@@ -12,13 +12,13 @@ Contains    :  static analysis for OWL 2
 
 module OWL2.StaticAnalysis where
 
-import OWL2.PrefixMap
 import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
 import OWL2.FS
 import OWL2.GetAxioms
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
@@ -28,6 +28,7 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
+import Control.Monad
 
 modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
 modEntity f (Entity ty u) = do
@@ -306,15 +307,32 @@ basicOWL2Analysis ::
 
 basicOWL2Analysis (odoc, inSign, _) = do 
     let ns = prefixDeclaration odoc
-        (integNamespace, transMap) = integrateNamespaces (prefixMap inSign) ns
-        odoc2 = renameNamespace transMap odoc
-        syms = Set.difference (symOf accSign) $ symOf inSign
+        fs = ontologyFrame $ mOntology odoc
+    integNamespace <- integrateNamespaces (prefixMap inSign) ns
+    let syms = Set.difference (symOf accSign) $ symOf inSign
         accSign = execState
-          (createSign $ ontologyFrame $ mOntology odoc2)
+          (createSign fs)
           inSign {prefixMap = integNamespace}
-    (axl, nfl) <- createAxioms accSign (ontologyFrame (mOntology odoc2))
-    let newdoc = modifyOntologyDocument odoc2 nfl
+    (axl, nfl) <- createAxioms accSign fs
+    let newdoc = modifyOntologyDocument odoc nfl
     return (newdoc , ExtSign accSign syms, axl)
+
+testAndInteg :: PrefixMap -> (String, String) -> Result PrefixMap
+
+testAndInteg old (pre, ouri) =  
+    case Map.lookup pre old of
+      Just iri -> if ouri == iri then return old else
+       fail $ "Static analysis. Prefix clash " ++ pre
+      Nothing -> return $ Map.insert pre ouri old
+
+uniteSign :: Sign -> Sign -> Result Sign
+uniteSign s1 s2 = do
+    pm <- integrateNamespaces (prefixMap s1) (prefixMap s2)
+    return $ (addSign s1 s2) {prefixMap = pm} 
+
+integrateNamespaces :: PrefixMap -> PrefixMap
+                    -> Result PrefixMap
+integrateNamespaces oldNsMap testNsMap = foldM testAndInteg oldNsMap (Map.toList testNsMap) 
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI
 getObjRoleFromExpression opExp =

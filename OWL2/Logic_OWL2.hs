@@ -43,7 +43,6 @@ import OWL2.Morphism
 --import OWL2.ProvePellet
 import OWL2.ProveFact
 import OWL2.Conservativity
-import OWL2.PrefixMap
 --import OWL2.Taxonomy
 
 
