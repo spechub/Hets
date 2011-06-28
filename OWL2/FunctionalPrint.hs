@@ -24,6 +24,8 @@ import OWL2.Keywords
 import OWL2.ColonKeywords
 import OWL2.Sign
 
+import qualified Data.Map as Map
+
 import qualified Data.Set as Set
 
 printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
@@ -41,11 +43,12 @@ printSign s =
    in vcat (map (\ (c, l) -> hsep $ map text
                  [prefixC, c ++ ":", '<' : l ++ ">"]
                 )
-       [ ("owl", "http://www.w3.org/2002/07/owl#")
+      $ Map.toList $ Map.union (prefixMap s)
+      $ Map.fromList [ ("owl", "http://www.w3.org/2002/07/owl#")
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
-      , ("", showQU dummyQName ++ "#") ]) $++$
+      , ("", showQU dummyQName ++ "#") ] ) $++$
    vcat (map (\ t -> keyword datatypeC <+> pretty t) $ Set.toList ts)
    $++$ vcat (map (\ c -> keyword classC <+> pretty c) $ Set.toList cs)
    $++$ vcat (map (\ o -> keyword objectPropertyC <+> pretty o) $ Set.toList $ objectProperties s)
@@ -125,5 +128,4 @@ printAxiom (PlainAxiom ans paxiom) = case paxiom of
        keyword datatypeC <+> pretty dt $+$ keyword equivalentToC <+> (printAnnotations ans $+$ pretty dr)
    HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$ keyword hasKeyC
      <+> (printAnnotations ans $+$ vcat (punctuate comma $ map pretty objlist ++ map pretty datalist))
-   u -> error $ "unknow axiom " ++ show u
 
