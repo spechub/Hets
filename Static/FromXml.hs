@@ -165,28 +165,23 @@ insertNodeAndLinks :: HetcatsOpts -> LogicGraph -> NamedNode -> [NamedLink]
                  -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
 insertNodeAndLinks opts lg trgNd links (dg, lv) = do
   mrs <- mapM (getTypeAndMorphism lg dg) links
-  {- for HidingDefLinks, the target node signature and link morphisms are
-  different. -}
-  let isHiding = (== HidingDef) . edgeTypeModInc . lType
   gsig1 <- liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
-  let gt = case gsig1 of
+  (gsig', hid) <- case links of
+      [Link sr _ (DGEdgeType (FreeOrCofreeDef _) _) _] -> do
+        (_, gs) <- signOfNode sr dg
+        return (gs, False)
+      _ -> let tps = map (edgeTypeModInc . lType) links in
+        if all (== HidingDef) tps then return (gsig1, True)
+        else if all (\t -> t == LocalDef || t == GlobalDef) tps
+          then return (gsig1, False)
+          else fail "illegal link type"
+  let gt = case gsig' of
              G_sign lid sg sId -> noSensGTheory lid sg sId
-  ((dg', lv'), hid) <- case partition isHiding links of
-    -- case #1: none hiding def links
-    ([], _) -> do
-      dglv <- insertNode opts (Left gt) trgNd (dg, lv)
-      return (dglv, False)
-    -- case #2: only hiding def links
-    (_, []) -> do
-        dglv <- insertNode opts (Left gt) trgNd (dg, lv)
-        return (dglv, True)
-    -- case #3: mixture. not implemented!
-    _ -> fail "mix of HidingDefLinks and other links pointing at a single node"
+  (dg', lv') <- insertNode opts (Left gt) trgNd (dg, lv)
   (j, gsig2) <- signOfNode (fst trgNd) dg'
-  let ins' dgR (i, mr, tp) = do
-        morph <- finalizeMorphism lg hid mr gsig2
-        insertLink i j morph tp dgR
-  dg'' <- foldM ins' dg' mrs
+  dg'' <- foldM ( \ dgR (i, mr, tp) -> do
+                    morph <- finalizeMorphism lg hid mr gsig2
+                    insertLink i j morph tp dgR ) dg' mrs
   return (dg'', lv')
 
 {- ------------------------------------------------------
@@ -294,11 +289,8 @@ insertNode opts gtOrLg (name, el) (dg, lv) =
         let parseTh = parseSpecs gt0 name dg
         gt1 <- case findChild (unqual "Hidden") el of
               Nothing -> case findChild (unqual "Declarations") el of
-                {- Case #1: No declared or hidden symbols, use signature
-                TODO: get rid of using Xml-Signature for all node types -}
-                Nothing -> do
-                  (gt', _) <- parseTh $ deepSearch ["Signature"] el
-                  return gt'
+                -- Case #1: No declared or hidden symbols
+                Nothing -> return gt0
                 -- Case #2: Node has declared symbols (DGBasicSpec)
                 Just ch -> do
                   (gt', _) <- parseTh $ deepSearch ["Symbol"] ch
