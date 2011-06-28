@@ -172,7 +172,7 @@ insertNodeAndLinks opts lg trgNd links (dg, lv) = do
         return (gs, False)
       _ -> let tps = map (edgeTypeModInc . lType) links in
         if all (== HidingDef) tps then return (gsig1, True)
-        else if all (\t -> t == LocalDef || t == GlobalDef) tps
+        else if all (`elem` [LocalDef, GlobalDef, HetDef]) tps
           then return (gsig1, False)
           else fail "illegal link type"
   let gt = case gsig' of
