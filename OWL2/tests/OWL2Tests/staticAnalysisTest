@@ -56,3 +56,6 @@ AnnotationProperty: a
     Range: x, Annotations: a b y
 
 DisjointProperties: b,b2,c
+
+Class: u
+  EquivalentTo: u, Annotations: p q u, Annotations: Annotations: p q, p2 q2 r t, u v d
