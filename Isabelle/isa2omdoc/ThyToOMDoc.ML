@@ -2,18 +2,15 @@
 open PolyML.Debug;
 breakIn "own_consts_of"; *)
 
-PolyML.profiling 1;
-PolyML.profiling 2;
-
-signature ThyToOMDoc = 
+signature ThyToOMDoc =
 sig
     val ParseTheory : string -> unit*unit
 end;
 
-structure ThyToOMDoc : ThyToOMDoc = 
+structure ThyToOMDoc : ThyToOMDoc =
 struct
 open utility
-fun escape([])=[]| 
+fun escape([])=[]|
 	    escape(name)= if hd(name)="&" then "&amp;"::escape(tl(name)) else
 			  if hd(name)="<" then "&lt;"::escape(tl(name)) else
 			  if hd(name)=">" then "&gt;"::escape(tl(name)) else
@@ -22,8 +19,8 @@ fun escape([])=[]|
 	fun escaped(name)=implode(escape(explode(name)));
 
 (* Parsing Constants *)
-fun own_consts_of T = 		  
-    let 
+fun own_consts_of T =
+    let
 	val get_consts = Name_Space.dest_table o #constants o Consts.dest o Sign.consts_of
 	fun comp ((a,_), (x,_)) = a < x
 	val consts = utility.mergesort comp (get_consts T)
@@ -33,20 +30,20 @@ fun own_consts_of T =
     end
 
 fun get_term env _ (nil:(string * term) list) = ("",env)
-  | get_term env Name (a::Axioms) = 
+  | get_term env Name (a::Axioms) =
     if Name = (#1 a) orelse implode ((explode (#3 env) @ ["."] @ (explode Name))) = (#1 a)
-        then let 
+        then let
 	    val x = ParseTerm.TermToOMOBJ env (#2 a)
 	in
 	    ("<definition name=\""^ escaped(getName(#1 a)) ^"\">\n" ^ (#1 x) ^ "</definition>\n", #2 x)
 	end
     else get_term env Name Axioms
 
-fun ParseConst env Axioms (Name, (Typ, Definition)) = 
-    let 
+fun ParseConst env Axioms (Name, (Typ, Definition)) =
+    let
 	val def = fn NONE => get_term env (implode ((explode Name) @ (explode "_def"))) Axioms
-		   | SOME(T) => 
-		     let 
+		   | SOME(T) =>
+		     let
 			 val x = ParseTerm.TermToOMOBJ env T
 		     in
 			 ("<definition>\n" ^ (#1 x) ^ "</definition>\n", #2 x)
@@ -56,7 +53,7 @@ fun ParseConst env Axioms (Name, (Typ, Definition)) =
     in
 	("<constant name=\"" ^ escaped(getName(Name)) ^ "\">\n"
 	^ "<type>\n"
-	
+
 	^ (if tvars = [] then obj else
 	"<om:OMBIND>\n"
 	^"<om:OMS cd=\"Pure\" name=\"alltype\"/>\n"
@@ -66,16 +63,16 @@ fun ParseConst env Axioms (Name, (Typ, Definition)) =
 	^obj
 	^"</om:OMBIND>\n")
 	^ "</type>\n"
-	^ (#1 y)			      
+	^ (#1 y)
 	^ "</constant>\n",
 	 #2 y)
     end
 
-fun ParseConsts env Axioms = 
-    let 
+fun ParseConsts env Axioms =
+    let
 	fun myfold env [] = ("", env)
-	  | myfold env (c::constList) = 
-	    let 
+	  | myfold env (c::constList) =
+	    let
 		val x= myfold env constList
 		val y = ParseConst (#2 x) Axioms c
 	    in
@@ -85,7 +82,7 @@ fun ParseConsts env Axioms =
 	myfold env (own_consts_of (Thy_Info.get_theory (#3 env)))
     end
 (* Parsing Axioms *)
-fun own_axioms_of T = 
+fun own_axioms_of T =
     let
 	val get_axioms = Theory.axioms_of
 	fun comp ((a,_), (x,_)) = a < x
@@ -94,14 +91,14 @@ fun own_axioms_of T =
 	fun is_def ("f"::"e"::"d"::"_"::_) = true
 	  | is_def _ = false
 	fun divide (ax,def) (nil:(string * term) list) = (ax,def)
-	  | divide (ax,def) (l::list) = if is_def (rev (explode (#1 l))) 
+	  | divide (ax,def) (l::list) = if is_def (rev (explode (#1 l)))
 				      then divide (ax, l::def) list
 				      else divide (l::ax, def) list
     in
 	divide ([],[]) (utility.rem(ancestor_axioms, axioms))
     end
 
-fun ParseAxiom env (s,t) = 
+fun ParseAxiom env (s,t) =
     let
 	val x = ParseTerm.TermToOMOBJ env t
     in
@@ -113,11 +110,11 @@ fun ParseAxiom env (s,t) =
 	 (#2 x))
     end
 
-fun ParseAxioms env = 
-    let 
+fun ParseAxioms env =
+    let
 	fun myfold env [] = ("", env)
-	  | myfold env (a::axiomList) = 
-	    let 
+	  | myfold env (a::axiomList) =
+	    let
 		val x= myfold env axiomList
 		val y = ParseAxiom (#2 x) a
 	    in
@@ -129,15 +126,15 @@ fun ParseAxioms env =
 
 (* Parsing Theorems *)
 fun own_theorems_of T =
-    let 
-	 fun get_theorems T = 
-	
-	
+    let
+	 fun get_theorems T =
+
+
    		map (fn (a,b) => (a, prop_of b)) (Global_Theory.all_thms_of T)
-	
+
 	fun comp ((a,_), (x,_)) = a < x
 	val theorems = utility.mergesort comp (get_theorems T)
-	
+
 
 	val debug=map get_theorems (Context.ancestors_of T)
 	fun member(_,[])=false|
@@ -148,25 +145,25 @@ fun own_theorems_of T =
 	fun combine((x::xs)::nil)=x::xs|
 	    combine((x::xs)::ys)= combine(combine2(x::xs,hd(ys))::tl(ys))|
             combine _ = raise Match;
-	
-	
+
+
 	val debug2=combine(debug);
 	val debug3 = utility.mergesort comp (debug2)
-	val ancestor_theorems = utility.uniquify (debug3) 
+	val ancestor_theorems = utility.uniquify (debug3)
     in
 	utility.rem(ancestor_theorems, theorems)
     end
 
-fun ParseTheorem env k t  = 
+fun ParseTheorem env k t  =
     let
 	val x = ParseTerm.TermToOMOBJ env t
 	fun def ("f"::"e"::"d"::"_"::_) = true
 	  | def _ = false
 	fun is_def s = def (rev (explode s))
     in
-	if is_def k 
+	if is_def k
 	then ("", env)
-	else 
+	else
 	("<assertion name=\""^escaped(getName(k))^"\" role=\"lemma\">\n"^
 	"<FMP>\n"^
 	(#1 x)^
@@ -177,11 +174,11 @@ fun ParseTheorem env k t  =
 
 fun ParseTheorems env =
     let
-	
+
 fun myfold env [] = ("", env)
-          | myfold env ((k, t)::thmsList) = 
-            let 
-		
+          | myfold env ((k, t)::thmsList) =
+            let
+
                 val x = myfold env thmsList
                 val y = ParseTheorem (#2 x) k t
             in
@@ -193,7 +190,7 @@ fun myfold env [] = ("", env)
 
 (* Parsing Theories *)
 
-fun ParseTheory S = 
+fun ParseTheory S =
     let
 	val inputfile= TextIO.openIn(S ^ ".thy");
         fun getToStr inputfile [] _ 	 = TextIO.inputLine(inputfile)|
@@ -206,18 +203,18 @@ fun ParseTheory S =
 			NONE => ""|
 			SOME(str) => str;
 	fun tmp (x::xs:string list,y:string list) = if x<> " " andalso x<> "\n" then tmp(xs,x::y) else (xs,implode(rev(y)))|
-            tmp _ = raise Match; 
+            tmp _ = raise Match;
 	fun parseImportNames([],x)=x|
 	    parseImportNames(str,x)= let
 			val word= #2(tmp(str,[]))
-			val remaining = #1 (tmp(str,[]))			
+			val remaining = #1 (tmp(str,[]))
 				in parseImportNames(remaining, word::x)
 			end
-	val importNames = (parseImportNames(explode(getImportNames(getToImportLine(inputfile))),[]));	
-	
+	val importNames = (parseImportNames(explode(getImportNames(getToImportLine(inputfile))),[]));
+
 	fun printimports ([]) ="" |
 	    printimports(x::xs) = "<imports from=\""^escaped(x)^"\"/>\n"^printimports(xs);
-	
+
 	fun get_name [] = ""
 	  | get_name ("/" :: _) = ""
 	  | get_name (a :: L) = (get_name L) ^ a
