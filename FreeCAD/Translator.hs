@@ -41,7 +41,9 @@ processFile fp = do
   readProcess "unzip" ["-o", fp, "-d", tempDir] []
   xmlInput <- readFile (joinPath[tempDir, "Document.xml"])
   let parsed = parseXMLDoc xmlInput
-  runReaderT (translate' $ fromJust parsed) tempDir
+  d <- runReaderT (translate' $ fromJust parsed) tempDir
+  removeDirectoryRecursive tempDir
+  return d
   --putStrLn (show $printDoc out)
   --putStrLn (show out)
 ------------------------}
