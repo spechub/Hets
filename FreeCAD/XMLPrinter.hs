@@ -73,7 +73,7 @@ makeObjElem obj = case obj of
 getEORef :: ExtendedObject -> String
 getEORef eo = case eo of
            Ref s -> s
-           Placed po -> error "cannot get reference"
+           Placed _ -> error "cannot get reference"
 
 makeBOElem :: BaseObject -> Element
 makeBOElem obj = case obj of
