@@ -1,21 +1,21 @@
-spec emptyontology = 
+spec emptyontology =
 
 Class: Boy
 
-    
+
 Class: Girl
 
-    
+
 Class: Dog
 
-    
+
 Individual: Stewie
 
-    Types: 
+    Types:
         Boy
-    
-    
-DisjointClasses: 
+
+
+DisjointClasses:
     Boy,Dog,Girl
 
-with class Boy |-> YoungMan
+with Class Boy |-> YoungMan
