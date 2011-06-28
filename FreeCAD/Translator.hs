@@ -30,8 +30,8 @@ getFreshTempDir :: IO FilePath
 getFreshTempDir = do
   dir <- getTemporaryDirectory
   (fp, _) <- openTempFile dir "hetsfc"
-  createDirectory fp
   removeFile fp
+  createDirectory fp
   return fp
 
 processFile :: FilePath -> IO Document
