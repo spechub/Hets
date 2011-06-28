@@ -21,18 +21,15 @@ Notes for the developer:
 module THF.Cons where
 
 import THF.As
-import THF.PrintTHF
 
 import Common.DefaultMorphism
-import Common.DocUtils
-import Common.Doc
 import Common.Id
 import Common.GlobalAnnotations
 import Common.Result
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
+-- import qualified Common.Lib.Rel as Rel
 
 -- We use the DefaultMorphism for THF.
 type MorphismTHF = DefaultMorphism SignTHF
@@ -41,19 +38,12 @@ data BasicSpecTHF = BasicSpecTHF [TPTP_THF] deriving (Show, Eq, Ord)
 
 instance GetRange BasicSpecTHF
 
-instance Pretty BasicSpecTHF where
-    pretty (BasicSpecTHF a) = printTPTPTHF a
-
-
 -- Sentence
 
 -- A Sentence is a THFFormula.
 type SentenceTHF = THFFormula
 
 instance GetRange THFFormula
-
-instance Pretty THFFormula where
-  pretty = printTHF
 
 -- SymbolTHF
 
@@ -64,21 +54,17 @@ data SymbolTHF = Symbol
 
 instance GetRange SymbolTHF
 
-instance Pretty SymbolTHF where
-  pretty s = (text "Name: ") <+> pretty (symName s)
-        <+> text (" Type: " ++ (drop 3 (show $ symType s)))
-
 data SymbolType =
     ST_Const
   | ST_Type
-  | ST_SubType
+  -- | ST_SubType
     deriving (Show, Eq, Ord)
 
 -- SignTHF
 
 data SignTHF = Sign
     { types :: TypeMap
-    , subTypes :: Rel.Rel Id
+    --, subTypes :: Rel.Rel Id
     , consts :: ConstMap
     , symbols :: Set.Set SymbolTHF
     , annoMap :: Map.Map Id Annotations -- ^ annotated symbols
@@ -87,11 +73,8 @@ data SignTHF = Sign
 
 instance Ord SignTHF where
     compare s1 s2 = compare
-        (types s1, subTypes s1, consts s1, symbols s1, annoMap s1)
-        (types s2, subTypes s2, consts s2, symbols s2, annoMap s2)
-
-instance Pretty SignTHF where
-    pretty = undefined
+        (types s1, {- subTypes s1, -} consts s1, symbols s1, annoMap s1)
+        (types s2, {- subTypes s2, -} consts s2, symbols s2, annoMap s2)
 
 type TypeMap = Map.Map Id Kind
 
@@ -106,7 +89,7 @@ data Kind =
 emptySign :: SignTHF
 emptySign = Sign
     { types = Map.empty
-    , subTypes = Rel.empty
+    --, subTypes = Rel.empty
     , consts = Map.empty
     , symbols = Set.empty
     , annoMap = Map.empty

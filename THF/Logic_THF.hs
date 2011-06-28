@@ -23,6 +23,7 @@ import Common.ProofTree
 import THF.ATC_THF ()
 import THF.Cons
 import THF.ParseTHF
+import THF.Print ()
 -- import THF.StaticAnalysisTHF
 -- import THF.ProveLeoII
 

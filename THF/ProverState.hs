@@ -17,6 +17,7 @@ module THF.ProverState where
 import Logic.Prover
 
 import THF.Cons
+import THF.Print
 
 import Common.AS_Annotation
 
@@ -37,5 +38,15 @@ data ProverStateTHF = ProverStateTHF
 initialProverStateTHF :: SignTHF -> [Named SentenceTHF]
     -> [FreeDefMorphism SentenceTHF MorphismTHF]
     -> ProverStateTHF
-initialProverStateTHF _ _ _ {-sign oSens freedefs-} =
-    error "missing initialProverStateTHF implementation"
+initialProverStateTHF sign oSens freedefs = ProverStateTHF
+    { axioms = filter isAxiom oSens
+    , signature = sign
+    , freeDefs = freedefs }
+
+insertSentenceTHF :: ProverStateTHF -> Named SentenceTHF -> ProverStateTHF
+insertSentenceTHF ps ns = ps {axioms = axioms ps ++ [ns]}
+
+showProblemTHF :: ProverStateTHF -> Named SentenceTHF -> [String] -> IO String
+showProblemTHF ps goal _ = do
+    return $ show $
+        printProblemTHF (signature ps) (filter isAxiom $ axioms ps) goal

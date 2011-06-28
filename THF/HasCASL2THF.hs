@@ -28,6 +28,7 @@ import HasCASL.Builtin
 
 import THF.Logic_THF
 import THF.Cons
+import THF.Print
 
 -- | The identity of the comorphism
 data HasCASL2THF = HasCASL2THF deriving Show

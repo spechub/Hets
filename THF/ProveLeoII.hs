@@ -51,11 +51,11 @@ leoIIHelpText =
 -}
 atpFun :: String -- ^ theory name
   -> ATPFunctions SignTHF SentenceTHF MorphismTHF ProofTree ProverStateTHF
-atpFun _ {- thName -} = ATPFunctions
+atpFun _ = ATPFunctions
   { initialProverState = initialProverStateTHF
-  , atpTransSenName = error "missing atpTransSenName implementation"
-  , atpInsertSentence = error "missing atpInsertSentence implementation"
-  , goalOutput = error "missing goalOutput implementation"
+  , atpTransSenName = id
+  , atpInsertSentence = insertSentenceTHF
+  , goalOutput = showProblemTHF
   , proverHelpText = leoIIHelpText
   , batchTimeEnv = "HETS_LEOII_BATCH_TIME_LIMIT" --        <- IMPORTATN NOTE: ask Till about env vars.
   , fileExtensions = FileExtensions
