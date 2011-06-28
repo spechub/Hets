@@ -306,35 +306,10 @@ basicOWL2Analysis ::
         Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
 
 basicOWL2Analysis (odoc, inSign, _) = do 
-    let {-ns = prefixDeclaration odoc
-        diags1 = foldl (++) [] (map isNamespaceInImport
-                         (Map.elems ns))
-        (integNamespace, transMap) =
-            integrateNamespaces (prefixMap inSign) ns
-        odoc2 = renameNamespace transMap odoc-}
-        syms = Set.difference (symOf accSign) $ symOf inSign
+    let syms = Set.difference (symOf accSign) $ symOf inSign
         (_, accSign) = runState
-          (createSign $ ontologyFrame $ mOntology odoc{-2-})
-          inSign --{ prefixMap = integNamespace }
-        {-
-        oName = muri $ mOntology odoc
-
-        isNamespaceInImport :: String -> [Diagnosis]
-        isNamespaceInImport iuri =
-          if null iuri then []
-            else
-             let uri' = take (length iuri - 1) iuri
-             in if elem uri' importList
-                  then []
-                  else
-                    [mkDiag
-                        Warning
-                        ("\"" ++ uri' ++ "\"" ++
-                                  " is not imported in ontology: " ++
-                                  show (localPart oName))
-                        ()]
-        importList = localPart oName
-          : map localPart (imports $ mOntology odoc) -}
+          (createSign $ ontologyFrame $ mOntology odoc)
+          inSign
     (axl, nfl) <- createAxioms accSign (ontologyFrame (mOntology odoc))
     let newdoc = modifyOntologyDocument odoc nfl
     return (newdoc , ExtSign accSign syms, axl)

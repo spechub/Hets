@@ -28,63 +28,20 @@ type TranslationMap = Map.Map String String  -- OldPrefix -> NewPrefix
 
 -- | propagate own namespaces from prefix to namespacesURI within a ontology
 class PNamespace a where
-    -- | separate localpart of a QName into two divide: prefix and new
-    -- | localpart. If uri of the QName already existed in NamespaceMap,
-    -- | should prefix also be changed.
-    propagateNspaces :: PrefixMap -> a -> a
     -- | on the basis of translation map changes the prefix of namespace.
     renameNamespace :: TranslationMap -> a -> a
 
 instance PNamespace PrefixMap where
-    propagateNspaces _ ns = ns
     renameNamespace tMap oldNs =
         foldl (\ ns (pre, ouri) ->
            Map.insert (Map.findWithDefault pre pre tMap) ouri ns)
         Map.empty $ Map.toList oldNs
 
 instance PNamespace QName where
-  propagateNspaces ns old@(QN pre local isFull nsUri)
-    | null (pre ++ local ++ nsUri) = old
-    | otherwise =
-     if local == "Thing" || snd (span (/= ':') local) == ":Thing" then
-        QN "owl" "Thing" False "http://www.w3.org/2002/07/owl#"
-      else
-        if null nsUri then let
-          prop :: String -> String -> QName
-          prop p loc = QN p loc isFull $ Map.findWithDefault "" p ns
-          in if null pre then
-              let (pre', local') = span (/= ':')
-                                     (if head local == '\"' then
-                                         read local :: String
-                                         else local
-                                     )
-              -- hiding "ftp://" oder "http://" oder "file:///"
-              in if null local' then old else let local'' = tail local' in
-                    if length pre' > 3 && isAlpha (last pre') then old
-                   else prop pre' local''
-             else prop pre local
-         else
-             if null pre then
-               let (pre', local') = span (/= '/')
-                                     (if head nsUri == '\"' then
-                                         read nsUri :: String
-                                         else nsUri
-                                     )
-                   rns = reverseMap ns
-                in if pre' /= "file:" then
-                       old { namePrefix = Map.findWithDefault pre
-                             (nsUri ++ "#") rns }
-                    -- if uri of QName already existed in namespace map, must
-                    -- the prefix also changed (as is located in map).
-                   else old { namePrefix = Map.findWithDefault pre
-                              (pre' ++ "//" ++ local' ++ "#") rns }
-              else old
-
   renameNamespace tMap old = let pre = namePrefix old in
       old { namePrefix = Map.findWithDefault pre pre tMap }
 
 instance PNamespace Sign where
-   propagateNspaces _ sig = sig
    renameNamespace tMap (Sign p1 p2 p3 p4 p5 p6 p7) =
        Sign (Set.map (renameNamespace tMap) p1)
             (Set.map (renameNamespace tMap) p2)
@@ -93,16 +50,14 @@ instance PNamespace Sign where
             (Set.map (renameNamespace tMap) p5)
             (Set.map (renameNamespace tMap) p6)
             (renameNamespace tMap p7)
-{-
+
 instance PNamespace (DomainOrRangeOrFunc a) where
-   propagateNspaces _ = id
    renameNamespace tMap dor = case dor of
      DomainOrRange ty des -> DomainOrRange ty $ renameNamespace tMap des
      RDRange dr -> RDRange $ renameNamespace tMap dr
      _ -> dor
 
 instance PNamespace SignAxiom where
-   propagateNspaces _ = id
    renameNamespace tMap signAxiom =
        case signAxiom of
        Subconcept cId1 cId2 ->
@@ -117,39 +72,23 @@ instance PNamespace SignAxiom where
                              (renameNamespace tMap des)
 
 instance PNamespace (Common.Annotation.Named Axiom) where
-    propagateNspaces _ nsent = nsent
     renameNamespace tMap sent = sent {
         Common.Annotation.sentence = renameNamespace tMap
                                      (Common.Annotation.sentence sent) }
 
 instance PNamespace OntologyDocument where
-    propagateNspaces ns ( OntologyDocument namespace onto) =
-         OntologyDocument (propagateNspaces ns namespace)
-                    (propagateNspaces ns onto)
     renameNamespace tMap ( OntologyDocument namespace onto) =
          OntologyDocument (renameNamespace tMap namespace)
                          (renameNamespace tMap onto)
 
 instance PNamespace MOntology where
-    propagateNspaces ns ( MOntology ouri impList anList axList) =
-         MOntology (propagateNspaces ns ouri)
-                     (map (propagateNspaces ns) impList)
-                     (map (propagateNspaces ns) anList)
-                     (map (propagateNspaces ns) axList)
-    renameNamespace tMap ( MOntology ouri impList anList axList) =
+    renameNamespace tMap ( MOntology ouri impList anList f) =
          MOntology (renameNamespace tMap ouri)
                      (map (renameNamespace tMap) impList)
                      (map (renameNamespace tMap) anList)
-                     (map (renameNamespace tMap) axList) 
--}
+                     (map (renameNamespace tMap) f) 
+
 instance PNamespace Annotation where
-    propagateNspaces ns anno =
-        case anno of
-           Annotation annos ap av ->
-               Annotation (map (propagateNspaces ns) annos)
-                             (propagateNspaces ns ap)
-                              (propagateNspaces ns av)
-          
     renameNamespace tMap anno =
         case anno of
           Annotation annos ap av ->
@@ -158,77 +97,57 @@ instance PNamespace Annotation where
                               (renameNamespace tMap av)
 
 instance PNamespace AnnotationValue where
-    propagateNspaces ns av = 
-        case av of
-            AnnValue iri -> AnnValue (propagateNspaces ns iri)
-            AnnValLit l -> AnnValLit (propagateNspaces ns l)
-    renameNamespace ns av = 
+  renameNamespace ns av = 
         case av of
             AnnValue iri -> AnnValue (renameNamespace ns iri)
             AnnValLit l -> AnnValLit (renameNamespace ns l)
  
-
 instance PNamespace Axiom where
-    propagateNspaces ns axiom = case axiom of
-        PlainAxiom annosList pa -> PlainAxiom
-            (map (propagateNspaces ns) annosList) $ propagateNspaces ns pa
     renameNamespace tMap axiom = case axiom of
         PlainAxiom annosList pa -> PlainAxiom
             (map (renameNamespace tMap) annosList) $ renameNamespace tMap pa
 
+instance PNamespace Annotations where
+    renameNamespace tMap ans = map (renameNamespace tMap) ans
+
+instance PNamespace a => PNamespace (AnnotatedList a) where
+    renameNamespace tMap anl = AnnotatedList $ map (\ (ans, b) -> (renameNamespace tMap ans, renameNamespace tMap b)) (convertAnnList anl)
+
+instance PNamespace Frame where
+    renameNamespace tMap frame = case frame of
+        Frame en fb -> Frame (renameNamespace tMap en) (map (renameNamespace tMap) fb)
+        MiscFrame ed ans misc -> MiscFrame ed (map (renameNamespace tMap) ans) (renameNamespace tMap misc)
+        MiscSameOrDifferent sd ans il -> MiscSameOrDifferent sd (map (renameNamespace tMap) ans) (map (renameNamespace tMap) il)
+
+instance PNamespace FrameBit where
+    renameNamespace tMap fb = case fb of
+        AnnotationFrameBit ans -> AnnotationFrameBit (map (renameNamespace tMap) ans)
+        AnnotationBit r anl -> AnnotationBit r (renameNamespace tMap anl)
+        DatatypeBit ans dr -> DatatypeBit (renameNamespace tMap ans) (renameNamespace tMap dr)
+        ExpressionBit e anl -> ExpressionBit e (renameNamespace tMap anl)
+        ClassDisjointUnion ans cel -> ClassDisjointUnion (renameNamespace tMap ans) (map (renameNamespace tMap) cel)
+        ClassHasKey ans ol dl -> ClassHasKey (renameNamespace tMap ans) (map (renameNamespace tMap) ol) (map (renameNamespace tMap) dl)
+        ObjectBit r anl -> ObjectBit r (renameNamespace tMap anl)
+        ObjectCharacteristics anl -> ObjectCharacteristics anl
+        ObjectSubPropertyChain ans ol -> ObjectSubPropertyChain (renameNamespace tMap ans) (map (renameNamespace tMap) ol)
+        DataBit r anl -> DataBit r (renameNamespace tMap anl)
+        DataPropRange anl -> DataPropRange (renameNamespace tMap anl)
+        DataFunctional ans -> DataFunctional (renameNamespace tMap ans)
+        IndividualFacts ans -> IndividualFacts (renameNamespace tMap ans)
+        IndividualSameOrDifferent sd anl -> IndividualSameOrDifferent sd (renameNamespace tMap anl)
+
+instance PNamespace Fact where
+     renameNamespace tMap f = case f of
+        ObjectPropertyFact pn op i -> ObjectPropertyFact pn (renameNamespace tMap op) (renameNamespace tMap i)
+        DataPropertyFact pn dp l -> DataPropertyFact pn (renameNamespace tMap dp) (renameNamespace tMap l)
+
+instance PNamespace Misc where
+    renameNamespace tMap m = case m of
+        MiscEquivOrDisjointClasses ce -> MiscEquivOrDisjointClasses $ map (renameNamespace tMap) ce
+        MiscEquivOrDisjointObjProp ce -> MiscEquivOrDisjointObjProp $ map (renameNamespace tMap) ce
+        MiscEquivOrDisjointDataProp ce -> MiscEquivOrDisjointDataProp $ map (renameNamespace tMap) ce
+
 instance PNamespace PlainAxiom where
-    propagateNspaces ns axiom =
-        case axiom of
-           AnnotationAssertion a -> AnnotationAssertion $ propagateNspaces ns a
-           AnnotationAxiom r ap iri -> AnnotationAxiom r (propagateNspaces ns ap) (propagateNspaces ns iri) 
-           SubClassOf sub sup -> SubClassOf
-                   (propagateNspaces ns sub) (propagateNspaces ns sup)
-           EquivOrDisjointClasses ty descList -> EquivOrDisjointClasses ty
-                   (map (propagateNspaces ns) descList)
-           DisjointUnion classUri descList -> DisjointUnion
-                   (propagateNspaces ns classUri)
-                   (map (propagateNspaces ns) descList)
-           SubObjectPropertyOf subExp objExp -> SubObjectPropertyOf
-                   (propagateNspaces ns subExp) (propagateNspaces ns objExp)
-           EquivOrDisjointObjectProperties ty objExpList ->
-                   EquivOrDisjointObjectProperties ty
-                   (map (propagateNspaces ns) objExpList)
-           ObjectPropertyDomainOrRange ty objExp desc ->
-                   ObjectPropertyDomainOrRange ty
-                   (propagateNspaces ns objExp) (propagateNspaces ns desc)
-           InverseObjectProperties objExp1 objExp2 -> InverseObjectProperties
-                   (propagateNspaces ns objExp1) (propagateNspaces ns objExp2)
-           ObjectPropertyCharacter ch objExp -> ObjectPropertyCharacter ch
-                   (propagateNspaces ns objExp)
-           SubDataPropertyOf dpExp1 dpExp2 -> SubDataPropertyOf
-                   (propagateNspaces ns dpExp1) (propagateNspaces ns dpExp2)
-           EquivOrDisjointDataProperties ty dpExpList ->
-                   EquivOrDisjointDataProperties ty
-                   (map (propagateNspaces ns) dpExpList)
-           DataPropertyDomainOrRange ddr dpExp -> DataPropertyDomainOrRange
-                   (case ddr of
-                      DataDomain desc -> DataDomain $ propagateNspaces ns desc
-                      DataRange dataRange -> DataRange
-                          $ propagateNspaces ns dataRange)
-                   $ propagateNspaces ns dpExp
-           FunctionalDataProperty dpExp -> FunctionalDataProperty
-                   (propagateNspaces ns dpExp)
-           SameOrDifferentIndividual ty indUriList ->
-                   SameOrDifferentIndividual ty
-                   (map (propagateNspaces ns) indUriList)
-           ClassAssertion desc indUri -> ClassAssertion
-                   (propagateNspaces ns desc) (propagateNspaces ns indUri) 
-           ObjectPropertyAssertion (Assertion objExp ty source target) ->
-                   ObjectPropertyAssertion $ Assertion
-                   (propagateNspaces ns objExp) ty
-                   (propagateNspaces ns source) (propagateNspaces ns target)
-           DataPropertyAssertion (Assertion dpExp ty source target) ->
-                   DataPropertyAssertion $ Assertion
-                   (propagateNspaces ns dpExp) ty
-                   (propagateNspaces ns source) (propagateNspaces ns target)
-           Declaration entity -> Declaration (propagateNspaces ns entity)
-           DatatypeDefinition dt dr -> DatatypeDefinition (propagateNspaces ns dt) (propagateNspaces ns dr)
-           HasKey ce opl dpl -> HasKey (propagateNspaces ns ce) (map (propagateNspaces ns) opl) (map (propagateNspaces ns) dpl)
     renameNamespace tMap axiom =
         case axiom of
            AnnotationAssertion a -> AnnotationAssertion $ renameNamespace tMap a
@@ -285,15 +204,9 @@ instance PNamespace PlainAxiom where
            HasKey ce opl dpl -> HasKey (renameNamespace tMap ce) (map (renameNamespace tMap) opl) (map (renameNamespace tMap) dpl)
 
 instance PNamespace Entity where
-  propagateNspaces ns (Entity ty euri) = Entity ty $ propagateNspaces ns euri
   renameNamespace tMap (Entity ty euri) = Entity ty $ renameNamespace tMap euri
 
 instance PNamespace Literal where
-    propagateNspaces ns constant =
-        case constant of
-           Literal l (Typed curi) ->
-               Literal l $ Typed $ propagateNspaces ns curi
-           u -> u        -- for untyped constant
     renameNamespace tMap constant =
         case constant of
            Literal l (Typed curi) ->
@@ -301,29 +214,12 @@ instance PNamespace Literal where
            u -> u        -- for untyped constant
 
 instance PNamespace ObjectPropertyExpression where
-    propagateNspaces ns opExp =
-        case opExp of
-           ObjectProp opuri -> ObjectProp (propagateNspaces ns opuri)
-           ObjectInverseOf invOp -> ObjectInverseOf (propagateNspaces ns invOp)
     renameNamespace tMap opExp =
         case opExp of
            ObjectProp opuri -> ObjectProp (renameNamespace tMap opuri)
            ObjectInverseOf invOp -> ObjectInverseOf (renameNamespace tMap invOp)
 
 instance PNamespace DataRange where
-    propagateNspaces ns dr =
-        case dr of
-           DataType druri restrList ->
-               DataType (propagateNspaces ns druri)
-                                      (map pnRest restrList)
-           DataJunction ty drlist -> DataJunction ty (map (propagateNspaces ns) drlist)
-           DataComplementOf dataRange ->
-               DataComplementOf (propagateNspaces ns dataRange)
-           DataOneOf constList ->
-               DataOneOf (map (propagateNspaces ns) constList)
-
-     where pnRest (facet, value) =
-               (facet, propagateNspaces ns value)
     renameNamespace tMap dr =
         case dr of
            DataType druri restrList ->
@@ -338,37 +234,6 @@ instance PNamespace DataRange where
                (facet, renameNamespace tMap value)
 
 instance PNamespace ClassExpression where
-    propagateNspaces ns desc =
-        case desc of
-           Expression curi ->
-               Expression (propagateNspaces ns curi)
-           ObjectJunction ty descList ->
-               ObjectJunction ty (map (propagateNspaces ns) descList)
-           ObjectComplementOf desc' ->
-               ObjectComplementOf (propagateNspaces ns desc')
-           ObjectOneOf indsList ->
-               ObjectOneOf (map (propagateNspaces ns) indsList)
-           ObjectValuesFrom ty opExp desc' ->
-               ObjectValuesFrom ty (propagateNspaces ns opExp)
-                                      (propagateNspaces ns desc')
-           ObjectHasSelf opExp ->
-               ObjectHasSelf (propagateNspaces ns opExp)
-           ObjectHasValue opExp indUri ->
-               ObjectHasValue (propagateNspaces ns opExp)
-                                 (propagateNspaces ns indUri)
-           ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
-               ObjectCardinality $ Cardinality ty card
-                 (propagateNspaces ns opExp) (maybePropagate ns maybeDesc)
-           DataValuesFrom ty dpExp dpExpList dataRange ->
-               DataValuesFrom ty (propagateNspaces ns dpExp)
-                                    (map (propagateNspaces ns) dpExpList)
-                                    (propagateNspaces ns dataRange)
-           DataHasValue dpExp const' ->
-               DataHasValue (propagateNspaces ns dpExp)
-                               (propagateNspaces ns const')
-           DataCardinality (Cardinality ty card dpExp maybeRange) ->
-               DataCardinality $ Cardinality ty card
-                 (propagateNspaces ns dpExp) (maybePropagate ns maybeRange)
     renameNamespace tMap desc =
         case desc of
            Expression curi ->
@@ -402,13 +267,6 @@ instance PNamespace ClassExpression where
                  (renameNamespace tMap dpExp) (maybeRename tMap maybeRange)
 
 instance PNamespace SubObjectPropertyExpression where
-    propagateNspaces ns subOpExp =
-        case subOpExp of
-           OPExpression opExp ->
-              OPExpression (propagateNspaces ns opExp)
-           SubObjectPropertyChain opExpList ->
-               SubObjectPropertyChain
-                     (map (propagateNspaces ns) opExpList)
     renameNamespace tMap subOpExp =
         case subOpExp of
            OPExpression opExp ->
@@ -416,10 +274,6 @@ instance PNamespace SubObjectPropertyExpression where
            SubObjectPropertyChain opExpList ->
                SubObjectPropertyChain
                      (map (renameNamespace tMap) opExpList)
-
--- propagate namespace of Maybe
-maybePropagate :: (PNamespace a) => PrefixMap -> Maybe a -> Maybe a
-maybePropagate ns = fmap $ propagateNspaces ns
 
 -- rename namespace of Maybe
 maybeRename :: (PNamespace a) => TranslationMap -> Maybe a -> Maybe a
@@ -458,7 +312,7 @@ integrateNamespaces oldNsMap testNsMap =
              in fromJust $ find (not . flip Map.member nameMap)
                      [name' ++ show (i :: Int) | i <- [1 ..]]
 
-{-
+
 integrateOntologyDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
 integrateOntologyDoc of1@( OntologyDocument ns1
@@ -478,9 +332,9 @@ integrateOntologyDoc of1@( OntologyDocument ns1
     in OntologyDocument newNamespace
             ( MOntology (newOid oid1 oid2)
                  (nub $ imp1 ++ map (renameNamespace transMap) imp2)
-                 (nub $ anno1 ++ map ((renameNamespace transMap) . (renameNamespace transMap)) anno2)
+                 (nub $ anno1 ++ map (renameNamespace transMap) anno2)
                  (nub $ axiom1 ++ map (renameNamespace transMap) (axiom2)))
--}
+
 -- | reverse a map: (key, value) -> (value, key)
 reverseMap :: Ord a => Map.Map k a -> Map.Map a k
 reverseMap oldMap =
