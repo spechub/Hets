@@ -62,15 +62,16 @@ data Object = BaseObject BaseObject
             | Common ExtendedObject ExtendedObject
             | Fusion ExtendedObject ExtendedObject
             | Extrusion ExtendedObject Vector3
-            --| Section ExtendedObject ExtendedObject
-            --| Fillet, (Base::String, Edges::Edgelist, Radius::Double)),
+            | Section ExtendedObject ExtendedObject
+            deriving (Show, Eq, Ord)
+
+{-          --| Fillet, (Base::String, Edges::Edgelist, Radius::Double)),
             --not enough data in the xml
             --| Chamfer, (Base::String, Edges::Edgelist, Amount::Double)),
             --not enough data in the xml
             --| Mirror, (Base::String, Position2::Vector))
             --mirroring of an object
-            deriving (Show, Eq, Ord)
-
+-}
 
 data ExtendedObject = Placed PlacedObject | Ref String deriving (Show, Eq, Ord)
 
