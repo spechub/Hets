@@ -114,7 +114,7 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
 
 -- TODO: get binary path from environment
 brepToXmlBinary :: RIO FilePath
-brepToXmlBinary = return "./FreeCAD/BrepConversion/bin/brep_to_xml"
+brepToXmlBinary = return "brep_to_xml"
 
 
 getBrepObject :: (String -> a) -> String -> String -> RIO a

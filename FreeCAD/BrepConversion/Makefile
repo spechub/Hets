@@ -2,7 +2,7 @@
 CC=g++
 CFLAGS=-Wall -I/usr/include/libxml2 -I/usr/include/opencascade
 
-LFLAGS= -lTKBRep -lxml2
+LFLAGS= -lTKBRep -lxml2 -lTKernel -lTKMath
 TARGET=brep_to_xml
 
 SRCS=src
@@ -19,10 +19,13 @@ $(TARGET): $(OBJS)/brep_to_xml.o $(OBJS)/main.o
 $(OBJS)/brep_to_xml.o: $(SRCS)/brep_to_xml.cxx
 	$(CC) $(CFLAGS) $(LFLAGS) -c $^
 	mv $(@F) $(OBJS)/
-	
+
 $(OBJS)/main.o: $(SRCS)/main.cxx
 	$(CC) $(CFLAGS) $(LFLAGS) -c $^
 	mv $(@F) $(OBJS)/
+
+install:
+	cp $(BIN)/brep_to_xml /bin
 
 clean:
 	-rm $(BIN)/$(TARGET)
