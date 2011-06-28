@@ -24,6 +24,8 @@ import Data.List (find, nub)
 import Data.Maybe
 import Data.Char (isDigit)
 
+import Common.Result
+
 type TranslationMap = Map.Map String String  -- OldPrefix -> NewPrefix
 
 -- | propagate own namespaces from prefix to namespacesURI within a ontology
@@ -296,6 +298,11 @@ disambiguateName name nameMap =
              in fromJust $ find (not . flip Map.member nameMap)
                      [name' ++ show (i :: Int) | i <- [1 ..]]
 
+uniteSign :: Sign -> Sign -> Result Sign
+uniteSign s1 s2 = do
+    let (pm, tm) = integrateNamespaces (prefixMap s1) (prefixMap s2)
+    if Map.null tm then return (addSign s1 s2) {prefixMap = pm} 
+      else fail "Static analysis. Could not unite signatures"
 
 integrateNamespaces :: PrefixMap -> PrefixMap
                     -> (PrefixMap, TranslationMap)

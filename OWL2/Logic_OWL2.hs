@@ -43,6 +43,7 @@ import OWL2.Morphism
 --import OWL2.ProvePellet
 import OWL2.ProveFact
 import OWL2.Conservativity
+import OWL2.PrefixMap
 --import OWL2.Taxonomy
 
 
@@ -85,7 +86,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       stat_symb_items OWL2 _ = return . statSymbItems
       stat_symb_map_items OWL2 _ _ = statSymbMapItems
       empty_signature OWL2 = emptySign
-      signature_union OWL2 s = return . addSign s
+      signature_union OWL2 = uniteSign 
       final_union OWL2 = signature_union OWL2
       is_subsig OWL2 = isSubSign
       subsig_inclusion OWL2 s = return . inclOWLMorphism s
