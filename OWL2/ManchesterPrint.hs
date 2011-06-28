@@ -91,8 +91,6 @@ instance Pretty MOntology where
 printImport :: ImportIRI -> Doc
 printImport x = keyword importC <+> pretty x
 
-
-
 printPrefixes :: PrefixMap -> Doc
 printPrefixes x = vcat (map (\(a, b) ->
        (text "Prefix:" <+> text a <> colon <+> text ('<' : b ++ ">"))) (Map.toList x))

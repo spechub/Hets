@@ -16,8 +16,6 @@ import OWL2.AS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-type ID = IRIreference          -- for universal ID
-type OntologyID = IRIreference
 type ClassID = IRIreference
 type DatatypeID = IRIreference
 type IndividualID = IRIreference

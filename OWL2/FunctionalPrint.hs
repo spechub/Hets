@@ -108,7 +108,7 @@ printAxiom (PlainAxiom ans paxiom) = case paxiom of
        opStart <+> pretty opExp1 $+$ keyword inverseOfC <+> (printAnnotations ans $+$ pretty opExp2)
    ObjectPropertyCharacter ch opExp ->
        opStart <+> pretty opExp $+$ (printAnnotations ans $+$ printCharact (show ch))
-   -- DataPropertyAxiom
+        -- DataPropertyAxiom 
    SubDataPropertyOf dpExp1 dpExp2 ->
        dpStart <+> pretty dpExp1 $+$ keyword subPropertyOfC <+> (printAnnotations ans $+$ pretty dpExp2)
    EquivOrDisjointDataProperties ty dpList ->

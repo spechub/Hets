@@ -42,8 +42,7 @@ isToProve = any isToProve1
 isToProve1 :: OWL2.AS.Annotation -> Bool
 isToProve1 anno = case anno of
       Annotation _ aIRI (AnnValLit(Literal value (Typed _))) ->
-          if localPart aIRI == "Implied" then isInfixOf "true" value
-            else False 
+          (localPart aIRI == "Implied" && isInfixOf "true" value)
       _ -> False
 
 data PlainAxiom =

@@ -53,7 +53,7 @@ convertFrameBit (Entity e iri) fb = case fb of
                           [iri, snd f]) x
     DataPropRange (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ DataPropertyDomainOrRange (DataRange b) iri) x
     DataFunctional anl -> [PlainAxiom anl $ FunctionalDataProperty iri]
-    IndividualFacts (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ (convertFact iri b)) x
+    IndividualFacts (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ convertFact iri b) x
     IndividualSameOrDifferent sd (AnnotatedList x) -> map (\ f -> PlainAxiom (fst f)
                         $ SameOrDifferentIndividual sd [iri, snd f]) x
 convertFact :: Individual -> Fact -> PlainAxiom

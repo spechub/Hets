@@ -72,10 +72,8 @@ type IRI = QName
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
 
-type NodeID = IRI
 type LexicalForm = String
 type LanguageTag = String
-type PrefixName = String
 type ImportIRI = IRI
 type OntologyIRI = IRI
 type Class = IRI
@@ -211,13 +209,6 @@ data ClassExpression =
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
   deriving (Show, Eq, Ord)
 
-data DomainOrRange = ADomain | ARange deriving (Show, Eq, Ord)
-
-showDomainOrRange :: DomainOrRange -> String
-showDomainOrRange dr = case dr of
-    ADomain -> domainC
-    ARange -> rangeC
-
 data AnnotationValue
         = AnnValue IRI
         | AnnValLit Literal
@@ -263,6 +254,13 @@ showEquivOrDisjoint :: EquivOrDisjoint -> String
 showEquivOrDisjoint ed = case ed of
     Equivalent -> equivalentToC
     Disjoint -> disjointWithC
+
+data DomainOrRange = ADomain | ARange deriving (Show, Eq, Ord)
+
+showDomainOrRange :: DomainOrRange -> String
+showDomainOrRange dr = case dr of
+    ADomain -> domainC
+    ARange -> rangeC
 
 data Relation =
     EDRelation EquivOrDisjoint
