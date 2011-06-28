@@ -31,10 +31,10 @@ addImplied a = case remImplied a of
       PlainAxiom ans pa -> PlainAxiom (impliedTh : ans) pa
 
 remImplied :: Axiom -> Axiom
-remImplied (PlainAxiom ans pa) = PlainAxiom (filter isToProve1 ans) pa
+remImplied (PlainAxiom ans pa) = PlainAxiom (filter (not . isToProve1) ans) pa
 
 impliedTh :: Annotation
-impliedTh = Annotation [] (mkQName "Implied") (AnnValLit(Literal "true" (Typed nullQName)))
+impliedTh = Annotation [] (mkQName "Implied") (AnnValLit(Literal "true" (Typed (QN "" "string" False ""))))
 
 isToProve :: [OWL2.AS.Annotation] -> Bool
 isToProve = any isToProve1
