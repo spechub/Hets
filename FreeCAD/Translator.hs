@@ -18,6 +18,7 @@ import Data.Maybe
 import Data.Set as Set
 import FreeCAD.Brep
 import System.Directory
+import System.IO
 import System.Process
 import System.FilePath
 import FreeCAD.PrintAs()
@@ -26,7 +27,12 @@ import Control.Monad.Reader (ReaderT(..))
 
 -- TODO: make unique subdirectory in tmp
 getFreshTempDir :: IO FilePath
-getFreshTempDir = getTemporaryDirectory
+getFreshTempDir = do
+  dir <- getTemporaryDirectory
+  (fp, _) <- openTempFile dir "hetsfc"
+  createDirectory fp
+  removeFile fp
+  return fp
 
 processFile :: FilePath -> IO Document
 processFile fp = do
@@ -190,8 +196,6 @@ child el = head(elChildren el)
 --Facade function that translates the parsed XML document
 --into Haskell-FreeCAD datatype
 
-translate:: Element -> IO Document
-translate baseElement = error "replace this once compilation error is solved"
 
 translate':: Element -> RIO Document
 translate' baseElement = mapM getObject $ objList baseElement
