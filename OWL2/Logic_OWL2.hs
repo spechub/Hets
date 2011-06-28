@@ -20,6 +20,8 @@ import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
 import Common.DefaultMorphism
+import Common.Consistency
+import Common.ProverTools
 
 import ATC.ProofTree ()
 
@@ -38,12 +40,19 @@ import OWL2.ATC_OWL2 ()
 import OWL2.Sign
 import OWL2.StaticAnalysis
 import OWL2.Morphism
+--import OWL2.ProvePellet
+import OWL2.ProveFact
+import OWL2.Conservativity
+--import OWL2.Taxonomy
+
+
 
 type OWLSub = ()
 
 data OWL2 = OWL2 deriving Show
 
 instance Language OWL2 where
+ language_name OWL2 = "OWL"
  description _ =
   "OWL2 DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
@@ -89,8 +98,18 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
 
 instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
-               OWLMorphism Entity RawSymb ProofTree
-
+               OWLMorphism Entity RawSymb ProofTree where
+         empty_proof_tree OWL2 = emptyProofTree
+#ifdef UNI_PACKAGE
+         provers OWL2 = unsafeFileCheck "OWLFactProver.jar" hetsOWLenv factProver
+         cons_checkers OWL2 = unsafeFileCheck "OWLFact.jar" hetsOWLenv factConsChecker
+         conservativityCheck OWL2 = concatMap
+           (\ ct -> unsafeFileCheck localityJar hetsOWLenv
+              $ ConservativityChecker ("Locality_" ++ ct)
+                      $ conserCheck ct)
+           ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
+	
+#endif
 {-
 instance SemiLatticeWithTop OWLSub where
     join = sl_max
