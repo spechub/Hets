@@ -30,7 +30,7 @@ from xml.etree import ElementTree as ET
 def newdoc(app):
     app.newDocument('fromHets')
 
-def fromHets(filePath, app):
+def fromHets(filePath, app, gui):
     try:
         f = open (filePath, 'r')
     except IOError as (errno, strerror):
@@ -61,6 +61,8 @@ def fromHets(filePath, app):
         for elsrc in buildque:
             if isBuildable(elsrc, buildque, app):
                 buildObject(elsrc, buildque, objDict, app)
+    gui.SendMsgToActiveView('ViewFit')
+    gui.activeDocument().activeView().viewAxometric()
 
 
 #checks whether the object is buildable in the current state of the program
