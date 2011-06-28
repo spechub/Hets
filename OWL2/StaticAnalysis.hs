@@ -306,12 +306,15 @@ basicOWL2Analysis ::
         Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
 
 basicOWL2Analysis (odoc, inSign, _) = do 
-    let syms = Set.difference (symOf accSign) $ symOf inSign
-        (_, accSign) = runState
-          (createSign $ ontologyFrame $ mOntology odoc)
-          inSign
-    (axl, nfl) <- createAxioms accSign (ontologyFrame (mOntology odoc))
-    let newdoc = modifyOntologyDocument odoc nfl
+    let ns = prefixDeclaration odoc
+        (integNamespace, transMap) = integrateNamespaces (prefixMap inSign) ns
+        odoc2 = renameNamespace transMap odoc
+        syms = Set.difference (symOf accSign) $ symOf inSign
+        (sens, accSign) = runState
+          (createSign $ ontologyFrame $ mOntology odoc2)
+          inSign {prefixMap = integNamespace}
+    (axl, nfl) <- createAxioms accSign (ontologyFrame (mOntology odoc2))
+    let newdoc = modifyOntologyDocument odoc2 nfl
     return (newdoc , ExtSign accSign syms, axl)
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI
