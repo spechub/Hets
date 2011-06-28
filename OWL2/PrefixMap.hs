@@ -459,9 +459,9 @@ integrateNamespaces oldNsMap testNsMap =
                      [name' ++ show (i :: Int) | i <- [1 ..]]
 
 {-
-integrateOntologyFile :: OntologyDocument -> OntologyDocument
+integrateOntologyDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
-integrateOntologyFile of1@( OntologyDocument ns1
+integrateOntologyDoc of1@( OntologyDocument ns1
                            ( MOntology oid1 imp1 anno1 axiom1))
                       of2@( OntologyDocument ns2
                            ( MOntology oid2 imp2 anno2 axiom2)) =
