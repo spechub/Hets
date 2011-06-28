@@ -22,7 +22,7 @@ import qualified Data.Set as Set
 import qualified Common.AS_Annotation as Common.Annotation
 import Data.List (find, nub)
 import Data.Maybe
-import Data.Char (isDigit, isAlpha)
+import Data.Char (isDigit)
 
 type TranslationMap = Map.Map String String  -- OldPrefix -> NewPrefix
 
@@ -279,39 +279,28 @@ instance PNamespace SubObjectPropertyExpression where
 maybeRename :: (PNamespace a) => TranslationMap -> Maybe a -> Maybe a
 maybeRename tMap = fmap $ renameNamespace tMap
 
-integrateNamespaces :: PrefixMap -> PrefixMap
-                    -> (PrefixMap, TranslationMap)
-integrateNamespaces oldNsMap testNsMap =
-    if oldNsMap == testNsMap then (oldNsMap, Map.empty)
-       else testAndInteg oldNsMap (Map.toList testNsMap) Map.empty
-
-   where testAndInteg :: PrefixMap -> [(String, String)]
-                      -> TranslationMap
+testAndInteg :: (String, String)
                       -> (PrefixMap, TranslationMap)
-         testAndInteg old [] tm = (old, tm)
-         testAndInteg old ((pre, ouri) : r) tm
-             | Just ouri == Map.lookup pre old =
-                 testAndInteg old r tm
-             -- if the uri already existed in old map, the key must be changed.
-             | isJust val =
-                 testAndInteg old r
-                      (Map.insert pre (fromJust val) tm)
-             | Map.member pre old =
-                let pre' = disambiguateName pre old
-                in testAndInteg (Map.insert pre' ouri old) r
-                        (Map.insert pre pre' tm)
-             | otherwise = testAndInteg (Map.insert pre ouri old) r tm
-            where val = Map.lookup ouri $ reverseMap old
+                      -> (PrefixMap, TranslationMap)
 
-         disambiguateName :: String -> PrefixMap -> String
-         disambiguateName name nameMap =
-             let name' = if isDigit $ last name then
-                             take (length name - 1) name
-                          else name
-                      -- how about "reverse . dropWhile isDigit . reverse"?
+testAndInteg (pre, ouri) (old, tm) =  
+    case Map.lookup pre old of
+      Just iri -> if ouri == iri then (old, tm) else
+       let pre' = disambiguateName pre old in 
+         ((Map.insert pre' ouri old), (Map.insert pre pre' tm))
+      Nothing -> (Map.insert pre ouri old, tm)
+
+disambiguateName :: String -> PrefixMap -> String
+disambiguateName name nameMap =
+             let name' = reverse . dropWhile isDigit $ reverse name
              in fromJust $ find (not . flip Map.member nameMap)
                      [name' ++ show (i :: Int) | i <- [1 ..]]
 
+
+integrateNamespaces :: PrefixMap -> PrefixMap
+                    -> (PrefixMap, TranslationMap)
+integrateNamespaces oldNsMap testNsMap =
+   foldr testAndInteg (oldNsMap, Map.empty) (Map.toList testNsMap) 
 
 integrateOntologyDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument

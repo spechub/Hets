@@ -19,7 +19,6 @@ import OWL2.MS
 import OWL2.FS
 import OWL2.GetAxioms
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
@@ -310,7 +309,7 @@ basicOWL2Analysis (odoc, inSign, _) = do
         (integNamespace, transMap) = integrateNamespaces (prefixMap inSign) ns
         odoc2 = renameNamespace transMap odoc
         syms = Set.difference (symOf accSign) $ symOf inSign
-        (sens, accSign) = runState
+        accSign = execState
           (createSign $ ontologyFrame $ mOntology odoc2)
           inSign {prefixMap = integNamespace}
     (axl, nfl) <- createAxioms accSign (ontologyFrame (mOntology odoc2))
