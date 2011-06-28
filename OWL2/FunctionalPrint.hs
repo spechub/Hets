@@ -37,7 +37,7 @@ instance Pretty Sign where
 printSign :: Sign -> Doc
 printSign s =
    let cs = concepts s
-       ts = Set.filter ((`notElem` datatypeKeys) . localPart) $ datatypes s
+       ts = datatypes s
    in vcat (map (\ (c, l) -> hsep $ map text
                  [prefixC, c ++ ":", '<' : l ++ ">"]
                 )

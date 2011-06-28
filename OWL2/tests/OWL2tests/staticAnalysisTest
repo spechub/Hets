@@ -2,6 +2,7 @@ Ontology: a
 
 Datatype: dt
 Datatype: dt2
+Datatype: xsd:positiveInteger
 
 DataProperty: b
 DataProperty: b2
