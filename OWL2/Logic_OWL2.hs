@@ -43,6 +43,7 @@ import OWL2.Morphism
 --import OWL2.ProvePellet
 import OWL2.ProveFact
 import OWL2.Conservativity
+import OWL2.ColimSign
 --import OWL2.Taxonomy
 
 
@@ -93,7 +94,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       induced_from_morphism OWL2 = inducedFromMor
       cogenerated_sign OWL2 = cogeneratedSign
       generated_sign OWL2 = generatedSign
-     
+      signature_colimit OWL2 = return . signColimit
 
 instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign

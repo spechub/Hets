@@ -24,12 +24,12 @@ Class: t
   EquivalentTo: d only b some dt[<2]
   SubClassOf: Annotations: Implied "true" c
 
-DisjointProperties: d,d2
+DisjointProperties: Annotations: p q d,d2
 
 DisjointProperties: b, b2
 
 Individual: i
-    DifferentFrom: Annotations: p q j,k
+    DifferentFrom: Annotations: p q j, Annotations: Annotations: p q r s, s t k
 
 Individual: j
   
