@@ -20,7 +20,6 @@ module FreeCAD.Brep where
 import System.Process
 import Text.XML.Light
 import Data.Maybe
---import Data.Set() as Set
 import FreeCAD.As
 import FreeCAD.VecTools
 import Control.Monad.Reader (ask, ReaderT(..), liftIO)
@@ -32,7 +31,6 @@ getBrep (address, "line") =
 getBrep (address, "rectangle") =
     fmap procRectangle $ getRectangle address
 getBrep (_, _) = error "getBrep called with wrong arguments"
-
 
 proc3dLine:: (Vector3, Vector3) -> (BaseObject, Placement)
 proc3dLine (a, b) = (Line l, place)
@@ -83,7 +81,7 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
       oy = Vector3 0 1 0
       rot1vec = v3VecProd oy hpoint -- rotation axis (for q1)
       rot1vecn = if norm3 rot1vec /= 0 then
-                     scalarprod3(1/(norm3 rot1vec)) rot1vec --normalized rotation axis
+                     scalarprod3(1/(norm3 rot1vec)) rot1vec --norm.rot.axis
                  else
                      Vector3 1 0 0
       cosAa1 = if norm3 rot1vec /= 0 then
@@ -112,10 +110,8 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
       pos = a
       place = Placement pos quaternion
 
--- TODO: get binary path from environment
 brepToXmlBinary :: RIO FilePath
 brepToXmlBinary = return "brep_to_xml"
-
 
 getBrepObject :: (String -> a) -> String -> String -> RIO a
 getBrepObject parser t addr = do
@@ -128,7 +124,6 @@ get3dLine = getBrepObject parseBrepXML2 "line"
 
 getRectangle:: String -> RIO (Vector3, Vector3, Vector3, Vector3)
 getRectangle = getBrepObject parseBrepXML "rectangle"
-
 
 parseBrepXML:: String -> (Vector3, Vector3, Vector3, Vector3)
 parseBrepXML a = getData (fromJust (parseXMLDoc a))
@@ -160,12 +155,9 @@ getData2 e = if (qName (elName e)) == "line" then
 
 parseVertex:: Element -> Vector3
 parseVertex e = Vector3 (getD "x") (getD "y") (getD "z") where
-    getD el = if ( findAttr (makeQName el) e) == Nothing then
+    getD el = if ( findAttr (unqual el) e) == Nothing then
                   error "erroneous input given by c++ module"
-              else read (fromJust (findAttr (makeQName el) e))
-
-makeQName:: String -> QName
-makeQName s = QName s Nothing Nothing
+              else read (fromJust (findAttr (unqual el) e))
 
 type Env = FilePath
 type RIO a = ReaderT Env IO a

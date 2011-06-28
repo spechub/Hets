@@ -21,7 +21,6 @@ import qualified Data.Set as Set
 exportXMLFC :: Sign -> String
 exportXMLFC = ppTopElement . doc2XML . Set.toList . objects
 
-
 makeAttr :: String -> String -> Attr
 makeAttr key value = Attr (unqual key) value
 
@@ -39,7 +38,7 @@ getNOChildren no = (makePlaceElem place):(makeObjElem obj):[] where
     place = p pobj
 
 makePlaceElem :: Placement -> Element
-makePlaceElem pl = unode "placement" attrList 
+makePlaceElem pl = unode "placement" attrList
     where
       attrList = xAt:yAt:zAt:q0At:q1At:q2At:q3At:[]
       mkp a b = Attr (unqual a) (show b)
@@ -65,9 +64,9 @@ makeObjElem obj = case obj of
                     Extrusion eo1 v3 -> mk1refs "extrusion" eo1 v3
     where
       mkRefAtt key eo = (Attr (unqual key) (getEORef eo))
-      mk2refs consType ref1 ref2 = 
+      mk2refs consType ref1 ref2 =
           unode consType ((mkRefAtt "base" ref1):(mkRefAtt "tool" ref2):[])
-      mk1refs consType ref v3 = 
+      mk1refs consType ref v3 =
           unode consType ((mkRefAtt "base" ref):(mkNumAtt "xval" (x v3)):
                           (mkNumAtt "yval" (y v3)):(mkNumAtt "zval" (z v3)):[])
 
@@ -78,13 +77,13 @@ getEORef eo = case eo of
 
 makeBOElem :: BaseObject -> Element
 makeBOElem obj = case obj of
-                   Box a1 a2 a3 -> 
+                   Box a1 a2 a3 ->
                        unode "box" ((mkNumAtt "height" a1):
                           (mkNumAtt "width" a2):(mkNumAtt "length" a3):[])
-                   Cylinder a1 a2 a3 -> 
+                   Cylinder a1 a2 a3 ->
                        unode "cylinder" ((mkNumAtt "angle" a1):
                           (mkNumAtt "height" a2):(mkNumAtt "radius" a3):[])
-                   Sphere a1 a2 a3 a4 -> 
+                   Sphere a1 a2 a3 a4 ->
                        unode "sphere" ((mkNumAtt "angle1" a1):
                           (mkNumAtt "angle2" a2):(mkNumAtt "angle3" a3):
                           (mkNumAtt "radius" a4):[])
@@ -97,9 +96,9 @@ makeBOElem obj = case obj of
                           (mkNumAtt "angle2" a2):(mkNumAtt "angle3" a3):
                           (mkNumAtt "radius1" a4):(mkNumAtt "radius2" a5):[])
                    Line a1 -> unode "line" (mkNumAtt "length" a1)
-                   Circle a1 a2 a3 -> 
+                   Circle a1 a2 a3 ->
                        unode "circle" ((mkNumAtt "startang" a1):
                           (mkNumAtt "endang" a2):(mkNumAtt "radius" a3):[])
-                   Rectangle a1 a2 -> 
+                   Rectangle a1 a2 ->
                        unode "rectangle" ((mkNumAtt "height" a1):
                           (mkNumAtt "length" a2):[])

@@ -15,6 +15,7 @@ Declaration of the abstract datatypes of FreeCAD terms
 module FreeCAD.VecTools where
 
 import FreeCAD.As
+
 distance3:: Vector3 -> Vector3 -> Double
 distance3 (Vector3 ax ay az) (Vector3 bx by bz) = sqrt (x1*x1 + x2*x2 + x3*x3)
     where
@@ -79,7 +80,7 @@ quatProd v1 v2 = Vector4 m1 m2 m3 m4
         m3 = (q1 v2)*(q0 v1)-(q0 v2)*(q1 v1)+(q3 v2)*(q2 v1)+(q2 v2)*(q3 v1)
         m4 = -(q0 v2)*(q0 v1)-(q1 v2)*(q1 v1)-(q2 v2)*(q2 v1)+(q3 v2)*(q3 v1)
 
--- from quaternion to rotation matrix
+-- transforms quaternion to rotation matrix
 quat2matrix:: Vector4 -> Matrix33
 quat2matrix q = Matrix33 m11 m12 m13 m21 m22 m23 m31 m32 m33
              where

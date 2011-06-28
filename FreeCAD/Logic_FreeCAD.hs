@@ -24,7 +24,6 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.Id
 import Common.LibName
-
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
@@ -48,11 +47,11 @@ data FreeCAD = FreeCAD deriving Show
 instance Language FreeCAD where
   description _ = "FreeCAD object representation language"
 
-newtype Text = Text { fromText :: String }
-  deriving (Show, Eq, Ord, GetRange, Typeable, ShATermConvertible)
-
 instance Pretty Text where
   pretty (Text s) = text s
+
+newtype Text = Text { fromText :: String }
+  deriving (Show, Eq, Ord, GetRange, Typeable, ShATermConvertible)
 
 type FCMorphism = DefaultMorphism Sign
 
@@ -73,8 +72,6 @@ instance StaticAnalysis FreeCAD Document () () () Sign FCMorphism () ()
   empty_signature FreeCAD = Sign { objects = Set.empty }
   is_subsig FreeCAD s1 s2 = Set.isSubsetOf (objects s1) $ objects s2
 
--- instance Logic FreeCAD () Text () () () Text (DefaultMorphism Text) () () ()
-
 instance Logic FreeCAD
     ()                        -- Sublogics
     Document                  -- basic_spec
@@ -88,8 +85,6 @@ instance Logic FreeCAD
     ()                        -- no proof_tree
     where
       stability FreeCAD = Experimental
-
-
 
 readFreeCADLib :: FilePath -> LibName -> IO LIB_DEFN
 readFreeCADLib fp ln = do

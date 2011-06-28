@@ -13,15 +13,13 @@ Portability :  portable
 
 Declaration of the abstract datatypes of FreeCAD terms
 -}
---
---data structures for FreeCAD documents and objects
---
+
 module FreeCAD.As where
 
 import qualified Data.Set as Set
 
-data Vector3 = Vector3 { x::Double, y::Double, z::Double } deriving (Show, Eq, Ord)
---a vector in cartesian coordinates
+data Vector3 =
+  Vector3 { x::Double, y::Double, z::Double } deriving (Show, Eq, Ord)
 
 data Matrix33 = Matrix33 {   a11::Double ,a12::Double ,a13::Double
                             ,a21::Double ,a22::Double ,a23::Double
@@ -36,17 +34,17 @@ data Placement = Placement { position::Vector3, orientation::Vector4 }
                  deriving (Show, Eq, Ord)
 
 {-
--- | the placement is determined by 2 vectors:
+--   the placement is determined by 2 vectors:
 --   the first one points to the 'center' of the objet in the space
 --   the second one determines the orientation of the object in the given space
 data Edgelist = []
               | 1:Edgelist
               | 0:Edgelist
--}
 
---reference from compound objects to 'building-blocks'
---objects made through strings or containment of the other
---objects
+  reference from compound objects to 'building-blocks'
+  objects made through strings or containment of the other
+  objects
+-}
 data BaseObject = Box Double Double Double -- Height, Width, Length
             | Cylinder Double Double Double -- Angle, Height, Radius
             | Sphere Double Double Double Double --Angle1,Angle2,Angle3,Radius
@@ -59,27 +57,25 @@ data BaseObject = Box Double Double Double -- Height, Width, Length
             deriving (Show, Eq, Ord)
           --TODO: Plane, Vertex, etc..
 
-
-
 data Object = BaseObject BaseObject
             | Cut ExtendedObject ExtendedObject
             | Common ExtendedObject ExtendedObject
             | Fusion ExtendedObject ExtendedObject
-            | Section ExtendedObject ExtendedObject
-                --section of an object (intersection with a plane
-            | Extrusion ExtendedObject Vector3 --TODO
---          | Fillet, (Base::String, Edges::Edgelist, Radius::Double)),
+            | Extrusion ExtendedObject Vector3
+            --| Section ExtendedObject ExtendedObject
+            --| Fillet, (Base::String, Edges::Edgelist, Radius::Double)),
             --not enough data in the xml
---          | Chamfer, (Base::String, Edges::Edgelist, Amount::Double)),
+            --| Chamfer, (Base::String, Edges::Edgelist, Amount::Double)),
             --not enough data in the xml
---          | Mirror, (Base::String, Position2::Vector))
+            --| Mirror, (Base::String, Position2::Vector))
             --mirroring of an object
             deriving (Show, Eq, Ord)
 
 
 data ExtendedObject = Placed PlacedObject | Ref String deriving (Show, Eq, Ord)
 
-data PlacedObject = PlacedObject {p::Placement, o::Object} deriving (Show, Eq, Ord)
+data PlacedObject =
+  PlacedObject {p::Placement, o::Object} deriving (Show, Eq, Ord)
 
 data NamedObject = NamedObject { name::String
                    , object:: PlacedObject}
@@ -92,10 +88,9 @@ data NamedObject = NamedObject { name::String
 --a list of doubles (numbers) describing the characteristics
 --of the object (e.g. dimensions, angles, etc)
 
-
 type Document = [NamedObject]
 
 -- | Datatype for FreeCAD Signatures
 -- Signatures are just sets of named objects
-data Sign = Sign { objects :: Set.Set NamedObject } deriving (Eq, Ord, Show)
 
+data Sign = Sign { objects :: Set.Set NamedObject } deriving (Eq, Ord, Show)

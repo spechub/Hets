@@ -14,7 +14,6 @@ Printing of the abstract syntax of FreeCAD terms
 module FreeCAD.PrintAs where
 
 import FreeCAD.As
-
 import Common.DocUtils
 import Common.Doc
 import Common.Id
@@ -22,7 +21,6 @@ import Common.Id
 -- | Pretty printing 'Double'
 instance Pretty Double where
     pretty = sidDoc . mkSimpleId . show
-
 
 instance Pretty Vector3 where
     pretty v =  pretty (x v, y v, z v)
@@ -40,7 +38,8 @@ instance Pretty Vector4 where
     pretty v = parens $ sepByCommas $ map pretty [q0 v, q1 v, q2 v, q3 v]
 
 instance Pretty Placement where
-    pretty p1 = brackets $ sepBySemis [pretty $ position p1, pretty $ orientation p1]
+    pretty p1 =
+      brackets $ sepBySemis [pretty $ position p1, pretty $ orientation p1]
 
 printBO:: BaseObject -> Doc
 printBO (Box h w l) = text "Box" <+> (vcat[hrow, wrow, lrow]) where
@@ -96,12 +95,14 @@ printEO:: ExtendedObject -> Doc
 printEO (Placed po) = pretty po
 printEO (Ref s) = text s
 
-instance Pretty ExtendedObject where
-    pretty eo = printEO eo
-
 printPO:: PlacedObject -> Doc
 printPO (PlacedObject plc obj) = vcat[pretty obj, text "place" <+> pretty plc]
 
+printDoc:: Document -> Doc
+printDoc a = vcat $ map pretty a
+
+instance Pretty ExtendedObject where
+    pretty eo = printEO eo
 
 instance Pretty PlacedObject where
     pretty po = printPO po
@@ -112,9 +113,6 @@ instance Pretty NamedObject where
         $+$ rbrack
 
 instance GetRange NamedObject
-
-printDoc:: Document -> Doc
-printDoc a = vcat $ map pretty a
 
 instance Pretty Sign where
     pretty = pretty . objects

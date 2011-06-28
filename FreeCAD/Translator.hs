@@ -12,6 +12,7 @@ Portability :  portable
 Declaration of the abstract datatypes of FreeCAD terms
 -}
 module FreeCAD.Translator where
+
 import FreeCAD.As
 import Text.XML.Light
 import Data.Maybe
@@ -25,7 +26,6 @@ import FreeCAD.PrintAs()
 import Control.Monad.Reader (ReaderT(..))
 
 
--- TODO: make unique subdirectory in tmp
 getFreshTempDir :: IO FilePath
 getFreshTempDir = do
   dir <- getTemporaryDirectory
@@ -37,46 +37,36 @@ getFreshTempDir = do
 processFile :: FilePath -> IO Document
 processFile fp = do
   tempDir <- getFreshTempDir
---  putStrLn $ show $ ["unzip", "-of", fp, "-d", tempDir]
   readProcess "unzip" ["-o", fp, "-d", tempDir] []
   xmlInput <- readFile (joinPath[tempDir, "Document.xml"])
   let parsed = parseXMLDoc xmlInput
   d <- runReaderT (translate' $ fromJust parsed) tempDir
   removeDirectoryRecursive tempDir
   return d
-  --putStrLn (show $printDoc out)
-  --putStrLn (show out)
-------------------------}
-
-
-
 
 --constants used to find the appropriate subtree in the XML file:
 objListQName::QName
-objListQName = makeQName "ObjectData"
-    --qualified name of the element which contains the list of objects
-    --with their properties
+objListQName = unqual "ObjectData"
+
 objQName::QName
-objQName = makeQName "Object"
-    --qualified name for the element which represents an object
+objQName = unqual "Object"
+
 objListEl:: Element -> Maybe Element
 objListEl mbel = findChild objListQName mbel
-    --the xml element containing all objects and their data:: Element
+
 objList:: Element -> [Element]
 objList mbel= findChildren objQName (fromJust (objListEl mbel))
-    --list of xml elements containing data for each object:: [Element]
-
 
 firstThree :: String -> String
 firstThree s = take 3 s
 
 getName:: Element -> String
-getName el = fromJust (findAttr (makeQName "name") el)
+getName el = fromJust (findAttr (unqual "name") el)
 hasName:: String -> Element -> Bool
 hasName s el = (getName el == s)
 
 childByName:: String -> Element -> Element
-childByName s el = fromJust (findChild (makeQName s) el)
+childByName s el = fromJust (findChild (unqual s) el)
 childByNameAttr:: String -> Element -> Element
 childByNameAttr s el = fromJust (filterChild(hasName s) el)
 
@@ -88,8 +78,6 @@ isBaseObject:: Element -> Bool
 isBaseObject el = member (firstThree (getName el)) setBaseObjs
     -- identify (by its name) whether an object is simpe or extended
     -- returns true if it is a base object and false otherwise
-
---used in order to identify the object constructor from the name
 
 getObject:: Element -> RIO NamedObject
 getObject el | tn == "Box" = mkBaseObject $ getBox elc
@@ -141,11 +129,19 @@ mkRectangle ef = do
         let obj = BaseObject bo
             po = PlacedObject place obj
         return $ NamedObject (getVal "name" ef) po
+
 mkLine :: Element -> RIO NamedObject
-mkLine = error "line not implemented"
+mkLine ef = do
+        let e = child ef
+            el2 = childByNameAttr "Shape" e
+            elx = childByName "Part" el2
+        (bo, place) <- getBrep (getVal "file" elx, "line")
+        let obj = BaseObject bo
+            po = PlacedObject place obj
+        return $ NamedObject (getVal "name" ef) po
 
 getVal:: String -> Element -> String
-getVal s el = fromJust (findAttr (makeQName s) el)
+getVal s el = fromJust (findAttr (unqual s) el)
 
 getFloatVal:: Element -> String
 getFloatVal el = getVal "value" el2
@@ -158,6 +154,7 @@ getPlacementVals el = (m "Px", m "Py", m "Pz", m "Q0", m "Q1", m "Q2", m "Q3")
     where
         m s = getVal s el2
         el2 = childByName "PropertyPlacement" el
+
 getLinkVal:: Element -> String
 getLinkVal el = getVal "value" el2
     where
@@ -167,6 +164,7 @@ findFloat:: String -> Element -> Double
 findFloat s el = read (getFloatVal el2)
     where
         el2 = childByNameAttr s el
+
 findPlacement::Element -> FreeCAD.As.Placement
 findPlacement el = Placement (Vector3 a b c) (Vector4 d e f g)
     where
@@ -201,5 +199,3 @@ child el = head(elChildren el)
 
 translate':: Element -> RIO Document
 translate' baseElement = mapM getObject $ objList baseElement
-
-
