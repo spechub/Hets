@@ -1,0 +1,58 @@
+Ontology: a
+
+Datatype: dt
+Datatype: dt2
+Datatype: xsd:positiveInteger
+
+DataProperty: b
+DataProperty: b2
+ObjectProperty: d
+ObjectProperty: d2
+    InverseOf: d, d2
+
+DataProperty: c
+  Annotations: a b
+  Domain: Annotations: x y, z t d min 2 d some b some dt 
+  Range: not dt[<1], dt or dt2
+
+ObjectProperty: a
+    EquivalentTo: Annotations: p r d,d2
+    SubPropertyOf: d
+    Range: b only not not dt, Annotations: a b d some c, Annotations: x y d min 2 d some b some dt
+
+Class: t
+  EquivalentTo: d only b some dt[<2]
+  SubClassOf: Annotations: Implied "true" c
+
+DisjointProperties: Annotations: p q d,d2
+
+DisjointProperties: b, b2
+
+Individual: i
+    DifferentFrom: Annotations: p q j, Annotations: Annotations: p q r s, s t k
+
+Individual: j
+  
+DifferentIndividuals: i,j,k
+
+DisjointClasses: Annotations: Annotations: x y z t c, d
+
+Class: d
+  EquivalentTo: Annotations: u v c
+
+Individual: k
+  DifferentFrom: i,j
+
+Individual: x
+  DifferentFrom: k,i
+
+Individual: x
+  SameAs: k,j,i
+
+Class: c
+  HasKey: b, d, b2, d2
+  
+AnnotationProperty: a
+    Range: x, Annotations: a b y
+
+DisjointProperties: b,b2,c
