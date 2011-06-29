@@ -21,12 +21,12 @@ done
 
 for i in *.het
 do
-  ../../hets -l OWL -v2 -o th,pp.het,omn $i
+  ../../hets -l OWL2 -v2 -o th,pp.het,omn $i
 done
 
 for i in *.th *.pp.het *.omn
 do
-  ../../hets -l OWL -v2 $i
+  ../../hets -l OWL2 -v2 $i
 done
 
 for i in *.omn
