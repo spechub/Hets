@@ -537,12 +537,10 @@ equivOrDisjointKeyword ext = choice
   $ map (\ f -> pkeyword (show f ++ ext) >> return f)
   equivOrDisjointL
 
-
 sameOrDifferentIndu :: CharParser st SameOrDifferent
 sameOrDifferentIndu =
   (pkeyword sameIndividualC >> return Same)
   <|> (pkeyword differentIndividualsC >> return Different)
-  <|> (pkeyword individualsC >> return Individuals)
 
 objectPropertyCharacter :: CharParser st Character
 objectPropertyCharacter =

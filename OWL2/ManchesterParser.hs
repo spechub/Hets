@@ -82,6 +82,8 @@ classFrame = do
         pkeyword classC
         iri <- uriP
         plain <- many classFrameBit
+        -- ignore Individuals: ... !
+        optional $ pkeyword individualsC >> sepByComma individualUri
         return $ Frame (Entity Class iri) plain
 
 classFrameBit :: CharParser st FrameBit

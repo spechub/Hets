@@ -70,7 +70,6 @@ printSameOrDifferentInd :: SameOrDifferent -> Doc
 printSameOrDifferentInd x = case x of
     Same -> keyword sameIndividualC
     Different -> keyword differentIndividualsC
-    Individuals -> keyword individualsC
 
 instance Pretty AnnotationValue where
     pretty x = case x of
@@ -87,7 +86,7 @@ printAnnotation (Annotation ans ap av) =
 printAnnotations :: Annotations -> Doc
 printAnnotations l = case l of
     [] -> empty
-    _ -> keyword annotationsC <+> 
+    _ -> keyword annotationsC <+>
           vcat (punctuate comma (map ( \(Annotation ans ap av) -> printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
 
 instance Pretty ClassExpression where
