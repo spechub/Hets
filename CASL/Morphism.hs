@@ -561,7 +561,7 @@ legalMor mor =
   && legalSign s2
 
 isInclOpMap :: Op_map -> Bool
-isInclOpMap = all (\ ((i, _), (j, k)) -> i == j && k == Total) . Map.toList
+isInclOpMap = all (\ ((i, _), (j, _)) -> i == j) . Map.toList
 
 idOrInclMorphism :: Morphism f e m -> Morphism f e m
 idOrInclMorphism m =
