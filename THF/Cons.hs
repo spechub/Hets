@@ -57,7 +57,7 @@ instance GetRange SymbolTHF
 data SymbolType =
     ST_Const
   | ST_Type
-  -- | ST_SubType
+  -- ST_SubType
     deriving (Show, Eq, Ord)
 
 -- SignTHF
