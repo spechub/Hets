@@ -15,16 +15,15 @@ module HasCASL.AsToLe where
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.TypeAna
 import HasCASL.ClassAna
 import HasCASL.VarDecl
 import HasCASL.Unify
 import HasCASL.OpDecl
+import HasCASL.TypeAna
 import HasCASL.TypeDecl
 import HasCASL.Builtin
 import HasCASL.PrintLe
 import HasCASL.Merge
-import HasCASL.MapTerm
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -88,15 +87,28 @@ basicAnalysis (b, e, ga) =
            Just (nb, ExtSign (cleanEnv ne) $ declSymbs ne,
                  reverse $ sentences ne)
 
--- | is the signature empty?
-isEmptyEnv :: Env -> Bool
-isEmptyEnv e = Map.null (classMap e)
-               && Map.null (typeMap e)
-               && Map.null (assumps e)
-
 -- | is the first argument a subsignature of the second?
 isSubEnv :: Env -> Env -> Bool
-isSubEnv e1 e2 = e1 == e2 || isEmptyEnv (diffEnv e1 e2)
+isSubEnv e1 e2 =
+  let c2 = classMap e2
+      cm = addCpoMap c2
+      t2 = typeMap e2
+      tm = addUnit cm t2
+      expTy = expand tm . opType
+  in Map.isSubmapOfBy (\ (ClassInfo _ k1) (ClassInfo _ k2) ->
+       Set.null $ Set.filter
+         (\ k -> Set.null $ Set.filter (flip (lesserKind cm) k) k2) k1)
+     (classMap e1) c2
+     && Map.isSubmapOfBy (\ ti1 ti2 -> let
+        k1 = otherTypeKinds ti1
+        k2 = otherTypeKinds ti2
+        in Set.null $ Set.filter (\ k -> Set.null $
+                  Set.filter (flip (lesserKind cm) k) k2) k1)
+     (typeMap e1) (typeMap e2)
+     && Map.isSubmapOfBy (\ s1 s2 ->
+         all (\ t -> any (instScheme tm 1 (expTy t) . expTy)
+             $ Set.toList s2)
+         $ Set.toList s1) (assumps e1) (assumps e2)
 
 -- | compute difference of signatures
 diffEnv :: Env -> Env -> Env
@@ -107,28 +119,17 @@ diffEnv e1 e2 = let
     in initialEnv
        { classMap = cm
        , typeMap = diffTypeMap acm (typeMap e1) tm
-       , assumps = Map.differenceWith (diffAss cm (filterAliases tm)
-                         $ addUnit cm tm) (assumps e1) $ assumps e2
+       , assumps = Map.differenceWith diffAss (assumps e1) $ assumps e2
        , binders = Map.differenceWith
            (\ i1 i2 -> if i1 == i2 then Nothing else Just i1)
            (binders e1) $ binders e2 }
 
--- | compute difference of overloaded operations
-diffAss :: ClassMap -> TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+-- | compute difference of operations
+diffAss :: Set.Set OpInfo -> Set.Set OpInfo
         -> Maybe (Set.Set OpInfo)
-diffAss cm tAs tm s1 s2 =
-    let s3 = diffOps cm tAs tm s1 s2 in
+diffAss s1 s2 =
+    let s3 = Set.difference s1 s2 in
         if Set.null s3 then Nothing else Just s3
-
-diffOps :: ClassMap -> TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
-        -> Set.Set OpInfo
-diffOps cm tAs tm s1 s2 = if Set.null s1 then s1 else
-    let (o, os) = Set.deleteFindMin s1
-        rs = diffOps cm tAs tm os s2
-        n = mapOpInfo (id, expandAliases tAs) o
-    in if Set.null $ Set.filter
-           (instScheme tm 1 (opType n) . expand tAs . opType) s2
-       then Set.insert n rs else rs
 
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env

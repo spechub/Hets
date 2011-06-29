@@ -225,12 +225,13 @@ mostSyms e = let
   tm = typeMap d
   in map (\ (i, k) -> idToClassSymbol i $ rawKind k) (Map.toList cm)
       ++ map (\ (i, s) -> Symbol i $ SuperClassSymbol s) (getSuperClasses cm)
-      ++ map (\ (i, k) -> idToTypeSymbol i $ typeKind k) (Map.toList tm)
       ++ map (\ (i, s) -> Symbol i $ TypeKindInstance s) (getTypeKinds tm)
       ++ map (\ (i, s) -> Symbol i $ SuperTypeSymbol s) (getSuperTypes tm)
       ++ map (\ (i, s) -> Symbol i $ TypeAliasSymbol s) (getTypeAliases tm)
       ++ concatMap (\ (i, ts) ->
-                    map (idToOpSymbol i . opType) $ Set.toList ts)
+                    map (\ t -> (if isPredOpDefn $ opDefn t then
+                           Symbol i . PredAsItemType . unPredTypeScheme
+                           else idToOpSymbol i) $ opType t) $ Set.toList ts)
              (Map.toList $ assumps d)
 
 printAliasType :: Type -> Doc
@@ -284,6 +285,7 @@ instance Pretty Symbol where
         OpAsItemType sc -> colon <+> pretty sc
         TypeAsItemType k -> colon <+> pretty (rawToKind k)
         ClassAsItemType k -> colon <+> pretty (rawToKind k)
+        PredAsItemType sc -> colon <+> pretty sc
 
 instance Pretty RawSymbol where
   pretty rs = case rs of
@@ -339,10 +341,7 @@ diffClass cm (ClassInfo r1 k1) (ClassInfo _ k2) =
            Just $ ClassInfo r1 ks
 
 diffTypeMap :: ClassMap -> TypeMap -> TypeMap -> TypeMap
-diffTypeMap cm t1 t2 =
-    let t = Map.differenceWith (diffType cm) t1 t2
-        r = Set.intersection $ Set.union (Map.keysSet t) $ Map.keysSet bTypes
-    in Map.map ( \ ti -> ti { superTypes = r $ superTypes ti }) t
+diffTypeMap = Map.differenceWith . diffType
 
 -- | compute difference of type infos
 diffType :: ClassMap -> TypeInfo -> TypeInfo -> Maybe TypeInfo
@@ -351,7 +350,7 @@ diffType cm ti1 ti2 =
         k2 = otherTypeKinds ti2
         ks = Set.filter (\ k -> Set.null $
                   Set.filter (flip (lesserKind cm) k) k2) k1
-    in if Set.null ks then Nothing else
+        sups = Set.difference (superTypes ti1) $ superTypes ti2
+    in if Set.null ks && Set.null sups then Nothing else
        Just $ ti1 { otherTypeKinds = ks
-                  , superTypes = Set.difference (superTypes ti1) $
-                                 superTypes ti2 }
+                  , superTypes = sups }

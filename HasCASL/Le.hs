@@ -331,6 +331,7 @@ data SymbolType =
   | TypeKindInstance Kind
   | SuperTypeSymbol Id
   | TypeAliasSymbol Type
+  | PredAsItemType TypeScheme
     deriving (Show, Eq, Ord)
 
 -- | symbols with their type
@@ -394,6 +395,7 @@ symbTypeToKind s = case s of
     TypeAliasSymbol _ -> SyKtype
     ClassAsItemType _ -> SyKclass
     SuperClassSymbol _ -> SyKclass
+    PredAsItemType _ -> SyKpred
 
 -- | wrap a symbol as raw symbol (is 'ASymbol')
 symbolToRaw :: Symbol -> RawSymbol
