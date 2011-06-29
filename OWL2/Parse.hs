@@ -351,10 +351,12 @@ dataRangeRestriction = do
     $ sepByComma facetValuePair
 
 dataConjunct :: CharParser st DataRange
-dataConjunct = fmap (mkDataJunction IntersectionOf) $ sepBy1 dataPrimary $ keyword andS
+dataConjunct = fmap (mkDataJunction IntersectionOf)
+      $ sepBy1 dataPrimary $ keyword andS
 
 dataRange :: CharParser st DataRange
-dataRange = fmap (mkDataJunction UnionOf) $ sepBy1 dataConjunct $ keyword orS
+dataRange = fmap (mkDataJunction UnionOf)
+      $ sepBy1 dataConjunct $ keyword orS
 
 dataPrimary :: CharParser st DataRange
 dataPrimary = do
@@ -369,7 +371,7 @@ mkDataJunction ty ds = case nubOrd ds of
   [x] -> x
   ns -> DataJunction ty ns
 
---the input must be "some" or "only" in order for the parsing to succeed
+-- the input must be "some" or "only" in order for the parsing to succeed
 someOrOnly :: CharParser st QuantifierType
 someOrOnly = choice
   $ map (\ f -> keyword (showQuantifierType f) >> return f)
@@ -388,7 +390,8 @@ card = do
 individualOrConstant :: CharParser st (Either Individual Literal)
 individualOrConstant = fmap Right literal <|> fmap Left individual
 
--- applies the previous one to a list separated by commas (the list needs to be all of the same type, of course)
+{- | applies the previous one to a list separated by commas
+    (the list needs to be all of the same type, of course) -}
 individualOrConstantList :: CharParser st (Either [Individual] [Literal])
 individualOrConstantList = do
     ioc <- individualOrConstant
@@ -504,7 +507,8 @@ entityType :: CharParser st EntityType
 entityType = choice $ map (\ f -> keyword (show f) >> return f)
   entityTypes
 
--- same as annotation Target in Manchester Syntax, named annotation Value in Abstract Syntax
+{- | same as annotation Target in Manchester Syntax,
+      named annotation Value in Abstract Syntax -}
 annotationValue :: CharParser st AnnotationValue
 annotationValue = do
     i <- individual

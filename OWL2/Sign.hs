@@ -25,17 +25,16 @@ type AnnotationPropertyID = IRIreference
 
 data Sign = Sign
             { concepts :: Set.Set ClassID
-              -- ^ a set of classes
-            , datatypes :: Set.Set DatatypeID -- ^ a set of datatypes
+              -- classes
+            , datatypes :: Set.Set DatatypeID -- datatypes
             , objectProperties :: Set.Set IndividualRoleIRI
-              -- ^ a set of object properties
+              -- object properties
             , dataProperties :: Set.Set DataRoleIRI
-              -- ^ a set of data properties
+              -- data properties
             , annotationRoles :: Set.Set AnnotationPropertyID
-            , individuals :: Set.Set IndividualID  -- ^ a set of individual
-              -- ^ a set of axioms of subconceptrelations, domain an drenge
-              -- ^of roles, functional roles and concept membership
-            , prefixMap :: PrefixMap 
+              -- annotation properties
+            , individuals :: Set.Set IndividualID  -- individuals
+            , prefixMap :: PrefixMap
             } deriving (Show, Eq, Ord)
 
 data SignAxiom =
@@ -73,7 +72,8 @@ diffSig :: Sign -> Sign -> Sign
 diffSig a b =
     a { concepts = concepts a `Set.difference` concepts b
       , datatypes = datatypes a `Set.difference` datatypes b
-      , objectProperties = objectProperties a `Set.difference` objectProperties b
+      , objectProperties = objectProperties a
+            `Set.difference` objectProperties b
       , dataProperties = dataProperties a `Set.difference` dataProperties b
       , annotationRoles = annotationRoles a `Set.difference` annotationRoles b
       , individuals = individuals a `Set.difference` individuals b
@@ -81,7 +81,7 @@ diffSig a b =
 
 addSign :: Sign -> Sign -> Sign
 addSign toIns totalSign =
-    totalSign { 
+    totalSign {
                 concepts = Set.union (concepts totalSign)
                                      (concepts toIns),
                 datatypes = Set.union (datatypes totalSign)

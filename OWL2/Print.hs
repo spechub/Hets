@@ -87,7 +87,8 @@ printAnnotations :: Annotations -> Doc
 printAnnotations l = case l of
     [] -> empty
     _ -> keyword annotationsC <+>
-          vcat (punctuate comma (map ( \(Annotation ans ap av) -> printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
+          vcat (punctuate comma (map (\ (Annotation ans ap av) ->
+            printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
 
 -- | Printing the ClassExpression
 instance Pretty ClassExpression where
