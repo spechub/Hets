@@ -5,10 +5,16 @@ so far it only works on a linux box with libopencascade-dev 6.5-0 installed.
 in order to build the brep_to_xml converter, go to FreeCAD/BrepConversion and
 run:
 	make
+
+	make install
+or
 	sudo make install
 
-this should build a binary file 'brep_to_xml' in /bin, which is called by
-Brep.hs while running in case it reads an xml containing at least one of the
+this should build a binary file 'brep_to_xml' and copy it to ~/bin if
+you call make install as current user or to /bin if you call it with
+sudo. Make sure that in any case the corresponding bin directory is in
+your PATH environment variable. This binary is then called by Brep.hs
+while running in case it reads an xml containing at least one of the
 following:
 	rectangle
 	line

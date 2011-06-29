@@ -10,6 +10,7 @@ BIN=bin
 OBJS=objs
 
 # g++ brep_to_xml.cxx -I /usr/include/opencascade/ -Wall -lTKBRep
+WHOAMI = $(shell whoami)
 
 all: $(TARGET)
 
@@ -25,7 +26,12 @@ $(OBJS)/main.o: $(SRCS)/main.cxx
 	mv $(@F) $(OBJS)/
 
 install:
+
+ifeq (${WHOAMI},root)
 	cp $(BIN)/brep_to_xml /bin
+else
+	cp $(BIN)/brep_to_xml ~/bin/
+endif
 
 clean:
 	-rm $(BIN)/$(TARGET)
