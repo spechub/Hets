@@ -168,9 +168,6 @@ statSymbMapItems =
         Just ty -> let mS = ASymbol . Entity ty in
                    map (\ (s, t) -> (mS s, mS t)) ps)
 
-mapEntity :: Map.Map Entity IRI -> Entity -> Entity
-mapEntity m (Entity ty u) = Entity ty $ getIri ty u m
-
 mapAnno :: Map.Map Entity IRI -> Annotation -> Annotation
 mapAnno m ann = case ann of
   Annotation l a e -> Annotation l (getIri AnnotationProperty a m) e
