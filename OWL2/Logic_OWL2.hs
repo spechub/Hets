@@ -85,7 +85,8 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       stat_symb_items OWL2 _ = return . statSymbItems
       stat_symb_map_items OWL2 _ _ = statSymbMapItems
       empty_signature OWL2 = emptySign
-      signature_union OWL2 = uniteSign 
+      signature_union OWL2 = uniteSign
+      signatureDiff OWL2 s = return . diffSig s
       final_union OWL2 = signature_union OWL2
       is_subsig OWL2 = isSubSign
       subsig_inclusion OWL2 s = return . inclOWLMorphism s
@@ -110,7 +111,7 @@ instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
               $ ConservativityChecker ("Locality_" ++ ct)
                       $ conserCheck ct)
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
-	
+
 #endif
 {-
 instance SemiLatticeWithTop OWLSub where
