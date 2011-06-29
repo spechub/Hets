@@ -89,6 +89,7 @@ printAnnotations l = case l of
     _ -> keyword annotationsC <+>
           vcat (punctuate comma (map ( \(Annotation ans ap av) -> printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
 
+-- | Printing the ClassExpression
 instance Pretty ClassExpression where
   pretty desc = case desc of
    Expression ocUri -> printURIreference ocUri

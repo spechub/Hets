@@ -39,6 +39,7 @@ type Annotations = [Annotation]
 data AnnotatedList a = AnnotatedList { convertAnnList :: [(Annotations, a)] }
    deriving (Show, Eq, Ord)
 
+-- | the datatype for Manchester Syntax frames
 data Frame
    = Frame Entity [FrameBit]
    | MiscFrame EquivOrDisjoint Annotations Misc

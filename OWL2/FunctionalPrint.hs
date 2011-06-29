@@ -33,6 +33,7 @@ printOWLBasicTheory (s, l) =
   printSign s
   $++$ vsep (map (pretty . sentence) l)
 
+-- | Printing the ontology signature
 instance Pretty Sign where
     pretty = printSign
 
@@ -51,10 +52,15 @@ printSign s =
       , ("", showQU dummyQName ++ "#") ] ) $++$
    vcat (map (\ t -> keyword datatypeC <+> pretty t) $ Set.toList ts)
    $++$ vcat (map (\ c -> keyword classC <+> pretty c) $ Set.toList cs)
-   $++$ vcat (map (\ o -> keyword objectPropertyC <+> pretty o) $ Set.toList $ objectProperties s)
-   $++$
-     vcat (map (\ d -> keyword dataPropertyC <+> pretty d) $ Set.toList $ dataProperties s)
-   $++$ vcat (map (\ i -> keyword individualC <+> pretty i) $ Set.toList $ individuals s)
+   $++$ vcat (map (\ o -> keyword objectPropertyC <+> pretty o)
+          $ Set.toList $ objectProperties s)
+   $++$ vcat (map (\ d -> keyword dataPropertyC <+> pretty d)
+          $ Set.toList $ dataProperties s)
+   $++$ vcat (map (\ i -> keyword individualC <+> pretty i)
+          $ Set.toList $ individuals s)
+   $++$ vcat (map (\ i -> keyword annotationPropertyC <+> pretty i)
+          $ Set.toList $ annotationRoles s)
+
 classStart :: Doc
 classStart = keyword classC
 
@@ -74,13 +80,15 @@ printCharact charact =
 instance Pretty Axiom where
     pretty = printAxiom
 
-printAssertion :: (Pretty a, Pretty b) => Assertion a b -> [OWL2.AS.Annotation] -> Doc
+printAssertion :: (Pretty a, Pretty b) =>
+        Assertion a b -> [OWL2.AS.Annotation] -> Doc
 printAssertion (Assertion a p s b) ans = indStart <+> pretty s $+$
    let d = fsep [pretty a, pretty b] in
    keyword factsC <+> (printAnnotations ans $+$ case p of
      Positive -> d
      Negative -> keyword notS <+> d)
 
+-- | Printing the axioms
 printAxiom :: Axiom -> Doc
 printAxiom (PlainAxiom ans paxiom) = case paxiom of
    AnnotationAssertion _ -> empty
@@ -88,9 +96,11 @@ printAxiom (PlainAxiom ans paxiom) = case paxiom of
    SubClassOf sub super -> case super of
      Expression curi
        | localPart curi == "Thing" && namePrefix curi == "owl" -> empty
-     _ -> classStart <+> pretty sub $+$ keyword subClassOfC <+> (printAnnotations ans $+$ pretty super)
+     _ -> classStart <+> pretty sub $+$
+            keyword subClassOfC <+> (printAnnotations ans $+$ pretty super)
    EquivOrDisjointClasses ty equiList ->
-       printEquivOrDisjointClasses ty <+> (printAnnotations ans $+$ setToDocV (Set.fromList equiList))
+       printEquivOrDisjointClasses ty <+>
+            (printAnnotations ans $+$ setToDocV (Set.fromList equiList))
    DisjointUnion curi discList ->
        classStart <+> pretty curi $+$ keyword disjointUnionOfC <+>
                    (printAnnotations ans $+$ setToDocV (Set.fromList discList))
@@ -101,31 +111,42 @@ printAxiom (PlainAxiom ans paxiom) = case paxiom of
                  _ -> subPropertyOfC)
                    <+> (printAnnotations ans $+$ pretty sopExp)
    EquivOrDisjointObjectProperties ty opList ->
-       printEquivOrDisjointProp ty <+> (printAnnotations ans $+$ setToDocV (Set.fromList opList))
+       printEquivOrDisjointProp ty <+>
+          (printAnnotations ans $+$ setToDocV (Set.fromList opList))
    ObjectPropertyDomainOrRange ty opExp desc ->
-       opStart <+> pretty opExp $+$ printDomainOrRange ty <+> (printAnnotations ans $+$ pretty desc)
+       opStart <+> pretty opExp $+$
+          printDomainOrRange ty <+> (printAnnotations ans $+$ pretty desc)
    InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ keyword inverseOfC <+> (printAnnotations ans $+$ pretty opExp2)
+       opStart <+> pretty opExp1 $+$
+          keyword inverseOfC <+> (printAnnotations ans $+$ pretty opExp2)
    ObjectPropertyCharacter ch opExp ->
-       opStart <+> pretty opExp $+$ (printAnnotations ans $+$ printCharact (show ch))
-        -- DataPropertyAxiom 
+       opStart <+> pretty opExp $+$
+          (printAnnotations ans $+$ printCharact (show ch))
+        -- DataPropertyAxiom
    SubDataPropertyOf dpExp1 dpExp2 ->
-       dpStart <+> pretty dpExp1 $+$ keyword subPropertyOfC <+> (printAnnotations ans $+$ pretty dpExp2)
+       dpStart <+> pretty dpExp1 $+$
+          keyword subPropertyOfC <+> (printAnnotations ans $+$ pretty dpExp2)
    EquivOrDisjointDataProperties ty dpList ->
-       printEquivOrDisjointProp ty <+> (printAnnotations ans $+$ setToDocV (Set.fromList dpList))
+       printEquivOrDisjointProp ty <+>
+          (printAnnotations ans $+$ setToDocV (Set.fromList dpList))
    DataPropertyDomainOrRange ddr dpExp ->
        dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr ans
    FunctionalDataProperty dpExp ->
-       dpStart <+> pretty dpExp $+$ (printAnnotations ans $+$ printCharact functionalS)
+       dpStart <+> pretty dpExp $+$
+          (printAnnotations ans $+$ printCharact functionalS)
    -- Fact
-   SameOrDifferentIndividual ty indlist -> printSameOrDifferentInd ty <+> (printAnnotations ans $+$ setToDocV (Set.fromList indlist))
+   SameOrDifferentIndividual ty indlist ->
+        printSameOrDifferentInd ty <+>
+          (printAnnotations ans $+$ setToDocV (Set.fromList indlist))
    ClassAssertion desc ind ->
-       indStart <+> pretty ind $+$ keyword typesC <+> (printAnnotations ans $+$ pretty desc)
+       indStart <+> pretty ind $+$
+          keyword typesC <+> (printAnnotations ans $+$ pretty desc)
    ObjectPropertyAssertion ass -> printAssertion ass ans
    DataPropertyAssertion ass -> printAssertion ass ans
    Declaration _ -> empty    -- [Annotation] Entity
    DatatypeDefinition dt dr ->
-       keyword datatypeC <+> pretty dt $+$ keyword equivalentToC <+> (printAnnotations ans $+$ pretty dr)
-   HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$ keyword hasKeyC
-     <+> (printAnnotations ans $+$ vcat (punctuate comma $ map pretty objlist ++ map pretty datalist))
-
+       keyword datatypeC <+> pretty dt $+$
+          keyword equivalentToC <+> (printAnnotations ans $+$ pretty dr)
+   HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$
+          keyword hasKeyC <+> (printAnnotations ans $+$
+            vcat (punctuate comma $ map pretty objlist ++ map pretty datalist))
