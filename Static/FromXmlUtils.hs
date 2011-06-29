@@ -28,7 +28,6 @@ import Common.Utils
 import Text.ParserCombinators.Parsec
 
 import qualified Data.Set as Set
-import Data.Maybe
 
 data BasicExtResponse = Failure Bool  -- True means fatal (give up)
   | Success G_theory Int (Set.Set G_symbol) Bool
@@ -48,8 +47,7 @@ extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
           Result ds res = f (bs, sign, ga)
           in case res of
             Just (_, ExtSign sign2 syms2, sens2) | not (hasErrors ds) ->
-              let Result es mm = inclusion lid sign2 sign
-                  sameSig = isJust mm
+              let sameSig = sign2 == sign
                   finExtSign = ExtSign sign2 $ Set.union syms syms2
               in
               (Success (G_theory lid (if sameSig then eSig else finExtSign)
@@ -58,9 +56,10 @@ extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
                       (length sens2)
                       (Set.map (G_symbol lid) $ Set.difference syms2 syms)
                       sameSig
-              , if sameSig then if null sens2 then "" else
+              , if sameSig then
+                   if null sens2 then "" else
                             show (vcat $ map (print_named lid) sens2)
-                       else showRelDiags 1 es)
+                       else "")
             _ -> (Failure False, showRelDiags 1 ds)
 
 deleteHiddenSymbols :: String -> G_sign -> Result G_sign
