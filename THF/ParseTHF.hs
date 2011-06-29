@@ -25,17 +25,15 @@ import Data.Maybe
 
 parseTHF :: CharParser st [TPTP_THF]
 parseTHF = do
-    skipSpaces
     h <- optionMaybe header
-    thf <- many (systemComment <|> definedComment <|> comment <|>
-                 include <|> thfAnnotatedFormula)
-    skipSpaces; eof
+    thf <- many ((systemComment <|> definedComment <|> comment <|>
+                 include <|> thfAnnotatedFormula) << skipSpaces)
     return $ if isJust h then (fromJust h) : thf else thf
 
 header :: CharParser st TPTP_THF
 header = do
     s <- headerSE
-    c <- many commentLine
+    c <- many $ commentLine << skipSpaces
     e <- headerSE
     return $ TPTP_Header ((s : c) ++ [e])
 
@@ -50,7 +48,6 @@ commentLine :: CharParser st Comment
 commentLine = do
     try (char '%' >> notFollowedBy (char '$'))
     c <- many printableChar
-    skipSpaces
     return $ Comment_Line c
 
 comment :: CharParser st TPTP_THF
@@ -59,7 +56,6 @@ comment = fmap TPTP_Comment commentLine
     try (string "/*" >> notFollowedBy (char '$'))
     c <- many (noneOf "*/")
     skipMany1 (char '*'); char '/'
-    skipSpaces
     return $ TPTP_Comment (Comment_Block (lines c))
 
 
@@ -67,26 +63,22 @@ definedComment :: CharParser st TPTP_THF
 definedComment = do
     try (string "%$" >> notFollowedBy (char '$'))
     c <- many printableChar
-    skipSpaces
     return $ TPTP_Defined_Comment (Defined_Comment_Line c)
   <|> do
     try (string "/*$" >> notFollowedBy (char '$'))
     c <- many (noneOf "*/")
     skipMany1 (char '*'); char '/'
-    skipSpaces
     return $ TPTP_Defined_Comment (Defined_Comment_Block (lines c))
 
 systemComment :: CharParser st TPTP_THF
 systemComment = do
     tryString "%$$"
     c <- many printableChar
-    skipSpaces
     return $ TPTP_System_Comment (System_Comment_Line c)
   <|> do
     tryString "/*$$"
     c <- many (noneOf "*/")
     skipMany1 (char '*'); char '/'
-    skipSpaces
     return $ TPTP_System_Comment (System_Comment_Block (lines c))
 
 include :: CharParser st TPTP_THF
@@ -96,7 +88,6 @@ include = do
     fn <- fileName
     fs <- formulaSelection
     cParentheses; char '.'
-    skipSpaces
     return $ TPTP_Include (I_Include fn fs)
 
 thfAnnotatedFormula :: CharParser st TPTP_THF
@@ -108,7 +99,6 @@ thfAnnotatedFormula = do
     tf <- thfFormula
     a <- annotations
     cParentheses; char '.'
-    skipSpaces
     return $ TPTP_THF_Annotated_Formula n fr tf a
 
 annotations :: CharParser st Annotations
