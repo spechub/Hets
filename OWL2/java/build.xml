@@ -17,19 +17,19 @@
     </target>
 
     <target name="compile" depends="owl-api">
+	<mkdir dir="${classesdir}"/>
+        <javac srcdir="./" destdir="${classesdir}" debug="on" target="${target-vm}" nowarn="off" source="1.5">
+            <classpath refid="classpath"/>
+	    <include name="de/unibremen/informatik/*.java"/>
+        </javac>
         <mkdir dir="${classesdir}/locality"/>
         <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}" nowarn="off" source="1.5">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/locality/*.java"/>
         </javac>
-       <mkdir dir="${classesdir}"/>
-        <javac srcdir="./" destdir="${classesdir}" debug="on" target="${target-vm}" nowarn="off" source="1.5">
-            <classpath refid="classpath"/>
-	    <include name="de/unibremen/informatik/*.java"/>
-        </javac>
     </target>
 
-    <target name="install" depends="jar,copy-libs,fact">
+    <target name="install" depends="jar,copy-libs,fact,compile">
       <copy file="${builddir}/OWL2Parser.jar" todir="../"/>
       <copy file="${builddir}/OWLLocality.jar" todir="../"/>
     </target>
@@ -71,7 +71,7 @@
 	  <attribute name="Title" value="OWL Fact Prover"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.FactProver.Prove"/>
-	  <attribute name="Class-Path" value="lib/owlapi-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar lib/org.semanticweb.HermiT.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar lib/org.semanticweb.HermiT.jar"/>	  
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFactProver.jar" todir="../"/>
