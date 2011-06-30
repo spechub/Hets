@@ -32,14 +32,7 @@ class Fact
 		IRI physicalIRI = IRI.create(args[0]);
 		OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
 
-		System.out.println("Ontology loaded: " + ontology + "\n");
-
-		//ConsoleProgressMonitor progressMonitor = new ConsoleProgressMonitor();
-		//OWLReasonerConfiguration config = new SimpleConfiguration(progressMonitor);
-		
-		Reasoner reasoner = f.createReasoner(ontology);//,config,BufferingMode.BUFFERING);
-
-		System.out.println("create fails\n");
+		OWLReasoner reasoner = f.createReasoner(ontology);
 		
 		Boolean cons = reasoner.isConsistent();
 		if (cons)
