@@ -161,7 +161,7 @@ runTimedFact tmpFileName prob mEnt tLimit = do
           if hasJni || hasJniLib then do
             timeTmpFile <- getTempFile prob tmpFileName
             let entailsFile = timeTmpFile ++ ".entail.owl"
-                jargs = ["-Djava.library.path=" ++ jni | not hasJniLib]
+                jargs = ["-Djava.library.path=" ++ jni | True]
                   ++ ["-jar", jar, "file://" ++ timeTmpFile]
                   ++ ["file://" ++ entailsFile | hasEnt ]
             case mEnt of
