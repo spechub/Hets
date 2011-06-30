@@ -1,59 +1,53 @@
 <?xml version='1.0' ?>
 <DGraph filename="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het" libname="ParamView" nextlinkid="18">
-  <DGNode name="s__IU1" refname="s" relxpath="/Imports/Union/Spec[1]">
+  <DGNode name="s__IU1" logic="CASL" refname="s" relxpath="/Imports/Union/Spec[1]">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:3.29">sort i</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s__PU1" refname="s" relxpath="/Parameters/Union/Spec[1]">
+  <DGNode name="s__PU1" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:3.14">sort p</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s" refname="s" relxpath="/">
+  <DGNode name="s" logic="CASL" refname="s" relxpath="/">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:3.39">sort s</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="v__IU1" refname="v" relxpath="/Imports/Union/Spec[1]">
+  <DGNode name="v__IU1" logic="CASL" refname="v" relxpath="/Imports/Union/Spec[1]">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.28">sort j</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="v__PU1" refname="v" relxpath="/Parameters/Union/Spec[1]">
+  <DGNode name="v__PU1" logic="CASL" refname="v" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.13">sort r</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="v__S" refname="v" relxpath="/Source">
+  <DGNode name="v__S" logic="CASL" refname="v" relxpath="/Source">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.39">sort p</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="v__T" refname="v" relxpath="/Target">
+  <DGNode name="v__T" logic="CASL" refname="v" relxpath="/Target">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.51">sort q</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s2__PU1" refname="s2" relxpath="/Parameters/Union/Spec[1]">
+  <DGNode name="s2__PU1" logic="CASL" refname="s2" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:8.15">sort p2</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s2__A1V" refname="s" relxpath="/Parameters/Union/Spec[1]">
-    <Signature>sorts i, p</Signature>
-  </DGNode>
-  <DGNode name="s2__A1A1" refname="s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
+  <DGNode name="s2__A1V" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]" />
+  <DGNode name="s2__A1A1" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
     <Declarations>
       <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:8.35">sort t</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s2__A1" refname="s2" relxpath="/Actuals/Spec[1]">
-    <Signature>sorts j, q, t</Signature>
-  </DGNode>
-  <DGNode name="s2" refname="s2" relxpath="/">
-    <Signature>sorts i, j, p2, q, s, t</Signature>
-  </DGNode>
+  <DGNode name="s2__A1" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]" />
+  <DGNode name="s2" logic="CASL" refname="s2" relxpath="/" />
   <DGLink source="s__IU1" target="s__PU1" linkid="0">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
@@ -68,15 +62,11 @@
   </DGLink>
   <DGLink source="s__PU1" target="s2__A1V" linkid="7">
     <Type>GlobalProvenThmInc</Type>
-    <Status>Proven</Status>
     <Rule>Global-Decomposition</Rule>
-    <ProofBasis linkref="5" />
-    <ProofBasis linkref="15" />
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s__PU1" target="s2__A1V" linkid="15">
     <Type>LocalProvenThmInc</Type>
-    <Status>Proven</Status>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
@@ -103,10 +93,7 @@
   </DGLink>
   <DGLink source="v__PU1" target="s2__A1A1" linkid="9">
     <Type>GlobalProvenThm</Type>
-    <Status>Proven</Status>
     <Rule>Global-Decomposition</Rule>
-    <ProofBasis linkref="8" />
-    <ProofBasis linkref="16" />
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
         <Symbol>sort r</Symbol>
@@ -116,7 +103,6 @@
   </DGLink>
   <DGLink source="v__PU1" target="s2__A1A1" linkid="16">
     <Type>LocalProvenThm</Type>
-    <Status>Proven</Status>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
@@ -127,9 +113,7 @@
   </DGLink>
   <DGLink source="v__S" target="v__T" linkid="4">
     <Type>GlobalProvenThm</Type>
-    <Status>Proven</Status>
     <Rule>Global-Decomposition</Rule>
-    <ProofBasis linkref="17" />
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
         <Symbol>sort p</Symbol>
@@ -139,7 +123,6 @@
   </DGLink>
   <DGLink source="v__S" target="v__T" linkid="17">
     <Type>LocalProvenThm</Type>
-    <Status>Proven</Status>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
