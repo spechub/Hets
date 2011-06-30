@@ -173,7 +173,7 @@ mapAnno m ann = case ann of
   Annotation l a e -> Annotation l (getIri AnnotationProperty a m) e
 
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
-mapSen m = undefined
+mapSen m = return
 
 --return . mapAxiom (mmaps m)
 {-
