@@ -29,7 +29,7 @@
         </javac>
     </target>
 
-    <target name="install" depends="jar,copy-libs,fact">
+    <target name="install" depends="clean,jar,copy-libs,fact">
       <copy file="${builddir}/OWL2Parser.jar" todir="../"/>
       <copy file="${builddir}/OWLLocality.jar" todir="../"/>
     </target>
@@ -48,13 +48,15 @@
 	  <attribute name="Title" value="OWL Fact"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.Fact.Fact"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar lib/org.semanticweb.HermiT.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar"/>	  
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFact.jar" todir="../"/>
       <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
       <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
       <copy file="${libdir}/FaCTpp-OWLAPI-3.2-v1.5.2.jar" todir="../lib/"/>
+      <copy file="lib/native/x86_64/FaCT++" todir="../lib/native/x86_64/"/>
+      <copy file="lib/native/i686/FaCT++" todir="../lib/native/i686/"/>	
     </target>
 
     <target name="fact-prover">
@@ -71,7 +73,7 @@
 	  <attribute name="Title" value="OWL Fact Prover"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.FactProver.Prove"/>
-	  <attribute name="Class-Path" value="lib/owlapi-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar lib/org.semanticweb.HermiT.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owlapi-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar"/>	  
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFactProver.jar" todir="../"/>
@@ -95,7 +97,7 @@
 	  <attribute name="Title" value="OWL2 MNO Parser"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="OWL2Parser"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/org.semanticweb.HermiT.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar"/>	  
 	</manifest>
       </jar>
     </target> 
@@ -108,6 +110,5 @@
     <target name="copy-libs">
       <mkdir dir="../lib"/>
       <copy file="${libdir}/owl2api-bin.jar" todir="../lib/"/>
-      <copy file="${libdir}/org.semanticweb.HermiT.jar" todir="../lib/"/>
     </target>
 </project>
