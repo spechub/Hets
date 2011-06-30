@@ -1,13 +1,13 @@
 package de.unibremen.informatik.Fact;
 
 import uk.ac.manchester.cs.factplusplus.owlapiv3.*;
+import uk.ac.manchester.cs.factplusplus.*;
 import org.semanticweb.owlapi.reasoner.*;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.OWLXMLOntologyFormat;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
-import org.semanticweb.HermiT.Reasoner;
 
 import java.net.URI;
 import java.util.*;
@@ -26,16 +26,21 @@ class Fact
 	try
 	    {
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-
+	
+		FaCTPlusPlusReasonerFactory f = new FaCTPlusPlusReasonerFactory();
+		
 		IRI physicalIRI = IRI.create(args[0]);
 		OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
-	
-		OWLReasonerFactory reasonerFa = new Reasoner.ReasonerFactory();
-	
-		OWLReasoner reasoner = reasonerFa.createReasoner(ontology);
 
-		//reasoner.precomputeInferences();
-	
+		System.out.println("Ontology loaded: " + ontology + "\n");
+
+		//ConsoleProgressMonitor progressMonitor = new ConsoleProgressMonitor();
+		//OWLReasonerConfiguration config = new SimpleConfiguration(progressMonitor);
+		
+		Reasoner reasoner = f.createReasoner(ontology);//,config,BufferingMode.BUFFERING);
+
+		System.out.println("create fails\n");
+		
 		Boolean cons = reasoner.isConsistent();
 		if (cons)
 		    {
