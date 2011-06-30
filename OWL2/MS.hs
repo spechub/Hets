@@ -40,37 +40,41 @@ data AnnotatedList a = AnnotatedList { convertAnnList :: [(Annotations, a)] }
    deriving (Show, Eq, Ord)
 
 -- | the datatype for Manchester Syntax frames
-data Frame
-   = Frame Entity [FrameBit]
-   | MiscFrame EquivOrDisjoint Annotations Misc
-   | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
+data Frame = Frame (Either Annotations Entity) [FrameBit]
     deriving (Show, Eq, Ord)
+
+data Axiom = PlainAxiom (Either Annotations Entity) FrameBit
+    deriving (Show, Eq, Ord)
+
+getAxioms :: Frame -> [Axiom]
+getAxioms (Frame e fbl) = map (\fb -> PlainAxiom e fb) fbl
+
+instance GetRange Axiom
 
 data FrameBit
-  = AnnotationFrameBit Annotations
-  | AnnotationBit Relation (AnnotatedList AnnotationProperty)
-  | DatatypeBit Annotations DataRange
-  | ExpressionBit Relation (AnnotatedList ClassExpression)
-  | ClassDisjointUnion Annotations [ClassExpression]
-  | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
-  | ObjectBit Relation (AnnotatedList ObjectPropertyExpression)
-  | ObjectCharacteristics (AnnotatedList Character)
-  | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
-  | DataBit Relation (AnnotatedList DataPropertyExpression)
-  | DataPropRange (AnnotatedList DataRange)
-  | DataFunctional Annotations
-  | IndividualFacts (AnnotatedList Fact)
-  | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
+  = ListFrameBit (Maybe Relation) ListFrameBit
+  | AnnFrameBit Annotations AnnFrameBit
     deriving (Show, Eq, Ord)
 
-data Misc
-  = MiscEquivOrDisjointClasses
-      [ClassExpression]
-  | MiscEquivOrDisjointObjProp
-      [ObjectPropertyExpression]
-  | MiscEquivOrDisjointDataProp
-      [DataPropertyExpression]
-     deriving (Show, Eq, Ord)
+data ListFrameBit
+  = AnnotationBit (AnnotatedList AnnotationProperty) --relation
+  | ExpressionBit (AnnotatedList ClassExpression) -- relation
+  | ObjectBit (AnnotatedList ObjectPropertyExpression) -- relation
+  | DataBit (AnnotatedList DataPropertyExpression) -- relation
+  | IndividualSameOrDifferent (AnnotatedList Individual) -- relation
+  | ObjectCharacteristics (AnnotatedList Character)
+  | DataPropRange (AnnotatedList DataRange)
+  | IndividualFacts (AnnotatedList Fact)
+    deriving (Show, Eq, Ord)
+
+data AnnFrameBit
+  = AnnotationFrameBit
+  | DataFunctional
+  | DatatypeBit DataRange
+  | ClassDisjointUnion [ClassExpression]
+  | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]
+  | ObjectSubPropertyChain [ObjectPropertyExpression]
+    deriving (Show, Eq, Ord)
 
 data Fact
   = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual

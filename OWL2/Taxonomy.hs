@@ -13,7 +13,7 @@ Taxonomy extraction for OWL2
 
 module OWL2.Taxonomy ( onto2Tax ) where
 
-import OWL2.FS
+import OWL2.MS
 import OWL2.Sign
 import OWL2.FunctionalPrint
 import OWL.ProvePellet

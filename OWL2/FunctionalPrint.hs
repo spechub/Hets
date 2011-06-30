@@ -18,7 +18,8 @@ import Common.Keywords
 import Common.AS_Annotation
 
 import OWL2.AS
-import OWL2.FS
+import OWL2.MS
+import OWL2.ManchesterPrint
 import OWL2.Print
 import OWL2.Keywords
 import OWL2.ColonKeywords
@@ -76,7 +77,7 @@ indStart = keyword individualC
 printCharact :: String -> Doc
 printCharact charact =
     keyword characteristicsC <+> text charact
-
+{-
 instance Pretty Axiom where
     pretty = printAxiom
 
@@ -149,4 +150,4 @@ printAxiom (PlainAxiom ans paxiom) = case paxiom of
           keyword equivalentToC <+> (printAnnotations ans $+$ pretty dr)
    HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$
           keyword hasKeyC <+> (printAnnotations ans $+$
-            vcat (punctuate comma $ map pretty objlist ++ map pretty datalist))
+            vcat (punctuate comma $ map pretty objlist ++ map pretty datalist)) -}

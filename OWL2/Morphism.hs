@@ -28,10 +28,10 @@ module OWL2.Morphism
   ) where
 
 import OWL2.AS
-import OWL2.FunctionalPrint ()
+import OWL2.MS
 import OWL2.Sign
+import OWL2.FunctionalPrint
 import OWL2.StaticAnalysis
-import OWL2.FS
 import OWL2.Symbols
 
 import Common.DocUtils
@@ -173,12 +173,14 @@ mapAnno m ann = case ann of
   Annotation l a e -> Annotation l (getIri AnnotationProperty a m) e
 
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
-mapSen m = return . mapAxiom (mmaps m)
+mapSen m = undefined
 
+--return . mapAxiom (mmaps m)
+{-
 mapAxiom :: Map.Map Entity IRI -> Axiom -> Axiom
 mapAxiom m axm = case axm of
   PlainAxiom as a -> PlainAxiom (map (mapAnno m) as) $ mapPlainAxiom m a
-    
+   
 mapObjExpr :: Map.Map Entity IRI -> ObjectPropertyExpression
            -> ObjectPropertyExpression
 mapObjExpr m ope = case ope of
@@ -276,3 +278,4 @@ mapPlainAxiom m pax = case pax of
     Declaration (Entity ty u) -> Declaration $ Entity ty $ getIri ty u m
     DatatypeDefinition ty d-> DatatypeDefinition (getIri Datatype ty m) (mapDRange m d)
     HasKey c ob da-> HasKey (mapDescr m c) (map (mapObjExpr m) ob) (map (mapDataExpr m) da)
+-}

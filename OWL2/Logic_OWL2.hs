@@ -28,8 +28,9 @@ import ATC.ProofTree ()
 import Logic.Logic
 
 import OWL2.AS
-import OWL2.FS
+
 import OWL2.MS
+import OWL2.Theorem
 import OWL2.Parse
 import OWL2.ManchesterParser
 import OWL2.ManchesterPrint

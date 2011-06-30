@@ -179,6 +179,7 @@ instance Pretty Literal where
 printRelation :: Relation -> Doc
 printRelation = keyword . showRelation
 
+
 printDomainOrRange :: DomainOrRange -> Doc
 printDomainOrRange = keyword . showDomainOrRange
 

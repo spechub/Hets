@@ -40,29 +40,41 @@ printAnnotatedList (AnnotatedList l) =
 instance Pretty FrameBit where
     pretty = printFrameBit
 
+instance Pretty ListFrameBit where
+    pretty = printListFrameBit
+
+printListFrameBit :: ListFrameBit -> Doc
+printListFrameBit lfb = case lfb of
+    AnnotationBit a -> pretty a
+    ExpressionBit a -> pretty a
+    ObjectBit a -> pretty a
+    DataBit a -> pretty a
+    IndividualSameOrDifferent a -> pretty a 
+    _ -> empty 
+
 printFrameBit :: FrameBit -> Doc
 printFrameBit fb = case fb of
-    AnnotationFrameBit x -> printAnnotations x
-    AnnotationBit ed l -> printRelation ed <+> pretty l
-    DatatypeBit ans a -> printAnnotations ans
-          $+$ keyword equivalentToC <+> pretty a
-    ExpressionBit x y -> printRelation x <+> pretty y
-    ClassDisjointUnion a x -> keyword disjointUnionOfC
+  ListFrameBit r lfb -> case r of 
+      Just rel -> printRelation rel <+> pretty lfb
+      Nothing -> case lfb of
+        ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
+        DataPropRange x -> keyword rangeC <+> pretty x
+        IndividualFacts x -> keyword factsC <+> pretty x
+        _ -> empty
+  AnnFrameBit a afb -> case afb of
+    AnnotationFrameBit -> printAnnotations a
+    DatatypeBit x -> printAnnotations a
+          $+$ keyword equivalentToC <+> pretty x
+    ClassDisjointUnion x -> keyword disjointUnionOfC
       <+> (printAnnotations a
           $+$ vcat (punctuate comma ( map pretty x )))
-    ClassHasKey a op dp -> keyword hasKeyC <+> (printAnnotations a
+    ClassHasKey op dp -> keyword hasKeyC <+> (printAnnotations a
       $+$ vcat (punctuate comma $ map pretty op ++ map pretty dp))
-    ObjectBit dr x -> printRelation dr <+> pretty x
-    ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
-    ObjectSubPropertyChain a opl -> keyword subPropertyChainC
+    ObjectSubPropertyChain opl -> keyword subPropertyChainC
       <+> (printAnnotations a $+$ fsep (prepPunctuate (keyword oS <> space)
           $ map pretty opl))
-    DataBit dr x -> printRelation dr <+> pretty x
-    DataPropRange x -> keyword rangeC <+> pretty x
-    DataFunctional x -> keyword characteristicsC <+>
-          (printAnnotations x $+$ printCharact functionalS)
-    IndividualFacts x -> keyword factsC <+> pretty x
-    IndividualSameOrDifferent s x -> printSameOrDifferent s <+> pretty x
+    DataFunctional -> keyword characteristicsC <+>
+          (printAnnotations a $+$ printCharact functionalS)
 
 instance Pretty Fact where
     pretty = printFact
@@ -84,17 +96,25 @@ instance Pretty Frame where
 
 printFrame :: Frame -> Doc
 printFrame f = case f of
-    Frame (Entity e uri) bl -> pretty (showEntityType e) <+>
+    Frame eith bl -> case eith of
+      Right (Entity e uri) -> pretty (showEntityType e) <+>
             fsep [pretty uri, vcat (map pretty bl)]
-    MiscFrame e a misc -> case misc of
-        MiscEquivOrDisjointClasses c -> printEquivOrDisjointClasses e <+>
-            (printAnnotations a $+$ vcat (punctuate comma (map pretty c) ))
-        MiscEquivOrDisjointObjProp c -> printEquivOrDisjointProp e <+>
-            (printAnnotations a $+$ vcat (punctuate comma (map pretty c) ))
-        MiscEquivOrDisjointDataProp c -> printEquivOrDisjointProp e <+>
-            (printAnnotations a $+$ vcat (punctuate comma (map pretty c) ))
-    MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+>
-            (printAnnotations a $+$ vcat (punctuate comma (map pretty c) ))
+      Left a -> case bl of 
+        [ListFrameBit (Just e) (ExpressionBit anl)] -> printEquivOrDisjointClasses (getED e) <+>
+            (printAnnotations a $+$ pretty anl)
+        [ListFrameBit (Just e) (ObjectBit anl)] -> printEquivOrDisjointProp (getED e) <+>
+            (printAnnotations a $+$ pretty anl)
+        [ListFrameBit (Just e) (DataBit anl)] -> printEquivOrDisjointProp (getED e) <+>
+            (printAnnotations a $+$ pretty anl)
+        [ListFrameBit (Just s) (IndividualSameOrDifferent anl)] -> printSameOrDifferentInd (getSD s) <+>
+            (printAnnotations a $+$ pretty anl)
+        _ -> empty
+
+instance Pretty Axiom where
+    pretty = printAxiom
+
+printAxiom :: Axiom -> Doc
+printAxiom (PlainAxiom e fb) = printFrame (Frame e [fb])
 
 instance Pretty MOntology where
     pretty = printOntology

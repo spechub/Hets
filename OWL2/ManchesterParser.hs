@@ -49,20 +49,22 @@ annotationPropertyFrame = do
   pkeyword annotationPropertyC
   ap <- uriP
   x <- many apBit
-  return $ Frame (Entity AnnotationProperty ap) x
+  return $ Frame (Right $ Entity AnnotationProperty ap) x
 
 apBit :: CharParser st FrameBit
 apBit = do
-          pkeyword subPropertyOfC
-          x <- sepByComma $ optAnnos uriP
-          return $ AnnotationBit SubPropertyOf $ AnnotatedList x
-        <|> do
-          dr <- domainOrRange
-          x <- sepByComma $ optAnnos uriP
-          return $ AnnotationBit (DRRelation dr) $ AnnotatedList x
-       <|> do
-          x <- annotations
-          return $ AnnotationFrameBit x
+    pkeyword subPropertyOfC
+    x <- sepByComma $ optAnnos uriP
+    return $ ListFrameBit (Just SubPropertyOf) 
+              $ AnnotationBit $ AnnotatedList x
+  <|> do
+    dr <- domainOrRange
+    x <- sepByComma $ optAnnos uriP
+    return $ ListFrameBit (Just (DRRelation dr)) 
+              $ AnnotationBit $ AnnotatedList x
+  <|> do
+    x <- annotations
+    return $ AnnFrameBit x AnnotationFrameBit
 
 datatypeBit :: CharParser st Frame
 datatypeBit = do
@@ -71,11 +73,11 @@ datatypeBit = do
     as1 <- many annotations
     mp <- optionMaybe $ pkeyword equivalentToC >> pair optionalAnnos dataRange
     as2 <- many annotations
-    return $ Frame (Entity Datatype duri)
-      $ map AnnotationFrameBit as1 ++ case mp of
+    return $ Frame (Right $ Entity Datatype duri)
+      $ map (\ ans -> AnnFrameBit ans AnnotationFrameBit) as1 ++ case mp of
           Nothing -> []
-          Just (ans, dr) -> [DatatypeBit ans dr]
-        ++ map AnnotationFrameBit as2
+          Just (ans, dr) -> [AnnFrameBit ans $ DatatypeBit dr]
+        ++ map (\ ans -> AnnFrameBit ans AnnotationFrameBit) as2
 
 classFrame :: CharParser st Frame
 classFrame = do
@@ -84,30 +86,30 @@ classFrame = do
         plain <- many classFrameBit
         -- ignore Individuals: ... !
         optional $ pkeyword individualsC >> sepByComma individualUri
-        return $ Frame (Entity Class iri) plain
+        return $ Frame (Right $ Entity Class iri) plain
 
 classFrameBit :: CharParser st FrameBit
 classFrameBit = do
     pkeyword subClassOfC
     ds <- descriptionAnnotatedList
-    return $ ExpressionBit SubClass $ AnnotatedList ds
+    return $ ListFrameBit (Just SubClass) $ ExpressionBit $ AnnotatedList ds
   <|> do
     e <- equivOrDisjoint
     ds <- descriptionAnnotatedList
-    return $ ExpressionBit (EDRelation e) $ AnnotatedList ds
+    return $ ListFrameBit (Just (EDRelation e)) $ ExpressionBit $ AnnotatedList ds
   <|> do
     pkeyword disjointUnionOfC
     as <- optionalAnnos
     ds <- sepByComma description
-    return $ ClassDisjointUnion as ds
+    return $ AnnFrameBit as $ ClassDisjointUnion ds
   <|> do
     pkeyword hasKeyC
     as <- optionalAnnos
     o <- sepByComma objectPropertyExpr
-    return $ ClassHasKey as o []
+    return $ AnnFrameBit as $ ClassHasKey o []
   <|> do
     as <- annotations
-    return $ AnnotationFrameBit as
+    return $ AnnFrameBit as AnnotationFrameBit
 
 objPropExprAList :: CharParser st [(Annotations, ObjectPropertyExpression)]
 objPropExprAList = sepByComma $ optAnnos objectPropertyExpr
@@ -116,38 +118,43 @@ objectFrameBit :: CharParser st FrameBit
 objectFrameBit = do
     r <- domainOrRange
     ds <- descriptionAnnotatedList
-    return $ ExpressionBit (DRRelation r) $ AnnotatedList ds
+    return $ ListFrameBit (Just (DRRelation r)) 
+              $ ExpressionBit $ AnnotatedList ds
   <|> do
     characterKey
     ds <- sepByComma $ optAnnos objectPropertyCharacter
-    return $ ObjectCharacteristics $ AnnotatedList ds
+    return $ ListFrameBit Nothing 
+              $ ObjectCharacteristics $ AnnotatedList ds
   <|> do
     subPropertyKey
     ds <- objPropExprAList
-    return $ ObjectBit SubPropertyOf $ AnnotatedList ds
+    return $ ListFrameBit (Just SubPropertyOf) 
+              $ ObjectBit $ AnnotatedList ds
   <|> do
     e <- equivOrDisjoint
     ds <- objPropExprAList
-    return $ ObjectBit (EDRelation e) $ AnnotatedList ds
+    return $ ListFrameBit (Just (EDRelation e))
+            $ ObjectBit $ AnnotatedList ds
   <|> do
     pkeyword inverseOfC
     ds <- objPropExprAList
-    return $ ObjectBit InverseOf $ AnnotatedList ds
+    return $ ListFrameBit (Just InverseOf)
+            $ ObjectBit $ AnnotatedList ds
   <|> do
     pkeyword subPropertyChainC
     as <- optionalAnnos
     os <- sepBy1 objectPropertyExpr (keyword oS)
-    return $ ObjectSubPropertyChain as os
+    return $ AnnFrameBit as $ ObjectSubPropertyChain os
   <|> do
     as <- annotations
-    return $ AnnotationFrameBit as
+    return $ AnnFrameBit as AnnotationFrameBit
 
 objectPropertyFrame :: CharParser st Frame
 objectPropertyFrame = do
   pkeyword objectPropertyC
   ouri <- uriP
   as <- many objectFrameBit
-  return $ Frame (Entity ObjectProperty ouri) as
+  return $ Frame (Right $ Entity ObjectProperty ouri) as
 
 dataPropExprAList :: CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
@@ -156,34 +163,34 @@ dataFrameBit :: CharParser st FrameBit
 dataFrameBit = do
     pkeyword domainC
     ds <- descriptionAnnotatedList
-    return $ ExpressionBit (DRRelation ADomain) $ AnnotatedList ds
+    return $ ListFrameBit (Just (DRRelation ADomain)) $ ExpressionBit $ AnnotatedList ds
   <|> do
     pkeyword rangeC
     ds <- sepByComma $ optAnnos dataRange
-    return $ DataPropRange $ AnnotatedList ds
+    return $ ListFrameBit Nothing $ DataPropRange $ AnnotatedList ds
   <|> do
     characterKey
     as <- optionalAnnos
     keyword functionalS
-    return $ DataFunctional as
+    return $ AnnFrameBit as DataFunctional
   <|> do
     subPropertyKey
     ds <- dataPropExprAList
-    return $ DataBit SubPropertyOf $ AnnotatedList ds
+    return $ ListFrameBit (Just SubPropertyOf) $ DataBit $ AnnotatedList ds
   <|> do
     e <- equivOrDisjoint
     ds <- dataPropExprAList
-    return $ DataBit (EDRelation e) $ AnnotatedList ds
+    return $ ListFrameBit (Just (EDRelation e)) $ DataBit $ AnnotatedList ds
   <|> do
     as <- annotations
-    return $ AnnotationFrameBit as
+    return $ AnnFrameBit as AnnotationFrameBit
 
 dataPropertyFrame :: CharParser st Frame
 dataPropertyFrame = do
   pkeyword dataPropertyC
   duri <- uriP
   as <- many dataFrameBit
-  return $ Frame (Entity DataProperty duri) as
+  return $ Frame (Right $ Entity DataProperty duri) as
 
 fact :: CharParser st Fact
 fact = do
@@ -200,43 +207,47 @@ iFrameBit :: CharParser st FrameBit
 iFrameBit = do
     pkeyword typesC
     ds <- descriptionAnnotatedList
-    return $ ExpressionBit Types $ AnnotatedList ds
+    return $ ListFrameBit (Just Types) $ ExpressionBit $ AnnotatedList ds
   <|> do
     s <- sameOrDifferent
     is <- sepByComma $ optAnnos individualUri
-    return $ IndividualSameOrDifferent s $ AnnotatedList is
+    return $ ListFrameBit (Just (SDRelation s))
+          $ IndividualSameOrDifferent $ AnnotatedList is
   <|> do
     pkeyword factsC
     fs <- sepByComma $ optAnnos fact
-    return $ IndividualFacts $ AnnotatedList fs
+    return $ ListFrameBit Nothing $ IndividualFacts $ AnnotatedList fs
   <|> do
     a <- annotations
-    return $ AnnotationFrameBit a
+    return $ AnnFrameBit a AnnotationFrameBit
 
 individualFrame :: CharParser st Frame
 individualFrame = do
   pkeyword individualC
   iuri <- individualUri
   as <- many iFrameBit
-  return $ Frame (Entity NamedIndividual iuri) as
+  return $ Frame (Right $ Entity NamedIndividual iuri) as
 
 misc :: CharParser st Frame
 misc = do
     e <- equivOrDisjointKeyword classesC
     as <- optionalAnnos
     ds <- sepByComma description
-    return $ MiscFrame e as $ MiscEquivOrDisjointClasses ds
+    return $ Frame (Left as) [ListFrameBit (Just (EDRelation e)) 
+        $ ExpressionBit $ AnnotatedList $ map (\ x -> ([], x)) ds]
   <|> do
     e <- equivOrDisjointKeyword propertiesC
     as <- optionalAnnos
     es <- sepByComma objectPropertyExpr
     -- indistinguishable from dataProperties
-    return $ MiscFrame e as $ MiscEquivOrDisjointObjProp es
+    return $ Frame (Left as) [ListFrameBit (Just (EDRelation e)) 
+        $ ObjectBit $ AnnotatedList $ map (\ x -> ([], x)) es]
   <|> do
     s <- sameOrDifferentIndu
     as <- optionalAnnos
     is <- sepByComma individualUri
-    return $ MiscSameOrDifferent s as is
+    return $ Frame (Left as) [ListFrameBit (Just (SDRelation s)) 
+        $ IndividualSameOrDifferent $ AnnotatedList $ map (\ x -> ([], x)) is]
 
 frames :: CharParser st [Frame]
 frames = many $ datatypeBit <|> classFrame

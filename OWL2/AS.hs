@@ -269,6 +269,7 @@ data Relation =
   | SubClass
   | Types
   | DRRelation DomainOrRange
+  | SDRelation SameOrDifferent
     deriving (Show, Eq, Ord)
 
 showRelation :: Relation -> String
@@ -279,6 +280,7 @@ showRelation r = case r of
     SubClass -> subClassOfC
     Types -> typesC
     DRRelation dr -> showDomainOrRange dr
+    SDRelation sd -> showSameOrDifferent sd
 
 getDR :: Relation -> DomainOrRange
 getDR r = case r of
@@ -289,6 +291,11 @@ getED :: Relation -> EquivOrDisjoint
 getED r = case r of
     EDRelation ed -> ed
     _ -> error "not domain or range"
+
+getSD :: Relation -> SameOrDifferent
+getSD s = case s of
+    SDRelation sd -> sd
+    _ -> error "not same or different"
 
 data DataDomainOrRange = DataDomain ClassExpression | DataRange DataRange
     deriving (Show, Eq, Ord)

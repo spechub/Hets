@@ -15,8 +15,7 @@ module OWL2.StaticAnalysis where
 import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
-import OWL2.FS
-import OWL2.GetAxioms
+import OWL2.Theorem
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -80,8 +79,7 @@ addEntity = modEntity Set.insert
 
 -- | adding annotations for theorems
 anaAxiom :: Axiom -> Named Axiom
-anaAxiom x = case x of
-   PlainAxiom as _ -> findImplied as $ makeNamed "" x
+anaAxiom x = findImplied x $ makeNamed "" x
 
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> a -> Entity -> Result a
@@ -214,54 +212,79 @@ checkClassExpression s desc = case desc of
                  " in the following ClassExpression\n\n" ++ show desc
 
 -- corrects the frame bits according to the signature
-checkBit :: Sign -> FrameBit -> Result FrameBit
-checkBit s fb = case fb of
-    AnnotationFrameBit _ -> return fb
-    AnnotationBit r anl -> case r of
-        DRRelation _ -> return fb
+
+checkAnnBit :: Sign -> AnnFrameBit -> Result AnnFrameBit
+checkAnnBit s fb = case fb of
+    DatatypeBit dr -> do
+        checkDataRange s dr
+        return fb
+    ClassDisjointUnion cel -> do
+        n <- mapM (checkClassExpression s) cel
+        return $ ClassDisjointUnion n
+    ClassHasKey _ _ -> checkHasKey s fb
+    ObjectSubPropertyChain ol -> checkObjPropList s fb ol
+    _ -> return fb
+
+
+checkListBit :: Sign -> (Maybe Relation) -> ListFrameBit -> Result ListFrameBit
+checkListBit s r fb = case fb of   
+    AnnotationBit anl -> case r of
+        Just (DRRelation _) -> return fb
         _ -> do
             let apl = map snd $ convertAnnList anl
             mapM_ (checkEntity s fb . Entity AnnotationProperty) apl
-            return fb
-    DatatypeBit _ dr -> do
-        checkDataRange s dr
-        return fb
-    ExpressionBit a anl -> do
+            return fb  
+    ExpressionBit anl -> do
         let ans = map fst $ convertAnnList anl
         let ce = map snd $ convertAnnList anl
         n <- mapM (checkClassExpression s) ce
-        return $ ExpressionBit a $ AnnotatedList $ zip ans n
-    ClassDisjointUnion a cel -> do
-        n <- mapM (checkClassExpression s) cel
-        return $ ClassDisjointUnion a n
-    ClassHasKey _ _ _ -> checkHasKey s fb
-    ObjectBit _ anl -> do
+        return $ ExpressionBit $ AnnotatedList $ zip ans n
+    ObjectBit anl -> do
+        let ans = map fst $ convertAnnList anl
         let ol = map snd $ convertAnnList anl
-        checkObjPropList s fb ol
-    ObjectCharacteristics _ -> return fb
-    ObjectSubPropertyChain _ ol -> checkObjPropList s fb ol
-    DataBit _ anl -> do
+        --checkObjPropList s fb ol
+        let x = sortObjDataList s ol
+        if null x then do
+            let dpl = map getObjRoleFromExpression ol
+            let nb = DataBit $ AnnotatedList $ zip ans dpl
+            checkDataPropList s nb dpl
+          else
+            if length x == length ol then return fb
+               else fail $ "Static analysis found that there are" ++
+                           " multiple types of properties in\n\n" ++
+                            show x ++ show 
+                              (map getObjRoleFromExpression (ol \\ x))
+    ObjectCharacteristics _ -> return fb 
+    DataBit anl -> do
         let dl = map snd $ convertAnnList anl
         checkDataPropList s fb dl
     DataPropRange anl -> do
         let dr = map snd $ convertAnnList anl
         mapM_ (checkDataRange s) dr
-        return fb
-    DataFunctional _ -> return fb
+        return fb   
     IndividualFacts anl -> do
         let f = map snd $ convertAnnList anl
         checkFactList s fb f
-    IndividualSameOrDifferent _ anl -> do
+    IndividualSameOrDifferent anl -> do
         let i = map snd $ convertAnnList anl
         mapM_ (checkEntity s fb . Entity NamedIndividual) i
         return fb
 
-checkFactList :: Sign -> FrameBit -> [Fact] -> Result FrameBit
+checkBit :: Sign -> FrameBit -> Result FrameBit
+checkBit s fb = case fb of
+    ListFrameBit mr lfb -> do
+        nf <- checkListBit s mr lfb
+        return $ ListFrameBit mr nf
+    AnnFrameBit ans afb -> do
+        nf <- checkAnnBit s afb
+        return $ AnnFrameBit ans nf
+
+checkFactList :: Sign -> ListFrameBit -> [Fact] -> Result ListFrameBit
 checkFactList s fb fl = do
     mapM_ (checkFact s fb) fl
     return fb
 
-checkFact :: Sign -> FrameBit -> Fact -> Result FrameBit
+checkFact :: Sign -> ListFrameBit -> Fact -> Result ListFrameBit
 checkFact s fb f =
     case f of
       ObjectPropertyFact _ op _ ->
@@ -291,63 +314,37 @@ checkDataPropList s fb dl = do
           ++ show dl
      else return fb
 
-checkHasKeyAll :: Sign -> FrameBit -> Result FrameBit
+checkHasKeyAll :: Sign -> AnnFrameBit -> Result AnnFrameBit
 checkHasKeyAll s k = case k of
-  ClassHasKey a ol dl -> do
+  ClassHasKey ol dl -> do
     let x = map (\ u -> Set.member (getObjRoleFromExpression u)
               (objectProperties s) ) ol
         y = map (\ u -> Set.member u (dataProperties s) ) dl
     if elem False (x ++ y) then
       fail "Static analysis. Keys failed, undeclared Data or Object Properties"
-     else return (ClassHasKey a ol dl)
+     else return $ ClassHasKey ol dl
   _ -> return k
 
-checkHasKey :: Sign -> FrameBit -> Result FrameBit
+checkHasKey :: Sign -> AnnFrameBit -> Result AnnFrameBit
 checkHasKey s k = case k of
-  ClassHasKey a ol _ -> do
+  ClassHasKey ol _ -> do
     let x = sortObjDataList s ol
-    let k2 = ClassHasKey a x (map getObjRoleFromExpression (ol \\ x))
+    let k2 = ClassHasKey x (map getObjRoleFromExpression (ol \\ x))
     checkHasKeyAll s k2
   _ -> return k
 
-checkMisc :: Sign -> Misc -> Result Misc
-checkMisc s m = case m of
-    MiscEquivOrDisjointClasses cl -> do
-      n <- mapM (checkClassExpression s) cl
-      return $ MiscEquivOrDisjointClasses n
-    MiscEquivOrDisjointObjProp ol -> do
-      let x = sortObjDataList s ol
-      if null x then do
-          let dpl = map getObjRoleFromExpression ol
-          let nm = MiscEquivOrDisjointDataProp dpl
-          checkDataPropList s nm dpl
-          return nm
-        else
-          if length x == length ol then return m
-           else fail $ "Static analysis found that there are" ++
-                       " multiple types of properties in\n\n" ++
-                       show x ++ show (map getObjRoleFromExpression (ol \\ x))
-    _ -> return m
-
 -- | checks a frame and applies desired changes
 checkFrame :: Sign -> Frame -> Result Frame
-checkFrame s f = case f of
-    Frame a fbl -> do
+checkFrame s (Frame either fbl) = do
       nl <- mapM (checkBit s) fbl
-      return $ Frame a nl
-    MiscFrame r al misc -> do
-      x <- checkMisc s misc
-      return $ MiscFrame r al x
-    MiscSameOrDifferent _ _ il -> do
-      mapM_ (checkEntity s f . Entity NamedIndividual) il
-      return f
+      return $ Frame either nl
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]
 correctFrames s = mapM (checkFrame s)
 
 getEntityFromFrame :: Frame -> State Sign ()
 getEntityFromFrame f = case f of
-    Frame e _ -> addEntity e
+    Frame (Right e) _ -> addEntity e
     _ -> return ()
 
 createSign :: [Frame] -> State Sign ()
@@ -399,9 +396,9 @@ integrateNamespaces :: PrefixMap -> PrefixMap
 integrateNamespaces oldNsMap testNsMap =
         foldM testAndInteg oldNsMap (Map.toList testNsMap)
 
-findImplied :: [OWL2.AS.Annotation] -> Named Axiom -> Named Axiom
-findImplied anno sent =
-  if isToProve anno then sent
+findImplied :: Axiom -> Named Axiom -> Named Axiom
+findImplied ax sent =
+  if isToProve ax then sent
          { isAxiom = False
          , isDef = False
          , wasTheorem = False }

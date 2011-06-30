@@ -24,7 +24,7 @@ import Common.Utils
 
 import GUI.Utils ()
 
-import OWL2.FS
+import OWL2.MS
 import OWL2.Morphism
 import OWL2.FunctionalPrint (printOWLBasicTheory)
 import OWL2.Sign
