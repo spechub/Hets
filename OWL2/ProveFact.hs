@@ -35,6 +35,7 @@ import Common.Timing
 import Data.Time (TimeOfDay, midnight)
 
 import System.Exit
+import System.Environment
 import System.Process
 import System.Directory
 import System.FilePath
@@ -156,13 +157,15 @@ runTimedFact tmpFileName prob mEnt tLimit = do
   (_, arch, _) <- readProcessWithExitCode "uname" ["-m"] ""
   if progTh then
         withinDirectory toolPath $ do
-          jni <- getEnvDef "HETS_JNI_LIBS" $ "lib/native/" ++ trim arch
+          mJni <- fmap (lookup "HETS_JNI_LIBS") getEnvironment
+          let jni = fromMaybe ("lib/native/" ++ trim arch) mJni
           hasJni <- doesFileExist $ jni </> jlibName
           if hasJni || hasJniLib then do
             timeTmpFile <- getTempFile prob tmpFileName
             let entailsFile = timeTmpFile ++ ".entail.owl"
-                jargs = ["-Djava.library.path=" ++ jni | True]
-                  ++ ["-jar", jar, "file://" ++ timeTmpFile]
+                jargs = ["-Djava.library.path=" ++ jni
+                        | not hasJniLib || isJust mJni ]
+                   ++ ["-jar", jar, "file://" ++ timeTmpFile]
                   ++ ["file://" ++ entailsFile | hasEnt ]
             case mEnt of
               Just entail -> writeFile entailsFile entail
