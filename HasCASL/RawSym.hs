@@ -61,7 +61,7 @@ symbToRaw me k (Symb idt mt _) = case mt of
     Nothing -> return $ symbKindToRaw k idt
     Just (SymbType sc@(TypeScheme vs t _)) -> case me of
       Nothing ->
-        warning (symbKindToRaw k idt) "ignoring target symbol qualification"
+        hint (symbKindToRaw k idt) "ignoring target symbol qualification"
           $ getRange sc
       Just e ->
         let qi ty = ASymbol $ Symbol idt ty
