@@ -225,48 +225,49 @@ mapDescr m desc = case desc of
 
 mapFact :: Map.Map Entity IRI -> Fact -> Fact
 mapFact m f = case f of
-    ObjectPropertyFact pn op i -> ObjectPropertyFact 
+    ObjectPropertyFact pn op i -> ObjectPropertyFact
             pn (mapObjExpr m op) (i `getIndIri` m)
-    DataPropertyFact pn dp l -> DataPropertyFact 
+    DataPropertyFact pn dp l -> DataPropertyFact
             pn (mapDataExpr m dp) l
 
-mapAnnList :: Map.Map Entity IRI -> (a -> a) -> 
+mapAnnList :: Map.Map Entity IRI -> (a -> a) ->
           AnnotatedList a -> AnnotatedList a
-mapAnnList m f (AnnotatedList anl) = 
+mapAnnList m f (AnnotatedList anl) =
              let ans = map fst anl
                  l = map snd anl
              in AnnotatedList $ zip (map (mapAnnoList m) ans) (map f l)
 
 mapLFB :: Map.Map Entity IRI -> ListFrameBit -> ListFrameBit
 mapLFB m lfb = case lfb of
-    AnnotationBit a -> AnnotationBit 
-          $ mapAnnList m (flip (getIri AnnotationProperty) m) a 
+    AnnotationBit a -> AnnotationBit
+          $ mapAnnList m (flip (getIri AnnotationProperty) m) a
     ObjectBit a -> ObjectBit $ mapAnnList m (mapObjExpr m) a
     DataBit a -> DataBit $ mapAnnList m (mapDataExpr m) a
-    IndividualSameOrDifferent a -> 
+    IndividualSameOrDifferent a ->
           IndividualSameOrDifferent $ mapAnnList m (`getIndIri` m) a
     DataPropRange a -> DataPropRange $ mapAnnList m (mapDRange m) a
     IndividualFacts a -> IndividualFacts $ mapAnnList m (mapFact m) a
-    _ -> lfb
+    ExpressionBit a -> ExpressionBit  $ mapAnnList m (mapDescr m) a
+    ObjectCharacteristics _ -> lfb
 
 mapAFB :: Map.Map Entity IRI -> AnnFrameBit -> AnnFrameBit
 mapAFB m afb = case afb of
   DatatypeBit dr -> DatatypeBit $ mapDRange m dr
   ClassDisjointUnion ce -> ClassDisjointUnion $ map (mapDescr m) ce
-  ClassHasKey op dp -> ClassHasKey (map (mapObjExpr m) op) 
+  ClassHasKey op dp -> ClassHasKey (map (mapObjExpr m) op)
           (map (mapDataExpr m) dp)
-  ObjectSubPropertyChain op -> ObjectSubPropertyChain 
+  ObjectSubPropertyChain op -> ObjectSubPropertyChain
           (map (mapObjExpr m) op)
   _ -> afb
 
 mapFB :: Map.Map Entity IRI -> FrameBit -> FrameBit
 mapFB m fb = case fb of
   ListFrameBit mr lfb -> ListFrameBit mr $ mapLFB m lfb
-  AnnFrameBit ans afb -> AnnFrameBit (mapAnnoList m ans) 
+  AnnFrameBit ans afb -> AnnFrameBit (mapAnnoList m ans)
             $ mapAFB m afb
 
 mapAxiom :: Map.Map Entity IRI -> Axiom -> Axiom
 mapAxiom m (PlainAxiom eith fb) = case eith of
-    Right (Entity ty ent) -> PlainAxiom 
+    Right (Entity ty ent) -> PlainAxiom
         (Right $ Entity ty $ getIri ty ent m) $ mapFB m fb
     Left ans -> PlainAxiom (Left  $ mapAnnoList m ans) $ mapFB m fb
