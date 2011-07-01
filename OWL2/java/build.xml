@@ -29,7 +29,7 @@
         </javac>
     </target>
 
-    <target name="install" depends="clean,jar,copy-libs,fact">
+    <target name="install" depends="clean,jar,copy-libs,fact,fact-prover">
       <copy file="${builddir}/OWL2Parser.jar" todir="../"/>
       <copy file="${builddir}/OWLLocality.jar" todir="../"/>
     </target>
@@ -73,7 +73,7 @@
 	  <attribute name="Title" value="OWL Fact Prover"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.FactProver.Prove"/>
-	  <attribute name="Class-Path" value="lib/owlapi-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar"/>	  
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFactProver.jar" todir="../"/>
