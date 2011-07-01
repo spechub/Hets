@@ -169,18 +169,15 @@ statSymbMapItems =
                    map (\ (s, t) -> (mS s, mS t)) ps)
 
 mapAnno :: Map.Map Entity IRI -> Annotation -> Annotation
-mapAnno m ann = case ann of
+mapAnno m annt = case annt of
   Annotation l a e -> Annotation l (getIri AnnotationProperty a m) e
 
-mapSen :: OWLMorphism -> Axiom -> Result Axiom
-mapSen m = return
+mapAnnoList :: Map.Map Entity IRI -> Annotations -> Annotations
+mapAnnoList m ans = map (mapAnno m) ans
 
---return . mapAxiom (mmaps m)
-{-
-mapAxiom :: Map.Map Entity IRI -> Axiom -> Axiom
-mapAxiom m axm = case axm of
-  PlainAxiom as a -> PlainAxiom (map (mapAnno m) as) $ mapPlainAxiom m a
-   
+mapSen :: OWLMorphism -> Axiom -> Result Axiom
+mapSen m = return . mapAxiom (mmaps m)
+
 mapObjExpr :: Map.Map Entity IRI -> ObjectPropertyExpression
            -> ObjectPropertyExpression
 mapObjExpr m ope = case ope of
@@ -226,56 +223,50 @@ mapDescr m desc = case desc of
     DataCardinality c -> DataCardinality
        $ mapCard (mapDataExpr m) (mapDRange m) c
 
-mapSubObjExpr :: Map.Map Entity IRI -> SubObjectPropertyExpression
-              -> SubObjectPropertyExpression
-mapSubObjExpr m ope = case ope of
-  OPExpression o -> OPExpression $ mapObjExpr m o
-  SubObjectPropertyChain os -> SubObjectPropertyChain
-    $ map (mapObjExpr m) os
+mapFact :: Map.Map Entity IRI -> Fact -> Fact
+mapFact m f = case f of
+    ObjectPropertyFact pn op i -> ObjectPropertyFact 
+            pn (mapObjExpr m op) (i `getIndIri` m)
+    DataPropertyFact pn dp l -> DataPropertyFact 
+            pn (mapDataExpr m dp) l
 
-mapDataDomOrRange :: Map.Map Entity IRI -> DataDomainOrRange
-                  -> DataDomainOrRange
-mapDataDomOrRange m ddr = case ddr of
-  DataDomain d -> DataDomain $ mapDescr m d
-  DataRange d -> DataRange $ mapDRange m d
+mapAnnList :: Map.Map Entity IRI -> (a -> a) -> 
+          AnnotatedList a -> AnnotatedList a
+mapAnnList m f (AnnotatedList anl) = 
+             let ans = map fst anl
+                 l = map snd anl
+             in AnnotatedList $ zip (map (mapAnnoList m) ans) (map f l)
 
-mapAssertion :: Map.Map Entity IRI -> (a -> b) -> (c -> d)
-             -> Assertion a c -> Assertion b d
-mapAssertion m f g (Assertion a ty i b) =
-  Assertion (f a) ty (getIndIri i m) $ g b
+mapLFB :: Map.Map Entity IRI -> ListFrameBit -> ListFrameBit
+mapLFB m lfb = case lfb of
+    AnnotationBit a -> AnnotationBit 
+          $ mapAnnList m (flip (getIri AnnotationProperty) m) a 
+    ObjectBit a -> ObjectBit $ mapAnnList m (mapObjExpr m) a
+    DataBit a -> DataBit $ mapAnnList m (mapDataExpr m) a
+    IndividualSameOrDifferent a -> 
+          IndividualSameOrDifferent $ mapAnnList m (`getIndIri` m) a
+    DataPropRange a -> DataPropRange $ mapAnnList m (mapDRange m) a
+    IndividualFacts a -> IndividualFacts $ mapAnnList m (mapFact m) a
+    _ -> lfb
 
-mapPlainAxiom :: Map.Map Entity IRI -> PlainAxiom -> PlainAxiom
-mapPlainAxiom m pax = case pax of
-    AnnotationAssertion ir -> AnnotationAssertion ir
-    AnnotationAxiom rel p ir -> AnnotationAxiom rel (getIri AnnotationProperty p m) ir
-    SubClassOf s t -> SubClassOf (mapDescr m s) $ mapDescr m t
-    EquivOrDisjointClasses ty ds -> EquivOrDisjointClasses ty
-      $ map (mapDescr m) ds
-    DisjointUnion u ds -> DisjointUnion (getClassIri u m)
-      $ map (mapDescr m) ds
-    SubObjectPropertyOf so o -> SubObjectPropertyOf (mapSubObjExpr m so)
-      $ mapObjExpr m o
-    EquivOrDisjointObjectProperties ty os -> EquivOrDisjointObjectProperties ty
-      $ map (mapObjExpr m) os
-    ObjectPropertyDomainOrRange odr o d -> ObjectPropertyDomainOrRange odr
-      (mapObjExpr m o) $ mapDescr m d
-    InverseObjectProperties o p -> InverseObjectProperties (mapObjExpr m o)
-      $ mapObjExpr m p
-    ObjectPropertyCharacter c o -> ObjectPropertyCharacter c $ mapObjExpr m o
-    SubDataPropertyOf d e -> SubDataPropertyOf (mapDataExpr m d)
-      $ mapDataExpr m e
-    EquivOrDisjointDataProperties ty ds -> EquivOrDisjointDataProperties ty
-      $ map (mapDataExpr m) ds
-    DataPropertyDomainOrRange dd d -> DataPropertyDomainOrRange
-      (mapDataDomOrRange m dd) $ mapDataExpr m d
-    FunctionalDataProperty d -> FunctionalDataProperty $ mapDataExpr m d
-    SameOrDifferentIndividual ty is -> SameOrDifferentIndividual ty $ map (`getIndIri` m) is
-    ClassAssertion d i -> ClassAssertion (mapDescr m d) $ getIndIri i m
-    ObjectPropertyAssertion a -> ObjectPropertyAssertion
-      $ mapAssertion m (mapObjExpr m) (`getIndIri` m) a
-    DataPropertyAssertion a -> DataPropertyAssertion
-      $ mapAssertion m (mapDataExpr m) id a
-    Declaration (Entity ty u) -> Declaration $ Entity ty $ getIri ty u m
-    DatatypeDefinition ty d-> DatatypeDefinition (getIri Datatype ty m) (mapDRange m d)
-    HasKey c ob da-> HasKey (mapDescr m c) (map (mapObjExpr m) ob) (map (mapDataExpr m) da)
--}
+mapAFB :: Map.Map Entity IRI -> AnnFrameBit -> AnnFrameBit
+mapAFB m afb = case afb of
+  DatatypeBit dr -> DatatypeBit $ mapDRange m dr
+  ClassDisjointUnion ce -> ClassDisjointUnion $ map (mapDescr m) ce
+  ClassHasKey op dp -> ClassHasKey (map (mapObjExpr m) op) 
+          (map (mapDataExpr m) dp)
+  ObjectSubPropertyChain op -> ObjectSubPropertyChain 
+          (map (mapObjExpr m) op)
+  _ -> afb
+
+mapFB :: Map.Map Entity IRI -> FrameBit -> FrameBit
+mapFB m fb = case fb of
+  ListFrameBit mr lfb -> ListFrameBit mr $ mapLFB m lfb
+  AnnFrameBit ans afb -> AnnFrameBit (mapAnnoList m ans) 
+            $ mapAFB m afb
+
+mapAxiom :: Map.Map Entity IRI -> Axiom -> Axiom
+mapAxiom m (PlainAxiom eith fb) = case eith of
+    Right (Entity ty ent) -> PlainAxiom 
+        (Right $ Entity ty $ getIri ty ent m) $ mapFB m fb
+    Left ans -> PlainAxiom (Left  $ mapAnnoList m ans) $ mapFB m fb

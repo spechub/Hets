@@ -335,9 +335,9 @@ checkHasKey s k = case k of
 
 -- | checks a frame and applies desired changes
 checkFrame :: Sign -> Frame -> Result Frame
-checkFrame s (Frame either fbl) = do
+checkFrame s (Frame eith fbl) = do
       nl <- mapM (checkBit s) fbl
-      return $ Frame either nl
+      return $ Frame eith nl
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]
 correctFrames s = mapM (checkFrame s)
