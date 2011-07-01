@@ -70,7 +70,7 @@ reachable r a = Set.fold reach Set.empty $ succs r a where
                     else Set.fold reach (Set.insert e s) $ succs r e
 
 -- | predecessors of one node in the given set of a nodes
-preds :: Ord a => Map.Map a (Set.Set a) -> a -> Set.Set a -> Set.Set a
+preds :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> b -> Set.Set a -> Set.Set a
 preds m a = Set.filter ( \ s -> MapSet.memberInSet s a m)
 
 -- | get direct predecessors inefficiently
