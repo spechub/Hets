@@ -16,10 +16,10 @@ module Common.ATerm.ConvInstances () where
 
 import ATerm.Lib
 import Common.Lib.SizedList as SizedList
-import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.InjMap as InjMap
 import Data.Typeable
-import Data.Time (TimeOfDay(..))
+import Data.Time (TimeOfDay (..))
 import Data.Fixed (Pico)
 import Data.Ratio (Ratio)
 import System.Time
@@ -45,28 +45,29 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
   toShATermAux att0 x = do
         (att1, a') <- toShATerm' att0 $ InjMap.getAToB x
         (att2, b') <- toShATerm' att1 $ InjMap.getBToA x
-        return $ addATerm (ShAAppl "InjMap" [a',b'] []) att2
+        return $ addATerm (ShAAppl "InjMap" [a', b'] []) att2
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "InjMap" [a,b] _ ->
+    ShAAppl "InjMap" [a, b] _ ->
         case fromShATerm' a att0 of { (att1, a') ->
         case fromShATerm' b att1 of { (att2, b') ->
         (att2, InjMap.unsafeConstructInjMap a' b') }}
     u -> fromShATermError "InjMap" u
 
-_tc_RelTc :: TyCon
-_tc_RelTc = mkTyCon "Common.Lib.Rel.Rel"
-instance Typeable1 Rel.Rel where
-    typeOf1 _ = mkTyConApp _tc_RelTc []
+_tc_MapSetTc :: TyCon
+_tc_MapSetTc = mkTyCon "Common.Lib.MapSet.MapSet"
+instance Typeable2 MapSet.MapSet where
+    typeOf2 _ = mkTyConApp _tc_MapSetTc []
 
-instance (Ord a, ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
+instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
+  => ShATermConvertible (MapSet.MapSet a b) where
   toShATermAux att0 r = do
-        (att1, a') <- toShATerm' att0 $ Rel.toMap r
-        return $ addATerm (ShAAppl "Rel" [a'] []) att1
+        (att1, a') <- toShATerm' att0 $ MapSet.toMap r
+        return $ addATerm (ShAAppl "MapSet" [a'] []) att1
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "Rel" [a] _ ->
+    ShAAppl "MapSet" [a] _ ->
         case fromShATerm' a att0 of { (att1, a') ->
-        (att1, Rel.fromDistinctMap a') }
-    u -> fromShATermError "Rel" u
+        (att1, MapSet.fromDistinctMap a') }
+    u -> fromShATermError "MapSet" u
 
 ctTc :: TyCon
 ctTc = mkTyCon "System.Time.ClockTime"
@@ -78,9 +79,9 @@ instance ShATermConvertible ClockTime where
     toShATermAux att0 (TOD a b) = do
         (att1, a') <- toShATerm' att0 a
         (att2, b') <- toShATerm' att1 b
-        return $ addATerm (ShAAppl "TOD" [a',b'] []) att2
+        return $ addATerm (ShAAppl "TOD" [a', b'] []) att2
     fromShATermAux ix att0 = case getShATerm ix att0 of
-            ShAAppl "TOD" [a,b] _ ->
+            ShAAppl "TOD" [a, b] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
                     (att2, TOD a' b') }}
@@ -104,9 +105,9 @@ instance ShATermConvertible TimeOfDay where
         (att1, a') <- toShATerm' att0 a
         (att2, b') <- toShATerm' att1 b
         (att3, c') <- toShATerm' att2 (toRational c :: Rational)
-        return $ addATerm (ShAAppl "TimeOfDay" [a',b',c'] []) att3
+        return $ addATerm (ShAAppl "TimeOfDay" [a', b', c'] []) att3
     fromShATermAux ix att0 = case getShATerm ix att0 of
-            ShAAppl "TimeOfDay" [a,b,c] _ ->
+            ShAAppl "TimeOfDay" [a, b, c] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
                     case fromShATerm' c att2 of { (att3, c') ->

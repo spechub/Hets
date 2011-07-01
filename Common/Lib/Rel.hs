@@ -32,14 +32,17 @@ for plain maps involving sets.
 -}
 
 module Common.Lib.Rel
-    ( Rel(), empty, null, insert, member, toMap, map
-    , union, intersection, isSubrelOf, difference, path
-    , delete, succs, predecessors, irreflex, sccOfClosure
+    ( Rel, map
+    , MapSet.null, MapSet.empty, MapSet.member
+    , MapSet.toMap, MapSet.insert, MapSet.union
+    , MapSet.intersection, MapSet.difference
+    , isSubrelOf, path
+    , succs, predecessors, irreflex, sccOfClosure
     , transClosure, fromList, toList, image, toPrecMap
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
     , transpose, transReduce, setInsert, setToMap
-    , fromDistinctMap, locallyFiltered
+    , locallyFiltered
     , flatSet, partSet, partList, leqClasses
     ) where
 
@@ -48,53 +51,17 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
-data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving (Eq, Ord)
--- the invariant is that set values are never empty
+import qualified Common.Lib.MapSet as MapSet
 
-fromDistinctMap :: Map.Map a (Set.Set a) -> Rel a
-fromDistinctMap = Rel
-
--- | the empty relation
-empty :: Rel a
-empty = Rel Map.empty
-
--- | test for 'empty'
-null :: Rel a -> Bool
-null (Rel m) = Map.null m
-
--- | difference of two relations
-difference :: Ord a => Rel a -> Rel a -> Rel a
-difference a b = fromSet (toSet a Set.\\ toSet b)
-
--- | union of two relations
-union :: Ord a => Rel a -> Rel a -> Rel a
-union a b = fromSet $ Set.union (toSet a) $ toSet b
-
--- | intersection of two relations
-intersection :: Ord a => Rel a -> Rel a -> Rel a
-intersection a b = fromSet $ Set.intersection (toSet a) $ toSet b
+type Rel a = MapSet.MapSet a a
 
 -- | is the first relation a sub-relation of the second
 isSubrelOf :: Ord a => Rel a -> Rel a -> Bool
-isSubrelOf a b = Set.isSubsetOf (toSet a) $ toSet b
-
--- | insert an ordered pair
-insert :: Ord a => a -> a -> Rel a -> Rel a
-insert a b = Rel . setInsert a b . toMap
-
--- | delete an ordered pair
-delete :: Ord a => a -> a -> Rel a -> Rel a
-delete a b (Rel m) =
-    let t = Set.delete b $ Map.findWithDefault Set.empty a m in
-    Rel $ if Set.null t then Map.delete a m else Map.insert a t m
-
--- | test for an (previously inserted) ordered pair
-member :: Ord a => a -> a -> Rel a -> Bool
-member a b r = Set.member b $ succs r a
+isSubrelOf = MapSet.isSubmapOf
 
 -- | get direct successors
 succs :: Ord a => Rel a -> a -> Set.Set a
-succs (Rel m) a = Map.findWithDefault Set.empty a m
+succs = flip MapSet.lookup
 
 -- | get all transitive successors
 reachable :: Ord a => Rel a -> a -> Set.Set a
@@ -103,12 +70,12 @@ reachable r a = Set.fold reach Set.empty $ succs r a where
                     else Set.fold reach (Set.insert e s) $ succs r e
 
 -- | predecessors of one node in the given set of a nodes
-preds :: Ord a => Rel a -> a -> Set.Set a -> Set.Set a
-preds r a = Set.filter ( \ s -> member s a r)
+preds :: Ord a => Map.Map a (Set.Set a) -> a -> Set.Set a -> Set.Set a
+preds m a = Set.filter ( \ s -> MapSet.memberInSet s a m)
 
 -- | get direct predecessors inefficiently
 predecessors :: Ord a => Rel a -> a -> Set.Set a
-predecessors r@(Rel m) a = preds r a $ Map.keysSet m
+predecessors r a = let m = MapSet.toMap r in preds m a $ Map.keysSet m
 
 -- | test for 'member' or transitive membership (non-empty path)
 path :: Ord a => a -> a -> Rel a -> Bool
@@ -116,42 +83,51 @@ path a b r = Set.member b $ reachable r a
 
 -- | compute transitive closure (make all transitive members direct members)
 transClosure :: Ord a => Rel a -> Rel a
-transClosure r@(Rel m) = Rel $ Map.mapWithKey ( \ k _ -> reachable r k) m
+transClosure r = MapSet.fromMap . Map.mapWithKey ( \ k _ -> reachable r k)
+  $ MapSet.toMap r
 
 -- | get reverse relation
 transpose :: Ord a => Rel a -> Rel a
 transpose = fromList . List.map ( \ (a, b) -> (b, a)) . toList
 
--- | establish the invariant
-rmNull :: Ord a => Map.Map a (Set.Set a) -> Map.Map a (Set.Set a)
-rmNull = Map.filter (not . Set.null)
-
 -- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
-irreflex (Rel m) = Rel $ rmNull $ Map.mapWithKey Set.delete m
+irreflex = MapSet.fromMap . Map.mapWithKey Set.delete . MapSet.toMap
 
 -- | compute strongly connected components for a transitively closed relation
-sccOfClosure :: Ord a => Rel a -> [Set.Set a]
-sccOfClosure r@(Rel m) =
+sccOfClosureM :: Ord a => Map.Map a (Set.Set a) -> [Set.Set a]
+sccOfClosureM m =
         if Map.null m then []
         else let ((k, v), p) = Map.deleteFindMin m in
              if Set.member k v then -- has a cycle
-                let c = preds r k v in -- get the cycle
-                c : sccOfClosure (Rel $ Set.fold Map.delete p c)
-             else sccOfClosure (Rel p)
+                let c = preds m k v in -- get the cycle
+                c : sccOfClosureM (Set.fold Map.delete p c)
+             else sccOfClosureM p
+
+-- | compute strongly connected components for a transitively closed relation
+sccOfClosure :: Ord a => Rel a -> [Set.Set a]
+sccOfClosure = sccOfClosureM . MapSet.toMap
+
+setToMap :: Ord a => Set.Set a -> Map.Map a a
+setToMap = Map.fromDistinctAscList . List.map (\ a -> (a, a)) . Set.toList
+
+-- | restrict to elements not in the input set
+delSetM :: Ord a => Set.Set a -> Map.Map a (Set.Set a) -> Map.Map a (Set.Set a)
+delSetM s m = MapSet.rmNull $ Map.map (Set.\\ s) m Map.\\ setToMap s
+
+-- | restrict to elements not in the input set
+delSet :: Ord a => Set.Set a -> Rel a -> Rel a
+delSet s = MapSet.fromDistinctMap . delSetM s . MapSet.toMap
 
 {- | restrict strongly connected components to its minimal representative
      (input sets must be non-null). Direct cycles may remain. -}
 collaps :: Ord a => [Set.Set a] -> Rel a -> Rel a
 collaps = delSet . Set.unions . List.map Set.deleteMin
 
-setToMap :: Ord a => Set.Set a -> Map.Map a a
-setToMap = Map.fromDistinctAscList . List.map (\ a -> (a, a)) . Set.toList
-
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a transitively closed DAG (i.e. without cycles)! -}
 transReduce :: Ord a => Rel a -> Rel a
-transReduce (Rel m) = Rel $ rmNull $
+transReduce r = let m = MapSet.toMap r in MapSet.fromMap $
 -- keep all (i, j) in rel for which no c with (i, c) and (c, j) in rel
     Map.mapWithKey ( \ i s -> let d = setToMap $ Set.delete i s in
         Set.filter ( \ j ->
@@ -160,15 +136,12 @@ transReduce (Rel m) = Rel $ rmNull $
 
 -- | convert a list of ordered pairs to a relation
 fromList :: Ord a => [(a, a)] -> Rel a
-fromList = foldr (uncurry insert) empty
+fromList = foldr (uncurry MapSet.insert) MapSet.empty
 
 -- | convert a relation to a list of ordered pairs
 toList :: Rel a -> [(a, a)]
-toList (Rel m) = concatMap (\ (a , bs) -> List.map ( \ b -> (a, b) )
-                            (Set.toList bs)) $ Map.toList m
-
-instance (Show a, Ord a) => Show (Rel a) where
-    show = show . Set.fromDistinctAscList . toList
+toList = concatMap (\ (a, bs) -> List.map (\ b -> (a, b)) bs)
+  . MapSet.toList
 
 -- | Insert into a set of values
 setInsert :: (Ord k, Ord a) => k -> a -> Map.Map k (Set.Set a)
@@ -186,16 +159,13 @@ image f s =
 
 -- | map the values of a relation
 map :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
-map f (Rel m) = Rel $ Map.foldWithKey
-    ( \ a -> Map.insertWith Set.union (f a) . Set.map f) Map.empty m
+map f = MapSet.fromDistinctMap . Map.foldWithKey
+    ( \ a -> Map.insertWith Set.union (f a) . Set.map f) Map.empty
+    . MapSet.toMap
 
 -- | Restriction of a relation under a set
 restrict :: Ord a => Rel a -> Set.Set a -> Rel a
 restrict r s = delSet (nodes r Set.\\ s) r
-
--- | restrict to elements not in the input set
-delSet :: Ord a => Set.Set a -> Rel a -> Rel a
-delSet s (Rel m) = Rel $ rmNull (Map.map (Set.\\ s) m) Map.\\ setToMap s
 
 -- | convert a relation to a set of ordered pairs
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
@@ -207,37 +177,42 @@ fromSet = fromAscList . Set.toList
 
 -- | convert a sorted list of ordered pairs to a relation
 fromAscList :: (Ord a) => [(a, a)] -> Rel a
-fromAscList = Rel . Map.fromDistinctAscList
-                  . List.map ( \ l -> (fst (head l),
-                                  Set.fromDistinctAscList $ List.map snd l))
-                        . List.groupBy ( \ (a, _) (b, _) -> a == b)
+fromAscList = MapSet.fromDistinctMap
+  . Map.fromDistinctAscList
+  . List.map ( \ l -> (fst (head l),
+                       Set.fromDistinctAscList $ List.map snd l))
+  . List.groupBy ( \ (a, _) (b, _) -> a == b)
 
 -- | all nodes of the edges
 nodes :: Ord a => Rel a -> Set.Set a
-nodes (Rel m) = Set.union (Map.keysSet m) $ elemsSet m
+nodes r = let m = MapSet.toMap r in
+  Set.union (Map.keysSet m) $ elemsSet m
 
 elemsSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
 elemsSet = Set.unions . Map.elems
 
-{- | Construct a precedence map from a closed relation. Indices range
-   between 1 and the second value that is output. -}
-toPrecMap :: Ord a =>  Rel a -> (Map.Map a Int, Int)
-toPrecMap = foldl ( \ (m1, c) s -> let n = c + 1 in
-                    (Set.fold (flip Map.insert n) m1 s, n))
-                 (Map.empty, 0) . topSort
-
-topSortDAG :: Ord a => Rel a -> [Set.Set a]
-topSortDAG r@(Rel m) = if Map.null m then [] else
+topSortDAGM :: Ord a => Map.Map a (Set.Set a) -> [Set.Set a]
+topSortDAGM m = if Map.null m then [] else
     let es = elemsSet m
         ml = Map.keysSet m Set.\\ es -- most left
-        Rel m2 = delSet ml r
+        m2 = delSetM ml m
         rs = es Set.\\ Map.keysSet m2 -- re-insert loose ends
-    in ml : topSortDAG (Rel $ Set.fold (flip Map.insert Set.empty) m2 rs)
+    in ml : topSortDAGM (Set.fold (`Map.insert` Set.empty) m2 rs)
+
+topSortDAG :: Ord a => Rel a -> [Set.Set a]
+topSortDAG = topSortDAGM . MapSet.toMap
 
 -- | topologically sort a closed relation (ignore isolated cycles)
 topSort :: Ord a => Rel a -> [Set.Set a]
 topSort r = let cs = sccOfClosure r in
       List.map (expandCycle cs) $ topSortDAG $ irreflex $ collaps cs r
+
+{- | Construct a precedence map from a closed relation. Indices range
+   between 1 and the second value that is output. -}
+toPrecMap :: Ord a => Rel a -> (Map.Map a Int, Int)
+toPrecMap = foldl ( \ (m1, c) s -> let n = c + 1 in
+                    (Set.fold (`Map.insert` n) m1 s, n))
+                 (Map.empty, 0) . topSort
 
 -- | find the cycle and add it to the result set
 expandCycle :: Ord a => [Set.Set a] -> Set.Set a -> Set.Set a
@@ -250,11 +225,11 @@ expandCycle cs s = case cs of
 {- | gets the most right elements of the irreflexive relation,
      unless no hierarchy is left then isolated nodes are output -}
 mostRightOfCollapsed :: Ord a => Rel a -> Set.Set a
-mostRightOfCollapsed r@(Rel m) = if Map.null m then Set.empty
-    else let Rel im = irreflex r
+mostRightOfCollapsed r = if MapSet.null r then Set.empty
+    else let im = MapSet.toMap $ irreflex r
              mr = elemsSet im Set.\\ Map.keysSet im
          in if Set.null mr then Map.keysSet $ Map.filterWithKey
-                ((==) . Set.singleton) m
+                ((==) . Set.singleton) $ MapSet.toMap r
             else mr
 
 {- |
@@ -265,7 +240,7 @@ find s such that x in s => forall y . yRx or not yRx and not xRy
  * strongly connected components (cycles) are treated as a compound node
 -}
 
-mostRight :: (Ord a) => Rel a -> (Set.Set a)
+mostRight :: Ord a => Rel a -> Set.Set a
 mostRight r = let
     cs = sccOfClosure r
     in expandCycle cs (mostRightOfCollapsed $ collaps cs r)
@@ -281,44 +256,45 @@ intransKernel r =
     let cs = sccOfClosure r
     in foldr addCycle (transReduce $ collaps cs r) cs
 
--- add a cycle given by a set in the collapsed node
+-- | add a cycle given by a set in the collapsed node
 addCycle :: Ord a => Set.Set a -> Rel a -> Rel a
 addCycle c r = if Set.null c then error "Common.Lib.Rel.addCycle" else
     let (a, b) = Set.deleteFindMin c
         (m, d) = Set.deleteFindMax c
-    in insert m a $ foldr (uncurry insert) (delete a a r) $
+    in MapSet.insert m a $ foldr (uncurry MapSet.insert) (MapSet.delete a a r) $
        zip (Set.toList d) (Set.toList b)
 
 {- | calculates if two given elements have a common left element
 
  * if one of the arguments is not present False is returned
 -}
-haveCommonLeftElem :: (Ord a) => a -> a -> Rel a -> Bool
+haveCommonLeftElem :: Ord a => a -> a -> Rel a -> Bool
 haveCommonLeftElem t1 t2 =
-    Map.fold(\ e -> (|| Set.member t1 e && Set.member t2 e)) False . toMap
+    Map.fold (\ e -> (|| Set.member t1 e && Set.member t2 e)) False
+    . MapSet.toMap
 
--- | partitions a set into a list of disjoint non-empty subsets
--- determined by the given function as equivalence classes
-partSet :: (Ord a) => (a -> a -> Bool) -> Set.Set a -> [(Set.Set a)]
+{- | partitions a set into a list of disjoint non-empty subsets
+determined by the given function as equivalence classes -}
+partSet :: Ord a => (a -> a -> Bool) -> Set.Set a -> [Set.Set a]
 partSet f = List.map Set.fromList . leqClasses f
 
--- | partitions a list into a list of disjoint non-empty lists
--- determined by the given function as equivalence classes
+{- | partitions a list into a list of disjoint non-empty lists
+determined by the given function as equivalence classes -}
 partList :: (a -> a -> Bool) -> [a] -> [[a]]
 partList f l = case l of
   [] -> []
   x : r -> let
-    (ds, es) = List.partition (List.null . filter (f x)) $ partList f r
+    (ds, es) = List.partition (not . any (f x)) $ partList f r
     in (x : concat es) : ds
 
 -- | Divide a Set (List) into equivalence classes w.r.t. eq
 leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
 leqClasses f = partList f . Set.toList
 
--- | flattens a list of non-empty sets and uses the minimal element of
--- each set to represent the set
-flatSet :: (Ord a) => [Set.Set a] -> Set.Set a
-flatSet = Set.fromList . List.map (\s -> if Set.null s
+{- | flattens a list of non-empty sets and uses the minimal element of
+each set to represent the set -}
+flatSet :: Ord a => [Set.Set a] -> Set.Set a
+flatSet = Set.fromList . List.map (\ s -> if Set.null s
                          then error "Common.Lib.Rel.flatSet"
                          else Set.findMin s)
 
@@ -326,9 +302,9 @@ flatSet = Set.fromList . List.map (\s -> if Set.null s
 
  * precondition: the relation must already be closed by transitive closure
 -}
-locallyFiltered :: (Ord a) => Rel a -> Bool
-locallyFiltered rel = (check . flatSet . partSet iso . mostRight) rel
-    where iso x y = member x y rel && member y x rel
+locallyFiltered :: Ord a => Rel a -> Bool
+locallyFiltered rel = check . flatSet . partSet iso $ mostRight rel
+    where iso x y = MapSet.member x y rel && MapSet.member y x rel
           check s = Set.null s ||
                   Set.fold (\ y ->
                             (&& not (haveCommonLeftElem x y rel))) True s'

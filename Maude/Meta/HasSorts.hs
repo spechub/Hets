@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE OverlappingInstances, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Accessing the Sorts of Maude data types

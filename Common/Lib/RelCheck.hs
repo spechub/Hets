@@ -16,10 +16,11 @@ module Common.Lib.RelCheck where
 
 import Test.QuickCheck
 import Common.Lib.Rel
+import Common.Lib.MapSet hiding (fromList)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-instance Arbitrary (Rel Int) where
+instance Arbitrary (MapSet Int Int) where
     arbitrary = do l0 <- arbitrary
                    l1 <- arbitrary
                    l2 <- arbitrary

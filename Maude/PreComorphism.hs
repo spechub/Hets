@@ -36,6 +36,7 @@ import Common.Result
 import Common.AS_Annotation
 import Common.ProofUtils (charMap)
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 
 import Comorphisms.GetPreludeLib (readLib)
 
@@ -216,7 +217,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
 -- | translates the Maude subsorts into CASL subsorts, and adds the subsorts
 -- for the kinds
 maudeSbs2caslSbs :: MSign.SubsortRel -> IdMap -> Rel.Rel CAS.SORT
-maudeSbs2caslSbs sbs im = Rel.fromDistinctMap m4
+maudeSbs2caslSbs sbs im = MapSet.fromMap m4
       where l = Map.toList $ Rel.toMap sbs
             l1 = [] -- map maudeSb2caslSb l
             l2 = idList2Subsorts $ Map.toList im
@@ -460,7 +461,7 @@ nonEqualitySens kind = [form'', comp_form'']
 axiomsSens :: IdMap -> MSign.OpMap -> [Named CAS.CASLFORMULA]
 axiomsSens im om = Map.fold (axiomsSensODS im) [] om
 
-axiomsSensODS :: IdMap -> MSign.OpDeclSet -> [Named CAS.CASLFORMULA] 
+axiomsSensODS :: IdMap -> MSign.OpDeclSet -> [Named CAS.CASLFORMULA]
                  -> [Named CAS.CASLFORMULA]
 axiomsSensODS im ods l = Set.fold (axiomsSensOD im) l ods
 
