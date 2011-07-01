@@ -36,7 +36,6 @@ import OWL2.ManchesterParser
 import OWL2.ManchesterPrint
 import OWL2.Symbols
 import OWL2.Print ()
-import OWL2.FunctionalPrint
 import OWL2.ATC_OWL2 ()
 import OWL2.Sign
 import OWL2.StaticAnalysis

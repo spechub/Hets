@@ -15,7 +15,7 @@ module OWL2.Taxonomy ( onto2Tax ) where
 
 import OWL2.MS
 import OWL2.Sign
-import OWL2.FunctionalPrint
+import OWL2.ManchesterPrint
 import OWL.ProvePellet
 
 import Common.AS_Annotation

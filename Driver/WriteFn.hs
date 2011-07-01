@@ -63,7 +63,7 @@ import VSE.ToSExpr
 
 #ifndef NOOWLLOGIC
 import OWL2.Logic_OWL2
-import OWL2.FunctionalPrint (printOWLBasicTheory)
+import OWL2.ManchesterPrint (printOWLBasicTheory)
 import OWL2.ManchesterParser (basicSpec)
 #endif
 

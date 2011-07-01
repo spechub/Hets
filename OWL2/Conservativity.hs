@@ -26,7 +26,7 @@ import GUI.Utils ()
 
 import OWL2.MS
 import OWL2.Morphism
-import OWL2.FunctionalPrint (printOWLBasicTheory)
+import OWL2.ManchesterPrint (printOWLBasicTheory)
 import OWL2.Sign
 
 import System.Directory

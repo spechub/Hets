@@ -14,29 +14,52 @@ module OWL2.ManchesterPrint where
 
 import Common.Doc
 import Common.DocUtils
-import Common.Keywords
+import Common.AS_Annotation
 
 import OWL2.AS
 import OWL2.MS
+import OWL2.Sign
 import OWL2.Print
 import OWL2.Keywords
 import OWL2.ColonKeywords
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
-printCharact :: String -> Doc
-printCharact = text
+-- | OWL2 signature printing
 
-instance Pretty Character where
-  pretty = printCharact . show
+printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
+printOWLBasicTheory (s, l) =
+  printSign s
+  $++$ vsep (map (pretty . sentence) l)
 
-instance Pretty a => Pretty (AnnotatedList a) where
-    pretty = printAnnotatedList
+instance Pretty Sign where
+    pretty = printSign
 
-printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
-printAnnotatedList (AnnotatedList l) =
-  vcat $ punctuate comma $ map
-    ( \ (ans, a) -> printAnnotations ans $+$ pretty a) l
+printSign :: Sign -> Doc
+printSign s =
+   let cs = concepts s
+       ts = datatypes s
+   in vcat (map (\ (c, l) -> hsep $ map text
+                 [prefixC, c ++ ":", '<' : l ++ ">"]
+                )
+      $ Map.toList $ Map.union (prefixMap s)
+      $ Map.fromList [ ("owl", "http://www.w3.org/2002/07/owl#")
+      , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+      , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
+      , ("", showQU dummyQName ++ "#") ] ) $++$
+   vcat (map (\ t -> keyword datatypeC <+> pretty t) $ Set.toList ts)
+   $++$ vcat (map (\ c -> keyword classC <+> pretty c) $ Set.toList cs)
+   $++$ vcat (map (\ o -> keyword objectPropertyC <+> pretty o)
+          $ Set.toList $ objectProperties s)
+   $++$ vcat (map (\ d -> keyword dataPropertyC <+> pretty d)
+          $ Set.toList $ dataProperties s)
+   $++$ vcat (map (\ i -> keyword individualC <+> pretty i)
+          $ Set.toList $ individuals s)
+   $++$ vcat (map (\ i -> keyword annotationPropertyC <+> pretty i)
+          $ Set.toList $ annotationRoles s)
 
+-- | Printing the frame bits and the axioms
 instance Pretty FrameBit where
     pretty = printFrameBit
 
@@ -86,11 +109,6 @@ printFact pf = case pf of
     DataPropertyFact pn dp l -> printPositiveOrNegative pn
            <+> pretty dp <+> pretty l
 
-printPositiveOrNegative :: PositiveOrNegative -> Doc
-printPositiveOrNegative x = case x of
-    Positive -> empty
-    Negative -> keyword notS
-
 instance Pretty Frame where
     pretty = printFrame
 
@@ -116,6 +134,7 @@ instance Pretty Axiom where
 printAxiom :: Axiom -> Doc
 printAxiom (PlainAxiom e fb) = printFrame (Frame e [fb])
 
+-- | Printing the ontology
 instance Pretty MOntology where
     pretty = printOntology
 

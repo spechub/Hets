@@ -30,7 +30,7 @@ module OWL2.Morphism
 import OWL2.AS
 import OWL2.MS
 import OWL2.Sign
-import OWL2.FunctionalPrint
+import OWL2.ManchesterPrint()
 import OWL2.StaticAnalysis
 import OWL2.Symbols
 
