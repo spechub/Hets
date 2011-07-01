@@ -40,7 +40,7 @@ import OWL2.ATC_OWL2 ()
 import OWL2.Sign
 import OWL2.StaticAnalysis
 import OWL2.Morphism
---import OWL2.ProvePellet
+import OWL2.ProvePellet
 import OWL2.ProveFact
 import OWL2.Conservativity
 import OWL2.ColimSign
@@ -104,8 +104,10 @@ instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                OWLMorphism Entity RawSymb ProofTree where
          empty_proof_tree OWL2 = emptyProofTree
 #ifdef UNI_PACKAGE
-         provers OWL2 = unsafeFileCheck "OWLFactProver.jar" hetsOWLenv factProver
-         cons_checkers OWL2 = unsafeFileCheck "OWLFact.jar" hetsOWLenv factConsChecker
+         provers OWL2 = unsafeFileCheck pelletJar pelletEnv pelletProver
+         cons_checkers OWL2 =
+             (unsafeFileCheck pelletJar pelletEnv pelletConsChecker) ++
+             (unsafeFileCheck "OWLFact.jar" hetsOWLenv factConsChecker)
          conservativityCheck OWL2 = concatMap
            (\ ct -> unsafeFileCheck localityJar hetsOWLenv
               $ ConservativityChecker ("Locality_" ++ ct)
