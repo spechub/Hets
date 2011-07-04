@@ -160,9 +160,9 @@ ledge ga dg (f, t, lbl) = let
   mkMor n = add_attr (mkAttr "morphismsource" $ getNameOfNode n dg) mor
   lnkSt = case thmLinkStatus typ of
          Nothing -> []
-         Just tls -> case tls of 
-            LeftOpen -> [] 
-            Proven r ls -> dgrule r ++ map (\ e -> 
+         Just tls -> case tls of
+            LeftOpen -> []
+            Proven r ls -> dgrule r ++ map (\ e ->
                 add_attr (mkAttr "linkref" $ showEdgeId e)
                 $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls)
   in add_attrs
