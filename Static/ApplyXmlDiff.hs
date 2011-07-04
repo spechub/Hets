@@ -19,21 +19,24 @@ import Control.Monad
 
 import Text.XML.Light
 
-{-applyXmlDiffDG :: LibEnv -> LibName -> String -> DGraph
-               -> ResultT IO (LibName, LibEnv)
-applyXmlDiffDG = undefined -}
-
 applyXmlDiff :: Monad m => Element -> String -> m Element
 applyXmlDiff el diff = do
   cs <- anaXUpdates diff
   foldM changeXml el cs
 
 changeXml :: Monad m => Element -> Change -> m Element
-changeXml el (Change csel expr) = let
-  -- TODO modChName :: Expr -> m QName
-  modChName = undefined
-  modChld = findChild modChName el
-  -- TODO modify modChld
-  chld' = undefined
-  -- TODO reinsert chld into parent element
-  in return el { elContent = chld' : elContent el }
+changeXml el (Change csel expr) = case csel of
+    Add _ addCs -> foldM insertXml el addCs where
+      insertXml e' c = case c of
+        AddElem e -> return e' { elContent = Elem e : elContent e' }
+        _ -> fail $ "no implementation for " ++ show c
+    Remove -> undefined
+    _ -> fail $ "no implementation for " ++ show csel
+
+removeXml :: (Element -> Bool) -> Element -> Element
+removeXml f e = let ct = elContent e in
+  e { elContent = foldr (\ c cs -> case c of
+        Elem e' -> if f e' then cs else (Elem e') : cs
+        _ -> c : cs ) [] ct }
+
+
