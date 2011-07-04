@@ -19,6 +19,7 @@ module Common.Lib.MapSet
   , setElems
   , setMember
   , setInsert
+  , setAll
   , MapSet
   , toMap
   , fromDistinctMap
@@ -30,6 +31,7 @@ module Common.Lib.MapSet
   , keysSet
   , elems
   , insert
+  , update
   , lookup
   , member
   , delete
@@ -38,14 +40,16 @@ module Common.Lib.MapSet
   , intersection
   , map
   , mapMonotonic
+  , mapSet
   , foldWithKey
   , filter
+  , all
   , isSubmapOf
   , preImage
   , transpose
   ) where
 
-import Prelude hiding (filter, map, null, lookup)
+import Prelude hiding (all, filter, map, null, lookup)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
@@ -72,6 +76,16 @@ setMember k v = Set.member v . setLookup k
 setInsert :: (Ord k, Ord a) => k -> a -> Map.Map k (Set.Set a)
   -> Map.Map k (Set.Set a)
 setInsert k v m = Map.insert k (Set.insert v $ setLookup k m) m
+
+-- | update an element set under the given key
+setUpdate :: (Ord k, Ord a) => (Set.Set a -> Set.Set a) -> k
+  -> Map.Map k (Set.Set a) -> Map.Map k (Set.Set a)
+setUpdate f k m = let s = f $ setLookup k m in
+  if Set.null s then Map.delete k m else Map.insert k s m
+
+-- | test all elements of a set
+setAll :: (a -> Bool) -> Set.Set a -> Bool
+setAll p = List.all p . Set.toList
 
 -- * protected maps of set as a newtype
 
@@ -127,6 +141,11 @@ lookup k = setLookup k . toMap
 insert :: (Ord a, Ord b) => a -> b -> MapSet a b -> MapSet a b
 insert k v = MapSet . setInsert k v . toMap
 
+-- | update an element set under the given key
+update :: (Ord a, Ord b) => (Set.Set b -> Set.Set b) -> a -> MapSet a b
+  -> MapSet a b
+update f k = MapSet . setUpdate f k . toMap
+
 -- | test for an element under a key
 member :: (Ord a, Ord b) => a -> b -> MapSet a b -> Bool
 member k v = setMember k v . toMap
@@ -162,6 +181,10 @@ map f = MapSet . Map.map (Set.map f) . toMap
 mapMonotonic :: (b -> c) -> MapSet a b -> MapSet a c
 mapMonotonic f = MapSet . Map.map (Set.mapMonotonic f) . toMap
 
+-- | apply a function to all element sets
+mapSet :: Ord a => (Set.Set b -> Set.Set c) -> MapSet a b -> MapSet a c
+mapSet f = fromMap . Map.map f . toMap
+
 -- | fold over all elements
 foldWithKey :: (a -> b -> c -> c) -> c -> MapSet a b -> c
 foldWithKey f e = Map.foldWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
@@ -170,13 +193,17 @@ foldWithKey f e = Map.foldWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
 filter :: (Ord a, Ord b) => (b -> Bool) -> MapSet a b -> MapSet a b
 filter p = fromMap . Map.map (Set.filter p) . toMap
 
+-- | test all elements
+all :: Ord b => (b -> Bool) -> MapSet a b -> Bool
+all p = setAll p . elems
+
 -- | submap test
 isSubmapOf :: (Ord a, Ord b) => MapSet a b -> MapSet a b -> Bool
 isSubmapOf (MapSet m) = Map.isSubmapOfBy Set.isSubsetOf m . toMap
 
 -- | pre-image of a map
 preImage :: (Ord a, Ord b) => Map.Map a b -> MapSet b a
-preImage = Map.foldWithKey (\ k v -> insert v k) empty
+preImage = Map.foldWithKey (flip insert) empty
 
 -- | transpose a map set
 transpose :: (Ord a, Ord b) => MapSet a b -> MapSet b a
