@@ -36,12 +36,14 @@ module Common.Lib.Rel
     , MapSet.null, MapSet.empty, MapSet.member
     , MapSet.toMap, MapSet.insert, MapSet.union
     , MapSet.intersection, MapSet.difference
+    , MapSet.transpose
+    , MapSet.setInsert
     , isSubrelOf, path
     , succs, predecessors, irreflex, sccOfClosure
     , transClosure, fromList, toList, image, toPrecMap
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
-    , transpose, transReduce, setInsert, setToMap
+    , transReduce, setToMap
     , locallyFiltered
     , flatSet, partSet, partList, leqClasses
     ) where
@@ -71,7 +73,7 @@ reachable r a = Set.fold reach Set.empty $ succs r a where
 
 -- | predecessors of one node in the given set of a nodes
 preds :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> b -> Set.Set a -> Set.Set a
-preds m a = Set.filter ( \ s -> MapSet.memberInSet s a m)
+preds m a = Set.filter ( \ s -> MapSet.setMember s a m)
 
 -- | get direct predecessors inefficiently
 predecessors :: Ord a => Rel a -> a -> Set.Set a
@@ -85,10 +87,6 @@ path a b r = Set.member b $ reachable r a
 transClosure :: Ord a => Rel a -> Rel a
 transClosure r = MapSet.fromMap . Map.mapWithKey ( \ k _ -> reachable r k)
   $ MapSet.toMap r
-
--- | get reverse relation
-transpose :: Ord a => Rel a -> Rel a
-transpose = fromList . List.map ( \ (a, b) -> (b, a)) . toList
 
 -- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
@@ -113,11 +111,11 @@ setToMap = Map.fromDistinctAscList . List.map (\ a -> (a, a)) . Set.toList
 
 -- | restrict to elements not in the input set
 delSetM :: Ord a => Set.Set a -> Map.Map a (Set.Set a) -> Map.Map a (Set.Set a)
-delSetM s m = MapSet.rmNull $ Map.map (Set.\\ s) m Map.\\ setToMap s
+delSetM s m = Map.map (Set.\\ s) m Map.\\ setToMap s
 
 -- | restrict to elements not in the input set
 delSet :: Ord a => Set.Set a -> Rel a -> Rel a
-delSet s = MapSet.fromDistinctMap . delSetM s . MapSet.toMap
+delSet s = MapSet.fromMap . delSetM s . MapSet.toMap
 
 {- | restrict strongly connected components to its minimal representative
      (input sets must be non-null). Direct cycles may remain. -}
@@ -143,25 +141,14 @@ toList :: Rel a -> [(a, a)]
 toList = concatMap (\ (a, bs) -> List.map (\ b -> (a, b)) bs)
   . MapSet.toList
 
--- | Insert into a set of values
-setInsert :: (Ord k, Ord a) => k -> a -> Map.Map k (Set.Set a)
-          -> Map.Map k (Set.Set a)
-setInsert kx x t =
-    Map.insert kx (Set.insert x $ Map.findWithDefault Set.empty kx t) t
-
 -- | the image of a map
 image :: (Ord k, Ord a) => Map.Map k a -> Set.Set k -> Set.Set a
-image f s =
-  Set.fold ins Set.empty s
-  where ins x = case Map.lookup x f of
-                 Nothing -> id
-                 Just y -> Set.insert y
+image f = Set.fromList . Map.elems . Map.intersection f . setToMap
 
 -- | map the values of a relation
 map :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
-map f = MapSet.fromDistinctMap . Map.foldWithKey
-    ( \ a -> Map.insertWith Set.union (f a) . Set.map f) Map.empty
-    . MapSet.toMap
+map f = MapSet.foldWithKey
+    ( \ a b -> MapSet.insert (f a) $ f b) MapSet.empty
 
 -- | Restriction of a relation under a set
 restrict :: Ord a => Rel a -> Set.Set a -> Rel a
@@ -185,15 +172,11 @@ fromAscList = MapSet.fromDistinctMap
 
 -- | all nodes of the edges
 nodes :: Ord a => Rel a -> Set.Set a
-nodes r = let m = MapSet.toMap r in
-  Set.union (Map.keysSet m) $ elemsSet m
-
-elemsSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
-elemsSet = Set.unions . Map.elems
+nodes r = Set.union (MapSet.keysSet r) $ MapSet.elems r
 
 topSortDAGM :: Ord a => Map.Map a (Set.Set a) -> [Set.Set a]
 topSortDAGM m = if Map.null m then [] else
-    let es = elemsSet m
+    let es = MapSet.setElems m
         ml = Map.keysSet m Set.\\ es -- most left
         m2 = delSetM ml m
         rs = es Set.\\ Map.keysSet m2 -- re-insert loose ends
@@ -226,8 +209,8 @@ expandCycle cs s = case cs of
      unless no hierarchy is left then isolated nodes are output -}
 mostRightOfCollapsed :: Ord a => Rel a -> Set.Set a
 mostRightOfCollapsed r = if MapSet.null r then Set.empty
-    else let im = MapSet.toMap $ irreflex r
-             mr = elemsSet im Set.\\ Map.keysSet im
+    else let ir = irreflex r
+             mr = MapSet.elems ir Set.\\ MapSet.keysSet ir
          in if Set.null mr then Map.keysSet $ Map.filterWithKey
                 ((==) . Set.singleton) $ MapSet.toMap r
             else mr

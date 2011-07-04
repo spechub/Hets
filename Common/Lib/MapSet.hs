@@ -15,17 +15,20 @@ to avoid differences due to empty set values versus undefined map keys.
 -}
 
 module Common.Lib.MapSet
-  ( MapSet
+  ( setLookup
+  , setElems
+  , setMember
+  , setInsert
+  , MapSet
   , toMap
   , fromDistinctMap
-  , rmNull
-  , lookupSet
-  , memberInSet
   , fromMap
   , empty
   , null
   , fromList
   , toList
+  , keysSet
+  , elems
   , insert
   , lookup
   , member
@@ -35,14 +38,42 @@ module Common.Lib.MapSet
   , intersection
   , map
   , mapMonotonic
+  , foldWithKey
   , filter
   , isSubmapOf
+  , preImage
+  , transpose
   ) where
 
 import Prelude hiding (filter, map, null, lookup)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
+
+-- * functions directly working over unwrapped maps of sets
+
+-- | remove empty elements from the map
+rmNullSets :: Ord a => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
+rmNullSets = Map.filter (not . Set.null)
+
+-- | get elements for a key
+setLookup :: Ord a => a -> Map.Map a (Set.Set b) -> Set.Set b
+setLookup = Map.findWithDefault Set.empty
+
+-- | all elementes united
+setElems :: Ord b => Map.Map a (Set.Set b) -> Set.Set b
+setElems = Set.unions . Map.elems
+
+-- | test for an element under a key
+setMember :: (Ord a, Ord b) => a -> b -> Map.Map a (Set.Set b) -> Bool
+setMember k v = Set.member v . setLookup k
+
+-- | insert into a set of values
+setInsert :: (Ord k, Ord a) => k -> a -> Map.Map k (Set.Set a)
+  -> Map.Map k (Set.Set a)
+setInsert k v m = Map.insert k (Set.insert v $ setLookup k m) m
+
+-- * protected maps of set as a newtype
 
 -- | a map to non-empty sets
 newtype MapSet a b = MapSet { toMap :: Map.Map a (Set.Set b) }
@@ -51,23 +82,16 @@ newtype MapSet a b = MapSet { toMap :: Map.Map a (Set.Set b) }
 instance (Show a, Show b) => Show (MapSet a b) where
     show = show . toMap
 
--- | unsafe variant of fromMap
+instance (Ord a, Read a, Ord b, Read b) => Read (MapSet a b) where
+    readsPrec d = List.map (\ (m, r) -> (fromMap m , r)) . readsPrec d
+
+-- | unsafe variant of fromMap (without removal of empty sets)
 fromDistinctMap :: Map.Map a (Set.Set b) -> MapSet a b
 fromDistinctMap = MapSet
 
-rmNull :: Ord a => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
-rmNull = Map.filter (not . Set.null)
-
-lookupSet :: Ord a => a -> Map.Map a (Set.Set b) -> Set.Set b
-lookupSet = Map.findWithDefault Set.empty
-
--- | test for an element under a key
-memberInSet :: (Ord a, Ord b) => a -> b -> Map.Map a (Set.Set b) -> Bool
-memberInSet k v = Set.member v . lookupSet k
-
--- | remove empty values from the map
+-- | remove empty values from the map before applying wrapping constructor
 fromMap :: Ord a => Map.Map a (Set.Set b) -> MapSet a b
-fromMap = MapSet . rmNull
+fromMap = MapSet . rmNullSets
 
 -- | the empty relation
 empty :: MapSet a b
@@ -87,17 +111,25 @@ fromList = fromMap
 toList :: MapSet a b -> [(a, [b])]
 toList = List.map (\ (a, bs) -> (a, Set.toList bs)) . Map.toList . toMap
 
--- | insert an element under the given key
-insert :: (Ord a, Ord b) => a -> b -> MapSet a b -> MapSet a b
-insert k v = MapSet . Map.insertWith Set.union k (Set.singleton v) . toMap
+-- | keys for non-empty elements
+keysSet :: MapSet a b -> Set.Set a
+keysSet = Map.keysSet . toMap
+
+-- | all elementes united
+elems :: Ord b => MapSet a b -> Set.Set b
+elems = setElems . toMap
 
 -- | get elements for a key
 lookup :: Ord a => a -> MapSet a b -> Set.Set b
-lookup k = lookupSet k . toMap
+lookup k = setLookup k . toMap
+
+-- | insert an element under the given key
+insert :: (Ord a, Ord b) => a -> b -> MapSet a b -> MapSet a b
+insert k v = MapSet . setInsert k v . toMap
 
 -- | test for an element under a key
 member :: (Ord a, Ord b) => a -> b -> MapSet a b -> Bool
-member k v = memberInSet k v . toMap
+member k v = setMember k v . toMap
 
 -- | delete an element under the given key
 delete :: (Ord a, Ord b) => a -> b -> MapSet a b -> MapSet a b
@@ -130,6 +162,10 @@ map f = MapSet . Map.map (Set.map f) . toMap
 mapMonotonic :: (b -> c) -> MapSet a b -> MapSet a c
 mapMonotonic f = MapSet . Map.map (Set.mapMonotonic f) . toMap
 
+-- | fold over all elements
+foldWithKey :: (a -> b -> c -> c) -> c -> MapSet a b -> c
+foldWithKey f e = Map.foldWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
+
 -- | filter elements
 filter :: (Ord a, Ord b) => (b -> Bool) -> MapSet a b -> MapSet a b
 filter p = fromMap . Map.map (Set.filter p) . toMap
@@ -137,3 +173,11 @@ filter p = fromMap . Map.map (Set.filter p) . toMap
 -- | submap test
 isSubmapOf :: (Ord a, Ord b) => MapSet a b -> MapSet a b -> Bool
 isSubmapOf (MapSet m) = Map.isSubmapOfBy Set.isSubsetOf m . toMap
+
+-- | pre-image of a map
+preImage :: (Ord a, Ord b) => Map.Map a b -> MapSet b a
+preImage = Map.foldWithKey (\ k v -> insert v k) empty
+
+-- | transpose a map set
+transpose :: (Ord a, Ord b) => MapSet a b -> MapSet b a
+transpose = foldWithKey (flip insert) empty
