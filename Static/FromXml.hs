@@ -35,7 +35,7 @@ import Data.List (partition, intercalate)
 import Data.Maybe (fromMaybe)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.Map as Map (lookup, insert, empty)
-import qualified Data.Set as Set (Set)
+import qualified Data.Set as Set (Set, insert, empty)
 
 import Driver.Options
 import Driver.ReadFn (findFileOfLibNameAux)
@@ -122,10 +122,10 @@ insertThmLinks lg links (dg, lv) = do
   dg' <- foldM ins' dg links
   return (dg', lv) where
     ins' dgR l = do
-        (i, mr, tp, ei) <- getTypeAndMorphism lg dgR l
+        (i, mr, tp) <- getTypeAndMorphism lg dgR l
         (j, gsig) <- signOfNode (trg l) dgR
-        morph <- finalizeMorphism lg False mr gsig
-        insertLink i j morph tp ei dgR
+        lkLab <- finalizeLink lg l mr gsig tp
+        insertLink i j lkLab dgR
 
 {- | main loop: in every step, all links are collected of which the source node
 has been written into DGraph already. Upon these, further nodes are written in
@@ -165,24 +165,22 @@ insertNodeAndLinks :: HetcatsOpts -> LogicGraph -> NamedNode -> [NamedLink]
                  -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
 insertNodeAndLinks opts lg trgNd links (dg, lv) = do
   mrs <- mapM (getTypeAndMorphism lg dg) links
-  -- only the links intermediate morphisms are merged for trgNode signature
-  gsig1 <- liftR $ gsigManyUnion lg $ map (\ (_, m, _, _) -> cod m) mrs
-  (gsig', hid) <- case links of
+  gsig <- case links of
       [Link sr _ (DGEdgeType (FreeOrCofreeDef _) _) _] -> do
         (_, gs) <- signOfNode sr dg
-        return (gs, False)
-      _ -> let tps = map (edgeTypeModInc . lType) links in
-        if all (== HidingDef) tps then return (gsig1, True)
-        else if all (`elem` [LocalDef, GlobalDef, HetDef]) tps
-          then return (gsig1, False)
-          else fail "illegal link type"
-  let gt = case gsig' of
+        return gs
+      _ -> let tps = map (edgeTypeModInc . lType) links
+               gs' = liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
+        in if all (== HidingDef) tps then gs'
+        else if all (`elem` [LocalDef, GlobalDef, HetDef]) tps then gs'
+        else fail "illegal link type(s)"
+  let gt = case gsig of
              G_sign lid sg sId -> noSensGTheory lid sg sId
   (dg', lv') <- insertNode opts (Left gt) trgNd (dg, lv)
   (j, gsig2) <- signOfNode (fst trgNd) dg'
-  dg'' <- foldM ( \ dgR (i, mr, tp, ei) -> do
-                    morph <- finalizeMorphism lg hid mr gsig2
-                    insertLink i j morph tp ei dgR) dg' mrs
+  dg'' <- foldM ( \ dgR ((i, mr, tp), l) -> do
+                    lkLab <- finalizeLink lg l mr gsig2 tp
+                    insertLink i j lkLab dgR) dg' $ zip mrs links
   return (dg'', lv')
 
 {- ------------------------------------------------------
@@ -190,24 +188,27 @@ Reconstruct the Development Graph, [link insertion] -}
 
 {- | given a links intermediate morphism and its target nodes signature,
 this function calculates the final morphism for this link -}
-finalizeMorphism :: LogicGraph -> Bool -> GMorphism -> G_sign
-                 -> ResultT IO GMorphism
-finalizeMorphism lg hid mr sg = liftR $ if hid
-  then ginclusion lg sg (cod mr)
-  else do
-    mr1 <- ginclusion lg (cod mr) sg
-    composeMorphisms mr mr1
+finalizeLink :: LogicGraph -> NamedLink -> GMorphism -> G_sign -> DGLinkType
+             -> ResultT IO DGLinkLab
+finalizeLink lg (Link _ _ lTp l) mr sg tp = do
+  mr' <- liftR $ case edgeTypeModInc lTp of
+    HidingDef -> ginclusion lg sg (cod mr)
+    _ -> do
+      mr1 <- ginclusion lg (cod mr) sg
+      composeMorphisms mr mr1
+  lId <- getAttrVal "linkid" l
+  return $ defDGLinkId mr' tp SeeTarget $ readEdgeId lId
 
 -- | inserts a new link into the dgraph
-insertLink :: Graph.Node -> Graph.Node -> GMorphism -> DGLinkType -> EdgeId
+insertLink :: Graph.Node -> Graph.Node -> DGLinkLab
            -> DGraph -> ResultT IO DGraph
-insertLink i j mr tp ei = return .
-  insLEdgeNubDG (i, j, defDGLinkId mr tp SeeTarget ei)
+insertLink i j lk = return .
+  insLEdgeNubDG (i, j, lk)
 
 {- | extracts the intermediate morphism for a link, using the xml data and the
 signature of the (previously inserted) source node -}
 getTypeAndMorphism :: LogicGraph -> DGraph -> NamedLink
-                -> ResultT IO (Graph.Node, GMorphism, DGLinkType, EdgeId)
+                -> ResultT IO (Graph.Node, GMorphism, DGLinkType)
 getTypeAndMorphism lg dg (Link srN _ tp l) =
   case findChild (unqual "GMorphism") l of
     Nothing -> fail "Links morphism description is missing!"
@@ -226,15 +227,21 @@ getTypeAndMorphism lg dg (Link srN _ tp l) =
           (i, sg1) <- signOfNode srN dg
           (sg2, lTp) <- getTypeAndMorAux lg dg (edgeTypeModInc tp)
               (getAttrVal "morphismsource" mor) sg1 cc rl
+              $ findChildren (unqual "ProofBasis") l
           mr' <- liftR $ getGMorphism lg sg2 nm symbs
-          lId <- getAttrVal "linkid" l
-          return (i, mr', lTp, EdgeId $ fromMaybe (-1) $ readMaybe lId)
+          return (i, mr', lTp)
 
 {- depending on the type of the link, the correct DGLinkType and the signature
 for the (external) morphism are extracted here -}
-getTypeAndMorAux :: LogicGraph -> DGraph -> DGEdgeTypeModInc -> Maybe String
-       -> G_sign -> Conservativity -> String -> ResultT IO (G_sign, DGLinkType)
-getTypeAndMorAux lg dg eTp mSrc sg@(G_sign slid _ _) cc rl = let
+getTypeAndMorAux :: LogicGraph -> DGraph
+                 -> DGEdgeTypeModInc -- ^ convert into DGLinkType
+                 -> Maybe String -- ^ maybe morphismSource
+                 -> G_sign -- ^ source nodes signature
+                 -> Conservativity
+                 -> String -- ^ DGRule
+                 -> [Element] -- ^ ProofBasis-Elements
+                 -> ResultT IO (G_sign, DGLinkType)
+getTypeAndMorAux lg dg eTp mSrc sg@(G_sign slid _ _) cc rl prRef = let
   emptySig = G_sign slid (ext_empty_signature slid) startSigId
   mkRtVAL sg' tp = return (sg', tp)
   in case eTp of
@@ -249,10 +256,13 @@ getTypeAndMorAux lg dg eTp mSrc sg@(G_sign slid _ _) cc rl = let
           (j, sg') <- signOfNode ms dg
           return (sg', JustNode $ NodeSig j sg')
       mkRtVAL sg' $ FreeOrCofreeDefLink fc mNd
-    ThmType thTp prv _ _ -> let
-      lStat = if not prv then LeftOpen
-          else Proven (DGRule rl) emptyProofBasis
-      in case thTp of
+    ThmType thTp prv _ _ -> do
+      prBasis <- foldM (\ pbR e -> do
+          lref <- getAttrVal "linkref" e
+          return $ Set.insert (readEdgeId lref) pbR) Set.empty prRef
+      let lStat = if not prv then LeftOpen
+            else Proven (DGRule rl) $ ProofBasis prBasis
+      case thTp of
         HidingThm -> do
           (i', sg') <- case mSrc of
             Just ms -> signOfNode ms dg
@@ -417,6 +427,9 @@ source and target nodes (used for error messages). -}
 printLinks :: [NamedLink] -> String
 printLinks = let show' l = src l ++ " -> " ++ trg l in
   unlines . map show'
+
+readEdgeId :: String -> EdgeId
+readEdgeId = EdgeId . fromMaybe (-1) . readMaybe
 
 -- | creates an entirely empty theory
 emptyTheory :: AnyLogic -> G_theory
