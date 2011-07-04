@@ -122,10 +122,10 @@ insertThmLinks lg links (dg, lv) = do
   dg' <- foldM ins' dg links
   return (dg', lv) where
     ins' dgR l = do
-        (i, mr, tp) <- getTypeAndMorphism lg dgR l
+        (i, mr, tp, ei) <- getTypeAndMorphism lg dgR l
         (j, gsig) <- signOfNode (trg l) dgR
         morph <- finalizeMorphism lg False mr gsig
-        insertLink i j morph tp dgR
+        insertLink i j morph tp ei dgR
 
 {- | main loop: in every step, all links are collected of which the source node
 has been written into DGraph already. Upon these, further nodes are written in
@@ -165,7 +165,8 @@ insertNodeAndLinks :: HetcatsOpts -> LogicGraph -> NamedNode -> [NamedLink]
                  -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
 insertNodeAndLinks opts lg trgNd links (dg, lv) = do
   mrs <- mapM (getTypeAndMorphism lg dg) links
-  gsig1 <- liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
+  -- only the links intermediate morphisms are merged for trgNode signature
+  gsig1 <- liftR $ gsigManyUnion lg $ map (\ (_, m, _, _) -> cod m) mrs
   (gsig', hid) <- case links of
       [Link sr _ (DGEdgeType (FreeOrCofreeDef _) _) _] -> do
         (_, gs) <- signOfNode sr dg
@@ -179,9 +180,9 @@ insertNodeAndLinks opts lg trgNd links (dg, lv) = do
              G_sign lid sg sId -> noSensGTheory lid sg sId
   (dg', lv') <- insertNode opts (Left gt) trgNd (dg, lv)
   (j, gsig2) <- signOfNode (fst trgNd) dg'
-  dg'' <- foldM ( \ dgR (i, mr, tp) -> do
+  dg'' <- foldM ( \ dgR (i, mr, tp, ei) -> do
                     morph <- finalizeMorphism lg hid mr gsig2
-                    insertLink i j morph tp dgR ) dg' mrs
+                    insertLink i j morph tp ei dgR) dg' mrs
   return (dg'', lv')
 
 {- ------------------------------------------------------
@@ -198,15 +199,15 @@ finalizeMorphism lg hid mr sg = liftR $ if hid
     composeMorphisms mr mr1
 
 -- | inserts a new link into the dgraph
-insertLink :: Graph.Node -> Graph.Node -> GMorphism -> DGLinkType -> DGraph
-           -> ResultT IO DGraph
-insertLink i j mr tp = return .
-  insLEdgeNubDG (i, j, defDGLink mr tp SeeTarget)
+insertLink :: Graph.Node -> Graph.Node -> GMorphism -> DGLinkType -> EdgeId
+           -> DGraph -> ResultT IO DGraph
+insertLink i j mr tp ei = return .
+  insLEdgeNubDG (i, j, defDGLinkId mr tp SeeTarget ei)
 
 {- | extracts the intermediate morphism for a link, using the xml data and the
 signature of the (previously inserted) source node -}
 getTypeAndMorphism :: LogicGraph -> DGraph -> NamedLink
-                -> ResultT IO (Graph.Node, GMorphism, DGLinkType)
+                -> ResultT IO (Graph.Node, GMorphism, DGLinkType, EdgeId)
 getTypeAndMorphism lg dg (Link srN _ tp l) =
   case findChild (unqual "GMorphism") l of
     Nothing -> fail "Links morphism description is missing!"
@@ -226,7 +227,8 @@ getTypeAndMorphism lg dg (Link srN _ tp l) =
           (sg2, lTp) <- getTypeAndMorAux lg dg (edgeTypeModInc tp)
               (getAttrVal "morphismsource" mor) sg1 cc rl
           mr' <- liftR $ getGMorphism lg sg2 nm symbs
-          return (i, mr', lTp)
+          lId <- getAttrVal "linkid" l
+          return (i, mr', lTp, EdgeId $ fromMaybe (-1) $ readMaybe lId)
 
 {- depending on the type of the link, the correct DGLinkType and the signature
 for the (external) morphism are extracted here -}

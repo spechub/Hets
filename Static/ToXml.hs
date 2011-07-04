@@ -100,7 +100,6 @@ lnode ga lenv (_, lbl) =
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
-      sigxml = prettyElem "Signature" ga $ dgn_sign lbl
   in add_attrs (mkNameAttr (showName nm)
     : if not (isDGRef lbl) then case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkAttr "logic" (show slid)
@@ -159,17 +158,20 @@ ledge ga dg (f, t, lbl) = let
   typ = dgl_type lbl
   mor = gmorph ga $ dgl_morphism lbl
   mkMor n = add_attr (mkAttr "morphismsource" $ getNameOfNode n dg) mor
-  rule = case thmLinkStatus typ of
-      -- writing out ProofBasis was removed with rev. 15224
-      Just (Proven r _) -> dgrule r
-      _ -> []
+  lnkSt = case thmLinkStatus typ of
+         Nothing -> []
+         Just tls -> case tls of 
+            LeftOpen -> [] 
+            Proven r ls -> dgrule r ++ map (\ e -> 
+                add_attr (mkAttr "linkref" $ showEdgeId e)
+                $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls)
   in add_attrs
   [ mkAttr "source" $ getNameOfNode f dg
   , mkAttr "target" $ getNameOfNode t dg
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl ]
   $ unode "DGLink"
-    $ unode "Type" (getDGLinkType lbl)
-    : rule ++ consStatus (getLinkConsStatus typ)
+    $ unode "Type" (getDGLinkType lbl) : lnkSt
+    ++ consStatus (getLinkConsStatus typ)
     ++ [case typ of
          HidingFreeOrCofreeThm _ n _ _ -> mkMor n
          FreeOrCofreeDefLink _ (JustNode ns) -> mkMor $ getNode ns

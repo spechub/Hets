@@ -418,6 +418,9 @@ same names for different links. -}
 defDGLink m ty orig = mkDGLink m ty orig (makeName $ mkSimpleId "")
                       defaultEdgeId
 
+defDGLinkId :: GMorphism -> DGLinkType -> DGLinkOrigin -> EdgeId -> DGLinkLab
+defDGLinkId m ty orig ei = (defDGLink m ty orig) { dgl_id = ei }
+
 globDefLink :: GMorphism -> DGLinkOrigin -> DGLinkLab
 globDefLink m = defDGLink m globalDef
 
