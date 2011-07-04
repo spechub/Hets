@@ -8,6 +8,7 @@ import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.io.OWLRendererException;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjectRenderer;
+import org.coode.owlapi.owlxml.renderer.OWLXMLRenderer;
 
 import java.io.BufferedReader;
 import java.io.PrintWriter;
@@ -36,6 +37,7 @@ public class OWL2Parser {
 	private static ArrayList<OWLOntology> haveImportsList = new ArrayList<OWLOntology>();
 	private static Map m = new HashMap();  
 	private static Set s = new HashSet();
+	private static boolean OP;
 
 	public static void main(String[] args) {
 		
@@ -51,10 +53,21 @@ public class OWL2Parser {
 		try {
 			IRI iri = IRI.create(args[0]);
 			OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-			if (args.length == 2) {
+			if (args.length == 3) {
 				filename = args[1];
 				out = new BufferedWriter(new FileWriter(filename));
+				if (args[2].equals("xml"))
+					OP = true;
+				else
+					OP = false;
+
 			} else {
+				if (args.length == 2)	{
+					if (args[1].equals("xml"))
+						OP = true;
+					else
+						OP = false;
+				}
 				out = new BufferedWriter(openForFile(null));
 			}
 						
@@ -69,7 +82,10 @@ public class OWL2Parser {
 	
 			if(loadedImportsList.size() == 0)
 			{
-				parse(ontology,out);
+				if (OP)
+					parse2xml(ontology, out, manager);			
+				else
+					parse(ontology,out);
 			}	
 
 			else {
@@ -116,7 +132,10 @@ public class OWL2Parser {
 					OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
 					
 					ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (manager);
-					rendi.render(merged,out);
+					if (OP)
+						parse2xml(merged, out, manager);	
+					else
+						rendi.render(merged,out);
 					}
 				else 	
 					{
@@ -182,7 +201,10 @@ public class OWL2Parser {
 		while(it.hasNext())	
 			{
 			OWLOntology onto = (OWLOntology)it.next();
-			parse(onto,out);
+			if (OP)
+				parse2xml(onto, out, onto.getOWLOntologyManager());
+			else 
+				parse(onto,out);
 			s.add(onto);
 			m.remove(onto);
 			parseImports(out);
@@ -198,7 +220,10 @@ public class OWL2Parser {
 	
 			if(checkset(pairs.getValue())) {
 				OWLOntology onto = (OWLOntology)pairs.getKey();
-				parse(onto,out);
+				if (OP)
+					parse2xml(onto, out, onto.getOWLOntologyManager());
+				else
+					parse(onto,out);
 				s.add((OWLOntology)pairs.getKey());
 				m.remove(pairs.getKey());
 				parseImports(out);
@@ -233,6 +258,16 @@ public class OWL2Parser {
 		rendi.render(onto,out);
 		} catch(OWLRendererException ex)	{		
 			System.err.println("Error by parse!");
+			ex.printStackTrace();
+		}
+	}
+	
+	public static void parse2xml(OWLOntology onto, BufferedWriter out,OWLOntologyManager mng)	{
+		try {
+		OWLXMLRenderer ren = new OWLXMLRenderer(mng);
+		ren.render(onto,out);
+		} catch (OWLRendererException ex)	{
+			System.err.println("Error by XMLParser!");
 			ex.printStackTrace();
 		}
 	}
