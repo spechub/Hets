@@ -63,6 +63,8 @@
   <DGLink source="s__PU1" target="s2__A1V" linkid="7">
     <Type>GlobalProvenThmInc</Type>
     <Rule>Global-Decomposition</Rule>
+    <ProofBasis linkref="5" />
+    <ProofBasis linkref="15" />
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s__PU1" target="s2__A1V" linkid="15">
@@ -94,6 +96,8 @@
   <DGLink source="v__PU1" target="s2__A1A1" linkid="9">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
+    <ProofBasis linkref="8" />
+    <ProofBasis linkref="16" />
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
         <Symbol>sort r</Symbol>
@@ -114,6 +118,7 @@
   <DGLink source="v__S" target="v__T" linkid="4">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
+    <ProofBasis linkref="17" />
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
         <Symbol>sort p</Symbol>
