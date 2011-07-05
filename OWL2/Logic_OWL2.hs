@@ -104,7 +104,8 @@ instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                OWLMorphism Entity RawSymb ProofTree where
          empty_proof_tree OWL2 = emptyProofTree
 #ifdef UNI_PACKAGE
-         provers OWL2 = unsafeFileCheck pelletJar pelletEnv pelletProver
+         provers OWL2 = unsafeFileCheck pelletJar pelletEnv pelletProver ++
+             (unsafeFileCheck "OWLFactProver.jar" hetsOWLenv factProver)
          cons_checkers OWL2 =
              (unsafeFileCheck pelletJar pelletEnv pelletConsChecker) ++
              (unsafeFileCheck "OWLFact.jar" hetsOWLenv factConsChecker)

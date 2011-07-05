@@ -18,6 +18,9 @@ public class Prove {
 			IRI physicalIRI = IRI.create(args[0]);
                         IRI goalIRI     = IRI.create(args[1]);
 			FactProver prover = new FactProver(physicalIRI);
+			System.out.println("FactProver: " + prover + "\n");
+			System.out.println("PhysicalIRI: " + physicalIRI + "\n");
+			System.out.println("GoalIRI: " + goalIRI + "\n");
                         prover.loadGoal(goalIRI);
                         boolean res = prover.prove();
                         if (res)

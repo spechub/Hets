@@ -25,7 +25,6 @@ public class FactProver
 	{
 		this.iri = iri;
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-//		FaCTPlusPlusReasonerFactory fac = new FaCTPlusPlusReasonerFactory();
 		OWLOntology ontology = manager.loadOntologyFromOntologyDocument(this.iri);
 		this.reasoner = new FaCTPlusPlusReasoner(ontology,new SimpleConfiguration(),BufferingMode.BUFFERING);		
 		
@@ -35,18 +34,25 @@ public class FactProver
         {
             OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(giri);
-	    System.out.println("Axioms:" + ontology.getAxioms());
+
             Set<OWLAxiom> axioms = ontology.getAxioms();
-            //if (axioms.size() == 1)
-            //{
+	   
+	    for(Iterator<OWLAxiom> i = axioms.iterator(); i.hasNext();)	{
+		OWLAxiom ax = i.next();
+		if (ax instanceof OWLDeclarationAxiom)	
+			i.remove();
+	    }
+	
+            if (axioms.size() == 1)
+            {
                 Iterator<OWLAxiom> it = axioms.iterator();
                 this.goal = it.next();
-            //}
-            //else
-           // {
-             //   throw new OWLOntologyCreationException
-              //              ("Too many axioms for conjecture");
-           // }
+            }
+            else
+            {
+                throw new OWLOntologyCreationException
+                            ("Too many axioms for conjecture");
+            }
         }
 
         public boolean prove() throws FaCTPlusPlusException
@@ -157,6 +163,198 @@ public class FactProver
                 throw new FaCTPlusPlusException
                             ("Fact++ cannot determine antisymmetry!");
             }
+
+	    if (goal instanceof OWLAnnotationAssertionAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLAnnotationAssertionAxiom!");
+            }
+
+	    if (goal instanceof OWLAnnotationAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLAnnotationAxiom!");	
+	    }
+
+	    if (goal instanceof OWLAnnotationPropertyDomainAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLAnnotationPropertyDomainAxiom!");	
+            }
+
+	    if (goal instanceof OWLAnnotationPropertyRangeAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLAnnotationPropertyRangeAxiom!");	
+      	    }
+
+	    if (goal instanceof OWLClassAxiom)
+	    {
+	   	throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLClassAxiom!");	
+            }
+
+	    if (goal instanceof OWLDataPropertyAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLDataPropertyAxiom!");	
+	    }
+	
+	    if (goal instanceof OWLDataPropertyCharacteristicAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLDataPropertyCharacteristicAxiom!");	
+	    }
+  
+	    if (goal instanceof OWLDatatypeDefinitionAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLDatatypeDefinitionAxiom!");	
+	    }
+
+	    if (goal instanceof OWLDeclarationAxiom)
+	    {
+		return true;
+	    }  
+	
+            if (goal instanceof OWLDifferentIndividualsAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLDifferentIndividualsAxiom!");	
+	    }  
+	
+	    if (goal instanceof OWLDisjointClassesAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLDisjointClassesAxiom!");	
+	    }  
+
+	    if (goal instanceof OWLDisjointDataPropertiesAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLDisjointDataPropertiesAxiom!");	
+	    }  
+
+	    if (goal instanceof OWLDisjointObjectPropertiesAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLDisjointObjectPropertiesAxiom!");	
+	    }  
+
+	    if (goal instanceof OWLDisjointUnionAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLDisjointUnionAxiom!");	
+	    }  
+
+	    if (goal instanceof OWLIndividualAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLIndividualAxiom!");	
+	    }  
+	
+ 	    if (goal instanceof OWLLogicalAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLLogicalAxiom!");	
+	    }  
+
+	    if (goal instanceof OWLNaryAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLNaryAxiom!");	
+	    }  
+
+	    if (goal instanceof OWLNaryClassAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLNaryClassAxiom!");	
+	    }  
+
+	    if (goal instanceof OWLNaryIndividualAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLNaryIndividualAxiom!");	
+	    } 
+		
+	    if (goal instanceof OWLNaryPropertyAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLNaryPropertyAxiom!");	
+	    } 
+
+	    if (goal instanceof OWLObjectPropertyAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLObjectPropertyAxiom!");	
+	    } 
+
+	    if (goal instanceof OWLObjectPropertyCharacteristicAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLObjectPropertyCharacteristicAxiom!");	
+	    } 
+
+	    if (goal instanceof OWLPropertyAssertionAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLPropertyAssertionAxiom!");	
+	    } 
+
+	    if (goal instanceof OWLPropertyAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLPropertyAxiom!");	
+	    }
+
+	    if (goal instanceof OWLPropertyDomainAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLPropertyDomainAxiom!");	
+	    }
+
+	    if (goal instanceof OWLPropertyRangeAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLPropertyRangeAxiom!");	
+	    } 
+		
+	    if (goal instanceof OWLSameIndividualAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLSameIndividualAxiom!");	
+	    } 
+
+	    if (goal instanceof OWLSubAnnotationPropertyOfAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLSubAnnotationPropertyOfAxiom!");	
+	    }
+	    
+	    if (goal instanceof OWLSubPropertyAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLSubPropertyAxiom!");	
+	    }
+
+	    if (goal instanceof OWLSubPropertyChainOfAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLSubPropertyChainOfAxiom!");	
+	    }
+
+	    if (goal instanceof OWLUnaryPropertyAxiom)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process OWLUnaryPropertyAxiom!");	
+	    }
+
+	    if (goal instanceof SWRLRule)
+	    {
+		throw new FaCTPlusPlusException 
+			    ("FaCT++ cannot process SWRLRule!");	
+	    }
+
             if (goal instanceof OWLEquivalentDataPropertiesAxiom)
             {
                 OWLEquivalentDataPropertiesAxiom g =
