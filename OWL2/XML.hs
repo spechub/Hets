@@ -45,21 +45,15 @@ getDeclarations e = concatMap getEntities $ catMaybes
       $ map (filterChildName isEntity) 
             $ filterElementsName (isSmth "Declaration") e
 
-languageTag :: Text.XML.Light.QName
-languageTag = QName {qName = "lang", qURI = Nothing, qPrefix = Just "xml"}
-
-datatypeIRI :: Text.XML.Light.QName
-datatypeIRI = QName {qName = "datatypeIRI", qURI = Nothing, qPrefix = Nothing}
-
 isPlainLiteral :: String -> Bool
 isPlainLiteral s = "PlainLiteral" == drop (length s - 12) s
 
 getLiteral :: Element -> Literal
 getLiteral e = let lit = fromJust $ filterElementName (isSmth "Literal") e 
                    lf = strContent e
-                   dt = fromJust $ findAttr datatypeIRI lit
+                   dt = fromJust $ findAttrBy (isSmth "datatypeIRI") lit
                in
-                  case findAttr languageTag lit of
+                  case (findAttrBy (isSmth "lang") lit) of
                     Just lang -> Literal lf (Untyped $ Just lang)
                     Nothing -> if isPlainLiteral dt then
                                   Literal lf (Untyped Nothing)
@@ -72,15 +66,22 @@ getValue e = let lit = filterElementName (isSmth "Literal") e
                   Nothing -> AnnValue $ mkQName val
                   Just _ -> AnnValLit $ getLiteral e
 
+filterElem :: String -> Element -> [Element]
+filterElem s e = filterElementsName (isSmth s) e 
+
 getAnnotation :: Element -> Annotation
-getAnnotation (Element {elContent = c}) = 
-     let hd = onlyElems $ take (length c - 2) c
-         [ap, av] = onlyElems $ drop (length c - 2) c 
-     in
-         Annotation (getAnnotations hd) (getIRI ap) (getValue av)
+getAnnotation e = 
+     let hd = filterChildrenName (isSmth "Annotation") e 
+         ap = filterElem "AnnotationProperty" e 
+         av = filterElem "Literal" e ++ filterElem "IRI" e
+     in 
+          Annotation (getAnnotations hd) (getIRI $ head ap) (getValue $ head av)
 
 getAnnotations :: [Element] -> [Annotation]
 getAnnotations e = map getAnnotation $ concatMap (filterElementsName (isSmth "Annotation")) e
+
+getAllAnnos :: Element -> [Annotation]
+getAllAnnos e = map getAnnotation $ filterElementsName (isSmth "Annotation") e
 
 
 
