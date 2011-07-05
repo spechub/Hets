@@ -9,11 +9,11 @@ import OWL2.MS
 import Data.List
 
 entityList :: [String]
-entityList = ["Class", "Datatype", "NamedIndividual", 
+entityList = ["Class", "Datatype", "NamedIndividual",
     "ObjectProperty", "DataProperty", "AnnotationProperty"]
 
 isEntity :: Text.XML.Light.QName -> Bool
-isEntity (QName {qName = qn}) = elem qn entityList
+isEntity (QName {qName = qn}) = qn `elem` entityList
 
 isSmth :: String -> Text.XML.Light.QName -> Bool
 isSmth s (QName {qName = qn}) = qn == s
@@ -28,7 +28,8 @@ getEntityType ty = case ty of
     "AnnotationProperty" -> AnnotationProperty
 
 getIRI :: Element -> OWL2.AS.QName
-getIRI (Element {elAttribs = a}) = let Attr {attrVal = iri} = head a 
+getIRI (Element {elAttribs = a}) =
+        let Attr {attrVal = iri} = head a
         in mkQName iri
 
 getName :: Element -> String
@@ -37,23 +38,29 @@ getName (Element {elName = QName {qName = n}}) = n
 toEntity :: Element -> Entity
 toEntity e = Entity (getEntityType $ getName e) (getIRI e)
 
-getEntities :: Element -> [Entity]
-getEntities e = map toEntity $ filterElementsName isEntity e
+getEntities :: Element -> Entity
+getEntities e = toEntity $ fromJust $ filterElementName isEntity e
 
-getDeclarations :: Element -> [Entity]
-getDeclarations e = concatMap getEntities $ catMaybes 
-      $ map (filterChildName isEntity) 
-            $ filterElementsName (isSmth "Declaration") e
+getDeclaration :: Element -> Frame
+getDeclaration e = 
+   let ent = fromJust $ filterChildName isEntity e
+       ans = getAllAnnos e
+   in Frame (Right $ toEntity ent) [AnnFrameBit ans AnnotationFrameBit]
 
+getDeclarations :: Element -> [Frame]
+getDeclarations e = 
+   let dcl = filterElementsName (isSmth "Declaration") e
+   in map getDeclaration dcl
+     
 isPlainLiteral :: String -> Bool
 isPlainLiteral s = "PlainLiteral" == drop (length s - 12) s
 
 getLiteral :: Element -> Literal
-getLiteral e = let lit = fromJust $ filterElementName (isSmth "Literal") e 
+getLiteral e = let lit = fromJust $ filterElementName (isSmth "Literal") e
                    lf = strContent e
                    dt = fromJust $ findAttrBy (isSmth "datatypeIRI") lit
                in
-                  case (findAttrBy (isSmth "lang") lit) of
+                  case findAttrBy (isSmth "lang") lit of
                     Just lang -> Literal lf (Untyped $ Just lang)
                     Nothing -> if isPlainLiteral dt then
                                   Literal lf (Untyped Nothing)
@@ -67,25 +74,23 @@ getValue e = let lit = filterElementName (isSmth "Literal") e
                   Just _ -> AnnValLit $ getLiteral e
 
 filterElem :: String -> Element -> [Element]
-filterElem s e = filterElementsName (isSmth s) e 
+filterElem s = filterElementsName (isSmth s)
 
 getAnnotation :: Element -> Annotation
-getAnnotation e = 
-     let hd = filterChildrenName (isSmth "Annotation") e 
-         ap = filterElem "AnnotationProperty" e 
+getAnnotation e =
+     let hd = filterChildrenName (isSmth "Annotation") e
+         ap = filterElem "AnnotationProperty" e
          av = filterElem "Literal" e ++ filterElem "IRI" e
-     in 
-          Annotation (getAnnotations hd) (getIRI $ head ap) (getValue $ head av)
+     in
+          Annotation (getAnnotations hd)
+              (getIRI $ head ap) (getValue $ head av)
 
 getAnnotations :: [Element] -> [Annotation]
-getAnnotations e = map getAnnotation $ concatMap (filterElementsName (isSmth "Annotation")) e
+getAnnotations e = map getAnnotation $ concatMap
+            (filterElementsName (isSmth "Annotation")) e
 
 getAllAnnos :: Element -> [Annotation]
-getAllAnnos e = map getAnnotation $ filterElementsName (isSmth "Annotation") e
-
-
-
-
-
+getAllAnnos e = map getAnnotation
+            $ filterElementsName (isSmth "Annotation") e
 
 
