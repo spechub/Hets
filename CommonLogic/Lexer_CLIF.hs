@@ -94,19 +94,23 @@ existsKey = Lexer.pToken $ string existsS
 
 -- cl keys
 clTextKey :: CharParser st Id.Token
-clTextKey = Lexer.pToken $ string "cl-text"
+clTextKey = Lexer.pToken $ try (string "cl-text") <|> string "cl:text"
 
 clModuleKey :: CharParser st Id.Token
-clModuleKey = Lexer.pToken $ string "cl-module"
+clModuleKey = Lexer.pToken $ try (string "cl-module") <|> string "cl:module"
 
 clImportsKey :: CharParser st Id.Token
-clImportsKey = Lexer.pToken $ string "cl-imports"
+clImportsKey = Lexer.pToken $ try (string "cl-imports") <|> string "cl:imports"
 
 clExcludesKey :: CharParser st Id.Token
-clExcludesKey = Lexer.pToken $ string "cl-excludes"
+clExcludesKey = Lexer.pToken 
+    $ try (string "cl-excludes") <|> string "cl:excludes"
 
 clCommentKey :: CharParser st Id.Token
-clCommentKey = Lexer.pToken $ string "cl-comment"
+clCommentKey = Lexer.pToken $ try (string "cl-comment") <|> string "cl:comment"
+
+clRolesetKey :: CharParser st Id.Token
+clRolesetKey = Lexer.pToken $ try (string "cl-roleset") <|> string "roleset:"
 
 seqmark :: CharParser st Id.Token
 seqmark = Lexer.pToken $ reserved reservedelement2 $ scanSeqMark
@@ -147,7 +151,7 @@ reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not"
 
 reservedcl :: [String]
 reservedcl = ["cl-text", "cl-imports", "cl-exlcudes", "cl-module"
-             , "cl-comment"]
+             , "cl-comment", "cl-roleset"]
 
 -- reserved elements for sequence marker
 reservedelement2 :: [String]

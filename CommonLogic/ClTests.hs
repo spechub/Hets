@@ -107,7 +107,9 @@ p6 = parseTest sentence "(exists (z) (and (Pet x) (Happy z) (Attr x z)))"
 
 -- | parses the given string
 abstrSyntax :: String -> Either ParseError TEXT
-abstrSyntax txt = parse CommonLogic.Parse_CLIF.text "" txt 
+abstrSyntax txt = parse CommonLogic.Parse_CLIF.cltext "" txt 
+
+cParse p s = parse p "" s
 
 -- | determines the sublogic of the given string
 sl :: String -> Either ParseError SL.CommonLogicSL

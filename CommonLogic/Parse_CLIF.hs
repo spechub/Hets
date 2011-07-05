@@ -49,7 +49,7 @@ namedtext = parens $ do
 
 text :: CharParser st TEXT
 text = do
-    phr <- many1 phrase
+    phr <- many phrase --was many1 (not as in standard)
     return $ Text phr nullRange
 
 -- remove the try
@@ -57,38 +57,47 @@ text = do
 -- error message in ex. the following text
 phrase :: CharParser st PHRASE
 phrase = do
-    try (string "(cl-module")
+    try (oParenT >> clModuleKey)
     spaces
     m <- pModule
     cParenT
     return $ Module m
-    <|> do
-    try (string "(cl-imports")
+  <|> do
+    try (oParenT >> clImportsKey)
     spaces
     i <- importation
     cParenT
     return $ Importation i
-    <|> do
-    try (string "(cl-comment")
+  <|> do
+    try (oParenT >> clCommentKey)
     spaces
     (c,t) <- comment <?> "comment: 3"
     cParenT
     return $ Comment_text c t nullRange
-    <|> do
-      s <- sentence
-      return $ Sentence s
+  <|> do
+    s <- sentence
+    return $ Sentence s
 
 -- | parser for module
-pModule :: CharParser st MODULE --TODO: parse exclusion lists
+pModule :: CharParser st MODULE
 pModule = do
-  -- clModuleKey
-  t <- identifier
-  txt <- text
-  return $ Mod t txt nullRange
- <|> do
-  -- clModuleKey
-  t <- identifier -- TODO
-  return $ Mod t (Text [] nullRange) nullRange
+    t <- identifier
+    (exs,txt) <- pModExcl
+    case exs of
+         [] -> return $ Mod t txt nullRange
+         _  -> return $ Mod_ex t exs txt nullRange
+
+-- | parser for 
+pModExcl :: CharParser st ([NAME], TEXT)
+pModExcl = do 
+    try (oParenT >> clExcludesKey)
+    exs <- many identifier
+    cParenT
+    txt <- text
+    return (exs, txt)
+  <|> do
+    txt <- text
+    return ([], txt)
 
 importation :: CharParser st IMPORTATION
 importation = do
@@ -108,7 +117,7 @@ comment = do
    return $ (Comment qs nullRange, (Text [] nullRange))
 
 -- | parser for sentences
-sentence :: CharParser st SENTENCE
+sentence :: CharParser st SENTENCE --TODO: parse commented sentences
 sentence = parens $ do
   at <- atom <?> "predicate"
   return $ Atom_sent at $ Range $ rangeSpan at

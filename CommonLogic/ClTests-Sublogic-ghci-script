@@ -12,7 +12,7 @@ let (Atom_sent (Atom ntQ [Term_seq ntP2]) _) = atsen2
 
 
 -- parsing error: Predicates *must* be used
-let (Left err) = abstrSyntax "(and (x) (y))"
+let (Right txt0) = abstrSyntax "(and (x) (y))"
 err
 
 -- first order
@@ -57,3 +57,5 @@ sen_new == sen'
 
 
 --TODO: analyze multiple modules in a text
+
+abstrSyntax "(cl-module D (P x)) (cl-module E (Q x)) (cl-module Fa (cl-module Fb (forall (z) (R z))))"
