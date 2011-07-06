@@ -19,6 +19,9 @@ isSmth s (QName {qName = qn}) = qn == s
 isClassExpression :: Text.XML.Light.QName -> Bool 
 isClassExpression (QName {qName = qn}) = qn `elem` classExpressionList
 
+isDataRange :: Text.XML.Light.QName -> Bool 
+isDataRange (QName {qName = qn}) = qn `elem` dataRangeList
+
 getEntityType :: String -> EntityType
 getEntityType ty = case ty of
     "Class" -> Class
@@ -109,6 +112,10 @@ getObjProp e = case filterElementName (isSmth "ObjectInverseOf") e of
 
 getFacetValuePair :: Element -> (ConstrainingFacet, RestrictionValue)
 getFacetValuePair e = (getIRI e, getLiteral $ head $ elChildren e)
+
+dataRangeList :: [String]
+dataRangeList = ["Datatype", "DatatypeRestriction", "DataComplementOf",
+      "DataOneOf", "DataIntersectionOf", "DataUnionOf"]
 
 getDataRange :: Element -> DataRange
 getDataRange e = case getName e of
@@ -207,6 +214,7 @@ getClassAxiom e =
    let ch = elChildren e
        as = concatMap getAllAnnos ch
        l = filterChildrenName isClassExpression e
+       drl = filterChildrenName isDataRange e
        cel = map getClassExpression l          
    in case getName e of
     "SubClassOf" -> 
@@ -222,9 +230,11 @@ getClassAxiom e =
         $ ExpressionBit $ AnnotatedList $ map (\ x -> ([], x)) cel
     "DisjointUnion" -> PlainAxiom (Right $ getEntity $ head l) 
         $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression $ tail l
+    "DatatypeDefinition" -> PlainAxiom (Right $ getEntity $ head drl) 
+        $ AnnFrameBit as $ DatatypeBit $ getDataRange $ last drl
     _ -> error "XML parser: not class axiom"
 
-
+       
 
 
     
