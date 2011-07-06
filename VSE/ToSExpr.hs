@@ -27,6 +27,7 @@ import Common.Id
 import Common.LibName
 import Common.ProofUtils
 import Common.SExpr
+import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -305,9 +306,9 @@ qualVseSignToSExpr nodeId libId sig =
           { sortSet = Set.filter (isQualNameFrom nodeId libId)
             $ sortSet sig }
       : predMapToSExprs sig
-            (Map.filterWithKey (\ i _ -> isQualNameFrom nodeId libId i)
-            $ diffMapSet (predMap sig) $ procsToPredMap e)
+            (MapSet.filterWithKey (\ i _ -> isQualNameFrom nodeId libId i)
+            . MapSet.difference (predMap sig) $ procsToPredMap e)
       ++ opMapToSExprs sig
-            (Map.filterWithKey (\ i _ -> isQualNameFrom nodeId libId i)
-            $ diffOpMapSet (opMap sig) $ procsToOpMap e)
+            (MapSet.filterWithKey (\ i _ -> isQualNameFrom nodeId libId i)
+            . diffOpMapSet (opMap sig) $ procsToOpMap e)
       ++ procsToSExprs (isQualNameFrom nodeId libId) sig

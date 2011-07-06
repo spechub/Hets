@@ -27,6 +27,7 @@ import Common.Id
 import Common.ProofTree
 import Common.Result
 import Common.Utils (number)
+import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -94,7 +95,7 @@ map_RelScheme_theory (sig, n_sens) = do
 mapSign :: SRel.Sign -> CASLSign
 mapSign sig = let
  (sorts,ops,preds) = genCASLSig (Set.toList $ SRel.tables sig)
-                                Set.empty Map.empty Map.empty
+                                Set.empty MapSet.empty MapSet.empty
               in (emptySign ()){
                   sortSet = sorts,
                   opMap = ops,
@@ -135,45 +136,34 @@ mapMorphism phi = let
    pred_map = Map.fromList $ concatMap
                (\(i, pSet) ->
                      [((i, pt),(Map.!) (SRel.table_map phi) i)
-                             | pt <- Set.toList pSet]) $
-               Map.toList $ predMap ssign,
+                             | pt <- pSet]) $
+               MapSet.toList $ predMap ssign,
    extended_map = ()
 }
 
-genCASLSig :: [SRel.RSTable] ->
-              Set.Set SORT ->
-              Map.Map Id (Set.Set OpType) ->
-              Map.Map Id (Set.Set PredType) ->
-              (Set.Set SORT,
-               Map.Map Id (Set.Set OpType),
-               Map.Map Id (Set.Set PredType)
-              )
-genCASLSig tabList sorts ops preds=
- case tabList of
+genCASLSig :: [SRel.RSTable] -> Set.Set SORT -> OpMap -> PredMap
+  -> (Set.Set SORT, OpMap, PredMap)
+genCASLSig tabList sorts ops preds = case tabList of
   [] -> (sorts, ops, preds)
-  t:tList -> let
+  t : tList -> let
    sorts' =  Set.fromList $ map stringToId $ map show $
              nub $ map SRel.c_data $ SRel.columns t
    ops' = let
      arity = map stringToId $ map show $ map SRel.c_data $
              SRel.columns t
           in
-    Map.fromList $
-     map ( \c -> (stringToId $ (show $ SRel.t_name t) ++ "_"
+    MapSet.fromList $
+     map ( \ c -> (stringToId $ (show $ SRel.t_name t) ++ "_"
                                 ++ (show $ SRel.c_name c),
-                  Set.singleton $ OpType{opKind = Total,
-                                         opArgs = arity,
-                                         opRes = stringToId $
-                                                 show $ SRel.c_data c
-                                 })
-                         ) $ SRel.columns t
-   preds' = Map.insert (SRel.t_name t)
-                       (Set.singleton $ PredType $ map stringToId $
+                  [OpType Total arity $ stringToId $ show $ SRel.c_data c]))
+     $ SRel.columns t
+   preds' = MapSet.insert (SRel.t_name t)
+                       (PredType $ map stringToId $
                         map show $ map SRel.c_data $
                         SRel.columns t) preds
              in genCASLSig tList
                            (Set.union sorts sorts')
-                           (Map.union ops ops')
+                           (MapSet.union ops ops')
                            preds'
 
 genAxioms :: SRel.RSTable -> Result [Named CASLFORMULA]

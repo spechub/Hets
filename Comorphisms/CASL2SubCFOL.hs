@@ -33,6 +33,7 @@ import Common.DocUtils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 import Common.AS_Annotation
 import Common.ProofUtils
 import Common.ProofTree
@@ -133,19 +134,17 @@ totalizeSymbType t = case t of
 sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.Set SORT -> Set.Set SORT
 sortsWithBottom m sig formBotSrts =
     let bsrts = treatFormula m Set.empty formBotSrts
-          (Map.keysSet $ Rel.toMap $ sortRel sig) (sortSet sig)
-        ops = Map.elems $ opMap sig
+          (Map.keysSet $ MapSet.toMap $ sortRel sig) (sortSet sig)
+        ops = MapSet.elems $ opMap sig
         -- all supersorts inherit the same bottom element
         allSortsWithBottom s =
             Set.unions $ s : map (`supersortsOf` sig) (Set.toList s)
         resSortsOfPartialFcts =
-            allSortsWithBottom $ Set.unions $ bsrts :
-               map (Set.map opRes . Set.filter
-                    ((== Partial) . opKind)) ops
+            allSortsWithBottom . Set.union bsrts
+               . Set.map opRes $ Set.filter ((== Partial) . opKind) ops
         collect given =
-            let more = allSortsWithBottom $ Set.unions $ map
-                     (Set.map opRes . Set.filter
-                      (any (`Set.member` given) . opArgs)) ops
+            let more = allSortsWithBottom . Set.map opRes $ Set.filter
+                      (any (`Set.member` given) . opArgs) ops
             in if Set.isSubsetOf more given then given
                else collect $ Set.union more given
      in collect resSortsOfPartialFcts
@@ -196,12 +195,12 @@ botType x = OpType {opKind = Total, opArgs = [], opRes = x }
 encodeSig :: Set.Set SORT -> Sign f e -> Sign f e
 encodeSig bsorts sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
-   newTotalMap = Map.map (Set.map mkTotal) $ opMap sig
+   newTotalMap = MapSet.map mkTotal $ opMap sig
    botOpMap = Set.fold (\ bt -> addOpTo (uniqueBotName $ toOP_TYPE bt) bt)
        newTotalMap $ Set.map botType bsorts
    defType x = PredType {predArgs = [x]}
    defTypes = Set.map defType bsorts
-   newpredMap = Map.insert defPred defTypes $ predMap sig
+   newpredMap = MapSet.update (const defTypes) defPred $ predMap sig
    rel = sortRel sig
    total (s, s') = OpType {opKind = Total, opArgs = [s'], opRes = s }
    setprojOptype = Set.map total $ Set.filter ( \ (s, _) ->
@@ -294,10 +293,8 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
         minSupers so = Set.toList $ Set.delete so $ Set.union (isos so)
           $ Set.unions $ map isos $ Set.toList $ Rel.succs rel2 so
         sortList = Set.toList bsorts
-        opList = [(f, t) | (f, types) <- Map.toList $ opMap sig,
-                  t <- Set.toList types ]
-        predList = [(p, t) | (p, types) <- Map.toList $ predMap sig,
-                    t <- Set.toList types ]
+        opList = mapSetToList $ opMap sig
+        predList = mapSetToList $ predMap sig
 
 codeRecord :: TermExtension f => Bool -> Set.Set SORT -> (f -> f)
   -> Record f (FORMULA f) (TERM f)

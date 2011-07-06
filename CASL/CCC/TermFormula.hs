@@ -19,6 +19,7 @@ import CASL.Sign(OpMap, Sign(sortRel), toOP_TYPE, toOpType)
 
 import Common.Id(Token(tokStr), Id(Id), Range, GetRange(..), nullRange)
 import Common.Utils(nubOrd)
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import Control.Monad(liftM)
@@ -345,10 +346,7 @@ constructorOverload s opm os = concatMap cons_Overload os
               case o of
                 Op_name _ -> [o]
                 Qual_op_name on1 ot _ ->
-                    case Map.lookup on1 opm of
-                      Nothing -> []
-                      Just op_t -> concatMap (cons on1 ot)
-                                   (Set.toList op_t)
+                    concatMap (cons on1 ot) $ Set.toList $ MapSet.lookup on1 opm
           cons on opt1 opt2 = [Qual_op_name on (toOP_TYPE opt2) nullRange |
                                leqF s (toOpType opt1) opt2]
 

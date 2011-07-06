@@ -19,12 +19,23 @@ module Comorphisms.CommonLogic2CASL
    )
    where
 
+import Comorphisms.GetPreludeLib
+
+import System.IO.Unsafe
+
+import Static.GTheory
+
+import Logic.Prover
+import Logic.Coerce
 import Logic.Logic as Logic
 import Logic.Comorphism
+
 import Common.ProofTree
 import Common.Result
 import Common.AS_Annotation as AS_Anno
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Id as Id
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -41,12 +52,6 @@ import qualified CASL.AS_Basic_CASL as CBasic
 import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
-
-import Comorphisms.GetPreludeLib
-import System.IO.Unsafe
-import Static.GTheory
-import Logic.Prover
-import Logic.Coerce
 
 data CommonLogic2CASL = CommonLogic2CASL deriving Show
 
@@ -133,34 +138,27 @@ mapTheory (sig, form) = Result [] $ Just (mapSig sig, baseCASLSig ++ (map
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
-               CSign.opMap = Set.fold (\ x -> Map.insert x
-                                ( Set.singleton $ CSign.OpType
-                                   { CSign.opKind = CBasic.Total
-                                   , CSign.opArgs = []
-                                   , CSign.opRes = individual }))
-                                Map.empty $ ClSign.items sign
+               CSign.opMap = Set.fold (\ x -> MapSet.insert x
+                                $ CSign.OpType CBasic.Total [] individual)
+                                MapSet.empty $ ClSign.items sign
                }) caslSig
 
 -- | setting casl sign: sorts, cons, fun, nil, pred
 caslSig :: CSign.CASLSign
 caslSig = (CSign.emptySign ())
                { CSign.sortSet = Set.fromList [list, individual]
-               , CSign.opMap = Map.fromList [
-                         (cons, Set.fromList [CSign.OpType
-                                          {CSign.opKind = CBasic.Total,
-                                           CSign.opArgs = [individual, list],
-                                           CSign.opRes = list}])
-                         , (fun, Set.fromList [CSign.OpType
-                                          {CSign.opKind = CBasic.Total,
-                                           CSign.opArgs = [individual, list],
-                                           CSign.opRes = individual}])
-                         , (nil, Set.fromList [CSign.OpType
-                                          {CSign.opKind = CBasic.Total,
-                                           CSign.opArgs = [],
-                                           CSign.opRes = list}])]
-               , CSign.predMap = Map.fromList
-                [(rel, Set.fromList [CSign.PredType
-                          {CSign.predArgs = [individual, list]}])]
+               , CSign.opMap = MapSet.fromList
+                         [ (cons, [CSign.OpType
+                                   CBasic.Total
+                                   [individual, list]
+                                   list])
+                         , (fun, [CSign.OpType
+                                  CBasic.Total
+                                  [individual, list]
+                                  individual])
+                         , (nil, [CSign.OpType CBasic.Total [] list])]
+               , CSign.predMap = MapSet.fromList
+                [(rel, [CSign.PredType [individual, list]])]
                }
 
 list :: Id.Id
@@ -255,9 +253,9 @@ termSeqForm sig ts = case ts of
                     termForm trm
                where subSig = ClSign.isSubSigOf new sig
                      new    = ClSign.Sign
-                         { 
+                         {
                            ClSign.items = Set.singleton $ Id.simpleIdToId name
-                         , ClSign.discourseItems = Set.singleton $                       
+                         , ClSign.discourseItems = Set.singleton $
                                Id.simpleIdToId name
                          }
              ClBasic.Funct_term term _ _ -> termForm term

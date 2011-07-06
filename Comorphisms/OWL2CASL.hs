@@ -16,10 +16,15 @@ module Comorphisms.OWL2CASL (OWL2CASL (..)) where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
+
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
+import Common.ProofTree
+import qualified Common.Lib.MapSet as MapSet
+
 import Control.Monad
+
 import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -36,8 +41,6 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic
-
-import Common.ProofTree
 
 data OWL2CASL = OWL2CASL deriving Show
 
@@ -142,11 +145,11 @@ mapSign :: OS.Sign                 -- ^ OWL signature
 mapSign sig =
       let conc = Set.union (OS.concepts sig) (OS.primaryConcepts sig)
           cvrt = map uriToId . Set.toList
-          tMp k = Map.fromList . map (\ u -> (u, Set.singleton k))
+          tMp k = MapSet.fromList . map (\ u -> (u, [k]))
           cPreds = thing : noThing : cvrt conc
           oPreds = cvrt $ OS.indValuedRoles sig
           dPreds = cvrt $ OS.dataValuedRoles sig
-          aPreds = Map.unions
+          aPreds = foldr MapSet.union MapSet.empty
             [ tMp conceptPred cPreds
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]

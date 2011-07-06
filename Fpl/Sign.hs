@@ -19,12 +19,12 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Keywords
+import qualified Common.Lib.MapSet as MapSet
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Data.List
@@ -50,8 +50,7 @@ instance Pretty SignExt where
   pretty es = let nr = nullRange in case
          groupBy (\ (_, c1) (_, c2) -> opRes c1 == opRes c2)
          $ sortBy (comparing (opRes . snd))
-         $ concatMap (\ (i, s) -> map (\ t -> (i, t)) $ Set.toList s)
-         $ Map.toList $ constr es of
+         $ mapSetToList $ constr es of
      [] -> empty
      l -> topSigKey (sortS ++ appendS l) <+> sepBySemis
        (map (\ g -> printDD
@@ -61,7 +60,7 @@ instance Pretty SignExt where
                g) nr)) l)
 
 emptyFplSign :: SignExt
-emptyFplSign = SignExt Map.empty
+emptyFplSign = SignExt MapSet.empty
 
 diffFplSign :: SignExt -> SignExt -> SignExt
 diffFplSign a b = a

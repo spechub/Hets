@@ -17,37 +17,39 @@ import CASL.AS_Basic_CASL
 import CASL.Overload
 import CASL.Sign
 import CASL.ToDoc
+
 import CspCASL.AS_CspCASL_Process
 import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
 import qualified CspCASL.LocalTop as LocalTop
 import CspCASL.Print_CspCASL ()
+
 import Common.AnnoState
 import Common.Doc
 import Common.DocUtils
 import Common.Id
-import Common.Lib.Rel (Rel, predecessors)
 import Common.Result
+import Common.Lib.Rel (Rel, predecessors)
+import qualified Common.Lib.MapSet as MapSet
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Ord
 
-type ChanNameMap = Map.Map CHANNEL_NAME (Set.Set SORT)
-type ProcNameMap = Map.Map PROCESS_NAME (Set.Set ProcProfile)
+type ChanNameMap = MapSet.MapSet CHANNEL_NAME SORT
+type ProcNameMap = MapSet.MapSet PROCESS_NAME ProcProfile
 type ProcVarMap = Map.Map SIMPLE_ID SORT
 type ProcVarList = [(SIMPLE_ID, SORT)]
 
 -- | Add a process name and its profile to a process name map.  exist.
 addProcNameToProcNameMap :: PROCESS_NAME -> ProcProfile -> ProcNameMap
   -> ProcNameMap
-addProcNameToProcNameMap name profile =
-    Map.insertWith Set.union name (Set.singleton profile)
+addProcNameToProcNameMap = MapSet.insert
 
 -- | Test if a simple process name with a profile is in the process name map.
 isNameInProcNameMap :: PROCESS_NAME -> ProcProfile -> ProcNameMap -> Bool
-isNameInProcNameMap name profile =
-  Set.member profile . Map.findWithDefault Set.empty name
+isNameInProcNameMap = MapSet.member
 
 {- | Given a simple process name and a required number of parameters, find a
 unqiue profile with that many parameters if possible. If this is not possible
@@ -57,7 +59,7 @@ the functions returns a failed result with a helpful error message.  failure. -}
 getUniqueProfileInProcNameMap :: PROCESS_NAME -> Int -> ProcNameMap ->
                                  Result ProcProfile
 getUniqueProfileInProcNameMap name numParams pm =
-  let profiles = Map.findWithDefault Set.empty name pm
+  let profiles = MapSet.lookup name pm
       isMatch (ProcProfile argSorts _) =
         length argSorts == numParams
       matchedProfiles = Set.filter isMatch profiles
@@ -76,7 +78,7 @@ profile's comms are in the sub sort relation and simply makes the comms
 downward closed under the sub-sort relation. -}
 closeProcNameMapSortRel :: Rel SORT -> ProcNameMap -> ProcNameMap
 closeProcNameMapSortRel sig =
-  Map.map (Set.map $ closeProcProfileSortRel sig)
+  MapSet.map (closeProcProfileSortRel sig)
 
 {- | Close a profile under a sub-sort relation.  Assumes the proc profile's
 comms are in the sub sort relation and simply makes the comms downward closed
@@ -111,8 +113,8 @@ data CspSign = CspSign
 -- | plain union
 cspSignUnion :: CspSign -> CspSign -> CspSign
 cspSignUnion sign1 sign2 = emptyCspSign
-    { chans = addMapSet (chans sign1) (chans sign2)
-    , procSet = addMapSet (procSet sign1) (procSet sign2) }
+    { chans = MapSet.union (chans sign1) (chans sign2)
+    , procSet = MapSet.union (procSet sign1) (procSet sign2) }
 
 {- | A CspCASL signature is a CASL signature with a CSP process
 signature in the extendedInfo part. -}
@@ -132,8 +134,8 @@ emptyCspCASLSign = emptySign emptyCspSign
 -- | Empty CSP process signature.
 emptyCspSign :: CspSign
 emptyCspSign = CspSign
-    { chans = Map.empty
-    , procSet = Map.empty }
+    { chans = MapSet.empty
+    , procSet = MapSet.empty }
 
 -- | Compute union of two CSP CASL signatures.
 unionCspCASLSign :: CspCASLSign -> CspCASLSign -> Result CspCASLSign
@@ -159,8 +161,8 @@ unionCspSign sr a b = cspSignUnion (closeProcs sr a) (closeProcs sr b)
 -- | Compute difference of two CSP process signatures.
 diffCspSig :: CspSign -> CspSign -> CspSign
 diffCspSig a b = emptyCspSign
-  { chans = diffMapSet (chans a) $ chans b
-  , procSet = diffMapSet (procSet a) $ procSet b
+  { chans = MapSet.difference (chans a) $ chans b
+  , procSet = MapSet.difference (procSet a) $ procSet b
   }
 
 -- | Is one CspCASL Signature a sub signature of another
@@ -176,9 +178,9 @@ isCspCASLSubSig =
 signature for now. -}
 isCspSubSign :: CspSign -> CspSign -> Bool
 isCspSubSign a b =
-    isSubMapSet (chans a) (chans b) &&
+     MapSet.isSubmapOf (chans a) (chans b) &&
     -- Check for each profile that the set of names are included.
-    isSubMapSet (procSet a) (procSet b)
+    MapSet.isSubmapOf (procSet a) (procSet b)
 
 -- | Pretty printing for CspCASL signatures
 instance Pretty CspSign where

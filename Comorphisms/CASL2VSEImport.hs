@@ -32,6 +32,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
 import Common.Result
+import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -108,9 +109,8 @@ mapSig sign =
         (sProcs ++ procsym,  sSens ++ axs)
      (sortProcs, sortSens) = foldl wrapSort ([],[]) $
                                         Set.toList $ sortSet sign
-     wrapOp (procsym, axs) (i, opTypeSet) = let
+     wrapOp (procsym, axs) (i, opTypes) = let
        funName = mkGenName i
-       opTypes = Set.toList opTypeSet
        fProcs = map (\profile ->
                        (funName,
                         Profile
@@ -156,9 +156,8 @@ mapSig sign =
                                             in
        (procsym ++ fProcs, axs ++ fSens)
      (opProcs, opSens) = foldl wrapOp ([], []) $
-                                        Map.toList $ opMap sign
-     wrapPred (procsym, axs) (i, predTypeSet) = let
-       predTypes = Set.toList predTypeSet
+                                        MapSet.toList $ opMap sign
+     wrapPred (procsym, axs) (i, predTypes) = let
        procName = mkGenName i
        pProcs = map (\profile -> (procName,
                         Profile
@@ -184,7 +183,7 @@ mapSig sign =
                                                 in
       (procsym ++ pProcs, axs ++ pSens)
      (predProcs, predSens) = foldl wrapPred ([],[]) $
-                                        Map.toList $ predMap sign
+                                        MapSet.toList $ predMap sign
      procs = Procs $ Map.fromList (sortProcs ++ opProcs ++ predProcs)
      newPreds = procsToPredMap procs
      newOps = procsToOpMap procs

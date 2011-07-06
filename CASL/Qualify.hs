@@ -26,6 +26,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.LibName
 import Common.Result
+import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
 import qualified Data.Map as Map
@@ -59,7 +60,7 @@ qualifySigExt extInd extEm nodeId libId m sig = do
       om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) (\ o -> o { opKind = Partial }) os
       oMap = Map.foldWithKey (\ i ->
-             Map.insertWith (+) i . Set.size) sMap os
+             Map.insertWith (+) i . Set.size) sMap $ MapSet.toMap os
       pm = Map.map fst $ qualOverloaded oMap (pred_map m) nodeId libId
            (mapPredType sm) id ps
   return ((embedMorphism extEm sig $ inducedSignAux extInd sm om pm extEm sig)
@@ -68,7 +69,7 @@ qualifySigExt extInd extEm nodeId libId m sig = do
     , pred_map = pm }, monotonicities sig)
 
 qualOverloaded :: Ord a => Map.Map Id Int -> Map.Map (Id, a) Id -> SIMPLE_ID
-               -> LibId -> (a -> a) -> (a -> a) -> Map.Map Id (Set.Set a)
+               -> LibId -> (a -> a) -> (a -> a) -> MapSet.MapSet Id a
                -> Map.Map (Id, a) (Id, a)
 qualOverloaded oMap rn nodeId libId f g =
   Map.foldWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
@@ -77,7 +78,7 @@ qualOverloaded oMap rn nodeId libId f g =
          Just j | isQualName j -> j
          _ -> mkQualName nodeId libId $ mkOverloadedId n i, f e)) m
                   $ zip (Set.toList s) [1 + Map.findWithDefault 0 i oMap ..])
-    Map.empty
+    Map.empty . MapSet.toMap
 
 createOpMorMap :: Map.Map (Id, OpType) (Id, OpType)
              -> Map.Map (Id, OpType) (Id, OpKind)

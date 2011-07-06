@@ -35,6 +35,7 @@ import Common.Id
 import Common.ProofTree
 import Common.Result
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 
 -- CASL
 import CASL.Logic_CASL
@@ -105,12 +106,11 @@ data PredInfo = PredInfo { topSortPI :: SORT
 
 type SubSortMap = Map.Map SORT PredInfo
 
-generateSubSortMap :: Rel.Rel SORT -> Map.Map Id (Set.Set PredType)
-  -> SubSortMap
+generateSubSortMap :: Rel.Rel SORT -> PredMap -> SubSortMap
 generateSubSortMap sortRels pMap =
     let disAmbMap = Map.map disAmbPred
         disAmbPred v = let pn = predicatePI v in
-          case dropWhile (`Map.member` pMap)
+          case dropWhile (`Set.member` MapSet.keysSet pMap)
                    $ pn : map (appendNumber (predicatePI v)) [1 ..] of
             n : _ -> v { predicatePI = n }
             [] -> error "generateSubSortMap"
@@ -145,10 +145,10 @@ transSig sig = return $ let sortRels = Rel.transClosure $ sortRel sig in
         newOpMap = transOpMap sortRels subSortMap (opMap sig)
         newAssOpMap0 = transOpMap sortRels subSortMap (assocOps sig)
         axs = generateAxioms subSortMap (predMap sig) newOpMap
-        newPreds = foldr (\ pI -> Map.insert (predicatePI pI)
-                          $ Set.singleton $ PredType [topSortPI pI])
-                    Map.empty . Map.elems
-        newPredMap = Map.unionWith Set.union (transPredMap subSortMap
+        newPreds = foldr (\ pI -> MapSet.insert (predicatePI pI)
+                          $ PredType [topSortPI pI])
+                    MapSet.empty . Map.elems
+        newPredMap = MapSet.union (transPredMap subSortMap
                   $ predMap sig) $ newPreds subSortMap
     in (sig
         { sortSet = Set.fromList (map topSortPI $ Map.elems subSortMap)
@@ -159,15 +159,13 @@ transSig sig = return $ let sortRels = Rel.transClosure $ sortRel sig in
         , predMap = newPredMap
         }, axs ++ symmetryAxioms subSortMap sortRels)
 
-transPredMap :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
-             -> Map.Map PRED_NAME (Set.Set PredType)
-transPredMap subSortMap = Map.map $ Set.map transType
+transPredMap :: SubSortMap -> PredMap -> PredMap
+transPredMap subSortMap = MapSet.map transType
     where transType t = t
             { predArgs = map (lkupTop subSortMap) $ predArgs t }
 
-transOpMap :: Rel.Rel SORT -> SubSortMap -> Map.Map OP_NAME (Set.Set OpType)
-           -> Map.Map OP_NAME (Set.Set OpType)
-transOpMap sRel subSortMap = Map.map (rmOrAddParts True . Set.map transType)
+transOpMap :: Rel.Rel SORT -> SubSortMap -> OpMap -> OpMap
+transOpMap sRel subSortMap = rmOrAddPartsMap True . MapSet.map transType
     where
           transType t =
               let args = opArgs t
@@ -210,11 +208,10 @@ symmetryAxioms ssMap sortRels =
           ) . Set.toList
     in concatMap toAxioms symSets
 
-generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
-  -> Map.Map OP_NAME (Set.Set OpType) -> [Named (FORMULA ())]
+generateAxioms :: SubSortMap -> PredMap -> OpMap -> [Named (FORMULA ())]
 generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
     where -- generate argument restrictions for operations
-          axs = Map.foldWithKey (procOpMapping subSortMap) [] oMap
+          axs = Map.foldWithKey (procOpMapping subSortMap) [] $ MapSet.toMap oMap
           p_axs =
           -- generate argument restrictions for predicates
            Map.foldWithKey (\ pName ->
@@ -224,7 +221,7 @@ generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
                                       (genPredication pName)
                                       sl)
                                     [] . mkProfMapPred subSortMap)
-                   [] pMap
+                   [] $ MapSet.toMap pMap
           hi_axs =
           {- generate subclass_of axioms derived from subsorts
           and non-emptyness axioms -}
@@ -383,7 +380,7 @@ mapRec ssM opM = (mapRecord id)
               let args = map lTop sl
                   res = lTop s
                   t1 = toOpType $ Op_type Total args res pl
-                  ts = Map.findWithDefault Set.empty on opM
+                  ts = MapSet.lookup on opM
                   nK = if Set.member t1 ts then Total else Partial
               in Op_type nK args res pl
           updateVarDecls (Var_decl vl s pl) =

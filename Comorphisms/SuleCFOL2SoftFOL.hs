@@ -30,6 +30,7 @@ import Common.Result
 import Common.DocUtils
 import Common.ProofTree
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 
 import Text.ParserCombinators.Parsec
 import qualified Data.Map as Map
@@ -182,7 +183,7 @@ transFuncMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
                 (FuncMap, IdTypeSPIdMap)
 transFuncMap idMap sign =
-    Map.foldWithKey toSPOpType (Map.empty, idMap) (CSign.opMap sign)
+    Map.foldWithKey toSPOpType (Map.empty, idMap) . MapSet.toMap $ CSign.opMap sign
     where toSPOpType iden typeSet (fm, im) =
               if not (Set.null typeSet) && Set.null (Set.deleteMin typeSet) then
                  let oType = Set.findMin typeSet
@@ -222,9 +223,10 @@ partOverload leq =
 
 transPredMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
-                (PredMap, IdTypeSPIdMap, [Named SPTerm])
+                (SPSign.PredMap, IdTypeSPIdMap, [Named SPTerm])
 transPredMap idMap sign =
-    Map.foldWithKey toSPPredType (Map.empty, idMap, []) (CSign.predMap sign)
+    Map.foldWithKey toSPPredType (Map.empty, idMap, []) . MapSet.toMap
+      $ CSign.predMap sign
     where toSPPredType iden typeSet (fm, im, sen) =
               if not (Set.null typeSet) && Set.null (Set.deleteMin typeSet) then
                 let pType = Set.findMin typeSet
@@ -341,7 +343,7 @@ integrateGenerated idMap genSens sign
                   mv
 
 makeGenGoals :: SPSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
-             -> (PredMap, IdTypeSPIdMap, [Named SPTerm])
+             -> (SPSign.PredMap, IdTypeSPIdMap, [Named SPTerm])
 makeGenGoals sign idMap fs =
   let Result _ res = makeGens sign idMap fs
   in case res of
@@ -598,19 +600,13 @@ transTheory trSig trForm (sign, sens) =
                  (_, ops, mp) -> assert (null mp) (insertInjOps sig ops)
               _ -> error "SuleCFOL2SoftFOL.transTheory.insInjOps"
         filterPreds sig =
-              sig { CSign.predMap = CSign.diffMapSet
+              sig { CSign.predMap = MapSet.difference
                 (CSign.predMap sig)
-                (Set.fold (\ pl newMap -> case pl of
-                      Pred_name pn -> insertPredToSet pn
-                                           (Pred_type [] nullRange) newMap
-                      Qual_pred_name pn pt _ -> insertPredToSet pn pt newMap)
-                    Map.empty eqPreds) }
-        insertPredToSet pId pType pMap =
-              if Map.member pId pMap
-                then Map.adjust insPredSet pId pMap
-                else Map.insert pId (insPredSet Set.empty) pMap
-            where
-              insPredSet = Set.insert (CSign.toPredType pType)
+                (Set.fold (\ pl -> case pl of
+                      Pred_name pn -> MapSet.insert pn (PredType [])
+                      Qual_pred_name pn pt _ ->
+                        MapSet.insert pn $ CSign.toPredType pt)
+                    MapSet.empty eqPreds) }
 
 {- |
  Finds definitions (Equivalences) where one side is a binary predicate

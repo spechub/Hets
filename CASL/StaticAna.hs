@@ -44,6 +44,7 @@ import Common.Id
 import Common.Keywords
 import Common.Lib.State
 import Common.Result
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import Control.Monad
@@ -69,7 +70,7 @@ addOp a ty i =
     do checkSorts (opRes ty : opArgs ty)
        e <- get
        let m = opMap e
-           l = Map.findWithDefault Set.empty i m
+           l = MapSet.lookup i m
            ds = checkWithOtherMap opS predS (predMap e) i
                 ++ checkWithVars opS (varMap e) i
            check = addDiags $
@@ -82,9 +83,8 @@ addOp a ty i =
                      addDiags $ mkDiag Warning "partially redeclared" i : ds
                      else store >> check
           Total -> if Set.member ty {opKind = Partial} l then do
-                         put e { opMap = Map.insert i
-                                 (Set.insert ty $
-                                  Set.delete ty {opKind = Partial} l) m }
+                         put e { opMap = MapSet.insert i ty
+                                   $ MapSet.delete i ty {opKind = Partial} m }
                          addDiags $ mkDiag Hint "redeclared as total" i : ds
                    else store >> check
        addAnnoSet a $ Symbol i $ OpAsItemType ty
@@ -110,21 +110,21 @@ addPred a ty i =
     do checkSorts $ predArgs ty
        e <- get
        let m = predMap e
-           l = Map.findWithDefault Set.empty i m
+           l = MapSet.lookup i m
            ds = checkWithOtherMap predS opS (opMap e) i
                 ++ checkWithVars predS (varMap e) i
        if Set.member ty l then
           addDiags $ mkDiag Hint "redeclared pred" i : ds
           else do
-            put e { predMap = Map.insert i (Set.insert ty l) m }
+            put e { predMap = MapSet.insert i ty m }
             addDiags $ checkPlaces (predArgs ty) i ++ checkNamePrefix i ++ ds
        addAnnoSet a $ Symbol i $ PredAsItemType ty
 
 nonConsts :: OpMap -> Set.Set Id
-nonConsts = Map.keysSet . Map.filter (any (not . null . opArgs) . Set.toList)
+nonConsts = MapSet.keysSet . MapSet.filter (not . null . opArgs)
 
 opMapConsts :: OpMap -> Set.Set Id
-opMapConsts = Map.keysSet . Map.filter (any (null . opArgs) . Set.toList)
+opMapConsts = MapSet.keysSet . MapSet.filter (null . opArgs)
 
 allOpIds :: Sign f e -> Set.Set Id
 allOpIds = nonConsts . opMap
@@ -133,7 +133,8 @@ allConstIds :: Sign f e -> Set.Set Id
 allConstIds = opMapConsts . opMap
 
 addAssocs :: Sign f e -> GlobalAnnos -> GlobalAnnos
-addAssocs e = updAssocMap (\ m -> foldr addAssocId m $ Map.keys $ assocOps e)
+addAssocs e =
+  updAssocMap (\ m -> Set.fold addAssocId m $ MapSet.keysSet $ assocOps e)
 
 updAssocMap :: (AssocMap -> AssocMap) -> GlobalAnnos -> GlobalAnnos
 updAssocMap f ga = ga { assoc_annos = f $ assoc_annos ga }
@@ -149,7 +150,7 @@ formulaIds e = let ops = allOpIds e in
                `Set.union` ops
 
 allPredIds :: Sign f e -> Set.Set Id
-allPredIds = Map.keysSet . predMap
+allPredIds = MapSet.keysSet . predMap
 
 addSentences :: [Named (FORMULA f)] -> State (Sign f e) ()
 addSentences ds =

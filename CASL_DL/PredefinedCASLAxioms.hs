@@ -10,16 +10,23 @@ Portability :  portable
 
 -}
 
-module CASL_DL.PredefinedCASLAxioms where
+module CASL_DL.PredefinedCASLAxioms
+  ( predefSign
+  , thing
+  , noThing
+  , predefinedAxioms
+  ) where
 
-import Common.Id
 import CASL.AS_Basic_CASL
-import Common.AS_Annotation
 import CASL.Sign
-import Data.Set as Set
-import Data.Map as Map
+
+import Common.AS_Annotation
+import Common.Id
 import Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
+
 import Data.Char
+import Data.Set as Set
 
 hetsPrefix :: String
 hetsPrefix = ""
@@ -28,151 +35,144 @@ hetsPrefix = ""
 thing :: SORT
 thing = stringToId "Thing"
 
+n :: Range
+n = nullRange
+
 -- | OWL bottom
 noThing :: PRED_SYMB
 noThing =
      (Qual_pred_name (stringToId "Nothing")
-                         (Pred_type [thing] nullRange) nullRange)
+                         (Pred_type [thing] n) n)
 
 predefSign :: Sign () ()
 predefSign
   = (emptySign ()){sortSet =
                      Set.fromList
-                       [Id [Token "Char" nullRange] [] nullRange,
-                        Id [Token "DATA" nullRange] [] nullRange,
-                        Id [Token "boolean" nullRange] [] nullRange,
-                        Id [Token "integer" nullRange] [] nullRange,
-                        Id [Token "negativeInteger" nullRange] [] nullRange,
-                        Id [Token "nonNegativeInteger" nullRange] [] nullRange,
-                        Id [Token "nonPositiveInteger" nullRange] [] nullRange,
-                        Id [Token "positiveInteger" nullRange] [] nullRange,
-                        Id [Token "string" nullRange] [] nullRange],
+                       [Id [Token "Char" n] [] n,
+                        Id [Token "DATA" n] [] n,
+                        Id [Token "boolean" n] [] n,
+                        Id [Token "integer" n] [] n,
+                        Id [Token "negativeInteger" n] [] n,
+                        Id [Token "nonNegativeInteger" n] [] n,
+                        Id [Token "nonPositiveInteger" n] [] n,
+                        Id [Token "positiveInteger" n] [] n,
+                        Id [Token "string" n] [] n],
                    sortRel =
                      Rel.fromList
-                       [(Id [Token "boolean" nullRange] [] nullRange,
-                         Id [Token "DATA" nullRange] [] nullRange),
-                        (Id [Token "integer" nullRange] [] nullRange,
-                         Id [Token "DATA" nullRange] [] nullRange),
-                        (Id [Token "negativeInteger" nullRange] [] nullRange,
-                         Id [Token "DATA" nullRange] [] nullRange),
-                        (Id [Token "negativeInteger" nullRange] [] nullRange,
-                         Id [Token "integer" nullRange] [] nullRange),
-                        (Id [Token "negativeInteger" nullRange] [] nullRange,
-                         Id [Token "nonPositiveInteger" nullRange] [] nullRange),
-                        (Id [Token "nonNegativeInteger" nullRange] [] nullRange,
-                         Id [Token "DATA" nullRange] [] nullRange),
-                        (Id [Token "nonNegativeInteger" nullRange] [] nullRange,
-                         Id [Token "integer" nullRange] [] nullRange),
-                        (Id [Token "nonPositiveInteger" nullRange] [] nullRange,
-                         Id [Token "DATA" nullRange] [] nullRange),
-                        (Id [Token "nonPositiveInteger" nullRange] [] nullRange,
-                         Id [Token "integer" nullRange] [] nullRange),
-                        (Id [Token "positiveInteger" nullRange] [] nullRange,
-                         Id [Token "DATA" nullRange] [] nullRange),
-                        (Id [Token "positiveInteger" nullRange] [] nullRange,
-                         Id [Token "integer" nullRange] [] nullRange),
-                        (Id [Token "positiveInteger" nullRange] [] nullRange,
-                         Id [Token "nonNegativeInteger" nullRange] [] nullRange),
-                        (Id [Token "positiveInteger" nullRange] [] nullRange,
-                         Id [Token "DATA" nullRange] [] nullRange),
-                        (Id [Token "positiveInteger" nullRange] [] nullRange,
-                         Id [Token "integer" nullRange] [] nullRange),
-                        (Id [Token "positiveInteger" nullRange] [] nullRange,
-                         Id [Token "nonNegativeInteger" nullRange] [] nullRange),
-                        (Id [Token "string" nullRange] [] nullRange,
-                         Id [Token "DATA" nullRange] [] nullRange)],
-                   opMap =
-                     Map.fromList [],
-                   assocOps = Map.fromList [],
+                       [(Id [Token "boolean" n] [] n,
+                         Id [Token "DATA" n] [] n),
+                        (Id [Token "integer" n] [] n,
+                         Id [Token "DATA" n] [] n),
+                        (Id [Token "negativeInteger" n] [] n,
+                         Id [Token "DATA" n] [] n),
+                        (Id [Token "negativeInteger" n] [] n,
+                         Id [Token "integer" n] [] n),
+                        (Id [Token "negativeInteger" n] [] n,
+                         Id [Token "nonPositiveInteger" n] [] n),
+                        (Id [Token "nonNegativeInteger" n] [] n,
+                         Id [Token "DATA" n] [] n),
+                        (Id [Token "nonNegativeInteger" n] [] n,
+                         Id [Token "integer" n] [] n),
+                        (Id [Token "nonPositiveInteger" n] [] n,
+                         Id [Token "DATA" n] [] n),
+                        (Id [Token "nonPositiveInteger" n] [] n,
+                         Id [Token "integer" n] [] n),
+                        (Id [Token "positiveInteger" n] [] n,
+                         Id [Token "DATA" n] [] n),
+                        (Id [Token "positiveInteger" n] [] n,
+                         Id [Token "integer" n] [] n),
+                        (Id [Token "positiveInteger" n] [] n,
+                         Id [Token "nonNegativeInteger" n] [] n),
+                        (Id [Token "positiveInteger" n] [] n,
+                         Id [Token "DATA" n] [] n),
+                        (Id [Token "positiveInteger" n] [] n,
+                         Id [Token "integer" n] [] n),
+                        (Id [Token "positiveInteger" n] [] n,
+                         Id [Token "nonNegativeInteger" n] [] n),
+                        (Id [Token "string" n] [] n,
+                         Id [Token "DATA" n] [] n)],
                    predMap =
-                     Map.fromList
-                       [(Id [Token "Nothing" nullRange] [] nullRange,
-                         Set.fromList
-                           [PredType [Id [Token "Thing" nullRange] [] nullRange]]),
+                     MapSet.fromList
+                       [(Id [Token "Nothing" n] [] n,
+                           [PredType [Id [Token "Thing" n] [] n]]),
                         (Id
-                           [Token "__" nullRange, Token "<" nullRange, Token "__" nullRange]
+                           [Token "__" n, Token "<" n, Token "__" n]
                            []
-                           nullRange,
-                         Set.fromList
+                           n,
                            [PredType
-                              [Id [Token "integer" nullRange] [] nullRange,
-                               Id [Token "integer" nullRange] [] nullRange],
+                              [Id [Token "integer" n] [] n,
+                               Id [Token "integer" n] [] n],
                             PredType
-                              [Id [Token "nonNegativeInteger" nullRange] [] nullRange,
-                               Id [Token "nonNegativeInteger" nullRange] [] nullRange]]),
+                              [Id [Token "nonNegativeInteger" n] [] n,
+                               Id [Token "nonNegativeInteger" n] [] n]]),
                         (Id
-                           [Token "__" nullRange, Token "<=" nullRange, Token "__" nullRange]
+                           [Token "__" n, Token "<=" n, Token "__" n]
                            []
-                           nullRange,
-                         Set.fromList
+                           n,
                            [PredType
-                              [Id [Token "integer" nullRange] [] nullRange,
-                               Id [Token "integer" nullRange] [] nullRange],
+                              [Id [Token "integer" n] [] n,
+                               Id [Token "integer" n] [] n],
                             PredType
-                              [Id [Token "nonNegativeInteger" nullRange] [] nullRange,
-                               Id [Token "nonNegativeInteger" nullRange] [] nullRange]]),
+                              [Id [Token "nonNegativeInteger" n] [] n,
+                               Id [Token "nonNegativeInteger" n] [] n]]),
                         (Id
-                           [Token "__" nullRange, Token ">" nullRange, Token "__" nullRange]
+                           [Token "__" n, Token ">" n, Token "__" n]
                            []
-                           nullRange,
-                         Set.fromList
+                           n,
                            [PredType
-                              [Id [Token "integer" nullRange] [] nullRange,
-                               Id [Token "integer" nullRange] [] nullRange],
+                              [Id [Token "integer" n] [] n,
+                               Id [Token "integer" n] [] n],
                             PredType
-                              [Id [Token "nonNegativeInteger" nullRange] [] nullRange,
-                               Id [Token "nonNegativeInteger" nullRange] [] nullRange]]),
+                              [Id [Token "nonNegativeInteger" n] [] n,
+                               Id [Token "nonNegativeInteger" n] [] n]]),
                         (Id
-                           [Token "__" nullRange, Token ">=" nullRange, Token "__" nullRange]
+                           [Token "__" n, Token ">=" n, Token "__" n]
                            []
-                           nullRange,
-                         Set.fromList
+                           n,
                            [PredType
-                              [Id [Token "integer" nullRange] [] nullRange,
-                               Id [Token "integer" nullRange] [] nullRange],
+                              [Id [Token "integer" n] [] n,
+                               Id [Token "integer" n] [] n],
                             PredType
-                              [Id [Token "nonNegativeInteger" nullRange] [] nullRange,
-                               Id [Token "nonNegativeInteger" nullRange] [] nullRange]]),
-                        (Id [Token "even" nullRange] [] nullRange,
-                         Set.fromList
-                           [PredType [Id [Token "integer" nullRange] [] nullRange],
+                              [Id [Token "nonNegativeInteger" n] [] n,
+                               Id [Token "nonNegativeInteger" n] [] n]]),
+                        (Id [Token "even" n] [] n,
+                           [PredType [Id [Token "integer" n] [] n],
                             PredType
-                              [Id [Token "nonNegativeInteger" nullRange] [] nullRange]]),
-                        (Id [Token "odd" nullRange] [] nullRange,
-                         Set.fromList
-                           [PredType [Id [Token "integer" nullRange] [] nullRange],
+                              [Id [Token "nonNegativeInteger" n] [] n]]),
+                        (Id [Token "odd" n] [] n,
+                           [PredType [Id [Token "integer" n] [] n],
                             PredType
-                              [Id [Token "nonNegativeInteger" nullRange] [] nullRange]])]}
+                              [Id [Token "nonNegativeInteger" n] [] n]])]}
 
 predefinedAxioms :: [SenAttr (FORMULA ()) [Char]]
 predefinedAxioms =
     [
      makeNamed "nothing in Nothing" $
      Quantification Universal
-     [Var_decl [mk_Name 1] thing nullRange]
+     [Var_decl [mk_Name 1] thing n]
      (
       Negation
       (
        Predication
        noThing
-       [Qual_var (mk_Name 1) thing nullRange]
-       nullRange
+       [Qual_var (mk_Name 1) thing n]
+       n
       )
-      nullRange
+      n
      )
-     nullRange
+     n
     ,
      makeNamed "thing in Thing" $
      Quantification Universal
-     [Var_decl [mk_Name 1] thing nullRange]
+     [Var_decl [mk_Name 1] thing n]
      (
        Predication
        (Qual_pred_name (stringToId "Thing")
-                           (Pred_type [thing] nullRange) nullRange)
-       [Qual_var (mk_Name 1) thing nullRange]
-       nullRange
+                           (Pred_type [thing] n) n)
+       [Qual_var (mk_Name 1) thing n]
+       n
      )
-     nullRange
+     n
     ]
 
 -- | Build a name

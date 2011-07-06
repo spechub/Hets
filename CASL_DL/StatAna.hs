@@ -32,10 +32,6 @@ import CASL.ShowMixfix
 import CASL.Overload
 import CASL.Quantification
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
-
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.AnalyseAnnos
@@ -44,6 +40,11 @@ import Common.Id
 import Common.Result
 import Common.ConvertLiteral
 import Common.ExtSign
+import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 instance TermExtension DL_FORMULA where
     freeVarsOfExt sign (Cardinality _ _ t1 t2 mf _) =
@@ -198,15 +199,11 @@ postAna ds1 in_sig i@(_, ExtSign acc_sig _, _) =
                  Set.insert topSortD
                         (subsortsOf topSortD predefinedSign)
 
-          checkPreds = Map.foldWithKey chPred [] (predMap diff_sig)
-          chPred p ts ds = ds ++
-              Set.fold (chArgs "pred" p . predArgs) [] ts
-
-          checkOps = Map.foldWithKey chOp [] (opMap diff_sig)
-          chOp o ts ds = ds ++
-              Set.fold (chArgs "op" o . opArgs) [] ts
-
-          chArgs kstr sym args ds = ds ++
+          checkPreds = MapSet.foldWithKey chPred [] (predMap diff_sig)
+          chPred p ty = (chArgs "pred" p (predArgs ty) ++)
+          checkOps = MapSet.foldWithKey chOp [] (opMap diff_sig)
+          chOp o ty = (chArgs "op" o (opArgs ty) ++)
+          chArgs kstr sym args =
               case args of
               [] -> if kstr == "op"
                     then []
@@ -262,25 +259,17 @@ resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm qualTerm ran) =
                                      resolveDL_FORMULA ga ids
 
 minDLForm :: Min DL_FORMULA CASL_DLSign
-minDLForm sign form =
-    case form of
+minDLForm sign form = case form of
     Cardinality ct ps varTerm natTerm qualTerm ran ->
-     case predName ps of
-     pn ->
-        case Map.findWithDefault Set.empty pn (predMap sign) of
-        pn_typeSet
-            | Set.null pn_typeSet ->
-                Result [Diag Error ("Unknown predicate: \"" ++
+       let pn = predSymbName ps
+           pn_RelTypes = Set.filter ((== 2) . length . predArgs)
+                 $ MapSet.lookup pn (predMap sign)
+       in
+      if Set.null pn_RelTypes then
+                Result [Diag Error ("Unknown binary predicate: \"" ++
                                     show pn ++ "\"") (posOfId pn)]
                        Nothing
-            | otherwise ->
-              let pn_RelTypes = Set.filter (\ pt -> length (predArgs pt) == 2)
-                                           pn_typeSet
-              in if Set.null pn_RelTypes
-                 then Result [Diag Error ("No binary predicate \"" ++
-                                    show pn ++ "\" declared") (posOfId pn)]
-                       Nothing
-                 else do
+      else do
                    v2 <- oneExpTerm minDLForm sign varTerm
                    let v_sort = sortOfTerm v2
                    n2 <- oneExpTerm minDLForm sign natTerm
@@ -332,9 +321,7 @@ minDLForm sign form =
                    if null ds
                     then return (Cardinality ct ps' v2 n2 qualTerm ran)
                     else Result [] Nothing
-    where predName ps = case ps of
-                        Pred_name pn -> pn
-                        Qual_pred_name pn _pType _ -> pn
+    where
           getType ps = case ps of
                         Pred_name _ -> Nothing
                         Qual_pred_name _ pType _ -> Just pType

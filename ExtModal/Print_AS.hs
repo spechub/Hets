@@ -13,11 +13,13 @@ printing AS_ExtModal ExtModalSign data types
 module ExtModal.Print_AS where
 
 import Common.Keywords
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import qualified Common.Lib.MapSet as MapSet
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
@@ -117,9 +119,11 @@ printEModalSign sim sign =
         let mds = modalities sign
             tms = time_modalities sign
             nms = nominals sign in
-        printSetMap (keyword rigidS <+> keyword opS) empty (rigidOps sign)
+        printSetMap (keyword rigidS <+> keyword opS) empty
+            (MapSet.toMap $ rigidOps sign)
         $+$
-        printSetMap (keyword rigidS <+> keyword predS) empty (rigidPreds sign)
+        printSetMap (keyword rigidS <+> keyword predS) empty
+            (MapSet.toMap $ rigidPreds sign)
         $+$
         (if Map.null mds then empty else
         cat [keyword modalitiesS <+> sepBySemis (map sidDoc (Map.keys mds))

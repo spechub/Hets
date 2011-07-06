@@ -20,8 +20,9 @@ import CASL.AS_Basic_CASL
 import CASL.Morphism(Morphism, imageOfMorphism)
 import CASL.Sign(Sign(sortSet, predMap), supersortsOf, toPredType)
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import qualified Common.Lib.MapSet as MapSet
 
 {-
 We use a three valued logic to evaluate a formula in a one-point expansion
@@ -121,11 +122,9 @@ evaluateOnePointFORMULA sig (Predication pred_symb _ _) =
      case pred_symb of
        Pred_name _ ->  Nothing
        Qual_pred_name pname ptype _ ->
-                case Map.lookup pname (predMap sig) of
-                  Nothing -> Just True
-                  Just ptypes ->
-                    if toPredType ptype `Set.member` ptypes then Nothing
-                    else Just True
+           if MapSet.member pname (toPredType ptype) (predMap sig)
+           then Nothing
+           else Just True
 
 evaluateOnePointFORMULA sig (Definedness (Sorted_term _ sort _) _) =
       if Set.member sort (sortSet sig) then Nothing else Just True

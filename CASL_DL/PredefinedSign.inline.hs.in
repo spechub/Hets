@@ -21,9 +21,9 @@ import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
 
 import Common.Id
-
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
-import qualified Data.Map as Map
+
 import qualified Data.Set as Set
 
 import CASL.AS_Basic_CASL
@@ -58,8 +58,8 @@ predefined_symbols :: Sign (FORMULA ()) ()
 predefined_symbols =
     ((emptySign ()) { sortSet = Set.singleton topSort
                    , predMap =
-                       Map.singleton (stringToId "Nothing")
-                           (Set.singleton (PredType [topSort]))
+                       MapSet.insert (stringToId "Nothing")
+                         (PredType [topSort]) MapSet.empty
                    })
 
 dataSig_CASL :: Sign (FORMULA ()) ()

@@ -12,22 +12,25 @@ Signatures for modal logic, as extension of CASL signatures.
 
 module Modal.ModalSign where
 
-import CASL.Sign
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Common.Id
 import Modal.AS_Modal
+
+import CASL.Sign
+
+import qualified Common.Lib.MapSet as MapSet
+import Common.Id
+
 import qualified Data.List as List
+import qualified Data.Map as Map
 
 data ModalSign = ModalSign
   { rigidOps :: OpMap
-  , rigidPreds :: Map.Map Id (Set.Set PredType)
+  , rigidPreds :: PredMap
   , modies :: Map.Map SIMPLE_ID [AnModFORM]
   , termModies :: Map.Map Id [AnModFORM] --SORT
   } deriving (Show, Eq, Ord)
 
 emptyModalSign :: ModalSign
-emptyModalSign = ModalSign Map.empty Map.empty Map.empty Map.empty
+emptyModalSign = ModalSign MapSet.empty MapSet.empty Map.empty Map.empty
 
 addModalSign :: ModalSign -> ModalSign -> ModalSign
 addModalSign a b = a
@@ -49,7 +52,7 @@ interModalSign a b = a
 
 diffModalSign :: ModalSign -> ModalSign -> ModalSign
 diffModalSign a b = a
-  { rigidOps = diffMapSet (rigidOps a) $ rigidOps b
+  { rigidOps = diffOpMapSet (rigidOps a) $ rigidOps b
   , rigidPreds = diffMapSet (rigidPreds a) $ rigidPreds b
   , modies = Map.differenceWith diffList (modies a) $ modies b
   , termModies = Map.differenceWith diffList (termModies a) $ termModies b
@@ -59,7 +62,7 @@ diffModalSign a b = a
 isSubModalSign :: ModalSign -> ModalSign -> Bool
 isSubModalSign a b =
     isSubOpMap (rigidOps a) (rigidOps b)
-    && isSubMapSet (rigidPreds a) (rigidPreds b)
+    && isSubMap (rigidPreds a) (rigidPreds b)
     && Map.isSubmapOfBy sublist (modies a) (modies b)
     && Map.isSubmapOfBy sublist (termModies a) (termModies b)
     where sublist l1 l2 = List.union l2 l1 == l2

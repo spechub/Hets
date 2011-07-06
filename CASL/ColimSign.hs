@@ -24,9 +24,10 @@ import CASL.AS_Basic_CASL
 
 import Common.Id
 import Common.SetColimit
-import Common.Utils (number)
-import qualified Common.Lib.Rel as Rel
+import Common.Utils (number, nubOrd)
 import Common.Lib.Graph
+import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
@@ -158,18 +159,15 @@ buildOpGraph :: Gr (Sign f e) (Int, Morphism f e m) ->
                 Gr (Set.Set (Id, OpType))
                    (Int, Map.Map (Id, OpType) (Id, OpType))
 buildOpGraph graph = let
-  getOps sign = foldl
-                 (\s (i, opset) ->
-                     Set.union s $ Set.map (\x -> (i, x)) opset)
-                 Set.empty $ Map.toList $ opMap sign
+  getOps = mapSetToList . opMap
   getOpFun mor = let
                   ssign = msource mor
                   smap = sort_map mor
                   omap = op_map mor
                  in foldl (\f x -> let y = mapOpSym smap omap x
                                   in if x == y then f else Map.insert x y f)
-                  Map.empty $ Set.toList $ getOps ssign
- in nmap getOps $ emap (\ (i, m) -> (i,getOpFun m)) graph
+                  Map.empty $ getOps ssign
+ in nmap (Set.fromList . getOps) $ emap (\ (i, m) -> (i, getOpFun m)) graph
 
 buildColimOvrl :: Gr (Sign f e) (Int, Morphism f e m) ->
                   Gr (Set.Set (Id, OpType))(Int, EndoMap (Id, OpType)) ->
@@ -271,8 +269,7 @@ nameSymbols :: Gr (Set.Set (Id, OpType))
                Map.Map ((Id, OpType), Int) (Map.Map Id Int) ->
                Rel.Rel ((Id, OpType), Int) ->
                Map.Map ((Id, OpType), Int) Bool ->
-               (Map.Map Id (Set.Set OpType),
-                Map.Map Int (Map.Map (Id, OpType) ((Id, OpType),Int)))
+               (OpMap, Map.Map Int (Map.Map (Id, OpType) ((Id, OpType),Int)))
 nameSymbols graph morMap phi names ovrl totalOps = let
   colimOvrl = Rel.sccOfClosure $ ovrl
   nameClass opFun gNames (set, idx) morFun = let
@@ -306,11 +303,11 @@ nameSymbols graph morMap phi names ovrl totalOps = let
 -- -- i have to map symbols entering set
 -- -- to (newName, their otype mapped)
     morFun' = Map.mapWithKey renameSymbols morFun
-   in (Map.insert newName opTypes opFun, gNames', morFun')
+   in (MapSet.update (const opTypes) newName opFun, gNames', morFun')
   colimOvrl' = reverse $
                sortBy (\ s1 s2 -> compare (Set.size s1)(Set.size s2)) colimOvrl
   (opFuns, _, renMap) = foldl (\(oF,gN, mM) x -> nameClass oF gN x mM)
-                                  (Map.empty,[], morMap)
+                                  (MapSet.empty,[], morMap)
                                   $ number colimOvrl'
  in (opFuns , renMap)
 
@@ -338,18 +335,15 @@ buildPredGraph :: Gr (Sign f e) (Int, Morphism f e m) ->
                 Gr (Set.Set (Id, PredType))
                    (Int, Map.Map (Id, PredType) (Id, PredType))
 buildPredGraph graph = let
-  getPreds sign = foldl
-                 (\s (i, pset) ->
-                     Set.union s $ Set.map (\x -> (i, x)) pset)
-                 Set.empty $ Map.toList $ predMap sign
+  getPreds = mapSetToList . predMap
   getPredFun mor = let
                   ssign = msource mor
                   smap = sort_map mor
                   pmap = pred_map mor
                  in foldl (\f x -> let y = mapPredSym smap pmap x
                                   in if x == y then f else Map.insert x y f)
-                  Map.empty $ Set.toList $ getPreds ssign
- in nmap getPreds $ emap (\ (i, m) -> (i,getPredFun m)) graph
+                  Map.empty $ getPreds ssign
+ in nmap (Set.fromList . getPreds) $ emap (\ (i, m) -> (i,getPredFun m)) graph
 
 
 buildPColimOvrl :: Gr (Sign f e) (Int, Morphism f e m) ->
@@ -436,8 +430,7 @@ namePSymbols :: Gr (Set.Set (Id, PredType))
                Map.Map Int (Morphism f e m) ->
                Map.Map ((Id, PredType), Int) (Map.Map Id Int) ->
                Rel.Rel ((Id, PredType), Int) ->
-               (Map.Map Id (Set.Set PredType),
-                Map.Map Int (Map.Map (Id, PredType) ((Id, PredType),Int)))
+               (PredMap, Map.Map Int (Map.Map (Id, PredType) ((Id, PredType),Int)))
 namePSymbols graph morMap phi names ovrl = let
   colimOvrl = Rel.sccOfClosure $ ovrl
   nameClass pFun gNames (set, idx) morFun = let
@@ -461,20 +454,13 @@ namePSymbols graph morMap phi names ovrl = let
 -- -- i have to map symbols entering set
 -- -- to (newName, their predtype mapped)
     morFun' = Map.mapWithKey renameSymbols morFun
-   in (Map.insert newName pTypes pFun, gNames', morFun')
+   in (MapSet.update (const pTypes) newName pFun, gNames', morFun')
   colimOvrl' = reverse $
                sortBy (\ s1 s2 -> compare (Set.size s1)(Set.size s2)) colimOvrl
   (pFuns, _, renMap) = foldl (\(pF,gN, mM) x -> nameClass pF gN x mM)
-                                  (Map.empty,[], morMap)
+                                  (MapSet.empty,[], morMap)
                                   $ number colimOvrl'
  in (pFuns , renMap)
-
-opSymbolsOf :: OpMap -> [(Id, OpType)]
--- returns the list of all operation symbols in a signature,
--- as pairs (Id,OpType)
-opSymbolsOf = concatMap
-  (\ (idX, opTSet) -> map (\y -> (idX, y)) $ Set.toList opTSet)
-  . Map.toList
 
 applyMor :: Morphism f e m -> (Id, OpType) -> (Id, OpType)
 applyMor phi (i, optype) = mapOpSym (sort_map phi) (op_map phi) (i, optype)
@@ -482,17 +468,17 @@ applyMor phi (i, optype) = mapOpSym (sort_map phi) (op_map phi) (i, optype)
 -- associative operations
 
 assocSymbols :: Sign f e -> [(Id, OpType)]
-assocSymbols = opSymbolsOf . assocOps
+assocSymbols = mapSetToList . assocOps
 
 colimitAssoc :: Gr (Sign f e) (Int,Morphism f e m) -> Sign f e ->
    Map.Map Int (Morphism f e m) -> (Sign f e, Map.Map Int (Morphism f e m))
 colimitAssoc graph sig morMap = let
-  assocOpList = nub $ concatMap
+  assocOpList = nubOrd $ concatMap
     (\ (node, sigma) -> map (applyMor ((Map.!)morMap node)) $
     assocSymbols sigma ) $ labNodes graph
-  idList = nub $ map fst assocOpList
-  sig1 = sig{assocOps = Map.fromList $
-   map (\sb -> (sb,Set.fromList $ map snd $ filter (\(i,_) -> i==sb)
+  idList = nubOrd $ map fst assocOpList
+  sig1 = sig{assocOps = MapSet.fromList $
+   map (\sb -> (sb, map snd $ filter (\(i,_) -> i==sb)
                                             assocOpList )) idList}
   morMap1 = Map.map (\ phi -> phi{mtarget = sig1}) morMap
  in (sig1, morMap1)

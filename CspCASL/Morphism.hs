@@ -41,6 +41,7 @@ import Common.Id
 import Common.Result
 import Common.Utils (composeMap, isSingleton)
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -143,20 +144,18 @@ composeCspAddMorphism m1 m2 = let
     sMap = composeMap (Rel.setToMap $ sortSet src) sMap1 sMap2
     src = msource m1
     cSrc = extendedInfo src
-    cMap = Map.foldWithKey ( \ c ts m ->
-                   Set.fold ( \ s ->
+    cMap = MapSet.foldWithKey ( \ c s ->
                        let p = (c, s)
                            ni = fst $ mapChannel m2 $ mapChannel m1 p
-                       in if c == ni then id else Map.insert p ni) m ts)
+                       in if c == ni then id else Map.insert p ni)
                       Map.empty $ chans cSrc
-    pMap = Map.foldWithKey ( \ p ps m ->
-                   Set.fold ( \ pr@(ProcProfile _ a) ->
+    pMap = MapSet.foldWithKey ( \ p pr@(ProcProfile _ a) ->
                        let pp = (p, pr)
                            (ni, ProcProfile _ na) =
                              mapProcess m2 $ mapProcess m1 pp
                            oa = mapCommAlphaAux sMap cMap a
                        in if p == ni && oa == na then id else
-                              Map.insert pp (ni, na)) m ps)
+                              Map.insert pp (ni, na))
                       Map.empty $ procSet cSrc
   in return emptyCspAddMorphism
   { channelMap = cMap
@@ -166,8 +165,7 @@ composeCspAddMorphism m1 m2 = let
 CspAddMorphism. -}
 type CspCASLMorphism = CASL_Morphism.Morphism CspSen CspSign CspAddMorphism
 
-{- | Dont know if this is implemented correctly. If m1 and m2 have the same
-channel or process maps then m1's are taken. BUG? -}
+-- | unite morphisms
 cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism
   -> Result CspAddMorphism
 cspAddMorphismUnion mor1 mor2 = let
@@ -177,16 +175,16 @@ cspAddMorphismUnion mor1 mor2 = let
     m2 = extended_map mor2
     chan1 = channelMap m1
     chan2 = channelMap m2
-    delChan (n, s) m = diffMapSet m $ Map.singleton n $ Set.singleton s
+    delChan (n, s) m = MapSet.delete n s m
     uc1 = foldr delChan (chans s1) $ Map.keys chan1
     uc2 = foldr delChan (chans s2) $ Map.keys chan2
-    uc = addMapSet uc1 uc2
+    uc = MapSet.union uc1 uc2
     proc1 = processMap m1
     proc2 = processMap m2
-    delProc (n, p) m = diffMapSet m $ Map.singleton n $ Set.singleton p
+    delProc (n, p) m = MapSet.delete n p m
     up1 = foldr delProc (procSet s1) $ Map.keys proc1
     up2 = foldr delProc (procSet s2) $ Map.keys proc2
-    up = addMapSet up1 up2
+    up = MapSet.union up1 up2
     showAlpha (i, s) l = shows i (if null l then "" else "(..)") ++ ":"
       ++ if isSingleton s then showDoc (Set.findMin s) "" else showDoc s ""
     (cds, cMap) = foldr ( \ (isc@(i, s), j) (ds, m) ->
@@ -198,7 +196,7 @@ cspAddMorphismUnion mor1 mor2 = let
                 ++ showDoc s " to " ++ shows j " and "
                 ++ shows k "") nullRange : ds, m)) ([], chan1)
           (Map.toList chan2 ++ concatMap ( \ (c, ts) -> map
-              ( \ s -> ((c, s), c)) $ Set.toList ts) (Map.toList uc))
+              ( \ s -> ((c, s), c)) ts) (MapSet.toList uc))
     (pds, pMap) =
       foldr ( \ (isc@(i, pt@(ProcProfile args _)), j) (ds, m) ->
           case Map.lookup isc m of
@@ -209,8 +207,8 @@ cspAddMorphismUnion mor1 mor2 = let
                 ++ showDoc pt " to " ++ showAlpha j args ++ " and "
                 ++ showAlpha k args) nullRange : ds, m)) (cds, proc1)
           (Map.toList proc2 ++ concatMap ( \ (p, pts) -> map
-              ( \ pt@(ProcProfile _ al) -> ((p, pt), (p, al)))
-              $ Set.toList pts) (Map.toList up))
+              ( \ pt@(ProcProfile _ al) -> ((p, pt), (p, al))) pts)
+              (MapSet.toList up))
      in if null pds then return emptyCspAddMorphism
         { channelMap = cMap
         , processMap = pMap }
@@ -220,23 +218,21 @@ toCspSymbMap :: Bool -> Morphism f CspSign CspAddMorphism
   -> Map.Map CspSymbol CspSymbol
 toCspSymbMap b mor = let
     src = extendedInfo $ msource mor
-    chanSymMap = Map.foldWithKey
-      ( \ i s m -> Set.fold
-        ( \ t -> let
+    chanSymMap = MapSet.foldWithKey
+      ( \ i t -> let
               p = (i, t)
               q@(j, _) = mapChannel mor p
               in if b && i == j then id else
                      Map.insert (toChanSymbol p) $ toChanSymbol q)
-        m s) Map.empty $ chans src
-    procSymMap = Map.foldWithKey
-      ( \ i s m -> Set.fold
-        ( \ t@(ProcProfile _ al) -> let
+      Map.empty $ chans src
+    procSymMap = MapSet.foldWithKey
+      ( \ i t@(ProcProfile _ al) -> let
               p = (i, t)
               al1 = mapCommAlpha mor al
               q@(j, ProcProfile _ al2) = mapProcess mor p
               in if b && i == j && al1 == al2 then id else
                      Map.insert (toProcSymbol p) $ toProcSymbol q)
-        m s) Map.empty $ procSet src
+      Map.empty $ procSet src
   in Map.union chanSymMap procSymMap
 
 cspMorphismToCspSymbMap :: CspCASLMorphism -> Map.Map CspSymbol CspSymbol
@@ -270,17 +266,17 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
 -- * induced signature extension
 
 inducedChanMap :: Sort_map -> ChanMap -> ChanNameMap -> ChanNameMap
-inducedChanMap sm cm = Map.foldWithKey
-  ( \ i -> flip $ Set.fold ( \ s ->
+inducedChanMap sm cm = MapSet.foldWithKey
+  ( \ i s ->
       let (j, t) = mapChan sm cm (i, s)
-      in Rel.setInsert j t)) Map.empty
+      in MapSet.insert j t) MapSet.empty
 
 inducedProcMap :: Sort_map -> ChanMap -> ProcessMap -> ProcNameMap
   -> ProcNameMap
-inducedProcMap sm cm pm = Map.foldWithKey
-  ( \ n -> flip $ Set.fold ( \ p ->
+inducedProcMap sm cm pm = MapSet.foldWithKey
+  ( \ n p ->
       let (m, q) = mapProcId sm cm pm (n, p)
-      in Rel.setInsert m q)) Map.empty
+      in MapSet.insert m q) MapSet.empty
 
 inducedCspSign :: InducedSign f CspSign CspAddMorphism CspSign
 inducedCspSign sm _ _ m sig =

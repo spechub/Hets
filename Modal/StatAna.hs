@@ -27,12 +27,14 @@ import CASL.Quantification
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Keywords
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.ExtSign
+import qualified Common.Lib.MapSet as MapSet
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List as List
 
 instance TermExtension M_FORMULA where
@@ -150,8 +152,7 @@ addRigidOp ty i m = return
 
 addRigidPred :: PredType -> Id -> ModalSign -> Result ModalSign
 addRigidPred ty i m = return
-       m { rigidPreds = let rps = rigidPreds m in Map.insert i
-             (Set.insert ty $ Map.findWithDefault Set.empty i rps) rps }
+       m { rigidPreds = MapSet.insert i ty $ rigidPreds m }
 
 ana_M_BASIC_ITEM
     :: Ana M_BASIC_ITEM M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign

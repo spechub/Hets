@@ -14,10 +14,9 @@ relation
 
 module CASL.Monoton (monotonicities) where
 
-import Common.Id
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import qualified Common.Lib.MapSet as MapSet
 import Common.AS_Annotation
+import Common.Id
 import Common.Utils
 
 -- CASL
@@ -27,14 +26,14 @@ import CASL.Overload
 
 monotonicities :: Sign f e -> [Named (FORMULA f)]
 monotonicities sig =
-    concatMap (makeMonos sig) (Map.toList $ opMap sig)
-    ++ concatMap (makePredMonos sig) (Map.toList $ predMap sig)
+    concatMap (makeMonos sig) (MapSet.toList $ opMap sig)
+    ++ concatMap (makePredMonos sig) (MapSet.toList $ predMap sig)
 
-makeMonos :: Sign f e -> (Id, Set.Set OpType) -> [Named (FORMULA f)]
-makeMonos sig (o, ts) = makeEquivMonos o sig $ Set.toList ts
+makeMonos :: Sign f e -> (Id, [OpType]) -> [Named (FORMULA f)]
+makeMonos sig (o, ts) = makeEquivMonos o sig ts
 
-makePredMonos :: Sign f e -> (Id, Set.Set PredType) -> [Named (FORMULA f)]
-makePredMonos sig (p, ts) = makeEquivPredMonos p sig $ Set.toList ts
+makePredMonos :: Sign f e -> (Id, [PredType]) -> [Named (FORMULA f)]
+makePredMonos sig (p, ts) = makeEquivPredMonos p sig ts
 
 makeEquivMonos :: Id -> Sign f e -> [OpType] -> [Named (FORMULA f)]
 makeEquivMonos o sig ts = case ts of

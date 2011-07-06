@@ -24,6 +24,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -91,7 +92,7 @@ cspTypedSymbKindToRaw :: Bool -> CspCASLSign -> CspSymbKind -> Id -> CspType
   -> Result CspRawSymbol
 cspTypedSymbKindToRaw b sig k idt t = let
     csig = extendedInfo sig
-    getSet = Map.findWithDefault Set.empty idt
+    getSet = MapSet.lookup idt
     chs = getSet $ chans csig
     prs = getSet $ procSet csig
     err = plain_error (idToCspRaw idt)

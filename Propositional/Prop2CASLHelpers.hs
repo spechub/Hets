@@ -20,6 +20,7 @@ import qualified Data.Map as Map
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Common.Result as Result
+import qualified Common.Lib.MapSet as MapSet
 
 -- Propositional
 import qualified Propositional.AS_BASIC_Propositional as PBasic
@@ -37,10 +38,8 @@ import qualified CASL.Morphism as CMor
 -- | Translation of the signature
 mapSig :: PSign.Sign -> CSign.CASLSign
 mapSig sign = (CSign.emptySign ())
-              {CSign.predMap = Set.fold (\x -> Map.insert x
-                                (Set.singleton $ CSign.PredType
-                                 {CSign.predArgs = []}))
-                                Map.empty $ PSign.items sign }
+              { CSign.predMap = Set.fold (`MapSet.insert` CSign.PredType [])
+                                MapSet.empty $ PSign.items sign }
 
 -- | Which is the target sublogic?
 mapSub :: PSL.PropSL -> CSL.CASL_Sublogics

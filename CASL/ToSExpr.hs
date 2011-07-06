@@ -18,9 +18,11 @@ import CASL.Morphism
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Quantification
+
 import Common.SExpr
 import Common.Result
 import Common.Id
+import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -32,10 +34,9 @@ predToSSymbol sign p = case p of
     Qual_pred_name i t _ -> predIdToSSymbol sign i $ toPredType t
 
 predIdToSSymbol :: Sign f e -> Id -> PredType -> SExpr
-predIdToSSymbol sign i t = case Map.lookup i $ predMap sign of
-    Nothing -> error "predIdToSSymbol"
-    Just s -> case List.elemIndex t $ Set.toList s of
-      Nothing -> error "predIdToSSymbol2"
+predIdToSSymbol sign i t =
+    case List.elemIndex t . Set.toList . MapSet.lookup i $ predMap sign of
+      Nothing -> error "predIdToSSymbol"
       Just n -> idToSSymbol (n + 1) i
 
 opToSSymbol :: Sign f e -> OP_SYMB -> SExpr
@@ -44,11 +45,10 @@ opToSSymbol sign o = case o of
     Qual_op_name i t _ -> opIdToSSymbol sign i $ toOpType t
 
 opIdToSSymbol :: Sign f e -> Id -> OpType -> SExpr
-opIdToSSymbol sign i (OpType _ args res) = case Map.lookup i $ opMap sign of
-    Nothing -> error $ "opIdToSSymbol " ++ show i
-    Just s -> case List.findIndex
-      (\ r -> opArgs r == args && opRes r == res) $ Set.toList s of
-        Nothing -> error "opIdToSSymbol2"
+opIdToSSymbol sign i (OpType _ args res) = case List.findIndex
+      (\ r -> opArgs r == args && opRes r == res) . Set.toList
+      . MapSet.lookup i $ opMap sign of
+        Nothing -> error $ "opIdToSSymbol " ++ show i
         Just n -> idToSSymbol (n + 1) i
 
 sortToSSymbol :: Id -> SExpr
@@ -125,22 +125,22 @@ sortSignToSExprs sign =
     SList (SSymbol "sorts"
       : map sortToSSymbol (Set.toList $ sortSet sign))
 
-predMapToSExprs :: Sign a e -> Map.Map Id (Set.Set PredType) -> [SExpr]
+predMapToSExprs :: Sign a e -> PredMap -> [SExpr]
 predMapToSExprs sign =
-    concatMap (\ (p, ts) -> map (\ t ->
+    map (\ (p, t) ->
        SList [ SSymbol "predicate"
              , predIdToSSymbol sign p t
-             , SList $ map sortToSSymbol $ predArgs t ]) $ Set.toList ts)
-      . Map.toList
+             , SList $ map sortToSSymbol $ predArgs t ])
+      . mapSetToList
 
 opMapToSExprs :: Sign a e -> OpMap -> [SExpr]
 opMapToSExprs sign =
-    concatMap (\ (p, ts) -> map (\ t ->
+    map (\ (p, t) ->
        SList [ SSymbol "function"
              , opIdToSSymbol sign p t
              , SList $ map sortToSSymbol $ opArgs t
-             , sortToSSymbol $ opRes t ]) $ Set.toList ts)
-      . Map.toList
+             , sortToSSymbol $ opRes t ])
+      . mapSetToList
 
 morToSExprs :: Morphism f e m -> [SExpr]
 morToSExprs m =
@@ -154,10 +154,12 @@ morToSExprs m =
           ot : _ -> let (j, nt) = mapOpSym sm (op_map m) (i, ot) in
              if i == j then id else
                (SList [ SSymbol "map", opIdToSSymbol src i ot
-                      , opIdToSSymbol tar j nt] :)) [] (opMap src)
+                      , opIdToSSymbol tar j nt] :)) []
+        (MapSet.toMap $ opMap src)
      ++ Map.foldWithKey (\ i s -> case Set.toList s of
           [] -> id
           ot : _ -> let (j, nt) = mapPredSym sm (pred_map m) (i, ot) in
              if i == j then id else
                (SList [ SSymbol "map", predIdToSSymbol src i ot
-                      , predIdToSSymbol tar j nt] :)) [] (predMap src)
+                      , predIdToSSymbol tar j nt] :)) []
+        (MapSet.toMap $ predMap src)

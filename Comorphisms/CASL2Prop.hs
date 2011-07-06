@@ -43,6 +43,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.DocUtils
+import qualified Common.Lib.MapSet as MapSet
 
 -- | lid of the morphism
 data CASL2Prop = CASL2Prop deriving Show
@@ -89,8 +90,8 @@ instance Comorphism CASL2Prop
 
 -- | Translation of the signature
 mapSig :: CASLSign -> PSign.Sign
-mapSig = PSign.Sign . Map.keysSet . Map.filter (not . Set.null)
-  . Map.map (Set.filter (null . predArgs)) . predMap
+mapSig = PSign.Sign . MapSet.keysSet
+  . MapSet.filter (null . predArgs) . predMap
 
 -- | Which is the target sublogic?
 mapSub :: CASL_Sublogics -> PSL.PropSL

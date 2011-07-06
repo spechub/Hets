@@ -31,6 +31,7 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.Lib.State
 import Common.ExtSign
+import qualified Common.Lib.MapSet as MapSet
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -101,10 +102,9 @@ anaChannelName s m chanName = do
         addDiags [mkDiag Error err chanName]
         return m
       else do
-        let ts = Map.findWithDefault Set.empty chanName m
-        when (Set.member s ts) $
+        when (MapSet.member chanName s m) $
           addDiags [mkDiag Warning "redeclared channel" chanName]
-        return $ Map.insert chanName (Set.insert s ts) m
+        return $ MapSet.insert chanName s m
 
 -- Static analysis of process items
 
@@ -162,8 +162,7 @@ findProfileForProcName :: FQ_PROCESS_NAME -> Int -> ProcNameMap ->
 findProfileForProcName pn numParams procNameMap =
   case pn of
     FQ_PROCESS_NAME pn' procProfile -> do
-      let profiles = Map.findWithDefault Set.empty pn' procNameMap
-      if procProfile `Set.member` profiles
+      if MapSet.member pn' procProfile procNameMap
         then return $ Just procProfile
         else do
           addDiags [mkDiag Error
@@ -487,7 +486,7 @@ anaCommType :: CspCASLSign -> (CommAlpha, [CommType]) -> CommType ->
 anaCommType sig (alpha, fqEsElems) ct =
   let res = return (Set.insert ct alpha, ct : fqEsElems)
       old = return (alpha, fqEsElems)
-      getChSrts ch = Set.toList $ Map.findWithDefault Set.empty ch $ chans
+      getChSrts ch = Set.toList $ MapSet.lookup ch $ chans
         $ extendedInfo sig
       chRes ch rs = let tcs = map (CommTypeChan . TypedChanName ch) rs
         in return (Set.union alpha $ Set.fromList tcs, tcs ++ fqEsElems)
@@ -606,7 +605,7 @@ anaChanSend :: Mix b s () () -> CHANNEL_NAME -> TERM () -> ProcVarMap
 anaChanSend mix c t vars = do
   sig <- get
   let ext = extendedInfo sig
-  case Set.toList $ Map.findWithDefault Set.empty c $ chans ext of
+  case Set.toList $ MapSet.lookup c $ chans ext of
     [] -> do
       addDiags [mkDiag Error "unknown channel" c]
       {- Use old term as the fully qualified term and forget about the
@@ -646,7 +645,7 @@ getDeclaredChanSort :: Maybe (CHANNEL_NAME, SORT) -> CspCASLSign
   -> Result SORT
 getDeclaredChanSort mc sig = let cm = chans $ extendedInfo sig in case mc of
   Nothing -> fail "no channel data"
-  Just (c, s) -> case Set.toList $ Map.findWithDefault Set.empty c cm of
+  Just (c, s) -> case Set.toList $ MapSet.lookup c cm of
     [] -> mkError "unknown channel" c
     css -> case filter (\ cs -> cs == s || Set.member s (subsortsOf cs sig))
            css of
@@ -727,8 +726,7 @@ for those operations. -}
 getUnaryOpsById :: Id -> OpKind -> State CspCASLSign (Set.Set CommType)
 getUnaryOpsById ri kind = do
     sig <- get
-    let opsWithId = Map.findWithDefault Set.empty ri (opMap sig)
-        binOpsKind = Set.filter (isBin kind) opsWithId
+    let binOpsKind = Set.filter (isBin kind) $ MapSet.lookup ri (opMap sig)
         cts = Set.map CommTypeSort $ Set.fold opSorts Set.empty binOpsKind
     return cts
       where isBin k ot = k == opKind ot && isSingle (opArgs ot)
@@ -740,8 +738,7 @@ communication types for those predicates. -}
 getBinPredsById :: Id -> State CspCASLSign (Set.Set CommType)
 getBinPredsById ri = do
     sig <- get
-    let predsWithId = Map.findWithDefault Set.empty ri (predMap sig)
-        binPreds = Set.filter isBin predsWithId
+    let binPreds = Set.filter isBin $ MapSet.lookup  ri (predMap sig)
         cts = Set.map CommTypeSort $ Set.fold predSorts Set.empty binPreds
     return cts
       where isBin ot = case predArgs ot of

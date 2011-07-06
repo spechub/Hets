@@ -70,6 +70,7 @@ import CASL.AS_Basic_CASL
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import Common.Doc
 import Common.DocUtils
@@ -345,7 +346,7 @@ typedSymbKindToRaw :: Bool -> Sign f e -> SYMB_KIND -> Id -> TYPE
 typedSymbKindToRaw b sig k idt t = let
      pm = predMap sig
      om = opMap sig
-     getSet = Map.findWithDefault Set.empty idt
+     getSet = MapSet.lookup idt
      err = plain_error (AKindedSymb Implicit idt)
               (showDoc idt ":" ++ showDoc t
                "does not have kind" ++ showDoc k "") (getRange idt)
@@ -429,18 +430,16 @@ morphismToSymbMapAux b mor = let
          if b && s == t then id else
              Map.insert (idToSortSymbol s) $ idToSortSymbol t)
       Map.empty $ sortSet src
-    opSymMap = Map.foldWithKey
-      ( \ i s m -> Set.fold
-        ( \ t -> let (j, k) = mapOpSym sorts ops (i, t) in
+    opSymMap = MapSet.foldWithKey
+      ( \ i t -> let (j, k) = mapOpSym sorts ops (i, t) in
                  if b && i == j && opKind k == opKind t then id else
                      Map.insert (idToOpSymbol i t) $ idToOpSymbol j k)
-        m s) Map.empty $ opMap src
-    predSymMap = Map.foldWithKey
-      ( \ i s m -> Set.fold
-        ( \ t -> let (j, k) = mapPredSym sorts preds (i, t) in
+      Map.empty $ opMap src
+    predSymMap = MapSet.foldWithKey
+      ( \ i t -> let (j, k) = mapPredSym sorts preds (i, t) in
                  if b && i == j then id else
                      Map.insert (idToPredSymbol i t) $ idToPredSymbol j k)
-        m s) Map.empty $ predMap src
+      Map.empty $ predMap src
   in foldr Map.union sortSymMap [opSymMap, predSymMap]
 
 matches :: Symbol -> RawSymbol -> Bool
@@ -471,20 +470,18 @@ composeM comp mor1 mor2 = do
       pMap2 = pred_map mor2
       sMap = composeMap (Rel.setToMap $ sortSet src) sMap1 sMap2
       oMap = if Map.null oMap2 then oMap1 else
-                 Map.foldWithKey ( \ i t m ->
-                   Set.fold ( \ ot ->
+                 MapSet.foldWithKey ( \ i ot ->
                        let (ni, nt) = mapOpSym sMap2 oMap2
                              $ mapOpSym sMap1 oMap1 (i, ot)
                            k = opKind nt
                        in if i == ni && opKind ot == k then id else
-                          Map.insert (i, mkPartial ot) (ni, k)) m t)
+                          Map.insert (i, mkPartial ot) (ni, k))
                      Map.empty $ opMap src
       pMap = if Map.null pMap2 then pMap1 else
-                 Map.foldWithKey ( \ i t m ->
-                   Set.fold ( \ pt ->
+                 MapSet.foldWithKey ( \ i pt ->
                        let ni = fst $ mapPredSym sMap2 pMap2
                              $ mapPredSym sMap1 pMap1 (i, pt)
-                       in if i == ni then id else Map.insert (i, pt) ni) m t)
+                       in if i == ni then id else Map.insert (i, pt) ni)
                       Map.empty $ predMap src
   extComp <- comp mor1 mor2
   let emb = embedMorphism extComp src tar
@@ -494,14 +491,9 @@ composeM comp mor1 mor2 = do
      , pred_map = pMap }
 
 legalSign :: Sign f e -> Bool
-legalSign sigma =
-  Map.foldWithKey (\ s sset -> (&& legalSort s && all legalSort
-                                (Set.toList sset)))
-                  True (Rel.toMap (sortRel sigma))
-  && Map.fold (\ ts -> (&& all legalOpType (Set.toList ts)))
-              True (opMap sigma)
-  && Map.fold (\ ts -> (&& all legalPredType (Set.toList ts)))
-              True (predMap sigma)
+legalSign sigma = MapSet.setAll legalSort (Rel.nodes $ sortRel sigma)
+  && MapSet.all legalOpType (opMap sigma)
+  && MapSet.all legalPredType (predMap sigma)
   where sorts = sortSet sigma
         legalSort s = Set.member s sorts
         legalOpType t = legalSort (opRes t)
@@ -535,17 +527,14 @@ inducedSignAux f sm om pm em src =
   , predMap = inducedPredMap sm pm $ predMap src }
 
 inducedOpMap :: Sort_map -> Op_map -> OpMap -> OpMap
-inducedOpMap sm fm = Map.foldWithKey
-  ( \ i -> flip $ Set.fold ( \ ot ->
-      let (j, nt) = mapOpSym sm fm (i, ot)
-      in Rel.setInsert j nt)) Map.empty
+inducedOpMap sm fm = MapSet.foldWithKey
+  (\ i ot -> let (j, nt) = mapOpSym sm fm (i, ot)
+     in MapSet.insert j nt) MapSet.empty
 
-inducedPredMap :: Sort_map -> Pred_map -> Map.Map Id (Set.Set PredType)
-               -> Map.Map Id (Set.Set PredType)
-inducedPredMap sm pm = Map.foldWithKey
-  ( \ i -> flip $ Set.fold ( \ ot ->
-      let (j, nt) = mapPredSym sm pm (i, ot)
-      in Rel.setInsert j nt)) Map.empty
+inducedPredMap :: Sort_map -> Pred_map -> PredMap -> PredMap
+inducedPredMap sm pm = MapSet.foldWithKey
+  ( \ i pt -> let (j, nt) = mapPredSym sm pm (i, pt)
+      in MapSet.insert j nt) MapSet.empty
 
 legalMor :: Morphism f e m -> Bool
 legalMor mor =
@@ -557,7 +546,7 @@ legalMor mor =
   && Set.isSubsetOf (msorts $ sortSet s1) (sortSet s2)
   && Set.isSubsetOf (msorts $ emptySortSet s1) (emptySortSet s2)
   && isSubOpMap (inducedOpMap sm (op_map mor) $ opMap s1) (opMap s2)
-  && isSubMapSet (inducedPredMap sm (pred_map mor) $ predMap s1) (predMap s2)
+  && isSubMap (inducedPredMap sm (pred_map mor) $ predMap s1) (predMap s2)
   && legalSign s2
 
 isInclOpMap :: Op_map -> Bool
@@ -568,7 +557,7 @@ idOrInclMorphism m =
   let src = opMap $ msource m
       tar = opMap $ mtarget m
   in if isSubOpMap tar src then m
-     else let diffOpMap = diffMapSet src tar in
+     else let diffOpMap = MapSet.toMap $ MapSet.difference src tar in
           m { op_map = Map.fromList $ concatMap (\ (i, s) ->
               map (\ t -> ((i, t), (i, Total)))
                  $ Set.toList s) $ Map.toList diffOpMap }
@@ -613,15 +602,14 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
       omap2 = op_map mor2
       uo1 = foldr delOp (opMap s1) $ Map.keys omap1
       uo2 = foldr delOp (opMap s2) $ Map.keys omap2
-      delOp (n, ot) m = diffMapSet m $ Map.singleton n $
-                    Set.fromList [mkPartial ot, mkTotal ot]
+      delOp (n, ot) m = diffOpMapSet m $ MapSet.fromList [(n, [mkTotal ot])]
       uo = addOpMapSet uo1 uo2
       pmap1 = pred_map mor1
       pmap2 = pred_map mor2
       up1 = foldr delPred (predMap s1) $ Map.keys pmap1
       up2 = foldr delPred (predMap s2) $ Map.keys pmap2
       up = addMapSet up1 up2
-      delPred (n, pt) m = diffMapSet m $ Map.singleton n $ Set.singleton pt
+      delPred (n, pt) = MapSet.delete n pt
       (sds, smap) = foldr ( \ (i, j) (ds, m) -> case Map.lookup i m of
           Nothing -> (ds, Map.insert i j m)
           Just k -> if j == k then (ds, m) else
@@ -640,10 +628,9 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
                ("incompatible mapping of op " ++ showId i ":"
                 ++ showDoc ot { opKind = t } " to "
                 ++ showId j " and " ++ showId k "") nullRange : ds, m))
-           (sds, omap1) (Map.toList omap2 ++ concatMap
-              ( \ (a, s) -> map ( \ ot -> ((a, mkPartial ot),
-                                           (a, opKind ot)))
-              $ Set.toList s) (Map.toList uo))
+           (sds, omap1) (Map.toList omap2 ++ map
+              ( \ (a, ot) -> ((a, mkPartial ot), (a, opKind ot)))
+              (mapSetToList uo))
       (pds, pmap) = foldr ( \ (isc@(i, pt), j) (ds, m) ->
           case Map.lookup isc m of
           Nothing -> (ds, Map.insert isc j m)
@@ -652,8 +639,7 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
                ("incompatible mapping of pred " ++ showId i ":"
                 ++ showDoc pt " to " ++ showId j " and "
                 ++ showId k "") nullRange : ds, m)) (ods, pmap1)
-          (Map.toList pmap2 ++ concatMap ( \ (a, s) -> map
-              ( \ pt -> ((a, pt), a)) $ Set.toList s) (Map.toList up))
+          (Map.toList pmap2 ++ map ( \ (a, pt) -> ((a, pt), a)) (mapSetToList up))
   in if null pds then do
     s3 <- addSigM addSigExt s1 s2
     s4 <- addSigM addSigExt (mtarget mor1) $ mtarget mor2
@@ -670,7 +656,7 @@ cleanMorMaps m = m
   { sort_map = Map.filterWithKey (/=) $ sort_map m
   , op_map = Map.filterWithKey
         (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
-         (Map.findWithDefault Set.empty i $ opMap $ msource m)) $ op_map m
+         (MapSet.lookup i $ opMap $ msource m)) $ op_map m
   , pred_map = Map.filterWithKey ((/=) . fst) $ pred_map m }
 
 isSortInjective :: Morphism f e m -> Bool
@@ -678,8 +664,8 @@ isSortInjective m =
     let ss = sortSet $ msource m
     in Set.size ss == Set.size (Set.map (mapSort $ sort_map m) ss)
 
-sumSize :: Map.Map a (Set.Set b) -> Int
-sumSize = sum . map Set.size . Map.elems
+sumSize :: MapSet.MapSet a b -> Int
+sumSize = sum . map Set.size . Map.elems . MapSet.toMap
 
 -- morphism extension m is not considered here
 isInjective :: Morphism f e m -> Bool

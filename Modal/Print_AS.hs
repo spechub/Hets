@@ -12,16 +12,20 @@ printing AS_Modal ModalSign data types
 
 module Modal.Print_AS where
 
-import Common.Id
-import Common.Keywords
-import qualified Data.Map as Map
+import CASL.AS_Basic_CASL (FORMULA (..))
+import CASL.ToDoc
+
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.Id
+import Common.Keywords
+import qualified Common.Lib.MapSet as MapSet
+
 import Modal.AS_Modal
 import Modal.ModalSign
-import CASL.AS_Basic_CASL (FORMULA (..))
-import CASL.ToDoc
+
+import qualified Data.Map as Map
 
 printFormulaOfModalSign :: FormExtension f => (FORMULA f -> FORMULA f)
                         -> [[Annoted (FORMULA f)]] -> Doc
@@ -73,9 +77,9 @@ printModalSign :: (FORMULA M_FORMULA -> FORMULA M_FORMULA) -> ModalSign -> Doc
 printModalSign sim s =
     let ms = modies s
         tms = termModies s in
-    printSetMap (keyword rigidS <+> keyword opS) empty (rigidOps s)
-    $+$
-    printSetMap (keyword rigidS <+> keyword predS) space (rigidPreds s)
+    printSetMap (keyword rigidS <+> keyword opS) empty (MapSet.toMap $ rigidOps s)
+    $+$ printSetMap (keyword rigidS <+> keyword predS) space
+        (MapSet.toMap $ rigidPreds s)
     $+$ (if Map.null ms then empty else
         cat [keyword modalitiesS <+> sepBySemis (map sidDoc $ Map.keys ms)
             , specBraces (printFormulaOfModalSign sim $ Map.elems ms)])

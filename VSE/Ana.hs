@@ -48,6 +48,7 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -122,8 +123,8 @@ getCases msg =
 getCaseDiags :: Sign f e -> [Diagnosis]
 getCaseDiags sig =
   getCases "sort" (sortSet sig)
-  ++ getCases "op or function" (Map.keysSet $ opMap sig)
-  ++ getCases "pred or proc" (Map.keysSet $ predMap sig)
+  ++ getCases "op or function" (MapSet.keysSet $ opMap sig)
+  ++ getCases "pred or proc" (MapSet.keysSet $ predMap sig)
 
 uBoolean :: Id
 uBoolean = stringToId "Boolean"
@@ -159,7 +160,7 @@ aFalse :: TERM f
 aFalse = mkConstAppl qFalse
 
 uOpMap :: OpMap
-uOpMap = Map.fromList $ map (\ c -> (c, Set.singleton constBoolType))
+uOpMap = MapSet.fromList $ map (\ c -> (c, [constBoolType]))
   [uFalse, uTrue]
 
 boolSig :: Sign f Procs
@@ -196,16 +197,17 @@ basicAna (bs, sig, ga) = do
     basicAnalysis minExpForm (const return) anaProcdecls anaMix
         (bs, sigIn, ga)
   appendDiags $ checkCases sig2 sens
-  appendDiags $ map
+  appendDiags . map
     (mkDiag Error "illegal predicate declaration for procedure")
-    $ Map.keys $ interMapSet (diffMapSet (predMap sig2) $ predMap sigIn)
-    $ procsToPredMap $ extendedInfo sig2
+    . Set.toList . MapSet.keysSet . interMapSet
+      (diffMapSet (predMap sig2) $ predMap sigIn)
+    . procsToPredMap $ extendedInfo sig2
   let sig3 = diffSig const sig2 boolSig
       (rSens, fSens) = partition (foldFormula (checkRec True) . sentence) sens
   appendDiags $ map (mkDiag Error "unsupported VSE formula" . sentence) fSens
-  appendDiags $ map (mkDiag Error "illegal overloading of")
-    $ Set.toList $ Set.intersection (Map.keysSet $ opMap sig3)
-    $ Map.keysSet uOpMap
+  appendDiags . map (mkDiag Error "illegal overloading of")
+    . Set.toList . Set.intersection (MapSet.keysSet $ opMap sig3)
+    $ MapSet.keysSet uOpMap
   return (bs2, ExtSign (addProcs $ diffSig const sig2 boolSig) syms, rSens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
@@ -228,17 +230,17 @@ parenProg = foldProg $ mapProg (Paren.mapTerm id) $ mapFormula id
 parenDefproc :: Defproc -> Defproc
 parenDefproc (Defproc k i vs p r) = Defproc k i vs (parenProg p) r
 
-procsToPredMap :: Procs -> Map.Map Id (Set.Set PredType)
+procsToPredMap :: Procs -> PredMap
 procsToPredMap (Procs m) =
   foldr (\ (n, pr@(Profile _ mr)) pm -> case mr of
-          Nothing -> Rel.setInsert n (profileToPredType pr) pm
-          Just _ -> pm) Map.empty $ Map.toList m
+          Nothing -> MapSet.insert n (profileToPredType pr) pm
+          Just _ -> pm) MapSet.empty $ Map.toList m
 
 procsToOpMap :: Procs -> OpMap
 procsToOpMap (Procs m) =
   foldr (\ (n, pr) om -> case profileToOpType pr of
-          Just ot -> Rel.setInsert n ot om
-          Nothing -> om) Map.empty $ Map.toList m
+          Just ot -> MapSet.insert n ot om
+          Nothing -> om) MapSet.empty $ Map.toList m
 
 -- | resolve mixfix applications of terms and formulas
 resolveDlformula :: MixResolve Dlformula
@@ -353,9 +355,9 @@ minExpProg invars res sig p@(Ranged prg r) = let
              else do
           sign <- if length l < length nl then
             Result [mkDiag Warning "function used as procedure" i] $ Just
-              sig { predMap = Rel.setInsert i (funProfileToPredType pr)
+              sig { predMap = MapSet.insert i (funProfileToPredType pr)
                     $ predMap sig }
-            else return sig { predMap = Rel.setInsert i (profileToPredType pr)
+            else return sig { predMap = MapSet.insert i (profileToPredType pr)
                     $ predMap sig }
           nf <- minExpF sign f
           checkCond nf
@@ -392,7 +394,7 @@ addVSEVars :: VAR_DECL -> State (Sign f Procs) ()
 addVSEVars vd@(Var_decl vs _ _) = do
     addVars vd
     p <- gets $ procsMap . extendedInfo
-    mapM_ (addDiags . checkWithOtherMap "var" "procedure" p . simpleIdToId) vs
+    mapM_ (addDiags . checkWithMap "var" "procedure" p . simpleIdToId) vs
 
 minProcdecl :: Sign () Procs -> Defproc -> Result Defproc
 minProcdecl sig (Defproc k i vs p r) = case lookupProc i sig of
@@ -416,7 +418,7 @@ anaProcdecl :: Sigentry -> State (Sign Dlformula Procs) ()
 anaProcdecl (Procedure i p@(Profile ps mr) q) = do
      e <- get
      let prM = predMap e
-         l = Map.findWithDefault Set.empty i prM
+         l = MapSet.lookup i prM
          ea = emptyAnno ()
          isPred = case mr of
            Nothing -> Set.member (profileToPredType p) l
@@ -582,12 +584,11 @@ inducedExt sm om pm _ = Procs . Map.fromList
 correctSign :: Sign f Procs -> Sign f Procs
 correctSign sig = sig
   { extendedInfo = Procs $ Map.filterWithKey (\ i p -> case profileToOpType p of
-         Just t -> case Map.lookup i $ opMap sig of
-           Just s -> Set.member t s || Set.member t { opKind = Total } s
-           Nothing -> False
-         Nothing -> case Map.lookup i $ predMap sig of
-           Just s -> Set.member (profileToPredType p) s
-           Nothing -> False) $ procsMap $ extendedInfo sig }
+         Just t -> let s = MapSet.lookup i $ opMap sig in
+           Set.member t s || Set.member t { opKind = Total } s
+         Nothing ->
+           Set.member (profileToPredType p) . MapSet.lookup i $ predMap sig
+         ) $ procsMap $ extendedInfo sig }
 
 mapProfile :: Sort_map -> Profile -> Profile
 mapProfile m (Profile l r) = Profile

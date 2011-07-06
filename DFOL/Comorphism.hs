@@ -13,6 +13,8 @@ module DFOL.Comorphism where
 
 import Common.Id
 import Common.AS_Annotation
+import qualified Common.Lib.MapSet as MapSet
+
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -49,43 +51,25 @@ folType n = take n $ repeat sort
 -- signature map
 sigMap :: Sign -> CASL_Sign.CASLSign
 sigMap sig =
-  sigMapH symbols sig caslSig2
-  where caslSig1 = CASL_Sign.emptySign ()
-        caslSig2 = caslSig1 {CASL_Sign.sortSet = Set.singleton sort,
-                             CASL_Sign.opMap = Map.singleton (mkId [botTok])
-                                                  $ Set.singleton
-                                                  $ CASL_Sign.OpType
-                                                       CASL_AS.Total [] sort}
+  foldr (sigMapH sig) caslSig2 symbols
+  where caslSig2 = (CASL_Sign.emptySign ())
+          { CASL_Sign.sortSet = Set.singleton sort
+          , CASL_Sign.opMap = MapSet.insert (mkId [botTok])
+              (CASL_Sign.OpType CASL_AS.Total [] sort) MapSet.empty }
         symbols = Set.toList $ getSymbols sig
 
-sigMapH :: [NAME] -> Sign -> CASL_Sign.CASLSign -> CASL_Sign.CASLSign
-sigMapH [] _ csig = csig
-sigMapH (sym:syms) sig csig =
-  case kind of
-       SortKind ->
-         let predis = CASL_Sign.predMap csig
-             predi = Map.singleton (mkId [sym]) $ Set.singleton
-                                                $ CASL_Sign.PredType
-                                                $ folType (arity+1)
-             in sigMapH syms sig
-                 $ csig {CASL_Sign.predMap = CASL_Sign.addMapSet predis predi}
-       PredKind ->
-         let predis = CASL_Sign.predMap csig
-             predi = Map.singleton (mkId [sym]) $ Set.singleton
-                                                $ CASL_Sign.PredType
-                                                $ folType arity
-             in sigMapH syms sig
-                 $ csig {CASL_Sign.predMap = CASL_Sign.addMapSet predis predi}
-       FuncKind ->
-         let funcs = CASL_Sign.opMap csig
-             func = Map.singleton (mkId [sym]) $ Set.singleton
-                                               $ CASL_Sign.OpType
-                                                   CASL_AS.Total
-                                                   (folType arity)
-                                                   sort
-             in sigMapH syms sig
-                 $ csig {CASL_Sign.opMap = CASL_Sign.addMapSet funcs func}
-  where Just kind = getSymbolKind sym sig
+sigMapH :: Sign -> NAME -> CASL_Sign.CASLSign -> CASL_Sign.CASLSign
+sigMapH sig sym csig = case kind of
+       SortKind -> csig { CASL_Sign.predMap = insSym (predTy $ arity + 1) predis }
+       PredKind -> csig { CASL_Sign.predMap = insSym (predTy arity) predis }
+       FuncKind -> csig
+         { CASL_Sign.opMap = MapSet.insert (mkId [sym])
+             (CASL_Sign.OpType CASL_AS.Total (folType arity) sort)
+             $ CASL_Sign.opMap csig }
+  where predis = CASL_Sign.predMap csig
+        insSym = MapSet.insert (mkId [sym])
+        predTy = CASL_Sign.PredType . folType
+        Just kind = getSymbolKind sym sig
         Just arity = getSymbolArity sym sig
 
 -- generating axioms for a translated signature

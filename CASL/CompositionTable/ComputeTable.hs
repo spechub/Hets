@@ -17,14 +17,15 @@ module CASL.CompositionTable.ComputeTable where
 import CASL.CompositionTable.CompositionTable
 import CASL.AS_Basic_CASL
 import CASL.Sign
-import Data.Maybe
+
 import Common.AS_Annotation
 import Common.Id
 import Common.DocUtils
 import Common.Result
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
+
+import Data.Maybe
+import qualified Data.Set as Set
 
 -- | given a specfication (name and theory), compute the composition table
 computeCompTable :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)])
@@ -60,9 +61,7 @@ computeCompTable spName (sig,nsens) = do
        [[b],[r]] -> return (b,r)
        _ -> fail errSorts
   -- types of operation symbols
-  let opTypes = concatMap (\ (o, ts) ->
-                             map ( \ ty -> (ty, o) ) $ Set.toList ts)
-                    $ Map.toList (opMap sig)
+  let opTypes = mapSetToList (opMap sig)
       -- idt    = OpType {opKind = Total, opArgs = [], opRes = baseRel}
       -- zerot  = OpType {opKind = Total, opArgs = [], opRes = rel}
       invt   = OpType {opKind = Total, opArgs = [baseRel], opRes = baseRel}
@@ -71,7 +70,7 @@ computeCompTable spName (sig,nsens) = do
       complt = OpType {opKind = Total, opArgs = [rel], opRes = rel}
       cupt   = OpType {opKind = Total, opArgs = [rel,rel], opRes = rel}
   -- look for operation symbols
-  let mlookup t = map snd $ filter (\(t',_) -> t==t') opTypes
+  let mlookup t = map fst $ filter ((== t) . snd) opTypes
   let oplookup typ msg =
         case mlookup typ of
                [op] -> return op

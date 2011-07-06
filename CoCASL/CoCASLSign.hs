@@ -14,8 +14,9 @@ module CoCASL.CoCASLSign where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL (SORT)
-import qualified Data.Map as Map
+
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 
 data CoCASLSign = CoCASLSign
   { sees :: Rel.Rel SORT
@@ -24,7 +25,7 @@ data CoCASLSign = CoCASLSign
   } deriving (Show, Eq, Ord)
 
 emptyCoCASLSign :: CoCASLSign
-emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty Map.empty
+emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty MapSet.empty
 
 closeConsRel :: CoCASLSign -> CoCASLSign
 closeConsRel s =
@@ -47,7 +48,7 @@ diffCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
 diffCoCASLSign a b = closeConsRel a
   { sees = Rel.difference (sees a) $ sees b
   , constructs = Rel.difference (constructs a) $ constructs b
-  , constructors = diffMapSet (constructors a) $ constructors b }
+  , constructors = diffOpMapSet (constructors a) $ constructors b }
 
 isSubCoCASLSign :: CoCASLSign -> CoCASLSign -> Bool
 isSubCoCASLSign a b =

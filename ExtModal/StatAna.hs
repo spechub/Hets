@@ -27,13 +27,15 @@ import CASL.Quantification
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Keywords
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.ExtSign
+import qualified Common.Lib.MapSet as MapSet
+
 import qualified Data.List as List
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 instance TermExtension EM_FORMULA where
         freeVarsOfExt sign ( BoxOrDiamond _ _ _ _ f _ ) = freeVars sign f
@@ -185,11 +187,7 @@ addRigidOp typ i sgn = return
 
 addRigidPred :: PredType -> Id -> EModalSign -> Result EModalSign
 addRigidPred typ i sgn = return
-        sgn { rigidPreds = let old_rpreds = rigidPreds sgn in
-                Map.insert i
-                (Set.insert typ $ Map.findWithDefault Set.empty i old_rpreds)
-                old_rpreds
-                }
+        sgn { rigidPreds = MapSet.insert i typ $ rigidPreds sgn }
 
 mixfixAna :: Mix EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
 mixfixAna = emptyMix

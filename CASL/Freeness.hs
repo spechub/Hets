@@ -25,6 +25,7 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 
 import Data.Char
 import Data.Maybe
@@ -91,16 +92,15 @@ filterNoCtorSorts :: OpMap -> Set.Set SORT -> Set.Set SORT
 filterNoCtorSorts om = Set.filter (filterNoCtorSort om)
 
 filterNoCtorSort :: OpMap -> SORT -> Bool
-filterNoCtorSort om s = Map.fold f False om
-         where f = \ x y -> or [resultTypeSet s x, y]
+filterNoCtorSort om s = Map.fold f False $ MapSet.toMap om
+         where f = \ x y -> y || resultTypeSet s x
 
 resultTypeSet :: SORT -> Set.Set OpType -> Bool
 resultTypeSet s = Set.fold f False
          where f = \ x y -> or [resultType s x, y]
 
 resultType :: SORT -> OpType -> Bool
-resultType s ot = s == s'
-         where s' = opRes ot
+resultType s = (s ==) . opRes
 
 -- | generates formulas of the form make(h(x)) =e= x, for any x of sort gn_free_s
 make_hom_forms :: Set.Set SORT -> [Named CASLFORMULA]
@@ -140,7 +140,7 @@ make_form s = makeNamed ("ga_hom_make_"++show s) q_eq
             q_eq = quantifyUniversally eq
 
 -- | computes the last part of the axioms to assert the kernel of h
-larger_than_ker_h :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA
+larger_than_ker_h :: Set.Set SORT -> PredMap -> CASLFORMULA
 larger_than_ker_h ss mis = conj
      where ltkhs = ltkh_sorts ss
            ltkhp = ltkh_preds mis
@@ -148,14 +148,8 @@ larger_than_ker_h ss mis = conj
 
 -- | computes the second part of the conjunction of the formula "largerThanKerH"
 -- from the kernel of H
-ltkh_preds :: Map.Map Id (Set.Set PredType) -> [CASLFORMULA]
-ltkh_preds = Map.foldWithKey ltkh_preds_set []
-
--- | computes the second part of the conjunction of the formula "largerThanKerH"
--- from the kernel of H for a concrete predicate identifier
-ltkh_preds_set :: Id -> Set.Set PredType -> [CASLFORMULA] -> [CASLFORMULA]
-ltkh_preds_set name sp acc = forms
-     where forms = Set.fold ((:) . (ltkh_preds_aux name)) acc sp
+ltkh_preds :: PredMap -> [CASLFORMULA]
+ltkh_preds = MapSet.foldWithKey (\ name -> (:) . ltkh_preds_aux name) []
 
 -- | computes the second part of the conjunction of the formula "largerThanKerH"
 -- from the kernel of H for a concrete predicate profile
@@ -211,14 +205,8 @@ no_gen _ = True
 -- | computes the axiom for the congruence of the kernel of h
 congruence_axs :: OpMap -> CASLFORMULA
 congruence_axs om = conj
-     where axs = Map.foldWithKey congruence_ax [] om
+     where axs = MapSet.foldWithKey (\ name -> (:) . congruence_ax_aux name) [] om
            conj = mk_conj axs
-
--- | computes the axiom for the congruence of the kernel of h
--- for a single operator id
-congruence_ax :: Id -> Set.Set OpType -> [CASLFORMULA] -> [CASLFORMULA]
-congruence_ax name sot acc = set_forms
-     where set_forms = Set.fold ((:) . (congruence_ax_aux name)) acc sot
 
 -- | computes the axiom for the congruence of the kernel of h
 -- for a single type of an operator id
@@ -313,7 +301,7 @@ psiName s = mkId [mkSimpleId $ "Psi_" ++ show s]
 
 -- | creates the axiom for the kernel of h given the sorts and the predicates
 -- in M, the premises and the conclusion
-mkKernelAx :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA
+mkKernelAx :: Set.Set SORT -> PredMap -> CASLFORMULA
               -> CASLFORMULA -> Named CASLFORMULA
 mkKernelAx ss preds prem conc = makeNamed "freeness_kernel" q2
      where imp = Implication prem conc True nullRange
@@ -336,13 +324,8 @@ quantifyPredsSort s f = q_form
 
 -- | applies the second order quantification to the formula for the given
 -- predicates
-quantifyPredsPreds :: Map.Map Id (Set.Set PredType) -> CASLFORMULA -> CASLFORMULA
-quantifyPredsPreds preds f = Map.foldWithKey quantifyPredsPredTypes f preds
-
--- | applies the second order quantification to the formula for the given
--- profiles
-quantifyPredsPredTypes :: Id -> Set.Set PredType -> CASLFORMULA -> CASLFORMULA
-quantifyPredsPredTypes name spt f = Set.fold (quantifyPredsPred name) f spt
+quantifyPredsPreds :: PredMap -> CASLFORMULA -> CASLFORMULA
+quantifyPredsPreds = flip $ MapSet.foldWithKey quantifyPredsPred
 
 -- | applies the second order quantification to the formula for the given
 -- predicate
@@ -451,10 +434,9 @@ sort_surj s = form'
             form' = makeNamed ("ga_hom_surj_" ++ show s) form
 
 -- | generates the axioms for the homomorphisms applied to the predicates
-homomorphism_axs_preds :: Map.Map Id (Set.Set PredType) -> [Named CASLFORMULA]
-homomorphism_axs_preds = Map.foldWithKey g []
-      where f = \ p_name pt sens -> (homomorphism_form_pred p_name pt) : sens
-            g = \ p_name set_pt sens -> Set.fold (f p_name) sens set_pt
+homomorphism_axs_preds :: PredMap -> [Named CASLFORMULA]
+homomorphism_axs_preds =
+  MapSet.foldWithKey (\ p_name -> (:) . homomorphism_form_pred p_name) []
 
 -- | generates the axioms for the homomorphisms applied to a predicate
 homomorphism_form_pred :: Id -> PredType -> Named CASLFORMULA
@@ -474,9 +456,8 @@ homomorphism_form_pred name (PredType args) = named_form
 
 -- | generates the axioms for the homomorphisms applied to the operators
 homomorphism_axs_ops :: OpMap -> [Named CASLFORMULA]
-homomorphism_axs_ops = Map.foldWithKey g []
-      where f = \ op_name ot sens -> (homomorphism_form_op op_name ot) : sens
-            g = \ op_name set_ot sens -> Set.fold (f op_name) sens set_ot
+homomorphism_axs_ops =
+  MapSet.foldWithKey (\ op_name -> (:) . homomorphism_form_op op_name) []
 
 -- | generates the axiom for the homomorphism applied to a concrete op
 homomorphism_form_op :: Id -> OpType -> Named CASLFORMULA
@@ -515,9 +496,7 @@ createVars i (s : ss) = var : ts
 
 -- | computes the set of components from the map of operators
 ops2comp :: OpMap -> Set.Set Component
-ops2comp = Map.foldWithKey g Set.empty
-      where f = \ n ot s -> Set.insert (Component n ot) s
-            g = \ name sot s -> Set.fold (f name) s sot
+ops2comp = MapSet.foldWithKey (\ n -> Set.insert . Component n) Set.empty
 
 -- | computes the sentence for the constructors
 freeCons :: GenAx -> [Named CASLFORMULA]
@@ -601,8 +580,7 @@ make_ops ss om = Set.fold make_op om ss
 
 -- | adds the make functions for the sort to the operator map
 make_op :: SORT -> OpMap -> OpMap
-make_op s om = Map.insertWith (Set.union) makeId (Set.singleton $ ot) om
-      where ot = OpType Total [s] $ mkFreeName s
+make_op s = MapSet.insert makeId $ OpType Total [s] $ mkFreeName s
 
 -- | identifier of the make function
 makeId :: Id
@@ -619,21 +597,19 @@ iota_sort_map_mor = Set.fold f Map.empty
 
 -- | creates the map between operators in the morphism iota
 iota_op_map_mor :: OpMap -> Op_map
-iota_op_map_mor = Map.foldWithKey g Map.empty
-     where f = \ name ot om -> Map.insert (name, ot) (mkFreeName name, Total) om
-           g = \ k sot m -> Set.fold (f k) m sot
+iota_op_map_mor = MapSet.foldWithKey
+  (\ name ot -> Map.insert (name, ot) (mkFreeName name, Total)) Map.empty
 
 -- | creates the map between predicates in the morphism iota
-iota_pred_map_mor :: Map.Map Id (Set.Set PredType) -> Pred_map
-iota_pred_map_mor = Map.foldWithKey g Map.empty
-     where f = \ name pt pm -> Map.insert (name, pt) (mkFreeName name) pm
-           g = \ k spt m -> Set.fold (f k) m spt
+iota_pred_map_mor :: PredMap -> Pred_map
+iota_pred_map_mor = MapSet.foldWithKey
+  (\ name pt -> Map.insert (name, pt) (mkFreeName name)) Map.empty
 
 -- | creates the homomorphism operators and adds it to the given operator map
 homomorphism_ops :: Set.Set SORT -> OpMap -> OpMap
 homomorphism_ops ss om = Set.fold f om ss
     where ot = \ sort -> OpType Partial [mkFreeName sort] sort
-          f = \ x y -> Map.insertWith (Set.union) homId (Set.singleton $ ot x) y
+          f = MapSet.insert homId . ot
 
 -- | applies the iota renaming to a signature
 totalSignCopy :: CASLSign -> CASLSign
@@ -665,20 +641,19 @@ iota_sort_set = Set.map mkFreeName
 
 -- | applies the iota renaming to a sort relation
 iota_sort_rel :: Rel.Rel SORT -> Rel.Rel SORT
-iota_sort_rel = Rel.fromList . map f . Rel.toList
-    where f = \ (x, y) -> (mkFreeName x, mkFreeName y)
+iota_sort_rel = Rel.map mkFreeName
 
 -- | applies the iota renaming to an operator map
 iota_op_map :: OpMap -> OpMap
-iota_op_map = Map.fromList . map g . Map.toList
-    where f = \ (OpType _ args res) -> OpType Total (map mkFreeName args) (mkFreeName res)
-          g = \ (op, ot) -> (mkFreeName op, Set.map f ot)
+iota_op_map = MapSet.foldWithKey
+  (\ op (OpType _ args res) -> MapSet.insert (mkFreeName op)
+       $ OpType Total (map mkFreeName args) (mkFreeName res)) MapSet.empty
 
 -- | applies the iota renaming to a predicate map
-iota_pred_map :: Map.Map Id (Set.Set PredType) -> Map.Map Id (Set.Set PredType)
-iota_pred_map = Map.fromList . map g . Map.toList
-    where f = \ (PredType args) -> PredType $ map mkFreeName args
-          g = \ (op, pt) -> (mkFreeName op, Set.map f pt)
+iota_pred_map :: PredMap -> PredMap
+iota_pred_map =  MapSet.foldWithKey
+  (\ p (PredType args) -> MapSet.insert (mkFreeName p)
+       $ PredType $ map mkFreeName args) MapSet.empty
 
 -- | applies the iota renaming to a variable map
 iota_var_map :: Map.Map SIMPLE_ID SORT -> Map.Map SIMPLE_ID SORT
@@ -699,9 +674,9 @@ iota_symbol (Symbol name ty) = Symbol (mkFreeName name) $ case ty of
     $ PredType $ map mkFreeName args
 
 -- | applies the iota renaming to the annotations
-iota_anno_map :: Map.Map Symbol (Set.Set Annotation)
-  -> Map.Map Symbol (Set.Set Annotation)
-iota_anno_map = Map.mapKeys iota_symbol
+iota_anno_map :: MapSet.MapSet Symbol Annotation
+  -> MapSet.MapSet Symbol Annotation
+iota_anno_map = MapSet.fromMap . Map.mapKeys iota_symbol . MapSet.toMap
 
 -- Some auxiliary functions
 

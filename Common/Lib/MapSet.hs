@@ -28,6 +28,7 @@ module Common.Lib.MapSet
   , null
   , fromList
   , toList
+  , toPairList
   , keysSet
   , elems
   , insert
@@ -43,6 +44,7 @@ module Common.Lib.MapSet
   , mapSet
   , foldWithKey
   , filter
+  , filterWithKey
   , all
   , isSubmapOf
   , preImage
@@ -125,6 +127,9 @@ fromList = fromMap
 toList :: MapSet a b -> [(a, [b])]
 toList = List.map (\ (a, bs) -> (a, Set.toList bs)) . Map.toList . toMap
 
+toPairList :: MapSet a b -> [(a, b)]
+toPairList = concatMap (\ (c, ts) -> List.map (\ t -> (c, t)) ts) . toList
+
 -- | keys for non-empty elements
 keysSet :: MapSet a b -> Set.Set a
 keysSet = Map.keysSet . toMap
@@ -192,6 +197,10 @@ foldWithKey f e = Map.foldWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
 -- | filter elements
 filter :: (Ord a, Ord b) => (b -> Bool) -> MapSet a b -> MapSet a b
 filter p = fromMap . Map.map (Set.filter p) . toMap
+
+-- | filter complete entries
+filterWithKey :: Ord a => (a -> Set.Set b -> Bool) -> MapSet a b -> MapSet a b
+filterWithKey p = MapSet . Map.filterWithKey p . toMap
 
 -- | test all elements
 all :: Ord b => (b -> Bool) -> MapSet a b -> Bool

@@ -24,8 +24,8 @@ import Common.AS_Annotation
 import Common.Result
 import Common.Id
 import Common.DocUtils
+import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
@@ -36,12 +36,11 @@ modelCheck _ (_, []) _ = (warning True "not implemented" nullRange)
 modelCheck _ (sign, sent) t =
     modelCheckTest (extractAnnotations (annoMap sign)) (sign, sent) t
 
-extractAnnotations :: Map.Map Symbol (Set.Set Annotation)
-                   -> [(OP_SYMB, String)]
+extractAnnotations :: MapSet.MapSet Symbol Annotation -> [(OP_SYMB, String)]
 extractAnnotations m =
-    catMaybes [extractAnnotation (a, b) | (a, b) <- Map.toList m]
+    catMaybes [extractAnnotation (a, b) | (a, b) <- MapSet.toList m]
 
-extractAnnotation :: (Symbol, Set.Set Annotation) -> Maybe (OP_SYMB, String)
+extractAnnotation :: (Symbol, [Annotation]) -> Maybe (OP_SYMB, String)
 extractAnnotation (Symbol symbname symbtype, set) = case symbtype of
     OpAsItemType _ -> Just (createOpSymb symbname symbtype, getAnno set)
     _ -> Nothing
@@ -51,10 +50,10 @@ createOpSymb i st = case st of
   OpAsItemType ty -> Qual_op_name i (toOP_TYPE ty) nullRange
   _ -> error "CASL.CompositionTable.ModelChecker.createOpSymb"
 
-getAnno :: Set.Set Annotation -> String
-getAnno a
- | Set.size a == 1 = getAnnoAux (Set.findMin a)
- | otherwise = "failure"
+getAnno :: [Annotation] -> String
+getAnno as = case as of
+   [a] -> getAnnoAux a
+   _ -> "failure"
 
 getAnnoAux :: Annotation -> String
 getAnnoAux a = case a of

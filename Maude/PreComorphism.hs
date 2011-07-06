@@ -244,17 +244,12 @@ sortSym2id _ = token2id $ mkSimpleId $ "error_translation"
 
 -- | generates the sentences to state that the rew predicates are a congruence
 rewPredicatesCongSens :: CSign.OpMap -> [Named CAS.CASLFORMULA]
-rewPredicatesCongSens = Map.foldWithKey rewPredCongSet []
-
--- | generates the sentences to state that the rew predicates are a congruence
--- for the operator types in the set
-rewPredCongSet :: Id -> Set.Set CSign.OpType -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
-rewPredCongSet idn ots fs = fs ++ fs'
-      where fs' = Set.fold (rewPredCong idn) [] ots
+rewPredicatesCongSens = MapSet.foldWithKey rewPredCong []
 
 -- | generates the sentences to state that the rew predicates are a congruence
 -- for a single operator
-rewPredCong :: Id -> CSign.OpType -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
+rewPredCong :: Id -> CSign.OpType -> [Named CAS.CASLFORMULA]
+  -> [Named CAS.CASLFORMULA]
 rewPredCong op ot fs = case args of
                         [] -> fs
                         _ -> nq_form : fs
@@ -352,16 +347,14 @@ universalOps _ om False = om
 
 -- | generates the universal operators for a concrete module
 universalOpKind :: Id -> CSign.OpMap -> CSign.OpMap
-universalOpKind kind om = om3
+universalOpKind kind = MapSet.union $ MapSet.fromList
+  [ (if_id, [if_opt]), (double_eq_id, [eq_opt]), (neg_double_eq_id, [eq_opt]) ]
         where if_id = str2id "if_then_else_fi"
               double_eq_id = str2id "_==_"
               neg_double_eq_id = str2id "_=/=_"
               bool_id = str2id "Bool"
-              if_opt = Set.singleton $ CSign.OpType CAS.Total [bool_id, kind, kind] kind
-              eq_opt = Set.singleton $ CSign.OpType CAS.Total [kind, kind] bool_id
-              om1 = Map.insertWith Set.union if_id if_opt om
-              om2 = Map.insertWith Set.union double_eq_id eq_opt om1
-              om3 = Map.insertWith Set.union neg_double_eq_id eq_opt om2
+              if_opt = CSign.OpType CAS.Total [bool_id, kind, kind] kind
+              eq_opt = CSign.OpType CAS.Total [kind, kind] bool_id
 
 -- | generates the formulas for the universal operators
 universalSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
@@ -501,7 +494,8 @@ commSen _ _ _ _ = []
 -- associative operators, membership induced from each Maude operator,
 -- and the set of sorts with the ctor attribute
 translateOps :: IdMap -> MSign.OpMap -> OpTransTuple
-translateOps im = Map.fold (translateOpDeclSet im) (Map.empty, Map.empty, Set.empty)
+translateOps im = Map.fold (translateOpDeclSet im)
+  (MapSet.empty, MapSet.empty, Set.empty)
 
 -- | translates an operator declaration set into a tern as described above
 translateOpDeclSet :: IdMap -> MSign.OpDeclSet -> OpTransTuple -> OpTransTuple
@@ -520,10 +514,9 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
             tl = tail $ Set.toList syms
             syms' = Set.fromList tl
             (cop_id, ot, _) = fromJust $ maudeSym2CASLOp im sym
-            cop_type = Set.singleton ot -- Set.union (Set.singleton ot) (Set.singleton ot')
-            ops' = Map.insertWith (Set.union) cop_id cop_type ops
+            ops' = MapSet.insert cop_id ot ops
             assoc_ops' = if any MAS.assoc ats
-                         then Map.insertWith (Set.union) cop_id cop_type assoc_ops
+                         then MapSet.insert cop_id ot assoc_ops
                          else assoc_ops
             cs' = if any MAS.ctor ats
                   then Set.insert (Component cop_id ot) cs
@@ -907,14 +900,12 @@ transSen kind = makeNamed name $ quantifyUniversally form
               name = "rew_trans_" ++ show kind
 
 -- | generate the predicates for the rewrites
-rewPredicates :: Set.Set Id -> Map.Map Id (Set.Set CSign.PredType)
-rewPredicates = Set.fold rewPredicate Map.empty
+rewPredicates :: Set.Set Id -> CSign.PredMap
+rewPredicates = Set.fold rewPredicate MapSet.empty
 
 -- | generate the predicates for the rewrites of the given sort
-rewPredicate :: Id -> Map.Map Id (Set.Set CSign.PredType)
-                -> Map.Map Id (Set.Set CSign.PredType)
-rewPredicate kind m = Map.insertWith (Set.union) rewID ar m
-   where ar = Set.singleton $ CSign.PredType [kind, kind]
+rewPredicate :: Id -> CSign.PredMap -> CSign.PredMap
+rewPredicate kind = MapSet.insert rewID $ CSign.PredType [kind, kind]
 
 -- | create the predicates that assign sorts to each term
 kindPredicates :: IdMap -> Map.Map Id (Set.Set CSign.PredType)
@@ -1010,12 +1001,8 @@ kind2sym :: Id -> CSign.Symbol
 kind2sym k = CSign.Symbol k CSign.SortAsItemType
 
 -- | translates the CASL predicates into CASL symbols
-preds2syms :: Map.Map Id (Set.Set CSign.PredType) -> Set.Set CSign.Symbol
-preds2syms = Map.foldWithKey pred2sym Set.empty
-
--- | translates a CASL predicate into a CASL symbol
-pred2sym :: Id -> Set.Set CSign.PredType -> Set.Set CSign.Symbol -> Set.Set CSign.Symbol
-pred2sym pn spt acc = Set.fold (createSym4id pn) acc spt
+preds2syms :: CSign.PredMap -> Set.Set CSign.Symbol
+preds2syms = MapSet.foldWithKey createSym4id Set.empty
 
 -- | creates a CASL symbol for a predicate
 createSym4id :: Id -> CSign.PredType -> Set.Set CSign.Symbol -> Set.Set CSign.Symbol
@@ -1024,12 +1011,7 @@ createSym4id pn pt acc = Set.insert sym acc
 
 -- | translates the CASL operators into CASL symbols
 ops2symbols :: CSign.OpMap -> Set.Set CSign.Symbol
-ops2symbols = Map.foldWithKey op2sym Set.empty
-
--- | translates a CASL operator into a CASL symbol
-op2sym :: Id -> Set.Set CSign.OpType -> Set.Set CSign.Symbol -> Set.Set CSign.Symbol
-op2sym on sot acc = Set.union set acc
-      where set = Set.fold (createSymOp4id on) Set.empty sot
+ops2symbols = MapSet.foldWithKey createSymOp4id Set.empty
 
 -- | creates a CASL symbol for an operator
 createSymOp4id :: Id -> CSign.OpType -> Set.Set CSign.Symbol -> Set.Set CSign.Symbol
@@ -1210,7 +1192,8 @@ isSymSort _ = False
 -- associative operators, membership induced from each Maude operator,
 -- and the set of sorts with the ctor attribute
 translateOps' :: IdMap -> MSign.OpMap -> OpTransTuple
-translateOps' im = Map.fold (translateOpDeclSet' im) (Map.empty, Map.empty, Set.empty)
+translateOps' im = Map.fold (translateOpDeclSet' im)
+  (MapSet.empty, MapSet.empty, Set.empty)
 
 -- | translates an operator declaration set into a tern as described above
 translateOpDeclSet' :: IdMap -> MSign.OpDeclSet -> OpTransTuple -> OpTransTuple
@@ -1229,10 +1212,9 @@ translateOpDecl' im (syms, ats) (ops, assoc_ops, cs) = case tl of
             tl = tail $ Set.toList syms
             syms' = Set.fromList tl
             (cop_id, ot, _) = fromJust $ maudeSym2CASLOp' im sym
-            cop_type = Set.singleton ot -- Set.union (Set.singleton ot) (Set.singleton ot')
-            ops' = Map.insertWith (Set.union) cop_id cop_type ops
+            ops' = MapSet.insert cop_id ot ops
             assoc_ops' = if any MAS.assoc ats
-                         then Map.insertWith (Set.union) cop_id cop_type assoc_ops
+                         then MapSet.insert cop_id ot assoc_ops
                          else assoc_ops
             cs' = if any MAS.ctor ats
                   then Set.insert (Component cop_id ot) cs

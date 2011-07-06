@@ -37,6 +37,7 @@ import Common.Id
 import Common.Lib.State
 import Common.Result
 import Common.Utils
+import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
 
@@ -134,8 +135,7 @@ resolveFunDef ga ids (FunDef o h@(Op_head _ vs _ _) at r) = do
 
 -- | get constructors for input sort
 getConstrs :: FplSign -> SORT -> OpMap
-getConstrs sign resSort = Map.filter (not . Set.null)
-  $ Map.map (Set.filter $ leqSort sign resSort . opRes)
+getConstrs sign resSort = MapSet.mapSet (Set.filter $ leqSort sign resSort . opRes)
          $ constr $ extendedInfo sign
 
 {- | This functions tries to recognize variables in case-patterns (application
@@ -153,8 +153,7 @@ resolvePattern sign (resSort, term) =
                              leqF sign oTy $ toOpType symTy
                          _ -> True
                     )
-         $ Set.toList $ Map.findWithDefault Set.empty ide
-         $ getConstrs sign resSort of
+         $ Set.toList $ MapSet.lookup ide $ getConstrs sign resSort of
       [] -> if null args && isSimpleId ide then
                 let v = Var_decl [head ts] resSort $ posOfId ide
                 in return ([v], toQualVar v)
@@ -280,9 +279,9 @@ anaFplSortItem mix si = case si of
     updateExtInfo $ \ cs -> foldM
       (\ e aa -> let a = item aa in if isConsAlt a then do
             let (c, ty, _) = getConsType s a
-            unless (Map.null cm)
+            unless (MapSet.null cm)
               $ if Set.member (mkPartial ty)
-                    $ makePartial $ Map.findWithDefault Set.empty c cm
+                    $ makePartial $ MapSet.lookup c cm
                 then appendDiags [mkDiag Warning "repeated constructor" c]
                 else mkError "illegal new constructor" c
             return e { constr = addOpTo c ty $ constr e }

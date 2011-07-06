@@ -40,6 +40,7 @@ import qualified CASL.Inject as CASLInject
 
 import Common.AS_Annotation (makeNamed, Named, SenAttr (..))
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 import Common.Id (nullRange)
 
 import Comorphisms.CASL2PCFOL (mkEmbInjName, mkTransAxiomName, mkIdAxiomName)
@@ -686,12 +687,11 @@ addFlatType isaTh sort =
 addProcNameDatatype :: CspSign -> IsaTheory -> IsaTheory
 addProcNameDatatype cspSign isaTh =
     let -- Create a list of pairs of process names and thier profiles
-        procNamesAndProfileSet = Map.toList (procSet cspSign)
-        f (name,profileSet) =
-          if Set.size profileSet == 1
-          then -- Just keep the first one.
-            FQ_PROCESS_NAME name $ head(Set.elems profileSet)
-          else error "CspCASLProver.Utils.addProcNameDatatype: CSP-CASL-Prover\
+        procNamesAndProfileSet = MapSet.toList (procSet cspSign)
+        f (name, profileSet) = case profileSet of
+             [h] -> FQ_PROCESS_NAME name h -- Just keep the first one
+             _ ->
+               error "CspCASLProver.Utils.addProcNameDatatype: CSP-CASL-Prover\
                      \ does not support overloaded process names yet."
         procNameDomainEntry = mkFQProcNameDE $ map f procNamesAndProfileSet
     in updateDomainTab procNameDomainEntry isaTh
@@ -825,12 +825,9 @@ addProcTheorems namedSens ccSign pcfolSign cfolSign isaTh =
 -- satisfactory way.
 getCollectionTotAx :: CASLSign.CASLSign -> [String]
 getCollectionTotAx pfolSign =
-    let opList = Map.toList $ CASLSign.opMap pfolSign
-        -- This filter is not quite right
-        totFilter (_, setOpType) = let listOpType = Set.toList setOpType
-                                 in CASLSign.opKind (head listOpType) == Total
-        totList = filter totFilter opList
-    in map (mkTotalityAxiomName . fst) totList
+    let totOpList = MapSet.toList . MapSet.filter ((== Total) . CASLSign.opKind)
+                 $ CASLSign.opMap pfolSign
+    in map (mkTotalityAxiomName . fst) totOpList
 
 -- | Return the name of the definedness function for a sort. We need
 -- to know all sorts to perform this workaround

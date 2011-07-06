@@ -17,6 +17,7 @@ import CASL.AS_Basic_CASL
 import CASL.ToDoc ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.State as State
 import Common.Keywords
@@ -38,7 +39,8 @@ data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
 
 data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 
-type OpMap = Map.Map Id (Set.Set OpType)
+type OpMap = MapSet.MapSet OP_NAME OpType
+type PredMap = MapSet.MapSet PRED_NAME PredType
 
 data SymbType = SortAsItemType
               | SubsortAsItemType SORT -- special symbols for xml output
@@ -82,12 +84,12 @@ data Sign f e = Sign
     , sortRel :: Rel.Rel SORT
     , opMap :: OpMap
     , assocOps :: OpMap -- ^ the subset of associative operators
-    , predMap :: Map.Map Id (Set.Set PredType)
+    , predMap :: PredMap
     , varMap :: Map.Map SIMPLE_ID SORT -- ^ temporary variables
     , sentences :: [Named (FORMULA f)] -- ^ current sentences
     , declaredSymbols :: Set.Set Symbol -- ^ introduced or redeclared symbols
     , envDiags :: [Diagnosis] -- ^ diagnostics for basic spec
-    , annoMap :: Map.Map Symbol (Set.Set Annotation) -- ^ annotated symbols
+    , annoMap :: MapSet.MapSet Symbol Annotation -- ^ annotated symbols
     , globAnnos :: GlobalAnnos -- ^ global annotations to use
     , extendedInfo :: e
     } deriving Show
@@ -107,14 +109,14 @@ emptySign e = Sign
     { sortSet = Set.empty
     , emptySortSet = Set.empty
     , sortRel = Rel.empty
-    , opMap = Map.empty
-    , assocOps = Map.empty
-    , predMap = Map.empty
+    , opMap = MapSet.empty
+    , assocOps = MapSet.empty
+    , predMap = MapSet.empty
     , varMap = Map.empty
     , sentences = []
     , declaredSymbols = Set.empty
     , envDiags = []
-    , annoMap = Map.empty
+    , annoMap = MapSet.empty
     , globAnnos = emptyGlobalAnnos
     , extendedInfo = e }
 
@@ -188,8 +190,8 @@ printSign fE s = let
          ++ map printRel (Map.toList
          $ Rel.toMap $ Rel.transpose $ Rel.transReduce $ Rel.irreflex
          $ Rel.collaps cs srel)))
-    $+$ printSetMap (text opS) empty (opMap s)
-    $+$ printSetMap (text predS) space (predMap s)
+    $+$ printSetMap (text opS) empty (MapSet.toMap $ opMap s)
+    $+$ printSetMap (text predS) space (MapSet.toMap $ predMap s)
     $+$ fE (extendedInfo s)
 
 -- working with Sign
@@ -201,34 +203,8 @@ closeSortRel :: Sign f e -> Sign f e
 closeSortRel s =
   s { sortRel = irreflexClosure $ sortRel s }
 
-diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in
-  closeSortRel a
-  { sortSet = s
-  , emptySortSet = Set.difference s
-      $ nonEmptySortSet a `Set.difference` nonEmptySortSet b
-  , sortRel = Rel.difference (Rel.transReduce $ sortRel a)
-      . Rel.transReduce $ sortRel b
-  , opMap = opMap a `diffOpMapSet` opMap b
-  , assocOps = assocOps a `diffOpMapSet` assocOps b
-  , predMap = predMap a `diffMapSet` predMap b
-  , annoMap = annoMap a `diffMapSet` annoMap b
-  , extendedInfo = dif (extendedInfo a) $ extendedInfo b }
-  {- transClosure needed:  {a < b < c} - {a < c; b}
-  is not transitive! -}
-
-diffOpMapSet :: OpMap -> OpMap -> OpMap
-diffOpMapSet m = diffMapSet m . Map.map (rmOrAddParts False)
-
-diffMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b)
-           -> Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
-diffMapSet = Map.differenceWith
-    (\ s t -> let d = Set.difference s t in
-              if Set.null d then Nothing else Just d)
-
-addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
-          -> Map.Map a (Set.Set b)
-addMapSet = Map.unionWith Set.union
+nonEmptySortSet :: Sign f e -> Set.Set Id
+nonEmptySortSet s = Set.difference (sortSet s) $ emptySortSet s
 
 mkPartial :: OpType -> OpType
 mkPartial o = o { opKind = Partial }
@@ -245,25 +221,36 @@ rmOrAddParts b s =
   let t = makePartial $ Set.filter ((== Total) . opKind) s
   in (if b then Set.difference else Set.union) s t
 
+rmOrAddPartsMap ::  Bool -> OpMap -> OpMap
+rmOrAddPartsMap b = MapSet.mapSet (rmOrAddParts b)
+
+diffMapSet :: PredMap -> PredMap -> PredMap
+diffMapSet = MapSet.difference
+
+diffOpMapSet :: OpMap -> OpMap -> OpMap
+diffOpMapSet m = MapSet.difference m . rmOrAddPartsMap False
+
+diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
+diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in
+  closeSortRel a
+  { sortSet = s
+  , emptySortSet = Set.difference s
+      $ nonEmptySortSet a `Set.difference` nonEmptySortSet b
+  , sortRel = Rel.difference (Rel.transReduce $ sortRel a)
+      . Rel.transReduce $ sortRel b
+  , opMap = opMap a `diffOpMapSet` opMap b
+  , assocOps = assocOps a `diffOpMapSet` assocOps b
+  , predMap = predMap a `diffMapSet` predMap b
+  , annoMap = annoMap a `MapSet.difference` annoMap b
+  , extendedInfo = dif (extendedInfo a) $ extendedInfo b }
+  {- transClosure needed:  {a < b < c} - {a < c; b}
+  is not transitive! -}
+
 addOpMapSet :: OpMap -> OpMap -> OpMap
-addOpMapSet m = Map.map (rmOrAddParts True) . addMapSet m
+addOpMapSet m = rmOrAddPartsMap True . MapSet.union m
 
-interMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
-            -> Map.Map a (Set.Set b)
-interMapSet m =
-  Map.filter (not . Set.null) . Map.intersectionWith Set.intersection m
-
-interOpMapSet :: OpMap -> OpMap -> OpMap
-interOpMapSet m = Map.filter (not . Set.null)
-  . Map.intersectionWith
-  (\ s t -> rmOrAddParts True $ Set.intersection (rmOrAddParts False s)
-   $ rmOrAddParts False t) m
-
-uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
-uniteCASLSign = addSig (\ _ _ -> ())
-
-nonEmptySortSet :: Sign f e -> Set.Set Id
-nonEmptySortSet s = Set.difference (sortSet s) $ emptySortSet s
+addMapSet :: PredMap -> PredMap -> PredMap
+addMapSet = MapSet.union
 
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 addSig ad a b = let s = sortSet a `Set.union` sortSet b in
@@ -274,13 +261,23 @@ addSig ad a b = let s = sortSet a `Set.union` sortSet b in
   , sortRel = Rel.union (sortRel a) $ sortRel b
   , opMap = addOpMapSet (opMap a) $ opMap b
   , assocOps = addOpMapSet (assocOps a) $ assocOps b
-  , predMap = addMapSet (predMap a) $ predMap b
-  , annoMap = addMapSet (annoMap a) $ annoMap b
+  , predMap = MapSet.union (predMap a) $ predMap b
+  , annoMap = MapSet.union (annoMap a) $ annoMap b
   , extendedInfo = ad (extendedInfo a) $ extendedInfo b }
+
+uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
+uniteCASLSign = addSig (\ _ _ -> ())
 
 interRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
 interRel a = Rel.fromSet
   . Set.intersection (Rel.toSet a) . Rel.toSet
+
+interOpMapSet :: OpMap -> OpMap -> OpMap
+interOpMapSet m = rmOrAddPartsMap True
+   . MapSet.intersection (rmOrAddPartsMap False m) . rmOrAddPartsMap False
+
+interMapSet :: PredMap -> PredMap -> PredMap
+interMapSet = MapSet.intersection
 
 interSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in
@@ -292,18 +289,17 @@ interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in
   , opMap = interOpMapSet (opMap a) $ opMap b
   , assocOps = interOpMapSet (assocOps a) $ assocOps b
   , predMap = interMapSet (predMap a) $ predMap b
-  , annoMap = interMapSet (annoMap a) $ annoMap b
+  , annoMap = MapSet.intersection (annoMap a) $ annoMap b
   , extendedInfo = ef (extendedInfo a) $ extendedInfo b }
 
-isSubMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
-            -> Bool
-isSubMapSet = Map.isSubmapOfBy Set.isSubsetOf
-
 isSubOpMap :: OpMap -> OpMap -> Bool
-isSubOpMap = Map.isSubmapOfBy $ \ s t ->
+isSubOpMap m = Map.isSubmapOfBy (\ s t ->
   Set.fold (\ e -> (&& (Set.member e t || case opKind e of
     Partial -> Set.member (mkTotal e) t
-    Total -> False))) True s
+    Total -> False))) True s) (MapSet.toMap m) . MapSet.toMap
+
+isSubMap :: PredMap -> PredMap -> Bool
+isSubMap = MapSet.isSubmapOf
 
 isSubSig :: (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
 isSubSig isSubExt a b = Set.isSubsetOf (sortSet a) (sortSet b)
@@ -311,12 +307,11 @@ isSubSig isSubExt a b = Set.isSubsetOf (sortSet a) (sortSet b)
          -- ignore empty sort sorts
   && isSubOpMap (opMap a) (opMap b)
          -- ignore associativity properties!
-  && isSubMapSet (predMap a) (predMap b)
+  && isSubMap (predMap a) (predMap b)
   && isSubExt (extendedInfo a) (extendedInfo b)
 
-mapSetToList :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> [(a, b)]
-mapSetToList = concatMap (\ (c, ts) -> map (\ t -> (c, t)) $ Set.toList ts)
-  . Map.toList
+mapSetToList :: MapSet.MapSet a b -> [(a, b)]
+mapSetToList = MapSet.toPairList
 
 addDiags :: [Diagnosis] -> State.State (Sign f e) ()
 addDiags ds = do
@@ -329,7 +324,7 @@ addAnnoSet a s = do
   let v = Set.union (Set.fromList $ l_annos a) $ Set.fromList $ r_annos a
   unless (Set.null v) $ do
     e <- State.get
-    State.put e { annoMap = Map.insertWith Set.union s v $ annoMap e }
+    State.put e { annoMap = MapSet.update (Set.union v) s $ annoMap e }
 
 addSymbol :: Symbol -> State.State (Sign f e) ()
 addSymbol s = do
@@ -417,11 +412,11 @@ alsoWarning new old i = let is = ' ' : showId i "'" in
     [Diag Warning ("new '" ++ new ++ is ++ " is also known as '" ++ old ++ is)
      $ posOfId i]
 
-checkWithOtherMap :: String -> String -> Map.Map Id a -> Id -> [Diagnosis]
-checkWithOtherMap s1 s2 m i =
-    case Map.lookup i m of
-    Nothing -> []
-    Just _ -> alsoWarning s1 s2 i
+checkWithMap :: String -> String -> Map.Map Id a -> Id -> [Diagnosis]
+checkWithMap s1 s2 m i = if Map.member i m then alsoWarning s1 s2 i else []
+
+checkWithOtherMap :: String -> String -> MapSet.MapSet Id a -> Id -> [Diagnosis]
+checkWithOtherMap s1 s2 = checkWithMap s1 s2 . MapSet.toMap
 
 addVars :: VAR_DECL -> State.State (Sign f e) ()
 addVars (Var_decl vs s _) = do
@@ -442,9 +437,7 @@ addVar s v =
                 ++ checkNamePrefix i
 
 addOpTo :: Id -> OpType -> OpMap -> OpMap
-addOpTo k v m =
-    let l = Map.findWithDefault Set.empty k m
-    in Map.insert k (Set.insert v l) m
+addOpTo = MapSet.insert
 
 type VarSet = Set.Set (VAR, SORT)
 
@@ -541,7 +534,7 @@ addSymbToSign :: Sign e f -> Symbol -> Result (Sign e f)
 addSymbToSign sig sy =
     let addSort' cs s =
             cs { sortSet = Set.insert s $ sortSet cs }
-        addToMap' m n t = Map.insertWith Set.union n (Set.singleton t) m
+        addToMap' m n t = MapSet.insert n t m
         addOp' cs n ot = cs { opMap = addToMap' (opMap cs) n ot }
         addPred' cs n pt = cs { predMap = addToMap' (predMap cs) n pt }
     in do

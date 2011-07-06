@@ -27,13 +27,13 @@ import Common.DocUtils(showDoc)
 import Common.Id
 import Common.Result(Result, warning)
 import Common.Utils(nubOrd)
+import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
 import Data.List
 import Data.Maybe
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
 
 inhabited :: [SORT] -> [Constraint] -> [SORT]
 inhabited sorts constrs = iterateInhabited sorts
@@ -136,9 +136,7 @@ getOOps m fsn = let
         op_fs = filter (\ f -> case leadingSym f of
                                Just (Left _) -> True
                                _ -> False) axioms
-        find_ot (ident, ot) = case Map.lookup ident oldOpMap of
-                               Nothing -> False
-                               Just ots -> Set.member ot ots
+        find_ot (ident, ot) = MapSet.member ident ot oldOpMap
     in filter (find_ot . head . filterOp . leadingSym) op_fs
 
 {-
@@ -153,9 +151,7 @@ getOPreds m fsn =
         pred_fs = filter (\ f -> case leadingSym f of
                                  Just (Right _) -> True
                                  _ -> False) axioms
-        find_pt (ident, pt) = case Map.lookup ident oldPredMap of
-                                 Nothing -> False
-                                 Just pts -> Set.member pt pts
+        find_pt (ident, pt) = MapSet.member ident pt oldPredMap
     in filter (find_pt . head . filterPred . leadingSym) pred_fs
 
 getNSorts :: Sign () () -> Morphism () () () -> [Id]

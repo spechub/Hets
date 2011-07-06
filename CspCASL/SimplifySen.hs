@@ -18,12 +18,9 @@ import CASL.AS_Basic_CASL (TERM (..), OP_SYMB (..))
 import CASL.Sign (extendedInfo)
 import CASL.SimplifySen (simplifyCASLSen, simplifyCASLTerm)
 
-
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-
 import Common.Id (simpleIdToId, nullRange)
 import Common.Utils (isSingleton)
+import qualified Common.Lib.MapSet as MapSet
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
@@ -44,7 +41,7 @@ simplifySen sigma sen =
 -- | Simplifies a process name.
 simplifyFQProcName :: CspCASLSign -> FQ_PROCESS_NAME -> FQ_PROCESS_NAME
 simplifyFQProcName sig fqPn = let pn = procNameToSimpProcName fqPn in
-  if isSingleton $ Map.findWithDefault Set.empty pn $ procSet $ extendedInfo sig
+  if isSingleton $ MapSet.lookup pn $ procSet $ extendedInfo sig
   then PROCESS_NAME pn else fqPn
 
 -- | Simplifiy a fully qualified variable list

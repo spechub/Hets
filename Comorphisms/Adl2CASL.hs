@@ -42,10 +42,10 @@ import Common.ProofTree
 import Common.Result
 import Common.Token
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 import Common.Lib.State
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 -- | lid of the morphism
 data Adl2CASL = Adl2CASL deriving Show
@@ -105,8 +105,8 @@ mapSign s = (C.emptySign ())
                  Con (C i) -> Set.insert $ simpleIdToId i
                  _ -> id) Set.empty $ A.symOf s
   , sortRel = Rel.map conceptToId $ isas s
-  , predMap = Map.fromList . map (\ (i, l) -> (transRelId $ idToSimpleId i, l))
-      . Map.toList . Map.map (Set.map relTypeToPred) $ rels s
+  , predMap = MapSet.fromList . map (\ (i, l) -> (transRelId $ idToSimpleId i, l))
+      . MapSet.toList . MapSet.map relTypeToPred . MapSet.fromMap $ rels s
   }
 
 transRelId :: Token -> Id
@@ -144,8 +144,7 @@ getRelPred sig m@(Sgn t (RelType c1 c2)) = let
   cs = filter (\ pt -> case predArgs pt of
                   [fr, to] -> leqSort sig ty1 fr && leqSort sig ty2 to
                   _ -> False)
-               $ Set.toList $ Map.findWithDefault Set.empty i
-               $ predMap sig
+               $ Set.toList $ MapSet.lookup i $ predMap sig
   in case cs of
        ty : _ ->
            Qual_pred_name i (toPRED_TYPE ty) $ tokPos t

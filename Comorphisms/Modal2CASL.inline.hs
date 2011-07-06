@@ -23,6 +23,7 @@ import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
+import qualified Common.Lib.MapSet as MapSet
 
 -- CASL
 import CASL.Logic_CASL
@@ -105,15 +106,15 @@ transSig sign =
           )  -}
    let sorSet     = sortSet sign
        fws        = freshWorldSort sorSet
-       flexOps'   = Map.foldWithKey (addWorld_OP fws)
-                                    Map.empty $ flexibleOps
-       flexPreds' = addWorldRels True relsTermMod $
-                    addWorldRels False relsMod $
-                    Map.foldWithKey (addWorld_PRED fws)
-                                    Map.empty $ flexiblePreds
+       flexOps'   = MapSet.fromMap . Map.foldWithKey (addWorld_OP fws)
+                                    Map.empty $ MapSet.toMap flexibleOps
+       flexPreds' = MapSet.fromMap . addWorldRels True relsTermMod
+                    . addWorldRels False relsMod
+                    . Map.foldWithKey (addWorld_PRED fws)
+                                    Map.empty $ MapSet.toMap flexiblePreds
        rigOps'    = rigidOps $ extendedInfo sign
        rigPreds'  = rigidPreds $ extendedInfo sign
-       flexibleOps   = diffMapSet (opMap sign) rigOps'
+       flexibleOps   = diffOpMapSet (opMap sign) rigOps'
        flexiblePreds = diffMapSet (predMap sign) rigPreds'
        relations = Map.union relsMod relsTermMod
        genRels f mp = Map.foldWithKey (\me _ nm -> f me nm) Map.empty mp
@@ -146,14 +147,14 @@ transSig sign =
             (emptySign ())
                {sortSet = Set.insert fws sorSet
                , sortRel = sortRel sign
-               , opMap = Map.unionWith Set.union flexOps' rigOps'
-               , assocOps = diffMapSet (assocOps sign) flexibleOps
-               , predMap = Map.unionWith Set.union flexPreds' rigPreds'},
+               , opMap = addOpMapSet flexOps' rigOps'
+               , assocOps = diffOpMapSet (assocOps sign) flexibleOps
+               , predMap = addMapSet flexPreds' rigPreds'},
          worldSort = fws,
          modalityRelMap = relations,
-         flexOps = flexibleOps,
+         flexOps = MapSet.toMap flexibleOps,
 --       rigOps = rigOps',
-         flexPreds = flexiblePreds,
+         flexPreds = MapSet.toMap flexiblePreds,
 --       rigPreds = rigPreds',
          relFormulas = []}
       in partMME { relFormulas = relModFrms++relTermModFrms}

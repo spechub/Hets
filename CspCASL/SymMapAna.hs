@@ -27,6 +27,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -45,10 +46,10 @@ cspInducedFromMorphism rmap sigma = do
       csig = extendedInfo sigma
   -- compute the channel name map (as a Map)
   cm <- Map.foldWithKey (chanFun sigma rmap sm)
-              (return Map.empty) (chans csig)
+              (return Map.empty) (MapSet.toMap $ chans csig)
   -- compute the process name map (as a Map)
   proc_Map <- Map.foldWithKey (procFun sigma rmap sm cm)
-              (return Map.empty) (procSet csig)
+              (return Map.empty) (MapSet.toMap $ procSet csig)
   let em = emptyCspAddMorphism
         { channelMap = cm
         , processMap = proc_Map }
@@ -262,14 +263,14 @@ cspRevealSym sy sig = let
     CaslSymbType t -> revealSym (Symbol n t) sig
     ChanAsItemType s -> sig
       { sortSet = Set.insert s ss
-      , extendedInfo = ext { chans = Rel.setInsert n s cs }}
+      , extendedInfo = ext { chans = MapSet.insert n s cs }}
     ProcAsItemType p@(ProcProfile _ al) -> sig
       { sortSet = Set.fold Set.insert ss $ procProfile2Sorts p
       , extendedInfo = ext
         { chans = Set.fold (\ ct -> case ct of
             CommTypeSort _ -> id
-            CommTypeChan (TypedChanName c s) -> Rel.setInsert c s) cs al
-        , procSet = Rel.setInsert n p $ procSet ext }
+            CommTypeChan (TypedChanName c s) -> MapSet.insert c s) cs al
+        , procSet = MapSet.insert n p $ procSet ext }
       }
 
 cspGeneratedSign :: Set.Set CspSymbol -> CspCASLSign -> Result CspCASLMorphism
@@ -277,8 +278,8 @@ cspGeneratedSign sys sigma = let
   symset = Set.unions $ symSets sigma
   sigma1 = Set.fold cspRevealSym sigma
     { sortSet = Set.empty
-    , opMap = Map.empty
-    , predMap = Map.empty
+    , opMap = MapSet.empty
+    , predMap = MapSet.empty
     , extendedInfo = emptyCspSign } sys
   sigma2 = sigma1
     { sortRel = sortRel sigma `Rel.restrict` sortSet sigma1

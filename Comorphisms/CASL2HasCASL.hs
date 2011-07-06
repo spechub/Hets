@@ -142,15 +142,15 @@ getConstructors f s = case sentence f of
 
 mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSig constr sign =
-    let f1 = concatMap ( \ (i, s) ->
-                   map ( \ ty -> (trId i, fromOpType ty $ CasS.opKind ty,
+    let f1 = map ( \ (i, ty) ->
+                   (trId i, fromOpType ty $ CasS.opKind ty,
                             if Set.member (i, ty { CasS.opKind = Cas.Partial })
                                constr then ConstructData $ CasS.opRes ty
                                else NoOpDefn Op))
-                         $ Set.toList s) $ Map.toList $ CasS.opMap sign
-        f2 = concatMap ( \ (i, s) ->
-                   map ( \ ty -> (trId i, fromPredType ty, NoOpDefn Pred))
-                         $ Set.toList s) $ Map.toList $ CasS.predMap sign
+                         $ CasS.mapSetToList $ CasS.opMap sign
+        f2 = map ( \ (i, ty) ->
+                   (trId i, fromPredType ty, NoOpDefn Pred))
+                         $ CasS.mapSetToList $ CasS.predMap sign
         insF (i, ty, defn) m =
             let os = Map.findWithDefault Set.empty i m
                 in Map.insert i (Set.insert (OpInfo ty Set.empty defn) os) m

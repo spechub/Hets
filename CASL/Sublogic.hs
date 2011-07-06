@@ -68,6 +68,7 @@ module CASL.Sublogic
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.AS_Annotation
@@ -615,9 +616,9 @@ sl_sign s =
              | otherwise = need_sub
         esorts = if Set.null $ emptySortSet s then bottom
                  else need_empty_sorts
-        preds = if Map.null $ predMap s then bottom else need_pred
-        partial = if any ( \ t -> opKind t == Partial) $ Set.toList
-                  $ Set.unions $ Map.elems $ opMap s then need_part else bottom
+        preds = if MapSet.null $ predMap s then bottom else need_pred
+        partial = if any ((== Partial) . opKind) $ Set.toList
+                  $ MapSet.elems $ opMap s then need_part else bottom
         in comp_list [subs, esorts, preds, partial]
 
 sl_sentence :: Lattice a => (f -> CASL_SL a) -> FORMULA f -> CASL_SL a

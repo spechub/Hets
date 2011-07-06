@@ -53,11 +53,11 @@ import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
 import Common.Utils
+import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
-import Data.Maybe
 
 -- | The identity of the comorphism
 data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving Show
@@ -124,7 +124,7 @@ transTheory trSig trForm (sign, sens) =
                                Map.empty (sortSet sign)},
     constTab = Map.foldWithKey insertPreds
                 (Map.foldWithKey insertOps Map.empty
-                $ opMap sign) $ predMap sign,
+                 . MapSet.toMap $ opMap sign) . MapSet.toMap $ predMap sign,
     domainTab = dtDefs},
          map (\ (s, n) -> makeNamed ("ga_induction_" ++ show n) $ myMapSen s)
               (number gens) ++
@@ -193,8 +193,8 @@ getAssumpsToks sign = Map.foldWithKey ( \ i ops s ->
     (Map.foldWithKey ( \ i prds s ->
     Set.union s $ Set.unions
         $ map ( \ (_, o) -> getConstIsaToks i o baseSign)
-              $ number $ Set.toList prds) Set.empty $ predMap sign)
-    $ opMap sign
+              $ number $ Set.toList prds) Set.empty . MapSet.toMap $ predMap sign)
+    . MapSet.toMap $ opMap sign
 
 transVar :: Set.Set String -> VAR -> String
 transVar toks v = let
@@ -215,31 +215,33 @@ quantify toks q (v, t) phi =
   qname Unique_existential = ex1S
 
 transOpSymb :: CASL.Sign.Sign f e -> Set.Set String -> OP_SYMB -> VName
-transOpSymb sign tyToks (Qual_op_name op ot _) = let
+transOpSymb sign tyToks qo = case qo of
+ Qual_op_name op ot _ -> let
   ga = globAnnos sign
-  l = length $ args_OP_TYPE ot in
-  fromMaybe (error $ "CASL2Isabelle unknown op: " ++ show op) $ do
-         ots <- Map.lookup op (opMap sign)
-         if isSingleton ots
-             then return $ mkIsaConstT False ga l op baseSign tyToks
-             else do
-               i <- elemIndex (toOpType ot) (Set.toList ots)
-               return $ mkIsaConstIT False ga l op (i + 1) baseSign tyToks
-transOpSymb _ _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
+  l = length $ args_OP_TYPE ot
+  in case Set.toList . MapSet.lookup op $ opMap sign of
+    [] -> error $ "CASL2Isabelle unknown op: " ++ show op
+    [_] -> mkIsaConstT False ga l op baseSign tyToks
+    ots -> case elemIndex (toOpType ot) ots of
+      Just i -> mkIsaConstIT False ga l op (i + 1) baseSign tyToks
+      Nothing -> error $ "CASL2Isabelle unknown type for op: " ++ show op
+ Op_name op -> error $ "CASL2Isabelle: unqualified op: " ++ show op
 
 transPredSymb :: CASL.Sign.Sign f e -> Set.Set String -> PRED_SYMB -> VName
-transPredSymb sign tyToks (Qual_pred_name p pt@(Pred_type args _) _) = let
-  ga = globAnnos sign
-  l = length args in
+transPredSymb sign tyToks qp =
+ let ga = globAnnos sign
+     d = mkIsaConstT True ga (-1) (predSymbName qp) baseSign tyToks
              -- for predicate names in induction schemes
-  fromMaybe (mkIsaConstT True ga (-1) p baseSign tyToks) $ do
-         pts <- Map.lookup p (predMap sign)
-         if isSingleton pts
-             then return $ mkIsaConstT True ga l p baseSign tyToks
-             else do
-                   i <- elemIndex (toPredType pt) (Set.toList pts)
-                   return $ mkIsaConstIT True ga l p (i + 1) baseSign tyToks
-transPredSymb _ _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
+ in case qp of
+ Qual_pred_name p pt@(Pred_type args _) _ -> let
+  l = length args
+  in case Set.toList . MapSet.lookup p $ predMap sign of
+    [] -> d
+    [_] -> mkIsaConstT True ga l p baseSign tyToks
+    pts -> case elemIndex (toPredType pt) pts of
+      Just i -> mkIsaConstIT True ga l p (i + 1) baseSign tyToks
+      Nothing -> d
+ Pred_name _ -> d
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> Set.Set String
        -> FORMULA f -> Sentence

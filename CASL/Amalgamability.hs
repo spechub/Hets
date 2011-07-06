@@ -35,6 +35,7 @@ import Data.Graph.Inductive.Graph
 import Data.List
 import Data.Maybe
 
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.Rel as Rel
 
@@ -88,7 +89,7 @@ ops diag =
         mkNodeOps n opId opTypes ol =
             ol ++ Set.fold (mkNodeOp n opId) [] opTypes
         appendOps ol (n, Sign { opMap = m }) =
-            ol ++ Map.foldWithKey (mkNodeOps n) [] m
+            ol ++ Map.foldWithKey (mkNodeOps n) [] (MapSet.toMap m)
     in foldl appendOps [] (labNodes diag)
 
 
@@ -101,7 +102,7 @@ preds diag =
         mkNodePreds n predId predTypes pl =
             pl ++ Set.fold (mkNodePred n predId) [] predTypes
         appendPreds pl (n, Sign { predMap = m }) =
-            pl ++ Map.foldWithKey (mkNodePreds n) [] m
+            pl ++ Map.foldWithKey (mkNodePreds n) [] (MapSet.toMap m)
     in foldl appendPreds [] (labNodes diag)
 
 
@@ -385,9 +386,7 @@ simeqOpTau sink =
         -- is mapped by m to b
         tagEdge (sn, Morphism { msource = src, sort_map = sm, op_map = fm }) =
             map (\ srcOp -> ((sn, srcOp), mapOpSym sm fm srcOp))
-                (concatMap ( \ (i, s) ->
-                        map ( \ ot -> (i, ot)) $ Set.toList s)
-                $ Map.toList $ opMap src)
+                (mapSetToList $ opMap src)
         rel = foldl (\ l e -> l ++ tagEdge e) [] sink
     in taggedValsToEquivClasses rel
 
@@ -401,9 +400,7 @@ simeqPredTau sink =
         -- is mapped by m to b
         tagEdge (sn, Morphism { msource = src, sort_map = sm, pred_map = pm }) =
             map (\ srcPred -> ((sn, srcPred), mapPredSym sm pm srcPred))
-               (concatMap ( \ (i, s) ->
-                        map ( \ pt -> (i, pt)) $ Set.toList s)
-                $ Map.toList $ predMap src)
+               (mapSetToList $ predMap src)
         rel = foldl (\ l e -> l ++ tagEdge e) [] sink
     in taggedValsToEquivClasses rel
 

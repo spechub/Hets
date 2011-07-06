@@ -53,31 +53,33 @@ import Language.Haskell.Pretty as HP
 import Language.Haskell.Syntax
 import Language.Haskell.Parser
 
-import qualified Data.Map as Map
-import qualified Common.Lib.Rel as Rel
-import qualified Data.Set as Set
 import Common.GlobalAnnotations
 import Common.AnnoState
-import Text.ParserCombinators.Parsec
 import Common.Id (Id (Id), Token (Token))
 import Common.Result
 import Common.AS_Annotation (SenAttr)
 import Common.ExtSign
 import Common.Utils
+import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
-import System.Environment
 import Data.Char (ord)
 import Data.List (nub, isPrefixOf, intercalate)
+import qualified Data.Set as Set
 
 -- avoid the whole Logic (and uni) overhead
 import CASL.AS_Basic_CASL (FORMULA)
 import CASL.Parse_AS_Basic (basicSpec)
 import CASL.Sign (emptySign, Sign (..), OpType (..), PredType (..), Symbol)
 import CASL.StaticAna (basicCASLAnalysis)
+
 import Modal.AS_Modal (M_FORMULA)
 import Modal.Parse_AS (modal_reserved_words)
 import Modal.ModalSign (emptyModalSign, ModalSign)
 import Modal.StatAna (basicModalAnalysis)
+
+import System.Environment
+import Text.ParserCombinators.Parsec
 
 -- | selects the requested output
 data ResType = InAxioms | InSign
@@ -102,12 +104,12 @@ showSign sig =
                 toString (Set.toList $ sortSet sig)
      sortRelS = "sortRel = Rel.fromList "++
                 toString (Rel.toList $ sortRel sig)
-     opMapS = "opMap = Map.fromList "++
-              toString (Map.toList $ opMap sig)
-     assocOpsS = "assocOps = Map.fromList "++
-                 toString (Map.toList $ assocOps sig)
-     predMapS = "predMap = Map.fromList "++
-                toString (Map.toList $ predMap sig)
+     opMapS = "opMap = MapSet.fromList "++
+              toString (MapSet.toList $ opMap sig)
+     assocOpsS = "assocOps = MapSet.fromList "++
+                 toString (MapSet.toList $ assocOps sig)
+     predMapS = "predMap = MapSet.fromList "++
+                toString (MapSet.toList $ predMap sig)
      extendedInfoS = toString (extendedInfo sig)
 
 instance (ToString x) => ToString (Set.Set x) where

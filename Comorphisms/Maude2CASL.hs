@@ -19,8 +19,6 @@ module Comorphisms.Maude2CASL
     )
     where
 
-import Common.ProofTree
-
 import Logic.Logic
 import Logic.Comorphism
 
@@ -40,17 +38,19 @@ import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 
-import Common.Result
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
 import Common.Id ()
+import Common.ProofTree
+import Common.Result
+import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
+
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- | lid of the morphism
 data Maude2CASL = Maude2CASL deriving Show
 
-instance Language Maude2CASL where
-  language_name Maude2CASL = "Maude2CASL"
+instance Language Maude2CASL
 
 instance Comorphism Maude2CASL
     MLogic.Maude
@@ -140,9 +140,7 @@ morExtension phi tExt sCASL tCASL =
    iotaN = CMor.embedMorphism () tCASL tExt
    genOps f = let
                f' = MSymbol.toId f
-               profiles = Map.findWithDefault
-                         Set.empty f' $
-                         CSign.opMap sCASL
+               profiles = MapSet.lookup f' $ CSign.opMap sCASL
                ff = Map.findWithDefault (error "morExtension")
                      f $ MMor.opMap phi
               in Set.toList $ Set.map (\ x -> ((f', x),

@@ -39,6 +39,7 @@ import CASL.ToDoc (FormExtension)
 import CASL.Sign
 import CASL.AS_Basic_CASL
 
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Id
@@ -128,9 +129,8 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
         return $ QuantOp o ty f'
     QuantPred p ty f -> do
         let pm = predMap sign0
-            ptys = Map.findWithDefault Set.empty p pm
             sign' = sign0
-              { predMap = Map.insert p (Set.insert (toPredType ty) ptys) pm }
+              { predMap = MapSet.insert p (toPredType ty) pm }
         Result (envDiags sign') $ Just ()
         f' <- minExpFORMULA mef sign' f
         return $ QuantPred p ty f'
@@ -221,7 +221,7 @@ minExpFORMULApred mef sign ide mty args pos = do
     nargs <- checkIdAndArgs ide args pos
     let -- predicates matching that name in the current environment
         preds' = Set.filter ((nargs ==) . length . predArgs) $
-              Map.findWithDefault Set.empty ide $ predMap sign
+              MapSet.lookup ide $ predMap sign
         preds = case mty of
                    Nothing -> map (pSortBy predArgs sign)
                               $ Rel.leqClasses (leqP' sign) preds'
@@ -333,7 +333,7 @@ minExpTermAppl mef sign ide mty args pos = do
     nargs <- checkIdAndArgs ide args pos
     let -- functions matching that name in the current environment
         ops' = Set.filter ( \ o -> length (opArgs o) == nargs) $
-              Map.findWithDefault Set.empty ide $ opMap sign
+              MapSet.lookup ide $ opMap sign
         ops = case mty of
                    Nothing -> map (pSortBy opArgs sign)
                               $ Rel.leqClasses (leqF' sign) ops'
