@@ -137,74 +137,64 @@ classExpressionList = ["Class", "ObjectIntersectionOf", "ObjectUnionOf",
      "DataMinCardinality", "DataMaxCardinality", "DataExactCardinality"]
 
 getClassExpression :: Element -> ClassExpression
-getClassExpression e = case getName e of
+getClassExpression e = 
+  let ch = elChildren e 
+  in case getName e of
     "Class" -> Expression $ getIRI e
     "ObjectIntersectionOf" -> ObjectJunction IntersectionOf
-            $ map getClassExpression $ elChildren e
+            $ map getClassExpression ch
     "ObjectUnionOf" -> ObjectJunction UnionOf
-            $ map getClassExpression $ elChildren e
+            $ map getClassExpression ch
     "ObjectComplementOf" -> ObjectComplementOf
-            $ getClassExpression $ head $ elChildren e
+            $ getClassExpression $ head ch
     "ObjectOneOf" -> ObjectOneOf
-            $ map getIRI $ elChildren e
-    "ObjectSomeValuesFrom" -> let ch = elChildren e in
-        ObjectValuesFrom SomeValuesFrom
+            $ map getIRI ch
+    "ObjectSomeValuesFrom" -> ObjectValuesFrom SomeValuesFrom
             (getObjProp $ head ch) (getClassExpression $ last ch)
-    "ObjectAllValuesFrom" -> let ch = elChildren e in
-        ObjectValuesFrom AllValuesFrom
+    "ObjectAllValuesFrom" -> ObjectValuesFrom AllValuesFrom
             (getObjProp $ head ch) (getClassExpression $ last ch)
-    "ObjectHasValue" -> let ch = elChildren e in
-        ObjectHasValue (getObjProp $ head ch) (getIRI $ last ch)
-    "ObjectHasSelf" -> ObjectHasSelf $ getObjProp $ head $ elChildren e
-    "ObjectMinCardinality" -> let ch = elChildren e in
-        if length ch == 2 then
+    "ObjectHasValue" -> ObjectHasValue (getObjProp $ head ch) (getIRI $ last ch)
+    "ObjectHasSelf" -> ObjectHasSelf $ getObjProp $ head ch
+    "ObjectMinCardinality" -> if length ch == 2 then
           ObjectCardinality $ Cardinality
               MinCardinality (getInt e) (getObjProp $ head ch)
                 $ Just $ getClassExpression $ last ch
          else ObjectCardinality $ Cardinality
               MinCardinality (getInt e) (getObjProp $ head ch) Nothing
-    "ObjectMaxCardinality" -> let ch = elChildren e in
-        if length ch == 2 then
+    "ObjectMaxCardinality" -> if length ch == 2 then
           ObjectCardinality $ Cardinality
               MaxCardinality (getInt e) (getObjProp $ head ch)
                 $ Just $ getClassExpression $ last ch
          else ObjectCardinality $ Cardinality
               MaxCardinality (getInt e) (getObjProp $ head ch) Nothing
-    "ObjectExactCardinality" -> let ch = elChildren e in
-        if length ch == 2 then
+    "ObjectExactCardinality" -> if length ch == 2 then
           ObjectCardinality $ Cardinality
               ExactCardinality (getInt e) (getObjProp $ head ch)
                 $ Just $ getClassExpression $ last ch
          else ObjectCardinality $ Cardinality
               ExactCardinality (getInt e) (getObjProp $ head ch) Nothing
     "DataSomeValuesFrom" -> 
-        let ch = elChildren e 
-            dp = map getIRI $ init ch
+        let dp = map getIRI $ init ch
             dr = last ch
         in DataValuesFrom SomeValuesFrom (head dp) (tail dp) (getDataRange dr)
     "DataAllValuesFrom" -> 
-        let ch = elChildren e 
-            dp = map getIRI $ init ch
+        let dp = map getIRI $ init ch
             dr = last ch
         in DataValuesFrom AllValuesFrom (head dp) (tail dp) (getDataRange dr)
-    "DataHasValue" -> let ch = elChildren e in
-        DataHasValue (getIRI $ head ch) (getLiteral $ last ch)
-    "DataMinCardinality" -> let ch = elChildren e in
-        if length ch == 2 then
+    "DataHasValue" -> DataHasValue (getIRI $ head ch) (getLiteral $ last ch)
+    "DataMinCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
               MinCardinality (getInt e) (getIRI $ head ch)
                 $ Just $ getDataRange $ last ch
          else DataCardinality $ Cardinality
               MinCardinality (getInt e) (getIRI $ head ch) Nothing
-    "DataMaxCardinality" -> let ch = elChildren e in
-        if length ch == 2 then
+    "DataMaxCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
               MaxCardinality (getInt e) (getIRI $ head ch)
                 $ Just $ getDataRange $ last ch
          else DataCardinality $ Cardinality
               MaxCardinality (getInt e) (getIRI $ head ch) Nothing
-    "DataExactCardinality" -> let ch = elChildren e in
-        if length ch == 2 then
+    "DataExactCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
               ExactCardinality (getInt e) (getIRI $ head ch)
                 $ Just $ getDataRange $ last ch
@@ -233,6 +223,10 @@ getClassAxiom e =
     "DisjointUnion" -> PlainAxiom (Right $ getEntity $ head l) 
         $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression $ tail l
     _ -> error "XML parser: not class axiom"
+
+
+
+
     
 
 
