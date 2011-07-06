@@ -64,6 +64,7 @@ import CASL_DL.Logic_CASL_DL
 import ConstraintCASL.Logic_ConstraintCASL
 import VSE.Logic_VSE
 -- no CASL extension, but omit them as non-essential
+import OMDoc.Logic_OMDoc
 import RelationalScheme.Logic_Rel
 import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
@@ -95,6 +96,7 @@ logicList =
   , Logic Haskell
 #endif
 #ifdef CASLEXTENSIONS
+  , Logic OMDoc_PUN
   , Logic THF
   , Logic Fpl
   , Logic Adl
