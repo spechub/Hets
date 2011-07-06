@@ -93,7 +93,7 @@ getAllAnnos :: Element -> [Annotation]
 getAllAnnos e = map getAnnotation
             $ filterElementsName (isSmth "Annotation") e
 
-getObjProp :: Element -> ObjectPropertyExpression
+getObjProp :: Element -> ObjectPropertyExpression  --still need to cancel double inverses
 getObjProp e = case filterElementName (isSmth "ObjectInverseOf") e of
                   Nothing -> ObjectProp $ getIRI e
                   Just o -> ObjectInverseOf $ getObjProp $ head $ elChildren e
@@ -117,6 +117,19 @@ getDataRange e = case getName e of
             $ map getDataRange $ elChildren e
     "DataUnionOf" -> DataJunction UnionOf
             $ map getDataRange $ elChildren e
+
+getClassExpression :: Element -> ClassExpression
+getClassExpression e = case getName e of
+    "Class" -> Expression $ getIRI e
+    
+
+
+
+
+
+
+
+
 
 
 
