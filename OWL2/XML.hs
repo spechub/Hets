@@ -6,25 +6,8 @@ import OWL2.AS
 import OWL2.MS
 import Common.Lexer
 
-entityList :: [String]
-entityList = ["Class", "Datatype", "NamedIndividual",
-    "ObjectProperty", "DataProperty", "AnnotationProperty"]
-
-isSmthList :: [String] -> Text.XML.Light.QName -> Bool
-isSmthList l (QName {qName = qn}) = qn `elem` l
-
-isSmth :: String -> Text.XML.Light.QName -> Bool
-isSmth s (QName {qName = qn}) = qn == s
-
-getEntityType :: String -> EntityType
-getEntityType ty = case ty of
-    "Class" -> Class
-    "Datatype" -> Datatype
-    "NamedIndividual" -> NamedIndividual
-    "ObjectProperty" -> ObjectProperty
-    "DataProperty" -> DataProperty
-    "AnnotationProperty" -> AnnotationProperty
-    _ -> error "not entity type"
+getName :: Element -> String
+getName (Element {elName = QName {qName = n}}) = n
 
 getIRI :: Element -> OWL2.AS.QName
 getIRI (Element {elAttribs = a}) =
@@ -36,9 +19,49 @@ getInt (Element {elAttribs = a}) =
         let Attr {attrVal = int} = head a
         in value 10 int
 
+isSmth :: String -> Text.XML.Light.QName -> Bool
+isSmth s (QName {qName = qn}) = qn == s
 
-getName :: Element -> String
-getName (Element {elName = QName {qName = n}}) = n
+isSmthList :: [String] -> Text.XML.Light.QName -> Bool
+isSmthList l (QName {qName = qn}) = qn `elem` l
+
+filterCh :: String -> Element -> [Element]
+filterCh s = filterChildrenName (isSmth s)
+
+filterChL :: [String] -> Element -> [Element]
+filterChL l = filterChildrenName (isSmthList l)
+
+entityList :: [String]
+entityList = ["Class", "Datatype", "NamedIndividual",
+    "ObjectProperty", "DataProperty", "AnnotationProperty"]
+
+objectPropList :: [String]
+objectPropList = ["ObjectProperty", "ObjectInverseOf"]
+
+dataPropList :: [String]
+dataPropList = ["DataProperty"]
+
+dataRangeList :: [String]
+dataRangeList = ["Datatype", "DatatypeRestriction", "DataComplementOf",
+      "DataOneOf", "DataIntersectionOf", "DataUnionOf"]
+
+classExpressionList :: [String]
+classExpressionList = ["Class", "ObjectIntersectionOf", "ObjectUnionOf",
+     "ObjectComplementOf", "ObjectOneOf", "ObjectSomeValuesFrom",
+     "ObjectAllValuesFrom", "ObjectHasValue", "ObjectHasSelf",
+     "ObjectMinCardinality", "ObjectMaxCardinality", "ObjectExactCardinality",
+     "DataSomeValuesFrom", "DataAllValuesFrom", "DataHasValue",
+     "DataMinCardinality", "DataMaxCardinality", "DataExactCardinality"]
+
+getEntityType :: String -> EntityType
+getEntityType ty = case ty of
+    "Class" -> Class
+    "Datatype" -> Datatype
+    "NamedIndividual" -> NamedIndividual
+    "ObjectProperty" -> ObjectProperty
+    "DataProperty" -> DataProperty
+    "AnnotationProperty" -> AnnotationProperty
+    _ -> error "not entity type"
 
 toEntity :: Element -> Entity
 toEntity e = Entity (getEntityType $ getName e) (getIRI e)
@@ -78,9 +101,6 @@ getValue e = let lit = filterElementName (isSmth "Literal") e
                   Nothing -> AnnValue $ mkQName val
                   Just _ -> AnnValLit $ getLiteral e
 
-filterCh :: String -> Element -> [Element]
-filterCh s = filterChildrenName (isSmth s)
-
 getAnnotation :: Element -> Annotation
 getAnnotation e =
      let hd = filterCh "Annotation" e
@@ -107,35 +127,23 @@ getObjProp e = case filterElementName (isSmth "ObjectInverseOf") e of
 getFacetValuePair :: Element -> (ConstrainingFacet, RestrictionValue)
 getFacetValuePair e = (getIRI e, getLiteral $ head $ elChildren e)
 
-dataRangeList :: [String]
-dataRangeList = ["Datatype", "DatatypeRestriction", "DataComplementOf",
-      "DataOneOf", "DataIntersectionOf", "DataUnionOf"]
-
 getDataRange :: Element -> DataRange
 getDataRange e = case getName e of
     "Datatype" -> DataType (getIRI e) []
     "DatatypeRestriction" ->
         let dt = getIRI $ fromJust $ filterChildName (isSmth "Datatype") e
             fvp = map getFacetValuePair
-               $ filterChildrenName (isSmth "FacetRestriction") e
+               $ filterCh "FacetRestriction" e
         in DataType dt fvp
     "DataComplementOf" -> DataComplementOf
             $ getDataRange $ head $ elChildren e
     "DataOneOf" -> DataOneOf
-            $ map getLiteral $ filterChildrenName (isSmth "Literal") e
+            $ map getLiteral $ filterCh  "Literal" e
     "DataIntersectionOf" -> DataJunction IntersectionOf
             $ map getDataRange $ elChildren e
     "DataUnionOf" -> DataJunction UnionOf
             $ map getDataRange $ elChildren e
     _ -> error "XML parser: not data range"
-
-classExpressionList :: [String]
-classExpressionList = ["Class", "ObjectIntersectionOf", "ObjectUnionOf",
-     "ObjectComplementOf", "ObjectOneOf", "ObjectSomeValuesFrom",
-     "ObjectAllValuesFrom", "ObjectHasValue", "ObjectHasSelf",
-     "ObjectMinCardinality", "ObjectMaxCardinality", "ObjectExactCardinality",
-     "DataSomeValuesFrom", "DataAllValuesFrom", "DataHasValue",
-     "DataMinCardinality", "DataMaxCardinality", "DataExactCardinality"]
 
 getClassExpression :: Element -> ClassExpression
 getClassExpression e =
@@ -207,8 +215,8 @@ getClassAxiom :: Element -> Axiom
 getClassAxiom e =
    let ch = elChildren e
        as = concatMap getAllAnnos ch
-       l = filterChildrenName (isSmthList classExpressionList) e
-       drl = filterChildrenName (isSmthList dataRangeList) e
+       l = filterChL classExpressionList e
+       drl = filterChL dataRangeList e
        cel = map getClassExpression l
    in case getName e of
     "SubClassOf" ->
@@ -229,10 +237,17 @@ getClassAxiom e =
     "DatatypeDefinition" -> PlainAxiom (Right $ getEntity $ head drl)
         $ AnnFrameBit as $ DatatypeBit $ getDataRange $ last drl
     _ -> error "XML parser: not class axiom"
-{-
+
 hasKey :: Element -> Axiom
-hasKey e = 
--}
+hasKey e =
+   let ch = elChildren e
+       as = concatMap getAllAnnos ch
+       ce = getClassExpression $ head $ filterChL classExpressionList e
+       op = map getObjProp $ filterChL objectPropList e
+       dp = map getIRI $ filterChL dataPropList e
+   in PlainAxiom (Left []) $ AnnFrameBit as
+          $ GCIClassHasKey ce op dp
+ 
 
 
 
