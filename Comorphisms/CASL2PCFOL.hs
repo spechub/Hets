@@ -83,10 +83,9 @@ encodeSig sig
       sig {sortRel = Rel.empty, opMap = projOpMap}
   where
         rel = sortRel sig
-        total (s, s') = OpType {opKind = Total, opArgs = [s], opRes = s'}
-        partial (s, s') = OpType {opKind = if Rel.member s' s rel
-                                 then Total
-                                 else Partial, opArgs = [s'], opRes = s}
+        total (s, s') = mkTotOpType [s] s'
+        partial (s, s') = (if Rel.member s' s rel then id else mkPartial)
+          $ total (s', s)
         setinjOptype = Set.map total $ Rel.toSet rel
         setprojOptype = Set.map partial $ Rel.toSet rel
         injOpMap = Set.fold (\ t -> addOpTo (uniqueInjName $ toOP_TYPE t) t)

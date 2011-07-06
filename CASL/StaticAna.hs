@@ -78,13 +78,14 @@ addOp a ty i =
                     else checkPlaces (opArgs ty) i ++ checkNamePrefix i)
                    ++ ds
            store = put e { opMap = addOpTo i ty m }
+           pTy = mkPartial ty
        case opKind ty of
-          Partial -> if Set.member ty {opKind = Total} l then
+          Partial -> if Set.member (mkTotal ty) l then
                      addDiags $ mkDiag Warning "partially redeclared" i : ds
                      else store >> check
-          Total -> if Set.member ty {opKind = Partial} l then do
+          Total -> if Set.member pTy l then do
                          put e { opMap = MapSet.insert i ty
-                                   $ MapSet.delete i ty {opKind = Partial} m }
+                                   $ MapSet.delete i pTy m }
                          addDiags $ mkDiag Hint "redeclared as total" i : ds
                    else store >> check
        addAnnoSet a $ Symbol i $ OpAsItemType ty
@@ -814,7 +815,7 @@ ana_COMPONENTS s c = do
             Just i -> do
               addOp (emptyAnno ()) ty i
               return $ Just $ Component i ty) cs
-    return $ partition ((== Total) . opKind . compType) $ catMaybes sels
+    return $ partition (isTotal . compType) $ catMaybes sels
 
 -- | utility
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a

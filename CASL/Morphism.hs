@@ -335,12 +335,6 @@ symbToRaw b sig k si = case si of
     _ -> AKindedSymb k idt
   Qual_id idt t _ -> typedSymbKindToRaw b sig k idt t
 
-sortToOpType :: SORT -> OpType
-sortToOpType = OpType Total []
-
-sortToPredType :: SORT -> PredType
-sortToPredType s = PredType [s]
-
 typedSymbKindToRaw :: Bool -> Sign f e -> SYMB_KIND -> Id -> TYPE
   -> Result RawSymbol
 typedSymbKindToRaw b sig k idt t = let
@@ -626,7 +620,7 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
                             else (ds, Map.insert isc (j, Total) m) else
               (Diag Error
                ("incompatible mapping of op " ++ showId i ":"
-                ++ showDoc ot { opKind = t } " to "
+                ++ showDoc (setOpKind t ot) " to "
                 ++ showId j " and " ++ showId k "") nullRange : ds, m))
            (sds, omap1) (Map.toList omap2 ++ map
               ( \ (a, ot) -> ((a, mkPartial ot), (a, opKind ot)))
@@ -639,7 +633,8 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
                ("incompatible mapping of pred " ++ showId i ":"
                 ++ showDoc pt " to " ++ showId j " and "
                 ++ showId k "") nullRange : ds, m)) (ods, pmap1)
-          (Map.toList pmap2 ++ map ( \ (a, pt) -> ((a, pt), a)) (mapSetToList up))
+          (Map.toList pmap2 ++ map ( \ (a, pt) -> ((a, pt), a))
+                  (mapSetToList up))
   in if null pds then do
     s3 <- addSigM addSigExt s1 s2
     s4 <- addSigM addSigExt (mtarget mor1) $ mtarget mor2

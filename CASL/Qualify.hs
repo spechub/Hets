@@ -58,7 +58,7 @@ qualifySigExt extInd extEm nodeId libId m sig = do
            Map.empty ss
       sMap = Set.fold (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
-           nodeId libId (mapOpType sm) (\ o -> o { opKind = Partial }) os
+           nodeId libId (mapOpType sm) mkPartial os
       oMap = Map.foldWithKey (\ i ->
              Map.insertWith (+) i . Set.size) sMap $ MapSet.toMap os
       pm = Map.map fst $ qualOverloaded oMap (pred_map m) nodeId libId

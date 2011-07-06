@@ -62,13 +62,10 @@ computeCompTable spName (sig,nsens) = do
        _ -> fail errSorts
   -- types of operation symbols
   let opTypes = mapSetToList (opMap sig)
-      -- idt    = OpType {opKind = Total, opArgs = [], opRes = baseRel}
-      -- zerot  = OpType {opKind = Total, opArgs = [], opRes = rel}
-      invt   = OpType {opKind = Total, opArgs = [baseRel], opRes = baseRel}
-      cmpt   = OpType {opKind = Total, opArgs = [baseRel,baseRel],
-                       opRes = rel}
-      complt = OpType {opKind = Total, opArgs = [rel], opRes = rel}
-      cupt   = OpType {opKind = Total, opArgs = [rel,rel], opRes = rel}
+      invt   = mkTotOpType [baseRel] baseRel
+      cmpt   = mkTotOpType [baseRel, baseRel] rel
+      complt = mkTotOpType [rel] rel
+      cupt   = mkTotOpType [rel, rel] rel
   -- look for operation symbols
   let mlookup t = map fst $ filter ((== t) . snd) opTypes
   let oplookup typ msg =

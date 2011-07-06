@@ -262,7 +262,7 @@ minDLForm :: Min DL_FORMULA CASL_DLSign
 minDLForm sign form = case form of
     Cardinality ct ps varTerm natTerm qualTerm ran ->
        let pn = predSymbName ps
-           pn_RelTypes = Set.filter ((== 2) . length . predArgs)
+           pn_RelTypes = Set.filter isBinPredType
                  $ MapSet.lookup pn (predMap sign)
        in
       if Set.null pn_RelTypes then

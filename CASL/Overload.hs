@@ -339,7 +339,7 @@ minExpTermAppl mef sign ide mty args pos = do
                               $ Rel.leqClasses (leqF' sign) ops'
                    Just ty -> [[ty] | Set.member ty ops' ||
                                   -- might be known to be total
-                                 Set.member ty {opKind = Total} ops' ]
+                                 Set.member (mkTotal ty) ops' ]
     noOpOrPred ops "operation" mty ide pos nargs
     expansions <- mapM (minExpTerm mef sign) args
     let  -- generate profiles as descr. on p. 339 (Step 3)

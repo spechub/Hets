@@ -128,7 +128,7 @@ instance Comorphism CASL2SubCFOL
 
 totalizeSymbType :: SymbType -> SymbType
 totalizeSymbType t = case t of
-  OpAsItemType ot -> OpAsItemType ot { opKind = Total }
+  OpAsItemType ot -> OpAsItemType $ mkTotal ot
   _ -> t
 
 sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.Set SORT -> Set.Set SORT
@@ -141,7 +141,7 @@ sortsWithBottom m sig formBotSrts =
             Set.unions $ s : map (`supersortsOf` sig) (Set.toList s)
         resSortsOfPartialFcts =
             allSortsWithBottom . Set.union bsrts
-               . Set.map opRes $ Set.filter ((== Partial) . opKind) ops
+               . Set.map opRes $ Set.filter isPartial ops
         collect given =
             let more = allSortsWithBottom . Set.map opRes $ Set.filter
                       (any (`Set.member` given) . opArgs) ops
@@ -189,7 +189,7 @@ totalizeConstraint bsrts c =
     c { opSymbs = map ( \ (o, is) -> (totalizeOpSymb o, is)) $ opSymbs c }
 
 botType :: SORT -> OpType
-botType x = OpType {opKind = Total, opArgs = [], opRes = x }
+botType = sortToOpType
 
 -- | Add projections to the signature
 encodeSig :: Set.Set SORT -> Sign f e -> Sign f e
@@ -202,7 +202,7 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
    defTypes = Set.map defType bsorts
    newpredMap = MapSet.update (const defTypes) defPred $ predMap sig
    rel = sortRel sig
-   total (s, s') = OpType {opKind = Total, opArgs = [s'], opRes = s }
+   total (s, s') = mkTotOpType [s'] s
    setprojOptype = Set.map total $ Set.filter ( \ (s, _) ->
        Set.member s bsorts) $ Rel.toSet rel
    projOpMap = Set.fold (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)
@@ -268,9 +268,9 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       in makeNamed (mkTotalityAxiomName f)
       -- forall x_i:s_i . d f(x_1, ..., x_n) {<}=> d x_1 /\\ ... /\\ d x_n
          $ mkForall vs
-           ((if opKind typ == Total then mkEqv else mkImpl)
+           ((if isTotal typ then mkEqv else mkImpl)
             (defined bsorts
-             (mkAppl (mkQualOp f $ toOP_TYPE typ { opKind = Total })
+             (mkAppl (mkQualOp f $ toOP_TYPE $ mkTotal typ)
                       $ map toQualVar vs) nullRange)
             $ defVards bsorts vs) nullRange) opList
     ++ map (\ (p, typ) ->

@@ -76,7 +76,7 @@ convPred s o =
     where addPred pn tSet wOnto =
            weither (const wOnto) insBinaryPred wOnto
            where insBinaryPred on =
-                  let binT = Set.filter ((== 2) . length . predArgs) tSet
+                  let binT = Set.filter isBinPredType tSet
                   in if Set.null binT
                         then hasValue on
                         else Set.fold insType (insName on) binT

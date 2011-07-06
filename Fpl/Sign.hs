@@ -40,7 +40,7 @@ falseC :: Id
 falseC = stringToId falseS
 
 boolType :: OpType
-boolType = OpType Total [] boolSort
+boolType = sortToOpType boolSort
 
 data SignExt = SignExt
   { constr :: OpMap }

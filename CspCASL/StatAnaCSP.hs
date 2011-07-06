@@ -738,12 +738,10 @@ communication types for those predicates. -}
 getBinPredsById :: Id -> State CspCASLSign (Set.Set CommType)
 getBinPredsById ri = do
     sig <- get
-    let binPreds = Set.filter isBin $ MapSet.lookup  ri (predMap sig)
+    let binPreds = Set.filter isBinPredType $ MapSet.lookup ri (predMap sig)
         cts = Set.map CommTypeSort $ Set.fold predSorts Set.empty binPreds
     return cts
-      where isBin ot = case predArgs ot of
-              [_, _] -> True
-              _ -> False
+      where
             predSorts p inS = inS `Set.union` Set.fromList (predArgs p)
 
 {- | Given two CspCASL communication alphabets, check that the first's

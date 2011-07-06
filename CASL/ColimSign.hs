@@ -146,7 +146,7 @@ computeColimitOp graph sigmaRel phiSRel = let
  (colim1, morMap1) = nameSymbols graph' morMap' phiSRel names ovrl totalOps
  morMap2 = Map.map (\f -> Map.map (\((i,o),_) -> (i, opKind o)) f) morMap1
  morMap3 = Map.map (\f -> Map.fromAscList $
-                          map (\((i,o),y) -> ((i,o{opKind = Partial}), y)) $
+                          map (\((i,o),y) -> ((i, mkPartial o), y)) $
                           Map.toList f) morMap2
  sigmaOps = sigmaRel{opMap = colim1}
  phiOps = Map.mapWithKey
@@ -222,8 +222,8 @@ buildOvrlAtNode graph' colim morMap ovrl names totalF nodeList =
                               (\(rl,lx) y -> (Rel.insert lx y rl, y))
                               (r,x) xs
                              f' = foldl (\g ((_i,o),((i',o'),n')) ->
-                                   if opKind o == Total then
-                                    Map.insert ((i',o'{opKind=Partial}), n')
+                                   if isTotal o then
+                                    Map.insert ((i', mkPartial o'), n')
                                                True g
                                     else g ) f $ zip l l1
                             in (Rel.insert ly x r', f')
@@ -276,12 +276,11 @@ nameSymbols graph morMap phi names ovrl totalOps = let
     (newName, gNames') = assignName (set, idx) gNames names
     opTypes = Set.map (\((oldId,ot),i) -> let
                  oKind' = if Map.findWithDefault False
-                             ((oldId,ot{opKind = Partial}), i)
+                             ((oldId, mkPartial ot), i)
                              totalOps
                            then Total else Partial
                  imor = Map.findWithDefault (error "imor") i phi
-                in mapOpType (sort_map imor) ot{opKind = oKind'}) $
-              set
+                in mapOpType (sort_map imor) $ setOpKind oKind' ot) set
     renameSymbols n f = let
         Just opSyms = lab graph n
         setKeys = filter (\x -> let y = Map.findWithDefault (x, n) x f
@@ -290,10 +289,10 @@ nameSymbols graph morMap phi names ovrl totalOps = let
           nmor = Map.findWithDefault (error "nmor") n phi
           o'' = mapOpType (sort_map nmor) o'
           oKind = if Map.findWithDefault False
-                             ((i',o'{opKind = Partial}), n')
+                             ((i', mkPartial o'), n')
                              totalOps
                            then Total else Partial
-          z = (newName, o''{opKind = oKind})
+          z = (newName, setOpKind oKind o'')
          in if (i,o) == z then
                Nothing
                           else

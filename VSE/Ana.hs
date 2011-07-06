@@ -585,7 +585,7 @@ correctSign :: Sign f Procs -> Sign f Procs
 correctSign sig = sig
   { extendedInfo = Procs $ Map.filterWithKey (\ i p -> case profileToOpType p of
          Just t -> let s = MapSet.lookup i $ opMap sig in
-           Set.member t s || Set.member t { opKind = Total } s
+           Set.member t s || Set.member (mkTotal t) s
          Nothing ->
            Set.member (profileToPredType p) . MapSet.lookup i $ predMap sig
          ) $ procsMap $ extendedInfo sig }

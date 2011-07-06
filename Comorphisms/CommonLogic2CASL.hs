@@ -139,7 +139,7 @@ mapTheory (sig, form) = Result [] $ Just (mapSig sig, baseCASLSig ++ (map
 mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
                CSign.opMap = Set.fold (\ x -> MapSet.insert x
-                                $ CSign.OpType CBasic.Total [] individual)
+                                $ CSign.mkTotOpType [] individual)
                                 MapSet.empty $ ClSign.items sign
                }) caslSig
 
@@ -148,15 +148,13 @@ caslSig :: CSign.CASLSign
 caslSig = (CSign.emptySign ())
                { CSign.sortSet = Set.fromList [list, individual]
                , CSign.opMap = MapSet.fromList
-                         [ (cons, [CSign.OpType
-                                   CBasic.Total
+                         [ (cons, [CSign.mkTotOpType
                                    [individual, list]
                                    list])
-                         , (fun, [CSign.OpType
-                                  CBasic.Total
+                         , (fun, [CSign.mkTotOpType
                                   [individual, list]
                                   individual])
-                         , (nil, [CSign.OpType CBasic.Total [] list])]
+                         , (nil, [CSign.mkTotOpType [] list])]
                , CSign.predMap = MapSet.fromList
                 [(rel, [CSign.PredType [individual, list]])]
                }

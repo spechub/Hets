@@ -617,7 +617,7 @@ sl_sign s =
         esorts = if Set.null $ emptySortSet s then bottom
                  else need_empty_sorts
         preds = if MapSet.null $ predMap s then bottom else need_pred
-        partial = if any ((== Partial) . opKind) $ Set.toList
+        partial = if any isPartial $ Set.toList
                   $ MapSet.elems $ opMap s then need_part else bottom
         in comp_list [subs, esorts, preds, partial]
 

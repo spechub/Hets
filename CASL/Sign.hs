@@ -37,7 +37,21 @@ import Control.Monad (when, unless)
 data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
               deriving (Show, Eq, Ord)
 
+mkTotOpType :: [SORT] -> SORT -> OpType
+mkTotOpType = OpType Total
+
+sortToOpType :: SORT -> OpType
+sortToOpType = mkTotOpType []
+
 data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
+
+sortToPredType :: SORT -> PredType
+sortToPredType s = PredType [s]
+
+isBinPredType :: PredType -> Bool
+isBinPredType (PredType l) = case l of
+  [_, _] -> True
+  _ -> False
 
 type OpMap = MapSet.MapSet OP_NAME OpType
 type PredMap = MapSet.MapSet PRED_NAME PredType
@@ -206,11 +220,22 @@ closeSortRel s =
 nonEmptySortSet :: Sign f e -> Set.Set Id
 nonEmptySortSet s = Set.difference (sortSet s) $ emptySortSet s
 
+-- op kinds of op types
+
+setOpKind :: OpKind -> OpType -> OpType
+setOpKind k o = o { opKind = k }
+
 mkPartial :: OpType -> OpType
-mkPartial o = o { opKind = Partial }
+mkPartial = setOpKind Partial
 
 mkTotal :: OpType -> OpType
-mkTotal o = o { opKind = Total }
+mkTotal = setOpKind Total
+
+isTotal :: OpType -> Bool
+isTotal = (== Total) . opKind
+
+isPartial :: OpType -> Bool
+isPartial = not . isTotal
 
 makePartial :: Set.Set OpType -> Set.Set OpType
 makePartial = Set.mapMonotonic mkPartial
@@ -218,10 +243,10 @@ makePartial = Set.mapMonotonic mkPartial
 -- | remove (True) or add (False) partial op if it is included as total
 rmOrAddParts :: Bool -> Set.Set OpType -> Set.Set OpType
 rmOrAddParts b s =
-  let t = makePartial $ Set.filter ((== Total) . opKind) s
+  let t = makePartial $ Set.filter isTotal s
   in (if b then Set.difference else Set.union) s t
 
-rmOrAddPartsMap ::  Bool -> OpMap -> OpMap
+rmOrAddPartsMap :: Bool -> OpMap -> OpMap
 rmOrAddPartsMap b = MapSet.mapSet (rmOrAddParts b)
 
 diffMapSet :: PredMap -> PredMap -> PredMap
@@ -293,10 +318,9 @@ interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in
   , extendedInfo = ef (extendedInfo a) $ extendedInfo b }
 
 isSubOpMap :: OpMap -> OpMap -> Bool
-isSubOpMap m = Map.isSubmapOfBy (\ s t ->
-  Set.fold (\ e -> (&& (Set.member e t || case opKind e of
-    Partial -> Set.member (mkTotal e) t
-    Total -> False))) True s) (MapSet.toMap m) . MapSet.toMap
+isSubOpMap m = Map.isSubmapOfBy (\ s t -> MapSet.setAll
+    (\ e -> Set.member e t || isPartial e && Set.member (mkTotal e) t)
+    s) (MapSet.toMap m) . MapSet.toMap
 
 isSubMap :: PredMap -> PredMap -> Bool
 isSubMap = MapSet.isSubmapOf

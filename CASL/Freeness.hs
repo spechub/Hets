@@ -580,7 +580,7 @@ make_ops ss om = Set.fold make_op om ss
 
 -- | adds the make functions for the sort to the operator map
 make_op :: SORT -> OpMap -> OpMap
-make_op s = MapSet.insert makeId $ OpType Total [s] $ mkFreeName s
+make_op s = MapSet.insert makeId $ mkTotOpType [s] $ mkFreeName s
 
 -- | identifier of the make function
 makeId :: Id
@@ -647,7 +647,7 @@ iota_sort_rel = Rel.map mkFreeName
 iota_op_map :: OpMap -> OpMap
 iota_op_map = MapSet.foldWithKey
   (\ op (OpType _ args res) -> MapSet.insert (mkFreeName op)
-       $ OpType Total (map mkFreeName args) (mkFreeName res)) MapSet.empty
+       $ mkTotOpType (map mkFreeName args) (mkFreeName res)) MapSet.empty
 
 -- | applies the iota renaming to a predicate map
 iota_pred_map :: PredMap -> PredMap
@@ -669,7 +669,7 @@ iota_symbol (Symbol name ty) = Symbol (mkFreeName name) $ case ty of
   SortAsItemType -> SortAsItemType
   SubsortAsItemType s -> SubsortAsItemType $ mkFreeName s
   OpAsItemType (OpType _ args res) -> OpAsItemType
-    $ OpType Total (map mkFreeName args) (mkFreeName res)
+    $ mkTotOpType (map mkFreeName args) (mkFreeName res)
   PredAsItemType (PredType args) -> PredAsItemType
     $ PredType $ map mkFreeName args
 

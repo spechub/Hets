@@ -55,7 +55,7 @@ sigMap sig =
   where caslSig2 = (CASL_Sign.emptySign ())
           { CASL_Sign.sortSet = Set.singleton sort
           , CASL_Sign.opMap = MapSet.insert (mkId [botTok])
-              (CASL_Sign.OpType CASL_AS.Total [] sort) MapSet.empty }
+              (CASL_Sign.sortToOpType sort) MapSet.empty }
         symbols = Set.toList $ getSymbols sig
 
 sigMapH :: Sign -> NAME -> CASL_Sign.CASLSign -> CASL_Sign.CASLSign
@@ -64,7 +64,7 @@ sigMapH sig sym csig = case kind of
        PredKind -> csig { CASL_Sign.predMap = insSym (predTy arity) predis }
        FuncKind -> csig
          { CASL_Sign.opMap = MapSet.insert (mkId [sym])
-             (CASL_Sign.OpType CASL_AS.Total (folType arity) sort)
+             (CASL_Sign.mkTotOpType (folType arity) sort)
              $ CASL_Sign.opMap csig }
   where predis = CASL_Sign.predMap csig
         insSym = MapSet.insert (mkId [sym])
@@ -399,7 +399,7 @@ symbolTransl sig sym =
            PredKind -> CASL_Sign.PredAsItemType
                          $ CASL_Sign.PredType (folType arity)
            FuncKind -> CASL_Sign.OpAsItemType
-                         $ CASL_Sign.OpType CASL_AS.Total (folType arity) sort
+                         $ CASL_Sign.mkTotOpType (folType arity) sort
            SortKind -> CASL_Sign.PredAsItemType
                          $ CASL_Sign.PredType (folType (arity+1))
   where n = name sym

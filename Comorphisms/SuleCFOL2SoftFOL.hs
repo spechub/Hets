@@ -182,8 +182,8 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
 transFuncMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
                 (FuncMap, IdTypeSPIdMap)
-transFuncMap idMap sign =
-    Map.foldWithKey toSPOpType (Map.empty, idMap) . MapSet.toMap $ CSign.opMap sign
+transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
+  . MapSet.toMap $ CSign.opMap sign
     where toSPOpType iden typeSet (fm, im) =
               if not (Set.null typeSet) && Set.null (Set.deleteMin typeSet) then
                  let oType = Set.findMin typeSet
@@ -980,7 +980,7 @@ typeCheckTerm sign ty m trm =
                  if null args && isVar cst then
                      (fb, Map.insert cst (CVar r, Nothing) fm, ty)
                  else (fb, Map.insert cst
-                        (COp $ OpType Total (catMaybes aTys) r, Nothing) fm
+                        (COp $ mkTotOpType (catMaybes aTys) r, Nothing) fm
                       , ty)
                _ -> (["no type for: " ++ showDoc trm ""], fm, ty)
       Just (COp ot, _) -> let

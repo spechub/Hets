@@ -329,7 +329,7 @@ ana_COCOMPONENTS s c = do
     sels <- mapM (\ (i, ty) ->
                    do addOp (emptyAnno ()) ty i
                       return $ Just $ Component i ty) cs
-    return $ partition ((== Total) . opKind . compType) $ catMaybes sels
+    return $ partition (isTotal . compType) $ catMaybes sels
 
 ana_C_BASIC_ITEM
     :: Ana C_BASIC_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign

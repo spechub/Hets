@@ -138,7 +138,7 @@ dataPropPred :: PredType
 dataPropPred = PredType [thing, dataS]
 
 indiConst :: OpType
-indiConst = OpType Total [] thing
+indiConst = sortToOpType thing
 
 mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result CASLSign         -- ^ CASL signature

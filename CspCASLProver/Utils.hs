@@ -825,7 +825,7 @@ addProcTheorems namedSens ccSign pcfolSign cfolSign isaTh =
 -- satisfactory way.
 getCollectionTotAx :: CASLSign.CASLSign -> [String]
 getCollectionTotAx pfolSign =
-    let totOpList = MapSet.toList . MapSet.filter ((== Total) . CASLSign.opKind)
+    let totOpList = MapSet.toList . MapSet.filter CASLSign.isTotal
                  $ CASLSign.opMap pfolSign
     in map (mkTotalityAxiomName . fst) totOpList
 
@@ -845,9 +845,7 @@ getDefinedName sorts s =
 -- This function is not implemented in a satisfactory way
 getInjectionName :: SORT -> SORT -> String
 getInjectionName s s' =
-    let t = CASLSign.toOP_TYPE (CASLSign.OpType {CASLSign.opKind = Total,
-                                                CASLSign.opArgs = [s],
-                                                CASLSign.opRes = s'})
+    let t = CASLSign.toOP_TYPE $ CASLSign.mkTotOpType [s] s'
         injName = show $ CASLInject.uniqueInjName t
     in injName
 

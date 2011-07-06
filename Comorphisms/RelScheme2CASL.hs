@@ -120,11 +120,7 @@ mapMorphism phi = let
                     head $ filter (\col -> SRel.c_name col == c1) $
                     SRel.columns t
           fname = stringToId $ (show tab) ++ "_" ++ (show c1)
-          ftype = OpType{
-                   opKind = Total,
-                   opArgs = types,
-                   opRes = resType
-                  }
+          ftype = mkTotOpType types resType
           rname = stringToId $
                   (show $ (Map.!)(SRel.table_map phi) tab)
                           ++ "_" ++ (show c2)

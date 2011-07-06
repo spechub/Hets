@@ -211,7 +211,8 @@ symmetryAxioms ssMap sortRels =
 generateAxioms :: SubSortMap -> PredMap -> OpMap -> [Named (FORMULA ())]
 generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
     where -- generate argument restrictions for operations
-          axs = Map.foldWithKey (procOpMapping subSortMap) [] $ MapSet.toMap oMap
+          axs = Map.foldWithKey (procOpMapping subSortMap) []
+                $ MapSet.toMap oMap
           p_axs =
           -- generate argument restrictions for predicates
            Map.foldWithKey (\ pName ->

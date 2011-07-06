@@ -135,7 +135,7 @@ getConstructors f s = case sentence f of
        (_, ops, _) = Cas.recover_Sort_gen_ax cs
        in foldr ( \ o -> case o of
              Cas.Qual_op_name i t _ ->
-               Set.insert (i, (CasS.toOpType t) { CasS.opKind = Cas.Partial })
+               Set.insert (i, CasS.mkPartial $ CasS.toOpType t)
              _ -> error "CASL2HasCASL.getConstructors")
              s ops
    _ -> s
@@ -144,7 +144,7 @@ mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSig constr sign =
     let f1 = map ( \ (i, ty) ->
                    (trId i, fromOpType ty $ CasS.opKind ty,
-                            if Set.member (i, ty { CasS.opKind = Cas.Partial })
+                            if Set.member (i, CasS.mkPartial ty)
                                constr then ConstructData $ CasS.opRes ty
                                else NoOpDefn Op))
                          $ CasS.mapSetToList $ CasS.opMap sign
