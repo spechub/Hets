@@ -218,8 +218,8 @@ sigSymsOf :: Sign f e -> [Symbol]
 sigSymsOf s = concat
   [ Set.toList $ sortSyms s
   , map (\ (a, b) -> Symbol a $ SubsortAsItemType b)
-    . Rel.toList . Rel.transReduce $ sortRel s
-    -- assume sort relation to be the irreflexive transitive closure
+    . Rel.toList . Rel.transReduce . Rel.irreflex $ sortRel s
+    -- assume sort relation to be the transitive closure
   , opSyms s
   , predSyms s ]
 
