@@ -262,13 +262,3 @@ getOPAxiom e =
                             (OPExpression $ head opl) $ last opl
              else PlainAxiom (Left []) $ AnnFrameBit as $ SubObjPropertyOf 
                             (SubObjectPropertyChain opchain) op
-
-
-
-
-
-
-
-
-
-
