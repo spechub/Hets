@@ -240,15 +240,28 @@ getClassAxiom e =
 
 hasKey :: Element -> Axiom
 hasKey e =
-   let ch = elChildren e
-       as = concatMap getAllAnnos ch
+   let as = concatMap getAllAnnos $ elChildren e
        ce = getClassExpression $ head $ filterChL classExpressionList e
        op = map getObjProp $ filterChL objectPropList e
        dp = map getIRI $ filterChL dataPropList e
    in PlainAxiom (Left []) $ AnnFrameBit as
           $ GCIClassHasKey ce op dp
- 
 
+getOPAxiom :: Element -> Axiom
+getOPAxiom e = 
+   let as = concatMap getAllAnnos $ elChildren e
+       op = getObjProp $ fromJust 
+            $ filterChildName (isSmthList objectPropList) e 
+   in case getName e of
+    "SubObjectPropertyOf" ->
+       let opchain = concatMap (map getObjProp) $ map elChildren
+            $ filterCh "ObjectPropertyChain" e 
+       in if opchain == []
+             then let opl = map getObjProp $ filterChL objectPropList e
+                  in PlainAxiom (Left []) $ AnnFrameBit as $ SubObjPropertyOf 
+                            (OPExpression $ head opl) $ last opl
+             else PlainAxiom (Left []) $ AnnFrameBit as $ SubObjPropertyOf 
+                            (SubObjectPropertyChain opchain) op
 
 
 
