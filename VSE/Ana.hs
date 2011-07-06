@@ -49,7 +49,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import qualified Common.Lib.MapSet as MapSet
-import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ExtSign
@@ -118,7 +117,7 @@ getCases :: String -> Set.Set Id -> [Diagnosis]
 getCases msg =
   map (mkDiag Error ("overlapping " ++ msg ++ " identifiers") . Set.toList)
   . filter hasMany . Map.elems
-  . Set.fold (\ i -> Rel.setInsert (idToLower i) i) Map.empty
+  . Set.fold (\ i -> MapSet.setInsert (idToLower i) i) Map.empty
 
 getCaseDiags :: Sign f e -> [Diagnosis]
 getCaseDiags sig =

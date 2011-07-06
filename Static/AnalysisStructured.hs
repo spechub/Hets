@@ -52,7 +52,7 @@ import Common.Id
 import Common.LibName
 import Common.Result
 import Common.Utils (number)
-import qualified Common.Lib.Rel as Rel (image, setInsert)
+import Common.Lib.MapSet (imageSet, setInsert)
 
 import Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.Set as Set
@@ -836,7 +836,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
                           Map.empty
       rh = symbMapToRawSymbMap h
       idh = Map.foldWithKey
-             (\ sy1 sy2 -> Rel.setInsert (sym_name lid sy1) (sym_name lid sy2))
+             (\ sy1 sy2 -> setInsert (sym_name lid sy1) (sym_name lid sy2))
              Map.empty h
   idhExt <- extID idsB idh
   let rIdExt = Map.foldWithKey (\ id1 id2 -> Map.insert
@@ -852,7 +852,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
   sigma <- ext_signature_union lid sigmaA sigmaAD
   let illShared = (ext_sym_of lid sigmaA `Set.intersection`
                               ext_sym_of lid sigmaAD )
-                   Set.\\ Rel.image h symsP
+                   Set.\\ imageSet h symsP
   unless (Set.null illShared)
     $ plain_error () ("Symbols shared between actual parameter and body"
                      ++ "\nmust be in formal parameter:\n"

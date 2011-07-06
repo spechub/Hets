@@ -26,9 +26,6 @@ Checking for a 'path' corresponds to checking for a member in the
 transitive (possibly non-reflexive) closure. A further 'insert', however,
 may destroy the closedness property of a relation.
 
-The functions 'image', and 'setInsert' are utility functions
-for plain maps involving sets.
-
 -}
 
 module Common.Lib.Rel
@@ -37,13 +34,13 @@ module Common.Lib.Rel
     , MapSet.toMap, MapSet.insert, MapSet.union
     , MapSet.intersection, MapSet.difference
     , MapSet.transpose
-    , MapSet.setInsert
+    , MapSet.setToMap
     , isSubrelOf, path
     , succs, predecessors, irreflex, sccOfClosure
-    , transClosure, fromList, toList, image, toPrecMap
+    , transClosure, fromList, toList, toPrecMap
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
-    , transReduce, setToMap
+    , transReduce
     , locallyFiltered
     , flatSet, partSet, partList, leqClasses
     ) where
@@ -85,8 +82,8 @@ path a b r = Set.member b $ reachable r a
 
 -- | compute transitive closure (make all transitive members direct members)
 transClosure :: Ord a => Rel a -> Rel a
-transClosure r = MapSet.fromMap . Map.mapWithKey ( \ k _ -> reachable r k)
-  $ MapSet.toMap r
+transClosure r = MapSet.fromDistinctMap
+  . Map.mapWithKey ( \ k _ -> reachable r k) $ MapSet.toMap r
 
 -- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
@@ -106,12 +103,9 @@ sccOfClosureM m =
 sccOfClosure :: Ord a => Rel a -> [Set.Set a]
 sccOfClosure = sccOfClosureM . MapSet.toMap
 
-setToMap :: Ord a => Set.Set a -> Map.Map a a
-setToMap = Map.fromDistinctAscList . List.map (\ a -> (a, a)) . Set.toList
-
 -- | restrict to elements not in the input set
 delSetM :: Ord a => Set.Set a -> Map.Map a (Set.Set a) -> Map.Map a (Set.Set a)
-delSetM s m = Map.map (Set.\\ s) m Map.\\ setToMap s
+delSetM s m = Map.map (Set.\\ s) $ m Map.\\ MapSet.setToMap s
 
 -- | restrict to elements not in the input set
 delSet :: Ord a => Set.Set a -> Rel a -> Rel a
@@ -127,7 +121,7 @@ collaps = delSet . Set.unions . List.map Set.deleteMin
 transReduce :: Ord a => Rel a -> Rel a
 transReduce r = let m = MapSet.toMap r in MapSet.fromMap $
 -- keep all (i, j) in rel for which no c with (i, c) and (c, j) in rel
-    Map.mapWithKey ( \ i s -> let d = setToMap $ Set.delete i s in
+    Map.mapWithKey ( \ i s -> let d = MapSet.setToMap $ Set.delete i s in
         Set.filter ( \ j ->
             Map.null $ Map.filter (Set.member j)
                 $ Map.intersection m $ Map.delete j d) s) m
@@ -140,10 +134,6 @@ fromList = foldr (uncurry MapSet.insert) MapSet.empty
 toList :: Rel a -> [(a, a)]
 toList = concatMap (\ (a, bs) -> List.map (\ b -> (a, b)) bs)
   . MapSet.toList
-
--- | the image of a map
-image :: (Ord k, Ord a) => Map.Map k a -> Set.Set k -> Set.Set a
-image f = Set.fromList . Map.elems . Map.intersection f . setToMap
 
 -- | map the values of a relation
 map :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b

@@ -20,6 +20,10 @@ module Common.Lib.MapSet
   , setMember
   , setInsert
   , setAll
+  , setToMap
+  , restrict
+  , imageList
+  , imageSet
   , MapSet
   , toMap
   , fromDistinctMap
@@ -88,6 +92,22 @@ setUpdate f k m = let s = f $ setLookup k m in
 -- | test all elements of a set
 setAll :: (a -> Bool) -> Set.Set a -> Bool
 setAll p = List.all p . Set.toList
+
+-- | convert a set into an identity map
+setToMap :: Ord a => Set.Set a -> Map.Map a a
+setToMap = Map.fromDistinctAscList . List.map (\ a -> (a, a)) . Set.toList
+
+-- | restrict a map by a keys set
+restrict :: Ord k => Map.Map k a -> Set.Set k -> Map.Map k a
+restrict m = Map.intersection m . setToMap
+
+-- | the image of a map
+imageList :: Ord k => Map.Map k a -> Set.Set k -> [a]
+imageList m = Map.elems . restrict m
+
+-- | the image of a map
+imageSet :: (Ord k, Ord a) => Map.Map k a -> Set.Set k -> Set.Set a
+imageSet m = Set.fromList . imageList m
 
 -- * protected maps of set as a newtype
 
