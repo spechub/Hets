@@ -10,17 +10,11 @@ entityList :: [String]
 entityList = ["Class", "Datatype", "NamedIndividual",
     "ObjectProperty", "DataProperty", "AnnotationProperty"]
 
-isEntity :: Text.XML.Light.QName -> Bool
-isEntity (QName {qName = qn}) = qn `elem` entityList
+isSmthList :: [String] -> Text.XML.Light.QName -> Bool
+isSmthList l (QName {qName = qn}) = qn `elem` l
 
 isSmth :: String -> Text.XML.Light.QName -> Bool
 isSmth s (QName {qName = qn}) = qn == s
-
-isClassExpression :: Text.XML.Light.QName -> Bool 
-isClassExpression (QName {qName = qn}) = qn `elem` classExpressionList
-
-isDataRange :: Text.XML.Light.QName -> Bool 
-isDataRange (QName {qName = qn}) = qn `elem` dataRangeList
 
 getEntityType :: String -> EntityType
 getEntityType ty = case ty of
@@ -50,11 +44,11 @@ toEntity :: Element -> Entity
 toEntity e = Entity (getEntityType $ getName e) (getIRI e)
 
 getEntity :: Element -> Entity
-getEntity e = toEntity $ fromJust $ filterElementName isEntity e
+getEntity e = toEntity $ fromJust $ filterElementName (isSmthList entityList) e
 
 getDeclaration :: Element -> Frame
 getDeclaration e =
-   let ent = fromJust $ filterChildName isEntity e
+   let ent = fromJust $ filterChildName (isSmthList entityList) e
        ans = getAllAnnos e
    in Frame (Right $ toEntity ent) [AnnFrameBit ans AnnotationFrameBit]
 
@@ -144,8 +138,8 @@ classExpressionList = ["Class", "ObjectIntersectionOf", "ObjectUnionOf",
      "DataMinCardinality", "DataMaxCardinality", "DataExactCardinality"]
 
 getClassExpression :: Element -> ClassExpression
-getClassExpression e = 
-  let ch = elChildren e 
+getClassExpression e =
+  let ch = elChildren e
   in case getName e of
     "Class" -> Expression $ getIRI e
     "ObjectIntersectionOf" -> ObjectJunction IntersectionOf
@@ -180,11 +174,11 @@ getClassExpression e =
                 $ Just $ getClassExpression $ last ch
          else ObjectCardinality $ Cardinality
               ExactCardinality (getInt e) (getObjProp $ head ch) Nothing
-    "DataSomeValuesFrom" -> 
+    "DataSomeValuesFrom" ->
         let dp = map getIRI $ init ch
             dr = last ch
         in DataValuesFrom SomeValuesFrom (head dp) (tail dp) (getDataRange dr)
-    "DataAllValuesFrom" -> 
+    "DataAllValuesFrom" ->
         let dp = map getIRI $ init ch
             dr = last ch
         in DataValuesFrom AllValuesFrom (head dp) (tail dp) (getDataRange dr)
@@ -210,34 +204,37 @@ getClassExpression e =
     _ -> error "XML parser: not ClassExpression"
 
 getClassAxiom :: Element -> Axiom
-getClassAxiom e = 
+getClassAxiom e =
    let ch = elChildren e
        as = concatMap getAllAnnos ch
-       l = filterChildrenName isClassExpression e
-       drl = filterChildrenName isDataRange e
-       cel = map getClassExpression l          
+       l = filterChildrenName (isSmthList classExpressionList) e
+       drl = filterChildrenName (isSmthList dataRangeList) e
+       cel = map getClassExpression l
    in case getName e of
-    "SubClassOf" -> 
+    "SubClassOf" ->
        let ces = drop (length ch - 2) ch
            sub = head ces
            super = last ces
        in PlainAxiom (Left []) $ AnnFrameBit as
-              $ GCISubClassOf (getClassExpression sub) 
+              $ GCISubClassOf (getClassExpression sub)
                     (getClassExpression super)
-    "EquivalentClasses" -> PlainAxiom (Left as) $ ListFrameBit (Just (EDRelation Equivalent)) 
-        $ ExpressionBit $ AnnotatedList $ map (\ x -> ([], x)) cel
-    "DisjointClasses" -> PlainAxiom (Left as) $ ListFrameBit (Just (EDRelation Disjoint)) 
-        $ ExpressionBit $ AnnotatedList $ map (\ x -> ([], x)) cel
-    "DisjointUnion" -> PlainAxiom (Right $ getEntity $ head l) 
+    "EquivalentClasses" -> PlainAxiom (Left as) $ ListFrameBit
+      (Just (EDRelation Equivalent)) $ ExpressionBit
+      $ AnnotatedList $ map (\ x -> ([], x)) cel
+    "DisjointClasses" -> PlainAxiom (Left as) $ ListFrameBit
+      (Just (EDRelation Disjoint)) $ ExpressionBit
+      $ AnnotatedList $ map (\ x -> ([], x)) cel
+    "DisjointUnion" -> PlainAxiom (Right $ getEntity $ head l)
         $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression $ tail l
-    "DatatypeDefinition" -> PlainAxiom (Right $ getEntity $ head drl) 
+    "DatatypeDefinition" -> PlainAxiom (Right $ getEntity $ head drl)
         $ AnnFrameBit as $ DatatypeBit $ getDataRange $ last drl
     _ -> error "XML parser: not class axiom"
+{-
+hasKey :: Element -> Axiom
+hasKey e = 
+-}
 
-       
 
-
-    
 
 
 
