@@ -16,6 +16,9 @@ isEntity (QName {qName = qn}) = qn `elem` entityList
 isSmth :: String -> Text.XML.Light.QName -> Bool
 isSmth s (QName {qName = qn}) = qn == s
 
+isClassExpression :: Text.XML.Light.QName -> Bool 
+isClassExpression (QName {qName = qn}) = qn `elem` classExpressionList
+
 getEntityType :: String -> EntityType
 getEntityType ty = case ty of
     "Class" -> Class
@@ -78,14 +81,14 @@ getValue e = let lit = filterElementName (isSmth "Literal") e
                   Nothing -> AnnValue $ mkQName val
                   Just _ -> AnnValLit $ getLiteral e
 
-filterElem :: String -> Element -> [Element]
-filterElem s = filterElementsName (isSmth s)
+filterCh :: String -> Element -> [Element]
+filterCh s = filterChildrenName (isSmth s)
 
 getAnnotation :: Element -> Annotation
 getAnnotation e =
-     let hd = filterChildrenName (isSmth "Annotation") e
-         ap = filterElem "AnnotationProperty" e
-         av = filterElem "Literal" e ++ filterElem "IRI" e
+     let hd = filterCh "Annotation" e
+         ap = filterCh "AnnotationProperty" e
+         av = filterCh "Literal" e ++ filterCh "IRI" e
      in
           Annotation (getAnnotations hd)
               (getIRI $ head ap) (getValue $ head av)
@@ -124,6 +127,14 @@ getDataRange e = case getName e of
     "DataUnionOf" -> DataJunction UnionOf
             $ map getDataRange $ elChildren e
     _ -> error "XML parser: not data range"
+
+classExpressionList :: [String]
+classExpressionList = ["Class", "ObjectIntersectionOf", "ObjectUnionOf",
+     "ObjectComplementOf", "ObjectOneOf", "ObjectSomeValuesFrom",
+     "ObjectAllValuesFrom", "ObjectHasValue", "ObjectHasSelf",
+     "ObjectMinCardinality", "ObjectMaxCardinality", "ObjectExactCardinality",
+     "DataSomeValuesFrom", "DataAllValuesFrom", "DataHasValue",
+     "DataMinCardinality", "DataMaxCardinality", "DataExactCardinality"]
 
 getClassExpression :: Element -> ClassExpression
 getClassExpression e = case getName e of
@@ -200,6 +211,29 @@ getClassExpression e = case getName e of
          else DataCardinality $ Cardinality
               ExactCardinality (getInt e) (getIRI $ head ch) Nothing
     _ -> error "XML parser: not ClassExpression"
+
+getClassAxiom :: Element -> Axiom
+getClassAxiom e = 
+   let ch = elChildren e
+       as = concatMap getAllAnnos ch
+       l = filterChildrenName isClassExpression e
+       cel = map getClassExpression l          
+   in case getName e of
+    "SubClassOf" -> 
+       let ces = drop (length ch - 2) ch
+           sub = head ces
+           super = last ces
+       in PlainAxiom (Left []) $ AnnFrameBit as
+              $ GCISubClassOf (getClassExpression sub) 
+                    (getClassExpression super)
+    "EquivalentClasses" -> PlainAxiom (Left as) $ ListFrameBit (Just (EDRelation Equivalent)) 
+        $ ExpressionBit $ AnnotatedList $ map (\ x -> ([], x)) cel
+    "DisjointClasses" -> PlainAxiom (Left as) $ ListFrameBit (Just (EDRelation Disjoint)) 
+        $ ExpressionBit $ AnnotatedList $ map (\ x -> ([], x)) cel
+    "DisjointUnion" -> PlainAxiom (Right $ getEntity $ head l) 
+        $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression $ tail l
+    _ -> error "XML parser: not class axiom"
+    
 
 
 

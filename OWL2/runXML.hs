@@ -8,7 +8,7 @@ processFile file = do
   s <- readFile file
   case parseXMLDoc s of 
     Nothing -> fail "error"
-    Just elems -> putStrLn $ show $ getClassExpression elems 
+    Just elems -> putStrLn $ show $ getClassAxiom elems 
 
 main :: IO ()
 main = do
