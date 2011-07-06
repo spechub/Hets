@@ -97,11 +97,9 @@ class ToString x where
 showSign :: (ToString e) => Sign f e -> String
 showSign sig =
     "(emptySign " ++ extendedInfoS ++ "){"
-    ++ intercalate "," [sortSetS, sortRelS, opMapS, assocOpsS, predMapS]
+    ++ intercalate "," [sortRelS, opMapS, assocOpsS, predMapS]
     ++ "}"
     where
-     sortSetS = "sortSet = Set.fromList "++
-                toString (Set.toList $ sortSet sig)
      sortRelS = "sortRel = Rel.fromList "++
                 toString (Rel.toList $ sortRel sig)
      opMapS = "opMap = MapSet.fromList "++

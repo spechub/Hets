@@ -30,7 +30,6 @@ import Common.SExpr
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Data.Char (toLower)
 import Data.List (sortBy)
 import Data.Ord (comparing)
@@ -303,8 +302,9 @@ qualVseSignToSExpr :: SIMPLE_ID -> LibId -> Sign f Procs -> SExpr
 qualVseSignToSExpr nodeId libId sig =
   let e = extendedInfo sig in
     SList $ SSymbol "signature" : sortSignToSExprs sig
-          { sortSet = Set.filter (isQualNameFrom nodeId libId)
-            $ sortSet sig }
+          { sortRel = MapSet.filterWithKey
+            (\ k _ -> isQualNameFrom nodeId libId k)
+            $ sortRel sig }
       : predMapToSExprs sig
             (MapSet.filterWithKey (\ i _ -> isQualNameFrom nodeId libId i)
             . MapSet.difference (predMap sig) $ procsToPredMap e)

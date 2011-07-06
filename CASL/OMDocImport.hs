@@ -142,7 +142,7 @@ addOmdocToTheory :: Env -> (Sign f e, [Named (FORMULA f)]) -> [TCElement]
                  -> Result (Sign f e, [Named (FORMULA f)])
 addOmdocToTheory e (sig, nsens) tcs = do
   srel <- omdocToSortRel e tcs
-  return (sig { sortRel = irreflexClosure srel }, nsens)
+  return (sig { sortRel = Rel.transClosure srel }, nsens)
 
 
 -- * Algebraic Data Types

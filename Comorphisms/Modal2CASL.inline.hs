@@ -145,27 +145,16 @@ transSig sign =
                         mp rels
        partMME = MME {caslSign =
             (emptySign ())
-               {sortSet = Set.insert fws sorSet
-               , sortRel = sortRel sign
+               { sortRel = MapSet.insert fws fws $ sortRel sign
                , opMap = addOpMapSet flexOps' rigOps'
                , assocOps = diffOpMapSet (assocOps sign) flexibleOps
                , predMap = addMapSet flexPreds' rigPreds'},
          worldSort = fws,
          modalityRelMap = relations,
          flexOps = MapSet.toMap flexibleOps,
---       rigOps = rigOps',
          flexPreds = MapSet.toMap flexiblePreds,
---       rigPreds = rigPreds',
          relFormulas = []}
       in partMME { relFormulas = relModFrms++relTermModFrms}
-
-{- ModalSign { rigidOps :: Map.Map Id (Set.Set OpType)
-   , rigidPreds :: Map.Map Id (Set.Set PredType)
-   , modies :: Set.Set SIMPLE_ID
-   , termModies :: Set.Set Id --SORT
-                              }
-
--}
 
 mapMor :: ModalMor -> CASLMor
 mapMor m = (embedMorphism ()

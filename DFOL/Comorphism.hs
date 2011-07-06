@@ -53,7 +53,7 @@ sigMap :: Sign -> CASL_Sign.CASLSign
 sigMap sig =
   foldr (sigMapH sig) caslSig2 symbols
   where caslSig2 = (CASL_Sign.emptySign ())
-          { CASL_Sign.sortSet = Set.singleton sort
+          { CASL_Sign.sortRel = MapSet.insert sort sort MapSet.empty
           , CASL_Sign.opMap = MapSet.insert (mkId [botTok])
               (CASL_Sign.sortToOpType sort) MapSet.empty }
         symbols = Set.toList $ getSymbols sig

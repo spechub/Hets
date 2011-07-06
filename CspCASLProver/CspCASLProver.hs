@@ -26,7 +26,7 @@ module CspCASLProver.CspCASLProver
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import CASL.Sign (CASLSign, Sign (..))
+import CASL.Sign (CASLSign, Sign (..), sortSet)
 
 import Common.AS_Annotation (Named, mapNamedM)
 import Common.Result

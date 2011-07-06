@@ -25,8 +25,6 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
 
-import qualified Data.Set as Set
-
 import Data.List
 import Data.Ord
 
@@ -86,7 +84,7 @@ addConsts :: SignExt -> SignExt
 addConsts s = s { constr = addBools $ constr s }
 
 addBuiltins :: FplSign -> FplSign
-addBuiltins s = s { sortSet = Set.insert boolSort $ sortSet s
+addBuiltins s = s { sortRel = MapSet.insert boolSort boolSort $ sortRel s
                   , opMap = addBools $ opMap s
                   , extendedInfo = addConsts $ extendedInfo s }
 

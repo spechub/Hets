@@ -97,7 +97,7 @@ mapSign sig = let
  (sorts,ops,preds) = genCASLSig (Set.toList $ SRel.tables sig)
                                 Set.empty MapSet.empty MapSet.empty
               in (emptySign ()){
-                  sortSet = sorts,
+                  sortRel = MapSet.fromSet sorts,
                   opMap = ops,
                   predMap = preds
                  }

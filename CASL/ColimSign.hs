@@ -59,7 +59,8 @@ signColimit graph extColimit =
    sortGraph = emap getSortMap $ nmap sortSet graph
    (setSort0, funSort0) = computeColimitSet sortGraph
    (setSort, funSort) = addIntToSymbols (setSort0, funSort0)
-   sigmaSort = (emptySign $ error "err"){sortSet=setSort}
+   sigmaSort = (emptySign $ error "err")
+     { sortRel = MapSet.fromSet setSort }
    phiSort = Map.fromList
     $ map (\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
            {sort_map = Map.findWithDefault (error "sort_map") node funSort}))

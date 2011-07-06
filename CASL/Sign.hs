@@ -92,10 +92,10 @@ sentences, symbols, diagnostics and annotations, that are removed or ignored
 when looking at signatures from outside, i.e. during logic-independent
 processing. -}
 data Sign f e = Sign
-    { sortSet :: Set.Set SORT
+    { sortRel :: Rel.Rel SORT
+    -- ^ every sort is a subsort of itself
     , emptySortSet :: Set.Set SORT
     -- ^ a subset of the sort set of possibly empty sorts
-    , sortRel :: Rel.Rel SORT
     , opMap :: OpMap
     , assocOps :: OpMap -- ^ the subset of associative operators
     , predMap :: PredMap
@@ -108,6 +108,9 @@ data Sign f e = Sign
     , extendedInfo :: e
     } deriving Show
 
+sortSet :: Sign f e -> Set.Set SORT
+sortSet = MapSet.keysSet . sortRel
+
 -- better ignore assoc flags for equality
 instance Eq e => Eq (Sign f e) where
     a == b = compare a {extendedInfo = ()} b {extendedInfo = ()} == EQ
@@ -115,14 +118,13 @@ instance Eq e => Eq (Sign f e) where
 
 instance Ord e => Ord (Sign f e) where
   compare a b = compare
-    (sortSet a, emptySortSet a, sortRel a, opMap a, predMap a, extendedInfo a)
-    (sortSet b, emptySortSet b, sortRel b, opMap b, predMap b, extendedInfo b)
+    (emptySortSet a, sortRel a, opMap a, predMap a, extendedInfo a)
+    (emptySortSet b, sortRel b, opMap b, predMap b, extendedInfo b)
 
 emptySign :: e -> Sign f e
 emptySign e = Sign
-    { sortSet = Set.empty
+    { sortRel = Rel.empty
     , emptySortSet = Set.empty
-    , sortRel = Rel.empty
     , opMap = MapSet.empty
     , assocOps = MapSet.empty
     , predMap = MapSet.empty
@@ -196,7 +198,7 @@ printSign fE s = let
        sepByCommas (map idDoc (Set.toList nsorts))) $+$
     (if Set.null esorts then empty else text (esortS ++ sS) <+>
        sepByCommas (map idDoc (Set.toList esorts))) $+$
-    (if Rel.null srel then empty
+    (if Rel.null $ Rel.irreflex srel then empty
       else text (sortS ++ sS) <+>
        fsep (punctuate semi $
           map (fsep . punctuate (space <> equals) . map pretty)
@@ -210,12 +212,9 @@ printSign fE s = let
 
 -- working with Sign
 
-irreflexClosure :: Ord a => Rel.Rel a -> Rel.Rel a
-irreflexClosure = Rel.irreflex . Rel.transClosure
-
 closeSortRel :: Sign f e -> Sign f e
 closeSortRel s =
-  s { sortRel = irreflexClosure $ sortRel s }
+  s { sortRel = Rel.transClosure $ sortRel s }
 
 nonEmptySortSet :: Sign f e -> Set.Set Id
 nonEmptySortSet s = Set.difference (sortSet s) $ emptySortSet s
@@ -258,8 +257,7 @@ diffOpMapSet m = MapSet.difference m . rmOrAddPartsMap False
 diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in
   closeSortRel a
-  { sortSet = s
-  , emptySortSet = Set.difference s
+  { emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.difference` nonEmptySortSet b
   , sortRel = Rel.difference (Rel.transReduce $ sortRel a)
       . Rel.transReduce $ sortRel b
@@ -280,8 +278,7 @@ addMapSet = MapSet.union
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 addSig ad a b = let s = sortSet a `Set.union` sortSet b in
   closeSortRel a
-  { sortSet = s
-  , emptySortSet = Set.difference s
+  { emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.union` nonEmptySortSet b
   , sortRel = Rel.union (sortRel a) $ sortRel b
   , opMap = addOpMapSet (opMap a) $ opMap b
@@ -307,8 +304,7 @@ interMapSet = MapSet.intersection
 interSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in
   closeSortRel a
-  { sortSet = s
-  , emptySortSet = Set.difference s
+  { emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.intersection` nonEmptySortSet b
   , sortRel = interRel (sortRel a) $ sortRel b
   , opMap = interOpMapSet (opMap a) $ opMap b
@@ -326,8 +322,8 @@ isSubMap :: PredMap -> PredMap -> Bool
 isSubMap = MapSet.isSubmapOf
 
 isSubSig :: (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
-isSubSig isSubExt a b = Set.isSubsetOf (sortSet a) (sortSet b)
-  && Rel.isSubrelOf (sortRel a) (sortRel b)
+isSubSig isSubExt a b =
+  Rel.isSubrelOf (sortRel a) (sortRel b)
          -- ignore empty sort sorts
   && isSubOpMap (opMap a) (opMap b)
          -- ignore associativity properties!
@@ -362,12 +358,12 @@ addSymbToDeclSymbs cs sy =
 addSort :: SortsKind -> Annoted a -> SORT -> State.State (Sign f e) ()
 addSort sk a s = do
   e <- State.get
-  let m = sortSet e
+  let r = sortRel e
       em = emptySortSet e
-      known = Set.member s m
+      known = Set.member s $ MapSet.keysSet r
   if known then addDiags [mkDiag Hint "redeclared sort" s]
     else do
-      State.put e { sortSet = Set.insert s m }
+      State.put e { sortRel = Rel.insert s s r }
       addDiags $ checkNamePrefix s
   case sk of
     NonEmptySorts -> when (Set.member s em) $ do
@@ -557,14 +553,15 @@ toSortGenNamed f sl = makeNamed (mkSortGenName sl) f
 addSymbToSign :: Sign e f -> Symbol -> Result (Sign e f)
 addSymbToSign sig sy =
     let addSort' cs s =
-            cs { sortSet = Set.insert s $ sortSet cs }
+            cs { sortRel = Rel.insert s s $ sortRel cs }
         addToMap' m n t = MapSet.insert n t m
         addOp' cs n ot = cs { opMap = addToMap' (opMap cs) n ot }
         addPred' cs n pt = cs { predMap = addToMap' (predMap cs) n pt }
     in do
       let sig' = addSymbToDeclSymbs sig sy
+          n = symName sy
       case symbType sy of
-        SortAsItemType -> return $ addSort' sig' $ symName sy
+        SortAsItemType -> return $ addSort' sig' n
         SubsortAsItemType _ -> return sig
-        PredAsItemType pt -> return $ addPred' sig' (symName sy) pt
-        OpAsItemType ot -> return $ addOp' sig' (symName sy) ot
+        PredAsItemType pt -> return $ addPred' sig' n pt
+        OpAsItemType ot -> return $ addOp' sig' n ot

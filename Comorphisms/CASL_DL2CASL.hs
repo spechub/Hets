@@ -120,12 +120,12 @@ trSign inSig =
     in
       inC
       {
-        sortSet = Set.insert topSort $  Set.insert topSortD $ sortSet inC,
-        sortRel =
-                  Set.fold (\x -> Rel.insert x topSortD)
-                  (Set.fold (\x -> Rel.insert x topSort)
-                   (sortRel inC) inSorts) $
-                  Set.delete topSortD inData
+        sortRel = Rel.insert topSort topSort
+          $ Rel.insert topSortD topSortD
+          $ Set.fold (`Rel.insert` topSortD)
+                  (Set.fold (`Rel.insert` topSort)
+                   (sortRel inC) inSorts)
+          $ Set.delete topSortD inData
       }
 
 -- ^ translation of the signature

@@ -146,7 +146,8 @@ mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
 -- | setting casl sign: sorts, cons, fun, nil, pred
 caslSig :: CSign.CASLSign
 caslSig = (CSign.emptySign ())
-               { CSign.sortSet = Set.fromList [list, individual]
+               { CSign.sortRel = MapSet.fromSet
+                   $ Set.fromList [list, individual]
                , CSign.opMap = MapSet.fromList
                          [ (cons, [CSign.mkTotOpType
                                    [individual, list]

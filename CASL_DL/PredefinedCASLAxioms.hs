@@ -26,7 +26,6 @@ import Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Char
-import Data.Set as Set
 
 hetsPrefix :: String
 hetsPrefix = ""
@@ -46,20 +45,14 @@ noThing =
 
 predefSign :: Sign () ()
 predefSign
-  = (emptySign ()){sortSet =
-                     Set.fromList
-                       [Id [Token "Char" n] [] n,
-                        Id [Token "DATA" n] [] n,
-                        Id [Token "boolean" n] [] n,
-                        Id [Token "integer" n] [] n,
-                        Id [Token "negativeInteger" n] [] n,
-                        Id [Token "nonNegativeInteger" n] [] n,
-                        Id [Token "nonPositiveInteger" n] [] n,
-                        Id [Token "positiveInteger" n] [] n,
-                        Id [Token "string" n] [] n],
-                   sortRel =
+  = (emptySign ()){ sortRel = Rel.transClosure $ Rel.reflexive $
                      Rel.fromList
-                       [(Id [Token "boolean" n] [] n,
+                       [
+                        (Id [Token "DATA" n] [] n,
+                         Id [Token "DATA" n] [] n),
+                        (Id [Token "Char" n] [] n,
+                         Id [Token "Char" n] [] n),
+                        (Id [Token "boolean" n] [] n,
                          Id [Token "DATA" n] [] n),
                         (Id [Token "integer" n] [] n,
                          Id [Token "DATA" n] [] n),

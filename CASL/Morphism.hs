@@ -513,8 +513,7 @@ inducedSignAux f sm om pm em src =
   let ms = mapSort sm
       msorts = Set.map ms
   in (emptySign $ f sm om pm em src)
-  { sortSet = msorts $ sortSet src
-  , sortRel = Rel.map ms $ sortRel src
+  { sortRel = Rel.map ms $ sortRel src
   , emptySortSet = msorts $ emptySortSet src
   , opMap = inducedOpMap sm om $ opMap src
   , assocOps = inducedOpMap sm om $ assocOps src

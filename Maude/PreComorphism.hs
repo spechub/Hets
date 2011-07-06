@@ -181,8 +181,9 @@ mapTheory (sg, nsens) = return $ maude2casl sg nsens
 -- given Maude signature and sentences
 maude2casl :: MSign.Sign -> [Named MSentence.Sentence]
               -> (CSign.CASLSign, [Named CAS.CASLFORMULA])
-maude2casl msign nsens = (csign { CSign.sortSet = cs,
-                            CSign.sortRel = sbs',
+maude2casl msign nsens = (csign {
+                            CSign.sortRel =
+                              MapSet.union (MapSet.fromSet cs) sbs',
                             CSign.opMap = cops',
                             CSign.assocOps = assoc_ops,
                             CSign.predMap = preds,

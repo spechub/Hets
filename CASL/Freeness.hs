@@ -614,7 +614,6 @@ homomorphism_ops ss om = Set.fold f om ss
 -- | applies the iota renaming to a signature
 totalSignCopy :: CASLSign -> CASLSign
 totalSignCopy sg = sg {
-                    sortSet = ss,
                     emptySortSet = ess,
                     sortRel = sr,
                     opMap = om,
@@ -625,8 +624,7 @@ totalSignCopy sg = sg {
                     declaredSymbols = sms,
                     annoMap = am
                       }
-     where ss = iota_sort_set $ sortSet sg
-           ess = iota_sort_set $ emptySortSet sg
+     where ess = iota_sort_set $ emptySortSet sg
            sr = iota_sort_rel $ sortRel sg
            om = iota_op_map $ opMap sg
            aom = iota_op_map $ assocOps sg

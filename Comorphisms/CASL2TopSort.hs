@@ -151,9 +151,9 @@ transSig sig = return $ let sortRels = Rel.transClosure $ sortRel sig in
         newPredMap = MapSet.union (transPredMap subSortMap
                   $ predMap sig) $ newPreds subSortMap
     in (sig
-        { sortSet = Set.fromList (map topSortPI $ Map.elems subSortMap)
+        { sortRel = MapSet.fromSet
+            $ Set.fromList (map topSortPI $ Map.elems subSortMap)
               `Set.union` (sortSet sig `Set.difference` Map.keysSet subSortMap)
-        , sortRel = Rel.empty
         , opMap = newOpMap
         , assocOps = interOpMapSet newAssOpMap0 newOpMap
         , predMap = newPredMap

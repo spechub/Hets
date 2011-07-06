@@ -18,7 +18,7 @@ module CASL.CCC.OnePoint where
 
 import CASL.AS_Basic_CASL
 import CASL.Morphism(Morphism, imageOfMorphism)
-import CASL.Sign(Sign(sortSet, predMap), supersortsOf, toPredType)
+import CASL.Sign (Sign, predMap, sortSet, supersortsOf, toPredType)
 
 import qualified Data.Set as Set
 

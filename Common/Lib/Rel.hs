@@ -36,7 +36,9 @@ module Common.Lib.Rel
     , MapSet.transpose
     , MapSet.setToMap
     , isSubrelOf, path
-    , succs, predecessors, irreflex, sccOfClosure
+    , succs, predecessors
+    , irreflex, reflexive
+    , sccOfClosure
     , transClosure, fromList, toList, toPrecMap
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
@@ -88,6 +90,10 @@ transClosure r = MapSet.fromDistinctMap
 -- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
 irreflex = MapSet.fromMap . Map.mapWithKey Set.delete . MapSet.toMap
+
+-- | make relation reflexive
+reflexive :: Ord a => Rel a -> Rel a
+reflexive = MapSet.fromDistinctMap . Map.mapWithKey Set.insert . MapSet.toMap
 
 -- | compute strongly connected components for a transitively closed relation
 sccOfClosureM :: Ord a => Map.Map a (Set.Set a) -> [Set.Set a]

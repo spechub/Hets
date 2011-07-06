@@ -50,8 +50,7 @@ computeCompTable spName (sig,nsens) = do
       errSorts = errmsg
                    ++ "\nneed exactly two sorts s,t, with s<t, but found:\n"
                    ++ showDoc ((emptySign ()::Sign () ())
-                                     { sortSet = sortSet sig,
-                                       sortRel = sortRel sig }) ""
+                                     { sortRel = sortRel sig }) ""
       errOps ops prof =
         errmsg ++ "\nneed exactly one operation "++prof++", but found:\n"
                ++ showDoc ops ""

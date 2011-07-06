@@ -154,7 +154,7 @@ mapSign sig =
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]
       in return (emptySign ())
-             { sortSet = predefSorts
+             { sortRel = MapSet.fromSet predefSorts
              , predMap = aPreds
              , opMap = tMp indiConst . cvrt $ OS.individuals sig
              }
@@ -165,7 +165,7 @@ loadDataInformation sl =
     let
         dts = Set.map (stringToId . printXSDName) $ datatype sl
     in
-     (emptySign ()) { sortSet = dts }
+     (emptySign ()) { sortRel = MapSet.fromSet dts }
 
 
 predefinedSentences :: [Named CASLFORMULA]

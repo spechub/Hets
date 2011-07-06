@@ -33,6 +33,7 @@ module Common.Lib.MapSet
   , fromList
   , toList
   , toPairList
+  , fromSet
   , keysSet
   , elems
   , insert
@@ -149,6 +150,10 @@ toList = List.map (\ (a, bs) -> (a, Set.toList bs)) . Map.toList . toMap
 
 toPairList :: MapSet a b -> [(a, b)]
 toPairList = concatMap (\ (c, ts) -> List.map (\ t -> (c, t)) ts) . toList
+
+-- | create an identity map with singleton elements
+fromSet :: Ord a => Set.Set a -> MapSet a a
+fromSet = MapSet . Map.map Set.singleton . setToMap
 
 -- | keys for non-empty elements
 keysSet :: MapSet a b -> Set.Set a

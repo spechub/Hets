@@ -164,7 +164,7 @@ uOpMap = MapSet.fromList $ map (\ c -> (c, [constBoolType]))
 
 boolSig :: Sign f Procs
 boolSig = (emptySign emptyProcs)
-  { sortSet = Set.singleton uBoolean
+  { sortRel = MapSet.insert uBoolean uBoolean MapSet.empty
   , opMap = uOpMap }
 
 lookupProc :: Id -> Sign f Procs -> Maybe Profile

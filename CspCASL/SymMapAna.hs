@@ -256,16 +256,16 @@ procProfile2Sorts (ProcProfile sorts al) =
 cspRevealSym :: CspSymbol -> CspCASLSign -> CspCASLSign
 cspRevealSym sy sig = let
   n = cspSymName sy
-  ss = sortSet sig
+  r = sortRel sig
   ext = extendedInfo sig
   cs = chans ext
   in case cspSymbType sy of
     CaslSymbType t -> revealSym (Symbol n t) sig
     ChanAsItemType s -> sig
-      { sortSet = Set.insert s ss
+      { sortRel = Rel.insert s s r
       , extendedInfo = ext { chans = MapSet.insert n s cs }}
     ProcAsItemType p@(ProcProfile _ al) -> sig
-      { sortSet = Set.fold Set.insert ss $ procProfile2Sorts p
+      { sortRel = MapSet.union (MapSet.fromSet $ procProfile2Sorts p) r
       , extendedInfo = ext
         { chans = Set.fold (\ ct -> case ct of
             CommTypeSort _ -> id
@@ -277,7 +277,7 @@ cspGeneratedSign :: Set.Set CspSymbol -> CspCASLSign -> Result CspCASLMorphism
 cspGeneratedSign sys sigma = let
   symset = Set.unions $ symSets sigma
   sigma1 = Set.fold cspRevealSym sigma
-    { sortSet = Set.empty
+    { sortRel = Rel.empty
     , opMap = MapSet.empty
     , predMap = MapSet.empty
     , extendedInfo = emptyCspSign } sys

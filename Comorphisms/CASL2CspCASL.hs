@@ -60,8 +60,8 @@ casl2CspCASLSen = foldFormula (mapRecord $ error "casl2CspCASLSen")
 
 mapSig :: CASLSign -> CspCASLSign
 mapSig sign =
-     (emptySign emptyCspSign) {sortSet = sortSet sign
-               , sortRel = sortRel sign
+     (emptySign emptyCspSign)
+               { sortRel = sortRel sign
                , opMap = opMap sign
                , assocOps = assocOps sign
                , predMap = predMap sign }

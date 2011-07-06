@@ -75,8 +75,8 @@ sorts :: CASLDiag        -- ^ the diagram to get the sorts from
       -> [DiagSort]
 sorts diag =
     let mkNodeSortPair n srt = (n, srt)
-        appendSorts sl (n, Sign { sortSet = s }) =
-            sl ++ map (mkNodeSortPair n) (Set.toList s)
+        appendSorts sl (n, sig) =
+            sl ++ map (mkNodeSortPair n) (Set.toList $ sortSet sig)
     in foldl appendSorts [] (labNodes diag)
 
 

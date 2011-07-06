@@ -29,8 +29,8 @@ emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty MapSet.empty
 
 closeConsRel :: CoCASLSign -> CoCASLSign
 closeConsRel s =
-  s { constructs = irreflexClosure $ constructs s
-    , sees = irreflexClosure $ sees s }
+  s { constructs = Rel.transClosure $ constructs s
+    , sees = Rel.transClosure $ sees s }
 
 addCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
 addCoCASLSign a b = closeConsRel a
