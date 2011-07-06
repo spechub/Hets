@@ -100,12 +100,23 @@ getObjProp e = case filterElementName (isSmth "ObjectInverseOf") e of
 
 getFacetValuePair :: Element -> (ConstrainingFacet, RestrictionValue)
 getFacetValuePair e = (getIRI e, getLiteral $ head $ elChildren e)
-{-
+
 getDataRange :: Element -> DataRange
 getDataRange e = case getName e of
-    "DatatypeRestriction" -> let elems = elChildren e in
-       getName $ fromJust $ filterElementName elems
--}
+    "Datatype" -> DataType (getIRI e) []
+    "DatatypeRestriction" -> 
+        let dt = getIRI $ fromJust $ filterChildName (isSmth "Datatype") e
+            fvp = map getFacetValuePair
+               $ filterChildrenName (isSmth "FacetRestriction") e
+        in DataType dt fvp
+    "DataComplementOf" -> DataComplementOf
+            $ getDataRange $ head $ elChildren e
+    "DataOneOf" -> DataOneOf
+            $ map getLiteral $ filterChildrenName (isSmth "Literal") e
+    "DataIntersectionOf" -> DataJunction IntersectionOf
+            $ map getDataRange $ elChildren e
+    "DataUnionOf" -> DataJunction UnionOf
+            $ map getDataRange $ elChildren e
 
 
 
