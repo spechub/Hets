@@ -74,6 +74,7 @@ data AnnFrameBit
   | ClassDisjointUnion [ClassExpression]
   | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]
   | ObjectSubPropertyChain [ObjectPropertyExpression]
+  | GCISubClassOf ClassExpression ClassExpression
     deriving (Show, Eq, Ord)
 
 data Fact

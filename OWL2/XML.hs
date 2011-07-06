@@ -38,8 +38,8 @@ getName (Element {elName = QName {qName = n}}) = n
 toEntity :: Element -> Entity
 toEntity e = Entity (getEntityType $ getName e) (getIRI e)
 
-getEntities :: Element -> Entity
-getEntities e = toEntity $ fromJust $ filterElementName isEntity e
+getEntity :: Element -> Entity
+getEntity e = toEntity $ fromJust $ filterElementName isEntity e
 
 getDeclaration :: Element -> Frame
 getDeclaration e = 
@@ -92,5 +92,20 @@ getAnnotations e = map getAnnotation $ concatMap
 getAllAnnos :: Element -> [Annotation]
 getAllAnnos e = map getAnnotation
             $ filterElementsName (isSmth "Annotation") e
+
+getObjProp :: Element -> ObjectPropertyExpression
+getObjProp e = case filterElementName (isSmth "ObjectInverseOf") e of
+                  Nothing -> ObjectProp $ getIRI e
+                  Just o -> ObjectInverseOf $ getObjProp $ head $ elChildren e
+
+getFacetValuePair :: Element -> (ConstrainingFacet, RestrictionValue)
+getFacetValuePair e = (getIRI e, getLiteral $ head $ elChildren e)
+{-
+getDataRange :: Element -> DataRange
+getDataRange e = case getName e of
+    "DatatypeRestriction" -> let elems = elChildren e in
+       getName $ fromJust $ filterElementName elems
+-}
+
 
 
