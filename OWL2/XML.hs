@@ -89,13 +89,17 @@ isPlainLiteral s = "PlainLiteral" == drop (length s - 12) s
 getLiteral :: Element -> Literal
 getLiteral e = let lit = fromJust $ filterElementName (isSmth "Literal") e
                    lf = strContent e
-                   dt = fromJust $ findAttrBy (isSmth "datatypeIRI") lit
-               in
-                  case findAttrBy (isSmth "lang") lit of
-                    Just lang -> Literal lf (Untyped $ Just lang)
-                    Nothing -> if isPlainLiteral dt then
-                                  Literal lf (Untyped Nothing)
-                                else Literal lf (Typed $ mkQName dt)
+                   mdt = findAttrBy (isSmth "datatypeIRI") lit
+                   mattr = findAttrBy (isSmth "lang") lit
+               in case mdt of 
+                    Nothing -> case mattr of
+                      Just lang -> Literal lf (Untyped $ Just lang)
+                      Nothing -> Literal lf (Untyped Nothing)
+                    Just dt -> case mattr of
+                      Just lang -> Literal lf (Untyped $ Just lang)
+                      Nothing -> if isPlainLiteral dt then
+                                      Literal lf (Untyped Nothing)
+                                  else Literal lf (Typed $ mkQName dt)
 
 getValue :: Element -> AnnotationValue
 getValue e = let lit = filterElementName (isSmth "Literal") e
@@ -402,8 +406,34 @@ getClassAssertion e = case getName e of
            $ ListFrameBit (Just Types) $ ExpressionBit [(as, ce)]
     _ -> error "not class assertion"
 
-
-
+getAnnoAxiom :: Element -> Axiom
+getAnnoAxiom e =
+   let as = concatMap getAllAnnos $ elChildren e
+       ap = getIRI $ fromJust $ filterChildName
+              (isSmth "AnnotationProperty") e
+   in case getName e of
+    "AnnotationAssertion" ->
+       let s = mkQName $ strContent $ fromJust
+               $ filterChildName (isSmth "IRI") e
+           v = getValue $ fromJust $ filterChildName
+               (isSmth "Literal") e
+       in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
+               $ AnnFrameBit [Annotation as s v] AnnotationFrameBit
+    "SubAnnotationPropertyOf" ->
+        let apl = map getIRI $ filterCh "AnnotationProperty" e
+        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty $ head apl)
+            $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, last apl)]
+    "AnnotationPropertyDomain" ->
+        let iri = mkQName $ strContent $ fromJust
+                  $ filterChildName (isSmth "IRI") e
+        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
+               $ ListFrameBit (Just (DRRelation ADomain)) $ AnnotationBit [(as, iri)]
+    "AnnotationPropertyRange" ->
+        let iri = mkQName $ strContent $ fromJust
+                  $ filterChildName (isSmth "IRI") e
+        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
+               $ ListFrameBit (Just (DRRelation ARange)) $ AnnotationBit [(as, iri)]
+    _ -> error "not annotation axiom"
 
 
 
