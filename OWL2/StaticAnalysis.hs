@@ -42,14 +42,6 @@ getObjRoleFromExpression opExp =
        ObjectProp u -> u
        ObjectInverseOf objProp -> getObjRoleFromExpression objProp
 
-getObjRoleFromSubExpression :: SubObjectPropertyExpression
-                            -> [IndividualRoleIRI]
-getObjRoleFromSubExpression sopExp =
-    case sopExp of
-      OPExpression opExp -> [getObjRoleFromExpression opExp]
-      SubObjectPropertyChain expList ->
-          map getObjRoleFromExpression expList
-
 sortObjData :: Sign -> ObjectPropertyExpression
                 -> Maybe ObjectPropertyExpression
 sortObjData s op =
@@ -227,13 +219,13 @@ checkAnnBit s fb = case fb of
 
 
 checkListBit :: Sign -> (Maybe Relation) -> ListFrameBit -> Result ListFrameBit
-checkListBit s r fb = case fb of   
+checkListBit s r fb = case fb of
     AnnotationBit anl -> case r of
         Just (DRRelation _) -> return fb
         _ -> do
             let apl = map snd anl
             mapM_ (checkEntity s fb . Entity AnnotationProperty) apl
-            return fb  
+            return fb
     ExpressionBit anl -> do
         let ans = map fst anl
         let ce = map snd anl
@@ -252,16 +244,16 @@ checkListBit s r fb = case fb of
             if length x == length ol then return fb
                else fail $ "Static analysis found that there are" ++
                            " multiple types of properties in\n\n" ++
-                            show x ++ show 
+                            show x ++ show
                               (map getObjRoleFromExpression (ol \\ x))
-    ObjectCharacteristics _ -> return fb 
+    ObjectCharacteristics _ -> return fb
     DataBit anl -> do
         let dl = map snd anl
         checkDataPropList s fb dl
     DataPropRange anl -> do
         let dr = map snd anl
         mapM_ (checkDataRange s) dr
-        return fb   
+        return fb
     IndividualFacts anl -> do
         let f = map snd anl
         checkFactList s fb f

@@ -105,12 +105,6 @@ data ObjectPropertyExpression = ObjectProp ObjectProperty
 
 type DataPropertyExpression = DataProperty
 
-data SubObjectPropertyExpression
-  = OPExpression ObjectPropertyExpression
-  | SubObjectPropertyChain [ObjectPropertyExpression]
-    -- min. 2 ObjectPropertyExpression
-    deriving (Show, Eq, Ord)
-
 -- | data type strings (some are not listed in the grammar)
 datatypeKeys :: [String]
 datatypeKeys =
