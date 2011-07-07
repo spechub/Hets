@@ -10,6 +10,12 @@ Portability :  portable
 Contains    :  OWL2 XML Syntax Parsing
 -}
 
+{-| still left to do:
+     - cancel multiple inverses for object properties
+     - separate qnames at the colon
+     - include all prefixes, xml-type
+     - simplify some functions
+      -}
 module OWL2.XML where
 
 import Text.XML.Light
