@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Felix Gabriel Mance
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  f.mance@jacobs-university.de
+Stability   :  provisional
+Portability :  portable
+
+Contains    :  OWL2 XML Syntax Parsing
+-}
+
 module OWL2.XML where
 
 import Text.XML.Light
@@ -350,7 +362,7 @@ getDPAxiom e =
             dr = getDataRange $ fromJust
                   $ filterChildName (isSmthList dataRangeList) e
         in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
-            $ ListFrameBit (Just (DRRelation ARange)) $ DataPropRange [(as, dr)]
+            $ ListFrameBit Nothing $ DataPropRange [(as, dr)]
     "FunctionalDataProperty" ->
         let dp = getIRI $ fromJust $ filterChildName (isSmthList dataPropList) e
         in PlainAxiom (SimpleEntity $ Entity DataProperty dp)

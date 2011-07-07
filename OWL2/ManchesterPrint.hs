@@ -68,11 +68,11 @@ instance Pretty ListFrameBit where
 
 printListFrameBit :: ListFrameBit -> Doc
 printListFrameBit lfb = case lfb of
-    AnnotationBit a -> pretty a
-    ExpressionBit a -> pretty a
-    ObjectBit a -> pretty a
-    DataBit a -> pretty a
-    IndividualSameOrDifferent a -> pretty a 
+    AnnotationBit a -> printAnnotatedList a
+    ExpressionBit a -> printAnnotatedList a
+    ObjectBit a -> printAnnotatedList a
+    DataBit a -> printAnnotatedList a
+    IndividualSameOrDifferent a -> printAnnotatedList a 
     _ -> empty 
 
 printFrameBit :: FrameBit -> Doc
@@ -80,9 +80,9 @@ printFrameBit fb = case fb of
   ListFrameBit r lfb -> case r of 
       Just rel -> printRelation rel <+> pretty lfb
       Nothing -> case lfb of
-        ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
-        DataPropRange x -> keyword rangeC <+> pretty x
-        IndividualFacts x -> keyword factsC <+> pretty x
+        ObjectCharacteristics x -> keyword characteristicsC <+> printAnnotatedList x
+        DataPropRange x -> keyword rangeC <+> printAnnotatedList x
+        IndividualFacts x -> keyword factsC <+> printAnnotatedList x
         _ -> empty
   AnnFrameBit a afb -> case afb of
     AnnotationFrameBit -> printAnnotations a
@@ -115,18 +115,18 @@ instance Pretty Frame where
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
         SimpleEntity (Entity e uri) -> pretty (showEntityType e) <+>
-            fsep [pretty uri, vcat (map pretty bl)]
+            fsep [pretty uri <+> vcat (map pretty bl)]
         ObjectEntity ope -> pretty ope <+> fsep [vcat (map pretty bl)]
         ClassEntity ce -> pretty ce <+> fsep [vcat (map pretty bl)]
         Misc a -> case bl of 
           [ListFrameBit (Just e) (ExpressionBit anl)] -> printEquivOrDisjointClasses (getED e) <+>
-            (printAnnotations a $+$ pretty anl)
+            (printAnnotations a $+$ printAnnotatedList anl)
           [ListFrameBit (Just e) (ObjectBit anl)] -> printEquivOrDisjointProp (getED e) <+>
-            (printAnnotations a $+$ pretty anl)
+            (printAnnotations a $+$ printAnnotatedList anl)
           [ListFrameBit (Just e) (DataBit anl)] -> printEquivOrDisjointProp (getED e) <+>
-            (printAnnotations a $+$ pretty anl)
+            (printAnnotations a $+$ printAnnotatedList anl)
           [ListFrameBit (Just s) (IndividualSameOrDifferent anl)] -> printSameOrDifferentInd (getSD s) <+>
-            (printAnnotations a $+$ pretty anl)
+            (printAnnotations a $+$ printAnnotatedList anl)
 
 instance Pretty Axiom where
     pretty = printAxiom
