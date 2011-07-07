@@ -484,5 +484,5 @@ xmlBasicSpec e = emptyOntologyDoc
         ann = getOntAnnos e,
         muri = getOntologyIRI e 
         },
-      prefixDeclaration = getPrefixMap e 
+      prefixDeclaration = getPrefixMap e
       }
