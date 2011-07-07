@@ -6,6 +6,8 @@ import OWL2.AS
 import OWL2.MS
 import Common.Lexer
 
+import qualified Data.Map as Map
+
 getName :: Element -> String
 getName (Element {elName = QName {qName = n}}) = n
 
@@ -13,6 +15,12 @@ getIRI :: Element -> OWL2.AS.QName
 getIRI (Element {elAttribs = a}) =
         let Attr {attrVal = iri} = head a
         in mkQName iri
+
+get2IRIs :: Element -> (String, IRI)
+get2IRIs (Element {elAttribs = ls}) =
+        let Attr {attrVal = pref} = head ls
+            Attr {attrVal = pmap} = last ls
+        in (pref, mkQName pmap)
 
 getInt :: Element -> Int
 getInt (Element {elAttribs = a}) =
@@ -24,6 +32,10 @@ isSmth s (QName {qName = qn}) = qn == s
 
 isSmthList :: [String] -> Text.XML.Light.QName -> Bool
 isSmthList l (QName {qName = qn}) = qn `elem` l
+
+isNotSmth :: Text.XML.Light.QName -> Bool
+isNotSmth (QName {qName = qn}) = qn /= "Declaration" &&
+    qn /= "Prefix" && qn /= "Import" && qn /= "Annotation"
 
 filterCh :: String -> Element -> [Element]
 filterCh s = filterChildrenName (isSmth s)
@@ -243,15 +255,17 @@ getClassAxiom e =
         $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression $ tail l
     "DatatypeDefinition" -> PlainAxiom (SimpleEntity $ getEntity $ head drl)
         $ AnnFrameBit as $ DatatypeBit $ getDataRange $ last drl
-    _ -> error "XML parser: not class axiom"
+    _ -> hasKey e
 
 hasKey :: Element -> Axiom
-hasKey e =
-   let as = concatMap getAllAnnos $ elChildren e
-       ce = getClassExpression $ head $ filterChL classExpressionList e
-       op = map getObjProp $ filterChL objectPropList e
-       dp = map getIRI $ filterChL dataPropList e
-   in PlainAxiom (ClassEntity ce) $ AnnFrameBit as $ ClassHasKey op dp
+hasKey e = case getName e of
+  "HasKey" ->
+    let as = concatMap getAllAnnos $ elChildren e
+        ce = getClassExpression $ head $ filterChL classExpressionList e
+        op = map getObjProp $ filterChL objectPropList e
+        dp = map getIRI $ filterChL dataPropList e
+    in PlainAxiom (ClassEntity ce) $ AnnFrameBit as $ ClassHasKey op dp
+  _ -> getOPAxiom e
 
 getOPAxiom :: Element -> Axiom
 getOPAxiom e =
@@ -306,7 +320,7 @@ getOPAxiom e =
         Nothing $ ObjectCharacteristics [(as, Asymmetric)]
     "TransitiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
         Nothing $ ObjectCharacteristics [(as, Transitive)]
-    _ -> error "not object property axiom"
+    _ -> getDPAxiom e
 
 getDPAxiom :: Element -> Axiom
 getDPAxiom e =
@@ -341,7 +355,7 @@ getDPAxiom e =
         let dp = getIRI $ fromJust $ filterChildName (isSmthList dataPropList) e
         in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
             $ AnnFrameBit as DataFunctional
-    _ -> error "not data property axiom"
+    _ -> getDataAssertion e
 
 getDataAssertion :: Element -> Axiom
 getDataAssertion e =
@@ -361,7 +375,7 @@ getDataAssertion e =
          PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
            $ ListFrameBit Nothing $ IndividualFacts
                [(as, DataPropertyFact Negative dp lit)]
-    _ -> error "not data assertion"
+    _ -> getObjectAssertion e
 
 getObjectAssertion :: Element -> Axiom
 getObjectAssertion e =
@@ -378,7 +392,7 @@ getObjectAssertion e =
         PlainAxiom (SimpleEntity $ Entity NamedIndividual $ head ind)
            $ ListFrameBit Nothing $ IndividualFacts
                [(as, ObjectPropertyFact Negative op (last ind))]
-    _ -> error "not object assertion"
+    _ -> getIndividualAssertion e
 
 getIndividualAssertion :: Element -> Axiom
 getIndividualAssertion e =
@@ -392,7 +406,7 @@ getIndividualAssertion e =
     "DifferentIndividuals" ->
         PlainAxiom (Misc as) $ ListFrameBit (Just (SDRelation Different))
           $ IndividualSameOrDifferent l
-    _ -> error "not individual assertion"
+    _ -> getClassAssertion e
 
 getClassAssertion :: Element -> Axiom
 getClassAssertion e = case getName e of
@@ -404,7 +418,7 @@ getClassAssertion e = case getName e of
                   $ filterChildName (isSmthList individualList) e
         in PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
            $ ListFrameBit (Just Types) $ ExpressionBit [(as, ce)]
-    _ -> error "not class assertion"
+    _ -> getAnnoAxiom e
 
 getAnnoAxiom :: Element -> Axiom
 getAnnoAxiom e =
@@ -433,18 +447,42 @@ getAnnoAxiom e =
                   $ filterChildName (isSmth "IRI") e
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ARange)) $ AnnotationBit [(as, iri)]
-    _ -> error "not annotation axiom"
+    _ -> getClassAxiom e
 
+getImports :: Element -> [ImportIRI]
+getImports e = map mkQName $ map strContent $ filterCh "Import" e
 
+getPrefixMap :: Element -> PrefixMap
+getPrefixMap e =
+    let prl = map get2IRIs $ filterCh "Prefix" e
+    in Map.fromList $ map (\ (p, m) -> (p, showQU m)) prl
 
+getOntologyIRI :: Element -> OntologyIRI
+getOntologyIRI e = mkQName $ fromJust $ findAttrBy (isSmth "ontologyIRI") e
 
+getOntAnnos :: Element -> [Annotations]
+getOntAnnos e = map getAllAnnos $ filterCh "Annotation" e
 
+axToFrame :: Axiom -> Frame
+axToFrame (PlainAxiom e fb) = Frame e [fb]
 
+getFrames :: Element -> [Frame]
+getFrames e =
+   let ax = filterChildrenName isNotSmth e
+   in getDeclarations e ++ map axToFrame (map getClassAxiom ax)
 
+getAxioms :: Element -> [Axiom]
+getAxioms e = map getClassAxiom $ filterChildrenName isNotSmth e
 
-
-
-
-
-
-
+xmlBasicSpec :: Element -> OntologyDocument
+xmlBasicSpec e = emptyOntologyDoc 
+      {
+      mOntology = emptyOntologyD 
+        {
+        ontologyFrame = getFrames e,
+        imports = getImports e,
+        ann = getOntAnnos e,
+        muri = getOntologyIRI e 
+        },
+      prefixDeclaration = getPrefixMap e 
+      }
