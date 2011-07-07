@@ -35,6 +35,9 @@ entityList :: [String]
 entityList = ["Class", "Datatype", "NamedIndividual",
     "ObjectProperty", "DataProperty", "AnnotationProperty"]
 
+individualList :: [String]
+individualList = ["NamedIndividual", "AnonymousIndividual"]
+
 objectPropList :: [String]
 objectPropList = ["ObjectProperty", "ObjectInverseOf"]
 
@@ -335,8 +338,60 @@ getDPAxiom e =
             $ AnnFrameBit as DataFunctional
     _ -> error "not data property axiom"
 
-
-
+getAssertion :: Element -> Axiom
+getAssertion e = 
+   let as = concatMap getAllAnnos $ elChildren e
+   in case getName e of
+    "SameIndividual" ->
+        let ind = map getIRI $ filterChL individualList e
+        in PlainAxiom (Misc as) $ ListFrameBit (Just (SDRelation Same))
+          $ IndividualSameOrDifferent $ map (\ x -> ([], x)) ind
+    "DifferentIndividuals" ->
+        let ind = map getIRI $ filterChL individualList e
+        in PlainAxiom (Misc as) $ ListFrameBit (Just (SDRelation Different))
+          $ IndividualSameOrDifferent $ map (\ x -> ([], x)) ind
+    "ClassAssertion" ->
+        let ce = getClassExpression $ fromJust
+                  $ filterChildName (isSmthList classExpressionList) e
+            ind = getIRI $ fromJust
+                  $ filterChildName (isSmthList individualList) e
+        in PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
+           $ ListFrameBit (Just Types) $ ExpressionBit [(as, ce)]
+    "ObjectPropertyAssertion" ->
+        let op = getObjProp $ fromJust
+                  $ filterChildName (isSmthList objectPropList) e
+            ind = map getIRI $ filterChL individualList e
+        in PlainAxiom (SimpleEntity $ Entity NamedIndividual $ head ind)
+           $ ListFrameBit Nothing $ IndividualFacts
+               [(as, ObjectPropertyFact Positive op (last ind))]
+    "NegativeObjectPropertyAssertion" ->
+        let op = getObjProp $ fromJust
+                  $ filterChildName (isSmthList objectPropList) e
+            ind = map getIRI $ filterChL individualList e
+        in PlainAxiom (SimpleEntity $ Entity NamedIndividual $ head ind)
+           $ ListFrameBit Nothing $ IndividualFacts
+               [(as, ObjectPropertyFact Negative op (last ind))]
+    "DataPropertyAssertion" ->
+        let dp = getIRI $ fromJust
+                  $ filterChildName (isSmthList dataPropList) e
+            ind = getIRI $ fromJust
+                  $ filterChildName (isSmthList individualList) e
+            lit = getLiteral $ fromJust
+                  $ filterChildName (isSmth "Literal") e
+        in PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
+           $ ListFrameBit Nothing $ IndividualFacts
+               [(as, DataPropertyFact Positive dp lit)]
+    "NegativeDataPropertyAssertion" ->
+        let dp = getIRI $ fromJust
+                  $ filterChildName (isSmthList dataPropList) e
+            ind = getIRI $ fromJust
+                  $ filterChildName (isSmthList individualList) e
+            lit = getLiteral $ fromJust
+                  $ filterChildName (isSmth "Literal") e
+        in PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
+           $ ListFrameBit Nothing $ IndividualFacts
+               [(as, DataPropertyFact Negative dp lit)]
+    _ -> error "not assertion"
 
 
 
