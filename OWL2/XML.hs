@@ -138,7 +138,7 @@ getDataRange e = case getName e of
     "DataComplementOf" -> DataComplementOf
             $ getDataRange $ head $ elChildren e
     "DataOneOf" -> DataOneOf
-            $ map getLiteral $ filterCh  "Literal" e
+            $ map getLiteral $ filterCh "Literal" e
     "DataIntersectionOf" -> DataJunction IntersectionOf
             $ map getDataRange $ elChildren e
     "DataUnionOf" -> DataJunction UnionOf
@@ -223,8 +223,9 @@ getClassAxiom e =
        let ces = drop (length ch - 2) ch
            sub = head ces
            super = last ces
-       in PlainAxiom (ClassEntity $ getClassExpression sub) 
-        $ ListFrameBit (Just SubClass) $ ExpressionBit [(as, (getClassExpression super))]
+       in PlainAxiom (ClassEntity $ getClassExpression sub)
+        $ ListFrameBit (Just SubClass) $ ExpressionBit
+                      [(as, getClassExpression super)]
     "EquivalentClasses" -> PlainAxiom (Misc as) $ ListFrameBit
       (Just (EDRelation Equivalent)) $ ExpressionBit
           $ map (\ x -> ([], x)) cel
@@ -246,28 +247,28 @@ hasKey e =
    in PlainAxiom (ClassEntity ce) $ AnnFrameBit as $ ClassHasKey op dp
 
 getOPAxiom :: Element -> Axiom
-getOPAxiom e = 
+getOPAxiom e =
    let as = concatMap getAllAnnos $ elChildren e
-       op = getObjProp $ fromJust 
-            $ filterChildName (isSmthList objectPropList) e 
+       op = getObjProp $ fromJust
+            $ filterChildName (isSmthList objectPropList) e
    in case getName e of
     "SubObjectPropertyOf" ->
        let opchain = concatMap (map getObjProp) $ map elChildren
-            $ filterCh "ObjectPropertyChain" e 
+            $ filterCh "ObjectPropertyChain" e
        in if null opchain
              then let opl = map getObjProp $ filterChL objectPropList e
                   in PlainAxiom (ObjectEntity $ head opl)
-                       $ ListFrameBit (Just SubPropertyOf) $ ObjectBit 
+                       $ ListFrameBit (Just SubPropertyOf) $ ObjectBit
                           [(as, last opl)]
              else PlainAxiom (ObjectEntity op) $ AnnFrameBit as
                     $ ObjectSubPropertyChain opchain
     "EquivalentObjectProperties" ->
        let opl = map getObjProp $ filterChL objectPropList e
-       in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Equivalent)) 
+       in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Equivalent))
         $ ObjectBit $ map (\ x -> ([], x)) opl
     "DisjointObjectProperties" ->
        let opl = map getObjProp $ filterChL objectPropList e
-       in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint)) 
+       in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint))
         $ ObjectBit $ map (\ x -> ([], x)) opl
 
 getDPAxiom :: Element -> Axiom
@@ -280,11 +281,11 @@ getDPAxiom e =
               $ ListFrameBit (Just SubPropertyOf) $ DataBit [(as, last dpl)]
      "EquivalentDataProperties" ->
         let dpl = map getIRI $ filterChL dataPropList e
-        in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Equivalent)) 
+        in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Equivalent))
           $ DataBit $ map (\ x -> ([], x)) dpl
      "DisjointDataProperties" ->
         let dpl = map getIRI $ filterChL dataPropList e
-        in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint)) 
+        in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint))
           $ DataBit $ map (\ x -> ([], x)) dpl
 
 
