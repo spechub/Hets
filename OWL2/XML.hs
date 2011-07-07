@@ -325,8 +325,9 @@ getDPAxiom e =
             ce = getClassExpression $ fromJust
                   $ filterChildName (isSmthList classExpressionList) e
         in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
-            $ ListFrameBit (Just (DRRelation ADomain)) $ ExpressionBit [(as, ce)]
-    "DataPropertyRange" -> 
+            $ ListFrameBit (Just (DRRelation ADomain))
+                     $ ExpressionBit [(as, ce)]
+    "DataPropertyRange" ->
         let dp = getIRI $ fromJust $ filterChildName (isSmthList dataPropList) e
             dr = getDataRange $ fromJust
                   $ filterChildName (isSmthList dataRangeList) e
@@ -376,7 +377,7 @@ getObjectAssertion e =
     _ -> error "not object assertion"
 
 getIndividualAssertion :: Element -> Axiom
-getIndividualAssertion e = 
+getIndividualAssertion e =
    let as = concatMap getAllAnnos $ elChildren e
        ind = map getIRI $ filterChL individualList e
        l = map (\ x -> ([], x)) ind
