@@ -305,24 +305,36 @@ getDPAxiom :: Element -> Axiom
 getDPAxiom e =
    let as = concatMap getAllAnnos $ elChildren e
    in case getName e of
-     "SubDataPropertyOf" ->
+    "SubDataPropertyOf" ->
         let dpl = map getIRI $ filterChL dataPropList e
         in PlainAxiom (SimpleEntity $ Entity DataProperty $ head dpl)
               $ ListFrameBit (Just SubPropertyOf) $ DataBit [(as, last dpl)]
-     "EquivalentDataProperties" ->
+    "EquivalentDataProperties" ->
         let dpl = map getIRI $ filterChL dataPropList e
         in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Equivalent))
           $ DataBit $ map (\ x -> ([], x)) dpl
-     "DisjointDataProperties" ->
+    "DisjointDataProperties" ->
         let dpl = map getIRI $ filterChL dataPropList e
         in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint))
           $ DataBit $ map (\ x -> ([], x)) dpl
-     "DataPropertyDomain" ->
+    "DataPropertyDomain" ->
         let dp = getIRI $ fromJust $ filterChildName (isSmthList dataPropList) e
             ce = getClassExpression $ fromJust
                   $ filterChildName (isSmthList classExpressionList) e
         in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
             $ ListFrameBit (Just (DRRelation ADomain)) $ ExpressionBit [(as, ce)]
+    "DataPropertyRange" -> 
+        let dp = getIRI $ fromJust $ filterChildName (isSmthList dataPropList) e
+            dr = getDataRange $ fromJust
+                  $ filterChildName (isSmthList dataRangeList) e
+        in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
+            $ ListFrameBit (Just (DRRelation ARange)) $ DataPropRange [(as, dr)]
+    "FunctionalDataProperty" ->
+        let dp = getIRI $ fromJust $ filterChildName (isSmthList dataPropList) e
+        in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
+            $ AnnFrameBit as DataFunctional
+    _ -> error "not data property axiom"
+
 
 
 
