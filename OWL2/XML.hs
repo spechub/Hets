@@ -273,13 +273,13 @@ getOPAxiom e =
     "ObjectPropertyDomain" ->
        let ce = getClassExpression $ fromJust
             $ filterChildName (isSmthList classExpressionList) e
-       in PlainAxiom (ObjectEntity $ op) $ ListFrameBit (Just (DRRelation ADomain))
-        $ ExpressionBit [(as, ce)]
+       in PlainAxiom (ObjectEntity op) $ ListFrameBit
+          (Just (DRRelation ADomain)) $ ExpressionBit [(as, ce)]
     "ObjectPropertyRange" ->
        let ce = getClassExpression $ fromJust
             $ filterChildName (isSmthList classExpressionList) e
-       in PlainAxiom (ObjectEntity $ op) $ ListFrameBit (Just (DRRelation ARange))
-        $ ExpressionBit [(as, ce)]
+       in PlainAxiom (ObjectEntity op) $ ListFrameBit
+          (Just (DRRelation ARange)) $ ExpressionBit [(as, ce)]
     "InverseObjectProperties" ->
        let opl = map getObjProp $ filterChL objectPropList e
        in PlainAxiom (ObjectEntity $ head opl)
@@ -287,8 +287,8 @@ getOPAxiom e =
                           [(as, last opl)]
     "FunctionalObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
         Nothing $ ObjectCharacteristics [(as, Functional)]
-    "InverseFunctionalObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
-        Nothing $ ObjectCharacteristics [(as, InverseFunctional)]
+    "InverseFunctionalObjectProperty" -> PlainAxiom (ObjectEntity op)
+        $ ListFrameBit Nothing $ ObjectCharacteristics [(as, InverseFunctional)]
     "ReflexiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
         Nothing $ ObjectCharacteristics [(as, Reflexive)]
     "IrreflexiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
@@ -317,6 +317,12 @@ getDPAxiom e =
         let dpl = map getIRI $ filterChL dataPropList e
         in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint))
           $ DataBit $ map (\ x -> ([], x)) dpl
+     "DataPropertyDomain" ->
+        let dp = getIRI $ fromJust $ filterChildName (isSmthList dataPropList) e
+            ce = getClassExpression $ fromJust
+                  $ filterChildName (isSmthList classExpressionList) e
+        in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
+            $ ListFrameBit (Just (DRRelation ADomain)) $ ExpressionBit [(as, ce)]
 
 
 
