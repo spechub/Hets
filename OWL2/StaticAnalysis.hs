@@ -231,22 +231,22 @@ checkListBit s r fb = case fb of
     AnnotationBit anl -> case r of
         Just (DRRelation _) -> return fb
         _ -> do
-            let apl = map snd $ convertAnnList anl
+            let apl = map snd anl
             mapM_ (checkEntity s fb . Entity AnnotationProperty) apl
             return fb  
     ExpressionBit anl -> do
-        let ans = map fst $ convertAnnList anl
-        let ce = map snd $ convertAnnList anl
+        let ans = map fst anl
+        let ce = map snd anl
         n <- mapM (checkClassExpression s) ce
-        return $ ExpressionBit $ AnnotatedList $ zip ans n
+        return $ ExpressionBit $ zip ans n
     ObjectBit anl -> do
-        let ans = map fst $ convertAnnList anl
-        let ol = map snd $ convertAnnList anl
+        let ans = map fst anl
+        let ol = map snd anl
         --checkObjPropList s fb ol
         let x = sortObjDataList s ol
         if null x then do
             let dpl = map getObjRoleFromExpression ol
-            let nb = DataBit $ AnnotatedList $ zip ans dpl
+            let nb = DataBit $ zip ans dpl
             checkDataPropList s nb dpl
           else
             if length x == length ol then return fb
@@ -256,17 +256,17 @@ checkListBit s r fb = case fb of
                               (map getObjRoleFromExpression (ol \\ x))
     ObjectCharacteristics _ -> return fb 
     DataBit anl -> do
-        let dl = map snd $ convertAnnList anl
+        let dl = map snd anl
         checkDataPropList s fb dl
     DataPropRange anl -> do
-        let dr = map snd $ convertAnnList anl
+        let dr = map snd anl
         mapM_ (checkDataRange s) dr
         return fb   
     IndividualFacts anl -> do
-        let f = map snd $ convertAnnList anl
+        let f = map snd anl
         checkFactList s fb f
     IndividualSameOrDifferent anl -> do
-        let i = map snd $ convertAnnList anl
+        let i = map snd anl
         mapM_ (checkEntity s fb . Entity NamedIndividual) i
         return fb
 
@@ -344,7 +344,7 @@ correctFrames s = mapM (checkFrame s)
 
 getEntityFromFrame :: Frame -> State Sign ()
 getEntityFromFrame f = case f of
-    Frame (Right e) _ -> addEntity e
+    Frame (SimpleEntity e) _ -> addEntity e
     _ -> return ()
 
 createSign :: [Frame] -> State Sign ()

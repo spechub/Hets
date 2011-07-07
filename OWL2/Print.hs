@@ -144,11 +144,8 @@ printAnnotations l = case l of
           vcat (punctuate comma (map (\ (Annotation ans ap av) ->
             printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
 
-instance Pretty a => Pretty (AnnotatedList a) where
-    pretty = printAnnotatedList
-
 printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
-printAnnotatedList (AnnotatedList l) =
+printAnnotatedList l =
   vcat $ punctuate comma $ map
     ( \ (ans, a) -> printAnnotations ans $+$ pretty a) l
 

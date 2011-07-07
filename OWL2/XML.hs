@@ -73,7 +73,7 @@ getDeclaration :: Element -> Frame
 getDeclaration e =
    let ent = fromJust $ filterChildName (isSmthList entityList) e
        ans = getAllAnnos e
-   in Frame (Right $ toEntity ent) [AnnFrameBit ans AnnotationFrameBit]
+   in Frame (SimpleEntity $ toEntity ent) [AnnFrameBit ans AnnotationFrameBit]
 
 getDeclarations :: Element -> [Frame]
 getDeclarations e =
@@ -223,18 +223,17 @@ getClassAxiom e =
        let ces = drop (length ch - 2) ch
            sub = head ces
            super = last ces
-       in PlainAxiom (Left []) $ AnnFrameBit as
-              $ GCISubClassOf (getClassExpression sub)
-                    (getClassExpression super)
-    "EquivalentClasses" -> PlainAxiom (Left as) $ ListFrameBit
+       in PlainAxiom (ClassEntity $ getClassExpression sub) 
+        $ ListFrameBit (Just SubClass) $ ExpressionBit [(as, (getClassExpression super))]
+    "EquivalentClasses" -> PlainAxiom (Misc as) $ ListFrameBit
       (Just (EDRelation Equivalent)) $ ExpressionBit
-      $ AnnotatedList $ map (\ x -> ([], x)) cel
-    "DisjointClasses" -> PlainAxiom (Left as) $ ListFrameBit
+          $ map (\ x -> ([], x)) cel
+    "DisjointClasses" -> PlainAxiom (Misc as) $ ListFrameBit
       (Just (EDRelation Disjoint)) $ ExpressionBit
-      $ AnnotatedList $ map (\ x -> ([], x)) cel
-    "DisjointUnion" -> PlainAxiom (Right $ getEntity $ head l)
+          $ map (\ x -> ([], x)) cel
+    "DisjointUnion" -> PlainAxiom (SimpleEntity $ getEntity $ head l)
         $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression $ tail l
-    "DatatypeDefinition" -> PlainAxiom (Right $ getEntity $ head drl)
+    "DatatypeDefinition" -> PlainAxiom (SimpleEntity $ getEntity $ head drl)
         $ AnnFrameBit as $ DatatypeBit $ getDataRange $ last drl
     _ -> error "XML parser: not class axiom"
 
@@ -244,8 +243,7 @@ hasKey e =
        ce = getClassExpression $ head $ filterChL classExpressionList e
        op = map getObjProp $ filterChL objectPropList e
        dp = map getIRI $ filterChL dataPropList e
-   in PlainAxiom (Left []) $ AnnFrameBit as
-          $ GCIClassHasKey ce op dp
+   in PlainAxiom (ClassEntity ce) $ AnnFrameBit as $ ClassHasKey op dp
 
 getOPAxiom :: Element -> Axiom
 getOPAxiom e = 
@@ -256,9 +254,54 @@ getOPAxiom e =
     "SubObjectPropertyOf" ->
        let opchain = concatMap (map getObjProp) $ map elChildren
             $ filterCh "ObjectPropertyChain" e 
-       in if opchain == []
+       in if null opchain
              then let opl = map getObjProp $ filterChL objectPropList e
-                  in PlainAxiom (Left []) $ AnnFrameBit as $ SubObjPropertyOf 
-                            (OPExpression $ head opl) $ last opl
-             else PlainAxiom (Left []) $ AnnFrameBit as $ SubObjPropertyOf 
-                            (SubObjectPropertyChain opchain) op
+                  in PlainAxiom (ObjectEntity $ head opl)
+                       $ ListFrameBit (Just SubPropertyOf) $ ObjectBit 
+                          [(as, last opl)]
+             else PlainAxiom (ObjectEntity op) $ AnnFrameBit as
+                    $ ObjectSubPropertyChain opchain
+    "EquivalentObjectProperties" ->
+       let opl = map getObjProp $ filterChL objectPropList e
+       in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Equivalent)) 
+        $ ObjectBit $ map (\ x -> ([], x)) opl
+    "DisjointObjectProperties" ->
+       let opl = map getObjProp $ filterChL objectPropList e
+       in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint)) 
+        $ ObjectBit $ map (\ x -> ([], x)) opl
+
+getDPAxiom :: Element -> Axiom
+getDPAxiom e =
+   let as = concatMap getAllAnnos $ elChildren e
+   in case getName e of
+     "SubDataPropertyOf" ->
+        let dpl = map getIRI $ filterChL dataPropList e
+        in PlainAxiom (SimpleEntity $ Entity DataProperty $ head dpl)
+              $ ListFrameBit (Just SubPropertyOf) $ DataBit [(as, last dpl)]
+     "EquivalentDataProperties" ->
+        let dpl = map getIRI $ filterChL dataPropList e
+        in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Equivalent)) 
+          $ DataBit $ map (\ x -> ([], x)) dpl
+     "DisjointDataProperties" ->
+        let dpl = map getIRI $ filterChL dataPropList e
+        in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint)) 
+          $ DataBit $ map (\ x -> ([], x)) dpl
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

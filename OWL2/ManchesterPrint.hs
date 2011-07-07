@@ -113,20 +113,20 @@ instance Pretty Frame where
     pretty = printFrame
 
 printFrame :: Frame -> Doc
-printFrame f = case f of
-    Frame eith bl -> case eith of
-      Right (Entity e uri) -> pretty (showEntityType e) <+>
+printFrame (Frame eith bl) = case eith of
+        SimpleEntity (Entity e uri) -> pretty (showEntityType e) <+>
             fsep [pretty uri, vcat (map pretty bl)]
-      Left a -> case bl of 
-        [ListFrameBit (Just e) (ExpressionBit anl)] -> printEquivOrDisjointClasses (getED e) <+>
+        ObjectEntity ope -> pretty ope <+> fsep [vcat (map pretty bl)]
+        ClassEntity ce -> pretty ce <+> fsep [vcat (map pretty bl)]
+        Misc a -> case bl of 
+          [ListFrameBit (Just e) (ExpressionBit anl)] -> printEquivOrDisjointClasses (getED e) <+>
             (printAnnotations a $+$ pretty anl)
-        [ListFrameBit (Just e) (ObjectBit anl)] -> printEquivOrDisjointProp (getED e) <+>
+          [ListFrameBit (Just e) (ObjectBit anl)] -> printEquivOrDisjointProp (getED e) <+>
             (printAnnotations a $+$ pretty anl)
-        [ListFrameBit (Just e) (DataBit anl)] -> printEquivOrDisjointProp (getED e) <+>
+          [ListFrameBit (Just e) (DataBit anl)] -> printEquivOrDisjointProp (getED e) <+>
             (printAnnotations a $+$ pretty anl)
-        [ListFrameBit (Just s) (IndividualSameOrDifferent anl)] -> printSameOrDifferentInd (getSD s) <+>
+          [ListFrameBit (Just s) (IndividualSameOrDifferent anl)] -> printSameOrDifferentInd (getSD s) <+>
             (printAnnotations a $+$ pretty anl)
-        _ -> empty
 
 instance Pretty Axiom where
     pretty = printAxiom

@@ -36,14 +36,20 @@ data MOntology = MOntology {
   @Annotations:@ if non-empty -}
 type Annotations = [Annotation]
 
-data AnnotatedList a = AnnotatedList { convertAnnList :: [(Annotations, a)] }
-   deriving (Show, Eq, Ord)
+type AnnotatedList a = [(Annotations, a)]
 
--- | the datatype for Manchester Syntax frames
-data Frame = Frame (Either Annotations Entity) [FrameBit]
+data Extended
+  = Misc Annotations
+  | SimpleEntity Entity
+  | ObjectEntity ObjectPropertyExpression
+  | ClassEntity ClassExpression
     deriving (Show, Eq, Ord)
 
-data Axiom = PlainAxiom (Either Annotations Entity) FrameBit
+-- | the datatype for Manchester Syntax frames
+data Frame = Frame Extended [FrameBit]
+    deriving (Show, Eq, Ord)
+
+data Axiom = PlainAxiom Extended FrameBit
     deriving (Show, Eq, Ord)
 
 getAxioms :: Frame -> [Axiom]
@@ -75,10 +81,6 @@ data AnnFrameBit
   | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]  
           -- needs to be replaced later on by GCIClassHasKey
   | ObjectSubPropertyChain [ObjectPropertyExpression]
-  | GCISubClassOf ClassExpression ClassExpression
-  | GCIClassHasKey ClassExpression
-        [ObjectPropertyExpression] [DataPropertyExpression]
-  | SubObjPropertyOf SubObjectPropertyExpression ObjectPropertyExpression
     deriving (Show, Eq, Ord)
 
 data Fact

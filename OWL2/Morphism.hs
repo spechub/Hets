@@ -232,10 +232,10 @@ mapFact m f = case f of
 
 mapAnnList :: Map.Map Entity IRI -> (a -> a) ->
           AnnotatedList a -> AnnotatedList a
-mapAnnList m f (AnnotatedList anl) =
+mapAnnList m f anl =
              let ans = map fst anl
                  l = map snd anl
-             in AnnotatedList $ zip (map (mapAnnoList m) ans) (map f l)
+             in zip (map (mapAnnoList m) ans) (map f l)
 
 mapLFB :: Map.Map Entity IRI -> ListFrameBit -> ListFrameBit
 mapLFB m lfb = case lfb of
@@ -268,6 +268,6 @@ mapFB m fb = case fb of
 
 mapAxiom :: Map.Map Entity IRI -> Axiom -> Axiom
 mapAxiom m (PlainAxiom eith fb) = case eith of
-    Right (Entity ty ent) -> PlainAxiom
-        (Right $ Entity ty $ getIri ty ent m) $ mapFB m fb
-    Left ans -> PlainAxiom (Left  $ mapAnnoList m ans) $ mapFB m fb
+    SimpleEntity (Entity ty ent) -> PlainAxiom
+        (SimpleEntity $ Entity ty $ getIri ty ent m) $ mapFB m fb
+    Misc ans -> PlainAxiom (Misc $ mapAnnoList m ans) $ mapFB m fb

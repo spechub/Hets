@@ -8,12 +8,12 @@ import Data.List
 addImplied :: Axiom -> Axiom
 addImplied a = case remImplied a of
       PlainAxiom eith fb -> case eith of 
-        Right _ -> case fb of
+        Misc ans -> PlainAxiom (Misc (impliedTh: ans)) fb 
+        _ -> case fb of
               ListFrameBit mr lfb -> PlainAxiom eith
                       $ ListFrameBit mr (addImplListFB lfb)
               AnnFrameBit ans afb -> PlainAxiom eith
                       $ AnnFrameBit (impliedTh : ans) afb
-        Left ans -> PlainAxiom (Left (impliedTh: ans)) fb 
 
 addImplListFB :: ListFrameBit -> ListFrameBit
 addImplListFB lfb = case lfb of
@@ -29,19 +29,18 @@ addImplListFB lfb = case lfb of
     IndividualFacts a -> IndividualFacts $ addImpliedAnnList a
 
 addImpliedAnnList :: AnnotatedList a -> AnnotatedList a
-addImpliedAnnList (AnnotatedList []) = AnnotatedList [] 
-addImpliedAnnList (AnnotatedList ((ans, b) : t)) =
-      AnnotatedList ((impliedTh : ans, b) : t)
+addImpliedAnnList [] = [] 
+addImpliedAnnList ((ans, b) : t) = (impliedTh : ans, b) : t
 
 remImplied :: Axiom -> Axiom
-remImplied (PlainAxiom eith fb) = case eith of 
-      Right _ -> PlainAxiom eith
+remImplied (PlainAxiom eith fb) = case eith of
+      Misc ans -> PlainAxiom (Misc (remImpliedList ans)) fb 
+      _ -> PlainAxiom eith
          (
           case fb of
             ListFrameBit mr lfb -> ListFrameBit mr (remImplListFB lfb)
             AnnFrameBit ans afb -> AnnFrameBit (remImpliedList ans) afb
          )
-      Left ans -> PlainAxiom (Left (remImpliedList ans)) fb 
       
 remImplListFB :: ListFrameBit -> ListFrameBit
 remImplListFB lfb = case lfb of
@@ -63,7 +62,7 @@ remImpliedList :: Annotations -> Annotations
 remImpliedList = filter (not . isToProve1)
 
 remImpliedAnnList :: AnnotatedList a -> AnnotatedList a
-remImpliedAnnList (AnnotatedList a) = AnnotatedList (map remImplied1 a)
+remImpliedAnnList = map remImplied1
 
 impliedTh :: Annotation
 impliedTh = Annotation [] (mkQName "Implied")
@@ -79,14 +78,14 @@ isToProveList :: (Annotations, a) -> Bool
 isToProveList (ans, _) = any isToProve1 ans
 
 isToProveAnnList :: AnnotatedList a -> Bool
-isToProveAnnList (AnnotatedList a) = any (isToProveList) a 
+isToProveAnnList = any isToProveList
 
 isToProve :: Axiom -> Bool
 isToProve (PlainAxiom eith fb) = case eith of
-      Right _ -> case fb of
+      Misc ans -> any isToProve1 ans
+      _ -> case fb of
         ListFrameBit _ lfb -> isToProveLB lfb
         AnnFrameBit ans _ -> any isToProve1 ans
-      Left ans -> any isToProve1 ans
 
 isToProveLB :: ListFrameBit -> Bool
 isToProveLB fb = case fb of
