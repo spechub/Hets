@@ -438,8 +438,9 @@ embs :: CASLDiag
      -> [DiagEmb]
 embs diag =
     let embs' [] = []
-        embs' ((n, Sign {sortRel = sr}) : lNodes) =
-            map (\ (s1, s2) -> (n, s1, s2)) (Rel.toList sr) ++ embs' lNodes
+        embs' ((n, sig) : lNodes) =
+           let ssl = Rel.toList . Rel.irreflex $ sortRel sig in
+            map (\ (s1, s2) -> (n, s1, s2)) ssl ++ embs' lNodes
     in embs' (labNodes diag)
 
 
@@ -450,8 +451,9 @@ sinkEmbs :: CASLDiag          -- ^ the diagram
          -> [DiagEmb]
 sinkEmbs _ [] = []
 sinkEmbs diag ((srcNode, _) : edgs) =
-    let (_, _, Sign {sortRel = sr}, _) = context diag srcNode
-    in map (\ (s1, s2) -> (srcNode, s1, s2)) (Rel.toList sr)
+    let (_, _, sig, _) = context diag srcNode
+        ssl = Rel.toList . Rel.irreflex $ sortRel sig
+    in map (\ (s1, s2) -> (srcNode, s1, s2)) ssl
            ++ sinkEmbs diag edgs
 
 
