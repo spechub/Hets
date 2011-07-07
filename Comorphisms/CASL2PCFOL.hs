@@ -21,6 +21,7 @@ import Logic.Comorphism
 import qualified Data.Set as Set
 
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
 import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
@@ -80,9 +81,9 @@ instance Comorphism CASL2PCFOL
 encodeSig :: Sign f e -> Sign f e
 encodeSig sig
   = if Rel.null rel then sig else
-      sig {sortRel = Rel.empty, opMap = projOpMap}
+      sig {sortRel = MapSet.fromSet $ sortSet sig, opMap = projOpMap}
   where
-        rel = sortRel sig
+        rel = Rel.irreflex $ sortRel sig
         total (s, s') = mkTotOpType [s] s'
         partial (s, s') = (if Rel.member s' s rel then id else mkPartial)
           $ total (s', s)

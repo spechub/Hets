@@ -610,7 +610,7 @@ them will be included by just checking the signatures -}
 
 sl_sign :: Lattice a => Sign f e -> CASL_SL a
 sl_sign s =
-    let rel = sortRel s
+    let rel = Rel.irreflex $ sortRel s
         subs | Rel.null rel = bottom
              | Rel.locallyFiltered rel = need_sul
              | otherwise = need_sub

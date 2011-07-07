@@ -139,7 +139,8 @@ generated that each generated unary predicate must hold on at least
 one element of the top-sort. -}
 
 transSig :: Sign () e -> Result (Sign () e, [Named (FORMULA ())])
-transSig sig = return $ let sortRels = Rel.transClosure $ sortRel sig in
+transSig sig = return
+  $ let sortRels = Rel.transClosure . Rel.irreflex $ sortRel sig in
     if Rel.null sortRels then (sig, []) else
     let subSortMap = generateSubSortMap sortRels (predMap sig)
         newOpMap = transOpMap sortRels subSortMap (opMap sig)
