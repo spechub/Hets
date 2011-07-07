@@ -270,6 +270,36 @@ getOPAxiom e =
        let opl = map getObjProp $ filterChL objectPropList e
        in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Disjoint))
         $ ObjectBit $ map (\ x -> ([], x)) opl
+    "ObjectPropertyDomain" ->
+       let ce = getClassExpression $ fromJust
+            $ filterChildName (isSmthList classExpressionList) e
+       in PlainAxiom (ObjectEntity $ op) $ ListFrameBit (Just (DRRelation ADomain))
+        $ ExpressionBit [(as, ce)]
+    "ObjectPropertyRange" ->
+       let ce = getClassExpression $ fromJust
+            $ filterChildName (isSmthList classExpressionList) e
+       in PlainAxiom (ObjectEntity $ op) $ ListFrameBit (Just (DRRelation ARange))
+        $ ExpressionBit [(as, ce)]
+    "InverseObjectProperties" ->
+       let opl = map getObjProp $ filterChL objectPropList e
+       in PlainAxiom (ObjectEntity $ head opl)
+                       $ ListFrameBit (Just InverseOf) $ ObjectBit
+                          [(as, last opl)]
+    "FunctionalObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
+        Nothing $ ObjectCharacteristics [(as, Functional)]
+    "InverseFunctionalObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
+        Nothing $ ObjectCharacteristics [(as, InverseFunctional)]
+    "ReflexiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
+        Nothing $ ObjectCharacteristics [(as, Reflexive)]
+    "IrreflexiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
+        Nothing $ ObjectCharacteristics [(as, Irreflexive)]
+    "SymmetricObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
+        Nothing $ ObjectCharacteristics [(as, Symmetric)]
+    "AsymmetricObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
+        Nothing $ ObjectCharacteristics [(as, Asymmetric)]
+    "TransitiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
+        Nothing $ ObjectCharacteristics [(as, Transitive)]
+    _ -> error "not object property axiom"
 
 getDPAxiom :: Element -> Axiom
 getDPAxiom e =
