@@ -120,10 +120,10 @@ trSign inSig =
     in
       inC
       {
-        sortRel = Rel.insert topSort topSort
-          $ Rel.insert topSortD topSortD
-          $ Set.fold (`Rel.insert` topSortD)
-                  (Set.fold (`Rel.insert` topSort)
+        sortRel = Rel.insertKey topSort
+          $ Rel.insertKey topSortD
+          $ Set.fold (`Rel.insertDiffPair` topSortD)
+                  (Set.fold (`Rel.insertDiffPair` topSort)
                    (sortRel inC) inSorts)
           $ Set.delete topSortD inData
       }

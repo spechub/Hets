@@ -247,7 +247,7 @@ insertSort sort sign = let
 -- | Insert a 'SubsortDecl' into a 'Sign'ature.
 insertSubsort :: SubsortDecl -> Sign -> Sign
 insertSubsort decl sign = let
-    insert (Subsort sub super) = Rel.insert (asSymbol sub) (asSymbol super)
+    insert (Subsort sub super) = Rel.insertPair (asSymbol sub) (asSymbol super)
     in sign {subsorts = insert decl (subsorts sign)}
 
 -- | Insert an 'Operator' declaration into an 'Operator' 'Map'.

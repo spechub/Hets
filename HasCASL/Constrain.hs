@@ -441,6 +441,6 @@ fromTypeVars = Map.foldWithKey
 -- | the type relation of declared types
 fromTypeMap :: TypeMap -> Rel.Rel Type
 fromTypeMap = Map.foldWithKey (\ t ti r -> let k = typeKind ti in
-                    Set.fold ( \ j -> Rel.insert (TypeName t k 0)
+                    Set.fold ( \ j -> Rel.insertPair (TypeName t k 0)
                                 $ TypeName j k 0) r
                                     $ superTypes ti) Rel.empty

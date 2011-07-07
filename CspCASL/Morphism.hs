@@ -40,7 +40,6 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Utils (composeMap, isSingleton)
-import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
@@ -141,7 +140,7 @@ composeCspAddMorphism :: Morphism f CspSign CspAddMorphism
 composeCspAddMorphism m1 m2 = let
     sMap1 = sort_map m1
     sMap2 = sort_map m2
-    sMap = composeMap (Rel.setToMap $ sortSet src) sMap1 sMap2
+    sMap = composeMap (MapSet.setToMap $ sortSet src) sMap1 sMap2
     src = msource m1
     cSrc = extendedInfo src
     cMap = MapSet.foldWithKey ( \ c s ->

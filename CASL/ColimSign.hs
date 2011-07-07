@@ -60,7 +60,7 @@ signColimit graph extColimit =
    (setSort0, funSort0) = computeColimitSet sortGraph
    (setSort, funSort) = addIntToSymbols (setSort0, funSort0)
    sigmaSort = (emptySign $ error "err")
-     { sortRel = MapSet.fromSet setSort }
+     { sortRel = Rel.fromKeysSet setSort }
    phiSort = Map.fromList
     $ map (\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
            {sort_map = Map.findWithDefault (error "sort_map") node funSort}))
@@ -220,14 +220,14 @@ buildOvrlAtNode graph' colim morMap ovrl names totalF nodeList =
                    [] -> error "addParts"
                    x:xs -> let
                              (r', ly) = foldl
-                              (\(rl,lx) y -> (Rel.insert lx y rl, y))
+                              (\(rl,lx) y -> (Rel.insertPair lx y rl, y))
                               (r,x) xs
                              f' = foldl (\g ((_i,o),((i',o'),n')) ->
                                    if isTotal o then
                                     Map.insert ((i', mkPartial o'), n')
                                                True g
                                     else g ) f $ zip l l1
-                            in (Rel.insert ly x r', f')
+                            in (Rel.insertPair ly x r', f')
                           )
                (rel, totalF) equivList
        (ovrl', totalF') = addParts ovrl parts
@@ -392,9 +392,9 @@ buildPOvrlAtNode graph' colim morMap ovrl names nodeList =
                    [] -> error "addParts"
                    x:xs -> let
                              (r', ly) = foldl
-                              (\(rl,lx) y -> (Rel.insert lx y rl, y))
+                              (\(rl,lx) y -> (Rel.insertPair lx y rl, y))
                               (r,x) xs
-                            in Rel.insert ly x r'
+                            in Rel.insertPair ly x r'
                           )
                rel equivList
        ovrl' = addParts ovrl parts

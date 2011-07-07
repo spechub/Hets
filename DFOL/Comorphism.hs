@@ -14,6 +14,7 @@ module DFOL.Comorphism where
 import Common.Id
 import Common.AS_Annotation
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
 import Data.Maybe
 import qualified Data.Set as Set
@@ -53,7 +54,7 @@ sigMap :: Sign -> CASL_Sign.CASLSign
 sigMap sig =
   foldr (sigMapH sig) caslSig2 symbols
   where caslSig2 = (CASL_Sign.emptySign ())
-          { CASL_Sign.sortRel = MapSet.insert sort sort MapSet.empty
+          { CASL_Sign.sortRel = Rel.insertKey sort Rel.empty
           , CASL_Sign.opMap = MapSet.insert (mkId [botTok])
               (CASL_Sign.sortToOpType sort) MapSet.empty }
         symbols = Set.toList $ getSymbols sig

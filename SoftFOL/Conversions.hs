@@ -42,7 +42,7 @@ signToSPLogicalPart s =
                                    }
                )
   where
-    sList = if Rel.null (sortRel s) && Map.null (funcMap s) &&
+    sList = if Rel.nullKeys (sortRel s) && Map.null (funcMap s) &&
                Map.null (predMap s) && Map.null (sortMap s)
               then Nothing
               else Just emptySymbolList

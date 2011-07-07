@@ -15,11 +15,13 @@ to avoid differences due to empty set values versus undefined map keys.
 -}
 
 module Common.Lib.MapSet
-  ( setLookup
+  ( rmNullSets
+  , setLookup
   , setElems
   , setMember
   , setInsert
   , setAll
+  , setDifference
   , setToMap
   , restrict
   , imageList
@@ -33,7 +35,6 @@ module Common.Lib.MapSet
   , fromList
   , toList
   , toPairList
-  , fromSet
   , keysSet
   , elems
   , insert
@@ -94,6 +95,11 @@ setUpdate f k m = let s = f $ setLookup k m in
 setAll :: (a -> Bool) -> Set.Set a -> Bool
 setAll p = List.all p . Set.toList
 
+-- | difference function for differenceWith, returns Nothing for empty sets
+setDifference :: Ord a => Set.Set a -> Set.Set a -> Maybe (Set.Set a)
+setDifference s t = let d = Set.difference s t in
+    if Set.null d then Nothing else Just d
+
 -- | convert a set into an identity map
 setToMap :: Ord a => Set.Set a -> Map.Map a a
 setToMap = Map.fromDistinctAscList . List.map (\ a -> (a, a)) . Set.toList
@@ -151,10 +157,6 @@ toList = List.map (\ (a, bs) -> (a, Set.toList bs)) . Map.toList . toMap
 toPairList :: MapSet a b -> [(a, b)]
 toPairList = concatMap (\ (c, ts) -> List.map (\ t -> (c, t)) ts) . toList
 
--- | create an identity map with singleton elements
-fromSet :: Ord a => Set.Set a -> MapSet a a
-fromSet = MapSet . Map.map Set.singleton . setToMap
-
 -- | keys for non-empty elements
 keysSet :: MapSet a b -> Set.Set a
 keysSet = Map.keysSet . toMap
@@ -188,15 +190,11 @@ delete k v m@(MapSet r) = MapSet
 
 -- | union of two maps
 union :: (Ord a, Ord b) => MapSet a b -> MapSet a b -> MapSet a b
-union (MapSet m) (MapSet n) = MapSet
-  $ Map.unionWith Set.union m n
+union (MapSet m) = MapSet . Map.unionWith Set.union m . toMap
 
 -- | difference of two maps
 difference :: (Ord a, Ord b) => MapSet a b -> MapSet a b -> MapSet a b
-difference (MapSet m) (MapSet n) = MapSet
-  $ Map.differenceWith
-    (\ s t -> let d = Set.difference s t in
-              if Set.null d then Nothing else Just d) m n
+difference (MapSet m) = MapSet . Map.differenceWith setDifference m . toMap
 
 -- | intersection of two maps
 intersection :: (Ord a, Ord b) => MapSet a b -> MapSet a b -> MapSet a b

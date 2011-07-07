@@ -80,7 +80,7 @@ generateSubsorting sig =
     in
       sig
       {
-        sortRel = Set.fold (\ x y -> Rel.insert x topSort y) inR inS
+        sortRel = Set.fold (\ x y -> Rel.insertDiffPair x topSort y) inR inS
       }
 
 transformSortDeclarations :: Bool

@@ -141,7 +141,7 @@ one element of the top-sort. -}
 transSig :: Sign () e -> Result (Sign () e, [Named (FORMULA ())])
 transSig sig = return
   $ let sortRels = Rel.transClosure . Rel.irreflex $ sortRel sig in
-    if Rel.null sortRels then (sig, []) else
+    if Rel.noPairs sortRels then (sig, []) else
     let subSortMap = generateSubSortMap sortRels (predMap sig)
         newOpMap = transOpMap sortRels subSortMap (opMap sig)
         newAssOpMap0 = transOpMap sortRels subSortMap (assocOps sig)
@@ -152,7 +152,7 @@ transSig sig = return
         newPredMap = MapSet.union (transPredMap subSortMap
                   $ predMap sig) $ newPreds subSortMap
     in (sig
-        { sortRel = MapSet.fromSet
+        { sortRel = Rel.fromKeysSet
             $ Set.fromList (map topSortPI $ Map.elems subSortMap)
               `Set.union` (sortSet sig `Set.difference` Map.keysSet subSortMap)
         , opMap = newOpMap
@@ -348,7 +348,7 @@ disjointness axioms. -}
 
 transSen :: Sign f e -> FORMULA f -> Result (FORMULA f)
 transSen sig f = let sortRels = Rel.transClosure $ sortRel sig in
-    if Rel.null sortRels then return f else do
+    if Rel.noPairs sortRels then return f else do
     let ssm = generateSubSortMap sortRels (predMap sig)
         newOpMap = transOpMap sortRels ssm (opMap sig)
     mapSen ssm newOpMap f

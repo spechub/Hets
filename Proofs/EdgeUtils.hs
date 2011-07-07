@@ -22,7 +22,6 @@ import Static.History
 import Common.Consistency
 import Common.Result
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Graph as Tree
 
 import Data.Graph.Inductive.Graph
@@ -204,7 +203,7 @@ selectProofBasis dg ledge paths = let
               $ labEdges $ dgBody dg
   rel = assert (checkEdgeIds dg == Nothing &&
                 all (\ (e, pB) -> not (Set.member e pB)) pBl) $
-        Rel.toMap $ Rel.transClosure $ MapSet.fromMap $ Map.fromList pBl
+        Rel.toMap $ Rel.transClosure $ Rel.fromMap $ Map.fromList pBl
   in selectProofBasisAux rel ledge $ provenPaths ++ unprovenPaths
 
 {- | selects the first path that does not form a proof cycle with the given

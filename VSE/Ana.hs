@@ -49,6 +49,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ExtSign
@@ -164,7 +165,7 @@ uOpMap = MapSet.fromList $ map (\ c -> (c, [constBoolType]))
 
 boolSig :: Sign f Procs
 boolSig = (emptySign emptyProcs)
-  { sortRel = MapSet.insert uBoolean uBoolean MapSet.empty
+  { sortRel = Rel.insertKey uBoolean Rel.empty
   , opMap = uOpMap }
 
 lookupProc :: Id -> Sign f Procs -> Maybe Profile

@@ -16,6 +16,7 @@ module Common.ATerm.ConvInstances () where
 
 import ATerm.Lib
 import Common.Lib.SizedList as SizedList
+import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.InjMap as InjMap
 import Data.Typeable
@@ -68,6 +69,21 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         case fromShATerm' a att0 of { (att1, a') ->
         (att1, MapSet.fromDistinctMap a') }
     u -> fromShATermError "MapSet" u
+
+_tc_RelTc :: TyCon
+_tc_RelTc = mkTyCon "Common.Lib.Rel.Rel"
+instance Typeable1 Rel.Rel where
+    typeOf1 _ = mkTyConApp _tc_RelTc []
+
+instance (Ord a, ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
+  toShATermAux att0 r = do
+        (att1, a') <- toShATerm' att0 $ Rel.toMap r
+        return $ addATerm (ShAAppl "Rel" [a'] []) att1
+  fromShATermAux ix att0 = case getShATerm ix att0 of
+    ShAAppl "Rel" [a] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        (att1, Rel.fromMap a') }
+    u -> fromShATermError "Rel" u
 
 ctTc :: TyCon
 ctTc = mkTyCon "System.Time.ClockTime"

@@ -22,6 +22,7 @@ import Common.Result
 import Common.Id
 import Common.ProofTree
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
 import Control.Monad
 
@@ -154,7 +155,7 @@ mapSign sig =
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]
       in return (emptySign ())
-             { sortRel = MapSet.fromSet predefSorts
+             { sortRel = Rel.fromKeysSet predefSorts
              , predMap = aPreds
              , opMap = tMp indiConst . cvrt $ OS.individuals sig
              }
@@ -165,7 +166,7 @@ loadDataInformation sl =
     let
         dts = Set.map (stringToId . printXSDName) $ datatype sl
     in
-     (emptySign ()) { sortRel = MapSet.fromSet dts }
+     (emptySign ()) { sortRel = Rel.fromKeysSet dts }
 
 
 predefinedSentences :: [Named CASLFORMULA]

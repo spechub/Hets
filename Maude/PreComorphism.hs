@@ -183,7 +183,7 @@ maude2casl :: MSign.Sign -> [Named MSentence.Sentence]
               -> (CSign.CASLSign, [Named CAS.CASLFORMULA])
 maude2casl msign nsens = (csign {
                             CSign.sortRel =
-                              MapSet.union (MapSet.fromSet cs) sbs',
+                              Rel.union (Rel.fromKeysSet cs) sbs',
                             CSign.opMap = cops',
                             CSign.assocOps = assoc_ops,
                             CSign.predMap = preds,
@@ -218,7 +218,7 @@ maude2casl msign nsens = (csign {
 -- | translates the Maude subsorts into CASL subsorts, and adds the subsorts
 -- for the kinds
 maudeSbs2caslSbs :: MSign.SubsortRel -> IdMap -> Rel.Rel CAS.SORT
-maudeSbs2caslSbs sbs im = MapSet.fromMap m4
+maudeSbs2caslSbs sbs im = Rel.fromMap m4
       where l = Map.toList $ Rel.toMap sbs
             l1 = [] -- map maudeSb2caslSb l
             l2 = idList2Subsorts $ Map.toList im

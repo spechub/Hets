@@ -8,7 +8,7 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portabl
 
-Taxonomy extraction for OWL2 
+Taxonomy extraction for OWL2
 -}
 
 module OWL2.Taxonomy ( onto2Tax ) where
@@ -89,7 +89,7 @@ relBuild s = case s of
         children = splitter nt
         ch = foldl Rel.union Rel.empty $ map relBuild children
         suc = map head children
-    in Rel.insert t t $ Rel.fromList (zip (repeat t) suc) `Rel.union` ch
+    in Rel.insertKey t $ Rel.fromList (zip (repeat t) suc) `Rel.union` ch
 
 -- | Invocation of Pellet
 runClassifier :: Sign -> [Named Axiom] -> IO (Result String)

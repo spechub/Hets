@@ -78,9 +78,9 @@ store_prec_annos pgr =
             in case prc of
           Lower -> if Rel.path hi li p2
             then err " < "
-            else return (Rel.insert li hi p2)
+            else return (Rel.insertPair li hi p2)
           BothDirections -> if Rel.path hi li p2 == Rel.path li hi p2
-            then return (Rel.insert hi li (Rel.insert li hi p2))
+            then return (Rel.insertPair hi li (Rel.insertPair li hi p2))
             else err " <> "
           _ -> err " > ") p1 hIds) p0 lIds
       _ -> return p0) pgr
@@ -207,7 +207,8 @@ setNumberLit = foldM $ \ m a -> case a of
   _ -> return m
 
 -- | add (and check for consistency) (possibly several) list annotations
-setListLit :: Map.Map Id (Id, Id) -> [Annotation] -> Result (Map.Map Id (Id, Id))
+setListLit :: Map.Map Id (Id, Id) -> [Annotation]
+  -> Result (Map.Map Id (Id, Id))
 setListLit =
   let showListAnno i1 (i2, i3) =
           " %list " ++ showId i1 "," ++ showId i2 "," ++ showId i3 ""

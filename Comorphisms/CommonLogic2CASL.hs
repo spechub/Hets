@@ -34,6 +34,7 @@ import Common.ProofTree
 import Common.Result
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 import qualified Common.Id as Id
 
 import qualified Data.Set as Set
@@ -146,7 +147,7 @@ mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
 -- | setting casl sign: sorts, cons, fun, nil, pred
 caslSig :: CSign.CASLSign
 caslSig = (CSign.emptySign ())
-               { CSign.sortRel = MapSet.fromSet
+               { CSign.sortRel = Rel.fromKeysSet
                    $ Set.fromList [list, individual]
                , CSign.opMap = MapSet.fromList
                          [ (cons, [CSign.mkTotOpType

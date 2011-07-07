@@ -28,6 +28,7 @@ import Common.ProofTree
 import Common.Result
 import Common.Utils (number)
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -97,7 +98,7 @@ mapSign sig = let
  (sorts,ops,preds) = genCASLSig (Set.toList $ SRel.tables sig)
                                 Set.empty MapSet.empty MapSet.empty
               in (emptySign ()){
-                  sortRel = MapSet.fromSet sorts,
+                  sortRel = Rel.fromKeysSet sorts,
                   opMap = ops,
                   predMap = preds
                  }

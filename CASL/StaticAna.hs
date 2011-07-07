@@ -340,23 +340,22 @@ getDataGenSig dl =
                let (i, ty, _) = getConsType s a
                in Component i ty) realAlts
         rel = foldr (\ (t, a) r ->
-                  foldr (`Rel.insert` t)
+                  foldr (`Rel.insertDiffPair` t)
                   r $ getAltSubsorts a)
                Rel.empty subs
         in (Set.fromList sorts, rel, Set.fromList cs)
 
 getGenSorts :: SORT_ITEM f -> GenAx
-getGenSorts si =
-    let (sorts, rel) = case si of
-           Sort_decl il _ -> (Set.fromList il, Rel.empty)
-           Subsort_decl il i _ -> (Set.fromList (i : il)
-                                  , foldr (`Rel.insert` i) Rel.empty il)
-           Subsort_defn sub _ super _ _ -> (Set.singleton sub
-                                           , Rel.insert sub super Rel.empty)
-           Iso_decl il _ -> (Set.fromList il
-                            , foldr (\ s r -> foldr (Rel.insert s) r il)
-                              Rel.empty il)
-        in (sorts, rel, Set.empty)
+getGenSorts si = let
+  (sorts, rel) = case si of
+    Sort_decl il _ -> (Set.fromList il, Rel.empty)
+    Subsort_decl il i _ ->
+      (Set.fromList (i : il), foldr (`Rel.insertDiffPair` i) Rel.empty il)
+    Subsort_defn sub _ super _ _ ->
+      (Set.singleton sub, Rel.insertDiffPair sub super Rel.empty)
+    Iso_decl il _ -> (Set.fromList il,
+      foldr (\ s r -> foldr (Rel.insertDiffPair s) r il) Rel.empty il)
+    in (sorts, rel, Set.empty)
 
 getOps :: OP_ITEM f -> Set.Set Component
 getOps oi = case oi of

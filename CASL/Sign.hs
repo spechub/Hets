@@ -109,7 +109,7 @@ data Sign f e = Sign
     } deriving Show
 
 sortSet :: Sign f e -> Set.Set SORT
-sortSet = MapSet.keysSet . sortRel
+sortSet = Rel.keysSet . sortRel
 
 -- better ignore assoc flags for equality
 instance Eq e => Eq (Sign f e) where
@@ -198,7 +198,7 @@ printSign fE s = let
        sepByCommas (map idDoc (Set.toList nsorts))) $+$
     (if Set.null esorts then empty else text (esortS ++ sS) <+>
        sepByCommas (map idDoc (Set.toList esorts))) $+$
-    (if Rel.null $ Rel.irreflex srel then empty
+    (if Rel.noPairs srel then empty
       else text (sortS ++ sS) <+>
        fsep (punctuate semi $
           map (fsep . punctuate (space <> equals) . map pretty)
@@ -360,10 +360,10 @@ addSort sk a s = do
   e <- State.get
   let r = sortRel e
       em = emptySortSet e
-      known = Set.member s $ MapSet.keysSet r
+      known = Rel.memberKey s r
   if known then addDiags [mkDiag Hint "redeclared sort" s]
     else do
-      State.put e { sortRel = Rel.insert s s r }
+      State.put e { sortRel = Rel.insertKey s r }
       addDiags $ checkNamePrefix s
   case sk of
     NonEmptySorts -> when (Set.member s em) $ do
@@ -395,8 +395,8 @@ addSubsortOrIso b super sub = do
   when b $ checkSorts [super, sub]
   e <- State.get
   let r = sortRel e
-  State.put e { sortRel = (if b then id else Rel.insert super sub)
-                $ Rel.insert sub super r }
+  State.put e { sortRel = (if b then id else Rel.insertDiffPair super sub)
+                $ Rel.insertDiffPair sub super r }
   let p = posOfId sub
       rel = " '" ++
         showDoc sub (if b then " < " else " = ") ++ showDoc super "'"
@@ -553,7 +553,7 @@ toSortGenNamed f sl = makeNamed (mkSortGenName sl) f
 addSymbToSign :: Sign e f -> Symbol -> Result (Sign e f)
 addSymbToSign sig sy =
     let addSort' cs s =
-            cs { sortRel = Rel.insert s s $ sortRel cs }
+            cs { sortRel = Rel.insertKey s $ sortRel cs }
         addToMap' m n t = MapSet.insert n t m
         addOp' cs n ot = cs { opMap = addToMap' (opMap cs) n ot }
         addPred' cs n pt = cs { predMap = addToMap' (predMap cs) n pt }

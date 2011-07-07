@@ -75,7 +75,7 @@ encodeSig sig = let
     injMap = Map.insert injName (mkInjOrProj FunArr) $ assumps sig
     projMap = Map.insert projName (mkInjOrProj PFunArr) injMap
     subtRelMap = Map.insert subtRelName subtRel projMap
-    in if Rel.null $ typeRel tm1 then sig else sig
+    in if Rel.nullKeys $ typeRel tm1 then sig else sig
            { assumps = subtRelMap
            , typeMap = Map.map ( \ ti -> ti { superTypes = Set.empty } ) tm1 }
 

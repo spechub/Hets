@@ -31,7 +31,7 @@ import HasCASL.Unify
 import Common.AnnoState
 import Common.DocUtils
 import Common.Id
-import Common.Lib.Rel (setToMap)
+import Common.Lib.MapSet (setToMap)
 import Common.Lib.State
 import Common.Parsec
 import Common.Result

@@ -21,7 +21,6 @@ import Logic.Comorphism
 import qualified Data.Set as Set
 
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.MapSet as MapSet
 import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
@@ -80,15 +79,16 @@ instance Comorphism CASL2PCFOL
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e
 encodeSig sig
-  = if Rel.null rel then sig else
-      sig {sortRel = MapSet.fromSet $ sortSet sig, opMap = projOpMap}
+  = if Rel.noPairs rel then sig else
+      sig {sortRel = Rel.fromKeysSet $ sortSet sig, opMap = projOpMap}
   where
         rel = Rel.irreflex $ sortRel sig
+        relSet = Rel.toSet rel
         total (s, s') = mkTotOpType [s] s'
         partial (s, s') = (if Rel.member s' s rel then id else mkPartial)
           $ total (s', s)
-        setinjOptype = Set.map total $ Rel.toSet rel
-        setprojOptype = Set.map partial $ Rel.toSet rel
+        setinjOptype = Set.map total relSet
+        setprojOptype = Set.map partial relSet
         injOpMap = Set.fold (\ t -> addOpTo (uniqueInjName $ toOP_TYPE t) t)
           (opMap sig) setinjOptype
         projOpMap = Set.fold (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)

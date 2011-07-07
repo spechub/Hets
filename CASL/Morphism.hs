@@ -462,7 +462,7 @@ composeM comp mor1 mor2 = do
       sMap2 = sort_map mor2
       oMap2 = op_map mor2
       pMap2 = pred_map mor2
-      sMap = composeMap (Rel.setToMap $ sortSet src) sMap1 sMap2
+      sMap = composeMap (MapSet.setToMap $ sortSet src) sMap1 sMap2
       oMap = if Map.null oMap2 then oMap1 else
                  MapSet.foldWithKey ( \ i ot ->
                        let (ni, nt) = mapOpSym sMap2 oMap2

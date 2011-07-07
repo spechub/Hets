@@ -387,6 +387,7 @@ getCoDataGenSig dl =
         sorts = map fst alts
         (realAlts, subs) = partition (isCoConsAlt . snd) alts
         sels = map (uncurry Component) $ concatMap get_sel realAlts
-        rel = foldr (\ (t, a) r -> foldr (`Rel.insert` t) r $ getCoSubsorts a)
+        rel = foldr (\ (t, a) r ->
+                     foldr (`Rel.insertDiffPair` t) r $ getCoSubsorts a)
                Rel.empty subs
         in (Set.fromList sorts, rel, Set.fromList sels)

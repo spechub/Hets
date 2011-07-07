@@ -524,7 +524,7 @@ generatedSign extEm sys sigma = let
 revealSym :: Symbol -> Sign f e -> Sign f e
 revealSym sy sigma1 = let
   n = symName sy
-  insSort s = Rel.insert s s
+  insSort = Rel.insertKey
   in case symbType sy of
     SortAsItemType ->      -- 4.1.1.
       sigma1 {sortRel = insSort n $ sortRel sigma1}

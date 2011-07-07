@@ -116,7 +116,7 @@ signExtension sigma sigmaC =
               CSign.OpType oK (map kindId oArgs) (kindId oRes) -}
  in sigmaC
          {CSign.sortRel = Rel.union
-             (MapSet.fromSet $ Set.union sorts $ Set.map kindId sorts)
+             (Rel.fromKeysSet $ Set.union sorts $ Set.map kindId sorts)
              $ Rel.union subsorts $ Rel.union
                               (Rel.map kindId subsorts)
                               $ Rel.fromSet

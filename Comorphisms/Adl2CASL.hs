@@ -102,7 +102,7 @@ relTypeToPred (RelType c1 c2) = PredType [conceptToId c1, conceptToId c2]
 mapSign :: A.Sign -> CASLSign
 mapSign s = (C.emptySign ())
   { sortRel = Rel.transClosure $ Rel.union
-       (MapSet.fromSet $ Set.fold (\ sy -> case sy of
+       (Rel.fromKeysSet $ Set.fold (\ sy -> case sy of
                  Con (C i) -> Set.insert $ simpleIdToId i
                  _ -> id) Set.empty $ A.symOf s)
        $ Rel.map conceptToId $ isas s

@@ -29,7 +29,7 @@ import Common.Doc
 import Common.Id
 import Common.Result
 import Common.Utils (composeMap)
-import Common.Lib.Rel (setToMap)
+import Common.Lib.MapSet (setToMap)
 
 import Control.Monad
 

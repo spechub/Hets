@@ -32,7 +32,7 @@ import Data.Maybe
 typeRel :: TypeMap -> Rel.Rel Id
 typeRel = Rel.transReduce . Rel.irreflex . Rel.transClosure
   . Map.foldWithKey ( \ i ti r ->
-    Set.fold (Rel.insert i) r $ superTypes ti) Rel.empty
+    Set.fold (Rel.insertPair i) r $ superTypes ti) Rel.empty
 
 getRawKind :: TypeMap -> Id -> RawKind
 getRawKind tm i = typeKind $
@@ -71,7 +71,8 @@ subtRel = Set.singleton OpInfo
 subtAxioms :: TypeMap -> [Named Sentence]
 subtAxioms tm =
   let tr = typeRel tm in
-  if Rel.null tr then [] else subtReflex : subtTrans : subtInjProj : injTrans
+  if Rel.nullKeys tr then [] else
+  subtReflex : subtTrans : subtInjProj : injTrans
   : map (subtAx tm) (Rel.toList tr)
 
 nr :: Range

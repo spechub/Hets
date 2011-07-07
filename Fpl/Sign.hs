@@ -20,6 +20,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Keywords
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
@@ -84,7 +85,7 @@ addConsts :: SignExt -> SignExt
 addConsts s = s { constr = addBools $ constr s }
 
 addBuiltins :: FplSign -> FplSign
-addBuiltins s = s { sortRel = MapSet.insert boolSort boolSort $ sortRel s
+addBuiltins s = s { sortRel = Rel.insertKey boolSort $ sortRel s
                   , opMap = addBools $ opMap s
                   , extendedInfo = addConsts $ extendedInfo s }
 

@@ -24,6 +24,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
 -- CASL
 import CASL.Logic_CASL
@@ -145,7 +146,7 @@ transSig sign =
                         mp rels
        partMME = MME {caslSign =
             (emptySign ())
-               { sortRel = MapSet.insert fws fws $ sortRel sign
+               { sortRel = Rel.insertKey fws $ sortRel sign
                , opMap = addOpMapSet flexOps' rigOps'
                , assocOps = diffOpMapSet (assocOps sign) flexibleOps
                , predMap = addMapSet flexPreds' rigPreds'},

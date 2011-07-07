@@ -130,8 +130,8 @@ computeRel gr =
                      let syms = Set.toList $ getSymbols $ source m
                          in foldl (\ r2 s ->
                                    let t = mapSymbol m s
-                                   in Rel.insert (i, s) (j, t)
-                                          $ Rel.insert (j, t) (i, s) r2
+                                   in Rel.insertPair (i, s) (j, t)
+                                          $ Rel.insertPair (j, t) (i, s) r2
                                   )
                                   r1
                                   syms

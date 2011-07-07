@@ -32,20 +32,18 @@ import CASL.Sign
 import Control.Exception
 
 predefinedSign :: Sign DL_FORMULA CASL_DLSign
-predefinedSign = toCASL_DL_Sign $
-   assert (Set.member topSortD $ sortSet dataSig_CASL) $
-   foldl (addSig (\ _ _ -> ())) (emptySign ())
-           [dataSig_CASL, predefined_symbols]
+predefinedSign = toCASL_DL_Sign
+  . assert (Set.member topSortD $ sortSet dataSig_CASL)
+  $ foldl (addSig (\ _ _ -> ())) (emptySign ())
+        [dataSig_CASL, predefined_symbols]
 
 toCASL_DL_Sign :: Sign (FORMULA ()) ()
                -> Sign DL_FORMULA CASL_DLSign
-toCASL_DL_Sign sig =
-    (emptySign emptyCASL_DLSign)
+toCASL_DL_Sign sig = (emptySign emptyCASL_DLSign)
       { sortRel = sortRel sig
       , opMap = opMap sig
       , assocOps = assocOps sig
-      , predMap = predMap sig
-      }
+      , predMap = predMap sig }
 
 topSort :: SORT
 topSort = stringToId "Thing"
@@ -54,12 +52,10 @@ topSortD :: SORT
 topSortD = stringToId "DATA"
 
 predefined_symbols :: Sign (FORMULA ()) ()
-predefined_symbols =
-    ((emptySign ()) { sortRel = Rel.insert topSort topSort Rel.empty
-                   , predMap =
-                       MapSet.insert (stringToId "Nothing")
-                         (PredType [topSort]) MapSet.empty
-                   })
+predefined_symbols = (emptySign ())
+  { sortRel = Rel.insertKey topSort Rel.empty
+  , predMap = MapSet.insert (stringToId "Nothing")
+              (PredType [topSort]) MapSet.empty }
 
 dataSig_CASL :: Sign (FORMULA ()) ()
 dataSig_CASL =

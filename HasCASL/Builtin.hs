@@ -153,7 +153,7 @@ addBuiltins ga =
         ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
         ops2 = map ( \ i -> (i, applId)) opIs
         newPrecs = foldl (\ p (a, b) -> if Rel.path b a p then p else
-                         Rel.insert a b p) precs $
+                         Rel.insertDiffPair a b p) precs $
                    concat [logs, rels1, rels1b, rels2, ops1, ops2]
     in case addGlobalAnnos ga { assoc_annos = newAss
           , prec_annos = Rel.transClosure newPrecs } $

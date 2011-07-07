@@ -36,7 +36,7 @@ import Common.DocUtils
 import Common.Doc
 import Common.Result
 import Common.Lib.State (execState)
-import Common.Lib.Rel (setToMap)
+import Common.Lib.MapSet (setToMap)
 
 import Control.Monad
 import Data.Maybe

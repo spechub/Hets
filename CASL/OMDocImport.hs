@@ -196,7 +196,7 @@ addMaybeToSortRel e r (TCSymbol n (OMA [sof, oms1, oms2]) Axiom _) =
           | sof == const_subsortof ->
               let s1 = lookupSortOMS "addMaybeToSortRel: s1" e oms1
                   s2 = lookupSortOMS "addMaybeToSortRel: s2" e oms2
-              in return $ Rel.insert s1 s2 r
+              in return $ Rel.insertDiffPair s1 s2 r
           | otherwise ->
               do
                 warning () ("Use of subsortof in a non ST Statement: " ++ n)
