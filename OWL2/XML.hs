@@ -379,13 +379,14 @@ getIndividualAssertion :: Element -> Axiom
 getIndividualAssertion e = 
    let as = concatMap getAllAnnos $ elChildren e
        ind = map getIRI $ filterChL individualList e
+       l = map (\ x -> ([], x)) ind
    in case getName e of
     "SameIndividual" ->
         PlainAxiom (Misc as) $ ListFrameBit (Just (SDRelation Same))
-          $ IndividualSameOrDifferent $ map (\ x -> ([], x)) ind
+          $ IndividualSameOrDifferent l
     "DifferentIndividuals" ->
         PlainAxiom (Misc as) $ ListFrameBit (Just (SDRelation Different))
-          $ IndividualSameOrDifferent $ map (\ x -> ([], x)) ind
+          $ IndividualSameOrDifferent l
     _ -> error "not individual assertion"
 
 getClassAssertion :: Element -> Axiom
