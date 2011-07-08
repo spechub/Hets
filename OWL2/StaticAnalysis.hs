@@ -58,7 +58,8 @@ modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
 modEntity f (Entity ty u) = do
   s <- get
   let chg = f u
-  put $ case ty of
+  if elem u $ map (splitIRI . mkQName) datatypeKeys then put s
+   else put $ case ty of
     Datatype -> s { datatypes = chg $ datatypes s }
     Class -> s { concepts = chg $ concepts s }
     ObjectProperty -> s { objectProperties = chg $ objectProperties s }
