@@ -82,11 +82,11 @@ datatypeBit = do
 classFrame :: CharParser st Frame
 classFrame = do
         pkeyword classC
-        iri <- uriP
+        iri <- description
         plain <- many classFrameBit
         -- ignore Individuals: ... !
         optional $ pkeyword individualsC >> sepByComma individualUri
-        return $ Frame (SimpleEntity $ Entity Class iri) plain
+        return $ Frame (ClassEntity iri) plain
 
 classFrameBit :: CharParser st FrameBit
 classFrameBit = do
@@ -152,9 +152,9 @@ objectFrameBit = do
 objectPropertyFrame :: CharParser st Frame
 objectPropertyFrame = do
   pkeyword objectPropertyC
-  ouri <- uriP
+  ouri <- objectPropertyExpr
   as <- many objectFrameBit
-  return $ Frame (SimpleEntity $ Entity ObjectProperty ouri) as
+  return $ Frame (ObjectEntity ouri) as
 
 dataPropExprAList :: CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP

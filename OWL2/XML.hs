@@ -31,21 +31,21 @@ import qualified Data.Map as Map
 splitIRI :: IRI -> IRI
 splitIRI qn =
   let QN {localPart = s} = qn 
-  in let r = delete '<' $ delete '>' $ delete '&' s 
+  in let r = delete '<' $ delete '>' $ delete '&' $ delete '#' s 
      in
        if elem ':' r then
           let p = takeWhile (/= ':') r
               lp = drop (length p + 1) r
           in nullQName {namePrefix = p, localPart = lp, isFullIri = 
                 if r == s then False else True}
-        else qn
+        else qn {localPart = r}
 
 getName :: Element -> String
 getName (Element {elName = QName {qName = n, qURI = Just q}}) =
       if q == "http://www.w3.org/2002/07/owl#" then n else ""
 
 getIRI :: Element -> OWL2.AS.QName
-getIRI (Element {elAttribs = a}) =
+getIRI (Element {elName = QName {}, elAttribs = a}) =
         let Attr {attrVal = iri} = head a
         in splitIRI $ mkQName iri
 
@@ -53,7 +53,7 @@ get2IRIs :: Element -> (String, IRI)
 get2IRIs (Element {elAttribs = ls}) =
         let Attr {attrVal = pref} = head ls
             Attr {attrVal = pmap} = last ls
-        in (pref, mkQName pmap)
+        in (pref, splitIRI $ mkQName pmap)
 
 getInt :: Element -> Int
 getInt (Element {elAttribs = a}) =
@@ -150,13 +150,13 @@ getLiteral e = let lit = fromJust $ filterElementName (isSmth "Literal") e
                       Just lang -> Literal lf (Untyped $ Just lang)
                       Nothing -> if isPlainLiteral dt then
                                       Literal lf (Untyped Nothing)
-                                  else Literal lf (Typed $ mkQName dt)
+                                  else Literal lf (Typed $ splitIRI $ mkQName dt)
 
 getValue :: Element -> AnnotationValue
 getValue e = let lit = filterElementName (isSmth "Literal") e
                  val = strContent e
              in case lit of
-                  Nothing -> AnnValue $ mkQName val
+                  Nothing -> AnnValue $ splitIRI $ mkQName val
                   Just _ -> AnnValLit $ getLiteral e
 
 getAnnotation :: Element -> Annotation
@@ -290,9 +290,9 @@ getClassAxiom e =
     "DisjointClasses" -> PlainAxiom (Misc as) $ ListFrameBit
       (Just (EDRelation Disjoint)) $ ExpressionBit
           $ map (\ x -> ([], x)) cel
-    "DisjointUnion" -> PlainAxiom (SimpleEntity $ getEntity $ head l)
+    "DisjointUnion" -> PlainAxiom (ClassEntity $ getClassExpression $ head l)
         $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression $ tail l
-    "DatatypeDefinition" -> PlainAxiom (SimpleEntity $ getEntity $ head drl)
+    "DatatypeDefinition" -> PlainAxiom (ClassEntity $ getClassExpression $ head drl)
         $ AnnFrameBit as $ DatatypeBit $ getDataRange $ last drl
     _ -> hasKey e
 
@@ -454,7 +454,7 @@ getAnnoAxiom e =
        ap = getIRI $ filterC "AnnotationProperty" e
    in case getName e of
     "AnnotationAssertion" ->
-       let s = mkQName $ strContent $ filterC "IRI" e
+       let s = splitIRI $ mkQName $ strContent $ filterC "IRI" e
            v = getValue $ filterC "Literal" e
        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ AnnFrameBit [Annotation as s v] AnnotationFrameBit
@@ -463,19 +463,19 @@ getAnnoAxiom e =
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty $ head apl)
             $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, last apl)]
     "AnnotationPropertyDomain" ->
-        let iri = mkQName $ strContent $ filterC "IRI" e
+        let iri = splitIRI $ mkQName $ strContent $ filterC "IRI" e
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ADomain))
                       $ AnnotationBit [(as, iri)]
     "AnnotationPropertyRange" ->
-        let iri = mkQName $ strContent $ filterC "IRI" e
+        let iri = splitIRI $ mkQName $ strContent $ filterC "IRI" e
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ARange))
                       $ AnnotationBit [(as, iri)]
     _ -> getClassAxiom e
 
 getImports :: Element -> [ImportIRI]
-getImports e = map (mkQName . strContent) $ filterCh "Import" e
+getImports e = map (splitIRI . mkQName . strContent) $ filterCh "Import" e
 
 getPrefixMap :: Element -> PrefixMap
 getPrefixMap e =
@@ -483,7 +483,7 @@ getPrefixMap e =
     in Map.fromList $ map (\ (p, m) -> (p, showQU m)) prl
 
 getOntologyIRI :: Element -> OntologyIRI
-getOntologyIRI e = mkQName $ fromJust $ findAttrBy (isSmth "ontologyIRI") e
+getOntologyIRI e = splitIRI $ mkQName $ fromJust $ findAttrBy (isSmth "ontologyIRI") e
 
 getOntAnnos :: Element -> [Annotations]
 getOntAnnos e = map getAllAnnos $ filterCh "Annotation" e
