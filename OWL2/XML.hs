@@ -30,18 +30,18 @@ import qualified Data.Map as Map
 
 splitIRI :: IRI -> IRI
 splitIRI qn =
-  let QN {localPart = s} = qn 
-  in let r = delete '<' $ delete '>' $ delete '&' $ delete '#' s 
+  let QN {localPart = s} = qn
+  in let r = delete '<' $ delete '>' $ delete '&' $ delete '#' s
      in
        if elem ':' r then
           let p = takeWhile (/= ':') r
               lp = drop (length p + 1) r
-          in nullQName {namePrefix = p, localPart = lp, isFullIri = 
+          in nullQName {namePrefix = p, localPart = lp, isFullIri =
                 if r == s then False else True}
         else qn {localPart = r}
 
 getName :: Element -> String
-getName e = case e of 
+getName e = case e of
   Element {elName = QName {qName = n, qURI = Just q}} ->
       if q == "http://www.w3.org/2002/07/owl#" then n else ""
   _ -> ""
@@ -275,14 +275,12 @@ getClassAxiom :: Element -> Axiom
 getClassAxiom e =
    let ch = elChildren e
        as = concatMap getAllAnnos ch
-       l = filterChL classExpressionList e
-       drl = filterChL dataRangeList e
+       l@(hd : tl) = filterChL classExpressionList e
+       drl@[dhd, dtl] = filterChL dataRangeList e
        cel = map getClassExpression l
    in case getName e of
     "SubClassOf" ->
-       let ces = drop (length ch - 2) ch
-           sub = head ces
-           super = last ces
+       let [sub, super] = drop (length ch - 2) ch
        in PlainAxiom (ClassEntity $ getClassExpression sub)
         $ ListFrameBit (Just SubClass) $ ExpressionBit
                       [(as, getClassExpression super)]
@@ -292,10 +290,10 @@ getClassAxiom e =
     "DisjointClasses" -> PlainAxiom (Misc as) $ ListFrameBit
       (Just (EDRelation Disjoint)) $ ExpressionBit
           $ map (\ x -> ([], x)) cel
-    "DisjointUnion" -> PlainAxiom (ClassEntity $ getClassExpression $ head l)
-        $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression $ tail l
-    "DatatypeDefinition" -> PlainAxiom (ClassEntity $ getClassExpression $ head drl)
-        $ AnnFrameBit as $ DatatypeBit $ getDataRange $ last drl
+    "DisjointUnion" -> PlainAxiom (ClassEntity $ getClassExpression hd)
+        $ AnnFrameBit as $ ClassDisjointUnion $ map getClassExpression tl
+    "DatatypeDefinition" -> PlainAxiom (ClassEntity $ getClassExpression dhd)
+        $ AnnFrameBit as $ DatatypeBit $ getDataRange dtl
     _ -> hasKey e
 
 hasKey :: Element -> Axiom
