@@ -36,7 +36,7 @@ import System.Exit
 import System.FilePath
 import System.Process
 
-import Text.XML.Light (parseXMLDoc)
+import Text.XML.Light (parseXML, onlyElems)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -50,17 +50,15 @@ parseOWL filename = do
        (exitCode, result, errStr) <- readProcessWithExitCode "java"
          ["-jar", toolPath </> jar, absfile, "xml"] ""
        case exitCode of
-         ExitSuccess -> parseProc filename result
+         ExitSuccess -> return $ parseProc filename result
          _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar ++ " not found"
 
 
-parseProc :: FilePath -> String -> IO LIB_DEFN
-parseProc filename str = do
-    case parseXMLDoc str of
-      Just el -> return $  convertToLibDefN filename [xmlBasicSpec el]
-      Nothing -> fail "OWL2.parseProc"
+parseProc :: FilePath -> String -> LIB_DEFN
+parseProc filename str = convertToLibDefN filename
+        $ map xmlBasicSpec $ onlyElems $ parseXML str
 
 cnvimport :: QName -> Annoted SPEC
 cnvimport i = emptyAnno $ Spec_inst (cnvtoSimpleId i) [] nullRange
