@@ -36,7 +36,7 @@ module Common.Lib.Rel
     , noPairs, insertKey, deleteKey, memberKey, keysSet
     , fromKeysSet
     , union, intersection, isSubrelOf, difference, path
-    , delete, succs, predecessors, irreflex, reflexive, sccOfClosure
+    , delete, succs, predecessors, irreflex, sccOfClosure
     , transClosure, fromList, toList, toPrecMap
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
@@ -162,10 +162,6 @@ transpose (Rel m) =
 -- | make relation irreflexive and also delete isolated nodes!
 irreflex :: Ord a => Rel a -> Rel a
 irreflex = Rel . MapSet.rmNullSets . Map.mapWithKey Set.delete . toMap
-
--- | make relation reflexive
-reflexive :: Ord a => Rel a -> Rel a
-reflexive = Rel . Map.mapWithKey Set.insert . toMap
 
 -- | compute strongly connected components for a transitively closed relation
 sccOfClosure :: Ord a => Rel a -> [Set.Set a]

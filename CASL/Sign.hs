@@ -287,7 +287,7 @@ addSig ad a b = let s = sortSet a `Set.union` sortSet b in
   , annoMap = MapSet.union (annoMap a) $ annoMap b
   , extendedInfo = ad (extendedInfo a) $ extendedInfo b }
 
-uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
+uniteCASLSign :: CASLSign -> CASLSign -> CASLSign
 uniteCASLSign = addSig (\ _ _ -> ())
 
 interRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a

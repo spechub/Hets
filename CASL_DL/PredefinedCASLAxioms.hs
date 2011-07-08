@@ -37,118 +37,126 @@ thing = stringToId "Thing"
 n :: Range
 n = nullRange
 
+nothing :: Id
+nothing = stringToId "Nothing"
+
+dataId :: Id
+dataId = stringToId "DATA"
+
+integer :: Id
+integer = stringToId "integer"
+
+posInt :: Id
+posInt = stringToId "positiveInteger"
+
+negInt :: Id
+negInt = stringToId "negativeInteger"
+
+nonPosInt :: Id
+nonPosInt = stringToId "nonPositiveInteger"
+
+nonNegInt :: Id
+nonNegInt = stringToId "nonNegativeInteger"
+
 -- | OWL bottom
 noThing :: PRED_SYMB
-noThing =
-     (Qual_pred_name (stringToId "Nothing")
-                         (Pred_type [thing] n) n)
+noThing = Qual_pred_name nothing
+                         (Pred_type [thing] n) n
 
-predefSign :: Sign () ()
-predefSign
-  = (emptySign ()){ sortRel = Rel.transClosure $ Rel.reflexive $
-                     Rel.fromList
+predefSign :: CASLSign
+predefSign = (emptySign ())
+                 { sortRel = Rel.insertKey (stringToId "Char")
+                      $ Rel.insertKey dataId
+                      $ Rel.transClosure $ Rel.fromList
                        [
-                        (Id [Token "DATA" n] [] n,
-                         Id [Token "DATA" n] [] n),
-                        (Id [Token "Char" n] [] n,
-                         Id [Token "Char" n] [] n),
-                        (Id [Token "boolean" n] [] n,
-                         Id [Token "DATA" n] [] n),
-                        (Id [Token "integer" n] [] n,
-                         Id [Token "DATA" n] [] n),
-                        (Id [Token "negativeInteger" n] [] n,
-                         Id [Token "DATA" n] [] n),
-                        (Id [Token "negativeInteger" n] [] n,
-                         Id [Token "integer" n] [] n),
-                        (Id [Token "negativeInteger" n] [] n,
-                         Id [Token "nonPositiveInteger" n] [] n),
-                        (Id [Token "nonNegativeInteger" n] [] n,
-                         Id [Token "DATA" n] [] n),
-                        (Id [Token "nonNegativeInteger" n] [] n,
-                         Id [Token "integer" n] [] n),
-                        (Id [Token "nonPositiveInteger" n] [] n,
-                         Id [Token "DATA" n] [] n),
-                        (Id [Token "nonPositiveInteger" n] [] n,
-                         Id [Token "integer" n] [] n),
-                        (Id [Token "positiveInteger" n] [] n,
-                         Id [Token "DATA" n] [] n),
-                        (Id [Token "positiveInteger" n] [] n,
-                         Id [Token "integer" n] [] n),
-                        (Id [Token "positiveInteger" n] [] n,
-                         Id [Token "nonNegativeInteger" n] [] n),
-                        (Id [Token "positiveInteger" n] [] n,
-                         Id [Token "DATA" n] [] n),
-                        (Id [Token "positiveInteger" n] [] n,
-                         Id [Token "integer" n] [] n),
-                        (Id [Token "positiveInteger" n] [] n,
-                         Id [Token "nonNegativeInteger" n] [] n),
-                        (Id [Token "string" n] [] n,
-                         Id [Token "DATA" n] [] n)],
-                   predMap =
+                        (stringToId "boolean",
+                         dataId),
+                        (integer,
+                         dataId),
+                        (negInt,
+                         dataId),
+                        (negInt,
+                         integer),
+                        (negInt,
+                         nonPosInt),
+                        (nonNegInt,
+                         dataId),
+                        (nonNegInt,
+                         integer),
+                        (nonPosInt,
+                         dataId),
+                        (nonPosInt,
+                         integer),
+                        (posInt,
+                         dataId),
+                        (posInt,
+                         integer),
+                        (posInt,
+                         nonNegInt),
+                        (posInt,
+                         dataId),
+                        (posInt,
+                         integer),
+                        (posInt,
+                         nonNegInt),
+                        (stringToId "string",
+                         dataId)]
+                 , predMap =
                      MapSet.fromList
-                       [(Id [Token "Nothing" n] [] n,
-                           [PredType [Id [Token "Thing" n] [] n]]),
-                        (Id
-                           [Token "__" n, Token "<" n, Token "__" n]
-                           []
-                           n,
+                       [(nothing,
+                           [PredType [thing]]),
+                        (mkInfix "<",
                            [PredType
-                              [Id [Token "integer" n] [] n,
-                               Id [Token "integer" n] [] n],
+                              [integer,
+                               integer],
                             PredType
-                              [Id [Token "nonNegativeInteger" n] [] n,
-                               Id [Token "nonNegativeInteger" n] [] n]]),
-                        (Id
-                           [Token "__" n, Token "<=" n, Token "__" n]
-                           []
-                           n,
+                              [nonNegInt,
+                               nonNegInt]]),
+                        (mkInfix "<=",
                            [PredType
-                              [Id [Token "integer" n] [] n,
-                               Id [Token "integer" n] [] n],
+                              [integer,
+                               integer],
                             PredType
-                              [Id [Token "nonNegativeInteger" n] [] n,
-                               Id [Token "nonNegativeInteger" n] [] n]]),
-                        (Id
-                           [Token "__" n, Token ">" n, Token "__" n]
-                           []
-                           n,
+                              [nonNegInt,
+                               nonNegInt]]),
+                        (mkInfix ">",
                            [PredType
-                              [Id [Token "integer" n] [] n,
-                               Id [Token "integer" n] [] n],
+                              [integer,
+                               integer],
                             PredType
-                              [Id [Token "nonNegativeInteger" n] [] n,
-                               Id [Token "nonNegativeInteger" n] [] n]]),
-                        (Id
-                           [Token "__" n, Token ">=" n, Token "__" n]
-                           []
-                           n,
+                              [nonNegInt,
+                               nonNegInt]]),
+                        (mkInfix ">=",
                            [PredType
-                              [Id [Token "integer" n] [] n,
-                               Id [Token "integer" n] [] n],
+                              [integer,
+                               integer],
                             PredType
-                              [Id [Token "nonNegativeInteger" n] [] n,
-                               Id [Token "nonNegativeInteger" n] [] n]]),
-                        (Id [Token "even" n] [] n,
-                           [PredType [Id [Token "integer" n] [] n],
+                              [nonNegInt,
+                               nonNegInt]]),
+                        (stringToId "even",
+                           [PredType [integer],
                             PredType
-                              [Id [Token "nonNegativeInteger" n] [] n]]),
-                        (Id [Token "odd" n] [] n,
-                           [PredType [Id [Token "integer" n] [] n],
+                              [nonNegInt]]),
+                        (stringToId "odd",
+                           [PredType [integer],
                             PredType
-                              [Id [Token "nonNegativeInteger" n] [] n]])]}
+                              [nonNegInt]])]}
 
-predefinedAxioms :: [SenAttr (FORMULA ()) [Char]]
-predefinedAxioms =
+predefinedAxioms :: [Named (FORMULA ())]
+predefinedAxioms = let
+  v1 = mkVarDecl (mk_Name 1) thing
+  t1 = toQualVar v1
+  in
     [
      makeNamed "nothing in Nothing" $
-     Quantification Universal
-     [Var_decl [mk_Name 1] thing n]
+     mkForall
+     [v1]
      (
       Negation
       (
        Predication
        noThing
-       [Qual_var (mk_Name 1) thing n]
+       [t1]
        n
       )
       n
@@ -156,13 +164,13 @@ predefinedAxioms =
      n
     ,
      makeNamed "thing in Thing" $
-     Quantification Universal
-     [Var_decl [mk_Name 1] thing n]
+     mkForall
+     [v1]
      (
        Predication
-       (Qual_pred_name (stringToId "Thing")
+       (Qual_pred_name thing
                            (Pred_type [thing] n) n)
-       [Qual_var (mk_Name 1) thing n]
+       [t1]
        n
      )
      n
@@ -170,9 +178,9 @@ predefinedAxioms =
 
 -- | Build a name
 mk_Name :: Int -> Token
-mk_Name i = mkSimpleId $ hetsPrefix ++  mk_Name_H i
+mk_Name i = mkSimpleId $ hetsPrefix ++ mk_Name_H i
     where
       mk_Name_H k =
           case k of
             0 -> ""
-            j ->  (mk_Name_H (j `div` 26)) ++ [(chr ((j `mod` 26) + 96))]
+            j -> mk_Name_H (j `div` 26) ++ [chr (j `mod` 26 + 96)]
