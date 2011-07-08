@@ -30,7 +30,7 @@ may destroy the closedness property of a relation.
 -}
 
 module Common.Lib.Rel
-    ( Rel, empty, nullKeys
+    ( Rel, empty, nullKeys, rmNullSets
     , insertPair, insertDiffPair
     , member, toMap, map
     , noPairs, insertKey, deleteKey, memberKey, keysSet
@@ -76,9 +76,12 @@ nullKeys (Rel m) = Map.null m
 keysSet :: Rel a -> Set.Set a
 keysSet = Map.keysSet . toMap
 
+rmNullSets :: Ord a => Rel a -> Rel a
+rmNullSets = Rel . MapSet.rmNullSets . toMap
+
 -- | test for 'empty'
 noPairs :: Ord a => Rel a -> Bool
-noPairs = Map.null . MapSet.rmNullSets . toMap
+noPairs = nullKeys . rmNullSets
 
 -- | difference of two relations
 difference :: Ord a => Rel a -> Rel a -> Rel a
@@ -159,9 +162,9 @@ transpose (Rel m) =
   in union (Rel isos)
      . Rel . MapSet.toMap . MapSet.transpose $ MapSet.fromDistinctMap rest
 
--- | make relation irreflexive and also delete isolated nodes!
+-- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
-irreflex = Rel . MapSet.rmNullSets . Map.mapWithKey Set.delete . toMap
+irreflex = Rel . Map.mapWithKey Set.delete . toMap
 
 -- | compute strongly connected components for a transitively closed relation
 sccOfClosure :: Ord a => Rel a -> [Set.Set a]

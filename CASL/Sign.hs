@@ -192,7 +192,7 @@ printSign fE s = let
                idDoc supersort
   esorts = emptySortSet s
   srel = sortRel s
-  cs = Rel.sccOfClosure $ Rel.transClosure srel
+  cs = Rel.sccOfClosure srel
   nsorts = Set.difference (sortSet s) esorts in
     (if Set.null nsorts then empty else text (sortS ++ sS) <+>
        sepByCommas (map idDoc (Set.toList nsorts))) $+$
@@ -204,7 +204,8 @@ printSign fE s = let
           map (fsep . punctuate (space <> equals) . map pretty)
            (filter ((> 1) . length) $ map Set.toList cs)
          ++ map printRel (Map.toList
-         $ Rel.toMap $ Rel.transpose $ Rel.transReduce $ Rel.irreflex
+         $ Rel.toMap
+         $ Rel.rmNullSets $ Rel.transpose $ Rel.transReduce $ Rel.irreflex
          $ Rel.collaps cs srel)))
     $+$ printSetMap (text opS) empty (MapSet.toMap $ opMap s)
     $+$ printSetMap (text predS) space (MapSet.toMap $ predMap s)

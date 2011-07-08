@@ -107,7 +107,7 @@ prpEq relFun1 relFun2 rel = let clos = transClosure rel in
                 (relFun1 rel == relFun2 rel)
 
 prop_TransposeTranspose = prpEq id (transpose . transpose)
-prop_IrreflexTranspose = prpEq (irreflex . transpose) (transpose . irreflex)
+-- prop_IrreflexTranspose = prpEq (irreflex . transpose) (transpose . irreflex)
 prop_TransClosureTranspose =
     prpEq (transClosure . transpose) (transpose . transClosure)
 prop_TransClosureIntransKernel = prpEq transClosure

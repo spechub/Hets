@@ -513,7 +513,8 @@ inducedSignAux f sm om pm em src =
   let ms = mapSort sm
       msorts = Set.map ms
   in (emptySign $ f sm om pm em src)
-  { sortRel = Rel.map ms $ sortRel src
+  { sortRel = Rel.transClosure . Rel.irreflex . Rel.map ms $ sortRel src
+    -- sorts may fall together and need to be removed as trivial relation
   , emptySortSet = msorts $ emptySortSet src
   , opMap = inducedOpMap sm om $ opMap src
   , assocOps = inducedOpMap sm om $ assocOps src

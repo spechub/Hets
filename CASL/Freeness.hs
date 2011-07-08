@@ -506,8 +506,8 @@ freeCons (sorts, rel, ops) = do
                       (toOP_TYPE $ compType c) $ posOfId iden) $ Set.toList ops
         injSyms = map ( \ (s, t) -> let p = posOfId s in
                         Qual_op_name (mkUniqueInjName s t)
-                         (Op_type Total [s] t p) p) $ Rel.toList
-                  $ Rel.irreflex rel
+                         (Op_type Total [s] t p) p)
+                  $ Rel.toList $ Rel.irreflex rel
         allSyms = opSyms ++ injSyms
         resType _ (Op_name _) = False
         resType s (Qual_op_name _ t _) = res_OP_TYPE t == s

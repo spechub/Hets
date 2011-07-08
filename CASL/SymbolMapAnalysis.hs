@@ -138,7 +138,7 @@ inducedFromMorphismExt extInd extEm rmap sigma = do
               (return Map.empty) (MapSet.toMap $ predMap sigma)
   em <- extEm rmap $ extendedInfo sigma
   -- return assembled morphism
-  return (embedMorphism em sigma $ closeSortRel
+  return (embedMorphism em sigma
           $ inducedSignAux extInd sort_Map op_Map pred_Map em sigma)
     { sort_map = sort_Map
     , op_map = op_Map
