@@ -325,11 +325,19 @@ checkHasKey s k = case k of
     checkHasKeyAll s k2
   _ -> return k
 
+checkExtended :: Sign -> Extended -> Result Extended
+checkExtended s e = case e of
+    ClassEntity ce -> do 
+        ne <- checkClassExpression s ce
+        return $ ClassEntity ne
+    _ -> return e
+
 -- | checks a frame and applies desired changes
 checkFrame :: Sign -> Frame -> Result Frame
 checkFrame s (Frame eith fbl) = do
+      ne <- checkExtended s eith
       nl <- mapM (checkBit s) fbl
-      return $ Frame eith nl
+      return $ Frame ne nl
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]
 correctFrames s = mapM (checkFrame s)
@@ -337,6 +345,10 @@ correctFrames s = mapM (checkFrame s)
 getEntityFromFrame :: Frame -> State Sign ()
 getEntityFromFrame f = case f of
     Frame (SimpleEntity e) _ -> addEntity e
+    Frame (ClassEntity (Expression e)) _ ->
+        addEntity $ Entity Class e
+    Frame (ObjectEntity (ObjectProp e)) _ ->
+        addEntity $ Entity ObjectProperty e
     _ -> return ()
 
 createSign :: [Frame] -> State Sign ()
