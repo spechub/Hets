@@ -36,7 +36,7 @@ import System.Exit
 import System.FilePath
 import System.Process
 
-import Text.XML.Light (parseXML, onlyElems)
+import Text.XML.Light (parseXML, onlyElems, filterElementsName)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -58,7 +58,8 @@ parseOWL filename = do
 
 parseProc :: FilePath -> String -> LIB_DEFN
 parseProc filename str = convertToLibDefN filename
-        $ map xmlBasicSpec $ onlyElems $ parseXML str
+        $ map xmlBasicSpec $ concatMap (filterElementsName $ isSmth "Ontology")
+        $ onlyElems $ parseXML str
 
 cnvimport :: QName -> Annoted SPEC
 cnvimport i = emptyAnno $ Spec_inst (cnvtoSimpleId i) [] nullRange
