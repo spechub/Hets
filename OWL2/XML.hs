@@ -41,8 +41,10 @@ splitIRI qn =
         else qn {localPart = r}
 
 getName :: Element -> String
-getName (Element {elName = QName {qName = n, qURI = Just q}}) =
+getName e = case e of 
+  Element {elName = QName {qName = n, qURI = Just q}} ->
       if q == "http://www.w3.org/2002/07/owl#" then n else ""
+  _ -> ""
 
 getIRI :: Element -> OWL2.AS.QName
 getIRI (Element {elName = QName {}, elAttribs = a}) =
