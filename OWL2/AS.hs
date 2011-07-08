@@ -56,6 +56,9 @@ dummyQName = QN "http" "//www.dfki.de/sks/hets/ontology/unamed" True ""
 mkQName :: String -> QName
 mkQName s = nullQName { localPart = s }
 
+setPrefix :: String -> QName -> QName
+setPrefix s q = q { namePrefix = s }
+
 instance Eq QName where
     p == q = compare p q == EQ
 
