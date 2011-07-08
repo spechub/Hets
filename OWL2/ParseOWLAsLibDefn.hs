@@ -14,20 +14,17 @@ module OWL2.ParseOWLAsLibDefn (parseOWL) where
 
 import OWL2.AS
 import OWL2.MS
-import OWL2.ManchesterParser
-import OWL2.Parse
-import OWL2.ColonKeywords
 
 import Data.Char
-import qualified Data.Map as Map
 
 import Common.Id
 import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation hiding (isAxiom, isDef)
 
-import Logic.Grothendieck 
+import Logic.Grothendieck
 import OWL2.Logic_OWL2
+import OWL2.XML
 
 import Driver.Options
 
@@ -39,9 +36,7 @@ import System.Exit
 import System.FilePath
 import System.Process
 
-import Text.ParserCombinators.Parsec
-import Common.Parsec
-
+import Text.XML.Light (parseXMLDoc)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -53,7 +48,7 @@ parseOWL filename = do
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
        (exitCode, result, errStr) <- readProcessWithExitCode "java"
-         ["-jar", toolPath </> jar, absfile] ""
+         ["-jar", toolPath </> jar, absfile, "xml"] ""
        case exitCode of
          ExitSuccess -> parseProc filename result
          _ -> error $ "process stop! " ++ shows exitCode "\n"
@@ -63,25 +58,23 @@ parseOWL filename = do
 
 parseProc :: FilePath -> String -> IO LIB_DEFN
 parseProc filename str = do
-    case runParser (many1 ontologyDocument << eof) () filename str of
-      Right os -> return $ convertToLibDefN filename os 
-      Left err -> do
-        putStrLn str
-        fail $ show err
+    case parseXMLDoc str of
+      Just el -> return $  convertToLibDefN filename [xmlBasicSpec el]
+      Nothing -> fail "OWL2.parseProc"
 
 cnvimport :: QName -> Annoted SPEC
 cnvimport i = emptyAnno $ Spec_inst (cnvtoSimpleId i) [] nullRange
 
 cnvtoSimpleId :: QName -> SPEC_NAME
-cnvtoSimpleId = mkSimpleId . filter isAlphaNum . showQN  
+cnvtoSimpleId = mkSimpleId . filter isAlphaNum . showQN
 
 createSpec :: OntologyDocument -> Annoted SPEC
-createSpec o = let 
+createSpec o = let
   bs = emptyAnno $ Basic_spec (G_basic_spec OWL2 o) nullRange
   in case imports $ mOntology o of
   [] -> bs
-  is -> emptyAnno $ Extension 
-         [case is of 
+  is -> emptyAnno $ Extension
+         [case is of
            [i] -> cnvimport i
            _ -> emptyAnno $ Union (map cnvimport is) nullRange
          , bs] nullRange
@@ -94,26 +87,8 @@ convertone o = emptyAnno $ Spec_defn
   nullRange
 
 convertToLibDefN :: FilePath -> [OntologyDocument] -> LIB_DEFN
-convertToLibDefN filename l = Lib_defn 
+convertToLibDefN filename l = Lib_defn
   (emptyLibName $ convertFileToLibStr filename)
   (map convertone $ l)
   nullRange
   []
-
-ontologyDocument :: CharParser st OntologyDocument
-ontologyDocument = do
-  nss <- many nsEntry
-  oiri <- pkeyword ontologyC >> option dummyQName uriP
-  is <- many importEntry
-  ans <- many annotations
-  as <- frames
-  return emptyOntologyDoc
-    { mOntology = emptyOntologyD
-      { ontologyFrame = as
-      , muri = oiri 
-      , imports = is
-      , ann = ans }
-    , prefixDeclaration = Map.fromList $
-      map (\ (p, q) -> (p, showQU q)) nss }
-
-
