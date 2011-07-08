@@ -16,6 +16,7 @@ import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
 import OWL2.Theorem
+import OWL2.XML (splitIRI)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -76,7 +77,7 @@ anaAxiom x = findImplied x $ makeNamed "" x
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a ent = let Entity ty e = ent in case ty of
-   Datatype -> if Set.member e (datatypes s) then return a
+   Datatype -> if elem e (Set.toList (datatypes s) ++ map (splitIRI . mkQName) datatypeKeys) then return a
                 else fail $ failMsg (Just ent) ""
    Class -> if Set.member e (concepts s) then return a
              else fail $ failMsg (Just ent) ""

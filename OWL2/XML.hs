@@ -483,7 +483,11 @@ getPrefixMap e =
     in Map.fromList $ map (\ (p, m) -> (p, showQU m)) prl
 
 getOntologyIRI :: Element -> OntologyIRI
-getOntologyIRI e = splitIRI $ mkQName $ fromJust $ findAttrBy (isSmth "ontologyIRI") e
+getOntologyIRI e =
+  let oi = findAttrBy (isSmth "ontologyIRI") e 
+  in case oi of
+    Nothing -> dummyQName
+    Just iri -> splitIRI $ mkQName iri
 
 getOntAnnos :: Element -> [Annotations]
 getOntAnnos e = map getAllAnnos $ filterCh "Annotation" e
