@@ -56,7 +56,8 @@ convertPrec pg =
         Prec_anno Lower (map fst l) (Set.toList $ snd $ head l) nullRange)
         (groupBy (\ a b -> snd a == snd b)
           $ sortBy (comparing snd)
-            $ Map.toList $ Rel.toMap $ Rel.transReduce $ Rel.irreflex
+            $ Map.toList $ Rel.toMap $ Rel.transReduce
+               $ Rel.rmNullSets $ Rel.irreflex
                $ Rel.collaps cs pg)
 
 convertAssoc :: AssocMap -> [Annotation]
