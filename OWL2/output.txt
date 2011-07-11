@@ -4207,7 +4207,7 @@
     </AnnotationAssertion>
     <AnnotationAssertion>
         <AnnotationProperty abbreviatedIRI="rdfs:label"/>
-        <IRI>#Margherita</IRI>
+        <AnonymousIndividual IRI="Margherita"/>
         <Literal xml:lang="pt" datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">Margherita</Literal>
     </AnnotationAssertion>
     <AnnotationAssertion>

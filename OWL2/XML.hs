@@ -54,7 +54,7 @@ getIRI e = let [a] = elAttribs e in mkQN $ attrVal a
 get1PrefMap :: Element -> (String, IRI)
 get1PrefMap e =
   let [pref, pmap] = map attrVal $ elAttribs e
-  in (pref, splitIRI $ mkQName pmap)
+  in (pref, mkQN pmap)
 
 getInt :: Element -> Int
 getInt e = let [int] = elAttribs e in value 10 $ attrVal int
@@ -138,7 +138,7 @@ getLiteral e = case getName e of
     "Literal" ->
       let lf = strContent e
           mdt = findAttr (unqual "datatypeIRI") e
-          mattr = findAttr (unqual "lang") e
+          mattr = findAttrBy (isSmth "lang") e
       in case mdt of
           Nothing -> case mattr of
              Just lang -> Literal lf (Untyped $ Just lang)
@@ -153,7 +153,13 @@ getLiteral e = case getName e of
 getValue :: Element -> AnnotationValue
 getValue e = case getName e of
     "Literal" -> AnnValLit $ getLiteral e
+    "AnonymousIndividual" -> AnnValue $ getIRI e
     _ -> AnnValue $ mkQN $ strContent e
+
+getSubject :: Element -> IRI
+getSubject e = case getName e of
+    "AnonymousIndividual" -> getIRI e
+    _ -> mkQN $ strContent e
 
 getAnnotation :: Element -> Annotation
 getAnnotation e =
@@ -307,7 +313,8 @@ hasKey e = case getName e of
         [ce] = filterChL classExpressionList e
         op = map getObjProp $ filterChL objectPropList e
         dp = map getIRI $ filterChL dataPropList e
-    in PlainAxiom (ClassEntity $ getClassExpression ce) $ AnnFrameBit as $ ClassHasKey op dp
+    in PlainAxiom (ClassEntity $ getClassExpression ce)
+          $ AnnFrameBit as $ ClassHasKey op dp
   _ -> getOPAxiom e
 
 getOPAxiom :: Element -> Axiom
@@ -458,28 +465,28 @@ getAnnoAxiom e =
        ap = getIRI $ filterC "AnnotationProperty" e
    in case getName e of
     "AnnotationAssertion" ->
-       let s = splitIRI $ mkQName $ strContent $ filterC "IRI" e
-           v = getValue $ filterC "Literal" e
+       let [s, v] = filterChL ["IRI", "AnonymousIndividual", "Literal"] e
        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
-               $ AnnFrameBit [Annotation as s v] AnnotationFrameBit
+               $ AnnFrameBit [Annotation as (getSubject s) (getValue v)] 
+                    AnnotationFrameBit
     "SubAnnotationPropertyOf" ->
         let [hd, lst] = map getIRI $ filterCh "AnnotationProperty" e
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty hd)
             $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, lst)]
     "AnnotationPropertyDomain" ->
-        let iri = splitIRI $ mkQName $ strContent $ filterC "IRI" e
+        let iri = mkQN $ strContent $ filterC "IRI" e
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ADomain))
                       $ AnnotationBit [(as, iri)]
     "AnnotationPropertyRange" ->
-        let iri = splitIRI $ mkQName $ strContent $ filterC "IRI" e
+        let iri = mkQN $ strContent $ filterC "IRI" e
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ARange))
                       $ AnnotationBit [(as, iri)]
     _ -> getClassAxiom e
 
 getImports :: Element -> [ImportIRI]
-getImports e = map (splitIRI . mkQName . strContent) $ filterCh "Import" e
+getImports e = map (mkQN . strContent) $ filterCh "Import" e
 
 getPrefixMap :: Element -> PrefixMap
 getPrefixMap e =
@@ -491,7 +498,7 @@ getOntologyIRI e =
   let oi = findAttr (unqual "ontologyIRI") e
   in case oi of
     Nothing -> dummyQName
-    Just iri -> splitIRI $ mkQName iri
+    Just iri -> mkQN iri
 
 axToFrame :: Axiom -> Frame
 axToFrame (PlainAxiom e fb) = Frame e [fb]
