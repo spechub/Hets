@@ -142,8 +142,8 @@ isPlainLiteral s = "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == 
 getLiteral :: Element -> Literal
 getLiteral e = let lit = fromJust $ filterElementName (isSmth "Literal") e
                    lf = strContent e
-                   mdt = findAttrBy (isSmth "datatypeIRI") lit
-                   mattr = findAttrBy (isSmth "lang") lit
+                   mdt = findAttr (unqual "datatypeIRI") lit
+                   mattr = findAttr (unqual "lang") lit
                in case mdt of
                     Nothing -> case mattr of
                       Just lang -> Literal lf (Untyped $ Just lang)
@@ -484,7 +484,7 @@ getPrefixMap e =
 
 getOntologyIRI :: Element -> OntologyIRI
 getOntologyIRI e =
-  let oi = findAttrBy (isSmth "ontologyIRI") e 
+  let oi = findAttr (unqual "ontologyIRI") e 
   in case oi of
     Nothing -> dummyQName
     Just iri -> splitIRI $ mkQName iri
