@@ -280,7 +280,19 @@
         <Class IRI="#SpicyTopping"/>
     </Declaration>
     <Declaration>
-        <Class IRI="#SpinachTopping"/>
+       <Annotation>
+         <Annotation>
+          <AnnotationProperty IRI="4"/>
+          <Literal datatypeIRI="xsd:string">"d"</Literal>
+       </Annotation>
+          <AnnotationProperty IRI="2"/>
+          <Literal datatypeIRI="xsd:string">"b"</Literal>
+       </Annotation>
+       <Annotation>
+          <AnnotationProperty IRI="3"/>
+          <Literal datatypeIRI="xsd:string">"c"</Literal>
+       </Annotation>
+       <Class IRI="#SpinachTopping"/>
     </Declaration>
     <Declaration>
         <Class IRI="#SultanaTopping"/>
@@ -3355,6 +3367,18 @@
         <Class IRI="#QuattroFormaggi"/>
     </DisjointClasses>
     <DisjointClasses>
+        <Annotation>
+          <AnnotationProperty IRI="1"/>
+          <Literal datatypeIRI="xsd:string">"a"</Literal>
+        </Annotation>
+        <Annotation>
+           <Annotation>
+              <AnnotationProperty IRI="3"/>
+              <Literal datatypeIRI="xsd:string">"c"</Literal>
+           </Annotation>
+           <AnnotationProperty IRI="2"/>
+           <Literal datatypeIRI="xsd:string">"b"</Literal>
+        </Annotation>
         <Class IRI="#Margherita"/>
         <Class IRI="#Rosa"/>
     </DisjointClasses>

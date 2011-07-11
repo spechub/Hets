@@ -41,6 +41,9 @@ splitIRI qn =
                '<' : r ++ ">" == s}
         else qn {localPart = r}
 
+mkQN :: String -> IRI
+mkQN = splitIRI . mkQName
+
 -- gets the actual name of an axiom in XML Syntax
 getName :: Element -> String
 getName e =
@@ -120,7 +123,7 @@ getEntityType ty = case ty of
     _ -> error "not entity type"
 
 toEntity :: Element -> Entity
-toEntity e = Entity (getEntityType $ getName e) (getIRI e)
+toEntity e = Entity (getEntityType $ (qName . elName) e) (getIRI e)
 
 getDeclaration :: Element -> Frame
 getDeclaration e = case getName e of
@@ -128,48 +131,46 @@ getDeclaration e = case getName e of
      let ent = filterCL entityList e
          ans = getAllAnnos e
      in Frame (SimpleEntity $ toEntity ent) [AnnFrameBit ans AnnotationFrameBit]
+   _ -> error "not declaration"
 
 isPlainLiteral :: String -> Bool
 isPlainLiteral s = "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
 
 getLiteral :: Element -> Literal
-getLiteral e = let lit = fromJust $ filterElementName (isSmth "Literal") e
-                   lf = strContent e
-                   mdt = findAttr (unqual "datatypeIRI") lit
-                   mattr = findAttr (unqual "lang") lit
-               in case mdt of
-                    Nothing -> case mattr of
-                      Just lang -> Literal lf (Untyped $ Just lang)
-                      Nothing -> Literal lf (Untyped Nothing)
-                    Just dt -> case mattr of
-                      Just lang -> Literal lf (Untyped $ Just lang)
-                      Nothing -> if isPlainLiteral dt then
-                                      Literal lf (Untyped Nothing)
-                                  else Literal lf (Typed $ splitIRI $ mkQName dt)
+getLiteral e = case getName e of
+    "Literal" ->
+      let lf = strContent e
+          mdt = findAttr (unqual "datatypeIRI") e
+          mattr = findAttr (unqual "lang") e
+      in case mdt of
+          Nothing -> case mattr of
+             Just lang -> Literal lf (Untyped $ Just lang)
+             Nothing -> Literal lf (Untyped Nothing)
+          Just dt -> case mattr of
+             Just lang -> Literal lf (Untyped $ Just lang)
+             Nothing -> if isPlainLiteral dt then
+                          Literal lf (Untyped Nothing)
+                         else Literal lf (Typed $ mkQN dt)
+    _ -> error "not literal"
 
 getValue :: Element -> AnnotationValue
-getValue e = let lit = filterElementName (isSmth "Literal") e
-                 val = strContent e
-             in case lit of
-                  Nothing -> AnnValue $ splitIRI $ mkQName val
-                  Just _ -> AnnValLit $ getLiteral e
+getValue e = case getName e of
+    "Literal" -> AnnValLit $ getLiteral e
+    _ -> AnnValue $ mkQN $ strContent e
 
 getAnnotation :: Element -> Annotation
 getAnnotation e =
      let hd = filterCh "Annotation" e
-         ap = filterCh "AnnotationProperty" e
-         av = filterCh "Literal" e ++ filterCh "IRI" e
+         [ap] = filterCh "AnnotationProperty" e
+         [av] = filterCh "Literal" e ++ filterCh "IRI" e
+                  ++ filterCh "AnonymousIndividual" e
      in
-          Annotation (getAnnotations hd)
-              (getIRI $ head ap) (getValue $ head av)
-
-getAnnotations :: [Element] -> [Annotation]
-getAnnotations e = map getAnnotation $ concatMap
-            (filterElementsName (isSmth "Annotation")) e
+          Annotation (map getAnnotation hd)
+              (getIRI ap) (getValue av)
 
 getAllAnnos :: Element -> [Annotation]
 getAllAnnos e = map getAnnotation
-            $ filterElementsName (isSmth "Annotation") e
+            $ filterCh "Annotation" e
 
  -- still need to cancel double inverses
 getObjProp :: Element -> ObjectPropertyExpression
@@ -267,7 +268,7 @@ getClassExpression e =
 getClassAxiom :: Element -> Axiom
 getClassAxiom e =
    let ch = elChildren e
-       as = concatMap getAllAnnos ch
+       as = getAllAnnos e
        l@(hd : tl) = filterChL classExpressionList e
        drl@[dhd, dtl] = filterChL dataRangeList e
        cel = map getClassExpression l
@@ -292,7 +293,7 @@ getClassAxiom e =
 hasKey :: Element -> Axiom
 hasKey e = case getName e of
   "HasKey" ->
-    let as = concatMap getAllAnnos $ elChildren e
+    let as = getAllAnnos e
         ce = getClassExpression $ head $ filterChL classExpressionList e
         op = map getObjProp $ filterChL objectPropList e
         dp = map getIRI $ filterChL dataPropList e
@@ -301,7 +302,7 @@ hasKey e = case getName e of
 
 getOPAxiom :: Element -> Axiom
 getOPAxiom e =
-   let as = concatMap getAllAnnos $ elChildren e
+   let as = getAllAnnos e
        op = getObjProp $ filterCL objectPropList e
    in case getName e of
     "SubObjectPropertyOf" ->
@@ -353,7 +354,7 @@ getOPAxiom e =
 
 getDPAxiom :: Element -> Axiom
 getDPAxiom e =
-   let as = concatMap getAllAnnos $ elChildren e
+   let as = getAllAnnos e
    in case getName e of
     "SubDataPropertyOf" ->
         let dpl = map getIRI $ filterChL dataPropList e
@@ -386,7 +387,7 @@ getDPAxiom e =
 
 getDataAssertion :: Element -> Axiom
 getDataAssertion e =
-   let as = concatMap getAllAnnos $ elChildren e
+   let as = getAllAnnos e
        dp = getIRI $ filterCL dataPropList e
        ind = getIRI $ filterCL individualList e
        lit = getLiteral $ filterC "Literal" e
@@ -403,7 +404,7 @@ getDataAssertion e =
 
 getObjectAssertion :: Element -> Axiom
 getObjectAssertion e =
-   let as = concatMap getAllAnnos $ elChildren e
+   let as = getAllAnnos e
        op = getObjProp $ filterCL  objectPropList e
        ind = map getIRI $ filterChL individualList e
    in case getName e of
@@ -419,7 +420,7 @@ getObjectAssertion e =
 
 getIndividualAssertion :: Element -> Axiom
 getIndividualAssertion e =
-   let as = concatMap getAllAnnos $ elChildren e
+   let as = getAllAnnos e
        ind = map getIRI $ filterChL individualList e
        l = map (\ x -> ([], x)) ind
    in case getName e of
@@ -434,7 +435,7 @@ getIndividualAssertion e =
 getClassAssertion :: Element -> Axiom
 getClassAssertion e = case getName e of
     "ClassAssertion" ->
-        let as = concatMap getAllAnnos $ elChildren e
+        let as = getAllAnnos e
             ce = getClassExpression $ filterCL classExpressionList e
             ind = getIRI $ filterCL individualList e
         in PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
@@ -443,7 +444,7 @@ getClassAssertion e = case getName e of
 
 getAnnoAxiom :: Element -> Axiom
 getAnnoAxiom e =
-   let as = concatMap getAllAnnos $ elChildren e
+   let as = getAllAnnos e
        ap = getIRI $ filterC "AnnotationProperty" e
    in case getName e of
     "AnnotationAssertion" ->
@@ -482,9 +483,6 @@ getOntologyIRI e =
     Nothing -> dummyQName
     Just iri -> splitIRI $ mkQName iri
 
-getOntAnnos :: Element -> [Annotations]
-getOntAnnos e = map getAllAnnos $ filterCh "Annotation" e
-
 axToFrame :: Axiom -> Frame
 axToFrame (PlainAxiom e fb) = Frame e [fb]
 
@@ -503,7 +501,7 @@ xmlBasicSpec e = emptyOntologyDoc
         {
         ontologyFrame = getFrames e,
         imports = getImports e,
-        ann = getOntAnnos e,
+        ann = [getAllAnnos e],
         muri = getOntologyIRI e
         },
       prefixDeclaration = getPrefixMap e
