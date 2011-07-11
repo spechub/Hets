@@ -174,15 +174,18 @@ getObjProp e = case getName e of
   "ObjectProperty" -> ObjectProp $ getIRI e
   "ObjectInverseOf" ->
     let [ch] = elChildren e
+        [cch] = elChildren ch
     in case getName ch of
-      "ObjectInverseOf" -> getObjProp $ head $ elChildren ch
+      "ObjectInverseOf" -> getObjProp cch
       "ObjectProperty" -> ObjectInverseOf $ ObjectProp $ getIRI ch
       _ -> error "not objectProperty"
   _ -> error "not objectProperty"
 
 getFacetValuePair :: Element -> (ConstrainingFacet, RestrictionValue)
 getFacetValuePair e = case getName e of
-    "FacetRestriction" -> (getIRI e, getLiteral $ head $ elChildren e)
+    "FacetRestriction" ->
+       let [ch] = elChildren e
+       in (getIRI e, getLiteral ch)
     _ -> error "not facet"
 
 getDataRange :: Element -> DataRange
@@ -227,10 +230,10 @@ getClassExpression e =
     "ObjectHasSelf" -> ObjectHasSelf $ getObjProp ch1
     "ObjectMinCardinality" -> if length ch == 2 then
           ObjectCardinality $ Cardinality
-              MinCardinality (getInt e) (getObjProp $ head ch)
-                $ Just $ getClassExpression $ last ch
+              MinCardinality (getInt e) (getObjProp ch1)
+                $ Just $ getClassExpression rch1
          else ObjectCardinality $ Cardinality
-              MinCardinality (getInt e) (getObjProp $ head ch) Nothing
+              MinCardinality (getInt e) (getObjProp ch1) Nothing
     "ObjectMaxCardinality" -> if length ch == 2 then
           ObjectCardinality $ Cardinality
               MaxCardinality (getInt e) (getObjProp ch1)
@@ -245,11 +248,11 @@ getClassExpression e =
               ExactCardinality (getInt e) (getObjProp ch1) Nothing
     "DataSomeValuesFrom" ->
         let hd : tl = map getIRI $ init ch
-            dr = last ch
+            dr = rch1
         in DataValuesFrom SomeValuesFrom hd tl (getDataRange dr)
     "DataAllValuesFrom" ->
         let hd : tl = map getIRI $ init ch
-            dr = last ch
+            dr = rch1
         in DataValuesFrom AllValuesFrom hd tl (getDataRange dr)
     "DataHasValue" -> DataHasValue (getIRI ch1) (getLiteral rch1)
     "DataMinCardinality" -> if length ch == 2 then
@@ -301,10 +304,10 @@ hasKey :: Element -> Axiom
 hasKey e = case getName e of
   "HasKey" ->
     let as = getAllAnnos e
-        ce = getClassExpression $ head $ filterChL classExpressionList e
+        [ce] = filterChL classExpressionList e
         op = map getObjProp $ filterChL objectPropList e
         dp = map getIRI $ filterChL dataPropList e
-    in PlainAxiom (ClassEntity ce) $ AnnFrameBit as $ ClassHasKey op dp
+    in PlainAxiom (ClassEntity $ getClassExpression ce) $ AnnFrameBit as $ ClassHasKey op dp
   _ -> getOPAxiom e
 
 getOPAxiom :: Element -> Axiom
@@ -316,10 +319,10 @@ getOPAxiom e =
        let opchain = concatMap (map getObjProp) $ map elChildren
             $ filterCh "ObjectPropertyChain" e
        in if null opchain
-             then let opl = map getObjProp $ filterChL objectPropList e
-                  in PlainAxiom (ObjectEntity $ head opl)
+             then let [hd, lst] = map getObjProp $ filterChL objectPropList e
+                  in PlainAxiom (ObjectEntity hd)
                        $ ListFrameBit (Just SubPropertyOf) $ ObjectBit
-                          [(as, last opl)]
+                          [(as, lst)]
              else PlainAxiom (ObjectEntity op) $ AnnFrameBit as
                     $ ObjectSubPropertyChain opchain
     "EquivalentObjectProperties" ->
@@ -339,10 +342,10 @@ getOPAxiom e =
        in PlainAxiom (ObjectEntity op) $ ListFrameBit
           (Just (DRRelation ARange)) $ ExpressionBit [(as, ce)]
     "InverseObjectProperties" ->
-       let opl = map getObjProp $ filterChL objectPropList e
-       in PlainAxiom (ObjectEntity $ head opl)
+       let [hd, lst] = map getObjProp $ filterChL objectPropList e
+       in PlainAxiom (ObjectEntity hd)
                        $ ListFrameBit (Just InverseOf) $ ObjectBit
-                          [(as, last opl)]
+                          [(as, lst)]
     "FunctionalObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
         Nothing $ ObjectCharacteristics [(as, Functional)]
     "InverseFunctionalObjectProperty" -> PlainAxiom (ObjectEntity op)
@@ -364,9 +367,9 @@ getDPAxiom e =
    let as = getAllAnnos e
    in case getName e of
     "SubDataPropertyOf" ->
-        let dpl = map getIRI $ filterChL dataPropList e
-        in PlainAxiom (SimpleEntity $ Entity DataProperty $ head dpl)
-              $ ListFrameBit (Just SubPropertyOf) $ DataBit [(as, last dpl)]
+        let [hd, lst] = map getIRI $ filterChL dataPropList e
+        in PlainAxiom (SimpleEntity $ Entity DataProperty hd)
+              $ ListFrameBit (Just SubPropertyOf) $ DataBit [(as, lst)]
     "EquivalentDataProperties" ->
         let dpl = map getIRI $ filterChL dataPropList e
         in PlainAxiom (Misc as) $ ListFrameBit (Just (EDRelation Equivalent))
@@ -413,16 +416,16 @@ getObjectAssertion :: Element -> Axiom
 getObjectAssertion e =
    let as = getAllAnnos e
        op = getObjProp $ filterCL objectPropList e
-       ind = map getIRI $ filterChL individualList e
+       [hd, lst] = map getIRI $ filterChL individualList e
    in case getName e of
     "ObjectPropertyAssertion" ->
-        PlainAxiom (SimpleEntity $ Entity NamedIndividual $ head ind)
+        PlainAxiom (SimpleEntity $ Entity NamedIndividual hd)
            $ ListFrameBit Nothing $ IndividualFacts
-               [(as, ObjectPropertyFact Positive op (last ind))]
+               [(as, ObjectPropertyFact Positive op lst)]
     "NegativeObjectPropertyAssertion" ->
-        PlainAxiom (SimpleEntity $ Entity NamedIndividual $ head ind)
+        PlainAxiom (SimpleEntity $ Entity NamedIndividual hd)
            $ ListFrameBit Nothing $ IndividualFacts
-               [(as, ObjectPropertyFact Negative op (last ind))]
+               [(as, ObjectPropertyFact Negative op lst)]
     _ -> getIndividualAssertion e
 
 getIndividualAssertion :: Element -> Axiom
@@ -460,9 +463,9 @@ getAnnoAxiom e =
        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ AnnFrameBit [Annotation as s v] AnnotationFrameBit
     "SubAnnotationPropertyOf" ->
-        let apl = map getIRI $ filterCh "AnnotationProperty" e
-        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty $ head apl)
-            $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, last apl)]
+        let [hd, lst] = map getIRI $ filterCh "AnnotationProperty" e
+        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty hd)
+            $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, lst)]
     "AnnotationPropertyDomain" ->
         let iri = splitIRI $ mkQName $ strContent $ filterC "IRI" e
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
