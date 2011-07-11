@@ -1,0 +1,8 @@
+<xupdate:modifications xmlns:xupdate="http://www.xmldb.org/xupdate" version="1.0">
+<xupdate:remove select="/DGraph/DGNode[@name=&quot;Spec&quot;][1]/Axioms[1]/Axiom[1]"/>
+<xupdate:append select="/DGraph/DGNode[@name=&quot;Spec&quot;][1]/Axioms[1]">
+<xupdate:element name="Axiom">
+<xupdate:text>. def a %(Ax1)%</xupdate:text>
+</xupdate:element>
+</xupdate:append>
+</xupdate:modifications>

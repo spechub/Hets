@@ -1,0 +1,7 @@
+<xupdate:modifications xmlns:xupdate="http://www.xmldb.org/xupdate" version="1.0">
+<xupdate:append select="/DGraph/DGNode[@name=&quot;Spec&quot;][1]/Axioms[1]">
+<xupdate:element name="Axiom">
+<xupdate:text>. def o %(Ax3)%</xupdate:text>
+</xupdate:element>
+</xupdate:append>
+</xupdate:modifications>

@@ -1,0 +1,9 @@
+<xupdate:modifications xmlns:xupdate="http://www.xmldb.org/xupdate" version="1.0">
+<xupdate:remove select="/DGraph/DGNode[@name=&quot;Spec&quot;][1]/Declarations[1]/Symbol[2]"/>
+<xupdate:insert-before select="/DGraph/DGNode[@name=&quot;Spec&quot;][1]/Declarations[1]/Symbol[3]">
+<xupdate:element name="Symbol">
+<xupdate:attribute name="range">/home/maeder/Hets/Static/test/./Spec.het:1.9</xupdate:attribute>
+<xupdate:text>sort u</xupdate:text>
+</xupdate:element>
+</xupdate:insert-before>
+</xupdate:modifications>

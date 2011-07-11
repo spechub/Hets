@@ -1,0 +1,3 @@
+<xupdate:modifications xmlns:xupdate="http://www.xmldb.org/xupdate" version="1.0">
+<xupdate:remove select="/DGraph/DGNode[@name=&quot;Spec&quot;][1]/Theorems[1]"/>
+</xupdate:modifications>
