@@ -10,12 +10,6 @@ Portability :  portable
 Contains    :  OWL2 XML Syntax Parsing
 -}
 
-{- still left to do:
-     - cancel multiple inverses for object properties
-     - include all prefixes, xml-type
-     - simplify some functions
-      -}
-
 module OWL2.XML where
 
 import Text.XML.Light
@@ -172,11 +166,16 @@ getAllAnnos :: Element -> [Annotation]
 getAllAnnos e = map getAnnotation
             $ filterCh "Annotation" e
 
- -- still need to cancel double inverses
 getObjProp :: Element -> ObjectPropertyExpression
-getObjProp e = case filterElementName (isSmth "ObjectInverseOf") e of
-                  Nothing -> ObjectProp $ getIRI e
-                  Just _ -> ObjectInverseOf $ getObjProp $ head $ elChildren e
+getObjProp e = case getName e of
+  "ObjectProperty" -> ObjectProp $ getIRI e
+  "ObjectInverseOf" ->
+    let [ch] = elChildren e
+    in case getName ch of
+      "ObjectInverseOf" -> getObjProp $ head $ elChildren ch
+      "ObjectProperty" -> ObjectInverseOf $ ObjectProp $ getIRI ch
+      _ -> error "not objectProperty"
+  _ -> error "not objectProperty"
 
 getFacetValuePair :: Element -> (ConstrainingFacet, RestrictionValue)
 getFacetValuePair e = (getIRI e, getLiteral $ head $ elChildren e)

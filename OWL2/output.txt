@@ -806,7 +806,10 @@
     <SubClassOf>
         <Class IRI="#Capricciosa"/>
         <ObjectAllValuesFrom>
+          <ObjectInverseOf>          <ObjectInverseOf>
+          <ObjectInverseOf>
             <ObjectProperty IRI="#hasTopping"/>
+          </ObjectInverseOf>          </ObjectInverseOf>          </ObjectInverseOf>
             <ObjectUnionOf>
                 <Class IRI="#AnchoviesTopping"/>
                 <Class IRI="#CaperTopping"/>
