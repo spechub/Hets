@@ -30,8 +30,8 @@ import qualified Data.Map as Map
 
 splitIRI :: IRI -> IRI
 splitIRI qn =
-  let QN {localPart = s} = qn
-  in let r = delete '<' $ delete '>' $ delete '&' $ delete '#' s
+  let s = localPart qn
+  in let r = delete '<' $ delete '>' $ delete '#' s
      in
        if elem ':' r then
           let p = takeWhile (/= ':') r
