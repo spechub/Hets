@@ -60,13 +60,13 @@ getInt :: Element -> Int
 getInt e = let [int] = elAttribs e in value 10 $ attrVal int  
 
 isSmth :: String -> Text.XML.Light.QName -> Bool
-isSmth s (QName {qName = qn}) = qn == s
+isSmth s = (s == ) . qName 
 
 isSmthList :: [String] -> Text.XML.Light.QName -> Bool
-isSmthList l (QName {qName = qn}) = qn `elem` l
+isSmthList l qn = qName qn `elem` l 
 
 isNotSmth :: Text.XML.Light.QName -> Bool
-isNotSmth (QName {qName = qn}) = qn /= "Declaration" &&
+isNotSmth q = let qn = qName q in qn /= "Declaration" &&
     qn /= "Prefix" && qn /= "Import" && qn /= "Annotation"
 
 filterCh :: String -> Element -> [Element]
