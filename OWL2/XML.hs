@@ -41,15 +41,15 @@ splitIRI qn =
         else qn {localPart = r}
 
 getName :: Element -> String
-getName e = case e of
-  Element {elName = QName {qName = n, qURI = Just q}} ->
-      if q == "http://www.w3.org/2002/07/owl#" then n else ""
-  _ -> ""
+getName e =
+  let n = (qName . elName) e
+      q = (qURI . elName) e
+  in case q of
+    Just "http://www.w3.org/2002/07/owl#" -> n
+    _ -> ""
 
 getIRI :: Element -> OWL2.AS.QName
-getIRI (Element {elName = QName {}, elAttribs = a}) =
-        let Attr {attrVal = iri} = head a
-        in splitIRI $ mkQName iri
+getIRI e = splitIRI $ mkQName $ attrVal $ head $ elAttribs e
 
 get2IRIs :: Element -> (String, IRI)
 get2IRIs (Element {elAttribs = ls}) =

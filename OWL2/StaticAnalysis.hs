@@ -78,7 +78,7 @@ anaAxiom x = findImplied x $ makeNamed "" x
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a ent = let Entity ty e = ent in case ty of
-   Datatype -> if elem e (Set.toList (datatypes s) ++ map (splitIRI . mkQName) datatypeKeys) then return a
+   Datatype -> if elem e (Set.toList (datatypes s) ++ map (setPrefix "xsd" . mkQName) datatypeKeys) then return a
                 else fail $ failMsg (Just ent) ""
    Class -> if Set.member e (concepts s) then return a
              else fail $ failMsg (Just ent) ""
@@ -316,14 +316,14 @@ checkHasKeyAll s k = case k of
         y = map (\ u -> Set.member u (dataProperties s) ) dl
     if elem False (x ++ y) then
       fail "Static analysis. Keys failed, undeclared Data or Object Properties"
-     else return $ ClassHasKey ol dl
+     else return k
   _ -> return k
 
 checkHasKey :: Sign -> AnnFrameBit -> Result AnnFrameBit
 checkHasKey s k = case k of
-  ClassHasKey ol _ -> do
+  ClassHasKey ol dl -> do
     let x = sortObjDataList s ol
-    let k2 = ClassHasKey x (map getObjRoleFromExpression (ol \\ x))
+    let k2 = ClassHasKey x (map getObjRoleFromExpression (ol \\ x) ++ dl)
     checkHasKeyAll s k2
   _ -> return k
 

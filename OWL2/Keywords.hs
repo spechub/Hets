@@ -52,13 +52,13 @@ keywords =
   ]
 
 booleanS :: String
-booleanS = "xsd:boolean"
+booleanS = "boolean"
 
 dATAS :: String
-dATAS = "xsd:DATA"
+dATAS = "DATA"
 
 decimalS :: String
-decimalS = "xsd:decimal"
+decimalS = "decimal"
 
 digitsS :: String
 digitsS = "digits"
@@ -67,7 +67,7 @@ exactlyS :: String
 exactlyS = "exactly"
 
 floatS :: String
-floatS = "xsd:float"
+floatS = "float"
 
 fractionS :: String
 fractionS = "fraction"
@@ -79,7 +79,7 @@ hasS :: String
 hasS = "has"
 
 integerS :: String
-integerS = "xsd:integer"
+integerS = "integer"
 
 inverseS :: String
 inverseS = "inverse"
@@ -100,13 +100,13 @@ minS :: String
 minS = "min"
 
 negativeIntegerS :: String
-negativeIntegerS = "xsd:negativeInteger"
+negativeIntegerS = "negativeInteger"
 
 nonNegativeIntegerS :: String
-nonNegativeIntegerS = "xsd:nonNegativeInteger"
+nonNegativeIntegerS = "nonNegativeInteger"
 
 nonPositiveIntegerS :: String
-nonPositiveIntegerS = "xsd:nonPositiveInteger"
+nonPositiveIntegerS = "nonPositiveInteger"
 
 oS :: String
 oS = "o"
@@ -124,7 +124,7 @@ patternS :: String
 patternS = "pattern"
 
 positiveIntegerS :: String
-positiveIntegerS = "xsd:positiveInteger"
+positiveIntegerS = "positiveInteger"
 
 selfS :: String
 selfS = "Self"
@@ -136,7 +136,7 @@ thatS :: String
 thatS = "that"
 
 universalS :: String
-universalS = "xsd:Universal"
+universalS = "Universal"
 
 valueS :: String
 valueS = "value"
