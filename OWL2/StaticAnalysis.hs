@@ -16,7 +16,6 @@ import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
 import OWL2.Theorem
-import OWL2.XML (splitIRI)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -29,6 +28,18 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
 import Control.Monad
+
+simpleSplit :: IRI -> IRI
+simpleSplit qn = 
+  let s = localPart qn
+  in let r = delete '<' $ delete '>' s
+     in
+       if ':' `elem` r then
+          let p = takeWhile (/= ':') r
+              ':' : lp = dropWhile (/= ':') r
+          in qn {namePrefix = p, localPart = lp, isFullIri =
+               '<' : r ++ ">" == s}
+        else qn {localPart = r} 
 
 -- | Error messages for static analysis
 failMsg :: Maybe Entity -> String -> String
@@ -58,7 +69,7 @@ modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
 modEntity f (Entity ty u) = do
   s <- get
   let chg = f u
-  if elem u $ map (splitIRI . mkQName) datatypeKeys then put s
+  if elem u $ map (simpleSplit . mkQName) datatypeKeys then put s
    else put $ case ty of
     Datatype -> s { datatypes = chg $ datatypes s }
     Class -> s { concepts = chg $ concepts s }
