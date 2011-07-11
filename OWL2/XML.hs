@@ -41,6 +41,7 @@ splitIRI qn =
                '<' : r ++ ">" == s}
         else qn {localPart = r}
 
+-- gets the actual name of an axiom in XML Syntax
 getName :: Element -> String
 getName e =
   let n = (qName . elName) e
@@ -52,6 +53,7 @@ getName e =
 getIRI :: Element -> OWL2.AS.QName
 getIRI e = let [a] = elAttribs e in splitIRI $ mkQName $ attrVal a
 
+-- gets one prefix with the corresponding iri
 get1PrefMap :: Element -> (String, IRI)
 get1PrefMap e =
   let [pref, pmap] = map attrVal $ elAttribs e
@@ -120,19 +122,12 @@ getEntityType ty = case ty of
 toEntity :: Element -> Entity
 toEntity e = Entity (getEntityType $ getName e) (getIRI e)
 
-getEntity :: Element -> Entity
-getEntity e = toEntity $ fromJust $ filterElementName (isSmthList entityList) e
-
 getDeclaration :: Element -> Frame
-getDeclaration e =
-   let ent = filterCL entityList e
-       ans = getAllAnnos e
-   in Frame (SimpleEntity $ toEntity ent) [AnnFrameBit ans AnnotationFrameBit]
-
-getDeclarations :: Element -> [Frame]
-getDeclarations e =
-   let dcl = filterElementsName (isSmth "Declaration") e
-   in map getDeclaration dcl
+getDeclaration e = case getName e of
+   "Declaration" ->
+     let ent = filterCL entityList e
+         ans = getAllAnnos e
+     in Frame (SimpleEntity $ toEntity ent) [AnnFrameBit ans AnnotationFrameBit]
 
 isPlainLiteral :: String -> Bool
 isPlainLiteral s = "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
@@ -496,7 +491,7 @@ axToFrame (PlainAxiom e fb) = Frame e [fb]
 getFrames :: Element -> [Frame]
 getFrames e =
    let ax = filterChildrenName isNotSmth e
-   in getDeclarations e ++ map (axToFrame . getClassAxiom) ax
+   in map getDeclaration (filterCh "Declaration" e) ++ map (axToFrame . getClassAxiom) ax
 
 getAxioms :: Element -> [Axiom]
 getAxioms e = map getClassAxiom $ filterChildrenName isNotSmth e
