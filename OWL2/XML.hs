@@ -48,7 +48,7 @@ getName e =
     _ -> ""
 
 getIRI :: Element -> OWL2.AS.QName
-getIRI e = let [a] = elAttribs e in splitIRI $ mkQName $ attrVal a
+getIRI e = let [a] = elAttribs e in mkQN $ attrVal a
 
 -- gets one prefix with the corresponding iri
 get1PrefMap :: Element -> (String, IRI)
@@ -57,13 +57,13 @@ get1PrefMap e =
   in (pref, splitIRI $ mkQName pmap)
 
 getInt :: Element -> Int
-getInt e = let [int] = elAttribs e in value 10 $ attrVal int  
+getInt e = let [int] = elAttribs e in value 10 $ attrVal int
 
 isSmth :: String -> Text.XML.Light.QName -> Bool
-isSmth s = (s == ) . qName 
+isSmth s = (s ==) . qName
 
 isSmthList :: [String] -> Text.XML.Light.QName -> Bool
-isSmthList l qn = qName qn `elem` l 
+isSmthList l qn = qName qn `elem` l
 
 isNotSmth :: Text.XML.Light.QName -> Bool
 isNotSmth q = let qn = qName q in qn /= "Declaration" &&
@@ -76,10 +76,12 @@ filterChL :: [String] -> Element -> [Element]
 filterChL l = filterChildrenName (isSmthList l)
 
 filterC :: String -> Element -> Element
-filterC s e = fromJust $ filterChildName (isSmth s) e
+filterC s e = fromMaybe (error "child not found")
+    (filterChildName (isSmth s) e)
 
 filterCL :: [String] -> Element -> Element
-filterCL l e = fromJust $ filterChildName (isSmthList l) e
+filterCL l e = fromMaybe (error "child not found")
+    (filterChildName (isSmthList l) e)
 
 entityList :: [String]
 entityList = ["Class", "Datatype", "NamedIndividual",
@@ -128,7 +130,8 @@ getDeclaration e = case getName e of
    _ -> error "not declaration"
 
 isPlainLiteral :: String -> Bool
-isPlainLiteral s = "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
+isPlainLiteral s =
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
 
 getLiteral :: Element -> Literal
 getLiteral e = case getName e of
@@ -178,10 +181,14 @@ getObjProp e = case getName e of
   _ -> error "not objectProperty"
 
 getFacetValuePair :: Element -> (ConstrainingFacet, RestrictionValue)
-getFacetValuePair e = (getIRI e, getLiteral $ head $ elChildren e)
+getFacetValuePair e = case getName e of
+    "FacetRestriction" -> (getIRI e, getLiteral $ head $ elChildren e)
+    _ -> error "not facet"
 
 getDataRange :: Element -> DataRange
-getDataRange e = case getName e of
+getDataRange e =
+  let ch@(ch1 : _) = elChildren e
+  in case getName e of
     "Datatype" -> DataType (getIRI e) []
     "DatatypeRestriction" ->
         let dt = getIRI $ filterC "Datatype" e
@@ -189,18 +196,19 @@ getDataRange e = case getName e of
                $ filterCh "FacetRestriction" e
         in DataType dt fvp
     "DataComplementOf" -> DataComplementOf
-            $ getDataRange $ head $ elChildren e
+            $ getDataRange ch1
     "DataOneOf" -> DataOneOf
             $ map getLiteral $ filterCh "Literal" e
     "DataIntersectionOf" -> DataJunction IntersectionOf
-            $ map getDataRange $ elChildren e
+            $ map getDataRange ch
     "DataUnionOf" -> DataJunction UnionOf
-            $ map getDataRange $ elChildren e
+            $ map getDataRange ch
     _ -> error "XML parser: not data range"
 
 getClassExpression :: Element -> ClassExpression
 getClassExpression e =
-  let ch = elChildren e
+  let ch@(ch1 : _) = elChildren e
+      rch1 : _ = reverse ch
   in case getName e of
     "Class" -> Expression $ getIRI e
     "ObjectIntersectionOf" -> ObjectJunction IntersectionOf
@@ -208,15 +216,15 @@ getClassExpression e =
     "ObjectUnionOf" -> ObjectJunction UnionOf
             $ map getClassExpression ch
     "ObjectComplementOf" -> ObjectComplementOf
-            $ getClassExpression $ head ch
+            $ getClassExpression ch1
     "ObjectOneOf" -> ObjectOneOf
             $ map getIRI ch
     "ObjectSomeValuesFrom" -> ObjectValuesFrom SomeValuesFrom
-            (getObjProp $ head ch) (getClassExpression $ last ch)
+            (getObjProp ch1) (getClassExpression rch1)
     "ObjectAllValuesFrom" -> ObjectValuesFrom AllValuesFrom
-            (getObjProp $ head ch) (getClassExpression $ last ch)
-    "ObjectHasValue" -> ObjectHasValue (getObjProp $ head ch) (getIRI $ last ch)
-    "ObjectHasSelf" -> ObjectHasSelf $ getObjProp $ head ch
+            (getObjProp ch1) (getClassExpression rch1)
+    "ObjectHasValue" -> ObjectHasValue (getObjProp ch1) (getIRI rch1)
+    "ObjectHasSelf" -> ObjectHasSelf $ getObjProp ch1
     "ObjectMinCardinality" -> if length ch == 2 then
           ObjectCardinality $ Cardinality
               MinCardinality (getInt e) (getObjProp $ head ch)
@@ -225,43 +233,43 @@ getClassExpression e =
               MinCardinality (getInt e) (getObjProp $ head ch) Nothing
     "ObjectMaxCardinality" -> if length ch == 2 then
           ObjectCardinality $ Cardinality
-              MaxCardinality (getInt e) (getObjProp $ head ch)
-                $ Just $ getClassExpression $ last ch
+              MaxCardinality (getInt e) (getObjProp ch1)
+                $ Just $ getClassExpression rch1
          else ObjectCardinality $ Cardinality
-              MaxCardinality (getInt e) (getObjProp $ head ch) Nothing
+              MaxCardinality (getInt e) (getObjProp ch1) Nothing
     "ObjectExactCardinality" -> if length ch == 2 then
           ObjectCardinality $ Cardinality
-              ExactCardinality (getInt e) (getObjProp $ head ch)
-                $ Just $ getClassExpression $ last ch
+              ExactCardinality (getInt e) (getObjProp ch1)
+                $ Just $ getClassExpression rch1
          else ObjectCardinality $ Cardinality
-              ExactCardinality (getInt e) (getObjProp $ head ch) Nothing
+              ExactCardinality (getInt e) (getObjProp ch1) Nothing
     "DataSomeValuesFrom" ->
-        let dp = map getIRI $ init ch
+        let hd : tl = map getIRI $ init ch
             dr = last ch
-        in DataValuesFrom SomeValuesFrom (head dp) (tail dp) (getDataRange dr)
+        in DataValuesFrom SomeValuesFrom hd tl (getDataRange dr)
     "DataAllValuesFrom" ->
-        let dp = map getIRI $ init ch
+        let hd : tl = map getIRI $ init ch
             dr = last ch
-        in DataValuesFrom AllValuesFrom (head dp) (tail dp) (getDataRange dr)
-    "DataHasValue" -> DataHasValue (getIRI $ head ch) (getLiteral $ last ch)
+        in DataValuesFrom AllValuesFrom hd tl (getDataRange dr)
+    "DataHasValue" -> DataHasValue (getIRI ch1) (getLiteral rch1)
     "DataMinCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
-              MinCardinality (getInt e) (getIRI $ head ch)
-                $ Just $ getDataRange $ last ch
+              MinCardinality (getInt e) (getIRI ch1)
+                $ Just $ getDataRange rch1
          else DataCardinality $ Cardinality
-              MinCardinality (getInt e) (getIRI $ head ch) Nothing
+              MinCardinality (getInt e) (getIRI ch1) Nothing
     "DataMaxCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
-              MaxCardinality (getInt e) (getIRI $ head ch)
-                $ Just $ getDataRange $ last ch
+              MaxCardinality (getInt e) (getIRI ch1)
+                $ Just $ getDataRange rch1
          else DataCardinality $ Cardinality
-              MaxCardinality (getInt e) (getIRI $ head ch) Nothing
+              MaxCardinality (getInt e) (getIRI ch1) Nothing
     "DataExactCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
-              ExactCardinality (getInt e) (getIRI $ head ch)
-                $ Just $ getDataRange $ last ch
+              ExactCardinality (getInt e) (getIRI ch1)
+                $ Just $ getDataRange rch1
          else DataCardinality $ Cardinality
-              ExactCardinality (getInt e) (getIRI $ head ch) Nothing
+              ExactCardinality (getInt e) (getIRI ch1) Nothing
     _ -> error "XML parser: not ClassExpression"
 
 getClassAxiom :: Element -> Axiom
@@ -269,7 +277,7 @@ getClassAxiom e =
    let ch = elChildren e
        as = getAllAnnos e
        l@(hd : tl) = filterChL classExpressionList e
-       drl@[dhd, dtl] = filterChL dataRangeList e
+       [dhd, dtl] = filterChL dataRangeList e
        cel = map getClassExpression l
    in case getName e of
     "SubClassOf" ->
@@ -404,7 +412,7 @@ getDataAssertion e =
 getObjectAssertion :: Element -> Axiom
 getObjectAssertion e =
    let as = getAllAnnos e
-       op = getObjProp $ filterCL  objectPropList e
+       op = getObjProp $ filterCL objectPropList e
        ind = map getIRI $ filterChL individualList e
    in case getName e of
     "ObjectPropertyAssertion" ->
@@ -477,7 +485,7 @@ getPrefixMap e =
 
 getOntologyIRI :: Element -> OntologyIRI
 getOntologyIRI e =
-  let oi = findAttr (unqual "ontologyIRI") e 
+  let oi = findAttr (unqual "ontologyIRI") e
   in case oi of
     Nothing -> dummyQName
     Just iri -> splitIRI $ mkQName iri
@@ -488,7 +496,8 @@ axToFrame (PlainAxiom e fb) = Frame e [fb]
 getFrames :: Element -> [Frame]
 getFrames e =
    let ax = filterChildrenName isNotSmth e
-   in map getDeclaration (filterCh "Declaration" e) ++ map (axToFrame . getClassAxiom) ax
+   in map getDeclaration (filterCh "Declaration" e)
+        ++ map (axToFrame . getClassAxiom) ax
 
 getAxioms :: Element -> [Axiom]
 getAxioms e = map getClassAxiom $ filterChildrenName isNotSmth e

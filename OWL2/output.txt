@@ -4595,6 +4595,23 @@
         <IRI>#isToppingOf</IRI>
         <Literal xml:lang="en" datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">Any given instance of topping should only be added to a single pizza (no cheap half-measures on our pizzas)</Literal>
     </AnnotationAssertion>
+
+<SubClassOf>
+     <Class IRI="Teenager"/>
+     <DataSomeValuesFrom>
+       <DataProperty IRI="hasAge"/>
+       <DatatypeRestriction>
+         <Datatype IRI="&xsd;integer"/>
+         <FacetRestriction facet="xsd:minExclusive">
+           <Literal datatypeIRI="xsd:integer">12</Literal>
+         </FacetRestriction>
+         <FacetRestriction facet="xsd:maxInclusive">
+           <Literal datatypeIRI="xsd:integer">19</Literal>
+         </FacetRestriction>
+       </DatatypeRestriction>
+     </DataSomeValuesFrom>
+   </SubClassOf>
+
 </Ontology>
 
 
