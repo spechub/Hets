@@ -12,10 +12,10 @@ Contains    :  OWL2 XML Syntax Parsing
 
 {- still left to do:
      - cancel multiple inverses for object properties
-     - separate qnames at the colon
      - include all prefixes, xml-type
      - simplify some functions
       -}
+
 module OWL2.XML where
 
 import Text.XML.Light
@@ -28,16 +28,17 @@ import Data.List
 
 import qualified Data.Map as Map
 
+-- splits an IRI at the colon
 splitIRI :: IRI -> IRI
 splitIRI qn =
   let s = localPart qn
   in let r = delete '<' $ delete '>' $ delete '#' s
      in
-       if elem ':' r then
+       if ':' `elem` r then
           let p = takeWhile (/= ':') r
-              lp = drop (length p + 1) r
-          in nullQName {namePrefix = p, localPart = lp, isFullIri =
-                if r == s then False else True}
+              ':' : lp = dropWhile (/= ':') r
+          in qn {namePrefix = p, localPart = lp, isFullIri =
+               '<' : r ++ ">" == s}
         else qn {localPart = r}
 
 getName :: Element -> String
