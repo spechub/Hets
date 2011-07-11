@@ -49,17 +49,15 @@ getName e =
     _ -> ""
 
 getIRI :: Element -> OWL2.AS.QName
-getIRI e = splitIRI $ mkQName $ attrVal $ head $ elAttribs e
+getIRI e = let [a] = elAttribs e in splitIRI $ mkQName $ attrVal a
 
 get1PrefMap :: Element -> (String, IRI)
 get1PrefMap e =
   let [pref, pmap] = map attrVal $ elAttribs e
   in (pref, splitIRI $ mkQName pmap)
-      
+
 getInt :: Element -> Int
-getInt (Element {elAttribs = a}) =
-        let Attr {attrVal = int} = head a
-        in value 10 int
+getInt e = let [int] = elAttribs e in value 10 $ attrVal int  
 
 isSmth :: String -> Text.XML.Light.QName -> Bool
 isSmth s (QName {qName = qn}) = qn == s
