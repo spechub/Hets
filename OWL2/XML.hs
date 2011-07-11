@@ -51,12 +51,11 @@ getName e =
 getIRI :: Element -> OWL2.AS.QName
 getIRI e = splitIRI $ mkQName $ attrVal $ head $ elAttribs e
 
-get2IRIs :: Element -> (String, IRI)
-get2IRIs (Element {elAttribs = ls}) =
-        let Attr {attrVal = pref} = head ls
-            Attr {attrVal = pmap} = last ls
-        in (pref, splitIRI $ mkQName pmap)
-
+get1PrefMap :: Element -> (String, IRI)
+get1PrefMap e =
+  let [pref, pmap] = map attrVal $ elAttribs e
+  in (pref, splitIRI $ mkQName pmap)
+      
 getInt :: Element -> Int
 getInt (Element {elAttribs = a}) =
         let Attr {attrVal = int} = head a
@@ -479,7 +478,7 @@ getImports e = map (splitIRI . mkQName . strContent) $ filterCh "Import" e
 
 getPrefixMap :: Element -> PrefixMap
 getPrefixMap e =
-    let prl = map get2IRIs $ filterCh "Prefix" e
+    let prl = map get1PrefMap $ filterCh "Prefix" e
     in Map.fromList $ map (\ (p, m) -> (p, showQU m)) prl
 
 getOntologyIRI :: Element -> OntologyIRI
