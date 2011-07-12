@@ -180,7 +180,7 @@ sccOfClosure r@(Rel m) =
         else let ((k, v), p) = Map.deleteFindMin m in
              if Set.member k v then -- has a cycle
                 let c = preds r k v in -- get the cycle
-                c : sccOfClosure (Rel $ Set.fold Map.delete p c)
+                c : sccOfClosure (delSet c r)
              else sccOfClosure (Rel p)
 
 {- | restrict strongly connected components to its minimal representative
