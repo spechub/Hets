@@ -303,17 +303,75 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                 
 
               _ -> return ([], cSig)
-{-
-          ObjectEntity oe -> -- treat relation here
-          ClassEntity ce -> -- treat relations here
--}
+          ObjectEntity oe -> do
+            case rel of
+              Nothing -> return ([], cSig)
+              Just re -> do
+                case re of
+                  DRRelation r -> do
+                  tobjP <- mapObjProp cSig oe 1 2
+                  tdsc <- mapM (\ (_, c) -> mapDescription cSig c $
+                    case r of
+                      ADomain -> 1
+                      ARange -> 2) cls
+                  let vars = case r of
+                               ADomain -> (mkNName 1, mkNName 2)
+                               ARange -> (mkNName 2, mkNName 1)
+                  return (map (\ cd -> Quantification Universal
+                                     [Var_decl [fst vars] thing nullRange]
+                                     (
+                                      Quantification Existential
+                                         [Var_decl [snd vars] thing nullRange]
+                                         (
+                                          Implication
+                                           tobjP
+                                           cd
+                                          True
+                                          nullRange
+                                         )
+                                      nullRange
+                                     )
+                                     nullRange) tdsc, cSig)  
+
+          ClassEntity ce -> do
+            let map2nd = map snd cls
+            case rel of
+              Nothing -> return ([], cSig)      
+              Just r -> case r of
+                EDRelation re -> 
+                  do
+                    decrsS <- mapDescriptionListP cSig 1 $ comPairsaux  ce map2nd
+                    let decrsP = map (\ (x,y) -> 
+                            Quantification Universal
+                              [Var_decl [mkNName 1] thing nullRange]
+                            (case re of
+                              Equivalent ->
+                                  Equivalence x y nullRange
+                              Disjoint ->
+                                  Negation
+                                       (Conjunction [x, y] nullRange) nullRange)
+                             nullRange)
+                                  decrsS
+                    return (decrsP, cSig)
+                SubClass -> 
+                  do
+                    domT <- mapDescription cSig ce 1
+                    codT <- mapDescriptionList cSig 1 map2nd
+                    return (map (\ cd -> Quantification Universal
+                               [Var_decl [mkNName 1] thing nullRange]
+                               (Implication
+                                domT
+                                cd
+                                True
+                                nullRange) nullRange) codT, cSig)
+                 
+
     ObjectBit ol -> 
       let mol = fmap ObjectProp (toIRILst ObjectProperty ex)
           isJ = isJust mol
           Just ob = mol
           map2nd = map snd ol
           fol = maybeToList mol ++ map2nd
-          
       in case rel of 
       Nothing -> return ([], cSig)
       Just r -> case r of
@@ -385,16 +443,314 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                        (Conjunction [a, b] nullRange)
                                        nullRange)
                                nullRange) pairs, cSig)
-     
-{-
-    IndividualSameOrDifferent a ->
-          IndividualSameOrDifferent $ mapAnnList m (`getIndIri` m) a
-    DataPropRange a -> DataPropRange $ mapAnnList m (mapDRange m) a
-    IndividualFacts a -> IndividualFacts $ mapAnnList m (mapFact m) a
-    ExpressionBit a -> ExpressionBit  $ mapAnnList m (mapDescr m) a
-    ObjectCharacteristics _ -> lfb
--}
-	
+        _ -> return ([], cSig) 
+
+    IndividualSameOrDifferent al -> 
+      do
+        let mol = toIRILst NamedIndividual ex
+            map2nd = map snd al
+        case rel of 
+          Nothing -> return ([], cSig)
+          Just r -> 
+            case r of
+              SDRelation re -> do
+                fs <- mapComIndivList cSig re mol map2nd 
+                return (fs, cSig)
+              _ -> return ([], cSig)
+
+    DataPropRange dpr -> 
+      case rel of
+        Nothing -> return ([], cSig)
+        Just re -> 
+          case re of
+            DRRelation r ->   
+              case r of
+                 ARange ->
+                      case ex of
+                        SimpleEntity ent ->
+                          case ent of 
+                            Entity ty iri ->
+                              case ty of 
+                                DataProperty -> 
+                                  do 
+                                    oEx <- mapDataProp cSig iri 1 2
+                                    odes <- mapM (\ (_, c) -> mapDataRange cSig c 2) dpr
+                                    let vars = (mkNName 1, mkNName 2)
+                                    return (map(\ cd -> Quantification Universal
+                                         [Var_decl [fst vars] thing nullRange]
+                                         (Quantification Existential
+                                         [Var_decl [snd vars] dataS nullRange]
+                                         (Implication oEx cd True nullRange)
+                                         nullRange) nullRange) odes, cSig)
+
+    IndividualFacts indf -> 
+        let map2nd = map snd indf
+        in
+        case map2nd of  
+          [ObjectPropertyFact posneg obe ind] ->  
+            case ex of 
+              SimpleEntity (Entity ty iri) ->
+                case ty of 
+                  ObjectProperty ->
+                    do
+                      inS <- mapIndivURI cSig iri
+                      inT <- mapIndivURI cSig ind    
+                      oPropH <- mapObjProp cSig obe 1 2
+                      let oProp = case posneg of
+                                      Positive -> oPropH
+                                      Negative -> Negation oPropH nullRange
+                      return ([Quantification Universal
+                                     [Var_decl [mkNName 1]
+                                         thing nullRange
+                                      ,Var_decl [mkNName 2]
+                                         thing nullRange]
+                                      (
+                                       Implication
+                                       (
+                                        Conjunction
+                                        [
+                                        Strong_equation
+                                         (Qual_var (mkNName 1) thing
+                                          nullRange)
+                                          inS
+                                          nullRange
+                                          , Strong_equation
+                                          (Qual_var (mkNName 2) thing
+                                           nullRange)
+                                          inT
+                                          nullRange
+                                         ]
+                                         nullRange
+                                        )
+                                        oProp
+                                        True
+                                       nullRange
+                                      )
+                                 nullRange], cSig)
+          [DataPropertyFact posneg dpe lit] ->
+            case ex of 
+              SimpleEntity (Entity ty iri) ->
+                case ty of 
+                  DataProperty ->
+                    do
+                      inS <- mapIndivURI cSig iri
+                      inT <- mapLiteral cSig lit    
+                      oPropH <-  mapDataProp cSig dpe 1 2
+                      let oProp = case posneg of
+                                    Positive -> oPropH
+                                    Negative -> Negation oPropH nullRange
+                      return ([Quantification Universal
+                                           [Var_decl [mkNName 1]
+                                                     thing nullRange
+                                           , Var_decl [mkNName 2]
+                                                     thing nullRange]
+                                         (
+                                          Implication
+                                          (
+                                           Conjunction
+                                           [
+                                            Strong_equation
+                                            (Qual_var (mkNName 1) thing
+                                             nullRange)
+                                            inS
+                                            nullRange
+                                           , Strong_equation
+                                            (Qual_var (mkNName 2) thing
+                                             nullRange)
+                                            inT
+                                            nullRange
+                                           ]
+                                           nullRange
+                                          )
+                                           oProp
+                                          True
+                                          nullRange
+                                         )
+                                         nullRange], cSig)
+
+    ObjectCharacteristics ace -> 
+      let map2nd = map snd ace
+      in
+      case ex of 
+        ObjectEntity ope ->
+          case map2nd of
+            [Functional] -> 
+              do
+                so1 <- mapObjProp cSig ope 1 2
+                so2 <- mapObjProp cSig ope 1 3
+                return ([Quantification Universal
+                                     [Var_decl [mkNName 1] thing nullRange
+                                     , Var_decl [mkNName 2] thing nullRange
+                                     , Var_decl [mkNName 3] thing nullRange
+                                     ]
+                                     (
+                                      Implication
+                                      (
+                                       Conjunction [so1, so2] nullRange
+                                      )
+                                      (
+                                       Strong_equation
+                                       (
+                                        Qual_var (mkNName 2) thing nullRange
+                                       )
+                                       (
+                                        Qual_var (mkNName 3) thing nullRange
+                                       )
+                                       nullRange
+                                      )
+                                      True
+                                      nullRange
+                                     )
+                                     nullRange], cSig)
+            [InverseFunctional] ->
+               do
+                 so1 <- mapObjProp cSig ope 1 3
+                 so2 <- mapObjProp cSig ope 2 3
+                 return ([Quantification Universal
+                                     [Var_decl [mkNName 1] thing nullRange
+                                     , Var_decl [mkNName 2] thing nullRange
+                                     , Var_decl [mkNName 3] thing nullRange
+                                     ]
+                                     (
+                                      Implication
+                                      (
+                                       Conjunction [so1, so2] nullRange
+                                      )
+                                      (
+                                       Strong_equation
+                                       (
+                                        Qual_var (mkNName 1) thing nullRange
+                                       )
+                                       (
+                                        Qual_var (mkNName 2) thing nullRange
+                                       )
+                                       nullRange
+                                      )
+                                      True
+                                      nullRange
+                                     )
+                                     nullRange], cSig)
+	    [Reflexive] ->
+              do
+                so <- mapObjProp cSig ope 1 1
+                return ([Quantification Universal
+                                   [Var_decl [mkNName 1] thing nullRange]
+                                   (
+                                    Implication
+                                     (
+                                      Membership
+                                      (Qual_var (mkNName 1) thing nullRange)
+                                      thing
+                                      nullRange
+                                     )
+                                     so
+                                     True
+                                     nullRange
+                                   )
+                                   nullRange], cSig)
+            [Irreflexive] ->
+              do
+                so <- mapObjProp cSig ope 1 1
+                return            ([Quantification Universal
+                                   [Var_decl [mkNName 1] thing nullRange]
+                                   (
+                                    Implication
+                                    (
+                                     Membership
+                                     (Qual_var (mkNName 1) thing nullRange)
+                                     thing
+                                     nullRange
+                                    )
+                                    (
+                                     Negation
+                                     so
+                                    nullRange
+                                    )
+                                    True
+                                    nullRange
+                                   )
+                                   nullRange], cSig)
+            [Symmetric] -> 
+              do
+                 so1 <- mapObjProp cSig ope 1 2
+                 so2 <- mapObjProp cSig ope 2 1
+                 return
+                           ([Quantification Universal
+                               [Var_decl [mkNName 1] thing nullRange
+                               , Var_decl [mkNName 2] thing nullRange]
+                               (
+                                Implication
+                                so1
+                                so2
+                                True
+                                nullRange
+                               )
+                               nullRange], cSig)
+            [Asymmetric] ->
+              do
+                so1 <- mapObjProp cSig ope 1 2
+                so2 <- mapObjProp cSig ope 2 1
+                return         ([Quantification Universal
+                               [Var_decl [mkNName 1] thing nullRange
+                               , Var_decl [mkNName 2] thing nullRange]
+                               (
+                                Implication
+                                so1
+                                (Negation so2 nullRange)
+                                True
+                                nullRange
+                               )
+                               nullRange], cSig)
+            [Antisymmetric] ->
+              do
+                so1 <- mapObjProp cSig ope 1 2
+                so2 <- mapObjProp cSig ope 2 1
+                return        ([Quantification Universal
+                               [Var_decl [mkNName 1] thing nullRange
+                               , Var_decl [mkNName 2] thing nullRange]
+                               (
+                                Implication
+                                 (Conjunction [so1, so2] nullRange)
+                                 (
+                                  Strong_equation
+                                  (
+                                   Qual_var (mkNName 1) thing nullRange
+                                  )
+                                  (
+                                   Qual_var (mkNName 2) thing nullRange
+                                  )
+                                  nullRange
+                                 )
+                                True
+                                nullRange
+                               )
+                               nullRange], cSig)
+            [Transitive] ->
+              do
+                so1 <- mapObjProp cSig ope 1 2
+                so2 <- mapObjProp cSig ope 2 3
+                so3 <- mapObjProp cSig ope 1 3
+                return        ([Quantification Universal
+                               [Var_decl [mkNName 1] thing nullRange
+                               , Var_decl [mkNName 2] thing nullRange
+                               , Var_decl [mkNName 3] thing nullRange]
+                               (
+                                Implication
+                                (
+                                 Conjunction [so1, so2] nullRange
+                                )
+                                 so3
+                                True
+                                nullRange
+                               )
+                               nullRange], cSig)
+
+-- | Mapping of AnnFrameBit
+mapAnnFrameBit :: CASLSign 
+       -> Extended
+       -> Maybe Relation 
+       -> AnnFrameBit
+       -> Result ([CASLFORMULA], CASLSign)
 
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
 operations. -}
@@ -404,15 +760,30 @@ mapComObjectPropsList :: CASLSign                    -- ^ CASLSignature
                       -> Int                         -- ^ First variable
                       -> Int                         -- ^ Last  variable
                       -> Result [(CASLFORMULA, CASLFORMULA)]
-mapComObjectPropsList cSig mol props num1 num2 =
-      mapM (\ (x, z) -> do
-                              l <- mapObjProp cSig x num1 num2
-                              r <- mapObjProp cSig z num1 num2
-                              return (l, r)
-                       ) $ case mol of
-                             Nothing -> comPairs props props
-                             Just ol -> comPairsaux ol props
-                           
+mapComObjectPropsList cSig mol props num1 num2 = do
+  fs <- mapM (\ x -> mapObjProp cSig x num1 num2) props
+  case mol of
+    Nothing -> return $ comPairs fs fs
+    Just ol -> do
+      f <- mapObjProp cSig ol num1 num2
+      return $ comPairsaux f fs          
+
+mapComIndivList :: CASLSign                    -- ^ CASLSignature 
+                -> SameOrDifferent
+                -> Maybe Individual
+                -> [Individual]
+                -> Result [CASLFORMULA]
+mapComIndivList cSig sod mol inds = do
+  fs <- mapM (\ x -> mapIndivURI cSig x) inds
+  tps <- case mol of 
+    Nothing -> return $ comPairs fs fs
+    Just ol -> do
+      f <- mapIndivURI cSig ol 
+      return $ comPairsaux f fs
+  return $ map (\ (x, y) -> case sod of
+    Same -> mkStEq x y 
+    Different -> Negation (mkStEq x y) nullRange) tps
+
 
 -- | mapping of data constants
 mapLiteral :: CASLSign
