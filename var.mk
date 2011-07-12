@@ -50,14 +50,6 @@ endif
 HEXPATVERSION = $(shell $(HCPKG) field hexpat exposed)
 ifneq ($(findstring True, $(HEXPATVERSION)),)
 HEXPAT_PACKAGE = -DHEXPAT
-else
- XMLVERSION = $(shell $(HCPKG) list xml-1.3.7 --simple-output)
- ifneq ($(findstring xml, $(XMLVERSION)),)
-  XMLEXPOSED = $(shell $(HCPKG) field xml-1.3.7 exposed)
-  ifneq ($(findstring True, $(XMLEXPOSED)),)
-   XMLBYTESTRING_PACKAGE = -DXMLBS
-  endif
- endif
 endif
 
 HTTPVERSION = $(shell $(HCPKG) field HTTP version)
@@ -94,7 +86,7 @@ endif
 HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
-  $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) $(SERVER_FLAG) \
+  $(PFE_FLAGS) $(SERVER_FLAG) \
   -DCASLEXTENSIONS
 
 # for profiling (or a minimal hets) comment out the previous two package lines
