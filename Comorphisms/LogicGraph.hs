@@ -96,6 +96,7 @@ import Comorphisms.Adl2CASL
 import Comorphisms.OWL2CASL
 import Comorphisms.OWL2CommonLogic
 import Comorphisms.DMU2OWL
+import OWL2.OWL22CASL
 #endif
 
 #ifdef PROGRAMATICA
@@ -154,6 +155,7 @@ comorphismList =
 #endif
 #ifndef NOOWLLOGIC
     , Comorphism OWL2CASL
+    , Comorphism OWL22CASL
     , Comorphism OWL2CommonLogic
     , Comorphism DMU2OWL
 #endif
