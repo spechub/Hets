@@ -224,28 +224,31 @@ mapTheory (owlSig, owlSens) =
       (cSensI, nSig) <- foldM (\ (x, y) z ->
                            do
                              (sen, sig) <- mapSentence y z
-                             return (sen : x, uniteCASLSign sig y)
+                             return (sen ++ x, uniteCASLSign sig y)
                              ) ([], cSig) owlSens
-      let cSens = concatMap (\ x ->
-                             case x of
-                               Nothing -> []
-                               Just a -> [a]
+      let cSens = concatMap (\ x -> [x]
                         ) cSensI
       return (uniteCASLSign nSig pSig, predefinedSentences ++ cSens)
 
 -- | mapping of OWL to CASL_DL formulae
 mapSentence :: CASLSign                           -- ^ CASL Signature
   -> Named Axiom                                  -- ^ OWL2 Sentence
-  -> Result (Maybe (Named CASLFORMULA), CASLSign) -- ^ CASL Sentence
+  -> Result ([Named CASLFORMULA], CASLSign) -- ^ CASL Sentence
 mapSentence cSig inSen = do
-    (outAx, outSig) <- mapAxiom cSig $ sentence inSen
-    return (fmap (flip mapNamed inSen . const) outAx, outSig)
+    (outAx, outSig) <- mapAxioms cSig $ sentence inSen
+    return (map (flip mapNamed inSen . const) outAx, outSig)
 
-
-mapAxiom :: CASLSign                             -- ^ CASL Signature
-         -> Axiom                                -- ^ OWL2 Axiom
-         -> Result (Maybe CASLFORMULA, CASLSign) -- ^ CASL Formula
-mapAxiom cSig _ = return (Nothing, cSig)
+mapAxioms :: CASLSign
+          -> Axiom
+          -> Result ([CASLFORMULA], CASLSign)
+mapAxioms cSig ax = 
+  case ax of
+    PlainAxiom ex fb ->
+      case fb of
+        ListFrameBit rel lfb ->
+          mapListFrameBit cSig ex rel lfb
+        AnnFrameBit ann afb ->
+          mapAnnFrameBit cSig ex afb
 
 
 toIRILst :: EntityType 
@@ -748,12 +751,145 @@ mapListFrameBit cSig ex rel lfb = case lfb of
 -- | Mapping of AnnFrameBit
 mapAnnFrameBit :: CASLSign 
        -> Extended
-       -> Maybe Relation 
        -> AnnFrameBit
        -> Result ([CASLFORMULA], CASLSign)
+mapAnnFrameBit cSig ex afb = 
+  case afb of
+    AnnotationFrameBit -> return ([],cSig)
+    DataFunctional -> 
+      case ex of 
+        SimpleEntity (Entity ty iri) -> 
+          case ty of
+            DataProperty -> 
+              do
+                so1 <- mapDataProp cSig iri 1 2
+                so2 <- mapDataProp cSig iri 1 3
+                return ([Quantification Universal
+                                     [Var_decl [mkNName 1] thing nullRange
+                                     , Var_decl [mkNName 2] dataS nullRange
+                                     , Var_decl [mkNName 3] dataS nullRange
+                                     ]
+                                     (
+                                      Implication
+                                      (
+                                       Conjunction [so1, so2] nullRange
+                                      )
+                                      (
+                                       Strong_equation
+                                       (
+                                        Qual_var (mkNName 2) dataS nullRange
+                                       )
+                                       (
+                                        Qual_var (mkNName 3) dataS nullRange
+                                       )
+                                       nullRange
+                                      )
+                                      True
+                                      nullRange
+                                     )
+                                    nullRange], cSig)
+    DatatypeBit dr ->
+      case ex of
+        SimpleEntity (Entity ty iri) -> 
+          case ty of
+            Datatype ->
+              do
+                odes <- mapDataRange cSig dr 2
+                let dtb = uriToId iri
+                return ([Quantification Universal
+                          [Var_decl [mkNName 1] thing nullRange]
+                            (
+                            Equivalence 
+                             odes
+                             (Membership
+                              (Qual_var (mkNName 2) thing nullRange)
+                             dtb
+                             nullRange
+                             )
+                            nullRange
+                            )
+                       nullRange]
+                       , cSig)
+
+    ClassDisjointUnion clsl ->
+      case ex of 
+        SimpleEntity (Entity ty iri) ->
+          case ty of 
+            Class -> 
+              do
+                 decrs <- mapDescriptionList cSig 1 clsl
+                 decrsS <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
+                 let decrsP = map (\ (x, y) -> Conjunction [x, y] nullRange) decrsS
+                 mcls <- mapClassURI cSig iri (mkNName 1)
+                 return ([Quantification Universal
+                              [Var_decl [mkNName 1] thing nullRange]
+                               (
+                                Equivalence
+                                  mcls            
+                                (                 
+                                  Conjunction
+                                  [
+                                   Disjunction decrs nullRange
+                                  , Negation
+                                   (
+                                    Conjunction decrsP nullRange
+                                   )
+                                   nullRange
+                                  ]
+                                  nullRange
+                                )
+                                nullRange
+                               ) nullRange], cSig)
+    ClassHasKey obpe dpe -> return ([], cSig)
+    ObjectSubPropertyChain oplst -> 
+      do
+        os <- mapM (\ cd -> mapSubObjPropChain cSig afb cd 3) oplst
+        return (os, cSig)
+
+
+-- | Mapping of ObjectSubPropertyChain         
+mapSubObjPropChain :: CASLSign
+              -> AnnFrameBit
+              -> ObjectPropertyExpression
+              -> Int
+              -> Result CASLFORMULA
+mapSubObjPropChain cSig prop oP num1 =
+    let num2 = num1 + 1
+    in
+    case prop of
+           ObjectSubPropertyChain props ->
+             do
+               let zprops = zip (tail props) [(num2 + 1) ..]
+                   (_, vars) = unzip zprops
+               oProps <- mapM (\ (z, x, y) -> mapObjProp cSig z x y) $
+                                 zip3 props ((num1 : vars) ++ [num2]) $
+                                      tail ((num1 : vars) ++ [num2])
+               ooP <- mapObjProp cSig oP num1 num2
+               return $ Quantification Universal
+                     [ Var_decl [mkNName num1] thing nullRange
+                     , Var_decl [mkNName num2] thing nullRange]
+                     (
+                      Quantification Universal
+                         (
+                          map (\ x -> Var_decl [mkNName x] thing nullRange) vars
+                         )
+                         (
+                          Implication
+                          (Conjunction oProps nullRange)
+                          ooP
+                          True
+                          nullRange
+                         )
+                       nullRange
+                     )
+                    nullRange
+
+
+
+
 
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
-operations. -}
+operations. -}  
 mapComObjectPropsList :: CASLSign                    -- ^ CASLSignature
                       -> Maybe ObjectPropertyExpression
                       -> [ObjectPropertyExpression]
@@ -1127,6 +1263,6 @@ mapDescription cSig desc var = case desc of
                                             Conjunction
                                             [minLst, maxLst]
                                             nullRange
-    DataValuesFrom _ _ _ _ -> fail "data handling nyi"
-    DataHasValue _ _ -> fail "data handling nyi"
-    DataCardinality _ -> fail "data handling nyi"
+    DataValuesFrom _ _ _ _ -> fail "DataValuesFrom handling nyi"
+    DataHasValue _ _ -> fail "DataHasValue handling nyi"
+    DataCardinality _ -> fail "DataCardinality handling nyi"
