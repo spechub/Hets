@@ -45,10 +45,8 @@ import OWL2.ProveFact
 import OWL2.Conservativity
 import OWL2.ColimSign
 import OWL2.Taxonomy
+import OWL2.Sublogic
 
-
-
-type OWLSub = ()
 
 data OWL2 = OWL2 deriving Show
 
