@@ -35,24 +35,24 @@ instance Arbitrary (Rel Int) where
                    z <- choose (0, length keys - 1)
                    x1 <- choose (0, length keys - 2)
                    y1 <- choose (0, length keys - 1)
+                   k <- choose (0, length keys - 3)
                    let r' =
                         insertPair x1 y1 $
                         insertPair y1 x1 $
                         insertPair x y $
                         insertPair x z $
                         insertPair z y $
-                        insertPair y x r
+                        insertPair y x $ insertKey k r
                    return r'
 
 prop_IntransKernelTransClosure = prpTransClosure intransKernel
 
 prpTransClosure intrKern r =
-    (Set.size (mostRight rel) <= 3 &&
-     length (sccOfClosure rel) > 1 &&
+     (length (sccOfClosure rel) > 1 &&
      length (Map.keys $ toMap r) > 6) ==>
-       (Set.size (toSet $ irreflex r) < 10) `trivial`
-        collect (length (Map.keys $ toMap r))
-                 (rel == transClosure (intrKern rel))
+       classify (Set.size (toSet $ irreflex r) < 10) "trivial"
+        (collect (length (Map.keys $ toMap r))
+                 (rel == transClosure (intrKern rel)))
     where rel = transClosure r :: Rel Int
 
 tr = transClosure test1
@@ -77,38 +77,22 @@ test6 = fromList [(2, 1 :: Int), (3, 1), (5, 2), (5, 4), (4, 5), (6, 3), (7, 3)
 test7 = fromList [(2, 1), (3, 1), (4, 2), (5, 2), (6, 3), (7, 6)
   , (8, 6 :: Int), (-7, 7), (7, -7)]
 
-myQuick = Config
-  { configMaxTest = 100
-  , configMaxFail = 2000
-  , configSize = (+ 3) . (`div` 2)
-  , configEvery = \ n args -> let s = show n in s ++ [ '\b' | _ <- s ]
-  }
-
-prpInvTest :: (Rel Int -> Rel Int) -> Rel Int -> Property
-prpInvTest relFun rel =
-    (length (Map.keys $ toMap rel) > 6) ==>
-       (Set.size (toSet $ irreflex rel) < 10) `trivial`
-        collect (length (Map.keys $ toMap rel))
-                (notElem Set.empty $ Map.elems
-                   $ MapSet.rmNullSets $ toMap $ relFun rel)
-
-prop_InvIntransKernel = prpInvTest intransKernel -- violated precondition!
-prop_InvTransReduce = prpInvTest transReduce  -- violated precondition!
-prop_InvTranspose = prpInvTest transpose
-prop_InvIrreflex = prpInvTest irreflex
-prop_InvTransClosure = prpInvTest transClosure
-
 prpEq :: (Rel Int -> Rel Int) -> (Rel Int -> Rel Int) -> Rel Int -> Property
 prpEq relFun1 relFun2 rel = let clos = transClosure rel in
     (Set.size (nodes rel) > 6 &&
       clos /= rel && clos /= irreflex clos && transpose rel /= rel) ==>
-       (Set.size (toSet rel) < 10) `trivial`
-        collect (Set.size (nodes rel))
-                (relFun1 rel == relFun2 rel)
+       classify (Set.size (toSet rel) < 10) "trivial"
+        (collect (Set.size (nodes rel))
+                (relFun1 rel == relFun2 rel))
 
-prop_TransposeTranspose = prpEq id (transpose . transpose)
--- prop_IrreflexTranspose = prpEq (irreflex . transpose) (transpose . irreflex)
+prop_irreflexReflexive = prpEq reflexive (reflexive . irreflex . reflexive)
+
+prop_reflexivIrreflex = prpEq irreflex (irreflex . reflexive . irreflex)
+
+prop_TransposeTranspose = prpEq rmNullSets (transpose . transpose)
+prop_IrreflexTranspose =
+    prpEq (rmNullSets . irreflex . transpose) (transpose . irreflex)
 prop_TransClosureTranspose =
     prpEq (transClosure . transpose) (transpose . transClosure)
-prop_TransClosureIntransKernel = prpEq transClosure
-    (transClosure . intransKernel . transClosure)
+prop_TransClosureIntransKernel = prpEq (transClosure . irreflex)
+    (transClosure . intransKernel . transClosure . irreflex)

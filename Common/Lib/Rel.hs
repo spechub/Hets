@@ -35,6 +35,8 @@ module Common.Lib.Rel
     , member, toMap, map
     , noPairs, insertKey, deleteKey, memberKey, keysSet
     , fromKeysSet
+    , reflexive
+    , getCycles
     , union, intersection, isSubrelOf, difference, path
     , delete, succs, predecessors, irreflex, sccOfClosure
     , transClosure, fromList, toList, toPrecMap
@@ -53,7 +55,7 @@ import qualified Data.List as List
 import qualified Common.Lib.MapSet as MapSet
 
 -- | no invariant is ensured for relations!
-data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving (Eq, Ord)
+newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving (Eq, Ord)
 
 instance Show a => Show (Rel a) where
     show = show . toMap
@@ -115,7 +117,7 @@ insertKey k r@(Rel m) = if Map.member k m then r else
 -- | delete an ordered pair
 delete :: Ord a => a -> a -> Rel a -> Rel a
 delete a b (Rel m) =
-    let t = Set.delete b $ Map.findWithDefault Set.empty a m in
+    let t = Set.delete b $ MapSet.setLookup a m in
     Rel $ if Set.null t then Map.delete a m else Map.insert a t m
 
 -- | delete a node and all its relations
@@ -155,16 +157,21 @@ path a b r = Set.member b $ reachable r a
 transClosure :: Ord a => Rel a -> Rel a
 transClosure r@(Rel m) = Rel $ Map.mapWithKey ( \ k _ -> reachable r k) m
 
--- | get reverse relation
+-- | get transposed relation (losing unrelated keys)
 transpose :: Ord a => Rel a -> Rel a
-transpose (Rel m) =
-  let (isos, rest) = Map.partition Set.null m
-  in union (Rel isos)
-     . Rel . MapSet.toMap . MapSet.transpose $ MapSet.fromDistinctMap rest
+transpose = Rel . MapSet.toMap . MapSet.transpose . MapSet.fromMap . toMap
 
 -- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
 irreflex = Rel . Map.mapWithKey Set.delete . toMap
+
+-- | add all keys as reflexive elements
+reflexive :: Ord a => Rel a -> Rel a
+reflexive = Rel . Map.mapWithKey Set.insert . toMap
+
+-- | get entries that contain the key as element
+getCycles :: Ord a => Rel a -> Rel a
+getCycles = Rel . Map.filterWithKey Set.member . toMap
 
 -- | compute strongly connected components for a transitively closed relation
 sccOfClosure :: Ord a => Rel a -> [Set.Set a]
@@ -262,9 +269,8 @@ topSort r = let cs = sccOfClosure r in
 expandCycle :: Ord a => [Set.Set a] -> Set.Set a -> Set.Set a
 expandCycle cs s = case cs of
   [] -> s
-  c : r -> if Set.null c then error "Common.Lib.Rel.expandCycle" else
-    let (a, b) = Set.deleteFindMin c in
-    if Set.member a s then Set.union b s else expandCycle r s
+  c : r ->
+    if Set.null $ Set.intersection c s then expandCycle r s else Set.union c s
 
 {- | gets the most right elements of the irreflexive relation,
      unless no hierarchy is left then isolated nodes are output -}
