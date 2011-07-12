@@ -24,6 +24,14 @@ import qualified Data.Map as Map
 
 type XMLBase = String
 
+{- two functions from Text.XML.Light.Proc version 1.3.7 for compatibility 
+  with previous versions -}
+vLookupAttrBy :: (Text.XML.Light.QName -> Bool) -> [Attr] -> Maybe String
+vLookupAttrBy p as   = attrVal `fmap` find (p . attrKey) as
+
+vFindAttrBy :: (Text.XML.Light.QName -> Bool) -> Element -> Maybe String
+vFindAttrBy p e = vLookupAttrBy p (elAttribs e)
+
 -- splits an IRI at the colon
 splitIRI :: XMLBase -> IRI -> IRI
 splitIRI b qn =
@@ -140,7 +148,7 @@ getLiteral b e = case getName e of
     "Literal" ->
       let lf = strContent e
           mdt = findAttr (unqual "datatypeIRI") e
-          mattr = findAttrBy (isSmth "lang") e
+          mattr = vFindAttrBy (isSmth "lang") e
       in case mdt of
           Nothing -> case mattr of
              Just lang -> Literal lf (Untyped $ Just lang)
@@ -515,7 +523,7 @@ getAxioms :: XMLBase -> Element -> [Axiom]
 getAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e
 
 getBase :: Element -> XMLBase
-getBase e = fromJust $ findAttrBy (isSmth "base") e
+getBase e = fromJust $ vFindAttrBy (isSmth "base") e
 
 xmlBasicSpec :: Element -> OntologyDocument
 xmlBasicSpec e = let b = getBase e in emptyOntologyDoc
