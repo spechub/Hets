@@ -271,3 +271,5 @@ mapAxiom m (PlainAxiom eith fb) = case eith of
     SimpleEntity (Entity ty ent) -> PlainAxiom
         (SimpleEntity $ Entity ty $ getIri ty ent m) $ mapFB m fb
     Misc ans -> PlainAxiom (Misc $ mapAnnoList m ans) $ mapFB m fb
+    ObjectEntity ope -> PlainAxiom (ObjectEntity $ mapObjExpr m ope) $ mapFB m fb
+    ClassEntity ce -> PlainAxiom (ClassEntity $ mapDescr m ce) $ mapFB m fb
