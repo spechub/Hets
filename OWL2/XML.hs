@@ -34,25 +34,19 @@ vFindAttrBy p e = vLookupAttrBy p (elAttribs e)
 
 simpleSplit :: IRI -> IRI
 simpleSplit qn =
-  let np = namePrefix qn
-      lp = localPart qn
-  in if np == "" then
-          let nnp = takeWhile (/= ':') lp
-              ':' : nlp = dropWhile (/= ':') lp
-          in qn {namePrefix = nnp, localPart = nlp}
-      else qn
+  let lp = localPart qn
+      np = takeWhile (/= ':') lp
+      ':' : nlp = dropWhile (/= ':') lp
+  in qn {namePrefix = np, localPart = nlp}
 
--- splits an IRI at the colon
+{- if the IRI contains ':', it is split at the colon
+else, the xml:base needs to be pre-pended to the addres
+and then the IRI must be splitted -}
 splitIRI :: XMLBase -> IRI -> IRI
 splitIRI b qn =
- if isFullIri qn then simpleSplit qn
-  else
-   let r = localPart qn
-   in if ':' `elem` r then
-          let p = takeWhile (/= ':') r
-              ':' : lp = dropWhile (/= ':') r
-          in qn {namePrefix = p, localPart = lp}
-        else simpleSplit $ qn {localPart = b ++ r, isFullIri = True}
+ let r = localPart qn
+ in if ':' `elem` r then simpleSplit qn
+     else simpleSplit $ qn {localPart = b ++ r, isFullIri = True}
 
 -- gets the actual name of an axiom in XML Syntax
 getName :: Element -> String
@@ -66,19 +60,19 @@ getName e =
 getIRI :: XMLBase -> Element -> OWL2.AS.QName
 getIRI b e =
   let [a] = elAttribs e
-  in let iri = attrVal a
-         f = case qName $ attrKey a of
+      iri = attrVal a
+      f = case qName $ attrKey a of
             "abbreviatedIRI" -> False
             _ -> ':' `elem` iri
-     in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
+  in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
 
 getFullOrAbbrIRI :: XMLBase -> Element -> IRI
 getFullOrAbbrIRI b e =
   let cont = strContent e
   in case getName e of
-      "abbreviatedIRI" -> splitIRI b $ nullQName {localPart = cont}
+      "abbreviatedIRI" -> simpleSplit $ nullQName {localPart = cont}
       "IRI" -> if ':' `elem` cont then
-                 splitIRI b $ nullQName {localPart = cont,
+                 simpleSplit $ nullQName {localPart = cont,
                           isFullIri = True}
                 else splitIRI b
                      $ nullQName {localPart = strContent e}
@@ -502,7 +496,7 @@ getAnnoAxiom b e =
        ap = getIRI b $ filterC "AnnotationProperty" e
    in case getName e of
     "AnnotationAssertion" ->
-       let [s, v] = filterChL ["IRI", "abbreviatedIRI",
+       let [s, v] = filterChL ["abbreviatedIRI", "IRI",
             "AnonymousIndividual", "Literal"] e
        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)]
@@ -523,7 +517,7 @@ getAnnoAxiom b e =
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ARange))
                       $ AnnotationBit [(as, iri)]
-    _ -> getClassAxiom b e
+    _ -> error "bad frame"
 
 getImports :: XMLBase -> Element -> [ImportIRI]
 getImports b e = map (splitIRI b . mkQName . strContent) $ filterCh "Import" e

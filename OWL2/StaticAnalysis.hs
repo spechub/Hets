@@ -16,7 +16,6 @@ import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
 import OWL2.Theorem
-import OWL2.XML (simpleSplit)
 import OWL2.Expand
 
 import qualified Data.Map as Map
@@ -59,7 +58,7 @@ modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
 modEntity f (Entity ty u) = do
   s <- get
   let chg = f u
-  if elem u $ map (simpleSplit . mkQName) datatypeKeys then put s
+  if elem (localPart u) datatypeKeys then put s
    else put $ case ty of
     Datatype -> s { datatypes = chg $ datatypes s }
     Class -> s { concepts = chg $ concepts s }
