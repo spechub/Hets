@@ -1,15 +1,13 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
-Description :  Comorphism from OWL 1.1 to CASL_Dl
-Copyright   :  (c) Uni Bremen 2007
+Description :  Comorphism from OWL 2 to CASL_Dl
+Copyright   :  (c) Francisc-Nicolae Bungiu
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  f.bungiu@jacobs-university.de
 Stability   :  provisional
 Portability :  non-portable (via Logic.Logic)
-
-a not yet implemented comorphism
 -}
 
 module OWL2.OWL22CASL (OWL22CASL (..)) where
@@ -34,9 +32,7 @@ import OWL2.Sublogic
 import OWL2.ManchesterPrint()
 import OWL2.Morphism
 import OWL2.Symbols
-import OWL2.ATC_OWL2
 import OWL2.Keywords
-import OWL2.Morphism
 import qualified OWL2.Sign as OS
 -- CASL_DL = codomain
 import CASL.Logic_CASL
@@ -247,7 +243,7 @@ mapAxioms cSig ax =
       case fb of
         ListFrameBit rel lfb ->
           mapListFrameBit cSig ex rel lfb
-        AnnFrameBit ann afb ->
+        AnnFrameBit _anno afb ->
           mapAnnFrameBit cSig ex afb
 
 
@@ -268,7 +264,7 @@ mapListFrameBit :: CASLSign
        -> ListFrameBit 
        -> Result ([CASLFORMULA], CASLSign)
 mapListFrameBit cSig ex rel lfb = case lfb of
-    AnnotationBit a -> return ([], cSig)
+    AnnotationBit _a -> return ([], cSig)
     ExpressionBit cls -> 
       case ex of
           Misc _ -> return ([], cSig)
@@ -312,15 +308,15 @@ mapListFrameBit cSig ex rel lfb = case lfb of
               Just re -> do
                 case re of
                   DRRelation r -> do
-                  tobjP <- mapObjProp cSig oe 1 2
-                  tdsc <- mapM (\ (_, c) -> mapDescription cSig c $
-                    case r of
-                      ADomain -> 1
-                      ARange -> 2) cls
-                  let vars = case r of
-                               ADomain -> (mkNName 1, mkNName 2)
-                               ARange -> (mkNName 2, mkNName 1)
-                  return (map (\ cd -> Quantification Universal
+                    tobjP <- mapObjProp cSig oe 1 2
+                    tdsc <- mapM (\ (_, c) -> mapDescription cSig c $
+                      case r of
+                        ADomain -> 1
+                        ARange -> 2) cls
+                    let vars = case r of
+                                 ADomain -> (mkNName 1, mkNName 2)
+                                 ARange -> (mkNName 2, mkNName 1)
+                    return (map (\ cd -> Quantification Universal
                                      [Var_decl [fst vars] thing nullRange]
                                      (
                                       Quantification Existential
@@ -335,7 +331,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                       nullRange
                                      )
                                      nullRange) tdsc, cSig)  
-
+                  _ -> fail "ObjectEntity Relation nyi"
           ClassEntity ce -> do
             let map2nd = map snd cls
             case rel of
@@ -367,14 +363,13 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                 cd
                                 True
                                 nullRange) nullRange) codT, cSig)
-                 
-
+                _ -> fail "ClassEntity Relation nyi"      
+           
     ObjectBit ol -> 
       let mol = fmap ObjectProp (toIRILst ObjectProperty ex)
           isJ = isJust mol
           Just ob = mol
           map2nd = map snd ol
-          fol = maybeToList mol ++ map2nd
       in case rel of 
       Nothing -> return ([], cSig)
       Just r -> case r of
@@ -415,7 +410,6 @@ mapListFrameBit cSig ex rel lfb = case lfb of
           isJ = isJust mol
           map2nd = map snd db
           Just ob = mol
-          fol = maybeToList mol ++ map snd db
       in case rel of
       Nothing -> return ([], cSig)
       Just r -> case r of 
@@ -485,7 +479,10 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                          [Var_decl [snd vars] dataS nullRange]
                                          (Implication oEx cd True nullRange)
                                          nullRange) nullRange) odes, cSig)
-
+                                _ -> fail "DataPropRange EntityType fail"
+                        _ -> fail "DataPropRange Entity fail"
+                 _ -> fail "DataPropRange ADomain ni"     
+            _ -> fail "DataPropRange Relations ni"
     IndividualFacts indf -> 
         let map2nd = map snd indf
         in
@@ -530,6 +527,8 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                        nullRange
                                       )
                                  nullRange], cSig)
+                  _ -> fail "ObjectPropertyFacts EntityType fail"  
+              _ -> fail "ObjectPropertyFactsFacts Entity fail"
           [DataPropertyFact posneg dpe lit] ->
             case ex of 
               SimpleEntity (Entity ty iri) ->
@@ -570,7 +569,9 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                           nullRange
                                          )
                                          nullRange], cSig)
-
+                  _ -> fail "DataPropertyFact EntityType fail"
+              _ -> fail "DataPropertyFact Entity fail"
+          _ -> fail "DataPropertyFacts fail"
     ObjectCharacteristics ace -> 
       let map2nd = map snd ace
       in
@@ -747,6 +748,8 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                 nullRange
                                )
                                nullRange], cSig)
+            _ -> fail "ObjectCharacteristics Character fail"
+        _ -> fail "ObjectCharacteristics Entity fail"
 
 -- | Mapping of AnnFrameBit
 mapAnnFrameBit :: CASLSign 
@@ -788,6 +791,8 @@ mapAnnFrameBit cSig ex afb =
                                       nullRange
                                      )
                                     nullRange], cSig)
+            _ -> fail "DataFunctional EntityType fail"
+        _ -> fail "DataFunctional Extend fail"
     DatatypeBit dr ->
       case ex of
         SimpleEntity (Entity ty iri) -> 
@@ -810,7 +815,8 @@ mapAnnFrameBit cSig ex afb =
                             )
                        nullRange]
                        , cSig)
-
+            _ -> fail "DatatypeBit EntityType fail"
+        _ -> fail "DatatypeBit Extend fail"
     ClassDisjointUnion clsl ->
       case ex of 
         SimpleEntity (Entity ty iri) ->
@@ -840,12 +846,13 @@ mapAnnFrameBit cSig ex afb =
                                 )
                                 nullRange
                                ) nullRange], cSig)
-    ClassHasKey obpe dpe -> return ([], cSig)
+            _ -> fail "ClassDisjointUnion EntityType fail"
+        _ -> fail "ClassDisjointUnion Extend fail"
+    ClassHasKey _obpe _dpe -> return ([], cSig)
     ObjectSubPropertyChain oplst -> 
       do
         os <- mapM (\ cd -> mapSubObjPropChain cSig afb cd 3) oplst
         return (os, cSig)
-
 
 -- | Mapping of ObjectSubPropertyChain         
 mapSubObjPropChain :: CASLSign
@@ -883,7 +890,7 @@ mapSubObjPropChain cSig prop oP num1 =
                        nullRange
                      )
                     nullRange
-
+           _ -> fail "mapping of ObjectSubPropertyChain failed"
 
 
 
@@ -1141,9 +1148,9 @@ mapDataRange cSig dr inId =
 			(Qual_var uid thing nullRange)
 			ur
 			nullRange
-	  DataComplementOf dr ->
+	  DataComplementOf drc ->
 	    do
-	      dc <- mapDataRange cSig dr inId
+	      dc <- mapDataRange cSig drc inId
 	      return $ Negation dc nullRange
 	  DataOneOf _ -> error "nyi"	
 	  DataJunction _ _ -> error "nyi"
