@@ -54,9 +54,6 @@ splitIRI b qn =
           in qn {namePrefix = p, localPart = lp}
         else simpleSplit $ qn {localPart = b ++ r, isFullIri = True}
 
-mkQN :: XMLBase -> String -> IRI
-mkQN b s = splitIRI b $ mkQName s
-
 -- gets the actual name of an axiom in XML Syntax
 getName :: Element -> String
 getName e =
