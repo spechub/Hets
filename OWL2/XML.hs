@@ -35,15 +35,13 @@ vFindAttrBy p e = vLookupAttrBy p (elAttribs e)
 -- splits an IRI at the colon
 splitIRI :: XMLBase -> IRI -> IRI
 splitIRI b qn =
-  let s = localPart qn
-  in let r = delete '<' $ delete '>' s
-     in
-       if ':' `elem` r then
+  let r = localPart qn
+  in if ':' `elem` r then
           let p = takeWhile (/= ':') r
               ':' : lp = dropWhile (/= ':') r
           in qn {namePrefix = p, localPart = lp, isFullIri =
-               '<' : r ++ ">" == s}
-        else splitIRI "" $ qn {localPart = b ++ s}
+               p == "http"}
+        else splitIRI "" $ qn {localPart = b ++ r}
 
 mkQN :: XMLBase -> String -> IRI
 mkQN b s = splitIRI b $ mkQName s

@@ -31,14 +31,12 @@ import Control.Monad
 
 simpleSplit :: IRI -> IRI
 simpleSplit qn = 
-  let s = localPart qn
-  in let r = delete '<' $ delete '>' s
-     in
-       if ':' `elem` r then
+  let r = localPart qn
+  in if ':' `elem` r then
           let p = takeWhile (/= ':') r
               ':' : lp = dropWhile (/= ':') r
           in qn {namePrefix = p, localPart = lp, isFullIri =
-               '<' : r ++ ">" == s}
+               p == "http"}
         else qn {localPart = r} 
 
 -- | Error messages for static analysis
@@ -88,18 +86,33 @@ anaAxiom x = findImplied x $ makeNamed "" x
 
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> a -> Entity -> Result a
-checkEntity s a ent = let Entity ty e = ent in case ty of
-   Datatype -> if elem e (Set.toList (datatypes s) ++ map (setPrefix "xsd" . mkQName) datatypeKeys) then return a
+checkEntity s a ent =
+  let Entity ty e = ent
+      fe = if isFullIri e || localPart e `elem` datatypeKeys then e
+            else simpleSplit $ mkQName $ fromMaybe 
+              (error $ "prefix " ++ show (namePrefix e) ++ " not found")
+               (Map.lookup (namePrefix e) (prefixMap s)) ++ localPart e
+  in case ty of
+   Datatype -> if elem fe (Set.toList (datatypes s)
+                      ++ map (setPrefix "xsd" . mkQName) datatypeKeys) 
+                   || elem e (Set.toList (datatypes s)
+                      ++ map (setPrefix "xsd" . mkQName) datatypeKeys)
+                  then return a
                 else fail $ failMsg (Just ent) ""
-   Class -> if Set.member e (concepts s) then return a
+   Class -> if Set.member fe (concepts s) 
+             || Set.member e (concepts s) then return a
              else fail $ failMsg (Just ent) ""
-   ObjectProperty -> if Set.member e (objectProperties s) then return a
+   ObjectProperty -> if Set.member fe (objectProperties s) 
+                      || Set.member e (objectProperties s) then return a
                       else fail $ failMsg (Just ent) ""
-   DataProperty -> if Set.member e (dataProperties s) then return a
+   DataProperty -> if Set.member fe (dataProperties s)
+                      || Set.member e (dataProperties s) then return a
                     else fail $ failMsg (Just ent) ""
-   NamedIndividual -> if Set.member e (individuals s) then return a
+   NamedIndividual -> if Set.member fe (individuals s) 
+                       || Set.member e (individuals s) then return a
                        else fail $ failMsg (Just ent) ""
-   AnnotationProperty -> if Set.member e (annotationRoles s) then return a
+   AnnotationProperty -> if Set.member fe (annotationRoles s) 
+                          || Set.member e (annotationRoles s) then return a
                           else fail $ failMsg (Just ent) ""
 
 -- | checks if a DataRange is valid
