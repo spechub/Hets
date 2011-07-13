@@ -29,11 +29,13 @@ import CASL.AS_Basic_CASL (FORMULA(..))
 import CASL.ToDoc
 
 instance Pretty EM_BASIC_ITEM where
-        pretty (Simple_mod_decl time id_list ax_list _) =
-                cat[if time then (keyword timeS) else empty
-                   , keyword modalityS <+> semiAnnos pretty id_list
-                   , space <> specBraces (semiAnnos pretty ax_list)]
-        pretty (Nominal_decl id_list _) = keyword nominalS <+> semiAnnos pretty id_list
+        pretty (Simple_mod_decl time id_list ax_list _) = fsep
+          [(if time then keyword timeS else empty) <+> keyword modalityS
+          , semiAnnos pretty id_list
+          , if null ax_list then empty else
+                specBraces (semiAnnos pretty ax_list)]
+        pretty (Nominal_decl id_list _) = sep
+          [ keyword nominalS, semiAnnos pretty id_list ]
 
 instance Pretty MODALITY where
         pretty (Simple_modality idt) = pretty idt
