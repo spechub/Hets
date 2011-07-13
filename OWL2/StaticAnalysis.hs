@@ -16,6 +16,7 @@ import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
 import OWL2.Theorem
+import OWL2.XML (simpleSplit)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -28,16 +29,6 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
 import Control.Monad
-
-simpleSplit :: IRI -> IRI
-simpleSplit qn = 
-  let r = localPart qn
-  in if ':' `elem` r then
-          let p = takeWhile (/= ':') r
-              ':' : lp = dropWhile (/= ':') r
-          in qn {namePrefix = p, localPart = lp, isFullIri =
-               p == "http"}
-        else qn {localPart = r} 
 
 -- | Error messages for static analysis
 failMsg :: Maybe Entity -> String -> String

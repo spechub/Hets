@@ -32,16 +32,27 @@ vLookupAttrBy p as   = attrVal `fmap` find (p . attrKey) as
 vFindAttrBy :: (Text.XML.Light.QName -> Bool) -> Element -> Maybe String
 vFindAttrBy p e = vLookupAttrBy p (elAttribs e)
 
+simpleSplit :: IRI -> IRI
+simpleSplit qn =
+  let np = namePrefix qn
+      lp = localPart qn
+  in if np == "" then 
+          let nnp = takeWhile (/= ':') np
+              ':' : nlp = dropWhile (/= ':') np
+          in qn {namePrefix = nnp, localPart = nlp, namespaceUri = lp}
+      else qn {namespaceUri = np ++ ":" ++ lp}
+
 -- splits an IRI at the colon
 splitIRI :: XMLBase -> IRI -> IRI
 splitIRI b qn =
-  let r = localPart qn
-  in if ':' `elem` r then
+ if isFullIri qn then simpleSplit qn
+  else
+   let r = localPart qn
+   in if ':' `elem` r then
           let p = takeWhile (/= ':') r
               ':' : lp = dropWhile (/= ':') r
-          in qn {namePrefix = p, localPart = lp, isFullIri =
-               p == "http"}  -- still not properly checked
-        else splitIRI "" $ qn {localPart = b ++ r}
+          in qn {namePrefix = p, localPart = lp}
+        else simpleSplit $ qn {localPart = b ++ r, isFullIri = True}
 
 mkQN :: XMLBase -> String -> IRI
 mkQN b s = splitIRI b $ mkQName s
