@@ -63,8 +63,11 @@ import VSE.ToSExpr
 
 #ifndef NOOWLLOGIC
 import OWL2.Logic_OWL2
-import OWL2.ManchesterPrint (printOWLBasicTheory)
-import OWL2.ManchesterParser (basicSpec)
+import qualified OWL2.ManchesterPrint as OWL2 (printOWLBasicTheory)
+import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
+import OWL.Logic_OWL
+import qualified OWL.Print as OWL1 (printOWLBasicTheory)
+import qualified OWL.Parse as OWL1 (basicSpec)
 #endif
 
 import Logic.Prover
@@ -179,6 +182,7 @@ writeTheory opts filePrefix ga
     let fp = filePrefix ++ "_" ++ show i
         f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
+        lang = language_name lid
     in case ot of
     FreeCADOut -> writeFreeCADFile opts filePrefix raw_gTh ln i
     ThyFile -> writeIsaFile opts filePrefix raw_gTh ln i
@@ -188,7 +192,7 @@ writeTheory opts filePrefix ga
       if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
         else putIfVerbose opts 0 "printing theory delta is not implemented"
-      when (language_name lid == language_name VSE) $ do
+      when (lang == language_name VSE) $ do
         (sign, sens) <- coerceBasicTheory lid VSE "" th
         let (sign', sens') = addUniformRestr sign sens
             lse = map (namedSenToSExpr sign') sens'
@@ -198,7 +202,7 @@ writeTheory opts filePrefix ga
       if null $ show d then
         writeVerbFile opts f $ shows (pretty $ signOf raw_gTh) "\n"
         else putIfVerbose opts 0 "printing signature delta is not implemented"
-      when (language_name lid == language_name VSE) $ do
+      when (lang == language_name VSE) $ do
         (sign, sens) <- coerceBasicTheory lid VSE "" th
         let (sign', _sens') = addUniformRestr sign sens
         writeVerbFile opts (f ++ ".sexpr")
@@ -209,7 +213,7 @@ writeTheory opts filePrefix ga
             putIfVerbose opts 0 $ "could not translate to Haskell file: " ++ f
         Just d -> writeVerbFile opts f $ shows d "\n"
 #endif
-    ComptableXml -> if language_name lid == language_name CASL then do
+    ComptableXml -> if lang == language_name CASL then do
           th2 <- coerceBasicTheory lid CASL "" th
           let Result ds res = computeCompTable i th2
           showDiags opts ds
@@ -218,14 +222,22 @@ writeTheory opts filePrefix ga
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #ifndef NOOWLLOGIC
-    OWLOut -> if language_name lid == language_name OWL2 then do
+    OWLOut
+      | lang == language_name OWL2 -> do
             th2 <- coerceBasicTheory lid OWL2 "" th
-            let owltext = shows (printOWLBasicTheory th2) "\n"
-            case parse (basicSpec >> eof) f owltext of
+            let owltext = shows (OWL2.printOWLBasicTheory th2) "\n"
+            case parse (OWL2.basicSpec >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
-        else putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
+      | lang == language_name OWL -> do
+            th2 <- coerceBasicTheory lid OWL "" th
+            let owltext = shows (OWL1.printOWLBasicTheory th2) "\n"
+            case parse (OWL1.basicSpec >> eof) f owltext of
+              Left err -> putIfVerbose opts 0 $ show err
+              _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
+            writeVerbFile opts f owltext
+      | otherwise -> putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
 #endif
     _ -> return () -- ignore other file types
 
