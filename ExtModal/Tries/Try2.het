@@ -1,0 +1,10 @@
+logic ExtModal
+
+spec Try2=
+	time modality t
+	modalities a,b
+	sort N
+	flexible op s__: N -> N
+	flexible ops 0,1: N
+	. s 0 = 1
+end
