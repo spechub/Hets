@@ -17,6 +17,7 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.Theorem
 import OWL2.XML (simpleSplit)
+import OWL2.Expand
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -79,31 +80,20 @@ anaAxiom x = findImplied x $ makeNamed "" x
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a ent =
   let Entity ty e = ent
-      fe = if isFullIri e || localPart e `elem` datatypeKeys then e
-            else simpleSplit $ mkQName $ fromMaybe 
-              (error $ "prefix " ++ show (namePrefix e) ++ " not found")
-               (Map.lookup (namePrefix e) (prefixMap s)) ++ localPart e
   in case ty of
-   Datatype -> if elem fe (Set.toList (datatypes s)
-                      ++ map (setPrefix "xsd" . mkQName) datatypeKeys) 
-                   || elem e (Set.toList (datatypes s)
-                      ++ map (setPrefix "xsd" . mkQName) datatypeKeys)
+   Datatype -> if Set.member e (datatypes s) ||
+                    elem (localPart e) (datatypeKeys) 
                   then return a
                 else fail $ failMsg (Just ent) ""
-   Class -> if Set.member fe (concepts s) 
-             || Set.member e (concepts s) then return a
+   Class -> if Set.member e (concepts s) then return a
              else fail $ failMsg (Just ent) ""
-   ObjectProperty -> if Set.member fe (objectProperties s) 
-                      || Set.member e (objectProperties s) then return a
+   ObjectProperty -> if Set.member e (objectProperties s) then return a
                       else fail $ failMsg (Just ent) ""
-   DataProperty -> if Set.member fe (dataProperties s)
-                      || Set.member e (dataProperties s) then return a
+   DataProperty -> if Set.member e (dataProperties s) then return a
                     else fail $ failMsg (Just ent) ""
-   NamedIndividual -> if Set.member fe (individuals s) 
-                       || Set.member e (individuals s) then return a
+   NamedIndividual -> if Set.member e (individuals s) then return a
                        else fail $ failMsg (Just ent) ""
-   AnnotationProperty -> if Set.member fe (annotationRoles s) 
-                          || Set.member e (annotationRoles s) then return a
+   AnnotationProperty -> if Set.member e (annotationRoles s) then return a
                           else fail $ failMsg (Just ent) ""
 
 -- | checks if a DataRange is valid
@@ -369,11 +359,13 @@ getEntityFromFrame f = case f of
     _ -> return ()
 
 createSign :: [Frame] -> State Sign ()
-createSign = mapM_ getEntityFromFrame
+createSign f = do
+  s <- get
+  mapM_ getEntityFromFrame $ map (expF s) f
 
 createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do
-    x <- correctFrames s fl
+    x <- correctFrames s $ map (expF s) fl
     return (map anaAxiom $ concatMap getAxioms x, x)
 
 modifyOntologyDocument :: OntologyDocument -> [Frame] -> OntologyDocument

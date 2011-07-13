@@ -10,6 +10,8 @@ Portability :  portable
 Contains    :  OWL2 XML Syntax Parsing
 -}
 
+-- imports and ont id still need to consider abbreviated iris
+
 module OWL2.XML where
 
 import Text.XML.Light
@@ -39,8 +41,8 @@ simpleSplit qn =
   in if np == "" then 
           let nnp = takeWhile (/= ':') lp
               ':' : nlp = dropWhile (/= ':') lp
-          in qn {namePrefix = nnp, localPart = nlp, namespaceUri = lp}
-      else qn {namespaceUri = np ++ ":" ++ lp}
+          in qn {namePrefix = nnp, localPart = nlp}
+      else qn
 
 -- splits an IRI at the colon
 splitIRI :: XMLBase -> IRI -> IRI
@@ -526,7 +528,7 @@ getAnnoAxiom b e =
     _ -> getClassAxiom b e
 
 getImports :: XMLBase -> Element -> [ImportIRI]
-getImports b e = map ((mkQN b) . strContent) $ filterCh "Import" e
+getImports b e = map ((splitIRI b) . mkQName . strContent) $ filterCh "Import" e
 
 getPrefixMap :: Element -> PrefixMap
 getPrefixMap e =

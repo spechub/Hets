@@ -31,7 +31,7 @@ data QName = QN
   , localPart :: String
   -- ^ the local part of a qualified name \"namePrefix:localPart\"
   , isFullIri :: Bool
-  , namespaceUri :: String
+  , expandedIRI :: String
   -- ^ the associated namespace uri (not printed)
   } deriving Show
 

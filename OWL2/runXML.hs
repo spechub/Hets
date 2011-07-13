@@ -9,9 +9,8 @@ import Common.DocUtils
 processFile :: String -> IO ()
 processFile file = do
   s <- readFile file
-  case parseXMLDoc s of 
-    Nothing -> fail "error"
-    Just elems -> putStrLn $ show (xmlBasicSpec elems)
+  case parseXML s of 
+    elems -> putStrLn $ show (map xmlBasicSpec $ concatMap (filterElementsName $ isSmth "Ontology") $ onlyElems elems)
 
 main :: IO ()
 main = do

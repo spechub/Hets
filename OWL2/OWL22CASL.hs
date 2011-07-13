@@ -1077,7 +1077,7 @@ uriToId urI =
                       '_'
         nP = map repl $ namePrefix ur
         lP = map repl $ localPart ur
-        nU = map repl $ namespaceUri ur
+        nU = map repl $ expandedIRI ur
     in stringToId $ nU ++ "" ++ nP ++ "" ++ lP
 
 -- | Mapping of a list of descriptions
