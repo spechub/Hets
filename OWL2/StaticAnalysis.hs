@@ -17,8 +17,8 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.Theorem
 import OWL2.Expand
+import OWL2.Rename
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
@@ -28,7 +28,6 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
-import Control.Monad
 
 -- | Error messages for static analysis
 failMsg :: Maybe Entity -> String -> String
@@ -378,17 +377,18 @@ basicOWL2Analysis ::
         Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
 
 basicOWL2Analysis (odoc, inSign, _) = do
-    let ns = prefixDeclaration odoc
-        fs = ontologyFrame $ mOntology odoc
-    integNamespace <- integrateNamespaces (prefixMap inSign) ns
+    let pd = prefixDeclaration odoc
+        (intP, tm) = integPref (prefixMap inSign) pd
+        ndoc = mv tm odoc
+        fs = ontologyFrame $ mOntology ndoc
     let syms = Set.difference (symOf accSign) $ symOf inSign
         accSign = execState
           (createSign fs)
-          inSign {prefixMap = integNamespace}
+          inSign {prefixMap = intP}
     (axl, nfl) <- createAxioms accSign fs
-    let newdoc = modifyOntologyDocument odoc nfl
+    let newdoc = modifyOntologyDocument ndoc nfl
     return (newdoc , ExtSign accSign syms, axl)
-
+{-
 testAndInteg :: PrefixMap -> (String, String) -> Result PrefixMap
 
 testAndInteg old (pre, ouri) =
@@ -406,7 +406,7 @@ integrateNamespaces :: PrefixMap -> PrefixMap
                     -> Result PrefixMap
 integrateNamespaces oldNsMap testNsMap =
         foldM testAndInteg oldNsMap (Map.toList testNsMap)
-
+-}
 findImplied :: Axiom -> Named Axiom -> Named Axiom
 findImplied ax sent =
   if isToProve ax then sent

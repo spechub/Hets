@@ -46,7 +46,7 @@ import OWL2.Conservativity
 import OWL2.ColimSign
 import OWL2.Taxonomy
 import OWL2.Sublogic
-
+import OWL2.Rename
 
 data OWL2 = OWL2 deriving Show
 
