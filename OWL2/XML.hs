@@ -37,8 +37,8 @@ simpleSplit qn =
   let np = namePrefix qn
       lp = localPart qn
   in if np == "" then 
-          let nnp = takeWhile (/= ':') np
-              ':' : nlp = dropWhile (/= ':') np
+          let nnp = takeWhile (/= ':') lp
+              ':' : nlp = dropWhile (/= ':') lp
           in qn {namePrefix = nnp, localPart = nlp, namespaceUri = lp}
       else qn {namespaceUri = np ++ ":" ++ lp}
 
@@ -67,13 +67,31 @@ getName e =
     _ -> ""
 
 getIRI :: XMLBase -> Element -> OWL2.AS.QName
-getIRI b e = let [a] = elAttribs e in mkQN b $ attrVal a
+getIRI b e =
+  let [a] = elAttribs e 
+  in let iri = attrVal a
+         f = case qName $ attrKey a of
+            "abbreviatedIRI" -> False
+            _ -> if elem ':' iri then True else False
+     in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
+
+getFullOrAbbrIRI :: XMLBase -> Element -> IRI
+getFullOrAbbrIRI b e =
+  let cont = strContent e
+  in case getName e of
+      "abbreviatedIRI" -> splitIRI b $ nullQName {localPart = cont}
+      "IRI" -> if ':' `elem` cont then
+                 splitIRI b $ nullQName {localPart = cont,
+                          isFullIri = True}
+                else splitIRI b
+                     $ nullQName {localPart = strContent e}
+      _ -> error "invalid type of iri"
 
 -- gets one prefix with the corresponding iri
-get1PrefMap :: XMLBase -> Element -> (String, IRI)
-get1PrefMap b e =
+get1PrefMap :: Element -> (String, IRI)
+get1PrefMap e =
   let [pref, pmap] = map attrVal $ elAttribs e
-  in (pref, mkQN b pmap)
+  in (pref, mkQName pmap)
 
 getInt :: Element -> Int
 getInt e = let [int] = elAttribs e in value 10 $ attrVal int
@@ -152,8 +170,8 @@ isPlainLiteral :: String -> Bool
 isPlainLiteral s =
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
 
-getLiteral :: XMLBase -> Element -> Literal
-getLiteral b e = case getName e of
+getLiteral :: Element -> Literal
+getLiteral e = case getName e of
     "Literal" ->
       let lf = strContent e
           mdt = findAttr (unqual "datatypeIRI") e
@@ -166,19 +184,19 @@ getLiteral b e = case getName e of
              Just lang -> Literal lf (Untyped $ Just lang)
              Nothing -> if isPlainLiteral dt then
                           Literal lf (Untyped Nothing)
-                         else Literal lf (Typed $ mkQN b dt)
+                         else Literal lf (Typed $ mkQName dt)
     _ -> error "not literal"
 
 getValue :: XMLBase -> Element -> AnnotationValue
 getValue b e = case getName e of
-    "Literal" -> AnnValLit $ getLiteral b e
+    "Literal" -> AnnValLit $ getLiteral e
     "AnonymousIndividual" -> AnnValue $ getIRI b e
-    _ -> AnnValue $ mkQN b $ strContent e
+    _ -> AnnValue $ getFullOrAbbrIRI b e
 
 getSubject :: XMLBase -> Element -> IRI
 getSubject b e = case getName e of
     "AnonymousIndividual" -> getIRI b e
-    _ -> mkQN b $ strContent e
+    _ -> getFullOrAbbrIRI b e
 
 getAnnotation :: XMLBase -> Element -> Annotation
 getAnnotation b e =
@@ -186,6 +204,7 @@ getAnnotation b e =
          [ap] = filterCh "AnnotationProperty" e
          [av] = filterCh "Literal" e ++ filterCh "IRI" e
                   ++ filterCh "AnonymousIndividual" e
+                  ++ filterCh "abbreviatedIRI" e
      in
           Annotation (map (getAnnotation b) hd)
               (getIRI b ap) (getValue b av)
@@ -210,7 +229,7 @@ getFacetValuePair :: XMLBase -> Element -> (ConstrainingFacet, RestrictionValue)
 getFacetValuePair b e = case getName e of
     "FacetRestriction" ->
        let [ch] = elChildren e
-       in (getIRI b e, getLiteral b ch)
+       in (getIRI b e, getLiteral ch)
     _ -> error "not facet"
 
 getDataRange :: XMLBase -> Element -> DataRange
@@ -226,7 +245,7 @@ getDataRange b e =
     "DataComplementOf" -> DataComplementOf
             $ getDataRange b ch1
     "DataOneOf" -> DataOneOf
-            $ map (getLiteral b) $ filterCh "Literal" e
+            $ map getLiteral $ filterCh "Literal" e
     "DataIntersectionOf" -> DataJunction IntersectionOf
             $ map (getDataRange b) ch
     "DataUnionOf" -> DataJunction UnionOf
@@ -279,7 +298,7 @@ getClassExpression b e =
         let hd : tl = map (getIRI b) $ init ch
             dr = rch1
         in DataValuesFrom AllValuesFrom hd tl (getDataRange b dr)
-    "DataHasValue" -> DataHasValue (getIRI b ch1) (getLiteral b rch1)
+    "DataHasValue" -> DataHasValue (getIRI b ch1) (getLiteral rch1)
     "DataMinCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
               MinCardinality (getInt e) (getIRI b ch1)
@@ -426,7 +445,7 @@ getDataAssertion b e =
    let as = getAllAnnos b e
        dp = getIRI b $ filterCL dataPropList e
        ind = getIRI b $ filterCL individualList e
-       lit = getLiteral b $ filterC "Literal" e
+       lit = getLiteral $ filterC "Literal" e
    in case getName e of
     "DataPropertyAssertion" ->
          PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
@@ -484,7 +503,7 @@ getAnnoAxiom b e =
        ap = getIRI b $ filterC "AnnotationProperty" e
    in case getName e of
     "AnnotationAssertion" ->
-       let [s, v] = filterChL ["IRI", "AnonymousIndividual", "Literal"] e
+       let [s, v] = filterChL ["IRI", "abbreviatedIRI", "AnonymousIndividual", "Literal"] e
        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)] 
                     AnnotationFrameBit
@@ -493,12 +512,14 @@ getAnnoAxiom b e =
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty hd)
             $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, lst)]
     "AnnotationPropertyDomain" ->
-        let iri = mkQN b $ strContent $ filterC "IRI" e
+        let [ch] = elChildren e
+            iri = getFullOrAbbrIRI b ch
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ADomain))
                       $ AnnotationBit [(as, iri)]
     "AnnotationPropertyRange" ->
-        let iri = mkQN b $ strContent $ filterC "IRI" e
+        let [ch] = elChildren e
+            iri = getFullOrAbbrIRI b ch
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ARange))
                       $ AnnotationBit [(as, iri)]
@@ -507,17 +528,17 @@ getAnnoAxiom b e =
 getImports :: XMLBase -> Element -> [ImportIRI]
 getImports b e = map ((mkQN b) . strContent) $ filterCh "Import" e
 
-getPrefixMap :: XMLBase -> Element -> PrefixMap
-getPrefixMap b e =
-    let prl = map (get1PrefMap b) $ filterCh "Prefix" e
+getPrefixMap :: Element -> PrefixMap
+getPrefixMap e =
+    let prl = map get1PrefMap $ filterCh "Prefix" e
     in Map.fromList $ map (\ (p, m) -> (p, showQU m)) prl
 
-getOntologyIRI :: XMLBase -> Element -> OntologyIRI
-getOntologyIRI b e =
+getOntologyIRI :: Element -> OntologyIRI
+getOntologyIRI e =
   let oi = findAttr (unqual "ontologyIRI") e
   in case oi of
     Nothing -> dummyQName
-    Just iri -> mkQN b iri
+    Just iri -> splitIRI "" $ nullQName {localPart = iri, isFullIri = True}
 
 axToFrame :: Axiom -> Frame
 axToFrame (PlainAxiom e fb) = Frame e [fb]
@@ -542,7 +563,7 @@ xmlBasicSpec e = let b = getBase e in emptyOntologyDoc
         ontologyFrame = getFrames b e,
         imports = getImports b e,
         ann = [getAllAnnos b e],
-        muri = getOntologyIRI b e
+        muri = getOntologyIRI e
         },
-      prefixDeclaration = getPrefixMap b e
+      prefixDeclaration = getPrefixMap e
       }
