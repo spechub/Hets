@@ -64,10 +64,10 @@ instance Eq QName where
 
 instance Ord QName where
   compare (QN p1 l1 b1 n1) (QN p2 l2 b2 n2) = case (n1, n2) of
-    ([], []) -> compare (b1, p1, l1) (b2, p2, l2)
-    ([], _) -> LT
-    (_, []) -> GT
-    _ -> compare (b1, l1, n1) (b2, l2, n2)
+    ("", "") -> compare (b1, p1, l1) (b2, p2, l2)
+    ("", _) -> LT
+    (_, "") -> GT
+    _ -> compare n1 n2 -- compare fully expanded names only
 
 type IRIreference = QName
 type IRI = QName
