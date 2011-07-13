@@ -10,8 +10,6 @@ Portability :  portable
 Contains    :  OWL2 XML Syntax Parsing
 -}
 
--- imports and ont id still need to consider abbreviated iris
-
 module OWL2.XML where
 
 import Text.XML.Light
@@ -26,10 +24,10 @@ import qualified Data.Map as Map
 
 type XMLBase = String
 
-{- two functions from Text.XML.Light.Proc version 1.3.7 for compatibility 
+{- two functions from Text.XML.Light.Proc version 1.3.7 for compatibility
   with previous versions -}
 vLookupAttrBy :: (Text.XML.Light.QName -> Bool) -> [Attr] -> Maybe String
-vLookupAttrBy p as   = attrVal `fmap` find (p . attrKey) as
+vLookupAttrBy p as = attrVal `fmap` find (p . attrKey) as
 
 vFindAttrBy :: (Text.XML.Light.QName -> Bool) -> Element -> Maybe String
 vFindAttrBy p e = vLookupAttrBy p (elAttribs e)
@@ -38,7 +36,7 @@ simpleSplit :: IRI -> IRI
 simpleSplit qn =
   let np = namePrefix qn
       lp = localPart qn
-  in if np == "" then 
+  in if np == "" then
           let nnp = takeWhile (/= ':') lp
               ':' : nlp = dropWhile (/= ':') lp
           in qn {namePrefix = nnp, localPart = nlp}
@@ -70,11 +68,11 @@ getName e =
 
 getIRI :: XMLBase -> Element -> OWL2.AS.QName
 getIRI b e =
-  let [a] = elAttribs e 
+  let [a] = elAttribs e
   in let iri = attrVal a
          f = case qName $ attrKey a of
             "abbreviatedIRI" -> False
-            _ -> if elem ':' iri then True else False
+            _ -> ':' `elem` iri
      in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
 
 getFullOrAbbrIRI :: XMLBase -> Element -> IRI
@@ -165,7 +163,8 @@ getDeclaration b e = case getName e of
    "Declaration" ->
      let ent = filterCL entityList e
          ans = getAllAnnos b e
-     in Frame (SimpleEntity $ toEntity b ent) [AnnFrameBit ans AnnotationFrameBit]
+     in Frame (SimpleEntity $ toEntity b ent)
+          [AnnFrameBit ans AnnotationFrameBit]
    _ -> error "not declaration"
 
 isPlainLiteral :: String -> Bool
@@ -366,7 +365,8 @@ getOPAxiom b e =
        let opchain = concatMap (map $ getObjProp b) $ map elChildren
             $ filterCh "ObjectPropertyChain" e
        in if null opchain
-             then let [hd, lst] = map (getObjProp b) $ filterChL objectPropList e
+             then let [hd, lst] = map (getObjProp b)
+                        $ filterChL objectPropList e
                   in PlainAxiom (ObjectEntity hd)
                        $ ListFrameBit (Just SubPropertyOf) $ ObjectBit
                           [(as, lst)]
@@ -505,9 +505,10 @@ getAnnoAxiom b e =
        ap = getIRI b $ filterC "AnnotationProperty" e
    in case getName e of
     "AnnotationAssertion" ->
-       let [s, v] = filterChL ["IRI", "abbreviatedIRI", "AnonymousIndividual", "Literal"] e
+       let [s, v] = filterChL ["IRI", "abbreviatedIRI",
+            "AnonymousIndividual", "Literal"] e
        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
-               $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)] 
+               $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)]
                     AnnotationFrameBit
     "SubAnnotationPropertyOf" ->
         let [hd, lst] = map (getIRI b) $ filterCh "AnnotationProperty" e
@@ -528,7 +529,7 @@ getAnnoAxiom b e =
     _ -> getClassAxiom b e
 
 getImports :: XMLBase -> Element -> [ImportIRI]
-getImports b e = map ((splitIRI b) . mkQName . strContent) $ filterCh "Import" e
+getImports b e = map (splitIRI b . mkQName . strContent) $ filterCh "Import" e
 
 getPrefixMap :: Element -> PrefixMap
 getPrefixMap e =
@@ -549,7 +550,7 @@ getFrames :: XMLBase -> Element -> [Frame]
 getFrames b e =
    let ax = filterChildrenName isNotSmth e
    in map (getDeclaration b) (filterCh "Declaration" e)
-        ++ map (axToFrame . (getClassAxiom b)) ax
+        ++ map (axToFrame . getClassAxiom b) ax
 
 getAxioms :: XMLBase -> Element -> [Axiom]
 getAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e

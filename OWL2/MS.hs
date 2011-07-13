@@ -53,7 +53,7 @@ data Axiom = PlainAxiom Extended FrameBit
     deriving (Show, Eq, Ord)
 
 getAxioms :: Frame -> [Axiom]
-getAxioms (Frame e fbl) = map (\fb -> PlainAxiom e fb) fbl
+getAxioms (Frame e fbl) = map (PlainAxiom e) fbl
 
 instance GetRange Axiom
 
@@ -63,7 +63,7 @@ data FrameBit
     deriving (Show, Eq, Ord)
 
 data ListFrameBit
-  = AnnotationBit (AnnotatedList AnnotationProperty) --relation
+  = AnnotationBit (AnnotatedList AnnotationProperty) -- relation
   | ExpressionBit (AnnotatedList ClassExpression) -- relation
   | ObjectBit (AnnotatedList ObjectPropertyExpression) -- relation
   | DataBit (AnnotatedList DataPropertyExpression) -- relation
@@ -78,7 +78,7 @@ data AnnFrameBit
   | DataFunctional
   | DatatypeBit DataRange
   | ClassDisjointUnion [ClassExpression]
-  | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]  
+  | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]
           -- needs to be replaced later on by GCIClassHasKey
   | ObjectSubPropertyChain [ObjectPropertyExpression]
     deriving (Show, Eq, Ord)

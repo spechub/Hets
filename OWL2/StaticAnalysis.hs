@@ -82,7 +82,7 @@ checkEntity s a ent =
   let Entity ty e = ent
   in case ty of
    Datatype -> if Set.member e (datatypes s) ||
-                    elem (localPart e) (datatypeKeys) 
+                    elem (localPart e) datatypeKeys
                   then return a
                 else fail $ failMsg (Just ent) ""
    Class -> if Set.member e (concepts s) then return a
@@ -225,7 +225,7 @@ checkAnnBit s fb = case fb of
     _ -> return fb
 
 
-checkListBit :: Sign -> (Maybe Relation) -> ListFrameBit -> Result ListFrameBit
+checkListBit :: Sign -> Maybe Relation -> ListFrameBit -> Result ListFrameBit
 checkListBit s r fb = case fb of
     AnnotationBit anl -> case r of
         Just (DRRelation _) -> return fb
@@ -241,7 +241,6 @@ checkListBit s r fb = case fb of
     ObjectBit anl -> do
         let ans = map fst anl
         let ol = map snd anl
-        --checkObjPropList s fb ol
         let x = sortObjDataList s ol
         if null x then do
             let dpl = map getObjRoleFromExpression ol
@@ -334,7 +333,7 @@ checkHasKey s k = case k of
 
 checkExtended :: Sign -> Extended -> Result Extended
 checkExtended s e = case e of
-    ClassEntity ce -> do 
+    ClassEntity ce -> do
         ne <- checkClassExpression s ce
         return $ ClassEntity ne
     _ -> return e
@@ -361,7 +360,7 @@ getEntityFromFrame f = case f of
 createSign :: [Frame] -> State Sign ()
 createSign f = do
   s <- get
-  mapM_ getEntityFromFrame $ map (expF s) f
+  mapM_ (getEntityFromFrame . expF s) f
 
 createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do

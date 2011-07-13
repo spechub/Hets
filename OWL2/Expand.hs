@@ -7,23 +7,22 @@ import OWL2.Sign
 import Data.Maybe
 import qualified Data.Map as Map
 
---expanding all IRIs according to the prefix map from the sign
---the result is stored in the expandedIRI field of data QName
+{- expanding all IRIs according to the prefix map from the sign
+ the result is stored in the expandedIRI field of data QName -}
 
 expand :: Sign -> IRI -> IRI
 expand s qn =
   let np = namePrefix qn
-      lp = localPart qn 
-  in case isFullIri qn of
-      True -> qn {expandedIRI = np ++ ":" ++ lp}
-      False ->
+      lp = localPart qn
+  in if isFullIri qn then qn {expandedIRI = np ++ ":" ++ lp}
+      else
         let expn = fromMaybe (error "inexistent prefix")
               $ Map.lookup np $ prefixMap s
         in qn {expandedIRI = expn ++ lp}
 
 expDataRange :: Sign -> DataRange -> DataRange
 expDataRange s dra = case dra of
-  DataType dt ls -> DataType (expand s dt) 
+  DataType dt ls -> DataType (expand s dt)
      $ map (\ (cf, rv) -> (expand s cf, rv)) ls
   DataJunction jt drl -> DataJunction jt $ map (expDataRange s) drl
   DataComplementOf dr -> DataComplementOf $ expDataRange s dr
@@ -70,7 +69,7 @@ expAV s av = case av of
   _ -> av
 
 expAL :: Sign -> (Sign -> a -> a) -> AnnotatedList a -> AnnotatedList a
-expAL s f al = map (\ (ans, a) -> (map (expAnn s) ans, f s a)) al
+expAL s f = map (\ (ans, a) -> (map (expAnn s) ans, f s a))
 
 expFact :: Sign -> Fact -> Fact
 expFact s f = case f of
