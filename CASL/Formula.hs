@@ -48,6 +48,7 @@ module CASL.Formula
     ( term
     , mixTerm
     , primFormula
+    , primCASLFormula
     , formula
     , anColon
     , varDecl
@@ -282,7 +283,10 @@ primFormula :: TermParser f => [String] -> AParser st (FORMULA f)
 primFormula k = do
     f <- termParser False
     return $ ExtFORMULA f
-  <|> do
+  <|> primCASLFormula k
+
+primCASLFormula :: TermParser f => [String] -> AParser st (FORMULA f)
+primCASLFormula k = do
     c <- asKey trueS
     return . True_atom . Range $ tokenRange c
   <|> do
