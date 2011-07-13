@@ -191,13 +191,12 @@ basicItemParser :: AParser st EM_BASIC_ITEM
 basicItemParser =
         do mt <- optionMaybe $ asKey timeS
            k <- mKey
-           (annoId, ks) <- separatedBy (annoParser simpleId) anComma
-           parseAxioms (isJust mt) annoId ( catRange $ k : ks )
+           (annoId, ks) <- separatedBy (annoParser simpleId) anSemiOrComma
+           parseAxioms (isJust mt) annoId $ catRange $ k : ks
         <|>
         do k <- nKey
-           (annoId, ks) <- separatedBy (annoParser simpleId) anComma
-           let pos = catRange $ k : ks
-           return (Nominal_decl annoId pos)
+           (annoId, ks) <- separatedBy (annoParser simpleId) anSemiOrComma
+           return $ Nominal_decl annoId $ catRange $ k : ks
 
 parseAxioms :: Bool -> [Annoted SIMPLE_ID] -> Range -> AParser st EM_BASIC_ITEM
 parseAxioms b annoId pos =
