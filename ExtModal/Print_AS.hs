@@ -127,9 +127,11 @@ printEModalSign sim sign =
         printSetMap (keyword rigidS <+> keyword predS) empty
             (MapSet.toMap $ rigidPreds sign)
         $+$
-        (if Map.null mds then empty else
-        cat [keyword modalitiesS <+> sepBySemis (map sidDoc (Map.keys mds))
-            , specBraces (printFormulaOfEModalSign sim $ Map.elems mds)])
+        (if Map.null mds then empty else fsep
+          [ keyword modalitiesS
+          , sepBySemis (map sidDoc (Map.keys mds))
+          , let fs = Map.elems mds in if null $ concat fs then empty else
+            specBraces $ printFormulaOfEModalSign sim fs ])
         $+$
         (if Set.null tms then empty else
         keyword timeS <+> keyword modalitiesS
