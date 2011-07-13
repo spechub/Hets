@@ -51,6 +51,7 @@ import OWL2.Sublogic
 data OWL2 = OWL2 deriving Show
 
 instance Language OWL2 where
+ language_name _ = "OWL"
  description _ =
   "OWL2 DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
