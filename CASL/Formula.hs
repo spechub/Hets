@@ -48,7 +48,7 @@ module CASL.Formula
     ( term
     , mixTerm
     , primFormula
-    , primCASLFormula
+    , genPrimFormula
     , formula
     , anColon
     , varDecl
@@ -280,8 +280,12 @@ termFormula k t = do
   <|> return (Mixfix_formula t)
 
 primFormula :: TermParser f => [String] -> AParser st (FORMULA f)
-primFormula k = do
-    f <- termParser False
+primFormula = genPrimFormula (termParser False)
+
+genPrimFormula :: TermParser f => AParser st f -> [String]
+  -> AParser st (FORMULA f)
+genPrimFormula p k = do
+    f <- p
     return $ ExtFORMULA f
   <|> primCASLFormula k
 

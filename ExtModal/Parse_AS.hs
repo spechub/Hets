@@ -15,6 +15,7 @@ module ExtModal.Parse_AS where
 import Text.ParserCombinators.Parsec
 
 import Common.Id
+import Common.Parsec
 import Common.Token
 import Common.Lexer
 import Common.AnnoState
@@ -56,157 +57,68 @@ ext_modal_reserved_words =
   , modalityS
   , modalitiesS ]
 
+boxParser :: AParser st (MODALITY, Bool, Range)
+boxParser = do
+    open <- oBracketT
+    modal <- parseModality
+    close <- cBracketT
+    return (modal, True, toRange open [] close)
+
+diamondParser :: AParser st (MODALITY, Bool, Range)
+diamondParser = do
+    open <- asKey lessS
+    modal <- parseModality
+    close <- asKey greaterS
+    return (modal, False, toRange open [] close)
+
+rekPrimParser :: AParser st (FORMULA EM_FORMULA)
+rekPrimParser = genPrimFormula modalPrimFormulaParser ext_modal_reserved_words
+
 -- | Modal formula parser
 modalFormulaParser :: AParser st EM_FORMULA
--- common beginnings must be factored out
-modalFormulaParser =
-        -- box, <=
-        do open <- oBracketT
-           modal <- parseModality
-           close <- cBracketT
-           asKey lessEq
-           number <- getNumber
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           return (BoxOrDiamond True modal True (value 10 number) em_formula
-                  $ toRange open [] close)
-        <|>
-        -- box, >=
-        do open <- oBracketT
-           modal <- parseModality
-           close <- cBracketT
-           asKey greaterEq
-           number <- getNumber
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           return (BoxOrDiamond True modal False (value 10 number) em_formula
-                  $ toRange open [] close)
-        <|>
-        -- diamond, <=
-        do open <- asKey lessS
-           modal <- parseModality
-           close <- asKey greaterS
-           asKey lessEq
-           number <- getNumber
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           return (BoxOrDiamond False modal True (value 10 number) em_formula
-                  $ toRange open [] close)
-        <|>
-        -- diamond, >=
-        do open <- asKey lessS
-           modal <- parseModality
-           close <- asKey greaterS
-           asKey greaterEq
-           number <- getNumber
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           return (BoxOrDiamond False modal False (value 10 number) em_formula
-                  $ toRange open [] close)
-        <|>
-        -- empty diamond, <=
-        do diam <- asKey diamondS
-           asKey lessEq
-           number <- getNumber
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos diam
-           return (BoxOrDiamond False (Simple_modality $ Token emptyS pos)
-                   True (value 10 number) em_formula pos)
-        <|>
-        -- empty diamond, >=
-        do diam <- asKey diamondS
-           asKey greaterEq
-           number <- getNumber
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos diam
-           return (BoxOrDiamond False (Simple_modality $ Token emptyS pos)
-                   False (value 10 number) em_formula pos)
-        <|>
-        -- Until, U
-        do formula1 <- primCASLFormula ext_modal_reserved_words
-           unt <- asKey untilS
-           formula2 <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos unt
-           return (UntilSince True formula1 formula2 pos)
-        <|>
-        -- Since, S
-        do formula1 <- primCASLFormula ext_modal_reserved_words
-           snc <- asKey sinceS
-           formula2 <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos snc
-           return (UntilSince False formula1 formula2 pos)
-        <|>
-        -- All paths, A
-        do ap <- asKey allPathsS
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos ap
-           return (PathQuantification True em_formula pos)
-        <|>
-        -- Some paths, E
-        do sp <- asKey somePathsS
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos sp
-           return (PathQuantification False em_formula pos)
-        <|>
-        -- Next, X
-        do nxt <- asKey nextS
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos nxt
-           return (NextY True em_formula pos)
-        <|>
-        -- Yesterday, Y
-        do ysd <- asKey yesterdayS
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos ysd
-           return (NextY False em_formula pos)
-        <|>
-        -- Generally, G
-        do grl <- asKey generallyS
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos grl
-           return (StateQuantification True True em_formula pos)
-        <|>
-        -- Eventually, F
-        do evt <- asKey eventuallyS
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos evt
-           return (StateQuantification True False em_formula pos)
-        <|>
-        -- Hitherto, H
-        do hth <- asKey hithertoS
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos hth
-           return (StateQuantification False True em_formula pos)
-        <|>
-        -- Previously, P
-        do prv <- asKey previouslyS
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos prv
-           return (StateQuantification False False em_formula pos)
-        <|>
-        -- parse Mu
-        do mu <- asKey muS
-           z <- varId ext_modal_reserved_words
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos mu
-           return (FixedPoint True z em_formula pos)
-        <|>
-        -- parse Nu
-        do nu <- asKey nuS
-           z <- varId ext_modal_reserved_words
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos nu
-           return (FixedPoint False z em_formula pos)
-        <|>
-        -- @
-        do at <- asKey atS
-           nom <- simpleId
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos at
-           return (Hybrid True (Nominal nom) em_formula pos)
-        <|>
-        -- Here
-        do her <- asKey hereS
-           nom <- simpleId
-           em_formula <- primCASLFormula ext_modal_reserved_words
-           let pos = tokPos her
-           return (Hybrid False (Nominal nom) em_formula pos)
+modalFormulaParser = do
+  (f1, t, b) <- try $ do -- here the lookup for the infix operators happens
+    f1 <- rekPrimParser
+    (t, b) <- pair (asKey untilS) (return True)
+      <|> pair (asKey sinceS) (return False)
+    return (f1, t, b)
+  f2 <- rekPrimParser
+  return $ UntilSince b f1 f2 $ tokPos t
+
+prefixModifier :: AParser st (FORMULA EM_FORMULA -> EM_FORMULA)
+prefixModifier = let mkF f r = return $ flip f $ tokPos r in
+      (asKey allPathsS >>= mkF (PathQuantification True))
+  <|> (asKey somePathsS >>= mkF (PathQuantification False))
+  <|> (asKey nextS >>= mkF (NextY True))
+  <|> (asKey yesterdayS >>= mkF (NextY False))
+  <|> (asKey generallyS >>= mkF (StateQuantification True True))
+  <|> (asKey eventuallyS >>= mkF (StateQuantification True False))
+  <|> (asKey hithertoS >>= mkF (StateQuantification False True))
+  <|> (asKey previouslyS >>= mkF (StateQuantification False False))
+  <|> do
+    mnb <- (asKey muS >> return True)
+      <|> (asKey nuS >> return False)
+    z <- varId ext_modal_reserved_words
+    mkF (FixedPoint mnb z) z
+  <|> do
+    ahb <- (asKey atS >> return True)
+      <|> (asKey hereS >> return False)
+    nom <- simpleId
+    mkF (Hybrid ahb $ Nominal nom) nom
+
+-- | Modal formula parser
+modalPrimFormulaParser :: AParser st EM_FORMULA
+modalPrimFormulaParser = do
+    (modal, b, r) <- boxParser <|> diamondParser
+    lgb <- (asKey lessEq >> return True)
+      <|> (asKey greaterEq >> return False)
+    number <- getNumber
+    em_formula <- rekPrimParser
+    return $ BoxOrDiamond b modal lgb (value 10 number) em_formula r
+  <|> do
+    f <- prefixModifier
+    em_formula <- rekPrimParser
+    return $ f em_formula
 
 -- | Term modality parser
 parsePrimModality :: AParser st MODALITY
@@ -216,9 +128,10 @@ parsePrimModality = do
            asKey tmCParanthS
            return t
         <|> do
-           mf <- optionMaybe $ primCASLFormula ext_modal_reserved_words
+           mf <- optionMaybe rekPrimParser
            case mf of
-             Nothing -> return $ Simple_modality $ mkSimpleId emptyS
+             Nothing ->
+               fmap (Simple_modality . Token emptyS . Range . (: [])) getPos
              Just f -> case f of
                Mixfix_formula (Mixfix_token t) | isSimpleToken t ->
                  return $ Simple_modality t
@@ -276,14 +189,10 @@ nKey = asKey nominalS <|> asKey nominalsS
 
 basicItemParser :: AParser st EM_BASIC_ITEM
 basicItemParser =
-        do k <- mKey
-           (annoId, ks) <- separatedBy (annoParser simpleId) anComma
-           parseAxioms False annoId ( catRange $ k : ks )
-        <|>
-        do asKey timeS
+        do mt <- optionMaybe $ asKey timeS
            k <- mKey
            (annoId, ks) <- separatedBy (annoParser simpleId) anComma
-           parseAxioms True annoId ( catRange $ k : ks )
+           parseAxioms (isJust mt) annoId ( catRange $ k : ks )
         <|>
         do k <- nKey
            (annoId, ks) <- separatedBy (annoParser simpleId) anComma
