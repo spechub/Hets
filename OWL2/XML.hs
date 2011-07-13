@@ -40,7 +40,7 @@ splitIRI b qn =
           let p = takeWhile (/= ':') r
               ':' : lp = dropWhile (/= ':') r
           in qn {namePrefix = p, localPart = lp, isFullIri =
-               p == "http"}
+               p == "http"}  -- still not properly checked
         else splitIRI "" $ qn {localPart = b ++ r}
 
 mkQN :: XMLBase -> String -> IRI
