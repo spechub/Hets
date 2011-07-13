@@ -115,9 +115,9 @@ instance Pretty Frame where
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
         SimpleEntity (Entity e uri) -> pretty (showEntityType e) <+>
-            fsep [pretty uri <+> vcat (map pretty bl)]
-        ObjectEntity ope -> keyword objectPropertyC <+> (pretty ope <+> fsep [vcat (map pretty bl)])
-        ClassEntity ce -> keyword classC <+> (pretty ce <+> fsep [vcat (map pretty bl)])
+            fsep [pretty uri $+$ vcat (map pretty bl)]
+        ObjectEntity ope -> keyword objectPropertyC $+$ (pretty ope <+> fsep [vcat (map pretty bl)])
+        ClassEntity ce -> keyword classC <+> (pretty ce $+$ fsep [vcat (map pretty bl)])
         Misc a -> case bl of 
           [ListFrameBit (Just e) (ExpressionBit anl)] -> printEquivOrDisjointClasses (getED e) <+>
             (printAnnotations a $+$ printAnnotatedList anl)
