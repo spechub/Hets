@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  Comorphism from OWL 2 to CASL_Dl
-Copyright   :  (c) Francisc-Nicolae Bungiu
+Copyright   :  (c) Francisc-Nicolae BungiuObjectPropertyFacts EntityType
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  f.bungiu@jacobs-university.de
@@ -169,14 +169,6 @@ loadDataInformation _ =
         dts = Set.fromList $ map stringToId datatypeKeys
     in
      (emptySign ()) { sortRel = Rel.fromKeysSet dts }
-{-
-loadDataInformation :: OWLSub -> Sign f ()
-loadDataInformation sl =
-    let
-        dts = Set.map (stringToId . printXSDName) $ datatype sl
-    in
-     (emptySign ()) { sortRel = Rel.fromKeysSet dts }
--}
 
 predefinedSentences :: [Named CASLFORMULA]
 predefinedSentences =
@@ -489,11 +481,9 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         case map2nd of  
           [ObjectPropertyFact posneg obe ind] ->  
             case ex of 
-              SimpleEntity (Entity ty iri) ->
-                case ty of 
-                  ObjectProperty ->
+              SimpleEntity (Entity NamedIndividual siri)->
                     do
-                      inS <- mapIndivURI cSig iri
+                      inS <- mapIndivURI cSig siri
                       inT <- mapIndivURI cSig ind    
                       oPropH <- mapObjProp cSig obe 1 2
                       let oProp = case posneg of
@@ -527,8 +517,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                        nullRange
                                       )
                                  nullRange], cSig)
-                  _ -> fail "ObjectPropertyFacts EntityType fail"  
-              _ -> fail "ObjectPropertyFactsFacts Entity fail"
+              _ -> fail $ "ObjectPropertyFactsFacts Entity fail: " ++ show ex
           [DataPropertyFact posneg dpe lit] ->
             case ex of 
               SimpleEntity (Entity ty iri) ->
