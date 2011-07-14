@@ -105,9 +105,8 @@ instance PrefixClass ClassExpression where
    ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
       ObjectCardinality $ Cardinality ty card
         (mv tMap opExp) (maybeRename tMap maybeDesc)
-   DataValuesFrom ty dpExp dpExpList dataRange ->
-      DataValuesFrom ty (mv tMap dpExp) (map (mv tMap) dpExpList)
-        (mv tMap dataRange)
+   DataValuesFrom ty dpExp dataRange ->
+      DataValuesFrom ty (mv tMap dpExp) (mv tMap dataRange)
    DataHasValue dpExp const' -> DataHasValue
         (mv tMap dpExp) (mv tMap const')
    DataCardinality (Cardinality ty card dpExp maybeRange) ->

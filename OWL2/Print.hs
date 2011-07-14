@@ -179,10 +179,9 @@ instance Pretty ClassExpression where
       printObjPropExp opExp <+> cardinalityType ty
         <+> text (show card)
         <+> maybe (keyword "owl:Thing") printPrimary maybeDesc
-   DataValuesFrom ty dpExp dpExpList dRange ->
+   DataValuesFrom ty dpExp dRange ->
        printURIreference dpExp <+> quantifierType ty
-           <+> (if null dpExpList then empty
-                 else specBraces $ ppWithCommas dpExpList) <+> pretty dRange
+        <+> pretty dRange
    DataHasValue dpExp cons -> pretty dpExp <+> keyword valueS <+> pretty cons
    DataCardinality (Cardinality ty card dpExp maybeRange) ->
        pretty dpExp <+> cardinalityType ty <+> text (show card)
@@ -197,7 +196,7 @@ printNegatedPrimary :: ClassExpression -> Doc
 printNegatedPrimary d = let r = parens $ pretty d in case d of
   ObjectComplementOf _ -> r
   ObjectValuesFrom _ _ _ -> r
-  DataValuesFrom _ _ _ _ -> r
+  DataValuesFrom _ _ _ -> r
   ObjectHasValue _ _ -> r
   DataHasValue _ _ -> r
   _ -> printPrimary d

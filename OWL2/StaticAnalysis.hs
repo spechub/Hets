@@ -151,7 +151,7 @@ checkClassExpression s desc = case desc of
      else if z then do
             ndr <- classExpressionToDataRange s d
             checkDataRange s ndr
-            return $ DataValuesFrom a iri [] ndr
+            return $ DataValuesFrom a iri ndr
            else fail $ failMsg (Just $ Entity ObjectProperty iri)
               " in the following ClassExpression\n\n" ++ show desc
   ObjectHasSelf opExpr -> do
@@ -186,9 +186,9 @@ checkClassExpression s desc = case desc of
            if z then return $ DataCardinality (Cardinality a b iri (Just dr))
             else fail $ failMsg (Just $ Entity DataProperty iri)
                        " in the following ClassExpression\n\n" ++ show desc
-  DataValuesFrom _ dExp ds r -> do
+  DataValuesFrom _ dExp r -> do
     checkDataRange s r
-    let x = Set.isSubsetOf (Set.fromList (dExp : ds)) (dataProperties s)
+    let x = Set.member dExp (dataProperties s)
     if x then return desc
      else fail $ failMsg (Just $ Entity DataProperty dExp)
                 " in the following ClassExpression\n\n" ++ show desc

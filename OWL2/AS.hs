@@ -196,7 +196,7 @@ data ClassExpression =
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
   | DataValuesFrom QuantifierType
-       DataPropertyExpression [DataPropertyExpression] DataRange
+       DataPropertyExpression DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord)

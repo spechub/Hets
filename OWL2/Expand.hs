@@ -49,8 +49,8 @@ expCE s cle = case cle of
               (Cardinality ct i (expOP s op) Nothing)
         Just ce -> ObjectCardinality
               (Cardinality ct i (expOP s op) $ Just (expCE s ce))
-  DataValuesFrom qt dp dpl dr -> DataValuesFrom qt (expand s dp)
-        (map (expand s) dpl) (expDataRange s dr)
+  DataValuesFrom qt dp dr -> DataValuesFrom qt
+              (expand s dp) (expDataRange s dr)
   DataHasValue dp l -> DataHasValue (expand s dp) l
   DataCardinality (Cardinality ct i dp mdr) ->
       case mdr of

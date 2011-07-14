@@ -217,8 +217,8 @@ mapDescr m desc = case desc of
     ObjectHasValue o i -> ObjectHasValue (mapObjExpr m o) $ getIndIri i m
     ObjectCardinality c -> ObjectCardinality
       $ mapCard (mapObjExpr m) (mapDescr m) c
-    DataValuesFrom ty d ds dr -> DataValuesFrom ty (mapDataExpr m d)
-      (map (mapDataExpr m) ds) $ mapDRange m dr
+    DataValuesFrom ty d dr -> DataValuesFrom ty (mapDataExpr m d)
+      $ mapDRange m dr
     DataHasValue d c -> DataHasValue (mapDataExpr m d) c
     DataCardinality c -> DataCardinality
        $ mapCard (mapDataExpr m) (mapDRange m) c

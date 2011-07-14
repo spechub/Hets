@@ -1259,6 +1259,6 @@ mapDescription cSig desc var = case desc of
                                             Conjunction
                                             [minLst, maxLst]
                                             nullRange
-    DataValuesFrom _ _ _ _ -> fail "DataValuesFrom handling nyi"
+    DataValuesFrom _ _ _ -> fail "DataValuesFrom handling nyi"
     DataHasValue _ _ -> fail "DataHasValue handling nyi"
     DataCardinality _ -> fail "DataCardinality handling nyi"
