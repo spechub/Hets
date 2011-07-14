@@ -552,12 +552,12 @@ getBase e = fromJust $ vFindAttrBy (isSmth "base") e
 xmlBasicSpec :: Element -> OntologyDocument
 xmlBasicSpec e = let b = getBase e in emptyOntologyDoc
       {
-      mOntology = emptyOntologyD
+      ontology = emptyOntologyD
         {
-        ontologyFrame = getFrames b e,
+        ontFrames = getFrames b e,
         imports = getImports b e,
         ann = [getAllAnnos b e],
-        muri = getOntologyIRI e
+        name = getOntologyIRI e
         },
       prefixDeclaration = getPrefixMap e
       }

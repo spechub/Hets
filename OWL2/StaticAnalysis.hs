@@ -367,8 +367,8 @@ createAxioms s fl = do
 
 modifyOntologyDocument :: OntologyDocument -> [Frame] -> OntologyDocument
 modifyOntologyDocument
-    OntologyDocument {mOntology = mo, prefixDeclaration = pd} fl =
-      OntologyDocument { mOntology = mo {ontologyFrame = fl},
+    OntologyDocument {ontology = mo, prefixDeclaration = pd} fl =
+      OntologyDocument { ontology = mo {ontFrames = fl},
             prefixDeclaration = pd}
 
 -- | static analysis of ontology with incoming sign.
@@ -380,7 +380,7 @@ basicOWL2Analysis (odoc, inSign, _) = do
     let pd = prefixDeclaration odoc
         (intP, tm) = integPref (prefixMap inSign) pd
         ndoc = mv tm odoc
-        fs = ontologyFrame $ mOntology ndoc
+        fs = ontFrames $ ontology ndoc
     let syms = Set.difference (symOf accSign) $ symOf inSign
         accSign = execState
           (createSign fs)

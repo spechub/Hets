@@ -116,13 +116,13 @@ expF s (Frame e fbl) = Frame (expE s e) $ map (expFB s) fbl
 expA :: Sign -> Axiom -> Axiom
 expA s (PlainAxiom e fb) = PlainAxiom (expE s e) $ expFB s fb
 
-expOnt :: Sign -> MOntology -> MOntology
+expOnt :: Sign -> Ontology -> Ontology
 expOnt s o =
-  let oiri = expand s $ muri o
+  let oiri = expand s $ name o
       imp = map (expand s) $ imports o
       ans = map (map (expAnn s)) $ ann o
-      fr = map (expF s) $ ontologyFrame o
-  in o {muri = oiri, imports = imp, ann = ans, ontologyFrame = fr}
+      fr = map (expF s) $ ontFrames o
+  in o {name = oiri, imports = imp, ann = ans, ontFrames = fr}
 
 expODoc :: Sign -> OntologyDocument -> OntologyDocument
-expODoc s o = o {mOntology = expOnt s $ mOntology o}
+expODoc s o = o {ontology = expOnt s $ ontology o}

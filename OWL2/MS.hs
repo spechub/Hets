@@ -20,16 +20,16 @@ import qualified Data.Map as Map
 
 data OntologyDocument = OntologyDocument {
     prefixDeclaration :: PrefixMap,
-    mOntology :: MOntology
+    ontology :: Ontology
  } deriving (Show, Eq, Ord)
 
 instance GetRange OntologyDocument
 
-data MOntology = MOntology {
-  muri :: OntologyIRI,
+data Ontology = Ontology {
+  name :: OntologyIRI,
   imports :: [ImportIRI],
   ann :: [Annotations],
-  ontologyFrame :: [Frame]
+  ontFrames :: [Frame]
  } deriving (Show, Eq, Ord)
 
 {- | annotions are annotedAnnotationList that must be preceded by the keyword
@@ -91,13 +91,13 @@ data Fact
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument Map.empty emptyOntologyD
 
-emptyOntologyD :: MOntology
-emptyOntologyD = MOntology nullQName [] [] []
+emptyOntologyD :: Ontology
+emptyOntologyD = Ontology nullQName [] [] []
 
 isEmptyOntologyDoc :: OntologyDocument -> Bool
 isEmptyOntologyDoc (OntologyDocument ns onto) =
-    Map.null ns && isEmptyOntologyM onto
+    Map.null ns && isEmptyOntology onto
 
-isEmptyOntologyM :: MOntology -> Bool
-isEmptyOntologyM (MOntology (QN _ l _ n) annoList impList frames) =
-    null l && null n && null annoList && null impList && null frames
+isEmptyOntology :: Ontology -> Bool
+isEmptyOntology (Ontology (QN _ l _ n) annoList impList fs) =
+    null l && null n && null annoList && null impList && null fs

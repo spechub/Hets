@@ -70,7 +70,7 @@ cnvtoSimpleId = mkSimpleId . filter isAlphaNum . showQN
 createSpec :: OntologyDocument -> Annoted SPEC
 createSpec o = let
   bs = emptyAnno $ Basic_spec (G_basic_spec OWL2 o) nullRange
-  in case imports $ mOntology o of
+  in case imports $ ontology o of
   [] -> bs
   is -> emptyAnno $ Extension
          [case is of
@@ -80,7 +80,7 @@ createSpec o = let
 
 convertone :: OntologyDocument-> Annoted LIB_ITEM
 convertone o = emptyAnno $ Spec_defn
-  (cnvtoSimpleId $ muri $ mOntology o)
+  (cnvtoSimpleId $ name $ ontology o)
   emptyGenericity
   (createSpec o)
   nullRange

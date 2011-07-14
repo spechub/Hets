@@ -262,11 +262,11 @@ basicSpec = do
   ans <- many annotations
   as <- frames
   return emptyOntologyDoc
-    { mOntology = emptyOntologyD
-      { ontologyFrame = as
+    { ontology = emptyOntologyD
+      { ontFrames = as
       , imports = ie
       , ann = ans
-      , muri = ou }
+      , name = ou }
     , prefixDeclaration = Map.fromList $
       [ ("owl", "http://www.w3.org/2002/07/owl#")
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")

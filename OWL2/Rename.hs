@@ -176,9 +176,9 @@ instance PrefixClass OntologyDocument where
   mv tMap ( OntologyDocument pm onto) =
       OntologyDocument (mv tMap pm) (mv tMap onto)
 
-instance PrefixClass MOntology where
-  mv tMap ( MOntology ouri impList anList f) =
-      MOntology (mv tMap ouri) (map (mv tMap) impList)
+instance PrefixClass Ontology where
+  mv tMap ( Ontology ouri impList anList f) =
+      Ontology (mv tMap ouri) (map (mv tMap) impList)
          (map (mv tMap) anList) (map (mv tMap) f)
 
 testAndInteg :: (String, String)
@@ -210,9 +210,9 @@ integPref oldNsMap testNsMap =
 integrateOntologyDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
 integrateOntologyDoc of1@( OntologyDocument ns1
-                           ( MOntology oid1 imp1 anno1 frames1))
+                           ( Ontology oid1 imp1 anno1 frames1))
                       of2@( OntologyDocument ns2
-                           ( MOntology oid2 imp2 anno2 frames2)) =
+                           ( Ontology oid2 imp2 anno2 frames2)) =
   if of1 == of2 then of1
    else
     let (newPref, tm) = integPref ns1 ns2
@@ -224,10 +224,10 @@ integrateOntologyDoc of1@( OntologyDocument ns1
                if null lid2 || id1 == id2 then id1 else id1
                   { localPart = uriToName lid1 ++ "_" ++ uriToName lid2 }
     in OntologyDocument newPref
-            ( MOntology (newOid oid1 oid2)
+            ( Ontology (newOid oid1 oid2)
                  (nub $ imp1 ++ map (mv tm) imp2)
                  (nub $ anno1 ++ map (mv tm) anno2)
-                 (nub $ frames1 ++ map (mv tm) (frames2)))
+                 (nub $ frames1 ++ map (mv tm) frames2))
 
 uriToName :: String -> String
 uriToName str = let

@@ -136,7 +136,7 @@ printAxiom :: Axiom -> Doc
 printAxiom (PlainAxiom e fb) = printFrame (Frame e [fb])
 
 -- | Printing the ontology
-instance Pretty MOntology where
+instance Pretty Ontology where
     pretty = printOntology
 
 printImport :: ImportIRI -> Doc
@@ -147,13 +147,13 @@ printPrefixes x = vcat (map (\ (a, b) ->
        (text "Prefix:" <+> text a <> colon <+> text ('<' : b ++ ">")))
           (Map.toList x))
 
-printOntology :: MOntology -> Doc
-printOntology MOntology {muri = a, imports = b, ann = c, ontologyFrame = d} =
+printOntology :: Ontology -> Doc
+printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
         keyword ontologyC <+> pretty a $++$ vcat (map printImport b)
         $++$ vcat (map printAnnotations c) $+$ vcat (map pretty d)
 
 printOntologyDocument :: OntologyDocument -> Doc
-printOntologyDocument OntologyDocument {prefixDeclaration = a, mOntology = b} =
+printOntologyDocument OntologyDocument {prefixDeclaration = a, ontology = b} =
         printPrefixes a $++$ pretty b
 
 instance Pretty OntologyDocument where
