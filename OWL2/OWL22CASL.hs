@@ -1077,8 +1077,7 @@ uriToId urI =
                       '_'
         nP = map repl $ namePrefix ur
         lP = map repl $ localPart ur
-        nU = map repl $ expandedIRI ur
-    in stringToId $ nU ++ "" ++ nP ++ "" ++ lP
+    in stringToId $ nP ++ "" ++ lP
 
 -- | Mapping of a list of descriptions
 mapDescriptionList :: CASLSign
@@ -1259,6 +1258,31 @@ mapDescription cSig desc var = case desc of
                                             Conjunction
                                             [minLst, maxLst]
                                             nullRange
-    DataValuesFrom _ _ _ -> fail "DataValuesFrom handling nyi"
+    DataValuesFrom ty dpe dr -> 
+      do
+        oprop0 <- mapDataProp cSig dpe var (var + 1)
+        desc0 <- mapDataRange cSig dr (var + 1)
+        case ty of 
+		SomeValuesFrom ->
+		   return $ Quantification Existential [Var_decl [mkNName
+								   (var + 1)]
+							  thing nullRange]
+			  (
+			  Conjunction
+                           [oprop0, desc0]
+                           nullRange
+			  )
+			  nullRange
+		AllValuesFrom ->
+		   return $ Quantification Universal [Var_decl [mkNName
+                                                               (var + 1)]
+                                                       thing nullRange]
+                       (
+                        Implication
+                        oprop0 desc0
+                        True
+                        nullRange
+                       )
+                       nullRange
     DataHasValue _ _ -> fail "DataHasValue handling nyi"
     DataCardinality _ -> fail "DataCardinality handling nyi"
