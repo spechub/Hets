@@ -49,7 +49,7 @@ namedtext = parens $ do
 
 text :: CharParser st TEXT
 text = do
-    phr <- many phrase --was many1 (not as in standard)
+    phr <- many1 phrase --was many1 (not as in standard)
     return $ Text phr nullRange
 
 -- remove the try
@@ -87,9 +87,9 @@ pModule = do
          [] -> return $ Mod t txt nullRange
          _  -> return $ Mod_ex t exs txt nullRange
 
--- | parser for 
+-- | parser for
 pModExcl :: CharParser st ([NAME], TEXT)
-pModExcl = do 
+pModExcl = do
     try (oParenT >> clExcludesKey)
     exs <- many identifier
     cParenT
@@ -121,7 +121,7 @@ sentence :: CharParser st SENTENCE --TODO: parse commented sentences
 sentence = parens $ do
   at <- atom <?> "predicate"
   return $ Atom_sent at $ Range $ rangeSpan at
-  <|> do 
+  <|> do
     c <- andKey
     s <- many sentence -- joinRanges with s = []?
     return $ Bool_sent (Conjunction s) $ Range $ joinRanges [rangeSpan c,
@@ -221,7 +221,7 @@ parseSentences = do
 
 -- FIX
 parseClText :: AnnoState.AParser st BASIC_ITEMS
-parseClText = do 
+parseClText = do
   tx <- cltext
   return $ Axiom_items (senToAn (senOfText tx))
 
@@ -257,8 +257,8 @@ sen2 s p = case p of
 senOfPhr :: PHRASE -> SENTENCE
 senOfPhr (Sentence s) = s
 -- senOfPhr (Module m) = case m of
---    Mod name text id -> 
---    Mod_ex name names text id -> 
+--    Mod name text id ->
+--    Mod_ex name names text id ->
 senOfPhr _ = Atom_sent (Atom (Name_term (Token "empty" nullRange)) [])
                nullRange
 
