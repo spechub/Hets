@@ -207,6 +207,14 @@ integPref :: PrefixMap -> PrefixMap
 integPref oldNsMap testNsMap =
    foldr testAndInteg (oldNsMap, Map.empty) (Map.toList testNsMap)
 
+newOid :: OntologyIRI -> OntologyIRI -> OntologyIRI
+newOid id1 id2 =
+  let lid1 = localPart id1
+      lid2 = localPart id2
+  in if null lid1 then id2
+      else if null lid2 || id1 == id2 then id1
+            else id1 { localPart = uriToName lid1 ++ "_" ++ uriToName lid2 }
+
 integrateOntologyDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
 integrateOntologyDoc of1@( OntologyDocument ns1
@@ -216,18 +224,10 @@ integrateOntologyDoc of1@( OntologyDocument ns1
   if of1 == of2 then of1
    else
     let (newPref, tm) = integPref ns1 ns2
-        newOid :: OntologyIRI -> OntologyIRI -> OntologyIRI
-        newOid id1 id2 = let
-              lid1 = localPart id1
-              lid2 = localPart id2
-            in if null lid1 then id2 else
-               if null lid2 || id1 == id2 then id1 else id1
-                  { localPart = uriToName lid1 ++ "_" ++ uriToName lid2 }
     in OntologyDocument newPref
-            ( Ontology (newOid oid1 oid2)
-                 (nub $ imp1 ++ map (mv tm) imp2)
-                 (nub $ anno1 ++ map (mv tm) anno2)
-                 (nub $ frames1 ++ map (mv tm) frames2))
+      (Ontology (newOid oid1 oid2) (nub $ imp1 ++ map (mv tm) imp2)
+       (nub $ anno1 ++ map (mv tm) anno2)
+       (nub $ frames1 ++ map (mv tm) frames2))
 
 uriToName :: String -> String
 uriToName str = let

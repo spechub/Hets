@@ -57,7 +57,7 @@ getName e =
     Just "http://www.w3.org/2002/07/owl#" -> n
     _ -> ""
 
-getIRI :: XMLBase -> Element -> OWL2.AS.QName
+getIRI :: XMLBase -> Element -> IRI
 getIRI b e =
   let [a] = elAttribs e
       iri = attrVal a
@@ -75,7 +75,7 @@ getFullOrAbbrIRI b e =
                  simpleSplit $ nullQName {localPart = cont,
                           isFullIri = True}
                 else splitIRI b
-                     $ nullQName {localPart = strContent e}
+                     $ nullQName {localPart = cont}
       _ -> error "invalid type of iri"
 
 -- gets one prefix with the corresponding iri
