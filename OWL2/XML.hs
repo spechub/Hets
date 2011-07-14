@@ -283,13 +283,13 @@ getClassExpression b e =
          else ObjectCardinality $ Cardinality
               ExactCardinality (getInt e) (getObjProp b ch1) Nothing
     "DataSomeValuesFrom" ->
-        let [hd] = map (getIRI b) $ init ch
+        let dp = getIRI b ch1
             dr = rch1
-        in DataValuesFrom SomeValuesFrom hd (getDataRange b dr)
+        in DataValuesFrom SomeValuesFrom dp (getDataRange b dr)
     "DataAllValuesFrom" ->
-        let [hd] = map (getIRI b) $ init ch
+        let dp = getIRI b ch1
             dr = rch1
-        in DataValuesFrom AllValuesFrom hd (getDataRange b dr)
+        in DataValuesFrom AllValuesFrom dp (getDataRange b dr)
     "DataHasValue" -> DataHasValue (getIRI b ch1) (getLiteral rch1)
     "DataMinCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
