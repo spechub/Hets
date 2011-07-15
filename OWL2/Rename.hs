@@ -242,13 +242,14 @@ unifyWith1 :: OntologyDocument -> [OntologyDocument] -> [OntologyDocument]
 unifyWith1 d odl = case odl of
   [] -> []
   [doc] -> [snd $ unifyTwo d doc]
-  doc1 : docs -> 
+  doc1 : docs ->
     let (merged, newDoc1) = unifyTwo d doc1
-    in newDoc1 : unifyWith1 merged docs 
+    in newDoc1 : unifyWith1 merged docs
 
--- takes 2 docs and returns as snd the corrected first one
--- and as fst the merge of the two
-unifyTwo :: OntologyDocument -> OntologyDocument -> (OntologyDocument, OntologyDocument)
+{- takes 2 docs and returns as snd the corrected first one
+ and as fst the merge of the two -}
+unifyTwo :: OntologyDocument -> OntologyDocument ->
+              (OntologyDocument, OntologyDocument)
 unifyTwo od1 od2 =
   let (_, tm) = integPref (prefixDeclaration od1) (prefixDeclaration od2)
       newod2 = mv tm od2
@@ -257,4 +258,3 @@ unifyTwo od1 od2 =
 
 unifyDocs :: [OntologyDocument] -> [OntologyDocument]
 unifyDocs = unifyWith1 emptyDoc
-
