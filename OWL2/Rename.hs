@@ -244,7 +244,7 @@ unifyWith1 d odl = case odl of
   [doc] -> [snd $ unifyTwo d doc]
   doc1 : docs -> 
     let (merged, newDoc1) = unifyTwo d doc1
-    in newDoc1 : (unifyWith1 merged docs) 
+    in newDoc1 : unifyWith1 merged docs 
 
 -- takes 2 docs and returns as snd the corrected first one
 -- and as fst the merge of the two
@@ -256,5 +256,5 @@ unifyTwo od1 od2 =
   in (alld, newod2)
 
 unifyDocs :: [OntologyDocument] -> [OntologyDocument]
-unifyDocs odocs = unifyWith1 emptyDoc odocs
+unifyDocs = unifyWith1 emptyDoc
 
