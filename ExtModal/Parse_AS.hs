@@ -10,7 +10,7 @@ Portability :  portable
 
 -}
 
-module ExtModal.Parse_AS where
+module ExtModal.Parse_AS (ext_modal_reserved_words) where
 
 import Text.ParserCombinators.Parsec
 
@@ -142,12 +142,12 @@ parsePrimModality = do
 parseTransClosModality :: AParser st MODALITY
 parseTransClosModality = do
   t <- parsePrimModality
-  mt <- optionMaybe $ asKey tmTransClosS
-  return $ if isJust mt then TransitiveClosure t else t
+  mt <- many $ asKey tmTransClosS
+  return $ if null mt then t else TransitiveClosure t
 
 parseCompModality :: AParser st MODALITY
 parseCompModality = do
-  t1 <- parsePrimModality
+  t1 <- parseTransClosModality
   option t1 $ do
     asKey tmCompositionS
     t2 <- parseCompModality
