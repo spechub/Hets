@@ -74,16 +74,18 @@ diamondParser = do
 rekPrimParser :: AParser st (FORMULA EM_FORMULA)
 rekPrimParser = genPrimFormula modalPrimFormulaParser ext_modal_reserved_words
 
--- | Modal formula parser
+-- | Modal infix formula parser
 modalFormulaParser :: AParser st EM_FORMULA
-modalFormulaParser = do
-  (f1, t, b) <- try $ do -- here the lookup for the infix operators happens
-    f1 <- rekPrimParser
+modalFormulaParser = try $ do
+  f1 <- rekPrimParser
+  do
     (t, b) <- pair (asKey untilS) (return True)
       <|> pair (asKey sinceS) (return False)
-    return (f1, t, b)
-  f2 <- rekPrimParser
-  return $ UntilSince b f1 f2 $ tokPos t
+    f2 <- rekPrimParser
+    return $ UntilSince b f1 f2 $ tokPos t
+   <|> case f1 of
+         ExtFORMULA f -> return f
+         _ -> pzero
 
 prefixModifier :: AParser st (FORMULA EM_FORMULA -> EM_FORMULA)
 prefixModifier = let mkF f r = return $ flip f $ tokPos r in
@@ -112,7 +114,7 @@ modalPrimFormulaParser = do
     (modal, b, r) <- boxParser <|> diamondParser
     lgb <- (asKey lessEq >> return True)
       <|> (asKey greaterEq >> return False)
-    number <- getNumber
+    number <- getNumber << skipSmart
     em_formula <- rekPrimParser
     return $ BoxOrDiamond b modal lgb (value 10 number) em_formula r
   <|> do
