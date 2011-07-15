@@ -32,6 +32,12 @@ data Ontology = Ontology {
   ontFrames :: [Frame]
  } deriving (Show, Eq, Ord)
 
+emptyOnt :: Ontology
+emptyOnt = Ontology nullQName [] [] []
+
+emptyDoc :: OntologyDocument
+emptyDoc = OntologyDocument Map.empty emptyOnt
+
 {- | annotions are annotedAnnotationList that must be preceded by the keyword
   @Annotations:@ if non-empty -}
 type Annotations = [Annotation]

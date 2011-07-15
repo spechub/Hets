@@ -204,8 +204,8 @@ uniteSign s1 s2 = do
 
 integPref :: PrefixMap -> PrefixMap
                     -> (PrefixMap, TranslationMap)
-integPref oldNsMap testNsMap =
-   foldr testAndInteg (oldNsMap, Map.empty) (Map.toList testNsMap)
+integPref oldMap testMap =
+   foldr testAndInteg (oldMap, Map.empty) (Map.toList testMap)
 
 newOid :: OntologyIRI -> OntologyIRI -> OntologyIRI
 newOid id1 id2 =
@@ -217,11 +217,11 @@ newOid id1 id2 =
 
 integrateOntologyDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
-integrateOntologyDoc of1@( OntologyDocument ns1
+integrateOntologyDoc od1@( OntologyDocument ns1
                            ( Ontology oid1 imp1 anno1 frames1))
-                      of2@( OntologyDocument ns2
+                      od2@( OntologyDocument ns2
                            ( Ontology oid2 imp2 anno2 frames2)) =
-  if of1 == of2 then of1
+  if od1 == od2 then od1
    else
     let (newPref, tm) = integPref ns1 ns2
     in OntologyDocument newPref
@@ -237,3 +237,24 @@ uriToName str = let
   in takeWhile (/= '.') $ reverse $ case takeWhile (/= '/') $ reverse str' of
          '#' : r -> r
          r -> r
+
+unifyWith1 :: OntologyDocument -> [OntologyDocument] -> [OntologyDocument]
+unifyWith1 d odl = case odl of
+  [] -> []
+  [doc] -> [snd $ unifyTwo d doc]
+  doc1 : docs -> 
+    let (merged, newDoc1) = unifyTwo d doc1
+    in newDoc1 : (unifyWith1 merged docs) 
+
+-- takes 2 docs and returns as snd the corrected first one
+-- and as fst the merge of the two
+unifyTwo :: OntologyDocument -> OntologyDocument -> (OntologyDocument, OntologyDocument)
+unifyTwo od1 od2 =
+  let (_, tm) = integPref (prefixDeclaration od1) (prefixDeclaration od2)
+      newod2 = mv tm od2
+      alld = integrateOntologyDoc od1 od2
+  in (alld, newod2)
+
+unifyDocs :: [OntologyDocument] -> [OntologyDocument]
+unifyDocs odocs = unifyWith1 emptyDoc odocs
+

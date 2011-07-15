@@ -16,7 +16,7 @@ expand s qn =
       lp = localPart qn
   in if isFullIri qn then qn {expandedIRI = np ++ ":" ++ lp}
       else
-        let expn = fromMaybe (error "inexistent prefix")
+        let expn = fromMaybe (error $ np ++ ": prefix not found")
               $ Map.lookup np $ prefixMap s
         in qn {expandedIRI = expn ++ lp}
 

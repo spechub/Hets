@@ -14,6 +14,7 @@ module OWL2.ParseOWLAsLibDefn (parseOWL) where
 
 import OWL2.AS
 import OWL2.MS
+import OWL2.Rename
 
 import Data.Char
 
@@ -88,6 +89,6 @@ convertone o = emptyAnno $ Spec_defn
 convertToLibDefN :: FilePath -> [OntologyDocument] -> LIB_DEFN
 convertToLibDefN filename l = Lib_defn
   (emptyLibName $ convertFileToLibStr filename)
-  (map convertone $ l)
+  (map convertone $ unifyDocs l)
   nullRange
   []

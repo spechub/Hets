@@ -17,7 +17,6 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.Theorem
 import OWL2.Expand
-import OWL2.Rename
 
 import qualified Data.Set as Set
 import Data.List
@@ -378,35 +377,15 @@ basicOWL2Analysis ::
 
 basicOWL2Analysis (odoc, inSign, _) = do
     let pd = prefixDeclaration odoc
-        (intP, tm) = integPref (prefixMap inSign) pd
-        ndoc = mv tm odoc
-        fs = ontFrames $ ontology ndoc
+        fs = ontFrames $ ontology odoc
     let syms = Set.difference (symOf accSign) $ symOf inSign
         accSign = execState
           (createSign fs)
-          inSign {prefixMap = intP}
+          inSign {prefixMap = pd}
     (axl, nfl) <- createAxioms accSign fs
-    let newdoc = modifyOntologyDocument ndoc nfl
+    let newdoc = modifyOntologyDocument odoc nfl
     return (newdoc , ExtSign accSign syms, axl)
-{-
-testAndInteg :: PrefixMap -> (String, String) -> Result PrefixMap
 
-testAndInteg old (pre, ouri) =
-    case Map.lookup pre old of
-      Just iri -> if ouri == iri then return old else
-       fail $ "Static analysis found a prefix clash " ++ pre
-      Nothing -> return $ Map.insert pre ouri old
-
-uniteSign :: Sign -> Sign -> Result Sign
-uniteSign s1 s2 = do
-    pm <- integrateNamespaces (prefixMap s1) (prefixMap s2)
-    return $ (addSign s1 s2) {prefixMap = pm}
-
-integrateNamespaces :: PrefixMap -> PrefixMap
-                    -> Result PrefixMap
-integrateNamespaces oldNsMap testNsMap =
-        foldM testAndInteg oldNsMap (Map.toList testNsMap)
--}
 findImplied :: Axiom -> Named Axiom -> Named Axiom
 findImplied ax sent =
   if isToProve ax then sent
