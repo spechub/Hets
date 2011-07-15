@@ -75,7 +75,7 @@ noThing = Qual_pred_name nothing classPredType n
 predefSign :: CASLSign
 predefSign = (emptySign ())
                  { sortRel = Rel.insertKey (stringToId "Char")
-                      $ Rel.insertKey dataS
+                      $ Rel.insertKey thing
                       $ Rel.transClosure $ Rel.fromList
                        [
                         (stringToId "boolean",
@@ -109,7 +109,8 @@ predefSign = (emptySign ())
                         (posInt,
                          nonNegInt),
                         (stringToId "string",
-                         dataS)]
+                         dataS),
+                        (dataS, thing) ]
                  , predMap =
                      MapSet.fromList
                        [(nothing,
