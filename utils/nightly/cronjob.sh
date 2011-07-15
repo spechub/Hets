@@ -24,7 +24,7 @@ export PELLET_PATH
 hetsdir=\
 /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
 destdir=$hetsdir/src-distribution/daily
-outtypes=env,thy,th,dfg,dfg.c,tptp,tptp.c,pp.het,pp.tex
+outtypes=env,thy,th,dfg,dfg.c,tptp,tptp.c,pp.het,pp.tex,pp.html,pp.xml,xml
 
 export hetsdir
 export destdir
@@ -133,6 +133,28 @@ pdflatex CspCASL/Shop/Shop.tex
 for i in CspCASL/*.{pp.het,th} CspCASL/Shop/*.{pp.het,th};
     do ./hets -v2 -o th,pp.het $i; done
 find CspCASL -name \*.th -o -name \*.pp.het | xargs \rm
+}
+
+checkOWL ()
+{
+date
+for i in Ontology/Examples/*.het;
+    do ./hets -v2 -o th,pp.het,omn $i; done
+for i in Ontology/Examples/*.{pp.het,th};
+    do ./hets -v2 -o th,pp.het $i; done
+find Ontology -name \*.th -o -name \*.pp.het | xargs \rm
+}
+
+checkXML ()
+{
+date
+for i in Basic/*.xml;
+    do ./hets -v2 -o th $i; done
+for i in Basic/*.het;
+    do ./hets -v2 -A -o xml $i; done
+for i in Basic/*.xml;
+    do ./hets -v2 -o th $i; done
+find Basic -name \*.th -o -name \*.xml | xargs \rm
 }
 
 makeLibCheck ()
