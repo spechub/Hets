@@ -38,9 +38,10 @@ ext_modal_reserved_words =
   , sinceS
   , allPathsS
   , somePathsS
+  , nextS
+  , yesterdayS
   , generallyS
   , eventuallyS
-  , generallyS
   , atS
   , hereS
   , timeS
@@ -70,6 +71,10 @@ diamondParser = do
     modal <- parseModality
     close <- asKey greaterS
     return (modal, False, toRange open [] close)
+  <|> do
+    d <- asKey diamondS
+    let p = tokPos d
+    return (Simple_modality $ Token emptyS p, False, p)
 
 rekPrimParser :: AParser st (FORMULA EM_FORMULA)
 rekPrimParser = genPrimFormula modalPrimFormulaParser ext_modal_reserved_words
@@ -125,21 +130,22 @@ modalPrimFormulaParser = do
 -- | Term modality parser
 parsePrimModality :: AParser st MODALITY
 parsePrimModality = do
-           asKey tmOParanthS
+           oParenT
            t <- parseModality
-           asKey tmCParanthS
+           cParenT
            return t
         <|> do
-           mf <- optionMaybe rekPrimParser
+           mf <- optionMaybe $ formula $ greaterS : ext_modal_reserved_words
            case mf of
              Nothing ->
                fmap (Simple_modality . Token emptyS . Range . (: [])) getPos
-             Just f -> case f of
-               Mixfix_formula (Mixfix_token t) | isSimpleToken t ->
-                 return $ Simple_modality t
-               _ -> do
-                 asKey tmGuardS
-                 return $ Guard f
+             Just f -> do
+                asSeparator tmGuardS
+                return $ Guard f
+              <|> case f of
+                Mixfix_formula (Mixfix_token t) | isSimpleToken t ->
+                  return $ Simple_modality t
+                _ -> pzero
 
 parseTransClosModality :: AParser st MODALITY
 parseTransClosModality = do

@@ -6,5 +6,8 @@ spec Try2=
 	sort N
 	flexible op s__: N -> N
 	flexible ops 0,1: N
-	. s 0 = 1
+	. [a] >= 2 (not (s 0 = 1)) U X true
+        . <(a)> <= 00 false S (X true U Y true)
+        . < > <=1 true U <> <=1 true
+        . <true?> <=1 true
 end
