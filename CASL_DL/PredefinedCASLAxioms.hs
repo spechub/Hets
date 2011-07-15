@@ -13,8 +13,11 @@ Portability :  portable
 module CASL_DL.PredefinedCASLAxioms
   ( predefSign
   , thing
-  , noThing
+  , nothing
+  , conceptPred
+  , dataS
   , predefinedAxioms
+  , mkNName
   ) where
 
 import CASL.AS_Basic_CASL
@@ -40,8 +43,9 @@ n = nullRange
 nothing :: Id
 nothing = stringToId "Nothing"
 
-dataId :: Id
-dataId = stringToId "DATA"
+-- | OWL Data topSort DATA
+dataS :: Id
+dataS = stringToId "DATA"
 
 integer :: Id
 integer = stringToId "integer"
@@ -58,53 +62,58 @@ nonPosInt = stringToId "nonPositiveInteger"
 nonNegInt :: Id
 nonNegInt = stringToId "nonNegativeInteger"
 
+classPredType :: PRED_TYPE
+classPredType = Pred_type [thing] n
+
+conceptPred :: PredType
+conceptPred = toPredType classPredType
+
 -- | OWL bottom
 noThing :: PRED_SYMB
-noThing = Qual_pred_name nothing
-                         (Pred_type [thing] n) n
+noThing = Qual_pred_name nothing classPredType n
 
 predefSign :: CASLSign
 predefSign = (emptySign ())
                  { sortRel = Rel.insertKey (stringToId "Char")
-                      $ Rel.insertKey dataId
+                      $ Rel.insertKey dataS
                       $ Rel.transClosure $ Rel.fromList
                        [
                         (stringToId "boolean",
-                         dataId),
+                         dataS),
                         (integer,
-                         dataId),
+                         dataS),
                         (negInt,
-                         dataId),
+                         dataS),
                         (negInt,
                          integer),
                         (negInt,
                          nonPosInt),
                         (nonNegInt,
-                         dataId),
+                         dataS),
                         (nonNegInt,
                          integer),
                         (nonPosInt,
-                         dataId),
+                         dataS),
                         (nonPosInt,
                          integer),
                         (posInt,
-                         dataId),
+                         dataS),
                         (posInt,
                          integer),
                         (posInt,
                          nonNegInt),
                         (posInt,
-                         dataId),
+                         dataS),
                         (posInt,
                          integer),
                         (posInt,
                          nonNegInt),
                         (stringToId "string",
-                         dataId)]
+                         dataS)]
                  , predMap =
                      MapSet.fromList
                        [(nothing,
-                           [PredType [thing]]),
+                           [conceptPred]),
                         (mkInfix "<",
                            [PredType
                               [integer,
@@ -144,7 +153,7 @@ predefSign = (emptySign ())
 
 predefinedAxioms :: [Named (FORMULA ())]
 predefinedAxioms = let
-  v1 = mkVarDecl (mk_Name 1) thing
+  v1 = mkVarDecl (mkNName 1) thing
   t1 = toQualVar v1
   in
     [
@@ -168,8 +177,7 @@ predefinedAxioms = let
      [v1]
      (
        Predication
-       (Qual_pred_name thing
-                           (Pred_type [thing] n) n)
+       (Qual_pred_name thing classPredType n)
        [t1]
        n
      )
@@ -177,10 +185,10 @@ predefinedAxioms = let
     ]
 
 -- | Build a name
-mk_Name :: Int -> Token
-mk_Name i = mkSimpleId $ hetsPrefix ++ mk_Name_H i
+mkNName :: Int -> Token
+mkNName i = mkSimpleId $ hetsPrefix ++ mkNNameAux i
     where
-      mk_Name_H k =
+      mkNNameAux k =
           case k of
             0 -> ""
-            j -> mk_Name_H (j `div` 26) ++ [chr (j `mod` 26 + 96)]
+            j -> mkNNameAux (j `div` 26) ++ [chr (j `mod` 26 + 96)]
