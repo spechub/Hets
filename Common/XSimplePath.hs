@@ -13,9 +13,14 @@ break down Common.XPath.Expr into a very simple path description.
 module Common.XSimplePath where
 
 import Common.XPath
+import Common.XUpdate
+
+import Control.Monad
 
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
+
+import Debug.Trace
 
 type SimplePath = [SimpleStep]
 
@@ -23,9 +28,23 @@ data SimpleStep = MkStepDown QName
                 | FindByAttr [Attr]
                 | FindByNumber Int
 
+
+readDiff :: String -> IO()
+readDiff filepath = do
+  xml <- readFile filepath
+  cs <- anaXUpdates xml
+  mapM_ (\ (Change _ e) -> exprToSimplePath e) cs
+
 -- TODO:
 exprToSimplePath :: Monad m => Expr -> m SimplePath
-exprToSimplePath = undefined
+exprToSimplePath e = case e of
+  PathExpr Nothing (Path True stps) -> foldM (\ r stp -> case stp of
+      Step Child (NameTest l) [] -> trace l $ return $ MkStepDown (unqual l) : r
+      Step Child (NameTest l) xs -> fail "found attributes"
+      Step Attribute _ _ -> undefined -- TODO: extract atribute list
+      _ -> fail "exprToSimplePath: unexpected step") [] stps
+  _ -> fail "exprToSimplePath (1)"
+
 
 moveStep :: Monad m => SimpleStep -> Cursor -> m Cursor
 moveStep stp cr = case stp of
