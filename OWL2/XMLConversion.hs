@@ -152,9 +152,9 @@ xmlClassExpression ce = case ce of
 xmlAnnotation :: Annotation -> Element
 xmlAnnotation (Annotation al ap av) = makeElement "Annotation"
   $ map xmlAnnotation al ++ [mwNameIRI "AnnotationProperty" ap,
-  (case av of
-    AnnValue iri -> mwSimpleIRI iri
-    AnnValLit l -> xmlLiteral l)]
+   case av of
+      AnnValue iri -> mwSimpleIRI iri
+      AnnValLit l -> xmlLiteral l]
 
 
 
