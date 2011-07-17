@@ -50,24 +50,27 @@ setLangTag ml e = case ml of
   Just lt -> e {elAttribs = elAttribs e ++ [Attr {attrKey
     = setQNPrefix "xml" (makeQN "lang"), attrVal = lt}]}
 
-makeNewName :: String -> Element
-makeNewName s = setName s nullElem
+mwString :: String -> Element
+mwString s = setName s nullElem
 
-makeNewIRI :: IRI -> Element
-makeNewIRI iri = setIRI iri nullElem
+mwIRI :: IRI -> Element
+mwIRI iri = setIRI iri nullElem
 
-makeIRIWithName :: String -> IRI -> Element
-makeIRIWithName s iri = setName s $ makeNewIRI iri
+mwNameIRI :: String -> IRI -> Element
+mwNameIRI s iri = setName s $ mwIRI iri
 
-makeElemWithText :: String -> Element
-makeElemWithText s = setText s nullElem
+mwText :: String -> Element
+mwText s = setText s nullElem
 
-makeNewElement :: String -> [Element] -> Element
-makeNewElement s el = setContent el $ makeNewName s
+mwSimpleIRI :: IRI -> Element
+mwSimpleIRI s = setName "IRI" $ mwText $ showQU s
+
+makeElement :: String -> [Element] -> Element
+makeElement s el = setContent el $ mwString s
 
 xmlLiteral :: Literal -> Element
 xmlLiteral (Literal lf tu) =
-  let part = setName "Literal" $ makeElemWithText lf
+  let part = setName "Literal" $ mwText lf
   in case tu of
     Typed dt -> setDt True dt part
     Untyped lang -> setLangTag lang $ setDt True
@@ -75,52 +78,52 @@ xmlLiteral (Literal lf tu) =
       part
 
 xmlFVPair :: (ConstrainingFacet, RestrictionValue) -> Element
-xmlFVPair (cf, rv) = setDt False cf $ makeNewElement "FacetRestriction"
+xmlFVPair (cf, rv) = setDt False cf $ makeElement "FacetRestriction"
     [xmlLiteral rv]
 
 xmlObjProp :: ObjectPropertyExpression -> Element
 xmlObjProp ope = case ope of
-  ObjectProp op -> makeIRIWithName "ObjectProperty" op
-  ObjectInverseOf i -> makeNewElement "ObjectInverseOf" [xmlObjProp i]
+  ObjectProp op -> mwNameIRI "ObjectProperty" op
+  ObjectInverseOf i -> makeElement "ObjectInverseOf" [xmlObjProp i]
 
 xmlDataRange :: DataRange -> Element
 xmlDataRange dr = case dr of
   DataType dt cfl ->
-    let dtelem = makeIRIWithName "Datatype" dt
+    let dtelem = mwNameIRI "Datatype" dt
     in if null cfl then dtelem
-        else makeNewElement "DatatypeRestriction"
+        else makeElement "DatatypeRestriction"
           $ dtelem : map xmlFVPair cfl
-  DataJunction jt drl -> makeNewElement (
+  DataJunction jt drl -> makeElement (
     case jt of
       IntersectionOf -> "DataIntersectionOf"
       UnionOf -> "DataUnionOf" )
     $ map xmlDataRange drl
-  DataComplementOf dr -> makeNewElement "DataComplementOf"
+  DataComplementOf dr -> makeElement "DataComplementOf"
        [xmlDataRange dr]
-  DataOneOf ll -> makeNewElement "DataOneOf"
+  DataOneOf ll -> makeElement "DataOneOf"
     $ map xmlLiteral ll
 
 xmlClassExpression :: ClassExpression -> Element
 xmlClassExpression ce = case ce of
-  Expression c -> makeIRIWithName "Class" c
-  ObjectJunction jt cel -> makeNewElement (
+  Expression c -> mwNameIRI "Class" c
+  ObjectJunction jt cel -> makeElement (
     case jt of
       IntersectionOf -> "ObjectIntersectionOf"
       UnionOf -> "ObjectUnionOf" )
     $ map xmlClassExpression cel
-  ObjectComplementOf ce -> makeNewElement "ObjectComplementOf"
+  ObjectComplementOf ce -> makeElement "ObjectComplementOf"
         [xmlClassExpression ce]
-  ObjectOneOf il -> makeNewElement "ObjectOneOf"
-    $ map (makeIRIWithName "Individual") il
-  ObjectValuesFrom qt ope ce -> makeNewElement (
+  ObjectOneOf il -> makeElement "ObjectOneOf"
+    $ map (mwNameIRI "Individual") il
+  ObjectValuesFrom qt ope ce -> makeElement (
     case qt of
        AllValuesFrom -> "ObjectAllValuesFrom"
        SomeValuesFrom -> "ObjectSomeValuesFrom" )
         [xmlObjProp ope, xmlClassExpression ce]
-  ObjectHasValue ope i -> makeNewElement "ObjectHasValue"
-        [xmlObjProp ope, makeIRIWithName "Individual" i]
-  ObjectHasSelf ope -> makeNewElement "ObjectHasSelf" [xmlObjProp ope]
-  ObjectCardinality (Cardinality ct i op mce) -> setInt i $ makeNewElement (
+  ObjectHasValue ope i -> makeElement "ObjectHasValue"
+        [xmlObjProp ope, mwNameIRI "Individual" i]
+  ObjectHasSelf ope -> makeElement "ObjectHasSelf" [xmlObjProp ope]
+  ObjectCardinality (Cardinality ct i op mce) -> setInt i $ makeElement (
     case ct of
         MinCardinality -> "ObjectMinCardinality"
         MaxCardinality -> "ObjectMaxCardinality"
@@ -129,22 +132,29 @@ xmlClassExpression ce = case ce of
       case mce of
           Nothing -> []
           Just ce -> [xmlClassExpression ce]
-  DataValuesFrom qt dp dr -> makeNewElement (
+  DataValuesFrom qt dp dr -> makeElement (
     case qt of
        AllValuesFrom -> "DataAllValuesFrom"
        SomeValuesFrom -> "DataSomeValuesFrom" )
-        [makeIRIWithName "DataProperty" dp, xmlDataRange dr]
-  DataHasValue dp l -> makeNewElement "DataHasValue"
-        [makeIRIWithName "DataProperty" dp, xmlLiteral l]
-  DataCardinality (Cardinality ct i dp mdr) -> setInt i $ makeNewElement (
+        [mwNameIRI "DataProperty" dp, xmlDataRange dr]
+  DataHasValue dp l -> makeElement "DataHasValue"
+        [mwNameIRI "DataProperty" dp, xmlLiteral l]
+  DataCardinality (Cardinality ct i dp mdr) -> setInt i $ makeElement (
     case ct of
         MinCardinality -> "DataMinCardinality"
         MaxCardinality -> "DataMaxCardinality"
         ExactCardinality -> "DataExactCardinality" )
-    $ makeIRIWithName "DataProperty" dp :
+    $ mwNameIRI "DataProperty" dp :
       case mdr of
           Nothing -> []
           Just dr -> [xmlDataRange dr]
+
+xmlAnnotation :: Annotation -> Element
+xmlAnnotation (Annotation al ap av) = makeElement "Annotation"
+  $ map xmlAnnotation al ++ [mwNameIRI "AnnotationProperty" ap,
+  (case av of
+    AnnValue iri -> mwSimpleIRI iri
+    AnnValLit l -> xmlLiteral l)]
 
 
 
