@@ -3,7 +3,7 @@ module OWL2.XMLConversion where
 import OWL2.AS
 import OWL2.MS
 import OWL2.XML
-
+import OWL2.ManchesterPrint
 import Text.XML.Light
 import Data.Maybe
 
@@ -156,6 +156,44 @@ xmlAnnotation (Annotation al ap av) = makeElement "Annotation"
       AnnValue iri -> mwSimpleIRI iri
       AnnValLit l -> xmlLiteral l]
 
+xmlAnnotations :: Annotations -> [Element]
+xmlAnnotations = map xmlAnnotation
+
+xmlAL :: (a -> Element) -> AnnotatedList a -> ([Element], [Element])
+xmlAL f al = (concatMap (xmlAnnotations . fst) al , map (\ (_, b) -> f b) al)
+
+xmlLFB :: Extended -> Maybe Relation -> ListFrameBit -> Element
+xmlLFB ext mr lfb = case lfb of
+  AnnotationBit al ->
+    let (as, apelem) = xmlAL (mwNameIRI "AnnotationProperty") al
+        (as2, apelem2) = xmlAL mwSimpleIRI al
+        SimpleEntity (Entity _ ap) = ext
+    in case fromMaybe (error "expected domain, range, subproperty of") mr of
+      SubPropertyOf -> makeElement "SubAnnotationPropertyOf" $
+        as ++ [mwNameIRI "AnnotationProperty" ap] ++ apelem
+      DRRelation ADomain -> makeElement "AnnotationPropertyDomain" $
+        as2 ++ [mwNameIRI "AnnotationProperty" ap] ++ apelem2
+      DRRelation ARange -> makeElement "AnnotationPropertyRange" $
+        as2 ++ [mwNameIRI "AnnotationProperty" ap] ++ apelem2
+  ExpressionBit al -> 
+    let (as, cel) = xmlAL xmlClassExpression al in case ext of
+      Misc anno -> makeElement (case fromMaybe 
+          (error "expected equiv--, disjoint--, sub-- class") mr of
+            EDRelation Equivalent -> "EquivalentClasses"
+            EDRelation Disjoint -> "DisjointClasses"
+        ) $ xmlAnnotations anno ++ cel
+      ClassEntity c -> makeElement "SubClassOf"
+          $ as ++ [xmlClassExpression c] ++ cel
+      ObjectEntity op -> makeElement (case fromMaybe 
+          (error "expected domain, range") mr of
+            DRRelation ADomain -> "ObjectPropertyDomain"
+            DRRelation ARange -> "ObjectPropertyRange"
+        ) $ as ++ [xmlObjProp op] ++ cel
+      SimpleEntity (Entity ty ent) -> case ty of
+        DataProperty -> makeElement "DataPropertyDomain"
+          $ as ++ [mwNameIRI "DataProperty" ent] ++ cel
+        NamedIndividual -> makeElement "ClassAssertion"
+          $ as ++ cel ++ [mwNameIRI "NamedIndividual" ent]
 
 
 

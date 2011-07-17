@@ -506,13 +506,13 @@ getAnnoAxiom b e =
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty hd)
             $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, lst)]
     "AnnotationPropertyDomain" ->
-        let [ch] = elChildren e
+        let [ch] = filterChL ["IRI", "abbreviatedIRI"] e
             iri = getFullOrAbbrIRI b ch
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ADomain))
                       $ AnnotationBit [(as, iri)]
     "AnnotationPropertyRange" ->
-        let [ch] = elChildren e
+        let [ch] = filterChL ["IRI", "abbreviatedIRI"] e
             iri = getFullOrAbbrIRI b ch
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ARange))
