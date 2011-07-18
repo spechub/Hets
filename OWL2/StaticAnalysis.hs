@@ -30,6 +30,8 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
 
+import Control.Monad
+
 -- | Error messages for static analysis
 failMsg :: Entity -> ClassExpression -> Result a
 failMsg (Entity ty e) desc =
@@ -59,8 +61,7 @@ modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
 modEntity f (Entity ty u) = do
   s <- get
   let chg = f u
-  if elem (localPart u) datatypeKeys then put s
-   else put $ case ty of
+  unless (isDatatypeKey u) $ put $ case ty of
     Datatype -> s { datatypes = chg $ datatypes s }
     Class -> s { concepts = chg $ concepts s }
     ObjectProperty -> s { objectProperties = chg $ objectProperties s }
@@ -78,12 +79,11 @@ anaAxiom x = findImplied x $ makeNamed "" x
 
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> a -> Entity -> Result a
-checkEntity s a ent =
-  let Entity ty e = ent
-      errMsg = mkError ("unknown " ++ showEntityType ty) e
+checkEntity s a (Entity ty e) =
+  let errMsg = mkError ("unknown " ++ showEntityType ty) e
   in case ty of
    Datatype -> if Set.member e (datatypes s) ||
-                    elem (localPart e) datatypeKeys
+                    isDatatypeKey e
                   then return a
                 else errMsg
    Class -> if Set.member e (concepts s) then return a

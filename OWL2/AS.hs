@@ -132,6 +132,10 @@ datatypeKeys =
   , universalS
   ]
 
+isDatatypeKey :: IRI -> Bool
+isDatatypeKey u =
+  elem (localPart u) datatypeKeys && elem (namePrefix u) ["", "xsd"]
+
 -- * DATA RANGES
 
 data DatatypeFacet =

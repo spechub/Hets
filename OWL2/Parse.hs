@@ -416,8 +416,7 @@ primaryOrDataRange = do
       fmap Left (restrictionAny $ ObjectProp u)
         <|> fmap (Right . DataType u)
             (bracketsP $ sepByComma facetValuePair)
-        <|> return (if elem (localPart u) datatypeKeys
-                       && elem (namePrefix u) ["", "xsd"]
+        <|> return (if isDatatypeKey u
               then Right $ DataType u []
               else Left $ Expression u) -- could still be a datatypeUri
     <|> do
