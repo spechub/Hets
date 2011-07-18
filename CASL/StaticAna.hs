@@ -409,6 +409,15 @@ ana_SORT_ITEM mef mix sk asi =
                          $ zip tl il
            return asi
 
+putVarsInEmptyMap :: [VAR_DECL] -> State (Sign f e) (Sign f e)
+putVarsInEmptyMap vs = do
+           e <- get -- save
+           put e { varMap = Map.empty }
+           mapM_ addVars vs
+           sign <- get
+           put e -- restore
+           return sign
+
 ana_OP_ITEM :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> Annoted (OP_ITEM f)
     -> State (Sign f e) (Annoted (OP_ITEM f))
@@ -435,11 +444,7 @@ ana_OP_ITEM mef mix aoi =
                arg = concatMap (\ (Var_decl v s qs) ->
                                  map (\ j -> Qual_var j s qs) v) vs
            maybe (return ()) (\ ty -> addOp aoi (toOpType ty) i) mty
-           e <- get -- save
-           put e { varMap = Map.empty }
-           mapM_ addVars vs
-           sign <- get
-           put e -- restore
+           sign <- putVarsInEmptyMap vs
            let Result ds mt = anaTerm mef mix sign
                  (maybe Nothing (Just . res_OP_TYPE) mty) ps $ item at
            addDiags ds
@@ -470,15 +475,19 @@ headToType = headToTypeM Nothing Just
 sortsOfArgs :: [VAR_DECL] -> [SORT]
 sortsOfArgs = concatMap (\ (Var_decl l s _) -> map (const s) l)
 
+threeVars :: SORT -> ([VAR_DECL], [TERM f])
+threeVars rty =
+      let q = posOfId rty
+          ns = map mkSimpleId ["x", "y", "z"]
+          vs = map (\ v -> Var_decl [v] rty q) ns
+      in (vs, map toQualVar vs)
+
 -- see Isabelle/doc/ref.pdf 10.6 Permutative rewrite rules (p. 137)
 addLeftComm :: OpType -> Bool -> Id -> Named (FORMULA f)
 addLeftComm ty ni i =
   let sty = toOP_TYPE ty
       rty = opRes ty
-      q = posOfId rty
-      ns = map mkSimpleId ["x", "y", "z"]
-      vs = map (\ v -> Var_decl [v] rty q) ns
-      [v1, v2, v3] = map (\ v -> Qual_var v rty q) ns
+      (vs, [v1, v2, v3]) = threeVars rty
       p = posOfId i
       qi = Qual_op_name i sty p
   in (makeNamed ("ga_left_comm_" ++ showId i "") $
@@ -516,9 +525,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
                addSentences $ map (makeUnit False anaT ty ni) ois
                return $ Just $ Unit_op_attr resT
     Assoc_op_attr -> do
-      let ns = map mkSimpleId ["x", "y", "z"]
-          vs = map (\ v -> Var_decl [v] rty q) ns
-          [v1, v2, v3] = map (\ v -> Qual_var v rty q) ns
+      let (vs, [v1, v2, v3]) = threeVars rty
           makeAssoc i = let p = posOfId i
                             qi = Qual_op_name i sty p in
             (makeNamed ("ga_assoc_" ++ showId i "") $
@@ -588,11 +595,7 @@ ana_PRED_ITEM mef mix apr = case item apr of
                arg = concatMap (\ (Var_decl v s qs) ->
                                  map (\ j -> Qual_var j s qs) v) vs
            addPred apr (toPredType ty) i
-           e <- get -- save
-           put e { varMap = Map.empty }
-           mapM_ addVars vs
-           sign <- get
-           put e -- restore
+           sign <- putVarsInEmptyMap vs
            let Result ds mt = anaForm mef mix sign $ item at
            addDiags ds
            case mt of
@@ -781,7 +784,7 @@ selForms1 :: String -> (Id, OpType, [COMPONENTS])
 selForms1 str (i, ty, il) =
     let cs = concatMap (getCompType (opRes ty)) il
         vs = genSelVars str 1 $ map snd cs
-    in (i, vs, mkAppl (Qual_op_name i (toOP_TYPE ty) nullRange)
+    in (i, vs, mkAppl (mkQualOp i $ toOP_TYPE ty)
             (map toQualVar vs), cs)
 
 selForms :: (Id, OpType, [COMPONENTS]) -> [Named (FORMULA f)]
