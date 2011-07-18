@@ -79,18 +79,22 @@ diamondParser = do
 rekPrimParser :: AParser st (FORMULA EM_FORMULA)
 rekPrimParser = genPrimFormula modalPrimFormulaParser ext_modal_reserved_words
 
+infixTok :: AParser st (Token, Bool)
+infixTok = pair (asKey untilS) (return True)
+    <|> pair (asKey sinceS) (return False)
+
 -- | Modal infix formula parser
 modalFormulaParser :: AParser st EM_FORMULA
-modalFormulaParser = try $ do
-  f1 <- rekPrimParser
-  do
-    (t, b) <- pair (asKey untilS) (return True)
-      <|> pair (asKey sinceS) (return False)
+modalFormulaParser = do
+    p1 <- modalPrimFormulaParser
+    option p1 $ do
+      (t, b) <- infixTok
+      f2 <- rekPrimParser
+      return $ UntilSince b (ExtFORMULA p1) f2 $ tokPos t
+  <|> do
+    (f1, (t, b)) <- try $ pair rekPrimParser infixTok
     f2 <- rekPrimParser
     return $ UntilSince b f1 f2 $ tokPos t
-   <|> case f1 of
-         ExtFORMULA f -> return f
-         _ -> pzero
 
 prefixModifier :: AParser st (FORMULA EM_FORMULA -> EM_FORMULA)
 prefixModifier = let mkF f r = return $ flip f $ tokPos r in
@@ -106,6 +110,7 @@ prefixModifier = let mkF f r = return $ flip f $ tokPos r in
     mnb <- (asKey muS >> return True)
       <|> (asKey nuS >> return False)
     z <- varId ext_modal_reserved_words
+    dotT
     mkF (FixedPoint mnb z) z
   <|> do
     ahb <- (asKey atS >> return True)
@@ -117,11 +122,13 @@ prefixModifier = let mkF f r = return $ flip f $ tokPos r in
 modalPrimFormulaParser :: AParser st EM_FORMULA
 modalPrimFormulaParser = do
     (modal, b, r) <- boxParser <|> diamondParser
-    lgb <- (asKey lessEq >> return True)
-      <|> (asKey greaterEq >> return False)
-    number <- getNumber << skipSmart
+    (lgb, val) <- option (True, 1) $ do
+       lgb <- (asKey lessEq >> return True)
+         <|> (asKey greaterEq >> return False)
+       number <- getNumber << skipSmart
+       return (lgb, value 10 number)
     em_formula <- rekPrimParser
-    return $ BoxOrDiamond b modal lgb (value 10 number) em_formula r
+    return $ BoxOrDiamond b modal lgb val em_formula r
   <|> do
     f <- prefixModifier
     em_formula <- rekPrimParser

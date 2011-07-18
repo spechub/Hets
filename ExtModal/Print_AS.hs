@@ -94,8 +94,9 @@ instance Pretty EM_FORMULA where
                                 _ -> if choice then keyword hithertoS else keyword previouslyS
                 in sep $ kw : space : [condParensInnerF printFormula parens em_sentence]
         pretty (FixedPoint choice p_var em_sentence _) =
-                sep $ (if choice then keyword muS else keyword nuS) : space : (pretty p_var) : space
-                        : [condParensInnerF printFormula parens em_sentence]
+                sep [ (if choice then keyword muS else keyword nuS)
+                       <+> pretty p_var <> bullet
+                     , condParensInnerF printFormula parens em_sentence]
 
 condParensInnerF :: Pretty f => (FORMULA f -> Doc) -> (Doc -> Doc) -> FORMULA f -> Doc
 condParensInnerF frm_print parens_fun frm  =
