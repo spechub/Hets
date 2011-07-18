@@ -109,8 +109,8 @@ mkProjInjName = mkInjectivityName "projection"
 
 -- | create a quantified injectivity implication
 mkInjectivity :: (TERM () -> TERM ()) -> VAR_DECL -> VAR_DECL -> FORMULA ()
-mkInjectivity f vx vy = mkForall [vx, vy]
-  (mkInjImpl f (toQualVar vx) $ toQualVar vy) nullRange
+mkInjectivity f vx vy =
+  mkForall [vx, vy] $ mkInjImpl f (toQualVar vx) $ toQualVar vy
 
 -- | create an injectivity implication over x and y
 mkInjImpl :: (TERM () -> TERM ()) -> TERM () -> TERM () -> FORMULA ()
@@ -147,7 +147,7 @@ mkXExEq :: SORT -> (TERM () -> TERM ()) -> (TERM () -> TERM ()) -> FORMULA ()
 mkXExEq s fl fr = let
   vx = mkVarDeclStr "x" s
   qualX = toQualVar vx
-  in mkForall [vx] (mkExEq (fl qualX) (fr qualX)) nullRange
+  in mkForall [vx] $ mkExEq (fl qualX) (fr qualX)
 
 {- | Make the named sentence for the projection axiom from s' to s
 i.e., forall x:s . pr(inj(x))=e=x -}

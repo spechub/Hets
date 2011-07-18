@@ -426,7 +426,7 @@ makeGen sign r@(Result ods omv) nf =
                              (lookupSPId s CSort iMap)] (disj var1 os))
                         | all isConstorInj os ]
             -- generate sentences: compute one disjunct (for one alternative)
-            disjunct v o@(Qual_op_name _ (Op_type _ args res _) _) =
+            mkDisjunct v o@(Qual_op_name _ (Op_type _ args res _) _) =
               -- a constant? then just compare with it
               case args of
                 [] -> mkEq (varTerm v) $ varTerm $ transOPSYMB iMap o
@@ -441,9 +441,9 @@ makeGen sign r@(Result ods omv) nf =
                      then varTerm var2
                      else compTerm (spSym $ transOPSYMB iMap o) [varTerm var2]
                 _ -> error "cannot handle ordinary constructors"
-            disjunct _ _ = error "unqualified operation symbol"
+            mkDisjunct _ _ = error "unqualified operation symbol"
             -- make disjunction out of all the alternatives
-            disj v os = case map (disjunct v) os of
+            disj v os = case map (mkDisjunct v) os of
                         [] -> error "SuleCFOL2SoftFOL: no constructors found"
                         [x] -> x
                         xs -> foldl1 mkDisj xs
@@ -911,9 +911,8 @@ createDomain sign m l = do
           ty : _ -> do
             let v = mkVarDeclStr "X" ty
             return $ mkForall [v]
-              (if null r then mkStEq (toQualVar v) trm else
-                   Disjunction (map (mkStEq $ toQualVar v) ts)
-                   nullRange) nullRange)
+              $ if null r then mkStEq (toQualVar v) trm else
+                   disjunct $ map (mkStEq $ toQualVar v) ts)
     . Rel.partList
       (\ p1 p2 -> haveCommonSupersorts True sign (fst p1) $ fst p2)
     $ zip tys l

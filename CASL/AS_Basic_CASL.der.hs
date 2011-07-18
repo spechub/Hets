@@ -306,6 +306,91 @@ opSymbName o = case o of
   Op_name n -> n
   Qual_op_name n _ _ -> n
 
+-- * short cuts for terms and formulas
+
+-- | create binding if variables are non-null
+mkForallRange :: [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
+mkForallRange vl f ps =
+  if null vl then f else Quantification Universal vl f ps
+
+mkForall :: [VAR_DECL] -> FORMULA f -> FORMULA f
+mkForall vl f = mkForallRange vl f nullRange
+
+-- | create an existential binding
+mkExist :: [VAR_DECL] -> FORMULA f -> FORMULA f
+mkExist vs f = Quantification Existential vs f nullRange
+
+-- | convert a singleton variable declaration into a qualified variable
+toQualVar :: VAR_DECL -> TERM f
+toQualVar (Var_decl v s ps) =
+    if isSingle v then Qual_var (head v) s ps else error "toQualVar"
+
+mkImpl :: FORMULA f -> FORMULA f -> FORMULA f
+mkImpl f f' = Implication f f' True nullRange
+
+mkExEq :: TERM f -> TERM f -> FORMULA f
+mkExEq f f' = Existl_equation f f' nullRange
+
+mkStEq :: TERM f -> TERM f -> FORMULA f
+mkStEq u v = Strong_equation u v nullRange
+
+mkEqv :: FORMULA f -> FORMULA f -> FORMULA f
+mkEqv u v = Equivalence u v nullRange
+
+mkAppl :: OP_SYMB -> [TERM f] -> TERM f
+mkAppl op_symb fs = Application op_symb fs nullRange
+
+mkPredication :: PRED_SYMB -> [TERM f] -> FORMULA f
+mkPredication symb fs = Predication symb fs nullRange
+
+-- | turn sorted variable into variable delcaration
+mkVarDecl :: VAR -> SORT -> VAR_DECL
+mkVarDecl v s = Var_decl [v] s nullRange
+
+-- | turn sorted variable into term
+mkVarTerm :: VAR -> SORT -> TERM f
+mkVarTerm v = toQualVar . mkVarDecl v
+
+-- | optimized conjunction
+conjunctRange :: [FORMULA f] -> Range -> FORMULA f
+conjunctRange fs ps = case fs of
+  [] -> True_atom ps
+  [phi] -> phi
+  _ -> Conjunction fs ps
+
+conjunct :: [FORMULA f] -> FORMULA f
+conjunct fs = conjunctRange fs nullRange
+
+disjunctRange :: [FORMULA f] -> Range -> FORMULA f
+disjunctRange fs ps = case fs of
+  [] -> False_atom ps
+  [phi] -> phi
+  _ -> Disjunction fs ps
+
+disjunct :: [FORMULA f] -> FORMULA f
+disjunct fs = disjunctRange fs nullRange
+
+mkQualOp :: OP_NAME -> OP_TYPE -> OP_SYMB
+mkQualOp f ty = Qual_op_name f ty nullRange
+
+mkQualPred :: PRED_NAME -> PRED_TYPE -> PRED_SYMB
+mkQualPred f ty = Qual_pred_name f ty nullRange
+
+negateForm :: FORMULA f -> Range -> FORMULA f
+negateForm f r = case f of
+  False_atom ps -> True_atom ps
+  True_atom ps -> False_atom ps
+  Negation nf _ -> nf
+  _ -> Negation f r
+
+mkNeg :: FORMULA f -> FORMULA f
+mkNeg f = negateForm f nullRange
+
+mkVarDeclStr :: String -> SORT -> VAR_DECL
+mkVarDeclStr = mkVarDecl . mkSimpleId
+
+-- * type synonyms
+
 type CASLFORMULA = FORMULA ()
 type CASLTERM = TERM ()
 

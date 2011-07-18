@@ -23,7 +23,6 @@ import qualified Data.Map as Map
 import Common.Id
 
 import CASL.AS_Basic_CASL
-import CASL.Sign (mkVarTerm)
 import CASL.Fold
 
 {- |

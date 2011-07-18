@@ -19,13 +19,6 @@ import CASL.Fold
 import Common.Id
 import Common.Utils (nubOrd)
 
-negateForm :: FORMULA f -> Range -> FORMULA f
-negateForm f r = case f of
-  False_atom ps -> True_atom ps
-  True_atom ps -> False_atom ps
-  Negation nf _ -> nf
-  _ -> Negation f r
-
 negateFormula :: FORMULA f -> Maybe (FORMULA f)
 negateFormula f = case f of
   Sort_gen_ax {} -> Nothing
@@ -46,15 +39,11 @@ simplifyRecord mf = (mapRecord mf)
            (False_atom _, Existential) -> qf
            _ -> nf
     , foldConjunction = \ _ fs ps -> if any is_False_atom fs
-      then False_atom ps else case nubOrd $ filter (not . is_True_atom) fs of
-      [] -> True_atom ps
-      [f] -> f
-      rs -> Conjunction rs ps
+      then False_atom ps else conjunctRange
+           (nubOrd $ filter (not . is_True_atom) fs) ps
     , foldDisjunction = \ _ fs ps -> if any is_True_atom fs
-      then True_atom ps else case nubOrd $ filter (not . is_False_atom) fs of
-      [] -> False_atom ps
-      [f] -> f
-      rs -> Disjunction rs ps
+      then True_atom ps else disjunctRange
+           (nubOrd $ filter (not . is_False_atom) fs) ps
     , foldImplication = \ _ f1 f2 b ps ->
       let nf1 = negateForm f1 ps
           tf = True_atom ps

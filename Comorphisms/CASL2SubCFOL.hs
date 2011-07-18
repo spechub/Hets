@@ -238,15 +238,13 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
             epxy = mkStEq px py
       -- forall x,y:s' . d(pr(x)) /\\ d(pr(y)) /\\ pr(x)=pr(y) => x=y
         in mkForall [xv, yv]
-           (mkImpl (if hasBot then conjunct [df px, df py, epxy]
-                    else epxy) $ mkStEq tx ty)
-           nullRange
+           $ mkImpl (if hasBot then conjunct [df px, df py, epxy]
+                    else epxy) $ mkStEq tx ty
             -- forall x:s . d(x) => pr(x)=x
       , makeNamed (mkAxName "total_projection" s' s)
       $ let eq = mkStEq (prj $ Sorted_term xt s' nullRange) xt
         in mkForall [vx]
-               (if hasBot then mkImpl (df xt) eq else eq)
-               nullRange]) (minSupers s)
+               $ if hasBot then mkImpl (df xt) eq else eq]) (minSupers s)
          -- exists x:s . d(x)
       ++ [makeNamed (mkNonEmptyAxiomName s)
          $ Quantification Existential [vx] (df xt) nullRange
@@ -257,7 +255,7 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
            in if uniqBot then
               -- forall x:s . not d(x) <=> x=bottom
               mkForall [vx]
-              (mkEqv (mkNeg $ df xt) $ mkStEq xt bt) nullRange
+              $ mkEqv (mkNeg $ df xt) $ mkStEq xt bt
               else mkNeg $ df bt -- not d(bottom)
          | hasBot]) sortList
    ++ filter (not . is_True_atom . sentence)
@@ -268,24 +266,22 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       in makeNamed (mkTotalityAxiomName f)
       -- forall x_i:s_i . d f(x_1, ..., x_n) {<}=> d x_1 /\\ ... /\\ d x_n
          $ mkForall vs
-           ((if isTotal typ then mkEqv else mkImpl)
+           $ (if isTotal typ then mkEqv else mkImpl)
             (defined bsorts
              (mkAppl (mkQualOp f $ toOP_TYPE $ mkTotal typ)
                       $ map toQualVar vs) nullRange)
-            $ defVards bsorts vs) nullRange) opList
+            $ defVards bsorts vs) opList
     ++ map (\ (p, typ) ->
       let vs = map (\ (s, i) -> mkVarDeclStr ("x_" ++ show i) s)
               $ number $ predArgs typ
       in makeNamed ("ga_predicate_strictness_" ++ show p)
       -- forall x_i:s_i . p(x_1, ..., x_n) => d x_1 /\\ ... /\\ d x_n
          $ mkForall vs
-           (mkImpl
+           $ mkImpl
             (Predication (Qual_pred_name p (toPRED_TYPE typ) nullRange)
                       (map toQualVar vs) nullRange)
-            $ defVards bsorts vs) nullRange) predList)
+            $ defVards bsorts vs) predList)
     where
-        mkQualOp f ty = Qual_op_name f ty nullRange
-        mkNeg f = Negation f nullRange
         rel1 = Rel.transClosure $ sortRel sig
         sccs = Rel.sccOfClosure rel1
         rel2 = Rel.transReduce $ Rel.collaps sccs rel1

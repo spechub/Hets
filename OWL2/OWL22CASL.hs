@@ -251,7 +251,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                     let vars = case r of
                                  ADomain -> (mkNName 1, mkNName 2)
                                  ARange -> (mkNName 2, mkNName 1)
-                    return (map (\ cd -> mkForall
+                    return (map (\ cd -> mkForallRange
                                      [Var_decl [fst vars] thing nullRange]
                                      (
                                       Quantification Existential
@@ -277,7 +277,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                     decrsS <- mapDescriptionListP cSig 1
                       $ comPairsaux ce map2nd
                     let decrsP = map (\ (x, y) ->
-                            mkForall
+                            mkForallRange
                               [Var_decl [mkNName 1] thing nullRange]
                             (case re of
                               Equivalent ->
@@ -292,7 +292,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                   do
                     domT <- mapDescription cSig ce 1
                     codT <- mapDescriptionList cSig 1 map2nd
-                    return (map (\ cd -> mkForall
+                    return (map (\ cd -> mkForallRange
                                [Var_decl [mkNName 1] thing nullRange]
                                (Implication
                                 domT
@@ -311,7 +311,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
       Just r -> case r of
         EDRelation ed -> do
           pairs <- mapComObjectPropsList cSig mol map2nd 1 2
-          return (map (\ (a, b) -> mkForall
+          return (map (\ (a, b) -> mkForallRange
                               [ Var_decl [mkNName 1] thing nullRange
                               , Var_decl [mkNName 2] thing nullRange]
                                  (case ed of
@@ -330,7 +330,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
           do
              os1 <- mapM (\ o1 -> mapObjProp cSig o1 1 2) map2nd
              o2 <- mapObjProp cSig ob 2 1
-             return (map (\ o1 -> mkForall
+             return (map (\ o1 -> mkForallRange
                              [Var_decl [mkNName 1] thing nullRange
                              , Var_decl [mkNName 2] thing nullRange]
                              (
@@ -353,7 +353,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         SubPropertyOf | isJ -> do
           os1 <- mapM (\ o1 -> mapDataProp cSig o1 1 2) map2nd
           o2 <- mapDataProp cSig ob 2 1
-          return (map (\ o1 -> mkForall
+          return (map (\ o1 -> mkForallRange
                                [ Var_decl [mkNName 1] thing nullRange
                                , Var_decl [mkNName 2] dataS nullRange]
                                (
@@ -366,7 +366,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                nullRange) os1, cSig)
         EDRelation ed -> do
           pairs <- mapComDataPropsList cSig map2nd 1 2
-          return (map (\ (a, b) -> mkForall
+          return (map (\ (a, b) -> mkForallRange
                               [ Var_decl [mkNName 1] thing nullRange
                               , Var_decl [mkNName 2] dataS nullRange]
                                 (case ed of
@@ -411,7 +411,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                     odes <- mapM (\ (_, c) ->
                                                   mapDataRange cSig c 2) dpr
                                     let vars = (mkNName 1, mkNName 2)
-                                    return (map (\ cd -> mkForall
+                                    return (map (\ cd -> mkForallRange
                                          [Var_decl [fst vars] thing nullRange]
                                          (Quantification Existential
                                          [Var_decl [snd vars] dataS nullRange]
@@ -435,7 +435,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                       let oProp = case posneg of
                                       Positive -> oPropH
                                       Negative -> Negation oPropH nullRange
-                      return ([mkForall
+                      return ([mkForallRange
                                      [Var_decl [mkNName 1]
                                          thing nullRange
                                       , Var_decl [mkNName 2]
@@ -476,7 +476,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                       let oProp = case posneg of
                                     Positive -> oPropH
                                     Negative -> Negation oPropH nullRange
-                      return ([mkForall
+                      return ([mkForallRange
                                            [Var_decl [mkNName 1]
                                                      thing nullRange
                                            , Var_decl [mkNName 2]
@@ -517,7 +517,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
               do
                 so1 <- mapObjProp cSig ope 1 2
                 so2 <- mapObjProp cSig ope 1 3
-                return ([mkForall
+                return ([mkForallRange
                                      [Var_decl [mkNName 1] thing nullRange
                                      , Var_decl [mkNName 2] thing nullRange
                                      , Var_decl [mkNName 3] thing nullRange
@@ -545,7 +545,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                do
                  so1 <- mapObjProp cSig ope 1 3
                  so2 <- mapObjProp cSig ope 2 3
-                 return ([mkForall
+                 return ([mkForallRange
                                      [Var_decl [mkNName 1] thing nullRange
                                      , Var_decl [mkNName 2] thing nullRange
                                      , Var_decl [mkNName 3] thing nullRange
@@ -572,7 +572,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             [Reflexive] ->
               do
                 so <- mapObjProp cSig ope 1 1
-                return ([mkForall
+                return ([mkForallRange
                                    [Var_decl [mkNName 1] thing nullRange]
                                    (
                                     Implication
@@ -590,7 +590,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             [Irreflexive] ->
               do
                 so <- mapObjProp cSig ope 1 1
-                return ([mkForall
+                return ([mkForallRange
                                    [Var_decl [mkNName 1] thing nullRange]
                                    (
                                     Implication
@@ -614,7 +614,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                  so1 <- mapObjProp cSig ope 1 2
                  so2 <- mapObjProp cSig ope 2 1
                  return
-                           ([mkForall
+                           ([mkForallRange
                                [Var_decl [mkNName 1] thing nullRange
                                , Var_decl [mkNName 2] thing nullRange]
                                (
@@ -629,7 +629,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
               do
                 so1 <- mapObjProp cSig ope 1 2
                 so2 <- mapObjProp cSig ope 2 1
-                return ([mkForall
+                return ([mkForallRange
                                [Var_decl [mkNName 1] thing nullRange
                                , Var_decl [mkNName 2] thing nullRange]
                                (
@@ -644,7 +644,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
               do
                 so1 <- mapObjProp cSig ope 1 2
                 so2 <- mapObjProp cSig ope 2 1
-                return ([mkForall
+                return ([mkForallRange
                                [Var_decl [mkNName 1] thing nullRange
                                , Var_decl [mkNName 2] thing nullRange]
                                (
@@ -669,7 +669,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                 so1 <- mapObjProp cSig ope 1 2
                 so2 <- mapObjProp cSig ope 2 3
                 so3 <- mapObjProp cSig ope 1 3
-                return ([mkForall
+                return ([mkForallRange
                                [Var_decl [mkNName 1] thing nullRange
                                , Var_decl [mkNName 2] thing nullRange
                                , Var_decl [mkNName 3] thing nullRange]
@@ -702,7 +702,7 @@ mapAnnFrameBit cSig ex afb =
               do
                 so1 <- mapDataProp cSig iri 1 2
                 so2 <- mapDataProp cSig iri 1 3
-                return ([mkForall
+                return ([mkForallRange
                                      [Var_decl [mkNName 1] thing nullRange
                                      , Var_decl [mkNName 2] dataS nullRange
                                      , Var_decl [mkNName 3] dataS nullRange
@@ -736,7 +736,7 @@ mapAnnFrameBit cSig ex afb =
               do
                 odes <- mapDataRange cSig dr 2
                 let dtb = uriToId iri
-                return ([mkForall
+                return ([mkForallRange
                           [Var_decl [mkNName 1] thing nullRange]
                             (
                             Equivalence
@@ -762,7 +762,7 @@ mapAnnFrameBit cSig ex afb =
                  decrsS <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
                  let decrsP = map (\ (x, y) -> conjunct [x, y]) decrsS
                  mcls <- mapClassURI cSig iri (mkNName 1)
-                 return ([mkForall
+                 return ([mkForallRange
                               [Var_decl [mkNName 1] thing nullRange]
                                (
                                 Equivalence
@@ -807,11 +807,11 @@ mapSubObjPropChain cSig prop oP num1 =
                                  zip3 props ((num1 : vars) ++ [num2]) $
                                       tail ((num1 : vars) ++ [num2])
                ooP <- mapObjProp cSig oP num1 num2
-               return $ mkForall
+               return $ mkForallRange
                      [ Var_decl [mkNName num1] thing nullRange
                      , Var_decl [mkNName num2] thing nullRange]
                      (
-                      mkForall
+                      mkForallRange
                          (
                           map (\ x -> Var_decl [mkNName x] thing nullRange) vars
                          )
@@ -889,7 +889,7 @@ mapSubObjProp cSig oPL oP num1 = do
     let num2 = num1 + 1
     l <- mapObjProp cSig oPL num1 num2
     r <- mapObjProp cSig oP num1 num2
-    return $ mkForall [mkVarDecl (mkNName num1) thing,
+    return $ mkForallRange [mkVarDecl (mkNName num1) thing,
                        mkVarDecl (mkNName num2) thing]
                        (mkImpl r l )
                        nullRange
@@ -1117,7 +1117,7 @@ mapDescription cSig desc var = case desc of
                           )
                           nullRange
                 AllValuesFrom ->
-                   return $ mkForall [Var_decl [mkNName
+                   return $ mkForallRange [Var_decl [mkNName
                                                                (var + 1)]
                                                        thing nullRange]
                        (
@@ -1176,7 +1176,7 @@ mapDescription cSig desc var = case desc of
                                    nullRange
                                   )
                                   nullRange
-                     let maxLst = mkForall
+                     let maxLst = mkForallRange
                                   qVarsM
                                   (
                                    Implication
@@ -1209,7 +1209,7 @@ mapDescription cSig desc var = case desc of
                           )
                           nullRange
                 AllValuesFrom ->
-                   return $ mkForall
+                   return $ mkForallRange
                        [Var_decl [mkNName (var + 1)] thing nullRange]
                        (mkImpl oprop0 desc0)
                        nullRange

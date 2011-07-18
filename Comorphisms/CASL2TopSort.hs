@@ -190,8 +190,8 @@ procOpMapping subSortMap opName =
     procProfMapOpMapping sl (kind, spl) = genArgRest
         (genSenName "o" opName $ length sl) (genOpEquation kind opName) sl spl
 
-mkQualPred :: PRED_NAME -> SORT -> PRED_SYMB
-mkQualPred symS ts = Qual_pred_name symS (Pred_type [ts] nullRange) nullRange
+mkSimpleQualPred :: PRED_NAME -> SORT -> PRED_SYMB
+mkSimpleQualPred symS ts = mkQualPred symS $ Pred_type [ts] nullRange
 
 symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA ())]
 symmetryAxioms ssMap sortRels =
@@ -200,12 +200,12 @@ symmetryAxioms ssMap sortRels =
           (\ s ->
             let ts = lkupTop ssMap s
                 symS = lkupPred ssMap s
-                psy = mkQualPred symS ts
+                psy = mkSimpleQualPred symS ts
                 vd = mkVarDeclStr "x" ts
                 vt = toQualVar vd
             in if ts == s then [] else
                    [makeNamed (show ts ++ "_symmetric_with_" ++ show symS)
-                   $ mkForall [vd] (Predication psy [vt] nullRange) nullRange]
+                   $ mkForall [vd] $ mkPredication psy [vt]]
           ) . Set.toList
     in concatMap toAxioms symSets
 
@@ -233,16 +233,16 @@ generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
                    set = directSuperSortsPI prdInf
                    supPreds = map (lkupPred subSortMap) $ Set.toList set
                    x = mkVarDeclStr "x" ts
-                   mkPredf sS = Predication (mkQualPred sS ts) [toQualVar x]
-                                nullRange
+                   mkPredf sS = mkPredication (mkSimpleQualPred sS ts)
+                     [toQualVar x]
                 in makeNamed (show subS ++ "_non_empty")
                    (Quantification Existential [x] (mkPredf subS)
                      nullRange)
                    : map (\ supS ->
                        makeNamed (show subS ++ "_subclassOf_" ++ show supS)
                        $ mkForall [x]
-                          (mkImpl (mkPredf subS) $ mkPredf supS)
-                          nullRange) supPreds
+                          $ mkImpl (mkPredf subS) $ mkPredf supS)
+                         supPreds
              ) $ Map.elems subSortMap
 
 mkProfMapPred :: SubSortMap -> Set.Set PredType
@@ -319,8 +319,7 @@ genQuantification :: FORMULA f {- ^ either the predication or
                   -> Maybe (FORMULA f)
 genQuantification prop vars spl = do
      dis <- genDisjunction vars spl
-     return $ mkForall vars
-                (mkImpl prop dis) nullRange
+     return $ mkForall vars $ mkImpl prop dis
 
 genDisjunction :: [VAR_DECL] -> Set.Set [Maybe PRED_NAME] -> Maybe (FORMULA f)
 genDisjunction vars spn
@@ -330,11 +329,11 @@ genDisjunction vars spn
         [x] -> Just x
         _ -> error "CASL2TopSort.genDisjunction: this cannot happen"
     | null disjs = Nothing
-    | otherwise = Just (Disjunction disjs nullRange)
+    | otherwise = Just (disjunct disjs)
       where disjs = foldl genConjunction [] (Set.toList spn)
             genConjunction acc pns
                 | null conjs = acc
-                | otherwise = Conjunction (reverse conjs) nullRange : acc
+                | otherwise = conjunct (reverse conjs) : acc
                 where conjs = foldl genPred [] (zip vars pns)
             genPred acc (v, mpn) = maybe acc
                 (\ pn -> genPredication pn [v] : acc) mpn
@@ -435,7 +434,7 @@ genEitherAxiom ssMap =
           sameTarget x1 x2 = compTarget x1 x2 == EQ
           lTop = lkupTop ssMap
           mkXVarDecl = mkVarDeclStr "x" . lTop . resultSort
-          genQuant qon f = mkForall [mkXVarDecl qon] f nullRange
+          genQuant qon = mkForall [mkXVarDecl qon]
           genImpl xs = case xs of
             x : _ -> let
               rSrt = resultSort x

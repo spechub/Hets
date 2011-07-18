@@ -171,7 +171,6 @@ predefinedAxioms = let
       )
       n
      )
-     n
     ,
      makeNamed "thing in Thing" $
      mkForall
@@ -182,7 +181,6 @@ predefinedAxioms = let
        [t1]
        n
      )
-     n
     ]
 
 -- | Build a name

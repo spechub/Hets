@@ -29,7 +29,6 @@ import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sublogic
 import CASL.Sign as C
-import CASL.Simplify
 import CASL.Morphism as C
 import CASL.Fold
 import CASL.Overload
@@ -120,7 +119,7 @@ mapSen sig s = case s of
   DeclProp r p -> getRelProp sig r p
   Assertion _ r ->
     let ((v1, s1), (v2, s2), f) = evalState (transRule sig r) 1 in
-    mkForall [mkVarDecl v1 s1, mkVarDecl v2 s2] f nullRange
+    mkForall [mkVarDecl v1 s1, mkVarDecl v2 s2] f
 
 -- | Translation of morphisms
 mapMor :: A.Morphism -> Result CASLMor
@@ -165,33 +164,33 @@ getRelProp sig r p =
       pAppl = Predication qp [t1, t2] q
       eqs = fr == to
   in case propProp p of
-       Uni -> mkForall [q1, q2, q3]
+       Uni -> mkForallRange [q1, q2, q3]
             (Implication
              (Conjunction
               [pAppl, Predication qp [t3, t2] q] q)
              (Strong_equation t1 t3 q)
              True q) q
-       Tot -> mkForall [q1] (Quantification Existential [q2] pAppl q) q
-       Sur -> mkForall [q2] (Quantification Existential [q1] pAppl q) q
+       Tot -> mkForallRange [q1] (Quantification Existential [q2] pAppl q) q
+       Sur -> mkForallRange [q2] (Quantification Existential [q1] pAppl q) q
        Inj -> let
          q4 = Var_decl [mkSimpleId "c"] to q
          t4 = toQualVar q4
-         in mkForall [q1, q2, q4]
+         in mkForallRange [q1, q2, q4]
             (Implication
              (Conjunction
               [pAppl, Predication qp [t1, t4] q] q)
              (Strong_equation t2 t4 q)
              True q) q
-       Sym | eqs ->
-         mkForall [q1, q2] (Equivalence pAppl (Predication qp [t2, t1] q) q) q
-       Asy | eqs -> mkForall [q1, q2]
+       Sym | eqs -> mkForallRange [q1, q2]
+         (Equivalence pAppl (Predication qp [t2, t1] q) q) q
+       Asy | eqs -> mkForallRange [q1, q2]
          (Implication pAppl (Negation (Predication qp [t2, t1] q) q) True q) q
-       Trn | eqs -> mkForall [q1, q2, q3]
+       Trn | eqs -> mkForallRange [q1, q2, q3]
           (Implication
            (Conjunction [pAppl, Predication qp [t2, t3] q] q)
              (Predication qp [t1, t3] q)
              True q) q
-       Rfx | eqs -> mkForall [q1] (Predication qp [t1, t1] q) q
+       Rfx | eqs -> mkForallRange [q1] (Predication qp [t1, t1] q) q
        pr -> error $ "getRelProp " ++ showDoc pr ""
 
 transRule :: CASLSign -> Rule
@@ -203,8 +202,6 @@ transRule sig rule =
                    error $ "transRule.myMin " ++ showDoc (sa, sb) "\n "
                    ++ showDoc rule ""
       myVarDecl = uncurry mkVarDecl
-      disjunct fs = Disjunction fs nullRange
-      mkExist vs f = Quantification Existential vs f nullRange
   in case rule of
   Tm m@(Sgn (Token s p) (RelType c1 c2)) -> do
       i <- next
@@ -257,7 +254,7 @@ transRule sig rule =
              vs = [myVarDecl v23]
              cs = [f3, f4]
          in if o == Fc then mkExist vs $ conjunct cs
-              else mkForall vs (disjunct cs) nullRange)
+              else mkForall vs $ disjunct cs)
          else do
            let v13 = myMin v1 v3
                v24 = myMin v2 v4

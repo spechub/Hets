@@ -494,48 +494,6 @@ optSortOfTerm f term = case term of
     ExtTERM t -> f t
     _ -> Nothing
 
--- | create binding if variables are non-null
-mkForall :: [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
-mkForall vl f ps = if null vl then f else Quantification Universal vl f ps
-
--- | convert a singleton variable declaration into a qualified variable
-toQualVar :: VAR_DECL -> TERM f
-toQualVar (Var_decl v s ps) =
-    if isSingle v then Qual_var (head v) s ps else error "toQualVar"
-
-mkImpl :: FORMULA f -> FORMULA f -> FORMULA f
-mkImpl f f' = Implication f f' True nullRange
-
-mkExEq :: TERM f -> TERM f -> FORMULA f
-mkExEq f f' = Existl_equation f f' nullRange
-
-mkStEq :: TERM f -> TERM f -> FORMULA f
-mkStEq u v = Strong_equation u v nullRange
-
-mkEqv :: FORMULA f -> FORMULA f -> FORMULA f
-mkEqv u v = Equivalence u v nullRange
-
-mkAppl :: OP_SYMB -> [TERM f] -> TERM f
-mkAppl op_symb fs = Application op_symb fs nullRange
-
--- | turn sorted variable into variable delcaration
-mkVarDecl :: VAR -> SORT -> VAR_DECL
-mkVarDecl v s = Var_decl [v] s nullRange
-
--- | turn sorted variable into term
-mkVarTerm :: VAR -> SORT -> TERM f
-mkVarTerm v = toQualVar . mkVarDecl v
-
--- | optimized conjunction
-conjunct :: [FORMULA f] -> FORMULA f
-conjunct fs = case fs of
-  [] -> True_atom nullRange
-  [phi] -> phi
-  _ -> Conjunction fs nullRange
-
-mkVarDeclStr :: String -> SORT -> VAR_DECL
-mkVarDeclStr = mkVarDecl . mkSimpleId
-
 mkAxName :: String -> SORT -> SORT -> String
 mkAxName str s s' = "ga_" ++ str ++ "_" ++ show s ++ "_to_" ++ show s'
 

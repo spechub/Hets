@@ -76,7 +76,7 @@ induction constrSubsts =
        sortInfo = map (\ ((cs, sub), i) -> (sub, (mkVar i, newSort cs)))
          $ number constrSubsts
        mkConclusion (subst, v) =
-         mkForall [uncurry mkVarDecl v] (subst (uncurry mkVarTerm v)) nullRange
+         mkForall [uncurry mkVarDecl v] $ subst $ uncurry mkVarTerm v
        inductionConclusion = conjunct $ map mkConclusion sortInfo
        inductionPremises = map (mkPrems $ map snd constrSubsts) constrSubsts
        inductionPremise = conjunct $ concat inductionPremises
@@ -92,7 +92,7 @@ mkPrems substs (constr, sub) = map (mkPrem substs sub) (opSymbs constr)
 mkPrem :: FormExtension f => [TERM f -> FORMULA f] -> (TERM f -> FORMULA f)
   -> (OP_SYMB, [Int]) -> FORMULA f
 mkPrem substs subst (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) =
-  mkForall qVars phi nullRange
+  mkForall qVars phi
   where
   qVars = map (\ (a, i) -> mkVarDeclStr ("y_" ++ show i) a) $ number argTypes
   phi = if null indHyps then indConcl
