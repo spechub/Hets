@@ -15,6 +15,7 @@ module OWL2.StaticAnalysis where
 import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
+import OWL2.Print ()
 import OWL2.Theorem
 import OWL2.Expand
 
@@ -23,17 +24,19 @@ import Data.List
 import Data.Maybe
 
 import Common.AS_Annotation
+import Common.DocUtils
 import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
 
 -- | Error messages for static analysis
-failMsg :: Maybe Entity -> String -> String
-failMsg ent s = case ent of
-    Just (Entity ty e) -> "Static analysis cannot find " ++ showEntityType ty
-          ++ " " ++ showQN e ++ s
-    Nothing -> s
+failMsg :: Entity -> ClassExpression -> Result a
+failMsg (Entity ty e) desc =
+  fatal_error
+    ("undeclared `" ++ showEntityType ty
+          ++ " " ++ showQN e ++ "` in the following ClassExpression:\n"
+          ++ showDoc desc "") $ iriPos e
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI
 getObjRoleFromExpression opExp =
@@ -77,21 +80,22 @@ anaAxiom x = findImplied x $ makeNamed "" x
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a ent =
   let Entity ty e = ent
+      errMsg = mkError ("unknown " ++ showEntityType ty ++ ":") e
   in case ty of
    Datatype -> if Set.member e (datatypes s) ||
                     elem (localPart e) datatypeKeys
                   then return a
-                else fail $ failMsg (Just ent) ""
+                else errMsg
    Class -> if Set.member e (concepts s) then return a
-             else fail $ failMsg (Just ent) ""
+             else errMsg
    ObjectProperty -> if Set.member e (objectProperties s) then return a
-                      else fail $ failMsg (Just ent) ""
+                      else errMsg
    DataProperty -> if Set.member e (dataProperties s) then return a
-                    else fail $ failMsg (Just ent) ""
+                    else errMsg
    NamedIndividual -> if Set.member e (individuals s) then return a
-                       else fail $ failMsg (Just ent) ""
+                       else errMsg
    AnnotationProperty -> if Set.member e (annotationRoles s) then return a
-                          else fail $ failMsg (Just ent) ""
+                          else errMsg
 
 -- | checks if a DataRange is valid
 checkDataRange :: Sign -> DataRange -> Result DataRange
@@ -119,14 +123,17 @@ classExpressionToDataRange s ce = case ce of
     ObjectComplementOf c -> do
       nr <- classExpressionToDataRange s c
       return $ DataComplementOf nr
-    _ -> fail $ failMsg Nothing
-            "Static analysis cannot correct so parsed ClassExpression\n\n"
-            ++ show ce ++ "\n\nto a DataRange"
+    _ -> fail $ "cannot convert ClassExpression to DataRange\n"
+            ++ showDoc ce ""
 
 {- | checks a ClassExpression and recursively converts the
      (maybe inappropriately) parsed syntax to a one satisfying the signature -}
 checkClassExpression :: Sign -> ClassExpression -> Result ClassExpression
-checkClassExpression s desc = case desc of
+checkClassExpression s desc =
+  let errMsg i = failMsg i desc
+      objErr i = errMsg $ Entity ObjectProperty i
+      datErr i = errMsg $ Entity DataProperty i
+  in case desc of
   Expression u ->
      if null (namePrefix u) && elem (localPart u) ["Thing", "Nothing"] then
      return $ Expression u { namePrefix = "owl", isFullIri = False }
@@ -151,21 +158,18 @@ checkClassExpression s desc = case desc of
             ndr <- classExpressionToDataRange s d
             checkDataRange s ndr
             return $ DataValuesFrom a iri ndr
-           else fail $ failMsg (Just $ Entity ObjectProperty iri)
-              " in the following ClassExpression\n\n" ++ show desc
+           else objErr iri
   ObjectHasSelf opExpr -> do
     let iri = getObjRoleFromExpression opExpr
     if Set.member iri (objectProperties s) then return desc
-     else fail $ failMsg (Just $ Entity ObjectProperty iri)
-              " in the following ClassExpression\n\n" ++ show desc
+     else objErr iri
   ObjectHasValue opExpr i -> do
     let iri = getObjRoleFromExpression opExpr
         x = Set.member iri (objectProperties s)
     if x then do
          checkEntity s desc (Entity NamedIndividual i)
          return desc
-      else fail $ failMsg (Just $ Entity ObjectProperty iri)
-               " in the following ClassExpression\n\n" ++ show desc
+      else objErr iri
   ObjectCardinality (Cardinality a b opExpr md) -> do
     let iri = getObjRoleFromExpression opExpr
     let x = Set.member iri (objectProperties s)
@@ -173,8 +177,7 @@ checkClassExpression s desc = case desc of
     case md of
       Nothing ->
         if x then return desc
-         else fail $ failMsg (Just $ Entity ObjectProperty iri)
-              " in the following ClassExpression\n\n" ++ show desc
+         else objErr iri
       Just d ->
         if x then do
            n <- checkClassExpression s d
@@ -183,19 +186,16 @@ checkClassExpression s desc = case desc of
            dr <- classExpressionToDataRange s d
            checkDataRange s dr
            if z then return $ DataCardinality (Cardinality a b iri (Just dr))
-            else fail $ failMsg (Just $ Entity DataProperty iri)
-                       " in the following ClassExpression\n\n" ++ show desc
+            else datErr iri
   DataValuesFrom _ dExp r -> do
     checkDataRange s r
     let x = Set.member dExp (dataProperties s)
     if x then return desc
-     else fail $ failMsg (Just $ Entity DataProperty dExp)
-                " in the following ClassExpression\n\n" ++ show desc
+     else datErr dExp
   DataHasValue dExp _ -> do
     let x = Set.member dExp (dataProperties s)
     if x then return desc
-     else fail $ failMsg (Just $ Entity DataProperty dExp)
-                " in the following ClassExpression\n\n" ++ show desc
+     else datErr dExp
   DataCardinality (Cardinality _ _ dExp mr) -> do
     let x = Set.member dExp (dataProperties s)
     if x then
@@ -204,8 +204,7 @@ checkClassExpression s desc = case desc of
           Just d -> do
             checkDataRange s d
             return desc
-      else fail $ failMsg (Just $ Entity DataProperty dExp)
-                 " in the following ClassExpression\n\n" ++ show desc
+      else datErr dExp
 
 -- corrects the frame bits according to the signature
 

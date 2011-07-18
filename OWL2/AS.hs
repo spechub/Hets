@@ -36,6 +36,9 @@ data QName = QN
   , iriPos :: Range
   } deriving Show
 
+instance GetRange QName where
+  getRange = iriPos
+
 showQN :: QName -> String
 showQN q = (if isFullIri q then showQI else showQU) q
 
