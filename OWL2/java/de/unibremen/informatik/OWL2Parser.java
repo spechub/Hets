@@ -28,15 +28,15 @@ import java.net.URLConnection;
 import java.util.Iterator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.*;
 
 @SuppressWarnings("unchecked")
 public class OWL2Parser {
 
 	private static ArrayList<OWLOntology> loadedImportsList = new ArrayList<OWLOntology>();
 	private static ArrayList<IRI> importsIRI = new ArrayList<IRI>();
-	private static ArrayList<OWLOntology> haveImportsList = new ArrayList<OWLOntology>();
-	private static Map m = new HashMap();  
-	private static Set s = new HashSet();
+	private static Map<OWLOntology,List<OWLOntology>> m = new HashMap<OWLOntology, List<OWLOntology>>(); 
+	private static Set<OWLOntology> s = new HashSet<OWLOntology>();
 	private static boolean OP;
 
 	public static void main(String[] args) {
@@ -79,7 +79,7 @@ public class OWL2Parser {
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
 
 			getImportsList(ontology, manager);
-	
+
 			if(loadedImportsList.size() == 0)
 			{
 				if (OP)
@@ -155,29 +155,29 @@ public class OWL2Parser {
 	private static void getImportsList(OWLOntology ontology,
 			OWLOntologyManager om) {
 
+		List<OWLOntology> empty = Collections.emptyList();
+		List<OWLOntology> l = new ArrayList<OWLOntology>();
 		ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
-		
+
 		try {	
 			if (om.getImports(ontology).isEmpty())	{
-				m.put(ontology,0); 
+				m.put(ontology,empty); 
 			}
 			else 	{ 
-				haveImportsList.add(ontology);
-	
-				for (OWLOntology imported : om.getImports(ontology)) {
+			
+				for (OWLOntology imported : om.getDirectImports(ontology)) {	
+
 					if (!importsIRI.contains(imported.getOntologyID().getOntologyIRI())) {
-	
+							
 						unSavedImports.add(imported);
 						loadedImportsList.add(imported);
 						importsIRI.add(imported.getOntologyID().getOntologyIRI());
-	
-						if(!loadedImportsList.contains(ontology))	{
-							m.put(ontology,imported);
-						}
+						l.add(imported);
+
 					}
 				}
 				} 				
-					
+			m.put(ontology,l);		
 			for (OWLOntology onto : unSavedImports) {
 				getImportsList(onto, om);
 			}
@@ -193,13 +193,14 @@ public class OWL2Parser {
 			return new OutputStreamWriter(System.out);
 		}
 	
-	private static void parseZeroImports(BufferedWriter out) 
+	private synchronized static  void parseZeroImports(BufferedWriter out) 
 	{
-		Set all = getKeysByValue(0);
+		Set all = getKeysByValue();
 		Iterator it = all.iterator();
-		
+
 		while(it.hasNext())	
 			{
+
 			OWLOntology onto = (OWLOntology)it.next();
 			if (OP)
 				parse2xml(onto, out, onto.getOWLOntologyManager());
@@ -208,44 +209,113 @@ public class OWL2Parser {
 			s.add(onto);
 			m.remove(onto);
 			parseImports(out);
+
 			}
 	}
 
-	public static void parseImports(BufferedWriter out)
+	
+	public synchronized static void parseImports(BufferedWriter out)
 	{
+		
 		Iterator iter = m.entrySet().iterator();
-		while(iter.hasNext()) {
+		while((iter.hasNext()) && (!m.isEmpty())) {
 
 			Map.Entry pairs = (Map.Entry)iter.next();
-	
-			if(checkset(pairs.getValue())) {
-				OWLOntology onto = (OWLOntology)pairs.getKey();
+			Set values = new HashSet<OWLOntology>();
+			List ls = new ArrayList<OWLOntology>();
+			ls.add(pairs.getValue());
+			List l = new ArrayList<OWLOntology>();
+			l = (List)ls.get(0);
+			values = cnvrt(l);
+
+			if(checkset(values)) {
+
+				OWLOntology onto = (OWLOntology)pairs.getKey();		
 				if (OP)
 					parse2xml(onto, out, onto.getOWLOntologyManager());
 				else
 					parse(onto,out);
-				s.add((OWLOntology)pairs.getKey());
-				m.remove(pairs.getKey());
-				parseImports(out);
-			}
+				
+			s.add((OWLOntology)pairs.getKey());
+			m.remove(iter);
+			parseImports(out);
+			}				
 		}
+
 	}
 
-	public static Boolean checkset(Object it)	{
-		Set aux = new HashSet();
-		aux.add(it);		
-		if (s.containsAll(aux))		
-			return true;
-		else
+	public static Set cnvrt(List lst)
+	{
+
+		Set st = new HashSet<OWLOntology>();
+		Iterator it = lst.iterator();
+		
+		if (lst.size() == 0)		
+			return st;
+
+		while(it.hasNext())
+			{
+			OWLOntology aux_ont = (OWLOntology)it.next();
+
+			st.add(aux_ont);
+			}
+		return st;
+	}
+
+
+	public static Boolean checkset(Collection it)	{
+
+		if (it.isEmpty())
 			return false;
+		Set<OWLOntology> aux = new HashSet<OWLOntology>();
+		aux.addAll(it);
+		return equalcollections(aux, s);	
 	}
 
-	public static Set getKeysByValue(int value) {
+	public static Boolean equalcollections(Set l1, Set l2)	{
+
+		Boolean eq = true;
+
+		if(l1.isEmpty() || l2.isEmpty())
+			return false;
+			
+		Iterator itr = l1.iterator();
+		if(itr.next().toString().equals("[]"))
+			{
+			eq = false;		
+			}
+		
+		while (itr.hasNext())
+			{
+				OWLOntology ont = (OWLOntology)itr.next();	
+				if (!l2.contains(ont))
+					eq = false;
+			}
+
+		Iterator it = l2.iterator();
+
+		if (it.next().toString().equals("[]"))
+			{
+			eq = false;
+			}
+
+		while (it.hasNext())
+			{
+			OWLOntology on = (OWLOntology)it.next();
+			if(!l1.contains(on))
+				eq = false;
+			}
+		
+		return eq;
+	}
+
+
+	public static Set getKeysByValue() {
 		Set keys = new HashSet();
 		Iterator it = m.entrySet().iterator();		
 		while(it.hasNext()) {
 			Map.Entry pairs = (Map.Entry)it.next();
-			if(pairs.getValue().equals(value)) {
+			if(pairs.getValue().toString().equals("[]")) {
 				keys.add(pairs.getKey());
 			}
 		}
