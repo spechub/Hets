@@ -148,13 +148,14 @@ find Ontology -name \*.th -o -name \*.pp.het | xargs \rm
 checkXML ()
 {
 date
+\rm Basic/*.pp.xml
 for i in Basic/*.xml;
     do ./hets -v2 -o th $i; done
-for i in Basic/*.het;
+for i in Basic/*.casl;
     do ./hets -v2 -A -o xml $i; done
 for i in Basic/*.xml;
     do ./hets -v2 -o th $i; done
-find Basic -name \*.th -o -name \*.xml | xargs \rm
+\rm Basic/*.{th,xml}
 }
 
 makeLibCheck ()
