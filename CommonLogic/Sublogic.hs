@@ -6,7 +6,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental
-Portability :  non-portable (imports Logic.Logic)
+Portability :  non-portable (via Logic.Logic)
 
 Sublogics for CommonLogic
 -}
@@ -32,6 +32,7 @@ module CommonLogic.Sublogic
     )
     where
 
+import CommonLogic.Tools
 import qualified Data.Set as Set
 import qualified CommonLogic.AS_CommonLogic as AS
 import qualified Common.AS_Annotation as AS_Anno
@@ -123,115 +124,6 @@ sublogics_max = sublogics_join joinType
 --
 comp_list :: [CommonLogicSL] -> CommonLogicSL
 comp_list l = foldl sublogics_max bottom l
-
-unifyPredicates :: (a -> Set.Set AS.NAME) -> [a] -> Set.Set AS.NAME
-unifyPredicates prd_item items =
-    foldl (\ns i -> Set.union ns (prd_item i)) Set.empty items
-
-------------------------------------------------------------------------------
--- Functions to compute the set of predicates, these work by recursing      --
--- into all subelements                                                     --
-------------------------------------------------------------------------------
-
-prd_text :: AS.TEXT -> Set.Set AS.NAME
-prd_text t = 
-    case t of
-         AS.Text ps _ -> prd_phrases ps
-         AS.Named_text _ nt _ -> prd_text nt
-
-prd_phrases :: [AS.PHRASE] -> Set.Set AS.NAME
-prd_phrases ps = unifyPredicates prd_phrase ps
-
-prd_phrase :: AS.PHRASE -> Set.Set AS.NAME
-prd_phrase p = 
-    case p of 
-         AS.Module m -> prd_module m
-         AS.Sentence s -> prd_sentence s
-         AS.Importation i -> prd_importation i
-         AS.Comment_text _ t _ -> prd_text t
-
-prd_module :: AS.MODULE -> Set.Set AS.NAME
-prd_module m = 
-    case m of
-         AS.Mod _ t _ -> prd_text t
-         AS.Mod_ex _ _ t  _ -> prd_text t 
-
-prd_sentence :: AS.SENTENCE -> Set.Set AS.NAME
-prd_sentence s = 
-    case s of
-         AS.Quant_sent q _ -> prd_quantSent q
-         AS.Bool_sent b _ -> prd_boolSent b
-         AS.Atom_sent a _ -> prd_atomSent a
-         AS.Comment_sent _ c _ -> prd_sentence c
-         AS.Irregular_sent i _ -> prd_sentence i
-
-prd_importation :: AS.IMPORTATION -> Set.Set AS.NAME
-prd_importation (AS.Imp_name n) = prd_name n
-
-prd_quantSent :: AS.QUANT_SENT -> Set.Set AS.NAME
-prd_quantSent q = 
-    case q of
-         AS.Universal noss s -> 
-            Set.union (unifyPredicates prd_nameOrSeqmark noss) $ prd_sentence s
-         AS.Existential noss s -> 
-            Set.union (unifyPredicates prd_nameOrSeqmark noss) $ prd_sentence s
---TODO SequenceMarker Handling
-
-prd_nameOrSeqmark :: AS.NAME_OR_SEQMARK -> Set.Set AS.NAME
-prd_nameOrSeqmark nos = 
-    case nos of
-         AS.Name n -> prd_name n
-         AS.SeqMark s -> prd_seqmark s
-
-prd_boolSent :: AS.BOOL_SENT -> Set.Set AS.NAME
-prd_boolSent b = 
-    case b of
-         AS.Conjunction ss -> unifyPredicates prd_sentence ss
-         AS.Disjunction ss -> unifyPredicates prd_sentence ss
-         AS.Negation s -> prd_sentence s
-         AS.Implication s1 s2 -> unifyPredicates prd_sentence [s1,s2]
-         AS.Biconditional s1 s2 -> unifyPredicates prd_sentence [s1,s2]
-
-prd_atomSent :: AS.ATOM -> Set.Set AS.NAME
-prd_atomSent a = 
-    case a of
-         AS.Equation t1 t2 -> unifyPredicates prd_term [t1,t2]
-         AS.Atom t tseq -> 
-            if null tseq 
-               then prd_term t
-               else Set.union (prd_termSeqs tseq) $ prd_add_term t
-
-prd_term :: AS.TERM -> Set.Set AS.NAME
-prd_term t = 
-  case t of
-    AS.Name_term n -> prd_name n
-    AS.Funct_term ft tseqs _ -> Set.union (prd_add_term ft) (prd_termSeqs tseqs)
-    AS.Comment_term ct _ _ -> prd_term ct
-
-prd_name :: AS.NAME -> Set.Set AS.NAME
-prd_name _ = Set.empty
-
-prd_seqmark :: AS.SEQ_MARK -> Set.Set AS.NAME
-prd_seqmark _ = Set.empty
-
-prd_termSeqs :: [AS.TERM_SEQ] -> Set.Set AS.NAME
-prd_termSeqs tsecs = unifyPredicates prd_termSeq tsecs
-
-prd_termSeq :: AS.TERM_SEQ -> Set.Set AS.NAME
-prd_termSeq tsec = 
-    case tsec of
-         AS.Term_seq t -> prd_term t
-         AS.Seq_marks s -> prd_seqmark s
-
-prd_add_term :: AS.TERM -> Set.Set AS.NAME
-prd_add_term t = 
-  case t of
-    AS.Name_term n -> prd_add_name n
-    AS.Funct_term ft tseqs _ -> Set.union (prd_add_term ft) (prd_termSeqs tseqs)
-    AS.Comment_term ct _ _ -> prd_term ct
-
-prd_add_name :: AS.NAME -> Set.Set AS.NAME
-prd_add_name n = Set.singleton n
 
 ------------------------------------------------------------------------------
 -- Functions to compute minimal sublogic for a given element, these work    --

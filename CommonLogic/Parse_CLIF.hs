@@ -187,7 +187,7 @@ term = do
    <|> do
      parens $ do
        t <- term
-       ts <- many1 termseq -- many1?
+       ts <- many1 termseq -- many1? yes, because it's a functional term
        return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t
                                                       , rangeSpan ts]
 
