@@ -1009,18 +1009,15 @@ uriToIdM = return . uriToId
 -- | Extracts Id from URI
 uriToId :: IRI -> Id
 uriToId urI =
-    let
-        ur = case urI of
-               QN _ "Thing" _ _ -> mkQName "Thing"
-               QN _ "Nothing" _ _ -> mkQName "Nothing"
-               _ -> urI
+    let l = localPart urI
+        ur = if elem l ["Thing", "Nothing"] then mkQName l else urI
         repl a = if isAlphaNum a
                   then
                       a
                   else
                       '_'
         nP = map repl $ namePrefix ur
-        lP = map repl $ localPart ur
+        lP = map repl l
     in stringToId $ nP ++ "" ++ lP
 
 -- | Mapping of a list of descriptions

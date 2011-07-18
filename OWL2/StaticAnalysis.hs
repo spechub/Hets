@@ -127,10 +127,10 @@ classExpressionToDataRange s ce = case ce of
      (maybe inappropriately) parsed syntax to a one satisfying the signature -}
 checkClassExpression :: Sign -> ClassExpression -> Result ClassExpression
 checkClassExpression s desc = case desc of
-  Expression u -> case u of
-    QN _ "Thing" _ _ -> return $ Expression $ QN "owl" "Thing" False ""
-    QN _ "Nothing" _ _ -> return $ Expression $ QN "owl" "Nothing" False ""
-    _ -> checkEntity s desc (Entity Class u)
+  Expression u ->
+     if null (namePrefix u) && elem (localPart u) ["Thing", "Nothing"] then
+     return $ Expression u { namePrefix = "owl", isFullIri = False }
+     else checkEntity s desc (Entity Class u)
   ObjectJunction a ds -> do
     nl <- mapM (checkClassExpression s) ds
     return $ ObjectJunction a nl

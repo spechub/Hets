@@ -105,5 +105,5 @@ isEmptyOntologyDoc (OntologyDocument ns onto) =
     Map.null ns && isEmptyOntology onto
 
 isEmptyOntology :: Ontology -> Bool
-isEmptyOntology (Ontology (QN _ l _ n) annoList impList fs) =
+isEmptyOntology (Ontology (QN _ l _ n _) annoList impList fs) =
     null l && null n && null annoList && null impList && null fs

@@ -75,7 +75,7 @@ signColimit graph = let
   in (colimSign, colimMor)
 
 instance SymbolName QName where
- addIntAsSuffix (QN p l b n, i) = QN p (l ++ show i) b n
+ addIntAsSuffix (q, i) = q { localPart = localPart q ++ show i }
 
 getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
                     -> (Int, Map.Map QName QName)

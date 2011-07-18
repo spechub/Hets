@@ -68,7 +68,7 @@ printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
 printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
 
 fromCF :: ConstrainingFacet -> String
-fromCF (QN _ local _ _) = local
+fromCF = localPart
 
 printRelation :: Relation -> Doc
 printRelation = keyword . showRelation

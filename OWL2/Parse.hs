@@ -21,6 +21,7 @@ import OWL2.Keywords
 import OWL2.ColonKeywords
 
 import Common.Keywords
+import Common.Id
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
@@ -151,19 +152,25 @@ skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
         (forget space <|> forget commentLine <|> nestCommentOut <?> ""))
 
-abbrIri :: CharParser st QName
-abbrIri = try $ do
+abbrIriNoPos :: CharParser st QName
+abbrIriNoPos = try $ do
     pre <- try $ prefix << char ':'
     r <- hierPartWithOpts
-    return $ QN pre r False ""
+    return nullQName { namePrefix = pre, localPart = r }
   <|> fmap mkQName hierPartWithOpts
+
+abbrIri :: CharParser st QName
+abbrIri = do
+  p <- getPos
+  q <- abbrIriNoPos
+  return q { iriPos = Range [p] }
 
 fullIri :: CharParser st QName
 fullIri = do
     char '<'
-    QN pre r _ _ <- abbrIri
+    QN pre r _ _ p <- abbrIri
     char '>'
-    return $ QN pre r True ""
+    return $ QN pre r True "" p
 
 uriQ :: CharParser st QName
 uriQ = fullIri <|> abbrIri

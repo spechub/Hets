@@ -17,7 +17,7 @@ References:
 module OWL2.AS where
 
 import Common.Keywords
-import Common.Id (GetRange)
+import Common.Id
 
 import OWL2.Keywords
 import OWL2.ColonKeywords
@@ -33,6 +33,7 @@ data QName = QN
   , isFullIri :: Bool
   , expandedIRI :: String
   -- ^ the associated namespace uri (not printed)
+  , iriPos :: Range
   } deriving Show
 
 showQN :: QName -> String
@@ -40,7 +41,7 @@ showQN q = (if isFullIri q then showQI else showQU) q
 
 -- | show QName as abbreviated iri
 showQU :: QName -> String
-showQU (QN pre local _ _) =
+showQU (QN pre local _ _ _) =
     if null pre then local else pre ++ ":" ++ local
 
 -- | show QName in ankle brackets as full iris
@@ -48,13 +49,17 @@ showQI :: QName -> String
 showQI = ('<' :) . (++ ">") . showQU
 
 nullQName :: QName
-nullQName = QN "" "" False ""
+nullQName = QN "" "" False "" nullRange
 
 dummyQName :: QName
-dummyQName = QN "http" "//www.dfki.de/sks/hets/ontology/unamed" True ""
+dummyQName =
+  QN "http" "//www.dfki.de/sks/hets/ontology/unamed" True "" nullRange
 
 mkQName :: String -> QName
 mkQName s = nullQName { localPart = s }
+
+setQRange :: Range -> QName -> QName
+setQRange r q = q { iriPos = r }
 
 setPrefix :: String -> QName -> QName
 setPrefix s q = q { namePrefix = s }
@@ -63,7 +68,7 @@ instance Eq QName where
     p == q = compare p q == EQ
 
 instance Ord QName where
-  compare (QN p1 l1 b1 n1) (QN p2 l2 b2 n2) = case (n1, n2) of
+  compare (QN p1 l1 b1 n1 _) (QN p2 l2 b2 n2 _) = case (n1, n2) of
     ("", "") -> compare (b1, p1, l1) (b2, p2, l2)
     ("", _) -> LT
     (_, "") -> GT
@@ -215,7 +220,8 @@ data AnnotationValue
 
 data Entity = Entity EntityType IRI deriving (Show, Eq, Ord)
 
-instance GetRange Entity
+instance GetRange Entity where
+  getRange (Entity _ iri) = iriPos iri
 
 data EntityType =
     Datatype

@@ -7,8 +7,8 @@ import Data.List
 -- | Adding annotations for theorems
 addImplied :: Axiom -> Axiom
 addImplied a = case remImplied a of
-      PlainAxiom eith fb -> case eith of 
-        Misc ans -> PlainAxiom (Misc (impliedTh: ans)) fb 
+      PlainAxiom eith fb -> case eith of
+        Misc ans -> PlainAxiom (Misc (impliedTh: ans)) fb
         _ -> case fb of
               ListFrameBit mr lfb -> PlainAxiom eith
                       $ ListFrameBit mr (addImplListFB lfb)
@@ -21,7 +21,7 @@ addImplListFB lfb = case lfb of
     ExpressionBit a -> ExpressionBit $ addImpliedAnnList a
     ObjectBit a -> ObjectBit $ addImpliedAnnList a
     DataBit a -> DataBit $ addImpliedAnnList a
-    IndividualSameOrDifferent a -> IndividualSameOrDifferent 
+    IndividualSameOrDifferent a -> IndividualSameOrDifferent
                         $ addImpliedAnnList a
     ObjectCharacteristics a -> ObjectCharacteristics
                         $ addImpliedAnnList a
@@ -29,26 +29,26 @@ addImplListFB lfb = case lfb of
     IndividualFacts a -> IndividualFacts $ addImpliedAnnList a
 
 addImpliedAnnList :: AnnotatedList a -> AnnotatedList a
-addImpliedAnnList [] = [] 
+addImpliedAnnList [] = []
 addImpliedAnnList ((ans, b) : t) = (impliedTh : ans, b) : t
 
 remImplied :: Axiom -> Axiom
 remImplied (PlainAxiom eith fb) = case eith of
-      Misc ans -> PlainAxiom (Misc (remImpliedList ans)) fb 
+      Misc ans -> PlainAxiom (Misc (remImpliedList ans)) fb
       _ -> PlainAxiom eith
          (
           case fb of
             ListFrameBit mr lfb -> ListFrameBit mr (remImplListFB lfb)
             AnnFrameBit ans afb -> AnnFrameBit (remImpliedList ans) afb
          )
-      
+
 remImplListFB :: ListFrameBit -> ListFrameBit
 remImplListFB lfb = case lfb of
     AnnotationBit a -> AnnotationBit $ remImpliedAnnList a
     ExpressionBit a -> ExpressionBit $ remImpliedAnnList a
     ObjectBit a -> ObjectBit $ remImpliedAnnList a
     DataBit a -> DataBit $ remImpliedAnnList a
-    IndividualSameOrDifferent a -> IndividualSameOrDifferent 
+    IndividualSameOrDifferent a -> IndividualSameOrDifferent
                         $ remImpliedAnnList a
     ObjectCharacteristics a -> ObjectCharacteristics
                         $ remImpliedAnnList a
@@ -66,7 +66,7 @@ remImpliedAnnList = map remImplied1
 
 impliedTh :: Annotation
 impliedTh = Annotation [] (mkQName "Implied")
-              (AnnValLit (Literal "true" (Typed (QN "" "string" False ""))))
+  . AnnValLit . Literal "true" . Typed $ mkQName "string"
 
 isToProve1 :: Annotation -> Bool
 isToProve1 anno = case anno of
@@ -89,11 +89,11 @@ isToProve (PlainAxiom eith fb) = case eith of
 
 isToProveLB :: ListFrameBit -> Bool
 isToProveLB fb = case fb of
-    AnnotationBit a -> isToProveAnnList a 
-    ExpressionBit a -> isToProveAnnList a 
-    ObjectBit a -> isToProveAnnList a 
-    DataBit a -> isToProveAnnList a 
-    IndividualSameOrDifferent a -> isToProveAnnList a 
-    ObjectCharacteristics a -> isToProveAnnList a 
-    DataPropRange a -> isToProveAnnList a 
-    IndividualFacts a -> isToProveAnnList a 
+    AnnotationBit a -> isToProveAnnList a
+    ExpressionBit a -> isToProveAnnList a
+    ObjectBit a -> isToProveAnnList a
+    DataBit a -> isToProveAnnList a
+    IndividualSameOrDifferent a -> isToProveAnnList a
+    ObjectCharacteristics a -> isToProveAnnList a
+    DataPropRange a -> isToProveAnnList a
+    IndividualFacts a -> isToProveAnnList a
