@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-PATH=/home/pub-bkb/bin:/usr/bin/:/usr/ccs/bin:/opt/csw/bin:/opt/csw/gcc4/bin
+PATH=/local/home/maeder/ghc/bin:/local/home/maeder/gcc/bin:/home/pub-bkb/bin:/usr/bin/:/usr/ccs/bin:/opt/csw/bin
 UDG_HOME=/home/pub-bkb/uDrawGraph-3.1
 HETS_LIB=/local/home/maeder/haskell/Hets-lib
 
@@ -15,7 +15,7 @@ cd /local/home/maeder/haskell
 makeHets
 cd Hets/Hets
 gmake hets.cgi
-\cp hets.cgi /home/wwwuser/maeder/cgi-bin/rawhets.cgi
+\cp hets.cgi /home/wwwuser/maeder/cgi-bin/hets.cgi
 cd ../..
 
 makeLibCheck
@@ -40,6 +40,7 @@ repackDocs
 updateLibForCgi
 
 topSortCheck
+checkXML
 #moreChecks
 checkCalculi
 checkEnvs
