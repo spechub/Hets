@@ -80,7 +80,7 @@ anaAxiom x = findImplied x $ makeNamed "" x
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a ent =
   let Entity ty e = ent
-      errMsg = mkError ("unknown " ++ showEntityType ty ++ ":") e
+      errMsg = mkError ("unknown " ++ showEntityType ty) e
   in case ty of
    Datatype -> if Set.member e (datatypes s) ||
                     elem (localPart e) datatypeKeys
