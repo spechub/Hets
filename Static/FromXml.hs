@@ -75,16 +75,15 @@ readDGXmlR :: HetcatsOpts -> FilePath -> LibEnv -> ResultT IO (LibName, LibEnv)
 readDGXmlR opts path lv = do
   lift $ putIfVerbose opts 2 $ "Reading " ++ path
   xml' <- lift $ readFile path
-  case parseXMLDoc xml' of
-    Nothing ->
-      fail $ "failed to parse XML file: " ++ path
-    Just xml -> case getAttrVal "libname" xml of
+  case (length xml', parseXMLDoc xml') of
+    (l, Just xml) | l > 0 -> case getAttrVal "libname" xml of
       Nothing ->
         fail $ "missing DGraph name attribute\n" ++
           unlines (take 5 $ lines xml')
       Just nm -> do
         let ln = setFilePath nm noTime $ emptyLibName nm
         fromXml opts logicGraph ln lv xml
+    _  -> fail $ "failed to parse XML file: " ++ path
 
 {- | main function; receives a logicGraph, an initial LibEnv and an Xml
 element, then adds all nodes and edges from this element into a DGraph -}
