@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  codruta.liliana@gmail.com
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  portable
 
@@ -16,6 +16,7 @@ import Common.Keywords
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Map as Map
@@ -25,7 +26,7 @@ import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 import ExtModal.Keywords
 
-import CASL.AS_Basic_CASL (FORMULA(..))
+import CASL.AS_Basic_CASL (FORMULA (..))
 import CASL.ToDoc
 
 instance Pretty EM_BASIC_ITEM where
@@ -37,16 +38,32 @@ instance Pretty EM_BASIC_ITEM where
         pretty (Nominal_decl id_list _) = sep
           [ keyword nominalS, semiAnnos pretty id_list ]
 
+modPrec :: MODALITY -> Int
+modPrec m = case m of
+  Simple_modality _ -> 0 -- strongest
+  Guard _ -> 1
+  TransitiveClosure _ -> 2
+  Composition _ _ -> 3
+  Union _ _ -> 4 -- weakest
+
+printMPrec :: Bool -> MODALITY -> MODALITY -> Doc
+printMPrec b oP cP =
+  (if (if b then (>) else (>=)) (modPrec oP) $ modPrec cP then id else parens)
+  $ pretty cP
+
 instance Pretty MODALITY where
-        pretty (Simple_modality idt) = pretty idt
-        pretty (Composition md1 md2) = (keyword tmOParanthS) <> (pretty md1) <>
-                                        (keyword tmCompositionS) <> (pretty md2)
-                                        <> (keyword tmCParanthS)
-        pretty (Union md1 md2) = (keyword tmOParanthS) <> (pretty md1) <> (keyword tmUnionS)
-                                 <> (pretty md2) <> (keyword tmCParanthS)
-        pretty (TransitiveClosure md) = (keyword tmOParanthS) <> (pretty md) <>
-                                        (keyword (tmTransClosS ++ tmCParanthS))
-        pretty (Guard sen) = (keyword tmOParanthS) <> (pretty sen) <> (keyword (tmGuardS ++ tmCParanthS))
+        pretty mdl = case mdl of
+          Simple_modality idt ->
+            if tokStr idt == emptyS then empty else pretty idt
+          Guard sen -> prJunct sen <> keyword tmGuardS
+          TransitiveClosure md -> printMPrec False mdl md
+            <> keyword tmTransClosS
+          Composition md1 md2 -> printMPrec True mdl md1
+            <> keyword tmCompositionS
+            <> printMPrec False mdl md2
+          Union md1 md2 -> printMPrec True mdl md1
+            <> keyword tmUnionS
+            <> printMPrec False mdl md2
 
 instance Pretty RIGOR where
         pretty Rigid = keyword rigidS
@@ -63,58 +80,51 @@ instance Pretty EM_SIG_ITEM where
 instance Pretty NOMINAL where
         pretty (Nominal idt) = pretty idt
 
-instance FormExtension EM_FORMULA
+instance FormExtension EM_FORMULA where
+  isQuantifierLike ef = case ef of
+    UntilSince {} -> False
+    _ -> True
+
+isEMJunct :: FORMULA EM_FORMULA -> Bool
+isEMJunct f = case f of
+  ExtFORMULA (UntilSince {}) -> True
+  _ -> isJunct f
+
+prJunct :: FORMULA EM_FORMULA -> Doc
+prJunct f = (if isEMJunct f then parens else id) $ pretty f
 
 instance Pretty EM_FORMULA where
-        pretty (BoxOrDiamond choice modality leq_geq number em_sentence _) =
-                let sp = case modality of
-                                Simple_modality _ -> (<>)
-                                _ -> (<+>)
-                    mdl = pretty modality
-                in sep $ (if choice then brackets mdl else less `sp` mdl `sp` greater)
-                       : (if leq_geq then keyword lessEq else keyword greaterEq)
-                       : (text (show number)) : space : [condParensInnerF printFormula parens em_sentence]
-
-        pretty (Hybrid choice nom em_sentence _) =
-                sep $ (if choice then keyword atS else keyword hereS) : space : (pretty nom) : space
-                    : [condParensInnerF printFormula parens em_sentence]
-        pretty (UntilSince choice sentence1 sentence2 _) =
-                sep $ ([condParensInnerF printFormula parens sentence1]
-                       ++ ( space : (if choice then keyword untilS else keyword sinceS) : space
-                             : [condParensInnerF printFormula parens sentence2]))
-        pretty (PathQuantification choice em_sentence _) =
-                sep $ (if choice then keyword allPathsS else keyword somePathsS) : space
-                    : [condParensInnerF printFormula parens em_sentence]
-        pretty (NextY choice em_sentence _) =
-                sep $ (if choice then keyword nextS else keyword yesterdayS) : space
-                    : [condParensInnerF printFormula parens em_sentence]
-        pretty (StateQuantification dir_choice choice em_sentence _) =
-                let kw = case dir_choice of
-                                True -> if choice then keyword generallyS else keyword eventuallyS
-                                _ -> if choice then keyword hithertoS else keyword previouslyS
-                in sep $ kw : space : [condParensInnerF printFormula parens em_sentence]
-        pretty (FixedPoint choice p_var em_sentence _) =
-                sep [ (if choice then keyword muS else keyword nuS)
-                       <+> pretty p_var <> bullet
-                     , condParensInnerF printFormula parens em_sentence]
-
-condParensInnerF :: Pretty f => (FORMULA f -> Doc) -> (Doc -> Doc) -> FORMULA f -> Doc
-condParensInnerF frm_print parens_fun frm  =
-        case frm of
-        Quantification _ _ _ _ -> frm'
-        True_atom _            -> frm'
-        False_atom _           -> frm'
-        Predication _ _ _      -> frm'
-        Definedness _ _        -> frm'
-        Existl_equation _ _ _  -> frm'
-        Strong_equation _ _ _  -> frm'
-        Membership _ _ _       -> frm'
-        ExtFORMULA _           -> frm'
-        _                      -> parens_fun frm'
-        where frm' = frm_print frm
+  pretty ef = case ef of
+    BoxOrDiamond choice modality leq_geq number s _ ->
+      let sp = case modality of
+                 Simple_modality _ -> (<>)
+                 _ -> (<+>)
+          mdl = pretty modality
+      in sep [ (if choice then brackets mdl else less `sp` mdl `sp` greater)
+               <+> if leq_geq && number == 1 then empty else
+                keyword (if leq_geq then lessEq else greaterEq)
+                <> text (show number)
+              , prJunct s]
+    Hybrid choice nom s _ ->
+      keyword (if choice then atS else hereS) <+> pretty nom
+      <+> prJunct s
+    UntilSince choice s1 s2 _ -> printInfix True sep (prJunct s1)
+      (keyword $ if choice then untilS else sinceS)
+      $ prJunct s2
+    PathQuantification choice s _ ->
+      keyword (if choice then allPathsS else somePathsS) <+> prJunct s
+    NextY choice s _ ->
+      keyword (if choice then nextS else yesterdayS) <+> prJunct s
+    StateQuantification dir_choice choice s _ ->
+      keyword (if dir_choice then if choice then generallyS else eventuallyS
+               else if choice then hithertoS else previouslyS)
+      <+> prJunct s
+    FixedPoint choice p_var s _ -> sep
+      [ keyword (if choice then muS else nuS) <+> pretty p_var
+      , bullet <+> prJunct s]
 
 instance Pretty EModalSign where
-        pretty  = printEModalSign id
+        pretty = printEModalSign id
 
 printEModalSign :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA) -> EModalSign
                 -> Doc
@@ -140,7 +150,6 @@ printEModalSign sim sign =
         $+$
         (if Set.null nms then empty else
         keyword nominalsS <+> sepBySemis (map sidDoc (Set.toList nms)))
-
 
 printFormulaOfEModalSign :: FormExtension f => (FORMULA f -> FORMULA f)
   -> [[Annoted (FORMULA f)]] -> Doc

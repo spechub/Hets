@@ -20,6 +20,7 @@ module CASL.ToDoc
     , pluralS
     , appendS
     , isJunct
+    , printInfix
     , ListCheck (..)
     , recoverType
     , printALTERNATIVE
