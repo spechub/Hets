@@ -23,6 +23,7 @@ public class OWL2Parser {
 	private static Map<OWLOntology,List<OWLOntology>> m = new HashMap<OWLOntology, List<OWLOntology>>(); 
 	private static Set<OWLOntology> s = new HashSet<OWLOntology>();
 	private static boolean OP;
+	private static int no = 1;
 
 	public static void main(String[] args) {
 		
@@ -62,8 +63,9 @@ public class OWL2Parser {
 			// Now do the loading
 			
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
-
 			getImportsList(ontology, manager);
+			
+			//System.out.println("MAP: " + m + "\n");
 
 			if(loadedImportsList.size() == 0)
 			{
@@ -145,15 +147,13 @@ public class OWL2Parser {
 		ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
 
 		try {	
-			if (om.getImports(ontology).isEmpty())	{
+			if (om.getDirectImports(ontology).isEmpty())	{
 				m.put(ontology,empty); 
 			}
 			else 	{ 
-			
 				for (OWLOntology imported : om.getDirectImports(ontology)) {	
 
 					if (!importsIRI.contains(imported.getOntologyID().getOntologyIRI())) {
-							
 						unSavedImports.add(imported);
 						loadedImportsList.add(imported);
 						importsIRI.add(imported.getOntologyID().getOntologyIRI());
@@ -184,25 +184,32 @@ public class OWL2Parser {
 		ListIterator it = all.listIterator();
 		ListIterator itr = all.listIterator();
 
-		//while(itr.hasNext()) itr.next();
-
 		while(itr.hasNext())
 			{
+			//System.out.println("ENTERED\n");
+			s.removeAll(s);
 			OWLOntology ontos = (OWLOntology)itr.next();
 			if (OP)
 				parse2xml(ontos, out, ontos.getOWLOntologyManager());
 			else 
 				parse(ontos,out);
+			s.add(ontos);
+			parseImports(out);
+			//m.remove(ontos);
+			//System.out.println("Zero_IMPORTS: " + ontos+ "\n");
 			}
-	
+/*
+		System.out.println("MAP: " + m + "\n");	
 		while (it.hasNext())
 			{
 		//	System.out.println("entered\n");
 			OWLOntology on = (OWLOntology)it.next();
 			s.add(on);
-			m.remove(on);
+			//m.remove(on);
 			parseImports(out);
 			}
+		System.out.println("MAP: " + m + "\n");
+*/
 	}
 
 	
@@ -220,8 +227,11 @@ public class OWL2Parser {
 			l = (List)ls.get(0);
 			values = cnvrt(l);
 
-			if(checkset(values)) {
+			//System.out.println("VALUES: " + values + "\n");
+//			System.out.println("S: " + s + "\n");
 
+			if(checkset(values)) {
+				//System.out.println("ENTERED checkset\n");
 				OWLOntology onto = (OWLOntology)pairs.getKey();		
 				if (OP)
 					parse2xml(onto, out, onto.getOWLOntologyManager());
@@ -230,7 +240,9 @@ public class OWL2Parser {
 				
 			s.add((OWLOntology)pairs.getKey());
 			//m.remove(iter);
-			parseImports(out);
+			no ++;
+			//if (no < m.size())
+				parseImports(out);
 			}				
 		}
 
@@ -248,7 +260,6 @@ public class OWL2Parser {
 		while(it.hasNext())
 			{
 			OWLOntology aux_ont = (OWLOntology)it.next();
-
 			st.add(aux_ont);
 			}
 		return st;
@@ -264,40 +275,33 @@ public class OWL2Parser {
 		return equalcollections(aux, s);	
 	}
 
-	public static Boolean equalcollections(Set l1, Set l2)	{
-
+	public static Boolean equalcollections(Set<OWLOntology> l1, Set<OWLOntology> l2)	{
 		Boolean eq = true;
+		//System.out.println("L1: " + l1 + "\n");
+//		System.out.println("L2: " + l2 + "\n");
 
 		if(l1.isEmpty() || l2.isEmpty())
-			return false;
-			
-		Iterator itr = l1.iterator();
-		if(itr.next().toString().equals("[]"))
-			{
-			eq = false;		
-			}
-		
-		while (itr.hasNext())
-			{
-				OWLOntology ont = (OWLOntology)itr.next();	
-				if (!l2.contains(ont))
-					eq = false;
-			}
-
-		Iterator it = l2.iterator();
-
-		if (it.next().toString().equals("[]"))
-			{
 			eq = false;
+/*					
+		for (OWLOntology ont: l1)
+			{
+			if (ont.getOntologyID().getOntologyIRI().toString().equals("[]"))
+				eq = false;
+		//	System.out.println("L1_iteration: " + ont + "\n");	
+			if (!l2.contains(ont))
+				eq = false;
 			}
 
-		while (it.hasNext())
+*/
+		for (OWLOntology on: l2)
 			{
-			OWLOntology on = (OWLOntology)it.next();
+			if (on.getOntologyID().getOntologyIRI().toString().equals("[]"))
+				eq = false;
+//			System.out.println("L2_iteration: " + on + "\n");
 			if(!l1.contains(on))
 				eq = false;
 			}
-		
+
 		return eq;
 	}
 
