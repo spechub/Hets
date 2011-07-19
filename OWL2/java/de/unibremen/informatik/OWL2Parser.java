@@ -178,29 +178,27 @@ public class OWL2Parser {
 			return new OutputStreamWriter(System.out);
 		}
 	
-	private synchronized static void parseZeroImports(BufferedWriter out) 
+	private static void parseZeroImports(BufferedWriter out) 
 	{
 		List all = getKeysByValue();
 		ListIterator it = all.listIterator();
 		ListIterator itr = all.listIterator();
 
-		while(itr.hasNext()) itr.next();
+		//while(itr.hasNext()) itr.next();
 
-		while(itr.hasPrevious())
+		while(itr.hasNext())
 			{
-			OWLOntology ontos = (OWLOntology)itr.previous();
+			OWLOntology ontos = (OWLOntology)itr.next();
 			if (OP)
 				parse2xml(ontos, out, ontos.getOWLOntologyManager());
 			else 
 				parse(ontos,out);
 			}
-
-		while(it.hasNext()) it.next();
 	
-		while (it.hasPrevious())
+		while (it.hasNext())
 			{
 		//	System.out.println("entered\n");
-			OWLOntology on = (OWLOntology)it.previous();
+			OWLOntology on = (OWLOntology)it.next();
 			s.add(on);
 			m.remove(on);
 			parseImports(out);
@@ -208,11 +206,11 @@ public class OWL2Parser {
 	}
 
 	
-	public synchronized static void parseImports(BufferedWriter out)
+	public static void parseImports(BufferedWriter out)
 	{
 		
 		Iterator iter = m.entrySet().iterator();
-		while((iter.hasNext()) && (!m.isEmpty())) {
+		while (iter.hasNext())  {
 
 			Map.Entry pairs = (Map.Entry)iter.next();
 			Set values = new HashSet<OWLOntology>();
@@ -231,7 +229,7 @@ public class OWL2Parser {
 					parse(onto,out);
 				
 			s.add((OWLOntology)pairs.getKey());
-			m.remove(iter);
+			//m.remove(iter);
 			parseImports(out);
 			}				
 		}
