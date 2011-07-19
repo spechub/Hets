@@ -560,7 +560,9 @@ parseOpDecl = opItem >-> Op_decl
 parseVarDecl :: AnnoState.AParser st BASIC_ITEM
 parseVarDecl = varItems >-> Var_decls
 
--- | parser for extended parameter declarations
+-- | parser for extended parameter declarations, one of:
+-- default value for an extended parameter (I=2)
+-- a domain variable declaration (n=10)
 parseEPDefValOrDomDecl :: AnnoState.AParser st BASIC_ITEM
 parseEPDefValOrDomDecl = do
   lstring "set"

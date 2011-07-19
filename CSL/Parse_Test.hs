@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
@@ -31,12 +32,15 @@ import Common.AS_Annotation
 import Common.Utils (getEnvDef)
 import System.IO
 import System.Process
-
+import Data.Time.Clock
+import Control.Monad.Reader
 -- expression parser
 
 -----------------------------------------------------------------------------
 --------------------------------- Parsing -----------------------------------
 -----------------------------------------------------------------------------
+
+expression = plusmin
 
 instance OperatorState String where
     lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
@@ -73,6 +77,7 @@ res23 = runParser parseOpDecl (emptyAnnos ()) "" "operator f,h"
 res24 = runParser parseAxItems (emptyAnnos ()) "" ". solve(x^2=1,x)"
 
 res25 = runParser basicSpec (emptyAnnos ()) "" "operator f,h . solve(x^2=1,x)"
+
 
 
 res30 = runParser extparam () "" "I=0"
@@ -170,6 +175,36 @@ castest = do
   -- putStrLn ( "Output is " ++ res)
   disconnectCAS sess
   return ()
+
+
+resS s = runParser basicSpec (emptyAnnos ()) "" s
+
+
+-- time measurement, pendant of the time shell command
+time :: MonadIO m => m a -> m a
+time p = do
+  t <- liftIO getCurrentTime
+  res <- p
+  t' <- liftIO getCurrentTime
+  liftIO $ putStrLn $ show $ diffUTCTime t' t
+  return res
+
+
+
+-- Run e.g.: time $ testBS "Hets-lib/EnCL/antlr/t2.het" "/tmp/t2.out"
+testBS fpin fpout = do
+  putStr "Reading time was "
+  s <- time $ do
+         s <- readFile fpin
+         putStr $ "(File length: " ++ show (length s) ++ ")"
+         return s
+  putStr "Parsing time was "
+  x <- time $ return $ runParser basicSpec (emptyAnnos ()) "" s
+  case x of
+    Right bs -> do
+           putStr "Writing time was "
+           time $ writeFile fpout $ show $ pretty bs
+    Left e -> putStrLn $ "Error: " ++ show e
 
 -----------------------------------------------------------------------------
 ------------------------- test of static analysis... ------------------------
