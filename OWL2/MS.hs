@@ -85,7 +85,6 @@ data AnnFrameBit
   | DatatypeBit DataRange
   | ClassDisjointUnion [ClassExpression]
   | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]
-          -- needs to be replaced later on by GCIClassHasKey
   | ObjectSubPropertyChain [ObjectPropertyExpression]
     deriving (Show, Eq, Ord)
 

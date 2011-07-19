@@ -332,7 +332,8 @@ getClassAxiom b e =
           $ map (\ x -> ([], x)) cel
     "DisjointUnion" -> PlainAxiom (ClassEntity $ getClassExpression b hd)
         $ AnnFrameBit as $ ClassDisjointUnion $ map (getClassExpression b) tl
-    "DatatypeDefinition" -> PlainAxiom (ClassEntity $ getClassExpression b dhd)
+    "DatatypeDefinition" -> PlainAxiom (SimpleEntity $ Entity
+                Datatype $ getIRI b dhd)
         $ AnnFrameBit as $ DatatypeBit $ getDataRange b dtl
     _ -> hasKey b e
 
@@ -396,6 +397,8 @@ getOPAxiom b e =
         Nothing $ ObjectCharacteristics [(as, Symmetric)]
     "AsymmetricObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
         Nothing $ ObjectCharacteristics [(as, Asymmetric)]
+    "AntisymmetricObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
+        Nothing $ ObjectCharacteristics [(as, Antisymmetric)]
     "TransitiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
         Nothing $ ObjectCharacteristics [(as, Transitive)]
     _ -> getDPAxiom b e
@@ -498,8 +501,8 @@ getAnnoAxiom b e =
     "AnnotationAssertion" ->
        let [s, v] = filterChL ["abbreviatedIRI", "IRI",
             "AnonymousIndividual", "Literal"] e
-       in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
-               $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)]
+       in PlainAxiom (Misc [Annotation as (getSubject b s) (getValue b v)])
+               $ AnnFrameBit [Annotation [] ap $ AnnValue nullQName]
                     AnnotationFrameBit
     "SubAnnotationPropertyOf" ->
         let [hd, lst] = map (getIRI b) $ filterCh "AnnotationProperty" e
