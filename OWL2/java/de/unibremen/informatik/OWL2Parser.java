@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.*;
 
+
 @SuppressWarnings("unchecked")
 public class OWL2Parser {
 
@@ -193,23 +194,32 @@ public class OWL2Parser {
 			return new OutputStreamWriter(System.out);
 		}
 	
-	private synchronized static  void parseZeroImports(BufferedWriter out) 
+	private synchronized static void parseZeroImports(BufferedWriter out) 
 	{
-		Set all = getKeysByValue();
-		Iterator it = all.iterator();
+		List all = getKeysByValue();
+		ListIterator it = all.listIterator();
+		ListIterator itr = all.listIterator();
 
-		while(it.hasNext())	
+		while(itr.hasNext()) itr.next();
+
+		while(itr.hasPrevious())
 			{
-
-			OWLOntology onto = (OWLOntology)it.next();
+			OWLOntology ontos = (OWLOntology)itr.previous();
 			if (OP)
-				parse2xml(onto, out, onto.getOWLOntologyManager());
+				parse2xml(ontos, out, ontos.getOWLOntologyManager());
 			else 
-				parse(onto,out);
-			s.add(onto);
-			m.remove(onto);
-			parseImports(out);
+				parse(ontos,out);
+			}
 
+		while(it.hasNext()) it.next();
+	
+		while (it.hasPrevious())
+			{
+		//	System.out.println("entered\n");
+			OWLOntology on = (OWLOntology)it.previous();
+			s.add(on);
+			m.remove(on);
+			parseImports(out);
 			}
 	}
 
@@ -310,8 +320,8 @@ public class OWL2Parser {
 	}
 
 
-	public static Set getKeysByValue() {
-		Set keys = new HashSet();
+	public static List getKeysByValue() {
+		List keys = new ArrayList<OWLOntology>();
 		Iterator it = m.entrySet().iterator();		
 		while(it.hasNext()) {
 			Map.Entry pairs = (Map.Entry)it.next();
