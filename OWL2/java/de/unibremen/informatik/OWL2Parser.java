@@ -10,28 +10,12 @@ import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRende
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjectRenderer;
 import org.coode.owlapi.owlxml.renderer.OWLXMLRenderer;
 
-import java.io.BufferedReader;
-import java.io.PrintWriter;
-import java.io.OutputStreamWriter;
-import java.io.File;
-import java.io.Writer;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
-import java.net.URLConnection;
-import java.util.Iterator;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.*;
 
 
-@SuppressWarnings("unchecked")
+//@SuppressWarnings("unchecked")
 public class OWL2Parser {
 
 	private static ArrayList<OWLOntology> loadedImportsList = new ArrayList<OWLOntology>();
