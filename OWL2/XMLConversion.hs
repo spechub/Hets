@@ -38,9 +38,10 @@ nullElem = Element nullQN [] [] Nothing
 setIRI :: IRI -> Element -> Element
 setIRI iri e =
     let np = namePrefix iri
-        ty = if (not . null) np && head np == '_' then "nodeID"
-              else if isFullIri iri || null np then "IRI"
-                    else "abbreviatedIRI"
+        ty
+            | (not . null) np && head np == '_' = "nodeID"
+            | isFullIri iri || null np = "IRI"
+            | otherwise = "abbreviatedIRI"
     in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showQU iri}]}
 
 setName :: String -> Element -> Element
@@ -116,11 +117,11 @@ xmlLiteral (Literal lf tu) =
 
 xmlIndividual :: IRI -> Element
 xmlIndividual iri =
-    let np = namePrefix iri 
-        h = if (not . null) np && head np == '_' then True else False
+    let np = namePrefix iri
+        h = (not . null) np && head np == '_'
     in mwNameIRI (if h then "AnonymousIndividual"
                 else "NamedIndividual") iri
-        
+
 xmlFVPair :: (ConstrainingFacet, RestrictionValue) -> Element
 xmlFVPair (cf, rv) = setDt False cf $ makeElement "FacetRestriction"
     [xmlLiteral rv]
@@ -418,8 +419,8 @@ xmlOntologyDoc :: OntologyDocument -> Element
 xmlOntologyDoc od =
     let ont = ontology od
         pd = prefixDeclaration od
-        emptyPref = fromMaybe ("") $ Map.lookup "" pd
-        b = fromMaybe (emptyPref) $ Map.lookup "base" pd
+        emptyPref = fromMaybe "" $ Map.lookup "" pd
+        b = fromMaybe emptyPref $ Map.lookup "base" pd
     in setBase b $ setXMLNS $ setOntIRI (name ont) $ makeElement "Ontology" $
         xmlPrefixes pd
         ++ map xmlImport (imports ont)
