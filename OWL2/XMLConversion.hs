@@ -117,8 +117,8 @@ xmlLiteral (Literal lf tu) =
 xmlIndividual :: IRI -> Element
 xmlIndividual iri =
     let np = namePrefix iri 
-        h = if (not . null) np && head np == '_' then '_' else 'x'
-    in mwNameIRI (if h == '_' then "AnonymousIndividual"
+        h = if (not . null) np && head np == '_' then True else False
+    in mwNameIRI (if h then "AnonymousIndividual"
                 else "NamedIndividual") iri
         
 xmlFVPair :: (ConstrainingFacet, RestrictionValue) -> Element
