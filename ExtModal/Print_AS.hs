@@ -101,7 +101,7 @@ instance Pretty EM_FORMULA where
                  _ -> (<+>)
           mdl = pretty modality
       in sep [ (if choice then brackets mdl else less `sp` mdl `sp` greater)
-               <+> if leq_geq && number == 1 then empty else
+               <+> if not leq_geq && number == 1 then empty else
                 keyword (if leq_geq then lessEq else greaterEq)
                 <> text (show number)
               , prJunct s]

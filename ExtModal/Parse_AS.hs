@@ -122,7 +122,7 @@ prefixModifier = let mkF f r = return $ flip f $ tokPos r in
 modalPrimFormulaParser :: AParser st EM_FORMULA
 modalPrimFormulaParser = do
     (modal, b, r) <- boxParser <|> diamondParser
-    (lgb, val) <- option (True, 1) $ do
+    (lgb, val) <- option (False, 1) $ do
        lgb <- (asKey lessEq >> return True)
          <|> (asKey greaterEq >> return False)
        number <- getNumber << skipSmart
