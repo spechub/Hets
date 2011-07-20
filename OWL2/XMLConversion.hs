@@ -324,61 +324,59 @@ xmlLFB ext mr lfb = case lfb of
                         [mwNameIRI "NamedIndividual" i] ++ [xmlLiteral lit]
             ) list
 
-{-
-xmlAFB :: Extended -> Annotations -> AnnFrameBit -> Element
+xmlAFB :: Extended -> Annotations -> AnnFrameBit -> [Element]
 xmlAFB ext anno afb = case afb of
     AnnotationFrameBit -> case ext of
         SimpleEntity ent ->
             let Entity ty iri = ent in case ty of
-                AnnotationProperty ->
-                    let [Annotation as s v] = anno
-                    in makeElement "AnnotationAssertion" $
+                AnnotationProperty -> map (\ (Annotation as s v) ->
+                    makeElement "AnnotationAssertion" $
                         xmlAnnotations as ++ [mwNameIRI "AnnotationProperty" iri]
                             ++ [mwSimpleIRI s, case v of
                                 AnnValue avalue -> mwSimpleIRI avalue
-                                AnnValLit l -> xmlLiteral l]
-                _ -> makeElement "Declaration"
-                    $ xmlAnnotations anno ++ [xmlEntity ent]
+                                AnnValLit l -> xmlLiteral l]) anno
+                _ -> [makeElement "Declaration"
+                    $ xmlAnnotations anno ++ [xmlEntity ent]]
         Misc as ->
             let [Annotation _ ap _] = anno
-            in makeElement "Declaration"
-                $ xmlAnnotations as ++ [mwNameIRI "AnnotationProperty" ap]
+            in [makeElement "Declaration"
+                $ xmlAnnotations as ++ [mwNameIRI "AnnotationProperty" ap]]
         _ -> error "bad ann frane bit"
     DataFunctional ->
         let SimpleEntity (Entity _ dp) = ext
-        in makeElement "FunctionalDataProperty"
-            $ xmlAnnotations anno ++ [mwNameIRI "DataProperty" dp] 
+        in [makeElement "FunctionalDataProperty"
+            $ xmlAnnotations anno ++ [mwNameIRI "DataProperty" dp]]
     DatatypeBit dr ->
         let SimpleEntity (Entity _ dt) = ext
-        in makeElement "DatatypeDefinition"
+        in [makeElement "DatatypeDefinition"
                 $ xmlAnnotations anno ++ [mwNameIRI "Datatype" dt,
-                    xmlDataRange dr]
+                    xmlDataRange dr]]
     ClassDisjointUnion cel ->
         let ClassEntity c = ext
-        in makeElement "DisjointUnion"
-                $ xmlAnnotations anno ++ map xmlClassExpression (c : cel)
+        in [makeElement "DisjointUnion"
+                $ xmlAnnotations anno ++ map xmlClassExpression (c : cel)]
     ClassHasKey op dp ->
         let ClassEntity c = ext
-        in makeElement "HasKey"
+        in [makeElement "HasKey"
                 $ xmlAnnotations anno ++ [xmlClassExpression c]
-                    ++ map xmlObjProp op ++ map (mwNameIRI "Datatype") dp
+                    ++ map xmlObjProp op ++ map (mwNameIRI "Datatype") dp]
     ObjectSubPropertyChain opl ->
         let ObjectEntity op = ext
             xmlop = map xmlObjProp opl
-        in makeElement "SubObjectPropertyOf"
+        in [makeElement "SubObjectPropertyOf"
                 $ xmlAnnotations anno ++ [xmlObjProp op,
-                    makeElement "ObjectPropertyChain" xmlop]
+                    makeElement "ObjectPropertyChain" xmlop]]
 
-xmlFrameBit :: Extended -> FrameBit -> Element
+xmlFrameBit :: Extended -> FrameBit -> [Element]
 xmlFrameBit ext fb = case fb of
     ListFrameBit mr lfb -> xmlLFB ext mr lfb
     AnnFrameBit anno afb -> xmlAFB ext anno afb
 
-xmlAxioms :: Axiom -> Element
+xmlAxioms :: Axiom -> [Element]
 xmlAxioms (PlainAxiom ext fb) = xmlFrameBit ext fb
 
 xmlFrames :: Frame -> [Element]
-xmlFrames (Frame ext fbl) = map (xmlFrameBit ext) fbl
+xmlFrames (Frame ext fbl) = concatMap (xmlFrameBit ext) fbl
 
 xmlImport :: ImportIRI -> Element
 xmlImport i = setName "Import" $ mwText $ showQU i
@@ -408,9 +406,3 @@ xmlOntologyDoc od =
         ++ map xmlImport (imports ont)
         ++ concatMap xmlFrames (ontFrames ont)
         ++ concatMap xmlAnnotations (ann ont) 
-
-
--}
-
-
-
