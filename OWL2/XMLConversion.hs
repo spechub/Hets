@@ -4,7 +4,7 @@ Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  f.mance@jacobs-university.de
-Stability   :  provisional
+Stability   :  provisionalM
 Portability :  portable
 
 Conversion from Manchester syntax to XML Syntax
@@ -14,9 +14,12 @@ module OWL2.XMLConversion where
 
 import OWL2.AS
 import OWL2.MS
+import OWL2.XML
+import OWL2.ManchesterPrint
 
 import Text.XML.Light
 import Data.Maybe
+import Common.Id
 
 import qualified Data.Map as Map
 
@@ -181,40 +184,55 @@ xmlAnnotation (Annotation al ap av) = makeElement "Annotation"
 xmlAnnotations :: Annotations -> [Element]
 xmlAnnotations = map xmlAnnotation
 
-xmlAL :: (a -> Element) -> AnnotatedList a -> ([Element], [Element])
-xmlAL f al = (concatMap (xmlAnnotations . fst) al , map (\ (_, b) -> f b) al)
+xmlAL :: (a -> Element) -> AnnotatedList a -> [([Element], Element)]
+xmlAL f al = let annos = map (xmlAnnotations . fst) al 
+                 other = map (\ (_, b) -> f b) al
+             in zip annos other
 
-xmlLFB :: Extended -> Maybe Relation -> ListFrameBit -> Element
+make1 :: String -> IRI -> String -> (String -> IRI -> Element) ->
+            [([Element], Element)] -> [Element]
+make1 hdr iri shdr f list = map (\ (a, b) -> makeElement hdr
+        $ a ++ [f shdr iri, b]) list 
+
+make2 :: String -> a -> (a -> Element) ->
+            [([Element], Element)] -> [Element]
+make2 hdr expr f list = map (\ (x, y) -> makeElement hdr
+        $ x ++ [f expr, y]) list 
+
+xmlLFB :: Extended -> Maybe Relation -> ListFrameBit -> [Element]
 xmlLFB ext mr lfb = case lfb of
     AnnotationBit al ->
-        let (as, apelem) = xmlAL (mwNameIRI "AnnotationProperty") al
-            (as2, apelem2) = xmlAL mwSimpleIRI al
+        let list = xmlAL mwSimpleIRI al
             SimpleEntity (Entity _ ap) = ext
         in case fromMaybe (error "expected domain, range, subproperty") mr of
-            SubPropertyOf -> makeElement "SubAnnotationPropertyOf"
-                $ as ++ [mwNameIRI "AnnotationProperty" ap] ++ apelem
-            DRRelation ADomain -> makeElement "AnnotationPropertyDomain"
-                $ as2 ++ [mwNameIRI "AnnotationProperty" ap] ++ apelem2
-            DRRelation ARange -> makeElement "AnnotationPropertyRange"
-                $ as2 ++ [mwNameIRI "AnnotationProperty" ap] ++ apelem2
+            SubPropertyOf ->
+                let list2 = xmlAL (mwNameIRI "AnnotationProperty") al
+                in make1 "SubAnnotationPropertyOf" ap "AnnotationProperty" mwNameIRI list2
+            DRRelation ADomain -> make1 "SubAnnotationPropertyOf" ap "AnnotationProperty" mwNameIRI list
+            DRRelation ARange -> make1 "SubAnnotationPropertyOf" ap "AnnotationProperty" mwNameIRI list
             _ -> error "bad annotation bit"
     ExpressionBit al ->
-        let (as, cel) = xmlAL xmlClassExpression al in case ext of
-            Misc anno -> makeElement (case fromMaybe
-                (error "expected equiv--, disjoint--, sub-- class") mr of
+        let list = xmlAL xmlClassExpression al in case ext of
+            Misc anno -> [makeElement (case fromMaybe
+                (error "expected equiv--, disjoint--, class") mr of
                     EDRelation Equivalent -> "EquivalentClasses"
                     EDRelation Disjoint -> "DisjointClasses"
                     _ -> error "bad equiv or disjoint classes bit"
-                ) $ xmlAnnotations anno ++ cel
-            ClassEntity c -> makeElement "SubClassOf"
-                $ as ++ [xmlClassExpression c] ++ cel
-            ObjectEntity op -> makeElement (case fromMaybe
+                ) $ xmlAnnotations anno ++ (map snd list)]
+            ClassEntity c -> make2 (case fromMaybe
+                (error "expected equiv--, disjoint--, sub-- class") mr of
+                    SubClass -> "SubClassOf"
+                    EDRelation Equivalent -> "EquivalentClasses"
+                    EDRelation Disjoint -> "DisjointClasses"
+                    _ -> error "bad equiv, disjoint, subClass bit")
+                c xmlClassExpression list
+            ObjectEntity op -> make2 (case fromMaybe
                 (error "expected domain, range") mr of
                     DRRelation ADomain -> "ObjectPropertyDomain"
                     DRRelation ARange -> "ObjectPropertyRange"
                     _ -> "bad object domain or range bit"
-                ) $ as ++ [xmlObjProp op] ++ cel
-            SimpleEntity (Entity ty ent) -> case ty of
+                ) op xmlObjProp list
+{-            SimpleEntity (Entity ty ent) -> case ty of
                 DataProperty -> makeElement "DataPropertyDomain"
                     $ as ++ [mwNameIRI "DataProperty" ent] ++ cel
                 NamedIndividual -> makeElement "ClassAssertion"
@@ -290,11 +308,20 @@ xmlLFB ext mr lfb = case lfb of
 xmlAFB :: Extended -> Annotations -> AnnFrameBit -> Element
 xmlAFB ext anno afb = case afb of
     AnnotationFrameBit -> case ext of
-        SimpleEntity ent -> makeElement "Declaration"
-            $ xmlAnnotations anno ++ [xmlEntity ent]
+        SimpleEntity ent ->
+            let Entity ty iri = ent in case ty of
+                AnnotationProperty ->
+                    let [Annotation as s v] = anno
+                    in makeElement "AnnotationAssertion" $
+                        xmlAnnotations as ++ [mwNameIRI "AnnotationProperty" iri]
+                            ++ [mwSimpleIRI s, case v of
+                                AnnValue avalue -> mwSimpleIRI avalue
+                                AnnValLit l -> xmlLiteral l]
+                _ -> makeElement "Declaration"
+                    $ xmlAnnotations anno ++ [xmlEntity ent]
         Misc as ->
-            let [Annotation _ ap _] = anno 
-            in makeElement "AnnotationAssertion"
+            let [Annotation _ ap _] = anno
+            in makeElement "Declaration"
                 $ xmlAnnotations as ++ [mwNameIRI "AnnotationProperty" ap]
         _ -> error "bad ann frane bit"
     DataFunctional ->
@@ -363,7 +390,7 @@ xmlOntologyDoc od =
         ++ concatMap xmlAnnotations (ann ont) 
 
 
-
+-}
 
 
 

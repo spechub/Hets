@@ -32,61 +32,6 @@ vLookupAttrBy p as = attrVal `fmap` find (p . attrKey) as
 vFindAttrBy :: (Text.XML.Light.QName -> Bool) -> Element -> Maybe String
 vFindAttrBy p e = vLookupAttrBy p (elAttribs e)
 
-simpleSplit :: IRI -> IRI
-simpleSplit qn =
-  let lp = localPart qn
-      np = takeWhile (/= ':') lp
-      ':' : nlp = dropWhile (/= ':') lp
-  in qn {namePrefix = np, localPart = nlp}
-
-{- if the IRI contains ':', it is split at the colon
-else, the xml:base needs to be pre-pended to the addres
-and then the IRI must be splitted -}
-splitIRI :: XMLBase -> IRI -> IRI
-splitIRI b qn =
- let r = localPart qn
- in if ':' `elem` r then simpleSplit qn
-     else simpleSplit $ qn {localPart = b ++ r, isFullIri = True}
-
--- gets the actual name of an axiom in XML Syntax
-getName :: Element -> String
-getName e =
-  let n = (qName . elName) e
-      q = (qURI . elName) e
-  in case q of
-    Just "http://www.w3.org/2002/07/owl#" -> n
-    _ -> ""
-
-getIRI :: XMLBase -> Element -> IRI
-getIRI b e =
-  let [a] = elAttribs e
-      iri = attrVal a
-      f = case qName $ attrKey a of
-            "abbreviatedIRI" -> False
-            _ -> ':' `elem` iri
-  in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
-
-getFullOrAbbrIRI :: XMLBase -> Element -> IRI
-getFullOrAbbrIRI b e =
-  let cont = strContent e
-  in case getName e of
-      "abbreviatedIRI" -> simpleSplit $ nullQName {localPart = cont}
-      "IRI" -> if ':' `elem` cont then
-                 simpleSplit $ nullQName {localPart = cont,
-                          isFullIri = True}
-                else splitIRI b
-                     $ nullQName {localPart = cont}
-      _ -> error "invalid type of iri"
-
--- gets one prefix with the corresponding iri
-get1PrefMap :: Element -> (String, IRI)
-get1PrefMap e =
-  let [pref, pmap] = map attrVal $ elAttribs e
-  in (pref, mkQName pmap)
-
-getInt :: Element -> Int
-getInt e = let [int] = elAttribs e in value 10 $ attrVal int
-
 isSmth :: String -> Text.XML.Light.QName -> Bool
 isSmth s = (s ==) . qName
 
@@ -149,13 +94,71 @@ getEntityType ty = case ty of
 toEntity :: XMLBase -> Element -> Entity
 toEntity b e = Entity (getEntityType $ (qName . elName) e) (getIRI b e)
 
+simpleSplit :: IRI -> IRI
+simpleSplit qn =
+  let lp = localPart qn
+      np = takeWhile (/= ':') lp
+      ':' : nlp = dropWhile (/= ':') lp
+  in qn {namePrefix = np, localPart = nlp}
+
+{- if the IRI contains ':', it is split at the colon
+else, the xml:base needs to be pre-pended to the addres
+and then the IRI must be splitted -}
+splitIRI :: XMLBase -> IRI -> IRI
+splitIRI b qn =
+ let r = localPart qn
+ in if ':' `elem` r then simpleSplit qn
+     else simpleSplit $ qn {localPart = b ++ r, isFullIri = True}
+
+-- gets the actual name of an axiom in XML Syntax
+getName :: Element -> String
+getName e =
+  let n = (qName . elName) e
+      q = (qURI . elName) e
+  in case q of
+    Just "http://www.w3.org/2002/07/owl#" -> n
+    _ -> ""
+
+getIRI :: XMLBase -> Element -> IRI
+getIRI b e =
+  let [a] = elAttribs e
+      iri = attrVal a
+      f = case qName $ attrKey a of
+            "abbreviatedIRI" -> False
+            _ -> ':' `elem` iri
+  in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
+
+getFullOrAbbrIRI :: XMLBase -> Element -> IRI
+getFullOrAbbrIRI b e =
+  let cont = strContent e
+  in case getName e of
+      "abbreviatedIRI" -> simpleSplit $ nullQName {localPart = cont}
+      "IRI" -> if ':' `elem` cont then
+                 simpleSplit $ nullQName {localPart = cont,
+                          isFullIri = True}
+                else splitIRI b
+                     $ nullQName {localPart = cont}
+      _ -> error "invalid type of iri"
+
+-- gets one prefix with the corresponding iri
+get1PrefMap :: Element -> (String, IRI)
+get1PrefMap e =
+  let [pref, pmap] = map attrVal $ elAttribs e
+  in (pref, mkQName pmap)
+
+getInt :: Element -> Int
+getInt e = let [int] = elAttribs e in value 10 $ attrVal int
+
 getDeclaration :: XMLBase -> Element -> Frame
 getDeclaration b e = case getName e of
    "Declaration" ->
      let ent = filterCL entityList e
          ans = getAllAnnos b e
-     in Frame (SimpleEntity $ toEntity b ent)
-          [AnnFrameBit ans AnnotationFrameBit]
+         entity@(Entity ty iri) = toEntity b ent
+     in case ty of
+        AnnotationProperty -> Frame (Misc ans) [AnnFrameBit
+            [Annotation [] iri $ AnnValue iri] AnnotationFrameBit]
+        _ -> Frame (SimpleEntity entity) [AnnFrameBit ans AnnotationFrameBit]
    _ -> error "not declaration"
 
 isPlainLiteral :: String -> Bool
@@ -501,8 +504,8 @@ getAnnoAxiom b e =
     "AnnotationAssertion" ->
        let [s, v] = filterChL ["abbreviatedIRI", "IRI",
             "AnonymousIndividual", "Literal"] e
-       in PlainAxiom (Misc [Annotation as (getSubject b s) (getValue b v)])
-               $ AnnFrameBit [Annotation [] ap $ AnnValue ap]
+       in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
+               $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)]
                     AnnotationFrameBit
     "SubAnnotationPropertyOf" ->
         let [hd, lst] = map (getIRI b) $ filterCh "AnnotationProperty" e
