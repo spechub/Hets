@@ -39,8 +39,8 @@ isSmthList :: [String] -> Text.XML.Light.QName -> Bool
 isSmthList l qn = qName qn `elem` l
 
 isNotSmth :: Text.XML.Light.QName -> Bool
-isNotSmth q = let qn = qName q in qn /= "Declaration" &&
-    qn /= "Prefix" && qn /= "Import" && qn /= "Annotation"
+isNotSmth q = let qn = qName q in qn `notElem` ["Declaration",
+    "Prefix", "Import", "Annotation"]
 
 filterCh :: String -> Element -> [Element]
 filterCh s = filterChildrenName (isSmth s)
