@@ -116,7 +116,8 @@ xmlLiteral (Literal lf tu) =
 
 xmlIndividual :: IRI -> Element
 xmlIndividual iri =
-    let np@(h : _) = namePrefix iri
+    let np = namePrefix iri 
+        h = if (not . null) np && head np == '_' then '_' else 'x'
     in mwNameIRI (if h == '_' then "AnonymousIndividual"
                 else "NamedIndividual") iri
         
@@ -424,12 +425,3 @@ xmlOntologyDoc od =
         ++ map xmlImport (imports ont)
         ++ concatMap xmlFrames (ontFrames ont)
         ++ concatMap xmlAnnotations (ann ont)
-
-
-
-
-
-
-
-
-
