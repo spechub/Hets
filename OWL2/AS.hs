@@ -225,44 +225,6 @@ showFacet df = case df of
     TOTALDIGITS -> digitsS
     FRACTIONDIGITS -> fractionS
 
--- * LITERALS
-
-data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
-    deriving (Show, Eq, Ord)
-
-data Literal = Literal LexicalForm TypedOrUntyped
-    deriving (Show, Eq, Ord)
-
-cTypeS :: String
-cTypeS = "^^"
-
--- * PROPERTY EXPRESSIONS
-
-type InverseObjectProperty = ObjectPropertyExpression
-
-data ObjectPropertyExpression = ObjectProp ObjectProperty
-  | ObjectInverseOf InverseObjectProperty
-        deriving (Show, Eq, Ord)
-
-type DataPropertyExpression = DataProperty
-
--- * DATA RANGES
-
-data DataRange
-        = DataType Datatype [(ConstrainingFacet, RestrictionValue)]
-        | DataJunction JunctionType [DataRange]
-          -- at least two elements in the list
-        | DataComplementOf DataRange
-        | DataOneOf [Literal]   -- at least one element in the list
-        deriving (Show, Eq, Ord)
-
-data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
-
-type ConstrainingFacet = IRI
-type RestrictionValue = Literal
-
--- * CLASS EXPERSSIONS
-
 data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality
     deriving (Show, Eq, Ord)
 
@@ -275,30 +237,10 @@ showCardinalityType ty = case ty of
 data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
     deriving (Show, Eq, Ord)
 
-data ClassExpression =
-    Expression Class
-  | ObjectJunction JunctionType [ClassExpression]  -- min. 2 ClassExpressions
-  | ObjectComplementOf ClassExpression
-  | ObjectOneOf [Individual]  -- min. 1 Individual
-  | ObjectValuesFrom QuantifierType ObjectPropertyExpression ClassExpression
-  | ObjectHasValue ObjectPropertyExpression Individual
-  | ObjectHasSelf ObjectPropertyExpression
-  | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
-  | DataValuesFrom QuantifierType
-       DataPropertyExpression DataRange
-  | DataHasValue DataPropertyExpression Literal
-  | DataCardinality (Cardinality DataPropertyExpression DataRange)
-    deriving (Show, Eq, Ord)
+data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
 
--- * ANNOTATIONS
-
-data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
-  deriving (Show, Eq, Ord)
-
-data AnnotationValue
-    = AnnValue IRI
-    | AnnValLit Literal
-          deriving (Show, Eq, Ord)
+type ConstrainingFacet = IRI
+type RestrictionValue = Literal
 
 -- * ENTITIES
 
@@ -327,3 +269,60 @@ showEntityType e = case e of
 
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
+
+-- * LITERALS
+
+data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
+    deriving (Show, Eq, Ord)
+
+data Literal = Literal LexicalForm TypedOrUntyped
+    deriving (Show, Eq, Ord)
+
+cTypeS :: String
+cTypeS = "^^"
+
+-- * PROPERTY EXPRESSIONS
+
+type InverseObjectProperty = ObjectPropertyExpression
+
+data ObjectPropertyExpression = ObjectProp ObjectProperty
+  | ObjectInverseOf InverseObjectProperty
+        deriving (Show, Eq, Ord)
+
+type DataPropertyExpression = DataProperty
+
+-- * DATA RANGES
+
+data DataRange
+  = DataType Datatype [(ConstrainingFacet, RestrictionValue)]
+  | DataJunction JunctionType [DataRange]
+  | DataComplementOf DataRange
+  | DataOneOf [Literal]
+    deriving (Show, Eq, Ord)
+
+-- * CLASS EXPERSSIONS
+
+data ClassExpression =
+    Expression Class
+  | ObjectJunction JunctionType [ClassExpression]
+  | ObjectComplementOf ClassExpression
+  | ObjectOneOf [Individual]
+  | ObjectValuesFrom QuantifierType ObjectPropertyExpression ClassExpression
+  | ObjectHasValue ObjectPropertyExpression Individual
+  | ObjectHasSelf ObjectPropertyExpression
+  | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
+  | DataValuesFrom QuantifierType
+       DataPropertyExpression DataRange
+  | DataHasValue DataPropertyExpression Literal
+  | DataCardinality (Cardinality DataPropertyExpression DataRange)
+    deriving (Show, Eq, Ord)
+
+-- * ANNOTATIONS
+
+data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
+  deriving (Show, Eq, Ord)
+
+data AnnotationValue
+    = AnnValue IRI
+    | AnnValLit Literal
+          deriving (Show, Eq, Ord)
