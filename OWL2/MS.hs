@@ -18,26 +18,6 @@ import OWL2.AS
 import Common.Id (GetRange)
 import qualified Data.Map as Map
 
-data OntologyDocument = OntologyDocument {
-    prefixDeclaration :: PrefixMap,
-    ontology :: Ontology
- } deriving (Show, Eq, Ord)
-
-instance GetRange OntologyDocument
-
-data Ontology = Ontology {
-  name :: OntologyIRI,
-  imports :: [ImportIRI],
-  ann :: [Annotations],
-  ontFrames :: [Frame]
- } deriving (Show, Eq, Ord)
-
-emptyOnt :: Ontology
-emptyOnt = Ontology nullQName [] [] []
-
-emptyDoc :: OntologyDocument
-emptyDoc = OntologyDocument Map.empty emptyOnt
-
 {- | annotions are annotedAnnotationList that must be preceded by the keyword
   @Annotations:@ if non-empty -}
 type Annotations = [Annotation]
@@ -49,23 +29,6 @@ data Extended
   | SimpleEntity Entity
   | ObjectEntity ObjectPropertyExpression
   | ClassEntity ClassExpression
-    deriving (Show, Eq, Ord)
-
--- | the datatype for Manchester Syntax frames
-data Frame = Frame Extended [FrameBit]
-    deriving (Show, Eq, Ord)
-
-data Axiom = PlainAxiom Extended FrameBit
-    deriving (Show, Eq, Ord)
-
-getAxioms :: Frame -> [Axiom]
-getAxioms (Frame e fbl) = map (PlainAxiom e) fbl
-
-instance GetRange Axiom
-
-data FrameBit
-  = ListFrameBit (Maybe Relation) ListFrameBit
-  | AnnFrameBit Annotations AnnFrameBit
     deriving (Show, Eq, Ord)
 
 data ListFrameBit
@@ -92,6 +55,42 @@ data Fact
   = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
   deriving (Show, Eq, Ord)
+
+data FrameBit
+  = ListFrameBit (Maybe Relation) ListFrameBit
+  | AnnFrameBit Annotations AnnFrameBit
+    deriving (Show, Eq, Ord)
+
+data Frame = Frame Extended [FrameBit]
+    deriving (Show, Eq, Ord)
+
+data Axiom = PlainAxiom Extended FrameBit
+    deriving (Show, Eq, Ord)
+
+getAxioms :: Frame -> [Axiom]
+getAxioms (Frame e fbl) = map (PlainAxiom e) fbl
+
+instance GetRange Axiom
+
+data OntologyDocument = OntologyDocument {
+    prefixDeclaration :: PrefixMap,
+    ontology :: Ontology
+ } deriving (Show, Eq, Ord)
+
+instance GetRange OntologyDocument
+
+data Ontology = Ontology {
+  name :: OntologyIRI,
+  imports :: [ImportIRI],
+  ann :: [Annotations],
+  ontFrames :: [Frame]
+ } deriving (Show, Eq, Ord)
+
+emptyOnt :: Ontology
+emptyOnt = Ontology nullQName [] [] []
+
+emptyDoc :: OntologyDocument
+emptyDoc = OntologyDocument Map.empty emptyOnt
 
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument Map.empty emptyOntologyD

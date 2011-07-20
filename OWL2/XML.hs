@@ -24,6 +24,31 @@ import qualified Data.Map as Map
 
 type XMLBase = String
 
+entityList :: [String]
+entityList = ["Class", "Datatype", "NamedIndividual",
+    "ObjectProperty", "DataProperty", "AnnotationProperty"]
+
+individualList :: [String]
+individualList = ["NamedIndividual", "AnonymousIndividual"]
+
+objectPropList :: [String]
+objectPropList = ["ObjectProperty", "ObjectInverseOf"]
+
+dataPropList :: [String]
+dataPropList = ["DataProperty"]
+
+dataRangeList :: [String]
+dataRangeList = ["Datatype", "DatatypeRestriction", "DataComplementOf",
+      "DataOneOf", "DataIntersectionOf", "DataUnionOf"]
+
+classExpressionList :: [String]
+classExpressionList = ["Class", "ObjectIntersectionOf", "ObjectUnionOf",
+     "ObjectComplementOf", "ObjectOneOf", "ObjectSomeValuesFrom",
+     "ObjectAllValuesFrom", "ObjectHasValue", "ObjectHasSelf",
+     "ObjectMinCardinality", "ObjectMaxCardinality", "ObjectExactCardinality",
+     "DataSomeValuesFrom", "DataAllValuesFrom", "DataHasValue",
+     "DataMinCardinality", "DataMaxCardinality", "DataExactCardinality"]
+
 {- two functions from Text.XML.Light.Proc version 1.3.7 for compatibility
   with previous versions -}
 vLookupAttrBy :: (Text.XML.Light.QName -> Bool) -> [Attr] -> Maybe String
@@ -55,44 +80,6 @@ filterC s e = fromMaybe (error "child not found")
 filterCL :: [String] -> Element -> Element
 filterCL l e = fromMaybe (error "child not found")
     (filterChildName (isSmthList l) e)
-
-entityList :: [String]
-entityList = ["Class", "Datatype", "NamedIndividual",
-    "ObjectProperty", "DataProperty", "AnnotationProperty"]
-
-individualList :: [String]
-individualList = ["NamedIndividual", "AnonymousIndividual"]
-
-objectPropList :: [String]
-objectPropList = ["ObjectProperty", "ObjectInverseOf"]
-
-dataPropList :: [String]
-dataPropList = ["DataProperty"]
-
-dataRangeList :: [String]
-dataRangeList = ["Datatype", "DatatypeRestriction", "DataComplementOf",
-      "DataOneOf", "DataIntersectionOf", "DataUnionOf"]
-
-classExpressionList :: [String]
-classExpressionList = ["Class", "ObjectIntersectionOf", "ObjectUnionOf",
-     "ObjectComplementOf", "ObjectOneOf", "ObjectSomeValuesFrom",
-     "ObjectAllValuesFrom", "ObjectHasValue", "ObjectHasSelf",
-     "ObjectMinCardinality", "ObjectMaxCardinality", "ObjectExactCardinality",
-     "DataSomeValuesFrom", "DataAllValuesFrom", "DataHasValue",
-     "DataMinCardinality", "DataMaxCardinality", "DataExactCardinality"]
-
-getEntityType :: String -> EntityType
-getEntityType ty = case ty of
-    "Class" -> Class
-    "Datatype" -> Datatype
-    "NamedIndividual" -> NamedIndividual
-    "ObjectProperty" -> ObjectProperty
-    "DataProperty" -> DataProperty
-    "AnnotationProperty" -> AnnotationProperty
-    _ -> error "not entity type"
-
-toEntity :: XMLBase -> Element -> Entity
-toEntity b e = Entity (getEntityType $ (qName . elName) e) (getIRI b e)
 
 simpleSplit :: IRI -> IRI
 simpleSplit qn =
@@ -140,14 +127,21 @@ getFullOrAbbrIRI b e =
                      $ nullQName {localPart = cont}
       _ -> error "invalid type of iri"
 
--- gets one prefix with the corresponding iri
-get1PrefMap :: Element -> (String, IRI)
-get1PrefMap e =
-  let [pref, pmap] = map attrVal $ elAttribs e
-  in (pref, mkQName pmap)
-
 getInt :: Element -> Int
 getInt e = let [int] = elAttribs e in value 10 $ attrVal int
+
+getEntityType :: String -> EntityType
+getEntityType ty = case ty of
+    "Class" -> Class
+    "Datatype" -> Datatype
+    "NamedIndividual" -> NamedIndividual
+    "ObjectProperty" -> ObjectProperty
+    "DataProperty" -> DataProperty
+    "AnnotationProperty" -> AnnotationProperty
+    _ -> error "not entity type"
+
+toEntity :: XMLBase -> Element -> Entity
+toEntity b e = Entity (getEntityType $ (qName . elName) e) (getIRI b e)
 
 getDeclaration :: XMLBase -> Element -> Frame
 getDeclaration b e = case getName e of
@@ -527,6 +521,12 @@ getAnnoAxiom b e =
 
 getImports :: XMLBase -> Element -> [ImportIRI]
 getImports b e = map (splitIRI b . mkQName . strContent) $ filterCh "Import" e
+
+-- gets one prefix with the corresponding iri
+get1PrefMap :: Element -> (String, IRI)
+get1PrefMap e =
+  let [pref, pmap] = map attrVal $ elAttribs e
+  in (pref, mkQName pmap)
 
 getPrefixMap :: Element -> [(String, String)]
 getPrefixMap e =
