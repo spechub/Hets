@@ -11,7 +11,7 @@ processFile :: String -> IO ()
 processFile file = do
     s <- readFile file
     let elems = map xmlBasicSpec $ concatMap (filterElementsName $ isSmth "Ontology") $ onlyElems $ parseXML s
-    putStrLn $ showDoc (map ppElement $ map xmlOntologyDoc elems) "\n"
+    putStrLn $ show (map ppElement $ map xmlOntologyDoc elems)
 
 main :: IO ()
 main = do
