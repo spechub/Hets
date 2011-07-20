@@ -189,15 +189,15 @@ xmlAL f al = let annos = map (xmlAnnotations . fst) al
                  other = map (\ (_, b) -> f b) al
              in zip annos other
 
-make1 :: String -> IRI -> String -> (String -> IRI -> Element) ->
+make1 :: Bool -> String ->  String -> (String -> IRI -> Element) -> IRI ->
             [([Element], Element)] -> [Element]
-make1 hdr iri shdr f list = map (\ (a, b) -> makeElement hdr
-        $ a ++ [f shdr iri, b]) list 
+make1 rl hdr shdr f iri list = map (\ (a, b) -> makeElement hdr
+        $ a ++ (if rl then [f shdr iri, b] else [b, f shdr iri])) list 
 
-make2 :: String -> a -> (a -> Element) ->
+make2 :: Bool -> String -> (a -> Element) -> a ->
             [([Element], Element)] -> [Element]
-make2 hdr expr f list = map (\ (x, y) -> makeElement hdr
-        $ x ++ [f expr, y]) list 
+make2 rl hdr f expr list = map (\ (x, y) -> makeElement hdr
+        $ x ++ (if rl then [f expr, y] else [y, f expr])) list
 
 xmlLFB :: Extended -> Maybe Relation -> ListFrameBit -> [Element]
 xmlLFB ext mr lfb = case lfb of
@@ -207,9 +207,12 @@ xmlLFB ext mr lfb = case lfb of
         in case fromMaybe (error "expected domain, range, subproperty") mr of
             SubPropertyOf ->
                 let list2 = xmlAL (mwNameIRI "AnnotationProperty") al
-                in make1 "SubAnnotationPropertyOf" ap "AnnotationProperty" mwNameIRI list2
-            DRRelation ADomain -> make1 "SubAnnotationPropertyOf" ap "AnnotationProperty" mwNameIRI list
-            DRRelation ARange -> make1 "SubAnnotationPropertyOf" ap "AnnotationProperty" mwNameIRI list
+                in make1 True "SubAnnotationPropertyOf" "AnnotationProperty"
+                         mwNameIRI ap list2
+            DRRelation ADomain -> make1 True "SubAnnotationPropertyOf"
+                        "AnnotationProperty" mwNameIRI ap list
+            DRRelation ARange -> make1 True "SubAnnotationPropertyOf"
+                        "AnnotationProperty" mwNameIRI ap list
             _ -> error "bad annotation bit"
     ExpressionBit al ->
         let list = xmlAL xmlClassExpression al in case ext of
@@ -219,63 +222,76 @@ xmlLFB ext mr lfb = case lfb of
                     EDRelation Disjoint -> "DisjointClasses"
                     _ -> error "bad equiv or disjoint classes bit"
                 ) $ xmlAnnotations anno ++ (map snd list)]
-            ClassEntity c -> make2 (case fromMaybe
+            ClassEntity c -> make2 True (case fromMaybe
                 (error "expected equiv--, disjoint--, sub-- class") mr of
                     SubClass -> "SubClassOf"
                     EDRelation Equivalent -> "EquivalentClasses"
                     EDRelation Disjoint -> "DisjointClasses"
                     _ -> error "bad equiv, disjoint, subClass bit")
-                c xmlClassExpression list
-            ObjectEntity op -> make2 (case fromMaybe
+                xmlClassExpression c list
+            ObjectEntity op -> make2 True (case fromMaybe
                 (error "expected domain, range") mr of
                     DRRelation ADomain -> "ObjectPropertyDomain"
                     DRRelation ARange -> "ObjectPropertyRange"
-                    _ -> "bad object domain or range bit"
-                ) op xmlObjProp list
-{-            SimpleEntity (Entity ty ent) -> case ty of
-                DataProperty -> makeElement "DataPropertyDomain"
-                    $ as ++ [mwNameIRI "DataProperty" ent] ++ cel
-                NamedIndividual -> makeElement "ClassAssertion"
-                    $ as ++ cel ++ [mwNameIRI "NamedIndividual" ent]
+                    _ -> "bad object domain or range bit") xmlObjProp op list
+            SimpleEntity (Entity ty ent) -> case ty of
+                DataProperty -> make1 True "DataPropertyDomain" "DataProperty"
+                        mwNameIRI ent list
+                NamedIndividual -> make1 False "ClassAssertion"
+                        "NamedIndividual" mwNameIRI ent list
                 _ -> error "bad expression bit"
     ObjectBit al ->
-        let (as, op) = xmlAL xmlObjProp al in case ext of
-            Misc anno -> makeElement (case fromMaybe
+        let list = xmlAL xmlObjProp al in case ext of
+            Misc anno -> [makeElement (case fromMaybe
                 (error "expected equiv--, disjoint-- obj prop") mr of
                     EDRelation Equivalent -> "EquivalentObjectProperties"
                     EDRelation Disjoint -> "DisjointObjectProperties"
                     _ -> error "bad object bit (equiv, disjoint)"
-                ) $ xmlAnnotations anno ++ op
-            ObjectEntity o -> makeElement (case fromMaybe
-                (error "expected subObjectPropertyOf, Inverse op") mr of
+                ) $ xmlAnnotations anno ++ map snd list]
+            ObjectEntity o -> make2 True (case fromMaybe
+                (error "expected sub, Inverse, equiv, disjoint op") mr of
                     SubPropertyOf -> "SubObjectPropertyOf"
                     InverseOf -> "InverseObjectProperties"
+                    EDRelation Equivalent -> "EquivalentObjectProperties"
+                    EDRelation Disjoint -> "DisjointObjectProperties"
                     _ -> error "bad object bit (subpropertyof, inverseof)"
-                ) $ as ++ [xmlObjProp o] ++ op
+                ) xmlObjProp o list
             _ -> error "bad object bit"
     DataBit al ->
-        let (as, dp) = xmlAL (mwNameIRI "DataProperty") al in case ext of
-            Misc anno -> makeElement (case fromMaybe
+        let list = xmlAL (mwNameIRI "DataProperty") al in case ext of
+            Misc anno -> [makeElement (case fromMaybe
                 (error "expected equiv--, disjoint-- data prop") mr of
                     EDRelation Equivalent -> "EquivalentDataProperties"
                     EDRelation Disjoint -> "DisjointDataProperties"
                     _ -> error "bad data bit"
-                ) $ xmlAnnotations anno ++ dp
-            SimpleEntity (Entity _ ent) -> makeElement "SubDataPropertyOf"
-                $ as ++ [mwNameIRI "DataProperty" ent] ++ dp
+                ) $ xmlAnnotations anno ++ map snd list]
+            SimpleEntity (Entity _ ent) -> make1 True (case fromMaybe
+                    (error "expected sub, equiv or disjoint data") mr of
+                        SubPropertyOf -> "SubDataPropertyOf"
+                        EDRelation Equivalent -> "EquivalentDataProperties"
+                        EDRelation Disjoint -> "DisjointDataProperties"
+                        _ -> error "bad data bit"
+                    ) "DataProperty" mwNameIRI ent list
             _ -> error "bad data bit"
     IndividualSameOrDifferent al ->
-        let (_, i) = xmlAL (mwNameIRI "NamedIndividual") al
-            Misc anno = ext
-        in makeElement (case fromMaybe
+        let list = xmlAL (mwNameIRI "NamedIndividual") al in case ext of
+            Misc anno -> [makeElement (case fromMaybe
                 (error "expected same--, different-- individuals") mr of
                     SDRelation Same -> "SameIndividual"
                     SDRelation Different -> "DifferentIndividuals"
                     _ -> error "bad individual bit (s or d)"
-                ) $ xmlAnnotations anno ++ i
-    ObjectCharacteristics [(as, c)] ->
+                ) $ xmlAnnotations anno ++ map snd list]
+            SimpleEntity (Entity _ i) -> make1 True (case fromMaybe
+                (error "expected same--, different-- individuals") mr of
+                    SDRelation Same -> "SameIndividual"
+                    SDRelation Different -> "DifferentIndividuals"
+                    _ -> error "bad individual bit (s or d)"
+                ) "NamedIndividual" mwNameIRI i list
+    ObjectCharacteristics al ->
         let ObjectEntity op = ext
-        in makeElement (case c of
+            annos = map (xmlAnnotations . fst) al
+            list = zip annos (map snd al)
+        in map (\ (x, y) -> makeElement (case y of
                 Functional -> "FunctionalObjectProperty"
                 InverseFunctional -> "InverseFunctionalObjectProperty" 
                 Reflexive -> "ReflexiveObjectProperty"
@@ -284,27 +300,31 @@ xmlLFB ext mr lfb = case lfb of
                 Asymmetric -> "AsymmetricObjectProperty"
                 Transitive -> "TransitiveObjectProperty"
                 Antisymmetric -> "AntisymmetricObjectProperty"
-             ) $ xmlAnnotations as ++ [xmlObjProp op]
-    DataPropRange [(as, dr)] ->
+            ) $ x ++ [xmlObjProp op]) list
+    DataPropRange al ->
         let SimpleEntity (Entity DataProperty dp) = ext
-        in makeElement "DataPropertyRange"
-            $ xmlAnnotations as ++ [mwNameIRI "DataProperty" dp,
-                xmlDataRange dr]
-    IndividualFacts [(as, f)] ->
+            list = xmlAL xmlDataRange al
+        in make1 True "DataPropertyRange" "DataProperty" mwNameIRI dp list
+    IndividualFacts al ->
         let SimpleEntity (Entity NamedIndividual i) = ext
-        in case f of
-            ObjectPropertyFact pn op ind -> makeElement (case pn of
+            annos = map (xmlAnnotations . fst) al
+            list = zip annos (map snd al)
+        in map (\ (x, f) -> case f of
+            ObjectPropertyFact pn op ind ->
+               makeElement (case pn of
                     Positive -> "ObjectPropertyAssertion"
                     Negative -> "NegativeObjectPropertyAssertion"
-                ) $ xmlAnnotations as ++ [xmlObjProp op] ++
-                        map (mwNameIRI "NamedIndividual") [i, ind]
-            DataPropertyFact pn dp lit -> makeElement (case pn of
+                ) $ x ++ [xmlObjProp op]
+                        ++ map (mwNameIRI "NamedIndividual") [i, ind]
+            DataPropertyFact pn dp lit ->
+                makeElement (case pn of
                     Positive -> "DataPropertyAssertion"
                     Negative -> "NegativeDataPropertyAssertion"
-                ) $ xmlAnnotations as ++ [mwNameIRI "DataProperty" dp] ++
+                ) $ x ++ [mwNameIRI "DataProperty" dp] ++
                         [mwNameIRI "NamedIndividual" i] ++ [xmlLiteral lit]
-    _ -> error "bad LFB"
+            ) list
 
+{-
 xmlAFB :: Extended -> Annotations -> AnnFrameBit -> Element
 xmlAFB ext anno afb = case afb of
     AnnotationFrameBit -> case ext of
