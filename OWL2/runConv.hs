@@ -6,11 +6,12 @@ import Text.XML.Light
 import OWL2.Print()
 import OWL2.ManchesterPrint()
 import Common.DocUtils
+
 processFile :: String -> IO ()
 processFile file = do
     s <- readFile file
     let elems = map xmlBasicSpec $ concatMap (filterElementsName $ isSmth "Ontology") $ onlyElems $ parseXML s
-    putStrLn $ show (map ppElement $ map xmlOntologyDoc elems)
+    putStrLn $ showDoc (map ppElement $ map xmlOntologyDoc elems) "\n"
 
 main :: IO ()
 main = do
