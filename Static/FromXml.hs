@@ -19,6 +19,7 @@ import Static.FromXmlUtils
 import Static.XGraph
 
 import Common.AnalyseAnnos (getGlobalAnnos)
+import Common.ExtSign
 import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
 import Common.LibName
 import Common.Result (Result (..))
@@ -33,13 +34,14 @@ import Control.Monad (foldM, unless)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.Map as Map (lookup, insert, empty)
 import Data.Set (Set)
+import qualified Data.Set as Set (map)
 
 import Driver.Options
 import Driver.ReadFn (findFileOfLibNameAux)
 
 import Logic.ExtSign (ext_empty_signature)
 import Logic.Grothendieck
-import Logic.Logic (AnyLogic (..), cod, composeMorphisms)
+import Logic.Logic (AnyLogic (..), cod, composeMorphisms, symset_of)
 import Logic.Prover (noSens)
 
 import Text.XML.Light
@@ -209,13 +211,22 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
             lo <- lookupLogic "logic was not found" lgN lg
             return $ emptyTheory lo
           Just gt -> return gt
+        -- hidden symbols use a different parser
         gt1 <- if hid then parseHidden gt0 syb else do
                  (gt', _) <- parseSpecs gt0 nm dg syb
                  return gt'
         (gt2, syb') <- parseSpecs gt1 nm dg spc
-        diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
-        let lbl = newNodeLab (parseNodeName nm)
-              (DGBasicSpec Nothing diffSig syb') gt2
+        -- the DGOrigin is also different for nodes with hidden symbols
+        lOrig <- if hid then do
+            diffSig <- liftR $ homGsigDiff (signOf gt0) $ signOf gt2
+            case diffSig of
+              G_sign lid (ExtSign sig _) _ -> let
+                syms = Set.map (G_symbol lid) $ symset_of lid sig
+                in return $ DGRestriction NoRestriction syms
+          else do
+            diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
+            return $ DGBasicSpec Nothing diffSig syb'
+        let lbl = newNodeLab (parseNodeName nm) lOrig gt2
         return (insLNodeDG (getNewNodeDG dg, lbl) dg, lv)
 
 parseHidden :: G_theory -> String -> ResultT IO G_theory
