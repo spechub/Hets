@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Felix Gabriel Mance
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  f.mance@jacobs-university.de
+Stability   :  provisionalM
+Portability :  portable
+
+Expansion of all IRIs in the Ontology
+-}
+
 module OWL2.Expand where
 
 import OWL2.AS

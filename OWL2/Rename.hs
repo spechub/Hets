@@ -1,4 +1,18 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+
+{- |
+Module      :  $Header$
+Copyright   :  (c) Felix Gabriel Mance
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  f.mance@jacobs-university.de
+Stability   :  provisionalM
+Portability :  portable
+
+Renames prefixes in OntologyDocuments, so that there are
+no prefix clashes
+-}
+
 module OWL2.Rename where
 
 import OWL2.AS
