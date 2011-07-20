@@ -10,7 +10,9 @@ processFile :: String -> IO ()
 processFile file = do
   s <- readFile file
   case parseXML s of 
-    elems -> putStrLn $ showDoc (map xmlBasicSpec $ concatMap (filterElementsName $ isSmth "Ontology") $ onlyElems elems) "\n"
+    elems -> putStrLn $ showDoc (map xmlBasicSpec
+                        $ concatMap (filterElementsName $ isSmth "Ontology")
+                        $ onlyElems elems) "\n"
 
 main :: IO ()
 main = do
