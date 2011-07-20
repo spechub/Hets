@@ -1,5 +1,10 @@
 #!/bin/sh
 
+HETS_OWL_TOOLS=`pwd`/..
+export HETS_OWL_TOOLS
+
+mkdir XML
+
 for i in *.rdf pizza.owl
 do
     java -jar ../OWL2Parser.jar file:`pwd`/$i xml >> `pwd`/XML/$i.xml
@@ -26,4 +31,11 @@ do
     diff $i $i.xml
 done
 
+cd ../../..
 
+for i in OWL2/tests/XML/*.xml
+do
+    ./hets -i ow2 $i
+done
+
+#rm -rf OWL2/tests/XML
