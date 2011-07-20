@@ -221,7 +221,7 @@ changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
           changeFrom [] dg2 = dg2
           changeFrom ((dgLink,fn):rf) dg2
             | fn `gelemDG` dg2 =
-                changeFrom rf $ insEdgeDG (fn, newNode, dgLink) $
+                changeFrom rf $ insLEdgeNubDG (fn, newNode, dgLink) $
                                     delEdgeDG (fn, n) dg2
             | otherwise = changeFrom rf dg2
 
@@ -229,7 +229,7 @@ changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
           changeTo [] dg2 = dg2
           changeTo ((dgLink,tn):rf) dg2
             | tn `gelemDG` dg2 =
-                changeTo rf $ insEdgeDG (newNode, tn, dgLink) $
+                changeTo rf $ insLEdgeNubDG (newNode, tn, dgLink) $
                                     delEdgeDG (n, tn) dg2
             | otherwise = changeTo rf dg2
 

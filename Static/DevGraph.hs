@@ -1509,12 +1509,14 @@ insLEdgeNubDG (v, w, l) g =
      g { getNewEdgeId = if change then succ oldEdgeId else oldEdgeId
        , dgBody = ng }
 
-{- | insert an edge into the given DGraph, which updates
-     the graph body and the edge counter as well. -}
-insEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
-insEdgeDG l oldDG =
-  oldDG { dgBody = insEdge l $ dgBody oldDG
-        , getNewEdgeId = succ $ getNewEdgeId oldDG }
+{- | inserts a new edge into the DGraph using it's own edgeId.
+ATTENTION: the caller must ensure that an edgeId is not used twice -}
+insEdgeAsIs :: LEdge DGLinkLab -> DGraph -> DGraph
+insEdgeAsIs (v, w, l) g = let
+  ei = dgl_id l
+  in if ei == defaultEdgeId then error "illegal link id" else
+     g { dgBody = fst $ Tree.insLEdge False compareLinks
+        (v, w, l) $ dgBody g }
 
 -- | insert a list of labeled edge into a given DG
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
