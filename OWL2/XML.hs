@@ -502,7 +502,7 @@ getAnnoAxiom b e =
        let [s, v] = filterChL ["abbreviatedIRI", "IRI",
             "AnonymousIndividual", "Literal"] e
        in PlainAxiom (Misc [Annotation as (getSubject b s) (getValue b v)])
-               $ AnnFrameBit [Annotation [] ap $ AnnValue nullQName]
+               $ AnnFrameBit [Annotation [] ap $ AnnValue ap]
                     AnnotationFrameBit
     "SubAnnotationPropertyOf" ->
         let [hd, lst] = map (getIRI b) $ filterCh "AnnotationProperty" e
@@ -525,10 +525,10 @@ getAnnoAxiom b e =
 getImports :: XMLBase -> Element -> [ImportIRI]
 getImports b e = map (splitIRI b . mkQName . strContent) $ filterCh "Import" e
 
-getPrefixMap :: Element -> PrefixMap
+getPrefixMap :: Element -> [(String, String)]
 getPrefixMap e =
     let prl = map get1PrefMap $ filterCh "Prefix" e
-    in Map.fromList $ map (\ (p, m) -> (p, showQU m)) prl
+    in map (\ (p, m) -> (p, showQU m)) prl
 
 getOntologyIRI :: Element -> OntologyIRI
 getOntologyIRI e =
@@ -562,5 +562,5 @@ xmlBasicSpec e = let b = getBase e in emptyOntologyDoc
         ann = [getAllAnnos b e],
         name = getOntologyIRI e
         },
-      prefixDeclaration = getPrefixMap e
+      prefixDeclaration = Map.fromList $ ("base", b) : getPrefixMap e
       }

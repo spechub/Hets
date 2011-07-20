@@ -135,7 +135,7 @@ checkClassExpression s desc =
       datErr i = errMsg $ Entity DataProperty i
   in case desc of
   Expression u ->
-     if null (namePrefix u) && elem (localPart u) ["Thing", "Nothing"] then
+     if elem (localPart u) ["Thing", "Nothing"] then
      return $ Expression u { namePrefix = "owl", isFullIri = False }
      else checkEntity s desc (Entity Class u)
   ObjectJunction a ds -> do

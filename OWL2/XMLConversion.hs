@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Felix Gabriel Mance
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  f.mance@jacobs-university.de
+Stability   :  provisional
+Portability :  portable
+
+Conversion from Manchester syntax to XML Syntax
+-}
+
 module OWL2.XMLConversion where
 
 import OWL2.AS
