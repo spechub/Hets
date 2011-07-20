@@ -297,20 +297,19 @@ insertNode opts gtOrLg (name, el) (dg, lv) =
             lid <- getAttrVal "logic" el
             lo <- lookupLogic ("unknown logic: " ++ lid) lid lg
             return $ emptyTheory lo
-        let parseTh = parseSpecs gt0 name dg
         gt1 <- case findChild (unqual "Hidden") el of
               Nothing -> case findChild (unqual "Declarations") el of
                 -- Case #1: No declared or hidden symbols
                 Nothing -> return gt0
                 -- Case #2: Node has declared symbols (DGBasicSpec)
                 Just ch -> do
-                  (gt', _) <- parseTh $ deepSearch ["Symbol"] ch
+                  (gt', _) <- parseSpecs gt0 name dg $ deepSearch ["Symbol"] ch
                   return gt'
               -- Case #3: Node has hidden symbols (DGRestricted)
               Just ch -> parseHidden gt0 $ deepSearch ["Symbol"] ch
-        let spec2 = deepSearch ["Axiom", "Theorem"] el
-        (gt2, symbs) <- parseSpecs gt1 name dg spec2
-        diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt1
+        (gt2, symbs) <- parseSpecs gt1 name dg
+            $ deepSearch ["Axiom", "Theorem"] el
+        diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
         let lbl = newNodeLab (parseNodeName name)
               (DGBasicSpec Nothing diffSig symbs) gt2
         return (insLNodeDG (getNewNodeDG dg, lbl) dg, lv)
