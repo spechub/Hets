@@ -84,6 +84,16 @@ mwSimpleIRI s = setName "IRI" $ mwText $ showQU s
 makeElement :: String -> [Element] -> Element
 makeElement s el = setContent el $ mwString s
 
+make1 :: Bool -> String -> String -> (String -> IRI -> Element) -> IRI ->
+            [([Element], Element)] -> [Element]
+make1 rl hdr shdr f iri = map (\ (a, b) -> makeElement hdr
+        $ a ++ (if rl then [f shdr iri, b] else [b, f shdr iri]))
+
+make2 :: Bool -> String -> (a -> Element) -> a ->
+            [([Element], Element)] -> [Element]
+make2 rl hdr f expr = map (\ (x, y) -> makeElement hdr
+        $ x ++ (if rl then [f expr, y] else [y, f expr]))
+
 xmlEntity :: Entity -> Element
 xmlEntity (Entity ty ent) = mwNameIRI (case ty of
     Class -> "Class"
@@ -188,16 +198,6 @@ xmlAL :: (a -> Element) -> AnnotatedList a -> [([Element], Element)]
 xmlAL f al = let annos = map (xmlAnnotations . fst) al
                  other = map (\ (_, b) -> f b) al
              in zip annos other
-
-make1 :: Bool -> String -> String -> (String -> IRI -> Element) -> IRI ->
-            [([Element], Element)] -> [Element]
-make1 rl hdr shdr f iri = map (\ (a, b) -> makeElement hdr
-        $ a ++ (if rl then [f shdr iri, b] else [b, f shdr iri]))
-
-make2 :: Bool -> String -> (a -> Element) -> a ->
-            [([Element], Element)] -> [Element]
-make2 rl hdr f expr = map (\ (x, y) -> makeElement hdr
-        $ x ++ (if rl then [f expr, y] else [y, f expr]))
 
 xmlLFB :: Extended -> Maybe Relation -> ListFrameBit -> [Element]
 xmlLFB ext mr lfb = case lfb of
