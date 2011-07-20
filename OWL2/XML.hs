@@ -83,10 +83,12 @@ filterCL l e = fromMaybe (error "child not found")
 
 simpleSplit :: IRI -> IRI
 simpleSplit qn =
-  let lp = localPart qn
-      np = takeWhile (/= ':') lp
-      ':' : nlp = dropWhile (/= ':') lp
-  in qn {namePrefix = np, localPart = nlp}
+  let lp@(h : _ : t) = localPart qn
+      lp2 = if h == '_' then t else lp
+      ai = if h == '_' then "_:" else ""
+      np = takeWhile (/= ':') lp2
+      ':' : nlp = dropWhile (/= ':') lp2
+  in qn {namePrefix = ai ++ np, localPart = nlp}
 
 {- if the IRI contains ':', it is split at the colon
 else, the xml:base needs to be pre-pended to the addres

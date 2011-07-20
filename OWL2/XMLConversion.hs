@@ -37,8 +37,10 @@ nullElem = Element nullQN [] [] Nothing
 
 setIRI :: IRI -> Element -> Element
 setIRI iri e =
-    let ty = if isFullIri iri || null (namePrefix iri) then "IRI"
-          else "abbreviatedIRI"
+    let np = namePrefix iri
+        ty = if (not . null) np && head np == '_' then "nodeID"
+              else if isFullIri iri || null np then "IRI"
+                    else "abbreviatedIRI"
     in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showQU iri}]}
 
 setName :: String -> Element -> Element
@@ -112,6 +114,12 @@ xmlLiteral (Literal lf tu) =
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
             part
 
+xmlIndividual :: IRI -> Element
+xmlIndividual iri =
+    let np@(h : _) = namePrefix iri
+    in mwNameIRI (if h == '_' then "AnonymousIndividual"
+                else "NamedIndividual") iri
+        
 xmlFVPair :: (ConstrainingFacet, RestrictionValue) -> Element
 xmlFVPair (cf, rv) = setDt False cf $ makeElement "FacetRestriction"
     [xmlLiteral rv]
@@ -149,14 +157,14 @@ xmlClassExpression ce = case ce of
     ObjectComplementOf cex -> makeElement "ObjectComplementOf"
         [xmlClassExpression cex]
     ObjectOneOf il -> makeElement "ObjectOneOf"
-        $ map (mwNameIRI "Individual") il
+        $ map xmlIndividual il
     ObjectValuesFrom qt ope cex -> makeElement (
         case qt of
             AllValuesFrom -> "ObjectAllValuesFrom"
             SomeValuesFrom -> "ObjectSomeValuesFrom")
         [xmlObjProp ope, xmlClassExpression cex]
     ObjectHasValue ope i -> makeElement "ObjectHasValue"
-        [xmlObjProp ope, mwNameIRI "Individual" i]
+        [xmlObjProp ope, xmlIndividual i]
     ObjectHasSelf ope -> makeElement "ObjectHasSelf" [xmlObjProp ope]
     ObjectCardinality (Cardinality ct i op mce) -> setInt i $ makeElement (
         case ct of
@@ -237,8 +245,8 @@ xmlLFB ext mr lfb = case lfb of
             SimpleEntity (Entity ty ent) -> case ty of
                 DataProperty -> make1 True "DataPropertyDomain" "DataProperty"
                         mwNameIRI ent list
-                NamedIndividual -> make1 False "ClassAssertion"
-                        "NamedIndividual" mwNameIRI ent list
+                NamedIndividual -> make2 False "ClassAssertion"
+                        xmlIndividual ent list
                 _ -> error "bad expression bit"
     ObjectBit al ->
         let list = xmlAL xmlObjProp al in case ext of
@@ -274,19 +282,19 @@ xmlLFB ext mr lfb = case lfb of
                     ) "DataProperty" mwNameIRI ent list
             _ -> error "bad data bit"
     IndividualSameOrDifferent al ->
-        let list = xmlAL (mwNameIRI "NamedIndividual") al in case ext of
+        let list = xmlAL xmlIndividual al in case ext of
             Misc anno -> [makeElement (case fromMaybe
                 (error "expected same--, different-- individuals") mr of
                     SDRelation Same -> "SameIndividual"
                     SDRelation Different -> "DifferentIndividuals"
                     _ -> error "bad individual bit (s or d)"
                 ) $ xmlAnnotations anno ++ map snd list]
-            SimpleEntity (Entity _ i) -> make1 True (case fromMaybe
+            SimpleEntity (Entity _ i) -> make2 True (case fromMaybe
                 (error "expected same--, different-- individuals") mr of
                     SDRelation Same -> "SameIndividual"
                     SDRelation Different -> "DifferentIndividuals"
                     _ -> error "bad individual bit (s or d)"
-                ) "NamedIndividual" mwNameIRI i list
+                ) xmlIndividual i list
             _ -> error "bad individual same or different"
     ObjectCharacteristics al ->
         let ObjectEntity op = ext
@@ -316,13 +324,13 @@ xmlLFB ext mr lfb = case lfb of
                     Positive -> "ObjectPropertyAssertion"
                     Negative -> "NegativeObjectPropertyAssertion"
                 ) $ x ++ [xmlObjProp op]
-                        ++ map (mwNameIRI "NamedIndividual") [i, ind]
+                        ++ map xmlIndividual [i, ind]
             DataPropertyFact pn dp lit ->
                 makeElement (case pn of
                     Positive -> "DataPropertyAssertion"
                     Negative -> "NegativeDataPropertyAssertion"
                 ) $ x ++ [mwNameIRI "DataProperty" dp] ++
-                        [mwNameIRI "NamedIndividual" i] ++ [xmlLiteral lit]
+                        [xmlIndividual i] ++ [xmlLiteral lit]
             ) list
 
 xmlAFB :: Extended -> Annotations -> AnnFrameBit -> [Element]
@@ -401,11 +409,27 @@ setOntIRI :: OntologyIRI -> Element -> Element
 setOntIRI iri e = e {elAttribs = Attr {attrKey = makeQN "ontologyIRI", attrVal =
         showQU iri} : elAttribs e}
 
+setBase :: String -> Element -> Element
+setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
+        qPrefix = Just "xml"}, attrVal = s} : elAttribs e}
+
 xmlOntologyDoc :: OntologyDocument -> Element
 xmlOntologyDoc od =
     let ont = ontology od
-    in setXMLNS $ setOntIRI (name ont) $ makeElement "Ontology" $
-        xmlPrefixes (prefixDeclaration od)
+        pd = prefixDeclaration od
+        emptyPref = fromMaybe ("") $ Map.lookup "" pd
+        b = fromMaybe (emptyPref) $ Map.lookup "base" pd
+    in setBase b $ setXMLNS $ setOntIRI (name ont) $ makeElement "Ontology" $
+        xmlPrefixes pd
         ++ map xmlImport (imports ont)
         ++ concatMap xmlFrames (ontFrames ont)
         ++ concatMap xmlAnnotations (ann ont)
+
+
+
+
+
+
+
+
+
