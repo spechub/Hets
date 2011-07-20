@@ -185,19 +185,19 @@ xmlAnnotations :: Annotations -> [Element]
 xmlAnnotations = map xmlAnnotation
 
 xmlAL :: (a -> Element) -> AnnotatedList a -> [([Element], Element)]
-xmlAL f al = let annos = map (xmlAnnotations . fst) al 
+xmlAL f al = let annos = map (xmlAnnotations . fst) al
                  other = map (\ (_, b) -> f b) al
              in zip annos other
 
-make1 :: Bool -> String ->  String -> (String -> IRI -> Element) -> IRI ->
+make1 :: Bool -> String -> String -> (String -> IRI -> Element) -> IRI ->
             [([Element], Element)] -> [Element]
-make1 rl hdr shdr f iri list = map (\ (a, b) -> makeElement hdr
-        $ a ++ (if rl then [f shdr iri, b] else [b, f shdr iri])) list 
+make1 rl hdr shdr f iri = map (\ (a, b) -> makeElement hdr
+        $ a ++ (if rl then [f shdr iri, b] else [b, f shdr iri]))
 
 make2 :: Bool -> String -> (a -> Element) -> a ->
             [([Element], Element)] -> [Element]
-make2 rl hdr f expr list = map (\ (x, y) -> makeElement hdr
-        $ x ++ (if rl then [f expr, y] else [y, f expr])) list
+make2 rl hdr f expr = map (\ (x, y) -> makeElement hdr
+        $ x ++ (if rl then [f expr, y] else [y, f expr]))
 
 xmlLFB :: Extended -> Maybe Relation -> ListFrameBit -> [Element]
 xmlLFB ext mr lfb = case lfb of
@@ -221,7 +221,7 @@ xmlLFB ext mr lfb = case lfb of
                     EDRelation Equivalent -> "EquivalentClasses"
                     EDRelation Disjoint -> "DisjointClasses"
                     _ -> error "bad equiv or disjoint classes bit"
-                ) $ xmlAnnotations anno ++ (map snd list)]
+                ) $ xmlAnnotations anno ++ map snd list]
             ClassEntity c -> make2 True (case fromMaybe
                 (error "expected equiv--, disjoint--, sub-- class") mr of
                     SubClass -> "SubClassOf"
@@ -287,13 +287,14 @@ xmlLFB ext mr lfb = case lfb of
                     SDRelation Different -> "DifferentIndividuals"
                     _ -> error "bad individual bit (s or d)"
                 ) "NamedIndividual" mwNameIRI i list
+            _ -> error "bad individual same or different"
     ObjectCharacteristics al ->
         let ObjectEntity op = ext
             annos = map (xmlAnnotations . fst) al
             list = zip annos (map snd al)
         in map (\ (x, y) -> makeElement (case y of
                 Functional -> "FunctionalObjectProperty"
-                InverseFunctional -> "InverseFunctionalObjectProperty" 
+                InverseFunctional -> "InverseFunctionalObjectProperty"
                 Reflexive -> "ReflexiveObjectProperty"
                 Irreflexive -> "IrreflexiveObjectProperty"
                 Symmetric -> "SymmetricObjectProperty"
@@ -331,7 +332,8 @@ xmlAFB ext anno afb = case afb of
             let Entity ty iri = ent in case ty of
                 AnnotationProperty -> map (\ (Annotation as s v) ->
                     makeElement "AnnotationAssertion" $
-                        xmlAnnotations as ++ [mwNameIRI "AnnotationProperty" iri]
+                        xmlAnnotations as
+                            ++ [mwNameIRI "AnnotationProperty" iri]
                             ++ [mwSimpleIRI s, case v of
                                 AnnValue avalue -> mwSimpleIRI avalue
                                 AnnValLit l -> xmlLiteral l]) anno
@@ -382,7 +384,8 @@ xmlImport :: ImportIRI -> Element
 xmlImport i = setName "Import" $ mwText $ showQU i
 
 setPref :: String -> Element -> Element
-setPref s e = e {elAttribs = Attr {attrKey = makeQN "name",attrVal = s} : elAttribs e}
+setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
+    , attrVal = s} : elAttribs e}
 
 set1Map :: (String, String) -> Element
 set1Map (s, iri) = setPref s $ mwIRI $ mkQName iri
@@ -405,4 +408,4 @@ xmlOntologyDoc od =
         xmlPrefixes (prefixDeclaration od)
         ++ map xmlImport (imports ont)
         ++ concatMap xmlFrames (ontFrames ont)
-        ++ concatMap xmlAnnotations (ann ont) 
+        ++ concatMap xmlAnnotations (ann ont)
