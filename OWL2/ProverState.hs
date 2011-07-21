@@ -22,28 +22,26 @@ import OWL2.ManchesterPrint
 import Common.AS_Annotation
 
 data ProverState = ProverState
-  { ontologySign :: Sign
-  , initialState :: [Named Axiom]
-  } deriving Show
+    { ontologySign :: Sign,
+      initialState :: [Named Axiom]
+    } deriving Show
 
-owlProverState :: Sign
-  -> [Named Axiom]
-  -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
-  -> ProverState
+owlProverState :: Sign -> [Named Axiom]
+    -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+    -> ProverState
 owlProverState sig oSens _ = ProverState
-  { ontologySign = sig
-  , initialState = filter isAxiom oSens }
+    { ontologySign = sig,
+    initialState = filter isAxiom oSens }
 
 {- |
-  Inserts a named OWL axiom into the prover state.
+  Inserts a named OWL2 axiom into the prover state.
 -}
 insertOWLAxiom :: ProverState -- ^ prover state containing initial logical part
                -> Named Axiom -- ^ goal to add
                -> ProverState
 insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
 
-showOWLProblemS :: ProverState
-                -> String -- ^ formatted output
+showOWLProblemS :: ProverState -> String -- ^ formatted output
 showOWLProblemS pst =
     let namedSens = initialState pst
         sign = ontologySign pst

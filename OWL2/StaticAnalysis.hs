@@ -387,7 +387,7 @@ basicOWL2Analysis (odoc, inSign, _) = do
 
 findImplied :: Axiom -> Named Axiom -> Named Axiom
 findImplied ax sent =
-  if isToProve ax then sent
+  if prove ax then sent
          { isAxiom = False
          , isDef = False
          , wasTheorem = False }

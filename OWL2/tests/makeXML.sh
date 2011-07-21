@@ -118,4 +118,4 @@ done
 
 echo "removing directory XML...\n"
 
-rm -rf ../XML
+#rm -rf ../XML
