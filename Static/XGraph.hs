@@ -92,7 +92,7 @@ extractXLinks :: Monad m => Element -> m [XLink]
 extractXLinks = mapM mkXLink . findChildren (unqual "DGLink")
 
 mkXNode :: Monad m => Element -> m XNode
-mkXNode el = let get f s = f . map strContent . findChildren (unqual s)
+mkXNode el = let get f s = f . map strContent . deepSearch [s]
                  get' s = get unlines s in do
   nm <- getAttrVal "name" el
   case findChild (unqual "Reference") el of
