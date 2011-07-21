@@ -33,10 +33,11 @@ order that they can be reconstructed later.
  - Top element holds all Theorem Links and the remaining Graph.
  - Branch holds a list of Definition Links and their Target-Node
  - Root contains all independent Nodes -}
-data XGraph = Top [XLink] XGraph
-            | Branch XNode [XLink] XGraph
-            | Root [XNode]
+data XGraph = XGraph { thmLinks :: [XLink]
+                     , xg_body :: XTree }
 
+data XTree = Root [XNode]
+           | Branch XNode [XLink] XTree
 
 data XNode = XNode { name :: String
                    , logicName :: String
@@ -73,9 +74,9 @@ xGraph xml = do
        ([], _) -> fail "found no independent nodes to start DGraph with"
        l -> return l
   xg <- builtXGraph defLk restN $ Root initN
-  return $ Top thmLk xg 
+  return $ XGraph thmLk xg
 
-builtXGraph :: Monad m => [XLink] -> [XNode] -> XGraph -> m XGraph
+builtXGraph :: Monad m => [XLink] -> [XNode] -> XTree -> m XTree
 builtXGraph [] [] xg = return xg
 builtXGraph [] _ _ = fail "builtXGraph: unexpected error (1)"
 builtXGraph _ [] _ = fail "builtXGraph: unexpected error (2)"

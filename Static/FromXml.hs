@@ -80,21 +80,20 @@ fromXml opts lg ln lv xml = do
     res <- rebuiltDG opts lg xg dg0 lv
     return (ln, computeLibEnvTheories $ uncurry (Map.insert ln) res)
 
-
 {- | reconstructs the Development Graph via a previously created XGraph-
 structure. -}
 rebuiltDG :: HetcatsOpts -> LogicGraph -> XGraph -> DGraph -> LibEnv
           -> ResultT IO (DGraph, LibEnv)
-rebuiltDG opts lg xg dg lv = case xg of
-  Root nds -> do
-    foldM (flip $ insertNode opts lg Nothing) (dg, lv) nds
-  Top thmLk xg' -> do
-    res0 <- rebuiltDG opts lg xg' dg lv
-    foldM (flip $ insertThmLink lg) res0 thmLk
-  Branch nd lKs xg' -> do
-    res0 <- rebuiltDG opts lg xg' dg lv
-    insertStep opts lg nd lKs res0
-
+rebuiltDG opts lg (XGraph thmLk body) dg lv = do
+  res <- rebuiltBody body dg lv
+  foldM (flip $ insertThmLink lg) res thmLk where
+    rebuiltBody bd dg' lv' = case bd of
+        Root nds -> do
+          foldM (flip $ insertNode opts lg Nothing) (dg', lv') nds
+        Branch nd lKs bd' -> do
+          res0 <- rebuiltBody bd' dg' lv'
+          insertStep opts lg nd lKs res0 
+    
 -- | inserts a new node as well as all definition links pointing at that node
 insertStep :: HetcatsOpts -> LogicGraph -> XNode -> [XLink] -> (DGraph, LibEnv)
            -> ResultT IO (DGraph, LibEnv)
