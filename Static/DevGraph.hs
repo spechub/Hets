@@ -50,7 +50,7 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
-import Common.Utils (numberSuffix, splitByList)
+import Common.Utils (numberSuffix, splitByList, splitOn, readMaybe)
 import Common.LibName
 import Common.Consistency
 
@@ -95,6 +95,15 @@ data NodeName = NodeName
   , xpath :: [XPathPart]
   } deriving (Show, Eq, Ord)
 
+readXPath :: Monad m => String -> m [XPathPart]
+readXPath = mapM readXPathComp . splitOn '/'
+
+readXPathComp :: Monad m => String -> m XPathPart
+readXPathComp s = case splitAt 5 s of
+  ("Spec[", s') -> case readMaybe $ takeWhile (/= ']') s' of
+        Just i -> return $ ChildIndex i
+        Nothing -> fail "cannot read nodes ChildIndex"
+  _ -> return $ ElemName s
 
 isInternal :: NodeName -> Bool
 isInternal n = extIndex n /= 0 || not (null $ extString n)

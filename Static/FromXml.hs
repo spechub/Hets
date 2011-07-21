@@ -200,7 +200,7 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
           (gt', _) <- parseSpecs gt nm dg spc
           let n = getNewNodeDG dg
               nInf = newRefInfo (emptyLibName rfLb) i
-              lbl = newInfoNodeLab (parseNodeName nm) nInf gt'
+              lbl = newInfoNodeLab nm nInf gt'
           return (addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
   -- Case #2: Regular Node
   XNode nm lgN (hid, syb) spc -> do
@@ -225,7 +225,7 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
           else do
             diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
             return $ DGBasicSpec Nothing diffSig syb'
-        let lbl = newNodeLab (parseNodeName nm) lOrig gt2
+        let lbl = newNodeLab nm lOrig gt2
         return (insLNodeDG (getNewNodeDG dg, lbl) dg, lv)
 
 parseHidden :: G_theory -> String -> ResultT IO G_theory
@@ -234,13 +234,13 @@ parseHidden gt s' = do
   return $ case gs of
     G_sign lid sg sId -> noSensGTheory lid sg sId
 
-parseSpecs :: G_theory -> String -> DGraph -> String
+parseSpecs :: G_theory -> NodeName -> DGraph -> String
            -> ResultT IO (G_theory, Set G_symbol)
 parseSpecs gt' nm dg spec = let
           (response, msg) = extendByBasicSpec (globalAnnos dg) spec gt'
           in case response of
             Success gt'' _ smbs _ -> return (gt'', smbs)
-            Failure _ -> fail $ "[ " ++ nm ++ " ]\n" ++ msg
+            Failure _ -> fail $ "[ " ++ showName nm ++ " ]\n" ++ msg
 
 loadRefLib :: HetcatsOpts -> String -> LibEnv -> ResultT IO (DGraph, LibEnv)
 loadRefLib opts ln lv = do

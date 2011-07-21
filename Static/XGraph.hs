@@ -39,11 +39,11 @@ data XGraph = XGraph { thmLinks :: [XLink]
 data XTree = Root [XNode]
            | Branch XNode [XLink] XTree
 
-data XNode = XNode { name :: String
+data XNode = XNode { nodeName :: NodeName
                    , logicName :: String
                    , symbs :: (Bool, String) -- ^ hidden?
                    , specs :: String } -- ^ Sentences
-           | XRef { name :: String
+           | XRef { nodeName :: NodeName
                   , refNode :: String
                   , refLib :: String
                   , specs :: String }
@@ -61,6 +61,9 @@ data XLink = XLink { source :: String
 
 {- ------------
 Functions -}
+
+name :: XNode -> String
+name = showName . nodeName
 
 xGraph :: Monad m => Element -> m XGraph
 xGraph xml = do
@@ -95,11 +98,12 @@ extractXLinks = mapM mkXLink . findChildren (unqual "DGLink")
 mkXNode :: Monad m => Element -> m XNode
 mkXNode el = let get f s = f . map strContent . deepSearch [s]
                  get' s = get unlines s in do
-  nm <- getAttrVal "name" el
+  nm' <- getAttrVal "name" el
   case findChild (unqual "Reference") el of
     Just rf -> do
       rfNm <- getAttrVal "node" rf
       rfLib <- getAttrVal "library" rf
+      let nm = parseNodeName nm'
       return $ XRef nm rfNm rfLib $ get' "Axiom" el ++ get' "Theorem" el
     Nothing -> let
       hdSyms = case findChild (unqual "Hidden") el of
@@ -112,8 +116,12 @@ mkXNode el = let get f s = f . map strContent . deepSearch [s]
             Just ch -> (True, get (intercalate ", ") "Symbol" ch)
       spcs = get' "Axiom" el ++ get' "Theorem" el
       in do
-        lg <- getAttrVal "logic" el
-        return $ XNode nm lg hdSyms spcs
+        lgN <- getAttrVal "logic" el
+        xp0 <- getAttrVal "relxpath" el
+        nm0 <- getAttrVal "refname" el
+        xp1 <- readXPath (nm0 ++ xp0)
+        let nm = parseNodeName nm'
+        return $ XNode nm { xpath = reverse xp1 } lgN hdSyms spcs
 
 mkXLink :: Monad m => Element -> m XLink
 mkXLink el = do
