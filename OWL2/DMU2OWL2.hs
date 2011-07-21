@@ -82,9 +82,8 @@ readOWL :: Monad m => String -> m (Sign, [Named Axiom])
 readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
   Left err -> fail $ show err
   Right ontoFile -> let
-    newsign = emptySign {prefixMap = prefixDeclaration ontoFile}
-    newont = expODoc newsign ontoFile 
-    newstate = execState (completeSign newont) newsign
+    newont = expODoc (prefixDeclaration ontoFile) ontoFile 
+    newstate = execState (completeSign newont) emptySign
     in case basicOWL2Analysis
     (ontoFile, newstate, emptyGlobalAnnos) of
     Result ds ms -> case ms of

@@ -10,11 +10,10 @@ Portability :  portable
 Expansion of all IRIs in the Ontology
 -}
 
-module OWL2.Expand where
+module OWL2.Expand (expF, expODoc) where
 
 import OWL2.AS
 import OWL2.MS
-import OWL2.Sign
 
 import Data.Maybe
 import qualified Data.Map as Map
@@ -22,17 +21,17 @@ import qualified Data.Map as Map
 {- expanding all IRIs according to the prefix map from the sign
  the result is stored in the expandedIRI field of data QName -}
 
-expand :: Sign -> IRI -> IRI
-expand s qn =
+expand :: PrefixMap -> IRI -> IRI
+expand pm qn =
   let np = namePrefix qn
       lp = localPart qn
   in if isFullIri qn then qn {expandedIRI = np ++ ":" ++ lp}
       else
         let expn = fromMaybe (error $ np ++ ": prefix not found ")
-              $ Map.lookup np $ prefixMap s
+              $ Map.lookup np pm
         in qn {expandedIRI = expn ++ lp}
 
-expDataRange :: Sign -> DataRange -> DataRange
+expDataRange :: PrefixMap -> DataRange -> DataRange
 expDataRange s dra = case dra of
   DataType dt ls -> DataType (expand s dt)
      $ map (\ (cf, rv) -> (expand s cf, rv)) ls
@@ -40,12 +39,12 @@ expDataRange s dra = case dra of
   DataComplementOf dr -> DataComplementOf $ expDataRange s dr
   _ -> dra
 
-expOP :: Sign -> ObjectPropertyExpression -> ObjectPropertyExpression
+expOP :: PrefixMap -> ObjectPropertyExpression -> ObjectPropertyExpression
 expOP s opr = case opr of
   ObjectProp op -> ObjectProp $ expand s op
   ObjectInverseOf op -> ObjectInverseOf $ expOP s op
 
-expCE :: Sign -> ClassExpression -> ClassExpression
+expCE :: PrefixMap -> ClassExpression -> ClassExpression
 expCE s cle = case cle of
   Expression c -> Expression $ expand s c
   ObjectJunction jt cel -> ObjectJunction jt $ map (expCE s) cel
@@ -71,25 +70,25 @@ expCE s cle = case cle of
         Just dr -> DataCardinality
               (Cardinality ct i (expand s dp) $ Just (expDataRange s dr))
 
-expAnn :: Sign -> Annotation -> Annotation
+expAnn :: PrefixMap -> Annotation -> Annotation
 expAnn s (Annotation al ap av) = Annotation (map (expAnn s) al)
           (expand s ap) (expAV s av)
 
-expAV :: Sign -> AnnotationValue -> AnnotationValue
+expAV :: PrefixMap -> AnnotationValue -> AnnotationValue
 expAV s av = case av of
   AnnValue iri -> AnnValue $ expand s iri
   _ -> av
 
-expAL :: Sign -> (Sign -> a -> a) -> AnnotatedList a -> AnnotatedList a
+expAL :: PrefixMap -> (PrefixMap -> a -> a) -> AnnotatedList a -> AnnotatedList a
 expAL s f = map (\ (ans, a) -> (map (expAnn s) ans, f s a))
 
-expFact :: Sign -> Fact -> Fact
+expFact :: PrefixMap -> Fact -> Fact
 expFact s f = case f of
   ObjectPropertyFact pn op i ->
         ObjectPropertyFact pn (expOP s op) (expand s i)
   DataPropertyFact pn dp l -> DataPropertyFact pn (expand s dp) l
 
-expLFB :: Sign -> ListFrameBit -> ListFrameBit
+expLFB :: PrefixMap -> ListFrameBit -> ListFrameBit
 expLFB s lfb = case lfb of
   AnnotationBit al -> AnnotationBit $ expAL s expand al
   ExpressionBit al -> ExpressionBit $ expAL s expCE al
@@ -101,7 +100,7 @@ expLFB s lfb = case lfb of
   IndividualFacts al -> IndividualFacts $ expAL s expFact al
   _ -> lfb
 
-expAFB :: Sign -> AnnFrameBit -> AnnFrameBit
+expAFB :: PrefixMap -> AnnFrameBit -> AnnFrameBit
 expAFB s afb = case afb of
   DatatypeBit dr -> DatatypeBit $ expDataRange s dr
   ClassDisjointUnion cel -> ClassDisjointUnion $ map (expCE s) cel
@@ -110,25 +109,25 @@ expAFB s afb = case afb of
   ObjectSubPropertyChain opl -> ObjectSubPropertyChain (map (expOP s) opl)
   _ -> afb
 
-expFB :: Sign -> FrameBit -> FrameBit
+expFB :: PrefixMap -> FrameBit -> FrameBit
 expFB s fb = case fb of
   ListFrameBit mr lfb -> ListFrameBit mr $ expLFB s lfb
   AnnFrameBit ans afb -> AnnFrameBit (map (expAnn s) ans) $ expAFB s afb
 
-expE :: Sign -> Extended -> Extended
+expE :: PrefixMap -> Extended -> Extended
 expE s ex = case ex of
   Misc ans -> Misc $ map (expAnn s) ans
   SimpleEntity (Entity ty e) -> SimpleEntity (Entity ty $ expand s e)
   ObjectEntity op -> ObjectEntity $ expOP s op
   ClassEntity ce -> ClassEntity $ expCE s ce
 
-expF :: Sign -> Frame -> Frame
+expF :: PrefixMap -> Frame -> Frame
 expF s (Frame e fbl) = Frame (expE s e) $ map (expFB s) fbl
 
-expA :: Sign -> Axiom -> Axiom
+expA :: PrefixMap -> Axiom -> Axiom
 expA s (PlainAxiom e fb) = PlainAxiom (expE s e) $ expFB s fb
 
-expOnt :: Sign -> Ontology -> Ontology
+expOnt :: PrefixMap -> Ontology -> Ontology
 expOnt s o =
   let oiri = expand s $ name o
       imp = map (expand s) $ imports o
@@ -136,5 +135,5 @@ expOnt s o =
       fr = map (expF s) $ ontFrames o
   in o {name = oiri, imports = imp, ann = ans, ontFrames = fr}
 
-expODoc :: Sign -> OntologyDocument -> OntologyDocument
+expODoc :: PrefixMap -> OntologyDocument -> OntologyDocument
 expODoc s o = o {ontology = expOnt s $ ontology o}

@@ -355,12 +355,12 @@ getEntityFromFrame f = case f of
 
 createSign :: [Frame] -> State Sign ()
 createSign f = do
-  s <- get
-  mapM_ (getEntityFromFrame . expF s) f
+  pm <- gets prefixMap
+  mapM_ (getEntityFromFrame . expF pm) f
 
 createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do
-    x <- correctFrames s $ map (expF s) fl
+    x <- correctFrames s $ map (expF $ prefixMap s) fl
     return (map anaAxiom $ concatMap getAxioms x, x)
 
 modifyOntologyDocument :: OntologyDocument -> [Frame] -> OntologyDocument
