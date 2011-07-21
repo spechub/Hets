@@ -571,5 +571,5 @@ xmlBasicSpec e = let b = getBase e in emptyOntologyDoc
         ann = [getAllAnnos b e],
         name = getOntologyIRI e
         },
-      prefixDeclaration = Map.fromList $ ("base", b) : getPrefixMap e
+      prefixDeclaration = Map.fromList $ getPrefixMap e
       }

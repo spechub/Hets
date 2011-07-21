@@ -408,8 +408,8 @@ setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =
         "http://www.w3.org/2002/07/owl#"} : elAttribs e}
 
 setOntIRI :: OntologyIRI -> Element -> Element
-setOntIRI iri e = e {elAttribs = Attr {attrKey = makeQN "ontologyIRI", attrVal =
-        showQU iri} : elAttribs e}
+setOntIRI iri e = e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
+        attrVal = showQU iri} : elAttribs e}
 
 setBase :: String -> Element -> Element
 setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
@@ -419,10 +419,9 @@ xmlOntologyDoc :: OntologyDocument -> Element
 xmlOntologyDoc od =
     let ont = ontology od
         pd = prefixDeclaration od
-        emptyPref = fromMaybe "" $ Map.lookup "" pd
-        b = fromMaybe emptyPref $ Map.lookup "base" pd
-    in setBase b $ setXMLNS $ setOntIRI (name ont) $ makeElement "Ontology" $
-        xmlPrefixes pd
-        ++ map xmlImport (imports ont)
-        ++ concatMap xmlFrames (ontFrames ont)
-        ++ concatMap xmlAnnotations (ann ont)
+        emptyPref = fromMaybe "http://unnamed" $ Map.lookup "" pd
+    in setBase emptyPref $ setXMLNS $ setOntIRI (name ont)
+        $ makeElement "Ontology" $ xmlPrefixes pd
+            ++ map xmlImport (imports ont)
+            ++ concatMap xmlFrames (ontFrames ont)
+            ++ concatMap xmlAnnotations (ann ont)

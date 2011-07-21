@@ -43,7 +43,7 @@ cd $dir
 
 echo "making diff on generated xml files...\n"
 
-for i in *.rdf.xml.xml
+for i in *.rdf.xml.xml *.owl.xml.xml
 do
     echo $i "\n"
     diff $i $i.xml
@@ -62,7 +62,7 @@ echo "\ncreating omn files from .rdf.xml with java...\n"
 
 cd OWL2/tests/XML
 
-for i in *.rdf.xml
+for i in *.rdf.xml *.owl.xml
 do
     java -jar ../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.xml.omn
     echo $i "ok\n"
@@ -70,7 +70,7 @@ done
 
 echo "creating omn files from .rdf.xml.xml with java...\n"
 
-for i in *.rdf.xml.xml
+for i in *.rdf.xml.xml *.owl.xml.xml
 do
    java -jar ../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.omn.omn
    echo $i "ok\n"
@@ -78,11 +78,10 @@ done
 
 echo "making diff on generated omn files...\n"
 
-for i in *.rdf.xml.xml.omn
+for i in *.rdf.xml.xml.omn *.owl.xml.xml.omn
 do
     echo $i "\n"
     diff $i $i.omn
-    echo "-----------------------------------\n"
 done
 
 cd ../../..
@@ -95,7 +94,7 @@ cd OWL2/tests/XML
 
 echo "\nrunning runXML on .rdf.xml files...\n"
 
-for i in *.rdf.xml
+for i in *.rdf.xml *.owl.xml
 do
     ../../scripts/runXML $i >> $i.xml.mno
     echo $i "ok\n"
@@ -103,7 +102,7 @@ done
 
 echo "running runXML on .rdf.xml.xml files...\n"
 
-for i in *.rdf.xml.xml
+for i in *.rdf.xml.xml *.owl.xml.xml
 do
     ../../scripts/runXML $i >> $i.mno.mno
     echo $i "ok\n"
@@ -111,7 +110,7 @@ done
 
 echo "making diff on generated mno files...\n"
 
-for i in *.rdf.xml.xml.mno
+for i in *.rdf.xml.xml.mno *.owl.xml.xml.mno
 do
     echo $i "\n"
     diff $i $i.mno
