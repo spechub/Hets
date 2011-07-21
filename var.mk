@@ -52,6 +52,13 @@ ifneq ($(findstring True, $(HEXPATVERSION)),)
 HEXPAT_PACKAGE = -DHEXPAT
 endif
 
+XMLVERSION = $(shell $(HCPKG) field xml version)
+ifneq ($(findstring 1.3.7, $(XMLVERSION)),)
+XML137_PACKAGE = -DXML137
+else ifneq ($(findstring 1.3.8, $(XMLVERSION)),)
+XML137_PACKAGE = -DXML137
+endif
+
 HTTPVERSION = $(shell $(HCPKG) field HTTP version)
 ifneq ($(findstring 4000., $(HTTPVERSION)),)
 else
@@ -85,7 +92,7 @@ endif
 
 HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
-  $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
+  $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) $(XML137_PACKAGE)\
   $(PFE_FLAGS) $(SERVER_FLAG) \
   -DCASLEXTENSIONS
 
