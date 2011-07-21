@@ -111,7 +111,7 @@ insertStep opts lg xNd lks (dg, lv) = do
   (j, gsig2) <- signOfNode (name xNd) dg'
   dg'' <- foldM ( \ dgR ((i, mr, tp), lk) -> do
             lkLab <- finalizeLink lg lk mr gsig2 tp
-            return $ insLEdgeNubDG (i, j, lkLab) dgR
+            return $ insEdgeAsIs (i, j, lkLab) dgR
             ) dg' $ zip mrs lks
   return (dg'', lv')
 
