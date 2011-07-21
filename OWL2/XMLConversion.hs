@@ -16,6 +16,7 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.XML
 import OWL2.ManchesterPrint
+import OWL2.XMLKeywords
 
 import Text.XML.Light
 import Data.Maybe
@@ -40,7 +41,7 @@ setIRI iri e =
     let np = namePrefix iri
         ty
             | (not . null) np && head np == '_' = "nodeID"
-            | isFullIri iri || null np = "IRI"
+            | isFullIri iri || null np = iriK
             | otherwise = "abbreviatedIRI"
     in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showQU iri}]}
 
@@ -82,7 +83,7 @@ mwText :: String -> Element
 mwText s = setText s nullElem
 
 mwSimpleIRI :: IRI -> Element
-mwSimpleIRI s = setName "IRI" $ mwText $ showQU s
+mwSimpleIRI s = setName iriK $ mwText $ showQU s
 
 makeElement :: String -> [Element] -> Element
 makeElement s el = setContent el $ mwString s
@@ -99,16 +100,16 @@ make2 rl hdr f expr = map (\ (x, y) -> makeElement hdr
 
 xmlEntity :: Entity -> Element
 xmlEntity (Entity ty ent) = mwNameIRI (case ty of
-    Class -> "Class"
-    Datatype -> "Datatype"
-    ObjectProperty -> "ObjectProperty"
-    DataProperty -> "DataProperty"
-    AnnotationProperty -> "AnnotationProperty"
-    NamedIndividual -> "NamedIndividual") ent
+    Class -> classK
+    Datatype -> datatypeK
+    ObjectProperty -> objectPropertyK
+    DataProperty -> dataPropertyK
+    AnnotationProperty -> annotationPropertyK
+    NamedIndividual -> namedIndividualK) ent
 
 xmlLiteral :: Literal -> Element
 xmlLiteral (Literal lf tu) =
-    let part = setName "Literal" $ mwText lf
+    let part = setName literalK $ mwText lf
     in case tu of
         Typed dt -> setDt True dt part
         Untyped lang -> setLangTag lang $ setDt True (mkQName
@@ -119,84 +120,84 @@ xmlIndividual :: IRI -> Element
 xmlIndividual iri =
     let np = namePrefix iri
         h = (not . null) np && head np == '_'
-    in mwNameIRI (if h then "AnonymousIndividual"
-                else "NamedIndividual") iri
+    in mwNameIRI (if h then anonymousIndividualK
+                else namedIndividualK) iri
 
 xmlFVPair :: (ConstrainingFacet, RestrictionValue) -> Element
-xmlFVPair (cf, rv) = setDt False cf $ makeElement "FacetRestriction"
+xmlFVPair (cf, rv) = setDt False cf $ makeElement facetRestrictionK
     [xmlLiteral rv]
 
 xmlObjProp :: ObjectPropertyExpression -> Element
 xmlObjProp ope = case ope of
-    ObjectProp op -> mwNameIRI "ObjectProperty" op
-    ObjectInverseOf i -> makeElement "ObjectInverseOf" [xmlObjProp i]
+    ObjectProp op -> mwNameIRI objectPropertyK op
+    ObjectInverseOf i -> makeElement objectInverseOfK [xmlObjProp i]
 
 xmlDataRange :: DataRange -> Element
 xmlDataRange dr = case dr of
     DataType dt cfl ->
-        let dtelem = mwNameIRI "Datatype" dt
+        let dtelem = mwNameIRI datatypeK dt
         in if null cfl then dtelem
-            else makeElement "DatatypeRestriction"
+            else makeElement datatypeRestrictionK
             $ dtelem : map xmlFVPair cfl
     DataJunction jt drl -> makeElement (
         case jt of
-            IntersectionOf -> "DataIntersectionOf"
-            UnionOf -> "DataUnionOf")
+            IntersectionOf -> dataIntersectionOfK
+            UnionOf -> dataUnionOfK)
         $ map xmlDataRange drl
-    DataComplementOf drn -> makeElement "DataComplementOf"
+    DataComplementOf drn -> makeElement dataComplementOfK
         [xmlDataRange drn]
-    DataOneOf ll -> makeElement "DataOneOf"
+    DataOneOf ll -> makeElement dataOneOfK
         $ map xmlLiteral ll
 
 xmlClassExpression :: ClassExpression -> Element
 xmlClassExpression ce = case ce of
-    Expression c -> mwNameIRI "Class" c
+    Expression c -> mwNameIRI classK c
     ObjectJunction jt cel -> makeElement (
         case jt of
-            IntersectionOf -> "ObjectIntersectionOf"
-            UnionOf -> "ObjectUnionOf")
+            IntersectionOf -> objectIntersectionOfK
+            UnionOf -> objectUnionOfK)
         $ map xmlClassExpression cel
-    ObjectComplementOf cex -> makeElement "ObjectComplementOf"
+    ObjectComplementOf cex -> makeElement objectComplementOfK
         [xmlClassExpression cex]
-    ObjectOneOf il -> makeElement "ObjectOneOf"
+    ObjectOneOf il -> makeElement objectOneOfK
         $ map xmlIndividual il
     ObjectValuesFrom qt ope cex -> makeElement (
         case qt of
-            AllValuesFrom -> "ObjectAllValuesFrom"
-            SomeValuesFrom -> "ObjectSomeValuesFrom")
+            AllValuesFrom -> objectAllValuesFromK
+            SomeValuesFrom -> objectSomeValuesFromK)
         [xmlObjProp ope, xmlClassExpression cex]
-    ObjectHasValue ope i -> makeElement "ObjectHasValue"
+    ObjectHasValue ope i -> makeElement objectHasValueK
         [xmlObjProp ope, xmlIndividual i]
-    ObjectHasSelf ope -> makeElement "ObjectHasSelf" [xmlObjProp ope]
+    ObjectHasSelf ope -> makeElement objectHasSelfK [xmlObjProp ope]
     ObjectCardinality (Cardinality ct i op mce) -> setInt i $ makeElement (
         case ct of
-            MinCardinality -> "ObjectMinCardinality"
-            MaxCardinality -> "ObjectMaxCardinality"
-            ExactCardinality -> "ObjectExactCardinality")
+            MinCardinality -> objectMinCardinalityK
+            MaxCardinality -> objectMaxCardinalityK
+            ExactCardinality -> objectExactCardinalityK)
         $ xmlObjProp op :
         case mce of
             Nothing -> []
             Just cexp -> [xmlClassExpression cexp]
     DataValuesFrom qt dp dr -> makeElement (
         case qt of
-            AllValuesFrom -> "DataAllValuesFrom"
-            SomeValuesFrom -> "DataSomeValuesFrom")
-        [mwNameIRI "DataProperty" dp, xmlDataRange dr]
-    DataHasValue dp l -> makeElement "DataHasValue"
-        [mwNameIRI "DataProperty" dp, xmlLiteral l]
+            AllValuesFrom -> dataAllValuesFromK
+            SomeValuesFrom -> dataSomeValuesFromK)
+        [mwNameIRI dataPropertyK dp, xmlDataRange dr]
+    DataHasValue dp l -> makeElement dataHasValueK
+        [mwNameIRI dataPropertyK dp, xmlLiteral l]
     DataCardinality (Cardinality ct i dp mdr) -> setInt i $ makeElement (
         case ct of
-            MinCardinality -> "DataMinCardinality"
-            MaxCardinality -> "DataMaxCardinality"
-            ExactCardinality -> "DataExactCardinality")
-        $ mwNameIRI "DataProperty" dp :
+            MinCardinality -> dataMinCardinalityK
+            MaxCardinality -> dataMaxCardinalityK
+            ExactCardinality -> dataExactCardinalityK)
+        $ mwNameIRI dataPropertyK dp :
             case mdr of
                 Nothing -> []
                 Just dr -> [xmlDataRange dr]
 
 xmlAnnotation :: Annotation -> Element
-xmlAnnotation (Annotation al ap av) = makeElement "Annotation"
-    $ map xmlAnnotation al ++ [mwNameIRI "AnnotationProperty" ap,
+xmlAnnotation (Annotation al ap av) = makeElement annotationK
+    $ map xmlAnnotation al ++ [mwNameIRI annotationPropertyK ap,
     case av of
         AnnValue iri -> mwSimpleIRI iri
         AnnValLit l -> xmlLiteral l]
@@ -216,85 +217,85 @@ xmlLFB ext mr lfb = case lfb of
             SimpleEntity (Entity _ ap) = ext
         in case fromMaybe (error "expected domain, range, subproperty") mr of
             SubPropertyOf ->
-                let list2 = xmlAL (mwNameIRI "AnnotationProperty") al
-                in make1 True "SubAnnotationPropertyOf" "AnnotationProperty"
+                let list2 = xmlAL (mwNameIRI annotationPropertyK) al
+                in make1 True subAnnotationPropertyOfK annotationPropertyK
                          mwNameIRI ap list2
-            DRRelation ADomain -> make1 True "SubAnnotationPropertyOf"
-                        "AnnotationProperty" mwNameIRI ap list
-            DRRelation ARange -> make1 True "SubAnnotationPropertyOf"
-                        "AnnotationProperty" mwNameIRI ap list
+            DRRelation ADomain -> make1 True subAnnotationPropertyOfK
+                        annotationPropertyK mwNameIRI ap list
+            DRRelation ARange -> make1 True subAnnotationPropertyOfK
+                        annotationPropertyK mwNameIRI ap list
             _ -> error "bad annotation bit"
     ExpressionBit al ->
         let list = xmlAL xmlClassExpression al in case ext of
             Misc anno -> [makeElement (case fromMaybe
                 (error "expected equiv--, disjoint--, class") mr of
-                    EDRelation Equivalent -> "EquivalentClasses"
-                    EDRelation Disjoint -> "DisjointClasses"
+                    EDRelation Equivalent -> equivalentClassesK
+                    EDRelation Disjoint -> disjointClassesK
                     _ -> error "bad equiv or disjoint classes bit"
                 ) $ xmlAnnotations anno ++ map snd list]
             ClassEntity c -> make2 True (case fromMaybe
                 (error "expected equiv--, disjoint--, sub-- class") mr of
-                    SubClass -> "SubClassOf"
-                    EDRelation Equivalent -> "EquivalentClasses"
-                    EDRelation Disjoint -> "DisjointClasses"
+                    SubClass -> subClassOfK
+                    EDRelation Equivalent -> equivalentClassesK
+                    EDRelation Disjoint -> disjointClassesK
                     _ -> error "bad equiv, disjoint, subClass bit")
                 xmlClassExpression c list
             ObjectEntity op -> make2 True (case fromMaybe
                 (error "expected domain, range") mr of
-                    DRRelation ADomain -> "ObjectPropertyDomain"
-                    DRRelation ARange -> "ObjectPropertyRange"
+                    DRRelation ADomain -> objectPropertyDomainK
+                    DRRelation ARange -> objectPropertyRangeK
                     _ -> "bad object domain or range bit") xmlObjProp op list
             SimpleEntity (Entity ty ent) -> case ty of
-                DataProperty -> make1 True "DataPropertyDomain" "DataProperty"
+                DataProperty -> make1 True dataPropertyDomainK dataPropertyK
                         mwNameIRI ent list
-                NamedIndividual -> make2 False "ClassAssertion"
+                NamedIndividual -> make2 False classAssertionK
                         xmlIndividual ent list
                 _ -> error "bad expression bit"
     ObjectBit al ->
         let list = xmlAL xmlObjProp al in case ext of
             Misc anno -> [makeElement (case fromMaybe
                 (error "expected equiv--, disjoint-- obj prop") mr of
-                    EDRelation Equivalent -> "EquivalentObjectProperties"
-                    EDRelation Disjoint -> "DisjointObjectProperties"
+                    EDRelation Equivalent -> equivalentObjectPropertiesK
+                    EDRelation Disjoint -> disjointObjectPropertiesK
                     _ -> error "bad object bit (equiv, disjoint)"
                 ) $ xmlAnnotations anno ++ map snd list]
             ObjectEntity o -> make2 True (case fromMaybe
                 (error "expected sub, Inverse, equiv, disjoint op") mr of
-                    SubPropertyOf -> "SubObjectPropertyOf"
-                    InverseOf -> "InverseObjectProperties"
-                    EDRelation Equivalent -> "EquivalentObjectProperties"
-                    EDRelation Disjoint -> "DisjointObjectProperties"
+                    SubPropertyOf -> subObjectPropertyOfK
+                    InverseOf -> inverseObjectPropertiesK
+                    EDRelation Equivalent -> equivalentObjectPropertiesK
+                    EDRelation Disjoint -> disjointObjectPropertiesK
                     _ -> error "bad object bit (subpropertyof, inverseof)"
                 ) xmlObjProp o list
             _ -> error "bad object bit"
     DataBit al ->
-        let list = xmlAL (mwNameIRI "DataProperty") al in case ext of
+        let list = xmlAL (mwNameIRI dataPropertyK) al in case ext of
             Misc anno -> [makeElement (case fromMaybe
                 (error "expected equiv--, disjoint-- data prop") mr of
-                    EDRelation Equivalent -> "EquivalentDataProperties"
-                    EDRelation Disjoint -> "DisjointDataProperties"
+                    EDRelation Equivalent -> equivalentDataPropertiesK
+                    EDRelation Disjoint -> disjointDataPropertiesK
                     _ -> error "bad data bit"
                 ) $ xmlAnnotations anno ++ map snd list]
             SimpleEntity (Entity _ ent) -> make1 True (case fromMaybe
                     (error "expected sub, equiv or disjoint data") mr of
-                        SubPropertyOf -> "SubDataPropertyOf"
-                        EDRelation Equivalent -> "EquivalentDataProperties"
-                        EDRelation Disjoint -> "DisjointDataProperties"
+                        SubPropertyOf -> subDataPropertyOfK
+                        EDRelation Equivalent -> equivalentDataPropertiesK
+                        EDRelation Disjoint -> disjointDataPropertiesK
                         _ -> error "bad data bit"
-                    ) "DataProperty" mwNameIRI ent list
+                    ) dataPropertyK mwNameIRI ent list
             _ -> error "bad data bit"
     IndividualSameOrDifferent al ->
         let list = xmlAL xmlIndividual al in case ext of
             Misc anno -> [makeElement (case fromMaybe
                 (error "expected same--, different-- individuals") mr of
-                    SDRelation Same -> "SameIndividual"
-                    SDRelation Different -> "DifferentIndividuals"
+                    SDRelation Same -> sameIndividualK
+                    SDRelation Different -> differentIndividualsK
                     _ -> error "bad individual bit (s or d)"
                 ) $ xmlAnnotations anno ++ map snd list]
             SimpleEntity (Entity _ i) -> make2 True (case fromMaybe
                 (error "expected same--, different-- individuals") mr of
-                    SDRelation Same -> "SameIndividual"
-                    SDRelation Different -> "DifferentIndividuals"
+                    SDRelation Same -> sameIndividualK
+                    SDRelation Different -> differentIndividualsK
                     _ -> error "bad individual bit (s or d)"
                 ) xmlIndividual i list
             _ -> error "bad individual same or different"
@@ -303,19 +304,19 @@ xmlLFB ext mr lfb = case lfb of
             annos = map (xmlAnnotations . fst) al
             list = zip annos (map snd al)
         in map (\ (x, y) -> makeElement (case y of
-                Functional -> "FunctionalObjectProperty"
-                InverseFunctional -> "InverseFunctionalObjectProperty"
-                Reflexive -> "ReflexiveObjectProperty"
-                Irreflexive -> "IrreflexiveObjectProperty"
-                Symmetric -> "SymmetricObjectProperty"
-                Asymmetric -> "AsymmetricObjectProperty"
-                Transitive -> "TransitiveObjectProperty"
-                Antisymmetric -> "AntisymmetricObjectProperty"
+                Functional -> functionalObjectPropertyK
+                InverseFunctional -> inverseFunctionalObjectPropertyK
+                Reflexive -> reflexiveObjectPropertyK
+                Irreflexive -> irreflexiveObjectPropertyK
+                Symmetric -> symmetricObjectPropertyK
+                Asymmetric -> asymmetricObjectPropertyK
+                Transitive -> transitiveObjectPropertyK
+                Antisymmetric -> antisymmetricObjectPropertyK
             ) $ x ++ [xmlObjProp op]) list
     DataPropRange al ->
         let SimpleEntity (Entity DataProperty dp) = ext
             list = xmlAL xmlDataRange al
-        in make1 True "DataPropertyRange" "DataProperty" mwNameIRI dp list
+        in make1 True dataPropertyRangeK dataPropertyK mwNameIRI dp list
     IndividualFacts al ->
         let SimpleEntity (Entity NamedIndividual i) = ext
             annos = map (xmlAnnotations . fst) al
@@ -323,15 +324,15 @@ xmlLFB ext mr lfb = case lfb of
         in map (\ (x, f) -> case f of
             ObjectPropertyFact pn op ind ->
                makeElement (case pn of
-                    Positive -> "ObjectPropertyAssertion"
-                    Negative -> "NegativeObjectPropertyAssertion"
+                    Positive -> objectPropertyAssertionK
+                    Negative -> negativeObjectPropertyAssertionK
                 ) $ x ++ [xmlObjProp op]
                         ++ map xmlIndividual [i, ind]
             DataPropertyFact pn dp lit ->
                 makeElement (case pn of
-                    Positive -> "DataPropertyAssertion"
-                    Negative -> "NegativeDataPropertyAssertion"
-                ) $ x ++ [mwNameIRI "DataProperty" dp] ++
+                    Positive -> dataPropertyAssertionK
+                    Negative -> negativeDataPropertyAssertionK
+                ) $ x ++ [mwNameIRI dataPropertyK dp] ++
                         [xmlIndividual i] ++ [xmlLiteral lit]
             ) list
 
@@ -341,43 +342,43 @@ xmlAFB ext anno afb = case afb of
         SimpleEntity ent ->
             let Entity ty iri = ent in case ty of
                 AnnotationProperty -> map (\ (Annotation as s v) ->
-                    makeElement "AnnotationAssertion" $
+                    makeElement annotationAssertionK $
                         xmlAnnotations as
-                            ++ [mwNameIRI "AnnotationProperty" iri]
+                            ++ [mwNameIRI annotationPropertyK iri]
                             ++ [mwSimpleIRI s, case v of
                                 AnnValue avalue -> mwSimpleIRI avalue
                                 AnnValLit l -> xmlLiteral l]) anno
-                _ -> [makeElement "Declaration"
+                _ -> [makeElement declarationK
                     $ xmlAnnotations anno ++ [xmlEntity ent]]
         Misc as ->
             let [Annotation _ ap _] = anno
-            in [makeElement "Declaration"
-                $ xmlAnnotations as ++ [mwNameIRI "AnnotationProperty" ap]]
+            in [makeElement declarationK
+                $ xmlAnnotations as ++ [mwNameIRI annotationPropertyK ap]]
         _ -> error "bad ann frane bit"
     DataFunctional ->
         let SimpleEntity (Entity _ dp) = ext
-        in [makeElement "FunctionalDataProperty"
-            $ xmlAnnotations anno ++ [mwNameIRI "DataProperty" dp]]
+        in [makeElement functionalDataPropertyK
+            $ xmlAnnotations anno ++ [mwNameIRI dataPropertyK dp]]
     DatatypeBit dr ->
         let SimpleEntity (Entity _ dt) = ext
-        in [makeElement "DatatypeDefinition"
-                $ xmlAnnotations anno ++ [mwNameIRI "Datatype" dt,
+        in [makeElement datatypeDefinitionK
+                $ xmlAnnotations anno ++ [mwNameIRI datatypeK dt,
                     xmlDataRange dr]]
     ClassDisjointUnion cel ->
         let ClassEntity c = ext
-        in [makeElement "DisjointUnion"
+        in [makeElement disjointUnionK
                 $ xmlAnnotations anno ++ map xmlClassExpression (c : cel)]
     ClassHasKey op dp ->
         let ClassEntity c = ext
-        in [makeElement "HasKey"
+        in [makeElement hasKeyK
                 $ xmlAnnotations anno ++ [xmlClassExpression c]
-                    ++ map xmlObjProp op ++ map (mwNameIRI "Datatype") dp]
+                    ++ map xmlObjProp op ++ map (mwNameIRI datatypeK) dp]
     ObjectSubPropertyChain opl ->
         let ObjectEntity op = ext
             xmlop = map xmlObjProp opl
-        in [makeElement "SubObjectPropertyOf"
+        in [makeElement subObjectPropertyOfK
                 $ xmlAnnotations anno ++ [xmlObjProp op,
-                    makeElement "ObjectPropertyChain" xmlop]]
+                    makeElement objectPropertyChainK xmlop]]
 
 xmlFrameBit :: Extended -> FrameBit -> [Element]
 xmlFrameBit ext fb = case fb of
@@ -391,7 +392,7 @@ xmlFrames :: Frame -> [Element]
 xmlFrames (Frame ext fbl) = concatMap (xmlFrameBit ext) fbl
 
 xmlImport :: ImportIRI -> Element
-xmlImport i = setName "Import" $ mwText $ showQU i
+xmlImport i = setName importK $ mwText $ showQU i
 
 setPref :: String -> Element -> Element
 setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
@@ -401,7 +402,7 @@ set1Map :: (String, String) -> Element
 set1Map (s, iri) = setPref s $ mwIRI $ mkQName iri
 
 xmlPrefixes :: PrefixMap -> [Element]
-xmlPrefixes pm = map (setName "Prefix" . set1Map) $ Map.toList pm
+xmlPrefixes pm = map (setName prefixK . set1Map) $ Map.toList pm
 
 setXMLNS :: Element -> Element
 setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =

@@ -216,6 +216,9 @@ negativeObjectPropertyAssertionK = "NegativeObjectPropertyAssertion"
 sameIndividualK :: String
 sameIndividualK = "SameIndividual"
 
+differentIndividualsK :: String
+differentIndividualsK = "DifferentIndividuals"
+
 classAssertionK :: String
 classAssertionK = "ClassAssertion"
 
