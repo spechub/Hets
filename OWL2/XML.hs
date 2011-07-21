@@ -16,6 +16,8 @@ import Text.XML.Light
 import Data.Maybe
 import OWL2.AS
 import OWL2.MS
+import OWL2.XMLKeywords
+
 import Common.Lexer
 
 import Data.List
@@ -23,31 +25,6 @@ import Data.List
 import qualified Data.Map as Map
 
 type XMLBase = String
-
-entityList :: [String]
-entityList = ["Class", "Datatype", "NamedIndividual",
-    "ObjectProperty", "DataProperty", "AnnotationProperty"]
-
-individualList :: [String]
-individualList = ["NamedIndividual", "AnonymousIndividual"]
-
-objectPropList :: [String]
-objectPropList = ["ObjectProperty", "ObjectInverseOf"]
-
-dataPropList :: [String]
-dataPropList = ["DataProperty"]
-
-dataRangeList :: [String]
-dataRangeList = ["Datatype", "DatatypeRestriction", "DataComplementOf",
-      "DataOneOf", "DataIntersectionOf", "DataUnionOf"]
-
-classExpressionList :: [String]
-classExpressionList = ["Class", "ObjectIntersectionOf", "ObjectUnionOf",
-     "ObjectComplementOf", "ObjectOneOf", "ObjectSomeValuesFrom",
-     "ObjectAllValuesFrom", "ObjectHasValue", "ObjectHasSelf",
-     "ObjectMinCardinality", "ObjectMaxCardinality", "ObjectExactCardinality",
-     "DataSomeValuesFrom", "DataAllValuesFrom", "DataHasValue",
-     "DataMinCardinality", "DataMaxCardinality", "DataExactCardinality"]
 
 {- two functions from Text.XML.Light.Proc version 1.3.7 for compatibility
   with previous versions -}
