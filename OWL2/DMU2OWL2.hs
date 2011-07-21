@@ -24,7 +24,7 @@ import Common.GlobalAnnotations
 import Common.ProofTree
 import Common.Result
 import Common.Utils
-import Common.Lib.State 
+import Common.Lib.State
 
 import DMU.Logic_DMU
 
@@ -45,6 +45,9 @@ import Control.Monad
 import System.Directory
 import System.Process
 import System.IO.Unsafe (unsafePerformIO)
+
+import Debug.Trace
+import Common.DocUtils
 
 -- | The identity of the comorphism
 data DMU2OWL2 = DMU2OWL2 deriving Show
@@ -73,15 +76,17 @@ runOntoDMU str = if null str then return "" else do
   ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
   tmpFile <- getTempFile str "ontoDMU.xml"
   (_, out, _) <- readProcessWithExitCode "java"
-    ["-jar",  ontoDMUpath, "-f", tmpFile] ""
+    ["-jar", ontoDMUpath, "-f", tmpFile] ""
   removeFile tmpFile
   return out
 
 readOWL :: Monad m => String -> m (Sign, [Named Axiom])
 readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
   Left err -> fail $ show err
-  Right ontoFile -> case basicOWL2Analysis
-    (ontoFile, execState (completeSign ontoFile) emptySign, emptyGlobalAnnos) of
+  Right ontoFile -> let
+    newstate = execState (completeSign ontoFile) emptySign
+    in trace (showDoc newstate "") $ case basicOWL2Analysis
+    (ontoFile, newstate, emptyGlobalAnnos) of
     Result ds ms -> case ms of
       Nothing -> fail $ showRelDiags 1 ds
       Just (_, ExtSign sig _, sens) -> return (sig, sens)
@@ -106,30 +111,29 @@ addLiteral (Literal _ ty) = case ty of
 addDType :: Datatype -> State Sign ()
 addDType = addEntity . Entity Datatype
 
+-- | Adds the DataRange to the Signature and returns it as a State Sign ()
 addDataRange :: DataRange -> State Sign ()
 addDataRange dr = case dr of
-  DataJunction _ lst -> mapM_ (\ cd -> addDataRange cd) lst
+  DataJunction _ lst -> mapM_ addDataRange lst
   DataComplementOf r -> addDataRange r
   DataOneOf cs -> mapM_ addLiteral cs
   DataType r fcs -> do
     addDType r
     mapM_ (addLiteral . snd) fcs
 
+-- | Adds the Fact to the Signature and returns it as a State Sign()
 addFact :: Fact -> State Sign ()
 addFact f = case f of
   ObjectPropertyFact _ obe _ ->
-    do
       addObjPropExpr obe
   DataPropertyFact _ dpe _ ->
-    do
       addDataPropExpr dpe
 
-
+-- | Adds the Description to the Signature. Returns it as a State
 addDescription :: ClassExpression -> State Sign ()
 addDescription desc = case desc of
   Expression u ->
-      if isThing u then return () 
-                   else addEntity $ Entity Class u
+      unless (isThing u) $ addEntity $ Entity Class u
   ObjectJunction _ ds -> mapM_ addDescription ds
   ObjectComplementOf d -> addDescription d
   ObjectOneOf is -> mapM_ addIndividual is
@@ -153,12 +157,13 @@ addDescription desc = case desc of
     addDataPropExpr dExp
     maybe (return ()) addDataRange mr
 
-
+{- | Adds possible ListFrameBits to the Signature by calling
+bottom level functions -}
 comSigLFB :: ListFrameBit
-          -> State Sign()
-comSigLFB lfb = 
+          -> State Sign ()
+comSigLFB lfb =
   case lfb of
-    AnnotationBit ab -> 
+    AnnotationBit ab ->
       do
         let map2nd = map snd ab
         mapM_ addAnnoProp map2nd
@@ -177,44 +182,49 @@ comSigLFB lfb =
       do
         let map2nd = map snd anind
         mapM_ addIndividual map2nd
-    ObjectCharacteristics _anch -> 
-      return ()      
+    ObjectCharacteristics _anch ->
+      return ()
     DataPropRange dr ->
       do
         let map2nd = map snd dr
         mapM_ addDataRange map2nd
-    IndividualFacts fct ->     
+    IndividualFacts fct ->
       do
         let map2nd = map snd fct
         mapM_ addFact map2nd
-        
-      
+
+{- | Adds AnnotationFrameBits to the Signature
+by calling the corresponding bottom level functions -}
 comSigAFB :: AnnFrameBit
           -> State Sign ()
 comSigAFB afb =
   case afb of
     AnnotationFrameBit -> return ()
     DataFunctional -> return ()
-    DatatypeBit dr -> do
+    DatatypeBit dr ->
       addDataRange dr
-    ClassDisjointUnion cls -> do
+    ClassDisjointUnion cls ->
       mapM_ addDescription cls
     ClassHasKey obe dpe -> do
       mapM_ addObjPropExpr obe
-      mapM_ addDataPropExpr dpe  
-    ObjectSubPropertyChain ope -> do
+      mapM_ addDataPropExpr dpe
+    ObjectSubPropertyChain ope ->
       mapM_ addObjPropExpr ope
 
+{- | Calls the completion of Signature based on
+case separation of ListFrameBit and AnnotationFrameBit -}
 comFB :: FrameBit -> State Sign ()
 comFB fb = case fb of
   ListFrameBit _rel lfb -> comSigLFB lfb
   AnnFrameBit _an anf -> comSigAFB anf
-       
-completeSignForFrame :: Frame -> State Sign()
-completeSignForFrame (Frame _ex fblist) = 
+
+-- | Maps the function comFB on the entire FrameBit list of the Frame
+completeSignForFrame :: Frame -> State Sign ()
+completeSignForFrame (Frame _ex fblist) =
   mapM_ comFB fblist
 
-completeSign :: OntologyDocument -> State Sign()
-completeSign od = 
+{- | Top level function: takes the OntologyDocument and completes
+the signature by calling completeSignForFrame -}
+completeSign :: OntologyDocument -> State Sign ()
+completeSign od =
   mapM_ completeSignForFrame $ ontFrames $ ontology od
-
