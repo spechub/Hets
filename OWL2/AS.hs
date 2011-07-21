@@ -71,14 +71,12 @@ instance Eq QName where
     p == q = compare p q == EQ
 
 instance Ord QName where
-  compare (QN p1 l1 b1 n1 _) (QN p2 l2 b2 n2 _) = case (n1, n2) of
-    ("", "") -> compare (b1, p1, l1) (b2, p2, l2)
-    ("", _) -> LT
-    (_, "") -> GT
-    _ -> compare n1 n2 -- compare fully expanded names only
+  compare (QN p1 l1 b1 n1 _) (QN p2 l2 b2 n2 _) =
+    if null n1 || null n2 then compare (b1, p1, l1) (b2, p2, l2) else
+    compare n1 n2 -- compare fully expanded names only
 
 isThing :: IRI -> Bool
-isThing u = elem (localPart u) ["Thing", "Nothing"] 
+isThing u = elem (localPart u) ["Thing", "Nothing"]
 
 type IRIreference = QName
 type IRI = QName
