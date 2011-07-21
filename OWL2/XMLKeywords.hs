@@ -71,7 +71,7 @@ dataUnionOfK = "DataUnionOf"
 
 objectIntersectionOfK :: String
 objectIntersectionOfK = "ObjectIntersectionOf"
- 
+
 objectUnionOfK :: String
 objectUnionOfK = "ObjectUnionOf"
 

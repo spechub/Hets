@@ -79,7 +79,8 @@ expAV s av = case av of
   AnnValue iri -> AnnValue $ expand s iri
   _ -> av
 
-expAL :: PrefixMap -> (PrefixMap -> a -> a) -> AnnotatedList a -> AnnotatedList a
+expAL :: PrefixMap -> (PrefixMap -> a -> a) ->
+        AnnotatedList a -> AnnotatedList a
 expAL s f = map (\ (ans, a) -> (map (expAnn s) ans, f s a))
 
 expFact :: PrefixMap -> Fact -> Fact

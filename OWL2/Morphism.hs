@@ -30,7 +30,7 @@ module OWL2.Morphism
 import OWL2.AS
 import OWL2.MS
 import OWL2.Sign
-import OWL2.ManchesterPrint()
+import OWL2.ManchesterPrint ()
 import OWL2.StaticAnalysis
 import OWL2.Symbols
 
@@ -173,7 +173,7 @@ mapAnno m annt = case annt of
   Annotation l a e -> Annotation l (getIri AnnotationProperty a m) e
 
 mapAnnoList :: Map.Map Entity IRI -> Annotations -> Annotations
-mapAnnoList m ans = map (mapAnno m) ans
+mapAnnoList m = map (mapAnno m)
 
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
 mapSen m = return . mapAxiom (mmaps m)
@@ -247,7 +247,7 @@ mapLFB m lfb = case lfb of
           IndividualSameOrDifferent $ mapAnnList m (`getIndIri` m) a
     DataPropRange a -> DataPropRange $ mapAnnList m (mapDRange m) a
     IndividualFacts a -> IndividualFacts $ mapAnnList m (mapFact m) a
-    ExpressionBit a -> ExpressionBit  $ mapAnnList m (mapDescr m) a
+    ExpressionBit a -> ExpressionBit $ mapAnnList m (mapDescr m) a
     ObjectCharacteristics _ -> lfb
 
 mapAFB :: Map.Map Entity IRI -> AnnFrameBit -> AnnFrameBit
@@ -271,5 +271,6 @@ mapAxiom m (PlainAxiom eith fb) = case eith of
     SimpleEntity (Entity ty ent) -> PlainAxiom
         (SimpleEntity $ Entity ty $ getIri ty ent m) $ mapFB m fb
     Misc ans -> PlainAxiom (Misc $ mapAnnoList m ans) $ mapFB m fb
-    ObjectEntity ope -> PlainAxiom (ObjectEntity $ mapObjExpr m ope) $ mapFB m fb
+    ObjectEntity ope -> PlainAxiom (ObjectEntity $ mapObjExpr m ope)
+        $ mapFB m fb
     ClassEntity ce -> PlainAxiom (ClassEntity $ mapDescr m ce) $ mapFB m fb
