@@ -122,7 +122,7 @@ insertThmLink lg xLk (dg, lv) = do
   (i, mr, tp) <- getTypeAndMorphism lg dg xLk
   (j, gsig) <- signOfNode (target xLk) dg
   lkLab <- finalizeLink lg xLk mr gsig tp
-  return (insLEdgeNubDG (i, j, lkLab) dg, lv)
+  return (insEdgeAsIs (i, j, lkLab) dg, lv)
 
 {- | given a links intermediate morphism and its target nodes signature,
 this function calculates the final morphism for this link -}
