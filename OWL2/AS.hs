@@ -77,6 +77,9 @@ instance Ord QName where
     (_, "") -> GT
     _ -> compare n1 n2 -- compare fully expanded names only
 
+isThing :: IRI -> Bool
+isThing u = elem (localPart u) ["Thing", "Nothing"] 
+
 type IRIreference = QName
 type IRI = QName
 
