@@ -31,17 +31,12 @@ import DMU.Logic_DMU
 import OWL2.AS
 import OWL2.MS
 import OWL2.Logic_OWL2
-import OWL2.Parse
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.StaticAnalysis
 import OWL2.Sublogic
 import OWL2.ManchesterParser
 import OWL2.Symbols
-
-import qualified Data.Set as Set
-import Data.List
-import qualified Data.Map as Map
 
 import Text.ParserCombinators.Parsec (eof, runParser)
 
@@ -86,7 +81,7 @@ readOWL :: Monad m => String -> m (Sign, [Named Axiom])
 readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
   Left err -> fail $ show err
   Right ontoFile -> case basicOWL2Analysis
-    (ontoFile, emptySign, emptyGlobalAnnos) of
+    (ontoFile, execState (completeSign ontoFile) emptySign, emptyGlobalAnnos) of
     Result ds ms -> case ms of
       Nothing -> fail $ showRelDiags 1 ds
       Just (_, ExtSign sig _, sens) -> return (sig, sens)
@@ -133,12 +128,8 @@ addFact f = case f of
 addDescription :: ClassExpression -> State Sign ()
 addDescription desc = case desc of
   Expression u ->
-      case u of
-        QN _ "Thing" _ _ r -> addEntity $ Entity Class $
-                          QN "owl" "Thing" False "" r
-        QN _ "Nothing" _ _ r -> addEntity $ Entity Class $
-                          QN "owl" "Nothing" False "" r
-        v -> addEntity $ Entity Class v
+      if isThing u then return () 
+                   else addEntity $ Entity Class u
   ObjectJunction _ ds -> mapM_ addDescription ds
   ObjectComplementOf d -> addDescription d
   ObjectOneOf is -> mapM_ addIndividual is
@@ -186,7 +177,7 @@ comSigLFB lfb =
       do
         let map2nd = map snd anind
         mapM_ addIndividual map2nd
-    ObjectCharacteristics anch -> 
+    ObjectCharacteristics _anch -> 
       return ()      
     DataPropRange dr ->
       do
@@ -213,17 +204,15 @@ comSigAFB afb =
       mapM_ addDataPropExpr dpe  
     ObjectSubPropertyChain ope -> do
       mapM_ addObjPropExpr ope
- 
+
+comFB :: FrameBit -> State Sign ()
+comFB fb = case fb of
+  ListFrameBit _rel lfb -> comSigLFB lfb
+  AnnFrameBit _an anf -> comSigAFB anf
        
 completeSignForFrame :: Frame -> State Sign()
-completeSignForFrame f = 
-  case f of
-    Frame ex fblist ->
-      case fblist of
-        [ListFrameBit _rel lfb] -> comSigLFB lfb
-        [AnnFrameBit _an anf] -> comSigAFB anf
-
--- execState in Common/Lib/State.hs
+completeSignForFrame (Frame _ex fblist) = 
+  mapM_ comFB fblist
 
 completeSign :: OntologyDocument -> State Sign()
 completeSign od = 
