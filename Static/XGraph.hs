@@ -10,7 +10,13 @@ Portability :  non-portable (DevGraph)
 convert an Xml-Graph into an XGraph-Structure.
 -}
 
-module Static.XGraph where
+module Static.XGraph
+  ( XGraph (..)
+  , XTree (..)
+  , XNode (..)
+  , XLink (..)
+  , xGraph
+  ) where
 
 import Static.DevGraph
 

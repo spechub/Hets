@@ -107,7 +107,7 @@ insertStep opts lg xNd lks (dg, lv) = do
   let gt = case gsig of
         G_sign lid sg sId -> noSensGTheory lid sg sId
   (dg', lv') <- insertNode opts lg (Just gt) xNd (dg, lv)
-  (j, gsig2) <- signOfNode (name xNd) dg'
+  (j, gsig2) <- signOfNode (showName $ nodeName xNd) dg'
   dg'' <- foldM ( \ dgR ((i, mr, tp), lk) -> do
             lkLab <- finalizeLink lg lk mr gsig2 tp
             return $ insEdgeAsIs (i, j, lkLab) dgR
