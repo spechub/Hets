@@ -18,6 +18,7 @@ import OWL2.MS
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.ManchesterPrint
+import OWL2.XML
 
 import Common.AS_Annotation
 
@@ -57,3 +58,13 @@ showOWLProblem pst nGoal =
   let sign = ontologySign pst
   in return $ showOWLProblemS pst
        ++ "\n\nEntailments:\n\n" ++ show (printOWLBasicTheory (sign, [nGoal]))
+
+mkODoc :: Sign -> [Named Axiom] -> OntologyDocument
+mkODoc s na = emptyOntologyDoc
+    {
+      ontology = emptyOntologyD
+        {
+        ontFrames = map (axToFrame . sentence) na
+        },
+      prefixDeclaration = prefixMap s
+    }
