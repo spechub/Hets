@@ -46,9 +46,6 @@ import System.Directory
 import System.Process
 import System.IO.Unsafe (unsafePerformIO)
 
-import Debug.Trace
-import Common.DocUtils
-
 -- | The identity of the comorphism
 data DMU2OWL2 = DMU2OWL2 deriving Show
 
@@ -85,7 +82,7 @@ readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
   Left err -> fail $ show err
   Right ontoFile -> let
     newstate = execState (completeSign ontoFile) emptySign
-    in trace (showDoc newstate "") $ case basicOWL2Analysis
+    in case basicOWL2Analysis
     (ontoFile, newstate, emptyGlobalAnnos) of
     Result ds ms -> case ms of
       Nothing -> fail $ showRelDiags 1 ds
