@@ -11,7 +11,7 @@ Portability :  portable
 Computation of the constraints needed for free definition links.
 -}
 
-module CASL.Freeness where
+module CASL.Freeness (quotientTermAlgebra) where
 
 import CASL.Sign
 import CASL.Morphism
@@ -590,21 +590,6 @@ makeId = mkId [mkSimpleId "make"]
 homId :: Id
 homId = mkId [mkSimpleId "hom"]
 
--- | creates the map between sorts in the morphism iota
-iota_sort_map_mor :: Set.Set SORT -> Sort_map
-iota_sort_map_mor = Set.fold f Map.empty
-     where f = \ x y -> Map.insert x (mkFreeName x) y
-
--- | creates the map between operators in the morphism iota
-iota_op_map_mor :: OpMap -> Op_map
-iota_op_map_mor = MapSet.foldWithKey
-  (\ name ot -> Map.insert (name, ot) (mkFreeName name, Total)) Map.empty
-
--- | creates the map between predicates in the morphism iota
-iota_pred_map_mor :: PredMap -> Pred_map
-iota_pred_map_mor = MapSet.foldWithKey
-  (\ name pt -> Map.insert (name, pt) (mkFreeName name)) Map.empty
-
 -- | creates the homomorphism operators and adds it to the given operator map
 homomorphism_ops :: Set.Set SORT -> OpMap -> OpMap
 homomorphism_ops ss om = Set.fold f om ss
@@ -774,11 +759,6 @@ listVarDecl :: Map.Map Id (Set.Set Token) -> [VAR_DECL]
 listVarDecl = Map.foldWithKey f []
       where f = \ sort var_set acc -> Var_decl (Set.toList var_set) sort nullRange : acc
 
--- | removes a quantification from a formula
-noQuantification :: CASLFORMULA -> (CASLFORMULA, [VAR_DECL])
-noQuantification (Quantification _ vars form _) = (form, vars)
-noQuantification form = (form, [])
-
 -- | generates a new variable qualified with the given number
 newVarIndex :: Int -> SORT -> CASLTERM
 newVarIndex i sort = Qual_var var sort nullRange
@@ -788,10 +768,6 @@ newVarIndex i sort = Qual_var var sort nullRange
 newVar :: SORT -> CASLTERM
 newVar sort = Qual_var var sort nullRange
     where var = mkSimpleId "V"
-
--- | deletes the repetitions from a list of sorts
-delete_reps :: [SORT] -> [SORT]
-delete_reps = Set.toList . Set.fromList
 
 -- | generates the free representation of an OP_SYMB
 free_op_sym :: OP_SYMB -> OP_SYMB
