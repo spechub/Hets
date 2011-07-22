@@ -1,4 +1,5 @@
 # to be include by Makefile
+# use ERRORMSG to signal errors to the user and exit makefile
 
 GHCVERSION = $(shell ghc --numeric-version)
 ifneq ($(findstring 7.0, $(GHCVERSION)),)
@@ -54,9 +55,9 @@ endif
 
 XMLVERSION = $(shell $(HCPKG) field xml version)
 ifneq ($(findstring 1.3.7, $(XMLVERSION)),)
-XML137_PACKAGE = -DXML137
 else ifneq ($(findstring 1.3.8, $(XMLVERSION)),)
-XML137_PACKAGE = -DXML137
+else
+ERRORMSG=xml library version 1.3.7 or later required
 endif
 
 HTTPVERSION = $(shell $(HCPKG) field HTTP version)
@@ -92,7 +93,7 @@ endif
 
 HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
-  $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) $(XML137_PACKAGE)\
+  $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE)\
   $(PFE_FLAGS) $(SERVER_FLAG) \
   -DCASLEXTENSIONS
 

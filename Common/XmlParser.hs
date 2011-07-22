@@ -15,17 +15,7 @@ Provides an xml parse function which depends on external libraries.
 
 module Common.XmlParser (XmlParseable (parseXml), readXmlFile) where
 
-
--- XML version from 1.3.7 on required!
--- TODO: specify in var.mk this requirement correctly, it is now required to have
--- exactly version 1.3.7 not >= 1.3.7.
-
-
-#ifdef XML137
 import Text.XML.Light
-#else
-import Text.XML.Light.Version_1_3_7_or_later_required
-#endif
 
 import qualified Data.ByteString.Lazy as BS
 #ifdef HEXPAT
