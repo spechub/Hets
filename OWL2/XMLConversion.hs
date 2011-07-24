@@ -24,6 +24,9 @@ import Common.Id
 
 import qualified Data.Map as Map
 
+showIRI :: OWL2.AS.QName -> String
+showIRI (QN pre local _ _ _) = pre ++ ":" ++ local
+
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing
 
@@ -41,9 +44,9 @@ setIRI iri e =
     let np = namePrefix iri
         ty
             | (not . null) np && head np == '_' = "nodeID"
-            | isFullIri iri || null np = iriK
+            | isFullIri iri {-|| null np-} = iriK
             | otherwise = "abbreviatedIRI"
-    in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showQU iri}]}
+    in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showIRI iri}]}
 
 setName :: String -> Element -> Element
 setName s e = e {elName = nullQN {qName = s,
@@ -83,7 +86,7 @@ mwText :: String -> Element
 mwText s = setText s nullElem
 
 mwSimpleIRI :: IRI -> Element
-mwSimpleIRI s = setName iriK $ mwText $ showQU s
+mwSimpleIRI s = setName iriK $ mwText $ showIRI s
 
 makeElement :: String -> [Element] -> Element
 makeElement s el = setContent el $ mwString s
@@ -372,7 +375,7 @@ xmlAFB ext anno afb = case afb of
         let ClassEntity c = ext
         in [makeElement hasKeyK
                 $ xmlAnnotations anno ++ [xmlClassExpression c]
-                    ++ map xmlObjProp op ++ map (mwNameIRI datatypeK) dp]
+                    ++ map xmlObjProp op ++ map (mwNameIRI dataPropertyK) dp]
     ObjectSubPropertyChain opl ->
         let ObjectEntity op = ext
             xmlop = map xmlObjProp opl
@@ -392,7 +395,7 @@ xmlFrames :: Frame -> [Element]
 xmlFrames (Frame ext fbl) = concatMap (xmlFrameBit ext) fbl
 
 xmlImport :: ImportIRI -> Element
-xmlImport i = setName importK $ mwText $ showQU i
+xmlImport i = setName importK $ mwText $ showIRI i
 
 setPref :: String -> Element -> Element
 setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
@@ -410,7 +413,7 @@ setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =
 
 setOntIRI :: OntologyIRI -> Element -> Element
 setOntIRI iri e = e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
-        attrVal = showQU iri} : elAttribs e}
+        attrVal = showIRI iri} : elAttribs e}
 
 setBase :: String -> Element -> Element
 setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
@@ -420,7 +423,7 @@ xmlOntologyDoc :: OntologyDocument -> Element
 xmlOntologyDoc od =
     let ont = ontology od
         pd = prefixDeclaration od
-        emptyPref = fromMaybe "http://unnamed" $ Map.lookup "" pd
+        emptyPref = fromMaybe (showIRI dummyQName) $ Map.lookup "" pd
     in setBase emptyPref $ setXMLNS $ setOntIRI (name ont)
         $ makeElement "Ontology" $ xmlPrefixes pd
             ++ map xmlImport (imports ont)

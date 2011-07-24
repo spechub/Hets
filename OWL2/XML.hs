@@ -509,7 +509,7 @@ getImports b e = map (splitIRI b . mkQName . strContent) $ filterCh "Import" e
 get1PrefMap :: Element -> (String, IRI)
 get1PrefMap e =
   let [pref, pmap] = map attrVal $ elAttribs e
-  in (pref, mkQName pmap)
+  in (pref, splitIRI "" $ mkQName pmap)
 
 getPrefixMap :: Element -> [(String, String)]
 getPrefixMap e =
