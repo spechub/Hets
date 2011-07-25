@@ -20,7 +20,11 @@ module Static.XGraph
 
 import Static.DevGraph
 
+import Common.AnalyseAnnos (getGlobalAnnos)
 import Common.Consistency (Conservativity (..))
+import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
+import Common.LibName
+import Common.Result (Result (..))
 import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal)
 
@@ -39,10 +43,11 @@ order that they can be reconstructed later.
  - Top element holds all Theorem Links and the remaining Graph.
  - Branch holds a list of Definition Links and their Target-Node
  - Root contains all independent Nodes -}
-data XGraph = XGraph { thmLinks :: [XLink]
-                     , xg_body :: XTree }
+data XGraph = XGraph { libName :: LibName
+                     , thmLinks :: [XLink]
+                     , xg_body :: XTree}
 
-data XTree = Root [XNode]
+data XTree = Root [XNode] DGraph
            | Branch XNode [XLink] XTree
 
 data XNode = XNode { nodeName :: NodeName
@@ -71,7 +76,7 @@ Functions -}
 name :: XNode -> String
 name = showName . nodeName
 
-xGraph :: Monad m => Element -> m XGraph
+xGraph :: Element -> Result XGraph
 xGraph xml = do
   allNodes <- extractXNodes xml
   allLinks <- extractXLinks xml
@@ -82,8 +87,14 @@ xGraph xml = do
      (\ n -> not $ elem (name n) $ map target defLk) allNodes of
        ([], _) -> fail "found no independent nodes to start DGraph with"
        l -> return l
-  xg <- builtXGraph defLk restN $ Root initN
-  return $ XGraph thmLk xg
+  nm <- getAttrVal "libname" xml
+  fl <- getAttrVal "filename" xml
+  let ln = setFilePath fl noTime $ emptyLibName nm
+  ga <- extractGlobalAnnos xml
+  i' <- fmap readEdgeId $ getAttrVal "nextlinkid" xml
+  let dg = emptyDG { globalAnnos = ga, getNewEdgeId = i' }
+  xg <- builtXGraph defLk restN $ Root initN dg
+  return $ XGraph ln thmLk xg
 
 builtXGraph :: Monad m => [XLink] -> [XNode] -> XTree -> m XTree
 builtXGraph [] [] xg = return xg
@@ -164,3 +175,10 @@ deepSearch tags' ele = rekSearch ele where
 
 readEdgeId :: String -> EdgeId
 readEdgeId = EdgeId . fromMaybe (-1) . readMaybe
+
+-- | extracts the global annotations from the xml-graph
+extractGlobalAnnos :: Element -> Result GlobalAnnos
+extractGlobalAnnos dgEle = case findChild (unqual "Global") dgEle of
+  Nothing -> return emptyGlobalAnnos
+  Just gl -> getGlobalAnnos $ unlines $ map strContent
+    $ findChildren (unqual "Annotation") gl

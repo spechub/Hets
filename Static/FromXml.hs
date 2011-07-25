@@ -18,13 +18,10 @@ import Static.GTheory
 import Static.FromXmlUtils
 import Static.XGraph
 
-import Common.AnalyseAnnos (getGlobalAnnos)
 import Common.ExtSign
-import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
 import Common.LibName
 import Common.Result (Result (..))
 import Common.ResultT
-import Common.XUpdate (getAttrVal)
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -60,40 +57,27 @@ readDGXmlR opts path lv = do
   lift $ putIfVerbose opts 2 $ "Reading " ++ path
   xml' <- lift $ readFile path
   case (length xml', parseXMLDoc xml') of
-    (l, Just xml) | l > 0 -> case getAttrVal "libname" xml of
-      Nothing ->
-        fail $ "missing DGraph name attribute\n" ++
-          unlines (take 5 $ lines xml')
-      Just nm -> do
-        let ln = setFilePath nm noTime $ emptyLibName nm
-        fromXml opts logicGraph ln lv xml
+    (l, Just xml) | l > 0 -> do
+      xg <- liftR $ xGraph xml
+      res <- rebuiltDG opts logicGraph xg lv
+      let ln = libName xg
+      return (ln, computeLibEnvTheories $ uncurry (Map.insert ln) res)
     _ -> fail $ "failed to parse XML file: " ++ path
-
-{- | main function; receives a logicGraph, an initial LibEnv and an Xml
-element, then adds all nodes and edges from this element into a DGraph -}
-fromXml :: HetcatsOpts -> LogicGraph -> LibName -> LibEnv -> Element
-        -> ResultT IO (LibName, LibEnv)
-fromXml opts lg ln lv xml = do
-    an <- extractGlobalAnnos xml
-    xg <- xGraph xml
-    let dg0 = emptyDG { globalAnnos = an }
-    res <- rebuiltDG opts lg xg dg0 lv
-    return (ln, computeLibEnvTheories $ uncurry (Map.insert ln) res)
 
 {- | reconstructs the Development Graph via a previously created XGraph-
 structure. -}
-rebuiltDG :: HetcatsOpts -> LogicGraph -> XGraph -> DGraph -> LibEnv
+rebuiltDG :: HetcatsOpts -> LogicGraph -> XGraph -> LibEnv
           -> ResultT IO (DGraph, LibEnv)
-rebuiltDG opts lg (XGraph thmLk body) dg lv = do
-  res <- rebuiltBody body dg lv
+rebuiltDG opts lg (XGraph _ thmLk body) lv = do
+  res <- rebuiltBody body lv
   foldM (flip $ insertThmLink lg) res thmLk where
-    rebuiltBody bd dg' lv' = case bd of
-        Root nds -> do
+    rebuiltBody bd lv' = case bd of
+        Root nds dg' -> do
           foldM (flip $ insertNode opts lg Nothing) (dg', lv') nds
         Branch nd lKs bd' -> do
-          res0 <- rebuiltBody bd' dg' lv'
-          insertStep opts lg nd lKs res0 
-    
+          res0 <- rebuiltBody bd' lv'
+          insertStep opts lg nd lKs res0
+
 -- | inserts a new node as well as all definition links pointing at that node
 insertStep :: HetcatsOpts -> LogicGraph -> XNode -> [XLink] -> (DGraph, LibEnv)
            -> ResultT IO (DGraph, LibEnv)
@@ -188,7 +172,7 @@ and the the DGraphs Global Annotations -}
 insertNode :: HetcatsOpts -> LogicGraph -> Maybe G_theory -> XNode
            -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
 insertNode opts lg mGt xNd (dg, lv) = case xNd of
-  --Case #1: Reference Node
+  -- Case #1: Reference Node
   XRef nm rfNd rfLb spc -> do
           (dg', lv') <- case Map.lookup (emptyLibName rfLb) lv of
             Just dg' -> return (dg', lv)
@@ -265,10 +249,3 @@ signOfNode nd dg = case lookupNodeByName nd dg of
   [(j, lbl)] ->
     return (j, signOf (dgn_theory lbl))
   _ -> fail $ "ambiguous occurence for node [" ++ nd ++ "]!"
-
--- | extracts the global annotations from the xml-graph
-extractGlobalAnnos :: Element -> ResultT IO GlobalAnnos
-extractGlobalAnnos dgEle = case findChild (unqual "Global") dgEle of
-  Nothing -> return emptyGlobalAnnos
-  Just gl -> liftR $ getGlobalAnnos $ unlines $ map strContent
-    $ findChildren (unqual "Annotation") gl
