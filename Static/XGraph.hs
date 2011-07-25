@@ -47,7 +47,7 @@ data XGraph = XGraph { libName :: LibName
                      , thmLinks :: [XLink]
                      , xg_body :: XTree}
 
-data XTree = Root [XNode] DGraph
+data XTree = Root [XNode] DGraph -- ^ DGraph stores GlobalAnnos and nextLinkId
            | Branch XNode [XLink] XTree
 
 data XNode = XNode { nodeName :: NodeName
@@ -97,14 +97,18 @@ xGraph xml = do
   return $ XGraph ln thmLk xg
 
 builtXGraph :: Monad m => [XLink] -> [XNode] -> XTree -> m XTree
-builtXGraph [] [] xg = return xg
-builtXGraph [] _ _ = fail "builtXGraph: unexpected error (1)"
-builtXGraph _ [] _ = fail "builtXGraph: unexpected error (2)"
-builtXGraph ls (nd : nR) xg = let
-  (lCur, lRest) = partition ((== name nd) . target) ls
-  in if any (`elem` (map name nR)) $ map source lCur
-        then builtXGraph ls (nR ++ [nd]) xg
-        else builtXGraph lRest nR $ Branch nd lCur xg
+builtXGraph = builtXGraphAux 0
+
+builtXGraphAux :: Monad m => Int -> [XLink] -> [XNode] -> XTree -> m XTree
+builtXGraphAux _ [] [] xg = return xg
+builtXGraphAux _ [] _ _ = fail "builtXGraph: unexpected error (1)"
+builtXGraphAux _ _ [] _ = fail "builtXGraph: unexpected error (2)"
+builtXGraphAux safeguard ls (nd : nR) xg = if safeguard > length nR
+  then fail "builtXGraph: DEADLOCK!"
+  else let (lCur, lRest) = partition ((== name nd) . target) ls in
+    if any (`elem` (map name nR)) $ map source lCur
+        then builtXGraphAux (safeguard + 1) ls (nR ++ [nd]) xg
+        else builtXGraphAux 0 lRest nR $ Branch nd lCur xg
 
 extractXNodes :: Monad m => Element -> m [XNode]
 extractXNodes = mapM mkXNode . findChildren (unqual "DGNode")
