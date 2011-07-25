@@ -413,7 +413,7 @@ setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =
 
 setOntIRI :: OntologyIRI -> Element -> Element
 setOntIRI iri e = e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
-        attrVal = showQN iri} : elAttribs e}
+        attrVal = showQU iri} : elAttribs e}
 
 setBase :: String -> Element -> Element
 setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
