@@ -54,7 +54,7 @@ doConservCheck :: String            -- ^ Jar name
 doConservCheck jar ct sig1 sen1 mor sen2 =
   let ontoFile = mkODoc (otarget mor) (filter isAxiom sen2)
       sigFile = mkODoc sig1 (filter isAxiom sen1)
-  in runLocalityChecker jar ct (show ontoFile) (show sigFile)
+  in runLocalityChecker jar ct ontoFile sigFile
 
 -- | Invoke the Java checker
 runLocalityChecker :: String            -- ^ Jar name
