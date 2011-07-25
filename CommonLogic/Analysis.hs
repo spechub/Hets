@@ -30,7 +30,7 @@ import qualified Data.List as List
 
 data DIAG_FORM = DiagForm
     {
-        formula :: AS_Anno.Named CL.SENTENCE,
+        formula :: AS_Anno.Named CL.TEXT,
       diagnosis :: Result.Diagnosis
     }
 
@@ -42,7 +42,7 @@ retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted CL.BASIC_ITEMS -> Sign.Sign
 retrieveBasicItem sig x = case AS_Anno.item x of
                             CL.Axiom_items xs -> List.foldl retrieveSign sig xs
 
-retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.SENTENCE -> Sign.Sign
+retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.TEXT -> Sign.Sign
 retrieveSign sig = Sign.unite sig . propsOfFormula . AS_Anno.item
 
 -- retrieve CL.Sentence out of BASIC_SPEC
@@ -63,11 +63,11 @@ retrieveFormulaItem axs x sig =
 
 data NUM_FORM = NumForm
     {
-      nfformula :: AS_Anno.Annoted CL.SENTENCE
+      nfformula :: AS_Anno.Annoted CL.TEXT
     , nfnum :: Int
     }
 
-numberFormulae :: [AS_Anno.Annoted CL.SENTENCE] -> Int -> [NUM_FORM]
+numberFormulae :: [AS_Anno.Annoted CL.TEXT] -> Int -> [NUM_FORM]
 numberFormulae [] _ = []
 numberFormulae (x : xs) i =
   if null $ AS_Anno.getRLabel x
@@ -94,7 +94,7 @@ addFormula formulae nf _ = formulae ++
       lnum = AS_Anno.opt_pos f
 
 -- | generates a named formula
-makeNamed :: AS_Anno.Annoted CL.SENTENCE -> Int -> AS_Anno.Named CL.SENTENCE
+makeNamed :: AS_Anno.Annoted CL.TEXT -> Int -> AS_Anno.Named CL.TEXT
 makeNamed f i = (AS_Anno.makeNamed (if null label then "Ax_" ++ show i
                                        else label) $ AS_Anno.item f)
                     { AS_Anno.isAxiom = not isTheorem }
@@ -106,25 +106,45 @@ makeNamed f i = (AS_Anno.makeNamed (if null label then "Ax_" ++ show i
       isTheorem = isImplies || isImplied
 
 -- | Retrives the signature of a sentence
-propsOfFormula :: CL.SENTENCE -> Sign.Sign
-propsOfFormula (CL.Atom_sent form _) = case form of
+propsOfFormula :: CL.TEXT -> Sign.Sign
+propsOfFormula (CL.Named_text _ txt _) = propsOfFormula txt
+propsOfFormula (CL.Text phrs _) = Sign.uniteL $ map propsOfPhrase phrs
+
+propsOfPhrase :: CL.PHRASE -> Sign.Sign
+propsOfPhrase (CL.Module m) = propsOfModule m
+propsOfPhrase (CL.Sentence s) = propsOfSentence s
+propsOfPhrase (CL.Comment_text _ txt _) = propsOfFormula txt
+propsOfPhrase (CL.Importation _) = Sign.emptySig
+
+propsOfModule :: CL.MODULE -> Sign.Sign
+propsOfModule m = case m of
+  (CL.Mod n txt _) -> Sign.unite (propsOfFormula txt) $ nameToSign n
+  (CL.Mod_ex n exs txt _) -> Sign.unite (propsOfFormula txt)
+      $ Sign.uniteL $ nameToSign n : map nameToSign exs
+  where nameToSign x = Sign.Sign {
+            Sign.items = Set.singleton $ Id.simpleIdToId x,
+            Sign.discourseItems = Set.singleton $ Id.simpleIdToId x
+          }
+
+propsOfSentence :: CL.SENTENCE -> Sign.Sign
+propsOfSentence (CL.Atom_sent form _) = case form of
     CL.Equation term1 term2 -> Sign.unite (propsOfTerm term1)
       (propsOfTerm term2)
     CL.Atom term ts -> Sign.unite (propsOfTerm term)
       (uniteMap propsOfTermSeq ts)
-propsOfFormula (CL.Quant_sent qs _) = case qs of
-    CL.Universal xs s -> Sign.sigDiff (propsOfFormula s)
+propsOfSentence (CL.Quant_sent qs _) = case qs of
+    CL.Universal xs s -> Sign.sigDiff (propsOfSentence s)
                                       (uniteMap propsOfNames xs)
-    CL.Existential xs s -> Sign.sigDiff (propsOfFormula s)
+    CL.Existential xs s -> Sign.sigDiff (propsOfSentence s)
                                         (uniteMap propsOfNames xs)
-propsOfFormula (CL.Bool_sent bs _) = case bs of
-    CL.Conjunction xs -> uniteMap propsOfFormula xs
-    CL.Disjunction xs -> uniteMap propsOfFormula xs
-    CL.Negation x -> propsOfFormula x
-    CL.Implication s1 s2 -> Sign.unite (propsOfFormula s1) (propsOfFormula s2)
-    CL.Biconditional s1 s2 -> Sign.unite (propsOfFormula s1) (propsOfFormula s2)
-propsOfFormula (CL.Comment_sent _ _ _) = Sign.emptySig
-propsOfFormula (CL.Irregular_sent _ _) = Sign.emptySig
+propsOfSentence (CL.Bool_sent bs _) = case bs of
+    CL.Conjunction xs -> uniteMap propsOfSentence xs
+    CL.Disjunction xs -> uniteMap propsOfSentence xs
+    CL.Negation x -> propsOfSentence x
+    CL.Implication s1 s2 -> Sign.unite (propsOfSentence s1) (propsOfSentence s2)
+    CL.Biconditional s1 s2 -> Sign.unite (propsOfSentence s1) (propsOfSentence s2)
+propsOfSentence (CL.Comment_sent _ _ _) = Sign.emptySig
+propsOfSentence (CL.Irregular_sent _ _) = Sign.emptySig
 
 propsOfTerm :: CL.TERM -> Sign.Sign
 propsOfTerm term = case term of
@@ -161,7 +181,7 @@ uniteMap p = List.foldl (\ sig -> Sign.unite sig . p)
 basicCommonLogicAnalysis :: (CL.BASIC_SPEC, Sign.Sign, a)
   -> Result (CL.BASIC_SPEC,
              ExtSign Sign.Sign Symbol.Symbol,
-             [AS_Anno.Named CL.SENTENCE])
+             [AS_Anno.Named CL.TEXT])
 basicCommonLogicAnalysis (bs, sig, _) =
    Result.Result [] $ if exErrs then Nothing else
      Just (bs, ExtSign sigItems newSyms, sentences)
@@ -184,9 +204,31 @@ inducedFromMorphism m s = let
   t = Sign.emptySig { items = Set.map (applyMap p) $ items s }
   in return $ mkMorphism s t p
 
+
+
+-- negate sentence (text) - propagates negation to sentences
+negForm :: CL.TEXT -> CL.TEXT
+negForm t = case t of
+  CL.Text phrs r -> CL.Text (map negForm_phr phrs) r
+  CL.Named_text n txt r -> CL.Named_text n (negForm txt) r
+
+-- negate phrase - propagates negation to sentences
+negForm_phr :: CL.PHRASE -> CL.PHRASE
+negForm_phr phr = case phr of
+  CL.Module m -> CL.Module $ negForm_mod m
+  CL.Sentence s -> CL.Sentence $ negForm_sen s
+  CL.Comment_text c t r -> CL.Comment_text c (negForm t) r
+  x -> x
+
+-- negate module - propagates negation to sentences
+negForm_mod ::CL.MODULE -> CL.MODULE
+negForm_mod m = case m of
+  CL.Mod n t r -> CL.Mod n (negForm t) r
+  CL.Mod_ex n exs t r -> CL.Mod_ex n exs (negForm t) r
+
 -- negate sentence
-negForm :: CL.SENTENCE -> CL.SENTENCE
-negForm f = case f of
+negForm_sen :: CL.SENTENCE -> CL.SENTENCE
+negForm_sen f = case f of
   CL.Quant_sent _ r -> CL.Bool_sent (CL.Negation f) r
   CL.Bool_sent bs r -> case bs of
     CL.Negation s -> s

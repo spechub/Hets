@@ -1,4 +1,4 @@
-{- |
+{- | 
 Module      :  $Header$
 Description :  Abstract syntax for common logic
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010
@@ -31,7 +31,7 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                       deriving Show
 
 data BASIC_ITEMS =
-    Axiom_items [AS_Anno.Annoted (SENTENCE)]
+    Axiom_items [AS_Anno.Annoted (TEXT)]
     deriving Show
 
 instance Pretty BASIC_SPEC where

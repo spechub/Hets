@@ -171,7 +171,6 @@ sl_phrase prds cs p =
         AS.Sentence s -> sl_sentence prds cs s
         AS.Importation i -> sl_importation prds cs i
         AS.Comment_text _ t _ -> sl_text prds cs t 
-            --is the last one correct/necessary?
 
 -- | determines sublogic for a module
 sl_module :: Set.Set AS.NAME -> CommonLogicSL -> AS.MODULE -> CommonLogicSL
@@ -180,6 +179,7 @@ sl_module prds cs m =
         AS.Mod _ t _ -> sl_text prds cs t
         AS.Mod_ex _ _ t _ -> sl_text prds cs t
 
+-- | determines sublogic for a sentence
 sl_sentence :: Set.Set AS.NAME -> CommonLogicSL -> AS.SENTENCE -> CommonLogicSL
 sl_sentence prds cs sen = 
     case sen of
@@ -189,10 +189,10 @@ sl_sentence prds cs sen =
         AS.Comment_sent _ s _ -> sl_sentence prds cs s
         AS.Irregular_sent s _ -> sl_sentence prds cs s
 
--- | determines the sublogic for importations
+-- | determines the sublogic for importations (importations are ignored)
 sl_importation :: Set.Set AS.NAME -> CommonLogicSL -> AS.IMPORTATION
     -> CommonLogicSL
-sl_importation prds cs (AS.Imp_name n) = sl_name prds cs n
+sl_importation _ cs _ = cs
 
 -- | determines the sublogic for quantified sentences
 sl_quantSent :: Set.Set AS.NAME -> CommonLogicSL -> AS.QUANT_SENT 
@@ -252,13 +252,12 @@ sl_term prds cs term =
       AS.Funct_term t tseq _ -> 
           comp_list $ folsl : sl_term prds cs t : map (sl_termSeq prds cs) tseq
       AS.Comment_term t _ _ -> sl_term prds cs t
-        --is the last one correct/necessary?
 
 -- | determines the sublogic for term sequences
 sl_termSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM_SEQ -> CommonLogicSL
 sl_termSeq prds cs tseq = 
     case tseq of
-        AS.Term_seq t -> sl_termInSeq prds cs t--------------------
+        AS.Term_seq t -> sl_termInSeq prds cs t
         AS.Seq_marks _ -> cs -- correct?
 
 -- | determines the sublogic for names
@@ -273,15 +272,14 @@ sl_termInSeq prds cs term =
       AS.Funct_term t tseq _ -> 
           comp_list $ folsl : sl_term prds cs t : map (sl_termSeq prds cs) tseq
       AS.Comment_term t _ _ -> sl_term prds cs t
-        --is the last one correct/necessary?
 
 
 
--- | determines subloig for basic items
+-- | determines sublogic for basic items
 sl_basic_items :: Set.Set AS.NAME -> CommonLogicSL -> AS.BASIC_ITEMS 
     -> CommonLogicSL
 sl_basic_items preds ps (AS.Axiom_items xs) = 
-    comp_list $ map ((sl_sentence preds ps) . AS_Anno.item) xs
+    comp_list $ map ((sl_text preds ps) . AS_Anno.item) xs
 
 -- | determines sublogic for basic spec
 sl_basic_spec :: Set.Set AS.NAME -> CommonLogicSL -> AS.BASIC_SPEC 

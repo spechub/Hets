@@ -223,7 +223,7 @@ parseSentences = do
 parseClText :: AnnoState.AParser st BASIC_ITEMS
 parseClText = do
   tx <- cltext
-  return $ Axiom_items (senToAn (senOfText tx))
+  return $ Axiom_items (textToAn [tx])
 
 {-
 parseClText :: AnnoState.AParser st BASIC_ITEMS
@@ -236,8 +236,8 @@ ps (Mod _ tx _) = senOfText tx
 ps (Mod_ex _ _ _ _) = []
 -}
 
-senToAn :: [SENTENCE] -> [Annotation.Annoted SENTENCE]
-senToAn x = map (\y -> Annotation.Annoted y nullRange [] []) x
+textToAn :: [TEXT] -> [Annotation.Annoted TEXT]
+textToAn x = map (\y -> Annotation.Annoted y nullRange [] []) x
 
 senOfText :: TEXT -> [SENTENCE]
 senOfText (Text phr _) = foldl (sen2) [] phr
@@ -277,9 +277,9 @@ parseAxItems = do
        return $ Axiom_items ns
 
 -- | Toplevel parser for formulae
-aFormula :: AnnoState.AParser st (Annotation.Annoted SENTENCE)
+aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT)
 aFormula = do
-     AnnoState.allAnnoParser sentence
+     AnnoState.allAnnoParser cltext
 
 -- | collect all the names and sequence markers
 symbItems :: GenParser Char st NAME

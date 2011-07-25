@@ -64,7 +64,7 @@ instance Comorphism
     ClLogic.CommonLogic     -- lid domain
     ()                      -- sublogics domain
     ClBasic.BASIC_SPEC              -- Basic spec domain
-    ClBasic.SENTENCE                -- sentence domain
+    ClBasic.TEXT                    -- sentence domain
     ClBasic.NAME                    -- symbol items domain
     ClBasic.SYMB_MAP_ITEMS          -- symbol map items domain
     ClSign.Sign            -- signature domain
@@ -130,7 +130,7 @@ trMor mp =
 
 -- |
 mapTheory :: (ClSign.Sign,
-              [AS_Anno.Named ClBasic.SENTENCE])
+              [AS_Anno.Named ClBasic.TEXT])
               -> Result
                   (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
@@ -180,37 +180,62 @@ nil :: Id.Id
 nil = Id.stringToId "nil"
 
 -- todo maybe input here axioms
-trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.SENTENCE)
+trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.TEXT)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
 trNamedForm sig form = AS_Anno.mapNamed (trForm sig) form
 
-mapSentence :: ClSign.Sign -> ClBasic.SENTENCE -> Result CBasic.CASLFORMULA
+mapSentence :: ClSign.Sign -> ClBasic.TEXT -> Result CBasic.CASLFORMULA
 mapSentence sig form = Result [] $ Just $ trForm sig form
 
-trForm :: ClSign.Sign -> ClBasic.SENTENCE -> CBasic.CASLFORMULA
+-- ignores importations
+trForm :: ClSign.Sign -> ClBasic.TEXT -> CBasic.CASLFORMULA
 trForm sig form =
+   case form of
+     ClBasic.Text phrs rn ->
+        CBasic.Conjunction (map (phraseForm sig) (filter nonImport phrs)) rn
+     ClBasic.Named_text _ t _ -> trForm sig t
+   where nonImport :: ClBasic.PHRASE -> Bool
+         nonImport p = case p of
+            ClBasic.Importation _ -> False
+            _ -> True
+
+phraseForm :: ClSign.Sign -> ClBasic.PHRASE -> CBasic.CASLFORMULA
+phraseForm sig phr =
+   case phr of
+     ClBasic.Module m -> moduleForm sig m
+     ClBasic.Sentence s -> senForm sig s
+     ClBasic.Importation i -> undefined -- cannot occur, because filtered
+     ClBasic.Comment_text _ t _ -> trForm sig t
+
+moduleForm :: ClSign.Sign -> ClBasic.MODULE -> CBasic.CASLFORMULA
+moduleForm sig m = case m of
+   ClBasic.Mod _ txt _ -> trForm sig txt
+   ClBasic.Mod_ex _ exs txt _ -> trForm sig txt --what to do with the exclusions?
+
+senForm :: ClSign.Sign -> ClBasic.SENTENCE -> CBasic.CASLFORMULA
+senForm sig form =
    case form of
      ClBasic.Bool_sent bs rn
         -> case bs of
-             ClBasic.Negation s -> CBasic.Negation (trForm sig s) rn
+             ClBasic.Negation s -> CBasic.Negation (senForm sig s) rn
              ClBasic.Conjunction ss ->
-                CBasic.Conjunction (map (trForm sig) ss) rn
+                CBasic.Conjunction (map (senForm sig) ss) rn
              ClBasic.Disjunction ss ->
-                CBasic.Disjunction (map (trForm sig) ss) rn
+                CBasic.Disjunction (map (senForm sig) ss) rn
              ClBasic.Implication s1 s2 ->
-                CBasic.Implication (trForm sig s1) (trForm sig s2) True rn
+                CBasic.Implication (senForm sig s1) (senForm sig s2) True rn
              ClBasic.Biconditional s1 s2 -> CBasic.Equivalence
-                                             (trForm sig s1) (trForm sig s2) rn
+                                             (senForm sig s1) (senForm sig s2) rn
      ClBasic.Quant_sent qs rn
         -> case qs of
              ClBasic.Universal bs s ->
                CBasic.Quantification CBasic.Universal
                [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-               (trForm sig s) rn -- FIX
+               (senForm sig s) rn -- FIX
              ClBasic.Existential bs s ->
                CBasic.Quantification CBasic.Existential
                [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-               (trForm sig s) rn -- FIX
+               (senForm sig s) rn -- FIX
      ClBasic.Atom_sent at rn
         -> case at of
              ClBasic.Equation trm1 trm2 ->
@@ -221,8 +246,8 @@ trForm sig form =
                                         Id.nullRange)
                                         Id.nullRange) ([termForm trm] ++
                                     (consSeq sig ts) : []) Id.nullRange
-     ClBasic.Comment_sent _ s _ -> trForm sig s -- FIX
-     ClBasic.Irregular_sent s _ -> trForm sig s -- FIX
+     ClBasic.Comment_sent _ s _ -> senForm sig s -- FIX
+     ClBasic.Irregular_sent s _ -> senForm sig s -- FIX
 
 termForm :: ClBasic.TERM -> CBasic.TERM a
 termForm trm = case trm of

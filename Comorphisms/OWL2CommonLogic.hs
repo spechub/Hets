@@ -58,14 +58,14 @@ instance Comorphism
     ProofTree       -- proof tree codomain
     CommonLogic            -- lid codomain
     ()--CommonLogic_Sublogics  -- sublogics codomain
-    BASIC_SPEC   -- Basic spec codomain
-    SENTENCE     -- sentence codomain
-    NAME      -- symbol items codomain
+    BASIC_SPEC      -- Basic spec codomain
+    TEXT            -- sentence codomain
+    NAME            -- symbol items codomain
     SYMB_MAP_ITEMS  -- symbol map items codomain
-    Sign        -- signature codomain
-    CLM.Morphism         -- morphism codomain
+    Sign            -- signature codomain
+    CLM.Morphism    -- morphism codomain
     Symbol          -- symbol codomain
-    Symbol       -- rawsymbol codomain
+    Symbol          -- rawsymbol codomain
     ProofTree       -- proof tree domain
     where
       sourceLogic OWL2CommonLogic    = OWL
@@ -110,7 +110,7 @@ mapSign sig =
 
 
 mapTheory :: (OS.Sign, [CommonAnno.Named Axiom])
-             -> Result (Sign, [CommonAnno.Named SENTENCE])
+             -> Result (Sign, [CommonAnno.Named TEXT])
 mapTheory (owlSig, owlSens) =
   do
     cSig <- mapSign owlSig
@@ -129,7 +129,7 @@ mapTheory (owlSig, owlSens) =
 -- | mapping of OWL to CommonLogic_DL formulae
 mapSentence :: Sign                    -- ^ CommonLogic Signature
   -> CommonAnno.Named Axiom                                  -- ^ OWL Sentence
-  -> Result (Maybe (CommonAnno.Named SENTENCE), Sign) -- ^ CommonLogic SENTENCE
+  -> Result (Maybe (CommonAnno.Named TEXT), Sign) -- ^ CommonLogic TEXT
 mapSentence cSig inSen = do
             (outAx, outSig) <- mapAxiom cSig $ CommonAnno.sentence inSen
             return (fmap (flip CommonAnno.mapNamed inSen . const) outAx, outSig)
@@ -137,12 +137,14 @@ mapSentence cSig inSen = do
 -- | Mapping of Axioms
 mapAxiom :: Sign                             -- ^ CommonLogic Signature
          -> Axiom                                -- ^ OWL Axiom
-         -> Result (Maybe SENTENCE, Sign) -- ^ CommonLogic SENTENCE
+         -> Result (Maybe TEXT, Sign) -- ^ CommonLogic TEXT
 mapAxiom cSig ax =
     let
         a = 1
         b = 2
         c = 3
+        senToText :: SENTENCE -> TEXT
+        senToText s = Text [Sentence s] nullRange
     in
       case ax of
         PlainAxiom _ pAx ->
@@ -152,7 +154,7 @@ mapAxiom cSig ax =
                     (domT, dSig) <- mapDescription cSig sub   (OVar a) a
                     (codT, eSig) <- mapDescription cSig super (OVar a) a
                     rSig <- sigUnion cSig (unite dSig eSig)
-                    return (Just $ Quant_sent (Universal
+                    return (Just $ senToText $ Quant_sent (Universal
                                [Name (mkNName a)]
                                (Bool_sent (Implication
                                 domT
@@ -173,7 +175,7 @@ mapAxiom cSig ax =
                                   head decrsP
                                 else
                                   Bool_sent (Conjunction decrsP) nullRange
-                    return (Just $ Quant_sent (Universal
+                    return (Just $ senToText $ Quant_sent (Universal
                               [Name (mkNName a)]
                                snt) nullRange, dSig)
               DisjointUnion cls sD ->
@@ -182,7 +184,7 @@ mapAxiom cSig ax =
                     (decrsS, pSig) <- mapDescriptionListP cSig a $ comPairs sD sD
                     let decrsP = unzip decrsS
                     mcls <- mapClassURI cSig cls (mkNName a)
-                    return (Just $ Quant_sent (Universal
+                    return (Just $ senToText $ Quant_sent (Universal
                               [Name (mkNName a)]
                                (
                                 Bool_sent (Biconditional
@@ -205,7 +207,7 @@ mapAxiom cSig ax =
               SubObjectPropertyOf ch op ->
                   do
                     os <- mapSubObjProp cSig ch op c
-                    return (Just os, cSig)
+                    return (Just $ senToText os, cSig)
               EquivOrDisjointObjectProperties disOrEq oExLst ->
                   do
                     pairs <- mapComObjectPropsList cSig oExLst (OVar a) (OVar b)
@@ -224,7 +226,7 @@ mapAxiom cSig ax =
                                 else
                                   Bool_sent (Conjunction
                                     sntLst) nullRange
-                    return (Just $ Quant_sent (Universal
+                    return (Just $ senToText $ Quant_sent (Universal
                               [ Name (mkNName a)
                               , Name (mkNName b)]
                                snt) nullRange, cSig)
@@ -238,7 +240,7 @@ mapAxiom cSig ax =
                           let vars = case domOrRn of
                                        ObjDomain -> (mkNName a, mkNName b)
                                        ObjRange  -> (mkNName b, mkNName a)
-                          return (Just $ Quant_sent (Universal
+                          return (Just $ senToText $ Quant_sent (Universal
                                      [Name (fst vars)]
                                      (
                                       Quant_sent (Existential
@@ -255,7 +257,7 @@ mapAxiom cSig ax =
                   do
                     so1 <- mapObjProp cSig o1 (OVar a) (OVar b)
                     so2 <- mapObjProp cSig o2 (OVar b) (OVar a)
-                    return (Just $ Quant_sent (Universal
+                    return (Just $ senToText $ Quant_sent (Universal
                              [Name (mkNName a)
                              ,Name (mkNName b)]
                              (
@@ -271,7 +273,7 @@ mapAxiom cSig ax =
                         do
                           so1 <- mapObjProp cSig o (OVar a) (OVar b)
                           so2 <- mapObjProp cSig o (OVar a) (OVar c)
-                          return (Just $ Quant_sent (Universal
+                          return (Just $ senToText $ Quant_sent (Universal
                                      [Name (mkNName a)
                                      ,Name (mkNName b)
                                      ,Name (mkNName c)
@@ -300,7 +302,7 @@ mapAxiom cSig ax =
                         do
                           so1 <- mapObjProp cSig o (OVar a) (OVar c)
                           so2 <- mapObjProp cSig o (OVar b) (OVar c)
-                          return (Just $ Quant_sent (Universal
+                          return (Just $ senToText $ Quant_sent (Universal
                                      [Name (mkNName a)
                                      ,Name (mkNName b)
                                      ,Name (mkNName c)
@@ -328,7 +330,7 @@ mapAxiom cSig ax =
                     Reflexive  ->
                         do
                           so <- mapObjProp cSig o (OVar a) (OVar a)
-                          return (Just $ Quant_sent (Universal
+                          return (Just $ senToText $ Quant_sent (Universal
                                    [Name (mkNName a)]
                                     so)
                                     nullRange, cSig)
@@ -336,7 +338,7 @@ mapAxiom cSig ax =
                         do
                           so <- mapObjProp cSig o (OVar a) (OVar a)
                           return
-                                 (Just $ Quant_sent (Universal
+                                 (Just $ senToText $ Quant_sent (Universal
                                    [Name (mkNName a)]
                                    (Bool_sent (Negation so) nullRange))
                                    nullRange, cSig)
@@ -345,7 +347,7 @@ mapAxiom cSig ax =
                           so1 <- mapObjProp cSig o (OVar a) (OVar b)
                           so2 <- mapObjProp cSig o (OVar b) (OVar a)
                           return
-                           (Just $ Quant_sent (Universal
+                           (Just $ senToText $ Quant_sent (Universal
                                [Name (mkNName a)
                                ,Name (mkNName b)]
                                (
@@ -359,7 +361,7 @@ mapAxiom cSig ax =
                           so1 <- mapObjProp cSig o (OVar a) (OVar b)
                           so2 <- mapObjProp cSig o (OVar b) (OVar a)
                           return
-                           (Just $ Quant_sent (Universal
+                           (Just $ senToText $ Quant_sent (Universal
                                [Name (mkNName a)
                                ,Name (mkNName b)]
                                (
@@ -373,7 +375,7 @@ mapAxiom cSig ax =
                           so1 <- mapObjProp cSig o (OVar a) (OVar b)
                           so2 <- mapObjProp cSig o (OVar b) (OVar a)
                           return
-                           (Just $ Quant_sent (Universal
+                           (Just $ senToText $ Quant_sent (Universal
                                [Name (mkNName a)
                                ,Name (mkNName b)]
                                (
@@ -400,7 +402,7 @@ mapAxiom cSig ax =
                           so2 <- mapObjProp cSig o (OVar b) (OVar c)
                           so3 <- mapObjProp cSig o (OVar a) (OVar c)
                           return
-                           (Just $ Quant_sent (Universal
+                           (Just $ senToText $ Quant_sent (Universal
                                [Name (mkNName a)
                                ,Name (mkNName b)
                                ,Name (mkNName c)]
@@ -416,7 +418,7 @@ mapAxiom cSig ax =
                   do
                     l <- mapDataProp cSig subDP (OVar a) (OVar b)
                     r <- mapDataProp cSig superDP  (OVar a) (OVar b)
-                    return (Just $ Quant_sent (Universal
+                    return (Just $ senToText $ Quant_sent (Universal
                                [ Name (mkNName a)
                                , Name (mkNName b)]
                                (
@@ -442,7 +444,7 @@ mapAxiom cSig ax =
                                  head sntLst
                                else
                                  Bool_sent (Conjunction sntLst) nullRange
-                    return (Just $ Quant_sent (Universal
+                    return (Just $ senToText $ Quant_sent (Universal
                               [ Name (mkNName a)
 
 
@@ -457,7 +459,7 @@ mapAxiom cSig ax =
                                 do
                                   (odes, dSig) <- mapDescription cSig mdom (OVar a) a
                                   let vars = (mkNName a, mkNName b)
-                                  return (Just $ Quant_sent (Universal
+                                  return (Just $ senToText $ Quant_sent (Universal
                                          [Name (fst vars)]
                                          (Quant_sent (Existential
                                          [Name (snd vars)]
@@ -467,7 +469,7 @@ mapAxiom cSig ax =
                                 do
                                   (odes, dSig) <- mapDataRange cSig rn (OVar b)
                                   let vars = (mkNName a, mkNName b)
-                                  return (Just $ Quant_sent (Universal
+                                  return (Just $ senToText $ Quant_sent (Universal
                                          [Name (fst vars)]
                                          (Quant_sent (Existential
                                          [Name (snd vars)]
@@ -477,7 +479,7 @@ mapAxiom cSig ax =
                         do
                           so1 <- mapDataProp cSig o (OVar a) (OVar b)
                           so2 <- mapDataProp cSig o (OVar a) (OVar c)
-                          return (Just $ Quant_sent (Universal
+                          return (Just $ senToText $ Quant_sent (Universal
                                      [Name (mkNName a)
                                      ,Name (mkNName b)
                                      ,Name (mkNName c)
@@ -509,9 +511,9 @@ mapAxiom cSig ax =
                                      (Atom_sent (Equation x y) nullRange)) nullRange
                                  ) inDL)
                     if (length sntLst == 1) then
-                       return (Just $ head sntLst, cSig)
+                       return (Just $ senToText $ head sntLst, cSig)
                       else
-                        return (Just $ (Bool_sent (Conjunction sntLst
+                        return (Just $ senToText $ (Bool_sent (Conjunction sntLst
                              ) nullRange), cSig)
               ClassAssertion indi cls ->
                   do
@@ -519,9 +521,9 @@ mapAxiom cSig ax =
                     (ocls, dSig) <- mapDescription cSig cls (OIndi indi) a
                     case cls of
                          OWLClassDescription _ ->
-                                return (Just $ ocls, dSig)
+                                return (Just $ senToText ocls, dSig)
                          _ ->
-                            return (Just $  Quant_sent (Universal
+                            return (Just $ senToText $ Quant_sent (Universal
                               [Name (mkNName a)]
                               (
                               Bool_sent (
@@ -543,7 +545,7 @@ mapAxiom cSig ax =
                                       Negative -> Bool_sent (Negation
                                                     oPropH)
                                                     nullRange
-                        return (Just oProp, cSig)
+                        return (Just $ senToText oProp, cSig)
               DataPropertyAssertion ass ->
                   case ass of
                     Assertion dPropExp posNeg sourceInd targetInd ->
@@ -562,7 +564,7 @@ mapAxiom cSig ax =
                                         Positive -> dPropH
                                         Negative -> Bool_sent (Negation
                                                     dPropH) nullRange
-                          return (Just $  dProp, cSig)
+                          return (Just $ senToText $ dProp, cSig)
               Declaration _ -> return (Nothing, cSig)
         EntityAnno _  -> return (Nothing, cSig)
 

@@ -49,7 +49,7 @@ instance Category Sign Morphism
       composeMorphisms = composeMor
 
 instance Sentences CommonLogic
-    SENTENCE
+    TEXT
     Sign
     Morphism
     Symbol
@@ -72,9 +72,9 @@ instance Syntax CommonLogic
 instance Logic CommonLogic
     ()                -- Sublogics
     BASIC_SPEC        -- basic_spec
-    SENTENCE          -- sentence
+    TEXT              -- sentence
     NAME              -- symb_items
-    SYMB_MAP_ITEMS     -- symb_map_items
+    SYMB_MAP_ITEMS    -- symb_map_items
     Sign              -- sign
     Morphism          -- morphism
     Symbol            -- symbol
@@ -93,7 +93,7 @@ instance Logic CommonLogic
 
 instance StaticAnalysis CommonLogic
     BASIC_SPEC
-    SENTENCE
+    TEXT
     NAME
     SYMB_MAP_ITEMS
     Sign

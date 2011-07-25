@@ -17,12 +17,16 @@ module CommonLogic.ClTests where
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Parse_CLIF
 import qualified CommonLogic.Sublogic as SL
-import Comorphisms.CommonLogic2CommonLogic 
+import Comorphisms.CommonLogic2CommonLogic
 
 import Common.Doc as Doc
 import Common.Id as Id
 
+
+
 import Text.ParserCombinators.Parsec
+
+
 
 -- examples for abstract syntax
 
@@ -108,7 +112,7 @@ p6 = parseTest sentence "(exists (z) (and (Pet x) (Happy z) (Attr x z)))"
 
 -- | parses the given string
 abstrSyntax :: String -> Either ParseError TEXT
-abstrSyntax txt = parse CommonLogic.Parse_CLIF.cltext "" txt 
+abstrSyntax txt = parse CommonLogic.Parse_CLIF.cltext "" txt
 
 cParse p s = parse p "" s
 

@@ -104,30 +104,51 @@ mkMorphism s t p =
            , target = t
            , propMap = p }
 
--- | sentence translation along signature morphism
+-- | sentence (text) translation along signature morphism
 -- here just the renaming of formulae
-mapSentence :: Morphism -> AS_BASIC.SENTENCE -> Result.Result AS_BASIC.SENTENCE
+mapSentence :: Morphism -> AS_BASIC.TEXT -> Result.Result AS_BASIC.TEXT
 mapSentence mor = return . mapSentenceH mor
 
-mapSentenceH :: Morphism -> AS_BASIC.SENTENCE -> AS_BASIC.SENTENCE
-mapSentenceH mor frm = case frm of
+-- propagates the translation to sentences
+mapSentenceH :: Morphism -> AS_BASIC.TEXT -> AS_BASIC.TEXT
+mapSentenceH mor t = case t of
+  AS_BASIC.Text phrs r -> AS_BASIC.Text (map (mapSentenceH_phr mor) phrs) r
+  AS_BASIC.Named_text n t r -> AS_BASIC.Named_text n (mapSentenceH mor t) r
+
+-- propagates the translation to sentences
+mapSentenceH_phr :: Morphism -> AS_BASIC.PHRASE -> AS_BASIC.PHRASE
+mapSentenceH_phr mor phr = case phr of
+  AS_BASIC.Module m -> AS_BASIC.Module $ mapSentenceH_mod mor m
+  AS_BASIC.Sentence s -> AS_BASIC.Sentence $ mapSentenceH_sen mor s
+  AS_BASIC.Comment_text c t r -> AS_BASIC.Comment_text c (mapSentenceH mor t) r
+  x -> x
+
+-- propagates the translation to sentences
+mapSentenceH_mod :: Morphism -> AS_BASIC.MODULE -> AS_BASIC.MODULE
+mapSentenceH_mod mor m = case m of
+  AS_BASIC.Mod n t rn -> AS_BASIC.Mod n (mapSentenceH mor t) rn
+  AS_BASIC.Mod_ex n exs t rn -> AS_BASIC.Mod_ex n exs (mapSentenceH mor t) rn
+
+mapSentenceH_sen :: Morphism -> AS_BASIC.SENTENCE -> AS_BASIC.SENTENCE
+mapSentenceH_sen mor frm = case frm of
   AS_BASIC.Quant_sent qs rn -> case qs of
     AS_BASIC.Universal xs sen -> AS_BASIC.Quant_sent
-       (AS_BASIC.Universal xs (mapSentenceH mor sen)) rn -- fix
+       (AS_BASIC.Universal xs (mapSentenceH_sen mor sen)) rn -- fix
     AS_BASIC.Existential xs sen -> AS_BASIC.Quant_sent
-       (AS_BASIC.Existential xs (mapSentenceH mor sen)) rn -- fix
+       (AS_BASIC.Existential xs (mapSentenceH_sen mor sen)) rn -- fix
   AS_BASIC.Bool_sent bs rn -> case bs of
     AS_BASIC.Conjunction sens -> AS_BASIC.Bool_sent
-           (AS_BASIC.Conjunction (map (mapSentenceH mor) sens)) rn
+           (AS_BASIC.Conjunction (map (mapSentenceH_sen mor) sens)) rn
     AS_BASIC.Disjunction sens -> AS_BASIC.Bool_sent
-           (AS_BASIC.Disjunction (map (mapSentenceH mor) sens)) rn
+           (AS_BASIC.Disjunction (map (mapSentenceH_sen mor) sens)) rn
     AS_BASIC.Negation sen -> AS_BASIC.Bool_sent
-           (AS_BASIC.Negation (mapSentenceH mor sen)) rn
+           (AS_BASIC.Negation (mapSentenceH_sen mor sen)) rn
     AS_BASIC.Implication s1 s2 -> AS_BASIC.Bool_sent
-           (AS_BASIC.Implication (mapSentenceH mor s1) (mapSentenceH mor s2)) rn
+           (AS_BASIC.Implication (mapSentenceH_sen mor s1)
+              (mapSentenceH_sen mor s2)) rn
     AS_BASIC.Biconditional s1 s2 -> AS_BASIC.Bool_sent
-           (AS_BASIC.Biconditional (mapSentenceH mor s1) (mapSentenceH mor s2))
-            rn
+           (AS_BASIC.Biconditional (mapSentenceH_sen mor s1)
+              (mapSentenceH_sen mor s2)) rn
   AS_BASIC.Atom_sent atom rn -> AS_BASIC.Atom_sent atom rn -- fix
   AS_BASIC.Comment_sent cm sen rn -> AS_BASIC.Comment_sent cm sen rn -- unused
   AS_BASIC.Irregular_sent sen rn -> AS_BASIC.Irregular_sent sen rn -- unused

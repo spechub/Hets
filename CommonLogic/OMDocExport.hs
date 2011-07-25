@@ -38,35 +38,58 @@ exportSymToOmdoc _ _ n = return $ TCSymbol n const_symbol Obj Nothing
 
 
 -- ----------------------------------------------------------
-exportSenToOmdoc :: Env -> SENTENCE
+exportSenToOmdoc :: Env -> TEXT
                  -> Result TCorOMElement
-exportSenToOmdoc en s = return $ Right $ exportSenToOmdoc' en [] s
+exportSenToOmdoc en t = return $ Right $ exportText en [] t
+
+exportText :: Env -> [NAME_OR_SEQMARK] -> TEXT -> OMElement
+exportText en vars txt = case txt of
+  Text phrs _ -> OMA $ const_and : map (exportPhr en vars) phrs
+  Named_text n t _ -> OMATTT (exportText en vars t) $
+    OMAttr const_textName (OMV (mkSimpleName n))
+
+exportPhr :: Env -> [NAME_OR_SEQMARK] -> PHRASE -> OMElement
+exportPhr en vars phr = case phr of
+  Module m -> OMBIND const_module [modName m] $ exportModule en vars m
+  Sentence s -> exportSen en vars s
+  Comment_text c t _ -> OMA [const_comment, simpleName c, exportText en vars t]
+  where modName m = case m of
+          Mod n _ _ -> exportVar $ AS.Name n
+          Mod_ex n _ _ _ -> exportVar $ AS.Name n
+        simpleName (Comment x _) = OMV $ mkSimpleName x
+  --Importation i -> undefined -- does not occur
 
 
-exportSenToOmdoc' :: Env -> [NAME_OR_SEQMARK] -> SENTENCE
+exportModule :: Env -> [NAME_OR_SEQMARK] -> MODULE -> OMElement
+exportModule en vars m = case m of
+  Mod _ t _ -> exportText en vars t
+  Mod_ex _ exs t _ ->  OMA $ const_moduleExcludes : exportText en vars t
+      : map (exportVar . AS.Name) exs
+
+exportSen :: Env -> [NAME_OR_SEQMARK] -> SENTENCE
                   -> OMElement
-exportSenToOmdoc' en vars s = case s of
+exportSen en vars s = case s of
       Quant_sent qs _ -> case qs of
           Universal vars2 s2 -> OMBIND const_forall
                                 (map exportVar vars2)
-                                (exportSenToOmdoc' en (vars ++ vars2) s2)
+                                (exportSen en (vars ++ vars2) s2)
           Existential vars2 s2 -> OMBIND const_exists
                                   (map exportVar vars2)
-                                  (exportSenToOmdoc' en (vars ++ vars2) s2)
+                                  (exportSen en (vars ++ vars2) s2)
       Bool_sent bs _ -> case bs of
           Conjunction ss ->
-              OMA $ const_and : map (exportSenToOmdoc' en vars) ss
+              OMA $ const_and : map (exportSen en vars) ss
           Disjunction ss ->
-             OMA $ const_or : map (exportSenToOmdoc' en vars) ss
-          Negation s1 -> OMA [ const_not, exportSenToOmdoc' en vars s1]
+             OMA $ const_or : map (exportSen en vars) ss
+          Negation s1 -> OMA [ const_not, exportSen en vars s1]
           Implication s1 s2 -> OMA
               [ const_implies
-              , exportSenToOmdoc' en vars s1
-              , exportSenToOmdoc' en vars s2]
+              , exportSen en vars s1
+              , exportSen en vars s2]
           Biconditional s1 s2 -> OMA
               [ const_equivalent
-              , exportSenToOmdoc' en vars s1
-              , exportSenToOmdoc' en vars s2]
+              , exportSen en vars s1
+              , exportSen en vars s2]
       Atom_sent at _ -> case at of
           Equation t1 t2 -> OMA
               [ const_eq
@@ -75,9 +98,9 @@ exportSenToOmdoc' en vars s = case s of
           Atom pt tts ->
               OMA $ exportTerm en vars pt : map (exportTermSeq en vars) tts
       Comment_sent _com s1 _ ->
-          OMA [const_comment, exportSenToOmdoc' en vars s1]
+          OMA [const_comment, exportSen en vars s1]
       Irregular_sent s1 _ ->
-          OMA [const_irregular, exportSenToOmdoc' en vars s1]
+          OMA [const_irregular, exportSen en vars s1]
 
 exportTerm :: Env -> [NAME_OR_SEQMARK] -> TERM -> OMElement
 exportTerm e vars t = case t of

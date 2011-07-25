@@ -12,9 +12,9 @@ Tools for CommonLogic static analysis
 -}
 
 module CommonLogic.Tools (
-        freeName       -- finds a free discourse name
-        , indvC_text   -- retrieves all discourse names from a text
-        , prd_text     -- retrieves all predicates from a text
+        freeName        -- finds a free discourse name
+        , indvC_text    -- retrieves all discourse names from a text
+        , prd_text      -- retrieves all predicates from a text
     )
     where
 
@@ -37,7 +37,6 @@ freeName (s, i) ns =
        then freeName (s, i+1) ns
        else (n, i+1)
     where n = mkSimpleId (s++"_"++[intToDigit i])
-
 
 -------------------------------------------------------------------------------
 -- Functions to compute the set of individual constants (discourse items),   --
