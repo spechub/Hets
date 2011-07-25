@@ -16,11 +16,13 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.XML
 import OWL2.ManchesterPrint
+import OWL2.Sign
 import OWL2.XMLKeywords
 
 import Text.XML.Light
 import Data.Maybe
 import Common.Id
+import Common.AS_Annotation (Named, sentence)
 
 import qualified Data.Map as Map
 
@@ -431,3 +433,13 @@ xmlOntologyDoc od =
             ++ map xmlImport (imports ont)
             ++ concatMap xmlFrames (ontFrames ont)
             ++ concatMap xmlAnnotations (ann ont)
+
+mkODoc :: Sign -> [Named Axiom] -> String
+mkODoc s na = ppTopElement $ xmlOntologyDoc $ emptyOntologyDoc
+    {
+      ontology = emptyOntologyD
+        {
+        ontFrames = map (axToFrame . sentence) na
+        },
+      prefixDeclaration = prefixMap s
+    }

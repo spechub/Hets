@@ -26,8 +26,8 @@ import GUI.Utils ()
 
 import OWL2.MS
 import OWL2.Morphism
-import OWL2.ManchesterPrint (printOWLBasicTheory)
 import OWL2.Sign
+import OWL2.XMLConversion
 
 import System.Directory
 import System.Exit
@@ -52,8 +52,8 @@ doConservCheck :: String            -- ^ Jar name
                -> [Named Axiom]  -- ^ Formulas of Onto 2
                -> IO (Result (Maybe (Conservativity, [Axiom])))
 doConservCheck jar ct sig1 sen1 mor sen2 =
-  let ontoFile = printOWLBasicTheory (otarget mor, filter isAxiom sen2)
-      sigFile = printOWLBasicTheory (sig1, filter isAxiom sen1)
+  let ontoFile = mkODoc (otarget mor) (filter isAxiom sen2)
+      sigFile = mkODoc sig1 (filter isAxiom sen1)
   in runLocalityChecker jar ct (show ontoFile) (show sigFile)
 
 -- | Invoke the Java checker
