@@ -1,0 +1,63 @@
+<rdf:RDF
+    xml:base="http://www.w3.org/2002/03owlt/description-logic/inconsistent109"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+    <owl:Ontology rdf:about=""/>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#Unsatisfiable">
+        <owl:equivalentClass>
+            <owl:Class>
+                <owl:intersectionOf rdf:parseType="Collection">
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://oiled.man.example.net/test#tt"/>
+                        <owl:allValuesFrom>
+                            <owl:Class rdf:about="http://oiled.man.example.net/test#a"/>
+                        </owl:allValuesFrom>
+                    </owl:Restriction>
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://oiled.man.example.net/test#tt"/>
+                        <owl:minCardinality
+ rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+                        >3</owl:minCardinality>
+                    </owl:Restriction>
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://oiled.man.example.net/test#tt"/>
+                        <owl:maxCardinality
+ rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+                         >1</owl:maxCardinality>
+                    </owl:Restriction>
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://oiled.man.example.net/test#tt"/>
+                        <owl:maxCardinality
+ rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+                        >1</owl:maxCardinality>
+                    </owl:Restriction>
+                </owl:intersectionOf>
+            </owl:Class>
+        </owl:equivalentClass>
+    </owl:Class>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#a">
+        <rdfs:subClassOf>
+            <owl:Class>
+                <owl:unionOf rdf:parseType="Collection">
+                    <owl:Class rdf:about="http://oiled.man.example.net/test#c"/>
+                    <owl:Class rdf:about="http://oiled.man.example.net/test#d"/>
+                </owl:unionOf>
+            </owl:Class>
+        </rdfs:subClassOf>
+    </owl:Class>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#c">
+        <rdfs:subClassOf>
+            <owl:Class>
+                <owl:complementOf>
+                    <owl:Class rdf:about="http://oiled.man.example.net/test#d"/>
+                </owl:complementOf>
+            </owl:Class>
+        </rdfs:subClassOf>
+    </owl:Class>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#d"/>
+    <owl:ObjectProperty rdf:about="http://oiled.man.example.net/test#tt"/>
+    <rdf:Description>
+        <rdf:type rdf:resource="http://oiled.man.example.net/test#Unsatisfiable"/>
+    </rdf:Description>
+</rdf:RDF>

@@ -1,0 +1,33 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:first="http://www.w3.org/2002/03owlt/miscellaneous/consistent103#"
+    xml:base="http://www.w3.org/2002/03owlt/miscellaneous/consistent103" >
+   <owl:Ontology/>
+   <owl:Thing rdf:ID="i">
+     <rdf:type>
+         <owl:Class>
+            <owl:intersectionOf rdf:parseType="Collection">
+               <owl:Restriction>
+                  <owl:onProperty>
+                    <owl:ObjectProperty rdf:ID="p"/>
+                  </owl:onProperty>
+                  <owl:allValuesFrom>
+                    <owl:Class rdf:ID="a"/>
+                  </owl:allValuesFrom>
+               </owl:Restriction>
+               <owl:Restriction>
+                  <owl:onProperty>
+                    <owl:ObjectProperty rdf:about="#q"/>
+                  </owl:onProperty>
+                  <owl:someValuesFrom>
+                    <owl:Class rdf:ID="s"/>
+                  </owl:someValuesFrom>
+               </owl:Restriction>
+             </owl:intersectionOf>
+         </owl:Class>
+     </rdf:type>
+   </owl:Thing>
+
+</rdf:RDF>

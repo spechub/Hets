@@ -1,0 +1,12 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xml:base="http://www.w3.org/2002/03owlt/I5.24/premises003" >
+  <owl:Ontology/>
+  <owl:ObjectProperty rdf:ID="prop">
+     <rdfs:range>
+        <owl:Class rdf:about="#A"/>
+     </rdfs:range>
+  </owl:ObjectProperty>
+</rdf:RDF>

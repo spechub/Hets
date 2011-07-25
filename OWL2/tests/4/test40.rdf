@@ -1,0 +1,20 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xml:base="http://www.w3.org/2002/03owlt/I5.24/premises004" >
+   <owl:Ontology/>
+   <owl:Class rdf:about="http://www.w3.org/2002/07/owl#Thing">
+      <rdfs:subClassOf>
+          <owl:Restriction>
+             <owl:onProperty>
+               <owl:ObjectProperty rdf:about="conclusions004#prop"/>
+             </owl:onProperty>
+             <owl:allValuesFrom>
+               <owl:Class rdf:about="conclusions004#A"/>
+              </owl:allValuesFrom>
+          </owl:Restriction>
+       </rdfs:subClassOf>
+   </owl:Class>
+
+</rdf:RDF>

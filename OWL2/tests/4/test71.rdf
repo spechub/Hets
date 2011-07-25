@@ -1,0 +1,11 @@
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:owl="http://www.w3.org/2002/07/owl#"
+      xml:base="http://www.w3.org/2002/03owlt/description-logic/nonconclusions209"
+>
+<owl:Ontology/>
+<owl:Thing rdf:about="http://oiled.man.example.net/test#V16448">
+  <rdf:type>
+<owl:Class rdf:about="http://oiled.man.example.net/test#C122"/>
+</rdf:type>
+</owl:Thing>
+</rdf:RDF>

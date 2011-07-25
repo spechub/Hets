@@ -1,0 +1,69 @@
+<rdf:RDF
+    xml:base="http://www.w3.org/2002/03owlt/description-logic/inconsistent102"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+    <owl:Ontology rdf:about=""/>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#Unsatisfiable">
+        <owl:equivalentClass>
+            <owl:Class>
+                <owl:intersectionOf rdf:parseType="Collection">
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://oiled.man.example.net/test#r"/>
+                        <owl:allValuesFrom>
+                            <owl:Class>
+                                <owl:intersectionOf rdf:parseType="Collection">
+                                    <owl:Class rdf:about="http://oiled.man.example.net/test#c"/>
+                                    <owl:Class rdf:about="http://oiled.man.example.net/test#d"/>
+                                </owl:intersectionOf>
+                            </owl:Class>
+                        </owl:allValuesFrom>
+                    </owl:Restriction>
+                    <owl:Restriction>
+                        <owl:onProperty rdf:resource="http://oiled.man.example.net/test#r"/>
+                        <owl:someValuesFrom>
+                            <owl:Class rdf:about="http://www.w3.org/2002/07/owl#Thing"/>
+                        </owl:someValuesFrom>
+                    </owl:Restriction>
+                </owl:intersectionOf>
+            </owl:Class>
+        </owl:equivalentClass>
+    </owl:Class>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#c">
+        <rdfs:subClassOf>
+            <owl:Class>
+                <owl:complementOf>
+                    <owl:Class rdf:about="http://oiled.man.example.net/test#d"/>
+                </owl:complementOf>
+            </owl:Class>
+        </rdfs:subClassOf>
+    </owl:Class>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#d"/>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#f">
+        <rdfs:subClassOf>
+            <owl:Class rdf:about="http://oiled.man.example.net/test#d"/>
+        </rdfs:subClassOf>
+    </owl:Class>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#c1">
+        <rdfs:subClassOf>
+            <owl:Class rdf:about="http://oiled.man.example.net/test#d1"/>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Class>
+                <owl:complementOf>
+                    <owl:Class rdf:about="http://oiled.man.example.net/test#d1"/>
+                </owl:complementOf>
+            </owl:Class>
+        </rdfs:subClassOf>
+    </owl:Class>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#d1"/>
+    <owl:Class rdf:about="http://oiled.man.example.net/test#e3">
+        <rdfs:subClassOf>
+            <owl:Class rdf:about="http://oiled.man.example.net/test#c"/>
+        </rdfs:subClassOf>
+    </owl:Class>
+    <owl:ObjectProperty rdf:about="http://oiled.man.example.net/test#r"/>
+    <rdf:Description>
+        <rdf:type rdf:resource="http://oiled.man.example.net/test#Unsatisfiable"/>
+    </rdf:Description>
+</rdf:RDF>

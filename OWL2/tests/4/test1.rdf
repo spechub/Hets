@@ -1,0 +1,14 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+  <owl:Ontology />
+  <owl:Class rdf:about="http://owl2.test/rules#C"/>
+  <owl:Class rdf:about="http://owl2.test/rules#C1"/>
+  <owl:ObjectProperty rdf:about="http://owl2.test/rules#op"/>
+  <owl:Restriction>
+    <owl:allValuesFrom rdf:resource="http://owl2.test/rules#C1"/>
+    <owl:onProperty rdf:resource="http://owl2.test/rules#op"/>
+    <rdfs:subClassOf rdf:resource="http://owl2.test/rules#C"/>
+  </owl:Restriction>
+</rdf:RDF>

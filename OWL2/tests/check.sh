@@ -7,7 +7,7 @@ echo "\nhi !\n"
 
 ALL=`ls`
 
-for DIR in $ALL
+for DIR in 4
 do
     if test -d $DIR;
         then
@@ -95,7 +95,14 @@ do
                 ../../../scripts/runXML $i >> $i.mno.mno
             done
 
-            rm -rf ../res
+            cd ..            
+    
+            rm -rf res
+
+            cd ..
+
+            echo "\n"
+            
     fi
 done
 

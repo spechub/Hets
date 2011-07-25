@@ -1,0 +1,110 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:first="http://www.w3.org/2002/03owlt/I5.2/consistent005#"
+    xml:base="http://www.w3.org/2002/03owlt/I5.2/consistent005" >
+
+  <owl:Ontology/>
+  <owl:Class rdf:ID="Nothing">
+       <rdfs:subClassOf>
+         <owl:Restriction>
+            <owl:onProperty>
+                <owl:ObjectProperty rdf:about="#p"/>
+            </owl:onProperty>
+            <owl:minCardinality rdf:datatype=
+"http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+            >1</owl:minCardinality>
+         </owl:Restriction>
+       </rdfs:subClassOf>
+       <rdfs:subClassOf>
+         <owl:Restriction>
+            <owl:onProperty>
+                <owl:ObjectProperty rdf:about="#p"/>
+            </owl:onProperty>
+            <owl:maxCardinality rdf:datatype=
+"http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+            >0</owl:maxCardinality>
+         </owl:Restriction>
+       </rdfs:subClassOf>
+   </owl:Class>
+ <owl:Class rdf:ID="A">
+   <owl:equivalentClass>
+     <owl:Restriction>
+       <owl:onProperty>
+         <owl:ObjectProperty rdf:about="#q"/>
+       </owl:onProperty>
+       <owl:someValuesFrom>
+         <owl:Class rdf:about="http://www.w3.org/2002/07/owl#Thing"/>
+       </owl:someValuesFrom>
+     </owl:Restriction>
+   </owl:equivalentClass>
+ </owl:Class>
+ <owl:Class rdf:ID="notA">
+   <owl:equivalentClass>
+     <owl:Restriction>
+       <owl:onProperty>
+         <owl:ObjectProperty rdf:about="#q"/>
+       </owl:onProperty>
+       <owl:allValuesFrom>
+         <owl:Class rdf:about="#Nothing"/>
+       </owl:allValuesFrom>
+     </owl:Restriction>
+   </owl:equivalentClass>
+ </owl:Class>
+ <owl:Class rdf:ID="B">
+   <owl:equivalentClass>
+     <owl:Restriction>
+       <owl:onProperty>
+         <owl:ObjectProperty rdf:about="#r"/>
+       </owl:onProperty>
+       <owl:someValuesFrom>
+         <owl:Class rdf:about="http://www.w3.org/2002/07/owl#Thing"/>
+       </owl:someValuesFrom>
+     </owl:Restriction>
+   </owl:equivalentClass>
+ </owl:Class>
+ <owl:Class rdf:ID="notB">
+   <owl:equivalentClass>
+     <owl:Restriction>
+       <owl:onProperty>
+         <owl:ObjectProperty rdf:about="#r"/>
+       </owl:onProperty>
+       <owl:allValuesFrom>
+         <owl:Class rdf:about="#Nothing"/>
+       </owl:allValuesFrom>
+     </owl:Restriction>
+   </owl:equivalentClass>
+ </owl:Class>
+ <owl:Class rdf:ID="notAorB">
+   <owl:intersectionOf rdf:parseType="Collection">
+    <owl:Class rdf:about="#notA"/>
+    <owl:Class rdf:about="#notB"/>
+   </owl:intersectionOf>
+ </owl:Class>
+ 
+ <owl:Class rdf:ID="AorB">
+   <owl:equivalentClass>
+     <owl:Restriction>
+       <owl:onProperty>
+         <owl:ObjectProperty rdf:about="#s"/>
+       </owl:onProperty>
+       <owl:someValuesFrom>
+         <owl:Class rdf:about="http://www.w3.org/2002/07/owl#Thing"/>
+       </owl:someValuesFrom>
+     </owl:Restriction>
+   </owl:equivalentClass>
+ </owl:Class>
+ <owl:Class rdf:about="#notAorB">
+   <owl:equivalentClass>
+     <owl:Restriction>
+       <owl:onProperty>
+         <owl:ObjectProperty rdf:about="#s"/>
+       </owl:onProperty>
+       <owl:allValuesFrom>
+         <owl:Class rdf:about="#Nothing"/>
+       </owl:allValuesFrom>
+     </owl:Restriction>
+   </owl:equivalentClass>
+ </owl:Class>
+</rdf:RDF>
