@@ -28,23 +28,31 @@ data SimpleStep = MkStepDown QName
                 | FindByAttr [Attr]
                 | FindByNumber Int
 
-
 readDiff :: String -> IO()
 readDiff filepath = do
   xml <- readFile filepath
   cs <- anaXUpdates xml
-  mapM_ (\ (Change _ e) -> exprToSimplePath e) cs
+  mapM_ (\ (Change _ e) -> case e of
+    PathExpr Nothing (Path True stps) -> putStrLn $ show stps ++"\n\n"
+    _ -> error "invalid pathexpr" ) cs
+  --mapM (\ (Change _ e) -> exprToSimplePath e) cs
 
--- TODO:
-exprToSimplePath :: Monad m => Expr -> m SimplePath
-exprToSimplePath e = case e of
+pathExprToSimplePath :: Monad m => Expr -> m SimplePath
+pathExprToSimplePath e = case e of
   PathExpr Nothing (Path True stps) -> foldM (\ r stp -> case stp of
-      Step Child (NameTest l) [] -> trace l $ return $ MkStepDown (unqual l) : r
-      Step Child (NameTest l) xs -> fail "found attributes"
-      Step Attribute _ _ -> undefined -- TODO: extract atribute list
+      Step Child (NameTest l) [] -> return $ MkStepDown (unqual l) : r
+      Step Child (NameTest l) xs -> do
+        es <- mapM convertExprAux xs
+        return $ MkStepDown (unqual l) : (concat es) ++ r
+      Step Attribute _ _ -> fail "found attributes" -- TODO: extract atribute list
       _ -> fail "exprToSimplePath: unexpected step") [] stps
   _ -> fail "exprToSimplePath (1)"
 
+convertExprAux :: Monad m => Expr -> m SimplePath
+convertExprAux e = undefined {-case e of
+  GenExpr _ "and" args -> mapM convertExprAux args
+  GenExpr _ "=" args -> case args of
+    [PathExpr _ (Path _ stps1-}
 
 moveStep :: Monad m => SimpleStep -> Cursor -> m Cursor
 moveStep stp cr = case stp of
