@@ -16,6 +16,7 @@ import Text.XML.Light
 import Data.Maybe
 import OWL2.AS
 import OWL2.MS
+import OWL2.Extract
 import OWL2.XMLKeywords
 
 import Common.Lexer
@@ -93,9 +94,7 @@ getIRI :: XMLBase -> Element -> IRI
 getIRI b e =
   let [a] = elAttribs e
       iri = attrVal a
-      f = case qName $ attrKey a of
-            "abbreviatedIRI" -> False
-            _ -> ':' `elem` iri
+      f = if (qName $ attrKey a) == "abbreviatedIRI" then False else True
   in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
 
 getFullOrAbbrIRI :: XMLBase -> Element -> IRI
@@ -126,16 +125,16 @@ getEntityType ty = case ty of
 toEntity :: XMLBase -> Element -> Entity
 toEntity b e = Entity (getEntityType $ (qName . elName) e) (getIRI b e)
 
-getDeclaration :: XMLBase -> Element -> Frame
+getDeclaration :: XMLBase -> Element -> Axiom
 getDeclaration b e = case getName e of
    "Declaration" ->
      let ent = filterCL entityList e
          ans = getAllAnnos b e
          entity@(Entity ty iri) = toEntity b ent
      in case ty of
-        AnnotationProperty -> Frame (Misc ans) [AnnFrameBit
-            [Annotation [] iri $ AnnValue iri] AnnotationFrameBit]
-        _ -> Frame (SimpleEntity entity) [AnnFrameBit ans AnnotationFrameBit]
+        AnnotationProperty -> PlainAxiom (Misc ans) $ AnnFrameBit
+            [Annotation [] iri $ AnnValue iri] AnnotationFrameBit
+        _ -> PlainAxiom (SimpleEntity entity) $ AnnFrameBit ans AnnotationFrameBit
    _ -> error "not declaration"
 
 isPlainLiteral :: String -> Bool
@@ -156,7 +155,7 @@ getLiteral e = case getName e of
              Just lang -> Literal lf (Untyped $ Just lang)
              Nothing -> if isPlainLiteral dt then
                           Literal lf (Untyped Nothing)
-                         else Literal lf (Typed $ mkQName dt)
+                         else Literal lf (Typed $ simpleSplit $ mkQName dt)
     _ -> error "not literal"
 
 getValue :: XMLBase -> Element -> AnnotationValue
@@ -503,13 +502,14 @@ getAnnoAxiom b e =
     _ -> error "bad frame"
 
 getImports :: XMLBase -> Element -> [ImportIRI]
-getImports b e = map (splitIRI b . mkQName . strContent) $ filterCh "Import" e
+getImports b e = map (setFull . splitIRI b . mkQName . strContent)
+    $ filterCh "Import" e
 
 -- gets one prefix with the corresponding iri
 get1PrefMap :: Element -> (String, IRI)
 get1PrefMap e =
   let [pref, pmap] = map attrVal $ elAttribs e
-  in (pref, splitIRI "" $ mkQName pmap)
+  in (pref, setFull $ splitIRI "" $ mkQName pmap)
 
 getPrefixMap :: Element -> [(String, String)]
 getPrefixMap e =
@@ -521,7 +521,8 @@ getOntologyIRI e =
   let oi = findAttr (unqual "ontologyIRI") e
   in case oi of
     Nothing -> dummyQName
-    Just iri -> splitIRI "" $ nullQName {localPart = iri, isFullIri = True}
+    Just iri -> setFull $ splitIRI ""
+        $ nullQName {localPart = iri, isFullIri = True}
 
 axToFrame :: Axiom -> Frame
 axToFrame (PlainAxiom e fb) = Frame e [fb]
@@ -529,8 +530,9 @@ axToFrame (PlainAxiom e fb) = Frame e [fb]
 getFrames :: XMLBase -> Element -> [Frame]
 getFrames b e =
    let ax = filterChildrenName isNotSmth e
-   in map (getDeclaration b) (filterCh "Declaration" e)
-        ++ map (axToFrame . getClassAxiom b) ax
+       f = map axToFrame (map (getDeclaration b) (filterCh "Declaration" e))
+            ++ map (axToFrame . getClassAxiom b) ax
+   in f ++ signToFrames f
 
 getAxioms :: XMLBase -> Element -> [Axiom]
 getAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e

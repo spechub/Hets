@@ -380,8 +380,8 @@ xmlAFB ext anno afb = case afb of
         let ObjectEntity op = ext
             xmlop = map xmlObjProp opl
         in [makeElement subObjectPropertyOfK
-                $ xmlAnnotations anno ++ [xmlObjProp op,
-                    makeElement objectPropertyChainK xmlop]]
+                $ xmlAnnotations anno ++
+                    [makeElement objectPropertyChainK xmlop, xmlObjProp op]]
 
 xmlFrameBit :: Extended -> FrameBit -> [Element]
 xmlFrameBit ext fb = case fb of
@@ -402,7 +402,7 @@ setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
     , attrVal = s} : elAttribs e}
 
 set1Map :: (String, String) -> Element
-set1Map (s, iri) = setPref s $ mwIRI $ mkQName iri
+set1Map (s, iri) = setPref s $ mwIRI $ setFull $ splitIRI "" $ mkQName iri
 
 xmlPrefixes :: PrefixMap -> [Element]
 xmlPrefixes pm = map (setName prefixK . set1Map) $ Map.toList pm

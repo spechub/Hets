@@ -41,13 +41,7 @@ done
 
 cd $dir
 
-echo "making diff on generated xml files...\n"
 
-for i in *.rdf.xml.xml *.owl.xml.xml *ofn.xml.xml
-do
-    echo $i "\n"
-    diff $i $i.xml
-done
 
 cd ../../..
 
@@ -76,13 +70,7 @@ do
    echo $i "ok\n"
 done
 
-echo "making diff on generated omn files...\n"
 
-for i in *.rdf.xml.xml.omn *.owl.xml.xml.omn *.ofn.xml.xml.omn
-do
-    echo $i "\n"
-    diff $i $i.omn
-done
 
 cd ../../..
 
@@ -108,13 +96,7 @@ do
     echo $i "ok\n"
 done
 
-echo "making diff on generated mno files...\n"
 
-for i in *.rdf.xml.xml.mno *.owl.xml.xml.mno *.ofn.xml.xml.mno
-do
-    echo $i "\n"
-    diff $i $i.mno
-done
 
 echo "removing directory XML...\n"
 

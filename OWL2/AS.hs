@@ -67,6 +67,9 @@ setQRange r q = q { iriPos = r }
 setPrefix :: String -> QName -> QName
 setPrefix s q = q { namePrefix = s }
 
+setFull :: QName -> QName
+setFull q = q {isFullIri = True}
+
 instance Eq QName where
     p == q = compare p q == EQ
 

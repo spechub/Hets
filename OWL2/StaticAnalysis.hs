@@ -66,7 +66,10 @@ modEntity f (Entity ty u) = do
     Class -> s { concepts = chg $ concepts s }
     ObjectProperty -> s { objectProperties = chg $ objectProperties s }
     DataProperty -> s { dataProperties = chg $ dataProperties s }
-    NamedIndividual -> s { individuals = chg $ individuals s }
+    NamedIndividual ->
+        if (not . null) (namePrefix u) &&
+            head (namePrefix u) == '_' then s
+         else s { individuals = chg $ individuals s }
     AnnotationProperty -> s {annotationRoles = chg $ annotationRoles s}
 
 -- | adding entities to the signature
