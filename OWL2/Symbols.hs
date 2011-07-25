@@ -14,15 +14,17 @@ module OWL2.Symbols where
 
 import OWL2.AS
 
-------------------------
--- SYMBOL ITEMS FOR HETS
-------------------------
+-- * SYMBOL ITEMS FOR HETS
 
-data SymbItems = SymbItems (Maybe EntityType) [IRI]
+data ExtEntityType = AnyEntity | Prefix | EntityType EntityType
+  deriving (Show, Eq, Ord)
+
+data SymbItems = SymbItems ExtEntityType [IRI]
     deriving (Show, Eq)
 
-data SymbMapItems = SymbMapItems (Maybe EntityType) [(IRI, Maybe IRI)]
+data SymbMapItems = SymbMapItems ExtEntityType [(IRI, Maybe IRI)]
     deriving (Show, Eq)
 
 -- | raw symbols
-data RawSymb = ASymbol Entity | AnUri IRI deriving (Show, Eq, Ord)
+data RawSymb = ASymbol Entity | AnUri IRI | APrefix String
+    deriving (Show, Eq, Ord)

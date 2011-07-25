@@ -33,6 +33,7 @@ import OWL2.Sign
 import OWL2.ManchesterPrint ()
 import OWL2.StaticAnalysis
 import OWL2.Symbols
+import OWL2.Rename
 
 import Common.DocUtils
 import Common.Doc
@@ -49,12 +50,14 @@ data OWLMorphism = OWLMorphism
   { osource :: Sign
   , otarget :: Sign
   , mmaps :: Map.Map Entity IRI
+  , pmap :: TranslationMap
   } deriving (Show, Eq, Ord)
 
 inclOWLMorphism :: Sign -> Sign -> OWLMorphism
 inclOWLMorphism s t = OWLMorphism
  { osource = s
  , otarget = t
+ , pmap = Map.empty
  , mmaps = Map.empty }
 
 isOWLInclusion :: OWLMorphism -> Bool
@@ -87,6 +90,7 @@ inducedFromMor rm sig = do
   return OWLMorphism
     { osource = sig
     , otarget = inducedSign mm sig
+    , pmap = Map.empty
     , mmaps = mm }
 
 symMapOf :: OWLMorphism -> Map.Map Entity Entity
@@ -145,8 +149,9 @@ matchesSym e@(Entity _ u) r = case r of
 statSymbItems :: [SymbItems] -> [RawSymb]
 statSymbItems = concatMap
   $ \ (SymbItems m us) -> case m of
-               Nothing -> map AnUri us
-               Just ty -> map (ASymbol . Entity ty) us
+               AnyEntity -> map AnUri us
+               EntityType ty -> map (ASymbol . Entity ty) us
+               Prefix -> map (APrefix . showQN) us
 
 statSymbMapItems :: [SymbMapItems] -> Result (Map.Map RawSymb RawSymb)
 statSymbMapItems =
@@ -164,8 +169,8 @@ statSymbMapItems =
   . concatMap (\ (SymbMapItems m us) ->
       let ps = map (\ (u, v) -> (u, fromMaybe u v)) us in
       case m of
-        Nothing -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
-        Just ty -> let mS = ASymbol . Entity ty in
+        AnyEntity -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
+        EntityType ty -> let mS = ASymbol . Entity ty in
                    map (\ (s, t) -> (mS s, mS t)) ps)
 
 mapAnno :: Map.Map Entity IRI -> Annotation -> Annotation

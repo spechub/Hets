@@ -186,7 +186,7 @@ uriP =
 -- | parse a possibly kinded list of comma separated uris aka symbols
 symbItems :: GenParser Char st SymbItems
 symbItems = do
-  m <- optionMaybe entityType
+  m <- option AnyEntity $ fmap EntityType entityType
   uris <- symbs
   return $ SymbItems m uris
 
@@ -201,7 +201,7 @@ symbs = uriP >>= \ u -> do
 -- | parse a possibly kinded list of comma separated symbol pairs
 symbMapItems :: GenParser Char st SymbMapItems
 symbMapItems = do
-  m <- optionMaybe entityType
+  m <- option AnyEntity $ fmap EntityType entityType
   uris <- symbPairs
   return $ SymbMapItems m uris
 

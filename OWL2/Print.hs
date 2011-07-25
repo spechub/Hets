@@ -34,11 +34,11 @@ printURIreference q =
 -- | Symbols printing
 
 instance Pretty SymbItems where
-  pretty (SymbItems m us) = maybe empty (keyword . show) m
+  pretty (SymbItems m us) = (keyword . show) m
     <+> ppWithCommas us
 
 instance Pretty SymbMapItems where
-  pretty (SymbMapItems m us) = maybe empty (keyword . show) m
+  pretty (SymbMapItems m us) = (keyword . show) m
     <+> sepByCommas
         (map (\ (s, ms) -> sep
               [ pretty s
