@@ -101,7 +101,7 @@ getFullOrAbbrIRI :: XMLBase -> Element -> IRI
 getFullOrAbbrIRI b e =
   let cont = strContent e
   in case getName e of
-      "abbreviatedIRI" -> simpleSplit $ nullQName {localPart = cont}
+      "AbbreviatedIRI" -> simpleSplit $ nullQName {localPart = cont}
       "IRI" -> if ':' `elem` cont then
                  simpleSplit $ nullQName {localPart = cont,
                           isFullIri = True}
@@ -175,7 +175,7 @@ getAnnotation b e =
          [ap] = filterCh "AnnotationProperty" e
          [av] = filterCh "Literal" e ++ filterCh "IRI" e
                   ++ filterCh "AnonymousIndividual" e
-                  ++ filterCh "abbreviatedIRI" e
+                  ++ filterCh "AbbreviatedIRI" e
      in
           Annotation (map (getAnnotation b) hd)
               (getIRI b ap) (getValue b av)
@@ -478,7 +478,7 @@ getAnnoAxiom b e =
        ap = getIRI b $ filterC "AnnotationProperty" e
    in case getName e of
     "AnnotationAssertion" ->
-       let [s, v] = filterChL ["abbreviatedIRI", "IRI",
+       let [s, v] = filterChL ["AbbreviatedIRI", "IRI",
             "AnonymousIndividual", "Literal"] e
        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)]
@@ -488,13 +488,13 @@ getAnnoAxiom b e =
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty hd)
             $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, lst)]
     "AnnotationPropertyDomain" ->
-        let [ch] = filterChL ["IRI", "abbreviatedIRI"] e
+        let [ch] = filterChL ["IRI", "AbbreviatedIRI"] e
             iri = getFullOrAbbrIRI b ch
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ADomain))
                       $ AnnotationBit [(as, iri)]
     "AnnotationPropertyRange" ->
-        let [ch] = filterChL ["IRI", "abbreviatedIRI"] e
+        let [ch] = filterChL ["IRI", "AbbreviatedIRI"] e
             iri = getFullOrAbbrIRI b ch
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ARange))

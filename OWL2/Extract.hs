@@ -31,8 +31,7 @@ addDataPropExpr = addEntity . Entity DataProperty
 
 addIndividual :: Individual -> State Sign ()
 addIndividual ind =
-    if (not . null) (namePrefix ind) &&
-        head (namePrefix ind) == '_' then return ()
+    if isAnonymous ind then return ()
      else addEntity $ Entity NamedIndividual ind
 
 addAnnoProp :: AnnotationProperty -> State Sign ()
@@ -94,14 +93,15 @@ addDescription desc = case desc of
 
 {- | Adds possible ListFrameBits to the Signature by calling
 bottom level functions -}
-comSigLFB :: ListFrameBit
+comSigLFB :: Maybe Relation -> ListFrameBit
           -> State Sign ()
-comSigLFB lfb =
+comSigLFB r lfb =
   case lfb of
     AnnotationBit ab ->
-      do
-        let map2nd = map snd ab
-        mapM_ addAnnoProp map2nd
+      if r == Just (DRRelation ADomain) || r == Just (DRRelation ARange) then return ()
+       else do 
+                let map2nd = map snd ab
+                mapM_ addAnnoProp map2nd
     ExpressionBit ancls -> do
       let clslst = map snd ancls
       mapM_ addDescription clslst
@@ -150,7 +150,7 @@ comSigAFB afb =
 case separation of ListFrameBit and AnnotationFrameBit -}
 comFB :: FrameBit -> State Sign ()
 comFB fb = case fb of
-  ListFrameBit _rel lfb -> comSigLFB lfb
+  ListFrameBit rel lfb -> comSigLFB rel lfb
   AnnFrameBit _an anf -> comSigAFB anf
 
 -- | Maps the function comFB on the entire FrameBit list of the Frame

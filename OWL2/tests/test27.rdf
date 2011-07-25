@@ -1,0 +1,14 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:j.0="http://owl2.test/rules/">
+  <owl:InverseFunctionalProperty rdf:about="http://owl2.test/rules/unique_employee_id">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+  </owl:InverseFunctionalProperty>
+  <owl:Thing rdf:about="http://owl2.test/rules/Y2">
+    <j.0:unique_employee_id>123</j.0:unique_employee_id>
+  </owl:Thing>
+  <owl:Thing rdf:about="http://owl2.test/rules/Y1">
+    <j.0:unique_employee_id>123</j.0:unique_employee_id>
+  </owl:Thing>
+</rdf:RDF>

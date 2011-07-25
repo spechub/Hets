@@ -3,6 +3,12 @@
 HETS_OWL_TOOLS=`pwd`/..
 export HETS_OWL_TOOLS
 
+cd ../..
+
+make
+
+cd OWL2/tests
+
 echo "\ncreating directory XML...\n"
 
 mkdir XML
@@ -11,7 +17,7 @@ dir=OWL2/tests/XML
 
 echo "creating .rdf.xml files with java...\n"
 
-for i in test?.rdf food.rdf pizza.owl *.ofn
+for i in test*.rdf food.rdf pizza.owl *.ofn
 do
     java -jar ../OWL2Parser.jar file:`pwd`/$i xml >> `pwd`/XML/$i.xml
     echo $i "ok\n"
@@ -41,8 +47,14 @@ done
 
 cd $dir
 
-
-
+a()
+{
+for i in *.rdf.xml.xml *.owl.xml.xml *ofn.xml.xml 
+do 
+    echo $i "\n" 
+    diff $i $i.xml 
+done 
+}
 cd ../../..
 
 echo "calling hets for all xml files...\n"
@@ -70,7 +82,14 @@ do
    echo $i "ok\n"
 done
 
-
+a()
+{
+for i in *.rdf.xml.xml.omn *.owl.xml.xml.omn *.ofn.xml.xml.omn 
+do 
+    echo $i "\n" 
+    diff $i $i.omn 
+done 
+}
 
 cd ../../..
 
@@ -96,8 +115,14 @@ do
     echo $i "ok\n"
 done
 
-
-
+a()
+{
+for i in *.rdf.xml.xml.mno *.owl.xml.xml.mno *.ofn.xml.xml.mno 
+do 
+    echo $i "\n" 
+    diff $i $i.mno 
+done 
+}
 echo "removing directory XML...\n"
 
 #rm -rf ../XML

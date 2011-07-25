@@ -1,0 +1,27 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:first="http://www.w3.org/2002/03owlt/TransitiveProperty/premises002#"
+    xmlns:second="http://www.w3.org/2002/03owlt/TransitiveProperty/conclusions002#"
+    xml:base="http://www.w3.org/2002/03owlt/TransitiveProperty/premises002" >
+   <owl:Ontology/>
+   <owl:SymmetricProperty rdf:ID="symProp">
+     <rdfs:range>
+       <owl:Class>
+          <owl:oneOf rdf:parseType="Collection">
+            <owl:Thing rdf:ID="a"/>
+            <owl:Thing rdf:ID="b"/>
+          </owl:oneOf>
+       </owl:Class>
+     </rdfs:range>
+   </owl:SymmetricProperty>
+   <owl:Thing rdf:about="#a">
+     <first:symProp rdf:resource="#a"/>
+   </owl:Thing>
+   <owl:Thing rdf:about="#b">
+     <first:symProp rdf:resource="#b"/>
+   </owl:Thing>
+
+
+</rdf:RDF>

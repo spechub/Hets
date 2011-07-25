@@ -70,6 +70,11 @@ setPrefix s q = q { namePrefix = s }
 setFull :: QName -> QName
 setFull q = q {isFullIri = True}
 
+isAnonymous :: IRI -> Bool
+isAnonymous iri =
+    let np = namePrefix iri
+    in if (not . null) np && head np == '_' then True else False
+
 instance Eq QName where
     p == q = compare p q == EQ
 

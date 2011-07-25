@@ -45,7 +45,7 @@ setIRI :: IRI -> Element -> Element
 setIRI iri e =
     let np = namePrefix iri
         ty
-            | (not . null) np && head np == '_' = "nodeID"
+            | isAnonymous iri = "nodeID"
             | isFullIri iri {-|| null np-} = iriK
             | otherwise = "abbreviatedIRI"
     in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showIRI iri}]}
@@ -88,7 +88,8 @@ mwText :: String -> Element
 mwText s = setText s nullElem
 
 mwSimpleIRI :: IRI -> Element
-mwSimpleIRI s = setName iriK $ mwText $ showIRI s
+mwSimpleIRI s = setName (if isFullIri s then iriK else "AbbreviatedIRI")
+    $ mwText $ showIRI s
 
 makeElement :: String -> [Element] -> Element
 makeElement s el = setContent el $ mwString s
@@ -123,9 +124,7 @@ xmlLiteral (Literal lf tu) =
 
 xmlIndividual :: IRI -> Element
 xmlIndividual iri =
-    let np = namePrefix iri
-        h = (not . null) np && head np == '_'
-    in mwNameIRI (if h then anonymousIndividualK
+    mwNameIRI (if isAnonymous iri then anonymousIndividualK
                 else namedIndividualK) iri
 
 xmlFVPair :: (ConstrainingFacet, RestrictionValue) -> Element
@@ -225,9 +224,9 @@ xmlLFB ext mr lfb = case lfb of
                 let list2 = xmlAL (mwNameIRI annotationPropertyK) al
                 in make1 True subAnnotationPropertyOfK annotationPropertyK
                          mwNameIRI ap list2
-            DRRelation ADomain -> make1 True subAnnotationPropertyOfK
+            DRRelation ADomain -> make1 True annotationPropertyDomainK
                         annotationPropertyK mwNameIRI ap list
-            DRRelation ARange -> make1 True subAnnotationPropertyOfK
+            DRRelation ARange -> make1 True annotationPropertyRangeK
                         annotationPropertyK mwNameIRI ap list
             _ -> error "bad annotation bit"
     ExpressionBit al ->

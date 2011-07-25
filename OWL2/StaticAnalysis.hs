@@ -67,8 +67,7 @@ modEntity f (Entity ty u) = do
     ObjectProperty -> s { objectProperties = chg $ objectProperties s }
     DataProperty -> s { dataProperties = chg $ dataProperties s }
     NamedIndividual ->
-        if (not . null) (namePrefix u) &&
-            head (namePrefix u) == '_' then s
+        if isAnonymous u then s
          else s { individuals = chg $ individuals s }
     AnnotationProperty -> s {annotationRoles = chg $ annotationRoles s}
 
@@ -354,6 +353,12 @@ getEntityFromFrame f = case f of
         addEntity $ Entity Class e
     Frame (ObjectEntity (ObjectProp e)) _ ->
         addEntity $ Entity ObjectProperty e
+    Frame _ [AnnFrameBit al AnnotationFrameBit]
+        -> case al of
+            [Annotation [] iri1 (AnnValue iri2)] ->
+                if iri1 == iri2 then addEntity $ Entity AnnotationProperty iri1
+                 else return ()
+            _ -> return ()
     _ -> return ()
 
 createSign :: [Frame] -> State Sign ()
