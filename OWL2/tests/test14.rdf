@@ -1,0 +1,25 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xml:base="http://www.w3.org/2002/03owlt/Class/nonconclusions005" >
+
+  <owl:Ontology/>
+  <owl:Class rdf:ID="c"/>
+  <rdf:Description rdf:about="premises005#x">
+    <rdf:type>
+      <rdf:Description>
+        <rdf:type 
+    rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdf:type 
+    rdf:resource="http://www.w3.org/2000/01/rdf-schema#Class"/>
+        <owl:unionOf rdf:parseType="Collection">
+          <rdf:Description rdf:about="#c" />
+          <owl:Class>
+            <owl:complementOf rdf:resource="#c"/>
+          </owl:Class>
+        </owl:unionOf>
+      </rdf:Description>
+    </rdf:type>
+  </rdf:Description>
+               
+</rdf:RDF>
