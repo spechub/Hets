@@ -1,0 +1,22 @@
+<Ontology xml:base="http://example.org/" xmlns="http://www.w3.org/2002/07/owl#">
+  <Prefix name="" IRI="http://example.org/" />
+  <Prefix name="owl" IRI="http://www.w3.org/2002/07/owl#" />
+  <Prefix name="rdf" IRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#" />
+  <Prefix name="rdfs" IRI="http://www.w3.org/2000/01/rdf-schema#" />
+  <Prefix name="xml" IRI="http://www.w3.org/XML/1998/namespace" />
+  <Prefix name="xsd" IRI="http://www.w3.org/2001/XMLSchema#" />
+  <DifferentIndividuals>
+    <Annotation>
+      <AnnotationProperty abbreviatedIRI="rdfs:comment" />
+      <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">I hereby annotate this</Literal>
+    </Annotation>
+    <NamedIndividual abbreviatedIRI=":a" />
+    <NamedIndividual abbreviatedIRI=":b" />
+  </DifferentIndividuals>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":a" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":b" />
+  </Declaration>
+</Ontology>

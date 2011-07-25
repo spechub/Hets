@@ -94,7 +94,7 @@ getIRI :: XMLBase -> Element -> IRI
 getIRI b e =
   let [a] = elAttribs e
       iri = attrVal a
-      f = if (qName $ attrKey a) == "abbreviatedIRI" then False else True
+      f = not $ (qName $ attrKey a) == "abbreviatedIRI"
   in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
 
 getFullOrAbbrIRI :: XMLBase -> Element -> IRI
@@ -530,7 +530,7 @@ axToFrame (PlainAxiom e fb) = Frame e [fb]
 getFrames :: XMLBase -> Element -> [Frame]
 getFrames b e =
    let ax = filterChildrenName isNotSmth e
-       f = map axToFrame (map (getDeclaration b) (filterCh "Declaration" e))
+       f = map (axToFrame . getDeclaration b) (filterCh "Declaration" e)
             ++ map (axToFrame . getClassAxiom b) ax
    in f ++ signToFrames f
 

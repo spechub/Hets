@@ -356,8 +356,7 @@ getEntityFromFrame f = case f of
     Frame _ [AnnFrameBit al AnnotationFrameBit]
         -> case al of
             [Annotation [] iri1 (AnnValue iri2)] ->
-                if iri1 == iri2 then addEntity $ Entity AnnotationProperty iri1
-                 else return ()
+                when (iri1 == iri2) $ addEntity $ Entity AnnotationProperty iri1
             _ -> return ()
     _ -> return ()
 

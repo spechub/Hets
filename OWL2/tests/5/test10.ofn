@@ -1,0 +1,7 @@
+Prefix(: = <http://example.org/>)
+ Prefix(rdfs: = <http://www.w3.org/2000/01/rdf-schema#>)
+ Ontology(
+   Declaration(ObjectProperty(:q))
+   Declaration(ObjectProperty(:r))
+   Declaration(ObjectProperty(:p))
+   SubObjectPropertyOf(Annotation(rdfs:comment "I hereby annotate this") ObjectPropertyChain(:q :r) :p))

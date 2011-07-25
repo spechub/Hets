@@ -1,0 +1,6 @@
+Prefix(: = <http://example.org/>)
+ Ontology(Annotation(Annotation(:member :a) Annotation(:member :b) Annotation(:member :c) :for :eqc)
+ Declaration(Class(:a))
+ Declaration(Class(:b))
+ Declaration(Class(:c))
+ EquivalentClasses( :a :b :c))

@@ -1,0 +1,208 @@
+<Ontology xml:base="http://example.org/" xmlns="http://www.w3.org/2002/07/owl#">
+  <Prefix name="" IRI="http://example.org/" />
+  <Prefix name="owl" IRI="http://www.w3.org/2002/07/owl#" />
+  <Prefix name="rdf" IRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#" />
+  <Prefix name="rdfs" IRI="http://www.w3.org/2000/01/rdf-schema#" />
+  <Prefix name="xml" IRI="http://www.w3.org/XML/1998/namespace" />
+  <Prefix name="xsd" IRI="http://www.w3.org/2001/XMLSchema#" />
+  <Declaration>
+    <Annotation>
+      <AnnotationProperty abbreviatedIRI="rdfs:comment" />
+      <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">No range so any literal is fine</Literal>
+    </Annotation>
+    <DataProperty abbreviatedIRI=":dp" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":dp" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":holder" />
+  </Declaration>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#double">1.1e6</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">1</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#long">6666666666</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2002/07/owl#rational">1/2</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#decimal">12.25</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" xml:lang="en">No use of rdf:PlainLiteral in old rdf serializations</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#Name">_12345</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#hexBinary">C010</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#dateTimeStamp">2007-09-01T12:00:01-05:00</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#unsignedByte">28</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">1</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#float">1.1e6</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#token">there is only one space between each word</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#anyURI">http://www.w3.org/2007/OWL/wiki/Syntax</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#NCName">non-hyphenated</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#unsignedShort">17</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#unsignedLong">6666666666</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">string</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">0</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#int">13</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#unsignedInt">12</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#boolean">true</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#nonPositiveInteger">0</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#negativeInteger">-11</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#base64Binary">b3ds</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#positiveInteger">12</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#short">14</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#language">en</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#byte">15</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#normalizedString">Normalized string can&#39;t have carriage return (#xD), line feed (#xA) or tab (#x9) characters in them</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#NMTOKEN">token</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#decimal">1</Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral">&lt;rdf:RDF
+    xmlns:ex=&quot;http://example.org/&quot;
+    xmlns:owl=&quot;http://www.w3.org/2002/07/owl#&quot;
+    xmlns:rdf=&quot;http://www.w3.org/1999/02/22-rdf-syntax-ns#&quot;
+    xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema#&quot;
+    &gt;
+  &lt;owl:Ontology&gt;&lt;/owl:Ontology&gt;
+  &lt;rdf:Description rdf:about=&quot;http://example.org/a&quot;&gt;
+    &lt;owl:differentFrom rdf:resource=&quot;http://example.org/b&quot;/&gt;
+  &lt;/rdf:Description&gt;
+ &lt;/rdf:RDF&gt;
+ </Literal>
+  </DataPropertyAssertion>
+  <DataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":dp" />
+    <NamedIndividual abbreviatedIRI=":holder" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#dateTime">2007-09-01T12:00:01</Literal>
+  </DataPropertyAssertion>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":dp" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":holder" />
+  </Declaration>
+</Ontology>

@@ -31,8 +31,7 @@ addDataPropExpr = addEntity . Entity DataProperty
 
 addIndividual :: Individual -> State Sign ()
 addIndividual ind =
-    if isAnonymous ind then return ()
-     else addEntity $ Entity NamedIndividual ind
+    unless (isAnonymous ind) $ addEntity $ Entity NamedIndividual ind
 
 addAnnoProp :: AnnotationProperty -> State Sign ()
 addAnnoProp = addEntity . Entity AnnotationProperty
@@ -58,8 +57,9 @@ addDataRange dr = case dr of
 -- | Adds the Fact to the Signature and returns it as a State Sign()
 addFact :: Fact -> State Sign ()
 addFact f = case f of
-  ObjectPropertyFact _ obe _ ->
+  ObjectPropertyFact _ obe ind -> do
       addObjPropExpr obe
+      addIndividual ind
   DataPropertyFact _ dpe _ ->
       addDataPropExpr dpe
 
@@ -98,10 +98,9 @@ comSigLFB :: Maybe Relation -> ListFrameBit
 comSigLFB r lfb =
   case lfb of
     AnnotationBit ab ->
-      if r == Just (DRRelation ADomain) || r == Just (DRRelation ARange) then return ()
-       else do 
-                let map2nd = map snd ab
-                mapM_ addAnnoProp map2nd
+      unless (r `elem` [Just (DRRelation ADomain), Just (DRRelation ARange)]) 
+        $ do let map2nd = map snd ab
+             mapM_ addAnnoProp map2nd
     ExpressionBit ancls -> do
       let clslst = map snd ancls
       mapM_ addDescription clslst

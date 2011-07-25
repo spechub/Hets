@@ -1,0 +1,266 @@
+<Ontology xml:base="http://example.org/" xmlns="http://www.w3.org/2002/07/owl#">
+  <Prefix name="" IRI="http://example.org/" />
+  <Prefix name="owl" IRI="http://www.w3.org/2002/07/owl#" />
+  <Prefix name="rdf" IRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#" />
+  <Prefix name="rdfs" IRI="http://www.w3.org/2000/01/rdf-schema#" />
+  <Prefix name="xml" IRI="http://www.w3.org/XML/1998/namespace" />
+  <Prefix name="xsd" IRI="http://www.w3.org/2001/XMLSchema#" />
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p1" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p3" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p4" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p6" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p7" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p9" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p2" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p5" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p8" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p1" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p3" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p4" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p6" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p7" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p9" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p2" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p5" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p8" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o1" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o3" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o4" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o6" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o7" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o9" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s1" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s2" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s3" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s4" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s5" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s6" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s7" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s8" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s9" />
+  </Declaration>
+  <NegativeObjectPropertyAssertion>
+    <ObjectProperty abbreviatedIRI=":p1" />
+    <NamedIndividual abbreviatedIRI=":s1" />
+    <NamedIndividual abbreviatedIRI=":o1" />
+  </NegativeObjectPropertyAssertion>
+  <NegativeObjectPropertyAssertion>
+    <ObjectInverseOf>
+      <ObjectProperty abbreviatedIRI=":p3" />
+    </ObjectInverseOf>
+    <NamedIndividual abbreviatedIRI=":s3" />
+    <NamedIndividual abbreviatedIRI=":o3" />
+  </NegativeObjectPropertyAssertion>
+  <NegativeObjectPropertyAssertion>
+    <Annotation>
+      <AnnotationProperty abbreviatedIRI="rdfs:comment" />
+      <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">I hereby annotate this</Literal>
+    </Annotation>
+    <ObjectProperty abbreviatedIRI=":p4" />
+    <NamedIndividual abbreviatedIRI=":s4" />
+    <NamedIndividual abbreviatedIRI=":o4" />
+  </NegativeObjectPropertyAssertion>
+  <NegativeObjectPropertyAssertion>
+    <Annotation>
+      <AnnotationProperty abbreviatedIRI="rdfs:comment" />
+      <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">I hereby annotate this also</Literal>
+    </Annotation>
+    <ObjectInverseOf>
+      <ObjectProperty abbreviatedIRI=":p6" />
+    </ObjectInverseOf>
+    <NamedIndividual abbreviatedIRI=":s6" />
+    <NamedIndividual abbreviatedIRI=":o6" />
+  </NegativeObjectPropertyAssertion>
+  <NegativeObjectPropertyAssertion>
+    <Annotation>
+      <Annotation>
+        <AnnotationProperty abbreviatedIRI="rdfs:label" />
+        <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">on seven</Literal>
+      </Annotation>
+      <AnnotationProperty abbreviatedIRI="rdfs:comment" />
+      <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">I hereby annotate this</Literal>
+    </Annotation>
+    <ObjectProperty abbreviatedIRI=":p7" />
+    <NamedIndividual abbreviatedIRI=":s7" />
+    <NamedIndividual abbreviatedIRI=":o7" />
+  </NegativeObjectPropertyAssertion>
+  <NegativeObjectPropertyAssertion>
+    <Annotation>
+      <Annotation>
+        <AnnotationProperty abbreviatedIRI="rdfs:label" />
+        <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">on nine</Literal>
+      </Annotation>
+      <AnnotationProperty abbreviatedIRI="rdfs:comment" />
+      <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">I hereby annotate this also</Literal>
+    </Annotation>
+    <ObjectInverseOf>
+      <ObjectProperty abbreviatedIRI=":p9" />
+    </ObjectInverseOf>
+    <NamedIndividual abbreviatedIRI=":s9" />
+    <NamedIndividual abbreviatedIRI=":o9" />
+  </NegativeObjectPropertyAssertion>
+  <NegativeDataPropertyAssertion>
+    <DataProperty abbreviatedIRI=":p2" />
+    <NamedIndividual abbreviatedIRI=":s2" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">2</Literal>
+  </NegativeDataPropertyAssertion>
+  <NegativeDataPropertyAssertion>
+    <Annotation>
+      <AnnotationProperty abbreviatedIRI="rdfs:comment" />
+      <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">I hereby annotate this too</Literal>
+    </Annotation>
+    <DataProperty abbreviatedIRI=":p5" />
+    <NamedIndividual abbreviatedIRI=":s5" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">5</Literal>
+  </NegativeDataPropertyAssertion>
+  <NegativeDataPropertyAssertion>
+    <Annotation>
+      <Annotation>
+        <AnnotationProperty abbreviatedIRI="rdfs:label" />
+        <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">on eight</Literal>
+      </Annotation>
+      <AnnotationProperty abbreviatedIRI="rdfs:comment" />
+      <Literal datatypeIRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral">I hereby annotate this too</Literal>
+    </Annotation>
+    <DataProperty abbreviatedIRI=":p8" />
+    <NamedIndividual abbreviatedIRI=":s8" />
+    <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">8</Literal>
+  </NegativeDataPropertyAssertion>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p1" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p3" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p4" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p6" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p7" />
+  </Declaration>
+  <Declaration>
+    <ObjectProperty abbreviatedIRI=":p9" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p2" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p5" />
+  </Declaration>
+  <Declaration>
+    <DataProperty abbreviatedIRI=":p8" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o1" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o3" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o4" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o6" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o7" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":o9" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s1" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s2" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s3" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s4" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s5" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s6" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s7" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s8" />
+  </Declaration>
+  <Declaration>
+    <NamedIndividual abbreviatedIRI=":s9" />
+  </Declaration>
+</Ontology>

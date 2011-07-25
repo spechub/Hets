@@ -1,0 +1,149 @@
+Prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
+Prefix: owl: <http://www.w3.org/2002/07/owl#>
+Prefix: : <http://example.org/>
+Prefix: xml: <http://www.w3.org/XML/1998/namespace>
+Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+
+
+Ontology: 
+
+AnnotationProperty: rdfs:label
+
+    
+AnnotationProperty: rdfs:comment
+
+    
+Datatype: rdf:PlainLiteral
+
+    
+Datatype: xsd:integer
+
+    
+ObjectProperty: p1
+
+    
+ObjectProperty: p4
+
+    
+ObjectProperty: p9
+
+    
+ObjectProperty: p6
+
+    
+ObjectProperty: p3
+
+    
+ObjectProperty: p7
+
+    
+DataProperty: p2
+
+    
+DataProperty: p5
+
+    
+DataProperty: p8
+
+    
+Individual: o1
+
+    
+Individual: s7
+
+    Facts:  
+     
+     Annotations: 
+                 Annotations: rdfs:label "on seven"
+                             
+                             rdfs:comment "I hereby annotate this"
+                 
+                  not  p7  o7
+    
+    
+Individual: s8
+
+    Facts:  
+     
+     Annotations: 
+                 Annotations: rdfs:label "on eight"
+                             
+                             rdfs:comment "I hereby annotate this too"
+                 
+                  not  p8  8
+    
+    
+Individual: s9
+
+    Facts:  
+     
+     Annotations: 
+                 Annotations: rdfs:label "on nine"
+                             
+                             rdfs:comment "I hereby annotate this also"
+                 
+                  not   inverse (p9)  o9
+    
+    
+Individual: s3
+
+    Facts:  
+      not   inverse (p3)  o3
+    
+    
+Individual: o7
+
+    
+Individual: s4
+
+    Facts:  
+     
+     Annotations: rdfs:comment "I hereby annotate this"
+                 
+                  not  p4  o4
+    
+    
+Individual: s5
+
+    Facts:  
+     
+     Annotations: rdfs:comment "I hereby annotate this too"
+                 
+                  not  p5  5
+    
+    
+Individual: o9
+
+    
+Individual: s6
+
+    Facts:  
+     
+     Annotations: rdfs:comment "I hereby annotate this also"
+                 
+                  not   inverse (p6)  o6
+    
+    
+Individual: o4
+
+    
+Individual: o3
+
+    
+Individual: o6
+
+    
+Individual: s1
+
+    Facts:  
+      not  p1  o1
+    
+    
+Individual: s2
+
+    Facts:  
+      not  p2  2
+    
+    

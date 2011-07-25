@@ -7,7 +7,7 @@ echo "\nhi !\n"
 
 ALL=`ls`
 
-for DIR in 4
+for DIR in 5
 do
     if test -d $DIR;
         then
@@ -17,7 +17,7 @@ do
 
             mkdir res
     
-            for i in *.ofn *.rdf
+            for i in *.ofn #*.rdf
             do
                 echo "\ncalling java for:" $i
                 java -jar ../../OWL2Parser.jar file:`pwd`/$i xml >> `pwd`/res/$i.xml
@@ -61,13 +61,13 @@ do
 
             cd OWL2/tests/$DIR/res
 
-            for i in *.rdf.xml *.ofn.xml
+            for i in *.ofn.xml #*.rdf.xml 
             do
                 echo "\ncalling java for:" $i
                 java -jar ../../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.xml.omn
             done
 
-            for i in *.rdf.xml.xml *.ofn.xml.xml
+            for i in *.ofn.xml.xml # *.rdf.xml.xml
             do
                 echo "\ncalling java for:" $i
                 java -jar ../../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.omn.omn
@@ -83,13 +83,13 @@ do
 
             echo "\ncalling runXML on .xml files..."
 
-            for i in *.rdf.xml  *.ofn.xml
+            for i in *.ofn.xml # *.rdf.xml  
             do
                 echo "\ncalling runXML for:" $i
                 ../../../scripts/runXML $i >> $i.xml.mno
             done
 
-            for i in *.rdf.xml.xml *.ofn.xml.xml
+            for i in *.ofn.xml.xml # *.rdf.xml.xml
             do
                 echo "\ncalling runXML for:" $i
                 ../../../scripts/runXML $i >> $i.mno.mno
@@ -97,7 +97,7 @@ do
 
             cd ..            
     
-            rm -rf res
+            #rm -rf res
 
             cd ..
 
