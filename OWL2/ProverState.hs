@@ -20,6 +20,9 @@ import OWL2.Morphism
 import OWL2.Sign
 import OWL2.ManchesterPrint
 import OWL2.XML
+import OWL2.XMLConversion
+
+import Text.XML.Light
 
 import Common.AS_Annotation
 
@@ -47,7 +50,7 @@ showOWLProblemS :: ProverState -> String -- ^ formatted output
 showOWLProblemS pst =
     let namedSens = initialState pst
         sign = ontologySign pst
-    in show $ printOWLBasicTheory (sign, filter isAxiom namedSens)
+    in ppTopElement $ xmlOntologyDoc $ mkODoc sign (filter isAxiom namedSens)
 
 {- |
   Pretty printing OWL goal for pellet or fact++
