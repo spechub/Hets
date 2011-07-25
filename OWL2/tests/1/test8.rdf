@@ -1,0 +1,12 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:first="http://www.w3.org/2002/03owlt/differentFrom/premises002#"
+    xml:base="http://www.w3.org/2002/03owlt/differentFrom/conclusions002" >
+
+    <owl:Ontology/>
+    <rdf:Description rdf:about="premises002#Barney">
+        <owl:differentFrom rdf:resource="premises002#Wilma"/>
+    </rdf:Description>
+
+</rdf:RDF>
