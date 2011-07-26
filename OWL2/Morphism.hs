@@ -62,7 +62,8 @@ inclOWLMorphism s t = OWLMorphism
  , mmaps = Map.empty }
 
 isOWLInclusion :: OWLMorphism -> Bool
-isOWLInclusion m = Map.null (mmaps m) && isSubSign (osource m) (otarget m)
+isOWLInclusion m = Map.null (pmap m)
+  && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
 symMap :: Map.Map Entity IRI -> Map.Map Entity Entity
 symMap = Map.mapWithKey (\ (Entity ty _) -> Entity ty)
@@ -161,7 +162,7 @@ generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 matchesSym :: Entity -> RawSymb -> Bool
 matchesSym e@(Entity _ u) r = case r of
   ASymbol s -> s == e
-  AnUri s -> s == u
+  AnUri s -> s == u || namePrefix u == localPart s && null (namePrefix s)
   APrefix p -> p == namePrefix u
 
 statSymbItems :: [SymbItems] -> [RawSymb]
@@ -191,7 +192,7 @@ statSymbMapItems =
       case m of
         AnyEntity -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
         EntityType ty ->
-            let mS = ASymbol . Entity ty 
+            let mS = ASymbol . Entity ty
             in map (\ (s, t) -> (mS s, mS t)) ps
         Prefix ->
             map (\ (s, t) -> (APrefix (showQU s), APrefix $ showQU t)) ps)
