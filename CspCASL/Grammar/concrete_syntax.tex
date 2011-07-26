@@ -17,39 +17,58 @@ PROCESS-HEAD    ::= ( VAR ,..., VAR )              %% definition only
                   | ( ARG-DECL ;...; ARG-DECL) ALPHABET
                   | ALPHABET
 
-ALPHABET        ::= : SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL
-                  | : \{ SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL \}
-                  | : \{ \}   %% empty alphabet
-                  | :         %% empty alphabet
+EVENT-SET       ::= SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL
+                  | \{ SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL \}
+                  | \{ \}   %% empty set
+
+ALPHABET        ::= : EVENT-SET
+                  | :       %% empty alphabet
 
 SORT-OR-CHANNEL ::= SORT
                   | CHANNEL
                   | CHANNEL : SORT
 
-CHANNEL         ::= ID
+CHANNEL         ::= SORT-ID
 PROCESS-NAME    ::= ID
 
-PROCESS ::=   ( PROCESS )                   %% parenthesized process
+PROCESS   ::= ( PROCESS )                   %% parenthesized process
             | \"SKIP\"
             | \"STOP\"
             | \"DIV\"
             | \"RUN\" ( EVENT-SET )
             | \"CHAOS\" ( EVENT-SET )
-            | PROCESS \back EVENT-SET       %% hiding
-            | PROCESS [[ RENAMING ]]
             | if FORMULA then PROCESS else PROCESS
             | PROCESS-CALL
+
+            | PROCESS \back EVENT-SET       %% hiding
+            | PROCESS [[ RENAMING ]]
+
             | EVENT -> PROCESS
-            | [] VAR :: SORT -> PROCESS    %% prefix choice
+            | TERM -> PROCESS
+            | [] VAR :: SORT -> PROCESS     %% prefix choice
             | |~| VAR :: SORT -> PROCESS
+
             | PROCESS ; PROCESS
             | PROCESS ;; PROCESS %% alternative syntax for sequential processes
 
-            | PROCESS [] PROCESS
+            | PROCESS [] PROCESS            %% choice
             | PROCESS |~| PROCESS
-            | PROCESS [| EVENT-SET |] PROCESS
-            | PROCESS [ EVENT-Set || EVENT-SET ] PROCESS
-            | PROCESS || PROCESS
-            | PROCESS ||| PROCESS
 
+            | PROCESS [| EVENT-SET |] PROCESS             %% generalized
+            | PROCESS [ EVENT-SET || EVENT-SET ] PROCESS  %% alphabetized
+            | PROCESS |[ EVENT-SET \| EVENT-SET ]| PROCESS %% alphabetized (alt.)
+            | PROCESS || PROCESS                          %% synchronous
+            | PROCESS ||| PROCESS                         %% interleaved
+
+PROCESS-CALL    ::= PROCESS-QUAL
+                  | PROCESS-QUAL ( TERM ,..., TERM )
+
+PROCESS-QUAL    ::= PROCESS-NAME
+                  | ( process PROCESS-NAME PROCESS-PROFILE )
+
+RENAMING        ::= ID ,..., ID       %% unsupported
+
+EVENT           ::= CHANNEL ? VAR :: SORT
+                  | CHANNEL ! VAR :: SORT
+                  | CHANNEL ! TERM
 
