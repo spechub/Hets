@@ -128,6 +128,7 @@ instance Pretty OWLMorphism where
              , pretty $ Set.difference (symOf t) $ symOf s ]
        else fsep
          [ pretty $ mmaps m
+         , pretty $ pmap m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
 
 legalMor :: OWLMorphism -> Bool
