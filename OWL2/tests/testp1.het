@@ -18,4 +18,4 @@ Individual: a:Stewie
         a:Boy
 
 
-with Prefix a |-> b
+with a |-> b
