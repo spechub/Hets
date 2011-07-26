@@ -24,7 +24,7 @@ const_cl n = OMS (clMetaTheory, mkSimpleName n)
 
 
 const_symbol, const_forall, const_exists, const_module, const_textName
- , const_moduleName, const_moduleExcludes, const_and, const_or
+ , const_moduleExcludes, const_and, const_or
  , const_not, const_implies, const_equivalent, const_eq, const_comment
  , const_irregular, const_comment_term :: OMElement
 
@@ -33,7 +33,6 @@ const_forall = const_cl "forall"
 const_exists = const_cl "exists"
 const_module = const_cl "module"
 const_textName = const_cl "text_name"
-const_moduleName = const_cl "module_name"
 const_moduleExcludes = const_cl "module_excludes"
 const_and = const_cl "and"
 const_or = const_cl "or"

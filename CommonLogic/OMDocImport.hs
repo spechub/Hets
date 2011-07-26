@@ -45,7 +45,7 @@ omdocToSym _ symb _ = fail $ concat ["omdocToSym: only TCSymbols are allowed, bu
 
 
 
- 
+
  --------------- Sentences from OMElements
 omdocToSen :: Env -> TCElement -> String -> Result (Maybe (Named TEXT))
 omdocToSen e (TCSymbol _ t sr _) n =
@@ -64,29 +64,35 @@ omdocToSen _ sym _ = fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
 
 toText :: Env -> OMElement -> TEXT
 toText e om = case om of
-  OMA (const_and : phrs) -> Text (map (toPhrase e) phrs) nullRange
-  OMATTT txt (OMAttr const_textName (OMV (OMName n _))) ->
-    Named_text n (toText e txt) nullRange
-  _ -> error $ "toText: unsupported " ++ show om
-
+  OMA (op : subl) ->
+      if op == const_and then Text (map (toPhrase e) subl) nullRange
+      else if op == const_textName
+      then case subl of
+        [OMV (OMName n _), txt@(OMA _)] -> Named_text n (toText e txt) nullRange
+        _ -> error $ "toText: only two arguments supported, but found " ++ show subl
+      else error $ concat $ ["toText: only ", show const_and , " and ",
+            show const_textName, " and Named_text supported, but found " ++ show op]
+  _ -> error $ "toText: only OMA with at lease one argument is allowed, but found " ++ show om
+ 
 toPhrase :: Env -> OMElement -> PHRASE
 toPhrase e om = case om of
-  OMBIND const_module [n] m -> Module $ toModule e m n
-  OMBIND const_module _ _ -> error "toPhrase: only one bound module name allowed"
-  OMA (const_comment : OMV (OMName cmt _) : [txt]) ->
-      Comment_text (Comment cmt nullRange) (toText e txt) nullRange
-  OMA (const_comment : _ : txt) -> error "toPhrase: comment itself must be a OMName"
-  OMA (const_comment : _ : _) -> error "toPhrase: text must be single element"
+  OMBIND op [n] m ->
+      if op == const_module then Module $ toModule e m n
+      else Sentence $ toSen e om
+  OMA (op : OMV (OMName cmt _) : [txt]) ->
+      if op == const_comment then Comment_text (Comment cmt nullRange) (toText e txt) nullRange
+      else Sentence $ toSen e om
   _ -> Sentence $ toSen e om
-  
 
 toModule :: Env -> OMElement -> OMElement -> MODULE
 toModule e om n = case om of
-  OMA (const_moduleExcludes : txt : exs) ->
-      Mod_ex (toName n) (map toName exs) (toText e txt) nullRange
-  txt -> Mod (toName n) (toText e txt) nullRange
+  OMA (op : txt : exs) ->
+      if op == const_moduleExcludes
+      then Mod_ex (toName n) (map toName exs) (toText e txt) nullRange
+      else Mod (toName n) (toText e om) nullRange
+  _ -> Mod (toName n) (toText e om) nullRange
   where toName (OMV (OMName k _)) = strToToken k
-        toName k = error $ "toModule: only name supported, but found " ++ show k
+        toName k = error $ "toModule: only OMV OMName supported, but found " ++ show k
 
 
 toSen :: Env -> OMElement -> SENTENCE

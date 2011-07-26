@@ -44,21 +44,24 @@ exportSenToOmdoc en t = return $ Right $ exportText en [] t
 
 exportText :: Env -> [NAME_OR_SEQMARK] -> TEXT -> OMElement
 exportText en vars txt = case txt of
-  Text phrs _ -> OMA $ const_and : map (exportPhr en vars) phrs
-  Named_text n t _ -> OMATTT (exportText en vars t) $
-    OMAttr const_textName (OMV (mkSimpleName n))
+  Text phrs _ ->
+      OMA $ const_and : map (exportPhr en vars) (filter nonImportation phrs)
+  Named_text n t _ ->
+      OMA [const_textName, OMV (mkSimpleName n), exportText en vars t]
+  where nonImportation p = case p of
+          Importation _ -> False
+          _ -> True
 
 exportPhr :: Env -> [NAME_OR_SEQMARK] -> PHRASE -> OMElement
 exportPhr en vars phr = case phr of
-  Module m -> OMBIND const_module [modName m] $ exportModule en vars m
-  Sentence s -> exportSen en vars s
-  Comment_text c t _ -> OMA [const_comment, simpleName c, exportText en vars t]
-  where modName m = case m of
+   Importation _ -> undefined -- does not occur
+   Module m   -> OMBIND const_module [modName m] $ exportModule en vars m
+   Sentence s -> exportSen en vars s
+   Comment_text c t _ -> OMA [const_comment, simpleName c, exportText en vars t]
+  where simpleName (Comment x _) = OMV $ mkSimpleName x
+        modName m = case m of
           Mod n _ _ -> exportVar $ AS.Name n
           Mod_ex n _ _ _ -> exportVar $ AS.Name n
-        simpleName (Comment x _) = OMV $ mkSimpleName x
-  --Importation i -> undefined -- does not occur
-
 
 exportModule :: Env -> [NAME_OR_SEQMARK] -> MODULE -> OMElement
 exportModule en vars m = case m of
