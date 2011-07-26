@@ -1,8 +1,9 @@
-BASIC-SPEC      ::= BASIC-ITEMS...BASIC-ITEMS  |  \{ \}
+BASIC-SPEC      ::= BASIC-ITEMS...BASIC-ITEMS
+                  | \{ \}
 
 BASIC-ITEMS     ::= channel/channels CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
                   | process PROCESS-ITEM ;...; PROCESS-ITEM ;/
-                  | ...
+                  | ...  %% other CASL basic items
 
 CHANNEL-ITEM    ::= CHANNEL ,..., CHANNEL : SORT
 

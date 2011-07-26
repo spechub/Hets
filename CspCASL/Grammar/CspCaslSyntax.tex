@@ -1,0 +1,193 @@
+\documentclass{article}
+
+
+\title{CspCASL syntax description}
+\author{Christian Maeder}
+
+
+\begin{document}
+
+\maketitle
+
+CspCASL is designed as CASL extension with additional channel and process
+items as parts of basic specifications.
+
+The only support for structural specifications is given by the ``data''
+keyword, that can be viewed as a special case for an extended specification
+given by the ``then'' keyword.
+
+\begin{verbatim}
+logic CASL
+spec s = ...
+
+logic CspCSL
+spec c = data s
+  ...
+\end{verbatim}
+
+can also be written as:
+
+\begin{verbatim}
+logic CASL
+spec s = ...
+
+logic CspCSL
+spec c = s then
+  ...
+\end{verbatim}
+
+The missing parts (indicated by the dots above), can be any sequence of basic
+CspCASL or CASL items. Sort, operation and predicate items can be freely mixed
+with channel or process items.
+
+\section{Basic CspCASL Items}
+
+As in CASL basic items are introduced by a (singular or plural) keyword
+followed by list of items of the same kind that are separated by semicolons,
+where a final semicolon is optional. A new item keyword, like ``sort'' or
+``channel'', starts a new item list. (The plural of ``process'' is currently
+not supported as keyword.)
+
+Similar to the CASL grammar, we adopt the following convention:
+\begin{itemize}
+\item Nonterminal symbols are written as uppercase words, possibly hyphenated,
+e.g.~BASIC-ITEMS.
+\item Terminal symbols (possibly quoted) are written as either lowercase
+  words, e.g.~channel; or sequences of special characters that do not clash
+  with the metasymbols ::=, $|$, or ‘...’.
+\item A final optional semicolon is written as ;/
+\item Repetitions are indicated by ellipsis ‘...’, e.g. ID ,..., ID indicate
+  one or more IDs separated by commas in the latter case.
+\item Alternative sequences are separated by vertical bars
+\item A vertical bar followed by ellipsis hint at alternatives that
+  are not shown.
+\end{itemize}
+
+\subsection{Channel Items}
+
+Channels are associated to sorts to control the communication. Many different
+channels may communicate data of the same sort. Channels with the same name
+but over a different sort are considered as different. Such channels (within
+alphabets or event sets) must be qualified with their sort for
+disambiguation.
+
+\begin{verbatim}
+BASIC-ITEMS     ::= channel CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
+                  | channels CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
+                  | ...
+
+CHANNEL-ITEM    ::= CHANNEL ,..., CHANNEL : SORT
+\end{verbatim}
+
+It is also possible to use the same names for channel and sorts. Again
+channels must be qualified then, later on. However, in practice, it is not
+recommended to exploit overloading extensively.
+
+\subsection{Process Items}
+
+Processes may be declared or defined (or both at the same time) by process items.
+
+\begin{verbatim}
+BASIC-ITEMS     ::= process PROCESS-ITEM ;...; PROCESS-ITEM ;/
+                  | ...
+
+PROCESS-ITEM    ::= PROCESS-NAME PROCESS-PROFILE
+                  | PROCESS-NAME PROCESS-HEAD = PROCESS
+                  | PROCESS-NAME = PROCESS
+
+PROCESS-PROFILE ::= ( SORT ,..., SORT ) ALPHABET
+                  | ALPHABET
+
+PROCESS-HEAD    ::= ( VAR ,..., VAR )
+                  | ( ARG-DECL ;...; ARG-DECL) ALPHABET
+                  | ALPHABET
+
+EVENT-SET       ::= SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL
+                  | { SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL }
+                  | { }
+
+ALPHABET        ::= : EVENT-SET
+
+SORT-OR-CHANNEL ::= SORT
+                  | CHANNEL
+                  | CHANNEL : SORT
+
+\end{verbatim}
+
+A mere process declaration introduces a process name, possibly with sorted
+arguments, and a communication alphabet (starting with a colon sign).
+
+Process names may be overloaded as long as the argument sorts are sufficiently
+different to disambiguate the names later within process expressions.
+
+A process definition is an equation that defines the process depending on its
+input variables (that must all be different).
+
+Such an equation can be seen as a special process formula and just like
+operations or predicates in CASL also processes can be declared and defined
+simultaneously, if sorted variables (possibly none) and the communication
+alphabet is supplied.
+
+An alphabet or possible event sets are just comma separated sets of sorts or
+channels, that may even be empty.
+
+It remains to describe the process expression that may occur on the left hand
+side of a process equation.
+
+\subsection{Processes}
+
+Processes are basically composed of more primitive processes. The most
+primitive process are:
+
+\begin{verbatim}
+PROCESS         ::= "SKIP"
+                  | "STOP"
+                  | "DIV"
+                  | "RUN" ( EVENT-SET )
+                  | "CHAOS" ( EVENT-SET )
+                  | ...
+\end{verbatim}
+
+Then, it is possible to invoke a process (declared earlier) with concrete
+argument terms.
+
+\begin{verbatim}
+PROCESS         ::= PROCESS-CALL
+                  | ...
+
+PROCESS-CALL    ::= PROCESS-QUAL
+                  | PROCESS-QUAL ( TERM ,..., TERM )
+
+PROCESS-QUAL    ::= PROCESS-NAME
+                  | ( process PROCESS-NAME PROCESS-PROFILE )
+\end{verbatim}
+
+Processes can be slightly modified.
+
+\begin{verbatim}
+ PROCESS        ::= PROCESS \ EVENT-SET       %% hiding
+                  | PROCESS [[ RENAMING ]]
+                  | ...
+\end{verbatim}
+
+Processes can be invoked depending on conditions or events.
+
+\begin{verbatim}
+PROCESS         ::= if FORMULA then PROCESS else PROCESS
+                  | EVENT -> PROCESS
+                  | TERM -> PROCESS
+                  | ...
+\end{verbatim}
+
+Two processes can be invoked sequentially. The alternative operator ;; is only
+used to avoid conflicts with the single semicolon that is also used to
+separate items.
+
+\begin{verbatim}
+PROCESS         ::= PROCESS ; PROCESS
+                  | PROCESS ;; PROCESS
+                  | ...
+\end{verbatim}
+
+
+\end{document}
