@@ -74,23 +74,34 @@ inducedSign m = execState $ do
     mapM_ (modEntity Set.delete) $ Map.keys m
     mapM_ (modEntity Set.insert) $ inducedElems m
 
+inducedPref :: String -> String -> Sign -> (Map.Map Entity IRI, TranslationMap)
+    -> (Map.Map Entity IRI, TranslationMap)
+inducedPref v u sig (m, t) =
+    let pm = prefixMap sig
+    in if elem v $ map fst $ Map.toList pm
+         then if u == v then (m, t) else (m, Map.insert v u t)
+        else error $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
+
 inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
-  mm <- foldM (\ m p -> case p of
+  (mm, tm) <- foldM (\ (m, t) p -> case p of
         (ASymbol s@(Entity _ v), ASymbol (Entity _ u)) ->
             if Set.member s syms
-            then return $ if u == v then m else Map.insert s u m
+            then return $ if u == v then (m, t) else (Map.insert s u m, t)
             else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
           $ map (`Entity` v) entityTypes of
-          [] -> fail $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
-          l -> return $ if u == v then m else foldr (`Map.insert` u) m l
-        _ -> error "OWL2.Morphism.inducedFromMor") Map.empty $ Map.toList rm
+          [] -> let v2 = showQU v
+                    u2 = showQU u
+                in return $ inducedPref v2 u2 sig (m, t)
+          l -> return $ if u == v then (m, t) else (foldr (`Map.insert` u) m l, t)
+        (APrefix v, APrefix u) -> return $ inducedPref v u sig (m, t)
+        _ -> error "OWL2.Morphism.inducedFromMor") (Map.empty, Map.empty) $ Map.toList rm
   return OWLMorphism
     { osource = sig
     , otarget = inducedSign mm sig
-    , pmap = Map.empty
+    , pmap = tm
     , mmaps = mm }
 
 symMapOf :: OWLMorphism -> Map.Map Entity Entity
