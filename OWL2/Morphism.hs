@@ -38,6 +38,7 @@ import OWL2.Rename
 import Common.DocUtils
 import Common.Doc
 import Common.Result
+import Common.Utils (composeMap)
 import Common.Lib.State (execState)
 import Common.Lib.MapSet (setToMap)
 
@@ -78,7 +79,7 @@ inducedPref :: String -> String -> Sign -> (Map.Map Entity IRI, TranslationMap)
     -> (Map.Map Entity IRI, TranslationMap)
 inducedPref v u sig (m, t) =
     let pm = prefixMap sig
-    in if elem v $ map fst $ Map.toList pm
+    in if Set.member v $ Map.keysSet pm
          then if u == v then (m, t) else (m, Map.insert v u t)
         else error $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
 
@@ -95,9 +96,11 @@ inducedFromMor rm sig = do
           [] -> let v2 = showQU v
                     u2 = showQU u
                 in return $ inducedPref v2 u2 sig (m, t)
-          l -> return $ if u == v then (m, t) else (foldr (`Map.insert` u) m l, t)
+          l -> return $ if u == v then (m, t) else
+                            (foldr (`Map.insert` u) m l, t)
         (APrefix v, APrefix u) -> return $ inducedPref v u sig (m, t)
-        _ -> error "OWL2.Morphism.inducedFromMor") (Map.empty, Map.empty) $ Map.toList rm
+        _ -> error "OWL2.Morphism.inducedFromMor") (Map.empty, Map.empty)
+                        $ Map.toList rm
   return OWLMorphism
     { osource = sig
     , otarget = inducedSign mm sig
@@ -141,6 +144,7 @@ composeMor m1 m2 =
            . symOf $ osource m1
   in return m1
      { otarget = otarget m2
+     , pmap = composeMap (prefixMap $ osource m1) (pmap m1) $ pmap m2
      , mmaps = nm }
 
 cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
@@ -156,6 +160,7 @@ matchesSym :: Entity -> RawSymb -> Bool
 matchesSym e@(Entity _ u) r = case r of
   ASymbol s -> s == e
   AnUri s -> s == u
+  APrefix p -> p == namePrefix u
 
 statSymbItems :: [SymbItems] -> [RawSymb]
 statSymbItems = concatMap
