@@ -1,15 +1,15 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
-Description :  Comorphism from OWL 1.1 to Common Logic
-Copyright   :  (c) Uni Bremen DFKI 2010
+Description :  Comorphism from OWL2 to Common Logic
+Copyright   :  (c) Francisc-Nicolae Bungiu 
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  mata@informatik.uni-bremen.de
+Maintainer  :  f.bungiu@jacobs-university.de
 Stability   :  provisional
 Portability :  non-portable (via Logic.Logic)
 
-a comorphism from OWL to CommonLogic
+a comorphism from OWL2 to CommonLogic
 -}
 
 module OWL2.OWL22CommonLogic (OWL22CommonLogic(..)) where
@@ -21,6 +21,7 @@ import Common.Result
 import Common.Id
 import Control.Monad
 import Data.Char
+import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -35,6 +36,7 @@ import OWL2.Keywords
 import qualified OWL2.Sign as OS
 -- CommonLogic = codomain
 import CommonLogic.Logic_CommonLogic
+import Common.Id as Id
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Sign
 import CommonLogic.Symbol
@@ -102,10 +104,9 @@ mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result Sign         -- ^ CommonLogic signature
 mapSign sig =
   let conc = Set.unions [ (OS.concepts sig)
-                        , (OS.primaryConcepts sig)
                         , (OS.datatypes sig)
-                        , (OS.indValuedRoles sig)
-                        , (OS.dataValuedRoles sig)
+                        , (OS.objectProperties sig)
+                        , (OS.dataProperties sig)
                         , (OS.annotationRoles sig)
                         , (OS.individuals sig) ]
       itms = Set.map uriToId conc
@@ -120,27 +121,25 @@ mapTheory (owlSig, owlSens) =
     (cSensI, nSig) <- foldM (\ (x,y) z ->
               do
                 (sen, sig) <- mapSentence y z
-                return (sen:x, unite sig y)
+                return (sen ++ x, unite sig y)
                 ) ([], cSig) owlSens
-    let cSens = concatMap (\ x ->
-            case x of
-                Nothing -> []
-                Just a -> [a]
-         ) cSensI
-    return (nSig, cSens)
+    return (nSig, cSensI)
+
 
 -- | mapping of OWL to CommonLogic_DL formulae
-mapSentence :: Sign                    -- ^ CommonLogic Signature
-  -> CommonAnno.Named Axiom                                  -- ^ OWL Sentence
-  -> Result (Maybe (CommonAnno.Named SENTENCE), Sign) -- ^ CommonLogic SENTENCE
+mapSentence :: Sign                           -- ^ CommonLogic Signature
+  -> CommonAnno.Named Axiom                   -- ^ OWL2 Sentence
+  -> Result ([CommonAnno.Named SENTENCE], Sign) -- ^ CommonLogic SENTENCE
 mapSentence cSig inSen = do
             (outAx, outSig) <- mapAxiom cSig $ CommonAnno.sentence inSen
-            return (fmap (flip CommonAnno.mapNamed inSen . const) outAx, outSig)
+            return (map (flip CommonAnno.mapNamed inSen . const) outAx, outSig)
 
 -- | Mapping of Axioms
 mapAxiom :: Sign                             -- ^ CommonLogic Signature
-         -> Axiom                                -- ^ OWL Axiom
-         -> Result (Maybe SENTENCE, Sign) -- ^ CommonLogic SENTENCE
+         -> Axiom                                -- ^ OWL2 Axiom
+         -> Result ([SENTENCE], Sign) -- ^ CommonLogic SENTENCE
+mapAxiom cSig _ax = return ([], cSig)
+{-
 mapAxiom cSig ax =
     let
         a = 1
@@ -184,7 +183,7 @@ mapAxiom cSig ax =
                     (decrs, dSig)  <- mapDescriptionList cSig a sD
                     (decrsS, pSig) <- mapDescriptionListP cSig a $ comPairs sD sD
                     let decrsP = unzip decrsS
-                    mcls <- mapClassURI cSig cls (mkNName a)
+                    mcls <- mapClassIRI cSig cls (mkNName a)
                     return (Just $ Quant_sent (Universal
                               [Name (mkNName a)]
                                (
@@ -504,7 +503,7 @@ mapAxiom cSig ax =
                                    )
               SameOrDifferentIndividual sameOrDiff indis ->
                   do
-                    inD <- mapM (mapIndivURI cSig) indis
+                    inD <- mapM (mapIndivIRI cSig) indis
                     let inDL = comPairs inD inD
                         sntLst = (map (\ (x, y) -> case sameOrDiff of
                                    Same -> Atom_sent (Equation x y) nullRange
@@ -518,7 +517,7 @@ mapAxiom cSig ax =
                              ) nullRange), cSig)
               ClassAssertion indi cls ->
                   do
-                    inD  <- mapIndivURI cSig indi
+                    inD  <- mapIndivIRI cSig indi
                     (ocls, dSig) <- mapDescription cSig cls (OIndi indi) a
                     case cls of
                          OWLClassDescription _ ->
@@ -551,7 +550,7 @@ mapAxiom cSig ax =
                   case ass of
                     Assertion dPropExp posNeg sourceInd targetInd ->
                         do
-                          inS <- mapIndivURI cSig sourceInd
+                          inS <- mapIndivIRI cSig sourceInd
                           inT <- mapConstant cSig targetInd
                           nm <- uriToTokM dPropExp
                           let dPropH = Atom_sent
@@ -570,6 +569,524 @@ mapAxiom cSig ax =
         EntityAnno _  -> return (Nothing, cSig)
 
 
+-}
+
+mkQuants :: QUANT_SENT -> SENTENCE
+mkQuants qs = Quant_sent qs nullRange
+
+mkBools :: BOOL_SENT -> SENTENCE
+mkBools bs = Bool_sent bs nullRange
+
+mkAtoms :: ATOM -> SENTENCE
+mkAtoms as = Atom_sent as nullRange
+
+mkComms :: COMMENT -> SENTENCE -> SENTENCE
+mkComms cmt sen = Comment_sent cmt sen nullRange
+
+mkIrregs :: SENTENCE -> SENTENCE
+mkIrregs sen = Irregular_sent sen nullRange
+
+mkUnivQ :: [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT
+mkUnivQ ls sen = Universal ls sen
+
+mkExist :: [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT
+mkExist ls sen = Existential ls sen
+
+cnjct :: [SENTENCE] -> BOOL_SENT
+cnjct ls = Conjunction ls
+
+dsjct :: [SENTENCE] -> BOOL_SENT
+dsjct ls = Disjunction ls
+
+mkNeg :: SENTENCE -> BOOL_SENT
+mkNeg sen = Negation sen
+
+mkImpl :: SENTENCE -> SENTENCE -> BOOL_SENT
+mkImpl sen1 sen2 = Implication sen1 sen2
+
+mkBicnd :: SENTENCE -> SENTENCE -> BOOL_SENT
+mkBicnd s1 s2 = Biconditional s1 s2
+
+mkNAME :: Int -> NAME_OR_SEQMARK
+mkNAME n = Name (mkNName n)
+
+mkSEQ :: SEQ_MARK -> NAME_OR_SEQMARK
+mkSEQ sq = SeqMark sq
+
+mkNTERM :: Int -> TERM
+mkNTERM n = Name_term (mkNName n)
+
+mkEq :: TERM -> TERM -> ATOM
+mkEq t1 t2 = Equation t1 t2
+
+
+-- | Mapping of ListFrameBit
+mapListFrameBit :: Sign
+                -> Extended
+                -> Maybe Relation
+                -> ListFrameBit
+                -> Result ([SENTENCE], Sign)
+mapListFrameBit cSig ex rel lfb = case lfb of
+    AnnotationBit _a -> return ([], cSig)
+    ExpressionBit cls ->
+      case ex of
+          Misc _ -> return ([], cSig)
+          SimpleEntity (Entity ty iri) ->
+            case ty of
+              NamedIndividual | rel == Just Types ->
+                do
+                  inD  <- mapIndivIRI cSig iri
+                  ls <- mapM (\ (_, c) -> mapDescription cSig c (OIndi iri) 1 ) cls
+                  let ocls = map fst ls
+                      dSig = map snd ls
+                      map2nd = map snd cls
+                  return ([], cSig)
+                  case map2nd of
+                         [Expression _] -> 
+                                return (ocls, uniteL dSig)
+                         _ ->
+                            return (map (\ cd ->
+                              mkQuants (mkUnivQ
+                                [mkNAME 1](mkBools
+                                  (mkImpl 
+                                    (mkAtoms (mkEq (mkNTERM 1) inD))
+                                    cd))
+                              )) ocls, cSig)
+
+              DataProperty | rel == (Just $ DRRelation ADomain) ->
+                do
+                  ls <- mapM (\ (_, c) -> mapDescription cSig c (OIndi iri) 1 ) cls
+                  oEx <- mapDataProp cSig iri (OVar 1) (OVar 2)
+                  let odes = map fst ls
+                      dSig = map snd ls
+                  return (map (\cd -> mkQuants (mkUnivQ
+                                         [mkNAME 1]
+                                         (mkQuants (mkExist
+                                         [mkNAME 2]
+                                         (mkBools (mkImpl oEx cd))))
+                                         )) odes, uniteL dSig)
+              _ -> return ([], cSig)            
+
+          ObjectEntity oe ->
+            case rel of
+              Nothing -> return ([], cSig)
+              Just re ->
+                case re of
+                  DRRelation r -> do
+                    tobjP <- mapObjProp cSig oe (OVar 1) (OVar 2)
+                    tdsc <- mapM (\ (_, c) -> mapDescription cSig c (
+                      case r of
+                        ADomain -> OVar 1
+                        ARange -> OVar 2)
+                      (case r of
+                        ADomain -> 1
+                        ARange ->  2)) cls
+                    let vars = case r of
+                                 ADomain -> (1,2)
+                                 ARange -> (2,1)
+                        mapfst = map fst tdsc
+                        dSig = map snd tdsc
+                    return (map (\cd -> mkQuants (mkUnivQ
+                                     [mkNAME (fst vars)]
+                                     (mkQuants (mkExist
+                                     [mkNAME (snd vars)]
+                                     (mkBools (mkImpl tobjP cd))))
+                                     )) mapfst, uniteL dSig)
+
+                  _ -> fail "ObjectEntity Relation nyi"
+          ClassEntity ce -> do
+            let map2nd = map snd cls
+            case rel of
+              Nothing -> return ([], cSig)
+              Just r -> case r of
+                EDRelation re ->
+                  do
+                    (decrsS, dSig) <- mapDescriptionListP cSig 1
+                      $ comPairsaux ce map2nd
+                    let
+                        decrsP = case re of
+                              Equivalent ->
+                                  map (\(x,y) -> mkBools (mkBicnd x y)) decrsS
+                              Disjoint   ->
+                                  map (\(x,y) -> mkBools (mkNeg (mkBools (cnjct [x,y])))) decrsS
+                        snt = if (length decrsP == 1) then
+                                  head decrsP
+                                else
+                                  mkBools (cnjct decrsP)
+                    return ([mkQuants (mkUnivQ
+                              [mkNAME 1]
+                             snt)], dSig)
+
+                SubClass ->
+                  do
+                    (domT, dSig) <- mapDescription cSig ce (OVar 1) 1
+                    ls <- mapM (\cd -> mapDescription cSig cd (OVar 1) 1) map2nd
+                    let
+                      codT = map fst ls
+                      eSig = map snd ls
+                    rSig <- sigUnion cSig (unite dSig (uniteL eSig))
+                    return (map (\cd -> mkQuants (mkUnivQ
+                               [mkNAME 1]
+                               (mkBools (mkImpl domT cd))
+                               )) codT, rSig)
+                _ -> fail "ClassEntity Relation nyi"
+
+    ObjectBit ol ->
+      let mol = fmap ObjectProp (toIRILst ObjectProperty ex)
+          isJ = isJust mol
+          Just ob = mol
+          map2nd = map snd ol
+      in case rel of
+      Nothing -> return ([], cSig)
+      Just r -> case r of
+        EDRelation ed -> do
+          pairs <- mapComObjectPropsList cSig map2nd (OVar 1) (OVar 2)
+          let sntLst = case ed of
+                         Equivalent ->
+                           map (\(x,y) -> mkBools (mkBicnd x y)) pairs
+                         Disjoint   ->
+                           map (\(x,y) -> mkBools (mkNeg (mkBools (cnjct [x,y])))) pairs
+              snt = if (length sntLst == 1) then
+                                  head sntLst
+                                else
+                                  mkBools (cnjct sntLst)
+          return ([mkQuants (mkUnivQ
+                              [mkNAME 1, mkNAME 2]
+                             snt)], cSig)
+
+        SubPropertyOf | isJ -> do
+                  os <- mapM (\ (o1, o2) -> mapSubObjProp cSig o1 o2 3)
+                    $ comPairsaux ob map2nd
+                  return (os, cSig)
+
+        InverseOf | isJ ->
+          do
+             os1 <- mapM (\ o1 -> mapObjProp cSig o1 (OVar 1) (OVar 2)) map2nd
+             o2 <- mapObjProp cSig ob (OVar 2) (OVar 1)
+             return (map (\cd -> mkQuants (mkUnivQ
+                             [mkNAME 1, mkNAME 2]
+                             (mkBools (mkBicnd cd o2)))) os1, cSig)
+
+        _ -> return ([], cSig)
+
+    DataBit db ->
+      let mol = toIRILst DataProperty ex
+          isJ = isJust mol
+          map2nd = map snd db
+          Just ob = mol
+      in case rel of
+      Nothing -> return ([], cSig)
+      Just r -> case r of
+        SubPropertyOf | isJ -> do
+          os1 <- mapM (\ o1 -> mapDataProp cSig o1 (OVar 1) (OVar 2)) map2nd
+          o2 <- mapDataProp cSig ob (OVar 1) (OVar 2)
+          return (map (\ cd -> mkQuants (mkUnivQ
+                    [mkNAME 1, mkNAME 2]
+                    (mkBools (mkImpl cd o2)))) os1, cSig)
+
+        EDRelation ed -> do
+          pairs <- mapComDataPropsList cSig map2nd (OVar 1) (OVar 2)
+          let sntLst = case ed of
+                         Equivalent ->
+                            map (\(x,y) ->
+                              mkBools (mkBicnd x y)) pairs
+                         Disjoint   ->
+                            map (\(x,y) ->
+                              mkBools (mkNeg (mkBools (cnjct [x,y])))) pairs
+              snt = if (length sntLst == 1) then
+                                 head sntLst
+                               else
+                                 mkBools (cnjct sntLst)                    
+          return ([mkQuants (mkUnivQ
+                             [mkNAME 1, mkNAME 2]
+                           snt)], cSig)
+
+        _ -> return ([], cSig)
+
+    IndividualSameOrDifferent al ->
+      do
+        let mol = toIRILst NamedIndividual ex
+            map2nd = map snd al
+        case rel of
+          Nothing -> return ([], cSig)
+          Just r ->
+            case r of
+              SDRelation re -> do
+                fs <- mapComIndivList cSig re mol map2nd
+                return (fs, cSig)
+              _ -> return ([], cSig)
+
+    DataPropRange dpr ->
+      case rel of
+        Nothing -> return ([], cSig)
+        Just re ->
+          case re of
+            DRRelation r ->
+              case r of
+                 ARange ->
+                      case ex of
+                        SimpleEntity ent ->
+                          case ent of
+                            Entity ty iri ->
+                              case ty of
+                                DataProperty ->
+                                  do
+                                    oEx <- mapDataProp cSig iri (OVar 1) (OVar 2)
+                                    ls <- mapM (\ (_, c) ->
+                                                  mapDataRange cSig c (OVar 2)) dpr
+                                    let dSig = map snd ls  
+                                        odes = map fst ls
+                                    return (map(\cd -> mkQuants (mkUnivQ
+                                               [mkNAME 1]
+                                               (mkQuants (mkExist
+                                               [mkNAME 2]
+                                                (mkBools (mkImpl oEx cd)))))) odes,
+                                           uniteL dSig)
+                                _ -> fail "DataPropRange EntityType fail"
+                        _ -> fail "DataPropRange Entity fail"
+                 _ -> fail "DataPropRange ADomain ni"
+            _ -> fail "DataPropRange Relations ni"
+
+    IndividualFacts indf ->
+        let map2nd = map snd indf
+        in
+        case map2nd of
+          [ObjectPropertyFact posneg obe ind] ->
+            case ex of
+              SimpleEntity (Entity NamedIndividual siri) ->
+                    do
+                      oPropH <- mapObjProp cSig obe (OIndi siri) (OIndi ind)
+                      let oProp = case posneg of
+                                      Positive -> oPropH
+                                      Negative -> mkBools (mkNeg oPropH)
+                      return ([oProp], cSig)
+{-
+              _ -> fail $ "ObjectPropertyFactsFacts Entity fail: " ++ show ex
+          [DataPropertyFact posneg dpe lit] ->
+            case ex of
+              SimpleEntity (Entity ty iri) ->
+                case ty of
+                  DataProperty ->
+                    do
+                      inS <- mapIndivURI cSig iri
+                      inT <- mapLiteral cSig lit
+                      oPropH <- mapDataProp cSig dpe 1 2
+                      let oProp = case posneg of
+                                    Positive -> oPropH
+                                    Negative -> Negation oPropH nullRange
+                      return ([mkForall
+                                [mkVarDecl (mkNName 1) thing,
+                                 mkVarDecl (mkNName 2) thing]
+                             (mkImpl (conjunct
+                                        [mkStEq (toQualVar
+                                          (mkVarDecl (mkNName 1) thing)) inS,
+                                         mkStEq (toQualVar
+                                          (mkVarDecl (mkNName 2) thing)) inT]
+                             ) oProp)]
+                             , cSig)
+                  _ -> fail "DataPropertyFact EntityType fail"
+              _ -> fail "DataPropertyFact Entity fail"
+          _ -> fail "DataPropertyFacts fail"
+    ObjectCharacteristics ace ->
+      let map2nd = map snd ace
+      in
+      case ex of
+        ObjectEntity ope ->
+          case map2nd of
+            [Functional] ->
+              do
+                so1 <- mapObjProp cSig ope 1 2
+                so2 <- mapObjProp cSig ope 1 3
+                return ([mkForall
+                         [mkVarDecl (mkNName 1) thing,
+                          mkVarDecl (mkNName 2) thing,
+                          mkVarDecl (mkNName 3) thing]
+                         (mkImpl
+                           (conjunct [so1, so2])
+                           (mkStEq
+                              (toQualVar (mkVarDecl (mkNName 2) thing))
+                              (toQualVar (mkVarDecl (mkNName 3) thing))
+                           )
+                       )], cSig)
+            [InverseFunctional] ->
+               do
+                 so1 <- mapObjProp cSig ope 1 3
+                 so2 <- mapObjProp cSig ope 2 3
+                 return ([mkForall
+                         [mkVarDecl (mkNName 1) thing,
+                          mkVarDecl (mkNName 2) thing,
+                          mkVarDecl (mkNName 3) thing]
+                         (mkImpl
+                           (conjunct [so1, so2])
+                           (mkStEq
+                              (toQualVar (mkVarDecl (mkNName 1) thing))
+                              (toQualVar (mkVarDecl (mkNName 2) thing))
+                           )
+                        )], cSig)
+            [Reflexive] ->
+              do
+                so <- mapObjProp cSig ope 1 1
+                return ([mkForall
+                           [mkVarDecl (mkNName 1) thing]
+                           (mkImpl (Membership (toQualVar
+                                     (mkVarDecl (mkNName 1) thing))
+                                     thing nullRange)
+                                   so)
+                        ], cSig)
+            [Irreflexive] ->
+              do
+                so <- mapObjProp cSig ope 1 1
+                return ([mkForall
+                           [mkVarDecl (mkNName 1) thing]
+                           (mkImpl (Membership (toQualVar
+                                     (mkVarDecl (mkNName 1) thing))
+                                      thing nullRange)
+                                   (mkNeg so))
+                        ], cSig)
+            [Symmetric] ->
+              do
+                 so1 <- mapObjProp cSig ope 1 2
+                 so2 <- mapObjProp cSig ope 2 1
+                 return ([mkForall
+                           [mkVarDecl (mkNName 1) thing,
+                            mkVarDecl (mkNName 2) thing]
+                           (mkImpl so1 so2)
+                        ], cSig)
+            [Asymmetric] ->
+              do
+                so1 <- mapObjProp cSig ope 1 2
+                so2 <- mapObjProp cSig ope 2 1
+                return ([mkForall
+                           [mkVarDecl (mkNName 1) thing,
+                            mkVarDecl (mkNName 2) thing]
+                           (mkImpl so1 (mkNeg so2))
+                        ], cSig)
+            [Antisymmetric] ->
+              do
+                so1 <- mapObjProp cSig ope 1 2
+                so2 <- mapObjProp cSig ope 2 1
+                return ([mkForall
+                         [mkVarDecl (mkNName 1) thing,
+                          mkVarDecl (mkNName 2) thing]
+                         (mkImpl
+                           (conjunct [so1, so2])
+                           (mkStEq
+                              (toQualVar (mkVarDecl (mkNName 1) thing))
+                              (toQualVar (mkVarDecl (mkNName 2) thing))
+                           )
+                        )], cSig)
+            [Transitive] ->
+              do
+                so1 <- mapObjProp cSig ope 1 2
+                so2 <- mapObjProp cSig ope 2 3
+                so3 <- mapObjProp cSig ope 1 3
+                return ([mkForall
+                           [mkVarDecl (mkNName 1) thing,
+                             mkVarDecl (mkNName 2) thing,
+                             mkVarDecl (mkNName 3) thing]
+                           (mkImpl (conjunct [so1, so2]) so3)
+                        ], cSig)
+            _ -> fail "ObjectCharacteristics Character fail"
+        _ -> fail "ObjectCharacteristics Entity fail"
+-}
+-- | Mapping of AnnFrameBit
+mapAnnFrameBit :: Sign
+               -> Extended
+               -> AnnFrameBit
+               -> Result ([SENTENCE], Sign)
+mapAnnFrameBit cSig ex afb =
+  case afb of
+    AnnotationFrameBit -> return ([], cSig)
+    DataFunctional ->
+      case ex of
+        SimpleEntity (Entity ty iri) ->
+          case ty of
+            DataProperty ->
+                do
+                  so1 <- mapDataProp cSig iri (OVar 1) (OVar 2)
+                  so2 <- mapDataProp cSig iri (OVar 1) (OVar 3)
+                  return ([mkQuants (mkUnivQ 
+                                      [mkNAME 1, mkNAME 2, mkNAME 3]
+                                     (mkBools 
+                                       (mkImpl 
+                                         (mkBools (cnjct [so1, so2]))
+                                         (mkAtoms (mkEq (mkNTERM 2) (mkNTERM 3)))
+                                       )
+                                     )
+                                    )
+                          ], cSig)
+
+            _ -> fail "DataFunctional EntityType fail"
+        _ -> fail "DataFunctional Extend fail"
+    DatatypeBit dr ->
+      case ex of
+        SimpleEntity (Entity ty iri) ->
+          case ty of
+            Datatype ->
+              do
+            --    odes <- mapDataRange cSig dr 2
+                let dtb = uriToId iri
+                return ([], cSig)
+            -- TO BE IMPLEMENTED
+              {-  return ([mkForall
+                           [mkVarDecl (mkNName 1) thing]
+                           (mkEqv
+                              odes
+                              (Membership
+                                (toQualVar (mkVarDecl (mkNName 2) thing))
+                                dtb
+                                nullRange
+                              )
+                           )
+                        ], cSig)-}
+            _ -> fail "DatatypeBit EntityType fail"
+        _ -> fail "DatatypeBit Extend fail"
+    ClassDisjointUnion clsl ->
+      case ex of
+        SimpleEntity (Entity ty iri) ->
+          case ty of
+            Class ->
+                 do
+                    (decrs, dSig)  <- mapDescriptionList cSig 1 clsl
+                    (decrsS, pSig) <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
+                    let decrsP = unzip decrsS
+                    mcls <- mapClassIRI cSig iri (mkNName 1)
+                    return ([mkQuants (mkUnivQ
+                              [mkNAME 1]
+                               (mkBools (mkBicnd
+                                 mcls(
+                                mkBools (cnjct
+                                [(mkBools (dsjct decrs))
+                                ,(mkBools (mkNeg 
+                                   (mkBools (cnjct((fst decrsP) ++ (snd decrsP))))
+                                ))])))))], unite dSig pSig)                               
+            _ -> fail "ClassDisjointUnion EntityType fail"
+        _ -> fail "ClassDisjointUnion Extend fail"
+    ClassHasKey _obpe _dpe -> return ([], cSig)
+    ObjectSubPropertyChain oplst ->
+      do
+        os <- mapM (\ cd -> mapSubObjPropChain cSig afb cd 3) oplst
+        return (os, cSig)
+
+
+-- | mapping of individual list
+mapComIndivList :: Sign                   
+                -> SameOrDifferent
+                -> Maybe Individual
+                -> [Individual]
+                -> Result [SENTENCE]
+mapComIndivList cSig sod mol inds = do
+  fs <- mapM (mapIndivIRI cSig) inds
+  tps <- case mol of
+    Nothing -> return $ comPairs fs fs
+    Just ol -> do
+      f <- mapIndivIRI cSig ol
+      return $ comPairsaux f fs
+  let inDL = comPairs fs fs
+      sntLst = (map (\ (x, y) -> case sod of
+                                   Same -> mkAtoms (mkEq x y)
+                                   Different -> mkBools (mkNeg (mkAtoms (mkEq x y)))) inDL)
+  return $ [mkBools (cnjct sntLst)]
 
 
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
@@ -586,6 +1103,14 @@ mapComObjectPropsList cSig props num1 num2 =
         return (l, r)
         ) $ comPairs props props
 
+toIRILst :: EntityType
+         -> Extended
+         -> Maybe IRI
+
+toIRILst ty ane = case ane of
+  SimpleEntity (Entity ty2 iri) | ty == ty2 -> Just iri
+  _ -> Nothing
+
 -- | Extracts Id from Entities
 entityToId :: Entity -> Id
 entityToId e =
@@ -594,55 +1119,34 @@ entityToId e =
 
 -- | mapping of data constants
 mapConstant :: Sign
-            -> Constant
+            -> Literal
             -> Result TERM
 mapConstant _ c =
   do
     let cl = case c of
-              Constant l _ -> l
+              Literal l _ -> l
     return $ Name_term (mkSimpleId cl)
 
 -- | Mapping of a list of data constants only for mapDataRange
 mapConstantList :: Sign
-                -> [Constant]
+                -> [Literal]
                 -> Result [TERM]
 mapConstantList sig cl =
   mapM (\ x -> do
                  t <- mapConstant sig x
                  return $ t ) cl
 
-
--- | Mapping of subobj properties
-mapSubObjProp :: Sign
-              -> SubObjectPropertyExpression
+mapSubObjPropChain :: Sign
+              -> AnnFrameBit
               -> ObjectPropertyExpression
               -> Int
               -> Result SENTENCE
-mapSubObjProp cSig prop oP num1 =
-  let
-      num2 = num1 + 1
-  in
+mapSubObjPropChain cSig prop oP num1 =
+    let num2 = num1 + 1
+    in
     case prop of
-             OPExpression oPL ->
-               do
-                 l <- mapObjProp cSig oPL (OVar num1) (OVar num2)
-                 r <- mapObjProp cSig oP (OVar num1) (OVar num2)
-                 return $ Quant_sent (Universal
-                    [ Name (mkNName num1)
-                    , Name (mkNName num2)]
-                    (
-                     Bool_sent
-                     (
-                      Implication
-                      l
-                      r
-                     )
-                     nullRange
-                    )
-                    )
-                    nullRange
-             SubObjectPropertyChain props ->
-               do
+           ObjectSubPropertyChain props ->
+             do
                  let zprops = zip (tail props) [(num2 + 1) ..]
                      (_, vars) = unzip zprops
                  oProps  <- mapM (\ (z, x, y) -> mapObjProp cSig z (OVar x) (OVar y)) $
@@ -664,6 +1168,33 @@ mapSubObjProp cSig prop oP num1 =
                             )
                            )
                            nullRange
+           _ -> fail "mapping of ObjectSubPropertyChain failed"
+
+
+-- | Mapping of subobj properties
+mapSubObjProp :: Sign
+              -> ObjectPropertyExpression
+              -> ObjectPropertyExpression
+              -> Int
+              -> Result SENTENCE
+mapSubObjProp cSig prop oP num1 = do
+  let num2 = num1 + 1
+  l <- mapObjProp cSig prop (OVar num1) (OVar num2)
+  r <- mapObjProp cSig oP (OVar num1) (OVar num2)
+  return $ Quant_sent (Universal
+           [ Name (mkNName num1)
+           , Name (mkNName num2)]
+           (
+            Bool_sent
+            (
+            Implication
+            l
+            r
+            )
+           nullRange
+           )
+           )
+           nullRange
 
 {- | Mapping along DataPropsList for creation of pairs for commutative
 operations. -}
@@ -717,7 +1248,7 @@ mapObjProp :: Sign
               -> Result SENTENCE
 mapObjProp cSig ob var1 var2 =
   case ob of
-         OpURI u ->
+         ObjectProp u ->
             do
               let l = Name_term (voiToTok var1)
                   r = Name_term (voiToTok var2)
@@ -731,15 +1262,15 @@ mapObjProp cSig ob var1 var2 =
                           [Term_seq l, Term_seq r]
                         )
                         nullRange
-         InverseOp u ->
+         ObjectInverseOf u ->
             mapObjProp cSig u var2 var1
 
--- | Mapping of Class URIs
-mapClassURI :: Sign
-            -> OwlClassURI
+-- | Mapping of Class IRIs
+mapClassIRI :: Sign
+            -> Class
             -> Token
             -> Result SENTENCE
-mapClassURI _ uril uid =
+mapClassIRI _ uril uid =
   do
     ur <- uriToTokM uril
     return $ Atom_sent
@@ -754,11 +1285,11 @@ mapClassURI _ uril uid =
              )
              nullRange
 
--- | Mapping of Individual URIs
-mapIndivURI :: Sign
-            -> IndividualURI
+-- | Mapping of Individual IRIs
+mapIndivIRI :: Sign
+            -> Individual
             -> Result TERM
-mapIndivURI _ uriI =
+mapIndivIRI _ uriI =
   do
     ur <- uriToTokM uriI
     return $ Name_term ur
@@ -768,21 +1299,24 @@ voiToTok v = case v of
         OVar o -> mkNName o
         OIndi o -> uriToTok o
 
-uriToTokM :: URI -> Result Token
+uriToTokM :: IRI -> Result Token
 uriToTokM = return . uriToTok
 
--- | Extracts Token from URI
-uriToTok :: URI -> Token
+-- | Extracts Token from IRI
+uriToTok :: IRI -> Token
 uriToTok urI = mkSimpleId $ showQN urI
 
--- | Extracts Id from URI
-uriToId :: URI -> Id
+-- | Extracts Id from IRI
+uriToId :: IRI -> Id
 uriToId = simpleIdToId . uriToTok
+
+uriToIdM :: IRI -> Result Id
+uriToIdM = return . uriToId
 
 -- | Mapping of a list of descriptions
 mapDescriptionList :: Sign
                       -> Int
-                      -> [Description]
+                      -> [ClassExpression]
                       -> Result ([SENTENCE], Sign)
 mapDescriptionList cSig n lst = -- (zip lst $ replicate (length lst) n)
   do
@@ -794,7 +1328,7 @@ mapDescriptionList cSig n lst = -- (zip lst $ replicate (length lst) n)
 -- | Mapping of a list of pairs of descriptions
 mapDescriptionListP :: Sign
                     -> Int
-                    -> [(Description, Description)]
+                    -> [(ClassExpression, ClassExpression)]
                     -> Result ([(SENTENCE, SENTENCE)], Sign)
 mapDescriptionListP cSig n lst =
     do
@@ -820,6 +1354,9 @@ comPairs _  []     = []
 comPairs [] _      = []
 comPairs (a:as) (_:bs) = zip (replicate (length bs) a) bs ++ comPairs as bs
 
+comPairsaux :: t -> [t1] -> [(t, t1)]
+comPairsaux a = map (\ b -> (a, b))
+
 -- | mapping of Data Range
 mapDataRange :: Sign
              -> DataRange                -- ^ OWL DataRange
@@ -829,13 +1366,7 @@ mapDataRange cSig rn inId =
   do
     let uid = Name_term (voiToTok inId)
     case rn of
-         DRDatatype uril ->
-          do
-            return  ((Atom_sent
-                          (Atom
-                            (Name_term (uriToTok uril))
-                            [ Term_seq uid ]
-                          ) nullRange) , cSig )
+         DataJunction _ _ -> error "nyi"
          DataComplementOf dr ->
           do
             (dc, sig) <- mapDataRange cSig dr inId
@@ -848,35 +1379,38 @@ mapDataRange cSig rn inId =
             return ((Bool_sent
                           (Disjunction
                             dl
-                          ) nullRange) , cSig)
-         DatatypeRestriction dr rl ->
-          do
-            (sent, rSig) <- mapDataRange cSig dr inId
-            (sens, sigL) <- liftM unzip $ mapM (mapFacet cSig uid) rl
+                          ) nullRange), cSig)
+         DataType dt rlst -> 
+           do
+           -- sent <- uriToTokM dt  -- NOT sure what to do with datatype here
+            (sens, sigL) <- liftM unzip $ mapM (mapFacet cSig uid) rlst
             return $ ((Bool_sent (
-                      Conjunction (sent : sens)
-                      ) nullRange), (uniteL (rSig : sigL)))
+                      Conjunction ({-sent :-} sens)
+                      ) nullRange), uniteL sigL)
 
--- | mapping of a tuple of DatatypeFacet and RestictionValue
+
+
+-- | mapping of a tuple of ConstrainingFacet and RestictionValue
 mapFacet :: Sign
-             -> TERM
-             -> (DatatypeFacet, RestrictionValue)
-             -> Result (SENTENCE, Sign)
+         -> TERM
+         -> (ConstrainingFacet, RestrictionValue)
+         -> Result (SENTENCE, Sign)
 mapFacet sig var (f,r) =
     do
       con <- mapConstant sig r
       return $ ((Atom_sent
                 (Atom
-                  (Name_term (mkSimpleId (showFacet f)))
+                  (Name_term (uriToTok f))
                   [ Term_seq con
                   , Term_seq var ]
                 ) nullRange) , unite sig (emptySig
-                   {items = Set.fromList [(stringToId (showFacet f))]} ))
+                   {items = Set.fromList [(stringToId (showQN f))]} ))
+
 
 
 -- | mapping of OWL Descriptions
 mapDescription :: Sign
-               -> Description              -- ^ OWL Description
+               -> ClassExpression           -- ^ OWL ClassExpression
                -> VarOrIndi                -- ^ Current Variablename
                -> Int                      -- ^ Alternative to current
                -> Result (SENTENCE, Sign)  -- ^ CommonLogic_DL Formula
@@ -888,9 +1422,9 @@ mapDescription cSig des oVar aVar =
         OVar v  -> v
         OIndi _ -> aVar
   in case des of
-         OWLClassDescription cl ->
+         Expression cl ->
            do
-            rslt <- mapClassURI cSig cl varN
+            rslt <- mapClassIRI cSig cl varN
             return (rslt, cSig)
          ObjectJunction jt desL ->
            do
@@ -905,7 +1439,7 @@ mapDescription cSig des oVar aVar =
              return $ ((Bool_sent (Negation desO) nullRange), dSig)
          ObjectOneOf indS ->
            do
-             indO <- mapM (mapIndivURI cSig) indS
+             indO <- mapM (mapIndivIRI cSig) indS
              let forms = map ((\x y -> Atom_sent (Equation x y)
                             nullRange) (Name_term varN)) indO
              return $ ((Bool_sent (Disjunction forms) nullRange), cSig)
@@ -932,7 +1466,7 @@ mapDescription cSig des oVar aVar =
                          nullRange
                         ))
                         nullRange), dSig)
-         ObjectExistsSelf oprop ->
+         ObjectHasSelf oprop ->
             do
               rslt <- mapObjProp cSig oprop oVar oVar
               return (rslt, cSig)
@@ -1004,11 +1538,11 @@ mapDescription cSig des oVar aVar =
                                            ((Bool_sent (Conjunction
                                            [minLst, maxLst])
                                            nullRange), uniteL sigL)
-         DataValuesFrom qt dpe dpel dr ->
+         DataValuesFrom qt dpe {-dpel-} dr ->
             do
               let varNN = mkNName (var + 1)
               (drSent, drSig) <- mapDataRange cSig dr (OVar var)
-              senl <- mapM (mapDataPropI cSig (OVar var) (OVar (var+1))) (dpe : dpel)
+              senl <- mapM (mapDataPropI cSig (OVar var) (OVar (var+1))) [dpe]
               let sent = Bool_sent ( Conjunction (drSent : senl)) nullRange
               case qt of
                    AllValuesFrom ->
@@ -1092,4 +1626,3 @@ mapDescription cSig des oVar aVar =
                                         ((Bool_sent (Conjunction
                                         [minLst, maxLst])
                                         nullRange), uniteL sigL)
-
