@@ -183,12 +183,16 @@ uriP =
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
 
--- | parse a possibly kinded list of comma separated uris aka symbols
+extEntity :: CharParser st ExtEntityType
+extEntity = do
+    fmap EntityType entityType
+   <|> do option AnyEntity $ pkeyword prefixC >> return Prefix
+
 symbItems :: GenParser Char st SymbItems
 symbItems = do
-  m <- option AnyEntity $ fmap EntityType entityType
-  uris <- symbs
-  return $ SymbItems m uris
+    ext <- extEntity
+    iris <- symbs
+    return $ SymbItems ext iris
 
 -- | parse a comma separated list of uris
 symbs :: GenParser Char st [URI]
@@ -201,9 +205,9 @@ symbs = uriP >>= \ u -> do
 -- | parse a possibly kinded list of comma separated symbol pairs
 symbMapItems :: GenParser Char st SymbMapItems
 symbMapItems = do
-  m <- option AnyEntity $ fmap EntityType entityType
-  uris <- symbPairs
-  return $ SymbMapItems m uris
+  ext <- extEntity
+  iris <- symbPairs
+  return $ SymbMapItems ext iris
 
 -- | parse a comma separated list of uri pairs
 symbPairs :: GenParser Char st [(URI, Maybe URI)]

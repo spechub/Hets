@@ -52,6 +52,7 @@ instance Pretty RawSymb where
   pretty rs = case rs of
     ASymbol e -> pretty e
     AnUri u -> pretty u
+    APrefix p -> pretty p
 
 -- | Entities
 
