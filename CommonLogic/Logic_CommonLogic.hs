@@ -32,6 +32,7 @@ import qualified Data.Map as Map
 import CommonLogic.OMDocExport
 import CommonLogic.OMDocImport as OMDocImport
 import CommonLogic.OMDoc
+import CommonLogic.Sublogic
 
 data CommonLogic = CommonLogic deriving Show
 
@@ -70,7 +71,7 @@ instance Syntax CommonLogic
       parse_symb_map_items CommonLogic = Nothing -- Just symbMapItems -- TODO
 
 instance Logic CommonLogic
-    ()                -- Sublogics
+    CommonLogicSL     -- Sublogics
     BASIC_SPEC        -- basic_spec
     TEXT              -- sentence
     NAME              -- symb_items
@@ -118,3 +119,50 @@ instance StaticAnalysis CommonLogic
       morphism_union CommonLogic = ()
       signature_colimit CommonLogic = ()
 -}
+
+-- | Sublogics
+instance SemiLatticeWithTop CommonLogicSL where
+    join = sublogics_max
+    top = CommonLogic.Sublogic.top
+
+instance MinSublogic CommonLogicSL BASIC_SPEC where
+     minSublogic = sl_basic_spec bottom
+
+instance MinSublogic CommonLogicSL Sign where
+    minSublogic = sl_sig bottom
+
+instance SublogicName CommonLogicSL where
+    sublogicName = sublogics_name
+
+instance MinSublogic CommonLogicSL TEXT where
+    minSublogic t = sublogic_text bottom t
+
+instance MinSublogic CommonLogicSL NAME where
+    minSublogic = sublogic_name bottom
+
+instance MinSublogic CommonLogicSL Symbol where
+    minSublogic = sl_sym bottom
+
+instance MinSublogic CommonLogicSL Morphism where
+    minSublogic = sl_mor bottom
+
+instance MinSublogic CommonLogicSL SYMB_MAP_ITEMS where
+    minSublogic = sl_symmap bottom
+
+instance ProjectSublogic CommonLogicSL BASIC_SPEC where
+  projectSublogic = prBasicSpec
+
+instance ProjectSublogicM CommonLogicSL NAME where
+  projectSublogicM = prName
+
+instance ProjectSublogicM CommonLogicSL SYMB_MAP_ITEMS where
+  projectSublogicM = prSymMapM
+
+instance ProjectSublogic CommonLogicSL Sign where
+  projectSublogic = prSig
+
+instance ProjectSublogic CommonLogicSL Morphism where
+  projectSublogic = prMor
+
+instance ProjectSublogicM CommonLogicSL Symbol where
+  projectSublogicM = prSymbolM

@@ -46,6 +46,7 @@ import qualified CommonLogic.AS_CommonLogic as ClBasic
 import qualified CommonLogic.Sign as ClSign
 import qualified CommonLogic.Symbol as ClSymbol
 import qualified CommonLogic.Morphism as ClMor
+import qualified CommonLogic.Sublogic as ClSl
 
 -- CASL
 import qualified CASL.Logic_CASL as CLogic
@@ -62,7 +63,7 @@ instance Language CommonLogic2CASL where
 instance Comorphism
     CommonLogic2CASL        -- comorphism
     ClLogic.CommonLogic     -- lid domain
-    ()                      -- sublogics domain
+    ClSl.CommonLogicSL   -- sublogics codomain
     ClBasic.BASIC_SPEC              -- Basic spec domain
     ClBasic.TEXT                    -- sentence domain
     ClBasic.NAME                    -- symbol items domain
@@ -85,7 +86,7 @@ instance Comorphism
     ProofTree              -- proof tree domain
     where
       sourceLogic CommonLogic2CASL = ClLogic.CommonLogic
-      sourceSublogic CommonLogic2CASL = ()
+      sourceSublogic CommonLogic2CASL = ClSl.top
       targetLogic CommonLogic2CASL = CLogic.CASL
       mapSublogic CommonLogic2CASL = Just . mapSub -- Just . mapSub
       map_theory CommonLogic2CASL = mapTheory -- TODO
@@ -105,7 +106,7 @@ baseCASLSig =
                                          -- filter (not . ctorCons) sens'
                                          sens'
 
-mapSub :: () -> CSL.CASL_Sublogics
+mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
 mapSub _ = CSL.caslTop
         { CSL.cons_features = CSL.emptyMapConsFeature
         , CSL.sub_features = CSL.NoSub }

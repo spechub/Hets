@@ -35,6 +35,7 @@ import CommonLogic.Logic_CommonLogic
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Sign
 import CommonLogic.Symbol
+import qualified CommonLogic.Sublogic as ClSl
 import qualified CommonLogic.Morphism as CLM
 
 import Common.ProofTree
@@ -57,7 +58,7 @@ instance Comorphism
     RawSymb         -- rawsymbol domain
     ProofTree       -- proof tree codomain
     CommonLogic            -- lid codomain
-    ()--CommonLogic_Sublogics  -- sublogics codomain
+    ClSl.CommonLogicSL   -- sublogics codomain
     BASIC_SPEC      -- Basic spec codomain
     TEXT            -- sentence codomain
     NAME            -- symbol items codomain
@@ -71,7 +72,7 @@ instance Comorphism
       sourceLogic OWL2CommonLogic    = OWL
       sourceSublogic OWL2CommonLogic = sl_top
       targetLogic OWL2CommonLogic    = CommonLogic
-      mapSublogic OWL2CommonLogic _  = Just $ ()
+      mapSublogic OWL2CommonLogic _  = Just $ ClSl.top
       map_theory OWL2CommonLogic     = mapTheory
       map_morphism OWL2CommonLogic   = mapMorphism
       isInclusionComorphism OWL2CommonLogic = True
