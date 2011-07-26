@@ -176,8 +176,10 @@ statSymbMapItems =
     Just u -> case (u, t) of
       (AnUri su, ASymbol (Entity _ tu)) | su == tu ->
         return $ Map.insert s t m
-      (ASymbol (Entity _ su), AnUri tu) | su == tu ->
-        return m
+      (ASymbol (Entity _ su), AnUri tu) | su == tu -> return m
+      (AnUri su, APrefix tu) | showQU su == tu ->
+        return $ Map.insert s t m
+      (APrefix su, AnUri tu) | su == showQU tu -> return m
       _ -> if u == t then return m else
         fail $ "differently mapped symbol: " ++ showDoc s "\nmapped to "
              ++ showDoc u " and " ++ showDoc t "")
@@ -186,8 +188,11 @@ statSymbMapItems =
       let ps = map (\ (u, v) -> (u, fromMaybe u v)) us in
       case m of
         AnyEntity -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
-        EntityType ty -> let mS = ASymbol . Entity ty in
-                   map (\ (s, t) -> (mS s, mS t)) ps)
+        EntityType ty ->
+            let mS = ASymbol . Entity ty 
+            in map (\ (s, t) -> (mS s, mS t)) ps
+        Prefix ->
+            map (\ (s, t) -> (APrefix (showQU s), APrefix $ showQU t)) ps)
 
 mapAnno :: Map.Map Entity IRI -> Annotation -> Annotation
 mapAnno m annt = case annt of
