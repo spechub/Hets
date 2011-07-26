@@ -203,8 +203,12 @@ xmlAnnotation :: Annotation -> Element
 xmlAnnotation (Annotation al ap av) = makeElement annotationK
     $ map xmlAnnotation al ++ [mwNameIRI annotationPropertyK ap,
     case av of
-        AnnValue iri -> mwSimpleIRI iri
+        AnnValue iri -> xmlSubject iri
         AnnValLit l -> xmlLiteral l]
+
+xmlSubject :: IRI -> Element
+xmlSubject iri = if isAnonymous iri then xmlIndividual iri
+                  else mwSimpleIRI iri
 
 xmlAnnotations :: Annotations -> [Element]
 xmlAnnotations = map xmlAnnotation
@@ -349,8 +353,8 @@ xmlAFB ext anno afb = case afb of
                     makeElement annotationAssertionK $
                         xmlAnnotations as
                             ++ [mwNameIRI annotationPropertyK iri]
-                            ++ [mwSimpleIRI s, case v of
-                                AnnValue avalue -> mwSimpleIRI avalue
+                            ++ [xmlSubject s, case v of
+                                AnnValue avalue -> xmlSubject avalue
                                 AnnValLit l -> xmlLiteral l]) anno
                 _ -> [makeElement declarationK
                     $ xmlAnnotations anno ++ [xmlEntity ent]]
