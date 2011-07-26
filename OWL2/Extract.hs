@@ -8,7 +8,7 @@ Maintainer  :  f.bungiu@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-go through the ontology document and extract the entities
+Extraction of all the entities in the ontology
 -}
 
 module OWL2.Extract where

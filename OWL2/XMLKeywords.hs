@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Felix Gabriel Mance
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  f.mance@jacobs-university.de
+Stability   :  provisional
+Portability :  portable
+
+Kewyords used for XML.hs and XMLConversion.hs
+-}
+
 module OWL2.XMLKeywords where
 
 ontologyIRIK :: String
