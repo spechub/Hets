@@ -1,0 +1,109 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xml:base="http://www.w3.org/2002/03owlt/I5.21/conclusions002" >
+
+    <owl:Ontology/>
+    <owl:Class rdf:about="premises002#Amphisbaenidae">
+      <owl:disjointWith rdf:resource="premises002#Agamidae"/>
+      <owl:disjointWith rdf:resource="premises002#Anomalepidae"/>
+      <owl:disjointWith rdf:resource="premises002#Emydidae"/>
+      <owl:disjointWith rdf:resource="premises002#Crocodylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Gekkonidae"/>
+      <owl:disjointWith rdf:resource="premises002#Sphenodontidae"/>
+      <owl:disjointWith rdf:resource="premises002#Cordylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Bipedidae"/>
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Agamidae">
+      <owl:disjointWith rdf:resource="premises002#Anomalepidae"/>
+      <owl:disjointWith rdf:resource="premises002#Emydidae"/>
+      <owl:disjointWith rdf:resource="premises002#Crocodylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Gekkonidae"/>
+      <owl:disjointWith rdf:resource="premises002#Sphenodontidae"/>
+      <owl:disjointWith rdf:resource="premises002#Cordylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Bipedidae"/>
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Anomalepidae">
+      <owl:disjointWith rdf:resource="premises002#Emydidae"/>
+      <owl:disjointWith rdf:resource="premises002#Crocodylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Gekkonidae"/>
+      <owl:disjointWith rdf:resource="premises002#Sphenodontidae"/>
+      <owl:disjointWith rdf:resource="premises002#Cordylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Bipedidae"/>
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Emydidae">
+      <owl:disjointWith rdf:resource="premises002#Crocodylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Gekkonidae"/>
+      <owl:disjointWith rdf:resource="premises002#Sphenodontidae"/>
+      <owl:disjointWith rdf:resource="premises002#Cordylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Bipedidae"/>
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Crocodylidae">
+      <owl:disjointWith rdf:resource="premises002#Gekkonidae"/>
+      <owl:disjointWith rdf:resource="premises002#Sphenodontidae"/>
+      <owl:disjointWith rdf:resource="premises002#Cordylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Bipedidae"/>
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Gekkonidae">
+      <owl:disjointWith rdf:resource="premises002#Sphenodontidae"/>
+      <owl:disjointWith rdf:resource="premises002#Cordylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Bipedidae"/>
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Sphenodontidae">
+      <owl:disjointWith rdf:resource="premises002#Cordylidae"/>
+      <owl:disjointWith rdf:resource="premises002#Bipedidae"/>
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Cordylidae">
+      <owl:disjointWith rdf:resource="premises002#Bipedidae"/>
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Bipedidae">
+      <owl:disjointWith rdf:resource="premises002#Leptotyphlopidae"/>
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Leptotyphlopidae">
+      <owl:disjointWith rdf:resource="premises002#Xantusiidae"/>
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Xantusiidae">
+      <owl:disjointWith rdf:resource="premises002#Loxocemidae"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="premises002#Loxocemidae">
+    </owl:Class>
+
+</rdf:RDF>

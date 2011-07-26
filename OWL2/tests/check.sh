@@ -9,7 +9,7 @@ $ECHO "\nhi !\n"
 
 ALL=`ls`
 
-for DIR in 8
+for DIR in 9
 do
     if test -d $DIR;
         then
@@ -102,8 +102,6 @@ do
             #rm -rf res
 
             cd ..
-
-            $ECHO "\n"
 
     fi
 done

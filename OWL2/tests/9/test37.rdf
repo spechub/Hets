@@ -1,0 +1,22 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xml:base="http://www.w3.org/2002/03owlt/extra-credit/conclusions004" >
+    
+    <owl:Class>
+         <owl:oneOf rdf:parseType="Collection">
+            <rdf:Description rdf:about="premises004#N"/>
+            <rdf:Description rdf:about="premises004#M"/>
+         </owl:oneOf>
+         <owl:oneOf rdf:parseType="Collection">
+            <rdf:Description>
+              <owl:sameAs rdf:datatype=
+"http://www.w3.org/2001/XMLSchema#int">83563</owl:sameAs>
+            </rdf:Description>
+            <rdf:Description>
+              <owl:sameAs rdf:datatype=
+"http://www.w3.org/2001/XMLSchema#int">11119</owl:sameAs>
+            </rdf:Description>
+         </owl:oneOf>
+    </owl:Class>
+</rdf:RDF>

@@ -1,0 +1,18 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xml:base="http://www.w3.org/2002/03owlt/cardinality/premises003" >
+    <owl:Ontology/>
+    <owl:Class rdf:ID="c">
+      <rdfs:subClassOf>
+        <owl:Restriction>
+          <owl:onProperty rdf:resource="#p"/>
+          <owl:cardinality
+ rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+          >2</owl:cardinality>
+        </owl:Restriction>
+      </rdfs:subClassOf>
+    </owl:Class>
+    <owl:ObjectProperty rdf:ID="p"/>
+</rdf:RDF>
