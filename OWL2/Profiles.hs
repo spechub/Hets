@@ -17,38 +17,66 @@ module OWL2.Profiles where
 import OWL2.AS
 import OWL2.MS
 
+import Common.Id
+
 import Data.Maybe
 
--- this datatype contains booleans, in this order, for EL, QL and RL
-type CoreProfiles = (Bool, Bool, Bool)
+-- this type contains booleans, in this order, for EL, QL and RL
+type CoreProfiles = [Bool]
 
-{- this datatype contains booleans, in this order, for EL, QL, RL,
+{- this type contains booleans, in this order, for EL, QL, RL,
     EL + QL, EL + RL, QL + RL and EL + QL + RL -}
-type AllProfiles = (Bool, Bool, Bool, Bool, Bool, Bool, Bool)
-
-type Table = [AllProfiles]
+type AllProfiles = [Bool]
 
 computeAll :: CoreProfiles -> AllProfiles
-computeAll (el, ql, rl) = (el, ql, rl, el || ql, el || rl, ql || rl, el || ql || rl)
+computeAll cp = case cp of
+    [e, q, r] -> [e, q, r, e || q, e || r, q || r, e || q || r]
+    _ -> []
 
+anaTable :: [[Bool]] -> [Bool]
+anaTable ls =
+    let first = all head ls
+    in first : case length $ head ls of
+        1 -> []
+        _ -> anaTable $ map tail ls
 
+minimalCovering :: CoreProfiles -> [AllProfiles] -> AllProfiles
+minimalCovering c t = anaTable [anaTable t, computeAll c]
 
+bottomProfile :: AllProfiles
+bottomProfile = [False, False, False, False, False, False, False]
 
-validSubClassRL :: ClassExpression -> Bool
-validSubClassRL cex = case cex of
-    Expression c -> ((not . isThing) c)
-    ObjectJunction _ cel -> (all validSubClassRL cel)
-    ObjectOneOf _ -> True
+topProfile :: AllProfiles
+topProfile = [True, True, True, True, True, True, True]
+
+el :: CoreProfiles
+el = [True, False, False]
+
+rl :: CoreProfiles
+rl = [False, False, True]
+
+elrl :: CoreProfiles
+elrl = [True, False, True] 
+
+subClass :: ClassExpression -> AllProfiles
+subClass cex = case cex of
+    Expression c -> computeAll [True, True, (not . isThing) c]
+    ObjectJunction jt cel -> case jt of
+        IntersectionOf -> minimalCovering elrl $ map subClass cel
+        UnionOf -> minimalCovering rl $ map subClass cel
+    ObjectOneOf _ -> computeAll elrl
     ObjectValuesFrom qt _ ce -> case qt of
         SomeValuesFrom -> case ce of
-            Expression c -> isThing c
-            _ -> validSubClassRL ce
-        _ -> False
-    ObjectHasValue _ _ -> True
-    DataHasValue _ _ -> True
-    DataValuesFrom SomeValuesFrom _ dr -> validDataRangeRL dr
-    _ -> False
-
+            Expression c -> if isThing c then topProfile
+                             else computeAll elrl
+            _ -> computeAll elrl
+        _ -> bottomProfile
+    ObjectHasValue _ _ -> computeAll elrl
+    ObjectHasSelf _ -> computeAll el
+    DataHasValue _ _ -> computeAll elrl
+    DataValuesFrom SomeValuesFrom _ dr -> bottomProfile -- dataRange dr
+    _ -> bottomProfile
+{-
 validSuperClassRL :: ClassExpression -> Bool
 validSuperClassRL cex = case cex of
     Expression c -> (not . isThing) c
@@ -124,7 +152,7 @@ validFbRL ext fb = case fb of
 
 validAxiomRL :: Axiom -> Bool
 validAxiomRL (PlainAxiom ext fb) = validFbRL ext fb  
-
+-}
 
 
 
