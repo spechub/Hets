@@ -119,6 +119,9 @@ data Sentence =
   | ConstDef { senTerm :: Term }
   | RecDef { keyWord :: String
            , senTerms :: [[Term]] }
+  | PrimRecDef { constName :: VName
+               , constType :: Typ
+               , primRecSenTerms :: [Term] }
   | TypeDef { newType :: Typ
             , typeDef :: SetDecl
             , nonEmptyPr :: IsaProof}

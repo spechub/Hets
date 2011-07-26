@@ -33,7 +33,6 @@ import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 
 import qualified Data.Map as Map
 
-import Isabelle.IsaConsts (primrecS)
 import Isabelle.IsaParse (parseTheory)
 import Isabelle.IsaPrint (getAxioms, printIsaTheory)
 import Isabelle.IsaSign (DomainEntry, IsaProof (..), mkCond, mkSen
@@ -92,16 +91,19 @@ addLemmasCollection lemmaname lemmas isaTh =
                         {isAxiom = False}
          in (isaTh_sign, isaTh_sen ++ [namedSen])
 
--- | Add a primrec defintion to the sentences of an Isabelle theory
-addPrimRec :: [Term] -> IsaTheory -> IsaTheory
-addPrimRec terms isaTh =
+-- | Add a constant with a primrec defintion to the sentences of an Isabelle
+-- theory. Parameters: constant name, type, primrec defintions and isabelle
+-- theory to be added to.
+addPrimRec :: String -> Typ -> [Term] -> IsaTheory -> IsaTheory
+addPrimRec cName cType terms isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
-        recDef = RecDef {keyWord = primrecS, senTerms = [terms]}
-        namedRecDef = (makeNamed "what_does_this_word_do?" recDef) {
-                        isAxiom = False,
-                        isDef = True}
-    in (isaTh_sign, isaTh_sen ++ [namedRecDef])
+        primRecDef = PrimRecDef {
+          constName = mkVName cName, constType = cType, primRecSenTerms = terms}
+        namedPrimRecDef = (makeNamed "BUG_what_does_this_word_do?" primRecDef) {
+          isAxiom = False,
+          isDef = True}
+    in (isaTh_sign, isaTh_sen ++ [namedPrimRecDef])
 
 -- | Add a theorem with proof to an Isabelle theory
 addTheoremWithProof :: String -> [Term] -> Term -> IsaProof -> IsaTheory ->

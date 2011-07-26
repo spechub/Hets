@@ -201,6 +201,7 @@ printNamedSen ns =
   in case s of
   TypeDef {} -> d
   RecDef {} -> d
+  PrimRecDef {} -> d
   Lemmas {} -> d
   Instance {} -> d
   _ -> let dd = doubleQuotes d in
@@ -228,6 +229,13 @@ printSentence s = case s of
                    $+$ pretty pr
   RecDef kw xs -> text kw <+>
      and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
+  PrimRecDef cName cType xs ->
+    let preparedEq = map (doubleQuotes . printTerm) xs
+        preparedEqWithBars =
+          (map (<+> text barS) $ init preparedEq) ++ [last preparedEq]
+    in text primrecS <+> text (new cName) <+> doubleColon <+>
+       doubleQuotes (printType cType) <+> printAlt cName <+> text whereS $+$
+       vcat preparedEqWithBars
   Instance { tName = t, arityArgs = args, arityRes = res, definitions = defs,
              instProof = prf } ->
       text instantiationS <+> text t <> doubleColon <> (case args of

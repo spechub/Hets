@@ -97,7 +97,6 @@ mkPreAlphabetDE sorts =
 addEqFun :: [SORT] -> IsaTheory -> IsaTheory
 addEqFun sortList isaTh =
     let eqtype = mkFunType preAlphabetType $ mkFunType preAlphabetType boolType
-        isaThWithConst = addConst eq_PreAlphabetS eqtype isaTh
         mkEq sort =
             let x = mkFree "x"
                 y = mkFree "y"
@@ -107,7 +106,7 @@ addEqFun sortList isaTh =
                 rhs_a = termAppl (conDouble (mkCompareWithFunName sort)) x
             in binEq lhs rhs
         eqs = map mkEq sortList
-    in addPrimRec eqs isaThWithConst
+    in addPrimRec eq_PreAlphabetS eqtype eqs isaTh
 
 -- | Add all compare_with functions for a given list of sorts to an
 -- Isabelle theory. We need to know about the casl signature (data
@@ -128,7 +127,6 @@ addCompareWithFun caslSign isaTh sort =
                                   typeArgs = []}
         funName = mkCompareWithFunName sort
         funType = mkFunType sortType $ mkFunType preAlphabetType boolType
-        isaThWithConst = addConst funName funType isaTh
         sortSuperSet = CASLSign.supersortsOf sort caslSign
         mkEq sort' =
             let x = mkFree "x"
@@ -168,7 +166,7 @@ addCompareWithFun caslSign isaTh sort =
                                        (mkInjection sort' s y)
             in binEq lhs rhs
         eqs = map mkEq sortList
-    in addPrimRec eqs isaThWithConst
+    in addPrimRec funName funType eqs isaTh
 
 -- ------------------------------------------------------
 -- Functions that creates a lemma for group many lemmas
@@ -499,7 +497,7 @@ addAllChooseFunctions sorts isaTh =
 -- | Add a single choose function for a given sort to an Isabelle
 -- theory.  The following Isabelle code is produced by this function:
 -- consts choose_Nat :: "Alphabet => Nat"
--- defs choose_Nat_def: "choose_Nat x == contents{y . class(C_Nat y) = x}"
+-- defs choose_Nat_def: "choose_Nat x == the_elem{y . class(C_Nat y) = x}"
 addChooseFunction :: IsaTheory -> SORT -> IsaTheory
 addChooseFunction isaTh sort =
     let -- constant
@@ -511,7 +509,7 @@ addChooseFunction isaTh sort =
         -- definition
         x = mkFree "x"
         y = mkFree "y"
-        contentsOp = termAppl (conDouble "contents")
+        contentsOp = termAppl (conDouble "the_elem")
         sortConsOp = termAppl (conDouble (mkPreAlphabetConstructor sort))
         bin_eq = binEq (classOp $ sortConsOp y) x
         subset = SubSet y sortType bin_eq
@@ -638,14 +636,13 @@ mkEventDE _ chanNameMap =
 addProjFlatFun :: IsaTheory -> IsaTheory
 addProjFlatFun isaTh =
     let eqtype = mkFunType eventType alphabetType
-        isaThWithConst = addConst projFlatS eqtype isaTh
         x = mkFree "x"
         lhs = termAppl (conDouble projFlatS) flatX
         flatX = termAppl (conDouble flatS) x
         rhs = x
         -- projFlat(Flat x) = x
         eqs = [binEq lhs rhs]
-    in addPrimRec eqs isaThWithConst
+    in addPrimRec projFlatS eqtype eqs isaTh
 
 -- | Function to add all the Flat types. These capture the original sorts, but
 -- use the bar values instead wrapped up in the Flat constructor(the Flat
@@ -739,8 +736,6 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
         transVar fqVar = CASL_Fold.foldTerm
                          (CFOL2IsabelleHOL.transRecord
                           caslSign tyToks trForm strs) fqVar
-        -- Extend Isabelle theory with additional constant
-        isaThWithConst = addConst procMapS procMapType isaTh
         -- Get the plain sentences from the named senetences which are not
         -- implied i.e., where axiom=true. first filter the axioms only then
         -- stip the named annotation off them.
@@ -774,7 +769,7 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
           _ -> error "addProcMap: no ProcessEq"
         -- Build equations for primrec using process equations
         eqs = map mkEq processEqs
-    in addPrimRec eqs isaThWithConst
+    in addPrimRec procMapS procMapType eqs isaTh
 
 -- | Add the implied process equations as theorems to be proven by the user. We
 -- need to know the CspCASL sentences and the casl signature (data part). We

@@ -751,8 +751,14 @@ metaImplS = "==>"
 usingS :: String
 usingS = "using"
 
+whereS :: String
+whereS = "where"
+
 dotDot :: String
 dotDot = ".."
+
+barS :: String
+barS = "|"
 
 markups :: [String]
 markups =
