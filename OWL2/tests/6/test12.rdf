@@ -1,0 +1,15 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:first="http://www.w3.org/2002/03owlt/AnnotationProperty/premises002#"
+    xml:base="http://www.w3.org/2002/03owlt/AnnotationProperty/conclusions002" >
+
+ <owl:Ontology/>
+ <owl:Class rdf:about="premises002#A">
+    <first:ap>
+       <owl:Thing />
+    </first:ap>
+  </owl:Class>
+  <owl:AnnotationProperty rdf:about="premises002#ap"/>
+
+</rdf:RDF>

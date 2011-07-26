@@ -1,0 +1,9 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xml:base="http://www.w3.org/2002/03owlt/miscellaneous/consistent303" >
+
+  <owl:Ontology/>
+  <owl:AnnotationProperty rdf:about='http://purl.org/dc/elements/1.0/creator'/>
+
+</rdf:RDF>

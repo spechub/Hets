@@ -1,0 +1,19 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+xmlns:first="http://www.w3.org/2002/03owlt/sameAs/premises001#"
+  xml:base="http://www.w3.org/2002/03owlt/sameAs/premises001" 
+   >
+
+   <owl:Ontology/>
+   <owl:Class rdf:ID="c1">
+     <owl:sameAs>
+       <owl:Class rdf:ID="c2"/>
+     </owl:sameAs>
+     <first:annotate>description of c1</first:annotate>
+   </owl:Class>
+
+   <owl:AnnotationProperty rdf:ID="annotate" />
+
+</rdf:RDF>

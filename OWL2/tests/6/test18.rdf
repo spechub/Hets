@@ -1,0 +1,13 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:first="http://www.w3.org/2002/03owlt/miscellaneous/premises302#"
+    xml:base="http://www.w3.org/2002/03owlt/miscellaneous/premises302" >
+
+<owl:Ontology/>
+<owl:AnnotationProperty rdf:ID="prop" />
+<owl:Thing rdf:about="#a">
+   <first:prop>foo</first:prop>
+</owl:Thing>
+
+</rdf:RDF>

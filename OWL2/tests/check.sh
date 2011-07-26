@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 HETS_OWL_TOOLS=~/Hets/OWL2
 export HETS_OWL_TOOLS
@@ -9,7 +9,7 @@ $ECHO "\nhi !\n"
 
 ALL=`ls`
 
-for DIR in $ALL
+for DIR in 8
 do
     if test -d $DIR;
         then
@@ -63,7 +63,7 @@ do
 
             cd OWL2/tests/$DIR/res
 
-            for i in *.ofn.xml #*.rdf.xml
+            for i in *.ofn.xml.xml *.rdf.xml.xml
             do
                 $ECHO "\ncalling java for:" $i
                 java -jar ../../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.xml.omn

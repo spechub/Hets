@@ -1,0 +1,16 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:first="http://www.w3.org/2002/03owlt/AnnotationProperty/consistent003#"
+    xml:base="http://www.w3.org/2002/03owlt/AnnotationProperty/consistent003" >
+
+  <owl:Ontology/>
+  <owl:AnnotationProperty rdf:ID="ap"/>
+
+  <owl:Class rdf:ID="A">
+    <first:ap>
+       <rdf:Description rdf:ID="B"/>
+    </first:ap>
+  </owl:Class>
+
+</rdf:RDF>
