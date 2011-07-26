@@ -70,10 +70,12 @@ symMap = Map.mapWithKey (\ (Entity ty _) -> Entity ty)
 inducedElems :: Map.Map Entity IRI -> [Entity]
 inducedElems = Map.elems . symMap
 
-inducedSign :: Map.Map Entity IRI -> Sign -> Sign
-inducedSign m = execState $ do
-    mapM_ (modEntity Set.delete) $ Map.keys m
-    mapM_ (modEntity Set.insert) $ inducedElems m
+inducedSign :: Map.Map Entity IRI -> TranslationMap -> Sign -> Sign
+inducedSign m t s =
+    let new = execState (do
+            mapM_ (modEntity Set.delete) $ Map.keys m
+            mapM_ (modEntity Set.insert) $ inducedElems m) s
+    in mv t new
 
 inducedPref :: String -> String -> Sign -> (Map.Map Entity IRI, TranslationMap)
     -> (Map.Map Entity IRI, TranslationMap)
@@ -103,7 +105,7 @@ inducedFromMor rm sig = do
                         $ Map.toList rm
   return OWLMorphism
     { osource = sig
-    , otarget = inducedSign mm sig
+    , otarget = inducedSign mm tm sig
     , pmap = tm
     , mmaps = mm }
 
@@ -202,7 +204,9 @@ mapAnnoList :: Map.Map Entity IRI -> Annotations -> Annotations
 mapAnnoList m = map (mapAnno m)
 
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
-mapSen m = return . mapAxiom (mmaps m)
+mapSen m a = do
+    let new = mapAxiom (mmaps m) a
+    return $ mv (pmap m) new
 
 mapObjExpr :: Map.Map Entity IRI -> ObjectPropertyExpression
            -> ObjectPropertyExpression

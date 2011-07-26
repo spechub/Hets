@@ -186,7 +186,7 @@ uriP =
 extEntity :: CharParser st ExtEntityType
 extEntity = do
     fmap EntityType entityType
-   <|> do option AnyEntity $ pkeyword prefixC >> return Prefix
+   <|> do option AnyEntity $ pkeyword "Prefix" >> return Prefix
 
 symbItems :: GenParser Char st SymbItems
 symbItems = do
