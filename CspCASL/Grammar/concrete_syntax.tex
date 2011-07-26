@@ -1,0 +1,55 @@
+BASIC-SPEC      ::= BASIC-ITEMS...BASIC-ITEMS  |  \{ \}
+
+BASIC-ITEMS     ::= channel/channels CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
+                  | process PROCESS-ITEM ;...; PROCESS-ITEM ;/
+                  | ...
+
+CHANNEL-ITEM    ::= CHANNEL ,..., CHANNEL : SORT
+
+PROCESS-ITEM    ::= PROCESS-NAME PROCESS-PROFILE    %% declaration only
+                  | PROCESS-NAME PROCESS-HEAD = PROCESS
+                  | PROCESS-NAME = PROCESS
+
+PROCESS-PROFILE ::= ( SORT ,..., SORT ) ALPHABET
+                  | ALPHABET
+
+PROCESS-HEAD    ::= ( VAR ,..., VAR )              %% definition only
+                  | ( ARG-DECL ;...; ARG-DECL) ALPHABET
+                  | ALPHABET
+
+ALPHABET        ::= : SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL
+                  | : \{ SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL \}
+                  | : \{ \}   %% empty alphabet
+                  | :         %% empty alphabet
+
+SORT-OR-CHANNEL ::= SORT
+                  | CHANNEL
+                  | CHANNEL : SORT
+
+CHANNEL         ::= ID
+PROCESS-NAME    ::= ID
+
+PROCESS ::=   ( PROCESS )                   %% parenthesized process
+            | \"SKIP\"
+            | \"STOP\"
+            | \"DIV\"
+            | \"RUN\" ( EVENT-SET )
+            | \"CHAOS\" ( EVENT-SET )
+            | PROCESS \back EVENT-SET       %% hiding
+            | PROCESS [[ RENAMING ]]
+            | if FORMULA then PROCESS else PROCESS
+            | PROCESS-CALL
+            | EVENT -> PROCESS
+            | [] VAR :: SORT -> PROCESS    %% prefix choice
+            | |~| VAR :: SORT -> PROCESS
+            | PROCESS ; PROCESS
+            | PROCESS ;; PROCESS %% alternative syntax for sequential processes
+
+            | PROCESS [] PROCESS
+            | PROCESS |~| PROCESS
+            | PROCESS [| EVENT-SET |] PROCESS
+            | PROCESS [ EVENT-Set || EVENT-SET ] PROCESS
+            | PROCESS || PROCESS
+            | PROCESS ||| PROCESS
+
+
