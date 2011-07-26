@@ -3,107 +3,109 @@
 HETS_OWL_TOOLS=~/Hets/OWL2
 export HETS_OWL_TOOLS
 
-echo "\nhi !\n"
+ECHO="echo -e"
+
+$ECHO "\nhi !\n"
 
 ALL=`ls`
 
-for DIR in 5
+for DIR in $ALL
 do
     if test -d $DIR;
         then
             cd $DIR
 
-            echo "testing for directory:" $DIR 
+            $ECHO "testing for directory:" $DIR
 
             mkdir res
-    
-            for i in *.ofn #*.rdf
+
+            for i in *.ofn *.rdf
             do
-                echo "\ncalling java for:" $i
+                $ECHO "\ncalling java for:" $i
                 java -jar ../../OWL2Parser.jar file:`pwd`/$i xml >> `pwd`/res/$i.xml
             done
 
             cd ../../..
 
-            echo "\ncompiling runConv...\n"
+            $ECHO "\ncompiling runConv...\n"
 
             make OWL2/scripts/runConv
 
             cd OWL2/tests/$DIR/res
 
-            echo "\nrunning runConv first time..."
+            $ECHO "\nrunning runConv first time..."
 
             for i in *.xml
             do
-                echo "\ncalling runConv for:" $i
+                $ECHO "\ncalling runConv for:" $i
                 ../../../scripts/runConv $i >> $i.xml
             done
 
-            echo "\nrunning runConv second time..."
+            $ECHO "\nrunning runConv second time..."
 
             for i in *.xml.xml
             do
-                echo "\ncalling runConv for:" $i
+                $ECHO "\ncalling runConv for:" $i
                 ../../../scripts/runConv $i >> $i.xml
             done
 
             cd ../../../..
 
-            echo "\ncalling hets for all xml files...\n"
+            $ECHO "\ncalling hets for all xml files...\n"
 
             for i in OWL2/tests/$DIR/res/*.xml
             do
                 ./hets -i ow2 $i
-                echo "\n"
+                $ECHO "\n"
             done
 
-            echo "creating omn files with java..."
+            $ECHO "creating omn files with java..."
 
             cd OWL2/tests/$DIR/res
 
-            for i in *.ofn.xml #*.rdf.xml 
+            for i in *.ofn.xml #*.rdf.xml
             do
-                echo "\ncalling java for:" $i
+                $ECHO "\ncalling java for:" $i
                 java -jar ../../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.xml.omn
             done
 
-            for i in *.ofn.xml.xml # *.rdf.xml.xml
+            for i in *.ofn.xml.xml *.rdf.xml.xml
             do
-                echo "\ncalling java for:" $i
+                $ECHO "\ncalling java for:" $i
                 java -jar ../../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.omn.omn
             done
 
             cd ../../../..
 
-            echo "\ncompiling runXML...\n"
+            $ECHO "\ncompiling runXML...\n"
 
             make OWL2/scripts/runXML
 
             cd OWL2/tests/$DIR/res
 
-            echo "\ncalling runXML on .xml files..."
+            $ECHO "\ncalling runXML on .xml files..."
 
-            for i in *.ofn.xml # *.rdf.xml  
+            for i in *.ofn.xml *.rdf.xml
             do
-                echo "\ncalling runXML for:" $i
+                $ECHO "\ncalling runXML for:" $i
                 ../../../scripts/runXML $i >> $i.xml.mno
             done
 
-            for i in *.ofn.xml.xml # *.rdf.xml.xml
+            for i in *.ofn.xml.xml *.rdf.xml.xml
             do
-                echo "\ncalling runXML for:" $i
+                $ECHO "\ncalling runXML for:" $i
                 ../../../scripts/runXML $i >> $i.mno.mno
             done
 
-            cd ..            
-    
+            cd ..
+
             #rm -rf res
 
             cd ..
 
-            echo "\n"
-            
+            $ECHO "\n"
+
     fi
 done
 
-echo "\nbye bye !\n"
+$ECHO "\nbye bye !\n"
