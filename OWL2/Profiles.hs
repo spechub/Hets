@@ -67,6 +67,14 @@ elql = [True, True, False]
 qlrl :: CoreProfiles
 qlrl = [False, True, True]
 
+individual :: Individual -> AllProfiles
+individual i = if isAnonymous i then computeAll rl else topProfile
+
+objProp :: ObjectPropertyExpression -> AllProfiles
+objProp ope = case ope of
+    ObjectInverseOf _ -> computeAll qlrl
+    _ -> topProfile 
+
 subClass :: ClassExpression -> AllProfiles
 subClass cex = case cex of
     Expression c -> computeAll [True, True, (not . isThing) c]
