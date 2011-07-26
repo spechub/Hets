@@ -19,10 +19,26 @@ import OWL2.MS
 
 import Data.Maybe
 
-validSubClassRL :: ClassExpression -> Bool
-validSubClassRL cex = case cex of
-    Expression c -> (not . isThing) c
-    ObjectJunction _ cel -> all validSubClassRL cel
+-- this datatype contains booleans, in this order, for EL, QL and RL
+data CoreProfiles = (Bool, Bool, Bool)
+
+{- this datatype contains booleans, in this order, for EL, QL, RL,
+    EL + QL, EL + RL, QL + RL and EL + QL + RL -}
+data AllProfiles = (Bool, Bool, Bool, Bool, Bool, Bool, Bool)
+
+data Table = [AllProfiles]
+
+computeAll :: CoreProfiles -> AllProfiles
+computeAll (el, ql, rl) = (el, ql, rl, el || ql, el || rl, ql || rl, el || ql || rl)
+
+minimalCovering :: Table -> AllProfiles
+minimalCovering = zipWith3 &&
+
+
+validSubClass :: ClassExpression -> Bool
+validSubClass cex = case cex of
+    Expression c -> ((not . isThing) c)
+    ObjectJunction _ cel -> (all validSubClassRL cel)
     ObjectOneOf _ -> True
     ObjectValuesFrom qt _ ce -> case qt of
         SomeValuesFrom -> case ce of
