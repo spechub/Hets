@@ -24,7 +24,7 @@ import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
--- OWL = domain
+-- OWL2 = domain
 import OWL2.Logic_OWL2
 import OWL2.AS
 import OWL2.MS
@@ -40,6 +40,7 @@ import CommonLogic.AS_CommonLogic
 import CommonLogic.Sign
 import CommonLogic.Symbol
 import qualified CommonLogic.Morphism as CLM
+import qualified CommonLogic.Sublogic as ClSl
 
 import Common.ProofTree
 
@@ -61,7 +62,7 @@ instance Comorphism
     RawSymb                 -- rawsymbol domain
     ProofTree               -- proof tree codomain
     CommonLogic             -- lid codomain
-    ()                      -- CommonLogic_Sublogics  -- sublogics codomain
+    ClSl.CommonLogicSL      -- sublogics codomain
     BASIC_SPEC              -- Basic spec codomain
     TEXT                    -- sentence codomain
     NAME                    -- symbol items codomain
@@ -75,7 +76,7 @@ instance Comorphism
       sourceLogic OWL22CommonLogic = OWL2
       sourceSublogic OWL22CommonLogic = sl_top
       targetLogic OWL22CommonLogic = CommonLogic
-      mapSublogic OWL22CommonLogic _ = Just ()
+      mapSublogic OWL22CommonLogic _ = Just ClSl.top
       map_theory OWL22CommonLogic = mapTheory
       map_morphism OWL22CommonLogic = mapMorphism
       isInclusionComorphism OWL22CommonLogic = True
@@ -448,7 +449,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                       nm <- uriToTokM dpe
                       let dPropH = mkAtoms (Atom
                                            (Name_term nm)
-                                           [ Term_seq inS, Term_seq inT])
+                                           [Term_seq inS, Term_seq inT])
                           dProp = case posneg of
                                         Positive -> dPropH
                                         Negative -> mkBools (mkNeg dPropH)
@@ -626,7 +627,6 @@ mapComIndivList cSig sod mol inds = do
                                        (mkEq x y)))) inDL)
   return [mkBools (cnjct sntLst)]
 
-
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
 operations. -}
 mapComObjectPropsList :: Sign                    -- ^ Signature
@@ -698,7 +698,6 @@ mapSubObjPropChain cSig prop oP num1 =
                                 (mkBools (cnjct oProps))
                                 ooP)))
            _ -> fail "mapping of ObjectSubPropertyChain failed"
-
 
 -- | Mapping of subobj properties
 mapSubObjProp :: Sign
@@ -906,7 +905,6 @@ mapFacet sig var (f, r) =
                   , Term_seq var ]
                 ) , unite sig (emptySig
                    {items = Set.fromList [stringToId (showQN f)]} ))
-
 
 -- | mapping of OWL Descriptions
 mapDescription :: Sign
