@@ -286,6 +286,27 @@ final process (following else) extends as far to the right as possible.
 
 \input{concrete_syntax.tex}
 
+The symbol extensions for structured specifications, like for renaming or hiding,
+are the following:
+
+\begin{verbatim}
+SOME-SYMB-KINDS ::= channel
+                  | channels
+                  | process
+                  | ...
+
+SYMB            ::= ID PROCESS-PROFILE
+                  | ID : TYPE
+                  | ID
+
+TYPE            ::= SORT
+                  | ...
+\end{verbatim}
+
+Note, that \verb|ID : SORT| might be highly ambiguous without symbol kind, as
+it could be a constant, a predicate, a channel or a process without arguments
+and with the given sort as communication alphabet.
+
 \section{Abbreviated Abstract Syntax}
 
 The abstract syntax abstracts from the concrete terminals by just using
@@ -297,5 +318,21 @@ alternatives are not restricted to only enumerate simple non-terminals.
 (An expansion would need more non-terminals.)
 
 \input{abbrev_syntax.tex}
+
+In the abbreviated syntax for structured specifications, the process profile
+can be moved into the symbol type.
+
+\begin{verbatim}
+SYMB-KIND       ::= channel-kind
+                  | process-kind
+                  | ...
+
+SYMB            ::= ID
+                  | qual-id ID TYPE
+
+TYPE            ::= channel-type SORT
+                  | process-type PROCESS-PROFILE
+                  | ...
+\end{verbatim}
 
 \end{document}
