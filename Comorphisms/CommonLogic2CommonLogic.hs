@@ -31,7 +31,7 @@ import Common.Id
 --------------------------------------------------------------------------------
 -- ASK TILL ABOUT THAT PART                                                   --
 --------------------------------------------------------------------------------
-{-
+
 import Comorphisms.GetPreludeLib
 
 import System.IO.Unsafe
@@ -45,7 +45,7 @@ import Logic.Comorphism
 
 import Common.ProofTree
 import Common.Result
-import Common.AS_Annotation as AS_Anno
+import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Id as Id
@@ -54,11 +54,12 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 -- Common Logic
-import qualified CommonLogic.Logic_CommonLogic as ClLogic
-import qualified CommonLogic.AS_CommonLogic as ClBasic
-import qualified CommonLogic.Sign as ClSign
-import qualified CommonLogic.Symbol as ClSymbol
-import qualified CommonLogic.Morphism as ClMor
+import CommonLogic.AS_CommonLogic
+import qualified CommonLogic.Logic_CommonLogic as Logic
+import qualified CommonLogic.Sign as Sign
+import qualified CommonLogic.Symbol as Symbol
+import qualified CommonLogic.Morphism as Mor
+import qualified CommonLogic.Sublogic as Sl
 
 data CommonLogic2CommonLogic = CommonLogic2CommonLogic deriving Show
 
@@ -66,41 +67,69 @@ instance Language CommonLogic2CommonLogic where
   language_name CommonLogic2CommonLogic = "CommonLogic2CommonLogic"
 
 instance Comorphism
-    CommonLogic2CommonLogic        -- comorphism
-    ClLogic.CommonLogic     -- lid domain
-    ()                      -- sublogics domain
-    ClBasic.BASIC_SPEC              -- Basic spec domain
-    ClBasic.SENTENCE                -- sentence domain
-    ClBasic.NAME                    -- symbol items domain
-    ClBasic.SYMB_MAP_ITEMS          -- symbol map items domain
-    ClSign.Sign            -- signature domain
-    ClMor.Morphism         -- morphism domain
-    ClSymbol.Symbol        -- symbol domain
-    ClSymbol.Symbol        -- rawsymbol domain
+    CommonLogic2CommonLogic -- comorphism
+    Logic.CommonLogic     -- lid domain
+    Sl.CommonLogicSL   -- sublogics codomain
+    BASIC_SPEC              -- Basic spec domain
+    TEXT                    -- sentence domain
+    NAME                    -- symbol items domain
+    SYMB_MAP_ITEMS          -- symbol map items domain
+    Sign.Sign            -- signature domain
+    Mor.Morphism         -- morphism domain
+    Symbol.Symbol        -- symbol domain
+    Symbol.Symbol        -- rawsymbol domain
     ProofTree              -- proof tree codomain
-    ProofTree              -- proof tree domain
+    Logic.CommonLogic     -- lid domain
+    Sl.CommonLogicSL   -- sublogics codomain
+    BASIC_SPEC              -- Basic spec domain
+    TEXT                    -- sentence domain
+    NAME                    -- symbol items domain
+    SYMB_MAP_ITEMS          -- symbol map items domain
+    Sign.Sign            -- signature domain
+    Mor.Morphism         -- morphism domain
+    Symbol.Symbol        -- symbol domain
+    Symbol.Symbol        -- rawsymbol domain
+    ProofTree              -- proof tree codomain
     where
-      sourceLogic CommonLogic2CommonLogic = ClLogic.CommonLogic
-      sourceSublogic CommonLogic2CommonLogic = ()
-      targetLogic CommonLogic2CommonLogic = ClLogic.CommonLogic
-      mapSublogic CommonLogic2CommonLogic = Just . mapSub -- Just . mapSub
-      map_theory CommonLogic2CommonLogic = mapTheory -- TODO
-      map_morphism CommonLogic2CommonLogic = mapMor  -- TODO prop
+      sourceLogic CommonLogic2CommonLogic = Logic.CommonLogic
+      sourceSublogic CommonLogic2CommonLogic = Sl.top
+      targetLogic CommonLogic2CommonLogic = Logic.CommonLogic
+      mapSublogic CommonLogic2CommonLogic = Just . mapSub 
+      map_theory CommonLogic2CommonLogic = mapTheory
+      map_morphism CommonLogic2CommonLogic = mapMor
       map_sentence CommonLogic2CommonLogic = mapSentence
-      has_model_expansion CommonLogic2CommonLogic = True
--}
+      has_model_expansion CommonLogic2CommonLogic = True -- TODO: check if it is really True
+
 --------------------------------------------------------------------------------
 -- END: ASK TILL ABOUT THAT PART                                              --
 --------------------------------------------------------------------------------
 
+mapSub :: Sl.CommonLogicSL -> Sl.CommonLogicSL
+mapSub = id
 
+mapMor :: Mor.Morphism -> Result Mor.Morphism
+mapMor mor = return mor
 
+mapSentence :: Sign.Sign -> TEXT -> Result TEXT
+mapSentence sign txt = return $ eliminateModules txt
 
 -------------------------------------------------------------------------------
 -- MODULE ELIMINATION                                                        --
 -------------------------------------------------------------------------------
 
--- | Result is an CL-equivalent text without modules
+
+
+mapTheory :: (Sign.Sign, [AS_Anno.Named TEXT])
+             -> Result (Sign.Sign, [AS_Anno.Named TEXT])
+mapTheory (srcSign, srcTexts) =
+  return (srcSign,
+          map ((uncurry AS_Anno.makeNamed) . elimModSnd . senAndName) srcTexts)
+  where senAndName :: AS_Anno.Named TEXT -> (String, TEXT)
+        senAndName t = (AS_Anno.senAttr t, AS_Anno.sentence t)
+        elimModSnd :: (String, TEXT) -> (String, TEXT)
+        elimModSnd (s, t) = (s, eliminateModules t)
+
+-- | Result is a CL-equivalent text without modules
 eliminateModules :: TEXT -> TEXT
 eliminateModules txt = Text [Sentence (me_text newName [] txt)] nullRange
     where (newName, _) = freeName ("x", 0) (indvC_text txt)
@@ -202,7 +231,8 @@ me_module newName modules m =
 
 -- Table 2 R4: each line in the conjunction
 ex_conj :: NAME -> [NAME] -> SENTENCE
-ex_conj n modules = Quant_sent (Existential [Name n] (Bool_sent ( Conjunction (
+ex_conj n modules =
+  Quant_sent (Existential [Name n] (Bool_sent ( Conjunction (
         map (modNameToPredicate n) modules
     )) nullRange)) nullRange
 
