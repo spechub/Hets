@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Comorphism from CommonLogic to CommonLogic
@@ -15,7 +16,7 @@ modules.
 
 
 module Comorphisms.CommonLogic2CommonLogic (
-        --CommonLogic2CommonLogic, 
+        CommonLogic2CommonLogic,
         eliminateModules --eliminates all modules in a text
     )
     where
@@ -25,12 +26,6 @@ import Data.Set (Set)
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Tools
 import Common.Id
-
-
-
---------------------------------------------------------------------------------
--- ASK TILL ABOUT THAT PART                                                   --
---------------------------------------------------------------------------------
 
 import Comorphisms.GetPreludeLib
 
@@ -100,9 +95,6 @@ instance Comorphism
       map_sentence CommonLogic2CommonLogic = mapSentence
       has_model_expansion CommonLogic2CommonLogic = True -- TODO: check if it is really True
 
---------------------------------------------------------------------------------
--- END: ASK TILL ABOUT THAT PART                                              --
---------------------------------------------------------------------------------
 
 mapSub :: Sl.CommonLogicSL -> Sl.CommonLogicSL
 mapSub = id

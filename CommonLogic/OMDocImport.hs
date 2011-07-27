@@ -77,10 +77,12 @@ toText e om = case om of
 toPhrase :: Env -> OMElement -> PHRASE
 toPhrase e om = case om of
   OMBIND op [n] m ->
-      if op == const_module then Module $ toModule e m n
+      if op == const_module
+      then Module $ toModule e m n
       else Sentence $ toSen e om
-  OMA (op : OMV (OMName cmt _) : [txt]) ->
-      if op == const_comment then Comment_text (Comment cmt nullRange) (toText e txt) nullRange
+  OMA (op : cmt : [txt]) ->
+      if op == const_comment
+      then Comment_text (varToComment cmt) (toText e txt) nullRange
       else Sentence $ toSen e om
   _ -> Sentence $ toSen e om
 
@@ -115,8 +117,10 @@ toSen e om = case om of
                                                        in Bool_sent (Negation ns) nullRange
                                 | omh == const_eq -> let t1:t2:[] = map (omdocToTerm e) os
                                                       in Atom_sent (Equation t1 t2) nullRange
-                                | omh == const_comment -> let s:[] = map (toSen e) os
-                                                           in Comment_sent (Comment "" nullRange) s nullRange
+                                | omh == const_comment
+                                  && length os > 0 -> let s:[] = map (toSen e) $ tail os
+                                                       in Comment_sent (varToComment $ head os) s nullRange
+                                | omh == const_comment -> error "toSen: commented sentence has no comment"
                                 | omh == const_irregular -> let s:[] = map (toSen e) os
                                                              in Irregular_sent s nullRange
                                 | otherwise ->  Atom_sent (Atom (omdocToTerm e omh)  (map (omdocToTermSeq e) os)) nullRange
@@ -132,8 +136,10 @@ toNameSeqmark _ = error $ "toNameSeqmark: only variables allowed"
 
 omdocToTerm :: Env -> OMElement -> TERM
 omdocToTerm e (OMA (omh : om)) 
-                     | omh == const_comment_term = let t:[] = map (omdocToTerm e) om 
-                                                    in Comment_term t (Comment "" nullRange) nullRange
+                     | omh == const_comment_term
+                        && length om > 0 = let t:[] = map (omdocToTerm e) $ tail om
+                                           in Comment_term t (varToComment $ head om) nullRange
+                     | omh == const_comment_term = error $ "omdocToTerm: commented term has no comment"
                      | otherwise = let th = omdocToTerm e omh 
                                        ts = map (omdocToTermSeq e) om
                                     in Funct_term th ts nullRange
@@ -160,3 +166,7 @@ strToToken s = Token s nullRange
 isSeqMark :: String -> Bool
 isSeqMark ('.':_) = True
 isSeqMark _ = False
+
+varToComment :: OMElement -> COMMENT
+varToComment (OMV (OMName cmt _)) = Comment cmt nullRange
+varToComment om = error $ "varToComment: only OMV OMName supported, but found: " ++ show om

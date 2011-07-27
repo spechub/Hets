@@ -57,9 +57,9 @@ exportPhr en vars phr = case phr of
    Importation _ -> undefined -- does not occur
    Module m   -> OMBIND const_module [modName m] $ exportModule en vars m
    Sentence s -> exportSen en vars s
-   Comment_text c t _ -> OMA [const_comment, simpleName c, exportText en vars t]
-  where simpleName (Comment x _) = OMV $ mkSimpleName x
-        modName m = case m of
+   Comment_text c t _ ->
+      OMA [const_comment, varFromComment c, exportText en vars t]
+  where modName m = case m of
           Mod n _ _ -> exportVar $ AS.Name n
           Mod_ex n _ _ _ -> exportVar $ AS.Name n
 
@@ -101,7 +101,7 @@ exportSen en vars s = case s of
           Atom pt tts ->
               OMA $ exportTerm en vars pt : map (exportTermSeq en vars) tts
       Comment_sent _com s1 _ ->
-          OMA [const_comment, exportSen en vars s1]
+          OMA [const_comment, varFromComment _com, exportSen en vars s1]
       Irregular_sent s1 _ ->
           OMA [const_irregular, exportSen en vars s1]
 
@@ -113,7 +113,7 @@ exportTerm e vars t = case t of
      Funct_term ft tss _ ->
          OMA $ exportTerm e vars ft : map (exportTermSeq e vars) tss
      Comment_term t1 _com _ ->
-         OMA [ const_comment_term, exportTerm e vars t1 ]
+         OMA [ const_comment_term, varFromComment _com, exportTerm e vars t1 ]
 
 
 exportTermSeq :: Env -> [NAME_OR_SEQMARK] -> TERM_SEQ -> OMElement
@@ -126,6 +126,9 @@ exportTermSeq e vars ts = case ts of
 exportVar :: NAME_OR_SEQMARK -> OMElement
 exportVar (AS.Name n) = OMV $ mkSimpleName $ tokStr n
 exportVar (SeqMark s) = OMV $ mkSimpleName $ tokStr s
+
+varFromComment :: COMMENT -> OMElement
+varFromComment (Comment x _) = OMV $ mkSimpleName x
 
 
 oms :: Env -> Token -> OMElement
