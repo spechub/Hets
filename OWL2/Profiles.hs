@@ -138,28 +138,20 @@ subClass cex = case cex of
     DataHasValue _ l -> literal l
     _ -> bottomProfile
 
+superClass :: ClassExpression -> AllProfiles
+superClass cex = case cex of
+    Expression c -> if isThing c then extendProfile elqlProfile else topProfile
+    ObjectJunction IntersectionOf cel -> andProfileList $ map superClass cel
+    ObjectComplementOf ce -> minimalCovering qlrlProfile [subClass ce]
+    ObjectOneOf il -> andProfileList $ map individual il
+    ObjectValuesFrom qt ope ce -> case qt of
+        SomeValuesFrom -> case ce of
+            Expression c -> minimalCovering elqlProfile [objProp ope]
+            _ -> andProfileList [objProp ope, extendProfile elProfile]
+
 
 
 {-
-
-
-subClass :: ClassExpression -> AllProfiles
-subClass cex = case cex of
-    Expression c -> computeAll [True, True, (not . isThing) c]
-    ObjectJunction jt cel -> case jt of
-        IntersectionOf -> minimalCovering elrl $ map subClass cel
-        UnionOf -> minimalCovering rl $ map subClass cel
-    ObjectOneOf _ -> computeAll elrl
-    ObjectValuesFrom SomeValuesFrom _ ce -> case ce of
-        Expression c -> if isThing c then topProfile
-                         else computeAll elrl
-        _ -> computeAll elrl
-    ObjectHasValue _ _ -> computeAll elrl
-    ObjectHasSelf _ -> computeAll el
-    DataHasValue _ _ -> computeAll elrl
-    DataValuesFrom SomeValuesFrom _ dr -> bottomProfile -- dataRange dr
-    _ -> bottomProfile
-
 superClass :: ClassExpression -> AllProfiles
 superClass cex = case cex of
     Expression c -> computeAll [True, True, (not . isThing) c]
@@ -178,16 +170,16 @@ superClass cex = case cex of
                 Just ce -> case ce of
                     Expression c -> topProfile
                     _ -> subClass ce)]
--}
- {-   DataValuesFrom AllValuesFrom _ dr -> validDataRangeRL dr
+
+   DataValuesFrom AllValuesFrom _ dr -> validDataRangeRL dr
     DataHasValue _ _ -> True
     DataCardinality (Cardinality MaxCardinality i _ mdr) -> elem i [0, 1] &&
         (case mdr of
             Nothing -> True
             Just dr -> validDataRangeRL dr)
     _ -> False
--}
-{-
+
+
 validEquivClassRL :: ClassExpression -> Bool
 validEquivClassRL cex = case cex of
     Expression c -> (not . isThing) c
