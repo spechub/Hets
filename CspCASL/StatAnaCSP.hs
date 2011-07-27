@@ -161,7 +161,8 @@ findProfileForProcName :: FQ_PROCESS_NAME -> Int -> ProcNameMap ->
                           State CspCASLSign (Maybe ProcProfile)
 findProfileForProcName pn numParams procNameMap =
   case pn of
-    FQ_PROCESS_NAME pn' procProfile -> do
+    FQ_PROCESS_NAME pn' (ProcProfile argSorts comms) -> do
+      procProfile <- anaProcAlphabet argSorts $ ProcAlphabet $ Set.toList comms
       if MapSet.member pn' procProfile procNameMap
         then return $ Just procProfile
         else do
