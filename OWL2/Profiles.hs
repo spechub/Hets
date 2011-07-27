@@ -99,22 +99,49 @@ minimalCovering c pl = andProfileList [extendProfile c, andProfileList pl]
 datatypeRequirement :: Datatype -> AllProfiles
 datatypeRequirement dt = topProfile -- needs to be implemented, of course
 
+literal :: Literal -> AllProfiles
+literal l = topProfile -- needs to be implemented
+
 individual :: Individual -> AllProfiles
 individual i = if isAnonymous i then extendProfile rlProfile else topProfile
 
-
-{-
-individual :: Individual -> AllProfiles
-individual i = if isAnonymous i then computeAll rl else topProfile
-
 objProp :: ObjectPropertyExpression -> AllProfiles
 objProp ope = case ope of
-    ObjectInverseOf _ -> computeAll qlrl
+    ObjectInverseOf _ -> extendProfile qlrlProfile
     _ -> topProfile
-{-
+
 dataRange :: DataRange -> AllProfiles
 dataRange dr = case dr of
-  -}  
+    DataType dt cfl ->
+        if null cfl then datatypeRequirement dt
+         else bottomProfile
+    DataJunction IntersectionOf drl -> andProfileList $ map dataRange drl
+    DataOneOf ll -> minimalCovering elProfile $ map literal ll
+    _ -> bottomProfile
+
+subClass :: ClassExpression -> AllProfiles
+subClass cex = case cex of
+    Expression c -> if isThing c then extendProfile elqlProfile else topProfile
+    ObjectJunction jt cel -> case jt of
+        IntersectionOf -> minimalCovering elrlProfile $ map subClass cel
+        UnionOf -> minimalCovering rlProfile $ map subClass cel
+    ObjectOneOf il -> minimalCovering elrlProfile $ map individual il
+    ObjectValuesFrom SomeValuesFrom ope ce -> andProfileList [objProp ope,
+        case ce of
+            Expression c -> if isThing c then topProfile
+                             else extendProfile elrlProfile
+            _ -> minimalCovering elrlProfile [subClass ce]]
+    ObjectHasValue ope i -> minimalCovering elrlProfile
+       [objProp ope, individual i]
+    ObjectHasSelf ope -> minimalCovering elProfile [objProp ope]
+    DataValuesFrom SomeValuesFrom _ dr -> dataRange dr
+    DataHasValue _ l -> literal l
+    _ -> bottomProfile
+
+
+
+{-
+
 
 subClass :: ClassExpression -> AllProfiles
 subClass cex = case cex of
