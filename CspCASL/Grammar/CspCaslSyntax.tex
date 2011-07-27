@@ -77,6 +77,8 @@ BASIC-ITEMS     ::= channel CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
                   | ...
 
 CHANNEL-ITEM    ::= CHANNEL ,..., CHANNEL : SORT
+
+CHANNEL         ::= SORT-ID
 \end{verbatim}
 
 It is also possible to use the same names for channel and sorts. Again
@@ -95,23 +97,22 @@ PROCESS-ITEM    ::= PROCESS-NAME PROCESS-PROFILE
                   | PROCESS-NAME PROCESS-HEAD = PROCESS
                   | PROCESS-NAME = PROCESS
 
-PROCESS-PROFILE ::= ( SORT ,..., SORT ) ALPHABET
-                  | ALPHABET
+PROCESS-NAME    ::= SORT-ID
+
+PROCESS-PROFILE ::= ( SORT ,..., SORT ) : ALPHABET
+                  | : ALPHABET
 
 PROCESS-HEAD    ::= ( VAR ,..., VAR )
-                  | ( ARG-DECL ;...; ARG-DECL) ALPHABET
-                  | ALPHABET
+                  | ( ARG-DECL ;...; ARG-DECL) : ALPHABET
+                  | : ALPHABET
 
-EVENT-SET       ::= SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL
+ALPHABETT       ::= SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL
                   | { SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL }
                   | { }
-
-ALPHABET        ::= : EVENT-SET
 
 SORT-OR-CHANNEL ::= SORT
                   | CHANNEL
                   | CHANNEL : SORT
-
 \end{verbatim}
 
 A mere process declaration introduces a process name, possibly with sorted
@@ -119,6 +120,10 @@ arguments, and a communication alphabet (starting with a colon sign).
 
 Process names may be overloaded as long as the argument sorts are sufficiently
 different to disambiguate the names later within process expressions.
+
+Proper mixfix identifiers (containing places) are not allowed as process
+names, in order to avoid confusion with the CspCASL builtin infix operators.
+However, compound identifiers like those for sorts and channel are legal.
 
 A process definition is an equation that defines the process depending on its
 input variables (that must all be different).
@@ -137,7 +142,7 @@ side of a process equation.
 \subsection{Processes}
 
 Processes are basically composed of more primitive processes. The most
-primitive process are:
+primitive processes are:
 
 \begin{verbatim}
 PROCESS         ::= "SKIP"
@@ -146,6 +151,8 @@ PROCESS         ::= "SKIP"
                   | "RUN" ( EVENT-SET )
                   | "CHAOS" ( EVENT-SET )
                   | ...
+
+EVENT-SET       ::= ALPHABET
 \end{verbatim}
 
 Then, it is possible to invoke a process (declared earlier) with concrete
@@ -162,12 +169,15 @@ PROCESS-QUAL    ::= PROCESS-NAME
                   | ( process PROCESS-NAME PROCESS-PROFILE )
 \end{verbatim}
 
-Processes can be slightly modified.
+Processes can be slightly modified by hiding (wrt to an event set) or by
+renaming.
 
 \begin{verbatim}
- PROCESS        ::= PROCESS \ EVENT-SET       %% hiding
+PROCESS         ::= PROCESS \ EVENT-SET
                   | PROCESS [[ RENAMING ]]
                   | ...
+
+RENAMING        ::= ID ,..., ID
 \end{verbatim}
 
 Processes can be invoked depending on conditions or events.
@@ -177,17 +187,97 @@ PROCESS         ::= if FORMULA then PROCESS else PROCESS
                   | EVENT -> PROCESS
                   | TERM -> PROCESS
                   | ...
+
+EVENT           ::= CHANNEL ? VAR :: SORT
+                  | CHANNEL ! VAR :: SORT
+                  | CHANNEL ! TERM
 \end{verbatim}
 
-Two processes can be invoked sequentially. The alternative operator ;; is only
-used to avoid conflicts with the single semicolon that is also used to
-separate items.
+Two processes can be invoked sequentially. (Instead of a single semicolon also
+a double semicolon ;; may be used as alternative operator to avoid possible
+conflicts wrt basic items.)
 
 \begin{verbatim}
 PROCESS         ::= PROCESS ; PROCESS
-                  | PROCESS ;; PROCESS
                   | ...
 \end{verbatim}
 
+Next, we have the external and internal choice between two processes.
+
+\begin{verbatim}
+PROCESS         ::= PROCESS [] PROCESS
+                  | PROCESS |~| PROCESS
+                  | ...
+\end{verbatim}
+
+There are also two corresponding prefix choice operators.
+\begin{verbatim}
+PROCESS         ::= [] VAR :: SORT -> PROCESS
+                  | |~| VAR :: SORT -> PROCESS
+                  | ...
+\end{verbatim}
+
+Finally, there are four kinds for parallel invocations of two processes,
+attributed with generalized, alphabetized, synchronous and interleaved,
+respectively.
+
+\begin{verbatim}
+PROCESS         ::= PROCESS [| EVENT-SET |] PROCESS
+                  | PROCESS [ EVENT-SET || EVENT-SET ] PROCESS
+                  | PROCESS || PROCESS
+                  | PROCESS ||| PROCESS
+                  | ...
+\end{verbatim}
+
+Generalized and alphabetized parallel are regarded as (just larger) infix
+operators, that also may be written using $|[$ and $]|$ as brackets. (The
+double bar between the two event sets within alphabetized parallel may also be
+a single bar.)
+
+The grammar given above is quite ambigouos, therefore some precedence rules
+and associativities for infix operators will follow. For explicit grouping
+parentheses may be used.
+
+\begin{verbatim}
+PROCESS         ::= ( PROCESS )
+                  | ...
+\end{verbatim}
+
+The four parallel infix operators bind weakest, followed by the two infix
+choice operators, followed by sequential composition. All infix operators
+associate to the right.
+
+\begin{verbatim}
+  p1 ; p2 ; p3 [] p4 |~| p5 || p6 [] p7 ; p8 ||| p9
+\end{verbatim}
+
+is parsed as:
+
+\begin{verbatim}
+  ((p1 ; (p2 ; p3)) [] (p4 |~| p5)) || ((p6 [] (p7 ; p8)) ||| p9)
+\end{verbatim}
+
+Prefix operators like the prefix choices or the event processes (using \verb|->|)
+bind stronger than infixes and yet stronger bind the postfix operators for
+hiding and renaming.
+
+\begin{verbatim}
+  t -> [] v :: s -> p \ s [[ r ]]
+\end{verbatim}
+
+is parsed as:
+
+\begin{verbatim}
+  t -> ([] v :: s -> ((p \ s) [[ r ]]))
+\end{verbatim}
+
+Strongest binding are the primitive processes and process calls.
+
+For conditional if-then-else processes the keywords serve as brackets and the
+final process (following else) extends as far to the right as possible.
+
+\section{Concrete Syntax}
+
+\input{concrete_syntax.tex}
 
 \end{document}

@@ -1,65 +1,67 @@
+\begin{verbatim}
 BASIC-SPEC      ::= BASIC-ITEMS...BASIC-ITEMS
-                  | \{ \}
+                  | { }
 
 BASIC-ITEMS     ::= channel/channels CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
                   | process PROCESS-ITEM ;...; PROCESS-ITEM ;/
-                  | ...  %% other CASL basic items
+                  | ...
 
 CHANNEL-ITEM    ::= CHANNEL ,..., CHANNEL : SORT
 
-PROCESS-ITEM    ::= PROCESS-NAME PROCESS-PROFILE    %% declaration only
+PROCESS-ITEM    ::= PROCESS-NAME PROCESS-PROFILE
                   | PROCESS-NAME PROCESS-HEAD = PROCESS
                   | PROCESS-NAME = PROCESS
 
-PROCESS-PROFILE ::= ( SORT ,..., SORT ) ALPHABET
-                  | ALPHABET
+PROCESS-PROFILE ::= ( SORT ,..., SORT ) : ALPHABET
+                  | : ALPHABET
 
-PROCESS-HEAD    ::= ( VAR ,..., VAR )              %% definition only
-                  | ( ARG-DECL ;...; ARG-DECL) ALPHABET
-                  | ALPHABET
+PROCESS-HEAD    ::= ( VAR ,..., VAR )
+                  | ( ARG-DECL ;...; ARG-DECL) : ALPHABET
+                  | : ALPHABET
 
-EVENT-SET       ::= SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL
-                  | \{ SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL \}
-                  | \{ \}   %% empty set
-
-ALPHABET        ::= : EVENT-SET
-                  | :       %% empty alphabet
+ALPHABET        ::= SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL
+                  | { SORT-OR-CHANNEL ,..., SORT-OR-CHANNEL }
+                  | { }
 
 SORT-OR-CHANNEL ::= SORT
                   | CHANNEL
                   | CHANNEL : SORT
 
 CHANNEL         ::= SORT-ID
-PROCESS-NAME    ::= ID
+PROCESS-NAME    ::= SORT-ID
 
-PROCESS   ::= ( PROCESS )                   %% parenthesized process
-            | \"SKIP\"
-            | \"STOP\"
-            | \"DIV\"
-            | \"RUN\" ( EVENT-SET )
-            | \"CHAOS\" ( EVENT-SET )
-            | if FORMULA then PROCESS else PROCESS
-            | PROCESS-CALL
+PROCESS         ::= ( PROCESS )
+                  | "SKIP"
+                  | "STOP"
+                  | "DIV"
+                  | "RUN" ( EVENT-SET )
+                  | "CHAOS" ( EVENT-SET )
+                  | if FORMULA then PROCESS else PROCESS
+                  | PROCESS-CALL
 
-            | PROCESS \back EVENT-SET       %% hiding
-            | PROCESS [[ RENAMING ]]
+                  | PROCESS \ EVENT-SET
+                  | PROCESS [[ RENAMING ]]
 
-            | EVENT -> PROCESS
-            | TERM -> PROCESS
-            | [] VAR :: SORT -> PROCESS     %% prefix choice
-            | |~| VAR :: SORT -> PROCESS
+                  | EVENT -> PROCESS
+                  | TERM -> PROCESS
+                  | [] VAR :: SORT -> PROCESS
+                  | |~| VAR :: SORT -> PROCESS
 
-            | PROCESS ; PROCESS
-            | PROCESS ;; PROCESS %% alternative syntax for sequential processes
+                  | PROCESS ; PROCESS
+                  | PROCESS ;; PROCESS
 
-            | PROCESS [] PROCESS            %% choice
-            | PROCESS |~| PROCESS
+                  | PROCESS [] PROCESS
+                  | PROCESS |~| PROCESS
 
-            | PROCESS [| EVENT-SET |] PROCESS             %% generalized
-            | PROCESS [ EVENT-SET || EVENT-SET ] PROCESS  %% alphabetized
-            | PROCESS |[ EVENT-SET \| EVENT-SET ]| PROCESS %% alphabetized (alt.)
-            | PROCESS || PROCESS                          %% synchronous
-            | PROCESS ||| PROCESS                         %% interleaved
+                  | PROCESS [| EVENT-SET |] PROCESS
+                  | PROCESS |[ EVENT-SET ]| PROCESS
+                  | PROCESS [ EVENT-SET || EVENT-SET ] PROCESS
+                  | PROCESS |[ EVENT-SET || EVENT-SET ]| PROCESS
+                  | PROCESS |[ EVENT-SET "|" EVENT-SET ]| PROCESS
+                  | PROCESS || PROCESS
+                  | PROCESS ||| PROCESS
+
+EVENT-SET       ::= ALPHABET
 
 PROCESS-CALL    ::= PROCESS-QUAL
                   | PROCESS-QUAL ( TERM ,..., TERM )
@@ -67,9 +69,9 @@ PROCESS-CALL    ::= PROCESS-QUAL
 PROCESS-QUAL    ::= PROCESS-NAME
                   | ( process PROCESS-NAME PROCESS-PROFILE )
 
-RENAMING        ::= ID ,..., ID       %% unsupported
+RENAMING        ::= ID ,..., ID
 
 EVENT           ::= CHANNEL ? VAR :: SORT
                   | CHANNEL ! VAR :: SORT
                   | CHANNEL ! TERM
-
+\end{verbatim}
