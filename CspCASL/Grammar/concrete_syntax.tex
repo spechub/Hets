@@ -2,7 +2,8 @@
 BASIC-SPEC      ::= BASIC-ITEMS...BASIC-ITEMS
                   | { }
 
-BASIC-ITEMS     ::= channel/channels CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
+BASIC-ITEMS     ::= channel CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
+                  | channels CHANNEL-ITEM ;...; CHANNEL-ITEM ;/
                   | process PROCESS-ITEM ;...; PROCESS-ITEM ;/
                   | ...
 
@@ -63,10 +64,10 @@ PROCESS         ::= ( PROCESS )
 
 EVENT-SET       ::= ALPHABET
 
-PROCESS-CALL    ::= PROCESS-QUAL
-                  | PROCESS-QUAL ( TERM ,..., TERM )
+PROCESS-CALL    ::= PROCESS-SYMB
+                  | PROCESS-SYMB ( TERM ,..., TERM )
 
-PROCESS-QUAL    ::= PROCESS-NAME
+PROCESS-SYMB    ::= PROCESS-NAME
                   | ( process PROCESS-NAME PROCESS-PROFILE )
 
 RENAMING        ::= ID ,..., ID

@@ -8,16 +8,16 @@ BASIC-ITEMS     ::= channel-items CHANNEL-ITEM+
 CHANNEL-ITEM    ::= channel-item CHANNEL+ SORT
 
 PROCESS-ITEM    ::= process-decl PROCESS-NAME PROCESS-PROFILE
-                  | process-defn PROCESS-NAME VAR* PROCESS
-                  | process-decl-defn PROCESS-NAME ARG-DECL* ALPHABET PROCESS
+                  | process-eq PROCESS-NAME VAR* PROCESS
+                  | process-defn PROCESS-NAME ARG-DECL* ALPHABET PROCESS
 
 PROCESS-PROFILE ::= process-profiles SORT* ALPHABET
 
 
 ALPHABET        ::= alphabet SORT-OR-CHANNEL*
 
-SORT-OR-CHANNEL ::= sort SORT
-                  | channel CHANNEL
+SORT-OR-CHANNEL ::= SORT
+                  | CHANNEL
                   | sorted-channel CHANNEL SORT
 
 CHANNEL         ::= SORT-ID
@@ -29,7 +29,7 @@ PROCESS         ::= skip
                   | run EVENT-SET
                   | choas EVENT-SET
                   | cond-process FORMULA PROCESS PROCESS
-                  | process-call PROCESS-QUAL TERM*
+                  | process-call PROCESS-SYMB TERM*
 
                   | hiding PROCESS EVENT-SET
                   | renaming PROCESS RENAMING
@@ -51,8 +51,8 @@ PROCESS         ::= skip
 
 EVENT-SET       ::= event-set SORT-OR-CHANNEL*
 
-PROCESS-QUAL    ::= unqual PROCESS-NAME
-                  | process_qual PROCESS-NAME PROCESS-PROFILE
+PROCESS-SYMB    ::= PROCESS-NAME
+                  | qual-process-name PROCESS-NAME PROCESS-PROFILE
 
 RENAMING        ::= renaming ID+
 

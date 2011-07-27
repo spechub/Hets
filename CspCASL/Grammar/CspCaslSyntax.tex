@@ -1,5 +1,7 @@
 \documentclass{article}
 
+\usepackage{url}
+\newcommand{\kw}[1]{{\bf #1}}
 
 \title{CspCASL syntax description}
 \author{Christian Maeder}
@@ -10,11 +12,14 @@
 \maketitle
 
 CspCASL is designed as CASL extension with additional channel and process
-items as parts of basic specifications.
+items as parts of basic specifications, see
+\url{http://www.informatik.uni-bremen.de/cofi/CASL-RM.pdf}, Part II.
 
-The only support for structural specifications is given by the ``data''
+The only support for structural specifications is given by the \kw{data}
 keyword, that can be viewed as a special case for an extended specification
-given by the ``then'' keyword.
+given by the \kw{then} keyword. (See
+\url{http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/HetCASL-Summary.pdf},
+Section 2.2.3 Data Specifications)
 
 \begin{verbatim}
 logic CASL
@@ -44,9 +49,9 @@ with channel or process items.
 
 As in CASL basic items are introduced by a (singular or plural) keyword
 followed by list of items of the same kind that are separated by semicolons,
-where a final semicolon is optional. A new item keyword, like ``sort'' or
-``channel'', starts a new item list. (The plural of ``process'' is currently
-not supported as keyword.)
+where a final semicolon is optional. A new item keyword, like \kw{var},
+\kw{sort} or \kw{channel}, starts a new item list. (The plural \kw{processes}
+is currently not supported as keyword.)
 
 Similar to the CASL grammar, we adopt the following convention:
 \begin{itemize}
@@ -119,7 +124,8 @@ A mere process declaration introduces a process name, possibly with sorted
 arguments, and a communication alphabet (starting with a colon sign).
 
 Process names may be overloaded as long as the argument sorts are sufficiently
-different to disambiguate the names later within process expressions.
+different (considering subsorting) to disambiguate the names later within
+process expressions.
 
 Proper mixfix identifiers (containing places) are not allowed as process
 names, in order to avoid confusion with the CspCASL builtin infix operators.
@@ -128,13 +134,13 @@ However, compound identifiers like those for sorts and channel are legal.
 A process definition is an equation that defines the process depending on its
 input variables (that must all be different).
 
-Such an equation can be seen as a special process formula and just like
-operations or predicates in CASL also processes can be declared and defined
+Such an equation can be seen as a special process formula. Just like
+operations or predicates in CASL, also processes can be declared and defined
 simultaneously, if sorted variables (possibly none) and the communication
 alphabet is supplied.
 
-An alphabet or possible event sets are just comma separated sets of sorts or
-channels, that may even be empty.
+Alphabets or event sets are just comma separated sets of sorts or
+channels, that may also be empty.
 
 It remains to describe the process expression that may occur on the left hand
 side of a process equation.
@@ -162,14 +168,14 @@ argument terms.
 PROCESS         ::= PROCESS-CALL
                   | ...
 
-PROCESS-CALL    ::= PROCESS-QUAL
-                  | PROCESS-QUAL ( TERM ,..., TERM )
+PROCESS-CALL    ::= PROCESS-SYMB
+                  | PROCESS-SYMB ( TERM ,..., TERM )
 
-PROCESS-QUAL    ::= PROCESS-NAME
+PROCESS-SYMB    ::= PROCESS-NAME
                   | ( process PROCESS-NAME PROCESS-PROFILE )
 \end{verbatim}
 
-Processes can be slightly modified by hiding (wrt to an event set) or by
+Processes can be slightly modified by hiding (regarding an event set) or by
 renaming.
 
 \begin{verbatim}
@@ -195,7 +201,7 @@ EVENT           ::= CHANNEL ? VAR :: SORT
 
 Two processes can be invoked sequentially. (Instead of a single semicolon also
 a double semicolon ;; may be used as alternative operator to avoid possible
-conflicts wrt basic items.)
+conflicts regarding basic items.)
 
 \begin{verbatim}
 PROCESS         ::= PROCESS ; PROCESS
@@ -279,5 +285,17 @@ final process (following else) extends as far to the right as possible.
 \section{Concrete Syntax}
 
 \input{concrete_syntax.tex}
+
+\section{Abbreviated Abstract Syntax}
+
+The abstract syntax abstracts from the concrete terminals by just using
+constructors (lowercase words) and components (non-terminals). * and + denote
+the repetition of components any number of times, at least once for +.
+
+This abstract syntax is abbreviated in the sense that rules with several
+alternatives are not restricted to only enumerate simple non-terminals.
+(An expansion would need more non-terminals.)
+
+\input{abbrev_syntax.tex}
 
 \end{document}
