@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Contains    :  OWL2 Profiles (EL, QL, RL, DL)
+Contains    :  OWL2 Profiles (EL, QL, RL and combinations)
 
 References  :  <http://www.w3.org/TR/owl2-profiles/>
 -}
@@ -21,59 +21,100 @@ import Common.Id
 
 import Data.Maybe
 
--- this type contains booleans, in this order, for EL, QL and RL
-type CoreProfiles = [Bool]
+data CoreProfiles = CoreProfiles {
+        el0 :: Bool,
+        ql0 :: Bool,
+        rl0 :: Bool
+    } deriving (Show, Eq, Ord)
 
-{- this type contains booleans, in this order, for EL, QL, RL,
-    EL + QL, EL + RL, QL + RL and EL + QL + RL -}
-type AllProfiles = [Bool]
-
-computeAll :: CoreProfiles -> AllProfiles
-computeAll cp = case cp of
-    [e, q, r] -> [e, q, r, e || q, e || r, q || r, e || q || r]
-    _ -> []
-
-anaTable :: [[Bool]] -> [Bool]
-anaTable ls =
-    let first = all head ls
-    in first : case length $ head ls of
-        1 -> []
-        _ -> anaTable $ map tail ls
-
-minimalCovering :: CoreProfiles -> [AllProfiles] -> AllProfiles
-minimalCovering c t = anaTable [anaTable t, computeAll c]
+data AllProfiles = AllProfiles {
+        el :: Bool,
+        ql :: Bool,
+        rl :: Bool,
+        elql :: Bool,
+        elrl :: Bool,
+        qlrl :: Bool,
+        all3 :: Bool
+    } deriving (Show, Eq, Ord)
 
 bottomProfile :: AllProfiles
-bottomProfile = [False, False, False, False, False, False, False]
+bottomProfile = AllProfiles False False False False False False False
 
 topProfile :: AllProfiles
-topProfile = [True, True, True, True, True, True, True]
+topProfile = AllProfiles True True True True True True True
 
-el :: CoreProfiles
-el = [True, False, False]
+noProfile :: CoreProfiles
+noProfile = CoreProfiles False False False
 
-ql :: CoreProfiles
-ql = [False, True, False]
+elProfile :: CoreProfiles
+elProfile = CoreProfiles True False False
 
-rl :: CoreProfiles
-rl = [False, False, True]
+qlProfile :: CoreProfiles
+qlProfile = CoreProfiles False True False
 
-elrl :: CoreProfiles
-elrl = [True, False, True]
+rlProfile :: CoreProfiles
+rlProfile = CoreProfiles False False True
 
-elql :: CoreProfiles
-elql = [True, True, False]
+elqlProfile :: CoreProfiles
+elqlProfile = CoreProfiles True True False
 
-qlrl :: CoreProfiles
-qlrl = [False, True, True]
+elrlProfile :: CoreProfiles
+elrlProfile = CoreProfiles True False True
 
+qlrlProfile :: CoreProfiles
+qlrlProfile = CoreProfiles False True True
+
+all3Profile :: CoreProfiles
+all3Profile = CoreProfiles True True True
+
+extendProfile :: CoreProfiles -> AllProfiles
+extendProfile cp =
+    let e = el0 cp
+        q = ql0 cp
+        r = rl0 cp
+    in bottomProfile {
+            el = e,
+            ql = q,
+            rl = r,
+            elql = e || q,
+            elrl = e || r,
+            qlrl = q || r,
+            all3 = e || q || r
+        }
+
+andProfileList :: [AllProfiles] -> AllProfiles
+andProfileList pl = bottomProfile {
+        el = all el pl,
+        ql = all ql pl,
+        rl = all rl pl,
+        elql = all elql pl,
+        elrl = all elrl pl,
+        qlrl = all qlrl pl,
+        all3 = all all3 pl
+    }
+
+minimalCovering :: CoreProfiles -> [AllProfiles] -> AllProfiles
+minimalCovering c pl = andProfileList [extendProfile c, andProfileList pl]
+
+datatypeRequirement :: Datatype -> AllProfiles
+datatypeRequirement dt = topProfile -- needs to be implemented, of course
+
+individual :: Individual -> AllProfiles
+individual i = if isAnonymous i then extendProfile rlProfile else topProfile
+
+
+{-
 individual :: Individual -> AllProfiles
 individual i = if isAnonymous i then computeAll rl else topProfile
 
 objProp :: ObjectPropertyExpression -> AllProfiles
 objProp ope = case ope of
     ObjectInverseOf _ -> computeAll qlrl
-    _ -> topProfile 
+    _ -> topProfile
+{-
+dataRange :: DataRange -> AllProfiles
+dataRange dr = case dr of
+  -}  
 
 subClass :: ClassExpression -> AllProfiles
 subClass cex = case cex of
@@ -110,6 +151,7 @@ superClass cex = case cex of
                 Just ce -> case ce of
                     Expression c -> topProfile
                     _ -> subClass ce)]
+-}
  {-   DataValuesFrom AllValuesFrom _ dr -> validDataRangeRL dr
     DataHasValue _ _ -> True
     DataCardinality (Cardinality MaxCardinality i _ mdr) -> elem i [0, 1] &&
