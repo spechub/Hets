@@ -46,7 +46,7 @@ setIRI iri e =
     let np = namePrefix iri
         ty
             | isAnonymous iri = "nodeID"
-            | isFullIri iri {-|| null np-} = iriK
+            | isFullIri iri = iriK
             | otherwise = "abbreviatedIRI"
     in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showIRI iri}]}
 
@@ -418,7 +418,7 @@ setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =
 
 setOntIRI :: OntologyIRI -> Element -> Element
 setOntIRI iri e =
-    if elem iri [nullQName, dummyQName] then e 
+    if elem iri [nullQName, dummyQName] then e
      else e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
         attrVal = showQU iri} : elAttribs e}
 
