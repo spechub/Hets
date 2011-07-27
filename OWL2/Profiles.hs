@@ -63,11 +63,14 @@ andProfileList pl = bottomProfile {
         rl = all rl pl
     }
 
+andList :: (a -> Profiles) -> [a] -> Profiles
+andList f cel = andProfileList (map f cel)
+
 minimalCovering :: Profiles -> [Profiles] -> Profiles
 minimalCovering c pl = andProfileList [c, andProfileList pl]
 
-datatypeRequirement :: Datatype -> Profiles
-datatypeRequirement dt = topProfile -- needs to be implemented, of course
+dataType :: Datatype -> Profiles
+dataType dt = topProfile -- needs to be implemented, of course
 
 literal :: Literal -> Profiles
 literal l = topProfile -- needs to be implemented
@@ -83,7 +86,7 @@ objProp ope = case ope of
 dataRange :: DataRange -> Profiles
 dataRange dr = case dr of
     DataType dt cfl ->
-        if null cfl then datatypeRequirement dt
+        if null cfl then dataType dt
          else bottomProfile
     DataJunction IntersectionOf drl -> andProfileList $ map dataRange drl
     DataOneOf ll -> minimalCovering elProfile $ map literal ll
@@ -155,9 +158,6 @@ annotation (Annotation as _ av) = andProfileList [annotations as, case av of
 
 annotations :: Annotations -> Profiles
 annotations ans = andProfileList $ map annotation ans
-
-andList :: (a -> Profiles) -> [a] -> Profiles
-andList f cel = andProfileList (map f cel)
 
 assertionQL :: ClassExpression -> Bool
 assertionQL ce = case ce of
@@ -267,48 +267,39 @@ lFB ext mr lfb = case lfb of
     IndividualFacts anl ->
         let ans = annotations $ concatMap fst anl
             facts = andList fact $ map snd anl
-        in andProfileList [ans, facts]
-
-
-
-
-{-
-
-validLfbRL :: Maybe Relation -> Extended -> ListFrameBit -> Bool
-validLfbRL mr ext lfb = case lfb of
-    ExpressionBit anl ->
-        let cel = map snd anl
-            r = fromMaybe (error "relation needed") mr
         in case ext of
-            Misc _ -> validEDClassesRL r cel
-            ClassEntity c -> case r of
-                SubClass -> validSubClassRL c && all validSuperClassRL cel
-                _ -> validEDClassesRL r cel
-            _ -> all validSuperClassRL cel
-    IndividualSameOrDifferent _ -> True
-    ObjectCharacteristics anl ->
-        let cl = map snd anl
-        in notElem Reflexive cl && notElem Antisymmetric cl
-    DataPropRange anl -> all validDataRangeRL $ map snd anl
-    _ -> True
+            SimpleEntity (Entity _ i) ->
+                andProfileList [ans, facts, individual i]
+            _ -> error "bad fact bit"
 
-validAfbRL :: Extended -> AnnFrameBit -> Bool
-validAfbRL ext afb = case afb of
-    DatatypeBit dr -> validDataRangeRL dr
-    ClassDisjointUnion _ -> False
-    ClassHasKey _ _ -> case ext of
-        ClassEntity ce -> validSubClassRL ce
-        _ -> False
-    _ -> True
+aFB :: Extended -> Annotations -> AnnFrameBit -> Profiles
+aFB ext anno afb =
+    let ans = annotations anno 
+    in case afb of
+        AnnotationFrameBit -> ans
+        DataFunctional -> andProfileList [ans, elrlProfile]
+        DatatypeBit dr -> case ext of
+            SimpleEntity (Entity _ dt) -> andProfileList
+                [ans, dataType dt, dataRange dr]
+            _ -> error "bad datatype bit"
+        ClassDisjointUnion _ -> bottomProfile
+        ClassHasKey opl _ -> case ext of
+            ClassEntity ce -> minimalCovering elrlProfile
+                [ans, andList objProp opl, subClass ce]
+            _ -> error "bad has key"
+        ObjectSubPropertyChain opl -> case ext of
+            ObjectEntity op -> minimalCovering elrlProfile
+                [ans, andList objProp $ op : opl]
+            _ -> error "bad sub property chain"
 
-validFbRL :: Extended -> FrameBit -> Bool
-validFbRL ext fb = case fb of
-    ListFrameBit mr lfb -> validLfbRL mr ext lfb
-    AnnFrameBit _ afb -> validAfbRL ext afb
+fB :: Extended -> FrameBit -> Profiles
+fB ext fb = case fb of
+    ListFrameBit mr lfb -> lFB ext mr lfb
+    AnnFrameBit anno afb -> aFB ext anno afb
 
-validAxiomRL :: Axiom -> Bool
-validAxiomRL (PlainAxiom ext fb) = validFbRL ext fb  
--}
+axiom :: Axiom -> Profiles
+axiom (PlainAxiom ext fb) = fB ext fb
+
 
 
 
