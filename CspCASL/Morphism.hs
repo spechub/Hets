@@ -166,7 +166,8 @@ composeCspAddMorphism m1 m2 = let
 CspAddMorphism. -}
 type CspCASLMorphism = CASL_Morphism.Morphism CspSen CspSign CspAddMorphism
 
--- | Check if a CspCASL signature morphism has the refl property
+-- | Check if a CspCASL signature morphism has the refl property i.e.,
+-- sigma(s1) <= sigma(s2) implies s1 <= s2 for all s1, s2 in S
 checkReflCondition :: CspCASLMorphism -> Bool
 checkReflCondition mor =
   let sig = msource mor
@@ -176,9 +177,35 @@ checkReflCondition mor =
       rel' = Rel.transClosure $ sortRel sig'
       allPairs = LT.cartesian $ sortSet sig
       failures = Set.filter (not . test) allPairs
-      test (x,y) =  if Rel.member (mapSort sm x) (mapSort sm y) rel'
-                    then Rel.member x y rel
+      test (s1,s2) =  if Rel.member (mapSort sm s1) (mapSort sm s2) rel'
+                    then Rel.member s1 s2 rel
                     else True
+  in Set.null failures
+
+-- | Check if a CspCASL signature morphism has the weak non extension property
+-- i.e.,
+-- sigma(s1) <= u' and -- sigma(s2) <= u' implies there exists t in S with
+-- s1 <= t and s2 <= t and sigma(t) <= u' for all s1,s2 in S and u' in S'
+checkWNECondition :: CspCASLMorphism -> Bool
+checkWNECondition mor =
+  let sig = msource mor
+      sig' = mtarget mor
+      sm = sort_map mor
+      rel' = Rel.transClosure $ sortRel sig'
+      supers s signature = Set.insert s $ supersortsOf s signature
+      allPairsInSource = LT.cartesian $ sortSet sig
+      commonSuperSortsInTarget s1 s2 = Set.intersection
+                                       (supers (mapSort sm s1) sig')
+                                       (supers (mapSort sm s2) sig')
+      conclusionCheck s1 s2 u' =
+        let possibleWitnesses =
+              Set.intersection (supers s1 sig) (supers s2 sig)
+            test t = Rel.member (mapSort sm t) u' rel'
+        in or $ Set.toList $ Set.map test possibleWitnesses
+      mainTest (s1,s2) =
+        Set.filter (not . conclusionCheck s1 s2)
+        (commonSuperSortsInTarget s1 s2)
+      failures = Set.map mainTest allPairsInSource
   in Set.null failures
 
 -- | unite morphisms
