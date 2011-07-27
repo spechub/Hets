@@ -1,0 +1,62 @@
+\begin{verbatim}
+BASIC-SPEC      ::= basic-spec BASIC-ITEMS*
+
+BASIC-ITEMS     ::= channel-items CHANNEL-ITEM+
+                  | process-items PROCESS-ITEM+
+                  | ...
+
+CHANNEL-ITEM    ::= channel-item CHANNEL+ SORT
+
+PROCESS-ITEM    ::= process-decl PROCESS-NAME PROCESS-PROFILE
+                  | process-defn PROCESS-NAME VAR* PROCESS
+                  | process-decl-defn PROCESS-NAME ARG-DECL* ALPHABET PROCESS
+
+PROCESS-PROFILE ::= process-profiles SORT* ALPHABET
+
+
+ALPHABET        ::= alphabet SORT-OR-CHANNEL*
+
+SORT-OR-CHANNEL ::= sort SORT
+                  | channel CHANNEL
+                  | sorted-channel CHANNEL SORT
+
+CHANNEL         ::= SORT-ID
+PROCESS-NAME    ::= SORT-ID
+
+PROCESS         ::= skip
+                  | stop
+                  | div
+                  | run EVENT-SET
+                  | choas EVENT-SET
+                  | cond-process FORMULA PROCESS PROCESS
+                  | process-call PROCESS-QUAL TERM*
+
+                  | hiding PROCESS EVENT-SET
+                  | renaming PROCESS RENAMING
+
+                  | event-process EVENT PROCESS
+                  | term-event TERM PROCESS
+                  | prefix-ext-choice VAR SORT PROCESS
+                  | prefix-int-choice VAR SORT PROCESS
+
+                  | sequence PROCESS PROCESS
+
+                  | ext-choice PROCESS PROCESS
+                  | int-choice PROCESS PROCESS
+
+                  | generalized PROCESS EVENT-SET PROCESS
+                  | alphabetized PROCESS EVENT-SET EVENT-SET PROCESS
+                  | synchronous PROCESS PROCESS
+                  | interleaved PROCESS PROCESS
+
+EVENT-SET       ::= event-set SORT-OR-CHANNEL*
+
+PROCESS-QUAL    ::= unqual PROCESS-NAME
+                  | process_qual PROCESS-NAME PROCESS-PROFILE
+
+RENAMING        ::= renaming ID+
+
+EVENT           ::= read-event CHANNEL VAR SORT
+                  | write-event CHANNEL VAR SORT
+                  | write-term CHANNEL TERM
+\end{verbatim}
