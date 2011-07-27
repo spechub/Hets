@@ -29,6 +29,7 @@ module CspCASL.Morphism
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
 import CspCASL.Symbol
+import qualified CspCASL.LocalTop as LT
 
 import CASL.AS_Basic_CASL (FORMULA, TERM, SORT)
 import CASL.Sign as CASL_Sign
@@ -41,6 +42,7 @@ import Common.Id
 import Common.Result
 import Common.Utils (composeMap, isSingleton)
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -163,6 +165,21 @@ composeCspAddMorphism m1 m2 = let
 {- | A CspCASLMorphism is a CASL Morphism with the extended_map to be a
 CspAddMorphism. -}
 type CspCASLMorphism = CASL_Morphism.Morphism CspSen CspSign CspAddMorphism
+
+-- | Check if a CspCASL signature morphism has the refl property
+checkReflCondition :: CspCASLMorphism -> Bool
+checkReflCondition mor =
+  let sig = msource mor
+      sig' = mtarget mor
+      sm = sort_map mor
+      rel = Rel.transClosure $ sortRel sig
+      rel' = Rel.transClosure $ sortRel sig'
+      allPairs = LT.cartesian $ sortSet sig
+      failures = Set.filter (not . test) allPairs
+      test (x,y) =  if Rel.member (mapSort sm x) (mapSort sm y) rel'
+                    then Rel.member x y rel
+                    else True
+  in Set.null failures
 
 -- | unite morphisms
 cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism

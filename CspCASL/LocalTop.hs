@@ -14,7 +14,8 @@ CspCASL static analysis.
 -}
 
 module CspCASL.LocalTop (
-    checkLocalTops
+    checkLocalTops,
+    cartesian
 ) where
 
 import CASL.AS_Basic_CASL (SORT)
