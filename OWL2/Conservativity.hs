@@ -71,8 +71,8 @@ runLocalityChecker jar ct onto sig = do
           jargs = ["-jar", jar, "file://" ++ ontoFile, "file://" ++ sigFile, ct]
       writeFile ontoFile onto
       mExit <- timeoutCommand tLimit "java" jargs
---      removeFile ontoFile
---      removeFile sigFile
+      removeFile ontoFile
+      removeFile sigFile
       return $ case mExit of
         Just (cont, out, _) -> parseOutput out cont
         Nothing -> fail $ "Timelimit " ++ show tLimit ++ " exceeded"
