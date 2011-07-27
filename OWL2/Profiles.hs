@@ -32,9 +32,6 @@ bottomProfile = Profiles False False False
 topProfile :: Profiles
 topProfile = Profiles True True True
 
-noProfile :: Profiles
-noProfile = Profiles False False False
-
 elProfile :: Profiles
 elProfile = Profiles True False False
 
@@ -89,7 +86,9 @@ dataRange dr = case dr of
         if null cfl then dataType dt
          else bottomProfile
     DataJunction IntersectionOf drl -> andProfileList $ map dataRange drl
-    DataOneOf ll -> minimalCovering elProfile $ map literal ll
+    DataOneOf ll -> bottomProfile {
+                        el = (el $ andList literal ll) && length ll == 1
+                    }
     _ -> bottomProfile
 
 subClass :: ClassExpression -> Profiles
@@ -98,7 +97,10 @@ subClass cex = case cex of
     ObjectJunction jt cel -> minimalCovering (case jt of
         IntersectionOf -> elrlProfile
         UnionOf -> rlProfile) $ map subClass cel
-    ObjectOneOf il -> minimalCovering elrlProfile $ map individual il
+    ObjectOneOf il -> bottomProfile {
+                    el = (el $ andList individual il) && length il == 1,
+                    rl = ql $ andList individual il
+                }
     ObjectValuesFrom SomeValuesFrom ope ce -> andProfileList [objProp ope,
         case ce of
             Expression c -> if isThing c then topProfile
@@ -116,7 +118,10 @@ superClass cex = case cex of
     Expression c -> if isThing c then elqlProfile else topProfile
     ObjectJunction IntersectionOf cel -> andList superClass cel
     ObjectComplementOf ce -> minimalCovering qlrlProfile [subClass ce]
-    ObjectOneOf il -> andProfileList $ map individual il
+    ObjectOneOf il -> bottomProfile {
+                    el = (el $ andList individual il) && length il == 1,
+                    rl = ql $ andList individual il
+                }
     ObjectValuesFrom qt ope ce -> case qt of
         SomeValuesFrom -> andProfileList [objProp ope, case ce of
             Expression _ -> elqlProfile
