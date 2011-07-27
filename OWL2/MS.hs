@@ -72,19 +72,19 @@ getAxioms (Frame e fbl) = map (PlainAxiom e) fbl
 
 instance GetRange Axiom
 
-data OntologyDocument = OntologyDocument {
-    prefixDeclaration :: PrefixMap,
-    ontology :: Ontology
- } deriving (Show, Eq, Ord)
-
-instance GetRange OntologyDocument
-
 data Ontology = Ontology {
   name :: OntologyIRI,
   imports :: [ImportIRI],
   ann :: [Annotations],
   ontFrames :: [Frame]
  } deriving (Show, Eq, Ord)
+
+data OntologyDocument = OntologyDocument {
+    prefixDeclaration :: PrefixMap,
+    ontology :: Ontology
+ } deriving (Show, Eq, Ord)
+
+instance GetRange OntologyDocument
 
 emptyOnt :: Ontology
 emptyOnt = Ontology nullQName [] [] []

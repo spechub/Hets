@@ -221,7 +221,7 @@ lFB ext mr lfb = case lfb of
                 _ -> qlrlProfile]
             ObjectEntity op -> andProfileList [ans, opl, objProp op, case r of
                 SubPropertyOf -> topProfile
-                EDRelation Equivalent -> topProfile         
+                EDRelation Equivalent -> topProfile
                 _ -> qlrlProfile]
             _ -> error "invalit object bit"
     DataBit anl ->
@@ -233,7 +233,7 @@ lFB ext mr lfb = case lfb of
                 _ -> qlrlProfile]
             _ -> andProfileList [ans, case r of
                     SubPropertyOf -> topProfile
-                    EDRelation Equivalent -> topProfile         
+                    EDRelation Equivalent -> topProfile
                     _ -> qlrlProfile]
     IndividualSameOrDifferent anl ->
         let ans = annotations $ concatMap fst anl
@@ -274,7 +274,7 @@ lFB ext mr lfb = case lfb of
 
 aFB :: Extended -> Annotations -> AnnFrameBit -> Profiles
 aFB ext anno afb =
-    let ans = annotations anno 
+    let ans = annotations anno
     in case afb of
         AnnotationFrameBit -> ans
         DataFunctional -> andProfileList [ans, elrlProfile]
@@ -299,6 +299,18 @@ fB ext fb = case fb of
 
 axiom :: Axiom -> Profiles
 axiom (PlainAxiom ext fb) = fB ext fb
+
+frame :: Frame -> Profiles
+frame (Frame ext fbl) = andList (fB ext) fbl
+
+ontologyP :: Ontology -> Profiles
+ontologyP ont =
+    let anns = ann ont
+        fr = ontFrames ont
+    in andProfileList [andList frame fr, andList annotations anns]
+
+ontologyDoc :: OntologyDocument -> Profiles
+ontologyDoc odoc = ontologyP $ ontology odoc
 
 
 
