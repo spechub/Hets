@@ -36,7 +36,8 @@ signColimit graph = let
                nmap dataProperties graph
    annPropGraph = emap (getEntityTypeMap AnnotationProperty) $
                nmap annotationRoles graph
-   prefixGraph = emap getPrefixMap $ nmap (Map.keysSet . toQName . prefixMap) graph
+   prefixGraph = emap getPrefixMap
+                    $ nmap (Map.keysSet . toQName . prefixMap) graph
    (con, funC) = addIntToSymbols $ computeColimitSet conGraph
    (dat, funD) = addIntToSymbols $ computeColimitSet dataGraph
    (ind, funI) = addIntToSymbols $ computeColimitSet indGraph
