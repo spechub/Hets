@@ -134,7 +134,8 @@ getDeclaration b e = case getName e of
      in case ty of
         AnnotationProperty -> PlainAxiom (Misc ans) $ AnnFrameBit
             [Annotation [] iri $ AnnValue iri] AnnotationFrameBit
-        _ -> PlainAxiom (SimpleEntity entity) $ AnnFrameBit ans AnnotationFrameBit
+        _ -> PlainAxiom (SimpleEntity entity)
+                $ AnnFrameBit ans AnnotationFrameBit
    _ -> error "not declaration"
 
 isPlainLiteral :: String -> Bool
@@ -428,7 +429,7 @@ getDataAssertion b e =
                [(as, DataPropertyFact Positive dp lit)]
     "NegativeDataPropertyAssertion" ->
          PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
-           $ ListFrameBit Nothing $ IndividualFacts
+                        $ ListFrameBit Nothing $ IndividualFacts
                [(as, DataPropertyFact Negative dp lit)]
     _ -> getObjectAssertion b e
 
