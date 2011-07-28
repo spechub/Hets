@@ -60,23 +60,35 @@ phrase = do
     try (oParenT >> clModuleKey)
     spaces
     m <- pModule
+    spaces
     cParenT
     return $ Module m
   <|> do
     try (oParenT >> clImportsKey)
     spaces
     i <- importation
+    spaces
     cParenT
     return $ Importation i
   <|> do
     try (oParenT >> clCommentKey)
     spaces
-    (c,t) <- comment <?> "comment: 3"
+    c <- quotedstring <|> enclosedname
+    spaces
+    t <- comment_txt <?> "comment: 3"
+    spaces
     cParenT
-    return $ Comment_text c t nullRange
+    return $ Comment_text (Comment c nullRange) t nullRange
   <|> do
     s <- sentence
     return $ Sentence s
+
+comment_txt :: CharParser st TEXT
+comment_txt = do
+   t <- try text
+   return $ t
+  <|> do
+   return $ Text [] nullRange
 
 -- | parser for module
 pModule :: CharParser st MODULE
@@ -105,22 +117,19 @@ importation = do
      n <- identifier
      return $ Imp_name n
 
-comment :: CharParser st (COMMENT, TEXT)
-comment = do
-   -- clCommentKey <?> "nothing"
-   qs <- quotedstring <|> enclosedname
-   -- t <- text <?> "Text" -- TODO empty Text
-   return $ (Comment qs nullRange, Text [] nullRange)
-  <|> do
-   -- clCommentKey
-   qs <- quotedstring <|> enclosedname
-   return $ (Comment qs nullRange, (Text [] nullRange))
-
 -- | parser for sentences
 sentence :: CharParser st SENTENCE --TODO: parse commented sentences
 sentence = parens $ do
-  at <- atom <?> "predicate"
-  return $ Atom_sent at $ Range $ rangeSpan at
+    ck <- try clCommentKey
+    spaces
+    c <- quotedstring <|> enclosedname
+    spaces
+    s <- sentence
+    return $ Comment_sent (Comment c $ Range $ rangeSpan c) s
+           $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan s]
+  <|> do
+    at <- atom <?> "predicate"
+    return $ Atom_sent at $ Range $ rangeSpan at
   <|> do
     c <- andKey
     s <- many sentence -- joinRanges with s = []?
@@ -185,11 +194,26 @@ term = do
      t <- identifier
      return $ Name_term t
    <|> do
-     parens $ do
-       t <- term
-       ts <- many1 termseq -- many1? yes, because it's a functional term
-       return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t
-                                                      , rangeSpan ts]
+     oParenT
+     spaces
+     term_fun_cmt
+
+term_fun_cmt :: CharParser st TERM
+term_fun_cmt = do
+  ck <- try clCommentKey
+  spaces
+  c <- quotedstring <|> enclosedname
+  spaces
+  t <- term
+  spaces
+  cParenT
+  return $ Comment_term t (Comment c $ Range $ rangeSpan c)
+         $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan t]
+ <|> do
+  t <- term
+  ts <- many1 termseq -- many1? yes, because it's a functional term
+  cParenT
+  return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t, rangeSpan ts]
 
 termseq :: CharParser st TERM_SEQ
 termseq = do
