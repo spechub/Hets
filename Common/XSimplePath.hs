@@ -28,32 +28,64 @@ data SimpleStep = MkStepDown QName
                 | FindByAttr [Attr]
                 | FindByNumber Int
 
-readDiff :: String -> IO()
+readDiff :: String -> IO SimplePath
 readDiff filepath = do
   xml <- readFile filepath
   cs <- anaXUpdates xml
-  mapM_ (\ (Change _ e) -> case e of
-    PathExpr Nothing (Path True stps) -> putStrLn $ show stps ++"\n\n"
-    _ -> error "invalid pathexpr" ) cs
-  --mapM (\ (Change _ e) -> exprToSimplePath e) cs
+{- mapM_ (\ (Change _ e) -> putStrLn $
+  "\n--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--\n" ++ show e) cs -}
+  concatMapM (\ (Change _ e) -> exprToSimplePath e) cs
 
-pathExprToSimplePath :: Monad m => Expr -> m SimplePath
-pathExprToSimplePath e = case e of
-  PathExpr Nothing (Path True stps) -> foldM (\ r stp -> case stp of
-      Step Child (NameTest l) [] -> return $ MkStepDown (unqual l) : r
-      Step Child (NameTest l) xs -> do
-        es <- mapM convertExprAux xs
-        return $ MkStepDown (unqual l) : (concat es) ++ r
-      Step Attribute _ _ -> fail "found attributes" -- TODO: extract atribute list
-      _ -> fail "exprToSimplePath: unexpected step") [] stps
-  _ -> fail "exprToSimplePath (1)"
 
-convertExprAux :: Monad m => Expr -> m SimplePath
-convertExprAux e = undefined {-case e of
-  GenExpr _ "and" args -> mapM convertExprAux args
-  GenExpr _ "=" args -> case args of
-    [PathExpr _ (Path _ stps1-}
+exprToSimplePath :: Monad m => Expr -> m SimplePath
+exprToSimplePath e = case e of
+  PathExpr Nothing (Path True stps) -> concatMapM anaSteps stps
+  _ -> fail "unexpected (1)"
 
+anaSteps :: Monad m => Step -> m SimplePath
+anaSteps stp = case stp of
+  -- TODO is MkStepDown the same for Attributes also?
+  Step Attribute (NameTest n) [] -> return [MkStepDown (unqual n)]
+  Step Child (NameTest n) exps -> do
+    atL <- if null exps then return []
+             else do
+               atL' <- mkAttrList exps
+               return [FindByAttr atL']
+    return $ MkStepDown (unqual n) : atL
+  _ -> fail "unexpected (2)"
+
+
+concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
+concatMapM f ls = do
+  lsM <- mapM f ls
+  return $ concat lsM
+
+mkAttrList :: Monad m => [Expr] -> m [Attr]
+mkAttrList [] = fail "unexpected (9)"
+-- TODO do anything with the tail?
+mkAttrList (e : _) = case e of
+    GenExpr True "and" exp' -> concatMapM mkAttrList $ map ( \ x -> [x]) exp'
+    GenExpr True "=" exp' -> do
+      at1 <- mkAttr exp'
+      return [at1]
+    -- TODO Would be <=> FindByNumber, but I think the information is redundant
+    PrimExpr _ _ -> return []
+    _ -> fail $ "unexpected (3)" ++ show e
+
+mkAttr :: Monad m => [Expr] -> m Attr
+mkAttr (e1 : e2 : r) = do
+  unless (null r) $ fail "unexpected (8)"
+  case e1 of
+    PathExpr Nothing (Path False stps) -> case stps of
+      Step Attribute (NameTest nm) [] : [] -> case e2 of
+        -- TODO are attribute fields correct?
+        PrimExpr Literal val -> return $ Attr (unqual nm) val
+        _ -> fail "unexpected (4)"
+      _ -> fail "unexpected (5)"
+    _ -> fail "unexpected (6)"
+mkAttr _ = fail "unexpected (7)"
+
+-- TODO needs a lot of testing right here..
 moveStep :: Monad m => SimpleStep -> Cursor -> m Cursor
 moveStep stp cr = case stp of
   -- Case #1
@@ -76,5 +108,5 @@ moveStep stp cr = case stp of
       Nothing -> fail $
         "cannot find an element that complies with the attributes: "
         ++ (unlines $ map show attrs)
-  -- Case #3, not implemented
+  -- Case #3, not implemented TODO what to do with it? (cp. -> mkAttrList)
   FindByNumber _ -> fail "no implementation for FindByNumber"
