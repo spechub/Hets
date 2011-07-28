@@ -61,6 +61,7 @@ signColimit graph = let
                 ]
    morMaps = Map.fromAscList $
               map (\ x -> (x, morFun x)) $ nodes graph
+
    nameMap = foldl Map.union Map.empty $
              map (\ (_, l) -> prefixMap l) $ labNodes graph
    colimSign = emptySign {

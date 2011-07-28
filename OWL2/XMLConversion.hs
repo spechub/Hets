@@ -15,13 +15,11 @@ module OWL2.XMLConversion where
 import OWL2.AS
 import OWL2.MS
 import OWL2.XML
-import OWL2.ManchesterPrint
 import OWL2.Sign
 import OWL2.XMLKeywords
 
 import Text.XML.Light
 import Data.Maybe
-import Common.Id
 import Common.AS_Annotation (Named, sentence)
 
 import qualified Data.Map as Map
@@ -43,8 +41,7 @@ nullElem = Element nullQN [] [] Nothing
 
 setIRI :: IRI -> Element -> Element
 setIRI iri e =
-    let np = namePrefix iri
-        ty
+    let ty
             | isAnonymous iri = "nodeID"
             | isFullIri iri = iriK
             | otherwise = "abbreviatedIRI"
