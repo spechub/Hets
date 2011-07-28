@@ -88,6 +88,7 @@ instance PrintTHF THFFormula where
     printTHF f = case f of
         TF_THF_Logic_Formula lf -> printTHF lf
         TF_THF_Sequent s        -> printTHF s
+        T0F_THF_Typed_Const tc  -> printTHF tc
 
 instance PrintTHF THFLogicFormula where
     printTHF lf = case lf of
@@ -105,30 +106,38 @@ instance PrintTHF THFBinaryFormula where
 
 instance PrintTHF THFBinaryTuple where
     printTHF bt = case bt of
-        TBT_THF_Or_Formula uf ufl       ->
-            sepBy (map printTHF (uf : ufl)) orSign
-        TBT_THF_And_Formula uf ufl      ->
-            sepBy (map printTHF (uf : ufl)) andSign
-        TBT_THF_Apply_Formula uf ufl    ->
-            sepBy (map printTHF (uf : ufl)) applySign
+        TBT_THF_Or_Formula ufl      -> sepBy (map printTHF ufl) orSign
+        TBT_THF_And_Formula ufl     -> sepBy (map printTHF ufl) andSign
+        TBT_THF_Apply_Formula ufl   -> sepBy (map printTHF ufl) applySign
 
 instance PrintTHF THFUnitaryFormula where
-    printTHF uf = case uf of
-        TUF_THF_Quantified_Formula q vl uf1 ->
-            printTHF q <+> brackets (sepByCommas (map printTHF vl))
-            <+> text ":" <+> printTHF uf1
-        TUF_THF_Unary_Formula uc lf         ->
-            printTHF uc <+> parens (printTHF lf)
-        TUF_THF_Atom a                      -> printTHF a
-        TUF_THF_Tuple t                     -> printTHFTuple t
-        TUF_THF_Let dvl uf2                 ->
+    printTHF tuf = case tuf of
+        TUF_THF_Quantified_Formula qf   -> printTHF qf
+        TUF_THF_Unary_Formula uc lf     -> printTHF uc <+> parens (printTHF lf)
+        TUF_THF_Atom a                  -> printTHF a
+        TUF_THF_Tuple t                 -> printTHFTuple t
+        TUF_THF_Let dvl uf              ->
             text ":=" <+> brackets (sepByCommas (map printTHF dvl))
-            <+> text ":" <+> printTHF uf2
-        TUF_THF_Conditional lf1 lf2 lf3     ->
+            <+> text ":" <+> printTHF uf
+        TUF_THF_Conditional lf1 lf2 lf3 ->
             text "$itef" <> parens (printTHF lf1
             <> comma <+> printTHF lf2
             <> comma <+> printTHF lf3)
-        TUF_THF_Logic_Formula_Par l         -> parens (printTHF l)
+        TUF_THF_Logic_Formula_Par l     -> parens (printTHF l)
+        T0UF_THF_Abstraction vl uf      -> text "^" <+>
+            brackets (printTHFVariableList vl) <+> text ":" <+> printTHF uf
+
+instance PrintTHF THFQuantifiedFormula where
+    printTHF qf = case qf of
+        TQF_THF_Quantified_Formula tq vl uf -> printTHF tq <+>
+            brackets (printTHFVariableList vl) <+> text ":" <+> printTHF uf
+        T0QF_THF_Quantified_Var q vl uf     -> printTHF q <+>
+            brackets (printTHFVariableList vl) <+> text ":" <+> printTHF uf
+        T0QF_THF_Quantified_Novar tq uf     ->
+            printTHF tq <+> parens (printTHF uf)
+
+printTHFVariableList :: THFVariableList -> Doc
+printTHFVariableList vl = sepByCommas (map printTHF vl)
 
 instance PrintTHF THFVariable where
     printTHF v = case v of
@@ -136,12 +145,17 @@ instance PrintTHF THFVariable where
             <+> text ":" <+> printTHF tlt
         TV_Variable var             -> printVariable var
 
+instance PrintTHF THFTypedConst where
+    printTHF ttc = case ttc of
+        T0TC_Typed_Const c tlt      -> printConstant c <+> text ":"
+            <+> printTHF tlt
+        T0TC_THF_TypedConst_Par tc  -> parens (printTHF tc)
+
 instance PrintTHF THFTypeFormula where
-    printTHF tf = case tf of
-        TTF_THF_Type_Formula tbf tlt    ->
-            printTHF tbf <+> text ":" <+> printTHF tlt
-        TTF_THF_Role_Type c tlt         ->
-            printTHF c <+> text ":" <+> printTHF tlt
+    printTHF ttf = case ttf of
+        TTF_THF_Type_Formula tf tlt -> printTHF tf <+> text ":" <+> printTHF tlt
+        TTF_THF_Typed_Const c tlt   -> printConstant c <+> text ":"
+            <+> printTHF tlt
 
 instance PrintTHF THFTypeableFormula where
     printTHF tbf = case tbf of
@@ -151,19 +165,32 @@ instance PrintTHF THFTypeableFormula where
 
 instance PrintTHF THFSubType where
     printTHF (TST_THF_Sub_Type c1 c2) =
-        printTHF c1 <+> text "<<" <+> printTHF c2
+        printConstant c1 <+> text "<<" <+> printConstant c2
 
-printTHFTopLevelType :: THFTopLevelType -> Doc
-printTHFTopLevelType = printTHF
+instance PrintTHF THFTopLevelType where
+    printTHF tlt = case tlt of
+        TTLT_THF_Logic_Formula lf   -> printTHF lf
+        T0TLT_Constant c            -> printConstant c
+        T0TLT_Variable v            -> printVariable v
+        T0TLT_Defined_Type dt       -> printTHF dt
+        T0TLT_System_Type st        -> printSystemType st
+        T0TLT_THF_Binary_Type bt    -> printTHF bt
 
-printTHFUnitaryType :: THFUnitaryType -> Doc
-printTHFUnitaryType = printTHF
+instance PrintTHF THFUnitaryType where
+    printTHF ut = case ut of
+        TUT_THF_Unitary_Formula uf  -> printTHF uf
+        T0UT_Constant c             -> printConstant c
+        T0UT_Variable v             -> printVariable v
+        T0UT_Defined_Type dt        -> printTHF dt
+        T0UT_System_Type st         -> printSystemType st
+        T0UT_THF_Binary_Type_Par bt -> parens (printTHF bt)
 
 instance PrintTHF THFBinaryType where
-    printTHF bt = case bt of
-        TBT_THF_Mapping_Type ut utl -> sepBy (map printTHF (ut : utl)) arrowSign
-        TBT_THF_Xprod_Type ut utl   -> sepBy (map printTHF (ut : utl)) starSign
-        TBT_THF_Union_Type ut utl   -> sepBy (map printTHF (ut : utl)) plusSign
+    printTHF tbt = case tbt of
+        TBT_THF_Mapping_Type utl    -> sepBy (map printTHF utl) arrowSign
+        TBT_THF_Xprod_Type utl      -> sepBy (map printTHF utl) starSign
+        TBT_THF_Union_Type utl      -> sepBy (map printTHF utl) plusSign
+        T0BT_THF_Binary_Type_Par bt -> parens (printTHF bt)
 
 instance PrintTHF THFAtom where
     printTHF a = case a of
@@ -171,8 +198,12 @@ instance PrintTHF THFAtom where
         TA_THF_Conn_Term ct         -> printTHF ct
         TA_Defined_Type dt          -> printTHF dt
         TA_Defined_Plain_Formula dp -> printTHF dp
-        TA_System_Type asw          -> printAtomicSystemWord asw
+        TA_System_Type st           -> printSystemType st
         TA_System_Atomic_Formula st -> printTHF st
+        T0A_Constant c              -> printConstant c
+        T0A_Defined_Constant dc     -> printAtomicDefinedWord dc
+        T0A_System_Constant sc      -> printAtomicSystemWord sc
+        T0A_Variable v              -> printVariable v
 
 printTHFTuple :: THFTuple -> Doc
 printTHFTuple ufl = brackets $ sepByCommas (map printTHF ufl)
@@ -193,16 +224,24 @@ instance PrintTHF THFConnTerm where
         TCT_THF_Pair_Connective pc  -> printTHF pc
         TCT_Assoc_Connective ac     -> printTHF ac
         TCT_THF_Unary_Connective uc -> printTHF uc
+        T0CT_THF_Quantifier q       -> printTHF q
 
 instance PrintTHF THFQuantifier where
     printTHF q = case q of
-        ForAll                  -> text "!"
-        Exists                  -> text "?"
-        Lambda_Binder           -> text "^"
-        Dependent_Product       -> text "!>"
-        Dependent_Sum           -> text "?*"
-        Indefinite_Description  -> text "@+"
-        Definite_Description    -> text "@-"
+        TQ_ForAll                   -> text "!"
+        TQ_Exists                   -> text "?"
+        TQ_Lambda_Binder            -> text "^"
+        TQ_Dependent_Product        -> text "!>"
+        TQ_Dependent_Sum            -> text "?*"
+        TQ_Indefinite_Description   -> text "@+"
+        TQ_Definite_Description     -> text "@-"
+        T0Q_PiForAll                -> text "!!"
+        T0Q_SigmaExists             -> text "??"
+
+instance PrintTHF Quantifier where
+    printTHF q = case q of
+        T0Q_ForAll  -> text "!"
+        T0Q_Exists  -> text "?"
 
 instance PrintTHF THFPairConnective where
     printTHF pc = case pc of
@@ -228,6 +267,9 @@ instance PrintTHF AssocConnective where
 instance PrintTHF DefinedType where
     printTHF dt = text $ "$" ++ drop 3 (show dt)
 
+printSystemType :: SystemType -> Doc
+printSystemType = printAtomicSystemWord
+
 instance PrintTHF DefinedPlainFormula where
     printTHF dpf = case dpf of
         DPF_Defined_Prop dp         -> printTHF dp
@@ -249,7 +291,7 @@ instance PrintTHF FunctionTerm where
     printTHF ft = case ft of
         FT_Plain_Term pt    -> printTHF pt
         FT_Defined_Term dt  -> printTHF dt
-        FT_System_Term st   ->printTHF st
+        FT_System_Term st   -> printTHF st
 
 instance PrintTHF PlainTerm where
     printTHF pt = case pt of
@@ -410,8 +452,9 @@ printGeneralTerms = sepByCommas . map printTHF
 
 instance PrintTHF Name where
     printTHF n = case n of
-        N_Atomic_Word a -> printTHF a
-        N_Integer s     -> text s
+        N_Atomic_Word a         -> printTHF a
+        N_Integer s             -> text s
+        T0N_Unsigned_Integer s  -> text s
 
 instance PrintTHF AtomicWord where
     printTHF a = case a of
@@ -420,6 +463,9 @@ instance PrintTHF AtomicWord where
 
 printAtomicSystemWord :: AtomicSystemWord -> Doc
 printAtomicSystemWord asw = text ("$$" ++ asw)
+
+printAtomicDefinedWord :: AtomicDefinedWord -> Doc
+printAtomicDefinedWord adw = text ("$" ++ adw)
 
 instance PrintTHF Number where
     printTHF n = case n of

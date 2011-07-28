@@ -3,7 +3,7 @@
 % Domain   : Geography
 % Problem  : Places in Spain and France do not overlap
 % Version  : [RCC92] axioms.
-% English  : 
+% English  :
 
 % Refs     : [RCC92] Randell et al. (1992), A Spatial Logic Based on Region
 %          : [Ben10a] Benzmueller (2010), Email to Geoff Sutcliffe
@@ -27,7 +27,7 @@
 %                                         (   0  @-;   0  @+)
 % SPC      : THF_THM_EQU
 
-% Comments : 
+% Comments :
 %------------------------------------------------------------------------------
 %----Include Region Connection Calculus axioms
 include('Axioms/LCL013^0.ax').

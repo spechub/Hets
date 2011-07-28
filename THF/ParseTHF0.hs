@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  A Parser for the TPTP-THF Syntax
+Description :  A Parser for the TPTP-THF0 Syntax
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -8,11 +8,12 @@ Maintainer  :  Alexis.Tsogias@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-A Parser for the TPTP-THF Input Syntax v5.1.0.2 taken from
+A Parser for the TPTP-THF0 Input Syntax taken from
+<http://www.ags.uni-sb.de/~chris/papers/C25.pdf> P. 15-16 and
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
 -}
 
-module THF.ParseTHF {- (parseTHF) -} where
+module THF.ParseTHF0 (parseTHF0) where
 
 import Text.ParserCombinators.Parsec
 import THF.As
@@ -23,8 +24,8 @@ import Data.Maybe
 
 -- Parser
 
-parseTHF :: CharParser st [TPTP_THF]
-parseTHF = do
+parseTHF0 :: CharParser st [TPTP_THF]
+parseTHF0 = do
     h <- optionMaybe header
     thf <- many ((systemComment <|> definedComment <|> comment <|>
                  include <|> thfAnnotatedFormula) << skipSpaces)
@@ -36,6 +37,7 @@ header = try (do
     c <- myManyTill (try (commentLine << skipSpaces)) (try headerSE)
     return $ TPTP_Header (s : c))
 
+-- parser for the start and end of headers (defined by "%----..."
 headerSE :: CharParser st Comment
 headerSE = do
     try (char '%' >> notFollowedBy (char '$'))
@@ -56,6 +58,7 @@ comment = fmap TPTP_Comment commentLine
     c <- many (noneOf "*/")
     skipMany1 (char '*'); char '/'
     return $ TPTP_Comment (Comment_Block (lines c))
+
 
 definedComment :: CharParser st TPTP_THF
 definedComment = do
@@ -130,18 +133,15 @@ formulaRole = do
         _                       -> fail ("No such Role: " ++ r)
 
 thfFormula :: CharParser st THFFormula
-thfFormula = fmap TF_THF_Logic_Formula thfLogicFormula
-  <|> fmap TF_THF_Sequent thfSequent
+thfFormula = fmap T0F_THF_Typed_Const thfTypedConst
+  <|> fmap TF_THF_Logic_Formula thfLogicFormula
 
 thfLogicFormula :: CharParser st THFLogicFormula
 thfLogicFormula = fmap TLF_THF_Binary_Formula thfBinaryFormula
-  <|> fmap TLF_THF_Type_Formula thfTypeFormula
-  <|> fmap TLF_THF_Sub_Type thfSubType
   <|> fmap TLF_THF_Unitary_Formula thfUnitaryFormula
 
 thfBinaryFormula :: CharParser st THFBinaryFormula
-thfBinaryFormula = fmap TBF_THF_Binary_Type thfBinaryType
-  <|> fmap TBF_THF_Binary_Tuple thfBinaryTuple
+thfBinaryFormula = fmap TBF_THF_Binary_Tuple thfBinaryTuple
   <|> do
     (uff, pc) <- try $ do
         uff1 <- thfUnitaryFormula
@@ -169,25 +169,22 @@ thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
   <|> fmap TUF_THF_Quantified_Formula thfQuantifiedFormula
   <|> thfUnaryFormula
   <|> fmap TUF_THF_Atom thfAtom
-  <|> fmap TUF_THF_Tuple thfTuple
   <|> do
-    key $ tryString ":="
-    ll <- brackets (sepBy1 thfDefinedVar comma); colon
+    keyChar '^'
+    vl <- brackets thfVariableList; colon
     uf <- thfUnitaryFormula
-    return $ TUF_THF_Let ll uf
-  <|> do
-    key $ tryString "$itef"; oParentheses
-    lf1 <- thfLogicFormula; comma
-    lf2 <- thfLogicFormula; comma
-    lf3 <- thfLogicFormula; cParentheses
-    return $ TUF_THF_Conditional lf1 lf2 lf3
+    return $ T0UF_THF_Abstraction vl uf
 
 thfQuantifiedFormula :: CharParser st THFQuantifiedFormula
 thfQuantifiedFormula = do
-    q <- thfQuantifier
+    q <- quantifier
     vl <- brackets thfVariableList; colon
     uf <- thfUnitaryFormula
-    return $ TQF_THF_Quantified_Formula q vl uf
+    return $ T0QF_THF_Quantified_Var q vl uf
+  <|> do
+    q <- thfQuantifier
+    uf <- parentheses thfUnitaryFormula
+    return $ T0QF_THF_Quantified_Novar q uf
 
 thfVariableList :: CharParser st THFVariableList
 thfVariableList = sepBy1 thfVariable comma
@@ -199,92 +196,61 @@ thfVariable = do
     return $ TV_THF_Typed_Variable v tlt
   <|> fmap TV_Variable variable
 
+thfTypedConst :: CharParser st THFTypedConst
+thfTypedConst = fmap T0TC_THF_TypedConst_Par (parentheses thfTypedConst)
+  <|> do
+    c <- try(constant << colon)
+    tlt <- thfTopLevelType
+    return $ T0TC_Typed_Const c tlt
+
 thfUnaryFormula :: CharParser st THFUnitaryFormula
 thfUnaryFormula = do
     uc <- thfUnaryConnective
     lf <- parentheses thfLogicFormula
     return $ TUF_THF_Unary_Formula uc lf
 
-thfTypeFormula :: CharParser st THFTypeFormula
-thfTypeFormula = do
-    tp <- try (thfTypeableFormula << colon)
-    tlt <- thfTopLevelType
-    return $ TTF_THF_Type_Formula tp tlt
-  <|> do
-    c <- try (constant << colon)
-    tlt <- thfTopLevelType
-    return $ TTF_THF_Typed_Const c tlt
-
-thfTypeableFormula :: CharParser st THFTypeableFormula
-thfTypeableFormula = fmap TTyF_THF_Atom thfAtom
-  <|> fmap TTyF_THF_Tuple thfTuple
-  <|> fmap TTyF_THF_Logic_Formula (parentheses thfLogicFormula)
-
-thfSubType :: CharParser st THFSubType
-thfSubType = do
-    cf <- try (constant << key (string "<<"))
-    cb <- constant
-    return $ TST_THF_Sub_Type cf cb
-
 thfTopLevelType :: CharParser st THFTopLevelType
-thfTopLevelType = fmap TTLT_THF_Logic_Formula thfLogicFormula
+thfTopLevelType = fmap T0TLT_THF_Binary_Type thfBinaryType
+  <|> fmap T0TLT_Constant constant
+  <|> fmap T0TLT_Variable variable
+  <|> fmap T0TLT_Defined_Type definedType
+  <|> fmap T0TLT_System_Type systemType
 
 thfUnitaryType :: CharParser st THFUnitaryType
-thfUnitaryType = fmap TUT_THF_Unitary_Formula thfUnitaryFormula
+thfUnitaryType = fmap T0UT_Constant constant
+  <|> fmap T0UT_Variable variable
+  <|> fmap T0UT_Defined_Type definedType
+  <|> fmap T0UT_System_Type systemType
+  <|> fmap T0UT_THF_Binary_Type_Par (parentheses thfBinaryType)
 
 thfBinaryType :: CharParser st THFBinaryType
-thfBinaryType = do -- mappingType
+thfBinaryType = do
     utf <- try (thfUnitaryType << arrow)
     utb <- sepBy1 thfUnitaryType arrow
     return $ TBT_THF_Mapping_Type (utf : utb)
-  <|> do -- xprodType
-    utf <- try (thfUnitaryType << star)
-    utb <- sepBy1 thfUnitaryType star
-    return $ TBT_THF_Xprod_Type (utf : utb)
-  <|> do -- unionType
-    utf <- try (thfUnitaryType << plus)
-    utb <- sepBy1 thfUnitaryType plus
-    return $ TBT_THF_Union_Type (utf : utb)
+  <|> fmap T0BT_THF_Binary_Type_Par (parentheses thfBinaryType)
 
 thfAtom :: CharParser st THFAtom
-thfAtom = fmap TA_Defined_Type definedType
-  <|> fmap TA_Defined_Plain_Formula definedPlainFormula
-  <|> fmap TA_System_Type systemType
-  <|> fmap TA_System_Atomic_Formula systemTerm
-  <|> fmap TA_Term term
+thfAtom = fmap T0A_Constant constant
+  <|> fmap T0A_Defined_Constant atomicDefinedWord
+  <|> fmap T0A_System_Constant atomicSystemWord
+  <|> fmap T0A_Variable variable
   <|> fmap TA_THF_Conn_Term thfConnTerm
-
-thfTuple :: CharParser st THFTuple
-thfTuple = try ((oBracket >> cBracket) >> return [])
-  <|> brackets (sepBy1 thfUnitaryFormula comma)
-
-thfDefinedVar :: CharParser st THFDefinedVar
-thfDefinedVar = fmap TDV_THF_Defined_Var_Par (parentheses thfDefinedVar)
-  <|> do
-    v <- try (thfVariable << key ( string ":="))
-    lf <- thfLogicFormula
-    return $ TDV_THF_Defined_Var v lf
-
-thfSequent :: CharParser st THFSequent
-thfSequent = fmap TS_THF_Sequent_Par (parentheses thfSequent)
-  <|> do
-    tf <- try (thfTuple << gentzenArrow)
-    tb <- thfTuple
-    return $ TS_THF_Sequent tf tb
 
 thfConnTerm :: CharParser st THFConnTerm
 thfConnTerm = fmap TCT_THF_Pair_Connective thfPairConnective
   <|> fmap TCT_Assoc_Connective assocConnective
   <|> fmap TCT_THF_Unary_Connective thfUnaryConnective
+  <|> fmap T0CT_THF_Quantifier thfQuantifier
 
 thfQuantifier :: CharParser st THFQuantifier
-thfQuantifier = (keyChar '!'    >> return TQ_ForAll)
-  <|> (keyChar '?'              >> return TQ_Exists)
-  <|> (keyChar '^'              >> return TQ_Lambda_Binder)
-  <|> (key (tryString "!>")     >> return TQ_Dependent_Product)
-  <|> (key (tryString "?*")     >> return TQ_Dependent_Sum)
-  <|> (key (tryString "@+")     >> return TQ_Indefinite_Description)
-  <|> (key (tryString "@-")     >> return TQ_Definite_Description)
+thfQuantifier = (key (tryString "!!")   >> return T0Q_PiForAll)
+  <|> (key (tryString "??")             >> return T0Q_SigmaExists)
+  <?> "thfQuantifier"
+
+quantifier :: CharParser st Quantifier
+quantifier = (keyChar '!'   >> return T0Q_ForAll)
+  <|> (keyChar '?'          >> return T0Q_Exists)
   <?> "quantifier"
 
 thfPairConnective :: CharParser st THFPairConnective
@@ -299,9 +265,7 @@ thfPairConnective = (key (tryString "!=")   >> return Infix_Inequality)
   <?> "pairConnective"
 
 thfUnaryConnective :: CharParser st THFUnaryConnective
-thfUnaryConnective = (keyChar '~'   >> return Negation)
-  <|> (key (tryString "!!")         >> return PiForAll)
-  <|> (key (tryString "??")         >> return SigmaExists)
+thfUnaryConnective = keyChar '~'   >> return Negation
 
 assocConnective :: CharParser st AssocConnective
 assocConnective = (keyChar '|'  >> return OR)
@@ -316,105 +280,16 @@ definedType = do
         "iType"     -> return DT_iType
         "i"         -> return DT_i
         "tType"     -> return DT_tType
-        "real"      -> return DT_real
-        "rat"       -> return DT_rat
-        "int"       -> return DT_int
         _           -> fail ("No such definedType: " ++ adw)
 
 systemType :: CharParser st SystemType
 systemType = atomicSystemWord
-
-definedPlainFormula :: CharParser st DefinedPlainFormula
-definedPlainFormula = fmap DPF_Defined_Prop definedProp
-  <|> do
-    dp <- definedPred
-    a <- parentheses arguments
-    return $ DPF_Defined_Formula dp a
-
-definedProp :: CharParser st DefinedProp
-definedProp = do
-    adw <- atomicDefinedWord
-    case adw of
-        "true"      -> return DP_True
-        "false"     -> return DP_False
-        _           -> fail ("No such definedProp: " ++ adw)
-
-definedPred :: CharParser st DefinedPred
-definedPred = do
-    adw <- atomicDefinedWord
-    case adw of
-        "equal"         -> return Equal
-        "distinct"      -> return Disrinct
-        "itef"          -> return Itef
-        "less"          -> return Less
-        "lesseq"        -> return Lesseq
-        "greater"       -> return Greater
-        "greatereq"     -> return Greatereq
-        "evaleq"        -> return Evaleq
-        "is_int"        -> return Is_int
-        "is_rat"        -> return Is_rat
-        _               -> fail ("No such definedPred: " ++ adw)
-
-term :: CharParser st Term
-term = fmap T_Function_Term functionTerm
-  <|> fmap T_Variable variable
-
-functionTerm :: CharParser st FunctionTerm
-functionTerm = fmap FT_System_Term systemTerm
-  <|> fmap FT_Defined_Term definedTerm
-  <|> fmap FT_Plain_Term plainTerm
-
-plainTerm :: CharParser st PlainTerm
-plainTerm = try (do
-    f <- tptpFunctor
-    a <- parentheses arguments
-    return $ PT_Plain_Term f a)
-  <|> fmap PT_Constant constant
 
 constant :: CharParser st Constant
 constant = tptpFunctor
 
 tptpFunctor :: CharParser st TPTPFunctor
 tptpFunctor = atomicWord
-
-definedTerm :: CharParser st DefinedTerm
-definedTerm = fmap DT_Defined_Atomic_Term definedPlainTerm
-  <|> fmap DT_Defined_Atom definedAtom
-
-definedAtom :: CharParser st DefinedAtom
-definedAtom = fmap DA_Number number
-  <|> fmap DA_Distinct_Object distinctObject
-
-definedPlainTerm :: CharParser st DefinedPlainTerm
-definedPlainTerm = try (do
-    df <- definedFunctor
-    a <- parentheses arguments
-    return $ DPT_Defined_Function df a)
-  <|> fmap DPT_Defined_Constant definedFunctor
-
-definedFunctor :: CharParser st DefinedFunctor
-definedFunctor = do
-    adw <- atomicDefinedWord
-    case adw of
-        "itett"         -> return Itett
-        "uminus"        -> return Uminus
-        "sum"           -> return Sum
-        "difference"    -> return Difference
-        "product"       -> return Product
-        "to_int"        -> return To_int
-        "to_rat"        -> return To_rat
-        "to_real"       -> return To_real
-        _               -> fail ("No such definedFunctor: " ++ adw)
-
-systemTerm :: CharParser st SystemTerm
-systemTerm = try (do
-    sf <- systemFunctor
-    a <- parentheses arguments
-    return $ ST_System_Term sf a)
-  <|> fmap ST_System_Constant systemFunctor
-
-systemFunctor :: CharParser st SystemFunctor
-systemFunctor = atomicSystemWord
 
 variable :: CharParser st Variable
 variable = do
@@ -423,9 +298,6 @@ variable = do
     skipAll
     return (u : an)
   <?> "Variable"
-
-arguments :: CharParser st Arguments
-arguments = sepBy1 term comma
 
 principalSymbol :: CharParser st PrincipalSymbol
 principalSymbol = fmap PS_Functor tptpFunctor
@@ -602,7 +474,7 @@ generalTerms :: CharParser st [GeneralTerm]
 generalTerms = sepBy1 generalTerm comma
 
 name :: CharParser st Name
-name = fmap N_Integer (integer << skipAll)
+name = fmap T0N_Unsigned_Integer (unsignedInteger << skipAll)
   <|> fmap N_Atomic_Word atomicWord
 
 atomicWord :: CharParser st AtomicWord
@@ -742,12 +614,6 @@ keyChar = key . char
 vLine :: CharParser st ()
 vLine = keyChar '|'
 
-star :: CharParser st ()
-star = keyChar '*'
-
-plus :: CharParser st ()
-plus = keyChar '+'
-
 arrow :: CharParser st ()
 arrow = keyChar '>'
 
@@ -786,9 +652,6 @@ ampersand = keyChar '&'
 
 at :: CharParser st ()
 at = keyChar '@'
-
-gentzenArrow :: CharParser st ()
-gentzenArrow = key $ string "-->"
 
 myManyTill :: CharParser st a -> CharParser st a -> CharParser st [a]
 myManyTill p end = do

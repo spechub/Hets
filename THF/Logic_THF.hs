@@ -22,10 +22,9 @@ import Common.ProofTree
 
 import THF.ATC_THF ()
 import THF.Cons
-import THF.ParseTHF
 import THF.Print ()
--- import THF.StaticAnalysisTHF
--- import THF.ProveLeoII
+import THF.StaticAnalysisTHF
+import THF.ProveLeoII
 
 data THF = THF deriving Show
 
@@ -36,7 +35,7 @@ instance Language THF where
   "http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
 instance Logic.Logic.Syntax THF BasicSpecTHF () () where
-    parse_basic_spec THF = Just $ fmap BasicSpecTHF parseTHF
+    parse_basic_spec THF = Just (basicSpec BSTHF0)
     -- remaining default implementations are fine!
 
 instance Sentences THF SentenceTHF SignTHF
@@ -48,11 +47,16 @@ instance Sentences THF SentenceTHF SignTHF
 
 instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
                SignTHF MorphismTHF SymbolTHF () where
-         -- basic_analysis THF = Just basicAnalysis
+         basic_analysis THF = Just basicAnalysis
          empty_signature THF = emptySign
+         -- add_symb_to_sign
+         -- signature_union
+         -- signatureDiff
+         -- intersection
          --is_subsig THF _ _ = True
          --subsig_inclusion THF = defaultInclusion
 
 instance Logic THF () BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
          stability _ = Testing
+         provers _ = [leoIIProver]

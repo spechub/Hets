@@ -44,7 +44,7 @@ initialProverStateTHF sign oSens freedefs = ProverStateTHF
     , freeDefs = freedefs }
 
 insertSentenceTHF :: ProverStateTHF -> Named SentenceTHF -> ProverStateTHF
-insertSentenceTHF ps ns = ps {axioms = axioms ps ++ [ns]}
+insertSentenceTHF ps ns = ps {axioms = ns : axioms ps}
 
 showProblemTHF :: ProverStateTHF -> Named SentenceTHF -> [String] -> IO String
 showProblemTHF ps goal _ = do

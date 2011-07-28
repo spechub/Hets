@@ -25,28 +25,54 @@ import qualified Data.Map as Map
 -- import qualified Data.Set as Set
 
 instance Pretty BasicSpecTHF where
-    pretty (BasicSpecTHF a) = printTPTPTHF a
+    pretty (BasicSpecTHF _ a) = printTPTPTHF a
 
 instance Pretty THFFormula where
-  pretty = printTHF
+    pretty = printTHF
+
+instance Pretty Include where
+    pretty = printTHF
+
+instance Pretty TPTP_THF where
+    pretty = printTHF
+
+instance Pretty THFTypedConst where
+    pretty = printTHF
+
+instance Pretty AtomicWord where
+    pretty = printTHF
 
 instance Pretty SymbolTHF where
-  pretty s = (text "Name: ") <+> pretty (symName s)
+  pretty s = (text "Name: ") <+> printTHF (symName s)
         <+> text (" Type: " ++ (drop 3 (show $ symType s)))
 
 instance Pretty SignTHF where
     pretty s =
-        let ts = foldl (\d (i, k) -> d $+$ (pretty i <+> text ":" <+> pretty k))
+        let ts = foldl (\d (i, k) -> d $+$ (printTHF i <+> text ":" <+> pretty k))
                     empty (Map.toList $ types s)
-            cs = foldl (\d (i, k) -> d $+$ (pretty i <+> text ":" <+> pretty k))
+            cs = foldl (\d (i, k) -> d $+$ (printTHF i <+> text ":" <+> pretty k))
                     empty (Map.toList $ consts s)
            -- ss  = foldl (\d k -> d $+$ (pretty k)) empty (Set.toList $ symbols s)
         in text "Types: " $+$ ts $++$ text "Constatns: " $+$ cs
 
 instance Pretty Kind where
     pretty k = case k of
-        TType               -> text "$tType"
+        TType           -> text "$tType"
         FunKind k1 k2 _ -> pretty k1  <+> text "->" <+> pretty k2
+        Const c         -> printTHF c
+        SysType st      -> printSystemType st
+
+instance Pretty TypeInfo where
+    -- pretty ti = pretty typeKind
+    pretty ti = text "Name:" <+> (printTHF $ typeName ti) <+>
+                text "Kind:" <+> (pretty $ typeKind ti) <+>
+                text "Def:" <+> (pretty $ typeDef ti)
+
+instance Pretty ConstInfo where
+    -- pretty ci = pretty constKind
+    pretty ci = text "Name:" <+> (printTHF $ constName ci) <+>
+                text "Kind:" <+> (pretty $ constKind ci) <+>
+                text "Def:" <+> (pretty $ constDef ci)
 
 printProblemTHF :: SignTHF -> [Named SentenceTHF] -> Named SentenceTHF -> Doc
 printProblemTHF sig ax goal = text "Signature:" $+$ pretty sig
