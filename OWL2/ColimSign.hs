@@ -34,11 +34,16 @@ signColimit graph = let
               nmap objectProperties graph
    dataPropGraph = emap (getEntityTypeMap DataProperty) $
                nmap dataProperties graph
+   annPropGraph = emap (getEntityTypeMap AnnotationProperty) $
+               nmap annotationRoles graph
+   prefixGraph = emap getPrefixMap $ nmap (Map.keysSet . toQName . prefixMap) graph
    (con, funC) = addIntToSymbols $ computeColimitSet conGraph
    (dat, funD) = addIntToSymbols $ computeColimitSet dataGraph
    (ind, funI) = addIntToSymbols $ computeColimitSet indGraph
    (obj, funO) = addIntToSymbols $ computeColimitSet objGraph
    (dp, funDP) = addIntToSymbols $ computeColimitSet dataPropGraph
+   (ap, funAP) = addIntToSymbols $ computeColimitSet annPropGraph
+   (pf, funP) = addIntToSymbols $ computeColimitSet prefixGraph
    morFun i = foldl Map.union Map.empty
                [ setEntityTypeMap Class $
                    Map.findWithDefault (error "maps") i funC,
@@ -49,7 +54,9 @@ signColimit graph = let
                  setEntityTypeMap ObjectProperty $
                    Map.findWithDefault (error "maps") i funO,
                  setEntityTypeMap DataProperty $
-                   Map.findWithDefault (error "maps") i funDP
+                   Map.findWithDefault (error "maps") i funDP,
+                 setEntityTypeMap AnnotationProperty $
+                   Map.findWithDefault (error "maps") i funAP
                 ]
    morMaps = Map.fromAscList $
               map (\ x -> (x, morFun x)) $ nodes graph
@@ -61,6 +68,7 @@ signColimit graph = let
                   objectProperties = obj,
                   dataProperties = dp,
                   individuals = ind,
+                  annotationRoles = ap,
                   prefixMap = nameMap
                 }
    colimMor = Map.fromAscList $
@@ -90,3 +98,13 @@ getEntityTypeMap e (i, phi) = let
 setEntityTypeMap :: EntityType -> Map.Map QName QName
                     -> Map.Map Entity QName
 setEntityTypeMap = Map.mapKeys . Entity
+
+getPrefixMap :: (Int, OWLMorphism) -> (Int, Map.Map QName QName)
+getPrefixMap (i, phi) = let
+    f = pmap phi
+    in (i, Map.fromList $
+        map (\ (x, y) -> (mkQName x, mkQName y)) $
+            Map.toAscList f)
+
+toQName :: PrefixMap -> Map.Map QName String
+toQName pm = Map.fromList $ map (\ (p, s) -> (mkQName p, s)) $ Map.toList pm
