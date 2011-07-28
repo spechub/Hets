@@ -47,6 +47,5 @@ insertSentenceTHF :: ProverStateTHF -> Named SentenceTHF -> ProverStateTHF
 insertSentenceTHF ps ns = ps {axioms = ns : axioms ps}
 
 showProblemTHF :: ProverStateTHF -> Named SentenceTHF -> [String] -> IO String
-showProblemTHF ps goal _ = do
-    return $ show $
+showProblemTHF ps goal _ = return $ show $
         printProblemTHF (signature ps) (filter isAxiom $ axioms ps) goal

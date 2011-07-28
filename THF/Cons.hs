@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  A collection of data-structures and functions. e.g SingTHF, SymbolTHF
+Description :  A collection of data-structures and functions.
+                e.g SingTHF, SymbolTHF
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -125,14 +126,14 @@ data Kind =
 -- This method checks weather a kind does not contain any
 isFinishedKind :: Kind -> Bool
 isFinishedKind k = case k of
-    FunKind k1 k2 _ -> (isFinishedKind k1) && (isFinishedKind k2)
+    FunKind k1 k2 _ -> isFinishedKind k1 && isFinishedKind k2
     TType           -> True
     SysType _       -> True
     _               -> False
 
 hasSysType :: Kind -> Bool
 hasSysType k = case k of
-    FunKind k1 k2 _ -> (hasSysType k1) || (hasSysType k2)
+    FunKind k1 k2 _ -> hasSysType k1 || hasSysType k2
     SysType _       -> True
     _               -> False
 

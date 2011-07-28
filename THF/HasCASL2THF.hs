@@ -19,6 +19,8 @@ module Comorphisms.HasCASL2THF where
 import Logic.Logic as Logic
 import Logic.Comorphism
 
+import Common.ProofTree
+
 import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
 import HasCASL.Le
@@ -37,11 +39,14 @@ instance Language HasCASL2THF
 
 instance Comorphism HasCASL2THF
                 HasCASL Sublogic
-                BasicSpec HCAS.Sentence SymbItems SymbMapItems
+                BasicSpec Sentence SymbItems SymbMapItems
                 Env Morphism Symbol RawSymbol ()
                 THF ()
-                () SentenceTHF () ()
-                () MorphismTHF SymbolTHF () () where
+                BasicSpecTHF SentenceTHF () ()
+                SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic HasCASL2THF = HasCASL
     sourceSublogic HasCASL2THF = top
     targetLogic HasCASL2THF = THF
+    mapSublogic _ = error "not implementet yet"
+    map_theory _ = error "not implementet yet"
+    map_morphism _ = error "not implementet yet"

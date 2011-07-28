@@ -57,7 +57,8 @@ atpFun _ = ATPFunctions
   , atpInsertSentence = insertSentenceTHF
   , goalOutput = showProblemTHF
   , proverHelpText = leoIIHelpText
-  , batchTimeEnv = "HETS_LEOII_BATCH_TIME_LIMIT" --        <- IMPORTATN NOTE: ask Till about env vars.
+  -- IMPORTANT: ask Till about env vars.
+  , batchTimeEnv = "HETS_LEOII_BATCH_TIME_LIMIT"
   , fileExtensions = FileExtensions
       { problemOutput = ".thf"
       , proverOutput = ".leoII"

@@ -44,8 +44,7 @@ instance PrintTHF TPTP_THF where
         TPTP_Header h                       -> printHeader h
 
 printHeader :: [Comment] -> Doc
-printHeader (c : rc) = printTHF c $+$ printHeader rc
-printHeader [] = empty
+printHeader = foldr (($+$) . printTHF) empty
 
 instance PrintTHF Comment where
     printTHF c = case c of
@@ -69,12 +68,11 @@ instance PrintTHF SystemComment where
                 $+$ text "*/"
 
 printCommentBlock :: [String] -> Doc
-printCommentBlock []        = empty
-printCommentBlock (s : rt)  = text s $+$ printCommentBlock rt
+printCommentBlock = foldr (($+$) . text) empty
 
 instance PrintTHF Include where
     printTHF (I_Include fn nl) = text "include" <> parens (printFileName fn
-        <> maybe empty (\c -> comma <+> printNameList c) nl) <> text "."
+        <> maybe empty (\ c -> comma <+> printNameList c) nl) <> text "."
 
 instance PrintTHF Annotations where
     printTHF a = case a of
@@ -265,7 +263,7 @@ instance PrintTHF AssocConnective where
     printTHF OR     = text "|"
 
 instance PrintTHF DefinedType where
-    printTHF dt = text $ "$" ++ drop 3 (show dt)
+    printTHF dt = text $ '$' : drop 3 (show dt)
 
 printSystemType :: SystemType -> Doc
 printSystemType = printAtomicSystemWord
@@ -280,7 +278,7 @@ instance PrintTHF DefinedProp where
     printTHF DP_False   = text "$false"
 
 instance PrintTHF DefinedPred where
-    printTHF dp = text $ "$" ++ map toLower (show dp)
+    printTHF dp = text $ '$' : map toLower (show dp)
 
 instance PrintTHF Term where
     printTHF t = case t of
@@ -320,7 +318,7 @@ instance PrintTHF DefinedPlainTerm where
         DPT_Defined_Function df a   -> printTHF df <> parens (printArguments a)
 
 instance PrintTHF DefinedFunctor where
-    printTHF df = text $ "$" ++ map toLower (show df)
+    printTHF df = text $ '$' : map toLower (show df)
 
 instance PrintTHF SystemTerm where
     printTHF st = case st of
@@ -360,7 +358,7 @@ instance PrintTHF DagSource where
 
 instance PrintTHF ParentInfo where
     printTHF (PI_Parent_Info s mgl) =
-        let gl = maybe empty (\c -> text ":" <> printGeneralList c) mgl
+        let gl = maybe empty (\ c -> text ":" <> printGeneralList c) mgl
         in printTHF s <> gl
 
 instance PrintTHF IntroType where
@@ -376,14 +374,14 @@ instance PrintTHF ExternalSource where
 
 instance PrintTHF FileSource where
     printTHF (FS_File fn mn) =
-        let n = maybe empty (\c -> comma <+> printTHF c) mn
+        let n = maybe empty (\ c -> comma <+> printTHF c) mn
         in text "file" <> parens (printFileName fn <> n)
 
 instance PrintTHF TheoryName where
     printTHF tn = text $ map toLower (show tn)
 
 printOptionalInfo :: OptionalInfo -> Doc
-printOptionalInfo = maybe empty (\ui -> comma <+> printUsefulInfo ui)
+printOptionalInfo = maybe empty (\ ui -> comma <+> printUsefulInfo ui)
 
 printUsefulInfo :: UsefulInfo -> Doc
 printUsefulInfo = brackets . sepByCommas . map printTHF
@@ -465,7 +463,7 @@ printAtomicSystemWord :: AtomicSystemWord -> Doc
 printAtomicSystemWord asw = text ("$$" ++ asw)
 
 printAtomicDefinedWord :: AtomicDefinedWord -> Doc
-printAtomicDefinedWord adw = text ("$" ++ adw)
+printAtomicDefinedWord adw = text ('$' : adw)
 
 instance PrintTHF Number where
     printTHF n = case n of

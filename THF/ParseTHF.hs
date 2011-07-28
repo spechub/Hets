@@ -28,7 +28,7 @@ parseTHF = do
     h <- optionMaybe header
     thf <- many ((systemComment <|> definedComment <|> comment <|>
                  include <|> thfAnnotatedFormula) << skipSpaces)
-    return $ if isJust h then (fromJust h) : thf else thf
+    return $ if isJust h then fromJust h : thf else thf
 
 header :: CharParser st TPTP_THF
 header = try (do
@@ -629,7 +629,7 @@ singleQuoted = do
     char '\''
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\'"
         <|> tryString "\\\'"
-        <|> single ( satisfy (\ c -> printable c && c /= '\'' && c /= '\\')))
+        <|> single ( satisfy (\ c -> printable c && notElem c ['\'', '\\'])))
     keyChar '\''
     return s
 
@@ -637,7 +637,7 @@ distinctObject :: CharParser st DistinctObject
 distinctObject = do
     char '\"'
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\\""
-        <|> single ( satisfy (\ c -> printable c && c /= '\"' && c /= '\\')))
+        <|> single ( satisfy (\ c -> printable c && notElem c ['\'', '\\'])))
     keyChar '\"'
     return s
 
@@ -666,7 +666,7 @@ real = try (do
 unsignedReal :: CharParser st String
 unsignedReal = do
     de <- try (do
-        d <- (decimalFractional <|> decimal)
+        d <- decimalFractional <|> decimal
         e <- oneOf "Ee"
         return (d ++ [e]))
     ex <- decimal
@@ -697,7 +697,7 @@ integer = try (do
   <?> "(signed) integer"
 
 unsignedInteger :: CharParser st String
-unsignedInteger = try( decimal << notFollowedBy (oneOf "eE/."))
+unsignedInteger = try ( decimal << notFollowedBy (oneOf "eE/."))
 
 decimal :: CharParser st String
 decimal = do
@@ -794,4 +794,4 @@ myManyTill :: CharParser st a -> CharParser st a -> CharParser st [a]
 myManyTill p end = do
     e <- end ; return [e]
   <|> do
-    x <- p; xs <- myManyTill p end; return (x:xs)
+    x <- p; xs <- myManyTill p end; return (x : xs)

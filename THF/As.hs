@@ -125,26 +125,27 @@ data THFLogicFormula =
 -- <thf_binary_pair> is used like <thf_pair_binary> and
 -- <thf_binary_tuple> are used like <thf_tuple_binary>
 data THFBinaryFormula =
-    TBF_THF_Binary_Pair     THFUnitaryFormula THFPairConnective THFUnitaryFormula
+    TBF_THF_Binary_Pair     THFUnitaryFormula THFPairConnective
+                            THFUnitaryFormula
   | TBF_THF_Binary_Tuple    THFBinaryTuple
   | TBF_THF_Binary_Type     THFBinaryType
     deriving (Show, Eq, Ord)
 
 
 -- THF:
--- <thf_binary_tuple>   ::= <thf_or_formula> | <thf_and_formula> |
+-- <thf_binary_tuple>  ::= <thf_or_formula> | <thf_and_formula> |
 --                          <thf_apply_formula>
 -- THF0:
--- <thf_tuple_binary>   ::= <thf_or_formula> | <thf_and_formula> |
+-- <thf_tuple_binary>  ::= <thf_or_formula> | <thf_and_formula> |
 --                          <thf_apply_formula>
 -- THF & THF0:
--- <thf_or_formula>     ::= <thf_unitary_formula> <vline> <thf_unitary_formula> |
+-- <thf_or_formula>    ::= <thf_unitary_formula> <vline> <thf_unitary_formula> |
 --                          <thf_or_formula> <vline> <thf_unitary_formula>
--- <thf_and_formula>    ::= <thf_unitary_formula> & <thf_unitary_formula> |
+-- <thf_and_formula>   ::= <thf_unitary_formula> & <thf_unitary_formula> |
 --                          thf_and_formula> & <thf_unitary_formula>
--- <thf_apply_formula>  ::= <thf_unitary_formula> @ <thf_unitary_formula> |
+-- <thf_apply_formula> ::= <thf_unitary_formula> @ <thf_unitary_formula> |
 --                          <thf_apply_formula> @ <thf_unitary_formula>
--- <vline>              :== |
+-- <vline>             :== |
 data THFBinaryTuple =
     TBT_THF_Or_Formula      [THFUnitaryFormula]
   | TBT_THF_And_Formula     [THFUnitaryFormula]
@@ -548,11 +549,11 @@ data PrincipalSymbol =
     deriving (Show, Eq, Ord)
 
 -- THF & THF0:
--- <source>             ::= <general_term>
--- <source>             :== <dag_source> | <internal_source> | <external_source> |
---                          unknown | [<sources>]
--- <internal_source>    :== introduced(<intro_type><optional_info>)
--- <sources>            :== <source> | <source>,<sources>
+-- <source>           ::= <general_term>
+-- <source>           :== <dag_source> | <internal_source> | <external_source> |
+--                        unknown | [<sources>]
+-- <internal_source>  :== introduced(<intro_type><optional_info>)
+-- <sources>          :== <source> | <source>,<sources>
 data Source =
     S_Dag_Source        DagSource
   | S_Internal_Source   IntroType OptionalInfo
@@ -580,7 +581,7 @@ data ParentInfo =
     deriving (Show, Eq, Ord)
 
 -- THF & THF0:
--- <intro_type>         :== definition | axiom_of_choice | tautology | assumption
+-- <intro_type>     :== definition | axiom_of_choice | tautology | assumption
 data IntroType =
    IT_definition | IT_axiom_of_choice | IT_tautology | IT_assumption
    deriving (Show, Eq, Ord)
@@ -662,10 +663,10 @@ data InferenceStatus =
     deriving (Show, Eq, Ord)
 
 -- THF & THF0:
--- <status_value>       :== suc | unp | sap | esa | sat | fsa | thm | eqv | tac |
---                          wec | eth | tau | wtc | wth | cax | sca | tca | wca |
---                          cup | csp | ecs | csa | cth | ceq | unc | wcc | ect |
---                          fun | uns | wuc | wct | scc | uca | noc
+-- <status_value>   :== suc | unp | sap | esa | sat | fsa | thm | eqv | tac |
+--                      wec | eth | tau | wtc | wth | cax | sca | tca | wca |
+--                      cup | csp | ecs | csa | cth | ceq | unc | wcc | ect |
+--                      fun | uns | wuc | wct | scc | uca | noc
 data StatusValue =
     Suc | Unp | Sap | Esa | Sat | Fsa | Thm | Eqv | Tac
   | Wec | Eth | Tau | Wtc | Wth | Cax | Sca | Tca | Wca
