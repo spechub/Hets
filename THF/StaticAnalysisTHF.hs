@@ -167,6 +167,7 @@ finConst sc k ckm cm = case k of
                                     then Left (k2, Map.insert c1 k2 ckm1)
                                     else fc
                 | otherwise -> Right $ mkDiag Error "Constant not defined: " c1
+    _               -> Left (k, ckm)
 
 
 {- Get all sentences from the content of the BasicSpecTHF-}
@@ -236,7 +237,7 @@ thfTopLevelTypeIsType tlt = case tlt of
     T0TLT_Defined_Type dt       -> thfDefinedTypeIsType dt
     T0TLT_System_Type _         -> True
     T0TLT_THF_Binary_Type _     -> False
-    T0TLT_Constant c            -> False
+    T0TLT_Constant _            -> False
     _                           -> False
 
 thfDefinedTypeIsType :: DefinedType -> Bool
