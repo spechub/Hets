@@ -31,7 +31,6 @@ import OWL2.MS
 import OWL2.Sublogic
 import OWL2.Morphism
 import OWL2.Symbols
-import OWL2.Keywords
 import qualified OWL2.Sign as OS
 -- CommonLogic = codomain
 import CommonLogic.Logic_CommonLogic
@@ -157,12 +156,6 @@ mkBools bs = Bool_sent bs nullRange
 mkAtoms :: ATOM -> SENTENCE
 mkAtoms as = Atom_sent as nullRange
 
-mkComms :: COMMENT -> SENTENCE -> SENTENCE
-mkComms cmt sen = Comment_sent cmt sen nullRange
-
-mkIrregs :: SENTENCE -> SENTENCE
-mkIrregs sen = Irregular_sent sen nullRange
-
 mkUnivQ :: [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT
 mkUnivQ = Universal
 
@@ -186,9 +179,6 @@ mkBicnd = Biconditional
 
 mkNAME :: Int -> NAME_OR_SEQMARK
 mkNAME n = Name (mkNName n)
-
-mkSEQ :: SEQ_MARK -> NAME_OR_SEQMARK
-mkSEQ = SeqMark
 
 mkNTERM :: Int -> TERM
 mkNTERM n = Name_term (mkNName n)
@@ -218,7 +208,6 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                   let ocls = map fst ls
                       dSig = map snd ls
                       map2nd = map snd cls
-                  return ([], cSig)
                   case map2nd of
                          [Expression _] ->
                                 return (msen2Txt ocls, uniteL dSig)
@@ -560,15 +549,21 @@ mapAnnFrameBit cSig ex afb =
                           )))], cSig)
             _ -> fail "DataFunctional EntityType fail"
         _ -> fail "DataFunctional Extend fail"
-    DatatypeBit dr ->
+    DatatypeBit dt ->
       case ex of
         SimpleEntity (Entity ty iri) ->
           case ty of
-            Datatype ->
+            Datatype ->         
               do
-                odes <- mapDataRange cSig dr (OVar 2)
-                let dtb = uriToId iri
-                return ([], cSig)
+                (odes, dSig) <- mapDataRange cSig dt (OVar 2)
+                dtb <- mapDataProp cSig iri (OVar 1) (OVar 2)
+                let res = [mkQuants (mkUnivQ
+                            [mkNAME 1, mkNAME 2]
+                             (mkBools (mkBicnd
+                                dtb
+                                odes)
+                          ))]
+                return (msen2Txt res, dSig)
             _ -> fail "DatatypeBit EntityType fail"
         _ -> fail "DatatypeBit Extend fail"
     ClassDisjointUnion clsl ->
@@ -614,7 +609,7 @@ mapComIndivList :: Sign
                 -> Result [SENTENCE]
 mapComIndivList cSig sod mol inds = do
   fs <- mapM (mapIndivIRI cSig) inds
-  tps <- case mol of
+  _tps <- case mol of
     Nothing -> return $ comPairs fs fs
     Just ol -> do
       f <- mapIndivIRI cSig ol
@@ -813,9 +808,6 @@ uriToTok urI = mkSimpleId $ showQN urI
 -- | Extracts Id from IRI
 uriToId :: IRI -> Id
 uriToId = simpleIdToId . uriToTok
-
-uriToIdM :: IRI -> Result Id
-uriToIdM = return . uriToId
 
 -- | Mapping of a list of descriptions
 mapDescriptionList :: Sign
