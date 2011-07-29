@@ -172,9 +172,10 @@ runTimedFact tmpFileName prob mEnt tLimit = do
               _ -> return ()
             t_start <- getHetsTime
             mExit <- timeoutCommand tLimit "java" jargs
+            putStrLn $ unwords jargs
             t_end <- getHetsTime
-            removeFile timeTmpFile
-            when hasEnt $ removeFile entailsFile
+      --      removeFile timeTmpFile
+      --      when hasEnt $ removeFile entailsFile
             return $ fmap (\ (ex, out, err) ->
                   (True, ex, out ++ err, diffHetsTime t_end t_start)) mExit
             else return $ Just (False, ExitSuccess, "no " ++ jlibName, midnight)

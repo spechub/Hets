@@ -22,6 +22,7 @@ import Text.XML.Light
 import Data.Maybe
 import Common.AS_Annotation (Named, sentence)
 
+import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 showIRI :: OWL2.AS.QName -> String
@@ -90,6 +91,9 @@ mwSimpleIRI s = setName (if isFullIri s then iriK else "AbbreviatedIRI")
 
 makeElement :: String -> [Element] -> Element
 makeElement s el = setContent el $ mwString s
+
+makeElementWith1 :: String -> Element -> Element
+makeElementWith1 s e = setContent [e] $ mwString s
 
 make1 :: Bool -> String -> String -> (String -> IRI -> Element) -> IRI ->
             [([Element], Element)] -> [Element]
@@ -423,8 +427,8 @@ setBase :: String -> Element -> Element
 setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
         qPrefix = Just "xml"}, attrVal = s} : elAttribs e}
 
-xmlOntologyDoc :: OntologyDocument -> Element
-xmlOntologyDoc od =
+xmlOntologyDoc :: Sign -> OntologyDocument -> Element
+xmlOntologyDoc s od =
     let ont = ontology od
         pd = prefixDeclaration od
         emptyPref = fromMaybe (showIRI dummyQName) $ Map.lookup "" pd
@@ -433,9 +437,31 @@ xmlOntologyDoc od =
             ++ map xmlImport (imports ont)
             ++ concatMap xmlFrames (ontFrames ont)
             ++ concatMap xmlAnnotations (ann ont)
+            ++ signToDec s
+
+signToDec :: Sign -> [Element]
+signToDec s =
+    let c = Set.toList $ concepts s
+        op = Set.toList $ objectProperties s
+        dp = Set.toList $ dataProperties s
+        ap = Set.toList $ annotationRoles s
+        dt = Set.toList $ datatypes s
+        i = Set.toList $ individuals s
+    in (map (makeElementWith1 declarationK)
+                $ map (mwNameIRI classK) c)
+        ++ (map (makeElementWith1 declarationK)
+                $ map (mwNameIRI objectPropertyK) op)
+        ++ (map (makeElementWith1 declarationK)
+                $ map (mwNameIRI dataPropertyK) dp)
+        ++ (map (makeElementWith1 declarationK)
+                $ map (mwNameIRI annotationPropertyK) ap)
+        ++ (map (makeElementWith1 declarationK)
+                $ map (mwNameIRI datatypeK) dt)
+        ++ (map (makeElementWith1 declarationK)
+                $ map (mwNameIRI namedIndividualK) i)
 
 mkODoc :: Sign -> [Named Axiom] -> String
-mkODoc s na = ppTopElement $ xmlOntologyDoc $ emptyOntologyDoc
+mkODoc s na = ppTopElement $ xmlOntologyDoc s $ emptyOntologyDoc
     {
       ontology = emptyOntologyD
         {
