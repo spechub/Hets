@@ -772,11 +772,12 @@ gSigCoerce lg g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
   if Logic lid1 == Logic lid2
     then return (g, idComorphism l2) else do
     cmor@(Comorphism i) <- logicInclusion lg (Logic lid1) l2
-    ExtSign sigma1' _ <-
+    ExtSign sigma1' sy <-
         coerceSign lid1 (sourceLogic i) "gSigCoerce of signature" sigma1
     (sigma1'', _) <- map_sign i sigma1'
+    sys <- return . Set.unions . map (map_symbol i sigma1') $ Set.toList sy
     let lid = targetLogic i
-    return (G_sign lid (makeExtSign lid sigma1'') startSigId, cmor)
+    return (G_sign lid (ExtSign sigma1'' sys) startSigId, cmor)
 
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
