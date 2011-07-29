@@ -459,10 +459,7 @@ anaEventSet eventSet =
              vds <- gets envDiags
              put sig { envDiags = vds }
              -- reverse the list inside the event set
-             return (comms, FQEventSet (reverse fqEsElems) r)
-      FQEventSet _ _ ->
-          error "CspCASL.StatAnaCSP.anaEventSet: Unexpected FQEventSet"
-
+             return (comms, EventSet (reverse fqEsElems) r)
 
 {- | Statically analyse a proc alphabet (i.e., a list of channel and sort
 identifiers) to yeild a list of sorts and typed channel names. We also check
@@ -755,7 +752,7 @@ checkCommAlphaSub sub super proc context = do
         `Set.difference` closeCspCommAlpha sr super
   unless (Set.null extras) $
             let err = "Communication alphabet subset violations (" ++
-                       context ++ "): " ++ show (Set.toList extras)
+                       context ++ ")" ++ show (printCommAlpha extras)
             in addDiags [mkDiag Error err proc]
 
 -- Static analysis of CASL terms occurring in CspCASL process terms.

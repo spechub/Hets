@@ -77,8 +77,6 @@ data EVENT
 
 -- | Event sets are sets of communication types.
 data EVENT_SET = EventSet [CommType] Range
-               -- | FQEvent set distinguishes between channel names and Sorts
-               | FQEventSet [CommType] Range
                  deriving (Show, Ord, Eq)
 
 -- | CSP renamings are predicate names or op names.

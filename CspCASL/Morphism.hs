@@ -398,13 +398,8 @@ mapProc mor proc =
 
 -- | Apply a signature morphism to an event set
 mapEventSet :: CspCASLMorphism -> EVENT_SET -> EVENT_SET
-mapEventSet mor evs =
-    case evs of
-      EventSet _ _ ->
-          {- There should be no EventSets (only FQEventSets) as the static
-          analysis should have transformed EventSets into FQEventSets -}
-          error "CspCASL.Morphism.mapEventSet: Unexpected EventSet"
-      FQEventSet fqComms r -> FQEventSet (map (mapCommType mor) fqComms) r
+mapEventSet mor (EventSet fqComms r) =
+  EventSet (map (mapCommType mor) fqComms) r
 
 -- | Apply a signature morphism to an event
 mapEvent :: CspCASLMorphism -> EVENT -> EVENT

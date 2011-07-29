@@ -43,10 +43,12 @@ instance Pretty FQ_PROCESS_NAME where
 instance Pretty ProcProfile where
   pretty = printProcProfile
 
+printCommAlpha :: CommAlpha -> Doc
+printCommAlpha = printProcAlphabet . ProcAlphabet . Set.toList
+
 printProcProfile :: ProcProfile -> Doc
 printProcProfile (ProcProfile sorts commAlpha) =
-    sep [ printArgs sorts
-        , printProcAlphabet (ProcAlphabet $ Set.toList commAlpha)]
+  sep [printArgs sorts, printCommAlpha commAlpha]
 
 printProcessName :: FQ_PROCESS_NAME -> Doc
 printProcessName fqPn = case fqPn of
@@ -249,7 +251,4 @@ instance Pretty EVENT_SET where
     pretty = printEventSet
 
 printEventSet :: EVENT_SET -> Doc
-printEventSet eventSet =
-    case eventSet of
-      EventSet es _ -> ppWithCommas es
-      FQEventSet es _ -> ppWithCommas es
+printEventSet (EventSet es _) = ppWithCommas es

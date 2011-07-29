@@ -174,12 +174,8 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
 
 -- | Translate a fully qualified EventSet into a list Isabelle term.
 transEventSet :: EVENT_SET -> Term
-transEventSet evs =
-    case evs of
-      EventSet _ _ ->
-          error $ "CspCASLProver.TransProcesses.transEventSet: "
-            ++ "Expected a FQEventSet not a non-FQEventSet"
-      FQEventSet comms _ ->
+transEventSet (EventSet comms _) =
+  if null comms then error "transEventSet" else
           -- This list will not be empty otherwise, if it was empty the static
           -- analysis would have failed.
           foldr1 binUnion (map transCommType comms)
