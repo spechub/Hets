@@ -33,6 +33,8 @@ import CspCASL.Morphism (CspCASLMorphism, emptyCspAddMorphism)
 import CspCASL.SymbItems
 import CspCASL.Symbol
 
+import qualified Data.Set as Set
+
 -- | The identity of the comorphism
 data CASL2CspCASL = CASL2CspCASL deriving (Show)
 
@@ -49,6 +51,7 @@ instance Comorphism CASL2CspCASL
     mapSublogic CASL2CspCASL _ = Just ()
     map_theory CASL2CspCASL =
       return . simpleTheoryMapping mapSig casl2CspCASLSen
+    map_symbol CASL2CspCASL _ = Set.singleton . caslToCspSymbol
     map_morphism CASL2CspCASL = return . mapMor
     map_sentence CASL2CspCASL _sig = return . casl2CspCASLSen
     has_model_expansion CASL2CspCASL = True
