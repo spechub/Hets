@@ -286,7 +286,7 @@ slFB :: FrameBit -> OWLSub
 slFB fb = case fb of
     AnnFrameBit _ afb -> slAFB afb
     ListFrameBit mr lfb -> sl_max (slLFB mr lfb) (case mr of
-        Nothing -> slFB fb
+        Nothing -> sl_bottom
         Just r -> case r of
             SubPropertyOf -> requireRoleHierarchy sl_bottom
             InverseOf -> requireInverseRoles sl_bottom

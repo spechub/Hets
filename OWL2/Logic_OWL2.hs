@@ -159,3 +159,4 @@ instance ProjectSublogicM OWLSub Entity where
 
 instance ProjectSublogic OWLSub OntologyDocument where
     projectSublogic = pr_o_doc
+
