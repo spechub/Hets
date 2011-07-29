@@ -28,7 +28,6 @@ import ATC.ProofTree ()
 import Logic.Logic
 
 import OWL2.AS
-
 import OWL2.MS
 import OWL2.Theorem
 import OWL2.Parse
@@ -114,7 +113,7 @@ instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
 
 #endif
-{-
+
 instance SemiLatticeWithTop OWLSub where
     join = sl_max
     top = sl_top
@@ -123,7 +122,7 @@ instance SublogicName OWLSub where
     sublogicName = sl_name
 
 instance MinSublogic OWLSub Axiom where
-    minSublogic = sl_ax
+    minSublogic = slAxiom
 
 instance MinSublogic OWLSub OWLMorphism where
     minSublogic = sl_mor
@@ -146,8 +145,8 @@ instance MinSublogic OWLSub SymbMapItems where
 instance MinSublogic OWLSub Entity where
     minSublogic = const sl_top
 
-instance MinSublogic OWLSub OntologyFile where
-    minSublogic = sl_o_file
+instance MinSublogic OWLSub OntologyDocument where
+    minSublogic = sl_o_doc
 
 instance ProjectSublogicM OWLSub SymbItems where
     projectSublogicM = const Just
@@ -158,6 +157,5 @@ instance ProjectSublogicM OWLSub SymbMapItems where
 instance ProjectSublogicM OWLSub Entity where
     projectSublogicM = const Just
 
-instance ProjectSublogic OWLSub OntologyFile where
-    projectSublogic = pr_o_file
--}
+instance ProjectSublogic OWLSub OntologyDocument where
+    projectSublogic = pr_o_doc

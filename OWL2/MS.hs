@@ -24,6 +24,7 @@ type Annotations = [Annotation]
 
 type AnnotatedList a = [(Annotations, a)]
 
+-- this datatype extends the Manchester Syntax to also allow GCIs
 data Extended
   = Misc Annotations
   | SimpleEntity Entity
@@ -31,6 +32,7 @@ data Extended
   | ClassEntity ClassExpression
     deriving (Show, Eq, Ord)
 
+-- these correspond to the frames which have annotated lists
 data ListFrameBit
   = AnnotationBit (AnnotatedList AnnotationProperty) -- relation
   | ExpressionBit (AnnotatedList ClassExpression) -- relation
@@ -42,6 +44,7 @@ data ListFrameBit
   | IndividualFacts (AnnotatedList Fact)
     deriving (Show, Eq, Ord)
 
+-- these correspond to the frames which start with annotations
 data AnnFrameBit
   = AnnotationFrameBit
   | DataFunctional

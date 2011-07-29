@@ -9,7 +9,7 @@ $ECHO "\nhi !\n"
 
 ALL=`ls`
 
-for DIR in 9
+for DIR in class
 do
     if test -d $DIR;
         then
