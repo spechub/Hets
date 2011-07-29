@@ -28,7 +28,7 @@ import qualified Data.Map as Map
 import OWL2.Logic_OWL2
 import OWL2.AS
 import OWL2.MS
-import OWL2.Sublogic
+import OWL2.ProfilesAndSublogics
 import OWL2.Morphism
 import OWL2.Symbols
 import qualified OWL2.Sign as OS
@@ -50,7 +50,7 @@ instance Language OWL22CommonLogic
 instance Comorphism
     OWL22CommonLogic        -- comorphism
     OWL2                    -- lid domain
-    OWLSub                  -- sublogics domain
+    ProfSub                  -- sublogics domain
     OntologyDocument        -- Basic spec domain
     Axiom                   -- sentence domain
     SymbItems               -- symbol items domain
@@ -73,7 +73,7 @@ instance Comorphism
     ProofTree               -- proof tree domain
     where
       sourceLogic OWL22CommonLogic = OWL2
-      sourceSublogic OWL22CommonLogic = sl_top
+      sourceSublogic OWL22CommonLogic = topS
       targetLogic OWL22CommonLogic = CommonLogic
       mapSublogic OWL22CommonLogic _ = Just ClSl.top
       map_theory OWL22CommonLogic = mapTheory
@@ -829,10 +829,10 @@ mapDescriptionListP :: Sign
 mapDescriptionListP cSig n lst =
     do
       let (l, r) = unzip lst
-      (llst, sSig) <- mapDescriptionList cSig n l
+      (llst, ssSig) <- mapDescriptionList cSig n l
       (rlst, tSig) <- mapDescriptionList cSig n r
       let olst = zip llst rlst
-      return (olst, unite sSig tSig)
+      return (olst, unite ssSig tSig)
 
 -- | Build a name
 mkNName :: Int -> Token

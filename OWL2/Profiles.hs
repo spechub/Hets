@@ -54,6 +54,13 @@ qlrlProfile = Profiles False True True
 all3Profile :: Profiles
 all3Profile = Profiles True True True
 
+printProfile :: Profiles -> String
+printProfile p@(Profiles e q r) = case p of
+    (Profiles False False False) -> "NP"
+    _ -> (if e then "EL" else "")
+            ++ (if q then "QL" else "")
+            ++ (if r then "RL" else "") 
+
 andProfileList :: [Profiles] -> Profiles
 andProfileList pl = bottomProfile {
         el = all el pl,

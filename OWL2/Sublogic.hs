@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Here is the place where the class Logic is instantiated for OWL DL.
+Here is the place where the class Logic is instantiated for OWL2 DL.
 
 -}
 

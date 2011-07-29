@@ -17,7 +17,7 @@ import Logic.Prover
 import OWL2.MS
 import OWL2.Morphism
 import OWL2.Sign
-import OWL2.Sublogic
+import OWL2.ProfilesAndSublogics
 import OWL2.ProverState
 
 import GUI.GenericATP
@@ -49,8 +49,8 @@ import Data.Maybe
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-factProver :: Prover Sign Axiom OWLMorphism OWLSub ProofTree
-factProver = mkAutomaticProver "Fact" sl_top factGUI
+factProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
+factProver = mkAutomaticProver "Fact" topS factGUI
   factCMDLautomaticBatch
 
 {- |
@@ -90,8 +90,8 @@ factCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 {- |
   The Cons-Checker implementation.
 -}
-factConsChecker :: ConsChecker Sign Axiom OWLSub OWLMorphism ProofTree
-factConsChecker = mkConsChecker "Fact" sl_top consCheck
+factConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
+factConsChecker = mkConsChecker "Fact" topS consCheck
 
 {- |
   Record for prover specific functions. This is used by both GUI and command

@@ -24,7 +24,7 @@ import Logic.Prover
 
 import OWL2.Morphism
 import OWL2.Sign
-import OWL2.Sublogic
+import OWL2.ProfilesAndSublogics
 import OWL2.ProverState
 import OWL2.MS
 
@@ -63,12 +63,12 @@ pelletEnv = "PELLET_PATH"
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-pelletProver :: Prover Sign Axiom OWLMorphism OWLSub ProofTree
-pelletProver = mkAutomaticProver pelletS sl_top pelletGUI
+pelletProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
+pelletProver = mkAutomaticProver pelletS topS pelletGUI
   pelletCMDLautomaticBatch
 
-pelletConsChecker :: ConsChecker Sign Axiom OWLSub OWLMorphism ProofTree
-pelletConsChecker = (mkConsChecker pelletS sl_top consCheck)
+pelletConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
+pelletConsChecker = (mkConsChecker pelletS topS consCheck)
   { ccNeedsTimer = False }
 
 {- |

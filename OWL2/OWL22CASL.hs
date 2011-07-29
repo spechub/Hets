@@ -31,7 +31,7 @@ import CASL_DL.PredefinedCASLAxioms
 import OWL2.Logic_OWL2
 import OWL2.MS
 import OWL2.AS
-import OWL2.Sublogic
+import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
@@ -54,7 +54,7 @@ instance Language OWL22CASL
 instance Comorphism
     OWL22CASL        -- comorphism
     OWL2             -- lid domain
-    OWLSub          -- sublogics domain
+    ProfSub          -- sublogics domain
     OntologyDocument    -- Basic spec domain
     Axiom           -- sentence domain
     SymbItems       -- symbol items domain
@@ -77,7 +77,7 @@ instance Comorphism
     ProofTree       -- proof tree domain
     where
       sourceLogic OWL22CASL = OWL2
-      sourceSublogic OWL22CASL = sl_top
+      sourceSublogic OWL22CASL = topS
       targetLogic OWL22CASL = CASL
       mapSublogic OWL22CASL _ = Just $ cFol
         { cons_features = emptyMapConsFeature }
@@ -139,7 +139,7 @@ mapSign sig =
              }
 
 
-loadDataInformation :: OWLSub -> Sign f ()
+loadDataInformation :: ProfSub -> Sign f ()
 loadDataInformation _ =
     let
         dts = Set.fromList $ map stringToId datatypeKeys
@@ -150,11 +150,11 @@ mapTheory :: (OS.Sign, [Named Axiom])
              -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) =
         let
-            sublogic = sl_top
+            sl = topS
         in
     do
       cSig <- mapSign owlSig
-      let pSig = loadDataInformation sublogic
+      let pSig = loadDataInformation sl
       (cSens, nSig) <- foldM (\ (x, y) z ->
                            do
                              (sen, sig) <- mapSentence y z

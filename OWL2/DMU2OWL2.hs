@@ -34,7 +34,7 @@ import OWL2.Logic_OWL2
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.StaticAnalysis
-import OWL2.Sublogic
+import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterParser
 import OWL2.Symbols
 import OWL2.Expand
@@ -55,7 +55,7 @@ instance Language DMU2OWL2 -- default definition is okay
 
 instance Comorphism DMU2OWL2
    DMU () Text () () () Text (DefaultMorphism Text) () () ()
-   OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
+   OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
        Sign OWLMorphism Entity RawSymb ProofTree where
     sourceLogic DMU2OWL2 = DMU
     sourceSublogic DMU2OWL2 = top

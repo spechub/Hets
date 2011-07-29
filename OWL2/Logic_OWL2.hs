@@ -44,7 +44,7 @@ import OWL2.ProveFact
 import OWL2.Conservativity
 import OWL2.ColimSign
 import OWL2.Taxonomy
-import OWL2.Sublogic
+import OWL2.ProfilesAndSublogics
 import OWL2.Rename
 
 data OWL2 = OWL2 deriving Show
@@ -96,7 +96,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL2 = onto2Tax
 #endif
-instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
+instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
                OWLMorphism Entity RawSymb ProofTree where
          empty_proof_tree OWL2 = emptyProofTree
@@ -114,49 +114,49 @@ instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
 
 #endif
 
-instance SemiLatticeWithTop OWLSub where
-    join = sl_max
-    top = sl_top
+instance SemiLatticeWithTop ProfSub where
+    join = maxS
+    top = topS
 
-instance SublogicName OWLSub where
-    sublogicName = sl_name
+instance SublogicName ProfSub where
+    sublogicName = nameS
 
-instance MinSublogic OWLSub Axiom where
-    minSublogic = slAxiom
+instance MinSublogic ProfSub Axiom where
+    minSublogic = psAxiom
 
-instance MinSublogic OWLSub OWLMorphism where
-    minSublogic = sl_mor
+instance MinSublogic ProfSub OWLMorphism where
+    minSublogic = sMorph
 
-instance ProjectSublogic OWLSub OWLMorphism where
-    projectSublogic = pr_mor
+instance ProjectSublogic ProfSub OWLMorphism where
+    projectSublogic = prMorph
 
-instance MinSublogic OWLSub Sign where
-    minSublogic = sl_sig
+instance MinSublogic ProfSub Sign where
+    minSublogic = sSig
 
-instance ProjectSublogic OWLSub Sign where
-    projectSublogic = pr_sig
+instance ProjectSublogic ProfSub Sign where
+    projectSublogic = prSig
 
-instance MinSublogic OWLSub SymbItems where
-    minSublogic = const sl_top
+instance MinSublogic ProfSub SymbItems where
+    minSublogic = const topS
 
-instance MinSublogic OWLSub SymbMapItems where
-    minSublogic = const sl_top
+instance MinSublogic ProfSub SymbMapItems where
+    minSublogic = const topS
 
-instance MinSublogic OWLSub Entity where
-    minSublogic = const sl_top
+instance MinSublogic ProfSub Entity where
+    minSublogic = const topS
 
-instance MinSublogic OWLSub OntologyDocument where
-    minSublogic = sl_o_doc
+instance MinSublogic ProfSub OntologyDocument where
+    minSublogic = profilesAndSublogic
 
-instance ProjectSublogicM OWLSub SymbItems where
+instance ProjectSublogicM ProfSub SymbItems where
     projectSublogicM = const Just
 
-instance ProjectSublogicM OWLSub SymbMapItems where
+instance ProjectSublogicM ProfSub SymbMapItems where
     projectSublogicM = const Just
 
-instance ProjectSublogicM OWLSub Entity where
+instance ProjectSublogicM ProfSub Entity where
     projectSublogicM = const Just
 
-instance ProjectSublogic OWLSub OntologyDocument where
-    projectSublogic = pr_o_doc
+instance ProjectSublogic ProfSub OntologyDocument where
+    projectSublogic = prODoc
 
