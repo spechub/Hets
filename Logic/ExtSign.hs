@@ -112,7 +112,9 @@ ext_induced_from_morphism :: Logic lid sublogics
 ext_induced_from_morphism l rmap (ExtSign sigma _) = do
   -- first check: do all source raw symbols match with source signature?
   checkRawMap l rmap sigma
-  induced_from_morphism l rmap sigma
+  mor <- induced_from_morphism l rmap sigma
+  if legal_mor mor then return mor else
+    fail $ "illegal morphism: \n" ++ showDoc mor ""
 
 checkRawMap :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items

@@ -132,6 +132,8 @@ class (Pretty e, Pretty m) => MorphismExtension e m | m -> e where
    isInclusionMorphismExtension :: m -> Bool
    prettyMorphismExtension :: Morphism f e m -> Doc
    prettyMorphismExtension = pretty . extended_map
+   legalMorphismExtension :: Morphism f e m -> Bool
+   legalMorphismExtension _ = True
 
 instance MorphismExtension () () where
    ideMorphismExtension _ = ()
@@ -530,7 +532,7 @@ inducedPredMap sm pm = MapSet.foldWithKey
   ( \ i pt -> let (j, nt) = mapPredSym sm pm (i, pt)
       in MapSet.insert j nt) MapSet.empty
 
-legalMor :: Morphism f e m -> Bool
+legalMor :: MorphismExtension e m => Morphism f e m -> Bool
 legalMor mor =
   let s1 = msource mor
       s2 = mtarget mor
@@ -541,7 +543,7 @@ legalMor mor =
   && Set.isSubsetOf (msorts $ emptySortSet s1) (emptySortSet s2)
   && isSubOpMap (inducedOpMap sm (op_map mor) $ opMap s1) (opMap s2)
   && isSubMap (inducedPredMap sm (pred_map mor) $ predMap s1) (predMap s2)
-  && legalSign s2
+  && legalSign s2 && legalMorphismExtension mor
 
 isInclOpMap :: Op_map -> Bool
 isInclOpMap = all (\ ((i, _), (j, _)) -> i == j) . Map.toList

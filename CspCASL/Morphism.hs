@@ -168,7 +168,7 @@ type CspCASLMorphism = CASL_Morphism.Morphism CspSen CspSign CspAddMorphism
 
 -- | Check if a CspCASL signature morphism has the refl property i.e.,
 -- sigma(s1) <= sigma(s2) implies s1 <= s2 for all s1, s2 in S
-checkReflCondition :: CspCASLMorphism -> Bool
+checkReflCondition :: Morphism f CspSign CspAddMorphism -> Bool
 checkReflCondition mor =
   let sig = msource mor
       sig' = mtarget mor
@@ -186,7 +186,7 @@ checkReflCondition mor =
 -- i.e.,
 -- sigma(s1) <= u' and -- sigma(s2) <= u' implies there exists t in S with
 -- s1 <= t and s2 <= t and sigma(t) <= u' for all s1,s2 in S and u' in S'
-checkWNECondition :: CspCASLMorphism -> Bool
+checkWNECondition :: Morphism f CspSign CspAddMorphism -> Bool
 checkWNECondition mor =
   let sig = msource mor
       sig' = mtarget mor
@@ -305,6 +305,7 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       -- pretty printing for Csp morphisms
       prettyMorphismExtension = printMap id sepByCommas pairElems
         . toCspSymbMap True
+      legalMorphismExtension m = checkReflCondition m && checkWNECondition m
 
 -- * induced signature extension
 
