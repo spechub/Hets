@@ -113,8 +113,9 @@ ext_induced_from_morphism l rmap (ExtSign sigma _) = do
   -- first check: do all source raw symbols match with source signature?
   checkRawMap l rmap sigma
   mor <- induced_from_morphism l rmap sigma
-  if legal_mor mor then return mor else
-    fail $ "illegal morphism: \n" ++ showDoc mor ""
+  unless (legal_mor mor)
+    $ fail $ "illegal induced morphism:\n" ++ showDoc mor ""
+  return mor
 
 checkRawMap :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -147,6 +148,10 @@ ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do
     let sysI = Set.toList $ Set.difference (symset_of l p) sy
         morM = symmap_of l mor
         msysI = map (\ sym -> Map.findWithDefault sym sym morM) sysI
-    if sysI == msysI then return mor
-       else fail $ "imported symbols are mapped differently.\n"
+    unless (sysI == msysI)
+      $ fail $ "imported symbols are mapped differently.\n"
             ++ showDoc (filter (uncurry (/=)) $ zip sysI msysI) ""
+    unless (legal_mor mor)
+      $ fail $ "illegal morphism:\n" ++ showDoc mor ""
+    return mor
+
