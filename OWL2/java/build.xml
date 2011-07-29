@@ -48,7 +48,7 @@
 	  <attribute name="Title" value="OWL Fact"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.Fact.Fact"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar"/>
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFact.jar" todir="../"/>
@@ -71,7 +71,7 @@
 	  <attribute name="Title" value="OWL Fact Prover"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.FactProver.Prove"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar"/>
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFactProver.jar" todir="../"/>
@@ -80,6 +80,8 @@
       <copy file="${libdir}/FaCTpp-OWLAPI-3.2-v1.5.2.jar" todir="../lib/"/>
     </target>
 
+    <target name="java-files" depends="install"/>
+    <target name="java-libs" depends="owl-api,copy-libs"/>
 
     <target name="jar" depends="compile">
       <jar basedir="${classesdir}/locality" destfile="${builddir}/OWLLocality.jar">
@@ -87,7 +89,7 @@
 	  <attribute name="Title" value="OWL Locality Checker"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.locality.LocalityChecker"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar"/>
 	</manifest>
       </jar>
       <jar basedir="${classesdir}" destfile="${builddir}/OWL2Parser.jar">
@@ -95,10 +97,10 @@
 	  <attribute name="Title" value="OWL2 MNO Parser"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="OWL2Parser"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar"/>
 	</manifest>
       </jar>
-    </target> 
+    </target>
 
     <target name="owl-api">
       <ant antfile="build.xml" dir="./OwlApi/antbuild/" target="binjar" inheritAll="false"/>

@@ -753,12 +753,12 @@ initialize_installer:
 	@echo and wait until it is finished
 
 # check out java parts for OWL
-owl_java:
+owl1_java:
 	svn co \
   https://owlapi.svn.sourceforge.net/svnroot/owlapi/owl1_1/trunk \
   OWL/java/OwlApi
 
-owl2_java:
+owl_java:
 	svn co \
   https://owlapi.svn.sourceforge.net/svnroot/owlapi/v3/trunk \
   OWL2/java/OwlApi

@@ -50,8 +50,9 @@ import OWL2.Rename
 data OWL2 = OWL2 deriving Show
 
 instance Language OWL2 where
- description _ =
-  "OWL2 DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
+  language_name _ = "OWL"
+  description _ =
+    "OWL2 DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
 instance Category Sign OWLMorphism where
     ide sig = inclOWLMorphism sig sig

@@ -46,8 +46,9 @@ import OWL.ColimSign
 data OWL = OWL deriving Show
 
 instance Language OWL where
- description _ =
-  "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
+  language_name _ = "OWL1"
+  description _ =
+    "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
 instance Category Sign OWLMorphism where
     ide sig = inclOWLMorphism sig sig
