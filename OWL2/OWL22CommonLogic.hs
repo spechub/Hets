@@ -431,7 +431,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             case ex of
               SimpleEntity (Entity ty iri) ->
                 case ty of
-                  DataProperty ->
+                  NamedIndividual ->
                     do
                       inS <- mapIndivIRI cSig iri
                       inT <- mapConstant cSig lit
