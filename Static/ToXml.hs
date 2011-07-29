@@ -45,7 +45,9 @@ dGraph lenv ln dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
-  in add_attrs [ mkAttr "filename" $ getFilePath ln
+  in add_attrs [ mkAttr "filename" $ case getFilePath ln of
+                   "" -> "?"
+                   p' -> p'
                , mkAttr "libname" $ show $ getLibId ln
                , mkAttr "nextlinkid" $ showEdgeId $ getNewEdgeId dg ]
      $ unode "DGraph" $
