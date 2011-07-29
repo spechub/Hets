@@ -15,6 +15,7 @@ module THF.ProveLeoII where
 import Logic.Prover
 
 import THF.Cons
+import THF.Sign
 import THF.ProverState
 
 import Common.AS_Annotation

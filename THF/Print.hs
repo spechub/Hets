@@ -19,6 +19,7 @@ import Common.AS_Annotation
 
 import THF.As
 import THF.Cons
+import THF.Sign
 import THF.PrintTHF
 
 import qualified Data.Map as Map
@@ -58,10 +59,18 @@ instance Pretty SignTHF where
 
 instance Pretty Kind where
     pretty k = case k of
-        TType           -> text "$tType"
-        FunKind k1 k2 _ -> pretty k1  <+> text "->" <+> pretty k2
-        Const c         -> printTHF c
+        Kind           -> text "$tType"
+        MapKind k1 k2 _ -> pretty k1  <+> text "->" <+> pretty k2
         SysType st      -> printSystemType st
+
+instance Pretty Type where
+    pretty t = case t of
+        TType           -> text "$tType"
+        OType           -> text "$o"
+        IType           -> text "$i"
+        MapType t1 t2   -> pretty t1 <+> text "->" <+> pretty t2
+        CType c         -> printConstant c
+        SType st        -> printSystemType st
 
 instance Pretty TypeInfo where
     -- pretty ti = pretty typeKind
@@ -72,7 +81,7 @@ instance Pretty TypeInfo where
 instance Pretty ConstInfo where
     -- pretty ci = pretty constKind
     pretty ci = text "Name:" <+> printTHF (constName ci) <+>
-                text "Kind:" <+> pretty (constKind ci) <+>
+                text "Kind:" <+> pretty (constType ci) <+>
                 text "Def:" <+> pretty (constDef ci)
 
 printProblemTHF :: SignTHF -> [Named SentenceTHF] -> Named SentenceTHF -> Doc

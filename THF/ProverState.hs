@@ -17,6 +17,7 @@ module THF.ProverState where
 import Logic.Prover
 
 import THF.Cons
+import THF.Sign
 import THF.Print
 
 import Common.AS_Annotation

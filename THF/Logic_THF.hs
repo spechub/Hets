@@ -25,6 +25,7 @@ import THF.Cons
 import THF.Print ()
 import THF.StaticAnalysisTHF
 import THF.ProveLeoII
+import THF.Sign
 
 data THF = THF deriving Show
 
@@ -49,14 +50,13 @@ instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
                SignTHF MorphismTHF SymbolTHF () where
          basic_analysis THF = Just basicAnalysis
          empty_signature THF = emptySign
-         -- add_symb_to_sign
-         -- signature_union
-         -- signatureDiff
-         -- intersection
+         signature_union THF = sigUnion
+         signatureDiff THF = sigDiff
+         intersection THF = sigIntersect
          --is_subsig THF _ _ = True
          --subsig_inclusion THF = defaultInclusion
 
 instance Logic THF () BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
-         stability _ = Testing
-         provers _ = [leoIIProver]
+         stability THF = Testing
+         provers THF = [leoIIProver]
