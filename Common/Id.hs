@@ -511,6 +511,11 @@ instance (GetRange a, GetRange b) => GetRange (a, b) where
     getRange = getRange . fst
     rangeSpan (a, b) = sortRange (rangeSpan a) $ rangeSpan b
 
+instance (GetRange a, GetRange b, GetRange c) => GetRange (a, b, c) where
+    getRange (a, _, _)= getRange a
+    rangeSpan (a, b, c) =
+      sortRange (rangeSpan a) $ sortRange (rangeSpan b) $ rangeSpan c
+
 instance GetRange a => GetRange (Set.Set a) where
     getRange = getRange . Set.toList
     rangeSpan = rangeSpan . Set.toList

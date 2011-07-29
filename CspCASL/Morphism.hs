@@ -168,7 +168,7 @@ type CspCASLMorphism = CASL_Morphism.Morphism CspSen CspSign CspAddMorphism
 
 -- | Check if a CspCASL signature morphism has the refl property i.e.,
 -- sigma(s1) <= sigma(s2) implies s1 <= s2 for all s1, s2 in S
-checkReflCondition :: Morphism f CspSign CspAddMorphism -> Bool
+checkReflCondition :: Morphism f CspSign CspAddMorphism -> Result ()
 checkReflCondition mor =
   let sig = msource mor
       sig' = mtarget mor
@@ -181,13 +181,19 @@ checkReflCondition mor =
                          (mapSort sm s1) == (mapSort sm s2)
                       then Rel.path s1 s2 rel || s1 == s2
                       else True
-  in Set.null failures
+  in if Set.null failures
+     then return ()
+     else let produceDiag (s1,s2) =
+                mkDiag Error "CSP-CASL Signature Morphism Refl \
+                             \Property Violated:" (s1,s2)
+              diags = map produceDiag $ Set.toList failures
+          in Result diags Nothing -- failure with error messages
 
 -- | Check if a CspCASL signature morphism has the weak non extension property
 -- i.e.,
 -- sigma(s1) <= u' and -- sigma(s2) <= u' implies there exists t in S with
 -- s1 <= t and s2 <= t and sigma(t) <= u' for all s1,s2 in S and u' in S'
-checkWNECondition :: Morphism f CspSign CspAddMorphism -> Bool
+checkWNECondition :: Morphism f CspSign CspAddMorphism -> Result ()
 checkWNECondition mor =
   let sig = msource mor
       sig' = mtarget mor
@@ -210,15 +216,13 @@ checkWNECondition mor =
             test t = Rel.path (mapSort sm t) u' rel' || (mapSort sm t) == u'
          in or $ Set.toList $ Set.map test possibleWitnesses
       failures = Set.filter (not . testCandidate) allCandidateTripples
-  in Set.null failures
-
--- conclusionCheck s1 s2 u' =
---       mainTest (s1,s2) =
---         let c = commonSuperSortsInTarget s1 s2
---             failedU' = Set.filter (not . conclusionCheck s1 s2) c
---         in Set.null failedU'
---       failures = Set.map (not . mainTest) allPairsInSource
---   in Trace.trace (show failures) $ Set.null failures
+  in if Set.null failures
+     then return ()
+     else let produceDiag (s1,s2,u') =
+                mkDiag Error "CSP-CASL Signature Morphism Weak Non-Extension \
+                             \Property Violated:" (s1,s2,u')
+              diags = map produceDiag $ Set.toList failures
+          in Result diags Nothing -- failure with error messages
 
 -- | unite morphisms
 cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism
@@ -317,9 +321,9 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       -- pretty printing for Csp morphisms
       prettyMorphismExtension = printMap id sepByCommas pairElems
         . toCspSymbMap True
-      legalMorphismExtension m = if
-          checkReflCondition m && checkWNECondition m
-          then return () else fail "CspCASL conds failed"
+      legalMorphismExtension m =
+        joinResult (checkReflCondition m) (checkWNECondition m)
+
 
 -- * induced signature extension
 
