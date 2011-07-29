@@ -173,13 +173,14 @@ checkReflCondition mor =
   let sig = msource mor
       sig' = mtarget mor
       sm = sort_map mor
-      rel = Rel.transClosure $ sortRel sig
-      rel' = Rel.transClosure $ sortRel sig'
+      rel = sortRel sig
+      rel' = sortRel sig'
       allPairs = LT.cartesian $ sortSet sig
       failures = Set.filter (not . test) allPairs
-      test (s1,s2) =  if Rel.member (mapSort sm s1) (mapSort sm s2) rel'
-                    then Rel.member s1 s2 rel
-                    else True
+      test (s1,s2) =  if Rel.path (mapSort sm s1) (mapSort sm s2) rel' ||
+                         (mapSort sm s1) == (mapSort sm s2)
+                      then Rel.path s1 s2 rel || s1 == s2
+                      else True
   in Set.null failures
 
 -- | Check if a CspCASL signature morphism has the weak non extension property
@@ -191,22 +192,33 @@ checkWNECondition mor =
   let sig = msource mor
       sig' = mtarget mor
       sm = sort_map mor
-      rel' = Rel.transClosure $ sortRel sig'
+      rel' = sortRel sig'
       supers s signature = Set.insert s $ supersortsOf s signature
       allPairsInSource = LT.cartesian $ sortSet sig
       commonSuperSortsInTarget s1 s2 = Set.intersection
                                        (supers (mapSort sm s1) sig')
                                        (supers (mapSort sm s2) sig')
-      conclusionCheck s1 s2 u' =
-        let possibleWitnesses =
-              Set.intersection (supers s1 sig) (supers s2 sig)
-            test t = Rel.member (mapSort sm t) u' rel'
-        in or $ Set.toList $ Set.map test possibleWitnesses
-      mainTest (s1,s2) =
-        Set.filter (not . conclusionCheck s1 s2)
-        (commonSuperSortsInTarget s1 s2)
-      failures = Set.map mainTest allPairsInSource
+      -- Candidates are triplles (s1,s2,u')
+      -- such that \sigma(s1),\sigma(s2) <= u'
+      createCandidateTripples (s1,s2) =
+        Set.map (\u' -> (s1,s2,u')) (commonSuperSortsInTarget s1 s2)
+      allCandidateTripples =
+        Set.unions $ Set.toList $ Set.map createCandidateTripples
+        allPairsInSource
+      testCandidate (s1,s2,u') =
+        let possibleWitnesses = Set.intersection (supers s1 sig) (supers s2 sig)
+            test t = Rel.path (mapSort sm t) u' rel' || (mapSort sm t) == u'
+         in or $ Set.toList $ Set.map test possibleWitnesses
+      failures = Set.filter (not . testCandidate) allCandidateTripples
   in Set.null failures
+
+-- conclusionCheck s1 s2 u' =
+--       mainTest (s1,s2) =
+--         let c = commonSuperSortsInTarget s1 s2
+--             failedU' = Set.filter (not . conclusionCheck s1 s2) c
+--         in Set.null failedU'
+--       failures = Set.map (not . mainTest) allPairsInSource
+--   in Trace.trace (show failures) $ Set.null failures
 
 -- | unite morphisms
 cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism
