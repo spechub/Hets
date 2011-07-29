@@ -248,9 +248,6 @@ languageTag :: CharParser st String
 languageTag = atMost1 4 letter
   <++> flat (many $ char '-' <:> atMost1 8 alphaNum)
 
-withOrWithoutLanguage :: String -> Maybe String
-withOrWithoutLanguage x = if x == "" then Nothing else Just x
-
 stringLiteral :: CharParser st Literal
 stringLiteral = do
   s <- stringLit
@@ -259,9 +256,9 @@ stringLiteral = do
       d <- datatypeUri
       return $ Literal s $ Typed d
     <|> do
-      string asP
-      t <- optionL $ skips languageTag
-      return $ Literal s $ Untyped (withOrWithoutLanguage t)
+        string asP
+        t <- skips $ optionMaybe languageTag
+        return $ Literal s $ Untyped t
     <|> skips (return $ Literal s $ Typed $ mkQName stringS)
 
 literal :: CharParser st Literal

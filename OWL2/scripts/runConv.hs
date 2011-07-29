@@ -12,6 +12,7 @@ script for running the conversion to XML
 
 import System.Environment
 
+import OWL2.Sign
 import OWL2.XML
 import OWL2.XMLConversion
 import Text.XML.Light
@@ -24,7 +25,7 @@ processFile file = do
     let elems = map xmlBasicSpec
                 $ concatMap (filterElementsName $ isSmth "Ontology")
                 $ onlyElems $ parseXML s
-    mapM_ (putStrLn . ppElement . xmlOntologyDoc) elems
+    mapM_ (putStrLn . ppElement . xmlOntologyDoc emptySign) elems
 
 main :: IO ()
 main = do
