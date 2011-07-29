@@ -24,6 +24,7 @@ import CASL.Morphism
 import CASL.SymbolMapAnalysis
 
 import Common.DocUtils
+import Common.ExtSign
 import Common.Id
 import Common.Result
 import qualified Common.Lib.Rel as Rel
@@ -35,6 +36,29 @@ import Data.List (partition)
 import Data.Maybe
 
 type CspRawMap = Map.Map CspRawSymbol CspRawSymbol
+
+cspInducedFromToMorphism :: CspRawMap -> ExtSign CspCASLSign CspSymbol
+  -> ExtSign CspCASLSign CspSymbol -> Result CspCASLMorphism
+cspInducedFromToMorphism rmap (ExtSign sSig sy) (ExtSign tSig tSy) =
+  let (crm, rm) = splitSymbolMap rmap
+  in if Map.null rm then
+         inducedFromToMorphismExt inducedCspSign
+         (constMorphExt emptyCspAddMorphism)
+         composeMorphismExtension isCspSubSign diffCspSig
+         crm (ExtSign sSig $ getCASLSymbols sy)
+         $ ExtSign tSig $ getCASLSymbols tSy
+     else do
+       mor <- cspInducedFromMorphism rmap sSig
+       let iSig = mtarget mor
+       if isSubSig isCspSubSign iSig tSig then do
+          incl <- sigInclusion emptyCspAddMorphism iSig tSig
+          composeM composeMorphismExtension mor incl
+         else
+           fatal_error
+         ("No signature morphism for csp symbol map found.\n" ++
+          "The following mapped symbols are missing in the target signature:\n"
+          ++ showDoc (diffSig diffCspSig iSig tSig) "")
+          $ concatMapRange getRange $ Map.keys rmap
 
 cspInducedFromMorphism :: CspRawMap -> CspCASLSign -> Result CspCASLMorphism
 cspInducedFromMorphism rmap sigma = do

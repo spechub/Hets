@@ -238,3 +238,8 @@ splitSymbolMap = Map.foldWithKey (\ s t (cm, ccm) ->
   case (toRawSymbol s, toRawSymbol t) of
     (Just c, Just d) -> (Map.insert c d cm, ccm)
     _ -> (cm, Map.insert s t ccm)) (Map.empty, Map.empty)
+
+getCASLSymbols :: Set.Set CspSymbol -> Set.Set Symbol
+getCASLSymbols = Set.fold (\ (CspSymbol i ty) -> case ty of
+    CaslSymbType t -> Set.insert $ Symbol i t
+    _ -> id) Set.empty
