@@ -36,7 +36,7 @@ signColimit graph = let
                nmap dataProperties graph
    annPropGraph = emap (getEntityTypeMap AnnotationProperty) $
                nmap annotationRoles graph
-   prefixGraph = emap getPrefixMap
+   _prefixGraph = emap getPrefixMap
                     $ nmap (Map.keysSet . toQName . prefixMap) graph
    (con, funC) = addIntToSymbols $ computeColimitSet conGraph
    (dat, funD) = addIntToSymbols $ computeColimitSet dataGraph
@@ -44,7 +44,7 @@ signColimit graph = let
    (obj, funO) = addIntToSymbols $ computeColimitSet objGraph
    (dp, funDP) = addIntToSymbols $ computeColimitSet dataPropGraph
    (ap, funAP) = addIntToSymbols $ computeColimitSet annPropGraph
-   (pf, funP) = addIntToSymbols $ computeColimitSet prefixGraph
+   -- (pf, funP) = addIntToSymbols $ computeColimitSet prefixGraph
    morFun i = foldl Map.union Map.empty
                [ setEntityTypeMap Class $
                    Map.findWithDefault (error "maps") i funC,
@@ -79,7 +79,8 @@ signColimit graph = let
                          om = OWLMorphism {
                                osource = ssig,
                                otarget = colimSign,
-                               mmaps = mm
+                               mmaps = mm,
+                               pmap = Map.empty
                               }
                                    in (i, om)
                      ) $ labNodes graph
