@@ -113,8 +113,7 @@ ext_induced_from_morphism l rmap (ExtSign sigma _) = do
   -- first check: do all source raw symbols match with source signature?
   checkRawMap l rmap sigma
   mor <- induced_from_morphism l rmap sigma
-  unless (legal_mor mor)
-    $ fail $ "illegal induced morphism:\n" ++ showDoc mor ""
+  legal_mor mor
   return mor
 
 checkRawMap :: Logic lid sublogics
@@ -151,7 +150,6 @@ ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do
     unless (sysI == msysI)
       $ fail $ "imported symbols are mapped differently.\n"
             ++ showDoc (filter (uncurry (/=)) $ zip sysI msysI) ""
-    unless (legal_mor mor)
-      $ fail $ "illegal morphism:\n" ++ showDoc mor ""
+    legal_mor mor
     return mor
 

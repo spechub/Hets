@@ -53,13 +53,14 @@ idMor :: Sign -> Morphism
 idMor a = inclusionMap a a
 
 -- | Determines whether a morphism is valid
-isLegalMorphism :: Morphism -> Bool
+isLegalMorphism :: Morphism -> Result ()
 isLegalMorphism pmor =
     let psource = items $ source pmor
         ptarget = items $ target pmor
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
-    in Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
+    in if Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
+    then return () else fail "illegal CommonLogic morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id
@@ -111,7 +112,7 @@ mapSentence mor = return . mapSentenceH mor
 
 -- propagates the translation to sentences
 mapSentenceH :: Morphism -> AS_BASIC.TEXT -> AS_BASIC.TEXT
-mapSentenceH mor t = case t of
+mapSentenceH mor txt = case txt of
   AS_BASIC.Text phrs r -> AS_BASIC.Text (map (mapSentenceH_phr mor) phrs) r
   AS_BASIC.Named_text n t r -> AS_BASIC.Named_text n (mapSentenceH mor t) r
 

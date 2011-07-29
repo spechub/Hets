@@ -208,7 +208,8 @@ class (Ord object, Ord morphism)
          isInclusion _ = False -- in general no inclusion
 
          -- | is a value of type morphism denoting a legal  morphism?
-         legal_mor :: morphism -> Bool
+         legal_mor :: morphism -> Result ()
+         legal_mor _ = return ()
 
 -- | test if the signature morphism is the identity
 isIdentity :: Category object morphism => morphism -> Bool
@@ -224,7 +225,6 @@ instance Ord sign => Category sign (DefaultMorphism sign) where
     ide = ideOfDefaultMorphism
     isInclusion = const True
     composeMorphisms = compOfDefaultMorphism
-    legal_mor = legalDefaultMorphism (const True)
 
 {- | Abstract syntax, parsing and printing.
      There are three types for abstract syntax:

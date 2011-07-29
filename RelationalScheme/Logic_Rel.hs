@@ -33,7 +33,6 @@ instance Category
         Sign                   -- sign
         RSMorphism             -- mor
         where
-                legal_mor _  = False
                 dom          = domain
                 cod          = codomain
                 ide          = idMor

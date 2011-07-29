@@ -60,13 +60,14 @@ idMor :: Sign -> Morphism
 idMor a = inclusionMap a a
 
 -- | Determines whether a morphism is valid
-isLegalMorphism :: Morphism -> Bool
+isLegalMorphism :: Morphism -> Result ()
 isLegalMorphism pmor =
     let psource = items $ source pmor
         ptarget = items $ target pmor
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
-    in Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
+    in if Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
+    then return () else fail "illegal QBF morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id

@@ -39,7 +39,6 @@ instance Category Sign Morphism where
    cod = target
    composeMorphisms = compMorph
    isInclusion = Map.null . symMap . canForm
-   legal_mor = const True
 
 instance Syntax LF BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_basic_spec LF = Just basicSpec

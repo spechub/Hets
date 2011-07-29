@@ -43,7 +43,8 @@ instance Category Sign Morphism where
    cod = target
    isInclusion = Map.null . symMap . canForm
    composeMorphisms = compMorph
-   legal_mor = isValidMorph
+   legal_mor m = if isValidMorph m then return () else
+                     fail "illegal DFOL morphism"
 
 -- syntax for DFOL
 instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where

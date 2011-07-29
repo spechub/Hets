@@ -317,7 +317,9 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       -- pretty printing for Csp morphisms
       prettyMorphismExtension = printMap id sepByCommas pairElems
         . toCspSymbMap True
-      legalMorphismExtension m = checkReflCondition m && checkWNECondition m
+      legalMorphismExtension m = if
+          checkReflCondition m && checkWNECondition m
+          then return () else fail "CspCASL conds failed"
 
 -- * induced signature extension
 

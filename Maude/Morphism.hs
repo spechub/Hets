@@ -295,7 +295,7 @@ isInclusion mor = let
     in all id [null'sortMap, null'opMap, null'labelMap]
 
 -- | True iff the 'Morphism' is legal
-isLegal :: Morphism -> Bool
+isLegal :: Morphism -> Result ()
 isLegal mor = let
     src = source mor
     tgt = target mor
@@ -309,7 +309,8 @@ isLegal mor = let
     lg'opMap = subset omap getOps
     lg'labelMap = subset lmap getLabels
     lg'target = Sign.isLegal tgt
-    in all id [lg'source, lg'sortMap, lg'opMap, lg'labelMap, lg'target]
+    in if all id [lg'source, lg'sortMap, lg'opMap, lg'labelMap, lg'target]
+    then return () else fail "illegal Maude morphism"
 
 -- * Conversion
 

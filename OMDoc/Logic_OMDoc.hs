@@ -86,10 +86,11 @@ instance Category OMDoc_Sign OMDoc_Morphism where
           return $ (m1 { OMDoc.inclusionMorphism = compim }, s1, t2)
   dom (_, s, _) = s
   cod (_, _, t) = t
-  legal_mor (m, s, t) =
+  legal_mor (m, s, t) = if
     (OMDoc.inclusionFrom m) == (OMDoc.mkSymbolRef (OMDoc.theoryId s))
     &&
     (OMDoc.inclusionTo m) == (OMDoc.mkSymbolRef (OMDoc.theoryId t))
+    then return () else fail "illegal OMDoc morphism"
 
 instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_of OMDoc_PUN s =

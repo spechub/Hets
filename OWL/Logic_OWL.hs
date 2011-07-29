@@ -54,7 +54,6 @@ instance Category Sign OWLMorphism where
     ide sig = inclOWLMorphism sig sig
     dom = osource
     cod = otarget
-    legal_mor = legalMor
     isInclusion = isOWLInclusion
     composeMorphisms = composeMor
 

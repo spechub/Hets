@@ -17,7 +17,6 @@ module Common.DefaultMorphism
   ( DefaultMorphism(..) -- constructor is only exported for ATC
   , ideOfDefaultMorphism
   , compOfDefaultMorphism
-  , legalDefaultMorphism
   , defaultInclusion
   ) where
 
@@ -44,9 +43,6 @@ compOfDefaultMorphism :: Monad m => DefaultMorphism sign
   -> DefaultMorphism sign -> m (DefaultMorphism sign)
 compOfDefaultMorphism (MkMorphism s1 _) (MkMorphism _ s3) =
     return $ MkMorphism s1 s3
-
-legalDefaultMorphism :: (sign -> Bool) -> DefaultMorphism sign -> Bool
-legalDefaultMorphism legalSign (MkMorphism s t) = legalSign s && legalSign t
 
 defaultInclusion :: Monad m => sign -> sign -> m (DefaultMorphism sign)
 defaultInclusion s = return . MkMorphism s

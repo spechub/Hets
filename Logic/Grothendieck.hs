@@ -670,11 +670,12 @@ instance Category G_sign GMorphism where
     in G_sign lid2 (makeExtSign lid2 sig2) startSigId
   isInclusion (GMorphism cid _ _ mor _) =
     isInclusionComorphism cid && isInclusion mor
-  legal_mor (GMorphism r (ExtSign s _) _ mor _) =
-    legal_mor mor &&
+  legal_mor (GMorphism r (ExtSign s _) _ mor _) = do
+    legal_mor mor
     case maybeResult $ map_sign r s of
-      Just (sigma', _) -> sigma' == cod mor
-      Nothing -> False
+      Just (sigma', _) -> if sigma' == cod mor then return () else
+          fail "legal_mor.GMorphism"
+      Nothing -> fail "legal_mor.GMorphism2"
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed2 :: G_sign -> G_morphism -> GMorphism

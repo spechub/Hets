@@ -131,10 +131,11 @@ instance Pretty OWLMorphism where
          , pretty $ pmap m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
 
-legalMor :: OWLMorphism -> Bool
-legalMor m = let mm = mmaps m in
+legalMor :: OWLMorphism -> Result ()
+legalMor m = let mm = mmaps m in if
   Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
   && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m)
+  then return () else fail "illegal OWL2 morphism"
 
 getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
 getIri ty u = fromMaybe u . Map.lookup (Entity ty u)

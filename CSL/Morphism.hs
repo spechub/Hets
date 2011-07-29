@@ -16,7 +16,6 @@ module CSL.Morphism
   ( Morphism (..)               -- datatype for Morphisms
   , pretty                      -- pretty printing
   , idMor                       -- identity morphism
-  , isLegalMorphism             -- check if morhpism is ok
   , composeMor                  -- composition
   , inclusionMap                -- inclusion map
   , mapSentence                 -- map of sentences
@@ -30,7 +29,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import CSL.Sign as Sign
 import qualified Common.Result as Result
-import CSL.AS_BASIC_CSL 
+import CSL.AS_BASIC_CSL
 import Common.Id as Id
 import Common.Result
 import Common.Doc
@@ -56,10 +55,6 @@ printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
 -- | Constructs an id-morphism
 idMor :: Sign -> Morphism
 idMor a = inclusionMap a a
-
--- | checks whether a given morphism is legal
-isLegalMorphism :: Morphism -> Bool
-isLegalMorphism _ = True
 
 -- | calculates the composition of two morhpisms f:X->Y, g:Y->Z
 composeMor :: Morphism -> Morphism -> Result Morphism

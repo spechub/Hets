@@ -50,8 +50,6 @@ instance Category Sign Morphism where
     cod = target
     -- check if morphism is inclusion
     isInclusion = Map.null . operatorMap
-    -- tests if the morphism is ok
-    legal_mor = isLegalMorphism
     -- composition of morphisms
     composeMorphisms = composeMor
 
