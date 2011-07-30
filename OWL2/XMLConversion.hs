@@ -4,7 +4,7 @@ Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  f.mance@jacobs-university.de
-Stability   :  provisionalM
+Stability   :  provisional
 Portability :  portable
 
 Conversion from Manchester syntax to XML Syntax
@@ -26,7 +26,9 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 showIRI :: OWL2.AS.QName -> String
-showIRI (QN pre local _ _ _) = pre ++ ":" ++ local
+showIRI (QN pre local ty _ _) = case ty of
+    NodeID -> local
+    _ -> pre ++ ":" ++ local
 
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing

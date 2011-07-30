@@ -9,7 +9,7 @@ $ECHO "\nhi !\n"
 
 ALL=`ls`
 
-for DIR in class
+for DIR in $ALL
 do
     if test -d $DIR;
         then
@@ -50,7 +50,8 @@ do
             done
 
             cd ../../../..
-
+            a()
+            {
             $ECHO "\ncalling hets for all xml files...\n"
 
             for i in OWL2/tests/$DIR/res/*.xml
@@ -58,7 +59,7 @@ do
                 ./hets -i ow2 $i
                 $ECHO "\n"
             done
-
+            }
             $ECHO "creating omn files with java..."
 
             cd OWL2/tests/$DIR/res

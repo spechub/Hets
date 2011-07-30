@@ -76,9 +76,7 @@ setFull :: QName -> QName
 setFull q = q {iriType = Full}
 
 isAnonymous :: IRI -> Bool
-isAnonymous iri =
-    let np = namePrefix iri
-    in (not . null) np && head np == '_'
+isAnonymous iri = iriType iri == NodeID
 
 instance Eq QName where
     p == q = compare p q == EQ

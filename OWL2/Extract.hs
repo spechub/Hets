@@ -31,7 +31,7 @@ addDataPropExpr = addEntity . Entity DataProperty
 
 addIndividual :: Individual -> State Sign ()
 addIndividual ind =
-    unless (isAnonymous ind) $ addEntity $ Entity NamedIndividual ind
+    unless (iriType ind == NodeID) $ addEntity $ Entity NamedIndividual ind
 
 addAnnoProp :: AnnotationProperty -> State Sign ()
 addAnnoProp = addEntity . Entity AnnotationProperty

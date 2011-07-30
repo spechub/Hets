@@ -72,7 +72,7 @@ getIRI b e =
             "abbreviatedIRI" -> Abbreviated
             "IRI" -> Full
             "nodeID" -> NodeID
-            _ -> err "invalid type of iri"
+            _ -> cssIRI iri
     in appendBase b $ nullQName {localPart = iri, iriType = ty}
 
 {- | if the IRI contains colon, it is split there;
@@ -98,7 +98,7 @@ nodeID :: IRI -> IRI
 nodeID qn =
     let lp = localPart qn
     in case lp of
-        '_' : ':' : t -> qn
+        '_' : ':' : _ -> qn
         _ -> qn {localPart = "_:" ++ lp}
 
 -- ^ gets the content of an element with name IRI, AbbreviatedIRI or Import
