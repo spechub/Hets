@@ -56,15 +56,15 @@ do
 done 
 }
 cd ../../..
-a()
-{
+
+
 echo "calling hets for all xml files...\n"
 
 for i in $dir/*.xml
 do
     ./hets -i ow2 $i
 done
-}
+
 echo "\ncreating omn files from .rdf.xml with java...\n"
 
 cd OWL2/tests/XML

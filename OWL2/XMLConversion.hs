@@ -144,7 +144,7 @@ xmlLiteral (Literal lf tu) =
     let part = setName literalK $ mwText lf
     in case tu of
         Typed dt -> setDt True dt part
-        Untyped lang -> setLangTag lang $ setDt True (mkQName
+        Untyped lang -> setLangTag lang $ setDt True (splitIRI $ mkQName
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
             part
 
@@ -456,7 +456,7 @@ setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
     , attrVal = s} : elAttribs e}
 
 set1Map :: (String, String) -> Element
-set1Map (s, iri) = setPref s $ mwIRI $ setFull $ mkQName iri
+set1Map (s, iri) = setPref s $ mwIRI $ setFull $ splitIRI $ mkQName iri
 
 xmlPrefixes :: PrefixMap -> [Element]
 xmlPrefixes pm = map (setName prefixK . set1Map) $ Map.toList pm
