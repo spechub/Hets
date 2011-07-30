@@ -57,7 +57,7 @@ setContent cl e = e {elContent = map Elem cl}
 
 setText :: String -> Element -> Element
 setText s e = e {elContent = [Text CData {cdVerbatim = CDataText,
-    cdData = s, cdLine = Just 1}]}
+    cdData = s, cdLine = Nothing}]}
 
 setInt :: Int -> Element -> Element
 setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
@@ -439,7 +439,8 @@ xmlOntologyDoc :: Sign -> OntologyDocument -> Element
 xmlOntologyDoc s od =
     let ont = ontology od
         pd = prefixDeclaration od
-        emptyPref = fromMaybe (showIRI dummyQName) $ Map.lookup "" pd
+        emptyPref = fromMaybe ("http://www.w3.org/2001/XMLSchema#")
+            $ Map.lookup "" pd
     in setBase emptyPref $ setXMLNS $ setOntIRI (name ont)
         $ makeElement "Ontology" $ xmlPrefixes pd
             ++ map xmlImport (imports ont)
