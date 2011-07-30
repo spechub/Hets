@@ -37,7 +37,7 @@ import OWL2.StaticAnalysis
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterParser
 import OWL2.Symbols
-import OWL2.Expand
+import OWL2.Function
 import OWL2.Extract
 
 import Text.ParserCombinators.Parsec (eof, runParser)
@@ -83,7 +83,7 @@ readOWL :: Monad m => String -> m (Sign, [Named Axiom])
 readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
   Left err -> fail $ show err
   Right ontoFile -> let
-    newont = expODoc (prefixDeclaration ontoFile) ontoFile 
+    newont = function Expand (prefixDeclaration ontoFile) ontoFile 
     newstate = execState (completeSign newont) emptySign
     in case basicOWL2Analysis
     (ontoFile, newstate, emptyGlobalAnnos) of

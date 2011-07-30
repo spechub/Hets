@@ -17,8 +17,6 @@ module OWL2.Profiles where
 import OWL2.AS
 import OWL2.MS
 
-import Common.Id
-
 import Data.Maybe
 
 data Profiles = Profiles {
@@ -75,10 +73,10 @@ minimalCovering :: Profiles -> [Profiles] -> Profiles
 minimalCovering c pl = andProfileList [c, andProfileList pl]
 
 dataType :: Datatype -> Profiles
-dataType dt = topProfile -- needs to be implemented, of course
+dataType _ = topProfile -- needs to be implemented, of course
 
 literal :: Literal -> Profiles
-literal l = topProfile -- needs to be implemented
+literal _ = topProfile -- needs to be implemented
 
 individual :: Individual -> Profiles
 individual i = if isAnonymous i then rlProfile else topProfile

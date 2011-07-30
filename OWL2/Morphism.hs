@@ -33,7 +33,7 @@ import OWL2.Sign
 import OWL2.ManchesterPrint ()
 import OWL2.StaticAnalysis
 import OWL2.Symbols
-import OWL2.Rename
+import OWL2.Function
 
 import Common.DocUtils
 import Common.Doc
@@ -51,7 +51,7 @@ data OWLMorphism = OWLMorphism
   { osource :: Sign
   , otarget :: Sign
   , mmaps :: Map.Map Entity IRI
-  , pmap :: TranslationMap
+  , pmap :: AMap
   } deriving (Show, Eq, Ord)
 
 inclOWLMorphism :: Sign -> Sign -> OWLMorphism
@@ -71,15 +71,15 @@ symMap = Map.mapWithKey (\ (Entity ty _) -> Entity ty)
 inducedElems :: Map.Map Entity IRI -> [Entity]
 inducedElems = Map.elems . symMap
 
-inducedSign :: Map.Map Entity IRI -> TranslationMap -> Sign -> Sign
+inducedSign :: Map.Map Entity IRI -> AMap -> Sign -> Sign
 inducedSign m t s =
     let new = execState (do
             mapM_ (modEntity Set.delete) $ Map.keys m
             mapM_ (modEntity Set.insert) $ inducedElems m) s
-    in mv t new
+    in function Rename t new
 
-inducedPref :: String -> String -> Sign -> (Map.Map Entity IRI, TranslationMap)
-    -> (Map.Map Entity IRI, TranslationMap)
+inducedPref :: String -> String -> Sign -> (Map.Map Entity IRI, AMap)
+    -> (Map.Map Entity IRI, AMap)
 inducedPref v u sig (m, t) =
     let pm = prefixMap sig
     in if Set.member v $ Map.keysSet pm
@@ -209,7 +209,7 @@ mapAnnoList m = map (mapAnno m)
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
 mapSen m a = do
     let new = mapAxiom (mmaps m) a
-    return $ mv (pmap m) new
+    return $ function Rename (pmap m) new
 
 mapObjExpr :: Map.Map Entity IRI -> ObjectPropertyExpression
            -> ObjectPropertyExpression

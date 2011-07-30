@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Contains    :  static analysis for OWL 2
+    Static analysis for OWL 2
 -}
 
 module OWL2.StaticAnalysis where
@@ -17,7 +17,7 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.Print ()
 import OWL2.Theorem
-import OWL2.Expand
+import OWL2.Function
 
 import qualified Data.Set as Set
 import Data.List
@@ -320,11 +320,11 @@ getEntityFromFrame f = case f of
 createSign :: [Frame] -> State Sign ()
 createSign f = do
   pm <- gets prefixMap
-  mapM_ (getEntityFromFrame . expF pm) f
+  mapM_ (getEntityFromFrame . function Expand pm) f
 
 createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do
-    x <- correctFrames s $ map (expF $ prefixMap s) fl
+    x <- correctFrames s $ map (function Expand $ prefixMap s) fl
     return (map anaAxiom $ concatMap getAxioms x, x)
 
 modifyOntologyDocument :: OntologyDocument -> [Frame] -> OntologyDocument
