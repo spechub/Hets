@@ -9,7 +9,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-    Instances for the functions used in OWL 2
+    Instances for some of the functions used in OWL 2
 -}
 
 module OWL2.Function where
