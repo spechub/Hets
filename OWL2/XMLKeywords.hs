@@ -250,6 +250,12 @@ entityList :: [String]
 entityList = [classK, datatypeK, namedIndividualK,
     objectPropertyK, dataPropertyK, annotationPropertyK]
 
+annotationValueList :: [String]
+annotationValueList = [literalK, iriK, "AbbreviatedIRI", anonymousIndividualK]
+
+annotationSubjectList :: [String]
+annotationSubjectList = [iriK, "AbbreviatedIRI", anonymousIndividualK]
+
 individualList :: [String]
 individualList = [namedIndividualK, anonymousIndividualK]
 

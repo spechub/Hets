@@ -7,25 +7,29 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Contains    :  OWL2 XML Syntax Parsing
+OWL2 XML Syntax Parsing
 -}
 
 module OWL2.XML where
 
-import Text.XML.Light
-import Data.Maybe
-import OWL2.AS
-import OWL2.MS
-import OWL2.Extract
-import OWL2.XMLKeywords
-
 import Common.Lexer
 
-import Data.List
+import OWL2.AS
+import OWL2.Extract
+import OWL2.MS
+import OWL2.XMLKeywords
 
+import Text.XML.Light
+
+import Data.Maybe
+import Data.List
 import qualified Data.Map as Map
 
 type XMLBase = String
+
+-- ^ error messages for the parser
+err :: String -> t
+err s = error $ "XML parser: " ++ s
 
 {- two functions from Text.XML.Light.Proc version 1.3.7 for compatibility
   with previous versions -}
@@ -52,36 +56,65 @@ filterChL :: [String] -> Element -> [Element]
 filterChL l = filterChildrenName (isSmthList l)
 
 filterC :: String -> Element -> Element
-filterC s e = fromMaybe (error "child not found")
+filterC s e = fromMaybe (err "child not found")
     (filterChildName (isSmth s) e)
 
 filterCL :: [String] -> Element -> Element
-filterCL l e = fromMaybe (error "child not found")
+filterCL l e = fromMaybe (err "child not found")
     (filterChildName (isSmthList l) e)
 
-simpleSplit :: IRI -> IRI
-simpleSplit qn =
-    let lp = localPart qn
-        lp2 = case lp of
-            '_' : ':' : t -> t
-            _ -> lp
-        ai = case lp of
-            '_' : ':' : _ -> "_:"
-            _ -> ""
-        np = takeWhile (/= ':') lp2
-        ':' : nlp = dropWhile (/= ':') lp2
-    in qn {namePrefix = ai ++ np, localPart = nlp}
+-- ^ parses an IRI
+getIRI :: XMLBase -> Element -> IRI
+getIRI b e =
+    let [a] = elAttribs e
+        iri = attrVal a
+        ty = case qName $ attrKey a of
+            "abbreviatedIRI" -> Abbreviated
+            "IRI" -> Full
+            "nodeID" -> NodeID
+            _ -> err "invalid type of iri"
+    in appendBase b $ nullQName {localPart = iri, iriType = ty}
 
-{- if the IRI contains ':', it is split at the colon
-else, the xml:base needs to be pre-pended to the addres
+{- | if the IRI contains colon, it is split there;
+else, the xml:base needs to be prepended to the local part
 and then the IRI must be splitted -}
-splitIRI :: XMLBase -> IRI -> IRI
-splitIRI b qn =
- let r = localPart qn
- in if ':' `elem` r then simpleSplit qn
-     else simpleSplit $ qn {localPart = b ++ r, isFullIri = True}
+appendBase :: XMLBase -> IRI -> IRI
+appendBase b qn =
+    let r = localPart qn
+    in if ':' `elem` r then splitIRI qn
+        else splitIRI $ qn {localPart = b ++ r, iriType = Full}
 
--- gets the actual name of an axiom in XML Syntax
+-- ^ splits an IRI at the colon
+splitIRI :: IRI -> IRI
+splitIRI qn = case iriType qn of
+    NodeID -> nodeID qn
+    _ -> let lp = localPart qn
+             np = takeWhile (/= ':') lp
+             ':' : nlp = dropWhile (/= ':') lp
+         in qn {namePrefix = np, localPart = nlp}
+
+-- ^ prepends "_:" to the nodeID if is not there already
+nodeID :: IRI -> IRI
+nodeID qn =
+    let lp = localPart qn
+    in case lp of
+        '_' : ':' : t -> qn
+        _ -> qn {localPart = "_:" ++ lp}
+
+-- ^ gets the content of an element with name IRI, AbbreviatedIRI or Import
+contentIRI :: XMLBase -> Element -> IRI
+contentIRI b e =
+  let cont = strContent e
+      iri = nullQName {localPart = cont}
+  in case getName e of
+      "AbbreviatedIRI" -> splitIRI iri
+      "IRI" -> if ':' `elem` cont then
+                 splitIRI $ iri {iriType = Full}
+                else appendBase b iri
+      "Import" -> appendBase b $ iri {iriType = cssIRI cont}
+      _ -> err "invalid type of iri"
+
+-- ^ gets the name of an axiom in XML Syntax
 getName :: Element -> String
 getName e =
   let n = (qName . elName) e
@@ -90,25 +123,7 @@ getName e =
     Just "http://www.w3.org/2002/07/owl#" -> n
     _ -> ""
 
-getIRI :: XMLBase -> Element -> IRI
-getIRI b e =
-  let [a] = elAttribs e
-      iri = attrVal a
-      f = not $ (qName $ attrKey a) == "abbreviatedIRI"
-  in splitIRI b $ nullQName {localPart = iri, isFullIri = f}
-
-getFullOrAbbrIRI :: XMLBase -> Element -> IRI
-getFullOrAbbrIRI b e =
-  let cont = strContent e
-  in case getName e of
-      "AbbreviatedIRI" -> simpleSplit $ nullQName {localPart = cont}
-      "IRI" -> if ':' `elem` cont then
-                 simpleSplit $ nullQName {localPart = cont,
-                          isFullIri = True}
-                else splitIRI b
-                     $ nullQName {localPart = cont}
-      _ -> error "invalid type of iri"
-
+-- ^ gets the cardinality
 getInt :: Element -> Int
 getInt e = let [int] = elAttribs e in value 10 $ attrVal int
 
@@ -120,10 +135,10 @@ getEntityType ty = case ty of
     "ObjectProperty" -> ObjectProperty
     "DataProperty" -> DataProperty
     "AnnotationProperty" -> AnnotationProperty
-    _ -> error "not entity type"
+    _ -> err "not entity type"
 
 toEntity :: XMLBase -> Element -> Entity
-toEntity b e = Entity (getEntityType $ (qName . elName) e) (getIRI b e)
+toEntity b e = Entity (getEntityType $ (qName . elName) e) $ getIRI b e
 
 getDeclaration :: XMLBase -> Element -> Axiom
 getDeclaration b e = case getName e of
@@ -136,14 +151,14 @@ getDeclaration b e = case getName e of
             [Annotation [] iri $ AnnValue iri] AnnotationFrameBit
         _ -> PlainAxiom (SimpleEntity entity)
                 $ AnnFrameBit ans AnnotationFrameBit
-   _ -> error "not declaration"
+   _ -> err "not declaration"
 
 isPlainLiteral :: String -> Bool
 isPlainLiteral s =
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
 
-getLiteral :: Element -> Literal
-getLiteral e = case getName e of
+getLiteral :: XMLBase -> Element -> Literal
+getLiteral b e = case getName e of
     "Literal" ->
       let lf = strContent e
           mdt = findAttr (unqual "datatypeIRI") e
@@ -156,31 +171,31 @@ getLiteral e = case getName e of
              Just lang -> Literal lf (Untyped $ Just lang)
              Nothing -> if isPlainLiteral dt then
                           Literal lf (Untyped Nothing)
-                         else Literal lf (Typed $ simpleSplit $ mkQName dt)
-    _ -> error "not literal"
+                         else Literal lf (Typed $ appendBase b $
+                            nullQName {localPart = dt, iriType = cssIRI dt})
+    _ -> err "not literal"
 
 getValue :: XMLBase -> Element -> AnnotationValue
 getValue b e = case getName e of
-    "Literal" -> AnnValLit $ getLiteral e
+    "Literal" -> AnnValLit $ getLiteral b e
     "AnonymousIndividual" -> AnnValue $ getIRI b e
-    _ -> AnnValue $ getFullOrAbbrIRI b e
+    _ -> AnnValue $ contentIRI b e
 
 getSubject :: XMLBase -> Element -> IRI
 getSubject b e = case getName e of
     "AnonymousIndividual" -> getIRI b e
-    _ -> getFullOrAbbrIRI b e
+    _ -> contentIRI b e
 
 getAnnotation :: XMLBase -> Element -> Annotation
 getAnnotation b e =
      let hd = filterCh "Annotation" e
          [ap] = filterCh "AnnotationProperty" e
-         [av] = filterCh "Literal" e ++ filterCh "IRI" e
-                  ++ filterCh "AnonymousIndividual" e
-                  ++ filterCh "AbbreviatedIRI" e
+         av = filterCL annotationValueList e
      in
           Annotation (map (getAnnotation b) hd)
               (getIRI b ap) (getValue b av)
 
+-- ^ returns a list of annotations
 getAllAnnos :: XMLBase -> Element -> [Annotation]
 getAllAnnos b e = map (getAnnotation b)
             $ filterCh "Annotation" e
@@ -194,15 +209,15 @@ getObjProp b e = case getName e of
     in case getName ch of
       "ObjectInverseOf" -> getObjProp b cch
       "ObjectProperty" -> ObjectInverseOf $ ObjectProp $ getIRI b ch
-      _ -> error "not objectProperty"
-  _ -> error "not objectProperty"
+      _ -> err "not objectProperty"
+  _ -> err "not objectProperty"
 
 getFacetValuePair :: XMLBase -> Element -> (ConstrainingFacet, RestrictionValue)
 getFacetValuePair b e = case getName e of
     "FacetRestriction" ->
        let [ch] = elChildren e
-       in (getIRI b e, getLiteral ch)
-    _ -> error "not facet"
+       in (getIRI b e, getLiteral b ch)
+    _ -> err "not facet"
 
 getDataRange :: XMLBase -> Element -> DataRange
 getDataRange b e =
@@ -217,12 +232,12 @@ getDataRange b e =
     "DataComplementOf" -> DataComplementOf
             $ getDataRange b ch1
     "DataOneOf" -> DataOneOf
-            $ map getLiteral $ filterCh "Literal" e
+            $ map (getLiteral b) $ filterCh "Literal" e
     "DataIntersectionOf" -> DataJunction IntersectionOf
             $ map (getDataRange b) ch
     "DataUnionOf" -> DataJunction UnionOf
             $ map (getDataRange b) ch
-    _ -> error "XML parser: not data range"
+    _ -> err "XML parser: not data range"
 
 getClassExpression :: XMLBase -> Element -> ClassExpression
 getClassExpression b e =
@@ -270,7 +285,7 @@ getClassExpression b e =
         let dp = getIRI b ch1
             dr = rch1
         in DataValuesFrom AllValuesFrom dp (getDataRange b dr)
-    "DataHasValue" -> DataHasValue (getIRI b ch1) (getLiteral rch1)
+    "DataHasValue" -> DataHasValue (getIRI b ch1) (getLiteral b rch1)
     "DataMinCardinality" -> if length ch == 2 then
           DataCardinality $ Cardinality
               MinCardinality (getInt e) (getIRI b ch1)
@@ -289,7 +304,7 @@ getClassExpression b e =
                 $ Just $ getDataRange b rch1
          else DataCardinality $ Cardinality
               ExactCardinality (getInt e) (getIRI b ch1) Nothing
-    _ -> error "XML parser: not ClassExpression"
+    _ -> err "XML parser: not ClassExpression"
 
 getClassAxiom :: XMLBase -> Element -> Axiom
 getClassAxiom b e =
@@ -421,7 +436,7 @@ getDataAssertion b e =
    let as = getAllAnnos b e
        dp = getIRI b $ filterCL dataPropList e
        ind = getIRI b $ filterCL individualList e
-       lit = getLiteral $ filterC "Literal" e
+       lit = getLiteral b $ filterC "Literal" e
    in case getName e of
     "DataPropertyAssertion" ->
          PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
@@ -479,8 +494,7 @@ getAnnoAxiom b e =
        ap = getIRI b $ filterC "AnnotationProperty" e
    in case getName e of
     "AnnotationAssertion" ->
-       let [s, v] = filterChL ["AbbreviatedIRI", "IRI",
-            "AnonymousIndividual", "Literal"] e
+       let [s, v] = filterChL annotationValueList e
        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)]
                     AnnotationFrameBit
@@ -490,43 +504,17 @@ getAnnoAxiom b e =
             $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, lst)]
     "AnnotationPropertyDomain" ->
         let [ch] = filterChL ["IRI", "AbbreviatedIRI"] e
-            iri = getFullOrAbbrIRI b ch
+            iri = contentIRI b ch
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ADomain))
                       $ AnnotationBit [(as, iri)]
     "AnnotationPropertyRange" ->
         let [ch] = filterChL ["IRI", "AbbreviatedIRI"] e
-            iri = getFullOrAbbrIRI b ch
+            iri = contentIRI b ch
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just (DRRelation ARange))
                       $ AnnotationBit [(as, iri)]
-    _ -> error "bad frame"
-
-getImports :: XMLBase -> Element -> [ImportIRI]
-getImports b e = map (setFull . splitIRI b . mkQName . strContent)
-    $ filterCh "Import" e
-
--- gets one prefix with the corresponding iri
-get1PrefMap :: Element -> (String, IRI)
-get1PrefMap e =
-  let [pref, pmap] = map attrVal $ elAttribs e
-  in (pref, setFull $ splitIRI "" $ mkQName pmap)
-
-getPrefixMap :: Element -> [(String, String)]
-getPrefixMap e =
-    let prl = map get1PrefMap $ filterCh "Prefix" e
-    in map (\ (p, m) -> (p, showQU m)) prl
-
-getOntologyIRI :: Element -> OntologyIRI
-getOntologyIRI e =
-  let oi = findAttr (unqual "ontologyIRI") e
-  in case oi of
-    Nothing -> dummyQName
-    Just iri -> setFull $ splitIRI ""
-        $ nullQName {localPart = iri, isFullIri = True}
-
-axToFrame :: Axiom -> Frame
-axToFrame (PlainAxiom e fb) = Frame e [fb]
+    _ -> err "bad frame"
 
 getFrames :: XMLBase -> Element -> [Frame]
 getFrames b e =
@@ -535,8 +523,27 @@ getFrames b e =
             ++ map (axToFrame . getClassAxiom b) ax
    in f ++ signToFrames f
 
-getAxioms :: XMLBase -> Element -> [Axiom]
-getAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e
+getOnlyAxioms :: XMLBase -> Element -> [Axiom]
+getOnlyAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e
+
+getImports :: XMLBase -> Element -> [ImportIRI]
+getImports b e = map (contentIRI b) $ filterCh "Import" e
+
+get1Map :: Element -> (String, String)
+get1Map e =
+  let [pref, pmap] = map attrVal $ elAttribs e
+  in (pref, pmap)
+
+getPrefixMap :: Element -> [(String, String)]
+getPrefixMap e = map get1Map $ filterCh "Prefix" e
+
+getOntologyIRI :: XMLBase -> Element -> OntologyIRI
+getOntologyIRI b e =
+  let oi = findAttr (unqual "ontologyIRI") e
+  in case oi of
+    Nothing -> dummyQName
+    Just iri -> appendBase b
+        $ nullQName {localPart = iri, iriType = cssIRI iri}
 
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e
@@ -549,7 +556,7 @@ xmlBasicSpec e = let b = getBase e in emptyOntologyDoc
         ontFrames = getFrames b e,
         imports = getImports b e,
         ann = [getAllAnnos b e],
-        name = getOntologyIRI e
+        name = getOntologyIRI b e
         },
       prefixDeclaration = Map.fromList $ getPrefixMap e
       }

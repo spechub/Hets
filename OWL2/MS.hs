@@ -73,6 +73,9 @@ data Axiom = PlainAxiom Extended FrameBit
 getAxioms :: Frame -> [Axiom]
 getAxioms (Frame e fbl) = map (PlainAxiom e) fbl
 
+axToFrame :: Axiom -> Frame
+axToFrame (PlainAxiom e fb) = Frame e [fb]
+
 instance GetRange Axiom
 
 data Ontology = Ontology {

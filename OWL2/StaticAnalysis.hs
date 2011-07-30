@@ -138,7 +138,7 @@ checkClassExpression s desc =
   in case desc of
   Expression u ->
      if isThing u then
-     return $ Expression u { namePrefix = "owl", isFullIri = False }
+     return $ Expression u { namePrefix = "owl", iriType = Abbreviated }
      else checkEntity s desc (Entity Class u)
   ObjectJunction a ds -> do
     nl <- mapM (checkClassExpression s) ds

@@ -25,7 +25,7 @@ expand :: PrefixMap -> IRI -> IRI
 expand pm qn =
   let np = namePrefix qn
       lp = localPart qn
-  in if isFullIri qn then qn {expandedIRI = np ++ ":" ++ lp}
+  in if iriType qn == Full then qn {expandedIRI = np ++ ":" ++ lp}
       else
         let expn = fromMaybe (error $ np ++ ": prefix not found ")
               $ Map.lookup np pm

@@ -42,9 +42,10 @@ nullElem = Element nullQN [] [] Nothing
 
 setIRI :: IRI -> Element -> Element
 setIRI iri e =
-    let ty
-            | isAnonymous iri = "nodeID"
-            | isFullIri iri = iriK
+    let fan = iriType iri
+        ty
+            | fan == NodeID = "nodeID"
+            | fan == Full = "IRI"
             | otherwise = "abbreviatedIRI"
     in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showIRI iri}]}
 
@@ -86,7 +87,8 @@ mwText :: String -> Element
 mwText s = setText s nullElem
 
 mwSimpleIRI :: IRI -> Element
-mwSimpleIRI s = setName (if isFullIri s then iriK else "AbbreviatedIRI")
+mwSimpleIRI s = setName (if iriType s /= Abbreviated then iriK
+                          else "AbbreviatedIRI")
     $ mwText $ showIRI s
 
 makeElement :: String -> [Element] -> Element
@@ -416,7 +418,7 @@ setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
     , attrVal = s} : elAttribs e}
 
 set1Map :: (String, String) -> Element
-set1Map (s, iri) = setPref s $ mwIRI $ setFull $ splitIRI "" $ mkQName iri
+set1Map (s, iri) = setPref s $ mwIRI $ setFull $ appendBase "" $ mkQName iri
 
 xmlPrefixes :: PrefixMap -> [Element]
 xmlPrefixes pm = map (setName prefixK . set1Map) $ Map.toList pm
@@ -455,18 +457,12 @@ signToDec s =
         ap = Set.toList $ annotationRoles s
         dt = Set.toList $ datatypes s
         i = Set.toList $ individuals s
-    in (map (makeElementWith1 declarationK)
-                $ map (mwNameIRI classK) c)
-        ++ (map (makeElementWith1 declarationK)
-                $ map (mwNameIRI objectPropertyK) op)
-        ++ (map (makeElementWith1 declarationK)
-                $ map (mwNameIRI dataPropertyK) dp)
-        ++ (map (makeElementWith1 declarationK)
-                $ map (mwNameIRI annotationPropertyK) ap)
-        ++ (map (makeElementWith1 declarationK)
-                $ map (mwNameIRI datatypeK) dt)
-        ++ (map (makeElementWith1 declarationK)
-                $ map (mwNameIRI namedIndividualK) i)
+    in map (makeElementWith1 declarationK . mwNameIRI classK) c
+      ++ map (makeElementWith1 declarationK . mwNameIRI objectPropertyK) op
+      ++ map (makeElementWith1 declarationK . mwNameIRI dataPropertyK) dp
+      ++ map (makeElementWith1 declarationK . mwNameIRI annotationPropertyK) ap
+      ++ map (makeElementWith1 declarationK . mwNameIRI datatypeK) dt
+      ++ map (makeElementWith1 declarationK . mwNameIRI namedIndividualK) i
 
 mkODoc :: Sign -> [Named Axiom] -> String
 mkODoc s na = ppTopElement $ xmlOntologyDoc s $ emptyOntologyDoc

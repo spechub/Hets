@@ -21,7 +21,12 @@ import Common.Id
 
 import OWL2.Keywords
 import OWL2.ColonKeywords
+
+import Data.List
 import qualified Data.Map as Map
+
+data IRIType = Full | Abbreviated | NodeID
+    deriving (Show, Eq, Ord)
 
 {- | full or abbreviated IRIs with a possible uri for the prefix
      or a local part following a hash sign -}
@@ -30,7 +35,7 @@ data QName = QN
   -- ^ the name prefix part of a qualified name \"namePrefix:localPart\"
   , localPart :: String
   -- ^ the local part of a qualified name \"namePrefix:localPart\"
-  , isFullIri :: Bool
+  , iriType :: IRIType
   , expandedIRI :: String
   -- ^ the associated namespace uri (not printed)
   , iriPos :: Range
@@ -40,7 +45,7 @@ instance GetRange QName where
   getRange = iriPos
 
 showQN :: QName -> String
-showQN q = (if isFullIri q then showQI else showQU) q
+showQN q = (if (iriType q /= Abbreviated) then showQI else showQU) q
 
 -- | show QName as abbreviated iri
 showQU :: QName -> String
@@ -52,11 +57,11 @@ showQI :: QName -> String
 showQI = ('<' :) . (++ ">") . showQU
 
 nullQName :: QName
-nullQName = QN "" "" False "" nullRange
+nullQName = QN "" "" Abbreviated "" nullRange
 
 dummyQName :: QName
 dummyQName =
-  QN "http" "//www.dfki.de/sks/hets/ontology/unamed" True "" nullRange
+  QN "http" "//www.dfki.de/sks/hets/ontology/unamed" Full "" nullRange
 
 mkQName :: String -> QName
 mkQName s = nullQName { localPart = s }
@@ -68,12 +73,12 @@ setPrefix :: String -> QName -> QName
 setPrefix s q = q { namePrefix = s }
 
 setFull :: QName -> QName
-setFull q = q {isFullIri = True}
+setFull q = q {iriType = Full}
 
 isAnonymous :: IRI -> Bool
 isAnonymous iri =
     let np = namePrefix iri
-    in if (not . null) np && head np == '_' then True else False
+    in (not . null) np && head np == '_'
 
 instance Eq QName where
     p == q = compare p q == EQ
@@ -85,6 +90,10 @@ instance Ord QName where
 
 isThing :: IRI -> Bool
 isThing u = localPart u `elem` ["Thing", "Nothing"]
+
+-- ^ checks if a string (bound to be localPart of an IRI) contains "://"
+cssIRI :: String -> IRIType
+cssIRI iri = if isInfixOf "://" iri then Full else Abbreviated
 
 type IRIreference = QName
 type IRI = QName
