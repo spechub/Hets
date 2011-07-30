@@ -363,7 +363,15 @@ xmlAFB ext anno afb = case afb of
             let [Annotation _ ap _] = anno
             in [makeElement declarationK
                 $ xmlAnnotations as ++ [mwNameIRI annotationPropertyK ap]]
-        _ -> error "bad ann frane bit"
+        ClassEntity ent -> case ent of
+            Expression c -> [makeElement declarationK
+                    $ xmlAnnotations anno ++ [xmlEntity $ Entity Class c]]
+            _ -> error "XML conversion: incompatible manchester and XML syntax"
+        ObjectEntity ent -> case ent of
+            ObjectProp o -> [makeElement declarationK
+                    $ xmlAnnotations anno ++
+                    [xmlEntity $ Entity ObjectProperty o]]
+            _ -> error "XML conversion: incompatible manchester and XML syntax"
     DataFunctional ->
         let SimpleEntity (Entity _ dp) = ext
         in [makeElement functionalDataPropertyK
