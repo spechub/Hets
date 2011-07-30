@@ -43,7 +43,6 @@ instance Function PrefixMap where
                 Map.empty $ Map.toList oldPs
         Expand -> oldPs
 
-
 instance Function IRI where
   function a pm qn = case a of
     Rename -> let pre = namePrefix qn in
@@ -179,15 +178,3 @@ instance Function Ontology where
 instance Function OntologyDocument where
   function t mp ( OntologyDocument pm onto) =
       OntologyDocument (function t mp pm) (function t mp onto)
-
-
-
-
-
-
-
-
-
-
-
-

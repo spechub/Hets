@@ -93,57 +93,31 @@ addDescription desc = case desc of
 
 {- | Adds possible ListFrameBits to the Signature by calling
 bottom level functions -}
-comSigLFB :: Maybe Relation -> ListFrameBit
-          -> State Sign ()
-comSigLFB r lfb =
-  case lfb of
+comSigLFB :: Maybe Relation -> ListFrameBit -> State Sign ()
+comSigLFB r lfb = case lfb of
     AnnotationBit ab ->
-      unless (r `elem` [Just (DRRelation ADomain), Just (DRRelation ARange)]) 
-        $ do let map2nd = map snd ab
-             mapM_ addAnnoProp map2nd
-    ExpressionBit ancls -> do
-      let clslst = map snd ancls
-      mapM_ addDescription clslst
-    ObjectBit anob ->
-      do
-        let map2nd = map snd anob
-        mapM_ addObjPropExpr map2nd
-    DataBit dlst ->
-      do
-        let map2nd = map snd dlst
-        mapM_ addDataPropExpr map2nd
-    IndividualSameOrDifferent anind ->
-      do
-        let map2nd = map snd anind
-        mapM_ addIndividual map2nd
-    ObjectCharacteristics _anch ->
-      return ()
-    DataPropRange dr ->
-      do
-        let map2nd = map snd dr
-        mapM_ addDataRange map2nd
-    IndividualFacts fct ->
-      do
-        let map2nd = map snd fct
-        mapM_ addFact map2nd
+      unless (r `elem` [Just (DRRelation ADomain), Just (DRRelation ARange)])
+        $ mapM_ (addAnnoProp . snd) ab
+    ExpressionBit ancls -> mapM_ (addDescription . snd) ancls
+    ObjectBit anob -> mapM_ (addObjPropExpr . snd) anob
+    DataBit dlst -> mapM_ (addDataPropExpr . snd) dlst
+    IndividualSameOrDifferent anind -> mapM_ (addIndividual . snd) anind
+    ObjectCharacteristics _anch -> return ()
+    DataPropRange dr -> mapM_ (addDataRange . snd) dr
+    IndividualFacts fct -> mapM_ (addFact . snd) fct
 
 {- | Adds AnnotationFrameBits to the Signature
 by calling the corresponding bottom level functions -}
-comSigAFB :: AnnFrameBit
-          -> State Sign ()
-comSigAFB afb =
-  case afb of
+comSigAFB :: AnnFrameBit -> State Sign ()
+comSigAFB afb = case afb of
     AnnotationFrameBit -> return ()
     DataFunctional -> return ()
-    DatatypeBit dr ->
-      addDataRange dr
-    ClassDisjointUnion cls ->
-      mapM_ addDescription cls
+    DatatypeBit dr -> addDataRange dr
+    ClassDisjointUnion cls -> mapM_ addDescription cls
     ClassHasKey obe dpe -> do
       mapM_ addObjPropExpr obe
       mapM_ addDataPropExpr dpe
-    ObjectSubPropertyChain ope ->
-      mapM_ addObjPropExpr ope
+    ObjectSubPropertyChain ope -> mapM_ addObjPropExpr ope
 
 {- | Calls the completion of Signature based on
 case separation of ListFrameBit and AnnotationFrameBit -}
