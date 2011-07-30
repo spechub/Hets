@@ -27,7 +27,9 @@ expand pm qn =
   in case iriType qn of
     Full -> qn {expandedIRI = np ++ ":" ++ lp}
     NodeID -> qn {expandedIRI = lp}
-    _ -> let expn = fromMaybe (error $ np ++ ": prefix not found for " ++ showQU qn) $ Map.lookup np pm
+    _ -> let expn = fromMaybe
+                (error $ np ++ ": prefix not found for " ++ showQU qn)
+                    $ Map.lookup np pm
          in qn {expandedIRI = expn ++ lp}
 
 expLit :: PrefixMap -> Literal -> Literal
