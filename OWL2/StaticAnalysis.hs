@@ -103,12 +103,8 @@ checkEntity s a (Entity ty e) =
 checkDataRange :: Sign -> DataRange -> Result DataRange
 checkDataRange s dr =
   case dr of
-    DataType dt _ -> do
-      checkEntity s dr (Entity Datatype dt)
-      return dr
-    DataJunction _ drl -> do
-      mapM_ (checkDataRange s) drl
-      return dr
+    DataType dt _ -> checkEntity s dr (Entity Datatype dt) >> return dr
+    DataJunction _ drl -> mapM_ (checkDataRange s) drl >> return dr
     DataComplementOf r -> checkDataRange s r
     _ -> return dr
 
@@ -116,15 +112,12 @@ checkDataRange s dr =
      DataProperties may be parsed as ObjectProperties -}
 classExpressionToDataRange :: Sign -> ClassExpression -> Result DataRange
 classExpressionToDataRange s ce = case ce of
-    Expression u -> do
-      checkEntity s ce (Entity Datatype u)
-      return $ DataType u []
-    ObjectJunction jt cel -> do
-      nrl <- mapM (classExpressionToDataRange s) cel
-      return $ DataJunction jt nrl
-    ObjectComplementOf c -> do
-      nr <- classExpressionToDataRange s c
-      return $ DataComplementOf nr
+    Expression u -> checkEntity s ce (Entity Datatype u)
+        >> return (DataType u [])
+    ObjectJunction jt cel -> fmap (DataJunction jt)
+        $ mapM (classExpressionToDataRange s) cel
+    ObjectComplementOf c -> fmap DataComplementOf
+        $ classExpressionToDataRange s c
     _ -> fail $ "cannot convert ClassExpression to DataRange\n"
             ++ showDoc ce ""
 
@@ -140,22 +133,17 @@ checkClassExpression s desc =
      if isThing u then
      return $ Expression u { namePrefix = "owl", iriType = Abbreviated }
      else checkEntity s desc (Entity Class u)
-  ObjectJunction a ds -> do
-    nl <- mapM (checkClassExpression s) ds
-    return $ ObjectJunction a nl
-  ObjectComplementOf d -> do
-    n <- checkClassExpression s d
-    return $ ObjectComplementOf n
-  ObjectOneOf is -> do
-    mapM_ (checkEntity s desc . Entity NamedIndividual) is
-    return desc
+  ObjectJunction a ds -> fmap (ObjectJunction a)
+        $ mapM (checkClassExpression s) ds
+  ObjectComplementOf d -> fmap ObjectComplementOf
+        $ checkClassExpression s d
+  ObjectOneOf is -> mapM_ (checkEntity s desc . Entity NamedIndividual) is
+        >> return desc
   ObjectValuesFrom a opExpr d -> do
     let iri = getObjRoleFromExpression opExpr
         x = Set.member iri (objectProperties s)
         z = Set.member iri (dataProperties s)
-    if x then do
-      n <- checkClassExpression s d
-      return $ ObjectValuesFrom a opExpr n
+    if x then fmap (ObjectValuesFrom a opExpr) $ checkClassExpression s d
      else if z then do
             ndr <- classExpressionToDataRange s d
             checkDataRange s ndr
@@ -168,9 +156,7 @@ checkClassExpression s desc =
   ObjectHasValue opExpr i -> do
     let iri = getObjRoleFromExpression opExpr
         x = Set.member iri (objectProperties s)
-    if x then do
-         checkEntity s desc (Entity NamedIndividual i)
-         return desc
+    if x then checkEntity s desc (Entity NamedIndividual i) >> return desc
       else objErr iri
   ObjectCardinality (Cardinality a b opExpr md) -> do
     let iri = getObjRoleFromExpression opExpr
@@ -203,46 +189,34 @@ checkClassExpression s desc =
     if x then
         case mr of
           Nothing -> return desc
-          Just d -> do
-            checkDataRange s d
-            return desc
+          Just d -> checkDataRange s d >> return desc
       else datErr dExp
 
 -- corrects the frame bits according to the signature
-
 checkAnnBit :: Sign -> AnnFrameBit -> Result AnnFrameBit
 checkAnnBit s fb = case fb of
-    DatatypeBit dr -> do
-        checkDataRange s dr
-        return fb
-    ClassDisjointUnion cel -> do
-        n <- mapM (checkClassExpression s) cel
-        return $ ClassDisjointUnion n
+    DatatypeBit dr -> checkDataRange s dr >> return fb
+    ClassDisjointUnion cel -> fmap ClassDisjointUnion
+        $ mapM (checkClassExpression s) cel
     ClassHasKey _ _ -> checkHasKey s fb
     ObjectSubPropertyChain ol -> checkObjPropList s fb ol
     _ -> return fb
-
 
 checkListBit :: Sign -> Maybe Relation -> ListFrameBit -> Result ListFrameBit
 checkListBit s r fb = case fb of
     AnnotationBit anl -> case r of
         Just (DRRelation _) -> return fb
-        _ -> do
-            let apl = map snd anl
-            mapM_ (checkEntity s fb . Entity AnnotationProperty) apl
-            return fb
+        _ -> mapM_ (checkEntity s fb . Entity AnnotationProperty
+                . snd) anl >> return fb
     ExpressionBit anl -> do
-        let ans = map fst anl
-        let ce = map snd anl
-        n <- mapM (checkClassExpression s) ce
-        return $ ExpressionBit $ zip ans n
+        n <- mapM (checkClassExpression s . snd) anl
+        return $ ExpressionBit $ zip (map fst anl) n
     ObjectBit anl -> do
-        let ans = map fst anl
         let ol = map snd anl
         let x = sortObjDataList s ol
         if null x then do
             let dpl = map getObjRoleFromExpression ol
-            let nb = DataBit $ zip ans dpl
+            let nb = DataBit $ zip (map fst anl) dpl
             checkDataPropList s nb dpl
           else
             if length x == length ol then return fb
@@ -251,34 +225,19 @@ checkListBit s r fb = case fb of
                             show x ++ show
                               (map getObjRoleFromExpression (ol \\ x))
     ObjectCharacteristics _ -> return fb
-    DataBit anl -> do
-        let dl = map snd anl
-        checkDataPropList s fb dl
-    DataPropRange anl -> do
-        let dr = map snd anl
-        mapM_ (checkDataRange s) dr
-        return fb
-    IndividualFacts anl -> do
-        let f = map snd anl
-        checkFactList s fb f
-    IndividualSameOrDifferent anl -> do
-        let i = map snd anl
-        mapM_ (checkEntity s fb . Entity NamedIndividual) i
-        return fb
+    DataBit anl -> checkDataPropList s fb $ map snd anl
+    DataPropRange anl -> mapM_ (checkDataRange s . snd) anl >> return fb
+    IndividualFacts anl -> checkFactList s fb $ map snd anl
+    IndividualSameOrDifferent anl -> mapM_ (checkEntity s fb .
+        Entity NamedIndividual . snd) anl >> return fb
 
 checkBit :: Sign -> FrameBit -> Result FrameBit
 checkBit s fb = case fb of
-    ListFrameBit mr lfb -> do
-        nf <- checkListBit s mr lfb
-        return $ ListFrameBit mr nf
-    AnnFrameBit ans afb -> do
-        nf <- checkAnnBit s afb
-        return $ AnnFrameBit ans nf
+    ListFrameBit mr lfb -> fmap (ListFrameBit mr) $ checkListBit s mr lfb
+    AnnFrameBit ans afb -> fmap (AnnFrameBit ans) $ checkAnnBit s afb
 
 checkFactList :: Sign -> ListFrameBit -> [Fact] -> Result ListFrameBit
-checkFactList s fb fl = do
-    mapM_ (checkFact s fb) fl
-    return fb
+checkFactList s fb fl = mapM_ (checkFact s fb) fl >> return fb
 
 checkFact :: Sign -> ListFrameBit -> Fact -> Result ListFrameBit
 checkFact s fb f =
@@ -331,9 +290,7 @@ checkHasKey s k = case k of
 
 checkExtended :: Sign -> Extended -> Result Extended
 checkExtended s e = case e of
-    ClassEntity ce -> do
-        ne <- checkClassExpression s ce
-        return $ ClassEntity ne
+    ClassEntity ce -> fmap ClassEntity $ checkClassExpression s ce
     _ -> return e
 
 -- | checks a frame and applies desired changes
