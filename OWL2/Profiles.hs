@@ -93,7 +93,7 @@ dataRange dr = case dr of
          else bottomProfile
     DataJunction IntersectionOf drl -> andProfileList $ map dataRange drl
     DataOneOf ll -> bottomProfile {
-                        el = (el $ andList literal ll) && length ll == 1
+                        el = el (andList literal ll) && length ll == 1
                     }
     _ -> bottomProfile
 
@@ -104,7 +104,7 @@ subClass cex = case cex of
         IntersectionOf -> elrlProfile
         UnionOf -> rlProfile) $ map subClass cel
     ObjectOneOf il -> bottomProfile {
-                    el = (el $ andList individual il) && length il == 1,
+                    el = el (andList individual il) && length il == 1,
                     rl = ql $ andList individual il
                 }
     ObjectValuesFrom SomeValuesFrom ope ce -> andProfileList [objProp ope,
@@ -125,7 +125,7 @@ superClass cex = case cex of
     ObjectJunction IntersectionOf cel -> andList superClass cel
     ObjectComplementOf ce -> minimalCovering qlrlProfile [subClass ce]
     ObjectOneOf il -> bottomProfile {
-                    el = (el $ andList individual il) && length il == 1,
+                    el = el (andList individual il) && length il == 1,
                     rl = ql $ andList individual il
                 }
     ObjectValuesFrom qt ope ce -> case qt of

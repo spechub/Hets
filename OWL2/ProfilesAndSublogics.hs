@@ -62,7 +62,7 @@ sMorph :: OWLMorphism -> ProfSub
 sMorph m = bottomS {sublogic = sl_mor m}
 
 prSig :: ProfSub -> Sign -> Sign
-prSig s a = pr_sig (sublogic s) a
+prSig s = pr_sig (sublogic s)
 
 prMorph :: ProfSub -> OWLMorphism -> OWLMorphism
 prMorph s a = a
@@ -70,7 +70,7 @@ prMorph s a = a
     , otarget = prSig s $ otarget a }
 
 prODoc :: ProfSub -> OntologyDocument -> OntologyDocument
-prODoc ps odoc = pr_o_doc (sublogic ps) odoc
+prODoc ps = pr_o_doc (sublogic ps)
 
 profilesAndSublogic :: OntologyDocument -> ProfSub
 profilesAndSublogic odoc = ProfSub (ontologyProfiles odoc) (sl_o_doc odoc)
