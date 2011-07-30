@@ -439,8 +439,7 @@ xmlOntologyDoc :: Sign -> OntologyDocument -> Element
 xmlOntologyDoc s od =
     let ont = ontology od
         pd = prefixDeclaration od
-        emptyPref = fromMaybe ("http://www.w3.org/2001/XMLSchema#")
-            $ Map.lookup "" pd
+        emptyPref = fromMaybe (showIRI dummyQName) $ Map.lookup "" pd
     in setBase emptyPref $ setXMLNS $ setOntIRI (name ont)
         $ makeElement "Ontology" $ xmlPrefixes pd
             ++ map xmlImport (imports ont)
