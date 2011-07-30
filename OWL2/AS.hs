@@ -16,8 +16,8 @@ References:
 
 module OWL2.AS where
 
-import Common.Keywords
 import Common.Id
+import Common.Keywords
 
 import OWL2.ColonKeywords
 import OWL2.Keywords

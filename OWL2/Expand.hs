@@ -4,7 +4,7 @@ Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  f.mance@jacobs-university.de
-Stability   :  provisionalM
+Stability   :  provisional
 Portability :  portable
 
 Expansion of all IRIs in the Ontology
@@ -18,18 +18,22 @@ import OWL2.MS
 import Data.Maybe
 import qualified Data.Map as Map
 
-{- expanding all IRIs according to the prefix map from the sign
- the result is stored in the expandedIRI field of data QName -}
-
+{- | expanding all IRIs according to the prefix map;
+    the result is stored in the expandedIRI field of data QName -}
 expand :: PrefixMap -> IRI -> IRI
 expand pm qn =
   let np = namePrefix qn
       lp = localPart qn
-  in if iriType qn == Full then qn {expandedIRI = np ++ ":" ++ lp}
-      else
-        let expn = fromMaybe (error $ np ++ ": prefix not found ")
-              $ Map.lookup np pm
-        in qn {expandedIRI = expn ++ lp}
+  in case iriType qn of
+    Full -> qn {expandedIRI = np ++ ":" ++ lp}
+    NodeID -> qn {expandedIRI = lp}
+    _ -> let expn = fromMaybe (error $ np ++ ": prefix not found for " ++ showQU qn) $ Map.lookup np pm
+         in qn {expandedIRI = expn ++ lp}
+
+expLit :: PrefixMap -> Literal -> Literal
+expLit pm l = case l of
+    Literal lf (Typed dt) -> Literal lf (Typed $ expand pm dt)
+    _ -> l
 
 expDataRange :: PrefixMap -> DataRange -> DataRange
 expDataRange s dra = case dra of
@@ -37,7 +41,7 @@ expDataRange s dra = case dra of
      $ map (\ (cf, rv) -> (expand s cf, rv)) ls
   DataJunction jt drl -> DataJunction jt $ map (expDataRange s) drl
   DataComplementOf dr -> DataComplementOf $ expDataRange s dr
-  _ -> dra
+  DataOneOf ll -> DataOneOf $ map (expLit s) ll
 
 expOP :: PrefixMap -> ObjectPropertyExpression -> ObjectPropertyExpression
 expOP s opr = case opr of
@@ -62,7 +66,7 @@ expCE s cle = case cle of
               (Cardinality ct i (expOP s op) $ Just (expCE s ce))
   DataValuesFrom qt dp dr -> DataValuesFrom qt
               (expand s dp) (expDataRange s dr)
-  DataHasValue dp l -> DataHasValue (expand s dp) l
+  DataHasValue dp l -> DataHasValue (expand s dp) (expLit s l)
   DataCardinality (Cardinality ct i dp mdr) ->
       case mdr of
         Nothing -> DataCardinality
@@ -77,7 +81,7 @@ expAnn s (Annotation al ap av) = Annotation (map (expAnn s) al)
 expAV :: PrefixMap -> AnnotationValue -> AnnotationValue
 expAV s av = case av of
   AnnValue iri -> AnnValue $ expand s iri
-  _ -> av
+  AnnValLit l -> AnnValLit $ expLit s l
 
 expAL :: PrefixMap -> (PrefixMap -> a -> a) ->
         AnnotatedList a -> AnnotatedList a
@@ -87,7 +91,7 @@ expFact :: PrefixMap -> Fact -> Fact
 expFact s f = case f of
   ObjectPropertyFact pn op i ->
         ObjectPropertyFact pn (expOP s op) (expand s i)
-  DataPropertyFact pn dp l -> DataPropertyFact pn (expand s dp) l
+  DataPropertyFact pn dp l -> DataPropertyFact pn (expand s dp) (expLit s l)
 
 expLFB :: PrefixMap -> ListFrameBit -> ListFrameBit
 expLFB s lfb = case lfb of
@@ -124,9 +128,6 @@ expE s ex = case ex of
 
 expF :: PrefixMap -> Frame -> Frame
 expF s (Frame e fbl) = Frame (expE s e) $ map (expFB s) fbl
-
-expA :: PrefixMap -> Axiom -> Axiom
-expA s (PlainAxiom e fb) = PlainAxiom (expE s e) $ expFB s fb
 
 expOnt :: PrefixMap -> Ontology -> Ontology
 expOnt s o =

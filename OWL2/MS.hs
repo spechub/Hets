@@ -7,15 +7,15 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Contains    :  Datatypes specific to the Manchester Syntax of OWL 2
+    Datatypes specific to the Manchester Syntax of OWL 2
 
 References  :  <http://www.w3.org/TR/owl2-manchester-syntax/>
 -}
 
 module OWL2.MS where
 
-import OWL2.AS
 import Common.Id (GetRange)
+import OWL2.AS
 import qualified Data.Map as Map
 
 {- | annotions are annotedAnnotationList that must be preceded by the keyword
@@ -24,7 +24,7 @@ type Annotations = [Annotation]
 
 type AnnotatedList a = [(Annotations, a)]
 
--- this datatype extends the Manchester Syntax to also allow GCIs
+-- ^ this datatype extends the Manchester Syntax to also allow GCIs
 data Extended
   = Misc Annotations
   | SimpleEntity Entity
@@ -32,7 +32,7 @@ data Extended
   | ClassEntity ClassExpression
     deriving (Show, Eq, Ord)
 
--- these correspond to the frames which have annotated lists
+-- ^ frames with annotated lists
 data ListFrameBit
   = AnnotationBit (AnnotatedList AnnotationProperty) -- relation
   | ExpressionBit (AnnotatedList ClassExpression) -- relation
@@ -44,7 +44,7 @@ data ListFrameBit
   | IndividualFacts (AnnotatedList Fact)
     deriving (Show, Eq, Ord)
 
--- these correspond to the frames which start with annotations
+-- ^ frames which start with annotations
 data AnnFrameBit
   = AnnotationFrameBit
   | DataFunctional

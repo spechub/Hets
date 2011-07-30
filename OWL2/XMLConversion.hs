@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Conversion from Manchester syntax to XML Syntax
+    Conversion from Manchester Syntax to XML Syntax
 -}
 
 module OWL2.XMLConversion where
@@ -95,7 +95,7 @@ mwText s = setText s nullElem
 
 -- ^ makes a new element with the IRI as the text content
 mwSimpleIRI :: IRI -> Element
-mwSimpleIRI s = setName (if iriType s /= Abbreviated then iriK
+mwSimpleIRI s = setName (if iriType s /= Abbreviated then "IRI"
                           else "AbbreviatedIRI") $ mwText $ showIRI s
 
 {- | generates a list of elements, all with the first string as name,
@@ -122,7 +122,7 @@ setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
 -- ^ sets either a literal datatype or a facet
 setDt :: Bool -> IRI -> Element -> Element
 setDt b dt e = e {elAttribs = elAttribs e ++ [Attr {attrKey
-    = makeQN (if b then "datatypeIRI" else "facet"), attrVal = showQU dt}]}
+    = makeQN (if b then "datatypeIRI" else "facet"), attrVal = showIRI dt}]}
 
 setLangTag :: Maybe LanguageTag -> Element -> Element
 setLangTag ml e = case ml of
@@ -433,45 +433,6 @@ xmlAxioms (PlainAxiom ext fb) = xmlFrameBit ext fb
 xmlFrames :: Frame -> [Element]
 xmlFrames (Frame ext fbl) = concatMap (xmlFrameBit ext) fbl
 
-xmlImport :: ImportIRI -> Element
-xmlImport i = setName importK $ mwText $ showIRI i
-
-setPref :: String -> Element -> Element
-setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
-    , attrVal = s} : elAttribs e}
-
-set1Map :: (String, String) -> Element
-set1Map (s, iri) = setPref s $ mwIRI $ setFull $ appendBase "" $ mkQName iri
-
-xmlPrefixes :: PrefixMap -> [Element]
-xmlPrefixes pm = map (setName prefixK . set1Map) $ Map.toList pm
-
-setXMLNS :: Element -> Element
-setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =
-        "http://www.w3.org/2002/07/owl#"} : elAttribs e}
-
-setOntIRI :: OntologyIRI -> Element -> Element
-setOntIRI iri e =
-    if elem iri [nullQName, dummyQName] then e
-     else e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
-        attrVal = showQU iri} : elAttribs e}
-
-setBase :: String -> Element -> Element
-setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
-        qPrefix = Just "xml"}, attrVal = s} : elAttribs e}
-
-xmlOntologyDoc :: Sign -> OntologyDocument -> Element
-xmlOntologyDoc s od =
-    let ont = ontology od
-        pd = prefixDeclaration od
-        emptyPref = fromMaybe (showIRI dummyQName) $ Map.lookup "" pd
-    in setBase emptyPref $ setXMLNS $ setOntIRI (name ont)
-        $ makeElement "Ontology" $ xmlPrefixes pd
-            ++ map xmlImport (imports ont)
-            ++ concatMap xmlFrames (ontFrames ont)
-            ++ concatMap xmlAnnotations (ann ont)
-            ++ signToDec s
-
 signToDec :: Sign -> [Element]
 signToDec s =
     let c = Set.toList $ concepts s
@@ -486,6 +447,45 @@ signToDec s =
       ++ map (makeElementWith1 declarationK . mwNameIRI annotationPropertyK) ap
       ++ map (makeElementWith1 declarationK . mwNameIRI datatypeK) dt
       ++ map (makeElementWith1 declarationK . mwNameIRI namedIndividualK) i
+
+xmlImport :: ImportIRI -> Element
+xmlImport i = setName importK $ mwText $ showIRI i
+
+setPref :: String -> Element -> Element
+setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
+    , attrVal = s} : elAttribs e}
+
+set1Map :: (String, String) -> Element
+set1Map (s, iri) = setPref s $ mwIRI $ setFull $ mkQName iri
+
+xmlPrefixes :: PrefixMap -> [Element]
+xmlPrefixes pm = map (setName prefixK . set1Map) $ Map.toList pm
+
+setOntIRI :: OntologyIRI -> Element -> Element
+setOntIRI iri e =
+    if elem iri [nullQName, dummyQName] then e
+     else e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
+        attrVal = showIRI iri} : elAttribs e}
+
+setBase :: String -> Element -> Element
+setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
+        qPrefix = Just "xml"}, attrVal = s} : elAttribs e}
+
+setXMLNS :: Element -> Element
+setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =
+        "http://www.w3.org/2002/07/owl#"} : elAttribs e}
+
+xmlOntologyDoc :: Sign -> OntologyDocument -> Element
+xmlOntologyDoc s od =
+    let ont = ontology od
+        pd = prefixDeclaration od
+        emptyPref = fromMaybe (showIRI dummyQName) $ Map.lookup "" pd
+    in setBase emptyPref $ setXMLNS $ setOntIRI (name ont)
+        $ makeElement "Ontology" $ xmlPrefixes pd
+            ++ map xmlImport (imports ont)
+            ++ concatMap xmlFrames (ontFrames ont)
+            ++ concatMap xmlAnnotations (ann ont)
+            ++ signToDec s
 
 mkODoc :: Sign -> [Named Axiom] -> String
 mkODoc s na = ppTopElement $ xmlOntologyDoc s $ emptyOntologyDoc
