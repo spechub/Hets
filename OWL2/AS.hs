@@ -19,8 +19,8 @@ module OWL2.AS where
 import Common.Keywords
 import Common.Id
 
-import OWL2.Keywords
 import OWL2.ColonKeywords
+import OWL2.Keywords
 
 import Data.List
 import qualified Data.Map as Map

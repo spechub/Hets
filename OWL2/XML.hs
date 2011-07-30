@@ -49,16 +49,20 @@ isNotSmth :: Text.XML.Light.QName -> Bool
 isNotSmth q = let qn = qName q in qn `notElem` ["Declaration",
     "Prefix", "Import", "Annotation"]
 
+-- ^ parses all children with the given name
 filterCh :: String -> Element -> [Element]
 filterCh s = filterChildrenName (isSmth s)
 
+-- ^ parses all children with names in the list
 filterChL :: [String] -> Element -> [Element]
 filterChL l = filterChildrenName (isSmthList l)
 
+-- ^ parses one child with the given name
 filterC :: String -> Element -> Element
 filterC s e = fromMaybe (err "child not found")
     (filterChildName (isSmth s) e)
 
+-- ^ parses one child with the name in the list
 filterCL :: [String] -> Element -> Element
 filterCL l e = fromMaybe (err "child not found")
     (filterChildName (isSmthList l) e)
@@ -548,6 +552,7 @@ getOntologyIRI b e =
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e
 
+-- ^ parses an ontology document
 xmlBasicSpec :: Element -> OntologyDocument
 xmlBasicSpec e = let b = getBase e in emptyOntologyDoc
       {

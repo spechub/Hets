@@ -12,20 +12,22 @@ Conversion from Manchester syntax to XML Syntax
 
 module OWL2.XMLConversion where
 
+import Common.AS_Annotation (Named, sentence)
+
 import OWL2.AS
 import OWL2.MS
-import OWL2.XML
 import OWL2.Sign
+import OWL2.XML
 import OWL2.XMLKeywords
 
 import Text.XML.Light
-import Data.Maybe
-import Common.AS_Annotation (Named, sentence)
 
+import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-showIRI :: OWL2.AS.QName -> String
+-- ^ prints the IRI with a colon separating the prefix and the local part
+showIRI :: IRI -> String
 showIRI (QN pre local ty _ _) = case ty of
     NodeID -> local
     _ -> pre ++ ":" ++ local
@@ -33,39 +35,91 @@ showIRI (QN pre local ty _ _) = case ty of
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing
 
-makeQN :: String -> Text.XML.Light.QName
-makeQN s = nullQN {qName = s}
-
-setQNPrefix :: String -> Text.XML.Light.QName -> Text.XML.Light.QName
-setQNPrefix s qn = qn {qPrefix = Just s}
-
 nullElem :: Element
 nullElem = Element nullQN [] [] Nothing
 
-setIRI :: IRI -> Element -> Element
-setIRI iri e =
-    let fan = iriType iri
-        ty
-            | fan == NodeID = "nodeID"
-            | fan == Full = "IRI"
-            | otherwise = "abbreviatedIRI"
-    in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showIRI iri}]}
+makeQN :: String -> Text.XML.Light.QName
+makeQN s = nullQN {qName = s}
 
-setName :: String -> Element -> Element
-setName s e = e {elName = nullQN {qName = s,
-    qURI = Just "http://www.w3.org/2002/07/owl#"} }
-
+-- ^ sets the content of an element to a list of given elements
 setContent :: [Element] -> Element -> Element
 setContent cl e = e {elContent = map Elem cl}
 
+-- ^ sets the content of an element to a given string
 setText :: String -> Element -> Element
 setText s e = e {elContent = [Text CData {cdVerbatim = CDataText,
     cdData = s, cdLine = Nothing}]}
 
+setQNPrefix :: String -> Text.XML.Light.QName -> Text.XML.Light.QName
+setQNPrefix s qn = qn {qPrefix = Just s}
+
+{- | sets the name of an element to a given string
+ and the namespace to "http://www.w3.org/2002/07/owl#" -}
+setName :: String -> Element -> Element
+setName s e = e {elName = nullQN {qName = s,
+    qURI = Just "http://www.w3.org/2002/07/owl#"} }
+
+{- | sets the attribute key to one of IRI, abbreviatedIRI or nodeID
+ and the attribute value to the actual content of the IRI-}
+setIRI :: IRI -> Element -> Element
+setIRI iri e =
+    let fan = iriType iri
+        ty
+            | fan == Full = "IRI"
+            | fan == Abbreviated = "abbreviatedIRI"
+            | otherwise = "nodeID"
+    in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showIRI iri}]}
+
+mwIRI :: IRI -> Element
+mwIRI iri = setIRI iri nullElem
+
+-- ^ makes an element with the string as name and the IRI as content
+mwNameIRI :: String -> IRI -> Element
+mwNameIRI s iri = setName s $ mwIRI iri
+
+-- ^ makes a new element with the given string as name
+mwString :: String -> Element
+mwString s = setName s nullElem
+
+-- ^ makes a new element with the string as name and an element as content
+makeElementWith1 :: String -> Element -> Element
+makeElementWith1 s e = setContent [e] $ mwString s
+
+{- | makes a new element with the string as name and the list of elements
+    as content -}
+makeElement :: String -> [Element] -> Element
+makeElement s el = setContent el $ mwString s
+
+mwText :: String -> Element
+mwText s = setText s nullElem
+
+-- ^ makes a new element with the IRI as the text content
+mwSimpleIRI :: IRI -> Element
+mwSimpleIRI s = setName (if iriType s /= Abbreviated then iriK
+                          else "AbbreviatedIRI") $ mwText $ showIRI s
+
+{- | generates a list of elements, all with the first string as name,
+    and each with the content in this order: first, the list of elements
+    in the given pair (usually annotations) and second, the result of the
+    application of the function (given as fourth argument) on the second string
+    and the given IRI  -}
+make1 :: Bool -> String -> String -> (String -> IRI -> Element) -> IRI ->
+            [([Element], Element)] -> [Element]
+make1 rl hdr shdr f iri = map (\ (a, b) -> makeElement hdr
+        $ a ++ (if rl then [f shdr iri, b] else [b, f shdr iri]))
+
+-- almost the same, just that the function takes only one argument
+make2 :: Bool -> String -> (a -> Element) -> a ->
+            [([Element], Element)] -> [Element]
+make2 rl hdr f expr = map (\ (x, y) -> makeElement hdr
+        $ x ++ (if rl then [f expr, y] else [y, f expr]))
+
+-- ^ sets the cardinality
 setInt :: Int -> Element -> Element
 setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
     attrVal = show i}]}
 
+-- ^ sets either a literal datatype or a facet
 setDt :: Bool -> IRI -> Element -> Element
 setDt b dt e = e {elAttribs = elAttribs e ++ [Attr {attrKey
     = makeQN (if b then "datatypeIRI" else "facet"), attrVal = showQU dt}]}
@@ -75,39 +129,6 @@ setLangTag ml e = case ml of
     Nothing -> e
     Just lt -> e {elAttribs = elAttribs e ++ [Attr {attrKey
         = setQNPrefix "xml" (makeQN "lang"), attrVal = lt}]}
-
-mwString :: String -> Element
-mwString s = setName s nullElem
-
-mwIRI :: IRI -> Element
-mwIRI iri = setIRI iri nullElem
-
-mwNameIRI :: String -> IRI -> Element
-mwNameIRI s iri = setName s $ mwIRI iri
-
-mwText :: String -> Element
-mwText s = setText s nullElem
-
-mwSimpleIRI :: IRI -> Element
-mwSimpleIRI s = setName (if iriType s /= Abbreviated then iriK
-                          else "AbbreviatedIRI")
-    $ mwText $ showIRI s
-
-makeElement :: String -> [Element] -> Element
-makeElement s el = setContent el $ mwString s
-
-makeElementWith1 :: String -> Element -> Element
-makeElementWith1 s e = setContent [e] $ mwString s
-
-make1 :: Bool -> String -> String -> (String -> IRI -> Element) -> IRI ->
-            [([Element], Element)] -> [Element]
-make1 rl hdr shdr f iri = map (\ (a, b) -> makeElement hdr
-        $ a ++ (if rl then [f shdr iri, b] else [b, f shdr iri]))
-
-make2 :: Bool -> String -> (a -> Element) -> a ->
-            [([Element], Element)] -> [Element]
-make2 rl hdr f expr = map (\ (x, y) -> makeElement hdr
-        $ x ++ (if rl then [f expr, y] else [y, f expr]))
 
 xmlEntity :: Entity -> Element
 xmlEntity (Entity ty ent) = mwNameIRI (case ty of
