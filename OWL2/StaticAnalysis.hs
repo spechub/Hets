@@ -192,7 +192,7 @@ checkClassExpression s desc =
           Just d -> checkDataRange s d >> return desc
       else datErr dExp
 
--- corrects the frame bits according to the signature
+-- | corrects the frame bits according to the signature
 checkAnnBit :: Sign -> AnnFrameBit -> Result AnnFrameBit
 checkAnnBit s fb = case fb of
     DatatypeBit dr -> checkDataRange s dr >> return fb

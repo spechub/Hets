@@ -28,7 +28,7 @@ import qualified Data.Map as Map
 
 type XMLBase = String
 
--- ^ error messages for the parser
+-- | error messages for the parser
 err :: String -> t
 err s = error $ "XML parser: " ++ s
 
@@ -50,25 +50,25 @@ isNotSmth :: Text.XML.Light.QName -> Bool
 isNotSmth q = let qn = qName q in qn `notElem` ["Declaration",
     "Prefix", "Import", "Annotation"]
 
--- ^ parses all children with the given name
+-- | parses all children with the given name
 filterCh :: String -> Element -> [Element]
 filterCh s = filterChildrenName (isSmth s)
 
--- ^ parses all children with names in the list
+-- | parses all children with names in the list
 filterChL :: [String] -> Element -> [Element]
 filterChL l = filterChildrenName (isSmthList l)
 
--- ^ parses one child with the given name
+-- | parses one child with the given name
 filterC :: String -> Element -> Element
 filterC s e = fromMaybe (err "child not found")
     (filterChildName (isSmth s) e)
 
--- ^ parses one child with the name in the list
+-- | parses one child with the name in the list
 filterCL :: [String] -> Element -> Element
 filterCL l e = fromMaybe (err "child not found")
     (filterChildName (isSmthList l) e)
 
--- ^ parses an IRI
+-- | parses an IRI
 getIRI :: XMLBase -> Element -> IRI
 getIRI b e =
     let [a] = elAttribs e
@@ -89,7 +89,7 @@ appendBase b qn =
     in if ':' `elem` r then splitIRI qn
         else splitIRI $ qn {localPart = b ++ r, iriType = Full}
 
--- ^ splits an IRI at the colon
+-- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
 splitIRI qn = case iriType qn of
     NodeID -> nodeID qn
@@ -98,7 +98,7 @@ splitIRI qn = case iriType qn of
              ':' : nlp = dropWhile (/= ':') lp
          in qn {namePrefix = np, localPart = nlp}
 
--- ^ prepends "_:" to the nodeID if is not there already
+-- | prepends "_:" to the nodeID if is not there already
 nodeID :: IRI -> IRI
 nodeID qn =
     let lp = localPart qn
@@ -106,7 +106,7 @@ nodeID qn =
         '_' : ':' : _ -> qn
         _ -> qn {localPart = "_:" ++ lp}
 
--- ^ gets the content of an element with name IRI, AbbreviatedIRI or Import
+-- | gets the content of an element with name IRI, AbbreviatedIRI or Import
 contentIRI :: XMLBase -> Element -> IRI
 contentIRI b e =
   let cont = strContent e
@@ -119,7 +119,7 @@ contentIRI b e =
       "Import" -> appendBase b $ iri {iriType = cssIRI cont}
       _ -> err "invalid type of iri"
 
--- ^ gets the name of an axiom in XML Syntax
+-- | gets the name of an axiom in XML Syntax
 getName :: Element -> String
 getName e =
   let n = (qName . elName) e
@@ -128,7 +128,7 @@ getName e =
     Just "http://www.w3.org/2002/07/owl#" -> n
     _ -> ""
 
--- ^ gets the cardinality
+-- | gets the cardinality
 getInt :: Element -> Int
 getInt e = let [int] = elAttribs e in value 10 $ attrVal int
 
@@ -200,7 +200,7 @@ getAnnotation b e =
           Annotation (map (getAnnotation b) hd)
               (getIRI b ap) (getValue b av)
 
--- ^ returns a list of annotations
+-- | returns a list of annotations
 getAllAnnos :: XMLBase -> Element -> [Annotation]
 getAllAnnos b e = map (getAnnotation b)
             $ filterCh "Annotation" e
@@ -553,7 +553,7 @@ getOntologyIRI b e =
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e
 
--- ^ parses an ontology document
+-- | parses an ontology document
 xmlBasicSpec :: Element -> OntologyDocument
 xmlBasicSpec e =
     let b = getBase e

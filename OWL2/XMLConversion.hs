@@ -26,7 +26,7 @@ import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
--- ^ prints the IRI with a colon separating the prefix and the local part
+-- | prints the IRI with a colon separating the prefix and the local part
 showIRI :: IRI -> String
 showIRI (QN pre local ty _ _) = case ty of
     NodeID -> local
@@ -41,11 +41,11 @@ nullElem = Element nullQN [] [] Nothing
 makeQN :: String -> Text.XML.Light.QName
 makeQN s = nullQN {qName = s}
 
--- ^ sets the content of an element to a list of given elements
+-- | sets the content of an element to a list of given elements
 setContent :: [Element] -> Element -> Element
 setContent cl e = e {elContent = map Elem cl}
 
--- ^ sets the content of an element to a given string
+-- | sets the content of an element to a given string
 setText :: String -> Element -> Element
 setText s e = e {elContent = [Text CData {cdVerbatim = CDataText,
     cdData = s, cdLine = Nothing}]}
@@ -73,15 +73,15 @@ setIRI iri e =
 mwIRI :: IRI -> Element
 mwIRI iri = setIRI iri nullElem
 
--- ^ makes an element with the string as name and the IRI as content
+-- | makes an element with the string as name and the IRI as content
 mwNameIRI :: String -> IRI -> Element
 mwNameIRI s iri = setName s $ mwIRI iri
 
--- ^ makes a new element with the given string as name
+-- | makes a new element with the given string as name
 mwString :: String -> Element
 mwString s = setName s nullElem
 
--- ^ makes a new element with the string as name and an element as content
+-- | makes a new element with the string as name and an element as content
 makeElementWith1 :: String -> Element -> Element
 makeElementWith1 s e = setContent [e] $ mwString s
 
@@ -93,7 +93,7 @@ makeElement s el = setContent el $ mwString s
 mwText :: String -> Element
 mwText s = setText s nullElem
 
--- ^ makes a new element with the IRI as the text content
+-- | makes a new element with the IRI as the text content
 mwSimpleIRI :: IRI -> Element
 mwSimpleIRI s = setName (if iriType s /= Abbreviated then "IRI"
                           else "AbbreviatedIRI") $ mwText $ showIRI s
@@ -114,12 +114,12 @@ make2 :: Bool -> String -> (a -> Element) -> a ->
 make2 rl hdr f expr = map (\ (x, y) -> makeElement hdr
         $ x ++ (if rl then [f expr, y] else [y, f expr]))
 
--- ^ sets the cardinality
+-- | sets the cardinality
 setInt :: Int -> Element -> Element
 setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
     attrVal = show i}]}
 
--- ^ sets either a literal datatype or a facet
+-- | sets either a literal datatype or a facet
 setDt :: Bool -> IRI -> Element -> Element
 setDt b dt e = e {elAttribs = elAttribs e ++ [Attr {attrKey
     = makeQN (if b then "datatypeIRI" else "facet"), attrVal = showIRI dt}]}
