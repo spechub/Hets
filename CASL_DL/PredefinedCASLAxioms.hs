@@ -25,7 +25,7 @@ import CASL.Sign
 
 import Common.AS_Annotation
 import Common.Id
-import Common.Lib.Rel as Rel
+import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Char
@@ -68,6 +68,15 @@ classPredType = Pred_type [thing] n
 conceptPred :: PredType
 conceptPred = toPredType classPredType
 
+boolS :: Id
+boolS = stringToId "boolean"
+
+boolT :: OpType
+boolT = mkTotOpType [] boolS
+
+natT :: OpType
+natT = mkTotOpType [] nonNegInt
+
 -- | OWL bottom
 noThing :: PRED_SYMB
 noThing = Qual_pred_name nothing classPredType n
@@ -78,7 +87,7 @@ predefSign = (emptySign ())
                       $ Rel.insertKey thing
                       $ Rel.transClosure $ Rel.fromList
                        [
-                        (stringToId "boolean",
+                        (boolS,
                          dataS),
                         (integer,
                          dataS),
@@ -150,7 +159,18 @@ predefSign = (emptySign ())
                         (stringToId "odd",
                            [PredType [integer],
                             PredType
-                              [nonNegInt]])]}
+                              [nonNegInt]])]
+                  , opMap = MapSet.fromList
+                        $ map (\ i -> (stringToId $ show i, [natT]))
+                          [0 .. 9 :: Int]
+                        ++
+                        [ (stringToId "True", [boolT])
+                        , (stringToId "False", [boolT])
+                        , (mkInfix "@@", [mkTotOpType [nonNegInt, nonNegInt]
+                                   nonNegInt])
+                        , (mkId [mkSimpleId "-", placeTok]
+                          , [mkTotOpType [integer] integer])
+                        ] }
 
 predefinedAxioms :: [Named (FORMULA ())]
 predefinedAxioms = let
