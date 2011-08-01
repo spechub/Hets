@@ -215,6 +215,22 @@ isDatatypeKey :: IRI -> Bool
 isDatatypeKey u =
   elem (localPart u) datatypeKeys && elem (namePrefix u) ["", "xsd"]
 
+data DatatypeType = OWL2Int | OWL2String | OWL2Bool | Other
+    deriving (Show, Eq, Ord)
+
+datatypeType :: IRI -> DatatypeType
+datatypeType iri =
+    let lp = localPart iri
+    in case isDatatypeKey iri of
+        True
+            | lp == booleanS -> OWL2Bool
+            | lp `elem` [integerS, negativeIntegerS, nonNegativeIntegerS,
+                nonPositiveIntegerS, positiveIntegerS] -> OWL2Int
+            | lp == stringS -> OWL2String
+            | otherwise -> Other
+        False -> Other
+
+
 data DatatypeFacet =
     LENGTH
   | MINLENGTH

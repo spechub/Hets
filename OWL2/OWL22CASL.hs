@@ -418,7 +418,24 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             case ex of
               SimpleEntity (Entity ty iri) ->
                 case ty of
-                  NamedIndividual -> return ([], cSig)
+                  NamedIndividual ->
+                    do
+                      inS <- mapIndivURI cSig iri
+                      inT <- mapLiteral cSig lit
+                      oPropH <- mapDataProp cSig dpe 1 2
+                      let oProp = case posneg of
+                                    Positive -> oPropH
+                                    Negative -> Negation oPropH nullRange
+                      return ([mkForall
+                                [mkVarDecl (mkNName 1) thing,
+                                 mkVarDecl (mkNName 2) dataS]
+                             (mkImpl (conjunct
+                                        [mkStEq (toQualVar
+                                          (mkVarDecl (mkNName 1) thing)) inS,
+                                         mkStEq (toQualVar
+                                          (mkVarDecl (mkNName 2) dataS)) inT]
+                             ) oProp)]
+                             , cSig)
                   _ -> fail "DataPropertyFact EntityType fail"
               _ -> fail "DataPropertyFact Entity fail"
           _ -> fail "DataPropertyFacts fail"
@@ -690,6 +707,17 @@ mapComDataPropsList cSig props num1 num2 =
                               return (l, r)
                        ) $ comPairs props props
 
+mapLiteral :: CASLSign -> Literal -> Result (TERM ())
+mapLiteral _ (Literal l ty) = do
+    case ty of
+        Untyped _ -> return $ foldr consChar emptyStringTerm l
+        Typed dt -> return $ case datatypeType dt of
+            OWL2Int -> foldr1 joinDigits $ map (mkDigit . digitToInt) l
+            OWL2Bool -> case l of
+                "True" -> trueT
+                _ -> falseT
+            _ -> foldr consChar emptyStringTerm l
+
 -- | Mapping of data properties
 mapDataProp :: CASLSign
             -> DataPropertyExpression
@@ -782,11 +810,11 @@ uriToId urI =
         ur = if isThing urI then mkQName l else urI
         repl a = if isAlphaNum a
                   then
-                      a
+                      [a]
                   else
-                      '_'
-        nP = map repl $ namePrefix ur
-        lP = map repl l
+                      "_u"
+        nP = concatMap repl $ namePrefix ur
+        lP = concatMap repl l
     in stringToId $ nP ++ "" ++ lP
 
 -- | Mapping of a list of descriptions
