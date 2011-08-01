@@ -280,7 +280,10 @@ individualUri :: CharParser st QName
 individualUri = uriP
 
 individual :: CharParser st Individual
-individual = individualUri
+individual = do
+    i <- individualUri
+    if namePrefix i == "_" then return $ i {iriType = NodeID}
+                            else return i
 
 skipChar :: Char -> CharParser st ()
 skipChar = forget . skips . char
