@@ -89,9 +89,20 @@ emptyCspAddMorphism = CspAddMorphism
 {- | Given two signatures (the first being a sub signature of the second
 according to CspCASL.SignCSP.isCspCASLSubSig) compute the inclusion morphism. -}
 cspSubsigInclusion :: CspCASLSign -> CspCASLSign -> Result CspCASLMorphism
-cspSubsigInclusion = CASL_Morphism.sigInclusion emptyCspAddMorphism
+cspSubsigInclusion sign = checkResultMorphismIsLegal .
+                          CASL_Morphism.sigInclusion emptyCspAddMorphism sign
 {- We use the empty morphism as it also represents the identity, thus this
 will embed channel names and process names properly. -}
+
+checkResultMorphismIsLegal :: Result CspCASLMorphism -> Result CspCASLMorphism
+checkResultMorphismIsLegal (Result d1 maybeMor) =
+  case maybeMor of
+    Nothing -> Result diags maybeMor
+    Just mor ->
+      let Result d2 answer = legalMorphismExtension mor
+      in case answer of
+        Nothing -> Result (d1 ++ d2) Nothing
+        Just _ -> Result (d1 ++ d2) $ Just mor
 
 -- | lookup a typed channel
 mapChan :: Sort_map -> ChanMap -> (CHANNEL_NAME, SORT) -> (CHANNEL_NAME, SORT)
