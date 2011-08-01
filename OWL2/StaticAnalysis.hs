@@ -61,7 +61,7 @@ modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
 modEntity f (Entity ty u) = do
   s <- get
   let chg = f u
-  unless (isDatatypeKey u) $ put $ case ty of
+  unless (isDatatypeKey u || isThing u) $ put $ case ty of
     Datatype -> s { datatypes = chg $ datatypes s }
     Class -> s { concepts = chg $ concepts s }
     ObjectProperty -> s { objectProperties = chg $ objectProperties s }
@@ -88,7 +88,7 @@ checkEntity s a (Entity ty e) =
                     isDatatypeKey e
                   then return a
                 else errMsg
-   Class -> if Set.member e (concepts s) then return a
+   Class -> if Set.member e (concepts s) || isThing e then return a
              else errMsg
    ObjectProperty -> if Set.member e (objectProperties s) then return a
                       else errMsg
