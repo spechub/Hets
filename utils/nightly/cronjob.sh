@@ -275,10 +275,10 @@ Haskell/hana ToHaskell/test/*.hascasl.hs
 makeOWLTools ()
 {
 $MAKE initialize_java
-cp OWL/*.jar $HETS_OWL_TOOLS/
-cp OWL/lib/*.jar $HETS_OWL_TOOLS/lib/
-cp OWL/lib/native/i686/*.so $HETS_OWL_TOOLS/lib/native/i686
-cp OWL/lib/native/x86_64/*.so $HETS_OWL_TOOLS/lib/native/x86_64
+cp OWL2/*.jar $HETS_OWL_TOOLS/
+cp OWL2/lib/*.jar $HETS_OWL_TOOLS/lib/
+cp OWL2/lib/native/i686/*.so $HETS_OWL_TOOLS/lib/native/i686
+cp OWL2/lib/native/x86_64/*.so $HETS_OWL_TOOLS/lib/native/x86_64
 cp CASL/Termination/AProVE.jar $HETS_OWL_TOOLS/
 }
 
