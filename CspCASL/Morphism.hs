@@ -97,7 +97,7 @@ will embed channel names and process names properly. -}
 checkResultMorphismIsLegal :: Result CspCASLMorphism -> Result CspCASLMorphism
 checkResultMorphismIsLegal (Result d1 maybeMor) =
   case maybeMor of
-    Nothing -> Result diags maybeMor
+    Nothing -> Result d1 maybeMor
     Just mor ->
       let Result d2 answer = legalMorphismExtension mor
       in case answer of
