@@ -31,7 +31,7 @@ import CspCASL.SignCSP
 import CspCASL.Symbol
 import qualified CspCASL.LocalTop as LT
 
-import CASL.AS_Basic_CASL (FORMULA, TERM, SORT)
+import CASL.AS_Basic_CASL (FORMULA, TERM, SORT, SORT_ITEM (..))
 import CASL.Sign as CASL_Sign
 import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
@@ -186,11 +186,11 @@ checkReflCondition mor =
      else let produceDiag (s1, s2) =
                 let x = (mapSort sm s1)
                     y = (mapSort sm s2)
-                in mkDiag Error ("CSP-CASL Signature Morphism Refl \
-                             \Property Violated: " ++ show s1 ++ " |-> " ++
-                              show x ++ " and " ++ show s2 ++ " |-> " ++
-                              show y ++ " and " ++ show x ++ " < " ++ show y ++
-                              " but not " ++ show s1 ++ " < " ++ show s2) ()
+                in Diag Error
+                 ("CSP-CASL Signature Morphism Refl Property Violated:\n'"
+                  ++ showDoc (Symbol x $ SubsortAsItemType y) "' but not\n'"
+                  ++ showDoc (Symbol s1 $ SubsortAsItemType s2) "'")
+                  nullRange
               allDiags = map produceDiag $ Set.toList failures
           in Result allDiags Nothing -- failure with error messages
 
@@ -227,14 +227,15 @@ checkWNECondition mor =
      else let produceDiag (s1, s2, u') =
                 let x = (mapSort sm s1)
                     y = (mapSort sm s2)
-                in mkDiag Error
-                   ("CSP-CASL Signature Morphism Weak Non-Extension Property \
-                    \Violated: " ++ show s1 ++ " |-> " ++ show x ++ " and "
-                     ++ show s2 ++ " |-> " ++ show y ++ " and " ++ show x ++
-                     " < " ++ show u' ++ " and " ++ show y ++ " < " ++
-                     show u' ++ " but there does not exist a sort a_sort \
-                     \with " ++ show s1 ++ " < a_sort and " ++ show s2 ++
-                     " < a_sort and sigma(a_sort) < " ++ show u') ()
+                in Diag Error
+                   ("CSP-CASL Signature Morphism Weak Non-Extension Property "
+                    ++ "Violated:\n'"
+                    ++ showDoc
+                       (Subsort_decl [x, y] u' nullRange :: SORT_ITEM ())
+                       "'\nbut no common supersort for\n'"
+                    ++ showDoc
+                       (Sort_decl [s1, s2] nullRange :: SORT_ITEM ()) "'")
+                   nullRange
               allDiags = map produceDiag $ Set.toList failures
           in Result allDiags Nothing -- failure with error messages
 
