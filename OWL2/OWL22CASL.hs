@@ -418,24 +418,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             case ex of
               SimpleEntity (Entity ty iri) ->
                 case ty of
-                  NamedIndividual ->
-                    do
-                      inS <- mapIndivURI cSig iri
-                      inT <- mapLiteral cSig lit
-                      oPropH <- mapDataProp cSig dpe 1 2
-                      let oProp = case posneg of
-                                    Positive -> oPropH
-                                    Negative -> Negation oPropH nullRange
-                      return ([mkForall
-                                [mkVarDecl (mkNName 1) thing,
-                                 mkVarDecl (mkNName 2) thing]
-                             (mkImpl (conjunct
-                                        [mkStEq (toQualVar
-                                          (mkVarDecl (mkNName 1) thing)) inS,
-                                         mkStEq (toQualVar
-                                          (mkVarDecl (mkNName 2) thing)) inT]
-                             ) oProp)]
-                             , cSig)
+                  NamedIndividual -> return ([], cSig)
                   _ -> fail "DataPropertyFact EntityType fail"
               _ -> fail "DataPropertyFact Entity fail"
           _ -> fail "DataPropertyFacts fail"
@@ -677,20 +660,6 @@ mapComIndivList cSig sod mol inds = do
   return $ map (\ (x, y) -> case sod of
     Same -> mkStEq x y
     Different -> mkNeg (mkStEq x y)) tps
-
--- | mapping of data constants
-mapLiteral :: CASLSign
-            -> Literal
-            -> Result (TERM ())
-mapLiteral _ c =
-    do
-      let cl = case c of
-                Literal l _ -> l
-      return $ mkAppl
-                 (mkQualOp (stringToId cl)
-                           (Op_type Total [] dataS nullRange)
-                 )
-                 []
 
 -- | Mapping of subobj properties
 mapSubObjProp :: CASLSign

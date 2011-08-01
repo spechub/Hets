@@ -78,6 +78,7 @@ instance Comorphism
       mapSublogic OWL22CommonLogic _ = Just ClSl.top
       map_theory OWL22CommonLogic = mapTheory
       map_morphism OWL22CommonLogic = mapMorphism
+      map_symbol OWL22CommonLogic _ = mapSymbol
       isInclusionComorphism OWL22CommonLogic = True
       has_model_expansion OWL22CommonLogic = True
 
@@ -98,6 +99,9 @@ hetsPrefix = ""
 mapMap :: Map.Map Entity IRI -> Result (Map.Map Id Id)
 mapMap m =
   return $ Map.map uriToId $ Map.mapKeys entityToId m
+
+mapSymbol :: Entity -> Set.Set Symbol
+mapSymbol (Entity _ iri) = Set.singleton $ idToRaw $ uriToId iri
 
 mapSign :: OS.Sign             -- ^ OWL2 signature
         -> Result Sign         -- ^ CommonLogic signature
