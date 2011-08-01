@@ -134,16 +134,9 @@ createConsLink lk conser lg dg nsig (NodeSig node gsig) orig = case nsig of
     EmptyNode _ | conser == None -> return dg
     _ -> case nsig of
       JustNode (NodeSig n sig) -> do
-        let Result _ mIncl = ginclusion lg sig gsig
-        case mIncl of
-          Just incl ->
-            return $ insLink dg incl
+        incl <- ginclusion lg sig gsig
+        return $ insLink dg incl
               (ScopedLink Global lk $ mkConsStatus conser) orig n node
-          Nothing -> do
-            unless (conser == None) $ warning ()
-                "ingoring conservativity annotation between non-subsignatures"
-                nullRange
-            return dg
       EmptyNode _ -> -- add conservativity to the target node
         return $ let lbl = labDG dg node
         in if isDGRef lbl then dg else
