@@ -20,13 +20,13 @@ public class OWL2Parser {
 
 	private static List<OWLOntology> loadedImportsList = new ArrayList<OWLOntology>();
 	private static ArrayList<IRI> importsIRI = new ArrayList<IRI>();
-	private static Map<OWLOntology,List<OWLOntology>> m = new HashMap<OWLOntology, List<OWLOntology>>(); 
+	private static Map<OWLOntology,List<OWLOntology>> m = new HashMap<OWLOntology, List<OWLOntology>>();
 	private static Set<OWLOntology> s = new HashSet<OWLOntology>();
-	private static Set<OWLOntology> expanded = new HashSet<OWLOntology>();	
+	private static Set<OWLOntology> expanded = new HashSet<OWLOntology>();
 	private static boolean OP;
 
 	public static void main(String[] args) {
-		
+
 		if (args.length < 1) {
 			System.out.println("Usage: processor <URI> [FILENAME]");
 			System.exit(1);
@@ -34,10 +34,9 @@ public class OWL2Parser {
 
 		String filename = "";
 		BufferedWriter out;
-		
+
 		// A simple example of how to load and save an ontology
 		try {
-			IRI iri = IRI.create(args[0]);
 			OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 			if (args.length == 3) {
 				filename = args[1];
@@ -56,34 +55,34 @@ public class OWL2Parser {
 				}
 				out = new BufferedWriter(openForFile(null));
 			}
-						
+
 			/* Load an ontology from a physical IRI */
 			IRI physicalIRI = IRI.create(args[0]);
-						
+
 			// Now do the loading
-			
+
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
 			getImportsList(ontology, manager);
-			
+
 			if(loadedImportsList.size() == 0)
 			{
 				if (OP)
-					parse2xml(ontology, out, manager);			
+					parse2xml(ontology, out, manager);
 				else
 					parse(ontology,out);
-			}	
+			}
 
 			else {
 				if(importsIRI.contains(ontology.getOntologyID().getOntologyIRI())) {
     					importsIRI.remove(importsIRI.lastIndexOf(ontology.getOntologyID().getOntologyIRI()));
 					}
-				
+
 				if(loadedImportsList.contains(ontology))
-					{	
+					{
 
 					OWLOntologyManager mng = OWLManager.createOWLOntologyManager();
 					OWLOntologyMerger merger = new OWLOntologyMerger(manager);
-	
+
 					String str = ontology.getOntologyID().getOntologyIRI().toQuotedString();
 					String notag = str.replaceAll("\\<","");
 
@@ -94,10 +93,10 @@ public class OWL2Parser {
 					notag = notag.replaceAll("\\)","");
 
 					loadedImportsList.remove(loadedImportsList.indexOf(ontology));
-					Object aux[] = loadedImportsList.toArray(); 
+					Object aux[] = loadedImportsList.toArray();
 
 					String merged_name = "";
-	
+
 					for (Object it : aux) {
 						Object aux_ont = it;
 						String mrg = aux_ont.toString();
@@ -112,21 +111,21 @@ public class OWL2Parser {
 					}
 
 					merged_name = notag + merged_name;
-					
+
 					IRI mergedOntologyIRI = IRI.create(merged_name);
 					OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
-					
+
 					ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (manager);
 					if (OP)
-						parse2xml(merged, out, manager);	
+						parse2xml(merged, out, manager);
 					else
 						rendi.render(merged,out);
 					}
-				else 	
+				else
 					{
 					parseZeroImports(out, ontology);
 					}
-   			
+
 			}
 		} catch (IOException e) {
 			System.err.println("Error: can not build file: " + filename);
@@ -144,13 +143,13 @@ public class OWL2Parser {
 		List<OWLOntology> l = new ArrayList<OWLOntology>();
 		ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
 
-		try {	
+		try {
 			if (om.getDirectImports(ontology).isEmpty())	{
-				m.put(ontology,empty); 
+				m.put(ontology,empty);
 			}
-			else 	{ 
+			else 	{
 				List<OWLOntology> srt = new ArrayList<OWLOntology>();
-				for (OWLOntology imported : om.getDirectImports(ontology)) {	
+				for (OWLOntology imported : om.getDirectImports(ontology)) {
 					if (!importsIRI.contains(imported.getOntologyID().getOntologyIRI())) {
 						unSavedImports.add(imported);
 						loadedImportsList.add(imported);
@@ -159,8 +158,8 @@ public class OWL2Parser {
 
 					}
 				}
-				} 				
-			m.put(ontology,l);		
+				}
+			m.put(ontology,l);
 			for (OWLOntology onto : unSavedImports) {
 				getImportsList(onto, om);
 			}
@@ -171,12 +170,12 @@ public class OWL2Parser {
 		}
 	}
 
-	private static Writer openForFile(String fileName) 
-		{ 		
+	private static Writer openForFile(String fileName)
+		{
 			return new OutputStreamWriter(System.out);
 		}
-	
-	private static void parseZeroImports(BufferedWriter out, OWLOntology ontology) 
+
+	private static void parseZeroImports(BufferedWriter out, OWLOntology ontology)
 	{
 		List all = getKeysByValue();
 		ListIterator it = all.listIterator();
@@ -188,14 +187,14 @@ public class OWL2Parser {
 			expanded.add(ontos);
 			if (OP)
 				parse2xml(ontos, out, ontos.getOWLOntologyManager());
-			else 
+			else
 				parse(ontos,out);
 			s.add(ontos);
 			parseImports(out, ontology);
 			}
 	}
 
-	
+
 	public static void parseImports(BufferedWriter out, OWLOntology ontology)
 	{
 
@@ -219,15 +218,15 @@ public class OWL2Parser {
 					else
 						parse(onto,out);
 
-					expanded.add(onto);	
-					s.add((OWLOntology)pairs.getKey());	
-	
-					if (onto.getOntologyID().toString().equals(ontology.getOntologyID().toString()))		
+					expanded.add(onto);
+					s.add((OWLOntology)pairs.getKey());
+
+					if (onto.getOntologyID().toString().equals(ontology.getOntologyID().toString()))
 						System.exit(0);
 
 					parseImports(out, ontology);
 				}
-			}				
+			}
 		}
 
 	}
@@ -237,8 +236,8 @@ public class OWL2Parser {
 
 		Set st = new HashSet<OWLOntology>();
 		Iterator it = lst.iterator();
-		
-		if (lst.size() == 0)		
+
+		if (lst.size() == 0)
 			return st;
 
 		while(it.hasNext())
@@ -256,8 +255,8 @@ public class OWL2Parser {
 			return false;
 		Set<OWLOntology> aux = new HashSet<OWLOntology>();
 		aux.addAll(it);
-	
-		return equalcollections(aux, s);	
+
+		return equalcollections(aux, s);
 	}
 
 	public static Boolean equalcollections(Set<OWLOntology> l1, Set<OWLOntology> l2)	{
@@ -265,7 +264,7 @@ public class OWL2Parser {
 
 		if(l1.isEmpty() || l2.isEmpty())
 			eq = false;
-						
+
 		for (OWLOntology ont: l1)
 			if (!l2.contains(ont))
 				eq = false;
@@ -275,7 +274,7 @@ public class OWL2Parser {
 
 	public static List getKeysByValue() {
 		List keys = new ArrayList<OWLOntology>();
-		Iterator it = m.entrySet().iterator();		
+		Iterator it = m.entrySet().iterator();
 		while(it.hasNext()) {
 			Map.Entry pairs = (Map.Entry)it.next();
 			if(pairs.getValue().toString().equals("[]")) {
@@ -284,17 +283,17 @@ public class OWL2Parser {
 		}
      	return keys;
 	}
-	
+
 	public static void parse(OWLOntology onto, BufferedWriter out)	{
 		try {
 		ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
 		rendi.render(onto,out);
-		} catch(OWLRendererException ex)	{		
+		} catch(OWLRendererException ex)	{
 			System.err.println("Error by parse!");
 			ex.printStackTrace();
 		}
 	}
-	
+
 	public static void parse2xml(OWLOntology onto, BufferedWriter out,OWLOntologyManager mng)	{
 		try {
 		OWLXMLRenderer ren = new OWLXMLRenderer(mng);
