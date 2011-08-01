@@ -24,10 +24,10 @@ import OWL2.Keywords
 import OWL2.ColonKeywords
 
 instance Pretty QName where
-    pretty = printURIreference
+    pretty = printIRI
 
-printURIreference :: QName -> Doc
-printURIreference q =
+printIRI :: QName -> Doc
+printIRI q =
   if isThing q || isDatatypeKey q
   then keyword $ localPart q else text $ showQN q
 
@@ -55,7 +55,6 @@ instance Pretty RawSymb where
     APrefix p -> pretty p
 
 -- | Entities
-
 instance Pretty Entity where
   pretty (Entity ty e) = keyword (show ty) <+> pretty e
 
@@ -73,17 +72,6 @@ fromCF = localPart
 
 printRelation :: Relation -> Doc
 printRelation = keyword . showRelation
-
-printDomainOrRange :: DomainOrRange -> Doc
-printDomainOrRange = keyword . showDomainOrRange
-
-printDataDomainOrRange :: DataDomainOrRange -> Annotations -> Doc
-printDataDomainOrRange dr ans = case dr of
-    DataDomain d -> keyword domainC <+> (printAnnotations ans $+$ pretty d)
-    DataRange d -> keyword rangeC <+> (printAnnotations ans $+$ pretty d)
-
-printSameOrDifferent :: SameOrDifferent -> Doc
-printSameOrDifferent = keyword . showSameOrDifferent
 
 printEquivOrDisjointClasses :: EquivOrDisjoint -> Doc
 printEquivOrDisjointClasses x = case x of
@@ -109,13 +97,10 @@ printCharact :: String -> Doc
 printCharact = text
 
 instance Pretty Character where
-  pretty = printCharact . show
+    pretty = printCharact . show
 
 instance Pretty DatatypeFacet where
     pretty = keyword . showFacet
-
-printIndividual :: Individual -> Doc
-printIndividual = pretty
 
 instance Pretty Literal where
     pretty (Literal lexi ty) =
@@ -126,6 +111,74 @@ instance Pretty Literal where
       Untyped tag -> if tag == Nothing then empty else
                      let Just tag2 = tag in text asP <> text tag2
 
+instance Pretty ObjectPropertyExpression where
+    pretty = printObjPropExp
+
+printObjPropExp :: ObjectPropertyExpression -> Doc
+printObjPropExp obExp = case obExp of
+    ObjectProp ou -> pretty ou
+    ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
+
+-- | Printing the DataRange
+instance Pretty DataRange where
+    pretty = printDataRange
+
+printDataRange :: DataRange -> Doc
+printDataRange dr = case dr of
+    DataType dtype l -> pretty dtype <+>
+      if null l then empty else brackets $ sepByCommas $ map printFV l
+    DataComplementOf drange -> keyword notS <+> pretty drange
+    DataOneOf constList -> specBraces $ ppWithCommas constList
+    DataJunction ty drlist -> let
+      k = case ty of
+          UnionOf -> orS
+          IntersectionOf -> andS
+      in fsep $ prepPunctuate (keyword k <> space) $ map pretty drlist
+
+-- | Printing the ClassExpression
+instance Pretty ClassExpression where
+  pretty desc = case desc of
+   Expression ocUri -> printIRI ocUri
+   ObjectJunction ty ds -> let
+      (k, p) = case ty of
+          UnionOf -> (orS, pretty)
+          IntersectionOf -> (andS, printPrimary)
+      in fsep $ prepPunctuate (keyword k <> space) $ map p ds
+   ObjectComplementOf d -> keyword notS <+> printNegatedPrimary d
+   ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
+   ObjectValuesFrom ty opExp d ->
+      printObjPropExp opExp <+> quantifierType ty <+> printNegatedPrimary d
+   ObjectHasSelf opExp ->
+      printObjPropExp opExp <+> keyword selfS
+   ObjectHasValue opExp indUri ->
+      pretty opExp <+> keyword valueS <+> pretty indUri
+   ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
+      printObjPropExp opExp <+> cardinalityType ty
+        <+> text (show card)
+        <+> maybe (keyword "owl:Thing") printPrimary maybeDesc
+   DataValuesFrom ty dpExp dRange ->
+       printIRI dpExp <+> quantifierType ty
+        <+> pretty dRange
+   DataHasValue dpExp cons -> pretty dpExp <+> keyword valueS <+> pretty cons
+   DataCardinality (Cardinality ty card dpExp maybeRange) ->
+       pretty dpExp <+> cardinalityType ty <+> text (show card)
+         <+> maybe empty pretty maybeRange
+
+printPrimary :: ClassExpression -> Doc
+printPrimary d = let dd = pretty d in case d of
+  ObjectJunction _ _ -> parens dd
+  _ -> dd
+
+printNegatedPrimary :: ClassExpression -> Doc
+printNegatedPrimary d = let r = parens $ pretty d in case d of
+  ObjectComplementOf _ -> r
+  ObjectValuesFrom _ _ _ -> r
+  DataValuesFrom _ _ _ -> r
+  ObjectHasValue _ _ -> r
+  DataHasValue _ _ -> r
+  _ -> printPrimary d
+
+-- | annotations printing
 instance Pretty AnnotationValue where
     pretty x = case x of
       AnnValue iri -> pretty iri
@@ -149,71 +202,3 @@ printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
 printAnnotatedList l =
   vcat $ punctuate comma $ map
     ( \ (ans, a) -> printAnnotations ans $+$ pretty a) l
-
-instance Pretty ObjectPropertyExpression where
-    pretty = printObjPropExp
-
-printObjPropExp :: ObjectPropertyExpression -> Doc
-printObjPropExp obExp =
-    case obExp of
-     ObjectProp ou -> pretty ou
-     ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
-
--- | Printing the ClassExpression
-instance Pretty ClassExpression where
-  pretty desc = case desc of
-   Expression ocUri -> printURIreference ocUri
-   ObjectJunction ty ds -> let
-      (k, p) = case ty of
-          UnionOf -> (orS, pretty)
-          IntersectionOf -> (andS, printPrimary)
-      in fsep $ prepPunctuate (keyword k <> space) $ map p ds
-   ObjectComplementOf d -> keyword notS <+> printNegatedPrimary d
-   ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
-   ObjectValuesFrom ty opExp d ->
-      printObjPropExp opExp <+> quantifierType ty <+> printNegatedPrimary d
-   ObjectHasSelf opExp ->
-      printObjPropExp opExp <+> keyword selfS
-   ObjectHasValue opExp indUri ->
-      pretty opExp <+> keyword valueS <+> pretty indUri
-   ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
-      printObjPropExp opExp <+> cardinalityType ty
-        <+> text (show card)
-        <+> maybe (keyword "owl:Thing") printPrimary maybeDesc
-   DataValuesFrom ty dpExp dRange ->
-       printURIreference dpExp <+> quantifierType ty
-        <+> pretty dRange
-   DataHasValue dpExp cons -> pretty dpExp <+> keyword valueS <+> pretty cons
-   DataCardinality (Cardinality ty card dpExp maybeRange) ->
-       pretty dpExp <+> cardinalityType ty <+> text (show card)
-         <+> maybe empty pretty maybeRange
-
-printPrimary :: ClassExpression -> Doc
-printPrimary d = let dd = pretty d in case d of
-  ObjectJunction _ _ -> parens dd
-  _ -> dd
-
-printNegatedPrimary :: ClassExpression -> Doc
-printNegatedPrimary d = let r = parens $ pretty d in case d of
-  ObjectComplementOf _ -> r
-  ObjectValuesFrom _ _ _ -> r
-  DataValuesFrom _ _ _ -> r
-  ObjectHasValue _ _ -> r
-  DataHasValue _ _ -> r
-  _ -> printPrimary d
-
--- | Printing the DataRange
-instance Pretty DataRange where
-    pretty = printDataRange
-
-printDataRange :: DataRange -> Doc
-printDataRange dr = case dr of
-    DataType dtype l -> pretty dtype <+>
-      if null l then empty else brackets $ sepByCommas $ map printFV l
-    DataComplementOf drange -> keyword notS <+> pretty drange
-    DataOneOf constList -> specBraces $ ppWithCommas constList
-    DataJunction ty drlist -> let
-      k = case ty of
-          UnionOf -> orS
-          IntersectionOf -> andS
-      in fsep $ prepPunctuate (keyword k <> space) $ map pretty drlist

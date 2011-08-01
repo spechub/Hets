@@ -7,7 +7,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Common datatypes for the Functional and Manchester Syntaxes of OWL 2
+OWL 2 Functional Syntax constructs
 
 References:
  <http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
@@ -41,6 +41,14 @@ data QName = QN
   , iriPos :: Range
   } deriving Show
 
+instance Eq QName where
+    p == q = compare p q == EQ
+
+instance Ord QName where
+  compare (QN p1 l1 b1 n1 _) (QN p2 l2 b2 n2 _) =
+    if null n1 || null n2 then compare (b1, p1, l1) (b2, p2, l2) else
+      compare n1 n2 -- compare fully expanded names only
+
 instance GetRange QName where
   getRange = iriPos
 
@@ -72,7 +80,7 @@ setQRange r q = q { iriPos = r }
 setPrefix :: String -> QName -> QName
 setPrefix s q = q { namePrefix = s }
 
-setReservedPrefix :: IRI -> IRI
+setReservedPrefix :: QName -> QName
 setReservedPrefix iri
     | isDatatypeKey iri = setPrefix "xsd" iri
     | isThing iri = setPrefix "owl" iri
@@ -81,16 +89,11 @@ setReservedPrefix iri
 setFull :: QName -> QName
 setFull q = q {iriType = Full}
 
+type IRI = QName
+
+-- | checks if an IRI is an anonymous individual
 isAnonymous :: IRI -> Bool
 isAnonymous iri = iriType iri == NodeID
-
-instance Eq QName where
-    p == q = compare p q == EQ
-
-instance Ord QName where
-  compare (QN p1 l1 b1 n1 _) (QN p2 l2 b2 n2 _) =
-    if null n1 || null n2 then compare (b1, p1, l1) (b2, p2, l2) else
-      compare n1 n2 -- compare fully expanded names only
 
 isThing :: IRI -> Bool
 isThing u = elem (localPart u) ["Thing", "Nothing"] &&
@@ -99,9 +102,6 @@ isThing u = elem (localPart u) ["Thing", "Nothing"] &&
 -- | checks if a string (bound to be localPart of an IRI) contains "://"
 cssIRI :: String -> IRIType
 cssIRI iri = if isInfixOf "://" iri then Full else Abbreviated
-
-type IRIreference = QName
-type IRI = QName
 
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
@@ -118,10 +118,6 @@ type AnnotationProperty = IRI
 type NamedIndividual = IRI
 type Individual = IRI
 
-type SourceIndividual = Individual
-type TargetIndividual = Individual
-type TargetValue = Literal
-
 data EquivOrDisjoint = Equivalent | Disjoint
     deriving (Show, Eq, Ord)
 
@@ -130,12 +126,21 @@ showEquivOrDisjoint ed = case ed of
     Equivalent -> equivalentToC
     Disjoint -> disjointWithC
 
-data DomainOrRange = ADomain | ARange deriving (Show, Eq, Ord)
+data DomainOrRange = ADomain | ARange
+    deriving (Show, Eq, Ord)
 
 showDomainOrRange :: DomainOrRange -> String
 showDomainOrRange dr = case dr of
     ADomain -> domainC
     ARange -> rangeC
+
+data SameOrDifferent = Same | Different
+    deriving (Show, Eq, Ord)
+
+showSameOrDifferent :: SameOrDifferent -> String
+showSameOrDifferent sd = case sd of
+    Same -> sameAsC
+    Different -> differentFromC
 
 data Relation =
     EDRelation EquivOrDisjoint
@@ -157,23 +162,20 @@ showRelation r = case r of
     DRRelation dr -> showDomainOrRange dr
     SDRelation sd -> showSameOrDifferent sd
 
-getDR :: Relation -> DomainOrRange
-getDR r = case r of
-    DRRelation dr -> dr
-    _ -> error "not domain or range"
-
 getED :: Relation -> EquivOrDisjoint
 getED r = case r of
     EDRelation ed -> ed
+    _ -> error "not domain or range"
+
+getDR :: Relation -> DomainOrRange
+getDR r = case r of
+    DRRelation dr -> dr
     _ -> error "not domain or range"
 
 getSD :: Relation -> SameOrDifferent
 getSD s = case s of
     SDRelation sd -> sd
     _ -> error "not same or different"
-
-data DataDomainOrRange = DataDomain ClassExpression | DataRange DataRange
-    deriving (Show, Eq, Ord)
 
 data Character =
     Functional
@@ -186,16 +188,11 @@ data Character =
   | Transitive
     deriving (Enum, Bounded, Show, Eq, Ord)
 
-data SameOrDifferent = Same | Different deriving (Show, Eq, Ord)
+data PositiveOrNegative = Positive | Negative
+    deriving (Show, Eq, Ord)
 
-showSameOrDifferent :: SameOrDifferent -> String
-showSameOrDifferent sd = case sd of
-    Same -> sameAsC
-    Different -> differentFromC
-
-data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
-
-data QuantifierType = AllValuesFrom | SomeValuesFrom deriving (Show, Eq, Ord)
+data QuantifierType = AllValuesFrom | SomeValuesFrom
+    deriving (Show, Eq, Ord)
 
 showQuantifierType :: QuantifierType -> String
 showQuantifierType ty = case ty of
@@ -237,7 +234,6 @@ datatypeType iri =
             | otherwise -> Other
         False -> Other
 
-
 data DatatypeFacet =
     LENGTH
   | MINLENGTH
@@ -276,7 +272,8 @@ showCardinalityType ty = case ty of
 data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
     deriving (Show, Eq, Ord)
 
-data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
+data JunctionType = UnionOf | IntersectionOf
+    deriving (Show, Eq, Ord)
 
 type ConstrainingFacet = IRI
 type RestrictionValue = Literal
@@ -350,8 +347,7 @@ data ClassExpression =
   | ObjectHasValue ObjectPropertyExpression Individual
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
-  | DataValuesFrom QuantifierType
-       DataPropertyExpression DataRange
+  | DataValuesFrom QuantifierType DataPropertyExpression DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord)
@@ -359,9 +355,9 @@ data ClassExpression =
 -- * ANNOTATIONS
 
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
-  deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 data AnnotationValue
-    = AnnValue IRI
-    | AnnValLit Literal
-          deriving (Show, Eq, Ord)
+   = AnnValue IRI
+   | AnnValLit Literal
+    deriving (Show, Eq, Ord)

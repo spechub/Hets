@@ -8,7 +8,7 @@ Maintainer  :  f.bungiu@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-    Extraction of all the entities in the ontology
+Extraction of all the entities in the ontology
 -}
 
 module OWL2.Extract where
@@ -24,7 +24,7 @@ import Common.Lib.State
 import qualified Data.Set as Set
 
 addObjPropExpr :: ObjectPropertyExpression -> State Sign ()
-addObjPropExpr = addEntity . Entity ObjectProperty . getObjRoleFromExpression
+addObjPropExpr = addEntity . Entity ObjectProperty . objPropToIRI
 
 addDataPropExpr :: DataPropertyExpression -> State Sign ()
 addDataPropExpr = addEntity . Entity DataProperty

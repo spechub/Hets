@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-    Static analysis for OWL 2
+Static analysis for OWL 2
 -}
 
 module OWL2.StaticAnalysis where
@@ -40,23 +40,7 @@ failMsg (Entity ty e) desc =
           ++ " " ++ showQN e ++ "` in the following ClassExpression:\n"
           ++ showDoc desc "") $ iriPos e
 
-getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI
-getObjRoleFromExpression opExp =
-    case opExp of
-       ObjectProp u -> u
-       ObjectInverseOf objProp -> getObjRoleFromExpression objProp
-
-sortObjData :: Sign -> ObjectPropertyExpression
-                -> Maybe ObjectPropertyExpression
-sortObjData s op =
-    let p = getObjRoleFromExpression op in
-    if Set.member p (objectProperties s) then Just op
-     else Nothing
-
-sortObjDataList :: Sign -> [ObjectPropertyExpression]
-                -> [ObjectPropertyExpression]
-sortObjDataList s = mapMaybe $ sortObjData s
-
+-- | takes an entity and modifies the sign according to the given function
 modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
 modEntity f (Entity ty u) = do
   s <- get
@@ -66,8 +50,7 @@ modEntity f (Entity ty u) = do
     Class -> s { concepts = chg $ concepts s }
     ObjectProperty -> s { objectProperties = chg $ objectProperties s }
     DataProperty -> s { dataProperties = chg $ dataProperties s }
-    NamedIndividual ->
-        if isAnonymous u then s
+    NamedIndividual -> if isAnonymous u then s
          else s { individuals = chg $ individuals s }
     AnnotationProperty -> s {annotationRoles = chg $ annotationRoles s}
 
@@ -75,34 +58,61 @@ modEntity f (Entity ty u) = do
 addEntity :: Entity -> State Sign ()
 addEntity = modEntity Set.insert
 
--- | adding annotations for theorems
-anaAxiom :: Axiom -> Named Axiom
-anaAxiom x = findImplied x $ makeNamed "" x
-
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a (Entity ty e) =
   let errMsg = mkError ("unknown " ++ showEntityType ty) e
   in case ty of
-   Datatype -> if Set.member e (datatypes s) ||
-                    isDatatypeKey e
-                  then return a
-                else errMsg
-   Class -> if Set.member e (concepts s) || isThing e then return a
-             else errMsg
-   ObjectProperty -> if Set.member e (objectProperties s) then return a
-                      else errMsg
-   DataProperty -> if Set.member e (dataProperties s) then return a
-                    else errMsg
-   NamedIndividual -> if Set.member e (individuals s) then return a
-                       else errMsg
-   AnnotationProperty -> if Set.member e (annotationRoles s) then return a
-                          else errMsg
+   Datatype -> if Set.member e (datatypes s) || isDatatypeKey e
+               then return a else errMsg
+   Class -> if Set.member e (concepts s) || isThing e
+            then return a else errMsg
+   ObjectProperty -> if Set.member e (objectProperties s)
+                     then return a else errMsg
+   DataProperty -> if Set.member e (dataProperties s)
+                   then return a else errMsg
+   AnnotationProperty -> if Set.member e (annotationRoles s)
+                         then return a else errMsg
+   _ -> return a
+
+objPropToIRI :: ObjectPropertyExpression -> Individual
+objPropToIRI opExp = case opExp of
+    ObjectProp u -> u
+    ObjectInverseOf objProp -> objPropToIRI objProp
+
+maybeObjProp :: Sign -> ObjectPropertyExpression
+                -> Maybe ObjectPropertyExpression
+maybeObjProp s op = if Set.member (objPropToIRI op) (objectProperties s)
+                   then Just op else Nothing
+
+{- | takes a list of object properties and discards the ones
+    which are not in the signature -}
+sortObjDataList :: Sign -> [ObjectPropertyExpression]
+                -> [ObjectPropertyExpression]
+sortObjDataList = mapMaybe . maybeObjProp
+
+checkObjPropList :: Sign -> a -> [ObjectPropertyExpression] -> Result a
+checkObjPropList s fb ol = do
+    let ls = map (\ u -> Set.member (objPropToIRI u)
+              (objectProperties s) ) ol
+    if elem False ls then
+        fail $ "Static analysis found that not all properties" ++
+               " in the following list are ObjectProperties\n\n"
+          ++ show ol
+     else return fb
+
+checkDataPropList :: Sign -> a -> [DataPropertyExpression] -> Result a
+checkDataPropList s fb dl = do
+    let ls = map (\ u -> Set.member u (dataProperties s) ) dl
+    if elem False ls then
+        fail $ "Static analysis found that not all properties" ++
+               " in the following list are DataProperties\n\n"
+          ++ show dl
+     else return fb
 
 -- | checks if a DataRange is valid
 checkDataRange :: Sign -> DataRange -> Result DataRange
-checkDataRange s dr =
-  case dr of
+checkDataRange s dr = case dr of
     DataType dt _ -> checkEntity s dr (Entity Datatype dt) >> return dr
     DataJunction _ drl -> mapM_ (checkDataRange s) drl >> return dr
     DataComplementOf r -> checkDataRange s r
@@ -137,70 +147,81 @@ checkClassExpression s desc =
         $ mapM (checkClassExpression s) ds
   ObjectComplementOf d -> fmap ObjectComplementOf
         $ checkClassExpression s d
-  ObjectOneOf is -> mapM_ (checkEntity s desc . Entity NamedIndividual) is
-        >> return desc
+  ObjectOneOf _ -> return desc
   ObjectValuesFrom a opExpr d -> do
-    let iri = getObjRoleFromExpression opExpr
-        x = Set.member iri (objectProperties s)
-        z = Set.member iri (dataProperties s)
-    if x then fmap (ObjectValuesFrom a opExpr) $ checkClassExpression s d
-     else if z then do
+    let iri = objPropToIRI opExpr
+        mbrOP = Set.member iri (objectProperties s)
+        mbrDP = Set.member iri (dataProperties s)
+    if mbrOP then fmap (ObjectValuesFrom a opExpr) $ checkClassExpression s d
+     else if mbrDP then do
             ndr <- classExpressionToDataRange s d
-            checkDataRange s ndr
+            _ <- checkDataRange s ndr
             return $ DataValuesFrom a iri ndr
            else objErr iri
   ObjectHasSelf opExpr -> do
-    let iri = getObjRoleFromExpression opExpr
+    let iri = objPropToIRI opExpr
     if Set.member iri (objectProperties s) then return desc
      else objErr iri
-  ObjectHasValue opExpr i -> do
-    let iri = getObjRoleFromExpression opExpr
-        x = Set.member iri (objectProperties s)
-    if x then checkEntity s desc (Entity NamedIndividual i) >> return desc
-      else objErr iri
+  ObjectHasValue opExpr _ -> do
+    let iri = objPropToIRI opExpr
+    if Set.member iri (objectProperties s) then return desc else objErr iri
   ObjectCardinality (Cardinality a b opExpr md) -> do
-    let iri = getObjRoleFromExpression opExpr
-    let x = Set.member iri (objectProperties s)
-    let z = Set.member iri (dataProperties s)
+    let iri = objPropToIRI opExpr
+    let mbrOP = Set.member iri (objectProperties s)
+    let mbrDP = Set.member iri (dataProperties s)
     case md of
-      Nothing ->
-        if x then return desc
-         else objErr iri
+      Nothing -> if mbrOP then return desc else objErr iri
       Just d ->
-        if x then do
+        if mbrOP then do
            n <- checkClassExpression s d
            return $ ObjectCardinality (Cardinality a b opExpr (Just n))
          else do
            dr <- classExpressionToDataRange s d
-           checkDataRange s dr
-           if z then return $ DataCardinality (Cardinality a b iri (Just dr))
+           _ <- checkDataRange s dr
+           if mbrDP then return $ DataCardinality
+                (Cardinality a b iri (Just dr))
             else datErr iri
   DataValuesFrom _ dExp r -> do
-    checkDataRange s r
-    let x = Set.member dExp (dataProperties s)
-    if x then return desc
-     else datErr dExp
-  DataHasValue dExp _ -> do
-    let x = Set.member dExp (dataProperties s)
-    if x then return desc
-     else datErr dExp
-  DataCardinality (Cardinality _ _ dExp mr) -> do
-    let x = Set.member dExp (dataProperties s)
-    if x then
-        case mr of
+    _ <- checkDataRange s r
+    if Set.member dExp (dataProperties s) then return desc else datErr dExp
+  DataHasValue dExp _ ->
+    if Set.member dExp (dataProperties s) then return desc else datErr dExp
+  DataCardinality (Cardinality _ _ dExp mr) -> 
+    if Set.member dExp (dataProperties s) then case mr of
           Nothing -> return desc
           Just d -> checkDataRange s d >> return desc
       else datErr dExp
 
--- | corrects the frame bits according to the signature
-checkAnnBit :: Sign -> AnnFrameBit -> Result AnnFrameBit
-checkAnnBit s fb = case fb of
-    DatatypeBit dr -> checkDataRange s dr >> return fb
-    ClassDisjointUnion cel -> fmap ClassDisjointUnion
-        $ mapM (checkClassExpression s) cel
-    ClassHasKey _ _ -> checkHasKey s fb
-    ObjectSubPropertyChain ol -> checkObjPropList s fb ol
-    _ -> return fb
+checkFactList :: Sign -> ListFrameBit -> [Fact] -> Result ListFrameBit
+checkFactList s fb fl = mapM_ (checkFact s fb) fl >> return fb
+
+checkFact :: Sign -> ListFrameBit -> Fact -> Result ListFrameBit
+checkFact s fb f = case f of
+    ObjectPropertyFact _ op _ ->
+        if Set.member (objPropToIRI op) (objectProperties s) then return fb
+         else fail "Static analysis. ObjectPropertyFact failed"
+    DataPropertyFact _ dp _ ->
+        if Set.member dp (dataProperties s) then return fb
+         else fail "Static analysis. DataProperty fact failed"
+
+checkHasKeyAll :: Sign -> AnnFrameBit -> Result AnnFrameBit
+checkHasKeyAll s k = case k of
+  ClassHasKey ol dl -> do
+    let l1 = map (\ u -> Set.member (objPropToIRI u) (objectProperties s) ) ol
+        l2 = map (`Set.member` dataProperties s) dl
+    if elem False (l1 ++ l2) then
+      fail "Static analysis. Keys failed, undeclared Data or Object Properties"
+     else return k
+  _ -> return k
+
+-- | sorts the data and object properties
+checkHasKey :: Sign -> AnnFrameBit -> Result AnnFrameBit
+checkHasKey s k = case k of
+  ClassHasKey ol dl -> do
+    let sl = sortObjDataList s ol
+    let k2 = ClassHasKey sl (map objPropToIRI (ol \\ sl) ++ dl)
+    checkHasKeyAll s k2
+  _ -> return k
 
 checkListBit :: Sign -> Maybe Relation -> ListFrameBit -> Result ListFrameBit
 checkListBit s r fb = case fb of
@@ -213,119 +234,81 @@ checkListBit s r fb = case fb of
         return $ ExpressionBit $ zip (map fst anl) n
     ObjectBit anl -> do
         let ol = map snd anl
-        let x = sortObjDataList s ol
-        if null x then do
-            let dpl = map getObjRoleFromExpression ol
+        let sorted = sortObjDataList s ol
+        if null sorted then do
+            let dpl = map objPropToIRI ol
             let nb = DataBit $ zip (map fst anl) dpl
             checkDataPropList s nb dpl
           else
-            if length x == length ol then return fb
+            if length sorted == length ol then return fb
                else fail $ "Static analysis found that there are" ++
                            " multiple types of properties in\n\n" ++
-                            show x ++ show
-                              (map getObjRoleFromExpression (ol \\ x))
+                            show sorted ++ show
+                              (map objPropToIRI (ol \\ sorted))
     ObjectCharacteristics _ -> return fb
     DataBit anl -> checkDataPropList s fb $ map snd anl
     DataPropRange anl -> mapM_ (checkDataRange s . snd) anl >> return fb
     IndividualFacts anl -> checkFactList s fb $ map snd anl
-    IndividualSameOrDifferent anl -> mapM_ (checkEntity s fb .
-        Entity NamedIndividual . snd) anl >> return fb
+    IndividualSameOrDifferent _ -> return fb
 
+checkAnnBit :: Sign -> AnnFrameBit -> Result AnnFrameBit
+checkAnnBit s fb = case fb of
+    DatatypeBit dr -> checkDataRange s dr >> return fb
+    ClassDisjointUnion cel -> fmap ClassDisjointUnion
+        $ mapM (checkClassExpression s) cel
+    ClassHasKey _ _ -> checkHasKey s fb
+    ObjectSubPropertyChain ol -> checkObjPropList s fb ol
+    _ -> return fb
+
+-- | corrects the frame bits according to the signature
 checkBit :: Sign -> FrameBit -> Result FrameBit
 checkBit s fb = case fb of
     ListFrameBit mr lfb -> fmap (ListFrameBit mr) $ checkListBit s mr lfb
     AnnFrameBit ans afb -> fmap (AnnFrameBit ans) $ checkAnnBit s afb
 
-checkFactList :: Sign -> ListFrameBit -> [Fact] -> Result ListFrameBit
-checkFactList s fb fl = mapM_ (checkFact s fb) fl >> return fb
-
-checkFact :: Sign -> ListFrameBit -> Fact -> Result ListFrameBit
-checkFact s fb f =
-    case f of
-      ObjectPropertyFact _ op _ ->
-        if Set.member (getObjRoleFromExpression op) (objectProperties s) then
-            return fb
-         else fail "Static analysis. ObjectPropertyFact failed"
-      DataPropertyFact _ dp _ ->
-            if Set.member dp (dataProperties s) then return fb
-             else fail "Static analysis. DataProperty fact failed"
-
-checkObjPropList :: Sign -> a -> [ObjectPropertyExpression] -> Result a
-checkObjPropList s fb ol = do
-    let x = map (\ u -> Set.member (getObjRoleFromExpression u)
-              (objectProperties s) ) ol
-    if elem False x then
-        fail $ "Static analysis found that not all properties" ++
-               " in the following list are ObjectProperties\n\n"
-          ++ show ol
-     else return fb
-
-checkDataPropList :: Sign -> a -> [DataPropertyExpression] -> Result a
-checkDataPropList s fb dl = do
-    let x = map (\ u -> Set.member u (dataProperties s) ) dl
-    if elem False x then
-        fail $ "Static analysis found that not all properties" ++
-               " in the following list are DataProperties\n\n"
-          ++ show dl
-     else return fb
-
-checkHasKeyAll :: Sign -> AnnFrameBit -> Result AnnFrameBit
-checkHasKeyAll s k = case k of
-  ClassHasKey ol dl -> do
-    let x = map (\ u -> Set.member (getObjRoleFromExpression u)
-              (objectProperties s) ) ol
-        y = map (\ u -> Set.member u (dataProperties s) ) dl
-    if elem False (x ++ y) then
-      fail "Static analysis. Keys failed, undeclared Data or Object Properties"
-     else return k
-  _ -> return k
-
-checkHasKey :: Sign -> AnnFrameBit -> Result AnnFrameBit
-checkHasKey s k = case k of
-  ClassHasKey ol dl -> do
-    let x = sortObjDataList s ol
-    let k2 = ClassHasKey x (map getObjRoleFromExpression (ol \\ x) ++ dl)
-    checkHasKeyAll s k2
-  _ -> return k
-
 checkExtended :: Sign -> Extended -> Result Extended
 checkExtended s e = case e of
     ClassEntity ce -> fmap ClassEntity $ checkClassExpression s ce
+    ObjectEntity oe -> case oe of
+        ObjectInverseOf op ->
+            if Set.member (objPropToIRI op) (objectProperties s)
+            then return e else fail $ "unknown object property" ++ show op
+        _ -> return e
     _ -> return e
 
 -- | checks a frame and applies desired changes
 checkFrame :: Sign -> Frame -> Result Frame
 checkFrame s (Frame eith fbl) = do
-      ne <- checkExtended s eith
-      nl <- mapM (checkBit s) fbl
-      return $ Frame ne nl
+    ne <- checkExtended s eith
+    nl <- mapM (checkBit s) fbl
+    return $ Frame ne nl
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]
-correctFrames s = mapM (checkFrame s)
+correctFrames = mapM . checkFrame
 
 getEntityFromFrame :: Frame -> State Sign ()
 getEntityFromFrame f = case f of
     Frame (SimpleEntity e) _ -> addEntity e
-    Frame (ClassEntity (Expression e)) _ ->
-        addEntity $ Entity Class e
+    Frame (ClassEntity (Expression e)) _ -> addEntity $ Entity Class e
     Frame (ObjectEntity (ObjectProp e)) _ ->
         addEntity $ Entity ObjectProperty e
-    Frame _ [AnnFrameBit al AnnotationFrameBit]
-        -> case al of
-            [Annotation [] iri1 (AnnValue iri2)] ->
-                when (iri1 == iri2) $ addEntity $ Entity AnnotationProperty iri1
-            _ -> return ()
+    Frame _ [AnnFrameBit al AnnotationFrameBit] -> case al of
+        [Annotation [] iri1 (AnnValue iri2)] ->
+            when (iri1 == iri2) $ addEntity $ Entity AnnotationProperty iri1
+        _ -> return ()
     _ -> return ()
 
+-- | collects all entites from the frames
 createSign :: [Frame] -> State Sign ()
 createSign f = do
   pm <- gets prefixMap
   mapM_ (getEntityFromFrame . function Expand pm) f
 
+-- | corrects the axioms according to the signature
 createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do
-    x <- correctFrames s $ map (function Expand $ prefixMap s) fl
-    return (map anaAxiom $ concatMap getAxioms x, x)
+    cf <- correctFrames s $ map (function Expand $ prefixMap s) fl
+    return (map anaAxiom $ concatMap getAxioms cf, cf)
 
 modifyOntologyDocument :: OntologyDocument -> [Frame] -> OntologyDocument
 modifyOntologyDocument
@@ -348,6 +331,10 @@ basicOWL2Analysis (odoc, inSign, _) = do
     (axl, nfl) <- createAxioms accSign fs
     let newdoc = modifyOntologyDocument odoc nfl
     return (newdoc , ExtSign accSign syms, axl)
+
+-- | adding annotations for theorems
+anaAxiom :: Axiom -> Named Axiom
+anaAxiom ax = findImplied ax $ makeNamed "" ax
 
 findImplied :: Axiom -> Named Axiom -> Named Axiom
 findImplied ax sent =

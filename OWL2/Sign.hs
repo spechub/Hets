@@ -7,7 +7,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Signatures and sentences for OWL 2
+OWL 2 signature and sentences
 -}
 
 module OWL2.Sign where
@@ -16,24 +16,17 @@ import OWL2.AS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-type ClassID = IRIreference
-type DatatypeID = IRIreference
-type IndividualID = IRIreference
-type DataRoleIRI = IRIreference
-type IndividualRoleIRI = IRIreference
-type AnnotationPropertyID = IRIreference
-
 data Sign = Sign
-            { concepts :: Set.Set ClassID
+            { concepts :: Set.Set Class
               -- classes
-            , datatypes :: Set.Set DatatypeID -- datatypes
-            , objectProperties :: Set.Set IndividualRoleIRI
+            , datatypes :: Set.Set Datatype -- datatypes
+            , objectProperties :: Set.Set Individual
               -- object properties
-            , dataProperties :: Set.Set DataRoleIRI
+            , dataProperties :: Set.Set DataProperty
               -- data properties
-            , annotationRoles :: Set.Set AnnotationPropertyID
+            , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
-            , individuals :: Set.Set IndividualID  -- individuals
+            , individuals :: Set.Set NamedIndividual  -- named individuals
             , prefixMap :: PrefixMap
             } deriving (Show, Eq, Ord)
 
@@ -41,7 +34,7 @@ data SignAxiom =
     Subconcept ClassExpression ClassExpression   -- subclass, superclass
   | Role (DomainOrRangeOrFunc (RoleKind, RoleType)) ObjectPropertyExpression
   | Data (DomainOrRangeOrFunc ()) DataPropertyExpression
-  | Conceptmembership IndividualID ClassExpression
+  | Conceptmembership NamedIndividual ClassExpression
     deriving (Show, Eq, Ord)
 
 data RoleKind = FuncRole | RefRole deriving (Show, Eq, Ord)
@@ -67,7 +60,6 @@ emptySign = Sign
   , prefixMap = Map.empty
   }
 
--- ignoe ontologyID
 diffSig :: Sign -> Sign -> Sign
 diffSig a b =
     a { concepts = concepts a `Set.difference` concepts b
