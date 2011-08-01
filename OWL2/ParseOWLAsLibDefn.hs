@@ -59,7 +59,8 @@ parseOWL filename = do
 
 parseProc :: FilePath -> String -> LIB_DEFN
 parseProc filename str = convertToLibDefN filename
-        $ unifyDocs $ map xmlBasicSpec $ concatMap (filterElementsName $ isSmth "Ontology")
+        $ unifyDocs $ map xmlBasicSpec
+        $ concatMap (filterElementsName $ isSmth "Ontology")
         $ onlyElems $ parseXML str
 
 cnvimport :: QName -> Annoted SPEC
