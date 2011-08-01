@@ -95,14 +95,10 @@ cspSubsigInclusion sign = checkResultMorphismIsLegal .
 will embed channel names and process names properly. -}
 
 checkResultMorphismIsLegal :: Result CspCASLMorphism -> Result CspCASLMorphism
-checkResultMorphismIsLegal (Result d1 maybeMor) =
-  case maybeMor of
-    Nothing -> Result d1 maybeMor
-    Just mor ->
-      let Result d2 answer = legalMorphismExtension mor
-      in case answer of
-        Nothing -> Result (d1 ++ d2) Nothing
-        Just _ -> Result (d1 ++ d2) $ Just mor
+checkResultMorphismIsLegal rmor = do
+  mor <- rmor
+  legalMorphismExtension mor
+  return mor
 
 -- | lookup a typed channel
 mapChan :: Sort_map -> ChanMap -> (CHANNEL_NAME, SORT) -> (CHANNEL_NAME, SORT)
