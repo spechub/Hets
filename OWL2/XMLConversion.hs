@@ -68,7 +68,8 @@ setIRI iri e =
             | fan == Full = "IRI"
             | fan == Abbreviated = "abbreviatedIRI"
             | otherwise = "nodeID"
-    in e {elAttribs = [Attr {attrKey = makeQN ty, attrVal = showIRI iri}]}
+    in e {elAttribs = [Attr {attrKey = makeQN ty,
+                             attrVal = showIRI $ setReservedPrefix iri}]}
 
 mwIRI :: IRI -> Element
 mwIRI iri = setIRI iri nullElem
@@ -96,7 +97,8 @@ mwText s = setText s nullElem
 -- | makes a new element with the IRI as the text content
 mwSimpleIRI :: IRI -> Element
 mwSimpleIRI s = setName (if iriType s /= Abbreviated then "IRI"
-                          else "AbbreviatedIRI") $ mwText $ showIRI s
+                          else "AbbreviatedIRI") $ mwText $ showIRI
+                          $ setReservedPrefix s
 
 {- | generates a list of elements, all with the first string as name,
     and each with the content in this order: first, the list of elements

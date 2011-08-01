@@ -28,8 +28,8 @@ instance Pretty QName where
 
 printURIreference :: QName -> Doc
 printURIreference q =
-  (if localPart q == "Thing" && elem (namePrefix q) ["", "owl"]
-  then keyword else text) $ showQN q
+  if isThing q || isDatatypeKey q
+  then keyword $ localPart q else text $ showQN q
 
 -- | Symbols printing
 

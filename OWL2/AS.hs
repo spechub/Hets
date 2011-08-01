@@ -45,7 +45,7 @@ instance GetRange QName where
   getRange = iriPos
 
 showQN :: QName -> String
-showQN q = (if (iriType q /= Abbreviated) then showQI else showQU) q
+showQN q = (if iriType q /= Abbreviated then showQI else showQU) q
 
 -- | show QName as abbreviated iri
 showQU :: QName -> String
@@ -72,6 +72,12 @@ setQRange r q = q { iriPos = r }
 setPrefix :: String -> QName -> QName
 setPrefix s q = q { namePrefix = s }
 
+setReservedPrefix :: IRI -> IRI
+setReservedPrefix iri
+    | isDatatypeKey iri = setPrefix "xsd" iri
+    | isThing iri = setPrefix "owl" iri
+    | otherwise = iri
+
 setFull :: QName -> QName
 setFull q = q {iriType = Full}
 
@@ -87,9 +93,10 @@ instance Ord QName where
       compare n1 n2 -- compare fully expanded names only
 
 isThing :: IRI -> Bool
-isThing u = localPart u `elem` ["Thing", "Nothing"]
+isThing u = elem (localPart u) ["Thing", "Nothing"] &&
+                elem (namePrefix u) ["", "owl"]
 
--- ^ checks if a string (bound to be localPart of an IRI) contains "://"
+-- | checks if a string (bound to be localPart of an IRI) contains "://"
 cssIRI :: String -> IRIType
 cssIRI iri = if isInfixOf "://" iri then Full else Abbreviated
 
