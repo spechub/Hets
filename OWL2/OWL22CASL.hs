@@ -203,6 +203,52 @@ toIRILst ty ane = case ane of
   SimpleEntity (Entity ty2 iri) | ty == ty2 -> Just iri
   _ -> Nothing
 
+mapFact :: CASLSign -> Extended -> Fact -> Result CASLFORMULA
+mapFact cSig ex f = case f of
+    ObjectPropertyFact posneg obe ind ->
+            case ex of
+              SimpleEntity (Entity NamedIndividual siri) ->
+                    do
+                      inS <- mapIndivURI cSig siri
+                      inT <- mapIndivURI cSig ind
+                      oPropH <- mapObjProp cSig obe 1 2
+                      let oProp = case posneg of
+                                      Positive -> oPropH
+                                      Negative -> Negation oPropH nullRange
+                      return (mkForall
+                             [mkVarDecl (mkNName 1) thing,
+                              mkVarDecl (mkNName 2) thing]
+                             (mkImpl
+                                (conjunct
+                                    [mkStEq (toQualVar
+                                      (mkVarDecl (mkNName 1) thing)) inS,
+                                     mkStEq (toQualVar
+                                      (mkVarDecl (mkNName 2) thing)) inT]
+                             ) oProp))
+              _ -> fail $ "ObjectPropertyFactsFacts Entity fail: " ++ show ex
+    DataPropertyFact posneg dpe lit ->
+            case ex of
+              SimpleEntity (Entity ty iri) ->
+                case ty of
+                  NamedIndividual ->
+                    do
+                      inS <- mapIndivURI cSig iri
+                      inT <- mapLiteral cSig lit
+                      oPropH <- mapDataProp cSig dpe 1 2
+                      let oProp = case posneg of
+                                    Positive -> oPropH
+                                    Negative -> Negation oPropH nullRange
+                      return (mkForall
+                                [mkVarDecl (mkNName 1) thing,
+                                 mkVarDecl (mkNName 2) dataS]
+                             (mkImpl (conjunct
+                                        [mkStEq (toQualVar
+                                          (mkVarDecl (mkNName 1) thing)) inS,
+                                         mkStEq (toQualVar
+                                          (mkVarDecl (mkNName 2) dataS)) inT]
+                             ) oProp))
+                  _ -> fail "DataPropertyFact EntityType fail"
+              _ -> fail "DataPropertyFact Entity fail"
 
 -- | Mapping of ListFrameBit
 mapListFrameBit :: CASLSign
@@ -388,57 +434,9 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                         _ -> fail "DataPropRange Entity fail"
                  _ -> fail "DataPropRange ADomain ni"
             _ -> fail "DataPropRange Relations ni"
-    IndividualFacts indf ->
-        let map2nd = map snd indf
-        in
-        case map2nd of
-          [ObjectPropertyFact posneg obe ind] ->
-            case ex of
-              SimpleEntity (Entity NamedIndividual siri) ->
-                    do
-                      inS <- mapIndivURI cSig siri
-                      inT <- mapIndivURI cSig ind
-                      oPropH <- mapObjProp cSig obe 1 2
-                      let oProp = case posneg of
-                                      Positive -> oPropH
-                                      Negative -> Negation oPropH nullRange
-                      return ([mkForall
-                             [mkVarDecl (mkNName 1) thing,
-                              mkVarDecl (mkNName 2) thing]
-                             (mkImpl
-                                (conjunct
-                                    [mkStEq (toQualVar
-                                      (mkVarDecl (mkNName 1) thing)) inS,
-                                     mkStEq (toQualVar
-                                      (mkVarDecl (mkNName 2) thing)) inT]
-                             ) oProp)]
-                             , cSig)
-              _ -> fail $ "ObjectPropertyFactsFacts Entity fail: " ++ show ex
-          [DataPropertyFact posneg dpe lit] ->
-            case ex of
-              SimpleEntity (Entity ty iri) ->
-                case ty of
-                  NamedIndividual ->
-                    do
-                      inS <- mapIndivURI cSig iri
-                      inT <- mapLiteral cSig lit
-                      oPropH <- mapDataProp cSig dpe 1 2
-                      let oProp = case posneg of
-                                    Positive -> oPropH
-                                    Negative -> Negation oPropH nullRange
-                      return ([mkForall
-                                [mkVarDecl (mkNName 1) thing,
-                                 mkVarDecl (mkNName 2) dataS]
-                             (mkImpl (conjunct
-                                        [mkStEq (toQualVar
-                                          (mkVarDecl (mkNName 1) thing)) inS,
-                                         mkStEq (toQualVar
-                                          (mkVarDecl (mkNName 2) dataS)) inT]
-                             ) oProp)]
-                             , cSig)
-                  _ -> fail "DataPropertyFact EntityType fail"
-              _ -> fail "DataPropertyFact Entity fail"
-          _ -> fail "DataPropertyFacts fail"
+    IndividualFacts indf -> do
+        fl <- mapM (mapFact cSig ex) $ map snd indf
+        return (fl, cSig)
     ObjectCharacteristics ace ->
       let map2nd = map snd ace
       in
@@ -712,7 +710,8 @@ mapLiteral _ (Literal l ty) = do
     case ty of
         Untyped _ -> return $ foldr consChar emptyStringTerm l
         Typed dt -> return $ case datatypeType dt of
-            OWL2Int -> foldr1 joinDigits $ map (mkDigit . digitToInt) l
+            OWL2Int -> foldr1 joinDigits
+                $ map (mkDigit . digitToInt) $ filter isDigit l
             OWL2Bool -> case l of
                 "True" -> trueT
                 _ -> falseT
