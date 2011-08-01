@@ -61,9 +61,9 @@ newOid id1 id2 =
       else if null lid2 || id1 == id2 then id1
             else id1 { localPart = uriToName lid1 ++ "_" ++ uriToName lid2 }
 
-integrateOntologyDoc :: OntologyDocument -> OntologyDocument
+combineDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
-integrateOntologyDoc od1@( OntologyDocument ns1
+combineDoc od1@( OntologyDocument ns1
                            ( Ontology oid1 imp1 anno1 frames1))
                       od2@( OntologyDocument ns2
                            ( Ontology oid2 imp2 anno2 frames2)) =
@@ -99,7 +99,7 @@ unifyTwo :: OntologyDocument -> OntologyDocument ->
 unifyTwo od1 od2 =
   let (_, tm) = integPref (prefixDeclaration od1) (prefixDeclaration od2)
       newod2 = function Rename tm od2
-      alld = integrateOntologyDoc od1 od2
+      alld = combineDoc od1 od2
   in (alld, newod2)
 
 unifyDocs :: [OntologyDocument] -> [OntologyDocument]
