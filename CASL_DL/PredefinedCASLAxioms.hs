@@ -235,7 +235,7 @@ predefSign = (emptySign ())
                         $ map (\ i -> (stringToId $ show i, [natT]))
                           [0 .. 9 :: Int]
                         ++ map (\ c -> (charToId c, [charT]))
-                          [chr 0 .. chr 255]
+                          [chr 0 .. chr 127]
                         ++
                         [ (trueS, [boolT])
                         , (falseS, [boolT])
