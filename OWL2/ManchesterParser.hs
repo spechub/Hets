@@ -85,7 +85,7 @@ classFrame = do
         iri <- description
         plain <- many classFrameBit
         -- ignore Individuals: ... !
-        optional $ pkeyword individualsC >> sepByComma individualUri
+        optional $ pkeyword individualsC >> sepByComma individual
         return $ Frame (ClassEntity iri) plain
 
 classFrameBit :: CharParser st FrameBit
@@ -200,7 +200,7 @@ fact = do
       c <- literal
       return $ DataPropertyFact pn u c
     <|> do
-      t <- individualUri
+      t <- individual
       return $ ObjectPropertyFact pn (ObjectProp u) t
 
 iFrameBit :: CharParser st FrameBit
@@ -210,7 +210,7 @@ iFrameBit = do
     return $ ListFrameBit (Just Types) $ ExpressionBit ds
   <|> do
     s <- sameOrDifferent
-    is <- sepByComma $ optAnnos individualUri
+    is <- sepByComma $ optAnnos individual
     return $ ListFrameBit (Just (SDRelation s))
           $ IndividualSameOrDifferent is
   <|> do
@@ -224,7 +224,7 @@ iFrameBit = do
 individualFrame :: CharParser st Frame
 individualFrame = do
   pkeyword individualC
-  iuri <- individualUri
+  iuri <- individual
   as <- many iFrameBit
   return $ Frame (SimpleEntity $ Entity NamedIndividual iuri) as
 
