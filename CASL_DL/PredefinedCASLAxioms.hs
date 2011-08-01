@@ -132,7 +132,8 @@ emptyStringTerm :: TERM ()
 emptyStringTerm = mkAppl (mkQualOp emptyString $ toOP_TYPE emptyStringTy) []
 
 charToId :: Char -> Id
-charToId c = stringToId $ "'\\" ++ show (ord c) ++ "'"
+charToId c = let s = show (ord c) in
+  stringToId $ "'\\" ++ replicate (3 - length s) '0' ++ show (ord c) ++ "'"
 
 mkChar :: Char -> TERM ()
 mkChar c = mkAppl (mkQualOp (charToId c) $ toOP_TYPE charT) []
