@@ -22,6 +22,8 @@ module CASL_DL.PredefinedCASLAxioms
   , joinDigits
   , consChar
   , emptyStringTerm
+  , trueT
+  , falseT
   ) where
 
 import CASL.AS_Basic_CASL
@@ -77,6 +79,18 @@ boolS = stringToId "boolean"
 
 boolT :: OpType
 boolT = mkTotOpType [] boolS
+
+trueS :: Id
+trueS = stringToId "True"
+
+falseS :: Id
+falseS = stringToId "False"
+
+trueT :: TERM ()
+trueT = mkAppl (mkQualOp trueS $ toOP_TYPE boolT) []
+
+falseT :: TERM ()
+falseT = mkAppl (mkQualOp falseS $ toOP_TYPE boolT) []
 
 natT :: OpType
 natT = mkTotOpType [] nonNegInt
@@ -221,8 +235,8 @@ predefSign = (emptySign ())
                         ++ map (\ c -> (charToId c, [charT]))
                           [chr 0 .. chr 255]
                         ++
-                        [ (stringToId "True", [boolT])
-                        , (stringToId "False", [boolT])
+                        [ (trueS, [boolT])
+                        , (falseS, [boolT])
                         , (atAt, [atAtTy])
                         , (unMinus, [minusTy])
                         , (cons, [consTy])
