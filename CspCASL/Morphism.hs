@@ -166,8 +166,8 @@ composeCspAddMorphism m1 m2 = let
 CspAddMorphism. -}
 type CspCASLMorphism = CASL_Morphism.Morphism CspSen CspSign CspAddMorphism
 
--- | Check if a CspCASL signature morphism has the refl property i.e.,
--- sigma(s1) <= sigma(s2) implies s1 <= s2 for all s1, s2 in S
+{- | Check if a CspCASL signature morphism has the refl property i.e.,
+sigma(s1) <= sigma(s2) implies s1 <= s2 for all s1, s2 in S -}
 checkReflCondition :: Morphism f CspSign CspAddMorphism -> Result ()
 checkReflCondition mor =
   let sig = msource mor
@@ -177,22 +177,28 @@ checkReflCondition mor =
       rel' = sortRel sig'
       allPairs = LT.cartesian $ sortSet sig
       failures = Set.filter (not . test) allPairs
-      test (s1,s2) =  if Rel.path (mapSort sm s1) (mapSort sm s2) rel' ||
-                         (mapSort sm s1) == (mapSort sm s2)
-                      then Rel.path s1 s2 rel || s1 == s2
-                      else True
+      test (s1, s2) = if Rel.path (mapSort sm s1) (mapSort sm s2) rel' ||
+                        mapSort sm s1 == mapSort sm s2
+                     then Rel.path s1 s2 rel || s1 == s2
+                     else True
   in if Set.null failures
      then return ()
-     else let produceDiag (s1,s2) =
-                mkDiag Error "CSP-CASL Signature Morphism Refl \
-                             \Property Violated:" (s1,s2)
-              diags = map produceDiag $ Set.toList failures
-          in Result diags Nothing -- failure with error messages
+     else let produceDiag (s1, s2) =
+                let x = (mapSort sm s1)
+                    y = (mapSort sm s2)
+                in mkDiag Error ("CSP-CASL Signature Morphism Refl \
+                             \Property Violated: " ++ show s1 ++ " |-> " ++
+                              show x ++ " and " ++ show s2 ++ " |-> " ++
+                              show y ++ " and " ++ show x ++ " < " ++ show y ++
+                              " but not " ++ show s1 ++ " < " ++ show s2) ()
+              allDiags = map produceDiag $ Set.toList failures
+          in Result allDiags Nothing -- failure with error messages
 
--- | Check if a CspCASL signature morphism has the weak non extension property
--- i.e.,
--- sigma(s1) <= u' and -- sigma(s2) <= u' implies there exists t in S with
--- s1 <= t and s2 <= t and sigma(t) <= u' for all s1,s2 in S and u' in S'
+
+{- | Check if a CspCASL signature morphism has the weak non extension property
+i.e.,
+sigma(s1) <= u' and sigma(s2) <= u' implies there exists t in S with
+s1 <= t and s2 <= t and sigma(t) <= u' for all s1,s2 in S and u' in S' -}
 checkWNECondition :: Morphism f CspSign CspAddMorphism -> Result ()
 checkWNECondition mor =
   let sig = msource mor
@@ -204,25 +210,33 @@ checkWNECondition mor =
       commonSuperSortsInTarget s1 s2 = Set.intersection
                                        (supers (mapSort sm s1) sig')
                                        (supers (mapSort sm s2) sig')
-      -- Candidates are triplles (s1,s2,u')
-      -- such that \sigma(s1),\sigma(s2) <= u'
-      createCandidateTripples (s1,s2) =
-        Set.map (\u' -> (s1,s2,u')) (commonSuperSortsInTarget s1 s2)
+      {- Candidates are triples (s1,s2,u') such that
+      \sigma(s1),\sigma(s2) < u' -}
+      createCandidateTripples (s1, s2) =
+        Set.map (\ u' -> (s1, s2, u')) (commonSuperSortsInTarget s1 s2)
       allCandidateTripples =
         Set.unions $ Set.toList $ Set.map createCandidateTripples
         allPairsInSource
-      testCandidate (s1,s2,u') =
+      testCandidate (s1, s2, u') =
         let possibleWitnesses = Set.intersection (supers s1 sig) (supers s2 sig)
-            test t = Rel.path (mapSort sm t) u' rel' || (mapSort sm t) == u'
+            test t = Rel.path (mapSort sm t) u' rel' || mapSort sm t == u'
          in or $ Set.toList $ Set.map test possibleWitnesses
       failures = Set.filter (not . testCandidate) allCandidateTripples
   in if Set.null failures
      then return ()
-     else let produceDiag (s1,s2,u') =
-                mkDiag Error "CSP-CASL Signature Morphism Weak Non-Extension \
-                             \Property Violated:" (s1,s2,u')
-              diags = map produceDiag $ Set.toList failures
-          in Result diags Nothing -- failure with error messages
+     else let produceDiag (s1, s2, u') =
+                let x = (mapSort sm s1)
+                    y = (mapSort sm s2)
+                in mkDiag Error
+                   ("CSP-CASL Signature Morphism Weak Non-Extension Property \
+                    \Violated: " ++ show s1 ++ " |-> " ++ show x ++ " and "
+                     ++ show s2 ++ " |-> " ++ show y ++ " and " ++ show x ++
+                     " < " ++ show u' ++ " and " ++ show y ++ " < " ++
+                     show u' ++ " but there does not exist a sort a_sort \
+                     \with " ++ show s1 ++ " < a_sort and " ++ show s2 ++
+                     " < a_sort and sigma(a_sort) < " ++ show u') ()
+              allDiags = map produceDiag $ Set.toList failures
+          in Result allDiags Nothing -- failure with error messages
 
 -- | unite morphisms
 cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism

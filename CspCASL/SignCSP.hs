@@ -113,8 +113,8 @@ data CspSign = CspSign
 -- | plain union
 cspSignUnion :: CspSign -> CspSign -> CspSign
 cspSignUnion sign1 sign2 = emptyCspSign
-    { chans = MapSet.union (chans sign1) (chans sign2)
-    , procSet = MapSet.union (procSet sign1) (procSet sign2) }
+    { chans = chans sign1 `MapSet.union` chans sign2
+    , procSet = procSet sign1 `MapSet.union` procSet sign2 }
 
 {- | A CspCASL signature is a CASL signature with a CSP process
 signature in the extendedInfo part. -}
