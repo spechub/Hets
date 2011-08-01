@@ -31,6 +31,7 @@ import CASL.Sign
 
 import Common.AS_Annotation
 import Common.Id
+import Common.GlobalAnnotations
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
@@ -230,7 +231,7 @@ predefSign = (emptySign ())
                            [PredType [integer],
                             PredType
                               [nonNegInt]])]
-                  , opMap = MapSet.fromList
+                 , opMap = MapSet.fromList
                         $ map (\ i -> (stringToId $ show i, [natT]))
                           [0 .. 9 :: Int]
                         ++ map (\ c -> (charToId c, [charT]))
@@ -242,7 +243,12 @@ predefSign = (emptySign ())
                         , (unMinus, [minusTy])
                         , (cons, [consTy])
                         , (emptyString, [emptyStringTy])
-                        ] }
+                        ]
+                 , globAnnos = emptyGlobalAnnos
+                     { literal_annos = emptyLiteralAnnos
+                       { number_lit = Just atAt
+                       , string_lit = Just (emptyString, cons) }}
+                 }
 
 predefinedAxioms :: [Named (FORMULA ())]
 predefinedAxioms = let
