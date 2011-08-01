@@ -18,6 +18,10 @@ module CASL_DL.PredefinedCASLAxioms
   , dataS
   , predefinedAxioms
   , mkNName
+  , mkDigit
+  , joinDigits
+  , consChar
+  , emptyStringTerm
   ) where
 
 import CASL.AS_Basic_CASL
@@ -77,6 +81,57 @@ boolT = mkTotOpType [] boolS
 natT :: OpType
 natT = mkTotOpType [] nonNegInt
 
+mkDigit :: Int -> TERM ()
+mkDigit i = mkAppl (mkQualOp (stringToId $ show i) $ toOP_TYPE natT) []
+
+unMinus :: Id
+unMinus = mkId [mkSimpleId "-", placeTok]
+
+minusTy :: OpType
+minusTy = mkTotOpType [integer] integer
+
+atAt :: Id
+atAt = mkInfix "@@"
+
+atAtTy :: OpType
+atAtTy = mkTotOpType [nonNegInt, nonNegInt] nonNegInt
+
+joinDigits :: TERM () -> TERM () -> TERM ()
+joinDigits d1 d2 = mkAppl (mkQualOp atAt $ toOP_TYPE atAtTy) [d1, d2]
+
+charS :: Id
+charS = stringToId "Char"
+
+charT :: OpType
+charT = mkTotOpType [] charS
+
+stringS :: Id
+stringS = stringToId "string"
+
+cons :: Id
+cons = mkInfix ":@:"
+
+emptyString :: Id
+emptyString = stringToId $ "emptyString"
+
+emptyStringTerm :: TERM ()
+emptyStringTerm = mkAppl (mkQualOp emptyString $ toOP_TYPE emptyStringTy) []
+
+charToId :: Char -> Id
+charToId c = stringToId $ "'\\" ++ show (ord c) ++ "'"
+
+mkChar :: Char -> TERM ()
+mkChar c = mkAppl (mkQualOp (charToId c) $ toOP_TYPE charT) []
+
+consChar :: Char -> TERM () -> TERM ()
+consChar c t = mkAppl (mkQualOp cons $ toOP_TYPE consTy) [mkChar c, t]
+
+emptyStringTy :: OpType
+emptyStringTy = mkTotOpType [] stringS
+
+consTy :: OpType
+consTy = mkTotOpType [charS, stringS] stringS
+
 -- | OWL bottom
 noThing :: PRED_SYMB
 noThing = Qual_pred_name nothing classPredType n
@@ -117,7 +172,7 @@ predefSign = (emptySign ())
                          integer),
                         (posInt,
                          nonNegInt),
-                        (stringToId "string",
+                        (stringS,
                          dataS),
                         (dataS, thing) ]
                  , predMap =
@@ -163,13 +218,15 @@ predefSign = (emptySign ())
                   , opMap = MapSet.fromList
                         $ map (\ i -> (stringToId $ show i, [natT]))
                           [0 .. 9 :: Int]
+                        ++ map (\ c -> (charToId c, [charT]))
+                          [chr 0 .. chr 255]
                         ++
                         [ (stringToId "True", [boolT])
                         , (stringToId "False", [boolT])
-                        , (mkInfix "@@", [mkTotOpType [nonNegInt, nonNegInt]
-                                   nonNegInt])
-                        , (mkId [mkSimpleId "-", placeTok]
-                          , [mkTotOpType [integer] integer])
+                        , (atAt, [atAtTy])
+                        , (unMinus, [minusTy])
+                        , (cons, [consTy])
+                        , (emptyString, [emptyStringTy])
                         ] }
 
 predefinedAxioms :: [Named (FORMULA ())]
