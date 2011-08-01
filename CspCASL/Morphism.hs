@@ -195,7 +195,8 @@ checkReflCondition mor =
                     y = (mapSort sm s2)
                 in Diag Error
                  ("CSP-CASL Signature Morphism Refl Property Violated:\n'"
-                  ++ showDoc (Symbol x $ SubsortAsItemType y) "' but not\n'"
+                  ++ showDoc (Symbol x $ SubsortAsItemType y)
+                         "' in target but not in source\n'"
                   ++ showDoc (Symbol s1 $ SubsortAsItemType s2) "'")
                   nullRange
               allDiags = map produceDiag $ Set.toList failures
@@ -343,8 +344,9 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       -- pretty printing for Csp morphisms
       prettyMorphismExtension = printMap id sepByCommas pairElems
         . toCspSymbMap True
-      legalMorphismExtension m =
-        joinResult (checkReflCondition m) (checkWNECondition m)
+      legalMorphismExtension m = do
+        checkReflCondition m
+        checkWNECondition m
 
 
 -- * induced signature extension
