@@ -53,7 +53,7 @@ public class OWL2Parser {
 					else
 						OP = false;
 				}
-				out = new BufferedWriter(openForFile(null));
+				out = new BufferedWriter(new OutputStreamWriter(System.out));
 			}
 
 			/* Load an ontology from a physical IRI */
@@ -169,11 +169,6 @@ public class OWL2Parser {
 			e.printStackTrace();
 		}
 	}
-
-	private static Writer openForFile(String fileName)
-		{
-			return new OutputStreamWriter(System.out);
-		}
 
 	private static void parseZeroImports(BufferedWriter out, OWLOntology ontology)
 	{
