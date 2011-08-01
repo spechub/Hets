@@ -83,6 +83,7 @@ instance Comorphism
         { cons_features = emptyMapConsFeature }
       map_theory OWL22CASL = mapTheory
       map_morphism OWL22CASL = mapMorphism
+      map_symbol OWL22CASL _ = mapSymbol
       isInclusionComorphism OWL22CASL = True
       has_model_expansion OWL22CASL = True
 
@@ -108,6 +109,17 @@ mapMorphism oMor =
       return (embedMorphism () cdm ccd)
                  { op_map = ops
                  , pred_map = preds }
+
+mapSymbol :: Entity -> Set.Set Symbol
+mapSymbol (Entity ty iri) = let
+  syN = Set.singleton . Symbol (uriToId iri)
+  in case ty of
+  Class -> syN $ PredAsItemType conceptPred
+  ObjectProperty -> syN $ PredAsItemType objectPropPred
+  DataProperty -> syN $ PredAsItemType dataPropPred
+  NamedIndividual -> syN $ OpAsItemType indiConst
+  AnnotationProperty -> Set.empty
+  Datatype -> Set.empty
 
 data VarOrIndi = OVar Int | OIndi IRI
 
