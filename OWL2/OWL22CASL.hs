@@ -706,16 +706,17 @@ mapComDataPropsList cSig props num1 num2 =
                        ) $ comPairs props props
 
 mapLiteral :: CASLSign -> Literal -> Result (TERM ())
-mapLiteral _ (Literal l ty) = do
-    case ty of
-        Untyped _ -> return $ foldr consChar emptyStringTerm l
-        Typed dt -> return $ case datatypeType dt of
+mapLiteral _ (Literal l ty) = return
+  $ Sorted_term (case ty of
+        Untyped _ -> foldr consChar emptyStringTerm l
+        Typed dt -> case datatypeType dt of
             OWL2Int -> foldr1 joinDigits
                 $ map (mkDigit . digitToInt) $ filter isDigit l
             OWL2Bool -> case l of
                 "True" -> trueT
                 _ -> falseT
-            _ -> foldr consChar emptyStringTerm l
+            _ -> foldr consChar emptyStringTerm l)
+    dataS nullRange
 
 -- | Mapping of data properties
 mapDataProp :: CASLSign
