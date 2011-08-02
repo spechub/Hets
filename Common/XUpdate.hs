@@ -22,7 +22,6 @@ import Text.XML.Light
 
 import Data.Char
 import Data.List
-import Data.Maybe
 
 import Control.Monad
 
@@ -112,11 +111,9 @@ isRemoveQN = hasLocalQN "remove"
 
 -- | extract the non-empty attribute value
 getAttrVal :: Monad m => String -> Element -> m String
-getAttrVal n e =
-    (\ s -> if null s
-            then failX ("missing " ++ n ++ " attribute") $ elName e
-            else return s)
-    . fromMaybe "" $ findAttr (unqual n) e
+getAttrVal n e = case findAttr (unqual n) e of
+  Nothing -> failX ("missing " ++ n ++ " attribute") $ elName e
+  Just s -> return s
 
 getSelectAttr :: Monad m => Element -> m String
 getSelectAttr = getAttrVal "select"
