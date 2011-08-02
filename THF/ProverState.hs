@@ -60,4 +60,4 @@ showProblemTHF ps goal _ = return $ show $
 
 -- | get all axioms possibly used in a proof
 getAxioms :: ProverStateTHF -> [String]
-getAxioms = map (show . printNamedSentenceTHF) . filter isAxiom . axioms
+getAxioms = map (senAttr) . filter isAxiom . axioms
