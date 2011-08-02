@@ -18,7 +18,6 @@ import Static.GTheory
 import Static.FromXmlUtils
 import Static.XGraph
 
-import Common.ExtSign
 import Common.LibName
 import Common.Result (Result (..))
 import Common.ResultT
@@ -31,14 +30,14 @@ import Control.Monad (foldM, unless)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.Map as Map (lookup, insert, empty)
 import Data.Set (Set)
-import qualified Data.Set as Set (map)
+import qualified Data.Set as Set
 
 import Driver.Options
 import Driver.ReadFn (findFileOfLibNameAux)
 
 import Logic.ExtSign (ext_empty_signature)
 import Logic.Grothendieck
-import Logic.Logic (AnyLogic (..), cod, composeMorphisms, symset_of)
+import Logic.Logic (AnyLogic (..), cod, composeMorphisms)
 import Logic.Prover (noSens)
 
 import Text.XML.Light
@@ -197,11 +196,9 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
                  else fmap fst $ parseSpecs gt0 nm dg syb
         (gt2, syb') <- parseSpecs gt1 nm dg spc
         -- the DGOrigin is also different for nodes with hidden symbols
-        lOrig <- if hid then do
-            diffSig <- liftR $ homGsigDiff (signOf gt0) $ signOf gt2
-            case diffSig of
-              G_sign lid (ExtSign sig _) _ -> let
-                syms = Set.map (G_symbol lid) $ symset_of lid sig
+        lOrig <- if hid then let
+                syms = Set.difference (symsOfGsign $ signOf gt0)
+                  $ symsOfGsign $ signOf gt2
                 in return $ DGRestriction NoRestriction syms
           else do
             diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
