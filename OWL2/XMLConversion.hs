@@ -124,7 +124,8 @@ setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
 -- | sets either a literal datatype or a facet
 setDt :: Bool -> IRI -> Element -> Element
 setDt b dt e = e {elAttribs = elAttribs e ++ [Attr {attrKey
-    = makeQN (if b then "datatypeIRI" else "facet"), attrVal = showIRI dt}]}
+    = makeQN (if b then "datatypeIRI" else "facet"),
+        attrVal = showIRI $ setReservedPrefix dt}]}
 
 setLangTag :: Maybe LanguageTag -> Element -> Element
 setLangTag ml e = case ml of

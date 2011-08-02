@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-    OWL/XML Syntax Parsing
+OWL/XML Syntax Parsing
 -}
 
 module OWL2.XML where
