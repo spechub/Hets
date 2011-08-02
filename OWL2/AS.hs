@@ -99,7 +99,7 @@ isThing :: IRI -> Bool
 isThing u = elem (localPart u) ["Thing", "Nothing"] &&
                 elem (namePrefix u) ["", "owl"]
 
--- | checks if a string (bound to be localPart of an IRI) contains "://"
+-- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
 cssIRI :: String -> IRIType
 cssIRI iri = if isInfixOf "://" iri then Full else Abbreviated
 

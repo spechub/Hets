@@ -54,13 +54,13 @@ setQNPrefix :: String -> Text.XML.Light.QName -> Text.XML.Light.QName
 setQNPrefix s qn = qn {qPrefix = Just s}
 
 {- | sets the name of an element to a given string
- and the namespace to "http://www.w3.org/2002/07/owl#" -}
+ and the namespace to <http://www.w3.org/2002/07/owl#> -}
 setName :: String -> Element -> Element
 setName s e = e {elName = nullQN {qName = s,
     qURI = Just "http://www.w3.org/2002/07/owl#"} }
 
 {- | sets the attribute key to one of IRI, abbreviatedIRI or nodeID
- and the attribute value to the actual content of the IRI-}
+ and the attribute value to the actual content of the IRI -}
 setIRI :: IRI -> Element -> Element
 setIRI iri e =
     let fan = iriType iri
@@ -104,7 +104,7 @@ mwSimpleIRI s = setName (if iriType s /= Abbreviated then "IRI"
     and each with the content in this order: first, the list of elements
     in the given pair (usually annotations) and second, the result of the
     application of the function (given as fourth argument) on the second string
-    and the given IRI  -}
+    and the given IRI -}
 make1 :: Bool -> String -> String -> (String -> IRI -> Element) -> IRI ->
             [([Element], Element)] -> [Element]
 make1 rl hdr shdr f iri = map (\ (a, b) -> makeElement hdr
