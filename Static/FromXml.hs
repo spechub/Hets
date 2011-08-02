@@ -195,9 +195,8 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
             return $ emptyTheory lo
           Just gt -> return gt
         -- hidden symbols use a different parser
-        gt1 <- if hid then parseHidden gt0 syb else do
-                 (gt', _) <- parseSpecs gt0 nm dg syb
-                 return gt'
+        gt1 <- if hid then parseHidden gt0 syb
+                 else fmap fst $ parseSpecs gt0 nm dg syb
         (gt2, syb') <- parseSpecs gt1 nm dg spc
         -- the DGOrigin is also different for nodes with hidden symbols
         lOrig <- if hid then do
