@@ -6,8 +6,9 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Alexis.Tsogias@dfki.de
 Stability   :  provisional
-Portability :
+Portability :  non-portable (imports Prover)
 
+LEO-II theorem prover for THF0
 -}
 
 module THF.ProveLeoII where
@@ -18,14 +19,32 @@ import THF.Cons
 import THF.Sign
 import THF.ProverState
 
-import Common.AS_Annotation
+import Common.AS_Annotation as AS_Anno
 import Common.Result
 import Common.ProofTree
+import Common.Utils (basename, getTempFile, timeoutCommand)
+import Common.SZSOntology
+
 import GUI.GenericATP
+
 import Interfaces.GenericATPState
+
+import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 
 import Proofs.BatchProcessing
+
+import System.Directory
+
+import Data.List
+import Data.Maybe
+import Data.Time (timeToTimeOfDay)
+import Data.Time.Clock (picosecondsToDiffTime, secondsToDiffTime)
+
+--------------------------------------------------------------------------------
+-- Note:
+--      * ask Till about env vars. (See atpFun)
+--------------------------------------------------------------------------------
 
 
 leoIIName :: String
@@ -58,7 +77,6 @@ atpFun _ = ATPFunctions
   , atpInsertSentence = insertSentenceTHF
   , goalOutput = showProblemTHF
   , proverHelpText = leoIIHelpText
-  -- IMPORTANT: ask Till about env vars.
   , batchTimeEnv = "HETS_LEOII_BATCH_TIME_LIMIT"
   , fileExtensions = FileExtensions
       { problemOutput = ".thf"
@@ -111,13 +129,92 @@ leoIICMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
    Runs the Leo-II prover.
 -}
 runLeoII :: ProverStateTHF
-           {- ^ logical part containing the input Sign and axioms and possibly
-           goals that have been proved earlier as additional axioms -}
-           -> GenericConfig ProofTree -- ^ configuration to use
-           -> Bool -- ^ True means save TPTP file
-           -> String -- ^ name of the theory in the DevGraph
-           -> Named SentenceTHF -- ^ goal to prove
-           -> IO (ATPRetval, GenericConfig ProofTree)
-           -- ^ (retval, configuration with proof status and complete output)
-runLeoII _ _ _ _ _ {- sps cfg saveTPTP thName nGoal -} =
-        error "missing runLeoII implementation"
+    -> GenericConfig ProofTree -- ^ configuration to use
+    -> Bool -- ^ True means save THF file
+    -> String -- ^ name of the theory in the DevGraph
+    -> Named SentenceTHF -- ^ goal to prove
+    -> IO (ATPRetval, GenericConfig ProofTree)
+    -- ^ (retval, configuration with proof status and complete output)
+runLeoII pst cfg saveTHF thName nGoal = do
+    let options = extraOpts cfg
+        tout = maybe leoIITimeout (+ 1) (timeLimit cfg)
+        extraOptions = maybe "-po" (("-po -t " ++) . show) (timeLimit cfg)
+        tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
+    prob <- showProblemTHF pst nGoal []
+    runRes <- runLeoIIProcess tout saveTHF extraOptions tmpFileName prob
+    case runRes of
+        Nothing ->
+            let ctime = timeToTimeOfDay $ secondsToDiffTime
+                            $ toInteger leoIITimeout
+            in return (ATPTLimitExceeded, cfg
+                        { proofStatus =
+                            (openProofStatus (AS_Anno.senAttr nGoal)
+                                            "LEO-II" emptyProofTree)
+                                { usedTime = ctime
+                                , tacticScript = TacticScript
+                                    $ show ATPTacticScript
+                                        { tsTimeLimit = configTimeLimit cfg
+                                        , tsExtraOpts = options} }
+                        , timeUsed = ctime })
+        Just (exitCode, out, tUsed) ->
+         let ctime = timeToTimeOfDay $ picosecondsToDiffTime
+                        $ toInteger $ tUsed * 1000000000
+             (err, retval) = case () of
+                _ | szsProved exitCode      -> (ATPSuccess, provedStatus)
+                _ | szsDisproved exitCode   -> (ATPSuccess, disProvedStatus)
+                _ | szsTimeout exitCode     ->
+                                    (ATPTLimitExceeded, defaultProofStatus)
+                _ | szsStopped exitCode   ->
+                                    (ATPBatchStopped, defaultProofStatus)
+                _                         ->
+                                    (ATPError exitCode, defaultProofStatus)
+             defaultProofStatus =
+              (openProofStatus (AS_Anno.senAttr nGoal) "LEO-II" emptyProofTree)
+                       { usedTime = ctime
+                       , tacticScript = TacticScript $ show ATPTacticScript
+                            { tsTimeLimit = configTimeLimit cfg
+                            , tsExtraOpts = options} }
+             disProvedStatus = defaultProofStatus {goalStatus = Disproved}
+             provedStatus = defaultProofStatus { goalStatus = Proved True
+                                              , usedAxioms = getAxioms pst }
+         in return (err, cfg { proofStatus = retval
+                         , resultOutput = out
+                         , timeUsed = ctime })
+
+runLeoIIProcess
+    :: Int -- ^ timeout time in seconds
+    -> Bool -- ^ save problem
+    -> String -- ^ options
+    -> String -- ^ filename without extension
+    -> String -- ^ problem
+    -> IO (Maybe (String, [String], Int))
+runLeoIIProcess tout saveTHF options tmpFileName prob = do
+    let tmpFile = basename tmpFileName ++ ".thf"
+    when saveTHF (writeFile tmpFile prob)
+    timeTmpFile <- getTempFile prob tmpFile
+    mres <- timeoutCommand tout "leo" (words options ++ [timeTmpFile])
+    maybe (return Nothing) (\ (_, pout, _) -> do
+        let l = lines pout
+            (res, _, tUsed) = parseOutput l
+        removeFile timeTmpFile
+        return $ Just (res, l, tUsed)) mres
+
+parseOutput :: [String] -> (String, Bool, Int)
+  -- ^ (exit code, status found, used time ins ms)
+parseOutput = foldl checkLine ("", False, -1) where
+   checkLine (exCode, stateFound, to) line = case getSZSStatusWord line of
+        Just szsState | not stateFound -> (szsState, True, to)
+        _ -> case words (fromMaybe "" $ stripPrefix "# Total time" line) of
+            _ : (tim : _) -> -- ":" : (tim : ("s" : []))
+                let time = round $ (read tim :: Float) * 1000
+                in (exCode, stateFound, time)
+            _ -> (exCode, stateFound, to)
+
+getSZSStatusWord :: String -> Maybe String
+getSZSStatusWord line =
+    case words (fromMaybe "" $ stripPrefix "% SZS status" line) of
+        [] -> Nothing
+        w : _ -> Just w
+
+leoIITimeout :: Int
+leoIITimeout = 601

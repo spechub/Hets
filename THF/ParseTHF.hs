@@ -12,16 +12,21 @@ A Parser for the TPTP-THF Input Syntax v5.1.0.2 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
 -}
 
-module THF.ParseTHF {- (parseTHF) -} where
+module THF.ParseTHF (parseTHF) where
+
+import THF.As
 
 import Text.ParserCombinators.Parsec
-import THF.As
+
 import Common.Parsec
 
 import Data.Char
 import Data.Maybe
 
--- Parser
+--------------------------------------------------------------------------------
+-- Parser for the THF Syntax
+-- Most methods match those of As.hs
+--------------------------------------------------------------------------------
 
 parseTHF :: CharParser st [TPTP_THF]
 parseTHF = do
@@ -721,7 +726,10 @@ decimalFractional = do
     return (dec ++ "." ++ n)
   <?> "decimal fractional"
 
--- some helper functions
+
+--------------------------------------------------------------------------------
+-- Some helper functions
+--------------------------------------------------------------------------------
 
 skipAll :: CharParser st ()
 skipAll = skipMany (skipMany1 space <|>
@@ -737,7 +745,16 @@ key = (>> skipAll)
 keyChar :: Char -> CharParser st ()
 keyChar = key . char
 
--- symbols
+myManyTill :: CharParser st a -> CharParser st a -> CharParser st [a]
+myManyTill p end = do
+    e <- end ; return [e]
+  <|> do
+    x <- p; xs <- myManyTill p end; return (x : xs)
+
+
+--------------------------------------------------------------------------------
+-- Different simple symbols
+--------------------------------------------------------------------------------
 
 vLine :: CharParser st ()
 vLine = keyChar '|'
@@ -789,9 +806,3 @@ at = keyChar '@'
 
 gentzenArrow :: CharParser st ()
 gentzenArrow = key $ string "-->"
-
-myManyTill :: CharParser st a -> CharParser st a -> CharParser st [a]
-myManyTill p end = do
-    e <- end ; return [e]
-  <|> do
-    x <- p; xs <- myManyTill p end; return (x : xs)

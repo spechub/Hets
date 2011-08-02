@@ -30,7 +30,6 @@ import HasCASL.Builtin
 
 import THF.Logic_THF
 import THF.Cons
-import THF.Print
 import THF.Sign
 
 -- | The identity of the comorphism

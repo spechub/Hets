@@ -8,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-Data structures and initialising functions for Prover state and configurations.
+Data structures, initialising functions for Prover state and configurations.
 
 -}
 
@@ -22,14 +22,21 @@ import THF.Print
 
 import Common.AS_Annotation
 
+--------------------------------------------------------------------------------
+-- Todos:
+--      * somehow use FreeDefMorphism in the ProverStateTHF
+-- Questions:
+--      * in insertSentenceTHF, is is a good idea to check if a ns has
+--        wasTheorem == True and the change its role to Axiom or something
+--        similar?
+--------------------------------------------------------------------------------
 
 -- * Data structures
 
 data ProverStateTHF = ProverStateTHF
     { axioms    :: [Named SentenceTHF]
     , signature :: SignTHF
-    , freeDefs  :: [FreeDefMorphism SentenceTHF MorphismTHF]
-    }
+    , freeDefs  :: [FreeDefMorphism SentenceTHF MorphismTHF] }
 
 -- * THF specific functions for prover GUI
 
@@ -50,3 +57,7 @@ insertSentenceTHF ps ns = ps {axioms = ns : axioms ps}
 showProblemTHF :: ProverStateTHF -> Named SentenceTHF -> [String] -> IO String
 showProblemTHF ps goal _ = return $ show $
         printProblemTHF (signature ps) (filter isAxiom $ axioms ps) goal
+
+-- | get all axioms possibly used in a proof
+getAxioms :: ProverStateTHF -> [String]
+getAxioms = map (show . printNamedSentenceTHF) . filter isAxiom . axioms

@@ -15,14 +15,19 @@ A Parser for the TPTP-THF0 Input Syntax taken from
 
 module THF.ParseTHF0 (parseTHF0) where
 
-import Text.ParserCombinators.Parsec
 import THF.As
+
+import Text.ParserCombinators.Parsec
+
 import Common.Parsec
 
 import Data.Char
 import Data.Maybe
 
--- Parser
+--------------------------------------------------------------------------------
+-- Parser for the THF0 Syntax
+-- Most methods match those of As.hs
+--------------------------------------------------------------------------------
 
 parseTHF0 :: CharParser st [TPTP_THF]
 parseTHF0 = do
@@ -593,7 +598,10 @@ decimalFractional = do
     return (dec ++ "." ++ n)
   <?> "decimal fractional"
 
--- some helper functions
+
+--------------------------------------------------------------------------------
+-- Some helper functions
+--------------------------------------------------------------------------------
 
 skipAll :: CharParser st ()
 skipAll = skipMany (skipMany1 space <|>
@@ -609,7 +617,16 @@ key = (>> skipAll)
 keyChar :: Char -> CharParser st ()
 keyChar = key . char
 
--- symbols
+myManyTill :: CharParser st a -> CharParser st a -> CharParser st [a]
+myManyTill p end = do
+    e <- end ; return [e]
+  <|> do
+    x <- p; xs <- myManyTill p end; return (x : xs)
+
+
+--------------------------------------------------------------------------------
+-- Different simple symbols
+--------------------------------------------------------------------------------
 
 vLine :: CharParser st ()
 vLine = keyChar '|'
@@ -652,9 +669,3 @@ ampersand = keyChar '&'
 
 at :: CharParser st ()
 at = keyChar '@'
-
-myManyTill :: CharParser st a -> CharParser st a -> CharParser st [a]
-myManyTill p end = do
-    e <- end ; return [e]
-  <|> do
-    x <- p; xs <- myManyTill p end; return (x : xs)

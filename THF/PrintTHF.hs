@@ -15,217 +15,219 @@ A printer for the TPTP-THF Input Syntax v5.1.0.2 taken from
 module THF.PrintTHF where
 
 import THF.As
+
 import Data.Char
 
 import Common.Doc
---import Common.DocUtils
+import Common.DocUtils
+
+--------------------------------------------------------------------------------
+-- Pretty Instances for the THF and THF0 Syntax.
+-- Most methods match those of As.hs
+--------------------------------------------------------------------------------
 
 printTPTPTHF :: [TPTP_THF] -> Doc
 printTPTPTHF [] = empty
 printTPTPTHF (t : rt) = case t of
-    TPTP_THF_Annotated_Formula _ _ _ _ -> printTHF t $++$ printTPTPTHF rt
-    _                                   -> printTHF t $+$ printTPTPTHF rt
+    TPTP_THF_Annotated_Formula _ _ _ _ -> pretty t $++$ printTPTPTHF rt
+    _                                   -> pretty t $+$ printTPTPTHF rt
 
-
-class PrintTHF a where
-    printTHF :: a -> Doc
-
-instance PrintTHF TPTP_THF where
-    printTHF t = case t of
+instance Pretty TPTP_THF where
+    pretty t = case t of
         TPTP_THF_Annotated_Formula n fr f a ->
-            text "thf" <> parens (printTHF n <> comma
-                <+> printTHF fr <> comma
-                <+> printTHF f <> printTHF a)
+            text "thf" <> parens (pretty n <> comma
+                <+> pretty fr <> comma
+                <+> pretty f <> pretty a)
             <> text "."
-        TPTP_Include i                      -> printTHF i
-        TPTP_Comment c                      -> printTHF c
-        TPTP_Defined_Comment dc             -> printTHF dc
-        TPTP_System_Comment sc              -> printTHF sc
-        TPTP_Header h                       -> printHeader h
+        TPTP_Include i                      -> pretty i
+        TPTP_Comment c                      -> pretty c
+        TPTP_Defined_Comment dc             -> pretty dc
+        TPTP_System_Comment sc              -> pretty sc
+        TPTP_Header h                       -> prettyHeader h
 
-printHeader :: [Comment] -> Doc
-printHeader = foldr (($+$) . printTHF) empty
+prettyHeader :: [Comment] -> Doc
+prettyHeader = foldr (($+$) . pretty) empty
 
-instance PrintTHF Comment where
-    printTHF c = case c of
+instance Pretty Comment where
+    pretty c = case c of
         Comment_Line s      -> text "%" <> text s
         Comment_Block sl    -> text "/*"
-                $+$ printCommentBlock sl
+                $+$ prettyCommentBlock sl
                 $+$ text "*/"
 
-instance PrintTHF DefinedComment where
-    printTHF dc = case dc of
+instance Pretty DefinedComment where
+    pretty dc = case dc of
         Defined_Comment_Line s      -> text "%$" <> text s
         Defined_Comment_Block sl    -> text "/*$"
-                $+$ printCommentBlock sl
+                $+$ prettyCommentBlock sl
                 $+$ text "*/"
 
-instance PrintTHF SystemComment where
-    printTHF sc = case sc of
+instance Pretty SystemComment where
+    pretty sc = case sc of
         System_Comment_Line s   -> text "%$$" <> text s
         System_Comment_Block sl -> text "/*$$"
-                $+$ printCommentBlock sl
+                $+$ prettyCommentBlock sl
                 $+$ text "*/"
 
-printCommentBlock :: [String] -> Doc
-printCommentBlock = foldr (($+$) . text) empty
+prettyCommentBlock :: [String] -> Doc
+prettyCommentBlock = foldr (($+$) . text) empty
 
-instance PrintTHF Include where
-    printTHF (I_Include fn nl) = text "include" <> parens (printFileName fn
-        <> maybe empty (\ c -> comma <+> printNameList c) nl) <> text "."
+instance Pretty Include where
+    pretty (I_Include fn nl) = text "include" <> parens (prettyFileName fn
+        <> maybe empty (\ c -> comma <+> prettyNameList c) nl) <> text "."
 
-instance PrintTHF Annotations where
-    printTHF a = case a of
-        Annotations s o -> comma <+> printTHF s <> printOptionalInfo o
+instance Pretty Annotations where
+    pretty a = case a of
+        Annotations s o -> comma <+> pretty s <> prettyOptionalInfo o
         Null            -> empty
 
-instance PrintTHF FormulaRole where
-    printTHF fr = text $ map toLower (show fr)
+instance Pretty FormulaRole where
+    pretty fr = text $ map toLower (show fr)
 
-instance PrintTHF THFFormula where
-    printTHF f = case f of
-        TF_THF_Logic_Formula lf -> printTHF lf
-        TF_THF_Sequent s        -> printTHF s
-        T0F_THF_Typed_Const tc  -> printTHF tc
+instance Pretty THFFormula where
+    pretty f = case f of
+        TF_THF_Logic_Formula lf -> pretty lf
+        TF_THF_Sequent s        -> pretty s
+        T0F_THF_Typed_Const tc  -> pretty tc
 
-instance PrintTHF THFLogicFormula where
-    printTHF lf = case lf of
-        TLF_THF_Binary_Formula bf   -> printTHF bf
-        TLF_THF_Unitary_Formula uf  -> printTHF uf
-        TLF_THF_Type_Formula tf     -> printTHF tf
-        TLF_THF_Sub_Type st         -> printTHF st
+instance Pretty THFLogicFormula where
+    pretty lf = case lf of
+        TLF_THF_Binary_Formula bf   -> pretty bf
+        TLF_THF_Unitary_Formula uf  -> pretty uf
+        TLF_THF_Type_Formula tf     -> pretty tf
+        TLF_THF_Sub_Type st         -> pretty st
 
-instance PrintTHF THFBinaryFormula where
-    printTHF bf = case bf of
-        TBF_THF_Binary_Tuple bt         -> printTHF bt
-        TBF_THF_Binary_Type bt          -> printTHF bt
+instance Pretty THFBinaryFormula where
+    pretty bf = case bf of
+        TBF_THF_Binary_Tuple bt         -> pretty bt
+        TBF_THF_Binary_Type bt          -> pretty bt
         TBF_THF_Binary_Pair uf1 pc uf2  ->
-            printTHF uf1 <+> printTHF pc <+> printTHF uf2
+            pretty uf1 <+> pretty pc <+> pretty uf2
 
-instance PrintTHF THFBinaryTuple where
-    printTHF bt = case bt of
-        TBT_THF_Or_Formula ufl      -> sepBy (map printTHF ufl) orSign
-        TBT_THF_And_Formula ufl     -> sepBy (map printTHF ufl) andSign
-        TBT_THF_Apply_Formula ufl   -> sepBy (map printTHF ufl) applySign
+instance Pretty THFBinaryTuple where
+    pretty bt = case bt of
+        TBT_THF_Or_Formula ufl      -> sepBy (map pretty ufl) orSign
+        TBT_THF_And_Formula ufl     -> sepBy (map pretty ufl) andSign
+        TBT_THF_Apply_Formula ufl   -> sepBy (map pretty ufl) applySign
 
-instance PrintTHF THFUnitaryFormula where
-    printTHF tuf = case tuf of
-        TUF_THF_Quantified_Formula qf   -> printTHF qf
-        TUF_THF_Unary_Formula uc lf     -> printTHF uc <+> parens (printTHF lf)
-        TUF_THF_Atom a                  -> printTHF a
-        TUF_THF_Tuple t                 -> printTHFTuple t
+instance Pretty THFUnitaryFormula where
+    pretty tuf = case tuf of
+        TUF_THF_Quantified_Formula qf   -> pretty qf
+        TUF_THF_Unary_Formula uc lf     -> pretty uc <+> parens (pretty lf)
+        TUF_THF_Atom a                  -> pretty a
+        TUF_THF_Tuple t                 -> prettyTuple t
         TUF_THF_Let dvl uf              ->
-            text ":=" <+> brackets (sepByCommas (map printTHF dvl))
-            <+> text ":" <+> printTHF uf
+            text ":=" <+> brackets (sepByCommas (map pretty dvl))
+            <+> text ":" <+> pretty uf
         TUF_THF_Conditional lf1 lf2 lf3 ->
-            text "$itef" <> parens (printTHF lf1
-            <> comma <+> printTHF lf2
-            <> comma <+> printTHF lf3)
-        TUF_THF_Logic_Formula_Par l     -> parens (printTHF l)
+            text "$itef" <> parens (pretty lf1
+            <> comma <+> pretty lf2
+            <> comma <+> pretty lf3)
+        TUF_THF_Logic_Formula_Par l     -> parens (pretty l)
         T0UF_THF_Abstraction vl uf      -> text "^" <+>
-            brackets (printTHFVariableList vl) <+> text ":" <+> printTHF uf
+            brackets (prettyVariableList vl) <+> text ":" <+> pretty uf
 
-instance PrintTHF THFQuantifiedFormula where
-    printTHF qf = case qf of
-        TQF_THF_Quantified_Formula tq vl uf -> printTHF tq <+>
-            brackets (printTHFVariableList vl) <+> text ":" <+> printTHF uf
-        T0QF_THF_Quantified_Var q vl uf     -> printTHF q <+>
-            brackets (printTHFVariableList vl) <+> text ":" <+> printTHF uf
+instance Pretty THFQuantifiedFormula where
+    pretty qf = case qf of
+        TQF_THF_Quantified_Formula tq vl uf -> pretty tq <+>
+            brackets (prettyVariableList vl) <+> text ":" <+> pretty uf
+        T0QF_THF_Quantified_Var q vl uf     -> pretty q <+>
+            brackets (prettyVariableList vl) <+> text ":" <+> pretty uf
         T0QF_THF_Quantified_Novar tq uf     ->
-            printTHF tq <+> parens (printTHF uf)
+            pretty tq <+> parens (pretty uf)
 
-printTHFVariableList :: THFVariableList -> Doc
-printTHFVariableList vl = sepByCommas (map printTHF vl)
+prettyVariableList :: THFVariableList -> Doc
+prettyVariableList vl = sepByCommas (map pretty vl)
 
-instance PrintTHF THFVariable where
-    printTHF v = case v of
-        TV_THF_Typed_Variable va tlt -> printVariable va
-            <+> text ":" <+> printTHF tlt
-        TV_Variable var             -> printVariable var
+instance Pretty THFVariable where
+    pretty v = case v of
+        TV_THF_Typed_Variable va tlt -> prettyVariable va
+            <+> text ":" <+> pretty tlt
+        TV_Variable var             -> prettyVariable var
 
-instance PrintTHF THFTypedConst where
-    printTHF ttc = case ttc of
-        T0TC_Typed_Const c tlt      -> printConstant c <+> text ":"
-            <+> printTHF tlt
-        T0TC_THF_TypedConst_Par tc  -> parens (printTHF tc)
+instance Pretty THFTypedConst where
+    pretty ttc = case ttc of
+        T0TC_Typed_Const c tlt      -> prettyConstant c <+> text ":"
+            <+> pretty tlt
+        T0TC_THF_TypedConst_Par tc  -> parens (pretty tc)
 
-instance PrintTHF THFTypeFormula where
-    printTHF ttf = case ttf of
-        TTF_THF_Type_Formula tf tlt -> printTHF tf <+> text ":" <+> printTHF tlt
-        TTF_THF_Typed_Const c tlt   -> printConstant c <+> text ":"
-            <+> printTHF tlt
+instance Pretty THFTypeFormula where
+    pretty ttf = case ttf of
+        TTF_THF_Type_Formula tf tlt -> pretty tf <+> text ":" <+> pretty tlt
+        TTF_THF_Typed_Const c tlt   -> prettyConstant c <+> text ":"
+            <+> pretty tlt
 
-instance PrintTHF THFTypeableFormula where
-    printTHF tbf = case tbf of
-        TTyF_THF_Atom a             -> printTHF a
-        TTyF_THF_Tuple t            -> printTHFTuple t
-        TTyF_THF_Logic_Formula lf   -> parens $ printTHF lf
+instance Pretty THFTypeableFormula where
+    pretty tbf = case tbf of
+        TTyF_THF_Atom a             -> pretty a
+        TTyF_THF_Tuple t            -> prettyTuple t
+        TTyF_THF_Logic_Formula lf   -> parens $ pretty lf
 
-instance PrintTHF THFSubType where
-    printTHF (TST_THF_Sub_Type c1 c2) =
-        printConstant c1 <+> text "<<" <+> printConstant c2
+instance Pretty THFSubType where
+    pretty (TST_THF_Sub_Type c1 c2) =
+        prettyConstant c1 <+> text "<<" <+> prettyConstant c2
 
-instance PrintTHF THFTopLevelType where
-    printTHF tlt = case tlt of
-        TTLT_THF_Logic_Formula lf   -> printTHF lf
-        T0TLT_Constant c            -> printConstant c
-        T0TLT_Variable v            -> printVariable v
-        T0TLT_Defined_Type dt       -> printTHF dt
-        T0TLT_System_Type st        -> printSystemType st
-        T0TLT_THF_Binary_Type bt    -> printTHF bt
+instance Pretty THFTopLevelType where
+    pretty tlt = case tlt of
+        TTLT_THF_Logic_Formula lf   -> pretty lf
+        T0TLT_Constant c            -> prettyConstant c
+        T0TLT_Variable v            -> prettyVariable v
+        T0TLT_Defined_Type dt       -> pretty dt
+        T0TLT_System_Type st        -> prettySystemType st
+        T0TLT_THF_Binary_Type bt    -> pretty bt
 
-instance PrintTHF THFUnitaryType where
-    printTHF ut = case ut of
-        TUT_THF_Unitary_Formula uf  -> printTHF uf
-        T0UT_Constant c             -> printConstant c
-        T0UT_Variable v             -> printVariable v
-        T0UT_Defined_Type dt        -> printTHF dt
-        T0UT_System_Type st         -> printSystemType st
-        T0UT_THF_Binary_Type_Par bt -> parens (printTHF bt)
+instance Pretty THFUnitaryType where
+    pretty ut = case ut of
+        TUT_THF_Unitary_Formula uf  -> pretty uf
+        T0UT_Constant c             -> prettyConstant c
+        T0UT_Variable v             -> prettyVariable v
+        T0UT_Defined_Type dt        -> pretty dt
+        T0UT_System_Type st         -> prettySystemType st
+        T0UT_THF_Binary_Type_Par bt -> parens (pretty bt)
 
-instance PrintTHF THFBinaryType where
-    printTHF tbt = case tbt of
-        TBT_THF_Mapping_Type utl    -> sepBy (map printTHF utl) arrowSign
-        TBT_THF_Xprod_Type utl      -> sepBy (map printTHF utl) starSign
-        TBT_THF_Union_Type utl      -> sepBy (map printTHF utl) plusSign
-        T0BT_THF_Binary_Type_Par bt -> parens (printTHF bt)
+instance Pretty THFBinaryType where
+    pretty tbt = case tbt of
+        TBT_THF_Mapping_Type utl    -> sepBy (map pretty utl) arrowSign
+        TBT_THF_Xprod_Type utl      -> sepBy (map pretty utl) starSign
+        TBT_THF_Union_Type utl      -> sepBy (map pretty utl) plusSign
+        T0BT_THF_Binary_Type_Par bt -> parens (pretty bt)
 
-instance PrintTHF THFAtom where
-    printTHF a = case a of
-        TA_Term t                   -> printTHF t
-        TA_THF_Conn_Term ct         -> printTHF ct
-        TA_Defined_Type dt          -> printTHF dt
-        TA_Defined_Plain_Formula dp -> printTHF dp
-        TA_System_Type st           -> printSystemType st
-        TA_System_Atomic_Formula st -> printTHF st
-        T0A_Constant c              -> printConstant c
-        T0A_Defined_Constant dc     -> printAtomicDefinedWord dc
-        T0A_System_Constant sc      -> printAtomicSystemWord sc
-        T0A_Variable v              -> printVariable v
+instance Pretty THFAtom where
+    pretty a = case a of
+        TA_Term t                   -> pretty t
+        TA_THF_Conn_Term ct         -> pretty ct
+        TA_Defined_Type dt          -> pretty dt
+        TA_Defined_Plain_Formula dp -> pretty dp
+        TA_System_Type st           -> prettySystemType st
+        TA_System_Atomic_Formula st -> pretty st
+        T0A_Constant c              -> prettyConstant c
+        T0A_Defined_Constant dc     -> prettyAtomicDefinedWord dc
+        T0A_System_Constant sc      -> prettyAtomicSystemWord sc
+        T0A_Variable v              -> prettyVariable v
 
-printTHFTuple :: THFTuple -> Doc
-printTHFTuple ufl = brackets $ sepByCommas (map printTHF ufl)
+prettyTuple :: THFTuple -> Doc
+prettyTuple ufl = brackets $ sepByCommas (map pretty ufl)
 
-instance PrintTHF THFDefinedVar where
-    printTHF dv = case dv of
+instance Pretty THFDefinedVar where
+    pretty dv = case dv of
         TDV_THF_Defined_Var v lf        ->
-            printTHF v <+> text ":=" <+> printTHF lf
-        TDV_THF_Defined_Var_Par d -> parens (printTHF d)
+            pretty v <+> text ":=" <+> pretty lf
+        TDV_THF_Defined_Var_Par d -> parens (pretty d)
 
-instance PrintTHF THFSequent where
-    printTHF (TS_THF_Sequent_Par s) = parens $ printTHF s
-    printTHF (TS_THF_Sequent t1 t2) =
-        printTHFTuple t1 <+> text "-->" <+> printTHFTuple t2
+instance Pretty THFSequent where
+    pretty (TS_THF_Sequent_Par s) = parens $ pretty s
+    pretty (TS_THF_Sequent t1 t2) =
+        prettyTuple t1 <+> text "-->" <+> prettyTuple t2
 
-instance PrintTHF THFConnTerm where
-    printTHF ct = case ct of
-        TCT_THF_Pair_Connective pc  -> printTHF pc
-        TCT_Assoc_Connective ac     -> printTHF ac
-        TCT_THF_Unary_Connective uc -> printTHF uc
-        T0CT_THF_Quantifier q       -> printTHF q
+instance Pretty THFConnTerm where
+    pretty ct = case ct of
+        TCT_THF_Pair_Connective pc  -> pretty pc
+        TCT_Assoc_Connective ac     -> pretty ac
+        TCT_THF_Unary_Connective uc -> pretty uc
+        T0CT_THF_Quantifier q       -> pretty q
 
-instance PrintTHF THFQuantifier where
-    printTHF q = case q of
+instance Pretty THFQuantifier where
+    pretty q = case q of
         TQ_ForAll                   -> text "!"
         TQ_Exists                   -> text "?"
         TQ_Lambda_Binder            -> text "^"
@@ -236,13 +238,13 @@ instance PrintTHF THFQuantifier where
         T0Q_PiForAll                -> text "!!"
         T0Q_SigmaExists             -> text "??"
 
-instance PrintTHF Quantifier where
-    printTHF q = case q of
+instance Pretty Quantifier where
+    pretty q = case q of
         T0Q_ForAll  -> text "!"
         T0Q_Exists  -> text "?"
 
-instance PrintTHF THFPairConnective where
-    printTHF pc = case pc of
+instance Pretty THFPairConnective where
+    pretty pc = case pc of
         Infix_Equality      -> text "="
         Infix_Inequality    -> text "!="
         Equivalent          -> text "<=>"
@@ -252,233 +254,233 @@ instance PrintTHF THFPairConnective where
         NOR                 -> text "~|"
         NAND                -> text "~&"
 
-instance PrintTHF THFUnaryConnective where
-    printTHF uc = case uc of
+instance Pretty THFUnaryConnective where
+    pretty uc = case uc of
         Negation    -> text "~"
         PiForAll    -> text "!!"
         SigmaExists -> text "??"
 
-instance PrintTHF AssocConnective where
-    printTHF AND    = text "&"
-    printTHF OR     = text "|"
+instance Pretty AssocConnective where
+    pretty AND    = text "&"
+    pretty OR     = text "|"
 
-instance PrintTHF DefinedType where
-    printTHF dt = text $ '$' : drop 3 (show dt)
+instance Pretty DefinedType where
+    pretty dt = text $ '$' : drop 3 (show dt)
 
-printSystemType :: SystemType -> Doc
-printSystemType = printAtomicSystemWord
+prettySystemType :: SystemType -> Doc
+prettySystemType = prettyAtomicSystemWord
 
-instance PrintTHF DefinedPlainFormula where
-    printTHF dpf = case dpf of
-        DPF_Defined_Prop dp         -> printTHF dp
-        DPF_Defined_Formula dp a    -> printTHF dp <> parens (printArguments a)
+instance Pretty DefinedPlainFormula where
+    pretty dpf = case dpf of
+        DPF_Defined_Prop dp         -> pretty dp
+        DPF_Defined_Formula dp a    -> pretty dp <> parens (prettyArguments a)
 
-instance PrintTHF DefinedProp where
-    printTHF DP_True    = text "$true"
-    printTHF DP_False   = text "$false"
+instance Pretty DefinedProp where
+    pretty DP_True    = text "$true"
+    pretty DP_False   = text "$false"
 
-instance PrintTHF DefinedPred where
-    printTHF dp = text $ '$' : map toLower (show dp)
+instance Pretty DefinedPred where
+    pretty dp = text $ '$' : map toLower (show dp)
 
-instance PrintTHF Term where
-    printTHF t = case t of
-        T_Function_Term ft  -> printTHF ft
-        T_Variable v        -> printVariable v
+instance Pretty Term where
+    pretty t = case t of
+        T_Function_Term ft  -> pretty ft
+        T_Variable v        -> prettyVariable v
 
-instance PrintTHF FunctionTerm where
-    printTHF ft = case ft of
-        FT_Plain_Term pt    -> printTHF pt
-        FT_Defined_Term dt  -> printTHF dt
-        FT_System_Term st   -> printTHF st
+instance Pretty FunctionTerm where
+    pretty ft = case ft of
+        FT_Plain_Term pt    -> pretty pt
+        FT_Defined_Term dt  -> pretty dt
+        FT_System_Term st   -> pretty st
 
-instance PrintTHF PlainTerm where
-    printTHF pt = case pt of
-        PT_Constant c       -> printConstant c
-        PT_Plain_Term f a   -> printTPTPFunctor f <> parens (printArguments a)
+instance Pretty PlainTerm where
+    pretty pt = case pt of
+        PT_Constant c       -> prettyConstant c
+        PT_Plain_Term f a   -> prettyTPTPFunctor f <> parens (prettyArguments a)
 
-printConstant :: Constant -> Doc
-printConstant = printTPTPFunctor
+prettyConstant :: Constant -> Doc
+prettyConstant = prettyTPTPFunctor
 
-printTPTPFunctor :: TPTPFunctor -> Doc
-printTPTPFunctor = printTHF
+prettyTPTPFunctor :: TPTPFunctor -> Doc
+prettyTPTPFunctor = pretty
 
-instance PrintTHF DefinedTerm where
-    printTHF dt = case dt of
-        DT_Defined_Atom da          -> printTHF da
-        DT_Defined_Atomic_Term dpt  -> printTHF dpt
+instance Pretty DefinedTerm where
+    pretty dt = case dt of
+        DT_Defined_Atom da          -> pretty da
+        DT_Defined_Atomic_Term dpt  -> pretty dpt
 
-instance PrintTHF DefinedAtom where
-    printTHF da = case da of
-        DA_Number n             -> printTHF n
-        DA_Distinct_Object dio  -> printDistinctObject dio
+instance Pretty DefinedAtom where
+    pretty da = case da of
+        DA_Number n             -> pretty n
+        DA_Distinct_Object dio  -> prettyDistinctObject dio
 
-instance PrintTHF DefinedPlainTerm where
-    printTHF dpt = case dpt of
-        DPT_Defined_Constant df     -> printTHF df
-        DPT_Defined_Function df a   -> printTHF df <> parens (printArguments a)
+instance Pretty DefinedPlainTerm where
+    pretty dpt = case dpt of
+        DPT_Defined_Constant df     -> pretty df
+        DPT_Defined_Function df a   -> pretty df <> parens (prettyArguments a)
 
-instance PrintTHF DefinedFunctor where
-    printTHF df = text $ '$' : map toLower (show df)
+instance Pretty DefinedFunctor where
+    pretty df = text $ '$' : map toLower (show df)
 
-instance PrintTHF SystemTerm where
-    printTHF st = case st of
-        ST_System_Constant sf   -> printSystemFunctor sf
-        ST_System_Term sf a     -> printSystemFunctor sf
-            <> parens (printArguments a)
+instance Pretty SystemTerm where
+    pretty st = case st of
+        ST_System_Constant sf   -> prettySystemFunctor sf
+        ST_System_Term sf a     -> prettySystemFunctor sf
+            <> parens (prettyArguments a)
 
-printSystemFunctor :: SystemFunctor -> Doc
-printSystemFunctor = printAtomicSystemWord
+prettySystemFunctor :: SystemFunctor -> Doc
+prettySystemFunctor = prettyAtomicSystemWord
 
-printVariable :: Variable -> Doc
-printVariable = text
+prettyVariable :: Variable -> Doc
+prettyVariable = text
 
-printArguments :: Arguments -> Doc
-printArguments = sepByCommas . map printTHF
+prettyArguments :: Arguments -> Doc
+prettyArguments = sepByCommas . map pretty
 
-instance PrintTHF PrincipalSymbol where
-    printTHF ps = case ps of
-        PS_Functor f    -> printTPTPFunctor f
-        PS_Variable v   -> printVariable v
+instance Pretty PrincipalSymbol where
+    pretty ps = case ps of
+        PS_Functor f    -> prettyTPTPFunctor f
+        PS_Variable v   -> prettyVariable v
 
-instance PrintTHF Source where
-    printTHF s = case s of
-        S_Dag_Source ds         -> printTHF ds
+instance Pretty Source where
+    pretty s = case s of
+        S_Dag_Source ds         -> pretty ds
         S_Internal_Source it oi -> text "introduced" <> parens (
-            printTHF it <> printOptionalInfo oi)
-        S_External_Source es    -> printTHF es
-        S_Sources ss            -> sepByCommas (map printTHF ss)
+            pretty it <> prettyOptionalInfo oi)
+        S_External_Source es    -> pretty es
+        S_Sources ss            -> sepByCommas (map pretty ss)
         S_Unknown               -> text "unknown"
 
-instance PrintTHF DagSource where
-    printTHF ds = case ds of
-        DS_Name n                       -> printTHF n
+instance Pretty DagSource where
+    pretty ds = case ds of
+        DS_Name n                       -> pretty n
         DS_Inference_Record aw ui pl    -> text "inference"
-            <> parens (printTHF aw <> comma <+> printUsefulInfo ui
-            <> comma <+> brackets (sepByCommas (map printTHF pl)))
+            <> parens (pretty aw <> comma <+> prettyUsefulInfo ui
+            <> comma <+> brackets (sepByCommas (map pretty pl)))
 
-instance PrintTHF ParentInfo where
-    printTHF (PI_Parent_Info s mgl) =
-        let gl = maybe empty (\ c -> text ":" <> printGeneralList c) mgl
-        in printTHF s <> gl
+instance Pretty ParentInfo where
+    pretty (PI_Parent_Info s mgl) =
+        let gl = maybe empty (\ c -> text ":" <> prettyGeneralList c) mgl
+        in pretty s <> gl
 
-instance PrintTHF IntroType where
-    printTHF it = text (drop 3 (show it))
+instance Pretty IntroType where
+    pretty it = text (drop 3 (show it))
 
-instance PrintTHF ExternalSource where
-    printTHF es = case es of
-        ES_File_Source fs       -> printTHF fs
+instance Pretty ExternalSource where
+    pretty es = case es of
+        ES_File_Source fs       -> pretty fs
         ES_Theory tn oi         -> text "theory" <> parens (
-            printTHF tn <> printOptionalInfo oi)
+            pretty tn <> prettyOptionalInfo oi)
         ES_Creator_Source aw oi -> text "creator" <> parens (
-            printTHF aw <> printOptionalInfo oi)
+            pretty aw <> prettyOptionalInfo oi)
 
-instance PrintTHF FileSource where
-    printTHF (FS_File fn mn) =
-        let n = maybe empty (\ c -> comma <+> printTHF c) mn
-        in text "file" <> parens (printFileName fn <> n)
+instance Pretty FileSource where
+    pretty (FS_File fn mn) =
+        let n = maybe empty (\ c -> comma <+> pretty c) mn
+        in text "file" <> parens (prettyFileName fn <> n)
 
-instance PrintTHF TheoryName where
-    printTHF tn = text $ map toLower (show tn)
+instance Pretty TheoryName where
+    pretty tn = text $ map toLower (show tn)
 
-printOptionalInfo :: OptionalInfo -> Doc
-printOptionalInfo = maybe empty (\ ui -> comma <+> printUsefulInfo ui)
+prettyOptionalInfo :: OptionalInfo -> Doc
+prettyOptionalInfo = maybe empty (\ ui -> comma <+> prettyUsefulInfo ui)
 
-printUsefulInfo :: UsefulInfo -> Doc
-printUsefulInfo = brackets . sepByCommas . map printTHF
+prettyUsefulInfo :: UsefulInfo -> Doc
+prettyUsefulInfo = brackets . sepByCommas . map pretty
 
-instance PrintTHF InfoItem where
-    printTHF ii = case ii of
-        II_Formula_Item fi      -> printTHF fi
-        II_Inference_Item infi  -> printTHF infi
-        II_General_Function gf  -> printTHF gf
+instance Pretty InfoItem where
+    pretty ii = case ii of
+        II_Formula_Item fi      -> pretty fi
+        II_Inference_Item infi  -> pretty infi
+        II_General_Function gf  -> pretty gf
 
-instance PrintTHF FormulaItem where
-    printTHF fi = case fi of
-        FI_Description_Item aw  -> text "description" <> parens (printTHF aw)
-        FI_Iquote_Item aw       -> text "iquote" <> parens (printTHF aw)
+instance Pretty FormulaItem where
+    pretty fi = case fi of
+        FI_Description_Item aw  -> text "description" <> parens (pretty aw)
+        FI_Iquote_Item aw       -> text "iquote" <> parens (pretty aw)
 
-instance PrintTHF InferenceItem where
-    printTHF ii = case ii of
-        II_Inference_Status is      -> printTHF is
+instance Pretty InferenceItem where
+    pretty ii = case ii of
+        II_Inference_Status is      -> pretty is
         II_Assumptions_Record nl    -> text "assumptions"
-            <> parens (brackets (printNameList nl))
-        II_New_Symbol_Record aw psl -> text "new_symbols" <> parens (printTHF aw
-            <> comma <+> brackets (sepByCommas (map printTHF psl)))
-        II_Refutation fs            -> text "refutation" <> parens (printTHF fs)
+            <> parens (brackets (prettyNameList nl))
+        II_New_Symbol_Record aw psl -> text "new_symbols" <> parens (pretty aw
+            <> comma <+> brackets (sepByCommas (map pretty psl)))
+        II_Refutation fs            -> text "refutation" <> parens (pretty fs)
 
-instance PrintTHF InferenceStatus where
-    printTHF is = case is of
-        IS_Status s                     -> text "status" <> parens (printTHF s)
-        IS_Inference_Info aw1 aw2 gl    -> printTHF aw1 <> parens (printTHF aw2
-            <> comma <+> printGeneralList gl)
+instance Pretty InferenceStatus where
+    pretty is = case is of
+        IS_Status s                     -> text "status" <> parens (pretty s)
+        IS_Inference_Info aw1 aw2 gl    -> pretty aw1 <> parens (pretty aw2
+            <> comma <+> prettyGeneralList gl)
 
-instance PrintTHF StatusValue where
-    printTHF sv = text $ map toLower (show sv)
+instance Pretty StatusValue where
+    pretty sv = text $ map toLower (show sv)
 
-printNameList :: NameList -> Doc
-printNameList = sepByCommas . map printTHF
+prettyNameList :: NameList -> Doc
+prettyNameList = sepByCommas . map pretty
 
-instance PrintTHF GeneralTerm where
-    printTHF gt = case gt of
-        GT_General_Data gd          -> printTHF gd
-        GT_General_Data_Term gd gt1 -> printTHF gd <+> text ":" <+> printTHF gt1
-        GT_General_List gl          -> printGeneralList gl
+instance Pretty GeneralTerm where
+    pretty gt = case gt of
+        GT_General_Data gd          -> pretty gd
+        GT_General_Data_Term gd gt1 -> pretty gd <+> text ":" <+> pretty gt1
+        GT_General_List gl          -> prettyGeneralList gl
 
-instance PrintTHF GeneralData where
-    printTHF gd = case gd of
-        GD_Atomic_Word aw       -> printTHF aw
-        GD_General_Function gf  -> printTHF gf
-        GD_Variable v           -> printVariable v
-        GD_Number n             -> printTHF n
-        GD_Distinct_Object dio  -> printDistinctObject dio
-        GD_Formula_Data fd      -> printTHF fd
+instance Pretty GeneralData where
+    pretty gd = case gd of
+        GD_Atomic_Word aw       -> pretty aw
+        GD_General_Function gf  -> pretty gf
+        GD_Variable v           -> prettyVariable v
+        GD_Number n             -> pretty n
+        GD_Distinct_Object dio  -> prettyDistinctObject dio
+        GD_Formula_Data fd      -> pretty fd
         GD_Bind v fd            -> text "bind" <> parens (
-            printVariable v <> comma <+> printTHF fd)
+            prettyVariable v <> comma <+> pretty fd)
 
-instance PrintTHF GeneralFunction where
-    printTHF (GF_General_Function aw gts) =
-        printTHF aw <> parens (printGeneralTerms gts)
+instance Pretty GeneralFunction where
+    pretty (GF_General_Function aw gts) =
+        pretty aw <> parens (prettyGeneralTerms gts)
 
-instance PrintTHF FormulaData where
-    printTHF (THF_Formula thff) = text "$thf" <> parens (printTHF thff)
+instance Pretty FormulaData where
+    pretty (THF_Formula thff) = text "$thf" <> parens (pretty thff)
 
-printGeneralList :: GeneralList -> Doc
-printGeneralList = brackets . printGeneralTerms
+prettyGeneralList :: GeneralList -> Doc
+prettyGeneralList = brackets . prettyGeneralTerms
 
-printGeneralTerms :: GeneralTerms -> Doc
-printGeneralTerms = sepByCommas . map printTHF
+prettyGeneralTerms :: GeneralTerms -> Doc
+prettyGeneralTerms = sepByCommas . map pretty
 
-instance PrintTHF Name where
-    printTHF n = case n of
-        N_Atomic_Word a         -> printTHF a
+instance Pretty Name where
+    pretty n = case n of
+        N_Atomic_Word a         -> pretty a
         N_Integer s             -> text s
         T0N_Unsigned_Integer s  -> text s
 
-instance PrintTHF AtomicWord where
-    printTHF a = case a of
-        A_Single_Quoted s   -> printSingleQuoted s
+instance Pretty AtomicWord where
+    pretty a = case a of
+        A_Single_Quoted s   -> prettySingleQuoted s
         A_Lower_Word l      -> text l
 
-printAtomicSystemWord :: AtomicSystemWord -> Doc
-printAtomicSystemWord asw = text ("$$" ++ asw)
+prettyAtomicSystemWord :: AtomicSystemWord -> Doc
+prettyAtomicSystemWord asw = text ("$$" ++ asw)
 
-printAtomicDefinedWord :: AtomicDefinedWord -> Doc
-printAtomicDefinedWord adw = text ('$' : adw)
+prettyAtomicDefinedWord :: AtomicDefinedWord -> Doc
+prettyAtomicDefinedWord adw = text ('$' : adw)
 
-instance PrintTHF Number where
-    printTHF n = case n of
+instance Pretty Number where
+    pretty n = case n of
         Num_Integer i   -> text i
         Num_Rational ra -> text ra
         Num_Real re     -> text re
 
-printFileName :: FileName -> Doc
-printFileName = printSingleQuoted
+prettyFileName :: FileName -> Doc
+prettyFileName = prettySingleQuoted
 
-printSingleQuoted :: SingleQuoted -> Doc
-printSingleQuoted s = text "\'" <> text s <> text "\'"
+prettySingleQuoted :: SingleQuoted -> Doc
+prettySingleQuoted s = text "\'" <> text s <> text "\'"
 
-printDistinctObject :: DistinctObject -> Doc
-printDistinctObject s = text "\"" <> text s <> text "\""
+prettyDistinctObject :: DistinctObject -> Doc
+prettyDistinctObject s = text "\"" <> text s <> text "\""
 
 orSign :: Doc
 orSign = text "|"

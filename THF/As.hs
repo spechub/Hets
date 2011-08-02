@@ -17,8 +17,15 @@ has been added where needed.
 
 module THF.As where
 
--- A last Question: at the example of <source>: Sould <general_term> be also
--- tried when all ather variations fail?
+--------------------------------------------------------------------------------
+-- Abstract Syntax for THF in general and THF0
+-- The comments show the rules for each data structure is basedon
+--------------------------------------------------------------------------------
+-- Questiona:
+--      * at the example of <source>: Sould <general_term> be also
+--        tried when all ather variations fail?
+--      * schould defined_types allow atomic_defined_words in generat, too?
+--------------------------------------------------------------------------------
 
 -- THF & THF0:
 -- <TPTP_input>       ::= <annotated_formula> | <include>

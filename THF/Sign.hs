@@ -18,44 +18,85 @@ import THF.As
 import THF.Cons
 
 import Common.DefaultMorphism
-import Common.Id
+import Common.Id hiding (typeId)
 import Common.Result
 
+
 import qualified Data.Map as Map
+
+--------------------------------------------------------------------------------
+-- Definitions and instances of data structures
+--------------------------------------------------------------------------------
 
 -- We use the DefaultMorphism for THF.
 type MorphismTHF = DefaultMorphism SignTHF
 
+-- A signature is a container for types and constants. In addition they are
+-- stored in an SymbolMap.
 data SignTHF = Sign
     { types     :: TypeMap
     , consts    :: ConstMap
     , symbols   :: SymbolMap
     } deriving (Show, Eq)
 
+-- Ord instance that does not use symbols
 instance Ord SignTHF where
-    compare s1 s2 = compare
-        (types s1, consts s1)
-        (types s2, consts s2)
+    compare s1 s2 = compare (types s1, consts s1) (types s2, consts s2)
 
 instance GetRange SignTHF
 
+-- Map for Types.
 type TypeMap = Map.Map Constant TypeInfo
 
+-- Map for Constants.
 type ConstMap = Map.Map Constant ConstInfo
 
+-- Map for Symbols. These are symbols and types.
 type SymbolMap = Map.Map Constant SymbolTHF
 
+-- TypeInfo are containers for types, their name and Kind.
+-- In addition the original definitions and Annotaions can be stored as
+-- (Maybe THFTypedConst) and Annotations.
 data TypeInfo = TypeInfo
-    { typeName  :: Constant
+    { typeId  :: Constant
+    , typeName :: Name
     , typeKind  :: Kind
-    , typeDef   :: Maybe THFTypedConst }
-    deriving (Show, Ord, Eq)
+    , typeDef   :: Maybe THFTypedConst
+    , typeAnno  :: Annotations }
+    deriving (Show)
 
+-- Ord instance that neither uses typeDef nor typeAnno
+instance Ord TypeInfo where
+    compare ti1 ti2 = compare
+        (typeId ti1, typeName ti1, typeKind ti1)
+        (typeId ti2, typeName ti2, typeKind ti2)
+
+-- Eq instance that neither uses typeDef nor typeAnno
+instance Eq TypeInfo where
+    (==) ti1 ti2 = (typeId ti1, typeName ti1, typeKind ti1) ==
+                   (typeId ti2, typeName ti2, typeKind ti2)
+
+-- ConstInfo are containers for constants, their naem and type.
+-- In addition the original definitions and Annotaions can be stored as
+-- (Maybe THFTypedConst) and Annotations.
 data ConstInfo = ConstInfo
-    { constName :: Constant
+    { constId   :: Constant
+    , constName :: Name
     , constType :: Type
-    , constDef  :: Maybe THFTypedConst }
-    deriving (Show, Ord, Eq)
+    , constDef  :: Maybe THFTypedConst
+    , constAnno :: Annotations }
+    deriving (Show)
+
+-- Ord instance that neither uses constDef nor constAnno
+instance Ord ConstInfo where
+    compare ci1 ci2 = compare
+        (constId ci1, constName ci1, constType ci1)
+        (constId ci2, constName ci2, constType ci2)
+
+-- Eq instance that neither uses constDef nor constAnno
+instance Eq ConstInfo where
+    (==) ci1 ci2 = (constId ci1, constName ci1, constType ci1) ==
+                   (constId ci2, constName ci2, constType ci2)
 
 -- Creates an empty Signature.
 emptySign :: SignTHF
@@ -64,80 +105,141 @@ emptySign = Sign
     , consts    = Map.empty
     , symbols   = Map.empty }
 
+
+--------------------------------------------------------------------------------
+-- Some helper data structures and functions for the
+-- union, difference and insersection methods
+--------------------------------------------------------------------------------
+
+type EitherMap c x = Map.Map c (Either x Diagnosis)
+
+-- Convert a map into an EitherMap.
+toEitherLeftMap :: Map.Map c x -> EitherMap c x
+toEitherLeftMap = Map.map Left
+
+eitherMapHasDiagnosis :: EitherMap c x -> Bool
+eitherMapHasDiagnosis = Map.fold (\ a b -> case a of
+    Right _ -> True
+    _       -> b            ) False
+
+-- only use after eitherMapHasDiagnosis returned true
+eitherMapGetDiagnosis :: EitherMap c x -> [Diagnosis]
+eitherMapGetDiagnosis =
+    Map.fold (\ e dl -> either (\ _ -> dl) (: dl) e) []
+
+-- only use after eitherMapHasDiagnosis returned false
+eitherMapGetMap :: EitherMap c x -> Map.Map c x
+eitherMapGetMap = Map.map (\ (Left a) -> a)
+
+-- If the EitherMap contains diagnosis they will be returned in a list.
+-- Otherwise the map will be converted back.
+genRes :: EitherMap c x -> Either (Map.Map c x) [Diagnosis]
+genRes em = if eitherMapHasDiagnosis em
+            then Right (eitherMapGetDiagnosis em)
+            else Left (eitherMapGetMap em)
+
+
+--------------------------------------------------------------------------------
+-- Signature union
+--------------------------------------------------------------------------------
+
 -- Union of two signatures
--- The globAnnos will be taken from the first signature
 sigUnion :: SignTHF -> SignTHF -> Result SignTHF
 sigUnion s1 s2 =
     let smu = symbolMapUnion (symbols s1) (symbols s2)
     in case smu of
-        Right d     -> Result [d] Nothing
+        Right d     -> Result d Nothing
         Left nsm    ->
             let tmu = typeMapUnion (types s1) (types s2)
                 cmu = constMapUnion (consts s1) (consts s2)
             in case tmu of
-                Right d1    -> Result [d1] Nothing
+                Right d1    -> Result d1 Nothing
                 Left ntm     -> case cmu of
-                    Right d2    -> Result [d2] Nothing
+                    Right d2    -> Result d2 Nothing
                     Left ncm     -> Result [] (Just $
                         s1 { types = ntm, consts = ncm, symbols = nsm })
 
-typeMapUnion :: TypeMap -> TypeMap -> Either TypeMap Diagnosis
-typeMapUnion = error "typeMapUnion not implementet yet."
+typeMapUnion :: TypeMap -> TypeMap -> Either TypeMap [Diagnosis]
+typeMapUnion t1 t2 =
+    let emt1 = toEitherLeftMap t1
+        emt2 = toEitherLeftMap t2
+    in genRes $ unite "Types" emt1 emt2
 
-constMapUnion :: ConstMap -> ConstMap -> Either ConstMap Diagnosis
-constMapUnion = error "constMapUnion not implementet yet."
+constMapUnion :: ConstMap -> ConstMap -> Either ConstMap [Diagnosis]
+constMapUnion c1 c2 =
+    let emc1 = toEitherLeftMap c1
+        emc2 = toEitherLeftMap c2
+    in genRes $ unite "Constants" emc1 emc2
 
-symbolMapUnion :: SymbolMap -> SymbolMap -> Either SymbolMap Diagnosis
-symbolMapUnion = error "symbolMapUnion not implementet yet."
+symbolMapUnion :: SymbolMap -> SymbolMap -> Either SymbolMap [Diagnosis]
+symbolMapUnion s1 s2 =
+    let ems1 = toEitherLeftMap s1
+        ems2 = toEitherLeftMap s2
+    in genRes $ unite "Symbols" ems1 ems2
+
+unite :: (Ord c, Eq x, Show x) => String -> EitherMap c x -> EitherMap c x
+                                                          -> EitherMap c x
+unite s = Map.unionWith (\ (Left e1) (Left e2) -> if e1 == e2 then Left e1
+            else Right (mkDiag Error
+                    (s ++ " " ++ show e1 ++ " and " ++ show e2 ++
+                    " have the same name but heve different definitions.") ()))
+
+
+--------------------------------------------------------------------------------
+-- Signature difference
+--------------------------------------------------------------------------------
 
 -- Difference of two signatures
--- The globAnnos will be taken from the first signature
 sigDiff :: SignTHF -> SignTHF -> Result SignTHF
-sigDiff s1 s2 =
-    let smd = symbolMapDiff (symbols s1) (symbols s2)
-    in case smd of
-        Right d     -> Result [d] Nothing
-        Left nsm    ->
-            let tmd = typeMapDiff (types s1) (types s2)
-                cmd = constMapDiff (consts s1) (consts s2)
-            in case tmd of
-                Right d1    -> Result [d1] Nothing
-                Left ntm    -> case cmd of
-                    Right d2    -> Result [d2] Nothing
-                    Left ncm    -> Result [] (Just $
-                        s1 { types = ntm, consts = ncm, symbols = nsm })
+sigDiff s1 s2 = Result [] (Just $
+    s1 { types      = diff (types s1) (types s2)
+       , consts     = diff (consts s1) (consts s2)
+       , symbols    = diff (symbols s1) (symbols s2) })
 
-typeMapDiff :: TypeMap -> TypeMap -> Either TypeMap Diagnosis
-typeMapDiff = error "typeMapDiff not implementet yet."
+diff :: (Ord c, Eq x) => Map.Map c x -> Map.Map c x -> Map.Map c x
+diff = Map.differenceWith (\ e1 e2 -> if e1 == e2 then Nothing else Just e1)
 
-constMapDiff :: ConstMap -> ConstMap -> Either ConstMap Diagnosis
-constMapDiff = error "constMapDiff not implementet yet."
+--------------------------------------------------------------------------------
+-- Signature intersection
+--------------------------------------------------------------------------------
 
-symbolMapDiff :: SymbolMap -> SymbolMap -> Either SymbolMap Diagnosis
-symbolMapDiff = error "symbolSetDiff not implementet yet."
-
--- Insersectin of two signatures
--- The globAnnos will be taken from the first signature
+-- Intersection of two signatures
 sigIntersect :: SignTHF -> SignTHF -> Result SignTHF
 sigIntersect s1 s2 =
     let smi = symbolMapIntersect (symbols s1) (symbols s2)
     in case smi of
-        Right d     -> Result [d] Nothing
+        Right d     -> Result d Nothing
         Left nsm    ->
             let tmi = typeMapIntersect (types s1) (types s2)
                 cmi = constMapIntersect (consts s1) (consts s2)
             in case tmi of
-                Right d1    -> Result [d1] Nothing
+                Right d1    -> Result d1 Nothing
                 Left ntm    -> case cmi of
-                    Right d2    -> Result [d2] Nothing
+                    Right d2    -> Result d2 Nothing
                     Left ncm    -> Result [] (Just $
                         s1 { types = ntm, consts = ncm, symbols = nsm })
 
-typeMapIntersect :: TypeMap -> TypeMap -> Either TypeMap Diagnosis
-typeMapIntersect = error "typeMapIntersection not implementet yet."
+typeMapIntersect :: TypeMap -> TypeMap -> Either TypeMap [Diagnosis]
+typeMapIntersect t1 t2 =
+    let emt1 = toEitherLeftMap t1
+        emt2 = toEitherLeftMap t2
+    in genRes $ intersect "Types" emt1 emt2
 
-constMapIntersect :: ConstMap -> ConstMap -> Either ConstMap Diagnosis
-constMapIntersect = error "constMapIntersection not implementet yet."
+constMapIntersect :: ConstMap -> ConstMap -> Either ConstMap [Diagnosis]
+constMapIntersect c1 c2 =
+    let emc1 = toEitherLeftMap c1
+        emc2 = toEitherLeftMap c2
+    in genRes $ intersect "Constants" emc1 emc2
 
-symbolMapIntersect :: SymbolMap -> SymbolMap -> Either SymbolMap Diagnosis
-symbolMapIntersect = error "symbolSetIntersection not implementet yet."
+symbolMapIntersect :: SymbolMap -> SymbolMap -> Either SymbolMap [Diagnosis]
+symbolMapIntersect s1 s2 =
+    let ems1 = toEitherLeftMap s1
+        ems2 = toEitherLeftMap s2
+    in genRes $ intersect "Symbols" ems1 ems2
+
+intersect :: (Ord c, Eq x, Show x) => String -> EitherMap c x -> EitherMap c x
+                                                         -> EitherMap c x
+intersect s = Map.intersectionWith (\ (Left e1) (Left e2) ->
+                if e1 == e2 then Left e1 else Right (mkDiag Error
+                    (s ++ " " ++ show e1 ++ " and " ++ show e2 ++
+                    " have the same name but heve different definitions.") ()))

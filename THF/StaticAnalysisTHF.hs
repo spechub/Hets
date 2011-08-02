@@ -18,15 +18,15 @@ module THF.StaticAnalysisTHF (basicAnalysis) where
 import THF.As as As
 import THF.Cons
 import THF.Print ()
-import THF.PrintTHF
 import THF.Sign
 
-import Common.Id
+import Common.Id hiding (typeId)
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import Common.ExtSign
 import Common.Lib.State
+import Common.DocUtils
 
 import Control.Monad
 
@@ -34,14 +34,12 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-{-
-QUESTION: how to treat fi_domain... in statAna
-        how to handle SysType in isTypeConsistent
--}
+--------------------------------------------------------------------------------
+-- Questions:
+--      * how to treat fi_domain, lemma, theorem... in statAna?
+--      * how to handle SysType in isTypeConsistent?
+--------------------------------------------------------------------------------
 
--- it looks like the returned symbols inside the result are symbols that
--- were not "used" for the signature, so i propablly have to fix that.
--- Ask Christian.
 basicAnalysis :: (BasicSpecTHF, SignTHF, GlobalAnnos) ->
         Result (BasicSpecTHF, ExtSign SignTHF SymbolTHF, [Named SentenceTHF])
 basicAnalysis (BasicSpecTHF BSTHF _, _, _) =
@@ -52,12 +50,11 @@ basicAnalysis (bs@(BasicSpecTHF BSTHF0 bs1), sig1, _) =
     let (diag1, bs2) = filterBS [] bs1
         (diag2, sig2, syms) = execState (fillSig bs2) (diag1, sig1, Set.empty)
         (diag3, ns) = getSentences bs2 (diag2, [])
-    in Result (reverse diag3)           -- liste der  symbole ist noch falsch
-            $ Just (bs, ExtSign sig2 syms, ns)
+    in Result (reverse diag3) $ Just (bs, ExtSign sig2 syms, ns)
 
--- The diagnosis list must have a rverted order!
-{- This functions delets all Comments and Includes because they are not needed
-for the static analysis -}
+-- The diagnosis list has a reverted order!
+-- This functions delets all Comments and Includes because they are not needed
+-- for the static analysis
 filterBS :: [Diagnosis] -> [TPTP_THF] -> ([Diagnosis], [TPTP_THF])
 filterBS d [] = (d, [])
 filterBS d (t : rt) = case t of
@@ -71,35 +68,37 @@ filterBS d (t : rt) = case t of
     _                       -> let (diag, thf) = filterBS d rt
                                in (diag, t : thf)
 
--- IMPORTENT: the diag-list must have a reverted order
--- filter stuff not usefull things, like comments
+-- Append the Signature by the Types and Constants given inside the basic spec
 fillSig :: [TPTP_THF] -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
 fillSig [] = return ()
 fillSig bs = mapM_ fillSingleType bs >> mapM_ fillSingleConst bs
     where
         fillSingleType t = case t of
-            TPTP_THF_Annotated_Formula _ fr tf _ -> case fr of
+            TPTP_THF_Annotated_Formula n fr tf a -> case fr of
                 Type    ->
                     when (isType tf) $ case makeKind tf of
                         Right d         -> appandDiag d
-                        Left (k, c, tc) -> insertType k c tc
+                        Left (k, c, tc) -> insertType c n k tc a
                 _       -> return ()
             _   -> return ()
         fillSingleConst t = case t of
-            TPTP_THF_Annotated_Formula _ fr tf _ -> case fr of
+            TPTP_THF_Annotated_Formula n fr tf a -> case fr of
                 Type    ->
                     unless (isType tf) $ case makeType tf of
                         Right d             -> appandDiag d
-                        Left (ty, c, tc)    -> insertConst ty c tc
+                        Left (ty, c, tc)    -> insertConst c n ty tc a
                 _       -> return ()
             _ -> return ()
 
+-- Append the Diagnosis-List by the given Diagnosis
+-- The new diag will be put on top of the existing list.
 appandDiag :: Diagnosis -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
 appandDiag d = modify (\ (diag, s, syms) -> (d : diag, s, syms))
 
-insertType :: Kind -> Constant -> THFTypedConst
+-- insert the given type into the Signature
+insertType :: Constant -> As.Name -> Kind -> THFTypedConst -> Annotations
                     -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
-insertType k c tc = do
+insertType c n k tc a = do
     (diag, sig, syms) <- get
     if sigHasConstSymbol c sig then appandDiag $ mkDiag Error
         "Duplicate definition a symbol as Type an Constant. Symbol: " c
@@ -109,15 +108,17 @@ insertType k c tc = do
                 mkDiag Error ("A Type with the same identifier"
                     ++ "but another Kind is already inside the signature") c
          else do -- everythign is fine
-            let ti = TypeInfo { typeName = c, typeKind = k, typeDef = Just tc }
-                sym = Symbol { symName = c, symType = ST_Type k }
+            let ti = TypeInfo { typeId = c, typeName = n, typeKind = k
+                              , typeDef = Just tc, typeAnno = a }
+                sym = Symbol { symId = c, symName = n, symType = ST_Type k }
             put (diag, sig { types = Map.insert c ti (types sig)
                            , symbols = Map.insert c sym (symbols sig) }
                 , Set.insert sym syms)
 
-insertConst :: Type -> Constant -> THFTypedConst
+-- insert the given constant into the Signature
+insertConst :: Constant -> As.Name -> Type -> THFTypedConst -> Annotations
                     -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
-insertConst t c tc = do
+insertConst c n t tc a = do
     (diag, sig, syms) <- get
     if sigHasTypeSymbol c sig then appandDiag $ mkDiag Error
         "Duplicate definition a symbol as Type an Constant. Symbol: " c
@@ -126,12 +127,13 @@ insertConst t c tc = do
         _       ->
             if sigHasConstSymbol c sig then
                 unless (sigHasSameType c t sig) $ appandDiag $ mkDiag Error
-                ("A Constant with the same" ++
-                "identifier but another Type is already inside the signature") c
+                ("A Constant with the same identifier but another " ++
+                 "Type is already inside the signature") c
             else do -- everything is fine
-                let ci = ConstInfo { constName = c, constType = t
-                                   , constDef = Just tc }
-                    sym = Symbol { symName = c, symType = ST_Const t }
+                let ci = ConstInfo { constId = c, constName = n, constType = t
+                                   , constDef = Just tc , constAnno = a }
+                    sym = Symbol { symId = c, symName = n
+                                 , symType = ST_Const t }
                 put (diag, sig { consts = Map.insert c ci (consts sig)
                                , symbols = Map.insert c sym (symbols sig) }
                     , Set.insert sym syms)
@@ -164,13 +166,18 @@ isTypeConsistent t sig = case t of
         let tc1 = isTypeConsistent t1 sig
             tc2 = isTypeConsistent t2 sig
         in if isNothing tc1 then tc2 else tc1
+    ParType t1      -> isTypeConsistent t1 sig
     CType c         -> if sigHasTypeSymbol c sig then Nothing
                        else Just $ mkDiag Error "Unknown type: " c
     SType _         -> Nothing -- how to handle these?
     _               -> Nothing
 
-{- Get all sentences from the content of the BasicSpecTHF-}
--- QUESTION: Are conjecures sentences?
+--------------------------------------------------------------------------------
+-- Extract the sentences from the basic spec
+--------------------------------------------------------------------------------
+
+-- Get all sentences from the content of the BasicSpecTH
+-- The diag list has a reverted order.
 getSentences :: [TPTP_THF] -> ([Diagnosis], [Named SentenceTHF])
                            -> ([Diagnosis], [Named SentenceTHF])
 getSentences [] dn = dn
@@ -187,25 +194,34 @@ getSentences (t : rt) dn@(d, ns) = case t of
                    in (d1, tptpthfToNS t : ns1)
     _ -> getSentences rt dn
 
--- make sure the formulaRole is not Type, Unknown or Plain
+-- Precondition: The formulaRole must not be Type, Unknown or Plain
+-- (They are filtered out in getSentences)
 tptpthfToNS :: TPTP_THF -> Named SentenceTHF
 tptpthfToNS t = case formulaRoleAF t of
-    Definition          -> SenAttr { senAttr = show $ printTHF $ nameAF t
-                          , isAxiom = True, isDef = True, wasTheorem = False
-                          , simpAnno = Nothing, attrOrigin = Nothing
-                          , sentence = thfFormulaAF t }
-    Conjecture          -> SenAttr { senAttr = show $ printTHF $ nameAF t
-                          , isAxiom = False, isDef = False, wasTheorem = False
-                          , simpAnno = Nothing, attrOrigin = Nothing
-                          , sentence = thfFormulaAF t }
-    Negated_Conjecture  -> SenAttr { senAttr = show $ printTHF $ nameAF t
-                          , isAxiom = False, isDef = False, wasTheorem = False
-                          , simpAnno = Nothing, attrOrigin = Nothing
-                          , sentence = thfFormulaAF t }
-    _                   -> makeNamed (show $ printTHF $ nameAF t)
-                                            (thfFormulaAF t)
+    Definition          ->
+        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
+        in SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
+                   , isDef = True, wasTheorem = False, simpAnno = Nothing
+                   , attrOrigin = Nothing, sentence = sen }
+    Conjecture          ->
+        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
+        in SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
+                   , isDef = False, wasTheorem = False, simpAnno = Nothing
+                   , attrOrigin = Nothing, sentence = sen }
+    Negated_Conjecture  ->
+        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
+        in SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
+                   , isDef = False, wasTheorem = False, simpAnno = Nothing
+                   , attrOrigin = Nothing, sentence = sen }
+    _                   ->
+        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
+        in makeNamed (show $ pretty $ nameAF t) sen
 
--- This mathod generates the kind of a Type-Formula
+
+--------------------------------------------------------------------------------
+-- Get the Kind of a type
+--------------------------------------------------------------------------------
+
 makeKind :: THFFormula -> Either (Kind, Constant, THFTypedConst) Diagnosis
 makeKind t = maybe (Right $ mkDiag Error "Error while parsing the Kind of:" t)
                 Left (thfFormulaToKind t)
@@ -232,7 +248,8 @@ thfBinaryTypeToKind bt = case bt of
     TBT_THF_Mapping_Type []         -> Nothing
     TBT_THF_Mapping_Type (_ : [])   -> Nothing
     TBT_THF_Mapping_Type mt         -> thfMappingTypeToKind mt
-    T0BT_THF_Binary_Type_Par btp    -> thfBinaryTypeToKind btp
+    T0BT_THF_Binary_Type_Par btp    -> maybe Nothing (Just . ParKind)
+                                            (thfBinaryTypeToKind btp)
     _                               -> Nothing
 
 thfMappingTypeToKind :: [THFUnitaryType] -> Maybe Kind
@@ -240,19 +257,24 @@ thfMappingTypeToKind [] = Nothing
 thfMappingTypeToKind (u : []) = thfUnitaryTypeToKind u
 thfMappingTypeToKind (u : ru) =
     let k1 = thfUnitaryTypeToKind u
-        k2 = (thfMappingTypeToKind ru)
+        k2 = thfMappingTypeToKind ru
     in if isJust k1 && isJust k2
        then Just $ MapKind (fromJust k1) (fromJust k2) nullRange
        else Nothing
 
 thfUnitaryTypeToKind :: THFUnitaryType -> Maybe Kind
 thfUnitaryTypeToKind ut = case ut of
-    T0UT_THF_Binary_Type_Par bt -> thfBinaryTypeToKind bt
+    T0UT_THF_Binary_Type_Par bt -> maybe Nothing (Just . ParKind)
+                                        (thfBinaryTypeToKind bt)
     T0UT_Defined_Type _         -> Just Kind
     T0UT_System_Type st         -> Just $ SysType st
     _                           -> Nothing
 
--- get The Type of a Constant
+
+--------------------------------------------------------------------------------
+-- Get the Type of a constant
+--------------------------------------------------------------------------------
+
 makeType :: THFFormula -> Either (Type, Constant, THFTypedConst) Diagnosis
 makeType t = maybe (Right $ mkDiag Error "Error while parsing the Type of:" t)
                 Left (thfFormulaToType t)
@@ -289,7 +311,8 @@ thfBinaryTypeToType bt = case bt of
     TBT_THF_Mapping_Type []         -> Nothing
     TBT_THF_Mapping_Type (_ : [])   -> Nothing
     TBT_THF_Mapping_Type mt         -> thfMappingTypeToType mt
-    T0BT_THF_Binary_Type_Par btp    -> thfBinaryTypeToType btp
+    T0BT_THF_Binary_Type_Par btp    -> maybe Nothing (Just . ParType)
+                                            (thfBinaryTypeToType btp)
     _                               -> Nothing
 
 thfMappingTypeToType :: [THFUnitaryType] -> Maybe Type
@@ -297,20 +320,25 @@ thfMappingTypeToType [] = Nothing
 thfMappingTypeToType (u : []) = thfUnitaryTypeToType u
 thfMappingTypeToType (u : ru) =
     let k1 = thfUnitaryTypeToType u
-        k2 = (thfMappingTypeToType ru)
+        k2 = thfMappingTypeToType ru
     in if isJust k1 && isJust k2
        then Just $ MapType (fromJust k1) (fromJust k2)
        else Nothing
 
 thfUnitaryTypeToType :: THFUnitaryType -> Maybe Type
 thfUnitaryTypeToType ut = case ut of
-    T0UT_THF_Binary_Type_Par bt -> thfBinaryTypeToType bt
+    T0UT_THF_Binary_Type_Par bt -> maybe Nothing (Just . ParType)
+                                        (thfBinaryTypeToType bt)
     T0UT_Defined_Type dt        -> thfDefinedTypeToType dt
     T0UT_Constant c             -> Just $ CType c
     T0UT_System_Type st         -> Just $ SType st
     _                           -> Nothing
 
--- Questin is this a type too: c : $tType > $tType
+
+--------------------------------------------------------------------------------
+-- Check if a THFFormula is a Type definition
+--------------------------------------------------------------------------------
+
 isType :: THFFormula -> Bool
 isType tf = case tf of
     T0F_THF_Typed_Const tc  -> thfTypedConstIsType tc
