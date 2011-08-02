@@ -6,7 +6,7 @@ Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  f.mance@jacobs-university.de
-Stability   :  provisionalM
+Stability   :  provisional
 Portability :  portable
 
 Renames prefixes in OntologyDocuments, so that there are

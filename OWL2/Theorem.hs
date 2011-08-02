@@ -4,7 +4,7 @@ Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  f.mance@jacobs-university.de
-Stability   :  provisionalM
+Stability   :  provisional
 Portability :  portable
 
 Adds the "implied" annotation - for specifying theorems
