@@ -59,21 +59,16 @@ addEntity :: Entity -> State Sign ()
 addEntity = modEntity Set.insert
 
 -- | checks if an entity is in the signature
-checkEntity :: Sign -> a -> Entity -> Result a
-checkEntity s a (Entity ty e) =
+checkEntity :: Sign -> Entity -> Result ()
+checkEntity s (Entity ty e) =
   let errMsg = mkError ("unknown " ++ showEntityType ty) e
   in case ty of
-   Datatype -> if Set.member e (datatypes s) || isDatatypeKey e
-               then return a else errMsg
-   Class -> if Set.member e (concepts s) || isThing e
-            then return a else errMsg
-   ObjectProperty -> if Set.member e (objectProperties s)
-                     then return a else errMsg
-   DataProperty -> if Set.member e (dataProperties s)
-                   then return a else errMsg
-   AnnotationProperty -> if Set.member e (annotationRoles s)
-                         then return a else errMsg
-   _ -> return a
+   Datatype -> unless (Set.member e (datatypes s) || isDatatypeKey e) errMsg
+   Class -> unless (Set.member e (concepts s) || isThing e) errMsg
+   ObjectProperty -> unless (Set.member e $ objectProperties s) errMsg
+   DataProperty -> unless (Set.member e $ dataProperties s) errMsg
+   AnnotationProperty -> unless (Set.member e $ annotationRoles s) errMsg
+   _ -> return ()
 
 objPropToIRI :: ObjectPropertyExpression -> Individual
 objPropToIRI opExp = case opExp of
@@ -113,7 +108,7 @@ checkDataPropList s fb dl = do
 -- | checks if a DataRange is valid
 checkDataRange :: Sign -> DataRange -> Result DataRange
 checkDataRange s dr = case dr of
-    DataType dt _ -> checkEntity s dr (Entity Datatype dt) >> return dr
+    DataType dt _ -> checkEntity s (Entity Datatype dt) >> return dr
     DataJunction _ drl -> mapM_ (checkDataRange s) drl >> return dr
     DataComplementOf r -> checkDataRange s r
     _ -> return dr
@@ -122,7 +117,7 @@ checkDataRange s dr = case dr of
      DataProperties may be parsed as ObjectProperties -}
 classExpressionToDataRange :: Sign -> ClassExpression -> Result DataRange
 classExpressionToDataRange s ce = case ce of
-    Expression u -> checkEntity s ce (Entity Datatype u)
+    Expression u -> checkEntity s (Entity Datatype u)
         >> return (DataType u [])
     ObjectJunction jt cel -> fmap (DataJunction jt)
         $ mapM (classExpressionToDataRange s) cel
@@ -142,7 +137,7 @@ checkClassExpression s desc =
   Expression u ->
      if isThing u then
      return $ Expression u { namePrefix = "owl", iriType = Abbreviated }
-     else checkEntity s desc (Entity Class u)
+     else checkEntity s (Entity Class u) >> return desc
   ObjectJunction a ds -> fmap (ObjectJunction a)
         $ mapM (checkClassExpression s) ds
   ObjectComplementOf d -> fmap ObjectComplementOf
@@ -227,7 +222,7 @@ checkListBit :: Sign -> Maybe Relation -> ListFrameBit -> Result ListFrameBit
 checkListBit s r fb = case fb of
     AnnotationBit anl -> case r of
         Just (DRRelation _) -> return fb
-        _ -> mapM_ (checkEntity s fb . Entity AnnotationProperty
+        _ -> mapM_ (checkEntity s . Entity AnnotationProperty
                 . snd) anl >> return fb
     ExpressionBit anl -> do
         n <- mapM (checkClassExpression s . snd) anl

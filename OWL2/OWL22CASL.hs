@@ -435,7 +435,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                  _ -> fail "DataPropRange ADomain ni"
             _ -> fail "DataPropRange Relations ni"
     IndividualFacts indf -> do
-        fl <- mapM (mapFact cSig ex) $ map snd indf
+        fl <- mapM (mapFact cSig ex . snd) indf
         return (fl, cSig)
     ObjectCharacteristics ace ->
       let map2nd = map snd ace
