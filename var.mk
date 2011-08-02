@@ -56,6 +56,7 @@ endif
 XMLVERSION = $(shell $(HCPKG) field xml version)
 ifneq ($(findstring 1.3.7, $(XMLVERSION)),)
 else ifneq ($(findstring 1.3.8, $(XMLVERSION)),)
+else ifneq ($(findstring 1.3.9, $(XMLVERSION)),)
 else
 ERRORMSG=xml library version 1.3.7 or later required
 endif
