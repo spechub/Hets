@@ -18,7 +18,6 @@ import OWL2.AS
 import OWL2.Extract
 import OWL2.MS
 import OWL2.XMLKeywords
-import OWL2.Function
 
 import Text.XML.Light
 
@@ -557,8 +556,7 @@ getBase e = fromJust $ vFindAttrBy (isSmth "base") e
 xmlBasicSpec :: Element -> OntologyDocument
 xmlBasicSpec e =
     let b = getBase e
-        pm = Map.fromList $ getPrefixMap e
-    in function Expand pm $ emptyOntologyDoc
+    in emptyOntologyDoc
       {
       ontology = emptyOntologyD
         {
@@ -567,5 +565,5 @@ xmlBasicSpec e =
         ann = [getAllAnnos b e],
         name = getOntologyIRI b e
         },
-      prefixDeclaration = pm
+      prefixDeclaration = Map.fromList $ getPrefixMap e
       }
