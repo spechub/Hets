@@ -187,12 +187,10 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
               lbl = newInfoNodeLab nm nInf gt'
           return (addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
   -- Case #2: Regular Node
-  XNode nm lgN (hid, syb) spc -> do
+  XNode nm lN (hid, syb) spc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes
         gt0 <- case mGt of
-          Nothing -> do
-            lo <- lookupLogic "logic was not found" lgN lg
-            return $ emptyTheory lo
+          Nothing -> fmap emptyTheory $ lookupLogic "logic was not found" lN lg
           Just gt -> return gt
         -- hidden symbols use a different parser
         gt1 <- if hid then parseHidden gt0 syb
