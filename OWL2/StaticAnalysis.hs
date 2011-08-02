@@ -70,6 +70,16 @@ checkEntity s (Entity ty e) =
    AnnotationProperty -> unless (Set.member e $ annotationRoles s) errMsg
    _ -> return ()
 
+-- | takes an iri  and finds out what entities it belongs to 
+correctEntity :: Sign -> IRI -> [Entity]
+correctEntity s iri =
+    [Entity AnnotationProperty iri | Set.member iri (annotationRoles s)] ++
+    [Entity Class iri | Set.member iri (concepts s)] ++
+    [Entity ObjectProperty iri | Set.member iri (objectProperties s)] ++
+    [Entity DataProperty iri | Set.member iri (dataProperties s)] ++
+    [Entity Datatype iri | Set.member iri (datatypes s)] ++
+    [Entity NamedIndividual iri | Set.member iri (individuals s)]
+
 objPropToIRI :: ObjectPropertyExpression -> Individual
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u
@@ -255,11 +265,24 @@ checkAnnBit s fb = case fb of
     ObjectSubPropertyChain ol -> checkObjPropList s fb ol
     _ -> return fb
 
--- | corrects the frame bits according to the signature
-checkBit :: Sign -> FrameBit -> Result FrameBit
-checkBit s fb = case fb of
-    ListFrameBit mr lfb -> fmap (ListFrameBit mr) $ checkListBit s mr lfb
-    AnnFrameBit ans afb -> fmap (AnnFrameBit ans) $ checkAnnBit s afb
+-- | corrects the axiom according to the signature
+checkAxiom :: Sign -> Axiom -> Result [Axiom]
+checkAxiom s (PlainAxiom ext fb) = case fb of
+    ListFrameBit mr lfb -> do
+        next <- checkExtended s ext
+        nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb   
+        return [PlainAxiom next nfb]
+    ab@(AnnFrameBit ans afb) -> case afb of
+        AnnotationFrameBit -> case ext of
+            Misc ([Annotation _ iri _]) -> do
+                let entList = correctEntity s iri
+                return $ map (\x -> PlainAxiom (SimpleEntity x) ab) entList
+            _ -> do next <- checkExtended s ext
+                    return [PlainAxiom next ab]
+        _ -> do
+            next <- checkExtended s ext
+            nfb <- fmap (AnnFrameBit ans) $ checkAnnBit s afb
+            return [PlainAxiom next nfb]
 
 checkExtended :: Sign -> Extended -> Result Extended
 checkExtended s e = case e of
@@ -272,14 +295,12 @@ checkExtended s e = case e of
     _ -> return e
 
 -- | checks a frame and applies desired changes
-checkFrame :: Sign -> Frame -> Result Frame
-checkFrame s (Frame eith fbl) = do
-    ne <- checkExtended s eith
-    nl <- mapM (checkBit s) fbl
-    return $ Frame ne nl
+checkFrame :: Sign -> Frame -> Result [Frame]
+checkFrame s f@(Frame eith fbl) = fmap (map axToFrame . concat)
+    $ mapM (checkAxiom s . PlainAxiom eith) fbl
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]
-correctFrames = mapM . checkFrame
+correctFrames s fl = fmap concat $ mapM (checkFrame s) fl
 
 getEntityFromFrame :: Frame -> State Sign ()
 getEntityFromFrame f = case f of
@@ -287,10 +308,6 @@ getEntityFromFrame f = case f of
     Frame (ClassEntity (Expression e)) _ -> addEntity $ Entity Class e
     Frame (ObjectEntity (ObjectProp e)) _ ->
         addEntity $ Entity ObjectProperty e
-    Frame _ [AnnFrameBit al AnnotationFrameBit] -> case al of
-        [Annotation [] iri1 (AnnValue iri2)] ->
-            when (iri1 == iri2) $ addEntity $ Entity AnnotationProperty iri1
-        _ -> return ()
     _ -> return ()
 
 -- | collects all entites from the frames

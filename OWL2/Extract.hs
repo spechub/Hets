@@ -156,11 +156,9 @@ toDecl s =
         op = map (Entity ObjectProperty) $ Set.toList (objectProperties s)
         dp = map (Entity DataProperty) $ Set.toList (dataProperties s)
         i = map (Entity NamedIndividual) $ Set.toList (individuals s)
-        ans = Set.toList (annotationRoles s)
+        ans = map (Entity AnnotationProperty) $ Set.toList (annotationRoles s)
     in map (\ c -> Frame (SimpleEntity c) [AnnFrameBit [] AnnotationFrameBit])
-            (cls ++ dt ++ op ++ dp ++ i) ++
-        map (\ a -> Frame (Misc []) [AnnFrameBit
-            [Annotation [] a $ AnnValue a] AnnotationFrameBit]) ans
+            (cls ++ dt ++ op ++ dp ++ i ++ ans)
 
 signToFrames :: [Frame] -> [Frame]
 signToFrames f =

@@ -149,11 +149,8 @@ getDeclaration b e = case getName e of
    "Declaration" ->
      let ent = filterCL entityList e
          ans = getAllAnnos b e
-         entity@(Entity ty iri) = toEntity b ent
-     in case ty of
-        AnnotationProperty -> PlainAxiom (Misc ans) $ AnnFrameBit
-            [Annotation [] iri $ AnnValue iri] AnnotationFrameBit
-        _ -> PlainAxiom (SimpleEntity entity)
+         entity = toEntity b ent
+     in PlainAxiom (SimpleEntity entity)
                 $ AnnFrameBit ans AnnotationFrameBit
    _ -> err "not declaration"
 
@@ -499,8 +496,9 @@ getAnnoAxiom b e =
    in case getName e of
     "AnnotationAssertion" ->
        let [s, v] = filterChL annotationValueList e
-       in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
-               $ AnnFrameBit [Annotation as (getSubject b s) (getValue b v)]
+           sub = getSubject b s
+       in PlainAxiom (Misc [Annotation [] sub $ AnnValue sub])
+           $ AnnFrameBit [Annotation as ap (getValue b v)]
                     AnnotationFrameBit
     "SubAnnotationPropertyOf" ->
         let [hd, lst] = map (getIRI b) $ filterCh "AnnotationProperty" e

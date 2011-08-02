@@ -63,6 +63,7 @@ echo "calling hets for all xml files...\n"
 for i in $dir/*.xml
 do
     ./hets -i ow2 $i
+    echo "\n"
 done
 
 echo "\ncreating omn files from .rdf.xml with java...\n"

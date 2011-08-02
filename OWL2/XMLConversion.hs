@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-    Conversion from Manchester Syntax to XML Syntax
+Conversion from Manchester Syntax to XML Syntax
 -}
 
 module OWL2.XMLConversion where
@@ -373,62 +373,53 @@ xmlLFB ext mr lfb = case lfb of
                         [xmlIndividual i] ++ [xmlLiteral lit]
             ) list
 
-xmlAFB :: Extended -> Annotations -> AnnFrameBit -> [Element]
+xmlAFB :: Extended -> Annotations -> AnnFrameBit -> Element
 xmlAFB ext anno afb = case afb of
     AnnotationFrameBit -> case ext of
-        SimpleEntity ent ->
-            let Entity ty iri = ent in case ty of
-                AnnotationProperty -> map (\ (Annotation as s v) ->
-                    makeElement annotationAssertionK $
-                        xmlAnnotations as
-                            ++ [mwNameIRI annotationPropertyK iri]
-                            ++ [xmlSubject s, case v of
-                                AnnValue avalue -> xmlSubject avalue
-                                AnnValLit l -> xmlLiteral l]) anno
-                _ -> [makeElement declarationK
-                    $ xmlAnnotations anno ++ [xmlEntity ent]]
+        SimpleEntity ent -> makeElement declarationK
+                    $ xmlAnnotations anno ++ [xmlEntity ent]
         Misc as ->
             let [Annotation _ ap _] = anno
-            in [makeElement declarationK
-                $ xmlAnnotations as ++ [mwNameIRI annotationPropertyK ap]]
+            in makeElement declarationK
+                $ xmlAnnotations as ++ [mwNameIRI annotationPropertyK ap]
         ClassEntity ent -> case ent of
-            Expression c -> [makeElement declarationK
-                    $ xmlAnnotations anno ++ [xmlEntity $ Entity Class c]]
+            Expression c -> makeElement declarationK
+                    $ xmlAnnotations anno ++ [xmlEntity $ Entity Class c]
             _ -> error "XML conversion: incompatible manchester and XML syntax"
         ObjectEntity ent -> case ent of
-            ObjectProp o -> [makeElement declarationK
+            ObjectProp o -> makeElement declarationK
                     $ xmlAnnotations anno ++
-                    [xmlEntity $ Entity ObjectProperty o]]
+                    [xmlEntity $ Entity ObjectProperty o]
             _ -> error "XML conversion: incompatible manchester and XML syntax"
     DataFunctional ->
         let SimpleEntity (Entity _ dp) = ext
-        in [makeElement functionalDataPropertyK
-            $ xmlAnnotations anno ++ [mwNameIRI dataPropertyK dp]]
+        in makeElement functionalDataPropertyK
+            $ xmlAnnotations anno ++ [mwNameIRI dataPropertyK dp]
     DatatypeBit dr ->
         let SimpleEntity (Entity _ dt) = ext
-        in [makeElement datatypeDefinitionK
+        in makeElement datatypeDefinitionK
                 $ xmlAnnotations anno ++ [mwNameIRI datatypeK dt,
-                    xmlDataRange dr]]
+                    xmlDataRange dr]
     ClassDisjointUnion cel ->
         let ClassEntity c = ext
-        in [makeElement disjointUnionK
-                $ xmlAnnotations anno ++ map xmlClassExpression (c : cel)]
+        in makeElement disjointUnionK
+                $ xmlAnnotations anno ++ map xmlClassExpression (c : cel)
     ClassHasKey op dp ->
         let ClassEntity c = ext
-        in [makeElement hasKeyK
+        in makeElement hasKeyK
                 $ xmlAnnotations anno ++ [xmlClassExpression c]
-                    ++ map xmlObjProp op ++ map (mwNameIRI dataPropertyK) dp]
+                    ++ map xmlObjProp op ++ map (mwNameIRI dataPropertyK) dp
     ObjectSubPropertyChain opl ->
         let ObjectEntity op = ext
             xmlop = map xmlObjProp opl
-        in [makeElement subObjectPropertyOfK
+        in makeElement subObjectPropertyOfK
                 $ xmlAnnotations anno ++
-                    [makeElement objectPropertyChainK xmlop, xmlObjProp op]]
+                    [makeElement objectPropertyChainK xmlop, xmlObjProp op]
 
 xmlFrameBit :: Extended -> FrameBit -> [Element]
 xmlFrameBit ext fb = case fb of
     ListFrameBit mr lfb -> xmlLFB ext mr lfb
-    AnnFrameBit anno afb -> xmlAFB ext anno afb
+    AnnFrameBit anno afb -> [xmlAFB ext anno afb]
 
 xmlAxioms :: Axiom -> [Element]
 xmlAxioms (PlainAxiom ext fb) = xmlFrameBit ext fb
