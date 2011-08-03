@@ -70,7 +70,6 @@ cd ..
 # within Hets-lib
 latexBasicLibraries ()
 {
-\cp ../Hets/utils/hetcasl.sty .
 pdflatex Basic-Libraries
 }
 
@@ -164,6 +163,7 @@ rm -rf Hets-lib
 svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 cd Hets-lib
 mv ../Hets/Hets/hets .
+\cp ../Hets/utils/hetcasl.sty .
 if [ -z "$1" ]; then
   checkCASLAsHasCASL
 fi
