@@ -286,6 +286,8 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
             Assertion -> case ext of
                 Misc [Annotation _ iri _] -> checkAssertion s iri ans
                 SimpleEntity (Entity _ iri) -> checkAssertion s iri ans
+                ClassEntity (Expression iri) -> checkAssertion s iri ans
+                ObjectEntity (ObjectProp iri) -> checkAssertion s iri ans
                 _ -> do next <- checkExtended s ext
                         return [PlainAxiom next ab]
             Declaration -> return [ax]
