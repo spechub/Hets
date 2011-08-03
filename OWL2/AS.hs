@@ -22,6 +22,7 @@ import Common.Keywords
 import OWL2.ColonKeywords
 import OWL2.Keywords
 
+import Data.Char (intToDigit)
 import Data.List
 import qualified Data.Map as Map
 
@@ -311,8 +312,84 @@ entityTypes = [minBound .. maxBound]
 data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
     deriving (Show, Eq, Ord)
 
-data Literal = Literal LexicalForm TypedOrUntyped
+data Literal = Literal LexicalForm TypedOrUntyped | NumberLit FloatLit
     deriving (Show, Eq, Ord)
+
+-- | non-negative integers given by the sequence of digits
+data NNInt = NNInt [Int] deriving (Eq, Ord)
+
+instance Show NNInt where
+  show (NNInt l) = map intToDigit l
+
+zeroNNInt :: NNInt
+zeroNNInt = NNInt []
+
+isZeroNNInt :: NNInt -> Bool
+isZeroNNInt (NNInt l) = null l
+
+data IntLit = IntLit
+  { absInt :: NNInt
+  , isNegInt :: Bool }
+  deriving (Eq, Ord)
+
+instance Show IntLit where
+  show (IntLit n b) = (if b then ('-' :) else id) $ show n
+
+zeroInt :: IntLit
+zeroInt = IntLit zeroNNInt False
+
+isZeroInt :: IntLit -> Bool
+isZeroInt (IntLit n _) = isZeroNNInt n
+
+negNNInt :: Bool -> NNInt -> IntLit
+negNNInt b n = IntLit n b
+
+negInt :: IntLit -> IntLit
+negInt (IntLit n b) = IntLit n $ not b
+
+data DecLit = DecLit
+  { truncDec :: IntLit
+  , fracDec :: NNInt }
+  deriving (Eq, Ord)
+
+instance Show DecLit where
+  show (DecLit t f) = show t
+    ++ if isZeroNNInt f then "" else
+      '.' : show f
+
+isDecInt :: DecLit -> Bool
+isDecInt = isZeroNNInt . fracDec
+
+negDec :: DecLit -> DecLit
+negDec (DecLit t f) = DecLit (negInt t) f
+
+data FloatLit = FloatLit
+  { floatBase :: DecLit
+  , floatExp :: IntLit }
+  deriving (Eq, Ord)
+
+instance Show FloatLit where
+  show (FloatLit b e) = show b
+    ++ if isZeroInt e then "" else
+      'E' : show e ++ "F"
+
+isFloatDec :: FloatLit -> Bool
+isFloatDec = isZeroInt . floatExp
+
+isFloatInt :: FloatLit -> Bool
+isFloatInt f = isFloatDec f && isDecInt (floatBase f)
+
+floatToInt :: FloatLit -> IntLit
+floatToInt = truncDec . floatBase
+
+intToDec :: IntLit -> DecLit
+intToDec i = DecLit i zeroNNInt
+
+decToFloat :: DecLit -> FloatLit
+decToFloat d = FloatLit d zeroInt
+
+intToFloat :: IntLit -> FloatLit
+intToFloat = decToFloat . intToDec
 
 cTypeS :: String
 cTypeS = "^^"

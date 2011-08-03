@@ -29,6 +29,7 @@ import Common.Token (criticalKeywords)
 import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
+import Control.Monad (liftM2)
 import Data.Char
 
 type URI = IRI
@@ -230,19 +231,37 @@ datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
 optSign :: CharParser st String
 optSign = optionL (single $ oneOf "+-")
 
-postDecimal :: CharParser st String
-postDecimal = char '.' <:> getNumber
+postDecimal :: CharParser st NNInt
+postDecimal = char '.' >> getNNInt
 
-fullDecimal :: CharParser st String
-fullDecimal = getNumber <++> optionL postDecimal
+getNNInt :: CharParser st NNInt
+getNNInt = fmap (NNInt . map digitToInt) getNumber
 
-decimalLit :: CharParser st String
-decimalLit = optSign <++> fullDecimal
+intLit :: CharParser st IntLit
+intLit = do
+  c <- optSign
+  n <- getNNInt
+  return $ negNNInt (c == "_") n
 
-floatingPointLit :: CharParser st String
-floatingPointLit = optSign <++> (fullDecimal <|> postDecimal)
-  <++> optionL (oneOf "eE" <:> optSign <++> getNumber)
-  << oneOf "fF"
+decimalLit :: CharParser st DecLit
+decimalLit = liftM2 DecLit intLit $ option zeroNNInt postDecimal
+
+floatDecimal :: CharParser st DecLit
+floatDecimal = do
+    n <- getNNInt
+    f <- option zeroNNInt postDecimal
+    return $ DecLit (negNNInt False n) f
+   <|> do
+    n <- postDecimal
+    return $ DecLit zeroInt n
+
+floatingPointLit :: CharParser st FloatLit
+floatingPointLit = do
+   c <- optSign
+   d <- floatDecimal
+   i <- option zeroInt (oneOf "eE" >> intLit)
+   oneOf "fF"
+   return $ FloatLit (if c == "-" then negDec d else d) i
 
 languageTag :: CharParser st String
 languageTag = atMost1 4 letter
@@ -264,11 +283,8 @@ stringLiteral = do
 literal :: CharParser st Literal
 literal = do
     f <- skips $ try floatingPointLit
-    return $ Literal f $ Typed $ mkQName floatS
-  <|> do
-    d <- skips decimalLit
-    return $ Literal d $ Typed $ mkQName
-      $ if any (== '.') d then decimalS else integerS
+         <|> fmap decToFloat decimalLit
+    return $ NumberLit f
   <|> stringLiteral
 
 -- * description

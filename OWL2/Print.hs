@@ -103,13 +103,14 @@ instance Pretty DatatypeFacet where
     pretty = keyword . showFacet
 
 instance Pretty Literal where
-    pretty (Literal lexi ty) =
-     text (case lexi of
+    pretty lit = case lit of
+     Literal lexi ty -> text (case lexi of
              '"' : _ -> lexi
              _ -> show lexi) <> case ty of
       Typed u -> keyword cTypeS <> pretty u
       Untyped tag -> if tag == Nothing then empty else
                      let Just tag2 = tag in text asP <> text tag2
+     NumberLit f -> text (show f)
 
 instance Pretty ObjectPropertyExpression where
     pretty = printObjPropExp
