@@ -134,6 +134,9 @@ printFrame (Frame eith bl) = case eith of
           [ListFrameBit (Just s) (IndividualSameOrDifferent anl)] ->
             printSameOrDifferentInd (getSD s) <+>
                 (printAnnotations a $+$ printAnnotatedList anl)
+          [AnnFrameBit ans AnnotationFrameBit] ->
+            let [Annotation _ iri _] = a
+            in keyword individualC <+> (pretty iri $+$ printAnnotations ans)
           _ -> empty
 
 instance Pretty Axiom where

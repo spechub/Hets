@@ -274,10 +274,10 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
         return [PlainAxiom next nfb]
     ab@(AnnFrameBit ans afb) -> case afb of
         AnnotationFrameBit -> case ext of
-            Misc ([Annotation _ iri _]) -> do
+            Misc [Annotation _ iri _] -> do
                 let entList = correctEntity s iri
                 if null entList then return [ax]
-                 else return $ map (\x -> PlainAxiom (SimpleEntity x) ab)
+                 else return $ map (\ x -> PlainAxiom (SimpleEntity x) ab)
                             entList
             _ -> do next <- checkExtended s ext
                     return [PlainAxiom next ab]
