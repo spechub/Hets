@@ -373,19 +373,23 @@ xmlLFB ext mr lfb = case lfb of
                         [xmlIndividual i] ++ [xmlLiteral lit]
             ) list
 
-xmlAFB :: Extended -> Annotations -> AnnFrameBit -> Element
-xmlAFB ext anno afb = case afb of
-    AnnotationFrameBit -> case ext of
-        SimpleEntity ent -> makeElement declarationK
-                    $ xmlAnnotations anno ++ [xmlEntity ent]
-        Misc ans ->
-            let [Annotation _ iri _] = ans
-                [Annotation as ap av] = anno
-            in makeElement annotationAssertionK $ xmlAnnotations as 
+xmlAssertion :: IRI -> Annotations -> Element
+xmlAssertion iri anno =
+    let [Annotation as ap av] = anno
+    in makeElement annotationAssertionK $ xmlAnnotations as 
 	 	            ++ [mwNameIRI annotationPropertyK ap] 
 	 	            ++ [xmlSubject iri, case av of
 	 	                   AnnValue avalue -> xmlSubject avalue 
 	 	                   AnnValLit l -> xmlLiteral l]
+ 
+xmlAFB :: Extended -> Annotations -> AnnFrameBit -> Element
+xmlAFB ext anno afb = case afb of
+    AnnotationFrameBit ty -> case ext of
+        SimpleEntity ent -> case ty of
+            Declaration -> makeElement declarationK
+                    $ xmlAnnotations anno ++ [xmlEntity ent]
+            Assertion -> let Entity _ iri = ent in xmlAssertion iri anno
+        Misc ans -> let [Annotation _ iri _] = ans in xmlAssertion iri anno
         ClassEntity ent -> case ent of
             Expression c -> makeElement declarationK
                     $ xmlAnnotations anno ++ [xmlEntity $ Entity Class c]

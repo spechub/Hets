@@ -287,7 +287,7 @@ aFB :: Extended -> Annotations -> AnnFrameBit -> Profiles
 aFB ext anno afb =
     let ans = annotations anno
     in case afb of
-        AnnotationFrameBit -> ans
+        AnnotationFrameBit _ -> ans
         DataFunctional -> andProfileList [ans, elrlProfile]
         DatatypeBit dr -> case ext of
             SimpleEntity (Entity _ dt) -> andProfileList

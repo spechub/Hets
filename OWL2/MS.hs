@@ -44,9 +44,12 @@ data ListFrameBit
   | IndividualFacts (AnnotatedList Fact)
     deriving (Show, Eq, Ord)
 
+data AnnoType = Declaration | Assertion
+    deriving (Show, Eq, Ord)
+
 -- | frames which start with annotations
 data AnnFrameBit
-  = AnnotationFrameBit
+  = AnnotationFrameBit AnnoType
   | DataFunctional
   | DatatypeBit DataRange
   | ClassDisjointUnion [ClassExpression]

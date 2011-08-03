@@ -546,7 +546,7 @@ mapAnnFrameBit :: CASLSign
        -> Result ([CASLFORMULA], CASLSign)
 mapAnnFrameBit cSig ex afb =
   case afb of
-    AnnotationFrameBit -> return ([], cSig)
+    AnnotationFrameBit _ -> return ([], cSig)
     DataFunctional ->
       case ex of
         SimpleEntity (Entity ty iri) ->

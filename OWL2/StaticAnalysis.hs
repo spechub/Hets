@@ -265,6 +265,15 @@ checkAnnBit s fb = case fb of
     ObjectSubPropertyChain ol -> checkObjPropList s fb ol
     _ -> return fb
 
+checkAssertion :: Sign -> IRI -> Annotations -> Result [Axiom]
+checkAssertion s iri ans = do
+    let entList = correctEntity s iri
+        ab = AnnFrameBit ans $ AnnotationFrameBit Assertion
+    if null entList then
+        let misc = Misc [Annotation [] iri $ AnnValue iri]
+        in return [PlainAxiom misc ab]
+     else return $ map (\ x -> PlainAxiom (SimpleEntity x) ab) entList
+
 -- | corrects the axiom according to the signature
 checkAxiom :: Sign -> Axiom -> Result [Axiom]
 checkAxiom s ax@(PlainAxiom ext fb) = case fb of
@@ -273,14 +282,13 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
         nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb
         return [PlainAxiom next nfb]
     ab@(AnnFrameBit ans afb) -> case afb of
-        AnnotationFrameBit -> case ext of
-            Misc [Annotation _ iri _] -> do
-                let entList = correctEntity s iri
-                if null entList then return [ax]
-                 else return $ map (\ x -> PlainAxiom (SimpleEntity x) ab)
-                            entList
-            _ -> do next <- checkExtended s ext
-                    return [PlainAxiom next ab]
+        AnnotationFrameBit ty -> case ty of
+            Assertion -> case ext of
+                Misc [Annotation _ iri _] -> checkAssertion s iri ans
+                SimpleEntity (Entity _ iri) -> checkAssertion s iri ans
+                _ -> do next <- checkExtended s ext
+                        return [PlainAxiom next ab]
+            Declaration -> return [ax]
         _ -> do
             next <- checkExtended s ext
             nfb <- fmap (AnnFrameBit ans) $ checkAnnBit s afb

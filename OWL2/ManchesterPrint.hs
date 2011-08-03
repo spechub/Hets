@@ -86,7 +86,7 @@ printFrameBit fb = case fb of
         IndividualFacts x -> keyword factsC <+> printAnnotatedList x
         _ -> empty
   AnnFrameBit a afb -> case afb of
-    AnnotationFrameBit -> printAnnotations a
+    AnnotationFrameBit _ -> printAnnotations a
     DatatypeBit x -> printAnnotations a
           $+$ keyword equivalentToC <+> pretty x
     ClassDisjointUnion x -> keyword disjointUnionOfC
@@ -134,7 +134,7 @@ printFrame (Frame eith bl) = case eith of
           [ListFrameBit (Just s) (IndividualSameOrDifferent anl)] ->
             printSameOrDifferentInd (getSD s) <+>
                 (printAnnotations a $+$ printAnnotatedList anl)
-          [AnnFrameBit ans AnnotationFrameBit] ->
+          [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->
             let [Annotation _ iri _] = a
             in keyword individualC <+> (pretty iri $+$ printAnnotations ans)
           _ -> empty

@@ -64,7 +64,7 @@ apBit = do
               $ AnnotationBit x
   <|> do
     x <- annotations
-    return $ AnnFrameBit x AnnotationFrameBit
+    return $ AnnFrameBit x $ AnnotationFrameBit Assertion
 
 datatypeBit :: CharParser st Frame
 datatypeBit = do
@@ -74,10 +74,10 @@ datatypeBit = do
     mp <- optionMaybe $ pkeyword equivalentToC >> pair optionalAnnos dataRange
     as2 <- many annotations
     return $ Frame (SimpleEntity $ Entity Datatype duri)
-      $ map (`AnnFrameBit` AnnotationFrameBit) as1 ++ case mp of
+      $ map (`AnnFrameBit` (AnnotationFrameBit Assertion)) as1 ++ case mp of
           Nothing -> []
           Just (ans, dr) -> [AnnFrameBit ans $ DatatypeBit dr]
-        ++ map (`AnnFrameBit` AnnotationFrameBit) as2
+        ++ map (`AnnFrameBit` (AnnotationFrameBit Assertion)) as2
 
 classFrame :: CharParser st Frame
 classFrame = do
@@ -109,7 +109,7 @@ classFrameBit = do
     return $ AnnFrameBit as $ ClassHasKey o []
   <|> do
     as <- annotations
-    return $ AnnFrameBit as AnnotationFrameBit
+    return $ AnnFrameBit as $ AnnotationFrameBit Assertion
 
 objPropExprAList :: CharParser st [(Annotations, ObjectPropertyExpression)]
 objPropExprAList = sepByComma $ optAnnos objectPropertyExpr
@@ -147,7 +147,7 @@ objectFrameBit = do
     return $ AnnFrameBit as $ ObjectSubPropertyChain os
   <|> do
     as <- annotations
-    return $ AnnFrameBit as AnnotationFrameBit
+    return $ AnnFrameBit as $ AnnotationFrameBit Assertion
 
 objectPropertyFrame :: CharParser st Frame
 objectPropertyFrame = do
@@ -183,7 +183,7 @@ dataFrameBit = do
     return $ ListFrameBit (Just (EDRelation e)) $ DataBit ds
   <|> do
     as <- annotations
-    return $ AnnFrameBit as AnnotationFrameBit
+    return $ AnnFrameBit as $ AnnotationFrameBit Assertion
 
 dataPropertyFrame :: CharParser st Frame
 dataPropertyFrame = do
@@ -219,7 +219,7 @@ iFrameBit = do
     return $ ListFrameBit Nothing $ IndividualFacts fs
   <|> do
     a <- annotations
-    return $ AnnFrameBit a AnnotationFrameBit
+    return $ AnnFrameBit a $ AnnotationFrameBit Assertion
 
 individualFrame :: CharParser st Frame
 individualFrame = do

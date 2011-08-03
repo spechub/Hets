@@ -110,7 +110,7 @@ comSigLFB r lfb = case lfb of
 by calling the corresponding bottom level functions -}
 comSigAFB :: AnnFrameBit -> State Sign ()
 comSigAFB afb = case afb of
-    AnnotationFrameBit -> return ()
+    AnnotationFrameBit _ -> return ()
     DataFunctional -> return ()
     DatatypeBit dr -> addDataRange dr
     ClassDisjointUnion cls -> mapM_ addDescription cls
@@ -157,7 +157,8 @@ toDecl s =
         dp = map (Entity DataProperty) $ Set.toList (dataProperties s)
         i = map (Entity NamedIndividual) $ Set.toList (individuals s)
         ans = map (Entity AnnotationProperty) $ Set.toList (annotationRoles s)
-    in map (\ c -> Frame (SimpleEntity c) [AnnFrameBit [] AnnotationFrameBit])
+    in map (\ c -> Frame (SimpleEntity c)
+        [AnnFrameBit [] $ AnnotationFrameBit Declaration])
             (cls ++ dt ++ op ++ dp ++ i ++ ans)
 
 signToFrames :: [Frame] -> [Frame]
