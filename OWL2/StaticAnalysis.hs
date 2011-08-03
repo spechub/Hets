@@ -70,7 +70,7 @@ checkEntity s (Entity ty e) =
    AnnotationProperty -> unless (Set.member e $ annotationRoles s) errMsg
    _ -> return ()
 
--- | takes an iri  and finds out what entities it belongs to 
+-- | takes an iri and finds out what entities it belongs to
 correctEntity :: Sign -> IRI -> [Entity]
 correctEntity s iri =
     [Entity AnnotationProperty iri | Set.member iri (annotationRoles s)] ++
@@ -191,7 +191,7 @@ checkClassExpression s desc =
     if Set.member dExp (dataProperties s) then return desc else datErr dExp
   DataHasValue dExp _ ->
     if Set.member dExp (dataProperties s) then return desc else datErr dExp
-  DataCardinality (Cardinality _ _ dExp mr) -> 
+  DataCardinality (Cardinality _ _ dExp mr) ->
     if Set.member dExp (dataProperties s) then case mr of
           Nothing -> return desc
           Just d -> checkDataRange s d >> return desc
@@ -270,7 +270,7 @@ checkAxiom :: Sign -> Axiom -> Result [Axiom]
 checkAxiom s (PlainAxiom ext fb) = case fb of
     ListFrameBit mr lfb -> do
         next <- checkExtended s ext
-        nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb   
+        nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb
         return [PlainAxiom next nfb]
     ab@(AnnFrameBit ans afb) -> case afb of
         AnnotationFrameBit -> case ext of
@@ -288,15 +288,15 @@ checkExtended :: Sign -> Extended -> Result Extended
 checkExtended s e = case e of
     ClassEntity ce -> fmap ClassEntity $ checkClassExpression s ce
     ObjectEntity oe -> case oe of
-        ObjectInverseOf op ->
-            if Set.member (objPropToIRI op) (objectProperties s)
-            then return e else fail $ "unknown object property" ++ show op
+        ObjectInverseOf op -> let i = objPropToIRI op in
+            if Set.member i (objectProperties s)
+            then return e else mkError "unknown object property" i
         _ -> return e
     _ -> return e
 
 -- | checks a frame and applies desired changes
 checkFrame :: Sign -> Frame -> Result [Frame]
-checkFrame s f@(Frame eith fbl) = fmap (map axToFrame . concat)
+checkFrame s (Frame eith fbl) = fmap (map axToFrame . concat)
     $ mapM (checkAxiom s . PlainAxiom eith) fbl
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]

@@ -316,7 +316,7 @@ keywordNotFollowedBy s c = skips $ try $ string s << notFollowedBy c
 
 -- | keyword not followed by any alphanum
 keyword :: String -> CharParser st String
-keyword s = keywordNotFollowedBy s alphaNum
+keyword s = keywordNotFollowedBy s (alphaNum <|> char '_')
 
 -- base OWLClass excluded
 atomic :: CharParser st ClassExpression
