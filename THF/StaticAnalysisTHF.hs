@@ -36,8 +36,10 @@ import qualified Data.Set as Set
 
 --------------------------------------------------------------------------------
 -- Questions:
---      * how to treat fi_domain, lemma, theorem... in statAna?
 --      * how to handle SysType in isTypeConsistent?
+-- Todo:
+--      * find out what fi_domain, fi_predicates and fi_functors are and try
+--        to somehow support them
 --------------------------------------------------------------------------------
 
 basicAnalysis :: (BasicSpecTHF, SignTHF, GlobalAnnos) ->
@@ -184,17 +186,37 @@ getSentences [] dn = dn
 getSentences (t : rt) dn@(d, ns) = case t of
     TPTP_THF_Annotated_Formula _ fr _ _ -> case fr of
         Type    -> getSentences rt dn
-        Unknown -> let diag = (mkDiag Warning
-                        "THFFormula with type \'unknown\' will be ignored." t)
-                   in getSentences rt (diag : d, ns)
-        Plain   -> let diag = (mkDiag Warning
-                        "THFFormula with type \'plain\' will be ignored." t)
-                   in getSentences rt (diag : d, ns)
-        _       -> let (d1, ns1) = getSentences rt dn
-                   in (d1, tptpthfToNS t : ns1)
+        Unknown         ->
+            let diag = (mkDiag Warning
+                    "THFFormula with role \'unknown\' will be ignored." t)
+            in getSentences rt (diag : d, ns)
+        Plain           ->
+            let diag = (mkDiag Warning
+                    "THFFormula with role \'plain\' will be ignored." t)
+            in getSentences rt (diag : d, ns)
+        Fi_Domain       ->
+            let diag = (mkDiag Warning
+                    "THFFormula with role \'fi_domain\' will be ignored." t)
+            in getSentences rt (diag : d, ns)
+        Fi_Functors     ->
+            let diag = (mkDiag Warning
+                    "THFFormula with role \'fi_functors\' will be ignored." t)
+            in getSentences rt (diag : d, ns)
+        Fi_Predicates   ->
+            let diag = (mkDiag Warning
+                    "THFFormula with role \'fi_predicates\' will be ignored." t)
+            in getSentences rt (diag : d, ns)
+        Assumption      ->
+            let diag = (mkDiag Warning
+                    "THFFormula with role \'assumption\' will be ignored." t)
+            in getSentences rt (diag : d, ns)
+        _               ->
+            let (d1, ns1) = getSentences rt dn
+            in (d1, tptpthfToNS t : ns1)
     _ -> getSentences rt dn
 
--- Precondition: The formulaRole must not be Type, Unknown or Plain
+-- Precondition: The formulaRole must not be Type, Unknown, Plain, Fi_Domain
+-- Fi_Functors, Fi_Predicates or Assumption
 -- (They are filtered out in getSentences)
 tptpthfToNS :: TPTP_THF -> Named SentenceTHF
 tptpthfToNS t = case formulaRoleAF t of
@@ -213,7 +235,22 @@ tptpthfToNS t = case formulaRoleAF t of
         in SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
                    , isDef = False, wasTheorem = False, simpAnno = Nothing
                    , attrOrigin = Nothing, sentence = sen }
-    _                   ->
+    Theorem             ->
+        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
+        in SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
+                   , isDef = False, wasTheorem = True, simpAnno = Nothing
+                   , attrOrigin = Nothing, sentence = sen }
+    Lemma               ->
+        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
+        in SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
+                   , isDef = False, wasTheorem = True, simpAnno = Nothing
+                   , attrOrigin = Nothing, sentence = sen }
+    Hypothesis          -> --isAxiom = false
+        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
+        in SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = False
+                   , isDef = False, wasTheorem = False, simpAnno = Nothing
+                   , attrOrigin = Nothing, sentence = sen }
+    _                   -> -- Axiom
         let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
         in makeNamed (show $ pretty $ nameAF t) sen
 

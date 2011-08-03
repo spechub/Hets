@@ -24,7 +24,6 @@ module THF.As where
 -- Questiona:
 --      * at the example of <source>: Sould <general_term> be also
 --        tried when all ather variations fail?
---      * schould defined_types allow atomic_defined_words in generat, too?
 --------------------------------------------------------------------------------
 
 -- THF & THF0:

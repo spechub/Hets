@@ -41,12 +41,6 @@ import Data.Maybe
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (picosecondsToDiffTime, secondsToDiffTime)
 
---------------------------------------------------------------------------------
--- Note:
---      * ask Till about env vars. (See atpFun)
---------------------------------------------------------------------------------
-
-
 leoIIName :: String
 leoIIName = "Leo-II"
 

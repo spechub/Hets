@@ -26,10 +26,11 @@ import THF.Cons
 import THF.StaticAnalysisTHF
 import THF.ProveLeoII
 import THF.Sign
+import THF.Print
 
 --------------------------------------------------------------------------------
 -- TODO:
---      * Ask Till or Christion about other methods of the instances that are
+--      * Ask Till or Christian about other methods of the instances that are
 --        important
 --------------------------------------------------------------------------------
 
@@ -47,6 +48,7 @@ instance Logic.Logic.Syntax THF BasicSpecTHF () () where
 
 instance Sentences THF SentenceTHF SignTHF MorphismTHF SymbolTHF where
     map_sen THF _ = return
+    print_named THF = printNamedSentenceTHF
     -- sym_name THF =
     -- negation THF _ =
     -- other default implementations are fine

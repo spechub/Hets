@@ -55,7 +55,10 @@ basicSpec o = case o of
 --------------------------------------------------------------------------------
 
 -- A Sentence is a THFFormula.
-data SentenceTHF = Sentence FormulaRole THFFormula Annotations
+data SentenceTHF = Sentence
+    { senRole       :: FormulaRole
+    , senFormula    :: THFFormula
+    , senAnno       :: Annotations }
     deriving (Show, Eq, Ord)
 
 instance GetRange SentenceTHF

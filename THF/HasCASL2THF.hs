@@ -12,8 +12,6 @@ Portability :  non-portable (imports Logic.Logic)
 The embedding comorphism from HasCASL to THF.
 -}
 
--- TODO move this file from Hets/THF to Hets/Comorphisms
-
 module Comorphisms.HasCASL2THF where
 
 import Logic.Logic as Logic
@@ -32,6 +30,11 @@ import THF.Logic_THF
 import THF.Cons
 import THF.Sign
 
+--------------------------------------------------------------------------------
+-- Todo:
+--      * move this file from Hets/THF to Hets/Comorphisms
+--------------------------------------------------------------------------------
+
 -- | The identity of the comorphism
 data HasCASL2THF = HasCASL2THF deriving Show
 
@@ -45,8 +48,20 @@ instance Comorphism HasCASL2THF
                 BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic HasCASL2THF = HasCASL
-    sourceSublogic HasCASL2THF = top
+    sourceSublogic HasCASL2THF = reqSubLogicForTHF0
     targetLogic HasCASL2THF = THF
-    mapSublogic _ = error "not implementet yet"
-    map_theory _ = error "not implementet yet"
-    map_morphism _ = error "not implementet yet"
+    mapSublogic HasCASL2THF = error "not implementet yet"
+    map_theory HasCASL2THF = error "not implementet yet"
+    map_morphism HasCASL2THF = error "not implementet yet"
+
+
+reqSubLogicForTHF0 :: Sublogic
+reqSubLogicForTHF0 = Sublogic
+    { has_sub = False
+    , has_part = True
+    , has_eq = True
+    , has_pred = True
+    , type_classes = NoClasses
+    , has_polymorphism = False
+    , has_type_constructors = True
+    , which_logic = HOL }

@@ -23,6 +23,11 @@ import THF.PrintTHF
 
 import qualified Data.Map as Map
 
+--------------------------------------------------------------------------------
+-- Some pretty instances for datastructures defined in Cons and Sign and
+-- other print methods
+--------------------------------------------------------------------------------
+
 instance Pretty BasicSpecTHF where
     pretty (BasicSpecTHF _ a) = printTPTPTHF a
 
