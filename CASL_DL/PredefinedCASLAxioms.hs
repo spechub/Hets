@@ -20,6 +20,13 @@ module CASL_DL.PredefinedCASLAxioms
   , mkNName
   , mkDigit
   , joinDigits
+  , negateInt
+  , integer
+  , float
+  , negateFloat
+  , upcast
+  , mkDecimal
+  , mkFloat
   , consChar
   , emptyStringTerm
   , trueT
@@ -47,26 +54,29 @@ thing = stringToId "Thing"
 n :: Range
 n = nullRange
 
-nothing :: Id
+nothing :: SORT
 nothing = stringToId "Nothing"
 
 -- | OWL Data topSort DATA
-dataS :: Id
+dataS :: SORT
 dataS = stringToId "DATA"
 
-integer :: Id
+integer :: SORT
 integer = stringToId "integer"
 
-posInt :: Id
+float :: SORT
+float = stringToId "float"
+
+posInt :: SORT
 posInt = stringToId "positiveInteger"
 
-negInt :: Id
+negInt :: SORT
 negInt = stringToId "negativeInteger"
 
-nonPosInt :: Id
+nonPosInt :: SORT
 nonPosInt = stringToId "nonPositiveInteger"
 
-nonNegInt :: Id
+nonNegInt :: SORT
 nonNegInt = stringToId "nonNegativeInteger"
 
 classPredType :: PRED_TYPE
@@ -75,7 +85,7 @@ classPredType = Pred_type [thing] n
 conceptPred :: PredType
 conceptPred = toPredType classPredType
 
-boolS :: Id
+boolS :: SORT
 boolS = stringToId "boolean"
 
 boolT :: OpType
@@ -87,17 +97,21 @@ trueS = stringToId "True"
 falseS :: Id
 falseS = stringToId "False"
 
+mkConst :: Id -> OpType -> TERM ()
+mkConst i o = mkAppl (mkQualOp i $ toOP_TYPE o) []
+
 trueT :: TERM ()
-trueT = mkAppl (mkQualOp trueS $ toOP_TYPE boolT) []
+trueT = mkConst trueS boolT
 
 falseT :: TERM ()
-falseT = mkAppl (mkQualOp falseS $ toOP_TYPE boolT) []
+falseT = mkConst falseS boolT
 
 natT :: OpType
 natT = mkTotOpType [] nonNegInt
 
+-- | create a term of type nonNegativeInteger
 mkDigit :: Int -> TERM ()
-mkDigit i = mkAppl (mkQualOp (stringToId $ show i) $ toOP_TYPE natT) []
+mkDigit i = mkConst (stringToId $ show i) natT
 
 unMinus :: Id
 unMinus = mkId [mkSimpleId "-", placeTok]
@@ -105,14 +119,57 @@ unMinus = mkId [mkSimpleId "-", placeTok]
 minusTy :: OpType
 minusTy = mkTotOpType [integer] integer
 
+minusFloat :: OpType
+minusFloat = mkTotOpType [float] float
+
+negateTy :: OpType -> TERM () -> TERM ()
+negateTy o t = mkAppl (mkQualOp unMinus $ toOP_TYPE o) [t]
+
+-- | negate a term of type integer
+negateInt :: TERM () -> TERM ()
+negateInt = negateTy minusTy
+
+-- | negate a term of type float
+negateFloat :: TERM () -> TERM ()
+negateFloat = negateTy minusFloat
+
 atAt :: Id
 atAt = mkInfix "@@"
 
 atAtTy :: OpType
 atAtTy = mkTotOpType [nonNegInt, nonNegInt] nonNegInt
 
+mkBinOp :: Id -> OpType -> TERM () -> TERM () -> TERM ()
+mkBinOp i o t1 t2 = mkAppl (mkQualOp i $ toOP_TYPE o) [t1, t2]
+
+-- | join two terms of type nonNegativeInteger
 joinDigits :: TERM () -> TERM () -> TERM ()
-joinDigits d1 d2 = mkAppl (mkQualOp atAt $ toOP_TYPE atAtTy) [d1, d2]
+joinDigits = mkBinOp atAt atAtTy
+
+dec :: Id
+dec = mkInfix ":::"
+
+decTy :: OpType
+decTy = mkTotOpType [nonNegInt, nonNegInt] float
+
+{- | create the float given by two non-negative integers separated by the
+decimal point -}
+mkDecimal :: TERM () -> TERM () -> TERM ()
+mkDecimal = mkBinOp dec decTy
+
+eId :: Id
+eId = mkInfix "E"
+
+expTy :: OpType
+expTy = mkTotOpType [float, integer] float
+
+-- | construct the E float, where the second argument is of type integer
+mkFloat :: TERM () -> TERM () -> TERM ()
+mkFloat = mkBinOp eId expTy
+
+-- | upcast a term to a matching sort
+upcast :: TERM () -> SORT -> TERM ()
+upcast t ty = Sorted_term t ty nullRange
 
 charS :: Id
 charS = stringToId "Char"
@@ -152,85 +209,34 @@ consTy = mkTotOpType [charS, stringS] stringS
 noThing :: PRED_SYMB
 noThing = Qual_pred_name nothing classPredType n
 
+compareTypes :: [PredType]
+compareTypes =
+  map (\ t -> PredType [t, t]) [integer, nonNegInt, float]
+
+intTypes :: [PredType]
+intTypes = map (\ t -> PredType [t]) [integer, nonNegInt]
+
 predefSign :: CASLSign
 predefSign = (emptySign ())
                  { sortRel = Rel.insertKey (stringToId "Char")
                       $ Rel.insertKey thing
                       $ Rel.transClosure $ Rel.fromList
-                       [
-                        (boolS,
-                         dataS),
-                        (integer,
-                         dataS),
-                        (negInt,
-                         dataS),
-                        (negInt,
-                         integer),
-                        (negInt,
-                         nonPosInt),
-                        (nonNegInt,
-                         dataS),
-                        (nonNegInt,
-                         integer),
-                        (nonPosInt,
-                         dataS),
-                        (nonPosInt,
-                         integer),
-                        (posInt,
-                         dataS),
-                        (posInt,
-                         integer),
-                        (posInt,
-                         nonNegInt),
-                        (posInt,
-                         dataS),
-                        (posInt,
-                         integer),
-                        (posInt,
-                         nonNegInt),
-                        (stringS,
-                         dataS),
+                       [(boolS, dataS),
+                        (integer, float),
+                        (float, dataS),
+                        (negInt, nonPosInt),
+                        (nonNegInt, integer),
+                        (nonPosInt, integer),
+                        (posInt, nonNegInt),
+                        (stringS, dataS),
                         (dataS, thing) ]
                  , predMap =
                      MapSet.fromList
-                       [(nothing,
-                           [conceptPred]),
-                        (mkInfix "<",
-                           [PredType
-                              [integer,
-                               integer],
-                            PredType
-                              [nonNegInt,
-                               nonNegInt]]),
-                        (mkInfix "<=",
-                           [PredType
-                              [integer,
-                               integer],
-                            PredType
-                              [nonNegInt,
-                               nonNegInt]]),
-                        (mkInfix ">",
-                           [PredType
-                              [integer,
-                               integer],
-                            PredType
-                              [nonNegInt,
-                               nonNegInt]]),
-                        (mkInfix ">=",
-                           [PredType
-                              [integer,
-                               integer],
-                            PredType
-                              [nonNegInt,
-                               nonNegInt]]),
-                        (stringToId "even",
-                           [PredType [integer],
-                            PredType
-                              [nonNegInt]]),
-                        (stringToId "odd",
-                           [PredType [integer],
-                            PredType
-                              [nonNegInt]])]
+                      $ (nothing, [conceptPred])
+                      : map ( \ o -> (mkInfix o, compareTypes))
+                        ["<", "<=", ">", ">="]
+                      ++ map ( \ o -> (stringToId o, intTypes))
+                         ["even", "odd"]
                  , opMap = MapSet.fromList
                         $ map (\ i -> (stringToId $ show i, [natT]))
                           [0 .. 9 :: Int]
@@ -240,13 +246,16 @@ predefSign = (emptySign ())
                         [ (trueS, [boolT])
                         , (falseS, [boolT])
                         , (atAt, [atAtTy])
-                        , (unMinus, [minusTy])
+                        , (unMinus, [minusTy, minusFloat])
+                        , (dec, [decTy])
+                        , (eId, [expTy])
                         , (cons, [consTy])
                         , (emptyString, [emptyStringTy])
                         ]
                  , globAnnos = emptyGlobalAnnos
                      { literal_annos = emptyLiteralAnnos
                        { number_lit = Just atAt
+                       , float_lit = Just (dec, eId)
                        , string_lit = Just (emptyString, cons) }}
                  }
 
