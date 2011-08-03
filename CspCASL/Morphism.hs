@@ -240,9 +240,10 @@ checkWNECondition mor =
                     ++ "Violated:\n'"
                     ++ showDoc
                        (Subsort_decl [x, y] u' nullRange :: SORT_ITEM ())
-                       "'\nbut no common supersort for\n'"
+                       "' in target\nbut no common supersort for\n'"
                     ++ showDoc
-                       (Sort_decl [s1, s2] nullRange :: SORT_ITEM ()) "'")
+                       (Sort_decl [s1, s2] nullRange :: SORT_ITEM ())
+                       "' in source")
                    nullRange
               allDiags = map produceDiag $ Set.toList failures
           in Result allDiags Nothing -- failure with error messages
