@@ -394,12 +394,12 @@ xmlAFB ext anno afb = case afb of
         ClassEntity ent -> case ent of
             Expression c -> [makeElement declarationK
                     $ xmlAnnotations anno ++ [xmlEntity $ Entity Class c]]
-            _ -> []
+            _ -> [] -- very rare cases
         ObjectEntity ent -> case ent of
             ObjectProp o -> [makeElement declarationK
                     $ xmlAnnotations anno ++
                     [xmlEntity $ Entity ObjectProperty o]]
-            _ -> []
+            _ -> [] -- very rare cases
     DataFunctional ->
         let SimpleEntity (Entity _ dp) = ext
         in [makeElement functionalDataPropertyK
