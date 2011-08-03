@@ -374,12 +374,12 @@ xmlLFB ext mr lfb = case lfb of
             ) list
 
 xmlAssertion :: IRI -> Annotations -> [Element]
-xmlAssertion iri anno = map (\ (Annotation as ap av) ->
+xmlAssertion iri = map (\ (Annotation as ap av) ->
     makeElement annotationAssertionK $ xmlAnnotations as
         ++ [mwNameIRI annotationPropertyK ap] 
 	 	++ [xmlSubject iri, case av of
 	 	        AnnValue avalue -> xmlSubject avalue 
-	 	        AnnValLit l -> xmlLiteral l]) anno
+	 	        AnnValLit l -> xmlLiteral l])
  
 xmlAFB :: Extended -> Annotations -> AnnFrameBit -> [Element]
 xmlAFB ext anno afb = case afb of
@@ -394,12 +394,12 @@ xmlAFB ext anno afb = case afb of
         ClassEntity ent -> case ent of
             Expression c -> [makeElement declarationK
                     $ xmlAnnotations anno ++ [xmlEntity $ Entity Class c]]
-            _ -> error "XML conversion: incompatible manchester and XML syntax"
+            _ -> []
         ObjectEntity ent -> case ent of
             ObjectProp o -> [makeElement declarationK
                     $ xmlAnnotations anno ++
                     [xmlEntity $ Entity ObjectProperty o]]
-            _ -> error "XML conversion: incompatible manchester and XML syntax"
+            _ -> []
     DataFunctional ->
         let SimpleEntity (Entity _ dp) = ext
         in [makeElement functionalDataPropertyK
