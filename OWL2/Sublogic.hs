@@ -135,14 +135,14 @@ sl_name sl =
         Unqualified -> "N"
         None -> "")
     ++ let ds = datatype sl in if Set.null ds then "" else
-           "(D"
+           "<D"
            ++ (let ts = Set.filter (/= OWLDATA) ds
                in if Set.null ts then "" else
-                 " {"
-                 ++ (if ds == Set.fromList owlDatatypes then "..." else
-                         intercalate " " $ map printXSDName $ Set.toList ts)
-                 ++ "}")
-           ++ ")"
+                 "<"
+                 ++ (if ds == Set.fromList owlDatatypes then "-" else
+                         intercalate "|" $ map printXSDName $ Set.toList ts)
+                 ++ ">")
+           ++ ">"
 
 requireQualNumberRestrictions :: OWLSub -> OWLSub
 requireQualNumberRestrictions sl = sl { numberRestrictions = Qualified }
@@ -261,7 +261,7 @@ slLFB mr lfb = case lfb of
         _ -> sl_bottom) $ foldl sl_max sl_bottom $ map (sl_data_prop . snd) anl
     IndividualSameOrDifferent _ -> requireNominals sl_bottom
     ObjectCharacteristics anl -> foldl sl_max sl_bottom
-        $ map (\ c -> case c of 
+        $ map (\ c -> case c of
               Transitive -> requireRoleTransitivity sl_bottom
               Reflexive -> requireAddFeatures sl_bottom
               Irreflexive -> requireAddFeatures sl_bottom
