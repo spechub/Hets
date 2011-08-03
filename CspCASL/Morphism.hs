@@ -240,7 +240,7 @@ checkWNECondition mor =
                     ++ "Violated:\n'"
                     ++ showDoc
                        (Subsort_decl [x, y] u' nullRange :: SORT_ITEM ())
-                       "' in target\nbut no common supersort for\n'"
+                       "' in target\nbut no common supersort for the sorts\n'"
                     ++ showDoc
                        (Sort_decl [s1, s2] nullRange :: SORT_ITEM ())
                        "' in source")
