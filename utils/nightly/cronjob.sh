@@ -149,11 +149,17 @@ checkXML ()
 date
 \rm Basic/*.pp.xml
 for i in Basic/*.xml;
-    do ./hets -v2 -o th $i; done
+    do ./hets -v2 -o th,xml $i; done
+for i in Basic/*.xml;
+    do ./hets -v2 -o th,xml $i; done
 for i in Basic/*.casl;
     do ./hets -v2 -A -o xml $i; done
 for i in Basic/*.xml;
-    do ./hets -v2 -o th $i; done
+    do ./hets -v2 -o th,xml $i; done
+for i in Basic/*.xml;
+    do ./hets -v2 -o th,xml $i; done
+for i in Basic/*.xml;
+    do ./hets -v2 -o th,xml $i; done
 \rm Basic/*.{th,xml}
 }
 
