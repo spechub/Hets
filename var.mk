@@ -2,7 +2,7 @@
 # use ERRORMSG to signal errors to the user and exit makefile
 
 GHCVERSION = $(shell ghc --numeric-version)
-ifneq ($(findstring 7.0, $(GHCVERSION)),)
+ifneq ($(findstring 7., $(GHCVERSION)),)
 GHC7OPTS = -rtsopts -fcontext-stack=31
 endif
 

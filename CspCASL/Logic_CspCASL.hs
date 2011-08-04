@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables
-  , TypeSynonymInstances #-}
+  , TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  CspCASL instance of type class logic

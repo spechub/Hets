@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
+  , FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  the incomplete Logic instance for VSE

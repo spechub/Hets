@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Isabelle instance of class Logic
@@ -66,4 +66,4 @@ instance Logic Isabelle () () Sentence () ()
          provers Isabelle = [isabelleProver]
          cons_checkers Isabelle = [isabelleConsChecker]
 
-instance LogicFram Isabelle () () Sentence () () Sign IsabelleMorphism () () ()        
+instance LogicFram Isabelle () () Sentence () () Sign IsabelleMorphism () () ()
