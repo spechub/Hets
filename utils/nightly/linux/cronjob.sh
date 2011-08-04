@@ -13,7 +13,7 @@ cd /tmp
 cd /local/home/maeder/haskell
 . ../cronjob.sh
 
-ssh bigmac launchctl load /home/maeder/Library/LaunchAgents/makeHets.plist
+ssh bigmac /Users/Shared/maeder/haskell/job.sh &
 ssh a01 /Users/Shared/maeder/haskell/job.sh &
 
 makeHets
