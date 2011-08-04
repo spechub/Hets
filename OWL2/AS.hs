@@ -391,6 +391,10 @@ decToFloat d = FloatLit d zeroInt
 intToFloat :: IntLit -> FloatLit
 intToFloat = decToFloat . intToDec
 
+numberName :: FloatLit -> String
+numberName f = if isFloatInt f then "integer" else
+    if isFloatDec f then "double" else "float"
+
 cTypeS :: String
 cTypeS = "^^"
 

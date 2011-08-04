@@ -537,11 +537,11 @@ entityType = choice $ map (\ f -> keyword (show f) >> return f)
       named annotation Value in Abstract Syntax -}
 annotationValue :: CharParser st AnnotationValue
 annotationValue = do
-    i <- individual
-    return $ AnnValue i
-  <|> do
     l <- literal
     return $ AnnValLit l
+  <|> do    
+    i <- individual
+    return $ AnnValue i
 
 equivOrDisjointL :: [EquivOrDisjoint]
 equivOrDisjointL = [Equivalent, Disjoint]

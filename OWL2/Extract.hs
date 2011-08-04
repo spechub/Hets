@@ -37,9 +37,11 @@ addAnnoProp :: AnnotationProperty -> State Sign ()
 addAnnoProp = addEntity . Entity AnnotationProperty
 
 addLiteral :: Literal -> State Sign ()
-addLiteral (Literal _ ty) = case ty of
-  Typed u -> addEntity $ Entity Datatype u
-  _ -> return ()
+addLiteral l = case l of
+    Literal _ ty -> case ty of
+        Typed u -> addEntity $ Entity Datatype u
+        _ -> return ()
+    _ -> return ()
 
 addDType :: Datatype -> State Sign ()
 addDType = addEntity . Entity Datatype

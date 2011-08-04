@@ -143,13 +143,17 @@ xmlEntity (Entity ty ent) = mwNameIRI (case ty of
     NamedIndividual -> namedIndividualK) ent
 
 xmlLiteral :: Literal -> Element
-xmlLiteral (Literal lf tu) =
+xmlLiteral l = case l of
+  Literal lf tu ->
     let part = setName literalK $ mwText lf
     in case tu of
         Typed dt -> setDt True dt part
         Untyped lang -> setLangTag lang $ setDt True (splitIRI $ mkQName
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
             part
+  NumberLit f -> setDt True (nullQName {namePrefix = "xsd",
+        localPart = numberName f})
+        $ setName literalK $ mwText $ show f
 
 xmlIndividual :: IRI -> Element
 xmlIndividual iri =
