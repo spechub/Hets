@@ -161,7 +161,22 @@ glue x y = let
 
 -- | the second argument is a left argument process of the first argument
 lglue :: PROCESS -> PROCESS -> Doc
-lglue x y = (if procPrio y > procPrio x then parens else id) $ pretty y
+lglue x y =
+  (if procPrio y > procPrio x || hasRightCond y then parens else id)
+  $ pretty y
+
+hasRightCond :: PROCESS -> Bool
+hasRightCond x = case x of
+  ConditionalProcess _ _ _ _ -> True
+  SynchronousParallel _ y _ -> hasRightCond y
+  GeneralisedParallel _ _ y _ -> hasRightCond y
+  AlphabetisedParallel _ _ _ y _ -> hasRightCond y
+  Interleaving _ y _ -> hasRightCond y
+  ExternalChoice _ y _ -> hasRightCond y
+  InternalChoice _ y _ -> hasRightCond y
+  Sequential _ y _ -> hasRightCond y
+  PrefixProcess _ y _ -> hasRightCond y
+  _ -> False
 
 {- par binds weakest and is left associative. Then choice follows,
 then sequence, then prefix and finally renaming or hiding. -}
