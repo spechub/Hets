@@ -66,7 +66,7 @@ checkEntity s (Entity ty e) =
    Datatype -> unless (Set.member e (datatypes s) || isDatatypeKey e) errMsg
    Class -> unless (Set.member e (concepts s) || isThing e) errMsg
    ObjectProperty -> unless (Set.member e $ objectProperties s) errMsg
-   --DataProperty -> unless (Set.member e $ dataProperties s) errMsg
+   DataProperty -> unless (Set.member e $ dataProperties s) errMsg
    AnnotationProperty -> unless (Set.member e $ annotationRoles s) errMsg
    _ -> return ()
 
@@ -205,9 +205,9 @@ checkFact s fb f = case f of
     ObjectPropertyFact _ op _ ->
         if Set.member (objPropToIRI op) (objectProperties s) then return fb
          else fail "Static analysis. ObjectPropertyFact failed"
-    DataPropertyFact _ dp _ -> return fb
-        {-if Set.member dp (dataProperties s) then return fb
-         else fail "Static analysis. DataProperty fact failed"-}
+    DataPropertyFact _ dp _ ->
+        if Set.member dp (dataProperties s) then return fb
+         else fail "Static analysis. DataProperty fact failed"
 
 checkHasKeyAll :: Sign -> AnnFrameBit -> Result AnnFrameBit
 checkHasKeyAll s k = case k of
