@@ -33,11 +33,13 @@ import Common.LibName
 import Common.Result
 
 import qualified Data.Map as Map
-import qualified Data.List as List (nub)
+import qualified Data.Set as Set
+
 import Data.Maybe
 import Data.Graph.Inductive.Graph
+
 import Control.Exception
-import Control.Monad
+import Control.Monad (foldM)
 
 -- | translation of a LibEnv (a map of globalcontext)
 libEnv_translation :: LibEnv -> AnyComorphism -> Result LibEnv
@@ -53,7 +55,7 @@ dg_translation le gc acm@(Comorphism cidMor) =
     in addErrorDiag ("translation failed via: " ++ language_name cidMor) ()
        $ do
         resOfEdges <- mapR updateEdges labEdgesList
-        resOfNodes <- mapR updateNodes labNodesList
+        resOfNodes <- mapR (updateNodes acm) labNodesList
         return $ computeDGraphTheories le
           $ mkGraphDG resOfNodes resOfEdges emptyDG
 
@@ -108,107 +110,89 @@ dg_translation le gc acm@(Comorphism cidMor) =
      else Result [mkDiag Error ("Link "++ showFromTo from to gc ++
                                 " is not homogeneous.") ()] Nothing
 
- updateNodes :: LNode DGNodeLab -> Result (LNode DGNodeLab)
- updateNodes (node, dgNodeLab) =
-     case fTh node $ dgn_theory dgNodeLab of
-       Result diagsT maybeTh ->
-           maybe (Result diagsT Nothing)
-              (\th' -> Result diagsT
-                       (Just (node, dgNodeLab {dgn_theory = th'
-                                              ,dgn_nf = Nothing
-                                              ,dgn_sigma = Nothing
-                                              }))) maybeTh
-
  -- !! the sign from fSign and from fTh maybe different.
  -- to translate sign
  fSign sourceID sign =
      coercePlainSign sourceID slid "DGTranslation.fSign" sign >>=
         map_sign cidMor
 
- fTh _ (G_theory lid sign _ thSens _) = do
-   -- (sign', _) <- fSign lid sign
-   (ExtSign sign' _) <-
-       coerceSign lid slid "DGTranslation.fTh.sign" sign
-   thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
-   (sign'', namedS) <- wrapMapTheory cidMor (sign', toNamedList thSens')
-   return $ G_theory tlid (mkExtSign sign'') startSigId
-              (toThSens $ List.nub namedS) startThId
-
  fMor sourceID mor =
      coerceMorphism sourceID slid "DGTranslation.fMor" mor >>=
                     map_morphism cidMor
+
+updateNodes :: AnyComorphism -> LNode DGNodeLab -> Result (LNode DGNodeLab)
+updateNodes (Comorphism cidMor) (node, dgNodeLab) =
+  case dgn_theory dgNodeLab of
+    G_theory lid esig _ thSens _ -> do
+      let slid = sourceLogic cidMor
+      ExtSign sign' sys' <- coerceSign lid slid "DGTranslation.fTh.sign" esig
+      thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
+      (sign'', namedS) <- wrapMapTheory cidMor (sign', toNamedList thSens')
+      syms <- return $ map (map_symbol cidMor sign') $ Set.toList sys'
+      return (node, dgNodeLab
+        { dgn_nf = Nothing
+        , dgn_sigma = Nothing
+        , dgn_theory = G_theory (targetLogic cidMor)
+            (ExtSign sign'' $ Set.unions syms) startSigId
+            (toThSens namedS) startThId })
 
 showFromTo :: Node -> Node -> DGraph -> String
 showFromTo from to gc =
     "from " ++ getNameOfNode from gc ++ " to " ++ getNameOfNode to gc
 
--- | get the maximal sublogic of a graph.
--- | each DGraph and each node will be tested, in order to find
--- | the maximal sublogic of th Graph.
--- | All edges and nodes will be searched also in the meantime, so as to test,
--- | whether the GMorphism of edges is homogeneous, and the logics of nodes are
--- | equal.
+{- | get the maximal sublogic of a graph.
+ each DGraph and each node will be tested, in order to find
+ the maximal sublogic of th Graph.
+ All edges and nodes will be searched also in the meantime, so as to test,
+ whether the GMorphism of edges is homogeneous, and the logics of nodes are
+ equal. -}
 getDGLogic :: LibEnv -> Result G_sublogics
 getDGLogic libEnv =
-    let sublogicsMap = map (getSublogicFromDGraph libEnv)
-                           (Map.keys libEnv)
-    in  foldr comResSublogics (Result [] Nothing) sublogicsMap
+    mapR (getSublogicFromDGraph libEnv) (Map.keys libEnv)
+    >>= combineSublogics
 
 getSublogicFromDGraph :: LibEnv -> LibName -> Result G_sublogics
-getSublogicFromDGraph le ln =
-    let edgesList = labEdgesDG gc
+getSublogicFromDGraph le ln = do
+    let gc = lookupDGraph ln le
+        edgesList = labEdgesDG gc
         nodesList = labNodesDG gc
-        slList1   = map testAndGetSublogicFromEdge edgesList
-        slList2   = map (getSubLogicsFromNodes $ getFirstLogic nodesList)
+    slList1 <- mapR testAndGetSublogicFromEdge edgesList
+    slList2 <- mapR (getSubLogicsFromNodes $ getFirstLogic nodesList)
                         nodesList
-    in  foldr comResSublogics (Result [] Nothing) (slList1 ++ slList2)
+    combineSublogics $ slList1 ++ slList2
 
-  where
-    gc = lookupDGraph ln le
+combineSublogics :: [G_sublogics] -> Result G_sublogics
+combineSublogics l = case l of
+  [] -> fail "Static.DGTranslation.combineSublogics.empty"
+  h : t -> case foldr (\ s ms -> case ms of
+           Just u -> joinSublogics s u
+           _ -> Nothing) (Just h) t of
+     Nothing -> fail "Static.DGTranslation.combineSublogics"
+     Just s -> return s
 
-    testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Result G_sublogics
-    testAndGetSublogicFromEdge l@(_, _, DGLink
-      { dgl_morphism = gm@(GMorphism cid' (ExtSign lsign _) _ lmorphism _) })
-        =
-          if isHomogeneous gm then
-              Result [] (joinSublogics g_mor g_sign)
-              else Result [mkDiag Error
-                           ("the " ++ showLEdge l ++
-                            " is not homogeneous.") () ] Nothing
+testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Result G_sublogics
+testAndGetSublogicFromEdge l@(_, _, lbl) =
+  case dgl_morphism lbl of
+    GMorphism cid' (ExtSign lsign _) _ lmorphism _ -> do
+      let tlid = targetLogic cid'
+      lsign' <- coercePlainSign (sourceLogic cid') tlid
+        (showLEdge l ++ " is not homogeneous.")  lsign
+      return $ G_sublogics tlid $ join (minSublogic lsign' )
+        $ minSublogic lmorphism
 
-         where g_mor = G_sublogics (targetLogic cid') $ minSublogic lmorphism
-               g_sign = G_sublogics (sourceLogic cid') $ minSublogic lsign
-
-
-    getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab
-                          -> Result G_sublogics
-    getSubLogicsFromNodes logic (_, lnode) =
+getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab -> Result G_sublogics
+getSubLogicsFromNodes logic (_, lnode) =
         case dgn_theory lnode of
           th@(G_theory lid _ _ _ _) ->
-              if Logic lid == logic then
-                  Result [] (Just $ sublogicOfTh th)
+              if Logic lid == logic then return $ sublogicOfTh th
                  else Result [mkDiag Error
                               ("the node " ++ getDGNodeName lnode ++
                                "  has a different logic \"" ++ show lid ++
                                "\" as the logic of Graph \"" ++ show logic ++
                                " is not homogeneous.") () ] Nothing
 
-    getFirstLogic :: [LNode DGNodeLab] -> AnyLogic
-    getFirstLogic list =
-        case dgn_theory $ snd $ head list of
-          G_theory lid _ _ _ _ ->
-              Logic lid
-
-
-comResSublogics :: Result G_sublogics
-                -> Result G_sublogics
-                -> Result G_sublogics
-comResSublogics (Result diags1 msubl1@(Just subl1))
-                    (Result diags2 msubl2) =
-               case msubl2 of
-                 Nothing -> Result (diags1 ++ diags2) msubl1
-                 Just subl2 ->
-                     Result (diags1 ++ diags2) $ joinSublogics subl1 subl2
-comResSublogics (Result diags1 Nothing) (Result diags2 _) =
-    Result (diags1 ++ diags2) Nothing
-
+getFirstLogic :: [LNode DGNodeLab] -> AnyLogic
+getFirstLogic list = case list of
+  (_, nlab) : _ -> case dgn_theory nlab of
+          G_theory lid _ _ _ _ -> Logic lid
+  _ -> error "Static.DGTranslation.getFirstLogic"
