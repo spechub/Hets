@@ -207,7 +207,7 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
                     (att4, (a', b', c', d'))}}}}
             u -> fromShATermError "(,,,)" u
 
-instance (Ord a, ShATermConvertible a, ShATermConvertible b)
+instance (ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (Map.Map a b) where
     toShATermAux att fm = do
       (att1, i) <- toShATerm' att $ Map.toList fm
@@ -228,7 +228,7 @@ instance ShATermConvertible a => ShATermConvertible (IntMap.IntMap a) where
                     (att1, IntMap.fromDistinctAscList a') }
             u -> fromShATermError "IntMap.IntMap" u
 
-instance (Ord a, ShATermConvertible a) => ShATermConvertible (Set.Set a) where
+instance ShATermConvertible a => ShATermConvertible (Set.Set a) where
     toShATermAux att set = do
       (att1, i) <-  toShATerm' att $ Set.toList set
       return $ addATerm (ShAAppl "Set" [i] []) att1

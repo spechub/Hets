@@ -1,5 +1,5 @@
 name:            aterm
-version:         0.1.0.0
+version:         0.1.0.1
 license:         GPL-2
 license-file:    LICENSE.txt
 author:          Klaus Luettich, Christian Maeder
@@ -12,7 +12,7 @@ category:        Data, Parsing
 stability:       provisional
 build-type:      Simple
 cabal-version:   >= 1.4
-tested-with:     GHC ==6.10.4, GHC ==6.12.3
+tested-with:     GHC ==6.10.4, GHC ==6.12.3, GHC ==7.0.4
 
 library
 
