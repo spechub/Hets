@@ -705,6 +705,30 @@ mapComDataPropsList cSig props num1 num2 =
                               return (l, r)
                        ) $ comPairs props props
 
+mapNNInt :: NNInt -> TERM ()
+mapNNInt int =
+    let NNInt uInt = int
+    in foldr1 joinDigits $ map mkDigit uInt
+   
+mapIntLit :: IntLit -> TERM ()
+mapIntLit int =
+    let cInt = mapNNInt $ absInt int
+    in if isNegInt int then upcast (negateInt cInt) negIntS else upcast cInt nonNegInt
+
+mapDecLit :: DecLit -> TERM ()
+mapDecLit dec =
+    let ip = truncDec dec
+        fp = fracDec dec
+        n = mkDecimal (mapIntLit $ abInt ip) (mapNNInt fp)
+    in Sorted_term (if isNegInt ip then negateFloat n else n) dataS nullRange
+
+mapFloatLit :: FloatLit -> TERM ()
+mapFloatLit f =
+    let fb = floatBase f
+        ex = floatExp f
+        n = mkDecimal (mapDecLit $ abDec fb) (mapIntLit ex)
+     in Sorted_term (if isNegDec fb then negateFloat n else n) dataS nullRange
+
 mapLiteral :: CASLSign -> Literal -> Result (TERM ())
 mapLiteral _ lit = case lit of
     Literal l ty -> return
@@ -718,8 +742,11 @@ mapLiteral _ lit = case lit of
                     _ -> falseT
                 _ -> foldr consChar emptyStringTerm l)
                         dataS nullRange
-    --NumberLit f -> 
-
+    NumberLit f
+       | isFloatInt f -> return $ mapIntLit $ truncDec $ floatBase f
+       | isFloatDec f -> return $ mapDecLit $ floatBase f
+       | otherwise -> return $ mapFloatLit f
+                
 -- | Mapping of data properties
 mapDataProp :: CASLSign
             -> DataPropertyExpression

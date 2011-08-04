@@ -31,6 +31,8 @@ module CASL_DL.PredefinedCASLAxioms
   , emptyStringTerm
   , trueT
   , falseT
+  , nonNegInt
+  , negIntS
   ) where
 
 import CASL.AS_Basic_CASL
@@ -70,8 +72,8 @@ float = stringToId "float"
 posInt :: SORT
 posInt = stringToId "positiveInteger"
 
-negInt :: SORT
-negInt = stringToId "negativeInteger"
+negIntS :: SORT
+negIntS = stringToId "negativeInteger"
 
 nonPosInt :: SORT
 nonPosInt = stringToId "nonPositiveInteger"
@@ -224,7 +226,7 @@ predefSign = (emptySign ())
                        [(boolS, dataS),
                         (integer, float),
                         (float, dataS),
-                        (negInt, nonPosInt),
+                        (negIntS, nonPosInt),
                         (nonNegInt, integer),
                         (nonPosInt, integer),
                         (posInt, nonNegInt),

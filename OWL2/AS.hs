@@ -391,9 +391,23 @@ decToFloat d = FloatLit d zeroInt
 intToFloat :: IntLit -> FloatLit
 intToFloat = decToFloat . intToDec
 
+abInt :: IntLit -> IntLit
+abInt int = int {isNegInt = False}
+
+abDec :: DecLit -> DecLit
+abDec dec = dec {truncDec = abInt $ truncDec dec}
+
+abFloat :: FloatLit -> FloatLit
+abFloat f = f {floatBase = abDec $ floatBase f}
+
+isNegDec :: DecLit -> Bool
+isNegDec d = isNegInt $ truncDec d
+
 numberName :: FloatLit -> String
-numberName f = if isFloatInt f then "integer" else
-    if isFloatDec f then "double" else "float"
+numberName f 
+    | isFloatInt f = "integer"
+    | isFloatDec f = "double"
+    | otherwise = "float"
 
 cTypeS :: String
 cTypeS = "^^"
