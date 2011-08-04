@@ -22,7 +22,7 @@ import Common.DocUtils
 data ExtSign sign symbol = ExtSign
   { plainSign :: sign
   , nonImportedSymbols :: Set.Set symbol
-  } deriving Show
+  } deriving (Show, Read)
 
 instance (Ord sign) => Eq (ExtSign sign symbol) where
     a == b = compare a b == EQ

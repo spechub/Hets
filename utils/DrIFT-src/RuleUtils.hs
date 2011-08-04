@@ -85,10 +85,16 @@ simpleInstance s d = hsep [text "instance"
                 , text s
                 , opt1 (texts (strippedName d : vars d)) parenSpace id]
    where
-   constr = map (\ (c, v) -> text c <+> text v) (constraints d) ++
-                      map (\ x -> text s <+> text x) (vars d)
+   constr = map (\ v -> text "Ord" <+> text v)
+            (concatMap getSetVars . concatMap types $ body d)
+       ++ map (\ (c, v) -> text c <+> text v) (constraints d)
+       ++ map (\ x -> text s <+> text x) (vars d)
    parenSpace = parens . hsep
 
+getSetVars :: Type -> [String]
+getSetVars ty = case ty of
+   LApply (Con "Set.Set") [Var v] -> [v]
+   _ -> []
 
 {- instanceSkeleton handles most instance declarations, where instance
 functions are not related to one another.  A member function is generated

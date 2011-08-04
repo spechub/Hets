@@ -67,7 +67,7 @@ instance Show SetOrdering where
 data InfDev = EpsLeft | Zero | EpsRight deriving (Eq, Show)
 
 instance Ord InfDev where
-    compare x y 
+    compare x y
         | x == y = EQ
         | otherwise =
             case (x, y) of
@@ -87,9 +87,9 @@ instance Ord a => Ord (CIType a) where
 
 
 -- | A finite set or an interval. True = closed, False = opened interval border.
-data Ord a => SetOrInterval a = Set (Set.Set a)
-                              | IntVal (a, Bool) (a, Bool)
-                                deriving (Eq, Ord, Show)
+data SetOrInterval a = Set (Set.Set a)
+                     | IntVal (a, Bool) (a, Bool)
+                       deriving (Eq, Ord, Show)
 
 -- | A closed interval
 data ClosedInterval a = ClosedInterval a a deriving (Eq, Ord, Show)
@@ -205,7 +205,7 @@ cmpSoIsExD i1@(IntVal _ _) s2@(Set s) =
     let ci2@(ClosedInterval a2 b2) = setToClosedIntD s2
     in case cmpClosedInts (setToClosedIntD i1) ci2 of
       Comparable EQ -> case intsizeA a2 b2 of
-                         Just dst 
+                         Just dst
                              | fromIntegral (Set.size s) == dst ->
                                  Comparable EQ
                              | otherwise -> Comparable GT
@@ -251,7 +251,7 @@ toSingular d
 
 -- | Transforms a 'SetOrInterval' to a closed representation
 -- Only for continuous types.
-setToClosedInt :: Ord a => 
+setToClosedInt :: Ord a =>
                   SetOrInterval a -> ClosedInterval (CIType a)
 setToClosedInt (Set s) = ClosedInterval (CIType (Set.findMin s, Zero))
                          $ CIType (Set.findMax s, Zero)
@@ -359,5 +359,5 @@ combineCmp x y
           (Comparable EQ, _) -> y -- neutral element
           (Comparable GT, Comparable LT) -> Incomparable Overlap
           _ -> combineCmp y x -- commutative (should capture all cases)
-    
+
 
