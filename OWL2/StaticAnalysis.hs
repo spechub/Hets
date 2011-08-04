@@ -308,7 +308,9 @@ checkExtended s e = case e of
 
 -- | checks a frame and applies desired changes
 checkFrame :: Sign -> Frame -> Result [Frame]
-checkFrame s f@(Frame eith fbl) = if null fbl then return [f]
+checkFrame s (Frame eith fbl) = if null fbl then do
+        ext <- checkExtended s eith
+        return [Frame ext []]
     else fmap (map axToFrame . concat)
         $ mapM (checkAxiom s . PlainAxiom eith) fbl
 
