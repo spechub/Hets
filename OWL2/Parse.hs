@@ -241,7 +241,7 @@ intLit :: CharParser st IntLit
 intLit = do
   c <- optSign
   n <- getNNInt
-  return $ negNNInt (c == "_") n
+  return $ negNNInt (c == "-") n
 
 decimalLit :: CharParser st DecLit
 decimalLit = liftM2 DecLit intLit $ option zeroNNInt postDecimal
