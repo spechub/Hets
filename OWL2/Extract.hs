@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  extraction of the sign from the frames
-Copyright   :  (c) Francis-Nicolae Bungiu
+Copyright   :  (c) Francisc-Nicolae Bungiu, Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  f.bungiu@jacobs-university.de
@@ -91,25 +91,38 @@ addDescription desc = case desc of
     addDataPropExpr dExp
     maybe (return ()) addDataRange mr
 
+addAnno :: Annotation -> State Sign ()
+addAnno (Annotation as apr _) = do
+    addAnnoProp apr
+    addAnnos as
+
+addAnnos :: Annotations -> State Sign ()
+addAnnos = mapM_ addAnno
+
+addAnnoList :: (a -> State Sign ()) -> AnnotatedList a -> State Sign ()
+addAnnoList f al = do
+    addAnnos $ concatMap fst al
+    mapM_ (f . snd) al
+
 {- | Adds possible ListFrameBits to the Signature by calling
 bottom level functions -}
-comSigLFB :: Maybe Relation -> ListFrameBit -> State Sign ()
-comSigLFB r lfb = case lfb of
+extLFB :: Maybe Relation -> ListFrameBit -> State Sign ()
+extLFB r lfb = case lfb of
     AnnotationBit ab ->
       unless (r `elem` [Just (DRRelation ADomain), Just (DRRelation ARange)])
-        $ mapM_ (addAnnoProp . snd) ab
-    ExpressionBit ancls -> mapM_ (addDescription . snd) ancls
-    ObjectBit anob -> mapM_ (addObjPropExpr . snd) anob
-    DataBit dlst -> mapM_ (addDataPropExpr . snd) dlst
-    IndividualSameOrDifferent anind -> mapM_ (addIndividual . snd) anind
-    ObjectCharacteristics _anch -> return ()
-    DataPropRange dr -> mapM_ (addDataRange . snd) dr
-    IndividualFacts fct -> mapM_ (addFact . snd) fct
+        $ addAnnoList addAnnoProp ab
+    ExpressionBit al -> addAnnoList addDescription al
+    ObjectBit anob -> addAnnoList addObjPropExpr anob
+    DataBit dlst -> addAnnoList addDataPropExpr dlst
+    IndividualSameOrDifferent anind -> addAnnoList addIndividual anind
+    ObjectCharacteristics al -> addAnnos $ concatMap fst al
+    DataPropRange dr -> addAnnoList addDataRange dr
+    IndividualFacts fct -> addAnnoList addFact fct
 
 {- | Adds AnnotationFrameBits to the Signature
 by calling the corresponding bottom level functions -}
-comSigAFB :: AnnFrameBit -> State Sign ()
-comSigAFB afb = case afb of
+extAFB :: AnnFrameBit -> State Sign ()
+extAFB afb = case afb of
     AnnotationFrameBit _ -> return ()
     DataFunctional -> return ()
     DatatypeBit dr -> addDataRange dr
@@ -121,33 +134,35 @@ comSigAFB afb = case afb of
 
 {- | Calls the completion of Signature based on
 case separation of ListFrameBit and AnnotationFrameBit -}
-comFB :: FrameBit -> State Sign ()
-comFB fb = case fb of
-  ListFrameBit rel lfb -> comSigLFB rel lfb
-  AnnFrameBit _an anf -> comSigAFB anf
+extFB :: Extended -> FrameBit -> State Sign ()
+extFB ext fb = case fb of
+  ListFrameBit rel lfb -> do
+    addExt ext
+    extLFB rel lfb
+  AnnFrameBit an anf -> do
+    addAnnos an
+    extAFB anf  
+    case anf of
+        AnnotationFrameBit Assertion -> case ext of
+            Misc _ -> return ()
+            _ -> addExt ext
+        _ -> addExt ext
 
--- | Maps the function comFB on the entire FrameBit list of the Frame
-completeSignForFrame :: Frame -> State Sign ()
-completeSignForFrame (Frame _ex fblist) =
-  mapM_ comFB fblist
+extFrame :: Frame -> State Sign ()
+extFrame (Frame ex fblist) = mapM_ (extFB ex) fblist
 
-completeWithExt :: Frame -> State Sign ()
-completeWithExt (Frame ex fblist) = do
-  mapM_ comFB fblist
-  comExt ex
-
-comExt :: Extended -> State Sign ()
-comExt ext = case ext of
+addExt :: Extended -> State Sign ()
+addExt ext = case ext of
     SimpleEntity e -> addEntity e
     ObjectEntity op -> addObjPropExpr op
     ClassEntity ce -> addDescription ce
-    _ -> return ()
+    Misc ans -> addAnnos ans
 
 {- | Top level function: takes the OntologyDocument and completes
 the signature by calling completeSignForFrame -}
-completeSign :: OntologyDocument -> State Sign ()
-completeSign od =
-  mapM_ completeSignForFrame $ ontFrames $ ontology od
+extractSign :: OntologyDocument -> State Sign ()
+extractSign od =
+  mapM_ extFrame $ ontFrames $ ontology od
 
 toDecl :: Sign -> [Frame]
 toDecl s =
@@ -163,5 +178,5 @@ toDecl s =
 
 signToFrames :: [Frame] -> [Frame]
 signToFrames f =
-    let s = mapM_ completeWithExt f
+    let s = mapM_ extFrame f
     in toDecl $ execState s emptySign

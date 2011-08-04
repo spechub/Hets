@@ -84,7 +84,7 @@ readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
   Left err -> fail $ show err
   Right ontoFile -> let
     newont = function Expand (prefixDeclaration ontoFile) ontoFile 
-    newstate = execState (completeSign newont) emptySign
+    newstate = execState (extractSign newont) emptySign
     in case basicOWL2Analysis
     (ontoFile, newstate, emptyGlobalAnnos) of
     Result ds ms -> case ms of
