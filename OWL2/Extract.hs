@@ -44,7 +44,7 @@ addLiteral l = case l of
     _ -> return ()
 
 addDType :: Datatype -> State Sign ()
-addDType = addEntity . Entity Datatype
+addDType dt = unless (isDatatypeKey dt) $ addEntity $ Entity Datatype dt
 
 -- | Adds the DataRange to the Signature and returns it as a State Sign ()
 addDataRange :: DataRange -> State Sign ()

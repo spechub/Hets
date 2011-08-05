@@ -60,6 +60,9 @@ dATAS = "DATA"
 decimalS :: String
 decimalS = "decimal"
 
+doubleS :: String
+doubleS = "double"
+
 digitsS :: String
 digitsS = "digits"
 

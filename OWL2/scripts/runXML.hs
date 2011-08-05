@@ -22,9 +22,9 @@ processFile :: String -> IO ()
 processFile file = do
   s <- readFile file
   case parseXML s of 
-    elems -> putStrLn $ showDoc (map xmlBasicSpec
+    elems -> putStrLn $ show (map xmlBasicSpec
                         $ concatMap (filterElementsName $ isSmth "Ontology")
-                        $ onlyElems elems) "\n"
+                        $ onlyElems elems) 
 main :: IO ()
 main = do
   args <- getArgs

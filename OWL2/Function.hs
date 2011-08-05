@@ -51,8 +51,8 @@ instance Function IRI where
               in case iriType qn of
                 Full -> qn {expandedIRI = np ++ ":" ++ lp}
                 NodeID -> qn {expandedIRI = lp}
-                _ -> let mexpn = Map.lookup np pm
-                     in case mexpn of
+                _ -> let miri = Map.lookup np pm
+                     in case miri of
                         Just expn -> qn {expandedIRI = expn ++ lp}
                         Nothing -> if null np then qn {expandedIRI =
                             showQU dummyQName ++ "#" ++ lp} else

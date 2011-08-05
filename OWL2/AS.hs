@@ -83,8 +83,8 @@ setPrefix s q = q { namePrefix = s }
 
 setReservedPrefix :: QName -> QName
 setReservedPrefix iri
-    | isDatatypeKey iri = setPrefix "xsd" iri
-    | isThing iri = setPrefix "owl" iri
+    | isDatatypeKey iri && (null $ namePrefix iri) = setPrefix "xsd" iri
+    | isThing iri && (null $ namePrefix iri) = setPrefix "owl" iri
     | otherwise = iri
 
 setFull :: QName -> QName
@@ -96,9 +96,12 @@ type IRI = QName
 isAnonymous :: IRI -> Bool
 isAnonymous iri = iriType iri == NodeID
 
+owlSomething :: [String]
+owlSomething = ["Thing", "Nothing"] 
+
 isThing :: IRI -> Bool
-isThing u = elem (localPart u) ["Thing", "Nothing"] &&
-                elem (namePrefix u) ["", "owl"]
+isThing u = elem (localPart u) owlSomething && elem (namePrefix u) ["", "owl"]
+   || (showQU u) `elem` map ("http://www.w3.org/2002/07/owl#" ++) owlSomething
 
 -- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
 cssIRI :: String -> IRIType
@@ -206,6 +209,7 @@ datatypeKeys =
   [ booleanS
   , dATAS
   , decimalS
+  , doubleS
   , floatS
   , integerS
   , negativeIntegerS
@@ -219,6 +223,7 @@ datatypeKeys =
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey u =
   elem (localPart u) datatypeKeys && elem (namePrefix u) ["", "xsd"]
+    || (showQU u) `elem` map ("http://www.w3.org/2001/XMLSchema#" ++) datatypeKeys
 
 data DatatypeType = OWL2Int | OWL2String | OWL2Bool | Other
     deriving (Show, Eq, Ord)
@@ -405,9 +410,9 @@ isNegDec d = isNegInt $ truncDec d
 
 numberName :: FloatLit -> String
 numberName f
-    | isFloatInt f = "integer"
-    | isFloatDec f = "double"
-    | otherwise = "float"
+    | isFloatInt f = integerS
+    | isFloatDec f = decimalS
+    | otherwise = floatS
 
 cTypeS :: String
 cTypeS = "^^"

@@ -27,9 +27,10 @@ instance Pretty QName where
     pretty = printIRI
 
 printIRI :: QName -> Doc
-printIRI q =
-  if isThing q || isDatatypeKey q
-  then keyword $ localPart q else text $ showQN q
+printIRI q
+    | (isThing q && namePrefix q == "owl"|| isDatatypeKey q) && namePrefix q == "xsd"
+            = keyword $ localPart q
+    | otherwise = text $ showQN q
 
 -- | Symbols printing
 

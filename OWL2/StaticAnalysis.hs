@@ -146,7 +146,7 @@ checkClassExpression s desc =
   in case desc of
   Expression u ->
      if isThing u then
-     return $ Expression u { namePrefix = "owl", iriType = Abbreviated }
+     return $ Expression $ setReservedPrefix u
      else checkEntity s (Entity Class u) >> return desc
   ObjectJunction a ds -> fmap (ObjectJunction a)
         $ mapM (checkClassExpression s) ds
