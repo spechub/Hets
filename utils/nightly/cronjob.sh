@@ -110,7 +110,7 @@ for i in Calculi/*/*.casl Calculi/*/*.het; do ./hets -v2 $i; done
 reCheckBasicCASLThs ()
 {
 date
-for i in Basic/*.th; do ./hets -v2 -o th,pp.het $i; done
+for i in Basic/*.th; do ./hets -o th,pp.het $i; done
 }
 
 checkHasCASL ()
@@ -327,7 +327,7 @@ date
 for i in Basic/*.casl;
     do ./hets -v2 -o th -t CASL2SubCFOL $i; done
 date
-for i in Basic/*.th; do ./hets -v2 -o th,pp.het $i; done
+for i in Basic/*.th; do ./hets -o th,pp.het $i; done
 date
 \rm Basic/*.thy
 for i in Basic/*.casl;
@@ -350,7 +350,7 @@ date
 for i in Basic/*.casl;
     do ./hets -v2 -o th,thy -t CASL2PCFOLTopSort $i; done
 date
-for i in Basic/*.th; do ./hets -v2 -o th,pp.het $i; done
+for i in Basic/*.th; do ./hets -o th,pp.het $i; done
 date
 ../Hets/utils/nightly/runisabelle.sh Basic/*.thy > ../isa3.log 2>&1
 fgrep \*\*\* ../isa3.log
