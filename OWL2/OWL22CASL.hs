@@ -735,7 +735,7 @@ mapLiteral _ lit = case lit of
         $ Sorted_term (case ty of
             Untyped _ -> foldr consChar emptyStringTerm l
             Typed dt -> case datatypeType dt of
-                OWL2Int -> foldr1 joinDigits
+                OWL2Number -> foldr1 joinDigits
                     $ map (mkDigit . digitToInt) $ filter isDigit l
                 OWL2Bool -> case l of
                     "True" -> trueT

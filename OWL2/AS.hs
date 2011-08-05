@@ -96,13 +96,6 @@ type IRI = QName
 isAnonymous :: IRI -> Bool
 isAnonymous iri = iriType iri == NodeID
 
-owlSomething :: [String]
-owlSomething = ["Thing", "Nothing"] 
-
-isThing :: IRI -> Bool
-isThing u = elem (localPart u) owlSomething && elem (namePrefix u) ["", "owl"]
-   || (showQU u) `elem` map ("http://www.w3.org/2002/07/owl#" ++) owlSomething
-
 -- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
 cssIRI :: String -> IRIType
 cssIRI iri = if isInfixOf "://" iri then Full else Abbreviated
@@ -203,29 +196,32 @@ showQuantifierType ty = case ty of
     AllValuesFrom -> onlyS
     SomeValuesFrom -> someS
 
+checkPredef :: [String] -> String -> String -> IRI -> Bool
+checkPredef sl pref sc u =
+    (localPart u) `elem` sl && elem (namePrefix u) ["", pref]
+        || (showQU u) `elem` map (sc ++) sl
+
+owlSomething :: [String]
+owlSomething = ["Thing", "Nothing"] 
+
+isThing :: IRI -> Bool
+isThing = checkPredef owlSomething "owl" "http://www.w3.org/2002/07/owl#"
+
 -- | data type strings (some are not listed in the grammar)
 datatypeKeys :: [String]
-datatypeKeys =
-  [ booleanS
-  , dATAS
-  , decimalS
-  , doubleS
-  , floatS
-  , integerS
-  , negativeIntegerS
-  , nonNegativeIntegerS
-  , nonPositiveIntegerS
-  , positiveIntegerS
-  , stringS
-  , universalS
-  ]
+datatypeKeys = [booleanS, dATAS, stringS, universalS] ++ owlNumbers
+
+owlNumbers :: [String]
+owlNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
+    nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS]
 
 isDatatypeKey :: IRI -> Bool
-isDatatypeKey u =
-  elem (localPart u) datatypeKeys && elem (namePrefix u) ["", "xsd"]
-    || (showQU u) `elem` map ("http://www.w3.org/2001/XMLSchema#" ++) datatypeKeys
+isDatatypeKey = checkPredef datatypeKeys "xsd" "http://www.w3.org/2001/XMLSchema#"
 
-data DatatypeType = OWL2Int | OWL2String | OWL2Bool | Other
+isOWLNumber :: IRI -> Bool
+isOWLNumber = checkPredef owlNumbers "xsd" "http://www.w3.org/2001/XMLSchema#"
+
+data DatatypeType = OWL2Number | OWL2String | OWL2Bool | Other
     deriving (Show, Eq, Ord)
 
 datatypeType :: IRI -> DatatypeType
@@ -234,8 +230,7 @@ datatypeType iri =
     in case isDatatypeKey iri of
         True
             | lp == booleanS -> OWL2Bool
-            | lp `elem` [integerS, negativeIntegerS, nonNegativeIntegerS,
-                nonPositiveIntegerS, positiveIntegerS] -> OWL2Int
+            | isOWLNumber iri -> OWL2Number
             | lp == stringS -> OWL2String
             | otherwise -> Other
         False -> Other

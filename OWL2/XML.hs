@@ -17,9 +17,11 @@ import Common.Lexer
 import OWL2.AS
 import OWL2.Extract
 import OWL2.MS
+import OWL2.Parse
 import OWL2.XMLKeywords
 
 import Text.XML.Light
+import Text.ParserCombinators.Parsec
 
 import Data.Maybe
 import Data.List
@@ -158,6 +160,16 @@ isPlainLiteral :: String -> Bool
 isPlainLiteral s =
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
 
+getNrLit :: LexicalForm -> Literal
+getNrLit lf =
+    let nr = parse literal "" lf in case nr of
+        Right n -> n
+        _ -> err $ "cannot parse literal " ++ lf
+
+getTypedLit :: LexicalForm -> Datatype -> Literal
+getTypedLit lf dt = if (datatypeType dt == OWL2Number)
+    then getNrLit lf else Literal lf (Typed dt)
+
 getLiteral :: XMLBase -> Element -> Literal
 getLiteral b e = case getName e of
     "Literal" ->
@@ -172,8 +184,8 @@ getLiteral b e = case getName e of
              Just lang -> Literal lf (Untyped $ Just lang)
              Nothing -> if isPlainLiteral dt then
                           Literal lf (Untyped Nothing)
-                         else Literal lf (Typed $ appendBase b $
-                            nullQName {localPart = dt, iriType = cssIRI dt})
+                         else getTypedLit lf $ appendBase b $
+                            nullQName {localPart = dt, iriType = cssIRI dt}
     _ -> err "not literal"
 
 getValue :: XMLBase -> Element -> AnnotationValue
