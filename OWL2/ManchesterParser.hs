@@ -74,10 +74,10 @@ datatypeBit = do
     mp <- optionMaybe $ pkeyword equivalentToC >> pair optionalAnnos dataRange
     as2 <- many annotations
     return $ Frame (SimpleEntity $ Entity Datatype duri)
-      $ map (`AnnFrameBit` (AnnotationFrameBit Assertion)) as1 ++ case mp of
+      $ map (`AnnFrameBit` AnnotationFrameBit Assertion) as1 ++ case mp of
           Nothing -> []
           Just (ans, dr) -> [AnnFrameBit ans $ DatatypeBit dr]
-        ++ map (`AnnFrameBit` (AnnotationFrameBit Assertion)) as2
+        ++ map (`AnnFrameBit` AnnotationFrameBit Assertion) as2
 
 classFrame :: CharParser st Frame
 classFrame = do
@@ -257,7 +257,7 @@ frames = many $ datatypeBit <|> classFrame
 basicSpec :: CharParser st OntologyDocument
 basicSpec = do
   nss <- many nsEntry
-  ou <- option dummyQName $ pkeyword ontologyC >> uriP
+  ou <- option nullQName $ pkeyword ontologyC >> option nullQName uriP
   ie <- many importEntry
   ans <- many annotations
   as <- frames
@@ -267,10 +267,4 @@ basicSpec = do
       , imports = ie
       , ann = ans
       , name = ou }
-    , prefixDeclaration = Map.fromList $
-      [ ("owl", "http://www.w3.org/2002/07/owl#")
-      , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-      , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
-      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
-      , ("", showQU dummyQName ++ "#") ]
-      ++ map (\ (p, q) -> (p, showQU q)) nss }
+    , prefixDeclaration = Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss }

@@ -27,37 +27,38 @@ import qualified Data.Set as Set
 
 -- | OWL2 signature printing
 
+predefPrefixes :: PrefixMap
+predefPrefixes = Map.fromList
+      [ ("owl", "http://www.w3.org/2002/07/owl#")
+      , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+      , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
+      , ("", showQU dummyQName ++ "#") ]
+
 printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
 printOWLBasicTheory (s, l) =
-  printSign s
+  printSign s { prefixMap = Map.union (prefixMap s) predefPrefixes }
   $++$ vsep (map (pretty . sentence) l)
 
 instance Pretty Sign where
     pretty = printSign
 
 printSign :: Sign -> Doc
-printSign s =
-   let cs = concepts s
-       ts = datatypes s
-   in vcat (map (\ (c, l) -> hsep $ map text
-                 [prefixC, c ++ ":", '<' : l ++ ">"]
-                )
-      $ Map.toList $ Map.union (prefixMap s)
-      $ Map.fromList [ ("owl", "http://www.w3.org/2002/07/owl#")
-      , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-      , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
-      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
-      , ("", showQU dummyQName ++ "#") ] ) $++$
-   vcat (map (\ t -> keyword datatypeC <+> pretty t) $ Set.toList ts)
-   $++$ vcat (map (\ c -> keyword classC <+> pretty c) $ Set.toList cs)
-   $++$ vcat (map (\ o -> keyword objectPropertyC <+> pretty o)
-          $ Set.toList $ objectProperties s)
-   $++$ vcat (map (\ d -> keyword dataPropertyC <+> pretty d)
-          $ Set.toList $ dataProperties s)
-   $++$ vcat (map (\ i -> keyword individualC <+> pretty i)
-          $ Set.toList $ individuals s)
-   $++$ vcat (map (\ i -> keyword annotationPropertyC <+> pretty i)
-          $ Set.toList $ annotationRoles s)
+printSign s = vcat
+    (map (\ (c, l) -> hsep $ map text [prefixC, c ++ ":", '<' : l ++ ">"])
+    $ Map.toList $ prefixMap s)
+  $++$ vcat (map (\ t -> keyword datatypeC <+> pretty t)
+            $ Set.toList $ datatypes s)
+  $++$ vcat (map (\ c -> keyword classC <+> pretty c)
+            $ Set.toList $ concepts s)
+  $++$ vcat (map (\ o -> keyword objectPropertyC <+> pretty o)
+            $ Set.toList $ objectProperties s)
+  $++$ vcat (map (\ d -> keyword dataPropertyC <+> pretty d)
+            $ Set.toList $ dataProperties s)
+  $++$ vcat (map (\ i -> keyword individualC <+> pretty i)
+            $ Set.toList $ individuals s)
+  $++$ vcat (map (\ i -> keyword annotationPropertyC <+> pretty i)
+            $ Set.toList $ annotationRoles s)
 
 -- | Printing the frame bits and the axioms
 instance Pretty FrameBit where
@@ -159,8 +160,9 @@ printPrefixes x = vcat (map (\ (a, b) ->
 
 printOntology :: Ontology -> Doc
 printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
-        keyword ontologyC <+> pretty a $++$ vcat (map printImport b)
-        $++$ vcat (map printAnnotations c) $+$ vcat (map pretty d)
+  (if nullQName == a then empty else keyword ontologyC <+> pretty a)
+  $++$ vcat (map printImport b)
+  $++$ vcat (map printAnnotations c) $+$ vcat (map pretty d)
 
 printOntologyDocument :: OntologyDocument -> Doc
 printOntologyDocument OntologyDocument {prefixDeclaration = a, ontology = b} =
