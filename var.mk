@@ -31,7 +31,7 @@ TAR_PACKAGE = -DTAR_PACKAGE
 endif
 
 UNIXVERSION = $(shell $(HCPKG) field unix version)
-ifneq ($(findstring 2.3, $(UNIXVERSION)),)
+ifneq ($(findstring 2., $(UNIXVERSION)),)
 UNIX_PACKAGE = -DUNIX
 endif
 ifneq ($(findstring 2.4, $(UNIXVERSION)),)
