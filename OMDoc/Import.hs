@@ -608,16 +608,15 @@ addSentences clf nsmap gsig =
     case (nsmap, gsig) of
       (G_mapofsymbol lidM sm, G_sign lid (ExtSign sig _) ind1) ->
           do
-            let sigm = SigMapI (coerceMapofsymbol lidM lid sm) $ notations clf
-                f tc = omdocToSen lid sigm tc
-                       $ lookupNotation sigm $ tcName tc
-
+            sigm <- return $ SigMapI (coerceMapofsymbol lidM lid sm)
+                    $ notations clf
             -- 1. translate sentences
-            mSens <- mapM f $ sentences clf
-            let sens = catMaybes mSens
+            mSens <- mapM (\ tc -> omdocToSen lid sigm tc
+                       $ lookupNotation sigm $ tcName tc) $ sentences clf
 
             -- 2. translate adts
-            (sig', sens') <- addOMadtToTheory lid sigm (sig, sens) $ adts clf
+            (sig', sens') <- addOMadtToTheory lid sigm (sig, catMaybes mSens)
+                             $ adts clf
 
             -- 3. translate rest of theory
             -- (all the sentences or just those which returned Nothing?)
