@@ -18,7 +18,6 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.Sign
 
-import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -52,9 +51,12 @@ instance Function IRI where
               in case iriType qn of
                 Full -> qn {expandedIRI = np ++ ":" ++ lp}
                 NodeID -> qn {expandedIRI = lp}
-                _ -> let expn = fromMaybe (error $ np ++ ": prefix not found")
-                               $ Map.lookup np pm
-                        in qn {expandedIRI = expn ++ lp}
+                _ -> let mexpn = Map.lookup np pm
+                     in case mexpn of
+                        Just expn -> qn {expandedIRI = expn ++ lp}
+                        Nothing -> if null np then qn {expandedIRI =
+                            showQU dummyQName ++ "#" ++ lp} else
+                            error $ np ++ ": prefix not found"
 
 instance Function Sign where
    function t mp (Sign p1 p2 p3 p4 p5 p6 p7) =

@@ -151,8 +151,8 @@ xmlLiteral l = case l of
         Untyped lang -> setLangTag lang $ setDt True (splitIRI $ mkQName
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
             part
-  NumberLit f -> setDt True (nullQName {namePrefix = "xsd",
-        localPart = numberName f})
+  NumberLit f -> setDt True (nullQName {namePrefix = "http",
+        localPart = "//www.w3.org/2001/XMLSchema#" ++ numberName f})
         $ setName literalK $ mwText $ show f
 
 xmlIndividual :: IRI -> Element
@@ -466,7 +466,8 @@ set1Map :: (String, String) -> Element
 set1Map (s, iri) = setPref s $ mwIRI $ setFull $ splitIRI $ mkQName iri
 
 xmlPrefixes :: PrefixMap -> [Element]
-xmlPrefixes pm = map (setName prefixK . set1Map) $ Map.toList pm
+xmlPrefixes pm = let allpm = Map.union pm predefPrefixes in
+    map (setName prefixK . set1Map) $ Map.toList allpm
 
 setOntIRI :: OntologyIRI -> Element -> Element
 setOntIRI iri e =

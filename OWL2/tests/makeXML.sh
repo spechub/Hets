@@ -60,7 +60,7 @@ cd ../../..
 
 echo "calling hets for all xml files...\n"
 
-for i in $dir/*.xml
+for i in $dir/*.xml.xml
 do
     ./hets -i ow2 $i
     echo "\n"
