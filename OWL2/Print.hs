@@ -28,8 +28,8 @@ instance Pretty QName where
 
 printIRI :: QName -> Doc
 printIRI q
-    | (isThing q && namePrefix q == "owl") || (isDatatypeKey q && namePrefix q == "xsd")
-            = keyword $ localPart q
+    | (isThing q && namePrefix q == "owl") ||
+        (isDatatypeKey q && namePrefix q == "xsd") = keyword $ localPart q
     | otherwise = text $ showQN q
 
 -- | Symbols printing
@@ -157,7 +157,7 @@ instance Pretty ClassExpression where
    ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
       printObjPropExp opExp <+> cardinalityType ty
         <+> text (show card)
-        <+> maybe (keyword "owl:Thing") printPrimary maybeDesc
+        <+> maybe (keyword "Thing") printPrimary maybeDesc
    DataValuesFrom ty dpExp dRange ->
        printIRI dpExp <+> quantifierType ty
         <+> pretty dRange

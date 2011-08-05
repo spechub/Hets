@@ -25,7 +25,7 @@ processFile :: String -> IO ()
 processFile file = do
   str <- readFile file
   case runParser (basicSpec << eof) () file str of
-    Right o -> putStrLn $ showDoc o "\n"
+    Right o -> putStrLn $ show o
     Left err -> print err
 
 main :: IO ()
