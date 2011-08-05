@@ -380,11 +380,11 @@ xmlLFB ext mr lfb = case lfb of
 xmlAssertion :: IRI -> Annotations -> [Element]
 xmlAssertion iri = map (\ (Annotation as ap av) ->
     makeElement annotationAssertionK $ xmlAnnotations as
-        ++ [mwNameIRI annotationPropertyK ap] 
-	 	++ [xmlSubject iri, case av of
-	 	        AnnValue avalue -> xmlSubject avalue 
-	 	        AnnValLit l -> xmlLiteral l])
- 
+        ++ [mwNameIRI annotationPropertyK ap]
+        ++ [xmlSubject iri, case av of
+                AnnValue avalue -> xmlSubject avalue
+                AnnValLit l -> xmlLiteral l])
+
 xmlAFB :: Extended -> Annotations -> AnnFrameBit -> [Element]
 xmlAFB ext anno afb = case afb of
     AnnotationFrameBit ty -> case ext of

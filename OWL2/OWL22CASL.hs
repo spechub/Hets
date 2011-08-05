@@ -709,11 +709,12 @@ mapNNInt :: NNInt -> TERM ()
 mapNNInt int =
     let NNInt uInt = int
     in foldr1 joinDigits $ map mkDigit uInt
-   
+
 mapIntLit :: IntLit -> TERM ()
 mapIntLit int =
     let cInt = mapNNInt $ absInt int
-    in if isNegInt int then upcast (negateInt cInt) negIntS else upcast cInt nonNegInt
+    in if isNegInt int then upcast (negateInt cInt) negIntS
+        else upcast cInt nonNegInt
 
 mapDecLit :: DecLit -> TERM ()
 mapDecLit dec =
@@ -746,7 +747,7 @@ mapLiteral _ lit = case lit of
        | isFloatInt f -> return $ mapIntLit $ truncDec $ floatBase f
        | isFloatDec f -> return $ mapDecLit $ floatBase f
        | otherwise -> return $ mapFloatLit f
-                
+
 -- | Mapping of data properties
 mapDataProp :: CASLSign
             -> DataPropertyExpression

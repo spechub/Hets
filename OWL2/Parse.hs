@@ -229,7 +229,7 @@ datatypeUri :: CharParser st QName
 datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
 
 optSign :: CharParser st Bool
-optSign = option False $ oneOf "+-" >>= return . (== '-')
+optSign = option False $ fmap (== '-') (oneOf "+-")
 
 postDecimal :: CharParser st NNInt
 postDecimal = char '.' >> getNNInt

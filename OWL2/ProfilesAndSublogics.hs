@@ -12,7 +12,7 @@ Contains    :  OWL2 Profiles (EL, QL and RL) + OWL2 DL
 References  :  <http://www.w3.org/TR/owl2-profiles/>
 -}
 
-module OWL2.ProfilesAndSublogics 
+module OWL2.ProfilesAndSublogics
     ( ProfSub (..)
     , Profiles (..)
     , topS

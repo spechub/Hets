@@ -83,8 +83,8 @@ setPrefix s q = q { namePrefix = s }
 
 setReservedPrefix :: QName -> QName
 setReservedPrefix iri
-    | isDatatypeKey iri && (null $ namePrefix iri) = setPrefix "xsd" iri
-    | isThing iri && (null $ namePrefix iri) = setPrefix "owl" iri
+    | isDatatypeKey iri && null (namePrefix iri) = setPrefix "xsd" iri
+    | isThing iri && null (namePrefix iri) = setPrefix "owl" iri
     | otherwise = iri
 
 setFull :: QName -> QName
@@ -198,11 +198,11 @@ showQuantifierType ty = case ty of
 
 checkPredef :: [String] -> String -> String -> IRI -> Bool
 checkPredef sl pref sc u =
-    (localPart u) `elem` sl && elem (namePrefix u) ["", pref]
-        || (showQU u) `elem` map (sc ++) sl
+    localPart u `elem` sl && elem (namePrefix u) ["", pref]
+        || showQU u `elem` map (sc ++) sl
 
 owlSomething :: [String]
-owlSomething = ["Thing", "Nothing"] 
+owlSomething = ["Thing", "Nothing"]
 
 isThing :: IRI -> Bool
 isThing = checkPredef owlSomething "owl" "http://www.w3.org/2002/07/owl#"
@@ -216,7 +216,8 @@ owlNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
     nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS]
 
 isDatatypeKey :: IRI -> Bool
-isDatatypeKey = checkPredef datatypeKeys "xsd" "http://www.w3.org/2001/XMLSchema#"
+isDatatypeKey = checkPredef datatypeKeys "xsd"
+    "http://www.w3.org/2001/XMLSchema#"
 
 isOWLNumber :: IRI -> Bool
 isOWLNumber = checkPredef owlNumbers "xsd" "http://www.w3.org/2001/XMLSchema#"

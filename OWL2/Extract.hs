@@ -143,7 +143,7 @@ extFB ext fb = case fb of
     extLFB rel lfb
   AnnFrameBit an anf -> do
     addAnnos an
-    extAFB anf  
+    extAFB anf
     case anf of
         AnnotationFrameBit Assertion -> case ext of
             Misc _ -> return ()

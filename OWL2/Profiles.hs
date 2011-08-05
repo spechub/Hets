@@ -57,7 +57,7 @@ printProfile p@(Profiles e q r) = case p of
     (Profiles False False False) -> "NP"
     _ -> (if e then "EL" else "")
             ++ (if q then "QL" else "")
-            ++ (if r then "RL" else "") 
+            ++ (if r then "RL" else "")
 
 andProfileList :: [Profiles] -> Profiles
 andProfileList pl = bottomProfile {
