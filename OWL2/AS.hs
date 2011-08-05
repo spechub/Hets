@@ -361,7 +361,7 @@ isDecInt :: DecLit -> Bool
 isDecInt = isZeroNNInt . fracDec
 
 negDec :: Bool -> DecLit -> DecLit
-negDec b (DecLit t f) = DecLit (if b then t else negInt t) f
+negDec b (DecLit t f) = DecLit (if b then negInt t else t) f
 
 data FloatLit = FloatLit
   { floatBase :: DecLit
