@@ -184,7 +184,10 @@ dgrule r =
       DGRuleLocalInference m ->
         map (\ (s, t) -> add_attrs [mkNameAttr s, mkAttr "renamedTo" t]
              $ unode "MovedTheorems" ()) m
-      Composition es -> map (\ (_, _, l) ->
-        add_attr (mkAttr "linkref" $ showEdgeId $ dgl_id l)
-        $ unode "RuleTarget" ()) es
+      Composition es -> map (\ e ->
+        add_attr (mkAttr "linkref" $ showEdgeId e)
+        $ unode "Composition" ()) es
+      DGRuleWithEdge _ e ->
+        [ add_attr (mkAttr "linkref" $ showEdgeId e)
+        $ unode "RuleTarget" () ]
       _ -> []

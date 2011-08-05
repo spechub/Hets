@@ -22,6 +22,7 @@ module Proofs.Global
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
+import Data.Maybe
 
 import Static.GTheory
 import Static.DevGraph
@@ -33,7 +34,7 @@ import Common.Utils
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 
-globDecompRule :: LEdge DGLinkLab -> DGRule
+globDecompRule :: EdgeId -> DGRule
 globDecompRule = DGRuleWithEdge "Global-Decomposition"
 
 {- apply rule GlobDecomp to all global theorem links in the current DG
@@ -98,7 +99,7 @@ getRefParents :: LibEnv -> LibName
               -> [(LNode DGNodeLab, [DGLinkLab])]
 getRefParents le refl refn =
    let
-   {- get the previous objects to the current one -}
+   -- get the previous objects to the current one
    dg = lookupDGraph refl le
    pres = innDG dg refn
    in modifyPs dg pres
@@ -139,9 +140,8 @@ updateDGraphAux libenv n refl dg (pnl, pls) =
    (auxDG, newN) = addParentNode libenv dg refl pnl
    in addParentLinks auxDG newN n pls
 
-{- | add the given parent node into the current dgraph
--}
-addParentNode :: LibEnv -> DGraph ->  LibName
+-- | add the given parent node into the current dgraph
+addParentNode :: LibEnv -> DGraph -> LibName
               -> LNode DGNodeLab -- the referenced parent node
               -> (DGraph, Node)
 addParentNode libenv dg refl (refn, oldNodelab) =
@@ -163,17 +163,17 @@ addParentNode libenv dg refl (refn, oldNodelab) =
      Set the sgMap and tMap too.
      Notice for those who are doing undo/redo, because the DGraph is actually
      changed if the maps are changed ;)
-   -}
-   -- creates an empty GTh, please check the definition of this function
-   -- because there can be some problem or errors at this place.
+
+   creates an empty GTh, please check the definition of this function
+   because there can be some problem or errors at this place. -}
    newGTh = case dgn_theory nodelab of
      G_theory lid sig ind _ _ -> noSensGTheory lid sig ind
    refInfo = newRefInfo newRefl newRefn
    newRefNode = (newInfoNodeLab (dgn_name nodelab) refInfo newGTh)
      { globalTheory = globalTheory nodelab }
    in
-   -- checks if this node exists in the current dg, if so, nothing needs to be
-   -- done.
+   {- checks if this node exists in the current dg, if so, nothing needs to be
+   done. -}
    case lookupInAllRefNodesDG refInfo dg of
         Nothing -> let newN = getNewNodeDG dg in
            ( changeDGH (addToRefNodesDG newN refInfo dg)
@@ -181,8 +181,7 @@ addParentNode libenv dg refl (refn, oldNodelab) =
            , newN)
         Just extN -> (dg, extN)
 
-{- | add a list of links between the given two node ids.
--}
+-- | add a list of links between the given two node ids.
 addParentLinks :: DGraph -> Node -> Node -> [DGLinkLab] -> DGraph
 addParentLinks dg src tgt ls =
   let oldLinks = map (\ (_, _, l) -> l)
@@ -208,7 +207,7 @@ globDecomp ln proofStatus =
 globDecompAux :: DGraph -> LEdge DGLinkLab -> DGraph
 globDecompAux dgraph edge =
   let newDGraph = globDecompForOneEdge dgraph edge
-  in groupHistory dgraph (globDecompRule edge) newDGraph
+  in groupHistory dgraph (globDecompRule $ getEdgeId edge) newDGraph
 
 -- applies global decomposition to a single edge
 globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> DGraph
@@ -218,7 +217,8 @@ globDecompForOneEdge dgraph edge@(source, target, edgeLab) = let
     (newGr, proof_basis) = foldl
       (globDecompForOneEdgeAux target) (dgraph, emptyProofBasis) paths
     provenEdge = (source, target, edgeLab
-        { dgl_type = setProof (Proven (globDecompRule edge) proof_basis)
+        { dgl_type = setProof (Proven (globDecompRule $ getEdgeId edge)
+                                      proof_basis)
             $ dgl_type edgeLab
         , dglPending = True
         , dgl_origin = DGLinkProof })
@@ -237,9 +237,9 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
       lbltype = dgl_type lbl
       isHiding = isHidingDef lbltype
       morphismPath = if isHiding then rpath else path
-      morphism = case calculateMorphismOfPath morphismPath of
-        Just morph -> morph
-        Nothing -> error "globDecomp: could not determine morphism of new edge"
+      morphism = fromMaybe
+        (error "globDecomp: could not determine morphism of new edge")
+        $ calculateMorphismOfPath morphismPath
       defEdgesToTarget = filter
         (\ (s, _, l) -> s == node && isGlobalDef (dgl_type l)
         && dgl_morphism l == morphism)
@@ -279,8 +279,8 @@ globSubsume ln libEnv =
         globalThmEdges = labEdgesDG dgraph
     in globSubsumeFromList ln globalThmEdges libEnv
 
-{- auxiliary function for globSubsume (above) the actual implementation -}
-globSubsumeAux :: LibEnv ->  DGraph -> LEdge DGLinkLab  -> DGraph
+-- auxiliary function for globSubsume (above) the actual implementation
+globSubsumeAux :: LibEnv -> DGraph -> LEdge DGLinkLab -> DGraph
 globSubsumeAux libEnv dgraph ledge@(src, tgt, edgeLab) =
   let morphism = dgl_morphism edgeLab
       filteredPaths = filterPathsByMorphism morphism $ filter (noPath ledge)
@@ -288,7 +288,8 @@ globSubsumeAux libEnv dgraph ledge@(src, tgt, edgeLab) =
       proofbasis = selectProofBasis dgraph ledge filteredPaths
   in if not (nullProofBasis proofbasis) || isIdentityEdge ledge libEnv dgraph
    then
-     let globSubsumeRule = DGRuleWithEdge "Global-Subsumption" ledge
+     let globSubsumeRule = DGRuleWithEdge "Global-Subsumption"
+           $ getEdgeId ledge
          newEdge = (src, tgt, edgeLab
                { dgl_type = setProof (Proven globSubsumeRule proofbasis)
                    $ dgl_type edgeLab

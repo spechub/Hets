@@ -334,9 +334,9 @@ data DGLinkOrigin =
 -}
 data DGRule =
     DGRule String
-  | DGRuleWithEdge String (LEdge DGLinkLab)
+  | DGRuleWithEdge String EdgeId
   | DGRuleLocalInference [(String, String)] -- renamed theorems
-  | Composition [LEdge DGLinkLab]
+  | Composition [EdgeId]
     deriving (Show, Eq)
 
 -- | proof status of a link

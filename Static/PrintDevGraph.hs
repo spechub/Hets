@@ -237,7 +237,7 @@ prettyLEdge e@(_, _, l) = fsep
   , prettyDGLinkLab (text . getDGLinkType) l
   , prettyThmLinkStatus $ dgl_type l ]
 
-dgRuleEdges :: DGRule -> [LEdge DGLinkLab]
+dgRuleEdges :: DGRule -> [EdgeId]
 dgRuleEdges r = case r of
     DGRuleWithEdge _ l -> [l]
     Composition ls -> ls
@@ -258,8 +258,7 @@ instance Pretty DGRule where
           let d = text s in if s == t then d else pairElems d $ text t) m
     _ -> case es of
       [] -> Doc.empty
-      [(_, _, l)] -> prettyDGLinkLab (const Doc.empty) l
-      _ -> pretty $ Set.fromList $ map (\ (_, _, l) -> dgl_id l) es]
+      _ -> pretty $ Set.fromList es]
 
 instance Pretty ThmLinkStatus where
   pretty tls = case tls of

@@ -51,7 +51,7 @@ type ListSelector m a = [a] -> m (Maybe a)
 type PathTuple = ([LEdge DGLinkLab], [LEdge DGLinkLab])
 type ProofBaseSelector m = DGraph -> ListSelector m PathTuple
 
-hideThmShiftRule :: LEdge DGLinkLab -> DGRule
+hideThmShiftRule :: EdgeId -> DGRule
 hideThmShiftRule = DGRuleWithEdge "HideTheoremShift"
 
 interactiveHideTheoremShift :: LibName -> LibEnv -> IO LibEnv
@@ -103,7 +103,7 @@ hideTheoremShiftAux proofBaseSel dgraph ledge =
              newEdge = makeProvenHidingThmEdge finalProofBasis ledge
              newDGraph2 = changeDGH auxDGraph $ DeleteEdge ledge
              newDGraph = insertDGLEdge newEdge newDGraph2
-             newRules = hideThmShiftRule ledge
+             newRules = hideThmShiftRule $ getEdgeId ledge
          in groupHistory dgraph newRules newDGraph
 
 {- | inserts the given edges into the development graph and adds a
@@ -133,7 +133,8 @@ insertNewEdges (dgraph, proofbasis) edge =
 makeProvenHidingThmEdge :: ProofBasis -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
   (src, tgt, edgeLab
-       { dgl_type = setProof (Proven (hideThmShiftRule ledge) proofBasisEdges)
+       { dgl_type = setProof (Proven (hideThmShiftRule $ getEdgeId ledge)
+                              proofBasisEdges)
            $ dgl_type edgeLab
        , dgl_origin = DGLinkProof })
 

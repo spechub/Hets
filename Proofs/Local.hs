@@ -48,8 +48,8 @@ import qualified Data.Map as Map
 import Data.Maybe
 
 -- | local decomposition
-locDecompFromList :: LibName ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
-locDecompFromList ln localThmEdges libEnv=
+locDecompFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+locDecompFromList ln localThmEdges libEnv =
    let dgraph = lookupDGraph ln libEnv
        finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
        nextDGraph = foldl (locDecompAux libEnv ln) dgraph finalLocalThmEdges
@@ -73,7 +73,7 @@ locDecompAux libEnv ln dgraph ledge@(src, tgt, edgeLab) = let
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofbasis = selectProofBasis dgraph ledge filteredPaths
     auxGraph = changeDGH dgraph $ DeleteEdge ledge
-    locDecompRule = DGRuleWithEdge "Local-Decomposition" ledge
+    locDecompRule = DGRuleWithEdge "Local-Decomposition" $ getEdgeId ledge
     newEdge = (src, tgt, edgeLab
       { dgl_type = setProof (Proven locDecompRule proofbasis)
           $ dgl_type edgeLab
@@ -168,5 +168,3 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
               in groupHistory dgraph locInferRule newGraph
         _ -> dgraph
     _ -> dgraph
-
-
