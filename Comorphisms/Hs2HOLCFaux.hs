@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
