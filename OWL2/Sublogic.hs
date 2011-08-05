@@ -135,14 +135,13 @@ sl_name sl =
         Unqualified -> "N"
         None -> "")
     ++ let ds = datatype sl in if Set.null ds then "" else
-           "<D"
+           "-D"
            ++ (let ts = Set.filter (/= OWLDATA) ds
                in if Set.null ts then "" else
-                 "<"
+                 "|"
                  ++ (if ds == Set.fromList owlDatatypes then "-" else
                          intercalate "|" $ map printXSDName $ Set.toList ts)
-                 ++ ">")
-           ++ ">"
+                 ++ "|")
 
 requireQualNumberRestrictions :: OWLSub -> OWLSub
 requireQualNumberRestrictions sl = sl { numberRestrictions = Qualified }
