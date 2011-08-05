@@ -80,8 +80,6 @@ data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
      we do not assign a real node in the DG here) -}
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
-data BasicConsProof = BasicConsProof deriving (Show, Eq) -- needs more details
-
 -- ** node label types
 
 data XPathPart = ElemName String | ChildIndex Int deriving (Show, Eq, Ord)
