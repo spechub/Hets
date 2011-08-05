@@ -11,7 +11,7 @@ Portability :  portable
 
 module Main (main) where
 
-import System
+import System.Environment
 import ATerm.ReadWrite
 import ATerm.SimpPretty
 
