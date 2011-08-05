@@ -68,7 +68,7 @@ module GUI.GtkUtils
 
   , activate
 
-  , shortenLabel
+  , escapeGtkMarkup
 
   -- * Datatypes and functions for prover
   , Goal (..)
@@ -131,6 +131,13 @@ forkIO_ f = forkIO f >> return ()
 
 forkIOWithPostProcessing :: IO a -> (a -> IO ()) -> IO ()
 forkIOWithPostProcessing action post = forkIO_ $ action >>= postGUIAsync . post
+
+escapeGtkMarkup :: String -> String
+escapeGtkMarkup = concatMap $ \ c -> case c of
+  '<' -> "&lt;"
+  '>' -> "&gt;"
+  '&' -> "&amp;"
+  _ -> [c]
 
 {- * Usefull windows and function.
      !!! IMPORTANT for all following functions !!!
@@ -575,10 +582,6 @@ updateListData list listData = do
 -- | Activates or deactivates a list of widgets
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (`widgetSetSensitive` active) widgets
-
--- | shortens a String to a given size and adds some dots
-shortenLabel :: Int -> String -> String
-shortenLabel i s = if length s <= i then s else take (i - 3) s ++ "..."
 
 -- * Datatypes and functions for prover
 
