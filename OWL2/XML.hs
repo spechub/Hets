@@ -167,7 +167,7 @@ getNrLit lf =
         _ -> err $ "cannot parse literal " ++ lf
 
 getTypedLit :: LexicalForm -> Datatype -> Literal
-getTypedLit lf dt = if (datatypeType dt == OWL2Number)
+getTypedLit lf dt = if isOWLNumber dt
     then getNrLit lf else Literal lf (Typed dt)
 
 getLiteral :: XMLBase -> Element -> Literal
