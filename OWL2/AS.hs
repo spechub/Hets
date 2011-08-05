@@ -360,8 +360,8 @@ instance Show DecLit where
 isDecInt :: DecLit -> Bool
 isDecInt = isZeroNNInt . fracDec
 
-negDec :: DecLit -> DecLit
-negDec (DecLit t f) = DecLit (negInt t) f
+negDec :: Bool -> DecLit -> DecLit
+negDec b (DecLit t f) = DecLit (if b then t else negInt t) f
 
 data FloatLit = FloatLit
   { floatBase :: DecLit
@@ -404,7 +404,7 @@ isNegDec :: DecLit -> Bool
 isNegDec d = isNegInt $ truncDec d
 
 numberName :: FloatLit -> String
-numberName f 
+numberName f
     | isFloatInt f = "integer"
     | isFloatDec f = "double"
     | otherwise = "float"

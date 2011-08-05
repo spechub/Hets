@@ -228,8 +228,8 @@ uriPair = uriP >>= \ u -> do
 datatypeUri :: CharParser st QName
 datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
 
-optSign :: CharParser st String
-optSign = optionL (single $ oneOf "+-")
+optSign :: CharParser st Bool
+optSign = option False $ oneOf "+-" >>= return . (== '-')
 
 postDecimal :: CharParser st NNInt
 postDecimal = char '.' >> getNNInt
@@ -239,9 +239,9 @@ getNNInt = fmap (NNInt . map digitToInt) getNumber
 
 intLit :: CharParser st IntLit
 intLit = do
-  c <- optSign
+  b <- optSign
   n <- getNNInt
-  return $ negNNInt (c == "-") n
+  return $ negNNInt b n
 
 decimalLit :: CharParser st DecLit
 decimalLit = liftM2 DecLit intLit $ option zeroNNInt postDecimal
@@ -257,11 +257,11 @@ floatDecimal = do
 
 floatingPointLit :: CharParser st FloatLit
 floatingPointLit = do
-   c <- optSign
+   b <- optSign
    d <- floatDecimal
    i <- option zeroInt (oneOf "eE" >> intLit)
    oneOf "fF"
-   return $ FloatLit (if c == "-" then negDec d else d) i
+   return $ FloatLit (negDec b d) i
 
 languageTag :: CharParser st String
 languageTag = atMost1 4 letter
@@ -539,7 +539,7 @@ annotationValue :: CharParser st AnnotationValue
 annotationValue = do
     l <- literal
     return $ AnnValLit l
-  <|> do    
+  <|> do
     i <- individual
     return $ AnnValue i
 
