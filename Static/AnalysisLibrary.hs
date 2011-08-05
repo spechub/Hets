@@ -29,6 +29,7 @@ import Syntax.AS_Library
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.ComputeTheory
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture

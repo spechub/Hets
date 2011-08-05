@@ -33,6 +33,7 @@ import Common.Id
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 
 -- * Types
 -- (as defined for extended static semantics in Chap. III:5.6.1)

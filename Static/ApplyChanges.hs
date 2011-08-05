@@ -14,6 +14,7 @@ module Static.ApplyChanges (dgXUpdate) where
 
 import Static.ComputeTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 import Static.History
 import Static.FromXmlUpdates

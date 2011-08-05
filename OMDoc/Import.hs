@@ -65,6 +65,7 @@ import Comorphisms.LogicList
 import Comorphisms.LogicGraph
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 import Static.AnalysisStructured
 import Static.ComputeTheory

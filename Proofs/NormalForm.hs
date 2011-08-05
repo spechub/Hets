@@ -22,6 +22,7 @@ import Logic.Grothendieck
 
 import Static.ComputeTheory
 import Static.GTheory
+import Static.DgUtils
 import Static.DevGraph
 import Static.History
 import Static.WACocone

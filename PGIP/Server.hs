@@ -27,6 +27,7 @@ import Static.AnalysisLibrary
 import Static.ApplyChanges
 import Static.ComputeTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.DotGraph
 import Static.FromXml
 import Static.GTheory

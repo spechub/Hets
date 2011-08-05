@@ -55,11 +55,12 @@ import Logic.Coerce
 import Logic.Grothendieck
 import Logic.Logic
 
-import Static.ComputeTheory
 import Proofs.EdgeUtils
 import Proofs.NormalForm
 
+import Static.ComputeTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 import Static.History
 

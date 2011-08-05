@@ -46,6 +46,7 @@ import System.FilePath
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 
 import Common.AS_Annotation (SenAttr (isAxiom))
 import Common.Utils

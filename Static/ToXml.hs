@@ -12,6 +12,7 @@ Xml of Hets DGs
 
 module Static.ToXml (dGraph) where
 
+import Static.DgUtils
 import Static.DevGraph
 import Static.GTheory
 import Static.PrintDevGraph

@@ -18,6 +18,7 @@ module OWL.StructureAnalysis
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 
 import OWL.Sign
 import OWL.Logic_OWL

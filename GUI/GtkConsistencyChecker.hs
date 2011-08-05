@@ -21,6 +21,7 @@ import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.PrintDevGraph ()
 import Static.GTheory
 import Static.History

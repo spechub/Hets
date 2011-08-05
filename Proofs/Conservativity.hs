@@ -24,6 +24,7 @@ import Proofs.EdgeUtils(isFreeEdge, isGlobalEdge, isGlobalThm,
 import Proofs.ComputeColimit(makeDiagram)
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory(gEnsuresAmalgamability)
 import Static.History
 

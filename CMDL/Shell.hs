@@ -41,6 +41,7 @@ import Logic.Logic
 import Proofs.AbstractState
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 
 import Data.Char (isSpace)

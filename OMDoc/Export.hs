@@ -38,6 +38,7 @@ import Logic.Grothendieck
 import Logic.Comorphism
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 
 import Common.Result

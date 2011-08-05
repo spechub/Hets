@@ -30,6 +30,7 @@ import CMDL.ProveCommands (cDoLoop)
 import Proofs.AbstractState (resetSelection)
 
 import Static.DevGraph
+import Static.DgUtils
 
 import Common.Consistency
 import Common.LibName (LibName)

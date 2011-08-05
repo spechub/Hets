@@ -19,6 +19,7 @@ module Proofs.VSE where
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.PrintDevGraph
 import Static.DGTranslation
 import Static.History

@@ -11,6 +11,7 @@ Portability :  non-portable (via imports)
 module Static.ConsInclusions (dumpConsInclusions) where
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 
 import Driver.Options

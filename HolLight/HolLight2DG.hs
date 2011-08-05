@@ -14,6 +14,7 @@ module HolLight.HolLight2DG where
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 import Static.ComputeTheory
 
@@ -59,7 +60,7 @@ tag = dropWhile (\e -> case e of
                         _ -> False)
 
 dropSpaces :: SaxEvL -> SaxEvL
-dropSpaces = tag 
+dropSpaces = tag
 
 whileJust :: b -> (b -> (Maybe a,b)) -> (Maybe [a],b)
 whileJust d f =
@@ -139,7 +140,7 @@ readTuple' f1 f2 d b = case tag d of
  _ -> (Nothing,d)
 
 readWord' :: SaxEvL -> (Maybe String, SaxEvL)
-readWord' d = case d of 
+readWord' d = case d of
  ((CharacterData s):d') -> let b = Data.Char.isSpace
                            in case readWord' d' of
                               (Just s',d'') -> (Just (reverse (dropWhile b (reverse (dropWhile b (s++s'))))),d'')
@@ -193,7 +194,7 @@ listToTypes m l = case l of
    _ -> Nothing
   _ -> Nothing
  []     -> Just []
- 
+
 
 readSharedHolType :: Map.Map Int String -> SaxEvL -> Map.Map Int HolType -> (Maybe (Map.Map Int HolType),SaxEvL)
 readSharedHolType sl d m = case tag d of
@@ -286,13 +287,13 @@ readSharedHolTerm ts sl d m = case tag d of
   _ -> (Nothing,d)
  _ -> (Nothing,d)
 
-importData :: FilePath -> IO ([(String,[(String,Term)])],[(String,String)]) 
+importData :: FilePath -> IO ([(String,[(String,Term)])],[(String,String)])
 importData fp = do
     s <- L.readFile fp
     let e = ([],[])
     case tag (parsexml s) of
       ((StartElement "HolExport" _):d) -> case readL readStr "Strings" d of
-       (Just sl,d1) -> 
+       (Just sl,d1) ->
         let strings = Map.fromList (zip [1..] sl)
           in case foldS (readSharedHolType strings) Map.empty "SharedHolTypes" d1 of
            (Just hol_types,d2) -> case foldS (readSharedHolTerm hol_types strings) Map.empty "SharedHolTerms" d2 of
@@ -303,7 +304,7 @@ importData fp = do
              _ -> return e
             _ -> return e
            _ -> return e
-       _ -> return e 
+       _ -> return e
       _ -> return e
 
 get_types :: Map.Map String Int -> HolType -> Map.Map String Int
@@ -319,7 +320,7 @@ mergeTypesOps (ts1,ops1) (ts2,ops2) =
  (Map.union ts1 ts2,Map.unionWith Set.union ops1 ops2)
 
 get_ops :: [String] -> Term
-           -> (Map.Map String Int,Map.Map String (Set.Set HolType)) 
+           -> (Map.Map String Int,Map.Map String (Set.Set HolType))
 get_ops ign tm = case tm of
  (Var s t _)    -> let ts = get_types Map.empty t
                      in if not (elem s ign) then
@@ -327,10 +328,10 @@ get_ops ign tm = case tm of
                         else (ts,Map.empty)
  (Const s t _)  -> let ts = get_types Map.empty t
                      in (ts,Map.insert s (Set.fromList [t]) Map.empty)
- (Comb t1 t2) -> mergeTypesOps 
+ (Comb t1 t2) -> mergeTypesOps
                   (get_ops ((name_of t1):ign) t1)
                   (get_ops ((name_of t1):ign) t2)
- (Abs t1 t2)  -> mergeTypesOps                  
+ (Abs t1 t2)  -> mergeTypesOps
                   (get_ops ((name_of t1):ign) t1)
                   (get_ops ((name_of t1):ign) t2)
 
@@ -379,7 +380,7 @@ anaHolLightFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaHolLightFile _opts path = do
    (libs, lnks) <- importData path
    let h = treeLevels lnks
-   let fixLinks m l = case l of 
+   let fixLinks m l = case l of
         (l1:l2:l') -> if ((snd l1) == (snd l2)) && (sigDepends
                           (Map.findWithDefault emptySig (fst l1) m)
                           (Map.findWithDefault emptySig (fst l2) m)) then

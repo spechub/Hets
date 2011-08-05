@@ -27,6 +27,7 @@ module Static.History
   ) where
 
 import Static.DevGraph
+import Static.DgUtils
 
 import qualified Common.Lib.SizedList as SizedList
 

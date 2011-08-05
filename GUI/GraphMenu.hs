@@ -34,6 +34,7 @@ import System.Directory (getCurrentDirectory)
 import System.FilePath
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.PrintDevGraph ()
 
 import Static.ComputeTheory (computeTheory)

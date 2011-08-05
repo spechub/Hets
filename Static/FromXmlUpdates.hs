@@ -13,6 +13,7 @@ adjust development graph according to xupdate information
 module Static.FromXmlUpdates where
 
 import Static.DevGraph
+import Static.DgUtils
 
 import Common.Id
 import Common.ToXml

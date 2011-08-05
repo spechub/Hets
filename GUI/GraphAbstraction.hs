@@ -46,7 +46,9 @@ import Events.Destructible (destroy)
 import Events.Synchronized (synchronize)
 
 import ATC.DevGraph ()
+
 import Static.DevGraph
+import Static.DgUtils
 
 import Data.IORef
 import Data.List (partition)

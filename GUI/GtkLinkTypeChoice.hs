@@ -22,6 +22,7 @@ import GUI.GtkUtils
 import qualified GUI.Glade.LinkTypeChoice as LinkTypeChoice
 
 import Static.DevGraph
+import Static.DgUtils
 
 import Control.Monad(filterM)
 

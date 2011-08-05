@@ -23,6 +23,7 @@ import Data.Maybe
 import qualified Data.Map as Map
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 
 import System.Directory

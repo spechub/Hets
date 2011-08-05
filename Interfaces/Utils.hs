@@ -42,6 +42,7 @@ import Data.IORef
 import Data.Map (insert)
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 import Static.History
 import Static.ComputeTheory

@@ -31,6 +31,7 @@ import Logic.Grothendieck
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.ComputeTheory
 
 import Driver.Options

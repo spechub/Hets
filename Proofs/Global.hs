@@ -26,6 +26,7 @@ import Data.Maybe
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 
 import Common.LibName

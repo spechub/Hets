@@ -14,6 +14,7 @@ Portability :  non-portable(Logic)
 module Proofs.TriangleCons where
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 
 import Common.Consistency

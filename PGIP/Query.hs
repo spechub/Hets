@@ -55,7 +55,7 @@ import Common.Utils
 import Interfaces.Command
 import Interfaces.CmdAction
 
-import Static.DevGraph
+import Static.DgUtils
 
 import Driver.Options
 

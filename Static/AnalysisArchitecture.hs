@@ -28,6 +28,7 @@ import Logic.Grothendieck
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.ArchDiagram
 import Static.AnalysisStructured
 

@@ -17,6 +17,7 @@ import Logic.Grothendieck
 import Logic.Logic
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 
 import Common.Consistency

@@ -14,6 +14,7 @@ module Static.FromXml where
 
 import Static.ComputeTheory (computeLibEnvTheories)
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 import Static.FromXmlUtils
 import Static.XGraph

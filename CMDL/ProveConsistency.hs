@@ -33,6 +33,7 @@ import Comorphisms.LogicGraph (logicGraph)
 import Proofs.AbstractState
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 
 import Logic.Comorphism

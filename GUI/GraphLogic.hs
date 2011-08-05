@@ -53,6 +53,7 @@ import Comorphisms.LogicGraph (logicGraph)
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.PrintDevGraph
 import Static.DGTranslation (libEnv_translation, getDGLogic)
 import Static.History

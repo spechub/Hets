@@ -37,6 +37,7 @@ import Logic.Grothendieck
 import Proofs.EdgeUtils
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 
 import Common.Consistency

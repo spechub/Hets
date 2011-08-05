@@ -45,6 +45,7 @@ import CMDL.Utils
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.PrintDevGraph (showLEdge)
 
 import Common.AS_Annotation (SenAttr (isAxiom))

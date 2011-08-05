@@ -30,6 +30,7 @@ module Proofs.TheoremHideShift
 import Logic.Logic
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 
 import Proofs.EdgeUtils

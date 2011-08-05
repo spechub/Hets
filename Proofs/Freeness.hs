@@ -25,6 +25,7 @@ import Logic.ExtSign
 import Static.ComputeTheory
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 
 import Common.ExtSign

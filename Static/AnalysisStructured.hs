@@ -39,6 +39,7 @@ import Logic.Grothendieck
 import Logic.Prover
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.GTheory
 
 import Syntax.AS_Structured

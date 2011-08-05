@@ -30,6 +30,7 @@ import Common.DocUtils
 import Driver.Options(doDump)
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.PrintDevGraph
 import Static.History
 

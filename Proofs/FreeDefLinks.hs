@@ -15,6 +15,7 @@ module Proofs.FreeDefLinks where
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.ComputeTheory
 
 import Proofs.EdgeUtils

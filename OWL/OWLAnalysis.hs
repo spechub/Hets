@@ -22,6 +22,7 @@ import OWL.StructureAnalysis
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils
 import Static.ComputeTheory
 
 import Common.Id

@@ -11,6 +11,7 @@ Portability :  portable
 module LF.Twelf2DG ( anaTwelfFile ) where
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.ComputeTheory
 import Static.GTheory
 

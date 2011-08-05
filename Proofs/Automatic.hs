@@ -31,6 +31,7 @@ import Proofs.HideTheoremShift
 import Proofs.TheoremHideShift
 
 import Static.DevGraph
+import Static.DgUtils
 import Static.History
 
 import Common.LibName

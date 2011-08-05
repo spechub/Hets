@@ -31,6 +31,7 @@ module Static.PrintDevGraph
 import Syntax.Print_AS_Structured ()
 import Syntax.AS_Structured
 
+import Static.DgUtils
 import Static.GTheory
 import Static.DevGraph
 import Static.History

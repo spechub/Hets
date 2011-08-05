@@ -14,6 +14,8 @@ Display of development graphs using Graphviz\/dot
 module Static.DotGraph (dotGraph) where
 
 import Data.Graph.Inductive.Graph
+
+import Static.DgUtils
 import Static.DevGraph
 
 edgeAttributes :: DGEdgeType -> String

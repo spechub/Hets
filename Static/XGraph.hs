@@ -19,6 +19,7 @@ module Static.XGraph
   ) where
 
 import Static.DevGraph
+import Static.DgUtils
 
 import Common.AnalyseAnnos (getGlobalAnnos)
 import Common.Consistency (Conservativity (..))
