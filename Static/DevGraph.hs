@@ -1223,8 +1223,8 @@ addEdgeId :: ProofBasis -> EdgeId -> ProofBasis
 addEdgeId (ProofBasis s) e = ProofBasis $ Set.insert e s
 
 -- | checks if the given edge is contained in the given proof basis..
-roughElem :: LEdge DGLinkLab -> ProofBasis -> Bool
-roughElem (_, _, label) = Set.member (dgl_id label) . proofBasis
+roughElem :: EdgeId -> ProofBasis -> Bool
+roughElem e = Set.member e . proofBasis
 
 -- ** edge label equalities
 

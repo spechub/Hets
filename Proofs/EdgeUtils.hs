@@ -213,7 +213,8 @@ selectProofBasisAux :: Map.Map EdgeId (Set.Set EdgeId) -> LEdge DGLinkLab
 selectProofBasisAux _ _ [] = emptyProofBasis
 selectProofBasisAux rel ledge (path : list) =
   let b = calculateProofBasis rel path in
-    if roughElem ledge b then selectProofBasisAux rel ledge list
+    if roughElem (getEdgeId ledge) b
+       then selectProofBasisAux rel ledge list
        else b               -- OK, no cyclic proof
 
 {- | calculates the proofBasis of the given path,
