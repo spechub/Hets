@@ -1035,8 +1035,8 @@ data DGraph = DGraph
   , refNodes :: Map.Map Node (LibName, Node) -- ^ unexpanded 'DGRef's
   , allRefNodes :: Map.Map (LibName, Node) Node -- ^ all DGRef's
   , sigMap :: Map.Map SigId G_sign -- ^ signature map
-  , thMap :: Map.Map ThId G_theory -- ^ morphism map
-  , morMap :: Map.Map MorId G_morphism -- ^ theory map
+  , thMap :: Map.Map ThId G_theory -- ^ theory map
+  , morMap :: Map.Map MorId G_morphism -- ^ morphism map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
   } deriving Show
