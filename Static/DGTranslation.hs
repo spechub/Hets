@@ -35,10 +35,8 @@ import Common.Result
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Data.Maybe
 import Data.Graph.Inductive.Graph
 
-import Control.Exception
 import Control.Monad (foldM)
 
 -- | translation of a LibEnv (a map of globalcontext)
@@ -54,71 +52,30 @@ dg_translation le gc acm@(Comorphism cidMor) =
         labEdgesList = labEdgesDG gc
     in addErrorDiag ("translation failed via: " ++ language_name cidMor) ()
        $ do
-        resOfEdges <- mapR updateEdges labEdgesList
-        resOfNodes <- mapR (updateNodes acm) labNodesList
+        resOfEdges <- mapM (updateEdges acm gc) labEdgesList
+        resOfNodes <- mapM (updateNodes acm) labNodesList
         return $ computeDGraphTheories le
           $ mkGraphDG resOfNodes resOfEdges emptyDG
 
- where
- slid = sourceLogic cidMor
- tlid = targetLogic cidMor
-
- updateEdges :: LEdge DGLinkLab -> Result (LEdge DGLinkLab)
- updateEdges
-       (from,to,(links@(DGLink { dgl_morphism=
-             gm@(GMorphism cid' (ExtSign lsign _) ind1 lmorphism ind2)}))) =
-  if isHomogeneous gm
-   then
-    let sourceLid = sourceLogic cid'
-        targetLid = targetLogic cid'
-        minTargetSublogic = G_sublogics targetLid $ minSublogic lmorphism
-    in if lessSublogicComor (G_sublogics sourceLid $ minSublogic lsign) acm
-        && lessSublogicComor minTargetSublogic acm
-        then
-            do -- translate sign of GMorphism
-               (lsign', _) <- fSign sourceLid lsign
-               -- translate morphism of GMorphism
-               lmorphism'  <- fMor targetLid lmorphism
-               -- build a new GMorphism of an edge
-               case idComorphism (Logic tlid) of
-                 Comorphism cid2 ->
-                   let newSign = fromJust $ coercePlainSign tlid
-                         (sourceLogic cid2) "DGTranslation.updateEdges"
-                                  lsign'
-                       newMor = fromJust $ coerceMorphism tlid
-                          (targetLogic cid2) "DGTranslation.updateEdges"
-                                  lmorphism'
-                       slNewSign = G_sublogics (sourceLogic cid2)
-                                   $ minSublogic newSign
-                       targetLogic2 = targetLogic cid2
-                       domMor = G_sublogics targetLogic2
-                                   $ minSublogic $ dom newMor
-                   in
--- ("old:\n" ++ showDoc lsign "\nnew:\n" ++ showDoc newSign "\n\n")
-                       return $ assert (slNewSign == domMor)
-                             (from, to,
-                                  links{dgl_morphism= GMorphism cid2
-                                         (mkExtSign newSign)
-                                         ind1 newMor ind2
-                                       }
-                             )
-
-        else Result [mkDiag Error ("the sublogic of GMorphism :\"" ++
-                     show minTargetSublogic
-                     ++ " of edge " ++ showFromTo from to gc
-                     ++ " is not less than " ++ show acm) ()] Nothing
-     else Result [mkDiag Error ("Link "++ showFromTo from to gc ++
-                                " is not homogeneous.") ()] Nothing
-
- -- !! the sign from fSign and from fTh maybe different.
- -- to translate sign
- fSign sourceID sign =
-     coercePlainSign sourceID slid "DGTranslation.fSign" sign >>=
-        map_sign cidMor
-
- fMor sourceID mor =
-     coerceMorphism sourceID slid "DGTranslation.fMor" mor >>=
-                    map_morphism cidMor
+updateEdges :: AnyComorphism -> DGraph -> LEdge DGLinkLab
+  -> Result (LEdge DGLinkLab)
+updateEdges (Comorphism cidMor) gc (s, t, lbl) = case dgl_morphism lbl of
+  GMorphism cid' esig _ mor _ ->
+   if isIdComorphism (Comorphism cid')
+   then do
+     let slid = sourceLogic cidMor
+         tlid = targetLogic cidMor
+     ExtSign lsign sys <- coerceSign (sourceLogic cid') slid
+       "DGTranslation.fSign" esig
+     (lsign', _) <- map_sign cidMor lsign
+     lMor <- coerceMorphism (targetLogic cid') slid "DGTranslation.fMor" mor
+     lmorphism' <- map_morphism cidMor lMor
+     return (s, t, lbl
+       { dgl_morphism = GMorphism (mkIdComorphism tlid $ top_sublogic tlid)
+         (ExtSign lsign' $ Set.unions
+         $ map (map_symbol cidMor lsign) $ Set.toList sys)
+         startSigId lmorphism' startMorId })
+   else fail $ "Link " ++ showFromTo s t gc ++ " is not homogeneous."
 
 updateNodes :: AnyComorphism -> LNode DGNodeLab -> Result (LNode DGNodeLab)
 updateNodes (Comorphism cidMor) (node, dgNodeLab) =
@@ -128,13 +85,13 @@ updateNodes (Comorphism cidMor) (node, dgNodeLab) =
       ExtSign sign' sys' <- coerceSign lid slid "DGTranslation.fTh.sign" esig
       thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
       (sign'', namedS) <- wrapMapTheory cidMor (sign', toNamedList thSens')
-      syms <- return $ map (map_symbol cidMor sign') $ Set.toList sys'
       return (node, dgNodeLab
         { dgn_nf = Nothing
         , dgn_sigma = Nothing
         , dgn_theory = G_theory (targetLogic cidMor)
-            (ExtSign sign'' $ Set.unions syms) startSigId
-            (toThSens namedS) startThId })
+            (ExtSign sign'' $ Set.unions
+            $ map (map_symbol cidMor sign') $ Set.toList sys')
+            startSigId (toThSens namedS) startThId })
 
 showFromTo :: Node -> Node -> DGraph -> String
 showFromTo from to gc =
@@ -148,7 +105,7 @@ showFromTo from to gc =
  equal. -}
 getDGLogic :: LibEnv -> Result G_sublogics
 getDGLogic libEnv =
-    mapR (getSublogicFromDGraph libEnv) (Map.keys libEnv)
+    mapM (getSublogicFromDGraph libEnv) (Map.keys libEnv)
     >>= combineSublogics
 
 getSublogicFromDGraph :: LibEnv -> LibName -> Result G_sublogics
@@ -156,8 +113,8 @@ getSublogicFromDGraph le ln = do
     let gc = lookupDGraph ln le
         edgesList = labEdgesDG gc
         nodesList = labNodesDG gc
-    slList1 <- mapR testAndGetSublogicFromEdge edgesList
-    slList2 <- mapR (getSubLogicsFromNodes $ getFirstLogic nodesList)
+    slList1 <- mapM testAndGetSublogicFromEdge edgesList
+    slList2 <- mapM (getSubLogicsFromNodes $ getFirstLogic nodesList)
                         nodesList
     combineSublogics $ slList1 ++ slList2
 
@@ -176,7 +133,7 @@ testAndGetSublogicFromEdge l@(_, _, lbl) =
     GMorphism cid' (ExtSign lsign _) _ lmorphism _ -> do
       let tlid = targetLogic cid'
       lsign' <- coercePlainSign (sourceLogic cid') tlid
-        (showLEdge l ++ " is not homogeneous.")  lsign
+        (showLEdge l ++ " is not homogeneous.") lsign
       return $ G_sublogics tlid $ join (minSublogic lsign' )
         $ minSublogic lmorphism
 
@@ -185,11 +142,10 @@ getSubLogicsFromNodes logic (_, lnode) =
         case dgn_theory lnode of
           th@(G_theory lid _ _ _ _) ->
               if Logic lid == logic then return $ sublogicOfTh th
-                 else Result [mkDiag Error
-                              ("the node " ++ getDGNodeName lnode ++
+                 else fail $ "the node " ++ getDGNodeName lnode ++
                                "  has a different logic \"" ++ show lid ++
                                "\" as the logic of Graph \"" ++ show logic ++
-                               " is not homogeneous.") () ] Nothing
+                               " is not homogeneous."
 
 getFirstLogic :: [LNode DGNodeLab] -> AnyLogic
 getFirstLogic list = case list of
