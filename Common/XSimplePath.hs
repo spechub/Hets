@@ -56,15 +56,13 @@ anaSteps stp = case stp of
 
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
-concatMapM f ls = do
-  lsM <- mapM f ls
-  return $ concat lsM
+concatMapM f = liftM concat . mapM f
 
 mkAttrList :: Monad m => [Expr] -> m [Attr]
 mkAttrList [] = fail "unexpected (9)"
 -- TODO do anything with the tail?
 mkAttrList (e : _) = case e of
-    GenExpr True "and" exp' -> concatMapM mkAttrList $ map ( \ x -> [x]) exp'
+    GenExpr True "and" exp' -> concatMapM mkAttrList $ map (: []) exp'
     GenExpr True "=" exp' -> do
       at1 <- mkAttr exp'
       return [at1]
@@ -107,6 +105,6 @@ moveStep stp cr = case stp of
       Just cr' -> return cr'
       Nothing -> fail $
         "cannot find an element that complies with the attributes: "
-        ++ (unlines $ map show attrs)
+        ++ unlines (map show attrs)
   -- Case #3, not implemented TODO what to do with it? (cp. -> mkAttrList)
   FindByNumber _ -> fail "no implementation for FindByNumber"
