@@ -143,8 +143,8 @@ propsOfSentence (CL.Bool_sent bs _) = case bs of
     CL.Negation x -> propsOfSentence x
     CL.Implication s1 s2 -> Sign.unite (propsOfSentence s1) (propsOfSentence s2)
     CL.Biconditional s1 s2 -> Sign.unite (propsOfSentence s1) (propsOfSentence s2)
-propsOfSentence (CL.Comment_sent _ _ _) = Sign.emptySig
-propsOfSentence (CL.Irregular_sent _ _) = Sign.emptySig
+propsOfSentence (CL.Comment_sent _ s _) = propsOfSentence s
+propsOfSentence (CL.Irregular_sent s _) = propsOfSentence s
 
 propsOfTerm :: CL.TERM -> Sign.Sign
 propsOfTerm term = case term of
