@@ -16,37 +16,20 @@ modules.
 
 
 module Comorphisms.CommonLogic2CommonLogic (
-        CommonLogic2CommonLogic,
-        eliminateModules --eliminates all modules in a text
+        CommonLogic2CommonLogic  (..)
     )
     where
 
 import qualified Data.Set as Set
-import Data.Set (Set)
-import CommonLogic.AS_CommonLogic
 import CommonLogic.Tools
 import Common.Id
 
-import Comorphisms.GetPreludeLib
-
-import System.IO.Unsafe
-
-import Static.GTheory
-
-import Logic.Prover
-import Logic.Coerce
 import Logic.Logic as Logic
 import Logic.Comorphism
 
 import Common.ProofTree
 import Common.Result
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Lib.MapSet as MapSet
-import qualified Common.Lib.Rel as Rel
-import qualified Common.Id as Id
-
-import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 -- Common Logic
 import CommonLogic.AS_CommonLogic
@@ -103,7 +86,7 @@ mapMor :: Mor.Morphism -> Result Mor.Morphism
 mapMor mor = return mor
 
 mapSentence :: Sign.Sign -> TEXT -> Result TEXT
-mapSentence sign txt = return $ eliminateModules txt
+mapSentence _ txt = return $ eliminateModules txt
 
 -------------------------------------------------------------------------------
 -- MODULE ELIMINATION                                                        --
@@ -130,8 +113,11 @@ eliminateModules txt = Text [Sentence (me_text newName [] txt)] nullRange
 me_text :: NAME -> [NAME] -> TEXT -> SENTENCE
 me_text newName modules txt  =
     case txt of
-        Text phrs _ -> me_phrases newName modules phrs
+        Text phrs _ -> me_phrases newName modules $ filter nonImportation phrs
         Named_text _ t _ -> me_text newName modules t
+  where nonImportation p = case p of
+          Importation _ -> False
+          _ -> True
 
 -- Table 2: R5a - R5b, ignoring importations and comments
 me_phrases :: NAME -> [NAME] -> [PHRASE] -> SENTENCE
@@ -149,12 +135,14 @@ me_phrases newName modules phrs =
             _ -> False
 
 
--- | converts comment-texts and importations to comment-sentences
+-- | converts comment-texts to comment-sentences
 me_phrase :: NAME -> [NAME] -> PHRASE -> SENTENCE
 me_phrase newName modules p =
     case p of
         Module m -> me_module newName modules m
         Sentence s -> me_sentence newName modules s
+        Comment_text c txt r -> Comment_sent c (me_text newName modules txt) r
+        Importation _ -> undefined
 
 me_sentence :: NAME -> [NAME] -> SENTENCE -> SENTENCE
 me_sentence newName modules sen =
