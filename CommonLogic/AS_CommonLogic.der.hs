@@ -135,7 +135,7 @@ printSentence s = case s of
     Quant_sent xs _ -> parens $ pretty xs
     Bool_sent xs _ -> parens $ pretty xs
     Atom_sent xs _ -> pretty xs
-    Comment_sent x y _ -> parens $ pretty y <+> pretty x
+    Comment_sent x y _ -> parens $ text commentS <+> quotes (pretty x) <+> pretty y
     Irregular_sent xs _ -> parens $ pretty xs
 
 printComment :: COMMENT -> Doc
@@ -164,7 +164,7 @@ printTerm :: TERM -> Doc
 printTerm s = case s of
    Name_term a -> pretty a
    Funct_term t ts _ -> parens $ pretty t <+> (fsep $ map pretty ts)
-   Comment_term x y _ -> pretty x <+> pretty y
+   Comment_term t c _ -> parens $ text commentS <+> quotes (pretty c) <+> pretty t
 
 printTermSeq :: TERM_SEQ -> Doc
 printTermSeq s = case s of
@@ -200,7 +200,7 @@ printPhrase s = case s of
   Module x -> pretty x
   Sentence x -> pretty x
   Importation x -> pretty x
-  Comment_text x y _ -> pretty x <+> pretty y
+  Comment_text x y _ -> parens $ text commentS <+> quotes (pretty x) <+> pretty y
 
 printModule :: MODULE -> Doc
 printModule (Mod x z _) = pretty x <+> pretty z
@@ -221,3 +221,6 @@ orS = "or"
 
 iffS :: String
 iffS = "iff"
+
+commentS :: String
+commentS = "cl-comment"
