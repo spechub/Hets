@@ -23,148 +23,147 @@ import Common.Lib.State
 
 import qualified Data.Set as Set
 
-addObjPropExpr :: ObjectPropertyExpression -> State Sign ()
-addObjPropExpr = addEntity . Entity ObjectProperty . objPropToIRI
+fromObjPropExpr :: ObjectPropertyExpression -> State Sign ()
+fromObjPropExpr = addEntity . Entity ObjectProperty . objPropToIRI
 
-addDataPropExpr :: DataPropertyExpression -> State Sign ()
-addDataPropExpr = addEntity . Entity DataProperty
+fromDataPropExpr :: DataPropertyExpression -> State Sign ()
+fromDataPropExpr = addEntity . Entity DataProperty
 
-addIndividual :: Individual -> State Sign ()
-addIndividual ind =
+fromIndividual :: Individual -> State Sign ()
+fromIndividual ind =
     unless (iriType ind == NodeID) $ addEntity $ Entity NamedIndividual ind
 
-addAnnoProp :: AnnotationProperty -> State Sign ()
-addAnnoProp = addEntity . Entity AnnotationProperty
+fromAnnoProp :: AnnotationProperty -> State Sign ()
+fromAnnoProp = addEntity . Entity AnnotationProperty
 
-addLiteral :: Literal -> State Sign ()
-addLiteral l = case l of
+fromLiteral :: Literal -> State Sign ()
+fromLiteral l = case l of
     Literal _ ty -> case ty of
         Typed u -> addEntity $ Entity Datatype u
         _ -> return ()
     _ -> return ()
 
-addDType :: Datatype -> State Sign ()
-addDType dt = unless (isDatatypeKey dt) $ addEntity $ Entity Datatype dt
+fromDType :: Datatype -> State Sign ()
+fromDType dt = unless (isDatatypeKey dt) $ addEntity $ Entity Datatype dt
 
 -- | Adds the DataRange to the Signature and returns it as a State Sign ()
-addDataRange :: DataRange -> State Sign ()
-addDataRange dr = case dr of
-  DataJunction _ lst -> mapM_ addDataRange lst
-  DataComplementOf r -> addDataRange r
-  DataOneOf cs -> mapM_ addLiteral cs
+fromDataRange :: DataRange -> State Sign ()
+fromDataRange dr = case dr of
+  DataJunction _ lst -> mapM_ fromDataRange lst
+  DataComplementOf r -> fromDataRange r
+  DataOneOf cs -> mapM_ fromLiteral cs
   DataType r fcs -> do
-    addDType r
-    mapM_ (addLiteral . snd) fcs
+    fromDType r
+    mapM_ (fromLiteral . snd) fcs
 
 -- | Adds the Fact to the Signature and returns it as a State Sign()
-addFact :: Fact -> State Sign ()
-addFact f = case f of
+fromFact :: Fact -> State Sign ()
+fromFact f = case f of
   ObjectPropertyFact _ obe ind -> do
-      addObjPropExpr obe
-      addIndividual ind
+      fromObjPropExpr obe
+      fromIndividual ind
   DataPropertyFact _ dpe _ ->
-      addDataPropExpr dpe
+      fromDataPropExpr dpe
 
 -- | Adds the Description to the Signature. Returns it as a State
-addDescription :: ClassExpression -> State Sign ()
-addDescription desc = case desc of
+fromDescription :: ClassExpression -> State Sign ()
+fromDescription desc = case desc of
   Expression u ->
       unless (isThing u) $ addEntity $ Entity Class u
-  ObjectJunction _ ds -> mapM_ addDescription ds
-  ObjectComplementOf d -> addDescription d
-  ObjectOneOf is -> mapM_ addIndividual is
+  ObjectJunction _ ds -> mapM_ fromDescription ds
+  ObjectComplementOf d -> fromDescription d
+  ObjectOneOf is -> mapM_ fromIndividual is
   ObjectValuesFrom _ opExpr d -> do
-    addObjPropExpr opExpr
-    addDescription d
-  ObjectHasSelf opExpr -> addObjPropExpr opExpr
+    fromObjPropExpr opExpr
+    fromDescription d
+  ObjectHasSelf opExpr -> fromObjPropExpr opExpr
   ObjectHasValue opExpr i -> do
-    addObjPropExpr opExpr
-    addIndividual i
+    fromObjPropExpr opExpr
+    fromIndividual i
   ObjectCardinality (Cardinality _ _ opExpr md) -> do
-    addObjPropExpr opExpr
-    maybe (return ()) addDescription md
+    fromObjPropExpr opExpr
+    maybe (return ()) fromDescription md
   DataValuesFrom _ dExp r -> do
-    addDataPropExpr dExp
-    addDataRange r
+    fromDataPropExpr dExp
+    fromDataRange r
   DataHasValue dExp c -> do
-    addDataPropExpr dExp
-    addLiteral c
+    fromDataPropExpr dExp
+    fromLiteral c
   DataCardinality (Cardinality _ _ dExp mr) -> do
-    addDataPropExpr dExp
-    maybe (return ()) addDataRange mr
+    fromDataPropExpr dExp
+    maybe (return ()) fromDataRange mr
 
-addAnno :: Annotation -> State Sign ()
-addAnno (Annotation as apr _) = do
-    addAnnoProp apr
-    addAnnos as
+fromAnno :: Annotation -> State Sign ()
+fromAnno (Annotation as apr _) = do
+    fromAnnoProp apr
+    fromAnnos as
 
-addAnnos :: Annotations -> State Sign ()
-addAnnos = mapM_ addAnno
+fromAnnos :: Annotations -> State Sign ()
+fromAnnos = mapM_ fromAnno
 
-addAnnoList :: (a -> State Sign ()) -> AnnotatedList a -> State Sign ()
-addAnnoList f al = do
-    addAnnos $ concatMap fst al
+fromAnnoList :: (a -> State Sign ()) -> AnnotatedList a -> State Sign ()
+fromAnnoList f al = do
+    fromAnnos $ concatMap fst al
     mapM_ (f . snd) al
 
 {- | Adds possible ListFrameBits to the Signature by calling
 bottom level functions -}
-extLFB :: Maybe Relation -> ListFrameBit -> State Sign ()
-extLFB r lfb = case lfb of
+fromLFB :: Maybe Relation -> ListFrameBit -> State Sign ()
+fromLFB r lfb = case lfb of
     AnnotationBit ab ->
       unless (r `elem` [Just (DRRelation ADomain), Just (DRRelation ARange)])
-        $ addAnnoList addAnnoProp ab
-    ExpressionBit al -> addAnnoList addDescription al
-    ObjectBit anob -> addAnnoList addObjPropExpr anob
-    DataBit dlst -> addAnnoList addDataPropExpr dlst
-    IndividualSameOrDifferent anind -> addAnnoList addIndividual anind
-    ObjectCharacteristics al -> addAnnos $ concatMap fst al
-    DataPropRange dr -> addAnnoList addDataRange dr
-    IndividualFacts fct -> addAnnoList addFact fct
+        $ fromAnnoList fromAnnoProp ab
+    ExpressionBit al -> fromAnnoList fromDescription al
+    ObjectBit anob -> fromAnnoList fromObjPropExpr anob
+    DataBit dlst -> fromAnnoList fromDataPropExpr dlst
+    IndividualSameOrDifferent anind -> fromAnnoList fromIndividual anind
+    ObjectCharacteristics al -> fromAnnos $ concatMap fst al
+    DataPropRange dr -> fromAnnoList fromDataRange dr
+    IndividualFacts fct -> fromAnnoList fromFact fct
 
-{- | Adds AnnotationFrameBits to the Signature
-by calling the corresponding bottom level functions -}
-extAFB :: AnnFrameBit -> State Sign ()
-extAFB afb = case afb of
+
+fromAFB :: AnnFrameBit -> State Sign ()
+fromAFB afb = case afb of
     AnnotationFrameBit _ -> return ()
     DataFunctional -> return ()
-    DatatypeBit dr -> addDataRange dr
-    ClassDisjointUnion cls -> mapM_ addDescription cls
+    DatatypeBit dr -> fromDataRange dr
+    ClassDisjointUnion cls -> mapM_ fromDescription cls
     ClassHasKey obe dpe -> do
-      mapM_ addObjPropExpr obe
-      mapM_ addDataPropExpr dpe
-    ObjectSubPropertyChain ope -> mapM_ addObjPropExpr ope
+      mapM_ fromObjPropExpr obe
+      mapM_ fromDataPropExpr dpe
+    ObjectSubPropertyChain ope -> mapM_ fromObjPropExpr ope
 
 {- | Calls the completion of Signature based on
 case separation of ListFrameBit and AnnotationFrameBit -}
-extFB :: Extended -> FrameBit -> State Sign ()
-extFB ext fb = case fb of
+fromFB :: Extended -> FrameBit -> State Sign ()
+fromFB ext fb = case fb of
   ListFrameBit rel lfb -> do
-    addExt ext
-    extLFB rel lfb
+    fromExt ext
+    fromLFB rel lfb
   AnnFrameBit an anf -> do
-    addAnnos an
-    extAFB anf
+    fromAnnos an
+    fromAFB anf
     case anf of
         AnnotationFrameBit Assertion -> case ext of
             Misc _ -> return ()
-            _ -> addExt ext
-        _ -> addExt ext
+            _ -> fromExt ext
+        _ -> fromExt ext
 
-extFrame :: Frame -> State Sign ()
-extFrame (Frame ex fblist) = mapM_ (extFB ex) fblist
+fromFrame :: Frame -> State Sign ()
+fromFrame (Frame ex fblist) = mapM_ (fromFB ex) fblist
 
-addExt :: Extended -> State Sign ()
-addExt ext = case ext of
+fromExt :: Extended -> State Sign ()
+fromExt ext = case ext of
     SimpleEntity e -> addEntity e
-    ObjectEntity op -> addObjPropExpr op
-    ClassEntity ce -> addDescription ce
-    Misc ans -> addAnnos ans
+    ObjectEntity op -> fromObjPropExpr op
+    ClassEntity ce -> fromDescription ce
+    Misc ans -> fromAnnos ans
 
 {- | Top level function: takes the OntologyDocument and completes
 the signature by calling completeSignForFrame -}
 extractSign :: OntologyDocument -> State Sign ()
 extractSign od =
-  mapM_ extFrame $ ontFrames $ ontology od
+  mapM_ fromFrame $ ontFrames $ ontology od
 
 toDecl :: Sign -> [Frame]
 toDecl s =
@@ -180,5 +179,5 @@ toDecl s =
 
 signToFrames :: [Frame] -> [Frame]
 signToFrames f =
-    let s = mapM_ extFrame f
+    let s = mapM_ fromFrame f
     in toDecl $ execState s emptySign

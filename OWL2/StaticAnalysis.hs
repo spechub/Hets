@@ -271,7 +271,7 @@ checkAssertion s iri ans = do
         ab = AnnFrameBit ans $ AnnotationFrameBit Assertion
     if null entList then
         let misc = Misc [Annotation [] iri $ AnnValue iri]
-        in return [PlainAxiom misc ab] -- for anonymous individuals
+        in return [PlainAxiom misc ab] -- only for anonymous individuals
      else return $ map (\ x -> PlainAxiom (SimpleEntity x) ab) entList
 
 -- | corrects the axiom according to the signature
@@ -284,11 +284,14 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
     ab@(AnnFrameBit ans afb) -> case afb of
         AnnotationFrameBit ty -> case ty of
             Assertion -> case ext of
+                    -- this can only come from XML
                 Misc [Annotation _ iri _] -> checkAssertion s iri ans
+                    -- these can only come from Manchester Syntax
                 SimpleEntity (Entity _ iri) -> checkAssertion s iri ans
                 ClassEntity (Expression iri) -> checkAssertion s iri ans
                 ObjectEntity (ObjectProp iri) -> checkAssertion s iri ans
-                _ -> do next <- checkExtended s ext -- very rare cases
+                _ -> do next <- checkExtended s ext
+                        -- could rarely happen, and only in our extended syntax
                         return [PlainAxiom next ab]
             Declaration -> return [ax]
         _ -> do

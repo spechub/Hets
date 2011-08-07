@@ -511,6 +511,7 @@ getAnnoAxiom b e =
     "AnnotationAssertion" ->
        let [s, v] = filterChL annotationValueList e
            sub = getSubject b s
+       -- the misc will be converted to entities in static analysis
        in PlainAxiom (Misc [Annotation [] sub $ AnnValue sub])
            $ AnnFrameBit [Annotation as ap (getValue b v)]
                     $ AnnotationFrameBit Assertion
