@@ -23,6 +23,8 @@ import OWL2.Symbols
 import OWL2.Keywords
 import OWL2.ColonKeywords
 
+import Data.List
+
 instance Pretty QName where
     pretty = printIRI
 
@@ -69,7 +71,9 @@ printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
 printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
 
 fromCF :: ConstrainingFacet -> String
-fromCF = localPart
+fromCF f
+    | iriType f == Full = showQU f \\ "http://www.w3.org/2001/XMLSchema#"
+    | otherwise = localPart f
 
 printRelation :: Relation -> Doc
 printRelation = keyword . showRelation

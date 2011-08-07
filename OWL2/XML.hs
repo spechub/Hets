@@ -160,14 +160,17 @@ isPlainLiteral :: String -> Bool
 isPlainLiteral s =
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
 
-getNrLit :: LexicalForm -> Literal
-getNrLit lf = let nr = parse literal "" lf in case nr of
-    Right n -> n
-    _ -> err $ "cannot parse literal " ++ lf
+getNrLit :: Datatype -> LexicalForm -> Literal
+getNrLit dt lx =
+    let lf = if isSuffixOf "float" (localPart dt) then lx ++ "f"
+              else lx
+        nr = parse literal "" lf in case nr of
+            Right n -> n
+            _ -> err $ "cannot parse literal " ++ lf
 
 getTypedLit :: LexicalForm -> Datatype -> Literal
 getTypedLit lf dt = if isOWLNumber dt
-    then getNrLit lf else Literal lf (Typed dt)
+    then getNrLit dt lf else Literal lf (Typed dt)
 
 getLiteral :: XMLBase -> Element -> Literal
 getLiteral b e = case getName e of

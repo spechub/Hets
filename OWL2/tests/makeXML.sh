@@ -57,7 +57,8 @@ done
 }
 cd ../../..
 
-
+a()
+{
 echo "calling hets for all xml files...\n"
 
 for i in $dir/*.xml.xml
@@ -65,10 +66,18 @@ do
     ./hets -i ow2 $i
     echo "\n"
 done
+}
+cd OWL2/tests/XML
 
 echo "\ncreating omn files from .rdf.xml with java...\n"
 
-cd OWL2/tests/XML
+for i in *.rdf.xml *.owl.xml *.ofn.xml
+do
+   java -jar ../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.xml.omn
+   echo $i "ok\n"
+done
+
+
 
 echo "creating omn files from .rdf.xml.xml with java...\n"
 
@@ -78,14 +87,14 @@ do
    echo $i "ok\n"
 done
 
-a()
-{
+#a()
+#{
 for i in *.rdf.xml.xml.omn *.owl.xml.xml.omn *.ofn.xml.xml.omn 
 do 
     echo $i "\n" 
     diff $i $i.omn 
 done 
-}
+#}
 
 cd ../../..
 

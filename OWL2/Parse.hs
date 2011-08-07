@@ -32,8 +32,6 @@ import Text.ParserCombinators.Parsec
 import Control.Monad (liftM2)
 import Data.Char
 
-type URI = IRI
-
 characters :: [Character]
 characters = [minBound .. maxBound]
 
@@ -196,7 +194,7 @@ symbItems = do
     return $ SymbItems ext iris
 
 -- | parse a comma separated list of uris
-symbs :: GenParser Char st [URI]
+symbs :: GenParser Char st [IRI]
 symbs = uriP >>= \ u -> do
     commaP `followedWith` uriP
     us <- symbs
@@ -211,14 +209,14 @@ symbMapItems = do
   return $ SymbMapItems ext iris
 
 -- | parse a comma separated list of uri pairs
-symbPairs :: GenParser Char st [(URI, Maybe URI)]
+symbPairs :: GenParser Char st [(IRI, Maybe IRI)]
 symbPairs = uriPair >>= \ u -> do
     commaP `followedWith` uriP
     us <- symbPairs
     return $ u : us
   <|> return [u]
 
-uriPair :: GenParser Char st (URI, Maybe URI)
+uriPair :: GenParser Char st (IRI, Maybe IRI)
 uriPair = uriP >>= \ u -> do
     pToken $ toKey mapsTo
     u2 <- uriP
@@ -398,7 +396,7 @@ mkDataJunction ty ds = case nubOrd ds of
   [x] -> x
   ns -> DataJunction ty ns
 
--- the input must be "some" or "only" in order for the parsing to succeed
+-- parses "some" or "only"
 someOrOnly :: CharParser st QuantifierType
 someOrOnly = choice
   $ map (\ f -> keyword (showQuantifierType f) >> return f)

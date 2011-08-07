@@ -44,12 +44,17 @@ annotations = do
 descriptionAnnotatedList :: CharParser st [(Annotations, ClassExpression)]
 descriptionAnnotatedList = sepByComma $ optAnnos description
 
+makeFrame :: Extended -> [FrameBit] -> Frame
+makeFrame ext fbl = if null fbl then Frame ext
+    [AnnFrameBit [] $ AnnotationFrameBit Declaration]
+    else Frame ext fbl
+
 annotationPropertyFrame :: CharParser st Frame
 annotationPropertyFrame = do
   pkeyword annotationPropertyC
   ap <- uriP
   x <- many apBit
-  return $ Frame (SimpleEntity $ Entity AnnotationProperty ap) x
+  return $ makeFrame (SimpleEntity $ Entity AnnotationProperty ap) x
 
 apBit :: CharParser st FrameBit
 apBit = do
@@ -75,18 +80,18 @@ datatypeBit = do
     as2 <- many annotations
     return $ Frame (SimpleEntity $ Entity Datatype duri)
       $ map (`AnnFrameBit` AnnotationFrameBit Assertion) as1 ++ case mp of
-          Nothing -> []
+          Nothing -> [AnnFrameBit [] $ AnnotationFrameBit Declaration]
           Just (ans, dr) -> [AnnFrameBit ans $ DatatypeBit dr]
         ++ map (`AnnFrameBit` AnnotationFrameBit Assertion) as2
 
 classFrame :: CharParser st Frame
 classFrame = do
-        pkeyword classC
-        iri <- description
-        plain <- many classFrameBit
-        -- ignore Individuals: ... !
-        optional $ pkeyword individualsC >> sepByComma individual
-        return $ Frame (ClassEntity iri) plain
+    pkeyword classC
+    iri <- description
+    plain <- many classFrameBit
+    -- ignore Individuals: ... !
+    optional $ pkeyword individualsC >> sepByComma individual
+    return $ makeFrame (ClassEntity iri) plain
 
 classFrameBit :: CharParser st FrameBit
 classFrameBit = do
@@ -154,7 +159,7 @@ objectPropertyFrame = do
   pkeyword objectPropertyC
   ouri <- objectPropertyExpr
   as <- many objectFrameBit
-  return $ Frame (ObjectEntity ouri) as
+  return $ makeFrame (ObjectEntity ouri) as
 
 dataPropExprAList :: CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
@@ -190,7 +195,7 @@ dataPropertyFrame = do
   pkeyword dataPropertyC
   duri <- uriP
   as <- many dataFrameBit
-  return $ Frame (SimpleEntity $ Entity DataProperty duri) as
+  return $ makeFrame (SimpleEntity $ Entity DataProperty duri) as
 
 fact :: CharParser st Fact
 fact = do
@@ -226,7 +231,7 @@ individualFrame = do
   pkeyword individualC
   iuri <- individual
   as <- many iFrameBit
-  return $ Frame (SimpleEntity $ Entity NamedIndividual iuri) as
+  return $ makeFrame (SimpleEntity $ Entity NamedIndividual iuri) as
 
 misc :: CharParser st Frame
 misc = do

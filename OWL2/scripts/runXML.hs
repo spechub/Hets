@@ -24,7 +24,7 @@ processFile file = do
   case parseXML s of 
     elems -> putStrLn $ show (map xmlBasicSpec
                         $ concatMap (filterElementsName $ isSmth "Ontology")
-                        $ onlyElems elems) 
+                        $ onlyElems elems)
 main :: IO ()
 main = do
   args <- getArgs

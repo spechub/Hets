@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-    Datatypes specific to the Manchester Syntax of OWL 2
+Datatypes specific to the Manchester Syntax of OWL 2
 
 References  :  <http://www.w3.org/TR/owl2-manchester-syntax/>
 -}
