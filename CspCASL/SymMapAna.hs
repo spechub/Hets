@@ -35,6 +35,8 @@ import qualified Data.Set as Set
 import Data.List (partition)
 import Data.Maybe
 
+import qualified Debug.Trace as Trace
+
 type CspRawMap = Map.Map CspRawSymbol CspRawSymbol
 
 cspInducedFromToMorphism :: CspRawMap -> ExtSign CspCASLSign CspSymbol
@@ -248,9 +250,27 @@ mappedProcSym sig sm cm pn pf rsy =
                (procSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
+-- BUG I am confused which parameter is which: the target seems to be the first
+-- parameter and the source the seconds, in terms of signature morphism
+-- analysis.
 compatibleProcTypes :: Maybe CspCASLSign -> ProcProfile -> ProcProfile -> Bool
 compatibleProcTypes msig (ProcProfile l1 al1) (ProcProfile l2 al2) =
-  l1 == l2 && relatedCommAlpha (fromMaybe emptyCspCASLSign msig) al1 al2
+  l1 == l2 && liamsRelatedCommAlpha (fromMaybe emptyCspCASLSign msig) al1 al2
+
+-- BUG I am confused which parameter is which: they seem backwards
+liamsRelatedCommAlpha :: CspCASLSign -> CommAlpha -> CommAlpha -> Bool
+liamsRelatedCommAlpha sig al2 al1 =
+  let msg = "al1 = [" ++ show al1 ++ "], al2= [" ++ show al2 ++ "]"
+  in Trace.trace (msg) $ all (\ a2 -> any (\a1 -> liamsRelatedCommTypes sig a1 a2) $ Set.toList al1)
+  (Set.toList al2)
+
+liamsRelatedCommTypes :: CspCASLSign -> CommType -> CommType -> Bool
+liamsRelatedCommTypes sig ct1 ct2 = case (ct1, ct2) of
+  (CommTypeSort s1, CommTypeSort s2)
+    -> s1 == s2 || s1 `Set.member` subsortsOf s1 sig
+  (CommTypeChan (TypedChanName c1 s1), CommTypeChan (TypedChanName c2 s2))
+    -> c1 == c2 && s1 == s2
+  _ -> False
 
 cspMatches :: CspSymbol -> CspRawSymbol -> Bool
 cspMatches (CspSymbol i t) rsy = case rsy of

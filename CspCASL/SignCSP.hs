@@ -209,7 +209,7 @@ printProcList :: [(PROCESS_NAME, ProcProfile)] -> Doc
 printProcList = sepBySemis . map
   (\ (procName, procProfile) -> pretty procName <+> pretty procProfile)
 
--- * overload relations
+-- * overload relations: We do not have one of these yet in theory
 
 relatedSorts :: CspCASLSign -> SORT -> SORT -> Bool
 relatedSorts sig s1 s2 = haveCommonSupersorts True sig s1 s2
