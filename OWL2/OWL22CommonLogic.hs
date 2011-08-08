@@ -83,6 +83,9 @@ instance Comorphism
       isInclusionComorphism OWL22CommonLogic = True
       has_model_expansion OWL22CommonLogic = True
 
+failMsg :: Pretty a => a -> Result b
+failMsg a = fail $ "cannot translate " ++ showDoc a "\n"
+
 -- | Mapping of OWL morphisms to CommonLogic morphisms
 mapMorphism :: OWLMorphism -> Result CLM.Morphism
 mapMorphism oMor =
@@ -210,8 +213,28 @@ mapClassAssertion ind (ce, sent) = case ce of
     Expression _ -> senToText sent
     _ -> senToText $ (mk1QU . mkBI (mkAtoms $ mkEq mk1NTERM ind)) sent
 
-failMsg :: Pretty a => a -> Result b
-failMsg a = fail $ "cannot translate " ++ showDoc a "\n"
+mapFact :: Sign -> Extended -> Fact -> Result TEXT
+mapFact cSig ex f = case f of
+    ObjectPropertyFact posneg obe ind -> case ex of
+        SimpleEntity (Entity NamedIndividual siri) -> do
+            oPropH <- mapObjProp cSig obe (OIndi siri) (OIndi ind)
+            let oProp = case posneg of
+                            Positive -> oPropH
+                            Negative -> mkBools (mkNeg oPropH)
+            return $ senToText oProp
+        _ -> failMsg f
+    DataPropertyFact posneg dpe lit -> case ex of
+        SimpleEntity (Entity NamedIndividual iri) -> do
+             inS <- mapIndivIRI cSig iri
+             inT <- mapConstant cSig lit
+             nm <- uriToTokM dpe
+             let dPropH = mkAtoms (Atom (Name_term nm)
+                    [Term_seq inS, Term_seq inT])
+                 dProp = case posneg of
+                             Positive -> dPropH
+                             Negative -> mkBools (mkNeg dPropH)
+             return $ senToText dProp
+        _ -> failMsg f
 
 -- | Mapping of ListFrameBit
 mapListFrameBit :: Sign -> Extended -> Maybe Relation -> ListFrameBit
@@ -354,41 +377,9 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                 return (msen2Txt $ map (mkSent [mkNAME 1] [mkNAME 2] oEx) odes
                                , uniteL dSig)
             _ -> failMsg dpr
-    IndividualFacts indf ->
-        let map2nd = map snd indf
-        in
-        case map2nd of
-          [ObjectPropertyFact posneg obe ind] ->
-            case ex of
-              SimpleEntity (Entity NamedIndividual siri) ->
-                    do
-                      oPropH <- mapObjProp cSig obe (OIndi siri) (OIndi ind)
-                      let oProp = case posneg of
-                                      Positive -> oPropH
-                                      Negative -> mkBools (mkNeg oPropH)
-                      return (msen2Txt [oProp], cSig)
-
-              _ -> fail "ObjectPropertyFactsFacts Entity fail"
-          [DataPropertyFact posneg dpe lit] ->
-            case ex of
-              SimpleEntity (Entity ty iri) ->
-                case ty of
-                  NamedIndividual ->
-                    do
-                      inS <- mapIndivIRI cSig iri
-                      inT <- mapConstant cSig lit
-                      nm <- uriToTokM dpe
-                      let dPropH = mkAtoms (Atom
-                                           (Name_term nm)
-                                           [Term_seq inS, Term_seq inT])
-                          dProp = case posneg of
-                                        Positive -> dPropH
-                                        Negative -> mkBools (mkNeg dPropH)
-                      return (msen2Txt [dProp], cSig)
-                  _ -> fail "DataPropertyFact EntityType fail"
-              _ -> fail "DataPropertyFact Entity fail"
-          _ -> fail "DataPropertyFacts fail"
-
+    IndividualFacts indf -> do
+        fl <- mapM (mapFact cSig ex . snd) indf
+        return (fl, cSig)
     ObjectCharacteristics ace ->
       let map2nd = map snd ace
       in
