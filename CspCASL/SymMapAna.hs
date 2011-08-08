@@ -70,11 +70,12 @@ cspInducedFromMorphism rmap sigma = do
       om = op_map m
       pm = pred_map m
       csig = extendedInfo sigma
+      newSRel = sortRel $ mtarget m
   -- compute the channel name map (as a Map)
   cm <- Map.foldWithKey (chanFun sigma rmap sm)
               (return Map.empty) (MapSet.toMap $ chans csig)
   -- compute the process name map (as a Map)
-  proc_Map <- Map.foldWithKey (procFun sigma rmap sm cm)
+  proc_Map <- Map.foldWithKey (procFun sigma rmap sm newSRel cm)
               (return Map.empty) (MapSet.toMap $ procSet csig)
   let em = emptyCspAddMorphism
         { channelMap = cm
@@ -160,38 +161,38 @@ mappedChanSym sm cn s rsy =
                (chanSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
-procFun :: CspCASLSign -> CspRawMap -> Sort_map -> ChanMap -> Id
+procFun :: CspCASLSign -> CspRawMap -> Sort_map -> Rel.Rel SORT -> ChanMap -> Id
   -> Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
-procFun sig rmap sm cm pn ps m =
+procFun sig rmap sm rel cm pn ps m =
     let pls = Rel.partSet (relatedProcs sig) ps
-        m1 = foldr (directProcMap sig rmap sm cm pn) m pls
+        m1 = foldr (directProcMap sig rmap sm rel cm pn) m pls
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (CspKindedSymb ProcessKind pn) rmap,
                 Map.lookup (CspKindedSymb (CaslKind Implicit) pn) rmap) of
        (Just rsy1, Just rsy2) -> let
-          m2 = Set.fold (insertProcSym sig sm cm pn rsy1) m1 ps
-          in Set.fold (insertProcSym sig sm cm pn rsy2) m2 ps
+          m2 = Set.fold (insertProcSym sig sm rel cm pn rsy1) m1 ps
+          in Set.fold (insertProcSym sig sm rel cm pn rsy2) m2 ps
        (Just rsy, Nothing) ->
-          Set.fold (insertProcSym sig sm cm pn rsy) m1 ps
+          Set.fold (insertProcSym sig sm rel cm pn rsy) m1 ps
        (Nothing, Just rsy) ->
-          Set.fold (insertProcSym sig sm cm pn rsy) m1 ps
+          Set.fold (insertProcSym sig sm rel cm pn rsy) m1 ps
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
-directProcMap :: CspCASLSign -> CspRawMap -> Sort_map -> ChanMap -> Id ->
-  Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
-directProcMap sig rmap sm cm pn ps m =
+directProcMap :: CspCASLSign -> CspRawMap -> Sort_map -> Rel.Rel SORT -> ChanMap
+  -> Id -> Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
+directProcMap sig rmap sm rel cm pn ps m =
   let pl = Set.toList ps
       rl = map (lookupProcSymbol sig rmap pn) pl
       (ms, os) = partition (isJust . fst) $ zip rl pl
   in case ms of
        l@((Just rsy, _) : rs) ->
          foldr (\ (_, p) ->
-           insertProcSym sig sm cm pn
+           insertProcSym sig sm rel cm pn
               (ACspSymbol $ toProcSymbol
                 (rawId rsy, mapProcProfile sm cm p)) p)
          (foldr (\ (rsy2, p) ->
-           insertProcSym sig sm cm pn (fromJust rsy2) p) m l)
+           insertProcSym sig sm rel cm pn (fromJust rsy2) p) m l)
          $ rs ++ os
        _ -> m
 
@@ -207,12 +208,13 @@ lookupProcSymbol sig rmap pn p = case
        -- in case of ambiguities try to find an exact match
   l -> lookup (ACspSymbol $ toProcSymbol (pn, p)) l
 
-insertProcSym :: CspCASLSign -> Sort_map -> ChanMap -> Id -> CspRawSymbol
-  -> ProcProfile -> Result ProcessMap -> Result ProcessMap
-insertProcSym sig sm cm pn rsy pf@(ProcProfile _ al) m = do
+insertProcSym :: CspCASLSign -> Sort_map -> Rel.Rel SORT -> ChanMap -> Id
+  -> CspRawSymbol -> ProcProfile -> Result ProcessMap -> Result ProcessMap
+insertProcSym sig sm rel cm pn rsy pf@(ProcProfile _ al) m = do
       m1 <- m
-      (p1, al1) <- mappedProcSym sig sm cm pn pf rsy
-      let otsy = toProcSymbol (pn, pf)
+      (p1, al0) <- mappedProcSym sig sm cm pn pf rsy
+      let al1 = closeCspCommAlpha rel al0
+          otsy = toProcSymbol (pn, pf)
           pos = getRange rsy
           m2 = Map.insert (pn, pf) (p1, al1) m1
       case Map.lookup (pn, pf) m1 of
