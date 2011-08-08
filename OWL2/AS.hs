@@ -219,20 +219,18 @@ isDatatypeKey :: IRI -> Bool
 isDatatypeKey = checkPredef datatypeKeys "xsd"
     "http://www.w3.org/2001/XMLSchema#"
 
-isOWLNumber :: IRI -> Bool
-isOWLNumber = checkPredef owlNumbers "xsd" "http://www.w3.org/2001/XMLSchema#"
+isOWLSmth :: [String] -> IRI -> Bool
+isOWLSmth sl = checkPredef sl "xsd" "http://www.w3.org/2001/XMLSchema#"
 
 data DatatypeType = OWL2Number | OWL2String | OWL2Bool | Other
     deriving (Show, Eq, Ord)
 
 datatypeType :: IRI -> DatatypeType
-datatypeType iri =
-    let lp = localPart iri
-    in case isDatatypeKey iri of
+datatypeType iri = case isDatatypeKey iri of
         True
-            | lp == booleanS -> OWL2Bool
-            | isOWLNumber iri -> OWL2Number
-            | lp == stringS -> OWL2String
+            | isOWLSmth [booleanS] iri -> OWL2Bool
+            | isOWLSmth owlNumbers iri -> OWL2Number
+            | isOWLSmth [stringS] iri -> OWL2String
             | otherwise -> Other
         False -> Other
 

@@ -31,6 +31,7 @@ import CASL_DL.PredefinedCASLAxioms
 import OWL2.Logic_OWL2
 import OWL2.MS
 import OWL2.AS
+import OWL2.Parse
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism
@@ -46,6 +47,7 @@ import CASL.Sublogic
 import Common.ProofTree
 
 import Data.Maybe
+import Text.ParserCombinators.Parsec
 
 data OWL22CASL = OWL22CASL deriving Show
 
@@ -233,7 +235,7 @@ mapFact cSig ex f = case f of
                   NamedIndividual ->
                     do
                       inS <- mapIndivURI cSig iri
-                      inT <- mapLiteral cSig lit
+                      inT <- mapLiteral lit
                       oPropH <- mapDataProp cSig dpe 1 2
                       let oProp = case posneg of
                                     Positive -> oPropH
@@ -731,22 +733,28 @@ mapFloatLit f =
         ex = floatExp f
      in mkFloat (mapDecLit fb) (mapIntLit ex)
 
-mapLiteral :: CASLSign -> Literal -> Result (TERM ())
-mapLiteral _ lit = return $ case lit of
+mapNrLit :: Literal -> TERM ()
+mapNrLit l = case l of
+    NumberLit f
+        | isFloatInt f -> mapIntLit $ truncDec $ floatBase f
+        | isFloatDec f -> mapDecLit $ floatBase f
+        | otherwise -> mapFloatLit f
+    _ -> error "not number literal"
+
+mapLiteral :: Literal -> Result (TERM ())
+mapLiteral lit = return $ case lit of
     Literal l ty -> Sorted_term (case ty of
             Untyped _ -> foldr consChar emptyStringTerm l
             Typed dt -> case datatypeType dt of
-                OWL2Number -> foldr1 joinDigits
-                    $ map (mkDigit . digitToInt) $ filter isDigit l
+                OWL2Number -> let p = parse literal "" l in case p of
+                    Right nr -> mapNrLit nr
+                    _ -> error "cannot parse number literal"
                 OWL2Bool -> case l of
                     "True" -> trueT
                     _ -> falseT
                 _ -> foldr consChar emptyStringTerm l)
                         dataS nullRange
-    NumberLit f
-       | isFloatInt f -> mapIntLit $ truncDec $ floatBase f
-       | isFloatDec f -> mapDecLit $ floatBase f
-       | otherwise -> mapFloatLit f
+    _ -> mapNrLit lit
 
 -- | Mapping of data properties
 mapDataProp :: CASLSign
