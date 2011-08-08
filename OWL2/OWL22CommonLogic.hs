@@ -381,81 +381,56 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         fl <- mapM (mapFact cSig ex . snd) indf
         return (fl, cSig)
     ObjectCharacteristics ace ->
-      let map2nd = map snd ace
-      in
-      case ex of
-        ObjectEntity ope ->
-          case map2nd of
-            [Functional] ->
-              do
-                so1 <- mapObjProp cSig ope (OVar 1) (OVar 2)
-                so2 <- mapObjProp cSig ope (OVar 1) (OVar 3)
-                return (msen2Txt [mkQuants (mkUnivQ
-                                   [mkNAME 1, mkNAME 2, mkNAME 3]
-                                   (mkBools (mkImpl (mkBools (cnjct [so1, so2]))
-                                   (mkAtoms (mkEq
-                                   (mkNTERM 2) (mkNTERM 3))))))], cSig)
-            [InverseFunctional] ->
-               do
-                 so1 <- mapObjProp cSig ope (OVar 1) (OVar 3)
-                 so2 <- mapObjProp cSig ope (OVar 2) (OVar 3)
-                 return (msen2Txt [mkQuants (mkUnivQ
-                                    [mkNAME 1, mkNAME 2, mkNAME 2]
-                                    (mkBools (mkImpl (mkBools
-                                    (cnjct [so1, so2]))
-                                    (mkAtoms (mkEq
-                                    (mkNTERM 1) (mkNTERM 2))))))], cSig)
-            [Reflexive] ->
-              do
-                so <- mapObjProp cSig ope (OVar 1) (OVar 1)
-                return (msen2Txt [mkQuants (mkUnivQ
-                                   [mkNAME 1] so)], cSig)
-            [Irreflexive] ->
-              do
-                so <- mapObjProp cSig ope (OVar 1) (OVar 1)
-                return (msen2Txt [mkQuants (mkUnivQ
-                                  [mkNAME 1]
-                                  (mkBools (mkNeg so)))], cSig)
-            [Symmetric] ->
-              do
-                 so1 <- mapObjProp cSig ope (OVar 1) (OVar 2)
-                 so2 <- mapObjProp cSig ope (OVar 2) (OVar 1)
-                 return (msen2Txt [mkQuants (mkUnivQ
-                          [mkNAME 1, mkNAME 2]
-                          (mkBools (mkImpl so1 so2)))], cSig)
-            [Asymmetric] ->
-              do
-                so1 <- mapObjProp cSig ope (OVar 1) (OVar 2)
-                so2 <- mapObjProp cSig ope (OVar 2) (OVar 1)
-                return (msen2Txt [mkQuants (mkUnivQ
-                                   [mkNAME 1, mkNAME 2]
-                                   (mkBools (mkImpl so1
-                                     (mkBools (mkNeg so2)))))], cSig)
-            [Antisymmetric] ->
-              do
-                so1 <- mapObjProp cSig ope (OVar 1) (OVar 2)
-                so2 <- mapObjProp cSig ope (OVar 2) (OVar 1)
-                return (msen2Txt [mkQuants (mkUnivQ
-                                   [mkNAME 1, mkNAME 2]
-                                  (mkBools (mkImpl
-                                   (mkBools (cnjct [so1, so2]))
-                                   (mkAtoms (mkEq (mkNTERM 1) (mkNTERM 2))
-                                  ))))], cSig)
-            [Transitive] ->
-              do
-                so1 <- mapObjProp cSig ope (OVar 1) (OVar 2)
-                so2 <- mapObjProp cSig ope (OVar 2) (OVar 3)
-                so3 <- mapObjProp cSig ope (OVar 1) (OVar 3)
-                return (msen2Txt [mkQuants (mkUnivQ
-                             [mkNAME 1, mkNAME 2, mkNAME 3]
-                             (mkBools (mkImpl
-                                (mkBools (cnjct [so1, so2]))
-                                so3
-                             )))], cSig)
-            _ -> fail "ObjectCharacteristics Character fail"
-        _ -> fail "ObjectCharacteristics Entity fail"
+      let map2nd = map snd ace in case ex of
+        ObjectEntity ope -> do
+            cl <- mapM (mapCharact cSig ope . snd) ace
+            return (cl, cSig)  
+     
+mapOPF :: Sign -> ObjectPropertyExpression -> Int -> Int -> Result SENTENCE
+mapOPF cSig ope x y = mapObjProp cSig ope (OVar x) (OVar y)
 
+mkQUBI :: [NAME_OR_SEQMARK] -> [SENTENCE] -> TERM -> TERM -> TEXT
+mkQUBI l1 l2 a b = senToText $ mkQU l1 $ mkBI (mkBools $ cnjct l2)
+    $ mkAtoms $ mkEq a b
 
+mapCharact :: Sign -> ObjectPropertyExpression -> Character -> Result TEXT
+mapCharact cSig ope c = case c of
+    Functional -> do
+        so1 <- mapOPF cSig ope 1 2
+        so2 <- mapOPF cSig ope 1 3
+        return $ mkQUBI (map mkNAME [1, 2, 3]) [so1, so2]
+                (mkNTERM 2) (mkNTERM 3)
+    InverseFunctional -> do
+        so1 <- mapOPF cSig ope 1 3
+        so2 <- mapOPF cSig ope 2 3
+        return $ mkQUBI (map mkNAME [1, 2, 3]) [so1, so2]
+                (mkNTERM 1) (mkNTERM 2)
+    Reflexive -> do
+        so <- mapOPF cSig ope 1 1
+        return $ senToText $ mk1QU so
+    Irreflexive -> do
+        so <- mapOPF cSig ope 1 1
+        return $ senToText $ mk1QU so
+    Symmetric -> do
+        so1 <- mapOPF cSig ope 1 2
+        so2 <- mapOPF cSig ope 2 1
+        return $ senToText $ mkQU [mkNAME 1, mkNAME 2] $ mkBI so1 so2
+    Asymmetric -> do
+        so1 <- mapOPF cSig ope 1 2
+        so2 <- mapOPF cSig ope 2 1
+        return $ senToText $ mkQU [mkNAME 1, mkNAME 2] $ mkBI so1
+                    $ mkBools $ mkNeg so2
+    Antisymmetric ->  do
+        so1 <- mapOPF cSig ope 1 2
+        so2 <- mapOPF cSig ope 2 1
+        return $ mkQUBI [mkNAME 1, mkNAME 2] [so1, so2] (mkNTERM 1) (mkNTERM 2)
+    Transitive -> do
+        so1 <- mapOPF cSig ope 1 2
+        so2 <- mapOPF cSig ope 2 3
+        so3 <- mapOPF cSig ope 1 3
+        return $ senToText $ mkQU [mkNAME 1, mkNAME 2, mkNAME 3] $ mkBI
+                (mkBools $ cnjct [so1, so2]) so3
+  
 -- | Mapping of AnnFrameBit
 mapAnnFrameBit :: Sign
                -> Extended
