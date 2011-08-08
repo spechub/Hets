@@ -134,6 +134,7 @@ cspTypedSymbKindToRaw b sig k idt t = let
                appendDiags [mkDiag Hint "matched process" idt]
                return $ ACspSymbol $ toProcSymbol (idt, pr)
          _ -> caslAnno
+       ProcType p | ck == Implicit -> return $ ACspSymbol $ toProcSymbol (idt, p)
        _ -> err
 
 cspSymbToRaw :: Bool -> CspCASLSign -> CspSymbKind -> CspSymb
@@ -152,6 +153,19 @@ cspStatSymbItems sig sl =
         mapM (cspSymbToRaw True sig kind) l
   in fmap concat (mapM st sl)
 
+maxKind :: CspSymbKind -> CspRawSymbol -> CspSymbKind
+maxKind k rs = case k of
+  CaslKind Implicit -> case rs of
+    ACspSymbol (CspSymbol _ ty) -> case ty of
+      ProcAsItemType _ -> ProcessKind
+      ChanAsItemType _ -> ChannelKind
+      CaslSymbType cTy -> case cTy of
+        OpAsItemType _ -> CaslKind Ops_kind
+        PredAsItemType _ -> CaslKind Preds_kind
+        _ -> CaslKind Sorts_kind
+    _ -> k
+  _ -> k
+
 cspSymbOrMapToRaw :: CspCASLSign -> Maybe CspCASLSign -> CspSymbKind
   -> CspSymbMap -> Result [(CspRawSymbol, CspRawSymbol)]
 cspSymbOrMapToRaw sig msig k (CspSymbMap s mt) = case mt of
@@ -164,9 +178,10 @@ cspSymbOrMapToRaw sig msig k (CspSymbMap s mt) = case mt of
           [mkDiag Hint "unneeded identical mapping of" a]
         _ -> []
       w <- cspSymbToRaw True sig k s
+      let nk = maxKind k w
       x <- case msig of
-             Nothing -> cspSymbToRaw False sig k t
-             Just tsig -> cspSymbToRaw True tsig k t
+             Nothing -> cspSymbToRaw False sig nk t
+             Just tsig -> cspSymbToRaw True tsig nk t
       let mkS i = ACspSymbol $ CspSymbol i $ CaslSymbType SortAsItemType
           pairS s1 s2 = (mkS s1, mkS s2)
       case (w, x) of
