@@ -278,7 +278,8 @@ cspMatches (CspSymbol i t) rsy = case rsy of
     (CaslSymbType t1, CaslSymbType t3) -> matches (Symbol i t1)
       $ ASymbol $ Symbol j t3
     (ChanAsItemType s1, ChanAsItemType s2) -> s1 == s2
-    (ProcAsItemType p1, ProcAsItemType p2) -> compatibleProcTypes Nothing p1 p2
+    (ProcAsItemType (ProcProfile l1 al1), ProcAsItemType (ProcProfile l2 al2)) ->
+      l1 == l2 && (Set.null al2 || not (Set.null $ Set.intersection al1 al2))
     _ -> False
   CspKindedSymb k j -> let res = i == j in case (k, t) of
     (CaslKind ck, CaslSymbType t1) -> matches (Symbol i t1)
