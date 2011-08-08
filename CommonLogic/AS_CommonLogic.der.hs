@@ -1,4 +1,4 @@
-{- | 
+{- |
 Module      :  $Header$
 Description :  Abstract syntax for common logic
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010
@@ -212,9 +212,6 @@ printImportation (Imp_name x) = pretty x
 -- keywords, reservednames in CLIF
 seqmarkS :: String
 seqmarkS = "..."
-
-(...) :: String
-(...) = "..."
 
 orS :: String
 orS = "or"
