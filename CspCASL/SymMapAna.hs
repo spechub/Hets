@@ -201,7 +201,7 @@ lookupProcSymbol :: CspCASLSign -> CspRawMap -> Id -> ProcProfile
 lookupProcSymbol sig rmap pn p = case
   filter (\ (k, _) -> case k of
     ACspSymbol (CspSymbol i (ProcAsItemType pf)) ->
-      i == pn && compatibleProcTypes (Just sig) p pf
+      i == pn && relatedProcs sig p pf
     _ -> False) $ Map.toList rmap of
   [(_, r)] -> Just r
   [] -> Nothing
