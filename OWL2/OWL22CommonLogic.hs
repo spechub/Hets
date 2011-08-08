@@ -28,6 +28,7 @@ import qualified Data.Map as Map
 import OWL2.Logic_OWL2
 import OWL2.AS
 import OWL2.MS
+import OWL2.ManchesterPrint
 import OWL2.ProfilesAndSublogics
 import OWL2.Morphism
 import OWL2.Symbols
@@ -389,6 +390,9 @@ mapListFrameBit cSig ex rel lfb = case lfb of
 mapOPF :: Sign -> ObjectPropertyExpression -> Int -> Int -> Result SENTENCE
 mapOPF cSig ope x y = mapObjProp cSig ope (OVar x) (OVar y)
 
+mapDP :: Sign -> DataPropertyExpression -> Int -> Int -> Result SENTENCE
+mapDP cSig dpe x y = mapDataProp cSig dpe (OVar x) (OVar y)
+
 mkQUBI :: [NAME_OR_SEQMARK] -> [SENTENCE] -> TERM -> TERM -> TEXT
 mkQUBI l1 l2 a b = senToText $ mkQU l1 $ mkBI (mkBools $ cnjct l2)
     $ mkAtoms $ mkEq a b
@@ -432,76 +436,38 @@ mapCharact cSig ope c = case c of
                 (mkBools $ cnjct [so1, so2]) so3
   
 -- | Mapping of AnnFrameBit
-mapAnnFrameBit :: Sign
-               -> Extended
-               -> AnnFrameBit
-               -> Result ([TEXT], Sign)
+mapAnnFrameBit :: Sign -> Extended -> AnnFrameBit -> Result ([TEXT], Sign)
 mapAnnFrameBit cSig ex afb =
-  case afb of
+    let err = fail $ "could not translate " ++ show afb in case afb of
     AnnotationFrameBit _ -> return ([], cSig)
-    DataFunctional ->
-      case ex of
-        SimpleEntity (Entity ty iri) ->
-          case ty of
-            DataProperty ->
-                do
-                  so1 <- mapDataProp cSig iri (OVar 1) (OVar 2)
-                  so2 <- mapDataProp cSig iri (OVar 1) (OVar 3)
-                  return (msen2Txt [mkQuants (mkUnivQ
-                                      [mkNAME 1, mkNAME 2, mkNAME 3]
-                                     (mkBools (mkImpl
-                                         (mkBools (cnjct [so1, so2]))
-                                         (mkAtoms (mkEq
-                                            (mkNTERM 2)
-                                            (mkNTERM 3)))
-                          )))], cSig)
-            _ -> fail "DataFunctional EntityType fail"
-        _ -> fail "DataFunctional Extend fail"
-    DatatypeBit dt ->
-      case ex of
-        SimpleEntity (Entity ty iri) ->
-          case ty of
-            Datatype ->         
-              do
-                (odes, dSig) <- mapDataRange cSig dt (OVar 2)
-                dtb <- mapDataProp cSig iri (OVar 1) (OVar 2)
-                let res = [mkQuants (mkUnivQ
-                            [mkNAME 1, mkNAME 2]
-                             (mkBools (mkBicnd
-                                dtb
-                                odes)
-                          ))]
-                return (msen2Txt res, dSig)
-            _ -> fail "DatatypeBit EntityType fail"
-        _ -> fail "DatatypeBit Extend fail"
-    ClassDisjointUnion clsl ->
-      case ex of
-        SimpleEntity (Entity ty iri) ->
-          case ty of
-            Class ->
-                 do
-                    (decrs, dSig) <- mapDescriptionList cSig 1 clsl
-                    (decrsS, pSig) <- mapDescriptionListP cSig 1 $
-                                        comPairs clsl clsl
-                    let decrsP = unzip decrsS
-                    mcls <- mapClassIRI cSig iri (mkNName 1)
-                    return (msen2Txt [mkQuants (mkUnivQ
-                              [mkNAME 1]
-                               (mkBools (mkBicnd
-                                 mcls (
-                                mkBools (cnjct
-                                [mkBools (dsjct decrs),
-                                 mkBools (mkNeg (mkBools
-                                 (cnjct (uncurry (++) decrsP
-                            ))))])))))], unite dSig pSig)
-            _ -> fail "ClassDisjointUnion EntityType fail"
-        _ -> fail "ClassDisjointUnion Extend fail"
-    ClassHasKey _obpe _dpe -> return ([], cSig)
-    ObjectSubPropertyChain oplst ->
-      do
+    DataFunctional -> case ex of
+        SimpleEntity (Entity DataProperty iri) -> do
+            so1 <- mapDP cSig iri 1 2
+            so2 <- mapDP cSig iri 1 3
+            return ([mkQUBI [mkNAME 1, mkNAME 2, mkNAME 3] [so1, so2]
+                        (mkNTERM 2) $ mkNTERM 3], cSig)
+        _ -> err
+    DatatypeBit dt -> case ex of
+        SimpleEntity (Entity Datatype iri) -> do
+            (odes, dSig) <- mapDataRange cSig dt (OVar 2)
+            dtb <- mapDP cSig iri 1 2
+            let res = mkQU [mkNAME 1, mkNAME 2] $ mkBools $ mkBicnd dtb odes
+            return ([senToText res], dSig)
+        _ -> err
+    ClassDisjointUnion clsl -> case ex of
+        SimpleEntity (Entity Class iri) -> do
+            (decrs, dSig) <- mapDescriptionList cSig 1 clsl
+            (decrsS, pSig) <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
+            let decrsP = unzip decrsS
+            mcls <- mapClassIRI cSig iri (mkNName 1)
+            return ([senToText $ mkQU [mkNAME 1] $ mkBools $ mkBicnd mcls $
+                mkBools $ cnjct [mkBools $ dsjct decrs, mkBools $ mkNeg
+                $ mkBools $ cnjct $ uncurry (++) decrsP]], unite dSig pSig)
+        _ -> err
+    ClassHasKey _ _ -> return ([], cSig)
+    ObjectSubPropertyChain oplst -> do
         os <- mapM (\ cd -> mapSubObjPropChain cSig afb cd 3) oplst
         return (msen2Txt os, cSig)
-
 
 senToText :: SENTENCE -> TEXT
 senToText s = Text [Sentence s] nullRange

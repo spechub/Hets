@@ -68,17 +68,8 @@ printListFrameBit lfb = case lfb of
     IndividualSameOrDifferent a -> printAnnotatedList a
     _ -> empty
 
-printFrameBit :: FrameBit -> Doc
-printFrameBit fb = case fb of
-  ListFrameBit r lfb -> case r of
-      Just rel -> printRelation rel <+> pretty lfb
-      Nothing -> case lfb of
-        ObjectCharacteristics x -> keyword characteristicsC
-                <+> printAnnotatedList x
-        DataPropRange x -> keyword rangeC <+> printAnnotatedList x
-        IndividualFacts x -> keyword factsC <+> printAnnotatedList x
-        _ -> empty
-  AnnFrameBit a afb -> case afb of
+printAnnFrameBit :: Annotations -> AnnFrameBit -> Doc
+printAnnFrameBit a afb = case afb of
     AnnotationFrameBit _ -> printAnnotations a
     DatatypeBit x -> printAnnotations a
           $+$ keyword equivalentToC <+> pretty x
@@ -92,6 +83,18 @@ printFrameBit fb = case fb of
           $ map pretty opl))
     DataFunctional -> keyword characteristicsC <+>
           (printAnnotations a $+$ printCharact functionalS)
+
+printFrameBit :: FrameBit -> Doc
+printFrameBit fb = case fb of
+  ListFrameBit r lfb -> case r of
+      Just rel -> printRelation rel <+> pretty lfb
+      Nothing -> case lfb of
+        ObjectCharacteristics x -> keyword characteristicsC
+                <+> printAnnotatedList x
+        DataPropRange x -> keyword rangeC <+> printAnnotatedList x
+        IndividualFacts x -> keyword factsC <+> printAnnotatedList x
+        _ -> empty
+  AnnFrameBit a afb -> printAnnFrameBit a afb
 
 instance Pretty Fact where
     pretty = printFact
