@@ -36,12 +36,18 @@ printIRI q
 
 -- | Symbols printing
 
+instance Pretty ExtEntityType where
+  pretty ety = case ety of
+    AnyEntity -> empty
+    EntityType ty -> keyword $ show ty
+    Prefix -> keyword "Prefix"
+
 instance Pretty SymbItems where
-  pretty (SymbItems m us) = (keyword . show) m
+  pretty (SymbItems m us) = pretty m
     <+> ppWithCommas us
 
 instance Pretty SymbMapItems where
-  pretty (SymbMapItems m us) = (keyword . show) m
+  pretty (SymbMapItems m us) = pretty m
     <+> sepByCommas
         (map (\ (s, ms) -> sep
               [ pretty s
