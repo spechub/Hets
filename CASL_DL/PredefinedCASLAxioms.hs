@@ -230,8 +230,7 @@ predefSign = (emptySign ())
                         (nonNegInt, integer),
                         (nonPosInt, integer),
                         (posInt, nonNegInt),
-                        (stringS, dataS),
-                        (dataS, thing) ]
+                        (stringS, dataS) ]
                  , predMap =
                      MapSet.fromList
                       $ (nothing, [conceptPred])
