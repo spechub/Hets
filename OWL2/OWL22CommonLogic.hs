@@ -466,7 +466,7 @@ mapAnnFrameBit cSig ex afb =
         _ -> err
     ClassHasKey _ _ -> return ([], cSig)
     ObjectSubPropertyChain oplst -> do
-        os <- mapM (\ cd -> mapSubObjPropChain cSig afb cd 3) oplst
+        os <- mapM (\ cd -> mapSubObjPropChain cSig oplst cd 3) oplst
         return (msen2Txt os, cSig)
 
 senToText :: SENTENCE -> TEXT
@@ -476,25 +476,21 @@ msen2Txt :: [SENTENCE] -> [TEXT]
 msen2Txt = map senToText
 
 -- | mapping of individual list
-mapComIndivList :: Sign
-                -> SameOrDifferent
-                -> Maybe Individual
-                -> [Individual]
+mapComIndivList :: Sign -> SameOrDifferent -> Maybe Individual -> [Individual]
                 -> Result [SENTENCE]
 mapComIndivList cSig sod mol inds = do
-  fs <- mapM (mapIndivIRI cSig) inds
-  _tps <- case mol of
-    Nothing -> return $ comPairs fs fs
-    Just ol -> do
-      f <- mapIndivIRI cSig ol
-      return $ comPairsaux f fs
-  let inDL = comPairs fs fs
-      sntLst = (map (\ (x, y) -> case sod of
-                                   Same -> mkAtoms (mkEq x y)
-                                   Different -> mkBools
-                                     (mkNeg (mkAtoms
-                                       (mkEq x y)))) inDL)
-  return [mkBools (cnjct sntLst)]
+    fs <- mapM (mapIndivIRI cSig) inds
+    case mol of
+        Nothing -> return $ comPairs fs fs
+        Just ol -> do
+            f <- mapIndivIRI cSig ol
+            return $ comPairsaux f fs
+    let inDL = comPairs fs fs
+        sntLst = (map (\ (x, y) -> case sod of
+                            Same -> mkAtoms (mkEq x y)
+                            Different -> mkBools $ mkNeg $ mkAtoms
+                                       $ mkEq x y)) inDL
+    return [mkBools (cnjct sntLst)]
 
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
 operations. -}
@@ -510,167 +506,100 @@ mapComObjectPropsList cSig props num1 num2 =
         return (l, r)
         ) $ comPairs props props
 
-toIRILst :: EntityType
-         -> Extended
-         -> Maybe IRI
-
+toIRILst :: EntityType -> Extended -> Maybe IRI
 toIRILst ty ane = case ane of
   SimpleEntity (Entity ty2 iri) | ty == ty2 -> Just iri
   _ -> Nothing
 
 -- | Extracts Id from Entities
 entityToId :: Entity -> Id
-entityToId e =
-  case e of
-       Entity _ urI -> uriToId urI
+entityToId (Entity _ iri) = uriToId iri
 
 -- | mapping of data constants
-mapConstant :: Sign
-            -> Literal
-            -> Result TERM
-mapConstant _ c =
-  do
+mapConstant :: Sign -> Literal -> Result TERM
+mapConstant _ c = do
     let cl = case c of
-              Literal l _ -> l
+                Literal l _ -> l
+                NumberLit l -> show l
     return $ Name_term (mkSimpleId cl)
 
 -- | Mapping of a list of data constants only for mapDataRange
-mapConstantList :: Sign
-                -> [Literal]
-                -> Result [TERM]
-mapConstantList sig = mapM (mapConstant sig)
+mapConstantList :: Sign -> [Literal] -> Result [TERM]
+mapConstantList = mapM . mapConstant
 
-mapSubObjPropChain :: Sign
-              -> AnnFrameBit
-              -> ObjectPropertyExpression
-              -> Int
-              -> Result SENTENCE
-mapSubObjPropChain cSig prop oP num1 =
-    let num2 = num1 + 1
-    in
-    case prop of
-           ObjectSubPropertyChain props ->
-             do
-                 let zprops = zip (tail props) [(num2 + 1) ..]
-                     (_, vars) = unzip zprops
-                 oProps <- mapM (\ (z, x, y) -> mapObjProp
-                                  cSig z (OVar x) (OVar y)) $
-                                  zip3 props ((num1 : vars) ++ [num2]) $
-                                       tail ((num1 : vars) ++ [num2])
-                 ooP <- mapObjProp cSig oP (OVar num1) (OVar num2)
-                 let lst = [ mkNAME num1
-                           , mkNAME num2]
-                           ++ map mkNAME vars
-                 return $ mkQuants (mkUnivQ
-                            lst
-                            (mkBools (mkImpl
-                                (mkBools (cnjct oProps))
-                                ooP)))
-           _ -> fail "mapping of ObjectSubPropertyChain failed"
+mapSubObjPropChain :: Sign -> [ObjectPropertyExpression] ->
+        ObjectPropertyExpression -> Int -> Result SENTENCE
+mapSubObjPropChain cSig props oP num1 = let num2 = num1 + 1 in do
+    let zprops = zip (tail props) [(num2 + 1) ..]
+        (_, vars) = unzip zprops
+    oProps <- mapM (\ (z, x, y) -> mapObjProp cSig z (OVar x) $ OVar y)
+            $ zip3 props ((num1 : vars) ++ [num2]) $
+            tail $ (num1 : vars) ++ [num2]
+    ooP <- mapObjProp cSig oP (OVar num1) (OVar num2)
+    let lst = map mkNAME $ num1 : num2 : vars
+    return $ mkQU lst $ mkBI (mkBools $ cnjct oProps) ooP
 
 -- | Mapping of subobj properties
-mapSubObjProp :: Sign
-              -> ObjectPropertyExpression
-              -> ObjectPropertyExpression
-              -> Int
-              -> Result SENTENCE
+mapSubObjProp :: Sign -> ObjectPropertyExpression -> ObjectPropertyExpression
+              -> Int -> Result SENTENCE
 mapSubObjProp cSig prop oP num1 = do
-  let num2 = num1 + 1
-  l <- mapObjProp cSig prop (OVar num1) (OVar num2)
-  r <- mapObjProp cSig oP (OVar num1) (OVar num2)
-  return $ mkQuants (mkUnivQ
-             [mkNAME num1, mkNAME num2]
-             (mkBools (mkImpl l r)))
+    let num2 = num1 + 1
+    l <- mapOPF cSig prop num1 num2
+    r <- mapOPF cSig oP num1 num2
+    return $ mkQU [mkNAME num1, mkNAME num2] $ mkBI l r
 
 {- | Mapping along DataPropsList for creation of pairs for commutative
 operations. -}
-mapComDataPropsList :: Sign
-                      -> [DataPropertyExpression]
-                      -> VarOrIndi                   -- ^ First variable
-                      -> VarOrIndi                   -- ^ Last  variable
-                      -> Result [(SENTENCE, SENTENCE)]
+mapComDataPropsList :: Sign -> [DataPropertyExpression] -> VarOrIndi
+    -> VarOrIndi -> Result [(SENTENCE, SENTENCE)]
 mapComDataPropsList cSig props num1 num2 =
-  mapM (\ (x, z) -> do
+    mapM (\ (x, z) -> do
                   l <- mapDataProp cSig x num1 num2
                   r <- mapDataProp cSig z num1 num2
                   return (l, r)
              ) $ comPairs props props
 
 -- | Mapping of data properties
-mapDataProp :: Sign
-            -> DataPropertyExpression
-            -> VarOrIndi
-            -> VarOrIndi
+mapDataProp :: Sign -> DataPropertyExpression -> VarOrIndi -> VarOrIndi
             -> Result SENTENCE
-mapDataProp _ dP nO nD =
-  do
-    let
-        l = Name_term (voiToTok nO)
+mapDataProp _ dP nO nD = do
+    let l = Name_term (voiToTok nO)
         r = Name_term (voiToTok nD)
     ur <- uriToTokM dP
-    return $ mkAtoms
-             (Atom
-              (Name_term ur)
-              [Term_seq l, Term_seq r]
-             )
+    return $ mkPropAtom ur [l, r]
 
-mapDataPropI :: Sign
-             -> VarOrIndi
-             -> VarOrIndi
-             -> DataPropertyExpression
+mkPropAtom :: NAME -> [TERM] -> SENTENCE
+mkPropAtom ur tl = mkAtoms $ Atom (Name_term ur) $ map Term_seq tl
+
+mapDataPropI :: Sign -> VarOrIndi -> VarOrIndi -> DataPropertyExpression
              -> Result SENTENCE
-mapDataPropI cSig nO nD dP =
-        mapDataProp cSig dP nO nD
+mapDataPropI cSig nO nD dP = mapDataProp cSig dP nO nD
 
 -- | Mapping of obj props
-mapObjProp :: Sign
-              -> ObjectPropertyExpression
-              -> VarOrIndi
-              -> VarOrIndi
-              -> Result SENTENCE
-mapObjProp cSig ob var1 var2 =
-  case ob of
-         ObjectProp u ->
-            do
-              let l = Name_term (voiToTok var1)
-                  r = Name_term (voiToTok var2)
-              ur <- uriToTokM u
-              return $ mkAtoms
-                        (Atom
-                          (Name_term ur)
-                          [Term_seq l, Term_seq r]
-                        )
-
-         ObjectInverseOf u ->
-            mapObjProp cSig u var2 var1
+mapObjProp :: Sign -> ObjectPropertyExpression -> VarOrIndi -> VarOrIndi
+            -> Result SENTENCE
+mapObjProp cSig ob var1 var2 = case ob of
+    ObjectProp u -> do
+        let l = Name_term (voiToTok var1)
+            r = Name_term (voiToTok var2)
+        ur <- uriToTokM u
+        return $ mkPropAtom ur [l, r]
+    ObjectInverseOf u -> mapObjProp cSig u var2 var1
 
 -- | Mapping of Class IRIs
-mapClassIRI :: Sign
-            -> Class
-            -> Token
-            -> Result SENTENCE
-mapClassIRI _ uril uid =
-  do
+mapClassIRI :: Sign -> Class -> Token -> Result SENTENCE
+mapClassIRI _ uril uid = do
     ur <- uriToTokM uril
-    return $ mkAtoms
-             (Atom
-              (Name_term ur)
-              [Term_seq (Name_term uid)]
-             )
+    return $ mkAtoms $ Atom (Name_term ur) [Term_seq $ Name_term uid]
 
 -- | Mapping of Individual IRIs
-mapIndivIRI :: Sign
-            -> Individual
-            -> Result TERM
-mapIndivIRI _ uriI =
-  do
-    ur <- uriToTokM uriI
-    return $ Name_term ur
+mapIndivIRI :: Sign -> Individual -> Result TERM
+mapIndivIRI _ uriI = fmap Name_term $ uriToTokM uriI
 
 voiToTok :: VarOrIndi -> Token
 voiToTok v = case v of
-        OVar o -> mkNName o
-        OIndi o -> uriToTok o
+    OVar o -> mkNName o
+    OIndi o -> uriToTok o
 
 uriToTokM :: IRI -> Result Token
 uriToTokM = return . uriToTok
@@ -684,38 +613,32 @@ uriToId :: IRI -> Id
 uriToId = simpleIdToId . uriToTok
 
 -- | Mapping of a list of descriptions
-mapDescriptionList :: Sign
-                      -> Int
-                      -> [ClassExpression]
-                      -> Result ([SENTENCE], Sign)
+mapDescriptionList :: Sign -> Int -> [ClassExpression]
+        -> Result ([SENTENCE], Sign)
 mapDescriptionList cSig n lst = -- (zip lst $ replicate (length lst) n)
   do
-    (sens, lSig) <- (mapAndUnzipM ((\ w x y z ->
-                       mapDescription w z x y) cSig (OVar n) n) lst)
+    (sens, lSig) <- mapAndUnzipM ((\ w x y z ->
+                       mapDescription w z x y) cSig (OVar n) n) lst
     sig <- sigUnionL lSig
     return (sens, sig)
 
 -- | Mapping of a list of pairs of descriptions
-mapDescriptionListP :: Sign
-                    -> Int
-                    -> [(ClassExpression, ClassExpression)]
+mapDescriptionListP :: Sign -> Int -> [(ClassExpression, ClassExpression)]
                     -> Result ([(SENTENCE, SENTENCE)], Sign)
-mapDescriptionListP cSig n lst =
-    do
-      let (l, r) = unzip lst
-      (llst, ssSig) <- mapDescriptionList cSig n l
-      (rlst, tSig) <- mapDescriptionList cSig n r
-      let olst = zip llst rlst
-      return (olst, unite ssSig tSig)
+mapDescriptionListP cSig n lst = do
+    let (l, r) = unzip lst
+    (llst, ssSig) <- mapDescriptionList cSig n l
+    (rlst, tSig) <- mapDescriptionList cSig n r
+    return (zip llst rlst, unite ssSig tSig)
+
+mkNName_H :: Int -> String
+mkNName_H k = case k of
+    0 -> ""
+    j -> mkNName_H (j `div` 26) ++ [chr $ j `mod` 26 + 96]
 
 -- | Build a name
 mkNName :: Int -> Token
 mkNName i = mkSimpleId $ hetsPrefix ++ mkNName_H i
-    where
-      mkNName_H k =
-          case k of
-            0 -> ""
-            j -> mkNName_H (j `div` 26) ++ [chr (j `mod` 26 + 96)]
 
 -- | Get all distinct pairs for commutative operations
 comPairs :: [t] -> [t1] -> [(t, t1)]
@@ -728,56 +651,34 @@ comPairsaux :: t -> [t1] -> [(t, t1)]
 comPairsaux a = map (\ b -> (a, b))
 
 -- | mapping of Data Range
-mapDataRange :: Sign
-             -> DataRange                 -- ^ OWL2 DataRange
-             -> VarOrIndi                 -- ^ Current Variablename
-             -> Result (SENTENCE, Sign)   -- ^ CommonLogic SENTENCE, Signature
-mapDataRange cSig rn inId =
-  do
+mapDataRange :: Sign -> DataRange -> VarOrIndi -> Result (SENTENCE, Sign)
+mapDataRange cSig rn inId = do
     let uid = Name_term (voiToTok inId)
     case rn of
-         DataJunction _ _ -> error "nyi"
-         DataComplementOf dr ->
-          do
+         DataJunction _ _ -> failMsg rn
+         DataComplementOf dr -> do
             (dc, sig) <- mapDataRange cSig dr inId
             return (mkBools (mkNeg dc), sig)
-         DataOneOf cs ->
-          do
+         DataOneOf cs -> do
             cl <- mapConstantList cSig cs
             dl <- mapM (\ x -> return $ mkAtoms (Atom x [Term_seq uid])) cl
             return (mkBools (dsjct dl), cSig)
-         DataType dt rlst ->
-           do
-            let (sent, rSig) = (mkAtoms (Atom
-                                (Name_term (uriToTok dt))
-                                [Term_seq uid]
-                               ), cSig)
+         DataType dt rlst -> do
+            let (sent, rSig) = (mkPropAtom (uriToTok dt) [uid], cSig)
             (sens, sigL) <- (mapAndUnzipM (mapFacet cSig uid) rlst)
-            return (mkBools (cnjct (sent : sens)
-                            ), uniteL (rSig : sigL))
+            return (mkBools $ cnjct $ sent : sens, uniteL $ rSig : sigL)
 
 -- | mapping of a tuple of ConstrainingFacet and RestictionValue
-mapFacet :: Sign
-         -> TERM
-         -> (ConstrainingFacet, RestrictionValue)
+mapFacet :: Sign -> TERM -> (ConstrainingFacet, RestrictionValue)
          -> Result (SENTENCE, Sign)
-mapFacet sig var (f, r) =
-    do
-      con <- mapConstant sig r
-      return (mkAtoms
-                (Atom
-                  (Name_term (uriToTok f))
-                  [ Term_seq con
-                  , Term_seq var ]
-                ) , unite sig (emptySig
+mapFacet sig var (f, r) = do
+    con <- mapConstant sig r
+    return (mkPropAtom (uriToTok f) [con, var], unite sig (emptySig
                    {items = Set.fromList [stringToId (showQN f)]} ))
 
 -- | mapping of OWL Descriptions
-mapDescription :: Sign
-               -> ClassExpression           -- ^ OWL2 ClassExpression
-               -> VarOrIndi                 -- ^ Current Variablename
-               -> Int                       -- ^ Alternative to current
-               -> Result (SENTENCE, Sign)   -- ^ CommonLogic_DL Formula
+mapDescription :: Sign -> ClassExpression -> VarOrIndi -> Int
+               -> Result (SENTENCE, Sign)
 mapDescription cSig des oVar aVar =
   let varN = case oVar of
         OVar v -> mkNName v
@@ -786,157 +687,101 @@ mapDescription cSig des oVar aVar =
         OVar v -> v
         OIndi _ -> aVar
   in case des of
-         Expression cl ->
-           do
+         Expression cl -> do
             rslt <- mapClassIRI cSig cl varN
             return (rslt, cSig)
-         ObjectJunction jt desL ->
-           do
+         ObjectJunction jt desL -> do
              (desO, dSig) <- (mapAndUnzipM ((\ w x y z ->
                                 mapDescription w z x y) cSig oVar aVar)
                               desL)
              return $ case jt of
-                UnionOf -> (mkBools (dsjct desO), uniteL dSig)
-                IntersectionOf -> (mkBools (cnjct desO), uniteL dSig)
-         ObjectComplementOf descr ->
-           do
+                UnionOf -> (mkBools $ dsjct desO, uniteL dSig)
+                IntersectionOf -> (mkBools $ cnjct desO, uniteL dSig)
+         ObjectComplementOf descr -> do
              (desO, dSig) <- mapDescription cSig descr oVar aVar
-             return (mkBools (mkNeg desO), dSig)
-         ObjectOneOf indS ->
-           do
+             return (mkBools $ mkNeg desO, dSig)
+         ObjectOneOf indS -> do
              indO <- mapM (mapIndivIRI cSig) indS
-             let forms = map ((\ x y -> mkAtoms (mkEq x y))
-                                          (Name_term varN)) indO
-             return (mkBools (dsjct forms), cSig)
-         ObjectValuesFrom qt oprop descr ->
-           do
-             opropO <- mapObjProp cSig oprop (OVar var) (OVar (var + 1))
-             (descO, dSig) <- mapDescription cSig descr
-                                  (OVar (var + 1)) (aVar + 1)
+             let forms = map ((\ x y -> mkAtoms $ mkEq x y)
+                    $ Name_term varN) indO
+             return (mkBools $ dsjct forms, cSig)
+         ObjectValuesFrom qt oprop descr -> do
+             opropO <- mapObjProp cSig oprop (OVar var) $ OVar $ var + 1
+             (descO, dSig) <- mapDescription cSig descr (OVar $ var + 1)
+                    $ aVar + 1
              case qt of
-               SomeValuesFrom ->
-                      return (mkQuants (mkExist
-                                   [mkNAME (var + 1)]
-                                (mkBools (cnjct [opropO, descO]))
-                               ), dSig)
-               AllValuesFrom ->
-                   return (mkQuants (mkUnivQ
-                                [mkNAME (var + 1)]
-                                (mkBools (mkImpl opropO descO))), dSig)
-         ObjectHasSelf oprop ->
-            do
+               SomeValuesFrom -> return (mkQuants $ mkExist [mkNAME $ var + 1]
+                                $ mkBools $ cnjct [opropO, descO], dSig)
+               AllValuesFrom -> return (mkQuants $ mkUnivQ [mkNAME $ var + 1]
+                                $ mkBools $ mkImpl opropO descO, dSig)
+         ObjectHasSelf oprop -> do
               rslt <- mapObjProp cSig oprop oVar oVar
               return (rslt, cSig)
-         ObjectHasValue oprop indiv ->
-            do
+         ObjectHasValue oprop indiv -> do
              rslt <- mapObjProp cSig oprop oVar (OIndi indiv)
              return (rslt, cSig)
-         ObjectCardinality c ->
-          case c of
-               Cardinality ct n oprop d
-                        ->
-                          do
-                            let vlst = [(var + 1) .. (n + var)]
-                                vLst = map OVar vlst
-                                vlstM = [(var + 1) .. (n + var + 1)]
-                                vLstM = map OVar vlstM
-                            (dOut, sigL) <- (\ x -> case x of
-                                  Nothing -> return ([], [])
-                                  Just y ->
-                                    mapAndUnzipM (uncurry (mapDescription
-                                      cSig y)) (zip vLst vlst)
-                                 ) d
-                            let dlst = map (\ (x, y) ->
-                                              mkBools (mkNeg
-                                               (mkAtoms (mkEq
-                                                (mkNTERM x)
-                                                (mkNTERM y)
-                                           )))) $ comPairs vlst vlst
-                                dlstM = map (\ (x, y) ->
-                                              mkAtoms (mkEq
-                                                (mkNTERM x)
-                                                (mkNTERM y)
-                                            )) $ comPairs vlstM vlstM
-                                qVars = map mkNAME vlst
-                                qVarsM = map mkNAME vlstM
-                            oProps <- mapM (mapObjProp cSig oprop (OVar var))
-                                            vLst
-                            oPropsM <- mapM (mapObjProp cSig oprop (OVar var))
-                                             vLstM
-                            let minLst = mkQuants (mkExist
-                                           qVars
-                                           (mkBools (cnjct
-                                               (dlst ++ dOut ++ oProps))))
-                            let maxLst = mkQuants (mkExist
-                                           qVarsM
-                                           (mkBools (mkImpl
-                                             (mkBools (cnjct (oPropsM ++ dOut)))
-                                             (mkBools (dsjct dlstM)))))
-                            case ct of
-                               MinCardinality -> return (minLst, cSig)
-                               MaxCardinality -> return (maxLst, cSig)
-                               ExactCardinality -> return
-                                           (mkBools (cnjct [minLst, maxLst])
-                                           , uniteL sigL)
-         DataValuesFrom qt dpe dr ->
-            do
-              let varNN = mkNName (var + 1)
-              (drSent, drSig) <- mapDataRange cSig dr (OVar var)
-              senl <- mapM (mapDataPropI cSig (OVar var) (OVar (var + 1))) [dpe]
-              let sent = mkBools (cnjct (drSent : senl))
-              case qt of
-                   AllValuesFrom ->
-                    return (mkQuants (mkUnivQ [Name varNN]
-                                       sent), drSig)
-                   SomeValuesFrom ->
-                    return (mkQuants (mkExist [Name varNN]
-                                        sent), drSig)
-         DataHasValue dpe c ->
-           do
+         ObjectCardinality (Cardinality ct n oprop d) -> do
+            let vlst = [(var + 1) .. (n + var)]
+                vLst = map OVar vlst
+                vlstM = [(var + 1) .. (n + var + 1)]
+                vLstM = map OVar vlstM
+            (dOut, sigL) <- (\ x -> case x of
+                Nothing -> return ([], [])
+                Just y -> mapAndUnzipM (uncurry $ mapDescription cSig y)
+                                     $ zip vLst vlst) d
+            let dlst = map (\ (x, y) -> mkBools $ mkNeg $ mkAtoms
+                    (mkEq (mkNTERM x) $ mkNTERM y)) $ comPairs vlst vlst
+                dlstM = map (\ (x, y) -> mkAtoms (mkEq (mkNTERM x)
+                     $ mkNTERM y)) $ comPairs vlstM vlstM
+                qVars = map mkNAME vlst
+                qVarsM = map mkNAME vlstM
+            oProps <- mapM (mapObjProp cSig oprop $ OVar var) vLst
+            oPropsM <- mapM (mapObjProp cSig oprop $ OVar var) vLstM
+            let minLst = mkQE qVars $ mkBools $ cnjct $ dlst ++ dOut ++ oProps
+                maxLst = mkQE qVarsM $ mkBools $ mkImpl (mkBools $ cnjct
+                    $ oPropsM ++ dOut) $ mkBools $ dsjct dlstM
+            return $ case ct of
+                MinCardinality -> (minLst, cSig)
+                MaxCardinality -> (maxLst, cSig)
+                ExactCardinality ->
+                    (mkBools (cnjct [minLst, maxLst]), uniteL sigL)
+         DataValuesFrom qt dpe dr -> do
+              let varNN = mkNName $ var + 1
+              (drSent, drSig) <- mapDataRange cSig dr $ OVar var
+              senl <- mapM (mapDataPropI cSig (OVar var) $ OVar $ var + 1) [dpe]
+              let sent = mkBools $ cnjct $ drSent : senl
+              return $ case qt of
+                    AllValuesFrom ->(mkQU [Name varNN] sent, drSig)
+                    SomeValuesFrom -> (mkQE [Name varNN] sent, drSig)
+         DataHasValue dpe c -> do
              let dpet = Name_term $ uriToTok dpe
              con <- mapConstant cSig c
-             return (mkQuants (mkUnivQ [Name varN]
-                        (mkAtoms (Atom dpet
-                                  [ Term_seq (Name_term varN)
-                                  , Term_seq con]
-                      ))), cSig)
-         DataCardinality c ->
-             case c of
-                  Cardinality ct n dpe dr
-                    ->
-                      do
-                        let vlst = [(var + 1) .. (n + var)]
-                            vLst = map OVar vlst
-                            vlstM = [(var + 1) .. (n + var + 1)]
-                            vLstM = map OVar vlstM
-                        (dOut, sigL) <- ( \ x -> case x of
-                              Nothing -> return ([], [])
-                              Just y ->
-                                mapAndUnzipM (mapDataRange cSig y) vLst
-                             ) dr
-                        let dlst = map ( \ (x, y) -> mkBools (mkNeg
-                                          (mkAtoms (mkEq
-                                                (mkNTERM x)
-                                                (mkNTERM y)))
-                                          )) $ comPairs vlst vlst
-                            dlstM = map ( \ (x, y) -> mkAtoms (mkEq
-                                          (mkNTERM x) (mkNTERM y)
-                                          )) $ comPairs vlstM vlstM
-                            qVars = map mkNAME vlst
-                            qVarsM = map mkNAME vlstM
-                        dProps <- mapM ( mapDataProp cSig dpe (OVar var)) vLst
-                        dPropsM <- mapM (mapDataProp cSig dpe (OVar var)) vLstM
-                        let minLst = mkQuants (mkExist qVars
-                                       (mkBools (cnjct
-                                            (dlst ++ dOut ++ dProps))))
-                        let maxLst = mkQuants (mkUnivQ
-                                       qVarsM
-                                       (mkBools (mkImpl
-                                         (mkBools (cnjct (dPropsM ++ dOut)))
-                                         (mkBools (dsjct dlstM)))))
-                        case ct of
-                            MinCardinality -> return (minLst, cSig)
-                            MaxCardinality -> return (maxLst, cSig)
-                            ExactCardinality -> return (mkBools (
-                                                    cnjct [minLst, maxLst])
-                                                    , uniteL sigL)
+             return (mkQU [Name varN] $ mkAtoms $ Atom dpet
+                                  [Term_seq (Name_term varN)
+                                  , Term_seq con], cSig)
+         DataCardinality (Cardinality ct n dpe dr) -> do
+            let vlst = [(var + 1) .. (n + var)]
+                vLst = map OVar vlst
+                vlstM = [(var + 1) .. (n + var + 1)]
+                vLstM = map OVar vlstM
+            (dOut, sigL) <- (\ x -> case x of
+                    Nothing -> return ([], [])
+                    Just y -> mapAndUnzipM (mapDataRange cSig y) vLst) dr
+            let dlst = map ( \ (x, y) ->
+                 mkBools $ mkNeg $ mkAtoms $ mkEq (mkNTERM x) $ mkNTERM y)
+                            $ comPairs vlst vlst
+                dlstM = map ( \ (x, y) ->
+                 mkAtoms $ mkEq (mkNTERM x) $ mkNTERM y) $ comPairs vlstM vlstM
+                qVars = map mkNAME vlst
+                qVarsM = map mkNAME vlstM
+            dProps <- mapM (mapDataProp cSig dpe $ OVar var) vLst
+            dPropsM <- mapM (mapDataProp cSig dpe $ OVar var) vLstM
+            let minLst = mkQuants $ mkExist qVars $ mkBools $ cnjct
+                                            $ dlst ++ dOut ++ dProps
+                maxLst = mkQuants $ mkUnivQ qVarsM $ mkBI (mkBools $ cnjct
+                            $ dPropsM ++ dOut) $ mkBools $ dsjct dlstM
+            return $ case ct of
+                MinCardinality -> (minLst, cSig)
+                MaxCardinality -> (maxLst, cSig)
+                ExactCardinality ->
+                    (mkBools $ cnjct [minLst, maxLst], uniteL sigL)
