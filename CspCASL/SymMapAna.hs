@@ -269,7 +269,7 @@ liamsRelatedCommAlpha sig al2 al1 =
 liamsRelatedCommTypes :: CspCASLSign -> CommType -> CommType -> Bool
 liamsRelatedCommTypes sig ct1 ct2 = case (ct1, ct2) of
   (CommTypeSort s1, CommTypeSort s2)
-    -> s1 == s2 || s1 `Set.member` subsortsOf s1 sig
+    -> s1 == s2 || s1 `Set.member` subsortsOf s2 sig
   (CommTypeChan (TypedChanName c1 s1), CommTypeChan (TypedChanName c2 s2))
     -> c1 == c2 && s1 == s2
   _ -> False
