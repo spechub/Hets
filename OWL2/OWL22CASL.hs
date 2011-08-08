@@ -750,7 +750,7 @@ mapLiteral lit = return $ case lit of
                     Right nr -> mapNrLit nr
                     _ -> error "cannot parse number literal"
                 OWL2Bool -> case l of
-                    "True" -> trueT
+                    "true" -> trueT
                     _ -> falseT
                 _ -> foldr consChar emptyStringTerm l)
                         dataS nullRange
