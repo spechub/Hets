@@ -245,7 +245,8 @@ mapFact cSig ex f = case f of
                                         [mkStEq (toQualVar
                                           (mkVarDecl (mkNName 1) thing)) inS,
                                          mkStEq (toQualVar
-                                          (mkVarDecl (mkNName 2) dataS)) inT]
+                                          (mkVarDecl (mkNName 2) dataS)) $
+                                         upcast inT dataS]
                              ) oProp))
                   _ -> fail "DataPropertyFact EntityType fail"
               _ -> fail "DataPropertyFact Entity fail"
@@ -713,27 +714,26 @@ mapNNInt int =
 mapIntLit :: IntLit -> TERM ()
 mapIntLit int =
     let cInt = mapNNInt $ absInt int
-    in if isNegInt int then upcast (negateInt cInt) negIntS
-        else upcast cInt nonNegInt
+    in if isNegInt int then negateInt $ upcast cInt integer
+        else upcast cInt integer
 
 mapDecLit :: DecLit -> TERM ()
 mapDecLit dec =
     let ip = truncDec dec
+        np = absInt ip
         fp = fracDec dec
-        n = mkDecimal (mapIntLit $ abInt ip) (mapNNInt fp)
-    in Sorted_term (if isNegInt ip then negateFloat n else n) dataS nullRange
+        n = mkDecimal (mapNNInt np) (mapNNInt fp)
+    in if isNegInt ip then negateFloat n else n
 
 mapFloatLit :: FloatLit -> TERM ()
 mapFloatLit f =
     let fb = floatBase f
         ex = floatExp f
-        n = mkDecimal (mapDecLit $ abDec fb) (mapIntLit ex)
-     in Sorted_term (if isNegDec fb then negateFloat n else n) dataS nullRange
+     in mkFloat (mapDecLit fb) (mapIntLit ex)
 
 mapLiteral :: CASLSign -> Literal -> Result (TERM ())
-mapLiteral _ lit = case lit of
-    Literal l ty -> return
-        $ Sorted_term (case ty of
+mapLiteral _ lit = return $ case lit of
+    Literal l ty -> Sorted_term (case ty of
             Untyped _ -> foldr consChar emptyStringTerm l
             Typed dt -> case datatypeType dt of
                 OWL2Number -> foldr1 joinDigits
@@ -744,9 +744,9 @@ mapLiteral _ lit = case lit of
                 _ -> foldr consChar emptyStringTerm l)
                         dataS nullRange
     NumberLit f
-       | isFloatInt f -> return $ mapIntLit $ truncDec $ floatBase f
-       | isFloatDec f -> return $ mapDecLit $ floatBase f
-       | otherwise -> return $ mapFloatLit f
+       | isFloatInt f -> mapIntLit $ truncDec $ floatBase f
+       | isFloatDec f -> mapDecLit $ floatBase f
+       | otherwise -> mapFloatLit f
 
 -- | Mapping of data properties
 mapDataProp :: CASLSign

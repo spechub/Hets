@@ -109,9 +109,7 @@ instance Pretty DatatypeFacet where
 
 instance Pretty Literal where
     pretty lit = case lit of
-     Literal lexi ty -> text (case lexi of
-             '"' : _ -> lexi
-             _ -> show lexi) <> case ty of
+     Literal lexi ty -> text ('"' : lexi ++ "\"") <> case ty of
       Typed u -> keyword cTypeS <> pretty u
       Untyped tag -> if tag == Nothing then empty else
                      let Just tag2 = tag in text asP <> text tag2

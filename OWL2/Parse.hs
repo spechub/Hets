@@ -265,9 +265,14 @@ languageTag :: CharParser st String
 languageTag = atMost1 4 letter
   <++> flat (many $ char '-' <:> atMost1 8 alphaNum)
 
+rmQuotes :: String -> String
+rmQuotes s = case s of
+  _ : tl@(_ : _) -> init tl
+  _ -> error "rmQuotes"
+
 stringLiteral :: CharParser st Literal
 stringLiteral = do
-  s <- stringLit
+  s <- fmap rmQuotes stringLit
   do
       string cTypeS
       d <- datatypeUri
