@@ -196,7 +196,7 @@ mkQU :: [NAME_OR_SEQMARK] -> SENTENCE -> SENTENCE
 mkQU l = mkQuants . mkUnivQ l
 
 mkBI :: SENTENCE -> SENTENCE -> SENTENCE
-mkBI s r = mkBools $ mkImpl s r
+mkBI s = mkBools . mkImpl s
 
 mkQE :: [NAME_OR_SEQMARK] -> SENTENCE -> SENTENCE
 mkQE l = mkQuants . mkExist l
@@ -291,34 +291,24 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         EDRelation ed -> do
           pairs <- mapComObjectPropsList cSig map2nd (OVar 1) (OVar 2)
           let sntLst = case ed of
-                         Equivalent ->
-                           map (\ (x, y) -> mkBools (mkBicnd x y)) pairs
-                         Disjoint ->
-                           map (\ (x, y) -> mkBools (mkNeg
-                                            (mkBools (cnjct [x, y])))) pairs
-              snt = if length sntLst == 1 then
-                                  head sntLst
-                                else
-                                  mkBools (cnjct sntLst)
-          return (msen2Txt [mkQuants (mkUnivQ
-                              [mkNAME 1, mkNAME 2]
-                             snt)], cSig)
+               Equivalent -> map (\ (x, y) -> mkBools $ mkBicnd x y) pairs
+               Disjoint -> map (\ (x, y) -> mkBools $ mkNeg $ mkBools
+                                $ cnjct [x, y]) pairs
+              snt = case sntLst of
+                        [hd] -> hd
+                        _ -> mkBools $ cnjct sntLst
+          return ([senToText $ mkQU [mkNAME 1, mkNAME 2] snt], cSig)
 
         SubPropertyOf | isJ -> do
-                  os <- mapM (\ (o1, o2) -> mapSubObjProp cSig o1 o2 3)
-                    $ comPairsaux ob map2nd
-                  return (msen2Txt os, cSig)
-
-        InverseOf | isJ ->
-          do
-             os1 <- mapM (\ o1 -> mapObjProp cSig o1 (OVar 1) (OVar 2)) map2nd
-             o2 <- mapObjProp cSig ob (OVar 2) (OVar 1)
-             return (msen2Txt $ map (\ cd -> mkQuants (mkUnivQ
-                             [mkNAME 1, mkNAME 2]
-                             (mkBools (mkBicnd cd o2)))) os1, cSig)
-
+          os <- mapM (\ (o1, o2) -> mapSubObjProp cSig o1 o2 3)
+                $ comPairsaux ob map2nd
+          return (msen2Txt os, cSig)
+        InverseOf | isJ -> do
+            os1 <- mapM (\ o1 -> mapObjProp cSig o1 (OVar 1) (OVar 2)) map2nd
+            o2 <- mapObjProp cSig ob (OVar 2) (OVar 1)
+            return (msen2Txt $ map (\ cd -> mkQU [mkNAME 1, mkNAME 2] $ mkBools
+                    $ mkBicnd cd o2) os1, cSig)
         _ -> return ([], cSig)
-
     DataBit db ->
       let mol = toIRILst DataProperty ex
           isJ = isJust mol
@@ -330,75 +320,40 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         SubPropertyOf | isJ -> do
           os1 <- mapM (\ o1 -> mapDataProp cSig o1 (OVar 1) (OVar 2)) map2nd
           o2 <- mapDataProp cSig ob (OVar 1) (OVar 2)
-          return (msen2Txt $ map (\ cd -> mkQuants (mkUnivQ
-                    [mkNAME 1, mkNAME 2]
-                    (mkBools (mkImpl cd o2)))) os1, cSig)
+          return (msen2Txt $ map (\ cd -> mkQU [mkNAME 1, mkNAME 2] $ mkBools
+                    $ mkImpl cd o2) os1, cSig)
 
         EDRelation ed -> do
           pairs <- mapComDataPropsList cSig map2nd (OVar 1) (OVar 2)
           let sntLst = case ed of
-                         Equivalent ->
-                            map (\ (x, y) ->
-                              mkBools (mkBicnd x y)) pairs
-                         Disjoint ->
-                            map (\ (x, y) ->
-                              mkBools (mkNeg (mkBools (cnjct [x, y])))) pairs
-              snt = if length sntLst == 1 then
-                                 head sntLst
-                               else
-                                 mkBools (cnjct sntLst)
-          return (msen2Txt [mkQuants (mkUnivQ
-                             [mkNAME 1, mkNAME 2]
-                           snt)], cSig)
-
+                Equivalent -> map (\ (x, y) -> mkBools $ mkBicnd x y) pairs
+                Disjoint -> map (\ (x, y) -> mkBools $ mkNeg $ mkBools
+                                $ cnjct [x, y]) pairs
+              snt = case sntLst of
+                        [hd] -> hd
+                        _ -> mkBools $ cnjct sntLst
+          return ([senToText $ mkQU [mkNAME 1, mkNAME 2] snt], cSig)
         _ -> return ([], cSig)
-
-    IndividualSameOrDifferent al ->
-      do
-        let mol = toIRILst NamedIndividual ex
-            map2nd = map snd al
+    IndividualSameOrDifferent al -> do
         case rel of
           Nothing -> return ([], cSig)
-          Just r ->
-            case r of
+          Just r -> case r of
               SDRelation re -> do
-                fs <- mapComIndivList cSig re mol map2nd
+                fs <- mapComIndivList cSig re (toIRILst NamedIndividual ex)
+                        $ map snd al
                 return (msen2Txt fs, cSig)
               _ -> return ([], cSig)
-
-    DataPropRange dpr ->
-      case rel of
+    DataPropRange dpr -> case rel of
         Nothing -> return ([], cSig)
-        Just re ->
-          case re of
-            DRRelation r ->
-              case r of
-                 ARange ->
-                      case ex of
-                        SimpleEntity ent ->
-                          case ent of
-                            Entity ty iri ->
-                              case ty of
-                                DataProperty ->
-                                  do
-                                    oEx <- mapDataProp cSig iri
-                                             (OVar 1) (OVar 2)
-                                    ls <- mapM (\ (_, c) ->
-                                            mapDataRange cSig c (OVar 2)) dpr
-                                    let dSig = map snd ls
-                                        odes = map fst ls
-                                    return (msen2Txt $ map (mkQuants .
-                                                    mkUnivQ [mkNAME 1] .
-                                                    mkQuants .
-                                                    mkExist [mkNAME 2] .
-                                                    mkBools . mkImpl oEx)
-                                               odes
-                                           , uniteL dSig)
-                                _ -> fail "DataPropRange EntityType fail"
-                        _ -> fail "DataPropRange Entity fail"
-                 _ -> fail "DataPropRange ADomain ni"
-            _ -> fail "DataPropRange Relations ni"
-
+        Just (DRRelation ARange) -> case ex of
+            SimpleEntity (Entity DataProperty iri) -> do
+                oEx <- mapDataProp cSig iri (OVar 1) (OVar 2)
+                ls <- mapM (\ (_, c) -> mapDataRange cSig c (OVar 2)) dpr
+                let dSig = map snd ls
+                    odes = map fst ls
+                return (msen2Txt $ map (mkSent [mkNAME 1] [mkNAME 2] oEx) odes
+                               , uniteL dSig)
+            _ -> failMsg dpr
     IndividualFacts indf ->
         let map2nd = map snd indf
         in
