@@ -95,15 +95,16 @@ cspTypedSymbKindToRaw b sig k idt t = let
     getSet = MapSet.lookup idt
     chs = getSet $ chans csig
     prs = getSet $ procSet csig
+    close = closeProcProfileSortRel $ sortRel sig
     err = plain_error (idToCspRaw idt)
               (showDoc idt " " ++ showDoc t
                " does not have kind " ++ showDoc k "") nullRange
     in case k of
      ProcessKind -> case t of
-       ProcType p -> return $ ACspSymbol $ toProcSymbol (idt, p)
+       ProcType p -> return $ ACspSymbol $ toProcSymbol (idt, close p)
        CaslType (A_type s) -> return
          $ ACspSymbol $ toProcSymbol
-             (idt, sortToProcProfile s)
+             (idt, close $ sortToProcProfile s)
        _ -> err
      ChannelKind -> case t of
        CaslType (A_type s) ->
@@ -134,7 +135,8 @@ cspTypedSymbKindToRaw b sig k idt t = let
                appendDiags [mkDiag Hint "matched process" idt]
                return $ ACspSymbol $ toProcSymbol (idt, pr)
          _ -> caslAnno
-       ProcType p | ck == Implicit -> return $ ACspSymbol $ toProcSymbol (idt, p)
+       ProcType p | ck == Implicit ->
+         return $ ACspSymbol $ toProcSymbol (idt, close p)
        _ -> err
 
 cspSymbToRaw :: Bool -> CspCASLSign -> CspSymbKind -> CspSymb
