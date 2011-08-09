@@ -211,7 +211,7 @@ mkEqVar = mkStEq . toQualVar
 
 mkFEI :: [VAR_DECL] -> [VAR_DECL] -> FORMULA f -> FORMULA f -> FORMULA f
 mkFEI l1 l2 f = mkForall l1 . mkExist l2 . mkImpl f
-    
+
 mapFact :: CASLSign -> Extended -> Fact -> Result CASLFORMULA
 mapFact cSig ex f = case f of
     ObjectPropertyFact posneg obe ind -> case ex of
@@ -222,7 +222,7 @@ mapFact cSig ex f = case f of
             let oProp = case posneg of
                     Positive -> oPropH
                     Negative -> Negation oPropH nullRange
-            return $ mkForall (map thingDecl [1,2]) $ implConj
+            return $ mkForall (map thingDecl [1, 2]) $ implConj
                             [mkEqVar (thingDecl 1) inS,
                              mkEqVar (thingDecl 2) inT] oProp
         _ -> fail $ "ObjectPropertyFactsFacts Entity fail: " ++ show ex
@@ -374,7 +374,7 @@ mapCharact cSig ope c = case c of
     Functional -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 1 3
-        return $ mkFI [1,2,3] [so1, so2] 2 3
+        return $ mkFI [1, 2, 3] [so1, so2] 2 3
     InverseFunctional -> do
         so1 <- mapObjProp cSig ope 1 3
         so2 <- mapObjProp cSig ope 2 3
@@ -413,7 +413,7 @@ mapAnnFrameBit cSig ex afb =
         SimpleEntity (Entity _ iri) -> do
             so1 <- mapDataProp cSig iri 1 2
             so2 <- mapDataProp cSig iri 1 3
-            return ([mkForall (thingDecl 1 : map dataDecl [2,3]) $ implConj
+            return ([mkForall (thingDecl 1 : map dataDecl [2, 3]) $ implConj
                         [so1, so2] $ mkEqVar (thingDecl 2) $ qualThing 3], cSig)
         _ -> err
     DatatypeBit dr -> case ex of
