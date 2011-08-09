@@ -28,7 +28,6 @@ import qualified Data.Map as Map
 import OWL2.Logic_OWL2
 import OWL2.AS
 import OWL2.MS
-import OWL2.ManchesterPrint
 import OWL2.ProfilesAndSublogics
 import OWL2.Morphism
 import OWL2.Symbols
@@ -367,25 +366,23 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                         $ map snd al
                 return (msen2Txt fs, cSig)
               _ -> return ([], cSig)
-    DataPropRange dpr -> case rel of
-        Nothing -> return ([], cSig)
-        Just (DRRelation ARange) -> case ex of
-            SimpleEntity (Entity DataProperty iri) -> do
-                oEx <- mapDataProp cSig iri (OVar 1) (OVar 2)
-                ls <- mapM (\ (_, c) -> mapDataRange cSig c (OVar 2)) dpr
-                let dSig = map snd ls
-                    odes = map fst ls
-                return (msen2Txt $ map (mkSent [mkNAME 1] [mkNAME 2] oEx) odes
+    DataPropRange dpr -> case ex of
+        SimpleEntity (Entity DataProperty iri) -> do
+            oEx <- mapDataProp cSig iri (OVar 1) (OVar 2)
+            ls <- mapM (\ (_, c) -> mapDataRange cSig c (OVar 2)) dpr
+            let dSig = map snd ls
+                odes = map fst ls
+            return (msen2Txt $ map (mkSent [mkNAME 1] [mkNAME 2] oEx) odes
                                , uniteL dSig)
-            _ -> failMsg dpr
+        _ -> failMsg dpr
     IndividualFacts indf -> do
         fl <- mapM (mapFact cSig ex . snd) indf
         return (fl, cSig)
-    ObjectCharacteristics ace ->
-      let map2nd = map snd ace in case ex of
+    ObjectCharacteristics ace -> case ex of
         ObjectEntity ope -> do
             cl <- mapM (mapCharact cSig ope . snd) ace
-            return (cl, cSig)  
+            return (cl, cSig)
+        _ -> failMsg ace
      
 mapOPF :: Sign -> ObjectPropertyExpression -> Int -> Int -> Result SENTENCE
 mapOPF cSig ope x y = mapObjProp cSig ope (OVar x) (OVar y)
