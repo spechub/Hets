@@ -234,11 +234,11 @@ mappedProcSym :: Sort_map -> Rel.Rel SORT -> ChanMap -> Id
 mappedProcSym sm rel cm pn pfSrc rsy =
     let procSym = "process symbol " ++ showDoc (toProcSymbol (pn, pfSrc))
                 " is mapped to "
-        pfMapped@(ProcProfile _ al2) = closeProcProfileSortRel rel
+        pfMapped@(ProcProfile _ al2) = reduceProcProfile rel
           $ mapProcProfile sm cm pfSrc
     in case rsy of
       ACspSymbol (CspSymbol ide (ProcAsItemType pf)) ->
-        let pfTar@(ProcProfile _ al1) = closeProcProfileSortRel rel pf
+        let pfTar@(ProcProfile _ al1) = reduceProcProfile rel pf
         in if compatibleProcTypes rel pfMapped pfTar
            then return (ide, al1)
            else plain_error (pn, al2)
