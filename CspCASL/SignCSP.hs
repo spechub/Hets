@@ -36,6 +36,7 @@ module CspCASL.SignCSP
   , ProcVarList
   , ProcVarMap
   , reduceProcProfile
+  , commType2Sort
   , relatedSorts
   , relatedProcs
   , unionCspCASLSign
@@ -99,27 +100,12 @@ getUniqueProfileInProcNameMap name numParams pm =
        _ -> mkError ("Process name not unique in signature with "
             ++ show numParams ++ " parameters:") name
 
-closeProcs :: Rel SORT -> CspSign -> CspSign
-closeProcs r s = s { procSet = closeProcNameMapSortRel r $ procSet s }
-
-{- | Close a proc name map under a sub-sort relation. Assumes all the proc
-profile's comms are in the sub sort relation and simply makes the comms
-downward closed under the sub-sort relation. -}
-closeProcNameMapSortRel :: Rel SORT -> ProcNameMap -> ProcNameMap
-closeProcNameMapSortRel sig =
-  MapSet.map (closeProcProfileSortRel sig)
-
 {- | Close a profile under a sub-sort relation.  Assumes the proc profile's
 comms are in the sub sort relation and simply makes the comms downward closed
 under the sub-sort relation. -}
 closeProcProfileSortRel :: Rel SORT -> ProcProfile -> ProcProfile
 closeProcProfileSortRel sig (ProcProfile argSorts comms) =
   ProcProfile argSorts (closeCspCommAlpha sig comms)
-
--- Close a communication alphabet under CASL subsort
-reallyCloseCspCommAlpha :: Rel SORT -> CommAlpha -> CommAlpha
-reallyCloseCspCommAlpha sr =
-    Set.unions . Set.toList . Set.map (closeOneCspComm sr)
 
 -- Close a communication alphabet under CASL subsort
 closeCspCommAlpha :: Rel SORT -> CommAlpha -> CommAlpha

@@ -288,11 +288,6 @@ cspMatches (CspSymbol i t) rsy = case rsy of
     (CaslKind Implicit, _) -> res
     _ -> False
 
-commType2Sort :: CommType -> SORT
-commType2Sort c = case c of
-  CommTypeSort s -> s
-  CommTypeChan (TypedChanName _ s) -> s
-
 procProfile2Sorts :: ProcProfile -> Set.Set SORT
 procProfile2Sorts (ProcProfile sorts al) =
   Set.union (Set.fromList sorts) $ Set.map commType2Sort al
