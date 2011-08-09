@@ -207,6 +207,9 @@ sHead s = case s of
     [a] -> a
     _ -> mkBC s
 
+eqFB :: [Int] -> [SENTENCE] -> TEXT
+eqFB nl l = senToText $ mkQU (map mkNAME nl) $ sHead l
+
 mkNNameH :: Int -> String
 mkNNameH k = case k of
     0 -> ""
@@ -694,9 +697,6 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             cl <- mapM (mapCharact cSig ope . snd) ace
             return (cl, cSig)
         _ -> failMsg ace
-
-eqFB :: [Int] -> [SENTENCE] -> TEXT
-eqFB nl l = senToText $ mkQU (map mkNAME nl) $ sHead l
 
 -- | Mapping of AnnFrameBit
 mapAnnFrameBit :: Sign -> Extended -> AnnFrameBit -> Result ([TEXT], Sign)
