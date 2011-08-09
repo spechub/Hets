@@ -197,6 +197,12 @@ nameDecl = mkVarDecl . mkNName
 thingDecl :: Int -> VAR_DECL
 thingDecl = flip nameDecl thing
 
+dataDecl :: Int -> VAR_DECL
+dataDecl = flip nameDecl dataS
+
+qualThing :: Int -> TERM f
+qualThing = toQualVar . thingDecl
+
 implConj :: [FORMULA f] -> FORMULA f -> FORMULA f
 implConj = mkImpl . conjunct
 
@@ -228,9 +234,9 @@ mapFact cSig ex f = case f of
             let oProp = case posneg of
                     Positive -> oPropH
                     Negative -> Negation oPropH nullRange
-            return $ mkForall [nameDecl 1 thing, nameDecl 2 dataS] $ implConj
-                [mkEqVar (nameDecl 1 thing) inS,
-                 mkEqVar (nameDecl 2 dataS) $ upcast inT dataS] oProp
+            return $ mkForall [thingDecl 1, dataDecl 2] $ implConj
+                [mkEqVar (thingDecl 1) inS,
+                 mkEqVar (dataDecl 2) $ upcast inT dataS] oProp
 
         _ -> fail "DataPropertyFact Entity fail"
 
@@ -319,7 +325,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         SubPropertyOf | isJ -> do
           os1 <- mapM (\ o1 -> mapDataProp cSig o1 1 2) map2nd
           o2 <- mapDataProp cSig ob 2 1
-          return (map (mkForall [nameDecl 1 thing, nameDecl 2 dataS]
+          return (map (mkForall [thingDecl 1, dataDecl 2]
                     . mkImpl o2) os1, cSig)
         EDRelation ed -> do
           pairs <- mapComDataPropsList cSig map2nd 1 2
@@ -354,13 +360,13 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             return (cl, cSig)
         _ -> failMsg ace
 
-mkChar :: [Int] -> [FORMULA f] -> Int -> Int -> FORMULA f
-mkChar l1 l2 x y = mkForall (map thingDecl l1) $ implConj l2 $ mkEqVar
-        (thingDecl x) $ toQualVar $ thingDecl y
+mkFI :: [Int] -> [FORMULA f] -> Int -> Int -> FORMULA f
+mkFI l1 l2 x y = mkForall (map thingDecl l1) $ implConj l2 $ mkEqVar
+        (thingDecl x) $ qualThing y
 
 mkRI :: [Int] -> Int -> FORMULA f -> FORMULA f
 mkRI l x so = mkForall (map thingDecl l) $ mkImpl
-            (Membership (toQualVar $ thingDecl x) thing nullRange) so
+            (Membership (qualThing x) thing nullRange) so
 
 mapCharact :: CASLSign -> ObjectPropertyExpression -> Character
             -> Result CASLFORMULA
@@ -368,11 +374,11 @@ mapCharact cSig ope c = case c of
     Functional -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 1 3
-        return $ mkChar [1,2,3] [so1, so2] 2 3
+        return $ mkFI [1,2,3] [so1, so2] 2 3
     InverseFunctional -> do
         so1 <- mapObjProp cSig ope 1 3
         so2 <- mapObjProp cSig ope 2 3
-        return $ mkChar [1, 2, 3] [so1, so2] 1 2
+        return $ mkFI [1, 2, 3] [so1, so2] 1 2
     Reflexive -> do
         so <- mapObjProp cSig ope 1 1
         return $ mkRI [1] 1 so
@@ -390,7 +396,7 @@ mapCharact cSig ope c = case c of
     Antisymmetric -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 2 1
-        return $ mkChar [1, 2] [so1, so2] 1 2
+        return $ mkFI [1, 2] [so1, so2] 1 2
     Transitive -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 2 3
@@ -398,175 +404,99 @@ mapCharact cSig ope c = case c of
         return $ mkForall (map thingDecl [1, 2, 3]) $ implConj [so1, so2] so3
 
 -- | Mapping of AnnFrameBit
-mapAnnFrameBit :: CASLSign
-       -> Extended
-       -> AnnFrameBit
-       -> Result ([CASLFORMULA], CASLSign)
+mapAnnFrameBit :: CASLSign -> Extended -> AnnFrameBit
+            -> Result ([CASLFORMULA], CASLSign)
 mapAnnFrameBit cSig ex afb =
-  case afb of
+    let err = fail $ "could not translate " ++ show afb in case afb of
     AnnotationFrameBit _ -> return ([], cSig)
-    DataFunctional ->
-      case ex of
-        SimpleEntity (Entity ty iri) ->
-          case ty of
-            DataProperty ->
-              do
-                so1 <- mapDataProp cSig iri 1 2
-                so2 <- mapDataProp cSig iri 1 3
-                return ([mkForall
-                         [mkVarDecl (mkNName 1) thing,
-                           mkVarDecl (mkNName 2) dataS,
-                           mkVarDecl (mkNName 3) dataS]
-                         (mkImpl
-                           (conjunct [so1, so2])
-                           (mkStEq
-                              (toQualVar (mkVarDecl (mkNName 2) thing))
-                              (toQualVar (mkVarDecl (mkNName 3) thing))
-                           )
-                        )], cSig)
-            _ -> fail "DataFunctional EntityType fail"
-        _ -> fail "DataFunctional Extend fail"
-    DatatypeBit dr ->
-      case ex of
-        SimpleEntity (Entity ty iri) ->
-          case ty of
-            Datatype ->
-              do
-                odes <- mapDataRange cSig dr 2
-                let dtb = uriToId iri
-                return ([mkForall
-                           [mkVarDecl (mkNName 1) thing]
-                           (mkEqv
-                              odes
-                              (Membership
-                                (toQualVar (mkVarDecl (mkNName 2) thing))
-                                dtb
-                                nullRange
-                              )
-                           )
-                        ], cSig)
-            _ -> fail "DatatypeBit EntityType fail"
-        _ -> fail "DatatypeBit Extend fail"
-    ClassDisjointUnion clsl ->
-      case ex of
-        SimpleEntity (Entity ty iri) ->
-          case ty of
-            Class ->
-              do
-                 decrs <- mapDescriptionList cSig 1 clsl
-                 decrsS <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
-                 let decrsP = map (\ (x, y) -> conjunct [x, y]) decrsS
-                 mcls <- mapClassURI cSig iri (mkNName 1)
-                 return ([mkForall
-                           [mkVarDecl (mkNName 1) thing]
-                           (mkEqv mcls
-                                  (conjunct
-                                    [disjunct decrs,
-                                     mkNeg (conjunct decrsP)]
-                                  )
-                           )
-                        ], cSig)
-            _ -> fail "ClassDisjointUnion EntityType fail"
-        _ -> fail "ClassDisjointUnion Extend fail"
-    ClassHasKey _obpe _dpe -> return ([], cSig)
-    ObjectSubPropertyChain oplst ->
-      do
-        os <- mapM (\ cd -> mapSubObjPropChain cSig afb cd 3) oplst
+    DataFunctional -> case ex of
+        SimpleEntity (Entity _ iri) -> do
+            so1 <- mapDataProp cSig iri 1 2
+            so2 <- mapDataProp cSig iri 1 3
+            return ([mkForall (thingDecl 1 : map dataDecl [2,3]) $ implConj
+                        [so1, so2] $ mkEqVar (thingDecl 2) $ qualThing 3], cSig)
+        _ -> err
+    DatatypeBit dr -> case ex of
+        SimpleEntity (Entity Datatype iri) -> do
+            odes <- mapDataRange cSig dr 2
+            let dtb = uriToId iri
+            return ([mkForall [thingDecl 1] $ mkEqv odes $ Membership
+                    (qualThing 2) dtb nullRange], cSig)
+        _ -> err
+    ClassDisjointUnion clsl -> case ex of
+        SimpleEntity (Entity Class iri) -> do
+            decrs <- mapDescriptionList cSig 1 clsl
+            decrsS <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
+            let decrsP = map (\ (x, y) -> conjunct [x, y]) decrsS
+            mcls <- mapClassURI cSig iri $ mkNName 1
+            return ([mkForall [thingDecl 1] $ mkEqv mcls $ conjunct
+                    [disjunct decrs, mkNeg $ conjunct decrsP]], cSig)
+        _ -> err
+    ClassHasKey _ _ -> return ([], cSig)
+    ObjectSubPropertyChain oplst -> do
+        os <- mapM (\ cd -> mapSubObjPropChain cSig oplst cd 3) oplst
         return (os, cSig)
 
 -- | Mapping of ObjectSubPropertyChain
-mapSubObjPropChain :: CASLSign
-              -> AnnFrameBit
-              -> ObjectPropertyExpression
-              -> Int
-              -> Result CASLFORMULA
-mapSubObjPropChain cSig prop oP num1 =
-    let num2 = num1 + 1
-    in
-    case prop of
-           ObjectSubPropertyChain props ->
-             do
-               let zprops = zip (tail props) [(num2 + 1) ..]
-                   (_, vars) = unzip zprops
-               oProps <- mapM (\ (z, x, y) -> mapObjProp cSig z x y) $
-                                 zip3 props ((num1 : vars) ++ [num2]) $
-                                      tail ((num1 : vars) ++ [num2])
-               ooP <- mapObjProp cSig oP num1 num2
-               return $ mkForall
-                           [mkVarDecl (mkNName 1) thing
-                           , mkVarDecl (mkNName 2) thing]
-                           (mkForall (map (\ x -> mkVarDecl
-                                       (mkNName x) thing) vars)
-                                     (mkImpl (conjunct oProps) ooP))
-           _ -> fail "mapping of ObjectSubPropertyChain failed"
-
+mapSubObjPropChain :: CASLSign -> [ObjectPropertyExpression]
+    -> ObjectPropertyExpression -> Int -> Result CASLFORMULA
+mapSubObjPropChain cSig props oP num1 = let num2 = num1 + 1 in do
+    let zprops = zip (tail props) [(num2 + 1) ..]
+        (_, vars) = unzip zprops
+    oProps <- mapM (\ (z, x, y) -> mapObjProp cSig z x y) $
+                zip3 props (num1 : vars ++ [num2]) $
+                tail $ num1 : vars ++ [num2]
+    ooP <- mapObjProp cSig oP num1 num2
+    return $ mkForall (map thingDecl [1, 2]) $ mkForall
+                (map thingDecl vars) $ mkImpl (conjunct oProps) ooP
 
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
 operations. -}
-mapComObjectPropsList :: CASLSign                    -- ^ CASLSignature
-                      -> Maybe ObjectPropertyExpression
-                      -> [ObjectPropertyExpression]
-                      -> Int                         -- ^ First variable
-                      -> Int                         -- ^ Last  variable
-                      -> Result [(CASLFORMULA, CASLFORMULA)]
+mapComObjectPropsList :: CASLSign -> Maybe ObjectPropertyExpression
+    -> [ObjectPropertyExpression] -> Int -> Int
+    -> Result [(CASLFORMULA, CASLFORMULA)]
 mapComObjectPropsList cSig mol props num1 num2 = do
-  fs <- mapM (\ x -> mapObjProp cSig x num1 num2) props
-  case mol of
-    Nothing -> return $ comPairs fs fs
-    Just ol -> do
-      f <- mapObjProp cSig ol num1 num2
-      return $ comPairsaux f fs
+    fs <- mapM (\ x -> mapObjProp cSig x num1 num2) props
+    case mol of
+        Nothing -> return $ comPairs fs fs
+        Just ol -> do
+            f <- mapObjProp cSig ol num1 num2
+            return $ comPairsaux f fs
 
 -- | mapping of individual list
-mapComIndivList :: CASLSign                    -- ^ CASLSignature
-                -> SameOrDifferent
-                -> Maybe Individual
-                -> [Individual]
-                -> Result [CASLFORMULA]
+mapComIndivList :: CASLSign -> SameOrDifferent -> Maybe Individual
+    -> [Individual] -> Result [CASLFORMULA]
 mapComIndivList cSig sod mol inds = do
-  fs <- mapM (mapIndivURI cSig) inds
-  tps <- case mol of
-    Nothing -> return $ comPairs fs fs
-    Just ol -> do
-      f <- mapIndivURI cSig ol
-      return $ comPairsaux f fs
-  return $ map (\ (x, y) -> case sod of
-    Same -> mkStEq x y
-    Different -> mkNeg (mkStEq x y)) tps
+    fs <- mapM (mapIndivURI cSig) inds
+    tps <- case mol of
+        Nothing -> return $ comPairs fs fs
+        Just ol -> do
+            f <- mapIndivURI cSig ol
+            return $ comPairsaux f fs
+    return $ map (\ (x, y) -> case sod of
+        Same -> mkStEq x y
+        Different -> mkNeg $ mkStEq x y) tps
 
 -- | Mapping of subobj properties
-mapSubObjProp :: CASLSign
-              -> ObjectPropertyExpression
-              -> ObjectPropertyExpression
-              -> Int
-              -> Result CASLFORMULA
+mapSubObjProp :: CASLSign -> ObjectPropertyExpression
+    -> ObjectPropertyExpression -> Int -> Result CASLFORMULA
 mapSubObjProp cSig oPL oP num1 = do
     let num2 = num1 + 1
     l <- mapObjProp cSig oPL num1 num2
     r <- mapObjProp cSig oP num1 num2
-    return $ mkForallRange [mkVarDecl (mkNName num1) thing,
-                       mkVarDecl (mkNName num2) thing]
-                       (mkImpl r l )
-                       nullRange
+    return $ mkForallRange (map thingDecl [num1, num2]) (mkImpl r l ) nullRange
 
 {- | Mapping along DataPropsList for creation of pairs for commutative
 operations. -}
-mapComDataPropsList :: CASLSign
-                      -> [DataPropertyExpression]
-                      -> Int                         -- ^ First variable
-                      -> Int                         -- ^ Last  variable
-                      -> Result [(CASLFORMULA, CASLFORMULA)]
-mapComDataPropsList cSig props num1 num2 =
-      mapM (\ (x, z) -> do
-                              l <- mapDataProp cSig x num1 num2
-                              r <- mapDataProp cSig z num1 num2
-                              return (l, r)
-                       ) $ comPairs props props
+mapComDataPropsList :: CASLSign -> [DataPropertyExpression] -> Int -> Int
+        -> Result [(CASLFORMULA, CASLFORMULA)]
+mapComDataPropsList cSig props num1 num2 = mapM (\ (x, z) -> do
+    l <- mapDataProp cSig x num1 num2
+    r <- mapDataProp cSig z num1 num2
+    return (l, r)) $ comPairs props props
 
 mapNNInt :: NNInt -> TERM ()
-mapNNInt int =
-    let NNInt uInt = int
-    in foldr1 joinDigits $ map mkDigit uInt
+mapNNInt int = let NNInt uInt = int in foldr1 joinDigits $ map mkDigit uInt
 
 mapIntLit :: IntLit -> TERM ()
 mapIntLit int =
@@ -599,99 +529,70 @@ mapNrLit l = case l of
 mapLiteral :: Literal -> Result (TERM ())
 mapLiteral lit = return $ case lit of
     Literal l ty -> Sorted_term (case ty of
-            Untyped _ -> foldr consChar emptyStringTerm l
-            Typed dt -> case datatypeType dt of
-                OWL2Number -> let p = parse literal "" l in case p of
-                    Right nr -> mapNrLit nr
-                    _ -> error "cannot parse number literal"
-                OWL2Bool -> case l of
-                    "true" -> trueT
-                    _ -> falseT
-                _ -> foldr consChar emptyStringTerm l)
-                        dataS nullRange
+        Untyped _ -> foldr consChar emptyStringTerm l
+        Typed dt -> case datatypeType dt of
+            OWL2Number -> let p = parse literal "" l in case p of
+                Right nr -> mapNrLit nr
+                _ -> error "cannot parse number literal"
+            OWL2Bool -> case l of
+                "true" -> trueT
+                _ -> falseT
+            _ -> foldr consChar emptyStringTerm l) dataS nullRange
     _ -> mapNrLit lit
 
+mkThingVar :: VAR -> TERM f
+mkThingVar v = Qual_var v thing nullRange
+
 -- | Mapping of data properties
-mapDataProp :: CASLSign
-            -> DataPropertyExpression
-            -> Int
-            -> Int
+mapDataProp :: CASLSign -> DataPropertyExpression -> Int -> Int
             -> Result CASLFORMULA
-mapDataProp _ dP nO nD =
-    do
-      let
-          l = mkNName nO
+mapDataProp _ dP nO nD = do
+      let l = mkNName nO
           r = mkNName nD
       ur <- uriToIdM dP
-      return $ mkPredication
-                 (mkQualPred ur (toPRED_TYPE dataPropPred))
-                 [Qual_var l thing nullRange, Qual_var r dataS nullRange]
+      return $ mkPred ur dataPropPred [Qual_var l thing nullRange,
+                Qual_var r dataS nullRange]
 
 -- | Mapping of obj props
-mapObjProp :: CASLSign
-              -> ObjectPropertyExpression
-              -> Int
-              -> Int
-              -> Result CASLFORMULA
-mapObjProp cSig ob num1 num2 =
-    case ob of
-      ObjectProp u ->
-          do
+mapObjProp :: CASLSign -> ObjectPropertyExpression -> Int -> Int
+        -> Result CASLFORMULA
+mapObjProp cSig ob num1 num2 = case ob of
+      ObjectProp u -> do
             let l = mkNName num1
                 r = mkNName num2
             ur <- uriToIdM u
-            return $ mkPredication
-                       (mkQualPred ur (toPRED_TYPE objectPropPred))
-                       [Qual_var l thing nullRange, Qual_var r thing nullRange]
-      ObjectInverseOf u ->
-          mapObjProp cSig u num2 num1
+            return $ mkPred ur objectPropPred (map mkThingVar [l, r])
+      ObjectInverseOf u -> mapObjProp cSig u num2 num1
 
 -- | Mapping of obj props with Individuals
-mapObjPropI :: CASLSign
-              -> ObjectPropertyExpression
-              -> VarOrIndi
-              -> VarOrIndi
+mapObjPropI :: CASLSign -> ObjectPropertyExpression -> VarOrIndi -> VarOrIndi
               -> Result CASLFORMULA
-mapObjPropI cSig ob lP rP =
-      case ob of
-        ObjectProp u ->
-          do
-            lT <- case lP of
-                    OVar num1 -> return $ Qual_var (mkNName num1)
-                                     thing nullRange
-                    OIndi indivID -> mapIndivURI cSig indivID
-            rT <- case rP of
-                    OVar num1 -> return $ Qual_var (mkNName num1)
-                                     thing nullRange
-                    OIndi indivID -> mapIndivURI cSig indivID
-            ur <- uriToIdM u
-            return $ mkPredication
-                       (mkQualPred ur (toPRED_TYPE objectPropPred))
-                       [lT, rT]
-        ObjectInverseOf u -> mapObjPropI cSig u rP lP
+mapObjPropI cSig ob lP rP = case ob of
+    ObjectProp u -> do
+        lT <- case lP of
+            OVar num1 -> return $ mkThingVar (mkNName num1)
+            OIndi indivID -> mapIndivURI cSig indivID
+        rT <- case rP of
+            OVar num1 -> return $ mkThingVar (mkNName num1)
+            OIndi indivID -> mapIndivURI cSig indivID
+        ur <- uriToIdM u
+        return $ mkPred ur objectPropPred [lT, rT]
+    ObjectInverseOf u -> mapObjPropI cSig u rP lP
+
+mkPred :: PRED_NAME -> PredType -> [TERM f] -> FORMULA f
+mkPred u c = mkPredication $ mkQualPred u $ toPRED_TYPE c
 
 -- | Mapping of Class URIs
-mapClassURI :: CASLSign
-            -> Class
-            -> Token
-            -> Result CASLFORMULA
-mapClassURI _ uril uid =
-    do
-      ur <- uriToIdM uril
-      return $ mkPredication
-                (mkQualPred ur (toPRED_TYPE conceptPred))
-                [Qual_var uid thing nullRange]
+mapClassURI :: CASLSign -> Class -> Token -> Result CASLFORMULA
+mapClassURI _ uril uid = do
+    ur <- uriToIdM uril
+    return $ mkPred ur conceptPred [mkThingVar uid]
 
 -- | Mapping of Individual URIs
-mapIndivURI :: CASLSign
-            -> Individual
-            -> Result (TERM ())
-mapIndivURI _ uriI =
-    do
-      ur <- uriToIdM uriI
-      return $ mkAppl
-                 (mkQualOp ur (Op_type Total [] thing nullRange))
-                 []
+mapIndivURI :: CASLSign -> Individual -> Result (TERM ())
+mapIndivURI _ uriI = do
+    ur <- uriToIdM uriI
+    return $ mkAppl (mkQualOp ur (Op_type Total [] thing nullRange)) []
 
 uriToIdM :: IRI -> Result Id
 uriToIdM = return . uriToId
@@ -701,31 +602,21 @@ uriToId :: IRI -> Id
 uriToId urI =
     let l = localPart urI
         ur = if isThing urI then mkQName l else urI
-        repl a = if isAlphaNum a
-                  then
-                      [a]
-                  else
-                      "_u"
+        repl a = if isAlphaNum a then [a] else "_u"
         nP = concatMap repl $ namePrefix ur
         lP = concatMap repl l
     in stringToId $ nP ++ "" ++ lP
 
 -- | Mapping of a list of descriptions
-mapDescriptionList :: CASLSign
-                      -> Int
-                      -> [ClassExpression]
-                      -> Result [CASLFORMULA]
-mapDescriptionList cSig n lst =
-      mapM (uncurry $ mapDescription cSig)
-                                $ zip lst $ replicate (length lst) n
+mapDescriptionList :: CASLSign -> Int -> [ClassExpression]
+        -> Result [CASLFORMULA]
+mapDescriptionList cSig n lst = mapM (uncurry $ mapDescription cSig)
+        $ zip lst $ replicate (length lst) n
 
 -- | Mapping of a list of pairs of descriptions
-mapDescriptionListP :: CASLSign
-                    -> Int
-                    -> [(ClassExpression, ClassExpression)]
+mapDescriptionListP :: CASLSign -> Int -> [(ClassExpression, ClassExpression)]
                     -> Result [(CASLFORMULA, CASLFORMULA)]
-mapDescriptionListP cSig n lst =
-    do
+mapDescriptionListP cSig n lst = do
       let (l, r) = unzip lst
       llst <- mapDescriptionList cSig n l
       rlst <- mapDescriptionList cSig n r
@@ -743,130 +634,66 @@ comPairsaux :: t -> [t1] -> [(t, t1)]
 comPairsaux a = map (\ b -> (a, b))
 
 -- | mapping of Data Range
-mapDataRange :: CASLSign
-          -> DataRange
-          -> Int
-          -> Result CASLFORMULA
-mapDataRange cSig dr inId =
-    do
-        let uid = mkNName inId
-        case dr of
-          DataType d _ ->
-            do
-              ur <- uriToIdM d
-              return $ Membership
-                        (Qual_var uid thing nullRange)
-                        ur
-                        nullRange
-          DataComplementOf drc ->
-            do
-              dc <- mapDataRange cSig drc inId
-              return $ mkNeg dc
-          DataOneOf _ -> error "nyi"
-          DataJunction _ _ -> error "nyi"
+mapDataRange :: CASLSign -> DataRange -> Int -> Result CASLFORMULA
+mapDataRange cSig dr inId = do
+    let uid = mkNName inId
+    case dr of
+        DataType d _ -> do
+            ur <- uriToIdM d
+            return $ Membership (Qual_var uid thing nullRange) ur nullRange
+        DataComplementOf drc -> fmap mkNeg $ mapDataRange cSig drc inId
+        _ -> fail $ "could not translate " ++ show dr
 
 -- | mapping of OWL2 Descriptions
-mapDescription :: CASLSign
-                -> ClassExpression
-                -> Int
-                -> Result CASLFORMULA
+mapDescription :: CASLSign -> ClassExpression -> Int -> Result CASLFORMULA
 mapDescription cSig desc var = case desc of
-    Expression u -> mapClassURI cSig u (mkNName var)
-    ObjectJunction ty ds ->
-        do
-           des0 <- mapM (flip (mapDescription cSig) var) ds
-           return $ case ty of
-                UnionOf -> disjunct des0
-                IntersectionOf -> conjunct des0
-    ObjectComplementOf d ->
-        do
-           des0 <- mapDescription cSig d var
-           return $ mkNeg des0
-    ObjectOneOf is ->
-        do
-           ind0 <- mapM (mapIndivURI cSig) is
-           let var0 = toQualVar (mkVarDecl (mkNName var) thing)
-           let forms = map (mkStEq var0) ind0
-           return $ disjunct forms
-    ObjectValuesFrom ty o d ->
-        do
-           oprop0 <- mapObjProp cSig o var (var + 1)
-           desc0 <- mapDescription cSig d (var + 1)
-           case ty of
-                SomeValuesFrom ->
-                   return $ mkExist
-                              [mkVarDecl (mkNName (var + 1)) thing]
-                              (conjunct [oprop0, desc0])
-                AllValuesFrom ->
-                   return $ mkForall
-                             [mkVarDecl (mkNName (var + 1)) thing]
-                             (mkImpl oprop0 desc0)
+    Expression u -> mapClassURI cSig u $ mkNName var
+    ObjectJunction ty ds -> do
+        des0 <- mapM (flip (mapDescription cSig) var) ds
+        return $ case ty of
+            UnionOf -> disjunct des0
+            IntersectionOf -> conjunct des0
+    ObjectComplementOf d -> fmap mkNeg $ mapDescription cSig d var
+    ObjectOneOf is -> do
+        ind0 <- mapM (mapIndivURI cSig) is
+        return $ disjunct $ map (mkStEq $ qualThing var) ind0
+    ObjectValuesFrom ty o d -> do
+        oprop0 <- mapObjProp cSig o var (var + 1)
+        desc0 <- mapDescription cSig d (var + 1)
+        case ty of
+            SomeValuesFrom -> return $ mkExist [thingDecl $ var + 1]
+                                (conjunct [oprop0, desc0])
+            AllValuesFrom -> return $ mkForall [thingDecl $ var + 1]
+                                (mkImpl oprop0 desc0)
     ObjectHasSelf o -> mapObjProp cSig o var var
     ObjectHasValue o i -> mapObjPropI cSig o (OVar var) (OIndi i)
-    ObjectCardinality c ->
-        case c of
-           Cardinality ct n oprop d
-                ->
-                   do
-                     let vlst = [(var + 1) .. (n + var)]
-                         vlstM = [(var + 1) .. (n + var + 1)]
-                     dOut <- (\ x -> case x of
-                                     Nothing -> return []
-                                     Just y ->
-                                           mapM (mapDescription cSig y) vlst
-                                ) d
-                     let dlst = map (\ (x, y) ->
-                                     mkNeg
-                                       (
-                                       mkStEq
-                                        (toQualVar (mkVarDecl
-                                          (mkNName x) thing))
-                                        (toQualVar (mkVarDecl
-                                          (mkNName y) thing))
-                                       )
-                                    ) $ comPairs vlst vlst
-                         dlstM = map (\ (x, y) ->
-                                      mkStEq
-                                          (toQualVar (mkVarDecl
-                                            (mkNName x) thing))
-                                          (toQualVar (mkVarDecl
-                                            (mkNName y) thing))
-                                     ) $ comPairs vlstM vlstM
-                         qVars = map (\ x ->
-                                      mkVarDecl (mkNName x) thing
-                                     ) vlst
-                         qVarsM = map (\ x ->
-                                       mkVarDecl (mkNName x) thing
-                                      ) vlstM
-                     oProps <- mapM (mapObjProp cSig oprop var) vlst
-                     oPropsM <- mapM (mapObjProp cSig oprop var) vlstM
-                     let minLst = mkExist
-                                   qVars
-                                   (conjunct (dlst ++ dOut ++ oProps))
-                     let maxLst = mkForall
-                                  qVarsM
-                                  (
-                                   mkImpl
-                                     (conjunct (oPropsM ++ dOut))
-                                     (disjunct dlstM)
-                                  )
-                     case ct of
-                        MinCardinality -> return minLst
-                        MaxCardinality -> return maxLst
-                        ExactCardinality -> return $ conjunct [minLst, maxLst]
-
-    DataValuesFrom ty dpe dr ->
-      do
+    ObjectCardinality (Cardinality ct n oprop d) -> do
+        let vlst = map (var +) [1 .. n]
+            vlstM = vlst ++ [n + var + 1]
+        dOut <- case d of
+                    Nothing -> return []
+                    Just ex -> mapM (mapDescription cSig ex) vlst
+        let dlst = map (\ (x, y) -> mkNeg $ mkStEq (qualThing x) $ qualThing y)
+                        $ comPairs vlst vlst
+            dlstM = map (\ (x, y) -> mkStEq (qualThing x) $ qualThing y)
+                        $ comPairs vlstM vlstM
+            qVars = map thingDecl vlst
+            qVarsM = map thingDecl vlstM
+        oProps <- mapM (mapObjProp cSig oprop var) vlst
+        oPropsM <- mapM (mapObjProp cSig oprop var) vlstM
+        let minLst = mkExist qVars $ conjunct $ dlst ++ dOut ++ oProps
+        let maxLst = mkForall qVarsM $ mkImpl (conjunct $ oPropsM ++ dOut)
+                        $ disjunct dlstM
+        return $ case ct of
+            MinCardinality -> minLst
+            MaxCardinality -> maxLst
+            ExactCardinality -> conjunct [minLst, maxLst]
+    DataValuesFrom ty dpe dr -> do
         oprop0 <- mapDataProp cSig dpe var (var + 1)
         desc0 <- mapDataRange cSig dr (var + 1)
-        case ty of
-                SomeValuesFrom ->
-                   return $ mkExist
-                              [mkVarDecl (mkNName (var + 1)) thing]
-                              (conjunct [oprop0, desc0])
-                AllValuesFrom ->
-                   return $ mkForall
-                       [mkVarDecl (mkNName (var + 1)) thing]
-                       (mkImpl oprop0 desc0)
-    DataHasValue _ _ -> fail "DataHasValue handling nyi"
-    DataCardinality _ -> fail "DataCardinality handling nyi"
+        return $ case ty of
+            SomeValuesFrom -> mkExist [thingDecl $ var + 1]
+                    $ conjunct [oprop0, desc0]
+            AllValuesFrom -> mkForall [thingDecl $ var + 1]
+                    $ mkImpl oprop0 desc0
+    _ -> fail $ "could not translate " ++ show desc
