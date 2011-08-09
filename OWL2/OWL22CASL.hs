@@ -658,8 +658,8 @@ mapAnnFrameBit cSig ex afb =
         SimpleEntity (Entity Datatype iri) -> do
             odes <- mapDataRange cSig dr 2
             let dtb = uriToId iri
-            return ([mkForall [thingDecl 1] $ mkEqv odes $ Membership
-                    (qualThing 2) dtb nullRange], cSig)
+            return ([mkForall [thingDecl 1] $ mkEqv odes $ mkMember
+                    (qualThing 2) dtb], cSig)
         _ -> err
     ClassDisjointUnion clsl -> case ex of
         SimpleEntity (Entity Class iri) -> do
