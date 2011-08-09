@@ -245,7 +245,8 @@ mappedProcSym sm rel cm pn pfSrc rsy =
              (procSym ++ "type " ++ showDoc pfTar
               "\nbut should be mapped to type " ++
               showDoc pfMapped
-              "\npossibly using a sub-alphabet of " ++ showDoc al2 ".")
+              "\npossibly using a sub-alphabet of " ++
+              showDoc (closeCspCommAlpha rel al2) ".")
              $ getRange rsy
       CspKindedSymb k ide | elem k [CaslKind Implicit, ProcessKind] ->
         return (ide, al2)
