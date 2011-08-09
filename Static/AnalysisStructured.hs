@@ -243,9 +243,9 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
         anaSpec addSyms lg ln dg nsig (extName "Translation" name) opts sp1
       mor <- anaRenaming lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
-      (fs, dgf) <- if isIdentity mor then
-         warning (ns', dg') ("nothing renamed by:\n" ++ showDoc ren "")
-           $ getRange ren
+      when (isIdentity mor) $ warning ()
+         ("nothing renamed by:\n" ++ showDoc ren "") $ getRange ren
+      (fs, dgf) <- if isIdentity mor && isInternal name then return (ns', dg')
          else do
          let (ns@(NodeSig node _), dg'') =
                insGSig dg' name (DGTranslation $ Renamed ren) $ cod mor
@@ -261,10 +261,9 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       (hmor, tmor) <- anaRestriction lg (getMaybeSig nsig) gsigma' opts restr
       let noRename = maybe True isIdentity tmor
           noHide = isIdentity hmor
-      p2@(NodeSig node1 _, dg2) <- if noHide then
-          (if noRename then warning else hint)
-          p1 ("nothing hidden by:\n" ++ showDoc restr "")
-            $ getRange restr
+      when noHide $ (if noRename then warning else hint) ()
+        ("nothing hidden by:\n" ++ showDoc restr "") $ getRange restr
+      p2@(NodeSig node1 _, dg2) <- if noHide && isInternal name then return p1
           else do
            let trgSg = dom hmor
                hidSyms = Set.difference (symsOfGsign gsigma')
