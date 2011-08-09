@@ -148,7 +148,7 @@ mkFIE l1 l2 x y = mkForall (map thingDecl l1) $ implConj l2 $ mkEqVar
 
 mkRI :: [Int] -> Int -> FORMULA f -> FORMULA f
 mkRI l x so = mkForall (map thingDecl l) $ mkImpl
-            (Membership (qualThing x) thing nullRange) so
+            (mkMember (qualThing x) thing) so
 
 mkThingVar :: VAR -> TERM f
 mkThingVar v = Qual_var v thing nullRange

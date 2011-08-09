@@ -83,6 +83,12 @@ instance Comorphism
       isInclusionComorphism OWL22CommonLogic = True
       has_model_expansion OWL22CommonLogic = True
 
+smap :: Monad m =>
+        (t4 -> t -> t1 -> t2 -> m t3) -> t4 -> t -> t1 -> t2 -> m (t3, t4)
+smap f s a b c = do
+    x <- f s a b c
+    return (x, s)
+
 failMsg :: Pretty a => a -> Result b
 failMsg a = fail $ "cannot translate " ++ showDoc a "\n"
 
@@ -171,6 +177,18 @@ mkQU l = mkQuants . mkUnivQ l
 mkBI :: SENTENCE -> SENTENCE -> SENTENCE
 mkBI s = mkBools . mkImpl s
 
+mkBN :: SENTENCE -> SENTENCE
+mkBN = mkBools . mkNeg
+
+mkBD :: [SENTENCE] -> SENTENCE
+mkBD = mkBools . dsjct
+
+mkBC :: [SENTENCE] -> SENTENCE
+mkBC = mkBools . cnjct
+
+mkBB :: SENTENCE -> SENTENCE -> SENTENCE
+mkBB s = mkBools . mkBicnd s
+
 mkQE :: [NAME_OR_SEQMARK] -> SENTENCE -> SENTENCE
 mkQE l = mkQuants . mkExist l
 
@@ -179,7 +197,7 @@ mkSent :: [NAME_OR_SEQMARK] -> [NAME_OR_SEQMARK] -> SENTENCE -> SENTENCE
 mkSent l1 l2 s = mkQU l1 . mkQE l2 . mkBI s
 
 mkQUBI :: [NAME_OR_SEQMARK] -> [SENTENCE] -> TERM -> TERM -> TEXT
-mkQUBI l1 l2 a b = senToText $ mkQU l1 $ mkBI (mkBools $ cnjct l2)
+mkQUBI l1 l2 a b = senToText $ mkQU l1 $ mkBI (mkBC l2)
     $ mkAtoms $ mkEq a b
 
 mkTermAtoms :: NAME -> [TERM] -> SENTENCE
@@ -290,8 +308,8 @@ mapComIndivList cSig sod mol inds = do
     let inDL = comPairs fs fs
         sntLst = map (\ (x, y) -> case sod of
                     Same -> mkAtoms $ mkEq x y
-                    Different -> mkBools $ mkNeg $ mkAtoms $ mkEq x y) inDL
-    return [mkBools $ cnjct sntLst]
+                    Different -> mkBN $ mkAtoms $ mkEq x y) inDL
+    return [mkBC sntLst]
 
 mapDataPropI :: Sign -> VarOrIndi -> VarOrIndi -> DataPropertyExpression
              -> Result SENTENCE
@@ -330,7 +348,7 @@ mapSubObjPropChain cSig props oP a = let b = a + 1 in do
             $ zip3 props vl $ tail vl
     ooP <- mapObjProp cSig oP (OVar a) $ OVar b
     let lst = map mkNAME $ a : b : vars
-    return $ mkQU lst $ mkBI (mkBools $ cnjct oProps) ooP
+    return $ mkQU lst $ mkBI (mkBC oProps) ooP
 
 -- | Mapping of subobj properties
 mapSubObjProp :: Sign -> ObjectPropertyExpression -> ObjectPropertyExpression
@@ -380,15 +398,15 @@ mapDataRange cSig rn inId = do
          DataJunction _ _ -> failMsg rn
          DataComplementOf dr -> do
             (dc, sig) <- mapDataRange cSig dr inId
-            return (mkBools (mkNeg dc), sig)
+            return (mkBN dc, sig)
          DataOneOf cs -> do
             cl <- mapLiteralList cSig cs
             dl <- mapM (\ x -> return $ mkAtoms $ Atom x [Term_seq uid]) cl
-            return (mkBools (dsjct dl), cSig)
+            return (mkBD dl, cSig)
          DataType dt rlst -> do
-            let (sent, rSig) = (mkTermAtoms (uriToTok dt) [uid], cSig)
+            let sent = mkTermAtoms (uriToTok dt) [uid]
             (sens, sigL) <- mapAndUnzipM (mapFacet cSig uid) rlst
-            return (mkBools $ cnjct $ sent : sens, uniteL $ rSig : sigL)
+            return (mkBC $ sent : sens, uniteL $ cSig : sigL)
 
 -- | mapping of a tuple of ConstrainingFacet and RestictionValue
 mapFacet :: Sign -> TERM -> (ConstrainingFacet, RestrictionValue)
@@ -409,104 +427,91 @@ mapDescription cSig des oVar aVar =
         OVar v -> v
         OIndi _ -> aVar
   in case des of
-         Expression cl -> do
-            rslt <- mapClassIRI cSig cl varN
-            return (rslt, cSig)
-         ObjectJunction jt desL -> do
-             (desO, dSig) <- (mapAndUnzipM ((\ w x y z ->
-                                mapDescription w z x y) cSig oVar aVar)
-                              desL)
-             return $ case jt of
-                UnionOf -> (mkBools $ dsjct desO, uniteL dSig)
-                IntersectionOf -> (mkBools $ cnjct desO, uniteL dSig)
-         ObjectComplementOf descr -> do
-             (desO, dSig) <- mapDescription cSig descr oVar aVar
-             return (mkBools $ mkNeg desO, dSig)
-         ObjectOneOf indS -> do
-             indO <- mapM (mapIndivIRI cSig) indS
-             let forms = map ((\ x y -> mkAtoms $ mkEq x y)
-                    $ Name_term varN) indO
-             return (mkBools $ dsjct forms, cSig)
-         ObjectValuesFrom qt oprop descr -> do
-             opropO <- mapObjProp cSig oprop (OVar var) $ OVar $ var + 1
-             (descO, dSig) <- mapDescription cSig descr (OVar $ var + 1)
-                    $ aVar + 1
-             case qt of
-               SomeValuesFrom -> return (mkQuants $ mkExist [mkNAME $ var + 1]
-                                $ mkBools $ cnjct [opropO, descO], dSig)
-               AllValuesFrom -> return (mkQuants $ mkUnivQ [mkNAME $ var + 1]
-                                $ mkBools $ mkImpl opropO descO, dSig)
-         ObjectHasSelf oprop -> do
-              rslt <- mapObjProp cSig oprop oVar oVar
-              return (rslt, cSig)
-         ObjectHasValue oprop indiv -> do
-             rslt <- mapObjProp cSig oprop oVar (OIndi indiv)
-             return (rslt, cSig)
-         ObjectCardinality (Cardinality ct n oprop d) -> do
-            let vlst = [(var + 1) .. (n + var)]
-                vLst = map OVar vlst
-                vlstM = [(var + 1) .. (n + var + 1)]
-                vLstM = map OVar vlstM
-            (dOut, sigL) <- (\ x -> case x of
-                Nothing -> return ([], [])
-                Just y -> mapAndUnzipM (uncurry $ mapDescription cSig y)
+    Expression cl -> do
+        rslt <- mapClassIRI cSig cl varN
+        return (rslt, cSig)
+    ObjectJunction jt desL -> do
+        (desO, dSig) <- mapAndUnzipM ((\ w x y z -> mapDescription w z x y)
+                            cSig oVar aVar) desL
+        let un = uniteL dSig
+        return $ case jt of
+                UnionOf -> (mkBD desO, un)
+                IntersectionOf -> (mkBC desO, un)
+    ObjectComplementOf descr -> do
+        (desO, dSig) <- mapDescription cSig descr oVar aVar
+        return (mkBN desO, dSig)
+    ObjectOneOf indS -> do
+        indO <- mapM (mapIndivIRI cSig) indS
+        let forms = map ((\ x y -> mkAtoms $ mkEq x y) $ Name_term varN) indO
+        return (mkBD forms, cSig)
+    ObjectValuesFrom qt oprop descr -> let v = var + 1 in do
+        opropO <- mapObjProp cSig oprop (OVar var) $ OVar v
+        (descO, dSig) <- mapDescription cSig descr (OVar v) $ aVar + 1
+        return $ case qt of
+            SomeValuesFrom ->
+                (mkQuants $ mkExist [mkNAME v] $ mkBC [opropO, descO], dSig)
+            AllValuesFrom ->
+                (mkQuants $ mkUnivQ [mkNAME v] $ mkBI opropO descO, dSig)
+    ObjectHasSelf oprop -> smap mapObjProp cSig oprop oVar oVar
+    ObjectHasValue oprop indiv -> smap mapObjProp cSig oprop oVar (OIndi indiv)
+    ObjectCardinality (Cardinality ct n oprop d) -> do
+        let vlst = [(var + 1) .. (n + var)]
+            vLst = map OVar vlst
+            vlstM = [(var + 1) .. (n + var + 1)]
+            vLstM = map OVar vlstM
+        (dOut, sigL) <- (\ x -> case x of
+            Nothing -> return ([], [])
+            Just y -> mapAndUnzipM (uncurry $ mapDescription cSig y)
                                      $ zip vLst vlst) d
-            let dlst = map (\ (x, y) -> mkBools $ mkNeg $ mkAtoms
+        let dlst = map (\ (x, y) -> mkBN $ mkAtoms
                     (mkEq (mkNTERM x) $ mkNTERM y)) $ comPairs vlst vlst
-                dlstM = map (\ (x, y) -> mkAtoms (mkEq (mkNTERM x)
+            dlstM = map (\ (x, y) -> mkAtoms (mkEq (mkNTERM x)
                      $ mkNTERM y)) $ comPairs vlstM vlstM
-                qVars = map mkNAME vlst
-                qVarsM = map mkNAME vlstM
-            oProps <- mapM (mapObjProp cSig oprop $ OVar var) vLst
-            oPropsM <- mapM (mapObjProp cSig oprop $ OVar var) vLstM
-            let minLst = mkQE qVars $ mkBools $ cnjct $ dlst ++ dOut ++ oProps
-                maxLst = mkQE qVarsM $ mkBools $ mkImpl (mkBools $ cnjct
-                    $ oPropsM ++ dOut) $ mkBools $ dsjct dlstM
-            return $ case ct of
+            qVars = map mkNAME vlst
+            qVarsM = map mkNAME vlstM
+        oProps <- mapM (mapObjProp cSig oprop $ OVar var) vLst
+        oPropsM <- mapM (mapObjProp cSig oprop $ OVar var) vLstM
+        let minLst = mkQE qVars $ mkBC $ dlst ++ dOut ++ oProps
+            maxLst = mkQE qVarsM $ mkBI (mkBC $ oPropsM ++ dOut) $ mkBD dlstM
+        return $ case ct of
                 MinCardinality -> (minLst, cSig)
                 MaxCardinality -> (maxLst, cSig)
-                ExactCardinality ->
-                    (mkBools (cnjct [minLst, maxLst]), uniteL sigL)
-         DataValuesFrom qt dpe dr -> do
-              let varNN = mkNName $ var + 1
-              (drSent, drSig) <- mapDataRange cSig dr $ OVar var
-              senl <- mapM (mapDataPropI cSig (OVar var) $ OVar $ var + 1) [dpe]
-              let sent = mkBools $ cnjct $ drSent : senl
-              return $ case qt of
-                    AllValuesFrom ->(mkQU [Name varNN] sent, drSig)
+                ExactCardinality -> (mkBC [minLst, maxLst], uniteL sigL)
+    DataValuesFrom qt dpe dr -> do
+        let varNN = mkNName $ var + 1
+        (drSent, drSig) <- mapDataRange cSig dr $ OVar var
+        senl <- mapM (mapDataPropI cSig (OVar var) $ OVar $ var + 1) [dpe]
+        let sent = mkBC $ drSent : senl
+        return $ case qt of
+                    AllValuesFrom -> (mkQU [Name varNN] sent, drSig)
                     SomeValuesFrom -> (mkQE [Name varNN] sent, drSig)
-         DataHasValue dpe c -> do
-             let dpet = Name_term $ uriToTok dpe
-             con <- mapLiteral cSig c
-             return (mkQU [Name varN] $ mkAtoms $ Atom dpet
-                                  [Term_seq (Name_term varN)
-                                  , Term_seq con], cSig)
-         DataCardinality (Cardinality ct n dpe dr) -> do
-            let vlst = [(var + 1) .. (n + var)]
-                vLst = map OVar vlst
-                vlstM = [(var + 1) .. (n + var + 1)]
-                vLstM = map OVar vlstM
-            (dOut, sigL) <- (\ x -> case x of
-                    Nothing -> return ([], [])
-                    Just y -> mapAndUnzipM (mapDataRange cSig y) vLst) dr
-            let dlst = map ( \ (x, y) ->
-                 mkBools $ mkNeg $ mkAtoms $ mkEq (mkNTERM x) $ mkNTERM y)
-                            $ comPairs vlst vlst
-                dlstM = map ( \ (x, y) ->
-                 mkAtoms $ mkEq (mkNTERM x) $ mkNTERM y) $ comPairs vlstM vlstM
-                qVars = map mkNAME vlst
-                qVarsM = map mkNAME vlstM
-            dProps <- mapM (mapDataProp cSig dpe $ OVar var) vLst
-            dPropsM <- mapM (mapDataProp cSig dpe $ OVar var) vLstM
-            let minLst = mkQuants $ mkExist qVars $ mkBools $ cnjct
-                                            $ dlst ++ dOut ++ dProps
-                maxLst = mkQuants $ mkUnivQ qVarsM $ mkBI (mkBools $ cnjct
-                            $ dPropsM ++ dOut) $ mkBools $ dsjct dlstM
-            return $ case ct of
+    DataHasValue dpe c -> do
+        let dpet = Name_term $ uriToTok dpe
+        con <- mapLiteral cSig c
+        return (mkQU [Name varN] $ mkAtoms $ Atom dpet
+                    [mkTermSeq varN, Term_seq con], cSig)
+    DataCardinality (Cardinality ct n dpe dr) -> do
+        let vlst = [(var + 1) .. (n + var)]
+            vLst = map OVar vlst
+            vlstM = [(var + 1) .. (n + var + 1)]
+            vLstM = map OVar vlstM
+        (dOut, sigL) <- (\ x -> case x of
+            Nothing -> return ([], [])
+            Just y -> mapAndUnzipM (mapDataRange cSig y) vLst) dr
+        let dlst = map ( \ (x, y) -> mkBN $ mkAtoms $ mkEq (mkNTERM x)
+                        $ mkNTERM y) $ comPairs vlst vlst
+            dlstM = map ( \ (x, y) -> mkAtoms $ mkEq (mkNTERM x) $ mkNTERM y)
+                        $ comPairs vlstM vlstM
+            qVars = map mkNAME vlst
+            qVarsM = map mkNAME vlstM
+        dProps <- mapM (mapDataProp cSig dpe $ OVar var) vLst
+        dPropsM <- mapM (mapDataProp cSig dpe $ OVar var) vLstM
+        let minLst = mkQE qVars $ mkBC $ dlst ++ dOut ++ dProps
+            maxLst = mkQU qVarsM $ mkBI (mkBC $ dPropsM ++ dOut) $ mkBD dlstM
+        return $ case ct of
                 MinCardinality -> (minLst, cSig)
                 MaxCardinality -> (maxLst, cSig)
-                ExactCardinality ->
-                    (mkBools $ cnjct [minLst, maxLst], uniteL sigL)
+                ExactCardinality -> (mkBC [minLst, maxLst], uniteL sigL)
 
 mapClassAssertion :: TERM -> (ClassExpression, SENTENCE) -> TEXT
 mapClassAssertion ind (ce, sent) = case ce of
@@ -520,7 +525,7 @@ mapFact cSig ex f = case f of
             oPropH <- mapObjProp cSig obe (OIndi siri) (OIndi ind)
             let oProp = case posneg of
                             Positive -> oPropH
-                            Negative -> mkBools (mkNeg oPropH)
+                            Negative -> mkBN oPropH
             return $ senToText oProp
         _ -> failMsg f
     DataPropertyFact posneg dpe lit -> case ex of
@@ -532,7 +537,7 @@ mapFact cSig ex f = case f of
                     [Term_seq inS, Term_seq inT])
                  dProp = case posneg of
                              Positive -> dPropH
-                             Negative -> mkBools (mkNeg dPropH)
+                             Negative -> mkBN dPropH
              return $ senToText dProp
         _ -> failMsg f
 
@@ -561,8 +566,7 @@ mapCharact cSig ope c = case c of
     Asymmetric -> do
         so1 <- mapOPE cSig ope 1 2
         so2 <- mapOPE cSig ope 2 1
-        return $ senToText $ mkQU [mkNAME 1, mkNAME 2] $ mkBI so1
-                    $ mkBools $ mkNeg so2
+        return $ senToText $ mkQU [mkNAME 1, mkNAME 2] $ mkBI so1 $ mkBN so2
     Antisymmetric ->  do
         so1 <- mapOPE cSig ope 1 2
         so2 <- mapOPE cSig ope 2 1
@@ -572,7 +576,7 @@ mapCharact cSig ope c = case c of
         so2 <- mapOPE cSig ope 2 3
         so3 <- mapOPE cSig ope 1 3
         return $ senToText $ mkQU [mkNAME 1, mkNAME 2, mkNAME 3] $ mkBI
-                (mkBools $ cnjct [so1, so2]) so3
+                (mkBC [so1, so2]) so3
 
 -- | Mapping of ListFrameBit
 mapListFrameBit :: Sign -> Extended -> Maybe Relation -> ListFrameBit
@@ -622,13 +626,11 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                     (decrsS, dSig) <- mapDescriptionListP cSig 1
                       $ mkPairs ce map2nd
                     let decrsP = case re of
-                          Equivalent -> map (\ (x, y) -> mkBools $ mkBicnd x y)
-                                            decrsS
-                          Disjoint -> map (\ (x, y) -> mkBools $ mkNeg
-                                           $ mkBools $ cnjct [x, y]) decrsS
+                         Equivalent -> map (\ (x, y) -> mkBB x y) decrsS
+                         Disjoint -> map (\ (x, y) -> mkBN $ mkBC [x, y]) decrsS
                         snt = case decrsP of
                                 [hd] -> hd
-                                _ -> mkBools $ cnjct decrsP
+                                _ -> mkBC decrsP
                     return ([senToText $ mk1QU snt], dSig)
                 SubClass -> do
                     (domT, dSig) <- mapDescription cSig ce (OVar 1) 1
@@ -652,12 +654,11 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         EDRelation ed -> do
           pairs <- mapComObjectPropsList cSig map2nd (OVar 1) (OVar 2)
           let sntLst = case ed of
-               Equivalent -> map (\ (x, y) -> mkBools $ mkBicnd x y) pairs
-               Disjoint -> map (\ (x, y) -> mkBools $ mkNeg $ mkBools
-                                $ cnjct [x, y]) pairs
+               Equivalent -> map (\ (x, y) -> mkBB x y) pairs
+               Disjoint -> map (\ (x, y) -> mkBN $ mkBC [x, y]) pairs
               snt = case sntLst of
                         [hd] -> hd
-                        _ -> mkBools $ cnjct sntLst
+                        _ -> mkBC sntLst
           return ([senToText $ mkQU [mkNAME 1, mkNAME 2] snt], cSig)
 
         SubPropertyOf | isJ -> do
@@ -667,8 +668,8 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         InverseOf | isJ -> do
             os1 <- mapM (\ o1 -> mapObjProp cSig o1 (OVar 1) (OVar 2)) map2nd
             o2 <- mapObjProp cSig ob (OVar 2) (OVar 1)
-            return (msen2Txt $ map (\ cd -> mkQU [mkNAME 1, mkNAME 2] $ mkBools
-                    $ mkBicnd cd o2) os1, cSig)
+            return (msen2Txt $ map (\ cd -> mkQU [mkNAME 1, mkNAME 2]
+                    $ mkBB cd o2) os1, cSig)
         _ -> return ([], cSig)
     DataBit db ->
       let mol = toIRILst DataProperty ex
@@ -681,18 +682,16 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         SubPropertyOf | isJ -> do
           os1 <- mapM (\ o1 -> mapDataProp cSig o1 (OVar 1) (OVar 2)) map2nd
           o2 <- mapDataProp cSig ob (OVar 1) (OVar 2)
-          return (msen2Txt $ map (\ cd -> mkQU [mkNAME 1, mkNAME 2] $ mkBools
-                    $ mkImpl cd o2) os1, cSig)
-
+          return (msen2Txt $ map (\ cd -> mkQU [mkNAME 1, mkNAME 2]
+                $ mkBI cd o2) os1, cSig)
         EDRelation ed -> do
           pairs <- mapComDataPropsList cSig map2nd (OVar 1) (OVar 2)
           let sntLst = case ed of
-                Equivalent -> map (\ (x, y) -> mkBools $ mkBicnd x y) pairs
-                Disjoint -> map (\ (x, y) -> mkBools $ mkNeg $ mkBools
-                                $ cnjct [x, y]) pairs
+                Equivalent -> map (\ (x, y) -> mkBB x y) pairs
+                Disjoint -> map (\ (x, y) -> mkBN $ mkBC [x, y]) pairs
               snt = case sntLst of
                         [hd] -> hd
-                        _ -> mkBools $ cnjct sntLst
+                        _ -> mkBC sntLst
           return ([senToText $ mkQU [mkNAME 1, mkNAME 2] snt], cSig)
         _ -> return ([], cSig)
     IndividualSameOrDifferent al -> do
@@ -738,7 +737,7 @@ mapAnnFrameBit cSig ex afb =
         SimpleEntity (Entity Datatype iri) -> do
             (odes, dSig) <- mapDataRange cSig dt (OVar 2)
             dtb <- mapDPE cSig iri 1 2
-            let res = mkQU [mkNAME 1, mkNAME 2] $ mkBools $ mkBicnd dtb odes
+            let res = mkQU [mkNAME 1, mkNAME 2] $ mkBB dtb odes
             return ([senToText res], dSig)
         _ -> err
     ClassDisjointUnion clsl -> case ex of
@@ -747,9 +746,9 @@ mapAnnFrameBit cSig ex afb =
             (decrsS, pSig) <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
             let decrsP = unzip decrsS
             mcls <- mapClassIRI cSig iri (mkNName 1)
-            return ([senToText $ mkQU [mkNAME 1] $ mkBools $ mkBicnd mcls $
-                mkBools $ cnjct [mkBools $ dsjct decrs, mkBools $ mkNeg
-                $ mkBools $ cnjct $ uncurry (++) decrsP]], unite dSig pSig)
+            return ([senToText $ mkQU [mkNAME 1] $ mkBB mcls $ mkBC
+                    [mkBD decrs, mkBN $ mkBC $ uncurry (++) decrsP]],
+                    unite dSig pSig)
         _ -> err
     ClassHasKey _ _ -> return ([], cSig)
     ObjectSubPropertyChain oplst -> do
