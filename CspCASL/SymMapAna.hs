@@ -243,7 +243,7 @@ mappedProcSym sm rel cm pn pfSrc rsy =
            then return (ide, al1)
            else plain_error (pn, al2)
              (procSym ++ "type " ++ showDoc pfTar
-              " but should be mapped to type " ++
+              " but should be mapped to at most the maximal type " ++
               showDoc pfMapped "") $ getRange rsy
       CspKindedSymb k ide | elem k [CaslKind Implicit, ProcessKind] ->
         return (ide, al2)
