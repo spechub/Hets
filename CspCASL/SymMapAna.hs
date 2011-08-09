@@ -35,8 +35,6 @@ import qualified Data.Set as Set
 import Data.List (partition)
 import Data.Maybe
 
-import qualified Debug.Trace as Trace
-
 type CspRawMap = Map.Map CspRawSymbol CspRawSymbol
 
 cspInducedFromToMorphism :: CspRawMap -> ExtSign CspCASLSign CspSymbol
@@ -70,7 +68,7 @@ cspInducedFromMorphism rmap sigma = do
       om = op_map m
       pm = pred_map m
       csig = extendedInfo sigma
-      newSRel = sortRel $ mtarget m
+      newSRel = Rel.transClosure . sortRel $ mtarget m
   -- compute the channel name map (as a Map)
   cm <- Map.foldWithKey (chanFun sigma rmap sm)
               (return Map.empty) (MapSet.toMap $ chans csig)
@@ -165,56 +163,55 @@ procFun :: CspCASLSign -> CspRawMap -> Sort_map -> Rel.Rel SORT -> ChanMap -> Id
   -> Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
 procFun sig rmap sm rel cm pn ps m =
     let pls = Rel.partSet (relatedProcs sig) ps
-        m1 = foldr (directProcMap sig rmap sm rel cm pn) m pls
+        m1 = foldr (directProcMap rmap sm rel cm pn) m pls
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (CspKindedSymb ProcessKind pn) rmap,
                 Map.lookup (CspKindedSymb (CaslKind Implicit) pn) rmap) of
        (Just rsy1, Just rsy2) -> let
-          m2 = Set.fold (insertProcSym sig sm rel cm pn rsy1) m1 ps
-          in Set.fold (insertProcSym sig sm rel cm pn rsy2) m2 ps
+          m2 = Set.fold (insertProcSym sm rel cm pn rsy1) m1 ps
+          in Set.fold (insertProcSym sm rel cm pn rsy2) m2 ps
        (Just rsy, Nothing) ->
-          Set.fold (insertProcSym sig sm rel cm pn rsy) m1 ps
+          Set.fold (insertProcSym sm rel cm pn rsy) m1 ps
        (Nothing, Just rsy) ->
-          Set.fold (insertProcSym sig sm rel cm pn rsy) m1 ps
+          Set.fold (insertProcSym sm rel cm pn rsy) m1 ps
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
-directProcMap :: CspCASLSign -> CspRawMap -> Sort_map -> Rel.Rel SORT -> ChanMap
+directProcMap :: CspRawMap -> Sort_map -> Rel.Rel SORT -> ChanMap
   -> Id -> Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
-directProcMap sig rmap sm rel cm pn ps m =
+directProcMap rmap sm rel cm pn ps m =
   let pl = Set.toList ps
-      rl = map (lookupProcSymbol sig rmap pn) pl
+      rl = map (lookupProcSymbol rmap pn) pl
       (ms, os) = partition (isJust . fst) $ zip rl pl
   in case ms of
        l@((Just rsy, _) : rs) ->
          foldr (\ (_, p) ->
-           insertProcSym sig sm rel cm pn
+           insertProcSym sm rel cm pn
               (ACspSymbol $ toProcSymbol
                 (rawId rsy, mapProcProfile sm cm p)) p)
          (foldr (\ (rsy2, p) ->
-           insertProcSym sig sm rel cm pn (fromJust rsy2) p) m l)
+           insertProcSym sm rel cm pn (fromJust rsy2) p) m l)
          $ rs ++ os
        _ -> m
 
-lookupProcSymbol :: CspCASLSign -> CspRawMap -> Id -> ProcProfile
+lookupProcSymbol :: CspRawMap -> Id -> ProcProfile
   -> Maybe CspRawSymbol
-lookupProcSymbol sig rmap pn p = case
+lookupProcSymbol rmap pn p = case
   filter (\ (k, _) -> case k of
     ACspSymbol (CspSymbol i (ProcAsItemType pf)) ->
-      i == pn && relatedProcs sig p pf
+      i == pn && matchProcTypes p pf
     _ -> False) $ Map.toList rmap of
   [(_, r)] -> Just r
   [] -> Nothing
        -- in case of ambiguities try to find an exact match
   l -> lookup (ACspSymbol $ toProcSymbol (pn, p)) l
 
-insertProcSym :: CspCASLSign -> Sort_map -> Rel.Rel SORT -> ChanMap -> Id
-  -> CspRawSymbol -> ProcProfile -> Result ProcessMap -> Result ProcessMap
-insertProcSym sig sm rel cm pn rsy pf@(ProcProfile _ al) m = do
+insertProcSym :: Sort_map -> Rel.Rel SORT -> ChanMap -> Id -> CspRawSymbol
+  -> ProcProfile -> Result ProcessMap -> Result ProcessMap
+insertProcSym sm rel cm pn rsy pf@(ProcProfile _ al) m = do
       m1 <- m
-      (p1, al0) <- mappedProcSym sig sm cm pn pf rsy
-      let al1 = closeCspCommAlpha rel al0
-          otsy = toProcSymbol (pn, pf)
+      (p1, al1) <- mappedProcSym sm rel cm pn pf rsy
+      let otsy = toProcSymbol (pn, pf)
           pos = getRange rsy
           m2 = Map.insert (pn, pf) (p1, al1) m1
       case Map.lookup (pn, pf) m1 of
@@ -232,47 +229,48 @@ insertProcSym sig sm rel cm pn rsy pf@(ProcProfile _ al) m = do
              ("conflicting mapping of " ++ showDoc otsy " to " ++
                show p1 ++ " and " ++ show p2) pos
 
-mappedProcSym :: CspCASLSign -> Sort_map -> ChanMap -> Id -> ProcProfile
-  -> CspRawSymbol -> Result (Id, CommAlpha)
-mappedProcSym sig sm cm pn pf rsy =
-    let procSym = "process symbol " ++ showDoc (toProcSymbol (pn, pf))
+mappedProcSym :: Sort_map -> Rel.Rel SORT -> ChanMap -> Id
+  -> ProcProfile -> CspRawSymbol -> Result (Id, CommAlpha)
+mappedProcSym sm rel cm pn pfSrc rsy =
+    let procSym = "process symbol " ++ showDoc (toProcSymbol (pn, pfSrc))
                 " is mapped to "
-        pf2@(ProcProfile _ al2) = mapProcProfile sm cm pf
+        pfMapped@(ProcProfile _ al2) = closeProcProfileSortRel rel
+          $ mapProcProfile sm cm pfSrc
     in case rsy of
-      ACspSymbol (CspSymbol ide (ProcAsItemType pf1@(ProcProfile _ al1))) ->
-        if compatibleProcTypes (Just sig) pf1 pf2
+      ACspSymbol (CspSymbol ide (ProcAsItemType pf)) ->
+        let pfTar@(ProcProfile _ al1) = closeProcProfileSortRel rel pf
+        in if compatibleProcTypes rel pfMapped pfTar
            then return (ide, al1)
            else plain_error (pn, al2)
-             (procSym ++ "type " ++ showDoc pf1
+             (procSym ++ "type " ++ showDoc pfTar
               " but should be mapped to type " ++
-              showDoc pf2 "") $ getRange rsy
+              showDoc pfMapped "") $ getRange rsy
       CspKindedSymb k ide | elem k [CaslKind Implicit, ProcessKind] ->
         return (ide, al2)
       _ -> plain_error (pn, al2)
                (procSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
--- BUG I am confused which parameter is which: the target seems to be the first
--- parameter and the source the seconds, in terms of signature morphism
--- analysis.
-compatibleProcTypes :: Maybe CspCASLSign -> ProcProfile -> ProcProfile -> Bool
-compatibleProcTypes msig (ProcProfile l1 al1) (ProcProfile l2 al2) =
-  l1 == l2 && liamsRelatedCommAlpha (fromMaybe emptyCspCASLSign msig) al1 al2
+compatibleProcTypes :: Rel.Rel SORT -> ProcProfile -> ProcProfile -> Bool
+compatibleProcTypes rel (ProcProfile l1 al1) (ProcProfile l2 al2) =
+  l1 == l2 && liamsRelatedCommAlpha rel al1 al2
 
--- BUG I am confused which parameter is which: they seem backwards
-liamsRelatedCommAlpha :: CspCASLSign -> CommAlpha -> CommAlpha -> Bool
-liamsRelatedCommAlpha sig al2 al1 =
-  let msg = "al1 = [" ++ show al1 ++ "], al2= [" ++ show al2 ++ "]"
-  in Trace.trace (msg) $ all (\ a2 -> any (\a1 -> liamsRelatedCommTypes sig a1 a2) $ Set.toList al1)
-  (Set.toList al2)
+liamsRelatedCommAlpha :: Rel.Rel SORT -> CommAlpha -> CommAlpha -> Bool
+liamsRelatedCommAlpha rel al1 al2 =
+  all (\ a2 -> any (\a1 -> liamsRelatedCommTypes rel a1 a2) $ Set.toList al1)
+  $ Set.toList al2
 
-liamsRelatedCommTypes :: CspCASLSign -> CommType -> CommType -> Bool
-liamsRelatedCommTypes sig ct1 ct2 = case (ct1, ct2) of
+liamsRelatedCommTypes :: Rel.Rel SORT -> CommType -> CommType -> Bool
+liamsRelatedCommTypes rel ct1 ct2 = case (ct1, ct2) of
   (CommTypeSort s1, CommTypeSort s2)
-    -> s1 == s2 || s1 `Set.member` subsortsOf s2 sig
+    -> s1 == s2 || s1 `Set.member` Rel.succs rel s2
   (CommTypeChan (TypedChanName c1 s1), CommTypeChan (TypedChanName c2 s2))
     -> c1 == c2 && s1 == s2
   _ -> False
+
+matchProcTypes :: ProcProfile -> ProcProfile -> Bool
+matchProcTypes (ProcProfile l1 al1) (ProcProfile l2 al2) = l1 == l2
+  && (Set.null al2 || Set.null al1 || not (Set.null $ Set.intersection al1 al2))
 
 cspMatches :: CspSymbol -> CspRawSymbol -> Bool
 cspMatches (CspSymbol i t) rsy = case rsy of
@@ -280,8 +278,7 @@ cspMatches (CspSymbol i t) rsy = case rsy of
     (CaslSymbType t1, CaslSymbType t3) -> matches (Symbol i t1)
       $ ASymbol $ Symbol j t3
     (ChanAsItemType s1, ChanAsItemType s2) -> s1 == s2
-    (ProcAsItemType (ProcProfile l1 al1), ProcAsItemType (ProcProfile l2 al2)) ->
-      l1 == l2 && (Set.null al2 || not (Set.null $ Set.intersection al1 al2))
+    (ProcAsItemType p1, ProcAsItemType p2) -> matchProcTypes p1 p2
     _ -> False
   CspKindedSymb k j -> let res = i == j in case (k, t) of
     (CaslKind ck, CaslSymbType t1) -> matches (Symbol i t1)
