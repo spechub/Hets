@@ -472,8 +472,8 @@ anaProcAlphabet argSorts (ProcAlphabet commTypes) = do
       CommType values. We do not need the fully qualfied commTypes that are
       returned (these area used for analysing Event Sets) -}
   (alpha, _ ) <- foldM (anaCommType sig) (Set.empty, []) commTypes
-  let profile =
-        closeProcProfileSortRel (sortRel sig) (ProcProfile argSorts alpha)
+  let profile = removeImplicitySortsFromProcProfile (ccSig2CASLSign sig)
+                (ProcProfile argSorts alpha)
   return profile
 
 {- | Statically analyse a CspCASL communication type. Returns the

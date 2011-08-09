@@ -104,6 +104,44 @@ closeOneCspComm sr x = let
         Set.map CommTypeSort (subsorts s)
       `Set.union` Set.map (mkTypedChan c) (subsorts s)
 
+removeImplicitySortsFromProcNamesInSig :: CASLSign -> CspSign -> CspSign
+removeImplicitySortsFromProcNamesInSig sig cspSig =
+  cspSig { procSet = removeImplicitySortsFromProcNameMap sig $ procSet cspSig }
+
+{- | Remove the implicit sorts from a proc name map under a sub-sort
+relation. Assumes all the proc profile's comms are in the sub sort relation and
+simply makes the comms contain only the minimal super sorts under the sub-sort
+relation. -}
+removeImplicitySortsFromProcNameMap :: Sign () () -> ProcNameMap ->
+                                            ProcNameMap
+removeImplicitySortsFromProcNameMap sig =
+  MapSet.map (removeImplicitySortsFromProcProfile sig)
+
+{- | Remove the implicit sorts from a profile under a sub-sort relation. Assumes
+all the proc profile's comms are in the sub sort relation and simply makes the
+comms contain only the minimal super sorts under the sub-sort relation. -}
+removeImplicitySortsFromProcProfile :: Sign () () -> ProcProfile ->
+                                            ProcProfile
+removeImplicitySortsFromProcProfile sig (ProcProfile argSorts comms) =
+  ProcProfile argSorts (removeImplicitySortsFromCspCommAlpha sig comms)
+
+{- | Remove the implicit sorts from a CommAlpha under a sub-sort
+relation. Assumes all the proc profile's comms are in the sub sort relation and
+simply makes the comms contain only the minimal super sorts under the sub-sort
+relation. -}
+removeImplicitySortsFromCspCommAlpha :: Sign () () -> CommAlpha -> CommAlpha
+removeImplicitySortsFromCspCommAlpha sig alph =
+  let isSort ct = case ct of
+        CommTypeSort _ -> True
+        CommTypeChan _ -> False
+      (onlySorts, onlyChans) = Set.partition isSort alph
+      projSorts ct = case ct of
+        CommTypeSort s -> s
+      superSortsOnly = keepMinimals1 False sig id $ Set.toList
+                       (Set.map projSorts onlySorts)
+      superSortsOnly' = Set.fromList $ map CommTypeSort superSortsOnly
+  in onlyChans `Set.union` superSortsOnly'
+
 -- | CSP process signature.
 data CspSign = CspSign
     { chans :: ChanNameMap
@@ -146,7 +184,8 @@ unionCspCASLSign s1 s2 = do
       rel = sortRel newDataSig
       diags' = LocalTop.checkLocalTops rel
   -- Compute the unioned csp signature with respect to the new data signature
-      newCspSign = unionCspSign rel (extendedInfo s1) (extendedInfo s2)
+      newCspSign = unionCspSign (ccSig2CASLSign newDataSig)
+                   (extendedInfo s1) (extendedInfo s2)
   {- Only error will be added if there are any probelms. If there are no
   problems no errors will be added and hets will continue as normal. -}
   appendDiags diags'
@@ -155,8 +194,9 @@ unionCspCASLSign s1 s2 = do
 
 {- | Compute union of two CSP signatures assuming the new already computed data
 signature. -}
-unionCspSign :: Rel SORT -> CspSign -> CspSign -> CspSign
-unionCspSign sr a b = cspSignUnion (closeProcs sr a) (closeProcs sr b)
+unionCspSign :: CASLSign -> CspSign -> CspSign -> CspSign
+unionCspSign sig a b = removeImplicitySortsFromProcNamesInSig sig $
+                       cspSignUnion a b
 
 -- | Compute difference of two CSP process signatures.
 diffCspSig :: CspSign -> CspSign -> CspSign

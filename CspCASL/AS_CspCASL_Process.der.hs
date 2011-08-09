@@ -93,9 +93,9 @@ type PROC_ARGS = [SORT]
 data PROC_ALPHABET = ProcAlphabet [CommType]
                      deriving (Show, Ord, Eq)
 
-{- | Fully qualified process names have parameter sorts, and a
-communication alphabet (a Set of sorts). The CommAlpha here should always
-contain downward closed sets (wrt the subsort relation). -}
+{- | Fully qualified process names have parameter sorts, and a communication
+alphabet (a Set of sorts). The CommAlpha here should always contain the minimal
+super sorts only. The communication over subsorts is implied -}
 data ProcProfile = ProcProfile PROC_ARGS CommAlpha
                    deriving (Eq, Ord, Show)
 
