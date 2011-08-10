@@ -220,21 +220,16 @@ recover_Sort_gen_ax constrs =
   then (sorts, map fst (concatMap opSymbs constrs), [])
      {- otherwise, we have to introduce new sorts for the indices
      and afterwards rename them into the sorts they denote -}
-  else (map indSort1 indices, map indOp indOps1, map sortMap indSorts)
+  else (origSorts, indOps, zip origSorts sorts)
   where
   sorts = map newSort constrs
-  indices = [0 .. length sorts - 1]
-  indSorts = zip indices sorts
-  indSort (i, s) = if i < 0 then s else indSort1 i
-  indSort1 = origSort . (constrs !!)
-  sortMap (i, s) = (indSort1 i, s)
-  indOps = zip indices (map opSymbs constrs)
-  indOps1 = concatMap (\ (i, ops) -> map ((,) i) ops) indOps
-  indOp (res, (Qual_op_name on (Op_type k args1 res1 pos1) pos, args)) =
+  origSorts = map origSort constrs
+  indSort (i, s) = if i < 0 then s else origSorts !! i
+  indOps = concatMap (\ c -> map (indOp $ origSort c) $ opSymbs c) constrs
+  indOp res (Qual_op_name on (Op_type k args1 _ pos1) pos, args) =
      Qual_op_name on
-         (Op_type k (map indSort (zip args args1))
-                        (indSort (res, res1)) pos1) pos
-  indOp _ = error
+         (Op_type k (map indSort $ zip args args1) res pos1) pos
+  indOp _ _ = error
       "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
 
 {- | from a free Sort_gex_ax, recover:
