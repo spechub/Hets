@@ -15,7 +15,7 @@ module CASL.CCC.FreeTypes (checkFreeType) where
 
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import CASL.MapSentence(mapSen)
-import CASL.Morphism(Morphism(mtarget), imageOfMorphism)
+import CASL.Morphism
 import CASL.Sign(OpType(..), PredType(..), Sign(..), sortSet, sortOfTerm)
 import CASL.SimplifySen(simplifyCASLSen)
 import CASL.CCC.TermFormula
@@ -154,14 +154,11 @@ getOPreds m fsn =
         find_pt (ident, pt) = MapSet.member ident pt oldPredMap
     in filter (find_pt . head . filterPred . leadingSym) pred_fs
 
+{- | newly introduced sorts
+(the input signature is the domain of the inclusion morphism) -}
 getNSorts :: Sign () () -> Morphism () () () -> [Id]
-getNSorts osig m = nSorts
-    where
-        tsig = mtarget m
-        oldSorts = sortSet osig
-        allSorts = sortSet tsig
-        newSorts = Set.filter (not . flip Set.member oldSorts) allSorts
-        nSorts = Set.toList newSorts
+getNSorts osig m = Set.toList
+  . Set.difference (sortSet $ mtarget m) $ sortSet osig
 
 getNotFreeSorts :: Sign () () -> Morphism () () ()
     -> [Named (FORMULA ())] -> [SORT]
