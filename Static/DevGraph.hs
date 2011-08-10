@@ -1164,7 +1164,7 @@ insLEdgeDG (s, t, l) g =
       newId = eId == defaultEdgeId
       e = (s, t, if newId then l { dgl_id = nId } else l)
   in (e, g
-    { getNewEdgeId = if newId then succ nId else max nId $ succ eId
+    { getNewEdgeId = if newId then incEdgeId nId else max nId $ incEdgeId eId
     , dgBody = fst $ Tree.insLEdge True compareLinks e $ dgBody g })
 
 compareLinks :: DGLinkLab -> DGLinkLab -> Ordering
@@ -1179,7 +1179,7 @@ insLEdgeNubDG (v, w, l) g =
       (ng, change) = Tree.insLEdge False compareLinks
         (v, w, l { dgl_id = oldEdgeId }) $ dgBody g
   in
-     g { getNewEdgeId = if change then succ oldEdgeId else oldEdgeId
+     g { getNewEdgeId = if change then incEdgeId oldEdgeId else oldEdgeId
        , dgBody = ng }
 
 {- | inserts a new edge into the DGraph using it's own edgeId.

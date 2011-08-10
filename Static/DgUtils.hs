@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {- |
 Module      :  $Header$
 Description :  auxiliary datastructures for development graphs
@@ -6,7 +5,7 @@ Copyright   :  (c) DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  non-portable (GeneralizedNewtypeDeriving)
+Portability :  portable
 
 -}
 
@@ -79,7 +78,11 @@ listDGNodeTypes = let bs = [False, True] in
 -- ** edge types
 
 -- | unique number for edges
-newtype EdgeId = EdgeId Int deriving (Show, Eq, Ord, Enum)
+newtype EdgeId = EdgeId Int deriving (Show, Eq, Ord)
+
+-- | next edge id
+incEdgeId :: EdgeId -> EdgeId
+incEdgeId (EdgeId i) = EdgeId $ i + 1
 
 -- | the first edge in a graph
 startEdgeId :: EdgeId
