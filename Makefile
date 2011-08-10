@@ -496,8 +496,7 @@ docs/index.html:
 	$(HADDOCK) --ignore-all-exports -o docs -h -s ../%F $(HAD_INTS) \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
-             Syntax/ADoc.hs $(filter-out Scratch.hs, $(wildcard *.hs)) \
-             Static/ChangeGraph.hs
+             Syntax/ADoc.hs $(filter-out Scratch.hs, $(wildcard *.hs))
 
 derivedSources: $(derived_sources)
 
