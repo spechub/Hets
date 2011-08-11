@@ -217,50 +217,15 @@ printEvent ev =
       ChanRecv cn v s _ ->
           pretty cn <+> text chan_receiveS <+> pretty v
                           <+> text svar_sortS <+> pretty s
-      FQEvent e mfqChan fqVar _ -> printFQEvent e mfqChan fqVar
-
-{- | Print a fully qualified event. We need the fully qualified
-channel (if there is one) and the fully qualified term (which may
-be an event or a variable). these will be passed in from the
-printEvent that actually has access to the fully qualified parts
-of this fully qualified event. -}
-printFQEvent :: EVENT -> Maybe (CHANNEL_NAME, SORT) -> TERM () -> Doc
-printFQEvent ev mfqChan t =
-  let mess msg = text $ "Error: Case " ++ msg
-        ++ " in printFQEvent in CspCASL.Print_CspCASL"
-    {- We only need to know the underlysing event type as we already
-    have all the fully qualified information. -}
-  in case ev of
-      {- mfqChan should be nothing
-      t is the fully qualified term to send -}
-      TermEvent _ _ -> pretty t
-      {- mfqChan shoudl be nothing
-      t is the fully qualified variable -}
-      InternalPrefixChoice _ _ _ -> internal_choice <+> pretty t
-      {- mfqChan shoudl be nothing
-      t is the fully qualified variable -}
-      ExternalPrefixChoice _ _ _ -> external_choice <+> pretty t
-      {- mfqChan should be the fully qualified channel
-      t is the fully qualified term to send -}
-      ChanSend _ _ _ ->
-          case mfqChan of
-            Just (cn, s) -> pretty cn <> colon <> pretty s
-                            <+> text chan_sendS <+> pretty t
-            Nothing -> mess "ChanSend"
-      {- mfqChan should be the fully qualified channel
-      t is the fully qualified variable -}
-      ChanNonDetSend _ _ _ _ ->
-          case mfqChan of
-            Just (cn, s) -> pretty cn <> colon <> pretty s
-                            <+> text chan_sendS <+> pretty t
-            Nothing -> mess "ChanNonDetSend"
-      ChanRecv _ _ _ _ ->
-          case mfqChan of
-            Just (cn, s) -> pretty cn <> colon <> pretty s
-                            <+> text chan_receiveS <+> pretty t
-            Nothing -> mess "ChanRecv"
-      -- This option should be impossible
-      FQEvent _ _ _ _ -> mess "FQEvent"
+      FQTermEvent t _ -> pretty t
+      FQExternalPrefixChoice t _ -> external_choice <+> pretty t
+      FQInternalPrefixChoice t _ -> internal_choice <+> pretty t
+      FQChanSend (cn, s) t _ -> pretty cn <> colon <> pretty s <+>
+                                text chan_sendS <+> pretty t
+      FQChanNonDetSend (cn, s) v _ -> pretty cn <> colon <> pretty s <+>
+                                      text chan_sendS <+> pretty v
+      FQChanRecv (cn, s) v _ -> pretty cn <> colon <> pretty s <+>
+                                text chan_receiveS <+> pretty v
 
 instance Pretty EVENT_SET where
     pretty = printEventSet

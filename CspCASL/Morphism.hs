@@ -49,7 +49,7 @@ import qualified Data.Set as Set
 
 -- Morphisms
 
-{- | This is the second component of a CspCASL signature moprhism, the process
+{- | This is the second component of a CspCASL signature morphism, the process
 name map. We map process name with a profile into new names and
 communications alphabet. We follow CASL here and instread of mapping to a new
 name and a new profile, we map just to the new name and the new
@@ -373,7 +373,7 @@ inducedCspSign sm _ _ m sig =
      { chans = inducedChanMap sm cm $ chans csig
      , procSet = inducedProcMap sm cm (processMap m) $ procSet csig }
 
--- * application of morhisms to sentences
+-- * application of morphisms to sentences
 
 -- | Apply a Signature Morphism to a CspCASL Sentence
 mapSen :: CspCASLMorphism -> CspSen -> CspSen
@@ -453,30 +453,26 @@ mapEvent mor e =
         mapSort' = CASL_MapSen.mapSrt mor
         mapChannelName' = mapChannel mor
     in case e of
-      TermEvent t r ->
-          -- Just map the morphism over the event (a term)
-          TermEvent (mapCASLTerm' t) r
-      InternalPrefixChoice v s r ->
-          -- Just map the morphism over the sort, we keep the variable name
-          InternalPrefixChoice v (mapSort' s) r
-      ExternalPrefixChoice v s r ->
-          -- Just map the morphism over the sort, we keep the variable name
-          ExternalPrefixChoice v (mapSort' s) r
-      ChanSend c t r ->
-          -- Just map the morphism over the event (a term) and the channel name
-          ChanSend (fst $ mapChannelName' (c, sortOfTerm t)) (mapCASLTerm' t) r
-      ChanNonDetSend c v s r ->
-          {- Just map the morphism over the sort and the channel name, we keep
-          the variable name -}
-          ChanNonDetSend (fst $ mapChannelName' (c, s)) v (mapSort' s) r
-      ChanRecv c v s r ->
-          {- Just map the morphism over the sort and the channel name, we keep
-          the variable name -}
-          ChanRecv (fst $ mapChannelName' (c, s)) v (mapSort' s) r
-      FQEvent ev mfqc fqTerm r ->
-          -- Map the morphism over each part of the FQEvent
-          FQEvent (mapEvent' ev) (fmap mapChannelName' mfqc)
-              (mapCASLTerm' fqTerm) r
+      -- Just map the morphism over the event (a term)
+      FQTermEvent t r -> FQTermEvent (mapCASLTerm' t) r
+      {- Just map the morphism over the variable, this just maps the sort and
+         keep the same name -}
+      FQExternalPrefixChoice v r -> FQExternalPrefixChoice (mapCASLTerm' v) r
+      {- Just map the morphism over the variable, this just maps the sort and
+         keep the same name -}
+      FQInternalPrefixChoice v r -> FQInternalPrefixChoice (mapCASLTerm' v) r
+      -- Just map the morphism over the event (a term) and the channel name
+      FQChanSend (c, s) t r ->
+        FQChanSend (mapChannelName' (c, s)) (mapCASLTerm' t) r
+      {- Just map the morphism over the sort and the channel name, we keep
+         the variable name -}
+      FQChanNonDetSend (c, s) v r ->
+        FQChanNonDetSend (mapChannelName' (c, s)) (mapCASLTerm' v) r
+      {- Just map the morphism over the sort and the channel name, we keep
+         the variable name -}
+      FQChanRecv (c, s) v r ->
+        FQChanRecv (mapChannelName' (c, s)) (mapCASLTerm' v) r
+      _ -> error "CspCASL.Morphism.mapEvent: Cannot map unqualified event"
 
 mapRenaming :: CspCASLMorphism -> RENAMING -> RENAMING
 mapRenaming mor re =

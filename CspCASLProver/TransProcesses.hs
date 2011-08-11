@@ -205,108 +205,48 @@ transEvent ccSign pcfolSign cfolSign vsm event p =
         caslSign = ccSig2CASLSign ccSign
         transCASLTerm' = transCASLTerm caslSign pcfolSign cfolSign
     in case event of
-      -- To use the fully qualified data we need to know what the underlying
-      -- type of the process is
-      FQEvent ev mfqc fqTerm _ ->
-          case ev of
-            TermEvent _ _ ->
-                -- Translate the term for use in the term prefix operator
-                cspProver_action_prefixOp (transCASLTerm' vsm TermPrefix fqTerm)
-                (transProcess' vsm p)
-            InternalPrefixChoice v s _ ->
-                -- Use the non fully qualified data instead of the fully
-                -- qualified data as it is easier in this case as the variable
-                -- is not really a variable of that sort. Here the variable and
-                -- sort are separate operands of the CSPProver operator.
-                cspProver_internal_prefix_choiceOp
-                (transVar v) (transSort NormalComm s)
-                                 (transProcess'
-                                  (Map.insert v PrefixChoice vsm) p)
-            ExternalPrefixChoice v s _ ->
-                -- Use the non fully qualified data instead of the fully
-                -- qualified data as it is easier in this case as the variable
-                -- is not really a variable of that sort. Here the variable and
-                -- sort are separate operands of the CSPProver operator.
-                cspProver_external_prefix_choiceOp
-                  (transVar v) (transSort NormalComm s)
-                                   (transProcess'
-                                    (Map.insert v PrefixChoice vsm) p)
-            ChanSend _ _ _ ->
-                -- We do not use the non fully qualified term or channel name.
-                -- Instead we use the fully qualified term (fqTerm) and the
-                -- fully qualified channel (mfqc)
-                case mfqc of
-                  Nothing -> error "CspCASLProver.TransProcesses.transEvent: Missing fully qualified channel data"
-                  Just (chanName, chanSort) ->
-                      -- CspProver's channel send Op
-                      cspProver_chan_sendOp
-                      -- Name of channel
-                      (transChanName chanName)
-                      -- Term to send
-                      (transCASLTerm' vsm (ChanSendOrParam chanSort) fqTerm)
-                      -- The translated version of the rest of the process
-                      (transProcess' vsm p)
-
-            ChanNonDetSend _ var varSort _ ->
-                -- We do not use the fully qualified variable (fqTerm) instead
-                -- we use the non fully qualified variable (var, varSort).
-                case mfqc of
-                  Nothing -> error "CspCASLProver.TransProcesses.transEvent: Missing fully qualified channel data"
-                             -- Notice we do not use the derived channel's
-                             -- sort(second of Just) as this can be a sub type
-                             -- of the declared channel sort, which is what we
-                             -- need.
-                  Just (chanName, _) ->
-                      let declaredChanSort = propagateErrors
-                            "CspCASLProver.TransProcesses.transEvent1"
-                            $ getDeclaredChanSort mfqc ccSign
-                      -- CspProvers non-deterministic channel send Op
-                      in cspProver_chan_nondeterministic_sendOp
-                      -- The channel name
-                      (transChanName chanName)
-                      -- The translated variable
-                      (transVar var)
-                      -- The translate sort (channel version) of the set to
-                      -- receive from. Note that the sort in the mfqc is the
-                      -- sort of the variable as specified, we want here the
-                      -- declaration sort of the channel.
-                      (transSort (ChanComm declaredChanSort) varSort)
-                      -- The translated version of the rest of the process
-                      (transProcess' (Map.insert var
-                                      (ChanSendOrRec declaredChanSort) vsm) p)
-
-            ChanRecv _ var varSort _ ->
-                -- We do not use the fully qualified variable (fqTerm) instead
-                -- we use the non fully qualified variable (var, varSort).
-                case mfqc of
-                  Nothing -> error "CspCASLProver.TransProcesses.transEvent: Missing fully qualified channel data"
-                  -- Notice we do not use the derived channel's sort(second of
-                  -- Just) as this can be a sub type of the declared channel
-                  -- sort, which is what we need.
-                  Just (chanName, _) ->
-                      let declaredChanSort = propagateErrors
-                            "CspCASLProver.TransProcesses.transEvent2"
-                            $ getDeclaredChanSort mfqc ccSign
-                      -- CspProvers channel receive Op
-                      in cspProver_chan_recOp
-                      -- The channel name
-                      (transChanName chanName)
-                      -- The translated variable
-                      (transVar var)
-                      -- The translate sort (channel version) of the set to
-                      -- receive from. Note that the sort in the mfqc is the
-                      -- sort of the variable as specified, we want here the
-                      -- declaration sort of the channel.
-                      (transSort (ChanComm declaredChanSort) varSort)
-                      -- The translated version of the rest of the process
-                      (transProcess' (Map.insert var
-                                      (ChanSendOrRec declaredChanSort) vsm) p)
-
-            FQEvent _ _ _ _ ->
-              error $ "CspCASLProver.TransProcesses.transEvent: "
-                ++ "A FQEvent should not contain a non-FQEvent"
-      _ -> error $ "CspCASLProver.TransProcesses.transEvent: "
-             ++ "Expected a FQEvent not a non-FQEvent"
+      FQTermEvent t _ ->
+        cspProver_action_prefixOp (transCASLTerm' vsm TermPrefix t)
+        (transProcess' vsm p)
+      FQExternalPrefixChoice fqVar _ ->
+        let (varName, varSort) = splitCASLVar fqVar
+        in cspProver_internal_prefix_choiceOp (transVar varName)
+           (transSort NormalComm varSort)
+           (transProcess' (Map.insert varName PrefixChoice vsm) p)
+      FQInternalPrefixChoice fqVar _ ->
+        let (varName, varSort) = splitCASLVar fqVar
+        in cspProver_external_prefix_choiceOp (transVar varName)
+           (transSort NormalComm varSort)
+           (transProcess' (Map.insert varName PrefixChoice vsm) p)
+      FQChanSend (chanName, chanSort) t _ ->
+        cspProver_chan_sendOp (transChanName chanName)
+        (transCASLTerm' vsm (ChanSendOrParam chanSort) t)
+        (transProcess' vsm p)
+      FQChanNonDetSend (chanName, chanSort) fqVar _ ->
+        let declaredChanSort = propagateErrors
+                               "CspCASLProver.TransProcesses.transEvent1"
+                               $ getDeclaredChanSort (chanName, chanSort) ccSign
+            (varName, varSort) = splitCASLVar fqVar
+        in cspProver_chan_nondeterministic_sendOp (transChanName chanName)
+           (transVar varName)
+           -- The translate sort (channel version) of the set to receive
+           -- from. Note that the sort is the sort of the variable as specified,
+           -- we want here the declaration sort of the channel.
+           (transSort (ChanComm declaredChanSort) varSort)
+           (transProcess' (Map.insert varName
+                           (ChanSendOrRec declaredChanSort) vsm) p)
+      FQChanRecv (chanName, chanSort) fqVar _ ->
+        let declaredChanSort = propagateErrors
+                               "CspCASLProver.TransProcesses.transEvent2"
+                            $ getDeclaredChanSort (chanName, chanSort) ccSign
+            (varName, varSort) = splitCASLVar fqVar
+        in cspProver_chan_recOp (transChanName chanName) (transVar varName)
+           -- The translate sort (channel version) of the set to receive
+           -- from. Note that the sort is the sort of the variable as specified,
+           -- we want here the declaration sort of the channel.
+           (transSort (ChanComm declaredChanSort) varSort)
+           (transProcess' (Map.insert varName
+                           (ChanSendOrRec declaredChanSort) vsm) p)
 
 -- | Translate a variable into CspProver (Isabelle). Notice
 -- that this does not work on fully qualified CASL variables (TERMs)

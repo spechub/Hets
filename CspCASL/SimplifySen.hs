@@ -117,7 +117,9 @@ simplifyProc sigma proc =
 simplification of data and removed channel qualification. -}
 simplifyEvent :: CspCASLSign -> EVENT -> EVENT
 simplifyEvent sigma event =
-    case event of
+  let caslSign = ccSig2CASLSign sigma
+      simpCaslTerm = simplifyCASLTerm caslSign
+  in case event of
       -- This is a non-fully qualified event anyway.
       TermEvent t r -> TermEvent t r
       -- This is a non-fully qualified event anyway.
@@ -130,10 +132,20 @@ simplifyEvent sigma event =
       ChanNonDetSend cn v s r -> ChanNonDetSend cn v s r
       -- This is a non-fully qualified event anyway.
       ChanRecv cn v s r -> ChanRecv cn v s r
-      {- All the fully qualified data is in the parameters here that
-      we don't use. e is an non-fully qualified event (which
-      may contain fully qualfied processes), so we simpliy just e. -}
-      FQEvent e _ _ _ -> simplifyEvent sigma e
+      FQTermEvent t r -> TermEvent (simpCaslTerm t) r
+      FQExternalPrefixChoice fqVar r ->
+        let (v,s) = (splitCASLVar fqVar)
+        in ExternalPrefixChoice v s r
+      FQInternalPrefixChoice fqVar r ->
+        let (v,s) = (splitCASLVar fqVar)
+        in InternalPrefixChoice v s r
+      FQChanSend (cn, _) t r -> ChanSend cn (simpCaslTerm t) r
+      FQChanNonDetSend (cn, _) fqVar r ->
+        let (v,s) = (splitCASLVar fqVar)
+        in ChanNonDetSend cn v s r
+      FQChanRecv (cn, _) fqVar r ->
+        let (v,s) = (splitCASLVar fqVar)
+        in ChanRecv cn v s r
 
 {- I am not really sure what to do with the sorts at the moment, can they be
 compound sorts -- BUG? -}

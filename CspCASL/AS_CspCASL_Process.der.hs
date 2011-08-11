@@ -12,24 +12,25 @@ Abstract syntax of CSP-CASL processes.
 
 -}
 
-module CspCASL.AS_CspCASL_Process (
-    CHANNEL_NAME,
-    CommAlpha,
-    CommType (..),
-    EVENT (..),
-    EVENT_SET (..),
-    FQ_PROCESS_NAME (..),
-    PROCESS (..),
-    PROC_ARGS,
-    PROC_ALPHABET (..),
-    procNameToSimpProcName,
-    ProcProfile (..),
-    RENAMING (..),
-    PROCESS_NAME,
-    TypedChanName (..)
-) where
+module CspCASL.AS_CspCASL_Process
+  ( CHANNEL_NAME
+  , CommAlpha
+  , CommType (..)
+  , EVENT (..)
+  , EVENT_SET (..)
+  , FQ_PROCESS_NAME (..)
+  , PROCESS (..)
+  , PROCESS_NAME
+  , PROC_ARGS
+  , PROC_ALPHABET (..)
+  , procNameToSimpProcName
+  , ProcProfile (..)
+  , RENAMING (..)
+  , splitCASLVar
+  , TypedChanName (..)
+  ) where
 
-import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
+import CASL.AS_Basic_CASL (FORMULA, SORT, TERM (..), VAR)
 import Common.Id
 import qualified Data.Set as Set
 
@@ -49,31 +50,26 @@ data EVENT
     | ChanNonDetSend CHANNEL_NAME VAR SORT Range
     -- | @c ? var :: s -> p@ - Channel recieve
     | ChanRecv CHANNEL_NAME VAR SORT Range
-    {- | A fully qualified event contains the (non-fully qualified)
-    event being qualified. There other parameters depend on the
-    underlying type of the event.
-    -
-    For TermEvent, the fully qualified channel should be nothing
-    and the fully qualified term should be the fully qualified
-    CASL term version of the term being communicated in the inner
-    process.
-    -
-    For ExternalPrefixChoice and InternalPrefixChoice, the fully
-    qualified channel should be nothing and the fully qualified
-    term should be the fully qualified CASL variable version (a
-    term) of the inner process's variable.
-    -
-    For ChanSend, the fully qualified channel should be the fully
-    qualified channel of the underlying event and the fully
-    qualified term should be the fully qualified CASL term
-    version of the term being communicated in the inner process.
-    -
-    For ChanNonDetSend and ChanRecv, the fully qualified channel
-    should be the fully qualified channel of the underlying event
-    and the fully qualified CASL variable version (a term) of the
-    inner process's variable -}
-    | FQEvent EVENT (Maybe (CHANNEL_NAME, SORT)) (TERM ()) Range
+    -- | @t -> p@ - Fully Qualified Term prefix
+    | FQTermEvent (TERM ()) Range
+    -- | @[] var :: s -> p@ - Fully Qualified External nondeterministic prefix
+    -- choice. The term here holds the fully qualified variable (name and sort).
+    | FQExternalPrefixChoice (TERM ()) Range
+    -- | @|~| var :: s -> p@ - Fully Qualified Internal nondeterministic prefix
+    -- choice. The term here holds the fully qualified variable (name and sort).
+    | FQInternalPrefixChoice (TERM ()) Range
+    -- | @c ! t -> p@ - Fully Qualified Channel send. The term holds the fully
+    -- term to send.
+    | FQChanSend (CHANNEL_NAME, SORT) (TERM ()) Range
+    -- | @c ! var :: s -> p@ - Fully Qualified Channel nondeterministic
+    -- send. The term here holds the fully qualified variable (name and sort).
+    | FQChanNonDetSend (CHANNEL_NAME, SORT) (TERM ()) Range
+    -- | @c ? var :: s -> p@ - Fully Qualified Channel recieve. The term here
+    -- holds the fully qualified variable (name and sort).
+    | FQChanRecv (CHANNEL_NAME, SORT) (TERM ()) Range
     deriving (Show, Ord, Eq)
+
+
 
 -- | Event sets are sets of communication types.
 data EVENT_SET = EventSet [CommType] Range
@@ -92,6 +88,11 @@ type PROC_ARGS = [SORT]
 
 data PROC_ALPHABET = ProcAlphabet [CommType]
                      deriving (Show, Ord, Eq)
+
+splitCASLVar :: TERM () -> (VAR, SORT)
+splitCASLVar (Qual_var v s _ ) = (v,s)
+splitCASLVar _ =
+  error "CspCASL.AS_CspCASL_Process: Can not split non Qual_var CASL Term"
 
 {- | Fully qualified process names have parameter sorts, and a communication
 alphabet (a Set of sorts). The CommAlpha here should always contain the minimal

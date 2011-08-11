@@ -525,17 +525,17 @@ anaEvent mix e vars =
       TermEvent t range ->
           do addDiags [mkDiag Debug "Term event" e]
              (alpha, newVars, fqTerm) <- anaTermEvent mix t vars
-             let fqEvent = FQEvent e Nothing fqTerm range
+             let fqEvent = FQTermEvent fqTerm range
              return (alpha, newVars, fqEvent)
       InternalPrefixChoice v s range ->
           do addDiags [mkDiag Debug "Internal prefix event" e]
              (alpha, newVars, fqVar) <- anaPrefixChoice v s
-             let fqEvent = FQEvent e Nothing fqVar range
+             let fqEvent = FQInternalPrefixChoice fqVar range
              return (alpha, newVars, fqEvent)
       ExternalPrefixChoice v s range ->
           do addDiags [mkDiag Debug "External prefix event" e]
              (alpha, newVars, fqVar) <- anaPrefixChoice v s
-             let fqEvent = FQEvent e Nothing fqVar range
+             let fqEvent = FQExternalPrefixChoice fqVar range
              return (alpha, newVars, fqEvent)
       ChanSend c t range ->
           do addDiags [mkDiag Debug "Channel send event" e]
@@ -544,24 +544,24 @@ anaEvent mix e vars =
              annChanSend failed - i.e. we forget
              about the channel. -}
              (alpha, newVars, mfqChan, fqTerm) <- anaChanSend mix c t vars
-             let fqEvent = FQEvent e mfqChan fqTerm range
+             let fqEvent = FQChanSend mfqChan fqTerm range
              return (alpha, newVars, fqEvent)
       ChanNonDetSend c v s range ->
           do addDiags [mkDiag Debug "Channel nondeterministic send event" e]
              {- mfqChan is the same as in chanSend case.
              fqVar is the fully qualfied version of the variable. -}
              (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
-             let fqEvent = FQEvent e mfqChan fqVar range
+             let fqEvent = FQChanNonDetSend mfqChan fqVar range
              return (alpha, newVars, fqEvent)
       ChanRecv c v s range ->
           do addDiags [mkDiag Debug "Channel receive event" e]
              {- mfqChan is the same as in chanSend case.
              fqVar is the fully qualfied version of the variable. -}
              (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
-             let fqEvent = FQEvent e mfqChan fqVar range
+             let fqEvent = FQChanRecv mfqChan fqVar range
              return (alpha, newVars, fqEvent)
-      FQEvent _ _ _ _ ->
-          error "CspCASL.StatAnaCSP.anaEvent: Unexpected FQEvent"
+      _ -> error
+           "CspCASL.StatAnaCSP.anaEvent: Unexpected Fully qualified event"
 
 {- | Statically analyse a CspCASL term event. Returns a constituent
 communication alphabet of the event and a mapping for any new
@@ -598,16 +598,17 @@ any new locally bound variables, a fully qualified channel (if
 possible) and the fully qualified version of the term. -}
 anaChanSend :: Mix b s () () -> CHANNEL_NAME -> TERM () -> ProcVarMap
   -> State CspCASLSign
-     (CommAlpha, ProcVarMap, Maybe (CHANNEL_NAME, SORT), TERM ())
+     (CommAlpha, ProcVarMap, (CHANNEL_NAME, SORT), TERM ())
 anaChanSend mix c t vars = do
   sig <- get
   let ext = extendedInfo sig
+      msg = "CspCASL.StatAnaCSP.anaChanSend: Channel Error"
   case Set.toList $ MapSet.lookup c $ chans ext of
     [] -> do
       addDiags [mkDiag Error "unknown channel" c]
       {- Use old term as the fully qualified term and forget about the
       channel, there is an error in the spec -}
-      return (Set.empty, Map.empty, Nothing, t)
+      return (Set.empty, Map.empty, error msg, t)
     chanSorts -> do
       mt <- anaTermCspCASL mix vars t
       case mt of
@@ -615,7 +616,7 @@ anaChanSend mix c t vars = do
           {- CASL analysis failed. Use old term as the fully
           qualified term and forget about the channel,
           there is an error in the spec. -}
-          return (Set.empty, Map.empty, Nothing, t)
+          return (Set.empty, Map.empty, error msg, t)
         Just at -> do
           let rs = map (\ s -> ccTermCast at s sig) chanSorts
           addDiags $ concatMap diags rs
@@ -624,7 +625,7 @@ anaChanSend mix c t vars = do
               {- cast failed. Use old term as the fully
               qualified term, and forget about the
               channel there is an error in the spec. -}
-              return (Set.empty, Map.empty, Nothing, t)
+              return (Set.empty, Map.empty, error msg, t)
             [(_, castSort)] ->
               let alpha = [ CommTypeSort castSort
                           , CommTypeChan $ TypedChanName c castSort]
@@ -632,51 +633,51 @@ anaChanSend mix c t vars = do
                         not want to use a cast term here. A cast
                         must be possible, but we do not want to
                         force it! -}
-              in return (Set.fromList alpha, Map.empty, Just (c, castSort), at)
+              in return (Set.fromList alpha, Map.empty, (c, castSort), at)
             cts -> do -- fail due to an ambiguous chan sort
               addDiags [mkDiag Error
                    ("ambiguous channel sorts " ++ show (map snd cts)) t]
-              return (Set.empty, Map.empty, Nothing, t)
+              {- Use old term as the fully qualified term and forget about the
+              channel, there is an error in the spec. -}
+              return (Set.empty, Map.empty, error msg, t)
 
-getDeclaredChanSort :: Maybe (CHANNEL_NAME, SORT) -> CspCASLSign
-  -> Result SORT
-getDeclaredChanSort mc sig = let cm = chans $ extendedInfo sig in case mc of
-  Nothing -> fail "no channel data"
-  Just (c, s) -> case Set.toList $ MapSet.lookup c cm of
+getDeclaredChanSort :: (CHANNEL_NAME, SORT) -> CspCASLSign -> Result SORT
+getDeclaredChanSort (c,s) sig =
+  let cm = chans $ extendedInfo sig
+  in case Set.toList $ MapSet.lookup c cm of
     [] -> mkError "unknown channel" c
     css -> case filter (\ cs -> cs == s || Set.member s (subsortsOf cs sig))
-           css of
-     [] -> mkError "sort not a subsort of channel's sort" s
-     [cs] -> return cs
-     fcs -> mkError ("ambiguous channel sorts " ++ show fcs) s
+                  css of
+             [] -> mkError "sort not a subsort of channel's sort" s
+             [cs] -> return cs
+             fcs -> mkError ("ambiguous channel sorts " ++ show fcs) s
 
 {- | Statically analyse a CspCASL "binding" channel event (which is
 either a channel nondeterministic send event or a channel receive
 event). Returns a constituent communication alphabet of the event,
 a mapping for any new locally bound variables, a fully qualified
-channel (if possible) and the fully qualified version of the
+channel and the fully qualified version of the
 variable. -}
 anaChanBinding :: CHANNEL_NAME -> VAR -> SORT
   -> State CspCASLSign
-     (CommAlpha, ProcVarMap, Maybe (CHANNEL_NAME, SORT), TERM ())
+     (CommAlpha, ProcVarMap, (CHANNEL_NAME, SORT), TERM ())
 anaChanBinding c v s = do
   checkSorts [s] -- check sort is known
   sig <- get
   let qv = Qual_var v s nullRange
-      jcs = Just (c, s)
-      Result ds ms = getDeclaredChanSort jcs sig
+      fqChan = (c, s)
+      Result ds ms = getDeclaredChanSort fqChan sig
   addDiags ds
   case ms of
-    Nothing -> return (Set.empty, Map.empty, jcs, qv)
+    Nothing -> return (Set.empty, Map.empty, fqChan, qv)
     Just _ ->
         let alpha = [CommTypeSort s, CommTypeChan (TypedChanName c s)]
             binding = [(v, s)]
-                              {- Return the alphabet, var mapping, the fully
-                              qualfied channel and fully qualfied
-                              variable. Notice that the fully qualified
-                              channel's sort should be the lowest sort we can
-                              communicate in i.e. the sort of the variable. -}
-        in return (Set.fromList alpha, Map.fromList binding, jcs, qv)
+            {- Return the alphabet, var mapping, the fully qualfied channel and
+            fully qualfied variable. Notice that the fully qualified
+            channel's sort should be the lowest sort we can communicate in
+            i.e. the sort of the variable. -}
+        in return (Set.fromList alpha, Map.fromList binding, fqChan, qv)
 
 -- Static analysis of renaming and renaming items
 
