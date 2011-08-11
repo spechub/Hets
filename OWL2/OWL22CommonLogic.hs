@@ -86,6 +86,8 @@ instance Comorphism
       isInclusionComorphism OWL22CommonLogic = True
       has_model_expansion OWL22CommonLogic = True
 
+--s = emptySig
+
 smap :: Monad m =>
         (t4 -> t -> t1 -> t2 -> m t3) -> t4 -> t -> t1 -> t2 -> m (t3, t4)
 smap f s a b c = do
@@ -741,25 +743,33 @@ mapAnnFrameBit cSig ex afb =
         _ -> err
     ClassHasKey opl dpl -> do
         let ClassEntity ce = ex
+            lo = length opl
+            ld = length dpl
+            uptoOP = [2 .. lo + 1]
+            uptoDP = [lo + 2 .. lo + ld + 1]
+            tl = lo + ld + 2
         (_, sig) <- mapDescription cSig ce (OVar 1) 1
-        ol <- mapM (\ o -> mapOPE cSig o 1 2) opl
-        nol <- mapM (\ o -> mapOPE cSig o 3 2) opl
-        dl <- mapM (\ d -> mapDPE cSig d 1 2) dpl
-        ndl <- mapM (\ d -> mapDPE cSig d 3 2) dpl
-        keys <- mapM (mapKey cSig ce) $ zip (ol ++ dl) $ nol ++ ndl
-        return (msen2Txt keys, sig)
+        ol <- mapM (\ (n, o) -> mapOPE cSig o 1 n) $ zip uptoOP opl
+        nol <- mapM (\ (n, o) -> mapOPE cSig o tl n) $ zip uptoOP opl
+        dl <- mapM (\ (n, d) -> mapDPE cSig d 1 n) $ zip uptoDP dpl
+        ndl <- mapM (\ (n, d) -> mapDPE cSig d tl n) $ zip uptoDP dpl
+        keys <- mapKey cSig ce (ol ++ dl, nol ++ ndl) tl
+            $ uptoOP ++ uptoDP
+        return ([senToText keys], sig)
     ObjectSubPropertyChain oplst -> case ex of
         ObjectEntity op -> do
             os <- mapSubObjPropChain cSig oplst op 3
             return ([senToText os], cSig)
         _ -> err
 
-mapKey :: Sign -> ClassExpression -> (SENTENCE, SENTENCE) -> Result SENTENCE
-mapKey cSig ce (p, np) = do
+mapKey :: Sign -> ClassExpression -> ([SENTENCE], [SENTENCE]) -> Int -> [Int]
+    -> Result SENTENCE
+mapKey cSig ce (pl, npl) p i = do
     (nce, _) <- mapDescription cSig ce (OVar 1) 1
-    (c3, _) <- mapDescription cSig ce (OVar 3) 3 
-    let un = mkQU [mkNAME 3] $ mkBI (mkBC [c3 ,np]) $ mkAE (mkNTERM 3) $ mkNTERM 1
-    return $ mk1QU $ mkBI nce $ mkQE [mkNAME 2] $ mkBC [p, un]
+    (c3, _) <- mapDescription cSig ce (OVar p) p 
+    let un = mkQU [mkNAME p] $ mkBI (mkBC $ c3 : npl)
+                $ mkAE (mkNTERM p) $ mkNTERM 1
+    return $ mk1QU $ mkBI nce $ mkQE (map mkNAME i) $ mkBC $ pl ++ [un] 
 
 -- | Mapping of Axioms
 mapAxioms :: Sign -> Axiom -> Result ([TEXT], Sign)
