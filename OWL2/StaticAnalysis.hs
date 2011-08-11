@@ -212,7 +212,7 @@ checkFact s fb f = case f of
 checkHasKeyAll :: Sign -> AnnFrameBit -> Result AnnFrameBit
 checkHasKeyAll s k = case k of
   ClassHasKey ol dl -> do
-    let l1 = map (\ u -> Set.member (objPropToIRI u) (objectProperties s) ) ol
+    let l1 = map (\ u -> Set.member (objPropToIRI u) (objectProperties s)) ol
         l2 = map (`Set.member` dataProperties s) dl
     if elem False (l1 ++ l2) then
       fail "Static analysis. Keys failed, undeclared Data or Object Properties"
@@ -239,10 +239,10 @@ checkListBit s r fb = case fb of
         return $ ExpressionBit $ zip (map fst anl) n
     ObjectBit anl -> do
         let ol = map snd anl
-        let sorted = sortObjDataList s ol
+            sorted = sortObjDataList s ol
         if null sorted then do
             let dpl = map objPropToIRI ol
-            let nb = DataBit $ zip (map fst anl) dpl
+                nb = DataBit $ zip (map fst anl) dpl
             checkDataPropList s nb dpl
           else
             if length sorted == length ol then return fb
@@ -312,10 +312,9 @@ checkExtended s e = case e of
 -- | checks a frame and applies desired changes
 checkFrame :: Sign -> Frame -> Result [Frame]
 checkFrame s (Frame eith fbl) = if null fbl then do
-        ext <- checkExtended s eith
-        return [Frame ext []]
-    else fmap (map axToFrame . concat)
-        $ mapM (checkAxiom s . PlainAxiom eith) fbl
+    ext <- checkExtended s eith
+    return [Frame ext []]
+  else fmap (map axToFrame . concat) $ mapM (checkAxiom s . PlainAxiom eith) fbl
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]
 correctFrames s fl = fmap concat $ mapM (checkFrame s) fl

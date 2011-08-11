@@ -215,8 +215,7 @@ mapSymbol (Entity ty iri) = let
     AnnotationProperty -> Set.empty
     Datatype -> Set.empty
 
-mapSign :: OS.Sign                 -- ^ OWL signature
-        -> Result CASLSign         -- ^ CASL signature
+mapSign :: OS.Sign -> Result CASLSign
 mapSign sig =
       let conc = OS.concepts sig
           cvrt = map uriToId . Set.toList
@@ -237,8 +236,7 @@ loadDataInformation :: ProfSub -> Sign f ()
 loadDataInformation _ = let dts = Set.fromList $ map stringToId datatypeKeys
     in (emptySign ()) { sortRel = Rel.fromKeysSet dts }
 
-mapTheory :: (OS.Sign, [Named Axiom])
-             -> Result (CASLSign, [Named CASLFORMULA])
+mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) = let sl = topS in do
     cSig <- mapSign owlSig
     let pSig = loadDataInformation sl
@@ -248,9 +246,7 @@ mapTheory (owlSig, owlSens) = let sl = topS in do
     return (uniteCASLSign nSig pSig, predefinedAxioms ++ cSens)
 
 -- | mapping of OWL to CASL_DL formulae
-mapSentence :: CASLSign                           -- ^ CASL Signature
-  -> Named Axiom                                  -- ^ OWL2 Sentence
-  -> Result ([Named CASLFORMULA], CASLSign) -- ^ CASL Sentence
+mapSentence :: CASLSign -> Named Axiom -> Result ([Named CASLFORMULA], CASLSign)
 mapSentence cSig inSen = do
     (outAx, outSig) <- mapAxioms cSig $ sentence inSen
     return (map (flip mapNamed inSen . const) outAx, outSig)

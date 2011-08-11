@@ -367,8 +367,7 @@ xmlLFB ext mr lfb = case lfb of
                makeElement (case pn of
                     Positive -> objectPropertyAssertionK
                     Negative -> negativeObjectPropertyAssertionK
-                ) $ x ++ [xmlObjProp op]
-                        ++ map xmlIndividual [i, ind]
+                ) $ x ++ [xmlObjProp op] ++ map xmlIndividual [i, ind]
             DataPropertyFact pn dp lit ->
                 makeElement (case pn of
                     Positive -> dataPropertyAssertionK
