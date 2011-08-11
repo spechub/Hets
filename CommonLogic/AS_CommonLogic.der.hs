@@ -135,7 +135,7 @@ printSentence s = case s of
     Quant_sent xs _ -> parens $ pretty xs
     Bool_sent xs _ -> parens $ pretty xs
     Atom_sent xs _ -> pretty xs
-    Comment_sent x y _ -> parens $ text commentS <+> quotes (pretty x) <+> pretty y
+    Comment_sent x y _ -> parens $ text clCommentS <+> quotes (pretty x) <+> pretty y
     Irregular_sent xs _ -> parens $ pretty xs
 
 printComment :: COMMENT -> Doc
@@ -164,7 +164,7 @@ printTerm :: TERM -> Doc
 printTerm s = case s of
    Name_term a -> pretty a
    Funct_term t ts _ -> parens $ pretty t <+> (fsep $ map pretty ts)
-   Comment_term t c _ -> parens $ text commentS <+> quotes (pretty c) <+> pretty t
+   Comment_term t c _ -> parens $ text clCommentS <+> quotes (pretty c) <+> pretty t
 
 printTermSeq :: TERM_SEQ -> Doc
 printTermSeq s = case s of
@@ -193,18 +193,19 @@ instance Pretty IMPORTATION where
 printText :: TEXT -> Doc
 printText s = case s of
   Text x _ -> fsep $ map pretty x
-  Named_text x y _ -> text x <+> pretty y
+  Named_text x y _ -> parens $ text clTextS <+> text x <+> pretty y
 
 printPhrase :: PHRASE -> Doc
 printPhrase s = case s of
-  Module x -> pretty x
+  Module x -> parens $ text clModuleS <+> pretty x
   Sentence x -> pretty x
-  Importation x -> pretty x
-  Comment_text x y _ -> parens $ text commentS <+> quotes (pretty x) <+> pretty y
+  Importation x -> parens $ text clImportS <+> pretty x
+  Comment_text x y _ -> parens $ text clCommentS <+> quotes (pretty x) <+> pretty y
 
 printModule :: MODULE -> Doc
 printModule (Mod x z _) = pretty x <+> pretty z
-printModule (Mod_ex x y z _) = pretty x <+> fsep (map pretty y) <+> pretty z
+printModule (Mod_ex x y z _) =
+  pretty x <+> parens (text clExcludeS <+> fsep (map pretty y)) <+> pretty z
 
 printImportation :: IMPORTATION -> Doc
 printImportation (Imp_name x) = pretty x
@@ -219,5 +220,17 @@ orS = "or"
 iffS :: String
 iffS = "iff"
 
-commentS :: String
-commentS = "cl-comment"
+clCommentS :: String
+clCommentS = "cl-comment"
+
+clTextS :: String
+clTextS = "cl-text"
+
+clImportS :: String
+clImportS = "cl-imports"
+
+clModuleS :: String
+clModuleS = "cl-module"
+
+clExcludeS :: String
+clExcludeS = "cl-excludes"
