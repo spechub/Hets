@@ -20,6 +20,7 @@ import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.DataAna
 import HasCASL.MinType
+import HasCASL.Merge
 
 import Common.Id
 import Common.AS_Annotation
@@ -69,10 +70,11 @@ subtRel = Set.singleton OpInfo
     , opDefn = NoOpDefn Fun }
 
 subtAxioms :: TypeMap -> [Named Sentence]
-subtAxioms tm =
-  let tr = typeRel tm in
+subtAxioms tm0 =
+  let tm = addUnit cpoMap tm0
+      tr = typeRel tm in
   if Rel.nullKeys tr then [] else
-  subtReflex : subtTrans : subtInjProj : injTrans
+  subtReflex : subtTrans : subtInjProj : injTrans : idInj
   : map (subtAx tm) (Rel.toList tr)
 
 nr :: Range
@@ -92,7 +94,7 @@ subtAx tm (i1, i2) = let
       (Map.findWithDefault (error "TypeRel.subtAx") i bTypes) i tm
     e1 = findType i1
     e2 = findType i2
-    txt = shows i1 "_<_" ++ show i2
+    txt = shows i1 "_isSubTypeOf_" ++ show i2
     l1 = getKindAppl $ typeKind e1
     l2 = getKindAppl $ typeKind e2
     l3 = zipWith minVariance l1 l2
@@ -195,6 +197,13 @@ injTrans = let
        $ mkLogTerm eqvId nr (mkInjEq aType cType v1 v3)
            $ mkInjEq bType cType v2 v3
 
+idInj :: Named Sentence
+idInj = let
+  v1 = mkVarDecl (stringToId "x") aType
+  in makeNamed "ga_inj_identity"
+  $ Formula $ mkForall [GenTypeVarDecl aTypeArg, GenVarDecl v1]
+  $ mkInjEq aType aType v1 v1
+
 monos :: Env -> [Named Sentence]
 monos e = concatMap (makeMonos e) . Map.toList $ assumps e
 
@@ -206,12 +215,19 @@ makeEquivMonos e i l = case l of
   [] -> []
   t : r -> mapMaybe (makeEquivMono e i t) r ++ makeEquivMonos e i r
 
+mkTypedTerm :: Term -> Type -> Range -> Term
+mkTypedTerm t s r = TypedTerm t OfType s r
+
+mkTypedEqTerm :: Id -> Type -> Range -> Term -> Term -> Term
+mkTypedEqTerm i s r t1 t2 =
+  mkEqTerm i s r (mkTypedTerm t1 s r) $ mkTypedTerm t2 s r
+
 makeEquivMono :: Env -> Id -> TypeScheme -> TypeScheme -> Maybe (Named Sentence)
 makeEquivMono e i s1 s2 = case getCommonSupertype e s1 s2 of
   Just (ty1, l1, ty2, l2, args, nTy) ->
     Just $ makeNamed "ga_monotonicity"
          $ Formula $ mkForall (map GenTypeVarDecl args)
-           $ mkEqTerm eqId nTy nr
+           $ mkTypedEqTerm eqId nTy nr
            (mkInjTerm ty1 nTy
              $ QualOp Op (PolyId i [] nr) s1 l1 UserGiven nr)
            $ mkInjTerm ty2 nTy
