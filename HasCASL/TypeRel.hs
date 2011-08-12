@@ -69,10 +69,15 @@ subtRel = Set.singleton OpInfo
     , opAttrs = Set.empty
     , opDefn = NoOpDefn Fun }
 
+varRel :: Rel.Rel Id -> TypeMap -> Rel.Rel Id
+varRel r =
+  foldr (\ i -> Rel.insertPair i i) r . Map.keys
+  . Map.filter (any (`elem` [CoVar, ContraVar]) . getKindAppl . typeKind)
+
 subtAxioms :: TypeMap -> [Named Sentence]
 subtAxioms tm0 =
   let tm = addUnit cpoMap tm0
-      tr = typeRel tm in
+      tr = varRel (typeRel tm) tm in
   if Rel.nullKeys tr then [] else
   subtReflex : subtTrans : subtInjProj : injTrans : idInj
   : map (subtAx tm) (Rel.toList tr)
@@ -94,7 +99,7 @@ subtAx tm (i1, i2) = let
       (Map.findWithDefault (error "TypeRel.subtAx") i bTypes) i tm
     e1 = findType i1
     e2 = findType i2
-    txt = shows i1 "_isSubTypeOf_" ++ show i2
+    txt = shows i1 "_<_" ++ show i2
     l1 = getKindAppl $ typeKind e1
     l2 = getKindAppl $ typeKind e2
     l3 = zipWith minVariance l1 l2
