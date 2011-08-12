@@ -146,19 +146,27 @@ subtReflex = let
        $ mkForall (GenTypeVarDecl aTypeArg : map GenVarDecl [v1, v2])
          $ mkSubtTerm aType aType v1 v2
 
+xa :: VarDecl
+xa = mkVarDecl (stringToId "x") aType
+
+yb :: VarDecl
+yb = mkVarDecl (stringToId "y") bType
+
+zc :: VarDecl
+zc = mkVarDecl (stringToId "z") cType
+
+xaToZc :: [GenVarDecl]
+xaToZc = map GenTypeVarDecl [aTypeArg, bTypeArg, cTypeArg]
+  ++ map GenVarDecl [xa, yb, zc]
+
 subtTrans :: Named Sentence
-subtTrans = let
-  v1 = mkVarDecl (stringToId "x") aType
-  v2 = mkVarDecl (stringToId "y") bType
-  v3 = mkVarDecl (stringToId "z") cType
-  in makeNamed "ga_subt_transitive" $ Formula
-     $ mkForall (map GenTypeVarDecl [aTypeArg, bTypeArg, cTypeArg]
-                 ++ map GenVarDecl [v1, v2, v3])
+subtTrans = makeNamed "ga_subt_transitive" $ Formula
+     $ mkForall xaToZc
      $ mkLogTerm implId nr
         (mkLogTerm andId nr
-         (mkSubtTerm aType bType v1 v2)
-         $ mkSubtTerm bType cType v2 v3)
-        $ mkSubtTerm aType cType v1 v3
+         (mkSubtTerm aType bType xa yb)
+         $ mkSubtTerm bType cType yb zc)
+        $ mkSubtTerm aType cType xa zc
 
 mkInjTerm :: Type -> Type -> Term -> Term
 mkInjTerm t1 t2 = mkTerm injName injType [t1, t2] nr
@@ -169,40 +177,30 @@ mkInjEq t1 t2 v1 v2 =
           $ mkInjTerm t1 t2 $ QualVar v1
 
 subtInjProj :: Named Sentence
-subtInjProj = let
-  v1 = mkVarDecl (stringToId "x") aType
-  v2 = mkVarDecl (stringToId "y") bType
-  in makeNamed "ga_subt_inj_proj" $ Formula
+subtInjProj = makeNamed "ga_subt_inj_proj" $ Formula
      $ mkForall (map GenTypeVarDecl [aTypeArg, bTypeArg]
-                 ++ map GenVarDecl [v1, v2])
+                 ++ map GenVarDecl [xa, yb])
      $ mkLogTerm implId nr
-        (mkSubtTerm aType bType v1 v2)
-       $ mkLogTerm eqvId nr (mkInjEq aType bType v1 v2)
-        $ mkEqTerm eqId aType nr (QualVar v1)
+        (mkSubtTerm aType bType xa yb)
+       $ mkLogTerm eqvId nr (mkInjEq aType bType xa yb)
+        $ mkEqTerm eqId aType nr (QualVar xa)
           $ mkTerm projName projType [bType, aType] nr
-            $ QualVar v2
+            $ QualVar yb
 
 injTrans :: Named Sentence
-injTrans = let
-  v1 = mkVarDecl (stringToId "x") aType
-  v2 = mkVarDecl (stringToId "y") bType
-  v3 = mkVarDecl (stringToId "z") cType
-  in makeNamed "ga_inj_transitive" $ Formula
-     $ mkForall (map GenTypeVarDecl [aTypeArg, bTypeArg, cTypeArg]
-                 ++ map GenVarDecl [v1, v2, v3])
+injTrans = makeNamed "ga_inj_transitive" $ Formula
+     $ mkForall xaToZc
      $ mkLogTerm implId nr
-        (mkLogTerm andId nr (mkSubtTerm aType bType v1 v2)
-          $ mkLogTerm andId nr (mkSubtTerm bType cType v2 v3)
-            $ mkInjEq aType bType v1 v2)
-       $ mkLogTerm eqvId nr (mkInjEq aType cType v1 v3)
-           $ mkInjEq bType cType v2 v3
+        (mkLogTerm andId nr (mkSubtTerm aType bType xa yb)
+          $ mkLogTerm andId nr (mkSubtTerm bType cType yb zc)
+            $ mkInjEq aType bType xa yb)
+       $ mkLogTerm eqvId nr (mkInjEq aType cType xa zc)
+           $ mkInjEq bType cType yb zc
 
 idInj :: Named Sentence
-idInj = let
-  v1 = mkVarDecl (stringToId "x") aType
-  in makeNamed "ga_inj_identity"
-  $ Formula $ mkForall [GenTypeVarDecl aTypeArg, GenVarDecl v1]
-  $ mkInjEq aType aType v1 v1
+idInj = makeNamed "ga_inj_identity"
+  $ Formula $ mkForall [GenTypeVarDecl aTypeArg, GenVarDecl xa]
+  $ mkInjEq aType aType xa xa
 
 monos :: Env -> [Named Sentence]
 monos e = concatMap (makeMonos e) . Map.toList $ assumps e
@@ -216,7 +214,7 @@ makeEquivMonos e i l = case l of
   t : r -> mapMaybe (makeEquivMono e i t) r ++ makeEquivMonos e i r
 
 mkTypedTerm :: Term -> Type -> Range -> Term
-mkTypedTerm t s r = TypedTerm t OfType s r
+mkTypedTerm t = TypedTerm t OfType
 
 mkTypedEqTerm :: Id -> Type -> Range -> Term -> Term -> Term
 mkTypedEqTerm i s r t1 t2 =
