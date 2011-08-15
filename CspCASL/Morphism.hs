@@ -481,7 +481,8 @@ mapRenaming mor re =
           {- There should be no (non fully qualified) Renamings (only
           FQRenamings) as the static analysis should have transformed
           EventSets into FQEventSets -}
-          error "CspCASL.Morphism.mapRenaming: Unexpected Renaming"
+          error "CspCASL.Morphism.mapRenaming: Unexpected non fully \
+                 \qualified renaming"
       FQRenaming rs -> FQRenaming $ map (mapCASLTerm mor) rs
 
 cspCASLMorphism2caslMorphism :: CspCASLMorphism -> Morphism () () ()

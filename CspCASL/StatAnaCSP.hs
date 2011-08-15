@@ -368,9 +368,9 @@ anaProcTerm mix proc gVars lVars = case proc of
     RenamingProcess p renaming r ->
         do addDiags [mkDiag Debug "Renaming" proc]
            (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
-           (renAlpha, _) <- anaRenaming renaming
+           (renAlpha, fqRenaming) <- anaRenaming renaming
            let newAlpha = pComms `Set.union` renAlpha
-               fqProc = FQProcess (RenamingProcess pFQTerm renaming r)
+               fqProc = FQProcess (RenamingProcess pFQTerm fqRenaming r)
                                          (pComms `Set.union` renAlpha) r
            return (newAlpha, fqProc)
     ConditionalProcess f p q r ->
@@ -642,7 +642,7 @@ anaChanSend mix c t vars = do
               return (Set.empty, Map.empty, error msg, t)
 
 getDeclaredChanSort :: (CHANNEL_NAME, SORT) -> CspCASLSign -> Result SORT
-getDeclaredChanSort (c,s) sig =
+getDeclaredChanSort (c, s) sig =
   let cm = chans $ extendedInfo sig
   in case Set.toList $ MapSet.lookup c cm of
     [] -> mkError "unknown channel" c
@@ -686,8 +686,8 @@ the fully qualified renaming. -}
 anaRenaming :: RENAMING -> State CspCASLSign (CommAlpha, RENAMING)
 anaRenaming renaming = case renaming of
   Renaming r -> do
-    (al, fqRenamingTermsMaybes) <- foldM anaRenamingItem (Set.empty, []) r
-    return (al, FQRenaming fqRenamingTermsMaybes)
+    (al, fqRenamingTerms) <- foldM anaRenamingItem (Set.empty, []) r
+    return (al, FQRenaming fqRenamingTerms)
   FQRenaming _ ->
       error "CspCASL.StatAnaCSP.anaRenaming: Unexpected FQRenaming"
 

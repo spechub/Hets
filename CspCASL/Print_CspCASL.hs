@@ -14,6 +14,7 @@ Printing abstract syntax of CSP-CASL
 module CspCASL.Print_CspCASL where
 
 import CASL.AS_Basic_CASL (SORT, TERM)
+import CASL.Fold
 import CASL.ToDoc
 import Common.Doc
 import Common.DocUtils
@@ -204,8 +205,12 @@ instance Pretty EVENT where
 -- | print an event.
 printEvent :: EVENT -> Doc
 printEvent ev =
-    case ev of
-      TermEvent t _ -> pretty t
+    let printRecord' = printRecord {
+          foldQual_var = \ _ v _ _ -> sidDoc v}
+
+        caslPrintTerm = foldTerm printRecord'
+    in case ev of
+      TermEvent t _ -> caslPrintTerm t
       InternalPrefixChoice v s _ ->
           internal_choice <+> pretty v <+> text svar_sortS <+> pretty s
       ExternalPrefixChoice v s _ ->
@@ -217,7 +222,7 @@ printEvent ev =
       ChanRecv cn v s _ ->
           pretty cn <+> text chan_receiveS <+> pretty v
                           <+> text svar_sortS <+> pretty s
-      FQTermEvent t _ -> pretty t
+      FQTermEvent t _ -> caslPrintTerm t
       FQExternalPrefixChoice t _ -> external_choice <+> pretty t
       FQInternalPrefixChoice t _ -> internal_choice <+> pretty t
       FQChanSend (cn, s) t _ -> pretty cn <> colon <> pretty s <+>

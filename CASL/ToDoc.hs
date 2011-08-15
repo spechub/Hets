@@ -32,6 +32,7 @@ module CASL.ToDoc
     , printOpItem
     , printPredItem
     , printPredHead
+    , printRecord
     , printAttr
     , FormExtension (..)
     ) where
