@@ -42,8 +42,8 @@ rmFB fb = case fb of
     ListFrameBit mr lfb -> ListFrameBit mr (rmLFB lfb)
     AnnFrameBit ans afb -> AnnFrameBit (rmList ans) afb
 
-rm :: Axiom -> Axiom
-rm (PlainAxiom eith fb) = case eith of
+rmImplied :: Axiom -> Axiom
+rmImplied (PlainAxiom eith fb) = case eith of
       Misc ans -> PlainAxiom (Misc (rmList ans)) $ rmFB fb
       _ -> PlainAxiom eith $ rmFB fb
 
@@ -62,8 +62,8 @@ addListFB lfb = case lfb of
     DataPropRange a -> DataPropRange $ addAnnList a
     IndividualFacts a -> IndividualFacts $ addAnnList a
 
-add :: Axiom -> Axiom
-add a = case rm a of
+addImplied :: Axiom -> Axiom
+addImplied a = case rmImplied a of
       PlainAxiom eith fb -> case eith of
         Misc ans -> PlainAxiom (Misc (implied : ans)) fb
         _ -> case fb of

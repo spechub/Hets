@@ -9,7 +9,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-    Instances for some of the functions used in OWL 2
+Instances for some of the functions used in OWL 2
 -}
 
 module OWL2.Function where
@@ -94,20 +94,20 @@ instance Function ClassExpression where
         ObjectComplementOf ce -> ObjectComplementOf $ function t s ce
         ObjectOneOf il -> ObjectOneOf $ map (function t s) il
         ObjectValuesFrom qt op ce ->
-            ObjectValuesFrom qt (function t s op) (function t s ce)
-        ObjectHasValue op i -> ObjectHasValue (function t s op) (function t s i)
-        ObjectHasSelf op -> ObjectHasSelf (function t s op)
+            ObjectValuesFrom qt (function t s op) $ function t s ce
+        ObjectHasValue op i -> ObjectHasValue (function t s op) $ function t s i
+        ObjectHasSelf op -> ObjectHasSelf $ function t s op
         ObjectCardinality (Cardinality ct i op mce) -> ObjectCardinality
               $ Cardinality ct i (function t s op) $ maybeDo t s mce
         DataValuesFrom qt dp dr -> DataValuesFrom qt
-              (function t s dp) (function t s dr)
-        DataHasValue dp l -> DataHasValue (function t s dp) (function t s l)
+              (function t s dp) $ function t s dr
+        DataHasValue dp l -> DataHasValue (function t s dp) $ function t s l
         DataCardinality (Cardinality ct i dp mdr) -> DataCardinality
               $ Cardinality ct i (function t s dp) $ maybeDo t s mdr
 
 instance Function Annotation where
     function t s (Annotation al ap av) = Annotation (map (function t s) al)
-          (function t s ap) (function t s av)
+          (function t s ap) $ function t s av
 
 instance Function AnnotationValue where
     function t s av = case av of
@@ -123,9 +123,9 @@ instance Function a => Function (AnnotatedList a) where
 instance Function Fact where
     function t s f = case f of
         ObjectPropertyFact pn op i ->
-            ObjectPropertyFact pn (function t s op) (function t s i)
+            ObjectPropertyFact pn (function t s op) $ function t s i
         DataPropertyFact pn dp l ->
-            DataPropertyFact pn (function t s dp) (function t s l)
+            DataPropertyFact pn (function t s dp) $ function t s l
 
 instance Function ListFrameBit where
     function t s lfb = case lfb of
@@ -144,14 +144,14 @@ instance Function AnnFrameBit where
         DatatypeBit dr -> DatatypeBit $ function t s dr
         ClassDisjointUnion cel -> ClassDisjointUnion $ map (function t s) cel
         ClassHasKey opl dpl -> ClassHasKey (map (function t s) opl)
-            (map (function t s) dpl)
+            $ map (function t s) dpl
         ObjectSubPropertyChain opl ->
-            ObjectSubPropertyChain (map (function t s) opl)
+            ObjectSubPropertyChain $ map (function t s) opl
         _ -> afb
 
 instance Function FrameBit where
     function t s fb = case fb of
-        ListFrameBit mr lfb -> ListFrameBit mr (function t s lfb)
+        ListFrameBit mr lfb -> ListFrameBit mr $ function t s lfb
         AnnFrameBit ans afb -> AnnFrameBit (function t s ans)
             (function t s afb)
 

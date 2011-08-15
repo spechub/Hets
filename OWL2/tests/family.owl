@@ -119,7 +119,7 @@ ObjectProperty: family:likes
 ObjectProperty: family:genid59
 
     
-ObjectProperty:  inverse (family:genid59)
+ObjectProperty:  family:genid59
 
     SubPropertyOf: 
         family:hasAncestor

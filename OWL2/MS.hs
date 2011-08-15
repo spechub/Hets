@@ -122,3 +122,6 @@ isEmptyOntologyDoc (OntologyDocument ns onto) =
 isEmptyOntology :: Ontology -> Bool
 isEmptyOntology (Ontology (QN _ l _ n _) annoList impList fs) =
     null l && null n && null annoList && null impList && null fs
+
+emptyAnnoList :: [a] -> AnnotatedList a
+emptyAnnoList = map $ \ x -> ([], x)
