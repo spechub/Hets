@@ -54,6 +54,8 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos:  "logic", Logic_name
               | Newlogic_defn LogicDef Range
               -- pos:  "newlogic", Logic_name, "=", opt "end"
+              | Newcomorphism_defn ComorphismDef Range
+              -- pos: "newcomorphism", Comorphism_name, "=", opt "end"              
                 deriving Show
 
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
