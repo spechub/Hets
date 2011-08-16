@@ -1,0 +1,11 @@
+logic OWL
+
+spec person =
+
+    ObjectProperty: hasSSN
+    ObjectProperty: hasName
+
+    Class: Person
+        HasKey: hasSSN, hasName
+
+end

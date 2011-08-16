@@ -240,7 +240,7 @@ misc = do
     return $ Frame (Misc as) [ListFrameBit (Just $ EDRelation e)
         $ ObjectBit $ emptyAnnoList es]
   <|> do
-    s <- sameOrDifferent
+    s <- sameOrDifferentIndu
     as <- optionalAnnos
     is <- sepByComma individualUri
     return $ Frame (Misc as) [ListFrameBit (Just $ SDRelation s)

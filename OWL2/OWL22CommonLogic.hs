@@ -265,6 +265,10 @@ mapSign sig =
       itms = Set.map uriToId conc
   in return emptySig { items = itms }
 
+nothingSent :: CommonAnno.Named TEXT
+nothingSent = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN $ mkTermAtoms
+    (mkSimpleId "owl:Nothing") [mkNTERM 1]
+
 mapTheory :: (OS.Sign, [CommonAnno.Named Axiom])
              -> Result (Sign, [CommonAnno.Named TEXT])
 mapTheory (owlSig, owlSens) = do
@@ -274,7 +278,7 @@ mapTheory (owlSig, owlSens) = do
                 (sen, sig) <- mapSentence y z
                 return (sen ++ x, unite sig y)
                 ) ([], cSig) owlSens
-    return (nSig, cSensI)
+    return (nSig, nothingSent : cSensI)
 
 -- | mapping of OWL to CommonLogic_DL formulae
 mapSentence :: Sign                             -- ^ CommonLogic Signature
@@ -371,11 +375,11 @@ mapOPE cSig ope x y = mapObjProp cSig ope (OVar x) $ OVar y
 
 mapOPEList :: Sign -> Int -> Int -> [ObjectPropertyExpression]
     -> Result [SENTENCE]
-mapOPEList s a b opl = mapM ((\ sig x1 x2 op -> mapOPE sig op x1 x2 ) s a b) opl
+mapOPEList s a b = mapM ((\ sig x1 x2 op -> mapOPE sig op x1 x2 ) s a b)
 
 mapDPEList :: Sign -> Int -> Int -> [DataPropertyExpression]
     -> Result [SENTENCE]
-mapDPEList s a b dpl = mapM ((\ sig x1 x2 dp -> mapDPE sig dp x1 x2 ) s a b) dpl
+mapDPEList s a b = mapM ((\ sig x1 x2 dp -> mapDPE sig dp x1 x2 ) s a b)
 
 mapObjPropListP :: Sign -> Int -> Int
     -> [(ObjectPropertyExpression, ObjectPropertyExpression)]
@@ -387,7 +391,7 @@ mapDataPropListP :: Sign -> Int -> Int
     -> Result [(SENTENCE, SENTENCE)]
 mapDataPropListP = mapObjOrDataListP mapDPEList
 
-mapObjOrDataListP :: Monad m => (t -> t1 -> t2 -> [a] -> m [b]) -> t -> t1 -> t2 
+mapObjOrDataListP :: Monad m => (t -> t1 -> t2 -> [a] -> m [b]) -> t -> t1 -> t2
     -> [(a, a)] -> m [(b, b)]
 mapObjOrDataListP f cSig a b ls = do
     let (l, r) = unzip ls
@@ -607,11 +611,11 @@ mapListFrameBit :: Sign -> Extended -> Maybe Relation -> ListFrameBit
 mapListFrameBit cSig ex rel lfb = case lfb of
     AnnotationBit _ -> return ([], cSig)
     ExpressionBit cls -> case ex of
-          Misc _ -> let cel = map snd cls in do 
+          Misc _ -> let cel = map snd cls in do
             (els, sig) <- mapDescriptionListP cSig 1 $ comPairs cel cel
             mkEDPairs sig [1] rel els
           SimpleEntity (Entity ty iri) -> do
-             ls <- mapM (\ (_, c) -> mapDescription cSig c (OIndi iri) 1 ) cls
+             ls <- mapM (\ (_, c) -> mapDescription cSig c (OIndi iri) 1) cls
              case ty of
               NamedIndividual | rel == Just Types -> do
                   inD <- mapIndivIRI cSig iri
@@ -641,7 +645,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                             uniteL $ map snd tdsc)
                   _ -> failMsg cls
           ClassEntity ce -> let cel = map snd cls in case rel of
-              Nothing -> failMsg lfb 
+              Nothing -> failMsg lfb
               Just r -> case r of
                 EDRelation _ -> do
                    (decrsS, dSig) <- mapDescriptionListP cSig 1 $ mkPairs ce cel
@@ -673,7 +677,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                         $ mkBB cd o2) os1, cSig)
                 _ -> failMsg lfb
             _ -> failMsg lfb
-    DataBit anl -> let dl = map snd anl in case rel of  
+    DataBit anl -> let dl = map snd anl in case rel of
         Nothing -> return ([], cSig)
         Just r -> case ex of
             Misc _ -> do
@@ -686,8 +690,8 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                 SubPropertyOf -> do
                     os1 <- mapM (\ o1 -> mapDPE cSig o1 1 2) dl
                     o2 <- mapDPE cSig iri 1 2
-                    return (msen2Txt $ map (\ cd -> mkQU (map mkNAME [1, 2])
-                        $ mkBI o2 cd) os1, cSig)
+                    return (msen2Txt $ map (mkQU (map mkNAME [1, 2])
+                        . mkBI o2) os1, cSig)
                 _ -> failMsg lfb
             _ -> failMsg lfb
     IndividualSameOrDifferent anl -> case rel of
@@ -766,10 +770,10 @@ mapKey :: Sign -> ClassExpression -> ([SENTENCE], [SENTENCE]) -> Int -> [Int]
     -> Result SENTENCE
 mapKey cSig ce (pl, npl) p i = do
     (nce, _) <- mapDescription cSig ce (OVar 1) 1
-    (c3, _) <- mapDescription cSig ce (OVar p) p 
+    (c3, _) <- mapDescription cSig ce (OVar p) p
     let un = mkQU [mkNAME p] $ mkBI (mkBC $ c3 : npl)
                 $ mkAE (mkNTERM p) $ mkNTERM 1
-    return $ mk1QU $ mkBI nce $ mkQE (map mkNAME i) $ mkBC $ pl ++ [un] 
+    return $ mk1QU $ mkBI nce $ mkQE (map mkNAME i) $ mkBC $ pl ++ [un]
 
 -- | Mapping of Axioms
 mapAxioms :: Sign -> Axiom -> Result ([TEXT], Sign)

@@ -145,16 +145,16 @@ checkClassExpression s desc =
     ObjectOneOf _ -> return desc
     ObjectValuesFrom q opExpr d -> if isDeclObjProp s opExpr
         then fmap (ObjectValuesFrom q opExpr) $ checkClassExpression s d
-        else let iri = objPropToIRI opExpr in
-                if isDeclDataProp s iri then do
+        else let iri = objPropToIRI opExpr
+             in if isDeclDataProp s iri then do
                         ndr <- classExpressionToDataRange s d
                         checkDataRange s ndr
                         return $ DataValuesFrom q iri ndr
                 else objErr iri
-    ObjectHasSelf opExpr -> if isDeclObjProp s opExpr
-        then return desc else objErr $ objPropToIRI opExpr
-    ObjectHasValue opExpr _ -> if isDeclObjProp s opExpr
-        then return desc else objErr $ objPropToIRI opExpr
+    ObjectHasSelf opExpr -> if isDeclObjProp s opExpr then return desc
+        else objErr $ objPropToIRI opExpr
+    ObjectHasValue opExpr _ -> if isDeclObjProp s opExpr then return desc
+        else objErr $ objPropToIRI opExpr
     ObjectCardinality (Cardinality a b opExpr md) -> do
         let iri = objPropToIRI opExpr
             mbrOP = Set.member iri $ objectProperties s
@@ -176,8 +176,8 @@ checkClassExpression s desc =
     DataValuesFrom _ dExp r -> do
         checkDataRange s r
         if isDeclDataProp s dExp then return desc else datErr dExp
-    DataHasValue dExp _ -> if isDeclDataProp s dExp
-        then return desc else datErr dExp
+    DataHasValue dExp _ -> if isDeclDataProp s dExp then return desc
+        else datErr dExp
     DataCardinality (Cardinality _ _ dExp mr) -> if isDeclDataProp s dExp
         then case mr of
             Nothing -> return desc
