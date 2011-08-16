@@ -24,6 +24,7 @@ import ATC.Grothendieck
 import ATC.Sml_cats
 import ATC.LibName ()
 
+import CommonLogic.ParseCLAsLibDefn
 #ifndef NOOWLLOGIC
 import OWL2.ParseOWLAsLibDefn
 #endif
@@ -56,6 +57,8 @@ readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
+    CommonLogicIn -> liftIO $ parseCL_CLIF file
+    CommonLogic2In -> liftIO $ parseCL_CLIF file
 #ifndef NOOWLLOGIC
     OWL2In -> liftIO $ parseOWL file
 #endif

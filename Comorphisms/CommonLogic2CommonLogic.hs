@@ -17,6 +17,7 @@ modules.
 
 module Comorphisms.CommonLogic2CommonLogic (
         CommonLogic2CommonLogic  (..)
+      , eliminateModules
     )
     where
 

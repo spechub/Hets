@@ -245,7 +245,7 @@ sl_nameOrSeqmark :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME_OR_SEQMARK
 sl_nameOrSeqmark prds cs nos = 
     case nos of
         AS.Name n -> sl_quantName prds cs n
-        AS.SeqMark _ -> cs -- correct?
+        AS.SeqMark _ -> top
 
 -- | determines the sublogic for names which are next to a quantifier,
 -- given predicates of the super-text
@@ -358,5 +358,22 @@ prSymMapM _ sMap = Just sMap
 prName :: CommonLogicSL -> AS.NAME -> Maybe AS.NAME
 prName _ n = Just n
 
+-- | filters all TEXTs inside the BASIX_SPEC of which the sublogic is less than
+-- or equal to @cs@
 prBasicSpec :: CommonLogicSL -> AS.BASIC_SPEC -> AS.BASIC_SPEC
-prBasicSpec _ bs = bs -- TODO: write some decent function
+prBasicSpec cs bs@(AS.Basic_spec items) = -- TODO: write some decent function
+  AS.Basic_spec $ map (maybeLE cs) items
+
+maybeLE :: CommonLogicSL ->
+            AS_Anno.Annoted (AS.BASIC_ITEMS) -> AS_Anno.Annoted (AS.BASIC_ITEMS)
+maybeLE cs items = AS_Anno.Annoted {
+      AS_Anno.opt_pos = AS_Anno.opt_pos items
+    , AS_Anno.l_annos = AS_Anno.l_annos items
+    , AS_Anno.r_annos = AS_Anno.r_annos items
+    , AS_Anno.item    =
+        AS.Axiom_items $ filter (isSL_LE cs) (case AS_Anno.item items of
+                                                  AS.Axiom_items i -> i)
+  }
+
+isSL_LE :: CommonLogicSL -> AS_Anno.Annoted (AS.TEXT) -> Bool
+isSL_LE cs at = compareLE (sublogic_text bottom $ AS_Anno.item at) cs
