@@ -114,3 +114,6 @@ instance LogicFram LF
    base_sig LF = baseSig
    write_logic LF = writeLogic
    write_syntax LF = writeSyntax
+   write_proof LF = writeProof
+   write_model LF = writeModel
+ --  write_comorphism LF = writeComorphism

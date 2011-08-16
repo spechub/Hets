@@ -256,6 +256,15 @@ modelsS = "models"
 proofsS :: String
 proofsS = "proofs"
 
+newcomorphismS :: String
+newcomorphismS = "newcomorphism"
+
+sourceS :: String
+sourceS = "source"
+
+targetS :: String 
+targetS = "target"
+
 -- * frameworks
 
 lfS :: String

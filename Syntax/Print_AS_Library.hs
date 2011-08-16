@@ -89,6 +89,8 @@ instance Pretty LIB_ITEM where
             keyword logicS <+> pretty aa
         Syntax.AS_Library.Newlogic_defn nl _ ->
             pretty nl
+        Syntax.AS_Library.Newcomorphism_defn nc _ ->
+            pretty nc
 
 instance Pretty GENERICITY where
     pretty (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]

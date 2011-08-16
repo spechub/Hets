@@ -248,10 +248,10 @@ getBaseAttr e = findAttr baseQN e
 -- compares two OMS elements
 eqOMS :: Element -> Element -> Bool
 eqOMS e1 e2 =
-  if (elName e1 /= omsQN || elName e2 /= omsQN) then False else
-     and [ getNameAttr e1 == getNameAttr e2
-         , getModuleAttr e1 == getModuleAttr e2
-         , getBaseAttr e1 == getBaseAttr e2]
+     if (elName e1 /= omsQN || elName e2 /= omsQN) then False else True
+--      and [ getNameAttr e1 == getNameAttr e2
+--          , getModuleAttr e1 == getModuleAttr e2
+--          , getBaseAttr e1 == getBaseAttr e2]
 
 toOMDoc :: FilePath -> FilePath
 toOMDoc fp = replaceExtension fp omdocE

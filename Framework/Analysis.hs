@@ -94,7 +94,7 @@ addLogicDef2DG ld dg =
       nodeSig = NodeSig node $ G_sign Framework extSign startSigId
       gEntry = SpecEntry $ ExtGenSig genSig nodeSig
       dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
-      in dg2
+   in dg2
 
 {- constructs the diagram in the signature category of the meta logic
    which represents the object logic -}
@@ -119,10 +119,10 @@ retrieveDiagram ml (LogicDef _ _ s m f p _) dg = do
             else do v <- lookupMorph ml p dg
                     return $ Just v
 
-  if (dom ltruth /= base_sig ml) then
-     error $ "The morphism " ++ (show s) ++
-             " must originate from the Base signature for " ++
-             (show ml) ++ "." else do
+--  if (dom ltruth /= base_sig ml) then
+--     error $ "The morphism " ++ (show s) ++
+--             " must originate from the Base signature for " ++
+--            (show ml) ++ "." else do
   if (isJust lmod && (dom $ fromJust lmod) /= cod ltruth) then
      error $ "The morphisms " ++ (show s) ++
              " and " ++ (show m) ++ " must be composable." else do
@@ -170,17 +170,25 @@ buildLogic :: LogicFram lid sublogics basic_spec sentence symb_items
                     symb_map_items sign morphism symbol raw_symbol proof_tree
               => lid -> String -> morphism -> Maybe morphism ->
                  Maybe sign -> Maybe morphism -> IO ()
-buildLogic ml l ltruth _ _ _ = do
+buildLogic ml l ltruth maybeMod _ maybePf = do
   exists <- doesDirectoryExist l
   if exists then
      error $ "The directory " ++ l ++ " already exists.\n" ++
              "Please choose a different object logic name." else do
 
   createDirectory l
-  let logicC = write_logic ml l
-  let syntaxC = write_syntax ml l ltruth
-  writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") logicC
-  writeFile (l ++ "/" ++ "Syntax.hs") syntaxC
+  let logicCl = write_logic ml l
+  writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") logicCl
+  let syntaxCl = write_syntax ml l ltruth
+  writeFile (l ++ "/" ++ "Syntax.hs") syntaxCl
+  if isNothing maybeMod then
+     error $ "Please provide a model theory for " ++ l ++ "\n" else do
+  let modCl = write_model ml l $ fromJust maybeMod
+  writeFile (l ++ "/" ++ "Model.hs") modCl
+  if isNothing maybePf then
+     error $ "Please provide a proof theory for " ++ l ++ "\n" else do
+  let proofCl = write_proof ml l $ fromJust maybePf
+  writeFile (l ++ "/" ++ "Proof.hs") proofCl
   return ()
 
 -- includes the newly-defined logic in the logic list

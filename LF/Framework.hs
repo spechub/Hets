@@ -143,3 +143,33 @@ writeSyntax l ltruth =
       ltruth_decl = mkDecl "ltruth" "Morphism" $ show ltruth
  
       in intercalate "\n\n" [mod_decl, impts1, impts2, ltruth_decl]
+      
+
+writeProof :: String -> Morphism -> String
+writeProof l lpf =
+  let -- module declaration
+      mod_decl = mkModDecl $ l ++ "." ++ "Proof"
+      
+      -- imports
+      impts1 = mkImports ["LF.Sign", "LF.Morphism"]
+      impts2 = mkImports ["Data.Map"]
+      
+      -- lpf declaration
+      lpf_decl = mkDecl "lpf" "Morphism" $ show lpf 
+      
+  in intercalate "\n\n" [mod_decl, impts1, impts2, lpf_decl]
+  
+
+writeModel :: String -> Morphism -> String
+writeModel l lmod =
+     let -- module declaration
+         mod_decl = mkModDecl $ l ++ "." ++ "Model"
+         
+         -- imports
+         impts1 = mkImports ["LF.Sign", "LF.Morphism"]
+         impts2 = mkImports ["Data.Map"]
+         
+         -- lpf declaration
+         lmod_decl = mkDecl "lmod" "Morphism" $ show lmod 
+         
+     in intercalate "\n\n" [mod_decl, impts1, impts2, lmod_decl]

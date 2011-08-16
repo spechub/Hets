@@ -93,7 +93,7 @@ data EXP = Type
          | Pi CONTEXT EXP
          | Lamb CONTEXT EXP
            deriving (Ord,Show)
-
+           
 instance GetRange EXP
 
 type Sentence = EXP

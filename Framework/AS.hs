@@ -41,10 +41,33 @@ data LogicDef = LogicDef
     patterns      :: PATTERN_NAME        
   } deriving (Ord, Eq, Show)
 
+data ComorphismDef = ComorphismDef
+  { --the name of the comorphism
+    newcomorphismName :: NAME,
+    -- the framework used for defining the comorphism
+    metaC             :: FRAM,
+    -- name of the source logic
+    source            :: SIG_NAME,
+    -- name of the target logic
+    target            :: SIG_NAME,
+    {- name of the morphism between the syntax of the source logic and 
+       the syntax of the target logic -}
+    syntaxC           :: MORPH_NAME,
+    {- name of the morphism between the model category of the source logic and
+       the model category of the target logic -}
+    modelC            :: MORPH_NAME,
+    {- name of the morphism between the proof category of the source logic and 
+       the proof category of the target logic -}
+    proofC            :: MORPH_NAME
+  } deriving (Ord, Eq, Show)
+
 instance GetRange LogicDef
+instance GetRange ComorphismDef
 
 instance Pretty LogicDef where
     pretty = printLogicDef
+instance Pretty ComorphismDef where
+    pretty = printComorphismDef
 instance Pretty FRAM where
     pretty = printFram
 
@@ -58,6 +81,17 @@ printLogicDef (LogicDef l ml s m f p pa) =
        , text " " <+> text proofsS <+> pretty p
        , text " " <+> text patternsS <+> pretty pa
        ] 
+    
+printComorphismDef :: ComorphismDef -> Doc
+printComorphismDef (ComorphismDef c ml sl tl s m p) =
+  vcat [ text newcomorphismS <+> pretty c
+       , text " " <+> text metaS <+> pretty ml
+       , text " " <+> text sourceS <+> pretty sl
+       , text " " <+> text targetS <+> pretty tl
+       , text " " <+> text syntaxS <+> pretty s
+       , text " " <+> text modelsS <+> pretty m
+       , text " " <+> text proofsS <+> pretty p
+       ]
 
 printFram :: FRAM -> Doc
 printFram LF = text "LF"

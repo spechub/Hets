@@ -751,6 +751,13 @@ class Logic lid sublogics basic_spec sentence
       write_syntax :: lid -> String -> morphism -> String
       write_syntax l = error $
          "Function write_syntax nyi for logic " ++ shows l "."
+      write_proof :: lid -> String -> morphism -> String
+      write_syntax l = error $
+         "Function write_proof nyi for logic " ++ shows l "."
+      write_model :: lid -> String -> morphism -> String
+      write_syntax l = error $
+         "Function write_model nyi for logic " ++ shows l "."
+
 
 {- --------------------------------------------------------------
 Derived functions

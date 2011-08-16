@@ -26,7 +26,7 @@ module LF.Morphism
 import LF.Sign
 
 import Common.Result
-import Common.Doc
+import Common.Doc hiding (space)
 import Common.DocUtils
 
 import qualified Data.Map as Map

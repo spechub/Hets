@@ -169,6 +169,18 @@ libItem l =
        q <- optEnd
        return (Newlogic_defn (LogicDef n ml s m f p pa)
           (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
+   <|> -- newcomorphism
+     do (n,  s1) <- newcomorphismP
+        s2  <- equalT
+        (ml, s3) <- metaP
+        (s,  s4) <- sourceP
+        (t,  s5) <- targetP
+        (sv, s6) <- syntaxP
+        (pv, s7) <- proofsP
+        (mv, s8) <- modelsP
+        q   <- optEnd
+        return (Newcomorphism_defn (ComorphismDef n ml s t sv pv mv)
+           (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l
@@ -289,3 +301,22 @@ patternsP = do
     p <- simpleId
     return (p, s)
   <|> return (nullTok, nullTok)
+
+newcomorphismP :: AParser st (Token, Token)
+newcomorphismP = do
+  -- add newcomorphismS = "newcomorphism" in 
+  s <- asKey newcomorphismS
+  n <- simpleId
+  return (n, s)
+  
+sourceP :: AParser st (Token, Token)
+sourceP = do
+  s  <- asKey sourceS
+  sl <- simpleIdOrDDottedId
+  return (sl, s)
+  
+targetP :: AParser st (Token, Token)
+targetP = do
+  s  <- asKey targetS
+  tl <- simpleIdOrDDottedId
+  return (tl, s)
