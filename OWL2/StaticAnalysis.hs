@@ -19,6 +19,7 @@ import OWL2.Print ()
 import OWL2.Theorem
 import OWL2.Function
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 
@@ -313,9 +314,23 @@ createAxioms s fl = do
     cf <- correctFrames s $ map (function Expand $ prefixMap s) fl
     return (map anaAxiom $ concatMap getAxioms cf, cf)
 
-newODoc :: OntologyDocument -> [Frame] -> OntologyDocument
+check1Prefix :: Maybe String -> String -> Bool
+check1Prefix ms s = case ms of
+    Nothing -> True
+    Just iri -> iri == s 
+
+checkPrefixMap :: PrefixMap -> Bool
+checkPrefixMap pm =
+    let pl = map (flip Map.lookup pm) ["owl", "rdf", "rdfs", "xsd"]
+    in and $ zipWith check1Prefix pl
+            (map snd $ tail $ Map.toList predefPrefixes)
+
+newODoc :: OntologyDocument -> [Frame] -> Result OntologyDocument
 newODoc OntologyDocument {ontology = mo, prefixDeclaration = pd} fl =
-    OntologyDocument { ontology = mo {ontFrames = fl}, prefixDeclaration = pd}
+    if checkPrefixMap pd
+        then return OntologyDocument
+                { ontology = mo {ontFrames = fl}, prefixDeclaration = pd}
+        else fail $ "Incorrect predefined prefixes " ++ showDoc pd "\n"
 
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis :: (OntologyDocument, Sign, GlobalAnnos)
@@ -326,7 +341,7 @@ basicOWL2Analysis (odoc, inSign, _) = do
         accSign = execState (createSign fs)
           inSign {prefixMap = prefixDeclaration odoc}
     (axl, nfl) <- createAxioms accSign fs
-    let newdoc = newODoc odoc nfl
+    newdoc <- newODoc odoc nfl
     return (newdoc , ExtSign accSign syms, axl)
 
 -- | adding annotations for theorems
