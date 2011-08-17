@@ -306,12 +306,12 @@ collectEntities f = case f of
 createSign :: [Frame] -> State Sign ()
 createSign f = do
   pm <- gets prefixMap
-  mapM_ (collectEntities . function Expand pm) f
+  mapM_ (collectEntities . function Expand (StringMap pm)) f
 
 -- | corrects the axioms according to the signature
 createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do
-    cf <- correctFrames s $ map (function Expand $ prefixMap s) fl
+    cf <- correctFrames s $ map (function Expand $ StringMap $ prefixMap s) fl
     return (map anaAxiom $ concatMap getAxioms cf, cf)
 
 check1Prefix :: Maybe String -> String -> Bool

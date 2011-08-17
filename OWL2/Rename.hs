@@ -28,7 +28,7 @@ import qualified Data.Map as Map
 import Common.Result
 
 testAndInteg :: (String, String)
-     -> (PrefixMap, AMap) -> (PrefixMap, AMap)
+     -> (PrefixMap, StringMap) -> (PrefixMap, StringMap)
 testAndInteg (pre, oiri) (old, tm) = case Map.lookup pre old of
   Just iri ->
    if oiri == iri then (old, tm)
@@ -49,7 +49,7 @@ uniteSign s1 s2 = do
       else fail "Static analysis could not unite signatures"
 
 integPref :: PrefixMap -> PrefixMap
-                    -> (PrefixMap, AMap)
+                    -> (PrefixMap, StringMap)
 integPref oldMap testMap =
    foldr testAndInteg (oldMap, Map.empty) (Map.toList testMap)
 
@@ -71,9 +71,10 @@ combineDoc od1@( OntologyDocument ns1
    else
     let (newPref, tm) = integPref ns1 ns2
     in OntologyDocument newPref
-      (Ontology (newOid oid1 oid2) (nub $ imp1 ++ map (function Rename tm) imp2)
-       (nub $ anno1 ++ map (function Rename tm) anno2)
-       (nub $ frames1 ++ map (function Rename tm) frames2))
+      (Ontology (newOid oid1 oid2) (nub $ imp1 ++ map
+            (function Rename $ StringMap tm) imp2)
+       (nub $ anno1 ++ map (function Rename $ StringMap tm) anno2)
+       (nub $ frames1 ++ map (function Rename $ StringMap tm) frames2))
 
 uriToName :: String -> String
 uriToName str = let
@@ -98,7 +99,7 @@ unifyTwo :: OntologyDocument -> OntologyDocument ->
               (OntologyDocument, OntologyDocument)
 unifyTwo od1 od2 =
   let (_, tm) = integPref (prefixDeclaration od1) (prefixDeclaration od2)
-      newod2 = function Rename tm od2
+      newod2 = function Rename (StringMap tm) od2
       alld = combineDoc od1 od2
   in (alld, newod2)
 

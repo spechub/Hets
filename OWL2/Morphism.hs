@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  OWL Morphisms
-Copyright   :  (c) Dominik Luecke, 2008
+Copyright   :  (c) Dominik Luecke, 2008, Felix Gabriel Mance, 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
@@ -51,7 +51,7 @@ data OWLMorphism = OWLMorphism
   { osource :: Sign
   , otarget :: Sign
   , mmaps :: Map.Map Entity IRI
-  , pmap :: AMap
+  , pmap :: StringMap
   } deriving (Show, Eq, Ord)
 
 inclOWLMorphism :: Sign -> Sign -> OWLMorphism
@@ -71,15 +71,15 @@ symMap = Map.mapWithKey (\ (Entity ty _) -> Entity ty)
 inducedElems :: Map.Map Entity IRI -> [Entity]
 inducedElems = Map.elems . symMap
 
-inducedSign :: Map.Map Entity IRI -> AMap -> Sign -> Sign
+inducedSign :: Map.Map Entity IRI -> StringMap -> Sign -> Sign
 inducedSign m t s =
     let new = execState (do
             mapM_ (modEntity Set.delete) $ Map.keys m
             mapM_ (modEntity Set.insert) $ inducedElems m) s
-    in function Rename t new
+    in function Rename (StringMap t) new
 
-inducedPref :: String -> String -> Sign -> (Map.Map Entity IRI, AMap)
-    -> (Map.Map Entity IRI, AMap)
+inducedPref :: String -> String -> Sign -> (Map.Map Entity IRI, StringMap)
+    -> (Map.Map Entity IRI, StringMap)
 inducedPref v u sig (m, t) =
     let pm = prefixMap sig
     in if Set.member v $ Map.keysSet pm
@@ -136,9 +136,6 @@ legalMor m = let mm = mmaps m in if
   Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
   && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m)
   then return () else fail "illegal OWL2 morphism"
-
-getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
-getIri ty u = fromMaybe u . Map.lookup (Entity ty u)
 
 composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
 composeMor m1 m2 =
@@ -199,111 +196,7 @@ statSymbMapItems =
         Prefix ->
             map (\ (s, t) -> (APrefix (showQU s), APrefix $ showQU t)) ps)
 
-mapAnno :: Map.Map Entity IRI -> Annotation -> Annotation
-mapAnno m annt = case annt of
-  Annotation l a e -> Annotation l (getIri AnnotationProperty a m) e
-
-mapAnnoList :: Map.Map Entity IRI -> Annotations -> Annotations
-mapAnnoList m = map (mapAnno m)
-
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
 mapSen m a = do
-    let new = mapAxiom (mmaps m) a
-    return $ function Rename (pmap m) new
-
-mapObjExpr :: Map.Map Entity IRI -> ObjectPropertyExpression
-           -> ObjectPropertyExpression
-mapObjExpr m ope = case ope of
-  ObjectProp u -> ObjectProp $ getIri ObjectProperty u m
-  ObjectInverseOf o -> ObjectInverseOf $ mapObjExpr m o
-
-mapDRange :: Map.Map Entity IRI -> DataRange -> DataRange
-mapDRange m dr = case dr of
-    DataType u l -> DataType (getIri Datatype u m) l
-    DataJunction j l -> DataJunction j (map (mapDRange m) l)
-    DataComplementOf d -> DataComplementOf $ mapDRange m d
-    DataOneOf _ -> dr
-
-mapDataExpr :: Map.Map Entity IRI -> DataPropertyExpression
-            -> DataPropertyExpression
-mapDataExpr m dpe = getIri DataProperty dpe m
-
-getClassIri :: IRI -> Map.Map Entity IRI -> IRI
-getClassIri = getIri Class
-
-getIndIri :: IRI -> Map.Map Entity IRI -> IRI
-getIndIri = getIri NamedIndividual
-
-mapCard :: (a -> b) -> (c -> d) -> Cardinality a c -> Cardinality b d
-mapCard f g (Cardinality ty i a mb) =
-  Cardinality ty i (f a) $ fmap g mb
-
-mapDescr :: Map.Map Entity IRI -> ClassExpression -> ClassExpression
-mapDescr m desc = case desc of
-    Expression u -> Expression $ getClassIri u m
-    ObjectJunction ty ds -> ObjectJunction ty $ map (mapDescr m) ds
-    ObjectComplementOf d -> ObjectComplementOf $ mapDescr m d
-    ObjectOneOf is -> ObjectOneOf $ map (`getIndIri` m) is
-    ObjectValuesFrom ty o d -> ObjectValuesFrom ty (mapObjExpr m o)
-      $ mapDescr m d
-    ObjectHasSelf o -> ObjectHasSelf $ mapObjExpr m o
-    ObjectHasValue o i -> ObjectHasValue (mapObjExpr m o) $ getIndIri i m
-    ObjectCardinality c -> ObjectCardinality
-      $ mapCard (mapObjExpr m) (mapDescr m) c
-    DataValuesFrom ty d dr -> DataValuesFrom ty (mapDataExpr m d)
-      $ mapDRange m dr
-    DataHasValue d c -> DataHasValue (mapDataExpr m d) c
-    DataCardinality c -> DataCardinality
-       $ mapCard (mapDataExpr m) (mapDRange m) c
-
-mapFact :: Map.Map Entity IRI -> Fact -> Fact
-mapFact m f = case f of
-    ObjectPropertyFact pn op i -> ObjectPropertyFact
-            pn (mapObjExpr m op) (i `getIndIri` m)
-    DataPropertyFact pn dp l -> DataPropertyFact
-            pn (mapDataExpr m dp) l
-
-mapAnnList :: Map.Map Entity IRI -> (a -> a) ->
-          AnnotatedList a -> AnnotatedList a
-mapAnnList m f anl =
-             let ans = map fst anl
-                 l = map snd anl
-             in zip (map (mapAnnoList m) ans) (map f l)
-
-mapLFB :: Map.Map Entity IRI -> ListFrameBit -> ListFrameBit
-mapLFB m lfb = case lfb of
-    AnnotationBit a -> AnnotationBit
-          $ mapAnnList m (flip (getIri AnnotationProperty) m) a
-    ObjectBit a -> ObjectBit $ mapAnnList m (mapObjExpr m) a
-    DataBit a -> DataBit $ mapAnnList m (mapDataExpr m) a
-    IndividualSameOrDifferent a ->
-          IndividualSameOrDifferent $ mapAnnList m (`getIndIri` m) a
-    DataPropRange a -> DataPropRange $ mapAnnList m (mapDRange m) a
-    IndividualFacts a -> IndividualFacts $ mapAnnList m (mapFact m) a
-    ExpressionBit a -> ExpressionBit $ mapAnnList m (mapDescr m) a
-    ObjectCharacteristics _ -> lfb
-
-mapAFB :: Map.Map Entity IRI -> AnnFrameBit -> AnnFrameBit
-mapAFB m afb = case afb of
-  DatatypeBit dr -> DatatypeBit $ mapDRange m dr
-  ClassDisjointUnion ce -> ClassDisjointUnion $ map (mapDescr m) ce
-  ClassHasKey op dp -> ClassHasKey (map (mapObjExpr m) op)
-          (map (mapDataExpr m) dp)
-  ObjectSubPropertyChain op -> ObjectSubPropertyChain
-          (map (mapObjExpr m) op)
-  _ -> afb
-
-mapFB :: Map.Map Entity IRI -> FrameBit -> FrameBit
-mapFB m fb = case fb of
-  ListFrameBit mr lfb -> ListFrameBit mr $ mapLFB m lfb
-  AnnFrameBit ans afb -> AnnFrameBit (mapAnnoList m ans)
-            $ mapAFB m afb
-
-mapAxiom :: Map.Map Entity IRI -> Axiom -> Axiom
-mapAxiom m (PlainAxiom eith fb) = case eith of
-    SimpleEntity (Entity ty ent) -> PlainAxiom
-        (SimpleEntity $ Entity ty $ getIri ty ent m) $ mapFB m fb
-    Misc ans -> PlainAxiom (Misc $ mapAnnoList m ans) $ mapFB m fb
-    ObjectEntity ope -> PlainAxiom (ObjectEntity $ mapObjExpr m ope)
-        $ mapFB m fb
-    ClassEntity ce -> PlainAxiom (ClassEntity $ mapDescr m ce) $ mapFB m fb
+    let new = function Rename (MorphMap $ mmaps m) a
+    return $ function Rename (StringMap $ pmap m) new

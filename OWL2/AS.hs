@@ -306,6 +306,9 @@ showEntityType e = case e of
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
 
+cutIRI :: Entity -> IRI
+cutIRI (Entity _ iri) = iri
+
 -- * LITERALS
 
 data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)

@@ -1,11 +1,20 @@
 logic OWL
 
 spec person =
+    Prefix: a: <http:x>
 
     ObjectProperty: hasSSN
     ObjectProperty: hasName
+    DataProperty: a:hasAge
+
+    Datatype: Years
+
+    Individual: Ann
+        Types: a:hasAge some Years
 
     Class: Person
         HasKey: hasSSN, hasName
+
+    with hasSSN |-> X, hasName |-> Y, Person |-> Z, Ann |-> Baby, Years |-> Days, a:hasAge |-> b:hasDays
 
 end
