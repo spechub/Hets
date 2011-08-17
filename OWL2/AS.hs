@@ -227,12 +227,12 @@ data DatatypeType = OWL2Number | OWL2String | OWL2Bool | Other
 
 datatypeType :: IRI -> DatatypeType
 datatypeType iri = case isDatatypeKey iri of
-        True
-            | isOWLSmth [booleanS] iri -> OWL2Bool
-            | isOWLSmth owlNumbers iri -> OWL2Number
-            | isOWLSmth [stringS] iri -> OWL2String
-            | otherwise -> Other
-        False -> Other
+    True
+        | isOWLSmth [booleanS] iri -> OWL2Bool
+        | isOWLSmth owlNumbers iri -> OWL2Number
+        | isOWLSmth [stringS] iri -> OWL2String
+        | otherwise -> Other
+    False -> Other
 
 data DatatypeFacet =
     LENGTH
@@ -423,8 +423,8 @@ type DataPropertyExpression = DataProperty
 
 -- * DATA RANGES
 
-data DataRange
-  = DataType Datatype [(ConstrainingFacet, RestrictionValue)]
+data DataRange =
+    DataType Datatype [(ConstrainingFacet, RestrictionValue)]
   | DataJunction JunctionType [DataRange]
   | DataComplementOf DataRange
   | DataOneOf [Literal]
@@ -451,7 +451,7 @@ data ClassExpression =
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
     deriving (Show, Eq, Ord)
 
-data AnnotationValue
-   = AnnValue IRI
+data AnnotationValue =
+     AnnValue IRI
    | AnnValLit Literal
     deriving (Show, Eq, Ord)

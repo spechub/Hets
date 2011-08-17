@@ -7,7 +7,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Contains    :  Pretty printing for the Manchester Syntax of OWL 2.
+Pretty printing for the Manchester Syntax of OWL 2.
 -}
 
 module OWL2.Print where
@@ -25,6 +25,12 @@ import OWL2.ColonKeywords
 
 import Data.List
 
+instance Pretty Character where
+    pretty = printCharact . show
+
+printCharact :: String -> Doc
+printCharact = text
+
 instance Pretty QName where
     pretty = printIRI
 
@@ -37,49 +43,37 @@ printIRI q
 -- | Symbols printing
 
 instance Pretty ExtEntityType where
-  pretty ety = case ety of
-    AnyEntity -> empty
-    EntityType ty -> keyword $ show ty
-    Prefix -> keyword "Prefix"
+    pretty ety = case ety of
+        AnyEntity -> empty
+        EntityType ty -> keyword $ show ty
+        Prefix -> keyword "Prefix"
 
 instance Pretty SymbItems where
-  pretty (SymbItems m us) = pretty m
-    <+> ppWithCommas us
+    pretty (SymbItems m us) = pretty m
+        <+> ppWithCommas us
 
 instance Pretty SymbMapItems where
-  pretty (SymbMapItems m us) = pretty m
-    <+> sepByCommas
-        (map (\ (s, ms) -> sep
-              [ pretty s
-              , case ms of
-                  Nothing -> empty
-                  Just t -> mapsto <+> pretty t]) us)
+    pretty (SymbMapItems m us) = pretty m
+        <+> sepByCommas
+            (map (\ (s, ms) -> sep
+                [ pretty s
+                , case ms of
+                    Nothing -> empty
+                    Just t -> mapsto <+> pretty t]) us)
 
 instance GetRange RawSymb -- no position by default
 
 instance Pretty RawSymb where
-  pretty rs = case rs of
-    ASymbol e -> pretty e
-    AnUri u -> pretty u
-    APrefix p -> pretty p
-
--- | Entities
-instance Pretty Entity where
-  pretty (Entity ty e) = keyword (show ty) <+> pretty e
+    pretty rs = case rs of
+        ASymbol e -> pretty e
+        AnUri u -> pretty u
+        APrefix p -> pretty p
 
 cardinalityType :: CardinalityType -> Doc
 cardinalityType = keyword . showCardinalityType
 
 quantifierType :: QuantifierType -> Doc
 quantifierType = keyword . showQuantifierType
-
-printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
-printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
-
-fromCF :: ConstrainingFacet -> String
-fromCF f
-    | iriType f == Full = showQU f \\ "http://www.w3.org/2001/XMLSchema#"
-    | otherwise = localPart f
 
 printRelation :: Relation -> Doc
 printRelation = keyword . showRelation
@@ -104,22 +98,16 @@ printSameOrDifferentInd x = case x of
     Same -> keyword sameIndividualC
     Different -> keyword differentIndividualsC
 
-printCharact :: String -> Doc
-printCharact = text
-
-instance Pretty Character where
-    pretty = printCharact . show
-
-instance Pretty DatatypeFacet where
-    pretty = keyword . showFacet
+instance Pretty Entity where
+    pretty (Entity ty e) = keyword (show ty) <+> pretty e
 
 instance Pretty Literal where
     pretty lit = case lit of
-     Literal lexi ty -> text ('"' : lexi ++ "\"") <> case ty of
-      Typed u -> keyword cTypeS <> pretty u
-      Untyped tag -> if tag == Nothing then empty else
-                     let Just tag2 = tag in text asP <> text tag2
-     NumberLit f -> text (show f)
+        Literal lexi ty -> text ('"' : lexi ++ "\"") <> case ty of
+            Typed u -> keyword cTypeS <> pretty u
+            Untyped tag -> if tag == Nothing then empty
+                    else let Just tag2 = tag in text asP <> text tag2
+        NumberLit f -> text (show f)
 
 instance Pretty ObjectPropertyExpression where
     pretty = printObjPropExp
@@ -128,6 +116,17 @@ printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp = case obExp of
     ObjectProp ou -> pretty ou
     ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
+
+printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
+printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
+
+fromCF :: ConstrainingFacet -> String
+fromCF f
+    | iriType f == Full = showQU f \\ "http://www.w3.org/2001/XMLSchema#"
+    | otherwise = localPart f
+
+instance Pretty DatatypeFacet where
+    pretty = keyword . showFacet
 
 -- | Printing the DataRange
 instance Pretty DataRange where
@@ -191,15 +190,15 @@ printNegatedPrimary d = let r = parens $ pretty d in case d of
 -- | annotations printing
 instance Pretty AnnotationValue where
     pretty x = case x of
-      AnnValue iri -> pretty iri
-      AnnValLit lit -> pretty lit
+        AnnValue iri -> pretty iri
+        AnnValLit lit -> pretty lit
 
 instance Pretty OWL2.AS.Annotation where
     pretty = printAnnotation
 
 printAnnotation :: OWL2.AS.Annotation -> Doc
 printAnnotation (Annotation ans ap av) =
-  sep [printAnnotations ans, sep [pretty ap, pretty av]]
+    sep [printAnnotations ans, sep [pretty ap, pretty av]]
 
 printAnnotations :: Annotations -> Doc
 printAnnotations l = case l of
@@ -210,5 +209,5 @@ printAnnotations l = case l of
 
 printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
 printAnnotatedList l =
-  vcat $ punctuate comma $ map
-    ( \ (ans, a) -> printAnnotations ans $+$ pretty a) l
+    vcat $ punctuate comma $ map
+        ( \ (ans, a) -> printAnnotations ans $+$ pretty a) l

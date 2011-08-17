@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Contains    :  Parser from Manchester Syntax to Manchester Abstract Syntax
+Manchester Syntax parser
 
 References  :  <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 -}
@@ -28,33 +28,34 @@ import qualified Data.Map as Map
 
 optAnnos :: CharParser st a -> CharParser st (Annotations, a)
 optAnnos p = do
-  as <- optionalAnnos
-  a <- p
-  return (as, a)
+    as <- optionalAnnos
+    a <- p
+    return (as, a)
 
 optionalAnnos :: CharParser st Annotations
 optionalAnnos = option [] annotations
 
 annotations :: CharParser st Annotations
 annotations = do
-   pkeyword annotationsC
-   fmap (map $ \ (as, (i, v)) -> Annotation as i v)
+    pkeyword annotationsC
+    fmap (map $ \ (as, (i, v)) -> Annotation as i v)
      . sepByComma . optAnnos $ pair uriP annotationValue
 
 descriptionAnnotatedList :: CharParser st [(Annotations, ClassExpression)]
 descriptionAnnotatedList = sepByComma $ optAnnos description
 
 makeFrame :: Extended -> [FrameBit] -> Frame
-makeFrame ext fbl = if null fbl then Frame ext
-    [AnnFrameBit [] $ AnnotationFrameBit Declaration]
-    else Frame ext fbl
+makeFrame ext fbl = Frame ext
+    $ if null fbl then
+        [AnnFrameBit [] $ AnnotationFrameBit Declaration]
+      else fbl
 
 annotationPropertyFrame :: CharParser st Frame
 annotationPropertyFrame = do
-  pkeyword annotationPropertyC
-  ap <- uriP
-  x <- many apBit
-  return $ makeFrame (SimpleEntity $ Entity AnnotationProperty ap) x
+    pkeyword annotationPropertyC
+    ap <- uriP
+    x <- many apBit
+    return $ makeFrame (SimpleEntity $ Entity AnnotationProperty ap) x
 
 apBit :: CharParser st FrameBit
 apBit = do
@@ -149,10 +150,10 @@ objectFrameBit = do
 
 objectPropertyFrame :: CharParser st Frame
 objectPropertyFrame = do
-  pkeyword objectPropertyC
-  ouri <- objectPropertyExpr
-  as <- many objectFrameBit
-  return $ makeFrame (ObjectEntity ouri) as
+    pkeyword objectPropertyC
+    ouri <- objectPropertyExpr
+    as <- many objectFrameBit
+    return $ makeFrame (ObjectEntity ouri) as
 
 dataPropExprAList :: CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
@@ -185,21 +186,21 @@ dataFrameBit = do
 
 dataPropertyFrame :: CharParser st Frame
 dataPropertyFrame = do
-  pkeyword dataPropertyC
-  duri <- uriP
-  as <- many dataFrameBit
-  return $ makeFrame (SimpleEntity $ Entity DataProperty duri) as
+    pkeyword dataPropertyC
+    duri <- uriP
+    as <- many dataFrameBit
+    return $ makeFrame (SimpleEntity $ Entity DataProperty duri) as
 
 fact :: CharParser st Fact
 fact = do
-  pn <- option Positive $ keyword notS >> return Negative
-  u <- uriP
-  do
-      c <- literal
-      return $ DataPropertyFact pn u c
-    <|> do
-      t <- individual
-      return $ ObjectPropertyFact pn (ObjectProp u) t
+    pn <- option Positive $ keyword notS >> return Negative
+    u <- uriP
+    do
+        c <- literal
+        return $ DataPropertyFact pn u c
+      <|> do
+        t <- individual
+        return $ ObjectPropertyFact pn (ObjectProp u) t
 
 iFrameBit :: CharParser st FrameBit
 iFrameBit = do
@@ -220,10 +221,10 @@ iFrameBit = do
 
 individualFrame :: CharParser st Frame
 individualFrame = do
-  pkeyword individualC
-  iuri <- individual
-  as <- many iFrameBit
-  return $ makeFrame (SimpleEntity $ Entity NamedIndividual iuri) as
+    pkeyword individualC
+    iuri <- individual
+    as <- many iFrameBit
+    return $ makeFrame (SimpleEntity $ Entity NamedIndividual iuri) as
 
 misc :: CharParser st Frame
 misc = do
@@ -248,20 +249,21 @@ misc = do
 
 frames :: CharParser st [Frame]
 frames = many $ datatypeBit <|> classFrame
-  <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
-  <|> annotationPropertyFrame <|> misc
+    <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
+    <|> annotationPropertyFrame <|> misc
 
 basicSpec :: CharParser st OntologyDocument
 basicSpec = do
-  nss <- many nsEntry
-  ou <- option nullQName $ pkeyword ontologyC >> option nullQName uriP
-  ie <- many importEntry
-  ans <- many annotations
-  as <- frames
-  return emptyOntologyDoc
-    { ontology = emptyOntologyD
-      { ontFrames = as
-      , imports = ie
-      , ann = ans
-      , name = ou }
-    , prefixDeclaration = Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss }
+    nss <- many nsEntry
+    ou <- option nullQName $ pkeyword ontologyC >> option nullQName uriP
+    ie <- many importEntry
+    ans <- many annotations
+    as <- frames
+    return emptyOntologyDoc
+        { ontology = emptyOntologyD
+            { ontFrames = as
+            , imports = ie
+            , ann = ans
+            , name = ou }
+            , prefixDeclaration =
+                    Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss }

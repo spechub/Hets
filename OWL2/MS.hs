@@ -25,16 +25,16 @@ type Annotations = [Annotation]
 type AnnotatedList a = [(Annotations, a)]
 
 -- | this datatype extends the Manchester Syntax to also allow GCIs
-data Extended
-  = Misc Annotations
+data Extended =
+    Misc Annotations
   | SimpleEntity Entity
   | ObjectEntity ObjectPropertyExpression
   | ClassEntity ClassExpression
     deriving (Show, Eq, Ord)
 
 -- | frames with annotated lists
-data ListFrameBit
-  = AnnotationBit (AnnotatedList AnnotationProperty) -- relation
+data ListFrameBit =
+    AnnotationBit (AnnotatedList AnnotationProperty) -- relation
   | ExpressionBit (AnnotatedList ClassExpression) -- relation
   | ObjectBit (AnnotatedList ObjectPropertyExpression) -- relation
   | DataBit (AnnotatedList DataPropertyExpression) -- relation
@@ -48,8 +48,8 @@ data AnnoType = Declaration | Assertion
     deriving (Show, Eq, Ord)
 
 -- | frames which start with annotations
-data AnnFrameBit
-  = AnnotationFrameBit AnnoType
+data AnnFrameBit =
+    AnnotationFrameBit AnnoType
   | DataFunctional
   | DatatypeBit DataRange
   | ClassDisjointUnion [ClassExpression]
@@ -57,13 +57,13 @@ data AnnFrameBit
   | ObjectSubPropertyChain [ObjectPropertyExpression]
     deriving (Show, Eq, Ord)
 
-data Fact
-  = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
+data Fact =
+    ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
   deriving (Show, Eq, Ord)
 
-data FrameBit
-  = ListFrameBit (Maybe Relation) ListFrameBit
+data FrameBit =
+    ListFrameBit (Maybe Relation) ListFrameBit
   | AnnFrameBit Annotations AnnFrameBit
     deriving (Show, Eq, Ord)
 
@@ -81,17 +81,17 @@ axToFrame (PlainAxiom e fb) = Frame e [fb]
 
 instance GetRange Axiom
 
-data Ontology = Ontology {
-  name :: OntologyIRI,
-  imports :: [ImportIRI],
-  ann :: [Annotations],
-  ontFrames :: [Frame]
- } deriving (Show, Eq, Ord)
+data Ontology = Ontology
+    { name :: OntologyIRI
+    , imports :: [ImportIRI]
+    , ann :: [Annotations]
+    , ontFrames :: [Frame]
+    } deriving (Show, Eq, Ord)
 
-data OntologyDocument = OntologyDocument {
-    prefixDeclaration :: PrefixMap,
-    ontology :: Ontology
- } deriving (Show, Eq, Ord)
+data OntologyDocument = OntologyDocument
+    { prefixDeclaration :: PrefixMap
+    , ontology :: Ontology
+    } deriving (Show, Eq, Ord)
 
 instance GetRange OntologyDocument
 

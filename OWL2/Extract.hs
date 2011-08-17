@@ -178,6 +178,4 @@ toDecl s =
             (cls ++ dt ++ op ++ dp ++ i ++ ans)
 
 signToFrames :: [Frame] -> [Frame]
-signToFrames f =
-    let s = mapM_ fromFrame f
-    in toDecl $ execState s emptySign
+signToFrames f = let s = mapM_ fromFrame f in toDecl $ execState s emptySign

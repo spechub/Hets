@@ -10,6 +10,7 @@ Stability   :  provisional
 Portability :  portable
 
 Instances for some of the functions used in OWL 2
+    (currently, renaming and expanding IRIs)
 -}
 
 module OWL2.Function where
