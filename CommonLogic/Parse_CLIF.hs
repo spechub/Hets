@@ -23,6 +23,10 @@ import CommonLogic.AS_CommonLogic
 import Common.Id as Id
 import Common.Lexer as Lexer
 
+import Data.Set (Set) -- used for parsing roleset
+import qualified Data.Set as Set
+import qualified CommonLogic.Tools as Tools
+
 import CommonLogic.Lexer_CLIF
 
 import Text.ParserCombinators.Parsec as Parsec
@@ -118,7 +122,7 @@ importation = do
      return $ Imp_name n
 
 -- | parser for sentences
-sentence :: CharParser st SENTENCE --TODO: parse commented sentences
+sentence :: CharParser st SENTENCE
 sentence = parens $ do
     ck <- try clCommentKey
     spaces
@@ -127,6 +131,11 @@ sentence = parens $ do
     s <- sentence
     return $ Comment_sent (Comment c $ Range $ rangeSpan c) s
            $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan s]
+  <|> do
+    t0 <- try rolesetTerm
+    nts <- many rolesetNT
+    cParenT
+    return $ rolesetSentence t0 nts
   <|> do
     at <- atom <?> "predicate"
     return $ Atom_sent at $ Range $ rangeSpan at
@@ -222,6 +231,43 @@ termseq = do
   <|> do
    t <- term
    return $ Term_seq t
+
+rolesetTerm :: CharParser st TERM
+rolesetTerm = do
+  t0 <- term
+  spaces
+  oParenT
+  clRolesetKey
+  spaces
+  return t0
+
+rolesetNT :: CharParser st (NAME, TERM)
+rolesetNT = parens $ do
+  n <- identifier
+  t <- term
+  return (n,t)
+  
+rolesetSentence :: TERM -> [(NAME, TERM)] -> SENTENCE
+rolesetSentence t0 nts =
+  let x = rolesetFreeName t0 nts
+  in  Quant_sent (Existential [Name x] (Bool_sent (Conjunction $
+          (rolesetAddToTerm x t0) : map (rolesetMixTerm x) nts
+        ) nullRange)) $ Range $ rangeSpan t0
+
+rolesetFreeName :: TERM -> [(NAME, TERM)] -> NAME
+rolesetFreeName trm nts =
+  let usedNames = Set.union (Tools.setUnion_list
+                    (\(n,t) -> Set.union (Tools.indvC_term t) (Set.singleton n))
+                    nts) (Tools.indvC_term trm)
+  in fst $ Tools.freeName ("x", 0) usedNames
+  
+
+rolesetAddToTerm :: NAME -> TERM -> SENTENCE
+rolesetAddToTerm x trm = Atom_sent (Atom trm [Term_seq $ Name_term x]) nullRange
+
+rolesetMixTerm :: NAME -> (NAME, TERM) -> SENTENCE
+rolesetMixTerm  x (n, t) =
+  Atom_sent (Atom (Name_term n) [Term_seq $ Name_term x, Term_seq t]) nullRange
 
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC

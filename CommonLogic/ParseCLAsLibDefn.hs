@@ -33,8 +33,7 @@ import Syntax.AS_Structured as Struc
 import System.IO
 
 -- | call for CommonLogic CLIF-parser
-parseCL_CLIF :: FilePath
-                -> IO LIB_DEFN
+parseCL_CLIF :: FilePath -> IO LIB_DEFN
 parseCL_CLIF filename = do
   handle <- openFile filename ReadMode
   contents <- hGetContents handle

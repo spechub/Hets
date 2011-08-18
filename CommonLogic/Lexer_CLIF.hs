@@ -110,7 +110,7 @@ clCommentKey :: CharParser st Id.Token
 clCommentKey = Lexer.pToken $ try (string "cl-comment") <|> string "cl:comment"
 
 clRolesetKey :: CharParser st Id.Token
-clRolesetKey = Lexer.pToken $ try (string "cl-roleset") <|> string "roleset:"
+clRolesetKey = Lexer.pToken $ string "cl-roleset" <|> string "roleset:"
 
 seqmark :: CharParser st Id.Token
 seqmark = Lexer.pToken $ reserved reservedelement2 $ scanSeqMark
