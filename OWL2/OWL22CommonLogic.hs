@@ -28,9 +28,9 @@ import qualified Data.Map as Map
 import OWL2.Logic_OWL2
 import OWL2.AS
 import OWL2.MS
---import OWL2.Parse
---import OWL2.ManchesterParser
---import Text.ParserCombinators.Parsec
+-- import OWL2.Parse
+-- import OWL2.ManchesterParser
+-- import Text.ParserCombinators.Parsec
 import OWL2.ProfilesAndSublogics
 import OWL2.Morphism
 import OWL2.Symbols
@@ -86,7 +86,7 @@ instance Comorphism
       isInclusionComorphism OWL22CommonLogic = True
       has_model_expansion OWL22CommonLogic = True
 
---s = emptySig
+-- s = emptySig
 
 smap :: Monad m =>
         (t4 -> t -> t1 -> t2 -> m t3) -> t4 -> t -> t1 -> t2 -> m (t3, t4)
@@ -211,6 +211,12 @@ mkQUBI l1 l2 a b = senToText $ mkQU l1 $ mkBI (mkBC l2) $ mkAE a b
 mkTermAtoms :: NAME -> [TERM] -> SENTENCE
 mkTermAtoms ur tl = mkAtoms $ Atom (Name_term ur) $ map Term_seq tl
 
+mk1TermAtom :: NAME -> SENTENCE
+mk1TermAtom ur = mkTermAtoms ur [mk1NTERM]
+
+mkSAtom :: String -> SENTENCE
+mkSAtom = mk1TermAtom . mkSimpleId
+
 sHead :: [SENTENCE] -> SENTENCE
 sHead s = case s of
     [a] -> a
@@ -266,8 +272,24 @@ mapSign sig =
   in return emptySig { items = itms }
 
 nothingSent :: CommonAnno.Named TEXT
-nothingSent = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN $ mkTermAtoms
-    (mkSimpleId "owl:Nothing") [mkNTERM 1]
+nothingSent = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN $ mkSAtom
+    "owl:Nothing"
+
+thingIncl :: IRI -> CommonAnno.Named TEXT
+thingIncl iri = CommonAnno.makeNamed "" $ senToText
+    $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "owl:Thing"
+
+dataIncl :: IRI -> CommonAnno.Named TEXT
+dataIncl iri = CommonAnno.makeNamed "" $ senToText
+    $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "owl:Datatype"
+
+declarations :: OS.Sign -> [CommonAnno.Named TEXT]
+declarations s = map thingIncl (Set.toList $ OS.concepts s)
+    ++ map dataIncl (Set.toList $ OS.datatypes s)
+
+thingDataDisjoint :: CommonAnno.Named TEXT
+thingDataDisjoint = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN
+    $ mkBC $ map mkSAtom ["owl:Thing", "owl:Datatype"]
 
 mapTheory :: (OS.Sign, [CommonAnno.Named Axiom])
              -> Result (Sign, [CommonAnno.Named TEXT])
@@ -278,7 +300,10 @@ mapTheory (owlSig, owlSens) = do
                 (sen, sig) <- mapSentence y z
                 return (sen ++ x, unite sig y)
                 ) ([], cSig) owlSens
-    return (nSig, nothingSent : cSensI)
+    let sig = unite (emptySig {items = Set.fromList $ map (uriToId . mkQName)
+            ["owl:Thing", "owl:Nothing", "owl:Datatype" ]}) nSig
+        cSens = nothingSent : thingDataDisjoint : declarations owlSig ++ cSensI
+    return (sig, cSens)
 
 -- | mapping of OWL to CommonLogic_DL formulae
 mapSentence :: Sign                             -- ^ CommonLogic Signature

@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-    Kewyords used for XML.hs and XMLConversion.hs
+Kewyords used for XML conversions
 -}
 
 module OWL2.XMLKeywords where

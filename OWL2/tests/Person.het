@@ -7,14 +7,16 @@ spec person =
     ObjectProperty: hasName
     DataProperty: a:hasAge
 
+    Datatype: natural
+        EquivalentTo: positiveInteger
+
     Datatype: Years
+        EquivalentTo: natural[<150]
 
     Individual: Ann
         Types: a:hasAge some Years
 
     Class: Person
         HasKey: hasSSN, hasName
-
-    with hasSSN |-> X, hasName |-> Y, Person |-> Z, Ann |-> Baby, Years |-> Days
 
 end

@@ -8,7 +8,7 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portabl
 
-Taxonomy extraction for OWL2
+Taxonomy extraction for OWL
 -}
 
 module OWL2.Taxonomy ( onto2Tax ) where

@@ -75,7 +75,7 @@ instance Function IRI where
                      in case miri of
                         Just expn -> qn {expandedIRI = expn ++ lp}
                         Nothing -> error $ np ++ ": prefix not found"
-    _ -> err
+    _ -> qn
 
 instance Function Sign where
    function t mp (Sign p1 p2 p3 p4 p5 p6 p7) = case mp of
