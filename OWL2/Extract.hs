@@ -121,7 +121,6 @@ fromLFB r lfb = case lfb of
     DataPropRange dr -> fromAnnoList fromDataRange dr
     IndividualFacts fct -> fromAnnoList fromFact fct
 
-
 fromAFB :: AnnFrameBit -> State Sign ()
 fromAFB afb = case afb of
     AnnotationFrameBit _ -> return ()
@@ -162,8 +161,7 @@ fromExt ext = case ext of
 {- | Top level function: takes the OntologyDocument and completes
 the signature by calling completeSignForFrame -}
 extractSign :: OntologyDocument -> State Sign ()
-extractSign od =
-  mapM_ fromFrame $ ontFrames $ ontology od
+extractSign = mapM_ fromFrame . ontFrames . ontology
 
 toDecl :: Sign -> [Frame]
 toDecl s =

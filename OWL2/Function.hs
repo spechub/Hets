@@ -44,7 +44,7 @@ maybeDo t mp = fmap $ function t mp
 getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
 getIri ty u = fromMaybe u . Map.lookup (Entity ty u)
 
-cutWith :: EntityType -> Action -> AMap -> IRI -> IRI 
+cutWith :: EntityType -> Action -> AMap -> IRI -> IRI
 cutWith ty t s iri = cutIRI $ function t s $ Entity ty iri
 
 err :: t
@@ -65,28 +65,29 @@ instance Function IRI where
     StringMap pm -> case a of
         Rename -> let pre = namePrefix qn in
             qn { namePrefix = Map.findWithDefault pre pre pm}
-        Expand -> let np = namePrefix qn
-                      lp = localPart qn
-                  in case iriType qn of
-                    Full -> qn {expandedIRI = np ++ ":" ++ lp}
-                    NodeID -> qn {expandedIRI = lp}
-                    _ -> let miri = Map.lookup np $ Map.union pm predefPrefixes
-                         in case miri of
-                            Just expn -> qn {expandedIRI = expn ++ lp}
-                            Nothing -> error $ np ++ ": prefix not found"
+        Expand ->
+            let np = namePrefix qn
+                lp = localPart qn
+            in case iriType qn of
+                Full -> qn {expandedIRI = np ++ ":" ++ lp}
+                NodeID -> qn {expandedIRI = lp}
+                _ -> let miri = Map.lookup np $ Map.union pm predefPrefixes
+                     in case miri of
+                        Just expn -> qn {expandedIRI = expn ++ lp}
+                        Nothing -> error $ np ++ ": prefix not found"
     _ -> err
 
 instance Function Sign where
    function t mp (Sign p1 p2 p3 p4 p5 p6 p7) = case mp of
-        StringMap _ ->
-            Sign (Set.map (function t mp) p1)
-                (Set.map (function t mp) p2)
-                (Set.map (function t mp) p3)
-                (Set.map (function t mp) p4)
-                (Set.map (function t mp) p5)
-                (Set.map (function t mp) p6)
-                (function t mp p7)
-        _ -> err
+    StringMap _ ->
+        Sign (Set.map (function t mp) p1)
+            (Set.map (function t mp) p2)
+            (Set.map (function t mp) p3)
+            (Set.map (function t mp) p4)
+            (Set.map (function t mp) p5)
+            (Set.map (function t mp) p6)
+            (function t mp p7)
+    _ -> err
 
 instance Function Entity where
     function t pm (Entity ty ent) = case pm of
@@ -96,7 +97,7 @@ instance Function Entity where
 instance Function Literal where
     function t pm l = case l of
         Literal lf (Typed dt) -> Literal lf $ Typed
-                $ cutIRI $ function t pm $ Entity Datatype dt
+                $ cutWith Datatype t pm dt
         _ -> l
 
 instance Function ObjectPropertyExpression where

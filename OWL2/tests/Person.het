@@ -15,6 +15,6 @@ spec person =
     Class: Person
         HasKey: hasSSN, hasName
 
-    with hasSSN |-> X, hasName |-> Y, Person |-> Z, Ann |-> Baby, Years |-> Days, a:hasAge |-> b:hasDays
+    with hasSSN |-> X, hasName |-> Y, Person |-> Z, Ann |-> Baby, Years |-> Days
 
 end

@@ -50,7 +50,7 @@ import qualified Data.Set as Set
 data OWLMorphism = OWLMorphism
   { osource :: Sign
   , otarget :: Sign
-  , mmaps :: Map.Map Entity IRI
+  , mmaps :: MorphMap
   , pmap :: StringMap
   } deriving (Show, Eq, Ord)
 
@@ -65,21 +65,21 @@ isOWLInclusion :: OWLMorphism -> Bool
 isOWLInclusion m = Map.null (pmap m)
   && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
-symMap :: Map.Map Entity IRI -> Map.Map Entity Entity
+symMap :: MorphMap -> Map.Map Entity Entity
 symMap = Map.mapWithKey (\ (Entity ty _) -> Entity ty)
 
-inducedElems :: Map.Map Entity IRI -> [Entity]
+inducedElems :: MorphMap -> [Entity]
 inducedElems = Map.elems . symMap
 
-inducedSign :: Map.Map Entity IRI -> StringMap -> Sign -> Sign
+inducedSign :: MorphMap -> StringMap -> Sign -> Sign
 inducedSign m t s =
     let new = execState (do
             mapM_ (modEntity Set.delete) $ Map.keys m
             mapM_ (modEntity Set.insert) $ inducedElems m) s
     in function Rename (StringMap t) new
 
-inducedPref :: String -> String -> Sign -> (Map.Map Entity IRI, StringMap)
-    -> (Map.Map Entity IRI, StringMap)
+inducedPref :: String -> String -> Sign -> (MorphMap, StringMap)
+    -> (MorphMap, StringMap)
 inducedPref v u sig (m, t) =
     let pm = prefixMap sig
     in if Set.member v $ Map.keysSet pm

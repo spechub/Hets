@@ -19,10 +19,10 @@ import OWL2.MS
 
 import Data.Maybe
 
-data Profiles = Profiles {
-        el :: Bool,
-        ql :: Bool,
-        rl :: Bool
+data Profiles = Profiles
+    { el :: Bool
+    , ql :: Bool
+    , rl :: Bool
     } deriving (Show, Eq, Ord)
 
 bottomProfile :: Profiles
@@ -60,11 +60,10 @@ printProfile p@(Profiles e q r) = case p of
             ++ (if r then "RL" else "")
 
 andProfileList :: [Profiles] -> Profiles
-andProfileList pl = bottomProfile {
-        el = all el pl,
-        ql = all ql pl,
-        rl = all rl pl
-    }
+andProfileList pl = bottomProfile
+    { el = all el pl
+    , ql = all ql pl
+    , rl = all rl pl }
 
 andList :: (a -> Profiles) -> [a] -> Profiles
 andList f cel = andProfileList (map f cel)
