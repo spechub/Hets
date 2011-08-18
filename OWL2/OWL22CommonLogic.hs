@@ -277,11 +277,11 @@ nothingSent = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN $ mkSAtom
 
 thingIncl :: IRI -> CommonAnno.Named TEXT
 thingIncl iri = CommonAnno.makeNamed "" $ senToText
-    $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "owl:Thing"
+    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "owl:Thing"
 
 dataIncl :: IRI -> CommonAnno.Named TEXT
 dataIncl iri = CommonAnno.makeNamed "" $ senToText
-    $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "owl:Datatype"
+    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "owl:Datatype"
 
 declarations :: OS.Sign -> [CommonAnno.Named TEXT]
 declarations s = map thingIncl (Set.toList $ OS.concepts s)
@@ -499,7 +499,7 @@ mapDescription cSig des oVar aVar =
     ObjectCardinality (Cardinality ct n oprop d) -> mapCard True cSig ct n
         (Left oprop) (fmap Left d) var
     DataValuesFrom qt dpe dr -> let varNN = mkNName $ var + 1 in do
-        (drSent, drSig) <- mapDataRange cSig dr $ OVar var
+        (drSent, drSig) <- mapDataRange cSig dr $ OVar $ var + 1
         senl <- mapM (mapDataPropI cSig (OVar var) $ OVar $ var + 1) [dpe]
         let sent = mkBC $ drSent : senl
         return $ case qt of
