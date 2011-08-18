@@ -1,24 +1,20 @@
 logic OWL
 
 spec person =
-    Prefix: a: <http:x>
-
     ObjectProperty: hasSSN
     ObjectProperty: hasName
-    DataProperty: a:hasAge
+    DataProperty: hasAge
 
     Datatype: natural
         EquivalentTo: positiveInteger
 
     Datatype: Years
-        EquivalentTo: natural[<150]
+        EquivalentTo: natural [<150]
 
     Individual: Ann
-        Types: a:hasAge some Years
+        Types: hasAge some integer
 
     Class: Person
         HasKey: hasSSN, hasName
-
-    with hasSSN |-> X, hasName |-> Y, Person |-> Z, Ann |-> Baby, Years |-> Days
 
 end

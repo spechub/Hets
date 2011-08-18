@@ -68,13 +68,14 @@ instance Function IRI where
         Expand ->
             let np = namePrefix qn
                 lp = localPart qn
-            in case iriType qn of
-                Full -> qn {expandedIRI = np ++ ":" ++ lp}
-                NodeID -> qn {expandedIRI = lp}
-                _ -> let miri = Map.lookup np $ Map.union pm predefPrefixes
-                     in case miri of
-                        Just expn -> qn {expandedIRI = expn ++ lp}
-                        Nothing -> error $ np ++ ": prefix not found"
+                iri = case iriType qn of
+                    Full -> qn {expandedIRI = np ++ ":" ++ lp}
+                    NodeID -> qn {expandedIRI = lp}
+                    _ -> let miri = Map.lookup np $ Map.union pm predefPrefixes
+                         in case miri of
+                            Just expn -> qn {expandedIRI = expn ++ lp}
+                            Nothing -> error $ np ++ ": prefix not found"
+            in setReservedPrefix iri
     _ -> qn
 
 instance Function Sign where

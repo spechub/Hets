@@ -285,7 +285,8 @@ dataIncl iri = CommonAnno.makeNamed "" $ senToText
 
 declarations :: OS.Sign -> [CommonAnno.Named TEXT]
 declarations s = map thingIncl (Set.toList $ OS.concepts s)
-    ++ map dataIncl (Set.toList $ OS.datatypes s)
+    ++ let dt = Set.toList $ OS.datatypes s
+       in map dataIncl $ map (setPrefix "xsd" . mkQName) datatypeKeys ++ dt
 
 thingDataDisjoint :: CommonAnno.Named TEXT
 thingDataDisjoint = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN
@@ -300,8 +301,9 @@ mapTheory (owlSig, owlSens) = do
                 (sen, sig) <- mapSentence y z
                 return (sen ++ x, unite sig y)
                 ) ([], cSig) owlSens
-    let sig = unite (emptySig {items = Set.fromList $ map (uriToId . mkQName)
-            ["owl:Thing", "owl:Nothing", "owl:Datatype" ]}) nSig
+    let sig = unite (emptySig {items = Set.fromList $ map (uriToId .
+            setReservedPrefix . mkQName) $ "owl:Datatype" : owlSomething
+            ++ datatypeKeys}) nSig
         cSens = nothingSent : thingDataDisjoint : declarations owlSig ++ cSensI
     return (sig, cSens)
 
