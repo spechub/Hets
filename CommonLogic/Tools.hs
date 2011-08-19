@@ -14,6 +14,7 @@ Tools for CommonLogic static analysis
 module CommonLogic.Tools (
       freeName        -- finds a free discourse name
       , indvC_text    -- retrieves all discourse names from a text
+      , indvC_sen     -- retrieves all discourse names from a sentence
       , indvC_term    -- retrieves all discourse names from a term
       , prd_text      -- retrieves all predicates from a text,
       , setUnion_list -- maps function @f@ to the list @ts@ and unifies the results

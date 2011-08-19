@@ -1,0 +1,9 @@
+(R (roleset: (N1 T1) (N2 T2))) %(roleset1)%
+
+(((P Q) x) (cl-roleset (N1 T1))) %(roleset2)%
+
+(forall (x) (P x)) %(usualAll)%
+
+(forall G (z) (and (P y) (P z) (forall (x) (P x)))) %(syntacticSugarAll)%
+
+(exists G (z) (and (P y) (P z) (forall (x) (P x)))) %(syntacticSugarEx)%

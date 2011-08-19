@@ -23,8 +23,7 @@ import CommonLogic.AS_CommonLogic
 import Common.Id as Id
 import Common.Lexer as Lexer
 
-import Data.Set (Set) -- used for parsing roleset
-import qualified Data.Set as Set
+import qualified Data.Set as Set -- used for parsing roleset
 import qualified CommonLogic.Tools as Tools
 
 import CommonLogic.Lexer_CLIF
@@ -168,19 +167,43 @@ sentence = parens $ do
                                                    rangeSpan s1, rangeSpan s1]
   <|> do
     c <- forallKey
-    bs <- parens bindingseq
-    s <- sentence
-    return $ Quant_sent (Universal bs s) $ Range $ joinRanges [rangeSpan c,
-               rangeSpan bs, rangeSpan s]
+    quantsent1 True c
   <|> do
     c <- existsKey
-    bs <- parens bindingseq
-    s <- sentence
-    return $ Quant_sent (Existential bs s) $ Range $ joinRanges [rangeSpan c,
-               rangeSpan s]
+    quantsent1 False c
 
-bindingseq :: CharParser st [NAME_OR_SEQMARK]
-bindingseq = many $ do
+quantsent1 :: Bool -> Id.Token -> CharParser st SENTENCE
+quantsent1 t c = do
+    g <- identifier --according to grammar in standard there may be a name
+    quantsent2 t c $ Just g -- Quant_sent using syntactic sugar
+  <|>
+    quantsent2 t c Nothing -- normal Quant_sent
+
+quantsent2 :: Bool -> Id.Token -> Maybe NAME -> CharParser st SENTENCE
+quantsent2 t c mg =
+  let quantType = if t then Universal else Existential
+  in do
+    bs <- parens boundlist
+    s <- sentence
+    return $
+      let rn = Range $ joinRanges [rangeSpan c, rangeSpan s]
+      in case mg of
+        Nothing -> Quant_sent (quantType bs s) rn
+        Just g ->
+          case t of
+            True  -> --TODO: check whether indvC_sen is the right function to get free names
+              Quant_sent (Universal bs (Bool_sent (Implication
+                (Atom_sent (Atom (Name_term g) $ map (Term_seq . Name_term) $
+                  Set.elems $ Tools.indvC_sen s) nullRange)
+                s) rn)) rn
+            False ->
+              Quant_sent (Existential bs (Bool_sent (Conjunction
+                [Atom_sent (Atom (Name_term g) $ map (Term_seq . Name_term) $
+                  Set.elems $ Tools.indvC_sen s) nullRange,
+                s]) rn)) rn
+
+boundlist :: CharParser st [NAME_OR_SEQMARK]
+boundlist = many $ do
     s <- seqmark -- fix seqmark parser for one
     return $ SeqMark s
   <|> do
