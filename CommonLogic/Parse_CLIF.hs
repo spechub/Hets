@@ -23,6 +23,7 @@ import CommonLogic.AS_CommonLogic
 import Common.Id as Id
 import Common.Lexer as Lexer
 
+import Data.Either (lefts, rights)
 import qualified Data.Set as Set -- used for parsing roleset
 import qualified CommonLogic.Tools as Tools
 
@@ -172,38 +173,61 @@ sentence = parens $ do
     c <- existsKey
     quantsent1 False c
 
-quantsent1 :: Bool -> Id.Token -> CharParser st SENTENCE
+quantsent1 :: Bool -> Token -> CharParser st SENTENCE
 quantsent1 t c = do
-    g <- identifier --according to grammar in standard there may be a name
+    g <- identifier -- according to grammar in standard there may be a name
     quantsent2 t c $ Just g -- Quant_sent using syntactic sugar
   <|>
     quantsent2 t c Nothing -- normal Quant_sent
 
-quantsent2 :: Bool -> Id.Token -> Maybe NAME -> CharParser st SENTENCE
-quantsent2 t c mg =
-  let quantType = if t then Universal else Existential
-  in do
-    bs <- parens boundlist
+quantsent2 :: Bool -> Token -> Maybe NAME -> CharParser st SENTENCE
+quantsent2 t c mg = do
+    bl <- parens boundlist
     s <- sentence
-    return $
-      let rn = Range $ joinRanges [rangeSpan c, rangeSpan s]
-      in case mg of
-        Nothing -> Quant_sent (quantType bs s) rn
-        Just g ->
-          case t of
-            True  -> --TODO: check whether indvC_sen is the right function to get free names
-              Quant_sent (Universal bs (Bool_sent (Implication
-                (Atom_sent (Atom (Name_term g) $ map (Term_seq . Name_term) $
-                  Set.elems $ Tools.indvC_sen s) nullRange)
-                s) rn)) rn
-            False ->
-              Quant_sent (Existential bs (Bool_sent (Conjunction
-                [Atom_sent (Atom (Name_term g) $ map (Term_seq . Name_term) $
-                  Set.elems $ Tools.indvC_sen s) nullRange,
-                s]) rn)) rn
+    return $ quantsent3 t mg (rights bl) (lefts bl) s
+           $ Range $ joinRanges [rangeSpan c, rangeSpan s]
 
-boundlist :: CharParser st [NAME_OR_SEQMARK]
+quantsent3 :: Bool -> Maybe NAME -> [NAME_OR_SEQMARK]
+                   -> [(NAME_OR_SEQMARK, TERM)] -> SENTENCE -> Range -> SENTENCE
+quantsent3 t mg bs ((n,trm):nts) s rn = -- Quant_sent using syntactic sugar
+  let functerm = case n of
+       Name nm -> Atom (Funct_term trm [Term_seq $ Name_term nm] nullRange) []
+       SeqMark sqm -> Atom (Funct_term trm [Seq_marks sqm] nullRange) []
+  in case t of
+        True -> Quant_sent (Universal [n] $ quantsent3 t mg bs nts (
+                  Bool_sent (Implication (Atom_sent functerm rn) s) rn
+                ) rn) rn
+        False -> Quant_sent (Universal [n] $ quantsent3 t mg bs nts (
+                  Bool_sent (Conjunction [Atom_sent functerm rn, s]) rn
+                ) rn) rn
+quantsent3 t mg bs [] s rn =
+  let quantType = if t then Universal else Existential
+  in case mg of
+    Nothing -> Quant_sent (quantType bs s) rn -- normal Quant_sent
+    Just g ->                                -- Quant_sent using syntactic sugar
+      let functerm = Atom (Funct_term (Name_term g) (map (Term_seq . Name_term)
+                      $ Set.elems $ Tools.indvC_sen s) nullRange) []
+      in case t of
+          True  -> -- TODO: check whether indvC_sen is the right function to get free names
+            Quant_sent (Universal bs (Bool_sent (Implication
+              (Atom_sent functerm nullRange) s) rn)) rn
+          False ->
+            Quant_sent (Existential bs (Bool_sent (Conjunction
+              [Atom_sent functerm nullRange, s]) rn)) rn
+
+boundlist :: CharParser st [Either (NAME_OR_SEQMARK, TERM) NAME_OR_SEQMARK]
 boundlist = many $ do
+    nos <- intNameOrSeqMark
+    return $ Right nos
+  <|> do
+    oParenT
+    nos <- intNameOrSeqMark
+    t <- term
+    cParenT
+    return $ Left $ (nos,t) -- TODO: check what to do with the term @t@
+
+intNameOrSeqMark :: CharParser st NAME_OR_SEQMARK
+intNameOrSeqMark = do
     s <- seqmark -- fix seqmark parser for one
     return $ SeqMark s
   <|> do
