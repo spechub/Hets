@@ -394,6 +394,9 @@ anaLibItem lgraph opts topLns currLn libenv dg itm = case itm of
   Newlogic_defn ld _ -> ResultT $ do
     dg' <- anaLogicDef ld dg
     return $ Result [] $ Just (itm, dg', libenv)
+  Newcomorphism_defn com _ -> ResultT $ do
+    dg' <- anaComorphismDef com dg
+    return $ Result [] $ Just (itm, dg', libenv)
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
