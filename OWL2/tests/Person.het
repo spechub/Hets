@@ -9,7 +9,7 @@ spec person =
         EquivalentTo: positiveInteger
 
     Datatype: Years
-        EquivalentTo: natural [<150]
+        EquivalentTo: natural
 
     Individual: Ann
         Types: hasAge some integer

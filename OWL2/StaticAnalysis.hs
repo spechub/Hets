@@ -321,7 +321,7 @@ check1Prefix ms s = case ms of
 
 checkPrefixMap :: PrefixMap -> Bool
 checkPrefixMap pm =
-    let pl = map (flip Map.lookup pm) ["owl", "rdf", "rdfs", "xsd"]
+    let pl = map (`Map.lookup` pm) ["owl", "rdf", "rdfs", "xsd"]
     in and $ zipWith check1Prefix pl
             (map snd $ tail $ Map.toList predefPrefixes)
 
