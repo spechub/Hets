@@ -21,7 +21,7 @@ import LF.Morphism
 import LF.ATC_LF ()
 import LF.Analysis
 import LF.Framework
-import LF.ComorphFram
+import LF.ComorphFram ()
 
 import Logic.Logic
 
