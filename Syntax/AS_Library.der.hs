@@ -60,37 +60,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
 
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
                   -- pos: many of "[","]" opt ("given", commas)
-
-instance GetRange LIB_ITEM where
-  getRange x = case x of
-    Spec_defn _ _ _ p -> p
-    View_defn _ _ _ _ p -> p
-    Arch_spec_defn _ _ p -> p
-    Unit_spec_defn _ _ p -> p
-    Ref_spec_defn _ _ p -> p
-    Download_items _ _ p -> p
-    Logic_decl _ p -> p
-    Newlogic_defn _ p -> p
-    Newcomorphism_defn _ p -> p
-  rangeSpan x = case x of
-    Spec_defn a b c d -> joinRanges [rangeSpan a, rangeSpan b,
-                                     rangeSpan c, rangeSpan d]
-    View_defn a b c d e -> joinRanges [rangeSpan a, rangeSpan b,
-                                       rangeSpan c, rangeSpan d, rangeSpan e]
-    Arch_spec_defn a b c -> joinRanges [rangeSpan a, rangeSpan b,
-                                        rangeSpan c]
-    Unit_spec_defn a b c -> joinRanges [rangeSpan a, rangeSpan b,
-                                        rangeSpan c]
-    Ref_spec_defn a b c -> joinRanges [rangeSpan a, rangeSpan b,
-                                       rangeSpan c]
-    Download_items a b c -> joinRanges [rangeSpan a, rangeSpan b,
-                                        rangeSpan c]
-    Logic_decl a b -> joinRanges [rangeSpan a, rangeSpan b]
-    Newlogic_defn a b -> joinRanges [rangeSpan a, rangeSpan b]
-    Newcomorphism_defn a b -> joinRanges [rangeSpan a, rangeSpan b]
-    
-    
-    
+  
 emptyGenericity :: GENERICITY
 emptyGenericity = Genericity (Params []) (Imported []) nullRange
 
