@@ -606,7 +606,7 @@ class (StaticAnalysis lid
                  basic_spec sentence symb_items symb_map_items
                  sign morphism symbol raw_symbol proof_tree
           where
-
+               
          -- | stability of the implementation
          stability :: lid -> Stability
          stability _ = Experimental
@@ -757,7 +757,15 @@ class Logic lid sublogics basic_spec sentence
       write_model :: lid -> String -> morphism -> String
       write_syntax l = error $
          "Function write_model nyi for logic " ++ shows l "."
+      read_morphism :: lid -> FilePath -> morphism
+      read_morphism l _ = error $
+         "Function read_morphism nyi for logic " ++ shows l "."
 
+      write_comorphism :: lid -> String -> String -> String
+                           -> morphism -> morphism -> morphism 
+                           -> String
+      write_comorphism l = error $
+         "Function write_comorphism nyi for logic " ++ shows l "."
 
 {- --------------------------------------------------------------
 Derived functions
