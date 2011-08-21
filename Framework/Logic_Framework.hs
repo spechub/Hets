@@ -50,3 +50,30 @@ instance StaticAnalysis Framework LogicDef () () ()
 
 -- instance of logic for Framework
 instance Logic Framework () LogicDef () () () LogicDef Morphism () () ()
+
+
+--------------------------------------------------------------------------------
+--      FrameworkCom -     logical framework for the analysis of comorphisms
+type MorphismCom = DefaultMorphism ComorphismDef
+
+data FrameworkCom = FrameworkCom deriving Show
+
+instance Language FrameworkCom where
+   description _ = "A framework allowing to add comorphisms between " ++
+                   "logics dynamically."
+
+-- syntax for Framework
+instance Syntax FrameworkCom ComorphismDef () ()
+
+-- sentences for Framework
+instance Sentences FrameworkCom () ComorphismDef MorphismCom ()
+
+-- static analysis for Framework
+instance StaticAnalysis FrameworkCom ComorphismDef () () ()
+         ComorphismDef MorphismCom () () where
+  empty_signature FrameworkCom = error
+       "Logic FrameworkCom does not have an empty signature."
+
+-- instance of logic for Framework
+instance Logic FrameworkCom () ComorphismDef () () () ComorphismDef 
+         MorphismCom () () ()

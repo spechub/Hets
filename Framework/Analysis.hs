@@ -9,7 +9,10 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module Framework.Analysis ( anaLogicDef ) where
+module Framework.Analysis 
+     ( anaLogicDef
+     , anaComorphismDef
+     ) where
 
 import Framework.AS
 import Framework.Logic_Framework
@@ -56,6 +59,18 @@ dynLogicsFile = "DynLogicList.hs"
 dynLogicsCon :: String
 dynLogicsCon = "dynLogicList"
 
+dynComorphismsDir :: FilePath
+dynComorphismsDir = "Comorphisms"
+
+dynComorphismsFile :: FilePath
+dynComorphismsFile = "DynComorphismsList.hs"
+
+dynComorphismsCon :: String
+dynComorphismsCon = "dynComorphismsList"
+
+-- ----------------------------------------------------------------------------
+--                    Logic analysis
+
 -- analyzes a logic definition
 anaLogicDef :: LogicDef -> DGraph -> IO DGraph
 anaLogicDef ld dg =
@@ -76,25 +91,6 @@ anaLogicDefH ml ld dg = do
            addLogic2LogicList l
            return $ addLogicDef2DG ld dg
        _ -> fail ""
-
--- creates a node for the logic definition
-addLogicDef2DG :: LogicDef -> DGraph -> DGraph
-addLogicDef2DG ld dg =
-  let node = getNewNodeDG dg
-      name = newlogicName ld
-      nodeName = emptyNodeName { getName = name }
-      info = newNodeInfo DGBasic
-      extSign = makeExtSign Framework ld
-      gth = noSensGTheory Framework extSign startSigId
-      nodeLabel = newInfoNodeLab nodeName info gth
-      dg1 = insNodeDG (node, nodeLabel) dg
-
-      emptyNode = EmptyNode $ Logic Framework
-      genSig = GenSig emptyNode [] emptyNode
-      nodeSig = NodeSig node $ G_sign Framework extSign startSigId
-      gEntry = SpecEntry $ ExtGenSig genSig nodeSig
-      dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
-   in dg2
 
 {- constructs the diagram in the signature category of the meta logic
    which represents the object logic -}
@@ -118,11 +114,10 @@ retrieveDiagram ml (LogicDef _ _ s m f p _) dg = do
             then return Nothing
             else do v <- lookupMorph ml p dg
                     return $ Just v
-
---  if (dom ltruth /= base_sig ml) then
---     error $ "The morphism " ++ (show s) ++
---             " must originate from the Base signature for " ++
---            (show ml) ++ "." else do
+--   if (dom ltruth /= base_sig ml) then
+--      error $ "The morphism " ++ (show s) ++
+--              " must originate from the Base signature for " ++
+--              (show ml) ++ "." else do
   if (isJust lmod && (dom $ fromJust lmod) /= cod ltruth) then
      error $ "The morphisms " ++ (show s) ++
              " and " ++ (show m) ++ " must be composable." else do
@@ -131,39 +126,24 @@ retrieveDiagram ml (LogicDef _ _ s m f p _) dg = do
              " and " ++ (show p) ++ " must be composable." else do
   return (ltruth, lmod, found, lpf)
 
--- looks up a signature by name
-lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
-                   sign morphism symbol raw_symbol proof_tree
-             => lid -> SIG_NAME -> DGraph -> Result sign
-lookupSig l n dg = do
-  let extSig = case lookupGlobalEnvDG n dg of
-                 Just (SpecEntry es) -> es
-                 _ -> error $ "The signature " ++ (show n) ++
-                              " could not be found."
-  case extSig of
-    ExtGenSig _ (NodeSig _ (G_sign l' (ExtSign sig _) _)) ->
-      if Logic l /= Logic l'
-         then error $ "The signature " ++ (show n) ++
-                      " is not in the logic " ++ (show l) ++ "."
-         else coercePlainSign l' l "" sig
+-- creates a node for the logic definition
+addLogicDef2DG :: LogicDef -> DGraph -> DGraph
+addLogicDef2DG ld dg =
+  let node = getNewNodeDG dg
+      name = newlogicName ld
+      nodeName = emptyNodeName { getName = name }
+      info = newNodeInfo DGBasic
+      extSign = makeExtSign Framework ld
+      gth = noSensGTheory Framework extSign startSigId
+      nodeLabel = newInfoNodeLab nodeName info gth
+      dg1 = insNodeDG (node, nodeLabel) dg
 
--- looks up a morphism by name
-lookupMorph :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
-                     sign morphism symbol raw_symbol proof_tree
-               => lid -> MORPH_NAME -> DGraph -> Result morphism
-lookupMorph l n dg = do
-  let extView = case lookupGlobalEnvDG n dg of
-                  Just (ViewEntry ev) -> ev
-                  Just (StructEntry ev) -> ev
-                  _ -> error $ "The morphism " ++ (show n) ++
-                               " could not be found."
-  case extView of
-    ExtViewSig _ (GMorphism c _ _ morph _) _ -> do
-      let l' = targetLogic c
-      if Logic l /= Logic l'
-         then error $ "The morphism " ++ (show n) ++
-                      " is not in the logic " ++ (show l) ++ "."
-         else coerceMorphism l' l "" morph
+      emptyNode = EmptyNode $ Logic Framework
+      genSig = GenSig emptyNode [] emptyNode
+      nodeSig = NodeSig node $ G_sign Framework extSign startSigId
+      gEntry = SpecEntry $ ExtGenSig genSig nodeSig
+      dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
+   in dg2
 
 -- constructs the logic instance for the object logic
 buildLogic :: LogicFram lid sublogics basic_spec sentence symb_items
@@ -200,6 +180,175 @@ addLogic2LogicList l = do
   case res of
       Right contentsNew -> writeFile file contentsNew
       Left er -> error $ show er
+
+
+-- ----------------------------------------------------------------------------
+--                    Comorphism analysis
+
+anaComorphismDef :: ComorphismDef -> DGraph -> IO DGraph
+anaComorphismDef cd dg =
+  case metaC cd of
+    LF -> anaComorphismDefH Logic_LF.LF cd dg
+    Isabelle -> anaComorphismDefH Logic_Isabelle.Isabelle cd dg
+    Maude -> anaComorphismDefH Logic_Maude.Maude cd dg
+
+anaComorphismDefH :: LogicFram lid sublogics basic_spec sentence symb_items
+                            symb_map_items sign morphism symbol raw_symbol
+                            proof_tree
+                     => lid -> ComorphismDef -> DGraph -> IO DGraph 
+anaComorphismDefH ml (ComorphismDef nc m sL tL sM pM mM) dg =
+   let c = tokStr nc
+       s = tokStr sL
+       t = tokStr tL
+   in case anaComH ml (ComorphismDef nc m sL tL sM pM mM) dg of
+        Result _ (Just (symM, pfM, modM)) -> do
+             buildComorphism ml c s t symM pfM modM 
+             addComorphism2ComorphismList c
+             return $ addComorphismDef2DG (ComorphismDef nc m sL tL sM pM mM) dg
+        _ -> fail ""
+
+anaComH :: LogicFram lid sublogics basic_spec sentence symb_items
+                            symb_map_items sign morphism symbol raw_symbol
+                            proof_tree
+                     => lid -> ComorphismDef -> DGraph -> Result (morphism, 
+                            morphism, morphism)
+anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
+     let sLName = tokStr sL
+         tLName = tokStr tL in do
+     synM <- lookupMorph ml sM dg 
+     pfM <- lookupMorph ml pM dg
+     modM <- lookupMorph ml mM dg
+     let  sLSyn = getMorphL ml sLName "Syntax"
+          sLPf = getMorphL ml sLName "Proof"
+          sLMod = getMorphL ml sLName "Model"
+          tLSyn = getMorphL ml tLName "Syntax"
+          tLPf = getMorphL ml tLName "Proof"
+          tLMod = getMorphL ml tLName "Model"
+     if (cod sLSyn /= dom synM) 
+        then fail $ "the domain of the syntax morphism has to be the syntax " ++
+                     "of the source logic.\n" 
+        else if (cod tLSyn /= cod synM)
+               then fail $ "" 
+               else if (cod sLPf /= dom pfM) 
+                       then fail ""
+                       else if (cod tLPf /= cod pfM) 
+                               then fail ""
+                               else if (cod sLMod /= dom modM) 
+                                       then fail ""
+                                       else if (cod tLMod /= cod modM) 
+                                               then fail ""
+                                               else case ((composeMorphisms synM tLPf), (composeMorphisms sLPf pfM)) of
+                                                         (Result _ comM1, Result _ comM2) -> if (comM1 /= comM2)
+                                                                                              then fail ""
+                                                                                              else case ((composeMorphisms synM tLMod), (composeMorphisms sLPf modM)) of
+                                                                                                        (Result _ comM3, Result _ comM4) -> if (comM3 /= comM4) 
+                                                                                                                                               then fail ""
+                                                                                                                                               else return (synM, pfM, modM)
+--                                                                                                          _ -> fail ""
+--                                                          _ -> fail ""
+
+getMorphL ::  LogicFram lid sublogics basic_spec sentence symb_items
+                            symb_map_items sign morphism symbol raw_symbol
+                            proof_tree
+                     => lid -> String -> String -> morphism
+getMorphL ml logicName fileName = 
+     let file = logicName ++ "/" ++ fileName ++ ".hs"  
+     in read_morphism ml file
+
+-- getMorphC ::  LogicFram lid sublogics basic_spec sentence symb_items
+--                             symb_map_items sign morphism symbol raw_symbol
+--                             proof_tree
+--                      => lid -> SIG_NAME -> String -> DGraph -> morphism
+-- getMorphC ml morph morphName dg =
+--      if (morph == nullTok) 
+--         then fail $ (show morphName) ++ " Morphism not provided.\n"
+--         else (lookupMorph ml morph dg)
+                                       
+        
+--         -- | The result monad. A failing result should include an error message.
+--         data Result a = Result { diags :: [Diagnosis]
+--         , maybeResult :: Maybe a
+--         } deriving Show
+        
+addComorphismDef2DG :: ComorphismDef -> DGraph -> DGraph
+addComorphismDef2DG cd dg =
+  let node = getNewNodeDG dg
+      name = newcomorphismName cd
+      nodeName = emptyNodeName { getName = name }
+      info = newNodeInfo DGBasic
+      extSign = makeExtSign FrameworkCom cd
+      gth = noSensGTheory FrameworkCom extSign startSigId
+      nodeLabel = newInfoNodeLab nodeName info gth
+      dg1 = insNodeDG (node, nodeLabel) dg
+      
+      emptyNode = EmptyNode $ Logic FrameworkCom
+      genSig = GenSig emptyNode [] emptyNode
+      nodeSig = NodeSig node $ G_sign FrameworkCom extSign startSigId
+      gEntry = SpecEntry $ ExtGenSig genSig nodeSig
+      dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
+  in dg2
+                          
+     
+buildComorphism :: LogicFram lid sublogics basic_spec sentence symb_items
+                    symb_map_items sign morphism symbol raw_symbol proof_tree
+              => lid -> String -> String -> String 
+                   -> morphism -> morphism -> morphism -> IO ()
+buildComorphism ml c s t synM pfM modM = do 
+  exists <- doesFileExist ("Comorphisms" ++ "/" ++ c ++ ".hs")
+  if exists 
+     then error $ "The comorphism " ++ c ++ "already exists.\n" 
+     else do
+  let comorphismC = write_comorphism ml c s t synM pfM modM
+  writeFile ("Comorphisms" ++ "/" ++ c ++ ".hs") comorphismC
+  return ()
+
+addComorphism2ComorphismList :: String -> IO ()
+addComorphism2ComorphismList c = do
+  let file = dynComorphismsDir ++ "/" ++ dynComorphismsFile
+  contentsOld <- readFile file
+  let res = runParser (parserc c) (emptyAnnos ()) "" contentsOld  -- !!
+  case res of
+      Right contentsNew -> writeFile file contentsNew
+      Left er -> error $ show er
+
+    
+-- ----------------------------------------------------------------------------
+--                    Auxiliary functions
+    
+-- looks up a signature by name
+lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
+                   sign morphism symbol raw_symbol proof_tree
+             => lid -> SIG_NAME -> DGraph -> Result sign
+lookupSig l n dg = do
+  let extSig = case lookupGlobalEnvDG n dg of
+                 Just (SpecEntry es) -> es
+                 _ -> error $ "The signature " ++ (show n) ++
+                              " could not be found."
+  case extSig of
+    ExtGenSig _ (NodeSig _ (G_sign l' (ExtSign sig _) _)) ->
+      if Logic l /= Logic l'
+         then error $ "The signature " ++ (show n) ++
+                      " is not in the logic " ++ (show l) ++ "."
+         else coercePlainSign l' l "" sig
+
+-- looks up a morphism by name
+lookupMorph :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
+                     sign morphism symbol raw_symbol proof_tree
+               => lid -> MORPH_NAME -> DGraph -> Result morphism
+lookupMorph l n dg = do
+  let extView = case lookupGlobalEnvDG n dg of
+                  Just (ViewEntry ev) -> ev
+                  Just (StructEntry ev) -> ev
+                  _ -> error $ "The morphism " ++ (show n) ++
+                               " could not be found."
+  case extView of
+    ExtViewSig _ (GMorphism c _ _ morph _) _ -> do
+      let l' = targetLogic c
+      if Logic l /= Logic l'
+         then error $ "The morphism " ++ (show n) ++
+                      " is not in the logic " ++ (show l) ++ "."
+         else coerceMorphism l' l "" morph
+
 
 parser :: String -> AParser st String
 parser l = do
@@ -238,6 +387,43 @@ parser l = do
            log_var_decl ++ "\n" ++ log_var_def ++ " " ++ "[" ++
            (intercalate ", " $ log_list ++ [l_log]) ++ "]"
 
+parserc :: String -> AParser st String
+parserc c = do
+     let com_imp = "import " ++ "Comorphisms." ++ c
+     let com_c = "Comorphism " ++ c
+     
+     header <- skipUntil "module"
+     mod_decl <- do m <- asStr "module"
+                    n <- moduleName
+                    w <- asStr "where"
+                    return $ intercalate " " [m,n,w]
+     imps <- do many1 $ do
+                i <- asStr "import"
+                n <- moduleName
+                return $ intercalate " " [i,n]
+     com_var_decl <- do v <- asStr dynComorphismsCon
+                        s <- asStr "::"
+                        t <- do oBracketT
+                                asStr "AnyComorphism"
+                                cBracketT
+                                return "[AnyComorphism]"
+                        return $ intercalate " " [v, s, t]
+     com_var_def <- do v <- asStr dynComorphismsCon
+                       s <- asStr "="
+                       return $ intercalate " " [v,s]
+     com_list <- do oBracketT
+                    ( do cBracketT
+                         return []
+                      <|>
+                      do (xs,_) <- comParser `separatedBy` commaT
+                         cBracketT
+                         return xs )
+     return $ header ++ mod_decl ++ "\n\n" ++
+              (intercalate "\n" (imps ++ [com_imp])) ++ "\n\n" ++
+              com_var_decl ++ "\n" ++
+              com_var_def ++ " " ++ "[" ++
+              (intercalate ", " (com_list ++ [com_c])) ++ "]"
+
 skipUntil :: String -> AParser st String
 skipUntil lim = do
   res <- many $ (reserved [lim] $ many1 $ noneOf whiteChars) <|>
@@ -261,3 +447,9 @@ logParser = do
   l <- asKey "Logic"
   n <- simpleId
   return $ tokStr l ++ " " ++ tokStr n
+
+comParser :: AParser st String
+comParser = do
+     c <- asKey "Comorphism"
+     n <- simpleId
+     return $ tokStr c ++ " " ++ tokStr n
