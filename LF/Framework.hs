@@ -194,7 +194,7 @@ writeComorphism c s t syn pf model =
       symbolC = "Symbol"
       raw_symbolC = "RAW_SYM"
       proof_treeC = "()"
-      mlC = "LF"
+--       mlC = "LF"
       
       -- module declaration
       comp_opt = mkCompOpt [multiOpt,synOpt]
