@@ -15,11 +15,13 @@ module LF.Logic_LF where
 
 import LF.AS
 import LF.Parse
+import LF.MorphParser (readMorphism)
 import LF.Sign
 import LF.Morphism
 import LF.ATC_LF ()
 import LF.Analysis
 import LF.Framework
+import LF.ComorphFram
 
 import Logic.Logic
 
@@ -116,4 +118,5 @@ instance LogicFram LF
    write_syntax LF = writeSyntax
    write_proof LF = writeProof
    write_model LF = writeModel
- --  write_comorphism LF = writeComorphism
+   write_comorphism LF = writeComorphism
+   read_morphism LF = readMorphism

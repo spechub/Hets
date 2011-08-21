@@ -9,7 +9,59 @@ import Common.AnnoParser (commentLine)
 
 import Text.ParserCombinators.Parsec
 
+import System.Directory
+import System.IO.Unsafe
+
 import qualified Data.Map as Map
+
+
+readMorphism :: FilePath -> Morphism
+readMorphism file =
+     let mor = unsafePerformIO $ readMorph file
+     in case mor of
+             Just m -> m
+             Nothing -> error $ "readMorphism : Could not read the " ++
+                                "morphism from " ++ (show file)
+
+readMorph :: FilePath -> IO (Maybe Morphism)
+readMorph file = do
+  e <- doesFileExist file
+  if e then do
+       content <- readFile file
+       case runParser (parseMorphism << eof) () file content of
+               Right m -> return $ Just m
+               Left err -> fail $ show err
+       else return Nothing
+          
+        
+parseMorphism :: CharParser st Morphism
+parseMorphism = do
+     skips $ manyTill anyChar (string "=")
+     pkeyword "Morphism"
+     skipChar '{'
+     mb <- parseWithEq "morphBase"
+     skipChar ','
+     mm <- parseWithEq "morphModule"
+     skipChar ','
+     mn <- parseWithEq "morphName"
+     skipChar ','
+     pkeyword "source"
+     skipChar '='
+     s <- parseSignature
+     skipChar ','
+     pkeyword "target"
+     skipChar '='
+     t <- parseSignature
+     skipChar ','
+     pkeyword "morphType"
+     skipChar '='
+     mt <- parseMorphType
+     skipChar ','
+     pkeyword "symMap"
+     skipChar '='
+     sm <- parseMap
+     skipChar '}'
+     return $ Morphism mb mm mn s t mt sm
 
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
@@ -26,7 +78,8 @@ qString :: CharParser st String
 qString = skips stringLit
 
 parensP :: CharParser st a -> CharParser st a
-parensP = between (skipChar '(') (skipChar ')')
+parensP p = between (skipChar '(') (skipChar ')') p
+     <|> p
 
 bracesP :: CharParser st a -> CharParser st a
 bracesP = between (skipChar '{') (skipChar '}')
@@ -46,7 +99,7 @@ skipChar = forget . skips . char
 parseWithEq :: String -> CharParser st String
 parseWithEq s = do
     pkeyword s
-    pkeyword "=" 
+    skipChar '=' 
     qString >>= return
 
 parseSym :: CharParser st Symbol
@@ -81,25 +134,19 @@ parseExp = do
     fmap Const parseSym
    <|> do
     pkeyword "Appl"
-    option () $ skipChar '('
-    ex <- parseExp
-    option () $ skipChar ')'
+    ex <- parensP parseExp
     exl <- bracketsP $ option [] $ sepByComma parseExp
     return $ Appl ex exl
    <|> do
     pkeyword "Func"
     exl <- bracketsP $ option [] $ sepByComma parseExp
-    option () $ skipChar '('
-    ex <- parseExp
-    option () $ skipChar ')'
+    ex <- parensP parseExp
     return $ Func exl ex
    <|> do
     ty <- choice $ map (\ ty -> pkeyword ty >> return ty)
                ["Pi", "Lamb"]
     c <- bracketsP $ option [] $ sepByComma parse1Context
-    option () $ skipChar '('
-    e <- parseExp 
-    option () $ skipChar ')'
+    e <- parensP parseExp 
     return $ (case ty of
         "Pi" -> Pi 
         "Lamb" -> Lamb
@@ -121,9 +168,7 @@ parseDef = do
     skipChar '='
     val <- do pkeyword "Nothing" >> return Nothing
              <|> do pkeyword "Just"
-                    option () $ skipChar '('
-                    e <- parseExp
-                    option () $ skipChar ')'
+                    e <- parensP parseExp
                     return $ Just e
     skipChar '}'
     return $ Def sym tp val
@@ -160,32 +205,3 @@ parseMap :: CharParser st (Map.Map Symbol EXP)
 parseMap = do
      pkeyword "fromList"
      fmap Map.fromList $ bracketsP $ option [] $ sepByComma parse1Map
-
-parseMorphism :: CharParser st Morphism
-parseMorphism = do
-     skips $ manyTill anyChar (string "=")
-     pkeyword "Morphism"
-     skipChar '{'
-     mb <- parseWithEq "morphBase"
-     skipChar ','
-     mm <- parseWithEq "morphModule"
-     skipChar ','
-     mn <- parseWithEq "morphName"
-     skipChar ','
-     pkeyword "source"
-     skipChar '='
-     s <- parseSignature
-     skipChar ','
-     pkeyword "target"
-     skipChar '='
-     t <- parseSignature
-     skipChar ','
-     pkeyword "morphType"
-     skipChar '='
-     mt <- parseMorphType
-     skipChar ','
-     pkeyword "symMap"
-     skipChar '='
-     sm <- parseMap
-     skipChar '}'
-     return $ Morphism mb mm mn s t mt sm

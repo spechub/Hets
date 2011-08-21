@@ -63,7 +63,8 @@ writeLogic l =
       impts1 = mkImports ["Logic.Logic"]
       impts2 = mkImports ["LF.AS", "LF.Sign", "LF.Morphism",
                           "LF.Logic_LF", "LF.ImplOL"]
-      impts3 = mkImports [l ++ "." ++ "Syntax"]
+      impts3 = mkImports [l ++ "." ++ "Syntax", l ++ "." ++ "Proof",
+                          l ++ "." ++ "Model"]
       
       -- lid
       lid = mkLid l
@@ -127,8 +128,8 @@ writeLogic l =
                 sentences, logic, analysis] 
       in header ++ "\n" ++ body
 
------------------------------------------------------------------
------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 writeSyntax :: String -> Morphism -> String
 writeSyntax l ltruth =
@@ -173,3 +174,79 @@ writeModel l lmod =
          lmod_decl = mkDecl "lmod" "Morphism" $ show lmod 
          
      in intercalate "\n\n" [mod_decl, impts1, impts2, lmod_decl]
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+writeComorphism :: String -> String -> String 
+                    -> Morphism -> Morphism -> Morphism 
+                    -> String
+writeComorphism c s t syn pf model =
+  let slC = s ++ "." ++ "Logic_" ++ s
+      tlC = t ++ "." ++ "Logic_" ++ t
+      sublogicsC = "()"
+      basic_specC = "BASIC_SPEC"
+      sentenceC = "Sentence"
+      symb_itemsC = "SYMB_ITEMS"
+      symb_map_itemsC = "SYMB_MAP_ITEMS"
+      signC = "Sign"      
+      morphismC = "Morphism"
+      symbolC = "Symbol"
+      raw_symbolC = "RAW_SYM"
+      proof_treeC = "()"
+      mlC = "LF"
+      
+      -- module declaration
+      comp_opt = mkCompOpt [multiOpt,synOpt]
+      mod_decl = mkModDecl $ "Comorphisms" ++ "." ++ c ++ 
+                             " (" ++ c ++ " (..)" ++ ")"
+      
+      -- imports 
+      impts1 = mkImports ["Logic.Logic" , "Logic.Comorphism"]
+      impts2 = mkImports [s ++ ".Logic_" ++ s, s ++ ".Syntax", 
+                          s ++ ".Proof", s ++ ".Model"] 
+      impts3 = mkImports [t ++ ".Logic_" ++ t, t ++ ".Syntax", 
+                          t ++ ".Proof", t ++ ".Model"]
+      impts4 = mkImports ["LF.Logic_LF", "LF.Morphism", "LF.AS", "LF.Sign", 
+                          "LF.ComorphFram"]
+--       impts5 = mkImports ["Common. " ...]
+      
+      -- lid
+      lid = mkLid c
+      
+      -- language
+      lang_nameI = mkImpl "language_name" c $ "\"" ++ c ++ "\""
+      descriptionI = mkImpl "description" c "\"User-defined comorphism\""
+      lang = mkInst "Language" c [] [lang_nameI, descriptionI]
+      
+      -- comorphism
+      sourceLogicC = mkImpl "sourceLogic" c slC
+      sourceSublogicC = mkImpl "sourceSublogic" c "()"
+      targetLogicC = mkImpl "targetLogic" c tlC
+      mapSublogicC = mkImpl "mapSublogic" c "()"
+      map_theoryC = mkImpl "map_theory" c "mapTheory cSyn"
+      map_morphismC = mkImpl "map_morphism" c "mapMor cSyn" -- TODO
+      map_sentenceC = mkImpl "map_sentence" c "mapSen cSyn"
+      map_symbolC = mkImpl "map_symbol" c "mapSymb cSyn"
+      comorphism = mkInst "Comorphism" c
+                    [c, 
+                     slC, sublogicsC, basic_specC, sentenceC, symb_itemsC,
+                          symb_map_itemsC, signC, morphismC, symbolC, 
+                          raw_symbolC, proof_treeC,
+                     tlC, sublogicsC, basic_specC, sentenceC, symb_itemsC,
+                          symb_map_itemsC, signC, morphismC, symbolC, 
+                          raw_symbolC, proof_treeC]
+                    [sourceLogicC, sourceSublogicC, targetLogicC, mapSublogicC,
+                        map_theoryC, map_morphismC, map_sentenceC, map_symbolC]
+                             
+       -- the morphisms
+      synMorphC = mkDecl "cSyn" "Morphism" $ show syn
+      proofMorphC = mkDecl "cPf" "Morphism" $ show pf
+      modelMorphC = mkDecl "cMod" "Morphism" $ show model
+       
+      -- file
+      header = comp_opt
+      body = intercalate "\n\n" $
+                 [mod_decl, impts1, impts2, impts3, impts4, lid, lang, comorphism,
+                      synMorphC, proofMorphC, modelMorphC]
+  in header ++ "\n" ++ body

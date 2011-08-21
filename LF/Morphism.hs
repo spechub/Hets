@@ -21,6 +21,7 @@ module LF.Morphism
    , inclusionMorph
    , inducedFromToMorphism
    , inducedFromMorphism
+   , gen_morph
    ) where
 
 import LF.Sign
@@ -31,6 +32,9 @@ import Common.DocUtils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+gen_morph :: String
+gen_morph = "GEN_MORPH"
 
 data MorphType = Definitional | Postulated | Unknown deriving (Ord,Eq,Show)
 
