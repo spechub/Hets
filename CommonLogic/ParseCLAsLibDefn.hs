@@ -10,7 +10,7 @@ Portability :  non-portable (imports Logic.Logic)
 Analyses CommonLogic files.
 -}
 
-module CommonLogic.ParseCLAsLibDefn (parseCL_CLIF) where
+module CommonLogic.ParseCLAsLibDefn where --(parseCL_CLIF) where
 
 import Common.Id
 import Common.LibName
@@ -31,29 +31,33 @@ import Syntax.AS_Structured as Struc
 
 
 import System.IO
+import System.FilePath.Windows (splitFileName)
 
 -- | call for CommonLogic CLIF-parser
 parseCL_CLIF :: FilePath -> IO LIB_DEFN
 parseCL_CLIF filename = do
   handle <- openFile filename ReadMode
   contents <- hGetContents handle
-  maybeText <- return $ runParser basicSpec (emptyAnnos ()) "" contents
+  maybeText <- return $ runParser (many basicSpec) (emptyAnnos ()) "" contents
   case maybeText of
-      Right bs -> return $ convertToLibDefN filename bs
+      Right bs -> return $ convertToLibDefN filename $ reverse bs
       Left _ -> error $ "Error parsing CLIF-File."
 
-convertToLibDefN :: FilePath -> BASIC_SPEC -> LIB_DEFN
+convertToLibDefN :: FilePath -> [BASIC_SPEC] -> LIB_DEFN
 convertToLibDefN filename bs = Lib_defn
   (emptyLibName $ convertFileToLibStr filename)
-  [convertBS filename bs]
+  (snd $ foldl (
+      \(i,r) b -> (i+1, convertBS i (convertFileToLibStr filename) b : r)
+    ) (0,[]) bs
+  )
   nullRange
   []
 
-convertBS :: FilePath -> BASIC_SPEC -> Anno.Annoted LIB_ITEM
-convertBS filename bs = emptyAnno $ Spec_defn
-  (mkSimpleId filename) --TODO: SPEC_NAME
+convertBS :: Int -> String -> BASIC_SPEC -> Anno.Annoted LIB_ITEM
+convertBS i filename b = emptyAnno $ Spec_defn
+  (specName i b filename)
   emptyGenericity
-  (createSpec bs)
+  (createSpec b)
   nullRange
 
 createSpec :: BASIC_SPEC -> Anno.Annoted SPEC
@@ -72,12 +76,11 @@ cnvimport :: NAME -> Annoted SPEC
 cnvimport n = emptyAnno $ Spec_inst n [] nullRange
 
 getImports :: BASIC_SPEC -> [NAME]
-getImports (CL.Basic_spec items) = 
-  concatMap getImports_text $ concatMap textsFromBasicItems items
+getImports (CL.Basic_spec items) =  getImports_text $ textsFromBasicItems items
 
-textsFromBasicItems :: Anno.Annoted (BASIC_ITEMS) -> [TEXT]
+textsFromBasicItems :: Anno.Annoted (BASIC_ITEMS) -> TEXT
 textsFromBasicItems abi = case Anno.item abi of
-                              Axiom_items annoTexts -> map Anno.item annoTexts
+                              Axiom_items annoText -> Anno.item annoText
 
 getImports_text :: TEXT -> [NAME]
 getImports_text (Text ps _) = map impToName $ filter isImportation ps
@@ -90,3 +93,13 @@ isImportation _ = False
 impToName :: PHRASE -> NAME
 impToName (Importation (Imp_name n)) = n
 impToName _ = undefined -- not necessary because filtered out
+
+specName :: Int -> CL.BASIC_SPEC -> String -> NAME
+specName i (CL.Basic_spec items) def =
+  case Anno.item items of
+       Axiom_items ax ->
+          case Anno.item ax of
+               Text _ _ -> mkSimpleId (def ++ "_" ++ show i)
+               Named_text n _ _ -> mkSimpleId n
+
+

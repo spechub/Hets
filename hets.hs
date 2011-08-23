@@ -90,8 +90,7 @@ processFile opts file = do
       TwelfIn -> anaTwelfFile opts file
       OmdocIn -> anaOMDocFile opts file
       CommonLogicIn -> anaLib opts { intype = CommonLogicIn }file
-      CommonLogic2In -> anaLibExt (opts { defLogic = "CommonLogic" }) file
-        emptyLibEnv emptyDG
+      CommonLogic2In -> anaLib opts { intype = CommonLogic2In }file
       DgXml | not (defLogicIsDMU opts) -> readDGXml opts file
       _ -> anaLib opts file
     case res of

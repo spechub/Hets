@@ -300,14 +300,13 @@ sl_termInSeq prds cs term =
 -- | determines sublogic for basic items
 sl_basic_items :: CommonLogicSL -> AS.BASIC_ITEMS -> CommonLogicSL
 sl_basic_items cs (AS.Axiom_items xs) =
-    comp_list $ map ((uncurry $ flip sl_text cs) . getPreds . AS_Anno.item) xs
+  ((uncurry $ flip sl_text cs) . getPreds . AS_Anno.item) xs
   where getPreds :: AS.TEXT -> (Set.Set AS.NAME, AS.TEXT)
         getPreds t = (prd_text t, t)
 
 -- | determines sublogic for basic spec
 sl_basic_spec :: CommonLogicSL -> AS.BASIC_SPEC -> CommonLogicSL
-sl_basic_spec cs (AS.Basic_spec spec) =
-    comp_list $ map ((sl_basic_items cs) . AS_Anno.item) spec
+sl_basic_spec cs (AS.Basic_spec spec) = ((sl_basic_items cs) . AS_Anno.item) spec
 
 -- | all sublogics
 sublogics_all :: [CommonLogicSL]
@@ -362,7 +361,7 @@ prName _ n = Just n
 -- or equal to @cs@
 prBasicSpec :: CommonLogicSL -> AS.BASIC_SPEC -> AS.BASIC_SPEC
 prBasicSpec cs bs@(AS.Basic_spec items) = -- TODO: write some decent function
-  AS.Basic_spec $ map (maybeLE cs) items
+  AS.Basic_spec $ (maybeLE cs) items
 
 maybeLE :: CommonLogicSL ->
             AS_Anno.Annoted (AS.BASIC_ITEMS) -> AS_Anno.Annoted (AS.BASIC_ITEMS)
@@ -370,9 +369,7 @@ maybeLE cs items = AS_Anno.Annoted {
       AS_Anno.opt_pos = AS_Anno.opt_pos items
     , AS_Anno.l_annos = AS_Anno.l_annos items
     , AS_Anno.r_annos = AS_Anno.r_annos items
-    , AS_Anno.item    =
-        AS.Axiom_items $ filter (isSL_LE cs) (case AS_Anno.item items of
-                                                  AS.Axiom_items i -> i)
+    , AS_Anno.item    = AS_Anno.item items
   }
 
 isSL_LE :: CommonLogicSL -> AS_Anno.Annoted (AS.TEXT) -> Bool

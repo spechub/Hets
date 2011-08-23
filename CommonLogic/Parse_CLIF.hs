@@ -318,9 +318,10 @@ rolesetMixTerm  x (n, t) =
 
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC
-basicSpec =
-  fmap Basic_spec (AnnoState.annosParser parseBasicItems)
-  <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
+basicSpec = do
+  bi <- AnnoState.allAnnoParser parseBasicItems
+  return $ Basic_spec $ bi
+--  <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 
 -- function to parse different syntaxes
 -- parsing: axiom items with dots, clif sentences, clif text
@@ -333,14 +334,14 @@ parseBasicItems = parseAxItems
 
 parseSentences :: AnnoState.AParser st BASIC_ITEMS
 parseSentences = do
-    xs <- many1 aFormula
+    xs <- aFormula
     return $ Axiom_items xs
 
 -- FIX
 parseClText :: AnnoState.AParser st BASIC_ITEMS
 parseClText = do
   tx <- cltext
-  return $ Axiom_items (textToAn [tx])
+  return $ Axiom_items (textToAn tx)
 
 {-
 parseClText :: AnnoState.AParser st BASIC_ITEMS
@@ -353,8 +354,8 @@ ps (Mod _ tx _) = senOfText tx
 ps (Mod_ex _ _ _ _) = []
 -}
 
-textToAn :: [TEXT] -> [Annotation.Annoted TEXT]
-textToAn x = map (\y -> Annotation.Annoted y nullRange [] []) x
+textToAn :: TEXT -> Annotation.Annoted TEXT
+textToAn x = Annotation.Annoted x nullRange [] []
 
 senOfText :: TEXT -> [SENTENCE]
 senOfText (Text phr _) = foldl (sen2) [] phr
@@ -390,8 +391,8 @@ parseAxItems = do
        (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
        let _ = Id.catRange (d : ds)
-           ns = init fs ++ [Annotation.appendAnno (last fs) an]
-       return $ Axiom_items ns
+           n = Annotation.appendAnno (last fs) an
+       return $ Axiom_items n
 
 -- | Toplevel parser for formulae
 aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT)

@@ -27,11 +27,11 @@ import qualified Common.AS_Annotation as AS_Anno
 -- DrIFT command
 {-! global: GetRange !-}
 
-newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
+newtype BASIC_SPEC = Basic_spec (AS_Anno.Annoted (BASIC_ITEMS))
                       deriving Show
 
 data BASIC_ITEMS =
-    Axiom_items [AS_Anno.Annoted (TEXT)]
+    Axiom_items (AS_Anno.Annoted (TEXT))
     deriving Show
 
 instance Pretty BASIC_SPEC where
@@ -40,10 +40,10 @@ instance Pretty BASIC_ITEMS where
     pretty = printBasicItems
 
 printBasicSpec :: BASIC_SPEC -> Doc
-printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
+printBasicSpec (Basic_spec xs) = pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
-printBasicItems (Axiom_items xs) = vcat $ map pretty xs
+printBasicItems (Axiom_items xs) = pretty xs
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range

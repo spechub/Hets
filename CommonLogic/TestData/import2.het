@@ -1,0 +1,16 @@
+logic CommonLogic
+
+spec cl1 =
+. (P x)
+. (and (P x) (Q y))
+
+
+spec cl2 =
+. (or (Cat x) (Mat y))
+. (not (On x y))
+. (if (P x) (Q x))
+
+spec cl3 =
+cl1 and cl2 then
+. (exists (z) (and (Pet x) (Happy z) (Attr x z)))
+end
