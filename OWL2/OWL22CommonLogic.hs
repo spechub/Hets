@@ -509,7 +509,7 @@ mapDescription cSig des oVar aVar =
             SomeValuesFrom -> (mkQE [Name varNN] sent, drSig)
     DataHasValue dpe c -> do
         con <- mapLiteral cSig c
-        return (mkQU [Name varN] $ mkAtoms $ Atom (Name_term $ uriToTok dpe)
+        return (mkAtoms $ Atom (Name_term $ uriToTok dpe)
                     [mkTermSeq varN, Term_seq con], cSig)
     DataCardinality (Cardinality ct n dpe dr) -> mapCard False cSig ct n
         (Right dpe) (fmap Right dr) var

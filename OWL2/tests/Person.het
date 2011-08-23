@@ -1,20 +1,32 @@
 logic OWL
 
 spec person =
-    ObjectProperty: hasSSN
-    ObjectProperty: hasName
-    DataProperty: hasAge
-
+    
+    Datatype: height
     Datatype: natural
         EquivalentTo: not negativeInteger
-
     Datatype: Years
         EquivalentTo: natural
 
-    Individual: Ann
-        Types: hasAge some natural
+    ObjectProperty: hasSSN
+    ObjectProperty: hasName
+    ObjectProperty: hasChildren
+    ObjectProperty: hasDaughter
+        SubPropertyOf: hasChildren
+
+    DataProperty: hasAge
+        Range: natural [> 10]
+    DataProperty: hasHeight
+        Range: height [maxLength 200]
+
+    Class: smallChild
+        SubClassOf: hasHeight value 100
 
     Class: Person
         HasKey: hasSSN, hasAge, hasName
+
+    Individual: Ann
+        Types: hasAge some natural, hasChildren min 2
+        Facts: hasAge 30
 
 end
