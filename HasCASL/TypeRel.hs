@@ -78,7 +78,7 @@ subtAxioms :: TypeMap -> [Named Sentence]
 subtAxioms tm0 =
   let tm = addUnit cpoMap tm0
       tr = varRel (typeRel tm) tm in
-  if Rel.nullKeys tr then [] else
+  if Rel.nullKeys $ typeRel tm0 then [] else
   subtReflex : subtTrans : subtInjProj : injTrans : idInj
   : map (subtAx tm) (Rel.toList tr)
 
