@@ -89,8 +89,7 @@ processFile opts file = do
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
       OmdocIn -> anaOMDocFile opts file
-      CommonLogicIn -> anaLibExt (opts { defLogic = "CommonLogic" }) file
-        emptyLibEnv emptyDG
+      CommonLogicIn -> anaLib opts { intype = CommonLogicIn }file
       CommonLogic2In -> anaLibExt (opts { defLogic = "CommonLogic" }) file
         emptyLibEnv emptyDG
       DgXml | not (defLogicIsDMU opts) -> readDGXml opts file
