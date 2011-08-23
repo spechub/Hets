@@ -6,15 +6,15 @@ spec person =
     DataProperty: hasAge
 
     Datatype: natural
-        EquivalentTo: positiveInteger
+        EquivalentTo: not negativeInteger
 
     Datatype: Years
         EquivalentTo: natural
 
     Individual: Ann
-        Types: hasAge some integer
+        Types: hasAge some natural
 
     Class: Person
-        HasKey: hasSSN, hasName
+        HasKey: hasSSN, hasAge, hasName
 
 end
