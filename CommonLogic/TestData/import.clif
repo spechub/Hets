@@ -1,13 +1,13 @@
-(cl-text myText1 (a))  %(myText1)%
+(cl-text myText1 (a))
 
-(cl-text myText1_1 (cl-imports myText1) (and (a) (b))) %(myText1_1)%
+(cl-text myText1_1 (cl-imports myText1) (and (a) (b)))
 
-(cl-text myText1_2 (cl-imports myText1) (and (b) (c))) %(myText1_2)%
+(cl-text myText1_2 (cl-imports myText1) (and (b) (c)))
 
-(cl-text myText2 (x)) %(myText2)%
+(cl-text myText2 (x))
 
-(cl-text myText2_1 (cl-imports myText2) (or  (x) (y))) %(myText2_1)%
+(cl-text myText2_1 (cl-imports myText2) (or  (x) (y)))
 
-(cl-text myText2_2 (cl-imports myText2) (or  (y) (z))) %(myText2_2)%
+(cl-text myText2_2 (cl-imports myText2) (or  (y) (z)))
 
 (cl-imports myText1_1) (cl-imports myText1_2) (cl-imports myText2_1) (cl-imports myText2_2) (P)  %(someText)%
