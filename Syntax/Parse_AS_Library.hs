@@ -35,6 +35,8 @@ import Data.Maybe (maybeToList)
 import Data.Char
 import Control.Monad
 
+import Debug.Trace
+
 import Framework.AS
 
 -- * Parsing functions
@@ -96,6 +98,7 @@ libItems l =
 
 -- | Parse an element of the library
 libItem :: LogicGraph -> AParser st LIB_ITEM
+libItem _ | trace ("libItem called.\n") False = undefined
 libItem l =
      -- spec defn
     do s <- asKey specS
@@ -176,8 +179,8 @@ libItem l =
         (s,  s4) <- sourceP
         (t,  s5) <- targetP
         (sv, s6) <- syntaxP
-        (mv, s8) <- modelsP
-        (pv, s7) <- proofsP
+        (pv, s8) <- proofsP
+        (mv, s7) <- modelsP
         q   <- optEnd
         return (Newcomorphism_defn (ComorphismDef n ml s t sv pv mv)
            (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))

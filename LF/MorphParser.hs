@@ -27,22 +27,24 @@ readMorphism file =
                                 "morphism from " ++ (show file)
 
 readMorph :: FilePath -> IO (Maybe Morphism)
+readMorph file | trace ("readMorph called on " ++ file ++ "\n") False = undefined
 readMorph file = do
   e <- doesFileExist file
   if e then do
        content <- readFile file
        case runParser (parseMorphism << eof) () file content of
                Right m -> return $ Just m
-               Left err -> fail $ show err
+               Left err -> error $ show err
        else return Nothing
           
         
 parseMorphism :: CharParser st Morphism
+-- parseMorphism | trace ("parse morphism\n") False = undefined
 parseMorphism = do
      skips $ manyTill anyChar (string "=")
-     pkeyword "Morphism"
+     pkeyword "Morphism" 
      skipChar '{'
-     mb <- parseWithEq "morphBase"
+     mb <- parseWithEq "morphBase" 
      skipChar ','
      mm <- parseWithEq "morphModule"
      skipChar ','
@@ -68,9 +70,11 @@ parseMorphism = do
 
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
+-- pkeyword s | trace s False = undefined
 pkeyword s = keywordNotFollowedBy s (alphaNum <|> char '/') >> return ()
 
 keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
+-- keywordNotFollowedBy s _ | trace ("keywordNotFollowedBy " ++ s ++ "\n") False = undefined
 keywordNotFollowedBy s c = skips $ try $ string s << notFollowedBy c
 
 skips :: CharParser st a -> CharParser st a
@@ -99,18 +103,21 @@ commaP :: CharParser st ()
 commaP = skipChar ',' >> return ()
 
 sepByComma :: CharParser st a -> CharParser st [a]
+-- sepByComma _ | trace ("sepByComma\n") False = undefined
 sepByComma p = sepBy1 p commaP
 
 skipChar :: Char -> CharParser st ()
 skipChar = forget . skips . char
 
 parseWithEq :: String -> CharParser st String
+-- parseWithEq s | trace ("parseWithEq" ++ s ++ "\n") False = undefined
 parseWithEq s = do
     pkeyword s
     skipChar '=' 
     qString >>= return
 
 parseSym :: CharParser st Symbol
+-- parseSym | trace ("parseSym\n") False = undefined
 parseSym = do 
     pkeyword "Symbol"
     skipChar '{'
@@ -123,6 +130,7 @@ parseSym = do
     return $ Symbol sb sm sn
 
 parse1Context :: CharParser st CONTEXT
+-- parse1Context | trace ("parse1Context\n") False = undefined
 parse1Context = do
     skipChar '('
     v <- qString
@@ -132,6 +140,7 @@ parse1Context = do
     return [(v, e)]
 
 parseExp :: CharParser st EXP
+-- parseExp | trace ("parseExp\n") False = undefined
 parseExp = do
     pkeyword "Type" >> return Type
    <|> do
@@ -161,6 +170,7 @@ parseExp = do
         _ -> error $ "Pi or Lamb expected.\n") (concat c) e
 
 parseDef :: CharParser st DEF
+-- parseDef | trace ("parseDef\n") False = undefined
 parseDef = do
     pkeyword "Def"
     skipChar '{'
@@ -182,6 +192,7 @@ parseDef = do
     return $ Def sym tp val
     
 parseSignature :: CharParser st Sign
+-- parseSignature | trace ("parseSignature\n") False = undefined
 parseSignature = do
     pkeyword "Sign"
     skipChar '{'
@@ -196,11 +207,13 @@ parseSignature = do
     return $ Sign sb sm sd
     
 parseMorphType :: CharParser st MorphType
+-- parseMorphType | trace ("parseMorphType\n") False = undefined
 parseMorphType = do
      choice $ map (\ t -> pkeyword (show t) >> return t)
           [Definitional, Postulated, Unknown ]
 
 parse1Map :: CharParser st (Symbol, EXP)
+-- parse1Map | trace ("parse1Map\n") False = undefined
 parse1Map = do
     skipChar '('
     s <- parseSym
@@ -210,6 +223,7 @@ parse1Map = do
     return (s, e)
 
 parseMap :: CharParser st (Map.Map Symbol EXP)
+-- parseMap | trace ("parseMap\n") False = undefined
 parseMap = do
      pkeyword "fromList"
      fmap Map.fromList $ bracketsP $ option [] $ sepByComma parse1Map

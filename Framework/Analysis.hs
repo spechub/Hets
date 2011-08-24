@@ -48,6 +48,8 @@ import Common.ExtSign
 
 import Text.ParserCombinators.Parsec
 
+import Debug.Trace 
+
 import LF.Framework ()
 
 dynLogicsDir :: FilePath
@@ -63,10 +65,10 @@ dynComorphismsDir :: FilePath
 dynComorphismsDir = "Comorphisms"
 
 dynComorphismsFile :: FilePath
-dynComorphismsFile = "DynComorphismsList.hs"
+dynComorphismsFile = "DynComorphismList.hs"
 
 dynComorphismsCon :: String
-dynComorphismsCon = "dynComorphismsList"
+dynComorphismsCon = "dynComorphismList"
 
 -- ----------------------------------------------------------------------------
 --                    Logic analysis
@@ -90,7 +92,7 @@ anaLogicDefH ml ld dg = do
            buildLogic ml l ltruth lmod found lpf
            addLogic2LogicList l
            return $ addLogicDef2DG ld dg
-       _ -> fail ""
+       _ -> error ""
 
 {- constructs the diagram in the signature category of the meta logic
    which represents the object logic -}
@@ -196,6 +198,7 @@ anaComorphismDefH :: LogicFram lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> ComorphismDef -> DGraph -> IO DGraph 
+anaComorphismDefH ml (ComorphismDef _ _ sL tL sM pM mM) _ | trace ("anaComH\n" ++ (show ml) ++ "\n" ++ (show sL) ++ "\n" ++ (show tL) ++ "\n" ++ (show sM) ++ (show pM) ++ (show mM) ++ "\n\n") False = undefined 
 anaComorphismDefH ml (ComorphismDef nc m sL tL sM pM mM) dg =
    let c = tokStr nc
        s = tokStr sL
@@ -205,71 +208,47 @@ anaComorphismDefH ml (ComorphismDef nc m sL tL sM pM mM) dg =
              buildComorphism ml c s t symM pfM modM 
              addComorphism2ComorphismList c
              return $ addComorphismDef2DG (ComorphismDef nc m sL tL sM pM mM) dg
-        _ -> fail ""
+        _ -> error ""
 
 anaComH :: LogicFram lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> ComorphismDef -> DGraph -> Result (morphism, 
                             morphism, morphism)
+anaComH ml (ComorphismDef _ _ sL tL sM pM mM) _ | trace ("anaComH\n" ++ (show ml) ++ "\n" ++ (show sL) ++ "\n" ++ (show tL) ++ "\n" ++ (show sM) ++ (show pM) ++ (show mM) ++ "\n\n") False = undefined 
 anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
      let sLName = tokStr sL
-         tLName = tokStr tL in do
+         tLName = tokStr tL
+         sLSyn = getMorphL ml sLName "Syntax"
+         sLPf = getMorphL ml sLName "Proof"
+         sLMod = getMorphL ml sLName "Model"
+         tLSyn = getMorphL ml tLName "Syntax"
+         tLPf = getMorphL ml tLName "Proof"
+         tLMod = getMorphL ml tLName "Model" in do
      synM <- lookupMorph ml sM dg 
      pfM <- lookupMorph ml pM dg
      modM <- lookupMorph ml mM dg
-     let  sLSyn = getMorphL ml sLName "Syntax"
-          sLPf = getMorphL ml sLName "Proof"
-          sLMod = getMorphL ml sLName "Model"
-          tLSyn = getMorphL ml tLName "Syntax"
-          tLPf = getMorphL ml tLName "Proof"
-          tLMod = getMorphL ml tLName "Model"
-     if (cod sLSyn /= dom synM) 
-        then fail $ "the domain of the syntax morphism has to be the syntax " ++
-                     "of the source logic.\n" 
-        else if (cod tLSyn /= cod synM)
-               then fail $ "" 
-               else if (cod sLPf /= dom pfM) 
-                       then fail ""
-                       else if (cod tLPf /= cod pfM) 
-                               then fail ""
-                               else if (cod sLMod /= dom modM) 
-                                       then fail ""
-                                       else if (cod tLMod /= cod modM) 
-                                               then fail ""
-                                               else case ((composeMorphisms synM tLPf), (composeMorphisms sLPf pfM)) of
-                                                         (Result _ comM1, Result _ comM2) -> if (comM1 /= comM2)
-                                                                                              then fail ""
-                                                                                              else case ((composeMorphisms synM tLMod), (composeMorphisms sLPf modM)) of
-                                                                                                        (Result _ comM3, Result _ comM4) -> if (comM3 /= comM4) 
-                                                                                                                                               then fail ""
-                                                                                                                                               else return (synM, pfM, modM)
---                                                                                                          _ -> fail ""
---                                                          _ -> fail ""
-
+     if (cod sLSyn /= dom synM) then error $ "the domain of the syntax morphism has to be the syntax of the source logic.\n"
+      else if (cod tLSyn /= cod synM) then error $ "the codomain of the syntax morphism has to be the syntax of the target logic.\n"
+            else if (cod sLPf /= dom pfM) then error $ "the domain of the proof morphism has to be the proof theory of the source logic.\n"   ++ (show (cod sLPf)) ++ "\n\n" ++ (show (dom pfM)) ++ "\n"
+                  else if (cod tLPf /= cod pfM) then error "the codomain of the proof morphism has to be the proof theory of the target logic.\n"
+                                                else if (cod sLMod /= dom modM) then error $ "the domain of the model morphism has to be the model theory of the source logic.\n" ++ (show (cod sLMod)) ++ "\n" ++ (show (dom modM)) ++ "\n"
+                              else if (cod tLMod /= cod modM) then error "the codomain of the model morphism has to be the model theory of the target logic.\n"
+                                   else case ((composeMorphisms synM tLPf), (composeMorphisms sLPf pfM)) of
+                                        (Result _ comM1, Result _ comM2) -> if (comM1 /= comM2) then error "the syntax - proof diagram does not commute.\n"
+                                                                             else case ((composeMorphisms synM tLMod), (composeMorphisms sLPf modM)) of
+                                                                                      (Result _ comM3, Result _ comM4) -> if (comM3 /= comM4) then error "the syntax - model diagram does not commute.\n"
+                                                                                                                           else return (synM, pfM, modM)
+                                                                                                                           
 getMorphL ::  LogicFram lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> String -> String -> morphism
+getMorphL _ ln fn | trace ("getMorphL " ++ ln ++ " " ++ fn ++ "\n") False = undefined 
 getMorphL ml logicName fileName = 
      let file = logicName ++ "/" ++ fileName ++ ".hs"  
      in read_morphism ml file
 
--- getMorphC ::  LogicFram lid sublogics basic_spec sentence symb_items
---                             symb_map_items sign morphism symbol raw_symbol
---                             proof_tree
---                      => lid -> SIG_NAME -> String -> DGraph -> morphism
--- getMorphC ml morph morphName dg =
---      if (morph == nullTok) 
---         then fail $ (show morphName) ++ " Morphism not provided.\n"
---         else (lookupMorph ml morph dg)
-                                       
-        
---         -- | The result monad. A failing result should include an error message.
---         data Result a = Result { diags :: [Diagnosis]
---         , maybeResult :: Maybe a
---         } deriving Show
-        
 addComorphismDef2DG :: ComorphismDef -> DGraph -> DGraph
 addComorphismDef2DG cd dg =
   let node = getNewNodeDG dg
