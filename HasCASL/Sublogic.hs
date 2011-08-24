@@ -615,7 +615,9 @@ sl_term t = sublogic_max (get_logic t) $ sl_t t
 sl_t :: Term -> Sublogic
 sl_t trm = case trm of
     QualVar vd -> sl_varDecl vd
-    QualOp b i t _ _ _ -> comp_list
+    QualOp b i@(PolyId ri _ _) t _ _ _ ->
+        if elem ri $ map fst bList then sl_opId i else
+        comp_list
         [ sl_opBrand b
         , sl_opId i
         , sl_typeScheme t ]
@@ -655,7 +657,8 @@ sl_genVarDecl g = case g of
     GenTypeVarDecl v -> sl_typeArg v
 
 sl_opId :: PolyId -> Sublogic
-sl_opId (PolyId i tys _) = if i == exEq || i == eqId then need_eq else
+sl_opId (PolyId i tys _) = if elem i [exEq, eqId] then need_eq else
+    if elem i [botId, defId] then need_part else
     comp_list $ map sl_typeArg tys
 
 sl_symbItems :: SymbItems -> Sublogic
