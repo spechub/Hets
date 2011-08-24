@@ -332,7 +332,7 @@ prettySystemFunctor :: SystemFunctor -> Doc
 prettySystemFunctor = prettyAtomicSystemWord
 
 prettyVariable :: Variable -> Doc
-prettyVariable = text
+prettyVariable = prettyUpperWord
 
 prettyArguments :: Arguments -> Doc
 prettyArguments = sepByCommas . map pretty
@@ -459,7 +459,7 @@ instance Pretty Name where
 instance Pretty AtomicWord where
     pretty a = case a of
         A_Single_Quoted s   -> prettySingleQuoted s
-        A_Lower_Word l      -> text l
+        A_Lower_Word l      -> prettyLowerWord l
 
 prettyAtomicSystemWord :: AtomicSystemWord -> Doc
 prettyAtomicSystemWord asw = text ("$$" ++ asw)
@@ -481,6 +481,12 @@ prettySingleQuoted s = text "\'" <> text s <> text "\'"
 
 prettyDistinctObject :: DistinctObject -> Doc
 prettyDistinctObject s = text "\"" <> text s <> text "\""
+
+prettyLowerWord :: UpperWord -> Doc
+prettyLowerWord uw = text (toLower (head uw) : tail uw)
+
+prettyUpperWord :: UpperWord -> Doc
+prettyUpperWord uw = text (toUpper (head uw) : tail uw)
 
 orSign :: Doc
 orSign = text "|"

@@ -29,12 +29,15 @@ module HasCASL.Builtin
     , ifThenElse
     , defId
     , eqId
+    , exEq
     , falseId
     , trueId
     , notId
     , negId
     , andId
     , orId
+    , logId
+    , predTypeId
     , implId
     , infixIf
     , eqvId

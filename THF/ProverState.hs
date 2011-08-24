@@ -28,18 +28,12 @@ import Common.AS_Annotation
 --      * maybe use FreeDefMorphism in the ProverStateTHF
 --------------------------------------------------------------------------------
 
--- * Data structures
-
 data ProverStateTHF = ProverStateTHF
     { axioms    :: [Named SentenceTHF]
     , signature :: SignTHF
     , freeDefs  :: [FreeDefMorphism SentenceTHF MorphismTHF] }
 
--- * THF specific functions for prover GUI
-
-{- |
-  Creates an initial THF prover state.
--}
+-- Creates an initial THF prover state.
 initialProverStateTHF :: SignTHF -> [Named SentenceTHF]
     -> [FreeDefMorphism SentenceTHF MorphismTHF]
     -> ProverStateTHF
@@ -48,16 +42,17 @@ initialProverStateTHF sign oSens freedefs = ProverStateTHF
     , signature = sign
     , freeDefs = freedefs }
 
+-- Insert a Named SentenceTHF into the ProverStateTHF
 insertSentenceTHF :: ProverStateTHF -> Named SentenceTHF -> ProverStateTHF
-insertSentenceTHF ps ns = ps {axioms = (checkAxiom ns) : axioms ps}
+insertSentenceTHF ps ns = ps {axioms = checkAxiom ns : axioms ps}
 
 showProblemTHF :: ProverStateTHF -> Named SentenceTHF -> [String] -> IO String
 showProblemTHF ps goal _ = return $ show $ printProblemTHF (signature ps)
             (filter isAxiom (map checkAxiom (axioms ps))) goal
 
--- | get all axioms possibly used in a proof
+-- Get all axioms possibly used in a proof.
 getAxioms :: ProverStateTHF -> [String]
-getAxioms = map (senAttr) . filter isAxiom . map checkAxiom . axioms
+getAxioms = map senAttr . filter isAxiom . map checkAxiom . axioms
 
 -- be carefull with negated_conjectures
 -- eventually negated conjectures should be negated before the are transformed
@@ -73,7 +68,6 @@ checkAxiom ns =
        else if elem (senRole sen) [Conjecture, Negated_Conjecture] then ns
             else ns { sentence = sen { senRole = Conjecture } }
 
+-- FormulaRoles that are treated like axioms
 thfAxioms :: [FormulaRole]
 thfAxioms = [Axiom, Definition, Lemma, Theorem]
-
-

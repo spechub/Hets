@@ -55,10 +55,6 @@ leoIIHelpText =
   "email hets-devel@informatik.uni-bremen.de " ++
   "for more information.\n"
 
--- * Main prover functions
-
--- ** Utility functions
-
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
@@ -175,6 +171,8 @@ runLeoII pst cfg saveTHF thName nGoal = do
                          , resultOutput = out
                          , timeUsed = ctime })
 
+-- Run the Leo-II process. timeoutCommand is used to terminate leo if it does
+-- not terminate itself after the timeout time is over.
 runLeoIIProcess
     :: Int -- ^ timeout time in seconds
     -> Bool -- ^ save problem
@@ -193,6 +191,7 @@ runLeoIIProcess tout saveTHF options tmpFileName prob = do
         removeFile timeTmpFile
         return $ Just (res, l, tUsed)) mres
 
+-- parse the output and return the szsStatus and the used time.
 parseOutput :: [String] -> (String, Bool, Int)
   -- ^ (exit code, status found, used time ins ms)
 parseOutput = foldl checkLine ("", False, -1) where
@@ -204,11 +203,13 @@ parseOutput = foldl checkLine ("", False, -1) where
                 in (exCode, stateFound, time)
             _ -> (exCode, stateFound, to)
 
+-- try to read the szs status from a given String
 getSZSStatusWord :: String -> Maybe String
 getSZSStatusWord line =
     case words (fromMaybe "" $ stripPrefix "% SZS status" line) of
         [] -> Nothing
         w : _ -> Just w
 
+-- the standart leo-II timeout time
 leoIITimeout :: Int
 leoIITimeout = 601

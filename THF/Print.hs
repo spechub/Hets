@@ -47,6 +47,7 @@ instance Pretty SignTHF where
 instance Pretty Kind where
     pretty k = case k of
         Kind            -> text "$tType"
+        VKind v         -> prettyVariable v
         MapKind k1 k2 _ -> pretty k1  <+> text ">" <+> pretty k2
         SysType st      -> prettySystemType st
         ParKind k1      -> parens $ pretty k1
@@ -59,6 +60,7 @@ instance Pretty Type where
         MapType t1 t2   -> pretty t1 <+> text ">" <+> pretty t2
         CType c         -> prettyConstant c
         SType st        -> prettySystemType st
+        VType v         -> prettyVariable v
         ParType t1      -> parens $ pretty t1
 
 instance Pretty TypeInfo where
@@ -75,14 +77,17 @@ instance Pretty ConstInfo where
                 pretty (constDef ci) <> pretty (constAnno ci))
             <> text "."
 
+-- for now only the THFFormulas of sentences are printed
 instance Pretty SentenceTHF where
     pretty (Sentence _ f _) = pretty f
 
+-- print the signature, with axioms and the proof goal
 printProblemTHF :: SignTHF -> [Named SentenceTHF] -> Named SentenceTHF -> Doc
 printProblemTHF sig ax gl = pretty sig $++$ text "%Axioms:" $+$
     foldl (\ d e -> d $+$ printNamedSentenceTHF e) empty ax $++$
     text "%Goal:" $+$ printNamedSentenceTHF gl
 
+-- print a Named Sentence
 printNamedSentenceTHF :: Named SentenceTHF -> Doc
 printNamedSentenceTHF ns =
     let (Sentence r f a) = sentence ns

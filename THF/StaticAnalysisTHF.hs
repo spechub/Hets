@@ -42,6 +42,7 @@ import qualified Data.Set as Set
 --        to somehow support them
 --------------------------------------------------------------------------------
 
+-- The main method for the static analysis
 basicAnalysis :: (BasicSpecTHF, SignTHF, GlobalAnnos) ->
         Result (BasicSpecTHF, ExtSign SignTHF SymbolTHF, [Named SentenceTHF])
 basicAnalysis (BasicSpecTHF BSTHF _, _, _) =
@@ -54,9 +55,9 @@ basicAnalysis (bs@(BasicSpecTHF BSTHF0 bs1), sig1, _) =
         (diag3, ns) = getSentences bs2 (diag2, [])
     in Result (reverse diag3) $ Just (bs, ExtSign sig2 syms, ns)
 
--- The diagnosis list has a reverted order!
 -- This functions delets all Comments and Includes because they are not needed
 -- for the static analysis
+-- The diagnosis list has a reverted order!
 filterBS :: [Diagnosis] -> [TPTP_THF] -> ([Diagnosis], [TPTP_THF])
 filterBS d [] = (d, [])
 filterBS d (t : rt) = case t of
@@ -268,7 +269,7 @@ thfFormulaToKind (T0F_THF_Typed_Const tc) = thfTypedConstToKind tc
 thfFormulaToKind _  = Nothing
 
 thfTypedConstToKind :: THFTypedConst -> Maybe (Kind, Constant, THFTypedConst)
-thfTypedConstToKind (T0TC_THF_TypedConst_Par tcp) =  thfTypedConstToKind tcp
+thfTypedConstToKind (T0TC_THF_TypedConst_Par tcp) = thfTypedConstToKind tcp
 thfTypedConstToKind tc@(T0TC_Typed_Const c tlt) =
             maybe Nothing (\ k -> Just (k, c, tc))
                 (thfTopLevelTypeToKind tlt)
@@ -278,6 +279,7 @@ thfTopLevelTypeToKind tlt = case tlt of
     T0TLT_THF_Binary_Type bt    -> thfBinaryTypeToKind bt
     T0TLT_Defined_Type _        -> Just Kind
     T0TLT_System_Type st        -> Just $ SysType st
+    T0TLT_Variable v            -> Just $ VKind v
     _                           -> Nothing
 
 thfBinaryTypeToKind :: THFBinaryType -> Maybe Kind
@@ -285,8 +287,7 @@ thfBinaryTypeToKind bt = case bt of
     TBT_THF_Mapping_Type []         -> Nothing
     TBT_THF_Mapping_Type (_ : [])   -> Nothing
     TBT_THF_Mapping_Type mt         -> thfMappingTypeToKind mt
-    T0BT_THF_Binary_Type_Par btp    -> maybe Nothing (Just . ParKind)
-                                            (thfBinaryTypeToKind btp)
+    T0BT_THF_Binary_Type_Par btp    -> fmap ParKind (thfBinaryTypeToKind btp)
     _                               -> Nothing
 
 thfMappingTypeToKind :: [THFUnitaryType] -> Maybe Kind
@@ -301,10 +302,10 @@ thfMappingTypeToKind (u : ru) =
 
 thfUnitaryTypeToKind :: THFUnitaryType -> Maybe Kind
 thfUnitaryTypeToKind ut = case ut of
-    T0UT_THF_Binary_Type_Par bt -> maybe Nothing (Just . ParKind)
-                                        (thfBinaryTypeToKind bt)
+    T0UT_THF_Binary_Type_Par bt -> fmap ParKind (thfBinaryTypeToKind bt)
     T0UT_Defined_Type _         -> Just Kind
     T0UT_System_Type st         -> Just $ SysType st
+    T0UT_Variable v             -> Just $ VKind v
     _                           -> Nothing
 
 
@@ -332,6 +333,7 @@ thfTopLevelTypeToType tlt = case tlt of
     T0TLT_THF_Binary_Type bt    -> thfBinaryTypeToType bt
     T0TLT_Constant c            -> Just $ CType c
     T0TLT_System_Type st        -> Just $ SType st
+    T0TLT_Variable v            -> Just $ VType v
     _                           -> Nothing
 
 thfDefinedTypeToType :: DefinedType -> Maybe Type
@@ -348,8 +350,7 @@ thfBinaryTypeToType bt = case bt of
     TBT_THF_Mapping_Type []         -> Nothing
     TBT_THF_Mapping_Type (_ : [])   -> Nothing
     TBT_THF_Mapping_Type mt         -> thfMappingTypeToType mt
-    T0BT_THF_Binary_Type_Par btp    -> maybe Nothing (Just . ParType)
-                                            (thfBinaryTypeToType btp)
+    T0BT_THF_Binary_Type_Par btp    -> fmap ParType (thfBinaryTypeToType btp)
     _                               -> Nothing
 
 thfMappingTypeToType :: [THFUnitaryType] -> Maybe Type
@@ -364,11 +365,11 @@ thfMappingTypeToType (u : ru) =
 
 thfUnitaryTypeToType :: THFUnitaryType -> Maybe Type
 thfUnitaryTypeToType ut = case ut of
-    T0UT_THF_Binary_Type_Par bt -> maybe Nothing (Just . ParType)
-                                        (thfBinaryTypeToType bt)
+    T0UT_THF_Binary_Type_Par bt -> fmap ParType (thfBinaryTypeToType bt)
     T0UT_Defined_Type dt        -> thfDefinedTypeToType dt
     T0UT_Constant c             -> Just $ CType c
     T0UT_System_Type st         -> Just $ SType st
+    T0UT_Variable v             -> Just $ VType v
     _                           -> Nothing
 
 

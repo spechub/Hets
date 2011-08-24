@@ -57,11 +57,11 @@ instance Comorphism HasCASL2THF
 
 reqSubLogicForTHF0 :: Sublogic
 reqSubLogicForTHF0 = Sublogic
-    { has_sub = False
-    , has_part = True
+    { has_sub = True
+    , has_part = False
     , has_eq = True
     , has_pred = True
     , type_classes = NoClasses
-    , has_polymorphism = False
+    , has_polymorphism = True
     , has_type_constructors = True
     , which_logic = HOL }

@@ -89,6 +89,7 @@ data Type =
   | MapType Type Type
   | CType Constant
   | SType SystemType
+  | VType Variable
   | ParType Type
     deriving (Show, Ord, Eq)
 
@@ -96,12 +97,6 @@ data Kind =
     Kind
   | MapKind Kind Kind Range
   | SysType SystemType
+  | VKind Variable
   | ParKind Kind
     deriving (Show, Ord, Eq)
-
-hasSysType :: Kind -> Bool
-hasSysType k = case k of
-    MapKind k1 k2 _ -> hasSysType k1 || hasSysType k2
-    ParKind k1      -> hasSysType k1
-    SysType _       -> True
-    _               -> False

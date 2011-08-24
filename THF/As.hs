@@ -382,7 +382,7 @@ data Quantifier =
 
 --THF:
 -- <thf_pair_connective> ::= <infix_equality> | <infix_inequality> |
---                          <binary_connective>
+--                           <binary_connective>
 -- <infix_equality>     ::= =
 -- <infix_inequality>   ::= !=
 -- THF0:
@@ -812,3 +812,5 @@ type DistinctObject = String
 -- <upper_alpha>        ::: [A-Z]
 -- <numeric>            ::: [0-9]
 type LowerWord = String
+
+type UpperWord = String
