@@ -64,6 +64,7 @@ import Comorphisms.OWL2CASL
 #endif
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
+import Comorphisms.HasCASL2THF0
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
@@ -165,6 +166,7 @@ isaComorphisms = do
 #endif
          , subHasCASL
          , Comorphism PCoClTyConsHOL2PairsInIsaHOL
+         , Comorphism HasCASL2THF0
          , prop2IHOL ]
 
 spassComorphisms :: Result [AnyComorphism]
