@@ -78,6 +78,7 @@ import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.CoCASL2CoPCFOL
 import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CASL2Modal
+import Comorphisms.CASL2ExtModal
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
@@ -138,6 +139,7 @@ comorphismList =
     , Comorphism DFOL2CASL
 #ifdef CASLEXTENSIONS
     , Comorphism CASL2Modal
+    , Comorphism CASL2ExtModal
     , Comorphism Modal2CASL
     , Comorphism CASL2CoCASL
     , Comorphism CASL2CspCASL
