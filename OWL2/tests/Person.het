@@ -3,7 +3,7 @@ logic OWL
 spec person =
     
     Datatype: height
-        EquivalentTo: integer [digits 3]
+        EquivalentTo: float [totalDigits 3, fractionDigits 2]
     Datatype: natural
         EquivalentTo: not negativeInteger
     Datatype: Years
@@ -20,10 +20,10 @@ spec person =
     DataProperty: hasAge
         Range: natural [> 10]
     DataProperty: hasHeight
-        Range: height [maxLength 2]
+        Range: height [< 2.1f]
 
     Class: smallChild
-        SubClassOf: hasHeight value 100
+        SubClassOf: hasHeight value 1.0f
 
     Class: Person
         HasKey: hasSSN, hasAge, hasName
