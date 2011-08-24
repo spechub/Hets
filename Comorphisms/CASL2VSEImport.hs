@@ -59,7 +59,7 @@ instance Comorphism CASL2VSEImport
     mapSublogic CASL2VSEImport _ = Just ()
     map_theory CASL2VSEImport = mapCASLTheory
     map_morphism CASL2VSEImport = return . mapMor
-    map_sentence CASL2VSEImport _ = return . toSen
+    map_sentence CASL2VSEImport _ = return . mapFORMULA
     map_symbol CASL2VSEImport = error "nyi"
       -- check these 3, but should be fine
     has_model_expansion CASL2VSEImport = True
@@ -71,7 +71,7 @@ mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
                  Result (VSESign, [Named Sentence])
 mapCASLTheory (sig, n_sens) = do
   let (tsig, genAx) = mapSig sig
-      tsens = map mapNamedSen n_sens
+      tsens = map (mapNamed mapFORMULA) n_sens
   case not $ null $ checkCases tsig (tsens ++ genAx) of
    True -> fail "case error in signature"
    _ -> return (tsig, tsens ++ genAx)
@@ -191,9 +191,6 @@ mapSig sign =
            predMap = addMapSet (predMap sign) newPreds,
            extendedInfo = procs,
            sentences = [] }, sortSens ++ opSens ++ predSens)
-
-mapNamedSen :: Named CASLFORMULA -> Named Sentence
-mapNamedSen = mapNamed toSen
 
 mapMor :: CASLMor -> VSEMor
 mapMor m = let

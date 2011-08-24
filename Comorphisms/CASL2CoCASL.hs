@@ -26,7 +26,6 @@ import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
-import CASL.Fold
 
 -- CoCASLCASL
 import CoCASL.Logic_CoCASL
@@ -56,30 +55,10 @@ instance Comorphism CASL2CoCASL
     targetLogic CASL2CoCASL = CoCASL
     mapSublogic CASL2CoCASL s = Just $ s { ext_features = False }
 
-    map_theory CASL2CoCASL = return . simpleTheoryMapping mapSig mapSen
-    map_morphism CASL2CoCASL = return . mapMor
-    map_sentence CASL2CoCASL _ = return . mapSen
-    map_symbol CASL2CoCASL _ = Set.singleton . mapSym
+    map_theory CASL2CoCASL = return . embedCASLTheory emptyCoCASLSign
+    map_morphism CASL2CoCASL = return . mapCASLMor emptyCoCASLSign emptyMorExt
+    map_sentence CASL2CoCASL _ = return . mapFORMULA
+    map_symbol CASL2CoCASL _ = Set.singleton . id
     has_model_expansion CASL2CoCASL = True
     is_weakly_amalgamable CASL2CoCASL = True
     isInclusionComorphism CASL2CoCASL = True
-
-mapSig :: CASLSign -> CSign
-mapSig sign =
-     (emptySign emptyCoCASLSign)
-               { sortRel = sortRel sign
-               , opMap = opMap sign
-               , assocOps = assocOps sign
-               , predMap = predMap sign }
-
-mapMor :: CASLMor -> CoCASLMor
-mapMor m = (embedMorphism emptyMorExt (mapSig $ msource m) $ mapSig $ mtarget m)
-  { sort_map = sort_map m
-  , op_map = op_map m
-  , pred_map = pred_map m }
-
-mapSym :: Symbol -> Symbol
-mapSym = id  -- needs to be changed once CoCASL symbols are added
-
-mapSen :: CASLFORMULA -> CoCASLFORMULA
-mapSen = foldFormula $ mapRecord (const $ error "CASL2CoCASL.mapSen")

@@ -19,7 +19,6 @@ import Common.ProofTree
 
 -- CASL
 import CASL.AS_Basic_CASL
-import CASL.Fold
 import CASL.Logic_CASL
 import CASL.Morphism
 import CASL.Sign
@@ -50,28 +49,11 @@ instance Comorphism CASL2CspCASL
     targetLogic CASL2CspCASL = cspCASL
     mapSublogic CASL2CspCASL _ = Just ()
     map_theory CASL2CspCASL =
-      return . simpleTheoryMapping mapSig casl2CspCASLSen
+      return . embedCASLTheory emptyCspSign
     map_symbol CASL2CspCASL _ = Set.singleton . caslToCspSymbol
-    map_morphism CASL2CspCASL = return . mapMor
-    map_sentence CASL2CspCASL _sig = return . casl2CspCASLSen
+    map_morphism CASL2CspCASL =
+      return . mapCASLMor emptyCspSign emptyCspAddMorphism
+    map_sentence CASL2CspCASL _sig = return . mapFORMULA
     has_model_expansion CASL2CspCASL = True
     is_weakly_amalgamable CASL2CspCASL = True
     isInclusionComorphism CASL2CspCASL = True
-
-casl2CspCASLSen :: CASLFORMULA -> CspCASLSen
-casl2CspCASLSen = foldFormula (mapRecord $ error "casl2CspCASLSen")
-
-mapSig :: CASLSign -> CspCASLSign
-mapSig sign =
-     (emptySign emptyCspSign)
-               { sortRel = sortRel sign
-               , opMap = opMap sign
-               , assocOps = assocOps sign
-               , predMap = predMap sign }
-
-mapMor :: CASLMor -> CspCASLMorphism
-mapMor m =
-  (embedMorphism emptyCspAddMorphism (mapSig $ msource m) $ mapSig $ mtarget m)
-  { sort_map = sort_map m
-  , op_map = op_map m
-  , pred_map = pred_map m }

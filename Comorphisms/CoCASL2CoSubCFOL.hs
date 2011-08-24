@@ -29,7 +29,6 @@ import CASL.Morphism
 import CASL.Fold
 import CASL.Simplify
 import Comorphisms.CASL2SubCFOL
-import Comorphisms.CASL2CoCASL
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -57,27 +56,27 @@ instance Comorphism CoCASL2CoSubCFOL
     targetLogic CoCASL2CoSubCFOL = CoCASL
     mapSublogic CoCASL2CoSubCFOL sl = Just $
        if has_part sl then sl
-        { has_part    = False -- partiality is coded out
-        , has_pred    = True
+        { has_part = False -- partiality is coded out
+        , has_pred = True
         , which_logic = max Horn $ which_logic sl
-        , has_eq      = True} else sl
+        , has_eq = True} else sl
     map_theory CoCASL2CoSubCFOL (sig, sens) =
         let bsrts = sortsWithBottom (formulaTreatment defaultCASL2SubCFOL)
               sig $ Set.unions $ map (botCoFormulaSorts . sentence) sens
             e = encodeSig bsrts sig
-            sens1 = map (mapNamed mapSen) $ generateAxioms
+            sens1 = map (mapNamed mapFORMULA) $ generateAxioms
                     (uniqueBottom defaultCASL2SubCFOL) bsrts sig
             sens2 = map (mapNamed (simplifyFormula simC_FORMULA
                                    . codeCoFormula bsrts)) sens
         in return (e, nameAndDisambiguate $ sens1 ++ sens2)
-    map_morphism CoCASL2CoSubCFOL mor@Morphism{msource = src, mtarget = tar} =
+    map_morphism CoCASL2CoSubCFOL mor@Morphism {msource = src, mtarget = tar} =
         let mkBSrts s = sortsWithBottom
               (formulaTreatment defaultCASL2SubCFOL) s Set.empty
         in return mor
             { msource = encodeSig (mkBSrts src) src
             , mtarget = encodeSig (mkBSrts tar) tar
             , op_map = Map.map (\ (i, _) -> (i, Total)) $ op_map mor }
-    map_sentence CoCASL2CoSubCFOL sig  sen =
+    map_sentence CoCASL2CoSubCFOL sig sen =
         return $ simplifyFormula simC_FORMULA $ codeCoFormula
            (sortsWithBottom (formulaTreatment defaultCASL2SubCFOL)
             sig $ botCoFormulaSorts sen) sen

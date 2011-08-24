@@ -30,7 +30,6 @@ module Logic.Comorphism
     , ext_map_sign
     , mapDefaultMorphism
     , wrapMapTheory
-    , simpleTheoryMapping
     , mkTheoryMapping
     , AnyComorphism (..)
     , idComorphism
@@ -74,27 +73,27 @@ class (Language cid,
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
   where
-    -- source and target logic and sublogic
-    -- the source sublogic is the maximal one for which the comorphism works
+    {- source and target logic and sublogic
+    the source sublogic is the maximal one for which the comorphism works -}
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
     minSourceTheory :: cid -> (sign1, [Named sentence1])
     minSourceTheory cid = (empty_signature (sourceLogic cid), [])
     targetLogic :: cid -> lid2
-    -- finer information of target sublogics corresponding to source sublogics
-    -- this function must be partial because mapTheory is partial
+    {- finer information of target sublogics corresponding to source sublogics
+    this function must be partial because mapTheory is partial -}
     mapSublogic :: cid -> sublogics1 -> Maybe sublogics2
-    -- the translation functions are partial
-    -- because the target may be a sublanguage
-    -- map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
-    -- cover theoroidal comorphisms as well
+    {- the translation functions are partial
+    because the target may be a sublanguage
+    map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
+    cover theoroidal comorphisms as well -}
     map_theory :: cid -> (sign1, [Named sentence1])
                       -> Result (sign2, [Named sentence2])
     map_morphism :: cid -> morphism1 -> Result morphism2
     map_sentence :: cid -> sign1 -> sentence1 -> Result sentence2
-          -- also covers semi-comorphisms
-          -- with no sentence translation
-          -- - but these are spans!
+          {- also covers semi-comorphisms
+          with no sentence translation
+          - but these are spans! -}
     map_sentence = failMapSentence
     map_symbol :: cid -> sign1 -> symbol1 -> Set.Set symbol2
     map_symbol = errMapSymbol
@@ -105,11 +104,11 @@ class (Language cid,
       ++ language_name cid
     -- properties of comorphisms
     is_model_transportable :: cid -> Bool
-    -- a comorphism (\phi, \alpha, \beta) is model-transportable
-    -- if for any signature \Sigma,
-    -- any \Sigma-model M and any \phi(\Sigma)-model N
-    -- for any isomorphism           h : \beta_\Sigma(N) -> M
-    -- there exists an isomorphism   h': N -> M' such that \beta_\Sigma(h') = h
+    {- a comorphism (\phi, \alpha, \beta) is model-transportable
+    if for any signature \Sigma,
+    any \Sigma-model M and any \phi(\Sigma)-model N
+    for any isomorphism           h : \beta_\Sigma(N) -> M
+    there exists an isomorphism   h': N -> M' such that \beta_\Sigma(h') = h -}
     is_model_transportable _ = False
     has_model_expansion :: cid -> Bool
     has_model_expansion _ = False
@@ -217,13 +216,7 @@ wrapMapTheory cid (sign, sens) =
                            "' with signature sublogic '" ++
                            sublogicName sigLog ++ "'") nullRange] Nothing
 
-simpleTheoryMapping :: (sign1 -> sign2) -> (sentence1 -> sentence2)
-                    -> (sign1, [Named sentence1])
-                    -> (sign2, [Named sentence2])
-simpleTheoryMapping mapSig mapSen (sign, sens) =
-    (mapSig sign, map (mapNamed mapSen) sens)
-
-mkTheoryMapping :: (Monad m) => (sign1 -> m (sign2, [Named sentence2]))
+mkTheoryMapping :: Monad m => (sign1 -> m (sign2, [Named sentence2]))
                    -> (sign1 -> sentence1 -> m sentence2)
                    -> (sign1, [Named sentence1])
                    -> m (sign2, [Named sentence2])

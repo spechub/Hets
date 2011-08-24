@@ -32,10 +32,9 @@ import CASL.Inject
 import CASL.Project
 import CASL.Monoton
 import Comorphisms.CASL2PCFOL
-import Comorphisms.CASL2CoCASL
 
 -- | The identity of the comorphism
-data CoCASL2CoPCFOL = CoCASL2CoPCFOL deriving (Show)
+data CoCASL2CoPCFOL = CoCASL2CoPCFOL deriving Show
 
 instance Language CoCASL2CoPCFOL -- default definition is okay
 
@@ -62,11 +61,11 @@ instance Comorphism CoCASL2CoPCFOL
     map_theory CoCASL2CoPCFOL = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in return
       (e, map (mapNamed $ injFormula injC_Formula) (monotonicities sig)
-          ++ map (mapNamed mapSen) (generateAxioms sig)))
+          ++ map (mapNamed mapFORMULA) (generateAxioms sig)))
       (map_sentence CoCASL2CoPCFOL)
     map_morphism CoCASL2CoPCFOL mor = return
-      (mor  { msource = encodeSig $ msource mor,
-              mtarget = encodeSig $ mtarget mor })
+      (mor { msource = encodeSig $ msource mor
+           , mtarget = encodeSig $ mtarget mor })
       -- other components need not to be adapted!
     map_sentence CoCASL2CoPCFOL _ = return . cf2CFormula
     map_symbol CoCASL2CoPCFOL _ = Set.singleton . id
@@ -76,6 +75,8 @@ instance Comorphism CoCASL2CoPCFOL
 cf2CFormula :: FORMULA C_FORMULA -> FORMULA C_FORMULA
 cf2CFormula = projFormula Partial projC_Formula . injFormula injC_Formula
 
-projC_Formula, injC_Formula :: C_FORMULA -> C_FORMULA
+projC_Formula :: C_FORMULA -> C_FORMULA
 projC_Formula = foldC_Formula (projRecord Partial projC_Formula) mapCoRecord
+
+injC_Formula :: C_FORMULA -> C_FORMULA
 injC_Formula = foldC_Formula (injRecord injC_Formula) mapCoRecord

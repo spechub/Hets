@@ -14,6 +14,7 @@ CASL signatures also serve as local environments for the basic static analysis
 module CASL.Sign where
 
 import CASL.AS_Basic_CASL
+import CASL.Fold
 import CASL.ToDoc ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -136,10 +137,32 @@ emptySign e = Sign
     , globAnnos = emptyGlobalAnnos
     , extendedInfo = e }
 
+embedSign :: e -> Sign f1 e1 -> Sign f e
+embedSign e sign = (emptySign e)
+    { sortRel = sortRel sign
+    , opMap = opMap sign
+    , assocOps = assocOps sign
+    , predMap = predMap sign }
+
+mapForm :: f -> FORMULA f1 -> FORMULA f
+mapForm c = foldFormula $ mapRecord (const c)
+
+mapFORMULA :: FORMULA f1 -> FORMULA f
+mapFORMULA = mapForm $ error "CASL.mapFORMULA"
+
+embedTheory :: (FORMULA f1 -> FORMULA f) -> e
+  -> (Sign f1 e1, [Named (FORMULA f1)])
+  -> (Sign f e, [Named (FORMULA f)])
+embedTheory f e (sign, sens) =
+  (embedSign e sign, map (mapNamed f) sens)
+
+embedCASLTheory :: e -> (Sign f1 e1, [Named (FORMULA f1)])
+  -> (Sign f e, [Named (FORMULA f)])
+embedCASLTheory = embedTheory mapFORMULA
+
 getSyntaxTable :: Sign f e -> (PrecMap, AssocMap)
 getSyntaxTable sig = let gannos = globAnnos sig
                      in (mkPrecIntMap $ prec_annos gannos, assoc_annos gannos)
-
 
 class SignExtension e where
     isSubSignExtension :: e -> e -> Bool

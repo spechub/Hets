@@ -34,7 +34,6 @@ module VSE.Ana
   , correctSign
   , correctTarget
   , inducedExt
-  , toSen
   , VSEMorExt
   , VSEMor
   , VSEBasicSpec
@@ -594,9 +593,6 @@ mapProfile :: Sort_map -> Profile -> Profile
 mapProfile m (Profile l r) = Profile
   (map (\ (Procparam k s) -> Procparam k $ mapSort m s) l)
   $ fmap (mapSort m) r
-
-toSen :: CASLFORMULA -> Sentence
-toSen = foldFormula $ mapRecord (error "CASL2VSEImport.mapSen")
 
 extVSEColimit :: Gr Procs (Int, VSEMorExt) ->
                   Map.Map Int VSEMor ->

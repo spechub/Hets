@@ -12,7 +12,7 @@ Portability :  non-portable (imports Logic.Logic)
 The embedding comorphism from CASL to VSE.
 -}
 
-module Comorphisms.CASL2VSE (CASL2VSE(..)) where
+module Comorphisms.CASL2VSE (CASL2VSE (..)) where
 
 import qualified Data.Set as Set
 
@@ -32,7 +32,7 @@ import VSE.Ana
 import Common.ProofTree
 
 -- | The identity of the comorphism
-data CASL2VSE = CASL2VSE deriving (Show)
+data CASL2VSE = CASL2VSE deriving Show
 
 instance Language CASL2VSE -- default definition is okay
 
@@ -51,22 +51,10 @@ instance Comorphism CASL2VSE
     sourceSublogic CASL2VSE = SL.cFol
     targetLogic CASL2VSE = VSE
     mapSublogic CASL2VSE _ = Just ()
-    map_theory CASL2VSE = return . simpleTheoryMapping mapSig toSen
-    map_morphism CASL2VSE = return . mapMor
-    map_sentence CASL2VSE _ = return . toSen
-    map_symbol CASL2VSE _ = Set.singleton . mapSym
+    map_theory CASL2VSE = return . embedCASLTheory emptyProcs
+    map_morphism CASL2VSE = return . mapCASLMor emptyProcs emptyMorExt
+    map_sentence CASL2VSE _ = return . mapFORMULA
+    map_symbol CASL2VSE _ = Set.singleton . id
     has_model_expansion CASL2VSE = True
     is_weakly_amalgamable CASL2VSE = True
     isInclusionComorphism CASL2VSE = True
-
-mapSig :: CASLSign -> VSESign
-mapSig sign = sign { extendedInfo = emptyProcs, sentences = [] }
-
-mapMor :: CASLMor -> VSEMor
-mapMor m = m
-  { msource = mapSig $ msource m
-  , mtarget = mapSig $ mtarget m
-  , extended_map = emptyMorExt }
-
-mapSym :: Symbol -> Symbol
-mapSym = id  -- needs to be changed once proc symbols are added

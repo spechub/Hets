@@ -32,6 +32,7 @@ module CASL.Morphism
   , Pred_map
   , Op_map
   , embedMorphism
+  , mapCASLMor
   , sigInclusion
   , composeM
   , plainMorphismUnion
@@ -190,6 +191,14 @@ embedMorphism extEm a b = Morphism
   , op_map = Map.empty
   , pred_map = Map.empty
   , extended_map = extEm }
+
+-- | given empty extensions convert a morphism
+mapCASLMor :: e -> m -> Morphism f1 e1 m1 -> Morphism f e m
+mapCASLMor e me m =
+  (embedMorphism me (embedSign e $ msource m) $ embedSign e $ mtarget m)
+  { sort_map = sort_map m
+  , op_map = op_map m
+  , pred_map = pred_map m }
 
 symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw = ASymbol
