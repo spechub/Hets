@@ -63,7 +63,7 @@ instance Comorphism HasCASL2THF0
                 BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic HasCASL2THF0 = HasCASL
-    sourceSublogic HasCASL2THF0 = reqSubLogicForTHF0
+    sourceSublogic HasCASL2THF0 = topLogic -- reqSubLogicForTHF0
     targetLogic HasCASL2THF0 = THF
     mapSublogic HasCASL2THF0 _ = Just ()
     map_theory HasCASL2THF0 = transTheory
@@ -71,6 +71,8 @@ instance Comorphism HasCASL2THF0
 {-    map_sentence HasCASL2THF0 sig sen =
         transSentence (maybeResult $ genIdConstantMap sig) sig sen -}
     map_symbol HasCASL2THF0 = transSymbol
+    -- isInclusionComorphism HasCASL2THF0 = True
+    has_model_expansion HasCASL2THF0 = True
 
 reqSubLogicForTHF0 :: Sublogic
 reqSubLogicForTHF0 = Sublogic
