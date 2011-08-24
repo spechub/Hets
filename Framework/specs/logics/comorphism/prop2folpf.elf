@@ -1,0 +1,73 @@
+%read "../propositional/proof_theory/prop.elf".
+%read "../first-order/proof_theory/fol.elf".
+%read "prop2folsyn.elf".
+
+%view BasePFCom : BasePF -> FOLPF = {
+   %include BaseCom.
+}.
+
+%view TruthPFCom : TruthPF -> FOLPF = {
+   %include BasePFCom.
+   %include TruthCom.
+   trueI := trueI.
+}.
+
+%view FalsityPFCom : FalsityPF -> FOLPF = {
+   %include BasePFCom.
+   %include FalsityCom.
+   falseE := [p] falseE p.
+}.
+
+%view NEGPFCom : NEGPF -> FOLPF = {
+   %include BasePFCom.
+   %include NEGCom.
+   notI := [A : o][p : ded A -> {B : o} ded B] notI p.
+   notE := [A : o][p][q] notE p q.
+}.
+
+%view IMPPFCom : IMPPF -> FOLPF = {
+   %include BasePFCom.
+   %include IMPCom.
+   impI := [A : o][B : o][p : ded A -> ded B] impI p.
+   impE := [A : o][B : o][p][q] impE p q.
+}.
+
+%view CONJPFCom : CONJPF -> FOLPF = {
+   %include BasePFCom.
+   %include CONJCom.
+   andI := [A][B][p][q] andI p q.
+   andEl := [A][B][p] andEl p.
+   andEr := [A][B][p] andEr p.
+}.
+
+%view DISJPFCom : DISJPF -> FOLPF = {
+   %include BasePFCom.
+   %include DISJCom.
+   orIl := [A][B][p] orIl p.
+   orIr := [A][B][p] orIr p.
+   orE := [A][B][C][p][q][r] orE p q r.
+}.
+
+%view TNDCom : TND -> FOLPF = {
+   %include BasePFCom.
+   %include NEGCom.
+   %include DISJCom.
+   tnd := [A] tnd.
+}.
+
+%view IPLPFCom : IPLPF -> FOLPF = {
+   %include BasePFCom.
+   %include Prop2FolSyn.
+   %include TruthPFCom.
+   %include FalsityPFCom.
+   %include NEGPFCom.
+   %include IMPPFCom.
+   %include CONJPFCom.
+   %include DISJPFCom.
+}.
+
+%view Prop2FolPf : CPLPF -> FOLPF = {
+   %include BasePFCom.
+   %include IPLPFCom.
+   %include TNDCom.
+}.

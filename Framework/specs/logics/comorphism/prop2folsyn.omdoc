@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<view name="BaseCom" from="../propositional/syntax/base.omdoc?Base" to="../first-order/syntax/fol.omdoc?FOL">
+   
+   <conass name="o">
+      <om:OMOBJ>
+         <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+      </om:OMOBJ>
+   </conass>
+   <conass name="ded">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="p"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+               <om:OMV name="p"/>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="TruthCom" from="../propositional/syntax/modules.omdoc?Truth" to="../first-order/syntax/fol.omdoc?FOL">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="BaseCom"/></OMMOR>
+   </include>
+   <conass name="true">
+      <om:OMOBJ>
+         <om:OMS base="../../propositional/syntax/modules.omdoc" module="Truth" name="true"/>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="FalsityCom" from="../propositional/syntax/modules.omdoc?Falsity" to="../first-order/syntax/fol.omdoc?FOL">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="BaseCom"/></OMMOR>
+   </include>
+   <conass name="false">
+      <om:OMOBJ>
+         <om:OMS base="../../propositional/syntax/modules.omdoc" module="Falsity" name="false"/>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="NEGCom" from="../propositional/syntax/modules.omdoc?NEG" to="../first-order/syntax/fol.omdoc?FOL">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="BaseCom"/></OMMOR>
+   </include>
+   <conass name="not">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="f"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS base="../../propositional/syntax/modules.omdoc" module="NEG" name="not"/>
+               <om:OMV name="f"/>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="IMPCom" from="../propositional/syntax/modules.omdoc?IMP" to="../first-order/syntax/fol.omdoc?FOL">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="BaseCom"/></OMMOR>
+   </include>
+   <conass name="imp">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="f"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="g"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../propositional/syntax/modules.omdoc" module="IMP" name="imp"/>
+                  <om:OMV name="f"/>
+                  <om:OMV name="g"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="CONJCom" from="../propositional/syntax/modules.omdoc?CONJ" to="../first-order/syntax/fol.omdoc?FOL">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="BaseCom"/></OMMOR>
+   </include>
+   <conass name="and">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="f"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="g"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../propositional/syntax/modules.omdoc" module="CONJ" name="and"/>
+                  <om:OMV name="f"/>
+                  <om:OMV name="g"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="DISJCom" from="../propositional/syntax/modules.omdoc?DISJ" to="../first-order/syntax/fol.omdoc?FOL">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="BaseCom"/></OMMOR>
+   </include>
+   <conass name="or">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="f"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="g"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../propositional/syntax/modules.omdoc" module="DISJ" name="or"/>
+                  <om:OMV name="f"/>
+                  <om:OMV name="g"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="Prop2FolSyn" from="../propositional/syntax/prop.omdoc?PL" to="../first-order/syntax/fol.omdoc?FOL">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="BaseCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="TruthCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="FalsityCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="NEGCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="IMPCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="CONJCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="DISJCom"/></OMMOR>
+   </include>
+   
+</view>
+
+</omdoc>

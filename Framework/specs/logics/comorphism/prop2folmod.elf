@@ -1,0 +1,74 @@
+%read "../propositional/model_theory/prop.elf".
+%read "../first-order/model_theory/fol.elf".
+
+%view Prop2FolMod : PLMOD -> FOLMOD = {
+%   %include Prop2FolSyn.
+%   true' := true'.
+%   true1 := true1.
+%   false' := false'.
+%   false0 := false0.
+%   not' := not'.
+%   not1 := not1.
+%   not0 := not0.
+%   or' := or'.
+%   or1 := or1.
+%   or0 := or0.
+%   and' := and'.
+%   and1 := and1.
+%   and0 := and0.
+%   imp' := imp'.
+%   imp0 := imp0.
+%   imp1 := imp1.
+%   o := o.
+%   ded := ded.
+%   tm := tm.
+%   sort := sort.
+%   true := true.
+%   trueI := trueI.
+%   false := false.
+%   falseE := falseE.
+%   not := not.
+%   notE := notE.
+%   notI := notI.
+%   imp := imp.
+%   impI := impI.
+%   impE := impE.
+%   and := and.
+%   andEr := andEr.
+%   andEl := andEl.
+%   andI := andI.
+%   or := or.
+%   orIl := orIl.
+%   orIr := orIr.
+%   orE := orE.
+%   forall := forall.
+%   forallI := forallI.
+%   forallE := forallE.
+%   exists := exists.
+%   existsI := existsI.
+%   existsE := existsE.
+%   eq := eq.
+%   refl := refl.
+%   sym := sym.
+%   trans := trans.
+%   congF := congF.
+%   congP := congP.
+% %%  %struct fun : SimpFun = {%struct level := IntExt.} %open → λ @ ; ∘ beta.
+%   → := →.
+%   λ := λ.
+%   @ := @.
+%   beta := beta.
+%   eta  := eta.
+%   ; := ;.
+%   ∘ := ∘.
+%   level.cl := level.cl.
+%   level.exp := level.exp.
+%   level.== := level.==.
+%   level.relf := level.refl.
+%   level.sym := level.sym.
+%   level.trans := level.trans.
+%   level.cong := level.cong.
+}.
+
+
+ 

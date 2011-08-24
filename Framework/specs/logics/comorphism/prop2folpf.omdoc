@@ -1,0 +1,812 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<view name="BasePFCom" from="../propositional/proof_theory/base.omdoc?BasePF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="BaseCom"/></OMMOR>
+   </include>
+   
+</view>
+
+<view name="TruthPFCom" from="../propositional/proof_theory/modules.omdoc?TruthPF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="TruthCom"/></OMMOR>
+   </include>
+   <conass name="trueI">
+      <om:OMOBJ>
+         <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="TruthPF" name="trueI"/>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="FalsityPFCom" from="../propositional/proof_theory/modules.omdoc?FalsityPF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="FalsityCom"/></OMMOR>
+   </include>
+   <conass name="falseE">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMS base="../../propositional/syntax/modules.omdoc" module="Falsity" name="false"/>
+               </om:OMA>
+               </om:OMATP><om:OMV name="p"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="FalsityPF" name="falseE"/>
+                  <om:OMV name="p"/>
+                  <om:OMV name="A"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="NEGPFCom" from="../propositional/proof_theory/modules.omdoc?NEGPF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="NEGCom"/></OMMOR>
+   </include>
+   <conass name="notI">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                     <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                        </om:OMATP><om:OMV name="B"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMBIND>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="p"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="NEGPF" name="notI"/>
+                  <om:OMV name="A"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                           </om:OMATP><om:OMV name="B"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="p"/>
+                           <om:OMV name="x"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="notE">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/modules.omdoc" module="NEG" name="not"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="p"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="q"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                        </om:OMATP><om:OMV name="B"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="NEGPF" name="notE"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="p"/>
+                        <om:OMV name="q"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="IMPPFCom" from="../propositional/proof_theory/modules.omdoc?IMPPF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="IMPCom"/></OMMOR>
+   </include>
+   <conass name="impI">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="IMPPF" name="impI"/>
+                     <om:OMV name="A"/>
+                     <om:OMV name="B"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="p"/>
+                           <om:OMV name="x"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="impE">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMA>
+                           <om:OMS base="../../propositional/syntax/modules.omdoc" module="IMP" name="imp"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="q"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                        <om:OMV name="p"/>
+                        <om:OMV name="q"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="CONJPFCom" from="../propositional/proof_theory/modules.omdoc?CONJPF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="CONJCom"/></OMMOR>
+   </include>
+   <conass name="andI">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="q"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="CONJPF" name="andI"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                        <om:OMV name="p"/>
+                        <om:OMV name="q"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="andEl">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMA>
+                           <om:OMS base="../../propositional/syntax/modules.omdoc" module="CONJ" name="and"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="CONJPF" name="andEl"/>
+                     <om:OMV name="A"/>
+                     <om:OMV name="B"/>
+                     <om:OMV name="p"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="andEr">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMA>
+                           <om:OMS base="../../propositional/syntax/modules.omdoc" module="CONJ" name="and"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="CONJPF" name="andEr"/>
+                     <om:OMV name="A"/>
+                     <om:OMV name="B"/>
+                     <om:OMV name="p"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="DISJPFCom" from="../propositional/proof_theory/modules.omdoc?DISJPF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="DISJCom"/></OMMOR>
+   </include>
+   <conass name="orIl">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="DISJPF" name="orIl"/>
+                     <om:OMV name="A"/>
+                     <om:OMV name="B"/>
+                     <om:OMV name="p"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="orIr">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="DISJPF" name="orIr"/>
+                     <om:OMV name="A"/>
+                     <om:OMV name="B"/>
+                     <om:OMV name="p"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="orE">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="C"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMA>
+                              <om:OMS base="../../propositional/syntax/modules.omdoc" module="DISJ" name="or"/>
+                              <om:OMV name="A"/>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="p"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                              <om:OMA>
+                              <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                              <om:OMA>
+                              <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                              <om:OMV name="C"/>
+                           </om:OMA>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="q"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                                 <om:OMA>
+                                 <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                                 <om:OMV name="B"/>
+                              </om:OMA>
+                                 <om:OMA>
+                                 <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                                 <om:OMV name="C"/>
+                              </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="r"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="DISJPF" name="orE"/>
+                              <om:OMV name="A"/>
+                              <om:OMV name="B"/>
+                              <om:OMV name="C"/>
+                              <om:OMV name="p"/>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMA>
+                                       <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                                       <om:OMV name="A"/>
+                                    </om:OMA>
+                                    </om:OMATP><om:OMV name="x"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMV name="q"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMBIND>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMA>
+                                       <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                                       <om:OMV name="B"/>
+                                    </om:OMA>
+                                    </om:OMATP><om:OMV name="x"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMV name="r"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMBIND>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="TNDCom" from="../propositional/proof_theory/modules.omdoc?TND" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="NEGCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="DISJCom"/></OMMOR>
+   </include>
+   <conass name="tnd">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS base="../../propositional/proof_theory/modules.omdoc" module="TND" name="tnd"/>
+               <om:OMV name="A"/>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="IPLPFCom" from="../propositional/proof_theory/iprop.omdoc?IPLPF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folsyn.omdoc" module="Prop2FolSyn"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="TruthPFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="FalsityPFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="NEGPFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="IMPPFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="CONJPFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="DISJPFCom"/></OMMOR>
+   </include>
+   
+</view>
+
+<view name="Prop2FolPf" from="../propositional/proof_theory/prop.omdoc?CPLPF" to="../first-order/proof_theory/fol.omdoc?FOLPF">
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="BasePFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="IPLPFCom"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="../../comorphism/prop2folpf.omdoc" module="TNDCom"/></OMMOR>
+   </include>
+   
+</view>
+
+</omdoc>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<view name="Prop2FolMod" from="../propositional/model_theory/prop.omdoc?PLMOD" to="../first-order/model_theory/fol.omdoc?FOLMOD">
+   
+   
+</view>
+
+</omdoc>

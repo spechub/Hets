@@ -1,0 +1,47 @@
+%read "../propositional/syntax/prop.elf".
+%read "../first-order/syntax/fol.elf".
+
+%view BaseCom : Base -> FOL = {
+   o := o.
+   ded := [p] ded p.
+}.
+
+%view TruthCom : Truth -> FOL = {
+   %include BaseCom.
+   true := true.
+}.
+
+%view FalsityCom : Falsity -> FOL = {
+   %include BaseCom.
+   false := false.
+}.
+
+%view NEGCom : NEG -> FOL = {
+   %include BaseCom.
+   not := [f] not f.
+}.
+
+%view IMPCom : IMP -> FOL = {
+   %include BaseCom.
+   imp := [f][g] f imp g.
+}.
+
+%view CONJCom : CONJ -> FOL = {
+   %include BaseCom.
+   and := [f][g] f and g.
+}.
+
+%view DISJCom : DISJ -> FOL = {
+   %include BaseCom.
+   or := [f][g] f or g.
+}.
+
+%view Prop2FolSyn : PL -> FOL = {
+   %include BaseCom.
+   %include TruthCom.
+   %include FalsityCom.
+   %include NEGCom.
+   %include IMPCom.
+   %include CONJCom.
+   %include DISJCom. 
+}.
