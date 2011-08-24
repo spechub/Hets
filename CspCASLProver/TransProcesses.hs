@@ -247,6 +247,8 @@ transEvent ccSign pcfolSign cfolSign vsm event p =
            (transSort (ChanComm declaredChanSort) varSort)
            (transProcess' (Map.insert varName
                            (ChanSendOrRec declaredChanSort) vsm) p)
+      _ -> error $ "CspCASLProver.TransProcesses.transEvent: "
+                  ++ "Expected a FQEvent not a non-FQEvent"
 
 -- | Translate a variable into CspProver (Isabelle). Notice
 -- that this does not work on fully qualified CASL variables (TERMs)
