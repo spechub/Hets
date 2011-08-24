@@ -121,11 +121,20 @@ setInt :: Int -> Element -> Element
 setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
     attrVal = show i}]}
 
+correctFacet :: ConstrainingFacet -> ConstrainingFacet
+correctFacet c = let d = getDataType c in setPrefix "http" $ mkQName $
+    "//www.w3.org/2001/XMLSchema#" ++ case d of
+        ">" -> "minExclusive"
+        "<" -> "maxExclusive"
+        ">=" -> "minInclusive"
+        "<=" -> "maxInclusive"
+        _ -> d
+
 -- | sets either a literal datatype or a facet
 setDt :: Bool -> IRI -> Element -> Element
 setDt b dt e = e {elAttribs = elAttribs e ++ [Attr {attrKey
     = makeQN (if b then "datatypeIRI" else "facet"),
-        attrVal = showIRI $ setReservedPrefix dt}]}
+      attrVal = showIRI $ if b then setReservedPrefix dt else correctFacet dt}]}
 
 setLangTag :: Maybe LanguageTag -> Element -> Element
 setLangTag ml e = case ml of

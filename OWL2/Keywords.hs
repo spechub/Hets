@@ -64,7 +64,7 @@ doubleS :: String
 doubleS = "double"
 
 digitsS :: String
-digitsS = "digits"
+digitsS = "totalDigits"
 
 exactlyS :: String
 exactlyS = "exactly"
@@ -73,7 +73,7 @@ floatS :: String
 floatS = "float"
 
 fractionS :: String
-fractionS = "fraction"
+fractionS = "fractionDigits"
 
 functionalS :: String
 functionalS = "Functional"
