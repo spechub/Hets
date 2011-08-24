@@ -12,10 +12,13 @@ import Text.ParserCombinators.Parsec
 import System.Directory
 import System.IO.Unsafe
 
+import Debug.Trace
+
 import qualified Data.Map as Map
 
 
 readMorphism :: FilePath -> Morphism
+readMorphism file | trace ("readMorphism called on " ++ file ++ "\n") False = undefined
 readMorphism file =
      let mor = unsafePerformIO $ readMorph file
      in case mor of
@@ -75,7 +78,7 @@ skips = (<< skipMany
         (forget space <|> forget commentLine <|> nestCommentOut <?> ""))
 
 qString :: CharParser st String
-qString = skips stringLit
+qString = skips endsWithQuot
 
 parensP :: CharParser st a -> CharParser st a
 parensP p = between (skipChar '(') (skipChar ')') p
@@ -86,6 +89,11 @@ bracesP = between (skipChar '{') (skipChar '}')
 
 bracketsP :: CharParser st a -> CharParser st a
 bracketsP = between (skipChar '[') (skipChar ']')
+
+endsWithQuot :: CharParser st String
+endsWithQuot = do
+     skipChar '"'
+     manyTill anyChar (string "\"") >>= return
 
 commaP :: CharParser st ()
 commaP = skipChar ',' >> return ()
