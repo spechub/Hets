@@ -16,9 +16,9 @@ This module provides the sublogic functions (as required by Logic.hs) for
 
 module HasCASL.Sublogic
     ( -- * datatypes
-      Sublogic(..)
-    , Formulas(..)
-    , Classes(..)
+      Sublogic (..)
+    , Formulas (..)
+    , Classes (..)
       -- * functions for SemiLatticeWithTop instance
     , topLogic
     , sublogic_max
@@ -33,6 +33,7 @@ module HasCASL.Sublogic
     , totalFuns
     , caslLogic
       -- * functions for Logic instance
+
       -- ** sublogic to string converstion
     , sublogic_name
       -- ** list of all sublogics
@@ -266,9 +267,7 @@ sublogic_min = sublogic_join min min min
 comp_list :: [Sublogic] -> Sublogic
 comp_list = foldl sublogic_max bottom
 
-------------------------------------------------------------------------------
 -- Functions to analyse formulae
-------------------------------------------------------------------------------
 
 {- ---------------------------------------------------------------------------
    These functions are based on Till Mossakowski's paper "Sublanguages of
@@ -353,7 +352,7 @@ is_horn_a term = case term of
         | i == trueId && t == unitTypeScheme -> True
     ApplTerm (QualOp _ (PolyId i _ _) t _ _ _) arg _
       | (case arg of
-        TupleTerm [_, _] _ -> (i == exEq || i == eqId) && t == eqType
+        TupleTerm [_, _] _ -> isEq i && t == eqType
         _ -> False) || i == defId && t == defType
         -> True
     _ -> is_atomic_t term
@@ -383,23 +382,20 @@ is_ghorn_t term = case term of
                (i == andId && (is_ghorn_c_conj f || is_ghorn_f_conj f)
                 || i == implId && is_ghorn_prem f1 && is_ghorn_conc f2
                 || i == eqvId && is_ghorn_prem f1 && is_ghorn_prem f2)
-              || t == eqType && (i == exEq || i == eqId)
+              || t == eqType && isEq i
           _ -> False) || t == defType && i == defId
           -> True
     _ -> is_atomic_t term
 
 -- C-CONJUNCTION
---
 is_ghorn_c_conj :: [Term] -> Bool
 is_ghorn_c_conj = all is_ghorn_conc
 
 -- F-CONJUNCTION
---
 is_ghorn_f_conj :: [Term] -> Bool
 is_ghorn_f_conj = all is_ghorn_t
 
 -- P-CONJUNCTION
---
 is_ghorn_p_conj :: [Term] -> Bool
 is_ghorn_p_conj = all is_ghorn_prem
 
@@ -413,7 +409,7 @@ is_ghorn_prem term = case term of
 -- CONCLUSION
 is_ghorn_conc :: Term -> Bool
 is_ghorn_conc term = case term of
-    ApplTerm (QualOp _ (PolyId i _ _) t _ _ _) (TupleTerm ts@[_,_] _) _ ->
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _ _) (TupleTerm ts@[_, _] _) _ ->
         i == andId && t == logType && is_ghorn_c_conj ts
     _ -> is_horn_a term
 
@@ -437,10 +433,8 @@ get_logic t
   | is_fol_t t = need_fol
   | otherwise = need_hol
 
-------------------------------------------------------------------------------
--- Functions to compute minimal sublogic for a given element; these work
--- by recursing into all subelements
-------------------------------------------------------------------------------
+{- Functions to compute minimal sublogic for a given element; these work
+by recursing into all subelements -}
 
 sl_basicSpec :: BasicSpec -> Sublogic
 sl_basicSpec (BasicSpec l) =
@@ -610,8 +604,8 @@ sl_component s = case s of
 sl_term :: Term -> Sublogic
 sl_term t = sublogic_max (get_logic t) $ sl_t t
 
--- typed in- or as-terms would also indicate subtyping
--- but we rely on the subtypes in the signature
+{- typed in- or as-terms would also indicate subtyping
+but we rely on the subtypes in the signature -}
 sl_t :: Term -> Sublogic
 sl_t trm = case trm of
     QualVar vd -> sl_varDecl vd
@@ -656,10 +650,15 @@ sl_genVarDecl g = case g of
     GenVarDecl v -> sl_varDecl v
     GenTypeVarDecl v -> sl_typeArg v
 
+isEq :: Id -> Bool
+isEq = (`elem` [exEq, eqId])
+
 sl_opId :: PolyId -> Sublogic
-sl_opId (PolyId i tys _) = if elem i [exEq, eqId] then need_eq else
-    if elem i [botId, defId] then need_part else
-    comp_list $ map sl_typeArg tys
+sl_opId (PolyId i tys _)
+  | isEq i = need_eq
+  | elem i [botId, defId, resId] = need_part
+  | elem i $ map fst bList = bottom
+  | otherwise = comp_list $ map sl_typeArg tys
 
 sl_symbItems :: SymbItems -> Sublogic
 sl_symbItems (SymbItems k l _ _) = comp_list $ sl_symbKind k : map sl_symb l
@@ -735,8 +734,8 @@ sl_sentence s = sublogicUp $ case s of
     ProgEqSen _ ts pq -> sublogic_max (sl_typeScheme ts) $ sl_progEq pq
     DatatypeSen l -> comp_list $ map sl_dataEntry l
 
--- a missing constructor identifier also indicates subtyping
--- but checking super types is enough for subtype detection
+{- a missing constructor identifier also indicates subtyping
+but checking super types is enough for subtype detection -}
 sl_altDefn :: AltDefn -> Sublogic
 sl_altDefn (Construct _ l p m) = comp_list $ sl_partiality p :
     map sl_type l ++ map sl_selector (concat m)
