@@ -1,0 +1,12 @@
+from Framework/specs/logics/comorphism/prop2folsyn get Prop2FolSyn
+from Framework/specs/logics/comorphism/prop2folpf get Prop2FolPf
+from Framework/specs/logics/comorphism/prop2folmod get Prop2FolMod
+
+newcomorphism P2F = 
+  meta LF
+  source PL
+  target FOL
+  syntax Prop2FolSyn
+  proofs Prop2FolPf
+  models Prop2FolMod
+end
