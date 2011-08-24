@@ -107,9 +107,6 @@ objectPropPred = PredType [thing, thing]
 dataPropPred :: PredType
 dataPropPred = PredType [thing, dataS]
 
-dataPred :: PredType
-dataPred = PredType [dataS, dataS]
-
 indiConst :: OpType
 indiConst = OpType Total [] thing
 
@@ -397,7 +394,7 @@ mapDataRange :: CASLSign -> DataRange -> Int -> Result (CASLFORMULA, CASLSign)
 mapDataRange cSig dr i = case dr of
     DataType d fl -> do
         let dt = mkMember (qualData i) $ uriToId d
-        (sens, s) <- mapAndUnzipM (mapFacet cSig $ qualData i) fl
+        (sens, s) <- mapAndUnzipM (mapFacet cSig i d) fl
         return (conjunct $ dt : sens, uniteL $ cSig : s)
     DataComplementOf drc -> do
         (sens, s) <- mapDataRange cSig drc i
@@ -412,13 +409,43 @@ mapDataRange cSig dr i = case dr of
         ls <- mapM mapLiteral cs
         return (disjunct $ map (mkStEq $ qualData i) ls, cSig)
 
-mapFacet :: CASLSign -> TERM () -> (ConstrainingFacet, RestrictionValue)
-    -> Result (CASLFORMULA, CASLSign)
-mapFacet sig var (f, r) = let cf = mkInfix $ fromCF f in do
+getNrType :: Datatype -> SORT
+getNrType dt = case getDataType dt of
+    "integer" -> integer
+    "negativeInteger" -> negIntS
+    "nonNegativeInteger" -> nonNegInt
+    "nonPositiveInteger" -> nonPosInt
+    "positiveInteger" -> posInt
+    "decimal" -> decimal
+    "double" -> double
+    "float" -> float
+    _ -> dataS -- for user-defined equivalent datatypes
+
+mkPredType :: ConstrainingFacet -> Datatype -> PredType
+mkPredType cf dt =
+    let c = getDataType cf
+    in PredType $
+        if c `elem` map showFacet
+                [MININCLUSIVE, MAXINCLUSIVE, MINEXCLUSIVE, MAXEXCLUSIVE]
+            then let s = getNrType dt in [s, s]
+            else case c of
+                "pattern" -> [dataS, stringS]
+                _ -> [dataS, nonNegInt]
+
+mkFacetPred :: TERM f -> ConstrainingFacet -> Int -> Datatype
+    -> (FORMULA f, Id)
+mkFacetPred lit f var dt =
+    let cf = mkInfix $ fromCF f
+        pt@(PredType [t, _]) = mkPredType f dt
+    in (mkPred pt [toQualVar $ nameDecl var t, lit] cf, cf)
+
+mapFacet :: CASLSign -> Int -> Datatype ->
+    (ConstrainingFacet, RestrictionValue) -> Result (CASLFORMULA, CASLSign)
+mapFacet sig var dt (f, r) = do
     con <- mapLiteral r
-    return (mkPred dataPred [var, con] cf,
-        uniteCASLSign sig $ (emptySign ())
-            {predMap = MapSet.fromList [(cf, [dataPred])]})
+    let (fp, cf) = mkFacetPred con f var dt
+    return (fp, uniteCASLSign sig $ (emptySign ())
+            {predMap = MapSet.fromList [(cf, [mkPredType f dt])]})
 
 cardProps :: Bool -> CASLSign
     -> Either ObjectPropertyExpression DataPropertyExpression -> Int

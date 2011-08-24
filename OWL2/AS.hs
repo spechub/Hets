@@ -24,6 +24,7 @@ import OWL2.Keywords
 
 import Data.Char (intToDigit)
 import Data.List
+import Data.Maybe (fromJust)
 import qualified Data.Map as Map
 
 data IRIType = Full | Abbreviated | NodeID
@@ -214,6 +215,13 @@ datatypeKeys = [booleanS, dATAS, stringS, universalS] ++ owlNumbers
 owlNumbers :: [String]
 owlNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
     nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS]
+
+getDataType :: Datatype -> String
+getDataType dt =
+    if (namePrefix dt) `elem` ["", "xsd"]
+        then localPart dt 
+        else fromJust $ stripPrefix
+                "http://www.w3.org/2001/XMLSchema#" $ showQU dt
 
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = checkPredef datatypeKeys "xsd"

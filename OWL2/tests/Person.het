@@ -3,10 +3,13 @@ logic OWL
 spec person =
     
     Datatype: height
+        EquivalentTo: integer [digits 3]
     Datatype: natural
         EquivalentTo: not negativeInteger
     Datatype: Years
         EquivalentTo: natural
+    Datatype: Name
+        EquivalentTo: string [pattern "[a-z]"^^string]
 
     ObjectProperty: hasSSN
     ObjectProperty: hasName
@@ -17,7 +20,7 @@ spec person =
     DataProperty: hasAge
         Range: natural [> 10]
     DataProperty: hasHeight
-        Range: height [maxLength 200]
+        Range: height [maxLength 2]
 
     Class: smallChild
         SubClassOf: hasHeight value 100

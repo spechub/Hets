@@ -24,6 +24,10 @@ module CASL_DL.PredefinedCASLAxioms
   , integer
   , float
   , negateFloat
+  , posInt
+  , nonPosInt
+  , decimal
+  , double
   , upcast
   , mkDecimal
   , mkFloat
@@ -33,6 +37,7 @@ module CASL_DL.PredefinedCASLAxioms
   , falseT
   , nonNegInt
   , negIntS
+  , stringS
   ) where
 
 import CASL.AS_Basic_CASL
@@ -68,6 +73,12 @@ integer = stringToId "integer"
 
 float :: SORT
 float = stringToId "float"
+
+decimal :: SORT
+decimal = stringToId "decimal"
+
+double :: SORT
+double = stringToId "double"
 
 posInt :: SORT
 posInt = stringToId "positiveInteger"
@@ -213,7 +224,8 @@ noThing = Qual_pred_name nothing classPredType n
 
 compareTypes :: [PredType]
 compareTypes =
-  map (\ t -> PredType [t, t]) [integer, nonNegInt, float, dataS]
+  map (\ t -> PredType [t, t]) [integer, nonNegInt, negIntS, posInt, nonPosInt,
+        decimal, double, float]
 
 intTypes :: [PredType]
 intTypes = map (\ t -> PredType [t]) [integer, nonNegInt]
@@ -236,9 +248,6 @@ predefSign = (emptySign ())
                       $ (nothing, [conceptPred])
                       : map ( \ o -> (mkInfix o, compareTypes))
                         ["<", "<=", ">", ">="]
-                      ++ map (\ o -> (mkInfix o, [PredType [dataS, dataS]]))
-                        ["length", "minLength", "maxLength", "pattern"
-                        , "digits", "fraction"]
                       ++ map ( \ o -> (stringToId o, intTypes))
                          ["even", "odd"]
                  , opMap = MapSet.fromList
