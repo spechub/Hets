@@ -18,7 +18,7 @@ references:
 (modules Text.XML.HXT.DOM.Unicode, Text.XML.HXT.Parser.XmlCharParser)
 <http://www.w3.org/TR/REC-xml/#NT-Name>
 
-'ncName' from 'OWL.Parse' allows `+' in names. Unicode is not
+Unicode is not
 fully supported. A qualified name is an ncName or two ncNames
 separated by a colon (different from OWL uris).
 -}
