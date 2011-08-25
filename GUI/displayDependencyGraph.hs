@@ -111,8 +111,6 @@ exclude s = not
     , "CspCASLProver.Utils", "CspCASLProver.IsabelleUtils"
     , "CspCASLProver.TransProcesses", "CspCASLProver.CspCASLProver"
     , "CASL.QuickCheck"
-    , "OWL.StructureAnalysis", "OWL.OWLAnalysis"
-    , "OWL.ProvePellet", "OWL.ProveFact"
     , "Proofs.InferBasic", "Proofs.BatchProcessing"
     , "Comorphisms.GetPreludeLib"
     , "Maude.Maude2DG", "Maude.PreComorphism"
@@ -130,9 +128,9 @@ exclude s = not
     , "Propositional.Prove"
     , "Modifications.ModalEmbedding"
     , "Static.AnalysisLibrary", "Static.WACocone"
-    , "OMDoc.OMDocDefs", "OMDoc.OMDocOutput", "OMDoc.DataTypes"
-    , "OMDoc.Export", "OMDoc.Sentences"
-    , "OMDoc.OMDocInput", "OMDoc.HetsDefs", "Debug.Trace"
+    , "OMDoc.DataTypes"
+    , "OMDoc.Export"
+    , "Debug.Trace"
     ])
 
 getContent2 :: String -> [String] -> [(String, String)]
