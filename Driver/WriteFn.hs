@@ -65,9 +65,6 @@ import VSE.ToSExpr
 import OWL2.Logic_OWL2
 import qualified OWL2.ManchesterPrint as OWL2 (printOWLBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
-import OWL.Logic_OWL
-import qualified OWL.Print as OWL1 (printOWLBasicTheory)
-import qualified OWL.Parse as OWL1 (basicSpec)
 #endif
 
 import Logic.Prover
@@ -227,13 +224,6 @@ writeTheory opts filePrefix ga
             th2 <- coerceBasicTheory lid OWL2 "" th
             let owltext = shows (OWL2.printOWLBasicTheory th2) "\n"
             case parse (OWL2.basicSpec >> eof) f owltext of
-              Left err -> putIfVerbose opts 0 $ show err
-              _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
-            writeVerbFile opts f owltext
-      | lang == language_name OWL -> do
-            th2 <- coerceBasicTheory lid OWL "" th
-            let owltext = shows (OWL1.printOWLBasicTheory th2) "\n"
-            case parse (OWL1.basicSpec >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext

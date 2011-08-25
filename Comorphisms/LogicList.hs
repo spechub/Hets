@@ -75,7 +75,6 @@ import CommonLogic.Logic_CommonLogic
 #endif
 #ifndef NOOWLLOGIC
 import DMU.Logic_DMU
-import OWL.Logic_OWL
 import OWL2.Logic_OWL2
 #endif
 import Comorphisms.DynLogicList
@@ -119,7 +118,6 @@ logicList =
 #endif
 #ifndef NOOWLLOGIC
   , Logic DMU
-  , Logic OWL
   , Logic OWL2
 #endif
   ] ++ dynLogicList

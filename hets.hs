@@ -26,10 +26,6 @@ import Driver.WriteFn
 import Static.DevGraph
 import Static.FromXml
 
-#ifndef NOOWLLOGIC
-import OWL.OWLAnalysis
-#endif
-
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
 #else
@@ -76,9 +72,7 @@ processFile opts file = do
 #ifdef PROGRAMATICA
       HaskellIn -> anaHaskellFile opts file
 #endif
-#ifndef NOOWLLOGIC
-      OWLIn -> parseOWL file >>= structureAna file opts
-#endif
+      OWLIn -> anaLib opts { intype = OWL2In } file
 #ifdef HEXPAT
       HolLightIn -> anaHolLightFile opts file
 #endif
@@ -89,8 +83,8 @@ processFile opts file = do
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
       OmdocIn -> anaOMDocFile opts file
-      CommonLogicIn -> anaLib opts { intype = CommonLogicIn }file
-      CommonLogic2In -> anaLib opts { intype = CommonLogic2In }file
+      CommonLogicIn -> anaLib opts { intype = CommonLogicIn } file
+      CommonLogic2In -> anaLib opts { intype = CommonLogic2In } file
       DgXml | not (defLogicIsDMU opts) -> readDGXml opts file
       _ -> anaLib opts file
     case res of

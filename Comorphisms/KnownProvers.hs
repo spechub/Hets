@@ -60,7 +60,7 @@ import Comorphisms.Adl2CASL
 import CspCASL.Comorphisms
 #endif
 #ifndef NOOWLLOGIC
-import Comorphisms.OWL2CASL
+import OWL2.OWL22CASL
 #endif
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
@@ -139,7 +139,7 @@ isaComorphisms = do
            compComorphism (Comorphism CommonLogic2CASL) subpc2IHOL
 #endif
 #ifndef NOOWLLOGIC
-       owl2HOL <- compComorphism (Comorphism OWL2CASL) subpc2IHOL
+       owl2HOL <- compComorphism (Comorphism OWL22CASL) subpc2IHOL
 #endif
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
@@ -189,7 +189,7 @@ spassComorphisms =
        adl2SPASS <- compSPASS (Comorphism Adl2CASL)
 #endif
 #ifndef NOOWLLOGIC
-       owl2spass <- compComorphism (Comorphism OWL2CASL) partOut
+       owl2spass <- compComorphism (Comorphism OWL22CASL) partOut
 #endif
        {- Fixme: constraint empty mapping is not available after Modal2CASL
        mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut

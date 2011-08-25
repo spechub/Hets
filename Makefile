@@ -53,7 +53,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
-    SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
+    SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
     FreeCAD OWL2
 
@@ -194,7 +194,7 @@ drifted_files = Common/AS_Annotation.hs \
     Syntax/AS_Structured.hs Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Propositional/AS_BASIC_Propositional.hs \
     CoCASL/AS_CoCASL.hs COL/AS_COL.hs \
-    CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
+    CASL_DL/AS_CASL_DL.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
     ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
@@ -303,7 +303,6 @@ CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs \
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs CASL_DL/Sublogics.hs
 SoftFOL_files = SoftFOL/Sign.hs
-OWL_files = OWL/Sign.hs OWL/Sublogic.hs OWL/Morphism.hs
 VSE_files = VSE/As.hs
 OMDoc_files = OMDoc/OMDocInterface.hs
 DFOL_files = DFOL/AS_DFOL.hs DFOL/Sign.hs DFOL/Morphism.hs DFOL/Symbol.hs
@@ -331,7 +330,8 @@ THF_files = THF/As.hs THF/Cons.hs THF/Sign.hs
 FreeCAD_files = FreeCAD/As.hs
 
 OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
-  OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs OWL2/Profiles.hs
+  OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
+  OWL2/Profiles.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
@@ -379,9 +379,6 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) $(GENRULES)
 
 SoftFOL/ATC_SoftFOL.der.hs: $(SoftFOL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SoftFOL_files)
-
-OWL/ATC_OWL.der.hs: $(OWL_files) $(GENRULES)
-	$(GENRULECALL) -i OWL.ReadWrite -o $@ $(OWL_files)
 
 VSE/ATC_VSE.der.hs: $(VSE_files) $(GENRULES)
 	$(GENRULECALL) -x VSE.As.FoldRec -i CASL.ATC_CASL -o $@ $(VSE_files)
@@ -571,8 +568,8 @@ clean_pretty:
 	$(RM) doc/UserGuide.{log,aux,bbl,blg,out,pdf}
 
 clean_javastuff:
-	$(RM) OWL/*.jar OWL/java/lib/*.jar
-	$(RM) -r OWL/java/build OWL/lib
+	$(RM) OWL2/*.jar OWL2/java/lib/*.jar
+	$(RM) -r OWL2/java/build OWL2/lib
 
 ### additionally removes the library files
 real_clean: clean
@@ -755,11 +752,6 @@ initialize_installer:
 	@echo and wait until it is finished
 
 # check out java parts for OWL
-owl1_java:
-	svn co \
-  https://owlapi.svn.sourceforge.net/svnroot/owlapi/owl1_1/trunk \
-  OWL/java/OwlApi
-
 owl_java:
 	svn co \
   https://owlapi.svn.sourceforge.net/svnroot/owlapi/v3/trunk \
