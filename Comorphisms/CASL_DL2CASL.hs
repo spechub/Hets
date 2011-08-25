@@ -30,7 +30,6 @@ import CASL_DL.PredefinedCASLAxioms
 import CASL_DL.Logic_CASL_DL
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign()
-import CASL_DL.PredefinedSign
 import CASL_DL.StatAna -- DLSign
 import CASL_DL.Sublogics
 
@@ -116,16 +115,16 @@ trSign inSig =
     let
         inC = projectToCASL inSig `uniteCASLSign` predefSign
         inSorts  = sortSet inSig
-        inData   = sortSet dataSig_CASL
+        inData   = sortSet predefSign
     in
       inC
       {
-        sortRel = Rel.insertKey topSort
-          $ Rel.insertKey topSortD
-          $ Set.fold (`Rel.insertDiffPair` topSortD)
-                  (Set.fold (`Rel.insertDiffPair` topSort)
+        sortRel = Rel.insertKey thing
+          $ Rel.insertKey dataS
+          $ Set.fold (`Rel.insertDiffPair` dataS)
+                  (Set.fold (`Rel.insertDiffPair` thing)
                    (sortRel inC) inSorts)
-          $ Set.delete topSortD inData
+          $ Set.delete dataS inData
       }
 
 -- ^ translation of the signature

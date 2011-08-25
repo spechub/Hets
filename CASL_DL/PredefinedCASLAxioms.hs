@@ -12,6 +12,7 @@ Portability :  portable
 
 module CASL_DL.PredefinedCASLAxioms
   ( predefSign
+  , predefinedSign
   , thing
   , nothing
   , conceptPred
@@ -230,8 +231,8 @@ compareTypes =
 intTypes :: [PredType]
 intTypes = map (\ t -> PredType [t]) [integer, nonNegInt]
 
-predefSign :: CASLSign
-predefSign = (emptySign ())
+predefinedSign :: e -> Sign f e
+predefinedSign e = (emptySign e)
                  { sortRel = Rel.insertKey (stringToId "Char")
                       $ Rel.insertKey thing
                       $ Rel.transClosure $ Rel.fromList
@@ -271,6 +272,9 @@ predefSign = (emptySign ())
                        , float_lit = Just (dec, eId)
                        , string_lit = Just (emptyString, cons) }}
                  }
+
+predefSign :: CASLSign
+predefSign = predefinedSign ()
 
 predefinedAxioms :: [Named (FORMULA ())]
 predefinedAxioms = let

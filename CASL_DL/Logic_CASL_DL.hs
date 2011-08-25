@@ -21,7 +21,7 @@ import Common.ProofTree
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
-import CASL_DL.PredefinedSign
+import CASL_DL.PredefinedCASLAxioms
 import CASL_DL.ATC_CASL_DL ()
 import CASL_DL.Parse_AS ()
 import CASL_DL.StatAna
@@ -128,7 +128,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
 extendSortRelWithTopSort :: Sign f e -> Sign f e
 extendSortRelWithTopSort sig = sig {sortRel = addThing $ sortRel sig}
     where addThing r = Rel.union r (Rel.fromSet
-                                    $ Set.map (\ x -> (x, topSort))
+                                    $ Set.map (\ x -> (x, thing))
                                     $ sortSet sig)
 
 instance Logic CASL_DL CASL_DL_SL

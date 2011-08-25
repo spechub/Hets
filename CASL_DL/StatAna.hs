@@ -20,8 +20,7 @@ module CASL_DL.StatAna ( basicCASL_DLAnalysis
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Print_AS ()
 import CASL_DL.Sign
-import CASL_DL.PredefinedSign
-import CASL_DL.PredefinedGlobalAnnos
+import CASL_DL.PredefinedCASLAxioms
 
 import CASL.Sign
 import CASL.MixfixParser
@@ -34,7 +33,7 @@ import CASL.Quantification
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.AnalyseAnnos
+import Common.ConvertGlobalAnnos
 import Common.DocUtils
 import Common.Id
 import Common.Result
@@ -59,8 +58,8 @@ basicCASL_DLAnalysis
                ExtSign (Sign DL_FORMULA CASL_DLSign) Symbol,
                [Named (FORMULA DL_FORMULA)])
 basicCASL_DLAnalysis (bs, sig, ga) =
-    do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
-       let sig' = addSig addCASL_DLSign sig predefinedSign
+    do ga' <- mergeGlobalAnnos ga $ globAnnos predefSign
+       let sig' = addSig addCASL_DLSign sig $ predefinedSign emptyCASL_DLSign
            bs' = transformSortDeclarations True bs
        case basicAnalysis minDLForm (const return)
              (const return) ana_Mix (bs', sig', ga') of
@@ -80,7 +79,7 @@ generateSubsorting sig =
     in
       sig
       {
-        sortRel = Set.fold (\ x y -> Rel.insertDiffPair x topSort y) inR inS
+        sortRel = Set.fold (\ x y -> Rel.insertDiffPair x thing y) inR inS
       }
 
 transformSortDeclarations :: Bool
@@ -106,17 +105,17 @@ transformSortDeclarations addThing (Basic_spec aBIs) =
               then
                     case sor_i of
                       Sort_decl sorts r ->
-                          [Subsort_decl sorts topSort r]
+                          [Subsort_decl sorts thing r]
                       Subsort_decl _ supSort _
-                          | supSort == topSort -> [sor_i]
+                          | supSort == thing -> [sor_i]
                           | otherwise ->
                               [ sor_i
-                              , Subsort_decl [supSort] topSort statAnaMarker]
+                              , Subsort_decl [supSort] thing statAnaMarker]
                       _ -> [sor_i]
               else
                     case sor_i of
                       Subsort_decl sorts supSort r
-                          | supSort == topSort -> if r == statAnaMarker
+                          | supSort == thing -> if r == statAnaMarker
                                                   then []
                                                   else [Sort_decl sorts r]
                           | otherwise -> [sor_i]
@@ -142,13 +141,10 @@ cleanStatAnaResult r@(Result ds1 mr) = maybe r clean mr
     where clean (bs, ExtSign sig sys, sen) =
               Result ds1 (Just (transformSortDeclarations False bs
                                , ExtSign (generateSubsorting $ cleanSign sig) $
-                                 Set.delete (idToSortSymbol topSort) sys
+                                 Set.delete (idToSortSymbol thing) sys
                                , sen))
           cleanSign sig =
-              diffSig diffCASL_DLSign
-                      (sig {sortRel = Rel.delSet (Set.singleton topSort)
-                                      $ sortRel sig})
-                      predefinedSign
+              diffSig diffCASL_DLSign sig $ predefinedSign emptyCASL_DLSign
 
 {- |
   postAna checks the Signature for
@@ -179,25 +175,25 @@ postAna ds1 in_sig i@(_, ExtSign acc_sig _, _) =
              [Diag Error
                         ("\n     new subsort relations with data " ++
                          "topsort are not allowed") nullRange
-             | Set.member topSortD (supersortsOf topSort acc_sig) ||
-                 Set.member topSortD (subsortsOf topSort acc_sig) ||
-                 supersortsOf topSortD predefinedSign /=
-                  supersortsOf topSortD acc_sig ||
-                 selectDATAKernel (sortRel predefinedSign)
+             | Set.member dataS (supersortsOf thing acc_sig) ||
+                 Set.member dataS (subsortsOf thing acc_sig) ||
+                 supersortsOf dataS predefSign /=
+                  supersortsOf dataS acc_sig ||
+                 selectDATAKernel (sortRel predefSign)
                   /= selectDATAKernel (sortRel acc_sig)]
           chSort s ds = ds ++
               [mkDiag Error
                         ("\n     new sort is not a subsort of '" ++
-                         showDoc topSort "':") s
-              | not $ Set.member topSort $ supersortsOf s acc_sig]
+                         showDoc thing "':") s
+              | not $ Set.member thing $ supersortsOf s acc_sig]
               ++ [mkDiag Error
                         ("\n     new sort must not be a supersort of '" ++
-                         showDoc topSort "':") s
-                 | Set.member topSort (subsortsOf s acc_sig)]
+                         showDoc thing "':") s
+                 | Set.member thing (subsortsOf s acc_sig)]
           selectDATAKernel rel =
               Rel.intransKernel $ Rel.restrict rel $
-                 Set.insert topSortD
-                        (subsortsOf topSortD predefinedSign)
+                 Set.insert dataS
+                        (subsortsOf dataS predefSign)
 
           checkPreds = MapSet.foldWithKey chPred [] (predMap diff_sig)
           chPred p ty = (chArgs "pred" p (predArgs ty) ++)
@@ -210,12 +206,12 @@ postAna ds1 in_sig i@(_, ExtSign acc_sig _, _) =
                     else [mkDiag Error
                         "\n     propositional symbols are not allowed" sym]
               (s : _) ->
-                  if s == topSort ||
-                     Set.member topSort (supersortsOf s acc_sig)
+                  if s == thing ||
+                     Set.member thing (supersortsOf s acc_sig)
                   then []
                   else [mkDiag Error
                         ("\n     the first argument sort of this " ++ kstr ++
-                        " is not a subsort of '" ++ showDoc topSort "':")
+                        " is not a subsort of '" ++ showDoc thing "':")
                         sym]
 
 
@@ -368,7 +364,7 @@ checkSymbolMapDL rsm =
        else mkError "Predefined CASL_DL symbols cannot be mapped" syms
 
 symOfPredefinedSign :: [Symbol]
-symOfPredefinedSign = Set.toList . Set.unions $ symOf predefinedSign
+symOfPredefinedSign = Set.toList . Set.unions $ symOf predefSign
 
 isNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isNumber = isGenNum splitApplM

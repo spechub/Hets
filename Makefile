@@ -434,7 +434,7 @@ genRules: $(generated_rule_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # files to be processed by utils/InlineAxioms
-inline_axiom_files = Comorphisms/Modal2CASL.hs CASL_DL/PredefinedSign.hs
+inline_axiom_files = Comorphisms/Modal2CASL.hs
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
@@ -583,7 +583,6 @@ package_clean:
 distclean: clean clean_genRules
 	$(RM) $(derived_sources)
 	$(RM) Modal/GeneratePatterns.inline.hs utils/appendHaskellPreludeString
-	$(RM) CASL_DL/PredefinedSign.inline.hs CASL_DL/PredDatatypes.het
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
 	$(RM) -r docs
@@ -707,23 +706,6 @@ endif
 	b=`basename $< .glade`; \
     cat GUI/Glade/Template.append.hs | sed "s/\%s/$$b/" | \
     utils/appendHaskellPreludeString $< > $@
-
-## generate the inline file for the predefined CASL_DL sign
-CASL_DL/PredefinedSign.inline.hs:  \
-     CASL_DL/PredefinedSign.inline.hs.in utils/appendHaskellPreludeString \
-     CASL_DL/PredDatatypes.het
-	$(RM) $@
-	utils/appendHaskellPreludeString CASL_DL/PredDatatypes.het \
-          < CASL_DL/PredefinedSign.inline.hs.in > $@
-	echo "  )" >> $@
-	chmod 444 $@
-
-# Warning: Don't change the order of the depencies!!
-CASL_DL/PredDatatypes.het: utils/transformLibAsBasicSpec.pl \
-     CASL_DL/Datatypes.het
-	$(RM) $@
-	$(PERL) $+ > $@
-	chmod 444 $@
 
 ## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
 # uses intransparently utils/outlineAxioms
