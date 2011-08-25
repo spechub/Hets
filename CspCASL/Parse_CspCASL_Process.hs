@@ -126,7 +126,7 @@ pref_proc = cond_proc <|> hid_ren_proc
   <|> try
     ((((fmap PROCESS_NAME processId >>= namedProc)
         <|> parens csp_casl_process) >>= hid_ren_proc')
-    `notFollowedWith` prefSym)
+    `notFollowedWith` (prefSym <|> colonT))
   <|> (try (term_event << prefSym)
       >>= mkPrefProc)
 
