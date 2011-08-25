@@ -48,8 +48,6 @@ import Common.ExtSign
 
 import Text.ParserCombinators.Parsec
 
-import Debug.Trace 
-
 import LF.Framework ()
 
 dynLogicsDir :: FilePath
@@ -198,7 +196,6 @@ anaComorphismDefH :: LogicFram lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> ComorphismDef -> DGraph -> IO DGraph 
-anaComorphismDefH ml (ComorphismDef _ _ sL tL sM pM mM) _ | trace ("anaComH\n" ++ (show ml) ++ "\n" ++ (show sL) ++ "\n" ++ (show tL) ++ "\n" ++ (show sM) ++ (show pM) ++ (show mM) ++ "\n\n") False = undefined 
 anaComorphismDefH ml (ComorphismDef nc m sL tL sM pM mM) dg =
    let c = tokStr nc
        s = tokStr sL
@@ -215,7 +212,6 @@ anaComH :: LogicFram lid sublogics basic_spec sentence symb_items
                             proof_tree
                      => lid -> ComorphismDef -> DGraph -> Result (morphism, 
                             morphism, morphism)
-anaComH ml (ComorphismDef _ _ sL tL sM pM mM) _ | trace ("anaComH\n" ++ (show ml) ++ "\n" ++ (show sL) ++ "\n" ++ (show tL) ++ "\n" ++ (show sM) ++ (show pM) ++ (show mM) ++ "\n\n") False = undefined 
 anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
      let sLName = tokStr sL
          tLName = tokStr tL
@@ -244,7 +240,6 @@ getMorphL ::  LogicFram lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> String -> String -> morphism
-getMorphL _ ln fn | trace ("getMorphL " ++ ln ++ " " ++ fn ++ "\n") False = undefined 
 getMorphL ml logicName fileName = 
      let file = logicName ++ "/" ++ fileName ++ ".hs"  
      in read_morphism ml file

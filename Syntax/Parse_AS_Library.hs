@@ -35,8 +35,6 @@ import Data.Maybe (maybeToList)
 import Data.Char
 import Control.Monad
 
-import Debug.Trace
-
 import Framework.AS
 
 -- * Parsing functions
@@ -98,7 +96,6 @@ libItems l =
 
 -- | Parse an element of the library
 libItem :: LogicGraph -> AParser st LIB_ITEM
-libItem _ | trace ("libItem called.\n") False = undefined
 libItem l =
      -- spec defn
     do s <- asKey specS
