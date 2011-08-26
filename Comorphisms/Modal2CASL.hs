@@ -1,10 +1,10 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Luettich and Uni Bremen 2004
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2004, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
@@ -248,66 +248,61 @@ mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
              replacePropPredication mTerm
                                     propSymb (mapSen mapEnv nvs f1) trForm
          mapT = mapTERM mapEnv newVars
+         vw1 = mkVarDecl w1 fws
+         vw2 = mkVarDecl w2 fws
+         mkPredType ts = Pred_type ts nullRange
      in
      case f of
      BoxOrDiamond True moda f1 _ ->
        let rel = getRel moda pwRelMap in
         case moda of
-        Simple_mod _ ->
-          case map sentence
-               $  concat [inlineAxioms CASL
-                       " sort fws \n\
-                       \ pred rel : fws * fws; \n\
-                       \      trans_f1 : () \n\
-                       \ vars w1 : fws \n\
-                       \ . forall w2 : fws . rel(w1,w2) => \n\
-                       \      trans_f1"] of
-                   [newFormula] -> trans' Nothing
-                                          trans_f1 newFormula newVars f1
-                   _  -> error "Modal2CASL: mapMSen: impossible error"
+        Simple_mod _ -> let
+          newFormula = mkForall [vw1, vw2]
+                          $ mkImpl
+                            (mkPredication
+                             (mkQualPred rel $ mkPredType [fws, fws])
+                             [toQualVar vw1, toQualVar vw2])
+                          $ mkPredication
+                            (mkQualPred trans_f1 $ mkPredType []) []
+          in trans' Nothing trans_f1 newFormula newVars f1
         Term_mod t ->
-         let tt    = getModTermSort rel in
-          case map sentence
-               $  concat [inlineAxioms CASL
-                       " sort fws,tt \n\
-                       \ pred rel : tt * fws * fws; \n\
-                       \      trans_f1 : () \n\
-                       \ vars w1 : fws; t_var : tt \n\
-                       \ . forall w2 : fws . rel(t_var,w1,w2) => \n\
-                       \      trans_f1"] of
-                   [newFormula] -> trans' (Just (rel,t_var,mapT t))
+         let tt = getModTermSort rel
+             vtt = mkVarDecl t_var tt
+             newFormula = mkForall [vtt, vw1, vw2]
+                          $ mkImpl
+                            (mkPredication
+                             (mkQualPred rel $ mkPredType [tt, fws, fws])
+                             [toQualVar vtt, toQualVar vw1, toQualVar vw2])
+                          $ mkPredication
+                            (mkQualPred trans_f1 $ mkPredType []) []
+         in trans' (Just (rel,t_var,mapT t))
                                           trans_f1 newFormula
                                           newVars f1
-                   _  -> error "Modal2CASL: mapMSen: impossible error"
-
      BoxOrDiamond False moda f1 _ ->
        let rel = getRel moda pwRelMap in
         case moda of
-        Simple_mod _ ->
-          case map sentence
-               $  concat [inlineAxioms CASL
-                       " sort fws \n\
-                       \ pred rel : fws * fws; \n\
-                       \      trans_f1 : () \n\
-                       \ vars w1 : fws \n\
-                       \ . exists w2 : fws . rel(w1,w2) /\\ \n\
-                       \      trans_f1"] of
-                   [newFormula] -> trans' Nothing
-                                          trans_f1 newFormula newVars f1
-                   _  -> error "Modal2CASL: mapMSen: impossible error"
+        Simple_mod _ -> let
+          newFormula = mkForall [vw1] $ mkExist [vw2]
+                          $ conjunct
+                            [ mkPredication
+                              (mkQualPred rel $ mkPredType [fws, fws])
+                              [toQualVar vw1, toQualVar vw2]
+                            , mkPredication
+                              (mkQualPred trans_f1 $ mkPredType []) []]
+          in trans' Nothing trans_f1 newFormula newVars f1
         Term_mod t ->
-         let tt = getModTermSort rel in
-          case map sentence
-               $  concat [inlineAxioms CASL
-                       " sort fws,tt \n\
-                       \ pred rel : tt * fws * fws; \n\
-                       \      trans_f1 : () \n\
-                       \ vars w1 : fws; t_var:tt \n\
-                       \ . exists w2 : fws . rel(t_var,w1,w2) /\\ \n\
-                       \      trans_f1"] of
-                   [newFormula] -> trans' (Just (rel,t_var,mapT t))
-                                          trans_f1 newFormula newVars f1
-                   _  -> error "Modal2CASL: mapMSen: impossible error"
+         let tt = getModTermSort rel
+             vtt = mkVarDecl t_var tt
+             newFormula = mkForall [vtt, vw1] $ mkExist [vw2]
+                          $ conjunct
+                            [ mkPredication
+                              (mkQualPred rel $ mkPredType [tt, fws, fws])
+                              [toQualVar vtt, toQualVar vw1, toQualVar vw2]
+                            , mkPredication
+                              (mkQualPred trans_f1 $ mkPredType []) []]
+         in trans' (Just (rel,t_var,mapT t))
+                                          trans_f1 newFormula
+                                          newVars f1
 
 -- head [VAR] is always the current world variable (for Application)
 mapTERM :: ModMapEnv -> [VAR] -> TERM M_FORMULA -> TERM ()

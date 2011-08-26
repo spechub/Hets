@@ -433,11 +433,6 @@ genRules: $(generated_rule_files)
 # the final ATC target files created by DriFT
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
-# files to be processed by utils/InlineAxioms
-inline_axiom_files = Comorphisms/Modal2CASL.hs
-
-gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
-
 # all sources that need to be created before ghc can be called
 derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
     $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files)
@@ -451,7 +446,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc fromKif derivedSources release cgi ghci build
 
-.SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
+.SECONDARY : %.hs %.d $(generated_rule_files)
 
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
