@@ -259,8 +259,28 @@ name.  They're both Ids.  Separation between operator or predicate
 (or some other non-applicable Id) must be a static analysis
 problem. -}
 
+rename :: AParser st Rename
+rename = do
+    i <- parseCspId
+    mc <- optionMaybe $ do
+      colonT
+      s1 <- cspSortId
+      c <- choice $ map (\ (s, k) -> (asKey s >> return k))
+        [(pFun, PartOp), (funS, TotOp), (prodS, BinPred), (timesS, BinPred)]
+      s2 <- cspSortId
+      return (c, (Just (s1, s2)))
+    return $ Rename i mc
+  <|> do
+    asKey opS
+    i <- parseCspId
+    return $ Rename i $ Just (PartOp, Nothing)
+  <|> do
+    asKey predS
+    i <- parseCspId
+    return $ Rename i $ Just (BinPred, Nothing)
+
 renaming :: AParser st RENAMING
-renaming = fmap Renaming $ parseCspId `sepBy1` commaT
+renaming = fmap Renaming $ rename `sepBy1` commaT
 
 -- names come from CASL/Hets.
 

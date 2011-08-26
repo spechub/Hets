@@ -25,6 +25,8 @@ module CspCASL.AS_CspCASL_Process
   , PROC_ALPHABET (..)
   , procNameToSimpProcName
   , ProcProfile (..)
+  , RenameKind (..)
+  , Rename (..)
   , RENAMING (..)
   , splitCASLVar
   , TypedChanName (..)
@@ -75,9 +77,13 @@ data EVENT
 data EVENT_SET = EventSet [CommType] Range
                  deriving (Show, Ord, Eq)
 
+data RenameKind = TotOp | PartOp | BinPred deriving (Show, Ord, Eq)
+
+data Rename = Rename Id (Maybe (RenameKind, Maybe (SORT, SORT)))
+    deriving (Show, Ord, Eq)
+
 -- | CSP renamings are predicate names or op names.
-data RENAMING = Renaming [Id]
-              | FQRenaming [TERM ()]
+data RENAMING = Renaming [Rename]
                 deriving (Show, Ord, Eq)
 
 type CHANNEL_NAME = Id

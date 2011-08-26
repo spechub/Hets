@@ -687,15 +687,13 @@ anaRenaming :: RENAMING -> State CspCASLSign (CommAlpha, RENAMING)
 anaRenaming renaming = case renaming of
   Renaming r -> do
     (al, fqRenamingTerms) <- foldM anaRenamingItem (Set.empty, []) r
-    return (al, FQRenaming fqRenamingTerms)
-  FQRenaming _ ->
-      error "CspCASL.StatAnaCSP.anaRenaming: Unexpected FQRenaming"
+    return (al, Renaming fqRenamingTerms)
 
 {- | Statically analyse a CspCASL renaming item. Return the alphabet
 and the fully qualified list of renaming functions and predicates. -}
-anaRenamingItem :: (CommAlpha, [TERM ()]) -> Id ->
-                   State CspCASLSign (CommAlpha, [TERM ()])
-anaRenamingItem (inAl, fqRenamingTerms) ri = do
+anaRenamingItem :: (CommAlpha, [Rename]) -> Rename ->
+                   State CspCASLSign (CommAlpha, [Rename])
+anaRenamingItem (inAl, fqRenamingTerms) (Rename ri _) = do
 -- BUG -- too many nothings - should only be one
   totOps <- getUnaryOpsById ri Total
   if not (Set.null totOps)

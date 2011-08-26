@@ -31,7 +31,7 @@ import CspCASL.SignCSP
 import CspCASL.Symbol
 import qualified CspCASL.LocalTop as LT
 
-import CASL.AS_Basic_CASL (FORMULA, TERM, SORT, SORT_ITEM (..))
+import CASL.AS_Basic_CASL (FORMULA, TERM, SORT, SORT_ITEM (..), OpKind (..))
 import CASL.Sign as CASL_Sign
 import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
@@ -474,16 +474,23 @@ mapEvent mor e =
         FQChanRecv (mapChannelName' (c, s)) (mapCASLTerm' v) r
       _ -> error "CspCASL.Morphism.mapEvent: Cannot map unqualified event"
 
+mapRename :: CspCASLMorphism -> Rename -> Rename
+mapRename mor r@(Rename i mc) = case mc of
+  Nothing -> r
+  Just (k, ms) -> case ms of
+    Nothing -> r
+    Just (s1, s2) -> case k of
+      BinPred -> let
+        (j, PredType [t1, t2]) = mapPredSym (sort_map mor) (pred_map mor)
+            (i, PredType [s1, s2])
+        in Rename j $ Just (k, Just (t1, t2))
+      _ -> let
+        (j, OpType _ [t1] t2) = mapOpSym (sort_map mor) (op_map mor)
+            (i, OpType Partial [s1] s2)
+        in Rename j $ Just (k, Just (t1, t2))
+
 mapRenaming :: CspCASLMorphism -> RENAMING -> RENAMING
-mapRenaming mor re =
-    case re of
-      Renaming _ ->
-          {- There should be no (non fully qualified) Renamings (only
-          FQRenamings) as the static analysis should have transformed
-          EventSets into FQEventSets -}
-          error "CspCASL.Morphism.mapRenaming: Unexpected non fully \
-                 \qualified renaming"
-      FQRenaming rs -> FQRenaming $ map (mapCASLTerm mor) rs
+mapRenaming mor (Renaming rm) = Renaming $ map (mapRename mor) rm
 
 cspCASLMorphism2caslMorphism :: CspCASLMorphism -> Morphism () () ()
 cspCASLMorphism2caslMorphism m =

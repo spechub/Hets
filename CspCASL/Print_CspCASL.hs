@@ -18,7 +18,7 @@ import CASL.Fold
 import CASL.ToDoc
 import Common.Doc
 import Common.DocUtils
-import Common.Keywords (elseS, ifS, thenS)
+import Common.Keywords (elseS, ifS, thenS, opS, predS)
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
@@ -145,10 +145,21 @@ instance Pretty CommType where
     pretty (CommTypeChan (TypedChanName c s)) =
         pretty c <+> colon <+> pretty s
 
+instance Pretty Rename where
+  pretty (Rename i mk) = let n = pretty i in case mk of
+    Nothing -> n
+    Just (k, ms) -> case ms of
+      Nothing -> case k of
+        BinPred -> keyword predS <+> n
+        _ -> keyword opS <+> n
+      Just (s1, s2) -> n <+> colon <+> pretty s1 <+> case k of
+          BinPred -> cross
+          TotOp -> funArrow
+          PartOp -> pfun
+        <+> pretty s2
+
 instance Pretty RENAMING where
-    pretty renaming = case renaming of
-                        Renaming ids -> ppWithCommas ids
-                        FQRenaming fqTerms -> ppWithCommas fqTerms
+    pretty (Renaming ids) = ppWithCommas ids
 
 {- glue and lglue decide whether the child in the parse tree needs
 to be parenthesised or not. -}
