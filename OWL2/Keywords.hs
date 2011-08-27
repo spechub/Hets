@@ -71,21 +71,6 @@ keywords =
   , languageS
   , normalizedStringS
   , xorS
-  , thing
-  , nothing
-  , topObjProp
-  , bottomObjProp
-  , topDataProp
-  , bottomDataProp
-  , label
-  , comment
-  , seeAlso
-  , isDefinedBy
-  , deprecated
-  , versionInfo
-  , priorVersion
-  , backwardCompatibleWith
-  , incompatibleWith
   ]
 
 base64BinaryS :: String

@@ -65,9 +65,10 @@ checkEntity s (Entity ty e) =
   in case ty of
    Datatype -> unless (Set.member e (datatypes s) || isDatatypeKey e) errMsg
    Class -> unless (Set.member e (concepts s) || isThing e) errMsg
-   ObjectProperty -> unless (Set.member e $ objectProperties s) errMsg
-   DataProperty -> unless (Set.member e $ dataProperties s) errMsg
-   AnnotationProperty -> unless (Set.member e $ annotationRoles s) errMsg
+   ObjectProperty -> unless (isDeclObjProp s $ ObjectProp e) errMsg
+   DataProperty -> unless (isDeclDataProp s e) errMsg
+   AnnotationProperty -> unless (Set.member e (annotationRoles s)
+        || isPredefAnnoProp e) errMsg
    _ -> return ()
 
 -- | takes an iri and finds out what entities it belongs to
@@ -91,10 +92,11 @@ objPropToIRI opExp = case opExp of
     ObjectInverseOf objProp -> objPropToIRI objProp
 
 isDeclObjProp :: Sign -> ObjectPropertyExpression -> Bool
-isDeclObjProp s ope = Set.member (objPropToIRI ope) $ objectProperties s
+isDeclObjProp s ope = let op = objPropToIRI ope in
+    Set.member op (objectProperties s) || isPredefObjProp op
 
 isDeclDataProp :: Sign -> DataPropertyExpression -> Bool
-isDeclDataProp s dp = Set.member dp $ dataProperties s
+isDeclDataProp s dp = Set.member dp (dataProperties s) || isPredefDataProp dp
 
 {- | takes a list of object properties and discards the ones
     which are not in the signature -}
@@ -181,9 +183,8 @@ checkClassExpression s desc =
                     if isDeclDataProp s iri then
                         return $ DataCardinality $ Cardinality a b iri $ Just dr
                         else datErr iri
-    DataValuesFrom _ dExp r -> do
-        checkDataRange s r
-        if isDeclDataProp s dExp then return desc else datErr dExp
+    DataValuesFrom _ dExp r -> checkDataRange s r
+        >> if isDeclDataProp s dExp then return desc else datErr dExp
     DataHasValue dExp l -> do
         checkLiteral s l    
         if isDeclDataProp s dExp then return desc

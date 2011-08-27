@@ -230,6 +230,10 @@ isPredefAnnoProp :: IRI -> Bool
 isPredefAnnoProp iri = isOWLPredef predefOWLAnnoProps iri
     || checkPredef predefRDFSAnnoProps "rdfs" iri
 
+isPredefPropOrClass :: IRI -> Bool
+isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
+    || isPredefObjProp iri || isThing iri
+
 xsdNumbers :: [String]
 xsdNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
     nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS,
@@ -294,7 +298,7 @@ getPredefName :: IRI -> String
 getPredefName iri =
     if namePrefix iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
         then localPart iri 
-        else case catMaybes $ map (flip stripPrefix $ showQU iri)
+        else case mapMaybe (flip stripPrefix $ showQU iri)
                     $ Map.elems predefPrefixes of
                 [s] -> s
                 _ -> error $ showQU iri ++ " is not a predefined IRI"

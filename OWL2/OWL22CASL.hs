@@ -45,7 +45,6 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic
 -- import OWL2.ManchesterParser
--- import Text.ParserCombinators.Parsec
 
 import Common.ProofTree
 import Common.DocUtils
