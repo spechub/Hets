@@ -367,12 +367,6 @@ facetValuePair = do
   rv <- literal
   return (facetToIRI df, rv)
 
-facetToIRI :: DatatypeFacet -> ConstrainingFacet
-facetToIRI = makeCF . showFacet
-
-makeCF :: String -> ConstrainingFacet
-makeCF lp = (mkQName lp) { namePrefix = "xsd"}
-
 -- it returns DataType Datatype or DatatypeRestriction Datatype [facetValuePair]
 dataRangeRestriction :: CharParser st DataRange
 dataRangeRestriction = do

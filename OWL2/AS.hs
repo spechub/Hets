@@ -257,6 +257,12 @@ nonXSDKeys = owlNumbers ++ [xmlLiteral, rdfsLiteral]
 datatypeKeys :: [String]
 datatypeKeys = xsdKeys ++ nonXSDKeys
 
+predefIRIs :: [IRI]
+predefIRIs = map (setPrefix "xsd" . mkQName) xsdKeys
+    ++ map (setPrefix "owl" . mkQName) owlNumbers
+    ++ [setPrefix "rdf" (mkQName rdfsLiteral), 
+        setPrefix "rdfs" $ mkQName xmlLiteral]
+
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey iri = any (\ (l, p) -> checkPredef l p iri) [(xsdKeys, "xsd"),
     (owlNumbers, "owl"), ([xmlLiteral], "rdf"), ([rdfsLiteral], "rdfs")]
@@ -291,6 +297,9 @@ setReservedPrefix iri
     | (isThing iri || isPredefAnnoProp iri || isPredefDataProp iri
         || isPredefObjProp iri) && null (namePrefix iri) = setPrefix "owl" iri
     | otherwise = iri
+
+stripReservedPrefix :: IRI -> IRI
+stripReservedPrefix = mkQName . getPredefName
 
 {- | returns the name of the predefined IRI (e.g <xsd:string> returns "string"
     or <http://www.w3.org/2002/07/owl#real> returns "real") -}
@@ -346,6 +355,9 @@ showFacet df = case df of
     MAXEXCLUSIVE -> greaterS
     TOTALDIGITS -> digitsS
     FRACTIONDIGITS -> fractionS
+
+facetToIRI :: DatatypeFacet -> ConstrainingFacet
+facetToIRI = setPrefix "xsd" . mkQName . showFacet
 
 -- * Cardinalities
 

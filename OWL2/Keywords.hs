@@ -239,10 +239,10 @@ normalizedStringS :: String
 normalizedStringS = "normalizedString"
 
 thing :: String
-thing = "thing"
+thing = "Thing"
 
 nothing :: String
-nothing = "nothing"
+nothing = "Nothing"
 
 topObjProp :: String
 topObjProp = "topObjectProperty"

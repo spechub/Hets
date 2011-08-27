@@ -8,8 +8,8 @@ spec person =
         EquivalentTo: not negativeInteger
     Datatype: Years
         EquivalentTo: natural
-    Datatype: Name
-        EquivalentTo: string [pattern "[a-z]"^^string]
+    Datatype: Surname
+        EquivalentTo: string [pattern "[a-z]"^^xsd:string]
 
     ObjectProperty: hasSSN
     ObjectProperty: hasName

@@ -155,20 +155,16 @@ getDeclaration b e = case getName e of
 isPlainLiteral :: String -> Bool
 isPlainLiteral s =
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
-{-}
-getNrLit :: Datatype -> LexicalForm -> Literal
-getNrLit dt lx =
-    let lf = if isSuffixOf "float" (localPart dt)
-                then lx ++ "f"
-                else lx
-        nr = parse literal "" lf in case nr of
-            Right n -> n
-            _ -> err $ "cannot parse literal " ++ lf
 
-getTypedLit :: LexicalForm -> Datatype -> Literal
-getTypedLit lf dt = if isOWLSmth xsdNumbers dt
-    then getNrLit dt lf else Literal lf (Typed dt)
--}
+correctLit :: Literal -> Literal
+correctLit l = case l of
+    Literal lf (Typed dt) ->
+        let nlf = if isSuffixOf "float" (localPart dt) && last lf /= 'f'
+                then lf ++ "f"
+                else lf
+        in Literal nlf (Typed dt)
+    _ -> l
+
 getLiteral :: XMLBase -> Element -> Literal
 getLiteral b e = case getName e of
     "Literal" ->
@@ -183,7 +179,7 @@ getLiteral b e = case getName e of
              Just lang -> Literal lf $ Untyped $ Just lang
              Nothing -> if isPlainLiteral dt then
                           Literal lf $ Untyped Nothing
-                         else Literal lf $ Typed $ appendBase b $
+                         else correctLit $ Literal lf $ Typed $ appendBase b $
                             nullQName {localPart = dt, iriType = cssIRI dt}
     _ -> err "not literal"
 
@@ -221,11 +217,23 @@ getObjProp b e = case getName e of
       _ -> err "not objectProperty"
   _ -> err "not objectProperty"
 
+properFacet :: ConstrainingFacet -> ConstrainingFacet
+properFacet cf
+    | iriType cf == Full =
+        let p = showQU cf \\ "http://www.w3.org/2001/XMLSchema#"
+        in case p of
+            "minInclusive" -> facetToIRI MININCLUSIVE
+            "minExclusive" -> facetToIRI MINEXCLUSIVE 
+            "maxInclusive" -> facetToIRI MAXINCLUSIVE
+            "maxExclusive" -> facetToIRI MAXEXCLUSIVE
+            _ -> cf
+    | otherwise = cf
+
 getFacetValuePair :: XMLBase -> Element -> (ConstrainingFacet, RestrictionValue)
 getFacetValuePair b e = case getName e of
     "FacetRestriction" ->
        let [ch] = elChildren e
-       in (getIRI b e, getLiteral b ch)
+       in (properFacet $ getIRI b e, getLiteral b ch)
     _ -> err "not facet"
 
 getDataRange :: XMLBase -> Element -> DataRange

@@ -110,7 +110,7 @@ uriToTokM = return . uriToTok
 
 -- | Extracts Token from IRI
 uriToTok :: IRI -> Token
-uriToTok urI = mkSimpleId $ showQN urI
+uriToTok urI = mkSimpleId $ showQN $ stripReservedPrefix urI
 
 -- | Extracts Id from IRI
 uriToId :: IRI -> Id
@@ -273,15 +273,15 @@ mapSign sig =
 
 nothingSent :: CommonAnno.Named TEXT
 nothingSent = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN $ mkSAtom
-    "owl:Nothing"
+    "Nothing"
 
 thingIncl :: IRI -> CommonAnno.Named TEXT
 thingIncl iri = CommonAnno.makeNamed "" $ senToText
-    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "owl:Thing"
+    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "Thing"
 
 dataIncl :: IRI -> CommonAnno.Named TEXT
 dataIncl iri = CommonAnno.makeNamed "" $ senToText
-    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "owl:Datatype"
+    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "Datatype"
 
 declarations :: OS.Sign -> [CommonAnno.Named TEXT]
 declarations s = map thingIncl (Set.toList $ OS.concepts s)
@@ -290,7 +290,7 @@ declarations s = map thingIncl (Set.toList $ OS.concepts s)
 
 thingDataDisjoint :: CommonAnno.Named TEXT
 thingDataDisjoint = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN
-    $ mkBC $ map mkSAtom ["owl:Thing", "owl:Datatype"]
+    $ mkBC $ map mkSAtom ["Thing", "Datatype"]
 
 mapTheory :: (OS.Sign, [CommonAnno.Named Axiom])
              -> Result (Sign, [CommonAnno.Named TEXT])
@@ -302,7 +302,7 @@ mapTheory (owlSig, owlSens) = do
                 return (sen ++ x, unite sig y)
                 ) ([], cSig) owlSens
     let sig = unite (emptySig {items = Set.fromList $ map (uriToId .
-            setReservedPrefix . mkQName) $ "owl:Datatype" : predefClass
+            setReservedPrefix . mkQName) $ "Datatype" : predefClass
             ++ datatypeKeys}) nSig
         cSens = nothingSent : thingDataDisjoint : declarations owlSig ++ cSensI
     return (sig, cSens)
@@ -424,7 +424,8 @@ mapFacet :: Sign -> TERM -> (ConstrainingFacet, RestrictionValue)
 mapFacet sig var (f, r) = do
     con <- mapLiteral sig r
     return (mkTermAtoms (uriToTok f) [con, var], unite sig $ emptySig
-                   {items = Set.fromList [stringToId $ showQN f]})
+                   {items = Set.fromList [stringToId $ showQN
+                                $ stripReservedPrefix f]})
 
 cardProps :: Bool -> Sign
     -> Either ObjectPropertyExpression DataPropertyExpression -> Int

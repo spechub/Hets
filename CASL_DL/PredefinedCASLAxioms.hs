@@ -16,6 +16,7 @@ module CASL_DL.PredefinedCASLAxioms
   , thing
   , nothing
   , conceptPred
+  , dataPred
   , dataS
   , predefinedAxioms
   , mkNName
@@ -43,6 +44,7 @@ module CASL_DL.PredefinedCASLAxioms
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
+import OWL2.AS
 
 import Common.AS_Annotation
 import Common.Id
@@ -98,6 +100,9 @@ classPredType = Pred_type [thing] n
 
 conceptPred :: PredType
 conceptPred = toPredType classPredType
+
+dataPred :: PredType
+dataPred = PredType [dataS, dataS]
 
 boolS :: SORT
 boolS = stringToId "boolean"
@@ -223,11 +228,6 @@ consTy = mkTotOpType [charS, stringS] stringS
 noThing :: PRED_SYMB
 noThing = Qual_pred_name nothing classPredType n
 
-compareTypes :: [PredType]
-compareTypes =
-  map (\ t -> PredType [t, t]) [integer, nonNegInt, negIntS, posInt, nonPosInt,
-        decimal, double, float]
-
 intTypes :: [PredType]
 intTypes = map (\ t -> PredType [t]) [integer, nonNegInt]
 
@@ -247,8 +247,10 @@ predefinedSign e = (emptySign e)
                  , predMap =
                      MapSet.fromList
                       $ (nothing, [conceptPred])
-                      : map ( \ o -> (mkInfix o, compareTypes))
-                        ["<", "<=", ">", ">="]
+                      : map ( \ o -> (mkInfix o, [dataPred]))
+                        (["<", "<=", ">", ">="] ++ map showFacet [LENGTH,
+                            MINLENGTH, MAXLENGTH, PATTERN, LANGRANGE,
+                            TOTALDIGITS, FRACTIONDIGITS])
                       ++ map ( \ o -> (stringToId o, intTypes))
                          ["even", "odd"]
                  , opMap = MapSet.fromList
