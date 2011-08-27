@@ -82,9 +82,20 @@ setQRange r q = q { iriPos = r }
 setPrefix :: String -> QName -> QName
 setPrefix s q = q { namePrefix = s }
 
+setDatatypePrefix :: QName -> QName
+setDatatypePrefix iri = let lp = localPart iri in
+    if lp `elem` xsdKeys
+        then setPrefix "xsd" iri
+        else if lp `elem` owlNumbers
+                then setPrefix "owl" iri
+                else case lp of
+                   "XMLLiteral" -> setPrefix "rdf" iri
+                   "Literal" -> setPrefix "rdfs" iri
+                   _ -> error $ showQU iri ++ " is not a predefined datatype"
+
 setReservedPrefix :: QName -> QName
 setReservedPrefix iri
-    | isDatatypeKey iri && null (namePrefix iri) = setPrefix "xsd" iri
+    | isDatatypeKey iri && null (namePrefix iri) = setDatatypePrefix iri
     | isThing iri && null (namePrefix iri) = setPrefix "owl" iri
     | otherwise = iri
 
@@ -103,6 +114,14 @@ cssIRI iri = if isInfixOf "://" iri then Full else Abbreviated
 
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
+
+predefPrefixes :: PrefixMap
+predefPrefixes = Map.fromList
+      [ ("owl", "http://www.w3.org/2002/07/owl#")
+      , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+      , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
+      , ("", showQU dummyQName ++ "#") ]
 
 type LexicalForm = String
 type LanguageTag = String
@@ -197,38 +216,56 @@ showQuantifierType ty = case ty of
     AllValuesFrom -> onlyS
     SomeValuesFrom -> someS
 
-checkPredef :: [String] -> String -> String -> IRI -> Bool
-checkPredef sl pref sc u =
+checkPredef :: [String] -> String -> IRI -> Bool
+checkPredef sl pref u =
     localPart u `elem` sl && elem (namePrefix u) ["", pref]
-        || showQU u `elem` map (sc ++) sl
+        || showQU u `elem` map (Map.findWithDefault
+                (error $ "wrong predefined prefix: " ++ show pref)
+                pref predefPrefixes ++) sl
 
 owlSomething :: [String]
 owlSomething = ["Thing", "Nothing"]
 
 isThing :: IRI -> Bool
-isThing = checkPredef owlSomething "owl" "http://www.w3.org/2002/07/owl#"
+isThing = checkPredef owlSomething "owl"
+
+xsdNumbers :: [String]
+xsdNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
+    nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS,
+    longS, intS, shortS, byteS, unsignedLongS, unsignedIntS, unsignedShortS,
+    unsignedByteS]
+
+owlNumbers :: [String]
+owlNumbers = [realS, rationalS]
+
+xsdStrings :: [String]
+xsdStrings = [stringS, ncNameS, nameS, nmTokenS, tokenS, languageS,
+    normalizedStringS]
+
+xsdKeys :: [String]
+xsdKeys = [booleanS, dATAS, hexBinaryS, base64BinaryS,
+    dateTimeS, dateTimeStampS, anyURI] ++ xsdNumbers ++ xsdStrings
+
+nonXSDKeys :: [String]
+nonXSDKeys = [realS, rationalS, xmlLiteral, rdfsLiteral]
 
 -- | data type strings (some are not listed in the grammar)
 datatypeKeys :: [String]
-datatypeKeys = [booleanS, dATAS, stringS, universalS] ++ owlNumbers
-
-owlNumbers :: [String]
-owlNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
-    nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS]
+datatypeKeys = xsdKeys ++ nonXSDKeys
 
 getDataType :: Datatype -> String
 getDataType dt =
-    if (namePrefix dt) `elem` ["", "xsd"]
+    if namePrefix dt `elem` ["", "xsd"]
         then localPart dt 
         else fromJust $ stripPrefix
                 "http://www.w3.org/2001/XMLSchema#" $ showQU dt
 
 isDatatypeKey :: IRI -> Bool
-isDatatypeKey = checkPredef datatypeKeys "xsd"
-    "http://www.w3.org/2001/XMLSchema#"
+isDatatypeKey iri = any (\ (l, p) -> checkPredef l p iri) [(xsdKeys, "xsd"),
+    (owlNumbers, "owl"), ([xmlLiteral], "rdf"), ([rdfsLiteral], "rdfs")]
 
 isOWLSmth :: [String] -> IRI -> Bool
-isOWLSmth sl = checkPredef sl "xsd" "http://www.w3.org/2001/XMLSchema#"
+isOWLSmth sl = checkPredef sl "xsd"
 
 data DatatypeType = OWL2Number | OWL2String | OWL2Bool | Other
     deriving (Show, Eq, Ord)
@@ -237,7 +274,7 @@ datatypeType :: IRI -> DatatypeType
 datatypeType iri = case isDatatypeKey iri of
     True
         | isOWLSmth [booleanS] iri -> OWL2Bool
-        | isOWLSmth owlNumbers iri -> OWL2Number
+        | isOWLSmth xsdNumbers iri -> OWL2Number
         | isOWLSmth [stringS] iri -> OWL2String
         | otherwise -> Other
     False -> Other
@@ -247,6 +284,7 @@ data DatatypeFacet =
   | MINLENGTH
   | MAXLENGTH
   | PATTERN
+  | LANGRANGE
   | MININCLUSIVE
   | MINEXCLUSIVE
   | MAXINCLUSIVE
@@ -261,6 +299,7 @@ showFacet df = case df of
     MINLENGTH -> minLengthS
     MAXLENGTH -> maxLengthS
     PATTERN -> patternS
+    LANGRANGE -> langRangeS
     MININCLUSIVE -> lessEq
     MINEXCLUSIVE -> lessS
     MAXINCLUSIVE -> greaterEq

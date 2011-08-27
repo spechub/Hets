@@ -9,7 +9,7 @@ spec person =
     Datatype: Years
         EquivalentTo: natural
     Datatype: Name
-        EquivalentTo: string [pattern "[a-z]"^^string]
+        EquivalentTo: Literal [pattern "[a-z]"^^string]
 
     ObjectProperty: hasSSN
     ObjectProperty: hasName

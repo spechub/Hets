@@ -18,7 +18,9 @@ module OWL2.Keywords where
 
 keywords :: [String]
 keywords =
-  [ booleanS
+  [ base64BinaryS
+  , booleanS
+  , byteS
   , dATAS
   , decimalS
   , digitsS
@@ -27,9 +29,12 @@ keywords =
   , fractionS
   , functionalS
   , hasS
+  , hexBinaryS
+  , intS
   , integerS
   , inverseS
   , lengthS
+  , longS
   , maxLengthS
   , maxS
   , minLengthS
@@ -43,16 +48,39 @@ keywords =
   , orS
   , patternS
   , positiveIntegerS
+  , rationalS
+  , realS
   , selfS
+  , shortS
   , someS
   , thatS
-  , universalS
+  , rdfsLiteral
+  , unsignedByteS
+  , unsignedIntS
+  , unsignedLongS
+  , unsignedShortS
   , valueS
+  , dateTimeS
+  , dateTimeStampS
+  , anyURI
+  , xmlLiteral
+  , ncNameS
+  , nameS
+  , nmTokenS
+  , tokenS
+  , languageS
+  , normalizedStringS
   , xorS
   ]
 
+base64BinaryS :: String
+base64BinaryS = "base64Binary"
+
 booleanS :: String
 booleanS = "boolean"
+
+byteS :: String
+byteS = "byte"
 
 dATAS :: String
 dATAS = "DATA"
@@ -81,14 +109,26 @@ functionalS = "Functional"
 hasS :: String
 hasS = "has"
 
+hexBinaryS :: String
+hexBinaryS = "hexBinary"
+
+intS :: String
+intS = "int"
+
 integerS :: String
 integerS = "integer"
 
 inverseS :: String
 inverseS = "inverse"
 
+langRangeS :: String
+langRangeS = "langRange"
+
 lengthS :: String
 lengthS = "length"
+
+longS :: String
+longS = "long"
 
 maxLengthS :: String
 maxLengthS = "maxLength"
@@ -129,8 +169,17 @@ patternS = "pattern"
 positiveIntegerS :: String
 positiveIntegerS = "positiveInteger"
 
+rationalS :: String
+rationalS = "rational"
+
+realS :: String
+realS = "real"
+
 selfS :: String
 selfS = "Self"
+
+shortS :: String
+shortS = "short"
 
 someS :: String
 someS = "some"
@@ -138,11 +187,53 @@ someS = "some"
 thatS :: String
 thatS = "that"
 
-universalS :: String
-universalS = "Universal"
+rdfsLiteral :: String
+rdfsLiteral = "Literal"
+
+unsignedByteS :: String
+unsignedByteS = "unsignedByte"
+
+unsignedIntS :: String
+unsignedIntS = "unsignedInt"
+
+unsignedLongS :: String
+unsignedLongS = "unsignedLongS"
+
+unsignedShortS :: String
+unsignedShortS = "unsignedShort"
 
 valueS :: String
 valueS = "value"
 
 xorS :: String
 xorS = "xor"
+
+dateTimeS :: String
+dateTimeS = "dateTime"
+
+dateTimeStampS :: String
+dateTimeStampS = "dateTimeStamp"
+
+anyURI :: String
+anyURI = "anyURI"
+
+xmlLiteral :: String
+xmlLiteral = "XMLLiteral"
+
+ncNameS :: String
+ncNameS = "NCName"
+
+nameS :: String
+nameS = "Name"
+
+nmTokenS :: String
+nmTokenS = "NMTOKEN"
+
+tokenS :: String
+tokenS = "token"
+
+languageS :: String
+languageS = "language"
+
+normalizedStringS :: String
+normalizedStringS = "normalizedString"
