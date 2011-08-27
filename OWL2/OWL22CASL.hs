@@ -319,7 +319,7 @@ mapLiteral :: Literal -> Result (TERM ())
 mapLiteral lit = return $ case lit of
     Literal l ty -> Sorted_term (case ty of
         Untyped _ -> foldr consChar emptyStringTerm l
-        Typed dt -> case datatypeType dt of
+        Typed dt -> case getDatatypeCat dt of
             OWL2Number -> let p = parse literal "" l in case p of
                 Right nr -> mapNrLit nr
                 _ -> error "cannot parse number literal"
@@ -410,7 +410,7 @@ mapDataRange cSig dr i = case dr of
         return (disjunct $ map (mkStEq $ qualData i) ls, cSig)
 
 getNrType :: Datatype -> SORT
-getNrType dt = case getDataType dt of
+getNrType dt = case getPredefName dt of
     "integer" -> integer
     "negativeInteger" -> negIntS
     "nonNegativeInteger" -> nonNegInt
@@ -423,7 +423,7 @@ getNrType dt = case getDataType dt of
 
 mkPredType :: ConstrainingFacet -> Datatype -> PredType
 mkPredType cf dt =
-    let c = getDataType cf
+    let c = getPredefName cf
     in PredType $
         if c `elem` map showFacet
                 [MININCLUSIVE, MAXINCLUSIVE, MINEXCLUSIVE, MAXEXCLUSIVE]

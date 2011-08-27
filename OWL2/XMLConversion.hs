@@ -122,7 +122,7 @@ setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
     attrVal = show i}]}
 
 correctFacet :: ConstrainingFacet -> ConstrainingFacet
-correctFacet c = let d = getDataType c in setPrefix "http" $ mkQName $
+correctFacet c = let d = getPredefName c in setPrefix "http" $ mkQName $
     "//www.w3.org/2001/XMLSchema#" ++ case d of
         ">" -> "minExclusive"
         "<" -> "maxExclusive"

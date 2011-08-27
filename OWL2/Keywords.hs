@@ -71,6 +71,21 @@ keywords =
   , languageS
   , normalizedStringS
   , xorS
+  , thing
+  , nothing
+  , topObjProp
+  , bottomObjProp
+  , topDataProp
+  , bottomDataProp
+  , label
+  , comment
+  , seeAlso
+  , isDefinedBy
+  , deprecated
+  , versionInfo
+  , priorVersion
+  , backwardCompatibleWith
+  , incompatibleWith
   ]
 
 base64BinaryS :: String
@@ -237,3 +252,48 @@ languageS = "language"
 
 normalizedStringS :: String
 normalizedStringS = "normalizedString"
+
+thing :: String
+thing = "thing"
+
+nothing :: String
+nothing = "nothing"
+
+topObjProp :: String
+topObjProp = "topObjectProperty"
+
+bottomObjProp :: String
+bottomObjProp = "bottomObjectProperty"
+
+topDataProp :: String
+topDataProp = "topDataProperty"
+
+bottomDataProp :: String
+bottomDataProp = "bottomDataProperty"
+
+label :: String
+label = "label"
+
+comment :: String
+comment = "comment"
+
+seeAlso :: String
+seeAlso = "seeAlso"
+
+isDefinedBy :: String
+isDefinedBy = "isDefinedBy"
+
+deprecated :: String
+deprecated = "deprecated"
+
+versionInfo :: String
+versionInfo = "versionInfo"
+
+priorVersion :: String
+priorVersion = "priorVersion"
+
+backwardCompatibleWith :: String
+backwardCompatibleWith = "backwardCompatibleWith"
+
+incompatibleWith :: String
+incompatibleWith = "incompatibleWith"

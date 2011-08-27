@@ -80,6 +80,11 @@ correctEntity s iri =
     [Entity Datatype iri | Set.member iri (datatypes s)] ++
     [Entity NamedIndividual iri | Set.member iri (individuals s)]
 
+checkLiteral :: Sign -> Literal -> Result ()
+checkLiteral s l = case l of
+    Literal _ (Typed dt) -> checkEntity s $ Entity Datatype dt
+    _ -> return ()
+
 objPropToIRI :: ObjectPropertyExpression -> Individual
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u
@@ -112,10 +117,12 @@ checkDataPropList s dl = do
 -- | checks if a DataRange is valid
 checkDataRange :: Sign -> DataRange -> Result ()
 checkDataRange s dr = case dr of
-    DataType dt _ -> checkEntity s $ Entity Datatype dt
+    DataType dt rl -> do
+        checkEntity s $ Entity Datatype dt
+        mapM_ (checkLiteral s . snd) rl
     DataJunction _ drl -> mapM_ (checkDataRange s) drl
     DataComplementOf r -> checkDataRange s r
-    _ -> return ()
+    DataOneOf ll -> mapM_ (checkLiteral s) ll
 
 {- | converts ClassExpression to DataRanges because some
      DataProperties may be parsed as ObjectProperties -}
@@ -177,8 +184,10 @@ checkClassExpression s desc =
     DataValuesFrom _ dExp r -> do
         checkDataRange s r
         if isDeclDataProp s dExp then return desc else datErr dExp
-    DataHasValue dExp _ -> if isDeclDataProp s dExp then return desc
-        else datErr dExp
+    DataHasValue dExp l -> do
+        checkLiteral s l    
+        if isDeclDataProp s dExp then return desc
+            else datErr dExp
     DataCardinality (Cardinality _ _ dExp mr) -> if isDeclDataProp s dExp
         then case mr of
             Nothing -> return desc
@@ -189,8 +198,10 @@ checkFact :: Sign -> Fact -> Result ()
 checkFact s f = case f of
     ObjectPropertyFact _ op _ -> unless (isDeclObjProp s op) $
         fail $ "Static analysis. ObjectPropertyFact failed " ++ show f
-    DataPropertyFact _ dp _ -> unless (isDeclDataProp s dp) $
-        fail $ "Static analysis. DataProperty fact failed " ++ show f
+    DataPropertyFact _ dp l -> do
+        checkLiteral s l
+        unless (isDeclDataProp s dp)
+            $ fail $ "Static analysis. DataProperty fact failed " ++ show f
 
 checkFactList :: Sign -> [Fact] -> Result ()
 checkFactList = mapM_ . checkFact

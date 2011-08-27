@@ -24,7 +24,7 @@ import OWL2.Keywords
 
 import Data.Char (intToDigit)
 import Data.List
-import Data.Maybe (fromJust)
+import Data.Maybe
 import qualified Data.Map as Map
 
 data IRIType = Full | Abbreviated | NodeID
@@ -81,23 +81,6 @@ setQRange r q = q { iriPos = r }
 
 setPrefix :: String -> QName -> QName
 setPrefix s q = q { namePrefix = s }
-
-setDatatypePrefix :: QName -> QName
-setDatatypePrefix iri = let lp = localPart iri in
-    if lp `elem` xsdKeys
-        then setPrefix "xsd" iri
-        else if lp `elem` owlNumbers
-                then setPrefix "owl" iri
-                else case lp of
-                   "XMLLiteral" -> setPrefix "rdf" iri
-                   "Literal" -> setPrefix "rdfs" iri
-                   _ -> error $ showQU iri ++ " is not a predefined datatype"
-
-setReservedPrefix :: QName -> QName
-setReservedPrefix iri
-    | isDatatypeKey iri && null (namePrefix iri) = setDatatypePrefix iri
-    | isThing iri && null (namePrefix iri) = setPrefix "owl" iri
-    | otherwise = iri
 
 setFull :: QName -> QName
 setFull q = q {iriType = Full}
@@ -216,18 +199,36 @@ showQuantifierType ty = case ty of
     AllValuesFrom -> onlyS
     SomeValuesFrom -> someS
 
-checkPredef :: [String] -> String -> IRI -> Bool
-checkPredef sl pref u =
-    localPart u `elem` sl && elem (namePrefix u) ["", pref]
-        || showQU u `elem` map (Map.findWithDefault
-                (error $ "wrong predefined prefix: " ++ show pref)
-                pref predefPrefixes ++) sl
+-- * Predefined IRIs
 
-owlSomething :: [String]
-owlSomething = ["Thing", "Nothing"]
+predefClass :: [String]
+predefClass = [thing, nothing]
 
 isThing :: IRI -> Bool
-isThing = checkPredef owlSomething "owl"
+isThing = isOWLPredef predefClass
+
+predefObjProp :: [String]
+predefObjProp = [topObjProp, bottomObjProp]
+
+isPredefObjProp :: IRI -> Bool 
+isPredefObjProp = isOWLPredef predefObjProp
+
+predefDataProp :: [String] 
+predefDataProp = [topDataProp, bottomDataProp]
+
+isPredefDataProp :: IRI -> Bool
+isPredefDataProp = isOWLPredef predefDataProp
+
+predefRDFSAnnoProps :: [String]
+predefRDFSAnnoProps = [label, comment, seeAlso, isDefinedBy]
+
+predefOWLAnnoProps :: [String]
+predefOWLAnnoProps = [deprecated, versionInfo, priorVersion,
+    backwardCompatibleWith, incompatibleWith]
+
+isPredefAnnoProp :: IRI -> Bool
+isPredefAnnoProp iri = isOWLPredef predefOWLAnnoProps iri
+    || checkPredef predefRDFSAnnoProps "rdfs" iri
 
 xsdNumbers :: [String]
 xsdNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
@@ -247,37 +248,72 @@ xsdKeys = [booleanS, dATAS, hexBinaryS, base64BinaryS,
     dateTimeS, dateTimeStampS, anyURI] ++ xsdNumbers ++ xsdStrings
 
 nonXSDKeys :: [String]
-nonXSDKeys = [realS, rationalS, xmlLiteral, rdfsLiteral]
+nonXSDKeys = owlNumbers ++ [xmlLiteral, rdfsLiteral]
 
--- | data type strings (some are not listed in the grammar)
 datatypeKeys :: [String]
 datatypeKeys = xsdKeys ++ nonXSDKeys
-
-getDataType :: Datatype -> String
-getDataType dt =
-    if namePrefix dt `elem` ["", "xsd"]
-        then localPart dt 
-        else fromJust $ stripPrefix
-                "http://www.w3.org/2001/XMLSchema#" $ showQU dt
 
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey iri = any (\ (l, p) -> checkPredef l p iri) [(xsdKeys, "xsd"),
     (owlNumbers, "owl"), ([xmlLiteral], "rdf"), ([rdfsLiteral], "rdfs")]
 
-isOWLSmth :: [String] -> IRI -> Bool
-isOWLSmth sl = checkPredef sl "xsd"
+checkPredef :: [String] -> String -> IRI -> Bool
+checkPredef sl pref u =
+    localPart u `elem` sl && elem (namePrefix u) ["", pref]
+        || showQU u `elem` map (Map.findWithDefault
+                (error $ "not predefined prefix: " ++ show pref)
+                pref (predefPrefixes `Map.difference`
+                        Map.fromList [("", showQU dummyQName ++ "#")]) ++) sl
 
-data DatatypeType = OWL2Number | OWL2String | OWL2Bool | Other
+isOWLPredef :: [String] -> IRI -> Bool
+isOWLPredef sl = checkPredef sl "owl"
+
+-- | sets the correct prefix for the predefined datatypes
+setDatatypePrefix :: IRI -> IRI
+setDatatypePrefix iri = let lp = localPart iri in
+    if lp `elem` xsdKeys
+        then setPrefix "xsd" iri
+        else if lp `elem` owlNumbers
+                then setPrefix "owl" iri
+                else case lp of
+                   "XMLLiteral" -> setPrefix "rdf" iri
+                   "Literal" -> setPrefix "rdfs" iri
+                   _ -> error $ showQU iri ++ " is not a predefined datatype"
+
+-- | checks if the IRI is part of the built-in ones and puts the correct prefix
+setReservedPrefix :: IRI -> IRI
+setReservedPrefix iri
+    | isDatatypeKey iri && null (namePrefix iri) = setDatatypePrefix iri
+    | (isThing iri || isPredefAnnoProp iri || isPredefDataProp iri
+        || isPredefObjProp iri) && null (namePrefix iri) = setPrefix "owl" iri
+    | otherwise = iri
+
+{- | returns the name of the predefined IRI (e.g <xsd:string> returns "string"
+    or <http://www.w3.org/2002/07/owl#real> returns "real") -}
+getPredefName :: IRI -> String
+getPredefName iri =
+    if namePrefix iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
+        then localPart iri 
+        else case catMaybes $ map (flip stripPrefix $ showQU iri)
+                    $ Map.elems predefPrefixes of
+                [s] -> s
+                _ -> error $ showQU iri ++ " is not a predefined IRI"
+
+data DatatypeCat = OWL2Number | OWL2String | OWL2Bool | Other
     deriving (Show, Eq, Ord)
 
-datatypeType :: IRI -> DatatypeType
-datatypeType iri = case isDatatypeKey iri of
+getDatatypeCat :: IRI -> DatatypeCat
+getDatatypeCat iri = case isDatatypeKey iri of
     True
-        | isOWLSmth [booleanS] iri -> OWL2Bool
-        | isOWLSmth xsdNumbers iri -> OWL2Number
-        | isOWLSmth [stringS] iri -> OWL2String
+        | hasPrefXSD [booleanS] iri -> OWL2Bool
+        | hasPrefXSD xsdNumbers iri || checkPredef owlNumbers "owl" iri
+            -> OWL2Number
+        | hasPrefXSD xsdStrings iri -> OWL2String
         | otherwise -> Other
     False -> Other
+
+hasPrefXSD :: [String] -> IRI -> Bool
+hasPrefXSD sl = checkPredef sl "xsd"
 
 data DatatypeFacet =
     LENGTH
@@ -306,6 +342,8 @@ showFacet df = case df of
     MAXEXCLUSIVE -> greaterS
     TOTALDIGITS -> digitsS
     FRACTIONDIGITS -> fractionS
+
+-- * Cardinalities
 
 data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality
     deriving (Show, Eq, Ord)

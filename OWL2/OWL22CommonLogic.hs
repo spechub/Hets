@@ -302,7 +302,7 @@ mapTheory (owlSig, owlSens) = do
                 return (sen ++ x, unite sig y)
                 ) ([], cSig) owlSens
     let sig = unite (emptySig {items = Set.fromList $ map (uriToId .
-            setReservedPrefix . mkQName) $ "owl:Datatype" : owlSomething
+            setReservedPrefix . mkQName) $ "owl:Datatype" : predefClass
             ++ datatypeKeys}) nSig
         cSens = nothingSent : thingDataDisjoint : declarations owlSig ++ cSensI
     return (sig, cSens)

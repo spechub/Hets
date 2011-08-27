@@ -9,7 +9,7 @@ spec person =
     Datatype: Years
         EquivalentTo: natural
     Datatype: Name
-        EquivalentTo: Literal [pattern "[a-z]"^^string]
+        EquivalentTo: string [pattern "[a-z]"^^string]
 
     ObjectProperty: hasSSN
     ObjectProperty: hasName
@@ -18,7 +18,7 @@ spec person =
         SubPropertyOf: hasChildren
 
     DataProperty: hasAge
-        Range: natural [> 10]
+        Range: natural [> "10.24"^^real]
     DataProperty: hasHeight
         Range: height [< 2.1f]
 
@@ -30,6 +30,5 @@ spec person =
 
     Individual: Ann
         Types: hasAge some natural, hasChildren min 2
-        Facts: hasAge 30
 
 end
