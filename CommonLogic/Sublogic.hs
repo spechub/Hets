@@ -331,9 +331,9 @@ sublogics_all =
 
 sublogics_name :: CommonLogicSL -> String
 sublogics_name f = case format f of
-                     Propositional   -> "Propositional Logic"
-                     FirstOrder      -> "First Order Logic"
-                     FullCommonLogic -> "Full CommonLogic"
+                     Propositional   -> "Propositional"
+                     FirstOrder      -> "FOL"
+                     FullCommonLogic -> "FullCommonLogic"
 
 -------------------------------------------------------------------------------
 -- Projections to sublogics                                                  --
