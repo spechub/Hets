@@ -15,7 +15,7 @@ The possible world encoding comorphism from ModalCASL to CASL.
 
 -}
 
-module Comorphisms.Modal2CASL (Modal2CASL(..)) where
+module Comorphisms.Modal2CASL (Modal2CASL (..)) where
 
 import Logic.Logic
 import Logic.Comorphism
@@ -79,47 +79,37 @@ instance Comorphism Modal2CASL
     is_weakly_amalgamable Modal2CASL = True
 
 data ModName = SimpleM SIMPLE_ID
-             | SortM   SORT
-               deriving (Show,Ord,Eq)
+             | SortM SORT
+               deriving (Show, Ord, Eq)
 
+-- | relations on possible worlds
 type ModalityRelMap = Map.Map ModName PRED_NAME
-data ModMapEnv = MME { caslSign :: CASLSign,
-                       worldSort :: SORT,
-                       modalityRelMap :: ModalityRelMap,
-                       flexOps :: Map.Map OP_NAME (Set.Set OpType),
---                     rigOps :: Map.Map OP_NAME (Set.Set OpType),
-                       flexPreds :: Map.Map PRED_NAME (Set.Set PredType),
---                     rigPreds :: Map.Map PRED_NAME (Set.Set PredType),
-                       relFormulas :: [Named CASLFORMULA]
-                     }
 
---  (CASL signature,World sort introduced,[introduced relations on possible worlds],)
-
+data ModMapEnv = MME
+    { caslSign :: CASLSign
+    , worldSort :: SORT
+    , modalityRelMap :: ModalityRelMap
+    , flexOps :: Map.Map OP_NAME (Set.Set OpType)
+    , flexPreds :: Map.Map PRED_NAME (Set.Set PredType)
+    , relFormulas :: [Named CASLFORMULA] }
 
 transSig :: MSign -> ModMapEnv
 transSig sign =
- {-   trace ("Flexible Ops: " ++ show flexibleOps ++
-           "\nRigid Ops: "  ++ show rigOps' ++
-           "\nOriginal Ops: " ++ show (opMap sign) ++ "\n" ++
-           "Flexible Preds: " ++ show flexiblePreds ++
-           "\nRigid Preds: "  ++ show rigPreds' ++
-           "\nOriginal Preds: " ++ show (predMap sign) ++ "\n"
-          )  -}
-   let sorSet     = sortSet sign
-       fws        = freshWorldSort sorSet
-       flexOps'   = MapSet.fromMap . Map.foldWithKey (addWorld_OP fws)
+   let sorSet = sortSet sign
+       fws = freshWorldSort sorSet
+       flexOps' = MapSet.fromMap . Map.foldWithKey (addWorld_OP fws)
                                     Map.empty $ MapSet.toMap flexibleOps
        flexPreds' = MapSet.fromMap . addWorldRels True relsTermMod
                     . addWorldRels False relsMod
                     . Map.foldWithKey (addWorld_PRED fws)
                                     Map.empty $ MapSet.toMap flexiblePreds
-       rigOps'    = rigidOps $ extendedInfo sign
-       rigPreds'  = rigidPreds $ extendedInfo sign
-       flexibleOps   = diffOpMapSet (opMap sign) rigOps'
+       rigOps' = rigidOps $ extendedInfo sign
+       rigPreds' = rigidPreds $ extendedInfo sign
+       flexibleOps = diffOpMapSet (opMap sign) rigOps'
        flexiblePreds = diffMapSet (predMap sign) rigPreds'
        relations = Map.union relsMod relsTermMod
-       genRels f mp = Map.foldWithKey (\me _ nm -> f me nm) Map.empty mp
-       genModFrms f mp = Map.foldWithKey f [] mp
+       genRels f = Map.foldWithKey (\ me _ nm -> f me nm) Map.empty
+       genModFrms f = Map.foldWithKey f []
        relSymbS me = Id [mkSimpleId "g_R"] [mkId [me]] nullRange
        relSymbT me = Id [mkSimpleId "g_R_t"] [me] nullRange
        relsMod = genRels (\ me nm -> Map.insert (SimpleM me) (relSymbS me) nm)
@@ -137,9 +127,9 @@ transSig sign =
                                (termModies $ extendedInfo sign)
        addWorldRels isTermMod rels mp =
               let argSorts rs = if isTermMod
-                             then [getModTermSort rs,fws,fws]
-                             else [fws,fws] in
-               Map.fold (\rs nm -> Map.insert rs
+                             then [getModTermSort rs, fws, fws]
+                             else [fws, fws] in
+               Map.fold (\ rs nm -> Map.insert rs
                                               (Set.singleton $
                                                     PredType $ argSorts rs)
                                               nm)
@@ -155,7 +145,7 @@ transSig sign =
          flexOps = MapSet.toMap flexibleOps,
          flexPreds = MapSet.toMap flexiblePreds,
          relFormulas = []}
-      in partMME { relFormulas = relModFrms++relTermModFrms}
+      in partMME { relFormulas = relModFrms ++ relTermModFrms}
 
 mapMor :: ModalMor -> CASLMor
 mapMor m = (embedMorphism ()
@@ -177,10 +167,10 @@ transSen :: MSign -> ModalFORMULA -> CASLFORMULA
 transSen msig = mapSenTop (transSig msig)
 
 mapSenTop :: ModMapEnv -> ModalFORMULA -> CASLFORMULA
-mapSenTop mapEnv@(MME{worldSort = fws}) f =
+mapSenTop mapEnv@(MME {worldSort = fws}) f =
     case f of
-    Quantification q@(Universal) vs frm ps ->
-        Quantification q (qwv:vs) (mapSen mapEnv wvs frm) ps
+    Quantification q@Universal vs frm ps ->
+        Quantification q (qwv : vs) (mapSen mapEnv wvs frm) ps
     f1 -> Quantification Universal [qwv] (mapSen mapEnv wvs f1) nullRange
     where qwv = Var_decl wvs fws nullRange
           wvs = [head worldVars]
@@ -188,7 +178,7 @@ mapSenTop mapEnv@(MME{worldSort = fws}) f =
 
 -- head [VAR] is always the current world variable (for predication)
 mapSen :: ModMapEnv -> [VAR] -> ModalFORMULA -> CASLFORMULA
-mapSen mapEnv@(MME{worldSort = fws,flexPreds=fPreds}) vars
+mapSen mapEnv@(MME {worldSort = fws, flexPreds = fPreds}) vars
        f = case f of
            Quantification q vs frm ps ->
                   Quantification q vs (mapSen mapEnv vars frm) ps
@@ -208,16 +198,16 @@ mapSen mapEnv@(MME{worldSort = fws,flexPreds=fPreds}) vars
            Strong_equation t1 t2 ps -> Strong_equation
                (mapTERM mapEnv vars t1) (mapTERM mapEnv vars t2) ps
            Predication pn as qs ->
-               let as'        = map (mapTERM mapEnv vars) as
-                   fwsTerm    = sortedWorldTerm fws (head vars)
-                   (pn',as'') =
+               let as' = map (mapTERM mapEnv vars) as
+                   fwsTerm = sortedWorldTerm fws (head vars)
+                   (pn', as'') =
                        case pn of
                        Pred_name _ -> error "Modal2CASL: untyped predication"
                        Qual_pred_name prn pType@(Pred_type sorts pps) ps ->
                          let addTup = (Qual_pred_name (addPlace prn)
-                                             (Pred_type (fws:sorts) pps) ps,
-                                       fwsTerm:as')
-                             defTup = (pn,as') in
+                                             (Pred_type (fws : sorts) pps) ps,
+                                       fwsTerm : as')
+                             defTup = (pn, as') in
                           maybe defTup
                             (\ ts -> assert (not $ Set.null ts)
                                  (if Set.member (toPredType pType) ts
@@ -232,18 +222,17 @@ mapSen mapEnv@(MME{worldSort = fws,flexPreds=fPreds}) vars
            _ -> error "Modal2CASL.transSen->mapSen"
 
 mapMSen :: ModMapEnv -> [VAR] -> M_FORMULA -> CASLFORMULA
-mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
+mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
    = let trans_f1 = mkId [mkSimpleId "Placeholder for Formula"]
-         t_var    = mkSimpleId "Placeholder for Modality Term"
-         (w1,w2,newVars) = assert (not (null vars))
+         t_var = mkSimpleId "Placeholder for Modality Term"
+         (w1, w2, newVars) = assert (not (null vars))
                            (let nVars =
-                                 freshWorldVar (vars) : vars
+                                 freshWorldVar vars : vars
                             in (head vars, head nVars, nVars))
-         getRel mo map' =
+         getRel mo =
               Map.findWithDefault
                     (error ("Modal2CASL: Undefined modality " ++ show mo))
                     (modalityToModName mo)
-                    map'
          trans' mTerm propSymb trForm nvs f1 =
              replacePropPredication mTerm
                                     propSymb (mapSen mapEnv nvs f1) trForm
@@ -277,27 +266,27 @@ mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
                              (mkQualPred rel $ mkPredType [tt, fws, fws])
                              [toQualVar vtt, toQualVar vw1, toQualVar vw2])
                           transPred
-         in trans' (Just (rel,t_var,mapT t))
+         in trans' (Just (rel, t_var, mapT t))
                                           trans_f1 newFormula
                                           newVars f1
 
 -- head [VAR] is always the current world variable (for Application)
 mapTERM :: ModMapEnv -> [VAR] -> TERM M_FORMULA -> TERM ()
-mapTERM mapEnv@(MME{worldSort=fws,flexOps=fOps}) vars t = case t of
+mapTERM mapEnv@(MME {worldSort = fws, flexOps = fOps}) vars t = case t of
     Qual_var v ty ps -> Qual_var v ty ps
-    Application opsym as qs  ->
-        let as'        = map (mapTERM mapEnv vars) as
-            fwsTerm    = sortedWorldTerm fws (head vars)
+    Application opsym as qs ->
+        let as' = map (mapTERM mapEnv vars) as
+            fwsTerm = sortedWorldTerm fws (head vars)
             addFws (Op_type k sorts res pps) =
-                Op_type k (fws:sorts) res pps
-            (opsym',as'') =
+                Op_type k (fws : sorts) res pps
+            (opsym', as'') =
                 case opsym of
                 Op_name _ -> error "Modal2CASL: untyped prdication"
                 Qual_op_name on opType ps ->
                     let addTup = (Qual_op_name (addPlace on)
                                                (addFws opType) ps,
-                                  fwsTerm:as')
-                        defTup = (opsym,as') in
+                                  fwsTerm : as')
+                        defTup = (opsym, as') in
                     maybe defTup
                           (\ ts -> assert (not $ Set.null ts)
                             (if Set.member (toOpType opType) ts
@@ -315,9 +304,9 @@ mapTERM mapEnv@(MME{worldSort=fws,flexOps=fOps}) vars t = case t of
 
 addPlace :: Id -> Id
 addPlace i@(Id ts ids ps)
-    | isMixfix i = Id ((\ (x,y) -> x++mkSimpleId place:y)
-                          (span (not . isPlace) ts)) ids ps
-    | otherwise  = i
+    | isMixfix i = Id ((\ (x, y) -> x ++ mkSimpleId place : y)
+                          (break isPlace ts)) ids ps
+    | otherwise = i
 
 modalityToModName :: MODALITY -> ModName
 modalityToModName (Simple_mod sid) = SimpleM sid
@@ -332,42 +321,26 @@ sortedWorldTerm fws v = Sorted_term (Qual_var v fws nullRange) fws nullRange
 addWorld_OP :: SORT -> OP_NAME -> Set.Set OpType
             -> Map.Map OP_NAME (Set.Set OpType)
             -> Map.Map OP_NAME (Set.Set OpType)
-addWorld_OP = addWorld_ (\ws t -> t { opArgs = ws : opArgs t})
+addWorld_OP = addWorld_ (\ ws t -> t { opArgs = ws : opArgs t})
 
 addWorld_PRED :: SORT -> PRED_NAME -> Set.Set PredType
               -> Map.Map PRED_NAME (Set.Set PredType)
               -> Map.Map PRED_NAME (Set.Set PredType)
-addWorld_PRED = addWorld_ (\ws t -> t {predArgs = ws : predArgs t})
+addWorld_PRED = addWorld_ (\ ws t -> t {predArgs = ws : predArgs t})
 
 addWorld_ :: (Ord a) => (SORT -> a -> a)
           -> SORT -> Id -> Set.Set a
           -> Map.Map OP_NAME (Set.Set a)
           -> Map.Map OP_NAME (Set.Set a)
-addWorld_ f fws k set mp = Map.insert (addPlace k) (Set.map (f fws) set) mp
-
-{-
--- List of sort ids for possible Worlds
-worldSorts :: [SORT]
-worldSorts = map mkSORT ("World":map (\x -> "World" ++ show x) [(1::Int)..])
-    where mkSORT s = mkId [mkSimpleId s]
--}
+addWorld_ f fws k set = Map.insert (addPlace k) (Set.map (f fws) set)
 
 freshWorldSort :: Set.Set SORT -> SORT
 freshWorldSort _sorSet = mkId [mkSimpleId "g_World"]
-    -- head . filter notKnown worldSorts
-    -- where notKnown s = not $ s `Set.member` sorSet
 
 -- List of variables for worlds
 worldVars :: [SIMPLE_ID]
-worldVars = map mkSimpleId $ map (\ x -> "g_w" ++ show x) [(1::Int)..]
+worldVars = map (mkSimpleId . ("g_w" ++) . show) [(1 :: Int) ..]
 
 freshWorldVar :: [SIMPLE_ID] -> SIMPLE_ID
-freshWorldVar vs = head . (filter notKnown) $ worldVars
-    where notKnown v = not $ elem v vs
-
-
-{-
--- construct a relation from a given modality symbol which is new
-consRelation :: Pred_map -- ^ map of allready known predicate symbols
-             ->
--}
+freshWorldVar vs = head $ filter notKnown worldVars
+    where notKnown v = notElem v vs
