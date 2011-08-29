@@ -435,7 +435,7 @@ gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # all sources that need to be created before ghc can be called
 derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
-    $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files)
+    $(inline_axiom_files) $(hs_der_files)
 
 ####################################################################
 ### targets
@@ -701,14 +701,6 @@ endif
 	b=`basename $< .glade`; \
     cat GUI/Glade/Template.append.hs | sed "s/\%s/$$b/" | \
     utils/appendHaskellPreludeString $< > $@
-
-## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
-# uses intransparently utils/outlineAxioms
-Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
-    utils/genTransMFormFunc.pl $(INLINEAXIOMS)
-	$(RM) $@
-	$(PERL) utils/genTransMFormFunc.pl $< $@
-	chmod 444 $@
 
 # directory for installers
 INSTALLER_DIR = ../installers
