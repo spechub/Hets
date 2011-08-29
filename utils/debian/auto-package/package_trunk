@@ -54,11 +54,11 @@ cd $HETS_FOLDER && export JAVA_HOME=/usr/lib/jvm/java-6-sun
 make initialize_java 1>/dev/null 2>/dev/null
 cd ..
 mkdir -p $HETS_FOLDER/hets-owl-tools
-cd $HETS_FOLDER/OWL
-cp -r tests OWL2ATerm.jar OWLFact.jar OWLFactProver.jar OWLLocality.jar $HETS_FOLDER/hets-owl-tools
+cd $HETS_FOLDER/OWL2
+cp -r tests OWL*.jar $HETS_FOLDER/hets-owl-tools
 cd ../..
 mkdir -p $HETS_FOLDER/hets-owl-tools/lib
-cp $HETS_FOLDER/OWL/lib/*.jar $HETS_FOLDER/hets-owl-tools/lib
+cp $HETS_FOLDER/OWL2/lib/*.jar $HETS_FOLDER/hets-owl-tools/lib
 echo ::Done
 
 #copying OntoDMU and AProVE to hets-owl-tools
@@ -69,7 +69,7 @@ cp $HETS_FOLDER/DMU/OntoDMU.jar $HETS_FOLDER/hets-owl-tools
 echo ::Clearing svn/cvs folders
 cd $HETS_FOLDER
 make distclean 1>/dev/null 2>/dev/null
-rm OWL/java -rf
+rm OWL2/java -rf
 rm programatica
 rm -rf GMP Search mini Lottery
 cd ..
