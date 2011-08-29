@@ -44,6 +44,8 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
 
+import Debug.Trace
+
 import Control.Monad
 
 type CspBasicSpec = BASIC_SPEC CspBasicExt () CspSen
@@ -694,18 +696,29 @@ and the fully qualified list of renaming functions and predicates. -}
 anaRenamingItem :: (CommAlpha, [Rename]) -> Rename ->
                    State CspCASLSign (CommAlpha, [Rename])
 anaRenamingItem (inAl, fqRenamingTerms) (Rename ri _) = do
--- BUG -- too many nothings - should only be one
-  totOps <- getUnaryOpsById ri Total
-  if not (Set.null totOps)
-    then return (inAl `Set.union` totOps, fqRenamingTerms)
+  (totOpsSorts, totOpsComms) <- getUnaryOpsById ri Total
+  if not (Set.null totOpsSorts)
+    then let newRen = Set.toList $
+                      Set.map (\ pair -> Rename ri $ Just (TotOp, Just pair))
+                      totOpsSorts
+         in return (inAl `Set.union` totOpsComms, fqRenamingTerms ++ newRen)
     else do
-      parOps <- getUnaryOpsById ri Partial
-      if not (Set.null parOps)
-        then return (inAl `Set.union` parOps, fqRenamingTerms)
+      (partOpsSorts, parOpsComms) <- getUnaryOpsById ri Partial
+      if trace (show partOpsSorts) not (Set.null partOpsSorts)
+        then let newRen =
+                   Set.toList $
+                   Set.map (\ pair -> Rename ri $ Just (PartOp, Just pair))
+                   partOpsSorts
+             in return (inAl `Set.union` parOpsComms, fqRenamingTerms ++ newRen)
         else do
-          preds <- getBinPredsById ri
-          if not (Set.null preds)
-            then return (inAl `Set.union` preds, fqRenamingTerms)
+          (predsOpsSorts, predOpsComms) <- getBinPredsById ri
+          if not (Set.null predsOpsSorts)
+            then let newRen =
+                       Set.toList $
+                       Set.map (\ pair -> Rename ri $ Just (PartOp, Just pair))
+                       predsOpsSorts
+                 in return (inAl `Set.union` predOpsComms, fqRenamingTerms ++
+                                                           newRen)
             else do
               let err = "renaming item not a binary "
                         ++ "operation or predicate name"
@@ -715,30 +728,44 @@ anaRenamingItem (inAl, fqRenamingTerms) (Rename ri _) = do
               as there is an error in the spec. -}
               return (inAl, fqRenamingTerms)
 
-{- | Given a CASL identifier and a `function kind' (total or partial),
-find all unary operations of that kind with that name in the CASL
-signature, and return a set of corresponding communication types
-for those operations. -}
-getUnaryOpsById :: Id -> OpKind -> State CspCASLSign (Set.Set CommType)
+{- | Given a CASL identifier and a `function kind' (total or partial), find all
+unary operations of that kind with that name in the CASL signature, and return a
+set of corresponding profiles . i.e., argument sort and result sort, for those
+operations. Also return the computed alphabet -}
+getUnaryOpsById :: Id -> OpKind ->
+                   State CspCASLSign (Set.Set (SORT,SORT), Set.Set CommType)
 getUnaryOpsById ri kind = do
-    sig <- get
-    let binOpsKind = Set.filter (isBin kind) $ MapSet.lookup ri (opMap sig)
-        cts = Set.map CommTypeSort $ Set.fold opSorts Set.empty binOpsKind
-    return cts
+  sig <- get
+  let binOpsTypes = Set.filter (isBin kind) $ MapSet.lookup ri (opMap sig)
+      opTypeToSortPair opType =
+        let args = opArgs opType
+            arg = case args of
+              [s] -> s
+              _ -> error "CspCASL.StatAnaCSP.getUnaryOpsById: Unexpected Case"
+        in (arg, opRes opType)
+      allSortPairs = Set.map opTypeToSortPair binOpsTypes
+      cts = Set.map CommTypeSort $ Set.fold opSorts Set.empty binOpsTypes
+  return (allSortPairs, cts)
       where isBin k ot = k == opKind ot && isSingle (opArgs ot)
             opSorts o inS = Set.union inS $ Set.fromList $ opRes o : opArgs o
 
-{- | Given a CASL identifier find all binary predicates with that name
-in the CASL signature, and return a set of corresponding
-communication types for those predicates. -}
-getBinPredsById :: Id -> State CspCASLSign (Set.Set CommType)
+{- | Given a CASL identifier find all binary predicates with that name in the
+CASL signature, and return a set of corresponding profiles . i.e., argument sort
+and result sort, for those predicated. Also return the computed alphabet -}
+getBinPredsById :: Id ->
+                   State CspCASLSign (Set.Set (SORT,SORT), Set.Set CommType)
 getBinPredsById ri = do
     sig <- get
-    let binPreds = Set.filter isBinPredType $ MapSet.lookup ri (predMap sig)
-        cts = Set.map CommTypeSort $ Set.fold predSorts Set.empty binPreds
-    return cts
-      where
-            predSorts p inS = inS `Set.union` Set.fromList (predArgs p)
+    let binPredsTypes = Set.filter isBinPredType $
+                        MapSet.lookup ri (predMap sig)
+        binPredsTypesToSortPairs predType =
+          case predArgs predType of
+            [s1,s2] -> (s1,s2)
+            _ -> error "CspCASL.StatAnaCSP.getBinPredsById: Unexpected Case"
+        allSortPairs = Set.map binPredsTypesToSortPairs binPredsTypes
+        cts = Set.map CommTypeSort $ Set.fold predSorts Set.empty binPredsTypes
+    return (allSortPairs, cts)
+      where predSorts p inS = inS `Set.union` Set.fromList (predArgs p)
 
 {- | Given two CspCASL communication alphabets, check that the first's
 subsort closure is a subset of the second's subsort closure. -}

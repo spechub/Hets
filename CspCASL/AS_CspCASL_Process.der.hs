@@ -71,8 +71,6 @@ data EVENT
     | FQChanRecv (CHANNEL_NAME, SORT) (TERM ()) Range
     deriving (Show, Ord, Eq)
 
-
-
 -- | Event sets are sets of communication types.
 data EVENT_SET = EventSet [CommType] Range
                  deriving (Show, Ord, Eq)
