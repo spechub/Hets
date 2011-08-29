@@ -9,6 +9,8 @@ Portability :  portable
 
 -}
 
+-- previously generated via GeneratePatterns and utils/genTransMFormFunc.pl
+
 module Modal.ModalSystems (transSchemaMFormula) where
 
 import Common.DocUtils
