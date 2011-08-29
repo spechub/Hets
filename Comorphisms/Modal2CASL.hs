@@ -203,10 +203,10 @@ mapSen mapEnv@(MME{worldSort = fws,flexPreds=fPreds}) vars
            Negation frm ps -> Negation (mapSen mapEnv vars frm) ps
            True_atom ps -> True_atom ps
            False_atom ps -> False_atom ps
-           Existl_equation t1 t2 ps ->
-               Existl_equation (mapTERM mapEnv vars t1) (mapTERM mapEnv vars t2) ps
-           Strong_equation t1 t2 ps ->
-                  Strong_equation (mapTERM mapEnv vars t1) (mapTERM mapEnv vars t2) ps
+           Existl_equation t1 t2 ps -> Existl_equation
+               (mapTERM mapEnv vars t1) (mapTERM mapEnv vars t2) ps
+           Strong_equation t1 t2 ps -> Strong_equation
+               (mapTERM mapEnv vars t1) (mapTERM mapEnv vars t2) ps
            Predication pn as qs ->
                let as'        = map (mapTERM mapEnv vars) as
                    fwsTerm    = sortedWorldTerm fws (head vars)
@@ -251,55 +251,32 @@ mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
          vw1 = mkVarDecl w1 fws
          vw2 = mkVarDecl w2 fws
          mkPredType ts = Pred_type ts nullRange
+         joinPreds b t1 t2 = if b then mkImpl t1 t2 else conjunct [t1, t2]
+         quantForm b vs = if b then mkForall vs else
+           mkForall (init vs) . mkExist [last vs]
+         transPred = mkPredication (mkQualPred trans_f1 $ mkPredType []) []
      in
      case f of
-     BoxOrDiamond True moda f1 _ ->
+     BoxOrDiamond b moda f1 _ ->
        let rel = getRel moda pwRelMap in
         case moda of
         Simple_mod _ -> let
-          newFormula = mkForall [vw1, vw2]
-                          $ mkImpl
+          newFormula = quantForm b [vw1, vw2]
+                          $ joinPreds b
                             (mkPredication
                              (mkQualPred rel $ mkPredType [fws, fws])
                              [toQualVar vw1, toQualVar vw2])
-                          $ mkPredication
-                            (mkQualPred trans_f1 $ mkPredType []) []
+                          transPred
           in trans' Nothing trans_f1 newFormula newVars f1
         Term_mod t ->
          let tt = getModTermSort rel
              vtt = mkVarDecl t_var tt
-             newFormula = mkForall [vtt, vw1, vw2]
-                          $ mkImpl
+             newFormula = quantForm b [vtt, vw1, vw2]
+                          $ joinPreds b
                             (mkPredication
                              (mkQualPred rel $ mkPredType [tt, fws, fws])
                              [toQualVar vtt, toQualVar vw1, toQualVar vw2])
-                          $ mkPredication
-                            (mkQualPred trans_f1 $ mkPredType []) []
-         in trans' (Just (rel,t_var,mapT t))
-                                          trans_f1 newFormula
-                                          newVars f1
-     BoxOrDiamond False moda f1 _ ->
-       let rel = getRel moda pwRelMap in
-        case moda of
-        Simple_mod _ -> let
-          newFormula = mkForall [vw1] $ mkExist [vw2]
-                          $ conjunct
-                            [ mkPredication
-                              (mkQualPred rel $ mkPredType [fws, fws])
-                              [toQualVar vw1, toQualVar vw2]
-                            , mkPredication
-                              (mkQualPred trans_f1 $ mkPredType []) []]
-          in trans' Nothing trans_f1 newFormula newVars f1
-        Term_mod t ->
-         let tt = getModTermSort rel
-             vtt = mkVarDecl t_var tt
-             newFormula = mkForall [vtt, vw1] $ mkExist [vw2]
-                          $ conjunct
-                            [ mkPredication
-                              (mkQualPred rel $ mkPredType [tt, fws, fws])
-                              [toQualVar vtt, toQualVar vw1, toQualVar vw2]
-                            , mkPredication
-                              (mkQualPred trans_f1 $ mkPredType []) []]
+                          transPred
          in trans' (Just (rel,t_var,mapT t))
                                           trans_f1 newFormula
                                           newVars f1
