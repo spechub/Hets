@@ -4,9 +4,10 @@ imports Datatype
 
 begin
 
-datatype type1 =
+datatype (type4) type1 =
        foo |
        bar type2
 and type2 = "nat * type1"
+and type3 = "nat * type2"
 
 end
