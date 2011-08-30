@@ -17,8 +17,6 @@ References:
 module OWL2.AS where
 
 import Common.Id
-import Common.Keywords
-
 import OWL2.ColonKeywords
 import OWL2.Keywords
 
@@ -199,32 +197,16 @@ showQuantifierType ty = case ty of
     AllValuesFrom -> onlyS
     SomeValuesFrom -> someS
 
--- * Predefined IRIs
-
-predefClass :: [String]
-predefClass = [thing, nothing]
+-- * Predefined IRI checkings
 
 isThing :: IRI -> Bool
 isThing = isOWLPredef predefClass
 
-predefObjProp :: [String]
-predefObjProp = [topObjProp, bottomObjProp]
-
 isPredefObjProp :: IRI -> Bool 
 isPredefObjProp = isOWLPredef predefObjProp
 
-predefDataProp :: [String] 
-predefDataProp = [topDataProp, bottomDataProp]
-
 isPredefDataProp :: IRI -> Bool
 isPredefDataProp = isOWLPredef predefDataProp
-
-predefRDFSAnnoProps :: [String]
-predefRDFSAnnoProps = [label, comment, seeAlso, isDefinedBy]
-
-predefOWLAnnoProps :: [String]
-predefOWLAnnoProps = [deprecated, versionInfo, priorVersion,
-    backwardCompatibleWith, incompatibleWith]
 
 isPredefAnnoProp :: IRI -> Bool
 isPredefAnnoProp iri = isOWLPredef predefOWLAnnoProps iri
@@ -233,29 +215,6 @@ isPredefAnnoProp iri = isOWLPredef predefOWLAnnoProps iri
 isPredefPropOrClass :: IRI -> Bool
 isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
     || isPredefObjProp iri || isThing iri
-
-xsdNumbers :: [String]
-xsdNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
-    nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS,
-    longS, intS, shortS, byteS, unsignedLongS, unsignedIntS, unsignedShortS,
-    unsignedByteS]
-
-owlNumbers :: [String]
-owlNumbers = [realS, rationalS]
-
-xsdStrings :: [String]
-xsdStrings = [stringS, ncNameS, nameS, nmTokenS, tokenS, languageS,
-    normalizedStringS]
-
-xsdKeys :: [String]
-xsdKeys = [booleanS, dATAS, hexBinaryS, base64BinaryS,
-    dateTimeS, dateTimeStampS, anyURI] ++ xsdNumbers ++ xsdStrings
-
-nonXSDKeys :: [String]
-nonXSDKeys = owlNumbers ++ [xmlLiteral, rdfsLiteral]
-
-datatypeKeys :: [String]
-datatypeKeys = xsdKeys ++ nonXSDKeys
 
 predefIRIs :: [IRI]
 predefIRIs = map (setPrefix "xsd" . mkQName) xsdKeys
@@ -327,34 +286,6 @@ getDatatypeCat iri = case isDatatypeKey iri of
 
 hasPrefXSD :: [String] -> IRI -> Bool
 hasPrefXSD sl = checkPredef sl "xsd"
-
-data DatatypeFacet =
-    LENGTH
-  | MINLENGTH
-  | MAXLENGTH
-  | PATTERN
-  | LANGRANGE
-  | MININCLUSIVE
-  | MINEXCLUSIVE
-  | MAXINCLUSIVE
-  | MAXEXCLUSIVE
-  | TOTALDIGITS
-  | FRACTIONDIGITS
-    deriving (Show, Eq, Ord)
-
-showFacet :: DatatypeFacet -> String
-showFacet df = case df of
-    LENGTH -> lengthS
-    MINLENGTH -> minLengthS
-    MAXLENGTH -> maxLengthS
-    PATTERN -> patternS
-    LANGRANGE -> langRangeS
-    MININCLUSIVE -> lessEq
-    MINEXCLUSIVE -> lessS
-    MAXINCLUSIVE -> greaterEq
-    MAXEXCLUSIVE -> greaterS
-    TOTALDIGITS -> digitsS
-    FRACTIONDIGITS -> fractionS
 
 facetToIRI :: DatatypeFacet -> ConstrainingFacet
 facetToIRI = setPrefix "xsd" . mkQName . showFacet

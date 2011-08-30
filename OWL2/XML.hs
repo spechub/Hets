@@ -16,6 +16,7 @@ import Common.Lexer
 
 import OWL2.AS
 import OWL2.Extract
+import OWL2.Keywords
 import OWL2.MS
 import OWL2.XMLKeywords
 

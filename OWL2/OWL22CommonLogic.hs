@@ -27,6 +27,7 @@ import qualified Data.Map as Map
 -- OWL2 = domain
 import OWL2.Logic_OWL2
 import OWL2.AS
+import OWL2.Keywords
 import OWL2.MS
 -- import OWL2.Parse
 -- import OWL2.ManchesterParser

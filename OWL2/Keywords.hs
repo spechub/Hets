@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  String constants for OWL keywords to be used for parsing
+Description :  OWL reserved keywords
   and printing
 Copyright   :  (c) Christian Maeder DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -10,11 +10,12 @@ Stability   :  provisional
 Portability :  portable
 
 String constants for keywords to be used for parsing and printing
-
-- all identifiers are mixed case (i.e. the keyword followed by a capital S)
+plus owl, xsd, rdf and rdfs reserved keywords. All identifiers are mixed case
 -}
 
 module OWL2.Keywords where
+
+import Common.Keywords
 
 keywords :: [String]
 keywords =
@@ -238,11 +239,11 @@ languageS = "language"
 normalizedStringS :: String
 normalizedStringS = "normalizedString"
 
-thing :: String
-thing = "Thing"
+thingS :: String
+thingS = "Thing"
 
-nothing :: String
-nothing = "Nothing"
+nothingS :: String
+nothingS = "Nothing"
 
 topObjProp :: String
 topObjProp = "topObjectProperty"
@@ -282,3 +283,74 @@ backwardCompatibleWith = "backwardCompatibleWith"
 
 incompatibleWith :: String
 incompatibleWith = "incompatibleWith"
+
+predefClass :: [String]
+predefClass = [thingS, nothingS]
+
+predefObjProp :: [String]
+predefObjProp = [topObjProp, bottomObjProp]
+
+predefDataProp :: [String] 
+predefDataProp = [topDataProp, bottomDataProp]
+
+predefRDFSAnnoProps :: [String]
+predefRDFSAnnoProps = [label, comment, seeAlso, isDefinedBy]
+
+predefOWLAnnoProps :: [String]
+predefOWLAnnoProps = [deprecated, versionInfo, priorVersion,
+    backwardCompatibleWith, incompatibleWith]
+
+xsdNumbers :: [String]
+xsdNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
+    nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS,
+    longS, intS, shortS, byteS, unsignedLongS, unsignedIntS, unsignedShortS,
+    unsignedByteS]
+
+owlNumbers :: [String]
+owlNumbers = [realS, rationalS]
+
+xsdStrings :: [String]
+xsdStrings = [stringS, ncNameS, nameS, nmTokenS, tokenS, languageS,
+    normalizedStringS]
+
+xsdKeys :: [String]
+xsdKeys = [booleanS, dATAS, hexBinaryS, base64BinaryS,
+    dateTimeS, dateTimeStampS, anyURI] ++ xsdNumbers ++ xsdStrings
+
+nonXSDKeys :: [String]
+nonXSDKeys = owlNumbers ++ [xmlLiteral, rdfsLiteral]
+
+datatypeKeys :: [String]
+datatypeKeys = xsdKeys ++ nonXSDKeys
+
+data DatatypeFacet =
+    LENGTH
+  | MINLENGTH
+  | MAXLENGTH
+  | PATTERN
+  | LANGRANGE
+  | MININCLUSIVE
+  | MINEXCLUSIVE
+  | MAXINCLUSIVE
+  | MAXEXCLUSIVE
+  | TOTALDIGITS
+  | FRACTIONDIGITS
+    deriving (Show, Eq, Ord)
+
+showFacet :: DatatypeFacet -> String
+showFacet df = case df of
+    LENGTH -> lengthS
+    MINLENGTH -> minLengthS
+    MAXLENGTH -> maxLengthS
+    PATTERN -> patternS
+    LANGRANGE -> langRangeS
+    MININCLUSIVE -> lessEq
+    MINEXCLUSIVE -> lessS
+    MAXINCLUSIVE -> greaterEq
+    MAXEXCLUSIVE -> greaterS
+    TOTALDIGITS -> digitsS
+    FRACTIONDIGITS -> fractionS
+
+facetList :: [DatatypeFacet]
+facetList = [LENGTH, MINLENGTH, MAXLENGTH, PATTERN, LANGRANGE, MININCLUSIVE,
+    MINEXCLUSIVE, MAXINCLUSIVE, MAXEXCLUSIVE, TOTALDIGITS, FRACTIONDIGITS]

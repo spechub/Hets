@@ -44,7 +44,7 @@ module CASL_DL.PredefinedCASLAxioms
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
-import OWL2.AS
+import OWL2.Keywords
 
 import Common.AS_Annotation
 import Common.Id
@@ -59,41 +59,41 @@ hetsPrefix = ""
 
 -- | OWL topsort Thing
 thing :: SORT
-thing = stringToId "Thing"
+thing = stringToId thingS
 
 n :: Range
 n = nullRange
 
 nothing :: SORT
-nothing = stringToId "Nothing"
+nothing = stringToId nothingS
 
 -- | OWL Data topSort DATA
 dataS :: SORT
-dataS = stringToId "DATA"
+dataS = stringToId dATAS
 
 integer :: SORT
-integer = stringToId "integer"
+integer = stringToId integerS
 
 float :: SORT
-float = stringToId "float"
+float = stringToId floatS
 
 decimal :: SORT
-decimal = stringToId "decimal"
+decimal = stringToId decimalS
 
 double :: SORT
-double = stringToId "double"
+double = stringToId doubleS
 
 posInt :: SORT
-posInt = stringToId "positiveInteger"
+posInt = stringToId positiveIntegerS
 
 negIntS :: SORT
-negIntS = stringToId "negativeInteger"
+negIntS = stringToId negativeIntegerS
 
 nonPosInt :: SORT
-nonPosInt = stringToId "nonPositiveInteger"
+nonPosInt = stringToId nonPositiveIntegerS
 
 nonNegInt :: SORT
-nonNegInt = stringToId "nonNegativeInteger"
+nonNegInt = stringToId nonNegativeIntegerS
 
 classPredType :: PRED_TYPE
 classPredType = Pred_type [thing] n
@@ -248,9 +248,7 @@ predefinedSign e = (emptySign e)
                      MapSet.fromList
                       $ (nothing, [conceptPred])
                       : map ( \ o -> (mkInfix o, [dataPred]))
-                        (["<", "<=", ">", ">="] ++ map showFacet [LENGTH,
-                            MINLENGTH, MAXLENGTH, PATTERN, LANGRANGE,
-                            TOTALDIGITS, FRACTIONDIGITS])
+                        (map showFacet facetList)
                       ++ map ( \ o -> (stringToId o, intTypes))
                          ["even", "odd"]
                  , opMap = MapSet.fromList
@@ -282,38 +280,15 @@ predefinedAxioms :: [Named (FORMULA ())]
 predefinedAxioms = let
   v1 = mkVarDecl (mkNName 1) thing
   t1 = toQualVar v1
-  in
-    [
-     makeNamed "nothing in Nothing" $
-     mkForall
-     [v1]
-     (
-      Negation
-      (
-       Predication
-       noThing
-       [t1]
-       n
-      )
-      n
-     )
-    ,
-     makeNamed "thing in Thing" $
-     mkForall
-     [v1]
-     (
-       Predication
-       (Qual_pred_name thing classPredType n)
-       [t1]
-       n
-     )
-    ]
+  in [makeNamed "nothing in Nothing" $ mkForall [v1] $ Negation
+      (Predication noThing [t1] n) n, makeNamed "thing in Thing" $
+      mkForall [v1] $ Predication (Qual_pred_name thing classPredType n) [t1] n]
+
+mkNNameAux :: Int -> String
+mkNNameAux k = case k of
+    0 -> ""
+    j -> mkNNameAux (j `div` 26) ++ [chr (j `mod` 26 + 96)]
 
 -- | Build a name
 mkNName :: Int -> Token
 mkNName i = mkSimpleId $ hetsPrefix ++ mkNNameAux i
-    where
-      mkNNameAux k =
-          case k of
-            0 -> ""
-            j -> mkNNameAux (j `div` 26) ++ [chr (j `mod` 26 + 96)]
