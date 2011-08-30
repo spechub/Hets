@@ -156,10 +156,8 @@ checkClassExpression s desc =
     ObjectValuesFrom q opExpr d -> if isDeclObjProp s opExpr
         then fmap (ObjectValuesFrom q opExpr) $ checkClassExpression s d
         else let iri = objPropToIRI opExpr
-             in if isDeclDataProp s iri then do
-                        ndr <- classExpressionToDataRange s d
-                        checkDataRange s ndr
-                        return $ DataValuesFrom q iri ndr
+             in if isDeclDataProp s iri then
+                    fmap (DataValuesFrom q iri) $ classExpressionToDataRange s d
                 else objErr iri
     ObjectHasSelf opExpr -> if isDeclObjProp s opExpr then return desc
         else objErr $ objPropToIRI opExpr
@@ -179,7 +177,6 @@ checkClassExpression s desc =
                             . Just) $ checkClassExpression s d
                 else do
                     dr <- classExpressionToDataRange s d
-                    checkDataRange s dr
                     if isDeclDataProp s iri then
                         return $ DataCardinality $ Cardinality a b iri $ Just dr
                         else datErr iri
@@ -229,8 +226,7 @@ checkAnnotation s (Annotation ans apr av) = do
 checkAnnos :: Sign -> [Annotations] -> Result ()
 checkAnnos = mapM_ . mapM . checkAnnotation
 
-checkAnnoList :: Sign -> ([t] -> Result ()) -> [(Annotations, t)]
-    -> Result ()
+checkAnnoList :: Sign -> ([t] -> Result ()) -> [(Annotations, t)] -> Result ()
 checkAnnoList s f anl = do
     checkAnnos s $ map fst anl
     f $ map snd anl

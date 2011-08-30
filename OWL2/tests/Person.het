@@ -12,6 +12,7 @@ spec person =
         EquivalentTo: string [pattern "[a-z]"^^xsd:string]
 
     AnnotationProperty: x
+        SubPropertyOf: deprecated
 
     ObjectProperty: hasSSN
     ObjectProperty: hasName
