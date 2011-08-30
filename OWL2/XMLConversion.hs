@@ -506,7 +506,7 @@ xmlOntologyDoc s od =
 mkODoc :: Sign -> [Named Axiom] -> String
 mkODoc s na = ppTopElement $ xmlOntologyDoc s $ emptyOntologyDoc
     {
-      ontology = emptyOntologyD
+      ontology = emptyOntology
         {
         ontFrames = map (axToFrame . sentence) na
         },

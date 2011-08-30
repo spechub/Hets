@@ -95,15 +95,15 @@ data OntologyDocument = OntologyDocument
 
 instance GetRange OntologyDocument
 
-emptyOntologyD :: Ontology
-emptyOntologyD = Ontology nullQName [] [] []
+emptyOntology :: Ontology
+emptyOntology = Ontology nullQName [] [] []
 
 emptyOntologyDoc :: OntologyDocument
-emptyOntologyDoc = OntologyDocument Map.empty emptyOntologyD
+emptyOntologyDoc = OntologyDocument Map.empty emptyOntology
 
 isEmptyOntology :: Ontology -> Bool
-isEmptyOntology (Ontology (QN _ l _ n _) annoList impList fs) =
-    null l && null n && null annoList && null impList && null fs
+isEmptyOntology (Ontology oiri annoList impList fs) = isNullQName oiri
+    && null annoList && null impList && null fs
 
 isEmptyOntologyDoc :: OntologyDocument -> Bool
 isEmptyOntologyDoc (OntologyDocument ns onto) =

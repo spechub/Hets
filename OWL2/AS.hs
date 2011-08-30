@@ -67,6 +67,11 @@ showQI = ('<' :) . (++ ">") . showQU
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
 
+isNullQName :: QName -> Bool
+isNullQName qn = case qn of
+    QN "" "" _ "" _ -> True
+    _ -> False
+
 dummyQName :: QName
 dummyQName =
   QN "http" "//www.dfki.de/sks/hets/ontology/unamed" Full "" nullRange

@@ -100,7 +100,7 @@ classFrameBit = do
   <|> do
     e <- equivOrDisjoint
     ds <- descriptionAnnotatedList
-    return $ ListFrameBit (Just (EDRelation e)) $ ExpressionBit ds
+    return $ ListFrameBit (Just $ EDRelation e) $ ExpressionBit ds
   <|> do
     pkeyword disjointUnionOfC
     as <- optionalAnnos
@@ -260,7 +260,7 @@ basicSpec = do
     ans <- many annotations
     as <- frames
     return emptyOntologyDoc
-        { ontology = emptyOntologyD
+        { ontology = emptyOntology
             { ontFrames = as
             , imports = ie
             , ann = ans

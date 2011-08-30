@@ -556,7 +556,7 @@ xmlBasicSpec e =
     let b = getBase e
     in emptyOntologyDoc
       {
-      ontology = emptyOntologyD
+      ontology = emptyOntology
         {
         ontFrames = getFrames b e,
         imports = getImports b e,

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  OWL reserved keywords
   and printing
-Copyright   :  (c) Christian Maeder DFKI Bremen 2008
+Copyright   :  (c) Christian Maeder DFKI Bremen 2008, Felix Mance, 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

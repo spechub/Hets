@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  Comorphism from OWL 2 to CASL_Dl
-Copyright   :  (c) Francisc-Nicolae Bungiu
+Copyright   :  (c) Francisc-Nicolae Bungiu, Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  f.bungiu@jacobs-university.de
