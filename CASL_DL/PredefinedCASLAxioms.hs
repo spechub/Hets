@@ -281,8 +281,9 @@ predefinedAxioms = let
   v1 = mkVarDecl (mkNName 1) thing
   t1 = toQualVar v1
   in [makeNamed "nothing in Nothing" $ mkForall [v1] $ Negation
-      (Predication noThing [t1] n) n, makeNamed "thing in Thing" $
-      mkForall [v1] $ Predication (Qual_pred_name thing classPredType n) [t1] n]
+            (Predication noThing [t1] n) n,
+      makeNamed "thing in Thing" $  mkForall [v1] $ Predication
+            (Qual_pred_name thing classPredType n) [t1] n]
 
 mkNNameAux :: Int -> String
 mkNNameAux k = case k of
