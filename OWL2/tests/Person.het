@@ -11,6 +11,8 @@ spec person =
     Datatype: Surname
         EquivalentTo: string [pattern "[a-z]"^^xsd:string]
 
+    AnnotationProperty: x
+
     ObjectProperty: hasSSN
     ObjectProperty: hasName
     ObjectProperty: hasChildren
@@ -23,10 +25,10 @@ spec person =
         Range: height [< 2.1f]
 
     Class: smallChild
-        SubClassOf: hasHeight value 1.0f
+        SubClassOf: Annotations: deprecated "y" hasHeight value 1.0f
 
     Class: Person
-        HasKey: hasSSN, hasAge, hasName
+        HasKey: Annotations: isDefinedBy y hasSSN, hasAge, hasName
 
     Individual: Ann
         Types: hasAge some natural, hasChildren min 2

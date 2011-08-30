@@ -213,9 +213,14 @@ isPredefObjProp = isOWLPredef predefObjProp
 isPredefDataProp :: IRI -> Bool
 isPredefDataProp = isOWLPredef predefDataProp
 
+isPredefRDFSAnnoProp :: IRI -> Bool
+isPredefRDFSAnnoProp iri = checkPredef predefRDFSAnnoProps "rdfs" iri
+
+isPredefOWLAnnoProp :: IRI -> Bool
+isPredefOWLAnnoProp iri = isOWLPredef predefOWLAnnoProps iri
+
 isPredefAnnoProp :: IRI -> Bool
-isPredefAnnoProp iri = isOWLPredef predefOWLAnnoProps iri
-    || checkPredef predefRDFSAnnoProps "rdfs" iri
+isPredefAnnoProp iri = isPredefOWLAnnoProp iri || isPredefRDFSAnnoProp iri
 
 isPredefPropOrClass :: IRI -> Bool
 isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
@@ -258,8 +263,9 @@ setDatatypePrefix iri = let lp = localPart iri in
 setReservedPrefix :: IRI -> IRI
 setReservedPrefix iri
     | isDatatypeKey iri && null (namePrefix iri) = setDatatypePrefix iri
-    | (isThing iri || isPredefAnnoProp iri || isPredefDataProp iri
+    | (isThing iri || isPredefDataProp iri || isPredefOWLAnnoProp iri
         || isPredefObjProp iri) && null (namePrefix iri) = setPrefix "owl" iri
+    | isPredefRDFSAnnoProp iri = setPrefix "rdfs" iri
     | otherwise = iri
 
 stripReservedPrefix :: IRI -> IRI

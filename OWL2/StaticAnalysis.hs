@@ -23,7 +23,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 
-import Common.AS_Annotation
+import Common.AS_Annotation hiding (Annotation)
 import Common.DocUtils
 import Common.Result
 import Common.GlobalAnnotations
@@ -218,30 +218,52 @@ checkHasKey s ol dl = do
     if and decl then return key
         else fail $ "Keys failed " ++ showDoc ol "" ++ showDoc dl "\n"
 
+checkAnnotation :: Sign -> Annotation -> Result ()
+checkAnnotation s (Annotation ans apr av) = do
+    checkAnnos s [ans]
+    checkEntity s (Entity AnnotationProperty apr)
+    case av of
+        AnnValLit lit -> checkLiteral s lit
+        _ -> return ()
+
+checkAnnos :: Sign -> [Annotations] -> Result ()
+checkAnnos = mapM_ . mapM . checkAnnotation
+
+checkAnnoList :: Sign -> ([t] -> Result ()) -> [(Annotations, t)]
+    -> Result ()
+checkAnnoList s f anl = do
+    checkAnnos s $ map fst anl
+    f $ map snd anl
+ 
 checkListBit :: Sign -> Maybe Relation -> ListFrameBit -> Result ListFrameBit
 checkListBit s r fb = case fb of
     AnnotationBit anl -> case r of
-        Just (DRRelation _) -> return fb
-        _ -> mapM_ (checkEntity s . Entity AnnotationProperty . snd) anl
-                >> return fb
+        Just (DRRelation _) -> checkAnnos s (map fst anl) >> return fb
+        _ -> checkAnnoList s (mapM_ $ checkEntity s .
+                    Entity AnnotationProperty) anl >> return fb
     ExpressionBit anl -> do
+        let annos = map fst anl
+        checkAnnos s annos
         n <- mapM (checkClassExpression s . snd) anl
-        return $ ExpressionBit $ zip (map fst anl) n
+        return $ ExpressionBit $ zip annos n
     ObjectBit anl -> do
-        let ol = map snd anl
+        let annos = map fst anl
+            ol = map snd anl
             sorted = filterObjProp s ol
         if null sorted then do
             let dpl = map objPropToIRI ol
-            checkDataPropList s dpl >> return (DataBit $ zip (map fst anl) dpl)
+            checkAnnos s annos
+            checkDataPropList s dpl >> return (DataBit $ zip annos dpl)
             else if length sorted == length ol then return fb
                     else fail $ "Static analysis found that there are" ++
                         " multiple types of properties in\n\n" ++
                         show sorted ++ show (map objPropToIRI $ ol \\ sorted)
-    ObjectCharacteristics _ -> return fb
-    DataBit anl -> checkDataPropList s (map snd anl) >> return fb
-    DataPropRange anl -> mapM_ (checkDataRange s . snd) anl >> return fb
-    IndividualFacts anl -> checkFactList s (map snd anl) >> return fb
-    IndividualSameOrDifferent _ -> return fb
+    ObjectCharacteristics anl -> checkAnnos s (map fst anl) >> return fb
+    DataBit anl -> checkAnnoList s (checkDataPropList s) anl >> return fb
+    DataPropRange anl -> checkAnnoList s (mapM_ $ checkDataRange s) anl
+            >> return fb
+    IndividualFacts anl -> checkAnnoList s (checkFactList s) anl >> return fb
+    IndividualSameOrDifferent anl -> checkAnnos s (map fst anl) >> return fb
 
 checkAnnBit :: Sign -> AnnFrameBit -> Result AnnFrameBit
 checkAnnBit s fb = case fb of
@@ -269,16 +291,19 @@ checkExtended s e = case e of
             if Set.member i (objectProperties s)
             then return e else mkError "unknown object property" i
         _ -> return e
+    Misc ans -> checkAnnos s [ans] >> return e
     _ -> return e
 
 -- | corrects the axiom according to the signature
 checkAxiom :: Sign -> Axiom -> Result [Axiom]
 checkAxiom s ax@(PlainAxiom ext fb) = case fb of
     ListFrameBit mr lfb -> do
-        next <- checkExtended s ext
-        nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb
-        return [PlainAxiom next nfb]
-    ab@(AnnFrameBit ans afb) -> case afb of
+      next <- checkExtended s ext
+      nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb
+      return [PlainAxiom next nfb]
+    ab@(AnnFrameBit ans afb) -> do
+      checkAnnos s [ans]        
+      case afb of
         AnnotationFrameBit ty -> case ty of
             Assertion -> case ext of
                     -- this can only come from XML
