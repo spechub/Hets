@@ -144,30 +144,25 @@ sl_name sl =
                  ++ "|")
 
 requireQualNumberRestrictions :: OWLSub -> OWLSub
-requireQualNumberRestrictions sl = sl { numberRestrictions = Qualified }
+requireQualNumberRestrictions sl = sl {numberRestrictions = Qualified}
 
 requireNumberRestrictions :: OWLSub -> OWLSub
-requireNumberRestrictions sl =
-    if numberRestrictions sl /= Qualified
-       then sl {numberRestrictions = Unqualified}
-       else
-           sl
+requireNumberRestrictions sl = let nr = numberRestrictions sl in
+    sl {numberRestrictions = if nr /= Qualified then Unqualified else nr}   
 
 requireRoleTransitivity :: OWLSub -> OWLSub
 requireRoleTransitivity sl = sl {roleTransitivity = True}
 
 requireRoleHierarchy :: OWLSub -> OWLSub
-requireRoleHierarchy sl = sl { roleHierarchy = True}
+requireRoleHierarchy sl = sl {roleHierarchy = True}
 
 requireComplexRoleInclusions :: OWLSub -> OWLSub
 requireComplexRoleInclusions sl =
     (requireRoleHierarchy $ requireRoleTransitivity sl)
-        { complexRoleInclusions = True}
+        {complexRoleInclusions = True}
 
 requireAddFeatures :: OWLSub -> OWLSub
-requireAddFeatures sl =
-    (requireComplexRoleInclusions sl)
-        { addFeatures = True}
+requireAddFeatures sl = (requireComplexRoleInclusions sl) {addFeatures = True}
 
 requireNominals :: OWLSub -> OWLSub
 requireNominals sl = sl {nominals = True}
@@ -177,18 +172,17 @@ requireInverseRoles sl = sl {inverseRoles = True}
 
 requireDatatype :: OWLSub -> OWLSub
 requireDatatype sl = sl {datatype = Set.union (datatype sl)
-                             $ Set.singleton OWLDATA}
+    $ Set.singleton OWLDATA}
 
 sl_obj_prop :: ObjectPropertyExpression -> OWLSub
 sl_obj_prop o = case o of
-      ObjectProp _ -> sl_bottom
-      ObjectInverseOf p -> requireInverseRoles $ sl_obj_prop p
+    ObjectProp _ -> sl_bottom
+    ObjectInverseOf p -> requireInverseRoles $ sl_obj_prop p
 
 sl_ent :: Entity -> OWLSub
-sl_ent (Entity et _) =
-    case et of
-      Datatype -> requireDatatype sl_bottom
-      _ -> sl_bottom
+sl_ent (Entity et _) = case et of
+    Datatype -> requireDatatype sl_bottom
+    _ -> sl_bottom
 
 sl_data_uri :: QName -> OWLSub
 sl_data_uri ur = sl_bottom
@@ -206,48 +200,38 @@ sl_data_prop :: DataPropertyExpression -> OWLSub
 sl_data_prop = sl_data_uri
 
 sl_data_range :: DataRange -> OWLSub
-sl_data_range rn =
-    requireDatatype $
-    case rn of
-      DataType ur _ -> sl_data_uri ur
-      DataComplementOf c -> sl_data_range c
-      DataOneOf _ -> requireNominals sl_bottom
-      DataJunction _ drl -> foldl sl_max sl_bottom $ map sl_data_range drl
+sl_data_range rn = requireDatatype $ case rn of
+    DataType ur _ -> sl_data_uri ur
+    DataComplementOf c -> sl_data_range c
+    DataOneOf _ -> requireNominals sl_bottom
+    DataJunction _ drl -> foldl sl_max sl_bottom $ map sl_data_range drl
 
 sl_desc :: ClassExpression -> OWLSub
-sl_desc des =
-    case des of
-      Expression _ -> sl_bottom
-      ObjectJunction _ dec -> foldl sl_max sl_bottom $ map sl_desc dec
-      ObjectComplementOf dec -> sl_desc dec
-      ObjectOneOf _ -> requireNominals sl_bottom
-      ObjectValuesFrom _ o d -> sl_max (sl_obj_prop o) (sl_desc d)
-      ObjectHasSelf o -> requireAddFeatures $ sl_obj_prop o
-      ObjectHasValue o _ -> sl_obj_prop o
-      ObjectCardinality c -> sl_card c
-      DataValuesFrom _ d dr -> requireDatatype $
+sl_desc des = case des of
+    Expression _ -> sl_bottom
+    ObjectJunction _ dec -> foldl sl_max sl_bottom $ map sl_desc dec
+    ObjectComplementOf dec -> sl_desc dec
+    ObjectOneOf _ -> requireNominals sl_bottom
+    ObjectValuesFrom _ o d -> sl_max (sl_obj_prop o) (sl_desc d)
+    ObjectHasSelf o -> requireAddFeatures $ sl_obj_prop o
+    ObjectHasValue o _ -> sl_obj_prop o
+    ObjectCardinality c -> sl_card c
+    DataValuesFrom _ d dr -> requireDatatype $
              sl_max (sl_data_range dr) (sl_data_prop d)
-      DataHasValue d _ -> requireDatatype $ sl_data_prop d
-      DataCardinality c -> requireDatatype $ sl_d_card c
+    DataHasValue d _ -> requireDatatype $ sl_data_prop d
+    DataCardinality c -> requireDatatype $ sl_d_card c
 
 sl_d_card :: Cardinality DataPropertyExpression DataRange -> OWLSub
-sl_d_card (Cardinality _ _ dp x) =
-    case x of
-      Nothing -> requireDatatype $
-                 requireNumberRestrictions $
-                 sl_data_prop dp
-      Just y -> requireDatatype $
-                 requireQualNumberRestrictions $
-                 sl_max (sl_data_prop dp) (sl_data_range y)
+sl_d_card (Cardinality _ _ dp x) = requireDatatype $ requireNumberRestrictions
+    $ case x of
+        Nothing -> sl_data_prop dp
+        Just y -> sl_max (sl_data_prop dp) (sl_data_range y)
 
-sl_card :: Cardinality ObjectPropertyExpression ClassExpression
-          -> OWLSub
-sl_card (Cardinality _ _ op x) =
-    case x of
-      Nothing -> requireNumberRestrictions $
-                 sl_obj_prop op
-      Just y -> requireQualNumberRestrictions $
-                 sl_max (sl_obj_prop op) (sl_desc y)
+sl_card :: Cardinality ObjectPropertyExpression ClassExpression -> OWLSub
+sl_card (Cardinality _ _ op x) = requireNumberRestrictions
+    $ case x of
+        Nothing -> sl_obj_prop op
+        Just y -> sl_max (sl_obj_prop op) (sl_desc y)
 
 slLFB :: Maybe Relation -> ListFrameBit -> OWLSub
 slLFB mr lfb = case lfb of
@@ -266,16 +250,14 @@ slLFB mr lfb = case lfb of
               Irreflexive -> requireAddFeatures sl_bottom
               Asymmetric -> requireAddFeatures sl_bottom
               _ -> sl_bottom) $ map snd anl
-    DataPropRange anl -> foldl sl_max sl_bottom
-        $ map (sl_data_range . snd) anl
+    DataPropRange anl -> foldl sl_max sl_bottom $ map (sl_data_range . snd) anl
     _ -> sl_bottom
 
 slAFB :: AnnFrameBit -> OWLSub
 slAFB afb = case afb of
     DatatypeBit dr -> sl_data_range dr
     ClassDisjointUnion cel -> foldl sl_max sl_bottom $ map sl_desc cel
-    ClassHasKey opl dpl -> sl_max (foldl sl_max sl_bottom
-            $ map sl_obj_prop opl)
+    ClassHasKey opl dpl -> sl_max (foldl sl_max sl_bottom $ map sl_obj_prop opl)
             (foldl sl_max sl_bottom $ map sl_data_prop dpl)
     ObjectSubPropertyChain opl -> requireComplexRoleInclusions
         $ requireRoleHierarchy $ foldl sl_max sl_bottom $ map sl_obj_prop opl
@@ -284,12 +266,12 @@ slAFB afb = case afb of
 slFB :: FrameBit -> OWLSub
 slFB fb = case fb of
     AnnFrameBit _ afb -> slAFB afb
-    ListFrameBit mr lfb -> sl_max (slLFB mr lfb) (case mr of
+    ListFrameBit mr lfb -> sl_max (slLFB mr lfb) $ case mr of
         Nothing -> sl_bottom
         Just r -> case r of
             SubPropertyOf -> requireRoleHierarchy sl_bottom
             InverseOf -> requireInverseRoles sl_bottom
-            _ -> sl_bottom) -- maybe addFeatures ??
+            _ -> sl_bottom -- maybe addFeatures ??
 
 slAxiom :: Axiom -> OWLSub
 slAxiom (PlainAxiom ext fb) = case ext of
@@ -307,13 +289,9 @@ sl_o_doc :: OntologyDocument -> OWLSub
 sl_o_doc = foldl sl_max sl_bottom . map slFrame . ontFrames . ontology
 
 sl_sig :: Sign -> OWLSub
-sl_sig sig =
-    if Set.size (dataProperties sig) == 0
-       && Set.size (datatypes sig) == 0
-     then
-         sl_bottom
-     else
-         requireDatatype sl_bottom
+sl_sig sig = if Set.size (dataProperties sig) == 0
+    && Set.size (datatypes sig) == 0
+    then sl_bottom else requireDatatype sl_bottom
 
 sl_mor :: OWLMorphism -> OWLSub
 sl_mor mor = sl_max (sl_sig $ osource mor) $ sl_sig $ otarget mor
@@ -325,27 +303,12 @@ pr_mor s a = a
     , otarget = pr_sig s $ otarget a }
 
 pr_sig :: OWLSub -> Sign -> Sign
-pr_sig s a =
-    if datatype s == Set.empty
-       then
-           a
-           {
-             datatypes = Set.empty
-           , dataProperties = Set.empty
-           }
-       else
-           a
+pr_sig s a = if datatype s == Set.empty
+    then a {datatypes = Set.empty, dataProperties = Set.empty}
+    else a
 
 pr_o_doc :: OWLSub -> OntologyDocument -> OntologyDocument
 pr_o_doc s a =
-    let
-        o = (ontology a)
-            {
-              ontFrames = filter ((s >=) . slFrame) $ ontFrames $
-                           ontology a
-            }
-    in
-      a
-      {
-        ontology = o
-      }
+    let o = (ontology a) {ontFrames = filter ((s >=) . slFrame) $ ontFrames $
+            ontology a }
+    in a {ontology = o}
