@@ -319,16 +319,18 @@ rolesetMixTerm  x (n, t) =
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC
 basicSpec = do
-  bi <- AnnoState.allAnnoParser parseBasicItems
-  return $ Basic_spec $ bi
+    bi <- parseAxItems
+    return $ bi
+  <|> do
+    bi <- AnnoState.allAnnoParser parseBasicItems
+    return $ Basic_spec $ [bi]
 --  <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 
 -- function to parse different syntaxes
 -- parsing: axiom items with dots, clif sentences, clif text
 -- first getting only the sentences
 parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
-parseBasicItems = parseAxItems
-              <|> try parseSentences
+parseBasicItems = try parseSentences
               <|> parseClText
               -- parseClText
 
@@ -343,56 +345,24 @@ parseClText = do
   tx <- cltext
   return $ Axiom_items (textToAn tx)
 
-{-
-parseClText :: AnnoState.AParser st BASIC_ITEMS
-parseClText = do
-     tx <- pModule
-     return $ Axiom_items (senToAn (ps tx))
-
-ps :: MODULE -> [SENTENCE]
-ps (Mod _ tx _) = senOfText tx
-ps (Mod_ex _ _ _ _) = []
--}
-
 textToAn :: TEXT -> Annotation.Annoted TEXT
 textToAn x = Annotation.Annoted x nullRange [] []
 
-senOfText :: TEXT -> [SENTENCE]
-senOfText (Text phr _) = foldl (sen2) [] phr
-senOfText (Named_text _ t _) = senOfText t
-
-sen2 :: [SENTENCE] -> PHRASE -> [SENTENCE]
-sen2 s p = case p of
-   Sentence x -> s ++ [x]
-   Module m -> case m of
-                 Mod _ t _ -> s ++ (senOfText t)
-                 Mod_ex _ _ t _ -> s ++ (senOfText t) -- TODO
-   Comment_text _ t _ -> s ++ (senOfText t)
-   _ -> s -- TODO importation
-
--- if (isSen p) then (s ++ [senOfPhr p]) else s
-
-senOfPhr :: PHRASE -> SENTENCE
-senOfPhr (Sentence s) = s
--- senOfPhr (Module m) = case m of
---    Mod name text id ->
---    Mod_ex name names text id ->
-senOfPhr _ = Atom_sent (Atom (Name_term (Token "empty" nullRange)) [])
-               nullRange
-
-isSen :: PHRASE -> Bool
-isSen (Sentence _) = True
-isSen _ = False
-
 -- | parser for Axiom_items
-parseAxItems :: AnnoState.AParser st BASIC_ITEMS
+parseAxItems :: AnnoState.AParser st BASIC_SPEC
 parseAxItems = do
        d <- AnnoState.dotT
-       (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
+       (fs, ds) <- (AnnoState.allAnnoParser parseAx) `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
        let _ = Id.catRange (d : ds)
-           n = Annotation.appendAnno (last fs) an
-       return $ Axiom_items n
+           ns = init fs ++ [Annotation.appendAnno (last fs) an]
+       return $ Basic_spec ns
+
+-- | Toplevel parser for formulae
+parseAx :: AnnoState.AParser st (BASIC_ITEMS)
+parseAx = do
+  t <- aFormula
+  return $ Axiom_items t
 
 -- | Toplevel parser for formulae
 aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT)

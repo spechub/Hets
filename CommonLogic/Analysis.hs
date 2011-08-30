@@ -36,7 +36,7 @@ data DIAG_FORM = DiagForm
 
 -- | retrieves the signature out of a basic spec
 makeSig :: CL.BASIC_SPEC -> Sign.Sign -> Sign.Sign
-makeSig (CL.Basic_spec spec) sig = retrieveBasicItem sig spec
+makeSig (CL.Basic_spec spec) sig = List.foldl retrieveBasicItem sig spec
 
 retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted CL.BASIC_ITEMS -> Sign.Sign
 retrieveBasicItem sig x = case AS_Anno.item x of
@@ -51,7 +51,8 @@ retrieveSign sig = Sign.unite sig . propsOfFormula . AS_Anno.item
 
 -- | retrieve sentences
 makeFormulas :: CL.BASIC_SPEC -> Sign.Sign -> [DIAG_FORM]
-makeFormulas (CL.Basic_spec bspec) sig = retrieveFormulaItem [] bspec sig
+makeFormulas (CL.Basic_spec bspec) sig =
+  List.foldl (\ xs bs -> retrieveFormulaItem xs bs sig) [] bspec
 
 retrieveFormulaItem :: [DIAG_FORM] -> AS_Anno.Annoted CL.BASIC_ITEMS
                        -> Sign.Sign -> [DIAG_FORM]

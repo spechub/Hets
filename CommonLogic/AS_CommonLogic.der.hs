@@ -27,11 +27,11 @@ import qualified Common.AS_Annotation as AS_Anno
 -- DrIFT command
 {-! global: GetRange !-}
 
-newtype BASIC_SPEC = Basic_spec (AS_Anno.Annoted (BASIC_ITEMS))
+newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
                       deriving Show
 
 data BASIC_ITEMS =
-    Axiom_items (AS_Anno.Annoted (TEXT))
+    Axiom_items (AS_Anno.Annoted TEXT)
     deriving Show
 
 instance Pretty BASIC_SPEC where

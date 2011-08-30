@@ -306,7 +306,8 @@ sl_basic_items cs (AS.Axiom_items xs) =
 
 -- | determines sublogic for basic spec
 sl_basic_spec :: CommonLogicSL -> AS.BASIC_SPEC -> CommonLogicSL
-sl_basic_spec cs (AS.Basic_spec spec) = ((sl_basic_items cs) . AS_Anno.item) spec
+sl_basic_spec cs (AS.Basic_spec spec) =
+  comp_list $ map ((sl_basic_items cs) . AS_Anno.item) spec
 
 -- | all sublogics
 sublogics_all :: [CommonLogicSL]
@@ -357,20 +358,12 @@ prSymMapM _ sMap = Just sMap
 prName :: CommonLogicSL -> AS.NAME -> Maybe AS.NAME
 prName _ n = Just n
 
--- | filters all TEXTs inside the BASIX_SPEC of which the sublogic is less than
+-- | filters all TEXTs inside the BASIC_SPEC of which the sublogic is less than
 -- or equal to @cs@
 prBasicSpec :: CommonLogicSL -> AS.BASIC_SPEC -> AS.BASIC_SPEC
-prBasicSpec cs bs@(AS.Basic_spec items) = -- TODO: write some decent function
-  AS.Basic_spec $ (maybeLE cs) items
+prBasicSpec cs (AS.Basic_spec items) = -- TODO: write some decent function
+  AS.Basic_spec $ filter ((isSL_LE cs) . AS_Anno.item) items
 
-maybeLE :: CommonLogicSL ->
-            AS_Anno.Annoted (AS.BASIC_ITEMS) -> AS_Anno.Annoted (AS.BASIC_ITEMS)
-maybeLE cs items = AS_Anno.Annoted {
-      AS_Anno.opt_pos = AS_Anno.opt_pos items
-    , AS_Anno.l_annos = AS_Anno.l_annos items
-    , AS_Anno.r_annos = AS_Anno.r_annos items
-    , AS_Anno.item    = AS_Anno.item items
-  }
-
-isSL_LE :: CommonLogicSL -> AS_Anno.Annoted (AS.TEXT) -> Bool
-isSL_LE cs at = compareLE (sublogic_text bottom $ AS_Anno.item at) cs
+isSL_LE :: CommonLogicSL -> AS.BASIC_ITEMS -> Bool
+isSL_LE cs (AS.Axiom_items at) =
+  compareLE (sublogic_text bottom $ AS_Anno.item at) cs

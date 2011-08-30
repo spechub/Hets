@@ -83,8 +83,8 @@ cnvimport n = emptyAnno $ Spec_inst n [] nullRange
 
 -- retrieves all importations from the text
 getImports :: BASIC_SPEC -> [NAME]
-getImports (CL.Basic_spec items) =  getImports_text $ textFromBasicItems items
-
+getImports (CL.Basic_spec items) =
+  concatMap getImports_text $ map textFromBasicItems items
 
 textFromBasicItems :: Anno.Annoted (BASIC_ITEMS) -> TEXT
 textFromBasicItems abi = case Anno.item abi of
@@ -104,11 +104,12 @@ impToName _ = undefined -- not necessary because filtered out
 
 -- returns a unique name for a node 
 specName :: Int -> CL.BASIC_SPEC -> String -> NAME
-specName i (CL.Basic_spec items) def =
+specName i (CL.Basic_spec []) def = mkSimpleId $ def ++ "_" ++ show i
+specName i (CL.Basic_spec [items]) def =
   case Anno.item items of
        Axiom_items ax ->
           case Anno.item ax of
-               Text _ _ -> mkSimpleId (def ++ "_" ++ show i)
+               Text _ _ -> mkSimpleId $ def ++ "_" ++ show i
                Named_text n _ _ -> mkSimpleId n
-
+specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i
 
