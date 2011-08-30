@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) C. Maeder
+Copyright   :  (c) C. Maeder, Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

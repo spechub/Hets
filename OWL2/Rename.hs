@@ -104,4 +104,4 @@ unifyTwo od1 od2 =
   in (alld, newod2)
 
 unifyDocs :: [OntologyDocument] -> [OntologyDocument]
-unifyDocs = unifyWith1 emptyDoc
+unifyDocs = unifyWith1 emptyOntologyDoc

@@ -95,25 +95,19 @@ data OntologyDocument = OntologyDocument
 
 instance GetRange OntologyDocument
 
-emptyOnt :: Ontology
-emptyOnt = Ontology nullQName [] [] []
-
-emptyDoc :: OntologyDocument
-emptyDoc = OntologyDocument Map.empty emptyOnt
+emptyOntologyD :: Ontology
+emptyOntologyD = Ontology nullQName [] [] []
 
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument Map.empty emptyOntologyD
 
-emptyOntologyD :: Ontology
-emptyOntologyD = Ontology nullQName [] [] []
+isEmptyOntology :: Ontology -> Bool
+isEmptyOntology (Ontology (QN _ l _ n _) annoList impList fs) =
+    null l && null n && null annoList && null impList && null fs
 
 isEmptyOntologyDoc :: OntologyDocument -> Bool
 isEmptyOntologyDoc (OntologyDocument ns onto) =
     Map.null ns && isEmptyOntology onto
-
-isEmptyOntology :: Ontology -> Bool
-isEmptyOntology (Ontology (QN _ l _ n _) annoList impList fs) =
-    null l && null n && null annoList && null impList && null fs
 
 emptyAnnoList :: [a] -> AnnotatedList a
 emptyAnnoList = map $ \ x -> ([], x)
