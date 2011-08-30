@@ -80,7 +80,7 @@ createSpec o = let
            _ -> emptyAnno $ Union (map cnvimport is) nullRange
          , bs] nullRange
 
-convertone :: OntologyDocument-> Annoted LIB_ITEM
+convertone :: OntologyDocument -> Annoted LIB_ITEM
 convertone o = emptyAnno $ Spec_defn
   (cnvtoSimpleId $ name $ ontology o)
   emptyGenericity

@@ -184,7 +184,7 @@ sl_obj_prop o = case o of
       ObjectProp _ -> sl_bottom
       ObjectInverseOf p -> requireInverseRoles $ sl_obj_prop p
 
-sl_ent :: Entity  -> OWLSub
+sl_ent :: Entity -> OWLSub
 sl_ent (Entity et _) =
     case et of
       Datatype -> requireDatatype sl_bottom

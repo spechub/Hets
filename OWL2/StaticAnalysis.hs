@@ -186,7 +186,7 @@ checkClassExpression s desc =
     DataValuesFrom _ dExp r -> checkDataRange s r
         >> if isDeclDataProp s dExp then return desc else datErr dExp
     DataHasValue dExp l -> do
-        checkLiteral s l    
+        checkLiteral s l
         if isDeclDataProp s dExp then return desc
             else datErr dExp
     DataCardinality (Cardinality _ _ dExp mr) -> if isDeclDataProp s dExp
@@ -234,7 +234,7 @@ checkAnnoList :: Sign -> ([t] -> Result ()) -> [(Annotations, t)]
 checkAnnoList s f anl = do
     checkAnnos s $ map fst anl
     f $ map snd anl
- 
+
 checkListBit :: Sign -> Maybe Relation -> ListFrameBit -> Result ListFrameBit
 checkListBit s r fb = case fb of
     AnnotationBit anl -> case r of
@@ -302,7 +302,7 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
       nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb
       return [PlainAxiom next nfb]
     ab@(AnnFrameBit ans afb) -> do
-      checkAnnos s [ans]        
+      checkAnnos s [ans]
       case afb of
         AnnotationFrameBit ty -> case ty of
             Assertion -> case ext of
@@ -354,7 +354,7 @@ createAxioms s fl = do
 check1Prefix :: Maybe String -> String -> Bool
 check1Prefix ms s = case ms of
     Nothing -> True
-    Just iri -> iri == s 
+    Just iri -> iri == s
 
 checkPrefixMap :: PrefixMap -> Bool
 checkPrefixMap pm =

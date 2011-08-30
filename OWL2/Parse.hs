@@ -559,8 +559,8 @@ sameOrDifferent = choice
   $ map (\ f -> pkeyword (showSameOrDifferent f) >> return f)
   [Same, Different]
 
-sameOrDifferentIndu :: CharParser st SameOrDifferent 
-sameOrDifferentIndu = (pkeyword sameIndividualC >> return Same) 
+sameOrDifferentIndu :: CharParser st SameOrDifferent
+sameOrDifferentIndu = (pkeyword sameIndividualC >> return Same)
     <|> (pkeyword differentIndividualsC >> return Different)
 
 equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint

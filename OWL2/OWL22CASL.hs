@@ -256,7 +256,7 @@ mapTheory (owlSig, owlSens) = let sl = topS in do
     let pSig = loadDataInformation sl
         dTypes = (emptySign ()) {sortRel = Rel.transClosure $ Rel.fromList
                     $ map (\ d -> (uriToId d, dataS))
-                    $ predefIRIs ++ (Set.toList $ OS.datatypes owlSig)}
+                    $ predefIRIs ++ Set.toList (OS.datatypes owlSig)}
     (cSens, nSig) <- foldM (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
             return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
@@ -401,7 +401,7 @@ mapDataRange cSig dr i = case dr of
         return (mkNeg sens, uniteCASLSign cSig s)
     DataJunction jt drl -> do
         (jl, sl) <- mapAndUnzipM ((\ s v r -> mapDataRange s r v) cSig i) drl
-        let usig = uniteL sl 
+        let usig = uniteL sl
         return $ case jt of
                 IntersectionOf -> (conjunct jl, usig)
                 UnionOf -> (disjunct jl, usig)
@@ -774,7 +774,7 @@ keyDecl :: Int -> [Int] -> [VAR_DECL]
 keyDecl h il = map thingDecl (take h il) ++ map dataDecl (drop h il)
 
 mapKey :: CASLSign -> ClassExpression -> [FORMULA ()] -> [FORMULA ()]
-    -> Int -> [Int] -> Int -> Result ((FORMULA ()), CASLSign)
+    -> Int -> [Int] -> Int -> Result (FORMULA (), CASLSign)
 mapKey cSig ce pl npl p i h = do
     (nce, s) <- mapDescription cSig ce 1
     (c3, _) <- mapDescription cSig ce p

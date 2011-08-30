@@ -161,4 +161,3 @@ instance ProjectSublogicM ProfSub Entity where
 
 instance ProjectSublogic ProfSub OntologyDocument where
     projectSublogic = prODoc
-

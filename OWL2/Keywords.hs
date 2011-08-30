@@ -290,7 +290,7 @@ predefClass = [thingS, nothingS]
 predefObjProp :: [String]
 predefObjProp = [topObjProp, bottomObjProp]
 
-predefDataProp :: [String] 
+predefDataProp :: [String]
 predefDataProp = [topDataProp, bottomDataProp]
 
 predefRDFSAnnoProps :: [String]

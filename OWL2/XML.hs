@@ -224,7 +224,7 @@ properFacet cf
         let p = showQU cf \\ "http://www.w3.org/2001/XMLSchema#"
         in case p of
             "minInclusive" -> facetToIRI MININCLUSIVE
-            "minExclusive" -> facetToIRI MINEXCLUSIVE 
+            "minExclusive" -> facetToIRI MINEXCLUSIVE
             "maxInclusive" -> facetToIRI MAXINCLUSIVE
             "maxExclusive" -> facetToIRI MAXEXCLUSIVE
             _ -> cf

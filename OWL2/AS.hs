@@ -207,17 +207,17 @@ showQuantifierType ty = case ty of
 isThing :: IRI -> Bool
 isThing = isOWLPredef predefClass
 
-isPredefObjProp :: IRI -> Bool 
+isPredefObjProp :: IRI -> Bool
 isPredefObjProp = isOWLPredef predefObjProp
 
 isPredefDataProp :: IRI -> Bool
 isPredefDataProp = isOWLPredef predefDataProp
 
 isPredefRDFSAnnoProp :: IRI -> Bool
-isPredefRDFSAnnoProp iri = checkPredef predefRDFSAnnoProps "rdfs" iri
+isPredefRDFSAnnoProp = checkPredef predefRDFSAnnoProps "rdfs"
 
 isPredefOWLAnnoProp :: IRI -> Bool
-isPredefOWLAnnoProp iri = isOWLPredef predefOWLAnnoProps iri
+isPredefOWLAnnoProp = isOWLPredef predefOWLAnnoProps
 
 isPredefAnnoProp :: IRI -> Bool
 isPredefAnnoProp iri = isPredefOWLAnnoProp iri || isPredefRDFSAnnoProp iri
@@ -229,7 +229,7 @@ isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
 predefIRIs :: [IRI]
 predefIRIs = map (setPrefix "xsd" . mkQName) xsdKeys
     ++ map (setPrefix "owl" . mkQName) owlNumbers
-    ++ [setPrefix "rdf" (mkQName rdfsLiteral), 
+    ++ [setPrefix "rdf" (mkQName rdfsLiteral),
         setPrefix "rdfs" $ mkQName xmlLiteral]
 
 isDatatypeKey :: IRI -> Bool
@@ -276,7 +276,7 @@ stripReservedPrefix = mkQName . getPredefName
 getPredefName :: IRI -> String
 getPredefName iri =
     if namePrefix iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
-        then localPart iri 
+        then localPart iri
         else case mapMaybe (flip stripPrefix $ showQU iri)
                     $ Map.elems predefPrefixes of
                 [s] -> s
