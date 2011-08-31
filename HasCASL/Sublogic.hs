@@ -616,7 +616,7 @@ sl_t trm = case trm of
         , sl_opId i
         , sl_typeScheme t ]
     ApplTerm t1 t2 _ -> case getAppl trm of
-      Just (i, _, [arg]) | elem i $ map fst bList -> sl_t arg
+      Just (i, _, arg) | elem i $ map fst bList -> comp_list (map sl_t arg)
       _ -> sublogic_max (sl_t t1) $ sl_t t2
     TupleTerm l _ -> comp_list $ map sl_t l
     TypedTerm t _ ty _ -> sublogic_max (sl_t t) $ sl_type ty

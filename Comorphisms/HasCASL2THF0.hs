@@ -63,7 +63,7 @@ instance Comorphism HasCASL2THF0
                 BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic HasCASL2THF0 = HasCASL
-    sourceSublogic HasCASL2THF0 = topLogic -- reqSubLogicForTHF0
+    sourceSublogic HasCASL2THF0 = reqSubLogicForTHF0 -- topLogic
     targetLogic HasCASL2THF0 = THF
     mapSublogic HasCASL2THF0 _ = Just ()
     map_theory HasCASL2THF0 = transTheory
@@ -77,12 +77,12 @@ instance Comorphism HasCASL2THF0
 reqSubLogicForTHF0 :: Sublogic
 reqSubLogicForTHF0 = Sublogic
     { has_sub = False
-    , has_part = False                  -- maybe, I am not sure yet
+    , has_part = False
     , has_eq = True
     , has_pred = True
     , type_classes = NoClasses
     , has_polymorphism = False
-    , has_type_constructors = False      -- maybe -- no data constructors
+    , has_type_constructors = False
     , which_logic = HOL }
 
 --------------------------------------------------------------------------------
@@ -90,17 +90,23 @@ reqSubLogicForTHF0 = Sublogic
 --------------------------------------------------------------------------------
 
 transTheory :: (Env, [Named Sentence]) -> Result (SignTHF, [Named SentenceTHF])
-transTheory (sig1, lns1) = do
-    (typs, icm) <- transTypeMap $ HCLe.typeMap sig1
-    cons <- transAssumps (HCLe.assumps sig1) icm
-    let aCons = Map.union cons preDefHCAssumps
+transTheory (env, hcnsl) = do
+    (typs, icm) <- transTypeMap $ HCLe.typeMap env
+    cons <- transAssumps (HCLe.assumps env) icm
+    (nsl, ids) <- foldM (fNSen icm) ([], Set.empty) hcnsl
+    let ax = preDefAxioms ids ++ reverse nsl
+        aCons = Map.union cons (preDefHCAssumps ids)
     syms <- mkSymbolMap typs aCons
     let sig = THFSign.emptySign { types = typs
                                 , consts = aCons
                                 , symbols = syms }
-    ax <- fmap (preDefAxioms ++)
-                    (mapM (transNamedSentence (Just icm) sig1) lns1)
     return (sig , ax)
+  where
+    fNSen :: IdConstantMap -> ([Named SentenceTHF], IdSet)
+                -> Named Sentence -> Result ([Named SentenceTHF], IdSet)
+    fNSen icm (nsl, ids) hcns = do
+        (ns, nids) <- transNamedSentence (Just icm) ids env hcns
+        return (ns : nsl, nids)
 
 
 --------------------------------------------------------------------------------
@@ -299,17 +305,18 @@ transSymbol sig1 sym1 = case HCLe.symType sym1 of
 -- Translatin methods for Sentences
 --------------------------------------------------------------------------------
 
-transNamedSentence :: Maybe IdConstantMap -> Env -> Named Sentence
-                            -> Result (Named SentenceTHF)
-transNamedSentence micm sig ns = do
+transNamedSentence :: Maybe IdConstantMap -> IdSet -> Env -> Named Sentence
+                            -> Result (Named SentenceTHF, IdSet)
+transNamedSentence micm ids sig ns = do
     icm <- maybe (genIdConstantMap sig) return micm
     case sentence ns of
         Formula term    -> do
-            lf <- transTerm sig icm term
-            return ns {sentence =
+            (lf, nids) <- transTerm sig icm ids term
+            return ( ns {sentence =
                 THFCons.Sentence { senRole       = getFormulaRole ns
                                  , senFormula    = TF_THF_Logic_Formula lf
                                  , senAnno       = Null } }
+                   , nids)
         ProgEqSen _ _ _ ->
             fatal_error "Programm equations are not supported."
                             (getRange ns)
@@ -323,18 +330,19 @@ getFormulaRole ns =
     then if wasTheorem ns then Theorem else Axiom
     else Conjecture
 
-transTerm :: Env -> IdConstantMap -> HCAs.Term -> Result THFLogicFormula
-transTerm e icm t = case t of
-    QuantifiedTerm q gcdl t1 r  -> fmap
-        (TLF_THF_Unitary_Formula . TUF_THF_Quantified_Formula)
-        (transQuantifiedTerm e icm q gcdl t1 r)
-    LambdaTerm tl p t1 r        -> transLamdaTerm e icm tl p t1 r
-    TypedTerm t1 tq ty r        -> redTypedTerm t1 tq ty r >>= transTerm e icm
-    ApplTerm t1 t2 r            -> transApplTerm e icm t1 t2 r
+transTerm :: Env -> IdConstantMap -> IdSet -> HCAs.Term
+                        -> Result (THFLogicFormula, IdSet)
+transTerm e icm ids t = case t of
+    QuantifiedTerm q gcdl t1 r  -> myFmap (TLF_THF_Unitary_Formula .
+        TUF_THF_Quantified_Formula) (transQuantifiedTerm e icm ids q gcdl t1 r)
+    LambdaTerm tl p t1 r        -> transLamdaTerm e icm ids tl p t1 r
+    TypedTerm t1 tq ty r        -> redTypedTerm t1 tq ty r >>=
+        transTerm e icm ids
+    ApplTerm t1 t2 r            -> transApplTerm e icm ids t1 t2 r
     QualVar (VarDecl i _ _ _)   -> fmap (TLF_THF_Unitary_Formula . TUF_THF_Atom
-                    . T0A_Variable) (transVarId i)
-    QualOp ob pid ts tl ik r    -> fmap (TLF_THF_Unitary_Formula . TUF_THF_Atom
-                    . T0A_Constant) (transQualOp e ob pid ts tl ik r)
+            . T0A_Variable) (transVarId i) >>= (\ lf -> return (lf, ids))
+    QualOp ob pid ts tl ik r    -> myFmap (TLF_THF_Unitary_Formula
+            . TUF_THF_Atom . T0A_Constant) (transQualOp e ids ob pid ts tl ik r)
     TupleTerm _ _               ->
             fatal_error "Tuples are not allowed in THF0." (getRange t)
     TermToken _                 ->
@@ -357,39 +365,48 @@ redTypedTerm t1 tq1 _ r1 =
         _                       -> return t1
     else fatal_error "Typed terms are not supported in THF0." r1
 
-transQualOp :: Env -> OpBrand -> PolyId -> TypeScheme -> [HCAs.Type] -> InstKind
-                -> Range -> Result Constant
-transQualOp e _ (PolyId i _ _) ts _ _ r =
+transQualOp :: Env -> IdSet -> OpBrand -> PolyId -> TypeScheme
+            -> [HCAs.Type] -> InstKind -> Range -> Result (Constant, IdSet)
+transQualOp e ids _ (PolyId i _ _) ts _ _ r = do
+    let nids = if elem i (map fst bList) then Set.insert i ids else ids
     case Map.lookup i (assumps e) of
         Just s
             | Set.size s <= 0   -> fatal_error ("unknown op: " ++ show i) r
-            | Set.size s == 1   -> transAssumpId i
+            | Set.size s == 1   -> transAssumpId i >>= (\ c -> return (c, nids))
             | Set.size s >= 2   -> case List.lookup ts (number
                                         (map HCLe.opType (Set.toList s))) of
                     Nothing  -> fatal_error ("unknown op: " ++ show i) r
-                    Just num -> transAssumpsId i num
-        _                       -> transAssumpId i
+                    Just num ->
+                        transAssumpsId i num >>= (\ c -> return (c, nids))
+        _                       -> transAssumpId i >>= (\ c -> return (c, nids))
 
-transApplTerm :: Env -> IdConstantMap -> HCAs.Term -> HCAs.Term -> Range
-                    -> Result THFLogicFormula
-transApplTerm e icm t1 t2 r = do
+transApplTerm :: Env -> IdConstantMap -> IdSet -> HCAs.Term -> HCAs.Term
+                    -> Range -> Result (THFLogicFormula, IdSet)
+transApplTerm e icm ids t1 t2 r = do
     let at = ApplTerm t1 t2 r
     case myGetAppl at of
         Nothing -> fatal_error ("unexpected Term Application: " ++ show at) r
         Just (t3, i, tl1)
             | elem i [eqId, exEq, andId, orId, eqvId, implId, infixIf, resId] ->
                 case tl1 of
-                    TupleTerm tl2 _ : [] -> fmap (TLF_THF_Binary_Formula .
-                                TBF_THF_Binary_Tuple . TBT_THF_Apply_Formula)
-                           (mapM (fmap lfToUf . transTerm e icm) (t3 : tl2))
+                    TupleTerm tl2 _ : [] ->
+                        myFmap (TLF_THF_Binary_Formula . TBF_THF_Binary_Tuple
+                                . TBT_THF_Apply_Formula . reverse)
+                           (foldM fTrmToUf ([], ids) (t3 : tl2))
                     _ -> fatal_error ("unexpected arguments " ++ show tl1 ++
                             " for the function " ++ show i) r
             | i == whenElse ->
                 fatal_error ("__when__else__ is not supported yet. " ++
-                       "Pleas code it out, see: Casl Reference Manula p. 25.") r
-            | otherwise -> fmap (TLF_THF_Binary_Formula .
-                            TBF_THF_Binary_Tuple . TBT_THF_Apply_Formula)
-                        (mapM (fmap lfToUf . transTerm e icm) (t3 : tl1))
+                    "Please code it out, see: Casl Reference Manula p. 25.") r
+            | otherwise -> myFmap (TLF_THF_Binary_Formula . TBF_THF_Binary_Tuple
+                                    . TBT_THF_Apply_Formula . reverse)
+                                (foldM fTrmToUf ([], ids) (t3 : tl1))
+  where
+    fTrmToUf :: ([THFUnitaryFormula], IdSet) -> HCAs.Term
+                    -> Result ([THFUnitaryFormula], IdSet)
+    fTrmToUf (ufl, oids)  t = do
+        (uf, nids) <- myFmap lfToUf (transTerm e icm oids t)
+        return (uf : ufl, nids)
 
 {- | decompose an 'ApplTerm' into an application of an operation and a
      list of arguments -}
@@ -406,25 +423,24 @@ myGetAppl = thrdM reverse . getRevAppl where
         ApplTerm t1 t2 _ -> thrdM (t2 :) $ getRevAppl t1
         _ -> Nothing
 
-transLamdaTerm :: Env -> IdConstantMap -> [HCAs.Term] -> Partiality -> HCAs.Term
-                    -> Range -> Result THFLogicFormula
-transLamdaTerm e icm tl _ t _ = do
+transLamdaTerm :: Env -> IdConstantMap -> IdSet -> [HCAs.Term] -> Partiality
+                        -> HCAs.Term -> Range -> Result (THFLogicFormula, IdSet)
+transLamdaTerm e icm ids tl _ t _ = do
         vl <- mapM trVar tl
-        uf <- fmap lfToUf (transTerm e icm t)
-        return $ TLF_THF_Unitary_Formula $ T0UF_THF_Abstraction vl uf
+        (uf, nids) <- myFmap lfToUf (transTerm e icm ids t)
+        return (TLF_THF_Unitary_Formula $ T0UF_THF_Abstraction vl uf, nids)
     where
         trVar :: HCAs.Term -> Result THFVariable
-        trVar t1 =
-            case t1 of
-                TypedTerm t2 tq ty r -> redTypedTerm t2 tq ty r >>= trVar
-                QualVar vd -> transVarDecl icm vd
-                _   -> fatal_error ("Unexpected term: " ++ show t1
-                                ++ " Expected variable.") (getRange t1)
+        trVar t1 = case t1 of
+            TypedTerm t2 tq ty r -> redTypedTerm t2 tq ty r >>= trVar
+            QualVar vd -> transVarDecl icm vd
+            _   -> fatal_error ("Unexpected term: " ++ show t1
+                            ++ " Expected variable.") (getRange t1)
 
-transQuantifiedTerm :: Env -> IdConstantMap -> HCAs.Quantifier
+transQuantifiedTerm :: Env -> IdConstantMap -> IdSet -> HCAs.Quantifier
                         -> [HCAs.GenVarDecl] -> HCAs.Term -> Range
-                        -> Result THFAs.THFQuantifiedFormula
-transQuantifiedTerm e icm q gcdl t r = case q of
+                        -> Result (THFAs.THFQuantifiedFormula, IdSet)
+transQuantifiedTerm e icm ids q gcdl t r = case q of
         Universal   -> tqHelper T0Q_ForAll
         Existential -> tqHelper T0Q_Exists
         Unique      ->
@@ -433,17 +449,19 @@ transQuantifiedTerm e icm q gcdl t r = case q of
             -- 1. Ex: x . P(x) /\ Not (Ex : x,y . (P(x) /\ P(y) /\ not (x = y)))
             -- 2. Ex: x . (All : y . (P(y) <=> x = y))
     where
-        tqHelper :: THFAs.Quantifier -> Result THFAs.THFQuantifiedFormula
+        tqHelper :: THFAs.Quantifier
+                        -> Result (THFAs.THFQuantifiedFormula, IdSet)
         tqHelper quant = do
             vl <- mapM (transGenVatDecl icm) gcdl
-            tt <- transTerm e icm t
-            return $ T0QF_THF_Quantified_Var quant vl (lfToUf tt)
+            myFmap (T0QF_THF_Quantified_Var quant vl . lfToUf)
+                   (transTerm e icm ids t)
 
 transGenVatDecl :: IdConstantMap -> GenVarDecl
                     -> Result THFVariable
 transGenVatDecl icm gvd = case gvd of
     GenVarDecl vd -> transVarDecl icm vd
-    GenTypeVarDecl (TypeArg _ _ _ _ _ _ _) -> error "not implemented yet"
+    GenTypeVarDecl (TypeArg _ _ _ _ _ _ r) ->
+        fatal_error "GenTypeVarDecl not supported" r
 
 transVarDecl :: IdConstantMap -> VarDecl -> Result THFVariable
 transVarDecl icm (VarDecl i t _ _) = do
@@ -495,3 +513,14 @@ lfToUf :: THFLogicFormula -> THFUnitaryFormula
 lfToUf lf = case lf of
     TLF_THF_Unitary_Formula uf  -> uf
     _                           -> TUF_THF_Logic_Formula_Par lf
+
+--------------------------------------------------------------------------------
+-- Helper
+--------------------------------------------------------------------------------
+
+type IdSet = Set.Set Id
+
+myFmap :: (a -> b) -> Result (a, IdSet) -> Result (b, IdSet)
+myFmap fun res = do
+    (something, ids) <- res
+    return (fun something, ids)
