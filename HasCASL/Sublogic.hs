@@ -617,9 +617,7 @@ sl_t trm = case trm of
         , sl_typeScheme t ]
     ApplTerm t1 t2 _ -> sublogic_max (sl_t t1) $ sl_t t2
     TupleTerm l _ -> comp_list $ map sl_t l
-    TypedTerm t tq ty _ ->
-        if tq == Inferred then sublogic_max (sl_t t) $ sl_InfType ty
-                          else sublogic_max (sl_t t) $ sl_type ty
+    TypedTerm t _ ty _ -> sublogic_max (sl_t t) $ sl_type ty
     QuantifiedTerm _ l t _ -> comp_list $ sl_t t : map sl_genVarDecl l
     LambdaTerm l p t _ ->
         comp_list $ sl_partiality p : sl_t t : map sl_t l
@@ -630,13 +628,6 @@ sl_t trm = case trm of
     BracketTerm _ l _ -> comp_list $ map sl_t l
     AsPattern vd p2 _ -> sublogic_max (sl_varDecl vd) $ sl_t p2
     _ -> bottom
-
-sl_InfType :: Type -> Sublogic
-sl_InfType ty = case getTypeAppl ty of
-    (TypeName ide _ _, [arg, res]) | isArrow ide -> comp_list
-        [ sl_BasicProd arg
-        , sl_Basictype res ]
-    _ -> sl_Basictype ty
 
 sl_progEq :: ProgEq -> Sublogic
 sl_progEq (ProgEq p t _) = sublogic_max (sl_t p) (sl_t t)
