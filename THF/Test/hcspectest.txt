@@ -1,0 +1,19 @@
+logic HasCASL
+
+spec test =
+     sort Elem
+     sort Frosch
+     types Fisch, Auto
+
+     op  blub: Elem -> Elem
+     op  e:Elem
+     op  f:Frosch
+     op inv:Elem->Elem
+
+     var b:Unit
+
+     forall x: Elem
+     . blub(inv(x)) = e
+     . blub(x) = e
+     . (not b) = true %implied
+
