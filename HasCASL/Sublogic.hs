@@ -615,7 +615,9 @@ sl_t trm = case trm of
         [ sl_opBrand b
         , sl_opId i
         , sl_typeScheme t ]
-    ApplTerm t1 t2 _ -> sublogic_max (sl_t t1) $ sl_t t2
+    ApplTerm t1 t2 _ -> case getAppl trm of
+      Just (i, _, [arg]) | elem i $ map fst bList -> sl_t arg
+      _ -> sublogic_max (sl_t t1) $ sl_t t2
     TupleTerm l _ -> comp_list $ map sl_t l
     TypedTerm t _ ty _ -> sublogic_max (sl_t t) $ sl_type ty
     QuantifiedTerm _ l t _ -> comp_list $ sl_t t : map sl_genVarDecl l
