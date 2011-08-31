@@ -176,14 +176,24 @@ PROCESS-SYMB    ::= PROCESS-NAME
 \end{verbatim}
 
 Processes can be slightly modified by hiding (regarding an event set) or by
-renaming.
+renaming using an unary total or partial function or a binary predicate.
 
 \begin{verbatim}
 PROCESS         ::= PROCESS \ EVENT-SET
                   | PROCESS [[ RENAMING ]]
                   | ...
 
-RENAMING        ::= ID ,..., ID
+RENAMING        ::= RENAME ,..., RENAME
+
+RENAME          ::= ID
+                  | op ID
+                  | pred ID
+                  | op ID : SORT -> SORT
+                  | op ID : SORT ->? SORT
+                  | pred ID : SORT * SORT
+                  | ID : SORT -> SORT
+                  | ID : SORT ->? SORT
+                  | ID : SORT * SORT
 \end{verbatim}
 
 Processes can be invoked depending on conditions or events.

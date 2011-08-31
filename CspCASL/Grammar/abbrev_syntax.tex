@@ -54,7 +54,14 @@ EVENT-SET       ::= event-set SORT-OR-CHANNEL*
 PROCESS-SYMB    ::= PROCESS-NAME
                   | qual-process-name PROCESS-NAME PROCESS-PROFILE
 
-RENAMING        ::= renaming ID+
+RENAMING        ::= renaming RENAME+
+
+RENAME          ::= id ID
+                  | opId ID
+                  | predId ID
+                  | totalOp ID SORT SORT
+                  | partialOp ID SORT SORT
+                  | binPredicate ID SORT SORT
 
 EVENT           ::= read-event CHANNEL VAR SORT
                   | write-event CHANNEL VAR SORT
