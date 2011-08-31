@@ -259,25 +259,37 @@ name.  They're both Ids.  Separation between operator or predicate
 (or some other non-applicable Id) must be a static analysis
 problem. -}
 
+renameKind :: Maybe RenameKind -> AParser st (RenameKind, Maybe (SORT, SORT))
+renameKind ok = do
+  let funs = [(pFun, PartOp), (funS, TotOp)]
+      preds = [(prodS, BinPred), (timesS, BinPred)]
+      expectedSymbs = case ok of
+        Just BinPred -> preds
+        Just PartOp -> funs
+        _ -> funs ++ preds
+  s1 <- cspSortId
+  c <- choice $ map (\ (s, k) -> (asKey s >> return k))
+        expectedSymbs
+  s2 <- cspSortId
+  return (c, (Just (s1, s2)))
+
+renameOpOrPred :: RenameKind -> AParser st Rename
+renameOpOrPred k = do
+   i <- parseCspId
+   c <- option (k, Nothing) $ renameKind $ Just k
+   return $ Rename i $ Just c
+
 rename :: AParser st Rename
 rename = do
     i <- parseCspId
-    mc <- optionMaybe $ do
-      colonT
-      s1 <- cspSortId
-      c <- choice $ map (\ (s, k) -> (asKey s >> return k))
-        [(pFun, PartOp), (funS, TotOp), (prodS, BinPred), (timesS, BinPred)]
-      s2 <- cspSortId
-      return (c, (Just (s1, s2)))
+    mc <- optionMaybe $ renameKind Nothing
     return $ Rename i mc
   <|> do
     asKey opS
-    i <- parseCspId
-    return $ Rename i $ Just (PartOp, Nothing)
+    renameOpOrPred PartOp
   <|> do
     asKey predS
-    i <- parseCspId
-    return $ Rename i $ Just (BinPred, Nothing)
+    renameOpOrPred BinPred
 
 renaming :: AParser st RENAMING
 renaming = fmap Renaming $ rename `sepBy1` commaT
