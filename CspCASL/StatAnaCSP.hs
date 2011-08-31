@@ -725,6 +725,12 @@ anaRenamingItem r@(Rename ri cm) = let
         $ addDiags [mkDiag Error "renaming operation not found" r]
       unless (isSingle realOs)
         $ addDiags [mkDiag Warning "multiple operations found" r]
+      when (k == TotOp) $
+        mapM_ (\ (o, (s1, s2)) -> when (o == Partial)
+          $ addDiags [mkDiag Error
+                     ("operation of type '"
+                      ++ shows s1 " -> "
+                      ++ shows s2 "' is not total") r]) realOs
       return $ map opToRen realOs
   Nothing -> do
     ps <- getBinPredsById ri
