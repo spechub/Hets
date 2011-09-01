@@ -137,7 +137,7 @@ slDataProp = slDatatype
 slObjProp :: ObjectPropertyExpression -> OWLSub
 slObjProp o = case o of
     ObjectProp _ -> sl_bottom
-    ObjectInverseOf p -> requireInverseRoles sl_bottom
+    ObjectInverseOf _ -> requireInverseRoles sl_bottom
 
 slEntity :: Entity -> OWLSub
 slEntity (Entity et iri) = case et of
