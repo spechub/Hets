@@ -11,8 +11,8 @@
 
 
 \usepackage[pdfborder=0 0 0,bookmarks,
-pdfauthor={Till Mossakowski, Christian Maeder, Mihai Codescu},
-pdftitle={Hets User Guide}]
+pdfauthor={Till Mossakowski, Christian Maeder, Mihai Codescu, Eugen Kuksa},
+pdftitle={Hets for Common Logic Users}]
 {hyperref} %% do not load more packages after this line!!
 
 \input{xy}
@@ -130,10 +130,10 @@ pdftitle={Hets User Guide}]
 
 \begin{document}
 
-\title{{\bf \protect{\LARGEHets} User Guide}\\
+\title{{\bf \protect{\LARGEHets} for Common Logic Users}\\
 -- Version 0.98 --}
 \author{Till Mossakowski, Christian Maeder,
-  Mihai Codescu\\[1em]
+  Mihai Codescu, Eugen Kuksa\\[1em]
 DFKI GmbH, Bremen, Germany.\\[1em]
 Comments to: hets-users@informatik.uni-bremen.de \\
 (the latter needs subscription to the mailing list)
@@ -230,57 +230,32 @@ out in \cite{Habil}. A short overview of \Hets is given in
 
 \section{Logics supported by Hets}
 
-The following list of logics (formalized as so-called institutions
-\cite{GoguenBurstall92}) is currently supported by \Hets:
+\Hets supports a variety of different logics. Most important for use with
+Common Logic are the following:
+
 
 \begin{figure}
   \begin{center}
     \includegraphics[scale=0.4]{LogicGraph}
   \end{center}
 \caption{Graph of logics currently supported by \Hets. The more an
-ellipse is filled with green, the more stable is the implementation of the logic. Blue indicates a prover-supported logic.}
+ellipse is filled with green, the more stable is the implementation of the
+logic. Blue indicates a prover-supported logic.}
 \label{fig:LogicGraph}
 \end{figure}
-
 
 \begin{figure}
 \begin{center}
 \begin{tabular}{|l|c|c|c|}\hline
 Language & Parser & Static Analysis & Prover \\\hline
 \CASL & x & x & - \\\hline
-\CoCASL & x & x & - \\\hline
-\ModalCASL & x & x & - \\\hline
-\HasCASL & x & x & - \\\hline
-Haskell & (x) & x & - \\\hline
-CspCASL & x & x & - \\\hline
-CspCASL\_Trace & - & - & x \\\hline
-CspCASL\_Failure & - & - & - \\\hline
 CommonLogic & x & x & - \\\hline
-Constraint\CASL & x & (x) & - \\\hline
-Temporal & x & (x) & - \\\hline
-RelScheme & x & (x) & - \\\hline
-DFOL & x & (x) & - \\\hline
-ExtModal & x & (x) & - \\\hline
-LF & x & (x) & - \\\hline
-%Structured specifications & x & x & (x) \\\hline
-%Architectural specifications & x & x & -\\\hline
-\CASLDL & x & - & - \\\hline
-DMU & x & - & - \\\hline
-FreeCAD & - & - & - \\\hline
 OWL DL & x & x & - \\\hline
 Propositional & x & x & x \\\hline
-QBF & x & x & x \\\hline
 SoftFOL & x & - & x \\\hline
-Maude & x & x & - \\\hline
-VSE & x & x & x \\\hline
-\Isabelle & (x) & - & x \\\hline
-HolLight & (x) & - & - \\\hline
-Adl & x & x & - \\\hline
-Fpl & x & x & - \\\hline
-EnCL & x & x & x \\\hline
 \end{tabular}
 \end{center}
-\caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
+\caption{Current degree of \Hets support for some of the languages.\label{fig:Languages}}
 \end{figure}
 
 \begin{description}
@@ -303,40 +278,7 @@ types for signatures, morphisms, abstract syntax etc.  This eases
 integration of \CASL extensions and keeps the effort of integrating
 \CASL extensions quite moderate.
 
-\item[CoCASL] \cite{MossakowskiEA04} is a coalgebraic extension of \CASL,
-suited for the specification of process types and reactive systems.
-The central proof method is coinduction.
-
-\item[ModalCASL] \cite{ModalCASL}
- is an extension of \CASL with multi-modalities and
-term modalities. It allows the specification of modal systems with
-Kripke's possible worlds semantics. It is also possible to express
-certain forms of dynamic logic.
-
-\item[ExtModal] is an extended modal logic, currently in an experimental state.
-
-\item[HasCASL] is a higher order extension of \CASL allowing
-  polymorphic datatypes and functions. It is closely related to the
-  programming language Haskell and allows program constructs being
-  embedded in the specification.
-  An overview of \HasCASL is given in \cite{Schroeder:2002:HIS};
-the language is summarized in \cite{HasCASL/Summary}, the semantics
-in \cite{Schroder05b,Schroder-habil}.
-
-\item[Haskell] is a modern, pure and strongly typed functional
-  programming language. It simultaneously is the implementation
-  language of \Hets, such that in the future, \Hets might be applied
-  to itself.
-The definitive reference for Haskell is \cite{PeytonJones03},
-see also \url{www.haskell.org}.
-
-\item[CspCASL] \cite{Roggenbach06} is a combination of \CASL
-  with the process algebra \Csp.
-
 \item[CommonLogic] \url{http://en.wikipedia.org/wiki/Common_logic}
-
-\item[ConstraintCASL] is an experimental logic for the specification
-of qualitative constraint calculi.
 
 \item[OWL DL] is the Web Ontology Language (OWL) recommended by the
   World Wide Web Consortium (W3C, \url{http://www.w3c.org}). It is
@@ -351,24 +293,8 @@ Hets calls an external OWL DL parser
 The
   structuring of the OWL imports is displayed as Development Graph.
 
-\item[CASL-DL] \cite{OWL-CASL-WADT2004}
-is an extension of a restriction of \CASL, realizing
-a strongly typed variant of OWL DL in \CASL syntax.
-It extends
-  \CASL with cardinality restrictions for the description of sorts and
-  unary predicates. The restrictions are based on the equivalence
-  between \CASLDL, OWL~DL and \SHOIN. Compared to \CASL only unary
-  and binary predicates, predefined datatypes and concepts (subsorts
-  of the topsort Thing) are allowed. It is used to bring OWL DL and
-  \CASL closer together.
-
 \item[Propositional] is classical propositional logic, with
 the zChaff SAT solver \cite{Herbstritt03} connected to it.
-
-\item[QBF] are quantified boolean formulas, with
-DepQBF \url{http://fmv.jku.at/depqbf/} connected to it.
-
-\item[RelScheme] is a logic for relational databases \cite{DBLP:journals/ao/SchorlemmerK08}.
 
 \item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
   proving (ATP) systems for first-order logic with equality: (1) \SPASS
@@ -377,54 +303,6 @@ DepQBF \url{http://fmv.jku.at/depqbf/} connected to it.
     classification of the FOL problem} \cite{ZimmerAutexier06}.
   These together comprise some of the most advanced theorem provers
   for first-order logic.
-
-\item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover
-  for higher-order logic.
-
-\item[HolLight] \url{http://www.cl.cam.ac.uk/~jrh13/hol-light/}
-  is John Harrison's interactive theorem prover
-  for higher-order logic.
-
-\item[VSE] is an interactive theorem prover, see \ref{subsec:VSE}.
-
-\item[DMU] is a dummy logic to read output of ``Computer Aided
-  Three-dimensional Interactive Application'' (Catia).
-
-\item[FreeCAD] is a logic to read design files of the CAD system
-  FreeCAD\\\url{http://sourceforge.net/projects/free-cad}.
-
-\item[Maude] is a rewrite system \url{http://maude.cs.uiuc.edu/} for
-  first-order logic. In order to use this logic the environment variable
-  \verb+HETS_MAUDE_LIB+ must be set to a directory containing the files
-  \verb+full-maude.maude+, \verb+hets.prj+, \verb+maude2haskell.maude+ and
-  \verb+parsing.maude+.
-
-\item[DFOL] is an extension of first-order logic with dependent types \cite{rabe:dfol:06}.
-
-\item [LF] is the dependent type theory of Twelf \url{http://twelf.plparty.org/}. Hets
-      calls Twelf on \verb+.elf+ files (for this, the environment variable
-      \verb+TWELF_LIB+ must be set) and reads in the OMDoc generated by Twelf.
-      Moreover, LF can be used as a logical framework to add new logics in Hets \cite{CHK+2011a}.
-      Logic definitions in LF are based in the logic atlas of the Latin project \cite{project:latin}
-      and therefore the environment variable \verb+LATIN_LIB+ must be set to the
-      repository with the Latin logic definitions.
-
-\item[Framework] is a dummy logic added for declarative logic definitions \cite{CHK+2011a}.
-
-\item[Adl] is ``A Description Language'' based on relational algebra originally
-  designed for requirements engineering of business rules
-  \url{https://lab.cs.ru.nl/BusinessRules/Requirements_engineering}.
-
-\item[Fpl] is a ``logic for functional programs'' as an extension of a
-  restriction of \CASL. (\CASL predicates are disabled.)
-  A detailed description of FPL will appear elsewhere.
-
-\item[EnCL] is an ``engineering calculation language'' based on first
-  order theory of real numbers with some predefined binders
-  \cite{logic:EnCL}.  It allows the formulation of executable
-  specifications of engineering calculation methods. For the execution
-  of these specifications Hets provides connections to the computer
-  algebra systems Mathematica, Maple and Reduce.
 \end{description}
 
 Various logics are supported with proof tools. Proof support for the
@@ -442,7 +320,10 @@ architectural specifications.  The corresponding document explaining the
 is the \HetCASL language summary \cite{Mossakowski04}; a formal
 semantics as well as a user manual with more examples are in preparation.
 Some of \HetCASL's heterogeneous constructs will be illustrated
-in Sect.~\ref{sec:HetSpec} below.
+in Sect.~\ref{sec:HetSpec} below.\\
+
+For further information on logics supported by \Hets, see the \Hets user guide  
+\cite{HetsUserGuide}.
 
 \section{Logic translations supported
 by Hets}
@@ -454,75 +335,18 @@ target logic. More precisely, one and the same logic translation
 may have several source and target \emph{sub}logics: for
 each source sublogic, the corresponding sublogic of the target
 logic is indicated.
-A graph of the most important logics and sublogics, together with their
-comorphisms, is shown in Fig.~\ref{fig:SublogicGraph}.
 
-\begin{figure}
-  \begin{center}
-    \includegraphics[scale=0.4]{SublogicGraph}
-  \end{center}
-\caption{Graph of most important sublogics currently supported by \Hets,
-together with their comorphisms.}
-\label{fig:SublogicGraph}
-\end{figure}
-
-In more detail, the following list of logic translations is currently
-supported by \Hets:
+In more detail, the following list of logic translations involving Common Logic 
+is currently supported by \Hets:\\
 
 \begin{tabular}{|l|p{8cm}|}\hline
-Adl2CASL & inclusion taking relations to CASL predicates \\\hline
-CASL2CoCASL & inclusion \\\hline
-CASL2CspCASL & inclusion \\\hline
-CASL2HasCASL & inclusion \\\hline
-CASL2Isabelle & inclusion on sublogic CFOL=
-(translation $(7)$ of \cite{Mossakowski02}) \\\hline
-CASL2Modal & inclusion \\\hline
-CASL2PCFOL & coding of subsorting (SubPCFOL=) by injections, see Chap.\ III:3.1 of the CASL Reference Manual \cite{CASL/RefManual} \\\hline
-CASL2PCFOLTopSort & coding of subsorting (SulPeCFOL=) by a top sort and unary
-predicates for the subsorts \\\hline
-CASL2Propositional & translation of propositional FOL \\\hline
-CASL2SoftFOL & coding of CASL.SuleCFOL=E to SoftFOL \cite{LuettichEA06a},
-mapping types to soft types \\\hline
-CASL2SoftFOLInduction & same as CASL2SoftFOL but with instances of induction
-axioms for all proof goals \\\hline
-CASL2SoftFOLInduction2 & similar to CASL2SoftFOLInduction but replaces goals with induction premises \\\hline
-CASL2SubCFOL & coding of partial functions by error elements
-(translation $(4a')$ of \cite{Mossakowski02}, but extended to subsorting, i.e. sublogic SubPCFOL=) \\\hline
-CASL2VSE & inclusion on sublogic CFOL= \\\hline
-CASL2VSEImport & inclusion on sublogic CFOL= \\\hline
-CASL2VSERefine & refining translation of CASL.CFOL= to VSE \\\hline
-CASL\_DL2CASL & inclusion \\\hline
-CoCASL2CoPCFOL & coding of subsorting by injections, similar to CASL2PCFOL \\\hline
-CoCASL2CoSubCFOL & coding of partial functions by error supersorts, similar to  CASL2SubCFOL \\\hline
-CoCASL2Isabelle & extended translation similar to CASL2Isabelle \\\hline
 CommonLogic2CASL & coding Common Logic to CASL \\\hline
 CommonLogic2CommonLogic & eliminating modules from a Common Logic theory \\\hline
-CspCASL2CspCASL\_Failure & inclusion \\\hline
-CspCASL2CspCASL\_Trace & inclusion \\\hline
-CspCASL2Modal & translating the CASL data part to ModalCASL \\\hline
-DFOL2CASL & translating dependent types \\\hline
-DMU2OWL & interpreting Catia output as OWL \\\hline
-\end{tabular}
-
-\begin{tabular}{|l|p{7cm}|}\hline
-HasCASL2HasCASLNoSubtypes & coding out subtypes \\\hline
-HasCASL2HasCASLPrograms & coding of \HasCASL axiomatic recursive definitions
-as \HasCASL recursive program definitions \\\hline
-HasCASL2Haskell & translation of \HasCASL recursive program definitions to Haskell \\\hline
-HasCASL2IsabelleOption & coding of HasCASL to Isabelle/HOL \cite{Groening05} \\\hline
-Haskell2Isabelle & coding of Haskell to Isabelle/HOL \cite{TorriniEtAl07} \\\hline
-Haskell2IsabelleHOLCF & coding of Haskell to Isabelle/HOLCF \cite{TorriniEtAl07} \\\hline
-HolLight2Isabelle & coding of HolLight to Isabelle/HOL \\\hline
-Maude2CASL & encoding of rewrites as predicates \\\hline
-Modal2CASL & the standard translation of modal logic
-to first-order logic \cite{blackburn_p-etal:2001a} \\\hline
-OWL2CASL & inclusion \\\hline
 OWL2CommonLogic & inclusion \\\hline
-Propositional2CASL & inclusion \\\hline
-Propositional2QBF & inclusion \\\hline
-QBF2Propositional & inclusion \\\hline
-RelScheme2CASL & inclusion \\\hline
-\end{tabular}
+\end{tabular}\\
+
+For further information on logic translations supported by \Hets, see the \Hets 
+user guide \cite{HetsUserGuide}.
 
 \section{Getting started}
 
@@ -618,29 +442,18 @@ Twelf & & \url{http://twelf.plparty.org/} \\\hline
 }
 
 \section{Analysis of Specifications}
-Consider the following \CASL
-specification:
+Consider the following Common Logic
+text:
 
 \medskip
-\begin{BIGEXAMPLE}
-\I\SPEC \NAME{Strict\_Partial\_Order} =
-%%PDM\I{}    \COMMENTENDLINE{Let's start with a simple example !}
-\begin{ITEMS}[\PRED]
-\I\SORT    \( Elem \)
-\I\PRED    \( \_\_<\_\_ : Elem \* Elem \)
-%           \COMMENTENDLINE{\PRED abbreviates predicate}
-\end{ITEMS}
-\(\[  \FORALL x,y,z : Elem \\
-      \. \NOT(x < x)                      \RIGHT{\LABEL{strict}}     \\
-      \. x < y   \IMPLIES  \NOT(y < x)    \RIGHT{\LABEL{asymmetric}} \\
-      \. x < y \A y < z  \IMPLIES  x < z  \RIGHT{\LABEL{transitive}} \\
-\]\)
-\begin{COMMENT}
-Note that there may exist \(x, y\) such that\\
-neither \(x < y\) nor \(y < x\).
-\end{COMMENT}
-\I\END
-\end{BIGEXAMPLE}
+\begin{verbatim}
+(P x)
+(and (P x) (Q y))
+(or (Cat x) (Mat y))
+(not (On x y))
+(if (P x) (Q x))
+(exists (z) (and (Pet x) (Happy z) (Attr x z)))
+\end{verbatim}
 
 \Hets can be used for parsing and
 checking static well-formedness of specifications.
@@ -650,18 +463,17 @@ checking static well-formedness of specifications.
                 \index{analysis, static}%
 
 Let us assume that the example is in a file named
-\texttt{Order.casl} (actually, this file is provided
-with the \Hets distribution as \texttt{Hets-lib/UserManual/Chapter3.casl}).
+\texttt{Cat.clif}.
 Then you can check the well-formedness of the
 specification by typing (into some shell):
 
 \begin{quote}
-\texttt{hets Order.casl}
+\texttt{hets Cat.clif}
 \end{quote}
 \Hets checks both the correctness of this specification
- with respect to the \CASL syntax, as
+ with respect to the Common Logic or \CASL syntax, as
 well as its correctness with respect to the static semantics (e.g.\
-whether all identifiers have been declared before they are used,
+in \CASL whether all identifiers have been declared before they are used,
 whether operators are applied to arguments of the correct sorts,
 whether the use of overloaded symbols is unambiguous, and so on).
 The following flags are available in this context:
@@ -678,45 +490,23 @@ The following flags are available in this context:
 \item[\texttt{-L DIR}, \texttt{--hets-libdir=DIR}]
 Use \texttt{DIR} as a colon separated list of directories for specification libraries (equivalently, you can set the variable \texttt{HETS\_LIB} before
 calling \Hets).
-\item[\texttt{-a ANALYSIS}, \texttt{--casl-amalg=ANALYSIS}]
-  For the analysis of architectural specification (a quite advanced
-  feature of \CASL), the \texttt{ANALYSIS} argument specifies the options for
-  amalgamability checking
-  algorithm for \CASL logic; it is a comma-separated list of zero or
-  more of the following options:
-  \begin{description}
-  \item[\texttt{sharing}] perform sharing analysis for sorts,
-    operations and predicates.
-  \item[\texttt{cell}] perform cell condition check; implies
-    \texttt{sharing}. With this option on, the subsort embeddings are
-    analyzed.
-  \item[\texttt{colimit-thinness}] perform colimit thinness check;
-    implies \texttt{sharing}. The colimit thinness check is less
-    complete and usually takes longer than the full cell condition
-    check (\texttt{cell} option), but may prove more efficient in case
-    of certain specifications.
-  \end{description}
-  If \texttt{ANALYSIS} is empty then amalgamability analysis for
-  \CASL is skipped.
-  The default value for \texttt{--casl-amalg} is
-  \texttt{cell}.
 \end{description}
+There are more flags which can be used with \Hets. However, these are intended 
+for use with \CASL \cite{HetsUserGuide}.
+
 
 \section{Heterogeneous Specification} \label{sec:HetSpec}
 
-\Hets accepts plain text input files with the following endings:
+\Hets accepts plain text input files (for the 
+presented logics) with the following endings:
 \\
 
 \begin{tabular}{|l|c|c|}\hline
 Ending & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
-\texttt{.hol} & HolLight & HolLight \\\hline
-\texttt{.hs} & Haskell & Haskell \\\hline
 \texttt{.owl} & OWL DL, OWL Lite & OWL \\\hline
-\texttt{.elf} & LF & Twelf \\\hline
 \texttt{.clf} or \texttt{.clif} & CommonLogic & \CASL \\\hline
-\texttt{.maude} & Maude & Maude \\\hline
 \end{tabular}
 
 \medskip
@@ -731,80 +521,75 @@ interchangeable, the former should be used for libraries of
 homogeneous \CASL specifications and the latter for \HetCASL libraries
 of heterogeneous specifications (that use the \CASL structuring
 constructs). Within a \HetCASL library, the current logic can be changed e.g.\
-to \HasCASL in the following way:
+to Common Logic in the following way:
 
 \begin{verbatim}
-logic HasCASL
+logic CommonLogic
 \end{verbatim}
 
 The subsequent specifications are then parsed and analysed as
-\HasCASL specifications. Within such specifications,
+Common Logic specifications. Within such specifications,
 it is possible to use references to named \CASL specifications;
 these are then automatically translated along the default
-embedding of \CASL into \HasCASL (cf.\ Fig.~\ref{fig:LogicGraph}).
+embedding of \CASL into Common Logic (cf.\ Fig.~\ref{fig:LogicGraph}).
 (There are also heterogeneous constructs
 for explicit translations between logics, see \cite{Mossakowski04}.)
 
-\eat{
-A \CspCASL specification consists of a \CASL specification
-for the data part and a \Csp process built over this data part.
-Therefore, \HetCASL provides a heterogeneous language construct
-\texttt{data} as follows:
-
-\begin{verbatim}
-library Buffer
-
-logic CASL
-
-spec List =
-  free type List[Elem] ::= nil | cons(Elem; List[Elem])
-  ops last: List -> ? Elem;
-      rest: List -> ? List
-end
-
-logic CspCASL
-
-spec Buffer =
-  data List
-  channel read, write : Elem
-  process Buf(List): read, write, List;
-          EmptyBuffer : read,write, List;
-          Buf(l)= read? x :: Elem -> Buf(cons(x,nil)) []
-                  (if l=nil then STOP else
-                   write!last(l) -> Buf(rest(l)))
-          EmptyBuffer = Buf(nil)
-end
-\end{verbatim}
-
-Here, the construct \texttt{data List} refers to the \CASL specification
-\texttt{List}, which is implicitly embedded into \CspCASL.
-}
-
-The ending \texttt{.hs} is available for directly reading in
-Haskell programs % and HasSLe specifications,
-and hence supports the Haskell module system.
+The endings \texttt{.clf} and \texttt{.clif} are available for directly reading in
+Common Logic CLIF texts, as in the example of \texttt{Cat.clif}.
 By contrast, in \HetCASL libraries (ending with \texttt{.het}),
 the logic Haskell has to be chosen explicitly, and the \CASL structuring
 syntax needs to be used:
 
 \begin{verbatim}
-library Factorial
+library Cat
 
-logic Haskell
+logic CommonLogic
 
-spec Factorial =
-{
-fac :: Int -> Int
-fac n = foldl (*) 1 [1..n]
-}
+spec Pred = 
+. (P x)
+  (and (P x) (Q y))
+
+spec Cat =
+. (or (Cat x) (Mat y))
+  (not (On x y))
+  (if (P x) (Q x))
+
+spec PetHappy =
+Pred and Cat then
+. (exists (z) (and (Pet x) (Happy z) (Attr x z)))
 end
 \end{verbatim}
 
-Note that according to the Haskell syntax, Haskell function
-declarations and definitions need to start with the first column of
-the text.
+Note that the dot at the beginning of a line indicates that a new text begins.
+Hence, it is possible to have multiple texts in a \CASL specification.
 
+This specification is the \HetCASL-strucured equivalent to the following CLIF 
+file:
 
+\begin{verbatim}
+(cl-text Pred 
+  (P x)
+  (and (P x) (Q y))
+)
+
+(cl-text Cat 
+  (or (Cat x) (Mat y))
+  (not (On x y))
+  (if (P x) (Q x))
+)
+
+(cl-text PetHappy 
+  (cl-imports Pred) (cl-imports Cat)
+  (exists (z) (and (Pet x) (Happy z) (Attr x z)))
+)
+\end{verbatim}
+
+Both can be directly used with \Hets, where the former content would be in a 
+file with ending \texttt{.het} and the latter in a file with one of the endings 
+\texttt{.clf} or \texttt{.clif}. This specification is divided into three 
+parts which are linked to each other. These links and some more information can 
+be seen in the development graph of the file.
 
 
 \section{Development Graphs}\label{sec:DevGraph}
@@ -1446,45 +1231,7 @@ uDrawGraph. Besides browsing, the web server is supposed to be accessed by
 other programs using queries. The possible queries are described on
 \url{http://trac.informatik.uni-bremen.de:8080/hets/wiki/RESTfulInterface}.
 
-A development graph is addressed by the \emph{path} following the port number
-and the slash of the URL, i.e.\
-\url{http://localhost:8000/Basic/Numbers.casl}. Once a development has been
-created it can be accessed via a (fairly unique) session id (consisting of
-nine digits) that can be used as \emph{path}.
-
-A \emph{path} may be followed by a query string that begins with a question
-mark and consists of \emph{entries} (usually field-value pairs) separated by
-ampersands. The queries control the information to be extracted from the
-development graph given by the \emph{path} or they allow to perform commands
-on the graph.
-
-Usually, query string are made up of \texttt{field=value} pairs, but in some
-cases the field name or the value may be omitted and in that case the equal
-sign must be omitted, too.
-
-For instance strings denoting formats, like \texttt{xml}, \texttt{svg},
-\texttt{pdf}, etc., do not need to be preceded by \texttt{format=}.  Some
-formats, like \texttt{pdf}, only pretty print specification and
-basically ignore the underlying development graph.
-
-A special \emph{entry} is just \texttt{session} which only returns a fresh
-session id for a development graph that is given by a file name, i.e.\
-\url{http://localhost:8000/Basic/Numbers.casl?session}. These session ids must
-be used to perform commands (of the development graph calculus) that
-\emph{change} the underlying graph.
-
-Given a graph, nodes and edges can be addressed by numbers via entries like
-\texttt{node=0} or \texttt{edge=0}. (Nodes can also be given by name.)  For
-nodes, prover actions are possible by further
-entries. \url{http://localhost:8000/123456789?prove=Nat\_\_E1\&prover=SPASS\&timeout=5}
-would try to prove the goals of the node \texttt{Nat\_\_E1} using the prover
-\texttt{SPASS} with a timeout of 5 seconds for the development graph that
-happened to have the (unlikely) session id \texttt{123456789}. Individual
-goals can be given via a \texttt{theorems} field and special translations by a
-\texttt{translation} field. The available provers and translations can be
-queried by \texttt{?node=0\&translations} and \texttt{?node=0\&provers} or
-shorter by \texttt{?translations=0} and \texttt{?provers=0}, where instead of
-the node number (here \texttt{0}) also a node name can be used.
+For details on this topic, see the \Hets user guide \cite{HetsUserGuide}.
 
 \section{Miscellaneous Options}
 
@@ -1539,8 +1286,8 @@ select those goals that should be inspected or proved. The GUI elements are the 
 \item By pressing the `Proof details' button a window is opened where for each
   proved goal the used axioms, its proof script, and its proof are shown ---
   the level of detail depends on the used theorem prover.
-\item With the `Prove' button the actual prover is launched. This is described
-  in more detail in the paragraphs below.
+\item With the `Prove' button the actual prover is launched. The provers are described
+  in more detail in the \Hets user guide \cite{HetsUserGuide}.
 \item The list `Pick Theorem Prover:' lets you choose one of the connected
   provers (among them \Isabelle, MathServe Broker, \SPASS, Vampire, and
   zChaff, described below). By pressing `Prove' the selected prover is
@@ -1561,6 +1308,24 @@ select those goals that should be inspected or proved. The GUI elements are the 
   all goals have been proved, the selected node turns from red into green.
 \item All other buttons control selecting list entries
 \end{itemize}
+
+In order to prove or disprove a theory, it needs to be declared as proof 
+obligation. This is done by the keyword \texttt{\%implied} at the end of a text:
+
+\begin{verbatim}
+logic CommonLogic
+
+spec ToProve =
+. (P x)
+  (and (P x) (Q y))
+. (Q y) %implied %(correct)%
+. (P y) %implied %(incorrect)%
+end
+\end{verbatim}
+
+In this specification the theorems, annotated (named) by \texttt{correct} and 
+\texttt{incorrect} are the ones, that can be proven or disproven.
+Note that they are separate texts inside the specification \texttt{ToProve}.
 
 \subsection{Consistency Checker}
 \label{sec:CC}
@@ -1668,241 +1433,9 @@ after brokering.
   \caption{ATP systems provided as Web services by MathServe}
 \vspace*{-4mm}
   \label{tab:MathServe}
-\end{table}
+\end{table}\\
 
-\subsubsection*{\SPASS}
-
-The ATP system \SPASS \cite{WeidenbachEtAl02} is a resolution-based
-prover for first-order logic with equality. Furthermore, it provides a soft
-typing mechanism with subsorting that treats sorts as unary
-predicates. The ATP \SPASS should be installed locally and available
-through your \verb,$PATH, environment variable.
-
-\subsubsection*{Vampire}
-% http://www.cs.miami.edu/~tptp/CASC/J3/SystemDescriptions.html#Vampire---8.0
-The ATP system Vampire is the winner of the last 5 CADE ATP System
-Competitions (CASC) (2002--2006) in the devisions \verb,FOF, and
-\verb,CNF,. It is a resolution based ATP system supporting the calculi
-of ordered binary resolution and superposition for handling equality.
-See
-\url{http://www.cs.miami.edu/~tptp/CASC/J3/SystemDescriptions.html#Vampire---8.0}
-for detailed information. The connection to Vampire is achieved by
-using an Web service of the MathServe system.
-
-\subsubsection*{MathServe Broker}
-
-% The classes ``effectively propositional'' and ``real first-order''
-% apply to first-order problems that are distinguished by the finiteness
-% of the Herbrand universe; an effectively propositional problem has
-% only constants (generated by finitely many terms) whereas a real
-% first-order problem contains true functions with an infinite Herbrand
-% universe.
-The brokering service chooses the most appropriate ATP system
-upon a classification based on the SPCs, and on a training with the
-library Thousands of Problems for Theorem Provers (TPTP)
-\cite{ZimmerAutexier06}. The TPTP format
-has been introduced by Sutcliffe and Suttner for the annual
-competition CASC \cite{Sutcliffe:2006:CASC} and provides a unified
-syntax for untyped FOL with equality, but without any symbol
-declaration.
-
-\subsection{Isabelle}
-
-\Isabelle \cite{NipPauWen02} is an interactive theorem prover, which is
-more powerful than ATP systems, but also requires more user interaction.
-
-\Isabelle
-has a very small core guaranteeing correctness, and its provers,
-like the simplifier or the tableaux prover, are built on top of this
-core. Furthermore, there is over fifteen years of experience with it,
-and several mathematical textbooks have been partially
-                \index{formal!verification}%
-verified with
-\Isabelle.
-
-\Isabelle is a tactic based theorem prover implemented in standard ML.
-The main \Isabelle logic (called Pure) is some weak intuitionistic type
-theory with polymorphism. The logic Pure is used to represent a
-variety of logics within \Isabelle; one of them being \HOL (higher-order
-logic).  For example, logical implication in Pure (written
-\texttt{==>}, also called meta-implication), is different from logical
-implication in \HOL (written \texttt{-->}, also called object
-implication).
-
-It is essential to be aware of the fact that the \Isabelle/\HOL logic
-is different from the logics that are encoded into it via comorphisms.
-Therefore, the formulas appearing in subgoals of proofs with \Isabelle
-will not conform to the syntax of the original input logic.  They may
-even use features of \Isabelle/\HOL such as higher-order functions
-that are not present in an input logic like \CASL.
-
-\Isabelle is started with ProofGeneral
-\cite{DBLP:conf/tacas/Aspinall00,url:ProofGeneral} in a separate Emacs
-\cite{url:Emacs,url:XEmacs}.
-The \Isabelle theory file conforms to the Isabelle/Isar syntax
-\cite{NipPauWen02}. It starts with the theory (encoded along the selected
- comorphism), followed by a list of theorems. Initially, all the
- theorems have trivial proofs, using the `oops` command. However, if
- you have saved earlier proof attempts, \Hets will patch these into
- the generated \Isabelle theory file, ensuring that your previous work
- is not lost. (But note that this patching can only be successful
- if you do not rename specifications, or change their structure.)  You
- now can replace the 'oops' commands with real \Isabelle proofs, and
- use Proof General to step through the proofs. You finish your session
- by saving your file (using the Emacs file menu, or the Ctrl-x Ctrl-s
- key sequence), and by exiting Emacs (Ctrl-x Ctrl-c).
-
-
-\subsection{VSE}
-\label{subsec:VSE}
- The specification environment Verification Support Environment
-(VSE) \cite{VSE00}, developed at
-DFKI Saarbr\"ucken, provides an industrial-strength  methodology
-for specification and verification of imperative programs.
-VSE provides an interactive prover, which supports a Gentzen style
-natural deduction calculus for dynamic logic.
-This logic is an extension of first-order logic with two additional
-kinds of formulas
-that allow for reasoning about programs. One of them is the
-box formula $[\alpha]\varphi$, where $\alpha$ is a program written in an imperative
-language, and $\varphi$ is a dynamic logic formula.
-The meaning of $[\alpha]\varphi$ can be roughly put as
-``After every terminating execution of $\alpha$, $\varphi$ holds.''.
-The other new kind
-of formulas is the diamond formula $\langle\alpha\rangle\varphi$, which is the dual counter part
-of a box formula. The meaning of $\langle\alpha\rangle\varphi$
-can be described as ``After some terminating execution of $\alpha$,
-$\varphi$ holds''.
-
-A VSE specification or something that can be translated to VSE (currently only
-\CASL) can be sent to the VSE prover via the node menu of development graph
-nodes in two different ways. You can either select VSE from the theorem prover
-choice box shown after ``Prove'' or you can select ``Prove VSE Structured''.
-The first choice will call VSE with a single flattened theory whereas a
-structured call will translate all nodes with ingoing links to the current one
-individually.
-
-VSE pops up with a ``project'' window. In this window you can choose ``Work
-on'' and ``specification''. Besides the builtin specification ``boolean''
-there is at least one specification from your development graph that you
-can select for proving. For a structured choice you'll have specifications
-for all underlying nodes that you should work on in a bottom up fashion.
-
-The state created by VSE will be stored in a \texttt{.tar} file (within the
-current directory) that preserves proofs for replay later on as long as you
-don't change library or node names.
-
-\subsection{zChaff}
-
-zChaff is a solver for satisfiabily problems of boolean formulas
-(\normalTEXTSC{S}{AT})
-in CNF. It is connected as a prover for propositional logic to \Hets. The prover
-\SPASS is used to transform arbitrary boolean formulas to CNF. zChaff
-implements the \normalTEXTSC{C}{HAFF}\xspace algorithm. We are
-using the property, that a conjecture under the assumption of a set of axioms is
-true, if the variables of axioms together with the negation of the conjecture
-have no satisfying assignment, to prove theorems with zChaff. That is why you see
-the result \normalTEXTSC{U}{NSAT}\xspace in the proof details, if a theorem has been proved
-to be true. zChaff uses the same ATP GUI as the provers for SoftFOL (ref. to section
-\ref{sec:ATP}). zChaff does not accept any options apart from the time-limit. The
-current integration of zChaff into \Hets has been tested with zChaff 2004.11.15.
-
-\subsection{Reduce}
-This is a connection to the computer algebra system from
-\url{http://www.reduce-algebra.com/}. Installation is possible as follows:
-
-\begin{verbatim}
-svn co https://reduce-algebra.svn.sourceforge.net/svnroot/reduce-algebra
-cd reduce-algebra/trunk
-./configure --with-csl --with-psl
-make
-\end{verbatim}
-
-The binary \texttt{redcsl} will be searched in the \texttt{PATH} or is taken
-from the \texttt{HETS\_REDUCE} environment variable.
-
-\subsection{Pellet}
-Pellet is a popular open-source \DL-reasoner for \SROIQ, which is the logic
-underlying OWL 2.0, written in Java. A Java Runtime Environment (in version $> 1.5$)
-is needed to run Pellet. For the integration into \Hets the environment variable
-\verb+PELLET_PATH+ has to be set to the root-directory of the Pellet installation.
-
-Pellet uses the same ATP GUI as the provers for SoftFOL (ref. to section
-\ref{sec:ATP}).
-\subsection{Fact++}
-Fact++ is a \DL-reasoner for \SROIQ, which is the logic underlying OWL 2.0, written in
-C++. Fact++ is integrated into \Hets via the OWL-API, which is written in Java.
-A Java Runtime Environment (in version $>= 1.5$) has to be installed. To use Fact++,
-the environment variable \verb+HETS_OWL_TOOLS+ has to be set to the directory
-containing the files
-\begin{verbatim}
-OWLFact.jar
-OWLFactProver.jar
-lib/FaCTpp-OWLAPI-v1.3.0.1.jar
-lib/owlapi-bin.jar
-\end{verbatim}
-as well as
-\begin{verbatim}
-lib/native/i686/libFaCTPlusPlusJNI.so
-\end{verbatim}
-on a 32bits-Linux-system or
-\begin{verbatim}
-lib/native/x86_64/libFaCTPlusPlusJNI.so
-\end{verbatim}
-in a 64bits-Linux-system. Fact++ does not support options.
-
-Fact++ uses the same ATP GUI as the provers for SoftFOL (ref. to section
-\ref{sec:ATP}).
-\subsection{E-KRHyper}
-E-KRHyper\footnote{\url{http://www.uni-koblenz.de/~bpelzer/ekrhyper/}}
-is an extension of
-KRHyper\footnote{\url{http://www.uni-koblenz.de/~wernhard/krhyper/}} by
-handling of equality. E-KRHyper is an automatic first order theorem
-prover and model finder based on the Hyper Tableaux Calculus\cite{Baumgartner:1996}.
-E-KRHyper is optimized for being integrated into other systems. In the current
-implementation we use a default tactics script, that can be influenced by the user.
-The options of E-KRHyper are written in a Prolog-like syntax as in
-\begin{verbatim}
-#(set_parameter(timeout_termination_method,0)).
-\end{verbatim}
-the ``.'' at the end of each option is mandatory. To get an overview of
-E-KRHyper's options, run the command
-\begin{verbatim}
-ekrh
-\end{verbatim}
-in a terminal. Then enter the command
-\begin{verbatim}
-#(help).
-\end{verbatim}
-at the prompt of E-KRHyper, to display its help information, which is basically
-a long list of all available parameters. You can exit E-KRHyper by the command
-\begin{verbatim}
-#(exit).
-\end{verbatim}
-
-E-KRHyper uses the same ATP GUI as the other provers for SoftFOL (ref. to section
-\ref{sec:ATP}).
-\subsection{Darwin}
-Darwin is an automatic first order prover and model finder implementing the Model
-Evolution
-Calculus\cite{Baumgartner:2003}. The integration of Darwin as a consistency checker
-supports the display of models (if they can be constructed) in \CASL-syntax.
-Eprover is needed to be in the system-path, if Darwin is used with \Hets, since
-Darwin uses Eprover for clausification of first-order formulae.
-
-Darwin supports a wide range of options, to get an overview of them run the command
-\begin{verbatim}
-darwin --help
-\end{verbatim}
-in a terminal.
-
-Darwin uses the same ATP GUI as the other provers for SoftFOL (ref. to section
-\ref{sec:ATP}).
-
-\subsection{QuickCheck}
-\subsection{minisat}
-\subsection{Truth tables}
-\subsection{CspCASLProver}
+For details on the ATPs supported, see the \Hets user guide \cite{HetsUserGuide}.
 
 \section{Limits of Hets}
 
@@ -1917,227 +1450,6 @@ not from the Internet.
 \item The proof engine for development graphs provides only experimental
 support for hiding links and for conservativity.
 \end{itemize}
-
-
-\section{Architecture of Hets}
-
-The architecture of \Hets is shown in Fig.~\ref{fig:hets}.
-How is a single logic implemented in the Heterogeneous Tool Set?
-This is depicted in the left column of Fig.~\ref{fig:hets}.
-
-\Hets provides an abstract interface for
-                \index{institution!independence}%
-                \index{independence, institution}%
-institutions, so
-that new logics can be integrated smoothly.
-In order to do so, a parser,
-a static checker and a prover for basic specifications in the logic have
-to be provided.
-
-
-
-\begin{figure}
-%\figrule
-\begin{center}
-{\small
-\begin{verbatim}
-class Logic lid sign morphism sentence basic_spec symbol_map
-    | lid -> sign morphism sentence basic_spec symbol_map where
-  identity :: lid -> sign -> morphism
-  compose :: lid -> morphism -> morphism -> morphism
-  dom, codom :: lid -> morphism -> sign
-  parse_basic_spec :: lid -> String -> basic_spec
-  parse_symbol_map :: lid -> String -> symbol_map
-  parse_sentence   :: lid -> String -> sentence
-  empty_signature :: lid -> sign
-  basic_analysis :: lid -> sign -> basic_spec -> (sign, [sentence])
-  stat_symbol_map :: lid -> sign -> symbol_map -> morphism
-  map_sentence :: lid -> morphism -> sentence -> sentence
-  provers ::
-    lid -> [(sign, [sentence]) -> [sentence] -> Proof_status]
-  cons_checkers :: lid -> [(sign, [sentence]) -> Proof_status]
-
-class Comorphism cid
-          lid1 sign1 morphism1 sentence1 basic_spec1 symbol_map1
-          lid2 sign2 morphism2 sentence2 basic_spec2 symbol_map2
-      | cid -> lid1 lid2 where
-  sourceLogic :: cid -> lid1       targetLogic :: cid -> lid2
-  map_theory :: cid -> (sign1, [sentence1]) -> (sign2, [sentence2])
-  map_morphism :: cid -> morphism1 -> morphism2
-\end{verbatim}
-}
-\end{center}
-\caption{The basic ingredients of logics and logic comorphisms}
-\label{fig:logic:all}
-%\figrule
-\end{figure}
-
-Each logic is realized in the programming language Haskell
-\cite{PeytonJones03} by a set of types and functions, see
-Fig.~\ref{fig:logic:all}, where we present a simplified, stripped down
-version, where e.g.\ error handling is ignored. For technical reasons
-a logic is \emph{tagged} with a unique identifier type (\texttt{lid}),
-which is a singleton type the only purpose of which is to determine
-all other type components of the given logic.  In Haskell jargon, the
-interface is called a multiparameter type class with functional
-dependencies \cite{TypeClasses}.  The Haskell interface for logic
-translations is realised similarly.
-
-
-The logic-independent modules in \Hets can be found in the right half
-of Fig.~\ref{fig:hets}.  These modules comprise roughly one third of
-\Hets' 100.000 lines of Haskell code.
-
-The heterogeneous parser transforms a string
-conforming to the syntax in Fig.~\ref{fig:lang}
-to an abstract syntax tree, using the \texttt{Parsec} combinator parser
-\cite{Parsec}.  Logic and translation names are looked up in the logic
-graph --- this is necessary to be able to choose the correct parser
-for basic specifications.  Indeed, the parser has a state that carries
-the current logic, and which is updated if an explicit specification
-of the logic is given, or if a logic translation is encountered (in
-the latter case, the state is set to the target logic of the
-translation).  With this, it is possible to parse basic specifications
-by just using the logic-specific parser of the current logic as
-obtained from the state.
-
-
-The static analysis is based on the static analysis of basic
-specifications, and transforms an abstract syntax tree to a
-development graph (cf.\ Sect.~\ref{sec:DevGraph} above).  Starting with a
-node corresponding to the empty theory, it successively extends (using
-the static analysis of basic specifications) and/or translates (along
-the intra- and inter-logic translations) the theory, while
-simultaneously adding nodes and links to the development graph.
-
-Heterogeneous proof management is done using heterogeneous
-development graphs, as described in Sect.~\ref{sec:DevGraph}.
-For local proof goals, logic-specific provers are invoked,
-see Sect.~\ref{sec:Proofs}.
-
-\Hets can store development graphs, including their proofs.
-Therefore, \Hets uses the so-called
-                \index{ATerms}%
-ATerm format \cite{BJKO00}, which is used as interchange format
-for interfacing with other tools.
-
-More details can be found in \cite{Habil,MossakowskiEtAl07b}
-and in the overview of modules provided in the developers section
-of the \Hets home page at \url{http://www.dfki.de/sks/hets}.
-
-\begin{figure}
-\begin{center}
-\includegraphics[scale=0.4]{hets2007}
-\end{center}
-%\vspace{1em}
-%\input{hets.tex}
-\caption{Architecture of the heterogeneous tool set.
-\label{fig:hets}}
-\end{figure}
-
-\bigskip
-
-\Hets is mainly maintained by
-Christian Maeder (Christian.Maeder@dfki.de) and Till Mossakowski
-(Till.Mossakowski@dfki.de). The mailing list is
-\begin{quote}
- \url{hets-users@informatik.uni-bremen.de}
-\end{quote}
-the homepage is
-\begin{quote}
-\url{http://www.informatik.uni-bremen.de/mailman/listinfo/hets-users}.
-\end{quote}
-
-You need to subscribe to the list before you can send a mail.
-But note that subscription is very easy!
-
-If your favourite logic is missing in \Hets, please tell us
-(hets-users@informatik.uni-bremen.de). We will take your feedback into account
-when deciding which logics and proof tools to integrate next into \Hets. Help
-with integration of more logics and proof tools into \Hets is also welcome.
-
-\paragraph{Acknowledgement}
-The heterogeneous tool set \Hets would not have possible
-without cooperation with many people.
-%Christian Maeder and Klaus L\"uttich.
-Besides the authors, the following people have been involved
-in the implementation of \Hets:
-Katja Abu-Dib,
-Michael Chan,
-Codru\c ta G\^ arlea,
-Dominik Dietrich,
-Elena Digor,
-Carsten Fischer,
-Jorina Freya Gerken,
-Andy Gimblett,
-Rainer Grabbe,
-Sonja Gr\"{o}ning,
-Markus Groß,
-Klaus Hartke,
-Daniel Hausmann,
-Wiebke Herding,
-Hendrik Iben,
-Cui ``Ken'' Jian,
-Heng Jiang,
-Stef Joosten,
-Anton Kirilov,
-Tina Krausser,
-Martin K\"{u}hl,
-Mingyi Liu,
-Karl Luc,
-Klaus L\"{u}ttich,
-%Christian Maeder,
-Maciek Makowski,
-Florian Mossakowski,
-Immanuel Normann,
-Sebastian Raible,
-Liam O'Reilly,
-Razvan Pascanu,
-Daniel Pratsch,
-Corneliu-Claudiu Prodescu,
-Felix Reckers,
-Adri\'{a}n Riesco,
-Markus Roggenbach,
-Pascal Schmidt,
-Ewaryst Schulz,
-Kristina Sojakova,
-Igor Stassiy,
-Tilman Thiry,
-Paolo Torrini,
-Jonathan von Schroeder,
-Simon Ulbricht,
-Ren\'{e} Wagner,
-Jian Chun Wang,
-Zicheng Wang, and
-Thiemo Wiedemeyer.
-
-\Hets has been built based on experiences with its
-precursors,
-                \index{Cats@\Cats}%
-\Cats and
-                \index{Maya@\MAYA}%
-\MAYA.
-The \CASL Tool Set (\Cats)
-\cite{Mossakowski:2000:CST,Mossakowski:1998:SSA}
-provides parsing and static analysis for \CASL.
-It has been developed by the first author with help
-of Mark van den Brand, Kolyang, Bartek Klin, Pascal Schmidt and
-Frederic Voisin.
-
-\MAYA \cite{Autexier:2002:IHD,AutexierEtal02} is a proof management
-tool based on development graphs.  \MAYA only supports development
-graphs without hiding and without logic translations.  \MAYA has been
-developed by Serge Autexier and Dieter Hutter.
-
-We also want to thank Agn\`es Arnould, Thibaud Brunet, Pascale LeGall,
-Kathrin Hoffmann, Bruno Langenstein, Katiane Lopes,
-%Klaus L\"uttich, Christian Maeder,
-Stefan Merz, Maria Martins Moreira, Christophe
-Ringeissen, Markus Roggenbach, Dmitri Schamschurko, Lutz Schr\"oder,
-Konstantin Tchekine and Stefan W\"olfl
-for giving feedback about \Cats, HOL-CASL and \Hets. Finally,
-special thanks to Christoph L\"uth and George Russell
-for help with connecting \Hets to their UniForM workbench.
 
 
 \bibliographystyle{plain}
