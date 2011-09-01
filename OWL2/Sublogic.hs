@@ -7,118 +7,77 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Here is the place where the class Logic is instantiated for OWL2 DL.
+Complexity analysis of OWL2
 
 -}
 
-module OWL2.Sublogic
-    ( OWLSub (..)
-    , NumberRestrictions (..)
-    , OWLDatatypes (..)
-    , sl_top
-    , sl_bottom
-    , sl_max
-    , sl_name
-    , slFrame
-    , slAxiom
-    , sl_o_doc
-    , sl_sig
-    , sl_mor
-    , pr_o_doc
-    , pr_sig
-    , pr_mor
-    , printXSDName
-    ) where
+module OWL2.Sublogic where
 
 import OWL2.AS
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Morphism
 
-import Data.Char
 import Data.List
 import Data.Maybe
 
 import qualified Data.Set as Set
 
 data NumberRestrictions = None | Unqualified | Qualified
-                        deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
-data OWLDatatypes = OWLDATA | OWLString |
-                    OWLnormalizedString |
-                    OWLBoolean | OWLDecimal | OWLFloat | OWLDouble |
-                    OWLInteger | OWLnonNegativeInteger | OWLpositiveInteger |
-                    OWLnonPositiveInteger | OWLnegativeInteger
-               deriving (Show, Eq, Ord, Enum, Bounded)
-
-owlDatatypes :: [OWLDatatypes]
-owlDatatypes = [minBound .. maxBound]
-
-printXSDName :: Show a => a -> String
-printXSDName dt =
-    drop 3 $ show dt
+owlDatatypes :: Set.Set Datatype
+owlDatatypes = Set.fromList predefIRIs
 
 data OWLSub = OWLSub
-            {
-              numberRestrictions :: NumberRestrictions
-            , nominals :: Bool
-            , inverseRoles :: Bool
-            , roleTransitivity :: Bool
-            , roleHierarchy :: Bool
-            , complexRoleInclusions :: Bool
-            , addFeatures :: Bool
-            , datatype :: Set.Set OWLDatatypes
-            } deriving (Show, Eq, Ord)
+    { numberRestrictions :: NumberRestrictions
+    , nominals :: Bool
+    , inverseRoles :: Bool
+    , roleTransitivity :: Bool
+    , roleHierarchy :: Bool
+    , complexRoleInclusions :: Bool
+    , addFeatures :: Bool
+    , datatype :: Set.Set Datatype
+    } deriving (Show, Eq, Ord)
 
 -- | sROIQ(D)
 sl_top :: OWLSub
 sl_top = OWLSub
-      {
-        numberRestrictions = Qualified
-      , nominals = True
-      , inverseRoles = True
-      , roleTransitivity = True
-      , roleHierarchy = True
-      , complexRoleInclusions = True
-      , addFeatures = True
-      , datatype = Set.fromList owlDatatypes
-      }
+    { numberRestrictions = Qualified
+    , nominals = True
+    , inverseRoles = True
+    , roleTransitivity = True
+    , roleHierarchy = True
+    , complexRoleInclusions = True
+    , addFeatures = True
+    , datatype = owlDatatypes
+    }
 
 -- ALC
 sl_bottom :: OWLSub
 sl_bottom = OWLSub
-            {
-              numberRestrictions = None
-            , nominals = False
-            , inverseRoles = False
-            , roleTransitivity = False
-            , roleHierarchy = False
-            , complexRoleInclusions = False
-            , addFeatures = False
-            , datatype = Set.empty
-            }
+    { numberRestrictions = None
+    , nominals = False
+    , inverseRoles = False
+    , roleTransitivity = False
+    , roleHierarchy = False
+    , complexRoleInclusions = False
+    , addFeatures = False
+    , datatype = Set.empty
+    }
 
 
 sl_max :: OWLSub -> OWLSub -> OWLSub
-sl_max sl1 sl2 =
-    OWLSub
-    {
-      numberRestrictions = max (numberRestrictions sl1)
-                           (numberRestrictions sl2)
-    , nominals = max (nominals sl1)
-                 (nominals sl2)
-    , inverseRoles = max (inverseRoles sl1)
-                     (inverseRoles sl2)
-    , roleTransitivity = max (roleTransitivity sl1)
-                         (roleTransitivity sl2)
-    , roleHierarchy = max (roleHierarchy sl1)
-                      (roleHierarchy sl2)
+sl_max sl1 sl2 = OWLSub
+    { numberRestrictions = max (numberRestrictions sl1) (numberRestrictions sl2)
+    , nominals = max (nominals sl1) (nominals sl2)
+    , inverseRoles = max (inverseRoles sl1) (inverseRoles sl2)
+    , roleTransitivity = max (roleTransitivity sl1) (roleTransitivity sl2)
+    , roleHierarchy = max (roleHierarchy sl1) (roleHierarchy sl2)
     , complexRoleInclusions = max (complexRoleInclusions sl1)
-                              (complexRoleInclusions sl2)
-    , addFeatures = max (addFeatures sl1)
-                    (addFeatures sl2)
-    , datatype = Set.union (datatype sl1)
-                 (datatype sl2)
+            (complexRoleInclusions sl2)
+    , addFeatures = max (addFeatures sl1) (addFeatures sl2)
+    , datatype = Set.union (datatype sl1) (datatype sl2)
     }
 
 -- | Naming for Description Logics
@@ -136,11 +95,10 @@ sl_name sl =
         None -> "")
     ++ let ds = datatype sl in if Set.null ds then "" else
            "-D"
-           ++ (let ts = Set.filter (/= OWLDATA) ds
-               in if Set.null ts then "" else
+           ++ (if Set.null ds then "" else
                  "|"
-                 ++ (if ds == Set.fromList owlDatatypes then "-" else
-                         intercalate "|" $ map printXSDName $ Set.toList ts)
+                 ++ (if ds == owlDatatypes then "-" else
+                         intercalate "|" $ map printDatatype $ Set.toList ds)
                  ++ "|")
 
 requireQualNumberRestrictions :: OWLSub -> OWLSub
@@ -157,9 +115,8 @@ requireRoleHierarchy :: OWLSub -> OWLSub
 requireRoleHierarchy sl = sl {roleHierarchy = True}
 
 requireComplexRoleInclusions :: OWLSub -> OWLSub
-requireComplexRoleInclusions sl =
-    (requireRoleHierarchy $ requireRoleTransitivity sl)
-        {complexRoleInclusions = True}
+requireComplexRoleInclusions sl = (requireRoleHierarchy
+    $ requireRoleTransitivity sl) {complexRoleInclusions = True}
 
 requireAddFeatures :: OWLSub -> OWLSub
 requireAddFeatures sl = (requireComplexRoleInclusions sl) {addFeatures = True}
@@ -170,78 +127,63 @@ requireNominals sl = sl {nominals = True}
 requireInverseRoles :: OWLSub -> OWLSub
 requireInverseRoles sl = sl {inverseRoles = True}
 
-requireDatatype :: OWLSub -> OWLSub
-requireDatatype sl = sl {datatype = Set.union (datatype sl)
-    $ Set.singleton OWLDATA}
+slDatatype :: Datatype -> OWLSub
+slDatatype dt = sl_bottom {datatype = if isDatatypeKey dt then
+    Set.singleton $ stripReservedPrefix dt else Set.singleton dt}
 
-sl_obj_prop :: ObjectPropertyExpression -> OWLSub
-sl_obj_prop o = case o of
+slDataProp :: DataPropertyExpression -> OWLSub
+slDataProp = slDatatype
+
+slObjProp :: ObjectPropertyExpression -> OWLSub
+slObjProp o = case o of
     ObjectProp _ -> sl_bottom
-    ObjectInverseOf p -> requireInverseRoles $ sl_obj_prop p
+    ObjectInverseOf p -> requireInverseRoles sl_bottom
 
-sl_ent :: Entity -> OWLSub
-sl_ent (Entity et _) = case et of
-    Datatype -> requireDatatype sl_bottom
+slEntity :: Entity -> OWLSub
+slEntity (Entity et iri) = case et of
+    Datatype -> slDatatype iri
     _ -> sl_bottom
 
-sl_data_uri :: QName -> OWLSub
-sl_data_uri ur = sl_bottom
-  { datatype = case namePrefix ur of
-      "xsd" -> let
-          l = map toLower $ localPart ur
-          s = case l of
-                '#' : r -> r
-                _ -> l
-          in Set.fromList $ OWLDATA
-               : filter ((s ==) . map toLower . printXSDName) owlDatatypes
-      _ -> Set.singleton OWLDATA }
-
-sl_data_prop :: DataPropertyExpression -> OWLSub
-sl_data_prop = sl_data_uri
-
-sl_data_range :: DataRange -> OWLSub
-sl_data_range rn = requireDatatype $ case rn of
-    DataType ur _ -> sl_data_uri ur
-    DataComplementOf c -> sl_data_range c
+slDataRange :: DataRange -> OWLSub
+slDataRange rn = case rn of
+    DataType ur _ -> slDatatype ur
+    DataComplementOf c -> slDataRange c
     DataOneOf _ -> requireNominals sl_bottom
-    DataJunction _ drl -> foldl sl_max sl_bottom $ map sl_data_range drl
+    DataJunction _ drl -> foldl sl_max sl_bottom $ map slDataRange drl
 
-sl_desc :: ClassExpression -> OWLSub
-sl_desc des = case des of
+slClassExpression :: ClassExpression -> OWLSub
+slClassExpression des = case des of
     Expression _ -> sl_bottom
-    ObjectJunction _ dec -> foldl sl_max sl_bottom $ map sl_desc dec
-    ObjectComplementOf dec -> sl_desc dec
+    ObjectJunction _ dec -> foldl sl_max sl_bottom $ map slClassExpression dec
+    ObjectComplementOf dec -> slClassExpression dec
     ObjectOneOf _ -> requireNominals sl_bottom
-    ObjectValuesFrom _ o d -> sl_max (sl_obj_prop o) (sl_desc d)
-    ObjectHasSelf o -> requireAddFeatures $ sl_obj_prop o
-    ObjectHasValue o _ -> sl_obj_prop o
-    ObjectCardinality c -> sl_card c
-    DataValuesFrom _ d dr -> requireDatatype $
-             sl_max (sl_data_range dr) (sl_data_prop d)
-    DataHasValue d _ -> requireDatatype $ sl_data_prop d
-    DataCardinality c -> requireDatatype $ sl_d_card c
+    ObjectValuesFrom _ o d -> sl_max (slObjProp o) (slClassExpression d)
+    ObjectHasSelf o -> requireAddFeatures $ slObjProp o
+    ObjectHasValue o _ -> slObjProp o
+    ObjectCardinality c -> slObjCard c
+    DataValuesFrom _ d dr -> sl_max (slDataRange dr) (slDataProp d)
+    DataHasValue d _ -> slDataProp d
+    DataCardinality c -> slDataCard c
 
-sl_d_card :: Cardinality DataPropertyExpression DataRange -> OWLSub
-sl_d_card (Cardinality _ _ dp x) = requireDatatype $ requireNumberRestrictions
-    $ case x of
-        Nothing -> sl_data_prop dp
-        Just y -> sl_max (sl_data_prop dp) (sl_data_range y)
+slDataCard :: Cardinality DataPropertyExpression DataRange -> OWLSub
+slDataCard (Cardinality _ _ dp x) = requireNumberRestrictions $ case x of
+    Nothing -> slDataProp dp
+    Just y -> sl_max (slDataProp dp) (slDataRange y)
 
-sl_card :: Cardinality ObjectPropertyExpression ClassExpression -> OWLSub
-sl_card (Cardinality _ _ op x) = requireNumberRestrictions
-    $ case x of
-        Nothing -> sl_obj_prop op
-        Just y -> sl_max (sl_obj_prop op) (sl_desc y)
+slObjCard :: Cardinality ObjectPropertyExpression ClassExpression -> OWLSub
+slObjCard (Cardinality _ _ op x) = requireNumberRestrictions $ case x of
+    Nothing -> slObjProp op
+    Just y -> sl_max (slObjProp op) (slClassExpression y)
 
 slLFB :: Maybe Relation -> ListFrameBit -> OWLSub
 slLFB mr lfb = case lfb of
-    ExpressionBit anl -> foldl sl_max sl_bottom $ map (sl_desc . snd) anl
+    ExpressionBit anl -> foldl sl_max sl_bottom $ map (slClassExpression . snd) anl
     ObjectBit anl -> sl_max (case fromMaybe (error "relation needed") mr of
         EDRelation Disjoint -> requireAddFeatures sl_bottom
-        _ -> sl_bottom) $ foldl sl_max sl_bottom $ map (sl_obj_prop . snd) anl
+        _ -> sl_bottom) $ foldl sl_max sl_bottom $ map (slObjProp . snd) anl
     DataBit anl -> sl_max (case fromMaybe (error "relation needed") mr of
         EDRelation Disjoint -> requireAddFeatures sl_bottom
-        _ -> sl_bottom) $ foldl sl_max sl_bottom $ map (sl_data_prop . snd) anl
+        _ -> sl_bottom) $ foldl sl_max sl_bottom $ map (slDataProp . snd) anl
     IndividualSameOrDifferent _ -> requireNominals sl_bottom
     ObjectCharacteristics anl -> foldl sl_max sl_bottom
         $ map (\ c -> case c of
@@ -250,17 +192,17 @@ slLFB mr lfb = case lfb of
               Irreflexive -> requireAddFeatures sl_bottom
               Asymmetric -> requireAddFeatures sl_bottom
               _ -> sl_bottom) $ map snd anl
-    DataPropRange anl -> foldl sl_max sl_bottom $ map (sl_data_range . snd) anl
+    DataPropRange anl -> foldl sl_max sl_bottom $ map (slDataRange . snd) anl
     _ -> sl_bottom
 
 slAFB :: AnnFrameBit -> OWLSub
 slAFB afb = case afb of
-    DatatypeBit dr -> sl_data_range dr
-    ClassDisjointUnion cel -> foldl sl_max sl_bottom $ map sl_desc cel
-    ClassHasKey opl dpl -> sl_max (foldl sl_max sl_bottom $ map sl_obj_prop opl)
-            (foldl sl_max sl_bottom $ map sl_data_prop dpl)
+    DatatypeBit dr -> slDataRange dr
+    ClassDisjointUnion cel -> foldl sl_max sl_bottom $ map slClassExpression cel
+    ClassHasKey opl dpl -> sl_max (foldl sl_max sl_bottom $ map slObjProp opl)
+            (foldl sl_max sl_bottom $ map slDataProp dpl)
     ObjectSubPropertyChain opl -> requireComplexRoleInclusions
-        $ requireRoleHierarchy $ foldl sl_max sl_bottom $ map sl_obj_prop opl
+        $ requireRoleHierarchy $ foldl sl_max sl_bottom $ map slObjProp opl
     _ -> sl_bottom
 
 slFB :: FrameBit -> OWLSub
@@ -276,11 +218,11 @@ slFB fb = case fb of
 slAxiom :: Axiom -> OWLSub
 slAxiom (PlainAxiom ext fb) = case ext of
     Misc _ -> slFB fb
-    ClassEntity ce -> sl_max (slFB fb) (sl_desc ce)
-    ObjectEntity o -> sl_max (slFB fb) (sl_obj_prop o)
+    ClassEntity ce -> sl_max (slFB fb) (slClassExpression ce)
+    ObjectEntity o -> sl_max (slFB fb) (slObjProp o)
     SimpleEntity e@(Entity ty ent) -> case ty of
-        DataProperty -> requireDatatype $ sl_max (slFB fb) (sl_data_prop ent)
-        _ -> sl_max (sl_ent e) (slFB fb)
+        DataProperty -> sl_max (slFB fb) (slDataProp ent)
+        _ -> sl_max (slEntity e) (slFB fb)
 
 slFrame :: Frame -> OWLSub
 slFrame = foldl sl_max sl_bottom . map slAxiom . getAxioms
@@ -289,9 +231,9 @@ sl_o_doc :: OntologyDocument -> OWLSub
 sl_o_doc = foldl sl_max sl_bottom . map slFrame . ontFrames . ontology
 
 sl_sig :: Sign -> OWLSub
-sl_sig sig = if Set.size (dataProperties sig) == 0
-    && Set.size (datatypes sig) == 0
-    then sl_bottom else requireDatatype sl_bottom
+sl_sig sig = let dts = Set.toList $ datatypes sig in
+    if Set.size (dataProperties sig) == 0 && null dts
+    then sl_bottom else foldl sl_max sl_bottom $ map slDatatype dts
 
 sl_mor :: OWLMorphism -> OWLSub
 sl_mor mor = sl_max (sl_sig $ osource mor) $ sl_sig $ otarget mor

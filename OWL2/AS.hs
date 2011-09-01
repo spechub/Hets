@@ -282,6 +282,10 @@ getPredefName iri =
                 [s] -> s
                 _ -> error $ showQU iri ++ " is not a predefined IRI"
 
+printDatatype :: IRI -> String
+printDatatype dt = showQU $
+    if isDatatypeKey dt then stripReservedPrefix dt else dt
+
 data DatatypeCat = OWL2Number | OWL2String | OWL2Bool | Other
     deriving (Show, Eq, Ord)
 
