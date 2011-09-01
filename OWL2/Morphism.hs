@@ -132,10 +132,10 @@ instance Pretty OWLMorphism where
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
 
 legalMor :: OWLMorphism -> Result ()
-legalMor m = let mm = mmaps m in if
-  Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
-  && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m)
-  then return () else fail "illegal OWL2 morphism"
+legalMor m = let mm = mmaps m in unless
+  (Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
+  && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m))
+        $ fail "illegal OWL2 morphism"
 
 composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
 composeMor m1 m2 =

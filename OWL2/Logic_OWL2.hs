@@ -136,7 +136,7 @@ instance MinSublogic ProfSub Sign where
     minSublogic = sSig
 
 instance ProjectSublogic ProfSub Sign where
-    projectSublogic = prSig
+    projectSublogic = prSign
 
 instance MinSublogic ProfSub SymbItems where
     minSublogic = const topS
@@ -160,4 +160,4 @@ instance ProjectSublogicM ProfSub Entity where
     projectSublogicM = const Just
 
 instance ProjectSublogic ProfSub OntologyDocument where
-    projectSublogic = prODoc
+    projectSublogic = prOntDoc

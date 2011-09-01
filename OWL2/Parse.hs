@@ -183,9 +183,9 @@ uriP =
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
 
 extEntity :: CharParser st ExtEntityType
-extEntity = do
+extEntity =
     fmap EntityType entityType
-   <|> do option AnyEntity $ pkeyword "Prefix" >> return Prefix
+   <|> option AnyEntity (pkeyword "Prefix" >> return Prefix)
 
 symbItems :: GenParser Char st SymbItems
 symbItems = do
