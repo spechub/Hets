@@ -121,6 +121,7 @@ setInt :: Int -> Element -> Element
 setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
     attrVal = show i}]}
 
+-- | the reverse of @properFacet@ in "OWL2.XML"
 correctFacet :: ConstrainingFacet -> ConstrainingFacet
 correctFacet c = let d = getPredefName c in setPrefix "http" $ mkQName $
     "//www.w3.org/2001/XMLSchema#" ++ case d of
@@ -448,20 +449,19 @@ xmlAxioms (PlainAxiom ext fb) = xmlFrameBit ext fb
 xmlFrames :: Frame -> [Element]
 xmlFrames (Frame ext fbl) = concatMap (xmlFrameBit ext) fbl
 
+mkElemeDecl :: Sign -> String -> (Sign -> Set.Set IRI) -> [Element]
+mkElemeDecl s k f = map (makeElementWith1 declarationK . mwNameIRI k)
+    $ Set.toList $ f s
+
+-- | converts the signature to declarations
 signToDec :: Sign -> [Element]
-signToDec s =
-    let c = Set.toList $ concepts s
-        op = Set.toList $ objectProperties s
-        dp = Set.toList $ dataProperties s
-        ap = Set.toList $ annotationRoles s
-        dt = Set.toList $ datatypes s
-        i = Set.toList $ individuals s
-    in map (makeElementWith1 declarationK . mwNameIRI classK) c
-      ++ map (makeElementWith1 declarationK . mwNameIRI objectPropertyK) op
-      ++ map (makeElementWith1 declarationK . mwNameIRI dataPropertyK) dp
-      ++ map (makeElementWith1 declarationK . mwNameIRI annotationPropertyK) ap
-      ++ map (makeElementWith1 declarationK . mwNameIRI datatypeK) dt
-      ++ map (makeElementWith1 declarationK . mwNameIRI namedIndividualK) i
+signToDec s = concatMap (uncurry $ mkElemeDecl s)
+    [ (classK, concepts)
+    , (objectPropertyK, objectProperties)
+    , (dataPropertyK, dataProperties)
+    , (annotationPropertyK, annotationRoles)
+    , (datatypeK, datatypes)
+    , (namedIndividualK, individuals)]
 
 xmlImport :: ImportIRI -> Element
 xmlImport i = setName importK $ mwText $ showIRI i

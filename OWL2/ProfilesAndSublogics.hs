@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-OWL2 Profiles (EL, QL and RL) + OWL2 DL
+OWL2 Profiles (EL, QL and RL) + OWL2 complexity analysis
 
 References  :  <http://www.w3.org/TR/owl2-profiles/>
 -}

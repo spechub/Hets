@@ -277,7 +277,7 @@ getPredefName :: IRI -> String
 getPredefName iri =
     if namePrefix iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
         then localPart iri
-        else case mapMaybe (flip stripPrefix $ showQU iri)
+        else case mapMaybe (`stripPrefix` showQU iri)
                     $ Map.elems predefPrefixes of
                 [s] -> s
                 _ -> error $ showQU iri ++ " is not a predefined IRI"
@@ -501,7 +501,5 @@ data ClassExpression =
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
     deriving (Show, Eq, Ord)
 
-data AnnotationValue =
-     AnnValue IRI
-   | AnnValLit Literal
+data AnnotationValue = AnnValue IRI | AnnValLit Literal
     deriving (Show, Eq, Ord)

@@ -93,15 +93,15 @@ appendBase b qn =
 -- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
 splitIRI qn = case iriType qn of
-    NodeID -> nodeID qn
+    NodeID -> mkNodeID qn
     _ -> let lp = localPart qn
              np = takeWhile (/= ':') lp
              ':' : nlp = dropWhile (/= ':') lp
          in qn {namePrefix = np, localPart = nlp}
 
 -- | prepends "_:" to the nodeID if is not there already
-nodeID :: IRI -> IRI
-nodeID qn =
+mkNodeID :: IRI -> IRI
+mkNodeID qn =
     let lp = localPart qn
     in case lp of
         '_' : ':' : _ -> qn
@@ -143,13 +143,13 @@ getEntityType ty = case ty of
     "AnnotationProperty" -> AnnotationProperty
     _ -> err "not entity type"
 
-toEntity :: XMLBase -> Element -> Entity
-toEntity b e = Entity (getEntityType $ (qName . elName) e) $ getIRI b e
+getEntity :: XMLBase -> Element -> Entity
+getEntity b e = Entity (getEntityType $ (qName . elName) e) $ getIRI b e
 
 getDeclaration :: XMLBase -> Element -> Axiom
 getDeclaration b e = case getName e of
    "Declaration" ->
-        PlainAxiom (SimpleEntity $ toEntity b $ filterCL entityList e)
+        PlainAxiom (SimpleEntity $ getEntity b $ filterCL entityList e)
             $ AnnFrameBit (getAllAnnos b e) $ AnnotationFrameBit Declaration
    _ -> err "not declaration"
 
@@ -157,6 +157,7 @@ isPlainLiteral :: String -> Bool
 isPlainLiteral s =
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
 
+-- | put an "f" for float if not there already (eg. 123.45 --> 123.45f)
 correctLit :: Literal -> Literal
 correctLit l = case l of
     Literal lf (Typed dt) ->
@@ -218,6 +219,7 @@ getObjProp b e = case getName e of
       _ -> err "not objectProperty"
   _ -> err "not objectProperty"
 
+-- | replaces eg. "minExclusive" with ">"
 properFacet :: ConstrainingFacet -> ConstrainingFacet
 properFacet cf
     | iriType cf == Full =
@@ -333,10 +335,10 @@ getClassAxiom b e =
     "DatatypeDefinition" ->
         PlainAxiom (SimpleEntity $ Entity Datatype $ getIRI b dhd)
             $ AnnFrameBit as $ DatatypeBit $ getDataRange b dtl
-    _ -> hasKey b e
+    _ -> getKey b e
 
-hasKey :: XMLBase -> Element -> Axiom
-hasKey b e = case getName e of
+getKey :: XMLBase -> Element -> Axiom
+getKey b e = case getName e of
   "HasKey" ->
     let as = getAllAnnos b e
         [ce] = filterChL classExpressionList e
