@@ -20,6 +20,7 @@ import qualified Common.AS_Annotation as CommonAnno
 import Common.Result
 import Control.Monad
 import Data.Char
+import Data.Either
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -105,6 +106,11 @@ voiToTok :: VarOrIndi -> Token
 voiToTok v = case v of
     OVar o -> mkNName o
     OIndi o -> uriToTok o
+
+varToInt :: VarOrIndi -> Int
+varToInt v = case v of
+    OVar i -> i
+    _ -> error $ "could not translate " ++ show v
 
 uriToTokM :: IRI -> Result Token
 uriToTokM = return . uriToTok
@@ -202,6 +208,9 @@ mkQE l = mkQuants . mkExist l
 mkAE :: TERM -> TERM -> SENTENCE
 mkAE t = mkAtoms . Equation t
 
+mkEqual :: NAME -> NAME -> SENTENCE
+mkEqual t1 t2 = mkAE (Name_term t1) $ Name_term t2 
+
 mkSent :: [NAME_OR_SEQMARK] -> [NAME_OR_SEQMARK] -> SENTENCE -> SENTENCE
        -> SENTENCE
 mkSent l1 l2 s = mkQU l1 . mkQE l2 . mkBI s
@@ -246,6 +255,7 @@ mkPairs :: t -> [t1] -> [(t, t1)]
 mkPairs a = map (\ b -> (a, b))
 
 data VarOrIndi = OVar Int | OIndi IRI
+    deriving Show
 
 -- | Mapping of OWL morphisms to CommonLogic morphisms
 mapMorphism :: OWLMorphism -> Result CLM.Morphism
@@ -356,13 +366,14 @@ mapComIndivList cSig sod mi inds = do
                     Different -> mkBN $ mkAE x y) il
     return [mkBC sntLst]
 
--- | mapping of literals
-mapLiteral :: Sign -> Literal -> Result TERM
-mapLiteral _ c = do
-    let cl = case c of
-                Literal l _ -> l
-                NumberLit l -> show l
-    return $ Name_term $ mkSimpleId cl
+mapLit :: Int -> Literal -> Result (Either (SENTENCE, SENTENCE) TERM)
+mapLit i c = return $ case c of
+    Literal l ty -> case ty of
+        Typed dt -> Left (mkEqual (mkSimpleId l) $ mkNName i,
+                    mkTermAtoms (uriToTok dt) [mkNTERM i])
+        Untyped _ -> Right $ Name_term $ mkSimpleId l
+    NumberLit l -> Left (mkEqual (mkSimpleId $ show l) $ mkNName i,
+                    mkTermAtoms (mkSimpleId $ numberName l) [mkNTERM i])
 
 -- | Mapping of data properties
 mapDataProp :: Sign -> DataPropertyExpression -> VarOrIndi -> VarOrIndi
@@ -426,22 +437,28 @@ mapDataRange cSig dr var = let uid = mkVTerm var in case dr of
         (dc, sig) <- mapDataRange cSig cdr var
         return (mkBN dc, sig)
     DataOneOf cs -> do
-        cl <- mapM (mapLiteral cSig) cs
-        dl <- mapM (\ x -> return $ mkAtoms $ Atom x [Term_seq uid]) cl
-        return (mkBD dl, cSig)
+        let i = varToInt var
+        cl <- mapM (mapLit i) cs
+        let (sens, ts) = (lefts cl, rights cl)
+            sl = map (\ (s1, s2) -> mkBC [s1, s2]) sens
+        tl <- mapM (\ x -> return $ mkAtoms $ Atom x [Term_seq uid]) ts
+        return (mkBD $ tl ++ sl, cSig)
     DataType dt rlst -> do
         let sent = mkTermAtoms (uriToTok dt) [uid]
-        (sens, sigL) <- mapAndUnzipM (mapFacet cSig uid) rlst
+        (sens, sigL) <- mapAndUnzipM (mapFacet cSig var uid) rlst
         return (mkBC $ sent : sens, uniteL $ cSig : sigL)
 
 -- | mapping of a tuple of ConstrainingFacet and RestictionValue
-mapFacet :: Sign -> TERM -> (ConstrainingFacet, RestrictionValue)
+mapFacet :: Sign -> VarOrIndi -> TERM -> (ConstrainingFacet, RestrictionValue)
     -> Result (SENTENCE, Sign)
-mapFacet sig var (f, r) = do
-    con <- mapLiteral sig r
-    return (mkTermAtoms (uriToTok f) [con, var], unite sig $ emptySig
-                   {items = Set.fromList [stringToId $ showQN
-                                $ stripReservedPrefix f]})
+mapFacet sig i var (f, r) = do
+    l <- mapLit 2 r
+    let sign = unite sig $ emptySig {items = Set.fromList [stringToId $ showQN
+                $ stripReservedPrefix f]}
+    case l of
+        Right lit -> return (mkTermAtoms (uriToTok f) [lit, var], sign)
+        Left (s1, s2) -> return (mkBC [mkTermAtoms (uriToTok f)
+                    [mkVTerm $ OVar $ varToInt i + 1, var], s1, s2], sign)
 
 cardProps :: Bool -> Sign
     -> Either ObjectPropertyExpression DataPropertyExpression -> Int
@@ -525,9 +542,14 @@ mapDescription cSig des oVar aVar =
             AllValuesFrom -> (mkQU [Name varNN] sent, drSig)
             SomeValuesFrom -> (mkQE [Name varNN] sent, drSig)
     DataHasValue dpe c -> do
-        con <- mapLiteral cSig c
-        return (mkAtoms $ Atom (Name_term $ uriToTok dpe)
-                    [mkTermSeq varN, Term_seq con], cSig)
+        let nvar = var + 1
+        con <- mapLit nvar c
+        case con of
+            Right lit -> return (mkAtoms $ Atom (Name_term $ uriToTok dpe)
+                    [mkTermSeq varN, Term_seq lit], cSig)
+            Left (s1, s2) -> do
+                sens <- mapDataProp cSig dpe oVar $ OVar nvar 
+                return (mkBC [sens, s1, s2], cSig)
     DataCardinality (Cardinality ct n dpe dr) -> mapCard False cSig ct n
         (Right dpe) (fmap Right dr) var
 
@@ -566,9 +588,13 @@ mapFact cSig ex f = case f of
     DataPropertyFact posneg dpe lit -> case ex of
         SimpleEntity (Entity NamedIndividual iri) -> do
              inS <- mapIndivIRI cSig iri
-             inT <- mapLiteral cSig lit
+             inT <- mapLit 1 lit
              nm <- uriToTokM dpe
-             let dPropH = mkTermAtoms nm [inS, inT]
+             dPropH <- case inT of
+                    Right li -> return $ mkTermAtoms nm [inS, li]
+                    Left (s1, s2) -> do
+                        sens <- mapDataProp cSig dpe (OIndi iri) $ OVar 1 
+                        return $ mkBC [sens, s1, s2]
              return $ senToText $ case posneg of
                              Positive -> dPropH
                              Negative -> mkBN dPropH

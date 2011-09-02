@@ -9,7 +9,7 @@ spec person =
     Datatype: Years
         EquivalentTo: natural
     Datatype: Surname
-        EquivalentTo: string [pattern "[a-z]"^^xsd:string]
+        EquivalentTo: string [pattern "[a-z] [0-1]"^^xsd:string]
 
     AnnotationProperty: x
         SubPropertyOf: deprecated
