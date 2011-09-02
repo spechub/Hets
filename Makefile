@@ -651,10 +651,6 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 
 ## rule for GHC
 %: %.hs packages
-ifdef ERRORMSG
-	@echo $(ERRORMSG)
-	@exit 2
-endif
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ## rule for HAPPY

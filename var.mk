@@ -1,5 +1,4 @@
 # to be include by Makefile
-# use ERRORMSG to signal errors to the user and exit makefile
 
 GHCVERSION = $(shell ghc --numeric-version)
 ifneq ($(findstring 7., $(GHCVERSION)),)
@@ -51,14 +50,6 @@ endif
 HEXPATVERSION = $(shell $(HCPKG) field hexpat exposed)
 ifneq ($(findstring True, $(HEXPATVERSION)),)
 HEXPAT_PACKAGE = -DHEXPAT
-endif
-
-XMLVERSION = $(shell $(HCPKG) field xml version)
-ifneq ($(findstring 1.3.7, $(XMLVERSION)),)
-else ifneq ($(findstring 1.3.8, $(XMLVERSION)),)
-else ifneq ($(findstring 1.3.9, $(XMLVERSION)),)
-else
-ERRORMSG=xml library version 1.3.7 or later required
 endif
 
 HTTPVERSION = $(shell $(HCPKG) field HTTP version)
