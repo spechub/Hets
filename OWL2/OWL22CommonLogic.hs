@@ -284,10 +284,24 @@ dataIncl :: IRI -> CommonAnno.Named TEXT
 dataIncl iri = CommonAnno.makeNamed "" $ senToText
     $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "Datatype"
 
+propertyIncl :: String -> QName -> CommonAnno.Named TEXT
+propertyIncl s prop = CommonAnno.makeNamed "" $ senToText $
+    let [d, pr] = map (`mkTermAtoms` map mkNTERM [1, 2])
+            [uriToTok prop, mkSimpleId s]
+    in mkBI d $ if s `elem` [topDataProp, topObjProp] then pr else mkBN pr
+
 declarations :: OS.Sign -> [CommonAnno.Named TEXT]
-declarations s = map thingIncl (Set.toList $ OS.concepts s)
-    ++ let dt = Set.toList $ OS.datatypes s
-       in map dataIncl $ map (setPrefix "xsd" . mkQName) datatypeKeys ++ dt
+declarations s =
+    let c = Set.toList $ OS.concepts s
+        dt = Set.toList $ OS.datatypes s
+        dp = Set.toList $ OS.dataProperties s
+        op = Set.toList $ OS.objectProperties s
+    in map thingIncl c
+        ++ map dataIncl (map (setPrefix "xsd" . mkQName) datatypeKeys ++ dt)
+        ++ map (propertyIncl topDataProp) dp
+        ++ map (propertyIncl bottomDataProp) dp
+        ++ map (propertyIncl topObjProp) op
+        ++ map (propertyIncl bottomObjProp) op
 
 thingDataDisjoint :: CommonAnno.Named TEXT
 thingDataDisjoint = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN
@@ -304,6 +318,7 @@ mapTheory (owlSig, owlSens) = do
                 ) ([], cSig) owlSens
     let sig = unite (emptySig {items = Set.fromList $ map (uriToId .
             setReservedPrefix . mkQName) $ "Datatype" : predefClass
+            ++ [topDataProp, bottomDataProp, topObjProp, bottomObjProp]
             ++ datatypeKeys}) nSig
         cSens = nothingSent : thingDataDisjoint : declarations owlSig ++ cSensI
     return (sig, cSens)
