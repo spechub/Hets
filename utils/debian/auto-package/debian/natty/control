@@ -25,8 +25,6 @@ Build-Depends:
  libghc6-xml-prof,
  libghc6-zlib-dev,
  libghc6-zlib-prof,
- libghc6-haskell-src-dev,
- libghc6-haskell-src-prof,
  libghc6-aterm-dev,
  libghc6-aterm-prof,
  libghc6-programatica-dev,

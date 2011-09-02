@@ -25,8 +25,6 @@ Build-Depends:
  libghc-xml-prof,
  libghc-zlib-dev,
  libghc-zlib-prof,
- libghc-haskell-src-dev,
- libghc-haskell-src-prof,
  libghc-aterm-dev,
  libghc-aterm-prof,
  libghc-programatica-dev,
