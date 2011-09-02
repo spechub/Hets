@@ -37,7 +37,7 @@ instance Pretty QName where
 printIRI :: QName -> Doc
 printIRI q
     | (isPredefPropOrClass q && namePrefix q `elem` ["owl", "rdfs"]) ||
-        (isDatatypeKey q && namePrefix q == "xsd") = keyword $ localPart q
+        isDatatypeKey q = keyword $ localPart q
     | otherwise = text $ showQN q
 
 -- | Symbols printing

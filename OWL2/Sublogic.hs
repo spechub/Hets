@@ -53,7 +53,7 @@ slTop = OWLSub
     , datatype = owlDatatypes
     }
 
--- ALC
+-- | ALC
 slBottom :: OWLSub
 slBottom = OWLSub
     { numberRestrictions = None
@@ -94,12 +94,8 @@ slName sl =
         Unqualified -> "N"
         None -> "")
     ++ let ds = datatype sl in if Set.null ds then "" else
-           "-D"
-           ++ (if Set.null ds then "" else
-                 "|"
-                 ++ (if ds == owlDatatypes then "-" else
-                         intercalate "|" $ map printDatatype $ Set.toList ds)
-                 ++ "|")
+           "-D|" ++ (if ds == owlDatatypes then "-|" else
+                intercalate "|" (map printDatatype $ Set.toList ds) ++ "|")
 
 requireQualNumberRestrictions :: OWLSub -> OWLSub
 requireQualNumberRestrictions sl = sl {numberRestrictions = Qualified}
@@ -129,10 +125,7 @@ requireInverseRoles sl = sl {inverseRoles = True}
 
 slDatatype :: Datatype -> OWLSub
 slDatatype dt = slBottom {datatype = if isDatatypeKey dt then
-    Set.singleton $ stripReservedPrefix dt else Set.singleton dt}
-
-slDataProp :: DataPropertyExpression -> OWLSub
-slDataProp = slDatatype
+    Set.singleton dt else Set.empty}
 
 slObjProp :: ObjectPropertyExpression -> OWLSub
 slObjProp o = case o of
@@ -153,7 +146,6 @@ slDataRange rn = case rn of
 
 slClassExpression :: ClassExpression -> OWLSub
 slClassExpression des = case des of
-    Expression _ -> slBottom
     ObjectJunction _ dec -> foldl slMax slBottom $ map slClassExpression dec
     ObjectComplementOf dec -> slClassExpression dec
     ObjectOneOf _ -> requireNominals slBottom
@@ -161,14 +153,14 @@ slClassExpression des = case des of
     ObjectHasSelf o -> requireAddFeatures $ slObjProp o
     ObjectHasValue o _ -> slObjProp o
     ObjectCardinality c -> slObjCard c
-    DataValuesFrom _ d dr -> slMax (slDataRange dr) (slDataProp d)
-    DataHasValue d _ -> slDataProp d
+    DataValuesFrom _ _ dr -> slDataRange dr
     DataCardinality c -> slDataCard c
+    _ -> slBottom
 
 slDataCard :: Cardinality DataPropertyExpression DataRange -> OWLSub
-slDataCard (Cardinality _ _ dp x) = requireNumberRestrictions $ case x of
-    Nothing -> slDataProp dp
-    Just y -> slMax (slDataProp dp) (slDataRange y)
+slDataCard (Cardinality _ _ _ x) = requireNumberRestrictions $ case x of
+    Nothing -> slBottom
+    Just y -> slDataRange y
 
 slObjCard :: Cardinality ObjectPropertyExpression ClassExpression -> OWLSub
 slObjCard (Cardinality _ _ op x) = requireNumberRestrictions $ case x of
@@ -182,9 +174,9 @@ slLFB mr lfb = case lfb of
     ObjectBit anl -> slMax (case fromMaybe (error "relation needed") mr of
         EDRelation Disjoint -> requireAddFeatures slBottom
         _ -> slBottom) $ foldl slMax slBottom $ map (slObjProp . snd) anl
-    DataBit anl -> slMax (case fromMaybe (error "relation needed") mr of
+    DataBit _ -> case fromMaybe (error "relation needed") mr of
         EDRelation Disjoint -> requireAddFeatures slBottom
-        _ -> slBottom) $ foldl slMax slBottom $ map (slDataProp . snd) anl
+        _ -> slBottom
     IndividualSameOrDifferent _ -> requireNominals slBottom
     ObjectCharacteristics anl -> foldl slMax slBottom
         $ map ((\ c -> case c of
@@ -200,8 +192,7 @@ slAFB :: AnnFrameBit -> OWLSub
 slAFB afb = case afb of
     DatatypeBit dr -> slDataRange dr
     ClassDisjointUnion cel -> foldl slMax slBottom $ map slClassExpression cel
-    ClassHasKey opl dpl -> slMax (foldl slMax slBottom $ map slObjProp opl)
-            (foldl slMax slBottom $ map slDataProp dpl)
+    ClassHasKey opl _ -> foldl slMax slBottom $ map slObjProp opl
     ObjectSubPropertyChain opl -> requireComplexRoleInclusions
         $ requireRoleHierarchy $ foldl slMax slBottom $ map slObjProp opl
     _ -> slBottom
@@ -221,9 +212,7 @@ slAxiom (PlainAxiom ext fb) = case ext of
     Misc _ -> slFB fb
     ClassEntity ce -> slMax (slFB fb) (slClassExpression ce)
     ObjectEntity o -> slMax (slFB fb) (slObjProp o)
-    SimpleEntity e@(Entity ty ent) -> case ty of
-        DataProperty -> slMax (slFB fb) (slDataProp ent)
-        _ -> slMax (slEntity e) (slFB fb)
+    SimpleEntity e -> slMax (slEntity e) (slFB fb)
 
 slFrame :: Frame -> OWLSub
 slFrame = foldl slMax slBottom . map slAxiom . getAxioms

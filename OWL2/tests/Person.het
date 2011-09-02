@@ -32,6 +32,6 @@ spec person =
         HasKey: Annotations: isDefinedBy y hasSSN, hasAge, hasName
 
     Individual: Ann
-        Types: hasAge some natural, hasChildren min 2
+        Types: hasAge some natural, hasChildren min 10
 
 end
