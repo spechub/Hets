@@ -50,7 +50,9 @@ emptySig = Sign { items = Set.empty
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
 printSign s =
-    hsep [text "vocabulary", sepByCommas $ map pretty $ Set.toList $ items s]
+  hsep [text "%{vocabulary"
+      , sepByCommas $ map pretty $ Set.toList $ items s
+      , text "}%"]
 
 -- | Determines if sig1 is subsignature of sig2
 isSubSigOf :: Sign -> Sign -> Bool
