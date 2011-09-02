@@ -1,4 +1,4 @@
-logic HasCASL.PTyClHOL=
+logic HasCASL.TyClHOL
 spec s2 =
 class
 d2 < Type
