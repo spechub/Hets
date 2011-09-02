@@ -33,6 +33,6 @@ fi
 
 #installing the libraries
 echo Installing libraries...
-cabal install aterm cairo xml fgl HTTP tar glade haskeline \
+cabal install aterm random xml fgl HTTP tar glade haskeline \
               hexpat wai-extra-0.2.4.2 uni-uDrawGraph \
               -O --enable-documentation --global --prefix=$pre
