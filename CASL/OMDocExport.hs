@@ -62,7 +62,8 @@ exportTheoryToOmdoc :: (Show f, Pretty e) => SigMap Symbol -> Sign f e
                     -> [Named (FORMULA f)] -> Result [TCElement]
 
 exportTheoryToOmdoc sigm sig _ =
-    return $ map (subsortToOmdoc $ sigMapSymbs sigm) $ Rel.toList $ sortRel sig
+    return $ map (subsortToOmdoc $ sigMapSymbs sigm)
+      $ Rel.toList $ Rel.reflexive $ sortRel sig
 
 
 -- ------------------------ Sentences --------------------------
