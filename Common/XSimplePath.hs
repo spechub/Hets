@@ -13,14 +13,11 @@ break down Common.XPath.Expr into a very simple path description.
 module Common.XSimplePath where
 
 import Common.XPath
-import Common.XUpdate
 
 import Control.Monad
 
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
-
-import Debug.Trace
 
 type SimplePath = [SimpleStep]
 
@@ -28,14 +25,10 @@ data SimpleStep = MkStepDown QName
                 | FindByAttr [Attr]
                 | FindByNumber Int
 
-readDiff :: String -> IO SimplePath
-readDiff filepath = do
-  xml <- readFile filepath
-  cs <- anaXUpdates xml
-{- mapM_ (\ (Change _ e) -> putStrLn $
-  "\n--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--\n" ++ show e) cs -}
-  concatMapM (\ (Change _ e) -> exprToSimplePath e) cs
-
+moveTo :: Monad m => Element -> Expr -> m Cursor
+moveTo el e = let cr = fromElement el in do
+  sPth <- exprToSimplePath e
+  foldM (flip moveStep) cr sPth
 
 exprToSimplePath :: Monad m => Expr -> m SimplePath
 exprToSimplePath e = case e of
@@ -107,4 +100,7 @@ moveStep stp cr = case stp of
         "cannot find an element that complies with the attributes: "
         ++ unlines (map show attrs)
   -- Case #3, not implemented TODO what to do with it? (cp. -> mkAttrList)
-  FindByNumber _ -> fail "no implementation for FindByNumber"
+  FindByNumber 0 -> return cr
+  FindByNumber i -> case right cr of
+                      Just cr' -> moveStep (FindByNumber (i-1)) cr'
+                      Nothing -> fail "index out of bounds"

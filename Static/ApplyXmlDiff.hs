@@ -13,23 +13,40 @@ change an Xml-DGraph according to XmlDiff-data.
 module Static.ApplyXmlDiff where
 
 import Common.XUpdate
---import Common.XSimplePath
+import Common.XSimplePath
 
 import Control.Monad
 
-import Text.XML.Light
+import Text.XML.Light hiding (findChild)
+import Text.XML.Light.Cursor
 
 applyXmlDiff :: Monad m => Element -> String -> m Element
 applyXmlDiff el diff = do
   cs <- anaXUpdates diff
   foldM changeXml el cs
 
+toElement :: Monad m => Cursor -> m Element
+toElement cr = case parent cr of
+  Nothing -> case current cr of
+    Elem e -> return e
+    _ -> fail "cannot convert Cursor into Element"
+  Just cr' -> toElement cr'
+
 changeXml :: Monad m => Element -> Change -> m Element
-changeXml el (Change csel expr) = case csel of
-    Add _ addCs -> foldM insertXml el addCs where
-      insertXml e' c = case c of
-        AddElem e -> return e' { elContent = Elem e : elContent e' }
+changeXml el (Change csel expr) = do
+  cr <- moveTo el expr 
+  case csel of
+    Add pos addCs -> let
+      ins = case pos of
+              Before -> insertGoLeft
+              After -> insertGoRight
+              Append -> error "not implemented"
+      insert' cr' c = case c of
+        AddElem e -> return $ ins (Elem e) cr'
         _ -> fail $ "no implementation for " ++ show c
+      in do
+        cr' <- foldM insert' cr addCs
+        toElement cr'
     Remove -> undefined
     _ -> fail $ "no implementation for " ++ show csel
 
