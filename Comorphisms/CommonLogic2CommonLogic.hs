@@ -47,28 +47,28 @@ instance Language CommonLogic2CommonLogic where
 
 instance Comorphism
     CommonLogic2CommonLogic -- comorphism
-    Logic.CommonLogic     -- lid domain
-    Sl.CommonLogicSL   -- sublogics codomain
+    Logic.CommonLogic       -- lid domain
+    Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
     TEXT                    -- sentence domain
     NAME                    -- symbol items domain
     SYMB_MAP_ITEMS          -- symbol map items domain
-    Sign.Sign            -- signature domain
-    Mor.Morphism         -- morphism domain
-    Symbol.Symbol        -- symbol domain
-    Symbol.Symbol        -- rawsymbol domain
-    ProofTree              -- proof tree codomain
-    Logic.CommonLogic     -- lid domain
-    Sl.CommonLogicSL   -- sublogics codomain
+    Sign.Sign               -- signature domain
+    Mor.Morphism            -- morphism domain
+    Symbol.Symbol           -- symbol domain
+    Symbol.Symbol           -- rawsymbol domain
+    ProofTree               -- proof tree codomain
+    Logic.CommonLogic       -- lid domain
+    Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
     TEXT                    -- sentence domain
     NAME                    -- symbol items domain
     SYMB_MAP_ITEMS          -- symbol map items domain
-    Sign.Sign            -- signature domain
-    Mor.Morphism         -- morphism domain
-    Symbol.Symbol        -- symbol domain
-    Symbol.Symbol        -- rawsymbol domain
-    ProofTree              -- proof tree codomain
+    Sign.Sign               -- signature domain
+    Mor.Morphism            -- morphism domain
+    Symbol.Symbol           -- symbol domain
+    Symbol.Symbol           -- rawsymbol domain
+    ProofTree               -- proof tree codomain
     where
       sourceLogic CommonLogic2CommonLogic = Logic.CommonLogic
       sourceSublogic CommonLogic2CommonLogic = Sl.top
@@ -77,7 +77,7 @@ instance Comorphism
       map_theory CommonLogic2CommonLogic = mapTheory
       map_morphism CommonLogic2CommonLogic = mapMor
       map_sentence CommonLogic2CommonLogic = mapSentence
-      has_model_expansion CommonLogic2CommonLogic = True -- TODO: check if it is really True
+      --hasCommonLogic2CommonLogic_model_expansion  = True -- TODO: check if it is really True
 
 
 mapSub :: Sl.CommonLogicSL -> Sl.CommonLogicSL

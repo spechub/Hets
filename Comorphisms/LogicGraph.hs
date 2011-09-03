@@ -93,6 +93,7 @@ import Comorphisms.CASL2VSEImport
 import Comorphisms.Maude2CASL
 import Comorphisms.CommonLogic2CASL
 import Comorphisms.CommonLogic2CommonLogic
+import Comorphisms.Prop2CommonLogic
 import Comorphisms.Adl2CASL
 #endif
 #ifndef NOOWLLOGIC
@@ -156,6 +157,7 @@ comorphismList =
     , Comorphism Maude2CASL
     , Comorphism CommonLogic2CASL
     , Comorphism CommonLogic2CommonLogic
+    , Comorphism Prop2CommonLogic
     , Comorphism Adl2CASL
 #endif
 #ifndef NOOWLLOGIC

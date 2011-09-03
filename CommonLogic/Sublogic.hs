@@ -19,6 +19,8 @@ module CommonLogic.Sublogic
     , sublogics_max                 -- join of sublogics
     , top                           -- FullCommonLogic
     , bottom                        -- Propositional
+    , folsl                         -- FirstOrderLogic
+    , propsl                        -- Propositional
     , sublogics_all                 -- all sublogics
     , sublogics_name                -- name of sublogics
     , sl_sig                        -- sublogic for a signature
