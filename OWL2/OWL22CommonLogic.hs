@@ -452,7 +452,7 @@ mapDataRange cSig dr var = let uid = mkVTerm var in case dr of
 mapFacet :: Sign -> VarOrIndi -> TERM -> (ConstrainingFacet, RestrictionValue)
     -> Result (SENTENCE, Sign)
 mapFacet sig i var (f, r) = do
-    l <- mapLit 2 r
+    l <- mapLit (varToInt i + 1) r
     let sign = unite sig $ emptySig {items = Set.fromList [stringToId $ showQN
                 $ stripReservedPrefix f]}
     case l of
