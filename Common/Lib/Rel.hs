@@ -31,7 +31,7 @@ may destroy the closedness property of a relation.
 
 module Common.Lib.Rel
     ( Rel, empty, nullKeys, rmNullSets
-    , insertPair, insertDiffPair
+    , insertPair, insertDiffPair, insertKeyOrPair
     , member, toMap, map
     , noPairs, insertKey, deleteKey, memberKey, keysSet
     , fromKeysSet
@@ -108,6 +108,10 @@ insertPair a b = Rel . MapSet.setInsert a b . toMap
 -- | insert a pair only if both sides are different
 insertDiffPair :: Ord a => a -> a -> Rel a -> Rel a
 insertDiffPair a b = if a == b then id else insertPair a b
+
+-- | insert a pair only if both sides are different
+insertKeyOrPair :: Ord a => a -> a -> Rel a -> Rel a
+insertKeyOrPair a b = if a == b then insertKey a else insertPair a b
 
 -- | insert an unrelated node
 insertKey :: Ord a => a -> Rel a -> Rel a

@@ -235,7 +235,7 @@ cdInLib ucd ln = case getUri ucd of
 anaOMDocFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaOMDocFile opts fp = do
   dir <- getCurrentDirectory
-  putIfVerbose opts 2 $ "anaOMDocFile: Importing OMDoc file " ++ fp
+  putIfVerbose opts 2 $ "Importing OMDoc file " ++ fp
   Result ds mEnvLn <- runResultT $ importLib (initialEnv opts)
                       $ resolveURI (toURI fp) $ dir ++ "/"
   showDiags opts ds

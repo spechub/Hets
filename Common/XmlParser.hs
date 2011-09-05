@@ -25,7 +25,10 @@ import qualified Data.ByteString.Lazy.Char8 as Char8
 #endif
 
 readXmlFile :: FilePath -> IO BS.ByteString
-readXmlFile = BS.readFile
+readXmlFile fp = do
+  bs <- BS.readFile fp
+  if BS.length bs > 0 then return bs else
+      fail "Common.XmlParser.readXmlFile: empty file"
 
 {- | This class provides an xml parsing function which is instantiated
 by using the hexpat or the XML.Light library, dependent on the haskell
