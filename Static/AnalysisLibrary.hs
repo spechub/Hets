@@ -50,6 +50,8 @@ import Driver.Options
 import Driver.ReadFn
 import Driver.WriteLibDefn
 
+import Network.HTTP (simpleHTTP, getRequest, getResponseBody)
+
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -79,7 +81,14 @@ anaSourceFile = anaSource Nothing
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
-anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
+anaSource mln lgraph opts topLns libenv initDG fname = ResultT $
+  if checkUri fname then do
+       putIfVerbose opts 2 $ "Downloading file " ++ fname
+       resp <- simpleHTTP (getRequest fname)
+       input <- getResponseBody resp
+       runResultT $
+         anaString mln lgraph opts topLns libenv initDG input fname
+  else do
   fname' <- findFileOfLibName opts fname
   case fname' of
     Nothing ->
@@ -115,11 +124,12 @@ anaString :: Maybe LibName -- ^ suggested library name
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaString mln lgraph opts topLns libenv initDG input file = do
   curDir <- lift getCurrentDirectory -- get full path for parser positions
-  mt <- lift $ getModificationTime file
+  mt <- if checkUri file then return noTime
+    else lift $ getModificationTime file
   let realFileName = curDir </> file
       posFileName = case mln of
           Just gLn | useLibPos opts -> show $ getLibId gLn
-          _ -> realFileName
+          _ -> if checkUri file then file else realFileName
 
   Lib_defn pln is ps ans <- readLibDefnM lgraph opts posFileName input
 
