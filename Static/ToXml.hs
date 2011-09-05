@@ -53,27 +53,6 @@ dGraph lenv ln dg =
          subnodes "Global" (annotations ga $ convertGlobalAnnos ga)
          ++ map (lnode ga lenv) lnodes
          ++ map (ledge ga dg) (labEdges body)
-         ++ Map.foldWithKey (globalEntry ga dg) [] (globalEnv dg)
-
-genSig :: DGraph -> GenSig -> [Attr]
-genSig dg (GenSig _ _ allparams) = case allparams of
-   EmptyNode _ -> []
-   JustNode (NodeSig n _) -> [mkAttr "formal-param" $ getNameOfNode n dg]
-
-globalEntry :: GlobalAnnos -> DGraph -> SIMPLE_ID -> GlobalEntry
-            -> [Element] -> [Element]
-globalEntry ga dg si ge l = case ge of
-  SpecEntry (ExtGenSig g (NodeSig n _)) ->
-    add_attrs (mkNameAttr (getNameOfNode n dg) :
-      rangeAttrs (getRangeSpan si) ++ genSig dg g)
-    (unode "SPEC-DEFN" ()) : l
-  ViewEntry (ExtViewSig (NodeSig s _) gm (ExtGenSig g (NodeSig n _))) ->
-    add_attrs (mkNameAttr (show si) : rangeAttrs (getRangeSpan si)
-      ++ genSig dg g ++
-      [ mkAttr "source" $ getNameOfNode s dg
-      , mkAttr "target" $ getNameOfNode n dg])
-    (unode "VIEW-DEFN" $ gmorph ga gm) : l
-  _ -> l
 
 gmorph :: GlobalAnnos -> GMorphism -> Element
 gmorph ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
