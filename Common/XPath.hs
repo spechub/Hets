@@ -175,7 +175,9 @@ showExpr e = case e of
   FilterExpr pe ps ->
     (if isPrimExpr pe then id else paren) (showExpr pe)
     ++ concatMap showPred ps
-  PrimExpr _ s -> s
+  PrimExpr k s -> case k of
+     Literal -> show $ filter (/= '"') s
+     _ -> s
 
 {- | show arguments with minimal parens interspersed with the infix operator.
 Also treat the unary minus where the argument list is a singleton.
@@ -299,8 +301,8 @@ ncName = satisfy ncNameStart <:> many (satisfy ncNameChar) <?> "ncName"
 -- | literal string within single or double quotes (skipping)
 literal :: Parser String
 literal = skips $
-  char '"' <:> many (satisfy (/= '"')) <++> string "\""
-  <|> char '\'' <:> many (satisfy (/= '\'')) <++> string "'"
+  (char '"' >> many (satisfy (/= '"')) << string "\"")
+  <|> (char '\'' >> many (satisfy (/= '\'')) << string "'")
 
 -- | ncName or wild-card (@*@) (skipping)
 localName :: Parser String
