@@ -21,14 +21,13 @@ import Text.XML.Light.Cursor
 
 type SimplePath = [SimpleStep]
 
-data SimpleStep = MkStepDown QName
-                | FindByAttr [Attr]
-                | FindByNumber Int
+data SimpleStep = MkStepDown
+                | FindBy QName [Attr] (Maybe Int)
 
 moveTo :: Monad m => Element -> Expr -> m Cursor
 moveTo el e = let cr = fromElement el in do
   sPth <- exprToSimplePath e
-  foldM (flip moveStep) cr sPth
+  foldM (flip moveStep) cr $ tail sPth
 
 exprToSimplePath :: Monad m => Expr -> m SimplePath
 exprToSimplePath e = case e of
@@ -38,13 +37,11 @@ exprToSimplePath e = case e of
 anaSteps :: Monad m => Step -> m SimplePath
 anaSteps stp = case stp of
   -- TODO is MkStepDown the same for Attributes also?
-  Step Attribute (NameTest n) [] -> return [MkStepDown (unqual n)]
+  Step Attribute (NameTest n) [] ->
+    return $ MkStepDown : [FindBy (unqual n) [] Nothing]
   Step Child (NameTest n) exps -> do
-    atL <- if null exps then return []
-             else do
-               atL' <- mkAttrList exps
-               return [FindByAttr atL']
-    return $ MkStepDown (unqual n) : atL
+    atL <- mkAttrList exps
+    return $ MkStepDown : [FindBy (unqual n) atL Nothing]
   _ -> fail "unexpected (2)"
 
 
@@ -52,7 +49,7 @@ concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = liftM concat . mapM f
 
 mkAttrList :: Monad m => [Expr] -> m [Attr]
-mkAttrList [] = fail "unexpected (9)"
+mkAttrList [] = return []
 -- TODO do anything with the tail?
 mkAttrList (e : _) = case e of
     GenExpr True "and" exp' -> concatMapM mkAttrList $ map (: []) exp'
@@ -80,27 +77,27 @@ mkAttr _ = fail "unexpected (7)"
 moveStep :: Monad m => SimpleStep -> Cursor -> m Cursor
 moveStep stp cr = case stp of
   -- Case #1
-  MkStepDown nm -> let
+  MkStepDown -> case firstChild cr of
+      Just cr' -> return cr'
+      Nothing -> fail "no more childs at given location"
+  -- Case #2
+  FindBy nm attrs maybeCount -> let
     checkName nm' cr' = case current cr' of
       Elem e -> elName e == nm'
       _ -> False
-    in case findChild (checkName nm) cr of
-      Just cr' -> return cr'
-      Nothing -> fail $ "cannot find any childs with name " ++ show nm
-  -- Case #2
-  FindByAttr attrs -> let
     checkAttrs attrs' cr' = case current cr' of
       Elem e -> foldr (\ at r -> case findAttr (attrKey at) e of
                   Nothing -> False
                   Just atV -> atV == attrVal at && r) True attrs'
       _ -> False
-    in case findRight (checkAttrs attrs) cr of
+    in findFromHere (\c -> checkAttrs attrs c && checkName nm c) cr {-of
       Just cr' -> return cr'
       Nothing -> fail $
         "cannot find an element that complies with the attributes: "
-        ++ unlines (map show attrs)
-  -- Case #3, not implemented TODO what to do with it? (cp. -> mkAttrList)
-  FindByNumber i | i < 2 -> return cr
-                 | otherwise -> case right cr of
-                      Just cr' -> moveStep (FindByNumber (i-1)) cr'
-                      Nothing -> fail "index out of bounds"
+        ++ unlines (map show attrs)-}
+
+
+findFromHere :: Monad m => (Cursor -> Bool) -> Cursor -> m Cursor
+findFromHere p cr = if p cr then return cr else case right cr of
+  Just cr' -> findFromHere p cr'
+  Nothing -> fail "couldn't find element"
