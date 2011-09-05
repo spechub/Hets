@@ -100,7 +100,7 @@ moveStep stp cr = case stp of
         "cannot find an element that complies with the attributes: "
         ++ unlines (map show attrs)
   -- Case #3, not implemented TODO what to do with it? (cp. -> mkAttrList)
-  FindByNumber 0 -> return cr
-  FindByNumber i -> case right cr of
+  FindByNumber i | i < 2 -> return cr
+                 | otherwise -> case right cr of
                       Just cr' -> moveStep (FindByNumber (i-1)) cr'
                       Nothing -> fail "index out of bounds"

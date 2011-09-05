@@ -26,11 +26,9 @@ applyXmlDiff el diff = do
   foldM changeXml el cs
 
 toElement :: Monad m => Cursor -> m Element
-toElement cr = case parent cr of
-  Nothing -> case current cr of
+toElement cr = case current $ root cr of
     Elem e -> return e
     _ -> fail "cannot convert Cursor into Element"
-  Just cr' -> toElement cr'
 
 changeXml :: Monad m => Element -> Change -> m Element
 changeXml el (Change csel expr) = do
@@ -47,6 +45,8 @@ changeXml el (Change csel expr) = do
       in do
         cr' <- foldM insert' cr addCs
         toElement cr'
-    Remove -> undefined
+    Remove -> do
+        cr' <- maybe (fail "removeGoUp") return $ removeGoUp cr
+        toElement cr'
     _ -> fail $ "no implementation for " ++ show csel
 
