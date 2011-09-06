@@ -18,7 +18,6 @@ module Static.XGraph
   , xGraph
   ) where
 
-import Static.DevGraph
 import Static.DgUtils
 
 import Common.AnalyseAnnos (getGlobalAnnos)
@@ -45,10 +44,12 @@ order that they can be reconstructed later.
  - Branch holds a list of Definition Links and their Target-Node
  - Root contains all independent Nodes -}
 data XGraph = XGraph { libName :: LibName
+                     , globAnnos :: GlobalAnnos
+                     , nextLinkId :: EdgeId
                      , thmLinks :: [XLink]
                      , xg_body :: XTree}
 
-data XTree = Root [XNode] DGraph -- ^ DGraph stores GlobalAnnos and nextLinkId
+data XTree = Root [XNode] -- ^ initial nodes
            | Branch XNode [XLink] XTree
 
 data XNode = XNode { nodeName :: NodeName
@@ -93,9 +94,8 @@ xGraph xml = do
   let ln = setFilePath fl noTime $ emptyLibName nm
   ga <- extractGlobalAnnos xml
   i' <- fmap readEdgeId $ getAttrVal "nextlinkid" xml
-  let dg = emptyDG { globalAnnos = ga, getNewEdgeId = i' }
-  xg <- builtXGraph defLk restN $ Root initN dg
-  return $ XGraph ln thmLk xg
+  xg <- builtXGraph defLk restN $ Root initN
+  return $ XGraph ln ga i' thmLk xg
 
 builtXGraph :: Monad m => [XLink] -> [XNode] -> XTree -> m XTree
 builtXGraph = builtXGraphAux 0

@@ -68,12 +68,13 @@ readDGXmlR opts path lv = do
 structure. -}
 rebuiltDG :: HetcatsOpts -> LogicGraph -> XGraph -> LibEnv
           -> ResultT IO (DGraph, LibEnv)
-rebuiltDG opts lg (XGraph _ thmLk body) lv = do
+rebuiltDG opts lg (XGraph _ ga i thmLk body) lv = do
   res <- rebuiltBody body lv
   foldM (flip $ insertThmLink lg) res thmLk where
     rebuiltBody bd lv' = case bd of
-        Root nds dg' -> do
-          foldM (flip $ insertNode opts lg Nothing) (dg', lv') nds
+        Root nds -> do
+          foldM (flip $ insertNode opts lg Nothing)
+            (emptyDG { globalAnnos = ga, getNewEdgeId = i }, lv') nds
         Branch nd lKs bd' -> do
           res0 <- rebuiltBody bd' lv'
           insertStep opts lg nd lKs res0
