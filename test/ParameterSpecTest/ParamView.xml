@@ -164,14 +164,4 @@
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <SPEC-DEFN name="s" range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:3.6" formal-param="s__PU1" />
-  <SPEC-DEFN name="s2" range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:8.6-8.7" formal-param="s2__PU1" />
-  <VIEW-DEFN name="v" range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.6" formal-param="v__PU1" source="v__S" target="v__T">
-    <GMorphism name="id_CASL.SubPCSOL=E">
-      <map>
-        <Symbol>sort p</Symbol>
-        <Symbol>sort q</Symbol>
-      </map>
-    </GMorphism>
-  </VIEW-DEFN>
 </DGraph>
