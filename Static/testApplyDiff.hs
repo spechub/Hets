@@ -1,7 +1,7 @@
 
 import Static.ApplyXmlDiff
 import System.Environment
-import Text.XML.Light (parseXMLDoc)
+import Text.XML.Light (parseXMLDoc, showTopElement)
 
 main :: IO()
 main = do
@@ -22,5 +22,5 @@ testDiff p1 p2 = do
       case parseXMLDoc xml of
         Just xml1 -> do
           xml2 <- applyXmlDiff xml1 diff
-          writeFile (p1 ++ "-output") $ show xml2
+          writeFile (p1 ++ "-output") $ showTopElement xml2
         _ -> fail "failed to parse xml-file"

@@ -25,8 +25,8 @@ multiple elements comply with the predicate -}
 data Finder = FindBy QName [Attr] Int
 
 -- create Cursor from Element and move towards PathExpr-position
-moveTo :: Monad m => Element -> Expr -> m Cursor
-moveTo el e = let cr = fromElement el in do
+mkCursorAndMoveTo :: Monad m => Element -> Expr -> m Cursor
+mkCursorAndMoveTo el e = let cr = fromElement el in do
   sPth <- exprToSimplePath e
   moveToAux cr sPth
 

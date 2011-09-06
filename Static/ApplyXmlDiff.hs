@@ -32,21 +32,29 @@ toElement cr = case current $ root cr of
 
 changeXml :: Monad m => Element -> Change -> m Element
 changeXml el (Change csel expr) = do
-  cr <- moveTo el expr 
+  cr <- mkCursorAndMoveTo el expr
   case csel of
     Add pos addCs -> let
       ins = case pos of
               Before -> insertGoLeft
-              After -> insertGoRight
-              Append -> error "not implemented"
-      insert' cr' c = case c of
-        AddElem e -> return $ ins (Elem e) cr'
-        _ -> fail $ "no implementation for " ++ show c
-      in do
-        cr' <- foldM insert' cr addCs
-        toElement cr'
+              _ -> insertGoRight
+      {- TODO: for append, cursor needs to go to children level.
+         check for other cases also! -}
+      cr' = case pos of
+              Append -> case firstChild cr of
+                Just cr'' -> rightMost cr''
+                Nothing -> error "changeXml(1)"
+              _ -> cr
+      cRes = foldl (\ crR cs -> case cs of
+        AddElem e -> ins (Elem e) crR
+        _ -> error $ "no implementation for " ++ show cs ) cr' addCs
+      in toElement cRes
     Remove -> do
         cr' <- maybe (fail "removeGoUp") return $ removeGoUp cr
         toElement cr'
     _ -> fail $ "no implementation for " ++ show csel
 
+rightMost :: Cursor -> Cursor
+rightMost cr = case right cr of
+  Just cr' -> rightMost cr'
+  Nothing -> cr
