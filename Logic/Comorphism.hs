@@ -28,7 +28,6 @@ module Logic.Comorphism
     , targetSublogic
     , map_sign
     , ext_map_sign
-    , mapDefaultMorphism
     , wrapMapTheory
     , mkTheoryMapping
     , AnyComorphism (..)
