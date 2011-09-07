@@ -112,8 +112,6 @@ xGraph xml = do
     $ fail $ "missing nodes for edge targets " ++ show missingTgts
   unless (Set.null missingSrcs)
     $ fail $ "missing nodes for edge sources " ++ show missingSrcs
-  when (Map.null initN)
-    $ fail "found no independent nodes to start DGraph with"
   nm <- getAttrVal "libname" xml
   fl <- getAttrVal "filename" xml
   let ln = setFilePath fl noTime $ emptyLibName nm
