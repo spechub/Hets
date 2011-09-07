@@ -90,6 +90,7 @@ class (Language cid,
     map_theory :: cid -> (sign1, [Named sentence1])
                       -> Result (sign2, [Named sentence2])
     map_morphism :: cid -> morphism1 -> Result morphism2
+    map_morphism = mapDefaultMorphism
     map_sentence :: cid -> sign1 -> sentence1 -> Result sentence2
           {- also covers semi-comorphisms
           with no sentence translation

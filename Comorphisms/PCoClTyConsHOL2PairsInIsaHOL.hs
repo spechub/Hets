@@ -50,7 +50,6 @@ instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
     map_theory PCoClTyConsHOL2PairsInIsaHOL th = do
       (sig, sens) <- mapTheory New simpForOption th
       return (sig { baseSig = MainHC_thy }, sens)
-    map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2PairsInIsaHOL sign phi =
        transSentence sign (typeToks sign) New simpForOption phi
     isInclusionComorphism PCoClTyConsHOL2PairsInIsaHOL = True

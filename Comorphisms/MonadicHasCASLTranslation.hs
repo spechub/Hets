@@ -50,7 +50,6 @@ instance Comorphism MonadicHasCASL2IsabelleHOL
                        then Just () else Nothing
     map_theory MonadicHasCASL2IsabelleHOL =
         mapTheory (Old NoSimpLift) simpForOption
-    map_morphism = mapDefaultMorphism
     map_sentence MonadicHasCASL2IsabelleHOL sign phi =
         transSentence sign (typeToks sign) (Old NoSimpLift) simpForOption phi
     isInclusionComorphism MonadicHasCASL2IsabelleHOL = True

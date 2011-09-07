@@ -59,7 +59,6 @@ instance Comorphism HolLight2Isabelle
    targetLogic _ = Isabelle
    mapSublogic _ _ = Just ()
    map_theory HolLight2Isabelle = mapTheory
-   map_morphism = mapDefaultMorphism
    map_sentence HolLight2Isabelle = mapSentence
 
 -- mapping sentences

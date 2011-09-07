@@ -171,7 +171,6 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
       str | str == show SoftFOLInduction -> generateInductionLemmas True
           | str == show SoftFOLInduction2 -> generateInductionLemmas False
           | otherwise -> id
-    map_morphism = mapDefaultMorphism
     map_sentence (GenSuleCFOL2SoftFOL _) sign =
       return . mapSen (isSingleSorted sign) formTrCASL sign
     extractModel (GenSuleCFOL2SoftFOL _) = extractCASLModel

@@ -50,7 +50,6 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
                        then Just () else Nothing
     map_theory PCoClTyConsHOL2IsabelleHOL =
         mapTheory (Old Lift2Case) simpForOption
-    map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
         transSentence sign (typeToks sign) (Old Lift2Case) simpForOption phi
     isInclusionComorphism PCoClTyConsHOL2IsabelleHOL = True

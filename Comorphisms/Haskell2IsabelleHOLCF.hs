@@ -47,7 +47,6 @@ instance Comorphism Haskell2IsabelleHOLCF
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
     mapSublogic _ _ = Just ()
-    map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
         Hs2HOLCF.transTheory (IsCont True) False sign sens
     has_model_expansion _ = True
@@ -69,6 +68,5 @@ instance Comorphism Haskell2IsabelleHOL
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
     mapSublogic _ _ = Just ()
-    map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
         Hs2HOLCF.transTheory NotCont False sign sens

@@ -62,7 +62,6 @@ instance Comorphism CoCFOL2IsabelleHOL
                        then Just () else Nothing
     map_theory CoCFOL2IsabelleHOL =
       return . transTheory sigTrCoCASL formTrCoCASL
-    map_morphism = mapDefaultMorphism
     map_sentence CoCFOL2IsabelleHOL sign =
       return . mapSen formTrCoCASL sign (typeToks sign)
     has_model_expansion CoCFOL2IsabelleHOL = True

@@ -62,7 +62,6 @@ instance Comorphism HasCASL2IsabelleHOL
                        then Just () else Nothing
     map_theory HasCASL2IsabelleHOL = mkTheoryMapping transSignature
                    (map_sentence HasCASL2IsabelleHOL)
-    map_morphism = mapDefaultMorphism
     map_sentence HasCASL2IsabelleHOL sign phi =
        case transSentence sign phi of
          Nothing   -> warning (mkSen true)

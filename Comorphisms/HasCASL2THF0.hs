@@ -67,7 +67,6 @@ instance Comorphism HasCASL2THF0
     targetLogic HasCASL2THF0 = THF
     mapSublogic HasCASL2THF0 _ = Just ()
     map_theory HasCASL2THF0 = transTheory
-    map_morphism = mapDefaultMorphism
 {-    map_sentence HasCASL2THF0 sig sen =
         transSentence (maybeResult $ genIdConstantMap sig) sig sen -}
     map_symbol HasCASL2THF0 = transSymbol
