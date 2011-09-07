@@ -284,6 +284,9 @@ backwardCompatibleWith = "backwardCompatibleWith"
 incompatibleWith :: String
 incompatibleWith = "incompatibleWith"
 
+implied :: String
+implied = "Implied"
+
 predefClass :: [String]
 predefClass = [thingS, nothingS]
 
@@ -298,7 +301,7 @@ predefRDFSAnnoProps = [label, comment, seeAlso, isDefinedBy]
 
 predefOWLAnnoProps :: [String]
 predefOWLAnnoProps = [deprecated, versionInfo, priorVersion,
-    backwardCompatibleWith, incompatibleWith]
+    backwardCompatibleWith, incompatibleWith, implied]
 
 xsdNumbers :: [String]
 xsdNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,

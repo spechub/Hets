@@ -3,6 +3,7 @@ Module      :  $Header$
 Description :  Interface to the OWL Ontology prover via Pellett.
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2008
 License     :  GPLv2 or higher, see LICENSE.txt
+
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX
@@ -17,6 +18,7 @@ module OWL2.ProvePellet
   , pelletJar
   , pelletEnv
   , pelletProver
+  , pelletEL
   , pelletConsChecker
   ) where
 
@@ -24,6 +26,8 @@ import Logic.Prover
 
 import OWL2.Morphism
 import OWL2.Sign
+import OWL2.Profiles
+import OWL2.Sublogic
 import OWL2.ProfilesAndSublogics
 import OWL2.ProverState
 import OWL2.MS
@@ -65,6 +69,10 @@ pelletEnv = "PELLET_PATH"
 -}
 pelletProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
 pelletProver = mkAutomaticProver pelletS topS pelletGUI
+  pelletCMDLautomaticBatch
+
+pelletEL :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
+pelletEL = mkAutomaticProver pelletS (ProfSub elProfile slTop) pelletGUI
   pelletCMDLautomaticBatch
 
 pelletConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree

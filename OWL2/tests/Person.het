@@ -23,7 +23,7 @@ spec person =
     DataProperty: hasAge
         Range: natural [> "10.24"^^real]
     DataProperty: hasHeight
-        Range: height [< 2.1f]
+        Range: height [< 2.1f] or height [> 3]
 
     Class: smallChild
         SubClassOf: Annotations: deprecated "y" hasHeight value 1.0f

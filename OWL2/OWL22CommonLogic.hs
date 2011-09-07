@@ -209,7 +209,7 @@ mkAE :: TERM -> TERM -> SENTENCE
 mkAE t = mkAtoms . Equation t
 
 mkEqual :: NAME -> NAME -> SENTENCE
-mkEqual t1 t2 = mkAE (Name_term t1) $ Name_term t2 
+mkEqual t1 t2 = mkAE (Name_term t1) $ Name_term t2
 
 mkSent :: [NAME_OR_SEQMARK] -> [NAME_OR_SEQMARK] -> SENTENCE -> SENTENCE
        -> SENTENCE
@@ -451,14 +451,14 @@ mapDataRange cSig dr var = let uid = mkVTerm var in case dr of
 -- | mapping of a tuple of ConstrainingFacet and RestictionValue
 mapFacet :: Sign -> VarOrIndi -> TERM -> (ConstrainingFacet, RestrictionValue)
     -> Result (SENTENCE, Sign)
-mapFacet sig i var (f, r) = do
-    l <- mapLit (varToInt i + 1) r
+mapFacet sig i var (f, r) = let v = varToInt i + 1 in do
+    l <- mapLit v r
     let sign = unite sig $ emptySig {items = Set.fromList [stringToId $ showQN
                 $ stripReservedPrefix f]}
     case l of
         Right lit -> return (mkTermAtoms (uriToTok f) [lit, var], sign)
         Left (s1, s2) -> return (mkBC [mkTermAtoms (uriToTok f)
-                    [mkVTerm $ OVar $ varToInt i + 1, var], s1, s2], sign)
+                    [mkVTerm $ OVar v, var], s1, s2], sign)
 
 cardProps :: Bool -> Sign
     -> Either ObjectPropertyExpression DataPropertyExpression -> Int
@@ -548,7 +548,7 @@ mapDescription cSig des oVar aVar =
             Right lit -> return (mkAtoms $ Atom (Name_term $ uriToTok dpe)
                     [mkTermSeq varN, Term_seq lit], cSig)
             Left (s1, s2) -> do
-                sens <- mapDataProp cSig dpe oVar $ OVar nvar 
+                sens <- mapDataProp cSig dpe oVar $ OVar nvar
                 return (mkBC [sens, s1, s2], cSig)
     DataCardinality (Cardinality ct n dpe dr) -> mapCard False cSig ct n
         (Right dpe) (fmap Right dr) var
@@ -593,7 +593,7 @@ mapFact cSig ex f = case f of
              dPropH <- case inT of
                     Right li -> return $ mkTermAtoms nm [inS, li]
                     Left (s1, s2) -> do
-                        sens <- mapDataProp cSig dpe (OIndi iri) $ OVar 1 
+                        sens <- mapDataProp cSig dpe (OIndi iri) $ OVar 1
                         return $ mkBC [sens, s1, s2]
              return $ senToText $ case posneg of
                              Positive -> dPropH
