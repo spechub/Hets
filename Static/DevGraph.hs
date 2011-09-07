@@ -762,6 +762,7 @@ data DGraph = DGraph
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
   , refTree :: Tree.Gr RTNodeLab RTLinkLab -- ^ the refinement tree
   , specRoots :: Map.Map String Node -- ^ root nodes for named specs
+  , nameMap :: Map.Map String Node -- ^ all nodes by name
   , archSpecDiags :: Map.Map String Diag
       -- ^ dependency diagrams between units
   , getNewEdgeId :: EdgeId  -- ^ edge counter
@@ -782,6 +783,7 @@ emptyDG = DGraph
   , dgBody = Graph.empty
   , refTree = Graph.empty
   , specRoots = Map.empty
+  , nameMap = Map.empty
   , archSpecDiags = Map.empty
   , getNewEdgeId = startEdgeId
   , refNodes = Map.empty
@@ -989,6 +991,12 @@ lookupNodeByName :: String -> DGraph -> [LNode DGNodeLab]
 lookupNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = getDGNodeName lbl == s
 
+lookupUniqueNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
+lookupUniqueNodeByName s dg = do
+  n <- Map.lookup s $ nameMap dg
+  l <- lab (dgBody dg) n
+  return (n, l)
+
 {- | filters all local nodes in the graph by their names, using showName
 to convert nodenames. See also 'lookupNodeByName'. -}
 filterLocalNodesByName :: String -> DGraph -> [LNode DGNodeLab]
@@ -1130,7 +1138,9 @@ delNodesDG ns dg = dg { dgBody = delNodes ns $ dgBody dg }
 
 -- | insert a new node into given DGraph
 insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
-insNodeDG n dg = dg { dgBody = insNode n $ dgBody dg }
+insNodeDG n@(i, l) dg = dg
+  { dgBody = insNode n $ dgBody dg
+  , nameMap = Map.insert (getDGNodeName l) i $ nameMap dg }
 
 -- | inserts a lnode into a given DG
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph

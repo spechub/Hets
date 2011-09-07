@@ -86,14 +86,16 @@ insertStep :: HetcatsOpts -> LogicGraph -> XNode -> [XLink] -> (DGraph, LibEnv)
            -> ResultT IO (DGraph, LibEnv)
 insertStep opts lg xNd lks (dg, lv) = do
   mrs <- mapM (getTypeAndMorphism lg dg) lks
-  gsig <- do
-    unless (length lks > 0) $ fail "insertStep: empty link list"
-    case edgeTypeModInc $ lType $ head lks of
-      FreeOrCofreeDef _ -> fmap snd $ signOfNode (source $ head lks) dg
+  G_sign lid sg sId <- case lks of
+    [] -> fail "insertStep: empty link list"
+    hd : rt -> case edgeTypeModInc $ lType hd of
+      FreeOrCofreeDef _ -> do
+        unless (null rt)
+          $ fail "unexpected non-singleton free or cofree def link"
+        fmap snd $ signOfNode (source hd) dg
       _ -> liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
-  let gt = case gsig of
-        G_sign lid sg sId -> noSensGTheory lid sg sId
-  (dg', lv') <- insertNode opts lg (Just gt) xNd (dg, lv)
+  (dg', lv') <- insertNode opts lg (Just $ noSensGTheory lid sg sId)
+    xNd (dg, lv)
   (j, gsig2) <- signOfNode (showName $ nodeName xNd) dg'
   dg'' <- foldM ( \ dgR ((i, mr, tp), lk) -> do
             lkLab <- finalizeLink lg lk mr gsig2 tp
@@ -180,10 +182,10 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
           (dg', lv') <- case Map.lookup (emptyLibName rfLb) lv of
             Just dg' -> return (dg', lv)
             Nothing -> loadRefLib opts rfLb lv
-          (i, gt) <- case lookupNodeByName rfNd dg' of
-              [(i, lbl)] -> case signOf $ dgn_theory lbl of
+          (i, gt) <- case lookupUniqueNodeByName rfNd dg' of
+              Just (i, lbl) -> case signOf $ dgn_theory lbl of
                 G_sign lid sign sId -> return (i, noSensGTheory lid sign sId)
-              _ -> fail $ "reference node " ++ rfNd ++ " was not found"
+              Nothing -> fail $ "reference node " ++ rfNd ++ " was not found"
           (gt', _) <- parseSpecs gt nm dg spc
           let n = getNewNodeDG dg
               nInf = newRefInfo (emptyLibName rfLb) i
@@ -242,8 +244,7 @@ emptyTheory (Logic lid) =
 signature, but only if one single node is found for the respective name.
 Otherwise an error is thrown. -}
 signOfNode :: String -> DGraph -> ResultT IO (Graph.Node, G_sign)
-signOfNode nd dg = case lookupNodeByName nd dg of
-  [] -> fail $ "required node [" ++ nd ++ "] was not found in DGraph!"
-  [(j, lbl)] ->
+signOfNode nd dg = case lookupUniqueNodeByName nd dg of
+  Nothing -> fail $ "required node [" ++ nd ++ "] was not found in DGraph!"
+  Just (j, lbl) ->
     return (j, signOf (dgn_theory lbl))
-  _ -> fail $ "ambiguous occurence for node [" ++ nd ++ "]!"
