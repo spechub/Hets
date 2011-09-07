@@ -12,7 +12,7 @@ convert an Xml-Graph into an XGraph-Structure.
 
 module Static.XGraph
   ( XGraph (..)
-  , XTree (..)
+  , XTree
   , XNode (..)
   , XLink (..)
   , xGraph
@@ -50,10 +50,10 @@ data XGraph = XGraph { libName :: LibName
                      , globAnnos :: GlobalAnnos
                      , nextLinkId :: EdgeId
                      , thmLinks :: [XLink]
-                     , xg_body :: XTree}
+                     , startNodes :: [XNode]
+                     , xg_body :: XTree }
 
-data XTree = Root [XNode] -- ^ initial nodes
-           | Branch [([XLink], XNode)] XTree
+type XTree = [[([XLink], XNode)]]
 
 type EdgeMap = Map.Map String (Map.Map String [XLink])
 
@@ -117,8 +117,8 @@ xGraph xml = do
   let ln = setFilePath fl noTime $ emptyLibName nm
   ga <- extractGlobalAnnos xml
   i' <- fmap readEdgeId $ getAttrVal "nextlinkid" xml
-  xg <- builtXGraph (Map.keysSet initN) edgeMap restN $ Root $ Map.elems initN
-  return $ XGraph ln ga i' thmLk xg
+  xg <- builtXGraph (Map.keysSet initN) edgeMap restN []
+  return $ XGraph ln ga i' thmLk (Map.elems initN) xg
 
 builtXGraph :: Monad m => Set.Set String -> EdgeMap -> Map.Map String XNode
             -> XTree -> m XTree
@@ -133,8 +133,8 @@ builtXGraph ns xls xns xg = if Map.null xls && Map.null xns then return xg
     ++ show (Set.difference (Set.unions $ map Map.keysSet $ Map.elems rls) ns)
     ++ "\nfor given nodes: " ++ show ns
   builtXGraph (Set.union ns $ Map.keysSet bs) rls
-    (Map.difference xns bs) $ Branch
-       (map (\ (m, x) -> (concat $ Map.elems m, x)) $ Map.elems bs) xg
+    (Map.difference xns bs) $
+       map (\ (m, x) -> (concat $ Map.elems m, x)) (Map.elems bs) : xg
 
 extractXNodes :: Monad m => Element -> m [XNode]
 extractXNodes = mapM mkXNode . findChildren (unqual "DGNode")
