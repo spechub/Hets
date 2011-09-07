@@ -72,12 +72,14 @@ rebuiltDG opts lg (XGraph _ ga i thmLk body) lv = do
   res <- rebuiltBody body lv
   foldM (flip $ insertThmLink lg) res thmLk where
     rebuiltBody bd lv' = case bd of
-        Root nds -> do
+        Root nds ->
           foldM (flip $ insertNode opts lg Nothing)
             (emptyDG { globalAnnos = ga, getNewEdgeId = i }, lv') nds
-        Branch nd lKs bd' -> do
+        Branch bs bd' -> do
           res0 <- rebuiltBody bd' lv'
-          insertStep opts lg nd lKs res0
+          foldM (\ dl (lKs, nd) ->
+            insertStep opts lg nd lKs dl)
+            res0 bs
 
 -- | inserts a new node as well as all definition links pointing at that node
 insertStep :: HetcatsOpts -> LogicGraph -> XNode -> [XLink] -> (DGraph, LibEnv)
@@ -162,7 +164,7 @@ getTypeAndMorAux lg dg sg@(G_sign slid _ _) xLk = let
         FreeOrCofreeThm fc -> do
             (i', sg') <- case mr_source xLk of
               Just ms -> signOfNode ms dg
-              Nothing -> return ((-1), emptySig)
+              Nothing -> return (-1, emptySig)
             mr' <- liftR $ ginclusion lg sg' sg
             mkRtVAL sg' $ HidingFreeOrCofreeThm (Just fc) i' mr' lStat
         GlobalOrLocalThm sc _ -> mkRtVAL sg

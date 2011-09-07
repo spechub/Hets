@@ -28,10 +28,13 @@ import Common.Result (Result (..))
 import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal)
 
-import Data.List (partition, intercalate)
+import Control.Monad
+
+import Data.List
 import Data.Maybe (fromMaybe)
 
-import qualified Data.Set as Set (empty, insert)
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 import Text.XML.Light
 
@@ -50,7 +53,9 @@ data XGraph = XGraph { libName :: LibName
                      , xg_body :: XTree}
 
 data XTree = Root [XNode] -- ^ initial nodes
-           | Branch XNode [XLink] XTree
+           | Branch [([XLink], XNode)] XTree
+
+type EdgeMap = Map.Map String (Map.Map String [XLink])
 
 data XNode = XNode { nodeName :: NodeName
                    , logicName :: String
@@ -78,38 +83,60 @@ Functions -}
 name :: XNode -> String
 name = showName . nodeName
 
+insertXLink :: XLink -> EdgeMap -> EdgeMap
+insertXLink l = Map.insertWith (Map.unionWith (++)) (target l)
+  $ Map.singleton (source l) [l]
+
 xGraph :: Element -> Result XGraph
 xGraph xml = do
   allNodes <- extractXNodes xml
   allLinks <- extractXLinks xml
+  _ <- foldM (\ s l -> let e = edgeId l in
+    if Set.member e s then fail $ "duplicate edge id: " ++ show e
+    else return $ Set.insert e s) Set.empty allLinks
+  nodeMap <- foldM (\ m n -> let s = name n in
+    if Map.member s m then fail $ "duplicate node name: " ++ s
+       else return $ Map.insert s n m) Map.empty allNodes
   let (thmLk, defLk) = partition (\ l -> case edgeTypeModInc $ lType l of
                          ThmType _ _ _ _ -> True
-                         _ -> False ) allLinks
-  (initN, restN) <- case partition
-     (\ n -> not $ elem (name n) $ map target defLk) allNodes of
-       ([], _) -> fail "found no independent nodes to start DGraph with"
-       l -> return l
+                         _ -> False) allLinks
+      edgeMap = foldr insertXLink Map.empty defLk
+      (initN, restN) = Map.partitionWithKey
+         (\ n _ -> Set.notMember n $ Map.keysSet edgeMap)
+         nodeMap
+      tgts = Map.keysSet nodeMap
+      missingTgts = Set.difference (Map.keysSet edgeMap) tgts
+      srcs = Set.unions $ map Map.keysSet $ Map.elems edgeMap
+      missingSrcs = Set.difference srcs tgts
+  unless (Set.null missingTgts)
+    $ fail $ "missing nodes for edge targets " ++ show missingTgts
+  unless (Set.null missingSrcs)
+    $ fail $ "missing nodes for edge sources " ++ show missingSrcs
+  when (Map.null initN)
+    $ fail "found no independent nodes to start DGraph with"
   nm <- getAttrVal "libname" xml
   fl <- getAttrVal "filename" xml
   let ln = setFilePath fl noTime $ emptyLibName nm
   ga <- extractGlobalAnnos xml
   i' <- fmap readEdgeId $ getAttrVal "nextlinkid" xml
-  xg <- builtXGraph defLk restN $ Root initN
+  xg <- builtXGraph (Map.keysSet initN) edgeMap restN $ Root $ Map.elems initN
   return $ XGraph ln ga i' thmLk xg
 
-builtXGraph :: Monad m => [XLink] -> [XNode] -> XTree -> m XTree
-builtXGraph = builtXGraphAux 0
-
-builtXGraphAux :: Monad m => Int -> [XLink] -> [XNode] -> XTree -> m XTree
-builtXGraphAux _ [] [] xg = return xg
-builtXGraphAux _ [] _ _ = fail "builtXGraph: unexpected error (1)"
-builtXGraphAux _ _ [] _ = fail "builtXGraph: unexpected error (2)"
-builtXGraphAux safeguard ls (nd : nR) xg = if safeguard > length nR
-  then fail "builtXGraph: DEADLOCK!"
-  else let (lCur, lRest) = partition ((== name nd) . target) ls in
-    if any (`elem` (map name nR)) $ map source lCur
-        then builtXGraphAux (safeguard + 1) ls (nR ++ [nd]) xg
-        else builtXGraphAux 0 lRest nR $ Branch nd lCur xg
+builtXGraph :: Monad m => Set.Set String -> EdgeMap -> Map.Map String XNode
+            -> XTree -> m XTree
+builtXGraph ns xls xns xg = if Map.null xls && Map.null xns then return xg
+  else do
+  when (Map.null xls) $ fail $ "unprocessed nodes: " ++ show (Map.keysSet xns)
+  when (Map.null xns) $ fail $ "unprocessed links: "
+       ++ show (map edgeId $ concat $ concatMap Map.elems $ Map.elems xls)
+  let (sls, rls) = Map.partition ((`Set.isSubsetOf` ns) . Map.keysSet) xls
+      bs = Map.intersectionWith (,) sls xns
+  when (Map.null bs) $ fail $ "cannot continue with source nodes:\n "
+    ++ show (Set.difference (Set.unions $ map Map.keysSet $ Map.elems rls) ns)
+    ++ "\nfor given nodes: " ++ show ns
+  builtXGraph (Set.union ns $ Map.keysSet bs) rls
+    (Map.difference xns bs) $ Branch
+       (map (\ (m, x) -> (concat $ Map.elems m, x)) $ Map.elems bs) xg
 
 extractXNodes :: Monad m => Element -> m [XNode]
 extractXNodes = mapM mkXNode . findChildren (unqual "DGNode")
@@ -119,13 +146,13 @@ extractXLinks = mapM mkXLink . findChildren (unqual "DGLink")
 
 mkXNode :: Monad m => Element -> m XNode
 mkXNode el = let get f s = f . map strContent . deepSearch [s]
-                 get' s = get unlines s in do
+                 get' = get unlines in do
   nm' <- getAttrVal "name" el
+  let nm = parseNodeName nm'
   case findChild (unqual "Reference") el of
     Just rf -> do
       rfNm <- getAttrVal "node" rf
       rfLib <- getAttrVal "library" rf
-      let nm = parseNodeName nm'
       return $ XRef nm rfNm rfLib $ get' "Axiom" el ++ get' "Theorem" el
     Nothing -> let
       hdSyms = case findChild (unqual "Hidden") el of
@@ -142,7 +169,6 @@ mkXNode el = let get f s = f . map strContent . deepSearch [s]
         xp0 <- getAttrVal "relxpath" el
         nm0 <- getAttrVal "refname" el
         xp1 <- readXPath (nm0 ++ xp0)
-        let nm = parseNodeName nm'
         return $ XNode nm { xpath = reverse xp1 } lgN hdSyms spcs
 
 mkXLink :: Monad m => Element -> m XLink
@@ -168,7 +194,7 @@ mkXLink el = do
   let parseSymbMap = intercalate ", " . map ( intercalate " |-> "
           . map strContent . elChildren ) . deepSearch ["map"]
       ei' = readEdgeId ei
-      prBs = ProofBasis $ foldr Set.insert Set.empty $ map readEdgeId prB
+      prBs = ProofBasis $ foldr (Set.insert . readEdgeId) Set.empty prB
   return $ XLink sr tr ei' tp (DGRule rl) cc prBs mrNm mrSrc $ parseSymbMap el
 
 -- | custom xml-search for not only immediate children
