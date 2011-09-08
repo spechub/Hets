@@ -73,7 +73,7 @@ rebuiltDG opts lg (XGraph _ ga i thmLk nds body) lv = do
   foldM (flip $ insertThmLink lg) res thmLk where
     rebuiltBody bd lv' = case bd of
         [] ->
-          foldM (flip $ insertNode opts lg Nothing)
+          foldM (flip $ insertFirstNode opts lg)
             (emptyDG { globalAnnos = ga, getNewEdgeId = i }, lv') nds
         bs : bd' -> do
           res0 <- rebuiltBody bd' lv'
@@ -94,11 +94,10 @@ insertStep opts lg xNd lks (dg, lv) = do
           $ fail "unexpected non-singleton free or cofree def link"
         fmap snd $ signOfNode (source hd) dg
       _ -> liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
-  (dg', lv') <- insertNode opts lg (Just $ noSensGTheory lid sg sId)
+  (j, gt2, dg', lv') <- insertNode opts lg (Just $ noSensGTheory lid sg sId)
     xNd (dg, lv)
-  (j, gsig2) <- signOfNode (showName $ nodeName xNd) dg'
   dg'' <- foldM ( \ dgR ((i, mr, tp), lk) -> do
-            lkLab <- finalizeLink lg lk mr gsig2 tp
+            lkLab <- finalizeLink lg lk mr (signOf gt2) tp
             return $ insEdgeAsIs (i, j, lkLab) dgR
             ) dg' $ zip mrs lks
   return (dg'', lv')
@@ -175,8 +174,8 @@ getTypeAndMorAux lg dg sg@(G_sign slid _ _) xLk = let
 {- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element
 and the the DGraphs Global Annotations -}
 insertNode :: HetcatsOpts -> LogicGraph -> Maybe G_theory -> XNode
-           -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
-insertNode opts lg mGt xNd (dg, lv) = case xNd of
+  -> (DGraph, LibEnv) -> ResultT IO (Graph.Node, G_theory, DGraph, LibEnv)
+insertNode opts lg mGt xNd (dg, lv) = let n = getNewNodeDG dg in case xNd of
   -- Case #1: Reference Node
   XRef nm rfNd rfLb spc -> do
           (dg', lv') <- case Map.lookup (emptyLibName rfLb) lv of
@@ -187,10 +186,9 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
                 G_sign lid sign sId -> return (i, noSensGTheory lid sign sId)
               Nothing -> fail $ "reference node " ++ rfNd ++ " was not found"
           (gt', _) <- parseSpecs gt nm dg spc
-          let n = getNewNodeDG dg
-              nInf = newRefInfo (emptyLibName rfLb) i
+          let nInf = newRefInfo (emptyLibName rfLb) i
               lbl = newInfoNodeLab nm nInf gt'
-          return (addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
+          return (n, gt', addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
   -- Case #2: Regular Node
   XNode nm lN (hid, syb) spc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes
@@ -210,7 +208,13 @@ insertNode opts lg mGt xNd (dg, lv) = case xNd of
             diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
             return $ DGBasicSpec Nothing diffSig syb'
         let lbl = newNodeLab nm lOrig gt2
-        return (insLNodeDG (getNewNodeDG dg, lbl) dg, lv)
+        return (n, gt2, insLNodeDG (n, lbl) dg, lv)
+
+insertFirstNode :: HetcatsOpts -> LogicGraph -> XNode -> (DGraph, LibEnv)
+  -> ResultT IO (DGraph, LibEnv)
+insertFirstNode opts lg xNd p = do
+  (_, _, dg, lv) <- insertNode opts lg Nothing xNd p
+  return (dg, lv)
 
 parseHidden :: G_theory -> String -> ResultT IO G_theory
 parseHidden gt s' = do
