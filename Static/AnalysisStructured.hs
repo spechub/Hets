@@ -532,7 +532,7 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
     c <- case tok of
             Just ctok -> lookupComorphism (tokStr ctok) lg
             Nothing -> case tar of
-               Just (Logic_name l _) ->
+               Just (Logic_name l _ _) ->
                  lookupLogic "with logic: " (tokStr l) lg
                  >>= logicInclusion lg (Logic srcLid)
                Nothing -> fail "with logic: cannot determine comorphism"
@@ -544,7 +544,7 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
 checkSrcOrTarLogic :: Bool -> AnyComorphism -> Maybe Logic_name -> Result ()
 checkSrcOrTarLogic b (Comorphism cid) ml = case ml of
   Nothing -> return ()
-  Just (Logic_name l _) -> let s = tokStr l in
+  Just (Logic_name l _ _) -> let s = tokStr l in
       when (s /= if b then language_name $ sourceLogic cid
                  else language_name $ targetLogic cid)
         $ plain_error () (s ++ " is is not the "

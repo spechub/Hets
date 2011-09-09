@@ -61,6 +61,7 @@ module Logic.Grothendieck
   , lessSublogicComor
   , LogicGraph (..)
   , setCurLogic
+  , setCurSublogic
   , emptyLogicGraph
   , lookupLogic
   , lookupCurrentLogic
@@ -414,6 +415,7 @@ lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
 data LogicGraph = LogicGraph
     { logics :: Map.Map String AnyLogic
     , currentLogic :: String
+    , currentSublogic :: Maybe Token
     , comorphisms :: Map.Map String AnyComorphism
     , inclusions :: Map.Map (String, String) AnyComorphism
     , unions :: Map.Map (String, String) (AnyComorphism, AnyComorphism)
@@ -427,6 +429,7 @@ emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph
     { logics = Map.empty
     , currentLogic = "CASL"
+    , currentSublogic = Nothing
     , comorphisms = Map.empty
     , inclusions = Map.empty
     , unions = Map.empty
@@ -437,6 +440,9 @@ emptyLogicGraph = LogicGraph
 
 setCurLogic :: String -> LogicGraph -> LogicGraph
 setCurLogic s lg = lg { currentLogic = s }
+
+setCurSublogic :: Maybe Token -> LogicGraph -> LogicGraph
+setCurSublogic s lg = lg { currentSublogic = s }
 
 instance Pretty LogicGraph where
     pretty lg = text ("current logic is: " ++ currentLogic lg)
@@ -673,9 +679,8 @@ instance Category G_sign GMorphism where
   legal_mor (GMorphism r (ExtSign s _) _ mor _) = do
     legal_mor mor
     case maybeResult $ map_sign r s of
-      Just (sigma', _) -> if sigma' == cod mor then return () else
-          fail "legal_mor.GMorphism"
-      Nothing -> fail "legal_mor.GMorphism2"
+      Just (sigma', _) | sigma' == cod mor -> return ()
+      _ -> fail "legal_mor.GMorphism2"
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed2 :: G_sign -> G_morphism -> GMorphism

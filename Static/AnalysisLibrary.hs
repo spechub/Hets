@@ -380,7 +380,7 @@ anaLibItem lgraph opts topLns currLn libenv dg itm = case itm of
       else -- trace (show $ refTree dg') $
            return ( rsd', dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
                   , libenv)
-  Logic_decl (Logic_name logTok _) _ -> do
+  Logic_decl (Logic_name logTok _ _) _ -> do
     logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
     putMessageIORes opts 1 $ "logic " ++ show logNm
     return (itm, dg, libenv)

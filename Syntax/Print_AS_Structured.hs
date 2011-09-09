@@ -140,10 +140,11 @@ instance Pretty Logic_name where
     pretty = printLogic_name
 
 printLogic_name :: Logic_name -> Doc
-printLogic_name (Logic_name mlog slog) = let d = structSimpleId mlog in
+printLogic_name (Logic_name mlog slog ms) = let d = structSimpleId mlog in
     case slog of
       Nothing -> d
       Just sub -> d <> dot <> structSimpleId sub
+    <> maybe empty (parens . pretty) ms
 
 {- |
   specialized printing of 'FIT_ARG's

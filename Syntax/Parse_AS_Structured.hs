@@ -67,16 +67,13 @@ encodingName = parseToken $ reserved (funS : casl_reserved_words)
 
 {- keep these identical in order to
 decide after seeing ".", ":" or "->" what was meant -}
-parseLogicName :: AParser st Logic_name
-parseLogicName = do
-    e <- encodingName
-    do string dotS
-       s <- encodingName
-       return (Logic_name e (Just s))
-      <|> return (Logic_name e Nothing)
-
 logicName :: AParser st Logic_name
-logicName = parseLogicName << skipSmart
+logicName = do
+    e <- encodingName
+    ms <- optionMaybe $ char '.' >> encodingName
+    skipSmart
+    mt <- optionMaybe $ oParenT >> simpleId << cParenT
+    return $ Logic_name e ms mt
 
 -- * parse Logic_code
 
@@ -95,13 +92,13 @@ parseLogicAux =
     do l <- asKey logicS
        do e <- logicName -- try to parse encoding or logic source after "logic"
           case e of
-              Logic_name _ (Just _) -> parseOptLogTarget Nothing (Just e) [l]
-              Logic_name f Nothing ->
+              Logic_name f Nothing Nothing ->
                       do c <- colonT
                          parseLogAfterColon (Just f) [l, c]
                       <|> parseOptLogTarget Nothing (Just e) [l]
                       <|> return (Logic_code (Just f) Nothing Nothing
                                   $ tokPos l)
+              _ -> parseOptLogTarget Nothing (Just e) [l]
          <|> do
            f <- asKey funS  -- parse at least a logic target after "logic"
            t <- logicName

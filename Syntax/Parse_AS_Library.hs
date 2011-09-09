@@ -138,13 +138,13 @@ libItem l =
                    (catRange ([kRef, kEqu] ++ maybeToList kEnd)))
   <|> -- arch spec
     do kArch <- asKey archS
-       kSpec <- asKey specS
+       kASpec <- asKey specS
        name <- simpleId
        kEqu <- equalT
        asp <- annotedArchSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Arch_spec_defn name asp
-                (catRange ([kArch, kSpec, kEqu] ++ maybeToList kEnd)))
+                (catRange ([kArch, kASpec, kEqu] ++ maybeToList kEnd)))
   <|> -- download
     do s1 <- asKey fromS
        iln <- libName
@@ -155,7 +155,7 @@ libItem l =
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- logic
     do s <- asKey logicS
-       logN@(Logic_name t _) <- logicName
+       logN@(Logic_name t _ _) <- logicName
        return (Logic_decl logN (catRange [s, t]))
   <|> -- newlogic
     do (n, s1) <- newlogicP
@@ -170,15 +170,15 @@ libItem l =
        return (Newlogic_defn (LogicDef n ml s m f p pa)
           (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
    <|> -- newcomorphism
-     do (n,  s1) <- newcomorphismP
-        s2  <- equalT
+     do (n, s1) <- newcomorphismP
+        s2 <- equalT
         (ml, s3) <- metaP
-        (s,  s4) <- sourceP
-        (t,  s5) <- targetP
+        (s, s4) <- sourceP
+        (t, s5) <- targetP
         (sv, s6) <- syntaxP
         (pv, s8) <- proofsP
         (mv, s7) <- modelsP
-        q   <- optEnd
+        q <- optEnd
         return (Newcomorphism_defn (ComorphismDef n ml s t sv pv mv)
            (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
   <|> -- just a spec (turned into "spec spec = sp")
@@ -304,19 +304,19 @@ patternsP = do
 
 newcomorphismP :: AParser st (Token, Token)
 newcomorphismP = do
-  -- add newcomorphismS = "newcomorphism" in 
+  -- add newcomorphismS = "newcomorphism" in
   s <- asKey newcomorphismS
   n <- simpleId
   return (n, s)
-  
+
 sourceP :: AParser st (Token, Token)
 sourceP = do
-  s  <- asKey sourceS
+  s <- asKey sourceS
   sl <- simpleIdOrDDottedId
   return (sl, s)
-  
+
 targetP :: AParser st (Token, Token)
 targetP = do
-  s  <- asKey targetS
+  s <- asKey targetS
   tl <- simpleIdOrDDottedId
   return (tl, s)
