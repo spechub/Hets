@@ -22,6 +22,7 @@ import Static.XGraph
 import Common.LibName
 import Common.Result (Result (..))
 import Common.ResultT
+import Common.XmlParser
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -41,8 +42,6 @@ import Logic.Grothendieck
 import Logic.Logic (AnyLogic (..), cod, composeMorphisms)
 import Logic.Prover (noSens)
 
-import Text.XML.Light
-
 -- | top-level function
 readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 readDGXml opts path = do
@@ -55,14 +54,14 @@ using an initial LogicGraph. -}
 readDGXmlR :: HetcatsOpts -> FilePath -> LibEnv -> ResultT IO (LibName, LibEnv)
 readDGXmlR opts path lv = do
   lift $ putIfVerbose opts 2 $ "Reading " ++ path
-  xml' <- lift $ readFile path
-  case (length xml', parseXMLDoc xml') of
-    (l, Just xml) | l > 0 -> do
+  xml' <- lift $ readXmlFile path
+  case parseXml xml' of
+    Right xml -> do
       xg <- liftR $ xGraph xml
       res <- rebuiltDG opts logicGraph xg lv
       let ln = libName xg
       return (ln, computeLibEnvTheories $ uncurry (Map.insert ln) res)
-    _ -> fail $ "failed to parse XML file: " ++ path
+    Left err -> fail $ "failed to parse XML file: " ++ path ++ "\n" ++ err
 
 {- | reconstructs the Development Graph via a previously created XGraph-
 structure. -}
