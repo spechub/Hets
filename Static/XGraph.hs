@@ -18,6 +18,8 @@ module Static.XGraph
   , xGraph
   , mkXNode
   , mkXLink
+  , EdgeMap
+  , mkEdgeMap
   ) where
 
 import Static.DgUtils
@@ -89,6 +91,9 @@ insertXLink :: XLink -> EdgeMap -> EdgeMap
 insertXLink l = Map.insertWith (Map.unionWith (++)) (target l)
   $ Map.singleton (source l) [l]
 
+mkEdgeMap :: [XLink] -> EdgeMap
+mkEdgeMap = foldl (flip insertXLink) Map.empty
+
 xGraph :: Element -> Result XGraph
 xGraph xml = do
   allNodes <- extractXNodes xml
@@ -102,7 +107,7 @@ xGraph xml = do
   let (thmLk, defLk) = partition (\ l -> case edgeTypeModInc $ lType l of
                          ThmType _ _ _ _ -> True
                          _ -> False) allLinks
-      edgeMap = foldr insertXLink Map.empty defLk
+      edgeMap = mkEdgeMap defLk
       (initN, restN) = Map.partitionWithKey
          (\ n _ -> Set.notMember n $ Map.keysSet edgeMap)
          nodeMap

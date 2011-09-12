@@ -30,7 +30,7 @@ import Control.Monad.Trans (lift)
 import Control.Monad (foldM, unless)
 
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
-import qualified Data.Map as Map (lookup, insert, empty)
+import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 
@@ -68,8 +68,9 @@ structure. -}
 rebuiltDG :: HetcatsOpts -> LogicGraph -> XGraph -> LibEnv
           -> ResultT IO (DGraph, LibEnv)
 rebuiltDG opts lg (XGraph _ ga i thmLk nds body) lv = do
-  res <- rebuiltBody body lv
-  foldM (flip $ insertThmLink lg) res thmLk where
+  (dg, lv') <- rebuiltBody body lv
+  dg' <- insertThmLinks lg dg $ mkEdgeMap thmLk
+  return (dg', lv') where
     rebuiltBody bd lv' = case bd of
         [] ->
           foldM (flip $ insertFirstNode opts lg)
@@ -101,14 +102,20 @@ insertStep opts lg xNd lks (dg, lv) = do
             ) dg' $ zip mrs lks
   return (dg'', lv')
 
--- | inserts a theorem link
-insertThmLink :: LogicGraph -> XLink -> (DGraph, LibEnv)
-               -> ResultT IO (DGraph, LibEnv)
-insertThmLink lg xLk (dg, lv) = do
-  (i, mr, tp) <- getTypeAndMorphism lg dg xLk
-  (j, gsig) <- signOfNode (target xLk) dg
-  lkLab <- finalizeLink lg xLk mr gsig tp
-  return (insEdgeAsIs (i, j, lkLab) dg, lv)
+-- | inserts theorem links
+insertThmLinks :: LogicGraph -> DGraph -> EdgeMap -> ResultT IO DGraph
+insertThmLinks lg p = foldM (\ dg (tgt, sm) -> do
+  (j, gsig) <- signOfNode tgt dg
+  insertTarThmLinks lg j gsig dg sm) p . Map.toList
+
+insertTarThmLinks :: LogicGraph -> Graph.Node -> G_sign
+  -> DGraph -> Map.Map String [XLink] -> ResultT IO DGraph
+insertTarThmLinks lg j tgt p = foldM (\ dg (src, ls) -> do
+  (i, gsig) <- signOfNode src dg
+  foldM (\ dg' xLk -> do
+      (mr, tp) <- getTypeAndMorphism1 lg dg gsig xLk
+      lkLab <- finalizeLink lg xLk mr tgt tp
+      return $ insEdgeAsIs (i, j, lkLab) dg') dg ls) p . Map.toList
 
 {- | given a links intermediate morphism and its target nodes signature,
 this function calculates the final morphism for this link -}
@@ -127,9 +134,15 @@ getTypeAndMorphism :: LogicGraph -> DGraph -> XLink
                    -> ResultT IO (Graph.Node, GMorphism, DGLinkType)
 getTypeAndMorphism lg dg xLk = do
   (i, sg1) <- signOfNode (source xLk) dg
-  (sg2, lTp) <- getTypeAndMorAux lg dg sg1 xLk
-  mr' <- liftR $ getGMorphism lg sg2 (mr_name xLk) (mapping xLk)
+  (mr', lTp) <- getTypeAndMorphism1 lg dg sg1 xLk
   return (i, mr', lTp)
+
+getTypeAndMorphism1 :: LogicGraph -> DGraph -> G_sign -> XLink
+  -> ResultT IO (GMorphism, DGLinkType)
+getTypeAndMorphism1 lg dg sg1 xLk = do
+    (sg2, lTp) <- getTypeAndMorAux lg dg sg1 xLk
+    mr' <- liftR $ getGMorphism lg sg2 (mr_name xLk) (mapping xLk)
+    return (mr', lTp)
 
 {- depending on the type of the link, the correct DGLinkType and the signature
 for the (external) morphism are extracted here -}
