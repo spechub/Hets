@@ -10,17 +10,7 @@ Portability :  non-portable (DevGraph)
 convert an Xml-Graph into an XGraph-Structure.
 -}
 
-module Static.XGraph
-  ( XGraph (..)
-  , XTree
-  , XNode (..)
-  , XLink (..)
-  , xGraph
-  , mkXNode
-  , mkXLink
-  , EdgeMap
-  , mkEdgeMap
-  ) where
+module Static.XGraph where
 
 import Static.DgUtils
 
@@ -84,9 +74,6 @@ data XLink = XLink { source :: String
 {- ------------
 Functions -}
 
-name :: XNode -> String
-name = showName . nodeName
-
 insertXLink :: XLink -> EdgeMap -> EdgeMap
 insertXLink l = Map.insertWith (Map.unionWith (++)) (target l)
   $ Map.singleton (source l) [l]
@@ -101,7 +88,7 @@ xGraph xml = do
   _ <- foldM (\ s l -> let e = edgeId l in
     if Set.member e s then fail $ "duplicate edge id: " ++ show e
     else return $ Set.insert e s) Set.empty allLinks
-  nodeMap <- foldM (\ m n -> let s = name n in
+  nodeMap <- foldM (\ m n -> let s = showName $ nodeName n in
     if Map.member s m then fail $ "duplicate node name: " ++ s
        else return $ Map.insert s n m) Map.empty allNodes
   let (thmLk, defLk) = partition (\ l -> case edgeTypeModInc $ lType l of
