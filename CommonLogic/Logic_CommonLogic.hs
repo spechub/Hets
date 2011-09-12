@@ -82,6 +82,7 @@ instance Logic CommonLogic
     Symbol            -- raw_symbol
     ProofTree                -- proof_tree
     where
+       all_sublogics CommonLogic = sublogics_all
        empty_proof_tree CommonLogic = emptyProofTree
        provers CommonLogic = []
 
