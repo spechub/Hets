@@ -24,13 +24,11 @@ import Control.Monad
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
 
-data SimpleChange = AddEl XElem
-                  | RemoveEl ElFinder
-
-type XElem = Either XNode XLink
-
-data ElFinder = FindNode String
-              | FindLink EdgeId
+-- ^ updates are combination of remove and add
+data SimpleChange = RemoveNode String
+                  | RemoveLink EdgeId
+                  | AddNode XNode
+                  | AddLink XLink
 
 applyXmlDiff_improved :: Monad m => Element -> String
                       -> m (Element, [SimpleChange])
@@ -58,64 +56,68 @@ changeXml el (Change csel expr) = do
       Just cr' -> do
           chg <- getRemoveChange crInit cr'
           return (cr', chg)
---  ?WHY DONT THIS WORK?    Just cr' -> fmap curry cr' $ getRemoveChange crInit cr'
+{-  ?WHY DONT THIS WORK?    Just cr' -> fmap curry cr' $ getRemoveChange crInit cr' -}
     -- TODO what to do when inserting any first element of a kind??
     Add pos addCs -> do
       (cr', insf) <- case pos of
         -- TODO: append works on child level. check both other cases also!
         Append -> do
-          cr' <- maybe (fail "changeXml.Append")
-              return $ firstChild crInit
+          cr' <- maybe (fail "changeXml.Append") return $ firstChild crInit
           return (rightMost cr', insertGoRight)
         After -> return (crInit, insertGoRight)
         Before -> return (crInit, insertGoLeft)
-      foldM (\ (cr'', chgs) addCh -> case addCh of
-        -- insert entire Node
-        AddElem e | nameString e == "DGNode" -> do
-          newEl <- mkXNode e
-          return (insf (Elem e) cr'', AddEl (Left newEl) : chgs)
-        -- insert entire link
-        AddElem e | nameString e == "DGLink" -> do
-          newEl <- mkXLink e
-          return (insf (Elem e) cr'', AddEl (Right newEl) : chgs)
-        -- insert other child element, update proper parent
-        -- TODO if multiple elems are added, only one update change should be output!
-        AddElem e -> do
-          chg <- mkUpdateCh cr''
-          return (insf (Elem e) cr'', chg ++ chgs)
-        _ -> fail $ "no implementation for " ++ show addCh ) (cr', []) addCs
+      crNew <- foldM (\ cr'' addCh -> case addCh of
+                 AddElem e -> return $ insf (Elem e) cr''
+              {- AddText s -> return $ insf (Text s) cr'' -}
+                 _ -> fail $ "no implementation for " ++ show addCh) cr' addCs
+      changes <- case mapM getAddElemChange addCs of
+                   Just chList -> return chList
+                   Nothing -> mkUpdateCh crNew
+      return (crNew, changes)
     _ -> fail $ "no implementation for " ++ show csel
+
+{- determine change for an add operation.
+NOTE: this will purposfully fail for any other cases than add entire Node/Link!
+-}
+getAddElemChange :: Monad m => Functor m => AddChange -> m SimpleChange
+getAddElemChange addCh = case addCh of
+  -- insert entire Node
+  AddElem e | nameString e == "DGNode" -> fmap AddNode $ mkXNode e
+  -- insert entire link
+  AddElem e | nameString e == "DGLink" -> fmap AddLink $ mkXLink e
+  -- insert other child element will be processed within changeXml!
+  _ -> fail "getAddElemChange"
 
 -- determine the change(s) for a remove operation
 getRemoveChange :: Monad m => Cursor -> Cursor -> m [SimpleChange]
-getRemoveChange crInit crCur = case current crInit of
+getRemoveChange crInit crCurrent = case current crInit of
       -- remove entire node
       Elem e | nameString e == "DGNode" -> do
           nm <- getAttrVal "name" e
-          return [RemoveEl $ FindNode nm]
+          return [RemoveNode nm]
       -- remove entire link
       Elem e | nameString e == "DGLink" -> do
           i <- getAttrVal "EdgeId" e
-          ei <- readEdgeId i
-          return [RemoveEl $ FindLink ei]
+          ei <- readEdgeId_M i
+          return [RemoveLink ei]
       -- remove child element -> update node
-      _ -> mkUpdateCh crInit
+      _ -> mkUpdateCh crCurrent
 
 mkUpdateCh :: Monad m => Cursor -> m [SimpleChange]
 mkUpdateCh cr = case current cr of
     Elem e | nameString e == "DGNode" -> do
           nm <- getAttrVal "name" e
           newEl <- mkXNode e
-          return [RemoveEl $ FindNode nm, AddEl $ Left newEl]
+          return [RemoveNode nm, AddNode newEl]
     Elem e | nameString e == "DGLink" -> do
           i <- getAttrVal "EdgeId" e
-          ei <- readEdgeId i
+          ei <- readEdgeId_M i
           newEl <- mkXLink e
-          return [RemoveEl $ FindLink ei, AddEl $ Right newEl]
+          return [RemoveLink ei, AddLink newEl]
     _ -> maybe (fail "mkUpdateCh") mkUpdateCh $ parent cr
 
-readEdgeId :: Monad m => String -> m EdgeId
-readEdgeId = maybe (fail "readEdgeId") (return . EdgeId) . readMaybe
+readEdgeId_M :: Monad m => String -> m EdgeId
+readEdgeId_M = maybe (fail "readEdgeId") (return . EdgeId) . readMaybe
 
 nameString :: Element -> String
 nameString = qName . elName
