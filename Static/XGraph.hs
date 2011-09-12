@@ -16,6 +16,8 @@ module Static.XGraph
   , XNode (..)
   , XLink (..)
   , xGraph
+  , mkXNode
+  , mkXLink
   ) where
 
 import Static.DgUtils
