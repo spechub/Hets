@@ -19,6 +19,7 @@ module CommonLogic.Sublogic
     , sublogics_max                 -- join of sublogics
     , top                           -- FullCommonLogic
     , bottom                        -- Propositional
+    , fullclsl                      -- FullCommonLogic
     , folsl                         -- FirstOrderLogic
     , propsl                        -- Propositional
     , sublogics_all                 -- all sublogics
@@ -87,15 +88,22 @@ compareLE p1 p2 =
         (Propositional,   Propositional)   -> True
         (_,               Propositional)   -> False
 
+-- | all sublogics
+sublogics_all :: [CommonLogicSL]
+sublogics_all = [fullclsl, folsl, bottom]
+
 ------------------------------------------------------------------------------
 -- Special elements in the Lattice of logics                                --
 ------------------------------------------------------------------------------
 
 top :: CommonLogicSL
-top = CommonLogicSL FullCommonLogic
+top = fullclsl
 
 bottom :: CommonLogicSL
-bottom = CommonLogicSL Propositional
+bottom = propsl
+
+fullclsl :: CommonLogicSL
+fullclsl = CommonLogicSL {format = FullCommonLogic}
 
 folsl :: CommonLogicSL
 folsl = CommonLogicSL {format = FirstOrder}
@@ -247,12 +255,12 @@ sl_nameOrSeqmark :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME_OR_SEQMARK
 sl_nameOrSeqmark prds cs nos = 
     case nos of
         AS.Name n -> sl_quantName prds cs n
-        AS.SeqMark _ -> top
+        AS.SeqMark _ -> fullclsl
 
 -- | determines the sublogic for names which are next to a quantifier,
 -- given predicates of the super-text
 sl_quantName :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
-sl_quantName prds _ n = if Set.member n prds then top else folsl
+sl_quantName prds _ n = if Set.member n prds then fullclsl else folsl
 
 -- | determines the sublogic for names,
 -- given predicates of the super-text
@@ -285,7 +293,7 @@ sl_termSeq prds cs tseq =
 -- | determines the sublogic for names,
 -- given predicates of the super-text
 sl_nameInTermSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
-sl_nameInTermSeq prds _ n = if Set.member n prds then top else propsl
+sl_nameInTermSeq prds _ n = if Set.member n prds then fullclsl else propsl
 
 -- | determines the sublogic for terms inside of a term-sequence,
 -- given predicates of the super-text
@@ -310,23 +318,6 @@ sl_basic_items cs (AS.Axiom_items xs) =
 sl_basic_spec :: CommonLogicSL -> AS.BASIC_SPEC -> CommonLogicSL
 sl_basic_spec cs (AS.Basic_spec spec) =
   comp_list $ map ((sl_basic_items cs) . AS_Anno.item) spec
-
--- | all sublogics
-sublogics_all :: [CommonLogicSL]
-sublogics_all =
-    [CommonLogicSL
-     {
-       format    = Propositional
-     }
-    ,CommonLogicSL
-     {
-       format    = FirstOrder
-     }
-    ,CommonLogicSL
-     {
-       format    = FullCommonLogic
-     }
-    ]
 
 -------------------------------------------------------------------------------
 -- Conversion functions to String                                            --

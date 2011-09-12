@@ -22,11 +22,14 @@ import Common.ProofTree
 import Common.Id
 import Common.Result
 import qualified Common.AS_Annotation as AS_Anno
+import qualified Common.DefaultMorphism as DefaultMorphism
+import qualified Common.Lib.Rel as Rel
 
 import Logic.Logic
 import Logic.Comorphism
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- SoftFOL
 import qualified SoftFOL.Logic_SoftFOL as FOLLogic
@@ -82,33 +85,76 @@ mapSub :: () -> ClSL.CommonLogicSL
 mapSub _ = ClSL.folsl
 
 mapMor :: FOLSign.SoftFOLMorphism -> Result ClMor.Morphism
-mapMor mor = undefined {-
-  let src = mapSign $ PMor.source mor
-      tgt = mapSign $ PMor.target mor
-      pmp = PMor.propMap mor
+mapMor mor =
+  let src = mapSign $ DefaultMorphism.domOfDefaultMorphism mor
+      tgt = mapSign $ DefaultMorphism.codOfDefaultMorphism mor
+      pmp = Map.empty -- TODO: implement propMap correctly
   in  return $ ClMor.Morphism src tgt pmp
--}
 
 mapSentence :: FOLSign.Sign -> FOLSign.Sentence -> Result TEXT
-mapSentence _ f = return $ translate f
+mapSentence s f = return $ translate s f
 
 mapSign :: FOLSign.Sign -> ClSign.Sign
-mapSign sig = undefined
---  ClSign.unite (ClSign.Sign (PSign.items sig) (PSign.items sig)) $ baseSig
+mapSign sig =
+  let items = Set.map (\t -> mkId [t]) $ Set.fromList $ concat
+                                [ Map.keys $ FOLSign.sortMap sig
+                                , Map.keys $ FOLSign.funcMap sig
+                                , Map.keys $ FOLSign.predMap sig
+                                ] -- TODO: use whole signature
+  in  ClSign.Sign items items
 
 -- | translates FOL-theories to CL-theories keeping their names
 mapTheory :: (FOLSign.Sign, [AS_Anno.Named FOLSign.Sentence])
              -> Result (ClSign.Sign, [AS_Anno.Named TEXT])
-mapTheory (srcSign, srcFormulas) = 
+mapTheory (srcSign, srcFormulas) =
   return (mapSign srcSign,
         map ((uncurry AS_Anno.makeNamed) . elimModSnd . senAndName) srcFormulas)
   where senAndName :: AS_Anno.Named FOLSign.Sentence -> (String, FOLSign.Sentence)
         senAndName f = (AS_Anno.senAttr f, AS_Anno.sentence f)
         elimModSnd :: (String, FOLSign.Sentence) -> (String, TEXT)
-        elimModSnd (s, f) = (s, translate f)
+        elimModSnd (s, f) = (s, translate srcSign f)
 
-translate :: FOLSign.Sentence -> TEXT
-translate f = Text [Sentence $ toSen f] nullRange
+translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT
+translate s f = Text ( sortRelPhrs (Rel.toMap $ FOLSign.sortRel s)
+                     ++ funcMapPhrs (FOLSign.funcMap s)
+                     ++ [Sentence $ toSen f]
+                     ) nullRange
+
+-- | creates one-sentence-phrases: forall x. (subSort x) => (superSort x)
+sortRelPhrs ::  Map.Map Token (Set.Set Token) -> [PHRASE]
+sortRelPhrs m =
+  Map.foldrWithKey (\subSrt set phrs -> (
+    Set.fold (\superSrt phrs2 ->
+        Sentence (Quant_sent (Universal [Name xName] (Bool_sent (Implication
+            (predicateNames subSrt [xName]) (predicateNames superSrt [xName])
+          ) nullRange)) nullRange)
+      : phrs2) [] set
+    ) ++ phrs) [] m
+
+-- | creates one-sentence-phrases:
+-- forall x y z. (if (and (T1 x) (T2 y) (T3 z)) (T4 f[x,y,z]))
+funcMapPhrs :: Map.Map Token (Set.Set ([Token], Token)) -> [PHRASE]
+funcMapPhrs m =
+  Map.foldrWithKey (\f set phrs -> (
+    Set.fold (\(args, res) phrs2 ->
+      let argsAndNames :: [(Token, NAME)] -- (type, individual)
+          argsAndNames = foldr (\(a, i) resArg -> (a, indv a i) : resArg) []
+                                                              $ zip args [0..]
+      in  Sentence (Quant_sent (Universal (map (Name . snd) argsAndNames) (
+              Bool_sent (Implication
+                  (Bool_sent (Conjunction $
+                      map (\(p, x) -> predicateNames p [x]) argsAndNames
+                    ) nullRange)
+                  (Atom_sent (Atom
+                      (Name_term res)
+                      [Term_seq $ Funct_term (Name_term f) (
+                          map (Term_seq . Name_term . snd) argsAndNames
+                        ) nullRange]
+                    ) nullRange)
+                ) nullRange
+              )) nullRange)
+      : phrs2) [] set
+    ) ++ phrs) [] m
 
 toSen :: FOLSign.SPTerm -> SENTENCE
 toSen t = case t of
@@ -176,11 +222,15 @@ predicate :: TERM -> [FOLSign.SPTerm] -> SENTENCE
 predicate t args =
   Atom_sent (Atom t (map sptermToTermSeq args)) nullRange
 
+predicateNames :: NAME -> [NAME] -> SENTENCE
+predicateNames p xs =
+  (Atom_sent (Atom (Name_term p) (map (Term_seq . Name_term) xs)) nullRange)
+
 -- converts an SPTerm to a TERM, i.e. for the arguments of an equation
 sptermToTerm :: FOLSign.SPTerm -> TERM
 sptermToTerm t = case t of
-  FOLSign.SPQuantTerm qsym vl f -> error "quantification not allowed for a term"
-  FOLSign.SPComplexTerm sym args -> case sym of
+  FOLSign.SPQuantTerm _ _ _ -> error "quantification not allowed for a term"
+  FOLSign.SPComplexTerm sym _ -> case sym of
       FOLSign.SPCustomSymbol i -> Name_term i
       x -> error $ "symbol not allowed as a term: " ++ show x
 
@@ -216,6 +266,10 @@ clTrue = Quant_sent (Universal [Name xName]
 -- representation for false in CL
 clFalse :: SENTENCE
 clFalse = Bool_sent (Negation clTrue) nullRange
+
+-- creates an individual-name out of a NAME
+indv :: NAME -> Int -> NAME
+indv n i = mkSimpleId (tokStr n ++ "_" ++ show i)
 
 -- simple names
 xName :: NAME

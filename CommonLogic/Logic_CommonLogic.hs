@@ -85,7 +85,6 @@ instance Logic CommonLogic
        all_sublogics CommonLogic = sublogics_all
        empty_proof_tree CommonLogic = emptyProofTree
        provers CommonLogic = []
-
        omdoc_metatheory CommonLogic = Just clMetaTheory
        export_senToOmdoc CommonLogic = exportSenToOmdoc
        export_symToOmdoc CommonLogic = exportSymToOmdoc
