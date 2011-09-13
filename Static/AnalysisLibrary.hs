@@ -270,9 +270,39 @@ anaLibItemAux opts topLns ln (libItems', dg1, libenv1, lG) libItem = let
 
 anaSublogic :: HetcatsOpts -> Logic_name -> LibName -> DGraph -> LibEnv
   -> LogicGraph -> Result LogicGraph
-anaSublogic _opts itm@(Logic_name lt _ms _mt) _ln _dg _libenv lG = do
-    _ <- lookupLogic "" (tokStr lt) lG
+anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
+    _logN@(Logic lid) <- lookupLogic "" (tokStr lt) lG
+    _gs <- case ms of
+      Nothing -> return Nothing
+      Just subL -> do
+        let s = tokStr subL
+        when (sublogicName (top_sublogic lid) == s)
+          $ warning () ("not a proper sublogic: " ++ s) $ tokPos subL
+        case lookup s $ map (\ l -> (sublogicName l, l)) $ all_sublogics lid of
+          Nothing -> fail $ "unknown sublogic: " ++ s
+          Just sl ->
+            if sublogicName (top_sublogic lid) == s then do
+              warning () ("not a proper sublogic: " ++ s) $ tokPos subL
+              return Nothing
+              else return $ Just $ G_sublogics lid sl
+    let logicLibN = emptyLibName "Logics"
+    _th <- case mt of
+      Nothing -> return Nothing
+      Just sp -> do
+        p <- case Map.lookup logicLibN libenv of
+          Just dg2 | logicLibN /= ln -> getNamedSpec sp logicLibN dg2 libenv
+          _ -> getNamedSpec sp ln dg libenv
+        return $ Just (p, sp)
     return $ setLogicName itm lG
+
+getNamedSpec :: SPEC_NAME -> LibName -> DGraph -> LibEnv
+  -> Result (LibName, Node)
+getNamedSpec sp ln dg _libenv = case Map.lookup sp $ globalEnv dg of
+          Just (SpecEntry (ExtGenSig _ (NodeSig n _))) ->
+            return $ case nodeInfo $ labDG dg n of
+              lbl@(DGRef {}) -> (ref_libname lbl, ref_node lbl)
+              _ -> (ln, n)
+          _ -> mkError "unknown theory" sp
 
 putMessageIORes :: HetcatsOpts -> Int -> String -> ResultT IO ()
 putMessageIORes opts i msg =
