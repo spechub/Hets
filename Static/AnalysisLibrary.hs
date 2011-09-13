@@ -36,6 +36,7 @@ import Static.AnalysisArchitecture
 import Static.ArchDiagram (emptyExtStUnitCtx)
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
+import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
@@ -244,27 +245,34 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
 anaLibItemAux :: HetcatsOpts -> LNS -> LibName
   -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
   -> LIB_ITEM -> ResultT IO ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
-anaLibItemAux opts topLns ln (libItems', dg1, libenv1, lG) libItem =
-    let newLG = case libItems' of
+anaLibItemAux opts topLns ln (libItems', dg1, libenv1, lG) libItem = let
+  newLG = case libItems' of
           [] -> setCurLogic (defLogic opts) lG
-          Logic_decl logN _ : _ -> setLogicName logN lG
+          Logic_decl logN _ : _ -> fromMaybe lG
+            $ maybeResult $ anaSublogic opts logN ln dg1 libenv1 lG
           _ -> lG
-        currLog = currentLogic newLG
-        newOpts = if elem currLog ["DMU", "Framework"] then
-          opts { defLogic = currLog } else opts
-    in ResultT (do
-      Result diags2 res <-
-         runResultT $ anaLibItem newLG newOpts topLns ln libenv1 dg1 libItem
-      runResultT $ showDiags1 newOpts (liftR (Result diags2 res))
+  currLog = currentLogic newLG
+  newOpts = if elem currLog ["DMU", "Framework"] then
+              opts { defLogic = currLog } else opts
+  in ResultT $ do
+      res2@(Result diags2 res) <- runResultT
+        $ anaLibItem newLG newOpts topLns ln libenv1 dg1 libItem
+      runResultT $ showDiags1 opts (liftR res2)
       let mRes = case res of
              Just (libItem', dg1', libenv1') ->
                  Just (libItem' : libItems', dg1', libenv1', newLG)
              Nothing -> Nothing
-      if outputToStdout newOpts then
+      if outputToStdout opts then
          if hasErrors diags2 then
             fail "Stopped due to errors"
             else runResultT $ liftR $ Result [] mRes
-         else runResultT $ liftR $ Result diags2 mRes)
+         else runResultT $ liftR $ Result diags2 mRes
+
+anaSublogic :: HetcatsOpts -> Logic_name -> LibName -> DGraph -> LibEnv
+  -> LogicGraph -> Result LogicGraph
+anaSublogic _opts itm@(Logic_name lt _ms _mt) _ln _dg _libenv lG = do
+    _ <- lookupLogic "" (tokStr lt) lG
+    return $ setLogicName itm lG
 
 putMessageIORes :: HetcatsOpts -> Int -> String -> ResultT IO ()
 putMessageIORes opts i msg =
@@ -380,9 +388,9 @@ anaLibItem lgraph opts topLns currLn libenv dg itm = case itm of
       else -- trace (show $ refTree dg') $
            return ( rsd', dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
                   , libenv)
-  Logic_decl (Logic_name logTok _ _) _ -> do
-    logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
-    putMessageIORes opts 1 $ "logic " ++ show logNm
+  Logic_decl logN pos -> do
+    putMessageIORes opts 1 $ showDoc itm ""
+    _ <- liftR $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lgraph
     return (itm, dg, libenv)
   Download_items ln items pos -> if Set.member ln topLns then
     liftR $ mkError "illegal cyclic library import"
