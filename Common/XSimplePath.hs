@@ -15,10 +15,13 @@ module Common.XSimplePath where
 
 import Common.XPath
 
+import Control.Monad
+
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
 
-type SimplePath = [Finder]
+-- ^ (Path to Child, Attribute Selection)
+type SimplePath = ([Finder], Maybe String)
 
 {- Finder stores predicate list to locate the element and an index, in case
 multiple elements comply with the predicate -}
@@ -26,24 +29,32 @@ data Finder = FindBy QName [Attr] Int
 
 -- create Cursor from Element and move towards PathExpr-position
 mkCursorAndMoveTo :: Monad m => Element -> Expr -> m Cursor
-mkCursorAndMoveTo el e = let cr = fromElement el in do
-  sPth <- exprToSimplePath e
-  moveToAux cr sPth
+mkCursorAndMoveTo el e = moveTo e $ fromElement el
 
-moveToAux :: Monad m => Cursor -> SimplePath -> m Cursor
-moveToAux cr [] = return cr
-moveToAux cr (FindBy nm atL i : stps) = do
-  cr' <- findFromHere (checkCursor nm atL) cr
-  case (i > 1, stps) of
-    (False, []) -> return cr'
-    -- if still steps left, move one level down and continue search
-    (False, _) -> case firstChild cr' of
-        Just cr'' -> moveToAux cr'' stps
+moveTo :: Monad m => Expr -> Cursor -> m Cursor
+moveTo e cr = do
+  (pth, atr) <- exprToSimplePath e
+  case reverse pth of
+    -- TODO: should empty path be allowed?
+    [] -> return cr
+    (f : fs) -> findFromHere cr f >>= flip (foldM (\ cr' f' ->
+      case firstChild cr' of
         Nothing -> fail "no elChildren to follow the path"
-    -- if counter >1, another element is wanted
-    (True, _) -> case right cr' of
-        Just cr'' -> moveToAux cr'' (FindBy nm atL (i-1) : stps)
-        Nothing -> fail "no more right siblings to follow the path"
+        Just crDown -> findFromHere crDown f')) fs
+
+-- locate an Element according to Finder data
+findFromHere :: Monad m => Cursor -> Finder -> m Cursor
+findFromHere cr (FindBy qn attrs i) = let
+  p1 = checkCursor qn attrs cr
+  p2 = i <= 1
+  -- could check if i runs below zero/one, but I don't
+  i' = if p1 then i-1 else i
+   in if p1 && p2 then return cr else case right cr of
+      Just cr' -> findFromHere cr' $ FindBy qn attrs i'
+      Nothing -> fail $ "couldn't locate desired Element: "
+        ++ "\n type: " ++ show qn
+        ++ (if null attrs then "" else "\n" ++ unlines (map show attrs))
+        ++ "\n..no more right siblings to follow the path"
 
 checkCursor :: QName -> [Attr] -> Cursor -> Bool
 checkCursor nm atL cr = case current cr of
@@ -53,25 +64,18 @@ checkCursor nm atL cr = case current cr of
                      Nothing -> False) True atL
     _ -> False
 
-findFromHere :: Monad m => (Cursor -> Bool) -> Cursor -> m Cursor
-findFromHere p cr = if p cr then return cr else case right cr of
-  Just cr' -> findFromHere p cr'
-  Nothing -> fail "couldn't find desired element."
-
 -- convert PathExpr into more simple Finder stucture
 exprToSimplePath :: Monad m => Expr -> m SimplePath
 exprToSimplePath e = case e of
-  PathExpr Nothing (Path True stps) -> mapM anaSteps stps
+  PathExpr Nothing (Path True stps) -> foldM anaStep ([], Nothing) stps where
+    anaStep (pth, at) stp = case stp of
+        Step Child (NameTest n) exps -> do
+          finder <- mkFinder (FindBy (unqual n) [] 1) exps
+          return (finder : pth, at)
+        -- should be last step only. return path so-far plus attribute selector
+        Step Attribute (NameTest n) [] -> return (pth, Just n)
+        _ -> fail $ "unexpected step: " ++ show stp
   _ -> fail $ "not a valid path description: " ++ show e
-
-anaSteps :: Monad m => Step -> m Finder
-anaSteps stp = let basicFinder n = FindBy (unqual n) [] 1 in
-  case stp of
-    -- TODO: whats up with the attribute? why is it same as Child?
-    Step Attribute (NameTest n) [] ->
-      return $ basicFinder n
-    Step Child (NameTest n) exps -> mkFinder (basicFinder n) exps
-    _ -> fail "unexpected (1)"
 
 mkFinder :: Monad m => Finder -> [Expr] -> m Finder
 mkFinder f [] = return f
@@ -85,11 +89,12 @@ mkFinder f@(FindBy qn attrs i) (e : r) = do
     _ -> fail "unexpected (2)"
   mkFinder f' r
 
+{- create attribute to locate the element with from expr-data.
+this method will fail for many illegal expr-types! -}
 mkAttr :: Monad m => [Expr] -> m Attr
 mkAttr [e1, e2] = case e1 of
     PathExpr Nothing (Path False stps) -> case stps of
       Step Attribute (NameTest nm) [] : [] -> case e2 of
-        -- TODO are attribute fields correct?
         PrimExpr _ val -> return $ Attr (unqual nm) val
         _ -> fail "unexpected (4)"
       _ -> fail "unexpected (5)"
