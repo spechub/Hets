@@ -812,11 +812,10 @@ getMaybeSig (JustNode ns) = getSig ns
 getMaybeSig (EmptyNode l) = emptyG_sign l
 
 getLogic :: MaybeNode -> AnyLogic
-getLogic (JustNode ns) = getNodeLogic ns
-getLogic (EmptyNode l) = l
+getLogic = logicOfGsign . getMaybeSig
 
 getNodeLogic :: NodeSig -> AnyLogic
-getNodeLogic (NodeSig _ (G_sign lid _ _)) = Logic lid
+getNodeLogic = logicOfGsign . getSig
 
 -- ** accessing node label
 
@@ -834,12 +833,15 @@ dgn_node = ref_node . nodeInfo
 
 -- | get the signature of a node's theory (total)
 dgn_sign :: DGNodeLab -> G_sign
-dgn_sign dn = case dgn_theory dn of
-    G_theory lid sig ind _ _ -> G_sign lid sig ind
+dgn_sign = signOf . dgn_theory
 
 -- | gets the name of a development graph node as a string (total)
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName = showName . dgn_name
+
+-- | get the global theory of a node or the local one if missing
+globOrLocTh :: DGNodeLab -> G_theory
+globOrLocTh lbl = fromMaybe (dgn_theory lbl) $ globalTheory lbl
 
 -- | gets the name of a development graph link as a string (total)
 getDGLinkName :: DGLinkLab -> String
@@ -1044,6 +1046,15 @@ lookupLocalNode le = f
                     f (lookupDGraph ln le) n'
                  x -> (dg, (n, x))
 
+{- | Given a Node and a 'DGraph' we follow the node to the graph where it is
+ defined . -}
+lookupRefNode :: LibEnv -> LibName -> DGraph -> Node
+   -> (LibName, DGraph, LNode DGNodeLab)
+lookupRefNode le libName dg n = case labDG dg n of
+                 DGNodeLab { nodeInfo = DGRef { ref_libname = ln
+                                              , ref_node = n' } } ->
+                    lookupRefNode le ln (lookupDGraph ln le) n'
+                 x -> (libName, dg, (n, x))
 
 -- ** treat reference nodes
 

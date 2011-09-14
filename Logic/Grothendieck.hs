@@ -52,6 +52,7 @@ module Logic.Grothendieck
   , G_symb_items_list (..)
   , G_symb_map_items_list (..)
   , G_sublogics (..)
+  , isSublogic
   , isProperSublogic
   , joinSublogics
   , G_morphism (..)
@@ -359,9 +360,12 @@ instance Ord G_sublogics where
         EQ -> compare (forceCoerceSublogic lid1 lid2 l1) l2
         r -> r
 
+isSublogic :: G_sublogics -> G_sublogics -> Bool
+isSublogic (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
+    isSubElem (forceCoerceSublogic lid1 lid2 l1) l2
+
 isProperSublogic :: G_sublogics -> G_sublogics -> Bool
-isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
-    isSubElem (forceCoerceSublogic lid1 lid2 l1) l2 && a /= b
+isProperSublogic a b = isSublogic a b && a /= b
 
 joinSublogics :: G_sublogics -> G_sublogics -> Maybe G_sublogics
 joinSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
