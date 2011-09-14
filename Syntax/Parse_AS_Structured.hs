@@ -54,23 +54,18 @@ annoParser2 =
 
 -- * logic and encoding names
 
-{- exclude colon (because encoding must be recognized)
-exclude dot to recognize optional sublogic name
-include underscore and backquote -}
-
-{- better list what is allowed rather than exclude what is forbidden
-white spaces und non-printables should be not allowed! -}
-encodingName :: AParser st Token
-encodingName = parseToken $ reserved (funS : casl_reserved_words)
-    $ many1 $ satisfy $ \ c -> notElem c ":." && isSignChar c
-    || elem c "_`'" || isAlphaNum c
+{- within sublogics we allow some further symbol characters -}
+sublogicName :: AParser st Token
+sublogicName = parseToken
+    $ many1 $ satisfy $ \ c -> notElem c ":./\\" && isSignChar c
+    || elem c "_'" || isAlphaNum c
 
 {- keep these identical in order to
 decide after seeing ".", ":" or "->" what was meant -}
 logicName :: AParser st Logic_name
 logicName = do
-    e <- encodingName
-    ms <- optionMaybe $ char '.' >> encodingName
+    e <- nonSkippingSimpleId -- name of the logic or comorphism
+    ms <- optionMaybe $ char '.' >> sublogicName
     skipSmart
     mt <- optionMaybe $ oParenT >> simpleId << cParenT
     return $ Logic_name e ms mt
