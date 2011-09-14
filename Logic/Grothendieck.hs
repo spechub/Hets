@@ -115,6 +115,7 @@ import Common.Parsec
 import Common.Result
 import Common.Token
 import Common.Utils
+import Common.LibName
 
 import Control.Monad (foldM)
 import Data.Maybe (mapMaybe)
@@ -415,11 +416,14 @@ lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
     in Logic lid2 == Logic lid1
         && isSubElem (forceCoerceSublogic lid1 lid2 sub1) (sourceSublogic cid)
 
+type SublogicBasedTheories = Map.Map Token (LibName, String)
+
 -- | Logic graph
 data LogicGraph = LogicGraph
     { logics :: Map.Map String AnyLogic
     , currentLogic :: String
-    , currentSublogic :: Maybe Token
+    , currentSublogic :: Maybe G_sublogics
+    , sublogicBasedTheories :: Map.Map AnyLogic SublogicBasedTheories
     , comorphisms :: Map.Map String AnyComorphism
     , inclusions :: Map.Map (String, String) AnyComorphism
     , unions :: Map.Map (String, String) (AnyComorphism, AnyComorphism)
@@ -434,6 +438,7 @@ emptyLogicGraph = LogicGraph
     { logics = Map.empty
     , currentLogic = "CASL"
     , currentSublogic = Nothing
+    , sublogicBasedTheories = Map.empty
     , comorphisms = Map.empty
     , inclusions = Map.empty
     , unions = Map.empty
@@ -445,7 +450,7 @@ emptyLogicGraph = LogicGraph
 setCurLogic :: String -> LogicGraph -> LogicGraph
 setCurLogic s lg = lg { currentLogic = s }
 
-setCurSublogic :: Maybe Token -> LogicGraph -> LogicGraph
+setCurSublogic :: Maybe G_sublogics -> LogicGraph -> LogicGraph
 setCurSublogic s lg = lg { currentSublogic = s }
 
 instance Pretty LogicGraph where

@@ -25,8 +25,7 @@ import Logic.Grothendieck
     , G_symb_items_list
     , G_symb_map_items_list
     , LogicGraph
-    , setCurLogic
-    , setCurSublogic )
+    , setCurLogic )
 
 -- for spec-defn and view-defn see AS_Library
 
@@ -103,9 +102,8 @@ data Logic_code = Logic_code (Maybe Token)
                  "logic bla1: ->bla2" => <encoding> and <targ-logic> -}
                   deriving (Show, Eq)
 
-data Logic_name = Logic_name Token (Maybe Token) (Maybe SPEC_NAME)
+data Logic_name = Logic_name SIMPLE_ID (Maybe Token) (Maybe SPEC_NAME)
   deriving (Show, Eq)
 
 setLogicName :: Logic_name -> LogicGraph -> LogicGraph
-setLogicName (Logic_name lid _ ms) =
-  setCurSublogic ms . setCurLogic (tokStr lid)
+setLogicName (Logic_name lid _ _) = setCurLogic (tokStr lid)
