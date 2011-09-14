@@ -20,27 +20,26 @@ import Control.Monad
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
 
--- ^ (Path to Child, Attribute Selection)
-type SimplePath = ([Finder], Maybe String)
+type SimplePath = ([Finder], AttrSelector)
 
 {- Finder stores predicate list to locate the element and an index, in case
 multiple elements comply with the predicate -}
 data Finder = FindBy QName [Attr] Int
 
--- create Cursor from Element and move towards PathExpr-position
-mkCursorAndMoveTo :: Monad m => Element -> Expr -> m Cursor
-mkCursorAndMoveTo el e = moveTo e $ fromElement el
+type AttrSelector = Maybe String
 
-moveTo :: Monad m => Expr -> Cursor -> m Cursor
+moveTo :: Monad m => Expr -> Cursor -> m (Cursor, AttrSelector)
 moveTo e cr = do
-  (pth, atr) <- exprToSimplePath e
+  (pth, attrSel) <- exprToSimplePath e
   case reverse pth of
     -- TODO: should empty path be allowed?
-    [] -> return cr
-    (f : fs) -> findFromHere cr f >>= flip (foldM (\ cr' f' ->
-      case firstChild cr' of
+    [] -> return (cr, attrSel)
+    (f : fs) -> do
+      crInit <- findFromHere cr f
+      crRes <- foldM (\ cr' f' -> case firstChild cr' of
         Nothing -> fail "no elChildren to follow the path"
-        Just crDown -> findFromHere crDown f')) fs
+        Just crDown -> findFromHere crDown f') crInit fs
+      return (crRes, attrSel)
 
 -- locate an Element according to Finder data
 findFromHere :: Monad m => Cursor -> Finder -> m Cursor
