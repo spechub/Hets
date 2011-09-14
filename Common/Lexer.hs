@@ -223,7 +223,7 @@ isNumber t = case tokStr t of
 
 isFloating :: Token -> Bool
 -- precondition: isNumber
-isFloating = any (`elem` ".E") . tokStr
+isFloating = any (`elem` ".eE") . tokStr
 
 -- * skip whitespaces and nested comment out
 
