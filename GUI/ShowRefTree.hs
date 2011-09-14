@@ -16,7 +16,6 @@ import Control.Monad
 
 import Data.Graph.Inductive.Graph as Tree
 import Data.IORef
-import Data.Maybe
 
 import GUI.GraphTypes
 import GUI.UDGUtils as UDG
@@ -27,7 +26,7 @@ import Interfaces.DataTypes
 import Interfaces.Command
 import Common.Consistency
 import Common.DocUtils
-import Driver.Options(doDump)
+import Driver.Options (doDump)
 
 import Static.DevGraph
 import Static.DgUtils
@@ -77,8 +76,7 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
                    Button "Check consistency" $ checkCons gInfo])
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
-                       ValueTitle (return . (\x -> rtn_name $
-                                                    labRT dg x)) $$$
+                       ValueTitle (return . rtn_name . labRT dg) $$$
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
    subNodeType <- newNodeType graph subNodeTypeParms
@@ -120,18 +118,18 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
                                             (lookup' nodes' n2)
    subArcListR <- mapM insertSubArcR $
                     filter (\ (_, _, e) -> rtl_type e == RTRefine) arcs
-   writeIORef nodesEdges (subNodeList, subArcList  ++ subArcListT
+   writeIORef nodesEdges (subNodeList, subArcList ++ subArcListT
                                        ++ subArcListR)
 
 
-checkCons :: GInfo -> Int-> IO()
+checkCons :: GInfo -> Int -> IO ()
 checkCons gInfo n = do
   lockGlobal gInfo
   checkConsAux gInfo [n]
 
-checkConsAux :: GInfo -> [Int] -> IO()
+checkConsAux :: GInfo -> [Int] -> IO ()
 checkConsAux gInfo [] = unlockGlobal gInfo
-checkConsAux gInfo (n:ns) = do
+checkConsAux gInfo (n : ns) = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
@@ -145,22 +143,22 @@ checkConsAux gInfo (n:ns) = do
     changeConsStatus x = let
         oldLab = labDG dg x
         oldNInfo = nodeInfo oldLab
-        newLab = oldLab{nodeInfo = case oldNInfo of
+        newLab = oldLab {nodeInfo = case oldNInfo of
                                      DGNode o _ -> DGNode o $ mkConsStatus Cons
                                      _ -> oldNInfo}
        in [SetNodeLab oldLab (x, newLab)]
     consLinks (s, t, l) = let
-        l' = l{dgl_type = case dgl_type l of
+        l' = l {dgl_type = case dgl_type l of
                            ScopedLink a b _ ->
                               ScopedLink a b $ mkConsStatus Cons
                            dt -> dt}
-       in [DeleteEdge (s,t,l), InsertEdge (s,t,l')]
+       in [DeleteEdge (s, t, l), InsertEdge (s, t, l')]
     updateDG changes = do
      let dg' = changesDGH dg changes
          history = snd $ splitHistory dg dg'
          le' = Map.insert (i_ln ist) dg' le
          lln = map DgCommandChange $ calcGlobalHistory le le'
-         nst = add2history (HelpCmd) ost lln
+         nst = add2history HelpCmd ost lln
          nwst = nst { i_state = Just ist { i_libEnv = le'}}
      doDump (hetcatsOpts gInfo) "PrintHistory" $ do
              putStrLn "History"
@@ -168,10 +166,10 @@ checkConsAux gInfo (n:ns) = do
      writeIORef (intState gInfo) nwst
      updateGraph gInfo (reverse $ flatHistory history)
    case rtn_type rtlab of
-     RTRef n' -> checkConsAux gInfo $ n':ns
+     RTRef n' -> checkConsAux gInfo $ n' : ns
      RTPlain usig ->
-      let units = map (\(_,x,_) -> x) $
-                 filter (\(_ss, _tt, ll) -> rtl_type ll == RTComp)$ out rt n
+      let units = map (\ (_, x, _) -> x) $
+                 filter (\ (_ss, _tt, ll) -> rtl_type ll == RTComp) $ out rt n
       in case units of
           [] -> -- n is itself a unit, insert obligation
              case usig of
@@ -184,7 +182,7 @@ checkConsAux gInfo (n:ns) = do
               UnitSig _nsigs nsig (Just usig') -> do
                 let ss = getNode usig'
                     tt = getNode nsig
-                    lEdges = filter (\(x,y,_) -> x == ss && y == tt)
+                    lEdges = filter (\ (x, y, _) -> x == ss && y == tt)
                               $ labEdges $ dgBody dg
                     ll = if null lEdges then
                             error "consCheck1"
@@ -192,9 +190,9 @@ checkConsAux gInfo (n:ns) = do
                     changes = consLinks ll
                 updateDG changes
                 checkConsAux gInfo ns
-          _ ->  checkConsAux gInfo $ units ++ ns
+          _ -> checkConsAux gInfo $ units ++ ns
 
-showSpec :: DGraph -> Int  -> IO()
+showSpec :: DGraph -> Int -> IO ()
 showSpec dg n =
     createTextDisplay "" (show $ labRT dg n)
 
@@ -222,17 +220,16 @@ showDiagram gInfo dg n = do
       writeIORef graph graph'
       redraw graph'
 
-showDiagSpec :: DGraph -> DiagNodeLab  -> IO()
+showDiagSpec :: DGraph -> DiagNodeLab -> IO ()
 showDiagSpec dg l = do
  let NodeSig n _ = dn_sig l
      nlab = labDG dg n
-     g1 = fromMaybe (dgn_theory nlab) $ globalTheory nlab
+     g1 = globOrLocTh nlab
  createTextDisplay ""
-   ("Desc:\n" ++ (dn_desc l) ++ "\n" ++
-    "Sig:\n" ++ (showDoc g1 "")
-   )
+   $ "Desc:\n" ++ dn_desc l ++ "\n" ++
+    "Sig:\n" ++ showDoc g1 ""
 
-addNodesAndEdgesDeps :: DGraph ->  Diag -> DaVinciGraphTypeSyn -> GInfo ->
+addNodesAndEdgesDeps :: DGraph -> Diag -> DaVinciGraphTypeSyn -> GInfo ->
                        IORef NodeEdgeListDep -> IO ()
 addNodesAndEdgesDeps dg diag graph gi nodesEdges = do
    let

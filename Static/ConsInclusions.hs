@@ -29,7 +29,6 @@ import Common.Result
 import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph as Graph
-import Data.Maybe
 import qualified Data.Set as Set
 
 dumpConsInclusions :: HetcatsOpts -> DGraph -> IO ()
@@ -48,8 +47,8 @@ dumpConsIncl opts dg (s, t, l) = do
        ga = globalAnnos dg
        nm = showEdgeId (dgl_id l)
        file = "ConsIncl_" ++ nm ++ ".het"
-       g1 = fromMaybe (dgn_theory src) $ globalTheory src
-       g2 = fromMaybe (dgn_theory tar) $ globalTheory tar
+       g1 = globOrLocTh src
+       g2 = globOrLocTh tar
    case g1 of
      G_theory lid1 sig1 _ sens1 _ -> case g2 of
        G_theory lid2 sig2 _ sens2 _ -> do
