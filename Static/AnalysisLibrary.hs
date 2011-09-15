@@ -245,27 +245,22 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
 anaLibItemAux :: HetcatsOpts -> LNS -> LibName
   -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
   -> LIB_ITEM -> ResultT IO ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
-anaLibItemAux opts topLns ln q@(libItems', dg1, libenv1, lG) libItem = let
-  (_, newLG) = case libItems' of
-          [] -> (Nothing, setCurLogic (defLogic opts) lG)
-          Logic_decl logN _ : _ -> fromMaybe (Nothing, lG)
-            $ maybeResult $ anaSublogic opts logN ln dg1 libenv1 lG
-          _ -> (Nothing, lG)
-  currLog = currentLogic newLG
+anaLibItemAux opts topLns ln q@(libItems', dg1, libenv1, lg) libItem = let
+  currLog = currentLogic lg
   newOpts = if elem currLog ["DMU", "Framework"] then
               opts { defLogic = currLog } else opts
   in ResultT $ do
       res2@(Result diags2 res) <- runResultT
-        $ anaLibItem newLG newOpts topLns ln libenv1 dg1 libItem
+        $ anaLibItem lg newOpts topLns ln libenv1 dg1 libItem
       runResultT $ showDiags1 opts (liftR res2)
       let mRes = case res of
-             Just (libItem', dg1', libenv1') ->
+             Just (libItem', dg1', libenv1', newLG) ->
                  Just (libItem' : libItems', dg1', libenv1', newLG)
              Nothing -> Just q
       if outputToStdout opts then
          if hasErrors diags2 then
             fail "Stopped due to errors"
-            else runResultT $ liftR $ Result [] Nothing
+            else runResultT $ liftR $ Result [] mRes
          else runResultT $ liftR $ Result diags2 mRes
 
 putMessageIORes :: HetcatsOpts -> Int -> String -> ResultT IO ()
@@ -306,24 +301,24 @@ anaGenericity lg ln dg opts name
 
 -- | analyse a LIB_ITEM
 anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
-  -> LIB_ITEM -> ResultT IO (LIB_ITEM, DGraph, LibEnv)
-anaLibItem lgraph opts topLns currLn libenv dg itm = case itm of
+  -> LIB_ITEM -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph)
+anaLibItem lg opts topLns currLn libenv dg itm = case itm of
   Spec_defn spn gen asp pos -> do
     let spstr = tokStr spn
         nName = makeName spn
     analyzing opts $ "spec " ++ spstr
     (gen', gsig@(GenSig _ _args allparams), dg') <-
-      liftR $ anaGenericity lgraph currLn dg opts nName gen
+      liftR $ anaGenericity lg currLn dg opts nName gen
     (sanno1, impliesA) <- liftR $ getSpecAnnos pos asp
     when impliesA $ liftR $ plain_error ()
        "unexpected initial %implies in spec-defn" pos
     (sp', body, dg'') <-
-      liftR (anaSpecTop sanno1 True lgraph currLn dg'
+      liftR (anaSpecTop sanno1 True lg currLn dg'
              allparams nName opts (item asp))
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg
     if Map.member spn genv
-      then liftR $ plain_error (libItem', dg'', libenv)
+      then liftR $ plain_error (libItem', dg'', libenv, lg)
                (alreadyDefined spstr) pos
       else
         -- let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
@@ -331,19 +326,20 @@ anaLibItem lgraph opts topLns currLn libenv dg itm = case itm of
          ( libItem'
          , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }
-         , libenv)
+         , libenv, lg)
   View_defn vn gen vt gsis pos -> do
     analyzing opts $ "view " ++ tokStr vn
-    liftR $ anaViewDefn lgraph currLn libenv dg opts vn gen vt gsis pos
+    liftR $ anaViewDefn lg currLn libenv dg opts vn gen vt gsis pos
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
-    (_, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lgraph currLn dg
+    (_, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lg currLn dg
       opts emptyExtStUnitCtx Nothing $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
     if Map.member asn genv
-      then liftR $ plain_error (asd', dg', libenv) (alreadyDefined asstr) pos
+      then liftR $ plain_error (asd', dg', libenv, lg)
+               (alreadyDefined asstr) pos
       else do
             let dg'' = updateNodeNameRT dg'
                        (refSource $ getPointerFromRef archSig) $ show asn
@@ -352,45 +348,54 @@ anaLibItem lgraph opts topLns currLn libenv dg itm = case itm of
                            $ archSpecDiags dg''}
             return (asd', dg3
                { globalEnv = Map.insert asn (ArchEntry archSig) genv },
-                      libenv)
+                      libenv, lg)
   Unit_spec_defn usn usp pos -> do
     let usstr = tokStr usn
     analyzing opts $ "unit spec " ++ usstr
-    l <- lookupCurrentLogic "Unit_spec_defn" lgraph
+    l <- lookupCurrentLogic "Unit_spec_defn" lg
     (rSig, dg', usp') <-
-      liftR $ anaUnitSpec lgraph currLn dg opts (EmptyNode l) Nothing usp
+      liftR $ anaUnitSpec lg currLn dg opts (EmptyNode l) Nothing usp
     unitSig <- liftR $ getUnitSigFromRef rSig
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
     if Map.member usn genv
-      then liftR $ plain_error (itm, dg', libenv) (alreadyDefined usstr) pos
+      then liftR $ plain_error (itm, dg', libenv, lg)
+               (alreadyDefined usstr) pos
       else return (usd', dg'
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
-             libenv)
+             libenv, lg)
   Ref_spec_defn rn rsp pos -> do
     let rnstr = tokStr rn
-    l <- lookupCurrentLogic "Ref_spec_defn" lgraph
-    (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lgraph currLn dg opts
+    l <- lookupCurrentLogic "Ref_spec_defn" lg
+    (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lg currLn dg opts
       (EmptyNode l) rn emptyExtStUnitCtx Nothing rsp
     analyzing opts $ "ref spec " ++ rnstr
     let rsd' = Ref_spec_defn rn rsp' pos
         genv = globalEnv dg'
     if Map.member rn genv
-      then liftR (plain_error (itm, dg', libenv)
-                             (alreadyDefined rnstr)
-                             pos)
-      else -- trace (show $ refTree dg') $
-           return ( rsd', dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
-                  , libenv)
+      then liftR $ plain_error (itm, dg', libenv, lg)
+               (alreadyDefined rnstr) pos
+      else return ( rsd'
+                  , dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
+                  , libenv, lg)
   Logic_decl logN pos -> do
     putMessageIORes opts 1 $ showDoc itm ""
-    _ <- liftR $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lgraph
-    return (itm, dg, libenv)
+    (mth, newLg) <- liftR
+      $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lg
+    case mth of
+      Nothing -> return (itm, dg, libenv, newLg)
+      Just (libName, _, (n, _)) -> do
+        -- properly compute theory
+        let newLibEnv = computeLibEnvTheories (Map.insert currLn dg libenv)
+            _lbl = labDG (lookupDGraph libName newLibEnv) n
+            newDG = lookupDGraph currLn newLibEnv
+            -- store th-lbl in newDG
+        return (itm, newDG, newLibEnv, newLg)
   Download_items ln items pos -> if Set.member ln topLns then
     liftR $ mkError "illegal cyclic library import"
       $ Set.map getLibId topLns
     else do
-        (ln', libenv') <- anaLibFile lgraph opts topLns libenv
+        (ln', libenv') <- anaLibFile lg opts topLns libenv
           (cpIndexMaps dg emptyDG) ln
         unless (ln == ln')
           $ liftR $ warning ()
@@ -402,13 +407,13 @@ anaLibItem lgraph opts topLns currLn libenv dg itm = case itm of
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 items
-            return (itm, dg1, libenv')
+            return (itm, dg1, libenv', lg)
   Newlogic_defn ld _ -> ResultT $ do
     dg' <- anaLogicDef ld dg
-    return $ Result [] $ Just (itm, dg', libenv)
+    return $ Result [] $ Just (itm, dg', libenv, lg)
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
-    return $ Result [] $ Just (itm, dg', libenv)
+    return $ Result [] $ Just (itm, dg', libenv, lg)
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
@@ -424,32 +429,32 @@ anaItemNamesOrMaps libenv' ln dg' dg items = do
 -- | analyse genericity and view type and construct gmorphism
 anaViewDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
   -> SIMPLE_ID -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
-  -> Result (LIB_ITEM, DGraph, LibEnv)
-anaViewDefn lgraph ln libenv dg opts vn gen vt gsis pos = do
+  -> Result (LIB_ITEM, DGraph, LibEnv, LogicGraph)
+anaViewDefn lg ln libenv dg opts vn gen vt gsis pos = do
   let vName = makeName vn
   (gen', gsig@(GenSig _ _ allparams), dg') <-
-       anaGenericity lgraph ln dg opts vName gen
+       anaGenericity lg ln dg opts vName gen
   (vt', (src@(NodeSig nodeS gsigmaS)
         , tar@(NodeSig nodeT gsigmaT@(G_sign lidT _ _))), dg'') <-
-       anaViewType lgraph ln dg' allparams opts vName vt
+       anaViewType lg ln dg' allparams opts vName vt
   let genv = globalEnv dg''
   if Map.member vn genv
-    then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv)
+    then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv, lg)
                     (alreadyDefined $ tokStr vn) pos
     else do
       let (tsis, hsis) = partitionGmaps gsis
       (gsigmaS', tmor) <- if null tsis then do
-          (gsigmaS', imor) <- gSigCoerce lgraph gsigmaS (Logic lidT)
+          (gsigmaS', imor) <- gSigCoerce lg gsigmaS (Logic lidT)
           tmor <- gEmbedComorphism imor gsigmaS
           return (gsigmaS', tmor)
         else do
-          mor <- anaRenaming lgraph allparams gsigmaS opts (Renaming tsis pos)
+          mor <- anaRenaming lg allparams gsigmaS opts (Renaming tsis pos)
           let gsigmaS'' = cod mor
-          (gsigmaS', imor) <- gSigCoerce lgraph gsigmaS'' (Logic lidT)
+          (gsigmaS', imor) <- gSigCoerce lg gsigmaS'' (Logic lidT)
           tmor <- gEmbedComorphism imor gsigmaS''
           fmor <- comp mor tmor
           return (gsigmaS', fmor)
-      emor <- fmap gEmbed $ anaGmaps lgraph opts pos gsigmaS' gsigmaT hsis
+      emor <- fmap gEmbed $ anaGmaps lg opts pos gsigmaS' gsigmaT hsis
       gmor <- comp tmor emor
       let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
           voidView = nodeS == nodeT && isInclusion gmor
@@ -461,7 +466,7 @@ anaViewDefn lgraph ln libenv dg opts vn gen vt gsis pos = do
                  (DGLinkView vn $ Fitted gsis) nodeS nodeT)
                 -- 'LeftOpen' for conserv correct?
                 { globalEnv = Map.insert vn (ViewEntry vsig) genv }
-               , libenv)
+               , libenv, lg)
 
 {- | analyze a VIEW_TYPE
 The first three arguments give the global context

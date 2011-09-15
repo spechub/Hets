@@ -270,7 +270,7 @@ cAddView input state = let iState = intState state in case i_state iState of
     return $ case tmp of
       Nothing -> genErrorMsg
           ("View analysis failed:\n" ++ showRelDiags (verbose opts) ds) state
-      Just (_, nwDg, nwLibEnv) ->
+      Just (_, nwDg, nwLibEnv, _) ->
         let newLibEnv' = Map.insert ln nwDg nwLibEnv
         in state
           { intState = iState
