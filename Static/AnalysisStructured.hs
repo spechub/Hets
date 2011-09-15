@@ -157,7 +157,8 @@ getNamedSpec sp ln dg libenv = case lookupGlobalEnvDG sp dg of
           _ -> mkError "unknown theory" sp
 
 anaSublogic :: HetcatsOpts -> Logic_name -> LibName -> DGraph -> LibEnv
-  -> LogicGraph -> Result LogicGraph
+  -> LogicGraph
+  -> Result (Maybe (LibName, DGraph, LNode DGNodeLab), LogicGraph)
 anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
     logN@(Logic lid) <- lookupLogic "" (tokStr lt) lG
     mgs <- case ms of
@@ -175,10 +176,10 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
     let logicLibN = emptyLibName "Logics"
         lG1 = setCurSublogic mgs $ setLogicName itm lG
     case mt of
-      Nothing -> return lG1
+      Nothing -> return (Nothing, lG1)
       Just sp -> do
         let ssp = tokStr sp
-        (libName, _, (_, lbl)) <- case Map.lookup logicLibN libenv of
+        t@(libName, _, (_, lbl)) <- case Map.lookup logicLibN libenv of
           Just dg2 | logicLibN /= ln -> getNamedSpec sp logicLibN dg2 libenv
           _ -> getNamedSpec sp ln dg libenv
         case sublogicOfTh $ globOrLocTh lbl of
@@ -210,8 +211,9 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
                     ++ prevName ++ "' and not '"
                     ++ nName ++ "'!"
                 return lMap
-            return lG1
-              { sublogicBasedTheories = Map.insert logN nMap sbMap }
+            return (Just t
+              , lG1
+              { sublogicBasedTheories = Map.insert logN nMap sbMap })
 
 anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
   -> MaybeNode -> NodeName -> HetcatsOpts -> SPEC

@@ -245,12 +245,12 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
 anaLibItemAux :: HetcatsOpts -> LNS -> LibName
   -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
   -> LIB_ITEM -> ResultT IO ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
-anaLibItemAux opts topLns ln (libItems', dg1, libenv1, lG) libItem = let
-  newLG = case libItems' of
-          [] -> setCurLogic (defLogic opts) lG
-          Logic_decl logN _ : _ -> fromMaybe lG
+anaLibItemAux opts topLns ln q@(libItems', dg1, libenv1, lG) libItem = let
+  (_, newLG) = case libItems' of
+          [] -> (Nothing, setCurLogic (defLogic opts) lG)
+          Logic_decl logN _ : _ -> fromMaybe (Nothing, lG)
             $ maybeResult $ anaSublogic opts logN ln dg1 libenv1 lG
-          _ -> lG
+          _ -> (Nothing, lG)
   currLog = currentLogic newLG
   newOpts = if elem currLog ["DMU", "Framework"] then
               opts { defLogic = currLog } else opts
@@ -261,11 +261,11 @@ anaLibItemAux opts topLns ln (libItems', dg1, libenv1, lG) libItem = let
       let mRes = case res of
              Just (libItem', dg1', libenv1') ->
                  Just (libItem' : libItems', dg1', libenv1', newLG)
-             Nothing -> Nothing
+             Nothing -> Just q
       if outputToStdout opts then
          if hasErrors diags2 then
             fail "Stopped due to errors"
-            else runResultT $ liftR $ Result [] mRes
+            else runResultT $ liftR $ Result [] Nothing
          else runResultT $ liftR $ Result diags2 mRes
 
 putMessageIORes :: HetcatsOpts -> Int -> String -> ResultT IO ()
