@@ -16,6 +16,7 @@ module Static.AnalysisStructured
     ( anaSpec
     , anaSpecTop
     , anaUnion
+    , anaSublogic
     , getSpecAnnos
     , isStructured
     , anaRenaming
@@ -55,7 +56,7 @@ import Common.Result
 import Common.Utils (number)
 import Common.Lib.MapSet (imageSet, setInsert)
 
-import Data.Graph.Inductive.Graph as Graph (Node)
+import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List (find)
@@ -147,6 +148,51 @@ createConsLink lk conser lg dg nsig (NodeSig node gsig) orig = case nsig of
                (nodeInfo lbl)
                  { node_cons_status = case getNodeConsStatus lbl of
                      ConsStatus c d th -> ConsStatus (max c conser) d th }}) dg
+
+getNamedSpec :: SPEC_NAME -> LibName -> DGraph -> LibEnv
+  -> Result (LibName, DGraph, LNode DGNodeLab)
+getNamedSpec sp ln dg libenv = case lookupGlobalEnvDG sp dg of
+          Just (SpecEntry (ExtGenSig _ (NodeSig n _))) ->
+              return $ lookupRefNode libenv ln dg n
+          _ -> mkError "unknown theory" sp
+
+anaSublogic :: HetcatsOpts -> Logic_name -> LibName -> DGraph -> LibEnv
+  -> LogicGraph -> Result LogicGraph
+anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
+    logN@(Logic lid) <- lookupLogic "" (tokStr lt) lG
+    mgs <- case ms of
+      Nothing -> return Nothing
+      Just subL -> do
+        let s = tokStr subL
+        case lookup s $ map (\ l -> (sublogicName l, l)) $ all_sublogics lid of
+          Nothing -> fail $ "unknown sublogic of logic " ++ show logN
+            ++ ": " ++ s
+          Just sl ->
+            if sublogicName (top_sublogic lid) == s then do
+              warning () ("not a proper sublogic: " ++ s) $ tokPos subL
+              return Nothing
+              else return $ Just $ G_sublogics lid sl
+    let logicLibN = emptyLibName "Logics"
+    _th <- case mt of
+      Nothing -> return Nothing
+      Just sp -> do
+        p@(_, _, (_, lbl)) <- case Map.lookup logicLibN libenv of
+          Just dg2 | logicLibN /= ln -> getNamedSpec sp logicLibN dg2 libenv
+          _ -> getNamedSpec sp ln dg libenv
+        case sublogicOfTh $ globOrLocTh lbl of
+          gs2@(G_sublogics lid2 _) -> do
+            unless (logN == Logic lid2)
+              $ fail $ "the logic of '" ++ tokStr sp
+                  ++ "' is '" ++ language_name lid2
+                  ++ "' and not '" ++ shows logN "'!"
+            case mgs of
+              Nothing -> return ()
+              Just gs -> unless (isSublogic gs2 gs)
+                $ fail $ "theory '" ++ tokStr sp
+                  ++ "' has sublogic '" ++ shows gs2 "' and not '"
+                  ++ shows gs "'!"
+            return $ Just (p, sp)
+    return $ setLogicName itm lG
 
 anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
   -> MaybeNode -> NodeName -> HetcatsOpts -> SPEC
@@ -492,8 +538,8 @@ anaUnion addSyms lg ln dg nsig name opts asps = case asps of
 -- analysis of renamings
 anaRen :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
   -> G_mapping -> Result GMorphism
-anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
-  adjustPos pos $ case gmap of
+anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
+  adjustPos pos $ case gMapping of
   G_symb_map (G_symb_map_items_list lid sis) ->
     let lid2 = targetLogic r in
     if language_name lid2 == language_name lid then
@@ -524,7 +570,7 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
       comor <- logicInclusion lg (Logic lid2) (Logic lid)
       gmorTrans <- gEmbedComorphism comor $ cod gmor
       newMor <- comp gmor gmorTrans
-      anaRen lg opts lenv pos newMor gmap
+      anaRen lg opts lenv pos newMor gMapping
   G_logic_translation (Logic_code tok src tar pos1) ->
     let adj1 = adjustPos $ if pos1 == nullRange then pos else pos1
     in adj1 $ do

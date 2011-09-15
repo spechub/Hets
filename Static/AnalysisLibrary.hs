@@ -268,51 +268,6 @@ anaLibItemAux opts topLns ln (libItems', dg1, libenv1, lG) libItem = let
             else runResultT $ liftR $ Result [] mRes
          else runResultT $ liftR $ Result diags2 mRes
 
-anaSublogic :: HetcatsOpts -> Logic_name -> LibName -> DGraph -> LibEnv
-  -> LogicGraph -> Result LogicGraph
-anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
-    logN@(Logic lid) <- lookupLogic "" (tokStr lt) lG
-    mgs <- case ms of
-      Nothing -> return Nothing
-      Just subL -> do
-        let s = tokStr subL
-        case lookup s $ map (\ l -> (sublogicName l, l)) $ all_sublogics lid of
-          Nothing -> fail $ "unknown sublogic of logic " ++ show logN
-            ++ ": " ++ s
-          Just sl ->
-            if sublogicName (top_sublogic lid) == s then do
-              warning () ("not a proper sublogic: " ++ s) $ tokPos subL
-              return Nothing
-              else return $ Just $ G_sublogics lid sl
-    let logicLibN = emptyLibName "Logics"
-    _th <- case mt of
-      Nothing -> return Nothing
-      Just sp -> do
-        p@(_, _, (_, lbl)) <- case Map.lookup logicLibN libenv of
-          Just dg2 | logicLibN /= ln -> getNamedSpec sp logicLibN dg2 libenv
-          _ -> getNamedSpec sp ln dg libenv
-        case sublogicOfTh $ globOrLocTh lbl of
-          gs2@(G_sublogics lid2 _) -> do
-            unless (logN == Logic lid2)
-              $ fail $ "the logic of '" ++ tokStr sp
-                  ++ "' is '" ++ language_name lid2
-                  ++ "' and not '" ++ shows logN "'!"
-            case mgs of
-              Nothing -> return ()
-              Just gs -> unless (isSublogic gs2 gs)
-                $ fail $ "theory '" ++ tokStr sp
-                  ++ "' has sublogic '" ++ shows gs2 "' and not '"
-                  ++ shows gs "'!"
-            return $ Just (p, sp)
-    return $ setLogicName itm lG
-
-getNamedSpec :: SPEC_NAME -> LibName -> DGraph -> LibEnv
-  -> Result (LibName, DGraph, LNode DGNodeLab)
-getNamedSpec sp ln dg libenv = case lookupGlobalEnvDG sp dg of
-          Just (SpecEntry (ExtGenSig _ (NodeSig n _))) ->
-              return $ lookupRefNode libenv ln dg n
-          _ -> mkError "unknown theory" sp
-
 putMessageIORes :: HetcatsOpts -> Int -> String -> ResultT IO ()
 putMessageIORes opts i msg =
    if outputToStdout opts
