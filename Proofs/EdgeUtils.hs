@@ -32,50 +32,6 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Exception (assert)
 
--- * methods to check the type of an edge
-
-isProven :: DGLinkType -> Bool
-isProven edge = case edge of
-    ScopedLink _ DefLink _ -> True
-    _ -> case thmLinkStatus edge of
-           Just (Proven _ _) -> True
-           _ -> False
-
-isGlobalEdge :: DGLinkType -> Bool
-isGlobalEdge edge = case edge of
-    ScopedLink Global _ _ -> True
-    _ -> False
-
-isGlobalThm :: DGLinkType -> Bool
-isGlobalThm edge = case edge of
-    ScopedLink Global (ThmLink _) _ -> True
-    _ -> False
-
-isUnprovenGlobalThm :: DGLinkType -> Bool
-isUnprovenGlobalThm lt = case lt of
-    ScopedLink Global (ThmLink LeftOpen) _ -> True
-    _ -> False
-
-isUnprovenLocalThm :: DGLinkType -> Bool
-isUnprovenLocalThm lt = case lt of
-    ScopedLink Local (ThmLink LeftOpen) _ -> True
-    _ -> False
-
-isUnprovenHidingThm :: DGLinkType -> Bool
-isUnprovenHidingThm lt = case lt of
-    HidingFreeOrCofreeThm Nothing _ _ LeftOpen -> True
-    _ -> False
-
-isFreeEdge :: DGLinkType -> Bool
-isFreeEdge edge = case edge of
-    FreeOrCofreeDefLink Free _ -> True
-    _ -> False
-
-isCofreeEdge :: DGLinkType -> Bool
-isCofreeEdge edge = case edge of
-    FreeOrCofreeDefLink Cofree _ -> True
-    _ -> False
-
 -- * other methods on edges
 
 eqLEdge :: (DGLinkLab -> DGLinkLab -> Bool) -> LEdge DGLinkLab

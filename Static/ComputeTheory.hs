@@ -46,12 +46,6 @@ nodeHasHiding dg = labelHasHiding . labDG dg
 nodeHasFree :: DGraph -> Node -> Bool
 nodeHasFree dg = labelHasFree . labDG dg
 
-isFreeEdge :: DGLinkType -> Bool
--- this is duplicated because I wanted to avoid quickly a cyclic import
-isFreeEdge edge = case edge of
-    FreeOrCofreeDefLink Free _ -> True
-    _ -> False
-
 {- | mark all nodes if they have incoming hiding edges.
    Assume reference nodes to other libraries being properly marked already.
 -}
