@@ -26,7 +26,6 @@ import Static.History
 import Static.ComputeTheory
 
 import Proofs.QualifyNames
-import Proofs.EdgeUtils
 
 import Common.AS_Annotation
 import Common.ExtSign
