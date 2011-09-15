@@ -273,10 +273,10 @@ data DGLinkLab = DGLink
   , dgl_origin :: DGLinkOrigin -- origin in input language
   , dglPending :: Bool        -- open proofs of edges in proof basis
   , dgl_id :: EdgeId          -- id of the edge
-  , dglName :: NodeName         -- name of the edge
+  , dglName :: String         -- name of the edge
   } deriving (Show, Eq)
 
-mkDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> NodeName -> EdgeId
+mkDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> String -> EdgeId
          -> DGLinkLab
 mkDGLink mor ty orig nn ei = DGLink
   { dgl_morphism = mor
@@ -287,14 +287,13 @@ mkDGLink mor ty orig nn ei = DGLink
   , dglName = nn }
 
 -- | name a link
-nameDGLink :: NodeName -> DGLinkLab -> DGLinkLab
+nameDGLink :: String -> DGLinkLab -> DGLinkLab
 nameDGLink nn l = l { dglName = nn }
 
 defDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> DGLinkLab
 {- See svn-version 13804 for a naming concept which unfortunately introduced
 same names for different links. -}
-defDGLink m ty orig = mkDGLink m ty orig (makeName $ mkSimpleId "")
-                      defaultEdgeId
+defDGLink m ty orig = mkDGLink m ty orig "" defaultEdgeId
 
 defDGLinkId :: GMorphism -> DGLinkType -> DGLinkOrigin -> EdgeId -> DGLinkLab
 defDGLinkId m ty orig ei = (defDGLink m ty orig) { dgl_id = ei }
@@ -886,10 +885,6 @@ getDGNodeName = showName . dgn_name
 -- | get the global theory of a node or the local one if missing
 globOrLocTh :: DGNodeLab -> G_theory
 globOrLocTh lbl = fromMaybe (dgn_theory lbl) $ globalTheory lbl
-
--- | gets the name of a development graph link as a string (total)
-getDGLinkName :: DGLinkLab -> String
-getDGLinkName = showName . dglName
 
 -- ** creating node content and label
 

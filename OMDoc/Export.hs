@@ -287,7 +287,7 @@ makeImportMapping le ln dg toInfo s (from, _, lbl)
                     >> return (s, Nothing)
     | isGlobalDef $ dgl_type lbl =
         let (lb', ln') = getNodeData le ln $ labDG dg from
-            edgName = getDGLinkName lbl
+            edgName = dglName lbl
             impname = if null edgName
                       then "gn_imp_" ++ showEdgeId (dgl_id lbl)
                       else edgName
@@ -311,7 +311,7 @@ exportLinkLab :: LibEnv -> LibName -> DGraph -> ExpEnv -> LEdge DGLinkLab
 exportLinkLab le ln dg s (from, to, lbl) =
     let ltyp = dgl_type lbl
         gmorph = dgl_morphism lbl
-        edgName = getDGLinkName lbl
+        edgName = dglName lbl
         viewname = if null edgName
                    then "gn_vn_" ++ showEdgeId (dgl_id lbl)
                    else edgName
