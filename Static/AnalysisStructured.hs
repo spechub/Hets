@@ -173,26 +173,45 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
               return Nothing
               else return $ Just $ G_sublogics lid sl
     let logicLibN = emptyLibName "Logics"
-    _th <- case mt of
-      Nothing -> return Nothing
+        lG1 = setCurSublogic mgs $ setLogicName itm lG
+    case mt of
+      Nothing -> return lG1
       Just sp -> do
-        p@(_, _, (_, lbl)) <- case Map.lookup logicLibN libenv of
+        let ssp = tokStr sp
+        (libName, _, (_, lbl)) <- case Map.lookup logicLibN libenv of
           Just dg2 | logicLibN /= ln -> getNamedSpec sp logicLibN dg2 libenv
           _ -> getNamedSpec sp ln dg libenv
         case sublogicOfTh $ globOrLocTh lbl of
           gs2@(G_sublogics lid2 _) -> do
             unless (logN == Logic lid2)
-              $ fail $ "the logic of '" ++ tokStr sp
+              $ fail $ "the logic of '" ++ ssp
                   ++ "' is '" ++ language_name lid2
                   ++ "' and not '" ++ shows logN "'!"
             case mgs of
               Nothing -> return ()
               Just gs -> unless (isSublogic gs2 gs)
-                $ fail $ "theory '" ++ tokStr sp
+                $ fail $ "theory '" ++ ssp
                   ++ "' has sublogic '" ++ shows gs2 "' and not '"
                   ++ shows gs "'!"
-            return $ Just (p, sp)
-    return $ setLogicName itm lG
+            let sbMap = sublogicBasedTheories lG1
+                lMap = Map.findWithDefault Map.empty logN sbMap
+                nName = getDGNodeName lbl
+            nMap <- case Map.lookup sp lMap of
+              Nothing -> return $ Map.insert sp (libName, nName) lMap
+              Just (prevLib, prevName) -> do
+                unless (libName == prevLib)
+                  $ fail $ "theory '" ++ ssp
+                    ++ "' should come from library '"
+                    ++ showDoc prevLib "' and not from '"
+                    ++ showDoc libName "'!"
+                unless (nName == prevName)
+                  $ fail $ "the original theory name for'" ++ ssp
+                    ++ "' should be '"
+                    ++ prevName ++ "' and not '"
+                    ++ nName ++ "'!"
+                return lMap
+            return lG1
+              { sublogicBasedTheories = Map.insert logN nMap sbMap }
 
 anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
   -> MaybeNode -> NodeName -> HetcatsOpts -> SPEC
