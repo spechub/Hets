@@ -10,8 +10,18 @@ main :: IO()
 main = do
   args <- getArgs
   case args of
+    ("-p" : p1 : ps) -> printDiff p1 ps
     (p1 : ps) -> testDiff p1 ps
     _ -> putStrLn "missing arguments: xml-file location and diff/xupdate files"
+
+printDiff :: FilePath -> [FilePath] -> IO()
+printDiff p1 ps = do
+      xml <- readFile p1
+      case parseXMLDoc xml of
+        Just xml1 -> mapM_ (\ xup -> do
+            diff <- readFile xup
+            printXmlDiff xml1 diff ) ps
+        _ -> fail "failed to parse xml-file"
 
 testDiff :: FilePath -> [FilePath] -> IO()
 testDiff p1 ps = do

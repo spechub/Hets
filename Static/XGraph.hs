@@ -71,6 +71,12 @@ data XLink = XLink { source :: String
                    , mr_source :: Maybe String
                    , mapping :: String }
 
+instance Show XNode where
+  show xn = "Node: " ++ show (nodeName xn)
+
+instance Show XLink where
+  show xl = "Link: " ++ show (source xl) ++ " -> " ++ show (target xl)
+
 {- ------------
 Functions -}
 
