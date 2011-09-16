@@ -1,26 +1,25 @@
 
+-- provides a simple testing-tool for using ApplyXmlDiff upon a proper Xml-File
+
 import Static.ApplyXmlDiff
 import System.Environment
+import Control.Monad (foldM)
 import Text.XML.Light (parseXMLDoc, showTopElement)
 
 main :: IO()
 main = do
   args <- getArgs
   case args of
-    (p1 : p2 : _) -> testDiff p1 p2
-    _ -> do
-      putStrLn "please enter xml location!"
-      p1 <- getLine
-      putStrLn "please enter diff location!"
-      p2 <- getLine
-      testDiff p1 p2
+    (p1 : ps) -> testDiff p1 ps
+    _ -> putStrLn "missing arguments: xml-file location and diff/xupdate files"
 
-testDiff :: FilePath -> FilePath -> IO()
-testDiff p1 p2 = do
+testDiff :: FilePath -> [FilePath] -> IO()
+testDiff p1 ps = do
       xml <- readFile p1
-      diff <- readFile p2
       case parseXMLDoc xml of
         Just xml1 -> do
-          xml2 <- applyXmlDiff xml1 diff
+          xml2 <- foldM (\ xml' xup -> do
+            diff <- readFile xup
+            applyXmlDiff xml' diff ) xml1 ps
           writeFile (p1 ++ "-output") $ showTopElement xml2
         _ -> fail "failed to parse xml-file"
