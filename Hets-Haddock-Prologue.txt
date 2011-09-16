@@ -65,26 +65,22 @@ This module also provides a partial union for logics, which is
 crucial for the static analysis of unions of specifications
 (which may occur explicitly or implicitly).
 
-
 Last but not least, there are general purpose folders.  The most
 important one is the folder "Common". It contains general purpose
 libraries, e.g. for relations, and for parsing and
 pretty printing. "Common.Result" provides a monad for error handling
 and error messages that is used at many places throughout Hets.
 
-The folder "ATC" is for conversion from and to shared ATerms. The
-/utils/ folder contains tools like /DriFT/ and /InlineAxioms/, the
-latter can be used to write the axioms for theoroidal
-comorphisms in a concise way, namely in the input syntax of the
-respective target logic (the identifiers will turn into Haskell
-variables and can hence be used for easily producing instances of
-axiom schemes).
+The folder "ATC" is for conversion from and to shared ATerms
+<http://hackage.haskell.org/package/aterm>. The /utils/ folder contains tools
+like /DriFT/.
 
 The command line interface is contained in "Driver", the graphical
 interface in "GUI". The latter is based on the UniForM Workbench
 that provides an event system and encapsulations of TclTk
 <http://www.informatik.uni-bremen.de/htk/> and uDraw(Graph)
-<http://www.informatik.uni-bremen.de/uDrawGraph/en/index.html>.
+<http://www.informatik.uni-bremen.de/uDrawGraph/en/index.html>,
+<http://hackage.haskell.org/package/uni-uDrawGraph>.
 
 Hets is also based on the following third-party libraries:
 
@@ -93,7 +89,7 @@ Hets is also based on the following third-party libraries:
 
  * The combinator parser library Parsec, see
    <http://www.haskell.org/haskellwiki/Parsec>,
-   <http://hackage.haskell.org/package/parsec>
+   <http://hackage.haskell.org/package/parsec1>
    and "Propositional.Parse_AS_Basic" for a sample use
 
  * finite sets and maps, see
@@ -105,12 +101,5 @@ Hets is also based on the following third-party libraries:
 
  * the xml light package, see
    <http://hackage.haskell.org/package/xml>
-
- * Haskeline for the command line interface, see
-   <http://trac.haskell.org/haskeline>
-   and <http://hackage.haskell.org/package/haskeline>
-
- * programatica for Haskell as a logic, see
-   <http://programatica.cs.pdx.edu/>
 
 Visit "Driver.Version" for the date of this documentation.
