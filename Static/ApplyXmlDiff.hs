@@ -13,7 +13,7 @@ change an Xml-DGraph according to XmlDiff-data.
 module Static.ApplyXmlDiff where
 
 import Static.XGraph
-import Static.DgUtils (EdgeId (..))
+import Static.DgUtils
 
 import Common.XUpdate
 import Common.XSimplePath
@@ -21,29 +21,34 @@ import Common.Utils (readMaybe)
 
 import Control.Monad
 
+import qualified Data.Map as Map
+
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
 
-data SimpleChange = RemoveNode String
-                  | RemoveLink EdgeId
-                  | RenameNode String String
-                  | RenumberLink EdgeId EdgeId
-                  | UpdateNode XNode
-                  | UpdateLink XLink
-                  | AddNode XNode
-                  | AddLink XLink
-                  deriving Show
+data SimpleChanges = SimpleChanges { removeNodes :: [NodeName]
+                                   , removeLinks :: [EdgeId]
+                                   , renamings :: [(NodeName, NodeName)]
+                                   , renumberings :: [(EdgeId, EdgeId)]
+                                   , updateNodes :: Map.Map NodeName XNode
+                                   , updateLinks :: Map.Map EdgeId XLink
+                                   , addNodes :: [XNode]
+                                   , addLinks :: [XLink]
+                                   } deriving Show 
+
+emptyChanges :: SimpleChanges
+emptyChanges = SimpleChanges [] [] [] [] Map.empty Map.empty [] []
 
 printXmlDiff :: Element -> String -> IO ()
 printXmlDiff el diff = do
   cs <- anaXUpdates diff
-  (cr, chgs) <- foldM changeXml (fromElement el, []) cs
-  putStrLn $ unlines $ map show chgs
+  (_, chgs) <- foldM changeXml (fromElement el, emptyChanges) cs
+  putStrLn $ show chgs
 
 applyXmlDiff :: Monad m => Element -> String -> m Element
 applyXmlDiff el diff = do
   cs <- anaXUpdates diff
-  (cr, chgs) <- foldM changeXml (fromElement el, []) cs
+  (cr, _) <- foldM changeXml (fromElement el, emptyChanges) cs
   toElement cr
 
 toElement :: Monad m => Cursor -> m Element
@@ -51,101 +56,107 @@ toElement cr = case current $ root cr of
     Elem e -> return e
     _ -> fail "cannot convert Cursor into Element"
 
-changeXml :: Monad m => (Cursor, [SimpleChange]) -> Change
-          -> m (Cursor, [SimpleChange])
+changeXml :: Monad m => (Cursor, SimpleChanges) -> Change
+          -> m (Cursor, SimpleChanges)
 changeXml (cr, sChgs) (Change csel expr) = do
   (crInit, attrSel) <- moveTo expr (root cr)
   case csel of
-    Remove -> do
-      (cr', chg) <- applyRemoveOp crInit attrSel
-      return (cr', chg : sChgs)
+    Remove -> applyRemoveOp crInit attrSel sChgs
     Add pos addCs -> do
-      crNew <- applyAddOp attrSel pos crInit addCs 
-      changes <- case mapM mkAddCh_fullElem addCs of
-                   Just chList -> return chList
-                   Nothing -> liftM ( :[] ) $ mkUpdateCh crNew
-      return (crNew, changes ++ sChgs)
-    -- TODO: I don't get it! whats the String for??
-    Update s -> undefined
+      crNew <- foldM (applyAddOp attrSel pos) crInit addCs 
+      changes <- case foldM mkAddCh_fullElem sChgs addCs of
+                   Just sChgs' -> return sChgs'
+                   Nothing -> mkUpdateCh sChgs crNew
+      return (crNew, changes)
+    Update s -> case attrSel of
+      Nothing -> fail "xupdate:update only works for Attributes!"
+      Just atS -> do
+        cr' <- case current crInit of
+          Elem e -> return crInit { current = Elem
+            $ add_attr (Attr (unqual atS) s) e }
+          _ -> fail $ "update: " ++ s
+        sChgs' <- mkUpdateCh sChgs cr'
+        return (cr', sChgs')
     _ -> fail $ "no implementation for :" ++ show csel
 
-applyRemoveOp :: Monad m => Cursor -> AttrSelector -> m (Cursor, SimpleChange)
-applyRemoveOp crInit attrSel = case attrSel of
+applyRemoveOp :: Monad m => Cursor -> AttrSelector -> SimpleChanges
+              -> m (Cursor, SimpleChanges)
+applyRemoveOp crInit attrSel sChgs = case attrSel of
       -- Case #1: remove attribute from element
       Just attr -> case current crInit of
         Elem e -> let e' = removeAttr attr e
                       cr' = crInit { current = Elem e' } in do
-          chg <- mkUpdateCh cr' 
-          return (cr', chg)
+          sChgs' <- mkUpdateCh sChgs cr'
+          return (cr', sChgs')
         _ -> fail "applyRemoveOp (Attr)"
       -- Case #2: remove element
       Nothing -> case removeGoUp crInit of
         Nothing -> fail "applyRemoveOp (Elem)"
         Just cr' -> do
-          chg <- mkRemoveCh crInit cr'
-          return (cr', chg)
+          sChgs' <- mkRemoveCh sChgs crInit cr'
+          return (cr', sChgs')
 
 removeAttr :: String -> Element -> Element
 removeAttr atName el = el { elAttribs =
   filter ((/= atName) . qName . attrKey) $ elAttribs el }
 
-applyAddOp :: Monad m => AttrSelector -> Insert -> Cursor -> [AddChange]
+applyAddOp :: Monad m => AttrSelector -> Insert -> Cursor -> AddChange
            -> m Cursor
-applyAddOp attrSel pos = foldM (\ cr' addCh -> case (pos, addCh, attrSel) of
-        (Before, AddElem e, Nothing) -> return $ insertGoLeft (Elem e) cr' 
-        (After, AddElem e, Nothing) -> return $ insertGoRight (Elem e) cr'
-        (Append, AddElem e, Nothing) -> case current cr' of
+applyAddOp attrSel pos cr addCh = case (pos, addCh, attrSel) of
+        (Before, AddElem e, Nothing) -> return $ insertGoLeft (Elem e) cr
+        (After, AddElem e, Nothing) -> return $ insertGoRight (Elem e) cr
+        (Append, AddElem e, Nothing) -> case current cr of
             {- TODO: custem version of addChild, see if it works!! -}
-            Elem e' -> return cr' { current = Elem $ e' {
+            Elem e' -> return cr { current = Elem $ e' {
                          elContent = Elem e : elContent e' } }
             _ -> fail "applyAddOp(1)"
-        (Before, AddAttr at, Just atSel) -> insertAttr cr' (Left atSel) at
-        (After, AddAttr at, Just atSel) -> insertAttr cr' (Right atSel) at
-        (Append, AddAttr at, Nothing) -> case current cr' of
-            Elem e -> return cr' { current = Elem $ add_attr at e }
+        -- TODO: there shouldn't be an attribute selection here, but there is!
+        (Append, AddAttr at, _) -> case current cr of
+            Elem e -> return cr { current = Elem $ add_attr at e }
             _ -> fail "applyAddOp(2)"
-        _ -> fail "applyAddOp(3)"                              )
-
-{- insert an attribute at a specific location.
-TODO: if attribute-selector is not found, nothing happens. no safeguard.. -}
-insertAttr :: Monad m => Cursor -> Either String String -> Attr -> m Cursor
-insertAttr cr atSel at = case current cr of
-  Elem e -> return cr { current = Elem $ e { elAttribs = foldr (\ at' atR ->
-    case atSel of
-      Left atS | (qName $ attrKey at') == atS -> at : at' : atR
-      Right atS | (qName $ attrKey at') == atS -> at' : at : atR
-      _ -> at' : atR ) [] $ elAttribs e } }
-  _ -> fail "insertAttr"
+        _ -> fail "applyAddOp(3)"
 
 {- determine change for an add operation.
 NOTE: this will purposfully fail for any other cases than add entire Node/Link!
 -}
-mkAddCh_fullElem :: Monad m => AddChange -> m SimpleChange
-mkAddCh_fullElem addCh = case addCh of
+mkAddCh_fullElem :: Monad m => SimpleChanges -> AddChange -> m SimpleChanges
+mkAddCh_fullElem sChgs addCh = case addCh of
   -- insert entire Node
-  AddElem e | nameString e == "DGNode" -> liftM AddNode $ mkXNode e
+  AddElem e | nameString e == "DGNode" -> do
+    n <- mkXNode e
+    return sChgs { addNodes = n : addNodes sChgs }
   -- insert entire link
-  AddElem e | nameString e == "DGLink" -> liftM AddLink $ mkXLink e
+  AddElem e | nameString e == "DGLink" -> do
+    l <- mkXLink e
+    return sChgs { addLinks = l : addLinks sChgs }
   -- insert other child element will be processed within changeXml!
   _ -> fail "mkAddCh_fullElem"
 
 -- determine the change(s) for a remove operation
-mkRemoveCh :: Monad m => Cursor -> Cursor -> m SimpleChange
-mkRemoveCh crInit crCurrent = case current crInit of
+mkRemoveCh :: Monad m => SimpleChanges -> Cursor -> Cursor -> m SimpleChanges
+mkRemoveCh sChgs crInit crCurrent = case current crInit of
       -- remove entire node
-      Elem e | nameString e == "DGNode" -> liftM RemoveNode
-            $ getAttrVal "name" e
+      Elem e | nameString e == "DGNode" -> do
+        nm <- liftM parseNodeName $ getAttrVal "name" e
+        return sChgs { removeNodes = nm : removeNodes sChgs }
       -- remove entire link
-      Elem e | nameString e == "DGLink" -> liftM RemoveLink
-            $ readEdgeId_M e
+      Elem e | nameString e == "DGLink" -> do
+        ei <- readEdgeId_M e
+        return sChgs { removeLinks = ei : removeLinks sChgs }
       -- remove child element -> update entire node or link
-      _ -> mkUpdateCh crCurrent
+      _ -> mkUpdateCh sChgs crCurrent
 
-mkUpdateCh :: Monad m => Cursor -> m SimpleChange
-mkUpdateCh cr = case current cr of
-    Elem e | nameString e == "DGNode" -> liftM UpdateNode $ mkXNode e
-    Elem e | nameString e == "DGLink" -> liftM UpdateLink $ mkXLink e
-    _ -> maybe (fail "mkUpdateCh") mkUpdateCh $ parent cr
+mkUpdateCh :: Monad m => SimpleChanges -> Cursor -> m SimpleChanges
+mkUpdateCh sChgs cr = case current cr of
+    Elem e | nameString e == "DGNode" -> do
+      n <- mkXNode e
+      return sChgs { updateNodes = Map.insert (nodeName n) n
+        $ updateNodes sChgs } 
+    Elem e | nameString e == "DGLink" -> do
+      l <- mkXLink e
+      return sChgs { updateLinks = Map.insert (edgeId l) l
+        $ updateLinks sChgs }
+    _ -> maybe (fail "mkUpdateCh") (mkUpdateCh sChgs) $ parent cr
 
 nameString :: Element -> String
 nameString = qName . elName
