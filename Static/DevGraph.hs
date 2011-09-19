@@ -582,11 +582,9 @@ refSigComposition _rsig1 _rsig2 =
 -- | an entry of the global environment
 data GlobalEntry =
     SpecEntry ExtGenSig
-  | StructEntry ExtViewSig
-  | ViewEntry ExtViewSig
-  | ArchEntry RefSig
+  | ViewOrStructEntry Bool ExtViewSig
+  | ArchOrRefEntry Bool RefSig
   | UnitEntry UnitSig
-  | RefEntry RefSig
     deriving Show
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry

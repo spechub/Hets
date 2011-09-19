@@ -366,11 +366,11 @@ instance Pretty RefSig where
 instance Pretty GlobalEntry where
   pretty ge = case ge of
     SpecEntry se -> topKey specS <+> pretty se
-    StructEntry ve -> topKey structS <+> pretty ve
-    ViewEntry ve -> topKey viewS <+> pretty ve
+    ViewOrStructEntry b ve -> topKey (if b then viewS else structS)
+      <+> pretty ve
     UnitEntry ue -> topKey unitS <+> pretty ue
-    ArchEntry ae -> topKey archS <+> pretty ae
-    RefEntry re -> keyword refinementS <+> pretty re
+    ArchOrRefEntry b ae -> (if b then topKey archS else keyword refinementS)
+      <+> pretty ae
 
 instance Pretty DGraph where
   pretty dg = vcat

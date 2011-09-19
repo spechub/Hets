@@ -113,12 +113,12 @@ type RealType = Double
 
 
 {-
-type EvalEnv = Map.Map String 
+type EvalEnv = Map.Map String
 
 evalInSubst :: Subst -> Term -> RealType
 evalInSubst s t =
     case t of
-      
+
     lookupS :: Subst -> a -> Maybe (SRule b)
 ruleContent :: SRule a -> a
 
@@ -148,7 +148,7 @@ c3 :: Point -> RealType
 c3 (P (_, _, x)) = x
 
 
-type EvalEnv = Map.Map String EvalTerm 
+type EvalEnv = Map.Map String EvalTerm
 
 data ETBinFun = ETdiff | ETdiam | ETprod | ETdist deriving Show
 
@@ -164,7 +164,7 @@ toEvalTerm e t =
            | not (null pointL) = Just $ ETpoint $ fst $ head pointL
            | otherwise = Nothing
     in mT
-           
+
 
 envFromSubst :: Env -> Subst -> EvalEnv
 envFromSubst e (Subst (m, _, _)) = Map.fromList $ mapMaybe f $ Map.toList m
@@ -202,7 +202,7 @@ getRconsts :: Env -> Subst -> Map.Map String RealType
 getRconsts e s = getRealConstMap e s constsForEval
 
 getRealConstMap :: Env -> Subst -> [(String, EvalTerm)] -> Map.Map String RealType
-getRealConstMap e sbst l = Map.fromList $ map f l where 
+getRealConstMap e sbst l = Map.fromList $ map f l where
     ee = envFromSubst e sbst
     f (s, et) = (s, etReal $ evalInEnv ee et)
 
@@ -447,7 +447,7 @@ testSpecMatchM sigs patN cN =
       (res2, l') <- matchCandidates def l
 
       case res of
-        Right mr -> 
+        Right mr ->
             do
               putStrLn $ "Non tried elements: " ++ show (length l)
               nice sigs $ return mr
@@ -458,7 +458,7 @@ testSpecMatchM sigs patN cN =
       putStrLn "------------------------------"
 
       case res2 of
-        Right mr -> 
+        Right mr ->
             do
               putStrLn $ "Non tried elements: " ++ show (length l')
               nice sigs $ return mr
@@ -478,7 +478,7 @@ processTemplate f m s = unlines $ map g $ lines s where
     h ln ((k, v):l')
       | isInfixOf k ln = f k v
       | otherwise = h ln l'
-    
+
 
 ------------------------- Shortcuts -------------------------
 
@@ -503,7 +503,7 @@ matchTranslate lb sp patN cN = do
   tmpl <- readFile $ hlib ++ "/EnCL/flangeExported.het"
   let f k v = " . " ++ k ++ " := " ++ show (v * 1000)
   return $ processTemplate f m tmpl
-  
+
 
 getMatchMap :: String -- ^ The filename of the library containing the specs to match
             -> String -- ^ The specname importing the specs to match
@@ -535,14 +535,13 @@ printGE = unlines . map f . Map.toList where
     f (s, ge) = show $ pretty s <> text ":" <+> infoEntry ge
 
 infoEntry :: GlobalEntry -> Doc
-infoEntry ge =
-    case ge of
+infoEntry ge = case ge of
       SpecEntry egs -> text "SpecEntry" <+> parens (infoEGS egs)
-      StructEntry evs -> text "StructEntry"
-      ViewEntry evs -> text "ViewEntry"
-      ArchEntry rs -> text "ArchEntry"
+      ViewOrStructEntry b evs -> text $ (if b then "View" else "Struct")
+        ++ "Entry"
       UnitEntry us -> text "UnitEntry"
-      RefEntry rs -> text "RefEntry"
+      ArchOrRefEntry b rs -> text $ (if b then "Arch" else "Ref")
+        ++ "Entry"
 
 
 infoEGS :: ExtGenSig -> Doc
@@ -565,7 +564,7 @@ infoEGS :: DevGraphNavigator a => a -> ExtGenSig -> (a, Doc)
 infoEGS dgn (ExtGenSig gs ns) = sepBySemis [infoGS gs, infoNS ns]
 
 infoGS :: DevGraphNavigator a => a -> GenSig -> (a, Doc)
-infoGS dgn (GenSig mn1 nsl mn2) = 
+infoGS dgn (GenSig mn1 nsl mn2) =
     (dgn', dl1) = mapAccumL infoMN dgn [mn1, mn2]
 sepByCommas [infoMN mn1, parens $ sepBySemis $ map infoNS nsl, infoMN mn2]
 

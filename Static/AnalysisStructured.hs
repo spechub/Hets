@@ -757,7 +757,7 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
                    (DGLinkInst spname $ Fitted gsis) nP nA'
           , (gmor, nsigA'))
   Fit_view vn afitargs pos -> case lookupGlobalEnvDG vn dg of
-    Just (ViewEntry (ExtViewSig (NodeSig nSrc gsigmaS) mor
+    Just (ViewOrStructEntry _ (ExtViewSig (NodeSig nSrc gsigmaS) mor
       gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar _))))
         -> adjustPos pos $ do
       GMorphism cid _ _ morHom ind <- return mor

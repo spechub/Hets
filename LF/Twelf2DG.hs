@@ -131,7 +131,8 @@ addMorphToDG morph dg nm le =
             emptyNode = EmptyNode $ Logic LF
             genSigTar = GenSig emptyNode [] emptyNode
             extGenSigTar = ExtGenSig genSigTar nodeSigTar
-            gEntry = StructEntry $ ExtViewSig nodeSigSrc gMorph extGenSigTar
+            gEntry = ViewOrStructEntry False
+              $ ExtViewSig nodeSigSrc gMorph extGenSigTar
             dg4 = dg3 { globalEnv = Map.insert name gEntry $ globalEnv dg3 }
             in dg4
 

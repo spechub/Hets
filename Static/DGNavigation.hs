@@ -212,7 +212,7 @@ fromSearchResult sf f dgnav = case sf dgnav of
 getLocalSyms :: DevGraphNavigator a => a -> Node -> Set.Set G_symbol
 getLocalSyms dgnav n =
     case dgn_origin $ getLocalLabel dgnav n of
-      DGBasicSpec _ s -> s
+      DGBasicSpec _ _ s -> s
       _ -> Set.empty
 
 linkSource :: LEdge a -> Node

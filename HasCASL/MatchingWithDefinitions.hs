@@ -66,15 +66,15 @@ initialDefStore e syms = DefinitionStore (e, syms)
 
 instance DefStore DefinitionStore where
     isGood _ _ = True
-    isMapable (DefinitionStore (e, syms)) (opid, typ) =
-        Set.member (idToOpSymbol e opid typ) syms
+    isMapable (DefinitionStore (_, syms)) (opid, typ) =
+        Set.member (idToOpSymbol opid typ) syms
     getDefinition (DefinitionStore (e, _)) = getOpDefinition e
     getEnv (DefinitionStore (e, _)) = e
---    logMsg _ _ = return () 
+--    logMsg _ _ = return ()
     logMsg def d = let e = getEnv def
                    in appendFile "/tmp/matcher.out" $ (++"\n") $ show
                           $ useGlobalAnnos (globAnnos e) d
-                               
+
 
 newtype MatchResult = MatchResult (Subst, [(Term, Term)]) deriving Show
 
@@ -148,7 +148,7 @@ match def mtch t1 t2 =
             -- eventually 2b.
             _ -> logg msg2b $ tryDefExpand2
 
-      (TupleTerm l _, _) -> 
+      (TupleTerm l _, _) ->
           case t2 of
             TupleTerm l' _ | length l == length l' ->
                                logg msg1aT $ matchfold mtch $ zip l l'
@@ -265,7 +265,7 @@ injections l l'
           [x] ->  [ singleton (x, y) | y <- l' ]
           x:xl ->  f [] l'
               where
-                f a (y:b) = f (y:a) b ++ 
+                f a (y:b) = f (y:a) b ++
                             (map (insertMapping (x,y)) $ injections xl $ a ++ b)
                 f _ [] = []
 
@@ -276,7 +276,7 @@ crossInjs = crosscombine combine
 crosscombine :: (a -> a -> a) -> [[a]] -> [a]
 crosscombine _ [] = []
 crosscombine _ [x] = x
-crosscombine f cl@(x:l) 
+crosscombine f cl@(x:l)
     | any null cl  = []
     | otherwise = [ f a b | a <- x, b <- crosscombine f l ]
 
@@ -386,7 +386,7 @@ gsymToSym (G_symbol lid sym) = coerceSymbol lid HasCASL sym
 
    The pattern specification is expected to be a parameterized specification
    containing the constants to be mapped in the actual parameter specification.
-   
+
    The candidates for the matching stem from those operators which have a
    definition and a certain type satisfying the given type predicate.
    A typical such predicate is:

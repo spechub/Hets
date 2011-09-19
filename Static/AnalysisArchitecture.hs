@@ -89,7 +89,7 @@ anaArchSpec lgraph ln dg opts sharedCtx nP archSp = case archSp of
                            (replaceAnnoted uexpr' uexpr) pos)
   Group_arch_spec asp _ -> anaArchSpec lgraph ln dg opts sharedCtx nP (item asp)
   Arch_spec_name asn@(Token astr pos) -> case lookupGlobalEnvDG asn dg of
-            Just (ArchEntry asig@(BranchRefSig
+            Just (ArchOrRefEntry True asig@(BranchRefSig
                         (NPBranch n f) (UnitSig nsList resNs _, _))) -> do
               let (rN, dg', asig') =
                         case nP of
@@ -713,7 +713,7 @@ anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
             Just (UnitEntry _) -> True
             Just (SpecEntry _) -> True
               -- this is needed because there are no REF_NAME in REF_SPEC
-            Just (RefEntry _) -> True
+            Just (ArchOrRefEntry False _) -> True
             _ -> False ->
        {- if argspecs are empty and resultspec is a name of unit spec
           then this should be converted to a Spec_name -}
@@ -744,7 +744,7 @@ anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
                   JustNode n -> Just n
                   _ -> Nothing
       return (mkRefSigFromUnit $ UnitSig args nsig uSig, dg, usp)
-    Just (RefEntry rsig) ->
+    Just (ArchOrRefEntry False rsig) ->
       case rN of
        Nothing -> let
              p = getPointerFromRef rsig
@@ -772,7 +772,7 @@ anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
                                  np' = compPointer (NPUnit x) p'
                              in return (setPointerInRef rsig np', dg', usp)
                        _ -> error "can't compose signatures!"
-    _ -> fatal_error (ustr ++ " is not an unit specification") pos
+    _ -> fatal_error (ustr ++ " is not a unit specification") pos
   Closed_unit_spec usp' _ -> do
     curl <- lookupCurrentLogic "UnitSpec" lgraph
     anaUnitSpec lgraph ln dg opts (EmptyNode curl) rN usp'

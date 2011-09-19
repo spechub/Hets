@@ -347,8 +347,8 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
                            Map.insert (show asn) diag
                            $ archSpecDiags dg''}
             return (asd', dg3
-               { globalEnv = Map.insert asn (ArchEntry archSig) genv },
-                      libenv, lg)
+              { globalEnv = Map.insert asn (ArchOrRefEntry True archSig) genv }
+              , libenv, lg)
   Unit_spec_defn usn usp pos -> do
     let usstr = tokStr usn
     analyzing opts $ "unit spec " ++ usstr
@@ -375,9 +375,9 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
     if Map.member rn genv
       then liftR $ plain_error (itm, dg', libenv, lg)
                (alreadyDefined rnstr) pos
-      else return ( rsd'
-                  , dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
-                  , libenv, lg)
+      else return ( rsd', dg'
+        { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv }
+        , libenv, lg)
   Logic_decl logN pos -> do
     putMessageIORes opts 1 $ showDoc itm ""
     (mth, newLg) <- liftR
@@ -465,7 +465,7 @@ anaViewDefn lg ln libenv dg opts vn gen vt gsis pos = do
                 (if voidView then dg'' else insLink dg'' gmor globalThm
                  (DGLinkView vn $ Fitted gsis) nodeS nodeT)
                 -- 'LeftOpen' for conserv correct?
-                { globalEnv = Map.insert vn (ViewEntry vsig) genv }
+                { globalEnv = Map.insert vn (ViewOrStructEntry True vsig) genv }
                , libenv, lg)
 
 {- | analyze a VIEW_TYPE
@@ -512,17 +512,13 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
       let (dg1, extsig1) = refExtsig libenv ln dg newName extsig
           genv1 = Map.insert new (SpecEntry extsig1) genv
        in return (genv1, dg1)
-    StructEntry vsig ->
+    ViewOrStructEntry b vsig ->
       let (dg1, vsig1) = refViewsig libenv ln dg newName vsig
-          genv1 = Map.insert new (StructEntry vsig1) genv
+          genv1 = Map.insert new (ViewOrStructEntry b vsig1) genv
       in return (genv1, dg1)
-    ViewEntry vsig ->
-      let (dg1, vsig1) = refViewsig libenv ln dg newName vsig
-          genv1 = Map.insert new (ViewEntry vsig1) genv
-      in return (genv1, dg1)
-    ArchEntry _asig -> anaErr "arch spec download"
     UnitEntry _usig -> anaErr "unit spec download"
-    RefEntry _rsig -> anaErr "ref spec download"
+    ArchOrRefEntry b _rsig -> anaErr $ (if b then "arch" else "ref")
+      ++ " spec download"
 
 refNodesig :: LibEnv -> LibName -> DGraph -> (NodeName, NodeSig)
            -> (DGraph, NodeSig)

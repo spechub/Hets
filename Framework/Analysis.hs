@@ -9,7 +9,7 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module Framework.Analysis 
+module Framework.Analysis
      ( anaLogicDef
      , anaComorphismDef
      ) where
@@ -195,14 +195,14 @@ anaComorphismDef cd dg =
 anaComorphismDefH :: LogicFram lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
-                     => lid -> ComorphismDef -> DGraph -> IO DGraph 
+                     => lid -> ComorphismDef -> DGraph -> IO DGraph
 anaComorphismDefH ml (ComorphismDef nc m sL tL sM pM mM) dg =
    let c = tokStr nc
        s = tokStr sL
        t = tokStr tL
    in case anaComH ml (ComorphismDef nc m sL tL sM pM mM) dg of
         Result _ (Just (symM, pfM, modM)) -> do
-             buildComorphism ml c s t symM pfM modM 
+             buildComorphism ml c s t symM pfM modM
              addComorphism2ComorphismList c
              return $ addComorphismDef2DG (ComorphismDef nc m sL tL sM pM mM) dg
         _ -> error ""
@@ -210,7 +210,7 @@ anaComorphismDefH ml (ComorphismDef nc m sL tL sM pM mM) dg =
 anaComH :: LogicFram lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
-                     => lid -> ComorphismDef -> DGraph -> Result (morphism, 
+                     => lid -> ComorphismDef -> DGraph -> Result (morphism,
                             morphism, morphism)
 anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
      let sLName = tokStr sL
@@ -221,7 +221,7 @@ anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
          tLSyn = getMorphL ml tLName "Syntax"
          tLPf = getMorphL ml tLName "Proof"
          tLMod = getMorphL ml tLName "Model" in do
-     synM <- lookupMorph ml sM dg 
+     synM <- lookupMorph ml sM dg
      pfM <- lookupMorph ml pM dg
      modM <- lookupMorph ml mM dg
      if (cod sLSyn /= dom synM) then error $ "the domain of the syntax morphism has to be the syntax of the source logic.\n"
@@ -235,13 +235,13 @@ anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
                                                                              else case ((composeMorphisms synM tLMod), (composeMorphisms sLPf modM)) of
                                                                                       (Result _ comM3, Result _ comM4) -> if (comM3 /= comM4) then error "the syntax - model diagram does not commute.\n"
                                                                                                                            else return (synM, pfM, modM)
-                                                                                                                           
+
 getMorphL ::  LogicFram lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> String -> String -> morphism
-getMorphL ml logicName fileName = 
-     let file = logicName ++ "/" ++ fileName ++ ".hs"  
+getMorphL ml logicName fileName =
+     let file = logicName ++ "/" ++ fileName ++ ".hs"
      in read_morphism ml file
 
 addComorphismDef2DG :: ComorphismDef -> DGraph -> DGraph
@@ -254,23 +254,23 @@ addComorphismDef2DG cd dg =
       gth = noSensGTheory FrameworkCom extSign startSigId
       nodeLabel = newInfoNodeLab nodeName info gth
       dg1 = insNodeDG (node, nodeLabel) dg
-      
+
       emptyNode = EmptyNode $ Logic FrameworkCom
       genSig = GenSig emptyNode [] emptyNode
       nodeSig = NodeSig node $ G_sign FrameworkCom extSign startSigId
       gEntry = SpecEntry $ ExtGenSig genSig nodeSig
       dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
   in dg2
-                          
-     
+
+
 buildComorphism :: LogicFram lid sublogics basic_spec sentence symb_items
                     symb_map_items sign morphism symbol raw_symbol proof_tree
-              => lid -> String -> String -> String 
+              => lid -> String -> String -> String
                    -> morphism -> morphism -> morphism -> IO ()
-buildComorphism ml c s t synM pfM modM = do 
+buildComorphism ml c s t synM pfM modM = do
   exists <- doesFileExist ("Comorphisms" ++ "/" ++ c ++ ".hs")
-  if exists 
-     then error $ "The comorphism " ++ c ++ "already exists.\n" 
+  if exists
+     then error $ "The comorphism " ++ c ++ "already exists.\n"
      else do
   let comorphismC = write_comorphism ml c s t synM pfM modM
   writeFile ("Comorphisms" ++ "/" ++ c ++ ".hs") comorphismC
@@ -285,10 +285,10 @@ addComorphism2ComorphismList c = do
       Right contentsNew -> writeFile file contentsNew
       Left er -> error $ show er
 
-    
+
 -- ----------------------------------------------------------------------------
 --                    Auxiliary functions
-    
+
 -- looks up a signature by name
 lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
                    sign morphism symbol raw_symbol proof_tree
@@ -311,8 +311,7 @@ lookupMorph :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
                => lid -> MORPH_NAME -> DGraph -> Result morphism
 lookupMorph l n dg = do
   let extView = case lookupGlobalEnvDG n dg of
-                  Just (ViewEntry ev) -> ev
-                  Just (StructEntry ev) -> ev
+                  Just (ViewOrStructEntry _ ev) -> ev
                   _ -> error $ "The morphism " ++ (show n) ++
                                " could not be found."
   case extView of
@@ -365,7 +364,7 @@ parserc :: String -> AParser st String
 parserc c = do
      let com_imp = "import " ++ "Comorphisms." ++ c
      let com_c = "Comorphism " ++ c
-     
+
      header <- skipUntil "module"
      mod_decl <- do m <- asStr "module"
                     n <- moduleName
