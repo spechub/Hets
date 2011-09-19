@@ -234,7 +234,8 @@ anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
 anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
   (libItems', dg', libenv', _) <- foldM (anaLibItemAux opts topLns ln)
-      ([], dg { globalAnnos = gannos }, libenv, lgraph) (map item alibItems)
+      ([], dg { globalAnnos = gannos }, libenv
+      , setCurLogic (defLogic opts) lgraph) (map item alibItems)
   let dg1 = computeDGraphTheories libenv' $ markFree libenv' $
             markHiding libenv' dg'
       newLD = Lib_defn ln
