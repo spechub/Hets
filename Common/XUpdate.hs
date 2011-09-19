@@ -169,9 +169,12 @@ anaXUpdate e = let
             Just i -> do
               cs <- mapM addXElem $ elChildren e
               let ps = getPaths p
-              if all ((== TElement) . finalPrincipalNodeType) ps then
-                  return $ Change (Add i cs) p
-                else fail $ "expecting element path: " ++ sel
+              {- TODO: due to a bug in .diff-generation, this safeguards has
+              been removed. Usually, only Elements should be allowed as path
+              for insert-operations.
+              unless (all ((== TElement) . finalPrincipalNodeType) ps)
+                $ fail $ "expecting element path: " ++ sel -}
+              return $ Change (Add i cs) p
             Nothing -> failX "no xupdate modification" q
   else failX "no xupdate qualified element" q
 
