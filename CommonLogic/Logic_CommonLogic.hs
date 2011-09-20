@@ -63,18 +63,18 @@ instance Sentences CommonLogic
 
 instance Syntax CommonLogic
     BASIC_SPEC
-    NAME
+    SYMB_ITEMS
     SYMB_MAP_ITEMS
     where
       parse_basic_spec CommonLogic = Just basicSpec
-      parse_symb_items CommonLogic = Nothing -- Just symbItems -- TODO
-      parse_symb_map_items CommonLogic = Nothing -- Just symbMapItems -- TODO
+      parse_symb_items CommonLogic = Just symbItems
+      parse_symb_map_items CommonLogic = Just symbMapItems
 
 instance Logic CommonLogic
     CommonLogicSL     -- Sublogics
     BASIC_SPEC        -- basic_spec
     TEXT              -- sentence
-    NAME              -- symb_items
+    SYMB_ITEMS        -- symb_items
     SYMB_MAP_ITEMS    -- symb_map_items
     Sign              -- sign
     Morphism          -- morphism
@@ -95,7 +95,7 @@ instance Logic CommonLogic
 instance StaticAnalysis CommonLogic
     BASIC_SPEC
     TEXT
-    NAME
+    SYMB_ITEMS
     SYMB_MAP_ITEMS
     Sign
     Morphism
@@ -149,6 +149,9 @@ instance MinSublogic CommonLogicSL Morphism where
 instance MinSublogic CommonLogicSL SYMB_MAP_ITEMS where
     minSublogic = sl_symmap bottom
 
+instance MinSublogic CommonLogicSL SYMB_ITEMS where
+    minSublogic = sl_symitems bottom
+
 instance ProjectSublogic CommonLogicSL BASIC_SPEC where
   projectSublogic = prBasicSpec
 
@@ -157,6 +160,9 @@ instance ProjectSublogicM CommonLogicSL NAME where
 
 instance ProjectSublogicM CommonLogicSL SYMB_MAP_ITEMS where
   projectSublogicM = prSymMapM
+
+instance ProjectSublogicM CommonLogicSL SYMB_ITEMS where
+  projectSublogicM = prSymItemsM
 
 instance ProjectSublogic CommonLogicSL Sign where
   projectSublogic = prSig

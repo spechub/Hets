@@ -61,13 +61,13 @@ instance Language CommonLogic2CASL where
   language_name CommonLogic2CASL = "CommonLogic2CASL"
 
 instance Comorphism
-    CommonLogic2CASL        -- comorphism
-    ClLogic.CommonLogic     -- lid domain
-    ClSl.CommonLogicSL   -- sublogics codomain
-    ClBasic.BASIC_SPEC              -- Basic spec domain
-    ClBasic.TEXT                    -- sentence domain
-    ClBasic.NAME                    -- symbol items domain
-    ClBasic.SYMB_MAP_ITEMS          -- symbol map items domain
+    CommonLogic2CASL       -- comorphism
+    ClLogic.CommonLogic    -- lid domain
+    ClSl.CommonLogicSL     -- sublogics codomain
+    ClBasic.BASIC_SPEC     -- Basic spec domain
+    ClBasic.TEXT           -- sentence domain
+    ClBasic.SYMB_ITEMS     -- symbol items domain
+    ClBasic.SYMB_MAP_ITEMS -- symbol map items domain
     ClSign.Sign            -- signature domain
     ClMor.Morphism         -- morphism domain
     ClSymbol.Symbol        -- symbol domain

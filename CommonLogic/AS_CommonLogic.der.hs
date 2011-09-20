@@ -106,8 +106,17 @@ data NAME_OR_SEQMARK = Name NAME
                      | SeqMark SEQ_MARK
                        deriving (Show, Eq, Ord)
 
-data SYMB_MAP_ITEMS = Symb_map_items [NAME_OR_SEQMARK] Id.Range
+data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP] Id.Range
                       deriving (Show, Eq)
+
+data SYMB_OR_MAP = Symb NAME_OR_SEQMARK
+                 | Symb_mapN NAME NAME Id.Range
+                 | Symb_mapS SEQ_MARK SEQ_MARK Id.Range
+                   deriving (Show, Ord, Eq)
+
+data SYMB_ITEMS = Symb_items [NAME_OR_SEQMARK] Id.Range
+                  -- pos: SYMB_KIND, commas
+                  deriving (Show, Eq)
 
 -- pretty printing using CLIF
 
@@ -127,8 +136,12 @@ instance Pretty COMMENT where
    pretty = printComment
 instance Pretty NAME_OR_SEQMARK where
    pretty = printNameOrSeqMark
+instance Pretty SYMB_OR_MAP where
+   pretty = printSymbOrMap
 instance Pretty SYMB_MAP_ITEMS where
    pretty = printSymbMapItems
+instance Pretty SYMB_ITEMS where
+   pretty = printSymbItems
 
 printSentence :: SENTENCE -> Doc
 printSentence s = case s of
@@ -178,8 +191,18 @@ printNameOrSeqMark s = case s of
   SeqMark x -> pretty x
   -- Alt x y -> pretty x <+> pretty y
 
+printSymbOrMap :: SYMB_OR_MAP -> Doc
+printSymbOrMap (Symb nos) = pretty nos
+printSymbOrMap (Symb_mapN source dest  _) =
+  pretty source <+> mapsto <+> pretty dest
+printSymbOrMap (Symb_mapS source dest  _) =
+  pretty source <+> mapsto <+> pretty dest
+
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
 printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
+
+printSymbItems :: SYMB_ITEMS -> Doc
+printSymbItems (Symb_items xs _) = fsep $ map pretty xs
 
 instance Pretty TEXT where
    pretty = printText

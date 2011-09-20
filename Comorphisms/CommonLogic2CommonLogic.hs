@@ -51,7 +51,7 @@ instance Comorphism
     Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
     TEXT                    -- sentence domain
-    NAME                    -- symbol items domain
+    SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symbol map items domain
     Sign.Sign               -- signature domain
     Mor.Morphism            -- morphism domain
@@ -62,7 +62,7 @@ instance Comorphism
     Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
     TEXT                    -- sentence domain
-    NAME                    -- symbol items domain
+    SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symbol map items domain
     Sign.Sign               -- signature domain
     Mor.Morphism            -- morphism domain

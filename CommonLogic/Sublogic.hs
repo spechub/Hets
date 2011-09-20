@@ -28,12 +28,14 @@ module CommonLogic.Sublogic
     , sl_sym                        -- sublogic for symbols
     , sl_mor                        -- sublogic for morphisms
     , sl_symmap                     -- sublogic for symbol map items
+    , sl_symitems                   -- sublogic for symbol items
     , sublogic_text                 -- sublogic for a text
     , sublogic_name                 -- sublogic for a text
     , prSymbolM
     , prSig
     , prMor
     , prSymMapM
+    , prSymItemsM
     , prName
     , prBasicSpec
     , isProp
@@ -319,6 +321,10 @@ sl_basic_spec :: CommonLogicSL -> AS.BASIC_SPEC -> CommonLogicSL
 sl_basic_spec cs (AS.Basic_spec spec) =
   comp_list $ map ((sl_basic_items cs) . AS_Anno.item) spec
 
+sl_symitems :: CommonLogicSL -> AS.SYMB_ITEMS -> CommonLogicSL
+sl_symitems _ (AS.Symb_items noss _) =
+  comp_list $ map (sl_nameOrSeqmark Set.empty bottom) noss
+
 -------------------------------------------------------------------------------
 -- Conversion functions to String                                            --
 -------------------------------------------------------------------------------
@@ -336,6 +342,9 @@ sublogics_name f = case format f of
 
 prSymbolM :: CommonLogicSL -> Symbol.Symbol -> Maybe Symbol.Symbol
 prSymbolM _ sym = Just sym
+
+prSymItemsM :: CommonLogicSL -> AS.SYMB_ITEMS -> Maybe AS.SYMB_ITEMS
+prSymItemsM = undefined
 
 prSig :: CommonLogicSL -> Sign.Sign -> Sign.Sign
 prSig _ sig = sig

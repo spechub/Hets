@@ -70,7 +70,7 @@ instance Comorphism
     ClSl.CommonLogicSL      -- sublogics codomain
     BASIC_SPEC              -- Basic spec codomain
     TEXT                    -- sentence codomain
-    NAME                    -- symbol items codomain
+    SYMB_ITEMS              -- symbol items codomain
     SYMB_MAP_ITEMS          -- symbol map items codomain
     Sign                    -- signature codomain
     CLM.Morphism            -- morphism codomain

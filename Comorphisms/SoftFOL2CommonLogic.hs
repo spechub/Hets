@@ -65,7 +65,7 @@ instance Comorphism SoftFOL2CommonLogic
     ClSL.CommonLogicSL       -- sublogics codomain
     BASIC_SPEC               -- Basic spec domain
     TEXT                     -- sentence domain
-    NAME                     -- symbol items domain
+    SYMB_ITEMS               -- symb_items
     SYMB_MAP_ITEMS           -- symbol map items domain
     ClSign.Sign              -- signature domain
     ClMor.Morphism           -- morphism domain
