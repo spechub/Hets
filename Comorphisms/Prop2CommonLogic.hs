@@ -107,11 +107,11 @@ mapTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
              -> Result (ClSign.Sign, [AS_Anno.Named TEXT])
 mapTheory (srcSign, srcFormulas) =
   return (mapSign srcSign,
-        map ((uncurry AS_Anno.makeNamed) . elimModSnd . senAndName) srcFormulas)
+        map ((uncurry AS_Anno.makeNamed) . transSnd . senAndName) srcFormulas)
   where senAndName :: AS_Anno.Named PBasic.FORMULA -> (String, PBasic.FORMULA)
         senAndName f = (AS_Anno.senAttr f, AS_Anno.sentence f)
-        elimModSnd :: (String, PBasic.FORMULA) -> (String, TEXT)
-        elimModSnd (s, f) = (s, translate f)
+        transSnd :: (String, PBasic.FORMULA) -> (String, TEXT)
+        transSnd (s, f) = (s, translate f)
 
 translate :: PBasic.FORMULA -> TEXT
 translate f = Text [Sentence singletonUniv, Sentence $ toSen f] nullRange
