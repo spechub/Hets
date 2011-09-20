@@ -344,7 +344,12 @@ prSymbolM :: CommonLogicSL -> Symbol.Symbol -> Maybe Symbol.Symbol
 prSymbolM _ sym = Just sym
 
 prSymItemsM :: CommonLogicSL -> AS.SYMB_ITEMS -> Maybe AS.SYMB_ITEMS
-prSymItemsM = undefined
+prSymItemsM cs si@(AS.Symb_items noss r) = case format cs of
+  FullCommonLogic -> Just si
+  _ -> Just $ AS.Symb_items (filter isName noss) r
+  where isName nos = case nos of
+          AS.Name _ -> True
+          _ -> False
 
 prSig :: CommonLogicSL -> Sign.Sign -> Sign.Sign
 prSig _ sig = sig
