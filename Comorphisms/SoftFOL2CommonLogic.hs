@@ -108,19 +108,22 @@ mapTheory :: (FOLSign.Sign, [AS_Anno.Named FOLSign.Sentence])
              -> Result (ClSign.Sign, [AS_Anno.Named TEXT])
 mapTheory (srcSign, srcFormulas) =
   return (mapSign srcSign,
-        map ((uncurry AS_Anno.makeNamed) . transSnd . senAndName) srcFormulas)
+        AS_Anno.makeNamed "SoftFOL_Sign_Trans" (transSign srcSign)
+        : map ((uncurry AS_Anno.makeNamed) . transSnd . senAndName) srcFormulas)
   where senAndName :: AS_Anno.Named FOLSign.Sentence -> (String, FOLSign.Sentence)
         senAndName f = (AS_Anno.senAttr f, AS_Anno.sentence f)
         transSnd :: (String, FOLSign.Sentence) -> (String, TEXT)
         transSnd (s, f) = (s, translate srcSign f)
 
+transSign :: FOLSign.Sign -> TEXT
+transSign s = Text ( sortRelPhrs (Rel.toMap $ FOLSign.sortRel s)
+                  ++ funcMapPhrs (FOLSign.funcMap s)
+                  ++ predMapPhrs (FOLSign.predMap s)
+                  ) nullRange
+
 -- translates a SoftFOL-theory to a CL-Text
 translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT
-translate s f = Text ( sortRelPhrs (Rel.toMap $ FOLSign.sortRel s)
-                     ++ funcMapPhrs (FOLSign.funcMap s)
-                     ++ predMapPhrs (FOLSign.predMap s)
-                     ++ [Sentence $ toSen s f]
-                     ) nullRange
+translate s f = Text [Sentence $ toSen s f] nullRange
 
 -- creates one-sentence-phrases: forall x. (subSort x) => (superSort x)
 sortRelPhrs :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
@@ -162,7 +165,7 @@ funcMapPhrs m =
     ) ++ phrs) [] m
 
 -- creates one-sentence-phrases:
--- forall x y z. (if (not (and (T1 x) (T2 y) (T3 z))) (not (P[x,y,z])))
+-- forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z))
 predMapPhrs :: Map.Map Token (Set.Set [Token]) -> [PHRASE]
 predMapPhrs m =
   Map.foldrWithKey (\prd set phrs -> (
@@ -170,13 +173,9 @@ predMapPhrs m =
       let argsAndNames = typesWithIndv args
       in  Sentence (Quant_sent (Universal (map (Name . snd) argsAndNames) (
               Bool_sent (Implication
-                  (Bool_sent (Disjunction $
-                      map (\(p, x) ->
-                            Bool_sent (Negation $ predicateNames p [x]) nullRange
-                          ) argsAndNames
-                    ) nullRange)
-                  (Bool_sent (Negation $
-                      predicateNames prd (map snd argsAndNames)
+                  (predicateNames prd (map snd argsAndNames))
+                  (Bool_sent (Conjunction $
+                      map (\(p, x) -> predicateNames p [x]) argsAndNames
                     ) nullRange)
                 ) nullRange
               )) nullRange)
