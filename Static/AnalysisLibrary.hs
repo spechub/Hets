@@ -384,13 +384,14 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
       $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lg
     case mth of
       Nothing -> return (itm, dg, libenv, newLg)
-      Just (libName, _, (n, _)) -> do
-        -- properly compute theory
-        let newLibEnv = computeLibEnvTheories (Map.insert currLn dg libenv)
-            _lbl = labDG (lookupDGraph libName newLibEnv) n
-            newDG = lookupDGraph currLn newLibEnv
+      Just (s, (libName, refDG, (_, lbl))) -> do
             -- store th-lbl in newDG
-        return (itm, newDG, newLibEnv, newLg)
+        let dg2 = if libName /= currLn then
+              let (genv, newDG) = refExtsigAndInsert libenv libName refDG
+                    (globalEnv dg, dg) (getName $ dgn_name lbl) s
+              in newDG { globalEnv = genv }
+              else dg
+        return (itm, dg2, libenv, newLg)
   Download_items ln items pos -> if Set.member ln topLns then
     liftR $ mkError "illegal cyclic library import"
       $ Set.map getLibId topLns
@@ -500,7 +501,6 @@ anaErr f = error $ "*** Analysis of " ++ f ++ " is not yet implemented!"
 anaItemNameOrMap1 :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
   -> (SIMPLE_ID, SIMPLE_ID) -> Result (GlobalEnv, DGraph)
 anaItemNameOrMap1 libenv ln refDG (genv, dg) (old, new) = do
-  let newName = makeName new
   entry <- maybeToResult (tokPos old)
             (tokStr old ++ " not found") (Map.lookup old $ globalEnv refDG)
   maybeToResult (tokPos new) (tokStr new ++ " already used")
@@ -509,11 +509,9 @@ anaItemNameOrMap1 libenv ln refDG (genv, dg) (old, new) = do
     Just _ -> Nothing
   case entry of
     SpecEntry extsig ->
-      let (dg1, extsig1) = refExtsig libenv ln refDG dg newName extsig
-          genv1 = Map.insert new (SpecEntry extsig1) genv
-       in return (genv1, dg1)
+      return $ refExtsigAndInsert libenv ln refDG (genv, dg) new extsig
     ViewOrStructEntry b vsig ->
-      let (dg1, vsig1) = refViewsig libenv ln refDG dg newName vsig
+      let (dg1, vsig1) = refViewsig libenv ln refDG dg (makeName new) vsig
           genv1 = Map.insert new (ViewOrStructEntry b vsig1) genv
       in return (genv1, dg1)
     UnitEntry _usig -> anaErr "unit spec download"
@@ -540,6 +538,13 @@ refNodesig libenv refln refDG dg
 refNodesigs :: LibEnv -> LibName -> DGraph -> DGraph -> [(NodeName, NodeSig)]
             -> (DGraph, [NodeSig])
 refNodesigs libenv ln = mapAccumR . refNodesig libenv ln
+
+refExtsigAndInsert  :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
+  -> SIMPLE_ID -> ExtGenSig -> (GlobalEnv, DGraph)
+refExtsigAndInsert libenv ln refDG (genv, dg) new extsig =
+  let (dg1, extsig1) = refExtsig libenv ln refDG dg (makeName new) extsig
+      genv1 = Map.insert new (SpecEntry extsig1) genv
+  in (genv1, dg1)
 
 refExtsig :: LibEnv -> LibName -> DGraph -> DGraph -> NodeName -> ExtGenSig
           -> (DGraph, ExtGenSig)

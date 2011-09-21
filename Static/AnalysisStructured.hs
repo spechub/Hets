@@ -150,15 +150,21 @@ createConsLink lk conser lg dg nsig (NodeSig node gsig) orig = case nsig of
                      ConsStatus c d th -> ConsStatus (max c conser) d th }}) dg
 
 getNamedSpec :: SPEC_NAME -> LibName -> DGraph -> LibEnv
-  -> Result (LibName, DGraph, LNode DGNodeLab)
+  -> Result (ExtGenSig, (LibName, DGraph, LNode DGNodeLab))
 getNamedSpec sp ln dg libenv = case lookupGlobalEnvDG sp dg of
-          Just (SpecEntry (ExtGenSig _ (NodeSig n _))) ->
-              return $ lookupRefNode libenv ln dg n
+          Just (SpecEntry s@(ExtGenSig (GenSig _ ps _) (NodeSig n _))) -> do
+            unless (null ps)
+              $ mkError "base theory must not be parameterized" sp
+            let t@(refLib, refDG, _) = lookupRefNode libenv ln dg n
+            if refLib == ln then return (s, t) else
+                case lookupGlobalEnvDG sp refDG of
+                  Just (SpecEntry s2) -> return (s2, t)
+                  _ -> mkError "theory reference error" sp
           _ -> mkError "unknown theory" sp
 
 anaSublogic :: HetcatsOpts -> Logic_name -> LibName -> DGraph -> LibEnv
   -> LogicGraph
-  -> Result (Maybe (LibName, DGraph, LNode DGNodeLab), LogicGraph)
+  -> Result (Maybe (ExtGenSig, (LibName, DGraph, LNode DGNodeLab)), LogicGraph)
 anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
     logN@(Logic lid) <- lookupLogic "" (tokStr lt) lG
     mgs <- case ms of
@@ -179,7 +185,7 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
       Nothing -> return (Nothing, lG1)
       Just sp -> do
         let ssp = tokStr sp
-        t@(libName, _, (_, lbl)) <- case Map.lookup logicLibN libenv of
+        (s, t@(libName, _, (_, lbl))) <- case Map.lookup logicLibN libenv of
           Just dg2 | logicLibN /= ln -> getNamedSpec sp logicLibN dg2 libenv
           _ -> getNamedSpec sp ln dg libenv
         case sublogicOfTh $ globOrLocTh lbl of
@@ -206,12 +212,12 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
                     ++ showDoc prevLib "' and not from '"
                     ++ showDoc libName "'!"
                 unless (nName == prevName)
-                  $ fail $ "the original theory name for'" ++ ssp
+                  $ fail $ "the original theory name for '" ++ ssp
                     ++ "' should be '"
                     ++ prevName ++ "' and not '"
                     ++ nName ++ "'!"
                 return lMap
-            return (Just t
+            return (Just (s, t)
               , lG1
               { sublogicBasedTheories = Map.insert logN nMap sbMap })
 
