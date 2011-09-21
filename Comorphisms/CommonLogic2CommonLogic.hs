@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  Comorphism from CommonLogic to CommonLogic
-Copyright   :  (c) Uni Bremen 2011
+Copyright   :  (c) Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  eugenk@informatik.uni-bremen.de

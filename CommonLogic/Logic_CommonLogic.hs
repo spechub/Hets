@@ -2,10 +2,10 @@
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for common logic
-Copyright   :  (c) Karl Luc, DFKI Bremen 2010
+Copyright   :  (c) Karl Luc, DFKI Bremen 2010, Eugen Kuksa and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  kluc@informatik.uni-bremen.de
+Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
@@ -80,7 +80,7 @@ instance Logic CommonLogic
     Morphism          -- morphism
     Symbol            -- symbol
     Symbol            -- raw_symbol
-    ProofTree                -- proof_tree
+    ProofTree         -- proof_tree
     where
        all_sublogics CommonLogic = sublogics_all
        empty_proof_tree CommonLogic = emptyProofTree

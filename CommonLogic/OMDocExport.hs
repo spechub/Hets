@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  CommonLogic-to-OMDoc conversion
-Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2009
+Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2009, Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  i.ignatov@jacobs-university.de
+Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 

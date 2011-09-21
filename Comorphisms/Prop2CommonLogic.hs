@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  Coding of Propositional into CommonLogic
-Copyright   :  (c) Eugen Kuksa and Uni Bremen 2007
+Copyright   :  (c) Eugen Kuksa and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  eugenk@informatik.uni-bremen.de

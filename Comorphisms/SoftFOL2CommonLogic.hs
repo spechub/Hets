@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  Coding of SoftFOL into CommonLogic
-Copyright   :  (c) Eugen Kuksa and Uni Bremen 2007
+Copyright   :  (c) Eugen Kuksa and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  eugenk@informatik.uni-bremen.de
@@ -148,19 +148,23 @@ funcMapPhrs m =
   Map.foldrWithKey (\f set phrs -> (
     Set.fold (\(args, res) phrs2 ->
       let argsAndNames = typesWithIndv args
-      in  Sentence (Quant_sent (Universal (map (Name . snd) argsAndNames) (
-              Bool_sent (Implication
-                  (Bool_sent (Conjunction $
-                      map (\(p, x) -> predicateNames p [x]) argsAndNames
-                    ) nullRange)
-                  (Atom_sent (Atom
-                      (Name_term res)
-                      [Term_seq $ Funct_term (Name_term f) (
-                          map (Term_seq . Name_term . snd) argsAndNames
-                        ) nullRange]
-                    ) nullRange)
-                ) nullRange
-              )) nullRange)
+      in  Sentence (
+            if null args
+            then predicateNames res [f]
+            else 
+              Quant_sent (Universal (map (Name . snd) argsAndNames) (
+                Bool_sent (Implication
+                    (Bool_sent (Conjunction $
+                        map (\(p, x) -> predicateNames p [x]) argsAndNames
+                      ) nullRange)
+                    (Atom_sent (Atom
+                        (Name_term res)
+                        [Term_seq $ Funct_term (Name_term f) (
+                            map (Term_seq . Name_term . snd) argsAndNames
+                          ) nullRange]
+                      ) nullRange)
+                  ) nullRange
+                )) nullRange)
       : phrs2) [] set
     ) ++ phrs) [] m
 
