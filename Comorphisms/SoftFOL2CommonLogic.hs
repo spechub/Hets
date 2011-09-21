@@ -217,12 +217,7 @@ toSen s t = case t of
         _ -> error $
               "equivalence can only be applied to two arguments, but found: "
               ++ show t
-    FOLSign.SPID -> predicateSPTerms (Name_term idName) args
-    FOLSign.SPDiv -> predicateSPTerms (Name_term divName) args
-    FOLSign.SPComp -> predicateSPTerms (Name_term compName) args
-    FOLSign.SPSum -> predicateSPTerms (Name_term sumName) args
-    FOLSign.SPConv -> predicateSPTerms (Name_term convName) args
-    FOLSign.SPCustomSymbol _ -> predicateSPTerms (symToTerm sym) args
+    _ -> predicateSPTerms (symToTerm sym) args
 
 -- | converts SPEquation to a CL-Equation
 toEquation :: (FOLSign.SPTerm, FOLSign.SPTerm) -> SENTENCE
@@ -240,7 +235,8 @@ predicateTerm :: NAME -> TERM -> SENTENCE
 predicateTerm p xs = Atom_sent (Atom (Name_term p) [Term_seq xs]) nullRange
 
 -- Converts a quantified FOL-term to a CL-Quant_sent. Quantifier arguments
--- contain only the inner-most arguments  in order to convert sentences like
+-- contain only the inner-most arguments  of the SoftFOL Quantifier in order to
+-- convert sentences like
 -- @forall s(Y1), t(u(Y2)) .  Y1 /= Y2@
 -- to
 -- @forall Y1, Y2 . S(Y1) & T(u(Y2)) & U(Y2) => Y1 /= Y2@
@@ -283,7 +279,9 @@ typeSentenceGetTypes :: FOLSign.Sign -> FOLSign.SPIdentifier -> [FOLSign.SPTerm]
 typeSentenceGetTypes sig symN args =
   case (Map.lookup symN $ FOLSign.funcMap sig) of
     Nothing -> case (Map.lookup symN $ FOLSign.predMap sig) of
-      Nothing -> clTrue --error $ "symbol has no type: " ++ show symN
+      Nothing -> case (Map.lookup symN $ FOLSign.sortMap sig) of
+        Nothing -> error $ "symbol has no type: " ++ show symN
+        Just _ -> typeSentencesSort args symN
       Just ts -> typeSentencesDisjPred sig args $ Set.elems ts
     Just ts -> typeSentencesDisjFunc sig args $ Set.elems ts
 
@@ -323,6 +321,15 @@ typeSentencesDisjFunc sig args typeSet = case typeSet of
                 error "quantification not allowed in quantifier-argument list"
             ) $ zip args t
           ) nullRange
+
+typeSentencesSort :: [FOLSign.SPTerm] -> FOLSign.SPIdentifier
+                     -> SENTENCE
+typeSentencesSort args srt = case args of
+  [] -> error $ "no arguments for sort " ++ show srt
+  [arg] -> predicateTerm srt (trmToFunctTrm arg)
+  _ -> Bool_sent (Conjunction $
+          map (\arg -> predicateTerm srt (trmToFunctTrm arg)) args
+        ) nullRange
 
 trmToName :: FOLSign.SPTerm -> NAME
 trmToName t  = case t of
