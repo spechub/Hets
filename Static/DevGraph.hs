@@ -387,7 +387,10 @@ isCofreeEdge edge = case edge of
 data GenSig = GenSig MaybeNode [NodeSig] MaybeNode deriving Show
 
 -- | genericity and body
-data ExtGenSig = ExtGenSig GenSig NodeSig deriving Show
+data ExtGenSig = ExtGenSig
+  { genericity :: GenSig
+  , extGenBody :: NodeSig }
+  deriving Show
 
 -- | source, morphism, parameterized target
 data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
@@ -801,6 +804,7 @@ data DGraph = DGraph
   , optLibDefn :: Maybe LIB_DEFN
   , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
+  , currentBaseTheory :: Maybe NodeSig
   , refTree :: Tree.Gr RTNodeLab RTLinkLab -- ^ the refinement tree
   , specRoots :: Map.Map String Node -- ^ root nodes for named specs
   , nameMap :: Map.Map String Node -- ^ all nodes by name
@@ -822,6 +826,7 @@ emptyDG = DGraph
   , optLibDefn = Nothing
   , globalEnv = Map.empty
   , dgBody = Graph.empty
+  , currentBaseTheory = Nothing
   , refTree = Graph.empty
   , specRoots = Map.empty
   , nameMap = Map.empty

@@ -280,18 +280,21 @@ anaGenericity :: LogicGraph -> LibName -> DGraph -> HetcatsOpts -> NodeName
   -> GENERICITY -> Result (GENERICITY, GenSig, DGraph)
 anaGenericity lg ln dg opts name
     gen@(Genericity (Params psps) (Imported isps) pos) =
+  let ms = currentBaseTheory dg in
   adjustPos pos $ case psps of
   [] -> do -- no parameter ...
     unless (null isps) $ plain_error ()
       "Parameterless specifications must not have imports" pos
     l <- lookupCurrentLogic "GENERICITY" lg
-    return (gen, GenSig (EmptyNode l) [] $ EmptyNode l, dg)
+    return (gen, GenSig (EmptyNode l) []
+      $ maybe (EmptyNode l) JustNode ms, dg)
   _ -> do
    l <- lookupCurrentLogic "IMPORTS" lg
+   let baseNode = maybe (EmptyNode l) JustNode ms
    (imps', nsigI, dg') <- case isps of
-     [] -> return ([], EmptyNode l, dg)
+     [] -> return ([], baseNode, dg)
      _ -> do
-      (is', _, nsig', dgI) <- anaUnion False lg ln dg (EmptyNode l)
+      (is', _, nsig', dgI) <- anaUnion False lg ln dg baseNode
           (extName "Imports" name) opts isps
       return (is', JustNode nsig', dgI)
    (ps', nsigPs, ns, dg'') <- anaUnion False lg ln dg' nsigI
@@ -383,14 +386,15 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
     (mth, newLg) <- liftR
       $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lg
     case mth of
-      Nothing -> return (itm, dg, libenv, newLg)
+      Nothing -> return (itm, dg { currentBaseTheory = Nothing }, libenv, newLg)
       Just (s, (libName, refDG, (_, lbl))) -> do
             -- store th-lbl in newDG
         let dg2 = if libName /= currLn then
-              let (genv, newDG) = refExtsigAndInsert libenv libName refDG
+              let (s2, (genv, newDG)) = refExtsigAndInsert libenv libName refDG
                     (globalEnv dg, dg) (getName $ dgn_name lbl) s
-              in newDG { globalEnv = genv }
-              else dg
+              in newDG { globalEnv = genv
+                       , currentBaseTheory = Just $ extGenBody s2 }
+              else dg { currentBaseTheory = Just $ extGenBody s }
         return (itm, dg2, libenv, newLg)
   Download_items ln items pos -> if Set.member ln topLns then
     liftR $ mkError "illegal cyclic library import"
@@ -509,7 +513,7 @@ anaItemNameOrMap1 libenv ln refDG (genv, dg) (old, new) = do
     Just _ -> Nothing
   case entry of
     SpecEntry extsig ->
-      return $ refExtsigAndInsert libenv ln refDG (genv, dg) new extsig
+      return $ snd $ refExtsigAndInsert libenv ln refDG (genv, dg) new extsig
     ViewOrStructEntry b vsig ->
       let (dg1, vsig1) = refViewsig libenv ln refDG dg (makeName new) vsig
           genv1 = Map.insert new (ViewOrStructEntry b vsig1) genv
@@ -539,12 +543,12 @@ refNodesigs :: LibEnv -> LibName -> DGraph -> DGraph -> [(NodeName, NodeSig)]
             -> (DGraph, [NodeSig])
 refNodesigs libenv ln = mapAccumR . refNodesig libenv ln
 
-refExtsigAndInsert  :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
-  -> SIMPLE_ID -> ExtGenSig -> (GlobalEnv, DGraph)
+refExtsigAndInsert :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
+  -> SIMPLE_ID -> ExtGenSig -> (ExtGenSig, (GlobalEnv, DGraph))
 refExtsigAndInsert libenv ln refDG (genv, dg) new extsig =
   let (dg1, extsig1) = refExtsig libenv ln refDG dg (makeName new) extsig
       genv1 = Map.insert new (SpecEntry extsig1) genv
-  in (genv1, dg1)
+  in (extsig1, (genv1, dg1))
 
 refExtsig :: LibEnv -> LibName -> DGraph -> DGraph -> NodeName -> ExtGenSig
           -> (DGraph, ExtGenSig)

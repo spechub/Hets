@@ -155,9 +155,12 @@ getNamedSpec sp ln dg libenv = case lookupGlobalEnvDG sp dg of
           Just (SpecEntry s@(ExtGenSig (GenSig _ ps _) (NodeSig n _))) -> do
             unless (null ps)
               $ mkError "base theory must not be parameterized" sp
-            let t@(refLib, refDG, _) = lookupRefNode libenv ln dg n
+            let t@(refLib, refDG, (_, lbl)) = lookupRefNode libenv ln dg n
+                refTok = getName $ dgn_name lbl
+            unless (sp == refTok)
+              $ appendDiags [mkDiag Warning "renamed base theory" sp]
             if refLib == ln then return (s, t) else
-                case lookupGlobalEnvDG sp refDG of
+                case lookupGlobalEnvDG refTok refDG of
                   Just (SpecEntry s2) -> return (s2, t)
                   _ -> mkError "theory reference error" sp
           _ -> mkError "unknown theory" sp
@@ -217,8 +220,7 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
                     ++ prevName ++ "' and not '"
                     ++ nName ++ "'!"
                 return lMap
-            return (Just (s, t)
-              , lG1
+            return (Just (s, t), lG1
               { sublogicBasedTheories = Map.insert logN nMap sbMap })
 
 anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
