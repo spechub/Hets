@@ -105,8 +105,8 @@ let (store_read_result,begin_load,end_load,get_libs,inject_hol_include) = let li
       List.iter (fun (t,tv) -> Hashtbl.replace lib_ths t tv)
         (!_read);
       Hashtbl.replace (!known) lib lib_ths in
-  let begin_load lib = if lib <> "export.ml"  && lib <> (hol_dir^"fusion.ml") && ((lib <> (hol_dir^"hol.ml") && lib <> "hol.ml") || not (!hol_core_loaded)) then
-                        ((if(lib <> (hol_dir^"hol.ml") || lib <> "hol.ml") then hol_core_loaded := true else ()); (if (Stack.is_empty (!stack)) then ()
+  let begin_load lib = if lib <> "export.ml"  && lib <> (Filename.concat hol_dir "fusion.ml") && ((lib <> (Filename.concat hol_dir "hol.ml") && lib <> "hol.ml") || not (!hol_core_loaded)) then
+                        ((if(lib <> (Filename.concat hol_dir "hol.ml") || lib <> "hol.ml") then hol_core_loaded := true else ()); (if (Stack.is_empty (!stack)) then ()
                         else
                           let plib = Stack.top (!stack)
                           in map_new_syms plib;
