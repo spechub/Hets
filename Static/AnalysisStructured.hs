@@ -185,7 +185,7 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
     let logicLibN = emptyLibName "Logics"
         lG1 = setCurSublogic mgs $ setLogicName itm lG
     case mt of
-      Nothing -> return (Nothing, lG1)
+      Nothing -> return (Nothing, lG1 { currentTargetBase = Nothing })
       Just sp -> do
         let ssp = tokStr sp
         (s, t@(libName, _, (_, lbl))) <- case Map.lookup logicLibN libenv of
@@ -221,7 +221,8 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
                     ++ nName ++ "'!"
                 return lMap
             return (Just (s, t), lG1
-              { sublogicBasedTheories = Map.insert logN nMap sbMap })
+              { sublogicBasedTheories = Map.insert logN nMap sbMap
+              , currentTargetBase = Just (libName, nName) })
 
 anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
   -> MaybeNode -> NodeName -> HetcatsOpts -> SPEC

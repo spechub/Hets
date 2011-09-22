@@ -423,6 +423,7 @@ data LogicGraph = LogicGraph
     { logics :: Map.Map String AnyLogic
     , currentLogic :: String
     , currentSublogic :: Maybe G_sublogics
+    , currentTargetBase :: Maybe (LibName, String)
     , sublogicBasedTheories :: Map.Map AnyLogic SublogicBasedTheories
     , comorphisms :: Map.Map String AnyComorphism
     , inclusions :: Map.Map (String, String) AnyComorphism
@@ -438,6 +439,7 @@ emptyLogicGraph = LogicGraph
     { logics = Map.empty
     , currentLogic = "CASL"
     , currentSublogic = Nothing
+    , currentTargetBase = Nothing
     , sublogicBasedTheories = Map.empty
     , comorphisms = Map.empty
     , inclusions = Map.empty
