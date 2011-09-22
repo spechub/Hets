@@ -27,7 +27,6 @@ module Logic.Comorphism
     , Comorphism (..)
     , targetSublogic
     , map_sign
-    , ext_map_sign
     , wrapMapTheory
     , mkTheoryMapping
     , AnyComorphism (..)
@@ -41,13 +40,12 @@ module Logic.Comorphism
 
 import Logic.Logic
 import Logic.Coerce
-import Logic.ExtSign
 
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import Common.ExtSign
 import Common.Id
+import Common.LibName
 import Common.ProofUtils
 import Common.Result
 
@@ -76,8 +74,8 @@ class (Language cid,
     the source sublogic is the maximal one for which the comorphism works -}
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
-    minSourceTheory :: cid -> (sign1, [Named sentence1])
-    minSourceTheory cid = (empty_signature (sourceLogic cid), [])
+    minSourceTheory :: cid -> Maybe (LibName, String)
+    minSourceTheory _ = Nothing
     targetLogic :: cid -> lid2
     {- finer information of target sublogics corresponding to source sublogics
     this function must be partial because mapTheory is partial -}
@@ -137,17 +135,6 @@ map_sign :: Comorphism cid
          => cid -> sign1 -> Result (sign2, [Named sentence2])
 map_sign cid sign = wrapMapTheory cid (sign, [])
 
-ext_map_sign :: Comorphism cid
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-         => cid -> ExtSign sign1 symbol1
-                -> Result (ExtSign sign2 symbol2, [Named sentence2])
-ext_map_sign cid (ExtSign sign _) = do
-    (sign2, sens2) <- map_sign cid sign
-    return (makeExtSign (targetLogic cid) sign2, sens2)
-
 mapDefaultMorphism :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -195,16 +182,7 @@ wrapMapTheory cid (sign, sens) =
                     $ map (minSublogic . sentence) sens of
             senLog ->
               if isSubElem senLog sub
-                 then case minSourceTheory cid of
-                   (msign, msens) ->
-                     if is_subsig lid1 msign sign
-                       && (null sens || all (\ ns -> any (== ns) sens) msens)
-                     then res
-                     else Result
-                       [ Diag Error
-                         ("for '" ++ language_name cid ++
-                          "' expected subtheory not found:\n" ++ thDoc)
-                         nullRange ] Nothing
+                 then res
                  else Result
                   [ Diag Hint thDoc nullRange
                   , Diag Error
