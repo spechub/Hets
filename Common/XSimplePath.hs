@@ -15,10 +15,15 @@ module Common.XSimplePath where
 
 import Common.XPath hiding (Text)
 import Common.XUpdate
+import Common.Utils
 
 import Control.Monad
 
 import Data.List
+import qualified Data.Set as Set
+
+import Static.DgUtils
+import Static.XGraph
 
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
@@ -81,28 +86,62 @@ data Direction = Vertical
 data ChangeRes = ChangeCr Cursor
                | RemoveCr
 
+data DgEffect = DgEffect { removes :: Set.Set DgElemId
+                         , updates :: Set.Set DgElemId
+                         , addNodes :: [XNode]
+                         , addLinks :: [XLink] }
+
+instance Show DgEffect where
+  show (DgEffect s1 s2 [] []) | Set.null s1 && Set.null s2 = "No Effects!"
+  show (DgEffect rmv upd addN addL) =
+    (if Set.null rmv then "" else "<< Removes>>\n" ++ showDgElemSet rmv)
+    ++ (if Set.null upd then "" else "<< Updates >>\n" ++ showDgElemSet upd)
+    ++ (if null addN then "" else "<< Node Insertion >>\n"
+       ++ unlines (map show addN))
+    ++ if null addL then "" else "<< Link Insertion >>\n "
+       ++ unlines (map show addL)
+
+type DgElemId = Either NodeName EdgeId
+
+showDgElemSet :: Set.Set DgElemId -> String
+showDgElemSet = unlines . map (\ e -> case e of
+  Left nm -> "Node: " ++ show (getName nm)
+  Right ei -> "Link: #" ++ show ei ) . Set.toList
+
+emptyDgEffect :: DgEffect
+emptyDgEffect = DgEffect Set.empty Set.empty [] []
+
 changeXml :: Monad m => Element -> String -> m Element
 changeXml el diff = let cr = fromElement el in do
   cs <- anaXUpdates diff
   pths <- mapM exprToSimplePath cs
-  cr' <- iterateXml TopElem pths cr
+  (cr', _) <- iterateXml TopElem pths cr emptyDgEffect
   case current cr' of
      Elem e -> return e
      _ -> fail "unexpected content within top element"
 
-iterateXml :: Monad m => Direction -> [SimplePath] -> Cursor -> m Cursor
-iterateXml _ [] cr = return cr
-iterateXml dir pths cr0 = do
+getEffect :: Monad m => Element -> String -> m DgEffect
+getEffect el diff = let cr = fromElement el in do
+  cs <- anaXUpdates diff
+  pths <- mapM exprToSimplePath cs
+  liftM snd $ iterateXml TopElem pths cr emptyDgEffect
+
+iterateXml :: Monad m => Direction -> [SimplePath] -> Cursor -> DgEffect
+           -> m (Cursor, DgEffect)
+iterateXml _ [] cr ef = return (cr, ef)
+iterateXml dir pths cr0 ef0 = do
   cr1 <- moveDown dir cr0
-  (chgs, toRight, toChildren) <- propagatePaths cr1 pths
-  cr2 <- iterateXml Vertical toChildren cr1
-  cr3 <- iterateXml Horizontal toRight cr2
-  chRes <- applyChanges chgs cr3
+  (curChg, toRight, toChildren) <- propagatePaths cr1 pths
+  (cr2, ef1) <- iterateXml Vertical toChildren cr1 ef0
+  (cr3, ef2) <- iterateXml Horizontal toRight cr2 ef1
+  (chRes, ef3) <- applyChanges curChg cr3 ef2
+  let mkRetVal = liftM (\cr -> (cr, ef3))
   case chRes of
-    ChangeCr cr4 -> moveUp dir (findThisElem cr0) cr4
+    ChangeCr cr4 -> mkRetVal $ moveUp dir cr4
     RemoveCr -> case dir of
-      Vertical -> maybeF "missing parent (Remove)" $ removeGoUp cr3
-      Horizontal -> maybeF "missing left sibling (Remove)" $ removeGoLeft cr3
+      Vertical -> mkRetVal $ maybeF "missing parent (Remove)" $ removeGoUp cr3
+      Horizontal -> mkRetVal $ maybeF "missing left sibling (Remove)"
+              $ removeGoLeft cr3
       TopElem -> fail "Top Element cannot be removed!"
 
 moveDown :: Monad m => Direction -> Cursor -> m Cursor
@@ -111,16 +150,11 @@ moveDown dir cr = case dir of
     Horizontal -> maybeF "no more right siblings" $ findRight isElem cr
     TopElem -> return cr
 
-moveUp :: Monad m => Direction -> (Cursor -> Bool) -> Cursor -> m Cursor
-moveUp dir p cr = case dir of
+moveUp :: Monad m => Direction -> Cursor -> m Cursor
+moveUp dir cr = case dir of
     Vertical -> maybeF "missing parent" $ parent cr
-    Horizontal -> maybeF "missing left sibling" $ findLeft p cr
+    Horizontal -> maybeF "missing left sibling" $ findLeft isElem cr
     TopElem -> return cr
-
-findThisElem :: Cursor -> (Cursor -> Bool)
-findThisElem cr cr' = case (current cr, current cr') of
-  (Elem e, Elem e') -> elName e == elName e' && checkAttrs e (elAttribs e')
-  _ -> False
 
 -- help function for movement; filter out (Text CData)-Contents
 isElem :: Cursor -> Bool
@@ -132,8 +166,76 @@ maybeF :: Monad m => String -> Maybe a -> m a
 maybeF err x = maybe (fail err) return x
 
 -- TODO: for Remove-Element, all other changes are lost. is this desired?
-applyChanges :: Monad m => [ChangeData] -> Cursor -> m ChangeRes
-applyChanges pths cr = foldM applyChange (ChangeCr cr) pths
+-- TODO: implement collection of DgEffect analogue to SimpleChange..
+applyChanges :: Monad m => [ChangeData] -> Cursor -> DgEffect -> m (ChangeRes, DgEffect)
+applyChanges changes cr ef = let
+  -- because cursor position will change, certain addChanges are appended
+  (chgNow, chgAppend) = partition (\ cd -> case cd of
+    ChangeData (Add pos addCs) _ -> pos /= Append && any (\ ch -> case ch of
+      AddElem _ -> True
+      _ -> False ) addCs
+    _ -> False ) changes in do
+  cres1 <- foldM applyChange (ChangeCr cr) chgNow
+  cres2 <- foldM applyChange cres1 chgAppend
+  efRes <- determineDgEffect ef cr changes
+  return (cres2, efRes)
+
+determineDgEffect :: Monad m => DgEffect -> Cursor -> [ChangeData] -> m DgEffect
+determineDgEffect ef0 cr cs = foldM updateEffect ef0 cs where
+  updateEffect ef chgDat = case chgDat of
+    ChangeData (Add _ addCs) _ -> case foldM mkAddCh_fullElem ef addCs of
+        Nothing -> mkUpdateCh ef cr
+        Just ef' -> return ef'
+    ChangeData Remove Nothing -> mkRemoveCh ef cr
+    _ -> mkUpdateCh ef cr
+  
+{- determine change for an add operation.
+NOTE: this will purposfully fail for any other cases than add entire Node/Link!
+-}
+mkAddCh_fullElem :: Monad m => DgEffect -> AddChange -> m DgEffect
+mkAddCh_fullElem ef addCh = case addCh of
+  -- insert entire Node
+  AddElem e | nameString e == "DGNode" -> do
+    n <- mkXNode e
+    return ef { addNodes = n : addNodes ef }
+  -- insert entire link
+  AddElem e | nameString e == "DGLink" -> do
+    l <- mkXLink e
+    return ef { addLinks = l : addLinks ef }
+  -- insert other child element will be processed within changeXml!
+  _ -> fail "mkAddCh_fullElem"
+
+-- determine the change(s) for a remove operation
+mkRemoveCh :: Monad m => DgEffect -> Cursor -> m DgEffect
+mkRemoveCh ef cr = case current cr of
+      -- remove entire node
+      Elem e | nameString e == "DGNode" -> do
+        nm <- liftM parseNodeName $ getAttrVal "name" e
+        return ef { removes = Set.insert (Left nm) $ removes ef }
+      -- remove entire link
+      Elem e | nameString e == "DGLink" -> do
+        ei <- readEdgeId_M e
+        return ef { removes = Set.insert (Right ei) $ removes ef }
+      -- remove child element -> update entire node or link
+      _ -> mkUpdateCh ef cr
+
+mkUpdateCh :: Monad m => DgEffect -> Cursor -> m DgEffect
+mkUpdateCh ef cr = case current cr of
+    Elem e | nameString e == "DGNode" -> do
+        nm <- liftM parseNodeName $ getAttrVal "name" e
+        return ef { updates = Set.insert (Left nm) $ updates ef }
+    Elem e | nameString e == "DGLink" -> do
+        ei <- readEdgeId_M e
+        return ef { updates = Set.insert (Right ei) $ updates ef }
+    _ -> maybe (fail "mkUpdateCh") (mkUpdateCh ef) $ parent cr
+
+nameString :: Element -> String
+nameString = qName . elName
+
+readEdgeId_M :: Monad m => Element -> m EdgeId
+readEdgeId_M e = do
+  ei <- getAttrVal "EdgeId" e
+  maybe (fail "readEdgeId_M") (return . EdgeId) $ readMaybe ei
 
 applyChange :: Monad m => ChangeRes -> ChangeData -> m ChangeRes
 applyChange (RemoveCr) _ = return RemoveCr
@@ -159,7 +261,7 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
 applyAddOp :: Monad m => Insert -> Cursor -> AddChange
            -> m Cursor
 applyAddOp pos cr addCh = case (pos, addCh) of
-        (Before, AddElem e) -> return $ insertLeft (Elem e) cr
+        (Before, AddElem e) -> return $ insertGoLeft (Elem e) cr
         (After, AddElem e) -> return $ insertRight (Elem e) cr
         (Append, AddElem e) -> case current cr of
             {- TODO: custem version of addChild, see if it works!! -}

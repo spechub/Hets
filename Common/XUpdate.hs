@@ -46,7 +46,7 @@ instance Show AddChange where
 valueOfS :: String
 valueOfS = "value-of"
 
-data Insert = Before | After | Append deriving Show
+data Insert = Before | After | Append deriving (Eq, Show)
 
 showInsert :: Insert -> String
 showInsert i = let s = map toLower $ show i in case i of
