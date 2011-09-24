@@ -95,11 +95,11 @@ iterateXml _ [] cr = return cr
 iterateXml dir pths cr0 = do
   cr1 <- moveDown dir cr0
   (chgs, toRight, toChildren) <- propagatePaths cr1 pths
-  cr2 <- iterateXml Horizontal toRight cr1
-  cr3 <- iterateXml Vertical toChildren cr2
+  cr2 <- iterateXml Vertical toChildren cr1
+  cr3 <- iterateXml Horizontal toRight cr2
   chRes <- applyChanges chgs cr3
   case chRes of
-    ChangeCr cr4 -> moveUp dir cr4
+    ChangeCr cr4 -> moveUp dir (findThisElem cr0) cr4
     RemoveCr -> case dir of
       Vertical -> maybeF "missing parent (Remove)" $ removeGoUp cr3
       Horizontal -> maybeF "missing left sibling (Remove)" $ removeGoLeft cr3
@@ -111,11 +111,16 @@ moveDown dir cr = case dir of
     Horizontal -> maybeF "no more right siblings" $ findRight isElem cr
     TopElem -> return cr
 
-moveUp :: Monad m => Direction -> Cursor -> m Cursor
-moveUp dir cr = case dir of
+moveUp :: Monad m => Direction -> (Cursor -> Bool) -> Cursor -> m Cursor
+moveUp dir p cr = case dir of
     Vertical -> maybeF "missing parent" $ parent cr
-    Horizontal -> maybeF "missing left sibling" $ findLeft isElem cr
+    Horizontal -> maybeF "missing left sibling" $ findLeft p cr
     TopElem -> return cr
+
+findThisElem :: Cursor -> (Cursor -> Bool)
+findThisElem cr cr' = case (current cr, current cr') of
+  (Elem e, Elem e') -> elName e == elName e' && checkAttrs e (elAttribs e')
+  _ -> False
 
 -- help function for movement; filter out (Text CData)-Contents
 isElem :: Cursor -> Bool
@@ -127,7 +132,6 @@ maybeF :: Monad m => String -> Maybe a -> m a
 maybeF err x = maybe (fail err) return x
 
 -- TODO: for Remove-Element, all other changes are lost. is this desired?
--- TODO: Element-insertion must be postponed, since cursor position may move!
 applyChanges :: Monad m => [ChangeData] -> Cursor -> m ChangeRes
 applyChanges pths cr = foldM applyChange (ChangeCr cr) pths
 
@@ -146,7 +150,8 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
   -- Case#4: update String (attr-only!)
   (Update s, Just atS) -> case current cr of
      Elem e -> return $ ChangeCr $ cr { current = Elem $
-       add_attr (Attr (unqual atS) s) e }
+       e { elAttribs = map (\ at -> if (qName $ attrKey at) == atS
+           then at { attrVal = s } else at) $ elAttribs e } }
      _ -> fail $ "applyChange(update): " ++ s
   -- OTHER CASES ARE NOT IMPLEMENTED!
   _ -> fail $ "no implementation for :" ++ show csel
@@ -154,7 +159,7 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
 applyAddOp :: Monad m => Insert -> Cursor -> AddChange
            -> m Cursor
 applyAddOp pos cr addCh = case (pos, addCh) of
-        (Before, AddElem e) -> return $ insertGoLeft (Elem e) cr
+        (Before, AddElem e) -> return $ insertLeft (Elem e) cr
         (After, AddElem e) -> return $ insertRight (Elem e) cr
         (Append, AddElem e) -> case current cr of
             {- TODO: custem version of addChild, see if it works!! -}
@@ -166,16 +171,18 @@ applyAddOp pos cr addCh = case (pos, addCh) of
             _ -> fail "applyAddOp(2)"
         _ -> fail "applyAddOp(3)"
 
+checkAttrs :: Element -> [Attr] -> Bool
+checkAttrs e = all checkAttr where
+   checkAttr at = case findAttr (attrKey at) e of
+          Nothing -> False
+          Just atV -> atV == attrVal at
+
 propagatePaths :: Monad m => Cursor -> [SimplePath]
                -> m ([ChangeData], [SimplePath], [SimplePath]) 
 propagatePaths cr pths = case current cr of
   Elem e -> let
-    checkAttrs = all checkAttr
-            where checkAttr at = case findAttr (attrKey at) e of
-                    Nothing -> False
-                    Just atV -> atV == attrVal at
     maybeDecrease pth = case pth of
-              PathStep (FindBy nm atL i) r | elName e == nm && checkAttrs atL
+              PathStep (FindBy nm atL i) r | elName e == nm && checkAttrs e atL
                 -> PathStep (FindBy nm atL $ i-1) r
               st -> st
     (cur, toRight) = partition isAtZero $ map maybeDecrease pths
