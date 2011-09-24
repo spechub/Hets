@@ -24,11 +24,14 @@ import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
 
 data SimplePath = PathStep Finder SimplePath
-                | PathEnd ChangeSel (Maybe String)
+                | PathEnd ChangeData
 
 {- Finder stores predicate list to locate the element and an index, in case
 multiple elements comply with the predicate -}
 data Finder = FindBy QName [Attr] Int
+
+-- Change to be applied at the end of a path.
+data ChangeData = ChangeData ChangeSel (Maybe String)
 
 -- convert PathExpr into more simple Finder stucture
 exprToSimplePath :: Monad m => Change -> m SimplePath
@@ -39,9 +42,10 @@ exprToSimplePath (Change csel e) = case e of
           finder <- mkFinder (FindBy (unqual n) [] 1) exps
           liftM (PathStep finder) $ anaSteps r
         -- should be last step only. return path so-far plus attribute selector
-        Step Attribute (NameTest n) [] -> return $ PathEnd csel $ Just n
+        Step Attribute (NameTest n) [] -> return $ PathEnd
+               $ ChangeData csel $ Just n
         _ -> fail $ "unexpected step: " ++ show stp
-    anaSteps [] = return $ PathEnd csel Nothing
+    anaSteps [] = return $ PathEnd $ ChangeData csel Nothing
   _ -> fail $ "not a valid path description: " ++ show e
 
 mkFinder :: Monad m => Finder -> [Expr] -> m Finder
@@ -68,9 +72,14 @@ mkAttr [e1, e2] = case e1 of
     _ -> fail "unexpected (6)"
 mkAttr _ = fail "unexpected (7)"
 
+-- iterate Xml in multiple directions
 data Direction = Vertical
                | Horizontal
                | TopElem
+
+-- Remove-changes must be treated differently
+data ChangeRes = ChangeCr Cursor
+               | RemoveCr
 
 changeXml :: Monad m => Element -> String -> m Element
 changeXml el diff = let cr = fromElement el in do
@@ -84,50 +93,63 @@ changeXml el diff = let cr = fromElement el in do
 iterateXml :: Monad m => Direction -> [SimplePath] -> Cursor -> m Cursor
 iterateXml _ [] cr = return cr
 iterateXml dir pths cr0 = do
-  cr1 <- moveCursor dir cr0
+  cr1 <- moveDown dir cr0
   (chgs, toRight, toChildren) <- propagatePaths cr1 pths
   cr2 <- iterateXml Horizontal toRight cr1
   cr3 <- iterateXml Vertical toChildren cr2
-  applyChanges dir chgs cr3
+  chRes <- applyChanges chgs cr3
+  case chRes of
+    ChangeCr cr4 -> moveUp dir cr4
+    RemoveCr -> case dir of
+      Vertical -> maybeF "missing parent (Remove)" $ removeGoUp cr3
+      Horizontal -> maybeF "missing left sibling (Remove)" $ removeGoLeft cr3
+      TopElem -> fail "Top Element cannot be removed!"
 
-moveCursor :: Monad m => Direction -> Cursor -> m Cursor
-moveCursor dir cr = case dir of
-    Vertical -> maybe (fail "no more children") return
-          $ findChild isElem cr
-    Horizontal -> maybe (fail "no more right siblings") return
-          $ findRight isElem cr
+moveDown :: Monad m => Direction -> Cursor -> m Cursor
+moveDown dir cr = case dir of
+    Vertical -> maybeF "no more children" $ findChild isElem cr
+    Horizontal -> maybeF "no more right siblings" $ findRight isElem cr
     TopElem -> return cr
 
+moveUp :: Monad m => Direction -> Cursor -> m Cursor
+moveUp dir cr = case dir of
+    Vertical -> maybeF "missing parent" $ parent cr
+    Horizontal -> maybeF "missing left sibling" $ findLeft isElem cr
+    TopElem -> return cr
+
+-- help function for movement; filter out (Text CData)-Contents
 isElem :: Cursor -> Bool
 isElem cr = case current cr of
   Elem _ -> True
   _ -> False
 
--- TODO: using monadic return type to detect remove-Op, thus all error dialog is lost!
-applyChanges :: Monad m => Direction -> [SimplePath] -> Cursor -> m Cursor
-applyChanges dir pths cr = case foldM applyChange cr pths of
-  Nothing -> case dir of
-    Vertical -> maybe (fail "applyChanges(1)") return $ removeGoUp cr
-    Horizontal -> maybe (fail "applyChanges(2)") return $ removeGoLeft cr
-    TopElem -> fail "top element cannot be removed!"
-  Just cr' -> case dir of
-    Vertical -> maybe (fail "applyChanges(3)") return $ parent cr'
-    Horizontal -> maybe (fail "applyChanges(4)") return $ findLeft isElem cr'
-    TopElem -> return cr'
+maybeF :: Monad m => String -> Maybe a -> m a
+maybeF err x = maybe (fail err) return x
 
-applyChange :: Monad m => Cursor -> SimplePath -> m Cursor
-applyChange _ (PathStep _ _) = error "applyChange: unexpected remaining PathSteps"
-applyChange cr (PathEnd csel attrSel) = case (csel, attrSel) of  
-  (Remove, Nothing) -> fail "controlled failure: full element removal"
+-- TODO: for Remove-Element, all other changes are lost. is this desired?
+-- TODO: Element-insertion must be postponed, since cursor position may move!
+applyChanges :: Monad m => [ChangeData] -> Cursor -> m ChangeRes
+applyChanges pths cr = foldM applyChange (ChangeCr cr) pths
+
+applyChange :: Monad m => ChangeRes -> ChangeData -> m ChangeRes
+applyChange (RemoveCr) _ = return RemoveCr
+applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
+  -- Case#1: full element removal
+  (Remove, Nothing) -> return RemoveCr
+  -- Case#2: attribute removal
   (Remove, Just atS) -> case current cr of
-     Elem e -> return cr { current = Elem $ e { elAttribs =
-       filter ((/= atS) . qName . attrKey) $ elAttribs e } }
-     _ -> error "applyChange(remove)"
-  (Add pos addCs, _) -> foldM (applyAddOp pos) cr addCs
+     Elem e -> return $ ChangeCr $ cr { current = Elem $
+       e { elAttribs = filter ((/= atS) . qName . attrKey) $ elAttribs e } }
+     _ -> fail "applyChange(remove-attr)"
+  -- Case#3: addChanges, either attr-/ or element-insertion
+  (Add pos addCs, _) -> liftM ChangeCr $ foldM (applyAddOp pos) cr addCs
+  -- Case#4: update String (attr-only!)
   (Update s, Just atS) -> case current cr of
-     Elem e -> return cr { current = Elem $ add_attr (Attr (unqual atS) s) e }
-     _ -> error $ "applyChange(update): " ++ s
-  _ -> error $ "no implementation for :" ++ show csel
+     Elem e -> return $ ChangeCr $ cr { current = Elem $
+       add_attr (Attr (unqual atS) s) e }
+     _ -> fail $ "applyChange(update): " ++ s
+  -- OTHER CASES ARE NOT IMPLEMENTED!
+  _ -> fail $ "no implementation for :" ++ show csel
 
 applyAddOp :: Monad m => Insert -> Cursor -> AddChange
            -> m Cursor
@@ -138,18 +160,15 @@ applyAddOp pos cr addCh = case (pos, addCh) of
             {- TODO: custem version of addChild, see if it works!! -}
             Elem e' -> return cr { current = Elem $ e' {
                          elContent = Elem e : elContent e' } }
-            _ -> error "applyAddOp(1)"
-        -- TODO: there shouldn't be an attribute selection here, but there is!
+            _ -> fail "applyAddOp(1)"
         (Append, AddAttr at) -> case current cr of
             Elem e -> return cr { current = Elem $ add_attr at e }
-            _ -> error "applyAddOp(2)"
-        _ -> error "applyAddOp(3)"
+            _ -> fail "applyAddOp(2)"
+        _ -> fail "applyAddOp(3)"
 
 propagatePaths :: Monad m => Cursor -> [SimplePath]
-               -> m ([SimplePath], [SimplePath], [SimplePath]) 
+               -> m ([ChangeData], [SimplePath], [SimplePath]) 
 propagatePaths cr pths = case current cr of
-  -- TODO why does Text (CData) even occur?
---  Text _ -> maybe (fail "^,^") (`propagatePaths` pths) $ right cr
   Elem e -> let
     checkAttrs = all checkAttr
             where checkAttr at = case findAttr (attrKey at) e of
@@ -161,12 +180,13 @@ propagatePaths cr pths = case current cr of
               st -> st
     (cur, toRight) = partition isAtZero $ map maybeDecrease pths
             where isAtZero (PathStep (FindBy _ _ 0) _) = True
-                  isAtZero _ = False
-    isPathEnd (PathEnd _ _) = True
-    isPathEnd _ = False
-    tail' (PathStep _ rPth) = return rPth
-    tail' (PathEnd _ _) = fail "unexpected PathEnd!" in do
-      (changes, toChildren) <- liftM (partition isPathEnd) $ mapM tail' cur
+                  isAtZero _ = False in do
+      -- crop current heads and extract immediate changes
+      (changes, toChildren) <- foldM (\ (r1, r2) c -> case c of
+          PathStep _ rPth -> case rPth of
+            PathEnd chDat -> return (chDat : r1, r2)
+            st -> return (r1, st : r2)
+          _ -> fail "unexpected PathEnd") ([], []) cur
       return (changes, toRight, toChildren)
   c -> fail $ "unexpected Cursor Content: " ++ show c
 
