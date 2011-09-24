@@ -40,81 +40,15 @@ emptyChanges :: SimpleChanges
 emptyChanges = SimpleChanges [] [] [] [] Map.empty Map.empty [] []
 
 printXmlDiff :: Element -> String -> IO ()
-printXmlDiff el diff = do
-  cs <- anaXUpdates diff
-  (_, chgs) <- foldM changeXml (fromElement el, emptyChanges) cs
-  putStrLn $ show chgs
+printXmlDiff el diff = undefined
 
 applyXmlDiff :: Monad m => Element -> String -> m Element
-applyXmlDiff el diff = do
-  cs <- anaXUpdates diff
-  (cr, _) <- foldM changeXml (fromElement el, emptyChanges) cs
-  toElement cr
-
+applyXmlDiff el diff = changeXml el diff
+  
 toElement :: Monad m => Cursor -> m Element
 toElement cr = case current $ root cr of
     Elem e -> return e
     _ -> fail "cannot convert Cursor into Element"
-
-changeXml :: Monad m => (Cursor, SimpleChanges) -> Change
-          -> m (Cursor, SimpleChanges)
-changeXml (cr, sChgs) (Change csel expr) = do
-  (crInit, attrSel) <- moveTo expr (root cr)
-  case csel of
-    Remove -> applyRemoveOp crInit attrSel sChgs
-    Add pos addCs -> do
-      crNew <- foldM (applyAddOp attrSel pos) crInit addCs 
-      changes <- case foldM mkAddCh_fullElem sChgs addCs of
-                   Just sChgs' -> return sChgs'
-                   Nothing -> mkUpdateCh sChgs crNew
-      return (crNew, changes)
-    Update s -> case attrSel of
-      Nothing -> fail "xupdate:update only works for Attributes!"
-      Just atS -> do
-        cr' <- case current crInit of
-          Elem e -> return crInit { current = Elem
-            $ add_attr (Attr (unqual atS) s) e }
-          _ -> fail $ "update: " ++ s
-        sChgs' <- mkUpdateCh sChgs cr'
-        return (cr', sChgs')
-    _ -> fail $ "no implementation for :" ++ show csel
-
-applyRemoveOp :: Monad m => Cursor -> AttrSelector -> SimpleChanges
-              -> m (Cursor, SimpleChanges)
-applyRemoveOp crInit attrSel sChgs = case attrSel of
-      -- Case #1: remove attribute from element
-      Just attr -> case current crInit of
-        Elem e -> let e' = removeAttr attr e
-                      cr' = crInit { current = Elem e' } in do
-          sChgs' <- mkUpdateCh sChgs cr'
-          return (cr', sChgs')
-        _ -> fail "applyRemoveOp (Attr)"
-      -- Case #2: remove element
-      Nothing -> case removeGoUp crInit of
-        Nothing -> fail "applyRemoveOp (Elem)"
-        Just cr' -> do
-          sChgs' <- mkRemoveCh sChgs crInit cr'
-          return (cr', sChgs')
-
-removeAttr :: String -> Element -> Element
-removeAttr atName el = el { elAttribs =
-  filter ((/= atName) . qName . attrKey) $ elAttribs el }
-
-applyAddOp :: Monad m => AttrSelector -> Insert -> Cursor -> AddChange
-           -> m Cursor
-applyAddOp attrSel pos cr addCh = case (pos, addCh, attrSel) of
-        (Before, AddElem e, Nothing) -> return $ insertGoLeft (Elem e) cr
-        (After, AddElem e, Nothing) -> return $ insertGoRight (Elem e) cr
-        (Append, AddElem e, Nothing) -> case current cr of
-            {- TODO: custem version of addChild, see if it works!! -}
-            Elem e' -> return cr { current = Elem $ e' {
-                         elContent = Elem e : elContent e' } }
-            _ -> fail "applyAddOp(1)"
-        -- TODO: there shouldn't be an attribute selection here, but there is!
-        (Append, AddAttr at, _) -> case current cr of
-            Elem e -> return cr { current = Elem $ add_attr at e }
-            _ -> fail "applyAddOp(2)"
-        _ -> fail "applyAddOp(3)"
 
 {- determine change for an add operation.
 NOTE: this will purposfully fail for any other cases than add entire Node/Link!
