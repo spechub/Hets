@@ -196,7 +196,7 @@ applyChanges :: Monad m => [ChangeData] -> Cursor -> m ChangeRes
 applyChanges changes cr = let
   -- because cursor position will change, certain addChanges are appended
   (chgNow, chgAppend) = partition (\ cd -> case cd of
-    ChangeData (Add pos addCs) _ -> pos /= Append && any (\ ch -> case ch of
+    ChangeData (Add pos addCs) _ -> pos == Before && any (\ ch -> case ch of
       AddElem _ -> True
       _ -> False ) addCs
     _ -> False ) changes in do
