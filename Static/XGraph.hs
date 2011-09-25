@@ -209,5 +209,8 @@ readEdgeId = EdgeId . fromMaybe (-1) . readMaybe
 extractGlobalAnnos :: Element -> Result GlobalAnnos
 extractGlobalAnnos dgEle = case findChild (unqual "Global") dgEle of
   Nothing -> return emptyGlobalAnnos
-  Just gl -> getGlobalAnnos $ unlines $ map strContent
-    $ findChildren (unqual "Annotation") gl
+  Just gl -> parseAnnotations gl
+
+parseAnnotations :: Element -> Result GlobalAnnos
+parseAnnotations = getGlobalAnnos . unlines . map strContent
+    . findChildren (unqual "Annotation")
