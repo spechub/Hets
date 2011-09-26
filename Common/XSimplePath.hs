@@ -119,20 +119,12 @@ showDgElemSet = unlines . map (\ e -> case e of
 emptyDgEffect :: DgEffect
 emptyDgEffect = DgEffect Set.empty Map.empty [] Nothing
 
-{- merges two DgEffects; prefers the data of the first one -}
-mergeEffects :: DgEffect -> DgEffect -> DgEffect
-mergeEffects ef1 (DgEffect rmv upd adds _) =
- ef1 { removes = Set.union (removes ef1) rmv
-     , updates = Map.union (updates ef1) upd
-     , additions = adds ++ additions ef1
-     } 
-
 {- apply a diff to an xml-document. the dg-change is lost -}
 changeXml :: Monad m => Element -> String -> m Element
 changeXml el diff = let cr = fromElement el in do
   cs <- anaXUpdates diff
   pths <- mapM exprToSimplePath cs
-  (cr', _) <- iterateXml TopElem pths cr
+  (cr', _) <- iterateXml TopElem pths cr emptyDgEffect
   case current cr' of
      Elem e -> return e
      _ -> fail "unexpected content within top element"
@@ -142,33 +134,47 @@ getEffect :: Monad m => Element -> String -> m DgEffect
 getEffect el diff = let cr = fromElement el in do
   cs <- anaXUpdates diff
   pths <- mapM exprToSimplePath cs
-  liftM snd $ iterateXml TopElem pths cr
+  liftM snd $ iterateXml TopElem pths cr emptyDgEffect
+
+showChange :: SimplePath -> String
+showChange sp = case sp of
+  PathStep (FindBy qn attr i) stps -> case stps of
+    PathEnd (ChangeData csel attrSel) -> qName qn
+      ++ (maybe ": " (\aS -> " (" ++ aS ++"): ") attrSel) ++ case csel of
+        Remove -> "-remove"
+        _ -> show csel
+    _ -> showChange stps
+  PathEnd _ -> "change top elem!"
 
 {- follow the Xml-structure and apply Changes. The Change is only applied after
 the recursive call to simulate parallel application. Resulting DgChanges are
 collected along the way. -}
 iterateXml :: Monad m => Direction -> [SimplePath] -> Cursor
-           -> m (Cursor, DgEffect)
-iterateXml _ [] cr = return (cr, emptyDgEffect)
-iterateXml dir pths cr0 = do
+           -> DgEffect -> m (Cursor, DgEffect)
+iterateXml _ [] cr ef = return (cr, ef)
+iterateXml dir pths cr0 ef0 = do
   cr1 <- moveDown dir cr0
   (curChg, toRight, toChildren) <- propagatePaths cr1 pths
-  (cr2, ef1) <- iterateXml Vertical toChildren cr1
-  (cr3, ef2) <- iterateXml Horizontal toRight cr2
-  let ef3 = mergeEffects ef2 ef1
+  (cr2, ef1) <- iterateXml Vertical toChildren cr1 ef0
+  (cr3, ef2) <- iterateXml Horizontal toRight cr2 ef1
   chRes <- applyChanges curChg cr3
   case chRes of
     ChangeCr cr4 -> do
-      ef4 <- mkAddOrUpdateCh cr4 curChg ef3
       crRes <- moveUp dir cr4
-      return (crRes, ef4)
+      ef3 <- mkAddOrUpdateCh cr4 curChg ef2
+      return (crRes, ef3)
     RemoveCr -> do
       crRes <- case dir of
         Vertical -> maybeF "missing parent (Remove)" $ removeGoUp cr3
-        Horizontal -> maybeF "missing left sibling (Remove)" $ removeGoLeft cr3
+        Horizontal -> maybeF "missing left sibling (Remove)"
+          $ removeFindLeft isElem cr3
         TopElem -> fail "Top Element cannot be removed!"
-      ef4 <- mkRemoveCh ef3 cr0 crRes
-      return (crRes, ef4)
+      ef3 <- mkRemoveCh ef2 cr3 crRes
+      return (crRes, ef3)
+
+removeFindLeft :: (Cursor -> Bool) -> Cursor -> Maybe Cursor
+removeFindLeft p = maybe Nothing (findLeft p) . removeGoLeft
+
 
 moveDown :: Monad m => Direction -> Cursor -> m Cursor
 moveDown dir cr = case dir of
@@ -276,11 +282,11 @@ mkRemoveCh ef crInit crNow = case current crInit of
       -- remove entire node
       Elem e | nameString e == "DGNode" -> do
         nm <- liftM parseNodeName $ getAttrVal "name" e
-        return ef { removes = Set.insert (Left nm) $ removes ef }
+        return $ ef { removes = Set.insert (Left nm) $ removes ef }
       -- remove entire link
       Elem e | nameString e == "DGLink" -> do
         ei <- readEdgeId_M e
-        return ef { removes = Set.insert (Right ei) $ removes ef }
+        return $ ef { removes = Set.insert (Right ei) $ removes ef }
       -- remove child element -> update entire node or link
       _ -> mkUpdateCh ef crNow
 
@@ -304,11 +310,11 @@ mkAddCh_fullElem ef addCh = case addCh of
   -- insert entire Node
   AddElem e | nameString e == "DGNode" -> do
     n <- mkXNode e
-    return ef { additions = (Left n) : additions ef }
+    return $ ef { additions = (Left n) : additions ef }
   -- insert entire link
   AddElem e | nameString e == "DGLink" -> do
     l <- mkXLink e
-    return ef { additions = (Right l) : additions ef }
+    return $ ef { additions = (Right l) : additions ef }
   -- insert other child element will be processed elsewhere!
   _ -> fail "mkAddCh_fullElem"
 
@@ -317,24 +323,27 @@ mkUpdateCh :: Monad m => DgEffect -> Cursor -> m DgEffect
 mkUpdateCh ef cr = case current cr of
     Elem e | nameString e == "Global" ->
         case maybeResult $ parseAnnotations e of
-          Just gl -> return ef { updateAnnotations = Just gl }
+          Just gl -> return $ ef { updateAnnotations = Just gl }
           Nothing -> fail "failed to parse global annotations"
     Elem e | nameString e == "DGNode" -> do
         nd <- mkXNode e
-        return ef { updates =
+        return $ ef { updates =
           Map.insert (Left $ nodeName nd) (Left nd) $ updates ef }
     Elem e | nameString e == "DGLink" -> do
         lk <- mkXLink e
-        return ef { updates =
+        return $ ef { updates =
           Map.insert (Right $ edgeId lk) (Right lk) $ updates ef }
-    -- TODO: if no changeable item is found, the old effect-object is returned.
-    _ -> maybe (return ef) (mkUpdateCh ef) $ parent cr
+    {- TODO: if no changeable item is found, the old effect-object is returned.
+    all attribute changes on DGraph-level for example are lost! -}
+    Elem e | nameString e == "DGraph" -> return ef
+    _ -> maybe (fail "update failed, no updatable parent")
+      (mkUpdateCh ef) $ parent cr
 
 nameString :: Element -> String
 nameString = qName . elName
 
 readEdgeId_M :: Monad m => Element -> m EdgeId
 readEdgeId_M e = do
-  ei <- getAttrVal "EdgeId" e
+  ei <- getAttrVal "linkid" e
   maybe (fail "readEdgeId_M") (return . EdgeId) $ readMaybe ei
 
