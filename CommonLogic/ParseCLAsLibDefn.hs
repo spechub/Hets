@@ -17,8 +17,6 @@ import Common.LibName
 import Common.AS_Annotation as Anno
 import Common.AnnoState
 
-import Driver.Options
-
 import Text.ParserCombinators.Parsec
 
 import Logic.Grothendieck
@@ -30,28 +28,27 @@ import CommonLogic.Parse_CLIF (basicSpec)
 import Syntax.AS_Library
 import Syntax.AS_Structured as Struc
 
-
 import System.IO
 
 -- | call for CommonLogic CLIF-parser
-parseCL_CLIF :: HetcatsOpts -> FilePath -> IO LIB_DEFN
-parseCL_CLIF opts filename = do
+parseCL_CLIF :: FilePath -> IO LIB_DEFN
+parseCL_CLIF filename = do
   handle <- openFile filename ReadMode
   contents <- hGetContents handle
   maybeText <- return $ runParser (many basicSpec) (emptyAnnos ()) "" contents
   case maybeText of
-      Right bs -> return $ convertToLibDefN opts filename $ reverse bs
+      Right bs -> return $ convertToLibDefN filename $ reverse bs
       Left _ -> error $ "Error parsing CLIF-File."
 
 -- maps imports in basic spec to global definition links (extensions) in
 -- development graph
-convertToLibDefN :: HetcatsOpts -> FilePath -> [BASIC_SPEC] -> LIB_DEFN
-convertToLibDefN opts filename bs =
+convertToLibDefN :: FilePath -> [BASIC_SPEC] -> LIB_DEFN
+convertToLibDefN filename bs =
   let knownSpecs = map (\(i,b) -> specName i b filename) $ zip [0..] bs
   in  Lib_defn
         (emptyLibName $ convertFileToLibStr filename)
         (concat $ foldl (
-            \r bn -> (convertBS opts knownSpecs bn : r)
+            \r bn -> (convertBS knownSpecs bn : r)
           ) [] $ zip bs knownSpecs
         )
         nullRange
@@ -59,28 +56,25 @@ convertToLibDefN opts filename bs =
 
 -- Creates Nodes in the Logic Graph.
 -- Also gives each non-named text a unique name in the graph.
-convertBS :: HetcatsOpts -> [NAME] -> (BASIC_SPEC, NAME)
-             -> [Anno.Annoted LIB_ITEM]
-convertBS opts knownSpecs (b,n) =
+convertBS :: [NAME] -> (BASIC_SPEC, NAME) -> [Anno.Annoted LIB_ITEM]
+convertBS knownSpecs (b,n) =
   let imports = getImports b
-      (missingTexts, toImport) = foldr
-        (\i (mt, ti) -> if elem i knownSpecs then (mt, i:ti) else (i:mt, ti))
-        ([], []) imports
+      missingTexts = filter (\i -> not $ elem i knownSpecs) imports
   in  map (\m -> emptyAnno $ Download_items
-                (emptyLibName $ tokStr m)
-                [Item_name m]
-                nullRange
+                  (emptyLibName $ tokStr m)
+                  [Item_name $ m]
+                  nullRange
             ) missingTexts
         ++ [emptyAnno $ Spec_defn
           n
           emptyGenericity
-          (createSpec opts imports b)
+          (createSpec imports b)
           nullRange]
 
 -- one importation is an extension
 -- many importations are an extension of a union
-createSpec :: HetcatsOpts -> [NAME] -> BASIC_SPEC -> Anno.Annoted SPEC
-createSpec opts imports b =
+createSpec :: [NAME] -> BASIC_SPEC -> Anno.Annoted SPEC
+createSpec imports b =
   let bs = emptyAnno $ Struc.Basic_spec (G_basic_spec CommonLogic b) nullRange
   in  case imports of
           [] -> bs
@@ -96,7 +90,7 @@ cnvimport :: NAME -> Annoted SPEC
 cnvimport n = emptyAnno $ Spec_inst n [] nullRange
 
 -- retrieves all importations from the text
-getImports :: BASIC_SPEC -> [NAME] -- TODO: Check for Spec Name
+getImports :: BASIC_SPEC -> [NAME]
 getImports (CL.Basic_spec items) =
   concatMap getImports_text $ map textFromBasicItems items
 
