@@ -309,7 +309,7 @@ importData fp = do
 
 get_types :: Map.Map String Int -> HolType -> Map.Map String Int
 get_types m t = case t of
- (TyVar s) -> Map.insert s 0 m
+ (TyVar _) -> m
  (TyApp s ts) -> let m' = foldl get_types m ts in
                      Map.insert s (length ts) m'
 
