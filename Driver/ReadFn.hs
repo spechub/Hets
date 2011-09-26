@@ -57,8 +57,8 @@ readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
-    CommonLogicIn -> liftIO $ parseCL_CLIF file
-    CommonLogic2In -> liftIO $ parseCL_CLIF file
+    CommonLogicIn -> liftIO $ parseCL_CLIF opts file
+    CommonLogic2In -> liftIO $ parseCL_CLIF opts file
 #ifndef NOOWLLOGIC
     OWL2In -> liftIO $ parseOWL file
     OWLIn -> liftIO $ parseOWL file
