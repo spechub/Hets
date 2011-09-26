@@ -18,6 +18,8 @@ module Comorphisms.SoftFOL2CommonLogic
     )
     where
 
+import Data.Maybe (maybeToList)
+
 import Common.ProofTree
 import Common.Id
 import Common.Result
@@ -107,14 +109,8 @@ mapSign sig =
 mapTheory :: (FOLSign.Sign, [AS_Anno.Named FOLSign.Sentence])
              -> Result (ClSign.Sign, [AS_Anno.Named TEXT])
 mapTheory (srcSign, srcFormulas) =
-  return (mapSign srcSign,
-          AS_Anno.makeNamed "SoftFOL_SubsortRelations"
-              (sortRelText (Rel.toMap $ FOLSign.sortRel srcSign))
-        : AS_Anno.makeNamed "SoftFOL_FunctionMaps"
-              (funcMapText (FOLSign.funcMap srcSign))
-        : AS_Anno.makeNamed "SoftFOL_PredicateMaps"
-              (predMapText (FOLSign.predMap srcSign))
-        : map ((uncurry AS_Anno.makeNamed) . transSnd . senAndName) srcFormulas)
+  return (mapSign srcSign, signToTexts srcSign
+       ++ map ((uncurry AS_Anno.makeNamed) . transSnd . senAndName) srcFormulas)
   where senAndName :: AS_Anno.Named FOLSign.Sentence -> (String, FOLSign.Sentence)
         senAndName f = (AS_Anno.senAttr f, AS_Anno.sentence f)
         transSnd :: (String, FOLSign.Sentence) -> (String, TEXT)
@@ -122,21 +118,39 @@ mapTheory (srcSign, srcFormulas) =
 
 -- translates a SoftFOL-theory to a CL-Text
 translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT
-translate s f = Text [Sentence $ toSen s f] nullRange
+translate s f = Text [Importation $ Imp_name $ mkSimpleId $ softFOLSignTr
+                     , Sentence $ toSen s f] nullRange
+
+
+signToTexts :: FOLSign.Sign -> [AS_Anno.Named TEXT]
+signToTexts srcSign =
+  let sr = sortRelText $ Rel.toMap $ FOLSign.sortRel srcSign
+      fm = funcMapText $ FOLSign.funcMap srcSign
+      pm = predMapText $ FOLSign.predMap srcSign
+      imps = map snd $ concat $ zip (maybeToList sr) [sortRelTrS]
+                              : zip (maybeToList fm) [funcMapTrS]
+                              : zip (maybeToList pm) [predMapTrS] : []
+      phrs = if null imps then [Sentence clTrue]
+                          else map (Importation . Imp_name . mkSimpleId) imps
+  in concat $ 
+        map (AS_Anno.makeNamed sortRelTrS) (maybeToList sr)
+      : map (AS_Anno.makeNamed funcMapTrS) (maybeToList fm)
+      : map (AS_Anno.makeNamed predMapTrS) (maybeToList pm)
+      : [[AS_Anno.makeNamed softFOLSignTr $
+                      Named_text softFOLSignTr (Text phrs nullRange) nullRange]]
 
 -- creates one-sentence-phrases: forall x. (subSort x) => (superSort x)
 sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
-                -> TEXT
+                -> Maybe TEXT
 sortRelText m =
-  Text (
-    Map.foldrWithKey (\subSrt set phrs -> (
-      Set.fold (\superSrt phrs2 ->
-          Sentence (Quant_sent (Universal [Name xName] (Bool_sent (Implication
-              (predicateNames subSrt [xName]) (predicateNames superSrt [xName])
-            ) nullRange)) nullRange)
-        : phrs2) [] set
-      ) ++ phrs) [] m
-    ) nullRange
+  let ps = Map.foldrWithKey (\subSrt set phrs -> (
+        Set.fold (\superSrt phrs2 ->
+            Sentence (Quant_sent (Universal [Name xName] (Bool_sent (Implication
+                (predicateNames subSrt [xName]) (predicateNames superSrt [xName])
+              ) nullRange)) nullRange)
+          : phrs2) [] set
+        ) ++ phrs) [] m
+  in if null ps then Nothing else Just $ Named_text sortRelTrS (Text ps nullRange) nullRange
 
 typesWithIndv :: [Token] -> [(Token, NAME)] -- (type, individual)
 typesWithIndv args =
@@ -144,52 +158,50 @@ typesWithIndv args =
 
 -- creates one-sentence-phrases:
 -- forall x y z. (if (and (T1 x) (T2 y) (T3 z)) (T4 f[x,y,z]))
-funcMapText :: Map.Map Token (Set.Set ([Token], Token)) -> TEXT
+funcMapText :: Map.Map Token (Set.Set ([Token], Token)) -> Maybe TEXT
 funcMapText m =
-  Text (
-    Map.foldrWithKey (\f set phrs -> (
-      Set.fold (\(args, res) phrs2 ->
-        let argsAndNames = typesWithIndv args
-        in  Sentence (
-              if null args
-              then predicateNames res [f]
-              else
-                Quant_sent (Universal (map (Name . snd) argsAndNames) (
-                  Bool_sent (Implication
-                      (Bool_sent (Conjunction $
-                          map (\(p, x) -> predicateNames p [x]) argsAndNames
-                        ) nullRange)
-                      (Atom_sent (Atom
-                          (Name_term res)
-                          [Term_seq $ Funct_term (Name_term f) (
-                              map (Term_seq . Name_term . snd) argsAndNames
-                            ) nullRange]
-                        ) nullRange)
-                    ) nullRange
-                  )) nullRange)
-        : phrs2) [] set
-      ) ++ phrs) [] m
-    ) nullRange
+  let ps = Map.foldrWithKey (\f set phrs -> (
+          Set.fold (\(args, res) phrs2 ->
+            let argsAndNames = typesWithIndv args
+            in  Sentence (
+                  if null args
+                  then predicateNames res [f]
+                  else
+                    Quant_sent (Universal (map (Name . snd) argsAndNames) (
+                      Bool_sent (Implication
+                          (Bool_sent (Conjunction $
+                              map (\(p, x) -> predicateNames p [x]) argsAndNames
+                            ) nullRange)
+                          (Atom_sent (Atom
+                              (Name_term res)
+                              [Term_seq $ Funct_term (Name_term f) (
+                                  map (Term_seq . Name_term . snd) argsAndNames
+                                ) nullRange]
+                            ) nullRange)
+                        ) nullRange
+                      )) nullRange)
+            : phrs2) [] set
+          ) ++ phrs) [] m
+  in if null ps then Nothing else Just $ Named_text funcMapTrS (Text ps nullRange) nullRange
 
 -- creates one-sentence-phrases:
 -- forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z))
-predMapText :: Map.Map Token (Set.Set [Token]) -> TEXT
+predMapText :: Map.Map Token (Set.Set [Token]) -> Maybe TEXT
 predMapText m =
-  Text (
-    Map.foldrWithKey (\prd set phrs -> (
-      Set.fold (\args phrs2 ->
-        let argsAndNames = typesWithIndv args
-        in  Sentence (Quant_sent (Universal (map (Name . snd) argsAndNames) (
-                Bool_sent (Implication
-                    (predicateNames prd (map snd argsAndNames))
-                    (Bool_sent (Conjunction $
-                        map (\(p, x) -> predicateNames p [x]) argsAndNames
-                      ) nullRange)
-                  ) nullRange
-                )) nullRange)
-        : phrs2) [] set
-      ) ++ phrs) [] m
-    ) nullRange
+  let ps = Map.foldrWithKey (\prd set phrs -> (
+          Set.fold (\args phrs2 ->
+            let argsAndNames = typesWithIndv args
+            in  Sentence (Quant_sent (Universal (map (Name . snd) argsAndNames) (
+                    Bool_sent (Implication
+                        (predicateNames prd (map snd argsAndNames))
+                        (Bool_sent (Conjunction $
+                            map (\(p, x) -> predicateNames p [x]) argsAndNames
+                          ) nullRange)
+                      ) nullRange
+                    )) nullRange)
+            : phrs2) [] set
+          ) ++ phrs) [] m
+  in if null ps then Nothing else Just $ Named_text predMapTrS (Text ps nullRange) nullRange
 
 toSen :: FOLSign.Sign -> FOLSign.SPTerm -> SENTENCE
 toSen s t = case t of
@@ -425,3 +437,16 @@ sumName = mkSimpleId "SUM"
 
 convName :: NAME
 convName = mkSimpleId "CONV"
+
+-- Text-Names
+sortRelTrS :: String
+sortRelTrS = "SoftFOL_SubsortRelations"
+
+funcMapTrS :: String
+funcMapTrS = "SoftFOL_FunctionMaps"
+
+predMapTrS :: String
+predMapTrS = "SoftFOL_PredicateMaps"
+
+softFOLSignTr :: String
+softFOLSignTr = "SoftFOL_SignatureTranslation"
