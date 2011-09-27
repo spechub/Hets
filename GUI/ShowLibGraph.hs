@@ -180,15 +180,15 @@ changeLibGraph gi graph nodesEdges = do
               putIfVerbose opts 3 $ "Ignoring Impacts:\n" ++ xis
               Result ds mdg <- runResultT $ dgXUpdate opts xs le ln dg
               case mdg of
-                Just fle -> do
+                Just (nLn, fle) -> do
                   closeOpenWindows gi
                   mapM_ (deleteArc graph') edges
                   mapM_ (deleteNode graph') nodes
                   addNodesAndEdges gi graph graph' nodesEdges
                   writeIORef (intState gi) emptyIntState
-                        { i_state = Just $ emptyIntIState fle ln
+                        { i_state = Just $ emptyIntIState fle nLn
                         , filename = fn }
-                  mShowGraph gi ln
+                  mShowGraph gi nLn
                 Nothing ->
                   errorDialog "Error" $ showRelDiags (verbose opts) ds
         _ -> errorDialog "Error" $ "Error when reloading file '" ++ fn ++ "'"
