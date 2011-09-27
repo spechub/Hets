@@ -136,16 +136,6 @@ getEffect el diff = let cr = fromElement el in do
   pths <- mapM exprToSimplePath cs
   liftM snd $ iterateXml TopElem pths cr emptyDgEffect
 
-showChange :: SimplePath -> String
-showChange sp = case sp of
-  PathStep (FindBy qn attr i) stps -> case stps of
-    PathEnd (ChangeData csel attrSel) -> qName qn
-      ++ (maybe ": " (\aS -> " (" ++ aS ++"): ") attrSel) ++ case csel of
-        Remove -> "-remove"
-        _ -> show csel
-    _ -> showChange stps
-  PathEnd _ -> "change top elem!"
-
 {- follow the Xml-structure and apply Changes. The Change is only applied after
 the recursive call to simulate parallel application. Resulting DgChanges are
 collected along the way. -}
@@ -174,7 +164,6 @@ iterateXml dir pths cr0 ef0 = do
 
 removeFindLeft :: (Cursor -> Bool) -> Cursor -> Maybe Cursor
 removeFindLeft p = maybe Nothing (findLeft p) . removeGoLeft
-
 
 moveDown :: Monad m => Direction -> Cursor -> m Cursor
 moveDown dir cr = case dir of
@@ -295,28 +284,26 @@ mkAddOrUpdateCh :: Monad m => Cursor -> [ChangeData] -> DgEffect -> m DgEffect
 mkAddOrUpdateCh cr cs ef1 = do
   -- at first determine the element-additions
   (ef2, rl) <- foldM (\ (efR, r) cd -> case cd of
-      c@(ChangeData (Add _ adds) _) -> case foldM mkAddCh_fullElem efR adds of
-            Just ef' -> return (ef', r)
-            Nothing -> return (efR, c:r)
+      ChangeData (Add pos adds) atS -> do
+         (ef', r2) <- mkOnlyAddCh efR adds
+         if null r2 then return (ef', r) else return 
+             (ef', ChangeData (Add pos r2) atS : r)
       c -> return (efR, c:r) ) (ef1, []) cs
   -- then only one update change is required for this position
   if null rl then return ef2 else mkUpdateCh ef2 cr
 
-{- determine change for an add operation.
-NOTE: this will purposfully fail for any other cases than add entire Node/Link!
--}
-mkAddCh_fullElem :: Monad m => DgEffect -> AddChange -> m DgEffect
-mkAddCh_fullElem ef addCh = case addCh of
-  -- insert entire Node
-  AddElem e | nameString e == "DGNode" -> do
-    n <- mkXNode e
-    return $ ef { additions = (Left n) : additions ef }
-  -- insert entire link
-  AddElem e | nameString e == "DGLink" -> do
-    l <- mkXLink e
-    return $ ef { additions = (Right l) : additions ef }
-  -- insert other child element will be processed elsewhere!
-  _ -> fail "mkAddCh_fullElem"
+mkOnlyAddCh :: Monad m => DgEffect -> [AddChange] -> m (DgEffect, [AddChange])
+mkOnlyAddCh ef' = foldM extractAddElems (ef', []) where
+  extractAddElems (ef, r) addCh = case addCh of
+    -- insert entire Node
+    AddElem e | nameString e == "DGNode" -> do
+      n <- mkXNode e
+      return (ef { additions = (Left n) : additions ef }, r)
+    -- insert entire link
+    AddElem e | nameString e == "DGLink" -> do
+      l <- mkXLink e
+      return (ef { additions = (Right l) : additions ef }, r)
+    _ -> return (ef, addCh : r)
 
 {- determine which objects needs updating. -}
 mkUpdateCh :: Monad m => DgEffect -> Cursor -> m DgEffect
