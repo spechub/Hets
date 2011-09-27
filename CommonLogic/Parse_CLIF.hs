@@ -36,10 +36,10 @@ import Text.ParserCombinators.Parsec as Parsec
 cltext :: CharParser st TEXT_MRS
 cltext = do
     nt <- try namedtext
-    return (nt,Set.empty)
+    return $ Text_mrs (nt,Set.empty)
   <|> do
     t <- text
-    return (t,Set.empty)
+    return $ Text_mrs (t,Set.empty)
 
 namedtext :: CharParser st TEXT
 namedtext = parens $ do

@@ -42,9 +42,9 @@ retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted CL.BASIC_ITEMS -> Sign.Sign
 retrieveBasicItem sig x = case AS_Anno.item x of
                             CL.Axiom_items xs -> retrieveSign sig xs
 
-retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.TEXT_MRS
-                -> Sign.Sign
-retrieveSign sig = Sign.unite sig . propsOfFormula . fst . AS_Anno.item
+retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.TEXT_MRS -> Sign.Sign
+retrieveSign sig (AS_Anno.Annoted (CL.Text_mrs (t,_)) _ _ _) =
+  Sign.unite sig $ propsOfFormula t
 
 -- retrieve CL.Sentence out of BASIC_SPEC
 
@@ -105,7 +105,7 @@ makeNamed f i =
     ) $ AS_Anno.item f)
   { AS_Anno.isAxiom = not isTheorem }
    where
-      (text, _) = AS_Anno.item f
+      (CL.Text_mrs (text, _)) = AS_Anno.item f
       label = AS_Anno.getRLabel f
       annos = AS_Anno.r_annos f
       isImplies = any AS_Anno.isImplies annos
@@ -215,7 +215,7 @@ inducedFromMorphism m s = let
 
 -- negate sentence (text) - propagates negation to sentences
 negForm :: CL.TEXT_MRS -> CL.TEXT_MRS
-negForm (t,mrs) = (negForm_txt t,mrs)
+negForm (CL.Text_mrs (t,mrs)) = CL.Text_mrs (negForm_txt t,mrs)
 
 negForm_txt :: CL.TEXT -> CL.TEXT
 negForm_txt t = case t of

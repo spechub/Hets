@@ -109,7 +109,8 @@ mkMorphism s t p =
 -- here just the renaming of formulae
 
 mapSentence :: Morphism -> AS_BASIC.TEXT_MRS -> Result.Result AS_BASIC.TEXT_MRS
-mapSentence mor (t,mrs) = return (mapSentence_txt mor t, mrs)
+mapSentence mor (Text_mrs (t,mrs)) =
+  return $ Text_mrs (mapSentence_txt mor t, mrs)
 
 mapSentence_txt :: Morphism -> AS_BASIC.TEXT -> AS_BASIC.TEXT
 mapSentence_txt mor = mapSentenceH mor

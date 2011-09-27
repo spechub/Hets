@@ -100,7 +100,7 @@ textFromBasicItems abi = case Anno.item abi of
                               Axiom_items annoText -> Anno.item annoText
 
 getImports_textMrs :: TEXT_MRS -> [NAME]
-getImports_textMrs (t,_) = getImports_text t
+getImports_textMrs (Text_mrs (t,_)) = getImports_text t
 
 getImports_text :: TEXT -> [NAME]
 getImports_text (Text ps _) = map impToName $ filter isImportation ps
@@ -120,8 +120,8 @@ specName i (CL.Basic_spec []) def = mkSimpleId $ def ++ "_" ++ show i
 specName i (CL.Basic_spec [items]) def =
   case Anno.item items of
        Axiom_items ax ->
-          case fst $ Anno.item ax of
-               Text _ _ -> mkSimpleId $ def ++ "_" ++ show i
-               Named_text n _ _ -> mkSimpleId n
+          case Anno.item ax of
+               Text_mrs (Text _ _, _) -> mkSimpleId $ def ++ "_" ++ show i
+               Text_mrs (Named_text n _ _, _) -> mkSimpleId n
 specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i
 

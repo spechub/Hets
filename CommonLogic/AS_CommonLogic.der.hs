@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for common logic
@@ -47,7 +48,8 @@ printBasicSpec (Basic_spec xs) = pretty xs
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = pretty xs
 
-type TEXT_MRS = (TEXT, Set METARELATION)
+newtype TEXT_MRS = Text_mrs (TEXT, Set METARELATION)
+                   deriving (Show, Ord, Eq)
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
@@ -217,6 +219,8 @@ printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
 printSymbItems :: SYMB_ITEMS -> Doc
 printSymbItems (Symb_items xs _) = fsep $ map pretty xs
 
+instance Pretty TEXT_MRS where
+   pretty = printTextMrs
 instance Pretty TEXT where
    pretty = printText
 instance Pretty PHRASE where
@@ -225,6 +229,9 @@ instance Pretty MODULE where
    pretty = printModule
 instance Pretty IMPORTATION where
    pretty = printImportation
+
+printTextMrs :: TEXT_MRS -> Doc
+printTextMrs (Text_mrs (t,_)) = pretty t
 
 printText :: TEXT -> Doc
 printText s = case s of
@@ -247,7 +254,8 @@ printImportation :: IMPORTATION -> Doc
 printImportation (Imp_name x) = pretty x
 
 printMetarelation :: METARELATION -> Doc
-printMetarelation (RelativeInterprets t1 delta t2) =
+printMetarelation _ = empty
+{- printMetarelation (RelativeInterprets t1 delta t2) =
   hsep [ text "%{"
        , text relativeInterpretsS
        , pretty t1
@@ -260,6 +268,7 @@ printMetarelation (NonconservativeExtends t1 t2) =
        , pretty t1
        , pretty t2
        , text "}%"]
+-}
 
 -- keywords, reservednames in CLIF
 seqmarkS :: String

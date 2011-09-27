@@ -118,8 +118,9 @@ mapTheory (srcSign, srcFormulas) =
 
 -- translates a SoftFOL-theory to a CL-Text
 translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT_MRS
-translate s f = (Text [Importation $ Imp_name $ mkSimpleId $ softFOLSignTr
-                     , Sentence $ trmToSen s f] nullRange, Set.empty)
+translate s f =
+  Text_mrs (Text [ Importation $ Imp_name $ mkSimpleId $ softFOLSignTr
+                 , Sentence $ trmToSen s f] nullRange, Set.empty)
 
 
 signToTexts :: FOLSign.Sign -> [AS_Anno.Named TEXT_MRS]
@@ -136,7 +137,7 @@ signToTexts srcSign =
         map (AS_Anno.makeNamed sortRelTrS) (maybeToList sr)
       : map (AS_Anno.makeNamed funcMapTrS) (maybeToList fm)
       : map (AS_Anno.makeNamed predMapTrS) (maybeToList pm)
-      : [[AS_Anno.makeNamed softFOLSignTr
+      : [[AS_Anno.makeNamed softFOLSignTr $ Text_mrs 
           (Named_text softFOLSignTr (Text phrs nullRange) nullRange, Set.empty)]]
 
 -- creates one-sentence-phrases: forall x. (subSort x) => (superSort x)
@@ -152,7 +153,7 @@ sortRelText m =
         ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just (Named_text sortRelTrS (Text ps nullRange) nullRange, Set.empty)
+        else Just $ Text_mrs (Named_text sortRelTrS (Text ps nullRange) nullRange, Set.empty)
 
 typesWithIndv :: [Token] -> [(Token, NAME)] -- (type, individual)
 typesWithIndv args =
@@ -186,7 +187,7 @@ funcMapText m =
           ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just (Named_text funcMapTrS (Text ps nullRange) nullRange, Set.empty)
+        else Just $ Text_mrs (Named_text funcMapTrS (Text ps nullRange) nullRange, Set.empty)
 
 -- creates one-sentence-phrases:
 -- forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z))
@@ -207,7 +208,7 @@ predMapText m =
           ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just (Named_text predMapTrS (Text ps nullRange) nullRange, Set.empty)
+        else Just $ Text_mrs (Named_text predMapTrS (Text ps nullRange) nullRange, Set.empty)
 
 trmToSen :: FOLSign.Sign -> FOLSign.SPTerm -> SENTENCE
 trmToSen s t = case t of

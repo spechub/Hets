@@ -54,7 +54,7 @@ omdocToSen e (TCSymbol _ t sr _) n =
       Just _ ->
           return Nothing -- don't translate encoded names here
       Nothing ->
-          let ns = makeNamed n $ (toText e t,Set.empty)
+          let ns = makeNamed n $ Text_mrs (toText e t,Set.empty)
               res b = return $ Just $ ns { isAxiom = b }
           in case sr of
                Axiom -> res True

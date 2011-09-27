@@ -114,7 +114,8 @@ mapTheory (srcSign, srcFormulas) =
         transSnd (s, f) = (s, translate f)
 
 translate :: PBasic.FORMULA -> TEXT_MRS
-translate f = (Text [Sentence singletonUniv, Sentence $ toSen f] nullRange,empty)
+translate f =
+  Text_mrs (Text [Sentence singletonUniv, Sentence $ toSen f] nullRange,empty)
   where singletonUniv = Quant_sent (Universal [Name xName, Name yName]
             $ Atom_sent (Equation (Name_term xName) (Name_term yName)) nullRange
           ) nullRange

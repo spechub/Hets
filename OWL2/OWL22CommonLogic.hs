@@ -842,4 +842,4 @@ mapAxioms cSig (PlainAxiom ex fb) = case fb of
 
 -- helper function
 addMrs :: TEXT -> TEXT_MRS
-addMrs t = (t,Set.empty)
+addMrs t = Text_mrs (t,Set.empty)

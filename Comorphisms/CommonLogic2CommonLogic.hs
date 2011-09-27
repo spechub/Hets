@@ -107,8 +107,8 @@ mapTheory (srcSign, srcTexts) =
 
 -- | Result is a CL-equivalent text without modules
 eliminateModules :: TEXT_MRS -> TEXT_MRS
-eliminateModules (txt,mrs) =
-  (Text [Sentence (me_text newName [] txt)] nullRange, mrs)
+eliminateModules (Text_mrs (txt,mrs)) =
+  Text_mrs (Text [Sentence (me_text newName [] txt)] nullRange, mrs)
   where (newName, _) = freeName ("x", 0) (indvC_text txt)
 
 -- NOTE: ignores importations

@@ -311,10 +311,10 @@ sl_termInSeq prds cs term =
 
 -- | determines sublogic for basic items
 sl_basic_items :: CommonLogicSL -> AS.BASIC_ITEMS -> CommonLogicSL
-sl_basic_items cs (AS.Axiom_items xs) =
-  ((uncurry $ flip sl_text cs) . getPreds . fst . AS_Anno.item) xs
+sl_basic_items cs (AS.Axiom_items (AS_Anno.Annoted (AS.Text_mrs (t,_)) _ _ _)) =
+  (uncurry $ flip sl_text cs) $ getPreds  t
   where getPreds :: AS.TEXT -> (Set.Set AS.NAME, AS.TEXT)
-        getPreds t = (prd_text t, t)
+        getPreds txt = (prd_text txt, txt)
 
 -- | determines sublogic for basic spec
 sl_basic_spec :: CommonLogicSL -> AS.BASIC_SPEC -> CommonLogicSL
@@ -372,5 +372,5 @@ prBasicSpec cs (AS.Basic_spec items) = -- TODO: write some decent function
   AS.Basic_spec $ filter ((isSL_LE cs) . AS_Anno.item) items
 
 isSL_LE :: CommonLogicSL -> AS.BASIC_ITEMS -> Bool
-isSL_LE cs (AS.Axiom_items at) =
-  compareLE (sublogic_text bottom $ fst $ AS_Anno.item at) cs
+isSL_LE cs (AS.Axiom_items (AS_Anno.Annoted (AS.Text_mrs (t,_)) _ _ _)) =
+  compareLE (sublogic_text bottom t) cs

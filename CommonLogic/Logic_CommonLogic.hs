@@ -135,7 +135,7 @@ instance SublogicName CommonLogicSL where
     sublogicName = sublogics_name
 
 instance MinSublogic CommonLogicSL TEXT_MRS where
-    minSublogic (t,_) = sublogic_text bottom t
+    minSublogic (Text_mrs (t,_)) = sublogic_text bottom t
 
 instance MinSublogic CommonLogicSL NAME where
     minSublogic = sublogic_name bottom

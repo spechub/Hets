@@ -190,7 +190,7 @@ mapSentence sig form = Result [] $ Just $ trFormMrs sig form
 
 -- ignores importations
 trFormMrs :: ClSign.Sign -> ClBasic.TEXT_MRS -> CBasic.CASLFORMULA
-trFormMrs sig (form, _) = trForm sig form
+trFormMrs sig (ClBasic.Text_mrs (form, _)) = trForm sig form
 -- TODO: think about including Metarelations in translation
 
 trForm :: ClSign.Sign -> ClBasic.TEXT -> CBasic.CASLFORMULA
