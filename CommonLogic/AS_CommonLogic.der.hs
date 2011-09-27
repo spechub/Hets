@@ -24,6 +24,8 @@ import Common.DocUtils
 import Common.Keywords
 import qualified Common.AS_Annotation as AS_Anno
 
+import Data.Set (Set)
+
 -- DrIFT command
 {-! global: GetRange !-}
 
@@ -31,7 +33,7 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
                       deriving Show
 
 data BASIC_ITEMS =
-    Axiom_items (AS_Anno.Annoted TEXT)
+    Axiom_items (AS_Anno.Annoted TEXT_MRS)
     deriving Show
 
 instance Pretty BASIC_SPEC where
@@ -44,6 +46,8 @@ printBasicSpec (Basic_spec xs) = pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = pretty xs
+
+type TEXT_MRS = (TEXT, Set METARELATION)
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
@@ -118,6 +122,13 @@ data SYMB_ITEMS = Symb_items [NAME_OR_SEQMARK] Id.Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Eq)
 
+data METARELATION = RelativeInterprets NAME NAME NAME
+                    -- pos: t1, delta, t2 - (t1 + delta entails t2)
+                  | NonconservativeExtends NAME NAME
+                    -- pos: t1, t2 - (forall sigma. t1 entails sigma => t2 entails sigma)
+                  deriving (Show, Ord, Eq)
+
+
 -- pretty printing using CLIF
 
 instance Pretty SENTENCE where
@@ -142,6 +153,8 @@ instance Pretty SYMB_MAP_ITEMS where
    pretty = printSymbMapItems
 instance Pretty SYMB_ITEMS where
    pretty = printSymbItems
+instance Pretty METARELATION where
+   pretty = printMetarelation
 
 printSentence :: SENTENCE -> Doc
 printSentence s = case s of
@@ -233,6 +246,21 @@ printModule (Mod_ex x y z _) =
 printImportation :: IMPORTATION -> Doc
 printImportation (Imp_name x) = pretty x
 
+printMetarelation :: METARELATION -> Doc
+printMetarelation (RelativeInterprets t1 delta t2) =
+  hsep [ text "%{"
+       , text relativeInterpretsS
+       , pretty t1
+       , pretty delta
+       , pretty t2
+       , text "}%"]
+printMetarelation (NonconservativeExtends t1 t2) =
+  hsep [ text "%{"
+       , text nonconservativeExtensionS
+       , pretty t1
+       , pretty t2
+       , text "}%"]
+
 -- keywords, reservednames in CLIF
 seqmarkS :: String
 seqmarkS = "..."
@@ -257,3 +285,10 @@ clModuleS = "cl-module"
 
 clExcludeS :: String
 clExcludeS = "cl-excludes"
+
+relativeInterpretsS :: String
+relativeInterpretsS = "relative-interprets"
+
+nonconservativeExtensionS :: String
+nonconservativeExtensionS = "nonconservative-extension"
+

@@ -50,7 +50,7 @@ instance Comorphism
     Logic.CommonLogic       -- lid domain
     Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
-    TEXT                    -- sentence domain
+    TEXT_MRS                -- sentence domain
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symbol map items domain
     Sign.Sign               -- signature domain
@@ -61,7 +61,7 @@ instance Comorphism
     Logic.CommonLogic       -- lid domain
     Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
-    TEXT                    -- sentence domain
+    TEXT_MRS                -- sentence domain
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symbol map items domain
     Sign.Sign               -- signature domain
@@ -86,7 +86,7 @@ mapSub = id
 mapMor :: Mor.Morphism -> Result Mor.Morphism
 mapMor mor = return mor
 
-mapSentence :: Sign.Sign -> TEXT -> Result TEXT
+mapSentence :: Sign.Sign -> TEXT_MRS -> Result TEXT_MRS
 mapSentence _ txt = return $ eliminateModules txt
 
 -------------------------------------------------------------------------------
@@ -95,20 +95,21 @@ mapSentence _ txt = return $ eliminateModules txt
 
 
 
-mapTheory :: (Sign.Sign, [AS_Anno.Named TEXT])
-             -> Result (Sign.Sign, [AS_Anno.Named TEXT])
+mapTheory :: (Sign.Sign, [AS_Anno.Named TEXT_MRS])
+             -> Result (Sign.Sign, [AS_Anno.Named TEXT_MRS])
 mapTheory (srcSign, srcTexts) =
   return (srcSign,
           map ((uncurry AS_Anno.makeNamed) . elimModSnd . senAndName) srcTexts)
-  where senAndName :: AS_Anno.Named TEXT -> (String, TEXT)
+  where senAndName :: AS_Anno.Named TEXT_MRS -> (String, TEXT_MRS)
         senAndName t = (AS_Anno.senAttr t, AS_Anno.sentence t)
-        elimModSnd :: (String, TEXT) -> (String, TEXT)
+        elimModSnd :: (String, TEXT_MRS) -> (String, TEXT_MRS)
         elimModSnd (s, t) = (s, eliminateModules t)
 
 -- | Result is a CL-equivalent text without modules
-eliminateModules :: TEXT -> TEXT
-eliminateModules txt = Text [Sentence (me_text newName [] txt)] nullRange
-    where (newName, _) = freeName ("x", 0) (indvC_text txt)
+eliminateModules :: TEXT_MRS -> TEXT_MRS
+eliminateModules (txt,mrs) =
+  (Text [Sentence (me_text newName [] txt)] nullRange, mrs)
+  where (newName, _) = freeName ("x", 0) (indvC_text txt)
 
 -- NOTE: ignores importations
 me_text :: NAME -> [NAME] -> TEXT -> SENTENCE

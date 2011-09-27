@@ -26,7 +26,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import Logic.Logic
 import Logic.Comorphism
 
-import Data.Set (fromList)
+import Data.Set (fromList,empty)
 
 -- Propositional
 import qualified Propositional.Logic_Propositional as PLogic
@@ -65,7 +65,7 @@ instance Comorphism Prop2CommonLogic
     ClLogic.CommonLogic     -- lid domain
     ClSL.CommonLogicSL      -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
-    TEXT                    -- sentence domain
+    TEXT_MRS                -- sentence domain
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symbol map items domain
     ClSign.Sign             -- signature domain
@@ -92,7 +92,7 @@ mapMor mor =
       pmp = PMor.propMap mor
   in  return $ ClMor.Morphism src tgt pmp
 
-mapSentence :: PSign.Sign -> PBasic.FORMULA -> Result TEXT
+mapSentence :: PSign.Sign -> PBasic.FORMULA -> Result TEXT_MRS
 mapSentence _ f = return $ translate f
 
 mapSign :: PSign.Sign -> ClSign.Sign
@@ -104,17 +104,17 @@ baseSig = let s = fromList [simpleIdToId xName, simpleIdToId yName]
           in  ClSign.Sign s s
 
 mapTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
-             -> Result (ClSign.Sign, [AS_Anno.Named TEXT])
+             -> Result (ClSign.Sign, [AS_Anno.Named TEXT_MRS])
 mapTheory (srcSign, srcFormulas) =
   return (mapSign srcSign,
         map ((uncurry AS_Anno.makeNamed) . transSnd . senAndName) srcFormulas)
   where senAndName :: AS_Anno.Named PBasic.FORMULA -> (String, PBasic.FORMULA)
         senAndName f = (AS_Anno.senAttr f, AS_Anno.sentence f)
-        transSnd :: (String, PBasic.FORMULA) -> (String, TEXT)
+        transSnd :: (String, PBasic.FORMULA) -> (String, TEXT_MRS)
         transSnd (s, f) = (s, translate f)
 
-translate :: PBasic.FORMULA -> TEXT
-translate f = Text [Sentence singletonUniv, Sentence $ toSen f] nullRange
+translate :: PBasic.FORMULA -> TEXT_MRS
+translate f = (Text [Sentence singletonUniv, Sentence $ toSen f] nullRange,empty)
   where singletonUniv = Quant_sent (Universal [Name xName, Name yName]
             $ Atom_sent (Equation (Name_term xName) (Name_term yName)) nullRange
           ) nullRange

@@ -38,7 +38,7 @@ parseCL_CLIF filename = do
   maybeText <- return $ runParser (many basicSpec) (emptyAnnos ()) "" contents
   case maybeText of
       Right bs -> return $ convertToLibDefN filename $ reverse bs
-      Left _ -> error $ "Error parsing CLIF-File."
+      Left x -> error $ "Error parsing CLIF-File." ++ show x
 
 -- maps imports in basic spec to global definition links (extensions) in
 -- development graph
@@ -92,11 +92,14 @@ cnvimport n = emptyAnno $ Spec_inst n [] nullRange
 -- retrieves all importations from the text
 getImports :: BASIC_SPEC -> [NAME]
 getImports (CL.Basic_spec items) =
-  concatMap getImports_text $ map textFromBasicItems items
+  concatMap getImports_textMrs $ map textFromBasicItems items
 
-textFromBasicItems :: Anno.Annoted (BASIC_ITEMS) -> TEXT
+textFromBasicItems :: Anno.Annoted (BASIC_ITEMS) -> TEXT_MRS
 textFromBasicItems abi = case Anno.item abi of
                               Axiom_items annoText -> Anno.item annoText
+
+getImports_textMrs :: TEXT_MRS -> [NAME]
+getImports_textMrs (t,_) = getImports_text t
 
 getImports_text :: TEXT -> [NAME]
 getImports_text (Text ps _) = map impToName $ filter isImportation ps
@@ -116,7 +119,7 @@ specName i (CL.Basic_spec []) def = mkSimpleId $ def ++ "_" ++ show i
 specName i (CL.Basic_spec [items]) def =
   case Anno.item items of
        Axiom_items ax ->
-          case Anno.item ax of
+          case fst $ Anno.item ax of
                Text _ _ -> mkSimpleId $ def ++ "_" ++ show i
                Named_text n _ _ -> mkSimpleId n
 specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i

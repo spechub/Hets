@@ -107,8 +107,12 @@ mkMorphism s t p =
 
 -- | sentence (text) translation along signature morphism
 -- here just the renaming of formulae
-mapSentence :: Morphism -> AS_BASIC.TEXT -> Result.Result AS_BASIC.TEXT
-mapSentence mor = return . mapSentenceH mor
+
+mapSentence :: Morphism -> AS_BASIC.TEXT_MRS -> Result.Result AS_BASIC.TEXT_MRS
+mapSentence mor (t,mrs) = return (mapSentence_txt mor t, mrs)
+
+mapSentence_txt :: Morphism -> AS_BASIC.TEXT -> AS_BASIC.TEXT
+mapSentence_txt mor = mapSentenceH mor
 
 -- propagates the translation to sentences
 mapSentenceH :: Morphism -> AS_BASIC.TEXT -> AS_BASIC.TEXT

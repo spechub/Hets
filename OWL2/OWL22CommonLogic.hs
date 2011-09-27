@@ -69,7 +69,7 @@ instance Comorphism
     CommonLogic             -- lid codomain
     ClSl.CommonLogicSL      -- sublogics codomain
     BASIC_SPEC              -- Basic spec codomain
-    TEXT                    -- sentence codomain
+    TEXT_MRS                -- sentence codomain
     SYMB_ITEMS              -- symbol items codomain
     SYMB_MAP_ITEMS          -- symbol map items codomain
     Sign                    -- signature codomain
@@ -318,7 +318,7 @@ thingDataDisjoint = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN
     $ mkBC $ map mkSAtom ["Thing", "Datatype"]
 
 mapTheory :: (OS.Sign, [CommonAnno.Named Axiom])
-             -> Result (Sign, [CommonAnno.Named TEXT])
+             -> Result (Sign, [CommonAnno.Named TEXT_MRS])
 mapTheory (owlSig, owlSens) = do
     cSig <- mapSign owlSig
     (cSensI, nSig) <- foldM (\ (x, y) z ->
@@ -331,7 +331,7 @@ mapTheory (owlSig, owlSens) = do
             ++ [topDataProp, bottomDataProp, topObjProp, bottomObjProp]
             ++ datatypeKeys}) nSig
         cSens = nothingSent : thingDataDisjoint : declarations owlSig ++ cSensI
-    return (sig, cSens)
+    return (sig, map (CommonAnno.mapNamed addMrs) cSens)
 
 -- | mapping of OWL to CommonLogic_DL formulae
 mapSentence :: Sign                             -- ^ CommonLogic Signature
@@ -838,3 +838,8 @@ mapAxioms :: Sign -> Axiom -> Result ([TEXT], Sign)
 mapAxioms cSig (PlainAxiom ex fb) = case fb of
     ListFrameBit rel lfb -> mapListFrameBit cSig ex rel lfb
     AnnFrameBit _ afb -> mapAnnFrameBit cSig ex afb
+
+
+-- helper function
+addMrs :: TEXT -> TEXT_MRS
+addMrs t = (t,Set.empty)

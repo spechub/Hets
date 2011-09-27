@@ -30,7 +30,7 @@ import qualified Data.List as List
 
 data DIAG_FORM = DiagForm
     {
-        formula :: AS_Anno.Named CL.TEXT,
+        formula :: AS_Anno.Named CL.TEXT_MRS,
       diagnosis :: Result.Diagnosis
     }
 
@@ -42,8 +42,9 @@ retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted CL.BASIC_ITEMS -> Sign.Sign
 retrieveBasicItem sig x = case AS_Anno.item x of
                             CL.Axiom_items xs -> retrieveSign sig xs
 
-retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.TEXT -> Sign.Sign
-retrieveSign sig = Sign.unite sig . propsOfFormula . AS_Anno.item
+retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.TEXT_MRS
+                -> Sign.Sign
+retrieveSign sig = Sign.unite sig . propsOfFormula . fst . AS_Anno.item
 
 -- retrieve CL.Sentence out of BASIC_SPEC
 
@@ -62,11 +63,11 @@ retrieveFormulaItem axs x sig =
 
 data NUM_FORM = NumForm
     {
-      nfformula :: AS_Anno.Annoted CL.TEXT
+      nfformula :: AS_Anno.Annoted CL.TEXT_MRS
     , nfnum :: Int
     }
 
-numberFormulae :: AS_Anno.Annoted CL.TEXT -> Int -> NUM_FORM
+numberFormulae :: AS_Anno.Annoted CL.TEXT_MRS -> Int -> NUM_FORM
 numberFormulae x i =
   if null $ AS_Anno.getRLabel x
   then NumForm {nfformula = x, nfnum = i}
@@ -92,11 +93,19 @@ addFormula formulae nf _ = formulae ++
       lnum = AS_Anno.opt_pos f
 
 -- | generates a named formula
-makeNamed :: AS_Anno.Annoted CL.TEXT -> Int -> AS_Anno.Named CL.TEXT
-makeNamed f i = (AS_Anno.makeNamed (if null label then "Ax_" ++ show i
-                                       else label) $ AS_Anno.item f)
-                    { AS_Anno.isAxiom = not isTheorem }
+makeNamed :: AS_Anno.Annoted CL.TEXT_MRS -> Int
+             -> AS_Anno.Named CL.TEXT_MRS
+makeNamed f i =
+  (AS_Anno.makeNamed (
+      if null label
+        then case text of
+                CL.Named_text s _ _ -> s
+                _ ->  "Ax_" ++ show i
+        else label
+    ) $ AS_Anno.item f)
+  { AS_Anno.isAxiom = not isTheorem }
    where
+      (text, _) = AS_Anno.item f
       label = AS_Anno.getRLabel f
       annos = AS_Anno.r_annos f
       isImplies = any AS_Anno.isImplies annos
@@ -179,7 +188,7 @@ uniteMap p = List.foldl (\ sig -> Sign.unite sig . p)
 basicCommonLogicAnalysis :: (CL.BASIC_SPEC, Sign.Sign, a)
   -> Result (CL.BASIC_SPEC,
              ExtSign Sign.Sign Symbol.Symbol,
-             [AS_Anno.Named CL.TEXT])
+             [AS_Anno.Named CL.TEXT_MRS])
 basicCommonLogicAnalysis (bs, sig, _) =
    Result.Result [] $ if exErrs then Nothing else
      Just (bs, ExtSign sigItems newSyms, sentences)
@@ -205,24 +214,27 @@ inducedFromMorphism m s = let
 
 
 -- negate sentence (text) - propagates negation to sentences
-negForm :: CL.TEXT -> CL.TEXT
-negForm t = case t of
+negForm :: CL.TEXT_MRS -> CL.TEXT_MRS
+negForm (t,mrs) = (negForm_txt t,mrs)
+
+negForm_txt :: CL.TEXT -> CL.TEXT
+negForm_txt t = case t of
   CL.Text phrs r -> CL.Text (map negForm_phr phrs) r
-  CL.Named_text n txt r -> CL.Named_text n (negForm txt) r
+  CL.Named_text n txt r -> CL.Named_text n (negForm_txt txt) r
 
 -- negate phrase - propagates negation to sentences
 negForm_phr :: CL.PHRASE -> CL.PHRASE
 negForm_phr phr = case phr of
   CL.Module m -> CL.Module $ negForm_mod m
   CL.Sentence s -> CL.Sentence $ negForm_sen s
-  CL.Comment_text c t r -> CL.Comment_text c (negForm t) r
+  CL.Comment_text c t r -> CL.Comment_text c (negForm_txt t) r
   x -> x
 
 -- negate module - propagates negation to sentences
 negForm_mod ::CL.MODULE -> CL.MODULE
 negForm_mod m = case m of
-  CL.Mod n t r -> CL.Mod n (negForm t) r
-  CL.Mod_ex n exs t r -> CL.Mod_ex n exs (negForm t) r
+  CL.Mod n t r -> CL.Mod n (negForm_txt t) r
+  CL.Mod_ex n exs t r -> CL.Mod_ex n exs (negForm_txt t) r
 
 -- negate sentence
 negForm_sen :: CL.SENTENCE -> CL.SENTENCE

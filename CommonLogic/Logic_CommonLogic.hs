@@ -50,7 +50,7 @@ instance Category Sign Morphism
       composeMorphisms = composeMor
 
 instance Sentences CommonLogic
-    TEXT
+    TEXT_MRS
     Sign
     Morphism
     Symbol
@@ -73,7 +73,7 @@ instance Syntax CommonLogic
 instance Logic CommonLogic
     CommonLogicSL     -- Sublogics
     BASIC_SPEC        -- basic_spec
-    TEXT              -- sentence
+    TEXT_MRS          -- sentence
     SYMB_ITEMS        -- symb_items
     SYMB_MAP_ITEMS    -- symb_map_items
     Sign              -- sign
@@ -94,7 +94,7 @@ instance Logic CommonLogic
 
 instance StaticAnalysis CommonLogic
     BASIC_SPEC
-    TEXT
+    TEXT_MRS
     SYMB_ITEMS
     SYMB_MAP_ITEMS
     Sign
@@ -134,8 +134,8 @@ instance MinSublogic CommonLogicSL Sign where
 instance SublogicName CommonLogicSL where
     sublogicName = sublogics_name
 
-instance MinSublogic CommonLogicSL TEXT where
-    minSublogic t = sublogic_text bottom t
+instance MinSublogic CommonLogicSL TEXT_MRS where
+    minSublogic (t,_) = sublogic_text bottom t
 
 instance MinSublogic CommonLogicSL NAME where
     minSublogic = sublogic_name bottom

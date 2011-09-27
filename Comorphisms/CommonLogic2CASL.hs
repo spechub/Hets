@@ -65,7 +65,7 @@ instance Comorphism
     ClLogic.CommonLogic    -- lid domain
     ClSl.CommonLogicSL     -- sublogics codomain
     ClBasic.BASIC_SPEC     -- Basic spec domain
-    ClBasic.TEXT           -- sentence domain
+    ClBasic.TEXT_MRS       -- sentence domain
     ClBasic.SYMB_ITEMS     -- symbol items domain
     ClBasic.SYMB_MAP_ITEMS -- symbol map items domain
     ClSign.Sign            -- signature domain
@@ -131,7 +131,7 @@ trMor mp =
 
 -- |
 mapTheory :: (ClSign.Sign,
-              [AS_Anno.Named ClBasic.TEXT])
+              [AS_Anno.Named ClBasic.TEXT_MRS])
               -> Result
                   (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
@@ -181,16 +181,20 @@ nil :: Id.Id
 nil = Id.stringToId "nil"
 
 -- todo maybe input here axioms
-trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.TEXT)
+trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.TEXT_MRS)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
-trNamedForm sig form = AS_Anno.mapNamed (trForm sig) form
+trNamedForm sig form = AS_Anno.mapNamed (trFormMrs sig) form
 
-mapSentence :: ClSign.Sign -> ClBasic.TEXT -> Result CBasic.CASLFORMULA
-mapSentence sig form = Result [] $ Just $ trForm sig form
+mapSentence :: ClSign.Sign -> ClBasic.TEXT_MRS -> Result CBasic.CASLFORMULA
+mapSentence sig form = Result [] $ Just $ trFormMrs sig form
 
 -- ignores importations
+trFormMrs :: ClSign.Sign -> ClBasic.TEXT_MRS -> CBasic.CASLFORMULA
+trFormMrs sig (form, _) = trForm sig form
+-- TODO: think about including Metarelations in translation
+
 trForm :: ClSign.Sign -> ClBasic.TEXT -> CBasic.CASLFORMULA
-trForm sig form =
+trForm sig form = 
    case form of
      ClBasic.Text phrs rn ->
         CBasic.Conjunction (map (phraseForm sig) (filter nonImport phrs)) rn
@@ -205,13 +209,13 @@ phraseForm sig phr =
    case phr of
      ClBasic.Module m -> moduleForm sig m
      ClBasic.Sentence s -> senForm sig s
-     ClBasic.Importation i -> undefined -- cannot occur, because filtered
+     ClBasic.Importation _ -> undefined -- cannot occur, because filtered
      ClBasic.Comment_text _ t _ -> trForm sig t
 
 moduleForm :: ClSign.Sign -> ClBasic.MODULE -> CBasic.CASLFORMULA
 moduleForm sig m = case m of
    ClBasic.Mod _ txt _ -> trForm sig txt
-   ClBasic.Mod_ex _ exs txt _ -> trForm sig txt --what to do with the exclusions?
+   ClBasic.Mod_ex _ _ txt _ -> trForm sig txt --what to do with the exclusions?
 
 senForm :: ClSign.Sign -> ClBasic.SENTENCE -> CBasic.CASLFORMULA
 senForm sig form =

@@ -25,7 +25,7 @@ import Common.Lexer as Lexer
 import Common.Keywords as Keywords
 
 import Data.Either (lefts, rights)
-import qualified Data.Set as Set -- used for parsing roleset
+import qualified Data.Set as Set
 import qualified CommonLogic.Tools as Tools
 
 import CommonLogic.Lexer_CLIF
@@ -33,13 +33,13 @@ import CommonLogic.Lexer_CLIF
 import Text.ParserCombinators.Parsec as Parsec
 
 -- | parser for cltext
-cltext :: CharParser st TEXT
+cltext :: CharParser st TEXT_MRS
 cltext = do
     nt <- try namedtext
-    return nt
+    return (nt,Set.empty)
   <|> do
     t <- text
-    return t
+    return (t,Set.empty)
 
 namedtext :: CharParser st TEXT
 namedtext = parens $ do
@@ -346,7 +346,7 @@ parseClText = do
   tx <- cltext
   return $ Axiom_items (textToAn tx)
 
-textToAn :: TEXT -> Annotation.Annoted TEXT
+textToAn :: TEXT_MRS -> Annotation.Annoted TEXT_MRS
 textToAn x = Annotation.Annoted x nullRange [] []
 
 -- | parser for Axiom_items
@@ -366,7 +366,7 @@ parseAx = do
   return $ Axiom_items t
 
 -- | Toplevel parser for formulae
-aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT)
+aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT_MRS)
 aFormula = do
      AnnoState.allAnnoParser cltext
 

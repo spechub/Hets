@@ -30,6 +30,7 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation 
 
+import qualified Data.Set as Set (empty)
 
 
 
@@ -47,13 +48,13 @@ omdocToSym _ symb _ = fail $ concat ["omdocToSym: only TCSymbols are allowed, bu
 
 
  --------------- Sentences from OMElements
-omdocToSen :: Env -> TCElement -> String -> Result (Maybe (Named TEXT))
+omdocToSen :: Env -> TCElement -> String -> Result (Maybe (Named TEXT_MRS))
 omdocToSen e (TCSymbol _ t sr _) n =
     case nameDecode n of
       Just _ ->
           return Nothing -- don't translate encoded names here
       Nothing ->
-          let ns = makeNamed n $ toText e t
+          let ns = makeNamed n $ (toText e t,Set.empty)
               res b = return $ Just $ ns { isAxiom = b }
           in case sr of
                Axiom -> res True
