@@ -43,7 +43,7 @@ instance Pretty BASIC_ITEMS where
     pretty = printBasicItems
 
 printBasicSpec :: BASIC_SPEC -> Doc
-printBasicSpec (Basic_spec xs) = pretty xs
+printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = pretty xs
