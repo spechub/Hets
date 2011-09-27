@@ -17,9 +17,7 @@ Definition of sentences for HolLight logic
 -}
 module HolLight.Sentence where
 
-import Common.AS_Annotation
 import Common.DocUtils
-import HolLight.Sign()
 import Common.Doc
 import HolLight.Helper
 import HolLight.Term
@@ -31,15 +29,8 @@ data Sentence = Sentence {
   proof :: Maybe HolProof
   } deriving (Eq, Ord, Show)
 
-printNamedSen :: Named Sentence -> Doc
-printNamedSen ns =
-  let s = sentence ns in
-  let name = senAttr ns
-  in (hcat [text ". ", pretty s,text " %(",text name,text ")%"])
-
-
 instance Pretty Sentence where
-  pretty s = (pp_print_term . term) s
+  pretty = pp_print_term . term
 
 pp_print_term :: Term -> Doc
 pp_print_term tm = print_term 0 tm
