@@ -4,7 +4,7 @@
 import Static.ApplyXmlDiff
 import System.Environment
 import Control.Monad (foldM)
-import Text.XML.Light (parseXMLDoc, showTopElement)
+import Text.XML.Light
 
 main :: IO()
 main = do
@@ -31,5 +31,5 @@ testDiff p1 ps = do
           xml2 <- foldM (\ xml' xup -> do
             diff <- readFile xup
             applyXmlDiff xml' diff ) xml1 ps
-          writeFile (p1 ++ "-output") $ showTopElement xml2
+          writeFile (p1 ++ "-output") $ ppTopElement xml2
         _ -> fail "failed to parse xml-file"
