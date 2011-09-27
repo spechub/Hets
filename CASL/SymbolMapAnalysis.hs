@@ -611,7 +611,7 @@ finalUnion addSigExt s1 s2 =
                ++ " side of union)")
        : map pretty l ++ [mapsto <+> pretty s]
      prM str = ppMap ((text str <+>) . pretty)
-               (vcat . map prL) id vcat (\ v1 v2 -> sep [v1, v2])
+               (vcat . map prL) (const id) vcat (\ v1 v2 -> sep [v1, v2])
  in if Map.null d2 && Map.null e2 then return s3
     else fail $ "illegal overload relation identifications for profiles of:\n"
          ++ show (prM "op" d2 $+$ prM "pred" e2)

@@ -52,7 +52,7 @@ import Text.XML.Light
 import Text.XML.Light.Cursor
 
 import Common.Doc
-import Common.DocUtils
+import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result

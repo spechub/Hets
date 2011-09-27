@@ -167,28 +167,43 @@ instance Pretty a => Pretty [a] where
     pretty = pretties
 
 instance Pretty a => Pretty (Set.Set a) where
-    pretty = braces . ppWithCommas . Set.toList
+    pretty = printSet braces sepByCommas
 
-printSetMap :: (Pretty k, Pretty a, Ord a, Ord k) => Doc -> Doc
-            -> Map.Map k (Set.Set a) -> Doc
+-- | container size
+data CSize = CEmpty | CSingle | CMult
+
+ppList :: (a -> Doc) -> (CSize -> Doc -> Doc) -> ([Doc] -> Doc) -> [a] -> Doc
+ppList fa brace inter l = case l of
+  [] -> brace CEmpty empty
+  [e] -> brace CSingle $ fa e
+  _ -> brace CMult . inter $ map fa l
+
+ppSet :: (a -> Doc) -> (CSize -> Doc -> Doc) -> ([Doc] -> Doc)
+  -> Set.Set a -> Doc
+ppSet fa brace inter = ppList fa brace inter . Set.toList
+
+printSet :: Pretty a => (Doc -> Doc) -> ([Doc] -> Doc) -> Set.Set a -> Doc
+printSet = ppSet pretty . const
+
+printSetMap :: (Pretty k, Pretty a) => Doc -> Doc -> Map.Map k (Set.Set a)
+  -> Doc
 printSetMap header sepa = vcat . concatMap ( \ (i, s) ->
     map ( \ e -> header <+> pretty i <+> colon <> sepa <> pretty e)
             $ Set.toList s) . Map.toList
 
 printMap :: (Pretty a, Pretty b) => (Doc -> Doc) -> ([Doc] -> Doc)
          -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
-printMap = ppMap pretty pretty
+printMap = ppMap pretty pretty . const
 
-ppMap :: (a -> Doc) -> (b -> Doc) -> (Doc -> Doc) -> ([Doc] -> Doc)
+ppMap :: (a -> Doc) -> (b -> Doc) -> (CSize -> Doc -> Doc) -> ([Doc] -> Doc)
       -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
 ppMap fa fb brace inter pairDoc =
     ppPairlist fa fb brace inter pairDoc . Map.toList
 
-ppPairlist :: (a -> Doc) -> (b -> Doc) -> (Doc -> Doc) -> ([Doc] -> Doc)
-      -> (Doc -> Doc -> Doc) -> [(a, b)] -> Doc
-ppPairlist fa fb brace inter pairDoc = brace . inter
-     . map ( \ (a, b) -> pairDoc (fa a) (fb b))
-
+ppPairlist :: (a -> Doc) -> (b -> Doc) -> (CSize -> Doc -> Doc)
+  -> ([Doc] -> Doc) -> (Doc -> Doc -> Doc) -> [(a, b)] -> Doc
+ppPairlist fa fb brace inter pairDoc =
+  ppList (\ (a, b) -> pairDoc (fa a) (fb b)) brace inter
 
 pairElems :: Doc -> Doc -> Doc
 pairElems a b = a <+> mapsto <+> b
