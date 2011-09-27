@@ -47,7 +47,7 @@ printBody f = let
        $+$
        ppMap pretty (sep . prepPunctuate (text andS <> Doc.space)
                              . map pretty . simpValue)
-             id vcat col gls
+             (const id) vcat col gls
        $+$
        (if Map.null cns then empty else keyword constsS)
        $+$
