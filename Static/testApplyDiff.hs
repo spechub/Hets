@@ -1,9 +1,11 @@
 
 -- provides a simple testing-tool for using ApplyXmlDiff upon a proper Xml-File
 
-import Static.ApplyXmlDiff
+import Static.XSimplePath
 import System.Environment
-import Control.Monad (foldM)
+
+import Control.Monad
+
 import Text.XML.Light
 
 main :: IO()
@@ -20,7 +22,8 @@ printDiff p1 ps = do
       case parseXMLDoc xml of
         Just xml1 -> mapM_ (\ xup -> do
             diff <- readFile xup
-            printXmlDiff xml1 diff ) ps
+            ef <- getEffect xml1 diff
+            putStrLn (show ef)) ps
         _ -> fail "failed to parse xml-file"
 
 testDiff :: FilePath -> [FilePath] -> IO()
@@ -30,6 +33,6 @@ testDiff p1 ps = do
         Just xml1 -> do
           xml2 <- foldM (\ xml' xup -> do
             diff <- readFile xup
-            applyXmlDiff xml' diff ) xml1 ps
+            changeXml xml' diff ) xml1 ps
           writeFile (p1 ++ "-output") $ ppTopElement xml2
         _ -> fail "failed to parse xml-file"

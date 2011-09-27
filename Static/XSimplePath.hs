@@ -163,7 +163,8 @@ iterateXml dir pths cr0 ef0 = do
       return (crRes, ef3)
 
 removeFindLeft :: (Cursor -> Bool) -> Cursor -> Maybe Cursor
-removeFindLeft p = maybe Nothing (findLeft p) . removeGoLeft
+removeFindLeft p = maybe Nothing (\cr ->
+  if p cr then Just cr else findLeft p cr) . removeGoLeft
 
 moveDown :: Monad m => Direction -> Cursor -> m Cursor
 moveDown dir cr = case dir of
