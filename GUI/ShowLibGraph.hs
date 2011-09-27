@@ -39,6 +39,7 @@ import Common.LibName
 import Common.Utils
 import qualified Common.Lib.Rel as Rel
 import Common.Result
+import Common.ResultT
 
 import Data.IORef
 import qualified Data.Map as Map
@@ -177,14 +178,13 @@ changeLibGraph gi graph nodesEdges = do
               xs <- readFile xd
               xis <- readFile xi
               putIfVerbose opts 3 $ "Ignoring Impacts:\n" ++ xis
-              let Result ds mdg = dgXUpdate xs le dg
+              Result ds mdg <- runResultT $ dgXUpdate opts xs le ln dg
               case mdg of
-                Just fdg -> do
+                Just fle -> do
                   closeOpenWindows gi
                   mapM_ (deleteArc graph') edges
                   mapM_ (deleteNode graph') nodes
                   addNodesAndEdges gi graph graph' nodesEdges
-                  let fle = Map.insert ln fdg le
                   writeIORef (intState gi) emptyIntState
                         { i_state = Just $ emptyIntIState fle ln
                         , filename = fn }

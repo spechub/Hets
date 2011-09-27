@@ -11,7 +11,7 @@ break down Common.XPath.Expr into a simpler path description and transfer
 into cursor movement.
 -}
 
-module Common.XSimplePath where
+module Static.XSimplePath where
 
 import Common.XPath hiding (Text)
 import Common.XUpdate
@@ -33,7 +33,6 @@ import Text.XML.Light.Cursor
 
 data SimplePath = PathStep Finder SimplePath
                 | PathEnd ChangeData
--- ([Finder], ChangeData)
 
 {- Finder stores predicate list to locate the element and an index, in case
 multiple elements comply with the predicate -}
@@ -93,7 +92,6 @@ data ChangeRes = ChangeCr Cursor
                | RemoveCr
 
 {- Describes the minimal change-effect of a .diff upon a DGraph. -}
--- TODO split update-maps
 data DgEffect = DgEffect { removes :: Set.Set DgElemId
                          , updates :: Map.Map DgElemId XElem
                          , additions :: [XElem]
@@ -108,14 +106,10 @@ instance Show DgEffect where
     (if Set.null rmv then "" else "<< Removes >>\n"
       ++ showDgElemSet (Set.toList rmv))
     ++ (if Map.null upd then "" else "<< Updates >>\n"
-      ++ unlines (map show $ Map.elems upd)) -- showDgElemSet (Map.keys upd))
-{-    ++ (if null adds then "" else "<< Insertions >>\n"
-       ++ unlines (map showXElem adds)) -}
+      ++ showDgElemSet (Map.keys upd))
+    ++ (if null adds then "" else "<< Insertions >>\n"
+       ++ unlines (map show adds))
     ++ maybe "" (\_ -> "Global Annotation Changed") annoCh
-
-showXElem :: XElem -> String
-showXElem (Left xn) = show xn
-showXElem (Right xl) = show xl
 
 showDgElemSet :: [DgElemId] -> String
 showDgElemSet = unlines . map (\ e -> case e of
@@ -240,18 +234,21 @@ applyAddOp pos cr addCh = case (pos, addCh) of
             _ -> fail "applyAddOp(2)"
         _ -> fail "applyAddOp(3)"
 
+checkAttrs :: Element -> [Attr] -> Bool
+checkAttrs e = all checkAttr where
+   checkAttr at = case findAttr (attrKey at) e of
+          Nothing -> False
+          Just atV -> atV == attrVal at
+
 {- given the remaining PathElements, determine for which Paths the current
 Cursor is relevant (else -> toRight) and then gather from those the changes
 regarding the current object (PathEnds; else -> toChildren). -}
 propagatePaths :: Monad m => Cursor -> [SimplePath]
-               -> m ([ChangeData], [SimplePath], [SimplePath]) 
+               -> m ([ChangeData], [SimplePath], [SimplePath])
 propagatePaths cr pths = case current cr of
   Elem e -> let
-    checkAttr at = case findAttr (attrKey at) e of
-                Nothing -> False
-                Just atV -> atV == attrVal at
     maybeDecrease pth = case pth of
-              PathStep (FindBy nm atL i) r | elName e == nm && all checkAttr atL
+              PathStep (FindBy nm atL i) r | elName e == nm && checkAttrs e atL
                 -> PathStep (FindBy nm atL $ i-1) r
               st -> st
     (cur, toRight) = partition isAtZero $ map maybeDecrease pths
@@ -289,7 +286,7 @@ mkAddOrUpdateCh cr cs ef1 = do
   (ef2, rl) <- foldM (\ (efR, r) cd -> case cd of
       ChangeData (Add pos adds) atS -> do
          (ef', r2) <- mkOnlyAddCh efR adds
-         if null r2 then return (ef', r) else return 
+         if null r2 then return (ef', r) else return
              (ef', ChangeData (Add pos r2) atS : r)
       c -> return (efR, c:r) ) (ef1, []) cs
   -- then only one update change is required for this position
@@ -317,11 +314,11 @@ mkUpdateCh ef cr = case current cr of
           Nothing -> fail "failed to parse global annotations"
     Elem e | nameString e == "DGNode" -> do
         nd <- mkXNode e
-        return ef { updates =
+        return $ ef { updates =
           Map.insert (Left $ nodeName nd) (Left nd) $ updates ef }
     Elem e | nameString e == "DGLink" -> do
         lk <- mkXLink e
-        return ef { updates =
+        return $ ef { updates =
           Map.insert (Right $ edgeId lk) (Right lk) $ updates ef }
     {- TODO: if no changeable item is found, the old effect-object is returned.
     all attribute changes on DGraph-level for example are lost! -}

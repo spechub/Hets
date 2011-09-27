@@ -88,11 +88,12 @@ anaLibExt opts file libEnv initDG = do
             uEnv <- if null xd then return nEnv else do
               putIfVerbose opts 2 $ "Reading " ++ xd
               xs <- readFile xd
-              let Result es mdg = dgXUpdate xs nEnv (lookupDGraph ln nEnv)
+              Result es mdg <- runResultT $ dgXUpdate opts xs nEnv ln
+                (lookupDGraph ln nEnv)
               showDiags opts es
               return $ case mdg of
                 Nothing -> nEnv
-                Just fdg -> Map.insert ln fdg nEnv
+                Just fdg -> fdg
             return $ Just (ln, uEnv)
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LibName -> IO LibEnv
