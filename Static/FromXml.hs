@@ -42,6 +42,8 @@ import Logic.Grothendieck
 import Logic.Logic (AnyLogic (..), cod, composeMorphisms)
 import Logic.Prover (noSens)
 
+import Text.XML.Light (Element)
+
 -- | top-level function
 readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 readDGXml opts path = do
@@ -56,12 +58,16 @@ readDGXmlR opts path lv = do
   lift $ putIfVerbose opts 2 $ "Reading " ++ path
   xml' <- lift $ readXmlFile path
   case parseXml xml' of
-    Right xml -> do
+    Right xml -> rebuiltDgXml opts lv xml
+    Left err -> fail $ "failed to parse XML file: " ++ path ++ "\n" ++ err
+
+{- | call rebuiltDG with only a LibEnv and an Xml-Element -}
+rebuiltDgXml :: HetcatsOpts -> LibEnv -> Element -> ResultT IO (LibName, LibEnv)
+rebuiltDgXml opts lv xml = do
       xg <- liftR $ xGraph xml
       res <- rebuiltDG opts logicGraph xg lv
       let ln = libName xg
       return (ln, computeLibEnvTheories $ uncurry (Map.insert ln) res)
-    Left err -> fail $ "failed to parse XML file: " ++ path ++ "\n" ++ err
 
 {- | reconstructs the Development Graph via a previously created XGraph-
 structure. -}
