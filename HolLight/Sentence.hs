@@ -35,12 +35,11 @@ printNamedSen :: Named Sentence -> Doc
 printNamedSen ns =
   let s = sentence ns in
   let name = senAttr ns
-  in (hcat [text name, text " = ",pretty s])
+  in (hcat [text ". ", pretty s,text " %(",text name,text ")%"])
 
 
 instance Pretty Sentence where
-  pretty s = (hcat [text "`",
-                    (pp_print_term . term) s,text "`"])
+  pretty s = (pp_print_term . term) s
 
 pp_print_term :: Term -> Doc
 pp_print_term tm = print_term 0 tm
