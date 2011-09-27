@@ -44,9 +44,10 @@ parseCL_CLIF filename = do
 -- development graph
 convertToLibDefN :: FilePath -> [BASIC_SPEC] -> LIB_DEFN
 convertToLibDefN filename bs =
-  let knownSpecs = map (\(i,b) -> specName i b filename) $ zip [0..] bs
+  let fn = convertFileToLibStr filename
+      knownSpecs = map (\(i,b) -> specName i b fn) $ zip [0..] bs
   in  Lib_defn
-        (emptyLibName $ convertFileToLibStr filename)
+        (emptyLibName fn)
         (concat $ foldl (
             \r bn -> (convertBS knownSpecs bn : r)
           ) [] $ zip bs knownSpecs
