@@ -119,7 +119,7 @@ mapTheory (srcSign, srcFormulas) =
 -- translates a SoftFOL-theory to a CL-Text
 translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT
 translate s f = Text [Importation $ Imp_name $ mkSimpleId $ softFOLSignTr
-                     , Sentence $ toSen s f] nullRange
+                     , Sentence $ trmToSen s f] nullRange
 
 
 signToTexts :: FOLSign.Sign -> [AS_Anno.Named TEXT]
@@ -203,8 +203,8 @@ predMapText m =
           ) ++ phrs) [] m
   in if null ps then Nothing else Just $ Named_text predMapTrS (Text ps nullRange) nullRange
 
-toSen :: FOLSign.Sign -> FOLSign.SPTerm -> SENTENCE
-toSen s t = case t of
+trmToSen :: FOLSign.Sign -> FOLSign.SPTerm -> SENTENCE
+trmToSen s t = case t of
   FOLSign.SPQuantTerm qsym vl f -> quantTrm s qsym vl f
   FOLSign.SPComplexTerm sym args -> case sym of
     FOLSign.SPEqual -> case args of
@@ -215,25 +215,25 @@ toSen s t = case t of
         x -> error $ "equation needs at least two arguments, but found: " ++ show x
     FOLSign.SPTrue -> clTrue
     FOLSign.SPFalse -> clFalse
-    FOLSign.SPOr -> Bool_sent (Disjunction $ map (toSen s) args) nullRange
-    FOLSign.SPAnd -> Bool_sent (Conjunction $ map (toSen s) args) nullRange
+    FOLSign.SPOr -> Bool_sent (Disjunction $ map (trmToSen s) args) nullRange
+    FOLSign.SPAnd -> Bool_sent (Conjunction $ map (trmToSen s) args) nullRange
     FOLSign.SPNot -> case args of
-        [x] -> Bool_sent (Negation $ toSen s x) nullRange
+        [x] -> Bool_sent (Negation $ trmToSen s x) nullRange
         _ -> error $
               "negation can only be applied to a single argument, but found: "
               ++ show t
     FOLSign.SPImplies -> case args of
-        [x,y] -> Bool_sent (Implication (toSen s x) (toSen s y)) nullRange
+        [x,y] -> Bool_sent (Implication (trmToSen s x) (trmToSen s y)) nullRange
         _ -> error $
               "implication can only be applied to two arguments, but found: "
               ++ show t
     FOLSign.SPImplied -> case args of
-        [x,y] -> Bool_sent (Implication (toSen s y) (toSen s x)) nullRange
+        [x,y] -> Bool_sent (Implication (trmToSen s y) (trmToSen s x)) nullRange
         _ -> error $
               "implication can only be applied to two arguments, but found: "
               ++ show t
     FOLSign.SPEquiv ->  case args of
-        [x,y] -> Bool_sent (Biconditional (toSen s x) (toSen s y)) nullRange
+        [x,y] -> Bool_sent (Biconditional (trmToSen s x) (trmToSen s y)) nullRange
         _ -> error $
               "equivalence can only be applied to two arguments, but found: "
               ++ show t
@@ -269,10 +269,10 @@ quantTrm sig qsymm vs f =
   let functions_quant = filter (not . isNullary) vs
       trans_vs = concatMap trmToNameSeq vs
       trans_f = if null functions_quant
-                then toSen sig f
+                then trmToSen sig f
                 else Bool_sent (Implication
                          (typeSentence sig functions_quant)
-                         (toSen sig f)
+                         (trmToSen sig f)
                        ) nullRange
       quantifier = case qsymm of
         FOLSign.SPForall -> Universal
@@ -304,6 +304,15 @@ typeSentenceGetTypes sig symN args =
         Just _ -> typeSentencesSort args symN
       Just ts -> typeSentencesDisjPred sig args $ Set.elems ts
     Just ts -> typeSentencesDisjFunc sig args $ Set.elems ts
+
+typeSentencesSort :: [FOLSign.SPTerm] -> FOLSign.SPIdentifier
+                     -> SENTENCE
+typeSentencesSort args srt = case args of
+  [] -> error $ "no arguments for sort " ++ show srt
+  [arg] -> predicateTerm srt (trmToFunctTrm arg)
+  _ -> Bool_sent (Conjunction $
+          map (\arg -> predicateTerm srt (trmToFunctTrm arg)) args
+        ) nullRange
 
 typeSentencesDisjPred :: FOLSign.Sign -> [FOLSign.SPTerm]
                          -> [[FOLSign.SPIdentifier]]
@@ -342,15 +351,6 @@ typeSentencesDisjFunc sig args typeSet = case typeSet of
             ) $ zip args t
           ) nullRange
 
-typeSentencesSort :: [FOLSign.SPTerm] -> FOLSign.SPIdentifier
-                     -> SENTENCE
-typeSentencesSort args srt = case args of
-  [] -> error $ "no arguments for sort " ++ show srt
-  [arg] -> predicateTerm srt (trmToFunctTrm arg)
-  _ -> Bool_sent (Conjunction $
-          map (\arg -> predicateTerm srt (trmToFunctTrm arg)) args
-        ) nullRange
-
 trmToName :: FOLSign.SPTerm -> NAME
 trmToName t  = case t of
   FOLSign.SPComplexTerm sym _ -> symToName sym
@@ -380,9 +380,11 @@ trmToTermSeq t = Term_seq $ case t of
       error "quantification not allowed in argument list"
 
 trmToFunctTrm :: FOLSign.SPTerm -> TERM
-trmToFunctTrm arg = case arg of
+trmToFunctTrm t = case t of
   FOLSign.SPComplexTerm sym args ->
-      Funct_term (symToTerm sym) (map trmToTermSeq args) nullRange
+      if null args
+      then symToTerm sym
+      else Funct_term (symToTerm sym) (map trmToTermSeq args) nullRange
   FOLSign.SPQuantTerm _ _ _ -> 
       error "quantification not allowed in quantifier-argument list"
 
