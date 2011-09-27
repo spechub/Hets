@@ -31,29 +31,28 @@ import Static.XGraph
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
 
-data SimplePath = PathStep Finder SimplePath
-                | PathEnd ChangeData
+data SimplePath = SimplePath { steps :: [Finder]
+                             , changeData :: ChangeData }
 
 {- Finder stores predicate list to locate the element and an index, in case
 multiple elements comply with the predicate -}
 data Finder = FindBy QName [Attr] Int
 
--- Change to be applied at the end of a path.
+-- change to be applied at the end of a path plus (maybe) attr-selection
 data ChangeData = ChangeData ChangeSel (Maybe String)
 
 -- convert PathExpr into more simple Finder stucture
 exprToSimplePath :: Monad m => Change -> m SimplePath
 exprToSimplePath (Change csel e) = case e of
-  PathExpr Nothing (Path True stps) -> anaSteps stps where
-    anaSteps (stp : r) = case stp of
+  PathExpr Nothing (Path True stps) -> do
+    (fs, atS) <- foldM (\ (fs', atS') stp -> case stp of
         Step Child (NameTest n) exps -> do
           finder <- mkFinder (FindBy (unqual n) [] 1) exps
-          liftM (PathStep finder) $ anaSteps r
+          return (fs' ++ [finder], atS')
         -- should be last step only. return path so-far plus attribute selector
-        Step Attribute (NameTest n) [] -> return $ PathEnd
-               $ ChangeData csel $ Just n
-        _ -> fail $ "unexpected step: " ++ show stp
-    anaSteps [] = return $ PathEnd $ ChangeData csel Nothing
+        Step Attribute (NameTest n) [] -> return (fs', Just n)
+        _ -> fail $ "unexpected step: " ++ show stp) ([], Nothing) stps
+    return $ SimplePath fs $ ChangeData csel atS
   _ -> fail $ "not a valid path description: " ++ show e
 
 {- built Finder by recursively following Expr-structure and adding data to
@@ -235,12 +234,6 @@ applyAddOp pos cr addCh = case (pos, addCh) of
             _ -> fail "applyAddOp(2)"
         _ -> fail "applyAddOp(3)"
 
-checkAttrs :: Element -> [Attr] -> Bool
-checkAttrs e = all checkAttr where
-   checkAttr at = case findAttr (attrKey at) e of
-          Nothing -> False
-          Just atV -> atV == attrVal at
-
 {- given the remaining PathElements, determine for which Paths the current
 Cursor is relevant (else -> toRight) and then gather from those the changes
 regarding the current object (PathEnds; else -> toChildren). -}
@@ -248,21 +241,24 @@ propagatePaths :: Monad m => Cursor -> [SimplePath]
                -> m ([ChangeData], [SimplePath], [SimplePath])
 propagatePaths cr pths = case current cr of
   Elem e -> let
-    maybeDecrease pth = case pth of
-              PathStep (FindBy nm atL i) r | elName e == nm && checkAttrs e atL
-                -> PathStep (FindBy nm atL $ i-1) r
-              st -> st
+    maybeDecrease sp = case steps sp of
+            FindBy nm atL i : r  | elName e == nm && all checkAttr atL
+              -> sp { steps = FindBy nm atL (i-1) : r }
+            _ -> sp
+    checkAttr at = case findAttr (attrKey at) e of
+          Nothing -> False
+          Just atV -> atV == attrVal at
     (cur, toRight) = partition isAtZero $ map maybeDecrease pths
-            where isAtZero (PathStep (FindBy _ _ 0) _) = True
-                  isAtZero _ = False in do
+            where isAtZero (SimplePath (FindBy _ _ 0 : _) _) = True
+                  isAtZero _ = False
+    in do
       -- crop current heads and extract immediate changes
       (changes, toChildren) <- foldM (\ (r1, r2) c -> case c of
-          PathStep _ rPth -> case rPth of
-            PathEnd chDat -> return (chDat : r1, r2)
-            st -> return (r1, st : r2)
-          _ -> fail "unexpected PathEnd") ([], []) cur
+          SimplePath [_] cd -> return (cd : r1, r2)
+          SimplePath (_ : r) cd -> return (r1, SimplePath r cd : r2)
+          _ -> fail "propagatePaths: unexpected PathEnd!") ([], []) cur
       return (changes, toRight, toChildren)
-  c -> fail $ "unexpected Cursor Content: " ++ show c
+  c -> fail $ "propagatePaths: unexpected Cursor Content: " ++ show c
 
 {- determine the effect of a remove operation. first see if the old (removed)
 Elem was a Link or Node; if not, compute the update-change upon the new Elem.
