@@ -106,17 +106,17 @@ instance Show DgEffect where
     | Set.null rmv && Map.null updN && Map.null updL = "No Effects!"
   show (DgEffect rmv updN updL adds annoCh _) =
     (if Set.null rmv then "" else "<< Removes >>\n"
-      ++ showDgElemSet (Set.toList rmv))
+      ++ showDgElemIds (Set.toList rmv))
     ++ (if Map.null updN && Map.null updL then "" else "<< Updates >>\n"
       ++ unlines (map show (Map.elems updN) ++ map show (Map.elems updL)))
     ++ (if null adds then "" else "<< Insertions >>\n"
-       ++ unlines (map show adds))
+      ++ unlines (map show adds))
     ++ maybe "" (\_ -> "Global Annotation Changed") annoCh
 
-showDgElemSet :: [DgElemId] -> String
-showDgElemSet = unlines . map (\ e -> case e of
-  Left nm -> "Node: " ++ show (getName nm)
-  Right ei -> "Link: #" ++ show ei )
+showDgElemIds :: [DgElemId] -> String
+showDgElemIds = unlines . map show' where
+  show' (Left a) = "Node [" ++ showName a ++ "]"
+  show' (Right b) = "Link #" ++ showEdgeId b
 
 emptyDgEffect :: DgEffect
 emptyDgEffect = DgEffect Set.empty Map.empty Map.empty [] Nothing (-1)
@@ -132,13 +132,6 @@ changeXml el diff = let cr = fromElement el in do
        i <- getAttrVal "nextlinkid" e
        return (e, ef { nextlinkid = read i })
      _ -> fail "unexpected content within top element"
-
-{- get only the dg-effect of a diff-application. the resulting xml is lost -}
-getEffect :: Monad m => Element -> String -> m DgEffect
-getEffect el diff = let cr = fromElement el in do
-  cs <- anaXUpdates diff
-  pths <- mapM exprToSimplePath cs
-  liftM snd $ iterateXml TopElem pths cr emptyDgEffect
 
 {- follow the Xml-structure and apply Changes. The Change is only applied after
 the recursive call to simulate parallel application. Resulting DgChanges are
@@ -195,10 +188,8 @@ maybeF err x = maybe (fail err) return x
 applyChanges :: Monad m => [ChangeData] -> Cursor -> m ChangeRes
 applyChanges changes cr = let
   -- because cursor position will change, certain addChanges are appended
-  (chgNow, chgAppend) = partition (\ cd -> case cd of
-    ChangeData (Add pos addCs) _ -> pos == Before && any (\ ch -> case ch of
-      AddElem _ -> True
-      _ -> False ) addCs
+  (chgAppend, chgNow) = partition (\ cd -> case cd of
+    ChangeData (Add pos _) _ -> pos == Before
     _ -> False ) changes in do
   cres1 <- foldM applyChange (ChangeCr cr) chgNow
   foldM applyChange cres1 chgAppend
@@ -210,14 +201,14 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
   (Remove, Nothing) -> return RemoveCr
   -- Case#2: attribute removal
   (Remove, Just atS) -> case current cr of
-     Elem e -> return $ ChangeCr $ cr { current = Elem $
+     Elem e -> return $ ChangeCr cr { current = Elem $
        e { elAttribs = filter ((/= atS) . qName . attrKey) $ elAttribs e } }
      _ -> fail "applyChange(remove-attr)"
   -- Case#3: addChanges, either attr-/ or element-insertion
   (Add pos addCs, _) -> liftM ChangeCr $ foldM (applyAddOp pos) cr addCs
   -- Case#4: update String (attr-only!)
   (Update s, Just atS) -> case current cr of
-     Elem e -> return $ ChangeCr $ cr { current = Elem $
+     Elem e -> return $ ChangeCr cr { current = Elem $
        e { elAttribs = map (\ at -> if (qName $ attrKey at) == atS
            then at { attrVal = s } else at) $ elAttribs e } }
      _ -> fail $ "applyChange(update): " ++ s
@@ -230,14 +221,13 @@ applyAddOp pos cr addCh = case (pos, addCh) of
         (Before, AddElem e) -> return $ insertGoLeft (Elem e) cr
         (After, AddElem e) -> return $ insertRight (Elem e) cr
         (Append, AddElem e) -> case current cr of
-            {- TODO: custem version of addChild, see if it works!! -}
             Elem e' -> return cr { current = Elem $ e' {
                          elContent = Elem e : elContent e' } }
-            _ -> fail "applyAddOp(1)"
+            _ -> fail "applyAddOp: unexpected content(1)"
         (Append, AddAttr at) -> case current cr of
             Elem e -> return cr { current = Elem $ add_attr at e }
-            _ -> fail "applyAddOp(2)"
-        _ -> fail "applyAddOp(3)"
+            _ -> fail "applyAddOp: unexpected content(2)"
+        _ -> fail "applyAddOp: illegal addChange-data!"
 
 {- given the remaining PathElements, determine for which Paths the current
 Cursor is relevant (else -> toRight) and then gather from those the changes
@@ -246,19 +236,17 @@ propagatePaths :: Monad m => Cursor -> [SimplePath]
                -> m ([ChangeData], [SimplePath], [SimplePath])
 propagatePaths cr pths = case current cr of
   Elem e -> let
+    checkAttr at = maybe False (== attrVal at) $ findAttr (attrKey at) e
     maybeDecrease sp = case steps sp of
-            FindBy nm atL i : r  | elName e == nm && all checkAttr atL
+          FindBy nm atL i : r  | elName e == nm && all checkAttr atL
               -> sp { steps = FindBy nm atL (i-1) : r }
-            _ -> sp
-    checkAttr at = case findAttr (attrKey at) e of
-          Nothing -> False
-          Just atV -> atV == attrVal at
+          _ -> sp
     (cur, toRight) = partition isAtZero $ map maybeDecrease pths
             where isAtZero (SimplePath (FindBy _ _ 0 : _) _) = True
                   isAtZero _ = False
     in do
       -- crop current heads and extract immediate changes
-      (changes, toChildren) <- foldM (\ (r1, r2) c -> case c of
+      (changes, toChildren) <- foldM (\ (r1, r2) sp -> case sp of
           SimplePath [_] cd -> return (cd : r1, r2)
           SimplePath (_ : r) cd -> return (r1, SimplePath r cd : r2)
           _ -> fail "propagatePaths: unexpected PathEnd!") ([], []) cur
@@ -273,11 +261,11 @@ mkRemoveCh ef crInit crNow = case current crInit of
       -- remove entire node
       Elem e | nameString e == "DGNode" -> do
         nm <- liftM parseNodeName $ getAttrVal "name" e
-        return $ ef { removes = Set.insert (Left nm) $ removes ef }
+        return ef { removes = Set.insert (Left nm) $ removes ef }
       -- remove entire link
       Elem e | nameString e == "DGLink" -> do
         ei <- readEdgeId_M e
-        return $ ef { removes = Set.insert (Right ei) $ removes ef }
+        return ef { removes = Set.insert (Right ei) $ removes ef }
       -- remove child element -> update entire node or link
       _ -> mkUpdateCh ef crNow
 

@@ -72,10 +72,10 @@ data XLink = XLink { source :: String
                    , mapping :: String }
 
 instance Show XNode where
-  show xn = "Node: " ++ showName (nodeName xn)
+  show xn = showName (nodeName xn)
 
 instance Show XLink where
-  show xl = "Link: " ++ show (source xl) ++ " -> " ++ show (target xl)
+  show xl = showEdgeId (edgeId xl) ++ ": " ++ source xl ++ " -> " ++ target xl
 
 {- ------------
 Functions -}
