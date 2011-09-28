@@ -92,20 +92,23 @@ data ChangeRes = ChangeCr Cursor
 
 {- Describes the minimal change-effect of a .diff upon a DGraph. -}
 data DgEffect = DgEffect { removes :: Set.Set DgElemId
-                         , updates :: Map.Map DgElemId XElem
+                         , updateNodes :: Map.Map NodeName XNode
+                         , updateLinks :: Map.Map EdgeId XLink
                          , additions :: [XElem]
-                         , updateAnnotations :: Maybe GlobalAnnos }
+                         , updateAnnotations :: Maybe GlobalAnnos
+                         , nextlinkid :: Int }
 
 type DgElemId = Either NodeName EdgeId
 type XElem = Either XNode XLink
 
 instance Show DgEffect where
-  show (DgEffect rmv upd [] Nothing) | Set.null rmv && Map.null upd = "No Effects!"
-  show (DgEffect rmv upd adds annoCh) =
+  show (DgEffect rmv updN updL [] Nothing _)
+    | Set.null rmv && Map.null updN && Map.null updL = "No Effects!"
+  show (DgEffect rmv updN updL adds annoCh _) =
     (if Set.null rmv then "" else "<< Removes >>\n"
       ++ showDgElemSet (Set.toList rmv))
-    ++ (if Map.null upd then "" else "<< Updates >>\n"
-      ++ showDgElemSet (Map.keys upd))
+    ++ (if Map.null updN && Map.null updL then "" else "<< Updates >>\n"
+      ++ unlines (map show (Map.elems updN) ++ map show (Map.elems updL)))
     ++ (if null adds then "" else "<< Insertions >>\n"
        ++ unlines (map show adds))
     ++ maybe "" (\_ -> "Global Annotation Changed") annoCh
@@ -116,19 +119,21 @@ showDgElemSet = unlines . map (\ e -> case e of
   Right ei -> "Link: #" ++ show ei )
 
 emptyDgEffect :: DgEffect
-emptyDgEffect = DgEffect Set.empty Map.empty [] Nothing
+emptyDgEffect = DgEffect Set.empty Map.empty Map.empty [] Nothing (-1)
 
 {- apply a diff to an xml-document. the dg-change is lost -}
-changeXml :: Monad m => Element -> String -> m Element
+changeXml :: Monad m => Element -> String -> m (Element, DgEffect)
 changeXml el diff = let cr = fromElement el in do
   cs <- anaXUpdates diff
   pths <- mapM exprToSimplePath cs
-  (cr', _) <- iterateXml TopElem pths cr emptyDgEffect
+  (cr', ef) <- iterateXml TopElem pths cr emptyDgEffect
   case current cr' of
-     Elem e -> return e
+     Elem e -> do
+       i <- getAttrVal "nextlinkid" e
+       return (e, ef { nextlinkid = read i })
      _ -> fail "unexpected content within top element"
 
-{- get the dg-effect of a diff-application. the resulting xml is lost -}
+{- get only the dg-effect of a diff-application. the resulting xml is lost -}
 getEffect :: Monad m => Element -> String -> m DgEffect
 getEffect el diff = let cr = fromElement el in do
   cs <- anaXUpdates diff
@@ -311,12 +316,11 @@ mkUpdateCh ef cr = case current cr of
           Nothing -> fail "failed to parse global annotations"
     Elem e | nameString e == "DGNode" -> do
         nd <- mkXNode e
-        return $ ef { updates =
-          Map.insert (Left $ nodeName nd) (Left nd) $ updates ef }
+        return ef { updateNodes = Map.insert (nodeName nd) nd
+                $ updateNodes ef }
     Elem e | nameString e == "DGLink" -> do
         lk <- mkXLink e
-        return $ ef { updates =
-          Map.insert (Right $ edgeId lk) (Right lk) $ updates ef }
+        return ef { updateLinks = Map.insert (edgeId lk) lk $ updateLinks ef }
     {- TODO: if no changeable item is found, the old effect-object is returned.
     all attribute changes on DGraph-level for example are lost! -}
     Elem e | nameString e == "DGraph" -> return ef

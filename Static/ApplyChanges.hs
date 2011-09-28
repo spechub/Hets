@@ -25,5 +25,5 @@ import Common.ResultT
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
   -> ResultT IO (LibName, LibEnv)
 dgXUpdate opts xs le ln dg = do
-  xml <- liftR $ changeXml (dGraph le ln dg) xs
+  (xml, _) <- liftR $ changeXml (dGraph le ln dg) xs
   rebuiltDgXml opts le xml
