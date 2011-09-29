@@ -975,7 +975,7 @@ homogenizeGM (Logic lid) gsis =
   where
   homogenize1 (G_symb_map_items_list lid2 sis) sm = case sm of
     G_symb_map (G_symb_map_items_list lid1 sis1) -> do
-         sis1' <- coerceSymbMapItemsList lid1 lid2 "" sis1
+         sis1' <- coerceSymbMapItemsList lid1 lid2 "homogenizeGM" sis1
          return $ G_symb_map_items_list lid2 $ sis ++ sis1'
     G_logic_translation lc ->
          fail $ "translation not supported by " ++ showDoc lc ""
