@@ -25,6 +25,7 @@ import CommonLogic.AS_CommonLogic
 import CommonLogic.Symbol as Symbol
 import CommonLogic.Analysis
 import CommonLogic.Parse_CLIF
+import CommonLogic.Parse_Symbols
 import CommonLogic.Morphism
 
 import qualified Data.Map as Map

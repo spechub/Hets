@@ -28,6 +28,8 @@ import CommonLogic.Parse_CLIF (basicSpec)
 import Syntax.AS_Library
 import Syntax.AS_Structured as Struc
 
+import qualified Data.Set as Set
+
 import System.IO
 
 -- | call for CommonLogic CLIF-parser
@@ -60,17 +62,13 @@ convertToLibDefN filename bs =
 convertBS :: [NAME] -> (BASIC_SPEC, NAME) -> [Anno.Annoted LIB_ITEM]
 convertBS knownSpecs (b,n) =
   let imports = getImports b
-      missingTexts = filter (\i -> not $ elem i knownSpecs) imports
-  in  map (\m -> emptyAnno $ Download_items
-                  (emptyLibName $ tokStr m)
-                  [Item_name $ m]
-                  nullRange
-            ) missingTexts
+  in  concatMap (downloadIfNotKnown knownSpecs) imports
         ++ [emptyAnno $ Spec_defn
-          n
-          emptyGenericity
-          (createSpec imports b)
-          nullRange]
+            n
+            emptyGenericity
+            (createSpec imports b)
+            nullRange]
+        ++ metarelsBS (knownSpecs++imports) b
 
 -- one importation is an extension
 -- many importations are an extension of a union
@@ -125,3 +123,43 @@ specName i (CL.Basic_spec [items]) def =
                Text_mrs (Named_text n _ _, _) -> mkSimpleId n
 specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i
 
+metarelsBS :: [NAME] -> BASIC_SPEC -> [Anno.Annoted LIB_ITEM]
+metarelsBS knownSpecs (CL.Basic_spec abis) =
+  concatMap (metarelsBI knownSpecs . Anno.item) abis
+
+metarelsBI :: [NAME] -> BASIC_ITEMS -> [Anno.Annoted LIB_ITEM]
+metarelsBI knownSpecs (Axiom_items (Anno.Annoted (Text_mrs (_,mrs)) _ _ _)) =
+  concatMap (metarelsMR knownSpecs) $ Set.elems mrs
+
+metarelsMR :: [NAME] -> METARELATION -> [Anno.Annoted LIB_ITEM]
+metarelsMR knownSpecs mr = case mr of
+  RelativeInterprets t1 delta t2 smaps ->
+      concatMap (downloadIfNotKnown knownSpecs) [t1,delta,t2]
+      ++ [emptyAnno $ View_defn
+                      (mkSimpleId "RelativeInterprets")
+                      emptyGenericity
+                      (View_type
+                        (emptyAnno (Union [cnvimport t1, cnvimport delta] nullRange))
+                        (cnvimport t2)
+                        nullRange)
+                      [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
+                      nullRange]
+  NonconservativeExtends t1 t2 smaps ->
+      concatMap (downloadIfNotKnown knownSpecs) [t1,t2]
+      ++ [emptyAnno $ View_defn
+                      (mkSimpleId "NonconservativeExtends")
+                      emptyGenericity
+                      (View_type
+                        (cnvimport t1)
+                        (cnvimport t2)
+                        nullRange)
+                      [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
+                      nullRange]
+
+downloadIfNotKnown :: [NAME] -> NAME -> [Anno.Annoted LIB_ITEM]
+downloadIfNotKnown knownSpecs n =
+  if elem n knownSpecs then []
+  else [emptyAnno $ Download_items
+                  (emptyLibName $ tokStr n)
+                  [Item_name $ n]
+                  nullRange]

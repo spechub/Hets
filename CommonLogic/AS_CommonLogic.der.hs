@@ -113,7 +113,7 @@ data NAME_OR_SEQMARK = Name NAME
                        deriving (Show, Eq, Ord)
 
 data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP] Id.Range
-                      deriving (Show, Eq)
+                      deriving (Show, Ord, Eq)
 
 data SYMB_OR_MAP = Symb NAME_OR_SEQMARK
                  | Symb_mapN NAME NAME Id.Range
@@ -122,11 +122,11 @@ data SYMB_OR_MAP = Symb NAME_OR_SEQMARK
 
 data SYMB_ITEMS = Symb_items [NAME_OR_SEQMARK] Id.Range
                   -- pos: SYMB_KIND, commas
-                  deriving (Show, Eq)
+                  deriving (Show, Ord, Eq)
 
-data METARELATION = RelativeInterprets NAME NAME NAME
+data METARELATION = RelativeInterprets NAME NAME NAME [SYMB_MAP_ITEMS]
                     -- pos: t1, delta, t2 - (t1 + delta entails t2)
-                  | NonconservativeExtends NAME NAME
+                  | NonconservativeExtends NAME NAME [SYMB_MAP_ITEMS]
                     -- pos: t1, t2 - (forall sigma. t1 entails sigma => t2 entails sigma)
                   deriving (Show, Ord, Eq)
 
@@ -255,20 +255,6 @@ printImportation (Imp_name x) = pretty x
 
 printMetarelation :: METARELATION -> Doc
 printMetarelation _ = empty
-{- printMetarelation (RelativeInterprets t1 delta t2) =
-  hsep [ text "%{"
-       , text relativeInterpretsS
-       , pretty t1
-       , pretty delta
-       , pretty t2
-       , text "}%"]
-printMetarelation (NonconservativeExtends t1 t2) =
-  hsep [ text "%{"
-       , text nonconservativeExtensionS
-       , pretty t1
-       , pretty t2
-       , text "}%"]
--}
 
 -- keywords, reservednames in CLIF
 seqmarkS :: String

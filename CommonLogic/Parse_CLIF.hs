@@ -22,13 +22,14 @@ import qualified Common.AS_Annotation as Annotation
 import CommonLogic.AS_CommonLogic
 import Common.Id as Id
 import Common.Lexer as Lexer
-import Common.Keywords as Keywords
 
 import Data.Either (lefts, rights)
 import qualified Data.Set as Set
 import qualified CommonLogic.Tools as Tools
 
 import CommonLogic.Lexer_CLIF
+import CommonLogic.Parse_Symbols (intNameOrSeqMark)
+import CommonLogic.Parse_Metarelations
 
 import Text.ParserCombinators.Parsec as Parsec
 
@@ -36,10 +37,10 @@ import Text.ParserCombinators.Parsec as Parsec
 cltext :: CharParser st TEXT_MRS
 cltext = do
     nt <- try namedtext
-    return $ Text_mrs (nt,Set.empty)
+    return $ Text_mrs (nt,metarelations nt)
   <|> do
     t <- text
-    return $ Text_mrs (t,Set.empty)
+    return $ Text_mrs (t,metarelations t)
 
 namedtext :: CharParser st TEXT
 namedtext = parens $ do
@@ -225,15 +226,7 @@ boundlist = many $ do
     nos <- intNameOrSeqMark
     t <- term
     cParenT
-    return $ Left $ (nos,t) -- TODO: check what to do with the term @t@
-
-intNameOrSeqMark :: CharParser st NAME_OR_SEQMARK
-intNameOrSeqMark = do
-    s <- seqmark -- fix seqmark parser for one
-    return $ SeqMark s
-  <|> do
-    n <- identifier
-    return $ Name n
+    return $ Left $ (nos,t)
 
 atom :: CharParser st ATOM
 atom = do
@@ -369,67 +362,3 @@ parseAx = do
 aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT_MRS)
 aFormula = do
      AnnoState.allAnnoParser cltext
-
-{- old unfinished function - TODO: remove as soon as the new one works
--- | collect all the names and sequence markers
-symbItems :: GenParser Char st NAME
-symbItems = do
-  return (Token "x" nullRange)
--}
-
--- | Parse a list of comma separated symbols.
-symbItems :: GenParser Char st SYMB_ITEMS
-symbItems = do
-  (is, ps) <- symbs
-  return (Symb_items is $ catRange ps)
-
--- | parse a comma separated list of symbols
-symbs :: GenParser Char st ([NAME_OR_SEQMARK], [Token])
-symbs = do
-       s <- intNameOrSeqMark
-       do   c <- commaT `followedWith` intNameOrSeqMark
-            (is, ps) <- symbs
-            return (s:is, c:ps)
-         <|> return ([s], [])
-
-
-
--- | parse a list of symbol mappings
-symbMapItems :: GenParser Char st SYMB_MAP_ITEMS
-symbMapItems = do
-  (is, ps) <- symbMaps
-  return (Symb_map_items is $ catRange ps)
-
--- | parse a comma separated list of symbol mappings
-symbMaps :: GenParser Char st ([SYMB_OR_MAP], [Token])
-symbMaps = do
-  s <- symbMap
-  do  c <- commaT `followedWith` intNameOrSeqMark
-      (is, ps) <- symbMaps
-      return (s:is, c:ps)
-    <|> return ([s], [])
-
--- | parsing one symbol or a mapping of one to a second symbol
-symbMap :: GenParser Char st SYMB_OR_MAP
-symbMap = do
-    seqMarkMap <- symbMapS
-    return seqMarkMap
-  <|> do
-    nameMap <- symbMapN
-    return nameMap
-
-symbMapS :: GenParser Char st SYMB_OR_MAP
-symbMapS = do
-  s <- seqmark
-  do  f <- pToken $ toKey mapsTo
-      t <- seqmark
-      return (Symb_mapS s t $ tokPos f)
-    <|> return (Symb $ SeqMark s)
-
-symbMapN :: GenParser Char st SYMB_OR_MAP
-symbMapN = do
-  s <- identifier
-  do  f <- pToken $ toKey mapsTo
-      t <- identifier
-      return (Symb_mapN s t $ tokPos f)
-    <|> return (Symb $ Name s)
