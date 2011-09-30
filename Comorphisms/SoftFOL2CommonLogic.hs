@@ -66,7 +66,7 @@ instance Comorphism SoftFOL2CommonLogic
     ClLogic.CommonLogic      -- lid domain
     ClSL.CommonLogicSL       -- sublogics codomain
     BASIC_SPEC               -- Basic spec domain
-    TEXT_MRS                 -- sentence domain
+    TEXT_META                -- sentence domain
     SYMB_ITEMS               -- symb_items
     SYMB_MAP_ITEMS           -- symbol map items domain
     ClSign.Sign              -- signature domain
@@ -93,7 +93,7 @@ mapMor mor =
       pmp = Map.empty
   in  return $ ClMor.Morphism src tgt pmp
 
-mapSentence :: FOLSign.Sign -> FOLSign.Sentence -> Result TEXT_MRS
+mapSentence :: FOLSign.Sign -> FOLSign.Sentence -> Result TEXT_META
 mapSentence s f = return $ translate s f
 
 mapSign :: FOLSign.Sign -> ClSign.Sign
@@ -107,23 +107,27 @@ mapSign sig =
 
 -- | translates SoftFOL-theories to CL-theories keeping their names
 mapTheory :: (FOLSign.Sign, [AS_Anno.Named FOLSign.Sentence])
-             -> Result (ClSign.Sign, [AS_Anno.Named TEXT_MRS])
+             -> Result (ClSign.Sign, [AS_Anno.Named TEXT_META])
 mapTheory (srcSign, srcFormulas) =
   return (mapSign srcSign, signToTexts srcSign
        ++ map ((uncurry AS_Anno.makeNamed) . transSnd . senAndName) srcFormulas)
   where senAndName :: AS_Anno.Named FOLSign.Sentence -> (String, FOLSign.Sentence)
         senAndName f = (AS_Anno.senAttr f, AS_Anno.sentence f)
-        transSnd :: (String, FOLSign.Sentence) -> (String, TEXT_MRS)
+        transSnd :: (String, FOLSign.Sentence) -> (String, TEXT_META)
         transSnd (s, f) = (s, translate srcSign f)
 
 -- translates a SoftFOL-theory to a CL-Text
-translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT_MRS
+translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT_META
 translate s f =
-  Text_mrs (Text [ Importation $ Imp_name $ mkSimpleId $ softFOLSignTr
-                 , Sentence $ trmToSen s f] nullRange, Set.empty)
+  Text_meta { getText = Text
+                          [ Importation $ Imp_name $ mkSimpleId $ softFOLSignTr
+                          , Sentence $ trmToSen s f
+                          ] nullRange
+            , metarelation = Set.empty
+            , discourseNames = Nothing
+            }
 
-
-signToTexts :: FOLSign.Sign -> [AS_Anno.Named TEXT_MRS]
+signToTexts :: FOLSign.Sign -> [AS_Anno.Named TEXT_META]
 signToTexts srcSign =
   let sr = sortRelText $ Rel.toMap $ FOLSign.sortRel srcSign
       fm = funcMapText $ FOLSign.funcMap srcSign
@@ -137,12 +141,14 @@ signToTexts srcSign =
         map (AS_Anno.makeNamed sortRelTrS) (maybeToList sr)
       : map (AS_Anno.makeNamed funcMapTrS) (maybeToList fm)
       : map (AS_Anno.makeNamed predMapTrS) (maybeToList pm)
-      : [[AS_Anno.makeNamed softFOLSignTr $ Text_mrs 
-          (Named_text softFOLSignTr (Text phrs nullRange) nullRange, Set.empty)]]
+      : [[AS_Anno.makeNamed softFOLSignTr $ Text_meta {
+            getText = Named_text softFOLSignTr (Text phrs nullRange) nullRange
+          , metarelation = Set.empty
+          , discourseNames = Nothing }]]
 
 -- creates one-sentence-phrases: forall x. (subSort x) => (superSort x)
 sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
-                -> Maybe TEXT_MRS
+                -> Maybe TEXT_META
 sortRelText m =
   let ps = Map.foldrWithKey (\subSrt set phrs -> (
         Set.fold (\superSrt phrs2 ->
@@ -153,7 +159,11 @@ sortRelText m =
         ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just $ Text_mrs (Named_text sortRelTrS (Text ps nullRange) nullRange, Set.empty)
+        else Just $ Text_meta { getText = Named_text sortRelTrS
+                                              (Text ps nullRange) nullRange
+                              , metarelation = Set.empty
+                              , discourseNames = Nothing
+                              }
 
 typesWithIndv :: [Token] -> [(Token, NAME)] -- (type, individual)
 typesWithIndv args =
@@ -161,7 +171,7 @@ typesWithIndv args =
 
 -- creates one-sentence-phrases:
 -- forall x y z. (if (and (T1 x) (T2 y) (T3 z)) (T4 f[x,y,z]))
-funcMapText :: Map.Map Token (Set.Set ([Token], Token)) -> Maybe TEXT_MRS
+funcMapText :: Map.Map Token (Set.Set ([Token], Token)) -> Maybe TEXT_META
 funcMapText m =
   let ps = Map.foldrWithKey (\f set phrs -> (
           Set.fold (\(args, res) phrs2 ->
@@ -187,11 +197,15 @@ funcMapText m =
           ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just $ Text_mrs (Named_text funcMapTrS (Text ps nullRange) nullRange, Set.empty)
+        else Just $ Text_meta { getText = Named_text funcMapTrS
+                                              (Text ps nullRange) nullRange
+                              , metarelation = Set.empty
+                              , discourseNames = Nothing
+                              }
 
 -- creates one-sentence-phrases:
 -- forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z))
-predMapText :: Map.Map Token (Set.Set [Token]) -> Maybe TEXT_MRS
+predMapText :: Map.Map Token (Set.Set [Token]) -> Maybe TEXT_META
 predMapText m =
   let ps = Map.foldrWithKey (\prd set phrs -> (
           Set.fold (\args phrs2 ->
@@ -208,7 +222,11 @@ predMapText m =
           ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just $ Text_mrs (Named_text predMapTrS (Text ps nullRange) nullRange, Set.empty)
+        else Just $ Text_meta { getText = Named_text predMapTrS
+                                              (Text ps nullRange) nullRange
+                              , metarelation = Set.empty
+                              , discourseNames = Nothing
+                              }
 
 trmToSen :: FOLSign.Sign -> FOLSign.SPTerm -> SENTENCE
 trmToSen s t = case t of

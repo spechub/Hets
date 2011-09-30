@@ -65,7 +65,7 @@ instance Comorphism Prop2CommonLogic
     ClLogic.CommonLogic     -- lid domain
     ClSL.CommonLogicSL      -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
-    TEXT_MRS                -- sentence domain
+    TEXT_META               -- sentence domain
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symbol map items domain
     ClSign.Sign             -- signature domain
@@ -92,7 +92,7 @@ mapMor mor =
       pmp = PMor.propMap mor
   in  return $ ClMor.Morphism src tgt pmp
 
-mapSentence :: PSign.Sign -> PBasic.FORMULA -> Result TEXT_MRS
+mapSentence :: PSign.Sign -> PBasic.FORMULA -> Result TEXT_META
 mapSentence _ f = return $ translate f
 
 mapSign :: PSign.Sign -> ClSign.Sign
@@ -104,18 +104,21 @@ baseSig = let s = fromList [simpleIdToId xName, simpleIdToId yName]
           in  ClSign.Sign s s
 
 mapTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
-             -> Result (ClSign.Sign, [AS_Anno.Named TEXT_MRS])
+             -> Result (ClSign.Sign, [AS_Anno.Named TEXT_META])
 mapTheory (srcSign, srcFormulas) =
   return (mapSign srcSign,
         map ((uncurry AS_Anno.makeNamed) . transSnd . senAndName) srcFormulas)
   where senAndName :: AS_Anno.Named PBasic.FORMULA -> (String, PBasic.FORMULA)
         senAndName f = (AS_Anno.senAttr f, AS_Anno.sentence f)
-        transSnd :: (String, PBasic.FORMULA) -> (String, TEXT_MRS)
+        transSnd :: (String, PBasic.FORMULA) -> (String, TEXT_META)
         transSnd (s, f) = (s, translate f)
 
-translate :: PBasic.FORMULA -> TEXT_MRS
+translate :: PBasic.FORMULA -> TEXT_META
 translate f =
-  Text_mrs (Text [Sentence singletonUniv, Sentence $ toSen f] nullRange,empty)
+  Text_meta { getText = Text [Sentence singletonUniv, Sentence $ toSen f] nullRange
+            , metarelation = empty
+            , discourseNames = Nothing
+            }
   where singletonUniv = Quant_sent (Universal [Name xName, Name yName]
             $ Atom_sent (Equation (Name_term xName) (Name_term yName)) nullRange
           ) nullRange

@@ -48,13 +48,16 @@ omdocToSym _ symb _ = fail $ concat ["omdocToSym: only TCSymbols are allowed, bu
 
 
  --------------- Sentences from OMElements
-omdocToSen :: Env -> TCElement -> String -> Result (Maybe (Named TEXT_MRS))
+omdocToSen :: Env -> TCElement -> String -> Result (Maybe (Named TEXT_META))
 omdocToSen e (TCSymbol _ t sr _) n =
     case nameDecode n of
       Just _ ->
           return Nothing -- don't translate encoded names here
       Nothing ->
-          let ns = makeNamed n $ Text_mrs (toText e t,Set.empty)
+          let ns = makeNamed n $ Text_meta { getText = toText e t
+                                           , metarelation = Set.empty
+                                           , discourseNames = Nothing
+                                           }
               res b = return $ Just $ ns { isAxiom = b }
           in case sr of
                Axiom -> res True

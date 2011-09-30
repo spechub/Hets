@@ -65,7 +65,7 @@ instance Comorphism
     ClLogic.CommonLogic    -- lid domain
     ClSl.CommonLogicSL     -- sublogics codomain
     ClBasic.BASIC_SPEC     -- Basic spec domain
-    ClBasic.TEXT_MRS       -- sentence domain
+    ClBasic.TEXT_META      -- sentence domain
     ClBasic.SYMB_ITEMS     -- symbol items domain
     ClBasic.SYMB_MAP_ITEMS -- symbol map items domain
     ClSign.Sign            -- signature domain
@@ -131,7 +131,7 @@ trMor mp =
 
 -- |
 mapTheory :: (ClSign.Sign,
-              [AS_Anno.Named ClBasic.TEXT_MRS])
+              [AS_Anno.Named ClBasic.TEXT_META])
               -> Result
                   (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
@@ -181,16 +181,16 @@ nil :: Id.Id
 nil = Id.stringToId "nil"
 
 -- todo maybe input here axioms
-trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.TEXT_MRS)
+trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.TEXT_META)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
 trNamedForm sig form = AS_Anno.mapNamed (trFormMrs sig) form
 
-mapSentence :: ClSign.Sign -> ClBasic.TEXT_MRS -> Result CBasic.CASLFORMULA
+mapSentence :: ClSign.Sign -> ClBasic.TEXT_META -> Result CBasic.CASLFORMULA
 mapSentence sig form = Result [] $ Just $ trFormMrs sig form
 
 -- ignores importations
-trFormMrs :: ClSign.Sign -> ClBasic.TEXT_MRS -> CBasic.CASLFORMULA
-trFormMrs sig (ClBasic.Text_mrs (form, _)) = trForm sig form
+trFormMrs :: ClSign.Sign -> ClBasic.TEXT_META -> CBasic.CASLFORMULA
+trFormMrs sig tm = trForm sig $ ClBasic.getText tm
 -- TODO: think about including Metarelations in translation
 
 trForm :: ClSign.Sign -> ClBasic.TEXT -> CBasic.CASLFORMULA

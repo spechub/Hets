@@ -19,7 +19,7 @@ module CommonLogic.Parse_CLIF where
 
 import qualified Common.AnnoState as AnnoState
 import qualified Common.AS_Annotation as Annotation
-import CommonLogic.AS_CommonLogic
+import CommonLogic.AS_CommonLogic as AS
 import Common.Id as Id
 import Common.Lexer as Lexer
 
@@ -29,18 +29,24 @@ import qualified CommonLogic.Tools as Tools
 
 import CommonLogic.Lexer_CLIF
 import CommonLogic.Parse_Symbols (intNameOrSeqMark)
+
 import CommonLogic.Parse_Metarelations
 
 import Text.ParserCombinators.Parsec as Parsec
 
--- | parser for cltext
-cltext :: CharParser st TEXT_MRS
+-- | parser for getText
+cltext :: CharParser st TEXT_META
 cltext = do
     nt <- try namedtext
-    return $ Text_mrs (nt,metarelations nt)
+    return $ tm nt
   <|> do
     t <- text
-    return $ Text_mrs (t,metarelations t)
+    return $ tm t
+  where tm :: TEXT -> TEXT_META
+        tm t = Text_meta { AS.getText = t
+                         , metarelation = metarelations t
+                         , discourseNames = Nothing
+                         }
 
 namedtext :: CharParser st TEXT
 namedtext = parens $ do
@@ -339,7 +345,7 @@ parseClText = do
   tx <- cltext
   return $ Axiom_items (textToAn tx)
 
-textToAn :: TEXT_MRS -> Annotation.Annoted TEXT_MRS
+textToAn :: TEXT_META -> Annotation.Annoted TEXT_META
 textToAn x = Annotation.Annoted x nullRange [] []
 
 -- | parser for Axiom_items
@@ -359,6 +365,6 @@ parseAx = do
   return $ Axiom_items t
 
 -- | Toplevel parser for formulae
-aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT_MRS)
+aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT_META)
 aFormula = do
      AnnoState.allAnnoParser cltext

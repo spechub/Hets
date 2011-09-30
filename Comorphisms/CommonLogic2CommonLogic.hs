@@ -50,7 +50,7 @@ instance Comorphism
     Logic.CommonLogic       -- lid domain
     Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
-    TEXT_MRS                -- sentence domain
+    TEXT_META               -- sentence domain
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symbol map items domain
     Sign.Sign               -- signature domain
@@ -61,7 +61,7 @@ instance Comorphism
     Logic.CommonLogic       -- lid domain
     Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
-    TEXT_MRS                -- sentence domain
+    TEXT_META               -- sentence domain
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symbol map items domain
     Sign.Sign               -- signature domain
@@ -86,7 +86,7 @@ mapSub = id
 mapMor :: Mor.Morphism -> Result Mor.Morphism
 mapMor mor = return mor
 
-mapSentence :: Sign.Sign -> TEXT_MRS -> Result TEXT_MRS
+mapSentence :: Sign.Sign -> TEXT_META -> Result TEXT_META
 mapSentence _ txt = return $ eliminateModules txt
 
 -------------------------------------------------------------------------------
@@ -95,21 +95,24 @@ mapSentence _ txt = return $ eliminateModules txt
 
 
 
-mapTheory :: (Sign.Sign, [AS_Anno.Named TEXT_MRS])
-             -> Result (Sign.Sign, [AS_Anno.Named TEXT_MRS])
+mapTheory :: (Sign.Sign, [AS_Anno.Named TEXT_META])
+             -> Result (Sign.Sign, [AS_Anno.Named TEXT_META])
 mapTheory (srcSign, srcTexts) =
   return (srcSign,
           map ((uncurry AS_Anno.makeNamed) . elimModSnd . senAndName) srcTexts)
-  where senAndName :: AS_Anno.Named TEXT_MRS -> (String, TEXT_MRS)
+  where senAndName :: AS_Anno.Named TEXT_META -> (String, TEXT_META)
         senAndName t = (AS_Anno.senAttr t, AS_Anno.sentence t)
-        elimModSnd :: (String, TEXT_MRS) -> (String, TEXT_MRS)
+        elimModSnd :: (String, TEXT_META) -> (String, TEXT_META)
         elimModSnd (s, t) = (s, eliminateModules t)
 
 -- | Result is a CL-equivalent text without modules
-eliminateModules :: TEXT_MRS -> TEXT_MRS
-eliminateModules (Text_mrs (txt,mrs)) =
-  Text_mrs (Text [Sentence (me_text newName [] txt)] nullRange, mrs)
-  where (newName, _) = freeName ("x", 0) (indvC_text txt)
+eliminateModules :: TEXT_META -> TEXT_META
+eliminateModules tm =
+  Text_meta { getText = Text [Sentence (me_text newName [] $ getText tm)] nullRange
+            , metarelation = metarelation tm
+            , discourseNames = discourseNames tm
+            }
+  where (newName, _) = freeName ("x", 0) (indvC_text $ getText tm)
 
 -- NOTE: ignores importations
 me_text :: NAME -> [NAME] -> TEXT -> SENTENCE

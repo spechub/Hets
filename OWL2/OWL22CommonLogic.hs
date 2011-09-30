@@ -69,7 +69,7 @@ instance Comorphism
     CommonLogic             -- lid codomain
     ClSl.CommonLogicSL      -- sublogics codomain
     BASIC_SPEC              -- Basic spec codomain
-    TEXT_MRS                -- sentence codomain
+    TEXT_META               -- sentence codomain
     SYMB_ITEMS              -- symbol items codomain
     SYMB_MAP_ITEMS          -- symbol map items codomain
     Sign                    -- signature codomain
@@ -318,7 +318,7 @@ thingDataDisjoint = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN
     $ mkBC $ map mkSAtom ["Thing", "Datatype"]
 
 mapTheory :: (OS.Sign, [CommonAnno.Named Axiom])
-             -> Result (Sign, [CommonAnno.Named TEXT_MRS])
+             -> Result (Sign, [CommonAnno.Named TEXT_META])
 mapTheory (owlSig, owlSens) = do
     cSig <- mapSign owlSig
     (cSensI, nSig) <- foldM (\ (x, y) z ->
@@ -841,5 +841,8 @@ mapAxioms cSig (PlainAxiom ex fb) = case fb of
 
 
 -- helper function
-addMrs :: TEXT -> TEXT_MRS
-addMrs t = Text_mrs (t,Set.empty)
+addMrs :: TEXT -> TEXT_META
+addMrs t = Text_meta { getText = t
+                     , metarelation = Set.empty
+                     , discourseNames = Nothing
+                     }

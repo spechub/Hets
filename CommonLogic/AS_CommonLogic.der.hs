@@ -34,7 +34,7 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
                       deriving Show
 
 data BASIC_ITEMS =
-    Axiom_items (AS_Anno.Annoted TEXT_MRS)
+    Axiom_items (AS_Anno.Annoted TEXT_META)
     deriving Show
 
 instance Pretty BASIC_SPEC where
@@ -48,8 +48,10 @@ printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = pretty xs
 
-newtype TEXT_MRS = Text_mrs (TEXT, Set METARELATION)
-                   deriving (Show, Ord, Eq)
+data TEXT_META = Text_meta { getText :: TEXT
+                           , metarelation :: Set METARELATION
+                           , discourseNames :: Maybe (Set NAME)
+                           } deriving (Show, Ord, Eq)
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
@@ -219,8 +221,8 @@ printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
 printSymbItems :: SYMB_ITEMS -> Doc
 printSymbItems (Symb_items xs _) = fsep $ map pretty xs
 
-instance Pretty TEXT_MRS where
-   pretty = printTextMrs
+instance Pretty TEXT_META where
+   pretty = printTextMeta
 instance Pretty TEXT where
    pretty = printText
 instance Pretty PHRASE where
@@ -230,8 +232,8 @@ instance Pretty MODULE where
 instance Pretty IMPORTATION where
    pretty = printImportation
 
-printTextMrs :: TEXT_MRS -> Doc
-printTextMrs (Text_mrs (t,_)) = pretty t
+printTextMeta :: TEXT_META -> Doc
+printTextMeta tm = pretty $ getText tm
 
 printText :: TEXT -> Doc
 printText s = case s of

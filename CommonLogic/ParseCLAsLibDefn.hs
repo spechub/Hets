@@ -99,12 +99,12 @@ getImports :: BASIC_SPEC -> [NAME]
 getImports (CL.Basic_spec items) =
   concatMap getImports_textMrs $ map textFromBasicItems items
 
-textFromBasicItems :: Anno.Annoted (BASIC_ITEMS) -> TEXT_MRS
+textFromBasicItems :: Anno.Annoted (BASIC_ITEMS) -> TEXT_META
 textFromBasicItems abi = case Anno.item abi of
                               Axiom_items annoText -> Anno.item annoText
 
-getImports_textMrs :: TEXT_MRS -> [NAME]
-getImports_textMrs (Text_mrs (t,_)) = getImports_text t
+getImports_textMrs :: TEXT_META -> [NAME]
+getImports_textMrs tm = getImports_text $ getText tm
 
 getImports_text :: TEXT -> [NAME]
 getImports_text (Text ps _) = map impToName $ filter isImportation ps
@@ -124,9 +124,9 @@ specName i (CL.Basic_spec []) def = mkSimpleId $ def ++ "_" ++ show i
 specName i (CL.Basic_spec [items]) def =
   case Anno.item items of
        Axiom_items ax ->
-          case Anno.item ax of
-               Text_mrs (Text _ _, _) -> mkSimpleId $ def ++ "_" ++ show i
-               Text_mrs (Named_text n _ _, _) -> mkSimpleId n
+          case getText $ Anno.item ax of
+               Text _ _ -> mkSimpleId $ def ++ "_" ++ show i
+               Named_text n _ _ -> mkSimpleId n
 specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i
 
 metarelsBS :: [NAME] -> BASIC_SPEC -> [Anno.Annoted LIB_ITEM]
@@ -134,8 +134,8 @@ metarelsBS knownSpecs (CL.Basic_spec abis) =
   concatMap (metarelsBI knownSpecs . Anno.item) abis
 
 metarelsBI :: [NAME] -> BASIC_ITEMS -> [Anno.Annoted LIB_ITEM]
-metarelsBI knownSpecs (Axiom_items (Anno.Annoted (Text_mrs (_,mrs)) _ _ _)) =
-  concatMap (metarelsMR knownSpecs) $ Set.elems mrs
+metarelsBI knownSpecs (Axiom_items (Anno.Annoted tm _ _ _)) =
+  concatMap (metarelsMR knownSpecs) $ Set.elems $ metarelation tm
 
 metarelsMR :: [NAME] -> METARELATION -> [Anno.Annoted LIB_ITEM]
 metarelsMR knownSpecs mr = case mr of

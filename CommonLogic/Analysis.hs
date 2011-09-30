@@ -30,7 +30,7 @@ import qualified Data.List as List
 
 data DIAG_FORM = DiagForm
     {
-        formula :: AS_Anno.Named CL.TEXT_MRS,
+        formula :: AS_Anno.Named CL.TEXT_META,
       diagnosis :: Result.Diagnosis
     }
 
@@ -42,9 +42,17 @@ retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted CL.BASIC_ITEMS -> Sign.Sign
 retrieveBasicItem sig x = case AS_Anno.item x of
                             CL.Axiom_items xs -> retrieveSign sig xs
 
-retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.TEXT_MRS -> Sign.Sign
-retrieveSign sig (AS_Anno.Annoted (CL.Text_mrs (t,_)) _ _ _) =
-  Sign.unite sig $ propsOfFormula t
+retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.TEXT_META -> Sign.Sign
+retrieveSign sig (AS_Anno.Annoted tm _ _ _) =
+  Sign.unite (Sign.unite sig $ discItems $ CL.discourseNames tm)
+    $ propsOfFormula $ CL.getText tm
+
+discItems :: Maybe (Set.Set CL.NAME) -> Sign.Sign
+discItems s = case s of
+  Nothing -> Sign.emptySig
+  Just ns -> Sign.Sign { Sign.items = Set.empty
+                       , Sign.discourseItems = Set.map Id.simpleIdToId ns
+                       }
 
 -- retrieve CL.Sentence out of BASIC_SPEC
 
@@ -63,11 +71,11 @@ retrieveFormulaItem axs x sig =
 
 data NUM_FORM = NumForm
     {
-      nfformula :: AS_Anno.Annoted CL.TEXT_MRS
+      nfformula :: AS_Anno.Annoted CL.TEXT_META
     , nfnum :: Int
     }
 
-numberFormulae :: AS_Anno.Annoted CL.TEXT_MRS -> Int -> NUM_FORM
+numberFormulae :: AS_Anno.Annoted CL.TEXT_META -> Int -> NUM_FORM
 numberFormulae x i =
   if null $ AS_Anno.getRLabel x
   then NumForm {nfformula = x, nfnum = i}
@@ -93,8 +101,8 @@ addFormula formulae nf _ = formulae ++
       lnum = AS_Anno.opt_pos f
 
 -- | generates a named formula
-makeNamed :: AS_Anno.Annoted CL.TEXT_MRS -> Int
-             -> AS_Anno.Named CL.TEXT_MRS
+makeNamed :: AS_Anno.Annoted CL.TEXT_META -> Int
+             -> AS_Anno.Named CL.TEXT_META
 makeNamed f i =
   (AS_Anno.makeNamed (
       if null label
@@ -105,7 +113,7 @@ makeNamed f i =
     ) $ AS_Anno.item f)
   { AS_Anno.isAxiom = not isTheorem }
    where
-      (CL.Text_mrs (text, _)) = AS_Anno.item f
+      text = CL.getText $ AS_Anno.item f
       label = AS_Anno.getRLabel f
       annos = AS_Anno.r_annos f
       isImplies = any AS_Anno.isImplies annos
@@ -130,7 +138,7 @@ propsOfModule m = case m of
       $ Sign.uniteL $ nameToSign n : map nameToSign exs
   where nameToSign x = Sign.Sign {
             Sign.items = Set.singleton $ Id.simpleIdToId x,
-            Sign.discourseItems = Set.singleton $ Id.simpleIdToId x
+            Sign.discourseItems = Set.empty
           }
 
 propsOfSentence :: CL.SENTENCE -> Sign.Sign
@@ -157,7 +165,7 @@ propsOfTerm :: CL.TERM -> Sign.Sign
 propsOfTerm term = case term of
     CL.Name_term x -> Sign.Sign {
             Sign.items = Set.singleton $ Id.simpleIdToId x,
-            Sign.discourseItems = Set.singleton $ Id.simpleIdToId x
+            Sign.discourseItems = Set.empty
         }
     CL.Funct_term t ts _ -> Sign.unite (propsOfTerm t)
                                        (uniteMap propsOfTermSeq ts)
@@ -166,11 +174,11 @@ propsOfTerm term = case term of
 propsOfNames :: CL.NAME_OR_SEQMARK -> Sign.Sign
 propsOfNames (CL.Name x) = Sign.Sign {
         Sign.items = Set.singleton $ Id.simpleIdToId x,
-        Sign.discourseItems = Set.singleton $ Id.simpleIdToId x
+        Sign.discourseItems = Set.empty
     }
 propsOfNames (CL.SeqMark x) = Sign.Sign {
         Sign.items = Set.singleton $ Id.simpleIdToId x,
-        Sign.discourseItems = Set.singleton $ Id.simpleIdToId x
+        Sign.discourseItems = Set.empty
     }
 
 propsOfTermSeq :: CL.TERM_SEQ -> Sign.Sign
@@ -178,7 +186,7 @@ propsOfTermSeq s = case s of
     CL.Term_seq term -> propsOfTerm term
     CL.Seq_marks sqm -> Sign.Sign {
             Sign.items = Set.singleton $ Id.simpleIdToId sqm,
-            Sign.discourseItems = Set.singleton $ Id.simpleIdToId sqm
+            Sign.discourseItems = Set.empty
         }
 
 uniteMap :: (a -> Sign.Sign) -> [a] -> Sign
@@ -188,7 +196,7 @@ uniteMap p = List.foldl (\ sig -> Sign.unite sig . p)
 basicCommonLogicAnalysis :: (CL.BASIC_SPEC, Sign.Sign, a)
   -> Result (CL.BASIC_SPEC,
              ExtSign Sign.Sign Symbol.Symbol,
-             [AS_Anno.Named CL.TEXT_MRS])
+             [AS_Anno.Named CL.TEXT_META])
 basicCommonLogicAnalysis (bs, sig, _) =
    Result.Result [] $ if exErrs then Nothing else
      Just (bs, ExtSign sigItems newSyms, sentences)
@@ -214,8 +222,11 @@ inducedFromMorphism m s = let
 
 
 -- negate sentence (text) - propagates negation to sentences
-negForm :: CL.TEXT_MRS -> CL.TEXT_MRS
-negForm (CL.Text_mrs (t,mrs)) = CL.Text_mrs (negForm_txt t,mrs)
+negForm :: CL.TEXT_META -> CL.TEXT_META
+negForm tm = CL.Text_meta { CL.getText = negForm_txt $ CL.getText tm
+                          , CL.metarelation = CL.metarelation tm
+                          , CL.discourseNames = CL.discourseNames tm
+                          }
 
 negForm_txt :: CL.TEXT -> CL.TEXT
 negForm_txt t = case t of

@@ -38,9 +38,9 @@ exportSymToOmdoc _ _ n = return $ TCSymbol n const_symbol Obj Nothing
 
 
 -- ----------------------------------------------------------
-exportSenToOmdoc :: Env -> TEXT_MRS
+exportSenToOmdoc :: Env -> TEXT_META
                  -> Result TCorOMElement
-exportSenToOmdoc en (Text_mrs (t,_)) = return $ Right $ exportText en [] t
+exportSenToOmdoc en tm = return $ Right $ exportText en [] $ AS.getText tm
 
 exportText :: Env -> [NAME_OR_SEQMARK] -> TEXT -> OMElement
 exportText en vars txt = case txt of
