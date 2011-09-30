@@ -128,8 +128,8 @@ changeXml el diff = let cr = fromElement el in do
   (cr', ef) <- iterateXml TopElem pths cr emptyDgEffect
   case current cr' of
      Elem e -> do
-       i <- getAttrVal "nextlinkid" e
-       return (e, ef { nextlinkid = read i })
+       v <- readAttrVal "illegal nextlinkid" "nextlinkid" e
+       return (e, ef { nextlinkid = v })
      _ -> fail "unexpected content within top element"
 
 {- follow the Xml-structure and apply Changes. The Change is only applied after
@@ -317,6 +317,8 @@ mkUpdateCh ef cr = case current cr of
 nameString :: Element -> String
 nameString = qName . elName
 
+readAttrVal :: (Read a, Monad m) => String -> String -> Element -> m a
+readAttrVal err attr = (>>= maybeF err . readMaybe) . getAttrVal attr
+
 readEdgeId_M :: Monad m => Element -> m EdgeId
-readEdgeId_M =
-  (>>= liftM EdgeId . maybeF "readEdgeId_M" . readMaybe) . getAttrVal "linkid"
+readEdgeId_M = liftM EdgeId . readAttrVal "readEdgeId_M" "linkid"
