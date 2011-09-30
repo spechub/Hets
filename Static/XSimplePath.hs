@@ -56,30 +56,29 @@ exprToSimplePath (Change csel e) = case e of
   _ -> fail $ "not a valid path description: " ++ show e
 
 {- built Finder by recursively following Expr-structure and adding data to
-an initally empty Finder along the way -}
+an initially empty Finder along the way -}
 mkFinder :: Monad m => Finder -> [Expr] -> m Finder
-mkFinder f [] = return f
-mkFinder f@(FindBy qn attrs i) (e : r) = do
-  f' <- case e of
+mkFinder = foldM mkFinderAux
+
+mkFinderAux :: Monad m => Finder -> Expr -> m Finder
+mkFinderAux f@(FindBy qn attrs i) e = case e of
     GenExpr True "and" es -> mkFinder f es
     GenExpr True "=" es -> do
       att <- mkAttr es
       return $ FindBy qn (att : attrs) i
-    PrimExpr Number i' -> return $ FindBy qn attrs $ read i'
+    PrimExpr Number i' -> do
+      v <- maybeF ("illegal number: " ++ i') $ readMaybe i'
+      when (i /= 1) $ fail "XPATH number already set differently"
+      return $ FindBy qn attrs v
     _ -> fail "unexpected (2)"
-  mkFinder f' r
 
 {- create attribute to locate the element with from expr-data.
 this method will fail for many illegal expr-types! -}
 mkAttr :: Monad m => [Expr] -> m Attr
-mkAttr [e1, e2] = case e1 of
-    PathExpr Nothing (Path False stps) -> case stps of
-      Step Attribute (NameTest nm) [] : [] -> case e2 of
-        PrimExpr _ val -> return $ Attr (unqual nm) val
-        _ -> fail "unexpected (4)"
-      _ -> fail "unexpected (5)"
-    _ -> fail "unexpected (6)"
-mkAttr _ = fail "unexpected (7)"
+mkAttr l = case l of
+  [ PathExpr Nothing (Path False [Step Attribute (NameTest nm) []])
+    , PrimExpr Literal val] -> return $ Attr (unqual nm) val
+  _ -> fail $ "XPATH unexpected attr: " ++ show l
 
 -- iterate Xml in multiple directions
 data Direction = Vertical
@@ -90,7 +89,7 @@ data Direction = Vertical
 data ChangeRes = ChangeCr Cursor
                | RemoveCr
 
-{- Describes the minimal change-effect of a .diff upon a DGraph. -}
+-- Describes the minimal change-effect of a .diff upon a DGraph.
 data DgEffect = DgEffect { removes :: Set.Set DgElemId
                          , updateNodes :: Map.Map NodeName XNode
                          , updateLinks :: Map.Map EdgeId XLink
@@ -111,7 +110,7 @@ instance Show DgEffect where
       ++ unlines (map show (Map.elems updN) ++ map show (Map.elems updL)))
     ++ (if null adds then "" else "<< Insertions >>\n"
       ++ unlines (map show adds))
-    ++ maybe "" (\_ -> "Global Annotation Changed") annoCh
+    ++ maybe "" (\ _ -> "Global Annotation Changed") annoCh
 
 showDgElemIds :: [DgElemId] -> String
 showDgElemIds = unlines . map show' where
@@ -121,7 +120,7 @@ showDgElemIds = unlines . map show' where
 emptyDgEffect :: DgEffect
 emptyDgEffect = DgEffect Set.empty Map.empty Map.empty [] Nothing (-1)
 
-{- apply a diff to an xml-document. the dg-change is lost -}
+-- apply a diff to an xml-document. the dg-change is lost
 changeXml :: Monad m => Element -> String -> m (Element, DgEffect)
 changeXml el diff = let cr = fromElement el in do
   cs <- anaXUpdates diff
@@ -160,7 +159,7 @@ iterateXml dir pths cr0 ef0 = do
       return (crRes, ef3)
 
 removeFindLeft :: (Cursor -> Bool) -> Cursor -> Maybe Cursor
-removeFindLeft p = maybe Nothing (\cr ->
+removeFindLeft p = maybe Nothing (\ cr ->
   if p cr then Just cr else findLeft p cr) . removeGoLeft
 
 moveDown :: Monad m => Direction -> Cursor -> m Cursor
@@ -182,7 +181,7 @@ isElem cr = case current cr of
   _ -> False
 
 maybeF :: Monad m => String -> Maybe a -> m a
-maybeF err x = maybe (fail err) return x
+maybeF err = maybe (fail err) return
 
 -- TODO: for Remove-Element, all other changes are lost. is this desired?
 applyChanges :: Monad m => [ChangeData] -> Cursor -> m ChangeRes
@@ -209,7 +208,7 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
   -- Case#4: update String (attr-only!)
   (Update s, Just atS) -> case current cr of
      Elem e -> return $ ChangeCr cr { current = Elem $
-       e { elAttribs = map (\ at -> if (qName $ attrKey at) == atS
+       e { elAttribs = map (\ at -> if qName (attrKey at) == atS
            then at { attrVal = s } else at) $ elAttribs e } }
      _ -> fail $ "applyChange(update): " ++ s
   -- OTHER CASES ARE NOT IMPLEMENTED!
@@ -238,8 +237,8 @@ propagatePaths cr pths = case current cr of
   Elem e -> let
     checkAttr at = maybe False (== attrVal at) $ findAttr (attrKey at) e
     maybeDecrease sp = case steps sp of
-          FindBy nm atL i : r  | elName e == nm && all checkAttr atL
-              -> sp { steps = FindBy nm atL (i-1) : r }
+          FindBy nm atL i : r | elName e == nm && all checkAttr atL
+              -> sp { steps = FindBy nm atL (i - 1) : r }
           _ -> sp
     (cur, toRight) = partition isAtZero $ map maybeDecrease pths
             where isAtZero (SimplePath (FindBy _ _ 0 : _) _) = True
@@ -269,7 +268,7 @@ mkRemoveCh ef crInit crNow = case current crInit of
       -- remove child element -> update entire node or link
       _ -> mkUpdateCh ef crNow
 
-{- translates the Change data from the .diff into minimal DgChange-effects. -}
+-- translates the Change data from the .diff into minimal DgChange-effects.
 mkAddOrUpdateCh :: Monad m => Cursor -> [ChangeData] -> DgEffect -> m DgEffect
 mkAddOrUpdateCh cr cs ef1 = do
   -- at first determine the element-additions
@@ -278,7 +277,7 @@ mkAddOrUpdateCh cr cs ef1 = do
          (ef', r2) <- mkOnlyAddCh efR adds
          if null r2 then return (ef', r) else return
              (ef', ChangeData (Add pos r2) atS : r)
-      c -> return (efR, c:r) ) (ef1, []) cs
+      c -> return (efR, c : r) ) (ef1, []) cs
   -- then only one update change is required for this position
   if null rl then return ef2 else mkUpdateCh ef2 cr
 
@@ -288,14 +287,14 @@ mkOnlyAddCh ef' = foldM extractAddElems (ef', []) where
     -- insert entire Node
     AddElem e | nameString e == "DGNode" -> do
       n <- mkXNode e
-      return (ef { additions = (Left n) : additions ef }, r)
+      return (ef { additions = Left n : additions ef }, r)
     -- insert entire link
     AddElem e | nameString e == "DGLink" -> do
       l <- mkXLink e
-      return (ef { additions = (Right l) : additions ef }, r)
+      return (ef { additions = Right l : additions ef }, r)
     _ -> return (ef, addCh : r)
 
-{- determine which objects needs updating. -}
+-- determine which objects needs updating.
 mkUpdateCh :: Monad m => DgEffect -> Cursor -> m DgEffect
 mkUpdateCh ef cr = case current cr of
     Elem e | nameString e == "Global" ->
@@ -322,4 +321,3 @@ readEdgeId_M :: Monad m => Element -> m EdgeId
 readEdgeId_M e = do
   ei <- getAttrVal "linkid" e
   maybe (fail "readEdgeId_M") (return . EdgeId) $ readMaybe ei
-
