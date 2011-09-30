@@ -75,12 +75,13 @@ showAxis a =
   Preceding c -> sibl c
   _ -> s
 
+-- | testing attribute, namespace or element nodes (usually) by name
 data NodeTest
-  = NameTest String -- ^ optional prefix and local part (possibly *)
-  | PI String -- ^ processing-instruction node type with optional literal
-  | Node
-  | Comment
-  | Text
+  = NameTest String -- ^ optional prefix and local part (possibly a * wildcard)
+  | PI String       -- ^ processing-instruction node type with optional literal
+  | Node            -- ^ true for any node (therefore rarely used)
+  | Comment         -- ^ true for comment nodes
+  | Text            -- ^ true for text nodes
     deriving Show
 
 -- | all node types without processing-instruction
@@ -198,9 +199,10 @@ showInfixExpr op args = case args of
   arg : rargs ->
     let mi = findIndex (elem op) inOps
         f = parenExpr False mi arg
-        padOp = if any isAlpha op then ' ' : op ++ " " else
-          if elem op addOps && not (null f) && ncNameChar (last f)
-             then ' ' : op else op
+        padOp
+          | any isAlpha op = ' ' : op ++ " "
+          | elem op addOps && not (null f) && ncNameChar (last f) = ' ' : op
+          | otherwise = op
     in f ++ concatMap ((padOp ++) . parenExpr True mi) rargs
 
 {- | put parens around arguments that have a lower precedence or
