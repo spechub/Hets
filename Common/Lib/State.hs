@@ -10,15 +10,18 @@ Portability :  portable
 
 State type from Control.Monad.State but no class MonadState
 
-This module may be replaced by the (non-nhc98 module) Control.Monad.State
+This module was a replacement of the (non-haskell98) module
+Control.Monad.State, but now Control.Monad.Trans.State can be used instead.
 
 -}
-
 
 module Common.Lib.State where
 
 -- | Our fixed state monad
 newtype State s a = State { runState :: s -> (a, s) }
+
+state :: (s -> (a, s)) -> State s a
+state = State
 
 instance Functor (State s) where
         fmap f m = State $ \ s -> let

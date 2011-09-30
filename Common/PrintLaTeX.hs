@@ -24,7 +24,7 @@ module Common.PrintLaTeX
     where
 
 import Data.Char (isSpace, isDigit)
-import Common.Lib.State (State (..), evalState, get, put)
+import Common.Lib.State
 import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 
@@ -111,15 +111,15 @@ latexTxt (PStr s1) cont
       subTabStop
       cont
     | s1 == setTab = do
-      state <- get
+      s <- get
       setTabStop
       s2 <- cont
-      let (eAn, sAn) = if insideAnno state
+      let (eAn, sAn) = if insideAnno s
             then (showChar '}', showString startAnno)
             else (id, id)
-      return (eAn . (if indentTabsWritten state
-                    + setTabsThisLine state > 12 ||
-                      onlyTabs state then id else showString s1) . sAn . s2)
+      return (eAn . (if indentTabsWritten s
+                    + setTabsThisLine s > 12 ||
+                      onlyTabs s then id else showString s1) . sAn . s2)
     | setTabWSp
       `isPrefixOf`
       s1 = do
@@ -153,11 +153,11 @@ latexTxt (PStr s1) cont
 debugLatexTxt :: TextDetails -> State LRState String -> State LRState String
 debugLatexTxt (Chr c) cont
     | c == '\n' = do
-      state <- get
+      s1 <- get
       annoBrace <- endOfLine
       indent <- getIndent
-      s <- cont
-      return (annoBrace "\\\\%" ++ show state ++ c : indent s)
+      s2 <- cont
+      return (annoBrace "\\\\%" ++ show s1 ++ c : indent s2)
     | otherwise = fmap (c :) cont
 debugLatexTxt (Str s1) cont
     | null s1 = cont
@@ -178,10 +178,10 @@ debugLatexTxt (PStr s1) cont
       s2 <- cont
       return (s1 ++ s2)
     | s1 == setTab = do
-      state <- get
+      s <- get
       setTabStop
       s2 <- cont
-      let (eAn, sAn) = if insideAnno state
+      let (eAn, sAn) = if insideAnno s
             then (showChar '}', showString startAnno)
             else (id, id)
       return (eAn s1 ++ sAn s2)
@@ -200,11 +200,11 @@ debugLatexTxt (PStr s1) cont
       s2 <- cont
       return ('}' : s2)
     | s1 == "\n" = do
-      state <- get
+      s <- get
       annoBrace <- endOfLine
       indent <- getIndent
       s2 <- cont
-      return (annoBrace "\\\\%" ++ show state ++ s1 ++ indent s2)
+      return (annoBrace "\\\\%" ++ show s ++ s1 ++ indent s2)
     | otherwise = do
       setOnlyTabs False
       s2 <- cont
@@ -212,30 +212,30 @@ debugLatexTxt (PStr s1) cont
 
 setOnlyTabs :: Bool -> State LRState ()
 setOnlyTabs b = do
-  state <- get
-  put $ state {onlyTabs = b}
+  s <- get
+  put s {onlyTabs = b}
 
 setInsideAnno :: Bool -> State LRState ()
 setInsideAnno b = do
-  state <- get
-  put $ state {insideAnno = b}
+  s <- get
+  put s {insideAnno = b}
 
 -- a function to produce a String containing the actual tab stops in use
 getIndent :: State LRState ShowS
 getIndent = do
-  state <- get
-  let indentTabsSum = sum (indentTabs state)
-  put $ state
+  s <- get
+  let indentTabsSum = sum (indentTabs s)
+  put $ s
     { indentTabsWritten = indentTabsSum
     , collSpaceIndents = []
     , onlyTabs = True
-    , totalTabStops = max (totalTabStops state)
-        (indentTabsSum + length (collSpaceIndents state)) }
+    , totalTabStops = max (totalTabStops s)
+        (indentTabsSum + length (collSpaceIndents s)) }
   let indent_fun = foldl (.) id (replicate indentTabsSum (showString "\\>"))
-      new_tab_line = foldl space_format id (collSpaceIndents state)
+      new_tab_line = foldl space_format id (collSpaceIndents s)
         . showString "\\kill\n"
-      sAnno = if insideAnno state then showString startAnno else id
-  return ((if null (collSpaceIndents state) then indent_fun else
+      sAnno = if insideAnno s then showString startAnno else id
+  return ((if null (collSpaceIndents s) then indent_fun else
            indent_fun . new_tab_line . indent_fun) . sAnno)
     where space_format :: ShowS -> Int -> ShowS
           space_format sf1 i = sf1 . showString (replicate i '~')
@@ -243,54 +243,54 @@ getIndent = do
 
 endOfLine :: State LRState ShowS
 endOfLine = do
-  state <- get
-  put $ state
+  s <- get
+  put s
     { isSetLine = False
     , setTabsThisLine = 0 }
-  return (if insideAnno state then showChar '}' else id)
+  return (if insideAnno s then showChar '}' else id)
 
 setTabStop :: State LRState ()
-setTabStop = State $ \ state ->
+setTabStop = state $ \ s ->
   ( ()
-  , let new_setTabsThisLine = succ $ setTabsThisLine state
-    in if onlyTabs state then state { isSetLine = True } else state
-      { recentlySet = succ $ recentlySet state
+  , let new_setTabsThisLine = succ $ setTabsThisLine s
+    in if onlyTabs s then s { isSetLine = True } else s
+      { recentlySet = succ $ recentlySet s
       , setTabsThisLine = new_setTabsThisLine
-      , totalTabStops = max (totalTabStops state)
-          (new_setTabsThisLine + indentTabsWritten state)
+      , totalTabStops = max (totalTabStops s)
+          (new_setTabsThisLine + indentTabsWritten s)
       , isSetLine = True })
 
 addTabWithSpaces :: String -> State LRState ()
-addTabWithSpaces s = let
+addTabWithSpaces str = let
     delayed_indent :: Int
-    delayed_indent = read . reverse . fst . span isDigit . tail $ reverse s
-  in State $ \ state ->
+    delayed_indent = read . reverse . fst . span isDigit . tail $ reverse str
+  in state $ \ s ->
   ( ()
-  , state { collSpaceIndents = collSpaceIndents state ++ [delayed_indent] })
+  , s { collSpaceIndents = collSpaceIndents s ++ [delayed_indent] })
 
 -- increase the indentTabs in the state by 1
 addTabStop :: State LRState ShowS
-addTabStop = State $ \ state ->
+addTabStop = state $ \ s ->
   let (new_indentTabs, newTabs) =
-        let nT = if isSetLine state then recentlySet state else 1
+        let nT = if isSetLine s then recentlySet s else 1
         in (condAdd_indentTabs nT, nT)
       indentTabsSum = sum
       condAdd_indentTabs i =
-          if i + indentTabsSum (indentTabs state) > totalTabStops state
-          then indentTabs state
-          else indentTabs state ++ [i]
+          if i + indentTabsSum (indentTabs s) > totalTabStops s
+          then indentTabs s
+          else indentTabs s ++ [i]
       new_recentlySet =
-          if isSetLine state
+          if isSetLine s
           then 0
-          else recentlySet state
+          else recentlySet s
       inTabs nT = foldl (.) id
         (replicate nT $ showString "\\>")
       (indent_fun, new_indentTabsWritten) =
-          if indentTabsSum new_indentTabs > indentTabsWritten state
-            && not (isSetLine state) && onlyTabs state
-          then (inTabs newTabs, newTabs + indentTabsWritten state)
-          else (id, indentTabsWritten state)
-  in (indent_fun, state
+          if indentTabsSum new_indentTabs > indentTabsWritten s
+            && not (isSetLine s) && onlyTabs s
+          then (inTabs newTabs, newTabs + indentTabsWritten s)
+          else (id, indentTabsWritten s)
+  in (indent_fun, s
     { recentlySet = new_recentlySet
     , indentTabs = new_indentTabs
     , indentTabsWritten = new_indentTabsWritten })
@@ -298,11 +298,11 @@ addTabStop = State $ \ state ->
 -- decrease the indentTabs in the state by 1
 subTabStop :: State LRState ()
 subTabStop = do
-  state <- get
-  let indentTabs' = case indentTabs state of
+  s <- get
+  let indentTabs' = case indentTabs s of
         [] -> []
         itabs -> init itabs  -- last itabs == 1
-  put (state {indentTabs = indentTabs'})
+  put s {indentTabs = indentTabs'}
 
 -- | function to set up a space based indentation macro
 setTabWithSpaces :: Int -> String
