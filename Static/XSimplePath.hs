@@ -48,11 +48,11 @@ exprToSimplePath (Change csel e) = case e of
     (fs, atS) <- foldM (\ (fs', atS') stp -> case stp of
         Step Child (NameTest n) exps -> do
           finder <- mkFinder (FindBy (unqual n) [] 1) exps
-          return (fs' ++ [finder], atS')
+          return (finder : fs', atS')
         -- should be last step only. return path so-far plus attribute selector
         Step Attribute (NameTest n) [] -> return (fs', Just n)
         _ -> fail $ "unexpected step: " ++ show stp) ([], Nothing) stps
-    return $ SimplePath fs $ ChangeData csel atS
+    return $ SimplePath (reverse fs) $ ChangeData csel atS
   _ -> fail $ "not a valid path description: " ++ show e
 
 {- built Finder by recursively following Expr-structure and adding data to
