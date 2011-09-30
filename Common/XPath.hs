@@ -443,10 +443,7 @@ unionExpr = singleInfixExpr pathExpr "|"
 
 -- | 'unionExpr' can be prefixed by the unary minus
 unaryExpr :: Parser Expr
-unaryExpr = do
-    symbol "-"
-    e <- unaryExpr
-    return $ GenExpr True "-" [e]
+unaryExpr = fmap (GenExpr True "-" . (: [])) (symbol "-" >> unaryExpr)
   <|> unionExpr
 
 {- | parse as many arguments separated by any infix symbol as possible
