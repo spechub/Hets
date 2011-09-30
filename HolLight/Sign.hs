@@ -26,18 +26,16 @@ data Sign = Sign { types :: Map.Map String Int
   deriving (Eq, Ord, Show)
 
 pretty_types :: Map.Map String Int -> Doc
-pretty_types = sepByCommas . map (\ (s, i) -> text s <> parens (pretty i))
-  . Map.toList
-
-instance Pretty HolType where
-  pretty = pp_print_type
+pretty_types = ppMap text (\ i -> if i < 1 then empty else parens (pretty i))
+  (const id) sepByCommas (<>)
 
 instance Pretty Sign where
   pretty s = keyword "types" <+> pretty_types (types s)
-    $++$ printMap id vcat (\ a b -> a <+> colon <+> b) (ops s)
+    $++$ ppMap text (ppSet pp_print_type optBraces sepByCommas)
+         (const id) vcat (\ a -> (a <+> colon <+>)) (ops s)
 
 emptySig :: Sign
-emptySig = Sign{types = Map.empty, ops = Map.empty}
+emptySig = Sign {types = Map.empty, ops = Map.empty}
 
 isSubSig :: Sign -> Sign -> Bool
 isSubSig s1 s2 = types s1 `Map.isSubmapOf` types s2
@@ -45,4 +43,4 @@ isSubSig s1 s2 = types s1 `Map.isSubmapOf` types s2
 
 sigUnion :: Sign -> Sign -> Result Sign
 sigUnion (Sign {types = t1, ops = o1}) (Sign {types = t2, ops = o2}) =
-  return $ Sign {types=Map.union t1 t2, ops=Map.unionWith Set.union o1 o2}
+  return Sign {types = Map.union t1 t2, ops = Map.unionWith Set.union o1 o2}
