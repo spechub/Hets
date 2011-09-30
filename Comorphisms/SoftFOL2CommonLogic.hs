@@ -150,7 +150,7 @@ signToTexts srcSign =
 sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
                 -> Maybe TEXT_META
 sortRelText m =
-  let ps = Map.foldrWithKey (\subSrt set phrs -> (
+  let ps = Map.foldWithKey (\subSrt set phrs -> (
         Set.fold (\superSrt phrs2 ->
             Sentence (Quant_sent (Universal [Name xName] (Bool_sent (Implication
                 (predicateNames subSrt [xName]) (predicateNames superSrt [xName])
@@ -173,7 +173,7 @@ typesWithIndv args =
 -- forall x y z. (if (and (T1 x) (T2 y) (T3 z)) (T4 f[x,y,z]))
 funcMapText :: Map.Map Token (Set.Set ([Token], Token)) -> Maybe TEXT_META
 funcMapText m =
-  let ps = Map.foldrWithKey (\f set phrs -> (
+  let ps = Map.foldWithKey (\f set phrs -> (
           Set.fold (\(args, res) phrs2 ->
             let argsAndNames = typesWithIndv args
             in  Sentence (
@@ -207,7 +207,7 @@ funcMapText m =
 -- forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z))
 predMapText :: Map.Map Token (Set.Set [Token]) -> Maybe TEXT_META
 predMapText m =
-  let ps = Map.foldrWithKey (\prd set phrs -> (
+  let ps = Map.foldWithKey (\prd set phrs -> (
           Set.fold (\args phrs2 ->
             let argsAndNames = typesWithIndv args
             in  Sentence (Quant_sent (Universal (map (Name . snd) argsAndNames) (
@@ -410,7 +410,7 @@ trmToFunctTrm t = case t of
       if null args
       then symToTerm sym
       else Funct_term (symToTerm sym) (map trmToTermSeq args) nullRange
-  FOLSign.SPQuantTerm _ _ _ -> 
+  FOLSign.SPQuantTerm _ _ _ ->
       error "quantification not allowed in quantifier-argument list"
 
 -- | converts a custom symbol to a NAME, used in
