@@ -96,21 +96,19 @@ fromLabelledSen s = let label = senAttr s in
     (if null label then [] else [Label [label] nullRange])
     ++ if isAxiom s then [] else [Semantic_anno SA_implied nullRange]
 
--- | function to split the annotation to the right of an item
--- * fst contains printed label and implied annotion
---   if any at the begining of the list of annotations
--- * snd contains the remaining annos
+{- | function to split the annotation to the right of an item.
+* fst contains printed label and implied annotion
+  if any at the begining of the list of annotations
+* snd contains the remaining annos -}
 splitRAnnos :: [Annotation] -> ([Annotation], [Annotation])
 splitRAnnos r = case r of
-    [] -> ([],[])
-    [l] -> if isLabel l || isImplied l then (r, [])
-             else ([], r)
-    l : s@(i : t) ->
-        if isLabel l then
+    [l] | isLabel l || isImplied l -> (r, [])
+    l : s@(i : t)
+      | isLabel l ->
             if isImplied i then ([l, i], t)
             else ([l], s)
-        else if isImplied l then ([l], s)
-             else ([], r)
+      | isImplied l -> ([l], s)
+    _ -> ([], r)
 
 -- | add global annotations for proper mixfix printing
 useGlobalAnnos :: GlobalAnnos -> Doc -> Doc
@@ -181,6 +179,11 @@ ppList fa brace inter l = case l of
 ppSet :: (a -> Doc) -> (CSize -> Doc -> Doc) -> ([Doc] -> Doc)
   -> Set.Set a -> Doc
 ppSet fa brace inter = ppList fa brace inter . Set.toList
+
+optBraces :: CSize -> Doc -> Doc
+optBraces c = case c of
+  CSingle -> id
+  _ -> braces
 
 printSet :: Pretty a => (Doc -> Doc) -> ([Doc] -> Doc) -> Set.Set a -> Doc
 printSet = ppSet pretty . const
