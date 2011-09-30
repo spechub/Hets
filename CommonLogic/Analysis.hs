@@ -244,3 +244,59 @@ negForm_sen f = case f of
     CL.Negation s -> s
     _ -> CL.Bool_sent (CL.Negation f) r
   _ -> CL.Bool_sent (CL.Negation f) Id.nullRange
+
+-- | Static analysis for symbol maps
+mkStatSymbMapItem :: [CL.SYMB_MAP_ITEMS]
+                  -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
+mkStatSymbMapItem xs =
+    Result.Result
+    {
+      Result.diags = []
+    , Result.maybeResult = Just $
+                           foldl
+                           (
+                            \ smap x ->
+                                case x of
+                                  CL.Symb_map_items sitem _ ->
+                                       Map.union smap $ statSymbMapItem sitem
+                           )
+                           Map.empty
+                           xs
+    }
+
+statSymbMapItem :: [CL.SYMB_OR_MAP] -> Map.Map Symbol.Symbol Symbol.Symbol
+statSymbMapItem xs =
+    foldl
+    (
+     \ mmap x ->
+         case x of
+           CL.Symb sym -> Map.insert (nosToSymbol sym) (nosToSymbol sym) mmap
+           CL.Symb_mapN s1 s2 _
+             -> Map.insert (symbToSymbol s1) (symbToSymbol s2) mmap
+           CL.Symb_mapS s1 s2 _
+             -> Map.insert (symbToSymbol s1) (symbToSymbol s2) mmap
+    )
+    Map.empty
+    xs
+
+-- | Retrieve raw symbols
+mkStatSymbItems :: [CL.SYMB_ITEMS] -> Result.Result [Symbol.Symbol]
+mkStatSymbItems a = Result.Result
+                    {
+                      Result.diags = []
+                    , Result.maybeResult = Just $ statSymbItems a
+                    }
+
+statSymbItems :: [CL.SYMB_ITEMS] -> [Symbol.Symbol]
+statSymbItems si = concat $ map symbItemsToSymbol si
+
+symbItemsToSymbol :: CL.SYMB_ITEMS -> [Symbol.Symbol]
+symbItemsToSymbol (CL.Symb_items syms _) = map nosToSymbol syms
+
+nosToSymbol :: CL.NAME_OR_SEQMARK -> Symbol.Symbol
+nosToSymbol nos = case nos of
+  CL.Name tok -> symbToSymbol tok
+  CL.SeqMark tok -> symbToSymbol tok
+
+symbToSymbol :: Id.Token -> Symbol.Symbol
+symbToSymbol tok = Symbol.Symbol{Symbol.symName = Id.simpleIdToId tok}

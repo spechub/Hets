@@ -50,9 +50,15 @@ convertToLibDefN filename bs =
       knownSpecs = map (\(i,b) -> specName i b fn) $ zip [0..] bs
   in  Lib_defn
         (emptyLibName fn)
-        (concat $ foldl (
-            \r bn -> (convertBS knownSpecs bn : r)
-          ) [] $ zip bs knownSpecs
+        (emptyAnno (Logic_decl (Logic_name
+                                  (mkSimpleId $ show CommonLogic)
+                                  Nothing
+                                  Nothing
+                               ) nullRange)
+          : (concat $ foldl (
+                \r bn -> (convertBS knownSpecs bn : r)
+              ) [] $ zip bs knownSpecs
+            )
         )
         nullRange
         []

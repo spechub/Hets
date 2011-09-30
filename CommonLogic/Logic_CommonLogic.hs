@@ -111,6 +111,8 @@ instance StaticAnalysis CommonLogic
       symbol_to_raw CommonLogic = symbolToRaw
       id_to_raw CommonLogic = idToRaw
       matches CommonLogic = Symbol.matches
+      stat_symb_items CommonLogic _ = mkStatSymbItems
+      stat_symb_map_items CommonLogic _ _ = mkStatSymbMapItem
       induced_from_morphism CommonLogic = inducedFromMorphism
       add_symb_to_sign CommonLogic = addSymbToSign -- TODO
 
