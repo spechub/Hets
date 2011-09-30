@@ -318,6 +318,5 @@ nameString :: Element -> String
 nameString = qName . elName
 
 readEdgeId_M :: Monad m => Element -> m EdgeId
-readEdgeId_M e = do
-  ei <- getAttrVal "linkid" e
-  maybe (fail "readEdgeId_M") (return . EdgeId) $ readMaybe ei
+readEdgeId_M =
+  (>>= liftM EdgeId . maybeF "readEdgeId_M" . readMaybe) . getAttrVal "linkid"
