@@ -202,23 +202,23 @@ that has a zero width.
 So it can be used for LaTeX-macros not needing any space, i.e.
 @\textit{@ or @}@ -}
 latex_macro :: String -> Doc
-latex_macro = sp_text 0
+latex_macro = sizedText 0
 
 casl_keyword_latex, casl_annotationbf_latex,
        casl_axiom_latex,
        casl_comment_latex, casl_structid_latex,
        casl_normal_latex :: String -> Doc
-casl_annotationbf_latex s = sp_text (annotationbf_width s) s
-casl_structid_latex s = sp_text (structid_width s) s
-casl_comment_latex s = sp_text (comment_width s) s
-casl_keyword_latex s = sp_text (keyword_width s) s
-casl_normal_latex s = sp_text (normal_width s) s
-casl_axiom_latex s = sp_text (axiom_width s) s
+casl_annotationbf_latex s = sizedText (annotationbf_width s) s
+casl_structid_latex s = sizedText (structid_width s) s
+casl_comment_latex s = sizedText (comment_width s) s
+casl_keyword_latex s = sizedText (keyword_width s) s
+casl_normal_latex s = sizedText (normal_width s) s
+casl_axiom_latex s = sizedText (axiom_width s) s
 
 -- | sort, op, pred, type and its plurals
 hc_sty_casl_keyword :: String -> Doc
 hc_sty_casl_keyword str =
-    sp_text (keyword_width "preds") $ '\\' : map toUpper str
+    sizedText (keyword_width "preds") $ '\\' : map toUpper str
 
 hc_sty_plain_keyword :: String -> Doc
 hc_sty_plain_keyword kw =

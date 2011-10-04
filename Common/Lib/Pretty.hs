@@ -179,7 +179,7 @@ module Common.Lib.Pretty (
         lparen, rparen, lbrack, rbrack, lbrace, rbrace,
 
         -- * Converting values into documents
-        text, char, ptext, sp_text,
+        text, char, ptext, sizedText,
         int, integer, float, double, rational,
 
         -- * Wrapping documents in delimiters
@@ -205,7 +205,6 @@ module Common.Lib.Pretty (
         Style(..),
         style,
         renderStyle,
-        renderStyle',
 
         -- ** General rendering
         fullRender,
@@ -241,12 +240,12 @@ text     :: String   -> Doc
 ptext    :: String   -> Doc
 -- added by KL
 {- |
-the conversion function @sp_text@ can be used for a special use of this
+the conversion function @sizedText@ can be used for a special use of this
 library. This function enables the possibility to use the rendering
 alghorithms provided for rendering LaTeX with a proportional font. It
 can also be abused because you can add text that has a zero width.
 -}
-sp_text  :: Int -> String -> Doc
+sizedText :: Int -> String -> Doc
 char     :: Char     -> Doc
 int      :: Int      -> Doc
 integer  :: Integer  -> Doc
@@ -540,7 +539,7 @@ char  c = textBeside_ (Chr c) 1 Empty
 text  s = case length   s of {sl -> textBeside_ (Str s)  sl Empty}
 ptext s = case length s of {sl -> textBeside_ (PStr s) sl Empty}
 -- added by KL
-sp_text sl s = case sl of {sl1 -> textBeside_ (PStr s) sl1 Empty}
+sizedText sl s = case sl of {sl1 -> textBeside_ (PStr s) sl1 Empty}
 
 nest k = mkNest k . reduceDoc        -- Externally callable version
 

@@ -81,41 +81,32 @@ initialLRState = LRS
   , insideAnno = False
   }
 
-annoBraceEndOfLine :: String -> State LRState ShowS -> State LRState ShowS
-annoBraceEndOfLine nl cont = do
-      annoBrace <- endOfLine
-      indent <- getIndent
-      s <- cont
-      return (annoBrace . showString ("\\\\" ++ nl) . indent . s)
-
-setOnlyTabsFalse :: String -> State LRState ShowS -> State LRState ShowS
-setOnlyTabsFalse s1 cont = do
-      setOnlyTabs False
-      s2 <- cont
-      return (showString s1 . s2)
+showTextDetails :: TextDetails -> String
+showTextDetails t = case t of
+  Chr c -> [c]
+  Str s -> s
+  PStr s -> s
 
 -- a function that knows how to print LaTeX TextDetails
 latexTxt :: TextDetails -> State LRState ShowS -> State LRState ShowS
-latexTxt (Chr c) cont
-    | c == '\n' = annoBraceEndOfLine [c] cont
-    | otherwise = do
+latexTxt td cont = let s1 = showTextDetails td in case s1 of
+  "" -> cont
+  "\n" -> do
+      annoBrace <- endOfLine
+      indent <- getIndent
       s <- cont
-      return (showChar c . s)
-latexTxt (Str s1) cont
-    | null s1 = cont
-    | all isSpace s1 = do
+      return (annoBrace . showString ("\\\\" ++ s1) . indent . s)
+  _ | all isSpace s1 -> do
       s2 <- cont
       return (showChar ' ' . s2)
-    | otherwise = setOnlyTabsFalse s1 cont
-latexTxt (PStr s1) cont
-    | s1 == startTab = do
+    | s1 == startTab -> do
       indent <- addTabStop
       s2 <- cont
       return (indent . s2)
-    | s1 == endTab = do
+    | s1 == endTab -> do
       subTabStop
       cont
-    | s1 == setTab = do
+    | s1 == setTab -> do
       s <- get
       setTabStop
       s2 <- cont
@@ -127,25 +118,27 @@ latexTxt (PStr s1) cont
                       onlyTabs s then id else showString s1) . sAn . s2)
     | setTabWSp
       `isPrefixOf`
-      s1 = do
+      s1 -> do
       addTabWithSpaces s1
       cont
-    | s1 == startAnno = do
+    | s1 == startAnno -> do
       setInsideAnno True
       s2 <- cont
       return (showString s1 . s2)
-    | s1 == endAnno = do
+    | s1 == endAnno -> do
       setInsideAnno False
       s2 <- cont
       return (showChar '}' . s2)
-    | s1 == "\n" = annoBraceEndOfLine s1 cont
     | "\\kill\n"
       `isSuffixOf`
-      s1 = do
+      s1 -> do
       indent <- getIndent
       s2 <- cont
       return (showString s1 . indent . s2)
-    | otherwise = setOnlyTabsFalse s1 cont
+  _ -> do
+      setOnlyTabs False
+      s2 <- cont
+      return (showString s1 . s2)
 
 setOnlyTabs :: Bool -> State LRState ()
 setOnlyTabs b = do

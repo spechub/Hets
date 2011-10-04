@@ -246,12 +246,11 @@ showRaw gd =
 
 
 instance Show Doc where
-    showsPrec _ doc cont =
-        Pretty.renderStyle' cont Pretty.style $ toText emptyGlobalAnnos doc
+    show = Pretty.renderStyle Pretty.style . toText emptyGlobalAnnos
 
 renderHtml :: GlobalAnnos -> Doc -> String
 renderHtml ga = replSpacesForHtml 0
-  . Pretty.renderStyle' "" Pretty.style . toHtml ga
+  . Pretty.renderStyle Pretty.style . toHtml ga
 
 replSpacesForHtml :: Int -> String -> String
 replSpacesForHtml n s = case s of
@@ -614,7 +613,7 @@ textToHtml :: Set.Set Id -> TextKind -> String -> Pretty.Doc
 textToHtml dis k s = let
   e = escapeHtml s ""
   h = Pretty.text e
-  zeroText = Pretty.sp_text 0
+  zeroText = Pretty.sizedText 0
   tagB t = '<' : t ++ ">"
   tagE t = tagB $ '/' : t
   tag t d = Pretty.hcat [zeroText (tagB t), d, zeroText (tagE t) ]
@@ -671,11 +670,11 @@ toLatexRecord dis tab = anyRecord
              : map (foldDoc (toLatexRecord dis False)
                        { foldText = \ _ k s ->
                           case k of
-                            Native -> Pretty.sp_text (axiom_width s) s
+                            Native -> Pretty.sizedText (axiom_width s) s
                             IdLabel _ Native _ ->
-                                Pretty.sp_text (axiom_width s) s
+                                Pretty.sizedText (axiom_width s) s
                             IdKind | s == " " ->
-                                Pretty.sp_text (axiom_width s) "\\,"
+                                Pretty.sizedText (axiom_width s) "\\,"
                             _ -> textToLatex dis False k s
                         }) os
               ++ [latex_macro "}}"]
@@ -833,7 +832,7 @@ latexSymbols = Map.union (Map.fromList
     , (barS, casl_normal_latex "\\AltBar{}")
     , (percentS, hc_sty_small_keyword "%")
     , (percents, hc_sty_small_keyword "%%")
-    , (exEqual, Pretty.sp_text (axiom_width "=") "\\Ax{\\stackrel{e}{=}}") ])
+    , (exEqual, Pretty.sizedText (axiom_width "=") "\\Ax{\\stackrel{e}{=}}") ])
     $ Map.map hc_sty_axiom $ Map.fromList
     [ (dotS, "\\bullet")
     , (diamondS, "\\Diamond")
