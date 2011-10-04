@@ -83,13 +83,13 @@ writeLibDefn ga file opts ld = do
                 PrettyXml -> printXml fn
                 PrettyAscii -> printAscii fn
                 PrettyHtml -> printHtml fn
-                PrettyLatex -> writeLibDefnLatex opts ga fn ld
+                PrettyLatex -> writeLibDefnLatex ga fn ld
             _ -> return () -- implemented elsewhere
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opts
 
-writeLibDefnLatex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-writeLibDefnLatex opts ga oup =
+writeLibDefnLatex :: GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
+writeLibDefnLatex ga oup =
   writeEncFile Latin1 oup . renderLatex Nothing . toLatex ga . pretty
 
 toShATermString :: ShATermLG a => a -> IO String
