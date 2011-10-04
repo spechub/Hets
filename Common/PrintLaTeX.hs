@@ -177,23 +177,21 @@ endOfLine = do
   return (if insideAnno s then showChar '}' else id)
 
 setTabStop :: State LRState ()
-setTabStop = state $ \ s ->
-  ( ()
-  , let new_setTabsThisLine = succ $ setTabsThisLine s
+setTabStop = modify $ \ s ->
+    let new_setTabsThisLine = succ $ setTabsThisLine s
     in if onlyTabs s then s { isSetLine = True } else s
       { recentlySet = succ $ recentlySet s
       , setTabsThisLine = new_setTabsThisLine
       , totalTabStops = max (totalTabStops s)
           (new_setTabsThisLine + indentTabsWritten s)
-      , isSetLine = True })
+      , isSetLine = True }
 
 addTabWithSpaces :: String -> State LRState ()
 addTabWithSpaces str = let
     delayed_indent :: Int
     delayed_indent = read . reverse . fst . span isDigit . tail $ reverse str
-  in state $ \ s ->
-  ( ()
-  , s { collSpaceIndents = collSpaceIndents s ++ [delayed_indent] })
+  in modify $ \ s ->
+  s { collSpaceIndents = collSpaceIndents s ++ [delayed_indent] }
 
 -- increase the indentTabs in the state by 1
 addTabStop :: State LRState ShowS
