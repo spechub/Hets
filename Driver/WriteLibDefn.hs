@@ -71,7 +71,7 @@ writeLibDefn ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld)
         printAscii fn = writeEncFile (ioEncoding opts) fn
-          . unlines . map trimRight . lines $ showGlobalDoc ga ld ""
+          $ showGlobalDoc ga ld "\n"
         printHtml fn = writeEncFile (ioEncoding opts) fn
           $ renderHtml ga $ pretty ld
         write_type :: OutType -> IO ()
