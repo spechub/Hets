@@ -129,7 +129,7 @@ trimLeft = dropWhile isSpace
 
 -- | trims a string only on the right side
 trimRight :: String -> String
-trimRight = reverse . trimLeft . reverse
+trimRight = foldr (\ c cs -> if null cs && isSpace c then [] else c : cs) ""
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
