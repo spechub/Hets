@@ -74,7 +74,8 @@ Executable hets
     , fgl >= 5.4.1.1
     , filepath
     , ghc-prim
-    , mtl >= 1.1.0.0
+    , transformers >= 0.2.0.0
+    , mtl >= 2.0.0.0
     , network >= 2.1.0.0
     , old-time >= 1.0.0.0
     , parsec >= 2.1.0.0
