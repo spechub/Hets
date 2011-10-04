@@ -14,7 +14,6 @@ Functions for LaTeX pretty printing
 
 module Common.PrintLaTeX
     ( renderLatex
-    , debugRenderLatex
     , renderLatexVerb
     , renderInternalLatex
     , setTabWithSpaces
@@ -82,14 +81,23 @@ initialLRState = LRS
   , insideAnno = False
   }
 
--- a function that knows how to print LaTeX TextDetails
-latexTxt :: TextDetails -> State LRState ShowS -> State LRState ShowS
-latexTxt (Chr c) cont
-    | c == '\n' = do
+annoBraceEndOfLine :: String -> State LRState ShowS -> State LRState ShowS
+annoBraceEndOfLine nl cont = do
       annoBrace <- endOfLine
       indent <- getIndent
       s <- cont
-      return (annoBrace . showString "\\\\" . showChar c . indent . s)
+      return (annoBrace . showString ("\\\\" ++ nl) . indent . s)
+
+setOnlyTabsFalse :: String -> State LRState ShowS -> State LRState ShowS
+setOnlyTabsFalse s1 cont = do
+      setOnlyTabs False
+      s2 <- cont
+      return (showString s1 . s2)
+
+-- a function that knows how to print LaTeX TextDetails
+latexTxt :: TextDetails -> State LRState ShowS -> State LRState ShowS
+latexTxt (Chr c) cont
+    | c == '\n' = annoBraceEndOfLine [c] cont
     | otherwise = do
       s <- cont
       return (showChar c . s)
@@ -98,10 +106,7 @@ latexTxt (Str s1) cont
     | all isSpace s1 = do
       s2 <- cont
       return (showChar ' ' . s2)
-    | otherwise = do
-      setOnlyTabs False
-      s2 <- cont
-      return (showString s1 . s2)
+    | otherwise = setOnlyTabsFalse s1 cont
 latexTxt (PStr s1) cont
     | s1 == startTab = do
       indent <- addTabStop
@@ -133,82 +138,14 @@ latexTxt (PStr s1) cont
       setInsideAnno False
       s2 <- cont
       return (showChar '}' . s2)
-    | s1 == "\n" = do
-      annoBrace <- endOfLine
-      indent <- getIndent
-      s2 <- cont
-      return (annoBrace . showString "\\\\\n" . indent . s2)
+    | s1 == "\n" = annoBraceEndOfLine s1 cont
     | "\\kill\n"
       `isSuffixOf`
       s1 = do
       indent <- getIndent
       s2 <- cont
       return (showString s1 . indent . s2)
-    | otherwise = do
-      setOnlyTabs False
-      s2 <- cont
-      return (showString s1 . s2)
-
--- a function that knows how to print LaTeX TextDetails
-debugLatexTxt :: TextDetails -> State LRState String -> State LRState String
-debugLatexTxt (Chr c) cont
-    | c == '\n' = do
-      s1 <- get
-      annoBrace <- endOfLine
-      indent <- getIndent
-      s2 <- cont
-      return (annoBrace "\\\\%" ++ show s1 ++ c : indent s2)
-    | otherwise = fmap (c :) cont
-debugLatexTxt (Str s1) cont
-    | null s1 = cont
-    | all isSpace s1 = do
-      s2 <- cont
-      return ( ' ' : s2)
-    | otherwise = do
-      setOnlyTabs False
-      s2 <- cont
-      return (s1 ++ s2)
-debugLatexTxt (PStr s1) cont
-    | s1 == startTab = do
-      indent <- addTabStop
-      s2 <- cont
-      return (s1 ++ indent s2)
-    | s1 == endTab = do
-      subTabStop
-      s2 <- cont
-      return (s1 ++ s2)
-    | s1 == setTab = do
-      s <- get
-      setTabStop
-      s2 <- cont
-      let (eAn, sAn) = if insideAnno s
-            then (showChar '}', showString startAnno)
-            else (id, id)
-      return (eAn s1 ++ sAn s2)
-    | setTabWSp
-      `isPrefixOf`
-      s1 = do
-      addTabWithSpaces s1
-      s2 <- cont
-      return (s1 ++ s2)
-    | s1 == startAnno = do
-      setInsideAnno True
-      s2 <- cont
-      return (s1 ++ s2)
-    | s1 == endAnno = do
-      setInsideAnno False
-      s2 <- cont
-      return ('}' : s2)
-    | s1 == "\n" = do
-      s <- get
-      annoBrace <- endOfLine
-      indent <- getIndent
-      s2 <- cont
-      return (annoBrace "\\\\%" ++ show s ++ s1 ++ indent s2)
-    | otherwise = do
-      setOnlyTabs False
-      s2 <- cont
-      return (s1 ++ s2)
+    | otherwise = setOnlyTabsFalse s1 cont
 
 setOnlyTabs :: Bool -> State LRState ()
 setOnlyTabs b = do
@@ -325,18 +262,6 @@ renderLatex :: Maybe Int -> Doc -> String
 renderLatex mi d = showString "\\begin{hetcasl}\n" $
                     renderLatexCore latexStyle' d "\n\\end{hetcasl}\n"
     where latexStyle' = latexStyle
-            { lineLength = fromMaybe (lineLength latexStyle) mi }
-
-debugRenderLatex :: Maybe Int -> Doc -> String
-debugRenderLatex mi d = evalState
-  (fullRender (mode latexStyle')
-   (lineLength latexStyle')
-   (ribbonsPerLine latexStyle')
-   debugLatexTxt
-   (return "") d')
-  initialLRState
-    where d' = ptext "\\begin{hetcasl}" $+$ d $+$ ptext "\\end{hetcasl}"
-          latexStyle' = latexStyle
             { lineLength = fromMaybe (lineLength latexStyle) mi }
 
 -- this lacks some environment starting and closing LaTeX commands

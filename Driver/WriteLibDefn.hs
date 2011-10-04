@@ -88,17 +88,9 @@ writeLibDefn ga file opts ld = do
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opts
 
-debugLatexFilename :: FilePath -> FilePath
-debugLatexFilename =
-    ( \ (b, p, _) -> p ++ b ++ ".debug.tex") . fileparse [".pp.tex"]
-
 writeLibDefnLatex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-writeLibDefnLatex opts ga oup ld =
-    do let ldoc = toLatex ga $ pretty ld
-       writeEncFile Latin1 oup $ renderLatex Nothing ldoc
-       doDump opts "DebugLatex" $
-           writeFile (debugLatexFilename oup) $
-               debugRenderLatex Nothing ldoc
+writeLibDefnLatex opts ga oup =
+  writeEncFile Latin1 oup . renderLatex Nothing . toLatex ga . pretty
 
 toShATermString :: ShATermLG a => a -> IO String
 toShATermString = fmap AT.writeSharedATerm . versionedATermTable
