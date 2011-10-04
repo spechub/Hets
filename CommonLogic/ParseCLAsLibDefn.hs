@@ -17,6 +17,8 @@ import Common.LibName
 import Common.AS_Annotation as Anno
 import Common.AnnoState
 
+import Driver.Options
+
 import Text.ParserCombinators.Parsec
 
 import Logic.Grothendieck
@@ -31,50 +33,62 @@ import Syntax.AS_Structured as Struc
 import qualified Data.Set as Set
 
 import System.IO
+import System.FilePath (combine, addExtension)
+import System.Directory (doesFileExist, getCurrentDirectory)
 
 -- | call for CommonLogic CLIF-parser
-parseCL_CLIF :: FilePath -> IO LIB_DEFN
-parseCL_CLIF filename = do
+parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
+parseCL_CLIF filename opts = do
+  maybeText <- parseCL_CLIF_file filename
+  case maybeText of
+      Right bs -> convertToLibDefN opts filename bs
+      Left x -> error $ show x
+
+parseCL_CLIF_file :: FilePath -> IO (Either ParseError [BASIC_SPEC])
+parseCL_CLIF_file filename = do
   handle <- openFile filename ReadMode
   contents <- hGetContents handle
-  maybeText <- return $ runParser (many basicSpec) (emptyAnnos ()) "" contents
-  case maybeText of
-      Right bs -> return $ convertToLibDefN filename $ reverse bs
-      Left x -> error $ "Error parsing CLIF-File." ++ show x
+  return $ runParser (many basicSpec) (emptyAnnos ())
+                               ("Error parsing CLIF-File " ++ filename) contents
 
 -- maps imports in basic spec to global definition links (extensions) in
 -- development graph
-convertToLibDefN :: FilePath -> [BASIC_SPEC] -> LIB_DEFN
-convertToLibDefN filename bs =
+convertToLibDefN :: HetcatsOpts -> FilePath -> [BASIC_SPEC] -> IO LIB_DEFN
+convertToLibDefN opts filename bs =
   let fn = convertFileToLibStr filename
       knownSpecs = map (\(i,b) -> specName i b fn) $ zip [0..] bs
-  in  Lib_defn
-        (emptyLibName fn)
-        (emptyAnno (Logic_decl (Logic_name
-                                  (mkSimpleId $ show CommonLogic)
-                                  Nothing
-                                  Nothing
-                               ) nullRange)
-          : (concat $ foldl (
-                \r bn -> (convertBS knownSpecs bn : r)
-              ) [] $ zip bs knownSpecs
-            )
-        )
-        nullRange
-        []
+  in do libItems <- convertToLibItems opts knownSpecs bs
+        return $ Lib_defn
+          (emptyLibName fn)
+          (emptyAnno (Logic_decl (Logic_name
+                                    (mkSimpleId $ show CommonLogic)
+                                    Nothing
+                                    Nothing
+                                ) nullRange)
+            : libItems
+          )
+          nullRange
+          []
+
+convertToLibItems :: HetcatsOpts -> [NAME] -> [BASIC_SPEC] -> IO [Anno.Annoted LIB_ITEM]
+convertToLibItems opts knownSpecs bs =
+  concatMapM (convertBS opts knownSpecs) $ zip bs knownSpecs
 
 -- Creates Nodes in the Logic Graph.
 -- Also gives each non-named text a unique name in the graph.
-convertBS :: [NAME] -> (BASIC_SPEC, NAME) -> [Anno.Annoted LIB_ITEM]
-convertBS knownSpecs (b,n) =
+convertBS :: HetcatsOpts -> [NAME] -> (BASIC_SPEC, NAME) -> IO [Anno.Annoted LIB_ITEM]
+convertBS opts knownSpecs (b,n) =
   let imports = getImports b
-  in  concatMap (downloadIfNotKnown knownSpecs) imports
-        ++ [emptyAnno $ Spec_defn
-            n
-            emptyGenericity
-            (createSpec imports b)
-            nullRange]
-        ++ metarelsBS (knownSpecs++imports) b
+  in do
+    downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) imports
+    metaRelations <- metarelsBS opts (knownSpecs++imports) b
+    return $ downloads                     -- external imports
+             ++ [emptyAnno $ Spec_defn     -- imports from known files
+                 n
+                 emptyGenericity
+                 (createSpec imports b)
+                 nullRange]
+             ++ metaRelations              -- metarelations for colore
 
 -- one importation is an extension
 -- many importations are an extension of a union
@@ -129,43 +143,73 @@ specName i (CL.Basic_spec [items]) def =
                Named_text n _ _ -> mkSimpleId n
 specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i
 
-metarelsBS :: [NAME] -> BASIC_SPEC -> [Anno.Annoted LIB_ITEM]
-metarelsBS knownSpecs (CL.Basic_spec abis) =
-  concatMap (metarelsBI knownSpecs . Anno.item) abis
+metarelsBS :: HetcatsOpts -> [NAME] -> BASIC_SPEC -> IO [Anno.Annoted LIB_ITEM]
+metarelsBS opts knownSpecs (CL.Basic_spec abis) =
+  concatMapM (metarelsBI opts knownSpecs . Anno.item) abis
 
-metarelsBI :: [NAME] -> BASIC_ITEMS -> [Anno.Annoted LIB_ITEM]
-metarelsBI knownSpecs (Axiom_items (Anno.Annoted tm _ _ _)) =
-  concatMap (metarelsMR knownSpecs) $ Set.elems $ metarelation tm
+metarelsBI :: HetcatsOpts -> [NAME] -> BASIC_ITEMS -> IO [Anno.Annoted LIB_ITEM]
+metarelsBI opts knownSpecs (Axiom_items (Anno.Annoted tm _ _ _)) =
+  concatMapM (metarelsMR opts knownSpecs) $ Set.elems $ metarelation tm
 
-metarelsMR :: [NAME] -> METARELATION -> [Anno.Annoted LIB_ITEM]
-metarelsMR knownSpecs mr = case mr of
-  RelativeInterprets t1 delta t2 smaps ->
-      concatMap (downloadIfNotKnown knownSpecs) [t1,delta,t2]
-      ++ [emptyAnno $ View_defn
-                      (mkSimpleId "RelativeInterprets")
-                      emptyGenericity
-                      (View_type
-                        (emptyAnno (Union [cnvimport t1, cnvimport delta] nullRange))
-                        (cnvimport t2)
-                        nullRange)
-                      [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
-                      nullRange]
-  NonconservativeExtends t1 t2 smaps ->
-      concatMap (downloadIfNotKnown knownSpecs) [t1,t2]
-      ++ [emptyAnno $ View_defn
-                      (mkSimpleId "NonconservativeExtends")
-                      emptyGenericity
-                      (View_type
-                        (cnvimport t1)
-                        (cnvimport t2)
-                        nullRange)
-                      [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
-                      nullRange]
+metarelsMR :: HetcatsOpts -> [NAME] -> METARELATION -> IO [Anno.Annoted LIB_ITEM]
+metarelsMR opts knownSpecs mr = case mr of
+  RelativeInterprets t1 delta t2 smaps -> do
+      downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) [t1,delta,t2]
+      return $ downloads
+          ++ [emptyAnno $ View_defn
+                          (mkSimpleId $ concat [ "RelativeInterprets "
+                                               , show t1, " "
+                                               , show delta, " "
+                                               , show t2 ])
+                          emptyGenericity
+                          (View_type
+                            (cnvimport t2)
+                            (emptyAnno (Union [cnvimport t1, cnvimport delta] nullRange))
+                            nullRange)
+                          [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
+                          nullRange]
+  NonconservativeExtends t1 t2 smaps -> do
+      downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) [t1,t2]
+      return $ downloads
+          ++ [emptyAnno $ View_defn
+                          (mkSimpleId $ concat [ "NonconservativeExtends "
+                                               , show t1, " "
+                                               , show t2 ])
+                          emptyGenericity
+                          (View_type
+                            (cnvimport t2)
+                            (cnvimport t1)
+                            nullRange)
+                          [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
+                          nullRange]
 
-downloadIfNotKnown :: [NAME] -> NAME -> [Anno.Annoted LIB_ITEM]
-downloadIfNotKnown knownSpecs n =
-  if elem n knownSpecs then []
-  else [emptyAnno $ Download_items
-                  (emptyLibName $ tokStr n)
-                  [Item_name $ n]
-                  nullRange]
+downloadIfNotKnown :: HetcatsOpts -> [NAME] -> NAME -> IO [Anno.Annoted LIB_ITEM]
+downloadIfNotKnown opts knownSpecs n =
+  if elem n knownSpecs
+  then return []
+  else do
+         curDir <- getCurrentDirectory
+         file <- findLibFile (curDir:libdirs opts) (tokStr n)
+         maybeText <- parseCL_CLIF_file file
+         case maybeText of
+              Right bs -> convertToLibItems opts (n:knownSpecs) bs
+              Left err -> error $ show err
+
+findLibFile :: [FilePath] -> String -> IO FilePath
+findLibFile [] f = error $ "Could not find Library " ++ f
+findLibFile (d:ds) f =
+  let f1 = (combine d (addExtension f (show CommonLogic2In)))
+      f2 = (combine d (addExtension f (show CommonLogicIn)))
+  in do
+      f1Exists <- doesFileExist f1
+      f2Exists <- doesFileExist f2
+      case f1Exists of
+        True -> return f1
+        _ ->  case f2Exists of
+                True -> return f2
+                _ -> findLibFile ds f
+
+concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
+concatMapM f xs = do
+  ys <- mapM f xs
+  return $ concat ys
