@@ -210,9 +210,8 @@ anaInput contents selectedBoxes outputfiles = do
   CRes.Result ds mres <- runResultT
          $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast
   let ds1 = filter diagFilter ds
-  if CRes.hasErrors ds1
-  then return $ CRes.Result ds1 Nothing
-  else maybe (return $ CRes.Result ds1 Nothing)
+  if CRes.hasErrors ds1 then return $ CRes.Result ds1 Nothing else
+    maybe (return $ CRes.Result ds1 Nothing)
            (\ res -> do
               saveLog (archive selectedBoxes)
               process_result ds1 res outputfiles selectedBoxes)
@@ -238,8 +237,7 @@ anaInput contents selectedBoxes outputfiles = do
                         latexFile = outputfile ++ ".tex"
                         pdfFile = outputfile ++ ".pdf"
                         tmpFile = outputfile ++ ".tmp"
-                    writeLibDefnLatex webOpts
-                         gannos pptexFile libDefn
+                    writeLibDefnLatex gannos pptexFile libDefn
                     writeFile latexFile (latexHeader ++
                                          "\\input{" ++ pptexFile ++
                                          "}\n \\end{document}\n")
