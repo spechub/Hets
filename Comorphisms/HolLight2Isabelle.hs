@@ -111,7 +111,7 @@ transConstS s t = case (Map.lookup s constMap, elem s notIgnore) of
                    (_, _) -> IsaSign.mkVName $ typedName s t
 
 typedName :: String -> HolType -> String
-typedName s t = transConstStringT bs $ s ++ "_" ++ (show $ pp_print_type t)
+typedName s t = transConstStringT bs $ s -- ++ "_" ++ (show $ pp_print_type t)
 
 unpack_gabs :: Term -> (IsaSign.Term, [IsaSign.Term], IsaSign.Term, IsaSign.Term)
 unpack_gabs t = case unpack_gabs' t [] of
@@ -218,16 +218,16 @@ bs :: IsaSign.BaseSig
 bs = IsaSign.MainHC_thy
 
 mapSign :: Sign -> IsaSign.Sign
-mapSign (Sign t o) = IsaSign.emptySign {
-                       IsaSign.baseSig = IsaSign.MainHC_thy,
-                       IsaSign.constTab = mapOps o,
-                       IsaSign.tsig = mapTypes t
-                      }
+mapSign (Sign t o tvs) = IsaSign.emptySign {
+                          IsaSign.baseSig = IsaSign.MainHC_thy,
+                          IsaSign.constTab = mapOps o,
+                          IsaSign.tsig = mapTypes t
+                           (zip (Set.toList tvs) (repeat (arity2tp 0)))
+                         }
 
-mapOps :: Map.Map String (Set.Set HolType) -> IsaSign.ConstTab
+mapOps :: Map.Map String HolType -> IsaSign.ConstTab
 mapOps f = Map.fromList
              $ map (\ (x, y) -> (transConstS x y, tp2Typ y))
-             $ concatMap (\ (x, s) -> Set.toList $ Set.map (\ a -> (x, a)) s)
              $ Map.toList (foldl (\ m i -> Map.delete i m) f ignore)
 
 tp2Typ :: HolType -> IsaSign.Typ
@@ -241,9 +241,10 @@ arity2tp :: Int -> [(IsaSign.IsaClass, [(IsaSign.Typ, IsaSign.Sort)])]
 arity2tp i = [(isaTerm, map (\ k -> (IsaSign.TFree ("'a" ++ show (k)) [], [isaTerm]))
                             [1 .. i])]
 
-mapTypes :: Map.Map String Int -> IsaSign.TypeSig
-mapTypes tps = IsaSign.emptyTypeSig {
-                IsaSign.arities = Map.fromList $ map extractTypeName
+mapTypes :: Map.Map String Int
+ -> [(String,[(IsaSign.IsaClass, [(IsaSign.Typ, IsaSign.Sort)])])] -> IsaSign.TypeSig
+mapTypes tps tvs = IsaSign.emptyTypeSig {
+                    IsaSign.arities = Map.fromList $ (++) tvs $ map extractTypeName
                   $ Map.toList $ foldr Map.delete tps
                        ["bool", "fun", "prod"] }
  where

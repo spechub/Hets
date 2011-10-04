@@ -22,7 +22,8 @@ import HolLight.Helper
 
 -- types should store the type kinds for every type constructor
 data Sign = Sign { types :: Map.Map String Int
-                 , ops :: Map.Map String (Set.Set HolType) }
+                 , ops :: Map.Map String HolType
+                 , typeVars :: Set.Set String }
   deriving (Eq, Ord, Show)
 
 pretty_types :: Map.Map String Int -> Doc
@@ -31,16 +32,18 @@ pretty_types = ppMap text (\ i -> if i < 1 then empty else parens (pretty i))
 
 instance Pretty Sign where
   pretty s = keyword "types" <+> pretty_types (types s)
-    $++$ ppMap text (ppSet pp_print_type optBraces sepByCommas)
+    $++$ keyword "typeVars" <+> (ppSet text (const id) sepByCommas (typeVars s))
+    $++$ ppMap text pp_print_type
          (const id) vcat (\ a -> (a <+> colon <+>)) (ops s)
 
 emptySig :: Sign
-emptySig = Sign {types = Map.empty, ops = Map.empty}
+emptySig = Sign {types = Map.empty, ops = Map.empty, typeVars = Set.empty}
 
 isSubSig :: Sign -> Sign -> Bool
 isSubSig s1 s2 = types s1 `Map.isSubmapOf` types s2
   && ops s1 `Map.isSubmapOf` ops s2
 
 sigUnion :: Sign -> Sign -> Result Sign
-sigUnion (Sign {types = t1, ops = o1}) (Sign {types = t2, ops = o2}) =
-  return Sign {types = Map.union t1 t2, ops = Map.unionWith Set.union o1 o2}
+sigUnion (Sign {types = t1, ops = o1, typeVars = tv1})
+         (Sign {types = t2, ops = o2, typeVars = tv2}) =
+  return Sign {types = Map.union t1 t2, ops = Map.union o1 o2, typeVars = Set.union tv1 tv2}

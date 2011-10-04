@@ -32,7 +32,6 @@ import HolLight.Sign
 import HolLight.Sentence
 import HolLight.Term
 import HolLight.Logic_HolLight
-import HolLight.Helper
 
 import Driver.Options
 
@@ -45,6 +44,19 @@ import qualified System.FilePath.Posix
 
 import Text.XML.Expat.SAX
 import qualified Data.ByteString.Lazy as L
+
+import Char
+
+names :: [String]
+names =
+ let
+  nextName []     = "A"
+  nextName (x:xs) = if (Char.ord x) >= 90
+                     then 'A':(nextName xs)
+                     else (Char.chr ((Char.ord x)+1)):xs
+ in iterate (\ xs ->
+     reverse (nextName (reverse xs))
+    ) "A"
 
 type SaxEvL = [SAXEvent String String]
 
@@ -80,6 +92,7 @@ readL f s d = case tag d of
   _ -> (Nothing,d)
  _ -> (Nothing,d)
 
+--reads list in reverse
 readList' :: (SaxEvL -> (Maybe a,SaxEvL)) -> SaxEvL -> (Maybe [a],SaxEvL)
 readList' f d = case whileJust d f of
  (Just l,d') -> (Just l,d')
@@ -202,7 +215,7 @@ readSharedHolType sl d m = case tag d of
   (Just (i,l),d2) -> case Map.lookup i sl of
    (Just s) -> case listToTypes m l of
      (Just l') -> case tag d2 of
-      ((EndElement "TyApp"):d3) -> (Just (Map.insert ((Map.size m)+1) (TyApp s l') m),d3)
+      ((EndElement "TyApp"):d3) -> (Just (Map.insert ((Map.size m)+1) (TyApp s (reverse l')) m),d3)
       _ -> (Nothing,d)
      _ -> (Nothing,d)
    _ -> (Nothing,d)
@@ -313,40 +326,76 @@ get_types m t = case t of
  (TyApp s ts) -> let m' = foldl get_types m ts in
                      Map.insert s (length ts) m'
 
-mergeTypesOps :: (Map.Map String Int,Map.Map String (Set.Set HolType))
-                 -> (Map.Map String Int,Map.Map String (Set.Set HolType))
-                 -> (Map.Map String Int,Map.Map String (Set.Set HolType))
+mergeTypesOps :: (Map.Map String Int,Map.Map String HolType)
+                 -> (Map.Map String Int,Map.Map String HolType)
+                 -> (Map.Map String Int,Map.Map String HolType)
 mergeTypesOps (ts1,ops1) (ts2,ops2) =
- (Map.union ts1 ts2,Map.unionWith Set.union ops1 ops2)
+ (Map.union ts1 ts2,Map.union ops1 ops2)
 
-get_ops :: [String] -> Term
-           -> (Map.Map String Int,Map.Map String (Set.Set HolType))
-get_ops ign tm = case tm of
- (Var s t _)    -> let ts = get_types Map.empty t
-                     in if not (elem s ign) then
-                          (ts,Map.insert s (Set.fromList [t]) Map.empty)
-                        else (ts,Map.empty)
+get_ops :: Term
+           -> (Map.Map String Int,Map.Map String HolType)
+get_ops tm = case tm of
+ (Var _ t _)    -> let ts = get_types Map.empty t
+                     in (ts,Map.empty)
  (Const s t _)  -> let ts = get_types Map.empty t
-                     in (ts,Map.insert s (Set.fromList [t]) Map.empty)
+                     in (ts,Map.insert s t Map.empty)
  (Comb t1 t2) -> mergeTypesOps
-                  (get_ops ((name_of t1):ign) t1)
-                  (get_ops ((name_of t1):ign) t2)
+                  (get_ops t1)
+                  (get_ops t2)
  (Abs t1 t2)  -> mergeTypesOps
-                  (get_ops ((name_of t1):ign) t1)
-                  (get_ops ((name_of t1):ign) t2)
+                  (get_ops t1)
+                  (get_ops t2)
 
-calcSig :: [(String,Term)] -> Sign
-calcSig tm = let (ts,os) = foldl
-                  (\p (_,t) -> (mergeTypesOps (get_ops [] t) p)) (Map.empty,Map.empty) tm
-             in Sign {
-                 types = ts
-                ,ops = os }
+calcSig :: ([(String,Term)],Int) -> Sign
+calcSig (tm,i) = let (ts,os) = foldl
+                      (\p (_,t) -> (mergeTypesOps (get_ops t) p))
+                      (Map.empty,Map.empty) tm
+                 in Sign {
+                   types = ts
+                  ,ops = os
+                  ,typeVars = Set.fromList $ take i names }
 
 sigDepends :: Sign -> Sign -> Bool
 sigDepends s1 s2 = ((Map.size (Map.intersection (types s1) (types s2))) /= 0) ||
-                   (foldl (||) False (map snd (Map.toList (Map.intersectionWith
-                     (\a b -> (Set.size (Set.intersection a b))/=0)
-                     (ops s1) (ops s2)))))
+                   ((Map.size (Map.intersection (ops s1) (ops s2))) /= 0)
+
+prettifyTypeVarsTp :: HolType -> Map.Map String String -> (HolType,Map.Map String String)
+prettifyTypeVarsTp (TyVar s)    m = case Map.lookup s m of
+                                    Just s' -> (TyVar s',m)
+                                    Nothing -> let s' = names!!(Map.size m)
+                                               in (TyVar s',Map.insert s s' m)
+prettifyTypeVarsTp (TyApp s ts) m = let (ts',m') =
+                                              foldl (\(ts'',m'') t -> 
+                                                let (t',m''') = prettifyTypeVarsTp t m''
+                                                in (t':ts'',m''')
+                                               ) ([],m) ts
+                                   in (TyApp s ts',m')
+
+prettifyTypeVarsTm :: Term -> Map.Map String String -> (Term,Map.Map String String)
+prettifyTypeVarsTm (Const s t p) _ =
+ let (t1,m1) = prettifyTypeVarsTp t Map.empty
+ in (Const s t1 p,m1)
+prettifyTypeVarsTm (Comb tm1 tm2) m =
+ let (tm1',m1) = prettifyTypeVarsTm tm1 m
+     (tm2',m2) = prettifyTypeVarsTm tm2 m1
+ in (Comb tm1' tm2',m2)
+prettifyTypeVarsTm (Abs tm1 tm2) m =
+ let (tm1',m1) = prettifyTypeVarsTm tm1 m
+     (tm2',m2) = prettifyTypeVarsTm tm2 m1
+ in (Abs tm1' tm2',m2)
+prettifyTypeVarsTm t m = (t,m)
+
+prettifyTypeVars :: ([(String,[(String,Term)])],    [(String,String)]) -> 
+                    ([(String,([(String,Term)],Int))],[(String,String)])
+prettifyTypeVars (libs,lnks) =
+ let libs' = map (\(s,terms) ->
+      let (terms',i) = foldl (\(tms,i') (ts,t) ->
+            let (t',m) = prettifyTypeVarsTm t Map.empty
+            in ((ts,t'):tms,max i' (Map.size m)))
+             ([],0) terms
+      in (s,(terms',i))
+      ) libs
+ in (libs',lnks)
 
 treeLevels :: [(String,String)] -> Map.Map Int [(String,String)]
 treeLevels l = let lk = foldr (\(imp,t) l' -> case lookup t l' of
@@ -378,7 +427,8 @@ _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight 
 
 anaHolLightFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaHolLightFile _opts path = do
-   (libs, lnks) <- importData path
+   (libs_, lnks_) <- importData path
+   let (libs,lnks) = prettifyTypeVars ((libs_, lnks_))
    let h = treeLevels lnks
    let fixLinks m l = case l of
         (l1:l2:l') -> if ((snd l1) == (snd l2)) && (sigDepends
@@ -398,7 +448,7 @@ anaHolLightFile _opts path = do
 {- we'd probably need to take care of dependencies on previously imported files not imported by the file imported last -}
                                                in (uniteSigs m'' lnks_next,lnks_next++lnks_loc)
                     ) (m,[]) [0..((Map.size h)-1)]
-   let (dg',node_m) = foldr (\(lname,lterms) (dg,node_m') ->
+   let (dg',node_m) = foldr (\(lname,(lterms,_)) (dg,node_m') ->
            let sig = Map.findWithDefault emptySig lname m'
                sens = map (\(n,t) -> makeNamedSentence n t) lterms in
            _insNodeDG sig sens lname (dg,node_m')) (emptyDG,Map.empty) libs

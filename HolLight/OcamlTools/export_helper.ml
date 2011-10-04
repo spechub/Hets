@@ -28,7 +28,8 @@ let rec mkSharedTerm t = match t with
    Var (s,tp)   -> insertOrIdx shared_hol_terms
                    (Svar ((insertOrIdx hol_strings s),
                            mkSharedHolType tp,(s,tp)))
- | Const (s,tp) -> insertOrIdx shared_hol_terms
+ | Const (s,_) -> let tp = snd (List.find (fun x -> (String.compare (fst x) s)==0) (constants()))
+                  in  insertOrIdx shared_hol_terms
                    (Sconst ((insertOrIdx hol_strings s),
                            mkSharedHolType tp,(s,tp)))
  | Comb (t1,t2) -> insertOrIdx shared_hol_terms
