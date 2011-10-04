@@ -14,9 +14,6 @@ Functions for LaTeX pretty printing
 
 module Common.PrintLaTeX
     ( renderLatex
-    , renderLatexVerb
-    , renderInternalLatex
-    , setTabWithSpaces
     , latexHeader
     , latexFooter
     )
@@ -234,14 +231,7 @@ subTabStop = do
         itabs -> init itabs  -- last itabs == 1
   put s {indentTabs = indentTabs'}
 
--- | function to set up a space based indentation macro
-setTabWithSpaces :: Int -> String
-setTabWithSpaces i = showString setTabWSp $ shows i "}"
-
 -- functions for producing IO printable Strings
-
-renderInternalLatex :: Doc -> String
-renderInternalLatex d = renderLatexCore latexStyle d ""
 
 renderLatexCore :: Style -> Doc -> ShowS
 renderLatexCore latexStyle' d =
@@ -256,10 +246,3 @@ renderLatex mi d = showString "\\begin{hetcasl}\n" $
                     renderLatexCore latexStyle' d "\n\\end{hetcasl}\n"
     where latexStyle' = latexStyle
             { lineLength = fromMaybe (lineLength latexStyle) mi }
-
--- this lacks some environment starting and closing LaTeX commands
-
-renderLatexVerb :: Maybe Int -> Doc -> String
-renderLatexVerb mi d = renderStyle textStyle' d'
-    where d' = text "\\begin{verbatim}" $+$ d $+$ text "\\end{verbatim}"
-          textStyle' = style {lineLength = fromMaybe (lineLength style) mi }
