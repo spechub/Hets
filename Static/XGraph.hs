@@ -35,11 +35,7 @@ import Text.XML.Light
 {- -------------
 Data Types -}
 
-{- the XGraph data structure contains the elements in exactly the opposite
-order that they can be reconstructed later.
- - Top element holds all Theorem Links and the remaining Graph.
- - Branch holds a list of Definition Links and their Target-Node
- - Root contains all independent Nodes -}
+{- represent element information in the order they can be processed later -}
 data XGraph = XGraph { libName :: LibName
                      , globAnnos :: GlobalAnnos
                      , nextLinkId :: EdgeId
@@ -47,6 +43,8 @@ data XGraph = XGraph { libName :: LibName
                      , startNodes :: [XNode]
                      , xg_body :: XTree }
 
+{- outer list must be executed in order; inner lists represent all def-links
+-node bundles that can be processed in one step -}
 type XTree = [[([XLink], XNode)]]
 
 type EdgeMap = Map.Map String (Map.Map String [XLink])
