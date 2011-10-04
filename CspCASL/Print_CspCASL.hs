@@ -13,7 +13,6 @@ Printing abstract syntax of CSP-CASL
 -}
 module CspCASL.Print_CspCASL where
 
-import CASL.AS_Basic_CASL (SORT, TERM)
 import CASL.Fold
 import CASL.ToDoc
 import Common.Doc
