@@ -95,8 +95,8 @@ constMap = Map.fromList [("+", IsaConsts.plusV)
                         , ("\\/", IsaConsts.disjV)
                         , ("==>", IsaConsts.implV)
                         , ("~", IsaConsts.notV)
-                        , ("F", IsaSign.mkVName IsaConsts.cTrue)
-                        , ("T", IsaSign.mkVName IsaConsts.cFalse)
+                        , ("T", IsaSign.mkVName IsaConsts.cTrue)
+                        , ("F", IsaSign.mkVName IsaConsts.cFalse)
                         ]
 
 notIgnore :: [String]
