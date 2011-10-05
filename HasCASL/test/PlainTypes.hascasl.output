@@ -7,17 +7,17 @@ types [__], {__} : a -> b
 vars  u : [ r ]; v : { s }
 type  tuple3 : a -> b -> c -> d
 var   x : tuple3 r s t
-var  
+var
 type  tuple1 : b -> a
 type  m : (a -> b) -> c
 var   z : m [__]
 type  List : a -> b
 var   w : m List
-var  
-var  
-var  
+var
+var
+var
 var   nt : a -> (b -> c) -> c -> d
-var  
+var
 types s1, r1, t1 < t
 types s2 = r2 = t2
 type  s3 = {x : t . x = x}

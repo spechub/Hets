@@ -37,7 +37,7 @@ anaParser :: StringParser
 anaParser ga = do (a, e) <- bParser ga
                   let ne = e { sentences = map
                          (mapNamed $ simplifySentence e) $ sentences e }
-                  return $ show $ toText (addBuiltins ga)
+                  return . show . useGlobalAnnos (addBuiltins ga)
                              $ pretty a $+$ pretty ne
 
 type SenParser = GlobalAnnos -> AParser () [Named Sentence]
@@ -50,5 +50,5 @@ transParser = fmap ( ( \ e -> map (mapNamed (translateSen e)) $ reverse $
                        sentences e) . snd) . bParser
 
 printSen :: SenParser -> StringParser
-printSen p ga = fmap (show . toText (addBuiltins ga) .
+printSen p ga = fmap (show . useGlobalAnnos (addBuiltins ga) .
   vcat . map (pretty . fromLabelledSen)) $ p ga

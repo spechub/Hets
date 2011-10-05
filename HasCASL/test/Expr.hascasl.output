@@ -19,7 +19,7 @@ op b : bool -> bool %[ = \ x : bool .! (var x : bool) ]%
 op notA : bool
           %[ =
           case (op a : bool) of
-          (op True : bool) -> (op False : bool) | 
+          (op True : bool) -> (op False : bool) |
           (op False : bool) -> (op True : bool) ]%
 type bool ::= False | True %(ga_bool)%
 . a = True
