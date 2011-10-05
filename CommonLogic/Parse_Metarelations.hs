@@ -73,6 +73,10 @@ parse_mrels = parens $ do
     t2 <- identifier
     symbMaps <- parse_mrels_symbMap
     return $ ConservativeExtends t2 symbMaps
+  <|> do
+    includeLibsKey
+    ns <- many identifier
+    return $ IncludeLibs ns
 
 parse_mrels_symbMap :: CharParser st [SYMB_MAP_ITEMS]
 parse_mrels_symbMap = do

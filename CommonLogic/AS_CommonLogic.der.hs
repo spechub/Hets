@@ -138,6 +138,8 @@ data METARELATION = RelativeInterprets NAME NAME [SYMB_MAP_ITEMS]
                     -- pos: t2 - (forall sigma. this_text entails sigma => t2 entails sigma)
                   | ConservativeExtends NAME [SYMB_MAP_ITEMS]
                     -- pos: t2 (this_text conservatively extends t2)
+                  | IncludeLibs [NAME]
+                    -- include the Libraries in the DevGraph
                   deriving (Show, Ord, Eq)
 
 

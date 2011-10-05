@@ -44,6 +44,9 @@ nonconservativeExtensionKey = tokParserFromString nonconservativeExtensionS
 conservativeExtensionKey :: CharParser st Id.Token
 conservativeExtensionKey = tokParserFromString conservativeExtensionS
 
+includeLibsKey :: CharParser st Id.Token
+includeLibsKey = tokParserFromString includeLibsS
+
 -- Keywords
 relativeInterpretsS :: String
 relativeInterpretsS = "relative-interprets"
@@ -62,3 +65,6 @@ nonconservativeExtensionS = "nonconservative-extension"
 
 conservativeExtensionS :: String
 conservativeExtensionS = "conservative-extension"
+
+includeLibsS :: String
+includeLibsS = "include-libs"

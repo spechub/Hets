@@ -57,7 +57,8 @@ convertToLibDefN :: HetcatsOpts -> FilePath -> [BASIC_SPEC] -> IO LIB_DEFN
 convertToLibDefN opts filename bs =
   let fn = convertFileToLibStr filename
       knownSpecs = map (\(i,b) -> specName i b fn) $ zip [0..] bs
-  in do libItems <- convertToLibItems opts knownSpecs bs
+  in do
+        libItems <- convertToLibItems opts knownSpecs bs
         return $ Lib_defn
           (emptyLibName fn)
           (emptyAnno (Logic_decl (Logic_name
@@ -82,7 +83,7 @@ convertBS opts knownSpecs (b,n) =
   in do
     downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) imports
     metaRelations <- metarelsBS opts (knownSpecs++imports) n b
-    return $ downloads                     -- external imports
+    return $ downloads                     -- external file imports
              ++ [emptyAnno $ Spec_defn     -- imports from known files
                  n
                  emptyGenericity
@@ -182,6 +183,7 @@ metarelsMR opts knownSpecs n mr = case mr of
                             nullRange)
                           [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
                           nullRange]
+  IncludeLibs ns -> concatMapM (downloadIfNotKnown opts knownSpecs) ns
 -- TODO: implement views for the other metarelations
 
 downloadIfNotKnown :: HetcatsOpts -> [NAME] -> NAME -> IO [Anno.Annoted LIB_ITEM]
