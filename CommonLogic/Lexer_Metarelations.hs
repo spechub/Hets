@@ -17,24 +17,48 @@ Parser of common logic interchange format
 
 module CommonLogic.Lexer_Metarelations where
 
-import CommonLogic.Lexer_CLIF
-
 import Common.Id as Id
 import Common.Lexer as Lexer
-import Common.Parsec
-import Common.Keywords
 
 import Text.ParserCombinators.Parsec as Parsec
 
--- Parser Keywords
+-- Parsers
+tokParserFromString :: String -> CharParser st Id.Token
+tokParserFromString s = Lexer.pToken $ string s
+
 relativeInterpretsKey :: CharParser st Id.Token
-relativeInterpretsKey = Lexer.pToken $ string relativeInterpretsS
+relativeInterpretsKey = tokParserFromString relativeInterpretsS
+
+definablyInterpretsKey :: CharParser st Id.Token
+definablyInterpretsKey = tokParserFromString definablyInterpretsS
+
+faithfullyInterpretsKey :: CharParser st Id.Token
+faithfullyInterpretsKey = tokParserFromString faithfullyInterpretsS
+
+definablyEquivalentKey :: CharParser st Id.Token
+definablyEquivalentKey = tokParserFromString definablyEquivalentS
 
 nonconservativeExtensionKey :: CharParser st Id.Token
-nonconservativeExtensionKey = Lexer.pToken $ string nonconservativeExtensionS
+nonconservativeExtensionKey = tokParserFromString nonconservativeExtensionS
 
+conservativeExtensionKey :: CharParser st Id.Token
+conservativeExtensionKey = tokParserFromString conservativeExtensionS
+
+-- Keywords
 relativeInterpretsS :: String
 relativeInterpretsS = "relative-interprets"
 
+definablyInterpretsS :: String
+definablyInterpretsS = "definably-interprets"
+
+faithfullyInterpretsS :: String
+faithfullyInterpretsS = "faithfully-interprets"
+
+definablyEquivalentS :: String
+definablyEquivalentS = "definably-equivalent"
+
 nonconservativeExtensionS :: String
 nonconservativeExtensionS = "nonconservative-extension"
+
+conservativeExtensionS :: String
+conservativeExtensionS = "conservative-extension"

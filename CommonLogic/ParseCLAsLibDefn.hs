@@ -81,7 +81,7 @@ convertBS opts knownSpecs (b,n) =
   let imports = getImports b
   in do
     downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) imports
-    metaRelations <- metarelsBS opts (knownSpecs++imports) b
+    metaRelations <- metarelsBS opts (knownSpecs++imports) n b
     return $ downloads                     -- external imports
              ++ [emptyAnno $ Spec_defn     -- imports from known files
                  n
@@ -143,45 +143,46 @@ specName i (CL.Basic_spec [items]) def =
                Named_text n _ _ -> mkSimpleId n
 specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i
 
-metarelsBS :: HetcatsOpts -> [NAME] -> BASIC_SPEC -> IO [Anno.Annoted LIB_ITEM]
-metarelsBS opts knownSpecs (CL.Basic_spec abis) =
-  concatMapM (metarelsBI opts knownSpecs . Anno.item) abis
+metarelsBS :: HetcatsOpts -> [NAME] -> NAME -> BASIC_SPEC -> IO [Anno.Annoted LIB_ITEM]
+metarelsBS opts knownSpecs n (CL.Basic_spec abis) =
+  concatMapM (metarelsBI opts knownSpecs n . Anno.item) abis
 
-metarelsBI :: HetcatsOpts -> [NAME] -> BASIC_ITEMS -> IO [Anno.Annoted LIB_ITEM]
-metarelsBI opts knownSpecs (Axiom_items (Anno.Annoted tm _ _ _)) =
-  concatMapM (metarelsMR opts knownSpecs) $ Set.elems $ metarelation tm
+metarelsBI :: HetcatsOpts -> [NAME] -> NAME -> BASIC_ITEMS -> IO [Anno.Annoted LIB_ITEM]
+metarelsBI opts knownSpecs n (Axiom_items (Anno.Annoted tm _ _ _)) =
+  concatMapM (metarelsMR opts knownSpecs n) $ Set.elems $ metarelation tm
 
-metarelsMR :: HetcatsOpts -> [NAME] -> METARELATION -> IO [Anno.Annoted LIB_ITEM]
-metarelsMR opts knownSpecs mr = case mr of
-  RelativeInterprets t1 delta t2 smaps -> do
-      downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) [t1,delta,t2]
+metarelsMR :: HetcatsOpts -> [NAME] -> NAME -> METARELATION -> IO [Anno.Annoted LIB_ITEM]
+metarelsMR opts knownSpecs n mr = case mr of
+  RelativeInterprets delta t2 smaps -> do
+      downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) [delta,t2]
       return $ downloads
           ++ [emptyAnno $ View_defn
-                          (mkSimpleId $ concat [ "RelativeInterprets "
-                                               , show t1, " "
-                                               , show delta, " "
+                          (mkSimpleId $ concat [ "RelativeInterprets_"
+                                               , show n, "_"
+                                               , show delta, "_"
                                                , show t2 ])
                           emptyGenericity
                           (View_type
                             (cnvimport t2)
-                            (emptyAnno (Union [cnvimport t1, cnvimport delta] nullRange))
+                            (emptyAnno (Union [cnvimport n, cnvimport delta] nullRange))
                             nullRange)
                           [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
                           nullRange]
-  NonconservativeExtends t1 t2 smaps -> do
-      downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) [t1,t2]
+  NonconservativeExtends t2 smaps -> do
+      downloads <- downloadIfNotKnown opts knownSpecs t2
       return $ downloads
           ++ [emptyAnno $ View_defn
-                          (mkSimpleId $ concat [ "NonconservativeExtends "
-                                               , show t1, " "
+                          (mkSimpleId $ concat [ "NonconservativeExtends_"
+                                               , show n, "_"
                                                , show t2 ])
                           emptyGenericity
                           (View_type
                             (cnvimport t2)
-                            (cnvimport t1)
+                            (cnvimport n)
                             nullRange)
                           [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
                           nullRange]
+-- TODO: implement views for the other metarelations
 
 downloadIfNotKnown :: HetcatsOpts -> [NAME] -> NAME -> IO [Anno.Annoted LIB_ITEM]
 downloadIfNotKnown opts knownSpecs n =

@@ -11,10 +11,6 @@ Portability :  portable
 Analysis and parsing of metarelations between texts
 -}
 
-{-
-  Ref. Common Logic ISO/IEC IS 24707:2007(E)
--}
-
 module CommonLogic.Parse_Metarelations
   ( metarelations
   ) where
@@ -47,17 +43,36 @@ mrels s = case runParser parse_mrels (AnnoState.emptyAnnos ()) "" s of
 parse_mrels :: CharParser st METARELATION
 parse_mrels = parens $ do
     relativeInterpretsKey
-    t1 <- identifier
     delta <- identifier
     t2 <- identifier
     symbMaps <- parse_mrels_symbMap
-    return $ RelativeInterprets t1 delta t2 symbMaps
+    return $ RelativeInterprets delta t2 symbMaps
   <|> do
-    nonconservativeExtensionKey
-    t1 <- identifier
+    faithfullyInterpretsKey
+    delta <- identifier
     t2 <- identifier
     symbMaps <- parse_mrels_symbMap
-    return $ NonconservativeExtends t1 t2 symbMaps
+    return $ FaithfullyInterprets delta t2 symbMaps
+  <|> do
+    try definablyInterpretsKey
+    t2 <- identifier
+    symbMaps <- parse_mrels_symbMap
+    return $ DefinablyInterprets t2 symbMaps
+  <|> do
+    definablyEquivalentKey
+    t2 <- identifier
+    symbMaps <- parse_mrels_symbMap
+    return $ DefinablyEquivalent t2 symbMaps
+  <|> do
+    nonconservativeExtensionKey
+    t2 <- identifier
+    symbMaps <- parse_mrels_symbMap
+    return $ NonconservativeExtends t2 symbMaps
+  <|> do
+    conservativeExtensionKey
+    t2 <- identifier
+    symbMaps <- parse_mrels_symbMap
+    return $ ConservativeExtends t2 symbMaps
 
 parse_mrels_symbMap :: CharParser st [SYMB_MAP_ITEMS]
 parse_mrels_symbMap = do

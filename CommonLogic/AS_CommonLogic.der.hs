@@ -126,10 +126,18 @@ data SYMB_ITEMS = Symb_items [NAME_OR_SEQMARK] Id.Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Ord, Eq)
 
-data METARELATION = RelativeInterprets NAME NAME NAME [SYMB_MAP_ITEMS]
-                    -- pos: t1, delta, t2 - (t1 + delta entails t2)
-                  | NonconservativeExtends NAME NAME [SYMB_MAP_ITEMS]
-                    -- pos: t1, t2 - (forall sigma. t1 entails sigma => t2 entails sigma)
+data METARELATION = RelativeInterprets NAME NAME [SYMB_MAP_ITEMS]
+                    -- pos: delta, t2 - (this_text + delta entails t2)
+                  | DefinablyInterprets NAME [SYMB_MAP_ITEMS]
+                    -- pos: t2 - (this_text definably interprets t2)
+                  | FaithfullyInterprets NAME NAME [SYMB_MAP_ITEMS]
+                    -- pos: delta, t2 - (forall sigma. not (this_text + delta entails sigma) => not (t2 entails sigma))
+                  | DefinablyEquivalent NAME [SYMB_MAP_ITEMS]
+                    -- pos: t2 - (this_text ist definably equivalent to t2)
+                  | NonconservativeExtends NAME [SYMB_MAP_ITEMS]
+                    -- pos: t2 - (forall sigma. this_text entails sigma => t2 entails sigma)
+                  | ConservativeExtends NAME [SYMB_MAP_ITEMS]
+                    -- pos: t2 (this_text conservatively extends t2)
                   deriving (Show, Ord, Eq)
 
 
@@ -211,12 +219,12 @@ printNameOrSeqMark s = case s of
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap (Symb nos) = pretty nos
 printSymbOrMap (Symb_mapN source dest  _) =
-  pretty source <+> mapsto <+> pretty dest
+  pretty source <+> mapsto <+> pretty dest <> space
 printSymbOrMap (Symb_mapS source dest  _) =
-  pretty source <+> mapsto <+> pretty dest
+  pretty source <+> mapsto <+> pretty dest <> space -- space needed. without space the comma (from printSymbMapItems) would be part of the name @dest@
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
-printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
+printSymbMapItems (Symb_map_items xs _) = ppWithCommas xs
 
 printSymbItems :: SYMB_ITEMS -> Doc
 printSymbItems (Symb_items xs _) = fsep $ map pretty xs
@@ -282,10 +290,3 @@ clModuleS = "cl-module"
 
 clExcludeS :: String
 clExcludeS = "cl-excludes"
-
-relativeInterpretsS :: String
-relativeInterpretsS = "relative-interprets"
-
-nonconservativeExtensionS :: String
-nonconservativeExtensionS = "nonconservative-extension"
-
