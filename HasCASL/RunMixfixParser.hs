@@ -50,5 +50,5 @@ resolveTerm ga = do
                                     $ initChart addRule ruleS) iEnv
        return $ do
            Result (filter isErrorDiag $ envDiags fEnv) $ Just ()
-           getResolved (shows . toText ga . printTerm . parenTerm)
+           getResolved ((++) . renderText ga . printTerm . parenTerm)
                     (getRange trm) (toMixTerm iEnv) chart

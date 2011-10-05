@@ -73,6 +73,7 @@ module Common.Doc
     ( -- * the document type
       Doc
     , renderHtml
+    , renderText
       -- * primitive documents
     , empty
     , space
@@ -168,8 +169,6 @@ module Common.Doc
     , predIdApplDoc
     , idApplDoc
       -- * transforming to existing formats
-    , toText
-    , toHtml
     , toLatex
       -- * manipulating documents
     , flushRight
@@ -249,9 +248,12 @@ textStyle = Pretty.style
   { Pretty.ribbonsPerLine = 1.19
   , Pretty.lineLength = 80 }
 
+renderText :: GlobalAnnos -> Doc -> String
+renderText ga =
+  removeTrailingSpaces 0 . Pretty.renderStyle textStyle . toText ga
+
 instance Show Doc where
-    show = removeTrailingSpaces 0
-      . Pretty.renderStyle textStyle . toText emptyGlobalAnnos
+    show = renderText emptyGlobalAnnos
 
 removeTrailingSpaces :: Int -> String -> String
 removeTrailingSpaces n s = case s of

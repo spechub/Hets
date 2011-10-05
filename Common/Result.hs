@@ -77,7 +77,7 @@ mkDiag k s a = let q = text "'" in
 mkNiceDiag :: (GetRange a, Pretty a) => GlobalAnnos
        -> DiagKind -> String -> a -> Diagnosis
 mkNiceDiag ga k s a = let q = text "'" in
-    Diag k (show (toText ga $ sep [text s, q <> pretty a <> q]))
+    Diag k (renderText ga $ sep [text s, q <> pretty a <> q])
       $ getRangeSpan a
 
 -- | check whether a diagnosis is an error
