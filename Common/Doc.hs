@@ -244,9 +244,14 @@ showRaw gd =
       Attr fm d -> "Attr(" ++ show fm ++ ", " ++ showRaw d ++ ")"
       ChangeGlobalAnnos _ d -> "ChangeGlobalAnnos(" ++ showRaw d ++ ")"
 
+textStyle :: Pretty.Style
+textStyle = Pretty.style
+  { Pretty.ribbonsPerLine = 1.19
+  , Pretty.lineLength = 80 }
+
 instance Show Doc where
     show = removeTrailingSpaces 0
-      . Pretty.renderStyle Pretty.style . toText emptyGlobalAnnos
+      . Pretty.renderStyle textStyle . toText emptyGlobalAnnos
 
 removeTrailingSpaces :: Int -> String -> String
 removeTrailingSpaces n s = case s of
@@ -258,7 +263,7 @@ removeTrailingSpaces n s = case s of
 
 renderHtml :: GlobalAnnos -> Doc -> String
 renderHtml ga = replSpacesForHtml 0
-  . Pretty.renderStyle Pretty.style . toHtml ga
+  . Pretty.renderStyle textStyle . toHtml ga
 
 replSpacesForHtml :: Int -> String -> String
 replSpacesForHtml n s = case s of
