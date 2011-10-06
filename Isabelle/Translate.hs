@@ -187,10 +187,15 @@ getConstIsaToksAux ide i =
    foldr (Set.insert . tokStr)
              Set.empty . getAltTokenList "" i ide
 
+transIsaInternalName :: String -> String
+transIsaInternalName s = if (last s) == '_'
+                         then s++"X"
+                         else s
+
 transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
                 -> String -> String
 transIsaStringT m i s = let t = transStringAux False s in
-  if Set.member t $ fromMaybe (error "Isabelle.transIsaStringT")
+  transIsaInternalName $ if Set.member t $ fromMaybe (error "Isabelle.transIsaStringT")
          $ Map.lookup i m
   then transIsaStringT m i $ '_' : s else t
 

@@ -14,8 +14,25 @@ module HolLight.Helper where
 
 import Data.Maybe (fromJust,isJust,catMaybes)
 import HolLight.Term
-import Data.List (union,(\\))
+import Data.List (union,(\\),find)
 import Common.Doc
+import Char
+
+names :: [String]
+names =
+ let
+  nextName []     = "a"
+  nextName (x:xs) = if (Char.ord x) >= 122
+                     then 'a':(nextName xs)
+                     else (Char.chr ((Char.ord x)+1)):xs
+ in iterate (\ xs ->
+     reverse (nextName (reverse xs))
+    ) "a"
+
+freeName :: [String] -> String
+freeName ns = (filter (\x -> case find (==x) ns
+                              of Nothing -> True
+                                 _ -> False) names)!!0
 
 fromRight:: Either t t1 -> t1
 fromRight e = case e of

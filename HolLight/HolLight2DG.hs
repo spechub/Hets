@@ -32,31 +32,18 @@ import HolLight.Sign
 import HolLight.Sentence
 import HolLight.Term
 import HolLight.Logic_HolLight
+import HolLight.Helper(names)
 
 import Driver.Options
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import qualified Data.Char
 
 import qualified System.FilePath.Posix
 
 import Text.XML.Expat.SAX
 import qualified Data.ByteString.Lazy as L
-
-import Char
-
-names :: [String]
-names =
- let
-  nextName []     = "A"
-  nextName (x:xs) = if (Char.ord x) >= 90
-                     then 'A':(nextName xs)
-                     else (Char.chr ((Char.ord x)+1)):xs
- in iterate (\ xs ->
-     reverse (nextName (reverse xs))
-    ) "A"
 
 type SaxEvL = [SAXEvent String String]
 
@@ -346,14 +333,13 @@ get_ops tm = case tm of
                   (get_ops t1)
                   (get_ops t2)
 
-calcSig :: ([(String,Term)],Int) -> Sign
-calcSig (tm,i) = let (ts,os) = foldl
+calcSig :: [(String,Term)] -> Sign
+calcSig tm = let (ts,os) = foldl
                       (\p (_,t) -> (mergeTypesOps (get_ops t) p))
                       (Map.empty,Map.empty) tm
                  in Sign {
                    types = ts
-                  ,ops = os
-                  ,typeVars = Set.fromList $ take i names }
+                  ,ops = os }
 
 sigDepends :: Sign -> Sign -> Bool
 sigDepends s1 s2 = ((Map.size (Map.intersection (types s1) (types s2))) /= 0) ||
@@ -362,7 +348,7 @@ sigDepends s1 s2 = ((Map.size (Map.intersection (types s1) (types s2))) /= 0) ||
 prettifyTypeVarsTp :: HolType -> Map.Map String String -> (HolType,Map.Map String String)
 prettifyTypeVarsTp (TyVar s)    m = case Map.lookup s m of
                                     Just s' -> (TyVar s',m)
-                                    Nothing -> let s' = names!!(Map.size m)
+                                    Nothing -> let s' = '\'':(names!!(Map.size m))
                                                in (TyVar s',Map.insert s s' m)
 prettifyTypeVarsTp (TyApp s ts) m = let (ts',m') =
                                               foldl (\(ts'',m'') t -> 
@@ -385,15 +371,15 @@ prettifyTypeVarsTm (Abs tm1 tm2) m =
  in (Abs tm1' tm2',m2)
 prettifyTypeVarsTm t m = (t,m)
 
-prettifyTypeVars :: ([(String,[(String,Term)])],    [(String,String)]) -> 
-                    ([(String,([(String,Term)],Int))],[(String,String)])
+prettifyTypeVars :: ([(String,[(String,Term)])],[(String,String)]) -> 
+                    ([(String,[(String,Term)])],[(String,String)])
 prettifyTypeVars (libs,lnks) =
  let libs' = map (\(s,terms) ->
-      let (terms',i) = foldl (\(tms,i') (ts,t) ->
-            let (t',m) = prettifyTypeVarsTm t Map.empty
-            in ((ts,t'):tms,max i' (Map.size m)))
-             ([],0) terms
-      in (s,(terms',i))
+      let terms' = foldl (\tms (ts,t) ->
+            let (t',_) = prettifyTypeVarsTm t Map.empty
+            in ((ts,t'):tms))
+             [] terms
+      in (s,terms')
       ) libs
  in (libs',lnks)
 
@@ -448,7 +434,7 @@ anaHolLightFile _opts path = do
 {- we'd probably need to take care of dependencies on previously imported files not imported by the file imported last -}
                                                in (uniteSigs m'' lnks_next,lnks_next++lnks_loc)
                     ) (m,[]) [0..((Map.size h)-1)]
-   let (dg',node_m) = foldr (\(lname,(lterms,_)) (dg,node_m') ->
+   let (dg',node_m) = foldr (\(lname,lterms) (dg,node_m') ->
            let sig = Map.findWithDefault emptySig lname m'
                sens = map (\(n,t) -> makeNamedSentence n t) lterms in
            _insNodeDG sig sens lname (dg,node_m')) (emptyDG,Map.empty) libs
