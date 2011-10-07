@@ -209,20 +209,31 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
   -- Case#1: full element removal
   (Remove, Nothing) -> return RemoveCr
   -- Case#2: attribute removal
-  (Remove, Just atS) -> case current cr of
-     Elem e -> return $ ChangeCr cr { current = Elem $
-       e { elAttribs = filter ((/= atS) . qName . attrKey) $ elAttribs e } }
-     _ -> fail "applyChange(remove-attr)"
+  (Remove, Just atS) -> removeOrChangeAttr Nothing cr atS
   -- Case#3: addChanges, either attr-/ or element-insertion
   (Add pos addCs, _) -> liftM ChangeCr $ foldM (applyAddOp pos) cr addCs
   -- Case#4: update String (attr-only!)
-  (Update s, Just atS) -> case current cr of
-     Elem e -> return $ ChangeCr cr { current = Elem $
-       e { elAttribs = map (\ at -> if qName (attrKey at) == atS
-           then at { attrVal = s } else at) $ elAttribs e } }
-     _ -> fail $ "applyChange(update): " ++ s
+  (Update s, Just atS) -> removeOrChangeAttr (Just s) cr atS
   -- OTHER CASES ARE NOT IMPLEMENTED!
   _ -> fail $ "no implementation for :" ++ show csel
+
+removeOrChangeAttr :: Monad m => Maybe String -- ^ optional update value
+  -> Cursor -> String -- ^ attribute key
+  -> m ChangeRes
+removeOrChangeAttr csel cr atS =
+  let failMsg msg = fail $ "removeOrChangeAttr '" ++ atS ++ "': " ++ msg
+  in case current cr of
+  Elem e ->
+    let (match, restAts) =
+          partition ((== atS) . qName . attrKey) $ elAttribs e
+    in case match of
+      [at] -> return $ ChangeCr cr
+        { current = Elem $ e
+          { elAttribs = maybe [] (\ s -> [at { attrVal = s }]) csel
+              ++ restAts } }
+      [] -> failMsg "attribute not found"
+      _ -> failMsg "ambiguous attribute"
+  _ -> failMsg "current cursor is no element"
 
 applyAddOp :: Monad m => Insert -> Cursor -> AddChange
            -> m Cursor
@@ -332,4 +343,3 @@ readAttrVal err attr = (>>= maybeF err . readMaybe) . getAttrVal attr
 
 readEdgeId_M :: Monad m => Element -> m EdgeId
 readEdgeId_M = liftM EdgeId . readAttrVal "readEdgeId_M" "linkid"
-
