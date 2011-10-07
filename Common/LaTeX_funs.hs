@@ -258,6 +258,9 @@ escapeSpecial :: String -> String
 escapeSpecial = concatMap $ \ c -> if elem c "_%$&{}#" then '\\' : [c] else
   Map.findWithDefault [c] c escapeMap
 
+{- http://dhelta.net/hprojects/HaTeX/code/HaTeX-3.1.0/Text/LaTeX/Base/Syntax.hs
+changes _ to \_{} -}
+
 escapeLatex :: String -> String
 escapeLatex = concatMap $ \ c -> case () of
   ()
@@ -277,11 +280,9 @@ axiomString = do
   return $ concat l
 
 parseAtom :: CharParser st [String]
-parseAtom = do
-    tryString "\\Ax{" <|> tryString "\\Id{" <|> string "{"
-    l <- many parseAtom
-    Parsec.char '}'
-    return (concat l)
+parseAtom = fmap concat
+    ((tryString "\\Ax{" <|> tryString "\\Id{" <|> string "{")
+    >> many parseAtom << Parsec.char '}')
  <|> do
     b <- Parsec.char '\\'
     s <- fmap (: []) (satisfy (\ c -> isSpace c
