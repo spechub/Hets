@@ -30,108 +30,76 @@ import CommonLogic.Parse_CLIF (basicSpec)
 import Syntax.AS_Library
 import Syntax.AS_Structured as Struc
 
+import Control.Monad (foldM)
+import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.List (elemIndex, sortBy)
 
 import System.IO
 import System.FilePath (combine, addExtension)
 import System.Directory (doesFileExist, getCurrentDirectory)
 
--- | call for CommonLogic CLIF-parser
+-- | call for CommonLogic CLIF-parser with recursive inclusion of importations
 parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
 parseCL_CLIF filename opts = do
   maybeText <- parseCL_CLIF_file filename
   case maybeText of
-      Right bs -> convertToLibDefN opts filename bs
+      Right bs ->
+        let fn = convertFileToLibStr filename
+            ns = specNameL bs fn
+            bnts = zip3 bs ns $ replicate (length bs) Set.empty
+        in do
+            specs <- anaImports opts (Set.fromList ns) bnts
+            return $ convertToLibDefN fn specs
       Left x -> error $ show x
 
+-- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_file :: FilePath -> IO (Either ParseError [BASIC_SPEC])
 parseCL_CLIF_file filename = do
   handle <- openFile filename ReadMode
   contents <- hGetContents handle
   return $ runParser (many basicSpec) (emptyAnnos ())
-                               ("Error parsing CLIF-File " ++ filename) contents
+                       ("Error parsing CLIF-File \"" ++ filename++"\"") contents
 
 -- maps imports in basic spec to global definition links (extensions) in
 -- development graph
-convertToLibDefN :: HetcatsOpts -> FilePath -> [BASIC_SPEC] -> IO LIB_DEFN
-convertToLibDefN opts filename bs =
-  let fn = convertFileToLibStr filename
-      knownSpecs = map (\(i,b) -> specName i b fn) $ zip [0..] bs
-  in do
-        libItems <- convertToLibItems opts knownSpecs bs
-        return $ Lib_defn
-          (emptyLibName fn)
-          (emptyAnno (Logic_decl (Logic_name
-                                    (mkSimpleId $ show CommonLogic)
-                                    Nothing
-                                    Nothing
-                                ) nullRange)
-            : libItems
-          )
-          nullRange
-          []
+convertToLibDefN :: String -> [(BASIC_SPEC, NAME)] -> LIB_DEFN
+convertToLibDefN fn specs =
+  Lib_defn
+    (emptyLibName fn)
+    (emptyAnno (Logic_decl (Logic_name
+                              (mkSimpleId $ show CommonLogic)
+                              Nothing
+                              Nothing
+                          ) nullRange)
+      : (map convertToLibItems specs
+        ++ concatMap convertMetarelsToLibItems specs)
+    )
+    nullRange
+    []
 
-convertToLibItems :: HetcatsOpts -> [NAME] -> [BASIC_SPEC] -> IO [Anno.Annoted LIB_ITEM]
-convertToLibItems opts knownSpecs bs =
-  concatMapM (convertBS opts knownSpecs) $ zip bs knownSpecs
+convertToLibItems :: (BASIC_SPEC, NAME) -> Anno.Annoted LIB_ITEM
+convertToLibItems (b,n) =
+  emptyAnno $ Spec_defn n emptyGenericity (createSpec b) nullRange
 
--- Creates Nodes in the Logic Graph.
--- Also gives each non-named text a unique name in the graph.
-convertBS :: HetcatsOpts -> [NAME] -> (BASIC_SPEC, NAME) -> IO [Anno.Annoted LIB_ITEM]
-convertBS opts knownSpecs (b,n) =
-  let imports = getImports b
-  in do
-    downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) imports
-    metaRelations <- metarelsBS opts (knownSpecs++imports) n b
-    return $ downloads                     -- external file imports
-             ++ [emptyAnno $ Spec_defn     -- imports from known files
-                 n
-                 emptyGenericity
-                 (createSpec imports b)
-                 nullRange]
-             ++ metaRelations              -- metarelations for colore
-
--- one importation is an extension
--- many importations are an extension of a union
-createSpec :: [NAME] -> BASIC_SPEC -> Anno.Annoted SPEC
-createSpec imports b =
-  let bs = emptyAnno $ Struc.Basic_spec (G_basic_spec CommonLogic b) nullRange
+createSpec :: BASIC_SPEC -> Anno.Annoted SPEC
+createSpec b =
+  let imports = Set.elems $ directImports b
+      bs = emptyAnno $ Struc.Basic_spec (G_basic_spec CommonLogic b) nullRange
   in  case imports of
           [] -> bs
           _  -> emptyAnno $ Extension [
               (case imports of
-                   [n] -> cnvimport n
-                   _   -> emptyAnno $ Union (map cnvimport imports) nullRange)
+                   [n] -> specFromName n
+                   _   -> emptyAnno $ Union (map specFromName imports) nullRange)
               , bs
             ] nullRange
 
--- converts an imporation name to a SPEC
-cnvimport :: NAME -> Annoted SPEC
-cnvimport n = emptyAnno $ Spec_inst n [] nullRange
+specFromName :: NAME -> Annoted SPEC
+specFromName n = emptyAnno $ Spec_inst n [] nullRange
 
--- retrieves all importations from the text
-getImports :: BASIC_SPEC -> [NAME]
-getImports (CL.Basic_spec items) =
-  concatMap getImports_textMrs $ map textFromBasicItems items
-
-textFromBasicItems :: Anno.Annoted (BASIC_ITEMS) -> TEXT_META
-textFromBasicItems abi = case Anno.item abi of
-                              Axiom_items annoText -> Anno.item annoText
-
-getImports_textMrs :: TEXT_META -> [NAME]
-getImports_textMrs tm = getImports_text $ getText tm
-
-getImports_text :: TEXT -> [NAME]
-getImports_text (Text ps _) = map impToName $ filter isImportation ps
-getImports_text (Named_text _ t _) = getImports_text t
-
-isImportation :: PHRASE -> Bool
-isImportation (Importation _) = True
-isImportation _ = False
-
-impToName :: PHRASE -> NAME
-impToName (Importation (Imp_name n)) = n
-impToName _ = undefined -- not necessary because filtered out
+specNameL :: [BASIC_SPEC] -> String -> [NAME]
+specNameL bs def = map (\(i,b) -> specName i b def) $ zip [0..] bs
 
 -- returns a unique name for a node
 specName :: Int -> CL.BASIC_SPEC -> String -> NAME
@@ -144,60 +112,119 @@ specName i (CL.Basic_spec [items]) def =
                Named_text n _ _ -> mkSimpleId n
 specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i
 
-metarelsBS :: HetcatsOpts -> [NAME] -> NAME -> BASIC_SPEC -> IO [Anno.Annoted LIB_ITEM]
-metarelsBS opts knownSpecs n (CL.Basic_spec abis) =
-  concatMapM (metarelsBI opts knownSpecs n . Anno.item) abis
+convertMetarelsToLibItems :: (BASIC_SPEC, NAME) -> [Anno.Annoted LIB_ITEM]
+convertMetarelsToLibItems (CL.Basic_spec abis, n) =
+  concatMap (metarelsBI n . Anno.item) abis
 
-metarelsBI :: HetcatsOpts -> [NAME] -> NAME -> BASIC_ITEMS -> IO [Anno.Annoted LIB_ITEM]
-metarelsBI opts knownSpecs n (Axiom_items (Anno.Annoted tm _ _ _)) =
-  concatMapM (metarelsMR opts knownSpecs n) $ Set.elems $ metarelation tm
+metarelsBI :: NAME -> BASIC_ITEMS -> [Anno.Annoted LIB_ITEM]
+metarelsBI n (Axiom_items (Anno.Annoted tm _ _ _)) =
+  concatMap (metarelsMR n) $ Set.elems $ metarelation tm
 
-metarelsMR :: HetcatsOpts -> [NAME] -> NAME -> METARELATION -> IO [Anno.Annoted LIB_ITEM]
-metarelsMR opts knownSpecs n mr = case mr of
-  RelativeInterprets delta t2 smaps -> do
-      downloads <- concatMapM (downloadIfNotKnown opts knownSpecs) [delta,t2]
-      return $ downloads
-          ++ [emptyAnno $ View_defn
+metarelsMR :: NAME -> METARELATION -> [Anno.Annoted LIB_ITEM]
+metarelsMR n mr = case mr of
+  RelativeInterprets delta t2 smaps ->
+      [emptyAnno $ View_defn
                           (mkSimpleId $ concat [ "RelativeInterprets_"
                                                , show n, "_"
                                                , show delta, "_"
                                                , show t2 ])
                           emptyGenericity
                           (View_type
-                            (cnvimport t2)
-                            (emptyAnno (Union [cnvimport n, cnvimport delta] nullRange))
+                            (specFromName t2)
+                            (emptyAnno (Union [specFromName n, specFromName delta] nullRange))
                             nullRange)
                           [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
                           nullRange]
-  NonconservativeExtends t2 smaps -> do
-      downloads <- downloadIfNotKnown opts knownSpecs t2
-      return $ downloads
-          ++ [emptyAnno $ View_defn
+  NonconservativeExtends t2 smaps ->
+      [emptyAnno $ View_defn
                           (mkSimpleId $ concat [ "NonconservativeExtends_"
                                                , show n, "_"
                                                , show t2 ])
                           emptyGenericity
                           (View_type
-                            (cnvimport t2)
-                            (cnvimport n)
+                            (specFromName t2)
+                            (specFromName n)
                             nullRange)
                           [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
                           nullRange]
-  IncludeLibs ns -> concatMapM (downloadIfNotKnown opts knownSpecs) ns
--- TODO: implement views for the other metarelations
+  IncludeLibs _ -> []
+-- TODO: implement this for the other metarelations
 
-downloadIfNotKnown :: HetcatsOpts -> [NAME] -> NAME -> IO [Anno.Annoted LIB_ITEM]
-downloadIfNotKnown opts knownSpecs n =
-  if elem n knownSpecs
-  then return []
+-- gets recursively all names of cl-texts which are imported or otherwise related to @b@
+collectDownloads :: HetcatsOpts -> Set NAME -> (BASIC_SPEC, NAME, Set NAME)
+                    -> IO ([(BASIC_SPEC, NAME, Set NAME)], Set NAME)
+collectDownloads opts knownTexts (b,n,topTexts) =
+  let directDls = Set.elems $ directDownloads b
+      knownTexts2 = foldr (\d r -> Set.insert d r) knownTexts directDls
+      topTexts2 = Set.insert n topTexts
+  in do
+      x <- mapM (downloadSpec opts knownTexts knownTexts2 topTexts2) directDls
+      let (specsL, newKnownTextsL) = unzip x
+      return (concat specsL, Set.unions newKnownTextsL)
+
+directDownloads :: BASIC_SPEC -> Set NAME
+directDownloads b = Set.union (directMetarels b) (directImports b)
+
+-- retrieves all importations from the text
+directImports :: BASIC_SPEC -> Set NAME
+directImports (CL.Basic_spec items) =
+  Set.unions $ map (getImports_textMeta . textFromBasicItems . Anno.item) items
+
+textFromBasicItems :: BASIC_ITEMS -> TEXT_META
+textFromBasicItems (Axiom_items annoText) = Anno.item annoText
+
+getImports_textMeta :: TEXT_META -> Set NAME
+getImports_textMeta tm = getImports_text $ getText tm
+
+getImports_text :: TEXT -> Set NAME
+getImports_text (Named_text _ t _) = getImports_text t
+getImports_text (Text p _) = Set.fromList $ map impName $ filter isImportation p
+
+isImportation :: PHRASE -> Bool
+isImportation (Importation _) = True
+isImportation _ = False
+
+impName :: PHRASE -> NAME
+impName (Importation (Imp_name n)) = n
+impName _ = undefined -- not necessary because filtered out
+
+directMetarels :: BASIC_SPEC -> Set NAME
+directMetarels (CL.Basic_spec abis) =
+  Set.unions $ map (metarelDownloadsBI . Anno.item) abis
+
+metarelDownloadsBI :: BASIC_ITEMS -> Set NAME
+metarelDownloadsBI (Axiom_items (Anno.Annoted tm _ _ _)) =
+  Set.fold Set.union Set.empty $ Set.map metarelDownloadsMR $ metarelation tm
+
+metarelDownloadsMR :: METARELATION -> Set NAME
+metarelDownloadsMR mr = case mr of
+  RelativeInterprets delta t2 _ -> Set.fromList [delta, t2]
+  NonconservativeExtends t2 _ -> Set.singleton  t2
+  IncludeLibs ns -> Set.fromList ns
+-- TODO: implement this for the other metarelations
+
+downloadSpec :: HetcatsOpts -> Set NAME -> Set NAME -> Set NAME -> NAME
+                -> IO ([(BASIC_SPEC, NAME, Set NAME)], Set NAME)
+downloadSpec opts oldKnownTexts newKnownTexts topTexts n =
+  if Set.member n oldKnownTexts
+  then return ([], newKnownTexts)
   else do
-         curDir <- getCurrentDirectory
-         file <- findLibFile (curDir:libdirs opts) (tokStr n)
-         maybeText <- parseCL_CLIF_file file
-         case maybeText of
-              Right bs -> convertToLibItems opts (n:knownSpecs) bs
-              Left err -> error $ show err
+    curDir <- getCurrentDirectory
+    file <- findLibFile (curDir:libdirs opts) (tokStr n)
+    maybeText <- parseCL_CLIF_file file
+    case maybeText of
+        Left err -> error $ show err
+        Right bs ->
+          let ns = specNameL bs (tokStr n)
+              j = case elemIndex n ns of
+                        Just i -> i
+                        Nothing -> error $ "CL-Text not found: " ++ show n
+              bnt = (bs !! j, n, topTexts)
+          in do
+            (dls,kts) <- collectDownloads opts newKnownTexts bnt
+            return $ (bnt : dls, kts)
 
+-- yields the path to a CommonLogic-file with name @f@ (before the extension)
 findLibFile :: [FilePath] -> String -> IO FilePath
 findLibFile [] f = error $ "Could not find Library " ++ f
 findLibFile (d:ds) f =
@@ -212,7 +239,19 @@ findLibFile (d:ds) f =
                 True -> return f2
                 _ -> findLibFile ds f
 
-concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
-concatMapM f xs = do
-  ys <- mapM f xs
-  return $ concat ys
+anaImports :: HetcatsOpts -> Set NAME -> [(BASIC_SPEC, NAME, Set NAME)]
+              -> IO [(BASIC_SPEC, NAME)]
+anaImports opts knownTexts bnts = do
+  --downloads <- concatMapM (collectDownloads opts) bnts
+  (downloads, _) <- foldM
+    (\(dls, kts) bnt -> do
+      (newSpecs, newKnownTexts) <- collectDownloads opts kts bnt
+      return (newSpecs ++ dls, newKnownTexts)
+    ) ([], knownTexts) bnts
+  let (bs,ns,_) =  unzip3 $ sortBy hierarchical (bnts ++ downloads)
+  return $ zip bs ns
+
+hierarchical :: (a,NAME,Set NAME) -> (a,NAME,Set NAME) -> Ordering
+hierarchical (_,n1,topTexts1) (_,n2,topTexts2) =
+  if Set.member n1 topTexts2 then GT else
+  if Set.member n2 topTexts1 then LT else EQ

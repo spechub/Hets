@@ -31,11 +31,11 @@ import Data.Set (Set)
 {-! global: GetRange !-}
 
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
-                      deriving Show
+                      deriving (Show, Ord, Eq)
 
 data BASIC_ITEMS =
     Axiom_items (AS_Anno.Annoted TEXT_META)
-    deriving Show
+    deriving (Show, Ord, Eq)
 
 instance Pretty BASIC_SPEC where
     pretty = printBasicSpec
@@ -50,8 +50,9 @@ printBasicItems (Axiom_items xs) = pretty xs
 
 data TEXT_META = Text_meta { getText :: TEXT
                            , metarelation :: Set METARELATION
-                           , discourseNames :: Maybe (Set NAME)
+                           , discourseNames :: Maybe (Set NAME) 
                            } deriving (Show, Ord, Eq)
+-- TODO: check static analysis and other features on discourse names, as soon as segregated dialects are supported
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
