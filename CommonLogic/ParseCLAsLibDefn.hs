@@ -33,11 +33,17 @@ import Syntax.AS_Structured as Struc
 import Control.Monad (foldM)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.List (elemIndex, sortBy)
 
 import System.IO
 import System.FilePath (combine, addExtension)
 import System.Directory (doesFileExist, getCurrentDirectory)
+
+
+--                 specName  (spec, topTexts)
+type SpecMap = Map String (BASIC_SPEC, Set String)
 
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
 parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
@@ -47,9 +53,9 @@ parseCL_CLIF filename opts = do
       Right bs ->
         let fn = convertFileToLibStr filename
             ns = specNameL bs fn
-            bnts = zip3 bs ns $ replicate (length bs) Set.empty
+            specMap = foldr (\(b,n) r -> Map.insertWith unify n (b, Set.empty) r) Map.empty (zip bs ns)
         in do
-            specs <- anaImports opts (Set.fromList ns) bnts
+            specs <- anaImports opts specMap
             return $ convertToLibDefN fn specs
       Left x -> error $ show x
 
@@ -98,19 +104,19 @@ createSpec b =
 specFromName :: NAME -> Annoted SPEC
 specFromName n = emptyAnno $ Spec_inst n [] nullRange
 
-specNameL :: [BASIC_SPEC] -> String -> [NAME]
+specNameL :: [BASIC_SPEC] -> String -> [String]
 specNameL bs def = map (\(i,b) -> specName i b def) $ zip [0..] bs
 
 -- returns a unique name for a node
-specName :: Int -> CL.BASIC_SPEC -> String -> NAME
-specName i (CL.Basic_spec []) def = mkSimpleId $ def ++ "_" ++ show i
+specName :: Int -> CL.BASIC_SPEC -> String -> String
+specName i (CL.Basic_spec []) def = def ++ "_" ++ show i
 specName i (CL.Basic_spec [items]) def =
   case Anno.item items of
        Axiom_items ax ->
           case getText $ Anno.item ax of
-               Text _ _ -> mkSimpleId $ def ++ "_" ++ show i
-               Named_text n _ _ -> mkSimpleId n
-specName i (CL.Basic_spec (_:_)) def = mkSimpleId $ def ++ "_" ++ show i
+               Text _ _ -> def ++ "_" ++ show i
+               Named_text n _ _ -> n
+specName i (CL.Basic_spec (_:_)) def = def ++ "_" ++ show i
 
 convertMetarelsToLibItems :: (BASIC_SPEC, NAME) -> [Anno.Annoted LIB_ITEM]
 convertMetarelsToLibItems (CL.Basic_spec abis, n) =
@@ -150,17 +156,57 @@ metarelsMR n mr = case mr of
   IncludeLibs _ -> []
 -- TODO: implement this for the other metarelations
 
--- gets recursively all names of cl-texts which are imported or otherwise related to @b@
-collectDownloads :: HetcatsOpts -> Set NAME -> (BASIC_SPEC, NAME, Set NAME)
-                    -> IO ([(BASIC_SPEC, NAME, Set NAME)], Set NAME)
-collectDownloads opts knownTexts (b,n,topTexts) =
-  let directDls = Set.elems $ directDownloads b
-      knownTexts2 = foldr (\d r -> Set.insert d r) knownTexts directDls
-      topTexts2 = Set.insert n topTexts
+collectDownloads :: HetcatsOpts -> SpecMap -> (String, (BASIC_SPEC, Set String))
+                    -> IO SpecMap
+collectDownloads opts specMap (n,(b,topTexts)) =
+  let directDls = Set.elems $ Set.map tokStr $ directDownloads b
+      newTopTexts = Set.insert n topTexts
+  in  foldM (\sm d -> do
+          newDls <- downloadSpec opts sm newTopTexts d
+          return (Map.unionWith unify newDls sm)
+        ) specMap directDls
+
+downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> String -> IO SpecMap
+downloadSpec opts specMap topTexts n =
+  case Map.lookup n specMap of
+      Just (b, t) ->
+          if  t == topTexts then return specMap else do
+          let newTopTexts = Set.union t topTexts
+          let newSpecMap = Map.insert n (b,newTopTexts) specMap
+          collectDownloads opts newSpecMap (n,(b,newTopTexts))
+      Nothing -> do
+          curDir <- getCurrentDirectory
+          file <- findLibFile (curDir:libdirs opts) n
+          maybeText <- parseCL_CLIF_file file
+          case maybeText of
+              Left err -> error $ show err
+              Right bs ->
+                let ns = specNameL bs n
+                    j = case elemIndex n ns of
+                              Just i -> i
+                              Nothing -> error $ "CL-Text not found: " ++ show n
+                    b = bs !! j
+                    nbt = (n, (b, topTexts))
+                    newSpecMap = Map.insertWith unify n (b,topTexts) specMap
+                in  collectDownloads opts newSpecMap nbt
+
+unify :: (a, Set String) -> (a, Set String) -> (a, Set String)
+unify (_, s) (a, t) = (a, Set.union s t)
+
+-- yields the path to a CommonLogic-file with name @f@ (before the extension)
+findLibFile :: [FilePath] -> String -> IO FilePath
+findLibFile [] f = error $ "Could not find Common Logic Library " ++ f
+findLibFile (d:ds) f =
+  let f1 = (combine d (addExtension f (show CommonLogic2In)))
+      f2 = (combine d (addExtension f (show CommonLogicIn)))
   in do
-      x <- mapM (downloadSpec opts knownTexts knownTexts2 topTexts2) directDls
-      let (specsL, newKnownTextsL) = unzip x
-      return (concat specsL, Set.unions newKnownTextsL)
+      f1Exists <- doesFileExist f1
+      f2Exists <- doesFileExist f2
+      case f1Exists of
+        True -> return f1
+        _ ->  case f2Exists of
+                True -> return f2
+                _ -> findLibFile ds f
 
 directDownloads :: BASIC_SPEC -> Set NAME
 directDownloads b = Set.union (directMetarels b) (directImports b)
@@ -203,55 +249,28 @@ metarelDownloadsMR mr = case mr of
   IncludeLibs ns -> Set.fromList ns
 -- TODO: implement this for the other metarelations
 
-downloadSpec :: HetcatsOpts -> Set NAME -> Set NAME -> Set NAME -> NAME
-                -> IO ([(BASIC_SPEC, NAME, Set NAME)], Set NAME)
-downloadSpec opts oldKnownTexts newKnownTexts topTexts n =
-  if Set.member n oldKnownTexts
-  then return ([], newKnownTexts)
-  else do
-    curDir <- getCurrentDirectory
-    file <- findLibFile (curDir:libdirs opts) (tokStr n)
-    maybeText <- parseCL_CLIF_file file
-    case maybeText of
-        Left err -> error $ show err
-        Right bs ->
-          let ns = specNameL bs (tokStr n)
-              j = case elemIndex n ns of
-                        Just i -> i
-                        Nothing -> error $ "CL-Text not found: " ++ show n
-              bnt = (bs !! j, n, topTexts)
-          in do
-            (dls,kts) <- collectDownloads opts newKnownTexts bnt
-            return $ (bnt : dls, kts)
+anaImports :: HetcatsOpts -> SpecMap -> IO [(BASIC_SPEC, NAME)]
+anaImports opts specMap = do
+  downloads <- foldM
+    (\sm nbt -> do
+      newSpecs <- collectDownloads opts sm nbt
+      return (Map.unionWith unify newSpecs sm)
+    ) specMap $ Map.assocs specMap
+  let specAssocs = Map.assocs $ Map.unionWith unify specMap downloads
+  let sortedSpecs = sortBy hierarchical specAssocs -- sort by putting the latest imported specs to the beginning
+  return $ bsNamePairs sortedSpecs
 
--- yields the path to a CommonLogic-file with name @f@ (before the extension)
-findLibFile :: [FilePath] -> String -> IO FilePath
-findLibFile [] f = error $ "Could not find Library " ++ f
-findLibFile (d:ds) f =
-  let f1 = (combine d (addExtension f (show CommonLogic2In)))
-      f2 = (combine d (addExtension f (show CommonLogicIn)))
-  in do
-      f1Exists <- doesFileExist f1
-      f2Exists <- doesFileExist f2
-      case f1Exists of
-        True -> return f1
-        _ ->  case f2Exists of
-                True -> return f2
-                _ -> findLibFile ds f
-
-anaImports :: HetcatsOpts -> Set NAME -> [(BASIC_SPEC, NAME, Set NAME)]
-              -> IO [(BASIC_SPEC, NAME)]
-anaImports opts knownTexts bnts = do
-  --downloads <- concatMapM (collectDownloads opts) bnts
-  (downloads, _) <- foldM
-    (\(dls, kts) bnt -> do
-      (newSpecs, newKnownTexts) <- collectDownloads opts kts bnt
-      return (newSpecs ++ dls, newKnownTexts)
-    ) ([], knownTexts) bnts
-  let (bs,ns,_) =  unzip3 $ sortBy hierarchical (bnts ++ downloads)
-  return $ zip bs ns
-
-hierarchical :: (a,NAME,Set NAME) -> (a,NAME,Set NAME) -> Ordering
-hierarchical (_,n1,topTexts1) (_,n2,topTexts2) =
+-- not an elegant way, but seems to work
+hierarchical ::Ord t => (t, (a, Set t)) -> (t, (b, Set t)) -> Ordering
+hierarchical (n1, (_, topTexts1)) (n2, (_, topTexts2)) =
+  if Set.null topTexts1 then GT else
+  if Set.null topTexts2 then LT else 
+  if Set.member n1 topTexts2 && Set.member n2 topTexts1 then EQ else
   if Set.member n1 topTexts2 then GT else
-  if Set.member n2 topTexts1 then LT else EQ
+  if Set.member n2 topTexts1 then LT else
+  if Set.isSubsetOf topTexts1 topTexts2 then LT else
+  if Set.isSubsetOf topTexts2 topTexts1 then GT else
+  if Set.null $ Set.intersection topTexts1 topTexts2 then EQ else EQ
+
+bsNamePairs :: [(String, (BASIC_SPEC, Set String))] -> [(BASIC_SPEC, NAME)]
+bsNamePairs = foldr (\(n,(b,_)) r -> (b, mkSimpleId n) : r) []
