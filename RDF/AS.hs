@@ -22,6 +22,9 @@ import Data.Char (intToDigit)
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+data RDFGraph = Set.Set RDFTriple
 
 data Signature = Sign [ResourceReference]
 
@@ -37,8 +40,9 @@ data Node = URIref | Literal | BlankNode deriving (Show, Eq, Ord)
 
 data Datatype = ValueSpace | LexicalSpace | Map.Map ValueSpace LexicalSpace
 
-data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
+data TypedOrUntyped = Typed DatatypeURI | Untyped DatatypeURI
     deriving (Show, Eq, Ord)
 
 data Literal = Literal LexicalForm TypedOrUntyped 
+             | Literal LexicalForm PlainLiteral (Maybe LanguageTag)
     deriving (Show, Eq, Ord)
