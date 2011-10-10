@@ -88,26 +88,50 @@ anaXUpdates input = case parseXMLDoc input of
  xupdate:update
 -}
 
+xupdateS :: String
+xupdateS = "xupdate"
+
+updateS :: String
+updateS = "update"
+
+elementS :: String
+elementS = "element"
+
+attributeS :: String
+attributeS = "attribute"
+
+textS :: String
+textS = "text"
+
+appendS :: String
+appendS = "append"
+
+removeS :: String
+removeS = "remove"
+
+selectS :: String
+selectS = "select"
+
 isXUpdateQN :: QName -> Bool
-isXUpdateQN = (Just "xupdate" ==) . qPrefix
+isXUpdateQN = (Just xupdateS ==) . qPrefix
 
 hasLocalQN :: String -> QName -> Bool
 hasLocalQN s = (== s) . qName
 
 isElementQN :: QName -> Bool
-isElementQN = hasLocalQN "element"
+isElementQN = hasLocalQN elementS
 
 isAttributeQN :: QName -> Bool
-isAttributeQN = hasLocalQN "attribute"
+isAttributeQN = hasLocalQN attributeS
 
 isTextQN :: QName -> Bool
-isTextQN = hasLocalQN "text"
+isTextQN = hasLocalQN textS
 
 isAddQN :: QName -> Bool
-isAddQN q = any (flip isPrefixOf $ qName q) ["insert", "append"]
+isAddQN q = any (flip isPrefixOf $ qName q) ["insert", appendS]
 
 isRemoveQN :: QName -> Bool
-isRemoveQN = hasLocalQN "remove"
+isRemoveQN = hasLocalQN removeS
 
 -- | extract the non-empty attribute value
 getAttrVal :: Monad m => String -> Element -> m String
@@ -116,7 +140,7 @@ getAttrVal n e = case findAttr (unqual n) e of
   Just s -> return s
 
 getSelectAttr :: Monad m => Element -> m String
-getSelectAttr = getAttrVal "select"
+getSelectAttr = getAttrVal selectS
 
 getNameAttr :: Monad m => Element -> m String
 getNameAttr = getAttrVal "name"
@@ -160,7 +184,7 @@ anaXUpdate e = let
           | hasLocalQN "variable" q -> do
               vn <- getNameAttr e
               noContent e $ Change (Variable vn) p
-        _ -> case lookup u [("update", Update), ("rename", Rename)] of
+        _ -> case lookup u [(updateS, Update), ("rename", Rename)] of
           Just c -> do
             s <- getXUpdateText e
             return $ Change (c s) p

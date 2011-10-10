@@ -1,5 +1,17 @@
+{- |
+Module      :  $Header$
+Description :  compute xml diffs
+Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
+License     :  GPLv2 or higher, see LICENSE.txt
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable
+
+-}
+
 module Common.XmlDiff where
 
+import Common.ToXml
 import Common.Utils as Utils
 import Common.XPath
 import Common.XUpdate
@@ -17,24 +29,27 @@ import Text.XML.Light as XML
 determine their equality. -}
 type UnordTags = Map.Map QName (Set.Set QName)
 
-xmlDiff :: UnordTags -> Path -> Int -> [Content] -> [Content] -> [Change]
-xmlDiff m pth i old new = case (old, filter validContent new) of
+xmlDiff :: UnordTags -> [Step] -> Int -> [Content] -> [Content] -> [Change]
+xmlDiff m pth i old new = let
+  np = addPathNumber (i + 1) pth
+  pe = pathToExpr np
+  in case (old, filter validContent new) of
   ([], []) -> []
   ([], ns) ->
-    [Change (Add Append $ map contentToAddChange ns) $ pathToExpr pth]
+    [Change (Add Append $ map contentToAddChange ns) pe]
   (os, []) -> map
     (\ (_, j) -> Change Remove $ pathToExpr $ addPathNumber (i + j) pth)
     $ Utils.number os
   (o : os, ns@(n : rt)) -> let
     restDiffs = xmlDiff m pth (i + 1) os
-    rmO = Change Remove (pathToExpr $ addPathNumber (i + 1) pth) : restDiffs ns
+    rmO = Change Remove pe : restDiffs ns
     in if validContent o then
     case o of
       Elem e ->
         let en = elName e
             atts = elAttribs e
             cs = elContent e
-            nPath = extendPath en pth
+            nPath = extendPath en np
         in case Map.lookup en m of
         Nothing -> case n of
           Elem e2 | elName e2 == en ->
@@ -49,8 +64,10 @@ xmlDiff m pth i old new = case (old, filter validContent new) of
               ++ restDiffs (rm ++ rns)
             _ -> rmO
       XML.Text cd -> case n of
-        XML.Text cd2 | trim (cdData cd) == trim (cdData cd2)
-          -> restDiffs rt
+        XML.Text cd2 | trim (cdData cd) == trim nText
+            -> restDiffs rt
+          | otherwise -> Change (Update nText) pe : restDiffs rt
+          where nText = cdData cd2
         _ -> rmO
       _ -> rmO
     else restDiffs ns
@@ -64,26 +81,36 @@ matchElems en atts c = case c of
     && Map.isSubmapOfBy (==) atts (attrMap $ elAttribs e) -> True
   _ -> False
 
-xmlElemDiff :: UnordTags -> Path -> [Attr] -> [Content] -> Element -> [Change]
+xmlElemDiff :: UnordTags -> [Step] -> [Attr] -> [Content] -> Element -> [Change]
 xmlElemDiff m nPath atts cs e2 = xmlAttrDiff nPath atts (elAttribs e2)
   ++ xmlDiff m nPath 0 cs (elContent e2)
 
-xmlAttrDiff :: Path -> [Attr] -> [Attr] -> [Change]
-xmlAttrDiff _ _ _ = []
+xmlAttrDiff :: [Step] -> [Attr] -> [Attr] -> [Change]
+xmlAttrDiff p a1 a2 = let
+  m1 = attrMap a1
+  m2 = attrMap a2
+  rms = Map.toList $ Map.difference m1 m2
+  ins = Map.toList $ Map.difference m2 m1
+  inter = Map.toList $ Map.filter (uncurry (/=))
+    $ Map.intersectionWith (,) m1 m2
+  addAttrStep a = pathToExpr $ Step Attribute (NameTest $ qName a) [] : p
+  in map (Change Remove . addAttrStep . fst) rms
+     ++ map (\ (a, (_, v)) -> Change (Update v) $ addAttrStep a) inter
+     ++ if null ins then [] else
+       [Change (Add Append $ map (AddAttr . uncurry Attr) ins) $ pathToExpr p]
 
-pathToExpr :: Path -> Expr
-pathToExpr = PathExpr Nothing
+pathToExpr :: [Step] -> Expr
+pathToExpr = PathExpr Nothing . Path True . reverse
 
-extendPath :: QName -> Path -> Path
-extendPath q (Path b stps) =
-  Path b $ Step Child (NameTest $ qName q) [] : stps
+extendPath :: QName -> [Step] -> [Step]
+extendPath q = (Step Child (NameTest $ qName q) [] :)
 
 -- steps and predicates are reversed!
-addPathNumber :: Int -> Path -> Path
-addPathNumber i (Path b stps) =
+addPathNumber :: Int -> [Step] -> [Step]
+addPathNumber i stps =
   let e = PrimExpr Number $ show i
-  in Path b $ case stps of
-  [] -> [Step Self Node [e]]
+  in case stps of
+  [] -> []
   Step a n es : rs -> Step a n (e : es) : rs
 
 validContent :: Content -> Bool
@@ -97,3 +124,27 @@ contentToAddChange c = case c of
   Elem e -> AddElem e
   XML.Text t -> AddText $ cdData t
   CRef s -> AddText s
+
+mkXQName :: String -> QName
+mkXQName s = (unqual s) { qPrefix = Just xupdateS }
+
+changeToXml :: Change -> Element
+changeToXml (Change csel pth) = let
+  sel = add_attr (mkAttr selectS $ show pth)
+  in case csel of
+  Add _ as -> sel
+    . node (mkXQName appendS) $ map addsToXml as
+  Remove -> sel $ node (mkXQName removeS) ()
+  Update s -> sel $ node (mkXQName updateS) s
+  _ -> error "changeToXml"
+
+addsToXml :: AddChange -> Content
+addsToXml a = case a of
+  AddElem e -> Elem e
+  AddAttr (Attr k v) -> Elem
+    . add_attr (mkNameAttr $ qName k) $ node (mkXQName attributeS) v
+  AddText s -> mkText s
+  _ -> error "addsToXml"
+
+mkMods :: [Change] -> Element
+mkMods = node (mkXQName "modifications") . map changeToXml
