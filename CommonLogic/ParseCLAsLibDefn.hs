@@ -257,9 +257,15 @@ anaImports opts specMap = do
       return (Map.unionWith unify newSpecs sm)
     ) specMap $ Map.assocs specMap
   let specAssocs = Map.assocs $ Map.unionWith unify specMap downloads
-  let sortedSpecs = sortBy hierarchical specAssocs -- sort by putting the latest imported specs to the beginning
+  let sortedSpecs = sortBy usingTopTextsCount specAssocs -- sort by putting the latest imported specs to the beginning
   return $ bsNamePairs sortedSpecs
 
+-- not fast (O(n+m)), but reliable
+usingTopTextsCount :: (t, (a, Set t)) -> (t, (b, Set t)) -> Ordering
+usingTopTextsCount (_,(_,topTexts1)) (_,(_,topTexts2)) =
+  compare (Set.size topTexts2) (Set.size topTexts1)
+
+{- 
 -- not an elegant way, but seems to work
 hierarchical ::Ord t => (t, (a, Set t)) -> (t, (b, Set t)) -> Ordering
 hierarchical (n1, (_, topTexts1)) (n2, (_, topTexts2)) =
@@ -271,6 +277,7 @@ hierarchical (n1, (_, topTexts1)) (n2, (_, topTexts2)) =
   if Set.isSubsetOf topTexts1 topTexts2 then LT else
   if Set.isSubsetOf topTexts2 topTexts1 then GT else
   if Set.null $ Set.intersection topTexts1 topTexts2 then EQ else EQ
+-}
 
 bsNamePairs :: [(String, (BASIC_SPEC, Set String))] -> [(BASIC_SPEC, NAME)]
 bsNamePairs = foldr (\(n,(b,_)) r -> (b, mkSimpleId n) : r) []
