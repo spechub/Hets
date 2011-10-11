@@ -42,7 +42,7 @@ import System.FilePath (combine, addExtension)
 import System.Directory (doesFileExist, getCurrentDirectory)
 
 import Network.URI
-
+import Network.HTTP
 
 --                 specName  (spec, topTexts)
 type SpecMap = Map String (BASIC_SPEC, Set String)
@@ -56,11 +56,9 @@ parseCL_CLIF filename opts = do
 
 
 -- call for CommonLogic CLIF-parser for a single file
-parseCL_CLIF_file :: FilePath -> IO (Either ParseError [BASIC_SPEC])
-parseCL_CLIF_file filename = do
-  handle <- openFile filename ReadMode
-  contents <- hGetContents handle
-  return $ runParser (many basicSpec) (emptyAnnos ())
+parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
+parseCL_CLIF_contents filename contents =
+  runParser (many basicSpec) (emptyAnnos ())
                        ("while parsing CLIF-File \"" ++ filename++"\"") contents
 
 -- maps imports in basic spec to global definition links (extensions) in
@@ -172,10 +170,8 @@ downloadSpec opts specMap topTexts filename =
           let newSpecMap = Map.insert fn (b,newTopTexts) specMap
           collectDownloads opts newSpecMap (fn,(b,newTopTexts))
       Nothing -> do
-          curDir <- getCurrentDirectory
-          file <- findLibFile (curDir:libdirs opts) filename
-          maybeText <- parseCL_CLIF_file file
-          case maybeText of
+          contents <- getCLIFContents opts filename
+          case parseCL_CLIF_contents filename contents of
               Left err -> error $ show err
               Right bs ->
                 let ns = specNameL bs fn
@@ -190,6 +186,31 @@ downloadSpec opts specMap topTexts filename =
 
 unify :: (a, Set String) -> (a, Set String) -> (a, Set String)
 unify (_, s) (a, t) = (a, Set.union s t)
+
+--one could add support for uri fragments/query (perhaps select a text from the file)
+getCLIFContents :: HetcatsOpts -> String -> IO String
+getCLIFContents opts filename = case parseURIReference filename of
+  Nothing -> do
+    putStrLn ("Not an URI: " ++ filename)
+    localFileContents opts filename
+  Just uri -> do
+    case uriScheme uri of
+      "" -> do
+        localFileContents opts ((uriToString id $ uri) "")
+      "file:" -> do
+        localFileContents opts (uriPath uri)
+      "http:" -> do
+        simpleHTTP (defaultGETRequest uri) >>= getResponseBody
+      "https:" -> do
+        simpleHTTP (defaultGETRequest uri) >>= getResponseBody
+      x -> error ("Unsupported URI scheme: " ++ x)
+
+localFileContents :: HetcatsOpts -> String -> IO String
+localFileContents opts filename = do
+  curDir <- getCurrentDirectory
+  file <- findLibFile (curDir:libdirs opts) filename
+  handle <- openFile filename ReadMode
+  hGetContents handle
 
 findLibFile :: [FilePath] -> String -> IO FilePath
 findLibFile [] f = error $ "Could not find Common Logic Library " ++ f
