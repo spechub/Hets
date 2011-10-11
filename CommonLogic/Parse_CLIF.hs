@@ -163,7 +163,7 @@ sentence = parens $ do
     return $ Bool_sent (Negation s) $ Range $ joinRanges [rangeSpan c,
                rangeSpan s]
   <|> do
-    c <- try iffKey -- with try? yes.
+    c <- try iffKey
     s1 <- sentence
     s2 <- sentence
     return $ Bool_sent (Biconditional s1 s2) $ Range $ joinRanges [rangeSpan c,
@@ -183,7 +183,7 @@ sentence = parens $ do
 
 quantsent1 :: Bool -> Token -> CharParser st SENTENCE
 quantsent1 t c = do
-    g <- identifier -- according to grammar in standard there may be a name
+    g <- identifier
     quantsent2 t c $ Just g -- Quant_sent using syntactic sugar
   <|>
     quantsent2 t c Nothing -- normal Quant_sent
@@ -216,7 +216,7 @@ quantsent3 t mg bs [] s rn =
       let functerm = Atom (Funct_term (Name_term g) (map (Term_seq . Name_term)
                       $ Set.elems $ Tools.indvC_sen s) nullRange) []
       in case t of
-          True  -> -- TODO: check whether indvC_sen is the right function to get free names
+          True  ->
             Quant_sent (Universal bs (Bool_sent (Implication
               (Atom_sent functerm nullRange) s) rn)) rn
           False ->
@@ -336,17 +336,17 @@ parseBasicItems = try parseSentences
 
 parseSentences :: AnnoState.AParser st BASIC_ITEMS
 parseSentences = do
-    xs <- aFormula
+    xs <- many1 aFormula
     return $ Axiom_items xs
 
 -- FIX
 parseClText :: AnnoState.AParser st BASIC_ITEMS
 parseClText = do
   tx <- cltext
-  return $ Axiom_items (textToAn tx)
+  return $ Axiom_items (textToAn [tx])
 
-textToAn :: TEXT_META -> Annotation.Annoted TEXT_META
-textToAn x = Annotation.Annoted x nullRange [] []
+textToAn :: [TEXT_META] -> [Annotation.Annoted TEXT_META]
+textToAn = map (\x -> Annotation.Annoted x nullRange [] [])
 
 -- | parser for Axiom_items
 parseAxItems :: AnnoState.AParser st BASIC_SPEC
@@ -361,7 +361,7 @@ parseAxItems = do
 -- | Toplevel parser for formulae
 parseAx :: AnnoState.AParser st (BASIC_ITEMS)
 parseAx = do
-  t <- aFormula
+  t <- many aFormula
   return $ Axiom_items t
 
 -- | Toplevel parser for formulae

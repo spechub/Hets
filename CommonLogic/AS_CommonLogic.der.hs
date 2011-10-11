@@ -26,27 +26,21 @@ import Common.Keywords
 import qualified Common.AS_Annotation as AS_Anno
 
 import Data.Set (Set)
+import qualified Data.Set as Set (empty)
 
 -- DrIFT command
 {-! global: GetRange !-}
 
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
-                      deriving (Show, Ord, Eq)
+                     deriving (Show, Ord, Eq)
 
-data BASIC_ITEMS =
-    Axiom_items (AS_Anno.Annoted TEXT_META)
-    deriving (Show, Ord, Eq)
+data BASIC_ITEMS = Axiom_items [AS_Anno.Annoted TEXT_META]
+                   deriving (Show, Ord, Eq)
 
-instance Pretty BASIC_SPEC where
-    pretty = printBasicSpec
-instance Pretty BASIC_ITEMS where
-    pretty = printBasicItems
-
-printBasicSpec :: BASIC_SPEC -> Doc
-printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
-
-printBasicItems :: BASIC_ITEMS -> Doc
-printBasicItems (Axiom_items xs) = pretty xs
+emptyTextMeta :: TEXT_META
+emptyTextMeta = Text_meta { getText = Text [] nullRange
+                          , metarelation = Set.empty
+                          , discourseNames = Nothing }
 
 data TEXT_META = Text_meta { getText :: TEXT
                            , metarelation :: Set METARELATION
@@ -145,7 +139,22 @@ data METARELATION = RelativeInterprets NAME NAME [SYMB_MAP_ITEMS]
 
 
 -- pretty printing using CLIF
-
+instance Pretty BASIC_SPEC where
+    pretty = printBasicSpec
+instance Pretty BASIC_ITEMS where
+    pretty = printBasicItems
+instance Pretty TEXT_META where
+   pretty = printTextMeta
+instance Pretty METARELATION where
+   pretty = printMetarelation
+instance Pretty TEXT where
+   pretty = printText
+instance Pretty PHRASE where
+   pretty = printPhrase
+instance Pretty MODULE where
+   pretty = printModule
+instance Pretty IMPORTATION where
+   pretty = printImportation
 instance Pretty SENTENCE where
    pretty = printSentence
 instance Pretty BOOL_SENT where
@@ -168,8 +177,38 @@ instance Pretty SYMB_MAP_ITEMS where
    pretty = printSymbMapItems
 instance Pretty SYMB_ITEMS where
    pretty = printSymbItems
-instance Pretty METARELATION where
-   pretty = printMetarelation
+
+printBasicSpec :: BASIC_SPEC -> Doc
+printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
+
+printBasicItems :: BASIC_ITEMS -> Doc
+printBasicItems (Axiom_items xs) = vcat $ map pretty xs
+
+printTextMeta :: TEXT_META -> Doc
+printTextMeta tm = pretty $ getText tm
+
+printMetarelation :: METARELATION -> Doc
+printMetarelation _ = empty
+
+printText :: TEXT -> Doc
+printText s = case s of
+  Text x _ -> fsep $ map pretty x
+  Named_text x y _ -> parens $ text clTextS <+> text x <+> pretty y
+
+printPhrase :: PHRASE -> Doc
+printPhrase s = case s of
+  Module x -> parens $ text clModuleS <+> pretty x
+  Sentence x -> pretty x
+  Importation x -> parens $ text clImportS <+> pretty x
+  Comment_text x y _ -> parens $ text clCommentS <+> quotes (pretty x) <+> pretty y
+
+printModule :: MODULE -> Doc
+printModule (Mod x z _) = pretty x <+> pretty z
+printModule (Mod_ex x y z _) =
+  pretty x <+> parens (text clExcludeS <+> fsep (map pretty y)) <+> pretty z
+
+printImportation :: IMPORTATION -> Doc
+printImportation (Imp_name x) = pretty x
 
 printSentence :: SENTENCE -> Doc
 printSentence s = case s of
@@ -232,42 +271,6 @@ printSymbMapItems (Symb_map_items xs _) = ppWithCommas xs
 printSymbItems :: SYMB_ITEMS -> Doc
 printSymbItems (Symb_items xs _) = fsep $ map pretty xs
 
-instance Pretty TEXT_META where
-   pretty = printTextMeta
-instance Pretty TEXT where
-   pretty = printText
-instance Pretty PHRASE where
-   pretty = printPhrase
-instance Pretty MODULE where
-   pretty = printModule
-instance Pretty IMPORTATION where
-   pretty = printImportation
-
-printTextMeta :: TEXT_META -> Doc
-printTextMeta tm = pretty $ getText tm
-
-printText :: TEXT -> Doc
-printText s = case s of
-  Text x _ -> fsep $ map pretty x
-  Named_text x y _ -> parens $ text clTextS <+> text x <+> pretty y
-
-printPhrase :: PHRASE -> Doc
-printPhrase s = case s of
-  Module x -> parens $ text clModuleS <+> pretty x
-  Sentence x -> pretty x
-  Importation x -> parens $ text clImportS <+> pretty x
-  Comment_text x y _ -> parens $ text clCommentS <+> quotes (pretty x) <+> pretty y
-
-printModule :: MODULE -> Doc
-printModule (Mod x z _) = pretty x <+> pretty z
-printModule (Mod_ex x y z _) =
-  pretty x <+> parens (text clExcludeS <+> fsep (map pretty y)) <+> pretty z
-
-printImportation :: IMPORTATION -> Doc
-printImportation (Imp_name x) = pretty x
-
-printMetarelation :: METARELATION -> Doc
-printMetarelation _ = empty
 
 -- keywords, reservednames in CLIF
 seqmarkS :: String

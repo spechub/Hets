@@ -311,8 +311,10 @@ sl_termInSeq prds cs term =
 
 -- | determines sublogic for basic items
 sl_basic_items :: CommonLogicSL -> AS.BASIC_ITEMS -> CommonLogicSL
-sl_basic_items cs (AS.Axiom_items (AS_Anno.Annoted tm _ _ _)) =
-  (uncurry $ flip sl_text cs) $ getPreds $ AS.getText tm
+sl_basic_items cs (AS.Axiom_items axs) = comp_list $ map
+  (\(AS_Anno.Annoted tm _ _ _) ->
+    (uncurry $ flip sl_text cs) $ getPreds $ AS.getText tm
+  ) axs
   where getPreds :: AS.TEXT -> (Set.Set AS.NAME, AS.TEXT)
         getPreds txt = (prd_text txt, txt)
 
@@ -368,9 +370,15 @@ prName _ n = Just n
 -- | filters all TEXTs inside the BASIC_SPEC of which the sublogic is less than
 -- or equal to @cs@
 prBasicSpec :: CommonLogicSL -> AS.BASIC_SPEC -> AS.BASIC_SPEC
-prBasicSpec cs (AS.Basic_spec items) = -- TODO: write some decent function
-  AS.Basic_spec $ filter ((isSL_LE cs) . AS_Anno.item) items
+prBasicSpec cs (AS.Basic_spec items) = AS.Basic_spec $ map (maybeLE cs) items
 
-isSL_LE :: CommonLogicSL -> AS.BASIC_ITEMS -> Bool
-isSL_LE cs (AS.Axiom_items (AS_Anno.Annoted tm _ _ _)) =
-  compareLE (sublogic_text bottom (AS.getText tm)) cs
+maybeLE :: CommonLogicSL ->
+            AS_Anno.Annoted (AS.BASIC_ITEMS) -> AS_Anno.Annoted (AS.BASIC_ITEMS)
+maybeLE cs items = items { AS_Anno.item =
+        AS.Axiom_items $ filter (isSL_LE cs) (case AS_Anno.item items of
+                                                  AS.Axiom_items i -> i)
+  }
+
+isSL_LE :: CommonLogicSL -> AS_Anno.Annoted (AS.TEXT_META) -> Bool
+isSL_LE cs at =
+  compareLE (sublogic_text bottom $ AS.getText $ AS_Anno.item at) cs

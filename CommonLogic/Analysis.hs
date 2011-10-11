@@ -40,7 +40,7 @@ makeSig (CL.Basic_spec spec) sig = List.foldl retrieveBasicItem sig spec
 
 retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted CL.BASIC_ITEMS -> Sign.Sign
 retrieveBasicItem sig x = case AS_Anno.item x of
-                            CL.Axiom_items xs -> retrieveSign sig xs
+                            CL.Axiom_items xs -> List.foldl retrieveSign sig xs
 
 retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.TEXT_META -> Sign.Sign
 retrieveSign sig (AS_Anno.Annoted tm _ _ _) =
@@ -67,7 +67,8 @@ retrieveFormulaItem :: [DIAG_FORM] -> AS_Anno.Annoted CL.BASIC_ITEMS
                        -> Sign.Sign -> [DIAG_FORM]
 retrieveFormulaItem axs x sig =
    case AS_Anno.item x of
-      CL.Axiom_items ax -> addFormula axs (numberFormulae ax 0) sig
+      CL.Axiom_items ax ->
+          List.foldl (\ xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
 
 data NUM_FORM = NumForm
     {
@@ -75,11 +76,12 @@ data NUM_FORM = NumForm
     , nfnum :: Int
     }
 
-numberFormulae :: AS_Anno.Annoted CL.TEXT_META -> Int -> NUM_FORM
-numberFormulae x i =
+numberFormulae :: [AS_Anno.Annoted CL.TEXT_META] -> Int -> [NUM_FORM]
+numberFormulae [] _ = []
+numberFormulae (x : xs) i =
   if null $ AS_Anno.getRLabel x
-  then NumForm {nfformula = x, nfnum = i}
-  else NumForm {nfformula = x, nfnum = 0}
+  then NumForm {nfformula = x, nfnum = i} : numberFormulae xs (i + 1)
+  else NumForm {nfformula = x, nfnum = 0} : numberFormulae xs i
 
 addFormula :: [DIAG_FORM]
            -> NUM_FORM

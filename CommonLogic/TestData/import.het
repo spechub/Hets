@@ -1,0 +1,13 @@
+logic CommonLogic
+
+spec cl1 =
+. (cl-text myText1 (and (a) (b)))
+
+
+spec cl2 =
+. (cl-imports myText1) (or (myText1) (d)) %{uses cl-imports, but this keyword has no function in a hetcasl-file}%
+
+spec cl3 =
+cl1 and cl2 then
+. (cl-module M (cl-excludes a b c) (and (a) (b) (c) (d))) 
+end
