@@ -324,7 +324,7 @@ mapTheory (owlSig, owlSens) = do
     (cSensI, nSig) <- foldM (\ (x, y) z ->
               do
                 (sen, sig) <- mapSentence y z
-                return (sen ++ x, unite sig y)
+                return (x ++ sen, unite sig y)
                 ) ([], cSig) owlSens
     let sig = unite (emptySig {items = Set.fromList $ map (uriToId .
             setReservedPrefix . mkQName) $ "Datatype" : predefClass
