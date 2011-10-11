@@ -29,48 +29,60 @@ import Text.XML.Light as XML
 determine their equality. -}
 type UnordTags = Map.Map QName (Set.Set QName)
 
-xmlDiff :: UnordTags -> [Step] -> Int -> [Content] -> [Content] -> [Change]
-xmlDiff m pth i old new = let
-  np = addPathNumber (i + 1) pth
-  pe = pathToExpr np
-  in case (old, filter validContent new) of
+-- keep track of the nth element with a given tag
+type Count = Map.Map QName Int
+
+{- we assume an element contains other elements and no text entries or just a
+single text content -}
+
+xmlDiff :: UnordTags -> [Step] -> Count -> [Content] -> [Content] -> [Change]
+xmlDiff m stps em old new = case (old, filter validContent new) of
   ([], []) -> []
   ([], ns) ->
-    [Change (Add Append $ map contentToAddChange ns) pe]
-  (os, []) -> map
-    (\ (_, j) -> Change Remove $ pathToExpr $ addPathNumber (i + j) pth)
-    $ Utils.number os
-  (o : os, ns@(n : rt)) -> let
-    restDiffs = xmlDiff m pth (i + 1) os
-    rmO = Change Remove pe : restDiffs ns
-    in if validContent o then
+    [Change (Add Append $ map contentToAddChange ns) $ pathToExpr stps]
+  (os, []) -> removeIns stps em os
+  (o : os, ns@(n : rt)) ->
+    if validContent o then
     case o of
       Elem e ->
         let en = elName e
             atts = elAttribs e
             cs = elContent e
-            nPath = extendPath en np
+            (nm, nstps) = extendPath en em stps
+            downDiffs = xmlElemDiff m nstps atts cs
+            restDiffs = xmlDiff m stps nm os
+            rmO = Change Remove (pathToExpr nstps) : restDiffs ns
         in case Map.lookup en m of
         Nothing -> case n of
           Elem e2 | elName e2 == en ->
-             xmlElemDiff m nPath atts cs e2
+             downDiffs e2
              ++ restDiffs rt
           _ -> rmO
         Just ats -> let
             (mns, rns) = partition (matchElems en $
               Map.intersection (attrMap atts) $ setToMap ats) ns
             in case mns of
-            Elem mn : rm -> xmlElemDiff m nPath atts cs mn
+            Elem mn : rm -> downDiffs mn
               ++ restDiffs (rm ++ rns)
             _ -> rmO
-      XML.Text cd -> case n of
-        XML.Text cd2 | trim (cdData cd) == trim nText
-            -> restDiffs rt
-          | otherwise -> Change (Update nText) pe : restDiffs rt
+      XML.Text cd -> let inText = cdData cd in case n of
+        XML.Text cd2 | trim inText == trim nText
+            -> xmlDiff m stps em os rt
+          | otherwise -> Change (Update nText) (pathToExpr stps)
+              : xmlDiff m stps em os rt
           where nText = cdData cd2
-        _ -> rmO
-      _ -> rmO
-    else restDiffs ns
+        _ -> error "xmldiff2"
+      _ -> error "xmldiff"
+    else xmlDiff m stps em os ns
+
+removeIns :: [Step] -> Count -> [Content] -> [Change]
+removeIns stps em cs = case cs of
+  [] -> []
+  c : rs -> case c of
+    Elem e -> let
+      (nm, nstps) = extendPath (elName e) em stps
+      in Change Remove (pathToExpr nstps) : removeIns stps nm rs
+    _ -> removeIns stps em rs
 
 attrMap :: [Attr] -> Map.Map QName String
 attrMap = Map.fromList . map (\ a -> (attrKey a, attrVal a))
@@ -83,7 +95,7 @@ matchElems en atts c = case c of
 
 xmlElemDiff :: UnordTags -> [Step] -> [Attr] -> [Content] -> Element -> [Change]
 xmlElemDiff m nPath atts cs e2 = xmlAttrDiff nPath atts (elAttribs e2)
-  ++ xmlDiff m nPath 0 cs (elContent e2)
+  ++ xmlDiff m nPath Map.empty cs (elContent e2)
 
 xmlAttrDiff :: [Step] -> [Attr] -> [Attr] -> [Change]
 xmlAttrDiff p a1 a2 = let
@@ -102,8 +114,12 @@ xmlAttrDiff p a1 a2 = let
 pathToExpr :: [Step] -> Expr
 pathToExpr = PathExpr Nothing . Path True . reverse
 
-extendPath :: QName -> [Step] -> [Step]
-extendPath q = (Step Child (NameTest $ qName q) [] :)
+extendPath :: QName -> Count -> [Step] -> (Count, [Step])
+extendPath en em stps = let
+  nm = Map.insertWith (+) en 1 em
+  i = Map.findWithDefault 1 en nm
+  nstps = Step Child (NameTest $ qName en) [PrimExpr Number $ show i] : stps
+  in (nm, nstps)
 
 -- steps and predicates are reversed!
 addPathNumber :: Int -> [Step] -> [Step]

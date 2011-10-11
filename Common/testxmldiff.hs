@@ -27,6 +27,6 @@ main = do
       s2 <- readFile f2
       case (parseXMLDoc s1, parseXMLDoc s2) of
         (Just e1, Just e2) -> putStrLn $ ppTopElement
-          $ mkMods $ xmlDiff Map.empty [] 0 [Elem e1] [Elem e2]
+          $ mkMods $ xmlDiff Map.empty [] Map.empty [Elem e1] [Elem e2]
         _ -> error "parseXMLDoc"
     _ -> error $ "wrong arguments: " ++ show args
