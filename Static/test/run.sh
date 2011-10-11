@@ -58,9 +58,13 @@ done
 
 callHets ()
 {
-for i in *.xupdate2
+for i in *Spec.xupdate2
 do
 hets -v2 -U $i Spec.het
+done
+for i in *Spec2.xupdate2
+do
+hets -v2 -U $i Spec2.het
 done
 }
 
