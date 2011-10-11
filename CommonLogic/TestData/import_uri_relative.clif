@@ -1,0 +1,12 @@
+(cl-text monoid
+
+(cl-imports ./import_semigroup.clif)
+
+(exists (e)
+	(forall (x)
+		(and	(= x (op e x))
+			(= x (op x e)))))
+
+)
+
+(cl-text nonsense2 (nonsense2))

@@ -1,0 +1,1 @@
+(cl-text myText (cl-module M (forall (a b c) (or (a) (a b) (c) (x)))) (and (x) (y)))

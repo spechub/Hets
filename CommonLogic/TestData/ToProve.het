@@ -1,0 +1,8 @@
+logic CommonLogic
+
+spec ToProve =
+. (P x)
+  (and (P x) (Q y))
+. (Q y) %implied
+. (P y) %implied
+end

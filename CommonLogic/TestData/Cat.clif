@@ -1,0 +1,15 @@
+(cl-text Pred 
+  (P x)
+  (and (P x) (Q y))
+)
+
+(cl-text Cat 
+  (or (Cat x) (Mat y))
+  (not (On x y))
+  (if (P x) (Q x))
+)
+
+(cl-text PetHappy 
+  (cl-imports Pred) (cl-imports Cat)
+  (exists (z) (and (Pet x) (Happy z) (Attr x z)))
+)
