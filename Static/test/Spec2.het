@@ -1,0 +1,11 @@
+spec s1 =
+sort s, t;
+ops a, o : s
+. a = o
+. o = a %implied
+
+spec s2 = s1 then
+sort u, v
+preds p, q : s * v
+
+. forall x : v . p(a, x)

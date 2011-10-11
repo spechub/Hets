@@ -14,13 +14,20 @@ mv $f.xml $f.new.xh
 cp $1.bak $1
 dir=`pwd`
 b2=`basename $2 .het`
-pushd $HETS_GMOC
+#pushd $HETS_GMOC
 rm -f tmp/*.xupdate
 rm -f tmp/*.imp
-bin/gmoc -c Configuration.xml -itype file moc \
-  $dir/$f.xh $dir/$f.xhi $dir/$f.new.xh
-mv tmp/*.xupdate $dir/$b2.xupdate
-mv tmp/*.imp $dir/$b2.imp
+#bin/gmoc -c Configuration.xml -itype file moc \
+#  $dir/$f.xh $dir/$f.xhi $dir/$f.new.xh
+#mv tmp/*.xupdate $dir/$b2.xupdate
+#mv tmp/*.imp $dir/$b2.imp
+#popd
+
+cp $dir/$f.xh $dir/$f.hetsdginternxml
+cp $dir/$f.new.xh $dir/$f.new.hetsdginternxml
+pushd $HETS_GMOC2
+bin/gmoc -itype file -otype diff -o $dir/$b2.xupdate2 sdiff \
+  $dir/$f.hetsdginternxml $dir/$f.new.hetsdginternxml
 popd
 }
 
@@ -41,11 +48,17 @@ do
        done
    done
 done
+for i in Spec2.het
+do
+   for j in Add Remove
+   do k=Node; createXUpdate $i $j$k$i
+   done
+done
 }
 
 callHets ()
 {
-for i in *.xupdate
+for i in *.xupdate2
 do
 hets -v2 -U $i Spec.het
 done
