@@ -1,0 +1,12 @@
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#" > 
+<rdf:Description rdf:about="http://amitKumar">
+   <vcard:N rdf:nodeID="A0"/>
+   <vcard:FN>Amit Kumar</vcard:FN>
+</rdf:Description>
+<rdf:Description rdf:nodeID="A0">
+   <vcard:Family>Kumar</vcard:Family>
+   <vcard:Given>Amit</vcard:Given>
+</rdf:Description>
+</rdf:RDF>
