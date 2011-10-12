@@ -18,12 +18,19 @@ import Static.FromXml
 import Static.XSimplePath
 
 import Driver.Options
+import Driver.ReadFn (libNameToFile)
+import Driver.WriteFn (writeVerbFile)
 
 import Common.LibName
 import Common.ResultT
+
+import Control.Monad.Trans (lift)
+import Text.XML.Light
 
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
   -> ResultT IO (LibName, LibEnv)
 dgXUpdate opts xs le ln dg = do
   (xml, _) <- liftR $ changeXml (dGraph le ln dg) xs
+  lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
+    $ ppTopElement xml
   rebuiltDgXml opts le xml
