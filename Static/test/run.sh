@@ -62,11 +62,13 @@ callHets ()
 {
 for i in *Spec.xupdate3
 do
-hets -v2 -U $i Spec.het
+hets -v2 --relative-positions -U $i Spec.het
+cp Spec.xml $i.xml
 done
 for i in *Spec2.xupdate3
 do
-hets -v2 -U $i Spec2.het
+hets -v2 --relative-positions -U $i Spec2.het
+cp Spec.xml $i.xml
 done
 }
 
