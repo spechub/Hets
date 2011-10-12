@@ -59,6 +59,7 @@ import qualified CommonLogic.Morphism as Morphism
 -- | types of sublogics
 data CLTextType = Propositional      -- Text without quantifiers
                 | FirstOrder         -- Text in First Order Logic
+                | Compact            -- Text beyond FOL, but without SeqMarks
                 | FullCommonLogic    -- Text without any constraints
                 deriving (Show, Eq, Ord)
 
@@ -85,14 +86,17 @@ compareLE p1 p2 =
     in
       case (f1, f2) of
         (_,               FullCommonLogic) -> True
+        (FullCommonLogic, Compact)         -> False
+        (_,               Compact)         -> True
         (FullCommonLogic, FirstOrder)      -> False
+        (Compact,         FirstOrder)      -> False
         (_,               FirstOrder)      -> True
         (Propositional,   Propositional)   -> True
         (_,               Propositional)   -> False
 
 -- | all sublogics
 sublogics_all :: [CommonLogicSL]
-sublogics_all = [fullclsl, folsl, bottom]
+sublogics_all = [fullclsl, compactsl, folsl, bottom]
 
 ------------------------------------------------------------------------------
 -- Special elements in the Lattice of logics                                --
@@ -106,6 +110,9 @@ bottom = propsl
 
 fullclsl :: CommonLogicSL
 fullclsl = CommonLogicSL {format = FullCommonLogic}
+
+compactsl :: CommonLogicSL
+compactsl = CommonLogicSL {format = Compact}
 
 folsl :: CommonLogicSL
 folsl = CommonLogicSL {format = FirstOrder}
@@ -127,9 +134,12 @@ sublogics_join pfF a b = CommonLogicSL
 
 joinType :: CLTextType -> CLTextType -> CLTextType
 joinType Propositional   Propositional   = Propositional
-joinType Propositional   FirstOrder      = FirstOrder
+joinType Propositional   x               = x
 joinType FirstOrder      Propositional   = FirstOrder
 joinType FirstOrder      FirstOrder      = FirstOrder
+joinType FirstOrder      x               = x
+joinType Compact         FullCommonLogic = FullCommonLogic
+joinType Compact         _               = Compact
 joinType _               _               = FullCommonLogic
 
 sublogics_max :: CommonLogicSL -> CommonLogicSL -> CommonLogicSL
@@ -262,7 +272,7 @@ sl_nameOrSeqmark prds cs nos =
 -- | determines the sublogic for names which are next to a quantifier,
 -- given predicates of the super-text
 sl_quantName :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
-sl_quantName prds _ n = if Set.member n prds then fullclsl else folsl
+sl_quantName prds _ n = if Set.member n prds then compactsl else folsl
 
 -- | determines the sublogic for names,
 -- given predicates of the super-text
@@ -290,12 +300,12 @@ sl_termSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM_SEQ -> CommonLogicSL
 sl_termSeq prds cs tseq = 
     case tseq of
         AS.Term_seq t -> sl_termInSeq prds cs t
-        AS.Seq_marks _ -> cs -- correct?
+        AS.Seq_marks _ -> fullclsl
 
 -- | determines the sublogic for names,
 -- given predicates of the super-text
 sl_nameInTermSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
-sl_nameInTermSeq prds _ n = if Set.member n prds then fullclsl else propsl
+sl_nameInTermSeq prds _ n = if Set.member n prds then compactsl else propsl
 
 -- | determines the sublogic for terms inside of a term-sequence,
 -- given predicates of the super-text
@@ -335,12 +345,12 @@ sublogics_name :: CommonLogicSL -> String
 sublogics_name f = case format f of
                      Propositional   -> "Propositional"
                      FirstOrder      -> "FOL"
+                     Compact         -> "Compact"
                      FullCommonLogic -> "FullCommonLogic"
 
 -------------------------------------------------------------------------------
 -- Projections to sublogics                                                  --
 -------------------------------------------------------------------------------
--- TODO: Projections
 
 prSymbolM :: CommonLogicSL -> Symbol.Symbol -> Maybe Symbol.Symbol
 prSymbolM _ sym = Just sym

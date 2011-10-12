@@ -1,0 +1,1 @@
+(forall (P ...Q) (and (P x) (...Q x)))
