@@ -68,7 +68,7 @@ done
 for i in *Spec2.xupdate3
 do
 hets -v2 --relative-positions -U $i Spec2.het
-cp Spec.xml $i.xml
+cp Spec2.xml $i.xml
 done
 }
 
