@@ -1,0 +1,59 @@
+<xupdate:modifications xmlns:xupdate="http://www.xmldb.org/xupdate" version="1.0">
+<xupdate:append select="/DGraph">
+<xupdate:element name="DGLink">
+<xupdate:attribute name="linkid">1</xupdate:attribute>
+<xupdate:attribute name="source">s2__E2</xupdate:attribute>
+<xupdate:attribute name="target">s2</xupdate:attribute>
+<xupdate:element name="Type">
+<xupdate:text>GlobalDefInc</xupdate:text>
+</xupdate:element>
+<xupdate:element name="GMorphism">
+<xupdate:attribute name="name">id_CASL.SubPCSOL=E</xupdate:attribute>
+</xupdate:element>
+</xupdate:element>
+<xupdate:element name="DGLink">
+<xupdate:attribute name="linkid">0</xupdate:attribute>
+<xupdate:attribute name="source">s1</xupdate:attribute>
+<xupdate:attribute name="target">s2__E2</xupdate:attribute>
+<xupdate:element name="Type">
+<xupdate:text>GlobalDefInc</xupdate:text>
+</xupdate:element>
+<xupdate:element name="GMorphism">
+<xupdate:attribute name="name">id_CASL.SubPCSOL=E</xupdate:attribute>
+</xupdate:element>
+</xupdate:element>
+</xupdate:append>
+<xupdate:insert-before select="/DGraph/DGNode[@name=&quot;s2&quot;][1]">
+<xupdate:element name="DGNode">
+<xupdate:attribute name="logic">CASL</xupdate:attribute>
+<xupdate:attribute name="name">s2__E2</xupdate:attribute>
+<xupdate:attribute name="refname">s2</xupdate:attribute>
+<xupdate:attribute name="relxpath">/Extension/Spec[2]</xupdate:attribute>
+<xupdate:element name="Declarations">
+<xupdate:element name="Symbol">
+<xupdate:attribute name="range">Spec2:8.6</xupdate:attribute>
+<xupdate:text>sort u</xupdate:text>
+</xupdate:element>
+<xupdate:element name="Symbol">
+<xupdate:attribute name="range">Spec2:8.9</xupdate:attribute>
+<xupdate:text>sort v</xupdate:text>
+</xupdate:element>
+</xupdate:element>
+</xupdate:element>
+</xupdate:insert-before>
+<xupdate:remove select="/DGraph/DGNode[@name=&quot;s2&quot;][1]/Declarations[1]/Symbol[1]"/>
+<xupdate:update select="/DGraph/DGNode[@name=&quot;s2&quot;][1]/Declarations[1]/Symbol[3]/attribute::range">
+<xupdate:text>Spec2:10.7</xupdate:text>
+</xupdate:update>
+<xupdate:update select="/DGraph/DGNode[@name=&quot;s2&quot;][1]/attribute::relxpath">
+<xupdate:text>/Extension/Spec[3]</xupdate:text>
+</xupdate:update>
+<xupdate:remove select="/DGraph/DGNode[@name=&quot;s2&quot;][1]/Declarations[1]/Symbol[2]"/>
+<xupdate:update select="/DGraph/attribute::nextlinkid">
+<xupdate:text>2</xupdate:text>
+</xupdate:update>
+<xupdate:remove select="/DGraph/DGLink[@linkid=&quot;0&quot; and @source=&quot;s1&quot; and @target=&quot;s2&quot;][1]"/>
+<xupdate:update select="/DGraph/DGNode[@name=&quot;s2&quot;][1]/Declarations[1]/Symbol[4]/attribute::range">
+<xupdate:text>Spec2:10.10</xupdate:text>
+</xupdate:update>
+</xupdate:modifications>

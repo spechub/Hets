@@ -3,32 +3,34 @@
 createXUpdate ()
 {
 f=`dirname $1`/`basename $1 .het`
-hets -v2 -o xml $f
+hets -v2 --relative-positions -o xml $f
 mv $f.xml $f.xh
-hets -v2 -A -o xml $f
+hets -v2 --relative-positions -A -o xml $f
 mv $f.xml $f.xhi
 cp $1 $1.bak
 propagateDiff $1 $1 $2
-hets -v2 -o xml $f
+hets -v2 --relative-positions -o xml $f
 mv $f.xml $f.new.xh
 cp $1.bak $1
 dir=`pwd`
 b2=`basename $2 .het`
-#pushd $HETS_GMOC
+pushd $HETS_GMOC
 rm -f tmp/*.xupdate
 rm -f tmp/*.imp
-#bin/gmoc -c Configuration.xml -itype file moc \
-#  $dir/$f.xh $dir/$f.xhi $dir/$f.new.xh
-#mv tmp/*.xupdate $dir/$b2.xupdate
-#mv tmp/*.imp $dir/$b2.imp
+bin/gmoc -c Configuration.xml -itype file moc \
+  $dir/$f.xh $dir/$f.xhi $dir/$f.new.xh
+mv tmp/*.xupdate $dir/$b2.xupdate
+mv tmp/*.imp $dir/$b2.imp
+popd
+
+#cp $dir/$f.xh $dir/$f.hetsdginternxml
+#cp $dir/$f.new.xh $dir/$f.new.hetsdginternxml
+#pushd $HETS_GMOC2
+#bin/gmoc -itype file -otype diff -o $dir/$b2.xupdate2 sdiff \
+#  $dir/$f.hetsdginternxml $dir/$f.new.hetsdginternxml
 #popd
 
-cp $dir/$f.xh $dir/$f.hetsdginternxml
-cp $dir/$f.new.xh $dir/$f.new.hetsdginternxml
-pushd $HETS_GMOC2
-bin/gmoc -itype file -otype diff -o $dir/$b2.xupdate2 sdiff \
-  $dir/$f.hetsdginternxml $dir/$f.new.hetsdginternxml
-popd
+#../../Common/testxmldiff $dir/$f.xh $dir/$f.new.xh > $dir/$b2.xupdate3
 }
 
 propagateDiff ()
@@ -58,11 +60,11 @@ done
 
 callHets ()
 {
-for i in *Spec.xupdate2
+for i in *Spec.xupdate
 do
 hets -v2 -U $i Spec.het
 done
-for i in *Spec2.xupdate2
+for i in *Spec2.xupdate
 do
 hets -v2 -U $i Spec2.het
 done
