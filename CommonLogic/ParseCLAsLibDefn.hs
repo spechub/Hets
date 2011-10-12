@@ -183,7 +183,7 @@ downloadSpec opts specMap topTexts importedBy isImport filename =
                   , "of Common Logic files. "
                   , "If you really need them, send us a message at "
                   , "hets@informatik.uni-bremen.de, and we will fix it."
-                ]) importedBy
+                ])
           else 
           if  t == topTexts then return specMap else do
           let newTopTexts = Set.union t topTexts
