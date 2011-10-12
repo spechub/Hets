@@ -733,3 +733,67 @@ java-files:
 
 java-clean:
 	ant -q java-clean
+
+# download dependencies for RDF Jena-api
+rdf_java:
+	mkdir -p RDF/java/lib
+	if [ -f RDF/java/lib/arq-2.8.7.jar ]; then \
+		echo "File arq-2.8.7.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/arq-2.8.7.jar http://repo1.maven.org/maven2/com/hp/hpl/jena/arq/2.8.7/arq-2.8.7.jar; \
+	fi
+	if [ -f RDF/java/lib/icu4j-3.4.4.jar ]; then \
+		echo "File icu4j-3.4.4.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/icu4j-3.4.4.jar http://repo1.maven.org/maven2/com/ibm/icu/icu4j/3.4.4/icu4j-3.4.4.jar; \
+	fi
+	if [ -f RDF/java/lib/iri-0.8.jar ]; then \
+		echo "File iri-0.8.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/iri-0.8.jar http://repo1.maven.org/maven2/com/hp/hpl/jena/iri/0.8/iri-0.8.jar; \
+	fi
+	if [ -f RDF/java/lib/jena-2.6.4.jar ]; then \
+		echo "File jena-2.6.4.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/jena-2.6.4.jar http://repo1.maven.org/maven2/com/hp/hpl/jena/jena/2.6.4/jena-2.6.4.jar; \
+	fi
+	if [ -f RDF/java/lib/junit-4.5.jar ]; then \
+		echo "File junit-4.5.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/junit-4.5.jar http://repo1.maven.org/maven2/junit/junit/4.5/junit-4.5.jar; \
+	fi
+	if [ -f RDF/java/lib/log4j-1.2.13.jar ]; then \
+		echo "File log4j-1.2.13.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/log4j-1.2.13.jar http://repo1.maven.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar; \
+	fi
+	if [ -f RDF/java/lib/lucene-core-2.3.1.jar ]; then \
+		echo "File lucene-core-2.3.1.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/lucene-core-2.3.1.jar http://repo1.maven.org/maven2/org/apache/lucene/lucene-core/2.3.1/lucene-core-2.3.1.jar; \
+	fi
+	if [ -f RDF/java/lib/slf4j-api-1.5.8.jar ]; then \
+		echo "File slf4j-api-1.5.8.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/slf4j-api-1.5.8.jar http://repo2.maven.org/maven2/org/slf4j/slf4j-api/1.5.8/slf4j-api-1.5.8.jar; \
+	fi
+	if [ -f RDF/java/lib/slf4j-log4j12-1.5.8.jar ]; then \
+		echo "File slf4j-log4j12-1.5.8.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/slf4j-log4j12-1.5.8.jar http://repo2.maven.org/maven2/org/slf4j/slf4j-log4j12/1.5.8/slf4j-log4j12-1.5.8.jar; \
+	fi
+	if [ -f RDF/java/lib/stax-api-1.0.1.jar ]; then \
+		echo "File stax-api-1.0.1.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/stax-api-1.0.1.jar http://dist.codehaus.org/stax/jars/stax-api-1.0.1.jar; \
+	fi
+	if [ -f RDF/java/lib/wstx-asl-3.2.9.jar ]; then \
+		echo "File wstx-asl-3.2.9.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/wstx-asl-3.2.9.jar http://repo1.maven.org/maven2/org/codehaus/woodstox/wstx-asl/3.2.9/wstx-asl-3.2.9.jar; \
+	fi
+	if [ -f RDF/java/lib/xercesImpl-2.7.1.jar ]; then \
+		echo "File xercesImpl-2.7.1.jar already exists"; \
+	else \
+		curl -o RDF/java/lib/xercesImpl-2.7.1.jar http://mirrors.ibiblio.org/pub/mirrors/maven2/xerces/xercesImpl/2.7.1/xercesImpl-2.7.1.jar; \
+	fi
