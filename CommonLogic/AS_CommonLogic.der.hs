@@ -190,6 +190,17 @@ printTextMeta tm = pretty $ getText tm
 printMetarelation :: METARELATION -> Doc
 printMetarelation _ = empty
 
+-- print basic spec as pure clif-texts, without any annotations
+exportBasicSpec :: BASIC_SPEC -> Doc
+exportBasicSpec (Basic_spec xs) = vsep $ map (exportBasicItems . AS_Anno.item) xs
+
+exportBasicItems :: BASIC_ITEMS -> Doc
+exportBasicItems (Axiom_items xs) = vsep $ map (exportTextMeta . AS_Anno.item) xs
+
+exportTextMeta :: TEXT_META -> Doc
+exportTextMeta = pretty . getText
+
+-- using pure clif syntax from here
 printText :: TEXT -> Doc
 printText s = case s of
   Text x _ -> fsep $ map pretty x
@@ -273,9 +284,6 @@ printSymbItems (Symb_items xs _) = fsep $ map pretty xs
 
 
 -- keywords, reservednames in CLIF
-seqmarkS :: String
-seqmarkS = "..."
-
 orS :: String
 orS = "or"
 
