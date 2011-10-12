@@ -16,7 +16,6 @@ module CommonLogic.ClTests where
 
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Parse_CLIF
-import Comorphisms.CommonLogic2CommonLogic
 
 import Common.Doc as Doc
 import Common.Id as Id
