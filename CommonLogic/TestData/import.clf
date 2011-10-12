@@ -1,5 +1,0 @@
-(cl-text myText1 (and (a) (b))) %(txt1)%
-
-(cl-imports myText1) (or (myText1) (d)) %(txt2)%
-
-(cl-module M (cl-excludes a b c) (and (a) (b) (c) (d))) %(txt3)%

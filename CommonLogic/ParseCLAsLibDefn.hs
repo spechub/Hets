@@ -44,13 +44,15 @@ import System.Directory (doesFileExist, getCurrentDirectory)
 import Network.URI
 import Network.HTTP
 
---                 specName  (spec, topTexts)
-type SpecMap = Map String (BASIC_SPEC, Set String)
+
+type SpecMap = Map String SpecInfo
+type SpecInfo = (BASIC_SPEC, Set String, Set String)
+                -- (spec, topTexts, importedBy)
 
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
 parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
 parseCL_CLIF filename opts = do
-  specMap <- downloadSpec opts Map.empty Set.empty filename
+  specMap <- downloadSpec opts Map.empty Set.empty Set.empty False filename
   specs <- anaImports opts specMap
   return $ convertToLibDefN (convertFileToLibStr filename) specs
 
@@ -150,42 +152,58 @@ metarelsMR n mr = case mr of
   IncludeLibs _ -> []
 -- TODO: implement this for the other metarelations
 
-collectDownloads :: HetcatsOpts -> SpecMap -> (String, (BASIC_SPEC, Set String))
-                    -> IO SpecMap
-collectDownloads opts specMap (n,(b,topTexts)) =
-  let directDls = Set.elems $ Set.map tokStr $ directDownloads b
+collectDownloads :: HetcatsOpts -> SpecMap -> (String, SpecInfo) -> IO SpecMap
+collectDownloads opts specMap (n,(b,topTexts,importedBy)) =
+  let -- directDls = Set.elems $ Set.map tokStr $ directDownloads b
+      directMrs = Set.elems $ Set.map tokStr $ directMetarels b
+      directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
-  in  foldM (\sm d -> do
-          newDls <- downloadSpec opts sm newTopTexts d
+      newImportedBy = Set.insert n importedBy
+  in do
+      sm2 <- foldM (\sm d -> do
+          newDls <- downloadSpec opts sm newTopTexts newImportedBy True d
           return (Map.unionWith unify newDls sm)
-        ) specMap directDls
+        ) specMap directImps -- imports get @n@ as new "importedBy"
+      foldM (\sm d -> do
+          newDls <- downloadSpec opts sm newTopTexts Set.empty False d
+          return (Map.unionWith unify newDls sm)
+        ) sm2 directMrs -- metarelations have no "importedBy"s
 
-downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> String -> IO SpecMap
-downloadSpec opts specMap topTexts filename =
+downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> Set String
+                -> Bool -> String -> IO SpecMap
+downloadSpec opts specMap topTexts importedBy isImport filename =
   let fn = convertFileToLibStr filename in
   case Map.lookup fn specMap of
-      Just (b, t) ->
+      Just (b, t, i) ->
+          if  isImport && Set.member (convertFileToLibStr filename) importedBy
+          then error (concat [
+                    "Hets currently cannot handle cyclic imports. "
+                  , "If you really need them, send us a message at "
+                  , "hets@informatik.uni-bremen.de, and we will fix it."
+                ])
+          else 
           if  t == topTexts then return specMap else do
           let newTopTexts = Set.union t topTexts
-          let newSpecMap = Map.insert fn (b,newTopTexts) specMap
-          collectDownloads opts newSpecMap (fn,(b,newTopTexts))
+          let newImportedBy = Set.union i importedBy
+          let newSpecMap = Map.insert fn (b,newTopTexts,newImportedBy) specMap
+          collectDownloads opts newSpecMap (fn,(b,newTopTexts,newImportedBy))
       Nothing -> do
           contents <- getCLIFContents opts filename
           case parseCL_CLIF_contents filename contents of
               Left err -> error $ show err
               Right bs ->
-                let ns = specNameL bs fn
-                    nbts = map (\(n,b) -> (n, (b, topTexts))) $ zip ns bs
-                    newSpecMap = foldr (\(n, bt) sm ->
-                        Map.insertWith unify n bt sm
-                      ) specMap nbts
+                let nbs = zip (specNameL bs fn) bs
+                    nbtis = map (\(n,b) -> (n, (b, topTexts,importedBy))) nbs
+                    newSpecMap = foldr (\(n, bti) sm ->
+                        Map.insertWith unify n bti sm
+                      ) specMap nbtis
                 in  foldM (\sm nbt -> do
                           newDls <- collectDownloads opts sm nbt
                           return (Map.unionWith unify newDls sm)
-                      )  newSpecMap nbts
+                      )  newSpecMap nbtis
 
-unify :: (a, Set String) -> (a, Set String) -> (a, Set String)
-unify (_, s) (a, t) = (a, Set.union s t)
+unify :: SpecInfo -> SpecInfo -> SpecInfo
+unify (_, s, p) (a, t, q) = (a, Set.union s t, Set.union p q)
 
 --one could add support for uri fragments/query (perhaps select a text from the file)
 getCLIFContents :: HetcatsOpts -> String -> IO String
@@ -209,7 +227,7 @@ localFileContents :: HetcatsOpts -> String -> IO String
 localFileContents opts filename = do
   curDir <- getCurrentDirectory
   file <- findLibFile (curDir:libdirs opts) filename
-  handle <- openFile filename ReadMode
+  handle <- openFile file ReadMode
   hGetContents handle
 
 findLibFile :: [FilePath] -> String -> IO FilePath
@@ -282,14 +300,14 @@ anaImports opts specMap = do
       newSpecs <- collectDownloads opts sm nbt
       return (Map.unionWith unify newSpecs sm)
     ) specMap $ Map.assocs specMap
-  let specAssocs = Map.assocs $ Map.unionWith unify specMap downloads
-  let sortedSpecs = sortBy usingTopTextsCount specAssocs -- sort by putting the latest imported specs to the beginning
+  let specAssocs = Map.assocs downloads
+  let sortedSpecs = sortBy usingImportedByCount specAssocs -- sort by putting the latest imported specs to the beginning
   return $ bsNamePairs sortedSpecs
 
 -- not fast (O(n+m)), but almost reliable (not working when mixing imports and metarelations)
-usingTopTextsCount :: (t, (a, Set t)) -> (t, (b, Set t)) -> Ordering
-usingTopTextsCount (_,(_,topTexts1)) (_,(_,topTexts2)) =
-  compare (Set.size topTexts2) (Set.size topTexts1)
+usingImportedByCount :: (String, SpecInfo) -> (String, SpecInfo) -> Ordering
+usingImportedByCount (_,(_,_,importedBy1)) (_,(_,_,importedBy2)) =
+  compare (Set.size importedBy2) (Set.size importedBy1)
 
-bsNamePairs :: [(String, (BASIC_SPEC, Set String))] -> [(BASIC_SPEC, NAME)]
-bsNamePairs = foldr (\(n,(b,_)) r -> (b, mkSimpleId n) : r) []
+bsNamePairs :: [(String, SpecInfo)] -> [(BASIC_SPEC, NAME)]
+bsNamePairs = foldr (\(n,(b,_,_)) r -> (b, mkSimpleId n) : r) []
