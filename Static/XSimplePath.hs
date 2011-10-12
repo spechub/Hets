@@ -13,6 +13,7 @@ into cursor movement.
 
 module Static.XSimplePath where
 
+import Common.ToXml (mkText)
 import Common.XPath hiding (Text)
 import Common.XUpdate
 import Common.Utils
@@ -214,8 +215,16 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
   (Add pos addCs, _) -> liftM ChangeCr $ foldM (applyAddOp pos) cr addCs
   -- Case#4: update String (attr-only!)
   (Update s, Just atS) -> removeOrChangeAttr (Just s) cr atS
+  (Update s, Nothing) -> changeText s cr
   -- OTHER CASES ARE NOT IMPLEMENTED!
   _ -> fail $ "no implementation for :" ++ show csel
+
+changeText :: Monad m => String -> Cursor -> m ChangeRes
+changeText t cr = case current cr of
+  Elem e | null $ onlyElems $ elContent e -> return $ ChangeCr cr
+    { current = Elem $ e
+      { elContent = [mkText t] }}
+  _ -> fail "current cursor is no element with text only"
 
 removeOrChangeAttr :: Monad m => Maybe String -- ^ optional update value
   -> Cursor -> String -- ^ attribute key
@@ -242,7 +251,7 @@ applyAddOp pos cr addCh = case (pos, addCh) of
         (After, AddElem e) -> return $ insertRight (Elem e) cr
         (Append, AddElem e) -> case current cr of
             Elem e' -> return cr { current = Elem $ e' {
-                         elContent = Elem e : elContent e' } }
+                         elContent = elContent e' ++ [Elem e] } }
             _ -> fail "applyAddOp: unexpected content(1)"
         (Append, AddAttr at) -> case current cr of
             Elem e -> return cr { current = Elem $ add_attr at e }
