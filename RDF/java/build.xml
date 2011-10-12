@@ -1,0 +1,60 @@
+<project default="install">
+
+    <property name="libdir"     value="./lib"/>
+    <property name="builddir"   value="build"/>
+    <property name="classesdir" value="${builddir}/classes"/>
+    <property name="target-vm"  value="1.5"/>
+    <property environment="env"/>
+
+    <path id="classpath">
+        <fileset dir="${libdir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <target name="clean">
+        <delete dir="${builddir}"/>
+    </target>
+
+    <target name="compile">
+       <mkdir dir="${classesdir}"/>
+        <javac srcdir="./" destdir="${classesdir}" debug="on" target="${target-vm}" nowarn="off" source="1.5">
+            <classpath refid="classpath"/>
+	    <include name="de/unibremen/informatik/*.java"/>
+        </javac>
+    </target>
+
+    <target name="install" depends="clean,jar,copy-libs">
+      <copy file="${builddir}/RDFReasoner.jar" todir="../"/>
+    </target>
+
+    <target name="java-files" depends="install"/>
+    <target name="java-libs" depends="copy-libs"/>
+
+    <target name="jar" depends="compile">
+      <jar basedir="${classesdir}" destfile="${builddir}/RDFReasoner.jar">
+	<manifest>
+	  <attribute name="Title" value="RDF Reasoner"/>
+	  <attribute name="Built-By" value="${user.name}"/>
+	  <attribute name="Main-Class" value="RDFReasoner"/>
+	  <attribute name="Class-Path" value="lib/jena-2.6.4.jar lib/slf4j-api-1.5.8.jar lib/xercesImpl-2.7.1.jar lib/arq-2.8.7.jar lib/icu4j-3.4.4.jar lib/iri-0.8.jar lib/junit-4.5.jar lib/log4j-1.2.13.jar lib/lucene-core-2.3.1.jar lib/slf4j-log4j12-1.5.8.jar lib/stax-api-1.0.1.jar lib/wstx-asl-3.2.9.jar"/>
+	</manifest>
+      </jar>
+    </target>
+
+    <target name="copy-libs">
+      <mkdir dir="../lib"/>
+      <copy file="${libdir}/jena-2.6.4.jar" todir="../lib/"/>
+      <copy file="${libdir}/slf4j-api-1.5.8.jar" todir="../lib/"/>
+      <copy file="${libdir}/xercesImpl-2.7.1.jar" todir="../lib/"/>
+      <copy file="${libdir}/arq-2.8.7.jar" todir="../lib/"/>
+      <copy file="${libdir}/icu4j-3.4.4.jar" todir="../lib/"/>
+      <copy file="${libdir}/iri-0.8.jar" todir="../lib/"/>
+      <copy file="${libdir}/junit-4.5.jar" todir="../lib/"/>
+      <copy file="${libdir}/log4j-1.2.13.jar" todir="../lib/"/>
+      <copy file="${libdir}/lucene-core-2.3.1.jar" todir="../lib/"/>
+      <copy file="${libdir}/slf4j-log4j12-1.5.8.jar" todir="../lib/"/>
+      <copy file="${libdir}/stax-api-1.0.1.jar" todir="../lib/"/>
+      <copy file="${libdir}/wstx-asl-3.2.9.jar" todir="../lib/"/>
+    </target>
+</project>
