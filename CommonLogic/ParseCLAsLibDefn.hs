@@ -16,6 +16,7 @@ import Common.Id
 import Common.LibName
 import Common.AS_Annotation as Anno
 import Common.AnnoState
+import Common.DocUtils
 
 import Driver.Options
 
@@ -177,10 +178,12 @@ downloadSpec opts specMap topTexts importedBy isImport filename =
       Just (b, t, i) ->
           if  isImport && Set.member (convertFileToLibStr filename) importedBy
           then error (concat [
-                    "Hets currently cannot handle cyclic imports. "
+                    "Illegal cyclic import: ", show (pretty importedBy), "\n"
+                  , "Hets currently cannot handle cyclic imports "
+                  , "of Common Logic files. "
                   , "If you really need them, send us a message at "
                   , "hets@informatik.uni-bremen.de, and we will fix it."
-                ])
+                ]) importedBy
           else 
           if  t == topTexts then return specMap else do
           let newTopTexts = Set.union t topTexts
@@ -247,9 +250,6 @@ findLibFile (d:ds) f =
                 _ -> case f2Exists of
                         True -> return f2
                         _ -> findLibFile ds f
-
-directDownloads :: BASIC_SPEC -> Set NAME
-directDownloads b = Set.union (directMetarels b) (directImports b)
 
 -- retrieves all importations from the text
 directImports :: BASIC_SPEC -> Set NAME
