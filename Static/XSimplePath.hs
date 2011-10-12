@@ -124,7 +124,7 @@ emptyDgEffect = DgEffect Set.empty Map.empty Map.empty [] Nothing (-1)
 {- apply a diff to an xml-document. returns the result xml and a list of
 changes that affect the original DGraph -}
 changeXml :: Monad m => Element -> String -> m (Element, DgEffect)
-changeXml el diff = let cr = fromElement el in do
+changeXml el diff = let cr = fromElement $ cleanUpElem el in do
   cs <- anaXUpdates diff
   pths <- mapM exprToSimplePath cs
   (cr', ef) <- iterateXml TopElem pths cr emptyDgEffect

@@ -18,7 +18,6 @@ import Common.XUpdate
 
 import Common.Lib.MapSet (setToMap)
 
-import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -129,12 +128,6 @@ addPathNumber i stps =
   [] -> []
   Step a n es : rs -> Step a n (e : es) : rs
 
-validContent :: Content -> Bool
-validContent c = case c of
-  XML.Text t | all isSpace $ cdData t -> False
-  CRef _ -> False -- we cannot handle this
-  _ -> True
-
 contentToAddChange :: Content -> AddChange
 contentToAddChange c = case c of
   Elem e -> AddElem e
@@ -156,7 +149,7 @@ changeToXml (Change csel pth) = let
 
 addsToXml :: AddChange -> Content
 addsToXml a = case a of
-  AddElem e -> Elem e
+  AddElem e -> Elem $ cleanUpElem e
   AddAttr (Attr k v) -> Elem
     . add_attr (mkNameAttr $ qName k) $ node (mkXQName attributeS) v
   AddText s -> mkText s

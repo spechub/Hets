@@ -23,6 +23,7 @@ import Driver.WriteFn (writeVerbFile)
 
 import Common.LibName
 import Common.ResultT
+import Common.XUpdate
 
 import Control.Monad.Trans (lift)
 import Text.XML.Light
@@ -32,5 +33,5 @@ dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
 dgXUpdate opts xs le ln dg = do
   (xml, _) <- liftR $ changeXml (dGraph le ln dg) xs
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
-    $ ppTopElement xml
+    $ ppTopElement $ cleanUpElem xml
   rebuiltDgXml opts le xml

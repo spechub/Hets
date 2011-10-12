@@ -18,7 +18,7 @@ import Common.XPath
 import Common.ToXml
 import Common.Utils
 
-import Text.XML.Light
+import Text.XML.Light as XML
 
 import Data.Char
 import Data.List
@@ -241,3 +241,14 @@ xupdate:text
 xupdate:element may contain xupdate:attribute elements and further
 xupdate:element or xupdate:text elements.
 -}
+
+validContent :: Content -> Bool
+validContent c = case c of
+  XML.Text t | all isSpace $ cdData t -> False
+  _ -> True
+
+cleanUpElem :: Element -> Element
+cleanUpElem e = e
+  { elContent = map (\ c -> case c of
+      Elem m -> Elem $ cleanUpElem m
+      _ -> c) $ filter validContent $ elContent e }
