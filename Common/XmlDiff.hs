@@ -148,8 +148,8 @@ changeToXml :: Change -> Element
 changeToXml (Change csel pth) = let
   sel = add_attr (mkAttr selectS $ show pth)
   in case csel of
-  Add _ as -> sel
-    . node (mkXQName appendS) $ map addsToXml as
+  Add i as -> sel
+    . node (mkXQName $ showInsert i) $ map addsToXml as
   Remove -> sel $ node (mkXQName removeS) ()
   Update s -> sel $ node (mkXQName updateS) s
   _ -> error "changeToXml"
