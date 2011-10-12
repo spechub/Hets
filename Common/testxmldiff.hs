@@ -15,6 +15,7 @@ module Main (main) where
 import Text.XML.Light
 import Common.XmlDiff
 
+import Control.Monad
 import qualified Data.Map as Map
 import System.Environment
 
@@ -26,7 +27,8 @@ main = do
       s1 <- readFile f1
       s2 <- readFile f2
       case (parseXMLDoc s1, parseXMLDoc s2) of
-        (Just e1, Just e2) -> putStrLn $ ppTopElement
-          $ mkMods $ xmlDiff Map.empty [] Map.empty [Elem e1] [Elem e2]
+        (Just e1, Just e2) -> let
+          ds = xmlDiff Map.empty [] Map.empty [Elem e1] [Elem e2]
+          in unless (null ds) . putStrLn . ppTopElement $ mkMods ds
         _ -> error "parseXMLDoc"
     _ -> error $ "wrong arguments: " ++ show args
