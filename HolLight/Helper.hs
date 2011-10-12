@@ -16,7 +16,7 @@ import Data.Maybe (fromJust,isJust,catMaybes)
 import HolLight.Term
 import Data.List (union,(\\),find)
 import Common.Doc
-import Char
+import Data.Char as Char
 
 names :: [String]
 names =
