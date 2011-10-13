@@ -24,7 +24,12 @@ hetsTags :: UnordTags
 hetsTags = Map.fromList
   $ map (\ (e, as) -> (unqual e, Set.fromList $ map unqual as))
   [ ("DGNode", ["name"])
-  , ("DGLink", ["linkid", "source", "target"]) ]
+  , ("DGLink", ["linkid", "source", "target"])
+  , ("Axiom", [])
+  , ("Theorem", []) ]
+
+{- for symbols the order matters. For axioms and theorems the names should be
+stored separately -}
 
 main :: IO ()
 main = do

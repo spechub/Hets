@@ -25,7 +25,8 @@ import qualified Data.Map as Map
 import Text.XML.Light as XML
 
 {- for elements, whose order does not matter, use the given attribute keys to
-determine their equality. -}
+determine their equality. An empty set indicates an element that only contains
+text to be compared. -}
 type UnordTags = Map.Map QName (Set.Set QName)
 
 -- keep track of the nth element with a given tag
@@ -58,7 +59,7 @@ xmlDiff m stps em old new = case (old, filter validContent new) of
              ++ restDiffs rt
           _ -> rmO
         Just ats -> let
-            (mns, rns) = partition (matchElems en $
+            (mns, rns) = partition (matchElems en (strContent e) $
               Map.intersection (attrMap atts) $ setToMap ats) ns
             in case mns of
             Elem mn : rm -> downDiffs mn
@@ -86,10 +87,11 @@ removeIns stps em cs = case cs of
 attrMap :: [Attr] -> Map.Map QName String
 attrMap = Map.fromList . map (\ a -> (attrKey a, attrVal a))
 
-matchElems :: QName -> Map.Map QName String -> Content -> Bool
-matchElems en atts c = case c of
-  Elem e | elName e == en
-    && Map.isSubmapOfBy (==) atts (attrMap $ elAttribs e) -> True
+matchElems :: QName -> String -> Map.Map QName String -> Content -> Bool
+matchElems en t atts c = case c of
+  Elem e -> elName e == en
+    && if Map.null atts then null (elChildren e) && strContent e == t else
+           Map.isSubmapOfBy (==) atts (attrMap $ elAttribs e)
   _ -> False
 
 xmlElemDiff :: UnordTags -> [Step] -> [Attr] -> [Content] -> Element -> [Change]
