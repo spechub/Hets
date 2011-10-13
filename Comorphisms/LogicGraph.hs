@@ -158,8 +158,7 @@ comorphismList =
     , Comorphism CASL2VSERefine
     , Comorphism Maude2CASL
     , Comorphism CommonLogic2CASL
-    , Comorphism CommonLogic2CASLCompact
-    , Comorphism CommonLogic_ModuleElimination
+    , Comorphism CommonLogicModuleElimination
     , Comorphism Prop2CommonLogic
     , Comorphism SoftFOL2CommonLogic
     , Comorphism Adl2CASL
