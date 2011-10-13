@@ -155,7 +155,6 @@ str2QName str = let (ft, rt) = break (== ':') str in
 -- | extract text and check for no other children
 getText :: Monad m => Element -> m String
 getText e = let s = trim $ strContent e in
-  if null s then fail $ "empty text: " ++ showElement e else
   case elChildren e of
     [] -> return s
     c : _ -> failX "unexpected child" $ elName c
@@ -242,9 +241,12 @@ xupdate:element may contain xupdate:attribute elements and further
 xupdate:element or xupdate:text elements.
 -}
 
+emptyCData :: CData -> Bool
+emptyCData = all isSpace . cdData
+
 validContent :: Content -> Bool
 validContent c = case c of
-  XML.Text t | all isSpace $ cdData t -> False
+  XML.Text t | emptyCData t -> False
   _ -> True
 
 cleanUpElem :: Element -> Element

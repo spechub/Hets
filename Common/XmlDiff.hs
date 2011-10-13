@@ -82,7 +82,8 @@ removeIns stps em cs = case cs of
     Elem e -> let
       (nm, nstps) = extendPath (elName e) em stps
       in Change Remove (pathToExpr nstps) : removeIns stps nm rs
-    _ -> removeIns stps em rs
+    _ -> Change (Update "") (pathToExpr stps) : removeIns stps em rs
+         -- does not work for multiple text entries
 
 attrMap :: [Attr] -> Map.Map QName String
 attrMap = Map.fromList . map (\ a -> (attrKey a, attrVal a))
