@@ -34,9 +34,10 @@ import Common.DocUtils
 -- | Datatype for common logic Signatures
 
 data Sign = Sign { items :: Set.Set Id
-                 , discourseItems :: Set.Set Id
+                 , discourseItems :: Set.Set Id 
                  } deriving (Eq, Ord, Show)
 -- TODO function testing whether an ID is a sequence marker
+-- discourseItems `Set.isSubset` items == True
 
 instance Pretty Sign where
     pretty = printSign

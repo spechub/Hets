@@ -62,7 +62,7 @@ parseCL_CLIF filename opts = do
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
 parseCL_CLIF_contents filename contents =
   runParser (many basicSpec) (emptyAnnos ())
-                       ("while parsing CLIF-File \"" ++ filename++"\"") contents
+                       ("Error while parsing CLIF-File \"" ++ filename++"\"") contents
 
 -- maps imports in basic spec to global definition links (extensions) in
 -- development graph

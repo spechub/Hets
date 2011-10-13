@@ -92,7 +92,7 @@ import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
 import Comorphisms.Maude2CASL
 import Comorphisms.CommonLogic2CASL
-import Comorphisms.CommonLogic_ModuleElimination
+import Comorphisms.CommonLogicModuleElimination
 import Comorphisms.Prop2CommonLogic
 import Comorphisms.SoftFOL2CommonLogic
 import Comorphisms.Adl2CASL
@@ -158,6 +158,7 @@ comorphismList =
     , Comorphism CASL2VSERefine
     , Comorphism Maude2CASL
     , Comorphism CommonLogic2CASL
+    , Comorphism CommonLogic2CASLCompact
     , Comorphism CommonLogic_ModuleElimination
     , Comorphism Prop2CommonLogic
     , Comorphism SoftFOL2CommonLogic

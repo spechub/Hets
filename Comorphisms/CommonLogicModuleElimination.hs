@@ -15,8 +15,8 @@ modules.
 -}
 
 
-module Comorphisms.CommonLogic_ModuleElimination (
-        CommonLogic_ModuleElimination  (..)
+module Comorphisms.CommonLogicModuleElimination (
+        CommonLogicModuleElimination  (..)
       , eliminateModules
     )
     where
@@ -40,13 +40,13 @@ import qualified CommonLogic.Symbol as Symbol
 import qualified CommonLogic.Morphism as Mor
 import qualified CommonLogic.Sublogic as Sl
 
-data CommonLogic_ModuleElimination = CommonLogic_ModuleElimination deriving Show
+data CommonLogicModuleElimination = CommonLogicModuleElimination deriving Show
 
-instance Language CommonLogic_ModuleElimination where
-  language_name CommonLogic_ModuleElimination = "CommonLogic_ModuleElimination"
+instance Language CommonLogicModuleElimination where
+  language_name CommonLogicModuleElimination = "CommonLogicModuleElimination"
 
 instance Comorphism
-    CommonLogic_ModuleElimination -- comorphism
+    CommonLogicModuleElimination -- comorphism
     Logic.CommonLogic       -- lid domain
     Sl.CommonLogicSL        -- sublogics codomain
     BASIC_SPEC              -- Basic spec domain
@@ -70,14 +70,14 @@ instance Comorphism
     Symbol.Symbol           -- rawsymbol domain
     ProofTree               -- proof tree codomain
     where
-      sourceLogic CommonLogic_ModuleElimination = Logic.CommonLogic
-      sourceSublogic CommonLogic_ModuleElimination = Sl.top
-      targetLogic CommonLogic_ModuleElimination = Logic.CommonLogic
-      mapSublogic CommonLogic_ModuleElimination = Just . mapSub
-      map_theory CommonLogic_ModuleElimination = mapTheory
-      map_morphism CommonLogic_ModuleElimination = mapMor
-      map_sentence CommonLogic_ModuleElimination = mapSentence
-      --hasCommonLogic_ModuleElimination_model_expansion  = True -- TODO: check if it is really True
+      sourceLogic CommonLogicModuleElimination = Logic.CommonLogic
+      sourceSublogic CommonLogicModuleElimination = Sl.top
+      targetLogic CommonLogicModuleElimination = Logic.CommonLogic
+      mapSublogic CommonLogicModuleElimination = Just . mapSub
+      map_theory CommonLogicModuleElimination = mapTheory
+      map_morphism CommonLogicModuleElimination = mapMor
+      map_sentence CommonLogicModuleElimination = mapSentence
+      --hasCommonLogicModuleElimination_model_expansion  = True -- TODO: check if it is really True
 
 
 mapSub :: Sl.CommonLogicSL -> Sl.CommonLogicSL
