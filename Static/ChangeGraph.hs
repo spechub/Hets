@@ -18,8 +18,10 @@ may be captured by some form of a state monad.
 
 module Static.ChangeGraph where
 
+import Static.DgUtils
 import Static.GTheory
 import Static.DevGraph
+import Static.XSimplePath
 
 import Logic.Grothendieck
 
@@ -31,9 +33,26 @@ import qualified Data.Set as Set
 
 -- * deleting and adding nodes
 
-{- | delete a node by index.
+{- | delete a node.
 
-The node will only be marked as deleted until a final commit.
+If a node is deleted all in- and outgoing links will be lost.  This is intended
+for ingoing definitions links.  The targets of outgoing definitions links (aka
+"depending nodes") need to me marked as "reduced".
+
+theorem links from A to B state that all sentences in A can be proven by the
+axioms (and proven theorems) from B (note the reversal). This means the
+sentences of A are translated and moved to B as theorems (to be proven) by
+"local inference".
+
+removing ingoing theorem links means: we loose properties of B, which is no
+problem since we delete B. (If we just delete the theorem link we must inform
+depending nodes that fewer axioms are now available. Since a proof for the
+link will be lost other proofs in depending nodes may become invalid.)
+
+removing outgoing theorem links means: depending nodes may contain theorems
+from the source node that need to be deleted, too. So depending nodes are
+"reduced" (fewer theorems only). (We do not keep even valid theorems, if we
+are told to delete them.)
 
 If the node index is unknown then auxiliary functions (or a mapping between
 node names and node indices) can be supplied to delete nodes by name. -}
@@ -42,6 +61,11 @@ deleteDGNode :: Node -> DGraph -> DGraph
 deleteDGNode = undefined
 
 {- | add a node supplying the necessary information.
+
+We should allow to add a node without knowing its final signature. We just
+know the 'XNode' information. Later on definition and theorem links may be
+added. Only after all ingoing definition links (and their sources) are known
+we can compute the actual signature (and theory).
 
 The node index will be new and returned. The name should be unique. The theory
 is a closed signature plus local sentences. The origin could be anything (to
@@ -59,7 +83,7 @@ addDGNode :: NodeName -> G_theory -> DGOrigin -> Conservativity -> DGraph
   -> (DGraph, Node)
 addDGNode = undefined
 
-{- | Maybe a function to rename nodes is desirable -}
+-- | Maybe a function to rename nodes is desirable
 renameNode :: Node -> NodeName -> DGraph -> DGraph
 renameNode = undefined
 
@@ -74,26 +98,30 @@ Getting the edge-id if only source node name, target
 node name, link type, possibly an origin, and the link morphism is given,
 needs auxiliary functions.
 
-Deleted edge-ids are never reused.
+Edge-ids maybe reused.
 
 Local theorem links are proven by moving sentences from the source to target
 node and changing them to theorems. So if such a proven local theorem link is
-removed the target node needs to be adjusted, too. This should happen
-automatically! -}
+removed the target node needs to be adjusted, too.
+
+target nodes of definition links need new signature computations.
+
+-}
 
 deleteDGLink :: Node -> Node -> EdgeId -> DGraph -> DGraph
 deleteDGLink = undefined
 
 {- | add a link supplying the necessary information.
 
-The domain and codomain of the morphism must correspond to the signatures
-given in the source and target node.
+Morphisms do not store source and target signatures. Only the source signature
+is taken from the node. The induced signature of the morphism will be a
+subsignature of the target signature.
 
 The link type may also contain a conservativity and isn't easy to set up for
 free and hiding links. The origin is again basically for documentation
 purposes.
 
-The return edge-id will be new.  -}
+The returned edge-id will be new or an edge-id may be supplied as input. -}
 
 addDGLink :: Node -> Node -> GMorphism -> DGLinkType -> DGLinkOrigin -> DGraph
   -> (DGraph, EdgeId)
@@ -103,8 +131,8 @@ addDGLink = undefined
 
 {- | Do we need function to modify links?
 
-Yes, for example, if a conservativity as part of the link type should be set
-or changed.
+Yes, later, for example, if a conservativity as part of the link type should
+be set or changed.
 
 Some link types contain proof information that needs to be kept up-to-date.
 
@@ -115,7 +143,7 @@ node.
 
 Maybe some more thoughts are needed to decide which link type information may
 be set or changed explicitely and which information should be adjusted
-automatically.  -}
+automatically. -}
 
 modifyDGLinkType :: Node -> Node -> EdgeId -> DGLinkType -> DGraph -> DGraph
 modifyDGLinkType = undefined
@@ -158,7 +186,7 @@ class logic.)
 
 Since there are functions to remove sentences explicitely, we leave it to the
 user to remove sentences first before reducing or changing the signature and
-simply fail if invalid sentences are left!  -}
+simply fail if invalid sentences are left! -}
 
 setSignature :: Node -> G_sign -> DGraph -> DGraph
 setSignature = undefined
@@ -179,7 +207,7 @@ the reduced closed signature automatically.
 Invalid sentences should have been removed before.
 
 This function can be easily extended to delete raw symbol via the logic
-specific matching between raw and signature symbols.  -}
+specific matching between raw and signature symbols. -}
 
 deleteSymbols :: Node -> Set.Set G_symbol -> DGraph -> DGraph
 deleteSymbols = undefined
@@ -201,7 +229,7 @@ happens for usual spec extensions, but note that the basic analysis may also
 yield sentences that might need to be added separately.
 
 Again target nodes of outgoing definition links will be adjusted
-automatically.  -}
+automatically. -}
 
 extendSignature :: Node -> G_sign -> DGraph -> DGraph
 extendSignature = undefined
@@ -230,7 +258,7 @@ definition links. All these axioms may be used to prove a theorem, assuming
 that the used axioms are valid in their original theory.
 
 So a change of a sentence may invalidate proofs in nodes reachable via theorem
-or definition links.  -}
+or definition links. -}
 
 data GSentence = GSentence
 
