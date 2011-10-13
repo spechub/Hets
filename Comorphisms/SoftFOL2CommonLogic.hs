@@ -119,10 +119,7 @@ mapTheory (srcSign, srcFormulas) =
 -- translates a SoftFOL-theory to a CL-Text
 translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT_META
 translate s f =
-  Text_meta { getText = Text
-                          [ Importation $ Imp_name $ mkSimpleId $ softFOLSignTr
-                          , Sentence $ trmToSen s f
-                          ] nullRange
+  Text_meta { getText = Text [Sentence $ trmToSen s f] nullRange
             , metarelation = Set.empty
             , discourseNames = Nothing
             }
@@ -132,19 +129,11 @@ signToTexts srcSign =
   let sr = sortRelText $ Rel.toMap $ FOLSign.sortRel srcSign
       fm = funcMapText $ FOLSign.funcMap srcSign
       pm = predMapText $ FOLSign.predMap srcSign
-      imps = map snd $ concat $ zip (maybeToList sr) [sortRelTrS]
-                              : zip (maybeToList fm) [funcMapTrS]
-                              : zip (maybeToList pm) [predMapTrS] : []
-      phrs = if null imps then [Sentence clTrue]
-                          else map (Importation . Imp_name . mkSimpleId) imps
   in concat $
-        map (AS_Anno.makeNamed sortRelTrS) (maybeToList sr)
-      : map (AS_Anno.makeNamed funcMapTrS) (maybeToList fm)
-      : map (AS_Anno.makeNamed predMapTrS) (maybeToList pm)
-      : [[AS_Anno.makeNamed softFOLSignTr $ Text_meta {
-            getText = Named_text softFOLSignTr (Text phrs nullRange) nullRange
-          , metarelation = Set.empty
-          , discourseNames = Nothing }]]
+      [ map (AS_Anno.makeNamed sortRelTrS) (maybeToList sr)
+      , map (AS_Anno.makeNamed funcMapTrS) (maybeToList fm)
+      , map (AS_Anno.makeNamed predMapTrS) (maybeToList pm)
+      ]
 
 -- creates one-sentence-phrases: forall x. (subSort x) => (superSort x)
 sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
@@ -474,6 +463,3 @@ funcMapTrS = "SoftFOL_FunctionMaps"
 
 predMapTrS :: String
 predMapTrS = "SoftFOL_PredicateMaps"
-
-softFOLSignTr :: String
-softFOLSignTr = "SoftFOL_SignatureTranslation"
