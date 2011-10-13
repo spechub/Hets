@@ -67,6 +67,10 @@ import qualified OWL2.ManchesterPrint as OWL2 (printOWLBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
 #endif
 
+import CommonLogic.Logic_CommonLogic
+import qualified CommonLogic.AS_CommonLogic as CL_AS (exportCLIF)
+import qualified CommonLogic.Parse_CLIF as CL_Parse (cltext)
+
 import Logic.Prover
 import Static.GTheory
 import Static.DevGraph
@@ -229,6 +233,16 @@ writeTheory opts filePrefix ga
             writeVerbFile opts f owltext
       | otherwise -> putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
 #endif
+    CLIFOut
+      | lang == language_name CommonLogic -> do
+            (_,th2) <- coerceBasicTheory lid CommonLogic "" th
+            let cltext = shows (CL_AS.exportCLIF th2) "\n"
+            case parse ((many CL_Parse.cltext) >> eof) f cltext of
+              Left err -> putIfVerbose opts 0 $ show err
+              _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
+            writeVerbFile opts f cltext
+      | otherwise -> putIfVerbose opts 0 $ "expected Common Logic theory for: "
+                                                                            ++ f
     _ -> return () -- ignore other file types
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
@@ -289,6 +303,7 @@ writeSpecFiles opts file lenv ln dg = do
             TheoryFile _ -> True
             SigFile _ -> True
             OWLOut -> True
+            CLIFOut -> True
             FreeCADOut -> True
             HaskellOut -> True
             ComptableXml -> True

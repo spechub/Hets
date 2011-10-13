@@ -191,6 +191,9 @@ printMetarelation :: METARELATION -> Doc
 printMetarelation _ = empty
 
 -- print basic spec as pure clif-texts, without any annotations
+exportCLIF :: [AS_Anno.Named TEXT_META] -> Doc
+exportCLIF xs = vsep $ map (exportTextMeta . AS_Anno.sentence) xs
+
 exportBasicSpec :: BASIC_SPEC -> Doc
 exportBasicSpec (Basic_spec xs) = vsep $ map (exportBasicItems . AS_Anno.item) xs
 

@@ -399,6 +399,7 @@ data OutType =
   | Prf
   | EnvOut
   | OWLOut
+  | CLIFOut
   | OmdocOut
   | XmlOut -- ^ development graph xml output
   | ExperimentalOut -- ^ for testing new functionality
@@ -418,6 +419,7 @@ instance Show OutType where
     Prf -> prfS
     EnvOut -> envS
     OWLOut -> "omn"
+    CLIFOut -> "clif"
     OmdocOut -> omdocS
     XmlOut -> xmlS
     ExperimentalOut -> experimentalS
@@ -432,7 +434,7 @@ instance Show OutType where
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
-  [Prf, EnvOut, OWLOut, OmdocOut, XmlOut, ExperimentalOut,
+  [Prf, EnvOut, OWLOut, CLIFOut, OmdocOut, XmlOut, ExperimentalOut,
       HaskellOut, ThyFile, ComptableXml, FreeCADOut]
 
 outTypeList :: [OutType]
