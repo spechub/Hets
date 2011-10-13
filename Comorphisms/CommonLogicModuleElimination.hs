@@ -185,13 +185,14 @@ me_quantsent newName modules qs =
 
 anticedent :: [NAME] -> [NAME_OR_SEQMARK] -> SENTENCE
 anticedent modules noss = 
-    case length modules of
-         1 -> anticedent1 (head modules) noss
+    case modules of
+         [m] -> anticedent1 m noss
          _ -> Bool_sent (Conjunction (map (flip anticedent1 noss) modules)) nullRange
 
 anticedent1 :: NAME -> [NAME_OR_SEQMARK] -> SENTENCE
-anticedent1 m noss = 
-    Atom_sent (Atom (Name_term m) (map nos2termseq noss)) nullRange
+anticedent1 m noss = case noss of
+  [nos] -> Atom_sent (Atom (Name_term m) [nos2termseq nos]) nullRange
+  _ -> Bool_sent (Conjunction $ map (\nos -> anticedent1 m [nos]) noss) nullRange
 
 nos2termseq :: NAME_OR_SEQMARK -> TERM_SEQ
 nos2termseq nos = case nos of 
