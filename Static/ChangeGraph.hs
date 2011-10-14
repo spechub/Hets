@@ -27,9 +27,12 @@ import Logic.Grothendieck
 
 import Common.AS_Annotation
 import Common.Consistency
+import Common.Result
+import Common.Lib.Graph as Tree
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Set as Set
+import Data.List
 
 -- * deleting and adding nodes
 
@@ -153,8 +156,14 @@ target nodes of definition links are "reduced" (see deleteDGNode)
 
 -}
 
-deleteDGLink :: Node -> Node -> EdgeId -> DGraph -> DGraph
-deleteDGLink = undefined
+deleteDGLink :: Node -> Node -> EdgeId -> DGraph -> Result DGraph
+deleteDGLink s t i dg = let
+  (Just (ins, nl, ns, outs), rg) = match s $ dgBody dg
+  in case partition (\ (el, ct) -> ct == t && dgl_id el == i) outs of
+    ([], _) -> justWarn dg ("link not found: " ++ show (s, t, i))
+    ([(lbl, _)], rs)
+      | isUnprovenLocalThm $ dgl_type lbl
+        -> return $ dg { dgBody = (ins, nl, ns, rs) & rg }
 
 {- | add a link supplying the necessary information.
 
