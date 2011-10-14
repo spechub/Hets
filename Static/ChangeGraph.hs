@@ -49,10 +49,55 @@ problem since we delete B. (If we just delete the theorem link we must inform
 depending nodes that fewer axioms are now available. Since a proof for the
 link will be lost other proofs in depending nodes may become invalid.)
 
-removing outgoing theorem links means: depending nodes may contain theorems
-from the source node that need to be deleted, too. So depending nodes are
+removing outgoing (local) theorem links means: target nodes may contain theorems
+from the source node that need to be deleted, too. So these nodes are
 "reduced" (fewer theorems only). (We do not keep even valid theorems, if we
 are told to delete them.)
+
+The node to be deleted may have been subject to global decomposition.  So
+outgoing global theorems of depending nodes may get a deleted edge-id in
+their proof-basis, that should be deleted, too.
+
+Outgoing theorem links of source nodes that have definition links to the
+target node to be deleted may be theorem links created by global decomposition
+which should be deleted, too.
+
+So, when deleting a node, let's delete the edges in reverse order of their
+creation. remove:
+
+  - (outgoing) local theorem links (with reversal of "local-inference")
+    whose corresponding global theorem link has only this local theorem link
+    as proof basis.
+
+    - sentences in targets are removed (or the target is deleted node anyway)
+      (if the local theorem was proven)
+
+    - corresponding global theorem links become unproven again and loose
+      their proof basis (or are deleted together with the node)
+
+  - unproven global theorem links (with reversal of "global-decomposition")
+
+    - the proof basis of other proven global theorem links with the same
+      target is reduced and marked as incomplete (since a corresponding local
+      theorem link and the definition link is not deleted yet).
+
+  - so proven global theorems links are removed after removing the links in
+    their proof basis first
+
+  - outgoing definition links
+
+    - target nodes need to be marked as reduced (outgoing global theorem links
+      may become complete again)
+
+      (Proofs relying on imported axioms become invalid, provided the sentence
+      are still well-formed in the reduced signature)
+
+  - ingoing definition links
+    this just marks the current node as reduced which will be deleted later
+
+Later on reduced nodes need to be re-computed possibly causing depending nodes
+to become reduced. Incomplete global theorem links need to be completed (by
+the user).
 
 If the node index is unknown then auxiliary functions (or a mapping between
 node names and node indices) can be supplied to delete nodes by name. -}
@@ -102,9 +147,9 @@ Edge-ids maybe reused.
 
 Local theorem links are proven by moving sentences from the source to target
 node and changing them to theorems. So if such a proven local theorem link is
-removed the target node needs to be adjusted, too.
+removed the target node needs to be reduced, too.
 
-target nodes of definition links need new signature computations.
+target nodes of definition links are "reduced" (see deleteDGNode)
 
 -}
 
@@ -116,6 +161,22 @@ deleteDGLink = undefined
 Morphisms do not store source and target signatures. Only the source signature
 is taken from the node. The induced signature of the morphism will be a
 subsignature of the target signature.
+
+- adding an (unproven) global theorem link:
+
+  this states that more theorems are supposed to hold in target nodes.
+
+- adding a global definition link:
+
+  - the signature of the target is enlarged (Proofs remain valid).
+
+  - proven outgoing global theorem links for new ingoing definition links may
+    become unproven and incomplete
+
+  - outgoing local theorem links for new ingoing definition links add proof
+    obligations the target nodes of the local theorem links.
+    Additional theorems need to be moved or we mark the proven local theorem
+    link as incomplete.
 
 The link type may also contain a conservativity and isn't easy to set up for
 free and hiding links. The origin is again basically for documentation
