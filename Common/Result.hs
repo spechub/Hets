@@ -31,6 +31,7 @@ module Common.Result
   , debug
   , plain_error
   , warning
+  , justWarn
   , hint
   , message
   , maybeToResult
@@ -174,6 +175,10 @@ plain_error x s p = Result [Diag Error s p] $ Just x
 -- | add a warning
 warning :: a -> String -> Range -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x
+
+-- | just add a warning without position information
+justWarn :: a -> String -> Result a
+justWarn x s = warning x s nullRange
 
 -- | add a hint
 hint :: a -> String -> Range -> Result a
