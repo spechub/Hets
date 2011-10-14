@@ -55,10 +55,7 @@ insertDGLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 insertDGLEdge edge dgraph =
   case tryToGetEdge edge dgraph of
     Nothing -> changeDGH dgraph $ InsertEdge edge
-    Just ne ->
-        if elem (getEdgeId edge) [defaultEdgeId, getEdgeId ne]
-        then dgraph
-        else error "Proofs.EdgeUtils.insertDGLEdge"
+    Just _ -> dgraph
 
 -- | get the edge id out of a given edge
 getEdgeId :: LEdge DGLinkLab -> EdgeId

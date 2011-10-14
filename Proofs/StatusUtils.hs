@@ -33,15 +33,13 @@ import Data.List
     an undo operation
 -}
 
--- -------------------------------
--- methods used in several proofs
--- -------------------------------
+-- * methods used in several proofs
 
-{- returns the history that belongs to the given library name -}
+-- | returns the history that belongs to the given library name
 lookupHistory :: LibName -> LibEnv -> ProofHistory
 lookupHistory ln = clearHist . proofHistory . lookupDGraph ln
 
--- clear label lock
+-- | clear label lock
 clr :: DGNodeLab -> DGNodeLab
 clr l = l { dgn_lock = Nothing }
 
@@ -60,13 +58,10 @@ clearElem e = case e of
   HistElem c -> HistElem $ clearLock c
   HistGroup r h -> HistGroup r $ clearHist h
 
--- ----------------------------------------------
--- methods that keep the change list clean
--- ----------------------------------------------
+-- * methods that keep the change list clean
 
 {- | remove the contray changes out of the list if it's necessary,
-     so that the list can stay clean.
--}
+so that the list can stay clean. -}
 removeContraryChanges :: [DGChange] -> [DGChange]
 removeContraryChanges cs = case cs of
   [] -> []
@@ -109,18 +104,22 @@ removeContraryChanges cs = case cs of
              _ -> recurse
     InsertEdge e1 -> let
         (r1, r2) = break (\ c2 -> case c2 of
-            DeleteEdge e2 -> e1 == e2
+            DeleteEdge e2 -> eqDGLEdge e1 e2
             _ -> False) r
         in case r2 of
              [] -> recurse
              _ : r3 -> removeContraryChanges $ r1 ++ r3
     DeleteEdge e1 -> let
         (r1, r2) = break (\ c2 -> case c2 of
-            InsertEdge e2 -> e1 == e2
+            InsertEdge e2 -> eqDGLEdge e1 e2
             _ -> False) r
         in case r2 of
              [] -> recurse
              _ : r3 -> removeContraryChanges $ r1 ++ r3
+
+eqDGLEdge :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
+eqDGLEdge (s1, t1, l1) (s2, t2, l2) = (s1, t1) == (s2, t2)
+  && eqDGLinkLabContent l1 l2
 
 {- | check if the given edge is an identity edge, namely a loop
      from a node to itself with an identity morphism. -}

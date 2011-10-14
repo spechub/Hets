@@ -87,7 +87,7 @@ import Driver.AnaLib (anaLib)
 
 import Data.IORef
 import Data.Char (toLower)
-import Data.List (partition, delete, isPrefixOf)
+import Data.List (partition, deleteBy, isPrefixOf)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
@@ -200,7 +200,7 @@ hideEdgesAux dg = map dgl_id
            )
   $ foldl (\ e c -> case c of
                       InsertEdge (_, _, lbl) -> lbl : e
-                      DeleteEdge (_, _, lbl) -> delete lbl e
+                      DeleteEdge (_, _, lbl) -> deleteBy eqDGLinkLabById lbl e
                       _ -> e
           ) [] $ flattenHistory (SizedList.toList $ proofHistory dg) []
 

@@ -75,6 +75,43 @@ listDGNodeTypes = let bs = [False, True] in
   , proven <- bs
   , spec <- bs ]
 
+-- | node modifications
+data NodeMod = NodeMod
+  { delAx :: Bool
+  , delTh :: Bool
+  , addSen :: Bool
+  , delSym :: Bool
+  , addSym :: Bool }
+  deriving (Show, Eq)
+
+-- | an unmodified node
+unMod :: NodeMod
+unMod = NodeMod False False False False False
+
+delAxMod :: NodeMod
+delAxMod = unMod { delAx = True }
+
+delThMod :: NodeMod
+delThMod = unMod { delTh = True }
+
+delSenMod :: NodeMod
+delSenMod = delAxMod { delTh = True }
+
+addSenMod :: NodeMod
+addSenMod = unMod { addSen = True }
+
+senMod :: NodeMod
+senMod = delSenMod { addSen = True }
+
+delSymMod :: NodeMod
+delSymMod = unMod { delSym = True }
+
+addSymMod :: NodeMod
+addSymMod = unMod { addSym = True }
+
+symMod :: NodeMod
+symMod = delSymMod { addSym = True }
+
 -- ** edge types
 
 -- | unique number for edges

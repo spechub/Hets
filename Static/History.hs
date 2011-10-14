@@ -153,7 +153,7 @@ updateDGOnly :: DGraph -> DGChange -> (DGraph, DGChange)
 updateDGOnly g c =
   case c of
     InsertNode n -> (updRefInfo n $ insLNodeDG n g, InsertNode n)
-    DeleteNode n -> (delLNodeDG n g, DeleteNode n)
+    DeleteNode n@(i, _) -> (delNodeDG i g, DeleteNode n)
     InsertEdge e -> let (newEdge, ng) = insLEdgeDG e g in
       (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)

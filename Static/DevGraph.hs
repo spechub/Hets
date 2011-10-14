@@ -37,6 +37,7 @@ import Syntax.AS_Structured
 import Syntax.AS_Library
 import Static.GTheory
 import Static.DgUtils
+import qualified Static.XGraph as XGraph
 
 import Logic.Logic
 import Logic.ExtSign
@@ -55,7 +56,6 @@ import Common.LibName
 import Common.Consistency
 
 import Control.Concurrent.MVar
-import Control.Exception (assert)
 
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Graph as Graph
@@ -150,12 +150,14 @@ data DGNodeLab =
   , dgn_freenf :: Maybe Node -- normal form for freeness
   , dgn_phi :: Maybe GMorphism -- morphism from signature to nffree signature
   , nodeInfo :: DGNodeInfo
+  , nodeMod :: NodeMod
+  , xnode :: Maybe XGraph.XNode
   , dgn_lock :: Maybe (MVar ())
   , dgn_symbolpathlist :: G_symbolmap [SLinkPath]
-  } deriving (Show, Eq)
+  }
 
-instance Show (MVar a) where
-  show _ = ""
+instance Show DGNodeLab where
+  show _ = "<a DG node label>"
 
 isDGRef :: DGNodeLab -> Bool
 isDGRef l = case nodeInfo l of
@@ -274,7 +276,10 @@ data DGLinkLab = DGLink
   , dglPending :: Bool        -- open proofs of edges in proof basis
   , dgl_id :: EdgeId          -- id of the edge
   , dglName :: String         -- name of the edge
-  } deriving (Show, Eq)
+  }
+
+instance Show DGLinkLab where
+  show _ = "<a DG link label>"
 
 mkDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> String -> EdgeId
          -> DGLinkLab
@@ -602,15 +607,13 @@ data DGChange =
   | DeleteEdge (LEdge DGLinkLab)
   -- it contains the old label and new label with node
   | SetNodeLab DGNodeLab (LNode DGNodeLab)
-  deriving (Show, Eq)
+  deriving Show
 
 data HistElem =
     HistElem DGChange
   | HistGroup DGRule ProofHistory
-    deriving (Show, Eq)
 
 type ProofHistory = SizedList.SizedList HistElem
-
 
 -- datatypes for the refinement tree
 
@@ -818,7 +821,10 @@ data DGraph = DGraph
   , morMap :: Map.Map MorId G_morphism -- ^ morphism map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
-  } deriving Show
+  }
+
+instance Show DGraph where
+  show _ = "<a development graph>"
 
 emptyDG :: DGraph
 emptyDG = DGraph
@@ -916,6 +922,8 @@ newInfoNodeLab name info gTh@(G_theory lid _ _ _ _) = DGNodeLab
   , dgn_freenf = Nothing
   , dgn_phi = Nothing
   , nodeInfo = info
+  , nodeMod = unMod
+  , xnode = Nothing
   , dgn_lock = Nothing
   , dgn_symbolpathlist = G_symbolmap lid Map.empty }
 
@@ -949,14 +957,11 @@ eqDGLinkLabContent :: DGLinkLab -> DGLinkLab -> Bool
 eqDGLinkLabContent l1 l2 = let
     i1 = dgl_id l1
     i2 = dgl_id l2
-  in if i1 <= defaultEdgeId || i2 <= defaultEdgeId then
-    dgl_morphism l1 == dgl_morphism l2
+  in (i1 <= defaultEdgeId || i2 <= defaultEdgeId || i1 == i2)
+  && dgl_morphism l1 == dgl_morphism l2
   && dgl_type l1 == dgl_type l2
   && dgl_origin l1 == dgl_origin l2
   && dglName l1 == dglName l2
-  else let r = eqDGLinkLabContent l1 l2 { dgl_id = defaultEdgeId}
-           s = i1 == i2
-       in assert (r == s) s
 
 -- | equality comparing ids only
 eqDGLinkLabById :: DGLinkLab -> DGLinkLab -> Bool
@@ -1180,10 +1185,6 @@ labelNodeDG p g =
 -- | delete the node out of the given DG
 delNodeDG :: Node -> DGraph -> DGraph
 delNodeDG n dg = dg { dgBody = delNode n $ dgBody dg }
-
--- | delete the LNode out of the given DG
-delLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
-delLNodeDG n dg = dg { dgBody = Tree.delLNode (==) n $ dgBody dg }
 
 -- | delete a list of nodes out of the given DG
 delNodesDG :: [Node] -> DGraph -> DGraph

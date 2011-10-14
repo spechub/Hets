@@ -27,9 +27,8 @@ import Static.DgUtils
 import Static.GTheory (gEnsuresAmalgamability)
 import Static.History
 
-
 import Data.Graph.Inductive.Graph (LEdge, LNode)
-import Data.List (nubBy, nub)
+import Data.List (nubBy)
 import qualified Data.Map as Map
 
 -- * Conservativity rules
@@ -91,12 +90,12 @@ shift dg = groupHistory dg (DGRule "conservativityShift") $
       [ (e1, e2)
       | e1@(s1, t1, _) <- consEdgs
       , e2@(s2, t2, _) <- globThmEdges
-      , e1 /= e2, s1 == s2, t1 /= s1, t2 /= s2 ]
+      , s1 == s2, t1 /= s1, t2 /= s2, not (eqDGLEdge e1 e2) ]
     pairs2 = nubBy nubPair
       [ (e3, e4)
       | e3@(_, t3, _) <- edgs
       , e4@(_, t4, _) <- edgs
-      , e3 /= e4 && t3 == t4 ]
+      , t3 == t4, not (eqDGLEdge e3 e4) ]
     quads = filter (isAmalgamable dg) $
             filter (isolated edgs . snd) $ map posQuad
       [ ((e1, e2), (e3, e4))
@@ -125,7 +124,12 @@ isAmalgamable dg ((e1@(s1, _, _), e2), (e3@(s3, _, l3), e4@(s4, t4, l4))) =
 
 -- Checks wether a pair is duplicate.
 nubPair :: Pair -> Pair -> Bool
-nubPair (e1, e2) (e3, e4) = e1 == e3 && e2 == e4 || e1 == e4 && e2 == e3
+nubPair (e1, e2) (e3, e4) = eqDGLEdge e1 e3 && eqDGLEdge e2 e4
+ || eqDGLEdge e1 e4 && eqDGLEdge e2 e3
+
+eqDGLEdge :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
+eqDGLEdge (s1, t1, l1) (s2, t2, l2) = (s1, t1) == (s2, t2)
+  && eqDGLinkLabById l1 l2
 
 {- Positions a quad so that the e4 edge is the one whose source node is the
 target node of e2. Also checks if the e4 has no conservativity value. -}
@@ -139,8 +143,8 @@ posQuad q@((e1@(_, t1, _), e2@(_, t2, _)), (e3@(s3, _, _), e4))
 Both edges of the pair have the same target node. -}
 isolated :: [LEdge DGLinkLab] -> Pair -> Bool
 isolated edgs (e1@(_, t1, _), e2) =
-  not $ any (\ x@(_, t, _) -> x /= e1 && x /= e2 && t == t1 ) $
-  filter (liftE isGlobalDef) edgs
+  not $ any (\ x@(_, t, _) -> t == t1 && not (eqDGLEdge x e1)
+             && not (eqDGLEdge x e2)) $ filter (liftE isGlobalDef) edgs
 
 {- First get all free links in the graph. Then all cons links.
 When the free and cons link point to the same node, the cons link is upgraded
@@ -151,7 +155,8 @@ freeIsMono dg = groupHistory dg (DGRule "freeIsMono") $ changesDGH dg changes
     edgs = labEdgesDG dg
     free = filter (liftE isFreeEdge) edgs
     cons = [ e | e <- edgs, liftE isGlobalThm e, getConservativity e == Cons ]
-    mono = nub [ c | c@(_, ct, _) <- cons, (_, ft, _) <- free, ct == ft ]
+    mono = nubBy eqDGLEdge
+           [ c | c@(_, ct, _) <- cons, (_, ft, _) <- free, ct == ft ]
     changes = concatMap (genEdgeChange
                         (\ (ConsStatus _ pc tl) -> ConsStatus Mono pc tl)) mono
 
