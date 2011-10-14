@@ -191,7 +191,6 @@ mapSentence sig form = Result [] $ Just $ trFormMrs sig form
 -- ignores importations
 trFormMrs :: ClSign.Sign -> ClBasic.TEXT_META -> CBasic.CASLFORMULA
 trFormMrs sig tm = trForm sig $ ClBasic.getText tm
--- TODO: think about including Metarelations in translation
 
 trForm :: ClSign.Sign -> ClBasic.TEXT -> CBasic.CASLFORMULA
 trForm sig form = 
@@ -246,35 +245,41 @@ senForm sig form =
              ClBasic.Universal bs s ->
                CBasic.Quantification CBasic.Universal
                [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-               (senForm sig s) rn -- FIX
+               (senForm sig s) rn
              ClBasic.Existential bs s ->
                CBasic.Quantification CBasic.Existential
                [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-               (senForm sig s) rn -- FIX
+               (senForm sig s) rn
      ClBasic.Atom_sent at rn
         -> case at of
              ClBasic.Equation trm1 trm2 ->
-                CBasic.Strong_equation (termForm trm1) (termForm trm2) rn
+                CBasic.Strong_equation (termForm sig trm1) (termForm sig trm2) rn
              ClBasic.Atom trm ts -> CBasic.Predication
                                        (CBasic.Qual_pred_name rel
                                        (CBasic.Pred_type [individual, list]
                                         Id.nullRange)
-                                        Id.nullRange) ([termForm trm] ++
+                                        Id.nullRange) ([termForm sig trm] ++
                                     (consSeq sig ts) : []) Id.nullRange
-     ClBasic.Comment_sent _ s _ -> senForm sig s -- FIX
-     ClBasic.Irregular_sent s _ -> senForm sig s -- FIX
+     ClBasic.Comment_sent _ s _ -> senForm sig s
+     ClBasic.Irregular_sent s _ -> senForm sig s
 
-termForm :: ClBasic.TERM -> CBasic.TERM a
-termForm trm = case trm of
+termForm :: ClSign.Sign -> ClBasic.TERM -> CBasic.TERM a
+termForm sig trm = case trm of
                  ClBasic.Name_term name -> CBasic.Application
                      (CBasic.Qual_op_name (Id.simpleIdToId name)
                        (CBasic.Op_type CBasic.Total [] individual Id.nullRange)
                        Id.nullRange)
                      [] $ Id.tokPos name
-                 -- ClBasic.Name_term name -> CBasic.Qual_var name individual
-                 -- Id.nullRange
-                 ClBasic.Funct_term term _ _ -> termForm term -- FIX
-                 ClBasic.Comment_term term _ _ -> termForm term -- FIX
+                 ClBasic.Funct_term term ts _ ->
+                    CBasic.Application
+                        (CBasic.Qual_op_name fun
+                          (CBasic.Op_type
+                            CBasic.Total [individual, list]
+                            individual Id.nullRange)
+                          Id.nullRange)
+                        ([termForm sig term] ++
+                          (consSeq sig ts) : []) Id.nullRange
+                 ClBasic.Comment_term term _ _ -> termForm sig term
 
 consSeq :: ClSign.Sign -> [ClBasic.TERM_SEQ] -> CBasic.TERM a
 consSeq _ [] = CBasic.Application (CBasic.Qual_op_name nil
@@ -286,11 +291,10 @@ consSeq sig (x : xs) = CBasic.Application (CBasic.Qual_op_name cons
 
 termSeqForm :: ClSign.Sign -> ClBasic.TERM_SEQ -> CBasic.TERM a
 termSeqForm sig ts = case ts of
-        -- ClBasic.Term_seq trm -> termForm trm
         ClBasic.Term_seq trm -> case trm of
              ClBasic.Name_term name -> if not subSig then
                 CBasic.Qual_var name individual Id.nullRange else
-                    termForm trm
+                    termForm sig trm
                where subSig = ClSign.isSubSigOf new sig
                      new    = ClSign.Sign
                          {
@@ -298,8 +302,8 @@ termSeqForm sig ts = case ts of
                          , ClSign.discourseItems = Set.singleton $
                                Id.simpleIdToId name
                          }
-             ClBasic.Funct_term term _ _ -> termForm term
-             ClBasic.Comment_term term _ _ -> termForm term
+             ClBasic.Funct_term term _ _ -> termForm sig term
+             ClBasic.Comment_term term _ _ -> termForm sig term
         ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
 
 bindingSeq :: ClBasic.NAME_OR_SEQMARK -> CBasic.VAR

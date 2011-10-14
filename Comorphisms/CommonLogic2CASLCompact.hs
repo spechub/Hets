@@ -81,9 +81,9 @@ instance Comorphism
       sourceLogic CommonLogic2CASLCompact = ClLogic.CommonLogic
       sourceSublogic CommonLogic2CASLCompact = ClSl.top
       targetLogic CommonLogic2CASLCompact = CLogic.CASL
-      mapSublogic CommonLogic2CASLCompact = Just . mapSub -- Just . mapSub
-      map_theory CommonLogic2CASLCompact = mapTheory -- TODO
-      map_morphism CommonLogic2CASLCompact = mapMor  -- TODO prop
+      mapSublogic CommonLogic2CASLCompact = Just . mapSub
+      map_theory CommonLogic2CASLCompact = mapTheory
+      map_morphism CommonLogic2CASLCompact = mapMor
       map_sentence CommonLogic2CASLCompact = mapSentence
       has_model_expansion CommonLogic2CASLCompact = True
 
@@ -126,11 +126,7 @@ mapTheory (sig, form) =
 mapSig :: ArityMap -> ClSign.Sign -> CSign.CASLSign
 mapSig arities sign =
   let constOpMap = Set.fold (\x res -> -- get constants
-        {- let n = Id.tokStr $ head $ Id.getTokens x -- CommonLogic only has prefix items --> getTokens yields a singleton list
-        in  if (Set.null $ MapSet.lookup (n, Pred) arities)
-               && (Set.null $ MapSet.lookup (n, Func) arities)
-            then -}MapSet.insert x (CSign.mkTotOpType [] individual) res{-
-            else res-}
+          MapSet.insert x (CSign.mkTotOpType [] individual) res
         ) MapSet.empty $ ClSign.items sign
       (pm, om) = MapSet.foldWithKey (\(n,t) ar (preds, ops) ->
           case t of
@@ -222,32 +218,25 @@ senForm form = case form of
       Cl.Universal bs s ->
           CBasic.Quantification CBasic.Universal
             [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-            (senForm s) rn -- FIX
+            (senForm s) rn
       Cl.Existential bs s ->
           CBasic.Quantification CBasic.Existential
             [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-            (senForm s) rn -- FIX
+            (senForm s) rn
   Cl.Atom_sent at rn -> case at of
       Cl.Equation trm1 trm2 ->
           CBasic.Strong_equation (termForm trm1) (termForm trm2) rn
       Cl.Atom trm tseqs -> 
           CBasic.Predication (termFormPrd trm) (map termSeqForm tseqs) rn
-  Cl.Comment_sent _ s _ -> senForm s -- FIX
-  Cl.Irregular_sent s _ -> senForm s -- FIX
+  Cl.Comment_sent _ s _ -> senForm s
+  Cl.Irregular_sent s _ -> senForm s
 
 termForm :: Cl.TERM -> CBasic.TERM a
 termForm trm = case trm of
   Cl.Name_term _ -> CBasic.Application (termFormApp trm) [] Id.nullRange
-{-      CBasic.Application
-        (CBasic.Qual_op_name (Id.simpleIdToId name)
-          (CBasic.Op_type CBasic.Total [] individual Id.nullRange)
-          Id.nullRange)
-        [] $ Id.tokPos name-}
-  -- Cl.Name_term name -> CBasic.Qual_var name individual
-  -- Id.nullRange
   Cl.Funct_term term tseqs rn ->
       CBasic.Application (termFormApp term) (map termSeqForm tseqs) rn
-  Cl.Comment_term term _ _ -> termForm term -- FIX
+  Cl.Comment_term term _ _ -> termForm term
 
 termFormApp :: Cl.TERM -> CBasic.OP_SYMB
 termFormApp trm = case trm of
