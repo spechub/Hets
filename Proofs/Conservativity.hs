@@ -18,6 +18,7 @@ import Common.Amalgamate (Amalgamates (Amalgamates), CASLAmalgOpt (..))
 import Common.Consistency
 import Common.LibName (LibName)
 import Common.Result (resultToMaybe)
+import Common.Utils (nubOrdOn)
 
 import Proofs.EdgeUtils (getAllPathsOfTypeFrom)
 import Proofs.ComputeColimit (makeDiagram)
@@ -28,7 +29,6 @@ import Static.GTheory (gEnsuresAmalgamability)
 import Static.History
 
 import Data.Graph.Inductive.Graph (LEdge, LNode)
-import Data.List (nubBy)
 import qualified Data.Map as Map
 
 -- * Conservativity rules
@@ -86,12 +86,12 @@ shift dg = groupHistory dg (DGRule "conservativityShift") $
     edgs = filter (liftE isGlobalEdge) $ labEdgesDG dg
     globThmEdges = filter (liftE isGlobalThm) edgs
     consEdgs = [ e | e <- globThmEdges, getConservativity e > None ]
-    pairs1 = nubBy nubPair
+    pairs1 = nubOrdOn pairInd
       [ (e1, e2)
       | e1@(s1, t1, _) <- consEdgs
       , e2@(s2, t2, _) <- globThmEdges
       , s1 == s2, t1 /= s1, t2 /= s2, not (eqDGLEdge e1 e2) ]
-    pairs2 = nubBy nubPair
+    pairs2 = nubOrdOn pairInd
       [ (e3, e4)
       | e3@(_, t3, _) <- edgs
       , e4@(_, t4, _) <- edgs
@@ -122,10 +122,12 @@ isAmalgamable dg ((e1@(s1, _, _), e2), (e3@(s3, _, l3), e4@(s4, t4, l4))) =
     diag = makeDiagram dg [s1, s3, s4, t4] [e1, e2, e3, e4]
     amal = gEnsuresAmalgamability [ColimitThinness, Cell] diag sink
 
--- Checks wether a pair is duplicate.
-nubPair :: Pair -> Pair -> Bool
-nubPair (e1, e2) (e3, e4) = eqDGLEdge e1 e3 && eqDGLEdge e2 e4
- || eqDGLEdge e1 e4 && eqDGLEdge e2 e3
+-- | Checks whether a pair is duplicate (disregarding pair order).
+pairInd :: Pair -> ((Int, Int, EdgeId), (Int, Int, EdgeId))
+pairInd ((s1, t1, l1), (s2, t2, l2)) =
+  let e1 = (s1, t1, dgl_id l1)
+      e2 = (s2, t2, dgl_id l2)
+  in if e1 < e2 then (e1, e2) else (e2, e1)
 
 eqDGLEdge :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
 eqDGLEdge (s1, t1, l1) (s2, t2, l2) = (s1, t1) == (s2, t2)
@@ -155,7 +157,7 @@ freeIsMono dg = groupHistory dg (DGRule "freeIsMono") $ changesDGH dg changes
     edgs = labEdgesDG dg
     free = filter (liftE isFreeEdge) edgs
     cons = [ e | e <- edgs, liftE isGlobalThm e, getConservativity e == Cons ]
-    mono = nubBy eqDGLEdge
+    mono = nubOrdOn (\ (s, t, l) -> (s, t, dgl_id l))
            [ c | c@(_, ct, _) <- cons, (_, ft, _) <- free, ct == ft ]
     changes = concatMap (genEdgeChange
                         (\ (ConsStatus _ pc tl) -> ConsStatus Mono pc tl)) mono
