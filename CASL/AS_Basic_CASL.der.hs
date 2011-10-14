@@ -174,11 +174,21 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
              -- needed for CASL extensions
                deriving (Show, Eq, Ord)
 
-is_True_atom, is_False_atom :: FORMULA f -> Bool
-is_True_atom (True_atom _) = True
-is_True_atom _ = False
-is_False_atom (False_atom _) = True
-is_False_atom _ = False
+is_True_atom :: FORMULA f -> Bool
+is_True_atom f = case f of
+  True_atom _ -> True
+  _ -> False
+
+is_False_atom :: FORMULA f -> Bool
+is_False_atom f = case f of
+  False_atom _ -> True
+  _ -> False
+
+trueForm :: FORMULA f
+trueForm = True_atom nullRange
+
+falseForm :: FORMULA f
+falseForm = False_atom nullRange
 
 {- In the CASL institution, sort generation constraints have an
 additional signature morphism component (Sect. III:2.1.3, p.134 of the

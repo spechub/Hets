@@ -135,9 +135,9 @@ insertSen qm sen = if not $ AS_Anno.isAxiom sen then qm else
   in case stripAllQuant f of
   -- insert a predicate or operation definition into a QModel
    Predication predsymb args _ ->
-     insertPred predsymb args (True_atom nullRange) qm1
+     insertPred predsymb args trueForm qm1
    Negation (Predication predsymb args _) _ ->
-     insertPred predsymb args (False_atom nullRange) qm1
+     insertPred predsymb args falseForm qm1
    Equivalence (Predication predsymb args _) body _ ->
      insertPred predsymb args body qm1
    Strong_equation (Application opsymb args _) body _ ->
@@ -147,16 +147,16 @@ insertSen qm sen = if not $ AS_Anno.isAxiom sen then qm else
    {- treat equality as special predicate symbol, for detecting inequalities
    also exploit that inequality is symmetric -}
    Negation (Strong_equation t1 t2 _) _ ->
-     insertPred eqSymb [t1, t2] (False_atom nullRange) $
-       insertPred eqSymb [t2, t1] (False_atom nullRange) qm1
+     insertPred eqSymb [t1, t2] falseForm $
+       insertPred eqSymb [t2, t1] falseForm qm1
    Negation (Existl_equation t1 t2 _) _ ->
-     insertPred eqSymb [t1, t2] (False_atom nullRange) $
-       insertPred eqSymb [t2, t1] (False_atom nullRange) qm1
+     insertPred eqSymb [t1, t2] falseForm $
+       insertPred eqSymb [t2, t1] falseForm qm1
    _ -> qm1
 
 -- | predicate symbol for equality (with dummy type)
 eqSymb :: PRED_SYMB
-eqSymb = Qual_pred_name eqId (Pred_type [] nullRange) nullRange
+eqSymb = mkQualPred eqId (Pred_type [] nullRange)
 
 -- * Variable assignments
 
@@ -216,7 +216,7 @@ applyOperation qm ass opsymb terms = do
   -- block infinite recursion
   when ((opsymb, terms) `elem` evaluatedOps qm)
        (fail ("infinite recursion when calculating"
-              ++ show (Application opsymb terms nullRange)))
+              ++ show (mkAppl opsymb terms)))
   let qm' = qm { evaluatedOps = (opsymb, terms) : evaluatedOps qm }
   -- evaluate argument terms
   args <- mapM (calculateTerm qm' ass) terms
@@ -224,11 +224,11 @@ applyOperation qm ass opsymb terms = do
   case Map.lookup opsymb (opDefs qm) of
     Nothing ->
       -- no operation definition? Then return unevaluated term
-      return (Application opsymb terms nullRange)
+      return (mkAppl opsymb terms)
     Just bodies -> do
       -- bind formal to actual arguments
       (body, m) <- match bodies args $
-                   showDoc (Application opsymb args nullRange) ""
+                   showDoc (mkAppl opsymb args) ""
       let ass' = foldl insertAssignment ass m
       -- evaluate body of operation definition
       calculateTerm qm' ass' body
@@ -319,8 +319,8 @@ calculateFormula isOuter qm varass f = case f of
                (zip (map (calculateFormula False qm varass) formulas) formulas)
        when isOuter $ case maybeResult res of
          Just False ->
-             warning () ("Conjunction not fulfilled\n"
-                         ++ "Formula that failed: " ++ showDoc f1 "") nullRange
+             justWarn () $ "Conjunction not fulfilled\n"
+                         ++ "Formula that failed: " ++ showDoc f1 ""
          _ -> return ()
        res
     Disjunction formulas _ ->
@@ -362,8 +362,8 @@ calculateQuantification isOuter qm varass qf = case qf of
                                           (zip resList assments')
         when isOuter $ case maybeResult res of
           Just False ->
-              warning () ("Universal quantification not fulfilled\n"
-                          ++ "Counterexample: " ++ show fass) nullRange
+              justWarn () ("Universal quantification not fulfilled\n"
+                          ++ "Counterexample: " ++ show fass)
           _ -> return ()
         res
       Existential ->
@@ -391,15 +391,15 @@ calculateQuantification isOuter qm varass qf = case qf of
           Right (msgs, Nothing) -> do
             Result msgs (Just ())
             when isOuter
-              (warning () ("Unique Existential quantification"
-                           ++ " not fulfilled: no assignment found") nullRange)
+              (justWarn () ("Unique Existential quantification"
+                           ++ " not fulfilled: no assignment found"))
             return False
           Left (msgs, Just (ass1, ass2)) -> do
             Result msgs (Just ())
             when isOuter
-              (warning () ("Unique Existential quantification"
+              (justWarn () ("Unique Existential quantification"
                 ++ " not fulfilled: at least two assignments found:\n"
-                ++ show ass1 ++ "\n" ++ show ass2 ++ "\n") nullRange)
+                ++ show ass1 ++ "\n" ++ show ass2 ++ "\n"))
             return False
           Left (msgs, Nothing) ->
             Result msgs Nothing
@@ -411,7 +411,7 @@ applyPredicate qm ass predsymb terms = do
   -- block infinite recursion
   when (elem (predsymb, terms) $ evaluatedPreds qm)
        (fail ("infinite recursion when calculating"
-              ++ show (Predication predsymb terms nullRange)))
+              ++ show (mkPredication predsymb terms)))
   let qm' = qm { evaluatedPreds = (predsymb, terms) : evaluatedPreds qm }
   -- evaluate argument terms
   args <- mapM (calculateTerm qm' ass) terms
@@ -421,7 +421,7 @@ applyPredicate qm ass predsymb terms = do
     Just bodies -> do
       -- bind formal to actual arguments
       (body, m) <- match bodies args $
-                   showDoc (Predication predsymb args nullRange) ""
+                   showDoc (mkPredication predsymb args) ""
       let ass' = foldl insertAssignment ass m
       -- evaluate body of predicate definition
       calculateFormula False qm' ass' body
@@ -460,7 +460,7 @@ termSort (Sort_gen_ax constr _) =
     where (sorts, ops, _) = recover_Sort_gen_ax constr
           constant (Qual_op_name _ (Op_type _ [] _ _) _) = True
           constant _ = False
-          mkTerm op = Application op [] nullRange
+          mkTerm op = mkAppl op []
 -- axiom forcing empty carrier
 termSort (Quantification Universal [Var_decl [_] s _] (False_atom _) _) =
   Just (s, [])
