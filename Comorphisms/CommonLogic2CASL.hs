@@ -197,12 +197,20 @@ trForm :: ClSign.Sign -> ClBasic.TEXT -> CBasic.CASLFORMULA
 trForm sig form = 
    case form of
      ClBasic.Text phrs rn ->
-        CBasic.Conjunction (map (phraseForm sig) (filter nonImport phrs)) rn
+        let ps = filter nonImportAndNonEmpty phrs in
+        if null ps then CBasic.True_atom Id.nullRange else
+        CBasic.Conjunction (map (phraseForm sig) ps) rn
      ClBasic.Named_text _ t _ -> trForm sig t
-   where nonImport :: ClBasic.PHRASE -> Bool
-         nonImport p = case p of
+   where nonImportAndNonEmpty :: ClBasic.PHRASE -> Bool
+         nonImportAndNonEmpty p = case p of
             ClBasic.Importation _ -> False
+            ClBasic.Comment_text _ t _ -> not $ isTextEmpty t
             _ -> True
+         isTextEmpty :: ClBasic.TEXT -> Bool
+         isTextEmpty txt = case txt of
+            ClBasic.Named_text _ t _ -> isTextEmpty t
+            ClBasic.Text [] _ -> True
+            _ -> False
 
 phraseForm :: ClSign.Sign -> ClBasic.PHRASE -> CBasic.CASLFORMULA
 phraseForm sig phr =
@@ -223,6 +231,8 @@ senForm sig form =
      ClBasic.Bool_sent bs rn
         -> case bs of
              ClBasic.Negation s -> CBasic.Negation (senForm sig s) rn
+             ClBasic.Conjunction [] -> CBasic.True_atom Id.nullRange
+             ClBasic.Disjunction [] -> CBasic.True_atom Id.nullRange
              ClBasic.Conjunction ss ->
                 CBasic.Conjunction (map (senForm sig) ss) rn
              ClBasic.Disjunction ss ->

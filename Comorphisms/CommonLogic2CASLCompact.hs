@@ -165,65 +165,75 @@ individual = Id.stringToId "individual"
 -- todo maybe input here axioms
 trNamedForm :: ClSign.Sign -> AS_Anno.Named (Cl.TEXT_META)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
-trNamedForm sig form = AS_Anno.mapNamed (trFormMrs sig) form
+trNamedForm _ form = AS_Anno.mapNamed trFormMrs form
 
 mapSentence :: ClSign.Sign -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
-mapSentence sig form = Result [] $ Just $ trFormMrs sig form
+mapSentence _ form = Result [] $ Just $ trFormMrs form
 
 -- ignores importations
-trFormMrs :: ClSign.Sign -> Cl.TEXT_META -> CBasic.CASLFORMULA
-trFormMrs sig tm = trForm sig $ Cl.getText tm
+trFormMrs :: Cl.TEXT_META -> CBasic.CASLFORMULA
+trFormMrs tm = trForm $ Cl.getText tm
 
-trForm :: ClSign.Sign -> Cl.TEXT -> CBasic.CASLFORMULA
-trForm sig form =
+trForm ::Cl.TEXT -> CBasic.CASLFORMULA
+trForm form =
    case form of
      Cl.Text phrs rn ->
-        CBasic.Conjunction (map (phraseForm sig) (filter nonImport phrs)) rn
-     Cl.Named_text _ t _ -> trForm sig t
-   where nonImport :: Cl.PHRASE -> Bool
-         nonImport p = case p of
+        let ps = filter nonImportAndNonEmpty phrs in
+        if null ps then CBasic.True_atom Id.nullRange else
+        CBasic.Conjunction (map phraseForm ps) rn
+     Cl.Named_text _ t _ -> trForm t
+   where nonImportAndNonEmpty :: Cl.PHRASE -> Bool
+         nonImportAndNonEmpty p = case p of
             Cl.Importation _ -> False
+            Cl.Comment_text _ t _ -> not $ isTextEmpty t
             _ -> True
+         isTextEmpty :: Cl.TEXT -> Bool
+         isTextEmpty txt = case txt of
+            Cl.Named_text _ t _ -> isTextEmpty t
+            Cl.Text [] _ -> True
+            _ -> False
 
-phraseForm :: ClSign.Sign -> Cl.PHRASE -> CBasic.CASLFORMULA
-phraseForm sig phr =
+phraseForm :: Cl.PHRASE -> CBasic.CASLFORMULA
+phraseForm phr =
    case phr of
-     Cl.Module m -> moduleForm sig m
-     Cl.Sentence s -> senForm sig s
+     Cl.Module m -> moduleForm m
+     Cl.Sentence s -> senForm s
      Cl.Importation _ -> undefined -- cannot occur, because filtered
-     Cl.Comment_text _ t _ -> trForm sig t
+     Cl.Comment_text _ t _ -> trForm t
 
-moduleForm :: ClSign.Sign -> Cl.MODULE -> CBasic.CASLFORMULA
-moduleForm sig m = case m of
-   Cl.Mod _ txt _ -> trForm sig txt
-   Cl.Mod_ex _ _ txt _ -> trForm sig txt --what to do with the exclusions?
+moduleForm :: Cl.MODULE -> CBasic.CASLFORMULA
+moduleForm m = case m of
+   Cl.Mod _ txt _ -> trForm txt
+   Cl.Mod_ex _ _ txt _ -> trForm txt --what to do with the exclusions?
 
-senForm :: ClSign.Sign -> Cl.SENTENCE -> CBasic.CASLFORMULA
-senForm sig form = case form of
+senForm :: Cl.SENTENCE -> CBasic.CASLFORMULA
+senForm form = case form of
   Cl.Bool_sent bs rn -> case bs of
-      Cl.Negation s -> CBasic.Negation (senForm sig s) rn
-      Cl.Conjunction ss -> CBasic.Conjunction (map (senForm sig) ss) rn
-      Cl.Disjunction ss -> CBasic.Disjunction (map (senForm sig) ss) rn
+      Cl.Negation s -> CBasic.Negation (senForm s) rn
+      Cl.Conjunction [] -> CBasic.True_atom Id.nullRange
+      Cl.Disjunction [] -> CBasic.True_atom Id.nullRange
+      Cl.Conjunction ss -> CBasic.Conjunction (map (senForm) ss) rn
+      Cl.Disjunction ss -> CBasic.Disjunction (map (senForm) ss) rn
       Cl.Implication s1 s2 ->
-          CBasic.Implication (senForm sig s1) (senForm sig s2) True rn
+          CBasic.Implication (senForm s1) (senForm s2) True rn
       Cl.Biconditional s1 s2 ->
-          CBasic.Equivalence (senForm sig s1) (senForm sig s2) rn
+          CBasic.Equivalence (senForm s1) (senForm s2) rn
   Cl.Quant_sent qs rn -> case qs of
       Cl.Universal bs s ->
           CBasic.Quantification CBasic.Universal
             [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-            (senForm sig s) rn -- FIX
+            (senForm s) rn -- FIX
       Cl.Existential bs s ->
           CBasic.Quantification CBasic.Existential
             [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-            (senForm sig s) rn -- FIX
+            (senForm s) rn -- FIX
   Cl.Atom_sent at rn -> case at of
       Cl.Equation trm1 trm2 ->
           CBasic.Strong_equation (termForm trm1) (termForm trm2) rn
       Cl.Atom trm tseqs -> 
           CBasic.Predication (termFormPrd trm) (map termSeqForm tseqs) rn
-  Cl.Comment_sent _ s _ -> senForm sig s -- FIX
-  Cl.Irregular_sent s _ -> senForm sig s -- FIX
+  Cl.Comment_sent _ s _ -> senForm s -- FIX
+  Cl.Irregular_sent s _ -> senForm s -- FIX
 
 termForm :: Cl.TERM -> CBasic.TERM a
 termForm trm = case trm of
