@@ -11,6 +11,7 @@ import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRende
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjectRenderer;
 import org.coode.owlapi.owlxml.renderer.OWLXMLRenderer;
 import org.coode.owlapi.rdf.rdfxml.*;
+import org.coode.owlapi.rdf.model.*;
 
 import java.io.*;
 import java.net.URI;
@@ -49,12 +50,7 @@ public class OWL2Parser {
 						if (args[1].equals("rdf"))
 							OP = 3;
 						else
-						{
-							if (args[1].equals("rdfm"))
-								OP = 4;
-							else
-								OP = 2;
-						}
+							OP = 2;
 					}
 
 			} else {
@@ -65,12 +61,7 @@ public class OWL2Parser {
 						if (args[1].equals("rdf"))
 							OP = 3;
 						else
-						{
-							if (args[1].equals("rdfm"))
-								OP = 4;
-							else
-								OP = 2;
-						}
+							OP = 2;			
 					}
 				}
 				else 
@@ -91,12 +82,7 @@ public class OWL2Parser {
 
 			if(loadedImportsList.size() == 0)
 			{
-				switch (OP) {
-					case 1: parse2xml(ontology, out, manager); 	break;
-					case 2: parse(ontology, out); 			break;
-					case 3: parse2rdf(ontology, out, manager);	break;
-					case 4: parse2RdfModel(ontology, out, manager); break;
-				}
+				parsing_option(ontology, out, manager);
 			}
 
 			else {
@@ -143,13 +129,7 @@ public class OWL2Parser {
 					OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
 
 					ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (manager);
-					
-					switch (OP) {
-					case 1: parse2xml(ontology, out, manager); 	break;
-					case 2: parse(ontology, out); 			break;
-					case 3: parse2rdf(ontology, out, manager);	break;
-					case 4: parse2RdfModel(ontology, out, manager); break;
-					}
+					parsing_option(ontology, out, manager);
 					}
 				else
 					{
@@ -185,10 +165,9 @@ public class OWL2Parser {
 						loadedImportsList.add(imported);
 						importsIRI.add(imported.getOntologyID().getOntologyIRI());
 						l.add(imported);
-
 					}
 				}
-				}
+			}
 			m.put(ontology,l);
 			for (OWLOntology onto : unSavedImports) {
 				getImportsList(onto, om);
@@ -210,14 +189,7 @@ public class OWL2Parser {
 			{
 			OWLOntology ontos = (OWLOntology)itr.next();
 			expanded.add(ontos);
-			if (OP == 1)
-				parse2xml(ontos, out, ontos.getOWLOntologyManager());
-			else 	{
-				if (OP == 2)
-					parse(ontos,out);
-				else
-					parse2rdf(ontos, out, ontos.getOWLOntologyManager());
-			}	
+			parsing_option(ontos, out, ontos.getOWLOntologyManager());
 			s.add(ontos);
 			parseImports(out, ontology);
 			}
@@ -242,18 +214,9 @@ public class OWL2Parser {
 			if(checkset(values)) {
 				if (!expanded.contains(onto))
 					{
-					if (OP == 1)
-						parse2xml(onto, out, onto.getOWLOntologyManager());
-					else	{
-						if (OP == 2)
-							parse(onto,out);
-						else
-							parse2rdf(onto, out, onto.getOWLOntologyManager());
-						}			
-
+					parsing_option (onto, out, onto.getOWLOntologyManager());
 					expanded.add(onto);
 					s.add((OWLOntology)pairs.getKey());
-
 					if (onto.getOntologyID().toString().equals(ontology.getOntologyID().toString()))
 						System.exit(0);
 
@@ -317,6 +280,15 @@ public class OWL2Parser {
      	return keys;
 	}
 
+	public static void parsing_option(OWLOntology onto, BufferedWriter out, OWLOntologyManager mng) {
+		switch (OP) {
+			case 1: parse2xml(onto, out, mng); 	break;
+			case 2: parse(onto, out); 		break;
+			case 3: parse2rdf(onto, out, mng);	break;
+		}
+
+	}
+
 	public static void parse(OWLOntology onto, BufferedWriter out)	{
 		try {
 		ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
@@ -334,16 +306,6 @@ public class OWL2Parser {
 		} catch (OWLRendererException ex)	{
 			System.err.println("Error by XMLParser!");
 			ex.printStackTrace();
-		}
-	}
-
-	public static void parse2RdfModel(OWLOntology onto, BufferedWriter out, OWLOntologyManager mng) {
-		try {
-			RDFXMLRenderer renderer = new RDFXMLRenderer(mng, onto, out);
-			renderer.render();
-		} catch (IOException exc) {
-			System.err.println("Error by RDFModel Parser!");
-			exc.printStackTrace();
 		}
 	}
 
