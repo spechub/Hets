@@ -37,7 +37,7 @@
 	  <attribute name="Title" value="RDF Reasoner"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="RDFReasoner"/>
-	  <attribute name="Class-Path" value="lib/jena-2.6.4.jar lib/slf4j-api-1.5.8.jar lib/xercesImpl-2.7.1.jar lib/arq-2.8.7.jar lib/icu4j-3.4.4.jar lib/iri-0.8.jar lib/junit-4.5.jar lib/log4j-1.2.13.jar lib/lucene-core-2.3.1.jar lib/slf4j-log4j12-1.5.8.jar lib/stax-api-1.0.1.jar lib/wstx-asl-3.2.9.jar"/>
+	  <attribute name="Class-Path" value="lib/arq-2.8.7.jar lib/jena-2.6.4.jar lib/slf4j-api-1.5.8.jar lib/xercesImpl-2.7.1.jar lib/arq-2.8.7.jar lib/icu4j-3.4.4.jar lib/iri-0.8.jar lib/junit-4.5.jar lib/log4j-1.2.13.jar lib/lucene-core-2.3.1.jar lib/slf4j-log4j12-1.5.8.jar lib/stax-api-1.0.1.jar lib/wstx-asl-3.2.9.jar"/>
 	</manifest>
       </jar>
     </target>
@@ -56,5 +56,6 @@
       <copy file="${libdir}/slf4j-log4j12-1.5.8.jar" todir="../lib/"/>
       <copy file="${libdir}/stax-api-1.0.1.jar" todir="../lib/"/>
       <copy file="${libdir}/wstx-asl-3.2.9.jar" todir="../lib/"/>
+      <copy file="${libdir}/arq-2.8.7.jar" todir="../lib/"/>
     </target>
 </project>
