@@ -21,14 +21,12 @@ module Static.ChangeGraph where
 import Static.DgUtils
 import Static.GTheory
 import Static.DevGraph
-import Static.XSimplePath
 
 import Logic.Grothendieck
 
 import Common.AS_Annotation
 import Common.Consistency
 import Common.Result
-import Common.Lib.Graph as Tree
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Set as Set
@@ -162,23 +160,29 @@ deleteDGLink s t i dg = let
   (tarOuts, otherOuts) = partition ((== t) . snd) outs
   in case partition ((== i) . dgl_id . fst) tarOuts of
     ([], _) -> justWarn dg ("link not found: " ++ show (s, t, i))
-    ([(lbl, _)], rs)
-      | isLocalThm $ dgl_type lbl
-        -> do
-      rg2 <- case thmLinkStatus $ dgl_type lbl of
-        Just (Proven (DGRuleLocalInference renms) pb)
-          -> fmap dgBody $ deleteSentence t (\ nSen -> not (isAxiom nSen)
-               && senAttr nSen `elem` map snd renms) dg { dgBody = rg }
-        _ -> return rg
-      -- find global links that contain the edge-id as proof-basis
-      let (gs, others) = partition
-            (\ (el, _) -> isGlobalThm (dgl_type el)
-             && edgeInProofBasis i (getProofBasis el)) rs
-          newGs = map (\ (el, ct) -> (case dgl_type el of
-            ScopedLink Global (ThmLink _) cs ->
-              el { dgl_type = ScopedLink Global (ThmLink LeftOpen) cs }
-            _ -> el, ct)) gs
-      return $ dg { dgBody = (ins, nl, ns, newGs ++ others ++ otherOuts) & rg2 }
+    ([(lbl, _)], rs) -> case dgl_type lbl of
+       ScopedLink lOrG lk _ -> case lOrG of
+         Local -> do
+           rg2 <- case lk of
+             ThmLink (Proven (DGRuleLocalInference renms) _) ->
+               fmap dgBody $ deleteSentence t (\ nSen -> not (isAxiom nSen)
+                 && senAttr nSen `elem` map snd renms) dg { dgBody = rg }
+             _ -> return rg
+           -- find global links that contain the edge-id as proof-basis
+           let (gs, others) = partition
+                 (\ (el, _) -> isGlobalThm (dgl_type el)
+                   && edgeInProofBasis i (getProofBasis el)) rs
+               newGs = map (\ (el, ct) -> (case dgl_type el of
+                 ScopedLink Global (ThmLink _) cs ->
+                   el { dgl_type = ScopedLink Global (ThmLink LeftOpen) cs }
+                 _ -> el, ct)) gs
+           return dg
+             { dgBody = (ins, nl, ns, newGs ++ others ++ otherOuts) & rg2 }
+         Global -> case lk of
+           ThmLink (Proven _ _) -> return dg
+           _ -> return dg
+       _ -> justWarn dg
+            ("unhandled hiding/free/cofree link: " ++ show (s, t, i))
     _ -> justWarn dg ("ambiguous link: " ++ show (s, t, i))
 
 {- | add a link supplying the necessary information.
