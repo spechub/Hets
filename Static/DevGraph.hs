@@ -366,6 +366,11 @@ isUnprovenGlobalThm lt = case lt of
     ScopedLink Global (ThmLink LeftOpen) _ -> True
     _ -> False
 
+isLocalThm :: DGLinkType -> Bool
+isLocalThm edge = case edge of
+    ScopedLink Local (ThmLink _) _ -> True
+    _ -> False
+
 isUnprovenLocalThm :: DGLinkType -> Bool
 isUnprovenLocalThm lt = case lt of
     ScopedLink Local (ThmLink LeftOpen) _ -> True
