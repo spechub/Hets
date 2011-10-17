@@ -268,6 +268,12 @@ thmLinkStatus t = case t of
     HidingFreeOrCofreeThm _ _ _ s -> Just s
     _ -> Nothing
 
+-- | extract proof basis from link type
+thmProofBasis :: DGLinkType -> ProofBasis
+thmProofBasis = maybe emptyProofBasis (\ ts -> case ts of
+             LeftOpen -> emptyProofBasis
+             Proven _ pb -> pb) . thmLinkStatus
+
 -- | link inscriptions in development graphs
 data DGLinkLab = DGLink
   { dgl_morphism :: GMorphism  -- signature morphism of link
@@ -1428,12 +1434,9 @@ changedPendingEdges dg = let
   (ms, ps) = foldr (\ (s, t, l) (m, es) ->
        let b = dglPending l
            e = dgl_id l
-       in (Map.insert e
-          (b, s, t,
-          maybe Set.empty (\ ts -> case ts of
-             LeftOpen -> Set.empty
-             Proven _ pb -> proofBasis pb) . thmLinkStatus $ dgl_type l) m
-       , if b && isLocalEdge (dgl_type l) then Set.insert e es else es))
+           ty = dgl_type l
+       in ( Map.insert e (b, s, t, proofBasis $ thmProofBasis ty) m
+          , if b && isLocalEdge ty then Set.insert e es else es))
     (Map.empty, Set.empty) ls
   close known =
       let nxt = Map.keysSet $ Map.filter

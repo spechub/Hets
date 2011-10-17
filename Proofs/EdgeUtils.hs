@@ -182,13 +182,9 @@ calculateProofBasis rel = ProofBasis . foldr
      . Set.union (Map.findWithDefault Set.empty eid rel))
     Set.empty
 
-{- | return the proof basis if the given linklab is a proven edge,
-     otherwise Nothing. -}
+-- | return the proof basis of the given linklab
 tryToGetProofBasis :: DGLinkLab -> ProofBasis
-tryToGetProofBasis label = case dgl_type label of
-    ScopedLink _ (ThmLink (Proven _ pB)) _ -> pB
-    HidingFreeOrCofreeThm _ _ _ (Proven _ pB) -> pB
-    _ -> emptyProofBasis
+tryToGetProofBasis = thmProofBasis . dgl_type
 
 setProof :: ThmLinkStatus -> DGLinkType -> DGLinkType
 setProof p lt = case lt of
