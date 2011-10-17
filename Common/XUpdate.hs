@@ -139,6 +139,13 @@ getAttrVal n e = case findAttr (unqual n) e of
   Nothing -> failX ("missing " ++ n ++ " attribute") $ elName e
   Just s -> return s
 
+-- | apply a read operation to the extracted value
+readAttrVal :: (Read a, Monad m) => String -> String -> Element -> m a
+readAttrVal err attr = (>>= maybeF err . readMaybe) . getAttrVal attr
+
+maybeF :: Monad m => String -> Maybe a -> m a
+maybeF err = maybe (fail err) return
+
 getSelectAttr :: Monad m => Element -> m String
 getSelectAttr = getAttrVal selectS
 

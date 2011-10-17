@@ -20,7 +20,7 @@ import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
 import Common.LibName
 import Common.Result (Result (..))
 import Common.Utils (readMaybe)
-import Common.XUpdate (getAttrVal)
+import Common.XUpdate (getAttrVal, readAttrVal)
 
 import Control.Monad
 
@@ -143,8 +143,7 @@ extractXLinks = mapM mkXLink . findChildren (unqual "DGLink")
 mkXNode :: Monad m => Element -> m XNode
 mkXNode el = let get f s = f . map strContent . deepSearch [s]
                  get' = get unlines in do
-  nm' <- getAttrVal "name" el
-  let nm = parseNodeName nm'
+  nm <- extractNodeName el
   case findChild (unqual "Reference") el of
     Just rf -> do
       rfNm <- getAttrVal "node" rf
@@ -167,11 +166,14 @@ mkXNode el = let get f s = f . map strContent . deepSearch [s]
         xp1 <- readXPath (nm0 ++ xp0)
         return $ XNode nm { xpath = reverse xp1 } lgN hdSyms spcs
 
+extractNodeName :: Monad m => Element -> m NodeName
+extractNodeName e = liftM parseNodeName $ getAttrVal "name" e
+
 mkXLink :: Monad m => Element -> m XLink
 mkXLink el = do
   sr <- getAttrVal "source" el
   tr <- getAttrVal "target" el
-  ei <- getAttrVal "linkid" el
+  ei <- extractEdgeId el
   tp <- case findChild (unqual "Type") el of
           Just tp' -> return $ revertDGEdgeTypeName $ strContent tp'
           Nothing -> fail "links type description is missing"
@@ -189,9 +191,14 @@ mkXLink el = do
         return (nm, findAttr (unqual "morphismsource") mor)
   let parseSymbMap = intercalate ", " . map ( intercalate " |-> "
           . map strContent . elChildren ) . deepSearch ["map"]
-      ei' = readEdgeId ei
       prBs = ProofBasis $ foldr (Set.insert . readEdgeId) Set.empty prB
-  return $ XLink sr tr ei' tp (DGRule rl) cc prBs mrNm mrSrc $ parseSymbMap el
+  return $ XLink sr tr ei tp (DGRule rl) cc prBs mrNm mrSrc $ parseSymbMap el
+
+extractEdgeId :: Monad m => Element -> m EdgeId
+extractEdgeId = liftM EdgeId . readAttrVal "XGraph.extractEdgeId" "linkid"
+
+readEdgeId :: String -> EdgeId
+readEdgeId = EdgeId . fromMaybe (-1) . readMaybe
 
 -- | custom xml-search for not only immediate children
 deepSearch :: [String] -> Element -> [Element]
@@ -199,9 +206,6 @@ deepSearch tags' ele = rekSearch ele where
   tags = map unqual tags'
   rekSearch e = filtr e ++ concatMap filtr (elChildren e)
   filtr = filterChildrenName (`elem` tags)
-
-readEdgeId :: String -> EdgeId
-readEdgeId = EdgeId . fromMaybe (-1) . readMaybe
 
 -- | extracts the global annotations from the xml-graph
 extractGlobalAnnos :: Element -> Result GlobalAnnos

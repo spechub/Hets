@@ -23,11 +23,9 @@ import Common.Result (maybeResult)
 import Control.Monad
 
 import Data.List
-import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 import Static.DgUtils
-import Static.XGraph
 
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
@@ -81,89 +79,104 @@ mkAttr l = case l of
     , PrimExpr Literal val] -> return $ Attr (unqual nm) val
   _ -> fail $ "XPATH unexpected attr: " ++ show l
 
+-- Describes the minimal change-effect of a .diff upon a DGraph.
+data ChangeList = ChangeList { nodeChanges :: Map.Map NodeName ChangeAction
+                             , linkChanges :: Map.Map EdgeId ChangeAction }
+
+data ChangeAction = Updated
+                  | Added
+                  | Renamed String -- ^ original NodeName; fails for links
+                  | Removed
+
+emptyChangeList :: ChangeList
+emptyChangeList = ChangeList Map.empty Map.empty
+
 -- iterate Xml in multiple directions
 data Direction = Vertical
                | Horizontal
                | TopElem
 
--- Remove-changes must be treated differently
-data ChangeRes = ChangeCr Cursor
-               | RemoveCr
-
--- Describes the minimal change-effect of a .diff upon a DGraph.
-data DgEffect = DgEffect { removes :: Set.Set DgElemId
-                         , updateNodes :: Map.Map NodeName XNode
-                         , updateLinks :: Map.Map EdgeId XLink
-                         , additions :: [XElem]
-                         , updateAnnotations :: Maybe GlobalAnnos
-                         , nextlinkid :: Int }
-
-type DgElemId = Either NodeName EdgeId
-type XElem = Either XNode XLink
-
-instance Show DgEffect where
-  show (DgEffect rmv updN updL [] Nothing _)
-    | Set.null rmv && Map.null updN && Map.null updL = "No Effects!"
-  show (DgEffect rmv updN updL adds annoCh _) = let
-    showDgElemIds = unlines . map (showElems showName showEdgeId)
-    showElems show' _ (Left a) = "Node: [" ++ show' a ++ "]"
-    showElems _ show' (Right b) = "Link #" ++ show' b
-    in (if Set.null rmv then "" else "<< Removes >>\n"
-      ++ showDgElemIds (Set.toList rmv))
-    ++ (if Map.null updN then "" else "<< Update Nodes >>\n"
-      ++ unlines (map show (Map.elems updN)))
-    ++ (if Map.null updL then "" else "<< Update Links >>\n"
-       ++ unlines (map show (Map.elems updL)))
-    ++ (if null adds then "" else "<< Insertions >>\n"
-      ++ unlines (map (showElems show show) adds))
-    ++ maybe "" (\ _ -> "Global Annotation Changed") annoCh
-
-emptyDgEffect :: DgEffect
-emptyDgEffect = DgEffect Set.empty Map.empty Map.empty [] Nothing (-1)
-
 {- apply a diff to an xml-document. returns the result xml and a list of
 changes that affect the original DGraph -}
-changeXml :: Monad m => Element -> String -> m (Element, DgEffect)
+changeXml :: Monad m => Element -> String -> m (Element, ChangeList)
 changeXml el diff = let cr = fromElement $ cleanUpElem el in do
   cs <- anaXUpdates diff
   pths <- mapM exprToSimplePath cs
-  (cr', ef) <- iterateXml TopElem pths cr emptyDgEffect
+  (cr', chL) <- iterateXml TopElem pths cr emptyChangeList
   case current cr' of
-     Elem e -> do
-       -- the link-id needs to be updated here
-       v <- readAttrVal "illegal nextlinkid" "nextlinkid" e
-       return (e, ef { nextlinkid = v })
+     Elem e -> return (e, chL)
      _ -> fail "unexpected content within top element"
 
 {- follow the Xml-structure and apply Changes. The Change is only applied after
 the recursive call to simulate parallel application. Resulting DgChanges are
 collected along the way. -}
 iterateXml :: Monad m => Direction -> [SimplePath] -> Cursor
-           -> DgEffect -> m (Cursor, DgEffect)
-iterateXml _ [] cr ef = return (cr, ef)
-iterateXml dir pths cr0 ef0 = do
+           -> ChangeList -> m (Cursor, ChangeList)
+iterateXml _ [] cr chL = return (cr, chL)
+iterateXml dir pths cr0 chL = do
   -- initially, the cursor movement has to be applied
   cr1 <- moveDown dir cr0
   (curChg, toRight, toChildren) <- propagatePaths cr1 pths
-  (cr2, ef1) <- iterateXml Vertical toChildren cr1 ef0
-  (cr3, ef2) <- iterateXml Horizontal toRight cr2 ef1
+  (cr2, chL') <- iterateXml Vertical toChildren cr1 chL
+  (cr3, chL'') <- iterateXml Horizontal toRight cr2 chL'
   -- after the call to children and rights, the current cursor is modified
-  chRes <- applyChanges curChg cr3
-  case chRes of
-    ChangeCr cr4 -> do
-      -- the changes are then extracted in a further, independent step
-      ef3 <- mkAddOrUpdateCh cr4 curChg ef2
-      crRes <- moveUp dir cr4
-      return (crRes, ef3)
-    RemoveCr -> do
-      crRes <- case dir of
-        Vertical -> maybeF "missing parent (Remove)" $ removeGoUp cr3
-        Horizontal -> maybeF "missing left sibling (Remove)"
-          $ removeFindLeft isElem cr3
-        TopElem -> fail "Top Element cannot be removed!"
-      ef3 <- mkRemoveCh ef2 cr3 crRes
-      return (crRes, ef3)
+  applyChanges curChg cr3 dir chL''
 
+-- Remove-changes must be treated differently
+data ChangeRes = ChangeCr Cursor
+               | RemoveCr
+
+{- a list of Changes is applied to a current Cursor -}
+applyChanges :: Monad m => [ChangeData] -> Cursor -> Direction -> ChangeList
+             -> m (Cursor, ChangeList)
+applyChanges changes cr dir chL = do
+  -- because cursor position will change, certain addChanges are appended
+  let (chAppend, chNow) = partition (\ cd -> case cd of
+          ChangeData (Add Before _) _ -> True
+          _ -> False ) changes
+  -- to know the resulting DgUpdates, the Changes need not to be applied
+  chL' <- updateChangeList cr chL changes
+  cres1 <- foldM applyChange (ChangeCr cr) chNow
+  cres2 <- foldM applyChange cres1 chAppend
+  -- after application of the changes, the Cursor movement takes place
+  cr' <- case cres2 of
+      ChangeCr cr' -> moveUp dir cr'
+      RemoveCr -> case dir of
+        Vertical -> maybeF "missing parent (Remove)" $ removeGoUp cr
+        Horizontal -> maybeF "missing left sibling (Remove)"
+          $ removeFindLeft isElem cr
+        TopElem -> fail "Top Element cannot be removed!"
+  return (cr', chL')
+
+updateChangeList :: Monad m => Cursor -> ChangeList -> [ChangeData]
+                 -> m ChangeList
+updateChangeList cr = foldM (updateChangeListAux cr)
+
+updateChangeListAux :: Monad m => Cursor -> ChangeList -> ChangeData
+                    -> m ChangeList
+updateChangeListAux cr chL (ChangeData csel atS) = case csel of
+  Add _ addCs -> do
+    (chL', restCs) <- foldM mkAddDgElemChange (chL, []) addCs
+    if null restCs then return chL' else mkUpdateElemChange cr chL'
+  Remove | atS == Nothing -> return chL
+  _ -> return chL
+
+mkUpdateElemChange :: Monad m => Cursor -> ChangeList -> m ChangeList
+mkUpdateElemChange _ = return
+
+mkAddDgElemChange :: Monad m => (ChangeList, [AddChange]) -> AddChange
+                  -> m (ChangeList, [AddChange])
+mkAddDgElemChange (chL, _) addCs = return (chL, []) {- case addCs of
+  [] -> (chL, [])
+  h : t -> case h of
+    AddElem e | isDgNodeElem e -> do -}
+
+{- TODO: incorporate ChangeList so it is updated TOGETHER with change-application.
+mk moveUp also in applyChange!
+when applying the changes, look more closely and sort them for execution order.
+fail if other changes are stored with a remove operation. -}
+
+-- TODO: ask Christian if safeguards can be removed..
 removeFindLeft :: (Cursor -> Bool) -> Cursor -> Maybe Cursor
 removeFindLeft p = maybe Nothing (\ cr ->
   if p cr then Just cr else findLeft p cr) . removeGoLeft
@@ -186,23 +199,6 @@ isElem cr = case current cr of
   Elem _ -> True
   _ -> False
 
-maybeF :: Monad m => String -> Maybe a -> m a
-maybeF err = maybe (fail err) return
-
-{- a list of Changes is applied to a current Cursor. If the Cursor is to be
-removed, other changes will be ignored (and removal must take place within the
-caller function). For other changes, the modified Element is returned.
-NOTE: if new Elems are inserted, the returned Cursor will be the !leftmost! of
-the resulting set of items. -}
-applyChanges :: Monad m => [ChangeData] -> Cursor -> m ChangeRes
-applyChanges changes cr = let
-  -- because cursor position will change, certain addChanges are appended
-  (chgAppend, chgNow) = partition (\ cd -> case cd of
-    ChangeData (Add pos _) _ -> pos == Before
-    _ -> False ) changes in do
-  cres1 <- foldM applyChange (ChangeCr cr) chgNow
-  foldM applyChange cres1 chgAppend
-
 -- sequentially built up resulting Cursor one Change at a time
 applyChange :: Monad m => ChangeRes -> ChangeData -> m ChangeRes
 applyChange (RemoveCr) _ = return RemoveCr
@@ -213,7 +209,7 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
   (Remove, Just atS) -> removeOrChangeAttr Nothing cr atS
   -- Case#3: addChanges, either attr-/ or element-insertion
   (Add pos addCs, _) -> liftM ChangeCr $ foldM (applyAddOp pos) cr addCs
-  -- Case#4: update String (attr-only!)
+  -- Case#4: update text-content
   (Update s, Just atS) -> removeOrChangeAttr (Just s) cr atS
   (Update s, Nothing) -> changeText s cr
   -- OTHER CASES ARE NOT IMPLEMENTED!
@@ -282,73 +278,3 @@ propagatePaths cr pths = case current cr of
       return (changes, toRight, toChildren)
   c -> fail $ "propagatePaths: unexpected Cursor Content: " ++ show c
 
-{- determine the effect of a remove operation. first see if the old (removed)
-Elem was a Link or Node; if not, compute the update-change upon the new Elem.
--}
-mkRemoveCh :: Monad m => DgEffect -> Cursor -> Cursor -> m DgEffect
-mkRemoveCh ef crInit crNow = case current crInit of
-      -- remove entire node
-      Elem e | nameString e == "DGNode" -> do
-        nm <- liftM parseNodeName $ getAttrVal "name" e
-        return ef { removes = Set.insert (Left nm) $ removes ef }
-      -- remove entire link
-      Elem e | nameString e == "DGLink" -> do
-        ei <- readEdgeId_M e
-        return ef { removes = Set.insert (Right ei) $ removes ef }
-      -- remove child element -> update entire node or link
-      _ -> mkUpdateCh ef crNow
-
--- translates the Change data from the .diff into minimal DgChange-effects.
-mkAddOrUpdateCh :: Monad m => Cursor -> [ChangeData] -> DgEffect -> m DgEffect
-mkAddOrUpdateCh cr cs ef1 = do
-  -- at first determine the element-additions
-  (ef2, rl) <- foldM (\ (efR, r) cd -> case cd of
-      ChangeData (Add pos adds) atS -> do
-         (ef', r2) <- mkOnlyAddCh efR adds
-         if null r2 then return (ef', r) else return
-             (ef', ChangeData (Add pos r2) atS : r)
-      c -> return (efR, c : r) ) (ef1, []) cs
-  -- then only one update change is required for this position
-  if null rl then return ef2 else mkUpdateCh ef2 cr
-
-mkOnlyAddCh :: Monad m => DgEffect -> [AddChange] -> m (DgEffect, [AddChange])
-mkOnlyAddCh ef' = foldM extractAddElems (ef', []) where
-  extractAddElems (ef, r) addCh = case addCh of
-    -- insert entire Node
-    AddElem e | nameString e == "DGNode" -> do
-      n <- mkXNode e
-      return (ef { additions = Left n : additions ef }, r)
-    -- insert entire link
-    AddElem e | nameString e == "DGLink" -> do
-      l <- mkXLink e
-      return (ef { additions = Right l : additions ef }, r)
-    _ -> return (ef, addCh : r)
-
--- determine which objects needs updating.
-mkUpdateCh :: Monad m => DgEffect -> Cursor -> m DgEffect
-mkUpdateCh ef cr = case current cr of
-    Elem e | nameString e == "Global" ->
-        case maybeResult $ parseAnnotations e of
-          Just gl -> return $ ef { updateAnnotations = Just gl }
-          Nothing -> fail "failed to parse global annotations"
-    Elem e | nameString e == "DGNode" -> do
-        nd <- mkXNode e
-        return ef { updateNodes = Map.insert (nodeName nd) nd
-                $ updateNodes ef }
-    Elem e | nameString e == "DGLink" -> do
-        lk <- mkXLink e
-        return ef { updateLinks = Map.insert (edgeId lk) lk $ updateLinks ef }
-    {- TODO: if no changeable item is found, the old effect-object is returned.
-    all attribute changes on DGraph-level for example are lost! -}
-    Elem e | nameString e == "DGraph" -> return ef
-    _ -> maybe (fail "update failed, no updatable parent")
-      (mkUpdateCh ef) $ parent cr
-
-nameString :: Element -> String
-nameString = qName . elName
-
-readAttrVal :: (Read a, Monad m) => String -> String -> Element -> m a
-readAttrVal err attr = (>>= maybeF err . readMaybe) . getAttrVal attr
-
-readEdgeId_M :: Monad m => Element -> m EdgeId
-readEdgeId_M = liftM EdgeId . readAttrVal "readEdgeId_M" "linkid"
