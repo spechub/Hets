@@ -37,6 +37,9 @@ dgXUpdate opts xs le ln dg = do
     $ ppTopElement $ cleanUpElem xml
   rebuiltDgXml opts le xml
 
+{- TODO: when deleting elements (especially links), check which elements will
+need theorychange. -}
+
 -- !! ALWAYS DELETE PROCESSED ENTRIES FROM DGEFFECT OBJECT
 iterateXGraph :: Monad m => HetcatsOpts -> XGraph -> LibEnv -> DGraph
               -> ChangeList -> m DGraph
