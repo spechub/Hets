@@ -348,6 +348,10 @@ getRealDGLinkType lnk = let
       GMorphism cid _ _ mor _ -> isInclusionComorphism cid && isInclusion mor
   }
 
+-- | return the proof basis of the given linklab
+getProofBasis :: DGLinkLab -> ProofBasis
+getProofBasis = thmProofBasis . dgl_type
+
 -- * methods to check the type of an edge
 
 isProven :: DGLinkType -> Bool

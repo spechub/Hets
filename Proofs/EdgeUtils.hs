@@ -153,7 +153,7 @@ selectProofBasis :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
 selectProofBasis dg ledge paths = let
   (provenPaths, unprovenPaths) = partition (all $ liftE isProven) paths
   pBl = map (\ (_, _, l) ->
-               (dgl_id l, proofBasis $ tryToGetProofBasis l))
+               (dgl_id l, proofBasis $ getProofBasis l))
               $ labEdges $ dgBody dg
   rel = assert (checkEdgeIds dg == Nothing &&
                 all (\ (e, pB) -> not (Set.member e pB)) pBl) $
@@ -167,7 +167,7 @@ selectProofBasisAux :: Map.Map EdgeId (Set.Set EdgeId) -> LEdge DGLinkLab
 selectProofBasisAux _ _ [] = emptyProofBasis
 selectProofBasisAux rel ledge (path : list) =
   let b = calculateProofBasis rel path in
-    if roughElem (getEdgeId ledge) b
+    if edgeInProofBasis (getEdgeId ledge) b
        then selectProofBasisAux rel ledge list
        else b               -- OK, no cyclic proof
 
@@ -181,10 +181,6 @@ calculateProofBasis rel = ProofBasis . foldr
     (\ (_, _, l) -> let eid = dgl_id l in Set.insert eid
      . Set.union (Map.findWithDefault Set.empty eid rel))
     Set.empty
-
--- | return the proof basis of the given linklab
-tryToGetProofBasis :: DGLinkLab -> ProofBasis
-tryToGetProofBasis = thmProofBasis . dgl_type
 
 setProof :: ThmLinkStatus -> DGLinkType -> DGLinkType
 setProof p lt = case lt of

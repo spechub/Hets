@@ -378,8 +378,8 @@ addEdgeId :: ProofBasis -> EdgeId -> ProofBasis
 addEdgeId (ProofBasis s) e = ProofBasis $ Set.insert e s
 
 -- | checks if the given edge is contained in the given proof basis..
-roughElem :: EdgeId -> ProofBasis -> Bool
-roughElem e = Set.member e . proofBasis
+edgeInProofBasis :: EdgeId -> ProofBasis -> Bool
+edgeInProofBasis e = Set.member e . proofBasis
 
 -- * utilities
 

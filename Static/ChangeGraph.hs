@@ -159,11 +159,22 @@ target nodes of definition links are "reduced" (see deleteDGNode)
 deleteDGLink :: Node -> Node -> EdgeId -> DGraph -> Result DGraph
 deleteDGLink s t i dg = let
   (Just (ins, nl, ns, outs), rg) = match s $ dgBody dg
-  in case partition (\ (el, ct) -> ct == t && dgl_id el == i) outs of
+  (tarOuts, otherOuts) = partition ((== t) . snd) outs
+  in case partition ((== i) . dgl_id . fst) tarOuts of
     ([], _) -> justWarn dg ("link not found: " ++ show (s, t, i))
     ([(lbl, _)], rs)
-      | isUnprovenLocalThm $ dgl_type lbl
-        -> return $ dg { dgBody = (ins, nl, ns, rs) & rg }
+      | isLocalThm $ dgl_type lbl
+        -> do
+      rg2 <- case thmLinkStatus $ dgl_type lbl of
+        Just (Proven (DGRuleLocalInference renms) pb)
+          -> fmap dgBody $ deleteSentence t (\ nSen -> not (isAxiom nSen)
+               && senAttr nSen `elem` map snd renms) dg { dgBody = rg }
+        _ -> return rg
+      -- find global links that contain the edge-id as proof-basis
+      let (gs, others) = partition
+            (\ (el, _) -> isGlobalThm (dgl_type el)
+             && edgeInProofBasis i (getProofBasis el)) rs
+      return $ dg { dgBody = (ins, nl, ns, rs ++ otherOuts) & rg2 }
 
 {- | add a link supplying the necessary information.
 
@@ -199,7 +210,7 @@ addDGLink = undefined
 
 -- * modifying links
 
-{- | Do we need function to modify links?
+{- | Do we need functions to modify links?
 
 Yes, later, for example, if a conservativity as part of the link type should
 be set or changed.
@@ -332,13 +343,13 @@ or definition links. -}
 
 data GSentence = GSentence
 
-{- | delete the sentence that fulfills the given predicate.
+{- | delete the sentences that fulfill the given predicate.
 
 Should this function fail if the predicate does not determine a unique
 sentence?  Surely, simply all sentences could be deleted fulfilling the
 predicate (possibly none). -}
 
-deleteSentence :: Node -> (Named GSentence -> Bool) -> DGraph -> DGraph
+deleteSentence :: Node -> (Named GSentence -> Bool) -> DGraph -> Result DGraph
 deleteSentence = undefined
 
 {- | delete a sentence by name
