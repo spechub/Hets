@@ -20,6 +20,7 @@ module CommonLogic.Sublogic
     , top                           -- FullCommonLogic
     , bottom                        -- Propositional
     , fullclsl                      -- FullCommonLogic
+    , compactsl                     -- Beyond FOL, but without seqMarks
     , folsl                         -- FirstOrderLogic
     , propsl                        -- Propositional
     , sublogics_all                 -- all sublogics

@@ -79,7 +79,7 @@ instance Comorphism
     ProofTree               -- proof tree domain
     where
       sourceLogic CommonLogic2CASLCompact = ClLogic.CommonLogic
-      sourceSublogic CommonLogic2CASLCompact = ClSl.top
+      sourceSublogic CommonLogic2CASLCompact = ClSl.compactsl
       targetLogic CommonLogic2CASLCompact = CLogic.CASL
       mapSublogic CommonLogic2CASLCompact = Just . mapSub
       map_theory CommonLogic2CASLCompact = mapTheory
