@@ -91,29 +91,29 @@ edgeTypes opts = map
       FreeOrCofreeDef _ -> (e, l, getColor opts Blue False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isProvenEdge = False } -> case thmType of
-        GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
+        GlobalOrLocalThm { thmScope = Local, isHomThm = False }
                       -> (e, l, getColor opts Coral True $ not $ isInc e)
         HidingThm -> (e, l, getColor opts Yellow False $ not $ isInc e)
         _ -> (e, l, getColor opts Coral False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isConservativ = False } -> case thmType of
-        GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
+        GlobalOrLocalThm { thmScope = Local, isHomThm = False }
                       -> (e, l, getColor opts Yellow True $ not $ isInc e)
         _ -> (e, l, getColor opts Yellow False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isPending = True } -> case thmType of
-        GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
+        GlobalOrLocalThm { thmScope = Local, isHomThm = False }
                       -> (e, l, getColor opts Yellow True $ not $ isInc e)
         _ -> (e, l, getColor opts Yellow False $ not $ isInc e)
       ThmType { thmEdgeType = thmType } -> case thmType of
-        GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
+        GlobalOrLocalThm { thmScope = Local, isHomThm = False }
                       -> (e, l, getColor opts Green True $ not $ isInc e)
         HidingThm -> (e, l, getColor opts Green True $ not $ isInc e)
         _ -> (e, l, getColor opts Green False $ not $ isInc e)
       _ -> (e, l, getColor opts Black False $ not $ isInc e)
     )
   . (\ e -> case edgeTypeModInc e of -- Add lineformat
-      ThmType { thmEdgeType = GlobalOrLocalThm { isLocalThmType = Local
+      ThmType { thmEdgeType = GlobalOrLocalThm { thmScope = Local
                                                , isHomThm = True } }
                    -> (e, Dashed)
       ThmType { thmEdgeType = GlobalOrLocalThm { isHomThm = False } }

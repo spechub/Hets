@@ -45,7 +45,7 @@ edgeAttributes ety = concatMap (", " ++)
                  if isPend then "yellow" else show "/green"
                else "orange"
              else "red"
-        in ("color=" ++ cl rc) : case isLocalThmType th of
+        in ("color=" ++ cl rc) : case thmScope th of
         Global -> []
         Local -> ["style=dashed"]
 

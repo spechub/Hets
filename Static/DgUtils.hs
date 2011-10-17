@@ -226,7 +226,7 @@ data DGEdgeTypeModInc =
 data ThmTypes =
     HidingThm
   | FreeOrCofreeThm FreeOrCofree
-  | GlobalOrLocalThm { isLocalThmType :: Scope
+  | GlobalOrLocalThm { thmScope :: Scope
                      , isHomThm :: Bool }
   deriving (Eq, Ord, Show)
 
@@ -247,9 +247,9 @@ listDGEdgeTypes =
                 , isPending = pending }
       | thmType <- HidingThm
         : [ FreeOrCofreeThm fc | fc <- fcList ] ++
-          [ GlobalOrLocalThm { isLocalThmType = local
+          [ GlobalOrLocalThm { thmScope = scope
                              , isHomThm = hom }
-          | local <- [Local, Global]
+          | scope <- [Local, Global]
           , hom <- [True, False]
           ]
       , proven <- [True, False]
