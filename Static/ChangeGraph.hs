@@ -174,7 +174,12 @@ deleteDGLink s t i dg = let
       let (gs, others) = partition
             (\ (el, _) -> isGlobalThm (dgl_type el)
              && edgeInProofBasis i (getProofBasis el)) rs
-      return $ dg { dgBody = (ins, nl, ns, rs ++ otherOuts) & rg2 }
+          newGs = map (\ (el, ct) -> (case dgl_type el of
+            ScopedLink Global (ThmLink _) cs ->
+              el { dgl_type = ScopedLink Global (ThmLink LeftOpen) cs }
+            _ -> el, ct)) gs
+      return $ dg { dgBody = (ins, nl, ns, newGs ++ others ++ otherOuts) & rg2 }
+    _ -> justWarn dg ("ambiguous link: " ++ show (s, t, i))
 
 {- | add a link supplying the necessary information.
 
