@@ -193,7 +193,15 @@ getTypeAndMorAux lg dg sg@(G_sign slid _ _) xLk = let
 and the the DGraphs Global Annotations -}
 insertNode :: HetcatsOpts -> LogicGraph -> Maybe G_theory -> XNode
   -> (DGraph, LibEnv) -> ResultT IO (Graph.Node, G_theory, DGraph, LibEnv)
-insertNode opts lg mGt xNd (dg, lv) = let n = getNewNodeDG dg in case xNd of
+insertNode opts lg mGt xNd (dg, lv) = let n = getNewNodeDG dg in do
+  (gt, dg', lv') <- insertOrOverwriteNode n opts lg mGt xNd (dg, lv)
+  return (n, gt, dg', lv')
+
+-- | for application in ApplyChanges, an overwrite option has been added
+insertOrOverwriteNode :: Graph.Node -> HetcatsOpts -> LogicGraph
+                      -> Maybe G_theory -> XNode -> (DGraph, LibEnv)
+                      -> ResultT IO (G_theory, DGraph, LibEnv)
+insertOrOverwriteNode n opts lg mGt xNd (dg, lv) = case xNd of
   -- Case #1: Reference Node
   XRef nm rfNd rfLb spc -> do
           (dg', lv') <- case Map.lookup (emptyLibName rfLb) lv of
@@ -206,7 +214,7 @@ insertNode opts lg mGt xNd (dg, lv) = let n = getNewNodeDG dg in case xNd of
           (gt', _) <- parseSpecs gt nm dg spc
           let nInf = newRefInfo (emptyLibName rfLb) i
               lbl = newInfoNodeLab nm nInf gt'
-          return (n, gt', addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
+          return (gt', addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
   -- Case #2: Regular Node
   XNode nm lN (hid, syb) spc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes
@@ -226,7 +234,7 @@ insertNode opts lg mGt xNd (dg, lv) = let n = getNewNodeDG dg in case xNd of
             diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
             return $ DGBasicSpec Nothing diffSig syb'
         let lbl = newNodeLab nm lOrig gt2
-        return (n, gt2, insLNodeDG (n, lbl) dg, lv)
+        return (gt2, insLNodeDG (n, lbl) dg, lv)
 
 insertFirstNode :: HetcatsOpts -> LogicGraph -> XNode -> (DGraph, LibEnv)
   -> ResultT IO (DGraph, LibEnv)
