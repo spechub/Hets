@@ -197,7 +197,7 @@ getTypeAndMorAux lg dg sg@(G_sign slid _ _) xLk = let
           $ ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
 
 {- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element
-and the the DGraphs Global Annotations. If a node with same name exists, it
+and the the DGraphs Global Annotations. If a node with the same name exists, it
 will be overwritten. -}
 insertNode :: HetcatsOpts -> LogicGraph -> Maybe G_theory -> XNode
   -> (DGraph, LibEnv) -> ResultT IO (Graph.Node, G_theory, DGraph, LibEnv)
