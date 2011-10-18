@@ -128,6 +128,9 @@ mapSig arities sign =
   let constOpMap = Set.fold (\x res -> -- get constants
           MapSet.insert x (CSign.mkTotOpType [] individual) res
         ) MapSet.empty $ ClSign.items sign
+      constPredMap = Set.fold (\x res -> -- get constants
+          MapSet.insert x (CSign.PredType []) res
+        ) MapSet.empty $ ClSign.items sign -- TODO: analyze constants
       (pm, om) = MapSet.foldWithKey (\(n,t) ar (preds, ops) ->
           case t of
             Pred -> ( MapSet.insert -- get non-nullary predicats
@@ -145,7 +148,7 @@ mapSig arities sign =
                           individual)
                         ops
                     )
-          ) (MapSet.empty, constOpMap) arities
+          ) (constPredMap, constOpMap) arities
   in  CSign.uniteCASLSign ((CSign.emptySign ()) { CSign.opMap = om
                                                 , CSign.predMap = pm
                                                 }) caslSig
