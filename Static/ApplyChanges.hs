@@ -92,29 +92,30 @@ deleteElements dg0 chL0 = do
 -- !! ALWAYS DELETE PROCESSED ENTRIES FROM DGEFFECT OBJECT
 iterateXgBody :: HetcatsOpts -> XGraph -> LibEnv -> DGraph
               -> ChangeList -> ResultT IO (DGraph, LibEnv)
-iterateXgBody opts xgr lv dg chL = do
-  (dg', lv', chL') <- foldM (mkNodeUpdate opts logicGraph Nothing)
-        (dg, lv, chL) $ startNodes xgr
-  undefined
-  -- check for adds/updates of initial nodes
-  -- rebuilt/iterate body
-  -- adjust nextLinkId etc.. then return
+iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
+  rs1 <- foldM (mkNodeUpdate opts lg Nothing) (dg, lv, chL) $ startNodes xgr
+  (dg', lv', chL') <- foldM (foldM (mkXStepUpdate opts lg)) rs1 $ xg_body xgr
+  -- TODO update/insert Theorem Links
+  -- TODO adjust nextLinkId etc..
+  -- TODO possibly test if any updates are left undone (corrupted dg/diff)
+  return (dg', lv')
+
+
+mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
+              -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
+mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = undefined {- do
+  (dg', needsUpdate') <- updateLinks -}
+
 
 mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
-           -> (DGraph, LibEnv, ChangeList) -> XNode
-           -> ResultT IO (DGraph, LibEnv, ChangeList)
+             -> (DGraph, LibEnv, ChangeList) -> XNode
+             -> ResultT IO (DGraph, LibEnv, ChangeList)
 mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
   case Map.lookup nm $ changeNodes chL of
     -- no change required, move on
     Nothing -> return (dg, lv, chL)
-    Just chgA -> let nd = showName nm in do
-      n <- case chgA of
-        MkInsert -> return $ getNewNodeDG dg
-        MkUpdate -> case lookupUniqueNodeByName nd dg of
-          Just (j, _) -> return j
-          Nothing -> fail $ "node [" ++ nd
-            ++ "] was not found in DGraph, but was marked for update."
-      (_, dg', lv') <- insertOrOverwriteNode n opts lg mGt xnd (dg, lv)
+    Just _ -> let nd = showName nm in do
+      (_, _, dg', lv') <- insertNode opts lg mGt xnd (dg, lv)
       return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
                  -- TODO: the exact NodeMod could be calculated here!
                  , changedInDg = Map.insert nm symMod $ changedInDg chL })

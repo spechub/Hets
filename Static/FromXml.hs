@@ -92,21 +92,28 @@ insertStep :: HetcatsOpts -> LogicGraph -> XNode -> [XLink] -> (DGraph, LibEnv)
            -> ResultT IO (DGraph, LibEnv)
 insertStep opts lg xNd lks (dg, lv) = do
   mrs <- mapM (getTypeAndMorphism lg dg) lks
-  G_sign lid sg sId <- case lks of
-    [] -> fail "insertStep: empty link list"
-    hd : rt -> case edgeTypeModInc $ lType hd of
-      FreeOrCofreeDef _ -> do
-        unless (null rt)
-          $ fail "unexpected non-singleton free or cofree def link"
-        fmap snd $ signOfNode (source hd) dg
-      _ -> liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
-  (j, gt2, dg', lv') <- insertNode opts lg (Just $ noSensGTheory lid sg sId)
-    xNd (dg, lv)
+  let mrsLks = zip mrs lks
+  (j, gt2, dg', lv') <- insertNodeWithLinkData opts lg (dg, lv) mrsLks xNd
   dg'' <- foldM ( \ dgR ((i, mr, tp), lk) -> do
             lkLab <- finalizeLink lg lk mr (signOf gt2) tp
             return $ insEdgeAsIs (i, j, lkLab) dgR
-            ) dg' $ zip mrs lks
+            ) dg' mrsLks
   return (dg'', lv')
+
+{- | given a list of XLinks along with their precalculated morphisms, calc. the
+required Theory and use it to insert an XNode into the Graph -}
+insertNodeWithLinkData :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv)
+      -> [((Graph.Node, GMorphism, DGLinkType), XLink)] -> XNode
+      -> ResultT IO (Graph.Node, G_theory, DGraph, LibEnv)
+insertNodeWithLinkData opts lg (dg, lv) mrs xNd = do
+  G_sign lid sg sId <- case mrs of
+    [] -> fail "insertStep: empty link list"
+    ((_, _, FreeOrCofreeDefLink _ _), xLk) : rt -> do
+        unless (null rt)
+          $ fail "unexpected non-singleton free or cofree def link"
+        fmap snd $ signOfNode (source xLk) dg
+    _ -> liftR $ gsigManyUnion lg $ map (\ ((_, m, _), _) -> cod m) mrs
+  insertNode opts lg (Just $ noSensGTheory lid sg sId) xNd (dg, lv)
 
 -- | inserts theorem links
 insertThmLinks :: LogicGraph -> DGraph -> EdgeMap -> ResultT IO DGraph
@@ -190,18 +197,13 @@ getTypeAndMorAux lg dg sg@(G_sign slid _ _) xLk = let
           $ ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
 
 {- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element
-and the the DGraphs Global Annotations -}
+and the the DGraphs Global Annotations. If a node with same name exists, it
+will be overwritten. -}
 insertNode :: HetcatsOpts -> LogicGraph -> Maybe G_theory -> XNode
   -> (DGraph, LibEnv) -> ResultT IO (Graph.Node, G_theory, DGraph, LibEnv)
-insertNode opts lg mGt xNd (dg, lv) = let n = getNewNodeDG dg in do
-  (gt, dg', lv') <- insertOrOverwriteNode n opts lg mGt xNd (dg, lv)
-  return (n, gt, dg', lv')
-
--- | for application in ApplyChanges, an overwrite option has been added
-insertOrOverwriteNode :: Graph.Node -> HetcatsOpts -> LogicGraph
-                      -> Maybe G_theory -> XNode -> (DGraph, LibEnv)
-                      -> ResultT IO (G_theory, DGraph, LibEnv)
-insertOrOverwriteNode n opts lg mGt xNd (dg, lv) = case xNd of
+insertNode opts lg mGt xNd (dg, lv) = let
+  n = maybe (getNewNodeDG dg) fst $ lookupUniqueNodeByName
+        (showName $ nodeName xNd) dg in case xNd of
   -- Case #1: Reference Node
   XRef nm rfNd rfLb spc -> do
           (dg', lv') <- case Map.lookup (emptyLibName rfLb) lv of
@@ -214,7 +216,7 @@ insertOrOverwriteNode n opts lg mGt xNd (dg, lv) = case xNd of
           (gt', _) <- parseSpecs gt nm dg spc
           let nInf = newRefInfo (emptyLibName rfLb) i
               lbl = newInfoNodeLab nm nInf gt'
-          return (gt', addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
+          return (n, gt', addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
   -- Case #2: Regular Node
   XNode nm lN (hid, syb) spc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes
@@ -234,7 +236,7 @@ insertOrOverwriteNode n opts lg mGt xNd (dg, lv) = case xNd of
             diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
             return $ DGBasicSpec Nothing diffSig syb'
         let lbl = newNodeLab nm lOrig gt2
-        return (gt2, insLNodeDG (n, lbl) dg, lv)
+        return (n, gt2, insLNodeDG (n, lbl) dg, lv)
 
 insertFirstNode :: HetcatsOpts -> LogicGraph -> XNode -> (DGraph, LibEnv)
   -> ResultT IO (DGraph, LibEnv)
