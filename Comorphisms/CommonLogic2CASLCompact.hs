@@ -230,25 +230,33 @@ senForm form = case form of
       Cl.Equation trm1 trm2 ->
           CBasic.Strong_equation (termForm trm1) (termForm trm2) rn
       Cl.Atom trm tseqs -> 
-          CBasic.Predication (termFormPrd trm) (map termSeqForm tseqs) rn
+          CBasic.Predication (termFormPrd trm (length tseqs)) (map termSeqForm tseqs) rn
   Cl.Comment_sent _ s _ -> senForm s
   Cl.Irregular_sent s _ -> senForm s
 
 termForm :: Cl.TERM -> CBasic.TERM a
 termForm trm = case trm of
-  Cl.Name_term _ -> CBasic.Application (termFormApp trm) [] Id.nullRange
+  Cl.Name_term _ -> CBasic.Application (termFormApp trm 0) [] Id.nullRange
   Cl.Funct_term term tseqs rn ->
-      CBasic.Application (termFormApp term) (map termSeqForm tseqs) rn
+      CBasic.Application (termFormApp term (length tseqs)) (map termSeqForm tseqs) rn
   Cl.Comment_term term _ _ -> termForm term
 
-termFormApp :: Cl.TERM -> CBasic.OP_SYMB
-termFormApp trm = case trm of
-  Cl.Name_term n -> CBasic.Op_name $ Id.mkId [n]
+termFormApp :: Cl.TERM -> Int -> CBasic.OP_SYMB
+termFormApp trm i = case trm of
+  Cl.Name_term n ->
+      CBasic.Qual_op_name
+        (Id.mkId [n])
+        (CBasic.Op_type CBasic.Total (replicate i individual) individual Id.nullRange)
+        Id.nullRange
   _ -> error errHigherOrderFunctionS
 
-termFormPrd :: Cl.TERM -> CBasic.PRED_SYMB
-termFormPrd trm = case trm of
-  Cl.Name_term n -> CBasic.Pred_name $ Id.mkId [n]
+termFormPrd :: Cl.TERM -> Int -> CBasic.PRED_SYMB
+termFormPrd trm i = case trm of
+  Cl.Name_term n ->
+      CBasic.Qual_pred_name
+        (Id.mkId [n])
+        (CBasic.Pred_type (replicate i individual) Id.nullRange)
+        Id.nullRange
   _ -> error errFunctionReturnedPredicateS
 
 termSeqForm :: Cl.TERM_SEQ -> CBasic.TERM a
