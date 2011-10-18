@@ -236,7 +236,7 @@ senForm form = case form of
 
 termForm :: Cl.TERM -> CBasic.TERM a
 termForm trm = case trm of
-  Cl.Name_term _ -> CBasic.Application (termFormApp trm 0) [] Id.nullRange
+  Cl.Name_term n -> CBasic.Qual_var n individual Id.nullRange
   Cl.Funct_term term tseqs rn ->
       CBasic.Application (termFormApp term (length tseqs)) (map termSeqForm tseqs) rn
   Cl.Comment_term term _ _ -> termForm term
