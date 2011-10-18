@@ -14,6 +14,7 @@ module Static.ApplyChanges (dgXUpdate) where
 
 import Static.DevGraph
 import Static.ChangeGraph
+import Static.GTheory
 import Static.DgUtils
 import Static.FromXml
 import Static.ToXml
@@ -24,10 +25,14 @@ import Driver.Options
 import Driver.ReadFn (libNameToFile)
 import Driver.WriteFn (writeVerbFile)
 
+import Comorphisms.LogicGraph (logicGraph)
+
 import Common.LibName
 import Common.ResultT
 import Common.Result
 import Common.XUpdate
+
+import Logic.Grothendieck
 
 import Control.Monad
 import Control.Monad.Trans (lift)
@@ -48,14 +53,14 @@ dgXUpdate opts xs le ln dg = do
 
 updateDG :: HetcatsOpts -> Element -> ChangeList -> DGraph -> LibEnv
          -> ResultT IO (LibName, LibEnv)
-updateDG opts xml chL dg le = liftR $ do
-  (dg', chL') <- deleteElements dg chL
-  xgr <- xGraph xml
+updateDG opts xml chL dg le = do
+  (dg', chL') <- liftR $ deleteElements dg chL
+  xgr <- liftR $ xGraph xml
   let dg'' = if updateAnnotations chL then dg' { globalAnnos = globAnnos xgr }
         else dg'
-  dgFin <- iterateXgBody opts xgr le dg'' chL'
+  (dgFin, le') <- iterateXgBody opts xgr le dg'' chL'
   let ln = libName xgr
-  return (ln, Map.insert ln dgFin le)
+  return (ln, Map.insert ln dgFin le')
 
 deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
 deleteElements dg0 chL0 = do
@@ -85,17 +90,34 @@ deleteElements dg0 chL0 = do
 
 
 -- !! ALWAYS DELETE PROCESSED ENTRIES FROM DGEFFECT OBJECT
-iterateXgBody :: Monad m => HetcatsOpts -> XGraph -> LibEnv -> DGraph
-              -> ChangeList -> m DGraph
-iterateXgBody opts xgr le dg chL = do
-  (dg', chL') <- foldM updateNode (dg, chL) $ startNodes xgr 
+iterateXgBody :: HetcatsOpts -> XGraph -> LibEnv -> DGraph
+              -> ChangeList -> ResultT IO (DGraph, LibEnv)
+iterateXgBody opts xgr lv dg chL = do
+  (dg', lv', chL') <- foldM (mkNodeUpdate opts logicGraph Nothing)
+        (dg, lv, chL) $ startNodes xgr
   undefined
   -- check for adds/updates of initial nodes
   -- rebuilt/iterate body
   -- adjust nextLinkId etc.. then return
 
-updateNode :: Monad m => (DGraph, ChangeList) -> XNode -> m (DGraph, ChangeList)
-updateNode = undefined
+mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
+           -> (DGraph, LibEnv, ChangeList) -> XNode
+           -> ResultT IO (DGraph, LibEnv, ChangeList)
+mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
+  case Map.lookup nm $ changeNodes chL of
+    -- no change required, move on
+    Nothing -> return (dg, lv, chL)
+    Just chgA -> let nd = showName nm in do
+      n <- case chgA of
+        MkInsert -> return $ getNewNodeDG dg
+        MkUpdate -> case lookupUniqueNodeByName nd dg of
+          Just (j, _) -> return j
+          Nothing -> fail $ "node [" ++ nd
+            ++ "] was not found in DGraph, but was marked for update."
+      (_, dg', lv') <- insertOrOverwriteNode n opts lg mGt xnd (dg, lv)
+      return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
+                 -- TODO: the exact NodeMod could be calculated here!
+                 , changedInDg = Map.insert nm symMod $ changedInDg chL })
 
 processBranch :: Monad m => [XLink] -> XNode -> DGraph -> ChangeList
               -> m (DGraph, Bool)
