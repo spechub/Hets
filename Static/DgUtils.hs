@@ -112,6 +112,28 @@ addSymMod = unMod { addSym = True }
 symMod :: NodeMod
 symMod = delSymMod { addSym = True }
 
+mergeNodeMod :: NodeMod -> NodeMod -> NodeMod
+mergeNodeMod NodeMod
+    { delAx = delAx1
+    , delTh = delTh1
+    , addSen = addSen1
+    , delSym = delSym1
+    , addSym = addSym1 }
+    NodeMod
+    { delAx = delAx2
+    , delTh = delTh2
+    , addSen = addSen2
+    , delSym = delSym2
+    , addSym = addSym2 }
+    = let delSym3 = delSym1 || delSym2
+          setSenMod a b = if delSym3 then False else a || b
+    in NodeMod
+    { delAx = setSenMod delAx1 delAx2
+    , delTh = setSenMod delTh1 delTh2
+    , addSen = setSenMod addSen1 addSen2
+    , delSym = delSym3
+    , addSym = addSym1 || addSym2 }
+
 -- ** edge types
 
 -- | unique number for edges

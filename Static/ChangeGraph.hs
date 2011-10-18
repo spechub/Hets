@@ -198,15 +198,16 @@ deleteDGLink t i dg = let
                         deleteDGLink t (dgl_id el) dgx) dg createdLinks
                    deleteDGLink t i dg2
            DefLink -> return dg
-             { dgBody =
-               (rs, nt, nl { nodeMod = delSymMod }, outs)
-               & rg }
+             { dgBody = ( rs, nt, updNodeMod delSymMod nl, outs) & rg }
        _ -> justWarn dg
             ("unhandled hiding/free/cofree link: " ++ show (t, i))
     _ -> justWarn dg ("ambiguous link: " ++ show (t, i))
 
+updNodeMod :: NodeMod -> DGNodeLab -> DGNodeLab
+updNodeMod m nl = nl { nodeMod = mergeNodeMod m $ nodeMod nl }
+
 deleteDGNodeThms :: (Named GSentence -> Bool) -> DGNodeLab -> DGNodeLab
-deleteDGNodeThms _p nl = nl { nodeMod = delThMod }
+deleteDGNodeThms _p = updNodeMod delThMod
 
 invalidateDGLinkProof :: DGLinkLab -> DGLinkLab
 invalidateDGLinkProof el = el { dgl_type = setProof LeftOpen $ dgl_type el }
