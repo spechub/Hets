@@ -32,6 +32,8 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Set as Set
 import Data.List
 
+import Control.Monad
+
 -- * deleting and adding nodes
 
 {- | delete a node.
@@ -157,8 +159,8 @@ target nodes of definition links are "reduced" (see deleteDGNode)
 deleteDGLink :: Node -> Node -> EdgeId -> DGraph -> Result DGraph
 deleteDGLink s t i dg = let
   (Just (ins, nl, ns, outs), rg) = match s $ dgBody dg
-  (tarOuts, otherOuts) = partition ((== t) . snd) outs
-  in case partition ((== i) . dgl_id . fst) tarOuts of
+  (outsToTar, otherOuts) = partition ((== t) . snd) outs
+  in case partition ((== i) . dgl_id . fst) outsToTar of
     ([], _) -> justWarn dg ("link not found: " ++ show (s, t, i))
     ([(lbl, _)], rs) -> case dgl_type lbl of
        ScopedLink lOrG lk _ -> case lOrG of
@@ -168,10 +170,9 @@ deleteDGLink s t i dg = let
                fmap dgBody $ deleteSentence t (\ nSen -> not (isAxiom nSen)
                  && senAttr nSen `elem` map snd renms) dg { dgBody = rg }
              _ -> return rg
-           -- find global links that contain the edge-id as proof-basis
+           -- find global link(s) that contain(s) the edge-id as proof-basis
            let (gs, others) = partition
-                 (\ (el, _) -> isGlobalThm (dgl_type el)
-                   && edgeInProofBasis i (getProofBasis el)) rs
+                 (edgeInProofBasis i . getProofBasis . fst) rs
                newGs = map (\ (el, ct) -> (case dgl_type el of
                  ScopedLink Global (ThmLink _) cs ->
                    el { dgl_type = ScopedLink Global (ThmLink LeftOpen) cs }
@@ -179,11 +180,43 @@ deleteDGLink s t i dg = let
            return dg
              { dgBody = (ins, nl, ns, newGs ++ others ++ otherOuts) & rg2 }
          Global -> case lk of
-           ThmLink (Proven _ _) -> return dg
-           _ -> return dg
+           ThmLink pst -> let
+             {- delete all links created by global decomposition,
+             (this may delete also manually inserted theorem links!)
+             all links have the same target. -}
+             tarIns = map (\ (sr, _, l) -> (l, sr)) $ innDG dg t
+             pB = proofBasisOfThmLinkStatus pst
+             -- the corresponding local theorem link
+             locs = filter
+                ((`edgeInProofBasis` pB) . dgl_id . fst) rs
+             -- further decompositions
+             globs = filter ((`edgeInProofBasis` pB) . dgl_id . fst) tarIns
+             -- global links proven by current link
+             topGlobs = filter (edgeInProofBasis i . getProofBasis . fst) tarIns
+             in if null locs && null globs && null topGlobs then
+                      return dg
+                        { dgBody = (ins, nl, ns, rs ++ otherOuts) & rg }
+                else do
+                   dg2 <- foldM (\ dgx (el, _) ->
+                        deleteDGLink s t (dgl_id el) dgx) dg locs
+                   dg3 <- foldM (\ dgx (el, sr) ->
+                        deleteDGLink sr t (dgl_id el) dgx) dg2 globs
+                   dg4 <- deleteDGLink s t i dg3
+                   return $ foldr (\ (el, sr) ->
+                           invalidateDGLinkProof sr t (dgl_id el)) dg4 topGlobs
+           DefLink -> return dg
        _ -> justWarn dg
             ("unhandled hiding/free/cofree link: " ++ show (s, t, i))
     _ -> justWarn dg ("ambiguous link: " ++ show (s, t, i))
+
+invalidateDGLinkProof :: Node -> Node -> EdgeId -> DGraph -> DGraph
+invalidateDGLinkProof s t i dg = let
+  (Just (ins, nl, ns, outs), rg) = match s $ dgBody dg
+  newOuts = map (\ (el, ct) -> let ty = dgl_type el in
+                 (if ct == t && dgl_id el == i && isProven ty then
+                     el { dgl_type = setProof LeftOpen ty } else el, ct))
+                 outs
+  in dg { dgBody = (ins, nl, ns, newOuts) & rg }
 
 {- | add a link supplying the necessary information.
 

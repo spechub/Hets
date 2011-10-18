@@ -270,9 +270,7 @@ thmLinkStatus t = case t of
 
 -- | extract proof basis from link type
 thmProofBasis :: DGLinkType -> ProofBasis
-thmProofBasis = maybe emptyProofBasis (\ ts -> case ts of
-             LeftOpen -> emptyProofBasis
-             Proven _ pb -> pb) . thmLinkStatus
+thmProofBasis = maybe emptyProofBasis proofBasisOfThmLinkStatus . thmLinkStatus
 
 -- | link inscriptions in development graphs
 data DGLinkLab = DGLink
@@ -351,6 +349,13 @@ getRealDGLinkType lnk = let
 -- | return the proof basis of the given linklab
 getProofBasis :: DGLinkLab -> ProofBasis
 getProofBasis = thmProofBasis . dgl_type
+
+-- | set proof for theorem links
+setProof :: ThmLinkStatus -> DGLinkType -> DGLinkType
+setProof p lt = case lt of
+    ScopedLink sc (ThmLink _) cs -> ScopedLink sc (ThmLink p) cs
+    HidingFreeOrCofreeThm hm n mor _ -> HidingFreeOrCofreeThm hm n mor p
+    _ -> lt
 
 -- * methods to check the type of an edge
 

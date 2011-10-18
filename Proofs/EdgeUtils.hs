@@ -182,12 +182,6 @@ calculateProofBasis rel = ProofBasis . foldr
      . Set.union (Map.findWithDefault Set.empty eid rel))
     Set.empty
 
-setProof :: ThmLinkStatus -> DGLinkType -> DGLinkType
-setProof p lt = case lt of
-    ScopedLink sc (ThmLink _) cs -> ScopedLink sc (ThmLink p) cs
-    HidingFreeOrCofreeThm hm n mor _ -> HidingFreeOrCofreeThm hm n mor p
-    _ -> lt
-
 invalidateProof :: DGLinkType -> DGLinkType
 invalidateProof t = case t of
     ScopedLink sc dl (ConsStatus c _ _) ->

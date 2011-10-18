@@ -150,6 +150,11 @@ isProvenThmLinkStatus tls = case tls of
   LeftOpen -> False
   _ -> True
 
+proofBasisOfThmLinkStatus :: ThmLinkStatus -> ProofBasis
+proofBasisOfThmLinkStatus tls = case tls of
+  LeftOpen -> emptyProofBasis
+  Proven _ pB -> pB
+
 data Scope = Local | Global deriving (Show, Eq, Ord)
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
