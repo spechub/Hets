@@ -196,7 +196,7 @@ phraseForm :: Cl.PHRASE -> CBasic.CASLFORMULA
 phraseForm phr =
    case phr of
      Cl.Module m -> moduleForm m
-     Cl.Sentence s -> senForm s
+     Cl.Sentence s -> senForm Set.empty s
      Cl.Importation _ -> undefined -- cannot occur, because filtered
      Cl.Comment_text _ t _ -> trForm t
 
@@ -205,41 +205,50 @@ moduleForm m = case m of
    Cl.Mod _ txt _ -> trForm txt
    Cl.Mod_ex _ _ txt _ -> trForm txt --what to do with the exclusions?
 
-senForm :: Cl.SENTENCE -> CBasic.CASLFORMULA
-senForm form = case form of
+senForm :: Set.Set Cl.NAME -> Cl.SENTENCE -> CBasic.CASLFORMULA
+senForm bndVars form = case form of
   Cl.Bool_sent bs rn -> case bs of
-      Cl.Negation s -> CBasic.Negation (senForm s) rn
+      Cl.Negation s -> CBasic.Negation (senForm bndVars s) rn
       Cl.Conjunction [] -> CBasic.True_atom Id.nullRange
       Cl.Disjunction [] -> CBasic.True_atom Id.nullRange
-      Cl.Conjunction ss -> CBasic.Conjunction (map (senForm) ss) rn
-      Cl.Disjunction ss -> CBasic.Disjunction (map (senForm) ss) rn
+      Cl.Conjunction ss -> CBasic.Conjunction (map (senForm bndVars) ss) rn
+      Cl.Disjunction ss -> CBasic.Disjunction (map (senForm bndVars) ss) rn
       Cl.Implication s1 s2 ->
-          CBasic.Implication (senForm s1) (senForm s2) True rn
+          CBasic.Implication (senForm bndVars s1) (senForm bndVars s2) True rn
       Cl.Biconditional s1 s2 ->
-          CBasic.Equivalence (senForm s1) (senForm s2) rn
+          CBasic.Equivalence (senForm bndVars s1) (senForm bndVars s2) rn
   Cl.Quant_sent qs rn -> case qs of
       Cl.Universal bs s ->
           CBasic.Quantification CBasic.Universal
             [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-            (senForm s) rn
+            (senForm (bndVarsToSet bndVars bs) s) rn
       Cl.Existential bs s ->
           CBasic.Quantification CBasic.Existential
             [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-            (senForm s) rn
+            (senForm (bndVarsToSet bndVars bs) s) rn
   Cl.Atom_sent at rn -> case at of
       Cl.Equation trm1 trm2 ->
-          CBasic.Strong_equation (termForm trm1) (termForm trm2) rn
+          CBasic.Strong_equation (termForm bndVars trm1) (termForm bndVars trm2) rn
       Cl.Atom trm tseqs -> 
-          CBasic.Predication (termFormPrd trm (length tseqs)) (map termSeqForm tseqs) rn
-  Cl.Comment_sent _ s _ -> senForm s
-  Cl.Irregular_sent s _ -> senForm s
+          CBasic.Predication (termFormPrd trm (length tseqs)) (map (termSeqForm bndVars) tseqs) rn
+  Cl.Comment_sent _ s _ -> senForm bndVars s
+  Cl.Irregular_sent s _ -> senForm bndVars s
 
-termForm :: Cl.TERM -> CBasic.TERM a
-termForm trm = case trm of
-  Cl.Name_term n -> CBasic.Qual_var n individual Id.nullRange
+termForm :: Set.Set Cl.NAME -> Cl.TERM -> CBasic.TERM a
+termForm bndVars trm = case trm of
+  Cl.Name_term n ->
+      if Set.member n bndVars
+      then CBasic.Qual_var n individual Id.nullRange
+      else CBasic.Application (termFormApp trm 0) [] Id.nullRange
   Cl.Funct_term term tseqs rn ->
-      CBasic.Application (termFormApp term (length tseqs)) (map termSeqForm tseqs) rn
-  Cl.Comment_term term _ _ -> termForm term
+      CBasic.Application (termFormApp term (length tseqs)) (map (termSeqForm bndVars) tseqs) rn
+  Cl.Comment_term term _ _ -> termForm bndVars term
+
+bndVarsToSet :: Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK] -> Set.Set Cl.NAME
+bndVarsToSet bndVars bs = foldr Set.insert bndVars
+  $ map (\nos -> case nos of
+                  Cl.Name n -> n
+                  Cl.SeqMark s -> error $ errSeqMark s) bs
 
 termFormApp :: Cl.TERM -> Int -> CBasic.OP_SYMB
 termFormApp trm i = case trm of
@@ -259,9 +268,9 @@ termFormPrd trm i = case trm of
         Id.nullRange
   _ -> error errFunctionReturnedPredicateS
 
-termSeqForm :: Cl.TERM_SEQ -> CBasic.TERM a
-termSeqForm tseq = case tseq of
-  Cl.Term_seq trm -> termForm trm
+termSeqForm :: Set.Set Cl.NAME -> Cl.TERM_SEQ -> CBasic.TERM a
+termSeqForm bndVars tseq = case tseq of
+  Cl.Term_seq trm -> termForm bndVars trm
   Cl.Seq_marks s -> error $ errSeqMark s
 
 bindingSeq :: Cl.NAME_OR_SEQMARK -> CBasic.VAR
