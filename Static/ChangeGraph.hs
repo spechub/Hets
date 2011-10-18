@@ -103,7 +103,7 @@ the user).
 If the node index is unknown then auxiliary functions (or a mapping between
 node names and node indices) can be supplied to delete nodes by name. -}
 
-deleteDGNode :: Node -> DGraph -> DGraph
+deleteDGNode :: Node -> DGraph -> Result DGraph
 deleteDGNode = undefined
 
 {- | add a node supplying the necessary information.

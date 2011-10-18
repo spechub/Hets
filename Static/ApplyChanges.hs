@@ -13,6 +13,8 @@ adjust development graph according to xupdate information
 module Static.ApplyChanges (dgXUpdate) where
 
 import Static.DevGraph
+import Static.ChangeGraph
+import Static.DgUtils
 import Static.FromXml
 import Static.ToXml
 import Static.XGraph
@@ -24,48 +26,69 @@ import Driver.WriteFn (writeVerbFile)
 
 import Common.LibName
 import Common.ResultT
+import Common.Result
 import Common.XUpdate
 
+import Control.Monad
 import Control.Monad.Trans (lift)
+
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+
 import Text.XML.Light
 
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
   -> ResultT IO (LibName, LibEnv)
 dgXUpdate opts xs le ln dg = do
-  (xml, _) <- liftR $ changeXml (dGraph le ln dg) xs
+  (xml, chL) <- liftR $ changeXml (dGraph le ln dg) xs
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
     $ ppTopElement $ cleanUpElem xml
   rebuiltDgXml opts le xml
 
-{- TODO: when deleting elements (especially links), check which elements will
-need theorychange. -}
+updateDG :: HetcatsOpts -> Element -> ChangeList -> DGraph -> LibEnv
+         -> ResultT IO (LibName, LibEnv)
+updateDG opts xml chL dg le = liftR $ do
+  (dg', chL') <- deleteElements dg chL
+  xgr <- xGraph xml
+  let dg'' = if updateAnnotations chL then dg' { globalAnnos = globAnnos xgr }
+        else dg'
+  dgFin <- iterateXgBody opts xgr le dg'' chL'
+  let ln = libName xgr
+  return (ln, Map.insert ln dgFin le) 
+
+deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
+deleteElements dg0 chL = let
+    -- deletes a link from dg. returns smaller dg and links target id
+    deleteLink (dg, tar) ei = case getDGLinksById ei dg of
+      [] -> fail $ "required link [" ++ show ei ++ "] was not found in DGraph!"
+      [(i, j, _)] -> do
+        dg' <- deleteDGLink i j ei dg
+        return (dg', j : tar)
+      _ -> fail $ "ambigous occurance of linkId: " ++ show ei
+    -- deletes a node from dg
+    deleteNode dg nm = let nd = showName nm
+      in case lookupUniqueNodeByName nd dg of
+        Nothing -> fail $ "required node [" ++ nd ++ "] was not found in DGraph!"
+        Just (j, _) -> deleteDGNode j dg
+  in do
+  (dg1, targets) <- foldM deleteLink (dg0, []) $ Set.toList $ deleteLinks chL
+  dg2 <- foldM deleteNode dg1 $ Set.toList $ deleteNodes chL
+  {- TODO: all target nodes should be looked up in dgraph AFTER node deletion.
+  if they are gone, everything is fine. if not, they should be marked for
+  updating (possibly just added to ChangeList) -}
+  return (dg2, chL)
 
 -- !! ALWAYS DELETE PROCESSED ENTRIES FROM DGEFFECT OBJECT
-iterateXGraph :: Monad m => HetcatsOpts -> XGraph -> LibEnv -> DGraph
+iterateXgBody :: Monad m => HetcatsOpts -> XGraph -> LibEnv -> DGraph
               -> ChangeList -> m DGraph
-iterateXGraph = undefined
-  -- delete nodes and links from dg
-  -- (? rebuilt global annotation ?)
+iterateXgBody = undefined
   -- check for adds/updates of initial nodes
   -- rebuilt/iterate body
   -- adjust nextLinkId etc.. then return
 
-{- TODO add parameter for needsChange/Update. if True, update ALL DgElements
-(using fromXml functionality). if False, only update from ChangeList. -}
-iterateXTree :: Monad m => HetcatsOpts -> XTree -> LibEnv -> DGraph
-             -> ChangeList -> m DGraph
-iterateXTree opts xt lv dg _ = case xt of
-  [] -> undefined
-    -- when tree is null, check if any changes left. else return dg
-  cur : r -> undefined
-    -- process all branches
-    {- scan for changes; call iterateXTree with updateTheory for those
-    upcomming branches that have any changed nodes as source. 
-    !! CAUTION: such branches may occur ANYWHERE within the remaining tree! -}
-
 processBranch :: Monad m => [XLink] -> XNode -> DGraph -> ChangeList
               -> m (DGraph, Bool)
-processBranch xlks xnd dg dgEff = undefined
+processBranch = undefined
   -- insert and update links
   -- insert or update node (use fromXml functions here)
   -- check if any changes made, then return
