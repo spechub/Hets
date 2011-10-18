@@ -156,14 +156,13 @@ target nodes of definition links are "reduced" (see deleteDGNode)
 
 -}
 
-deleteDGLink :: Node -> Node -> EdgeId -> DGraph -> Result DGraph
-deleteDGLink s t i dg = let
+deleteDGLink :: Node -> EdgeId -> DGraph -> Result DGraph
+deleteDGLink t i dg = let
   (Just (ins, nt, nl, loopsAndOuts), rg) = match t $ dgBody dg
   (loops, outs) = partition ((== t) . snd) loopsAndOuts
   allIns = loops ++ ins
-  (linksFromSrc, otherInLinks) = partition ((== s) . snd) allIns
-  in case partition ((== i) . dgl_id . fst) linksFromSrc of
-    ([], _) -> justWarn dg ("link not found: " ++ show (s, t, i))
+  in case partition ((== i) . dgl_id . fst) allIns of
+    ([], _) -> justWarn dg ("link not found: " ++ show (t, i))
     ([(lbl, _)], rs) -> case dgl_type lbl of
        ScopedLink lOrG lk _ -> case lOrG of
          Local -> let
@@ -177,7 +176,7 @@ deleteDGLink s t i dg = let
                  (edgeInProofBasis i . getProofBasis . fst) rs
            newGs = map (\ (el, ct) -> (invalidateDGLinkProof el, ct)) gs
            in return dg
-             { dgBody = (newGs ++ others ++ otherInLinks, nt, nl2, outs)
+             { dgBody = (newGs ++ others, nt, nl2, outs)
                & rg }
          Global -> case lk of
            ThmLink pst -> let
@@ -186,25 +185,25 @@ deleteDGLink s t i dg = let
              (this may delete also manually inserted theorem links!)
              all links have the same target. -}
              createdLinks =
-               filter ((`edgeInProofBasis` pB) . dgl_id . fst) allIns
+               filter ((`edgeInProofBasis` pB) . dgl_id . fst) rs
              -- global links proven by current link
              (gs, restIns) = partition
                 (edgeInProofBasis i . getProofBasis . fst)
-                otherInLinks
+                rs
              newGs = map (\ (el, ct) -> (invalidateDGLinkProof el, ct)) gs
              in if null createdLinks then return dg { dgBody =
-                   (rs ++ newGs ++ restIns, nt, nl, outs) & rg }
+                   (newGs ++ restIns, nt, nl, outs) & rg }
                 else do
                    dg2 <- foldM (\ dgx (el, _) ->
-                        deleteDGLink s t (dgl_id el) dgx) dg createdLinks
-                   deleteDGLink s t i dg2
+                        deleteDGLink t (dgl_id el) dgx) dg createdLinks
+                   deleteDGLink t i dg2
            DefLink -> return dg
              { dgBody =
-               (rs ++ otherInLinks, nt, nl { nodeMod = delSymMod }, outs)
+               (rs, nt, nl { nodeMod = delSymMod }, outs)
                & rg }
        _ -> justWarn dg
-            ("unhandled hiding/free/cofree link: " ++ show (s, t, i))
-    _ -> justWarn dg ("ambiguous link: " ++ show (s, t, i))
+            ("unhandled hiding/free/cofree link: " ++ show (t, i))
+    _ -> justWarn dg ("ambiguous link: " ++ show (t, i))
 
 deleteDGNodeThms :: (Named GSentence -> Bool) -> DGNodeLab -> DGNodeLab
 deleteDGNodeThms _p nl = nl { nodeMod = delThMod }

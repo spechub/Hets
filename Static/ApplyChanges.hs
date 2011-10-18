@@ -54,7 +54,7 @@ updateDG opts xml chL dg le = liftR $ do
         else dg'
   dgFin <- iterateXgBody opts xgr le dg'' chL'
   let ln = libName xgr
-  return (ln, Map.insert ln dgFin le) 
+  return (ln, Map.insert ln dgFin le)
 
 deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
 deleteElements dg0 chL = let
@@ -62,7 +62,7 @@ deleteElements dg0 chL = let
     deleteLink (dg, tar) ei = case getDGLinksById ei dg of
       [] -> fail $ "required link [" ++ show ei ++ "] was not found in DGraph!"
       [(i, j, _)] -> do
-        dg' <- deleteDGLink i j ei dg
+        dg' <- deleteDGLink j ei dg
         return (dg', j : tar)
       _ -> fail $ "ambigous occurance of linkId: " ++ show ei
     -- deletes a node from dg
