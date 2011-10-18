@@ -68,29 +68,17 @@ module CASL.Sublogic
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.AS_Annotation
+import Common.Lattice
+
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
 import CASL.Fold
-
-class (Ord l, Show l) => Lattice l where
-  cjoin :: l -> l -> l
-  ctop :: l
-  bot :: l
-
-instance Lattice () where
-  cjoin _ _ = ()
-  ctop = ()
-  bot = ()
-
-instance Lattice Bool where
-  cjoin = (||)
-  ctop = True
-  bot = False
 
 {- ----------------------------------------------------------------------------
 datatypes for CASL sublogics
