@@ -32,6 +32,7 @@ import Common.XUpdate
 import Control.Monad
 import Control.Monad.Trans (lift)
 
+import qualified Data.List as List (nub)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -57,34 +58,44 @@ updateDG opts xml chL dg le = liftR $ do
   return (ln, Map.insert ln dgFin le)
 
 deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
-deleteElements dg0 chL = let
+deleteElements dg0 chL0 = do
+  (dg1, targets) <- foldM deleteLink (dg0, []) $ Set.toList $ deleteLinks chL0
+  dg2 <- foldM deleteNode dg1 $ Set.toList $ deleteNodes chL0
+  chL' <- foldM (markNodeUpdates dg2) chL0 $ List.nub targets
+  return (dg2, chL') where
     -- deletes a link from dg. returns smaller dg and links target id
-    deleteLink (dg, tar) ei = case getDGLinksById ei dg of
-      [] -> fail $ "required link [" ++ show ei ++ "] was not found in DGraph!"
-      [(i, j, _)] -> do
-        dg' <- deleteDGLink j ei dg
-        return (dg', j : tar)
-      _ -> fail $ "ambigous occurance of linkId: " ++ show ei
+    deleteLink (dg, tars) (trg, ei) = case lookupUniqueNodeByName trg dg of
+      Just (j, _) -> liftM (\ dg' -> (dg', j : tars)) $ deleteDGLink j ei dg
+      Nothing -> fail $
+        "required target [" ++ trg ++ "] was not found in DGraph!"
     -- deletes a node from dg
     deleteNode dg nm = let nd = showName nm
       in case lookupUniqueNodeByName nd dg of
-        Nothing -> fail $ "required node [" ++ nd ++ "] was not found in DGraph!"
         Just (j, _) -> deleteDGNode j dg
-  in do
-  (dg1, targets) <- foldM deleteLink (dg0, []) $ Set.toList $ deleteLinks chL
-  dg2 <- foldM deleteNode dg1 $ Set.toList $ deleteNodes chL
-  {- TODO: all target nodes should be looked up in dgraph AFTER node deletion.
-  if they are gone, everything is fine. if not, they should be marked for
-  updating (possibly just added to ChangeList) -}
-  return (dg2, chL)
+        Nothing -> fail $
+          "required node [" ++ nd ++ "] was not found in DGraph!"
+    {- after deletion, all still-existing nodes which lost ingoing links must
+    be marked for updating
+    TODO: this might only be applicable to definition links. Ask Christian about it! -}
+    markNodeUpdates dg chL trg = case lookupNodeWith ((== trg) . fst) dg of
+      [] -> return chL
+      [(_, lbl)] -> return $ chL
+        { changeNodes = Map.insert (dgn_name lbl) MkUpdate $ changeNodes chL } 
+      _ -> fail $ "ambigous occurance of node #" ++ show trg
+
 
 -- !! ALWAYS DELETE PROCESSED ENTRIES FROM DGEFFECT OBJECT
 iterateXgBody :: Monad m => HetcatsOpts -> XGraph -> LibEnv -> DGraph
               -> ChangeList -> m DGraph
-iterateXgBody = undefined
+iterateXgBody opts xgr le dg chL = do
+  (dg', chL') <- foldM updateNode (dg, chL) $ startNodes xgr 
+  undefined
   -- check for adds/updates of initial nodes
   -- rebuilt/iterate body
   -- adjust nextLinkId etc.. then return
+
+updateNode :: Monad m => (DGraph, ChangeList) -> XNode -> m (DGraph, ChangeList)
+updateNode = undefined
 
 processBranch :: Monad m => [XLink] -> XNode -> DGraph -> ChangeList
               -> m (DGraph, Bool)

@@ -80,16 +80,19 @@ mkAttr l = case l of
   _ -> fail $ "XPATH unexpected attr: " ++ show l
 
 -- | Describes the minimal change-effect of a .diff upon a DGraph.
-data ChangeList = ChangeList { deleteNodes :: Set.Set NodeName
-                             , deleteLinks :: Set.Set EdgeId
-                             , changeNodes :: Map.Map NodeName ChangeAction
-                             , changeLinks :: Map.Map EdgeId ChangeAction
-                             , updateAnnotations :: Bool }
+data ChangeList = ChangeList
+  { deleteNodes :: Set.Set NodeName
+  , deleteLinks :: Set.Set (String, EdgeId) -- ^ target node  
+  , changeNodes :: Map.Map NodeName ChangeAction
+  , changeLinks :: Map.Map EdgeId ChangeAction
+  , changedInDg :: Map.Map NodeName NodeMod -- ^ to be used in ApplyChanges
+  , updateAnnotations :: Bool }
 
 data ChangeAction = MkUpdate | MkInsert
 
 emptyChangeList :: ChangeList
-emptyChangeList = ChangeList Set.empty Set.empty Map.empty Map.empty False
+emptyChangeList =
+  ChangeList Set.empty Set.empty Map.empty Map.empty Map.empty False
 
 -- | iterate Xml in multiple directions
 data Direction = Vertical
@@ -299,7 +302,8 @@ mkRemoveChange cr chL = case current cr of
       return chL { deleteNodes = Set.insert nm $ deleteNodes chL }
   Elem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
-      return chL { deleteLinks = Set.insert ei $ deleteLinks chL }
+      trg <- getAttrVal "target" e
+      return chL { deleteLinks = Set.insert (trg, ei) $ deleteLinks chL }
   _ -> mkUpdateChange cr chL
 
 isDgNodeElem :: Element -> Bool
