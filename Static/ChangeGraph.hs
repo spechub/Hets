@@ -206,8 +206,13 @@ delDGLink ms t i dg = let
                    delDGLink ms t i dg2
            DefLink -> return dg
              { dgBody = (rs, nt, updNodeMod delSymMod nl, outs) & rg }
-       _ -> justWarn dg
-            ("unhandled hiding/free/cofree link: " ++ show (t, i))
+       HidingFreeOrCofreeThm _ _ _ _ -> return dg
+         { dgBody = (rs, nt, nl, outs) & rg }
+           {- just delete the theorem link, we don't know what links can be
+           in the proof basis by the shifting rules -}
+       _ -> return dg
+         { dgBody = (rs, nt, updNodeMod delSymMod nl, outs) & rg }
+           -- delete other def links
     _ -> justWarn dg ("ambiguous link: " ++ show (t, i))
 
 updNodeMod :: NodeMod -> DGNodeLab -> DGNodeLab
