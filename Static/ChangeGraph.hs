@@ -157,13 +157,19 @@ target nodes of definition links are "reduced" (see deleteDGNode)
 -}
 
 deleteDGLink :: Node -> EdgeId -> DGraph -> Result DGraph
-deleteDGLink t i dg = let
+deleteDGLink = delDGLink Nothing
+
+delDGLink :: Maybe Node -> Node -> EdgeId -> DGraph -> Result DGraph
+delDGLink ms t i dg = let
   (Just (ins, nt, nl, loopsAndOuts), rg) = match t $ dgBody dg
   (loops, outs) = partition ((== t) . snd) loopsAndOuts
   allIns = loops ++ ins
   in case partition ((== i) . dgl_id . fst) allIns of
     ([], _) -> justWarn dg ("link not found: " ++ show (t, i))
-    ([(lbl, _)], rs) -> case dgl_type lbl of
+    ([(lbl, s)], rs) ->
+       if maybe False (/= s) ms
+       then fail $ "non-matching source node: " ++ show (s, t, i)
+       else case dgl_type lbl of
        ScopedLink lOrG lk _ -> case lOrG of
          Local -> let
            nl2 = case lk of
@@ -194,11 +200,11 @@ deleteDGLink t i dg = let
              in if null createdLinks then return dg { dgBody =
                    (newGs ++ restIns, nt, nl, outs) & rg }
                 else do
-                   dg2 <- foldM (\ dgx (el, _) ->
-                        deleteDGLink t (dgl_id el) dgx) dg createdLinks
-                   deleteDGLink t i dg2
+                   dg2 <- foldM (\ dgx (el, sr) ->
+                        delDGLink (Just sr) t (dgl_id el) dgx) dg createdLinks
+                   delDGLink ms t i dg2
            DefLink -> return dg
-             { dgBody = ( rs, nt, updNodeMod delSymMod nl, outs) & rg }
+             { dgBody = (rs, nt, updNodeMod delSymMod nl, outs) & rg }
        _ -> justWarn dg
             ("unhandled hiding/free/cofree link: " ++ show (t, i))
     _ -> justWarn dg ("ambiguous link: " ++ show (t, i))
