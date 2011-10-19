@@ -92,28 +92,25 @@ insertStep :: HetcatsOpts -> LogicGraph -> XNode -> [XLink] -> (DGraph, LibEnv)
            -> ResultT IO (DGraph, LibEnv)
 insertStep opts lg xNd lks (dg, lv) = do
   mrs <- mapM (getTypeAndMorphism lg dg) lks
-  let mrsLks = zip mrs lks
-  (j, gt2, dg', lv') <- insertNodeWithLinkData opts lg (dg, lv) mrsLks xNd
-  dg'' <- foldM ( \ dgR ((i, mr, tp), lk) -> do
+  G_sign lid sg sId <- getSigForXNode opts lg (dg, lv) mrs xNd
+  (j, gt2, dg', lv') <-
+      insertNode opts lg (Just $ noSensGTheory lid sg sId) xNd (dg, lv)
+  dg'' <- foldM ( \ dgR (i, mr, tp, lk) -> do
             lkLab <- finalizeLink lg lk mr (signOf gt2) tp
             return $ insEdgeAsIs (i, j, lkLab) dgR
-            ) dg' mrsLks
+            ) dg' mrs
   return (dg'', lv')
 
-{- | given a list of XLinks along with their precalculated morphisms, calc. the
-required Theory and use it to insert an XNode into the Graph -}
-insertNodeWithLinkData :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv)
-      -> [((Graph.Node, GMorphism, DGLinkType), XLink)] -> XNode
-      -> ResultT IO (Graph.Node, G_theory, DGraph, LibEnv)
-insertNodeWithLinkData opts lg (dg, lv) mrs xNd = do
-  G_sign lid sg sId <- case mrs of
+getSigForXNode :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv)
+      -> [(Graph.Node, GMorphism, DGLinkType, XLink)] -> XNode
+      -> ResultT IO G_sign
+getSigForXNode  opts lg (dg, lv) mrs xNd = case mrs of
     [] -> fail "insertStep: empty link list"
-    ((_, _, FreeOrCofreeDefLink _ _), xLk) : rt -> do
+    (_, _, FreeOrCofreeDefLink _ _, xLk) : rt -> do
         unless (null rt)
           $ fail "unexpected non-singleton free or cofree def link"
         fmap snd $ signOfNode (source xLk) dg
-    _ -> liftR $ gsigManyUnion lg $ map (\ ((_, m, _), _) -> cod m) mrs
-  insertNode opts lg (Just $ noSensGTheory lid sg sId) xNd (dg, lv)
+    _ -> liftR $ gsigManyUnion lg $ map (\ (_, m, _, _) -> cod m) mrs
 
 -- | inserts theorem links
 insertThmLinks :: LogicGraph -> DGraph -> EdgeMap -> ResultT IO DGraph
@@ -144,11 +141,11 @@ finalizeLink lg xLk mr sg tp = do
 
 -- | gathers information for an XLink using its source nodes signature
 getTypeAndMorphism :: LogicGraph -> DGraph -> XLink
-                   -> ResultT IO (Graph.Node, GMorphism, DGLinkType)
+                   -> ResultT IO (Graph.Node, GMorphism, DGLinkType, XLink)
 getTypeAndMorphism lg dg xLk = do
   (i, sg1) <- signOfNode (source xLk) dg
   (mr', lTp) <- getTypeAndMorphism1 lg dg sg1 xLk
-  return (i, mr', lTp)
+  return (i, mr', lTp, xLk)
 
 getTypeAndMorphism1 :: LogicGraph -> DGraph -> G_sign -> XLink
   -> ResultT IO (GMorphism, DGLinkType)

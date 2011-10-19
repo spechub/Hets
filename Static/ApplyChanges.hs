@@ -37,11 +37,12 @@ import Logic.Grothendieck
 import Control.Monad
 import Control.Monad.Trans (lift)
 
+import Data.Graph.Inductive.Graph (Node)
 import qualified Data.List as List (nub)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-import Text.XML.Light
+import Text.XML.Light hiding (Node)
 
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
   -> ResultT IO (LibName, LibEnv)
@@ -78,10 +79,27 @@ iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
   - resulting theory changes of former updates (source of indoing deflinks -}
 mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
               -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = undefined {- do
-  (dg', needsUpdate') <- updateLinks -}
+mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
+  needSigUpd = foldl (\ r xlk -> r || maybe False (\_ -> True)
+    (Map.lookup (parseNodeName $ source xlk) $ changedInDg chL)) False xlks
+  {- TODO use ChangeGraph.setSignature when possible to keep old node info. -} 
+  chL' = if needSigUpd then chL { changeNodes = Map.insert (nodeName xnd)
+           MkUpdate $ changeNodes chL } else chL in do
+    mrs <- mapM (getTypeAndMorphism lg dg) xlks
+    G_sign lid sg sId <- getSigForXNode opts lg (dg, lv) mrs xnd
+    rs1 <- mkNodeUpdate opts lg (Just $ noSensGTheory lid sg sId)
+        (dg, lv, chL') xnd
+    foldM (mkLinkUpdate opts lg) rs1 mrs
 
--- | update or insert a node in accordance with XGraph data
+{- iterate one branches list of xlinks and make update/insertions to dg as
+required -}
+mkLinkUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
+             -> (Node, GMorphism, DGLinkType, XLink)
+             -> ResultT IO (DGraph, LibEnv, ChangeList)
+mkLinkUpdate = undefined
+
+{- | update or insert a node in accordance with XGraph data ONLY if the element
+is marked for updating in changelist. -}
 mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
              -> (DGraph, LibEnv, ChangeList) -> XNode
              -> ResultT IO (DGraph, LibEnv, ChangeList)
@@ -89,7 +107,7 @@ mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
   case Map.lookup nm $ changeNodes chL of
     -- no change required, move on
     Nothing -> return (dg, lv, chL)
-    Just _ -> let nd = showName nm in do
+    Just _ -> do
       (_, _, dg', lv') <- insertNode opts lg mGt xnd (dg, lv)
       return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
                  -- TODO: the exact NodeMod could be calculated here!
