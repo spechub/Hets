@@ -108,14 +108,15 @@ If the node index is unknown then auxiliary functions (or a mapping between
 node names and node indices) can be supplied to delete nodes by name. -}
 
 deleteDGNode :: Node -> DGraph -> Result DGraph
-deleteDGNode t dg = let
-  (Just (ins, _, _, outs), rg) = match t $ dgBody dg
-  in if null $ ins ++ outs then return dg { dgBody = rg } else do
-  dg2 <- foldM (\ dgx (el, sr) -> delDGLink (Just sr) t (dgl_id el) dgx)
-    dg ins
-  dg3 <- foldM (\ dgx (el, rt) -> delDGLink (Just t) rt (dgl_id el) dgx)
-    dg2 outs
-  deleteDGNode t dg3
+deleteDGNode t dg = case match t $ dgBody dg of
+  (Just (ins, _, _, outs), rg) ->
+    if null $ ins ++ outs then return dg { dgBody = rg } else do
+      dg2 <- foldM (\ dgx (el, sr) -> delDGLink (Just sr) t (dgl_id el) dgx)
+        dg ins
+      dg3 <- foldM (\ dgx (el, rt) -> delDGLink (Just t) rt (dgl_id el) dgx)
+        dg2 outs
+      deleteDGNode t dg3
+  _ -> justWarn dg $ "node not in graph: " ++ show t
 
 {- | add a node supplying the necessary information.
 
@@ -174,24 +175,28 @@ delDGLink ms t i dg = let
   (loops, outs) = partition ((== t) . snd) loopsAndOuts
   allIns = loops ++ ins
   in case partition ((== i) . dgl_id . fst) allIns of
-    ([], _) -> justWarn dg ("link not found: " ++ show (t, i))
-    ([(lbl, s)], rs) -> case ms of
+    ([], _) -> justWarn dg $ "link not found: " ++ show (t, i)
+    ((lbl, s) : os, rs) -> do
+     unless (null os) $ justWarn ()
+       $ "ambiguous link: " ++ shows (t, i) " other sources are: "
+         ++ show (map snd os)
+     case ms of
       Just sr | sr /= s -> fail
         $ "non-matching source node: " ++ show (s, t, i)
         ++ " given: " ++ show sr
       _ -> case dgl_type lbl of
        ScopedLink lOrG lk _ -> case lOrG of
-         Local -> let
-           nl2 = case lk of
+         Local -> do
+           nl2 <- case lk of
                  ThmLink (Proven (DGRuleLocalInference renms) _) ->
                    deleteDGNodeSens (\ nSen -> not (isAxiom nSen)
                      && senAttr nSen `elem` map snd renms) nl
-                 _ -> nl
+                 _ -> return nl
            -- find global link(s) that contain(s) the edge-id as proof-basis
-           (gs, others) = partition
+           let (gs, others) = partition
                  (edgeInProofBasis i . getProofBasis . fst) rs
-           newGs = map (\ (el, ct) -> (invalidateDGLinkProof el, ct)) gs
-           in return dg
+               newGs = map (\ (el, ct) -> (invalidateDGLinkProof el, ct)) gs
+           return dg
              { dgBody = (newGs ++ others, t, nl2, outs)
                & rg }
          Global -> case lk of
@@ -222,12 +227,12 @@ delDGLink ms t i dg = let
        _ -> return dg
          { dgBody = (rs, t, updNodeMod delSymMod nl, outs) & rg }
            -- delete other def links
-    _ -> justWarn dg ("ambiguous link: " ++ show (t, i))
 
 updNodeMod :: NodeMod -> DGNodeLab -> DGNodeLab
 updNodeMod m nl = nl { nodeMod = mergeNodeMod m $ nodeMod nl }
 
-deleteDGNodeSens :: (forall a . Named a -> Bool) -> DGNodeLab -> DGNodeLab
+deleteDGNodeSens :: (forall a . Named a -> Bool) -> DGNodeLab
+  -> Result DGNodeLab
 deleteDGNodeSens p nl = case dgn_theory nl of
   G_theory lid s si sens _ ->
     case OMap.partitionWithKey (\ n -> p . reName (const n)) sens of
@@ -236,8 +241,9 @@ deleteDGNodeSens p nl = case dgn_theory nl of
           chg | all isAxiom es = delAxMod
               | all (not . isAxiom) es = delThMod
               | otherwise = delSenMod
-          in if OMap.null del then nl else
-          updNodeMod chg $ nl
+        in if OMap.null del
+          then justWarn nl $ "no sentence deleted in: " ++ getDGNodeName nl
+          else return $ updNodeMod chg $ nl
             { dgn_theory = G_theory lid s si rest startThId }
 
 invalidateDGLinkProof :: DGLinkLab -> DGLinkLab
