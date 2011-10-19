@@ -27,8 +27,8 @@ data Annote_word = Annote_word String | Comment_start deriving (Show, Eq, Ord)
 data Annote_text = Line_anno String | Group_anno [String]
     deriving (Show, Eq, Ord)
 
--- | formats to be displayed (may be extended in the future).
--- Drop 3 from the show result to get the string for parsing and printing
+{- | formats to be displayed (may be extended in the future).
+Drop 3 from the show result to get the string for parsing and printing -}
 data Display_format = DF_HTML | DF_LATEX | DF_RTF deriving (Show, Eq, Ord)
 
 -- | swap the entries of a lookup table
@@ -43,25 +43,25 @@ toTable = map $ \ a -> (a, drop 3 $ show a)
 display_format_table :: [(Display_format, String)]
 display_format_table = toTable [ DF_HTML, DF_LATEX, DF_RTF ]
 
--- | lookup the textual representation of a display format
--- in 'display_format_table'
+{- | lookup the textual representation of a display format
+in 'display_format_table' -}
 lookupDisplayFormat :: Display_format -> String
 lookupDisplayFormat df =
     fromMaybe (error "lookupDisplayFormat: unknown display format")
         $ lookup df display_format_table
 
--- | precedence 'Lower' means less and 'BothDirections' means less and greater.
--- 'Higher' means greater but this is syntactically not allowed in 'Prec_anno'.
--- 'NoDirection' can also not be specified explicitly,
--- but covers those ids that are not mentionend in precedences.
+{- | precedence 'Lower' means less and 'BothDirections' means less and greater.
+'Higher' means greater but this is syntactically not allowed in 'Prec_anno'.
+'NoDirection' can also not be specified explicitly,
+but covers those ids that are not mentionend in precedences. -}
 data PrecRel = Higher | Lower | BothDirections | NoDirection
     deriving (Show, Eq, Ord)
 
 -- | either left or right associative
 data AssocEither = ALeft | ARight deriving (Show, Eq, Ord)
 
--- | semantic (line) annotations without further information.
--- Use the same drop-3-trick as for the 'Display_format'.
+{- | semantic (line) annotations without further information.
+Use the same drop-3-trick as for the 'Display_format'. -}
 data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono | SA_implied
     deriving (Show, Eq, Ord)
 
@@ -70,8 +70,8 @@ semantic_anno_table :: [(Semantic_anno, String)]
 semantic_anno_table =
     toTable [SA_cons, SA_def, SA_implies, SA_mono, SA_implied]
 
--- | lookup the textual representation of a semantic anno
--- in 'semantic_anno_table'
+{- | lookup the textual representation of a semantic anno
+in 'semantic_anno_table' -}
 lookupSemanticAnno :: Semantic_anno -> String
 lookupSemanticAnno sa =
     fromMaybe (error "lookupSemanticAnno: no semantic anno")
@@ -92,21 +92,20 @@ data Annotation = -- | constructor for comments or unparsed annotes
                 | String_anno Id Id Range
                 -- position of anno start, commas and anno end
                 | Prec_anno PrecRel [Id] [Id] Range
-                -- positions: "{",commas,"}", RecRel, "{",commas,"}"
-                -- Lower = "< "  BothDirections = "<>"
+                {- positions: "{",commas,"}", RecRel, "{",commas,"}"
+                Lower = "< "  BothDirections = "<>" -}
                 | Assoc_anno AssocEither [Id] Range -- position of commas
                 | Label [String] Range
                 -- position of anno start and anno end
 
                 -- All annotations below are only as annote line allowed
                 | Semantic_anno Semantic_anno Range
-                -- position information for annotations is provided
-                -- by every annotation
+                {- position information for annotations is provided
+                by every annotation -}
                   deriving (Show, Eq, Ord)
 
--- |
--- 'isLabel' tests if the given 'Annotation' is a label
--- (a 'Label' typically follows a formula)
+{- | 'isLabel' tests if the given 'Annotation' is a label
+(a 'Label' typically follows a formula) -}
 isLabel :: Annotation -> Bool
 isLabel a = case a of
     Label _ _ -> True
@@ -122,30 +121,27 @@ isImplied a = case a of
     Semantic_anno SA_implied _ -> True
     _ -> False
 
--- |
--- 'isSemanticAnno' tests if the given 'Annotation' is a semantic one
+-- | 'isSemanticAnno' tests if the given 'Annotation' is a semantic one
 isSemanticAnno :: Annotation -> Bool
 isSemanticAnno a = case a of
     Semantic_anno _ _ -> True
     _ -> False
 
--- |
--- 'isComment' tests if the given 'Annotation' is a comment line or a
--- comment group
+{- | 'isComment' tests if the given 'Annotation' is a comment line or a
+comment group -}
 isComment :: Annotation -> Bool
 isComment c = case c of
     Unparsed_anno Comment_start _ _ -> True
     _ -> False
 
--- |
--- 'isAnnote' is the negation of 'isComment'
+-- | 'isAnnote' is the negation of 'isComment'
 isAnnote :: Annotation -> Bool
 isAnnote = not . isComment
 
--- | an item wrapped in preceding (left 'l_annos')
--- and following (right 'r_annos') annotations.
--- 'opt_pos' should carry the position of an optional semicolon
--- following a formula (but is currently unused).
+{- | an item wrapped in preceding (left 'l_annos')
+and following (right 'r_annos') annotations.
+'opt_pos' should carry the position of an optional semicolon
+following a formula (but is currently unused). -}
 data Annoted a = Annoted
     { item :: a
     , opt_pos :: Range
@@ -185,7 +181,7 @@ makeNamed a s = SenAttr
 
 type Named s = SenAttr s String
 
-reName :: (String -> String) -> Named s -> Named s
+reName :: (a -> b) -> SenAttr s a -> SenAttr s b
 reName f x = x { senAttr = f $ senAttr x }
 
 -- | extending sentence maps to maps on labelled sentences
@@ -210,10 +206,10 @@ instance Functor Annoted where
 -- | replace the 'item'
 replaceAnnoted :: b -> Annoted a -> Annoted b
 replaceAnnoted x (Annoted _ o l r) = Annoted x o l r
--- one could use this fmap variant instead (less efficient)
--- replaceAnnoted x = fmap (const x)
--- or even:
--- replaceAnnoted = (<$)
+{- one could use this fmap variant instead (less efficient)
+replaceAnnoted x = fmap (const x)
+or even:
+replaceAnnoted = (<$) -}
 
 -- | add further following annotations
 appendAnno :: Annoted a -> [Annotation] -> Annoted a
@@ -234,8 +230,8 @@ getRLabel a =
       Label l _ : _ -> unwords $ concatMap words l
       _ -> ""
 
--- | check for an annotation starting with % and the input str
--- (does not work for known annotation words)
+{- | check for an annotation starting with % and the input str
+(does not work for known annotation words) -}
 identAnno :: String -> Annotation -> Bool
 identAnno str an = case an of
     Unparsed_anno (Annote_word wrd) _ _ -> wrd == str
