@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {- |
 Module      :  $Header$
 Description :  functions for changing a development graphs
@@ -26,6 +27,7 @@ import Logic.Grothendieck
 
 import Common.AS_Annotation
 import Common.Consistency
+import qualified Common.OrderedMap as OMap
 import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
@@ -175,7 +177,7 @@ delDGLink ms t i dg = let
          Local -> let
            nl2 = case lk of
                  ThmLink (Proven (DGRuleLocalInference renms) _) ->
-                   deleteDGNodeThms (\ nSen -> not (isAxiom nSen)
+                   deleteDGNodeSens (\ nSen -> not (isAxiom nSen)
                      && senAttr nSen `elem` map snd renms) nl
                  _ -> nl
            -- find global link(s) that contain(s) the edge-id as proof-basis
@@ -218,8 +220,18 @@ delDGLink ms t i dg = let
 updNodeMod :: NodeMod -> DGNodeLab -> DGNodeLab
 updNodeMod m nl = nl { nodeMod = mergeNodeMod m $ nodeMod nl }
 
-deleteDGNodeThms :: (Named GSentence -> Bool) -> DGNodeLab -> DGNodeLab
-deleteDGNodeThms _p = updNodeMod delThMod
+deleteDGNodeSens :: (forall a . Named a -> Bool) -> DGNodeLab -> DGNodeLab
+deleteDGNodeSens p nl = case dgn_theory nl of
+  G_theory lid s si sens _ ->
+    case OMap.partitionWithKey (\ n -> p . reName (const n)) sens of
+      (del, rest) -> let
+          es = OMap.elems del
+          chg | all isAxiom es = delAxMod
+              | all (not . isAxiom) es = delThMod
+              | otherwise = delSenMod
+          in if OMap.null del then nl else
+          updNodeMod chg $ nl
+            { dgn_theory = G_theory lid s si rest startThId }
 
 invalidateDGLinkProof :: DGLinkLab -> DGLinkLab
 invalidateDGLinkProof el = el { dgl_type = setProof LeftOpen $ dgl_type el }
