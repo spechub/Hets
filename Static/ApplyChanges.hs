@@ -89,15 +89,26 @@ mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
     G_sign lid sg sId <- getSigForXNode opts lg (dg, lv) mrs xnd
     rs1 <- mkNodeUpdate opts lg (Just $ noSensGTheory lid sg sId)
         (dg, lv, chL') xnd
-    foldM (mkLinkUpdate opts lg) rs1 mrs
+    foldM (mkLinkUpdate lg) rs1 mrs
 
 {- iterate one branches list of xlinks and make update/insertions to dg as
 required -}
-mkLinkUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
+mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
              -> (Node, GMorphism, DGLinkType, XLink)
              -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkLinkUpdate = undefined
-
+mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xlk) =
+  case Map.lookup (edgeId xlk) $ changeLinks chL of
+    -- no change required, move on
+    Nothing -> return (dg, lv, chL)
+    -- TODO do we need to delete link first if updating an existing one??
+    Just _ -> case lookupUniqueNodeByName (target xlk) dg of
+        Nothing -> fail $
+          "required node [" ++ target xlk ++ "] was not found in DGraph!"
+        Just (j, lbl) -> do
+          dg' <- (insertLink lg j $ signOf $ dgn_theory lbl) dg lkMr
+          return (dg', lv, chL { changeLinks = Map.delete (edgeId xlk)
+            $ changeLinks chL })
+    
 {- | update or insert a node in accordance with XGraph data ONLY if the element
 is marked for updating in changelist. -}
 mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory

@@ -95,22 +95,14 @@ insertStep opts lg xNd lks (dg, lv) = do
   G_sign lid sg sId <- getSigForXNode opts lg (dg, lv) mrs xNd
   (j, gt2, dg', lv') <-
       insertNode opts lg (Just $ noSensGTheory lid sg sId) xNd (dg, lv)
-  dg'' <- foldM ( \ dgR (i, mr, tp, lk) -> do
-            lkLab <- finalizeLink lg lk mr (signOf gt2) tp
-            return $ insEdgeAsIs (i, j, lkLab) dgR
-            ) dg' mrs
+  dg'' <- foldM (insertLink lg j (signOf gt2)) dg' mrs
   return (dg'', lv')
 
-getSigForXNode :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv)
-      -> [(Graph.Node, GMorphism, DGLinkType, XLink)] -> XNode
-      -> ResultT IO G_sign
-getSigForXNode  opts lg (dg, lv) mrs xNd = case mrs of
-    [] -> fail "insertStep: empty link list"
-    (_, _, FreeOrCofreeDefLink _ _, xLk) : rt -> do
-        unless (null rt)
-          $ fail "unexpected non-singleton free or cofree def link"
-        fmap snd $ signOfNode (source xLk) dg
-    _ -> liftR $ gsigManyUnion lg $ map (\ (_, m, _, _) -> cod m) mrs
+insertLink :: LogicGraph -> Graph.Node -> G_sign -> DGraph
+            -> (Graph.Node, GMorphism, DGLinkType, XLink) -> ResultT IO DGraph
+insertLink lg j gs dg (i, mr, tp, lk) = do
+            lkLab <- finalizeLink lg lk mr gs tp
+            return $ insEdgeAsIs (i, j, lkLab) dg
 
 -- | inserts theorem links
 insertThmLinks :: LogicGraph -> DGraph -> EdgeMap -> ResultT IO DGraph
@@ -124,8 +116,7 @@ insertTarThmLinks lg j tgt p = foldM (\ dg (src, ls) -> do
   (i, gsig) <- signOfNode src dg
   foldM (\ dg' xLk -> do
       (mr, tp) <- getTypeAndMorphism1 lg dg gsig xLk
-      lkLab <- finalizeLink lg xLk mr tgt tp
-      return $ insEdgeAsIs (i, j, lkLab) dg') dg ls) p . Map.toList
+      insertLink lg j tgt dg' (i, mr, tp, xLk)) dg ls) p . Map.toList
 
 {- | given a links intermediate morphism and its target nodes signature,
 this function calculates the final morphism for this link -}
@@ -138,6 +129,19 @@ finalizeLink lg xLk mr sg tp = do
       mr1 <- ginclusion lg (cod mr) sg
       composeMorphisms mr mr1
   return $ defDGLinkId mr' tp SeeTarget $ edgeId xLk
+
+{- | based upon the morphisms of ingoing deflinks, calculate the initial
+signature to be used for node insertion -}
+getSigForXNode :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv)
+      -> [(Graph.Node, GMorphism, DGLinkType, XLink)] -> XNode
+      -> ResultT IO G_sign
+getSigForXNode  opts lg (dg, lv) mrs xNd = case mrs of
+    [] -> fail "insertStep: empty link list"
+    (_, _, FreeOrCofreeDefLink _ _, xLk) : rt -> do
+        unless (null rt)
+          $ fail "unexpected non-singleton free or cofree def link"
+        fmap snd $ signOfNode (source xLk) dg
+    _ -> liftR $ gsigManyUnion lg $ map (\ (_, m, _, _) -> cod m) mrs
 
 -- | gathers information for an XLink using its source nodes signature
 getTypeAndMorphism :: LogicGraph -> DGraph -> XLink
