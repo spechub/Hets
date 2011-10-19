@@ -19,13 +19,14 @@ insertion\/conversion order for the creation of the new list
 module Common.OrderedMap
   ( OMap
   , ElemWOrd (..)
+  , null
   , lookup
   , insert
   , map, mapWithKey
   , update
   , difference
   , filter, filterWithKey
-  , partition
+  , partition, partitionWithKey
   , fromList, toList
   , keys, elems
   ) where
@@ -48,6 +49,9 @@ instance Ord a => Ord (ElemWOrd a) where
     compare = comparing ele
 
 type OMap a b = Map.Map a (ElemWOrd b)
+
+null :: OMap k a -> Bool
+null = Map.null
 
 lookup :: (Monad m, Ord k) => k -> OMap k a -> m a
 lookup k = maybe (fail "Common.OrderedMap.lookup")
