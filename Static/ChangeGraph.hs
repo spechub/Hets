@@ -166,10 +166,11 @@ delDGLink ms t i dg = let
   allIns = loops ++ ins
   in case partition ((== i) . dgl_id . fst) allIns of
     ([], _) -> justWarn dg ("link not found: " ++ show (t, i))
-    ([(lbl, s)], rs) ->
-       if maybe False (/= s) ms
-       then fail $ "non-matching source node: " ++ show (s, t, i)
-       else case dgl_type lbl of
+    ([(lbl, s)], rs) -> case ms of
+      Just sr | sr /= s -> fail
+        $ "non-matching source node: " ++ show (s, t, i)
+        ++ " given: " ++ show sr
+      _ -> case dgl_type lbl of
        ScopedLink lOrG lk _ -> case lOrG of
          Local -> let
            nl2 = case lk of
