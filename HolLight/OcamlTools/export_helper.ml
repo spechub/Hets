@@ -104,4 +104,4 @@ let print_to_file printer obj fname =
  printer fmt obj;
  close_out out_ch;;
 
-let export_libs (h,l) f = print_to_file pp_export (htbl_to_list h (fun k v -> (k,htbl_to_list v (fun k1 v1 -> (k1,mkSharedTerm (concl v1))))),l) f;;
+let export_libs (h,l) f = print_to_file pp_export (htbl_to_list h (fun k v -> (k,htbl_to_list v (fun k1 v1 -> (k1,mkSharedTerm v1)))),l) f;;

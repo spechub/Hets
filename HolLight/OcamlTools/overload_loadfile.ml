@@ -30,21 +30,29 @@ do_list (fun s -> Topdirs.dir_directory(Filename.concat ocaml_source_dir s))
 #load "printtyp.cmo";;
 
 if let v = String.sub Sys.ocaml_version 0 4 in
-   v = "3.10" or v = "3.11"
+   v >= "3.10"
 then (Topdirs.dir_directory "+camlp5";
       Topdirs.dir_load Format.std_formatter "camlp5o.cma")
 else (Topdirs.dir_load Format.std_formatter "camlp4o.cma");;
 
 Topdirs.dir_load Format.std_formatter (Filename.concat hol_dir "pa_j.cmo");;
 
-#use "sys.ml";;
-#use "lib.ml";;
-#use "fusion.ml";;
-
 let use_file s =
   if Toploop.use_file Format.std_formatter s then ()
   else (Format.print_string("Error in included file "^s);
         Format.print_newline());;
+
+if Sys.file_exists "sys.ml" then
+use_file "sys.ml"
+else
+use_file "system.ml";;
+
+let needs f = ();;
+
+#use "lib.ml";;
+#use "fusion.ml";;
+
+use_file (ocaml_tools_dir^"fixnames.ml");;
 
 module OldToploop = Toploop;;
 module OldTopdirs = Topdirs;;
@@ -55,7 +63,7 @@ let (store_read_result,begin_load,end_load,get_libs,inject_hol_include) = let li
   and hol_core_loaded = ref false
   and bnds_size = ref 0 in
   let _read = ref [] in
-  let store_read_result s = _read := s
+  let store_read_result s = _read := (List.map fixNames s);
   and listify l = if l = [] then "[]"
     else "[\n"^(List.fold_right (fun a b -> a^";\n"^b) l "")^"\n]\n" in
   let file_of_string filename s =
@@ -119,7 +127,14 @@ let (store_read_result,begin_load,end_load,get_libs,inject_hol_include) = let li
                         Stack.push lib (!stack);
                         Hashtbl.add (!known) lib (Hashtbl.create 10);
                         true) else false
-  and end_load () = map_new_syms (Stack.pop (!stack))
+  and end_load () =
+   (*let bname = (Filename.basename (Stack.top (!stack)))
+   in (if bname = "tactics.ml" 
+         then let filename = Filename.temp_file "rebind" ".ml"
+              in (file_of_string filename "let prove = fun (t,tac) -> mk_thm ([],t);;";
+                 use_file filename;
+                 Sys.remove filename)
+         else ());*) map_new_syms (Stack.pop (!stack))
   and inject_hol_include f = (libs := (!libs)@[("hol.ml",f)])
   and get_libs () = let empty = Hashtbl.fold (fun k v t -> if Hashtbl.length v == 0 then k::t else t) (!known) []
                     and purge = fun names (h,l) -> (Hashtbl.fold (fun k v t -> (if List.mem k names then () else Hashtbl.add t k v); t) h (Hashtbl.create (Hashtbl.length h)),List.filter (fun (s,_) -> not(List.mem s names)) l)
@@ -130,13 +145,10 @@ let (store_read_result,begin_load,end_load,get_libs,inject_hol_include) = let li
                     in purge (purgable empty (!libs)) (!known,!libs)
                      
   in
-(*(Hashtbl.fold (fun k v t -> (if Hashtbl.length v > 0 then Hashtbl.add t k v else ()); t) (!known) (Hashtbl.create (Hashtbl.length (!known))), List.filter (fun (s,_) -> (Hashtbl.length (Hashtbl.find (!known) s)) > 0) (!libs)) in*)
   (store_read_result,begin_load,end_load,get_libs,inject_hol_include);;
 
 module Topdirs =
     struct
-      (* type 'a printer_type_new = Format.formatter -> 'a -> unit
-      type 'a printer_type_old = 'a -> unit *)
       let dir_quit = OldTopdirs.dir_quit
       let dir_directory = OldTopdirs.dir_directory
       let dir_cd = OldTopdirs.dir_cd
@@ -152,13 +164,6 @@ module Topdirs =
 
 module Toploop = 
     struct
-      (*type directive_fun =
-        Toploop.directive_fun =
-          Directive_none  of (unit -> unit)
-        | Directive_string of (string -> unit)
-        | Directive_int of (int -> unit)
-        | Directive_ident of (Longident.t -> unit)
-        | Directive_bool of (bool -> unit) *)
       let getvalue = OldToploop.getvalue
       let setvalue = OldToploop.setvalue
       let set_paths = OldToploop.set_paths

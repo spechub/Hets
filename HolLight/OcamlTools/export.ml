@@ -6,6 +6,7 @@ let hol_dir = getenv "HETS_HOL_DIR";;
 let ocaml_source_dir = getenv "HETS_OCAML_LIB_DIR";;
 let ocaml_tools_dir = (Sys.getcwd ())^"/";;
 #use "overload_loadfile.ml";;
+inject_hol_include;;
 use_file "hol.ml";;
 
 use_file (ocaml_tools_dir^"export_helper.ml");;
