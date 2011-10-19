@@ -50,6 +50,7 @@ dgXUpdate opts xs le ln dg = do
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
     $ ppTopElement $ cleanUpElem xml
   rebuiltDgXml opts le xml
+--  updateDG opts xml chL dg le
 
 updateDG :: HetcatsOpts -> Element -> ChangeList -> DGraph -> LibEnv
          -> ResultT IO (LibName, LibEnv)
@@ -58,10 +59,44 @@ updateDG opts xml chL dg le = do
   xgr <- liftR $ xGraph xml
   let dg'' = if updateAnnotations chL then dg' { globalAnnos = globAnnos xgr }
         else dg'
-  (dgFin, le') <- iterateXgBody opts xgr le dg'' chL'
+  (dgFin, le', chL'') <- iterateXgBody opts xgr le dg'' chL'
   let ln = libName xgr
+  -- TODO update/insert Theorem Links
+  -- TODO adjust nextLinkId etc..
+  -- TODO possibly test if any updates are left undone (corrupted dg/diff)
   return (ln, Map.insert ln dgFin le')
 
+-- !! ALWAYS DELETE PROCESSED ENTRIES FROM CHANGELIST
+iterateXgBody :: HetcatsOpts -> XGraph -> LibEnv -> DGraph
+              -> ChangeList -> ResultT IO (DGraph, LibEnv, ChangeList)
+iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
+  rs1 <- foldM (mkNodeUpdate opts lg Nothing) (dg, lv, chL) $ startNodes xgr
+  foldM (foldM (mkXStepUpdate opts lg)) rs1 $ xg_body xgr
+
+{- | apply updates to one branch of the xgraph. conducted updates are
+  - all updates or insertions found in ChangeList
+  - resulting theory changes of former updates (source of indoing deflinks -}
+mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
+              -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
+mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = undefined {- do
+  (dg', needsUpdate') <- updateLinks -}
+
+-- | update or insert a node in accordance with XGraph data
+mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
+             -> (DGraph, LibEnv, ChangeList) -> XNode
+             -> ResultT IO (DGraph, LibEnv, ChangeList)
+mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
+  case Map.lookup nm $ changeNodes chL of
+    -- no change required, move on
+    Nothing -> return (dg, lv, chL)
+    Just _ -> let nd = showName nm in do
+      (_, _, dg', lv') <- insertNode opts lg mGt xnd (dg, lv)
+      return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
+                 -- TODO: the exact NodeMod could be calculated here!
+                 , changedInDg = Map.insert nm symMod $ changedInDg chL })
+
+{- | deletes the those elements from dgraph that are marked for deletion in
+changelist. for link deletion, the affected nodes are marked as such in chL -}
 deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
 deleteElements dg0 chL0 = do
   (dg1, targets) <- foldM deleteLink (dg0, []) $ Set.toList $ deleteLinks chL0
@@ -88,41 +123,3 @@ deleteElements dg0 chL0 = do
         { changeNodes = Map.insert (dgn_name lbl) MkUpdate $ changeNodes chL } 
       _ -> fail $ "ambigous occurance of node #" ++ show trg
 
-
--- !! ALWAYS DELETE PROCESSED ENTRIES FROM DGEFFECT OBJECT
-iterateXgBody :: HetcatsOpts -> XGraph -> LibEnv -> DGraph
-              -> ChangeList -> ResultT IO (DGraph, LibEnv)
-iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
-  rs1 <- foldM (mkNodeUpdate opts lg Nothing) (dg, lv, chL) $ startNodes xgr
-  (dg', lv', chL') <- foldM (foldM (mkXStepUpdate opts lg)) rs1 $ xg_body xgr
-  -- TODO update/insert Theorem Links
-  -- TODO adjust nextLinkId etc..
-  -- TODO possibly test if any updates are left undone (corrupted dg/diff)
-  return (dg', lv')
-
-
-mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
-              -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = undefined {- do
-  (dg', needsUpdate') <- updateLinks -}
-
-
-mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
-             -> (DGraph, LibEnv, ChangeList) -> XNode
-             -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
-  case Map.lookup nm $ changeNodes chL of
-    -- no change required, move on
-    Nothing -> return (dg, lv, chL)
-    Just _ -> let nd = showName nm in do
-      (_, _, dg', lv') <- insertNode opts lg mGt xnd (dg, lv)
-      return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
-                 -- TODO: the exact NodeMod could be calculated here!
-                 , changedInDg = Map.insert nm symMod $ changedInDg chL })
-
-processBranch :: Monad m => [XLink] -> XNode -> DGraph -> ChangeList
-              -> m (DGraph, Bool)
-processBranch = undefined
-  -- insert and update links
-  -- insert or update node (use fromXml functions here)
-  -- check if any changes made, then return
