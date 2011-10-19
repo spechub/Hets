@@ -17,7 +17,7 @@ Also all functions modify an development graph when the are successful, which
 may be captured by some form of a state monad.
 -}
 
-module Static.ChangeGraph where
+module Static.ChangeGraph (deleteDGNode, deleteDGLink) where
 
 import Static.DgUtils
 import Static.GTheory
@@ -108,7 +108,14 @@ If the node index is unknown then auxiliary functions (or a mapping between
 node names and node indices) can be supplied to delete nodes by name. -}
 
 deleteDGNode :: Node -> DGraph -> Result DGraph
-deleteDGNode = undefined
+deleteDGNode t dg = let
+  (Just (ins, _, _, outs), rg) = match t $ dgBody dg
+  in if null $ ins ++ outs then return dg { dgBody = rg } else do
+  dg2 <- foldM (\ dgx (el, sr) -> delDGLink (Just sr) t (dgl_id el) dgx)
+    dg ins
+  dg3 <- foldM (\ dgx (el, rt) -> delDGLink (Just t) rt (dgl_id el) dgx)
+    dg2 outs
+  deleteDGNode t dg3
 
 {- | add a node supplying the necessary information.
 
@@ -163,7 +170,7 @@ deleteDGLink = delDGLink Nothing
 
 delDGLink :: Maybe Node -> Node -> EdgeId -> DGraph -> Result DGraph
 delDGLink ms t i dg = let
-  (Just (ins, nt, nl, loopsAndOuts), rg) = match t $ dgBody dg
+  (Just (ins, _, nl, loopsAndOuts), rg) = match t $ dgBody dg
   (loops, outs) = partition ((== t) . snd) loopsAndOuts
   allIns = loops ++ ins
   in case partition ((== i) . dgl_id . fst) allIns of
@@ -185,7 +192,7 @@ delDGLink ms t i dg = let
                  (edgeInProofBasis i . getProofBasis . fst) rs
            newGs = map (\ (el, ct) -> (invalidateDGLinkProof el, ct)) gs
            in return dg
-             { dgBody = (newGs ++ others, nt, nl2, outs)
+             { dgBody = (newGs ++ others, t, nl2, outs)
                & rg }
          Global -> case lk of
            ThmLink pst -> let
@@ -201,19 +208,19 @@ delDGLink ms t i dg = let
                 rs
              newGs = map (\ (el, ct) -> (invalidateDGLinkProof el, ct)) gs
              in if null createdLinks then return dg { dgBody =
-                   (newGs ++ restIns, nt, nl, outs) & rg }
+                   (newGs ++ restIns, t, nl, outs) & rg }
                 else do
                    dg2 <- foldM (\ dgx (el, sr) ->
                         delDGLink (Just sr) t (dgl_id el) dgx) dg createdLinks
                    delDGLink ms t i dg2
            DefLink -> return dg
-             { dgBody = (rs, nt, updNodeMod delSymMod nl, outs) & rg }
+             { dgBody = (rs, t, updNodeMod delSymMod nl, outs) & rg }
        HidingFreeOrCofreeThm _ _ _ _ -> return dg
-         { dgBody = (rs, nt, nl, outs) & rg }
+         { dgBody = (rs, t, nl, outs) & rg }
            {- just delete the theorem link, we don't know what links can be
            in the proof basis by the shifting rules -}
        _ -> return dg
-         { dgBody = (rs, nt, updNodeMod delSymMod nl, outs) & rg }
+         { dgBody = (rs, t, updNodeMod delSymMod nl, outs) & rg }
            -- delete other def links
     _ -> justWarn dg ("ambiguous link: " ++ show (t, i))
 
