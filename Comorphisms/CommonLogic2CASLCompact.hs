@@ -262,11 +262,11 @@ senForm bndVars form = case form of
   Cl.Atom_sent at rn -> case at of
       Cl.Equation trm1 trm2 ->
           CBasic.Strong_equation
-            (termForm bndVars trm1)
-            (termForm bndVars trm2) rn
-      Cl.Atom trm tseqs -> 
+            (termForm bndVars $ uncurryTerm trm1)
+            (termForm bndVars $ uncurryTerm trm2) rn
+      Cl.Atom trm tseqs ->
           CBasic.Predication
-            (termFormPrd trm (length tseqs))
+            (termFormPrd (uncurryTerm trm) (length tseqs))
             (map (termSeqForm bndVars) tseqs) rn
   Cl.Comment_sent _ s _ -> senForm bndVars s
   Cl.Irregular_sent s _ -> senForm bndVars s
@@ -321,8 +321,10 @@ termForm bndVars trm = case trm of
       then CBasic.Qual_var n individual Id.nullRange
       else CBasic.Application (termFormApp trm 0) [] Id.nullRange
   Cl.Funct_term term tseqs rn ->
-      CBasic.Application (termFormApp term (length tseqs)) (map (termSeqForm bndVars) tseqs) rn
-  Cl.Comment_term term _ _ -> termForm bndVars term
+      CBasic.Application
+        (termFormApp term (length tseqs))
+        (map (termSeqForm bndVars) tseqs) rn
+  Cl.Comment_term term _ _ -> termForm bndVars (uncurryTerm term)
 
 termFormApp :: Cl.TERM -> Int -> CBasic.OP_SYMB
 termFormApp trm ar = case trm of
@@ -337,7 +339,7 @@ termFormPrd trm ar = case trm of
 
 termSeqForm :: Set.Set Cl.NAME -> Cl.TERM_SEQ -> CBasic.TERM a
 termSeqForm bndVars tseq = case tseq of
-  Cl.Term_seq trm -> termForm bndVars trm
+  Cl.Term_seq trm -> termForm bndVars $ uncurryTerm trm
   Cl.Seq_marks s -> error $ errSeqMark s
 
 bindingSeq :: Cl.NAME_OR_SEQMARK -> CBasic.VAR
@@ -375,9 +377,9 @@ colTi_sen sen = case sen of
       Cl.Implication s1 s2 -> unionsTI $ map colTi_sen [s1,s2]
       Cl.Biconditional s1 s2 -> unionsTI $ map colTi_sen [s1,s2]
   Cl.Atom_sent a _ -> case a of
-      Cl.Equation t1 t2 -> unionsTI $ map colTi_trm_var [t1,t2]
-      Cl.Atom t [] -> colTi_trm_prop t
-      Cl.Atom t tseqs -> colTi_addArity Pred t tseqs
+      Cl.Equation t1 t2 -> unionsTI $ map (colTi_trm_var . uncurryTerm) [t1, t2]
+      Cl.Atom t [] -> colTi_trm_prop $ uncurryTerm t
+      Cl.Atom t tseqs -> colTi_addArity Pred (uncurryTerm t) tseqs
   Cl.Comment_sent _ s _ -> colTi_sen s
   Cl.Irregular_sent s _ -> colTi_sen s
 
@@ -390,19 +392,19 @@ colTi_trm_var :: Cl.TERM -> TextInfo
 colTi_trm_var trm = case trm of
   Cl.Name_term n -> emptyTI {vars = Set.singleton (Id.tokStr n)}
   Cl.Comment_term t _ _ -> colTi_trm_var t
-  _ -> colTi_trm trm
+  _ -> colTi_trm $ uncurryTerm trm
 
 colTi_trm_prop :: Cl.TERM -> TextInfo
 colTi_trm_prop trm = case trm of
   Cl.Name_term n -> emptyTI {props = Set.singleton (Id.tokStr n)}
   Cl.Comment_term t _ _ -> colTi_trm_prop t
-  _ -> colTi_trm trm
+  _ -> colTi_trm $ uncurryTerm trm
 
 colTi_trm :: Cl.TERM -> TextInfo
 colTi_trm trm = case trm of
   Cl.Name_term _ -> emptyTI
   Cl.Funct_term t tseqs _ -> colTi_addArity Func t tseqs
-  Cl.Comment_term t _ _ -> colTi_trm t
+  Cl.Comment_term t _ _ -> colTi_trm $ uncurryTerm t
 
 colTi_trmSeq :: Cl.TERM_SEQ -> TextInfo
 colTi_trmSeq tseq = case tseq of
@@ -417,13 +419,25 @@ colTi_addArity ty trm tseqs = case trm of
                                   (Id.tokStr n) (length tseqs) MapSet.empty}
                   else emptyTI { arityFunc = MapSet.insert
                                   (Id.tokStr n) (length tseqs) MapSet.empty}
-                  )
-                  : map colTi_trmSeq tseqs
-  Cl.Funct_term _ _ _ ->
-    unionsTI [ colTi_trm trm
-             -- , undefined -- TODO: implement correct handling for curried functions
-             ]
+                  ) : map colTi_trmSeq tseqs
+  Cl.Funct_term _ _ _ -> colTi_trm $ uncurryTerm trm -- FIX predicate "(f x) y"
   Cl.Comment_term t _ _ -> colTi_addArity ty t tseqs
+
+-- If curried, uncurries term. Otherwise original term returned
+-- removes comments
+uncurryTerm :: Cl.TERM -> Cl.TERM
+uncurryTerm trm = case trm of
+  Cl.Funct_term t tseqs rn ->
+      let (nt, args) = uncurryTermWithArgs t tseqs in
+      Cl.Funct_term nt args rn
+  Cl.Comment_term t _ _ -> uncurryTerm t
+  _ -> trm
+
+uncurryTermWithArgs :: Cl.TERM -> [Cl.TERM_SEQ] -> (Cl.TERM, [Cl.TERM_SEQ])
+uncurryTermWithArgs trm tseqs = case trm of
+  Cl.Funct_term t ts _ -> uncurryTermWithArgs t (ts ++ tseqs)
+  Cl.Comment_term t _ _ -> uncurryTermWithArgs t tseqs
+  _ -> (trm, tseqs)
 
 errSeqMark :: Cl.SEQ_MARK -> String
 errSeqMark s = "Sequence marks not allowed in this comorphism. Found: " ++ Id.tokStr s
