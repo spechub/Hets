@@ -92,7 +92,7 @@ insertStep :: HetcatsOpts -> LogicGraph -> XNode -> [XLink] -> (DGraph, LibEnv)
            -> ResultT IO (DGraph, LibEnv)
 insertStep opts lg xNd lks (dg, lv) = do
   mrs <- mapM (getTypeAndMorphism lg dg) lks
-  G_sign lid sg sId <- getSigForXNode opts lg (dg, lv) mrs xNd
+  G_sign lid sg sId <- getSigForXNode lg dg mrs
   (j, gt2, dg', lv') <-
       insertNode opts lg (Just $ noSensGTheory lid sg sId) xNd (dg, lv)
   dg'' <- foldM (insertLink lg j (signOf gt2)) dg' mrs
@@ -132,10 +132,10 @@ finalizeLink lg xLk mr sg tp = do
 
 {- | based upon the morphisms of ingoing deflinks, calculate the initial
 signature to be used for node insertion -}
-getSigForXNode :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv)
-      -> [(Graph.Node, GMorphism, DGLinkType, XLink)] -> XNode
-      -> ResultT IO G_sign
-getSigForXNode  opts lg (dg, lv) mrs xNd = case mrs of
+getSigForXNode :: LogicGraph -> DGraph
+               -> [(Graph.Node, GMorphism, DGLinkType, XLink)]
+               -> ResultT IO G_sign
+getSigForXNode lg dg mrs = case mrs of
     [] -> fail "insertStep: empty link list"
     (_, _, FreeOrCofreeDefLink _ _, xLk) : rt -> do
         unless (null rt)
@@ -217,7 +217,7 @@ insertNode opts lg mGt xNd (dg, lv) = let
           (gt', _) <- parseSpecs gt nm dg spc
           let nInf = newRefInfo (emptyLibName rfLb) i
               lbl = newInfoNodeLab nm nInf gt'
-          return (n, gt', addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
+          return (n, gt', addToRefNodesDG n nInf $ insNodeDG (n, lbl) dg, lv')
   -- Case #2: Regular Node
   XNode nm lN (hid, syb) spc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes
@@ -237,7 +237,7 @@ insertNode opts lg mGt xNd (dg, lv) = let
             diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
             return $ DGBasicSpec Nothing diffSig syb'
         let lbl = newNodeLab nm lOrig gt2
-        return (n, gt2, insLNodeDG (n, lbl) dg, lv)
+        return (n, gt2, insNodeDG (n, lbl) dg, lv)
 
 insertFirstNode :: HetcatsOpts -> LogicGraph -> XNode -> (DGraph, LibEnv)
   -> ResultT IO (DGraph, LibEnv)

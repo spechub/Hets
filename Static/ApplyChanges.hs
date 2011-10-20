@@ -12,6 +12,7 @@ adjust development graph according to xupdate information
 
 module Static.ApplyChanges (dgXUpdate) where
 
+import Static.ComputeTheory (computeLibEnvTheories)
 import Static.DevGraph
 import Static.ChangeGraph
 import Static.GTheory
@@ -44,14 +45,16 @@ import qualified Data.Map as Map
 
 import Text.XML.Light hiding (Node)
 
+import Debug.Trace
+
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
   -> ResultT IO (LibName, LibEnv)
 dgXUpdate opts xs le ln dg = do
   (xml, chL) <- liftR $ changeXml (dGraph le ln dg) xs
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
     $ ppTopElement $ cleanUpElem xml
-  rebuiltDgXml opts le xml
---  updateDG opts xml chL dg le
+--  rebuiltDgXml opts le xml
+  updateDG opts xml chL dg le
 
 {- TODO (general): a lot of unused information is created. possibly check if
 update is required for an element BEFORE processing xgraph information. -}
@@ -65,15 +68,15 @@ application. an xgraph is created and used as a guideline for signature-
 hierachy and for retrieving required new data. -}
 updateDG :: HetcatsOpts -> Element -> ChangeList -> DGraph -> LibEnv
          -> ResultT IO (LibName, LibEnv)
-updateDG opts xml chL dg le = do
+updateDG opts xml chL dg le = trace (show chL) $ do
   (dg', chL') <- liftR $ deleteElements dg chL
   xgr <- liftR $ xGraph xml
-  let dg'' = if updateAnnotations chL then dg' { globalAnnos = globAnnos xgr }
-        else dg'
+  let dg'' = dg' { globalAnnos = if updateAnnotations chL' then globAnnos xgr
+                     else globalAnnos dg', getNewEdgeId = nextLinkId xgr }
   (dgFin, le', _) <- iterateXgBody opts xgr le dg'' chL'
   let ln = libName xgr
   -- TODO possibly test if any updates are left undone (corrupted dg/diff)
-  return (ln, Map.insert ln dgFin { getNewEdgeId = nextLinkId xgr } le')
+  return (ln, computeLibEnvTheories $ Map.insert ln dgFin le')
 
 {- | move along xgraph structure and update or insert when required. updated
 elements are those initially marked as such in changelist as well as all
@@ -82,7 +85,7 @@ iterateXgBody :: HetcatsOpts -> XGraph -> LibEnv -> DGraph
               -> ChangeList -> ResultT IO (DGraph, LibEnv, ChangeList)
 iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
   rs1 <- foldM (mkNodeUpdate opts lg Nothing) (dg, lv, chL) $ startNodes xgr
-  rs2 <- foldM (foldM (mkXStepUpdate opts lg)) rs1 $ xg_body xgr
+  rs2 <- foldM (foldM (mkXStepUpdate opts lg)) rs1 $ reverse $ xg_body xgr
   mkThmLinkUpdates lg rs2 $ thmLinks xgr
 
 {- | apply updates to one branch of the xgraph. -}
@@ -96,7 +99,7 @@ mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
   chL' = if needSigUpd then chL { changeNodes = Map.insert (nodeName xnd)
            MkUpdate $ changeNodes chL } else chL in do
     mrs <- mapM (getTypeAndMorphism lg dg) xlks
-    G_sign lid sg sId <- getSigForXNode opts lg (dg, lv) mrs xnd
+    G_sign lid sg sId <- getSigForXNode lg dg mrs
     rs1 <- mkNodeUpdate opts lg (Just $ noSensGTheory lid sg sId)
         (dg, lv, chL') xnd
     foldM (mkLinkUpdate lg) rs1 mrs
@@ -105,7 +108,7 @@ mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
 mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
              -> (Node, GMorphism, DGLinkType, XLink)
              -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xlk) = let
+mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xlk) = trace ("updLink: " ++ show xlk) $ let
   -- TODO use setMorphism if possible to keep old link data
   mkLinkUpdateAux = case lookupUniqueNodeByName (target xlk) dg of
         Nothing -> fail $
@@ -137,13 +140,15 @@ is marked for updating in changelist. -}
 mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
              -> (DGraph, LibEnv, ChangeList) -> XNode
              -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
+mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = trace ("updNode: " ++ show xnd)
+  $ let nm = nodeName xnd in
   case Map.lookup nm $ changeNodes chL of
     -- no change required, move on
     Nothing -> return (dg, lv, chL)
-    Just _ -> do
-      (_, _, dg', lv') <- insertNode opts lg mGt xnd (dg, lv)
-      return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
+    Just chAc -> do
+      dg'' <- liftR $ if chAc == MkUpdate then deleteNode dg nm else return dg
+      (j, _, dg', lv') <- insertNode opts lg mGt xnd (dg'', lv)
+      trace ("updated as #" ++ show j) $ return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
                  -- TODO: the exact NodeMod could be calculated here!
                  , changedInDg = Map.insert nm symMod $ changedInDg chL })
 
@@ -155,17 +160,6 @@ deleteElements dg0 chL0 = do
   dg2 <- foldM deleteNode dg1 $ Set.toList $ deleteNodes chL0
   chL' <- foldM (markNodeUpdates dg2) chL0 $ List.nub targets
   return (dg2, chL') where
-    -- deletes a link from dg. returns smaller dg and links target id
-    deleteLink (dg, tars) (trg, ei) = case lookupUniqueNodeByName trg dg of
-      Just (j, _) -> liftM (\ dg' -> (dg', j : tars)) $ deleteDGLink j ei dg
-      Nothing -> fail $
-        "required target [" ++ trg ++ "] was not found in DGraph!"
-    -- deletes a node from dg
-    deleteNode dg nm = let nd = showName nm
-      in case lookupUniqueNodeByName nd dg of
-        Just (j, _) -> deleteDGNode j dg
-        Nothing -> fail $
-          "required node [" ++ nd ++ "] was not found in DGraph!"
     {- after deletion, all still-existing nodes which lost ingoing links must
     be marked for updating
     TODO: this might only be applicable to definition links. Ask Christian about it! -}
@@ -174,4 +168,19 @@ deleteElements dg0 chL0 = do
       [(_, lbl)] -> return $ chL
         { changeNodes = Map.insert (dgn_name lbl) MkUpdate $ changeNodes chL } 
       _ -> fail $ "ambigous occurance of node #" ++ show trg
+
+    -- deletes a link from dg. returns smaller dg and links target id
+deleteLink :: (DGraph, [Node]) -> (String, EdgeId) -> Result (DGraph, [Node])
+deleteLink (dg, tars) (trg, ei) = case lookupUniqueNodeByName trg dg of
+      Just (j, _) -> liftM (\ dg' -> (dg', j : tars)) $ deleteDGLink j ei dg
+      Nothing -> fail $
+        "required target [" ++ trg ++ "] was not found in DGraph!"
+    -- deletes a node from dg
+
+deleteNode :: DGraph -> NodeName -> Result DGraph
+deleteNode dg nm = let nd = showName nm
+      in case lookupUniqueNodeByName nd dg of
+        Just (j, _) -> deleteDGNode j dg
+        Nothing -> fail $
+          "required node [" ++ nd ++ "] was not found in DGraph!"
 

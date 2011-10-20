@@ -88,7 +88,20 @@ data ChangeList = ChangeList
   , changedInDg :: Map.Map NodeName NodeMod -- ^ to be used in ApplyChanges
   , updateAnnotations :: Bool }
 
-data ChangeAction = MkUpdate | MkInsert
+instance Show ChangeList where
+  show (ChangeList delN delL updN updL _ _) =
+      "delete nodes:\n" ++ unlines (map showName (Set.toList delN))
+   ++ "delete links:\n" ++ unlines (map show (Set.toList delL))
+   ++ "update nodes:\n" ++ unlines 
+     (map (\ (a, b) -> showName a ++ show b) (Map.toList updN))
+   ++ "update links:\n" ++ unlines
+     (map (\ (a, b) -> show a ++ show b) (Map.toList updL))
+
+data ChangeAction = MkUpdate | MkInsert deriving Eq
+
+instance Show ChangeAction where
+  show MkUpdate = "-update"
+  show MkInsert = "-insert"
 
 emptyChangeList :: ChangeList
 emptyChangeList =
