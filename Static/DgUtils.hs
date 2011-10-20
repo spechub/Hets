@@ -26,7 +26,7 @@ import qualified Data.Set as Set
 
 -- ** node label types
 
-data XPathPart = ElemName String | ChildIndex Int deriving (Show, Eq, Ord)
+data XPathPart = ElemName String | ChildIndex Int deriving Show
 
 {- | name of a node in a DG; auxiliary nodes may have extension string
      and non-zero number (for these, names are usually hidden). -}
@@ -35,7 +35,13 @@ data NodeName = NodeName
   , extString :: String
   , extIndex :: Int
   , xpath :: [XPathPart]
-  } deriving (Show, Eq, Ord)
+  } deriving Show
+
+instance Ord NodeName where
+  compare n1 n2 = compare (showName n1) (showName n2)
+
+instance Eq NodeName where
+  n1 == n2 = compare n1 n2 == EQ
 
 readXPath :: Monad m => String -> m [XPathPart]
 readXPath = mapM readXPathComp . splitOn '/'
