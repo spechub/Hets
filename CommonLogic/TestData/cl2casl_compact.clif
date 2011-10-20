@@ -1,53 +1,29 @@
 (cl-text prop
-
   (thisMustBeTrue)
-
   (and (a) (b) (not (c)))
-
   (or (d) (e) (not (f)))
-
 )
-
 
 (cl-text pred
-
   (P g)
-
   (Q h)
-
   (P g h)
-
 )
-
 
 (cl-text quant
-
   (forall (x y z) (and (P x) (P y) (not (P z))))
-
   (exists (x) (P x))
-
 )
-
 
 (cl-text compact
-
-  (P i)
-
+  (P g)
   (Q P)
-
-  (forall (P) (P j))
-
+  (forall (P) (P h))
 )
 
-
 (cl-text func
-
-  (= (F k) l)
-
-  (= m (n o p q))
-
-  (forall (G H) (= (G r) (H s t)))
-
-  (= ((I ((J u) v) w) aa) bb)
-
+  (= (F g) h)
+  (= g (G h i j))
+  (forall (H I) (= (H g) (I h i)))
+  (= ((J ((K g) h) i) j) k)
 )
