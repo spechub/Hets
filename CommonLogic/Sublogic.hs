@@ -13,25 +13,26 @@ Sublogics for CommonLogic
 
 module CommonLogic.Sublogic
     (
-     sl_basic_spec                  -- determine sublogic for basic spec
-    , CLTextType (..)               -- types of CommonLogic texts
-    , CommonLogicSL (..)            -- sublogics for CommonLogic
-    , sublogics_max                 -- join of sublogics
-    , top                           -- FullCommonLogic
-    , bottom                        -- Propositional
-    , fullclsl                      -- FullCommonLogic
-    , compactsl                     -- Beyond FOL, but without seqMarks
-    , folsl                         -- FirstOrderLogic
-    , propsl                        -- Propositional
-    , sublogics_all                 -- all sublogics
-    , sublogics_name                -- name of sublogics
-    , sl_sig                        -- sublogic for a signature
-    , sl_sym                        -- sublogic for symbols
-    , sl_mor                        -- sublogic for morphisms
-    , sl_symmap                     -- sublogic for symbol map items
-    , sl_symitems                   -- sublogic for symbol items
-    , sublogic_text                 -- sublogic for a text
-    , sublogic_name                 -- sublogic for a text
+      sl_basic_spec       -- determine sublogic for basic spec
+    , CLTextType (..)     -- types of CommonLogic texts
+    , CommonLogicSL (..)  -- sublogics for CommonLogic
+    , sublogics_max       -- join of sublogics
+    , top                 -- FullCommonLogic
+    , bottom              -- Propositional
+    , fullclsl            -- FullCommonLogic
+    , funcNoPredsl        -- Beyond Compact, but no function returns a predicate
+    , compactsl           -- Beyond FOL, but without seqMarks
+    , folsl               -- FirstOrderLogic
+    , propsl              -- Propositional
+    , sublogics_all       -- all sublogics
+    , sublogics_name      -- name of sublogics
+    , sl_sig              -- sublogic for a signature
+    , sl_sym              -- sublogic for symbols
+    , sl_mor              -- sublogic for morphisms
+    , sl_symmap           -- sublogic for symbol map items
+    , sl_symitems         -- sublogic for symbol items
+    , sublogic_text       -- sublogic for a text
+    , sublogic_name       -- sublogic for a text
     , prSymbolM
     , prSig
     , prMor
@@ -39,9 +40,6 @@ module CommonLogic.Sublogic
     , prSymItemsM
     , prName
     , prBasicSpec
-    , isProp
-    , isFOL
-    , isCL
     )
     where
 
@@ -58,26 +56,18 @@ import qualified CommonLogic.Morphism as Morphism
 -------------------------------------------------------------------------------
 
 -- | types of sublogics
-data CLTextType = Propositional      -- Text without quantifiers
-                | FirstOrder         -- Text in First Order Logic
-                | Compact            -- Text beyond FOL, but without SeqMarks
-                | FullCommonLogic    -- Text without any constraints
-                deriving (Show, Eq, Ord)
+data CLTextType =
+    Propositional      -- Text without quantifiers
+  | FirstOrder         -- Text in First Order Logic
+  | Compact            -- Text beyond FOL, but without SeqMarks
+  | FuncNoPred         -- beyond Compact, but no function returns a predicate
+  | FullCommonLogic    -- Text without any constraints
+  deriving (Show, Eq, Ord)
 
 -- | sublogics for CommonLogic
 data CommonLogicSL = CommonLogicSL
     { format       :: CLTextType     -- Structural restrictions
     } deriving (Show, Eq, Ord)
-
-
-isProp :: CommonLogicSL -> Bool
-isProp sl = format sl == Propositional
-
-isFOL :: CommonLogicSL -> Bool
-isFOL sl = format sl == FirstOrder
-
-isCL :: CommonLogicSL -> Bool
-isCL sl = format sl == FullCommonLogic
 
 -- | comparison of sublogics
 compareLE :: CommonLogicSL -> CommonLogicSL -> Bool
@@ -87,17 +77,20 @@ compareLE p1 p2 =
     in
       case (f1, f2) of
         (_,               FullCommonLogic) -> True
+        (FullCommonLogic, FuncNoPred)      -> False
+        (_,               FuncNoPred)      -> True
         (FullCommonLogic, Compact)         -> False
+        (FuncNoPred,      Compact)         -> False
         (_,               Compact)         -> True
-        (FullCommonLogic, FirstOrder)      -> False
-        (Compact,         FirstOrder)      -> False
-        (_,               FirstOrder)      -> True
+        (Propositional,   FirstOrder)      -> True
+        (FirstOrder,      FirstOrder)      -> True
+        (_,               FirstOrder)      -> False
         (Propositional,   Propositional)   -> True
         (_,               Propositional)   -> False
 
 -- | all sublogics
 sublogics_all :: [CommonLogicSL]
-sublogics_all = [fullclsl, compactsl, folsl, bottom]
+sublogics_all = [fullclsl, funcNoPredsl, compactsl, folsl, bottom]
 
 ------------------------------------------------------------------------------
 -- Special elements in the Lattice of logics                                --
@@ -111,6 +104,9 @@ bottom = propsl
 
 fullclsl :: CommonLogicSL
 fullclsl = CommonLogicSL {format = FullCommonLogic}
+
+funcNoPredsl :: CommonLogicSL
+funcNoPredsl = CommonLogicSL {format = FuncNoPred}
 
 compactsl :: CommonLogicSL
 compactsl = CommonLogicSL {format = Compact}
@@ -126,25 +122,8 @@ propsl = CommonLogicSL {format = Propositional}
 -- join and max                                                              --
 -------------------------------------------------------------------------------
 
-sublogics_join :: (CLTextType -> CLTextType -> CLTextType)
-                  -> CommonLogicSL -> CommonLogicSL -> CommonLogicSL
-sublogics_join pfF a b = CommonLogicSL
-                         {
-                           format    = pfF (format a) (format b)
-                         }
-
-joinType :: CLTextType -> CLTextType -> CLTextType
-joinType Propositional   Propositional   = Propositional
-joinType Propositional   x               = x
-joinType FirstOrder      Propositional   = FirstOrder
-joinType FirstOrder      FirstOrder      = FirstOrder
-joinType FirstOrder      x               = x
-joinType Compact         FullCommonLogic = FullCommonLogic
-joinType Compact         _               = Compact
-joinType _               _               = FullCommonLogic
-
 sublogics_max :: CommonLogicSL -> CommonLogicSL -> CommonLogicSL
-sublogics_max = sublogics_join joinType
+sublogics_max a b = if compareLE a b then b else a
 
 -------------------------------------------------------------------------------
 -- Helpers                                                                   --
@@ -258,8 +237,12 @@ sl_atomSent prds cs a =
         AS.Equation t1 t2 -> 
             comp_list $ folsl : map (sl_term prds cs) [t1,t2]
         AS.Atom t [] -> sl_term prds cs t 
-        AS.Atom t tseq -> comp_list 
-            $ folsl : sl_term prds cs t : map (sl_termSeq prds cs) tseq
+        AS.Atom t tseq ->
+            let base = case t of
+                  AS.Funct_term _ _ _ -> fullclsl
+                  _ -> folsl
+            in  comp_list $ base
+                            : sl_term prds cs t : map (sl_termSeq prds cs) tseq
 
 -- | determines the sublogic for NAME_OR_SEQMARK,
 -- given predicates of the super-text
@@ -268,7 +251,7 @@ sl_nameOrSeqmark :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME_OR_SEQMARK
 sl_nameOrSeqmark prds cs nos = 
     case nos of
         AS.Name n -> sl_quantName prds cs n
-        AS.SeqMark _ -> fullclsl
+        AS.SeqMark _ -> funcNoPredsl
 
 -- | determines the sublogic for names which are next to a quantifier,
 -- given predicates of the super-text
@@ -301,7 +284,7 @@ sl_termSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM_SEQ -> CommonLogicSL
 sl_termSeq prds cs tseq = 
     case tseq of
         AS.Term_seq t -> sl_termInSeq prds cs t
-        AS.Seq_marks _ -> fullclsl
+        AS.Seq_marks _ -> funcNoPredsl
 
 -- | determines the sublogic for names,
 -- given predicates of the super-text
@@ -347,6 +330,7 @@ sublogics_name f = case format f of
                      Propositional   -> "Propositional"
                      FirstOrder      -> "FOL"
                      Compact         -> "Compact"
+                     FuncNoPred      -> "FunctionsNotReturningPredicate"
                      FullCommonLogic -> "FullCommonLogic"
 
 -------------------------------------------------------------------------------

@@ -26,6 +26,7 @@ import Common.ProofTree
 import Common.Result
 import Common.AS_Annotation as AS_Anno
 import Common.Lib.MapSet (MapSet)
+import Common.DocUtils (pretty)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Id as Id
@@ -312,7 +313,8 @@ bndVarsToSet :: Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK] -> Set.Set Cl.NAME
 bndVarsToSet bndVars bs = foldr Set.insert bndVars
   $ map (\nos -> case nos of
                   Cl.Name n -> n
-                  Cl.SeqMark s -> error $ errSeqMark s) bs
+                  Cl.SeqMark s -> error $ errSeqMark s)
+        bs
 
 termForm :: Set.Set Cl.NAME -> Cl.TERM -> CBasic.TERM a
 termForm bndVars trm = case trm of
@@ -329,13 +331,15 @@ termForm bndVars trm = case trm of
 termFormApp :: Cl.TERM -> Int -> CBasic.OP_SYMB
 termFormApp trm ar = case trm of
   Cl.Name_term n -> CBasic.Qual_op_name (Id.mkId [n]) (opType ar) Id.nullRange
+  Cl.Comment_term t _ _ -> termFormApp t ar
   _ -> error errCurriedFunctionS
 
 termFormPrd :: Cl.TERM -> Int -> CBasic.PRED_SYMB
 termFormPrd trm ar = case trm of
   Cl.Name_term n ->
       CBasic.Qual_pred_name (Id.mkId [n]) (predType ar) Id.nullRange
-  _ -> error errFunctionReturnedPredicateS
+  Cl.Comment_term t _ _ -> termFormPrd t ar
+  Cl.Funct_term _ _ _ -> error $ errFunctionReturnedPredicateS trm
 
 termSeqForm :: Set.Set Cl.NAME -> Cl.TERM_SEQ -> CBasic.TERM a
 termSeqForm bndVars tseq = case tseq of
@@ -445,5 +449,5 @@ errSeqMark s = "Sequence marks not allowed in this comorphism. Found: " ++ Id.to
 errCurriedFunctionS :: String
 errCurriedFunctionS = "Found curried function"
 
-errFunctionReturnedPredicateS :: String
-errFunctionReturnedPredicateS = "Function returned predicate"
+errFunctionReturnedPredicateS :: Cl.TERM -> String
+errFunctionReturnedPredicateS t = "Function returned predicate "++ (show $ pretty t)
