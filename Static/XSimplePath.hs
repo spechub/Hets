@@ -291,6 +291,8 @@ mkAddChange (chL, restCs) addCh = case addCh of
       ei <- extractEdgeId e
       return (chL { changeLinks = Map.insert ei MkInsert $ changeLinks chL }
         , restCs)
+    AddElem e | qName (elName e) == "Global" ->
+      return (chL { updateAnnotations = True }, restCs)
     _ -> return (chL, addCh : restCs)
 
 -- | go upwards until an updatable element is found

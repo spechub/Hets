@@ -83,7 +83,7 @@ elements are those initially marked as such in changelist as well as all
 elements that are subject to an ingoing signature modification. -}
 iterateXgBody :: HetcatsOpts -> XGraph -> LibEnv -> DGraph
               -> ChangeList -> ResultT IO (DGraph, LibEnv, ChangeList)
-iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
+iterateXgBody opts xgr lv dg chL = trace ("startNodes:\n" ++ unlines (map show $ startNodes xgr)) $ let lg = logicGraph in do
   rs1 <- foldM (mkNodeUpdate opts lg Nothing) (dg, lv, chL) $ startNodes xgr
   rs2 <- foldM (foldM (mkXStepUpdate opts lg)) rs1 $ reverse $ xg_body xgr
   mkThmLinkUpdates lg rs2 $ thmLinks xgr
@@ -91,12 +91,12 @@ iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
 {- | apply updates to one branch of the xgraph. -}
 mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
               -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
+mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = trace ("updStep: [" ++ show xnd ++ "], " ++ unlines (map show xlks)) $ let
   -- TODO by adjusting this test, the partial update can get more precise
   needSigUpd = foldl (\ r xlk -> r || maybe False (\_ -> True)
     (Map.lookup (parseNodeName $ source xlk) $ changedInDg chL)) False xlks
   {- TODO use ChangeGraph.setSignature when possible to keep old node info. -} 
-  chL' = if needSigUpd then chL { changeNodes = Map.insert (nodeName xnd)
+  chL' = if needSigUpd then chL { changeNodes = Map.insertWith (\ _ b -> b) (nodeName xnd)
            MkUpdate $ changeNodes chL } else chL in do
     mrs <- mapM (getTypeAndMorphism lg dg) xlks
     G_sign lid sg sId <- getSigForXNode lg dg mrs
@@ -104,7 +104,7 @@ mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
         (dg, lv, chL') xnd
     foldM (mkLinkUpdate lg) rs1 mrs
 
-{- check one xlink and make update/insertion to dg if required -}
+{- | check one xlink and make update or insertion to dg if required -}
 mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
              -> (Node, GMorphism, DGLinkType, XLink)
              -> ResultT IO (DGraph, LibEnv, ChangeList)
@@ -140,12 +140,11 @@ is marked for updating in changelist. -}
 mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
              -> (DGraph, LibEnv, ChangeList) -> XNode
              -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = trace ("updNode: " ++ show xnd)
-  $ let nm = nodeName xnd in
+mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
   case Map.lookup nm $ changeNodes chL of
     -- no change required, move on
     Nothing -> return (dg, lv, chL)
-    Just chAc -> do
+    Just chAc -> trace ("updNode: " ++ show xnd ++ " (" ++ show chAc ++ ")") $ do
       dg'' <- liftR $ if chAc == MkUpdate then deleteNode dg nm else return dg
       (j, _, dg', lv') <- insertNode opts lg mGt xnd (dg'', lv)
       trace ("updated as #" ++ show j) $ return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
@@ -165,18 +164,18 @@ deleteElements dg0 chL0 = do
     TODO: this might only be applicable to definition links. Ask Christian about it! -}
     markNodeUpdates dg chL trg = case lookupNodeWith ((== trg) . fst) dg of
       [] -> return chL
-      [(_, lbl)] -> return $ chL
+      [(_, lbl)] -> trace ("upd-changeaction: [" ++ show (dgn_name lbl) ++ "]") $ return $ chL
         { changeNodes = Map.insert (dgn_name lbl) MkUpdate $ changeNodes chL } 
       _ -> fail $ "ambigous occurance of node #" ++ show trg
 
-    -- deletes a link from dg. returns smaller dg and links target id
+-- deletes a link from dg. returns smaller dg and links target id
 deleteLink :: (DGraph, [Node]) -> (String, EdgeId) -> Result (DGraph, [Node])
 deleteLink (dg, tars) (trg, ei) = case lookupUniqueNodeByName trg dg of
       Just (j, _) -> liftM (\ dg' -> (dg', j : tars)) $ deleteDGLink j ei dg
       Nothing -> fail $
         "required target [" ++ trg ++ "] was not found in DGraph!"
-    -- deletes a node from dg
 
+-- deletes a node from dg
 deleteNode :: DGraph -> NodeName -> Result DGraph
 deleteNode dg nm = let nd = showName nm
       in case lookupUniqueNodeByName nd dg of
