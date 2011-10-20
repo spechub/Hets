@@ -30,6 +30,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Id as Id
 
+import Data.List (partition, intersect)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -87,11 +88,42 @@ instance Comorphism
       map_sentence CommonLogic2CASLCompact = mapSentence
       has_model_expansion CommonLogic2CASLCompact = True
 
-data TYPE = Pred | Func deriving (Eq, Ord, Show)
-type ArityMap = MapSet (String, TYPE) Int
+data Q_TYPE = Universal | Existential deriving (Eq, Ord, Show)
+data Pred_Or_Func = Pred | Func deriving (Eq, Ord, Show)
+data TextInfo = TextInfo {
+    vars :: Set.Set String
+  , props :: Set.Set String
+  , arityPred :: MapSet String Int
+  , arityFunc :: MapSet String Int
+  } deriving (Eq, Ord, Show)
 
-unionsMS :: (Ord a, Ord b) => [MapSet a b] -> MapSet a b
-unionsMS ts =  foldl MapSet.union MapSet.empty ts
+emptyTI :: TextInfo
+emptyTI = TextInfo { vars = Set.empty
+                   , props = Set.empty
+                   , arityPred = MapSet.empty
+                   , arityFunc = MapSet.empty
+                   }
+
+unionTI :: TextInfo -> TextInfo -> TextInfo
+unionTI s t = TextInfo { vars = Set.union (vars s) (vars t)
+                       , props = Set.union (props s) (props t)
+                       , arityPred = MapSet.union (arityPred s) (arityPred t)
+                       , arityFunc = MapSet.union (arityFunc s) (arityFunc t)
+                       }
+
+unionsTI :: [TextInfo] -> TextInfo
+unionsTI = foldr (\ti r -> unionTI r ti) emptyTI
+
+removeFromTI :: String -> TextInfo -> TextInfo
+removeFromTI n ti = ti { vars = Set.delete n $ vars ti
+                       , props = Set.delete n $ props ti
+                       , arityPred = MapSet.fromMap $
+                                      Map.delete n $ MapSet.toMap $ arityPred ti
+                       , arityFunc = MapSet.fromMap $
+                                      Map.delete n $ MapSet.toMap $ arityFunc ti
+                       }
+
+
 
 mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
 mapSub _ = CSL.caslTop
@@ -100,7 +132,7 @@ mapSub _ = CSL.caslTop
 
 mapMor :: ClMor.Morphism -> Result CMor.CASLMor
 mapMor mor = Result [] $ Just (CMor.embedMorphism ()
-  (mapSig MapSet.empty $ ClMor.source mor) $ mapSig MapSet.empty $ ClMor.target mor)
+  (mapSig emptyTI $ ClMor.source mor) $ mapSig emptyTI $ ClMor.target mor)
   { CMor.pred_map = trMor $ ClMor.propMap mor }
 
 -- | Helper for map mor
@@ -116,42 +148,43 @@ trMor mp =
       Map.empty
       mp
 
+idOf :: String -> Id.Id
+idOf s = (Id.mkId [Id.mkSimpleId s])
+
 -- |
 mapTheory :: (ClSign.Sign, [AS_Anno.Named Cl.TEXT_META])
               -> Result (CSign.CASLSign, [AS_Anno.Named CBasic.CASLFORMULA])
 mapTheory (sig, form) =
-  let arities = unionsMS $ map (collectArities . AS_Anno.sentence) form
-  in  Result [] $ Just (mapSig arities sig, map (trNamedForm sig) form)
+  let ti = unionsTI $ map (collectTextInfo . AS_Anno.sentence) form
+  in  Result [] $ Just (mapSig ti sig, map trNamedForm form)
 
-mapSig :: ArityMap -> ClSign.Sign -> CSign.CASLSign
-mapSig arities sign =
-  let constOpMap = Set.fold (\x res -> -- get constants
-          MapSet.insert x (CSign.mkTotOpType [] individual) res
-        ) MapSet.empty $ ClSign.items sign
-      constPredMap = Set.fold (\x res -> -- get constants
-          MapSet.insert x (CSign.PredType []) res
-        ) MapSet.empty $ ClSign.items sign -- TODO: analyze constants
-      (pm, om) = MapSet.foldWithKey (\(n,t) ar (preds, ops) ->
-          case t of
-            Pred -> ( MapSet.insert -- get non-nullary predicats
-                        (Id.mkId [Id.mkSimpleId n])
-                        (CSign.PredType {
-                          CSign.predArgs = replicate ar individual})
-                        preds
-                    , ops
-                    )
-            Func -> ( preds -- get non-nullary functions
-                    , MapSet.insert
-                        (Id.mkId [Id.mkSimpleId n])
-                        (CSign.mkTotOpType
-                          (replicate ar individual)
-                          individual)
-                        ops
-                    )
-          ) (constPredMap, constOpMap) arities
-  in  CSign.uniteCASLSign ((CSign.emptySign ()) { CSign.opMap = om
-                                                , CSign.predMap = pm
-                                                }) caslSig
+mapSig :: TextInfo -> ClSign.Sign -> CSign.CASLSign
+mapSig ti _ =
+  let constOpMap = Set.fold (\n res ->
+          MapSet.insert (idOf n) (opTypeSign 0) res
+        ) MapSet.empty (vars ti)
+      constPredMap = Set.fold (\n res ->
+          MapSet.insert (idOf n) (predTypeSign 0) res
+        ) MapSet.empty (props ti)
+      opMap = MapSet.foldWithKey (\n ar ops ->
+          MapSet.insert (idOf n) (opTypeSign ar) ops
+        ) MapSet.empty (arityFunc ti)
+      predMap = MapSet.foldWithKey (\n ar preds ->
+          MapSet.insert (idOf n) (predTypeSign ar) preds
+        ) MapSet.empty (arityPred ti)
+  in  CSign.uniteCASLSign (
+          (CSign.emptySign ()) {
+              CSign.opMap = MapSet.union constOpMap opMap
+            , CSign.predMap = MapSet.union constPredMap predMap
+            }
+        ) caslSig
+
+opTypeSign :: Int -> CSign.OpType
+opTypeSign ar = CSign.mkTotOpType (replicate ar individual) individual
+
+predTypeSign :: Int -> CSign.PredType
+predTypeSign ar = CSign.PredType {CSign.predArgs = replicate ar individual}
+
 
 -- | setting casl sign: sorts, cons, fun, nil, pred
 caslSig :: CSign.CASLSign
@@ -162,15 +195,15 @@ individual :: Id.Id
 individual = Id.stringToId "individual"
 -- -}
 -- todo maybe input here axioms
-trNamedForm :: ClSign.Sign -> AS_Anno.Named (Cl.TEXT_META)
+trNamedForm :: AS_Anno.Named (Cl.TEXT_META)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
-trNamedForm _ form = AS_Anno.mapNamed trFormMrs form
+trNamedForm form = AS_Anno.mapNamed trFormMrs form
 
 mapSentence :: ClSign.Sign -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
 mapSentence _ form = Result [] $ Just $ trFormMrs form
 
 -- ignores importations
-trFormMrs :: Cl.TEXT_META -> CBasic.CASLFORMULA
+trFormMrs ::  Cl.TEXT_META -> CBasic.CASLFORMULA
 trFormMrs tm = trForm $ Cl.getText tm
 
 trForm ::Cl.TEXT -> CBasic.CASLFORMULA
@@ -214,25 +247,72 @@ senForm bndVars form = case form of
       Cl.Conjunction ss -> CBasic.Conjunction (map (senForm bndVars) ss) rn
       Cl.Disjunction ss -> CBasic.Disjunction (map (senForm bndVars) ss) rn
       Cl.Implication s1 s2 ->
-          CBasic.Implication (senForm bndVars s1) (senForm bndVars s2) True rn
+          CBasic.Implication
+            (senForm bndVars s1)
+            (senForm bndVars s2)
+            True rn
       Cl.Biconditional s1 s2 ->
-          CBasic.Equivalence (senForm bndVars s1) (senForm bndVars s2) rn
+          CBasic.Equivalence
+            (senForm bndVars s1)
+            (senForm bndVars s2)
+            rn
   Cl.Quant_sent qs rn -> case qs of
-      Cl.Universal bs s ->
-          CBasic.Quantification CBasic.Universal
-            [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-            (senForm (bndVarsToSet bndVars bs) s) rn
-      Cl.Existential bs s ->
-          CBasic.Quantification CBasic.Existential
-            [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-            (senForm (bndVarsToSet bndVars bs) s) rn
+      Cl.Universal bs s -> quantSentForm Universal rn bndVars bs s
+      Cl.Existential bs s -> quantSentForm Existential rn  bndVars bs s
   Cl.Atom_sent at rn -> case at of
       Cl.Equation trm1 trm2 ->
-          CBasic.Strong_equation (termForm bndVars trm1) (termForm bndVars trm2) rn
+          CBasic.Strong_equation
+            (termForm bndVars trm1)
+            (termForm bndVars trm2) rn
       Cl.Atom trm tseqs -> 
-          CBasic.Predication (termFormPrd trm (length tseqs)) (map (termSeqForm bndVars) tseqs) rn
+          CBasic.Predication
+            (termFormPrd trm (length tseqs))
+            (map (termSeqForm bndVars) tseqs) rn
   Cl.Comment_sent _ s _ -> senForm bndVars s
   Cl.Irregular_sent s _ -> senForm bndVars s
+
+-- checks for second order quantification
+quantSentForm :: Q_TYPE -> Id.Range -> Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK]
+                 -> Cl.SENTENCE -> CBasic.CASLFORMULA
+quantSentForm qt rn bndVars bs sen =
+  let ti = colTi_sen sen
+      bSs = map nosStrnig bs
+      (predSs, opsVars) = partition
+          (\n -> Map.member n $ MapSet.toMap $ arityPred ti) bSs
+      (opSs, predsVars) = partition
+          (\n -> Map.member n $ MapSet.toMap $ arityFunc ti) bSs
+      vs = map (Cl.Name . Id.mkSimpleId) $ intersect opsVars predsVars
+      preds = MapSet.filterWithKey (\s _ -> elem s predSs) $ arityPred ti
+      ops = MapSet.filterWithKey (\s _ -> elem s opSs) $ arityFunc ti
+      quantifier = case qt of
+          Universal -> CBasic.Universal
+          Existential -> CBasic.Existential
+      folSen =
+        if null vs
+        then senForm bndVars sen
+        else CBasic.Quantification quantifier
+                  [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
+                  (senForm (bndVarsToSet bndVars vs) sen) rn
+      predSen = MapSet.foldWithKey (\prd ar s ->
+          CBasic.QuantPred (idOf prd) (predType ar) s
+        ) folSen preds
+      opSen = MapSet.foldWithKey (\op ar s ->
+          CBasic.QuantOp (idOf op) (opType ar) s
+        ) predSen ops
+  in  opSen
+
+opType :: Int -> CBasic.OP_TYPE
+opType ar =
+  CBasic.Op_type CBasic.Total (replicate ar individual) individual Id.nullRange
+
+predType :: Int -> CBasic.PRED_TYPE
+predType ar = CBasic.Pred_type (replicate ar individual) Id.nullRange
+
+bndVarsToSet :: Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK] -> Set.Set Cl.NAME
+bndVarsToSet bndVars bs = foldr Set.insert bndVars
+  $ map (\nos -> case nos of
+                  Cl.Name n -> n
+                  Cl.SeqMark s -> error $ errSeqMark s) bs
 
 termForm :: Set.Set Cl.NAME -> Cl.TERM -> CBasic.TERM a
 termForm bndVars trm = case trm of
@@ -244,28 +324,15 @@ termForm bndVars trm = case trm of
       CBasic.Application (termFormApp term (length tseqs)) (map (termSeqForm bndVars) tseqs) rn
   Cl.Comment_term term _ _ -> termForm bndVars term
 
-bndVarsToSet :: Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK] -> Set.Set Cl.NAME
-bndVarsToSet bndVars bs = foldr Set.insert bndVars
-  $ map (\nos -> case nos of
-                  Cl.Name n -> n
-                  Cl.SeqMark s -> error $ errSeqMark s) bs
-
 termFormApp :: Cl.TERM -> Int -> CBasic.OP_SYMB
-termFormApp trm i = case trm of
-  Cl.Name_term n ->
-      CBasic.Qual_op_name
-        (Id.mkId [n])
-        (CBasic.Op_type CBasic.Total (replicate i individual) individual Id.nullRange)
-        Id.nullRange
-  _ -> error errHigherOrderFunctionS
+termFormApp trm ar = case trm of
+  Cl.Name_term n -> CBasic.Qual_op_name (Id.mkId [n]) (opType ar) Id.nullRange
+  _ -> error errCurriedFunctionS
 
 termFormPrd :: Cl.TERM -> Int -> CBasic.PRED_SYMB
-termFormPrd trm i = case trm of
+termFormPrd trm ar = case trm of
   Cl.Name_term n ->
-      CBasic.Qual_pred_name
-        (Id.mkId [n])
-        (CBasic.Pred_type (replicate i individual) Id.nullRange)
-        Id.nullRange
+      CBasic.Qual_pred_name (Id.mkId [n]) (predType ar) Id.nullRange
   _ -> error errFunctionReturnedPredicateS
 
 termSeqForm :: Set.Set Cl.NAME -> Cl.TERM_SEQ -> CBasic.TERM a
@@ -278,75 +345,91 @@ bindingSeq bs = case bs of
   Cl.Name n -> n
   Cl.SeqMark s -> error $ errSeqMark s
 
-collectArities :: Cl.TEXT_META -> ArityMap
-collectArities tm = colAr_txt $ Cl.getText tm
+collectTextInfo :: Cl.TEXT_META -> TextInfo
+collectTextInfo tm = colTi_txt $ Cl.getText tm
 
-colAr_txt :: Cl.TEXT -> ArityMap
-colAr_txt txt = case txt of
-  Cl.Named_text _ t _ -> colAr_txt t
-  Cl.Text ps _ -> unionsMS $ map colAr_phr ps
+colTi_txt :: Cl.TEXT -> TextInfo
+colTi_txt txt = case txt of
+  Cl.Named_text _ t _ -> colTi_txt t
+  Cl.Text ps _ -> unionsTI $ map colTi_phr ps
 
-colAr_phr :: Cl.PHRASE -> ArityMap
-colAr_phr p = case p of
-  Cl.Module (Cl.Mod _ t _) -> colAr_txt t
-  Cl.Module (Cl.Mod_ex _ _ t _) -> colAr_txt t
-  Cl.Importation _ -> MapSet.empty
-  Cl.Comment_text _ t _ -> colAr_txt t
-  Cl.Sentence s -> colAr_sen s
+colTi_phr :: Cl.PHRASE -> TextInfo
+colTi_phr p = case p of
+  Cl.Module (Cl.Mod _ t _) -> colTi_txt t
+  Cl.Module (Cl.Mod_ex _ _ t _) -> colTi_txt t
+  Cl.Importation _ -> emptyTI
+  Cl.Comment_text _ t _ -> colTi_txt t
+  Cl.Sentence s -> colTi_sen s
 
-colAr_sen :: Cl.SENTENCE -> ArityMap
-colAr_sen sen = case sen of
+colTi_sen :: Cl.SENTENCE -> TextInfo
+colTi_sen sen = case sen of
   Cl.Quant_sent q _ -> case q of
-      Cl.Universal [] s -> colAr_sen s
-      Cl.Existential [] s -> colAr_sen s
-      Cl.Universal noss s -> unionsMS $ colAr_sen s : (map colAr_nos noss)
-      Cl.Existential noss s -> unionsMS $ colAr_sen s : (map colAr_nos noss)
+      Cl.Universal noss s ->
+          foldr (\n r -> removeFromTI n r) (colTi_sen s) (map nosStrnig noss)
+      Cl.Existential noss s ->
+          foldr (\n r -> removeFromTI n r) (colTi_sen s) (map nosStrnig noss)
   Cl.Bool_sent b _ -> case b of
-      Cl.Conjunction sens -> unionsMS $ map colAr_sen sens
-      Cl.Disjunction sens -> unionsMS $ map colAr_sen sens
-      Cl.Negation s -> colAr_sen s
-      Cl.Implication s1 s2 -> unionsMS $ map colAr_sen [s1,s2]
-      Cl.Biconditional s1 s2 -> unionsMS $ map colAr_sen [s1,s2]
+      Cl.Conjunction sens -> unionsTI $ map colTi_sen sens
+      Cl.Disjunction sens -> unionsTI $ map colTi_sen sens
+      Cl.Negation s -> colTi_sen s
+      Cl.Implication s1 s2 -> unionsTI $ map colTi_sen [s1,s2]
+      Cl.Biconditional s1 s2 -> unionsTI $ map colTi_sen [s1,s2]
   Cl.Atom_sent a _ -> case a of
-      Cl.Equation t1 t2 -> unionsMS $ map colAr_trm [t1,t2]
-      Cl.Atom t [] -> colAr_trm t
-      Cl.Atom t tseqs -> colAr_Add Pred t tseqs
-  Cl.Comment_sent _ s _ -> colAr_sen s
-  Cl.Irregular_sent s _ -> colAr_sen s
+      Cl.Equation t1 t2 -> unionsTI $ map colTi_trm_var [t1,t2]
+      Cl.Atom t [] -> colTi_trm_prop t
+      Cl.Atom t tseqs -> colTi_addArity Pred t tseqs
+  Cl.Comment_sent _ s _ -> colTi_sen s
+  Cl.Irregular_sent s _ -> colTi_sen s
 
-colAr_nos :: Cl.NAME_OR_SEQMARK -> ArityMap
-colAr_nos nos = case nos of
-  Cl.Name _ -> MapSet.empty
+nosStrnig :: Cl.NAME_OR_SEQMARK -> String
+nosStrnig nos = case nos of
+  Cl.Name n -> Id.tokStr n
   Cl.SeqMark s -> error $ errSeqMark s
 
-colAr_trm :: Cl.TERM -> ArityMap
-colAr_trm trm = case trm of
-  Cl.Name_term _ -> MapSet.empty
-  Cl.Funct_term t tseqs _ -> colAr_Add Func t tseqs
-  Cl.Comment_term t _ _ -> colAr_trm t
+colTi_trm_var :: Cl.TERM -> TextInfo
+colTi_trm_var trm = case trm of
+  Cl.Name_term n -> emptyTI {vars = Set.singleton (Id.tokStr n)}
+  Cl.Comment_term t _ _ -> colTi_trm_var t
+  _ -> colTi_trm trm
 
-colAr_trmSeq :: Cl.TERM_SEQ -> ArityMap
-colAr_trmSeq tseq = case tseq of
-  Cl.Term_seq t -> colAr_trm t
+colTi_trm_prop :: Cl.TERM -> TextInfo
+colTi_trm_prop trm = case trm of
+  Cl.Name_term n -> emptyTI {props = Set.singleton (Id.tokStr n)}
+  Cl.Comment_term t _ _ -> colTi_trm_prop t
+  _ -> colTi_trm trm
+
+colTi_trm :: Cl.TERM -> TextInfo
+colTi_trm trm = case trm of
+  Cl.Name_term _ -> emptyTI
+  Cl.Funct_term t tseqs _ -> colTi_addArity Func t tseqs
+  Cl.Comment_term t _ _ -> colTi_trm t
+
+colTi_trmSeq :: Cl.TERM_SEQ -> TextInfo
+colTi_trmSeq tseq = case tseq of
+  Cl.Term_seq trm -> colTi_trm_var trm
   Cl.Seq_marks s -> error $ errSeqMark s
 
-colAr_Add :: TYPE -> Cl.TERM -> [Cl.TERM_SEQ] -> ArityMap
-colAr_Add ty trm tseqs = case trm of
+colTi_addArity :: Pred_Or_Func -> Cl.TERM -> [Cl.TERM_SEQ] -> TextInfo
+colTi_addArity ty trm tseqs = case trm of
   Cl.Name_term n ->
-      unionsMS $ MapSet.insert (Id.tokStr n,ty) (length tseqs) MapSet.empty
-                    : colAr_trm trm
-                    : map colAr_trmSeq tseqs
+      unionsTI $ (if ty == Pred
+                  then emptyTI { arityPred = MapSet.insert
+                                  (Id.tokStr n) (length tseqs) MapSet.empty}
+                  else emptyTI { arityFunc = MapSet.insert
+                                  (Id.tokStr n) (length tseqs) MapSet.empty}
+                  )
+                  : map colTi_trmSeq tseqs
   Cl.Funct_term _ _ _ ->
-    unionsMS [ colAr_trm trm
-             -- , undefined -- TODO: implement correct handling for higher order functions
+    unionsTI [ colTi_trm trm
+             -- , undefined -- TODO: implement correct handling for curried functions
              ]
-  Cl.Comment_term t _ _ -> colAr_Add ty t tseqs
+  Cl.Comment_term t _ _ -> colTi_addArity ty t tseqs
 
 errSeqMark :: Cl.SEQ_MARK -> String
 errSeqMark s = "Sequence marks not allowed in this comorphism. Found: " ++ Id.tokStr s
 
-errHigherOrderFunctionS :: String
-errHigherOrderFunctionS = "Found higher order function"
+errCurriedFunctionS :: String
+errCurriedFunctionS = "Found curried function"
 
 errFunctionReturnedPredicateS :: String
 errFunctionReturnedPredicateS = "Function returned predicate"
