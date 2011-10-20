@@ -2,60 +2,52 @@
 
   (thisMustBeTrue)
 
-  (and (x) (y) (not (z)))
+  (and (a) (b) (not (c)))
 
-  (or (x) (y) (not (z)))
-
-)
-%((thisMustBeTrue) absolutely! [-X-] (and (x) (y) (not (z))) simple proposition [-X-] (or (x) (y) (not (z))) simple proposition)%
-
-
-(cl-text quant
-
-  (forall (x y z) (and (x) (y) (not (z))))
-
-  (exists (x) (x))
+  (or (d) (e) (not (f)))
 
 )
-%(forall (x y z) (and (x) (y) (not (z)))) universal quantification [-X-] (exists (x) (x)) existential quantification)%
-
 
 
 (cl-text pred
 
-  (P x)
+  (P g)
 
-  (Q y)
+  (Q h)
 
-  (P x y)
+  (P g h)
 
 )
-%((P x) simple predicate with 1 argument [-X-] (Q y) simple predicate with 1 argument [-X-] (P x y) P with 2 arguments)%
 
+
+(cl-text quant
+
+  (forall (x y z) (and (P x) (P y) (not (P z))))
+
+  (exists (x) (P x))
+
+)
 
 
 (cl-text compact
 
-  (P x)
+  (P i)
 
   (Q P)
 
-  (forall (P) (P x))
+  (forall (P) (P j))
 
 )
-%((P x) simple predicate [-X-] (Q P) beyond FOL [-X-] (forall (P) (P x)) beyond FOL)%
-
 
 
 (cl-text func
 
-  (= (f x) y)
+  (= (F k) l)
 
-  (= y (f x y z))
+  (= m (n o p q))
 
-  (= ((f g) x) y)
+  (forall (G H) (= (G r) (H s t)))
 
-  ((F x) y)
+  (= ((I ((J u) v) w) aa) bb)
 
 )
-%((= (f x) y) simple function [-X-] (= y (f x y z)) simple function [-X-] (= ((f g) x) y) higher order functions [-X-] ((F x) y) function returning predicate)%
