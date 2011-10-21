@@ -1,0 +1,4 @@
+(cl-text seqMark
+  (cl-imports cl2casl_compact)
+  (forall (a ...moreLetters z) (SomePredicate a ...moreLetters c))
+)

@@ -299,11 +299,10 @@ termSeqForm sig ts = case ts of
                      new    = ClSign.Sign
                          {
                            ClSign.items = Set.singleton $ Id.simpleIdToId name
-                         , ClSign.discourseItems = Set.singleton $
-                               Id.simpleIdToId name
+                         , ClSign.discourseItems = Set.empty
                          }
-             ClBasic.Funct_term term _ _ -> termForm sig term
-             ClBasic.Comment_term term _ _ -> termForm sig term
+             ClBasic.Funct_term _ _ _ -> termForm sig trm
+             ClBasic.Comment_term _ _ _ -> termForm sig trm
         ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
 
 bindingSeq :: ClBasic.NAME_OR_SEQMARK -> CBasic.VAR

@@ -1,11 +1,11 @@
 (cl-text prop
   (thisMustBeTrue)
-  (and (a) (b) (not (c)))
+  (and (x) (b) (not (c)))
   (or (d) (e) (not (f)))
 )
 
 (cl-text pred
-  (P g)
+  (P y)
   (Q h)
   (P g h)
 )
@@ -26,4 +26,12 @@
   (= g (G h i j))
   (forall (H I) (= (H g) (I h i)))
   (= ((J ((K g) h) i) j) k)
+)
+
+(cl-text comments
+  (cl-comment 'CommentedText' (and (x)
+                                   (cl-comment 'CommentedSentence' (b))
+                                   (= (F g) (cl-comment 'CommentedTerm' h))
+                              )
+  )
 )
