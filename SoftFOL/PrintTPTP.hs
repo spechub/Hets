@@ -23,8 +23,10 @@ import Common.DocUtils
 import SoftFOL.Sign
 import SoftFOL.Conversions
 
--- | This type class allows pretty printing in TPTP syntax of instantiated data
---   types
+import Data.Maybe
+
+{- | This type class allows pretty printing in TPTP syntax of instantiated data
+types -}
 class PrintTPTP a where
     printTPTP :: a -> Doc
 
@@ -55,11 +57,11 @@ instance PrintTPTP SPLogicalPart where
     printTPTP lp =
       let decls = declarationList lp
           validDeclarations = filter (\ decl -> case decl of
-              SPSubsortDecl {}   -> True
-              SPTermDecl {}      -> True
+              SPSubsortDecl {} -> True
+              SPTermDecl {} -> True
               SPSimpleTermDecl _ -> True
-              _                  -> False)
-                     $ (maybe [] id decls)
+              _ -> False)
+                     $ fromMaybe [] decls
           fs = formulaLists lp
       in if null validDeclarations && null fs then
             text "fof" <> parens
@@ -70,7 +72,7 @@ instance PrintTPTP SPLogicalPart where
                     parens (text ("declaration" ++ show i) <> comma <>
                     printTPTP SPOriginAxioms <> comma
                     $+$ printTPTP decl) <> dot)
-                $ zip validDeclarations [(0::Int)..])
+                $ zip validDeclarations [(0 :: Int) ..])
          $+$ vcat (map printTPTP fs)
 
 {- |
@@ -79,19 +81,19 @@ instance PrintTPTP SPLogicalPart where
 -}
 instance PrintTPTP SPDeclaration where
     printTPTP decl = case decl of
-      SPSubsortDecl{sortSymA= sortA, sortSymB= sortB}
+      SPSubsortDecl {sortSymA = sortA, sortSymB = sortB}
         -> let subsortVar = spTerms $ genVarList sortA [sortB]
-           in  printTPTP SPQuantTerm
-             { quantSym=SPForall,
-               variableList=subsortVar,
-               qFormula=compTerm SPImplies
+           in printTPTP SPQuantTerm
+             { quantSym = SPForall,
+               variableList = subsortVar,
+               qFormula = compTerm SPImplies
                  [ compTerm (spSym sortA) subsortVar
                  , compTerm (spSym sortB) subsortVar] }
-      SPTermDecl{termDeclTermList= tlist, termDeclTerm= tt}
-        -> printTPTP SPQuantTerm{
-                       quantSym=SPForall,
-                       variableList=tlist,
-                       qFormula=tt}
+      SPTermDecl {termDeclTermList = tlist, termDeclTerm = tt}
+        -> printTPTP SPQuantTerm {
+                       quantSym = SPForall,
+                       variableList = tlist,
+                       qFormula = tt}
       SPSimpleTermDecl stsym -> printTPTP stsym
       pd@(SPPredDecl {}) -> maybe empty printTPTP $ predDecl2Term pd
       _ -> empty
@@ -107,7 +109,7 @@ instance PrintTPTP SPFormulaList where
 -}
 instance PrintTPTP SPOriginType where
     printTPTP t = text $ case t of
-        SPOriginAxioms      -> "axiom"
+        SPOriginAxioms -> "axiom"
         SPOriginConjectures -> "conjecture"
 
 {- |
@@ -126,7 +128,7 @@ printFormula ot f =
 -}
 instance PrintTPTP SPTerm where
     printTPTP t = case t of
-      SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt} -> let
+      SPQuantTerm {quantSym = qsym, variableList = tlist, qFormula = tt} -> let
         isComplexTerm tm = case tm of
             SPComplexTerm _ [] -> False
             _ -> True
@@ -147,10 +149,10 @@ instance PrintTPTP SPTerm where
            <+> if null cl then parPrintTPTP tt
                -- or there are none simple terms
                else
-          -- construct premiss for implication out of variableList (Forall)
-          -- construct conjunction out of variableList (Exists)
+          {- construct premiss for implication out of variableList (Forall)
+          construct conjunction out of variableList (Exists) -}
                parens $ printTPTP conj
-      SPComplexTerm{symbol= ctsym, arguments= args}
+      SPComplexTerm {symbol = ctsym, arguments = args}
         -> printTermList ctsym args
 
 {- |
@@ -179,8 +181,8 @@ parPrintTPTP t = (if isUnitary t then id else parens) $ printTPTP t
 
 isUnitary :: SPTerm -> Bool
 isUnitary t = case t of
-    SPComplexTerm{symbol = ctsym, arguments = _ : _ : _} ->
-       not $ elem ctsym binLogOps
+    SPComplexTerm {symbol = ctsym, arguments = _ : _ : _} ->
+       notElem ctsym binLogOps
     _ -> True
 
 binLogOps :: [SPSymbol]
@@ -191,8 +193,8 @@ binLogOps = [SPOr, SPAnd, SPImplies, SPImplied, SPEquiv]
 -}
 instance PrintTPTP SPQuantSym where
     printTPTP qs = text $ case qs of
-        SPForall             -> "!"
-        SPExists             -> "?"
+        SPForall -> "!"
+        SPExists -> "?"
         SPCustomQuantSym cst -> show cst
 
 {- |
@@ -200,15 +202,15 @@ instance PrintTPTP SPQuantSym where
 -}
 instance PrintTPTP SPSymbol where
     printTPTP s = text $ case s of
-        SPEqual            -> "="
-        SPTrue             -> "$true"
-        SPFalse            -> "$false"
-        SPOr               -> "|"
-        SPAnd              -> "&"
-        SPNot              -> "~"
-        SPImplies          -> "=>"
-        SPImplied          -> "<="
-        SPEquiv            -> "<=>"
+        SPEqual -> "="
+        SPTrue -> "$true"
+        SPFalse -> "$false"
+        SPOr -> "|"
+        SPAnd -> "&"
+        SPNot -> "~"
+        SPImplies -> "=>"
+        SPImplied -> "<="
+        SPEquiv -> "<=>"
         SPCustomSymbol cst -> show cst
         _ -> showSPSymbol s
 
@@ -237,19 +239,18 @@ spCommentText fieldName fieldDesc =
 -}
 instance PrintTPTP SPLogState where
     printTPTP s = text $ case s of
-      SPStateSatisfiable   -> "satisfiable"
+      SPStateSatisfiable -> "satisfiable"
       SPStateUnsatisfiable -> "unsatisfiable"
-      SPStateUnknown       -> "unknown"
+      SPStateUnknown -> "unknown"
 
 instance PrintTPTP SPSetting where
-    printTPTP s = case s of
-      SPGeneralSettings e ->
-        hsep [text "% Option ", colon, text $ show e]
-      SPSettings _ settingText ->
-          hsep $ (text "% Option " <+> colon) : map printTPTP settingText
+    printTPTP s = spCommentText "Option  " "" <+> case s of
+      SPGeneralSettings e -> text $ show e
+      SPSettings _ settingText -> hsep $ map printTPTP settingText
 
 instance PrintTPTP SPSettingBody where
     printTPTP s = case s of
-      SPFlag sw v ->
-          cat [text sw, if null v then empty else parens (ppWithCommas v)]
+      SPFlag sw v -> hcat
+        [text sw, if null v then empty else
+                      parens $ hsep $ punctuate comma $ map text v]
       _ -> empty
