@@ -243,25 +243,22 @@ term = do
      t <- identifier
      return $ Name_term t
    <|> do
-     oParenT
-     spaces
      term_fun_cmt
 
 term_fun_cmt :: CharParser st TERM
-term_fun_cmt = do
+term_fun_cmt = parens $ do
+  spaces
   ck <- try clCommentKey
   spaces
   c <- quotedstring <|> enclosedname
   spaces
   t <- term
   spaces
-  cParenT
   return $ Comment_term t (Comment c $ Range $ rangeSpan c)
          $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan t]
  <|> do
   t <- term
   ts <- many1 termseq -- many1? yes, because it's a functional term
-  cParenT
   return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t, rangeSpan ts]
 
 termseq :: CharParser st TERM_SEQ
@@ -277,6 +274,7 @@ rolesetTerm = do
   t0 <- term
   spaces
   oParenT
+  spaces
   clRolesetKey
   spaces
   return t0
@@ -317,7 +315,6 @@ basicSpec = do
   <|> do
     bi <- AnnoState.allAnnoParser parseBasicItems
     return $ Basic_spec $ [bi]
---  <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 
 -- function to parse different syntaxes
 -- parsing: axiom items with dots, clif sentences, clif text
