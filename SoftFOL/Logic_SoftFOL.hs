@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
+  , FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for SoftFOL.
@@ -89,6 +90,7 @@ instance Logic SoftFOL () () Sentence () ()
 #endif
            ++ unsafeProverCheck "darwin" "PATH" (darwinProver $ Darwin False)
            ++ unsafeProverCheck "e-darwin" "PATH" (darwinProver EDarwin)
+           ++ unsafeProverCheck "eprover" "PATH" (darwinProver EProver)
            ++ unsafeProverCheck "metis" "PATH" metisProver
            ++ unsafeProverCheck "ekrh" "PATH" hyperProver
          cons_checkers SoftFOL =
@@ -96,5 +98,6 @@ instance Logic SoftFOL () () Sentence () ()
            ++ unsafeProverCheck "darwin" "PATH"
                 (darwinConsChecker $ Darwin True)
            ++ unsafeProverCheck "e-darwin" "PATH" (darwinConsChecker EDarwin)
+           ++ unsafeProverCheck "eprover" "PATH" (darwinConsChecker EProver)
            ++ unsafeProverCheck "ekrh" "PATH" hyperConsChecker
 #endif

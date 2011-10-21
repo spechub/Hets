@@ -51,7 +51,7 @@ import Proofs.BatchProcessing
 
 -- * Prover implementation
 
-data ProverBinary = Darwin Bool | EDarwin
+data ProverBinary = Darwin Bool | EDarwin | EProver
 
 proverBinary :: ProverBinary -> String
 proverBinary b = darwinExe b ++
@@ -63,7 +63,7 @@ darwinExe :: ProverBinary -> String
 darwinExe b = case b of
   Darwin _ -> "darwin"
   EDarwin -> "e-darwin"
-
+  EProver -> "eprover"
 
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover. -}
@@ -159,6 +159,9 @@ darwinCMDLautomaticBatchAux b inclProvedThs saveProblem_batch resultMVar
 
 -- * Main prover functions
 
+eproverOpts :: String
+eproverOpts = "-xAuto -tAuto --tptp3-format -s --soft-cpu-limit="
+
 {- | Runs the Darwin service. The tactic script only contains a string for the
   time limit. -}
 consCheck
@@ -172,10 +175,13 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> do
         let proverStateI = spassProverState sig (toNamedList nSens) freedefs
             fdOpt = "-pmtptp true -fd true "
-            extraOptions = "-pc false " ++ case b of
+            extraOptions = case b of
+              EProver -> eproverOpts ++ tl
+              _ -> "-pc false " ++ case b of
                 Darwin i -> if i then "" else fdOpt
                 EDarwin -> fdOpt ++ "-eq Axioms "
-              ++ "-to " ++ tl
+                EProver -> error "Darwin.consCheck"
+               ++ "-to " ++ tl
             bin = darwinExe b
         prob <- showTPTPProblemM thName proverStateI []
         (exitCode, out, tUsed) <-
@@ -205,9 +211,9 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
     return (bin ++ " not found. Check your $PATH", [], -1)
     else do
     timeTmpFile <- getTempFile prob tmpFile
-    (_, pout, _) <-
+    (_, pout, perr) <-
       readProcessWithExitCode bin (words options ++ [timeTmpFile]) ""
-    let l = lines pout
+    let l = lines $ pout ++ perr
         (res, _, tUsed) = parseOutput l
     removeFile timeTmpFile
     return (res, l, tUsed)
@@ -226,8 +232,12 @@ runDarwin
 runDarwin b sps cfg saveTPTP thName nGoal = do
     let bin = darwinExe b
         options = extraOpts cfg
-        extraOptions = maybe "-pc false"
-             (("-pc false -to " ++) . show) (timeLimit cfg)
+        mtl = timeLimit cfg
+        extraOptions = unwords $ case b of
+          EProver -> eproverOpts ++ maybe "10" show mtl
+          _ -> maybe "-pc false"
+             (("-pc false -to " ++) . show) mtl
+         : options
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showTPTPProblem thName sps nGoal
       $ options ++ ["Requested prover: " ++ bin]
@@ -263,16 +273,15 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
                       timeUsed = ctime })
 
 getSZSStatusWord :: String -> Maybe String
-getSZSStatusWord line = case words
-    $ fromMaybe (fromMaybe "" $ stripPrefix "% SZS status" line)
-    $ stripPrefix "SZS status" line of
+getSZSStatusWord line = case words $ fromMaybe ""
+    $ stripPrefix "SZS status" $ dropWhile (`elem` "%# ") line of
   [] -> Nothing
   w : _ -> Just w
 
 parseOutput :: [String] -> (String, Bool, Int)
   -- ^ (exit code, status found, used time)
-parseOutput = foldl checkLine ("", False, -1) where
-   checkLine (exCode, stateFound, to) line =
+parseOutput = foldl checkLine ("could not determine SZS status", False, -1)
+  where checkLine (exCode, stateFound, to) line =
           if isPrefixOf "Couldn't find eprover" line
              || isInfixOf "darwin -h for further information" line
                 -- error by running darwin.
