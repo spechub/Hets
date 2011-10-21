@@ -98,15 +98,7 @@ instance Comorphism
 
 -- | Creates CASL Sig
 baseCASLSig :: [AS_Anno.Named CBasic.CASLFORMULA]
-baseCASLSig =
-     let lib = head $ unsafePerformIO $ readLib "CommonLogic/CommonLogic.casl"
-     in case lib of
-        G_theory lid _ _ thSens _ -> let sens = toNamedList thSens
-                                     in do
-                                         sens' <- coerceSens lid CLogic.CASL ""
-                                                    sens
-                                         -- filter (not . ctorCons) sens'
-                                         sens'
+baseCASLSig = [ga_injective_cons, ga_disjoint_nil_cons, ga_generated_list]
 
 mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
 mapSub _ = CSL.caslTop
@@ -306,3 +298,90 @@ bindingSeq :: ClBasic.NAME_OR_SEQMARK -> CBasic.VAR
 bindingSeq bs = case bs of
                   ClBasic.Name name -> name
                   ClBasic.SeqMark seqm -> seqm
+
+ga_injective_cons :: AS_Anno.Named CBasic.CASLFORMULA
+ga_injective_cons = AS_Anno.makeNamed "ga_injective_cons" $
+  CBasic.Quantification CBasic.Universal
+    [ CBasic.Var_decl [Id.mkSimpleId "X1"] individual Id.nullRange
+    , CBasic.Var_decl [Id.mkSimpleId "X2"] list Id.nullRange
+    , CBasic.Var_decl [Id.mkSimpleId "Y1"] individual Id.nullRange
+    , CBasic.Var_decl [Id.mkSimpleId "Y2"] list Id.nullRange
+    ]
+    (CBasic.Equivalence
+        (CBasic.Strong_equation
+          (CBasic.Application
+            (CBasic.Qual_op_name cons
+              (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
+              Id.nullRange
+            )
+            [ CBasic.Qual_var (Id.mkSimpleId "X1") individual Id.nullRange
+            , CBasic.Qual_var (Id.mkSimpleId "X2") list Id.nullRange
+            ] Id.nullRange
+          )
+          (CBasic.Application
+            (CBasic.Qual_op_name cons
+              (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
+              Id.nullRange
+            )
+            [ CBasic.Qual_var (Id.mkSimpleId "Y1") individual Id.nullRange
+            , CBasic.Qual_var (Id.mkSimpleId "Y2") list Id.nullRange
+            ] Id.nullRange
+          ) Id.nullRange)
+        (CBasic.Conjunction
+          [ CBasic.Strong_equation
+              (CBasic.Qual_var (Id.mkSimpleId "X1") individual Id.nullRange)
+              (CBasic.Qual_var (Id.mkSimpleId "Y1") individual Id.nullRange)
+              Id.nullRange
+          , CBasic.Strong_equation
+              (CBasic.Qual_var (Id.mkSimpleId "X2") list Id.nullRange)
+              (CBasic.Qual_var (Id.mkSimpleId "Y2") list Id.nullRange)
+              Id.nullRange
+          ] Id.nullRange
+        ) Id.nullRange
+    ) Id.nullRange
+
+ga_disjoint_nil_cons :: AS_Anno.Named CBasic.CASLFORMULA
+ga_disjoint_nil_cons = AS_Anno.makeNamed "ga_disjoint_nil_cons" $
+  CBasic.Quantification CBasic.Universal
+    [ CBasic.Var_decl [Id.mkSimpleId "Y1"] individual Id.nullRange
+    , CBasic.Var_decl [Id.mkSimpleId "Y2"] list Id.nullRange
+    ]
+    (CBasic.Negation
+      (CBasic.Strong_equation
+        (CBasic.Application
+          (CBasic.Qual_op_name nil
+            (CBasic.Op_type CBasic.Total [] list Id.nullRange)
+            Id.nullRange
+          ) [] Id.nullRange
+        )
+        (CBasic.Application
+          (CBasic.Qual_op_name cons
+            (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
+            Id.nullRange
+          )
+          [ CBasic.Qual_var (Id.mkSimpleId "Y1") individual Id.nullRange
+          , CBasic.Qual_var (Id.mkSimpleId "Y2") list Id.nullRange
+          ] Id.nullRange
+        ) Id.nullRange
+      ) Id.nullRange
+    ) Id.nullRange
+
+ga_generated_list :: AS_Anno.Named CBasic.CASLFORMULA
+ga_generated_list = AS_Anno.makeNamed "ga_generated_list" $
+  CBasic.Sort_gen_ax
+    [ CBasic.Constraint
+      { CBasic.newSort = list
+      , CBasic.opSymbs =
+          [ (CBasic.Qual_op_name cons
+              (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
+              Id.nullRange
+            , [-1,0] )
+          , (CBasic.Qual_op_name nil
+              (CBasic.Op_type CBasic.Total [] list Id.nullRange)
+              Id.nullRange
+              , [])
+          ]
+      , CBasic.origSort = list
+      }
+    ] True
+
