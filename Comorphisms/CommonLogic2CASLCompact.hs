@@ -43,6 +43,8 @@ import qualified CommonLogic.Symbol as ClSymbol
 import qualified CommonLogic.Morphism as ClMor
 import qualified CommonLogic.Sublogic as ClSl
 
+import Comorphisms.CommonLogicModuleElimination (eliminateModules)
+
 -- CASL
 import qualified CASL.Logic_CASL as CLogic
 import qualified CASL.AS_Basic_CASL as CBasic
@@ -198,14 +200,14 @@ individual = Id.stringToId "individual"
 -- todo maybe input here axioms
 trNamedForm :: AS_Anno.Named (Cl.TEXT_META)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
-trNamedForm form = AS_Anno.mapNamed trFormMrs form
+trNamedForm form = AS_Anno.mapNamed (trFormMeta . eliminateModules) form
 
 mapSentence :: ClSign.Sign -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
-mapSentence _ form = Result [] $ Just $ trFormMrs form
+mapSentence _ form = Result [] $ Just $ trFormMeta (eliminateModules form)
 
 -- ignores importations
-trFormMrs ::  Cl.TEXT_META -> CBasic.CASLFORMULA
-trFormMrs tm = trForm $ Cl.getText tm
+trFormMeta ::  Cl.TEXT_META -> CBasic.CASLFORMULA
+trFormMeta tm = trForm $ Cl.getText tm
 
 trForm ::Cl.TEXT -> CBasic.CASLFORMULA
 trForm form =
@@ -227,17 +229,11 @@ trForm form =
             _ -> False
 
 phraseForm :: Cl.PHRASE -> CBasic.CASLFORMULA
-phraseForm phr =
-   case phr of
-     Cl.Module m -> moduleForm m
-     Cl.Sentence s -> senForm Set.empty s
-     Cl.Importation _ -> undefined -- cannot occur, because filtered
-     Cl.Comment_text _ t _ -> trForm t
-
-moduleForm :: Cl.MODULE -> CBasic.CASLFORMULA
-moduleForm m = case m of
-   Cl.Mod _ txt _ -> trForm txt
-   Cl.Mod_ex _ _ txt _ -> trForm txt --what to do with the exclusions?
+phraseForm phr = case phr of
+  Cl.Module _ -> undefined -- cannot occur because module elimination applied
+  Cl.Sentence s -> senForm Set.empty s
+  Cl.Importation _ -> undefined -- cannot occur, because filtered
+  Cl.Comment_text _ t _ -> trForm t
 
 senForm :: Set.Set Cl.NAME -> Cl.SENTENCE -> CBasic.CASLFORMULA
 senForm bndVars form = case form of

@@ -1,1 +1,7 @@
-(cl-text myText (cl-module M (forall (a b c) (or (a) (a b) (c) (x)))) (and (x) (y)))
+(cl-text moduleElim
+
+(P x)
+
+(cl-module M (cl-excludes x y z) (forall (a b c) (and (P a) (Q b) (R c))))
+
+)

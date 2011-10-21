@@ -48,6 +48,8 @@ import qualified CommonLogic.Symbol as ClSymbol
 import qualified CommonLogic.Morphism as ClMor
 import qualified CommonLogic.Sublogic as ClSl
 
+import Comorphisms.CommonLogicModuleElimination (eliminateModules)
+
 -- CASL
 import qualified CASL.Logic_CASL as CLogic
 import qualified CASL.AS_Basic_CASL as CBasic
@@ -89,7 +91,7 @@ instance Comorphism
       sourceSublogic CommonLogic2CASL = ClSl.funcNoPredsl
       targetLogic CommonLogic2CASL = CLogic.CASL
       mapSublogic CommonLogic2CASL = Just . mapSub -- Just . mapSub
-      map_theory CommonLogic2CASL = mapTheory -- TODO
+      map_theory CommonLogic2CASL = mapTheory
       map_morphism CommonLogic2CASL = mapMor  -- TODO prop
       map_sentence CommonLogic2CASL = mapSentence
       has_model_expansion CommonLogic2CASL = True
@@ -183,14 +185,14 @@ nil = Id.stringToId "nil"
 -- todo maybe input here axioms
 trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.TEXT_META)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
-trNamedForm sig form = AS_Anno.mapNamed (trFormMrs sig) form
+trNamedForm sig form = AS_Anno.mapNamed (trFormMeta sig . eliminateModules) form
 
 mapSentence :: ClSign.Sign -> ClBasic.TEXT_META -> Result CBasic.CASLFORMULA
-mapSentence sig form = Result [] $ Just $ trFormMrs sig form
+mapSentence sig form = Result [] $ Just $ trFormMeta sig (eliminateModules form)
 
 -- ignores importations
-trFormMrs :: ClSign.Sign -> ClBasic.TEXT_META -> CBasic.CASLFORMULA
-trFormMrs sig tm = trForm sig $ ClBasic.getText tm
+trFormMeta :: ClSign.Sign -> ClBasic.TEXT_META -> CBasic.CASLFORMULA
+trFormMeta sig tm = trForm sig $ ClBasic.getText tm
 
 trForm :: ClSign.Sign -> ClBasic.TEXT -> CBasic.CASLFORMULA
 trForm sig form = 
@@ -214,15 +216,10 @@ trForm sig form =
 phraseForm :: ClSign.Sign -> ClBasic.PHRASE -> CBasic.CASLFORMULA
 phraseForm sig phr =
    case phr of
-     ClBasic.Module m -> moduleForm sig m
+     ClBasic.Module _ -> undefined -- cannot occur because module elimination applied
      ClBasic.Sentence s -> senForm sig s
      ClBasic.Importation _ -> undefined -- cannot occur, because filtered
      ClBasic.Comment_text _ t _ -> trForm sig t
-
-moduleForm :: ClSign.Sign -> ClBasic.MODULE -> CBasic.CASLFORMULA
-moduleForm sig m = case m of
-   ClBasic.Mod _ txt _ -> trForm sig txt
-   ClBasic.Mod_ex _ _ txt _ -> trForm sig txt --what to do with the exclusions?
 
 senForm :: ClSign.Sign -> ClBasic.SENTENCE -> CBasic.CASLFORMULA
 senForm sig form =

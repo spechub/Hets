@@ -35,3 +35,20 @@
                               )
   )
 )
+
+(cl-text module1
+(cl-module M (forall (a b) (and (P a) (Q b))))
+)
+
+
+(cl-text module2
+(cl-module N (cl-excludes ex_a ex_b) (forall (a b) (and (P a) (Q b))))
+)
+
+(cl-text module3
+  (cl-module M1 (cl-excludes ex_a ex_b)
+    (cl-module M2 (cl-excludes ex_a ex_b)
+      (exists (a b) (= a b))
+    )
+  )
+)

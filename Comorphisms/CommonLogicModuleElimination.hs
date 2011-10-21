@@ -112,7 +112,7 @@ eliminateModules tm =
             , metarelation = metarelation tm
             , discourseNames = discourseNames tm
             }
-  where (newName, _) = freeName ("x", 0) (indvC_text $ getText tm)
+  where (newName, _) = freeName ("item", 0) (indvC_text $ getText tm)
 
 -- NOTE: ignores importations
 me_text :: NAME -> [NAME] -> TEXT -> SENTENCE

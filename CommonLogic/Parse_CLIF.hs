@@ -70,25 +70,18 @@ text = do
 phrase :: CharParser st PHRASE
 phrase = do
     try (oParenT >> clModuleKey)
-    spaces
     m <- pModule
-    spaces
     cParenT
     return $ Module m
   <|> do
     try (oParenT >> clImportsKey)
-    spaces
     i <- importation
-    spaces
     cParenT
     return $ Importation i
   <|> do
     try (oParenT >> clCommentKey)
-    spaces
     c <- quotedstring <|> enclosedname
-    spaces
     t <- comment_txt <?> "comment: 3"
-    spaces
     cParenT
     return $ Comment_text (Comment c nullRange) t nullRange
   <|> do
