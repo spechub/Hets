@@ -17,6 +17,8 @@ module SoftFOL.ProveDarwin
   , darwinCMDLautomaticBatch
   , darwinConsChecker
   , ProverBinary (..)
+  , darwinExe
+  , tptpProvers
   ) where
 
 -- preliminary hacks for display of CASL models
@@ -51,19 +53,25 @@ import Proofs.BatchProcessing
 
 -- * Prover implementation
 
-data ProverBinary = Darwin Bool | EDarwin | EProver
+data ProverBinary = Darwin | DarwinFD | EDarwin | EProver | Leo
+  deriving (Enum, Bounded)
+
+tptpProvers :: [ProverBinary]
+tptpProvers = [minBound .. maxBound]
 
 proverBinary :: ProverBinary -> String
 proverBinary b = darwinExe b ++
   case b of
-    Darwin True -> "-non-fd"
+    Darwin -> "-non-fd"
     _ -> ""
 
 darwinExe :: ProverBinary -> String
 darwinExe b = case b of
-  Darwin _ -> "darwin"
+  Darwin -> "darwin"
+  DarwinFD -> "darwin"
   EDarwin -> "e-darwin"
   EProver -> "eprover"
+  Leo -> "leo"
 
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover. -}
@@ -135,7 +143,7 @@ darwinCMDLautomaticBatch
   -> IO (Concurrent.ThreadId, Concurrent.MVar ())
      {- ^ fst: identifier of the batch thread for killing it
      snd: MVar to wait for the end of the thread -}
-darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux (Darwin False)
+darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux DarwinFD
 
 darwinCMDLautomaticBatchAux
   :: ProverBinary -- ^ the actual binary
@@ -162,6 +170,18 @@ darwinCMDLautomaticBatchAux b inclProvedThs saveProblem_batch resultMVar
 eproverOpts :: String
 eproverOpts = "-xAuto -tAuto --tptp3-format -s --soft-cpu-limit="
 
+fdOpt :: String
+fdOpt = "-fd true"
+
+toOpt :: String
+toOpt = " -to "
+
+darOpt :: String
+darOpt = "-pc false"
+
+eqOpt :: String
+eqOpt = " -eq Axioms"
+
 {- | Runs the Darwin service. The tactic script only contains a string for the
   time limit. -}
 consCheck
@@ -174,14 +194,14 @@ consCheck
 consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> do
         let proverStateI = spassProverState sig (toNamedList nSens) freedefs
-            fdOpt = "-pmtptp true -fd true "
+            fdConsOpt = " -pmtptp true " ++ fdOpt
+            tOut = toOpt ++ tl
             extraOptions = case b of
               EProver -> eproverOpts ++ tl
-              _ -> "-pc false " ++ case b of
-                Darwin i -> if i then "" else fdOpt
-                EDarwin -> fdOpt ++ "-eq Axioms "
-                EProver -> error "Darwin.consCheck"
-               ++ "-to " ++ tl
+              Leo -> "-t " ++ tl
+              Darwin -> darOpt ++ tOut
+              DarwinFD -> darOpt ++ fdConsOpt ++ tOut
+              EDarwin -> darOpt ++ fdConsOpt ++ eqOpt ++ tOut
             bin = darwinExe b
         prob <- showTPTPProblemM thName proverStateI []
         (exitCode, out, tUsed) <-
@@ -232,12 +252,15 @@ runDarwin
 runDarwin b sps cfg saveTPTP thName nGoal = do
     let bin = darwinExe b
         options = extraOpts cfg
-        mtl = timeLimit cfg
+        tl = maybe "10" show $ timeLimit cfg
+        tOut = toOpt ++ tl
         extraOptions = unwords $ case b of
-          EProver -> eproverOpts ++ maybe "10" show mtl
-          _ -> maybe "-pc false"
-             (("-pc false -to " ++) . show) mtl
-         : options
+            EProver -> eproverOpts ++ tl
+            Leo -> "-t " ++ tl
+            Darwin -> darOpt ++ tOut
+            DarwinFD -> darOpt ++ " " ++ fdOpt ++ tOut
+            EDarwin -> darOpt ++ " " ++ fdOpt ++ eqOpt ++ tOut
+          : options
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showTPTPProblem thName sps nGoal
       $ options ++ ["Requested prover: " ++ bin]

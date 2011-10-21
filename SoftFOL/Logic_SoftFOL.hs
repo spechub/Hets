@@ -88,16 +88,13 @@ instance Logic SoftFOL () () Sentence () ()
 #ifndef NOMATHSERVER
            ++ [mathServBroker, vampire]
 #endif
-           ++ unsafeProverCheck "darwin" "PATH" (darwinProver $ Darwin False)
-           ++ unsafeProverCheck "e-darwin" "PATH" (darwinProver EDarwin)
-           ++ unsafeProverCheck "eprover" "PATH" (darwinProver EProver)
+           ++ concatMap
+              (\ b -> unsafeProverCheck (darwinExe b) "PATH" $ darwinProver b)
+              tptpProvers
            ++ unsafeProverCheck "metis" "PATH" metisProver
            ++ unsafeProverCheck "ekrh" "PATH" hyperProver
-         cons_checkers SoftFOL =
-           unsafeProverCheck "darwin" "PATH" (darwinConsChecker $ Darwin False)
-           ++ unsafeProverCheck "darwin" "PATH"
-                (darwinConsChecker $ Darwin True)
-           ++ unsafeProverCheck "e-darwin" "PATH" (darwinConsChecker EDarwin)
-           ++ unsafeProverCheck "eprover" "PATH" (darwinConsChecker EProver)
+         cons_checkers SoftFOL = concatMap
+              (\ b -> unsafeProverCheck (darwinExe b) "PATH"
+               $ darwinConsChecker b) tptpProvers
            ++ unsafeProverCheck "ekrh" "PATH" hyperConsChecker
 #endif
