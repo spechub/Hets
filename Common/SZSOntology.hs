@@ -292,11 +292,10 @@ szsDisproved :: String -> Bool
 szsDisproved = szsCheck successes ["CSA", "UNS"]
 
 szsTimeout :: String -> Bool
-szsTimeout = szsCheck nosuccess ["TMO"]
+szsTimeout = szsCheck nosuccess ["TMO", "RSO"]
 
 szsMemoryOut :: String -> Bool
 szsMemoryOut = szsCheck nosuccess ["MMO"]
 
 szsStopped :: String -> Bool
 szsStopped = szsCheck nosuccess ["STP"]
-
