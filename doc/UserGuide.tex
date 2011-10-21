@@ -495,8 +495,17 @@ CASL\_DL2CASL & inclusion \\\hline
 CoCASL2CoPCFOL & coding of subsorting by injections, similar to CASL2PCFOL \\\hline
 CoCASL2CoSubCFOL & coding of partial functions by error supersorts, similar to  CASL2SubCFOL \\\hline
 CoCASL2Isabelle & extended translation similar to CASL2Isabelle \\\hline
-CommonLogic2CASL & coding Common Logic to CASL \\\hline
-CommonLogic2CommonLogic & eliminating modules from a Common Logic theory \\\hline
+CommonLogic2CASL & Coding Common Logic to \CASL.Module elimination
+		   is applied before translating to \CASL. \\\hline
+CommonLogic2CASLCompact & Coding compact Common Logic to \CASL. 
+			  Compact Common Logic is a sublogic of Common Logic
+			  where no sequence markers occur. Module elimination
+			  is applied before translating to \CASL. We recommend
+			  using this comorphism whenever possible because it 
+			  results in simpler specifications.\\\hline
+CommonLogicModuleElimination & Eliminating modules from a Common Logic theory 
+			       resulting in an equivalent specification without
+				modules. \\\hline
 CspCASL2CspCASL\_Failure & inclusion \\\hline
 CspCASL2CspCASL\_Trace & inclusion \\\hline
 CspCASL2Modal & translating the CASL data part to ModalCASL \\\hline

@@ -258,7 +258,7 @@ logic. Blue indicates a prover-supported logic.}
 \begin{tabular}{|l|c|c|c|}\hline
 Language & Parser & Static Analysis & Prover \\\hline
 \CASL & x & x & - \\\hline
-CommonLogic & x & x & - \\\hline
+CommonLogic & x (CLIF) & x & - \\\hline
 OWL DL & x & x & - \\\hline
 Propositional & x & x & x \\\hline
 SoftFOL & x & - & x \\\hline
@@ -287,7 +287,9 @@ types for signatures, morphisms, abstract syntax etc.  This eases
 integration of \CASL extensions and keeps the effort of integrating
 \CASL extensions quite moderate.
 
-\item[CommonLogic] \url{http://en.wikipedia.org/wiki/Common_logic}
+\item[Common Logic] \url{http://en.wikipedia.org/wiki/Common_logic} \newline 
+  \Hets currently only supports parsing CLIF. If you need other dialects, 
+  send us a message and we will add them.
 
 \item[OWL DL] is the Web Ontology Language (OWL) recommended by the
   World Wide Web Consortium (W3C, \url{http://www.w3c.org}). It is
@@ -334,8 +336,7 @@ in Sect.~\ref{sec:HetSpec} below.\\
 For further information on logics supported by \Hets, see the \Hets user guide  
 \cite{HetsUserGuide}.
 
-\section{Logic translations supported
-by Hets}
+\section{Logic translations supported by Hets}
 \label{comorphisms}
 
 Logic translations (formalized as institution comorphisms
@@ -349,11 +350,31 @@ In more detail, the following list of logic translations involving Common Logic
 is currently supported by \Hets:\\
 
 \begin{tabular}{|l|p{8cm}|}\hline
-CommonLogic2CASL & coding Common Logic to CASL \\\hline
-CommonLogic2CommonLogic & eliminating modules from a Common Logic theory \\\hline
-OWL2CommonLogic & inclusion \\\hline
-Prop2CommonLogic & inclusion of propositional logic \\\hline
+CommonLogic2CASL & Coding Common Logic to \CASL.Module elimination
+		   is applied before translating to \CASL. \\\hline
+CommonLogic2CASLCompact & Coding compact Common Logic to \CASL. 
+			  Compact Common Logic is a sublogic of Common Logic
+			  where no sequence markers occur. Module elimination
+			  is applied before translating to \CASL. We recommend
+			  using this comorphism whenever possible because it 
+			  results in simpler specifications.\\\hline
+CommonLogicModuleElimination & Eliminating modules from a Common Logic theory 
+			       resulting in an equivalent specification without
+				modules. \\\hline
+OWL2CommonLogic & Inclusion of OWL description logic \\\hline
+Prop2CommonLogic & Inclusion of propositional logic \\\hline
+SoftFOL2CommonLogic & Inclusion of first order logic \\\hline
+CASL2SoftFOL & Coding of CASL.SuleCFOL=E to SoftFOL \cite{LuettichEA06a},
+mapping types to soft types \\\hline
+CASL2SoftFOLInduction & Same as CASL2SoftFOL but with instances of induction
+axioms for all proof goals \\\hline
+CASL2SoftFOLInduction2 & Similar to CASL2SoftFOLInduction but replaces goals with induction premises \\\hline
+CASL2Propositional & Translation of propositional FOL \\\hline
 \end{tabular}\\
+
+Those comorphisms can be chained, e.g., for theorem proving, you can translate 
+Common Logic to SoftFOL with \texttt{CommonLogic2CASLCompact;CASL2SoftFOLInduction} 
+since there is no prover for Common Logic or \CASL.
 
 For further information on logic translations supported by \Hets, see the \Hets 
 user guide \cite{HetsUserGuide}.
@@ -512,7 +533,7 @@ Ending & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
 \texttt{.owl} & OWL DL, OWL Lite & OWL \\\hline
-\texttt{.clf} or \texttt{.clif} & CommonLogic & \CASL \\\hline
+\texttt{.clf} or \texttt{.clif} & CommonLogic & Custom, see Chapter \ref{relationsInCL} \\\hline
 \end{tabular}
 
 \medskip
@@ -680,6 +701,7 @@ clicking (and holding) with the right mouse button. For an explanation of the
 menus see the \Hets User Guide \Hets user guide \cite{HetsUserGuide}.
 
 \subsection{Relations between Common Logic Texts}
+\label{relationsInCL}
 \Hets supports several relations between Common Logic Texts. However only one of
 them is defined in ISO/IEC 24707:2007 \cite{iso24a}. All the other relations are 
 unofficial extensions used i.e. by COLORE \cite{Colore}.
