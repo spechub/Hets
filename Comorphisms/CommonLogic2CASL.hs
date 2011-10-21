@@ -2,10 +2,10 @@
 {- |
 Module      :  $Header$
 Description :  Comorphism from CommonLogic to CASL
-Copyright   :  (c) Uni Bremen 2010
+Copyright   :  (c) Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  kluc@informatik.uni-bremen.de
+Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (via Logic.Logic)
 
@@ -19,14 +19,6 @@ module Comorphisms.CommonLogic2CASL
    )
    where
 
-import Comorphisms.GetPreludeLib
-
-import System.IO.Unsafe
-
-import Static.GTheory
-
-import Logic.Prover
-import Logic.Coerce
 import Logic.Logic as Logic
 import Logic.Comorphism
 

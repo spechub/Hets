@@ -151,9 +151,6 @@ trMor mp =
       Map.empty
       mp
 
-idOf :: String -> Id.Id
-idOf s = (Id.mkId [Id.mkSimpleId s])
-
 -- |
 mapTheory :: (ClSign.Sign, [AS_Anno.Named Cl.TEXT_META])
               -> Result (CSign.CASLSign, [AS_Anno.Named CBasic.CASLFORMULA])
@@ -164,16 +161,16 @@ mapTheory (sig, form) =
 mapSig :: TextInfo -> ClSign.Sign -> CSign.CASLSign
 mapSig ti _ =
   let constOpMap = Set.fold (\n res ->
-          MapSet.insert (idOf n) (opTypeSign 0) res
+          MapSet.insert (Id.stringToId n) (opTypeSign 0) res
         ) MapSet.empty (vars ti)
       constPredMap = Set.fold (\n res ->
-          MapSet.insert (idOf n) (predTypeSign 0) res
+          MapSet.insert (Id.stringToId n) (predTypeSign 0) res
         ) MapSet.empty (props ti)
       opMap = MapSet.foldWithKey (\n ar ops ->
-          MapSet.insert (idOf n) (opTypeSign ar) ops
+          MapSet.insert (Id.stringToId n) (opTypeSign ar) ops
         ) MapSet.empty (arityFunc ti)
       predMap = MapSet.foldWithKey (\n ar preds ->
-          MapSet.insert (idOf n) (predTypeSign ar) preds
+          MapSet.insert (Id.stringToId n) (predTypeSign ar) preds
         ) MapSet.empty (arityPred ti)
   in  CSign.uniteCASLSign (
           (CSign.emptySign ()) {
@@ -291,10 +288,10 @@ quantSentForm qt rn bndVars bs sen =
                   [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
                   (senForm (bndVarsToSet bndVars vs) sen) rn
       predSen = MapSet.foldWithKey (\prd ar s ->
-          CBasic.QuantPred (idOf prd) (predType ar) s
+          CBasic.QuantPred (Id.stringToId prd) (predType ar) s
         ) folSen preds
       opSen = MapSet.foldWithKey (\op ar s ->
-          CBasic.QuantOp (idOf op) (opType ar) s
+          CBasic.QuantOp (Id.stringToId op) (opType ar) s
         ) predSen ops
   in  opSen
 
