@@ -88,20 +88,19 @@ data ChangeList = ChangeList
   , changedInDg :: Map.Map NodeName NodeMod -- ^ to be used in ApplyChanges
   , updateAnnotations :: Bool }
 
-instance Show ChangeList where
-  show (ChangeList delN delL updN updL _ _) =
-      "delete nodes:\n" ++ unlines (map showName (Set.toList delN))
-   ++ "delete links:\n" ++ unlines (map show (Set.toList delL))
-   ++ "update nodes:\n" ++ unlines 
-     (map (\ (a, b) -> showName a ++ show b) (Map.toList updN))
-   ++ "update links:\n" ++ unlines
-     (map (\ (a, b) -> show a ++ show b) (Map.toList updL))
+data ChangeAction = MkUpdate NodeMod | MkInsert deriving Eq
 
-data ChangeAction = MkUpdate | MkInsert deriving Eq
+updateNodeChange :: NodeName -> ChangeAction -> ChangeList -> ChangeList
+updateNodeChange nm chA chL = chL { changeNodes =
+  Map.insertWith mergeChA nm chA $ changeNodes chL }
 
-instance Show ChangeAction where
-  show MkUpdate = "-update"
-  show MkInsert = "-insert"
+updateLinkChange :: EdgeId -> ChangeAction -> ChangeList -> ChangeList
+updateLinkChange ei chA chL = chL { changeLinks =
+  Map.insertWith mergeChA ei chA $ changeLinks chL }
+
+mergeChA :: ChangeAction -> ChangeAction -> ChangeAction
+mergeChA (MkUpdate md1) (MkUpdate md2) = MkUpdate $ mergeNodeMod md1 md2
+mergeChA _ _ = MkInsert
 
 emptyChangeList :: ChangeList
 emptyChangeList =
@@ -274,9 +273,9 @@ updateChangeList :: Monad m => Cursor -> ChangeList -> ChangeData
 updateChangeList cr chL (ChangeData csel atS) = case csel of
   Add _ addCs -> do
     (chL', restCs) <- foldM mkAddChange (chL, []) addCs
-    if null restCs then return chL' else mkUpdateChange cr chL'
-  Remove | atS == Nothing -> mkRemoveChange cr chL
-  _ -> mkUpdateChange cr chL
+    if null restCs then return chL' else mkUpdateChange unMod chL' cr
+  Remove | atS == Nothing -> mkRemoveChange chL cr
+  _ -> mkUpdateChange unMod chL cr
 
 {- | split a list of AddChanges and write all Node and Link insertions into the
 ChangeList. -}
@@ -285,33 +284,31 @@ mkAddChange :: Monad m => (ChangeList, [AddChange]) -> AddChange
 mkAddChange (chL, restCs) addCh = case addCh of
     AddElem e | isDgNodeElem e -> do
       nm <- extractNodeName e
-      return (chL { changeNodes = Map.insert nm MkInsert $ changeNodes chL }
-        , restCs)
+      return (updateNodeChange nm MkInsert chL, restCs)
     AddElem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
-      return (chL { changeLinks = Map.insert ei MkInsert $ changeLinks chL }
-        , restCs)
+      return (updateLinkChange ei MkInsert chL, restCs)
     AddElem e | qName (elName e) == "Global" ->
       return (chL { updateAnnotations = True }, restCs)
     _ -> return (chL, addCh : restCs)
 
 -- | go upwards until an updatable element is found
-mkUpdateChange :: Monad m => Cursor -> ChangeList -> m ChangeList
-mkUpdateChange cr chL = case current cr of
+mkUpdateChange :: Monad m => NodeMod -> ChangeList -> Cursor -> m ChangeList
+mkUpdateChange nmod chL cr = case current cr of
   Elem e | isDgNodeElem e -> do
       nm <- extractNodeName e
-      return chL { changeNodes = Map.insert nm MkUpdate $ changeNodes chL }
+      return $ updateNodeChange nm (MkUpdate nmod) chL
   Elem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
-      return chL { changeLinks = Map.insert ei MkUpdate $ changeLinks chL }
-  Elem e | qName (elName e) == "Global" ->
+      return $ updateLinkChange ei (MkUpdate nmod) chL
+  Elem e | nameStringIs "Global" e ->
       return chL { updateAnnotations = True }
-  _ -> maybe (return chL) ((flip mkUpdateChange) chL) $ parent cr
+  _ -> maybe (return chL) (mkUpdateChange nmod chL) $ parent cr
 
 {- | if node or link is removed, add this to ChangeList. otherwise create
 update-change -}
-mkRemoveChange :: Monad m => Cursor -> ChangeList -> m ChangeList
-mkRemoveChange cr chL = case current cr of
+mkRemoveChange :: Monad m => ChangeList -> Cursor -> m ChangeList
+mkRemoveChange chL cr = case current cr of
   Elem e | isDgNodeElem e -> do
       nm <- extractNodeName e
       return chL { deleteNodes = Set.insert nm $ deleteNodes chL }
@@ -319,11 +316,14 @@ mkRemoveChange cr chL = case current cr of
       ei <- extractEdgeId e
       trg <- getAttrVal "target" e
       return chL { deleteLinks = Set.insert (trg, ei) $ deleteLinks chL }
-  _ -> mkUpdateChange cr chL
+  _ -> mkUpdateChange unMod chL cr
+
+nameStringIs :: String -> Element -> Bool
+nameStringIs s = (== s) . qName . elName
 
 isDgNodeElem :: Element -> Bool
-isDgNodeElem = (== "DGNode") . qName . elName
+isDgNodeElem = nameStringIs "DGNode"
 
 isDgLinkElem :: Element -> Bool
-isDgLinkElem = (== "DGLink") . qName . elName
+isDgLinkElem = nameStringIs "DGLink"
 

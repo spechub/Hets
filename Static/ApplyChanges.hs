@@ -45,8 +45,6 @@ import qualified Data.Map as Map
 
 import Text.XML.Light hiding (Node)
 
-import Debug.Trace
-
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
   -> ResultT IO (LibName, LibEnv)
 dgXUpdate opts xs le ln dg = do
@@ -68,7 +66,7 @@ application. an xgraph is created and used as a guideline for signature-
 hierachy and for retrieving required new data. -}
 updateDG :: HetcatsOpts -> Element -> ChangeList -> DGraph -> LibEnv
          -> ResultT IO (LibName, LibEnv)
-updateDG opts xml chL dg le = trace (show chL) $ do
+updateDG opts xml chL dg le = do
   (dg', chL') <- liftR $ deleteElements dg chL
   xgr <- liftR $ xGraph xml
   let dg'' = dg' { globalAnnos = if updateAnnotations chL' then globAnnos xgr
@@ -83,7 +81,7 @@ elements are those initially marked as such in changelist as well as all
 elements that are subject to an ingoing signature modification. -}
 iterateXgBody :: HetcatsOpts -> XGraph -> LibEnv -> DGraph
               -> ChangeList -> ResultT IO (DGraph, LibEnv, ChangeList)
-iterateXgBody opts xgr lv dg chL = trace ("startNodes:\n" ++ unlines (map show $ startNodes xgr)) $ let lg = logicGraph in do
+iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
   rs1 <- foldM (mkNodeUpdate opts lg Nothing) (dg, lv, chL) $ startNodes xgr
   rs2 <- foldM (foldM (mkXStepUpdate opts lg)) rs1 $ reverse $ xg_body xgr
   mkThmLinkUpdates lg rs2 $ thmLinks xgr
@@ -91,13 +89,13 @@ iterateXgBody opts xgr lv dg chL = trace ("startNodes:\n" ++ unlines (map show $
 {- | apply updates to one branch of the xgraph. -}
 mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
               -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = trace ("updStep: [" ++ show xnd ++ "], " ++ unlines (map show xlks)) $ let
+mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
   -- TODO by adjusting this test, the partial update can get more precise
   needSigUpd = foldl (\ r xlk -> r || maybe False (\_ -> True)
     (Map.lookup (parseNodeName $ source xlk) $ changedInDg chL)) False xlks
   {- TODO use ChangeGraph.setSignature when possible to keep old node info. -} 
-  chL' = if needSigUpd then chL { changeNodes = Map.insertWith (\ _ b -> b) (nodeName xnd)
-           MkUpdate $ changeNodes chL } else chL in do
+  chL' = if needSigUpd then chL
+         else updateNodeChange (nodeName xnd) (MkUpdate symMod) chL in do
     mrs <- mapM (getTypeAndMorphism lg dg) xlks
     G_sign lid sg sId <- getSigForXNode lg dg mrs
     rs1 <- mkNodeUpdate opts lg (Just $ noSensGTheory lid sg sId)
@@ -108,7 +106,7 @@ mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = trace ("updStep: [" ++ show xn
 mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
              -> (Node, GMorphism, DGLinkType, XLink)
              -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xlk) = trace ("updLink: " ++ show xlk) $ let
+mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xlk) = let
   -- TODO use setMorphism if possible to keep old link data
   mkLinkUpdateAux = case lookupUniqueNodeByName (target xlk) dg of
         Nothing -> fail $
@@ -144,10 +142,15 @@ mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
   case Map.lookup nm $ changeNodes chL of
     -- no change required, move on
     Nothing -> return (dg, lv, chL)
-    Just chAc -> trace ("updNode: " ++ show xnd ++ " (" ++ show chAc ++ ")") $ do
-      dg'' <- liftR $ if chAc == MkUpdate then deleteNode dg nm else return dg
-      (j, _, dg', lv') <- insertNode opts lg mGt xnd (dg'', lv)
-      trace ("updated as #" ++ show j) $ return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
+    Just MkInsert -> do
+      (_, dg', lv') <- insertNode opts lg mGt xnd (getNewNodeDG dg) (dg, lv)
+      return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
+                 -- TODO: the exact NodeMod could be calculated here!
+                 , changedInDg = Map.insert nm symMod $ changedInDg chL })
+    Just (MkUpdate nmod) -> do
+      (j, dg'') <- liftR $ deleteNode dg nm
+      (_, dg', lv') <- insertNode opts lg mGt xnd j (dg'', lv)
+      return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
                  -- TODO: the exact NodeMod could be calculated here!
                  , changedInDg = Map.insert nm symMod $ changedInDg chL })
 
@@ -156,7 +159,7 @@ changelist. for link deletion, the affected nodes are marked as such in chL -}
 deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
 deleteElements dg0 chL0 = do
   (dg1, targets) <- foldM deleteLink (dg0, []) $ Set.toList $ deleteLinks chL0
-  dg2 <- foldM deleteNode dg1 $ Set.toList $ deleteNodes chL0
+  dg2 <- foldM (\ dg' nm -> fmap snd $ deleteNode dg' nm) dg1 $ Set.toList $ deleteNodes chL0
   chL' <- foldM (markNodeUpdates dg2) chL0 $ List.nub targets
   return (dg2, chL') where
     {- after deletion, all still-existing nodes which lost ingoing links must
@@ -164,8 +167,8 @@ deleteElements dg0 chL0 = do
     TODO: this might only be applicable to definition links. Ask Christian about it! -}
     markNodeUpdates dg chL trg = case lookupNodeWith ((== trg) . fst) dg of
       [] -> return chL
-      [(_, lbl)] -> trace ("upd-changeaction: [" ++ show (dgn_name lbl) ++ "]") $ return $ chL
-        { changeNodes = Map.insert (dgn_name lbl) MkUpdate $ changeNodes chL } 
+      [(_, lbl)] -> return
+             $ updateNodeChange (dgn_name lbl) (MkUpdate symMod) chL
       _ -> fail $ "ambigous occurance of node #" ++ show trg
 
 -- deletes a link from dg. returns smaller dg and links target id
@@ -176,10 +179,10 @@ deleteLink (dg, tars) (trg, ei) = case lookupUniqueNodeByName trg dg of
         "required target [" ++ trg ++ "] was not found in DGraph!"
 
 -- deletes a node from dg
-deleteNode :: DGraph -> NodeName -> Result DGraph
+deleteNode :: DGraph -> NodeName -> Result (Node, DGraph)
 deleteNode dg nm = let nd = showName nm
       in case lookupUniqueNodeByName nd dg of
-        Just (j, _) -> deleteDGNode j dg
+        Just (j, _) -> fmap (\ dg' -> (j, dg')) $ deleteDGNode j dg
         Nothing -> fail $
           "required node [" ++ nd ++ "] was not found in DGraph!"
 
