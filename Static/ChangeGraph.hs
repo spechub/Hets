@@ -110,14 +110,24 @@ node names and node indices) can be supplied to delete nodes by name. -}
 
 deleteDGNode :: Node -> DGraph -> Result DGraph
 deleteDGNode t dg = case fst . match t $ dgBody dg of
-  Just (ins, _, nl, outs) ->
-    if null $ ins ++ outs then return $ changeDGH dg $ DeleteNode (t, nl)
-    else do
-      dg2 <- foldM (\ dgx (el, sr) -> delDGLink (Just sr) t (dgl_id el) dgx)
-        dg ins
-      dg3 <- foldM (\ dgx (el, rt) -> delDGLink (Just t) rt (dgl_id el) dgx)
-        dg2 outs
-      deleteDGNode t dg3
+  Just (ins, _, nl, outs) -> case dgn_nf nl of
+    Just n -> do
+      dg2 <- deleteDGNode n dg
+      deleteDGNode t $ changeDGH dg2 $ SetNodeLab nl
+        (t, nl { dgn_nf = Nothing, dgn_sigma = Nothing })
+    Nothing -> case dgn_freenf nl of
+      Just n -> do
+        dg2 <- deleteDGNode n dg
+        deleteDGNode t $ changeDGH dg2 $ SetNodeLab nl
+          (t, nl { dgn_freenf = Nothing, dgn_phi = Nothing })
+      Nothing ->
+        if null $ ins ++ outs then return $ changeDGH dg $ DeleteNode (t, nl)
+        else do
+          dg2 <- foldM (\ dgx (el, sr) -> delDGLink (Just sr) t (dgl_id el) dgx)
+            dg ins
+          dg3 <- foldM (\ dgx (el, rt) -> delDGLink (Just t) rt (dgl_id el) dgx)
+            dg2 outs
+          deleteDGNode t dg3
   _ -> justWarn dg $ "node not in graph: " ++ show t
 
 {- | add a node supplying the necessary information.
