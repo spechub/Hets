@@ -90,12 +90,12 @@ data ChangeList = ChangeList
 
 data ChangeAction = MkUpdate NodeMod | MkInsert deriving Eq
 
-updateNodeChange :: NodeName -> ChangeAction -> ChangeList -> ChangeList
-updateNodeChange nm chA chL = chL { changeNodes =
+updateNodeChange :: ChangeAction -> NodeName -> ChangeList -> ChangeList
+updateNodeChange chA nm chL = chL { changeNodes =
   Map.insertWith mergeChA nm chA $ changeNodes chL }
 
-updateLinkChange :: EdgeId -> ChangeAction -> ChangeList -> ChangeList
-updateLinkChange ei chA chL = chL { changeLinks =
+updateLinkChange :: ChangeAction -> EdgeId -> ChangeList -> ChangeList
+updateLinkChange chA ei chL = chL { changeLinks =
   Map.insertWith mergeChA ei chA $ changeLinks chL }
 
 mergeChA :: ChangeAction -> ChangeAction -> ChangeAction
@@ -267,29 +267,36 @@ propagatePaths cr pths = case current cr of
       return (changes, toRight, toChildren)
   c -> fail $ "propagatePaths: unexpected Cursor Content: " ++ show c
 
--- | determine the required DgUpdates for a Change operation
+{- TODO: update entire node when change cannot be identified
+determine the required DgUpdates for a Change operation -}
 updateChangeList :: Monad m => Cursor -> ChangeList -> ChangeData
                  -> m ChangeList
 updateChangeList cr chL (ChangeData csel atS) = case csel of
   Add _ addCs -> do
-    (chL', restCs) <- foldM mkAddChange (chL, []) addCs
+    (chL', restCs) <- foldM (mkAddChange cr) (chL, []) addCs
     if null restCs then return chL' else mkUpdateChange unMod chL' cr
   Remove | atS == Nothing -> mkRemoveChange chL cr
   _ -> mkUpdateChange unMod chL cr
 
 {- | split a list of AddChanges and write all Node and Link insertions into the
 ChangeList. -}
-mkAddChange :: Monad m => (ChangeList, [AddChange]) -> AddChange
+mkAddChange :: Monad m => Cursor -> (ChangeList, [AddChange]) -> AddChange
             -> m (ChangeList, [AddChange])
-mkAddChange (chL, restCs) addCh = case addCh of
+mkAddChange cr (chL, restCs) addCh = case addCh of
     AddElem e | isDgNodeElem e -> do
       nm <- extractNodeName e
-      return (updateNodeChange nm MkInsert chL, restCs)
+      return (updateNodeChange MkInsert nm chL, restCs)
     AddElem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
-      return (updateLinkChange ei MkInsert chL, restCs)
-    AddElem e | qName (elName e) == "Global" ->
+      return (updateLinkChange MkInsert ei chL, restCs)
+    AddElem e | nameStringIs "Global" e ->
       return (chL { updateAnnotations = True }, restCs)
+    AddElem e | isSymbolType e -> do
+      chL' <- mkUpdateChange addSymMod chL cr
+      return (chL', restCs)
+    AddElem e | isAxiomType e || isTheoremType e -> do
+      chL' <- mkUpdateChange addSenMod chL cr
+      return (chL', restCs)
     _ -> return (chL, addCh : restCs)
 
 -- | go upwards until an updatable element is found
@@ -297,10 +304,10 @@ mkUpdateChange :: Monad m => NodeMod -> ChangeList -> Cursor -> m ChangeList
 mkUpdateChange nmod chL cr = case current cr of
   Elem e | isDgNodeElem e -> do
       nm <- extractNodeName e
-      return $ updateNodeChange nm (MkUpdate nmod) chL
+      return $ updateNodeChange (MkUpdate nmod) nm chL
   Elem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
-      return $ updateLinkChange ei (MkUpdate nmod) chL
+      return $ updateLinkChange (MkUpdate nmod) ei chL
   Elem e | nameStringIs "Global" e ->
       return chL { updateAnnotations = True }
   _ -> maybe (return chL) (mkUpdateChange nmod chL) $ parent cr
@@ -315,7 +322,19 @@ mkRemoveChange chL cr = case current cr of
   Elem e | isDgLinkElem e -> do
       xl <- mkXLink e
       return chL { deleteLinks = Set.insert xl $ deleteLinks chL }
+  Elem e | isSymbolType e -> mkUpdateChange delSymMod chL cr
+  Elem e | isAxiomType e -> mkUpdateChange delAxMod chL cr
+  Elem e | isTheoremType e -> mkUpdateChange delThMod chL cr
   _ -> mkUpdateChange unMod chL cr
+
+isSymbolType :: Element -> Bool
+isSymbolType e = nameStringIs "Symbol" e || nameStringIs "Declarations" e
+
+isAxiomType :: Element -> Bool
+isAxiomType e = nameStringIs "Axiom" e || nameStringIs "Axioms" e
+
+isTheoremType :: Element -> Bool
+isTheoremType e = nameStringIs "Theorem" e || nameStringIs "Theorems" e
 
 nameStringIs :: String -> Element -> Bool
 nameStringIs s = (== s) . qName . elName
