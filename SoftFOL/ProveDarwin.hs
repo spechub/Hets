@@ -143,7 +143,7 @@ darwinCMDLautomaticBatch
   -> IO (Concurrent.ThreadId, Concurrent.MVar ())
      {- ^ fst: identifier of the batch thread for killing it
      snd: MVar to wait for the end of the thread -}
-darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux DarwinFD
+darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux Darwin
 
 darwinCMDLautomaticBatchAux
   :: ProverBinary -- ^ the actual binary
