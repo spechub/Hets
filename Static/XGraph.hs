@@ -35,7 +35,7 @@ import Text.XML.Light
 {- -------------
 Data Types -}
 
-{- represent element information in the order they can be processed later -}
+-- represent element information in the order they can be processed later
 data XGraph = XGraph { libName :: LibName
                      , globAnnos :: GlobalAnnos
                      , nextLinkId :: EdgeId

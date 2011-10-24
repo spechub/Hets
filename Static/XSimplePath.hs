@@ -325,4 +325,3 @@ isDgNodeElem = nameStringIs "DGNode"
 
 isDgLinkElem :: Element -> Bool
 isDgLinkElem = nameStringIs "DGLink"
-

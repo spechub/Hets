@@ -61,7 +61,7 @@ readDGXmlR opts path lv = do
     Right xml -> rebuiltDgXml opts lv xml
     Left err -> fail $ "failed to parse XML file: " ++ path ++ "\n" ++ err
 
-{- | call rebuiltDG with only a LibEnv and an Xml-Element -}
+-- | call rebuiltDG with only a LibEnv and an Xml-Element
 rebuiltDgXml :: HetcatsOpts -> LibEnv -> Element -> ResultT IO (LibName, LibEnv)
 rebuiltDgXml opts lv xml = do
       xg <- liftR $ xGraph xml
@@ -94,7 +94,8 @@ insertStep opts lg xNd lks (dg, lv) = do
   mrs <- mapM (getTypeAndMorphism lg dg) lks
   G_sign lid sg sId <- getSigForXNode lg dg mrs
   let j = getNewNodeDG dg
-  (gt2, dg', lv') <- insertNode opts lg (Just $ noSensGTheory lid sg sId) xNd j (dg, lv)
+  (gt2, dg', lv') <-
+    insertNode opts lg (Just $ noSensGTheory lid sg sId) xNd j (dg, lv)
   dg'' <- foldM (insertLink lg j (signOf gt2)) dg' mrs
   return (dg'', lv')
 
