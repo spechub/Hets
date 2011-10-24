@@ -196,8 +196,9 @@ applyChange (ChangeCr cr) (ChangeData csel attrSel) = case (csel, attrSel) of
   (Remove, Just atS) -> removeOrChangeAttr Nothing cr atS
   -- Case#3: addChanges, either attr-/ or element-insertion
   (Add pos addCs, _) -> liftM ChangeCr $ foldM (applyAddOp pos) cr addCs
-  -- Case#4: update text-content
+  -- Case#4: set attribute value
   (Update s, Just atS) -> removeOrChangeAttr (Just s) cr atS
+  -- Case#5: update text-content
   (Update s, Nothing) -> changeText s cr
   -- OTHER CASES ARE NOT IMPLEMENTED!
   _ -> fail $ "no implementation for :" ++ show csel
@@ -229,8 +230,7 @@ removeOrChangeAttr csel cr atS =
   _ -> failMsg "current cursor is no element"
 
 -- | add new elements or attributes
-applyAddOp :: Monad m => Insert -> Cursor -> AddChange
-           -> m Cursor
+applyAddOp :: Monad m => Insert -> Cursor -> AddChange -> m Cursor
 applyAddOp pos cr addCh = case (pos, addCh) of
         (Before, AddElem e) -> return $ insertGoLeft (Elem e) cr
         (After, AddElem e) -> return $ insertRight (Elem e) cr
@@ -267,8 +267,9 @@ propagatePaths cr pths = case current cr of
       return (changes, toRight, toChildren)
   c -> fail $ "propagatePaths: unexpected Cursor Content: " ++ show c
 
-{- TODO: update entire node when change cannot be identified
-determine the required DgUpdates for a Change operation -}
+-- TODO: update entire node when change cannot be identified
+
+-- | determine the required DgUpdates for a Change operation
 updateChangeList :: Monad m => Cursor -> ChangeList -> ChangeData
                  -> m ChangeList
 updateChangeList cr chL (ChangeData csel atS) = case csel of

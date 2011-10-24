@@ -37,6 +37,7 @@ import Logic.Grothendieck
 import Control.Monad
 import Control.Monad.Trans (lift)
 
+import Data.Maybe (fromMaybe)
 import Data.Graph.Inductive.Graph (Node, match)
 import qualified Data.List as List (nub)
 import qualified Data.Set as Set
@@ -75,9 +76,10 @@ updateDG opts xml chL dg le = do
   -- TODO possibly test if any updates are left undone (corrupted dg/diff)
   return (ln, computeLibEnvTheories $ Map.insert ln dgFin le')
 
-{- | move along xgraph structure and update or insert when required. updated
-elements are those initially marked as such in changelist as well as all
-elements that are subject to an ingoing signature modification. -}
+{- | move along xgraph structure and make updates or insertions in accordance
+with changelist. In addition to the initial entries of the changelist, all
+nodes that were subject to ingoing signature changes as well as all links
+adjacent to an updated node will also be updated. -}
 iterateXgBody :: HetcatsOpts -> XGraph -> LibEnv -> DGraph
               -> ChangeList -> ResultT IO (DGraph, LibEnv, ChangeList)
 iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
@@ -89,17 +91,41 @@ iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
 mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
               -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
 mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
-  -- TODO by adjusting this test, the partial update can get more precise
-  needSigUpd = foldl (\ r xlk -> r || maybe False (\ _ -> True)
-    (Map.lookup (parseNodeName $ source xlk) $ changedInDg chL)) False xlks
-  -- TODO use ChangeGraph.setSignature when possible to keep old node info.
-  chL' = if needSigUpd then chL
-         else updateNodeChange (MkUpdate symMod) (nodeName xnd) chL in do
+  {- the required node update due to predecessor signature changes or link mods
+  is derived using union. The change, if any, is added to the update-entry. -}
+  sigUpd = foldr (\ xl -> mergeNodeMod (getLinkMod (edgeId xl) chL)
+    . mergeNodeMod (fromMaybe unMod (getChangedInDg (source xl) chL)))
+    unMod xlks
+  chL' = if sigUpd == unMod then chL
+    else updateNodeChange (MkUpdate sigUpd) (nodeName xnd) chL in do
     mrs <- mapM (getTypeAndMorphism lg dg) xlks
     G_sign lid sg sId <- getSigForXNode lg dg mrs
     rs1 <- mkNodeUpdate opts lg (Just $ noSensGTheory lid sg sId)
         (dg, lv, chL') xnd
     foldM (mkLinkUpdate lg) rs1 mrs
+
+{- | update or insert a node in accordance with XGraph data ONLY if the element
+is marked for updating in changelist. -}
+mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
+             -> (DGraph, LibEnv, ChangeList) -> XNode
+             -> ResultT IO (DGraph, LibEnv, ChangeList)
+mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
+  case Map.lookup nm $ changeNodes chL of
+    -- no change required, move on
+    Nothing -> return (dg, lv, chL)
+    -- make insertion using FromXml.insertNode
+    {- make update
+    TODO: watch out for reference nodes!
+    TODO: use NodeMod in a proper way, only update as much as necessary! -}
+    Just (MkUpdate nmod) -> do
+      (j, dg'') <- liftR $ deleteNode dg nm
+      (_, dg', lv') <- insertNode opts lg mGt xnd j (dg'', lv)
+      -- all adjacent links need to get their morphism updated
+      return (dg', lv', markLinkUpdates dg' j nmod
+        $ markNodeAsChanged nm nmod chL)
+    Just MkInsert -> do
+      (_, dg', lv') <- insertNode opts lg mGt xnd (getNewNodeDG dg) (dg, lv)
+      return (dg', lv', markNodeAsChanged nm symMod chL)
 
 -- | check one xlink and make update or insertion to dg if required
 mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
@@ -130,23 +156,6 @@ mkThmLinkUpdates lg (dg, lv, chL) xlks = do
   -- TODO use setMorphism if possible to keep old link data
   foldM (mkLinkUpdate lg) (dg, lv, chL) mrs
 
-{- | update or insert a node in accordance with XGraph data ONLY if the element
-is marked for updating in changelist. -}
-mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
-             -> (DGraph, LibEnv, ChangeList) -> XNode
-             -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
-  case Map.lookup nm $ changeNodes chL of
-    -- no change required, move on
-    Nothing -> return (dg, lv, chL)
-    Just MkInsert -> do
-      (_, dg', lv') <- insertNode opts lg mGt xnd (getNewNodeDG dg) (dg, lv)
-      return (dg', lv', markNodeAsChanged nm symMod chL)
-    Just (MkUpdate nmod) -> do -- TODO: what if reference node??
-      (j, dg'') <- liftR $ deleteNode dg nm
-      (_, dg', lv') <- insertNode opts lg mGt xnd j (dg'', lv)
-      return (dg', lv', markLinkUpdates dg' j nmod
-        $ markNodeAsChanged nm nmod chL)
 
 markLinkUpdates :: DGraph -> Node -> NodeMod -> ChangeList -> ChangeList
 markLinkUpdates dg t nmod chL = let
@@ -159,6 +168,15 @@ markNodeAsChanged nm nmod chL = chL
     { changeNodes = Map.delete nm $ changeNodes chL
     , changedInDg = Map.insert nm nmod $ changedInDg chL }
 
+
+getChangedInDg :: String -> ChangeList -> Maybe NodeMod
+getChangedInDg s = Map.lookup (parseNodeName s) . changedInDg
+
+getLinkMod :: EdgeId -> ChangeList -> NodeMod
+getLinkMod ei = maybe unMod (\ ca -> case ca of
+  MkUpdate m -> m
+  -- TODO maybe not all link-insertions require symMod?
+  MkInsert -> symMod) . Map.lookup ei . changeLinks
 
 {- | deletes the those elements from dgraph that are marked for deletion in
 changelist. for link deletion, the affected nodes are marked as such in chL -}
