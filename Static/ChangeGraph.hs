@@ -17,11 +17,12 @@ Also all functions modify an development graph when the are successful, which
 may be captured by some form of a state monad.
 -}
 
-module Static.ChangeGraph (deleteDGNode, deleteDGLink) where
+module Static.ChangeGraph where
 
 import Static.DgUtils
 import Static.GTheory
 import Static.DevGraph
+import Static.History
 
 import Logic.Grothendieck
 
@@ -108,9 +109,10 @@ If the node index is unknown then auxiliary functions (or a mapping between
 node names and node indices) can be supplied to delete nodes by name. -}
 
 deleteDGNode :: Node -> DGraph -> Result DGraph
-deleteDGNode t dg = case match t $ dgBody dg of
-  (Just (ins, _, _, outs), rg) ->
-    if null $ ins ++ outs then return dg { dgBody = rg } else do
+deleteDGNode t dg = case fst . match t $ dgBody dg of
+  Just (ins, _, nl, outs) ->
+    if null $ ins ++ outs then return $ changeDGH dg $ DeleteNode (t, nl)
+    else do
       dg2 <- foldM (\ dgx (el, sr) -> delDGLink (Just sr) t (dgl_id el) dgx)
         dg ins
       dg3 <- foldM (\ dgx (el, rt) -> delDGLink (Just t) rt (dgl_id el) dgx)
@@ -166,13 +168,10 @@ target nodes of definition links are "reduced" (see deleteDGNode)
 
 -}
 
-deleteDGLink :: Node -> EdgeId -> DGraph -> Result DGraph
-deleteDGLink = delDGLink Nothing
-
 delDGLink :: Maybe Node -> Node -> EdgeId -> DGraph -> Result DGraph
 delDGLink ms t i dg = let
-  (Just (ins, _, nl, loopsAndOuts), rg) = match t $ dgBody dg
-  (loops, outs) = partition ((== t) . snd) loopsAndOuts
+  (ins, _, nl, loopsAndOuts) = safeContextDG "delDGLink" dg t
+  loops = filter ((== t) . snd) loopsAndOuts
   allIns = loops ++ ins
   in case partition ((== i) . dgl_id . fst) allIns of
     ([], _) -> justWarn dg $ "link not found: " ++ show (t, i)
@@ -184,21 +183,23 @@ delDGLink ms t i dg = let
       Just sr | sr /= s -> fail
         $ "non-matching source node: " ++ show (s, t, i)
         ++ " given: " ++ show sr
-      _ -> case dgl_type lbl of
+      _ -> let delE dg' = return $ changeDGH dg' $ DeleteEdge (s, t, lbl)
+               -- links proven by current link
+               gs = filter (edgeInProofBasis i . getProofBasis . fst) rs
+               dgCh = changeDGH dg $ SetNodeLab nl (t, updNodeMod delSymMod nl)
+               delDef = delE dgCh
+       in case dgl_type lbl of
        ScopedLink lOrG lk _ -> case lOrG of
          Local -> do
-           nl2 <- case lk of
-                 ThmLink (Proven (DGRuleLocalInference renms) _) ->
-                   deleteDGNodeSens (\ nSen -> not (isAxiom nSen)
+           dg2 <- case lk of
+                 ThmLink (Proven (DGRuleLocalInference renms) _) -> do
+                   nl2 <- deleteDGNodeSens (\ nSen -> not (isAxiom nSen)
                      && senAttr nSen `elem` map snd renms) nl
-                 _ -> return nl
+                   return $ updDGNodeLab dg nl (t, nl2)
+                 _ -> return dg
            -- find global link(s) that contain(s) the edge-id as proof-basis
-           let (gs, others) = partition
-                 (edgeInProofBasis i . getProofBasis . fst) rs
-               newGs = map (\ (el, ct) -> (invalidateDGLinkProof el, ct)) gs
-           return dg
-             { dgBody = (newGs ++ others, t, nl2, outs)
-               & rg }
+           let dg3 = invalDGLinkProofs dg2 $ map (\ (l, sr) -> (sr, t, l)) gs
+           delE dg3
          Global -> case lk of
            ThmLink pst -> let
              pB = proofBasisOfThmLinkStatus pst
@@ -207,29 +208,30 @@ delDGLink ms t i dg = let
              all links have the same target. -}
              createdLinks =
                filter ((`edgeInProofBasis` pB) . dgl_id . fst) rs
-             -- global links proven by current link
-             (gs, restIns) = partition
-                (edgeInProofBasis i . getProofBasis . fst)
-                rs
-             newGs = map (\ (el, ct) -> (invalidateDGLinkProof el, ct)) gs
-             in if null createdLinks then return dg { dgBody =
-                   (newGs ++ restIns, t, nl, outs) & rg }
+             in if null createdLinks then
+                  let dg3 = invalDGLinkProofs dg
+                            $ map (\ (l, sr) -> (sr, t, l)) gs
+                  in delE dg3
                 else do
                    dg2 <- foldM (\ dgx (el, sr) ->
                         delDGLink (Just sr) t (dgl_id el) dgx) dg createdLinks
                    delDGLink ms t i dg2
-           DefLink -> return dg
-             { dgBody = (rs, t, updNodeMod delSymMod nl, outs) & rg }
-       HidingFreeOrCofreeThm _ _ _ _ -> return dg
-         { dgBody = (rs, t, nl, outs) & rg }
+           DefLink -> delDef
+       HidingFreeOrCofreeThm _ _ _ _ -> delE dg
            {- just delete the theorem link, we don't know what links can be
            in the proof basis by the shifting rules -}
-       _ -> return dg
-         { dgBody = (rs, t, updNodeMod delSymMod nl, outs) & rg }
-           -- delete other def links
+       _ -> delDef          -- delete other def links
 
 updNodeMod :: NodeMod -> DGNodeLab -> DGNodeLab
 updNodeMod m nl = nl { nodeMod = mergeNodeMod m $ nodeMod nl }
+
+updDGNodeLab :: DGraph
+  -> DGNodeLab -- ^ old label
+  -> LNode DGNodeLab -- ^ node with new label
+  -> DGraph
+updDGNodeLab dg l n = let
+    dg0 = changeDGH dg $ SetNodeLab l n
+    in togglePending dg0 $ changedLocalTheorems dg0 n
 
 deleteDGNodeSens :: (forall a . Named a -> Bool) -> DGNodeLab
   -> Result DGNodeLab
@@ -248,6 +250,13 @@ deleteDGNodeSens p nl = case dgn_theory nl of
 
 invalidateDGLinkProof :: DGLinkLab -> DGLinkLab
 invalidateDGLinkProof el = el { dgl_type = setProof LeftOpen $ dgl_type el }
+
+invalDGLinkProof :: LEdge DGLinkLab -> [DGChange]
+invalDGLinkProof e@(s, t, l) =
+  [DeleteEdge e, InsertEdge (s, t, invalidateDGLinkProof l)]
+
+invalDGLinkProofs :: DGraph -> [LEdge DGLinkLab] -> DGraph
+invalDGLinkProofs dg = changesDGH dg . concatMap invalDGLinkProof
 
 {- | add a link supplying the necessary information.
 
