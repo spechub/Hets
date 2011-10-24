@@ -292,6 +292,12 @@ listDGEdgeTypes =
   , isInclusion' <- [True, False]
   ]
 
+-- | check an EdgeType and see if its a definition link
+isDefEdgeType :: DGEdgeType -> Bool
+isDefEdgeType edgeTp = case edgeTypeModInc edgeTp of
+    ThmType _ _ _ _ -> False
+    _ -> True
+
 
 -- * datatypes for storing the nodes of the ref tree in the global env
 

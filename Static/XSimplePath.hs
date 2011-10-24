@@ -25,7 +25,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Static.DgUtils
-import Static.XGraph (extractNodeName, extractEdgeId)
+import Static.XGraph
 
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
@@ -82,7 +82,7 @@ mkAttr l = case l of
 -- | Describes the minimal change-effect of a .diff upon a DGraph.
 data ChangeList = ChangeList
   { deleteNodes :: Set.Set NodeName
-  , deleteLinks :: Set.Set (String, EdgeId) -- ^ target node  
+  , deleteLinks :: Set.Set XLink -- ^ stores additional information
   , changeNodes :: Map.Map NodeName ChangeAction
   , changeLinks :: Map.Map EdgeId ChangeAction
   , changedInDg :: Map.Map NodeName NodeMod -- ^ to be used in ApplyChanges
@@ -313,9 +313,8 @@ mkRemoveChange chL cr = case current cr of
       nm <- extractNodeName e
       return chL { deleteNodes = Set.insert nm $ deleteNodes chL }
   Elem e | isDgLinkElem e -> do
-      ei <- extractEdgeId e
-      trg <- getAttrVal "target" e
-      return chL { deleteLinks = Set.insert (trg, ei) $ deleteLinks chL }
+      xl <- mkXLink e
+      return chL { deleteLinks = Set.insert xl $ deleteLinks chL }
   _ -> mkUpdateChange unMod chL cr
 
 nameStringIs :: String -> Element -> Bool

@@ -75,6 +75,13 @@ instance Show XNode where
 instance Show XLink where
   show xl = showEdgeId (edgeId xl) ++ ": " ++ source xl ++ " -> " ++ target xl
 
+instance Ord XLink where
+  compare xl1 xl2 = compare (edgeId xl1, source xl1, target xl1)
+    (edgeId xl2, source xl2, target xl2)
+
+instance Eq XLink where
+  a == b = compare a b == EQ
+
 {- ------------
 Functions -}
 

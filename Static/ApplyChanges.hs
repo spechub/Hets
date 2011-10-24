@@ -14,7 +14,6 @@ module Static.ApplyChanges (dgXUpdate) where
 
 import Static.ComputeTheory (computeLibEnvTheories)
 import Static.DevGraph
-import Static.ChangeGraph
 import Static.GTheory
 import Static.DgUtils
 import Static.FromXml
@@ -147,7 +146,7 @@ mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
       return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
                  -- TODO: the exact NodeMod could be calculated here!
                  , changedInDg = Map.insert nm symMod $ changedInDg chL })
-    Just (MkUpdate nmod) -> do
+    Just (MkUpdate nmod) -> do -- TODO: what if reference node??
       (j, dg'') <- liftR $ deleteNode dg nm
       (_, dg', lv') <- insertNode opts lg mGt xnd j (dg'', lv)
       return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL
@@ -159,7 +158,7 @@ changelist. for link deletion, the affected nodes are marked as such in chL -}
 deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
 deleteElements dg0 chL0 = do
   (dg1, targets) <- foldM deleteLink (dg0, []) $ Set.toList $ deleteLinks chL0
-  dg2 <- foldM (\ dg' nm -> fmap snd $ deleteNode dg' nm) dg1 $ Set.toList $ deleteNodes chL0
+  dg2 <- foldM (\ dg' -> fmap snd . deleteNode dg') dg1 $ Set.toList $ deleteNodes chL0
   chL' <- foldM (markNodeUpdates dg2) chL0 $ List.nub targets
   return (dg2, chL') where
     {- after deletion, all still-existing nodes which lost ingoing links must
@@ -171,18 +170,24 @@ deleteElements dg0 chL0 = do
              $ updateNodeChange (dgn_name lbl) (MkUpdate symMod) chL
       _ -> fail $ "ambigous occurance of node #" ++ show trg
 
--- deletes a link from dg. returns smaller dg and links target id
-deleteLink :: (DGraph, [Node]) -> (String, EdgeId) -> Result (DGraph, [Node])
-deleteLink (dg, tars) (trg, ei) = case lookupUniqueNodeByName trg dg of
-      Just (j, _) -> liftM (\ dg' -> (dg', j : tars)) $ deleteDGLink j ei dg
-      Nothing -> fail $
-        "required target [" ++ trg ++ "] was not found in DGraph!"
+-- deletes a link from dg. returns smaller dg and (def)links target id
+deleteLink :: Monad m => (DGraph, [Node]) -> XLink -> m (DGraph, [Node])
+deleteLink (dg, tars) xlk = case lookupUniqueNodeByName (source xlk) dg of
+  Just (s, _) -> let dg' = delEdgeDG s (edgeId xlk) dg
+    in if not $ isDefEdgeType (lType xlk)
+      then return (dg', tars)
+      else case lookupUniqueNodeByName (target xlk) dg of
+        Just (t, _) -> return (dg', t : tars)
+        Nothing -> fail $ "required target [" ++ target xlk
+          ++ "] was not found in DGraph!"
+  Nothing -> fail $ "required source [" ++ source xlk
+    ++ "] was not found in DGraph!"
 
 -- deletes a node from dg
-deleteNode :: DGraph -> NodeName -> Result (Node, DGraph)
+deleteNode :: Monad m => DGraph -> NodeName -> m (Node, DGraph)
 deleteNode dg nm = let nd = showName nm
       in case lookupUniqueNodeByName nd dg of
-        Just (j, _) -> fmap (\ dg' -> (j, dg')) $ deleteDGNode j dg
+        Just (j, _) -> let dg' = delNodeDG j dg in return (j, dg')
         Nothing -> fail $
           "required node [" ++ nd ++ "] was not found in DGraph!"
 

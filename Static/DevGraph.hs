@@ -1225,6 +1225,11 @@ insLNodeDG n@(v, _) g =
 insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
 insNodesDG ns dg = dg { dgBody = insNodes ns $ dgBody dg }
 
+-- | given its source node and edgeId, delete an edge out of dg 
+delEdgeDG :: Node -> EdgeId -> DGraph -> DGraph
+delEdgeDG s ei dg = let (Just (ins, _, nl, outs), rg) = match s $ dgBody dg
+  in dg { dgBody = (ins, s, nl, filter ((/= ei) . dgl_id . fst) outs) & rg }
+
 -- | delete a labeled edge out of the given DG
 delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdgeDG e g = g
