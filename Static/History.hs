@@ -23,7 +23,9 @@ module Static.History
   , applyProofHistory
   , undoHistStep
   , redoHistStep
+  , undoAllChanges
   , togglePending
+  , justTogglePending
   ) where
 
 import Static.DevGraph
@@ -103,6 +105,10 @@ undoHistStep dg = let h = proofHistory dg in
      in (dg2, concat ncs)
   in (ndg { redoHistory = SizedList.cons he $ redoHistory dg }, cs)
 
+undoAllChanges :: DGraph -> DGraph
+undoAllChanges dg = let h = proofHistory dg in
+  if SizedList.null h then dg else undoAllChanges $ fst $ undoHistStep dg
+
 redoHistStep :: DGraph -> (DGraph, [DGChange])
 redoHistStep dg = let h = redoHistory dg in
   if SizedList.null h then (dg, []) else
@@ -133,6 +139,19 @@ togglePending dg = changesDGH dg . concatMap
   (\ e@(s, t, l) ->
        [DeleteEdge e, InsertEdge
         (s, t, l { dglPending = not (dglPending l)})])
+
+-- | toggle the pending flag of the input edges (without history change)
+justTogglePending :: DGraph -> [LEdge DGLinkLab] -> DGraph
+justTogglePending = foldl' togglePendFlag
+
+togglePendFlag :: DGraph -> LEdge DGLinkLab -> DGraph
+togglePendFlag dg (v, _, l) = let
+  (Just (ins, _, sl, outs), rg) = match v $ dgBody dg
+  in dg { dgBody = (ins, v, sl
+                   , map (\ (o, t) ->
+            if dgl_id o == dgl_id l
+            then (o { dglPending = not (dglPending o) }, t)
+            else (o, t)) outs) & rg }
 
 -- | forget redo stack
 clearRedo :: DGraph -> DGraph
