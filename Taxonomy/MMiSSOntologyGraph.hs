@@ -26,7 +26,7 @@ import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Query.DFS
 
-import qualified GUI.AbstractGraphView as A
+import qualified Taxonomy.AbstractGraphView as A
 
 displayClassGraph :: MMiSSOntology -> Maybe String -> IO A.OurGraph
 displayClassGraph onto startClass = do

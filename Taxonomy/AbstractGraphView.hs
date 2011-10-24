@@ -18,7 +18,7 @@ Interface for graph viewing and abstraction.
    edge types are handled by user-supplied strings.
 -}
 
-module GUI.AbstractGraphView
+module Taxonomy.AbstractGraphView
     ( OurGraph
     , initgraphs
     , Result(Result)
