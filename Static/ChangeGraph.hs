@@ -150,8 +150,17 @@ to normal forms for hiding or free links cannot be set this way. So further
 function are needed. -}
 
 addDGNode :: NodeName -> G_theory -> DGOrigin -> Conservativity -> DGraph
-  -> (DGraph, Node)
-addDGNode = undefined
+  -> Result (DGraph, Node)
+addDGNode nn th o cs dg = let
+  n = getNewNodeDG dg
+  inf = newConsNodeInfo o cs
+  sn = showName nn
+  nl = newInfoNodeLab nn inf th
+  in case lookupNodeByName sn dg of
+     [] -> return (changeDGH dg $ InsertNode (n, nl), n)
+     ns -> fail $ "node name '" ++ sn
+       ++ "' already defined in graph for node(s): "
+       ++ show (map fst ns)
 
 -- | Maybe a function to rename nodes is desirable
 renameNode :: Node -> NodeName -> DGraph -> DGraph
