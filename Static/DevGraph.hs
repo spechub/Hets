@@ -917,11 +917,15 @@ globOrLocTh lbl = fromMaybe (dgn_theory lbl) $ globalTheory lbl
 
 -- ** creating node content and label
 
+-- | create node info
+newConsNodeInfo :: DGOrigin -> Conservativity -> DGNodeInfo
+newConsNodeInfo orig cs = DGNode
+  { node_origin = orig
+  , node_cons_status = mkConsStatus cs }
+
 -- | create default content
 newNodeInfo :: DGOrigin -> DGNodeInfo
-newNodeInfo orig = DGNode
-  { node_origin = orig
-  , node_cons_status = mkConsStatus None }
+newNodeInfo orig = newConsNodeInfo orig None
 
 -- | create a reference node part
 newRefInfo :: LibName -> Node -> DGNodeInfo
