@@ -91,11 +91,10 @@ iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
 mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
               -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
 mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
-  {- the required node update due to predecessor signature changes or link mods
-  is derived using union. The change, if any, is added to the update-entry. -}
-  sigUpd = foldr (\ xl -> mergeNodeMod (getLinkMod (edgeId xl) chL)
-    . mergeNodeMod (fromMaybe unMod (getChangedInDg (source xl) chL)))
-    unMod xlks
+  {- the required node update due to link mods is derived using union.
+  predecessor signature changes have been collected through markLinkUpdates. -}
+  sigUpd = foldr (\ xl ->
+      mergeNodeMod (getChangedInDg (source xl) chL)) unMod xlks
   chL' = if sigUpd == unMod then chL
     else updateNodeChange (MkUpdate sigUpd) (nodeName xnd) chL in do
     mrs <- mapM (getTypeAndMorphism lg dg) xlks
@@ -168,15 +167,8 @@ markNodeAsChanged nm nmod chL = chL
     { changeNodes = Map.delete nm $ changeNodes chL
     , changedInDg = Map.insert nm nmod $ changedInDg chL }
 
-
-getChangedInDg :: String -> ChangeList -> Maybe NodeMod
-getChangedInDg s = Map.lookup (parseNodeName s) . changedInDg
-
-getLinkMod :: EdgeId -> ChangeList -> NodeMod
-getLinkMod ei = maybe unMod (\ ca -> case ca of
-  MkUpdate m -> m
-  -- TODO maybe not all link-insertions require symMod?
-  MkInsert -> symMod) . Map.lookup ei . changeLinks
+getChangedInDg :: String -> ChangeList -> NodeMod
+getChangedInDg s = fromMaybe unMod . Map.lookup (parseNodeName s) . changedInDg
 
 {- | deletes the those elements from dgraph that are marked for deletion in
 changelist. for link deletion, the affected nodes are marked as such in chL -}
