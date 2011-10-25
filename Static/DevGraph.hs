@@ -47,6 +47,7 @@ import Logic.Prover
 
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
+import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.SizedList as SizedList
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
@@ -830,7 +831,7 @@ data DGraph = DGraph
   , currentBaseTheory :: Maybe NodeSig
   , refTree :: Tree.Gr RTNodeLab RTLinkLab -- ^ the refinement tree
   , specRoots :: Map.Map String Node -- ^ root nodes for named specs
-  , nameMap :: Map.Map String Node -- ^ all nodes by name
+  , nameMap :: MapSet.MapSet String Node -- ^ all nodes by name
   , archSpecDiags :: Map.Map String Diag
       -- ^ dependency diagrams between units
   , getNewEdgeId :: EdgeId  -- ^ edge counter
@@ -855,7 +856,7 @@ emptyDG = DGraph
   , currentBaseTheory = Nothing
   , refTree = Graph.empty
   , specRoots = Map.empty
-  , nameMap = Map.empty
+  , nameMap = MapSet.empty
   , archSpecDiags = Map.empty
   , getNewEdgeId = startEdgeId
   , refNodes = Map.empty
@@ -1061,29 +1062,29 @@ lookupNodeWith f dg = filter f $ labNodesDG dg
 {- | lookup a node in the graph by its name, using showName
 to convert nodenames. -}
 lookupNodeByName :: String -> DGraph -> [LNode DGNodeLab]
-lookupNodeByName s dg = lookupNodeWith f dg where
-    f (_, lbl) = getDGNodeName lbl == s
+lookupNodeByName s dg = map (\ n -> (n, labDG dg n)) . Set.toList
+  . MapSet.lookup s $ nameMap dg
 
 lookupUniqueNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
-lookupUniqueNodeByName s dg = do
-  n <- Map.lookup s $ nameMap dg
-  l <- lab (dgBody dg) n
-  return (n, l)
+lookupUniqueNodeByName s dg =
+  case Set.toList $ MapSet.lookup s $ nameMap dg of
+    [n] -> do
+      l <- lab (dgBody dg) n
+      return (n, l)
+    _ -> Nothing
 
 {- | filters all local nodes in the graph by their names, using showName
 to convert nodenames. See also 'lookupNodeByName'. -}
 filterLocalNodesByName :: String -> DGraph -> [LNode DGNodeLab]
-filterLocalNodesByName s dg = lookupNodeWith f dg where
-    f (_, lbl) = not (isDGRef lbl) && getDGNodeName lbl == s
+filterLocalNodesByName s = filter (not . isDGRef . snd) . lookupNodeByName s
 
 {- | filter all ref nodes in the graph by their names, using showName
 to convert nodenames. See also 'lookupNodeByName'. -}
 filterRefNodesByName :: String -> LibName -> DGraph -> [LNode DGNodeLab]
-filterRefNodesByName s ln dg = lookupNodeWith f dg where
-    f (_, lbl) = case nodeInfo lbl of
-                   DGRef { ref_libname = libn } ->
-                       libn == ln && getDGNodeName lbl == s
-                   _ -> False
+filterRefNodesByName s ln =
+  filter (\ (_, lbl) -> case nodeInfo lbl of
+                   DGRef { ref_libname = libn } -> libn == ln
+                   _ -> False) . lookupNodeByName s
 
 {- | Given a 'LibEnv' we search each DGraph in it for a (maybe referenced) node
  with the given name. We return the labeled node and the Graph where this node
@@ -1203,22 +1204,32 @@ safeContextDG s = safeContext s . dgBody where
 
 -- | sets the node with new label and returns the new graph and the old label
 labelNodeDG :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
-labelNodeDG p g =
-    let (b, l) = Tree.labelNode p $ dgBody g in (g { dgBody = b }, l)
+labelNodeDG p@(n, lbl) dg =
+    let (b, l) = Tree.labelNode p $ dgBody dg
+        oldN = getDGNodeName l
+        newN = getDGNodeName lbl
+        nMap = nameMap dg
+    in (dg { dgBody = b
+           , nameMap = if oldN == newN then nMap else
+               MapSet.insert newN n $ MapSet.delete oldN n nMap }, l)
 
 -- | delete the node out of the given DG
 delNodeDG :: Node -> DGraph -> DGraph
-delNodeDG n dg = dg { dgBody = delNode n $ dgBody dg }
+delNodeDG n dg = case match n $ dgBody dg of
+  (Just (_, _, lbl, _), rg) -> dg
+     { dgBody = rg
+     , nameMap = MapSet.delete (getDGNodeName lbl) n $ nameMap dg }
+  _ -> error $ "delNodeDG " ++ show n
 
 -- | delete a list of nodes out of the given DG
 delNodesDG :: [Node] -> DGraph -> DGraph
-delNodesDG ns dg = dg { dgBody = delNodes ns $ dgBody dg }
+delNodesDG = flip $ foldr delNodeDG
 
 -- | insert a new node into given DGraph
 insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insNodeDG n@(i, l) dg = dg
   { dgBody = insNode n $ dgBody dg
-  , nameMap = Map.insert (getDGNodeName l) i $ nameMap dg }
+  , nameMap = MapSet.insert (getDGNodeName l) i $ nameMap dg }
 
 -- | inserts a lnode into a given DG
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
@@ -1227,7 +1238,7 @@ insLNodeDG n@(v, _) g =
 
 -- | insert a new node with the given node content into a given DGraph
 insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
-insNodesDG ns dg = dg { dgBody = insNodes ns $ dgBody dg }
+insNodesDG = flip $ foldr insNodeDG
 
 -- | given its source node and edgeId, delete an edge out of dg
 delEdgeDG :: Node -> EdgeId -> DGraph -> DGraph
