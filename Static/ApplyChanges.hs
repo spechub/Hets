@@ -38,7 +38,7 @@ import Logic.Grothendieck
 import Control.Monad
 import Control.Monad.Trans (lift)
 
-import Data.Graph.Inductive.Graph (Node, match)
+import Data.Graph.Inductive.Graph (Node, match, lab)
 import qualified Data.List as List (nub)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -186,11 +186,10 @@ markLinkUpdates dg t nmod chL = let
 
 -- | look for given node and mark as update-pending in changelist
 markNodeUpdates :: Monad m => DGraph -> Node -> ChangeList -> m ChangeList
-markNodeUpdates dg trg = case lookupNodeWith ((== trg) . fst) dg of
-  [] -> return
+markNodeUpdates dg trg = case lab (dgBody dg) trg of
+  Nothing -> return
   -- TODO: here also, the NodeMod could be calculated
-  [(_, lbl)] -> return . updateNodeChange (MkUpdate symMod) (dgn_name lbl)
-  _ -> fail $ "ambigous occurance of node #" ++ show trg
+  Just lbl -> return . updateNodeChange (MkUpdate symMod) (dgn_name lbl)
 
 -- | remove a node from changelist pending list and mark it as update conducted
 markNodeAsChanged :: NodeName -> NodeMod -> ChangeList -> ChangeList

@@ -1055,10 +1055,6 @@ lookupInAllRefNodesDG ref dg = case ref of
 
 -- ** lookup nodes by their names or other properties
 
--- | lookup a node in the graph with a predicate.
-lookupNodeWith :: (LNode DGNodeLab -> Bool) -> DGraph -> [LNode DGNodeLab]
-lookupNodeWith f dg = filter f $ labNodesDG dg
-
 {- | lookup a node in the graph by its name, using showName
 to convert nodenames. -}
 lookupNodeByName :: String -> DGraph -> [LNode DGNodeLab]
