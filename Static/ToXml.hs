@@ -15,7 +15,6 @@ module Static.ToXml (dGraph) where
 import Static.DgUtils
 import Static.DevGraph
 import Static.GTheory
-import Static.History
 import Static.PrintDevGraph
 
 import Logic.Prover
@@ -43,9 +42,8 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
 
 dGraph :: LibEnv -> LibName -> DGraph -> Element
-dGraph lenv ln dg0 =
-  let dg = undoAllChanges dg0
-      body = dgBody dg
+dGraph lenv ln dg =
+  let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
   in add_attrs [ mkAttr "filename" $ getFilePath ln

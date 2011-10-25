@@ -17,6 +17,7 @@ import Static.DevGraph
 import Static.GTheory
 import Static.DgUtils
 import Static.FromXml
+import Static.History (undoAllChanges)
 import Static.ToXml
 import Static.XGraph
 import Static.XSimplePath
@@ -47,7 +48,7 @@ import Text.XML.Light hiding (Node)
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
   -> ResultT IO (LibName, LibEnv)
 dgXUpdate opts xs le ln dg = do
-  (xml, chL) <- liftR $ changeXml (dGraph le ln dg) xs
+  (xml, chL) <- liftR $ changeXml (dGraph le ln $ undoAllChanges dg) xs
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
     $ ppTopElement $ cleanUpElem xml
 -- rebuiltDgXml opts le xml
