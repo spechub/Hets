@@ -37,7 +37,6 @@ import Logic.Grothendieck
 import Control.Monad
 import Control.Monad.Trans (lift)
 
-import Data.Maybe (fromMaybe)
 import Data.Graph.Inductive.Graph (Node, match)
 import qualified Data.List as List (nub)
 import qualified Data.Set as Set
@@ -56,8 +55,6 @@ dgXUpdate opts xs le ln dg = do
 
 {- TODO (general): a lot of unused information is created. possibly check if
 update is required for an element BEFORE processing xgraph information.
-TODO (general): use ChangeGraph functions instead of DevGraph ones for
-insertion? (called through FromXml)
 TODO (general): determine the EXACT required change for each object instead
 of overwriting the existing one every time! -}
 
@@ -91,10 +88,8 @@ iterateXgBody opts xgr lv dg chL = let lg = logicGraph in do
 mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
               -> ([XLink], XNode) -> ResultT IO (DGraph, LibEnv, ChangeList)
 mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
-  {- the required node update due to link mods is derived using union.
-  predecessor signature changes have been collected through markLinkUpdates. -}
-  sigUpd = foldr (\ xl ->
-      mergeNodeMod (getChangedInDg (source xl) chL)) unMod xlks
+  -- first, add the req. signature change from ingoing definition links
+  sigUpd = getLinkModUnion chL xlks
   chL' = if sigUpd == unMod then chL
     else updateNodeChange (MkUpdate sigUpd) (nodeName xnd) chL in do
     mrs <- mapM (getTypeAndMorphism lg dg) xlks
@@ -102,6 +97,16 @@ mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
     rs1 <- mkNodeUpdate opts lg (Just $ noSensGTheory lid sg sId)
         (dg, lv, chL') xnd
     foldM (mkLinkUpdate lg) rs1 mrs
+
+{- | the required node update due to link mods is derived using union.
+predecessor signature changes have been collected through markLinkUpdates. -}
+getLinkModUnion :: ChangeList -> [XLink] -> NodeMod
+getLinkModUnion chL = foldr (\ xl ->
+  case Map.lookup (edgeId xl) $ changeLinks chL of
+    -- TODO get proper NodeMod here!
+    Just MkInsert -> mergeNodeMod symMod
+    Just (MkUpdate nmod) -> mergeNodeMod nmod
+    Nothing -> id ) unMod
 
 {- | update or insert a node in accordance with XGraph data ONLY if the element
 is marked for updating in changelist. -}
@@ -113,6 +118,9 @@ mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
     -- no change required, move on
     Nothing -> return (dg, lv, chL)
     -- make insertion using FromXml.insertNode
+    Just MkInsert -> do
+      (_, dg', lv') <- insertNode opts lg mGt xnd (getNewNodeDG dg) (dg, lv)
+      return (dg', lv', markNodeAsChanged nm symMod chL)
     {- make update
     TODO: watch out for reference nodes!
     TODO: use NodeMod in a proper way, only update as much as necessary! -}
@@ -122,82 +130,88 @@ mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
       -- all adjacent links need to get their morphism updated
       return (dg', lv', markLinkUpdates dg' j nmod
         $ markNodeAsChanged nm nmod chL)
-    Just MkInsert -> do
-      (_, dg', lv') <- insertNode opts lg mGt xnd (getNewNodeDG dg) (dg, lv)
-      return (dg', lv', markNodeAsChanged nm symMod chL)
 
 -- | check one xlink and make update or insertion to dg if required
 mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
              -> (Node, GMorphism, DGLinkType, XLink)
              -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xlk) =
-  case Map.lookup (edgeId xlk) $ changeLinks chL of
+mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xl) =
+  case Map.lookup (edgeId xl) $ changeLinks chL of
     Nothing -> return (dg, lv, chL)
-    Just MkInsert -> mkLinkUpdateAux dg
+    Just MkInsert -> do
+      dg' <- insertLinkAux lg (target xl) dg lkMr
+      let chL' = chL { changeLinks = Map.delete (edgeId xl) $ changeLinks chL }
+      return (dg', lv, chL')
+    -- TODO use setMorphism if possible to keep old link data
     Just (MkUpdate nmod) -> do
-      (dg', _) <- deleteLink (dg, []) xlk
-      mkLinkUpdateAux dg'
-   -- TODO use setMorphism if possible to keep old link data
-    where mkLinkUpdateAux dg' = case lookupUniqueNodeByName (target xlk) dg' of
-            Nothing -> fail $
-              "required node [" ++ target xlk ++ "] was not found in DGraph!"
-            Just (j, lbl) -> do
-              dg'' <- (insertLink lg j $ signOf $ dgn_theory lbl) dg' lkMr
-              return (dg'', lv, chL { changeLinks = Map.delete (edgeId xlk)
-                $ changeLinks chL })
+      dg'' <- deleteLink dg xl
+      dg' <- insertLinkAux lg (target xl) dg'' lkMr
+      let chL' = chL { changeLinks = Map.delete (edgeId xl) $ changeLinks chL }
+      return (dg', lv, chL')
 
+-- | gather target node information and call FromXml.insertLink
+insertLinkAux :: LogicGraph -> String -> DGraph
+              -> (Node, GMorphism, DGLinkType, XLink) -> ResultT IO DGraph
+insertLinkAux lg tar dg lkMr = case lookupUniqueNodeByName tar dg of
+            Nothing -> fail $
+              "required node [" ++ tar ++ "] was not found in DGraph!"
+            Just (j, lbl) -> (insertLink lg j $ signOf $ dgn_theory lbl) dg lkMr
 
 -- | updates any necessary ThmLinks
 mkThmLinkUpdates :: LogicGraph -> (DGraph, LibEnv, ChangeList) -> [XLink]
                  -> ResultT IO (DGraph, LibEnv, ChangeList)
 mkThmLinkUpdates lg (dg, lv, chL) xlks = do
   mrs <- mapM (getTypeAndMorphism lg dg) xlks
-  -- TODO use setMorphism if possible to keep old link data
   foldM (mkLinkUpdate lg) (dg, lv, chL) mrs
 
+{- | deletes the those elements from dgraph that are marked for deletion in
+changelist. for link deletion, the affected nodes are marked as such in chL -}
+deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
+deleteElements dg chL = do
+  (dg1, targets) <- foldM deleteLinkAux (dg, []) $ Set.toList $ deleteLinks chL
+  dg2 <- foldM (\ dg' -> liftM snd . deleteNode dg') dg1 $ Set.toList
+          $ deleteNodes chL
+  {- after deletion, all still-existing nodes which lost ingoing definition
+  links must be marked for updating. -}
+  chL' <- foldM (flip $ markNodeUpdates dg2) chL $ List.nub targets
+  return (dg2, chL' { deleteNodes = Set.empty, deleteLinks = Set.empty })
 
+-- | mark all links adjacent to a node as update-pending
 markLinkUpdates :: DGraph -> Node -> NodeMod -> ChangeList -> ChangeList
 markLinkUpdates dg t nmod chL = let
   (Just (ins, _, _, outs), _) = match t $ dgBody dg
   in foldr (updateLinkChange (MkUpdate nmod)) chL
      $ map (dgl_id . fst) $ ins ++ outs
 
+-- | look for given node and mark as update-pending in changelist
+markNodeUpdates :: Monad m => DGraph -> Node -> ChangeList -> m ChangeList
+markNodeUpdates dg trg = case lookupNodeWith ((== trg) . fst) dg of
+  [] -> return
+  -- TODO: here also, the NodeMod could be calculated
+  [(_, lbl)] -> return . updateNodeChange (MkUpdate symMod) (dgn_name lbl)
+  _ -> fail $ "ambigous occurance of node #" ++ show trg
+
+-- | remove a node from changelist pending list and mark it as update conducted
 markNodeAsChanged :: NodeName -> NodeMod -> ChangeList -> ChangeList
 markNodeAsChanged nm nmod chL = chL
     { changeNodes = Map.delete nm $ changeNodes chL
     , changedInDg = Map.insert nm nmod $ changedInDg chL }
 
-getChangedInDg :: String -> ChangeList -> NodeMod
-getChangedInDg s = fromMaybe unMod . Map.lookup (parseNodeName s) . changedInDg
+-- deletes a link from dg.
+deleteLink :: Monad m => DGraph -> XLink -> m DGraph
+deleteLink dg = liftM fst . deleteLinkAux (dg, [])
 
-{- | deletes the those elements from dgraph that are marked for deletion in
-changelist. for link deletion, the affected nodes are marked as such in chL -}
-deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
-deleteElements dg0 chL0 = do
-  (dg1, targets) <- foldM deleteLink (dg0, []) $ Set.toList $ deleteLinks chL0
-  dg2 <- foldM (\ dg' -> fmap snd . deleteNode dg') dg1
-           $ Set.toList $ deleteNodes chL0
-  chL' <- foldM (markNodeUpdates dg2) chL0 $ List.nub targets
-  return (dg2, chL') where
-    {- after deletion, all still-existing nodes which lost ingoing definition
-    links must be marked for updating. -}
-    markNodeUpdates dg chL trg = case lookupNodeWith ((== trg) . fst) dg of
-      [] -> return chL
-      [(_, lbl)] -> return
-             $ updateNodeChange (MkUpdate symMod) (dgn_name lbl) chL
-      _ -> fail $ "ambigous occurance of node #" ++ show trg
-
--- deletes a link from dg. returns smaller dg and (def)links target id
-deleteLink :: Monad m => (DGraph, [Node]) -> XLink -> m (DGraph, [Node])
-deleteLink (dg, tars) xlk = case lookupUniqueNodeByName (source xlk) dg of
-  Just (s, _) -> let dg' = delEdgeDG s (edgeId xlk) dg
-    in if not $ isDefEdgeType (lType xlk)
+-- additionally returns (def)links target id
+deleteLinkAux :: Monad m => (DGraph, [Node]) -> XLink -> m (DGraph, [Node])
+deleteLinkAux (dg, tars) xl = case lookupUniqueNodeByName (source xl) dg of
+  Just (s, _) -> let dg' = delEdgeDG s (edgeId xl) dg
+    in if not $ isDefEdgeType (lType xl)
       then return (dg', tars)
-      else case lookupUniqueNodeByName (target xlk) dg of
+      else case lookupUniqueNodeByName (target xl) dg of
         Just (t, _) -> return (dg', t : tars)
-        Nothing -> fail $ "required target [" ++ target xlk
+        Nothing -> fail $ "required target [" ++ target xl
           ++ "] was not found in DGraph!"
-  Nothing -> fail $ "required source [" ++ source xlk
+  Nothing -> fail $ "required source [" ++ source xl
     ++ "] was not found in DGraph!"
 
 -- deletes a node from dg
