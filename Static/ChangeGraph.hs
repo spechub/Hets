@@ -163,8 +163,15 @@ addDGNode nn th o cs dg = let
        ++ show (map fst ns)
 
 -- | Maybe a function to rename nodes is desirable
-renameNode :: Node -> NodeName -> DGraph -> DGraph
-renameNode = undefined
+renameNode :: Node -> NodeName -> DGraph -> Result DGraph
+renameNode n nn dg = let
+  sn = showName nn
+  nl = labDG dg n
+  in case lookupNodeByName sn dg of
+     [] -> return $ changeDGH dg $ SetNodeLab nl (n, nl { dgn_name = nn })
+     ns -> fail $ "node name '" ++ sn
+       ++ "' already defined in graph for node(s): "
+       ++ show (map fst ns)
 
 -- * deleting and adding links
 
