@@ -88,15 +88,6 @@ flatHide = mkFlatStr "hiding"
 flatHet :: DGRule
 flatHet = mkFlatStr "heterogeneity"
 
-{- given a node in a library, gives the node at the end of the reference chain
-in the library -}
-lookUpReferenceChain :: LibEnv -> LibName -> Node -> (LibName, Node)
-lookUpReferenceChain lib_Env libName nd = let
-  dg = lookupDGraph libName lib_Env
-  in case lookupInRefNodesDG nd dg of
-   Just (n_lib, n_nd) -> lookUpReferenceChain lib_Env n_lib n_nd
-   Nothing -> (libName, nd)
-
 cErr :: String -> Node -> a
 cErr str n = error $ str ++ " no global theory for node " ++ show n
 
@@ -235,12 +226,11 @@ dgFlatHeterogen libEnv ln dg = let
    updateNodes lib_Env l_n nds = case nds of
     [] -> lib_Env
     (hd, isHetDef) : tl -> let
-      {- have to consider references here. computeTheory is applied to the
-      node at the end of the chain of references only. -}
-      (lname, nd) = lookUpReferenceChain lib_Env l_n hd
-      odg = lookupDGraph lname lib_Env
-      labRf = labDG odg nd
-      change = case computeTheory lib_Env lname nd of
+      {- have to consider references here. The global theory is taken as
+      local one at the end of the reference chain. -}
+      (lname, odg, (nd, labRf)) =
+          lookupRefNode lib_Env l_n (lookupDGraph l_n lib_Env) hd
+      change = case globalTheory labRf of
         Just ndgn_theory ->
           SetNodeLab labRf (nd, labRf {dgn_theory = ndgn_theory})
         Nothing -> cErr "dgFlatHeterogen" nd
