@@ -1078,9 +1078,8 @@ filterLocalNodesByName s = filter (not . isDGRef . snd) . lookupNodeByName s
 to convert nodenames. See also 'lookupNodeByName'. -}
 filterRefNodesByName :: String -> LibName -> DGraph -> [LNode DGNodeLab]
 filterRefNodesByName s ln =
-  filter (\ (_, lbl) -> case nodeInfo lbl of
-                   DGRef { ref_libname = libn } -> libn == ln
-                   _ -> False) . lookupNodeByName s
+  filter (\ (_, lbl) -> isDGRef lbl && dgn_libname lbl == ln)
+  . lookupNodeByName s
 
 {- | Given a 'LibEnv' we search each DGraph in it for a (maybe referenced) node
  with the given name. We return the labeled node and the Graph where this node
@@ -1106,30 +1105,32 @@ lookupLocalNodeByName le dg s =
 {- | Given a Node and a 'DGraph' we follow the node to the graph where it is
  defined as a local node. -}
 lookupLocalNode :: LibEnv -> DGraph -> Node -> (DGraph, LNode DGNodeLab)
-lookupLocalNode le = f
-    where
-      f dg n = case labDG dg n of
-                 DGNodeLab { nodeInfo = DGRef { ref_libname = ln
-                                              , ref_node = n' } } ->
-                    f (lookupDGraph ln le) n'
-                 x -> (dg, (n, x))
+lookupLocalNode le dg n = let
+  (_, refDg, p) = lookupRefNodeM le Nothing dg n
+  in (refDg, p)
 
 {- | Given a Node and a 'DGraph' we follow the node to the graph where it is
  defined . -}
 lookupRefNode :: LibEnv -> LibName -> DGraph -> Node
    -> (LibName, DGraph, LNode DGNodeLab)
-lookupRefNode le libName dg n = case labDG dg n of
-                 DGNodeLab { nodeInfo = DGRef { ref_libname = ln
-                                              , ref_node = n' } } ->
-                    lookupRefNode le ln (lookupDGraph ln le) n'
-                 x -> (libName, dg, (n, x))
+lookupRefNode le ln dg n = let
+  (mLn, refDg, p) = lookupRefNodeM le Nothing dg n
+  in (fromMaybe ln mLn, refDg, p)
+
+lookupRefNodeM :: LibEnv -> Maybe LibName -> DGraph -> Node
+   -> (Maybe LibName, DGraph, LNode DGNodeLab)
+lookupRefNodeM le libName dg n = let x = labDG dg n in
+  if isDGRef x then let
+    ln = dgn_libname x
+    n' = dgn_node x in lookupRefNodeM le (Just ln) (lookupDGraph ln le) n'
+  else (libName, dg, (n, x))
 
 -- ** treat reference nodes
 
 -- | add a new referenced node into the refNodes map of the given DG
 addToRefNodesDG :: Node -> DGNodeInfo -> DGraph -> DGraph
 addToRefNodesDG n ref dg = case ref of
-    DGRef { ref_libname = libn, ref_node = refn } ->
+    DGRef libn refn ->
       dg { refNodes = Map.insert n (libn, refn) $ refNodes dg
          , allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg }
     _ -> dg
