@@ -238,8 +238,7 @@ incPredImpME (ModExp m_id) pdg (ptim, tim, dg) = up where
          refLab = labDG pdg n
          nodeCont = new { globalTheory = globalTheory refLab }
          -- (ns1, dg1) = insGTheory dg name1 DGBasic gt1
-         dg1 = addToRefNodesDG newNode refInfo
-           $ insNodeDG (newNode, nodeCont) dg
+         dg1 = insNodeDG (newNode, nodeCont) dg
          ext_sg2 = makeExtSign Maude sg2
          gt2 = G_theory Maude ext_sg2 startSigId noSens startThId
          name2 = makeName q'
@@ -248,8 +247,7 @@ incPredImpME (ModExp m_id) pdg (ptim, tim, dg) = up where
          refLab' = labDG pdg n'
          nodeCont' = new' { globalTheory = globalTheory refLab' }
          -- (ns2, dg2) = insGTheory dg1 name2 DGBasic gt2
-         dg2 = addToRefNodesDG newNode' refInfo'
-           $ insNodeDG (newNode', nodeCont') dg1
+         dg2 = insNodeDG (newNode', nodeCont') dg1
          tim1 = Map.insert q (newNode, sg1, sys1, tts1, ps1) tim
          tim2 = Map.insert q' (newNode', sg2, sys2, tts2, ps2) tim1
          in (ptim2, tim2, dg2)

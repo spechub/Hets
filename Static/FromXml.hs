@@ -216,7 +216,7 @@ insertNode opts lg mGt xNd n (dg, lv) = case xNd of
           (gt', _) <- parseSpecs gt nm dg spc
           let nInf = newRefInfo (emptyLibName rfLb) i
               lbl = newInfoNodeLab nm nInf gt'
-          return (gt', addToRefNodesDG n nInf $ insNodeDG (n, lbl) dg, lv')
+          return (gt', insNodeDG (n, lbl) dg, lv')
   -- Case #2: Regular Node
   XNode nm lN (hid, syb) spc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes

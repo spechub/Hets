@@ -536,7 +536,7 @@ refNodesig libenv refln refDG dg
    in case lookupInAllRefNodesDG refInfo dg of
         Just existNode -> (dg, NodeSig existNode sigma)
         Nothing ->
-          ( addToRefNodesDG node refInfo $ insNodeDG (node, nodeCont) dg
+          ( insNodeDG (node, nodeCont) dg
           , NodeSig node sigma)
 
 refNodesigs :: LibEnv -> LibName -> DGraph -> DGraph -> [(NodeName, NodeSig)]

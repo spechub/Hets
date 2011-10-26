@@ -48,14 +48,14 @@ import Driver.ReadFn (libNameToFile)
 import Driver.Options (rmSuffix, HetcatsOpts, putIfVerbose, showDiags)
 
 import Logic.Logic
-    ( AnyLogic(Logic)
-    , Logic( omdoc_metatheory, omdocToSym, omdocToSen, addOMadtToTheory
+    ( AnyLogic (Logic)
+    , Logic ( omdoc_metatheory, omdocToSym, omdocToSen, addOMadtToTheory
            , addOmdocToTheory)
-    , Category(ide, cod)
-    , StaticAnalysis( induced_from_morphism, induced_from_to_morphism
+    , Category (ide, cod)
+    , StaticAnalysis ( induced_from_morphism, induced_from_to_morphism
                     , signature_union, empty_signature, add_symb_to_sign
                     , symbol_to_raw, id_to_raw )
-    , Sentences(symmap_of) )
+    , Sentences (symmap_of) )
 import Logic.ExtSign
 import Logic.Coerce
 import Logic.Prover
@@ -133,7 +133,7 @@ lookupNode e (ln, dg) ucd =
     let mn = getModule ucd in
     if cdInLib ucd ln then
         case filterLocalNodesByName mn dg of
-          []-> error $ "lookupNode: Node not found: " ++ mn
+          [] -> error $ "lookupNode: Node not found: " ++ mn
           lnode : _ -> Just (ln, lnode)
     else case lookupLib e $ fromJust $ getUri ucd of
            Nothing -> Nothing
@@ -157,10 +157,10 @@ rPutIfVerbose :: ImpEnv -> Int -> String -> ResultT IO ()
 rPutIfVerbose e n s = lift $ putIfVerbose (hetsOptions e) n s
 
 rPut :: ImpEnv -> String -> ResultT IO ()
-rPut e s = rPutIfVerbose e 1 s
+rPut e = rPutIfVerbose e 1
 
 rPut2 :: ImpEnv -> String -> ResultT IO ()
-rPut2 e s = rPutIfVerbose e 2 s
+rPut2 e = rPutIfVerbose e 2
 
 -- * URI Functions
 
@@ -216,7 +216,7 @@ toUriCD cd ln =
 getLogicFromMeta :: Maybe OMCD -> AnyLogic
 getLogicFromMeta mCD =
     let p (Logic lid) = case omdoc_metatheory lid of
-                          Just cd' -> (fromJust mCD) == cd'
+                          Just cd' -> fromJust mCD == cd'
                           _ -> False
     in if isNothing mCD then defaultLogic else
            case find p logicList of
@@ -244,8 +244,8 @@ anaOMDocFile opts fp = do
 
 -- * OMDoc traversal
 
--- | If the lib is not already in the environment, the OMDoc file and
--- the closure of its imports is added to the environment.
+{- | If the lib is not already in the environment, the OMDoc file and
+the closure of its imports is added to the environment. -}
 importLib :: ImpEnv -- ^ The import environment
           -> URI -- ^ The url of the OMDoc file
           -> ResultT IO (ImpEnv, LibName, DGraph)
@@ -262,8 +262,8 @@ readLib e u = do
   rPut e $ "Downloading " ++ show u ++ " ..."
   xmlString <- lift $ readFromURL readXmlFile u
   OMDoc n l <- liftR $ xmlIn xmlString
-  -- the name of the omdoc is used as the libname, no relationship between the
-  -- libname and the filepath!
+  {- the name of the omdoc is used as the libname, no relationship between the
+  libname and the filepath! -}
   ln <- lift $ libNameFromURL n u
   rPut e $ "Importing library " ++ show ln
   (e', dg) <- foldM (addTLToDGraph ln) (e, emptyDG) l
@@ -286,22 +286,22 @@ importTheory e (ln, dg) cd = do
     Just (ln', nd)
         | ln == ln' ->
             do
-              rPut2 e $ "... found local node."
+              rPut2 e "... found local node."
               return (e, ln, dg, nd)
         | isDGRef $ snd nd ->
             do
-              rPut2 e $ "... found already referenced node."
+              rPut2 e "... found already referenced node."
               return (e, ln', dg, nd)
         | otherwise ->
             do
-              rPut2 e $ "... found node, referencing it ..."
+              rPut2 e "... found node, referencing it ..."
               let (lnode, dg') = addNodeAsRefToDG nd ln' dg
-              rPut2 e $ "... done"
+              rPut2 e "... done"
               return (e, ln', dg', lnode)
     -- if lookupNode finds nothing implies that ln is not the current libname!
     _ -> do
       let u = fromJust $ getUri ucd
-      rPut2 e $ "... node not found, reading lib."
+      rPut2 e "... node not found, reading lib."
       (e', ln', refDg) <- readLib e u
       case filterLocalNodesByName (getModule ucd) refDg of
         -- don't add the node to the refDG but to the original DG!
@@ -320,8 +320,8 @@ addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
 
   let clf = classifyTCs l
 
-  -- I. Lookup all imports (= follow and create them first),
-  -- and insert DGNodeRefs if neccessary.
+  {- I. Lookup all imports (= follow and create them first),
+  and insert DGNodeRefs if neccessary. -}
   ((e', dg'), iIL) <- followImports ln (e, dg) $ importInfo clf
 
   -- II. Compute morphisms and update initial sig and name symbol map stepwise.
@@ -352,15 +352,15 @@ addTLToDGraph ln (e, dg) (TLView n from to mMor) = do
 
   rPut e $ "Importing view " ++ n
 
-  -- follow the source and target of the view and insert DGNodeRefs
-  -- if neccessary.
-  -- use followTheory for from and to.
+  {- follow the source and target of the view and insert DGNodeRefs
+  if neccessary.
+  use followTheory for from and to. -}
   ((e', dg'), [lkNdFrom, lkNdTo]) <- followTheories ln (e, dg) [from, to]
   lkInf <- computeViewMorphism e' ln $ ImportInfo (lkNdFrom, lkNdTo) n mMor
   let dg'' = addLinkToDG
-             -- this error should never occur as the linkinfo contains
-             -- a to-node.
-             -- The error is used here as a "don't care element" of type Node
+             {- this error should never occur as the linkinfo contains
+             a to-node.
+             The error is used here as a "don't care element" of type Node -}
              (error "addTLToDGraph: TLView - Default node not available")
              dg' lkInf
   return (e', dg'')
@@ -392,13 +392,13 @@ computeMorphisms :: ImpEnv -> LibName
                  -> ResultT IO ((NameSymbolMap, G_sign), [LinkInfo])
 computeMorphisms e ln nots = mapAccumLM (computeMorphism e ln nots)
 
--- | Computes the morphism for an import link and updates the signature
--- and the name symbol map with the imported symbols
+{- | Computes the morphism for an import link and updates the signature
+and the name symbol map with the imported symbols -}
 computeMorphism :: ImpEnv -- ^ The import environment for lookup purposes
                 -> LibName -- ^ Current libname
                 -> Map.Map OMName String -- ^ Notations of target signature
-                -> (NameSymbolMap, G_sign) -- ^ OMDoc symbol to Hets symbol map
-                                           -- and target signature
+                -> (NameSymbolMap, G_sign) {- ^ OMDoc symbol to Hets symbol map
+                                           and target signature -}
                 -> ImportInfo LinkNode -- ^ source label with OMDoc morphism
                 -> ResultT IO ((NameSymbolMap, G_sign), LinkInfo)
 computeMorphism e ln nots (nsmap, tGSig) (ImportInfo (mLn, (from, lbl)) n morph)
@@ -408,8 +408,8 @@ computeMorphism e ln nots (nsmap, tGSig) (ImportInfo (mLn, (from, lbl)) n morph)
               G_sign tLid (ExtSign tSig _) sigId ->
                   do
                     let sourceNSMap = lookupNSMap e ln mLn $ getDGNodeName lbl
-                    -- 1. build the morphism
-                    -- compute first the symbol-map
+                    {- 1. build the morphism
+                    compute first the symbol-map -}
                     symMap <- computeSymbolMap (Just nots) sourceNSMap nsmap
                               morph tLid
                     let
@@ -421,13 +421,13 @@ computeMorphism e ln nots (nsmap, tGSig) (ImportInfo (mLn, (from, lbl)) n morph)
                     -- REMARK: Logic-homogeneous environment assumed
                     sSig' <- coercePlainSign sLid tLid "computeMorphism" sSig
                     mor <- liftR $ induced_from_morphism tLid rsMap sSig'
-                    -- 2. build the GMorphism and update the signature
-                    -- and the name symbol map
+                    {- 2. build the GMorphism and update the signature
+                    and the name symbol map -}
                     newSig <- liftR $ signature_union tLid tSig $ cod mor
                     let gMor = gEmbed $ mkG_morphism tLid mor
                         newGSig = G_sign tLid (makeExtSign tLid newSig) sigId
-                        -- function for filtering the raw symbols in the
-                        -- nsmap update
+                        {- function for filtering the raw symbols in the
+                        nsmap update -}
                         h (s, Left (n', _)) = Just (s, n')
                         h (_, Right _) = Nothing
                         nsmap' = updateSymbolMap tLid mor nsmap
@@ -448,12 +448,12 @@ computeViewMorphism e ln (ImportInfo ( (mSLn, (from, lblS))
             do
               let nsmapS = lookupNSMap e ln mSLn $ getDGNodeName lblS
                   nsmapT = lookupNSMap e ln mTLn $ getDGNodeName lblT
-              -- 1. build the morphism
-              -- compute first the symbol-map
+              {- 1. build the morphism
+              compute first the symbol-map -}
               symMap <- computeSymbolMap Nothing nsmapS nsmapT morph tLid
               let f = symbol_to_raw tLid
-                  -- this can't occur as we do not provide a notation map
-                  -- to computeSymbolMap
+                  {- this can't occur as we do not provide a notation map
+                  to computeSymbolMap -}
                   g (Left _) = error "computeViewMorphism: impossible case"
                   g (Right s) = symbol_to_raw tLid s
                   rsMap = Map.fromList
@@ -469,8 +469,8 @@ computeViewMorphism e ln (ImportInfo ( (mSLn, (from, lblS))
 mkLinkOrigin :: String -> DGLinkOrigin
 mkLinkOrigin s = DGLinkMorph $ mkSimpleId s
 
--- | For each entry (s, n) in l we enter the mapping (n, m(s))
--- to the name symbol map
+{- | For each entry (s, n) in l we enter the mapping (n, m(s))
+to the name symbol map -}
 updateSymbolMap :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
@@ -537,8 +537,8 @@ followImports :: LibName -> (ImpEnv, DGraph) -> [ImportInfo OMCD]
               -> ResultT IO ((ImpEnv, DGraph), [ImportInfo LinkNode])
 followImports ln = mapAccumLCM (curry snd) (followImport ln)
 
--- | Ensures that the theory for the given OMCD is available in the environment.
--- See also 'followTheory'
+{- | Ensures that the theory for the given OMCD is available in the environment.
+See also 'followTheory' -}
 followImport :: LibName -> (ImpEnv, DGraph) -> ImportInfo OMCD
              -> ResultT IO ((ImpEnv, DGraph), ImportInfo LinkNode)
 followImport ln x iInfo = do
@@ -550,8 +550,8 @@ followTheories :: LibName -> (ImpEnv, DGraph) -> [OMCD]
                -> ResultT IO ((ImpEnv, DGraph), [LinkNode])
 followTheories ln = mapAccumLCM (curry snd) (followTheory ln)
 
--- | We lookup the theory referenced by the cd in the environment
--- and add it if neccessary to the environment.
+{- | We lookup the theory referenced by the cd in the environment
+and add it if neccessary to the environment. -}
 followTheory :: LibName -> (ImpEnv, DGraph) -> OMCD
              -> ResultT IO ((ImpEnv, DGraph), LinkNode)
 followTheory ln (e, dg) cd = do
@@ -563,8 +563,8 @@ followTheory ln (e, dg) cd = do
 -- * Development Graph and LibEnv interface
 
 
--- | returns a function compatible with mapAccumLM for TCElement processing.
--- Used in localSig.
+{- | returns a function compatible with mapAccumLM for TCElement processing.
+Used in localSig. -}
 sigmapAccumFun :: (Monad m, Show a) => (SigMapI a -> TCElement -> String -> m a)
                -> SigMapI a -> TCElement -> m (SigMapI a, a)
 sigmapAccumFun f smi s = do
@@ -591,8 +591,8 @@ localSig clf nsmap gSig =
       (G_sign lid _ _, G_mapofsymbol lid' sm) ->
           do
             let smi = SigMapI (coerceMapofsymbol lid' lid sm) $ notations clf
-            -- accumulates symbol mappings in the symbMap in SigMapI
-            -- while creating symbols from OMDoc symbols
+            {- accumulates symbol mappings in the symbMap in SigMapI
+            while creating symbols from OMDoc symbols -}
             (sm', symbs) <- mapAccumLM (sigmapAccumFun $ omdocToSym lid) smi
                            $ sigElems clf
             -- adding the symbols to the empty signature
@@ -619,8 +619,8 @@ addSentences clf nsmap gsig =
             (sig', sens') <- addOMadtToTheory lid sigm (sig, catMaybes mSens)
                              $ adts clf
 
-            -- 3. translate rest of theory
-            -- (all the sentences or just those which returned Nothing?)
+            {- 3. translate rest of theory
+            (all the sentences or just those which returned Nothing?) -}
             (sig'', sens'') <- addOmdocToTheory lid sigm (sig', sens')
                                $ sentences clf
 
@@ -656,10 +656,9 @@ addNodeAsRefToDG (nd, lbl) ln dg =
         nd' = getNewNodeDG dg
         lnode = (nd', lbl { nodeInfo = info })
         dg1 = insNodeDG lnode dg
-        dg2 = addToRefNodesDG nd' info dg1
-    in case refNodeM of
+     in case refNodeM of
          Just refNode -> ((refNode, labDG dg refNode), dg)
-         _ -> (lnode, dg2)
+         _ -> (lnode, dg1)
 
 
 -- * Theory-utils
@@ -675,8 +674,8 @@ data ImportInfo a = ImportInfo a String TCMorphism deriving Show
 iInfoVal :: ImportInfo a -> a
 iInfoVal (ImportInfo x _ _) = x
 
-instance Functor ImportInfo where fmap f (ImportInfo x y z)
-                                      = ImportInfo (f x) y z
+instance Functor ImportInfo where
+  fmap f (ImportInfo x y z) = ImportInfo (f x) y z
 
 fmapLI :: Monad m => (GMorphism -> m GMorphism) -> LinkInfo -> m LinkInfo
 fmapLI f (gm, x, y, z, t) = do
@@ -688,7 +687,7 @@ data TCClassification = TCClf {
     , sigElems :: [TCElement] -- ^ Signature symbols
     , sentences :: [TCElement] -- ^ Theory sentences
     , adts :: [[OmdADT]] -- ^ ADTs
-    , notations :: (Map.Map OMName String) -- ^ Notations
+    , notations :: Map.Map OMName String -- ^ Notations
     }
 
 
@@ -696,7 +695,7 @@ emptyClassification :: TCClassification
 emptyClassification = TCClf [] [] [] [] Map.empty
 
 classifyTCs :: [TCElement] -> TCClassification
-classifyTCs l = foldr classifyTC emptyClassification l
+classifyTCs = foldr classifyTC emptyClassification
 
 classifyTC :: TCElement -> TCClassification -> TCClassification
 classifyTC tc clf =
@@ -710,10 +709,10 @@ classifyTC tc clf =
           else clf
       TCADT l -> clf { adts = l : adts clf }
       TCImport n from morph ->
-          clf { importInfo = (ImportInfo from n morph) : importInfo clf }
+          clf { importInfo = ImportInfo from n morph : importInfo clf }
       TCComment _ -> clf
       TCSmartNotation _ _ _ _ _ -> error "classifyTC: unexpected SmartNotation"
-      TCFlexibleNotation _ _ _ -> error "classifyTC: unexpected FlexibleNotation"
+      TCFlexibleNotation _ _ _ ->
+          error "classifyTC: unexpected FlexibleNotation"
       -- just for the case TCNotation with a style different from hets
       _ -> clf
-

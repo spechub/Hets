@@ -162,9 +162,7 @@ addParentNode libenv dg refl refDg refn =
    done. -}
    case lookupInAllRefNodesDG refInfo dg of
         Nothing -> let newN = getNewNodeDG dg in
-           ( changeDGH (addToRefNodesDG newN refInfo dg)
-             $ InsertNode (newN, newRefNode)
-           , newN)
+           (changeDGH dg $ InsertNode (newN, newRefNode), newN)
         Just extN -> (dg, extN)
 
 -- | add a list of links between the given two node ids.

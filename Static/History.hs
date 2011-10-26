@@ -171,13 +171,10 @@ updateDGAndChanges = mapAccumL updateDGOnly
 updateDGOnly :: DGraph -> DGChange -> (DGraph, DGChange)
 updateDGOnly g c =
   case c of
-    InsertNode n -> (updRefInfo n $ insLNodeDG n g, InsertNode n)
+    InsertNode n -> (insLNodeDG n g, InsertNode n)
     DeleteNode n@(i, _) -> (delNodeDG i g, DeleteNode n)
     InsertEdge e -> let (newEdge, ng) = insLEdgeDG e g in
       (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in
-      (updRefInfo n newG, SetNodeLab o n)
-
-updRefInfo :: LNode DGNodeLab -> DGraph -> DGraph
-updRefInfo (n, lbl) = addToRefNodesDG n $ nodeInfo lbl
+      (newG, SetNodeLab o n)

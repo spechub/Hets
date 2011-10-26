@@ -39,7 +39,7 @@ type NODE_MAP = Map.Map NODE Node
 -- analyzes the given Twelf file
 anaTwelfFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaTwelfFile _ fp = do
-  (libs,bs) <- twelf2GR LATIN fp (Map.empty,[])
+  (libs, bs) <- twelf2GR LATIN fp (Map.empty, [])
   let libenv = makeLibEnv libs bs
   file <- toAbsoluteURI fp
   lname <- toLibName LATIN file
@@ -49,34 +49,34 @@ anaTwelfFile _ fp = do
    the list of library names stores the order in which they were added -}
 makeLibEnv :: LIBS -> [BASE] -> LibEnv
 makeLibEnv libs bs = fst $
-  foldl ( \ (le,nm) b ->
-            let (sigs,morphs) = Map.findWithDefault
+  foldl ( \ (le, nm) b ->
+            let (sigs, morphs) = Map.findWithDefault
                     (error "Library cannot be found.") b libs
                 ln = emptyLibName b
                 le1 = Map.insert ln emptyDG le
-                (le2,nm1) = addNodes le1 nm b sigs
+                (le2, nm1) = addNodes le1 nm b sigs
                 le3 = addLinks le2 nm1 b morphs
                 dg = computeDGraphTheories le3 $ lookupDGraph ln le3
                 le4 = Map.insert ln dg le3
-                in (le4,nm1)
-        ) (emptyLibEnv,Map.empty) bs
+                in (le4, nm1)
+        ) (emptyLibEnv, Map.empty) bs
 
 {- adds nodes to the library environment
    node map returned for reference when adding links -}
-addNodes :: LibEnv -> NODE_MAP -> BASE -> SIGS -> (LibEnv,NODE_MAP)
+addNodes :: LibEnv -> NODE_MAP -> BASE -> SIGS -> (LibEnv, NODE_MAP)
 addNodes le nm b sigs =
   let ln = emptyLibName b
-      (dg2,nm1) = Map.foldWithKey
-         (\ m sig (dg,nmap) ->
-            let (n,dg1) = addSigToDG sig dg
-                nmap1 = Map.insert (b,m) n nmap
-                in (dg1,nmap1)
+      (dg2, nm1) = Map.foldWithKey
+         (\ m sig (dg, nmap) ->
+            let (n, dg1) = addSigToDG sig dg
+                nmap1 = Map.insert (b, m) n nmap
+                in (dg1, nmap1)
          ) (lookupDGraph ln le, nm) sigs
       le1 = Map.insert ln dg2 le
-      in (le1,nm1)
+      in (le1, nm1)
 
 -- inserts a signature as a node to the development graph
-addSigToDG :: Sign -> DGraph -> (Node,DGraph)
+addSigToDG :: Sign -> DGraph -> (Node, DGraph)
 addSigToDG sig dg =
   let node = getNewNodeDG dg
       name = Token (sigModule sig) nullRange
@@ -85,13 +85,13 @@ addSigToDG sig dg =
       extSign = makeExtSign LF sig
       gth = noSensGTheory LF extSign startSigId
       nodeLabel = newInfoNodeLab nodeName info gth
-      dg1 = insNodeDG (node,nodeLabel) dg
+      dg1 = insNodeDG (node, nodeLabel) dg
       emptyNode = EmptyNode $ Logic LF
       gSig = GenSig emptyNode [] emptyNode
       nodeSig = NodeSig node $ G_sign LF extSign startSigId
       gEntry = SpecEntry $ ExtGenSig gSig nodeSig
       dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
-      in (node,dg2)
+      in (node, dg2)
 
 -- adds links to the library environment
 addLinks :: LibEnv -> NODE_MAP -> BASE -> MORPHS -> LibEnv
@@ -117,12 +117,12 @@ addMorphToDG morph dg nm le =
       consStatus = ConsStatus Cons.None Cons.None LeftOpen
       linkType = ScopedLink Global linkKind consStatus
       linkLabel = defDGLink gMorph linkType SeeTarget
-      (node1,dg1) = addRefNode (source morph) (b,dg) nm le
-      (node2,dg2) = addRefNode (target morph) (b,dg1) nm le
-      (_,dg3) = insLEdgeDG (node1,node2,linkLabel) dg2
+      (node1, dg1) = addRefNode (source morph) (b, dg) nm le
+      (node2, dg2) = addRefNode (target morph) (b, dg1) nm le
+      (_, dg3) = insLEdgeDG (node1, node2, linkLabel) dg2
 
-      in if (k == Definitional && null n) then dg3 else
-        let n' = if (k == Postulated) then m else m ++ sigDelimS ++ n
+      in if k == Definitional && null n then dg3 else
+        let n' = if k == Postulated then m else m ++ sigDelimS ++ n
             name = Token n' nullRange
             extSignSrc = makeExtSign LF $ source morph
             extSignTar = makeExtSign LF $ target morph
@@ -137,20 +137,20 @@ addMorphToDG morph dg nm le =
             in dg4
 
 -- constructs a reference node to the specified signature, if needed
-addRefNode :: Sign -> (BASE,DGraph) -> NODE_MAP -> LibEnv -> (Node,DGraph)
-addRefNode sig (base,dg) nm le =
+addRefNode :: Sign -> (BASE, DGraph) -> NODE_MAP -> LibEnv -> (Node, DGraph)
+addRefNode sig (base, dg) nm le =
   let b = sigBase sig
       m = sigModule sig
-      nod = Map.findWithDefault (error "Node number cannot be found.") (b,m) nm
-      in if (b == base) then (nod,dg) else
+      nod = Map.findWithDefault (error "Node number cannot be found.") (b, m) nm
+      in if b == base then (nod, dg) else
             let info = newRefInfo (emptyLibName b) nod
                 refNodeM = lookupInAllRefNodesDG info dg
                 in case refNodeM of
-                        Just refNode -> (refNode,dg)
+                        Just refNode -> (refNode, dg)
                         Nothing -> insRefSigToDG sig info dg le
 
 -- inserts a signature as a reference node to the development graph
-insRefSigToDG :: Sign -> DGNodeInfo -> DGraph -> LibEnv -> (Node,DGraph)
+insRefSigToDG :: Sign -> DGNodeInfo -> DGraph -> LibEnv -> (Node, DGraph)
 insRefSigToDG sig info dg le =
   let node = getNewNodeDG dg
       m = sigModule sig
@@ -161,6 +161,5 @@ insRefSigToDG sig info dg le =
       refDG = lookupDGraph (ref_libname info) le
       refGlobTh = globalTheory $ labDG refDG $ ref_node info
       nodeLabel2 = nodeLabel1 { globalTheory = refGlobTh}
-      dg1 = insNodeDG (node,nodeLabel2) dg
-      dg2 = addToRefNodesDG node info dg1
-      in (node,dg2)
+      dg1 = insNodeDG (node, nodeLabel2) dg
+      in (node, dg1)

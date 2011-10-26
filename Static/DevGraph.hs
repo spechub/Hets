@@ -1179,10 +1179,6 @@ safeContextDG s = safeContext s . dgBody where
 
 -- ** manipulate graph
 
--- | dummy function for compatibility
-addToRefNodesDG :: Node -> DGNodeInfo -> DGraph -> DGraph
-addToRefNodesDG _ _ = id
-
 -- | sets the node with new label and returns the new graph and the old label
 labelNodeDG :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
 labelNodeDG p@(n, lbl) dg =
