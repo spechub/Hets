@@ -84,7 +84,7 @@ data ChangeList = ChangeList
   { deleteNodes :: Set.Set NodeName
   , deleteLinks :: Set.Set XLink -- ^ stores additional information
   , changeNodes :: Map.Map NodeName ChangeAction
-  , changeLinks :: Map.Map EdgeId ChangeAction }
+  , changeLinks :: Map.Map EdgeId ChangeAction } deriving Eq
 
 data ChangeAction = MkUpdate NodeMod | MkInsert deriving Eq
 
@@ -92,9 +92,20 @@ updateNodeChange :: ChangeAction -> NodeName -> ChangeList -> ChangeList
 updateNodeChange chA nm chL = chL { changeNodes =
   Map.insertWith mergeChA nm chA $ changeNodes chL }
 
+retrieveNodeChange :: NodeName -> ChangeList
+                   -> Maybe (ChangeAction, ChangeList)
+retrieveNodeChange nm chL = do
+  nmod <- Map.lookup nm $ changeNodes chL
+  return (nmod, chL { changeNodes = Map.delete nm $ changeNodes chL })
+
 updateLinkChange :: ChangeAction -> EdgeId -> ChangeList -> ChangeList
 updateLinkChange chA ei chL = chL { changeLinks =
   Map.insertWith mergeChA ei chA $ changeLinks chL }
+
+retrieveLinkChange :: EdgeId -> ChangeList -> Maybe (ChangeAction, ChangeList)
+retrieveLinkChange ei chL = do
+  nmod <- Map.lookup ei $ changeLinks chL
+  return (nmod, chL { changeLinks = Map.delete ei $ changeLinks chL })
 
 mergeChA :: ChangeAction -> ChangeAction -> ChangeAction
 mergeChA (MkUpdate md1) (MkUpdate md2) = MkUpdate $ mergeNodeMod md1 md2

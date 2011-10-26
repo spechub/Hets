@@ -69,9 +69,9 @@ updateDG opts xml chL dg le = do
   xgr <- liftR $ xGraph xml
   let dg'' = dg' { globalAnnos = globAnnos xgr
                  , getNewEdgeId = nextLinkId xgr }
-  (dgFin, le', _) <- iterateXgBody opts xgr le dg'' chL'
+  (dgFin, le', chL'') <- iterateXgBody opts xgr le dg'' chL'
   let ln = libName xgr
-  -- TODO possibly test if any updates are left undone (corrupted dg/diff)
+  unless (chL'' == emptyChangeList) $ fail "not all changes could be processed"
   return (ln, computeLibEnvTheories $ Map.insert ln dgFin le')
 
 {- | move along xgraph structure and make updates or insertions in accordance
@@ -97,7 +97,7 @@ mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
     G_sign lid sg sId <- getSigForXNode lg dg mrs
     rs1 <- mkNodeUpdate opts lg (Just $ noSensGTheory lid sg sId)
         (dg, lv, chL') xnd
-    foldM (mkLinkUpdateAux lg) rs1 mrs
+    foldM (mkLinkUpdate lg) rs1 mrs
 
 {- | the required node update due to link mods is derived using union.
 predecessor signature changes have been collected through markLinkUpdates. -}
@@ -115,23 +115,21 @@ mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
              -> (DGraph, LibEnv, ChangeList) -> XNode
              -> ResultT IO (DGraph, LibEnv, ChangeList)
 mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
-  case Map.lookup nm $ changeNodes chL of
+  case retrieveNodeChange nm chL of
     -- no change required, move on
     Nothing -> return (dg, lv, chL)
     -- make insertion using FromXml.insertNode
-    Just MkInsert -> do
+    Just (MkInsert, chL') -> do
       (_, dg', lv') <- insertNode opts lg mGt xnd (getNewNodeDG dg) (dg, lv)
-      return (dg', lv', chL { changeNodes = Map.delete nm $ changeNodes chL })
+      return (dg', lv', chL')
     {- make update
     TODO: watch out for reference nodes!
     TODO: use NodeMod in a proper way, only update as much as necessary! -}
-    Just (MkUpdate nmod) -> do
-      (j, dg'') <- liftR $ deleteNode dg nm
+    Just (MkUpdate nmod, chL') -> do
+      (j, dg'') <- deleteNode dg nm
       (_, dg', lv') <- insertNode opts lg mGt xnd j (dg'', lv)
       -- all adjacent links need to get their morphism updated
-      let chL' = markLinkUpdates dg' j nmod chL
-      return (dg', lv', chL' { changeNodes =
-        Map.delete nm $ changeNodes chL' })
+      return (dg', lv', markLinkUpdates dg' j nmod chL')
 
 -- | mark all links adjacent to a node as update-pending
 markLinkUpdates :: DGraph -> Node -> NodeMod -> ChangeList -> ChangeList
@@ -140,35 +138,26 @@ markLinkUpdates dg t nmod chL = let
   in foldr (updateLinkChange (MkUpdate nmod)) chL
      $ map (dgl_id . fst) $ ins ++ outs
 
-{- | gather target node information, call update-link, and delete link from
-changelist after change application -}
-mkLinkUpdateAux :: LogicGraph -> (DGraph, LibEnv, ChangeList)
+-- | update or insert a link if said so in changelist
+mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
                 -> (Node, GMorphism, DGLinkType, XLink)
                 -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkLinkUpdateAux lg (dg, lv, chL) lkMr@(_, _, _, xl) = do
-  (j, gs) <- signOfNode (target xl) dg
-  dg' <- mkLinkUpdate lg j gs chL dg lkMr
-  return (dg', lv, chL { changeLinks =
-    Map.delete (edgeId xl) $ changeLinks chL })
-
--- | check one xlink and make update or insertion to dg if required
-mkLinkUpdate :: LogicGraph -> Node -> G_sign -> ChangeList -> DGraph
-             -> (Node, GMorphism, DGLinkType, XLink) -> ResultT IO DGraph
-mkLinkUpdate lg j gs chL dg lkMr@(_, _, _, xl) =
-  case Map.lookup (edgeId xl) $ changeLinks chL of
-    Nothing -> return dg
-    Just MkInsert -> insertLink lg j gs dg lkMr
-    -- TODO use setMorphism if possible to keep old link data
-    Just (MkUpdate nmod) -> do
-      dg' <- deleteLink dg xl
-      insertLink lg j gs dg' lkMr
+mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xl) = do
+  case retrieveLinkChange (edgeId xl) chL of
+    Nothing -> return (dg, lv, chL)
+    Just (chA, chL') -> do
+      (j, gs) <- signOfNode (target xl) dg
+      -- TODO use setMorphism if possible to keep old link data
+      dg'' <- if chA == MkInsert then return dg else deleteLink dg xl
+      dg' <- insertLink lg j gs dg'' lkMr
+      return (dg', lv, chL')
 
 -- | updates any necessary ThmLinks
 mkThmLinkUpdates :: LogicGraph -> (DGraph, LibEnv, ChangeList) -> [XLink]
                  -> ResultT IO (DGraph, LibEnv, ChangeList)
 mkThmLinkUpdates lg (dg, lv, chL) xlks = do
   mrs <- mapM (getTypeAndMorphism lg dg) xlks
-  foldM (mkLinkUpdateAux lg) (dg, lv, chL) mrs
+  foldM (mkLinkUpdate lg) (dg, lv, chL) mrs
 
 {- | deletes the those elements from dgraph that are marked for deletion in
 changelist. for link deletion, the affected nodes are marked as such in chL -}
