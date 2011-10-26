@@ -125,7 +125,7 @@ mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
                CSign.opMap = Set.fold (\ x -> MapSet.insert x
                                 $ CSign.mkTotOpType [] individual)
-                                MapSet.empty $ ClSign.items sign
+                                MapSet.empty $ ClSign.allItems sign
                }) Predefined.caslSig
 
 trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.TEXT_META)
@@ -233,19 +233,18 @@ consSeq sig (x : xs) = CBasic.Application (CBasic.Qual_op_name cons
 
 termSeqForm :: ClSign.Sign -> ClBasic.TERM_SEQ -> CBasic.TERM a
 termSeqForm sig ts = case ts of
-        ClBasic.Term_seq trm -> case trm of
-             ClBasic.Name_term name -> if not subSig then
-                CBasic.Qual_var name individual Id.nullRange else
-                    termForm sig trm
-               where subSig = ClSign.isSubSigOf new sig
-                     new    = ClSign.Sign
-                         {
-                           ClSign.items = Set.singleton $ Id.simpleIdToId name
-                         , ClSign.discourseItems = Set.empty
-                         }
-             ClBasic.Funct_term _ _ _ -> termForm sig trm
-             ClBasic.Comment_term _ _ _ -> termForm sig trm
-        ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
+  ClBasic.Term_seq trm -> case trm of
+    ClBasic.Name_term name -> if not subSig then
+      CBasic.Qual_var name individual Id.nullRange else
+          termForm sig trm
+      where subSig = ClSign.isSubSigOf new sig
+            new    = ClSign.emptySig
+                  {
+                    ClSign.discourseNames = Set.singleton $ Id.simpleIdToId name
+                  }
+    ClBasic.Funct_term _ _ _ -> termForm sig trm
+    ClBasic.Comment_term _ _ _ -> termForm sig trm
+  ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
 
 bindingSeq :: ClBasic.NAME_OR_SEQMARK -> CBasic.VAR
 bindingSeq bs = case bs of

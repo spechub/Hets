@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  Symbols of common logic
-Copyright   :  (c) Karl Luc, DFKI Bremen 2010
+Copyright   :  (c) Karl Luc, DFKI Bremen 2010, Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  kluc@informatik.uni-bremen.de
+Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
@@ -48,13 +48,13 @@ printSymbol x = pretty $ symName x
 
 symOf :: Sign.Sign -> Set.Set Symbol
 symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
-           Sign.items x
+           Sign.allItems x
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
 getSymbolMap f =
   foldr (\ x -> Map.insert (Symbol x) (Symbol $ applyMap (propMap f) x))
-  Map.empty $ Set.toList $ Sign.items $ source f
+  Map.empty $ Set.toList $ Sign.allItems $ source f
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
@@ -70,4 +70,11 @@ matches :: Symbol -> Symbol -> Bool
 matches s1 s2 = s1 == s2
 
 addSymbToSign :: Sign.Sign -> Symbol -> Result (Sign.Sign)
-addSymbToSign sig _ = Result [] $ Just sig -- TODO
+addSymbToSign sig symb = Result [] $ Just $
+  if Sign.isSeqMark $ symName symb
+  then sig { Sign.sequenceMarkers =
+                    Set.insert (symName symb) $ Sign.sequenceMarkers sig
+           }
+  else sig { Sign.discourseNames =
+                    Set.insert (symName symb) $ Sign.discourseNames sig
+           }

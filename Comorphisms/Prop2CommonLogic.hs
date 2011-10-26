@@ -26,7 +26,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import Logic.Logic
 import Logic.Comorphism
 
-import Data.Set (fromList,empty)
+import qualified Data.Set as Set (fromList)
 
 -- Propositional
 import qualified Propositional.Logic_Propositional as PLogic
@@ -97,11 +97,14 @@ mapSentence _ f = return $ translate f
 
 mapSign :: PSign.Sign -> ClSign.Sign
 mapSign sig =
-  ClSign.unite (ClSign.Sign (PSign.items sig) (PSign.items sig)) $ baseSig
+  ClSign.unite (ClSign.emptySig {
+      ClSign.discourseNames = PSign.items sig
+    }) $ baseSig
 
 baseSig :: ClSign.Sign
-baseSig = let s = fromList [simpleIdToId xName, simpleIdToId yName]
-          in  ClSign.Sign s s
+baseSig = ClSign.emptySig {
+    ClSign.discourseNames = Set.fromList [simpleIdToId xName, simpleIdToId yName]
+  }
 
 mapTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
              -> Result (ClSign.Sign, [AS_Anno.Named TEXT_META])
@@ -115,10 +118,9 @@ mapTheory (srcSign, srcFormulas) =
 
 translate :: PBasic.FORMULA -> TEXT_META
 translate f =
-  Text_meta { getText = Text [Sentence singletonUniv, Sentence $ toSen f] nullRange
-            , metarelation = empty
-            , discourseNames = Nothing
-            }
+  emptyTextMeta {
+        getText = Text [Sentence singletonUniv, Sentence $ toSen f] nullRange
+  }
   where singletonUniv = Quant_sent (Universal [Name xName, Name yName]
             $ Atom_sent (Equation (Name_term xName) (Name_term yName)) nullRange
           ) nullRange

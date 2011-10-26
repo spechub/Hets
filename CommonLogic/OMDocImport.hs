@@ -30,9 +30,6 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation 
 
-import qualified Data.Set as Set (empty)
-
-
 
 type Env = SigMapI Symbol
 
@@ -54,10 +51,7 @@ omdocToSen e (TCSymbol _ t sr _) n =
       Just _ ->
           return Nothing -- don't translate encoded names here
       Nothing ->
-          let ns = makeNamed n $ Text_meta { getText = toText e t
-                                           , metarelation = Set.empty
-                                           , discourseNames = Nothing
-                                           }
+          let ns = makeNamed n $ emptyTextMeta { getText = toText e t }
               res b = return $ Just $ ns { isAxiom = b }
           in case sr of
                Axiom -> res True

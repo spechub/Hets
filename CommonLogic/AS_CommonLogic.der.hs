@@ -40,13 +40,13 @@ data BASIC_ITEMS = Axiom_items [AS_Anno.Annoted TEXT_META]
 emptyTextMeta :: TEXT_META
 emptyTextMeta = Text_meta { getText = Text [] nullRange
                           , metarelation = Set.empty
-                          , discourseNames = Nothing }
+                          , nondiscourseNames = Nothing }
 
 data TEXT_META = Text_meta { getText :: TEXT
                            , metarelation :: Set METARELATION
-                           , discourseNames :: Maybe (Set NAME) 
+                           , nondiscourseNames :: Maybe (Set NAME)
                            } deriving (Show, Ord, Eq)
--- TODO: check static analysis and other features on discourse names, as soon as segregated dialects are supported
+-- TODO: check static analysis and other features on discourse names, as soon as parsers of segregated dialects are implemented
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range

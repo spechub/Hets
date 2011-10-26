@@ -103,7 +103,7 @@ mapSign sig =
                                 , Map.keys $ FOLSign.funcMap sig
                                 , Map.keys $ FOLSign.predMap sig
                                 ]
-  in  ClSign.Sign items items
+  in  ClSign.emptySig { ClSign.discourseNames = items }
 
 -- | translates SoftFOL-theories to CL-theories keeping their names
 mapTheory :: (FOLSign.Sign, [AS_Anno.Named FOLSign.Sentence])
@@ -119,10 +119,7 @@ mapTheory (srcSign, srcFormulas) =
 -- translates a SoftFOL-theory to a CL-Text
 translate :: FOLSign.Sign -> FOLSign.Sentence -> TEXT_META
 translate s f =
-  Text_meta { getText = Text [Sentence $ trmToSen s f] nullRange
-            , metarelation = Set.empty
-            , discourseNames = Nothing
-            }
+  emptyTextMeta { getText = Text [Sentence $ trmToSen s f] nullRange }
 
 signToTexts :: FOLSign.Sign -> [AS_Anno.Named TEXT_META]
 signToTexts srcSign =
@@ -148,11 +145,9 @@ sortRelText m =
         ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just $ Text_meta { getText = Named_text sortRelTrS
-                                              (Text ps nullRange) nullRange
-                              , metarelation = Set.empty
-                              , discourseNames = Nothing
-                              }
+        else Just $ emptyTextMeta { getText = Named_text sortRelTrS
+                                                (Text ps nullRange) nullRange
+                                  }
 
 typesWithIndv :: [Token] -> [(Token, NAME)] -- (type, individual)
 typesWithIndv args =
@@ -186,11 +181,9 @@ funcMapText m =
           ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just $ Text_meta { getText = Named_text funcMapTrS
-                                              (Text ps nullRange) nullRange
-                              , metarelation = Set.empty
-                              , discourseNames = Nothing
-                              }
+        else Just $ emptyTextMeta { getText = Named_text funcMapTrS
+                                                (Text ps nullRange) nullRange
+                                  }
 
 -- creates one-sentence-phrases:
 -- forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z))
@@ -211,11 +204,9 @@ predMapText m =
           ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just $ Text_meta { getText = Named_text predMapTrS
-                                              (Text ps nullRange) nullRange
-                              , metarelation = Set.empty
-                              , discourseNames = Nothing
-                              }
+        else Just $ emptyTextMeta { getText = Named_text predMapTrS
+                                                (Text ps nullRange) nullRange
+                                  }
 
 trmToSen :: FOLSign.Sign -> FOLSign.SPTerm -> SENTENCE
 trmToSen s t = case t of

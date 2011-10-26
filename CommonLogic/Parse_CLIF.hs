@@ -45,7 +45,7 @@ cltext = do
   where tm :: TEXT -> TEXT_META
         tm t = Text_meta { AS.getText = t
                          , metarelation = metarelations t
-                         , discourseNames = Nothing
+                         , nondiscourseNames = Nothing
                          }
 
 namedtext :: CharParser st TEXT

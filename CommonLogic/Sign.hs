@@ -14,15 +14,15 @@ Definition of signatures for common logic
 module CommonLogic.Sign
     (Sign (..)
     , pretty                        -- pretty printing
+    , allItems                      -- union of all signature-fields
     , emptySig                      -- empty signature
     , isSubSigOf                    -- sub signature of signature
     , sigDiff                       -- Difference of Signatures
     , unite                         -- union of signatures
     , uniteL                        -- union of a list ofsignatures
     , sigUnion                      -- Union for Logic.Logic
-    , isSeqMark                     -- is sequence marker?
-    , isStringSeqMark
     , sigUnionL                     -- union of a list ofsignatures
+    , isSeqMark                     -- is an Id a sequence marker?
     ) where
 
 import qualified Data.Set as Set
@@ -33,37 +33,53 @@ import Common.DocUtils
 
 -- | Datatype for common logic Signatures
 
-data Sign = Sign { items :: Set.Set Id
-                 , discourseItems :: Set.Set Id 
+data Sign = Sign { discourseNames :: Set.Set Id
+                 , nondiscourseNames :: Set.Set Id
+                 , sequenceMarkers :: Set.Set Id
                  } deriving (Eq, Ord, Show)
--- TODO function testing whether an ID is a sequence marker
--- discourseItems `Set.isSubset` items == True
 
 instance Pretty Sign where
     pretty = printSign
 
+-- | union of all signature-fields
+allItems :: Sign -> Set.Set Id
+allItems s = Set.unions $ map (\f -> f s) [ discourseNames
+                                          , nondiscourseNames
+                                          , sequenceMarkers
+                                          ]
+
 -- | The empty signature
 emptySig :: Sign
-emptySig = Sign { items = Set.empty
-                , discourseItems = Set.empty
+emptySig = Sign { discourseNames = Set.empty
+                , nondiscourseNames = Set.empty
+                , sequenceMarkers = Set.empty
                 }
 
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
 printSign s =
-  hsep [text "%{vocabulary"
-      , sepByCommas $ map pretty $ Set.toList $ items s
-      , text "}%"]
+  vsep [ text "%{"
+       , (text "discourseNames: ")
+          <+> (sepByCommas $ map pretty $ Set.toList $ discourseNames s)
+       , (text "nondiscourseNames: ")
+          <+> (sepByCommas $ map pretty $ Set.toList $ nondiscourseNames s)
+       , (text "sequenceMarkers: ")
+          <+> (sepByCommas $ map pretty $ Set.toList $ sequenceMarkers s)
+       , text "}%"]
 
 -- | Determines if sig1 is subsignature of sig2
 isSubSigOf :: Sign -> Sign -> Bool
-isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) $ items sig2
+isSubSigOf sig1 sig2 =
+  Set.isSubsetOf (discourseNames sig1) (discourseNames sig2)
+  && Set.isSubsetOf (nondiscourseNames sig1) (nondiscourseNames sig2)
+  && Set.isSubsetOf (sequenceMarkers sig1) (sequenceMarkers sig2)
 
 -- | difference of Signatures
 sigDiff :: Sign -> Sign -> Sign
 sigDiff sig1 sig2 = Sign {
-    items = Set.difference (items sig1) $ items sig2,
-    discourseItems = Set.difference (discourseItems sig1) $ items sig2
+  discourseNames = Set.difference (discourseNames sig1) (discourseNames sig2),
+  nondiscourseNames = Set.difference (nondiscourseNames sig1) (nondiscourseNames sig2),
+  sequenceMarkers = Set.difference (sequenceMarkers sig1) (sequenceMarkers sig2)
 }
 
 -- | Unite Signatures
@@ -78,16 +94,16 @@ sigUnionL [] = return emptySig
 
 unite :: Sign -> Sign -> Sign
 unite sig1 sig2 = Sign {
-    items = Set.union (items sig1) $ items sig2,
-    discourseItems = Set.union (discourseItems sig1) $ discourseItems sig2
+  discourseNames = Set.union (discourseNames sig1) (discourseNames sig2),
+  nondiscourseNames = Set.union (nondiscourseNames sig1) (nondiscourseNames sig2),
+  sequenceMarkers = Set.union (sequenceMarkers sig1) (sequenceMarkers sig2)
 }
-
--- TODO
-isSeqMark :: Id -> Bool
-isSeqMark _ = True
-
-isStringSeqMark :: String -> Bool
-isStringSeqMark s = take 3 s == "..."
 
 uniteL :: [Sign] -> Sign
 uniteL = foldr unite emptySig
+
+isSeqMark :: Id -> Bool
+isSeqMark = isStringSeqMark . tokStr . idToSimpleId
+
+isStringSeqMark :: String -> Bool
+isStringSeqMark s = take 3 s == "..."

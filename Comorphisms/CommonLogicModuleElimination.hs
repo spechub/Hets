@@ -108,10 +108,7 @@ mapTheory (srcSign, srcTexts) =
 -- | Result is a CL-equivalent text without modules
 eliminateModules :: TEXT_META -> TEXT_META
 eliminateModules tm =
-  Text_meta { getText = Text [Sentence (me_text newName [] $ getText tm)] nullRange
-            , metarelation = metarelation tm
-            , discourseNames = discourseNames tm
-            }
+  tm { getText = Text [Sentence (me_text newName [] $ getText tm)] nullRange }
   where (newName, _) = freeName ("item", 0) (indvC_text $ getText tm)
 
 -- NOTE: ignores importations

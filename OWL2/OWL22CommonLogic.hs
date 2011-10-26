@@ -280,7 +280,7 @@ mapSign sig =
                         , OS.annotationRoles sig
                         , OS.individuals sig ]
       itms = Set.map uriToId conc
-  in return emptySig { items = itms }
+  in return emptySig { discourseNames = itms }
 
 nothingSent :: CommonAnno.Named TEXT
 nothingSent = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN $ mkSAtom
@@ -326,7 +326,7 @@ mapTheory (owlSig, owlSens) = do
                 (sen, sig) <- mapSentence y z
                 return (x ++ sen, unite sig y)
                 ) ([], cSig) owlSens
-    let sig = unite (emptySig {items = Set.fromList $ map (uriToId .
+    let sig = unite (emptySig {discourseNames = Set.fromList $ map (uriToId .
             setReservedPrefix . mkQName) $ "Datatype" : predefClass
             ++ [topDataProp, bottomDataProp, topObjProp, bottomObjProp]
             ++ datatypeKeys}) nSig
@@ -453,8 +453,9 @@ mapFacet :: Sign -> VarOrIndi -> TERM -> (ConstrainingFacet, RestrictionValue)
     -> Result (SENTENCE, Sign)
 mapFacet sig i var (f, r) = let v = varToInt i + 1 in do
     l <- mapLit v r
-    let sign = unite sig $ emptySig {items = Set.fromList [stringToId $ showQN
-                $ stripReservedPrefix f]}
+    let sign = unite sig $ emptySig {
+                  discourseNames = Set.fromList [stringToId $ showQN
+                                                  $ stripReservedPrefix f]}
     case l of
         Right lit -> return (mkTermAtoms (uriToTok f) [lit, var], sign)
         Left (s1, s2) -> return (mkBC [mkTermAtoms (uriToTok f)
@@ -842,7 +843,4 @@ mapAxioms cSig (PlainAxiom ex fb) = case fb of
 
 -- helper function
 addMrs :: TEXT -> TEXT_META
-addMrs t = Text_meta { getText = t
-                     , metarelation = Set.empty
-                     , discourseNames = Nothing
-                     }
+addMrs t = emptyTextMeta { getText = t }

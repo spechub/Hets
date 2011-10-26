@@ -4,7 +4,7 @@ Description :  Morphism of Common Logic
 Copyright   :  (c) Uni Bremen DFKI 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  kluc@informatik.uni-bremen.de
+Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  non-portable (via Logic.Logic)
 
@@ -21,7 +21,6 @@ module CommonLogic.Morphism
   , inclusionMap                -- inclusion map
   , mkMorphism                  -- create Morphism
   , mapSentence                 -- map of sentences
-  , mapSentenceH                -- map of sentences, without Result type
   , applyMap                    -- application function for maps
   , applyMorphism               -- application function for morphism
   , morphismUnion
@@ -35,7 +34,7 @@ import Common.Result
 import Common.Doc
 import Common.DocUtils
 
-import CommonLogic.AS_CommonLogic as AS_BASIC
+import CommonLogic.AS_CommonLogic as AS
 import CommonLogic.Sign as Sign
 
 -- maps of sets
@@ -55,8 +54,8 @@ idMor a = inclusionMap a a
 -- | Determines whether a morphism is valid
 isLegalMorphism :: Morphism -> Result ()
 isLegalMorphism pmor =
-    let psource = items $ source pmor
-        ptarget = items $ target pmor
+    let psource = allItems $ source pmor
+        ptarget = allItems $ target pmor
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
     in if Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
@@ -83,7 +82,7 @@ composeMor f g =
   , propMap = if Map.null gMap then fMap else
       Set.fold ( \ i -> let j = applyMap gMap (applyMap fMap i) in
                         if i == j then id else Map.insert i j)
-                                  Map.empty $ items fSource }
+                                  Map.empty $ allItems fSource }
 
 -- | Pretty printing for Morphisms
 printMorphism :: Morphism -> Doc
@@ -108,62 +107,76 @@ mkMorphism s t p =
 -- | sentence (text) translation along signature morphism
 -- here just the renaming of formulae
 
-mapSentence :: Morphism -> AS_BASIC.TEXT_META -> Result.Result AS_BASIC.TEXT_META
-mapSentence mor (Text_meta t mrs dis) =
-  return $ Text_meta { getText = mapSentence_txt mor t
-                     , metarelation = mrs
-                     , discourseNames = dis
-                     }
-
-mapSentence_txt :: Morphism -> AS_BASIC.TEXT -> AS_BASIC.TEXT
-mapSentence_txt mor = mapSentenceH mor
+mapSentence :: Morphism -> AS.TEXT_META -> Result.Result AS.TEXT_META
+mapSentence mor tm =
+  return $ tm { getText = mapSen_txt mor $ getText tm }
 
 -- propagates the translation to sentences
-mapSentenceH :: Morphism -> AS_BASIC.TEXT -> AS_BASIC.TEXT
-mapSentenceH mor txt = case txt of
-  AS_BASIC.Text phrs r -> AS_BASIC.Text (map (mapSentenceH_phr mor) phrs) r
-  AS_BASIC.Named_text n t r -> AS_BASIC.Named_text n (mapSentenceH mor t) r
+mapSen_txt :: Morphism -> AS.TEXT -> AS.TEXT
+mapSen_txt mor txt = case txt of
+  AS.Text phrs r -> AS.Text (map (mapSen_phr mor) phrs) r
+  AS.Named_text n t r -> AS.Named_text n (mapSen_txt mor t) r
 
 -- propagates the translation to sentences
-mapSentenceH_phr :: Morphism -> AS_BASIC.PHRASE -> AS_BASIC.PHRASE
-mapSentenceH_phr mor phr = case phr of
-  AS_BASIC.Module m -> AS_BASIC.Module $ mapSentenceH_mod mor m
-  AS_BASIC.Sentence s -> AS_BASIC.Sentence $ mapSentenceH_sen mor s
-  AS_BASIC.Comment_text c t r -> AS_BASIC.Comment_text c (mapSentenceH mor t) r
+mapSen_phr :: Morphism -> AS.PHRASE -> AS.PHRASE
+mapSen_phr mor phr = case phr of
+  AS.Module m -> AS.Module $ mapSen_mod mor m
+  AS.Sentence s -> AS.Sentence $ mapSen_sen mor s
+  AS.Comment_text c t r -> AS.Comment_text c (mapSen_txt mor t) r
   x -> x
 
 -- propagates the translation to sentences
-mapSentenceH_mod :: Morphism -> AS_BASIC.MODULE -> AS_BASIC.MODULE
-mapSentenceH_mod mor m = case m of
-  AS_BASIC.Mod n t rn -> AS_BASIC.Mod n (mapSentenceH mor t) rn
-  AS_BASIC.Mod_ex n exs t rn -> AS_BASIC.Mod_ex n exs (mapSentenceH mor t) rn
+mapSen_mod :: Morphism -> AS.MODULE -> AS.MODULE
+mapSen_mod mor m = case m of
+  AS.Mod n t rn -> AS.Mod n (mapSen_txt mor t) rn
+  AS.Mod_ex n exs t rn -> AS.Mod_ex n exs (mapSen_txt mor t) rn
 
-mapSentenceH_sen :: Morphism -> AS_BASIC.SENTENCE -> AS_BASIC.SENTENCE
-mapSentenceH_sen mor frm = case frm of
-  AS_BASIC.Quant_sent qs rn -> case qs of
-    AS_BASIC.Universal xs sen -> AS_BASIC.Quant_sent
-       (AS_BASIC.Universal xs (mapSentenceH_sen mor sen)) rn -- fix
-    AS_BASIC.Existential xs sen -> AS_BASIC.Quant_sent
-       (AS_BASIC.Existential xs (mapSentenceH_sen mor sen)) rn -- fix
-  AS_BASIC.Bool_sent bs rn -> case bs of
-    AS_BASIC.Conjunction sens -> AS_BASIC.Bool_sent
-           (AS_BASIC.Conjunction (map (mapSentenceH_sen mor) sens)) rn
-    AS_BASIC.Disjunction sens -> AS_BASIC.Bool_sent
-           (AS_BASIC.Disjunction (map (mapSentenceH_sen mor) sens)) rn
-    AS_BASIC.Negation sen -> AS_BASIC.Bool_sent
-           (AS_BASIC.Negation (mapSentenceH_sen mor sen)) rn
-    AS_BASIC.Implication s1 s2 -> AS_BASIC.Bool_sent
-           (AS_BASIC.Implication (mapSentenceH_sen mor s1)
-              (mapSentenceH_sen mor s2)) rn
-    AS_BASIC.Biconditional s1 s2 -> AS_BASIC.Bool_sent
-           (AS_BASIC.Biconditional (mapSentenceH_sen mor s1)
-              (mapSentenceH_sen mor s2)) rn
-  AS_BASIC.Atom_sent atom rn -> AS_BASIC.Atom_sent atom rn -- fix
-  AS_BASIC.Comment_sent cm sen rn -> AS_BASIC.Comment_sent cm sen rn -- unused
-  AS_BASIC.Irregular_sent sen rn -> AS_BASIC.Irregular_sent sen rn -- unused
+mapSen_sen :: Morphism -> AS.SENTENCE -> AS.SENTENCE
+mapSen_sen mor frm = case frm of
+  AS.Quant_sent qs rn -> AS.Quant_sent (case qs of
+      AS.Universal xs sen ->
+          AS.Universal (map (mapSen_nos mor) xs) (mapSen_sen mor sen)
+      AS.Existential xs sen ->
+          AS.Existential (map (mapSen_nos mor) xs) (mapSen_sen mor sen)
+      ) rn
+  AS.Bool_sent bs rn -> AS.Bool_sent (case bs of
+      AS.Conjunction sens ->  AS.Conjunction (map (mapSen_sen mor) sens)
+      AS.Disjunction sens -> AS.Disjunction (map (mapSen_sen mor) sens)
+      AS.Negation sen -> AS.Negation (mapSen_sen mor sen)
+      AS.Implication s1 s2 ->
+          AS.Implication (mapSen_sen mor s1) (mapSen_sen mor s2)
+      AS.Biconditional s1 s2 ->
+          AS.Biconditional (mapSen_sen mor s1) (mapSen_sen mor s2)
+    ) rn
+  AS.Atom_sent atom rn -> AS.Atom_sent (case atom of
+      AS.Equation t1 t2 -> AS.Equation (mapSen_trm mor t1) (mapSen_trm mor t2)
+      AS.Atom t tss -> AS.Atom (mapSen_trm mor t) (map (mapSen_trmSeq mor) tss)
+    ) rn
+  AS.Comment_sent cm sen rn -> AS.Comment_sent cm (mapSen_sen mor sen) rn
+  AS.Irregular_sent sen rn -> AS.Irregular_sent (mapSen_sen mor sen) rn
+
+mapSen_trm :: Morphism -> AS.TERM -> AS.TERM
+mapSen_trm mor trm = case trm of
+  AS.Name_term n -> AS.Name_term (mapSen_tok mor n)
+  AS.Funct_term t ts rn ->
+      AS.Funct_term (mapSen_trm mor t) (map (mapSen_trmSeq mor) ts) rn
+  AS.Comment_term t c rn -> AS.Comment_term (mapSen_trm mor t) c rn
+
+mapSen_nos :: Morphism -> AS.NAME_OR_SEQMARK -> AS.NAME_OR_SEQMARK
+mapSen_nos mor nos = case nos of
+  AS.Name n -> AS.Name (mapSen_tok mor n)
+  AS.SeqMark s -> AS.SeqMark (mapSen_tok mor s)
+
+mapSen_trmSeq :: Morphism -> AS.TERM_SEQ -> AS.TERM_SEQ
+mapSen_trmSeq mor ts = case ts of
+  AS.Term_seq t -> AS.Term_seq (mapSen_trm mor t)
+  AS.Seq_marks s -> AS.Seq_marks (mapSen_tok mor s)
+
+mapSen_tok :: Morphism -> Id.Token -> Id.Token
+mapSen_tok mor tok = Id.idToSimpleId $ applyMorphism mor $ Id.simpleIdToId tok
 
 {-
-  AS_BASIC.Predication predH -> AS_BASIC.Predication
+  AS.Predication predH -> AS.Predication
       $ id2SimpleId $ applyMorphism mor $ Id.simpleIdToId predH
 -}
 
@@ -173,8 +186,8 @@ morphismUnion mor1 mor2 =
       pmap2 = propMap mor2
       p1 = source mor1
       p2 = source mor2
-      up1 = Set.difference (items p1) $ Map.keysSet pmap1
-      up2 = Set.difference (items p2) $ Map.keysSet pmap2
+      up1 = Set.difference (allItems p1) $ Map.keysSet pmap1
+      up2 = Set.difference (allItems p2) $ Map.keysSet pmap2
       (pds, pmap) = foldr ( \ (i, j) (ds, m) -> case Map.lookup i m of
           Nothing -> (ds, Map.insert i j m)
           Just k -> if j == k then (ds, m) else
