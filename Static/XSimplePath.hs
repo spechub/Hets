@@ -85,7 +85,6 @@ data ChangeList = ChangeList
   , deleteLinks :: Set.Set XLink -- ^ stores additional information
   , changeNodes :: Map.Map NodeName ChangeAction
   , changeLinks :: Map.Map EdgeId ChangeAction
-  , changedInDg :: Map.Map NodeName NodeMod -- ^ to be used in ApplyChanges
   , updateAnnotations :: Bool }
 
 data ChangeAction = MkUpdate NodeMod | MkInsert deriving Eq
@@ -104,7 +103,7 @@ mergeChA _ _ = MkInsert
 
 emptyChangeList :: ChangeList
 emptyChangeList =
-  ChangeList Set.empty Set.empty Map.empty Map.empty Map.empty False
+  ChangeList Set.empty Set.empty Map.empty Map.empty False
 
 -- | iterate Xml in multiple directions
 data Direction = Vertical
