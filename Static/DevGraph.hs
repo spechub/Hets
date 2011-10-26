@@ -1119,21 +1119,6 @@ lookupRefNodeM le libName dg n = let x = labDG dg n in
     n' = dgn_node x in lookupRefNodeM le (Just ln) (lookupDGraph ln le) n'
   else (libName, dg, (n, x))
 
--- ** treat reference nodes
-
--- | add a new referenced node into the refNodes map of the given DG
-addToRefNodesDG :: Node -> DGNodeInfo -> DGraph -> DGraph
-addToRefNodesDG n ref dg = case ref of
-    DGRef libn refn ->
-      dg { allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg }
-    _ -> dg
-
-deleteFromRefNodesDG :: DGNodeInfo -> DGraph -> DGraph
-deleteFromRefNodesDG ref dg = case ref of
-    DGRef libn refn ->
-      dg { allRefNodes = Map.delete (libn, refn) $ allRefNodes dg }
-    _ -> dg
-
 -- ** accessing the actual graph
 
 -- | get the next available node id
@@ -1194,23 +1179,41 @@ safeContextDG s = safeContext s . dgBody where
 
 -- ** manipulate graph
 
+-- | dummy function for compatibility
+addToRefNodesDG :: Node -> DGNodeInfo -> DGraph -> DGraph
+addToRefNodesDG _ _ = id
+
 -- | sets the node with new label and returns the new graph and the old label
 labelNodeDG :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
 labelNodeDG p@(n, lbl) dg =
     let (b, l) = Tree.labelNode p $ dgBody dg
         oldN = getDGNodeName l
         newN = getDGNodeName lbl
+        oldInf = nodeInfo l
+        newInf = nodeInfo lbl
         nMap = nameMap dg
+        refs = allRefNodes dg
     in (dg { dgBody = b
            , nameMap = if oldN == newN then nMap else
-               MapSet.insert newN n $ MapSet.delete oldN n nMap }, l)
+               MapSet.insert newN n $ MapSet.delete oldN n nMap
+           , allRefNodes = case (oldInf, newInf) of
+               (DGRef libn refn, DGRef nLibn nRefn) ->
+                   if newInf == oldInf then refs
+                     else Map.insert (nLibn, nRefn) n
+                          $ Map.delete (libn, refn) refs
+               (DGRef libn refn, _) -> Map.delete (libn, refn) refs
+               (_, DGRef nLibn nRefn) -> Map.insert (nLibn, nRefn) n refs
+               _ -> refs }, l)
 
 -- | delete the node out of the given DG
 delNodeDG :: Node -> DGraph -> DGraph
 delNodeDG n dg = case match n $ dgBody dg of
-  (Just (_, _, lbl, _), rg) -> dg
+  (Just (_, _, lbl, _), rg) -> let refs = allRefNodes dg in dg
      { dgBody = rg
-     , nameMap = MapSet.delete (getDGNodeName lbl) n $ nameMap dg }
+     , nameMap = MapSet.delete (getDGNodeName lbl) n $ nameMap dg
+     , allRefNodes = case nodeInfo lbl of
+         DGRef libn refn -> Map.delete (libn, refn) refs
+         _ -> refs }
   _ -> error $ "delNodeDG " ++ show n
 
 -- | delete a list of nodes out of the given DG
@@ -1219,9 +1222,12 @@ delNodesDG = flip $ foldr delNodeDG
 
 -- | insert a new node into given DGraph
 insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
-insNodeDG n@(i, l) dg = dg
+insNodeDG n@(i, l) dg = let refs = allRefNodes dg in dg
   { dgBody = insNode n $ dgBody dg
-  , nameMap = MapSet.insert (getDGNodeName l) i $ nameMap dg }
+  , nameMap = MapSet.insert (getDGNodeName l) i $ nameMap dg
+  , allRefNodes = case nodeInfo l of
+      DGRef libn refn -> Map.insert (libn, refn) i refs
+      _ -> refs }
 
 -- | inserts a lnode into a given DG
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
