@@ -590,7 +590,7 @@ This specification is the \HetCASL-strucured equivalent to the following three
 CLIF files:\\
 
 
-``Pred.clif'':
+\textbf{Pred.clif}:
 \begin{verbatim}
 (cl-text Pred 
   (P x)
@@ -598,7 +598,7 @@ CLIF files:\\
 )
 \end{verbatim}
 
-``Cat.clif'':
+\textbf{Cat.clif}:
 \begin{verbatim}
 (cl-text Cat 
   (or (Cat x) (Mat y))
@@ -607,7 +607,7 @@ CLIF files:\\
 )
 \end{verbatim}
 
-``Spec.clif'':
+\textbf{Spec.clif}:
 \begin{verbatim}
 (cl-text PetHappy 
   (cl-imports Pred) (cl-imports Cat)
@@ -741,7 +741,7 @@ unofficial extensions used i.e. by COLORE \cite{Colore}.
   
   \begin{verbatim}
 (cl-text someText
-  (cl-comment '(relative-interprets someTranslationFile someFile)')
+  (cl-comment '(relative-interprets someTranslationFile someTargetFile)')
   (someAxiom)
 )
   \end{verbatim}
@@ -753,7 +753,7 @@ unofficial extensions used i.e. by COLORE \cite{Colore}.
   Common Logic file it is specified inside of a comment on text-level:
   
   \begin{verbatim}
-(cl-comment '(nonconservative-extension someFile)')
+(cl-comment '(nonconservative-extension someTargetFile)')
   \end{verbatim}
   Just as with imports (\ref{descr:link_import}), \Hets supports different types 
   of references to resources here, as e.g. URIs.
@@ -773,6 +773,50 @@ unofficial extensions used i.e. by COLORE \cite{Colore}.
   of resources to be shown in the development graph. The resource-names can be 
   of different type here, too.
 \end{description}
+
+Except for importation and inclusion, you can specify an optional symbol map 
+(name map) in a relation. Names from the target file are mapped to names from the current 
+file (including the translation file, if the relation uses one). 
+The example has two almost identical files, \texttt{upper.clif} and 
+\texttt{lower.clif}. The only difference in the actual axioms is that 
+\texttt{upper.clif} uses uppercase predicates while \texttt{lower.clif} 
+uses lowercase predicates. The symbol is added at the end of the relation
+definition in parentheses. Only the names which differ between source
+and target need to be listed. The other names are implicitly the same. 
+A mapping of a single name is defined with 
+``\texttt{nameInTargetFile |-> nameInCurrentFile}''. Multiple mappings are 
+separated by commas. Note that in Common Logic, a comma can be part of a name.
+Hence a space must be placed between the separation-comma and a name.\\
+
+\textbf{upper.clif}:
+\begin{verbatim}
+(cl-text upper
+
+(cl-comment '(nonconservative-extension lower
+  ( a |-> A
+  , b |-> B
+  ))'
+)
+
+(forall (x y) (iff  (A x y)
+                    (B x y)))
+)
+\end{verbatim}
+
+\textbf{lower.clif}:
+\begin{verbatim}
+(cl-text lower
+
+(cl-comment '(nonconservative-extension upper (A |-> a , B |-> b))')
+
+(forall (x y) (iff  (a x y)
+                    (b x y)))
+)
+\end{verbatim}
+
+Note that is is possible to use cyclic relations in \Hets. Only the cyclic 
+importation is not supported.
+
 
 \section{Reading, Writing and Formatting}
 
