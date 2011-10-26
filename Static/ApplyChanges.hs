@@ -67,8 +67,8 @@ updateDG :: HetcatsOpts -> Element -> ChangeList -> DGraph -> LibEnv
 updateDG opts xml chL dg le = do
   (dg', chL') <- liftR $ deleteElements dg chL
   xgr <- liftR $ xGraph xml
-  let dg'' = dg' { globalAnnos = if updateAnnotations chL' then globAnnos xgr
-                     else globalAnnos dg', getNewEdgeId = nextLinkId xgr }
+  let dg'' = dg' { globalAnnos = globAnnos xgr
+                 , getNewEdgeId = nextLinkId xgr }
   (dgFin, le', _) <- iterateXgBody opts xgr le dg'' chL'
   let ln = libName xgr
   -- TODO possibly test if any updates are left undone (corrupted dg/diff)

@@ -84,8 +84,7 @@ data ChangeList = ChangeList
   { deleteNodes :: Set.Set NodeName
   , deleteLinks :: Set.Set XLink -- ^ stores additional information
   , changeNodes :: Map.Map NodeName ChangeAction
-  , changeLinks :: Map.Map EdgeId ChangeAction
-  , updateAnnotations :: Bool }
+  , changeLinks :: Map.Map EdgeId ChangeAction }
 
 data ChangeAction = MkUpdate NodeMod | MkInsert deriving Eq
 
@@ -103,7 +102,7 @@ mergeChA _ _ = MkInsert
 
 emptyChangeList :: ChangeList
 emptyChangeList =
-  ChangeList Set.empty Set.empty Map.empty Map.empty False
+  ChangeList Set.empty Set.empty Map.empty Map.empty
 
 -- | iterate Xml in multiple directions
 data Direction = Vertical
@@ -289,8 +288,6 @@ mkAddChange cr (chL, restCs) addCh = case addCh of
     AddElem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
       return (updateLinkChange MkInsert ei chL, restCs)
-    AddElem e | nameStringIs "Global" e ->
-      return (chL { updateAnnotations = True }, restCs)
     AddElem e | isSymbolType e -> do
       chL' <- mkUpdateChange addSymMod chL cr
       return (chL', restCs)
@@ -308,8 +305,6 @@ mkUpdateChange nmod chL cr = case current cr of
   Elem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
       return $ updateLinkChange (MkUpdate nmod) ei chL
-  Elem e | nameStringIs "Global" e ->
-      return chL { updateAnnotations = True }
   _ -> maybe (return chL) (mkUpdateChange nmod chL) $ parent cr
 
 {- | if node or link is removed, add this to ChangeList. otherwise create
