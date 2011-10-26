@@ -58,7 +58,9 @@ symbMapItems = do
 -- | parse a comma separated list of symbol mappings
 symbMaps :: GenParser Char st ([SYMB_OR_MAP], [Token])
 symbMaps = do
+  spaces
   s <- symbMap
+  spaces
   do  c <- commaT `followedWith` intNameOrSeqMark
       (is, ps) <- symbMaps
       return (s:is, c:ps)

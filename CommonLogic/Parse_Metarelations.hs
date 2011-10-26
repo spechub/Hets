@@ -80,6 +80,7 @@ parse_mrels = parens $ do
 
 parse_mrels_symbMap :: CharParser st [SYMB_MAP_ITEMS]
 parse_mrels_symbMap = do
+    spaces
     symbMap <- parens $ symbMapItems
     return [symbMap]
   <|> do

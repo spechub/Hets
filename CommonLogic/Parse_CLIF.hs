@@ -80,7 +80,9 @@ phrase = do
     return $ Importation i
   <|> do
     try (oParenT >> clCommentKey)
+    spaces
     c <- quotedstring <|> enclosedname
+    spaces
     t <- comment_txt <?> "comment: 3"
     cParenT
     return $ Comment_text (Comment c nullRange) t nullRange
