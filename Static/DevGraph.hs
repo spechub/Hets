@@ -835,7 +835,6 @@ data DGraph = DGraph
   , archSpecDiags :: Map.Map String Diag
       -- ^ dependency diagrams between units
   , getNewEdgeId :: EdgeId  -- ^ edge counter
-  , refNodes :: Map.Map Node (LibName, Node) -- ^ unexpanded 'DGRef's
   , allRefNodes :: Map.Map (LibName, Node) Node -- ^ all DGRef's
   , sigMap :: Map.Map SigId G_sign -- ^ signature map
   , thMap :: Map.Map ThId G_theory -- ^ theory map
@@ -859,7 +858,6 @@ emptyDG = DGraph
   , nameMap = MapSet.empty
   , archSpecDiags = Map.empty
   , getNewEdgeId = startEdgeId
-  , refNodes = Map.empty
   , allRefNodes = Map.empty
   , sigMap = Map.empty
   , thMap = Map.empty
@@ -1042,14 +1040,10 @@ morMapI = getMapAndMaxIndex startMorId morMap
 lookupGlobalEnvDG :: SIMPLE_ID -> DGraph -> Maybe GlobalEntry
 lookupGlobalEnvDG sid = Map.lookup sid . globalEnv
 
--- | lookup a referenced library and node of a given reference node
-lookupInRefNodesDG :: Node -> DGraph -> Maybe (LibName, Node)
-lookupInRefNodesDG n = Map.lookup n . refNodes
-
 -- | lookup a reference node for a given libname and node
 lookupInAllRefNodesDG :: DGNodeInfo -> DGraph -> Maybe Node
 lookupInAllRefNodesDG ref dg = case ref of
-    DGRef { ref_libname = libn, ref_node = refn } ->
+    DGRef libn refn ->
         Map.lookup (libn, refn) $ allRefNodes dg
     _ -> Nothing
 
@@ -1131,13 +1125,14 @@ lookupRefNodeM le libName dg n = let x = labDG dg n in
 addToRefNodesDG :: Node -> DGNodeInfo -> DGraph -> DGraph
 addToRefNodesDG n ref dg = case ref of
     DGRef libn refn ->
-      dg { refNodes = Map.insert n (libn, refn) $ refNodes dg
-         , allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg }
+      dg { allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg }
     _ -> dg
 
--- | delete the given referenced node out of the refnodes map
-deleteFromRefNodesDG :: Node -> DGraph -> DGraph
-deleteFromRefNodesDG n dg = dg { refNodes = Map.delete n $ refNodes dg }
+deleteFromRefNodesDG :: DGNodeInfo -> DGraph -> DGraph
+deleteFromRefNodesDG ref dg = case ref of
+    DGRef libn refn ->
+      dg { allRefNodes = Map.delete (libn, refn) $ allRefNodes dg }
+    _ -> dg
 
 -- ** accessing the actual graph
 
