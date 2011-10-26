@@ -76,34 +76,30 @@ updateDGraph :: LibEnv -> DGraph
              -> Node -- source nodes of all global unproven links
              -> DGraph
 updateDGraph le dg x =
-    {- checks if it is an unexpanded referenced node
-       the function lookupInRefNodesDG only checks the
-       nodes which are not expanded. -}
-    case lookupInRefNodesDG x dg of
-         Just (refl, refn) ->
+    case lookupRefNodeM le Nothing dg x of
+      (Just refl, refDg, (refn, _)) ->
             let
-            parents = getRefParents le refl refn
+            parents = getRefParents refDg refn
             {- important for those, who's doing redo/undo function:
                notice that if the node is expanded, then it should be
                deleted out of the unexpanded map using
                deleteFromRefNodesDG -}
-            auxDG = foldl (updateDGraphAux le x refl)
+            auxDG = foldl (updateDGraphAux le x refl refDg)
                 dg parents
             in auxDG
-         _ -> dg
+      _ -> dg
 
 {- | get all the parents, namely the related referenced nodes and the links
      between them and the present to be expanded node.
 -}
-getRefParents :: LibEnv -> LibName
+getRefParents :: DGraph
               -> Node -- the present to be expanded node
-              -> [(LNode DGNodeLab, [DGLinkLab])]
-getRefParents le refl refn =
+              -> [(Node, [DGLinkLab])]
+getRefParents dg refn =
    let
    -- get the previous objects to the current one
-   dg = lookupDGraph refl le
    pres = innDG dg refn
-   in modifyPs dg pres
+   in modifyPs pres
 
 {- | modify the parents to a better form.
      e.g. if the list is like:
@@ -115,51 +111,40 @@ getRefParents le refl refn =
      [(1, [a, b]), (2, [c, d, e])]
      which simplifies the inserting afterwards ;)
 -}
-modifyPs :: DGraph -> [LEdge DGLinkLab] -> [(LNode DGNodeLab, [DGLinkLab])]
-modifyPs dg ls =
-   map
-   (\ (n, x) -> ((n, labDG dg n), x))
-   $ modifyPsAux ls
-   where
-   modifyPsAux :: Ord a => [(a, t, b)] -> [(a, [b])]
-   modifyPsAux l =
-        Map.toList $ Map.fromListWith (++) [(k, [v]) | (k, _, v) <- l ]
+
+modifyPs :: [LEdge DGLinkLab] -> [(Node, [DGLinkLab])]
+modifyPs = Map.toList . Map.fromListWith (++)
+  . map (\ (k, _, v) -> (k, [v]))
 
 {- | the actual update function to insert a list of related parents to the
      present to be expanded node.
-     It inserts the related referenced node firstly by calling addParentNode.
-     Then it inserts the related links by calling addParentLinks
-     Notice that nodes have to be added firstly, so that the links can be
-     connected to the inserted nodes ;), especially by adding to the change
-     list.
+     It inserts the related referenced node first by calling addParentNode.
+     Then it inserts the related links by calling addParentLinks.
 -}
 updateDGraphAux :: LibEnv -> Node -- the present to be expanded node
-                -> LibName -> DGraph -> (LNode DGNodeLab, [DGLinkLab])
+                -> LibName
+                -> DGraph -- ^ the reference graph for the libname
+                -> DGraph -> (Node, [DGLinkLab])
                 -> DGraph
-updateDGraphAux libenv n refl dg (pnl, pls) =
+updateDGraphAux libenv n refl refDg dg (pn, pls) =
    let
-   (auxDG, newN) = addParentNode libenv dg refl pnl
+   (auxDG, newN) = addParentNode libenv dg refl refDg pn
    in addParentLinks auxDG newN n pls
 
 -- | add the given parent node into the current dgraph
 addParentNode :: LibEnv -> DGraph -> LibName
-              -> LNode DGNodeLab -- the referenced parent node
+              -> DGraph -- ^ the reference graph for the libname
+              -> Node -- the referenced parent node
               -> (DGraph, Node)
-addParentNode libenv dg refl (refn, oldNodelab) =
+addParentNode libenv dg refl refDg refn =
    let
    {-
      To advoid the chain which is desribed in ticket 5, the parent node should
      be a non referenced node firstly, so that the actual parent node can be
      related.
    -}
-   (nodelab, newRefl, newRefn) = if isDGRef oldNodelab then
-                let
-                tempRefl = dgn_libname oldNodelab
-                tempRefn = dgn_node oldNodelab
-                originDG = lookupDGraph tempRefl libenv
-                in
-                (labDG originDG tempRefn, tempRefl, tempRefn)
-             else (oldNodelab, refl, refn)
+   (newRefl, _, (newRefn, nodelab)) = lookupRefNode libenv refl
+     refDg refn
    {-
      Set the sgMap and tMap too.
      Notice for those who are doing undo/redo, because the DGraph is actually
