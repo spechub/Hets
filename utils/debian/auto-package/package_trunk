@@ -83,7 +83,7 @@ echo ::Done
 
 #detecting distributions for which to build
 echo "::Detecting distroseries"
-DISTROS=$PWD/debian/*
+DISTROS=$PWD/debian/oneiric
 COUNT=`echo $DISTROS | wc -w`
 echo "  $COUNT distributions found"
 
