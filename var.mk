@@ -86,7 +86,7 @@ HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE)\
   $(PFE_FLAGS) $(SERVER_FLAG) \
-  -DCASLEXTENSIONS
+  -DCASLEXTENSIONS -package transformers
 
 # for profiling (or a minimal hets) comment out the previous two package lines
 # and the $(GLADE_PACKAGE) below
