@@ -1,0 +1,23 @@
+spec s2 =
+sort s, t;
+ops a, o : s
+. a = o
+. o = a %implied
+sort u, v
+preds p, q : s * v
+
+. forall x : v . p(a, x)
+
+spec t1 =
+sort s, t;
+ops a, o : s
+. a = o
+. o = a %implied
+
+spec t2 = t1 then
+sort u, v
+preds p, q : s * v
+
+. forall x : v . p(a, x)
+
+view v : s2 to t2

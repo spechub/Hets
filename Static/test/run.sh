@@ -50,7 +50,7 @@ do
        done
    done
 done
-for i in Spec2.het
+for i in Spec2.het Spec3.het
 do
    for j in Add Remove
    do createXUpdate $i ${j}Node$i
@@ -69,6 +69,11 @@ for i in *Spec2.xupdate3
 do
 ../../hets -v2 --relative-positions -U $i Spec2.het
 cp Spec2.xml $i.xml
+done
+for i in *Spec3.xupdate3
+do
+../../hets -A -v2 --relative-positions -U $i Spec3.het
+cp Spec3.xml $i.xml
 done
 }
 
