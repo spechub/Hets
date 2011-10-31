@@ -68,7 +68,9 @@ updateDG opts xml chL dg le = do
   (dg', chL') <- liftR $ deleteElements dg chL
   xgr <- liftR $ xGraph xml
   let dg'' = dg' { globalAnnos = globAnnos xgr
-                 , getNewEdgeId = nextLinkId xgr }
+                 , getNewEdgeId = nextLinkId xgr
+                 -- TODO as of now, ALL nodes will be removed from globalEnv!
+                 , globalEnv = Map.empty }
   (dgFin, le', chL'') <- iterateXgBody opts xgr le dg'' chL'
   let ln = libName xgr
   unless (chL'' == emptyChangeList) $ fail "not all changes could be processed"

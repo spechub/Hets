@@ -30,6 +30,9 @@ import Static.XGraph
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
 
+-- to check the type of ignored changes
+import Debug.Trace
+
 data SimplePath = SimplePath { steps :: [Finder]
                              , changeData :: ChangeData }
 
@@ -276,36 +279,27 @@ propagatePaths cr pths = case current cr of
       return (changes, toRight, toChildren)
   c -> fail $ "propagatePaths: unexpected Cursor Content: " ++ show c
 
--- TODO: update entire node when change cannot be identified
-
 -- | determine the required DgUpdates for a Change operation
 updateChangeList :: Monad m => Cursor -> ChangeList -> ChangeData
                  -> m ChangeList
 updateChangeList cr chL (ChangeData csel atS) = case csel of
-  Add _ addCs -> do
-    (chL', restCs) <- foldM (mkAddChange cr) (chL, []) addCs
-    if null restCs then return chL' else mkUpdateChange unMod chL' cr
+  Add _ addCs -> foldM (mkAddChange cr) chL addCs
   Remove | atS == Nothing -> mkRemoveChange chL cr
-  _ -> mkUpdateChange unMod chL cr
+  _ -> trace (">> ignoring change: " ++ show csel) $ return chL
 
 {- | split a list of AddChanges and write all Node and Link insertions into the
 ChangeList. -}
-mkAddChange :: Monad m => Cursor -> (ChangeList, [AddChange]) -> AddChange
-            -> m (ChangeList, [AddChange])
-mkAddChange cr (chL, restCs) addCh = case addCh of
+mkAddChange :: Monad m => Cursor -> ChangeList -> AddChange -> m ChangeList
+mkAddChange cr chL addCh = case addCh of
     AddElem e | isDgNodeElem e -> do
       nm <- extractNodeName e
-      return (updateNodeChange MkInsert nm chL, restCs)
+      return $ updateNodeChange MkInsert nm chL
     AddElem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
-      return (updateLinkChange MkInsert ei chL, restCs)
-    AddElem e | isSymbolType e -> do
-      chL' <- mkUpdateChange addSymMod chL cr
-      return (chL', restCs)
-    AddElem e | isAxiomType e || isTheoremType e -> do
-      chL' <- mkUpdateChange addSenMod chL cr
-      return (chL', restCs)
-    _ -> return (chL, addCh : restCs)
+      return $ updateLinkChange MkInsert ei chL
+    AddElem e | isSymbolType e -> mkUpdateChange addSymMod chL cr
+    AddElem e | isSentenceType e -> mkUpdateChange addSenMod chL cr
+    _ -> trace (">> ignoring (add)change: " ++ show addCh) $ return chL
 
 -- | go upwards until an updatable element is found
 mkUpdateChange :: Monad m => NodeMod -> ChangeList -> Cursor -> m ChangeList
@@ -316,7 +310,8 @@ mkUpdateChange nmod chL cr = case current cr of
   Elem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
       return $ updateLinkChange (MkUpdate nmod) ei chL
-  _ -> maybe (return chL) (mkUpdateChange nmod chL) $ parent cr
+  _ -> maybe (trace ">> ignoring a change in mkUpdate" $ return chL)
+        (mkUpdateChange nmod chL) $ parent cr
 
 {- | if node or link is removed, add this to ChangeList. otherwise create
 update-change -}
@@ -331,10 +326,16 @@ mkRemoveChange chL cr = case current cr of
   Elem e | isSymbolType e -> mkUpdateChange delSymMod chL cr
   Elem e | isAxiomType e -> mkUpdateChange delAxMod chL cr
   Elem e | isTheoremType e -> mkUpdateChange delThMod chL cr
-  _ -> mkUpdateChange unMod chL cr
+  _ -> trace ">> ignoring a change in mkRemove" $ return chL 
+
+nameStringIs :: String -> Element -> Bool
+nameStringIs s = (== s) . qName . elName
 
 isSymbolType :: Element -> Bool
 isSymbolType e = nameStringIs "Symbol" e || nameStringIs "Declarations" e
+
+isSentenceType :: Element -> Bool
+isSentenceType e = isAxiomType e || isTheoremType e
 
 isAxiomType :: Element -> Bool
 isAxiomType e = nameStringIs "Axiom" e || nameStringIs "Axioms" e
@@ -342,11 +343,9 @@ isAxiomType e = nameStringIs "Axiom" e || nameStringIs "Axioms" e
 isTheoremType :: Element -> Bool
 isTheoremType e = nameStringIs "Theorem" e || nameStringIs "Theorems" e
 
-nameStringIs :: String -> Element -> Bool
-nameStringIs s = (== s) . qName . elName
-
 isDgNodeElem :: Element -> Bool
 isDgNodeElem = nameStringIs "DGNode"
 
 isDgLinkElem :: Element -> Bool
 isDgLinkElem = nameStringIs "DGLink"
+
