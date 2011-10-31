@@ -3,13 +3,13 @@
 createXUpdate ()
 {
 f=`dirname $1`/`basename $1 .het`
-hets -v2 --relative-positions -o xml $f
+../../hets -v2 --relative-positions -o xml $f
 mv $f.xml $f.xh
-hets -v2 --relative-positions -A -o xml $f
+../../hets -v2 --relative-positions -A -o xml $f
 mv $f.xml $f.xhi
 cp $1 $1.bak
 propagateDiff $1 $1 $2
-hets -v2 --relative-positions -o xml $f
+../../hets -v2 --relative-positions -o xml $f
 mv $f.xml $f.new.xh
 cp $1.bak $1
 dir=`pwd`
@@ -62,12 +62,12 @@ callHets ()
 {
 for i in *Spec.xupdate3
 do
-hets -v2 --relative-positions -U $i Spec.het
+../../hets -v2 --relative-positions -U $i Spec.het
 cp Spec.xml $i.xml
 done
 for i in *Spec2.xupdate3
 do
-hets -v2 --relative-positions -U $i Spec2.het
+../../hets -v2 --relative-positions -U $i Spec2.het
 cp Spec2.xml $i.xml
 done
 }
