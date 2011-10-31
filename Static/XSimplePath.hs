@@ -285,6 +285,10 @@ updateChangeList :: Monad m => Cursor -> ChangeList -> ChangeData
 updateChangeList cr chL (ChangeData csel atS) = case csel of
   Add _ addCs -> foldM (mkAddChange cr) chL addCs
   Remove | atS == Nothing -> mkRemoveChange chL cr
+  Update _ | atS == Nothing -> case current cr of
+    Elem e | isSentenceType e -> mkUpdateChange senMod chL cr
+    Elem e | isSymbolType e -> mkUpdateChange symMod chL cr
+    _ -> trace (">> ignoring change(2): " ++ show csel) $ return chL
   _ -> trace (">> ignoring change: " ++ show csel) $ return chL
 
 {- | split a list of AddChanges and write all Node and Link insertions into the
