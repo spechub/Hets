@@ -1234,11 +1234,6 @@ insLNodeDG n@(v, _) g =
 insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
 insNodesDG = flip $ foldr insNodeDG
 
--- | given its source node and edgeId, delete an edge out of dg
-delEdgeDG :: Node -> EdgeId -> DGraph -> DGraph
-delEdgeDG s ei dg = let (Just (ins, _, nl, outs), rg) = match s $ dgBody dg
-  in dg { dgBody = (ins, s, nl, filter ((/= ei) . dgl_id . fst) outs) & rg }
-
 -- | delete a labeled edge out of the given DG
 delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdgeDG e g = g
@@ -1300,6 +1295,14 @@ mkGraphDG ns ls = insEdgesDG ls . insNodesDG ns
 -- | get links by id (inefficiently)
 getDGLinksById :: EdgeId -> DGraph -> [LEdge DGLinkLab]
 getDGLinksById e = filter (\ (_, _, l) -> e == dgl_id l) . labEdgesDG
+
+-- | find a unique link given its source node and edgeId
+lookupUniqueLink :: Monad m => Node -> EdgeId -> DGraph -> m (LEdge DGLinkLab)
+lookupUniqueLink s ei dg = let (Just (_, _, _, outs), _) = match s $ dgBody dg
+  in case filter ((== ei) . dgl_id . fst) outs of
+    [] -> fail $ "could not find linkId #" ++ show ei
+    [(lbl, t)] -> return (s, t, lbl)
+    _ -> fail $ "ambigous occurance of linkId #" ++ show ei
 
 -- ** top-level functions
 

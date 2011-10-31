@@ -17,7 +17,7 @@ import Static.DevGraph
 import Static.GTheory
 import Static.DgUtils
 import Static.FromXml
-import Static.History (undoAllChanges)
+import Static.History (undoAllChanges, changeDGH)
 import Static.ToXml
 import Static.XGraph
 import Static.XSimplePath
@@ -187,8 +187,10 @@ deleteLink dg = liftM fst . deleteLinkAux (dg, [])
 -- | additionally returns (def)links target id
 deleteLinkAux :: Monad m => (DGraph, [Node]) -> XLink -> m (DGraph, [Node])
 deleteLinkAux (dg, tars) xl = case lookupUniqueNodeByName (source xl) dg of
-  Just (s, _) -> let dg' = delEdgeDG s (edgeId xl) dg
-    in if not $ isDefEdgeType (lType xl)
+  Just (s, _) -> do
+    dg' <- liftM (changeDGH dg . DeleteEdge)
+        $ lookupUniqueLink s (edgeId xl) dg
+    if not $ isDefEdgeType (lType xl)
       then return (dg', tars)
       else case lookupUniqueNodeByName (target xl) dg of
         Just (t, _) -> return (dg', t : tars)
@@ -200,7 +202,7 @@ deleteLinkAux (dg, tars) xl = case lookupUniqueNodeByName (source xl) dg of
 -- | deletes a node from dg
 deleteNode :: Monad m => DGraph -> NodeName -> m (Node, DGraph)
 deleteNode dg nm = let nd = showName nm
-      in case lookupUniqueNodeByName nd dg of
-        Just (j, _) -> let dg' = delNodeDG j dg in return (j, dg')
-        Nothing -> fail $
-          "required node [" ++ nd ++ "] was not found in DGraph!"
+  in case lookupUniqueNodeByName nd dg of
+      Just (j, lbl) -> return (j, changeDGH dg $ DeleteNode (j, lbl))
+      Nothing -> fail $
+        "required node [" ++ nd ++ "] was not found in DGraph!"
