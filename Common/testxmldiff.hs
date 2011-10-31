@@ -14,23 +14,9 @@ module Main (main) where
 
 import Text.XML.Light
 import Common.XmlDiff
-import Common.XUpdate
 
 import Control.Monad
-import qualified Data.Set as Set
-import qualified Data.Map as Map
 import System.Environment
-
-hetsTags :: UnordTags
-hetsTags = Map.fromList
-  $ map (\ (e, as) -> (unqual e, Set.fromList $ map unqual as))
-  [ ("DGNode", ["name"])
-  , ("DGLink", ["linkid", "source", "target"])
-  , ("Axiom", [])
-  , ("Theorem", []) ]
-
-{- for symbols the order matters. For axioms and theorems the names should be
-stored separately -}
 
 main :: IO ()
 main = do
@@ -41,9 +27,7 @@ main = do
       s2 <- readFile f2
       case (parseXMLDoc s1, parseXMLDoc s2) of
         (Just e1, Just e2) -> let
-          ds = xmlDiff hetsTags [] Map.empty
-            [Elem $ cleanUpElem e1]
-            [Elem $ cleanUpElem e2]
+          ds = hetsXmlChanges e1 e2
           in unless (null ds) . putStrLn . ppTopElement $ mkMods ds
         _ -> error "parseXMLDoc"
     _ -> error $ "wrong arguments: " ++ show args

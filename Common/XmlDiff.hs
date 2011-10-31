@@ -24,6 +24,24 @@ import qualified Data.Map as Map
 
 import Text.XML.Light as XML
 
+hetsTags :: UnordTags
+hetsTags = Map.fromList
+  $ map (\ (e, as) -> (unqual e, Set.fromList $ map unqual as))
+  [ ("DGNode", ["name"])
+  , ("DGLink", ["linkid", "source", "target"])
+  , ("Axiom", [])
+  , ("Theorem", []) ]
+{- for symbols the order matters. For axioms and theorems the names should be
+stored separately -}
+
+hetsXmlChanges :: Element -> Element -> [Change]
+hetsXmlChanges e1 e2 = xmlDiff hetsTags [] Map.empty
+  [Elem $ cleanUpElem e1]
+  [Elem $ cleanUpElem e2]
+
+hetsXmlDiff :: Element -> Element -> Element
+hetsXmlDiff e = mkMods . hetsXmlChanges e
+
 {- for elements, whose order does not matter, use the given attribute keys to
 determine their equality. An empty set indicates an element that only contains
 text to be compared. -}
