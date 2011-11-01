@@ -10,7 +10,7 @@ Portability :  non-portable(Grothendieck)
 adjust development graph according to xupdate information
 -}
 
-module Static.ApplyChanges (dgXUpdate) where
+module Static.ApplyChanges (dgXUpdateMods, dgXUpdate) where
 
 import Static.ComputeTheory (computeLibEnvTheories)
 import Static.DevGraph
@@ -47,11 +47,17 @@ import Text.XML.Light hiding (Node)
 
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
   -> ResultT IO (LibName, LibEnv)
-dgXUpdate opts xs le ln dg = do
-  (xml, chL) <- liftR $ changeXml (dGraph le ln $ undoAllChanges dg) xs
+dgXUpdate opts xs le ln dg = case parseXMLDoc xs of
+    Nothing -> fail "dgXUpdate: cannot parse xupdate file"
+    Just diff ->
+      dgXUpdateMods opts (dGraph le ln $ undoAllChanges dg) diff le ln dg
+
+dgXUpdateMods :: HetcatsOpts -> Element -> Element -> LibEnv -> LibName
+  -> DGraph -> ResultT IO (LibName, LibEnv)
+dgXUpdateMods opts orig diff le ln dg = do
+  (xml, chL) <- liftR $ changeXmlMod orig diff
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
     $ ppTopElement $ cleanUpElem xml
--- rebuiltDgXml opts le xml
   updateDG opts xml chL dg le
 
 {- TODO (general): determine the EXACT required change for each object instead
@@ -152,7 +158,7 @@ mkLinkUpdate lg (dg, lv, chL) (i, mr, tp, xl) = let ei = edgeId xl in do
     Just (chA, chL') -> do
       (j, gs) <- signOfNode (target xl) dg
       lkLab <- finalizeLink lg xl mr gs tp
-      -- if updating an existing link, the old one is deleted from dg first 
+      -- if updating an existing link, the old one is deleted from dg first
       dg' <- if chA == MkInsert then return dg
         else fmap (changeDGH dg . DeleteEdge) $ lookupUniqueLink i ei dg
       return (changeDGH dg' $ InsertEdge (i, j, lkLab), lv, chL')

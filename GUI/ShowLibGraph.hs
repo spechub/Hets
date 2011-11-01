@@ -50,8 +50,6 @@ import Control.Monad
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-import Text.XML.Light (ppTopElement)
-
 type NodeEdgeList = ([DaVinciNode LibName], [DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
@@ -148,8 +146,8 @@ changeLibGraph gi graph nodesEdges = do
               ndg = changesDGH dg2 $ map negateChange $ flatHistory
                   $ proofHistory dg2
               c3 = ToXml.dGraph nle ln ndg
-              xs = ppTopElement $ hetsXmlDiff c2 c3
-          Result ds mdg <- runResultT $ dgXUpdate opts xs le ln dg
+              xs = hetsXmlDiff c2 c3
+          Result ds mdg <- runResultT $ dgXUpdateMods opts c2 xs le ln dg
           case mdg of
                 Just (nLn, fle) -> do
                   closeOpenWindows gi
