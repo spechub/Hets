@@ -87,9 +87,9 @@ data ChangeList = ChangeList
   { deleteNodes :: Set.Set NodeName
   , deleteLinks :: Set.Set XLink -- ^ stores additional information
   , changeNodes :: Map.Map NodeName ChangeAction
-  , changeLinks :: Map.Map EdgeId ChangeAction } deriving Eq
+  , changeLinks :: Map.Map EdgeId ChangeAction } deriving (Eq, Show)
 
-data ChangeAction = MkUpdate NodeMod | MkInsert deriving Eq
+data ChangeAction = MkUpdate NodeMod | MkInsert deriving (Eq, Show)
 
 updateNodeChange :: ChangeAction -> NodeName -> ChangeList -> ChangeList
 updateNodeChange chA nm chL = chL { changeNodes =

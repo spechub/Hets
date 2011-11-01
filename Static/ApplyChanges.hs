@@ -70,8 +70,8 @@ updateDG opts xml chL dg le = do
                  -- TODO as of now, ALL nodes will be removed from globalEnv!
                  , globalEnv = Map.empty }
   (dgFin, le', chL'') <- iterateXgBody opts xgr le dg'' chL'
-  let ln = libName xgr
-  unless (chL'' == emptyChangeList) $ fail "not all changes could be processed"
+  let ln = libName xgr -- TODO delete unprocessed entries, fail if not a theorem link
+  unless (chL'' == emptyChangeList) $ fail $ "not all changes could be processed" ++ show chL''
   return (ln, computeLibEnvTheories $ Map.insert ln dgFin le')
 
 {- | move along xgraph structure and make updates or insertions in accordance
