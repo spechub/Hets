@@ -21,6 +21,7 @@ import Common.Utils
 import Control.Monad
 
 import Data.List
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -123,11 +124,16 @@ data Direction = Vertical
                | Horizontal
                | TopElem
 
+changeXml :: Monad m => Element -> String -> m (Element, ChangeList)
+changeXml el input = case parseXMLDoc input of
+    Nothing -> fail "changeXml: cannot parse xupdate file"
+    Just diff -> changeXmlMod (cleanUpElem el) diff
+
 {- | apply a diff to an xml-document. returns the result xml and a list of
 changes that affect the original DGraph -}
-changeXml :: Monad m => Element -> String -> m (Element, ChangeList)
-changeXml el diff = let cr = fromElement $ cleanUpElem el in do
-  cs <- anaXUpdates diff
+changeXmlMod :: Monad m => Element -> Element -> m (Element, ChangeList)
+changeXmlMod el diff = let cr = fromElement el in do
+  cs <- anaMods diff
   pths <- mapM exprToSimplePath cs
   (cr', chL) <- iterateXml TopElem pths cr emptyChangeList
   case current cr' of
@@ -284,8 +290,8 @@ updateChangeList :: Monad m => Cursor -> ChangeList -> ChangeData
                  -> m ChangeList
 updateChangeList cr chL (ChangeData csel atS) = case csel of
   Add _ addCs -> foldM (mkAddChange cr) chL addCs
-  Remove | atS == Nothing -> mkRemoveChange chL cr
-  Update _ | atS == Nothing -> case current cr of
+  Remove | isNothing atS -> mkRemoveChange chL cr
+  Update _ | isNothing atS -> case current cr of
     Elem e | isSentenceType e -> mkUpdateChange senMod chL cr
     Elem e | isSymbolType e -> mkUpdateChange symMod chL cr
     _ -> trace (">> ignoring change(2): " ++ show csel) $ return chL
@@ -330,7 +336,7 @@ mkRemoveChange chL cr = case current cr of
   Elem e | isSymbolType e -> mkUpdateChange delSymMod chL cr
   Elem e | isAxiomType e -> mkUpdateChange delAxMod chL cr
   Elem e | isTheoremType e -> mkUpdateChange delThMod chL cr
-  _ -> trace ">> ignoring a change in mkRemove" $ return chL 
+  _ -> trace ">> ignoring a change in mkRemove" $ return chL
 
 nameStringIs :: String -> Element -> Bool
 nameStringIs s = (== s) . qName . elName
@@ -352,4 +358,3 @@ isDgNodeElem = nameStringIs "DGNode"
 
 isDgLinkElem :: Element -> Bool
 isDgLinkElem = nameStringIs "DGLink"
-
