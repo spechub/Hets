@@ -203,7 +203,15 @@ and the the DGraphs Global Annotations. The caller has to ensure that the
 chosen nodeId is not used in dgraph. -}
 insertNode :: HetcatsOpts -> LogicGraph -> Maybe G_theory -> XNode -> Graph.Node
   -> (DGraph, LibEnv) -> ResultT IO (G_theory, DGraph, LibEnv)
-insertNode opts lg mGt xNd n (dg, lv) = case xNd of
+insertNode opts lg mGt xNd n (dg, lv) = do
+  (lbl, lv') <- generateNodeLab opts lg mGt xNd (dg, lv)
+  return (dgn_theory lbl, insNodeDG (n, lbl) dg, lv')
+
+{- | generate nodelab with startoff-gtheory and xnode information (a new libenv
+is returned in case it was extended due to reference node insertion) -}
+generateNodeLab :: HetcatsOpts -> LogicGraph -> Maybe G_theory -> XNode
+  -> (DGraph, LibEnv) -> ResultT IO (DGNodeLab, LibEnv)
+generateNodeLab opts lg mGt xNd (dg, lv) = case xNd of
   -- Case #1: Reference Node
   XRef nm rfNd rfLb spc -> do
           (dg', lv') <- case Map.lookup (emptyLibName rfLb) lv of
@@ -215,8 +223,7 @@ insertNode opts lg mGt xNd n (dg, lv) = case xNd of
               Nothing -> fail $ "reference node " ++ rfNd ++ " was not found"
           (gt', _) <- parseSpecs gt nm dg spc
           let nInf = newRefInfo (emptyLibName rfLb) i
-              lbl = newInfoNodeLab nm nInf gt'
-          return (gt', insNodeDG (n, lbl) dg, lv')
+          return (newInfoNodeLab nm nInf gt', lv')
   -- Case #2: Regular Node
   XNode nm lN (hid, syb) spc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes
@@ -235,8 +242,7 @@ insertNode opts lg mGt xNd n (dg, lv) = case xNd of
           else do
             diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
             return $ DGBasicSpec Nothing diffSig syb'
-        let lbl = newNodeLab nm lOrig gt2
-        return (gt2, insNodeDG (n, lbl) dg, lv)
+        return (newNodeLab nm lOrig gt2, lv)
 
 insertFirstNode :: HetcatsOpts -> LogicGraph -> XNode -> (DGraph, LibEnv)
   -> ResultT IO (DGraph, LibEnv)

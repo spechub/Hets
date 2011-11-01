@@ -54,9 +54,7 @@ dgXUpdate opts xs le ln dg = do
 -- rebuiltDgXml opts le xml
   updateDG opts xml chL dg le
 
-{- TODO (general): a lot of unused information is created. possibly check if
-update is required for an element BEFORE processing xgraph information.
-TODO (general): determine the EXACT required change for each object instead
+{- TODO (general): determine the EXACT required change for each object instead
 of overwriting the existing one every time! -}
 
 {- | updates a dgraph partially in accordance with changelist data from a .diff
@@ -116,22 +114,26 @@ is marked for updating in changelist. -}
 mkNodeUpdate :: HetcatsOpts -> LogicGraph -> Maybe G_theory
              -> (DGraph, LibEnv, ChangeList) -> XNode
              -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let nm = nodeName xnd in
-  case retrieveNodeChange nm chL of
+mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let
+  nm = nodeName xnd
+  nd = showName nm in case retrieveNodeChange nm chL of
     -- no change required, move on
     Nothing -> return (dg, lv, chL)
-    -- make insertion using FromXml.insertNode
-    Just (MkInsert, chL') -> do
-      (_, dg', lv') <- insertNode opts lg mGt xnd (getNewNodeDG dg) (dg, lv)
+    -- make insertion using DGChange.InsertNode object
+    Just (MkInsert, chL') -> let n = getNewNodeDG dg in do
+      (lbl, lv') <- generateNodeLab opts lg mGt xnd (dg, lv)
+      let dg' = changeDGH dg $ InsertNode (n, lbl)
       return (dg', lv', chL')
-    {- make update
-    TODO: watch out for reference nodes!
-    TODO: use NodeMod in a proper way, only update as much as necessary! -}
+    -- make update using DGChange.SetNodeLab object
     Just (MkUpdate nmod, chL') -> do
-      (j, dg'') <- deleteNode dg nm
-      (_, dg', lv') <- insertNode opts lg mGt xnd j (dg'', lv)
+      (lbl, lv') <- generateNodeLab opts lg mGt xnd (dg, lv)
+      (n, lblOrig) <- case lookupUniqueNodeByName nd dg of
+        Just ndOrig -> return ndOrig
+        Nothing -> fail $ "node [" ++ nd ++ "] was not found in dg, but was"
+            ++ " marked for updating"
+      let dg' = changeDGH dg $ SetNodeLab lblOrig (n, lbl)
       -- all adjacent links need to get their morphism updated
-      return (dg', lv', markLinkUpdates dg' j nmod chL')
+      return (dg', lv', markLinkUpdates dg' n nmod chL')
 
 -- | mark all links adjacent to a node as update-pending
 markLinkUpdates :: DGraph -> Node -> NodeMod -> ChangeList -> ChangeList
@@ -142,17 +144,18 @@ markLinkUpdates dg t nmod chL = let
 
 -- | update or insert a link if said so in changelist
 mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
-                -> (Node, GMorphism, DGLinkType, XLink)
-                -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkLinkUpdate lg (dg, lv, chL) lkMr@(_, _, _, xl) = do
-  case retrieveLinkChange (edgeId xl) chL of
+             -> (Node, GMorphism, DGLinkType, XLink)
+             -> ResultT IO (DGraph, LibEnv, ChangeList)
+mkLinkUpdate lg (dg, lv, chL) (i, mr, tp, xl) = let ei = edgeId xl in do
+  case retrieveLinkChange ei chL of
     Nothing -> return (dg, lv, chL)
     Just (chA, chL') -> do
       (j, gs) <- signOfNode (target xl) dg
-      -- TODO use setMorphism if possible to keep old link data
-      dg'' <- if chA == MkInsert then return dg else deleteLink dg xl
-      dg' <- insertLink lg j gs dg'' lkMr
-      return (dg', lv, chL')
+      lkLab <- finalizeLink lg xl mr gs tp
+      -- if updating an existing link, the old one is deleted from dg first 
+      dg' <- if chA == MkInsert then return dg
+        else fmap (changeDGH dg . DeleteEdge) $ lookupUniqueLink i ei dg
+      return (changeDGH dg' $ InsertEdge (i, j, lkLab), lv, chL')
 
 -- | updates any necessary ThmLinks
 mkThmLinkUpdates :: LogicGraph -> (DGraph, LibEnv, ChangeList) -> [XLink]
@@ -180,11 +183,7 @@ markNodeUpdates dg trg = case lab (dgBody dg) trg of
   -- TODO: here also, the NodeMod could be calculated
   Just lbl -> return . updateNodeChange (MkUpdate symMod) (dgn_name lbl)
 
--- | deletes a link from dg.
-deleteLink :: Monad m => DGraph -> XLink -> m DGraph
-deleteLink dg = liftM fst . deleteLinkAux (dg, [])
-
--- | additionally returns (def)links target id
+-- | deletes a link from dg and returns (def)links target id additionally
 deleteLinkAux :: Monad m => (DGraph, [Node]) -> XLink -> m (DGraph, [Node])
 deleteLinkAux (dg, tars) xl = case lookupUniqueNodeByName (source xl) dg of
   Just (s, _) -> do
