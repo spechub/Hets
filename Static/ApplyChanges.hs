@@ -68,17 +68,30 @@ application. an xgraph is created and used as a guideline for signature-
 hierachy and for retrieving required new data. -}
 updateDG :: HetcatsOpts -> Element -> ChangeList -> DGraph -> LibEnv
          -> ResultT IO (LibName, LibEnv)
-updateDG opts xml chL dg le = do
-  (dg', chL') <- liftR $ deleteElements dg chL
+updateDG opts xml chL dg0 le = do
+  (dg1, chL') <- liftR $ deleteElements dg0 chL
   xgr <- liftR $ xGraph xml
-  let dg'' = dg' { globalAnnos = globAnnos xgr
+  let dg2 = dg1 { globalAnnos = globAnnos xgr
                  , getNewEdgeId = nextLinkId xgr
                  -- TODO as of now, ALL nodes will be removed from globalEnv!
                  , globalEnv = Map.empty }
-  (dgFin, le', chL'') <- iterateXgBody opts xgr le dg'' chL'
-  let ln = libName xgr -- TODO delete unprocessed entries, fail if not a theorem link
-  unless (chL'' == emptyChangeList) $ fail $ "not all changes could be processed" ++ show chL''
+  (dg3, le', chL'') <- iterateXgBody opts xgr le dg2 chL'
+  -- for any leftover theorem link updates, the respective links are deleted
+  dgFin <- deleteLeftoverChanges dg3 chL''
+  let ln = libName xgr
   return (ln, computeLibEnvTheories $ Map.insert ln dgFin le')
+
+{- | deletes theorem links from dg that were left-over in changelist.
+fails if any other undone changes are found -}
+deleteLeftoverChanges :: Monad m => DGraph -> ChangeList -> m DGraph
+deleteLeftoverChanges dg chL = let lIds = Map.keys $ changeLinks chL in do
+  unless (emptyChangeList == chL { changeLinks = Map.empty })
+    $ fail $ "some changes could not be processed:\n" ++ show chL
+  foldM (\ dg' ei -> case getDGLinksById ei dg' of
+    [ledge@(_, _, lkLab)] | not $ isDefEdge $ dgl_type lkLab -> return
+      $ changeDGH dg' $ DeleteEdge ledge
+    _ -> fail $ "deleteLeftoverChanges: conflict with edge #" ++ show ei
+    ) dg lIds
 
 {- | move along xgraph structure and make updates or insertions in accordance
 with changelist. In addition to the initial entries of the changelist, all
