@@ -16,8 +16,7 @@ module GUI.ShowLibGraph
   , closeOpenWindows
   ) where
 
-import Driver.Options (HetcatsOpts (outtypes, verbose), putIfVerbose)
-import Driver.WriteFn (writeVerbFile)
+import Driver.Options (HetcatsOpts (outtypes, verbose))
 import Driver.ReadFn
 import Driver.AnaLib
 
@@ -36,16 +35,14 @@ import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
 
 import Common.LibName
-import Common.Utils
 import qualified Common.Lib.Rel as Rel
 import Common.Result
 import Common.ResultT
+import Common.XmlDiff
 
 import Data.IORef
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Maybe
-import Data.List
 
 import Control.Concurrent.MVar
 import Control.Monad
@@ -54,8 +51,6 @@ import Interfaces.DataTypes
 import Interfaces.Utils
 
 import Text.XML.Light (ppTopElement)
-
-import System.Process
 
 type NodeEdgeList = ([DaVinciNode LibName], [DaVinciArc (IO String)])
 
@@ -137,49 +132,25 @@ changeLibGraph gi graph nodesEdges = do
   ost <- readIORef $ intState gi
   graph' <- readIORef graph
   (nodes, edges) <- readIORef nodesEdges
-  gmocPath <- getEnvDef "HETS_GMOC" ""
   case i_state ost of
     Nothing -> return ()
-    Just ist -> if null gmocPath then
-      errorDialog "Error" "HETS_GMOC variable not set" else do
+    Just ist -> do
       let le = i_libEnv ist
           dg = lookupDGraph ln le
           fn = libNameToFile ln
-          f1 = fn ++ ".xhi"
-          f2 = fn ++ ".old.xh"
-          f3 = fn ++ ".new.xh"
           dgold = changesDGH dg $ map negateChange $ flatHistory
                   $ proofHistory dg
-          writeXml l' f' g' =
-              writeVerbFile opts f' $ ppTopElement
-                $ ToXml.dGraph l' ln g'
-      writeXml le f1 dg
-      writeXml le f2 dgold
+          c2 = ToXml.dGraph le ln dgold
       m <- anaLib opts { outtypes = [] } fn
       case m of
         Just (nln, nle) | nln == ln -> do
           let dg2 = lookupDGraph nln nle
               ndg = changesDGH dg2 $ map negateChange $ flatHistory
                   $ proofHistory dg2
-          writeXml nle f3 ndg
-          md <- withinDirectory gmocPath $ do
-            (_, exitPulse) <- pulseBar "Gmoc" "calling bin/gmoc ..."
-            output <- readProcess "bin/gmoc"
-              ["-c", "Configuration.xml", "-itype", "file", "moc", f2, f1, f3]
-              ""
-            exitPulse
-            let getFile pre =
-                  listToMaybe $ mapMaybe (stripPrefix pre) $ lines output
-            return $ liftM2 (,) (getFile "xupdates: ") $ getFile "Impacts: "
-          case md of
-            Nothing -> errorDialog "Error" "no xupdate file found"
-            Just (xd, xi) -> do
-              putIfVerbose opts 2 $ "Reading " ++ xd
-              xs <- readFile xd
-              xis <- readFile xi
-              putIfVerbose opts 3 $ "Ignoring Impacts:\n" ++ xis
-              Result ds mdg <- runResultT $ dgXUpdate opts xs le ln dg
-              case mdg of
+              c3 = ToXml.dGraph nle ln ndg
+              xs = ppTopElement $ hetsXmlDiff c2 c3
+          Result ds mdg <- runResultT $ dgXUpdate opts xs le ln dg
+          case mdg of
                 Just (nLn, fle) -> do
                   closeOpenWindows gi
                   mapM_ (deleteArc graph') edges
