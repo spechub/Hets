@@ -77,7 +77,10 @@ instance Show Change where
 anaXUpdates :: Monad m => String -> m [Change]
 anaXUpdates input = case parseXMLDoc input of
     Nothing -> fail "cannot parse xupdate file"
-    Just e -> mapM anaXUpdate $ elChildren e
+    Just e -> anaMods e
+
+anaMods :: Monad m => Element -> m [Change]
+anaMods = mapM anaXUpdate . elChildren
 
 {- the input element is expected to be one of
 
