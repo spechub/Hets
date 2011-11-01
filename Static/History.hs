@@ -26,6 +26,7 @@ module Static.History
   , undoAllChanges
   , togglePending
   , justTogglePending
+  , clearHistory
   ) where
 
 import Static.DevGraph
@@ -156,6 +157,10 @@ togglePendFlag dg (v, _, l) = let
 -- | forget redo stack
 clearRedo :: DGraph -> DGraph
 clearRedo g = g { redoHistory = SizedList.empty }
+
+-- | forget history
+clearHistory :: DGraph -> DGraph
+clearHistory g = g { proofHistory = SizedList.empty }
 
 -- | change the given DGraph and the history with the given DGChange.
 changeDGH :: DGraph -> DGChange -> DGraph
