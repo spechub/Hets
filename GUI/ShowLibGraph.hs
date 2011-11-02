@@ -18,6 +18,7 @@ module GUI.ShowLibGraph
 
 import Driver.Options (HetcatsOpts (outtypes, verbose))
 import Driver.ReadFn
+import Driver.WriteFn
 import Driver.AnaLib
 
 import Static.ComputeTheory
@@ -40,6 +41,8 @@ import qualified Common.Lib.Rel as Rel
 import Common.Result
 import Common.ResultT
 import Common.XmlDiff
+
+import Text.XML.Light
 
 import Data.IORef
 import qualified Data.Map as Map
@@ -152,6 +155,8 @@ changeLibGraph gi graph nodesEdges = do
                  renumberDGLink i (getNewEdgeId xdg) xdg else xdg) dg
                  { getNewEdgeId = max (getNewEdgeId ndg) (getNewEdgeId dg) }
                  $ labEdgesDG dg
+          writeVerbFile opts (libNameToFile ln ++ ".xupdate")
+            $ ppTopElement xs
           Result ds mdg <- runResultT $ dgXUpdateMods opts c2 xs le ln rdg
           case mdg of
                 Just (nLn, fle) -> do
