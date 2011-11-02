@@ -12,11 +12,11 @@ adjust development graph according to xupdate information
 
 module Static.ApplyChanges (dgXUpdateMods, dgXUpdate) where
 
-import Static.ComputeTheory (computeLibEnvTheories)
+import Static.ComputeTheory
 import Static.DevGraph
-import Static.GTheory
 import Static.DgUtils
 import Static.FromXml
+import Static.GTheory
 import Static.History (undoAllChanges, changeDGH)
 import Static.ToXml
 import Static.XGraph
@@ -172,7 +172,12 @@ mkLinkUpdate lg (dg, lv, chL) (i, mr, tp, xl) = let ei = edgeId xl in do
       (j, gs) <- signOfNode (target xl) dg
       lkLab <- finalizeLink lg xl mr gs tp
       -- if updating an existing link, the old one is deleted from dg first
-      dg' <- if chA == MkInsert then return dg
+      dg' <- if chA == MkInsert then case getDGLinksById ei dg of
+          -- because unknown theorem links with same id might exist..
+          [] -> return dg
+          [_] -> let i' = getNewEdgeId dg in return
+              (renumberDGLink ei i' dg) { getNewEdgeId = incEdgeId i' }
+          _ -> fail $ "ambigous occurance of link-id #" ++ show ei 
         else fmap (changeDGH dg . DeleteEdge) $ lookupUniqueLink i ei dg
       return (changeDGH dg' $ InsertEdge (i, j, lkLab), lv, chL')
 
