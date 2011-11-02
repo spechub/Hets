@@ -79,8 +79,7 @@ import Common.Result
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.SizedList as SizedList
 
-import Driver.Options ( HetcatsOpts, putIfVerbose, outtypes, doDump, verbose
-                      , rmSuffix)
+import Driver.Options (HetcatsOpts, putIfVerbose, outtypes, doDump, verbose)
 import Driver.WriteLibDefn (writeShATermFile)
 import Driver.ReadFn (libNameToFile, readVerbose)
 import Driver.AnaLib (anaLib)
@@ -722,7 +721,7 @@ saveUDGraph gInfo@(GInfo { graphInfo = gi
   case i_state ost of
    Nothing -> return ()
    Just _ -> do
-    maybeFilePath <- fileSaveDialog (rmSuffix (libNameToFile ln) ++ ".udg")
+    maybeFilePath <- fileSaveDialog (libNameToFile ln ++ ".udg")
                                     [ ("uDrawGraph", ["*.udg"])
                                     , ("All Files", ["*"])] Nothing
     case maybeFilePath of

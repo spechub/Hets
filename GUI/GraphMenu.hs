@@ -139,7 +139,7 @@ createGraph gi title convGraph showLib = do
     Just _ -> do
       let ln = libName gi
           opts = options gi
-          file = rmSuffix (libNameToFile ln) ++ prfSuffix
+          file = libNameToFile ln ++ prfSuffix
       deselectEdgeTypes <- newIORef []
       globMenu <- createGlobalMenu gi showLib deselectEdgeTypes
       GA.makeGraph (graphInfo gi)
