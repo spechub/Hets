@@ -21,6 +21,7 @@ module Static.ComputeTheory
     , updateLabelTheory
     , markHiding
     , markFree
+    , renumberDGLink
     ) where
 
 import Logic.Prover
@@ -156,8 +157,7 @@ updateLabelTheory le dg (i, l) gth = let
     n = (i, l' { globalTheory = computeLabelTheory le dg (i, l') })
     in updatePending dg l n
 
-updatePending
-  :: DGraph
+updatePending :: DGraph
   -> DGNodeLab -- ^ old label
   -> LNode DGNodeLab -- ^ node with new label
   -> DGraph
@@ -166,3 +166,13 @@ updatePending dg l n = let
     dg1 = togglePending dg0 $ changedLocalTheorems dg0 n
     dg2 = togglePending dg1 $ changedPendingEdges dg1
     in groupHistory dg (DGRule "Node proof") dg2
+
+renumberDGLink :: EdgeId -> EdgeId -> DGraph -> DGraph
+renumberDGLink i ni dg = changesDGH dg
+  $ foldr (\ e@(s, t, l) -> if dgl_id l == i then
+         ([DeleteEdge e, InsertEdge (s, t, l { dgl_id = ni })] ++)
+         else let pB = getProofBasis l in
+         if edgeInProofBasis i pB then
+         ([ DeleteEdge e, InsertEdge (s, t, l
+          { dgl_type = updThmProofBasis (dgl_type l) $ updEdgeId pB i ni })] ++)
+         else id) [] $ labEdgesDG dg

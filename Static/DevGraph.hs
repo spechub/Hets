@@ -273,6 +273,14 @@ thmLinkStatus t = case t of
 thmProofBasis :: DGLinkType -> ProofBasis
 thmProofBasis = maybe emptyProofBasis proofBasisOfThmLinkStatus . thmLinkStatus
 
+updThmProofBasis :: DGLinkType -> ProofBasis -> DGLinkType
+updThmProofBasis t pB = case t of
+    ScopedLink sc (ThmLink s) cs -> ScopedLink sc
+      (ThmLink $ updProofBasisOfThmLinkStatus s pB) cs
+    HidingFreeOrCofreeThm h n m s -> HidingFreeOrCofreeThm h n m
+      $ updProofBasisOfThmLinkStatus s pB
+    _ -> t
+
 -- | link inscriptions in development graphs
 data DGLinkLab = DGLink
   { dgl_morphism :: GMorphism  -- signature morphism of link

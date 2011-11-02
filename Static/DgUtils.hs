@@ -183,6 +183,11 @@ proofBasisOfThmLinkStatus tls = case tls of
   LeftOpen -> emptyProofBasis
   Proven _ pB -> pB
 
+updProofBasisOfThmLinkStatus :: ThmLinkStatus -> ProofBasis -> ThmLinkStatus
+updProofBasisOfThmLinkStatus tls pB = case tls of
+  LeftOpen -> tls
+  Proven r _ -> Proven r pB
+
 data Scope = Local | Global deriving (Show, Eq, Ord)
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
@@ -415,6 +420,12 @@ nullProofBasis = Set.null . proofBasis
 
 addEdgeId :: ProofBasis -> EdgeId -> ProofBasis
 addEdgeId (ProofBasis s) e = ProofBasis $ Set.insert e s
+
+delEdgeId :: ProofBasis -> EdgeId -> ProofBasis
+delEdgeId (ProofBasis s) e = ProofBasis $ Set.delete e s
+
+updEdgeId :: ProofBasis -> EdgeId -> EdgeId -> ProofBasis
+updEdgeId pb = addEdgeId . delEdgeId pb
 
 -- | checks if the given edge is contained in the given proof basis..
 edgeInProofBasis :: EdgeId -> ProofBasis -> Bool
