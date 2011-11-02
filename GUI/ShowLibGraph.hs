@@ -20,6 +20,7 @@ import Driver.Options (HetcatsOpts (outtypes, verbose))
 import Driver.ReadFn
 import Driver.AnaLib
 
+import Static.ComputeTheory
 import Static.DevGraph
 import Static.History
 import Static.ToXml as ToXml
@@ -136,18 +137,22 @@ changeLibGraph gi graph nodesEdges = do
       let le = i_libEnv ist
           dg = lookupDGraph ln le
           fn = libNameToFile ln
-          dgold = changesDGH dg $ map negateChange $ flatHistory
-                  $ proofHistory dg
+          dgold = undoAllChanges dg
+          olk = getNewEdgeId dgold
           c2 = ToXml.dGraph le ln dgold
       m <- anaLib opts { outtypes = [] } fn
       case m of
         Just (nln, nle) | nln == ln -> do
           let dg2 = lookupDGraph nln nle
-              ndg = changesDGH dg2 $ map negateChange $ flatHistory
-                  $ proofHistory dg2
+              ndg = undoAllChanges dg2
               c3 = ToXml.dGraph nle ln ndg
               xs = hetsXmlDiff c2 c3
-          Result ds mdg <- runResultT $ dgXUpdateMods opts c2 xs le ln dg
+              rdg = foldr (\ (_, _, l) xdg -> let i = dgl_id l in
+                 if i >= olk then
+                 renumberDGLink i (getNewEdgeId xdg) xdg else xdg) dg
+                 { getNewEdgeId = max (getNewEdgeId ndg) (getNewEdgeId dg) }
+                 $ labEdgesDG dg
+          Result ds mdg <- runResultT $ dgXUpdateMods opts c2 xs le ln rdg
           case mdg of
                 Just (nLn, fle) -> do
                   closeOpenWindows gi
