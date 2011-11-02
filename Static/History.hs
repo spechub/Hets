@@ -106,9 +106,14 @@ undoHistStep dg = let h = proofHistory dg in
      in (dg2, concat ncs)
   in (ndg { redoHistory = SizedList.cons he $ redoHistory dg }, cs)
 
+undoAllChangesAux :: DGraph -> DGraph
+undoAllChangesAux dg = let h = proofHistory dg in
+  if SizedList.null h then dg else undoAllChangesAux $ fst $ undoHistStep dg
+
 undoAllChanges :: DGraph -> DGraph
-undoAllChanges dg = let h = proofHistory dg in
-  if SizedList.null h then dg else undoAllChanges $ fst $ undoHistStep dg
+undoAllChanges dg = let nDg = undoAllChangesAux dg in
+  nDg { getNewEdgeId = incEdgeId $ maximum (startEdgeId
+        : map (\ (_, _, l) -> dgl_id l) (labEdgesDG nDg)) }
 
 redoHistStep :: DGraph -> (DGraph, [DGChange])
 redoHistStep dg = let h = redoHistory dg in
