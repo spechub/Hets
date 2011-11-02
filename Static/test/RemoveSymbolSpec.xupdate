@@ -1,3 +1,0 @@
-<xupdate:modifications xmlns:xupdate="http://www.xmldb.org/xupdate" version="1.0">
-<xupdate:remove select="/DGraph/DGNode[@name=&quot;Spec&quot;][1]/Declarations[1]/Symbol[2]"/>
-</xupdate:modifications>

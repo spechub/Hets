@@ -1,8 +1,0 @@
-<xupdate:modifications xmlns:xupdate="http://www.xmldb.org/xupdate" version="1.0">
-<xupdate:insert-before select="/DGraph/DGNode[@name=&quot;Spec&quot;][1]/Declarations[1]/Symbol[3]">
-<xupdate:element name="Symbol">
-<xupdate:attribute name="range">Spec:1.12</xupdate:attribute>
-<xupdate:text>sort u</xupdate:text>
-</xupdate:element>
-</xupdate:insert-before>
-</xupdate:modifications>
