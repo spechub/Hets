@@ -21,7 +21,6 @@ import Driver.ReadFn
 import Driver.WriteFn
 import Driver.AnaLib
 
-import Static.ComputeTheory
 import Static.DevGraph
 import Static.History
 import Static.ToXml as ToXml
@@ -141,7 +140,6 @@ changeLibGraph gi graph nodesEdges = do
           dg = lookupDGraph ln le
           fn = libNameToFile ln
           dgold = undoAllChanges dg
-          olk = getNewEdgeId dgold
           c2 = ToXml.dGraph le ln dgold
       m <- anaLib opts { outtypes = [] } fn
       case m of
@@ -150,14 +148,10 @@ changeLibGraph gi graph nodesEdges = do
               ndg = undoAllChanges dg2
               c3 = ToXml.dGraph nle ln ndg
               xs = hetsXmlDiff c2 c3
-              rdg = foldr (\ (_, _, l) xdg -> let i = dgl_id l in
-                 if i >= olk then
-                 renumberDGLink i (getNewEdgeId xdg) xdg else xdg) dg
-                 { getNewEdgeId = max (getNewEdgeId ndg) (getNewEdgeId dg) }
-                 $ labEdgesDG dg
           writeVerbFile opts (libNameToFile ln ++ ".xupdate")
             $ ppTopElement xs
-          Result ds mdg <- runResultT $ dgXUpdateMods opts c2 xs le ln rdg
+          Result ds mdg <- runResultT $ dgXUpdateMods opts c2
+            (getNewEdgeId dgold) xs le ln dg
           case mdg of
                 Just (nLn, fle) -> do
                   closeOpenWindows gi

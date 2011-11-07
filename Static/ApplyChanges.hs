@@ -45,42 +45,43 @@ import qualified Data.Map as Map
 
 import Text.XML.Light hiding (Node)
 
-dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
-  -> ResultT IO (LibName, LibEnv)
-dgXUpdate opts xs le ln dg = case parseXMLDoc xs of
-    Nothing -> fail "dgXUpdate: cannot parse xupdate file"
-    Just diff ->
-      dgXUpdateMods opts (dGraph le ln $ undoAllChanges dg) diff le ln dg
-
-dgXUpdateMods :: HetcatsOpts -> Element -> Element -> LibEnv -> LibName
-  -> DGraph -> ResultT IO (LibName, LibEnv)
-dgXUpdateMods opts orig diff le ln dg = do
-  (xml, chL) <- liftR $ changeXmlMod orig diff
-  lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
-    $ ppTopElement $ cleanUpElem xml
-  updateDG opts xml chL dg le
 
 {- TODO (general): determine the EXACT required change for each object instead
 of overwriting the existing one every time! -}
 
+-- | recieves diff as a string and current dg and prepares those for processing
+dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
+          -> ResultT IO (LibName, LibEnv)
+dgXUpdate opts xs le ln dg = case parseXMLDoc xs of
+    Nothing -> fail "dgXUpdate: cannot parse xupdate file"
+    Just diff -> let
+      dgOld = undoAllChanges dg
+      oldLId = getNewEdgeId dg
+      xorig = dGraph le ln dgOld
+      in dgXUpdateMods opts xorig oldLId diff le ln dg
+
 {- | updates a dgraph partially in accordance with changelist data from a .diff
 application. an xgraph is created and used as a guideline for signature-
 hierachy and for retrieving required new data. -}
-updateDG :: HetcatsOpts -> Element -> ChangeList -> DGraph -> LibEnv
-         -> ResultT IO (LibName, LibEnv)
-updateDG opts xml chL dg0 le = do
-  (dg1, chL') <- liftR $ deleteElements dg0 chL
+dgXUpdateMods :: HetcatsOpts -> Element -> EdgeId -> Element -> LibEnv
+              -> LibName -> DGraph -> ResultT IO (LibName, LibEnv)
+dgXUpdateMods opts xorig oldLId diff le ln dg = do
+  (xml, chL) <- liftR $ changeXmlMod xorig diff
   xgr <- liftR $ xGraph xml
+  let dgInit = (foldr (\ (_, _, l) xdg -> let i = dgl_id l in if i >= oldLId
+        then renumberDGLink i (getNewEdgeId xdg) xdg else xdg)
+          dg { getNewEdgeId = nextLinkId xgr } $ labEdgesDG dg
+        ) { getNewEdgeId = oldLId }
+  lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
+    $ ppTopElement $ cleanUpElem xml
+  (dg1, chL') <- liftR $ deleteElements dgInit chL
   let dg2 = dg1 { globalAnnos = globAnnos xgr
-                 , getNewEdgeId = nextLinkId xgr
-                 -- TODO as of now, ALL nodes will be removed from globalEnv!
-                 , globalEnv = Map.empty }
+                -- TODO as of now, ALL nodes will be removed from globalEnv!
+                , globalEnv = Map.empty }
   (dg3, le', chL'') <- iterateXgBody opts xgr le dg2 chL'
   -- for any leftover theorem link updates, the respective links are deleted
-  dgFin <- deleteLeftoverChanges dg3 chL''
-  let ln = libName xgr
-      dgFin2 = clearHistory dgFin
-  return (ln, computeLibEnvTheories $ Map.insert ln dgFin2 le')
+  dgFin <- fmap clearHistory $ deleteLeftoverChanges dg3 chL''
+  return (ln, computeLibEnvTheories $ Map.insert ln dgFin le')
 
 {- | deletes theorem links from dg that were left-over in changelist.
 fails if any other undone changes are found -}
@@ -177,7 +178,7 @@ mkLinkUpdate lg (dg, lv, chL) (i, mr, tp, xl) = let ei = edgeId xl in do
           -- because unknown theorem links with same id might exist..
           [] -> return dg
           [_] -> let i' = getNewEdgeId dg in return
-              (renumberDGLink ei i' dg) { getNewEdgeId = incEdgeId i' }
+            $ renumberDGLink ei i' dg { getNewEdgeId = incEdgeId i' }
           _ -> fail $ "ambigous occurance of link-id #" ++ show ei
         else fmap (changeDGH dg . DeleteEdge) $ lookupUniqueLink i ei dg
       return (changeDGH dg' $ InsertEdge (i, j, lkLab), lv, chL')
