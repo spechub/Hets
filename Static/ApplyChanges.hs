@@ -17,7 +17,7 @@ import Static.DevGraph
 import Static.DgUtils
 import Static.FromXml
 import Static.GTheory
-import Static.History (undoAllChanges, changeDGH)
+import Static.History (undoAllChanges, changeDGH, clearHistory)
 import Static.ToXml
 import Static.XGraph
 import Static.XSimplePath
@@ -79,7 +79,8 @@ updateDG opts xml chL dg0 le = do
   -- for any leftover theorem link updates, the respective links are deleted
   dgFin <- deleteLeftoverChanges dg3 chL''
   let ln = libName xgr
-  return (ln, computeLibEnvTheories $ Map.insert ln dgFin le')
+      dgFin2 = clearHistory dgFin
+  return (ln, computeLibEnvTheories $ Map.insert ln dgFin2 le')
 
 {- | deletes theorem links from dg that were left-over in changelist.
 fails if any other undone changes are found -}
@@ -177,7 +178,7 @@ mkLinkUpdate lg (dg, lv, chL) (i, mr, tp, xl) = let ei = edgeId xl in do
           [] -> return dg
           [_] -> let i' = getNewEdgeId dg in return
               (renumberDGLink ei i' dg) { getNewEdgeId = incEdgeId i' }
-          _ -> fail $ "ambigous occurance of link-id #" ++ show ei 
+          _ -> fail $ "ambigous occurance of link-id #" ++ show ei
         else fmap (changeDGH dg . DeleteEdge) $ lookupUniqueLink i ei dg
       return (changeDGH dg' $ InsertEdge (i, j, lkLab), lv, chL')
 

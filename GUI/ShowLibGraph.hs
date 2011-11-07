@@ -150,8 +150,8 @@ changeLibGraph gi graph nodesEdges = do
               ndg = undoAllChanges dg2
               c3 = ToXml.dGraph nle ln ndg
               xs = hetsXmlDiff c2 c3
-              rdg = foldr (\ (_, _, l) xdg -> let i = dgl_id l in
-                 if i >= olk then
+              rdg = clearHistory $ foldr (\ (_, _, l) xdg ->
+                 let i = dgl_id l in if i >= olk then
                  renumberDGLink i (getNewEdgeId xdg) xdg else xdg) dg
                  { getNewEdgeId = max (getNewEdgeId ndg) (getNewEdgeId dg) }
                  $ labEdgesDG dg
