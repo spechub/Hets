@@ -112,8 +112,8 @@ mkXStepUpdate :: HetcatsOpts -> LogicGraph -> (DGraph, LibEnv, ChangeList)
 mkXStepUpdate opts lg (dg, lv, chL) (xlks, xnd) = let
   -- first, add the req. signature change from ingoing definition links
   sigUpd = getLinkModUnion chL xlks
-  chL' = if sigUpd == unMod then chL
-    else updateNodeChange (MkUpdate sigUpd) (nodeName xnd) chL in do
+  chL' = if sigUpd == unMod then chL else updateNodeChange (MkUpdate sigUpd)
+              (nodeName xnd) chL in do
     mrs <- mapM (getTypeAndMorphism lg dg) xlks
     G_sign lid sg sId <- getSigForXNode lg dg mrs
     rs1 <- mkNodeUpdate opts lg (Just $ noSensGTheory lid sg sId)
@@ -174,13 +174,8 @@ mkLinkUpdate lg (dg, lv, chL) (i, mr, tp, xl) = let ei = edgeId xl in do
       (j, gs) <- signOfNode (target xl) dg
       lkLab <- finalizeLink lg xl mr gs tp
       -- if updating an existing link, the old one is deleted from dg first
-      dg' <- if chA == MkInsert then case getDGLinksById ei dg of
-          -- because unknown theorem links with same id might exist..
-          [] -> return dg
-          [_] -> let i' = getNewEdgeId dg in return
-            $ renumberDGLink ei i' dg { getNewEdgeId = incEdgeId i' }
-          _ -> fail $ "ambigous occurance of link-id #" ++ show ei
-        else fmap (changeDGH dg . DeleteEdge) $ lookupUniqueLink i ei dg
+      dg' <- if chA == MkInsert then return dg else
+        fmap (changeDGH dg . DeleteEdge) $ lookupUniqueLink i ei dg
       return (changeDGH dg' $ InsertEdge (i, j, lkLab), lv, chL')
 
 -- | updates any necessary ThmLinks
