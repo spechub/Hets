@@ -9,14 +9,15 @@ Portability :  non-portable (via imports)
 
 -}
 
-module PGIP.Server (hetsServer, sourceToBs) where
+module PGIP.Server (hetsServer) where
 
 import PGIP.Query
 
 import Driver.Options
 import Driver.ReadFn
 
-import Network.Wai.Handler.SimpleServer
+import Network.Wai.Handler.Warp
+import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Parse
 
@@ -61,7 +62,7 @@ import Common.ToXml
 import Common.Utils
 import Common.XUpdate
 
-import Control.Monad.Trans (lift)
+import Control.Monad.Trans (lift, liftIO)
 import Control.Monad
 
 import qualified Data.Map as Map
@@ -74,6 +75,7 @@ import Data.List
 import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
 import Data.Time.Clock
+import qualified Data.Text as T
 
 import System.Random
 import System.Process
@@ -98,6 +100,15 @@ sessGraph dgQ (Session le ln _ _) = case dgQ of
         $ Map.toList le
   _ -> fmap (\ dg -> (ln, dg)) $ Map.lookup ln le
 
+queryToString :: [QueryItem] -> String
+queryToString = ('?' :) . intercalate "&" . map
+  (\ (s, ms) -> B8.unpack s ++ case ms of
+    Nothing -> ""
+    Just r -> '=' : B8.unpack r)
+
+pathToString :: [T.Text] -> String
+pathToString = intercalate "/" . map T.unpack
+
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
@@ -108,24 +119,26 @@ hetsServer opts1 = do
   writeFile permFile ""
   sessRef <- newIORef IntMap.empty
   run 8000 $ \ re -> do
-   let query = B8.unpack $ queryString re
-       path = dropWhile (== '/') $ B8.unpack (pathInfo re)
+   let query = queryToString $ queryString re
+       path = pathToString $ pathInfo re
        rhost = shows (remoteHost re) "\n"
-   time <- getCurrentTime
-   m <- readIORef sessRef
-   appendFile permFile $ shows time " sessions: " ++ shows (IntMap.size m) "\n"
-   appendFile permFile rhost
-   appendFile permFile $ shows (requestHeaders re) "\n"
+   liftIO $ do
+     time <- getCurrentTime
+     m <- readIORef sessRef
+     appendFile permFile $ shows time " sessions: "
+                    ++ shows (IntMap.size m) "\n"
+     appendFile permFile rhost
+     appendFile permFile $ shows (requestHeaders re) "\n"
    -- better try to read hosts to exclude from a file
    if isInfixOf "crawl" rhost then return $ mkResponse status403 "" else
     case B8.unpack (requestMethod re) of
-    "GET" -> if query == "?menus" then mkMenuResponse else do
+    "GET" -> liftIO $ if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs then getHetsResponse opts [] sessRef path query
            else mkHtmlPage path dirs
     "POST" -> do
       (params, files) <- parseRequestBody tempFileSink re
-      mTmpFile <- case lookup "content"
+      mTmpFile <- liftIO $ case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
               Just areatext -> let content = B8.unpack areatext in
@@ -136,7 +149,7 @@ hetsServer opts1 = do
       let res tmpFile = getHetsResponse opts [] sessRef tmpFile query
           mRes = maybe (return $ mkResponse status400 "nothing submitted")
             res mTmpFile
-      case files of
+      liftIO $ case files of
         [] -> mRes
         [(_, f)] | query /= "?update" -> do
            let fn = takeFileName $ B8.unpack $ fileName f
@@ -149,16 +162,6 @@ hetsServer opts1 = do
             else mRes
         _ -> getHetsResponse opts (map snd files) sessRef path query
     _ -> return $ mkResponse status405 ""
-
--- for debugging purposes copied from Network.Wai.Parse
-sourceToBs :: Source -> IO B8.ByteString
-sourceToBs = fmap B8.concat . go id
-  where
-    go front (Source s) = do
-        res <- s
-        case res of
-            Nothing -> return $ front []
-            Just (bs, src') -> go (front . (:) bs) src'
 
 mkMenuResponse :: IO Response
 mkMenuResponse = return $ mkOkResponse $ ppTopElement $ unode "menus" mkMenus
@@ -191,7 +194,7 @@ mkHtmlPage :: FilePath -> [Element] -> IO Response
 mkHtmlPage path = return . mkOkResponse . mkHtmlString path
 
 mkResponse :: Status -> String -> Response
-mkResponse st = Response st [] . ResponseLBS . BS.pack
+mkResponse st = responseLBS st [] . BS.pack
 
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
