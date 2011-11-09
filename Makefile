@@ -803,10 +803,4 @@ rdf_java:
 	
 # download rdf4h, unpack and install
 rdf4h:
-	wget http://protempore.net/rdf4h/rdf4h-0.6.1.tar.gz
-	tar -xvf rdf4h-0.6.1.tar.gz
-	cd rdf4h-0.6.1; runhaskell Setup.hs configure --user --prefix=${HOME}
-	cd rdf4h-0.6.1; runhaskell Setup.hs build 
-	cd rdf4h-0.6.1; runhaskell Setup.hs install
-	rm -rvf rdf4h-0.6.1 
-	rm rdf4h-0.6.1.tar.gz
+	cabal install http://protempore.net/rdf4h/rdf4h-0.6.1.tar.gz
