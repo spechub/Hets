@@ -9,16 +9,18 @@ Stability   :  provisional
 Portability :  portable
 
 parse the outer syntax of an Isabelle theory file. The syntax is taken from
- <http://isabelle.in.tum.de/dist/Isabelle/doc/isar-ref.pdf> for Isabelle2005.
+ <http://isabelle.in.tum.de/dist/Isabelle/doc/isar-ref.pdf> for Isabelle2005
+and is adjusted for Isabelle2011-1.
 -}
 
 module Isabelle.IsaParse
-    (parseTheory
+{-    ( parseTheory
     , Body(..)
     , TheoryHead(..)
     , SimpValue(..)
     , warnSimpAttr
-    , compatibleBodies) where
+    , compatibleBodies) -}
+    where
 
 import Isabelle.IsaConsts
 
@@ -35,13 +37,16 @@ import Control.Monad
 import Data.List
 import qualified Data.Map as Map
 
+-- | should be only ascii letters
 latin :: Parser String
 latin = single letter <?> "latin"
 
+{- | this is a slash and an ident in angle brackets
+(not just some greek letters spelled out). -}
 greek :: Parser String
 greek = string "\\<" <++>
          optionL (string "^") -- isup
-         <++> many1 letter <++> string ">" <?> "greek"
+         <++> ident <++> string ">" <?> "greek"
 
 isaLetter :: Parser String
 isaLetter = latin <|> greek
@@ -59,13 +64,22 @@ ident = isaLetter <++> restident
 longident :: Parser String
 longident = ident <++> flat (many $ char '.' <:> ident)
 
+-- includes the colon for backwards compatibility (simp add: MS_symm)
 symident :: Parser String
-symident = many1 (oneOf "!#$&*+-/:<=>?@^_|~" <?> "sym") <|> greek
+symident = many1 (oneOf "!#$%&*+-/:<=>?@^_|~" <?> "sym") <|> greek
+
+strContent :: Char -> Parser String
+strContent c = flat $ many (single (noneOf $ c : "\\")
+                                 <|> char '\\' <:> single anyChar)
+
+genString :: Char -> Parser String
+genString c = enclosedBy (strContent c) $ char c
 
 isaString :: Parser String
-isaString = enclosedBy (flat $ many (single (noneOf "\\\"")
-                                 <|> char '\\' <:> single anyChar))
-            (char '\"')
+isaString = genString '"'
+
+altString :: Parser String
+altString = genString '´'
 
 verbatim :: Parser String
 verbatim = plainBlock "{*" "*}"
@@ -75,6 +89,15 @@ nestComment = nestedComment "(*" "*)"
 
 nat :: Parser String
 nat = many1 digit <?> "nat"
+
+int :: Parser String
+int = optionL (string "-") <++> nat
+
+float :: Parser String
+float = int <++> char '.' <:> nat
+
+real :: Parser String
+real = int <++> optionL (char '.' <:> nat)
 
 name :: Parser String
 name = ident <|> symident <|> isaString <|> nat
@@ -103,6 +126,12 @@ var = try (char '?' <:> isaLetter) <++> restident <++> indexsuffix
 term :: Parser String -- prop
 term = var <|> nameref
 
+inst :: Parser String
+inst = single (char '_') <|> term
+
+insts :: Parser [Token]
+insts = many $ lexP inst
+
 isaSkip :: Parser ()
 isaSkip = skipMany (many1 space <|> nestComment <?> "")
 
@@ -124,6 +153,9 @@ namerefP = lexP $ reserved isaKeywords nameref
 parname :: Parser Token
 parname = lexS "(" >> lexP name << lexS ")"
 
+comment :: Parser Token
+comment = lexS "--"  >> lexP isaText
+
 -- | the theory part before and including the begin keyword with a context
 data TheoryHead = TheoryHead
    { theoryname :: Token
@@ -138,8 +170,8 @@ theoryHead = do
     optionMaybe headerP
     lexS theoryS
     th <- nameP
-    is <- optionL (lexS importsS >> many nameP)
-    us <- optionL (lexS usesS >> many (nameP <|> parname))
+    is <- lexS importsS >> many1 nameP
+    us <- optionL (lexS usesS >> many1 (nameP <|> parname))
     lexS beginS
     oc <- optionMaybe nameP
     return $ TheoryHead th is us oc
@@ -201,16 +233,20 @@ genMixfix b = parensP $
 mixfix :: Parser ()
 mixfix = genMixfix False
 
+-- ignores float that may start with "-"
 atom :: Parser String
 atom = var <|> typefree <|> typevar <|> nameref
         -- nameref covers nat and symident keywords
 
+arg :: Parser [Token]
+arg = fmap (: []) (lexP atom) <|> parensP args <|> bracketsP args
+
 args :: Parser [Token]
-args = many $ lexP atom
+args = flat $ many arg
 
 -- | look for the simp attribute
 attributes :: Parser [Bool]
-attributes = bracketsP . commalist $
+attributes = bracketsP . optionL . commalist $
              liftM2 (\ n l -> null l && show n == simpS) namerefP args
 
 lessOrEq :: Parser String
@@ -226,14 +262,19 @@ classdecl = do
 classes :: Parser [[Token]]
 classes = lexS classesS >> many1 classdecl
 
-data Typespec = Typespec Token [Token]
+data Typespec = Typespec [(Token, Maybe Token)] Token
 
 typespec :: Parser Typespec
-typespec = fmap (flip Typespec []) namerefP <|> do
-    ns <- parensP (commalist typefreeP) <|> fmap (:[]) typefreeP
-    n <- namerefP
-    return $ Typespec n ns
-    where typefreeP = lexP typefree
+typespec = typespecSort False
+
+typespecSort :: Bool -> Parser Typespec
+typespecSort b = fmap (Typespec []) namerefP
+  <|> liftM2 Typespec
+      (parensP (commalist typefreeP) <|> fmap (: []) typefreeP)
+      namerefP
+    where typefreeP = pair (lexP typefree)
+              $ if b then optionMaybe $ lexS "::" >> namerefP
+                else return Nothing
 
 optinfix :: Parser ()
 optinfix = optional $ parensP infixP
@@ -244,11 +285,9 @@ types = lexS typesS >> many1 (typespec << (lexS "=" >> typeP >> optinfix))
 typedecl :: Parser [Typespec]
 typedecl = lexS typedeclS >> many1 (typespec << optinfix)
 
-arity :: Parser [Token]
-arity = fmap (:[]) namerefP <|> do
-    ns <- parensP $ commalist namerefP
-    n <- namerefP
-    return $ n : ns
+arity :: Parser ([Token], Token)
+arity = fmap (\ n -> ([], n)) namerefP
+  <|> pair (parensP $ commalist namerefP) namerefP
 
 data Const = Const Token Token
 
@@ -320,10 +359,12 @@ selection = parensP . commalist $
   where natP = lexP nat
 
 thmref :: Parser Token
-thmref = namerefP << (optional selection >> optionL attributes)
+thmref = (((namerefP << optional selection) <|> lexP altString)
+          << optionL attributes)
 
 thmrefs :: Parser [Token]
-thmrefs = many1 thmref
+thmrefs = flat
+  $ many1 (single thmref <|> fmap (const []) (bracketsP attributes))
 
 thmdef :: Parser SenDecl
 thmdef = try $ thmbind << lexS "="
@@ -337,7 +378,7 @@ theorems = (lexS theoremsS <|> lexS lemmasS)
     >> sepBy1 (optional thmdef >> thmrefs) andL
 
 proppat :: Parser [Token]
-proppat = parensP . many1 $ lexP term
+proppat = parensP . many1 $ lexS "is" >> lexP term
 
 data Goal = Goal SenDecl [Token]
 
@@ -399,27 +440,27 @@ data BodyElem = Axioms [Axiom]
               | Datatype [Dtspec]
               | Ignored
 
-ignore :: Functor f => f a -> f BodyElem
-ignore = fmap $ const Ignored
+discard :: Functor f => f a -> f BodyElem
+discard = fmap $ const Ignored
 
 theoryBody :: Parser [BodyElem]
 theoryBody = many $
-    ignore typedecl
-    <|> ignore types
+    discard typedecl
+    <|> discard types
     <|> fmap Datatype datatype
     <|> fmap Consts consts
     <|> fmap (Consts . concat) constdefs
     <|> fmap Axioms defs
-    <|> ignore classes
-    <|> ignore markupP
-    <|> ignore theorems
+    <|> discard classes
+    <|> discard markupP
+    <|> discard theorems
     <|> fmap Axioms axioms
-    <|> ignore instanceP
+    <|> discard instanceP
     <|> fmap Goals lemma
-    <|> ignore axclass
-    <|> ignore mltext
-    <|> ignore (choice (map lexS ignoredKeys) >> skipMany unknown)
-    <|> ignore unknown
+    <|> discard axclass
+    <|> discard mltext
+    <|> discard (choice (map lexS ignoredKeys) >> skipMany unknown)
+    <|> discard unknown
 
 data SimpValue a = SimpValue { hasSimp :: Bool, simpValue :: a }
 
@@ -453,7 +494,7 @@ addConst (Const n a) = Map.insert n a
 
 addDatatype :: Dtspec -> Map.Map Token ([Token], [[Token]])
             -> Map.Map Token ([Token], [[Token]])
-addDatatype (Dtspec (Typespec n ps) a) = Map.insert n (ps, a)
+addDatatype (Dtspec (Typespec ps n) a) = Map.insert n (map fst ps, a)
 
 emptyBody :: Body
 emptyBody = Body
