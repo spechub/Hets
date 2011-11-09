@@ -128,8 +128,11 @@ Executable hets
 
   if flag(server)
     build-depends:
-        wai-extra >= 0.2 && < 0.3
-      , wai >= 0.2 && < 0.3
+        wai-extra >= 0.4 && < 0.5
+      , wai >= 0.4 && < 0.5
+      , warp >= 0.4 && < 0.5
+      , http-types >= 0.6 && < 0.7
+      , text >= 0.5 && < 1.0
       , bytestring >= 0.9
       , random >= 1.0
     cpp-options: -DSERVER
