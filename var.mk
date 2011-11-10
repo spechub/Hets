@@ -24,12 +24,12 @@ ifneq ($(findstring time-1.1.2, $(TIMEVERSION)),)
 TIME_PACKAGE = -DTIME_WITHOUT_TYPEABLE
 endif
 
-TARVERSION = $(shell $(HCPKG) field tar version)
+TARVERSION = $(shell $(HCPKG) latest tar)
 ifneq ($(findstring 0.3, $(TARVERSION)),)
 TAR_PACKAGE = -DTAR_PACKAGE
 endif
 
-UNIXVERSION = $(shell $(HCPKG) field unix version)
+UNIXVERSION = $(shell $(HCPKG) latest unix)
 ifneq ($(findstring 2., $(UNIXVERSION)),)
 UNIX_PACKAGE = -DUNIX
 endif
@@ -37,46 +37,50 @@ ifneq ($(findstring 2.4, $(UNIXVERSION)),)
 UNIX_PACKAGE = -DUNIX
 endif
 
-GLADEVERSION = $(shell $(HCPKG) field glade version)
+GLADEVERSION = $(shell $(HCPKG) latest glade)
 ifneq ($(findstring 0.1, $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE $(SUNRUNPATH)
 endif
 
-HASKELINEVERSION = $(shell $(HCPKG) field haskeline version)
+HASKELINEVERSION = $(shell $(HCPKG) latest haskeline)
 ifneq ($(findstring 0.6, $(HASKELINEVERSION)),)
 HASKELINE_PACKAGE = -DHASKELINE
 endif
 
-HEXPATVERSION = $(shell $(HCPKG) field hexpat exposed)
+HEXPATVERSION = $(shell $(HCPKG) latest hexpat exposed)
 ifneq ($(findstring True, $(HEXPATVERSION)),)
 HEXPAT_PACKAGE = -DHEXPAT
 endif
 
-HTTPVERSION = $(shell $(HCPKG) field HTTP version)
+HTTPVERSION = $(shell $(HCPKG) latest HTTP)
 ifneq ($(findstring 4000., $(HTTPVERSION)),)
 else
 HTTP_PACKAGE = -DNOMATHSERVER
 endif
 
-UNIVERSION = $(shell $(HCPKG) field uni-uDrawGraph version)
+UNIVERSION = $(shell $(HCPKG) latest uni-uDrawGraph)
 ifneq ($(findstring 2., $(UNIVERSION)),)
 UNI_PACKAGE = -DUNI_PACKAGE
 endif
 
-PROGRAMATICAVERSION = $(shell $(HCPKG) field programatica version)
+PROGRAMATICAVERSION = $(shell $(HCPKG) latest programatica)
 ifneq ($(findstring 1.0, $(PROGRAMATICAVERSION)),)
 PFE_FLAGS = -package programatica -DPROGRAMATICA
 endif
 
-WAIVERSION = $(shell $(HCPKG) field wai-extra version)
-WARPVERSION = $(shell $(HCPKG) field warp version)
+WAIVERSION = $(shell $(HCPKG) latest wai-extra)
+WARPVERSION = $(shell $(HCPKG) latest warp)
 ifneq ($(findstring 0., $(WAIVERSION)),)
-ifneq ($(findstring 0.4, $(WARPVERSION)),)
-SERVER_FLAG = -DSERVER
-endif
+  ifneq ($(findstring 0.4, $(WARPVERSION)),)
+    SERVER_FLAG = -DSERVER
+  else
+    ifneq ($(findstring 0.2, $(WAIVERSION)),)
+      SERVER_FLAG = -DOLDSERVER
+    endif
+  endif
 endif
 
-PARSEC1VERSION = $(shell $(HCPKG) field parsec1 version)
+PARSEC1VERSION = $(shell $(HCPKG) latest parsec1)
 ifneq ($(findstring 1.0., $(PARSEC1VERSION)),)
 PARSEC_FLAG = -hide-package parsec -package parsec1
 endif
