@@ -215,14 +215,17 @@ encodeForQuery = concatMap (\ c -> let n = ord c in case c of
   _ | n <= 255 -> '%' : (if n < 16 then "0" else "") ++ showHex n ""
   _ -> "") -- ignore real unicode stuff
 
+decodePlus :: Char -> Char
+decodePlus c = if c == '+' then ' ' else c
+
 decodeQueryCode :: String -> String
 decodeQueryCode s = case s of
   "" -> ""
   '%' : h1 : h2 : r -> case readHex [h1, h2] of
-     (i, "") : _ -> chr i : decodeQueryCode r
+     (i, "") : _ -> decodePlus (chr i) : decodeQueryCode r
      _ -> error $ "decodeQueryCode hex: " ++ take 3 s
   c : r
-      -> (if c == '+' then ' ' else c) : decodeQueryCode r
+      -> decodePlus c : decodeQueryCode r
 
 anaNodeQuery :: Maybe Int -> [String] -> NodeIdOrName -> [String]
   -> [[String]] -> Either String (Maybe Int, QueryKind)
@@ -235,7 +238,7 @@ anaNodeQuery mi ans i incls pss =
       prover = lookup "prover" pps
       theorems = case lookup "theorems" pps of
         Nothing -> []
-        Just str -> map decodeQueryCode $ splitOn '+' str
+        Just str -> splitOn ' ' $ decodeQueryCode str
       timeLimit = fmap read $ lookup "timeout" pps
       pp = ProveNode (not (null incls) || case lookup "include" pps of
         Nothing -> True
