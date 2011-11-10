@@ -47,8 +47,8 @@ ifneq ($(findstring 0.6, $(HASKELINEVERSION)),)
 HASKELINE_PACKAGE = -DHASKELINE
 endif
 
-HEXPATVERSION = $(shell $(HCPKG) latest hexpat exposed)
-ifneq ($(findstring True, $(HEXPATVERSION)),)
+HEXPATVERSION = $(shell $(HCPKG) latest hexpat)
+ifneq ($(findstring 0.1, $(HEXPATVERSION)),)
 HEXPAT_PACKAGE = -DHEXPAT
 endif
 
