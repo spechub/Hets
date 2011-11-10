@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  run hets as server
@@ -16,8 +17,15 @@ import PGIP.Query
 import Driver.Options
 import Driver.ReadFn
 
+#ifdef OLDSERVER
+import Network.Wai.Handler.SimpleServer
+import Control.Monad.Trans (lift)
+#else
 import Network.Wai.Handler.Warp
 import Network.HTTP.Types
+import Control.Monad.Trans (lift, liftIO)
+import qualified Data.Text as T
+#endif
 import Network.Wai
 import Network.Wai.Parse
 
@@ -62,7 +70,6 @@ import Common.ToXml
 import Common.Utils
 import Common.XUpdate
 
-import Control.Monad.Trans (lift, liftIO)
 import Control.Monad
 
 import qualified Data.Map as Map
@@ -75,7 +82,6 @@ import Data.List
 import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
 import Data.Time.Clock
-import qualified Data.Text as T
 
 import System.Random
 import System.Process
@@ -100,15 +106,6 @@ sessGraph dgQ (Session le ln _ _) = case dgQ of
         $ Map.toList le
   _ -> fmap (\ dg -> (ln, dg)) $ Map.lookup ln le
 
-queryToString :: [QueryItem] -> String
-queryToString = ('?' :) . intercalate "&" . map
-  (\ (s, ms) -> B8.unpack s ++ case ms of
-    Nothing -> ""
-    Just r -> '=' : B8.unpack r)
-
-pathToString :: [T.Text] -> String
-pathToString = intercalate "/" . map T.unpack
-
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
@@ -122,7 +119,19 @@ hetsServer opts1 = do
    let query = queryToString $ queryString re
        path = pathToString $ pathInfo re
        rhost = shows (remoteHost re) "\n"
-   liftIO $ do
+#ifdef OLDSERVER
+       queryToString = B8.unpack
+       pathToString = dropWhile (== '/') . B8.unpack
+       liftRun = id
+#else
+       queryToString = ('?' :) . intercalate "&" . map
+         (\ (s, ms) -> B8.unpack s ++ case ms of
+           Nothing -> ""
+           Just r -> '=' : B8.unpack r)
+       pathToString = intercalate "/" . map T.unpack
+       liftRun = liftIO
+#endif
+   liftRun $ do
      time <- getCurrentTime
      m <- readIORef sessRef
      appendFile permFile $ shows time " sessions: "
@@ -132,13 +141,13 @@ hetsServer opts1 = do
    -- better try to read hosts to exclude from a file
    if isInfixOf "crawl" rhost then return $ mkResponse status403 "" else
     case B8.unpack (requestMethod re) of
-    "GET" -> liftIO $ if query == "?menus" then mkMenuResponse else do
+    "GET" -> liftRun $ if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs then getHetsResponse opts [] sessRef path query
            else mkHtmlPage path dirs
     "POST" -> do
       (params, files) <- parseRequestBody tempFileSink re
-      mTmpFile <- liftIO $ case lookup "content"
+      mTmpFile <- liftRun $ case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
               Just areatext -> let content = B8.unpack areatext in
@@ -149,7 +158,7 @@ hetsServer opts1 = do
       let res tmpFile = getHetsResponse opts [] sessRef tmpFile query
           mRes = maybe (return $ mkResponse status400 "nothing submitted")
             res mTmpFile
-      liftIO $ case files of
+      liftRun $ case files of
         [] -> mRes
         [(_, f)] | query /= "?update" -> do
            let fn = takeFileName $ B8.unpack $ fileName f
@@ -194,7 +203,13 @@ mkHtmlPage :: FilePath -> [Element] -> IO Response
 mkHtmlPage path = return . mkOkResponse . mkHtmlString path
 
 mkResponse :: Status -> String -> Response
-mkResponse st = responseLBS st [] . BS.pack
+mkResponse st =
+#ifdef OLDSERVER
+  Response st [] . ResponseLBS
+#else
+  responseLBS st []
+#endif
+  . BS.pack
 
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200

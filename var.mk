@@ -68,15 +68,17 @@ ifneq ($(findstring 1.0, $(PROGRAMATICAVERSION)),)
 PFE_FLAGS = -package programatica -DPROGRAMATICA
 endif
 
-WAIVERSION = $(shell $(HCPKG) latest wai-extra)
+WAIEXTVERSION = $(shell $(HCPKG) latest wai-extra)
+WAIVERSION = $(shell $(HCPKG) latest wai)
 WARPVERSION = $(shell $(HCPKG) latest warp)
-ifneq ($(findstring 0., $(WAIVERSION)),)
-  ifneq ($(findstring 0.4, $(WARPVERSION)),)
-    SERVER_FLAG = -DSERVER
-  else
-    ifneq ($(findstring 0.2, $(WAIVERSION)),)
-      SERVER_FLAG = -DOLDSERVER
-    endif
+ifneq ($(findstring 0.4, $(WARPVERSION)),)
+  ifneq ($(findstring 0.4, $(WAIEXTVERSION)),)
+  SERVER_FLAG = -DSERVER
+  endif
+endif
+ifneq ($(findstring 0.2, $(WAIEXTVERSION)),)
+  ifneq ($(findstring 0.2, $(WAIVERSION)),)
+  SERVER_FLAG = -DSERVER -DOLDSERVER
   endif
 endif
 
