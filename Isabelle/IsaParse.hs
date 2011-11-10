@@ -64,9 +64,8 @@ ident = isaLetter <++> restident
 longident :: Parser String
 longident = ident <++> flat (many $ char '.' <:> ident)
 
--- includes the colon for backwards compatibility (simp add: MS_symm)
 symident :: Parser String
-symident = many1 (oneOf "!#$%&*+-/:<=>?@^_|~" <?> "sym") <|> greek
+symident = many1 (oneOf "!#$%&*+-/<=>?@^_|~" <?> "sym") <|> greek
 
 strContent :: Char -> Parser String
 strContent c = flat $ many (single (noneOf $ c : "\\")
@@ -421,9 +420,9 @@ dtspec = do
 datatype :: Parser [Dtspec]
 datatype = lexS datatypeS >> sepBy1 dtspec andL
 
--- allow '.' sequences in unknown parts
+-- allow '.' sequences or ":" in unknown parts
 anyP :: Parser String
-anyP = atom <|> many1 (char '.')
+anyP = atom <|> many1 (char '.') <|> string ":"
 
 -- allow "and", etc. in unknown parts
 unknown :: Parser ()
