@@ -44,7 +44,7 @@ latexFooter = "\n\\end{document}\n"
 latexStyle :: Style
 latexStyle = style
   { ribbonsPerLine = 1.1
-  , lineLength = calc_line_length "345.0pt"}
+  , lineLength = calcLineLen 345.0 }
   -- for svmono you need 336.0pt
 
 {- a LatexRenderingState

@@ -24,7 +24,7 @@ Functions to calculate the length of a given word as it would be
 -}
 
 module Common.LaTeX_funs
-    ( calc_line_length
+    ( calcLineLen
     , axiom_width
     , latex_macro
     , flushright
@@ -73,27 +73,16 @@ setTab = "\\="
 setTabWSp :: String
 setTabWSp = "\\@setTS@{"
 
-{- functions for calculating an integer value according to a given
-   length in LaTeX units
-
-   Units per mm found in: Karsten Guenther, "Einfuehrung in LaTeX2e" (p.376)
+{- | functions for calculating an integer value according to a given
+   length in LaTeX points.
 -}
+calcLineLen :: Double -> Int
+calcLineLen len =
+    truncate $ len * 0.351 * 1000 / scaleDivisor
+-- Units per mm found in: Karsten Guenther, "Einfuehrung in LaTeX2e" (p.376)
 
-calc_line_length :: String -> Int
-calc_line_length s =
-    let (r_unit, r_number) =
-            (\ (x, y) -> (reverse x, reverse y)) $ span isAlpha $ reverse s
-        unit = case r_unit of
-               "mm" -> 1
-               "cm" -> 10
-               "pt" -> 0.351
-               "in" -> 25.4
-               u -> error ( "unknown or unsupported LaTeX unit: " ++ u )
-        len :: Double
-        len = read $ map (\ c -> case c of
-                                   ',' -> '.'
-                                   _ -> c) r_number
-    in truncate (len * unit * 1000)
+scaleDivisor :: Num a => a
+scaleDivisor = 22
 
 {- functions to calculate a word-width in integer with a given word
    type or purpose
@@ -104,7 +93,10 @@ data Word_type =
     deriving (Show, Eq)
 
 calc_word_width :: Word_type -> String -> Int
-calc_word_width wt s = Map.findWithDefault
+calc_word_width wt s = calc_word_widthAux wt s `div` scaleDivisor
+
+calc_word_widthAux :: Word_type -> String -> Int
+calc_word_widthAux wt s = Map.findWithDefault
   (sum_char_width_deb (showString "In map \"" . shows wt . showString "\" \'")
    wFM k_wFM s - correction) s wFM
     where (wFM, k_wFM) = case wt of
