@@ -84,6 +84,9 @@ showTextDetails t = case t of
   Str s -> s
   PStr s -> s
 
+maxTabs :: Int
+maxTabs = 12
+
 -- a function that knows how to print LaTeX TextDetails
 latexTxt :: TextDetails -> State LRState ShowS -> State LRState ShowS
 latexTxt td cont = let s1 = showTextDetails td in case s1 of
@@ -111,7 +114,7 @@ latexTxt td cont = let s1 = showTextDetails td in case s1 of
             then (showChar '}', showString startAnno)
             else (id, id)
       return (eAn . (if indentTabsWritten s
-                    + setTabsThisLine s > 12 ||
+                    + setTabsThisLine s > maxTabs ||
                       onlyTabs s then id else showString s1) . sAn . s2)
     | setTabWSp
       `isPrefixOf`
@@ -151,7 +154,7 @@ setInsideAnno b = do
 getIndent :: State LRState ShowS
 getIndent = do
   s <- get
-  let indentTabsSum = sum (indentTabs s)
+  let indentTabsSum = min (succ maxTabs) $ sum $ indentTabs s
   put $ s
     { indentTabsWritten = indentTabsSum
     , collSpaceIndents = []
