@@ -68,10 +68,9 @@ dgXUpdateMods :: HetcatsOpts -> Element -> EdgeId -> Element -> LibEnv
 dgXUpdateMods opts xorig oldLId diff le ln dg = do
   (xml, chL) <- liftR $ changeXmlMod xorig diff
   xgr <- liftR $ xGraph xml
-  let dgInit = (foldr (\ (_, _, l) xdg -> let i = dgl_id l in if i >= oldLId
+  let dgInit = foldr (\ (_, _, l) xdg -> let i = dgl_id l in if i >= oldLId
         then renumberDGLink i (getNewEdgeId xdg) xdg else xdg)
           dg { getNewEdgeId = nextLinkId xgr } $ labEdgesDG dg
-        ) { getNewEdgeId = oldLId }
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
     $ ppTopElement $ cleanUpElem xml
   (dg1, chL') <- liftR $ deleteElements dgInit chL
