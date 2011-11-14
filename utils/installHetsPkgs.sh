@@ -21,18 +21,20 @@ else
 pre=`ghc --print-libdir | sed -e 's+/lib/.*++g'`
 fi
 
+opts="-O --enable-documentation --global --prefix=$pre"
+
 #installing the binaries
 BINARIES="alex gtk2hsC2hs gtk2hsHookGenerator gtk2hsTypeGen"
 if which $BINARIES &> /dev/null; then
     echo Binaries already installed
 else
     echo Installing binaries...
-    cabal install alex gtk2hs-buildtools \
-                  -O --global --prefix=$pre
+    cabal install alex gtk2hs-buildtools $opts
 fi
 
 #installing the libraries
 echo Installing libraries...
 cabal install aterm random xml fgl HTTP tar glade haskeline \
-              hexpat wai-extra-0.2.4.2 uni-uDrawGraph \
-              -O --enable-documentation --global --prefix=$pre
+              hexpat wai-extra warp uni-uDrawGraph parsec1 $opts
+
+ghc-pkg hide parsec1
