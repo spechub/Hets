@@ -119,6 +119,7 @@ hetsServer opts1 = do
    let query = queryToString $ queryString re
        path = pathToString $ pathInfo re
        rhost = shows (remoteHost re) "\n"
+       bots = ["crawl", "ffff:66.249."]
 #ifdef OLDSERVER
        queryToString = B8.unpack
        pathToString = dropWhile (== '/') . B8.unpack
@@ -139,7 +140,7 @@ hetsServer opts1 = do
      appendFile permFile rhost
      appendFile permFile $ shows (requestHeaders re) "\n"
    -- better try to read hosts to exclude from a file
-   if isInfixOf "crawl" rhost then return $ mkResponse status403 "" else
+   if any (`isInfixOf` rhost) bots then return $ mkResponse status403 "" else
     case B8.unpack (requestMethod re) of
     "GET" -> liftRun $ if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
