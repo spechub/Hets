@@ -87,33 +87,6 @@ pfe_sources = $(wildcard $(addsuffix /*hs, $(PFE_PATHS)))
 PFE_PATH = $(addprefix -i, $(PFE_PATHS))
 happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
-LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
-
-programatica_pkg: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
-            $(LEX_DIR)/HsLex.hs $(SETUP)
-	@if $(HCPKG) field programatica version; then \
-          echo "of programatica package found"; else \
-          ($(PATCH) -usNlp0 -d $(PFE_TOOLDIR) \
-            -i `pwd`/Haskell/Programatica.patch || exit 0); \
-          cp -f utils/programatica.cabal $(PFE_TOOLDIR); \
-          cp -f $(SETUP) $(PFE_TOOLDIR); \
-          cp -f LICENSE.txt $(PFE_TOOLDIR); \
-          (cd $(PFE_TOOLDIR); \
-           ./Setup configure $(SETUPPREFIX) --user; \
-           ./Setup build; ./Setup install) fi
-
-$(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
-	echo "{-# OPTIONS -w #-}" > $@
-	$< >> $@
-
-$(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
-    $(LEX_DIR)/HsTokens.hs
-	$(HC) --make -fno-monomorphism-restriction -O \
-           -i$(PFE_TOOLDIR)/base/tests/HbcLibraries \
-           -i$(PFE_TOOLDIR)/base/lib \
-	   -i$(LEX_DIR) -i$(LEX_DIR)Gen -i$(LEX_DIR)Spec \
-              $@.hs -o $@
-
 logics += Haskell
 derived_sources += Haskell/PreludeString.hs
 
@@ -444,8 +417,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 ### targets
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
-    real_clean bin_clean package_clean distclean packages \
-    programatica_pkg aterm_pkg maintainer-clean annos \
+    real_clean bin_clean distclean maintainer-clean annos \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc fromKif derivedSources release cgi ghci build
 
@@ -453,10 +425,6 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
-
-packages: programatica_pkg
-
-programatica_pkg:
 
 hets-opt:
 	$(MAKE) distclean
@@ -572,11 +540,6 @@ clean_javastuff:
 ### additionally removes the library files
 real_clean: clean
 
-### clean user packages
-package_clean:
-	$(HCPKG) unregister programatica --user || exit 0
-	$(HCPKG) unregister aterm --user || exit 0
-
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
 	$(RM) $(derived_sources)
@@ -585,7 +548,7 @@ distclean: clean clean_genRules
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
 	$(RM) -r docs
 
-maintainer-clean: distclean package_clean
+maintainer-clean: distclean
 	$(RM) -r $(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 ### interactive
@@ -593,7 +556,7 @@ ghci: $(derived_sources)
 	ghci $(HC_OPTS)
 
 ### build only, don't link
-build: hets.hs packages
+build: hets.hs
 	$(HC) --make -c $< $(HC_OPTS)
 
 ### Kif parser
@@ -653,7 +616,7 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 .SUFFIXES:
 
 ## rule for GHC
-%: %.hs packages
+%: %.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ## rule for HAPPY
@@ -800,7 +763,7 @@ rdf_java:
 	else \
 		curl -o RDF/java/lib/xercesImpl-2.7.1.jar http://mirrors.ibiblio.org/pub/mirrors/maven2/xerces/xercesImpl/2.7.1/xercesImpl-2.7.1.jar; \
 	fi
-	
+
 # download rdf4h, unpack and install
 rdf4h:
 	cabal install http://protempore.net/rdf4h/rdf4h-0.6.1.tar.gz
