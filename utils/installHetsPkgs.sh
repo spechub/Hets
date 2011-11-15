@@ -21,7 +21,7 @@ else
 pre=`ghc --print-libdir | sed -e 's+/lib/.*++g'`
 fi
 
-opts="-O --enable-documentation --global --prefix=$pre"
+opts="--enable-documentation --global --prefix=$pre"
 
 #installing the binaries
 BINARIES="alex gtk2hsC2hs gtk2hsHookGenerator gtk2hsTypeGen"
@@ -29,7 +29,7 @@ if which $BINARIES &> /dev/null; then
     echo Binaries already installed
 else
     echo Installing binaries...
-    cabal install alex gtk2hs-buildtools $opts
+    cabal install alex gtk2hs-buildtools cabal-install-0.10.2 $opts
 fi
 
 #installing the libraries
@@ -37,4 +37,9 @@ echo Installing libraries...
 cabal install aterm random xml fgl HTTP tar glade haskeline \
               hexpat wai-extra warp uni-uDrawGraph parsec1 $opts
 
+cabal install \
+  http://www.dfki.de/sks/hets/src-distribution/programatica-1.0.0.3.tar.gz \
+  --global --prefix=$pre
+
 ghc-pkg hide parsec1
+ghc-pkg hide programatica
