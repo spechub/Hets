@@ -116,19 +116,27 @@ hetsServer opts1 = do
   writeFile permFile ""
   sessRef <- newIORef IntMap.empty
   run 8000 $ \ re -> do
-   let query = queryToString $ queryString re
+   let (query, splitQuery) = queryToString $ queryString re
        path = pathToString $ pathInfo re
        rhost = shows (remoteHost re) "\n"
        bots = ["crawl", "ffff:66.249."]
 #ifdef OLDSERVER
-       queryToString = B8.unpack
+       queryToString s = let r = B8.unpack s in
+         (r, map ((\ l -> case l of
+              [] -> error "queryToString"
+              [x] -> (x, Nothing)
+              x : t -> (x, Just $ intercalate "=" t))
+              . splitOn '=') . concatMap (splitOn ';') . splitOn '&'
+              . dropWhile (== '?') $ filter (not . isSpace) r)
        pathToString = dropWhile (== '/') . B8.unpack
        liftRun = id
 #else
-       queryToString = ('?' :) . intercalate "&" . map
-         (\ (s, ms) -> B8.unpack s ++ case ms of
-           Nothing -> ""
-           Just r -> '=' : B8.unpack r)
+       queryToString s = let
+         r = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms)) s
+         in (('?' :) . intercalate "&" $ map
+                (\ (x, ms) -> x ++ case ms of
+                  Nothing -> ""
+                  Just y -> '=' : y) r, r)
        pathToString = intercalate "/" . map T.unpack
        liftRun = liftIO
 #endif
@@ -144,7 +152,7 @@ hetsServer opts1 = do
     case B8.unpack (requestMethod re) of
     "GET" -> liftRun $ if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
-         if null cs then getHetsResponse opts [] sessRef path query
+         if null cs then getHetsResponse opts [] sessRef path splitQuery
            else mkHtmlPage path dirs
     "POST" -> do
       (params, files) <- parseRequestBody tempFileSink re
@@ -156,7 +164,7 @@ hetsServer opts1 = do
                    tmpFile <- getTempFile content "temp.het"
                    copyPermissions permFile tmpFile
                    return $ Just tmpFile
-      let res tmpFile = getHetsResponse opts [] sessRef tmpFile query
+      let res tmpFile = getHetsResponse opts [] sessRef tmpFile splitQuery
           mRes = maybe (return $ mkResponse status400 "nothing submitted")
             res mTmpFile
       liftRun $ case files of
@@ -170,7 +178,7 @@ hetsServer opts1 = do
              copyFile snkFile tmpFile
              maybe (res tmpFile) res mTmpFile
             else mRes
-        _ -> getHetsResponse opts (map snd files) sessRef path query
+        _ -> getHetsResponse opts (map snd files) sessRef path splitQuery
     _ -> return $ mkResponse status405 ""
 
 mkMenuResponse :: IO Response
@@ -352,7 +360,7 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
 
 getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> FilePath
-  -> String -> IO Response
+  -> [QueryPair] -> IO Response
 getHetsResponse opts updates sessRef path query = do
   Result ds ms <- getHetsResult opts updates sessRef path query
   return $ case ms of
@@ -361,10 +369,9 @@ getHetsResponse opts updates sessRef path query = do
 
 getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> FilePath
-  -> String -> IO (Result String)
+  -> [QueryPair] -> IO (Result String)
 getHetsResult opts updates sessRef file query =
-  runResultT $ case anaUri file $ dropWhile (== '?')
-                 $ filter (not . isSpace) query of
+  runResultT $ case anaUri file query of
     Left err -> fail err
     Right (Query dgQ qk) -> do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
