@@ -77,11 +77,11 @@ setTabWSp = "\\@setTS@{"
    length in LaTeX points.
 -}
 calcLineLen :: Int -> Int
-calcLineLen len = scaleDivisor $ len * 351
+calcLineLen len = scaleDown $ len * 351
 -- Units per mm found in: Karsten Guenther, "Einfuehrung in LaTeX2e" (p.376)
 
-scaleDivisor :: Int -> Int
-scaleDivisor = (`div` 22)
+scaleDown :: Int -> Int
+scaleDown = (`div` 44) . (+ 15)
 
 {- functions to calculate a word-width in integer with a given word
    type or purpose
@@ -92,7 +92,7 @@ data Word_type =
     deriving (Show, Eq)
 
 calc_word_width :: Word_type -> String -> Int
-calc_word_width wt s = scaleDivisor $ calc_word_widthAux wt s
+calc_word_width wt s = scaleDown $ calc_word_widthAux wt s
 
 calc_word_widthAux :: Word_type -> String -> Int
 calc_word_widthAux wt s = Map.findWithDefault
