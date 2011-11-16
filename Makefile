@@ -419,9 +419,12 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean distclean maintainer-clean annos \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
-    count doc fromKif derivedSources release cgi ghci build
+    count doc fromKif derivedSources release cgi ghci build callghc
 
 .SECONDARY : %.hs %.d $(generated_rule_files)
+
+# dummy target to force ghc invocation
+callghc:
 
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
@@ -616,7 +619,7 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 .SUFFIXES:
 
 ## rule for GHC
-%: %.hs
+%: %.hs callghc
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ## rule for HAPPY
