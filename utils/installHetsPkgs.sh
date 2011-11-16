@@ -29,7 +29,7 @@ if which $BINARIES &> /dev/null; then
     echo Binaries already installed
 else
     echo Installing binaries...
-    cabal install alex gtk2hs-buildtools cabal-install-0.10.2 $opts
+    cabal install alex gtk2hs-buildtools $opts
 fi
 
 #installing the libraries
