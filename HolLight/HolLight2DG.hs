@@ -14,6 +14,7 @@ module HolLight.HolLight2DG where
 
 import Static.GTheory
 import Static.DevGraph
+
 import Static.DgUtils
 import Static.History
 import Static.ComputeTheory
@@ -27,12 +28,13 @@ import Common.LibName
 import Common.Id
 import Common.AS_Annotation
 import Common.Result
-import Common.Utils (getTempFile)
+import Common.Utils (getTempFile,getEnvDef)
 
 import HolLight.Sign
 import HolLight.Sentence
 import HolLight.Term
 import HolLight.Logic_HolLight
+
 import HolLight.Helper(names)
 
 import Driver.Options
@@ -42,10 +44,7 @@ import qualified Data.Map as Map
 import qualified Data.Char
 
 import System.FilePath.Posix
-import System.Environment (getEnvironment)
-import System.IO (openTempFile,hClose)
 import System.Directory (removeFile,canonicalizePath)
-import System.Posix.Directory (getWorkingDirectory)
 
 import Text.XML.Expat.SAX
 import qualified Data.ByteString.Lazy as L
@@ -121,6 +120,7 @@ readTuple f1 f2 d = case tag d of
         _ -> (Nothing,d)
        _ -> (Nothing,d)
       _ -> (Nothing,d)
+
      _ -> (Nothing,d)
     _ -> (Nothing,d)
    _ -> (Nothing,d)
@@ -204,6 +204,7 @@ listToTypes m l = case l of
 
 
 readSharedHolType :: Map.Map Int String -> SaxEvL -> Map.Map Int HolType -> (Maybe (Map.Map Int HolType),SaxEvL)
+
 readSharedHolType sl d m = case tag d of
  ((StartElement "TyApp" _):d1) -> case readTuple readInt (readList' readInt') d1 of
   (Just (i,l),d2) -> case Map.lookup i sl of
@@ -222,6 +223,7 @@ readSharedHolType sl d m = case tag d of
    _ -> (Nothing,d)
   _ -> (Nothing,d)
  _ -> (Nothing,d)
+
 
 readParseType :: SaxEvL -> (Maybe HolParseType,SaxEvL)
 readParseType d = case tag d of
@@ -297,12 +299,9 @@ readSharedHolTerm ts sl d m = case tag d of
 importData :: HetcatsOpts -> FilePath -> IO ([(String,[(String,Term)])],[(String,String)])
 importData opts fp' = do
     fp <- canonicalizePath fp'
-    env <- getEnvironment
-    let tool_path = case lookup "HETS_HOLLIGHT_TOOLS" env of
-		 Just t -> t
-                 Nothing -> error "HETS_HOLLIGHT_TOOLS not set!"
+    default_tool_path <- canonicalizePath "./HolLight/OcamlTools/"
+    tool_path <- getEnvDef "HETS_HOLLIGHT_TOOLS" default_tool_path
     temp_path <- getTempFile "" (takeBaseName fp)
-    --error ("ocaml " ++ (show (tool_path </> "export.ml")) ++ " " ++ (show fp) ++ " " ++ (show temp_path))
     h <- SP.runCommand ("ocaml " ++ (show (tool_path </> "export.ml")) ++ " " ++ (show fp) ++ " " ++ (show temp_path))
     c <- SP.waitForProcess h
     s <- L.readFile temp_path
