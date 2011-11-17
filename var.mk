@@ -15,7 +15,7 @@ TAR = tar
 PATCH = patch
 endif
 
-HC = ghc -optl-s -XTemplateHaskell -threaded $(GHC7OPTS)
+HC = ghc -optl-s -XTemplateHaskell -threaded
 
 HCPKG = ghc-pkg
 
@@ -91,7 +91,7 @@ ifneq ($(strip $(UNI_PACKAGE)),)
 TESTTARGETFILES += Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
 endif
 
-HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
+HC_OPTS_WITHOUTGLADE = $(GHC7OPTS) $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE)\
   $(PFE_FLAGS) $(SERVER_FLAG) \
