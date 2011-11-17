@@ -455,23 +455,16 @@ anaHolLightFile opts path = do
                sens = map (\(n,t) -> makeNamedSentence n t) lterms in
            _insNodeDG sig sens lname (dg,node_m')) (emptyDG,Map.empty) libs
        dg'' = foldr (\(source,target) dg -> case Map.lookup source node_m of
-                                           Just (n,k,lk) -> case Map.lookup target node_m of
-                                             Just (n1,k1,lk1) -> let sig  = Map.findWithDefault emptySig n  m'
-                                                                     sig1 = Map.findWithDefault emptySig n1 m' in
+                                           Just (n,k,_) -> case Map.lookup target node_m of
+                                             Just (n1,k1,_) -> let sig  = Map.findWithDefault emptySig n  m'
+                                                                   sig1 = Map.findWithDefault emptySig n1 m' in
                                                           case resultToMaybe $ subsig_inclusion HolLight sig sig1 of
                                                             Nothing -> dg
                                                             Just incl ->
                                                               let inclM = gEmbed $ mkG_morphism HolLight incl
                                                                   insE = [InsertEdge (k, k1,globDefLink inclM DGLinkImports)]
-                                                                  newDG = changesDGH dg insE
-                                                                  updL = [SetNodeLab lk1 (k1, lk1
-                                                                          { globalTheory = computeLabelTheory Map.empty newDG
-                                                                           (k1, lk1) }),
-                                                                          SetNodeLab lk (k, lk
-                                                                          { globalTheory = computeLabelTheory Map.empty newDG
-                                                                           (k, lk) })]
-                                                              in changesDGH newDG updL
+                                                              in changesDGH dg insE
                                              Nothing -> dg
                                            Nothing -> dg) dg' lnks'
        le = Map.insert (emptyLibName (System.FilePath.Posix.takeBaseName path)) dg'' (Map.empty)
-   return (Just (emptyLibName (System.FilePath.Posix.takeBaseName path), le))
+   return (Just (emptyLibName (System.FilePath.Posix.takeBaseName path), computeLibEnvTheories le))
