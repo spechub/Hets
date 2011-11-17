@@ -44,6 +44,8 @@ import Common.Utils (composeMap, isSingleton)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
+import Control.Monad
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -176,11 +178,11 @@ type CspCASLMorphism = CASL_Morphism.Morphism CspSen CspSign CspAddMorphism
 {- | Check if a CspCASL signature morphism has the refl property i.e.,
 sigma(s1) <= sigma(s2) implies s1 <= s2 for all s1, s2 in S -}
 checkReflCondition :: Morphism f CspSign CspAddMorphism -> Result ()
-checkReflCondition mor =
-  let sig = msource mor
-      sig' = mtarget mor
-      sm = sort_map mor
-      rel = sortRel sig
+checkReflCondition Morphism
+  { msource = sig
+  , mtarget = sig'
+  , sort_map = sm } = do
+  let rel = sortRel sig
       rel' = sortRel sig'
       allPairs = LT.cartesian $ sortSet sig
       failures = Set.filter (not . test) allPairs
@@ -188,9 +190,7 @@ checkReflCondition mor =
                         mapSort sm s1 == mapSort sm s2
                      then Rel.path s1 s2 rel || s1 == s2
                      else True
-  in if Set.null failures
-     then return ()
-     else let produceDiag (s1, s2) =
+      produceDiag (s1, s2) =
                 let x = (mapSort sm s1)
                     y = (mapSort sm s2)
                 in Diag Error
@@ -199,8 +199,9 @@ checkReflCondition mor =
                          "' in target but not in source\n'"
                   ++ showDoc (Symbol s1 $ SubsortAsItemType s2) "'")
                   nullRange
-              allDiags = map produceDiag $ Set.toList failures
-          in Result allDiags Nothing -- failure with error messages
+      allDiags = map produceDiag $ Set.toList failures
+  unless (Set.null failures)
+    $ Result allDiags Nothing -- failure with error messages
 
 
 {- | Check if a CspCASL signature morphism has the weak non extension property
@@ -208,11 +209,11 @@ i.e.,
 sigma(s1) <= u' and sigma(s2) <= u' implies there exists t in S with
 s1 <= t and s2 <= t and sigma(t) <= u' for all s1,s2 in S and u' in S' -}
 checkWNECondition :: Morphism f CspSign CspAddMorphism -> Result ()
-checkWNECondition mor =
-  let sig = msource mor
-      sig' = mtarget mor
-      sm = sort_map mor
-      rel' = sortRel sig'
+checkWNECondition Morphism
+  { msource = sig
+  , mtarget = sig'
+  , sort_map = sm } = do
+  let rel' = sortRel sig'
       supers s signature = Set.insert s $ supersortsOf s signature
       allPairsInSource = LT.cartesian $ sortSet sig
       commonSuperSortsInTarget s1 s2 = Set.intersection
@@ -230,9 +231,7 @@ checkWNECondition mor =
             test t = Rel.path (mapSort sm t) u' rel' || mapSort sm t == u'
          in or $ Set.toList $ Set.map test possibleWitnesses
       failures = Set.filter (not . testCandidate) allCandidateTripples
-  in if Set.null failures
-     then return ()
-     else let produceDiag (s1, s2, u') =
+      produceDiag (s1, s2, u') =
                 let x = (mapSort sm s1)
                     y = (mapSort sm s2)
                 in Diag Error
@@ -245,8 +244,9 @@ checkWNECondition mor =
                        (Sort_decl [s1, s2] nullRange :: SORT_ITEM ())
                        "' in source")
                    nullRange
-              allDiags = map produceDiag $ Set.toList failures
-          in Result allDiags Nothing -- failure with error messages
+      allDiags = map produceDiag $ Set.toList failures
+  unless (Set.null failures)
+    $ Result allDiags Nothing -- failure with error messages
 
 -- | unite morphisms
 cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism
@@ -258,13 +258,13 @@ cspAddMorphismUnion mor1 mor2 = let
     m2 = extended_map mor2
     chan1 = channelMap m1
     chan2 = channelMap m2
-    delChan (n, s) m = MapSet.delete n s m
+    delChan (n, s) = MapSet.delete n s
     uc1 = foldr delChan (chans s1) $ Map.keys chan1
     uc2 = foldr delChan (chans s2) $ Map.keys chan2
     uc = MapSet.union uc1 uc2
     proc1 = processMap m1
     proc2 = processMap m2
-    delProc (n, p) m = MapSet.delete n p m
+    delProc (n, p) = MapSet.delete n p
     up1 = foldr delProc (procSet s1) $ Map.keys proc1
     up2 = foldr delProc (procSet s2) $ Map.keys proc2
     up = MapSet.union up1 up2
@@ -448,9 +448,7 @@ mapEventSet mor (EventSet fqComms r) =
 -- | Apply a signature morphism to an event
 mapEvent :: CspCASLMorphism -> EVENT -> EVENT
 mapEvent mor e =
-    let mapEvent' = mapEvent mor
-        mapCASLTerm' = mapCASLTerm mor
-        mapSort' = CASL_MapSen.mapSrt mor
+    let mapCASLTerm' = mapCASLTerm mor
         mapChannelName' = mapChannel mor
     in case e of
       -- Just map the morphism over the event (a term)
