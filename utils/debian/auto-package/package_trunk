@@ -6,7 +6,7 @@
 # c.prodescu@jacobs-university.de
 #
 # Dependencies: hets-core dependencies, devscripts, subversion, ant,
-#   sun-java6-jdk
+#   openjdk-6-jdk
 #
 # VARIABLES
 
@@ -50,7 +50,7 @@ echo ::Done
 #checking out Hets-owl-tools and compiling jar files
 HETS_OWL_TOOLS_FOLDER=$HETS_FOLDER/hets-owl-tools
 echo ::Compiling Hets OWL Tools
-cd $HETS_FOLDER && export JAVA_HOME=/usr/lib/jvm/java-6-sun
+cd $HETS_FOLDER
 make initialize_java 1>/dev/null 2>/dev/null
 cd ..
 mkdir -p $HETS_FOLDER/hets-owl-tools
@@ -83,7 +83,7 @@ echo ::Done
 
 #detecting distributions for which to build
 echo "::Detecting distroseries"
-DISTROS=$PWD/debian/oneiric
+DISTROS=$PWD/debian/*
 COUNT=`echo $DISTROS | wc -w`
 echo "  $COUNT distributions found"
 
