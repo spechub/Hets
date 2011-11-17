@@ -60,12 +60,12 @@ parseCL_CLIF filename opts = do
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
-parseCL_CLIF_contents filename contents =
+parseCL_CLIF_contents filename =
   runParser (many basicSpec) (emptyAnnos ())
-                       ("Error while parsing CLIF-File \"" ++ filename++"\"") contents
+     ("Error while parsing CLIF-File \"" ++ filename ++ "\"")
 
--- maps imports in basic spec to global definition links (extensions) in
--- development graph
+{- maps imports in basic spec to global definition links (extensions) in
+development graph -}
 convertToLibDefN :: String -> [(BASIC_SPEC, NAME)] -> LIB_DEFN
 convertToLibDefN fn specs =
   Lib_defn
@@ -82,19 +82,19 @@ convertToLibDefN fn specs =
     []
 
 convertToLibItems :: (BASIC_SPEC, NAME) -> Anno.Annoted LIB_ITEM
-convertToLibItems (b,n) =
+convertToLibItems (b, n) =
   emptyAnno $ Spec_defn n emptyGenericity (createSpec b) nullRange
 
 createSpec :: BASIC_SPEC -> Anno.Annoted SPEC
 createSpec b =
   let imports = Set.elems $ directImports b
       bs = emptyAnno $ Struc.Basic_spec (G_basic_spec CommonLogic b) nullRange
-  in  case imports of
+  in case imports of
           [] -> bs
-          _  -> emptyAnno $ Extension [
-              (case imports of
+          _ -> emptyAnno $ Extension [
+              case imports of
                 [n] -> specFromName n
-                _   -> emptyAnno $ Union (map specFromName imports) nullRange)
+                _ -> emptyAnno $ Union (map specFromName imports) nullRange
               , bs
             ] nullRange
 
@@ -103,7 +103,7 @@ specFromName n = emptyAnno $ Spec_inst (cnvImportName n) [] nullRange
 
 specNameL :: [BASIC_SPEC] -> String -> [String]
 specNameL [_] def = [def]
-specNameL bs def = map (specName def) [0..(length bs)]
+specNameL bs def = map (specName def) [0 .. (length bs)]
 
 -- returns a unique name for a node
 specName :: String -> Int -> String
@@ -134,7 +134,9 @@ metarelsMR n mr = case mr of
                           emptyGenericity
                           (View_type
                             (specFromName t2)
-                            (emptyAnno (Union [specFromName n, specFromName delta] nullRange))
+                            (emptyAnno
+                             (Union
+                              [specFromName n, specFromName delta] nullRange))
                             nullRange)
                           [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
                           nullRange]
@@ -151,21 +153,22 @@ metarelsMR n mr = case mr of
                           [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
                           nullRange]
   IncludeLibs _ -> []
+  _ -> error "metarelsMR"
 -- TODO: implement this for the other metarelations
 
 collectDownloads :: HetcatsOpts -> SpecMap -> (String, SpecInfo) -> IO SpecMap
-collectDownloads opts specMap (n,(b,topTexts,importedBy)) =
+collectDownloads opts specMap (n, (b, topTexts, importedBy)) =
   let -- directDls = Set.elems $ Set.map tokStr $ directDownloads b
       directMrs = Set.elems $ Set.map tokStr $ directMetarels b
       directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
   in do
-      sm2 <- foldM (\sm d -> do
+      sm2 <- foldM (\ sm d -> do
           newDls <- downloadSpec opts sm newTopTexts newImportedBy True d
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
-      foldM (\sm d -> do
+      foldM (\ sm d -> do
           newDls <- downloadSpec opts sm newTopTexts Set.empty False d
           return (Map.unionWith unify newDls sm)
         ) sm2 directMrs -- metarelations have no "importedBy"s
@@ -175,86 +178,81 @@ downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> Set String
 downloadSpec opts specMap topTexts importedBy isImport filename =
   let fn = convertFileToLibStr filename in
   case Map.lookup fn specMap of
-      Just (b, t, i) ->
-          if  isImport && Set.member (convertFileToLibStr filename) importedBy
-          then error (concat [
+      Just (b, t, i)
+        | isImport && Set.member (convertFileToLibStr filename) importedBy
+          -> error (concat [
                     "Illegal cyclic import: ", show (pretty importedBy), "\n"
                   , "Hets currently cannot handle cyclic imports "
                   , "of Common Logic files. "
                   , "If you really need them, send us a message at "
                   , "hets@informatik.uni-bremen.de, and we will fix it."
                 ])
-          else 
-          if  t == topTexts then return specMap else do
+        | t == topTexts
+          -> return specMap
+        | otherwise -> do
           let newTopTexts = Set.union t topTexts
           let newImportedBy = Set.union i importedBy
-          let newSpecMap = Map.insert fn (b,newTopTexts,newImportedBy) specMap
-          collectDownloads opts newSpecMap (fn,(b,newTopTexts,newImportedBy))
+          let newSpecMap = Map.insert fn (b, newTopTexts, newImportedBy) specMap
+          collectDownloads opts newSpecMap (fn, (b, newTopTexts, newImportedBy))
       Nothing -> do
           contents <- getCLIFContents opts filename
           case parseCL_CLIF_contents filename contents of
               Left err -> error $ show err
               Right bs ->
                 let nbs = zip (specNameL bs fn) bs
-                    nbtis = map (\(n,b) -> (n, (b, topTexts,importedBy))) nbs
-                    newSpecMap = foldr (\(n, bti) sm ->
+                    nbtis = map (\ (n, b) -> (n, (b, topTexts, importedBy))) nbs
+                    newSpecMap = foldr (\ (n, bti) sm ->
                         Map.insertWith unify n bti sm
                       ) specMap nbtis
-                in  foldM (\sm nbt -> do
+                in foldM (\ sm nbt -> do
                           newDls <- collectDownloads opts sm nbt
                           return (Map.unionWith unify newDls sm)
-                      )  newSpecMap nbtis
+                      ) newSpecMap nbtis
 
 unify :: SpecInfo -> SpecInfo -> SpecInfo
 unify (_, s, p) (a, t, q) = (a, Set.union s t, Set.union p q)
 
---one could add support for uri fragments/query (perhaps select a text from the file)
+{- one could add support for uri fragments/query
+(perhaps select a text from the file) -}
 getCLIFContents :: HetcatsOpts -> String -> IO String
 getCLIFContents opts filename = case parseURIReference filename of
   Nothing -> do
     putStrLn ("Not an URI: " ++ filename)
     localFileContents opts filename
-  Just uri -> do
+  Just uri ->
     case uriScheme uri of
-      "" -> do
-        localFileContents opts ((uriToString id $ uri) "")
-      "file:" -> do
+      "" ->
+        localFileContents opts (uriToString id uri "")
+      "file:" ->
         localFileContents opts (uriPath uri)
-      "http:" -> do
+      "http:" ->
         simpleHTTP (defaultGETRequest uri) >>= getResponseBody
-      "https:" -> do
+      "https:" ->
         simpleHTTP (defaultGETRequest uri) >>= getResponseBody
       x -> error ("Unsupported URI scheme: " ++ x)
 
 localFileContents :: HetcatsOpts -> String -> IO String
 localFileContents opts filename = do
   curDir <- getCurrentDirectory
-  file <- findLibFile (curDir:libdirs opts) filename
+  file <- findLibFile (curDir : libdirs opts) filename
   handle <- openFile file ReadMode
   hGetContents handle
 
 findLibFile :: [FilePath] -> String -> IO FilePath
 findLibFile [] f = error $ "Could not find Common Logic Library " ++ f
-findLibFile (d:ds) f =
-  let f0 = f
-      f1 = (combine d (addExtension f (show CommonLogic2In)))
-      f2 = (combine d (addExtension f (show CommonLogicIn)))
-  in do
-      f0Exists <- doesFileExist f0
-      f1Exists <- doesFileExist f1
-      f2Exists <- doesFileExist f2
-      case f0Exists of
-        True -> return f0
-        _ -> case f1Exists of
-                True -> return f1
-                _ -> case f2Exists of
-                        True -> return f2
-                        _ -> findLibFile ds f
+findLibFile (d : ds) f = do
+  let fs = [ f
+           , combine d (addExtension f (show CommonLogic2In))
+           , combine d (addExtension f (show CommonLogicIn)) ]
+  es <- mapM doesFileExist fs
+  case filter fst $ zip es fs of
+        [] -> findLibFile ds f
+        (_, f0) : _ -> return f0
 
 -- retrieves all importations from the text
 directImports :: BASIC_SPEC -> Set NAME
-directImports (CL.Basic_spec items) =
-  Set.unions $ map (getImports_textMetas . textsFromBasicItems . Anno.item) items
+directImports (CL.Basic_spec items) = Set.unions
+  $ map (getImports_textMetas . textsFromBasicItems . Anno.item) items
 
 textsFromBasicItems :: BASIC_ITEMS -> [TEXT_META]
 textsFromBasicItems (Axiom_items axs) = map Anno.item axs
@@ -289,25 +287,28 @@ metarelDownloadsTM tm =
 metarelDownloadsMR :: METARELATION -> Set NAME
 metarelDownloadsMR mr = case mr of
   RelativeInterprets delta t2 _ -> Set.fromList [delta, t2]
-  NonconservativeExtends t2 _ -> Set.singleton  t2
+  NonconservativeExtends t2 _ -> Set.singleton t2
   IncludeLibs ns -> Set.fromList ns
+  _ -> error "metarelDownloadsMR"
 -- TODO: implement this for the other metarelations
 
 anaImports :: HetcatsOpts -> SpecMap -> IO [(BASIC_SPEC, NAME)]
 anaImports opts specMap = do
   downloads <- foldM
-    (\sm nbt -> do
+    (\ sm nbt -> do
       newSpecs <- collectDownloads opts sm nbt
       return (Map.unionWith unify newSpecs sm)
     ) specMap $ Map.assocs specMap
   let specAssocs = Map.assocs downloads
-  let sortedSpecs = sortBy usingImportedByCount specAssocs -- sort by putting the latest imported specs to the beginning
+  let sortedSpecs = sortBy usingImportedByCount specAssocs
+      -- sort by putting the latest imported specs to the beginning
   return $ bsNamePairs sortedSpecs
 
--- not fast (O(n+m)), but almost reliable (not working when mixing imports and metarelations)
+{- not fast (O(n+m)), but almost reliable
+(not working when mixing imports and metarelations) -}
 usingImportedByCount :: (String, SpecInfo) -> (String, SpecInfo) -> Ordering
-usingImportedByCount (_,(_,_,importedBy1)) (_,(_,_,importedBy2)) =
+usingImportedByCount (_, (_, _, importedBy1)) (_, (_, _, importedBy2)) =
   compare (Set.size importedBy2) (Set.size importedBy1)
 
 bsNamePairs :: [(String, SpecInfo)] -> [(BASIC_SPEC, NAME)]
-bsNamePairs = foldr (\(n,(b,_,_)) r -> (b, mkSimpleId n) : r) []
+bsNamePairs = foldr (\ (n, (b, _, _)) r -> (b, mkSimpleId n) : r) []
