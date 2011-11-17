@@ -2,7 +2,8 @@
 
 GHCVERSION = $(shell ghc --numeric-version)
 ifneq ($(findstring 7., $(GHCVERSION)),)
-GHC7OPTS = -rtsopts -fcontext-stack=31
+GHC7OPTS = -fcontext-stack=31
+GHC7RTSOPTS = -rtsopts
 endif
 
 OSBYUNAME = $(shell uname)
@@ -15,7 +16,7 @@ TAR = tar
 PATCH = patch
 endif
 
-HC = ghc -optl-s -XTemplateHaskell -threaded
+HC = ghc -optl-s -XTemplateHaskell -threaded $(GHC7RTSOPTS)
 
 HCPKG = ghc-pkg
 
