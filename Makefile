@@ -21,12 +21,8 @@ DRIFT_ENV = DERIVEPATH=$(subst $(space),:,$(PFE_PATHS))
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
 GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
-INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
-    Common/Doc.hs CASL/ToDoc.hs Modal/AS_Modal.hs \
-    Modal/Parse_AS.hs Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
 PERL = perl
-HAPPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
     -i Data.Typeable -i ATerm.Lib
@@ -34,16 +30,7 @@ GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
 GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \
     -i Data.Typeable -i ATerm.Lib -i ATC.Grothendieck
 DRIFT = utils/DrIFT
-INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
-
-ARCH = $(subst $(space),,$(shell uname -m))
-SETUP = utils/Setup
-SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
-
-SETUPPACKAGE = ../$(SETUP) clean; \
-    ../$(SETUP) configure -O -p $(SETUPPREFIX) --user; \
-    ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install
 
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
@@ -83,9 +70,6 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
     property/TI property/defs property/parse2 property/parse2/Parser
 
 PFE_PATHS = $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
-pfe_sources = $(wildcard $(addsuffix /*hs, $(PFE_PATHS)))
-PFE_PATH = $(addprefix -i, $(PFE_PATHS))
-happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
 logics += Haskell
 derived_sources += Haskell/PreludeString.hs
@@ -410,8 +394,7 @@ genRules: $(generated_rule_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # all sources that need to be created before ghc can be called
-derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
-    $(inline_axiom_files) $(hs_der_files)
+derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
 
 ####################################################################
 ### targets
@@ -425,9 +408,6 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 
 # dummy target to force ghc invocation
 callghc:
-
-$(SETUP): utils/Setup.hs
-	$(HC) --make -O -o $@ $<
 
 hets-opt:
 	$(MAKE) distclean
@@ -474,11 +454,6 @@ $(GENRULES): $(DRIFT) $(GENERATERULES_deps)
             $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
                 GenerateRules.hs -o ../genRules)
 
-# "-package hssource" for ghc-5.04.2
-$(INLINEAXIOMS): $(INLINEAXIOMS_deps)
-	$(HC) $(PARSEC_FLAG) --make utils/InlineAxioms/InlineAxioms.hs \
-          $(HC_WARN) $(HC_PROF) -i../.. -o $(INLINEAXIOMS)
-
 utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 	$(HC) --make -o $@ $<
 
@@ -524,7 +499,6 @@ o_clean:
 bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
-	$(RM) $(SETUP)
 	$(RM) $(TESTTARGETS)
 
 clean_pretty:
@@ -546,8 +520,8 @@ real_clean: clean
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
 	$(RM) $(derived_sources)
-	$(RM) Modal/GeneratePatterns.inline.hs utils/appendHaskellPreludeString
-	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
+	$(RM) utils/appendHaskellPreludeString
+	$(RM) utils/DrIFT utils/genRules
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
 	$(RM) -r docs
 
@@ -622,29 +596,11 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 %: %.hs callghc
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-## rule for HAPPY
-%.hs: %.y
-	$(HAPPY) -o $@.tmp $<
-	echo "{-# OPTIONS -w #-}" > $@
-	cat $@.tmp >> $@
-	$(RM) $@.tmp
-
 ## rule for DrIFT
 %.hs: %.der.hs $(DRIFT)
 	$(RM) $@
 	($(DRIFT_ENV); export DERIVEPATH; $(DRIFT) $< > $@)
 	chmod 444 $@
-
-## rule for inlineAxioms
-%.hs: %.inline.hs $(INLINEAXIOMS)
-	$(RM) $@
-	$(INLINEAXIOMS) $< > $@
-	chmod 444 $@
-
-## rule for cpp and haddock
-%.hspp: %.hs
-	$(HC) -E -cpp -D__HADDOCK__ \
-            -DUNI_PACKAGE -DCASLEXTENSIONS -DPROGRAMATICA -optP -P $<
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
