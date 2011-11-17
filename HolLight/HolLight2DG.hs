@@ -27,6 +27,7 @@ import Common.LibName
 import Common.Id
 import Common.AS_Annotation
 import Common.Result
+import Common.Utils (getTempFile)
 
 import HolLight.Sign
 import HolLight.Sentence
@@ -40,10 +41,16 @@ import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Char
 
-import qualified System.FilePath.Posix
+import System.FilePath.Posix
+import System.Environment (getEnvironment)
+import System.IO (openTempFile,hClose)
+import System.Directory (removeFile,canonicalizePath)
+import System.Posix.Directory (getWorkingDirectory)
 
 import Text.XML.Expat.SAX
 import qualified Data.ByteString.Lazy as L
+
+import qualified System.Process as SP
 
 type SaxEvL = [SAXEvent String String]
 
@@ -287,9 +294,19 @@ readSharedHolTerm ts sl d m = case tag d of
   _ -> (Nothing,d)
  _ -> (Nothing,d)
 
-importData :: FilePath -> IO ([(String,[(String,Term)])],[(String,String)])
-importData fp = do
-    s <- L.readFile fp
+importData :: HetcatsOpts -> FilePath -> IO ([(String,[(String,Term)])],[(String,String)])
+importData opts fp' = do
+    fp <- canonicalizePath fp'
+    env <- getEnvironment
+    let tool_path = case lookup "HETS_HOLLIGHT_TOOLS" env of
+		 Just t -> t
+                 Nothing -> error "HETS_HOLLIGHT_TOOLS not set!"
+    temp_path <- getTempFile "" (takeBaseName fp)
+    --error ("ocaml " ++ (show (tool_path </> "export.ml")) ++ " " ++ (show fp) ++ " " ++ (show temp_path))
+    h <- SP.runCommand ("ocaml " ++ (show (tool_path </> "export.ml")) ++ " " ++ (show fp) ++ " " ++ (show temp_path))
+    c <- SP.waitForProcess h
+    s <- L.readFile temp_path
+    removeFile temp_path
     let e = ([],[])
     case tag (parsexml s) of
       ((StartElement "HolExport" _):d) -> case readL readStr "Strings" d of
@@ -412,8 +429,8 @@ _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight 
                                    newDG1 = changesDGH newDG labCh in (newDG1,m')
 
 anaHolLightFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-anaHolLightFile _opts path = do
-   (libs_, lnks_) <- importData path
+anaHolLightFile opts path = do
+   (libs_, lnks_) <- importData opts path
    let (libs,lnks) = prettifyTypeVars ((libs_, lnks_))
    let h = treeLevels lnks
    let fixLinks m l = case l of

@@ -128,13 +128,13 @@ let (store_read_result,begin_load,end_load,get_libs,inject_hol_include) = let li
                         Hashtbl.add (!known) lib (Hashtbl.create 10);
                         true) else false
   and end_load () =
-   (*let bname = (Filename.basename (Stack.top (!stack)))
+   let bname = (Filename.basename (Stack.top (!stack)))
    in (if bname = "tactics.ml" 
          then let filename = Filename.temp_file "rebind" ".ml"
               in (file_of_string filename "let prove = fun (t,tac) -> mk_thm ([],t);;";
                  use_file filename;
                  Sys.remove filename)
-         else ());*) map_new_syms (Stack.pop (!stack))
+         else ()); map_new_syms (Stack.pop (!stack))
   and inject_hol_include f = (libs := (!libs)@[("hol.ml",f)])
   and get_libs () = let empty = Hashtbl.fold (fun k v t -> if Hashtbl.length v == 0 then k::t else t) (!known) []
                     and purge = fun names (h,l) -> (Hashtbl.fold (fun k v t -> (if List.mem k names then () else Hashtbl.add t k v); t) h (Hashtbl.create (Hashtbl.length h)),List.filter (fun (s,_) -> not(List.mem s names)) l)
