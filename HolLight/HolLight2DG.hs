@@ -28,7 +28,7 @@ import Common.LibName
 import Common.Id
 import Common.AS_Annotation
 import Common.Result
-import Common.Utils (getTempFile,getEnvDef)
+import Common.Utils (getTempFile, getEnvDef)
 
 import HolLight.Sign
 import HolLight.Sentence
@@ -43,13 +43,16 @@ import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Char
 
+import Control.Monad
+
+import System.Exit
 import System.FilePath.Posix
-import System.Directory (removeFile,canonicalizePath)
+import System.Directory (removeFile, canonicalizePath)
+import System.Process
+
 
 import Text.XML.Expat.SAX
 import qualified Data.ByteString.Lazy as L
-
-import qualified System.Process as SP
 
 type SaxEvL = [SAXEvent String String]
 
@@ -296,32 +299,44 @@ readSharedHolTerm ts sl d m = case tag d of
   _ -> (Nothing,d)
  _ -> (Nothing,d)
 
-importData :: HetcatsOpts -> FilePath -> IO ([(String,[(String,Term)])],[(String,String)])
+importData :: HetcatsOpts -> FilePath
+  -> IO ([(String, [(String, Term)])], [(String, String)])
 importData opts fp' = do
-    fp <- canonicalizePath fp'
-    default_tool_path <- canonicalizePath "./HolLight/OcamlTools/"
-    tool_path <- getEnvDef "HETS_HOLLIGHT_TOOLS" default_tool_path
-    temp_path <- getTempFile "" (takeBaseName fp)
-    h <- SP.runCommand ("ocaml " ++ (show (tool_path </> "export.ml")) ++ " " ++ (show fp) ++ " " ++ (show temp_path))
-    c <- SP.waitForProcess h
-    s <- L.readFile temp_path
-    removeFile temp_path
-    let e = ([],[])
-    case tag (parsexml s) of
-      ((StartElement "HolExport" _):d) -> case readL readStr "Strings" d of
-       (Just sl,d1) ->
-        let strings = Map.fromList (zip [1..] sl)
-          in case foldS (readSharedHolType strings) Map.empty "SharedHolTypes" d1 of
-           (Just hol_types,d2) -> case foldS (readSharedHolTerm hol_types strings) Map.empty "SharedHolTerms" d2 of
-            (Just hol_terms,d3) -> case readL (readTuple readWord (readList' (readTuple readWord (readMappedInt hol_terms)))) "Libs" d3 of
-             (Just libs,d4) -> case readL (readTuple readWord readWord) "LibLinks" d4 of
-              (Just liblinks,_) -> return (libs,liblinks)
-              _ -> return e
-             _ -> return e
-            _ -> return e
-           _ -> return e
-       _ -> return e
-      _ -> return e
+  fp <- canonicalizePath fp'
+  relToolPath <- getEnvDef "HETS_HOLLIGHT_TOOLS" "HolLight/OcamlTools"
+  toolPath <- canonicalizePath relToolPath
+  tempPath <- getTempFile "" (takeBaseName fp)
+  (ex, sout, err) <- readProcessWithExitCode "ocaml"
+      [toolPath </> "export.ml", fp, tempPath] ""
+  case ex of
+   ExitFailure _ -> fail err
+   ExitSuccess -> do
+    s <- L.readFile tempPath
+    let e = ([], [])
+    r <- return $ case tag (parsexml s) of
+      StartElement "HolExport" _ : d -> case readL readStr "Strings" d of
+        (Just sl, d1) -> let strings = Map.fromList (zip [1..] sl) in
+          case foldS (readSharedHolType strings)
+               Map.empty "SharedHolTypes" d1 of
+          (Just hol_types, d2) ->
+            case foldS (readSharedHolTerm hol_types strings)
+                 Map.empty "SharedHolTerms" d2 of
+            (Just hol_terms, d3) ->
+              case readL (readTuple readWord
+                          (readList' (readTuple readWord
+                                     (readMappedInt hol_terms)))) "Libs" d3 of
+              (Just libs, d4) ->
+                case readL (readTuple readWord readWord) "LibLinks" d4 of
+                (Just liblinks, _) -> (libs, liblinks)
+                _ -> e
+              _ -> e
+            _ -> e
+          _ -> e
+        _ -> e
+      _ -> e
+    when (length (fst r) > 0) $ putIfVerbose opts 5 sout
+    removeFile tempPath
+    return r
 
 get_types :: Map.Map String Int -> HolType -> Map.Map String Int
 get_types m t = case t of
@@ -367,7 +382,7 @@ prettifyTypeVarsTp (TyVar s)    m = case Map.lookup s m of
                                     Nothing -> let s' = '\'':(names!!(Map.size m))
                                                in (TyVar s',Map.insert s s' m)
 prettifyTypeVarsTp (TyApp s ts) m = let (ts',m') =
-                                              foldl (\(ts'',m'') t -> 
+                                              foldl (\(ts'',m'') t ->
                                                 let (t',m''') = prettifyTypeVarsTp t m''
                                                 in (t':ts'',m''')
                                                ) ([],m) ts
@@ -387,7 +402,7 @@ prettifyTypeVarsTm (Abs tm1 tm2) m =
  in (Abs tm1' tm2',m2)
 prettifyTypeVarsTm t m = (t,m)
 
-prettifyTypeVars :: ([(String,[(String,Term)])],[(String,String)]) -> 
+prettifyTypeVars :: ([(String,[(String,Term)])],[(String,String)]) ->
                     ([(String,[(String,Term)])],[(String,String)])
 prettifyTypeVars (libs,lnks) =
  let libs' = map (\(s,terms) ->
