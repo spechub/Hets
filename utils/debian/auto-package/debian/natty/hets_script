@@ -6,7 +6,7 @@
 
 #
 # Handling switches
-#  -update 
+#  -update
 #  -revert
 #
 if [ "$#" = "1" ]; then
@@ -117,6 +117,5 @@ export HETS_OCAML_LIB_DIR=/usr/lib/ocaml/compiler-libs
 export PELLET_PATH=/usr/share/pellet
 export TWELF_LIB=/usr/share/twelf/bin
 export MAUDE_LIB=/usr/share/maude
-export GHCRTS='-H300m -M6g'
 
 /usr/lib/hets/hets $@
