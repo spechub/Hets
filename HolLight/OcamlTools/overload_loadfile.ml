@@ -6,7 +6,7 @@ let rec do_list f l =
   | (h::t) -> (f h; do_list f t);;
 
 do_list (fun s -> Topdirs.dir_directory(Filename.concat ocaml_source_dir s))
-        ["parsing"; "typing"; "toplevel"; "utils"];;
+        ["parsing"; "typing"; "utils"];;
 
 (* This must be loaded first! It is stateful, and affects Predef *)
 #load "ident.cmo";;
@@ -52,7 +52,7 @@ let needs f = ();;
 #use "lib.ml";;
 #use "fusion.ml";;
 
-use_file (ocaml_tools_dir^"fixnames.ml");;
+use_file (Filename.concat ocaml_tools_dir "fixnames.ml");;
 
 module OldToploop = Toploop;;
 module OldTopdirs = Topdirs;;

@@ -10,10 +10,10 @@ let use_file' s =
   else (Format.print_string("Error in included file "^s);
         Format.print_newline());;
 
-use_file' (ocaml_tools_dir^"overload_loadfile.ml");;
+use_file' (Filename.concat ocaml_tools_dir "overload_loadfile.ml");;
 use_file "hol.ml";;
 
-use_file' (ocaml_tools_dir^"export_helper.ml");;
+use_file' (Filename.concat ocaml_tools_dir "export_helper.ml");;
 
 let argv = Sys.argv;;
 let f = Array.get argv 1;;
