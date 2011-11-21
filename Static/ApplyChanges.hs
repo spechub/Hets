@@ -56,7 +56,7 @@ dgXUpdate opts xs le ln dg = case parseXMLDoc xs of
     Nothing -> fail "dgXUpdate: cannot parse xupdate file"
     Just diff -> let
       dgOld = undoAllChanges dg
-      oldLId = getNewEdgeId dg
+      oldLId = getNewEdgeId dgOld
       xorig = dGraph le ln dgOld
       in dgXUpdateMods opts xorig oldLId diff le ln dg
 
@@ -67,12 +67,12 @@ dgXUpdateMods :: HetcatsOpts -> Element -> EdgeId -> Element -> LibEnv
               -> LibName -> DGraph -> ResultT IO (LibName, LibEnv)
 dgXUpdateMods opts xorig oldLId diff le ln dg = do
   (xml, chL) <- liftR $ changeXmlMod xorig diff
-  xgr <- liftR $ xGraph xml
-  let dgInit = renumberDGLinks oldLId (nextLinkId xgr) dg
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
     $ ppTopElement $ cleanUpElem xml
-  (dg1, chL') <- liftR $ deleteElements dgInit chL
-  let dg2 = dg1 { globalAnnos = globAnnos xgr
+  xgr <- liftR $ xGraph xml
+  (dg0, chL') <- liftR $ deleteElements dg chL
+  let dg1 = renumberDGLinks oldLId (nextLinkId xgr) dg0
+      dg2 = dg1 { globalAnnos = globAnnos xgr
                 -- TODO as of now, ALL nodes will be removed from globalEnv!
                 , globalEnv = Map.empty }
   (dg3, le', chL'') <- iterateXgBody opts xgr le dg2 chL'
