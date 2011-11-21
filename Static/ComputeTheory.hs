@@ -21,7 +21,7 @@ module Static.ComputeTheory
     , updateLabelTheory
     , markHiding
     , markFree
-    , renumberDGLink
+    , renumberDGLinks
     ) where
 
 import Logic.Prover
@@ -37,6 +37,7 @@ import Common.Result
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
 import qualified Data.Map as Map
+import qualified Data.Set as Set (fromList, toList)
 import Data.Ord
 
 -- * nodes with incoming hiding definition links
@@ -167,12 +168,28 @@ updatePending dg l n = let
     dg2 = togglePending dg1 $ changedPendingEdges dg1
     in groupHistory dg (DGRule "Node proof") dg2
 
-renumberDGLink :: EdgeId -> EdgeId -> DGraph -> DGraph
-renumberDGLink i ni dg = changesDGH dg
-  $ foldr (\ e@(s, t, l) -> if dgl_id l == i then
-         ([DeleteEdge e, InsertEdge (s, t, l { dgl_id = ni })] ++)
-         else let pB = getProofBasis l in
-         if edgeInProofBasis i pB then
-         ([ DeleteEdge e, InsertEdge (s, t, l
-          { dgl_type = updThmProofBasis (dgl_type l) $ updEdgeId pB i ni })] ++)
-         else id) [] $ labEdgesDG dg
+{- | iterate all edgeId entries of the dg and increase all that are equal or
+above the old lId (1st param) so they will be above the desired nextLId
+(2nd param) -}
+renumberDGLinks :: EdgeId -> EdgeId -> DGraph -> DGraph
+renumberDGLinks (EdgeId i1) (EdgeId i2) dg = if i1 >= i2 then dg else
+  changesDGH dg $ concatMap mkRenumberChange $ labEdgesDG dg where
+  needUpd (EdgeId x) = x >= i1
+  offset = i2 - i1
+  inc (EdgeId x) = EdgeId $ x + offset
+  mkRenumberChange e@(s, t, l) = let
+    ei = dgl_id l
+    -- update links own id if required
+    (upd, newId) = let b = needUpd ei in (b, if b then inc ei else ei)
+    -- make updates to links proof basis if required
+    (upd', newTp) = let
+      pB = getProofBasis l
+      (b, pBids) = foldl (\ (bR, eiR) ei' -> let b = needUpd ei' in
+        (bR || b, if b then inc ei' : eiR else ei' : eiR))
+          (False, []) $ Set.toList $ proofBasis pB
+      in (b, (if b then (flip updThmProofBasis)
+        (ProofBasis $ Set.fromList pBids) else id) $ dgl_type l)
+    -- update in dg unless no updates conducted
+    in if upd || upd' then [DeleteEdge e, InsertEdge (s, t, l
+      { dgl_id = newId, dgl_type = newTp })] else []
+
