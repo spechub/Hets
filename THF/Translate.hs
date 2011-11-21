@@ -41,26 +41,26 @@ mkDefName c = case c of
     A_Single_Quoted s -> N_Atomic_Word $ A_Single_Quoted ("def_" ++ s)
 
 transTypeId :: Id -> Result THFAs.Constant
-transTypeId id = case maybeElem id preDefHCTypeIds of
+transTypeId id1 = case maybeElem id1 preDefHCTypeIds of
     Just res -> return $ stringToConstant res
-    Nothing  -> case transToTHFString $ show id of
+    Nothing  -> case transToTHFString $ show id1 of
         Just s  -> return $ stringToConstant s
-        Nothing -> fatal_error ("Unable to translate " ++ show id ++
+        Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Constant.") nullRange
 
 transAssumpId :: Id -> Result THFAs.Constant
-transAssumpId id = case maybeElem id preDefHCAssumpIds of
+transAssumpId id1 = case maybeElem id1 preDefHCAssumpIds of
     Just res -> return $ stringToConstant res
-    Nothing  -> case transToTHFString $ show id of
+    Nothing  -> case transToTHFString $ show id1 of
         Just s  -> return $ stringToConstant s
-        Nothing -> fatal_error ("Unable to translate " ++ show id ++
+        Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Constant.") nullRange
 
 transAssumpsId :: Id -> Int -> Result THFAs.Constant
-transAssumpsId id int = if int == 1 then transAssumpId id else
-    case transToTHFString $ show id of
+transAssumpsId id1 int = if int == 1 then transAssumpId id1 else
+    case transToTHFString $ show id1 of
         Just s  -> return $ stringToConstant (s ++ show int)
-        Nothing -> fatal_error ("Unable to translate " ++ show id ++
+        Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Constant.") nullRange
 
 stringToConstant :: String -> THFAs.Constant
@@ -68,14 +68,16 @@ stringToConstant = A_Lower_Word . stringToLowerWord
 
 stringToLowerWord :: String -> THFAs.LowerWord
 stringToLowerWord (c1 : rc)  = toLower c1 : rc
+stringToLowerWord [] = []
 
 stringToVariable :: String -> THFAs.Variable
 stringToVariable (c1 : rc) = toUpper c1 : rc
+stringToVariable [] = []
 
 transVarId :: Id -> Result THFAs.Variable
-transVarId id = case transToTHFString $ show id of
+transVarId id1 = case transToTHFString $ show id1 of
         Just s  -> return $ stringToVariable s
-        Nothing -> fatal_error ("Unable to translate " ++ show id ++
+        Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Variable.") nullRange
 
 transToTHFString :: String -> Maybe String
@@ -128,12 +130,12 @@ preDefHCAssumpIds = Map.fromList
     , (infixIf,     "hcc" ++ show infixIf) ]
 
 maybeElem :: Id -> Map.Map Id a -> Maybe a
-maybeElem i m = helper i (Map.toList m)
+maybeElem id1 m = helper id1 (Map.toList m)
     where
         helper :: Id -> [(Id, a)] -> Maybe a
-        helper id [] = Nothing
-        helper id ((eid, ea) : r) =
-            if myEqId id eid then Just ea else helper id r
+        helper _ [] = Nothing
+        helper id2 ((eid, ea) : r) =
+            if myEqId id2 eid then Just ea else helper id2 r
 
 myEqId :: Id -> Id -> Bool
 myEqId (Id t1 c1 _) (Id t2 c2 _) = (t1, c1) == (t2, c2)
