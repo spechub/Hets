@@ -307,7 +307,7 @@ importData opts fp' = do
   toolPath <- canonicalizePath relToolPath
   tempPath <- getTempFile "" (takeBaseName fp)
   (ex, sout, err) <- readProcessWithExitCode "ocaml"
-      [toolPath </> "export.ml", fp, tempPath] ""
+      ["-w", "a", toolPath </> "export.ml", fp, tempPath] ""
   case ex of
    ExitFailure _ -> fail err
    ExitSuccess -> do

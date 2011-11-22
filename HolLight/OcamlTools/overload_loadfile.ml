@@ -130,10 +130,10 @@ let (store_read_result,begin_load,end_load,get_libs,inject_hol_include) = let li
   and end_load () =
    let bname = (Filename.basename (Stack.top (!stack)))
    in (if bname = "tactics.ml" 
-         then let filename = Filename.temp_file "rebind" ".ml"
+         then () (*let filename = Filename.temp_file "rebind" ".ml"
               in (file_of_string filename "let prove = fun (t,tac) -> mk_thm ([],t);;";
                  use_file filename;
-                 Sys.remove filename)
+                 Sys.remove filename)*)
          else ()); map_new_syms (Stack.pop (!stack))
   and inject_hol_include f = (libs := (!libs)@[("hol.ml",f)])
   and get_libs () = let empty = Hashtbl.fold (fun k v t -> if Hashtbl.length v == 0 then k::t else t) (!known) []
@@ -149,6 +149,8 @@ let (store_read_result,begin_load,end_load,get_libs,inject_hol_include) = let li
 
 module Topdirs =
     struct
+      type 'a printer_type_new = Format.formatter -> 'a -> unit
+      type 'a printer_type_old = 'a -> unit
       let dir_quit = OldTopdirs.dir_quit
       let dir_directory = OldTopdirs.dir_directory
       let dir_cd = OldTopdirs.dir_cd

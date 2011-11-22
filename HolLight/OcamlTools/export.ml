@@ -21,6 +21,8 @@ use_file' (Filename.concat ocaml_tools_dir "export_helper.ml");;
 let argv = Sys.argv;;
 let f = Array.get argv 1;;
 let e = Array.get argv 2;;
+
+use_file f;;
 inject_hol_include f;;
-(*use_file f;;*)
+
 export_libs (get_libs()) e;;
