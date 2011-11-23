@@ -18,11 +18,5 @@ use_file "hol.ml";;
 
 use_file' (Filename.concat ocaml_tools_dir "export_helper.ml");;
 
-let argv = Sys.argv;;
-let f = Array.get argv 1;;
-let e = Array.get argv 2;;
-
-use_file f;;
-inject_hol_include f;;
-
-export_libs (get_libs()) e;;
+let oc = open_out "/tmp/exportml_done" in
+close_out oc;
