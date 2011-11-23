@@ -173,19 +173,20 @@ above the old lId (1st param) so they will be above the desired nextLId
 (2nd param) -}
 renumberDGLinks :: EdgeId -> EdgeId -> DGraph -> DGraph
 renumberDGLinks (EdgeId i1) (EdgeId i2) dg = if i1 >= i2 then dg else
-  changesDGH dg $ concatMap mkRenumberChange $ labEdgesDG dg where
+  changesDGH dg $ concatMap mkRenumberChange $ reverse
+    $ sortBy (comparing (\ (_, _, l) -> dgl_id l)) $ labEdgesDG dg where
   needUpd (EdgeId x) = x >= i1
   offset = i2 - i1
-  inc (EdgeId x) = EdgeId $ x + offset
+  add (EdgeId x) = EdgeId $ x + offset
   mkRenumberChange e@(s, t, l) = let
     ei = dgl_id l
     -- update links own id if required
-    (upd, newId) = let b = needUpd ei in (b, if b then inc ei else ei)
+    (upd, newId) = let b = needUpd ei in (b, if b then add ei else ei)
     -- make updates to links proof basis if required
     (upd', newTp) = let
       pB = getProofBasis l
-      (b, pBids) = foldl (\ (bR, eiR) ei' -> let b = needUpd ei' in
-        (bR || b, if b then inc ei' : eiR else ei' : eiR))
+      (b, pBids) = foldl (\ (bR, eiR) ei' -> let bi = needUpd ei' in
+        (bR || bi, if bi then add ei' : eiR else ei' : eiR))
           (False, []) $ Set.toList $ proofBasis pB
       in (b, (if b then (flip updThmProofBasis)
         (ProofBasis $ Set.fromList pBids) else id) $ dgl_type l)
