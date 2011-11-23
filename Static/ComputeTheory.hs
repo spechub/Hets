@@ -173,8 +173,7 @@ above the old lId (1st param) so they will be above the desired nextLId
 (2nd param) -}
 renumberDGLinks :: EdgeId -> EdgeId -> DGraph -> DGraph
 renumberDGLinks (EdgeId i1) (EdgeId i2) dg = if i1 >= i2 then dg else
-  changesDGH dg $ concatMap mkRenumberChange $ reverse
-    $ sortBy (comparing (\ (_, _, l) -> dgl_id l)) $ labEdgesDG dg where
+  changesDGH dg $ concatMap mkRenumberChange $ labEdgesDG dg where
   needUpd (EdgeId x) = x >= i1
   offset = i2 - i1
   add (EdgeId x) = EdgeId $ x + offset

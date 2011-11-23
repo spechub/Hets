@@ -71,7 +71,8 @@ dgXUpdateMods opts xorig oldLId diff le ln dg = do
     $ ppTopElement $ cleanUpElem xml
   xgr <- liftR $ xGraph xml
   (dg0, chL') <- liftR $ deleteElements dg chL
-  let dg1 = renumberDGLinks oldLId (nextLinkId xgr) dg0
+  let newLId = max (nextLinkId xgr) $ getNewEdgeId dg
+      dg1 = renumberDGLinks oldLId newLId dg0
       dg2 = dg1 { globalAnnos = globAnnos xgr
                 -- TODO as of now, ALL nodes will be removed from globalEnv!
                 , globalEnv = Map.empty }
