@@ -296,7 +296,7 @@ cp -p CASL/Termination/AProVE.jar $HETS_OWL_TOOLS/
 
 makeHOLTools ()
 {
-cp -p HolLight/OcamlTools/*.ml $HETS_HOLLIGHT_TOOLS/
+cp -p HolLight/OcamlTools/exportTools/*.ml $HETS_HOLLIGHT_TOOLS/
 }
 
 runIsaHS ()

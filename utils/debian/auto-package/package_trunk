@@ -60,7 +60,7 @@ cd ../..
 mkdir -p $HETS_FOLDER/hets-owl-tools/lib
 cp $HETS_FOLDER/OWL2/lib/*.jar $HETS_FOLDER/hets-owl-tools/lib
 mkdir -p $HETS_FOLDER/hets-hollight-tools
-cp $HETS_FOLDER/HolLight/OcamlTools/*.ml $HETS_FOLDER/hets-hollight-tools
+cp $HETS_FOLDER/HolLight/OcamlTools/exportTools/*.ml $HETS_FOLDER/hets-hollight-tools
 echo ::Done
 
 #copying OntoDMU and AProVE to hets-owl-tools
