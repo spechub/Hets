@@ -17,7 +17,6 @@ References:
 module RDF.AS where
 
 import Common.Id
-import OWL2.Keywords
 import OWL2.AS
 
 import Data.Char (intToDigit)
@@ -25,7 +24,6 @@ import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-
 
 -- * Graphs
 
@@ -40,3 +38,9 @@ data Sentence = Sentence Subject Predicate Object
 
 data RDFGraph = RDFGraph (Set.Set Sentence)
     deriving (Show, Eq, Ord)
+
+data EntityRDF = EntityRDF IRI
+    deriving (Show, Eq, Ord)
+
+type StringMap = Map.Map String String
+type MorphMap = Map.Map EntityRDF IRI
