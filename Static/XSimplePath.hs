@@ -343,6 +343,7 @@ nameStringIs s = (== s) . qName . elName
 
 isSymbolType :: Element -> Bool
 isSymbolType e = nameStringIs "Symbol" e || nameStringIs "Declarations" e
+  || nameStringIs "Hidden" e
 
 isSentenceType :: Element -> Bool
 isSentenceType e = isAxiomType e || isTheoremType e
