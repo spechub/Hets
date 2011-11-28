@@ -189,6 +189,12 @@ getNodeConsStatus lbl = case nodeInfo lbl of
 getNodeCons :: DGNodeLab -> Conservativity
 getNodeCons = getConsOfStatus . getNodeConsStatus
 
+-- | overwrite a nodes conservativity
+setNodeCons :: Conservativity -> DGNodeLab -> DGNodeLab
+setNodeCons c lbl = case nodeInfo lbl of
+  DGNode orig _ -> lbl { nodeInfo = DGNode orig $ mkConsStatus c }
+  _ -> lbl
+
 -- | returns the Conservativity if the given node has one, otherwise none
 getNodeConservativity :: LNode DGNodeLab -> Conservativity
 getNodeConservativity = getNodeCons . snd

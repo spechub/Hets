@@ -225,7 +225,7 @@ generateNodeLab opts lg mGt xNd (dg, lv) = case xNd of
           let nInf = newRefInfo (emptyLibName rfLb) i
           return (newInfoNodeLab nm nInf gt', lv')
   -- Case #2: Regular Node
-  XNode nm lN (hid, syb) spc -> do
+  XNode nm lN (hid, syb) spc cc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes
         gt0 <- case mGt of
           Nothing -> fmap emptyTheory $ lookupLogic "logic was not found" lN lg
@@ -242,7 +242,7 @@ generateNodeLab opts lg mGt xNd (dg, lv) = case xNd of
           else do
             diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt0
             return $ DGBasicSpec Nothing diffSig syb'
-        return (newNodeLab nm lOrig gt2, lv)
+        return (newInfoNodeLab nm (newConsNodeInfo lOrig cc) gt2, lv)
 
 insertFirstNode :: HetcatsOpts -> LogicGraph -> XNode -> (DGraph, LibEnv)
   -> ResultT IO (DGraph, LibEnv)

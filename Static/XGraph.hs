@@ -49,11 +49,11 @@ type XTree = [[([XLink], XNode)]]
 
 type EdgeMap = Map.Map String (Map.Map String [XLink])
 
--- TODO: keep cons status information.
 data XNode = XNode { nodeName :: NodeName
                    , logicName :: String
                    , symbs :: (Bool, String) -- ^ hidden?
-                   , specs :: String } -- ^ Sentences
+                   , specs :: String -- ^ Sentences
+                   , nd_cons :: Conservativity }
            | XRef { nodeName :: NodeName
                   , refNode :: String
                   , refLib :: String
@@ -172,7 +172,7 @@ mkXNode el = let get f s = f . map strContent . deepSearch [s]
         xp0 <- getAttrVal "relxpath" el
         nm0 <- getAttrVal "refname" el
         xp1 <- readXPath (nm0 ++ xp0)
-        return $ XNode nm { xpath = reverse xp1 } lgN hdSyms spcs
+        return $ XNode nm { xpath = reverse xp1 } lgN hdSyms spcs $ readCons el
 
 extractNodeName :: Monad m => Element -> m NodeName
 extractNodeName e = liftM parseNodeName $ getAttrVal "name" e
@@ -185,14 +185,11 @@ mkXLink el = do
   tp <- case findChild (unqual "Type") el of
           Just tp' -> return $ revertDGEdgeTypeName $ strContent tp'
           Nothing -> fail "links type description is missing"
-  let cc = case findChild (unqual "ConsStatus") el of
-            Nothing -> None
-            Just c' -> fromMaybe None $ readMaybe $ strContent c'
   rl <- case findChild (unqual "Rule") el of
           Nothing -> return $ DGRule "no rule"
           Just r' -> case findChildren (unqual "MovedTheorems") el of
             [] -> return $ DGRule $ strContent r'
-            mThs -> liftM DGRuleLocalInference $ mapM (\e -> do
+            mThs -> liftM DGRuleLocalInference $ mapM (\ e -> do
                 nmOld <- getAttrVal "name" e
                 nmNew <- getAttrVal "renamedTo" e
                 return (nmOld, nmNew)) mThs
@@ -205,7 +202,13 @@ mkXLink el = do
   let parseSymbMap = intercalate ", " . map ( intercalate " |-> "
           . map strContent . elChildren ) . deepSearch ["map"]
       prBs = ProofBasis $ foldr (Set.insert . readEdgeId) Set.empty prB
+      cc = readCons el
   return $ XLink sr tr ei tp rl cc prBs mrNm mrSrc $ parseSymbMap el
+
+readCons :: Element -> Conservativity
+readCons el = case findChild (unqual "ConsStatus") el of
+  Nothing -> None
+  Just c' -> fromMaybe None $ readMaybe $ strContent c'
 
 extractEdgeId :: Monad m => Element -> m EdgeId
 extractEdgeId = liftM EdgeId . readAttrVal "XGraph.extractEdgeId" "linkid"
