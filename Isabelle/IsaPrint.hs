@@ -22,9 +22,11 @@ module Isabelle.IsaPrint
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
+import Isabelle.Translate
 
 import Common.AS_Annotation
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Doc hiding (bar)
 import Common.DocUtils
 import Common.Utils (number)
@@ -232,7 +234,7 @@ printSentence s = case s of
   PrimRecDef cName cType xs ->
     let preparedEq = map (doubleQuotes . printTerm) xs
         preparedEqWithBars =
-          (map (<+> text barS) $ init preparedEq) ++ [last preparedEq]
+          map (<+> text barS) (init preparedEq) ++ [last preparedEq]
     in text primrecS <+> text (new cName) <+> doubleColon <+>
        doubleQuotes (printType cType) <+> printAlt cName <+> text whereS $+$
        vcat preparedEqWithBars
@@ -524,19 +526,18 @@ brackMapList f ws = brackets $ hsep $ punctuate comma
   | (a, b) <- ws]
 
 -- filter out types that are given in the domain table
-printTypeDecls :: DomainTab -> Arities -> Doc
-printTypeDecls odt ars =
+printTypeDecls :: BaseSig -> DomainTab -> Arities -> Doc
+printTypeDecls bs odt ars =
     let dt = Map.fromList $ map (\ (t, _) -> (typeId t, [])) $ concat odt
-    in vcat $ map printTycon $ Map.toList $ Map.difference ars dt
+    in vcat $ map (printTycon bs) $ Map.toList $ Map.difference ars dt
 
-printTycon :: (TName, [(IsaClass, [(Typ, Sort)])]) -> Doc
-printTycon (t, arity') = case arity' of
+printTycon :: BaseSig -> (TName, [(IsaClass, [(Typ, Sort)])]) -> Doc
+printTycon bs (t, arity') = case arity' of
   [] -> error "IsaPrint.printTycon"
   (_, rs) : _ ->
-         if elem t ["lBool", "intT", "integerT", "charT", "ratT", "lString"
-                    , "unitT", "unit", "bool", "int", "char", "rat", "string"
-                    , "lOrdering", "sOrdering", "either", "*"
-                    , "llist", "list", "lprod", "lEither", "lMaybe", "option"]
+         if Set.member t
+              $ Map.findWithDefault (error "Isabelle.printTycon") bs
+                $ preTypes isaPrelude
          then empty else
             text typedeclS <+>
             (if null rs then empty else
@@ -569,7 +570,7 @@ printSign sig = let dt = ordDoms $ domainTab sig
                     ars = arities $ tsig sig
                 in
     printAbbrs (abbrs $ tsig sig) $++$
-    printTypeDecls dt ars $++$
+    printTypeDecls (baseSig sig) dt ars $++$
     printClassrel (classrel $ tsig sig) $++$
     printDomainDefs dt $++$
     printConstTab (Map.difference (constTab sig)

@@ -27,14 +27,16 @@ mkIsaSet = Set.fromList . concatMap words
 -}
 
 data IsaSets = IsaSets
-    { types  :: Set.Set String
-    , consts  :: Set.Set String
+    { types :: Set.Set String
+    , consts :: Set.Set String
     }
 
 holcfS :: IsaSets
 holcfS =
   IsaSets {
-  types = mkIsaSet [""],
+  types = mkIsaSet
+    [ "lBool intT integerT charT ratT lString"
+    , "unitT lOrdering sOrdering llist lprod lEither lMaybe"],
   consts = mkIsaSet [
   "!   !!   #   $   %   &   (   ()   (:   (]   (|   (}   )   *   **",
   "+   ++   ,   -   -->   ->   -`   .   ..   ...   ..}   /   //   0   1   :",
@@ -167,7 +169,8 @@ holcfS =
 mainS :: IsaSets
 mainS =
   IsaSets {
-  types = mkIsaSet ["bool Nat Int partial"],
+  types = mkIsaSet
+    ["bool Nat int partial list unit char rat string option either *"],
   consts = mkIsaSet ["2 3 4 5 6 7 8 9",
   "inject n [__] [__/__] __[__/__] {__} >= > /",
   "!   !!   #   %   &   (   ()   (]   (|   (}   )   *   +   ++   ,",

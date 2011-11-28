@@ -15,7 +15,8 @@ translate 'Id' to Isabelle strings
 module Isabelle.Translate
     ( showIsaConstT, showIsaConstIT, showIsaTypeT, transConstStringT
     , transTypeStringT
-    , mkIsaConstT, mkIsaConstIT, transString, isaPrelude, IsaPreludes
+    , mkIsaConstT, mkIsaConstIT, transString, isaPrelude
+    , IsaPreludes (..)
     , getConstIsaToks ) where
 
 import Common.AS_Annotation
@@ -36,7 +37,7 @@ import Isabelle.IsaSign
 import Isabelle.IsaConsts
 import Isabelle.IsaStrings
 
-------------------- Id translation functions -------------------
+-- ----------------- Id translation functions -------------------
 data IsaPreludes = IsaPreludes
   { preTypes :: Map.Map BaseSig (Set.Set String)
   , preConsts :: Map.Map BaseSig (Set.Set String) }
@@ -109,7 +110,8 @@ toAltSyntax prd over ga n i thy toks = let
     ht = let chd = convert hd in
       if isPrefixOf br chd then drop (length br) chd else chd
     ts = ht ++ tts
-    (precList, erg) = if isInfix i then case Map.lookup i precMap of
+    (precList, erg)
+      | isInfix i = case Map.lookup i precMap of
         Just p -> let
             q = adjustPrec p
             (l, r) = case Map.lookup i $ assoc_annos ga of
@@ -118,9 +120,9 @@ toAltSyntax prd over ga n i thy toks = let
                  Just ARight -> (q + 1, q)
             in (l : minL2 ++ [r], q)
         Nothing -> let q = adjustPrec $ mx + 1 in (q : minL2 ++ [q], minPrec)
-      else if begPlace i then let q = adjustPrec $ mx + 3 in (q : minL1 , q)
-      else if endPlace i then let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
-      else (minL, maxPrio - 1)
+      | begPlace i = let q = adjustPrec $ mx + 3 in (q : minL1 , q)
+      | endPlace i = let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
+      | otherwise = (minL, maxPrio - 1)
     in if n < 0 || ni > 1 && ni /= n
            || any (flip Set.member toks . tokStr) atoks then Nothing
        else if n == 0 then Just $ AltSyntax ts [] maxPrio
@@ -173,7 +175,7 @@ showIsaConstIT ide i thy = showIsaConstT ide thy ++ "X" ++ show i
 mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig
              -> Set.Set String -> VName
 mkIsaConstIT prd ga n ide i =
-    mkIsaConstVName i ( \ ide' -> showIsaConstIT ide' i) prd ga n ide
+    mkIsaConstVName i (`showIsaConstIT` i) prd ga n ide
 
 {- | get the tokens of the alternative syntax that should not be used
      as variables -}
@@ -188,22 +190,20 @@ getConstIsaToksAux ide i =
              Set.empty . getAltTokenList "" i ide
 
 transIsaInternalName :: String -> String
-transIsaInternalName s = if (last s) == '_'
-                         then s++"X"
-                         else s
+transIsaInternalName s = if last s == '_' then s ++ "X" else s
 
 transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
                 -> String -> String
 transIsaStringT m i s = let t = transStringAux False s in
-  transIsaInternalName $ if Set.member t $ fromMaybe (error "Isabelle.transIsaStringT")
-         $ Map.lookup i m
+  transIsaInternalName $ if Set.member t
+    $ fromMaybe (error "Isabelle.transIsaStringT") $ Map.lookup i m
   then transIsaStringT m i $ '_' : s else t
 
 transConstStringT :: BaseSig -> String -> String
 transConstStringT = transIsaStringT $ preConsts isaPrelude
 
 transTypeStringT :: BaseSig -> String -> String
-transTypeStringT  = transIsaStringT $ preTypes isaPrelude
+transTypeStringT = transIsaStringT $ preTypes isaPrelude
 
 -- | check for legal alphanumeric Isabelle characters
 isIsaChar :: Char -> Bool
