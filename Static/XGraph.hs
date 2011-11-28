@@ -49,6 +49,7 @@ type XTree = [[([XLink], XNode)]]
 
 type EdgeMap = Map.Map String (Map.Map String [XLink])
 
+-- TODO: keep cons status information.
 data XNode = XNode { nodeName :: NodeName
                    , logicName :: String
                    , symbs :: (Bool, String) -- ^ hidden?
@@ -184,12 +185,17 @@ mkXLink el = do
   tp <- case findChild (unqual "Type") el of
           Just tp' -> return $ revertDGEdgeTypeName $ strContent tp'
           Nothing -> fail "links type description is missing"
-  let rl = case findChild (unqual "Rule") el of
-            Nothing -> "no rule"
-            Just r' -> strContent r'
-      cc = case findChild (unqual "ConsStatus") el of
+  let cc = case findChild (unqual "ConsStatus") el of
             Nothing -> None
             Just c' -> fromMaybe None $ readMaybe $ strContent c'
+  rl <- case findChild (unqual "Rule") el of
+          Nothing -> return $ DGRule "no rule"
+          Just r' -> case findChildren (unqual "MovedTheorems") el of
+            [] -> return $ DGRule $ strContent r'
+            mThs -> liftM DGRuleLocalInference $ mapM (\e -> do
+                nmOld <- getAttrVal "name" e
+                nmNew <- getAttrVal "renamedTo" e
+                return (nmOld, nmNew)) mThs
   prB <- mapM (getAttrVal "linkref") $ findChildren (unqual "ProofBasis") el
   (mrNm, mrSrc) <- case findChild (unqual "GMorphism") el of
     Nothing -> fail "Links morphism description is missing!"
@@ -199,7 +205,7 @@ mkXLink el = do
   let parseSymbMap = intercalate ", " . map ( intercalate " |-> "
           . map strContent . elChildren ) . deepSearch ["map"]
       prBs = ProofBasis $ foldr (Set.insert . readEdgeId) Set.empty prB
-  return $ XLink sr tr ei tp (DGRule rl) cc prBs mrNm mrSrc $ parseSymbMap el
+  return $ XLink sr tr ei tp rl cc prBs mrNm mrSrc $ parseSymbMap el
 
 extractEdgeId :: Monad m => Element -> m EdgeId
 extractEdgeId = liftM EdgeId . readAttrVal "XGraph.extractEdgeId" "linkid"
