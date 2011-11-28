@@ -47,9 +47,10 @@ import Control.Monad
 
 import System.Exit
 import System.FilePath.Posix
-import System.Directory (removeFile, canonicalizePath)
+import System.Directory (removeFile, canonicalizePath, doesFileExist)
 import System.Process
-
+import Control.Concurrent (forkIO)
+import System.IO (hPutStr,hGetContents)
 
 import Text.XML.Expat.SAX
 import qualified Data.ByteString.Lazy as L
@@ -303,15 +304,27 @@ importData :: HetcatsOpts -> FilePath
   -> IO ([(String, [(String, Term)])], [(String, String)])
 importData opts fp' = do
   fp <- canonicalizePath fp'
-  relToolPath <- getEnvDef "HETS_HOLLIGHT_TOOLS" "HolLight/OcamlTools"
-  toolPath <- canonicalizePath relToolPath
-  tempPath <- getTempFile "" (takeBaseName fp)
-  (ex, sout, err) <- readProcessWithExitCode "ocaml"
-      ["-w", "a", toolPath </> "export.ml", fp, tempPath] ""
+  dmtcpRestartPath <- getEnvDef "HETS_HOLLIGHT_TOOLS" "HolLight/OcamlTools/imageTools/dmtcp/bin/dmtcp_restart"
+  imageFile <- getEnvDef "HETS_HOLLIGHT_IMAGE" "HolLight/OcamlTools/hol_light.dmtcp"
+  e1 <- doesFileExist dmtcpRestartPath
+  e2 <- doesFileExist imageFile
+  if not e1 then (fail "dmtcp_restart not found") else return ()
+  if not e2 then (fail "hol_light.dmtcp not found") else return ()
+  tempFile <- getTempFile "" (takeBaseName fp)
+  (inp,sout,err,pid) <- runInteractiveProcess dmtcpRestartPath
+   [imageFile] Nothing Nothing
+  forkIO (hPutStr inp
+   ("use_file "++ (show fp) ++";;\n"
+    ++ "inject_hol_include "++ (show fp) ++";;\n"
+    ++ "export_libs (get_libs()) "++ (show tempFile) ++";;\n"
+    ++ "exit 0;;\n"))
+  ex <- waitForProcess pid
   case ex of
-   ExitFailure _ -> fail err
+   ExitFailure _ -> do 
+    err' <- hGetContents err
+    fail err'
    ExitSuccess -> do
-    s <- L.readFile tempPath
+    s <- L.readFile tempFile
     let e = ([], [])
     r <- return $ case tag (parsexml s) of
       StartElement "HolExport" _ : d -> case readL readStr "Strings" d of
@@ -334,8 +347,9 @@ importData opts fp' = do
           _ -> e
         _ -> e
       _ -> e
-    when (length (fst r) > 0) $ putIfVerbose opts 5 sout
-    removeFile tempPath
+    sout' <- hGetContents sout
+    when (length (fst r) > 0) $ putIfVerbose opts 5 sout'
+    removeFile tempFile
     return r
 
 get_types :: Map.Map String Int -> HolType -> Map.Map String Int

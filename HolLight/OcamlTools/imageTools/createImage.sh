@@ -1,3 +1,4 @@
 rm /tmp/exportml_done
 imageTools/dmtcp/bin/dmtcp_coordinator --background
-imageTools/dmtcp/bin/dmtcp_checkpoint ocaml exportTools/export.ml
+imageTools/makeCheckpoint.sh &
+imageTools/dmtcp/bin/dmtcp_checkpoint --quiet ocaml -w a -init exportTools/export.ml
