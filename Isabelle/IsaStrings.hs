@@ -170,7 +170,7 @@ mainS :: IsaSets
 mainS =
   IsaSets {
   types = mkIsaSet
-    ["bool Nat int partial list unit char rat string option either *"],
+    ["bool Nat Int int partial list unit char rat string option either *"],
   consts = mkIsaSet ["2 3 4 5 6 7 8 9",
   "inject n [__] [__/__] __[__/__] {__} >= > /",
   "!   !!   #   %   &   (   ()   (]   (|   (}   )   *   +   ++   ,",
