@@ -18,5 +18,7 @@ use_file "hol.ml";;
 
 use_file' (Filename.concat ocaml_tools_dir "export_helper.ml");;
 
+Gc.compact ();;
+
 let oc = open_out "/tmp/exportml_done" in
 close_out oc;

@@ -5,7 +5,7 @@ HETS_OCAML_LIB_DIR="/usr/lib/ocaml/compiler-libs/"
 HETS_HOL_DIR="`pwd`/imageTools/hol_light/"
 HETS_HOLLIGHT_TOOLS="`pwd`/exportTools/"
 
-export: imageTools/hol_light/pa_j.ml imageTools/dmtcp/bin/dmtcp_command imageTools/dmtcp/bin/dmtcp_coordinator imageTools/dmtcp/bin/dmtcp_checkpoint
+hol_light.dmtcp: Makefile exportTools/*.ml imageTools/*.sh imageTools/hol_light/pa_j.ml imageTools/dmtcp/bin/dmtcp_command imageTools/dmtcp/bin/dmtcp_coordinator imageTools/dmtcp/bin/dmtcp_checkpoint
 	HETS_OCAML_LIB_DIR=${HETS_OCAML_LIB_DIR} \
 HETS_HOL_DIR=${HETS_HOL_DIR} \
 HETS_HOLLIGHT_TOOLS=${HETS_HOLLIGHT_TOOLS} \

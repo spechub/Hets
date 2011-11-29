@@ -304,11 +304,11 @@ importData :: HetcatsOpts -> FilePath
   -> IO ([(String, [(String, Term)])], [(String, String)])
 importData opts fp' = do
   fp <- canonicalizePath fp'
-  dmtcpRestartPath <- getEnvDef "HETS_HOLLIGHT_TOOLS" "HolLight/OcamlTools/imageTools/dmtcp/bin/dmtcp_restart"
+  dmtcpRestartPath <- getEnvDef "HETS_DMTCP_RESTART" "HolLight/OcamlTools/imageTools/dmtcp/bin/dmtcp_restart"
   imageFile <- getEnvDef "HETS_HOLLIGHT_IMAGE" "HolLight/OcamlTools/hol_light.dmtcp"
   e1 <- doesFileExist dmtcpRestartPath
   e2 <- doesFileExist imageFile
-  if not e1 then (fail "dmtcp_restart not found") else return ()
+  if not e1 then (fail ("dmtcp_restart not found" ++ dmtcpRestartPath)) else return ()
   if not e2 then (fail "hol_light.dmtcp not found") else return ()
   tempFile <- getTempFile "" (takeBaseName fp)
   (inp,sout,err,pid) <- runInteractiveProcess dmtcpRestartPath
