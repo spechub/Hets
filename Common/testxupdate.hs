@@ -12,11 +12,12 @@ Portability :  portable
 module Main (main) where
 
 import Common.XUpdate
-import Control.Monad.Error ()
+import Control.Monad.Error
+import Data.Functor.Identity
 
 main :: IO ()
 main = do
   str <- getContents
-  case anaXUpdates str of
+  case runIdentity $ runErrorT $ anaXUpdates str of
     Left e -> fail e
     Right cs -> mapM_ print cs
