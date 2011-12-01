@@ -29,11 +29,11 @@ try:
     print "Retrieving latest Hets binary...",
     sys.stdout.flush()
     os.system("rm -f /tmp/hets-$HETS_DAILY_VERSION*");
-    if  os.uname()[4] == "x86":
-        os.system("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux/daily/hets.bz2 \
+    if  os.uname()[4] == "x86_64":
+        os.system("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/daily/hets.bz2 \
                          > /tmp/hets-$HETS_DAILY_VERSION.bz2")
     else:
-        os.system("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/daily/hets.bz2 \
+        os.system("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux/daily/hets.bz2 \
                          > /tmp/hets-$HETS_DAILY_VERSION.bz2")
     os.system("bunzip2 /tmp/hets-$HETS_DAILY_VERSION.bz2")
     os.system("mv /usr/lib/hets/hets \
