@@ -21,7 +21,6 @@ import GUI.Utils
 import GUI.UDGUtils
 #ifdef GTKGLADE
 import GUI.GtkDisprove
-import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
 import GUI.GtkAutomaticProofs
 import GUI.GtkAddSentence
@@ -198,13 +197,7 @@ createClose gi = do
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> LibFunc -> IORef [String]
                  -> IO [GlobalMenu]
-createGlobalMenu gi showLib
-#ifdef GTKGLADE
-  deselectEdgeTypes
-#else
-  _
-#endif
- = do
+createGlobalMenu gi showLib _ = do
  ost <- readIORef $ intState gi
  case i_state ost of
   Nothing -> return []
@@ -230,10 +223,6 @@ createGlobalMenu gi showLib
       ]
      , Button "Focus node" $ ral $ focusNode gi
 #ifdef GTKGLADE
-     , Button "Select Linktypes" $ showLinkTypeChoice deselectEdgeTypes
-       $ \ eTypes -> ral $ do
-             GA.hideSetOfEdgeTypes (graphInfo gi) eTypes
-             updateGraph gi []
      , Button "Consistency checker"
          (performProofMenuAction (GlobCmd CheckConsistencyCurrent)
            $ showConsistencyChecker Nothing gi)
