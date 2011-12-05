@@ -62,8 +62,8 @@ foldCatchLeft :: Monad m => (a -> MaybeT m a) -> a -> MaybeT m a
 foldCatchLeft fn def = MaybeT $ do
  v <- runMaybeT $ fn def
  case v of
-  Just res -> (runMaybeT $ foldCatchLeft fn res) >>=
-   \ v1 -> maybe (return v1) (\ x -> return $ Just x) v1
+  Just res -> runMaybeT (foldCatchLeft fn res) >>=
+   \ v1 -> maybe (return v1) (return . Just) v1
   _ -> return (Just def)
 
 whileM :: Monad m => MaybeT m a -> MaybeT m [a]
@@ -71,7 +71,7 @@ whileM fn = foldCatchLeft (\ l -> fn >>= \ v -> return $ l ++ [v]) []
 
 -- Strip whitespaces from the beginning and the end of s
 trim :: String -> String
-trim s = let rem_rev = \ x -> reverse $ dropWhile Data.Char.isSpace x
+trim s = let rem_rev x = reverse $ dropWhile Data.Char.isSpace x
          in rem_rev $ rem_rev s
 
 type SaxEvL = [SAXEvent String String]
@@ -89,8 +89,7 @@ debugS' s = do
    else return Nothing
 
 debugS :: String -> MSaxState a
-debugS s = MaybeT $ do
- debugS' s
+debugS s = MaybeT $ debugS' s
 
 runMSaxState :: MSaxState a -> SaxEvL -> Bool
                 -> (Maybe a, (SaxEvL, DbgData))
@@ -133,7 +132,7 @@ tag = do
   EndElement s : xs -> do
    putD xs
    return (False, s)
-  _ -> debugS $ "Expected a tag - instead got: " ++ (show (head d))
+  _ -> debugS $ "Expected a tag - instead got: " ++ show (head d)
 
 expectTag :: Bool -> String -> MSaxState String
 expectTag st s = do
@@ -144,12 +143,12 @@ expectTag st s = do
    Just (b, t) -> if s /= t || st /= b
                  then do
                   put d
-                  debugS' $ "Expected tag " ++ (show (st, s))
-                           ++ " but instead got: " ++ (show (b, t))
+                  debugS' $ "Expected tag " ++ show (st, s)
+                           ++ " but instead got: " ++ show (b, t)
                  else return $ Just s
    Nothing -> do
     put d
-    debugS' $ "Expected a tag, but didn't find one - see previous message!"
+    debugS' "Expected a tag, but didn't find one - see previous message!"
 
 readWithTag :: MSaxState a -> String -> MSaxState a
 readWithTag fn tagName = do
@@ -183,8 +182,8 @@ readWord = foldCatchLeft (\ s ->
      putD xs
      return s'
     _ -> debugS $ "Expected character data but instead got: "
-                  ++ (show (head d))
-  return $ s ++ (trim s')) []
+                  ++ show (head d)
+  return $ s ++ trim s') []
 
 readStr :: MSaxState String
 readStr = readWithTag readWord "s"
@@ -202,7 +201,7 @@ readMappedInt m = do
  i <- readInt
  case Map.lookup i m of
   Just a -> return a
-  _ -> debugS $ "readMappedInt: Integer " ++ (show i)
+  _ -> debugS $ "readMappedInt: Integer " ++ show i
                 ++ " not mapped"
 
 listToTypes :: Map.Map Int HolType -> [Int] -> Maybe [HolType]
@@ -225,23 +224,23 @@ readSharedHolType sl m = do
    case (Map.lookup i sl, listToTypes m l) of
     (Just s, Just l') -> do
      expectTag False "TyApp"
-     return $ Map.insert ((Map.size m) + 1) (TyApp s $ reverse l') m
+     return $ Map.insert (Map.size m + 1) (TyApp s $ reverse l') m
     (r1, r2) -> debugS $ "readSharedHolType: Couldn't build TyApp"
                         ++ " because the result of the lookup for "
-                        ++ (show (i, l)) ++ " was " ++ (show (r1, r2))
+                        ++ show (i, l) ++ " was " ++ show (r1, r2)
   (True, "TyVar") -> do
    i <- readInt
    case Map.lookup i sl of
     Just s -> do
      expectTag False "TyVar"
-     return $ Map.insert ((Map.size m) + 1) (TyVar s) m
+     return $ Map.insert (Map.size m + 1) (TyVar s) m
     _ -> debugS $ "readSharedHolType: Couldn't build TyVar"
-                  ++ " because looking up " ++ (show i)
+                  ++ " because looking up " ++ show i
                   ++ " failed"
   _ -> do
    put d
    debugS $ "readSharedHolType: Expected a hol type but"
-            ++ " instead got following tag: " ++ (show (b, t))
+            ++ " instead got following tag: " ++ show (b, t)
 
 readParseType :: MSaxState HolParseType
 readParseType = do
@@ -265,7 +264,7 @@ readParseType = do
    expectTag False "Binder"
    return Binder
   _ -> debugS $ "readParseType: Expected a parse type but"
-                ++ " instead got following tag: " ++ (show (b, t))
+                ++ " instead got following tag: " ++ show (b, t)
 
 readTermInfo :: MSaxState HolTermInfo
 readTermInfo = do
@@ -288,42 +287,42 @@ readSharedHolTerm ts sl m = do
    case (Map.lookup n sl, Map.lookup t ts) of
     (Just name, Just tp) -> do
      expectTag False "Var"
-     return $ Map.insert ((Map.size m) + 1) (Var name tp ti) m
+     return $ Map.insert (Map.size m + 1) (Var name tp ti) m
     (r1, r2) -> debugS $ "readSharedHolTerm: Couldn't build Var"
                   ++ " because the result of the lookup for "
-                  ++ (show (n, t)) ++ " was " ++ (show (r1, r2))
+                  ++ show (n, t) ++ " was " ++ show (r1, r2)
   (True, "Const") -> do
    (n, t) <- readTuple readInt readInt
    ti <- readTermInfo
    case (Map.lookup n sl, Map.lookup t ts) of
     (Just name, Just tp) -> do
      expectTag False "Const"
-     return $ Map.insert ((Map.size m) + 1) (Const name tp ti) m
+     return $ Map.insert (Map.size m + 1) (Const name tp ti) m
     (r1, r2) -> debugS $ "readSharedHolTerm: Couldn't build Const"
                   ++ " because the result of the lookup for "
-                  ++ (show (n, t)) ++ " was " ++ (show (r1, r2))
+                  ++ show (n, t) ++ " was " ++ show (r1, r2)
   (True, "Comb") -> do
    (t1, t2) <- readTuple readInt readInt
    case (Map.lookup t1 m, Map.lookup t2 m) of
     (Just t1', Just t2') -> do
      expectTag False "Comb"
-     return $ Map.insert ((Map.size m) + 1) (Comb t1' t2') m
+     return $ Map.insert (Map.size m + 1) (Comb t1' t2') m
     (r1, r2) -> debugS $ "readSharedHolTerm: Couldn't build Comb"
                   ++ " because the result of the lookup for "
-                  ++ (show (t1, t2)) ++ " was " ++ (show (r1, r2))
+                  ++ show (t1, t2) ++ " was " ++ show (r1, r2)
   (True, "Abs") -> do
    (t1, t2) <- readTuple readInt readInt
    case (Map.lookup t1 m, Map.lookup t2 m) of
     (Just t1', Just t2') -> do
      expectTag False "Abs"
-     return $ Map.insert ((Map.size m) + 1) (Abs t1' t2') m
+     return $ Map.insert (Map.size m + 1) (Abs t1' t2') m
     (r1, r2) -> debugS $ "readSharedHoLTerm: Couldn't build Abs"
                   ++ " because the result of the lookup for "
-                  ++ (show (t1, t2)) ++ " was " ++ (show (r1, r2))
+                  ++ show (t1, t2) ++ " was " ++ show (r1, r2)
   _ -> do
    put d
    debugS $ "readSharedHolTerm: Expected a hol term but"
-            ++ " instead got following tag: " ++ (show (b, tg))
+            ++ " instead got following tag: " ++ show (b, tg)
 
 importData :: HetcatsOpts -> FilePath
   -> IO ([(String, [(String, Term)])], [(String, String)])
@@ -354,7 +353,7 @@ importData opts fp' = do
     sout' <- hGetContents sout
     putIfVerbose opts 5 sout'
     s <- L.readFile tempFile
-    e <- return ([], [])
+    let e = return ([], [])
     (r, evl, msgs) <- return $ case runMSaxState (do
      expectTag True "HolExport"
      sl <- readL readStr "Strings"
@@ -369,11 +368,11 @@ importData opts fp' = do
      liblinks <- readL (readTuple readWord readWord) "LibLinks"
      return (libs, liblinks)) (parsexml s) (verbose opts >= 6) of
       (Just d, msgs) -> (d, "Next 5 items: "
-       ++ (show $ take 5 $ fst msgs), fst $ snd msgs)
+       ++ show $ take 5 $ fst msgs, fst $ snd msgs)
       (Nothing, msgs) -> (e, "Next 5 items: "
-       ++ (show $ take 5 $ fst msgs), fst $ snd msgs)
+       ++ show $ take 5 $ fst msgs, fst $ snd msgs)
     when (isJust msgs) $ putIfVerbose opts 6 $
-                          (unlines $ reverse $ fromJust msgs)
+                          unlines (reverse $ fromJust msgs)
                           ++ evl
     removeFile tempFile
     return r
