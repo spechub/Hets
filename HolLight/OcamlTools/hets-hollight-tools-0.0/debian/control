@@ -2,11 +2,11 @@ Source: hets-hollight-tools
 Section: misc
 Priority: extra
 Maintainer: Christian Maeder <Christian.Maeder@dfki.de>
-Build-Depends: debhelper (>= 7.4.15), hol-light, ocaml, ocaml-compiler-libs, dmtcp, hets-core
+Build-Depends: debhelper (>= 7.4.15), syslog-ng, hol-light, ocaml, ocaml-compiler-libs, dmtcp
 Standards-Version: 3.9.1
 Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
 
 Package: hets-hollight-tools
 Architecture: i386 amd64
-Depends: hol-light, ocaml, ocaml-compiler-libs, dmtcp, hets-core ${shlibs:Depends}, ${misc:Depends}
+Depends: hol-light, ocaml, ocaml-compiler-libs, dmtcp, ${shlibs:Depends}, ${misc:Depends}
 Description: checkpointing hollight for hets
