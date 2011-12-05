@@ -86,7 +86,7 @@ debugS' s = do
         (\ msg -> put (evl, (Just $ s : msg, do_dbg)))
         dbg
   return Nothing
- else return Nothing
+   else return Nothing
 
 debugS :: String -> MSaxState a
 debugS s = MaybeT $ do
