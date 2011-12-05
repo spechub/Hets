@@ -83,38 +83,28 @@ trim s = let rem_rev = \x -> reverse $ dropWhile Data.Char.isSpace x
          in rem_rev $ rem_rev s
 
 type SaxEvL      = [SAXEvent String String]
-type MSaxState a = MaybeT (State (SaxEvL,Maybe [String])) a
+type MSaxState a = MaybeT (State (SaxEvL,(Maybe [String],Bool))) a
 
-debugC :: Bool
-debugC = False
-
-debugS' :: String -> State (SaxEvL,Maybe [String]) (Maybe a)
+debugS' :: String -> State (SaxEvL,(Maybe [String],Bool)) (Maybe a)
 debugS' s = do
- if debugC then
-  do
-   (evl,dbg) <- get
-   case dbg of
-    Just msg -> do
-     put (evl,Just $ s:msg)
-     return Nothing
-    Nothing -> do
-     put (evl, Just [s])
-     return Nothing
+ (evl,(dbg,do_dbg)) <- get
+ if do_dbg then
+  case dbg of
+   Just msg -> do
+    put (evl,(Just $ s:msg,do_dbg))
+    return Nothing
+   Nothing -> do
+    put (evl, (Just [s],do_dbg))
+    return Nothing
  else return Nothing
 
 debugS :: String -> MSaxState a
-debugS s = do
- if debugC then
-  do
-   (evl,dbg) <- get
-   case dbg of
-    Just msg -> put (evl,Just $ s:msg)
-    Nothing -> put (evl, Just [s])
- else fail s
- fail s
+debugS s = MaybeT $ do
+ debugS' s
 
-runMSaxState :: MSaxState a -> SaxEvL -> (Maybe a, (SaxEvL,Maybe [String]))
-runMSaxState f evl = runState (runMaybeT f) (evl,Nothing)
+runMSaxState :: MSaxState a -> SaxEvL -> Bool
+                -> (Maybe a, (SaxEvL,(Maybe [String],Bool)))
+runMSaxState f evl b = runState (runMaybeT f) (evl,(Nothing,b))
 
 parsexml :: L.ByteString -> SaxEvL
 parsexml = parse defaultParseOptions
@@ -377,14 +367,14 @@ importData opts fp' = do
                     (whileM (readTuple readWord
                              (readMappedInt hol_terms)))) "Libs"
      liblinks <- readL (readTuple readWord readWord) "LibLinks"
-     return (libs,liblinks)) (parsexml s) of
+     return (libs,liblinks)) (parsexml s) (verbose opts >= 6) of
       (Just d,msgs) -> (d,"Next 5 items: "
-       ++ (show $ take 5 $ fst msgs), snd msgs)
+       ++ (show $ take 5 $ fst msgs), fst $ snd msgs)
       (Nothing,msgs) -> (e,"Next 5 items: "
-       ++ (show $ take 5 $ fst msgs), snd msgs)
-    when (debugC && isJust msgs) $ putIfVerbose opts 6 $
-                                    (unlines $ reverse $ fromJust msgs)
-                                    ++ evl
+       ++ (show $ take 5 $ fst msgs), fst $ snd msgs)
+    when (isJust msgs) $ putIfVerbose opts 6 $
+                          (unlines $ reverse $ fromJust msgs)
+                          ++ evl
     removeFile tempFile
     return r
 
