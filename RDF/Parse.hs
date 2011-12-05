@@ -33,8 +33,8 @@ convertRDF2Ntriples fileIn fileOut =
     system $ "cwm --rdf " ++ fileIn ++ " --ntriples > " ++ fileOut
 
 -- | takes a filename containing n-triples and returns the list of triples
-parseNtriples :: Monad m => String -> m [Triple]
-parseNtriples fileIn = do
+getNtriples :: Monad m => String -> m [Triple]
+getNtriples fileIn = do
     let graph = unsafePerformIO $ parseFile NTriplesParser fileIn
             :: Either ParseFailure TriplesGraph
     case graph of
@@ -74,10 +74,10 @@ convertTriple (Triple s p o) =
         Left pre = convertNode p
     in Sentence subj pre $ convertNode o
 
--- | takes a filename with n-triples and returns the rdf graph in our syntax
-nTriplesParser :: Monad m => String -> m RDFGraph
-nTriplesParser fileIn = do
-    gr <- parseNtriples fileIn
+-- | takes a file with n-triples and returns the rdf graph in our syntax
+parseNtriples :: Monad m => String -> m RDFGraph
+parseNtriples fileIn = do
+    gr <- getNtriples fileIn
     return $ RDFGraph $ map convertTriple gr
 
 
