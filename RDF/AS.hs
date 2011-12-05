@@ -16,27 +16,21 @@ References:
 
 module RDF.AS where
 
-import Common.Id
 import OWL2.AS
 
-import Data.Char (intToDigit)
-import Data.List
-import Data.Maybe
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 -- * Graphs
 
 type Subject = IRI
 type Predicate = IRI
-data Object = ObjURI IRI | ObjLiteral Literal
-    deriving (Show, Eq, Ord)
+type Object = Either IRI Literal
 
 -- Sentence represents a RDF Triple
 data Sentence = Sentence Subject Predicate Object
     deriving (Show, Eq, Ord)
 
-data RDFGraph = RDFGraph (Set.Set Sentence)
+data RDFGraph = RDFGraph [Sentence]
     deriving (Show, Eq, Ord)
 
 data RDFEntityType = Subject | Predicate | Object
