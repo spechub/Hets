@@ -20,12 +20,6 @@ export DH_OPTIONS
 %:
 	dh $@ 
 
-override_dh_auto_clean:
-	rm -f hol_light.dmtcp
-
-override_dh_auto_build:
-	./createHolLightImage.sh
-
 override_dh_auto_install:
 	install -m 755 -d debian/hets-hollight-tools/usr/lib/hets/hets-hollight-tools
 	install -m 644 hol_light.dmtcp debian/hets-hollight-tools/usr/lib/hets/hets-hollight-tools
