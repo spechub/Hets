@@ -723,3 +723,12 @@ rdf_java:
 # download rdf4h, unpack and install
 rdf4h:
 	cabal install http://protempore.net/rdf4h/rdf4h-0.6.1.tar.gz
+
+# install cwm tool for rdf to ntriples translation
+cwm_ubuntu:
+	sudo apt-get install swap-cwm
+
+cwm:
+	wget http://www.w3.org/2000/10/swap/cwm.tar.gz
+	tar -xvf cwm.tar.gz
+	cd cwm-1.2.1; sudo ./setup.py install; cd ..; rm -rfv cwm.tar.gz	
