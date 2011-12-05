@@ -39,7 +39,10 @@ data Sentence = Sentence Subject Predicate Object
 data RDFGraph = RDFGraph (Set.Set Sentence)
     deriving (Show, Eq, Ord)
 
-data EntityRDF = EntityRDF IRI
+data RDFEntityType = Subject | Predicate | Object
+    deriving (Show, Eq, Ord)
+
+data EntityRDF = EntityRDF RDFEntityType IRI
     deriving (Show, Eq, Ord)
 
 type StringMap = Map.Map String String
