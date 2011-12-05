@@ -22,6 +22,7 @@ import OWL2.AS
 import OWL2.Print
 import RDF.AS
 import RDF.Parse
+import RDF.Symbols
 
 instance Pretty Sentence where
     pretty = printSentence
@@ -40,5 +41,8 @@ instance Pretty RDFGraph where
 
 printGraph :: RDFGraph -> Doc
 printGraph (RDFGraph sl) = vcat $ map pretty sl
+
+instance Pretty SymbItems where
+instance Pretty SymbMapItems where
 
 

@@ -79,5 +79,7 @@ parseNtriples :: Monad m => String -> m RDFGraph
 parseNtriples fileIn = do
     gr <- getNtriples fileIn
     return $ RDFGraph $ map convertTriple gr
+    
+basicSpec = undefined
 
 

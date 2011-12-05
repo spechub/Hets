@@ -9,7 +9,7 @@ Portability :  portable
 
 RDF abstract syntax
 
-References:
+References: 
     <http://www.informatik.uni-bremen.de/~till/papers/ontotrans.pdf>
     <http://www.w3.org/TR/rdf-concepts/#section-Graph-syntax>
 -}
@@ -17,6 +17,7 @@ References:
 module RDF.AS where
 
 import OWL2.AS
+import Common.Id
 
 import qualified Data.Map as Map
 
@@ -41,3 +42,5 @@ data EntityRDF = EntityRDF RDFEntityType IRI
 
 type StringMap = Map.Map String String
 type MorphMap = Map.Map EntityRDF IRI
+
+instance GetRange RDFGraph where

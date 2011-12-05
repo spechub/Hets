@@ -8,6 +8,7 @@ RDF signature and sentences
 
 module RDF.Sign where
 
+import OWL2.AS
 import RDF.AS
 import qualified Data.Set as Set
 import qualified Data.Map as Map

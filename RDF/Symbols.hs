@@ -26,3 +26,7 @@ data SymbMapItems = SymbMapItems (Maybe RDFEntityType) [(IRI, Maybe IRI)]
 -- | raw symbols
 data RawSymb = ASymbol EntityRDF | AnUri IRI
     deriving (Show, Eq, Ord)
+    
+symbItems = undefined
+
+symbMapItems = undefined

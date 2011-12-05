@@ -11,21 +11,7 @@ Portability :  portable
 Morphisms for RDF
 -}
 
-module RDF.Morphism
-  ( RDFMorphism (..)
-  , isRDFInclusion
-  , inclRDFMorphism
---  , legalMor
---  , composeMor
---  , cogeneratedSign
--- , generatedSign
---  , matchesSym
---  , statSymbItems
---  , statSymbMapItems
---  , inducedFromMor
--- , symMapOf
---  , mapSen
-  ) where
+module RDF.Morphism where
 
 import RDF.AS
 import RDF.Sign
@@ -59,5 +45,8 @@ inclRDFMorphism s t = RDFMorphism
 isRDFInclusion :: RDFMorphism -> Bool
 isRDFInclusion m = Map.null (pmap m)
   && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
+  
+legalMor = undefined
+composeMor = undefined
   
   
