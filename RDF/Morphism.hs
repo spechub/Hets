@@ -59,3 +59,5 @@ inclRDFMorphism s t = RDFMorphism
 isRDFInclusion :: RDFMorphism -> Bool
 isRDFInclusion m = Map.null (pmap m)
   && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
+  
+  
