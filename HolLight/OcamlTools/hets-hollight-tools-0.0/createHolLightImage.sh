@@ -10,9 +10,14 @@ dmtcp_coordinator --background
  do
    sleep 0.1
 done
+echo "------------------------------ Creating Checkpoint"
 dmtcp_command --quiet --bcheckpoint
-dmtcp_command --quiet --quit) &
+echo "------------------------------ Killing Process & Quitting Coordinator"
+dmtcp_command --quiet --quit
+echo "------------------------------ Killed Process"
+) &
 dmtcp_checkpoint --quiet ocaml -w a -init $HETS_HOLLIGHT_TOOLS/export.ml
 
+echo "----------------------------- Moving Image"
 mv -f ckpt_ocamlrun_* hol_light.dmtcp
 rm -f dmtcp_restart_script*.sh
