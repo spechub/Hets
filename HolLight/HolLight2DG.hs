@@ -42,6 +42,7 @@ import Driver.Options
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Char
+import Data.Maybe (fromJust,isJust)
 
 import Control.Monad
 import Control.Monad.Maybe
@@ -82,10 +83,38 @@ trim s = let rem_rev = \x -> reverse $ dropWhile Data.Char.isSpace x
          in rem_rev $ rem_rev s
 
 type SaxEvL      = [SAXEvent String String]
-type MSaxState a = MaybeT (State SaxEvL) a
+type MSaxState a = MaybeT (State (SaxEvL,Maybe [String])) a
 
-runMSaxState :: MSaxState a -> SaxEvL -> (Maybe a, SaxEvL)
-runMSaxState f = runState $ runMaybeT f
+debugC :: Bool
+debugC = False
+
+debugS' :: String -> State (SaxEvL,Maybe [String]) (Maybe a)
+debugS' s = do
+ if debugC then
+  do
+   (evl,dbg) <- get
+   case dbg of
+    Just msg -> do
+     put (evl,Just $ s:msg)
+     return Nothing
+    Nothing -> do
+     put (evl, Just [s])
+     return Nothing
+ else return Nothing
+
+debugS :: String -> MSaxState a
+debugS s = do
+ if debugC then
+  do
+   (evl,dbg) <- get
+   case dbg of
+    Just msg -> put (evl,Just $ s:msg)
+    Nothing -> put (evl, Just [s])
+ else fail s
+ fail s
+
+runMSaxState :: MSaxState a -> SaxEvL -> (Maybe a, (SaxEvL,Maybe [String]))
+runMSaxState f evl = runState (runMaybeT f) (evl,Nothing)
 
 parsexml :: L.ByteString -> SaxEvL
 parsexml = parse defaultParseOptions
@@ -95,26 +124,26 @@ is_space = all Data.Char.isSpace
 
 dropSpaces :: MSaxState ()
 dropSpaces = do
- evl <- get
- put $ dropWhile
+ (evl,dbg) <- get
+ put $ (dropWhile
   (\ e ->
      case e of
       (CharacterData d) -> is_space d
       _ -> False
-  ) evl
+  ) evl,dbg)
 
 tag :: MSaxState (Bool,String)
 tag = do
  dropSpaces
- d <- get
+ (d,dbg) <- get
  case d of
   StartElement s _ : xs	-> do
-   put xs
+   put (xs,dbg)
    return (True, s)
   EndElement   s   : xs	-> do
-   put xs
+   put (xs,dbg)
    return (False,s)
-  _ -> fail "Unexpected Data!"
+  _ -> debugS $ "Expected a tag - instead got: " ++ (show (head d))
 
 expectTag :: Bool -> String -> MSaxState String
 expectTag st s = do
@@ -125,11 +154,12 @@ expectTag st s = do
    Just (b,t) -> if s /= t || st /= b
                  then do
                   put d
-                  return Nothing
+                  debugS' $ "Expected tag " ++ (show (st,s))
+                           ++ " but instead got: " ++ (show (b,t))
                  else return $ Just s
    Nothing    -> do
     put d
-    return Nothing
+    debugS' $ "Expected a tag, but didn't find one - see previous message!"
 
 readWithTag :: MSaxState a -> String -> MSaxState a
 readWithTag fn tagName = do
@@ -149,7 +179,7 @@ readTuple f1 f2 = do
  expectTag True "tuple"
  t1 <- readWithTag f1 "fst"
  t2 <- readWithTag f2 "snd"
- expectTag True "tuple"
+ expectTag False "tuple"
  return (t1,t2)
 
 readWord :: MSaxState String
@@ -157,12 +187,13 @@ readWord = foldCatchLeft (\s ->
  do
   s' <- do
    dropSpaces
-   d <- get
+   (d,dbg) <- get
    case d of
     CharacterData s' : xs -> do
-     put xs
+     put (xs,dbg)
      return s'
-    _ -> fail "Not Character Data!"
+    _ -> debugS $ "Expected character data but instead got: "
+                  ++ (show (head d))
   return $ s++(trim s')) []
 
 readStr :: MSaxState String
@@ -181,7 +212,8 @@ readMappedInt m = do
  i <- readInt
  case Map.lookup i m of
   Just a -> return a
-  _ -> fail "Not mapped!"
+  _ -> debugS $ "readMappedInt: Integer " ++ (show i)
+                ++ " not mapped"
 
 listToTypes :: Map.Map Int HolType -> [Int] -> Maybe [HolType]
 listToTypes m l = case l of
@@ -195,6 +227,7 @@ listToTypes m l = case l of
 readSharedHolType :: Map.Map Int String -> Map.Map Int HolType
                       -> MSaxState (Map.Map Int HolType)
 readSharedHolType sl m = do
+ d <- get
  (b,t) <- tag
  case (b,t) of
   (True,"TyApp") -> do
@@ -202,16 +235,23 @@ readSharedHolType sl m = do
    case (Map.lookup i sl,listToTypes m l) of
     (Just s,Just l') -> do
      expectTag False "TyApp"
-     return $ Map.insert ((Map.size m)+1) (TyApp s l') m
-    _ -> fail "Couldn't build HolType!"
+     return $ Map.insert ((Map.size m)+1) (TyApp s $ reverse l') m
+    (r1,r2) -> debugS $ "readSharedHolType: Couldn't build TyApp"
+                        ++ " because the result of the lookup for "
+                        ++ (show (i,l)) ++ " was " ++ (show (r1,r2))
   (True,"TyVar") -> do
    i <- readInt
    case Map.lookup i sl of
     Just s -> do
      expectTag False "TyVar"
      return $ Map.insert ((Map.size m)+1) (TyVar s) m
-    _ -> fail "Couldn't build HolType!"
-  _ -> fail "Not a HolType"
+    _ -> debugS $ "readSharedHolType: Couldn't build TyVar"
+                  ++ " because looking up " ++ (show i)
+                  ++ " failed"
+  _ -> do
+   put d
+   debugS $ "readSharedHolType: Expected a hol type but"
+            ++ " instead got following tag: " ++ (show (b,t))
 
 readParseType :: MSaxState HolParseType
 readParseType = do
@@ -234,7 +274,8 @@ readParseType = do
   (True,"Binder") -> do
    expectTag False "Binder"
    return Binder
-  _ -> fail "Not a HolParseType!"
+  _ -> debugS $ "readParseType: Expected a parse type but"
+                ++ " instead got following tag: " ++ (show (b,t))
 
 readTermInfo :: MSaxState HolTermInfo
 readTermInfo = do
@@ -248,6 +289,7 @@ readTermInfo = do
 readSharedHolTerm :: Map.Map Int HolType -> Map.Map Int String
                       -> Map.Map Int Term -> MSaxState (Map.Map Int Term)
 readSharedHolTerm ts sl m = do
+ d <- get
  (b,tg) <- tag
  case (b,tg) of
   (True,"Var")   -> do
@@ -257,7 +299,9 @@ readSharedHolTerm ts sl m = do
     (Just name,Just tp) -> do
      expectTag False "Var"
      return $ Map.insert ((Map.size m)+1) (Var name tp ti) m
-    _ -> fail "Not a valid Var!"
+    (r1,r2) -> debugS $ "readSharedHolTerm: Couldn't build Var"
+                  ++ " because the result of the lookup for "
+                  ++ (show (n,t)) ++ " was " ++ (show (r1,r2))
   (True,"Const") -> do
    (n,t) <- readTuple readInt readInt
    ti    <- readTermInfo
@@ -265,22 +309,31 @@ readSharedHolTerm ts sl m = do
     (Just name,Just tp) -> do
      expectTag False "Const"
      return $ Map.insert ((Map.size m)+1) (Const name tp ti) m
-    _ -> fail "Not a valid Const!"
+    (r1,r2) -> debugS $ "readSharedHolTerm: Couldn't build Const"
+                  ++ " because the result of the lookup for "
+                  ++ (show (n,t)) ++ " was " ++ (show (r1,r2))
   (True,"Comb")  -> do
    (t1,t2) <- readTuple readInt readInt
    case (Map.lookup t1 m,Map.lookup t2 m) of
     (Just t1',Just t2') -> do
      expectTag False "Comb"
      return $ Map.insert ((Map.size m)+1) (Comb t1' t2') m
-    _ -> fail "Not a Comb of valid Terms!"
+    (r1,r2) -> debugS $ "readSharedHolTerm: Couldn't build Comb"
+                  ++ " because the result of the lookup for "
+                  ++ (show (t1,t2)) ++ " was " ++ (show (r1,r2))
   (True,"Abs")   -> do
    (t1,t2) <- readTuple readInt readInt
    case (Map.lookup t1 m,Map.lookup t2 m) of
     (Just t1',Just t2') -> do
      expectTag False "Abs"
      return $ Map.insert ((Map.size m)+1) (Abs t1' t2') m
-    _ -> fail "Not an Abs of valid Terms!"
-  _ -> fail "Not a HolTerm!"
+    (r1,r2) -> debugS $ "readSharedHoLTerm: Couldn't build Abs"
+                  ++ " because the result of the lookup for "
+                  ++ (show (t1,t2)) ++ " was " ++ (show (r1,r2))
+  _ -> do
+   put d
+   debugS $ "readSharedHolTerm: Expected a hol term but"
+            ++ " instead got following tag: " ++ (show (b,tg))
 
 importData :: HetcatsOpts -> FilePath
   -> IO ([(String, [(String, Term)])], [(String, String)])
@@ -312,7 +365,7 @@ importData opts fp' = do
     putIfVerbose opts 5 sout'
     s <- L.readFile tempFile
     e <- return ([], [])
-    r <- return $ case runMSaxState (do
+    (r,evl,msgs) <- return $ case runMSaxState (do
      expectTag True "HolExport"
      sl <- readL readStr "Strings"
      let strings = Map.fromList (zip [1 ..] sl)
@@ -325,8 +378,13 @@ importData opts fp' = do
                              (readMappedInt hol_terms)))) "Libs"
      liblinks <- readL (readTuple readWord readWord) "LibLinks"
      return (libs,liblinks)) (parsexml s) of
-      (Just d,_) -> d
-      _ -> e
+      (Just d,msgs) -> (d,"Next 5 items: "
+       ++ (show $ take 5 $ fst msgs), snd msgs)
+      (Nothing,msgs) -> (e,"Next 5 items: "
+       ++ (show $ take 5 $ fst msgs), snd msgs)
+    when (debugC && isJust msgs) $ putIfVerbose opts 6 $
+                                    (unlines $ reverse $ fromJust msgs)
+                                    ++ evl
     removeFile tempFile
     return r
 
