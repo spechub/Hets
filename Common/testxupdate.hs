@@ -13,7 +13,7 @@ module Main (main) where
 
 import Common.XUpdate
 import Control.Monad.Error
-import Data.Functor.Identity
+import Control.Monad.Identity
 
 main :: IO ()
 main = do
