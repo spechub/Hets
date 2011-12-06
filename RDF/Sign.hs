@@ -9,13 +9,7 @@ RDF signature and sentences
 module RDF.Sign where
 
 import OWL2.AS
-import RDF.AS
 import qualified Data.Set as Set
-import qualified Data.Map as Map
-import Common.Id
-import Common.Result
-import Common.Doc
-import Common.DocUtils
 
 data Sign = Sign
     { subjects :: Set.Set IRI

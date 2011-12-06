@@ -13,20 +13,10 @@ Morphisms for RDF
 
 module RDF.Morphism where
 
-import RDF.AS
 import RDF.Sign
+import RDF.Function
 
-import Common.DocUtils
-import Common.Doc
-import Common.Result
-import Common.Utils (composeMap)
-import Common.Lib.State (execState)
-import Common.Lib.MapSet (setToMap)
-
-import Control.Monad
-import Data.Maybe
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 data RDFMorphism = RDFMorphism
   { osource :: Sign

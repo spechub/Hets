@@ -12,20 +12,15 @@ analyse OWL files by calling the external Java parser.
 
 module RDF.ParseRDFAsLibDefn (parseRDF) where
 
-import OWL2.AS
 import RDF.AS
 import RDF.Parse
 import RDF.Logic_RDF
-import Data.Char
 
-import Common.DocUtils
 import Common.Id
 import Common.LibName
-import Common.ProverTools
 import Common.AS_Annotation hiding (isAxiom, isDef)
 
 import Logic.Grothendieck
-import RDF.Logic_RDF
 
 import Driver.Options
 
@@ -34,7 +29,6 @@ import Syntax.AS_Structured
 
 import System.Directory
 import System.Exit
-import System.FilePath
 import System.Process
 
 parseRDF :: FilePath              -- ^ local filepath or uri
@@ -43,9 +37,10 @@ parseRDF filename = do
     absfile <- if checkUri filename then return filename else
       canonicalizePath filename
     let absfileNt = absfile ++ ".nt"
-    system $ "cwm --rdf " ++ absfile ++ " --ntriples > " ++ absfileNt
-    putStrLn $ showDoc (parseNtriples absfileNt) "\n" 
-    return $ parseNT absfileNt 
+    ec <- system $ "cwm --rdf " ++ absfile ++ " --ntriples > " ++ absfileNt ++ " 2> /dev/null" 
+    case ec of
+        ExitSuccess -> return $ parseNT absfileNt
+        _ -> return $ parseNT absfile
 
 parseNT :: FilePath -> LIB_DEFN
 parseNT filename = convertToLibDefN filename $ parseNtriples filename

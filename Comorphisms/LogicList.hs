@@ -77,6 +77,9 @@ import CommonLogic.Logic_CommonLogic
 import DMU.Logic_DMU
 import OWL2.Logic_OWL2
 #endif
+#ifndef RDFLOGIC
+import RDF.Logic_RDF
+#endif
 import Comorphisms.DynLogicList
 
 logicList :: [AnyLogic]
@@ -119,6 +122,7 @@ logicList =
 #ifndef NOOWLLOGIC
   , Logic DMU
   , Logic OWL2
+  , Logic RDF
 #endif
   ] ++ dynLogicList
 

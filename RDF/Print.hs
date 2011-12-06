@@ -13,16 +13,12 @@ Printer for N-triples
 
 module RDF.Print where
 
+import OWL2.Print ()
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import Common.Id
-import Common.Keywords
 
-import OWL2.AS
-import OWL2.Print
 import RDF.AS
-import RDF.Parse
 import RDF.Symbols
 import RDF.Sign
 import RDF.Morphism
@@ -30,7 +26,7 @@ import RDF.Morphism
 -- | RDF signature printing
 
 printRDFBasicTheory :: (Sign, [Named Axiom]) -> Doc
-printRDFBasicTheory (s, l) = vsep (map (pretty . sentence) l)
+printRDFBasicTheory (_, l) = vsep (map (pretty . sentence) l)
 
 instance Pretty Sign where
     pretty = printSign

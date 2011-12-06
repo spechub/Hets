@@ -35,6 +35,7 @@ import RDF.Print
 import RDF.Sign
 import RDF.Morphism
 import RDF.Sublogic
+import RDF.StaticAnalysis
 
 data RDF = RDF deriving Show
 
@@ -67,7 +68,7 @@ instance StaticAnalysis RDF RDFGraph Axiom
                Sign
                RDFMorphism
                RDFEntity RawSymb where
-      basic_analysis RDF = undefined -- Just basicRDFAnalysis
+      basic_analysis RDF = Just basicRDFAnalysis
       stat_symb_items RDF _ = undefined -- return . statSymbItems
       stat_symb_map_items RDF _ _ = undefined -- statSymbMapItems
       empty_signature RDF = emptySign

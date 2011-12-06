@@ -19,8 +19,6 @@ module RDF.AS where
 import OWL2.AS
 import Common.Id
 
-import qualified Data.Map as Map
-
 -- * Graphs
 
 type Subject = IRI
@@ -39,9 +37,6 @@ data RDFEntityType = Subject | Predicate | Object
 
 data RDFEntity = RDFEntity RDFEntityType IRI
     deriving (Show, Eq, Ord)
-
-type StringMap = Map.Map String String
-type MorphMap = Map.Map RDFEntity IRI
 
 instance GetRange RDFGraph where
 instance GetRange Axiom where

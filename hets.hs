@@ -73,6 +73,7 @@ processFile opts file = do
       HaskellIn -> anaHaskellFile opts file
 #endif
       OWLIn -> anaLib opts { intype = OWL2In } file
+      RDFIn -> anaLib opts { intype = RDFIn } file
 #ifdef HEXPAT
       HolLightIn -> anaHolLightFile opts file
 #endif
