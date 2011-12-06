@@ -33,10 +33,13 @@ data RDFGraph = RDFGraph [Axiom]
     deriving (Show, Eq, Ord)
 
 data RDFEntityType = Subject | Predicate | Object
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Bounded, Enum)
 
 data RDFEntity = RDFEntity RDFEntityType IRI
     deriving (Show, Eq, Ord)
+    
+rdfEntityTypes :: [RDFEntityType]
+rdfEntityTypes = [minBound .. maxBound]
 
 instance GetRange RDFGraph where
 instance GetRange Axiom where

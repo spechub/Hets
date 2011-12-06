@@ -21,7 +21,6 @@ import Common.DocUtils
 import RDF.AS
 import RDF.Symbols
 import RDF.Sign
-import RDF.Morphism
 
 -- | RDF signature printing
 
@@ -55,7 +54,6 @@ printGraph (RDFGraph sl) = vcat $ map pretty sl
 
 instance Pretty SymbItems where
 instance Pretty SymbMapItems where
-instance Pretty RDFMorphism where
 instance Pretty RDFEntity where
 instance Pretty RawSymb where
 

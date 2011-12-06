@@ -31,6 +31,3 @@ data RawSymb = ASymbol RDFEntity | AnUri IRI
     
 instance GetRange RawSymb
     
-symbItems = undefined
-
-symbMapItems = undefined

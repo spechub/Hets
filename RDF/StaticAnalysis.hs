@@ -16,7 +16,6 @@ import OWL2.AS
 import RDF.AS
 import RDF.Sign
 import RDF.Function
-import RDF.Morphism
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -83,8 +82,7 @@ basicRDFAnalysis (gr, inSign, _) = do
         accSign = execState (createSign gr) inSign
     (axl, newgraph) <- createAxioms accSign gr
     return (newgraph, ExtSign accSign syms, axl)
-    
-    
+
     
     
     

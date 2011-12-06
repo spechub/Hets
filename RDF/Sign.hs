@@ -8,6 +8,8 @@ RDF signature and sentences
 
 module RDF.Sign where
 
+import RDF.AS
+import Common.Result
 import OWL2.AS
 import qualified Data.Set as Set
 
@@ -45,3 +47,12 @@ isSubSign a b =
     Set.isSubsetOf (subjects a) (subjects b)
        && Set.isSubsetOf (predicates a) (predicates b)
        && Set.isSubsetOf (objects a) (objects b)
+       
+uniteSign :: Sign -> Sign -> Result Sign
+uniteSign s1 s2 = return $ addSign s1 s2
+
+symOf :: Sign -> Set.Set RDFEntity
+symOf s = Set.unions
+  [ Set.map (RDFEntity Subject) $ subjects s
+  , Set.map (RDFEntity Predicate) $ predicates s
+  , Set.map (RDFEntity Object) $ objects s ]
