@@ -67,8 +67,10 @@ import qualified OWL2.ManchesterPrint as OWL2 (printOWLBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
 #endif
 
+#ifdef RDFLOGIC
 import RDF.Logic_RDF
 import qualified RDF.Print as RDF (printRDFBasicTheory)
+#endif
 
 import CommonLogic.Logic_CommonLogic
 import qualified CommonLogic.AS_CommonLogic as CL_AS (exportCLIF)
@@ -236,12 +238,14 @@ writeTheory opts filePrefix ga
             writeVerbFile opts f owltext
       | otherwise -> putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
 #endif
+#ifdef RDFLOGIC
     RDFOut
         | lang == language_name RDF -> do
             th2 <- coerceBasicTheory lid RDF "" th
             let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
             writeVerbFile opts f rdftext
         | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
+#endif
     CLIFOut
       | lang == language_name CommonLogic -> do
             (_,th2) <- coerceBasicTheory lid CommonLogic "" th

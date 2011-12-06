@@ -28,7 +28,9 @@ import CommonLogic.ParseCLAsLibDefn
 #ifndef NOOWLLOGIC
 import OWL2.ParseOWLAsLibDefn
 #endif
+#ifdef RDFLOGIC
 import RDF.ParseRDFAsLibDefn
+#endif
 
 import Driver.Options
 
@@ -64,7 +66,9 @@ readLibDefnM lgraph opts file input =
     OWL2In -> liftIO $ parseOWL file
     OWLIn -> liftIO $ parseOWL file
 #endif
+#ifdef RDFLOGIC
     RDFIn -> liftIO $ parseRDF file
+#endif
     FreeCADIn ->
       liftIO $ readFreeCADLib file $ fileToLibName opts file
     _ ->

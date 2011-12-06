@@ -83,6 +83,11 @@ ifneq ($(findstring 0.2, $(WAIEXTVERSION)),)
   endif
 endif
 
+RDFVERSION = $(shell $(HCPKG) latest rdf4h)
+ifneq ($(findstring 0.6, $(RDFVERSION)),)
+RDF_FLAGS = -DRDFLOGIC
+endif
+
 PARSEC1VERSION = $(shell $(HCPKG) latest parsec1)
 ifneq ($(findstring 1.0., $(PARSEC1VERSION)),)
 PARSEC_FLAG = -hide-package parsec -package parsec1
@@ -94,8 +99,8 @@ endif
 
 HC_OPTS_WITHOUTGLADE = $(GHC7OPTS) $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
-  $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE)\
-  $(PFE_FLAGS) $(SERVER_FLAG) \
+  $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
+  $(PFE_FLAGS) $(SERVER_FLAG) $(RDF_FLAGS) \
   -DCASLEXTENSIONS
 
 # for profiling (or a minimal hets) comment out the previous two package lines
