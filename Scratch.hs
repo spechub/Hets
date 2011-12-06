@@ -27,6 +27,7 @@ import Driver.Options
 import Driver.AnaLib
 
 import qualified Common.OrderedMap as OMap
+import qualified Common.Lib.MapSet as MapSet
 import Common.GlobalAnnotations
 import Common.AS_Annotation as Anno
 import Common.Result
