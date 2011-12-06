@@ -53,7 +53,7 @@ instance Category Sign RDFMorphism where
     composeMorphisms = composeMor
 
 instance Syntax RDF RDFGraph SymbItems SymbMapItems where
-    parse_basic_spec RDF = error "a" --Just basicSpec
+    parse_basic_spec RDF = Just basicSpec
     parse_symb_items RDF = error "b" --Just symbItems
     parse_symb_map_items RDF = error "c" --Just symbMapItems
 
