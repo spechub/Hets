@@ -18,6 +18,7 @@ import RDF.Parse
 import RDF.Logic_RDF
 import Data.Char
 
+import Common.DocUtils
 import Common.Id
 import Common.LibName
 import Common.ProverTools
@@ -40,14 +41,11 @@ parseRDF :: FilePath              -- ^ local filepath or uri
          -> IO LIB_DEFN        -- ^ map: uri -> RDF graph
 parseRDF filename = do
     absfile <- if checkUri filename then return filename else
-      fmap ("file://" ++) $ canonicalizePath filename
+      canonicalizePath filename
     let absfileNt = absfile ++ ".nt"
-    (exitCode, result, errStr) <- readProcessWithExitCode "cwm"
-         ["--rdf", absfile, "--ntriples >", absfileNt ] ""
-    case exitCode of
-         ExitSuccess -> return $ parseNT absfileNt 
-         _ -> error $ "process stop! " ++ shows exitCode "\n"
-              ++ errStr
+    system $ "cwm --rdf " ++ absfile ++ " --ntriples > " ++ absfileNt
+    putStrLn $ showDoc (parseNtriples absfileNt) "\n" 
+    return $ parseNT absfileNt 
 
 parseNT :: FilePath -> LIB_DEFN
 parseNT filename = convertToLibDefN filename $ parseNtriples filename
