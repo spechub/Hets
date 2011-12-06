@@ -70,7 +70,7 @@ Description: Package containing the documentation for Heterogeneous Tool Set.
 
 Package: hets
 Architecture: all
-Depends: hets-core, hets-ontology, hets-doc, isabelle, maude, twelf, reduce, hol-light ${misc:Depends}
+Depends: hets-core, hets-ontology, hets-doc, isabelle, maude, twelf, reduce, hol-light, ${misc:Depends}
 Description: Package containing the full Hets - the Heterogeneous Tool Set.
  This is a meta-package containing the full Hets system.
 
