@@ -7,7 +7,7 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-RDF syntax parser, based on rdf4h library
+RDF syntax parser
 
 -}
 
