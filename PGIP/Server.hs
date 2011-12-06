@@ -555,10 +555,8 @@ sessAns libName (sess, k) =
                    "no provers available " ++ goalInfo)
           else aRef (libPath ++ c ++ "=" ++ s
               ++ if isProve then "&theorems="
-                 ++ intercalate " " (map encodeForQuery
-                   -- theorems containing spaces do not work with "+"
-                   $ filter (all $ not . isSpace) $ map fst
-                   $ if null os then gs else os)
+                 ++ encodeForQuery (intercalate "+"
+                   $ map (escStr . fst) $ if null os then gs else os)
                  else "")
               $ if isProve then c ++ goalInfo else c)
         (if noProvers then nodeCommands \\ comorphs else nodeCommands)

@@ -62,6 +62,7 @@ import Driver.Options
 import Data.Char
 import Data.List
 import Data.Maybe
+import qualified Data.Map as Map
 
 import Numeric
 
@@ -210,6 +211,27 @@ getIdOrName ids nns ns2 = case ids of
       (_, Just v) : _ -> if isNat v then Left $ read v else Right v
       _ -> error "getIdOrName"
 
+escMap :: [(Char, Char)]
+escMap = map (\ l -> let [f, s] = l in (f, s))
+  [ "+P"
+  , "&A"
+  , "=E"
+  , ";S"
+  , " B"
+  , "XX" ]
+
+escStr :: String -> String
+escStr = concatMap (\ c -> case Map.lookup c $ Map.fromList escMap of
+    Nothing -> [c]
+    Just e -> ['X', e])
+
+unEsc :: String -> String
+unEsc s = let m = Map.fromList $ map (\ (a, b) -> (b, a)) escMap
+  in case s of
+  "" -> ""
+  'X' : c : r -> Map.findWithDefault c c m : unEsc r
+  c : r -> c : unEsc r
+
 encodeForQuery :: String -> String
 encodeForQuery = concatMap (\ c -> let n = ord c in case c of
   _ | isAscii c && isAlphaNum c || elem c "_.-" -> [c]
@@ -224,7 +246,7 @@ decodeQueryCode :: String -> String
 decodeQueryCode s = case s of
   "" -> ""
   '%' : h1 : h2 : r -> case readHex [h1, h2] of
-     (i, "") : _ -> chr i : decodeQueryCode r
+     (i, "") : _ -> decodePlus (chr i) : decodeQueryCode r
      _ -> error $ "decodeQueryCode hex: " ++ take 3 s
   c : r
       -> decodePlus c : decodeQueryCode r
@@ -240,7 +262,7 @@ anaNodeQuery mi ans i incls pss =
       prover = lookup "prover" pps
       theorems = case lookup "theorems" pps of
         Nothing -> []
-        Just str -> splitOn ' ' $ decodeQueryCode str
+        Just str -> map unEsc $ splitOn ' ' $ decodeQueryCode str
       timeLimit = fmap read $ lookup "timeout" pps
       pp = ProveNode (not (null incls) || case lookup "include" pps of
         Nothing -> True
