@@ -34,6 +34,7 @@ import RDF.Symbols
 import RDF.Print
 import RDF.Sign
 import RDF.Morphism
+import RDF.Sublogic
 
 data RDF = RDF deriving Show
 
@@ -51,62 +52,50 @@ instance Category Sign RDFMorphism where
     composeMorphisms = composeMor
 
 instance Syntax RDF RDFGraph SymbItems SymbMapItems where
-    parse_basic_spec RDF = Just basicSpec
+    parse_basic_spec RDF = undefined --Just basicSpec
     parse_symb_items RDF = Just symbItems
     parse_symb_map_items RDF = Just symbMapItems
-{-
-instance Sentences RDF Sentence Sign RDFMorphism Entity where
+
+instance Sentences RDF Axiom Sign RDFMorphism RDFEntity where
     map_sen RDF = mapSen
-    print_named RDF namedSen =
-        pretty $ (if isAxiom namedSen then rmImplied else addImplied)
-            (sentence namedSen)
+    print_named RDF namedSen = undefined
     sym_of RDF = singletonList . symOf
     symmap_of RDF = symMapOf
 
-instance StaticAnalysis RDF RDFGraph Sentence
+instance StaticAnalysis RDF RDFGraph Axiom
                SymbItems SymbMapItems
                Sign
                RDFMorphism
-               Entity RawSymb where
-      basic_analysis RDF = Just basicRDFAnalysis
-      stat_symb_items RDF _ = return . statSymbItems
-      stat_symb_map_items RDF _ _ = statSymbMapItems
+               RDFEntity RawSymb where
+      basic_analysis RDF = undefined -- Just basicRDFAnalysis
+      stat_symb_items RDF _ = undefined -- return . statSymbItems
+      stat_symb_map_items RDF _ _ = undefined -- statSymbMapItems
       empty_signature RDF = emptySign
-      signature_union RDF = uniteSign
+      signature_union RDF = undefined -- uniteSign
       signatureDiff RDF s = return . diffSig s
       final_union RDF = signature_union RDF
       is_subsig RDF = isSubSign
-      subsig_inclusion RDF s = return . inclOWLMorphism s
-      matches RDF = matchesSym
-      symbol_to_raw RDF = ASymbol
-      induced_from_morphism RDF = inducedFromMor
-      cogenerated_sign RDF = cogeneratedSign
-      generated_sign RDF = generatedSign
-      signature_colimit RDF = return . signColimit
+      subsig_inclusion RDF s = undefined --return . inclOWLMorphism s
+      matches RDF = undefined --matchesSym
+      symbol_to_raw RDF = undefined -- ASymbol
+      induced_from_morphism RDF = undefined --inducedFromMor
+      cogenerated_sign RDF = undefined --cogeneratedSign
+      generated_sign RDF = undefined --generatedSign
+      signature_colimit RDF = undefined --return . signColimit
 #ifdef UNI_PACKAGE
-      theory_to_taxonomy RDF = onto2Tax
+      theory_to_taxonomy RDF = undefined --onto2Tax
 #endif
 
-instance Logic RDF ProfSub OntologyDocument Axiom SymbItems SymbMapItems
+instance Logic RDF RDFSub RDFGraph Axiom SymbItems SymbMapItems
                Sign
-               OWLMorphism Entity RawSymb ProofTree where
+               RDFMorphism RDFEntity RawSymb ProofTree where
          empty_proof_tree RDF = emptyProofTree
 #ifdef UNI_PACKAGE
-         provers RDF = unsafeFileCheck pelletJar pelletEnv pelletProver ++
-            unsafeFileCheck pelletJar pelletEnv pelletEL ++
-             (unsafeFileCheck "OWLFactProver.jar" hetsOWLenv factProver)
-         cons_checkers RDF =
-             (unsafeFileCheck pelletJar pelletEnv pelletConsChecker) ++
-             (unsafeFileCheck "OWLFact.jar" hetsOWLenv factConsChecker)
-         conservativityCheck RDF = concatMap
-           (\ ct -> unsafeFileCheck localityJar hetsOWLenv
-              $ ConservativityChecker ("Locality_" ++ ct)
-                      $ conserCheck ct)
-           ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
-
-
+         provers RDF = undefined
+         cons_checkers RDF = undefined
+         conservativityCheck RDF = undefined
 #endif
--}
+
 
 {-
 instance SemiLatticeWithTop ProfSub where

@@ -12,6 +12,8 @@ Symbol items for Hets
 
 module RDF.Symbols where
 
+import Common.Id
+
 import RDF.AS
 import OWL2.AS
 
@@ -24,8 +26,10 @@ data SymbMapItems = SymbMapItems (Maybe RDFEntityType) [(IRI, Maybe IRI)]
     deriving (Show, Eq)
 
 -- | raw symbols
-data RawSymb = ASymbol EntityRDF | AnUri IRI
+data RawSymb = ASymbol RDFEntity | AnUri IRI
     deriving (Show, Eq, Ord)
+    
+instance GetRange RawSymb
     
 symbItems = undefined
 

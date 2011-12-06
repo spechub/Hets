@@ -48,5 +48,7 @@ isRDFInclusion m = Map.null (pmap m)
   
 legalMor = undefined
 composeMor = undefined
-  
+mapSen = undefined
+symOf = undefined
+symMapOf = undefined
   

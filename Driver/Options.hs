@@ -336,6 +336,7 @@ data InType =
   | CommonLogicIn
   | CommonLogic2In -- ^ "clif"
   | DgXml
+  | RDFIn
 
 instance Show InType where
   show i = case i of
@@ -357,6 +358,7 @@ instance Show InType where
     CommonLogicIn -> "clf"
     CommonLogic2In -> "clif"
     DgXml -> xmlS
+    RDFIn -> "rdf"
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
@@ -377,7 +379,7 @@ plainInTypes :: [InType]
 plainInTypes =
   [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
   , HolLightIn, PrfIn, OmdocIn, ProofCommand, CommonLogicIn, CommonLogic2In
-  , DgXml, FreeCADIn, OWL2In ]
+  , DgXml, FreeCADIn, OWL2In, RDFIn ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
@@ -411,6 +413,7 @@ data OutType =
   | ComptableXml
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
+  | RDFOut
 
 instance Show OutType where
   show o = case o of
@@ -431,11 +434,12 @@ instance Show OutType where
     ComptableXml -> "comptable.xml"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
+    RDFOut -> "nt"
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
   [Prf, EnvOut, OWLOut, CLIFOut, OmdocOut, XmlOut, ExperimentalOut,
-      HaskellOut, ThyFile, ComptableXml, FreeCADOut]
+      HaskellOut, ThyFile, ComptableXml, FreeCADOut, RDFOut]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in

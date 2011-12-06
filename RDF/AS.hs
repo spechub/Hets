@@ -27,20 +27,22 @@ type Subject = IRI
 type Predicate = IRI
 type Object = Either IRI Literal
 
--- Sentence represents a RDF Triple
-data Sentence = Sentence Subject Predicate Object
+-- Axiom represents a RDF Triple
+data Axiom = Axiom Subject Predicate Object
     deriving (Show, Eq, Ord)
 
-data RDFGraph = RDFGraph [Sentence]
+data RDFGraph = RDFGraph [Axiom]
     deriving (Show, Eq, Ord)
 
 data RDFEntityType = Subject | Predicate | Object
     deriving (Show, Eq, Ord)
 
-data EntityRDF = EntityRDF RDFEntityType IRI
+data RDFEntity = RDFEntity RDFEntityType IRI
     deriving (Show, Eq, Ord)
 
 type StringMap = Map.Map String String
-type MorphMap = Map.Map EntityRDF IRI
+type MorphMap = Map.Map RDFEntity IRI
 
 instance GetRange RDFGraph where
+instance GetRange Axiom where
+instance GetRange RDFEntity where

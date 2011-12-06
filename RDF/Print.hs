@@ -13,6 +13,7 @@ Printer for N-triples
 
 module RDF.Print where
 
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.Id
@@ -23,12 +24,26 @@ import OWL2.Print
 import RDF.AS
 import RDF.Parse
 import RDF.Symbols
+import RDF.Sign
+import RDF.Morphism
 
-instance Pretty Sentence where
-    pretty = printSentence
+-- | RDF signature printing
 
-printSentence :: Sentence -> Doc
-printSentence (Sentence sub pre obj)
+printRDFBasicTheory :: (Sign, [Named Axiom]) -> Doc
+printRDFBasicTheory (s, l) = vsep (map (pretty . sentence) l)
+
+instance Pretty Sign where
+    pretty = printSign
+
+printSign :: Sign -> Doc
+printSign s = pretty (subjects s) <+> pretty (predicates s)
+    <+> pretty (objects s)
+
+instance Pretty Axiom where
+    pretty = printAxiom
+
+printAxiom :: Axiom -> Doc
+printAxiom (Axiom sub pre obj)
     = pretty sub <+> pretty pre <+> printObject obj <+> text "."
 
 printObject :: Object -> Doc
@@ -44,5 +59,8 @@ printGraph (RDFGraph sl) = vcat $ map pretty sl
 
 instance Pretty SymbItems where
 instance Pretty SymbMapItems where
+instance Pretty RDFMorphism where
+instance Pretty RDFEntity where
+instance Pretty RawSymb where
 
 
