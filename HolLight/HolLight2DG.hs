@@ -28,7 +28,7 @@ import Common.LibName
 import Common.Id
 import Common.AS_Annotation
 import Common.Result
-import Common.Utils (getTempFile, getEnvDef)
+import Common.Utils (getTempFile, getEnvDef, trim)
 
 import HolLight.Sign
 import HolLight.Sentence
@@ -62,17 +62,11 @@ foldCatchLeft :: Monad m => (a -> MaybeT m a) -> a -> MaybeT m a
 foldCatchLeft fn def = MaybeT $ do
  v <- runMaybeT $ fn def
  case v of
-  Just res -> runMaybeT (foldCatchLeft fn res) >>=
-   \ v1 -> maybe (return v1) (return . Just) v1
+  Just res -> runMaybeT (foldCatchLeft fn res)
   _ -> return (Just def)
 
 whileM :: Monad m => MaybeT m a -> MaybeT m [a]
-whileM fn = foldCatchLeft (\ l -> fn >>= \ v -> return $ l ++ [v]) []
-
--- Strip whitespaces from the beginning and the end of s
-trim :: String -> String
-trim s = let rem_rev x = reverse $ dropWhile Data.Char.isSpace x
-         in rem_rev $ rem_rev s
+whileM fn = liftM reverse $ foldCatchLeft (\ l -> liftM (: l) fn) []
 
 type SaxEvL = [SAXEvent String String]
 type DbgData = (Maybe [String], Bool)
