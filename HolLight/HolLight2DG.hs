@@ -45,8 +45,8 @@ import qualified Data.Char
 import Data.Maybe (fromJust, isJust)
 
 import Control.Monad
-import Control.Monad.Maybe
-import Control.Monad.State
+import Common.Lib.Maybe
+import Common.Lib.State
 
 import System.Exit
 import System.FilePath.Posix
@@ -78,6 +78,12 @@ type SaxEvL = [SAXEvent String String]
 type DbgData = (Maybe [String], Bool)
 type MSaxState a = MaybeT (State (SaxEvL, DbgData)) a
 
+getM :: MSaxState (SaxEvL,DbgData)
+getM = lift get
+
+putM ::(SaxEvL,DbgData) -> MSaxState ()
+putM = lift . put
+
 debugS' :: String -> State (SaxEvL, DbgData) (Maybe a)
 debugS' s = do
  (evl, (dbg, do_dbg)) <- get
@@ -97,13 +103,13 @@ runMSaxState f evl b = runState (runMaybeT f) (evl, (Nothing, b))
 
 getD :: MSaxState SaxEvL
 getD = do
- (evl, _) <- get
+ (evl, _) <- getM
  return evl
 
 putD :: SaxEvL -> MSaxState ()
 putD evl = do
- (_, dbg) <- get
- put (evl, dbg)
+ (_, dbg) <- getM
+ putM (evl, dbg)
 
 parsexml :: L.ByteString -> SaxEvL
 parsexml = parse defaultParseOptions
@@ -136,7 +142,7 @@ tag = do
 
 expectTag :: Bool -> String -> MSaxState String
 expectTag st s = do
- d <- get
+ d <- getM
  MaybeT $ do
   v <- runMaybeT tag
   case v of
@@ -216,7 +222,7 @@ listToTypes m l = case l of
 readSharedHolType :: Map.Map Int String -> Map.Map Int HolType
                       -> MSaxState (Map.Map Int HolType)
 readSharedHolType sl m = do
- d <- get
+ d <- getM
  (b, t) <- tag
  case (b, t) of
   (True, "TyApp") -> do
@@ -238,7 +244,7 @@ readSharedHolType sl m = do
                   ++ " because looking up " ++ show i
                   ++ " failed"
   _ -> do
-   put d
+   putM d
    debugS $ "readSharedHolType: Expected a hol type but"
             ++ " instead got following tag: " ++ show (b, t)
 
@@ -278,7 +284,7 @@ readTermInfo = do
 readSharedHolTerm :: Map.Map Int HolType -> Map.Map Int String
                       -> Map.Map Int Term -> MSaxState (Map.Map Int Term)
 readSharedHolTerm ts sl m = do
- d <- get
+ d <- getM
  (b, tg) <- tag
  case (b, tg) of
   (True, "Var") -> do
@@ -320,7 +326,7 @@ readSharedHolTerm ts sl m = do
                   ++ " because the result of the lookup for "
                   ++ show (t1, t2) ++ " was " ++ show (r1, r2)
   _ -> do
-   put d
+   putM d
    debugS $ "readSharedHolTerm: Expected a hol term but"
             ++ " instead got following tag: " ++ show (b, tg)
 
