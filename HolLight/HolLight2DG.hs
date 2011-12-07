@@ -41,8 +41,8 @@ import Driver.Options
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
-import qualified Data.Char
-import Data.Maybe (fromJust, isJust)
+import Data.Char
+import Data.Maybe (fromMaybe)
 
 import Control.Monad
 import Common.Lib.Maybe
@@ -96,9 +96,7 @@ runMSaxState :: MSaxState a -> SaxEvL -> Bool
 runMSaxState f evl b = runState (runMaybeT f) (evl, (Nothing, b))
 
 getD :: MSaxState SaxEvL
-getD = do
- (evl, _) <- getM
- return evl
+getD = liftM fst getM
 
 putD :: SaxEvL -> MSaxState ()
 putD evl = do
@@ -367,13 +365,11 @@ importData opts fp' = do
                              (readMappedInt hol_terms)))) "Libs"
      liblinks <- readL (readTuple readWord readWord) "LibLinks"
      return (libs, liblinks)) (parsexml s) (verbose opts >= 6) of
-      (Just d, msgs) -> (d, "Next 5 items: "
+      (de, msgs) -> (fromMaybe e de, "Next 5 items: "
        ++ show (take 5 $ fst msgs), fst $ snd msgs)
-      (Nothing, msgs) -> (e, "Next 5 items: "
-       ++ show (take 5 $ fst msgs), fst $ snd msgs)
-    when (isJust msgs) $ putIfVerbose opts 6 $
-                          unlines (reverse $ fromJust msgs)
-                          ++ evl
+    case msgs of
+      Just ms -> putIfVerbose opts 6 $ unlines (reverse ms) ++ evl
+      Nothing -> return ()
     removeFile tempFile
     return r
 
