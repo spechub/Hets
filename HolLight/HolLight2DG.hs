@@ -63,7 +63,7 @@ foldCatchLeft fn def = MaybeT $ do
  v <- runMaybeT $ fn def
  case v of
   Just res -> runMaybeT (foldCatchLeft fn res) >>=
-   \ v1 -> maybe (return v1) (\ x -> (return . Just) x) v1
+   \ v1 -> maybe (return v1) (return . Just) v1
   _ -> return (Just def)
 
 whileM :: Monad m => MaybeT m a -> MaybeT m [a]
@@ -78,11 +78,11 @@ type SaxEvL = [SAXEvent String String]
 type DbgData = (Maybe [String], Bool)
 type MSaxState a = MaybeT (State (SaxEvL, DbgData)) a
 
-getM :: MSaxState (SaxEvL,DbgData)
-getM = lift get
+getM :: MSaxState (SaxEvL, DbgData)
+getM = liftToMaybeT get
 
-putM ::(SaxEvL,DbgData) -> MSaxState ()
-putM = lift . put
+putM :: (SaxEvL, DbgData) -> MSaxState ()
+putM = liftToMaybeT . put
 
 debugS' :: String -> State (SaxEvL, DbgData) (Maybe a)
 debugS' s = do
