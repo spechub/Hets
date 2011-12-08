@@ -28,7 +28,7 @@ import Common.LibName
 import Common.Id
 import Common.AS_Annotation
 import Common.Result
-import Common.Utils (getTempFile, getEnvDef, trim)
+import Common.Utils
 
 import HolLight.Sign
 import HolLight.Sentence
@@ -121,13 +121,13 @@ tag = do
  dropSpaces
  d <- getD
  case d of
-  StartElement s _ : xs -> do
-   putD xs
-   return (True, s)
-  EndElement s : xs -> do
-   putD xs
-   return (False, s)
-  _ -> debugS $ "Expected a tag - instead got: " ++ show (head d)
+   [] -> error "HolLight.tag"
+   h : xs -> do
+     putD xs
+     case h of
+       StartElement s _ -> return (True, s)
+       EndElement s -> return (False, s)
+       _ -> debugS $ "Expected a tag - instead got: " ++ show h
 
 expectTag :: Bool -> String -> MSaxState String
 expectTag st s = do
@@ -135,11 +135,11 @@ expectTag st s = do
  MaybeT $ do
   v <- runMaybeT tag
   case v of
-   Just (b, t) -> if s /= t || st /= b
+   Just p -> let p2 = (st, s) in if p2 /= p
                  then do
                   put d
-                  debugS' $ "Expected tag " ++ show (st, s)
-                           ++ " but instead got: " ++ show (b, t)
+                  debugS' $ "Expected tag " ++ show p2
+                           ++ " but instead got: " ++ show p
                  else return $ Just s
    Nothing -> do
     put d
@@ -173,11 +173,12 @@ readWord = foldCatchLeft (\ s ->
    dropSpaces
    d <- getD
    case d of
-    CharacterData s' : xs -> do
-     putD xs
-     return s'
-    _ -> debugS $ "Expected character data but instead got: "
-                  ++ show (head d)
+     [] -> error "HolLight.readWord"
+     h : xs -> case h of
+       CharacterData s' -> do
+         putD xs
+         return s'
+       _ -> debugS $ "Expected character data but instead got: " ++ show h
   return $ s ++ trim s') []
 
 readStr :: MSaxState String
@@ -186,7 +187,7 @@ readStr = readWithTag readWord "s"
 readInt :: MSaxState Int
 readInt = do
  w <- readWord
- return (read w :: Int)
+ return $ fromMaybe (error "HolLight.readInt") $ readMaybe w
 
 readInt' :: MSaxState Int
 readInt' = readWithTag readInt "i"
@@ -196,8 +197,7 @@ readMappedInt m = do
  i <- readInt
  case Map.lookup i m of
   Just a -> return a
-  _ -> debugS $ "readMappedInt: Integer " ++ show i
-                ++ " not mapped"
+  _ -> debugS $ "readMappedInt: Integer " ++ show i ++ " not mapped"
 
 listToTypes :: Map.Map Int HolType -> [Int] -> Maybe [HolType]
 listToTypes m l = case l of
