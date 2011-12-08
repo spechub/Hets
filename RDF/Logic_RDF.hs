@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {-# OPTIONS -w #-}
 {- |
 Module      :  $Header$
@@ -54,8 +54,8 @@ instance Category Sign RDFMorphism where
 
 instance Syntax RDF RDFGraph SymbItems SymbMapItems where
     parse_basic_spec RDF = Just basicSpec
-    parse_symb_items RDF = error "b" --Just symbItems
-    parse_symb_map_items RDF = error "c" --Just symbMapItems
+    parse_symb_items RDF = error "RDF.b" -- Just symbItems
+    parse_symb_map_items RDF = error "RDF.c" -- Just symbMapItems
 
 instance Sentences RDF Axiom Sign RDFMorphism RDFEntity where
     map_sen RDF = mapSen
@@ -82,21 +82,11 @@ instance StaticAnalysis RDF RDFGraph Axiom
       induced_from_morphism RDF = inducedFromMor
       cogenerated_sign RDF = cogeneratedSign
       generated_sign RDF = generatedSign
-      signature_colimit RDF = undefined --return . signColimit
-#ifdef UNI_PACKAGE
-      theory_to_taxonomy RDF = undefined --onto2Tax
-#endif
 
 instance Logic RDF RDFSub RDFGraph Axiom SymbItems SymbMapItems
                Sign
                RDFMorphism RDFEntity RawSymb ProofTree where
          empty_proof_tree RDF = emptyProofTree
-#ifdef UNI_PACKAGE
-         provers RDF = undefined
-         cons_checkers RDF = undefined
-         conservativityCheck RDF = undefined
-#endif
-
 
 {-
 instance SemiLatticeWithTop ProfSub where
