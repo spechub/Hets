@@ -8,5 +8,5 @@ Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoF
 
 Package: hets-hollight-tools
 Architecture: i386
-Depends: hol-light, ocaml, ocaml-compiler-libs, dmtcp, ${shlibs:Depends}, ${misc:Depends}
+Depends: dmtcp, ${shlibs:Depends}, ${misc:Depends}
 Description: checkpointing hollight for hets

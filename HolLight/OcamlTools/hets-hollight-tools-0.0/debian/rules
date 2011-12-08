@@ -23,4 +23,3 @@ export DH_OPTIONS
 override_dh_auto_install:
 	install -m 755 -d debian/hets-hollight-tools/usr/lib/hets/hets-hollight-tools
 	install -m 644 hol_light.dmtcp debian/hets-hollight-tools/usr/lib/hets/hets-hollight-tools
-	cp *.ml debian/hets-hollight-tools/usr/lib/hets/hets-hollight-tools
