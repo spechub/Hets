@@ -329,6 +329,7 @@ importData opts fp' = do
   tmpImage <- getTempFile "" image
   imageFile <- fmap (</> image) $ getEnvDef
    "HETS_HOLLIGHT_TOOLS" "HolLight/OcamlTools/"
+  -- for dmtcp we need an image owned by the current user
   copyFile imageFile tmpImage
   e2 <- doesFileExist imageFile
   unless e2 $ fail $ image ++ " not found"
