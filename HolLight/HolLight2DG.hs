@@ -106,16 +106,13 @@ putD evl = do
 parsexml :: L.ByteString -> SaxEvL
 parsexml = parse defaultParseOptions
 
-is_space :: String -> Bool
-is_space = all Data.Char.isSpace
-
 dropSpaces :: MSaxState ()
 dropSpaces = do
  evl <- getD
  putD $ dropWhile
   (\ e ->
      case e of
-      (CharacterData d) -> is_space d
+      CharacterData d -> all isSpace d
       _ -> False
   ) evl
 
