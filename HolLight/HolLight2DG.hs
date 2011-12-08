@@ -178,7 +178,7 @@ readWord = liftM reverse $ foldCatchLeft (\ s ->
          putD xs
          return s'
        _ -> debugS $ "Expected character data but instead got: " ++ show h
-  return $ reverse (trim s') ++ s) []
+  return $ trimLeft (reverse $ trimLeft s') ++ s) []
 
 readStr :: MSaxState String
 readStr = readWithTag readWord "s"
