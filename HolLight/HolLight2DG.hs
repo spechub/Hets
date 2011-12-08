@@ -338,11 +338,14 @@ importData opts fp' = do
     ++ "inject_hol_include " ++ show fp ++ ";;\n"
     ++ "export_libs (get_libs()) " ++ show tempFile ++ ";;\n"
     ++ "exit 0;;\n"
+  removeFile tmpImage
+  s <- L.readFile tempFile
   case ex of
-   ExitFailure _ -> fail $ "HolLight.importData: " ++ err
+   ExitFailure _ -> do
+     removeFile tempFile
+     fail $ "HolLight.importData: " ++ err
    ExitSuccess -> do
     putIfVerbose opts 5 sout
-    s <- L.readFile tempFile
     let e = ([], [])
     (r, evl, msgs) <- return $ case runMSaxState (do
      expectTag True "HolExport"
