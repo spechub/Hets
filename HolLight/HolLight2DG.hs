@@ -326,16 +326,12 @@ importData :: HetcatsOpts -> FilePath
   -> IO ([(String, [(String, Term)])], [(String, String)])
 importData opts fp' = do
   fp <- canonicalizePath fp'
-  dmtcpRestartPath <- getEnvDef "HETS_DMTCP_RESTART"
-   "HolLight/OcamlTools/imageTools/dmtcp/bin/dmtcp_restart"
-  imageFile <- getEnvDef "HETS_HOLLIGHT_IMAGE"
-   "HolLight/OcamlTools/hol_light.dmtcp"
-  e1 <- doesFileExist dmtcpRestartPath
+  imageFile <- fmap (</> "hol_light.dmtcp") $ getEnvDef
+   "HETS_HOLLIGHT_TOOLS" "HolLight/OcamlTools/"
   e2 <- doesFileExist imageFile
-  unless e1 $ fail $ "dmtcp_restart not found" ++ dmtcpRestartPath
   unless e2 $ fail "hol_light.dmtcp not found"
   tempFile <- getTempFile "" (takeBaseName fp)
-  (inp, sout, err, pid) <- runInteractiveProcess dmtcpRestartPath
+  (inp, sout, err, pid) <- runInteractiveProcess "dmtcp_restart"
    [imageFile] Nothing Nothing
   forkIO (hPutStr inp
    ("use_file " ++ show fp ++ ";;\n"
