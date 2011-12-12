@@ -1,0 +1,3 @@
+sudo pbuilder create --distribution natty --othermirror "deb http://archive.ubuntu.com/ubuntu natty main restricted universe multiverse|deb http://ppa.launchpad.net/hets/hets/ubuntu natty main"
+
+sudo pbuilder --build *.dsc
