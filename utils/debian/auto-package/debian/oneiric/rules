@@ -9,7 +9,12 @@ override_dh_auto_clean:
 	dh_auto_clean
 
 override_dh_auto_build:
-	make hets-opt
+	make derivedSources
+	cp Makefile Makefile.orig
+	cp ReleaseMakefile Makefile
+	make depend
+	make hets
+	cp Makefile.orig Makefile
 	cd doc && pdflatex UserGuide.tex
 	make doc
 

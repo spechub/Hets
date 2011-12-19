@@ -83,7 +83,7 @@ echo ::Done
 
 #detecting distributions for which to build
 echo "::Detecting distroseries"
-DISTROS=$PWD/debian/*
+DISTROS=$PWD/debian/natty
 COUNT=`echo $DISTROS | wc -w`
 echo "  $COUNT distributions found"
 
@@ -115,11 +115,11 @@ do
 
    	echo ::Starting package building and signing;
    	cd $HETS_FOLDER;
-   	debuild -S -sa
+   	debuild -S -sa -uc -us
 	echo ::Done
    	cd ..
 	echo ::Uploading package...
-   	dput ppa:hets/hets hets_"$HETS_FULL_VERSION"-1ubuntu"$count"_source.changes
+   	#dput ppa:hets/hets hets_"$HETS_FULL_VERSION"-1ubuntu"$count"_source.changes
 	echo ::Done
 done
 
