@@ -37,13 +37,13 @@ parseRDF filename = do
     absfile <- if checkUri filename then return filename else
       canonicalizePath filename
     let absfileNt = absfile ++ ".nt"
-    ec <- system $ "cwm --rdf " ++ absfile ++ " --ntriples > " ++ absfileNt ++ " 2> /dev/null" 
+    ec <- system $ "cwm --rdf " ++ absfile ++ " --ntriples > " ++ absfileNt ++ " 2> /dev/null"
     case ec of
-        ExitSuccess -> return $ parseNT absfileNt
-        _ -> return $ parseNT absfile
+        ExitSuccess -> parseNT absfileNt
+        _ -> parseNT absfile
 
-parseNT :: FilePath -> LIB_DEFN
-parseNT filename = convertToLibDefN filename $ parseNtriples filename
+parseNT :: FilePath -> IO LIB_DEFN
+parseNT filename = fmap (convertToLibDefN filename) $ parseNtriples filename
 
 createSpec :: RDFGraph -> Annoted SPEC
 createSpec gr = emptyAnno $ Basic_spec (G_basic_spec RDF gr) nullRange
