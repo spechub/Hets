@@ -22,8 +22,11 @@ Syntax/hetpa.hs
 Static/test
 Comorphisms/test
 SoftFOL/tests
-OWL/tests
+
 OWL2/tests
+OWL2/java/lib/native
+
+HolLight/OcamlTools
 
 OMDoc/Basic
 
@@ -39,13 +42,8 @@ ideas
 todo
 test
 
-utils/SPASS-ppc-mac
-utils/SPASS-intel-mac
-utils/update_central_CASL-lib.pl
 utils/appendHaskellPreludeString
-utils/outlineAxioms
 utils/DrIFT
-utils/examine_doc_log.pl
 utils/genRules
 utils/nightly
 utils/LiveCD
