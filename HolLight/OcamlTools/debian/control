@@ -7,6 +7,6 @@ Standards-Version: 3.9.1
 Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
 
 Package: hets-hollight-tools
-Architecture: i386
-Depends: dmtcp, ${shlibs:Depends}, ${misc:Depends}
+Architecture: i386 amd64
+Depends: dmtcp, ocaml, camlp5, ocaml-compiler-libs, hol-light, ${shlibs:Depends}, ${misc:Depends}
 Description: checkpointing hollight for hets
