@@ -40,7 +40,6 @@ makeSources
 
 checkMoreBins
 makeOWLTools
-makeHOLTools
 runIsaHS
 
 makeCofiLib
