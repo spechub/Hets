@@ -8,6 +8,9 @@ sig
 	val get_gen_theorems : theory -> string -> (string * Datatype.info) list -> string list -> string list
 	val get_datatypes : theory -> (string * Datatype.info) list
 	val filter : string list -> (string * 'a) list -> (string * 'a) list
+	val termListToXML : string -> (string * term) list -> XML.tree
+	val termTypListToXML : string -> (string * (typ * term option)) list -> XML.tree
+	val typesListToXML : string -> (string * Datatype.info) list -> XML.tree
 end;
 
 structure ExportHelper : ExportHelper =
@@ -138,4 +141,28 @@ struct
                                   val ts' = map (fn s => (String.extract (s,tl+1,NONE),Datatype.get_info T s)) (List.filter (String.isPrefix tname) ts)
 			      in restructure_rec_types T ts' end
 	fun filter rem d = remove' id #1 ((mergesort id rem),(mergesort #1 d))
+	fun termListToXML section l = XML.Elem ((section,[]),List.map (
+         fn (s,t) => XML.Elem (("Term",[("name",s)]),[XML_Syntax.xml_of_term t])) l)
+	fun termTypListToXML section l = XML.Elem ((section,[]),List.map (
+	 fn (s,(t,v)) => let val v' = case v of
+          SOME(tm) => (("Term",[("name",s)]),[XML_Syntax.xml_of_term tm])
+	  | NONE => (("NoTerm",[]),[])
+         in XML.Elem (("Const",[("name",s)]),[XML_Syntax.xml_of_type t,XML.Elem v']) end) l)
+	fun dtypToXML (Datatype.DtTFree s) = XML.Elem (("DtTFree",[("s",s)]),[])
+           | dtypToXML (Datatype.DtType (s,dtl)) = XML.Elem (("DtType",[("s",s)]),List.map dtypToXML dtl)
+    	   | dtypToXML (Datatype.DtRec i) = XML.Elem (("DtType",[("i",Int.toString i)]),[])
+	fun constructorToXML (name,dtl) = XML.Elem
+         (("Constructor",[("val",Long_Name.base_name name)]),List.map dtypToXML dtl)
+	fun typeToXML d = List.map
+         (fn (i,(s,vs,dt)) => let val name = case (#alt_names d) of
+            SOME(ns) => List.nth (ns,i)
+            | NONE => s
+          in XML.Elem (("RecType",[("i",Int.toString i),("name",name)]),[
+               XML.Elem (("Vars",[]),List.map dtypToXML vs),
+	       XML.Elem (("Constructors",[]),List.map constructorToXML dt)
+              ])
+          end)
+         (#descr d)
+	fun typesListToXML section l = XML.Elem ((section,[]),List.map (
+	fn (s,d) => XML.Elem (("Type",[("name",s)]),typeToXML d)) l)
 end;

@@ -58,9 +58,15 @@ val theorems = ExportHelper.filter (ExportHelper.get_gen_theorems T name types (
 val num_consts = List.length consts;
 val num_axioms = List.length axioms;
 val num_theorems = List.length theorems;
+
+val xml_consts = ExportHelper.termTypListToXML \"Consts\" consts;
+val xml_axioms = ExportHelper.termListToXML \"Axioms\" axioms;
+val xml_theorems = ExportHelper.termListToXML \"Theorems\" theorems;
+val xml_types = ExportHelper.typesListToXML \"Types\" types;
+val xml = XML.Elem ((\"IsaExport\",[(\"file\",\"$TRANS_T\")]),[xml_consts,xml_axioms,xml_theorems,xml_types]);
+File.write (Path.explode \"$TRANS.isa\") (XML.string_of xml);
 "
  echo "*}"
  echo "end;"
 
- #echo "ThyToOMDoc.ParseTheory \"$TRANS\";"
 ) | ($ISABELLE tty -p "")
