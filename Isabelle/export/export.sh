@@ -26,7 +26,7 @@ if [ ! -z $ISABELLE_BIN_PATH ]; then
  fi
 else
  ISABELLE=`which isabelle`
- if [ ! $? ]; then
+ if [ $? ]; then
   echo "Cannot find isabelle executable. Maybe you need to specify ISABELLE_BIN_PATH"
   exit 1
  fi
@@ -37,44 +37,30 @@ if [ ! -x $ISABELLE ]; then
  exit 1
 fi
 
+echo $ISABELLE
+
 (
  echo "theory IsaExport"
  echo "imports \"$TRANS\" Wellfounded"
+ echo "uses \"$SCRIPTPATH/export_helper.ml\""
  echo "begin"
  echo "ML {*"
  echo "val T = Thy_Info.get_theory \"$TRANS_T\";
-use \"$SCRIPTPATH/export_helper.ml\";
+val name = Context.theory_name T;
 val types = ExportHelper.get_datatypes T;
-val gths = ExportHelper.get_generated_theorems T types;
-val consts = ExportHelper.get_consts T;
-val axioms = ExportHelper.get_axioms T;
-val theorems = ExportHelper.filter gths (ExportHelper.get_theorems T);
+val consts = ExportHelper.filter (ExportHelper.get_gen_consts T name types)
+                                 (ExportHelper.get_consts T);
+val axioms = ExportHelper.filter (ExportHelper.get_gen_axioms T name types)
+                                 (ExportHelper.get_axioms T);
+val ths = ExportHelper.get_theorems T;
+val theorems = ExportHelper.filter (ExportHelper.get_gen_theorems T name types (List.map #1 ths))
+                                   ths;
 val num_consts = List.length consts;
 val num_axioms = List.length axioms;
 val num_theorems = List.length theorems;
-
-(*fun contains s s1 = if String.isPrefix s s1 then true
-                    else if String.size s1 = 0 then false
-                         else contains s (String.extract (s1,1,NONE));
-
-List.map #1 (List.filter ((contains \"rec\") o #1) (theorems));
-
-
-val t1 = Option.valOf (Datatype.get_info T @{type_name list});
-#rec_names t1;
-
-Inductive.the_inductive (ProofContext.init_global T) \"list1_rec_set\"
-
-val t2 = Option.valOf (Datatype.get_info T @{type_name type2});
-
-Binding.qualify true \"test\" (Binding.name \"abc\");
-
-val t1 = Option.valOf (#2 (List.hd types));
-#alt_names t1;
-#sorts t1;
-Recdef.get_recdef T (Sign.intern_const T \"indicator\")*)"
+"
  echo "*}"
  echo "end;"
 
  #echo "ThyToOMDoc.ParseTheory \"$TRANS\";"
-) | $ISABELLE tty -p ""
+) | ($ISABELLE tty -p "")
