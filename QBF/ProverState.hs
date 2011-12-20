@@ -21,7 +21,7 @@ import qualified QBF.Morphism as QMorphism
 import qualified QBF.AS_BASIC_QBF as AS
 import QBF.Tools
 
-import Data.List (intercalate, elemIndex)
+import Data.List (elemIndex)
 import qualified Control.Arrow
 
 import qualified Common.AS_Annotation as AS_Anno
@@ -163,13 +163,13 @@ showQDIMACSProblem thName pst nGoal _ =
                ++ show (length goal2 + axiomsL)
              ]
           ++ (if qf == [] then []
-              else ["a " ++ intercalate " " (map show ([1 .. lqf] ++ [0]))])
+              else ["a " ++ unwords (map show ([1 .. lqf] ++ [0]))])
           ++ (if qe == [] then []
-              else ["e " ++ intercalate " " (map show
+              else ["e " ++ unwords (map show
                      ([(lqf + 1) .. (lqf + lqe)] ++ [0]))])
           ++ foldl (++) [] (map
                  (\ (_, f) -> map
-                                (\ fs -> intercalate " "
+                                (\ fs -> unwords
                                           (map (show . atomToNum) fs ++ ["0"])
                                 ) f
                  ) (axioms2 ++ [("", goal2)]))

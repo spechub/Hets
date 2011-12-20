@@ -120,8 +120,8 @@ sublogicsMax = sublogicsJoin joinType
 compList :: [QBFSL] -> QBFSL
 compList = foldl sublogicsMax bottom
 
--- Functions to compute minimal sublogic for a given element, these work
--- by recursing into all subelements
+{- Functions to compute minimal sublogic for a given element, these work
+by recursing into all subelements -}
 
 -- | determines the sublogic for symbol map items
 slSymmap :: QBFSL -> AS_BASIC.SYMBMAPITEMS -> QBFSL
@@ -160,7 +160,7 @@ anaForm ps f =
           do
             st <- State.get
             return $ sublogicsMax needPF $ compList $ map
-              (\ x -> (State.evalState (anaForm ps x) (st + 1))) l
+              (\ x -> State.evalState (anaForm ps x) (st + 1)) l
       AS_BASIC.Implication l m _ ->
           do
              st <- State.get

@@ -266,7 +266,15 @@ uniqueQuantifiedVars c = uniqueQuantifiedVars' c Map.empty
 
 uniqueQuantifiedVars' :: Int -> Map.Map Token Token
   -> String -> FORMULA -> (Int, FORMULA)
-uniqueQuantifiedVars' c m p f = let u = uniqueQuantifiedVars' c m p in
+uniqueQuantifiedVars' c m p f = let
+  u = uniqueQuantifiedVars' c m p
+  handleQuantified ts x = let
+   c1 = c + length ts
+   (m1, ts1) = foldr (\ i (m', ts') ->
+          (Map.insert (ts !! (i - c)) (Token (p ++ show i) nullRange) m',
+            Token (p ++ show i) nullRange : ts')) (m, []) [c .. (c1 - 1)]
+   in (uniqueQuantifiedVars' c1 m1 p x,ts1)
+ in
   case f of
     (Negation x n) -> let (c1, x1) = u x in (c1, Negation x1 n)
     (Conjunction fs n) -> let
@@ -293,19 +301,11 @@ uniqueQuantifiedVars' c m p f = let u = uniqueQuantifiedVars' c m p in
                          Nothing -> (c, Predication t)
                          Just t1 -> (c, Predication t1)
     (ForAll ts x n) -> let
-        c1 = c + length ts
-        (m1, ts1) = foldr (\ i (m', ts') ->
-          (Map.insert (ts !! (i - c)) (Token (p ++ show i) nullRange) m',
-            Token (p ++ show i) nullRange : ts')) (m, []) [c .. (c1 - 1)]
-        (c2, x') = uniqueQuantifiedVars' c1 m1 p x
+        ((c2, x'),ts1) = handleQuantified ts x
       in
         (c2, ForAll ts1 x' n)
     (Exists ts x n) -> let
-        c1 = c + length ts
-        (m1, ts1) = foldr (\ i (m', ts') ->
-          (Map.insert (ts !! (i - c)) (Token (p ++ show i) nullRange) m',
-            Token (p ++ show i) nullRange : ts')) (m, []) [c .. (c1 - 1)]
-        (c2, x') = uniqueQuantifiedVars' c1 m1 p x
+        ((c2, x'),ts1) = handleQuantified ts x
       in
         (c2, Exists ts1 x' n)
 
@@ -343,10 +343,10 @@ joinQuantifiedVars q1 q2 = let
 getQuantifiedVars :: FORMULA -> QuantifiedVars
 getQuantifiedVars f = case f of
   (Negation x _) -> getQuantifiedVars x
-  (Conjunction xs _) -> foldr joinQuantifiedVars quantifiedVars
-    (map getQuantifiedVars xs)
-  (Disjunction xs _) -> foldr joinQuantifiedVars quantifiedVars
-    (map getQuantifiedVars xs)
+  (Conjunction xs _) -> foldr (joinQuantifiedVars . getQuantifiedVars)
+    quantifiedVars xs
+  (Disjunction xs _) -> foldr (joinQuantifiedVars . getQuantifiedVars)
+    quantifiedVars xs
   (Implication x1 x2 _) -> joinQuantifiedVars (getQuantifiedVars x1)
     (getQuantifiedVars x2)
   (Equivalence x1 x2 _) -> joinQuantifiedVars (getQuantifiedVars x1)
@@ -358,13 +358,13 @@ getQuantifiedVars f = case f of
     (quantifiedVars { existentiallyQ = ts }) (getQuantifiedVars x)
   _ -> quantifiedVars
 
--- | the flatten functions use associtivity to "flatten" the syntax
--- | tree of the formulae
+{- | the flatten functions use associtivity to "flatten" the syntax
+tree of the formulae -}
 
--- | flatten \"flattens\" formulae under the assumption of the
--- | semantics of basic specs, this means that we put each
--- | \"clause\" into a single formula for CNF we really will obtain
--- | clauses
+{- | flatten \"flattens\" formulae under the assumption of the
+semantics of basic specs, this means that we put each
+\"clause\" into a single formula for CNF we really will obtain
+clauses -}
 
 flatten :: FORMULA -> [FORMULA]
 flatten f = case f of

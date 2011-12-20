@@ -85,7 +85,7 @@ retrieveBasicItem tsig x =
     let
         occ = occurence tsig
     in
-    case (AS_Anno.item x) of
+    case AS_Anno.item x of
       (AS_BASIC.PredDecl apred) ->
           if occ == 0
           then
@@ -149,7 +149,7 @@ retrieveFormulaItem ::
     -> Sign.Sign
     -> [DIAGFORM]
 retrieveFormulaItem axs x sig =
-    case (AS_Anno.item x) of
+    case AS_Anno.item x of
       (AS_BASIC.PredDecl _) -> axs
       (AS_BASIC.AxiomItems ax) ->
           List.foldl (\ xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
@@ -234,11 +234,11 @@ propsOfFormula (AS_BASIC.Predication x) = Sign.Sign
                          {Sign.items = Set.singleton $
                                        Id.simpleIdToId x }
 propsOfFormula (AS_BASIC.Conjunction xs _) = List.foldl
-                                     (\ sig frm -> Sign.unite sig $ propsOfFormula frm)
-                                     Sign.emptySig xs
+ (\ sig frm -> Sign.unite sig $ propsOfFormula frm)
+ Sign.emptySig xs
 propsOfFormula (AS_BASIC.Disjunction xs _) = List.foldl
-                                     (\ sig frm -> Sign.unite sig $ propsOfFormula frm)
-                                     Sign.emptySig xs
+ (\ sig frm -> Sign.unite sig $ propsOfFormula frm)
+ Sign.emptySig xs
 propsOfFormula (AS_BASIC.ForAll xs f _) = sigDiff
                          (propsOfFormula f)
                          (Sign.Sign (Set.fromList (map Id.simpleIdToId xs)))
@@ -317,6 +317,19 @@ symbToSymbol :: AS_BASIC.SYMB -> Symbol.Symbol
 symbToSymbol (AS_BASIC.SymbId tok) =
     Symbol.Symbol {Symbol.symName = Id.simpleIdToId tok}
 
+pMap :: Map.Map Symbol.Symbol Symbol.Symbol -> Set.Set Id.Id
+         -> Map.Map Id.Id Id.Id
+pMap imap =
+ Set.fold (
+  \ x ->
+    let
+        symOf = Symbol.Symbol
+                 { Symbol.symName = x }
+        y = Symbol.symName
+             $ Symbol.applySymMap imap symOf
+    in Map.insert x y
+ ) Map.empty
+
 -- | Induce a signature morphism from a source signature and a raw symbol map
 inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                     -> Sign.Sign
@@ -328,28 +341,16 @@ inducedFromMorphism imap sig =
           , Result.maybeResult =
               let
                   sigItems = Sign.items sig
-                  pMap :: Map.Map Id.Id Id.Id
-                  pMap =
-                      Set.fold (
-                                \ x ->
-                                    let
-                                        symOf = Symbol.Symbol
-                                                        { Symbol.symName = x }
-                                        y = Symbol.symName
-                                          $ Symbol.applySymMap imap symOf
-                                    in
-                                      Map.insert x y
-                               )
-                               Map.empty sigItems
               in
               Just
               Morphism.Morphism
                           {
                             Morphism.source = sig
-                          , Morphism.propMap = pMap
+                          , Morphism.propMap = pMap imap sigItems
                           , Morphism.target = Sign.Sign
                                       {Sign.items =
-                                             Set.map (Morphism.applyMap pMap)
+                                             Set.map (Morphism.applyMap
+                                              (pMap imap sigItems))
                                                   $ Sign.items sig
                                       }
                           }
@@ -363,25 +364,11 @@ inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
 inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
               let
                   sigItems = Sign.items sig
-                  pMap :: Map.Map Id.Id Id.Id
-                  pMap =
-                      Set.fold (
-                                \ x ->
-                                    let
-                                        symOf = Symbol.Symbol
-                                                        { Symbol.symName = x }
-                                        y = Symbol.symName
-                                                    $ Symbol.applySymMap
-                                                              imap
-                                                              symOf
-                                    in
-                                      Map.insert x y
-                               )
-                               Map.empty sigItems
                   targetSig = Sign.Sign
                                                {Sign.items =
                                                     Set.map
-                                                       (Morphism.applyMap pMap)
+                                                       (Morphism.applyMap
+                                                        (pMap imap sigItems))
                                                        $ Sign.items sig
                                                }
                   isSub = Sign.items targetSig
@@ -395,7 +382,7 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
                              Just Morphism.Morphism
                                  {
                                      Morphism.source = sig
-                                     , Morphism.propMap = pMap
+                                     , Morphism.propMap = pMap imap sigItems
                                      , Morphism.target = tSig
                                  }
                      }
