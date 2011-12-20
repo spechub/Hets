@@ -30,6 +30,11 @@ import Common.AS_Annotation
 import Common.Result
 import Common.ProverTools
 import Common.Utils
+import Common.SAX
+import Control.Monad
+import Common.Lib.Maybe
+import qualified Data.ByteString.Lazy as L
+import Text.XML.Expat.SAX
 
 import HolLight.Sign
 import HolLight.Sentence
@@ -42,120 +47,12 @@ import Driver.Options
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
-import Data.Char
 import Data.Maybe (fromMaybe)
-
-import Control.Monad
-import Common.Lib.Maybe
-import Common.Lib.State
 
 import System.Exit
 import System.FilePath.Posix
 import System.Directory
 import System.Process
-
-import Text.XML.Expat.SAX
-import qualified Data.ByteString.Lazy as L
-
-foldCatchLeft :: Monad m => (a -> MaybeT m a) -> a -> MaybeT m a
-foldCatchLeft fn def = MaybeT $ do
- v <- runMaybeT $ fn def
- case v of
-  Just res -> runMaybeT (foldCatchLeft fn res)
-  _ -> return (Just def)
-
-whileM :: Monad m => MaybeT m a -> MaybeT m [a]
-whileM fn = liftM reverse $ foldCatchLeft (\ l -> liftM (: l) fn) []
-
-type SaxEvL = [SAXEvent String String]
-type DbgData = (Maybe [String], Bool)
-type MSaxState a = MaybeT (State (SaxEvL, DbgData)) a
-
-getM :: MSaxState (SaxEvL, DbgData)
-getM = liftToMaybeT get
-
-putM :: (SaxEvL, DbgData) -> MSaxState ()
-putM = liftToMaybeT . put
-
-debugS' :: String -> State (SaxEvL, DbgData) (Maybe a)
-debugS' s = do
- (evl, (dbg, do_dbg)) <- get
- if do_dbg then do
-  maybe (put (evl, (Just [s], do_dbg)))
-        (\ msg -> put (evl, (Just $ s : msg, do_dbg)))
-        dbg
-  return Nothing
-   else return Nothing
-
-debugS :: String -> MSaxState a
-debugS s = MaybeT $ debugS' s
-
-runMSaxState :: MSaxState a -> SaxEvL -> Bool
-                -> (Maybe a, (SaxEvL, DbgData))
-runMSaxState f evl b = runState (runMaybeT f) (evl, (Nothing, b))
-
-getD :: MSaxState SaxEvL
-getD = liftM fst getM
-
-putD :: SaxEvL -> MSaxState ()
-putD evl = do
- (_, dbg) <- getM
- putM (evl, dbg)
-
-parsexml :: L.ByteString -> SaxEvL
-parsexml = parse defaultParseOptions
-
-dropSpaces :: MSaxState ()
-dropSpaces = do
- evl <- getD
- putD $ dropWhile
-  (\ e ->
-     case e of
-      CharacterData d -> all isSpace d
-      _ -> False
-  ) evl
-
-tag :: MSaxState (Bool, String)
-tag = do
- dropSpaces
- d <- getD
- case d of
-   [] -> error "HolLight.tag"
-   h : xs -> do
-     putD xs
-     case h of
-       StartElement s _ -> return (True, s)
-       EndElement s -> return (False, s)
-       _ -> debugS $ "Expected a tag - instead got: " ++ show h
-
-expectTag :: Bool -> String -> MSaxState String
-expectTag st s = do
- d <- getM
- MaybeT $ do
-  v <- runMaybeT tag
-  case v of
-   Just p -> let p2 = (st, s) in if p2 /= p
-                 then do
-                  put d
-                  debugS' $ "Expected tag " ++ show p2
-                           ++ " but instead got: " ++ show p
-                 else return $ Just s
-   Nothing -> do
-    put d
-    debugS' "Expected a tag, but didn't find one - see previous message!"
-
-readWithTag :: MSaxState a -> String -> MSaxState a
-readWithTag fn tagName = do
- expectTag True tagName
- d <- fn
- expectTag False tagName
- return d
-
-readL :: Show a => MSaxState a -> String -> MSaxState [a]
-readL fn = readWithTag (whileM fn)
-
-foldS :: Show a => (a -> MSaxState a) -> a -> String -> MSaxState a
-foldS fn def = readWithTag (foldCatchLeft fn def)
 
 readTuple :: (Show a, Show b) => MSaxState a -> MSaxState b -> MSaxState (a, b)
 readTuple f1 f2 = do
