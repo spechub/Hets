@@ -51,7 +51,7 @@ makePlaceElem pl = unode "placement" attrList
       q2At = mko "q2" (q2 $ orientation pl)
       q3At = mko "q3" (q3 $ orientation pl)
 
-mkNumAtt :: Num a => String -> a -> Attr
+mkNumAtt :: Show a => String -> a -> Attr
 mkNumAtt key num = (Attr (unqual key) (show num))
 
 makeObjElem :: Object -> Element

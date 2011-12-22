@@ -35,7 +35,7 @@ instance Pretty Sentence where
 pp_print_term :: Term -> Doc
 pp_print_term tm = print_term 0 tm
 
-prec_parens :: Num a => a -> Doc -> Doc
+prec_parens :: (Num a, Eq a) => a -> Doc -> Doc
 prec_parens prec = if prec /= 0 then parens else id
 
 replace_pt :: Term -> HolParseType -> Term
