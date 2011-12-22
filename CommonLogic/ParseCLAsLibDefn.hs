@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Copyright   :  Eugen Kuksa 2011
@@ -43,8 +44,9 @@ import System.FilePath (combine, addExtension)
 import System.Directory (doesFileExist, getCurrentDirectory)
 
 import Network.URI
+#ifndef NOHTTP
 import Network.HTTP
-
+#endif
 
 type SpecMap = Map String SpecInfo
 type SpecInfo = (BASIC_SPEC, Set String, Set String)
@@ -225,10 +227,12 @@ getCLIFContents opts filename = case parseURIReference filename of
         localFileContents opts (uriToString id uri "")
       "file:" ->
         localFileContents opts (uriPath uri)
+#ifndef NOHTTP
       "http:" ->
         simpleHTTP (defaultGETRequest uri) >>= getResponseBody
       "https:" ->
         simpleHTTP (defaultGETRequest uri) >>= getResponseBody
+#endif
       x -> error ("Unsupported URI scheme: " ++ x)
 
 localFileContents :: HetcatsOpts -> String -> IO String

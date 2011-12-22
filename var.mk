@@ -56,7 +56,7 @@ endif
 HTTPVERSION = $(shell $(HCPKG) latest HTTP)
 ifneq ($(findstring 4000., $(HTTPVERSION)),)
 else
-HTTP_PACKAGE = -DNOMATHSERVER
+HTTP_PACKAGE = -DNOHTTP
 endif
 
 UNIVERSION = $(shell $(HCPKG) latest uni-uDrawGraph)

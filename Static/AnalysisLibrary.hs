@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  static analysis of CASL specification libraries
@@ -51,7 +52,9 @@ import Driver.Options
 import Driver.ReadFn
 import Driver.WriteLibDefn
 
+#ifndef NOHTTP
 import Network.HTTP (simpleHTTP, getRequest, getResponseBody)
+#endif
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -82,13 +85,16 @@ anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSource mln lgraph opts topLns libenv initDG fname = ResultT $
+#ifndef NOHTTP
   if checkUri fname then do
        putIfVerbose opts 2 $ "Downloading file " ++ fname
        resp <- simpleHTTP (getRequest fname)
        input <- getResponseBody resp
        runResultT $
          anaString mln lgraph opts topLns libenv initDG input fname
-  else do
+  else
+#endif
+  do
   fname' <- findFileOfLibName opts fname
   case fname' of
     Nothing ->

@@ -33,7 +33,7 @@ import SoftFOL.Morphism
 import Common.ProverTools
 import SoftFOL.ProveSPASS
 import SoftFOL.ProveHyperHyper
-#ifndef NOMATHSERVER
+#ifndef NOHTTP
 import SoftFOL.ProveMathServ
 import SoftFOL.ProveVampire
 #endif
@@ -85,7 +85,7 @@ instance Logic SoftFOL () () Sentence () ()
 #ifdef UNI_PACKAGE
          provers SoftFOL =
            unsafeProverCheck "SPASS" "PATH" spassProver
-#ifndef NOMATHSERVER
+#ifndef NOHTTP
            ++ [mathServBroker, vampire]
 #endif
            ++ concatMap
