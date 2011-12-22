@@ -89,7 +89,10 @@ PARSEC_FLAG = -hide-package parsec -package parsec1
 endif
 
 ifneq ($(strip $(UNI_PACKAGE)),)
-TESTTARGETFILES += Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
+TESTTARGETFILES += Taxonomy/taxonomyTool.hs
+  ifeq ($(strip $(HTTP_PACKAGE)),)
+  TESTTARGETFILES += SoftFOL/tests/CMDL_tests.hs
+  endif
 endif
 
 HC_OPTS_WITHOUTGLADE = $(GHC7OPTS) $(PARSEC_FLAG) \
