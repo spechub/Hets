@@ -22,7 +22,6 @@ import Common.AS_Annotation
 import Common.SExpr
 import Common.Utils
 
-import Control.Monad
 import Data.Char
 import Data.Maybe
 import Data.List
@@ -31,6 +30,7 @@ import System.Process
 import System.IO
 import Text.ParserCombinators.Parsec
 #ifdef TAR_PACKAGE
+import Control.Monad
 import System.Directory
 import qualified Codec.Archive.Tar as Tar
 #endif
