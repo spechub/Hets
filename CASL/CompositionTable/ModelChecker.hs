@@ -168,7 +168,7 @@ calculateQuantification (sign, qf) vardecls t symbs = case qf of
             _ -> warning False "Unique Existential not fulifilled" range
     _ -> error "CASL.CompositionTable.ModelChecker.calculateQuantification"
 
-data VARIABLE_ASSIGNMENT = Variable_Assignment [(VAR, Baserel)] deriving Eq
+data VARIABLE_ASSIGNMENT = Variable_Assignment [(VAR, Baserel)]
 
 instance Show VARIABLE_ASSIGNMENT where
     show (Variable_Assignment assignList) = showAssignments assignList
@@ -331,7 +331,7 @@ calculateFormula (sign, qf) varass t symbs = case qf of
          ++ showDoc qf ""
 
 equalElements :: [Baserel] -> [Baserel] -> Bool
-equalElements a b = Set.fromList a == Set.fromList b
+equalElements a b = Set.toList (Set.fromList a) == Set.toList (Set.fromList b)
 
 generateVariableAssignments :: [VAR_DECL] -> Table -> [VARIABLE_ASSIGNMENT]
 generateVariableAssignments vardecls t =

@@ -98,7 +98,7 @@ data TextInfo = TextInfo {
   , props :: Set.Set String
   , arityPred :: MapSet String Int
   , arityFunc :: MapSet String Int
-  } deriving (Eq, Ord, Show)
+  } deriving Show
 
 emptyTI :: TextInfo
 emptyTI = TextInfo { vars = Set.empty

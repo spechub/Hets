@@ -102,7 +102,7 @@ instance Comorphism CASL2TopSort
 data PredInfo = PredInfo { topSortPI :: SORT
                          , directSuperSortsPI :: Set.Set SORT
                          , predicatePI :: PRED_NAME
-                         } deriving (Show, Ord, Eq)
+                         } deriving Show
 
 type SubSortMap = Map.Map SORT PredInfo
 

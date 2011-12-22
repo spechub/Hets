@@ -58,7 +58,7 @@ data QModel = QModel
         -- currently evaluated items, for avoiding infinite recursion
         , evaluatedPreds :: [(PRED_SYMB, [CASLTERM])]
         , evaluatedOps :: [(OP_SYMB, [CASLTERM])]
-        } deriving (Eq, Show)
+        } deriving Show
 
 {- |
   Run the QuickCheck service.
@@ -161,7 +161,6 @@ eqSymb = mkQualPred eqId (Pred_type [] nullRange)
 -- * Variable assignments
 
 data VariableAssignment = VariableAssignment QModel [(VAR, CASLTERM)]
-                          deriving Eq
 
 instance Show VariableAssignment where
   show (VariableAssignment qm assignList) = showAssignments qm assignList
