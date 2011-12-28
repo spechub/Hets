@@ -1,0 +1,15 @@
+<rdf:RDF xmlns="http://www.w3.org/2000/10/swap/test/demo1/about-pat#"
+    xmlns:bio="http://www.w3.org/2000/10/swap/test/demo1/biology#"
+    xmlns:per="http://www.w3.org/2000/10/swap/test/demo1/friends-vocab#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+
+    <bio:Human rdf:about="#pat">
+        <per:name>Pat Smith</per:name>
+        <per:name>Patrick Smith</per:name>
+        <per:pet>
+            <bio:Dog>
+                <per:name>Rover</per:name>
+            </bio:Dog>
+        </per:pet>
+    </bio:Human>
+</rdf:RDF>
