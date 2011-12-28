@@ -16,8 +16,8 @@ References:
 
 module RDF.AS where
 
-import OWL2.AS
 import Common.Id
+import OWL2.AS
 
 -- * Graphs
 
@@ -34,7 +34,7 @@ data RDFGraph = RDFGraph [Axiom]
 
 data RDFEntityType = Subject | Predicate | Object
     deriving (Show, Eq, Ord, Bounded, Enum)
-
+    
 data RDFEntity = RDFEntity RDFEntityType IRI
     deriving (Show, Eq, Ord)
     

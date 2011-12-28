@@ -29,18 +29,20 @@ import Syntax.AS_Structured
 import System.Exit
 import System.Process
 
-{-- | top-level function for parsing RDF; it first tries to parse RDF-XML and
+{- | top-level function for parsing RDF; it first tries to parse RDF-XML and
 if this fails, it tries to parse ntriples; the output file is in ntriples
-format --}
+format -}
 parseRDF :: FilePath                -- ^ local filepath or uri
          -> IO LIB_DEFN             -- ^ map: uri -> RDF graph
 parseRDF filename = do
     let triplesFile = filename ++ ".nt"
     ec <- system $ "cwm --rdf " ++ filename
         ++ " --ntriples > " ++ triplesFile ++ " 2> /dev/null"
-    case ec of
+    libdefn <- case ec of
         ExitSuccess -> parseNTriplesToLibDefn triplesFile
         _ -> parseNTriplesToLibDefn filename
+    system $ "rm " ++ triplesFile
+    return libdefn
 
 parseNTriplesToLibDefn :: FilePath -> IO LIB_DEFN
 parseNTriplesToLibDefn filename = fmap (convertToLibDefN filename)
