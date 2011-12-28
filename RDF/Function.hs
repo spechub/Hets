@@ -64,7 +64,7 @@ instance Function Sign where
             (Set.map (function t mp) p2)
             (Set.map (function t mp) p3)
     _ -> error "cannot perform operation"
-    
+
 instance Function RDFEntity where
     function t pm (RDFEntity ty ent) = case pm of
         StringMap _ -> RDFEntity ty $ function t pm ent
@@ -72,12 +72,12 @@ instance Function RDFEntity where
 
 instance Function Literal where
     function _ _ l = l
-    
+
 instance Function Object where
     function t pm obj = case obj of
         Left iri -> Left $ function t pm iri
         Right lit -> Right $ function t pm lit
-        
+
 valueOfKey :: RDFEntityType -> IRI -> MorphMap -> IRI
 valueOfKey ty iri mm =
     let ent = RDFEntity ty iri
@@ -93,6 +93,6 @@ instance Function Axiom where
             in Axiom nsub npre $ case obj of
                     Left iri -> Left $ valueOfKey Object iri mm
                     _ -> obj
-                
+
 instance Function RDFGraph where
   function t mp (RDFGraph l) = RDFGraph $ map (function t mp) l

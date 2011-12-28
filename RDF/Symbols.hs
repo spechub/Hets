@@ -28,6 +28,5 @@ data SymbMapItems = SymbMapItems (Maybe RDFEntityType) [(IRI, Maybe IRI)]
 -- | raw symbols
 data RawSymb = ASymbol RDFEntity | AnUri IRI
     deriving (Show, Eq, Ord)
-    
+
 instance GetRange RawSymb
-    

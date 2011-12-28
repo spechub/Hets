@@ -35,7 +35,7 @@ modEntity f (RDFEntity ty u) = do
     Subject -> s { subjects = chg $ subjects s }
     Predicate -> s { predicates = chg $ predicates s }
     Object -> s { objects = chg $ objects s }
-    
+
 -- | adding entities to the signature
 addEntity :: RDFEntity -> State Sign ()
 addEntity = modEntity Set.insert
@@ -47,11 +47,11 @@ collectEntities (Axiom sub pre obj) = do
     case obj of
         Left iri -> addEntity (RDFEntity Object iri)
         _ -> return ()
-        
+
 -- | collects all entites from the graph
 createSign :: RDFGraph -> State Sign ()
-createSign (RDFGraph gr) = do
-  mapM_ (collectEntities . function Expand (StringMap Map.empty)) gr
+createSign (RDFGraph gr) =
+    mapM_ (collectEntities . function Expand (StringMap Map.empty)) gr
 
 -- | corrects the axioms according to the signature
 createAxioms :: Sign -> RDFGraph -> Result ([Named Axiom], RDFGraph)
@@ -70,10 +70,10 @@ findImplied ax sent =
          , isDef = False
          , wasTheorem = False }
    else sent { isAxiom = True }
-    
+
 prove :: Axiom -> Bool
 prove _ = False
-    
+
 -- | static analysis of graph with incoming sign.
 basicRDFAnalysis :: (RDFGraph, Sign, GlobalAnnos)
     -> Result (RDFGraph, ExtSign Sign RDFEntity, [Named Axiom])
@@ -82,8 +82,3 @@ basicRDFAnalysis (gr, inSign, _) = do
         accSign = execState (createSign gr) inSign
     (axl, newgraph) <- createAxioms accSign gr
     return (newgraph, ExtSign accSign syms, axl)
-
-    
-    
-    
-    

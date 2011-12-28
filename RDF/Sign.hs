@@ -47,7 +47,7 @@ isSubSign a b =
     Set.isSubsetOf (subjects a) (subjects b)
        && Set.isSubsetOf (predicates a) (predicates b)
        && Set.isSubsetOf (objects a) (objects b)
-       
+
 uniteSign :: Sign -> Sign -> Result Sign
 uniteSign s1 s2 = return $ addSign s1 s2
 

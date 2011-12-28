@@ -32,10 +32,10 @@ printRDFBasicTheory (_, l) = vsep (map (pretty . sentence) l)
 
 instance Pretty Sign where
     pretty = printSign
-    
+
 printNodes :: String -> Set.Set IRI -> Doc
-printNodes s iris = text "#" <+> text s $+$ (vcat $ map (text "#\t\t" <+>)
-    $ map pretty $ Set.toList iris)
+printNodes s iris = text "#" <+> text s $+$
+    vcat (map ((text "#\t\t" <+>) . pretty) (Set.toList iris))
 
 printSign :: Sign -> Doc
 printSign s = text "# signature" $+$ printNodes "subjects:" (subjects s)
@@ -65,7 +65,7 @@ printGraph (RDFGraph sl) = vcat $ map pretty sl
 
 instance Pretty RDFEntityType where
     pretty ety = text $ show ety
-    
+
 instance Pretty RDFEntity where
     pretty (RDFEntity ty ent) = pretty ty <+> pretty ent
 

@@ -46,7 +46,7 @@ inclRDFMorphism s t = RDFMorphism
 
 isRDFInclusion :: RDFMorphism -> Bool
 isRDFInclusion m = Map.null (mmaps m) && isSubSign (osource m) (otarget m)
-  
+
 symMap :: MorphMap -> Map.Map RDFEntity RDFEntity
 symMap = Map.mapWithKey (\ (RDFEntity ty _) -> RDFEntity ty)
 
@@ -54,10 +54,10 @@ inducedElems :: MorphMap -> [RDFEntity]
 inducedElems = Map.elems . symMap
 
 inducedSign :: MorphMap -> Sign -> Sign
-inducedSign m s = execState (do
+inducedSign m = execState (do
             mapM_ (modEntity Set.delete) $ Map.keys m
-            mapM_ (modEntity Set.insert) $ inducedElems m) s
-        
+            mapM_ (modEntity Set.insert) $ inducedElems m)
+
 inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result RDFMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
@@ -75,7 +75,7 @@ inducedFromMor rm sig = do
     { osource = sig
     , otarget = inducedSign mm sig
     , mmaps = mm }
-  
+
 symMapOf :: RDFMorphism -> Map.Map RDFEntity RDFEntity
 symMapOf mor = Map.union (symMap $ mmaps mor) $ setToMap $ symOf $ osource mor
 
@@ -95,13 +95,13 @@ instance Pretty RDFMorphism where
        else fsep
          [ pretty $ mmaps m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
-         
+
 legalMor :: RDFMorphism -> Result ()
 legalMor m = let mm = mmaps m in unless
   (Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
   && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m))
         $ fail "illegal RDF morphism"
-        
+
 composeMor :: RDFMorphism -> RDFMorphism -> Result RDFMorphism
 composeMor m1 m2 =
   let nm = Set.fold (\ s@(RDFEntity ty u) -> let
@@ -112,7 +112,7 @@ composeMor m1 m2 =
   in return m1
      { otarget = otarget m2
      , mmaps = nm }
-     
+
 cogeneratedSign :: Set.Set RDFEntity -> Sign -> Result RDFMorphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
@@ -132,7 +132,7 @@ statSymbItems = concatMap
   $ \ (SymbItems m us) -> case m of
                Nothing -> map AnUri us
                Just ty -> map (ASymbol . RDFEntity ty) us
-               
+
 statSymbMapItems :: [SymbMapItems] -> Result (Map.Map RawSymb RawSymb)
 statSymbMapItems =
   foldM (\ m (s, t) -> case Map.lookup s m of

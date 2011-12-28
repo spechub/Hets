@@ -9,7 +9,7 @@ Portability :  portable
 
 RDF abstract syntax
 
-References: 
+References:
     <http://www.informatik.uni-bremen.de/~till/papers/ontotrans.pdf>
     <http://www.w3.org/TR/rdf-concepts/#section-Graph-syntax>
 -}
@@ -39,10 +39,11 @@ data RDFGraph = RDFGraph [Axiom]
 
 data RDFEntityType = Subject | Predicate | Object
     deriving (Show, Eq, Ord, Bounded, Enum)
-    
+
+-- | entities used for morphisms
 data RDFEntity = RDFEntity RDFEntityType IRI
     deriving (Show, Eq, Ord)
-    
+
 rdfEntityTypes :: [RDFEntityType]
 rdfEntityTypes = [minBound .. maxBound]
 
