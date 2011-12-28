@@ -61,7 +61,27 @@ instance Pretty RDFGraph where
 printGraph :: RDFGraph -> Doc
 printGraph (RDFGraph sl) = vcat $ map pretty sl
 
-instance Pretty SymbItems where
-instance Pretty SymbMapItems where
+-- | Symbols printing
+
+instance Pretty RDFEntityType where
+    pretty ety = text $ show ety
+    
 instance Pretty RDFEntity where
+    pretty (RDFEntity ty ent) = pretty ty <+> pretty ent
+
+instance Pretty SymbItems where
+    pretty (SymbItems m us) = pretty m <+> ppWithCommas us
+
+instance Pretty SymbMapItems where
+    pretty (SymbMapItems m us) = pretty m
+        <+> sepByCommas
+            (map (\ (s, ms) -> sep
+                [ pretty s
+                , case ms of
+                    Nothing -> empty
+                    Just t -> mapsto <+> pretty t]) us)
+
 instance Pretty RawSymb where
+    pretty rs = case rs of
+        ASymbol e -> pretty e
+        AnUri u -> pretty u

@@ -13,6 +13,12 @@ Morphisms for RDF
 
 module RDF.Morphism where
 
+import Common.DocUtils
+import Common.Doc
+import Common.Lib.State
+import Common.Lib.MapSet (setToMap)
+import Common.Result
+
 import OWL2.AS
 import RDF.AS
 import RDF.Sign
@@ -20,15 +26,9 @@ import RDF.Function
 import RDF.StaticAnalysis
 import RDF.Print
 import RDF.Symbols
-import Common.DocUtils
-import Common.Doc
-import Common.Lib.State
-import Common.Lib.MapSet (setToMap)
-import Common.Result
+
 import Control.Monad
-
 import Data.Maybe
-
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -36,19 +36,16 @@ data RDFMorphism = RDFMorphism
   { osource :: Sign
   , otarget :: Sign
   , mmaps :: MorphMap
-  , pmap :: StringMap
   } deriving (Show, Eq, Ord)
 
 inclRDFMorphism :: Sign -> Sign -> RDFMorphism
 inclRDFMorphism s t = RDFMorphism
  { osource = s
  , otarget = t
- , pmap = Map.empty
  , mmaps = Map.empty }
 
 isRDFInclusion :: RDFMorphism -> Bool
-isRDFInclusion m = Map.null (pmap m)
-  && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
+isRDFInclusion m = Map.null (mmaps m) && isSubSign (osource m) (otarget m)
   
 symMap :: MorphMap -> Map.Map RDFEntity RDFEntity
 symMap = Map.mapWithKey (\ (RDFEntity ty _) -> RDFEntity ty)
@@ -91,9 +88,7 @@ inducedFromMor rm sig = do
   return RDFMorphism
     { osource = sig
     , otarget = inducedSign mm tm sig
-    , pmap = tm
     , mmaps = mm }
-
   
 symMapOf :: RDFMorphism -> Map.Map RDFEntity RDFEntity
 symMapOf mor = Map.union (symMap $ mmaps mor) $ setToMap $ symOf $ osource mor
@@ -113,7 +108,6 @@ instance Pretty RDFMorphism where
              , pretty $ Set.difference (symOf t) $ symOf s ]
        else fsep
          [ pretty $ mmaps m
-         , pretty $ pmap m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
          
 legalMor :: RDFMorphism -> Result ()
@@ -131,7 +125,6 @@ composeMor m1 m2 =
            . symOf $ osource m1
   in return m1
      { otarget = otarget m2
-     , pmap = Map.empty
      , mmaps = nm }
      
 cogeneratedSign :: Set.Set RDFEntity -> Sign -> Result RDFMorphism
@@ -175,7 +168,5 @@ statSymbMapItems =
             in map (\ (s, t) -> (mS s, mS t)) ps)
 
 mapSen :: RDFMorphism -> Axiom -> Result Axiom
-mapSen m a = do
-    let new = function Rename (MorphMap $ mmaps m) a
-    return $ function Rename (StringMap $ pmap m) new
-  
+mapSen m a = return $ function Rename (MorphMap $ mmaps m) a
+
