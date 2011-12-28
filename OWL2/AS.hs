@@ -92,7 +92,7 @@ type IRI = QName
 
 -- | checks if an IRI is an anonymous individual
 isAnonymous :: IRI -> Bool
-isAnonymous iri = iriType iri == NodeID
+isAnonymous iri = iriType iri == NodeID || namePrefix iri == "_"
 
 -- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
 cssIRI :: String -> IRIType

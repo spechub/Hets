@@ -25,6 +25,11 @@ type Subject = IRI
 type Predicate = IRI
 type Object = Either IRI Literal
 
+getIRIFromObject :: Object -> Maybe IRI
+getIRIFromObject obj = case obj of
+    Left iri -> Just iri
+    _ -> Nothing
+
 -- Axiom represents a RDF Triple
 data Axiom = Axiom Subject Predicate Object
     deriving (Show, Eq, Ord)

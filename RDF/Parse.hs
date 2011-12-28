@@ -21,14 +21,13 @@ import OWL2.Parse
 import RDF.AS
 import RDF.Symbols
 
-import System.Process
 import Text.ParserCombinators.Parsec
 
 -- * ntriples parser
 
 -- | parses an object
 parseObj :: CharParser st Object
-parseObj = fmap Right literal <|> fmap Left individual
+parseObj = fmap Right literal <|> fmap Left uriP
 
 -- | parses a comment
 comment :: CharParser st ()

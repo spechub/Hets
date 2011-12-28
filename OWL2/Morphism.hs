@@ -11,21 +11,7 @@ Portability :  portable
 Morphisms for OWL
 -}
 
-module OWL2.Morphism
-  ( OWLMorphism (..)
-  , isOWLInclusion
-  , inclOWLMorphism
-  , legalMor
-  , composeMor
-  , cogeneratedSign
-  , generatedSign
-  , matchesSym
-  , statSymbItems
-  , statSymbMapItems
-  , inducedFromMor
-  , symMapOf
-  , mapSen
-  ) where
+module OWL2.Morphism where
 
 import OWL2.AS
 import OWL2.MS

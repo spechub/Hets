@@ -24,8 +24,8 @@ import RDF.AS
 import RDF.Sign
 import RDF.Function
 import RDF.StaticAnalysis
-import RDF.Print
 import RDF.Symbols
+import RDF.Print ()
 
 import Control.Monad
 import Data.Maybe
@@ -53,41 +53,27 @@ symMap = Map.mapWithKey (\ (RDFEntity ty _) -> RDFEntity ty)
 inducedElems :: MorphMap -> [RDFEntity]
 inducedElems = Map.elems . symMap
 
-inducedSign :: MorphMap -> StringMap -> Sign -> Sign
-inducedSign m t s =
-    let new = execState (do
+inducedSign :: MorphMap -> Sign -> Sign
+inducedSign m s = execState (do
             mapM_ (modEntity Set.delete) $ Map.keys m
             mapM_ (modEntity Set.insert) $ inducedElems m) s
-    in function Rename (StringMap t) new
-
-inducedPref :: String -> String -> Sign -> (MorphMap, StringMap)
-    -> (MorphMap, StringMap)
-inducedPref v u sig (m, t) =
-    let pm = Map.empty
-    in if Set.member v $ Map.keysSet pm
-         then if u == v then (m, t) else (m, Map.insert v u t)
-        else error $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
         
 inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result RDFMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
-  (mm, tm) <- foldM (\ (m, t) p -> case p of
+  mm <- foldM (\ m p -> case p of
         (ASymbol s@(RDFEntity _ v), ASymbol (RDFEntity _ u)) ->
             if Set.member s syms
-            then return $ if u == v then (m, t) else (Map.insert s u m, t)
+            then return $ if u == v then m else Map.insert s u m
             else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
           $ map (`RDFEntity` v) rdfEntityTypes of
-          [] -> let v2 = showQU v
-                    u2 = showQU u
-                in return $ inducedPref v2 u2 sig (m, t)
-          l -> return $ if u == v then (m, t) else
-                            (foldr (`Map.insert` u) m l, t)
-        _ -> error "RDF.Morphism.inducedFromMor") (Map.empty, Map.empty)
-                        $ Map.toList rm
+          [] -> fail $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
+          l -> return $ if u == v then m else foldr (`Map.insert` u) m l
+        _ -> error "RDF.Morphism.inducedFromMor") Map.empty $ Map.toList rm
   return RDFMorphism
     { osource = sig
-    , otarget = inducedSign mm tm sig
+    , otarget = inducedSign mm sig
     , mmaps = mm }
   
 symMapOf :: RDFMorphism -> Map.Map RDFEntity RDFEntity
@@ -169,4 +155,3 @@ statSymbMapItems =
 
 mapSen :: RDFMorphism -> Axiom -> Result Axiom
 mapSen m a = return $ function Rename (MorphMap $ mmaps m) a
-
