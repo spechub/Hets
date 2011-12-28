@@ -30,7 +30,8 @@ import System.Exit
 import System.Process
 
 {-- | top-level function for parsing RDF; it first tries to parse RDF-XML and
-if this fails, it tries to parse ntriples --}
+if this fails, it tries to parse ntriples; the output file is in ntriples
+format --}
 parseRDF :: FilePath                -- ^ local filepath or uri
          -> IO LIB_DEFN             -- ^ map: uri -> RDF graph
 parseRDF filename = do
