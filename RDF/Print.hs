@@ -37,10 +37,10 @@ printNodes :: String -> Set.Set IRI -> Doc
 printNodes s iris = text "#" <+> text s $+$ (vcat $ map (text "#\t\t" <+>) $ map pretty $ Set.toList iris)
 
 printSign :: Sign -> Doc
-printSign s = text "#" $+$ printNodes "subjects:" (subjects s)
+printSign s = text "# signature" $+$ printNodes "subjects:" (subjects s)
     $+$ printNodes "predicates:" (predicates s)
     $+$ printNodes "objects:" (objects s)
-    $+$ text "#"
+    $+$ text "# end signature"
 
 instance Pretty Axiom where
     pretty = printAxiom

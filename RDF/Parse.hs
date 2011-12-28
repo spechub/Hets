@@ -19,40 +19,36 @@ import RDF.AS
 import System.Process
 import Text.ParserCombinators.Parsec
 
-{- | takes an input file and outputs the n-triples
-    representation in the output file -}
-convertRDF2Ntriples :: String -> String -> IO ()
-convertRDF2Ntriples fileIn fileOut = do
-    system $ "cwm --rdf " ++ fileIn ++ " --ntriples > " ++ fileOut
-    return ()
-
--- parses and object
+-- | parses an object
 parseObj :: CharParser st Object
 parseObj = fmap Right literal <|> fmap Left individual
 
+-- | parses a comment
 comment :: CharParser st ()
 comment = do
     skipChar '#'
     forget $ manyTill anyChar $ char '\n'
 
-parseTriple :: CharParser st Axiom
-parseTriple = do
+-- | parses one ntriple (subject, predicate, object)
+parseNTriple :: CharParser st Axiom
+parseNTriple = do
     many space
     subj <- uriP
     pre <- uriP
     obj <- parseObj
     skips $ char '.'
     return $ Axiom subj pre obj
+    
+-- | parses a string containing several ntriples
+basicSpec :: CharParser st RDFGraph
+basicSpec = do
+    many $ forget space <|> comment
+    fmap RDFGraph $ many parseNTriple
 
-parseNtriples :: String -> IO RDFGraph
-parseNtriples file = do
+-- | parses an ntriple file
+parseNTriplesFile :: String -> IO RDFGraph
+parseNTriplesFile file = do
   str <- readFile file
   case runParser (basicSpec << eof) () file str of
     Right g -> return g
     Left err -> error $ show err
-
-basicSpec :: CharParser st RDFGraph
-basicSpec = do
-    many $ forget space <|> comment
-    fmap RDFGraph $ many parseTriple
-
