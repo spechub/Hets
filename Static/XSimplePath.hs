@@ -31,9 +31,6 @@ import Static.XGraph
 import Text.XML.Light hiding (findChild)
 import Text.XML.Light.Cursor
 
--- to check the type of ignored changes
-import Debug.Trace
-
 data SimplePath = SimplePath { steps :: [Finder]
                              , changeData :: ChangeData }
 
@@ -285,7 +282,8 @@ propagatePaths cr pths = case current cr of
       return (changes, toRight, toChildren)
   c -> fail $ "propagatePaths: unexpected Cursor Content: " ++ show c
 
--- | determine the required DgUpdates for a Change operation
+{- | determine the required DgUpdates from a Change operation.
+NOTE: some changes (like most attribute changes) will be ignored! -}
 updateChangeList :: Monad m => Cursor -> ChangeList -> ChangeData
                  -> m ChangeList
 updateChangeList cr chL (ChangeData csel atS) = case csel of
@@ -294,8 +292,11 @@ updateChangeList cr chL (ChangeData csel atS) = case csel of
   Update _ | isNothing atS -> case current cr of
     Elem e | isSentenceType e -> mkUpdateChange senMod chL cr
     Elem e | isSymbolType e -> mkUpdateChange symMod chL cr
-    _ -> trace (">> ignoring change(2): " ++ show csel) $ return chL
-  _ -> trace (">> ignoring change: " ++ show csel) $ return chL
+    {- TODO: cases above have been considered and tested.
+    Cases below will only receive update-information for reasons of fault-
+    resistancy. They might be refined or even removed! -}
+    _ -> mkUpdateChange symMod chL cr
+  _ -> mkUpdateChange symMod chL cr
 
 {- | split a list of AddChanges and write all Node and Link insertions into the
 ChangeList. -}
@@ -309,7 +310,8 @@ mkAddChange cr chL addCh = case addCh of
       return $ updateLinkChange MkInsert ei chL
     AddElem e | isSymbolType e -> mkUpdateChange addSymMod chL cr
     AddElem e | isSentenceType e -> mkUpdateChange addSenMod chL cr
-    _ -> trace (">> ignoring (add)change: " ++ show addCh) $ return chL
+    -- other cases as the above will be ignored
+    _ -> return chL
 
 -- | go upwards until an updatable element is found
 mkUpdateChange :: Monad m => NodeMod -> ChangeList -> Cursor -> m ChangeList
@@ -320,8 +322,8 @@ mkUpdateChange nmod chL cr = case current cr of
   Elem e | isDgLinkElem e -> do
       ei <- extractEdgeId e
       return $ updateLinkChange (MkUpdate nmod) ei chL
-  _ -> maybe (trace ">> ignoring a change in mkUpdate" $ return chL)
-        (mkUpdateChange nmod chL) $ parent cr
+  -- if no updateable element is found, the change is ignored
+  _ -> maybe (return chL) (mkUpdateChange nmod chL) $ parent cr
 
 {- | if node or link is removed, add this to ChangeList. otherwise create
 update-change -}
@@ -336,7 +338,8 @@ mkRemoveChange chL cr = case current cr of
   Elem e | isSymbolType e -> mkUpdateChange delSymMod chL cr
   Elem e | isAxiomType e -> mkUpdateChange delAxMod chL cr
   Elem e | isTheoremType e -> mkUpdateChange delThMod chL cr
-  _ -> trace ">> ignoring a change in mkRemove" $ return chL
+  -- other cases as the above will be ignored
+  _ -> return chL
 
 nameStringIs :: String -> Element -> Bool
 nameStringIs s = (== s) . qName . elName

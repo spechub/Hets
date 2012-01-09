@@ -45,9 +45,21 @@ import qualified Data.Map as Map
 
 import Text.XML.Light hiding (Node)
 
+{- incorporate a previous session (diff) upon an exising dgraph. The structure
+is as follows:
+ - roll back the current dg to it's initial state
+ - apply diff to initial dg
+ - create xgraph from dg'
+ - incorporate changes into current dg; the xgraph serves for structuring.
 
-{- TODO (general): determine the EXACT required change for each object instead
-of overwriting the existing one every time! -}
+NOTE: The data-type NodeMod holds information about the changes upon a node.
+However, with the current usage, a Boolean value would do since the module only
+knows update or don't-update. We kept the NodeMod-approach since proper usage
+of the NodeMod data type might allow more precise updating.
+
+NOTE(2): If any element changes, ALL elements that lie underneath in terms of
+signature-hierachy will receive updating as well (even if two subsequent
+changes would lead to an unchanged signature further down). -}
 
 -- | recieves diff as a string and current dg and prepares those for processing
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
@@ -55,6 +67,7 @@ dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
 dgXUpdate opts xs le ln dg = case parseXMLDoc xs of
     Nothing -> fail "dgXUpdate: cannot parse xupdate file"
     Just diff -> let
+      -- we assume that the diff refers to an unchanged dg..
       dgOld = undoAllChanges dg
       oldLId = getNewEdgeId dgOld
       xorig = dGraph le ln dgOld
@@ -66,12 +79,15 @@ hierachy and for retrieving required new data. -}
 dgXUpdateMods :: HetcatsOpts -> Element -> EdgeId -> Element -> LibEnv
               -> LibName -> DGraph -> ResultT IO (LibName, LibEnv)
 dgXUpdateMods opts xorig oldLId diff le ln dg = do
+  -- dg with changes incorporated (diff only) and listing of these changes
   (xml, chL) <- liftR $ changeXmlMod xorig diff
   lift $ writeVerbFile opts (libNameToFile ln ++ ".xml")
     $ ppTopElement $ cleanUpElem xml
   xgr <- liftR $ xGraph xml
+  -- the changes will now be incorporated in the so-far unchanged session-dg.
   (dg0, chL') <- liftR $ deleteElements dg chL
   let newLId = max (nextLinkId xgr) $ getNewEdgeId dg
+      -- to anticipate multiple use of link-ids
       dg1 = renumberDGLinks oldLId newLId dg0
       dg2 = dg1 { globalAnnos = globAnnos xgr
                 -- TODO as of now, ALL nodes will be removed from globalEnv!
@@ -123,7 +139,7 @@ predecessor signature changes have been collected through markLinkUpdates. -}
 getLinkModUnion :: ChangeList -> [XLink] -> NodeMod
 getLinkModUnion chL = foldr (\ xl ->
   case Map.lookup (edgeId xl) $ changeLinks chL of
-    -- TODO get proper NodeMod here!
+    -- TODO: Cons symMod was chosen only to ensure updating of adjacent nodes.
     Just MkInsert -> mergeNodeMod symMod
     Just (MkUpdate nmod) -> mergeNodeMod nmod
     Nothing -> id ) unMod
@@ -183,7 +199,7 @@ mkThmLinkUpdates lg (dg, lv, chL) xlks = do
   mrs <- mapM (getTypeAndMorphism lg dg) xlks
   foldM (mkLinkUpdate lg) (dg, lv, chL) mrs
 
-{- | deletes the those elements from dgraph that are marked for deletion in
+{- | deletes those elements from dgraph that are marked for deletion in
 changelist. for link deletion, the affected nodes are marked as such in chL -}
 deleteElements :: DGraph -> ChangeList -> Result (DGraph, ChangeList)
 deleteElements dg chL = do
@@ -199,7 +215,7 @@ deleteElements dg chL = do
 markNodeUpdates :: Monad m => DGraph -> Node -> ChangeList -> m ChangeList
 markNodeUpdates dg trg = case lab (dgBody dg) trg of
   Nothing -> return
-  -- TODO: here also, the NodeMod could be calculated
+  -- TODO: symMod was chosen to ensure updating, it does not always apply.
   Just lbl -> return . updateNodeChange (MkUpdate symMod) (dgn_name lbl)
 
 -- | deletes a link from dg and returns (def)links target id additionally
