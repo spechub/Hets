@@ -17,6 +17,8 @@ Control.Monad.State, but now Control.Monad.Trans.State can be used instead.
 
 module Common.Lib.State where
 
+import Control.Monad
+
 -- | Our fixed state monad
 newtype State s a = State { runState :: s -> (a, s) }
 
@@ -24,15 +26,12 @@ state :: (s -> (a, s)) -> State s a
 state = State
 
 instance Functor (State s) where
-        fmap f m = State $ \ s -> let
-                (a, s') = runState m s
-                in (f a, s')
+        fmap = liftM
 
 instance Monad (State s) where
         return a = State $ \ s -> (a, s)
-        m >>= k = State $ \ s -> let
-                (a, s') = runState m s
-                in runState (k a) s'
+        State f >>= k = State $ \ s ->
+                let (a, s') = f s in runState (k a) s'
 
 -- put and get are non-overloaded here!
 
@@ -46,7 +45,7 @@ modify :: (s -> s) -> State s ()
 modify f = get >>= put . f
 
 gets :: (s -> a) -> State s a
-gets f = fmap f get
+gets f = liftM f get
 
 evalState :: State s a -> s -> a
 evalState m = fst . runState m
