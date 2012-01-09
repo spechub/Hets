@@ -142,6 +142,7 @@ hetsServer opts1 = do
 #endif
    liftRun $ do
      time <- getCurrentTime
+     createDirectoryIfMissing False tempHetsLib
      m <- readIORef sessRef
      appendFile permFile $ shows time " sessions: "
                     ++ shows (IntMap.size m) "\n"
