@@ -827,7 +827,8 @@ extractCASLModel sign (ProofTree output) =
             $ Map.toList nops
           nsign = sign { opMap = nos }
           mkWarn s = Diag Warning s nullRange
-      doms <- mapM (\ (n, f) -> do
+      doms <- if Set.null (sortSet sign) then return [] else
+        mapM (\ (n, f) -> do
           diss <- getDomElems f
           nf <- createDomain sign nm diss
           return $ makeNamed n nf) ds
