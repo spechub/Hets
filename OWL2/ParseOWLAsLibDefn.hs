@@ -54,8 +54,8 @@ parseOWL filename = do
          ExitSuccess -> return $ parseProc filename result
          _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
-      else error $ jar ++ " not found"
-
+      else error $ jar
+        ++ " not found, check your environment variable: " ++ hetsOWLenv
 
 parseProc :: FilePath -> String -> LIB_DEFN
 parseProc filename str = convertToLibDefN filename
