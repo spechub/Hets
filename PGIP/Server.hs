@@ -420,6 +420,7 @@ getHetsResult opts updates sessRef file query =
                     "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
+                -- TODO: create nodeview in html-style
                 NcInfo -> return $ fstLine ++ showN dgnode
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
@@ -548,11 +549,10 @@ sessAns libName (sess, k) =
             goalInfo = '[' : shows (length ps) "/" ++ shows (length gs) "]"
               ++ subsumed
         in
-        unode "i" (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
+        italic (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
           let isProve = c == "prove" in
           if isProve && (null gs || noProvers) then
-            unode "i"
-               (if null gs then "no goals" ++ subsumed else
+            italic (if null gs then "no goals" ++ subsumed else
                    "no provers available " ++ goalInfo)
           else aRef (libPath ++ c ++ "=" ++ s
               ++ if isProve then "&theorems="
@@ -569,23 +569,19 @@ sessAns libName (sess, k) =
       elabs = labEdgesDG dg
   in htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
-           (unode "b" ("library " ++ ln)
+           (bold ("library " ++ ln)
             : map ref displayTypes
             ++ menuElement : loadXUpdate (libPath ++ "update")
-            : [unode "p" "commands:"]
-            ++ [unode "ul" $
-                map (unode "li" . ref) globalCommands]
-            ++ [unode "p" "imported libraries:"]
-            ++ [unode "ul" $
-                map (unode "li" . libref) $ Map.keys libEnv]
-            ++ [unode "p" (show (length nlabs)
-                           ++ " nodes with local and global theories:")]
-            ++ [unode "ul" $
-                map (unode "li" . noderef) nlabs]
-            ++ [unode "p" (show (length elabs) ++ " edges:")]
-            ++ [unode "ul" $
-                map (unode "li" . edgeref)
-                $ sortBy (comparing (\ (_, _, l) -> dgl_id l)) elabs]
+            : [plain "commands:"]
+            ++ [mkUnorderedList $ map ref globalCommands]
+            ++ [plain "imported libraries:"]
+            ++ [mkUnorderedList $ map libref $ Map.keys libEnv]
+            ++ [plain (show (length nlabs)
+                 ++ " nodes with local and global theories:")]
+            ++ [mkUnorderedList $ map noderef nlabs]
+            ++ [plain (show (length elabs) ++ " edges:")]
+            ++ [mkUnorderedList $ map edgeref
+                 $ sortBy (comparing (\ (_, _, l) -> dgl_id l)) elabs]
            )
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
@@ -613,6 +609,18 @@ aRef lnk txt = add_attr (mkAttr "href" lnk) $ unode "a" txt
 
 mkHtmlRef :: String -> String -> Element
 mkHtmlRef query entry = unode "dir" $ aRef (entry ++ query) entry
+
+mkUnorderedList :: Node t => [t] -> Element
+mkUnorderedList = unode "ul" . map (unode "li")
+
+italic :: String -> Element
+italic = unode "i"
+
+bold :: String -> Element
+bold = unode "b"
+
+plain :: String -> Element
+plain = unode "p"
 
 headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
@@ -662,8 +670,8 @@ uploadHtml = mkForm "/"
 
 loadXUpdate :: String -> Element
 loadXUpdate a = mkForm a
-  [ unode "i" "xupdate"
+  [ italic "xupdate"
   , loadNode "xupdate"
-  , unode "i" "impacts"
+  , italic "impacts"
   , loadNode "impacts"
   , submitNode ]
