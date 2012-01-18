@@ -1,0 +1,23 @@
+digraph G {
+    size = "8,6"
+
+RelScheme -> CASL;
+CASL -> CommonLogic
+SoftFOL -> CommonLogic;
+CASL -> SoftFOL;
+CommonLogic -> CommonLogic;
+CASL -> HasCASL;
+Propositional -> CASL;
+Propositional -> CommonLogic;
+CASL -> Propositional;
+Propositional -> OWL;
+OWL -> CommonLogic;
+CommonLogic -> CASL;
+CommonLogic -> CASL;
+CASL -> HasCASL;
+HasCASL -> THF;
+HasCASL -> Isabelle;
+HasCASL -> Isabelle;
+HasCASL -> Isabelle;
+HasCASL -> Isabelle;
+}

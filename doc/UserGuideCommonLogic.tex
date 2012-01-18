@@ -159,7 +159,46 @@ Comments to: \href{mailto:hets-users@informatik.uni-bremen.de}{hets-users@inform
 
 \section{Introduction}
 
+Common Logic (CL) is an ISO standard published as ``ISO/IEC 24707:2007
+- Information technology — Common Logic (CL): a framework for a family
+of logic-based languages''. It is freely available at
+\url{http://iso-commonlogic.org/}. CL is based on untyped first-order
+logic, but extends first-order logic in two ways: (1) any term can be
+used as function or predicate, and (2) sequence markers allow
+for talking about sequences of individuals directly.\footnote
+{Strictly speaking, only the second feature goes beyond first-order
+logic.}
 
+The Heterogeneous Tool Set (\Hets) is open source software providing
+several kinds of tool support for Common Logic:
+\begin{itemize}
+\item a parser for the Common Logic Interchange Format (CLIF) --- CLIF
+  is a Lisp-like syntax for CL;
+\item a connection of CL to well-known first-order theorem provers
+like SPASS, darwin and Vampire, such that logical consequences
+of CL theories can be proved;
+\item a connection of CL to the higher-order provers Isabelle/HOL
+and Leo-II in order to perform induction proofs in theories
+involving sequence markers;
+\item a connection to first-order model finders like darwin that
+allow one to find models for CL theories;
+\item support for proving interpretations between CL theories to be correct;
+\item a translation that eliminates the use of CL modules\footnote
+{Actually, we are using a revised semantics for modules, as proposed
+recently by Fabian Neuhaus and Pat Hayes in their paper ``Common Logic and
+the Horatio Problem''.}. Since the semantics of CL modules
+is special to CL, this elimination o modules is necessary before
+sending CL theories to a standard first-order prover;
+\item a translation of the Web Ontology Language OWL to CL;
+\item a translation of propositional logic to CL.
+\end{itemize}
+
+This guide will introduce you to these functioanlities of \Hets.
+For the full functionalities of \Hets, see the \Hets user guide  
+\cite{HetsUserGuide}.
+
+
+\section{The Heterogeneous Tool Set}
 
 The central idea of the Heterogeneous Tool Set (\protect\Hets) is to
 provide a general framework for formal methods integration and proof
@@ -179,7 +218,7 @@ hand.
 \end{figure}
 
 \Hets supports a number of input languages directly, such as \CASL,
-Common Logic and OWL DL. For heterogeneous
+Common Logic and OWL2. For heterogeneous
 specification, \Hets offers the Heterogeneous \CASL language (\HetCASL).
  \HetCASL generalises the structuring
 constructs of
@@ -248,9 +287,9 @@ out in \cite{Habil}. A short overview of \Hets is given in
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\textwidth]{LogicGraph}
+    \includegraphics[width=\textwidth]{LogicGraph-CL}
   \end{center}
-\caption{Graph of logics currently supported by \Hets. The more an
+\caption{Graph of logics related to Common Logic that are currently supported by \Hets. The more an
 ellipse is filled with green, the more stable is the implementation of the
 logic. Blue indicates a prover-supported logic.}
 \label{fig:LogicGraph}
@@ -262,43 +301,31 @@ logic. Blue indicates a prover-supported logic.}
 Language & Parser & Static Analysis & Prover \\\hline
 \CASL & x & x & -- \\\hline
 CommonLogic & x (CLIF) & x & -- \\\hline
-OWL DL & x & x & -- \\\hline
+OWL2 & x & x & x \\\hline
 Propositional & x & x & x \\\hline
 SoftFOL & x & -- & x \\\hline
 \end{tabular}
 \end{center}
-\caption{Current degree of \Hets support for some of the languages.\label{fig:Languages}}
+\caption{Current degree of \Hets support for some of the languages.
+Languages without prover can still ``borrow'' provers
+via logic translations.\label{fig:Languages}}
 \end{figure}
 
 \begin{description}
 
-\item[CASL] extends many sorted first-order logic with partial
-  functions and subsorting.  It also provides induction sentences,
-  expressing the (free) generation of datatypes.
-%It is mainly designed and used for the
-%specification of requirements for software systems. But it is also
-%used for the specification of \Dolce (Descriptive Ontology for
-%Linguistic and Cognitive Engineering), an Upper Ontology for knowledge
-%representation. \cite{Gangemi:2002:SOD} Further it is now used to
-%specify calculi for time and space.
-For more details on \CASL see \cite{CASL/RefManual,CASL-UM}.
-%
-We have implemented the \CASL logic in such a way that much of the
-implementation can be re-used for \CASL extensions as well; this
-is achieved via ``holes'' (realized via polymorphic variables) in the
-types for signatures, morphisms, abstract syntax etc.  This eases
-integration of \CASL extensions and keeps the effort of integrating
-\CASL extensions quite moderate.
 
-\item[Common Logic] \url{http://en.wikipedia.org/wiki/Common_logic} \newline 
-  \Hets currently only supports parsing CLIF. If you need other dialects, 
-  send us a message and we will add them.
+\item[Common Logic] \url{http://iso-commonlogic.org/}
+   is an ISO standard published as ``ISO/IEC 24707:2007 - Information technology — Common Logic (CL): a framework for a family of logic-based languages''. It is based on first-order logic, but extends first-order
+logic in several ways.   The Common Logic
+  Interchange Format (CLIF) provides a Lisp-like syntax for Common
+  Logic.  \Hets currently only supports parsing CLIF. If you need
+  other dialects, send us a message and we will add them.
 
-\item[OWL DL] is the description logic sublanguage of the Web Ontology Language (OWL \cite{McGvHa:owl04})\ednote{CL: So far this reads like OWL 1; how about OWL 2 support?} recommended by the
+\item[OWL2] is the description logic sublanguage of the Web Ontology Language (OWL \cite{McGvHa:owl04}) recommended by the
   World Wide Web Consortium (W3C, \url{http://www.w3c.org}). It is
   used for knowledge representation on the Semantic Web
   \cite{berners:2001:SWeb}.
-Hets calls an external OWL DL parser
+Hets calls an external OWL2 parser
   written in Java to obtain the abstract syntax for an OWL file and its
   imports. The Java parser also does a first analysis classifying
   the OWL ontology into the sublanguages OWL Full, OWL DL and OWL
@@ -310,18 +337,53 @@ The
 \item[Propositional] is classical propositional logic, with
 the zChaff SAT solver \cite{Herbstritt03} connected to it.
 
-\item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
+\item[SoftFOL] \cite{LuettichEA06a} offers several automated theorem
   proving (ATP) systems for first-order logic with equality: \begin{inparaenum}[(1)]\item \SPASS
-  \cite{WeidenbachEtAl02}; \item Vampire \cite{RiazanovV02}; and \item 
+  \cite{WeidenbachEtAl02}, see \url{http://www.spass-prover.org}; 
+\item Vampire \cite{RiazanovV02} see \url{http://www.vprover.org};
+\item Eprover \cite{Schulz:AICOM-2002}, see {http://www.eprover.org};
+\item E-KRHyper \cite{DBLP:conf/cade/PelzerW07}, see {http://www.uni-koblenz.de/~bpelzer/ekrhyper}, and 
+\item 
   MathServe Broker\footnote{which chooses an appropriate ATP upon a
-    classification of the FOL problem} \cite{ZimmerAutexier06}\end{inparaenum}.
+    classification of the FOL problem} \cite{ZimmerAutexier06}.
+\end{inparaenum}
   These together comprise some of the most advanced theorem provers
-  for first-order logic.
+  for first-order logic. SoftFOL is essentially the first-order
+  interchange language TPTP \cite{DBLP:conf/lpar/Sutcliffe10},
+see \url{http://www.tptp.org}.
+
+\item[CASL] extends many sorted first-order logic with partial
+  functions and subsorting.  It also provides induction sentences,
+  expressing the (free) generation of datatypes.
+For more details on \CASL see \cite{CASL/RefManual,CASL-UM}.
+
+\item[\Isabelle] \cite{NipPauWen02} is the logic of the interactive
+  theorem prover Isabelle for higher-order logic.
+
+\item[THF] is an interchange language for higher-order logic
+  \cite{DBLP:conf/cade/BenzmullerRS08}, similar to what TPTP
+  is for first-order logic. \Hets connects THF to the automated
+  higher-order prover Leo-II.
+
+\item[HasCASL] is a higher order extension of \CASL allowing
+  polymorphic datatypes and functions. It is closely related to the
+  programming language Haskell and allows program constructs being
+  embedded in the specification. For Common Logic, HasCASL
+  is mainly interesting as a transitional logic for paths
+  to the provers Isabelle and Leo-II.
+
+\item[RelScheme] is a logic for relational databases \cite{DBLP:journals/ao/SchorlemmerK08}.
+
 \end{description}
 
 Various logics are supported with proof tools. Proof support for the
 other logics can be obtained by using logic translations to a
-prover-supported logic.
+prover-supported logic. For Common Logic, the paths to SoftFOL
+are particularly interesting, because this offers an interface
+to standard first-order provers. Moreover, the paths to THF
+and Isabelle offer interfaces to higher-order provers, which
+is essential if you want to prove inductive theorems about
+sequences.
 
 
 An introduction to \CASL can be found in the \CASL User Manual
@@ -364,7 +426,7 @@ CommonLogic2CASLCompact & Coding compact Common Logic to \CASL.
 CommonLogicModuleElimination & Eliminating modules from a Common Logic theory 
 			       resulting in an equivalent specification without
 				modules. \\\hline
-OWL2CommonLogic & Inclusion of OWL description logic \\\hline
+OWL22CommonLogic & Inclusion of OWL2 description logic \\\hline
 Prop2CommonLogic & Inclusion of propositional logic \\\hline
 SoftFOL2CommonLogic & Inclusion of first order logic \\\hline
 CASL2SoftFOL & Coding of CASL.SuleCFOL=E to SoftFOL \cite{LuettichEA06a},
@@ -399,6 +461,7 @@ There are several possibilities to install \Hets.
 \begin{enumerate}
 \item
 The best support is currently given via Ubuntu packages.
+For Ubuntu Lucid Lynx, enter the following into a terminal:
 \begin{lstlisting}
 sudo apt-add-repository ppa:hets/hets
 sudo apt-add-repository \
@@ -406,6 +469,8 @@ sudo apt-add-repository \
 sudo apt-get update
 sudo apt-get install hets
 \end{lstlisting}
+For later Ubuntu versions, replace lucid by maverick, natty or oneiric.
+
 This will also install quite a couple of tools for proving requiring about
 800 MB of disk space. For a minimal installation use \texttt{apt-get install
   hets-core} instead of \texttt{hets}.
@@ -449,7 +514,8 @@ install the above mentioned software and set
 several environment variables, as explained on the installation page.
 
 \item
-You may compile \Hets from the sources, please follow the
+You may compile \Hets from the sources (they are licensed under GPL), 
+please follow the
 link ``Hets: source code and information for developers''
 on the \Hets web page, download the sources (as tarball or from
 svn), and follow the
@@ -521,8 +587,7 @@ The following flags are available in this context:
 Use \texttt{DIR} as a colon separated list of directories for specification libraries (equivalently, you can set the variable \texttt{HETS\_LIB} before
 calling \Hets).
 \end{description}
-There are more flags which can be used with \Hets. However, these are intended 
-for use with \CASL \cite{HetsUserGuide}.
+There are more flags which can be used with \Hets, see \cite{HetsUserGuide}.
 
 
 \section{Heterogeneous Specification} \label{sec:HetSpec}
@@ -535,7 +600,7 @@ presented logics) with the following endings:
 filename extension & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
-\texttt{.owl} & OWL DL, OWL Lite & OWL \\\hline
+\texttt{.owl} & OWL2 & OWL2 \\\hline
 \texttt{.clf} or \texttt{.clif} & CommonLogic & custom, see Chapter \ref{relationsInCL} \\\hline
 \end{tabular}
 
@@ -590,7 +655,7 @@ Note that the dot at the beginning of a line indicates that a new text begins.
 Hence, it is possible to have multiple texts in a \CASL specification.
 
 This specification is the \HetCASL-strucured equivalent to the following three
-CLIF files:\ednote{CL: The previous revision of this document used ``cl-text'', which Hets also supports for some reason, but the Common Logic specification says ``cl:text''.}\\
+CLIF files:\footnote{Note that where the Common Logic specification requires ``cl:text'', some samples available on the web use ``cl-text''. Therefore, \Hets also supports the latter.}\\
 
 
 \textbf{Pred.clif}:
@@ -693,15 +758,23 @@ graph calculus to the final graph and save applying these rule via the GUI.
 For a summary of the types of nodes and links occurring in
 development graphs, see the \Hets user guide \cite{HetsUserGuide}.\\
 
-We now explain the menus of the development graph window.
-Most of the pull-down menus of the window are uDraw(Graph)-specific
-layout menus;
-their function can be looked up in the uDraw(Graph) documentation\footnote{see
-\url{http://www.informatik.uni-bremen.de/uDrawGraph/en/service/uDG31\_doc/}.}.
-The exception is the Edit menu. Moreover, the nodes and links
-of the graph have attached pop-up menus, which appear when
-clicking (and holding) with the right mouse button. For an explanation of the 
-menus see the \Hets User Guide \Hets user guide \cite{HetsUserGuide}.
+Most of the pull-down menus of the development graph window are
+uDraw(Graph)-specific layout menus; their function can be looked up in
+the uDraw(Graph) documentation\footnote{see
+  \url{http://www.informatik.uni-bremen.de/uDrawGraph/en/service/uDG31\_doc/}.}.
+The exception is the Edit menu. 
+With choosing Edit, Proofs, Auto-DG prover, you can can prove red theorem
+links (which may be generated by relative interpretations of theories).
+Actually, this will generate new proof obligations at some node,
+which then can be discharged there.
+Moreover, the nodes and links of the
+graph have attached pop-up menus, which appear when clicking (and
+holding) with the right mouse button. 
+The node menus ``Prove'' and ``Check consistency'' are the most
+important ones. With ``Add sentence'', you can add axioms and
+proof goals on the fly.
+For a detailed explanation of the menus
+see the \Hets User Guide \Hets user guide \cite{HetsUserGuide}.
 
 \subsection{Relations between Common Logic Texts}
 \label{relationsInCL}
@@ -1052,7 +1125,7 @@ see below for details).
 \hspace{0.1\linewidth}
 \begin{minipage}[b]{0.5\linewidth}
   \includegraphics[width=\linewidth,keepaspectratio=true]{UserGuideCL_Prove_Vampire}
-  \caption{Interface of Vampire Prover\label{fig:Prove_devGraph}}
+  \caption{Interface of Vampire Prover\label{fig:Vampire}}
 \end{minipage}
 \end{figure}
 
@@ -1249,19 +1322,6 @@ after brokering.
 
 For details on the ATPs supported, see the \Hets user guide \cite{HetsUserGuide}.
 
-\section{Limits of Hets}
-
-\Hets is still intensively under development. In particular, the
-following points are still missing:
-
-\begin{itemize}
-\item There is no proof support for architectural specifications.
-\item Distributed libraries are always downloaded from the local disk,
-not from the Internet (except for pure Common Logic libraries).
-\item Version numbers of libraries are not considered properly.
-\item The proof engine for development graphs provides only experimental
-support for hiding links and for conservativity.
-\end{itemize}
 
 
 \bibliographystyle{plain}
