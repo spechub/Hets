@@ -9,6 +9,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{charter} % very clean and readable font
+\usepackage{courier}
 
 
 
@@ -20,10 +21,13 @@
 \usepackage{color}
 \usepackage{url}
 \usepackage{threeparttable,hhline}
-
+\usepackage{tabularx}
+\usepackage{paralist}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily,columns=fixed}
 
 \usepackage[pdfborder=0 0 0,bookmarks,
-pdfauthor={Till Mossakowski, Christian Maeder, Mihai Codescu, Eugen Kuksa},
+pdfauthor={Till Mossakowski, Christian Maeder, Mihai Codescu, Eugen Kuksa, Christoph Lange},
 pdftitle={Hets for Common Logic Users}]
 {hyperref} %% do not load more packages after this line!!
 
@@ -145,9 +149,9 @@ pdftitle={Hets for Common Logic Users}]
 \title{{\bf \protect{\LARGEHets} for Common Logic Users}\\
 -- Version 0.99 --}
 \author{Till Mossakowski, Christian Maeder,
-  Mihai Codescu, Eugen Kuksa\\[1em]
+  Mihai Codescu, Eugen Kuksa, Christoph Lange\\[1em]
 DFKI GmbH, Bremen, Germany.\\[1em]
-Comments to: hets-users@informatik.uni-bremen.de \\
+Comments to: \href{mailto:hets-users@informatik.uni-bremen.de}{hets-users@informatik.uni-bremen.de} \\
 (the latter needs subscription to the mailing list)
 }
 
@@ -175,14 +179,14 @@ hand.
 \end{figure}
 
 \Hets supports a number of input languages directly, such as \CASL,
-Common Logic and OWL-DL. For heterogeneous
-specification, \Hets offers the language heterogeneous \CASL.
-Heterogeneous \CASL (\HetCASL) generalises the structuring
+Common Logic and OWL DL. For heterogeneous
+specification, \Hets offers the Heterogeneous \CASL language (\HetCASL).
+ \HetCASL generalises the structuring
 constructs of
-\CASL \cite{CASL-UM,CASL/RefManual} to arbitrary logics
+\CASL (Common Algebraic Specification Language \cite{CASL-UM,CASL/RefManual}) to arbitrary logics
 (if they are formalised as institutions and plugged into
 the \Hets motherboard), as well as to heterogeneous
-combination of specification written in different logics.
+combinations of specifications written in different logics.
 See
 Fig.~\ref{fig:lang} for a simple subset of the
 \HetCASL syntax, where \emph{basic specifications} are unstructured
@@ -194,7 +198,7 @@ degree of support by \Hets in Fig.~\ref{fig:Languages}.
 \begin{figure}[ht]
 \centering
 {\small
-\begin{verbatim}
+\begin{lstlisting}[morekeywords={then,with,logic,spec,end,view,to}]
 SPEC ::= BASIC-SPEC
        | SPEC then SPEC
        | SPEC then %implies SPEC
@@ -207,7 +211,7 @@ DEFINITION ::= logic ID
              | view ID : SPEC to SPEC = with logic ID end
 
 LIBRARY = DEFINITION*
-\end{verbatim}
+\end{lstlisting}
 }
 \caption{Syntax of a simple subset of the heterogeneous
 specification language.
@@ -232,20 +236,19 @@ to call the logic-specific tools whenever a basic specification is
 encountered.
 
 \Hets is based on the theory of institutions \cite{GoguenBurstall92},
-which formalize the notion of a logic. The theory behind \Hets is laid
+which formalise the notion of a logic. The theory behind \Hets is laid
 out in \cite{Habil}. A short overview of \Hets is given in
 \cite{MossakowskiEA06,MossakowskiEtAl07b}.
 
 
 \section{Logics supported by Hets}
 
-\Hets supports a variety of different logics. Most important for use with
-Common Logic are the following:
+\Hets supports a variety of different logics.   The following are most important for use with Common Logic:
 
 
 \begin{figure}
   \begin{center}
-    \includegraphics[scale=0.4]{LogicGraph}
+    \includegraphics[width=\textwidth]{LogicGraph}
   \end{center}
 \caption{Graph of logics currently supported by \Hets. The more an
 ellipse is filled with green, the more stable is the implementation of the
@@ -257,11 +260,11 @@ logic. Blue indicates a prover-supported logic.}
 \begin{center}
 \begin{tabular}{|l|c|c|c|}\hline
 Language & Parser & Static Analysis & Prover \\\hline
-\CASL & x & x & - \\\hline
-CommonLogic & x (CLIF) & x & - \\\hline
-OWL DL & x & x & - \\\hline
+\CASL & x & x & -- \\\hline
+CommonLogic & x (CLIF) & x & -- \\\hline
+OWL DL & x & x & -- \\\hline
 Propositional & x & x & x \\\hline
-SoftFOL & x & - & x \\\hline
+SoftFOL & x & -- & x \\\hline
 \end{tabular}
 \end{center}
 \caption{Current degree of \Hets support for some of the languages.\label{fig:Languages}}
@@ -291,27 +294,27 @@ integration of \CASL extensions and keeps the effort of integrating
   \Hets currently only supports parsing CLIF. If you need other dialects, 
   send us a message and we will add them.
 
-\item[OWL DL] is the Web Ontology Language (OWL) recommended by the
+\item[OWL DL] is the description logic sublanguage of the Web Ontology Language (OWL \cite{McGvHa:owl04})\ednote{CL: So far this reads like OWL 1; how about OWL 2 support?} recommended by the
   World Wide Web Consortium (W3C, \url{http://www.w3c.org}). It is
-  used for knowledge representation and the Semantic Web
+  used for knowledge representation on the Semantic Web
   \cite{berners:2001:SWeb}.
 Hets calls an external OWL DL parser
-  written in JAVA to obtain the abstract syntax for an OWL file and its
-  imports. The JAVA parser is also doing a first analysis classifying
+  written in Java to obtain the abstract syntax for an OWL file and its
+  imports. The Java parser also does a first analysis classifying
   the OWL ontology into the sublanguages OWL Full, OWL DL and OWL
   Lite.
- Hets only supports the last two, more restricted variants.
+ Hets only supports the latter two, more restricted variants.
 The
-  structuring of the OWL imports is displayed as Development Graph.
+  structuring of the OWL imports is displayed as a Development Graph.
 
 \item[Propositional] is classical propositional logic, with
 the zChaff SAT solver \cite{Herbstritt03} connected to it.
 
 \item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
-  proving (ATP) systems for first-order logic with equality: (1) \SPASS
-  \cite{WeidenbachEtAl02}; (2) Vampire \cite{RiazanovV02}; and (3)
+  proving (ATP) systems for first-order logic with equality: \begin{inparaenum}[(1)]\item \SPASS
+  \cite{WeidenbachEtAl02}; \item Vampire \cite{RiazanovV02}; and \item 
   MathServe Broker\footnote{which chooses an appropriate ATP upon a
-    classification of the FOL problem} \cite{ZimmerAutexier06}.
+    classification of the FOL problem} \cite{ZimmerAutexier06}\end{inparaenum}.
   These together comprise some of the most advanced theorem provers
   for first-order logic.
 \end{description}
@@ -339,7 +342,7 @@ For further information on logics supported by \Hets, see the \Hets user guide
 \section{Logic translations supported by Hets}
 \label{comorphisms}
 
-Logic translations (formalized as institution comorphisms
+Logic translations (formalised as institution comorphisms
 \cite{GoguenRosu02}) translate from a given source logic to a given
 target logic. More precisely, one and the same logic translation
 may have several source and target \emph{sub}logics: for
@@ -349,8 +352,8 @@ logic is indicated.
 In more detail, the following list of logic translations involving Common Logic 
 is currently supported by \Hets:\\
 
-\begin{tabular}{|l|p{8cm}|}\hline
-CommonLogic2CASL & Coding Common Logic to \CASL.Module elimination
+\noindent\begin{tabularx}{\textwidth}{|l|X|}\hline
+CommonLogic2CASL & Coding Common Logic to \CASL. Module elimination
 		   is applied before translating to \CASL. \\\hline
 CommonLogic2CASLCompact & Coding compact Common Logic to \CASL. 
 			  Compact Common Logic is a sublogic of Common Logic
@@ -370,7 +373,7 @@ CASL2SoftFOLInduction & Same as CASL2SoftFOL but with instances of induction
 axioms for all proof goals \\\hline
 CASL2SoftFOLInduction2 & Similar to CASL2SoftFOLInduction but replaces goals with induction premises \\\hline
 CASL2Propositional & Translation of propositional FOL \\\hline
-\end{tabular}\\
+\end{tabularx}\\
 
 Those comorphisms can be chained, e.g., for theorem proving, you can translate 
 Common Logic to SoftFOL with \texttt{CommonLogic2CASLCompact;CASL2SoftFOLInduction} 
@@ -390,32 +393,32 @@ The latest \Hets version can be obtained from the
 improved constantly, it is recommended always to use the latest version.
 
 \Hets is currently available (on Intel architectures only) for Linux
-and Mac OS-X.
+and Mac OS X.
 
 There are several possibilities to install \Hets.
 \begin{enumerate}
 \item
 The best support is currently given via Ubuntu packages.
-\begin{verbatim}
+\begin{lstlisting}
 sudo apt-add-repository ppa:hets/hets
 sudo apt-add-repository \
   "deb http://archive.canonical.com/ubuntu lucid partner"
 sudo apt-get update
 sudo apt-get install hets
-\end{verbatim}
+\end{lstlisting}
 This will also install quite a couple of tools for proving requiring about
-800 MB of disk space. For a minimal installation \texttt{apt-get install
+800 MB of disk space. For a minimal installation use \texttt{apt-get install
   hets-core} instead of \texttt{hets}.
-\item For Mac OSX 10.6 (Snow Leopard) we provide a meta package
+\item For Mac OS X 10.6 (Snow Leopard) we provide a meta package
   \texttt{Hets.mpkg} based on MacPorts that will be extended by further tools
   for proving in the future.
 \item
 Then we have Java based \Hets installer that we may drop in the future.
 Download a \texttt{.jar} file and start it with
-\begin{quote}
-java -jar \texttt{file.jar}
-\end{quote}
-Note that you need Sun Java 1.4.2 or later. On a Mac, you can just
+\begin{lstlisting}
+java -jar file.jar
+\end{lstlisting}
+Note that you need Sun/Oracle Java 1.4.2 or later. On a Mac, you can just
 double-click on the \texttt{.jar} file, but you have to install the MacPorts
 \texttt{libglade2} package (and all its dependencies) yourself. In order to
 speed this up we provide a meta package \texttt{libglade2.mpkg}, too.
@@ -426,7 +429,7 @@ software (if not already installed on your computer):
 
 \medskip
 {\small
-\begin{tabular}{|l|l|p{5cm}|}\hline
+\begin{tabularx}{\linewidth}{|l|l|X|}\hline
 Hets-lib & specification library & \url{http://www.cofi.info/Libraries}\\\hline
 uDraw(Graph) & graph drawing & \url{http://www.informatik.uni-bremen.de/uDrawGraph/en/}\\\hline
 Tcl/Tk & graphics widget system & (version 8.4 or 8.5 must be installed before)\\\hline
@@ -434,14 +437,14 @@ Tcl/Tk & graphics widget system & (version 8.4 or 8.5 must be installed before)\
 Darwin & theorem prover & should be installed manually from \url{http://combination.cs.uiowa.edu/Darwin/}\\\hline
 \Isabelle & theorem prover & \url{http://www.cl.cam.ac.uk/Research/HVG/Isabelle/}\\\hline
 (X)Emacs & editor (for Isabelle) & (must be installed manually)\\\hline
-\end{tabular}
+\end{tabularx}
 }
 \medskip
 
 \item
-If you do not have Sun Java, you can just download the hets binary.
-You have to unpack it with \texttt{bunzip2} and then put it at
-some place coverd by your \texttt{PATH}. You also have to
+If you do not have Sun/Oracle Java, you can just download the hets binary.
+You have to unpack it with \texttt{bunzip2} and then put it into
+some place covered by your \texttt{PATH} environment variable. You also have to
 install the above mentioned software and set
 several environment variables, as explained on the installation page.
 
@@ -458,7 +461,7 @@ installed in addition:
 
 \medskip
 {\small
-\begin{tabular}{|l|l|p{5cm}|}\hline
+\begin{tabularx}{\linewidth}{|l|l|X|}\hline
 zChaff & SAT solver & \url{http://www.princeton.edu/~chaff/zchaff.html} \\\hline
 minisat & SAT solver & \url{http://minisat.se/} \\\hline
 Pellet & OWL reasoner & \url{http://clarkparsia.com/pellet/} \\\hline
@@ -469,21 +472,21 @@ Reduce & computer algebra system
 Maude & rewrite system & \url{http://maude.cs.uiuc.edu/} \\\hline
 VSE & theorem prover & (non-public) \\\hline
 Twelf & & \url{http://twelf.plparty.org/} \\\hline
-\end{tabular}
+\end{tabularx}
 }
 
 \section{Analysis of Specifications}
 Consider the following Common Logic text written in CLIF:
 
 \medskip
-\begin{verbatim}
+\begin{lstlisting}[language=clif]
 (P x)
 (and (P x) (Q y))
 (or (Cat x) (Mat y))
 (not (On x y))
 (if (P x) (Q x))
 (exists (z) (and (Pet x) (Happy z) (Attr x z)))
-\end{verbatim}
+\end{lstlisting}
 
 \Hets can be used for parsing and
 checking static well-formedness of specifications.
@@ -505,16 +508,16 @@ specification by typing (into some shell):
 well as its correctness with respect to the static semantics.
 The following flags are available in this context:
 \begin{description}
-\item[\texttt{-p}, \texttt{--just-parse}] Just do the parsing
+\item[\texttt{-p}, \texttt{-{}-just-parse}] Just do the parsing
  -- the static analysis is skipped and no development graph is created.
-\item[\texttt{-s}, \texttt{--just-structured}] Do the parsing and the
+\item[\texttt{-s}, \texttt{-{}-just-structured}] Do the parsing and the
   static analysis of (heterogeneous) structured specifications, but
   leave out the analysis of basic specifications.  This can be used
   for prototyping issues, namely to quickly produce a development graph
   showing the dependencies among the specifications (cf.
   Sect.~\ref{sec:DevGraph}) even if the individual specifications are
   not correct yet.
-\item[\texttt{-L DIR}, \texttt{--hets-libdir=DIR}]
+\item[\texttt{-L DIR}, \texttt{-{}-hets-libdir=DIR}]
 Use \texttt{DIR} as a colon separated list of directories for specification libraries (equivalently, you can set the variable \texttt{HETS\_LIB} before
 calling \Hets).
 \end{description}
@@ -529,11 +532,11 @@ presented logics) with the following endings:
 \\
 
 \begin{tabular}{|l|c|c|}\hline
-Ending & default logic & structuring language\\\hline
+filename extension & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
 \texttt{.owl} & OWL DL, OWL Lite & OWL \\\hline
-\texttt{.clf} or \texttt{.clif} & CommonLogic & Custom, see Chapter \ref{relationsInCL} \\\hline
+\texttt{.clf} or \texttt{.clif} & CommonLogic & custom, see Chapter \ref{relationsInCL} \\\hline
 \end{tabular}
 
 \medskip
@@ -542,12 +545,12 @@ Although the endings \texttt{.casl} and \texttt{.het} are
 interchangeable, the former should be used for libraries of
 homogeneous \CASL specifications and the latter for \HetCASL libraries
 of heterogeneous specifications (that use the \CASL structuring
-constructs). Within a \HetCASL library, the current logic can be changed e.g.\
+constructs). Within a \HetCASL library, the current logic can be changed, e.g.,
 to Common Logic in the following way:
 
-\begin{verbatim}
+\begin{lstlisting}[morekeywords=logic]
 logic CommonLogic
-\end{verbatim}
+\end{lstlisting}
 
 The subsequent specifications are then parsed and analysed as
 Common Logic specifications. Within such specifications,
@@ -563,7 +566,7 @@ By contrast, in \HetCASL libraries (ending with \texttt{.het}),
 the logic Common Logic has to be chosen explicitly, and the \CASL structuring
 syntax needs to be used:
 
-\begin{verbatim}
+\begin{lstlisting}[language=clif,morekeywords={library,logic,spec,then}]
 library Cat
 
 logic CommonLogic
@@ -581,44 +584,44 @@ spec PetHappy =
 Pred and Cat then
 . (exists (z) (and (Pet x) (Happy z) (Attr x z)))
 end
-\end{verbatim}
+\end{lstlisting}
 
 Note that the dot at the beginning of a line indicates that a new text begins.
 Hence, it is possible to have multiple texts in a \CASL specification.
 
 This specification is the \HetCASL-strucured equivalent to the following three
-CLIF files:\\
+CLIF files:\ednote{CL: The previous revision of this document used ``cl-text'', which Hets also supports for some reason, but the Common Logic specification says ``cl:text''.}\\
 
 
 \textbf{Pred.clif}:
-\begin{verbatim}
-(cl-text Pred 
+\begin{lstlisting}[language=clif]
+(cl:text Pred 
   (P x)
   (and (P x) (Q y))
 )
-\end{verbatim}
+\end{lstlisting}
 
 \textbf{Cat.clif}:
-\begin{verbatim}
-(cl-text Cat 
+\begin{lstlisting}[language=clif]
+(cl:text Cat 
   (or (Cat x) (Mat y))
   (not (On x y))
   (if (P x) (Q x))
 )
-\end{verbatim}
+\end{lstlisting}
 
 \textbf{Spec.clif}:
-\begin{verbatim}
-(cl-text PetHappy 
-  (cl-imports Pred) (cl-imports Cat)
+\begin{lstlisting}[language=clif]
+(cl:text PetHappy 
+  (cl:imports Pred) (cl:imports Cat)
   (exists (z) (and (Pet x) (Happy z) (Attr x z)))
 )
-\end{verbatim}
+\end{lstlisting}
 
 Both can be directly used with \Hets, where the former content would be in a 
-file with ending \texttt{.het} and the latter in a file with one of the endings 
+file with the extension \texttt{.het} and the latter in a file with one of the extensions 
 \texttt{.clf} or \texttt{.clif}. This specification is divided into three 
-parts which are linked to each other. These links and some more information can 
+parts, which are linked to each other. These links and some more information can 
 be seen in the development graph of the file.
 
 
@@ -628,7 +631,7 @@ Development graphs are a simple kernel formalism for (heterogeneous)
 structured theorem proving and proof management.
 
 A development graph consists of a set of nodes (corresponding to whole
-structured specifications or parts thereof), and a set of arrows
+structured specifications or parts thereof), and a set of edges
 called \emph{definition links}, indicating the dependency of each
 involved structured specification on its subparts.  Each node is
 associated with a signature and some set of local axioms.  The axioms
@@ -672,17 +675,17 @@ and in \cite{Habil,MossakowskiEtAl05,MossakowskiEtAl07b}.
 The following options let \Hets show the development graph of
 a specification library:
 \begin{description}
-\item[\texttt{-g}, \texttt{--gui}] Shows the development graph in a GUI window
-\item[\texttt{-u}, \texttt{--uncolored}] no colors in shown graphs
+\item[\texttt{-g}, \texttt{-{}-gui}] Shows the development graph in a GUI window
+\item[\texttt{-u}, \texttt{-{}-uncolored}] no colors in shown graphs
 \end{description}
 
 The following additional options also apply typical rules from the development
 graph calculus to the final graph and save applying these rule via the GUI.
 \begin{description}
-\item[\texttt{-A}, \texttt{--apply-automatic-rule}] apply the automatic
+\item[\texttt{-A}, \texttt{-{}-apply-automatic-rule}] apply the automatic
   strategy to the development graph. This is what you usually want in order to
   get goals within nodes for proving.
-\item[\texttt{-N}, \texttt{--normal-form}] compute all normal forms for nodes
+\item[\texttt{-N}, \texttt{-{}-normal-form}] compute all normal forms for nodes
   with incoming hiding links. (This may take long and may not be implemented
   for all logics.)
 \end{description}
@@ -714,20 +717,20 @@ unofficial extensions used i.e. by COLORE \cite{Colore}.
   them, send us a message at hets@informatik.uni-bremen.de, and we will fix it.
   
   Using CLIF, you can import \texttt{someFile.clif} via
-  \begin{verbatim}
-(cl-imports someFile.clif)
-  \end{verbatim}
+  \begin{lstlisting}[language=clif]
+(cl:imports someFile.clif)
+  \end{lstlisting}
   Omitting the file extension will also succeed. In this case \Hets will look 
   for a file called \texttt{someFile.clif} in first place and then for 
   \texttt{someFile.clf} in the current directory and then in the library paths.
 
   \Hets also supports URIs for importing resources. The allowed URI schemes are
   \texttt{file:}, \texttt{http:} and \texttt{https:}.
-  \begin{verbatim}
-(cl-imports file:///absolute/path/to/someFile.clif)
-(cl-imports http://someDomain.com/path/to/someFile.clif)
-(cl-imports https://someDomain.com/path/to/someFile.clif)
-  \end{verbatim}
+  \begin{lstlisting}[language=clif]
+(cl:imports file:///absolute/path/to/someFile.clif)
+(cl:imports http://someDomain.com/path/to/someFile.clif)
+(cl:imports https://someDomain.com/path/to/someFile.clif)
+  \end{lstlisting}
 
   The Importation is indicated by a global definition link (black arrow) in the 
   development graph.
@@ -739,12 +742,12 @@ unofficial extensions used i.e. by COLORE \cite{Colore}.
   of the Common Logic (optionally named) text instead of one in a sentence or 
   term:
   
-  \begin{verbatim}
-(cl-text someText
-  (cl-comment '(relative-interprets someTranslationFile someTargetFile)')
+  \begin{lstlisting}[language=clif]
+(cl:text someText
+  (cl:comment '(relative-interprets someTranslationFile someTargetFile)')
   (someAxiom)
 )
-  \end{verbatim}
+  \end{lstlisting}
   Just as with imports (\ref{descr:link_import}), \Hets supports different types 
   of references to resources here, as e.g. URIs.
 
@@ -752,9 +755,9 @@ unofficial extensions used i.e. by COLORE \cite{Colore}.
   is represented by a theorem link (red arrow) in the development graph. In a 
   Common Logic file it is specified inside of a comment on text-level:
   
-  \begin{verbatim}
-(cl-comment '(nonconservative-extension someTargetFile)')
-  \end{verbatim}
+  \begin{lstlisting}[language=clif]
+(cl:comment '(nonconservative-extension someTargetFile)')
+  \end{lstlisting}
   Just as with imports (\ref{descr:link_import}), \Hets supports different types 
   of references to resources here, as e.g. URIs.
   
@@ -766,9 +769,9 @@ unofficial extensions used i.e. by COLORE \cite{Colore}.
   to show other theories in the development graph, without any connection 
   to the current theory. In a Common Logic file inclusion is specified in a 
   text-level comment:
-  \begin{verbatim}
-(cl-comment '(include-libs someFile someOtherFile nextFile andSoOn)')
-  \end{verbatim}
+  \begin{lstlisting}[language=clif]
+(cl:comment '(include-libs someFile someOtherFile nextFile andSoOn)')
+  \end{lstlisting}
   The keyword \texttt{include-libs} is followed by a whitespace-separated list 
   of resources to be shown in the development graph. The resource-names can be 
   of different type here, too.
@@ -789,10 +792,10 @@ separated by commas. Note that in Common Logic, a comma can be part of a name.
 Hence a space must be placed between the separation-comma and a name.\\
 
 \textbf{upper.clif}:
-\begin{verbatim}
-(cl-text upper
+\begin{lstlisting}[language=clif]
+(cl:text upper
 
-(cl-comment '(nonconservative-extension lower
+(cl:comment '(nonconservative-extension lower
   ( a |-> A
   , b |-> B
   ))'
@@ -801,18 +804,18 @@ Hence a space must be placed between the separation-comma and a name.\\
 (forall (x y) (iff  (A x y)
                     (B x y)))
 )
-\end{verbatim}
+\end{lstlisting}
 
 \textbf{lower.clif}:
-\begin{verbatim}
-(cl-text lower
+\begin{lstlisting}[language=clif]
+(cl:text lower
 
-(cl-comment '(nonconservative-extension upper (A |-> a , B |-> b))')
+(cl:comment '(nonconservative-extension upper (A |-> a , B |-> b))')
 
 (forall (x y) (iff  (a x y)
                     (b x y)))
 )
-\end{verbatim}
+\end{lstlisting}
 
 Note that is is possible to use cyclic relations in \Hets. Only the cyclic 
 importation is not supported.
@@ -823,7 +826,7 @@ importation is not supported.
 \Hets provides several options controlling the types of files
 that are read and written.
 \begin{description}
-\item[\texttt{-i ITYPE}, \texttt{--input-type=ITYPE}] Specify \texttt{ITYPE}
+\item[\texttt{-i ITYPE}, \texttt{-{}-input-type=ITYPE}] Specify \texttt{ITYPE}
   as explicit type of the input file. 
 
   \texttt{exp} files contain a development graph in a new experimental omdoc
@@ -836,7 +839,7 @@ that are read and written.
   supported.)
 
 The possible input types are:
-\begin{verbatim}
+\begin{lstlisting}
     casl
   | het
   | owl
@@ -852,14 +855,14 @@ The possible input types are:
   | clif
   | xml
   | [tree.]gen_trm[.baf]
-\end{verbatim}
+\end{lstlisting}
 
-\item[\texttt{-O DIR}, \texttt{--output-dir=DIR}]
+\item[\texttt{-O DIR}, \texttt{-{}-output-dir=DIR}]
 Specify \texttt{DIR} as destination directory for output files.
 
-\item[\texttt{-o OTYPES}, \texttt{--output-types=OTYPES}]
+\item[\texttt{-o OTYPES}, \texttt{-{}-output-types=OTYPES}]
 \texttt{OTYPES} is a comma separated list of output types:
-\begin{verbatim}
+\begin{lstlisting}
     prf
   | env
   | omn
@@ -875,7 +878,7 @@ Specify \texttt{DIR} as destination directory for output files.
   | graph.(exp.dot|dot)
   | dfg[.c]
   | tptp[.c]
-\end{verbatim}
+\end{lstlisting}
 The \texttt{env} and \texttt{prf} formats are for subsequent reading,
 avoiding the need to re-analyse downloaded libraries. \texttt{prf} files
 can also be stored or loaded via the GUI's File menu.
@@ -906,7 +909,7 @@ each specification in the library to \Isabelle, and write one \Isabelle
 
 When the \texttt{comptable.xml} format is selected, \Hets will extract
 the composition and inverse table of a Tarskian relation algebra from
-specification(s) (selected with the \texttt{-n} or \texttt{--spec}
+specification(s) (selected with the \texttt{-n} or \texttt{-{}-spec}
 option). It is assumed that the relation algebra is
 generated by basic relations, and that the specification is written
 in the \CASL logic. A sample specification of a relation
@@ -949,34 +952,34 @@ For all output formats it is recommended to increase the verbosity to at least
 level 2 (by using the option \texttt{-v2}) to get feedback which files are
 actually written. (\texttt{-v2} also shows which files are read.)
 
-\item[\texttt{-t TRANS}, \texttt{--translation=TRANS}]
+\item[\texttt{-t TRANS}, \texttt{-{}-translation=TRANS}]
 chooses a translation option. \texttt{TRANS} is a colon-separated list
 without blanks of one or more comorphism names (see Sect.~\ref{comorphisms})
 
-\item[\texttt{-n SPECS}, \texttt{--spec=SPECS}]
+\item[\texttt{-n SPECS}, \texttt{-{}-spec=SPECS}]
 chooses a list of named specifications for processing
 
-\item[\texttt{-w NVIEWS}, \texttt{--view=NVIEWS}]
+\item[\texttt{-w NVIEWS}, \texttt{-{}-view=NVIEWS}]
 chooses a list of named views for processing
 
-\item[\texttt{-R}, \texttt{--recursive}] output also imported libraries
+\item[\texttt{-R}, \texttt{-{}-recursive}] output also imported libraries
 
-\item[\texttt{-I}, \texttt{--interactive}] run \Hets in interactive mode
+\item[\texttt{-I}, \texttt{-{}-interactive}] run \Hets in interactive mode
 
-\item[\texttt{-X}, \texttt{--server}] run \Hets as web server (see
+\item[\texttt{-X}, \texttt{-{}-server}] run \Hets as web server (see
   \ref{sec:Server})
 
-\item[\texttt{-x}, \texttt{--xml}] use xml-pgip packets to communicate with
+\item[\texttt{-x}, \texttt{-{}-xml}] use xml-pgip packets to communicate with
   \Hets in interactive mode
 
-\item[\texttt{-S PORT}, \texttt{--listen=PORT}] communicate
+\item[\texttt{-S PORT}, \texttt{-{}-listen=PORT}] communicate
   with \Hets in interactive mode by listining to the port \texttt{PORT}
 
-\item[\texttt{-c HOSTNAME:PORT}, \texttt{--connect=HOSTNAME:PORT}] communicate
+\item[\texttt{-c HOSTNAME:PORT}, \texttt{-{}-connect=HOSTNAME:PORT}] communicate
   with \Hets in interactive mode via connecting to the port on host
   \texttt{HOSTNAME}
 
-\item[\texttt{-d STRING}, \texttt{--dump=STRING}] produces implementation
+\item[\texttt{-d STRING}, \texttt{-{}-dump=STRING}] produces implementation
   dependent output for debugging purposes only
   (i.e.\ \texttt{-d LogicGraph} lists the logics and comorphisms)
 \end{description}
@@ -998,23 +1001,23 @@ For details on this topic, see the \Hets user guide \cite{HetsUserGuide}.
 \section{Miscellaneous Options}
 
 \begin{description}
-\item[\texttt{-v[Int]}, \texttt{--verbose[=Int]}]
+\item[\texttt{-v[Int]}, \texttt{-{}-verbose[=Int]}]
 Set the verbosity level according to \texttt{Int}. Default is 1.
-\item[\texttt{-q}, \texttt{--quiet}]
+\item[\texttt{-q}, \texttt{-{}-quiet}]
 Be quiet -- no diagnostic output at all. Overrides -v.
-\item[\texttt{-V}, \texttt{--version}] Print version number and exit.
-\item[\texttt{-h}, \texttt{--help}, \texttt{--usage}]
+\item[\texttt{-V}, \texttt{-{}-version}] Print version number and exit.
+\item[\texttt{-h}, \texttt{-{}-help}, \texttt{-{}-usage}]
 Print usage information and exit.
 \item[\texttt{+RTS -KIntM -RTS}] Increase the stack size to
  \texttt{Int} megabytes (needed in case of a stack overflow).
 This must be the first option.
-\item[\texttt{-l LOGIC}, \texttt{--logic=LOGIC}] chooses the initial logic, which is used for processing the specifications before the first \textbf{logic L}
+\item[\texttt{-l LOGIC}, \texttt{-{}-logic=LOGIC}] chooses the initial logic, which is used for processing the specifications before the first \textbf{logic L}
 declaration. The default is \CASL.
-\item[\texttt{-e ENCODING}, \texttt{--encoding=ENCODING}] Read input files using latin1 or utf8 encoding. The default is still latin1.
-\item[\texttt{--unlit}] Read literate input files.
-\item[\texttt{--relative-positions}] Just uses the relative library name in positions of warning or errors.
-\item[\texttt{-U FILE}, \texttt{--xupdate=FILE}] update a development graph according to special xml update information (still experimental).
-\item[\texttt{-m FILE}, \texttt{--modelSparQ=FILE}] model check a qualitative calculus given in SparQ lisp notation \cite{SparQ06} against a \CASL specification
+\item[\texttt{-e ENCODING}, \texttt{-{}-encoding=ENCODING}] Read input files using latin1 or utf8 encoding. The default is still latin1.
+\item[\texttt{-{}-unlit}] Read literate input files.
+\item[\texttt{-{}-relative-positions}] Just uses the relative library name in positions of warning or errors.
+\item[\texttt{-U FILE}, \texttt{-{}-xupdate=FILE}] update a development graph according to special xml update information (still experimental).
+\item[\texttt{-m FILE}, \texttt{-{}-modelSparQ=FILE}] model check a qualitative calculus given in SparQ lisp notation \cite{SparQ06} against a \CASL specification
 \end{description}
 
 \section{Proofs with \Hets}\label{sec:Proofs}
@@ -1092,7 +1095,7 @@ select those goals that should be inspected or proved. The GUI elements are the 
 In order to prove or disprove a theorem, it needs to be declared as proof 
 obligation. This is done by the keyword \texttt{\%implied} at the end of a text:
 
-\begin{verbatim}
+\begin{lstlisting}
 logic CommonLogic
 
 spec ToProve =
@@ -1101,7 +1104,7 @@ spec ToProve =
 . (Q y) %implied %(correct)%
 . (P y) %implied %(incorrect)%
 end
-\end{verbatim}
+\end{lstlisting}
 
 In this specification the theorems, annotated (named) by \texttt{correct} and 
 \texttt{incorrect} are the ones, that can be proven or disproven.
@@ -1111,18 +1114,18 @@ The annotations are optional. For proving, they are the names shown in the
 (Fig. \ref{fig:proof_window}).
 
 The same specification can be written down in CLIF:
-\begin{verbatim}
-(cl-text axiom
+\begin{lstlisting}[language=clif]
+(cl:text axiom
   (P x)
   (and (P x) (Q y))
 )
 
-(cl-text correct
+(cl:text correct
   (Q y)
 ) %implied
 
-(cl-text incorrect (P y)) %implied
-\end{verbatim}
+(cl:text incorrect (P y)) %implied
+\end{lstlisting}
 In CLIF, there is no notion of proof obligation. Hence the \texttt{\%implied} 
 keyword of \Hets must be used and it is not pure CLIF. Because the texts have 
 names, these are also used in the prover interface. Otherwise, \Hets invents 
@@ -1206,7 +1209,7 @@ capabilities are derived from the \emph{Specialist Problem Classes}
 properties by Sutcliffe and Suttner \cite{SutcliffeEA:2001:EvalATP}.
 Only two of the Web services provided by the MathServe system are used
 by \Hets currently: Vampire and the brokering system.  The ATP systems
-are offered as Web Services using standardized protocols and formats
+are offered as Web Services using standardised protocols and formats
 such as SOAP, HTTP and XML.  Currently, the ATP system Vampire may be
 accessed from \Hets via MathServe; the other systems are only reached
 after brokering.
@@ -1269,5 +1272,5 @@ support for hiding links and for conservativity.
 
 %%% Local Variables:
 %%% mode: latex
-%%% TeX-master: "UserGuide"
+%%% TeX-master: "UserGuideCommonLogic"
 %%% End:

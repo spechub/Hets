@@ -7,54 +7,82 @@
 %% ed.dtx  (with options: `package')
 %% 
 \NeedsTeXFormat{LaTeX2e}[1999/12/01]
-\ProvidesPackage{ed}[2007/05/10 v.12 Editorial Notes]
+\ProvidesPackage{ed}[2011/01/16 v1.7 Editorial Notes]
 \newif\ifshowednotes\showednotesfalse
-\DeclareOption{show}{\showednotestrue}
-\DeclareOption{hide}{\showednotesfalse}
+\newif\ifmargins\marginstrue
+\DeclareOption{show}{\showednotestrue\message{ed.sty: showing ednotes}}
+\DeclareOption{hide}{\showednotesfalse\message{ed.sty: hiding ednotes}}
+\DeclareOption{draft}{\showednotestrue\message{ed.sty: showing ednotes}}
+\DeclareOption{final}{\showednotesfalse\message{ed.sty: hiding ednotes}}
+\DeclareOption{nomargins}{\marginsfalse}
 \ProcessOptions
-\ifshowednotes\else\usepackage{verbatim}\fi
+\ifshowednotes
+\RequirePackage{paralist}
+\RequirePackage{xcolor}
+\else
+\RequirePackage{verbatim}
+\fi
 \def\ednoteshape{\sffamily}
 \newcounter{ednote}
 \def\ed@foot#1#2#3% text, type, label
 {\def\test{#3}\def\empty{}\footnotetext[\value{ednote}]%
 {{\scshape{#2}\if\test\empty\else\label{ed:#3}[{#3}]\fi:} \ednoteshape #1}}
+\def\ed@margin#1{\ifmargins\marginpar{#1}\fi}
 \def\Ed@note#1#2#3% text, type, label
 {\addtocounter{ednote}{1}\message{#2!}%
 \ifshowednotes\footnotemark[\arabic{ednote}]\ed@foot{#1}{#2}{#3}\fi}
 \def\ed@note#1#2#3% text, type, label
-{\Ed@note{#1}{#2}{#3}\ifshowednotes\marginpar{#2(\arabic{ednote})}\fi}
-\newcommand{\Ednote}[2][]{\Ed@note{#2}{EdNote}{#1}}
-\newcommand{\ednote}[2][]{\ed@note{#2}{EdNote}{#1}}
-\newcommand{\tweak}[2][]{\ed@note{#2}{Tweak}{#1}}
-\newcommand{\Tweak}[2][]{\Ed@note{#2}{Tweak}{#1}}
-\newcommand{\issue}[2][]{\ed@note{#2}{Issue}{#1}}
-\newcommand{\Issue}[2][]{\Ed@note{#2}{Issue}{#1}}
+{\Ed@note{#1}{#2}{#3}\ifshowednotes\ed@margin{#2:\arabic{ednote}}\fi}
+\def\ednote@label{EdNote}
+\newcommand\ednotelabel[1]{\def\ednote@label{#1}}
+\newcommand{\Ednote}[2][]{\Ed@note{#2}\ednote@label{#1}}
+\newcommand{\ednote}[2][]{\ed@note{#2}\ednote@label{#1}}
+\newcommand\tweaklabel[1]{\def\tweak@label{#1}}
+\def\tweak@label{Tweak}
+\newcommand{\tweak}[2][]{\ed@note{#2}\tweak@label{#1}}
+\newcommand{\Tweak}[2][]{\Ed@note{#2}\tweak@label{#1}}
+\def\edissue@label{Issue}
+\newcommand\edissuelabel[1]{\def\edissue@label{#1}}
+\providecommand{\issue}[2][]{\ed@note{#2}\edissue@label{#1}}
+\providecommand{\Issue}[2][]{\Ed@note{#2}\edissue@label{#1}}
+\newcommand{\edissue}[2][]{\ed@note{#2}\edissue@label{#1}}
+\newcommand{\edIssue}[2][]{\Ed@note{#2}\edissue@label{#1}}
 \def\new@part#1#2#3% text, mess, start
 {\addtocounter{ednote}{1}\edef\new@number{\theednote}\message{#2!\new@number}
-\ifshowednotes\ed@foot{#1}{#2}{}\marginpar{#3(\new@number)}\fi}
+\ifshowednotes\ed@foot{#1}{#2}{}\ed@margin{#3:\new@number}\fi}
 \def\endnew@part#1% end
-{\ifshowednotes\marginpar{#1(\new@number)}\fi}
-\newenvironment{Newpart}[1]{\new@part{#1}{New Part}{BegNP}}{}
-\newenvironment{newpart}[1]{\new@part{#1}{New Part}{BegNP}}{\endnew@part{EndNP}}
-\newenvironment{Oldpart}[1]{\new@part{#1}{Old Part}{BegOP}}{}
-\newenvironment{oldpart}[1]{\new@part{#1}{Old Part}{BegOP}}{\endnew@part{EndOP}}
-\def\Todo#1{% the comment
-\ifshowednotes\message{todo!}{{\sffamily To Do: #1}}\bgroup\sffamily%
-\else\comment%
-\fi}
+{\ifshowednotes\ed@margin{#1:\new@number}\fi}
+\def\b@newpart@label{BegNP}\def\e@newpart@label{EndNP}
+\newcommand\newpartlabels[2]{\def\b@newpart@label{#1}\def\e@newpart@label{#2}}
+\newenvironment{Newpart}[1]{\new@part{#1}{New Part}\b@newpart@label}{}
+\newenvironment{newpart}[1]{\new@part{#1}{New Part}\b@newpart@label}{\endnew@part\e@newpart@label}
+\newcommand\oldpartlabels[2]{\def\b@oldpart@label{#1}\def\e@oldpart@label{#2}}
+\def\b@oldpart@label{BegOP}\def\e@oldpart@label{EndOP}
+\newenvironment{Oldpart}[1]%
+{\new@part{#1}{Old Part}\b@oldpart@label\ifshowednotes\color{gray}\fi}{}
+\newenvironment{oldpart}[1]%
+{\new@part{#1}{Old Part}\b@oldpart@label\ifshowednotes\color{gray}\fi}
+{\endnew@part\e@oldpart@label}
+\newcommand\todolabel[1]{\def\todo@label{#1}}
+\def\todo@label{ToDo}
+\newcommand{\Todo}[2][]{\Ed@note{#2}\todo@label{#1}\ifshowednotes\bgroup\ednoteshape\else\comment\fi}
 \def\endTodo{\ifshowednotes\egroup\else\endcomment\fi}
-\def\todo#1{\ifshowednotes\marginpar{{\sffamily ToDo}}\Todo{#1}\fi}
+\newcommand{\todo}[2][]{\ed@note{#2}\todo@label{#1}\ifshowednotes\bgroup\ednoteshape\else\comment\fi}
 \def\endtodo{\endTodo}
 \def\Todolist#1{% the comment
-\ifshowednotes\message{todolist!}{{\sffamily To Do: #1}}\bgroup\sffamily\begin{itemize}%
+\ifshowednotes\message{todolist!}{{\ednoteshape To Do: #1}}\bgroup\ednoteshape\begin{compactenum}%
 \else\comment%
 \fi}
-\def\endTodolist{\ifshowednotes\end{itemize}\egroup\else\endcomment\fi}
-\def\todolist#1{\ifshowednotes\marginpar{{\sffamily ToDo}}\Todolist{#1}\fi}
+\def\endTodolist{\ifshowednotes\end{compactenum}\egroup\else\endcomment\fi}
+\def\todolist#1{\ifshowednotes\ed@margin{{\ednoteshape ToDo}}\Todolist{#1}\fi}
 \def\endtodolist{\endTodolist}
-\def\ednotemessage{\ifnum\value{ednote}>0\typeout{}%
-\typeout{There are still \arabic{ednote} EdNotes and Issues to resolve!}%
+\newenvironment{musings}{\ifshowednotes\color{blue}\fi}{}
+\def\@ednotemessage{\ifnum\value{ednote}>0\typeout{}%
+\typeout{There are still \arabic{ednote} EdNotes, New/Oldparts, and Issues to resolve!}%
 \typeout{}\fi}
+\AtEndDocument{\@ednotemessage}
+\def\ednotemessage{\PackageWarning{ed}{The `\ednotemessage' macro is obsolete, the message
+  is generated automatically now.}}
 \long\def\edexplanation{\todolist{we will use the ednote system to communicate}
 \item use the {\tt{\char92ednote\char123author: some explanatory text\char125}}
   like a footnote to say what you have done or what should still be
