@@ -1,0 +1,132 @@
+% Common Logic Interchange Format (CLIF)
+\lst@definelanguage{clif}%
+{morekeywords={%
+and,%
+cl:comment,%
+cl:imports,%
+cl:text,%
+exists,%
+forall,%
+not,%
+or,%
+},
+alsoletter=:,%
+}[keywords]
+
+% Relax NG Compact
+\lst@definelanguage{rnc}%
+{morekeywords={%
+default,namespace,datatypes,%
+start,%
+element,%
+attribute,%
+text,%
+empty},
+morestring=[b]",%
+}[keywords,strings]
+
+% Distributed Ontology Language (DOL), text serialization (experimental)
+\lst@definelanguage{dolText}%
+{morekeywords={%
+end,%
+hide,reveal,%
+distributed-ontology,logic,%
+ontology,and,then,%
+view,to,%
+with},
+morecomment=[l]{\%\%\ },%
+morecomment=[n]{\%[}{]\%},%
+morecomment=[s]{\%\{}{\}\%},%
+}[keywords,comments]
+
+% Extended Backus-Naur Form
+\lst@definelanguage{ebnf}%
+% nothing so far, just a placeholder for the future
+{}
+
+% OWL (Web Ontology Language) 2 Functional-style Syntax
+\lst@definelanguage{owl2fun}%
+{morekeywords={SubClassOf,%
+ObjectIntersectionOf,ObjectUnionOf,ObjectOneOf,%
+ObjectAllValuesFrom,ObjectSomeValuesFrom,ObjectHasValue,%
+ObjectExactCardinality,%
+DataOneOf,%
+DataHasValue,%
+EquivalentClasses,%
+DifferentIndividuals}}[keywords]
+
+% OWL (Web Ontology Language) 2 Manchester Syntax
+\lst@definelanguage{owl2Manchester}%
+{morekeywords={%
+AnnotationProperty,Annotations,Asymmetric,%
+Characteristics,Class,%
+Datatype,DifferentFrom,DifferentIndividuals,DisjointClasses,DisjointProperties,DisjointUnionOf,DisjointWith,Domain,%
+EquivalentClasses,EquivalentProperties,EquivalentTo,%
+Facts,Functional,%
+HasKey,%
+Import,Individual,InverseFunctional,InverseOf,Irreflexive,%
+ObjectProperty,%
+Ontology,%
+Prefix,%
+Range,Reflexive,%
+SameAs,SameIndividual,Self,SubClassOf,SubPropertyChain,SubPropertyOf,Symmetric,%
+Transitive,Types,%
+and,%
+exactly,%
+inverse,%
+langPattern,length,%
+max,maxLength,min,minLength,%
+not,%
+only,or,%
+pattern,%
+some,%
+that,%
+value}}[keywords]
+
+% N3 Logic (also usable for Turtle RDF serialization)
+\lst@definelanguage{N3}%
+{morekeywords={@forAll,@forSome,@prefix,a,is,of},%
+morecomment=[l]{\#\ },%
+morestring=[b]",%
+morestring=[b]{"""}}[keywords,comments,strings]
+
+% XQuery
+\lst@definelanguage{xquery}%
+{morekeywords={for,in,let,return,%
+eq,and,not,%
+declare,default,function,element,variable,external,%
+as,%
+copy,modify,replace,with,delete,insert,node,nodes,first,into,%
+module,namespace,import,at},%
+ morestring=[b]',%
+ morecomment=[n]{(:}{:)}}[keywords,strings]
+
+% Regular XML RDF
+\lst@definelanguage{rxr}[]{XML}%
+{keywordsprefix={rxr:}}[keywords]
+
+% RDF/XML
+\lst@definelanguage{RDF/XML}[]{XML}%
+{keywordsprefix={rdf:}}[keywords]
+
+% XInclude
+\lst@definelanguage{XInclude}[]{XML}%
+{keywordsprefix={xi:}}[keywords]
+
+% XHTML+RDFa
+\lst@definelanguage{XHTML+RDFa}[]{HTML}%
+{morekeywords={about,content,datatype,href,property,rel,resource,rev,src,typeof}}[keywords]
+
+% MathML notation definitions (experimental)
+\lst@definelanguage{ntn}[]{XML}%
+{morekeywords={notation,prototype,expr,rendering,render}}
+
+% HTTP headers
+\lst@definelanguage{HTTP}%
+{morekeywords={GET,Host,Accept}}
+
+% OpenMath Content Dictionaries with OpenMath objects
+\lstdefinelanguage{omWithCD}[]{XML}%
+  {morekeywords={OMS,OMV,OMI,OMB,OMSTR,OMF,OMA,OMBIND,OMBVAR,OME,OMATTR,OMATP,OMOBJ,CD,CDBase,CDName,CDURL,CDReviewDate,CDStatus,CDVersion,CDRevision,CDUses,CDDefinition,Name,Description,Role,CMP,FMP},
+  sensitive=true}
+
