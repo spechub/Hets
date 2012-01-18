@@ -239,7 +239,8 @@ CLIF is specified in the Common Logic standard, see
 \url{http://iso-commonlogic.org/}. \Hets can directly read in files in
 CLIF syntax, and also recursively reads in any imported files.
 
-CLIF itself does not support relative theory interpretations and other
+CLIF itself does not support the specification of logical
+consequences, nor relative theory interpretations, nor other
 features that speak about structuring and comparing logical
 theories. Michael Gr\"uninger has suggested some CLIF annotations for
 this purpose, which are supported by \Hets, see
@@ -262,8 +263,13 @@ files. For this purpose, OWL2 Manchester syntax can be used within
 
 \subsection{HetCASL}
 \label{HetCASL}
-For heterogeneous
-specification, \Hets offers the Heterogeneous language \HetCASL.
+For heterogeneous specification, \Hets offers the Heterogeneous
+language \HetCASL.  \HetCASL is not so much a logic, but a meta
+language that can express relations of theories written in different
+logics, like logical consequences, relative interpretations of
+theories, conservative extensions, translations of theories
+along logic translations, etc.
+
  \HetCASL generalises the structuring
 constructs of
 \CASL (Common Algebraic Specification Language \cite{CASL-UM,CASL/RefManual}) to arbitrary logics
