@@ -150,7 +150,7 @@ reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not"
                   , "cl:comment", "roleset:"] ++ reservedcl
 
 reservedcl :: [String]
-reservedcl = ["cl-text", "cl-imports", "cl-exlcudes", "cl-module"
+reservedcl = ["cl-text", "cl-imports", "cl-excludes", "cl-module"
              , "cl-comment", "cl-roleset"]
 
 -- reserved elements for sequence marker
