@@ -198,7 +198,7 @@ For the full functionalities of \Hets, see the \Hets user guide
 \cite{HetsUserGuide}.
 
 
-\section{The Heterogeneous Tool Set}
+\section{The Heterogeneous Tool Set and Its Input Languages}
 
 The central idea of the Heterogeneous Tool Set (\protect\Hets) is to
 provide a general framework for formal methods integration and proof
@@ -217,9 +217,53 @@ hand.
 \caption{The \Hets motherboard and some expansion cards}
 \end{figure}
 
-\Hets supports a number of input languages directly, such as \CASL,
-Common Logic and OWL2. For heterogeneous
-specification, \Hets offers the Heterogeneous \CASL language (\HetCASL).
+\Hets consists of logic-specific tools for the parsing and static
+analysis of the different involved logics, as well as a
+logic-independent parsing and static analysis tool for structured and
+architectural specifications and libraries. The latter of course needs
+to call the logic-specific tools whenever a basic specification is
+encountered.
+
+\Hets is based on the theory of institutions \cite{GoguenBurstall92},
+which formalise the notion of a logic. The theory behind \Hets is laid
+out in \cite{Habil}. A short overview of \Hets is given in
+\cite{MossakowskiEA06,MossakowskiEtAl07b}.
+
+\Hets supports a number of input languages directly, such as Common
+Logic and OWL2 and \HetCASL. They will be described in the next
+sections.
+
+\subsection{Common Logic Interchange Format (CLIF)}
+
+CLIF is specified in the Common Logic standard, see
+\url{http://iso-commonlogic.org/}. \Hets can directly read in files in
+CLIF syntax, and also recursively reads in any imported files.
+
+CLIF itself does not support relative theory interpretations and other
+features that speak about structuring and comparing logical
+theories. Michael Gr\"uninger has suggested some CLIF annotations for
+this purpose, which are supported by \Hets, see
+section~\ref{relationsInCL}. Alternatively, CLIF syntax can be used
+within \HetCASL files, or CLIF files can be refered to within \HetCASL
+files.  \HetCASL is a structuring languages supporting relative theory
+interpretations and other things, see section~\ref{HetCASL} below.
+
+\subsection{OWL2}
+
+OWL2 is a W3C standard, see \url{http://www.w3.org/TR/owl2-overview/}.
+\Hets can directly read in OWL2 files in various syntaxes, including
+the native XML syntax, the RDF syntax, and the human-readable
+Manchester syntax.
+
+Since OWL2 does not support relative theory interpretations and other
+structuring features, such things can only be expressed in \HetCASL
+files. For this purpose, OWL2 Manchester syntax can be used within
+\HetCASL files, or OWL2 files can be refered to within \HetCASL files.
+
+\subsection{HetCASL}
+\label{HetCASL}
+For heterogeneous
+specification, \Hets offers the Heterogeneous language \HetCASL.
  \HetCASL generalises the structuring
 constructs of
 \CASL (Common Algebraic Specification Language \cite{CASL-UM,CASL/RefManual}) to arbitrary logics
@@ -238,16 +282,16 @@ degree of support by \Hets in Fig.~\ref{fig:Languages}.
 \centering
 {\small
 \begin{lstlisting}[morekeywords={then,with,logic,spec,end,view,to}]
-SPEC ::= BASIC-SPEC
-       | SPEC then SPEC
-       | SPEC then %implies SPEC
-       | SPEC with SYMBOL-MAP
-       | SPEC with logic ID
+SPEC ::= BASIC-SPEC                %% logic-specific syntax, e.g CLIF, Manchester syntax
+       | SPEC then SPEC            %% extension of a spec with new symbols and axioms
+       | SPEC then %implies SPEC   %% annotation: extension is logically implied
+       | SPEC with SYMBOL-MAP      %% renaming of SPEC along SYMBOL-MAP
+       | SPEC with logic ID        %% translation of SPEC to a different logic
 
-DEFINITION ::= logic ID
-             | spec ID = SPEC end
-             | view ID : SPEC to SPEC = SYMBOL-MAP end
-             | view ID : SPEC to SPEC = with logic ID end
+DEFINITION ::= logic ID            %% select a new logic for subsequent items
+             | spec ID = SPEC end  %% give the name ID to SPEC
+             | view ID : SPEC to SPEC = SYMBOL-MAP end  %% interpretation of theories
+             | view ID : SPEC to SPEC = logic ID end    %% dto., but across different logics
 
 LIBRARY = DEFINITION*
 \end{lstlisting}
@@ -265,19 +309,9 @@ combine and rename specifications, hide parts thereof, and also
 translate them to other logics. \emph{Architectural specifications}
 prescribe the structure of implementations.  \emph{Specification
   libraries} are collections of named structured and architectural
-specifications.
-
-\Hets consists of logic-specific tools for the parsing and static
-analysis of the different involved logics, as well as a
-logic-independent parsing and static analysis tool for structured and
-architectural specifications and libraries. The latter of course needs
-to call the logic-specific tools whenever a basic specification is
-encountered.
-
-\Hets is based on the theory of institutions \cite{GoguenBurstall92},
-which formalise the notion of a logic. The theory behind \Hets is laid
-out in \cite{Habil}. A short overview of \Hets is given in
-\cite{MossakowskiEA06,MossakowskiEtAl07b}.
+specifications. \emph{Refinements} express the fact the a specification
+is becoming more specific. All this is supported by \HetCASL.
+For details, see \cite{Mossakowski04,Habil,CASL/RefManual}.
 
 
 \section{Logics supported by Hets}
