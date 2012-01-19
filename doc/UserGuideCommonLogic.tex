@@ -190,7 +190,7 @@ sending CL theories to a standard first-order prover;
 \item a translation of propositional logic to CL.
 \end{itemize}
 
-This guide will introduce you to these functioanlities of \Hets.
+This guide will introduce you to these functionalities of \Hets.
 For the full functionalities of \Hets, see the \Hets user guide  
 \cite{HetsUserGuide}.
 
@@ -230,33 +230,33 @@ out in \cite{Habil}. A short overview of \Hets is given in
 Logic and OWL2 and \HetCASL. They will be described in the next
 sections.
 
-\subsection{Common Logic Interchange Format (CLIF)}
+\subsection{Common Logic and the Common Logic Interchange Format (CLIF)}
 
 CLIF is specified in Annex A of the Common Logic standard
 \cite{CommonLogic:oldfashioned}. \Hets can directly read in files in
-CLIF syntax, and also recursively reads in any imported files.
+CLIF syntax, and also recursively reads in any imported files (cf.\ section~\ref{relationsInCL} for the syntax).
 
-CLIF itself does not support the specification of logical
+Common Logic itself does not support the specification of logical
 consequences, nor relative theory interpretations, nor other
 features that speak about structuring and comparing logical
-theories. Michael Gr\"uninger has suggested some CLIF annotations for
+theories. Michael Gr\"uninger has suggested certain special annotations comments for
 this purpose, which are supported by \Hets, see
-section~\ref{relationsInCL}. Alternatively, CLIF syntax can be used
-within \HetCASL files, or CLIF files can be refered to within \HetCASL
-files.  \HetCASL is a structuring languages supporting relative theory
+section~\ref{relationsInCL}.  Alternatively, CLIF syntax can be used
+for specifications within \HetCASL files, or CLIF files can be referred to within \HetCASL
+files.  \HetCASL is a structuring language supporting relative theory
 interpretations and other things, see section~\ref{HetCASL} below.
 
 \subsection{OWL2}
 
-OWL2 is a W3C standard, see \url{http://www.w3.org/TR/owl2-overview/}.
-\Hets can directly read in OWL2 files in various syntaxes, including
-the native XML syntax, the RDF syntax, and the human-readable
-Manchester syntax.
+OWL2 is a W3C standard \cite{w3c:owl2-overview}.
+\Hets can directly read in OWL2 files in various syntaxes (called ``serializations''), including
+the native OWL XML syntax \cite{w3c:owl2-xml}, the RDF/XML syntax \cite{w3c:owl2-RDF-mapping,w3c04:rdf-xml}\ednote{CL: This was previously ``the RDF syntax''; however RDF is just a data model, which has many possible syntaxes itself.  I presume that Hets supports at least RDF/XML, but does it also supports further RDF serializations, e.g.\ Turtle?}, and the human-readable
+Manchester syntax \cite{w3c:owl2-manchester}.
 
 Since OWL2 does not support relative theory interpretations and other
 structuring features, such things can only be expressed in \HetCASL
 files. For this purpose, OWL2 Manchester syntax can be used within
-\HetCASL files, or OWL2 files can be refered to within \HetCASL files.
+\HetCASL files, or OWL2 files can be referred to within \HetCASL files.
 
 \subsection{HetCASL}
 \label{HetCASL}
@@ -337,7 +337,7 @@ logic. Blue indicates a prover-supported logic.}
 \begin{tabular}{|l|c|c|c|}\hline
 Language & Parser & Static Analysis & Prover \\\hline
 \CASL & x & x & -- \\\hline
-CommonLogic & x (CLIF) & x & -- \\\hline
+Common Logic & x (CLIF) & x & -- \\\hline
 OWL2 & x & x & x \\\hline
 Propositional & x & x & x \\\hline
 SoftFOL & x & -- & x \\\hline
@@ -376,8 +376,8 @@ the zChaff SAT solver \cite{Herbstritt03} connected to it.
   proving (ATP) systems for first-order logic with equality: \begin{inparaenum}[(1)]\item \SPASS
   \cite{WeidenbachEtAl02}, see \url{http://www.spass-prover.org}; 
 \item Vampire \cite{RiazanovV02} see \url{http://www.vprover.org};
-\item Eprover \cite{Schulz:AICOM-2002}, see {http://www.eprover.org};
-\item E-KRHyper \cite{DBLP:conf/cade/PelzerW07}, see {http://www.uni-koblenz.de/~bpelzer/ekrhyper}, and 
+\item Eprover \cite{Schulz:AICOM-2002}, see \url{http://www.eprover.org};
+\item E-KRHyper \cite{DBLP:conf/cade/PelzerW07}, see \url{http://www.uni-koblenz.de/~bpelzer/ekrhyper}, and 
 \item 
   MathServe Broker\footnote{which chooses an appropriate ATP upon a
     classification of the FOL problem} \cite{ZimmerAutexier06}.
@@ -691,8 +691,8 @@ end
 Note that the dot at the beginning of a line indicates that a new text begins.
 Hence, it is possible to have multiple texts in a \CASL specification.
 
-This specification is the \HetCASL-strucured equivalent to the following three
-CLIF files:\footnote{Note that where the Common Logic specification requires ``cl:text'', some samples available on the web use ``cl-text''. Therefore, \Hets also supports the latter.}\\
+This specification is the \HetCASL-structured equivalent to the following three
+CLIF files:\footnote{Note that where the Common Logic specification requires ``cl:text'', some samples available on the Web use ``cl-text''. Therefore, \Hets also supports the latter.}\\
 
 
 \textbf{Pred.clif}:
@@ -817,7 +817,7 @@ see the \Hets User Guide \Hets user guide \cite{HetsUserGuide}.
 \label{relationsInCL}
 \Hets supports several relations between Common Logic Texts. However only one of
 them is defined in ISO/IEC 24707:2007 \cite{iso24a}. All the other relations are 
-unofficial extensions used i.e. by COLORE \cite{Colore}.
+unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Colore}.
 
 \begin{description}
 \item[Importation] \label{descr:link_import}
@@ -1106,7 +1106,7 @@ inactive. Figure~\ref{fig:SPASS_GUI} shows the instantiation for \SPASS, where
 in the top right part of the window the batch mode can be controlled.  The
 left side shows the list of goals (with status indicators).  If goals are
 timed out (indicated by `t') it may help to activate the check box `Include
-preceeding proven theorems in next proof attempt' and pressing `Prove all'
+preceding proven theorems in next proof attempt' and pressing `Prove all'
 again.
 
 On the bottom right the result of the last proof
@@ -1174,7 +1174,7 @@ that are read and written.
 \item[\texttt{-i ITYPE}, \texttt{-{}-input-type=ITYPE}] Specify \texttt{ITYPE}
   as explicit type of the input file. 
 
-  \texttt{exp} files contain a development graph in a new experimental omdoc
+  \texttt{exp} files contain a development graph in a new experimental OMDoc
   format.  \texttt{prf} files contain additional development steps (as shared
   ATerms) to be applied on top of an underlying development graph created from
   a corresponding \texttt{env}, \texttt{casl}, or \texttt{het}
@@ -1318,7 +1318,7 @@ chooses a list of named views for processing
   \Hets in interactive mode
 
 \item[\texttt{-S PORT}, \texttt{-{}-listen=PORT}] communicate
-  with \Hets in interactive mode by listining to the port \texttt{PORT}
+  with \Hets in interactive mode by listening to the port \texttt{PORT}
 
 \item[\texttt{-c HOSTNAME:PORT}, \texttt{-{}-connect=HOSTNAME:PORT}] communicate
   with \Hets in interactive mode via connecting to the port on host
@@ -1369,8 +1369,6 @@ declaration. The default is \CASL.
 \bibliographystyle{plain}
 \bibliography{cofibib,cofi-ann,UM,hets,kl,hetsForCL}
 \end{document}
-
-
 
 %%% Local Variables:
 %%% mode: latex
