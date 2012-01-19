@@ -249,8 +249,8 @@ interpretations and other things, see section~\ref{HetCASL} below.
 \subsection{OWL2}
 
 OWL2 is a W3C standard \cite{w3c:owl2-overview}.
-\Hets can directly read in OWL2 files in various syntaxes (called ``serializations''), including
-the native OWL XML syntax \cite{w3c:owl2-xml}, the RDF/XML syntax \cite{w3c:owl2-RDF-mapping,w3c04:rdf-xml}\ednote{CL: This was previously ``the RDF syntax''; however RDF is just a data model, which has many possible syntaxes itself.  I presume that Hets supports at least RDF/XML, but does it also supports further RDF serializations, e.g.\ Turtle?}, and the human-readable
+\Hets can directly read in OWL2 files in various syntaxes (called ``serialisations''), including
+the native OWL XML syntax \cite{w3c:owl2-xml}, the RDF/XML syntax \cite{w3c:owl2-RDF-mapping,w3c04:rdf-xml}\ednote{CL: This was previously ``the RDF syntax''; however RDF is just a data model, which has many possible syntaxes itself.  I presume that Hets supports at least RDF/XML, but does it also supports further RDF serialisations, e.g.\ Turtle?}, and the human-readable
 Manchester syntax \cite{w3c:owl2-manchester}.
 
 Since OWL2 does not support relative theory interpretations and other
@@ -363,9 +363,9 @@ logic in several ways.   The Common Logic
   \cite{berners:2001:SWeb}.
 Hets calls an external OWL2 parser
   written in Java to obtain the abstract syntax for an OWL file and its
-  imports. \begin{newpart}{CL: ``Full/DL/Lite'' is OWL 1 terminology.  I've updated it to OWL 2 profiles, but please check if I got it right.}The Java parser also does a first analysis classifying
+  imports. The Java parser also does a first analysis classifying
   the OWL ontology into the sublanguages OWL Full (all of OWL, under the RDF semantics, undecidable \cite{w3c:owl2-rdf-based-semantics}), OWL DL (all of OWL, under the direct semantics \cite{w3c:owl2-direct-semantics}), and the so-called OWL Profiles (i.e.\ proper sublanguages) OWL EL, OWL QL, and OWL RL \cite{w3c:owl2-profiles}.
- Hets supports all except OWL Full.\end{newpart}
+ Hets supports all except OWL Full.
 The
   structuring of the OWL imports is displayed as a Development Graph.
 
@@ -778,7 +778,7 @@ The following options let \Hets show the development graph of
 a specification library:
 \begin{description}
 \item[\texttt{-g}, \texttt{-{}-gui}] Shows the development graph in a GUI window
-\item[\texttt{-u}, \texttt{-{}-uncolored}] no colors in shown graphs
+\item[\texttt{-u}, \texttt{-{}-uncolored}] no colours in shown graphs
 \end{description}
 
 The following additional options also apply typical rules from the development
@@ -1373,4 +1373,19 @@ declaration. The default is \CASL.
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "UserGuideCommonLogic"
+%%% ispell-local-dictionary: "british"
 %%% End:
+% LocalWords:  SPASS darwin uninger Hets HetCASL SoftFOL EL QL RL zChaff TPTP
+% LocalWords:  Eprover KRHyper MathServe CASL THF HasCASL RelScheme CommonLogic
+% LocalWords:  CASLCompact CommonLogicModuleElimination SuleCFOL hets oneiric
+% LocalWords:  SoftFOLInduction mpkg MacPorts libglade uDraw Tcl Tk bunzip VSE
+% LocalWords:  minisat Twelf Attr clif libdir casl het clf Pred PetHappy gui DG
+% LocalWords:  uncolored COLORE someFile http https someText someTargetFile sp
+% LocalWords:  someTranslationFile someAxiom Nonconservative nonconservative EP
+% LocalWords:  libs someOtherFile nextFile andSoOn nameInTargetFile forall iff
+% LocalWords:  nameInCurrentFile ToProve ATPs rgen Zimmer SPCs Sutcliffe DCTP
+% LocalWords:  Suttner Waldmeister urgen ITYPE OMDoc prf ATerms env hpf trm hs
+% LocalWords:  maude hol omdoc xml baf dir OTYPES omn comptable sig th tex html
+% LocalWords:  dfg tptp Tarskian hetcasl NVIEWS pgip HOSTNAME LogicGraph svg
+% LocalWords:  uDrawGraph RTS KIntM latin utf xupdate modelSparQ SparQ cofibib
+% LocalWords:  cofi ann hetsForCL
