@@ -160,16 +160,16 @@ Comments to: \href{mailto:hets-users@informatik.uni-bremen.de}{hets-users@inform
 \section{Introduction}
 
 Common Logic (CL) is an ISO standard published as ``ISO/IEC 24707:2007
-- Information technology — Common Logic (CL): a framework for a family
+--- Information technology — Common Logic (CL): a framework for a family
 of logic-based languages''. It is freely available at
 \url{http://iso-commonlogic.org/}. CL is based on untyped first-order
-logic, but extends first-order logic in two ways: (1) any term can be
-used as function or predicate, and (2) sequence markers allow
-for talking about sequences of individuals directly.\footnote
+logic, but extends first-order logic in two ways: \begin{inparaenum}[(1)]\item any term can be
+used as function or predicate, and \item sequence markers allow
+for talking about sequences of individuals directly\end{inparaenum}.\footnote
 {Strictly speaking, only the second feature goes beyond first-order
 logic.}
 
-The Heterogeneous Tool Set (\Hets) is open source software providing
+The Heterogeneous Tool Set (\Hets) is an open source software providing
 several kinds of tool support for Common Logic:
 \begin{itemize}
 \item a parser for the Common Logic Interchange Format (CLIF) --- CLIF
@@ -183,10 +183,8 @@ involving sequence markers;
 \item a connection to first-order model finders like darwin that
 allow one to find models for CL theories;
 \item support for proving interpretations between CL theories to be correct;
-\item a translation that eliminates the use of CL modules\footnote
-{Actually, we are using a revised semantics for modules, as proposed
-recently by Fabian Neuhaus and Pat Hayes in their paper ``Common Logic and
-the Horatio Problem''.}. Since the semantics of CL modules
+\item a translation that eliminates the use of CL modules\footnote{Actually, we are using a revised semantics for modules, as proposed
+recently in~\cite{NH:CommonLogicHoratio}.}. Since the semantics of CL modules
 is special to CL, this elimination o modules is necessary before
 sending CL theories to a standard first-order prover;
 \item a translation of the Web Ontology Language OWL to CL;
