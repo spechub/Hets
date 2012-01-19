@@ -161,8 +161,7 @@ Comments to: \href{mailto:hets-users@informatik.uni-bremen.de}{hets-users@inform
 
 Common Logic (CL) is an ISO standard published as ``ISO/IEC 24707:2007
 --- Information technology — Common Logic (CL): a framework for a family
-of logic-based languages''. It is freely available at
-\url{http://iso-commonlogic.org/}. CL is based on untyped first-order
+of logic-based languages'' \cite{CommonLogic:oldfashioned}. CL is based on untyped first-order
 logic, but extends first-order logic in two ways: \begin{inparaenum}[(1)]\item any term can be
 used as function or predicate, and \item sequence markers allow
 for talking about sequences of individuals directly\end{inparaenum}.\footnote
@@ -185,7 +184,7 @@ allow one to find models for CL theories;
 \item support for proving interpretations between CL theories to be correct;
 \item a translation that eliminates the use of CL modules\footnote{Actually, we are using a revised semantics for modules, as proposed
 recently in~\cite{NH:CommonLogicHoratio}.}. Since the semantics of CL modules
-is special to CL, this elimination o modules is necessary before
+is special to CL, this elimination of modules is necessary before
 sending CL theories to a standard first-order prover;
 \item a translation of the Web Ontology Language OWL to CL;
 \item a translation of propositional logic to CL.
@@ -233,8 +232,8 @@ sections.
 
 \subsection{Common Logic Interchange Format (CLIF)}
 
-CLIF is specified in the Common Logic standard, see
-\url{http://iso-commonlogic.org/}. \Hets can directly read in files in
+CLIF is specified in Annex A of the Common Logic standard
+\cite{CommonLogic:oldfashioned}. \Hets can directly read in files in
 CLIF syntax, and also recursively reads in any imported files.
 
 CLIF itself does not support the specification of logical
@@ -352,23 +351,21 @@ via logic translations.\label{fig:Languages}}
 \begin{description}
 
 
-\item[Common Logic] \url{http://iso-commonlogic.org/}
-   is an ISO standard published as ``ISO/IEC 24707:2007 - Information technology — Common Logic (CL): a framework for a family of logic-based languages''. It is based on first-order logic, but extends first-order
+\item[Common Logic] is an ISO standard published as ``ISO/IEC 24707:2007 - Information technology — Common Logic (CL): a framework for a family of logic-based languages'' \cite{CommonLogic:oldfashioned}. It is based on first-order logic, but extends first-order
 logic in several ways.   The Common Logic
   Interchange Format (CLIF) provides a Lisp-like syntax for Common
   Logic.  \Hets currently only supports parsing CLIF. If you need
   other dialects, send us a message and we will add them.
 
-\item[OWL2] is the description logic sublanguage of the Web Ontology Language (OWL \cite{McGvHa:owl04}) recommended by the
-  World Wide Web Consortium (W3C, \url{http://www.w3c.org}). It is
+\item[OWL2] is the Web Ontology Language recommended by the
+  World Wide Web Consortium (W3C, \url{http://www.w3c.org}); see \cite{w3c:owl2-overview}. It is
   used for knowledge representation on the Semantic Web
   \cite{berners:2001:SWeb}.
 Hets calls an external OWL2 parser
   written in Java to obtain the abstract syntax for an OWL file and its
-  imports. The Java parser also does a first analysis classifying
-  the OWL ontology into the sublanguages OWL Full, OWL DL and OWL
-  Lite.
- Hets only supports the latter two, more restricted variants.
+  imports. \begin{newpart}{CL: ``Full/DL/Lite'' is OWL 1 terminology.  I've updated it to OWL 2 profiles, but please check if I got it right.}The Java parser also does a first analysis classifying
+  the OWL ontology into the sublanguages OWL Full (all of OWL, under the RDF semantics, undecidable \cite{w3c:owl2-rdf-based-semantics}), OWL DL (all of OWL, under the direct semantics \cite{w3c:owl2-direct-semantics}), and the so-called OWL Profiles (i.e.\ proper sublanguages) OWL EL, OWL QL, and OWL RL \cite{w3c:owl2-profiles}.
+ Hets supports all except OWL Full.\end{newpart}
 The
   structuring of the OWL imports is displayed as a Development Graph.
 
