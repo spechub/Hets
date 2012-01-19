@@ -284,17 +284,17 @@ degree of support by \Hets in Fig.~\ref{fig:Languages}.
 \begin{figure}[ht]
 \centering
 {\small
-\begin{lstlisting}[morekeywords={then,with,logic,spec,end,view,to}]
-SPEC ::= BASIC-SPEC                %% logic-specific syntax, e.g CLIF, Manchester syntax
-       | SPEC then SPEC            %% extension of a spec with new symbols and axioms
-       | SPEC then %implies SPEC   %% annotation: extension is logically implied
-       | SPEC with SYMBOL-MAP      %% renaming of SPEC along SYMBOL-MAP
-       | SPEC with logic ID        %% translation of SPEC to a different logic
+\begin{lstlisting}[basicstyle=\ttfamily\small,morekeywords={then,with,logic,spec,end,view,to},escapeinside={<>}]
+SPEC ::= BASIC-SPEC                %% <logic-specific syntax, e.g CLIF, Manchester syntax>
+       | SPEC then SPEC            %% <extension of a spec with new symbols and axioms>
+       | SPEC then %implies SPEC   %% <annotation: extension is logically implied>
+       | SPEC with SYMBOL-MAP      %% <renaming of SPEC along SYMBOL-MAP>
+       | SPEC with logic ID        %% <translation of SPEC to a different logic>
 
-DEFINITION ::= logic ID            %% select a new logic for subsequent items
-             | spec ID = SPEC end  %% give the name ID to SPEC
-             | view ID : SPEC to SPEC = SYMBOL-MAP end  %% interpretation of theories
-             | view ID : SPEC to SPEC = logic ID end    %% dto., but across different logics
+DEFINITION ::= logic ID            %% <select a new logic for subsequent items>
+             | spec ID = SPEC end  %% <give the name ID to SPEC>
+             | view ID : SPEC to SPEC = SYMBOL-MAP end  %% <interpretation of theories>
+             | view ID : SPEC to SPEC = logic ID end    %% <dto., but across different logics>
 
 LIBRARY = DEFINITION*
 \end{lstlisting}
