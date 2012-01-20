@@ -935,12 +935,12 @@ global theorem links to local proof goals. You can do this reduction by clicking
 on the Edit-menu in the development graph window and selecting 
 Proofs/Auto-DG-Prover. Local proof goals (indicated by red
 nodes in the development graph) can be eventually discharged using a theorem
-prover, i.e. by using the ``Prove'' menu of a red node.
+prover, i.e.\ by using the ``Prove'' menu of a red node.
 
 The graphical user interface (GUI) for calling a prover is shown in
-Fig. \ref{fig:proof_window} --- we call it ``Proof Management GUI''.
-The top list on the left shows all goal names prefixed with the proof
-status in square brackets. A proved goal is indicated by a `+', a `-'
+Fig.~\ref{fig:proof_window} --- we call it ``Proof Management GUI''.
+The top list on the left shows all goal names prefixed with their proof
+status in square brackets. A proved goal is indicated by a `+', a `–'
 indicates a disproved goal, a space denotes an open goal, and a
 `$\times$' denotes an inconsistent specification (aka a fallen `+';
 see below for details).
@@ -980,30 +980,30 @@ select those goals that should be inspected or proved. The GUI elements are the 
   provers (among them \Isabelle, MathServe Broker, \SPASS, Vampire, and
   zChaff, described below). By pressing `Prove' the selected prover is
   launched and the theory along with the selected goals is translated via the
-  shortest possible path of comorphisms into the provers logic.
+  shortest possible path of comorphisms into the prover's logic.
 \item The pop-up choice box below `Selected comorphism path:' lets you pick a
   (composed) comorphism to be used for the chosen prover. If the specification
   does not contain any sequence markers, it is possible to use the comorphism
   \texttt{CommonLogic2CASLCompact} which results in a simpler 
-  \CASL-specification. We recommend using this comorphism whenever possible.
+  \CASL specification. We recommend using this comorphism whenever possible.
 \item Since the amount and kind of sentences sent to an ATP system is a major
   factor for the performance of the ATP system, it is possible to select in
   the bottom lists the axioms and proven theorems that will comprise the
   theory of the next proof attempt. Based on this selection the sublogic may
-  vary and also the available provers and comorphisms to provers. Former
+  vary \ednote{CL: From here, my brain can't parse this sentence.}and also the available provers and comorphisms to provers. Former
   theorems that are imported from other specifications are marked with the
   prefix `(Th)'. Since former theorems do not add additional logical content,
   they may be safely removed from the theory.
 \item If you press the bottom-right `Close' button the window is closed and
   the status of the goals' list is integrated into the development graph. If
   all goals have been proved, the selected node turns from red into green.
-\item All other buttons control selecting list entries
+\item All other buttons control selecting list entries.
 \end{itemize}
 
 In order to prove or disprove a theorem, it needs to be declared as proof 
 obligation. This is done by the keyword \texttt{\%implied} at the end of a text:
 
-\begin{lstlisting}
+\begin{lstlisting}[morekeywords={logic,spec,and,implied,end}]
 logic CommonLogic
 
 spec ToProve =
@@ -1019,10 +1019,10 @@ In this specification the theorems, annotated (named) by \texttt{correct} and
 Note that they are separate texts inside the specification \texttt{ToProve}.
 The annotations are optional. For proving, they are the names shown in the 
 ``Axioms to include'' section of the prover interface 
-(Fig. \ref{fig:proof_window}).
+(Fig.~\ref{fig:proof_window}).
 
 The same specification can be written down in CLIF:
-\begin{lstlisting}[language=clif]
+\begin{lstlisting}[language=clif,morekeywords={implied}]
 (cl:text axiom
   (P x)
   (and (P x) (Q y))
@@ -1035,7 +1035,7 @@ The same specification can be written down in CLIF:
 (cl:text incorrect (P y)) %implied
 \end{lstlisting}
 In CLIF, there is no notion of proof obligation. Hence the \texttt{\%implied} 
-keyword of \Hets must be used and it is not pure CLIF. Because the texts have 
+keyword of \Hets must be used, and thus the specification is not pure CLIF. Because the texts have 
 names, these are also used in the prover interface. Otherwise, \Hets invents 
 names.
 
@@ -1043,7 +1043,7 @@ names.
 \label{sec:CC}
 Since proofs are void if specifications are inconsistent, the consistency
 should be checked (if possible for the given logic) by the ``Consistency
-checker'' shown in Fig. \ref{fig:cons_window}.  This GUI is invoked from
+checker'' shown in Fig.~\ref{fig:cons_window}.  This GUI is invoked from
 the `Edit' menu as it operates on all nodes.
 
 The list on the left shows all node names prefixed with a consistency status
@@ -1072,7 +1072,7 @@ some \CASL models can be re-constructed. When pressing `Check', possibly after
 most the number of seconds given under `Timeout:' on each node. Pressing
 `Stop' allows to terminate this process if too many nodes have been chosen.
 Either by `View results' or automatically the `Results of consistency check'
-(Fig. \ref{fig:cons_res}) will pop up and allow you to inspect the models for
+(Fig.~\ref{fig:cons_res}) will pop up and allow you to inspect the models for
 nodes, if they could be constructed.
 
 \begin{figure}[ht]
