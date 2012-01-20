@@ -42,6 +42,9 @@ public class OWL2Parser {
 		try {
 			OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 			if (args.length == 3) {
+                                // args[0]: IRI
+                                // args[1]: name of output file
+                                // args[2]: type of output file: xml, rdf, or otherwise assume Manchester syntax
 				filename = args[1];
 				out = new BufferedWriter(new FileWriter(filename));
 				if (args[2].equals("xml"))
@@ -54,6 +57,12 @@ public class OWL2Parser {
 					}
 
 			} else {
+                                // args[0]: IRI
+                                // args[1]: type of output:
+                                //   xml (OWL XML),
+                                //   rdf (RDF/XML),
+                                //   or otherwise use Manchester syntax
+                                // Output goes to standard output, i.e. System.out
 				if (args.length == 2)	{
 					if (args[1].equals("xml"))
 						OP = 1;
@@ -66,6 +75,9 @@ public class OWL2Parser {
 				}
 				else 
 				{
+                                        // args[0]: IRI
+                                        // Output goes to standard output, i.e. System.out
+                                        // and will be made in Manchester syntax
 					if (args.length == 1)
 						OP = 2;
 				}
