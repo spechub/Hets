@@ -250,9 +250,9 @@ interpretations and other things, see section~\ref{HetCASL} below.
 \subsection{OWL2}
 
 OWL2 is a W3C standard \cite{w3c:owl2-overview}.
-\Hets can directly read in OWL2 files in various syntaxes (called ``serialisations''), including
-the native OWL XML syntax \cite{w3c:owl2-xml}, the RDF/XML syntax \cite{w3c:owl2-RDF-mapping,w3c04:rdf-xml}\ednote{CL: This was previously ``the RDF syntax''; however RDF is just a data model, which has many possible syntaxes itself.  I presume that Hets supports at least RDF/XML, but does it also supports further RDF serialisations, e.g.\ Turtle?}, and the human-readable
-Manchester syntax \cite{w3c:owl2-manchester}.
+\Hets can directly read in OWL2 files in all syntaxes (called ``serialisations'') that the OWL API supports \cite{OWLAPI:URL}, including
+the native OWL XML syntax \cite{w3c:owl2-xml},  the human-readable
+Manchester syntax \cite{w3c:owl2-manchester}, as well as RDF \cite{w3c:owl2-RDF-mapping}.  The RDF data model has multiple possible syntaxes itself, including RDF/XML \cite{w3c04:rdf-xml} and the text-oriented Turtle syntax \cite{w3c:turtle}.
 
 Since OWL2 does not support relative theory interpretations and other
 structuring features, such things can only be expressed in \HetCASL
@@ -282,31 +282,23 @@ currently supported logics and logic translations (the latter are also
 called comorphisms) is shown in Fig.~\ref{fig:LogicGraph}, and the
 degree of support by \Hets in Fig.~\ref{fig:Languages}.
 
-\begin{figure}[ht]
-\centering
-{\small
-\begin{lstlisting}[basicstyle=\ttfamily\small,morekeywords={then,with,logic,spec,end,view,to},escapeinside={<>}]
-SPEC ::= BASIC-SPEC                %% <logic-specific syntax, e.g CLIF, Manchester syntax>
-       | SPEC then SPEC            %% <extension of a spec with new symbols and axioms>
-       | SPEC then %implies SPEC   %% <annotation: extension is logically implied>
-       | SPEC with SYMBOL-MAP      %% <renaming of SPEC along SYMBOL-MAP>
-       | SPEC with logic ID        %% <translation of SPEC to a different logic>
+% We give an ad hoc listing language definition of EBNF here.  This should probably go into lstlang0.sty.
+\begin{lstlisting}[float,label={fig:lang},caption={Syntax of a simple subset of the heterogeneous specification language. \texttt{BASIC-SPEC} and \texttt{SYMBOL-MAP} have a logic specific syntax, while \texttt{ID} stands for some form of identifiers.},basicstyle=\ttfamily\small,morecomment={[l]{\%\%\ }},morekeywords={then,with,logic,spec,end,view,to},escapeinside={<>}]
+SPEC ::= BASIC-SPEC        %% logic-specific syntax, e.g. CLIF or Manchester syntax
+       | SPEC then SPEC          %% extension of a spec with new symbols and axioms
+       | SPEC then %implies SPEC %% annotation: extension is logically implied
+       | SPEC with SYMBOL-MAP    %% renaming of SPEC along SYMBOL-MAP
+       | SPEC with logic ID      %% translation of SPEC to a different logic
 
-DEFINITION ::= logic ID            %% <select a new logic for subsequent items>
-             | spec ID = SPEC end  %% <give the name ID to SPEC>
-             | view ID : SPEC to SPEC = SYMBOL-MAP end  %% <interpretation of theories>
-             | view ID : SPEC to SPEC = logic ID end    %% <dto., but across different logics>
+DEFINITION ::= logic ID            %% select a new logic for subsequent items
+             | spec ID = SPEC end  %% give the name ID to SPEC
+             | view ID : SPEC to SPEC = SYMBOL-MAP end
+               %% interpretation of theories
+             | view ID : SPEC to SPEC = logic ID end
+               %% dto., but across different logics
 
 LIBRARY = DEFINITION*
 \end{lstlisting}
-}
-\caption{Syntax of a simple subset of the heterogeneous
-specification language.
-\texttt{BASIC-SPEC} and \texttt{SYMBOL-MAP} have a logic
-specific syntax, while \texttt{ID} stands for some form of
-identifiers.\label{fig:lang}
-}
-\end{figure}
 
 With \emph{heterogeneous structured specifications}, it is possible to
 combine and rename specifications, hide parts thereof, and also
@@ -824,8 +816,8 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 \item[Importation] \label{descr:link_import}
   is defined in ISO/IEC 24707:2007 \cite{iso24a} as virtual copying of a 
   resource. In \Hets a whole file is ``copied'' into the importing  
-  specification. Hets currently cannot handle cyclic imports. If you really need
-  them, send us a message at hets@informatik.uni-bremen.de, and we will fix it.
+  specification. Hets cannot currently handle cyclic imports. If you really need
+  them, send us a message at \href{mailto:hets@informatik.uni-bremen.de}{hets@informatik.uni-bremen.de}, and we will fix it.
   
   Using CLIF, you can import \texttt{someFile.clif} via
   \begin{lstlisting}[language=clif]
@@ -843,14 +835,14 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 (cl:imports https://someDomain.com/path/to/someFile.clif)
   \end{lstlisting}
 
-  The Importation is indicated by a global definition link (black arrow) in the 
+  The importation is indicated by a global definition link (black arrow) in the 
   development graph.
 
 \item[Relative interpretation]
   is described in \cite{colore-fois}. It is represented by a theorem link 
   (red arrow) in the development graph. In a Common Logic file it is specified 
-  inside of a comment on text-level, that is a comment in the upper most level 
-  of the Common Logic (optionally named) text instead of one in a sentence or 
+  inside of a comment on text-level, that is a comment in the uppermost level 
+  of the (optionally named) Common Logic text instead of a comment in a sentence or 
   term:
   
   \begin{lstlisting}[language=clif]
@@ -860,13 +852,13 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 )
   \end{lstlisting}
   Just as with imports (\ref{descr:link_import}), \Hets supports different types 
-  of references to resources here, as e.g. URIs.
+  of references to resources here, such as URIs.
   Alternatively, the \HetCASL syntax for relative interpretations is
 \begin{quote}
-\textbf{view} v : sp1 to sp2 end
+\textbf{view} v : sp1 \textbf{to} sp2 \textbf{end}
 \end{quote}
-
-
+  Views are declared outside of specifications, as can be seen from listing~\ref{fig:lang}.
+  
 \item[Nonconservative extension]
   is represented by a theorem link (red arrow) in the development graph. In a 
   Common Logic file it is specified inside of a comment on text-level:
@@ -894,42 +886,40 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 \end{description}
 
 Except for importation and inclusion, you can specify an optional symbol map 
-(name map) in a relation. Names from the target file are mapped to names from the current 
+(name map) in a relation.\ednote{CL: Would it be worth mentioning that, if you want to achieve something comparable to ``importation with renaming'', you can use \HetCASL's ``SPEC with ... then SPEC'' extension mechanism?} Names from the target file are mapped to names from the current 
 file (including the translation file, if the relation uses one). 
 The example has two almost identical files, \texttt{upper.clif} and 
 \texttt{lower.clif}. The only difference in the actual axioms is that 
 \texttt{upper.clif} uses uppercase predicates while \texttt{lower.clif} 
 uses lowercase predicates. The symbol is added at the end of the relation
-definition in parentheses. Only the names which differ between source
+definition in parentheses. Only those names that differ between source
 and target need to be listed. The other names are implicitly the same. 
 A mapping of a single name is defined with 
-``\texttt{nameInTargetFile |-> nameInCurrentFile}''. Multiple mappings are 
+``\texttt{nameInTargetFile |-> nameInCurrentFile}''; multiple mappings are 
 separated by commas. Note that in Common Logic, a comma can be part of a name.
 Hence a space must be placed between the separation-comma and a name.\\
 
 \textbf{upper.clif}:
 \begin{lstlisting}[language=clif]
 (cl:text upper
-
-(cl:comment '(nonconservative-extension lower
-  ( a |-> A
-  , b |-> B
-  ))'
-)
-
-(forall (x y) (iff  (A x y)
-                    (B x y)))
+  (cl:comment '(nonconservative-extension lower
+    ( a |-> A
+    , b |-> B
+    ))'
+  )
+  
+  (forall (x y) (iff (A x y)
+                     (B x y)))
 )
 \end{lstlisting}
 
 \textbf{lower.clif}:
 \begin{lstlisting}[language=clif]
 (cl:text lower
-
-(cl:comment '(nonconservative-extension upper (A |-> a , B |-> b))')
-
-(forall (x y) (iff  (a x y)
-                    (b x y)))
+  (cl:comment '(nonconservative-extension upper (A |-> a , B |-> b))')
+  
+  (forall (x y) (iff (a x y)
+                     (b x y)))
 )
 \end{lstlisting}
 
