@@ -891,8 +891,16 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 Except for importation and inclusion, you can specify an optional symbol map 
 (name map) in a relation.\footnote{While the ``copy'' semantics of Common Logic importations does not permit renamings, \HetCASL's extension mechanism offers an alternative possibility to reuse ontologies and rename some of their symbols, using the ``\textit{importedSpec} \textbf{with} \textit{name1Old} |-> \textit{name1New}, \textit{name2Old} |-> \textit{name2New} \textbf{then} \textit{importingSpec}'' syntax.}
  Names from the target file are mapped to names from the current 
-file (including the translation file, if the relation uses one). 
-The example has two almost identical files, \texttt{upper.clif} and 
+file (including the translation file, if the relation uses one).  Note that is is possible to use cyclic relations in \Hets. Only the cyclic 
+importation is not supported.
+
+\subsection{Examples}
+\label{sec:examples}
+
+\subsubsection{Renaming Symbols with Symbol Maps}
+\label{sec:renam-symb-with}
+
+This example has two almost identical files, \texttt{upper.clif} and 
 \texttt{lower.clif}. The only difference in the actual axioms is that 
 \texttt{upper.clif} uses uppercase predicates while \texttt{lower.clif} 
 uses lowercase predicates. The symbol is added at the end of the relation
@@ -903,7 +911,8 @@ A mapping of a single name is defined with
 separated by commas. Note that in Common Logic, a comma can be part of a name.
 Hence a space must be placed between the separation-comma and a name.\\
 
-\textbf{upper.clif}:
+\begin{description}
+\item[upper.clif:]~\\
 \begin{lstlisting}[language=clif]
 (cl:text upper
   (cl:comment '(nonconservative-extension lower
@@ -916,8 +925,7 @@ Hence a space must be placed between the separation-comma and a name.\\
                      (B x y)))
 )
 \end{lstlisting}
-
-\textbf{lower.clif}:
+\item[lower.clif:]~\\
 \begin{lstlisting}[language=clif]
 (cl:text lower
   (cl:comment '(nonconservative-extension upper (A |-> a , B |-> b))')
@@ -926,9 +934,10 @@ Hence a space must be placed between the separation-comma and a name.\\
                      (b x y)))
 )
 \end{lstlisting}
+\end{description}
 
-Note that is is possible to use cyclic relations in \Hets. Only the cyclic 
-importation is not supported.
+\subsubsection{Ontology-based Ambient Assisted Living Services and Devices}
+\label{sec:aal-example}
 
 
 
