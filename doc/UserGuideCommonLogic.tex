@@ -235,17 +235,17 @@ sections.
 
 CLIF is specified in Annex A of the Common Logic standard
 \cite{CommonLogic:oldfashioned}. \Hets can directly read in files in
-CLIF syntax, and also recursively reads in any imported files (cf.\ section~\ref{relationsInCL} for the syntax).
+CLIF syntax, and also recursively reads in any imported files (cf.\ Sect.~\ref{relationsInCL} for the syntax).
 
 Common Logic itself does not support the specification of logical
 consequences, nor relative theory interpretations, nor other
 features that speak about structuring and comparing logical
 theories. Michael Gr\"uninger has suggested certain special annotations comments for
 this purpose, which are supported by \Hets, see
-section~\ref{relationsInCL}.  Alternatively, CLIF syntax can be used
+Sect.~\ref{relationsInCL}.  Alternatively, CLIF syntax can be used
 for specifications within \HetCASL files, or CLIF files can be referred to within \HetCASL
 files.  \HetCASL is a structuring language supporting relative theory
-interpretations and other things, see section~\ref{HetCASL} below.
+interpretations and other things, see Sect.~\ref{HetCASL} below.
 
 \subsection{OWL2}
 
@@ -631,7 +631,7 @@ filename extension & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
 \texttt{.owl} & OWL2 & OWL2 \\\hline
-\texttt{.clf} or \texttt{.clif} & CommonLogic & custom, see Chapter \ref{relationsInCL} \\\hline
+\texttt{.clf} or \texttt{.clif} & CommonLogic & custom, see Sect.~\ref{relationsInCL} \\\hline
 \end{tabular}
 
 \medskip
@@ -857,7 +857,7 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 \begin{quote}
 \textbf{view} v : sp1 \textbf{to} sp2 \textbf{end}
 \end{quote}
-  Views are declared outside of specifications, as can be seen from listing~\ref{fig:lang}.
+  Views are declared outside of specifications, as can be seen from List.~\ref{fig:lang}.
   
 \item[Nonconservative extension]
   is represented by a theorem link (red arrow) in the development graph. In a 
@@ -1093,7 +1093,7 @@ nodes, if they could be constructed.
 
 All ATPs integrated into \Hets share the same GUI, with only a slight
 modification for the MathServe Broker: the input field for extra options is
-inactive. Figure~\ref{fig:SPASS_GUI} shows the instantiation for \SPASS, where
+inactive. Fig.~\ref{fig:SPASS_GUI} shows the instantiation for \SPASS, where
 in the top right part of the window the batch mode can be controlled.  The
 left side shows the list of goals (with status indicators).  If goals are
 timed out (indicated by `t') it may help to activate the check box `Include
@@ -1111,7 +1111,7 @@ goals are transferred back to the Proof Management GUI.
 The MathServe system \cite{ZimmerAutexier06} developed by J\"{u}rgen
 Zimmer provides a unified interface to a range of different ATP
 systems; the most important systems are listed in
-Table~\ref{tab:MathServe}, along with their capabilities. These
+Tab.~\ref{tab:MathServe}, along with their capabilities. These
 capabilities are derived from the \emph{Specialist Problem Classes}
 (SPCs) defined upon the basis of logical, language and syntactical
 properties by Sutcliffe and Suttner \cite{SutcliffeEA:2001:EvalATP}.
@@ -1303,7 +1303,7 @@ chooses a list of named views for processing
 \item[\texttt{-I}, \texttt{-{}-interactive}] run \Hets in interactive mode
 
 \item[\texttt{-X}, \texttt{-{}-server}] run \Hets as web server (see
-  \ref{sec:Server})
+  Sect.~\ref{sec:Server})
 
 \item[\texttt{-x}, \texttt{-{}-xml}] use xml-pgip packets to communicate with
   \Hets in interactive mode
