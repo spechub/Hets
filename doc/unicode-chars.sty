@@ -1,0 +1,21 @@
+% definition of some characters, for use with
+% \usepackage[utf8]{inputenc}
+% \usepackage[T1]{fontenc}
+% Author: Christoph Lange
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{unicode-chars}[2011/12/18]
+\DeclareUnicodeCharacter{00AE}{\textsuperscript{\textregistered}}% ®
+\DeclareUnicodeCharacter{0101}{\=a}%                               ā
+\DeclareUnicodeCharacter{0123}{\c g}%                              ģ
+\DeclareUnicodeCharacter{0146}{\c n}%                              ņ
+\DeclareUnicodeCharacter{016B}{\=u}%                               ū
+\DeclareUnicodeCharacter{2190}{\ensuremath{\leftarrow}}%           ←
+\DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}%          →
+\DeclareUnicodeCharacter{2194}{\ensuremath{\leftrightarrow}}%      ↔
+\DeclareUnicodeCharacter{21A6}{\ensuremath{\mapsto}}%              ↦
+\DeclareUnicodeCharacter{21D2}{\ensuremath{\Rightarrow}}%          ⇒
+\DeclareUnicodeCharacter{2248}{\ensuremath{\approx}}%              ≈
+\DeclareUnicodeCharacter{25CB}{\ensuremath{\ocircle}}%             ○
+\DeclareUnicodeCharacter{2713}{\ensuremath{\checkmark}}%           ✓
+% Notes
+% 2192: \textrightarrow is not available in all fonts
