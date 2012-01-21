@@ -12,9 +12,7 @@
 \usepackage{courier}
 \usepackage{unicode-chars}
 
-
-
-\usepackage[show]{ed}  % set to hide for producing a released version
+\usepackage[hide]{ed}  % set to hide for producing a released version
 
 \usepackage{alltt}
 \usepackage{casl}
@@ -852,7 +850,7 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
   
   \begin{lstlisting}[language=clif]
 (cl:text someText
-  (cl:comment '(relative-interprets someTranslationFile someTargetFile)')
+  (cl:comment '(relatively-interprets someTranslationFile someTargetFile)')
   (someAxiom)
 )
   \end{lstlisting}
@@ -942,9 +940,11 @@ Hence a space must be placed between the separation-comma and a name.\\
 \end{lstlisting}
 \end{description}
 
-\subsubsection{Relative Interpretation}\label{sec:relat-interpr}
+\subsubsection{Relative Interpretation in COLORE}\label{sec:relat-interpr}
 
-As an example for relative interpretation, consider the COLORE \cite{Colore} module \texttt{Region\-Boolean\-Contact\-Algebra}, which relatively interprets the module \texttt{Atomless\-Boolean\-Lattice}.  These two modules specify axioms about booleans; thus, they have the same signature.  In the graph of imports, they have several common imported modules (e.g.\ \texttt{Bounded\-Distributive\-Lattice}), but no common importing module, as can be seen from Fig.~\ref{fig:colore-graph}.
+We give two examples for relative interpretation: one from COLORE (in this section), and one standalone one (in Sect.~\ref{sec:rel-intpr-standalone}).
+
+The COLORE \cite{Colore} module \texttt{Region\-Boolean\-Contact\-Algebra} relatively interprets the module \texttt{Atomless\-Boolean\-Lattice}.  These two modules specify axioms about booleans; thus, they have the same signature.  In the graph of imports, they have several common imported modules (e.g.\ \texttt{Bounded\-Distributive\-Lattice}), but no common importing module, as can be seen from Fig.~\ref{fig:colore-graph}.
 
 \begin{figure}
   \begin{center}
@@ -954,11 +954,11 @@ As an example for relative interpretation, consider the COLORE \cite{Colore} mod
 \label{fig:colore-graph}
 \end{figure}
 
-For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.\ednote{CL: OK to put it this way? TM: yes}
+For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.
 
 We first show how to express the relative interpretation using COLORE's CLIF annotations, then how to express it using \HetCASL syntax.\ednote{CL: The latter is not currently part of the \Hets library; should I add it?  Maybe as one *.het file in the ``CommonLogic'' directory?  That file could then reference the imported ontologies via the ``get *.clif from library'' mechanism.  OK? TM: yes}
 
-\paragraph{Common Logic Syntax:}~\\
+\paragraph{Common Logic Syntax:}\ednote{CL: TODO fix the second argument of ``relatively-interprets''}~\\
 \begin{lstlisting}[language=clif]
 (cl:module AtomlessBooleanLattice
   (cl:imports BooleanLattice)
@@ -969,7 +969,7 @@ We first show how to express the relative interpretation using COLORE's CLIF ann
 
 (cl:module RegionBooleanContactAlgebra
   (cl:imports BooleanContactAlgebra)
-  (cl:comment '(relative-interprets ??? AtomlessBooleanLattice)')
+  (cl:comment '(relatively-interprets ??? AtomlessBooleanLattice)')
   (forall (x)     
           (if (and (not (= x 0)) 
                    (not (= x 1))) 
@@ -1005,6 +1005,82 @@ end
 view v : AtomlessBooleanLattice to RegionBooleanContactAlgebra
 \end{lstlisting}
 
+\subsubsection{Relative Interpretation (Standalone Example)}\label{sec:rel-intpr-standalone}
+
+This example defines a partial order twice: once as an extension of a strict partial order, and once directly.  Then, we connect both definitions by a ``relative interpretation'' link.  The sources are available from the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}.
+
+\paragraph{Common Logic Syntax:}\ednote{CL: TODO fix the second argument of ``relatively-interprets''}~\\
+\begin{lstlisting}[language=clif]
+(cl:module Partial_Order
+  (forall (x)
+          (cl:comment 'reflexive')
+          (le x x))
+  (forall (x y)
+          (cl:comment 'asymmetric')
+          (if (and (le x y)
+                   (le y x))
+              (= x y)))
+  (forall (x y z)
+          (cl:comment 'transitive')
+          (if (and (le x y)
+                   (le y z))
+              (le x z))))
+
+(cl:module Partial_Order_From_Strict_Partial_Order
+  (cl:imports Strict_Partial_Order.clif)
+  (forall (x y)
+          (cl:comment 'define "less or equal" in terms of "less than"')
+          (iff (le x y)
+               (or (lt x y)
+                   (= x y)))))
+
+(cl:module Partial_Order_From_Strict_Partial_Order
+  (cl:imports Strict_Partial_Order.clif)
+  (cl:comment '(relatively-interprets ??? Partial_Order)')
+  (forall (x y)
+          (cl:comment 'define "less or equal" in terms of "less than"')
+          (iff (le x y)
+               (or (lt x y)
+                   (= x y)))))
+\end{lstlisting}
+
+\paragraph{\HetCASL Syntax:}~\\
+\begin{lstlisting}[language=hetcasl,morekeywords={forall,exists,and,not,if}]
+logic CommonLogic
+
+spec Strict_Partial_Order =
+. (forall (x)
+          (le x x))
+. (forall (x y)
+          (if (and (le x y)
+                   (le y x))
+              (= x y)))
+. (forall (x y z)
+          (if (and (le x y)
+                   (le y z))
+              (le x z))))
+end
+
+spec Partial_Order_From_Strict_Partial_Order =
+    Strict_Partial_Order
+then
+. (forall (x y)
+          (cl:comment 'define "less or equal" in terms of "less than"')
+          (iff (le x y)
+               (or (lt x y)
+                   (= x y)))))
+end
+
+spec Partial_Order =
+. (forall (x y)
+          (cl:comment 'define "less or equal" in terms of "less than"')
+          (iff (le x y)
+               (or (lt x y)
+                   (= x y)))))
+end
+
+view v : Partial_Order to Partial_Order_From_Strict_Partial_Order 
+\end{lstlisting}
 
 \subsubsection{Ontology-based Ambient Assisted Living Services and Devices}
 \label{sec:aal-example}
@@ -1192,7 +1268,7 @@ select those goals that should be inspected or proved. The GUI elements are the 
   factor for the performance of the ATP system, it is possible to select in
   the bottom lists the axioms and proven theorems that will comprise the
   theory of the next proof attempt. Based on this selection the sublogic may
-  vary \ednote{CL: From here, my brain can't parse this sentence. TM: improved}and so do the available provers and the comorphism paths leading to provers. Former
+  vary and so do the available provers and the comorphism paths leading to provers. Former
   theorems that are imported from other specifications are marked with the
   prefix `(Th)'. Since former theorems do not add additional logical content,
   they may be safely removed from the theory.
