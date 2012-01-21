@@ -954,9 +954,9 @@ As an example for relative interpretation, consider the COLORE \cite{Colore} mod
 \label{fig:colore-graph}
 \end{figure}
 
-For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.\ednote{CL: OK to put it this way?}
+For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.\ednote{CL: OK to put it this way? TM: yes}
 
-We first show how to express the relative interpretation using COLORE's CLIF annotations, then how to express it using \HetCASL syntax.\ednote{CL: The latter is not currently part of the \Hets library; should I add it?  Maybe as one *.het file in the ``CommonLogic'' directory?  That file could then reference the imported ontologies via the ``get *.clif from library'' mechanism.  OK?}
+We first show how to express the relative interpretation using COLORE's CLIF annotations, then how to express it using \HetCASL syntax.\ednote{CL: The latter is not currently part of the \Hets library; should I add it?  Maybe as one *.het file in the ``CommonLogic'' directory?  That file could then reference the imported ontologies via the ``get *.clif from library'' mechanism.  OK? TM: yes}
 
 \paragraph{Common Logic Syntax:}~\\
 \begin{lstlisting}[language=clif]
@@ -1096,7 +1096,7 @@ In the previous example, we established a link between an OWL ontology and a Com
 
 \HetCASL's view mechanism offers an alternative to that.  A view from one ontology to another ontology in the same logic has been shown in Sect.~\ref{sec:relat-interpr}, but it is also possible to have views across logics, as long as there is a translation between these logics that is known to \Hets (cf.\ Sect.~\ref{comorphisms}).
 
-The following example establishes a view between the OWL Time ontology and its reimplementation in Common Logic, \ednote{CL: There is no way to make that explicit in \HetCASL, is there?}using the ``OWL22CommonLogic'' translation:\ednote{CL: I will also put this into the \Hets library}
+The following example establishes a view between the OWL Time ontology and its reimplementation in Common Logic, \ednote{CL: There is no way to make that explicit in \HetCASL, is there? TM: you mean the datatype stuff that the OWL to CL translation generates? We should modify the translation to generate this only if really needed.}using the ``OWL22CommonLogic'' translation:\ednote{CL: I will also put this into the \Hets library}
 
 \begin{lstlisting}[language=hetcasl]
 logic OWL
@@ -1192,7 +1192,7 @@ select those goals that should be inspected or proved. The GUI elements are the 
   factor for the performance of the ATP system, it is possible to select in
   the bottom lists the axioms and proven theorems that will comprise the
   theory of the next proof attempt. Based on this selection the sublogic may
-  vary \ednote{CL: From here, my brain can't parse this sentence.}and also the available provers and comorphisms to provers. Former
+  vary \ednote{CL: From here, my brain can't parse this sentence. TM: improved}and so do the available provers and the comorphism paths leading to provers. Former
   theorems that are imported from other specifications are marked with the
   prefix `(Th)'. Since former theorems do not add additional logical content,
   they may be safely removed from the theory.
