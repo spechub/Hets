@@ -41,6 +41,21 @@ morecomment=[n]{\%[}{]\%},%
 morecomment=[s]{\%\{}{\}\%},%
 }[keywords,comments]
 
+% HetCASL
+\lst@definelanguage{HetCASL}%
+{morekeywords={%
+end,%
+hide,reveal,%
+library,from,get,%
+logic,%
+spec,and,then,%
+view,to,%
+with},
+morecomment=[l]{\%\%\ },%
+morecomment=[n]{\%[}{]\%},%
+morecomment=[s]{\%\{}{\}\%},%
+}[keywords,comments]
+
 % Extended Backus-Naur Form
 \lst@definelanguage{ebnf}%
 % nothing so far, just a placeholder for the future

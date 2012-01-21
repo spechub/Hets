@@ -27,6 +27,9 @@
 \usepackage{listings}
 \lstset{basicstyle=\ttfamily,columns=fixed}
 
+\usepackage{amssymb}
+\usepackage{mathtools}
+
 \usepackage[pdfborder=0 0 0,bookmarks,
 pdfauthor={Till Mossakowski, Christian Maeder, Mihai Codescu, Eugen Kuksa, Christoph Lange},
 pdftitle={Hets for Common Logic Users}]
@@ -939,7 +942,85 @@ Hence a space must be placed between the separation-comma and a name.\\
 \subsubsection{Ontology-based Ambient Assisted Living Services and Devices}
 \label{sec:aal-example}
 
+% Source: https://svn-agbkb.informatik.uni-bremen.de/sfb-repos/Projects/I1_OntoSpace/standards/OntoIOp/WD_OntoIOp_current.tex
+Consider the following ambient assisted living (AAL) scenario:
+\begin{quote}
+  Clara instructs her \textbf{wheelchair} to get her to the \textbf{kitchen} (\textbf{\underline{next door}} to the \textbf{living room}.  For \textbf{dinner}, she would like to take a pizza from the \textbf{freezer} and bake it in the \textbf{oven}.  (Her diet is vegetarian.)  \textbf{\underline{Afterwards}} she needs to rest in \textbf{bed}.
+\end{quote}
+Existing ontologies for ambient assisted living (e.g.\ the OpenAAL\footnote{\url{http://openaal.org}} OWL ontology) cover the \emph{core} of these  concepts; they provide at least classes (or generic superclasses) corresponding to the concepts highlighted in \textbf{bold}.  However, that does not cover the scenario completely.  In particular, there are relevant concepts (here: space and time, \underline{underlined}), which are not covered at the required level of complexity.  OpenAAL says that appointments have a date and that rooms can be connected to each other, but not what exactly that means.  Foundational ontologies and spatial calculi, often formalized in first-order logic, cover space and time at the level of complexity required by a central controller of an apartment and by an autonomously navigating wheelchair.
 
+More concretely, Common Logic is useful in this scenario for expressing knowledge on the arrangement of rooms, e.g.\ as follows in a first-order formalization of an RCC-style spatial calculus:
+
+\begin{align*}
+  \forall a_1, a_2 .&\mathrm{equal}(a_1, a_2) \veebar \mathrm{overlapping}(a_1, a_2) \veebar \mathrm{bordering}(a_1, a_2) \veebar \mathrm{disconnected}(a_1, a_2) \veebar\\
+  &\mathrm{proper\_part\_of}(a_1, a_2) \veebar \mathrm{proper\_part\_of}(a_2, a_1)
+\end{align*}
+(“Two areas in a house (e.g.\ a working area in a room) are either the same, or intersecting, or bordering, or separated, or one is a proper part of the other.”)
+
+The following listing shows a relevant excerpt of the heterogeneous specification, which can be found 
+under \texttt{Ontology/Examples/AAL.het} in the \Hets library \cite{hets-library:URL}.  The key features include:
+
+\begin{itemize}
+\item Heterogeneous specification allows for reusing the OpenAAL OWL ontology, but at the same time formalizing a first-order spatial calculus.
+\item In particular, the compact representation of mutual disjointness chosen here makes use of Common Logic's sequence markers.
+\item As Common Logic module extends the previously imported OWL ontology, it has access to all entities of the OWL ontology by name; in particular, we can specify that two rooms are connected (in terms of the OpenAAL terminology) if certain conditions in terms of our Common Logic module, or certain conditions in terms of OpenAAL hold.
+\end{itemize}
+
+\begin{lstlisting}[language=HetCASL,basicstyle={\small\ttfamily},morekeywords={exists,forall,or,iff,not,if},alsoletter={-}]
+library Ontology/Examples/AAL
+
+from Ontology/Examples/OpenAALOntology get OpenAAL
+
+logic OWL
+
+spec OurAAL =
+  %% Import the OpenAAL OWL ontology.
+  OpenAAL
+  ... %% some other extensions not shown here
+  %% Extend it by an RCC-style spatial calculus
+  %% formalized in first order logic.
+  then logic CommonLogic : {
+    . (forall (a1 a2)
+        (or (equal a1 a2)
+            (overlapping a1 a2)
+            (bordering a1 a2)
+            (disconnected a1 a2)
+            (proper_part_of a1 a2)
+            (proper_part_of a2 a1)))
+    %% mutual disjointness of predicates (need this for an exclusive or)
+    . (forall (p)
+        (mutually-disjoint p))
+    . (forall (p q ...)
+       (iff (mutually-disjoint p q ...)
+          (and (forall (...x)
+                  (not (and (p ...x) (q ...x))))
+               (mutually-disjoint p ...)
+               (mutually-disjoint q ...))))
+    %% a utility predicate for talking about inverse relations
+    %% (similar to owl:inverseOf)
+    . (forall (r x y)
+         (iff ((converse r) x y) (r y x)))
+    %% make the above "or" exclusive
+    . (mutually-disjoint equal overlapping bordering disconnected
+                         proper_part_of (converse proper_part_of))
+    %% if some RCC relations hold (so far it would also work in OWL)
+    %% or if there is a door that connects two rooms, then ...
+    %% (the latter would only work in OWL if we used an explicit subproperty
+    %% is-door-of of is-in-room; then we could chain "inverse is-door-of"
+    %% and "is-door-of", but otherwise we wouldn't be able to restrict the
+    %% "connecting element" to a Door)
+    . (forall (a1 a2)
+         (if (or (equal a1 a2)
+                 (overlapping a1 a2)
+                 (proper_part_of a1 a2)
+                 (proper_part_of a2 a1)
+                 (exists (door)
+                   (and (Door door)
+                        (is-in-room door a1)
+                        (is-in-room door a2)))
+             )
+             (is-connected-to-room a1 a2)))
+\end{lstlisting}
 
 \section{Proofs with \Hets}\label{sec:Proofs}
 
@@ -1262,8 +1343,7 @@ specification(s) (selected with the \texttt{-n} or \texttt{-{}-spec}
 option). It is assumed that the relation algebra is
 generated by basic relations, and that the specification is written
 in the \CASL logic. A sample specification of a relation
-algebra can be found in the \Hets library \texttt{Calculi/Space/RCC8.het},
-available from \url{http://www.cofi.info/Libraries}.
+algebra can be found under \texttt{Calculi/Space/RCC8.het} in the \Hets library \cite{hets-library:URL}.
 The output format is XML, the URL of the DTD is included in the
 XML file.
 
