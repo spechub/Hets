@@ -1,0 +1,39 @@
+digraph G {
+    size = "8,6"
+
+AtomlessBooleanLattice[style=bold];
+RegionBooleanContactAlgebra[style=bold];
+
+AtomlessBooleanContactAlgebra -> BooleanContactAlgebra;
+AtomlessBooleanContactAlgebra -> AtomlessBooleanLattice;
+
+BoundedLattice -> Lattice;
+
+DistributiveLattice -> Lattice;
+
+LatticeComplementation -> BoundedLattice;
+
+ComplementedLattice -> BoundedLattice;
+ComplementedLattice -> LatticeComplementation;
+
+BoundedDistributiveLattice -> BoundedLattice;
+BoundedDistributiveLattice -> DistributiveLattice;
+
+BooleanLattice -> BoundedDistributiveLattice;
+BooleanLattice -> ComplementedLattice;
+
+PseudocomplementedLattice -> BoundedLattice;
+
+WeakContactAlgebra -> BoundedDistributiveLattice;
+
+DistributiveContactAlgebra -> WeakContactAlgebra;
+
+ContactAlgebra -> DistributiveContactAlgebra;
+ContactAlgebra -> PseudocomplementedLattice;
+
+BooleanContactAlgebra -> ContactAlgebra;
+    
+AtomlessBooleanLattice -> BooleanLattice;
+    
+RegionBooleanContactAlgebra -> BooleanContactAlgebra;
+}

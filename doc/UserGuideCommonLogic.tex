@@ -693,16 +693,15 @@ Hence, it is possible to have multiple texts in a \CASL specification.
 This specification is the \HetCASL-structured equivalent to the following three
 CLIF files:\footnote{Note that where the Common Logic specification requires ``cl:text'', some samples available on the Web use ``cl-text''. Therefore, \Hets also supports the latter.}\\
 
-
-\textbf{Pred.clif}:
+\begin{description}
+  \item[Pred.clif:]~\\
 \begin{lstlisting}[language=clif]
 (cl:text Pred 
   (P x)
   (and (P x) (Q y))
 )
 \end{lstlisting}
-
-\textbf{Cat.clif}:
+  \item[Cat.clif:]~\\
 \begin{lstlisting}[language=clif]
 (cl:text Cat 
   (or (Cat x) (Mat y))
@@ -710,14 +709,14 @@ CLIF files:\footnote{Note that where the Common Logic specification requires ``c
   (if (P x) (Q x))
 )
 \end{lstlisting}
-
-\textbf{Spec.clif}:
+  \item[Spec.clif:]~\\
 \begin{lstlisting}[language=clif]
 (cl:text PetHappy 
   (cl:imports Pred) (cl:imports Cat)
   (exists (z) (and (Pet x) (Happy z) (Attr x z)))
 )
 \end{lstlisting}
+\end{description}
 
 Both can be directly used with \Hets, where the former content would be in a 
 file with the extension \texttt{.het} and the latter in a file with one of the extensions 
@@ -815,12 +814,12 @@ see the \Hets User Guide \cite{HetsUserGuide}.
 \subsection{Relations between Common Logic Texts}
 \label{relationsInCL}
 \Hets supports several relations between Common Logic Texts. However only one of
-them is defined in ISO/IEC 24707:2007 \cite{iso24a}. All the other relations are 
+them is defined in ISO/IEC 24707:2007 \cite{CommonLogic:oldfashioned}. All the other relations are 
 unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Colore}.
 
 \begin{description}
 \item[Importation] \label{descr:link_import}
-  is defined in ISO/IEC 24707:2007 \cite{iso24a} as virtual copying of a 
+  is defined in ISO/IEC 24707:2007 \cite{CommonLogic:oldfashioned} as virtual copying of a 
   resource. In \Hets a whole file is ``copied'' into the importing  
   specification. Hets cannot currently handle cyclic imports. If you really need
   them, send us a message at \href{mailto:hets@informatik.uni-bremen.de}{hets@informatik.uni-bremen.de}, and we will fix it.
@@ -863,7 +862,7 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 \begin{quote}
 \textbf{view} \textit{v} : \textit{sp1} \textbf{to} \textit{sp2} \textbf{end}
 \end{quote}
-  Views are declared outside of specifications, as can be seen from List.~\ref{fig:lang}.
+  Views are declared outside of specifications, as can be seen from the syntax specification in List.~\ref{fig:lang}.  We provide a concrete example in Sect.~\ref{sec:relat-interpr} below.
   
 \item[Nonconservative extension]
   is represented by a theorem link (red arrow) in the development graph. In a 
@@ -900,11 +899,13 @@ importation is not supported.
 \subsection{Examples}
 \label{sec:examples}
 
+This section introduces several typical examples of using Common Logic ontologies with \Hets.
+
 \subsubsection{Renaming Symbols with Symbol Maps}
 \label{sec:renam-symb-with}
 
 This example has two almost identical files, \texttt{upper.clif} and 
-\texttt{lower.clif}. The only difference in the actual axioms is that 
+\texttt{lower.clif}; these can be found in the \texttt{CommonLogic} directory in the \Hets library \cite{hets-library:URL}. The only difference in the actual axioms is that 
 \texttt{upper.clif} uses uppercase predicates while \texttt{lower.clif} 
 uses lowercase predicates. The symbol is added at the end of the relation
 definition in parentheses. Only those names that differ between source
@@ -931,13 +932,79 @@ Hence a space must be placed between the separation-comma and a name.\\
 \item[lower.clif:]~\\
 \begin{lstlisting}[language=clif]
 (cl:text lower
-  (cl:comment '(nonconservative-extension upper (A |-> a , B |-> b))')
+  (cl:comment '(nonconservative-extension upper
+    (A |-> a
+   , B |-> b))')
   
   (forall (x y) (iff (a x y)
                      (b x y)))
 )
 \end{lstlisting}
 \end{description}
+
+\subsubsection{Relative Interpretation}\label{sec:relat-interpr}
+
+As an example for relative interpretation, consider the COLORE \cite{Colore} module \texttt{Region\-Boolean\-Contact\-Algebra}, which relatively interprets the module \texttt{Atomless\-Boolean\-Lattice}.  These two modules specify axioms about booleans; thus, they have the same signature.  In the graph of imports, they have several common imported modules (e.g.\ \texttt{Bounded\-Distributive\-Lattice}), but no common importing module, as can be seen from Fig.~\ref{fig:colore-graph}.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=.75\textwidth]{colore-subset}
+  \end{center}
+\caption{Boolean algebras and lattices in COLORE (subgraph)}
+\label{fig:colore-graph}
+\end{figure}
+
+For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.\ednote{CL: OK to put it this way?}
+
+We first show how to express the relative interpretation using COLORE's CLIF annotations, then how to express it using \HetCASL syntax.\ednote{CL: The latter is not currently part of the \Hets library; should I add it?  Maybe as one *.het file in the ``CommonLogic'' directory?  That file could then reference the imported ontologies via the ``get *.clif from library'' mechanism.  OK?}
+
+\paragraph{Common Logic Syntax:}~\\
+\begin{lstlisting}[language=clif]
+(cl:module AtomlessBooleanLattice
+  (cl:imports BooleanLattice)
+  (forall (x)
+	  (exists (y)
+		  (and (not (= y 0))
+		       (leq y x)))))
+
+(cl:module RegionBooleanContactAlgebra
+  (cl:imports BooleanContactAlgebra)
+  (cl:comment '(relative-interprets ??? AtomlessBooleanLattice)')
+  (forall (x)     
+          (if (and (not (= x 0)) 
+                   (not (= x 1))) 
+              (exists (y)
+                      (and (complement x y)
+                           (C x y))))))
+\end{lstlisting}
+
+\paragraph{\HetCASL Syntax:}~\\
+\begin{lstlisting}[language=hetcasl,morekeywords={forall,exists,and,not,if}]
+logic CommonLogic
+
+spec AtomlessBooleanLattice =
+  BooleanLattice
+then
+. (forall (x)
+	  (exists (y)
+		  (and (not (= y 0))
+		       (leq y x)))))
+end
+
+spec RegionBooleanContactAlgebra =
+  BooleanContactAlgebra
+then
+. (forall (x)     
+          (if (and (not (= x 0)) 
+                   (not (= x 1))) 
+              (exists (y)
+                      (and (complement x y)
+                           (C x y))))))
+end
+
+view v : AtomlessBooleanLattice to RegionBooleanContactAlgebra
+\end{lstlisting}
+
 
 \subsubsection{Ontology-based Ambient Assisted Living Services and Devices}
 \label{sec:aal-example}
@@ -1020,6 +1087,47 @@ spec OurAAL =
                         (is-in-room door a2)))
              )
              (is-connected-to-room a1 a2)))
+\end{lstlisting}
+
+\subsubsection{Heterogeneous Views from OWL to Common Logic}
+\label{sec:heter-views-from}
+
+In the previous example, we established a link between an OWL ontology and a Common Logic ontology by reusing elements of the signature of the OWL ontology (concretely: OpenAAL's \texttt{is-in-room} predicate) in the Common Logic ontology.
+
+\HetCASL's view mechanism offers an alternative to that.  A view from one ontology to another ontology in the same logic has been shown in Sect.~\ref{sec:relat-interpr}, but it is also possible to have views across logics, as long as there is a translation between these logics that is known to \Hets (cf.\ Sect.~\ref{comorphisms}).
+
+The following example establishes a view between the OWL Time ontology and its reimplementation in Common Logic, \ednote{CL: There is no way to make that explicit in \HetCASL, is there?}using the ``OWL22CommonLogic'' translation:\ednote{CL: I will also put this into the \Hets library}
+
+\begin{lstlisting}[language=hetcasl]
+logic OWL
+spec TimeOWL =
+  Class: TemporalEntity
+  ObjectProperty: before
+    Domain: TemporalEntity
+    Range: TemporalEntity
+    Characteristics: Transitive
+end
+
+logic CommonLogic
+spec TimeCL =
+%% CommonLogic equivalent of Domain and Range above
+. (forall (t1 t2)
+          (if (before t1 t2)
+              (and (TemporalEntity t1)
+                   (TemporalEntity t2))))
+%% CommonLogic equivalent of Transitive above
+. (forall (t1 t2 t3)
+          (if (and (before t1 t2)
+                   (before t2 t3))
+              (before t1 t3)))
+%% A new axiom that cannot be expressed in OWL
+. (forall (t1 t2)
+          (or (before t1 t2)
+              (before t2 t1)
+              (= t1 t2)))
+end
+
+view TimeOWLtoCL : TimeOWL to TimeCL
 \end{lstlisting}
 
 \section{Proofs with \Hets}\label{sec:Proofs}
