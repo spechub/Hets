@@ -595,12 +595,12 @@ checking static well-formedness of specifications.
                 \index{analysis, static}%
 
 Let us assume that the example is in a file named
-\texttt{Cat.clif}.
+\texttt{Cat-AllInOne.clif}.\footnote{This file can be found in the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}.}
 Then you can check the well-formedness of the
 specification by typing (into some shell):
 
 \begin{quote}
-\texttt{hets Cat.clif}
+\texttt{hets Cat-AllInOne.clif}
 \end{quote}
 \Hets checks both the correctness of this specification
  with respect to the CLIF syntax, as
@@ -659,7 +659,7 @@ embedding of \CASL into Common Logic (cf.\ Fig.~\ref{fig:LogicGraph}).
 for explicit translations between logics, see \cite{Mossakowski04}.)
 
 The endings \texttt{.clf} and \texttt{.clif} are available for directly reading in
-Common Logic CLIF texts, as in the example of \texttt{Cat.clif}.
+Common Logic CLIF texts, as in the example of \texttt{Cat-AllInOne.clif}.
 By contrast, in \HetCASL libraries (ending with \texttt{.het}),
 the logic Common Logic has to be chosen explicitly, and the \CASL structuring
 syntax needs to be used:
@@ -717,7 +717,7 @@ CLIF files:\footnote{Note that where the Common Logic specification requires ``c
 
 Both can be directly used with \Hets, where the former content would be in a 
 file with the extension \texttt{.het} and the latter in a file with one of the extensions 
-\texttt{.clf} or \texttt{.clif}. This specification is divided into three 
+\texttt{.clf} or \texttt{.clif}.\footnote{These files can be found in the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}.} This specification is divided into three 
 parts, which are linked to each other. These links and some more information can 
 be seen in the development graph of the file.
 
@@ -902,7 +902,7 @@ This section introduces several typical examples of using Common Logic ontologie
 \label{sec:renam-symb-with}
 
 This example has two almost identical files, \texttt{upper.clif} and 
-\texttt{lower.clif}; these can be found in the \texttt{CommonLogic} directory in the \Hets library \cite{hets-library:URL}. The only difference in the actual axioms is that 
+\texttt{lower.clif}; these can be found in the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}. The only difference in the actual axioms is that 
 \texttt{upper.clif} uses uppercase predicates while \texttt{lower.clif} 
 uses lowercase predicates. The symbol is added at the end of the relation
 definition in parentheses. Only those names that differ between source
@@ -955,7 +955,7 @@ The COLORE \cite{Colore} module \texttt{Region\-Boolean\-Contact\-Algebra} relat
 
 For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.
 
-We first show how to express the relative interpretation using COLORE's CLIF annotations, then how to express it using \HetCASL syntax.\ednote{CL: The latter is not currently part of the \Hets library; should I add it?  Maybe as one *.het file in the ``CommonLogic'' directory?  That file could then reference the imported ontologies via the ``get *.clif from library'' mechanism.  OK? TM: yes}
+We first show how to express the relative interpretation using COLORE's CLIF annotations, then how to express it using \HetCASL syntax.  The \HetCASL variant can be found in the \texttt{CommonLogic/Examples} directory.
 
 \paragraph{Common Logic Syntax:}\ednote{CL: TODO fix the second argument of ``relatively-interprets''}~\\
 \begin{lstlisting}[language=clif]
@@ -987,7 +987,7 @@ then
 . (forall (x)
 	  (exists (y)
 		  (and (not (= y 0))
-		       (leq y x)))))
+		       (leq y x))))
 end
 
 spec RegionBooleanContactAlgebra =
@@ -998,7 +998,7 @@ then
                    (not (= x 1))) 
               (exists (y)
                       (and (complement x y)
-                           (C x y))))))
+                           (C x y)))))
 end
 
 view v : AtomlessBooleanLattice to RegionBooleanContactAlgebra
@@ -1011,24 +1011,24 @@ This example defines a partial order twice: once as an extension of a strict par
 \paragraph{Common Logic Syntax:}\ednote{CL: TODO fix the second argument of ``relatively-interprets''}~\\
 \begin{lstlisting}[language=clif]
 (cl:module Partial_Order
+  (cl:comment 'reflexive')
   (forall (x)
-          (cl:comment 'reflexive')
           (le x x))
+  (cl:comment 'asymmetric')
   (forall (x y)
-          (cl:comment 'asymmetric')
           (if (and (le x y)
                    (le y x))
               (= x y)))
+  (cl:comment 'transitive')
   (forall (x y z)
-          (cl:comment 'transitive')
           (if (and (le x y)
                    (le y z))
               (le x z))))
 
 (cl:module Partial_Order_From_Strict_Partial_Order
   (cl:imports Strict_Partial_Order.clif)
+  (cl:comment 'define "less or equal" in terms of "less than"')
   (forall (x y)
-          (cl:comment 'define "less or equal" in terms of "less than"')
           (iff (le x y)
                (or (lt x y)
                    (= x y)))))
@@ -1036,8 +1036,8 @@ This example defines a partial order twice: once as an extension of a strict par
 (cl:module Partial_Order_From_Strict_Partial_Order
   (cl:imports Strict_Partial_Order.clif)
   (cl:comment '(relatively-interprets ??? Partial_Order)')
+  (cl:comment 'define "less or equal" in terms of "less than"')
   (forall (x y)
-          (cl:comment 'define "less or equal" in terms of "less than"')
           (iff (le x y)
                (or (lt x y)
                    (= x y)))))
@@ -1057,25 +1057,27 @@ spec Strict_Partial_Order =
 . (forall (x y z)
           (if (and (le x y)
                    (le y z))
-              (le x z))))
+              (le x z)))
 end
 
 spec Partial_Order_From_Strict_Partial_Order =
     Strict_Partial_Order
 then
+%% define "less or equal" in terms of "less than"'
 . (forall (x y)
           (cl:comment 'define "less or equal" in terms of "less than"')
           (iff (le x y)
                (or (lt x y)
-                   (= x y)))))
+                   (= x y))))
 end
 
 spec Partial_Order =
+%% 'define "less or equal" in terms of "less than"'
 . (forall (x y)
           (cl:comment 'define "less or equal" in terms of "less than"')
           (iff (le x y)
                (or (lt x y)
-                   (= x y)))))
+                   (= x y))))
 end
 
 view v : Partial_Order to Partial_Order_From_Strict_Partial_Order 
@@ -1109,15 +1111,16 @@ under \texttt{Ontology/Examples/AAL.het} in the \Hets library \cite{hets-library
 \end{itemize}
 
 \begin{lstlisting}[language=HetCASL,basicstyle={\small\ttfamily},alsolanguage=clif,alsoletter={-}]
-library Ontology/Examples/AAL
-
-from Ontology/Examples/OpenAALOntology get OpenAAL
+library AAL
 
 logic OWL
 
+from OpenAALOntology get httpwwwdfkideskshetsontologyunnamed
+%% this is the default name that Hets assigns to unnamed ontologies
+
 spec OurAAL =
   %% Import the OpenAAL OWL ontology.
-  OpenAAL
+  httpwwwdfkideskshetsontologyunnamed
   ... %% some other extensions not shown here
   %% Extend it by an RCC-style spatial calculus
   %% formalized in first order logic.
@@ -1294,7 +1297,7 @@ spec ToProve =
 end
 \end{lstlisting}
 
-In this specification the theorems, annotated (named) by \texttt{correct} and 
+In this specification\footnote{\texttt{HelloWorldExamples/ToProve.het} in the \Hets library \cite{hets-library:URL}} the theorems, annotated (named) by \texttt{correct} and 
 \texttt{incorrect} are the ones, that can be proven or disproven.
 Note that they are separate texts inside the specification \texttt{ToProve}.
 The annotations are optional. For proving, they are the names shown in the 
