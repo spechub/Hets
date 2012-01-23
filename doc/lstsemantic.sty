@@ -1,5 +1,17 @@
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{lstsemantic}[2012/01/23]
+\RequirePackage{listings}
+% listing language definitions for several language of the following kinds:
+% * ontology languages
+% * markup languages
+% * other semantic web languages
+% * other languages occurring in the above contexts
+% compiled by Christoph Lange (Universität Bremen, Jacobs University Bremen)
+% 2010–2012
+% christoph.lange@jacobs-university.de
+
 % Common Logic Interchange Format (CLIF)
-\lst@definelanguage{clif}%
+\lstdefinelanguage{clif}%
 {morekeywords={%
 and,%
 cl:comment,%
@@ -17,7 +29,7 @@ alsoletter=:,%
 }[keywords]
 
 % Relax NG Compact
-\lst@definelanguage{rnc}%
+\lstdefinelanguage{rnc}%
 {morekeywords={%
 default,namespace,datatypes,%
 start,%
@@ -29,7 +41,7 @@ morestring=[b]",%
 }[keywords,strings]
 
 % Distributed Ontology Language (DOL), text serialization (experimental)
-\lst@definelanguage{dolText}%
+\lstdefinelanguage{dolText}%
 {morekeywords={%
 end,%
 hide,reveal,%
@@ -43,7 +55,7 @@ morecomment=[s]{\%\{}{\}\%},%
 }[keywords,comments]
 
 % HetCASL
-\lst@definelanguage{HetCASL}%
+\lstdefinelanguage{HetCASL}%
 {morekeywords={%
 end,%
 hide,reveal,%
@@ -51,19 +63,20 @@ library,from,get,%
 logic,%
 spec,and,then,%
 view,to,%
-with},
+with,%
+implied},
 morecomment=[l]{\%\%\ },%
 morecomment=[n]{\%[}{]\%},%
 morecomment=[s]{\%\{}{\}\%},%
 }[keywords,comments]
 
 % Extended Backus-Naur Form
-\lst@definelanguage{ebnf}%
+\lstdefinelanguage{ebnf}%
 % nothing so far, just a placeholder for the future
 {}
 
 % OWL (Web Ontology Language) 2 Functional-style Syntax
-\lst@definelanguage{owl2fun}%
+\lstdefinelanguage{owl2fun}%
 {morekeywords={SubClassOf,%
 ObjectIntersectionOf,ObjectUnionOf,ObjectOneOf,%
 ObjectAllValuesFrom,ObjectSomeValuesFrom,ObjectHasValue,%
@@ -74,7 +87,7 @@ EquivalentClasses,%
 DifferentIndividuals}}[keywords]
 
 % OWL (Web Ontology Language) 2 Manchester Syntax
-\lst@definelanguage{owl2Manchester}%
+\lstdefinelanguage{owl2Manchester}%
 {morekeywords={%
 AnnotationProperty,Annotations,Asymmetric,%
 Characteristics,Class,%
@@ -102,14 +115,14 @@ that,%
 value}}[keywords]
 
 % N3 Logic (also usable for Turtle RDF serialization)
-\lst@definelanguage{N3}%
+\lstdefinelanguage{N3}%
 {morekeywords={@forAll,@forSome,@prefix,a,is,of},%
 morecomment=[l]{\#\ },%
 morestring=[b]",%
 morestring=[b]{"""}}[keywords,comments,strings]
 
 % XQuery
-\lst@definelanguage{xquery}%
+\lstdefinelanguage{xquery}%
 {morekeywords={for,in,let,return,%
 eq,and,not,%
 declare,default,function,element,variable,external,%
@@ -120,27 +133,27 @@ module,namespace,import,at},%
  morecomment=[n]{(:}{:)}}[keywords,strings]
 
 % Regular XML RDF
-\lst@definelanguage{rxr}[]{XML}%
+\lstdefinelanguage{rxr}[]{XML}%
 {keywordsprefix={rxr:}}[keywords]
 
 % RDF/XML
-\lst@definelanguage{RDF/XML}[]{XML}%
+\lstdefinelanguage{RDF/XML}[]{XML}%
 {keywordsprefix={rdf:}}[keywords]
 
 % XInclude
-\lst@definelanguage{XInclude}[]{XML}%
+\lstdefinelanguage{XInclude}[]{XML}%
 {keywordsprefix={xi:}}[keywords]
 
 % XHTML+RDFa
-\lst@definelanguage{XHTML+RDFa}[]{HTML}%
+\lstdefinelanguage{XHTML+RDFa}[]{HTML}%
 {morekeywords={about,content,datatype,href,property,rel,resource,rev,src,typeof}}[keywords]
 
 % MathML notation definitions (experimental)
-\lst@definelanguage{ntn}[]{XML}%
+\lstdefinelanguage{ntn}[]{XML}%
 {morekeywords={notation,prototype,expr,rendering,render}}
 
-% HTTP headers
-\lst@definelanguage{HTTP}%
+% HTTP headers (incomplete)
+\lstdefinelanguage{HTTP}%
 {morekeywords={GET,Host,Accept}}
 
 % OpenMath Content Dictionaries with OpenMath objects
