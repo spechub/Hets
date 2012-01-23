@@ -280,7 +280,7 @@ getPredefName iri =
         else case mapMaybe (`stripPrefix` showQU iri)
                     $ Map.elems predefPrefixes of
                 [s] -> s
-                _ -> error $ showQU iri ++ " is not a predefined IRI"
+                _ -> showQN iri
 
 printDatatype :: IRI -> String
 printDatatype dt = showQU $

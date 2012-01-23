@@ -117,7 +117,7 @@ uriToTokM = return . uriToTok
 
 -- | Extracts Token from IRI
 uriToTok :: IRI -> Token
-uriToTok urI = mkSimpleId $ showQN $ stripReservedPrefix urI
+uriToTok urI = mkSimpleId $ getPredefName urI
 
 -- | Extracts Id from IRI
 uriToId :: IRI -> Id
