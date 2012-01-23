@@ -518,7 +518,7 @@ getAnnoAxiom b e =
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ARange)
                       $ AnnotationBit [(as, iri)]
-    _ -> err "bad frame"
+    _ -> err $ "bad frame " ++ ppElement e
 
 getFrames :: XMLBase -> Element -> [Frame]
 getFrames b e =

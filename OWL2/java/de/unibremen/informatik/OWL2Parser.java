@@ -64,7 +64,7 @@ public class OWL2Parser {
                                 // Output goes to standard output, i.e. System.out
 				if (args.length == 2) {
 					if (args[1].equals("xml"))
-						op = OPTION.RDF_XML;
+						op = OPTION.OWL_XML;
 					else	{
 						if (args[1].equals("rdf"))
 							op = OPTION.RDF_XML;
