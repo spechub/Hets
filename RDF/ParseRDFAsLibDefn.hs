@@ -40,7 +40,12 @@ parseRDF filename = do
         ++ " --ntriples > " ++ triplesFile ++ " 2> /dev/null"
     libdefn <- case ec of
         ExitSuccess -> parseNTriplesToLibDefn triplesFile
-        _ -> parseNTriplesToLibDefn filename
+        _ -> do
+            ec2 <- system $ "cwm " ++ filename
+                ++ " --ntriples > " ++ triplesFile ++ " 2> /dev/null"
+            case ec2 of
+                ExitSuccess -> parseNTriplesToLibDefn triplesFile
+                _ -> fail $ filename ++ ": unsupported RDF format"
     system $ "rm " ++ triplesFile
     return libdefn
 
