@@ -17,21 +17,20 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
-
 //@SuppressWarnings("unchecked")
 public class OWL2Parser {
-
+	private static enum OPTION {OWL_XML, MANCHESTER, RDF_XML}
+	private static OPTION op;
 	private static List<OWLOntology> loadedImportsList = new ArrayList<OWLOntology>();
 	private static ArrayList<IRI> importsIRI = new ArrayList<IRI>();
 	private static Map<OWLOntology,List<OWLOntology>> m = new HashMap<OWLOntology, List<OWLOntology>>();
 	private static Set<OWLOntology> s = new HashSet<OWLOntology>();
 	private static Set<OWLOntology> expanded = new HashSet<OWLOntology>();
-	private static int OP;
 
 	public static void main(String[] args) {
 
 		if (args.length < 1) {
-			System.out.println("Usage: processor <URI> [FILENAME]");
+			System.out.println("Usage: processor <URI> [FILENAME] <OPTION>");
 			System.exit(1);
 		}
 
@@ -48,12 +47,12 @@ public class OWL2Parser {
 				filename = args[1];
 				out = new BufferedWriter(new FileWriter(filename));
 				if (args[2].equals("xml"))
-					OP = 1;
+					op = OPTION.OWL_XML;
 				else	{
 						if (args[1].equals("rdf"))
-							OP = 3;
+							op = OPTION.RDF_XML;
 						else
-							OP = 2;
+							op = OPTION.MANCHESTER;
 					}
 
 			} else {
@@ -63,14 +62,14 @@ public class OWL2Parser {
                                 //   rdf (RDF/XML),
                                 //   or otherwise use Manchester syntax
                                 // Output goes to standard output, i.e. System.out
-				if (args.length == 2)	{
+				if (args.length == 2) {
 					if (args[1].equals("xml"))
-						OP = 1;
+						op = OPTION.RDF_XML;
 					else	{
 						if (args[1].equals("rdf"))
-							OP = 3;
+							op = OPTION.RDF_XML;
 						else
-							OP = 2;			
+							op = OPTION.MANCHESTER;			
 					}
 				}
 				else 
@@ -79,7 +78,7 @@ public class OWL2Parser {
                                         // Output goes to standard output, i.e. System.out
                                         // and will be made in Manchester syntax
 					if (args.length == 1)
-						OP = 2;
+						op = OPTION.MANCHESTER;
 				}
 				out = new BufferedWriter(new OutputStreamWriter(System.out));
 			}
@@ -88,22 +87,16 @@ public class OWL2Parser {
 			IRI physicalIRI = IRI.create(args[0]);
 
 			// Now do the loading
-
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
 			getImportsList(ontology, manager);
 
-			if(loadedImportsList.size() == 0)
-			{
+			if (loadedImportsList.size() == 0)			
 				parsing_option(ontology, out, manager);
-			}
-
 			else {
 				if(importsIRI.contains(ontology.getOntologyID().getOntologyIRI())) {
     					importsIRI.remove(importsIRI.lastIndexOf(ontology.getOntologyID().getOntologyIRI()));
 					}
-
-				if(loadedImportsList.contains(ontology))
-					{
+				if(loadedImportsList.contains(ontology)) {
 
 					OWLOntologyManager mng = OWLManager.createOWLOntologyManager();
 					OWLOntologyMerger merger = new OWLOntologyMerger(manager);
@@ -142,12 +135,9 @@ public class OWL2Parser {
 
 					ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (manager);
 					parsing_option(ontology, out, manager);
-					}
-				else
-					{
+				}
+				else	
 					parseZeroImports(out, ontology);
-					}
-
 			}
 		} catch (IOException e) {
 			System.err.println("Error: can not build file: " + filename);
@@ -166,10 +156,10 @@ public class OWL2Parser {
 		ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
 
 		try {
-			if (om.getDirectImports(ontology).isEmpty())	{
+			if (om.getDirectImports(ontology).isEmpty()) {
 				m.put(ontology,empty);
 			}
-			else 	{
+			else {
 				List<OWLOntology> srt = new ArrayList<OWLOntology>();
 				for (OWLOntology imported : om.getDirectImports(ontology)) {
 					if (!importsIRI.contains(imported.getOntologyID().getOntologyIRI())) {
@@ -191,25 +181,22 @@ public class OWL2Parser {
 		}
 	}
 
-	private static void parseZeroImports(BufferedWriter out, OWLOntology ontology)
-	{
+	private static void parseZeroImports(BufferedWriter out, OWLOntology ontology) 	{
 		List all = getKeysByValue();
 		ListIterator it = all.listIterator();
 		ListIterator itr = all.listIterator();
 
-		while(itr.hasNext())
-			{
+		while(itr.hasNext()) {
 			OWLOntology ontos = (OWLOntology)itr.next();
 			expanded.add(ontos);
 			parsing_option(ontos, out, ontos.getOWLOntologyManager());
 			s.add(ontos);
 			parseImports(out, ontology);
-			}
+		}
 	}
 
 
-	public static void parseImports(BufferedWriter out, OWLOntology ontology)
-	{
+	public static void parseImports(BufferedWriter out, OWLOntology ontology) {
 
 		Iterator iter = m.entrySet().iterator();
 		while (iter.hasNext())  {
@@ -236,11 +223,9 @@ public class OWL2Parser {
 				}
 			}
 		}
-
 	}
 
-	public static Set cnvrt(List lst)
-	{
+	public static Set cnvrt(List lst) {
 
 		Set st = new HashSet<OWLOntology>();
 		Iterator it = lst.iterator();
@@ -248,26 +233,22 @@ public class OWL2Parser {
 		if (lst.size() == 0)
 			return st;
 
-		while(it.hasNext())
-			{
+		while(it.hasNext()) {
 			OWLOntology aux_ont = (OWLOntology)it.next();
 			st.add(aux_ont);
-			}
+		}
 		return st;
 	}
 
+	public static Boolean checkset(Collection it) {
 
-	public static Boolean checkset(Collection it)	{
-
-		if (it.isEmpty())
-			return false;
+		if (it.isEmpty()) return false;
 		Set<OWLOntology> aux = new HashSet<OWLOntology>();
 		aux.addAll(it);
-
 		return equalcollections(aux, s);
 	}
 
-	public static Boolean equalcollections(Set<OWLOntology> l1, Set<OWLOntology> l2)	{
+	public static Boolean equalcollections(Set<OWLOntology> l1, Set<OWLOntology> l2) {
 		Boolean eq = true;
 
 		if(l1.isEmpty() || l2.isEmpty())
@@ -278,7 +259,6 @@ public class OWL2Parser {
 				eq = false;
 		return eq;
 	}
-
 
 	public static List getKeysByValue() {
 		List keys = new ArrayList<OWLOntology>();
@@ -293,20 +273,19 @@ public class OWL2Parser {
 	}
 
 	public static void parsing_option(OWLOntology onto, BufferedWriter out, OWLOntologyManager mng) {
-		switch (OP) {
-			case 1: parse2xml(onto, out, mng); 	break;
-			case 2: parse(onto, out); 		break;
-			case 3: parse2rdf(onto, out, mng);	break;
+		switch (op) {
+			case OWL_XML: parse2xml(onto, out, mng); 	break;
+			case MANCHESTER: parse(onto, out); 			break;
+			case RDF_XML: parse2rdf(onto, out, mng);	break;
 		}
-
 	}
 
 	public static void parse(OWLOntology onto, BufferedWriter out)	{
 		try {
 		ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
 		rendi.render(onto,out);
-		} catch(OWLRendererException ex)	{
-			System.err.println("Error by parse!");
+		} catch(OWLRendererException ex) {
+			System.err.println("Error by ManchesterParser!");
 			ex.printStackTrace();
 		}
 	}
@@ -331,6 +310,3 @@ public class OWL2Parser {
 		}
 	}
 }
-
-
-
