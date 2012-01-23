@@ -6,11 +6,16 @@
 % * markup languages
 % * other semantic web languages
 % * other languages occurring in the above contexts
+% 
+% for some related languages see also https://svn.kwarc.info/repos/stex/trunk/sty/etc/lstomdoc.sty
+% 
 % compiled by Christoph Lange (Universität Bremen, Jacobs University Bremen)
 % 2010–2012
 % christoph.lange@jacobs-university.de
 
-% Common Logic Interchange Format (CLIF)
+% Common Logic 1.0 Interchange Format (CLIF)
+% http://iso-commonlogic.org/
+% partial specification
 \lstdefinelanguage{clif}%
 {morekeywords={%
 and,%
@@ -29,6 +34,8 @@ alsoletter=:,%
 }[keywords]
 
 % Relax NG Compact
+% http://relaxng.org/compact-20021121.html
+% partial specification
 \lstdefinelanguage{rnc}%
 {morekeywords={%
 default,namespace,datatypes,%
@@ -40,7 +47,9 @@ empty},
 morestring=[b]",%
 }[keywords,strings]
 
-% Distributed Ontology Language (DOL), text serialization (experimental)
+% Distributed Ontology Language (DOL), text serialization
+% http://ontolog.cim3.net/cgi-bin/wiki.pl?OntoIOp
+% partial specification; the whole DOL language is currently experimental
 \lstdefinelanguage{dolText}%
 {morekeywords={%
 end,%
@@ -55,6 +64,8 @@ morecomment=[s]{\%\{}{\}\%},%
 }[keywords,comments]
 
 % HetCASL
+% http://www.dfki.de/sks/hets/
+% partial specification
 \lstdefinelanguage{HetCASL}%
 {morekeywords={%
 end,%
@@ -71,11 +82,14 @@ morecomment=[s]{\%\{}{\}\%},%
 }[keywords,comments]
 
 % Extended Backus-Naur Form
+% http://en.wikipedia.org/wiki/Extended_Backus–Naur_Form
 \lstdefinelanguage{ebnf}%
 % nothing so far, just a placeholder for the future
 {}
 
 % OWL (Web Ontology Language) 2 Functional-style Syntax
+% http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/
+% partial specification
 \lstdefinelanguage{owl2fun}%
 {morekeywords={SubClassOf,%
 ObjectIntersectionOf,ObjectUnionOf,ObjectOneOf,%
@@ -87,6 +101,8 @@ EquivalentClasses,%
 DifferentIndividuals}}[keywords]
 
 % OWL (Web Ontology Language) 2 Manchester Syntax
+% http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/
+% complete specification
 \lstdefinelanguage{owl2Manchester}%
 {morekeywords={%
 AnnotationProperty,Annotations,Asymmetric,%
@@ -112,16 +128,23 @@ only,or,%
 pattern,%
 some,%
 that,%
-value}}[keywords]
+value},%
+morecomment=[l]{\#\ },%
+morestring=[b]",%
+}[keywords,comments,strings]
 
 % N3 Logic (also usable for Turtle RDF serialization)
+% http://www.w3.org/TeamSubmission/n3/
+% partial specification
 \lstdefinelanguage{N3}%
 {morekeywords={@forAll,@forSome,@prefix,a,is,of},%
 morecomment=[l]{\#\ },%
 morestring=[b]",%
 morestring=[b]{"""}}[keywords,comments,strings]
 
-% XQuery
+% XQuery 1.0
+% http://www.w3.org/TR/2010/REC-xquery-20101214/
+% partial specification
 \lstdefinelanguage{xquery}%
 {morekeywords={for,in,let,return,%
 eq,and,not,%
@@ -133,30 +156,44 @@ module,namespace,import,at},%
  morecomment=[n]{(:}{:)}}[keywords,strings]
 
 % Regular XML RDF
+% http://www.dajobe.org/papers/xmleurope2004/
+% "full" specification (well, it's trivial)
 \lstdefinelanguage{rxr}[]{XML}%
 {keywordsprefix={rxr:}}[keywords]
 
 % RDF/XML
+% http://www.w3.org/TR/2004/REC-rdf-syntax-grammar-20040210/
+% "full" specification (well, it's trivial)
 \lstdefinelanguage{RDF/XML}[]{XML}%
 {keywordsprefix={rdf:}}[keywords]
 
-% XInclude
+% XInclude 1.0
+% http://www.w3.org/TR/2006/REC-xinclude-20061115/
+% "full" specification (well, it's trivial)
 \lstdefinelanguage{XInclude}[]{XML}%
 {keywordsprefix={xi:}}[keywords]
 
-% XHTML+RDFa
+% XHTML+RDFa 1.0
+% http://www.w3.org/TR/2008/REC-rdfa-syntax-20081014
+% full specification
 \lstdefinelanguage{XHTML+RDFa}[]{HTML}%
 {morekeywords={about,content,datatype,href,property,rel,resource,rev,src,typeof}}[keywords]
 
-% MathML notation definitions (experimental)
+% MathML notation definitions
+% http://www.w3.org/TR/2008/WD-MathML3-20080409/chapter8.html
+% full specification (but the language is experimental and has not been admitted as a part of MathML so far)
 \lstdefinelanguage{ntn}[]{XML}%
 {morekeywords={notation,prototype,expr,rendering,render}}
 
-% HTTP headers (incomplete)
+% HTTP headers
+% http://tools.ietf.org/html/rfc2616
+% partial specification
 \lstdefinelanguage{HTTP}%
 {morekeywords={GET,Host,Accept}}
 
 % OpenMath Content Dictionaries with OpenMath objects
+% http://www.openmath.org/standard/om20-2004-06-30/
+% complete specification
 \lstdefinelanguage{omWithCD}[]{XML}%
   {morekeywords={OMS,OMV,OMI,OMB,OMSTR,OMF,OMA,OMBIND,OMBVAR,OME,OMATTR,OMATP,OMOBJ,CD,CDBase,CDName,CDURL,CDReviewDate,CDStatus,CDVersion,CDRevision,CDUses,CDDefinition,Name,Description,Role,CMP,FMP},
   sensitive=true}
