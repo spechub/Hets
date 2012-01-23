@@ -19,8 +19,7 @@ import System.Directory
 import System.IO.Unsafe
 import System.FilePath
 
--- | Checks if a Prover Binary exists and is executable
--- in an unsafe manner
+-- | Checks if a Prover Binary exists and is executable in an unsafe manner
 unsafeProverCheck :: String -- ^ prover Name
                   -> String -- ^ Environment Variable
                   -> a
@@ -76,9 +75,16 @@ check4File name env a = do
 check4jarFile :: String -- ^ environment Variable
   -> String -- ^ jar file name
   -> IO (Bool, FilePath)
-check4jarFile var jar = do
+check4jarFile = check4jarFileWithDefault ""
+
+check4jarFileWithDefault
+  :: String -- ^ default path
+  -> String -- ^ environment Variable
+  -> String -- ^ jar file name
+  -> IO (Bool, FilePath)
+check4jarFileWithDefault def var jar = do
   noJava <- missingExecutableInPath "java"
-  pPath <- getEnvDef var ""
+  pPath <- getEnvDef var def
   hasJar <- doesFileExist $ pPath </> jar
   return (not noJava && hasJar, pPath)
 
@@ -89,4 +95,4 @@ hetsOWLenv = "HETS_OWL_TOOLS"
 -- | check for the jar file under HETS_OWL_TOOLS
 check4HetsOWLjar :: String -- ^ jar file name
   -> IO (Bool, FilePath)
-check4HetsOWLjar = check4jarFile hetsOWLenv
+check4HetsOWLjar = check4jarFileWithDefault "OWL2" hetsOWLenv
