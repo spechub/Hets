@@ -10,7 +10,7 @@ Portability :  non-portable(Grothendieck)
 Xml of Hets DGs
 -}
 
-module Static.ToXml (dGraph) where
+module Static.ToXml (dGraph, lnode) where
 
 import Static.DgUtils
 import Static.DevGraph

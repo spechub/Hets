@@ -58,7 +58,7 @@ import Logic.Logic
 import Proofs.AbstractState
 
 import Text.XML.Light
-import Text.XML.Light.Cursor
+import Text.XML.Light.Cursor hiding (findChild)
 
 import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
@@ -80,7 +80,7 @@ import Data.IORef
 import Data.Maybe
 import Data.List
 import Data.Ord
-import Data.Graph.Inductive.Graph (lab)
+import Data.Graph.Inductive.Graph (lab, LNode)
 import Data.Time.Clock
 
 import System.Random
@@ -421,7 +421,7 @@ getHetsResult opts updates sessRef file query =
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
                 -- TODO: create nodeview in html-style
-                NcInfo -> return $ fstLine ++ showN dgnode
+                NcInfo -> return $ showNodeView dg libEnv (i, dgnode) fstLine
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
@@ -444,6 +444,29 @@ getHetsResult opts updates sessRef file query =
               [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
+
+showNodeView :: DGraph -> LibEnv -> LNode DGNodeLab -> String -> String
+showNodeView dg lv (i, lbl) fstLine = let
+  xmlN = lnode (globalAnnos dg) lv (i, lbl)
+  thms = case deepSearch "Theorem" xmlN of
+           [] -> [plain "no theorems"]
+           ls -> bold "Theorems" : [mkUnorderedList ls]
+  axs = case deepSearch "Axiom" xmlN of
+          [] -> [plain "no axioms"]
+          ls -> bold "Axioms" : [mkUnorderedList ls]
+  sbs = let sb el = mkUnorderedList $ deepSearch "Symbol" el
+        in case findChild (unqual "Hidden") xmlN of
+            Just ch -> bold "Hidden Symbols" : [sb ch]
+            Nothing -> case findChild (unqual "Declarations") xmlN of
+              Just ch -> bold "Symbols" : [sb ch]
+              Nothing -> [plain "no local symbols"]
+  in mkHtmlElem fstLine $ bold fstLine : newLine : sbs ++ thms ++ axs
+
+-- | custom xml-search for not only immediate children
+deepSearch :: String -> Element -> [Element]
+deepSearch tag ele = rekSearch ele where
+  rekSearch e = filtr e ++ concatMap filtr (elChildren e)
+  filtr = filterChildrenName (== (unqual tag))
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
@@ -621,6 +644,9 @@ bold = unode "b"
 
 plain :: String -> Element
 plain = unode "p"
+
+newLine :: Element
+newLine = unode "br /" ""
 
 headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
