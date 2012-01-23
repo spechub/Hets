@@ -646,7 +646,7 @@ plain :: String -> Element
 plain = unode "p"
 
 newLine :: Element
-newLine = unode "br /" ""
+newLine = plain " "
 
 headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
