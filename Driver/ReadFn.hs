@@ -60,19 +60,19 @@ readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
-    CommonLogicIn -> liftIO $ parseCL_CLIF file opts
-    CommonLogic2In -> liftIO $ parseCL_CLIF file opts
-#ifndef NOOWLLOGIC
-    OWL2In -> liftIO $ parseOWL file
-    OWLIn -> liftIO $ parseOWL file
-#endif
-#ifdef RDFLOGIC
-    RDFIn -> liftIO $ parseRDF file
-#endif
     FreeCADIn ->
       liftIO $ readFreeCADLib file $ fileToLibName opts file
-    _ ->
-      case runParser (library $ setCurLogic (defLogic opts) lgraph)
+    _ -> case guess file (intype opts) of
+      CommonLogicIn -> liftIO $ parseCL_CLIF file opts
+      CommonLogic2In -> liftIO $ parseCL_CLIF file opts
+#ifndef NOOWLLOGIC
+      OWL2In -> liftIO $ parseOWL file
+      OWLIn -> liftIO $ parseOWL file
+#endif
+#ifdef RDFLOGIC
+      RDFIn -> liftIO $ parseRDF file
+#endif
+      _ -> case runParser (library $ setCurLogic (defLogic opts) lgraph)
           (emptyAnnos ()) file input of
          Left err -> fail (showErr err)
          Right ast -> return ast

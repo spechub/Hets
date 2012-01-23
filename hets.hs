@@ -72,8 +72,6 @@ processFile opts file = do
 #ifdef PROGRAMATICA
       HaskellIn -> anaHaskellFile opts file
 #endif
-      OWLIn -> anaLib opts { intype = OWL2In } file
-      RDFIn -> anaLib opts { intype = RDFIn } file
 #ifdef HEXPAT
       HolLightIn -> anaHolLightFile opts file
 #endif
@@ -84,8 +82,6 @@ processFile opts file = do
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
       OmdocIn -> anaOMDocFile opts file
-      CommonLogicIn -> anaLib opts { intype = CommonLogicIn } file
-      CommonLogic2In -> anaLib opts { intype = CommonLogic2In } file
       DgXml | not (defLogicIsDMU opts) -> readDGXml opts file
       _ -> anaLib opts file
     case res of
