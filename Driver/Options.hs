@@ -322,7 +322,6 @@ data InType =
   | CASLIn
   | HetCASLIn
   | OWLIn
-  | OWL2In
   | HaskellIn
   | MaudeIn
   | TwelfIn
@@ -333,8 +332,7 @@ data InType =
   | ProofCommand
   | GuessIn
   | FreeCADIn
-  | CommonLogicIn
-  | CommonLogic2In -- ^ "clif"
+  | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
   | RDFIn
 
@@ -344,7 +342,6 @@ instance Show InType where
     CASLIn -> "casl"
     HetCASLIn -> "het"
     OWLIn -> "owl"
-    OWL2In -> "ow2"
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
@@ -355,8 +352,7 @@ instance Show InType where
     ProofCommand -> "hpf"
     GuessIn -> ""
     FreeCADIn -> "fcstd"
-    CommonLogicIn -> "clf"
-    CommonLogic2In -> "clif"
+    CommonLogicIn isLong -> if isLong then "clif" else "clf"
     DgXml -> xmlS
     RDFIn -> "rdf"
 
@@ -378,8 +374,9 @@ instance Show ATType where
 plainInTypes :: [InType]
 plainInTypes =
   [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
-  , HolLightIn, PrfIn, OmdocIn, ProofCommand, CommonLogicIn, CommonLogic2In
-  , DgXml, FreeCADIn, OWL2In, RDFIn ]
+  , HolLightIn, PrfIn, OmdocIn, ProofCommand
+  , CommonLogicIn False, CommonLogicIn True
+  , DgXml, FreeCADIn, RDFIn ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]

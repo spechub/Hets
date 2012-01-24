@@ -243,14 +243,18 @@ localFileContents opts filename = do
   hGetContents handle
 
 findLibFile :: [FilePath] -> String -> IO FilePath
-findLibFile [] f = error $ "Could not find Common Logic Library " ++ f
-findLibFile (d : ds) f = do
-  let fs = [ f
-           , combine d (addExtension f (show CommonLogic2In))
-           , combine d (addExtension f (show CommonLogicIn)) ]
+findLibFile ds f = do
+  e <- doesFileExist f
+  if e then return f else findLibFileAux ds f
+
+findLibFileAux :: [FilePath] -> String -> IO FilePath
+findLibFileAux [] f = error $ "Could not find Common Logic Library " ++ f
+findLibFileAux (d : ds) f = do
+  let fs = [ combine d $ addExtension f $ show $ CommonLogicIn b
+           | b <- [False, True]]
   es <- mapM doesFileExist fs
   case filter fst $ zip es fs of
-        [] -> findLibFile ds f
+        [] -> findLibFileAux ds f
         (_, f0) : _ -> return f0
 
 -- retrieves all importations from the text

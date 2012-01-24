@@ -63,10 +63,8 @@ readLibDefnM lgraph opts file input =
     FreeCADIn ->
       liftIO $ readFreeCADLib file $ fileToLibName opts file
     _ -> case guess file (intype opts) of
-      CommonLogicIn -> liftIO $ parseCL_CLIF file opts
-      CommonLogic2In -> liftIO $ parseCL_CLIF file opts
+      CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
 #ifndef NOOWLLOGIC
-      OWL2In -> liftIO $ parseOWL file
       OWLIn -> liftIO $ parseOWL file
 #endif
 #ifdef RDFLOGIC
