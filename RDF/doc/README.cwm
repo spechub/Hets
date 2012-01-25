@@ -1,0 +1,18 @@
+The cwm tool (http://www.w3.org/2000/10/swap/doc/cwm.html) is used by
+Hets to convert between different RDF serializations:
+
+* N-Triples (http://www.w3.org/TR/rdf-testcases/#ntriples)
+* Turtle (http://www.w3.org/TeamSubmission/turtle/)
+* RDF/XML (http://www.w3.org/TR/REC-rdf-syntax/)
+
+In order to install it, you can do either:
+
+(for Ubuntu)
+	sudo apt-get install swap-cwm
+
+or
+
+	wget http://www.w3.org/2000/10/swap/cwm.tar.gz
+	tar -xvf cwm.tar.gz
+	cd cwm-1.2.1
+	sudo ./setup.py install
