@@ -1048,16 +1048,18 @@ This example defines a partial order twice: once as an extension of a strict par
 logic CommonLogic
 
 spec Strict_Partial_Order =
+%% strict
 . (forall (x)
-          (le x x))
+          (not (lt x x)))
+%% asymmetric
 . (forall (x y)
-          (if (and (le x y)
-                   (le y x))
-              (= x y)))
+          (if (lt x y)
+              (not (lt y x))))
+%% transitive
 . (forall (x y z)
-          (if (and (le x y)
-                   (le y z))
-              (le x z)))
+          (if (and (lt x y)
+                   (lt y z))
+              (lt x z)))
 end
 
 spec Partial_Order_From_Strict_Partial_Order =
@@ -1065,19 +1067,25 @@ spec Partial_Order_From_Strict_Partial_Order =
 then
 %% define "less or equal" in terms of "less than"'
 . (forall (x y)
-          (cl:comment 'define "less or equal" in terms of "less than"')
           (iff (le x y)
                (or (lt x y)
                    (= x y))))
 end
 
 spec Partial_Order =
-%% 'define "less or equal" in terms of "less than"'
+%% reflexive
+. (forall (x)
+          (le x x))
+%% antisymmetric
 . (forall (x y)
-          (cl:comment 'define "less or equal" in terms of "less than"')
-          (iff (le x y)
-               (or (lt x y)
-                   (= x y))))
+          (if (and (le x y)
+                   (le y x))
+              (= x y)))
+%% transitive
+. (forall (x y z)
+          (if (and (le x y)
+                   (le y z))
+              (le x z))))
 end
 
 view v : Partial_Order to Partial_Order_From_Strict_Partial_Order 
