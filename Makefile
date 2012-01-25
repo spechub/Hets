@@ -737,4 +737,4 @@ cwm_ubuntu:
 cwm:
 	wget http://www.w3.org/2000/10/swap/cwm.tar.gz
 	tar -xvf cwm.tar.gz
-	cd cwm-1.2.1; sudo ./setup.py install; cd ..; rm -rfv cwm.tar.gz	
+	cd cwm-1.2.1; ./setup.py install --prefix='~'; cd ..; rm -rfv cwm.tar.gz	
