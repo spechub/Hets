@@ -688,19 +688,19 @@ Note that the dot at the beginning of a line indicates that a new text begins.
 Hence, it is possible to have multiple texts in a \CASL specification.
 
 This specification is the \HetCASL-structured equivalent to the following three
-CLIF files:\footnote{Note that where the Common Logic specification requires ``cl:text'', some samples available on the Web use ``cl-text''. Therefore, \Hets also supports the latter.}\\
+CLIF files:\footnote{Note that the ``cl:text'' syntax specified in the Common Logic standard \cite{CommonLogic:oldfashioned} has subsequently been recorded as a defect \cite{CommonLogicDefects:oldfashioned}, in favor of ``cl-text''.  \Hets supports both.}\\
 
 \begin{description}
   \item[Pred.clif:]~\\
 \begin{lstlisting}[language=clif]
-(cl:text Pred 
+(cl-text Pred 
   (P x)
   (and (P x) (Q y))
 )
 \end{lstlisting}
   \item[Cat.clif:]~\\
 \begin{lstlisting}[language=clif]
-(cl:text Cat 
+(cl-text Cat 
   (or (Cat x) (Mat y))
   (not (On x y))
   (if (P x) (Q x))
@@ -708,8 +708,8 @@ CLIF files:\footnote{Note that where the Common Logic specification requires ``c
 \end{lstlisting}
   \item[Spec.clif:]~\\
 \begin{lstlisting}[language=clif]
-(cl:text PetHappy 
-  (cl:imports Pred) (cl:imports Cat)
+(cl-text PetHappy 
+  (cl-imports Pred) (cl-imports Cat)
   (exists (z) (and (Pet x) (Happy z) (Attr x z)))
 )
 \end{lstlisting}
@@ -811,8 +811,8 @@ see the \Hets User Guide \cite{HetsUserGuide}.
 \subsection{Relations between Common Logic Texts}
 \label{relationsInCL}
 \Hets supports several relations between Common Logic Texts. However only one of
-them is defined in ISO/IEC 24707:2007 \cite{CommonLogic:oldfashioned}. All the other relations are 
-unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Colore}.
+them, the importation, is defined in ISO/IEC 24707:2007 \cite{CommonLogic:oldfashioned}, and has a syntax within Common Logic. All the other relations are 
+unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Colore}, and represented externally of Common Logic texts.  COLORE currently represents them in external XML documents, and any required symbol maps in external CLIF files.  \Hets, in contrast, allows for declaring them as \emph{views} within \HetCASL files, outside of specifications, as can be seen from the syntax specification in List.~\ref{fig:lang}.
 
 \begin{description}
 \item[Importation] \label{descr:link_import}
@@ -823,7 +823,7 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
   
   Using CLIF, you can import \texttt{someFile.clif} via
   \begin{lstlisting}[language=clif]
-(cl:imports someFile.clif)
+(cl-imports someFile.clif)
   \end{lstlisting}
   Omitting the file extension will also succeed. In this case \Hets will look 
   for a file called \texttt{someFile.clif} in first place and then for 
@@ -832,9 +832,9 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
   \Hets also supports URIs for importing resources. The allowed URI schemes are
   \texttt{file:}, \texttt{http:} and \texttt{https:}.
   \begin{lstlisting}[language=clif]
-(cl:imports file:///absolute/path/to/someFile.clif)
-(cl:imports http://someDomain.com/path/to/someFile.clif)
-(cl:imports https://someDomain.com/path/to/someFile.clif)
+(cl-imports file:///absolute/path/to/someFile.clif)
+(cl-imports http://someDomain.com/path/to/someFile.clif)
+(cl-imports https://someDomain.com/path/to/someFile.clif)
   \end{lstlisting}
 
   The importation is indicated by a global definition link (black arrow) in the 
@@ -842,32 +842,30 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 
 \item[Relative interpretation]
   is described in \cite{colore-fois}. It is represented by a theorem link 
-  (red arrow) in the development graph. In a Common Logic file it is specified 
-  inside of a comment on text-level, that is a comment in the uppermost level 
-  of the (optionally named) Common Logic text instead of a comment in a sentence or 
-  term:
-  
-  \begin{lstlisting}[language=clif]
-(cl:text someText
-  (cl:comment '(relatively-interprets someTranslationFile someTargetFile)')
-  (someAxiom)
-)
-  \end{lstlisting}
-  Just as with imports (\ref{descr:link_import}), \Hets supports different types 
-  of references to resources here, such as URIs.
-  Alternatively, the \HetCASL syntax for relative interpretations is
+  (red arrow) in the development graph.
+
+  The \HetCASL syntax for relative interpretations is
 \begin{quote}
-\textbf{view} \textit{v} : \textit{sp1} \textbf{to} \textit{sp2} \textbf{end}
+\textbf{view} \textit{v} : \textit{someCLText} \textbf{to} \textit{someTargetCLText}  \textbf{end}
 \end{quote}
-  Views are declared outside of specifications, as can be seen from the syntax specification in List.~\ref{fig:lang}.  We provide a concrete example in Sect.~\ref{sec:relat-interpr} below.
+or
+\begin{quote}
+\textbf{view} \textit{v} : \{ \textit{someCLText} \textbf{with} \textit{<symbol map (see below)>} \} \textbf{to} \textit{someTargetCLText}  \textbf{end}
+\end{quote}
+  where a symbol map allows for renaming symbols, e.g.
+\begin{quote}
+\textit{name1Old} |-> \textit{name1New}, \textit{name2Old} |-> \textit{name2New}.
+\end{quote}
+  We provide a concrete example in Sect.~\ref{sec:relat-interpr} below.
+  
+  Just as with imports (see above), \Hets supports different types 
+  of references to resources here, such as URIs.
   
 \item[Nonconservative extension]
-  is represented by a theorem link (red arrow) in the development graph. In a 
-  Common Logic file it is specified inside of a comment on text-level:
+  is represented by a theorem link (red arrow) in the development graph. 
   
-  \begin{lstlisting}[language=clif]
-(cl:comment '(nonconservative-extension someTargetFile)')
-  \end{lstlisting}
+\ednote{CL: show the Hets view syntax}
+  
   Just as with imports (\ref{descr:link_import}), \Hets supports different types 
   of references to resources here, as e.g. URIs.
   
@@ -877,12 +875,9 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
 \item[Inclusion]
   is not a relation between theories. However inclusion can useful. It is used 
   to show other theories in the development graph, without any connection 
-  to the current theory. In a Common Logic file inclusion is specified in a 
-  text-level comment:
-  \begin{lstlisting}[language=clif]
-(cl:comment '(include-libs someFile someOtherFile nextFile andSoOn)')
-  \end{lstlisting}
-  The keyword \texttt{include-libs} is followed by a whitespace-separated list 
+  to the current theory.
+  
+  \ednote{CL: show the Hets library (?) syntax} a list 
   of resources to be shown in the development graph. The resource-names can be 
   of different type here, too.
 \end{description}
@@ -901,7 +896,7 @@ This section introduces several typical examples of using Common Logic ontologie
 \subsubsection{Renaming Symbols with Symbol Maps}
 \label{sec:renam-symb-with}
 
-This example has two almost identical files, \texttt{upper.clif} and 
+\ednote{CL: still need to port this to \HetCASL syntax}This example has two almost identical files, \texttt{upper.clif} and 
 \texttt{lower.clif}; these can be found in the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}. The only difference in the actual axioms is that 
 \texttt{upper.clif} uses uppercase predicates while \texttt{lower.clif} 
 uses lowercase predicates. The symbol is added at the end of the relation
@@ -915,8 +910,8 @@ Hence a space must be placed between the separation-comma and a name.\\
 \begin{description}
 \item[upper.clif:]~\\
 \begin{lstlisting}[language=clif]
-(cl:text upper
-  (cl:comment '(nonconservative-extension lower
+(cl-text upper
+  (cl-comment '(nonconservative-extension lower
     ( a |-> A
     , b |-> B
     ))'
@@ -928,8 +923,8 @@ Hence a space must be placed between the separation-comma and a name.\\
 \end{lstlisting}
 \item[lower.clif:]~\\
 \begin{lstlisting}[language=clif]
-(cl:text lower
-  (cl:comment '(nonconservative-extension upper
+(cl-text lower
+  (cl-comment '(nonconservative-extension upper
     (A |-> a
    , B |-> b))')
   
@@ -953,31 +948,8 @@ The COLORE \cite{Colore} module \texttt{Region\-Boolean\-Contact\-Algebra} relat
 \label{fig:colore-graph}
 \end{figure}
 
-For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.
+For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.  The \HetCASL variant of expressing the relative interpretation can be found in the \texttt{CommonLogic/Examples} directory.  Here, it is not necessary to rename symbols, as both modules have the same signature.
 
-We first show how to express the relative interpretation using COLORE's CLIF annotations, then how to express it using \HetCASL syntax.  The \HetCASL variant can be found in the \texttt{CommonLogic/Examples} directory.
-
-\paragraph{Common Logic Syntax:}\ednote{CL: TODO fix the second argument of ``relatively-interprets''}~\\
-\begin{lstlisting}[language=clif]
-(cl:module AtomlessBooleanLattice
-  (cl:imports BooleanLattice)
-  (forall (x)
-	  (exists (y)
-		  (and (not (= y 0))
-		       (leq y x)))))
-
-(cl:module RegionBooleanContactAlgebra
-  (cl:imports BooleanContactAlgebra)
-  (cl:comment '(relatively-interprets ??? AtomlessBooleanLattice)')
-  (forall (x)     
-          (if (and (not (= x 0)) 
-                   (not (= x 1))) 
-              (exists (y)
-                      (and (complement x y)
-                           (C x y))))))
-\end{lstlisting}
-
-\paragraph{\HetCASL Syntax:}~\\
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif]
 logic CommonLogic
 
@@ -1006,44 +978,10 @@ view v : AtomlessBooleanLattice to RegionBooleanContactAlgebra
 
 \subsubsection{Relative Interpretation (Standalone Example)}\label{sec:rel-intpr-standalone}
 
-This example defines a partial order twice: once as an extension of a strict partial order, and once directly.  Then, we connect both definitions by a ``relative interpretation'' link.  The sources are available from the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}.
+This example defines a partial order twice: once as an extension of a strict partial order, and once directly.  Then, we connect both definitions by a view that expresses the relative interpretation.
 
-\paragraph{Common Logic Syntax:}\ednote{CL: TODO fix the second argument of ``relatively-interprets''}~\\
-\begin{lstlisting}[language=clif]
-(cl:module Partial_Order
-  (cl:comment 'reflexive')
-  (forall (x)
-          (le x x))
-  (cl:comment 'asymmetric')
-  (forall (x y)
-          (if (and (le x y)
-                   (le y x))
-              (= x y)))
-  (cl:comment 'transitive')
-  (forall (x y z)
-          (if (and (le x y)
-                   (le y z))
-              (le x z))))
+The sources are available from the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}.
 
-(cl:module Partial_Order_From_Strict_Partial_Order
-  (cl:imports Strict_Partial_Order.clif)
-  (cl:comment 'define "less or equal" in terms of "less than"')
-  (forall (x y)
-          (iff (le x y)
-               (or (lt x y)
-                   (= x y)))))
-
-(cl:module Partial_Order_From_Strict_Partial_Order
-  (cl:imports Strict_Partial_Order.clif)
-  (cl:comment '(relatively-interprets ??? Partial_Order)')
-  (cl:comment 'define "less or equal" in terms of "less than"')
-  (forall (x y)
-          (iff (le x y)
-               (or (lt x y)
-                   (= x y)))))
-\end{lstlisting}
-
-\paragraph{\HetCASL Syntax:}~\\
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif]
 logic CommonLogic
 
@@ -1118,7 +1056,7 @@ under \texttt{Ontology/Examples/AAL.het} in the \Hets library \cite{hets-library
 \item As Common Logic module extends the previously imported OWL ontology, it has access to all entities of the OWL ontology by name; in particular, we can specify that two rooms are connected (in terms of the OpenAAL terminology) if certain conditions in terms of our Common Logic module, or certain conditions in terms of OpenAAL hold.
 \end{itemize}
 
-\begin{lstlisting}[language=HetCASL,basicstyle={\small\ttfamily},alsolanguage=clif,alsoletter={-}]
+\begin{lstlisting}[language=HetCASL,basicstyle={\small\ttfamily},alsolanguage=clif]
 library AAL
 
 logic OWL
@@ -1184,10 +1122,7 @@ In the previous example, we established a link between an OWL ontology and a Com
 
 The following example establishes a view between the OWL Time ontology and its reimplementation in Common Logic, \ednote{CL: There is no way to make that explicit in \HetCASL, is there? TM: you mean the datatype stuff that the OWL to CL translation generates? We should modify the translation to generate this only if really needed.}using the ``OWL22CommonLogic'' translation:\ednote{CL: I will also put this into the \Hets library}
 
-% The following doesn't work, as in CLIF ":" is part of keywords, whereas in OWL Manchester it is not.
-%% \begin{lstlisting}[language=hetcasl,alsolanguage=clif,alsolanguage=owl2Manchester]
-% Therefore we specify the relevant keywords manually:
-\begin{lstlisting}[language=hetcasl,morekeywords={Class,ObjectProperty,Domain,Range,Characteristics,Transitive,forall,if,and,or}]
+\begin{lstlisting}[language=hetcasl,alsolanguage=clif,alsolanguage=owl2Manchester]
 logic OWL
 spec TimeOWL =
   Class: TemporalEntity
@@ -1216,7 +1151,9 @@ spec TimeCL =
               (= t1 t2)))
 end
 
-view TimeOWLtoCL : TimeOWL to TimeCL
+view TimeOWLtoCL : { TimeOWL with logic OWL22CommonLogic } to TimeCL
+%% As OWL22CommonLogic is the default translation,
+%% it is optional to specify it.
 \end{lstlisting}
 
 \section{Proofs with \Hets}\label{sec:Proofs}
@@ -1314,16 +1251,16 @@ The annotations are optional. For proving, they are the names shown in the
 
 The same specification can be written down in CLIF:
 \begin{lstlisting}[language=clif,morekeywords={implied}]
-(cl:text axiom
+(cl-text axiom
   (P x)
   (and (P x) (Q y))
 )
 
-(cl:text correct
+(cl-text correct
   (Q y)
 ) %implied
 
-(cl:text incorrect (P y)) %implied
+(cl-text incorrect (P y)) %implied
 \end{lstlisting}
 In CLIF, there is no notion of proof obligation. Hence the \texttt{\%implied} 
 keyword of \Hets must be used, and thus the specification is not pure CLIF. Because the texts have 
