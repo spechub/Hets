@@ -92,7 +92,7 @@ fi
 ISABELLE_VERSION=`isabelle version | awk '{ print $1 }' | sed "s/Isabelle//g" | sed "s/://g"`
 case "$ISABELLE_VERSION"
 in
-    2011)
+    2011*)
         HETS_ISABELLE_DIR=/usr/lib/hets/hets-lib/Isabelle/2011
     ;;
     *)
