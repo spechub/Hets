@@ -85,6 +85,7 @@ public class OWL2Parser {
 
 			/* Load an ontology from a physical IRI */
 			IRI physicalIRI = IRI.create(args[0]);
+	//		System.out.println("IRI: " + physicalIRI + "\n");
 
 			// Now do the loading
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
@@ -129,12 +130,14 @@ public class OWL2Parser {
 					}
 
 					merged_name = notag + merged_name;
-
+			//		System.out.println("NAME: " + merged_name + "\n");
 					IRI mergedOntologyIRI = IRI.create(merged_name);
+			//		System.out.println("MERGED_IRI " + mergedOntologyIRI + "\n");
 					OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
 
 					ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (manager);
-					parsing_option(ontology, out, manager);
+				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+					parsing_option(merged, out, manager);
 				}
 				else	
 					parseZeroImports(out, ontology);
