@@ -60,9 +60,13 @@ import Proofs.AbstractState
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
 
+import Common.AS_Annotation (isAxiom)
 import Common.Doc
-import Common.DocUtils (pretty, showGlobalDoc, showDoc)
+import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
+import Common.ExtSign (ExtSign (..))
+import Common.GlobalAnnotations (GlobalAnnos)
 import Common.LibName
+import qualified Common.OrderedMap as OMap
 import Common.PrintLaTeX
 import Common.Result
 import Common.ResultT
@@ -417,11 +421,11 @@ getHetsResult opts updates sessRef file query =
                   Just dgnode -> return (i, dgnode)
               let fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
-                    "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
+                    "node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
-                -- TODO: create nodeview in html-style
-                NcInfo -> return $ showNodeView dg libEnv (i, dgnode) fstLine
+                -- TODO: work on html-style nodeview
+                NcInfo -> return $ showLocalTh dg (i, dgnode) fstLine
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
@@ -445,28 +449,33 @@ getHetsResult opts updates sessRef file query =
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
-showNodeView :: DGraph -> LibEnv -> LNode DGNodeLab -> String -> String
-showNodeView dg lv (i, lbl) fstLine = let
-  xmlN = lnode (globalAnnos dg) lv (i, lbl)
-  thms = case deepSearch "Theorem" xmlN of
-           [] -> [plain "no theorems"]
-           ls -> bold "Theorems" : [mkUnorderedList ls]
-  axs = case deepSearch "Axiom" xmlN of
-          [] -> [plain "no axioms"]
-          ls -> bold "Axioms" : [mkUnorderedList ls]
-  sbs = let sb el = mkUnorderedList $ deepSearch "Symbol" el
-        in case findChild (unqual "Hidden") xmlN of
-            Just ch -> bold "Hidden Symbols" : [sb ch]
-            Nothing -> case findChild (unqual "Declarations") xmlN of
-              Just ch -> bold "Symbols" : [sb ch]
-              Nothing -> [plain "no local symbols"]
-  in mkHtmlElem fstLine $ bold fstLine : newLine : sbs ++ thms ++ axs
+showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
+showLocalTh dg (_, lbl) fstLine = case dgn_theory lbl of
+  G_theory lid1 (ExtSign sig1 _) _ thsens _ -> let
+      ga = globalAnnos dg
+      pr = intercalate br . map (renderHtml ga . pretty)
+      br = "<br />"
+      (axs, thms) = OMap.partition isAxiom $ OMap.map
+                      (mapValue $ simplify_sen lid1 sig1) thsens
+      sbs = showNodeSymbols ga lbl
+      in mkHtmlElem fstLine [bold fstLine] ++ br
+         ++ "<h2>Symbols</h2>" ++ sbs ++ br
+         ++ "<h2>Theorems</h2>" ++ pr (OMap.toList thms) ++ br
+         ++ "<h2>Axioms</h2>" ++ pr (OMap.toList axs)
 
--- | custom xml-search for not only immediate children
-deepSearch :: String -> Element -> [Element]
-deepSearch tag ele = rekSearch ele where
-  rekSearch e = filtr e ++ concatMap filtr (elChildren e)
-  filtr = filterChildrenName (== (unqual tag))
+prettyHtml :: Pretty a => GlobalAnnos -> a -> String
+prettyHtml ga = renderHtml ga . pretty
+
+showNodeSymbols :: GlobalAnnos -> DGNodeLab -> String
+showNodeSymbols ga lbl = let pr = intercalate "<br />" . map (prettyHtml ga) in
+  case nodeInfo lbl of
+        DGRef _ _ -> "<em>reference node, no local symbols</em>"
+        DGNode orig _ -> case orig of
+            DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ -> pr
+              $ map (G_symbol lid) $ mostSymsOf lid dsig
+            DGRestriction _ hidSyms -> pr $ Set.toList hidSyms
+            -- TODO check below with christian
+            _ -> "<em>unexpected node origin</em>"
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
@@ -644,9 +653,6 @@ bold = unode "b"
 
 plain :: String -> Element
 plain = unode "p"
-
-newLine :: Element
-newLine = plain " "
 
 headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
