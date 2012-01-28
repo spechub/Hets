@@ -118,8 +118,9 @@ mapTheory :: (ClSign.Sign,
               -> Result
                   (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
-mapTheory (sig, form) = Result [] $
+mapTheory (sig, form) =  Result [] $
   Just (mapSig sig, Predefined.baseCASLAxioms ++ (map (trNamedForm sig) form))
+  
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
@@ -207,11 +208,17 @@ senForm sig form =
 
 termForm :: ClSign.Sign -> ClBasic.TERM -> CBasic.TERM a
 termForm sig trm = case trm of
-                 ClBasic.Name_term name -> CBasic.Application
-                     (CBasic.Qual_op_name (Id.simpleIdToId name)
-                       (CBasic.Op_type CBasic.Total [] individual Id.nullRange)
-                       Id.nullRange)
-                     [] $ Id.tokPos name
+                 ClBasic.Name_term name ->
+                    if ClSign.isSubSigOf (ClSign.emptySig {
+                            ClSign.discourseNames =
+                                Set.singleton (Id.simpleIdToId name)
+                          }) sig
+                    then CBasic.Application
+                          (CBasic.Qual_op_name (Id.simpleIdToId name)
+                            (CBasic.Op_type CBasic.Total [] individual Id.nullRange)
+                            Id.nullRange)
+                          [] $ Id.tokPos name
+                    else CBasic.Qual_var name individual Id.nullRange
                  ClBasic.Funct_term term ts _ ->
                     CBasic.Application
                         (CBasic.Qual_op_name fun
