@@ -422,7 +422,7 @@ getHetsResult opts updates sessRef file query =
               let fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
                     "node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
-                  showN d = showGlobalDoc (globalAnnos dg) d "\n"
+                  -- showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
                 -- TODO: work on html-style nodeview
                 NcInfo -> return $ showLocalTh dg (i, dgnode) fstLine
@@ -439,7 +439,7 @@ getHetsResult opts updates sessRef file query =
                            map (\ (n, e) -> unode "goal"
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
-                      NcTheory -> fstLine ++ showN gTh
+                      NcTheory -> showGlobalTh dg gTh fstLine -- ++ showN gTh
                       NcProvers mt -> getProvers mt subL
                       NcTranslations mp -> getComorphs mp subL
                       _ -> error "getHetsResult.NodeQuery."
@@ -449,33 +449,45 @@ getHetsResult opts updates sessRef file query =
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
+showGlobalTh :: DGraph -> G_theory -> String -> String
+showGlobalTh dg gTh fstLine = mkHtmlElem fstLine []
+  ++ "<h2>" ++ fstLine ++ "</h2>"
+  ++ showThmsAndAxs (globalAnnos dg) gTh
+
+-- | display nodes local signature elements in html
 showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
-showLocalTh dg (_, lbl) fstLine = case dgn_theory lbl of
+showLocalTh dg (_, lbl) fstLine = let
+  ga = globalAnnos dg
+  in mkHtmlElem fstLine [] ++ "<h2>" ++ fstLine ++ "</h2>"
+    ++ showNodeSymbols ga lbl
+    ++ showThmsAndAxs ga (dgn_theory lbl)
+
+showThmsAndAxs :: GlobalAnnos -> G_theory -> String
+showThmsAndAxs ga gTh = case gTh of
   G_theory lid1 (ExtSign sig1 _) _ thsens _ -> let
-      ga = globalAnnos dg
-      pr = intercalate br . map (renderHtml ga . pretty)
-      br = "<br />"
+      pretty' s = prettyHtmlLs ga s . OMap.toList
       (axs, thms) = OMap.partition isAxiom $ OMap.map
                       (mapValue $ simplify_sen lid1 sig1) thsens
-      sbs = showNodeSymbols ga lbl
-      in mkHtmlElem fstLine [bold fstLine] ++ br
-         ++ "<h2>Symbols</h2>" ++ sbs ++ br
-         ++ "<h2>Theorems</h2>" ++ pr (OMap.toList thms) ++ br
-         ++ "<h2>Axioms</h2>" ++ pr (OMap.toList axs)
+      in pretty' "Theorems" thms ++ pretty' "Axioms" axs
 
-prettyHtml :: Pretty a => GlobalAnnos -> a -> String
-prettyHtml ga = renderHtml ga . pretty
+-- | render list of elements in html using pretty. catches empty lists.
+prettyHtmlLs :: Pretty a => GlobalAnnos -> String -> [a] -> String
+prettyHtmlLs ga s ls = if null ls then "<br /><em>no " ++ s ++ "</em>" else
+  "<h3>" ++ s ++ "</h3>" ++ intercalate "<br />"
+  (map (renderHtml ga . pretty) ls)
 
+-- | display nodes symbol set in html
 showNodeSymbols :: GlobalAnnos -> DGNodeLab -> String
-showNodeSymbols ga lbl = let pr = intercalate "<br />" . map (prettyHtml ga) in
-  case nodeInfo lbl of
-        DGRef _ _ -> "<em>reference node, no local symbols</em>"
-        DGNode orig _ -> case orig of
-            DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ -> pr
-              $ map (G_symbol lid) $ mostSymsOf lid dsig
-            DGRestriction _ hidSyms -> pr $ Set.toList hidSyms
-            -- TODO check below with christian
-            _ -> "<em>unexpected node origin</em>"
+showNodeSymbols ga lbl = let
+  pr = prettyHtmlLs ga
+  in case nodeInfo lbl of
+    DGRef _ _ -> "<em>reference node, no local symbols</em>"
+    DGNode orig _ -> case orig of
+      DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ -> pr "Symbols"
+        $ map (G_symbol lid) $ mostSymsOf lid dsig
+      DGRestriction _ hidSyms -> pr "Hidden Symbols" $ Set.toList hidSyms
+      -- TODO check below with christian
+      _ -> "<em>unexpected node origin</em>"
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
