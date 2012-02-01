@@ -11,6 +11,8 @@
 \usepackage{courier}
 \usepackage{unicode-chars}
 
+\usepackage[british]{babel}
+
 \usepackage[hide]{ed}  % set to hide for producing a released version
 
 \usepackage{alltt}
@@ -841,7 +843,9 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
   development graph.
 
 \item[Relative interpretation]
-  is described in \cite{colore-fois}. It is represented by a theorem link 
+  is formally defined in \cite{colore-fois}.  Informally, one module relatively interprets those “modules whose theorems are preserved within the current module through [a] mapping. There exists a mapping between modules such that all theorems of the other module hold in the current module after the mapping is applied.” \cite{Colore-metadata}
+
+  \Hets represents relative interpretation by a theorem link 
   (red arrow) in the development graph.
 
   The \HetCASL syntax for relative interpretations is
@@ -856,13 +860,14 @@ or
 \begin{quote}
 \textit{name1Old} |-> \textit{name1New}, \textit{name2Old} |-> \textit{name2New}.
 \end{quote}
-  We provide a concrete example in Sect.~\ref{sec:relat-interpr} below.
+  We provide a concrete examples in Sect.~\ref{sec:examples} below.
   
   Just as with imports (see above), \Hets supports different types 
   of references to resources here, such as URIs.
   
-\item[Nonconservative extension]
-  is represented by a theorem link (red arrow) in the development graph. 
+\item[Non-conservative extension] is informally defined as follows:  One module non-conservatively extends other modules, if its “axioms entail new facts for the shared lexicon of the [other] module(s). [That is, the] shared lexicon between the current module and a [non-conservatively extended] module are not logically equivalent with respect to their modules.” \cite{Colore-metadata}.
+
+  \Hets represents non-conservative extension by a theorem link (red arrow) in the development graph. 
   
 \ednote{CL: show the Hets view syntax}
   
@@ -877,9 +882,10 @@ or
   to show other theories in the development graph, without any connection 
   to the current theory.
   
-  \ednote{CL: show the Hets library (?) syntax} a list 
-  of resources to be shown in the development graph. The resource-names can be 
-  of different type here, too.
+  For loading such theories, \HetCASL employs the same syntax as for loading theories that are connected to other theories, i.e.\ on loading theories, \Hets does not care about their relations:
+\begin{quote}
+\textbf{from} \textit{library} \textbf{get} \textit{spec$_1$}, \dots, \texttt{spec$_n$}
+\end{quote}
 \end{description}
 
 Except for importation and inclusion, you can specify an optional symbol map 
@@ -896,27 +902,14 @@ This section introduces several typical examples of using Common Logic ontologie
 \subsubsection{Renaming Symbols with Symbol Maps}
 \label{sec:renam-symb-with}
 
-\ednote{CL: still need to port this to \HetCASL syntax}This example has two almost identical files, \texttt{upper.clif} and 
+This example has two almost identical Common Logic texts, \texttt{upper.clif} and 
 \texttt{lower.clif}; these can be found in the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}. The only difference in the actual axioms is that 
 \texttt{upper.clif} uses uppercase predicates while \texttt{lower.clif} 
-uses lowercase predicates. The symbol is added at the end of the relation
-definition in parentheses. Only those names that differ between source
-and target need to be listed. The other names are implicitly the same. 
-A mapping of a single name is defined with 
-``\texttt{nameInTargetFile |-> nameInCurrentFile}''; multiple mappings are 
-separated by commas. Note that in Common Logic, a comma can be part of a name.
-Hence a space must be placed between the separation-comma and a name.\\
-
+uses lowercase predicates:
 \begin{description}
 \item[upper.clif:]~\\
 \begin{lstlisting}[language=clif]
 (cl-text upper
-  (cl-comment '(nonconservative-extension lower
-    ( a |-> A
-    , b |-> B
-    ))'
-  )
-  
   (forall (x y) (iff (A x y)
                      (B x y)))
 )
@@ -924,15 +917,31 @@ Hence a space must be placed between the separation-comma and a name.\\
 \item[lower.clif:]~\\
 \begin{lstlisting}[language=clif]
 (cl-text lower
-  (cl-comment '(nonconservative-extension upper
-    (A |-> a
-   , B |-> b))')
-  
   (forall (x y) (iff (a x y)
                      (b x y)))
 )
 \end{lstlisting}
 \end{description}
+
+The heterogeneous library \texttt{CommonLogic/Examples/SymbolMap.het} in the \Hets library \cite{hets-library:URL} establishes a mapping (actually: a relative interpretation) between these two Common Logic texts:
+
+\begin{lstlisting}[language=hetcasl]
+library SymbolMap
+
+logic CommonLogic
+
+from upper get upper
+from lower get lower
+
+view v : { lower with a |-> A , b |-> B } to upper
+view w : { upper with A |-> a , B |-> b } to lower 
+\end{lstlisting}
+
+A symbol map only needs to list those names that differ between the source
+and the target ontology; the other names (none in this concrete case) are implicitly the same.  A mapping of a single name is defined with 
+``\texttt{nameInTargetFile |-> nameInCurrentFile}''; multiple mappings are 
+separated by commas. Note that in Common Logic, a comma can be part of a name.
+Hence a space must be placed between the separation-comma and a name.
 
 \subsubsection{Relative Interpretation in COLORE}\label{sec:relat-interpr}
 
@@ -980,7 +989,7 @@ view v : AtomlessBooleanLattice to RegionBooleanContactAlgebra
 
 This example defines a partial order twice: once as an extension of a strict partial order, and once directly.  Then, we connect both definitions by a view that expresses the relative interpretation.
 
-The sources are available from the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}.
+The source is available as \texttt{CommonLogic/Examples/Partial\_Orders.het} directory in the \Hets library \cite{hets-library:URL}.
 
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif]
 logic CommonLogic
