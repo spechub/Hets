@@ -867,9 +867,7 @@ or
   
 \item[Non-conservative extension] is informally defined as follows:  One module non-conservatively extends other modules, if its “axioms entail new facts for the shared lexicon of the [other] module(s). [That is, the] shared lexicon between the current module and a [non-conservatively extended] module are not logically equivalent with respect to their modules.” \cite{Colore-metadata}.
 
-  \Hets represents non-conservative extension by a theorem link (red arrow) in the development graph. 
-  
-\ednote{CL: show the Hets view syntax}
+  \Hets represents non-conservative extension by a theorem link (red arrow) in the development graph.\ednote{CL: show the Hets view syntax}
   
   Just as with imports (\ref{descr:link_import}), \Hets supports different types 
   of references to resources here, as e.g. URIs.
@@ -1129,7 +1127,7 @@ In the previous example, we established a link between an OWL ontology and a Com
 
 \HetCASL's view mechanism offers an alternative to that.  A view from one ontology to another ontology in the same logic has been shown in Sect.~\ref{sec:relat-interpr}, but it is also possible to have views across logics, as long as there is a translation between these logics that is known to \Hets (cf.\ Sect.~\ref{comorphisms}).
 
-The following example establishes a view between the OWL Time ontology and its reimplementation in Common Logic, \ednote{CL: There is no way to make that explicit in \HetCASL, is there? TM: you mean the datatype stuff that the OWL to CL translation generates? We should modify the translation to generate this only if really needed.}using the ``OWL22CommonLogic'' translation:\ednote{CL: I will also put this into the \Hets library}
+The following example, which is available as \texttt{Ontology/Examples/TimeInOWLandCL.het} in the \Hets library \cite{hets-library:URL}, establishes a view between the OWL Time ontology and its reimplementation in Common Logic, \ednote{CL: There is no way to make that explicit in \HetCASL, is there?\\ TM: you mean the datatype stuff that the OWL to CL translation generates? We should modify the translation to generate this only if really needed.\\ CL: No, I just thought (and was wrong) that \HetCASL had no way of explicitly choosing a logic translation.  But not I don't understand what \emph{you} mean.  Maybe it's related to the error that I get when loading the file; see my ticket.}using the ``OWL22CommonLogic'' translation:
 
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif,alsolanguage=owl2Manchester]
 logic OWL
