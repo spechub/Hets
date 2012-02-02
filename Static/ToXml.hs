@@ -102,10 +102,9 @@ lnode ga lenv (_, lbl) =
                        $ map (prettyRangeElem "Symbol" ga)
                        $ Set.toList hidSyms
                    _ -> []
-      ++ case dgn_theory lbl of
+      ++ case simplifyTh $ dgn_theory lbl of
         G_theory lid (ExtSign sig _) _ thsens _ -> let
-                 (axs, thms) = OMap.partition isAxiom $ OMap.map
-                               (mapValue $ simplify_sen lid sig) thsens
+                 (axs, thms) = OMap.partition isAxiom thsens
                  in subnodes "Axioms"
                     (map (mkAxDocNode ga . print_named lid) $ toNamedList axs)
                     ++ subnodes "Theorems"
