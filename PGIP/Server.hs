@@ -459,35 +459,20 @@ showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
 showLocalTh dg (_, lbl) fstLine = let
   ga = globalAnnos dg
   in mkHtmlElem fstLine [] ++ "<h2>" ++ fstLine ++ "</h2>"
-    ++ showNodeSymbols ga lbl
     ++ showThmsAndAxs ga (dgn_theory lbl)
 
 showThmsAndAxs :: GlobalAnnos -> G_theory -> String
-showThmsAndAxs ga gTh = case gTh of
-  G_theory lid1 (ExtSign sig1 _) _ thsens _ -> let
-      pretty' s = prettyHtmlLs ga s . OMap.toList
-      (axs, thms) = OMap.partition isAxiom $ OMap.map
-                      (mapValue $ simplify_sen lid1 sig1) thsens
-      in pretty' "Theorems" thms ++ pretty' "Axioms" axs
-
--- | render list of elements in html using pretty. catches empty lists.
-prettyHtmlLs :: Pretty a => GlobalAnnos -> String -> [a] -> String
-prettyHtmlLs ga s ls = if null ls then "<br /><em>no " ++ s ++ "</em>" else
-  "<h3>" ++ s ++ "</h3>" ++ intercalate "<br />"
-  (map (renderHtml ga . pretty) ls)
-
--- | display nodes symbol set in html
-showNodeSymbols :: GlobalAnnos -> DGNodeLab -> String
-showNodeSymbols ga lbl = let
-  pr = prettyHtmlLs ga
-  in case nodeInfo lbl of
-    DGRef _ _ -> "<em>reference node, no local symbols</em>"
-    DGNode orig _ -> case orig of
-      DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ -> pr "Symbols"
-        $ map (G_symbol lid) $ mostSymsOf lid dsig
-      DGRestriction _ hidSyms -> pr "Hidden Symbols" $ Set.toList hidSyms
-      -- TODO check below with christian
-      _ -> "<em>unexpected node origin</em>"
+showThmsAndAxs ga gTh = case simplifyTh gTh of
+  G_theory lid (ExtSign _ sig) _ thsens _ -> let
+      pretty' f s m = case mkPrettyHtml f m of
+                      [] -> printNl $ italic $ "no " ++ s
+                      ls -> (printNl (bold s)) ++ ls
+      mkPrettyHtml f = renderHtml ga . f . map (print_named lid) . toNamedList
+      (axs, thms) = OMap.partition isAxiom thsens
+      printNl e = concatMap ppElement [plain "", e, plain ""]
+      in pretty' vsep "Theorems" thms ++ pretty' vcat "Axioms" axs
+        ++ (printNl $ bold "Signature")
+        ++ renderHtml ga (vcat $ map pretty $ Set.toList sig)
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
