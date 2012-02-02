@@ -103,7 +103,7 @@ lnode ga lenv (_, lbl) =
                        $ Set.toList hidSyms
                    _ -> []
       ++ case simplifyTh $ dgn_theory lbl of
-        G_theory lid (ExtSign sig _) _ thsens _ -> let
+        G_theory lid _ _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom thsens
                  in subnodes "Axioms"
                     (map (mkAxDocNode ga . print_named lid) $ toNamedList axs)
