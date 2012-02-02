@@ -955,10 +955,17 @@ The COLORE \cite{Colore} module \texttt{Region\-Boolean\-Contact\-Algebra} relat
 \label{fig:colore-graph}
 \end{figure}
 
-For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.  The \HetCASL variant of expressing the relative interpretation can be found in the \texttt{CommonLogic/Examples} directory.  Here, it is not necessary to rename symbols, as both modules have the same signature.
+For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.  The \HetCASL variant of expressing the relative interpretation can be found in \texttt{CommonLogic/Examples/COLORE-RelativeInterpretation}.  Here, it is not necessary to rename symbols, as both modules have the same signature.
+
+For easier understanding, the \HetCASL implementation includes literal copies of the \texttt{Region\-Boolean\-Contact\-Algebra} and \texttt{Atomless\-Boolean\-Lattice} modules; actually, they could as well have been included from their respective files using \texttt{from ... get ...}.
 
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif]
+library COLORE-RelativeInterpretation
+
 logic CommonLogic
+
+from CommonLogic/colore/lat/BooleanLattice get BooleanLattice
+from CommonLogic/colore/ca/BooleanContactAlgebra get BooleanContactAlgebra
 
 spec AtomlessBooleanLattice =
   BooleanLattice
@@ -1068,12 +1075,13 @@ library AAL
 
 logic OWL
 
-from OpenAALOntology get httpwwwdfkideskshetsontologyunnamed
-%% this is the default name that Hets assigns to unnamed ontologies
+from OpenAALOntology get httpwwwdfkideskshetsontologyunnamed |-> OpenAAL
+%% this is the default name that Hets assigns to unnamed ontologies,
+%% but we rename it to something nicer
 
 spec OurAAL =
   %% Import the OpenAAL OWL ontology.
-  httpwwwdfkideskshetsontologyunnamed
+  OpenAAL
   ... %% some other extensions not shown here
   %% Extend it by an RCC-style spatial calculus
   %% formalized in first order logic.
