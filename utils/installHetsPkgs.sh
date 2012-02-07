@@ -38,7 +38,7 @@ cabal install aterm random xml fgl HTTP tar glade haskeline \
               hexpat wai-extra warp uni-uDrawGraph parsec1 $opts
 
 cabal install \
-  http://www.dfki.de/sks/hets/src-distribution/programatica-1.0.0.3.tar.gz \
+  http://www.dfki.de/sks/hets/src-distribution/programatica-1.0.0.4.tar.gz \
   --global --prefix=$pre
 
 ghc-pkg hide parsec1
