@@ -25,6 +25,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.LibName
 import Common.Result
+import Common.Parsec (forget)
 import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
 import Common.SExpr
@@ -138,7 +139,6 @@ writeSoftFOL opts f gTh ln i c n msg = do
              "could not translate to " ++ msg ++ " file: " ++ f)
           ( \ d -> do
               let str = shows d "\n"
-                  forget = fmap (const ())
               case parse (if n == 0 then forget parseSPASS else forget tptp)
                    f str of
                 Left err -> putIfVerbose opts 0 $ show err
