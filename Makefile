@@ -289,7 +289,7 @@ FreeCAD_files = FreeCAD/As.hs
 OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
   OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
   OWL2/Profiles.hs
-  
+
 RDF_files = RDF/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
 	RDF/Sublogic.hs OWL2/AS.hs
 
@@ -381,7 +381,7 @@ FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
 
 OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
-	
+
 RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)
 
@@ -646,7 +646,8 @@ initialize_installer:
 
 # check out java parts for OWL
 owl_java:
-	svn co \
+	$(RM) -r OWL2/java/OwlApi
+	svn export \
   https://owlapi.svn.sourceforge.net/svnroot/owlapi/v3/trunk \
   OWL2/java/OwlApi
 
