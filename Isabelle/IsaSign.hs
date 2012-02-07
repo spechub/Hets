@@ -145,22 +145,21 @@ data MetaTerm = Term Term
               | Conditional [Term] Term -- List of preconditions, conclusion.
                 deriving (Eq, Ord, Show)
 
-mkSen :: Term -> Sentence
-mkSen t = Sentence
+mkSenAux :: Bool -> MetaTerm -> Sentence
+mkSenAux b t = Sentence
     { isSimp = False
-    , isRefuteAux = False
+    , isRefuteAux = b
     , thmProof = Nothing
-    , metaTerm = Term t }
+    , metaTerm = t }
+
+mkSen :: Term -> Sentence
+mkSen = mkSenAux False . Term
 
 mkCond :: [Term] -> Term -> Sentence
-mkCond conds concl = Sentence
-    { isSimp = False
-    , isRefuteAux = False
-    , thmProof = Nothing
-    , metaTerm = Conditional conds concl}
+mkCond conds = mkSenAux False . Conditional conds
 
 mkRefuteSen :: Term -> Sentence
-mkRefuteSen t = (mkSen t) { isRefuteAux = True }
+mkRefuteSen = mkSenAux True . Term
 
 isRefute :: Sentence -> Bool
 isRefute s = case s of
