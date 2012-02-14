@@ -100,7 +100,7 @@ echo ::Done
 
 #creating orig.tar.gz
 echo ::Creating orig.tar.gz archive
-tar -czf hets_$HETS_FULL_VERSION.orig.tar.gz $HETS_FOLDER
+tar -czf hets_$HETS_FULL_VERSION.orig.tar.gz hets 
 echo ::Done
 
 #detecting distributions for which to build
