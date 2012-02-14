@@ -14,6 +14,27 @@ HETS_VERSION=0.98
 HETS_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
 HETS_LIB_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
 
+export_repo()
+{
+REPO="$1"
+REPO_FOLDER="$2"
+FOLDER="$3"
+echo ::Checking out $REPO ...
+if [ -d $REPO_FOLDER ]; then
+        svn update -q $REPO_FOLDER || { rm -rf $REPO_FOLDER && svn checkout -q --force $REPO $REPO_FOLDER; }
+else
+        svn checkout -q $REPO $REPO_FOLDER
+fi
+echo ::Exporting $REPO ...
+svn -q --force export $REPO_FOLDER $FOLDER
+echo ::Done
+}
+
+installed() {
+	which $1 1> /dev/null || { echo "$1 not installed
+Bye." && exit; }
+}
+
 if [ -d $PWD/debian ]; then
 	echo Starting Hets debianize script
 else
@@ -21,6 +42,12 @@ else
 	echo Bye.
 	exit
 fi
+
+installed svn
+installed ant
+
+dpkg -s "openjdk-6-jdk" 1>/dev/null 2>/dev/null || { echo "Package openjdk-6-jre not installed
+Bye." && exit; }
 
 #Macro handling
 DIRNAME="`dirname "$0"`"
@@ -33,25 +60,20 @@ echo ::Revision detected: $HETS_REVISION
 #setting full version
 HETS_FULL_VERSION="$HETS_VERSION"r"$HETS_REVISION"
 #setting folder name
-HETS_FOLDER=$PWD/hets-$HETS_FULL_VERSION
+HETS_REPO_FOLDER=$PWD/hets-svn
+HETS_FOLDER=$PWD/hets
+HETS_LIB_REPO_FOLDER=$PWD/hets-lib-svn
 echo ::Using folder $HETS_FOLDER
 
-#checking out latest Hets version
-rm -rf $HETS_FOLDER
-echo ::Checking out $HETS_REPO ...
-svn -q export $HETS_REPO $HETS_FOLDER
-echo ::Done
+export_repo "$HETS_REPO" "$HETS_REPO_FOLDER" "$HETS_FOLDER"
 
-#checking out latest Hets-lib
-echo ::Checking out $HETS_LIB_REPO ...
-svn -q export $HETS_LIB_REPO $HETS_FOLDER/hets-lib
-echo ::Done
+export_repo "$HETS_LIB_REPO" "$HETS_LIB_REPO_FOLDER" "$HETS_FOLDER/hets-lib"
 
 #checking out Hets-owl-tools and compiling jar files
 HETS_OWL_TOOLS_FOLDER=$HETS_FOLDER/hets-owl-tools
 echo ::Compiling Hets OWL Tools
 cd $HETS_FOLDER
-make initialize_java 1>/dev/null 2>/dev/null
+make initialize_java 1>/dev/null || { echo Building Hets OWL Tools failed && echo Bye. && exit; }
 cd ..
 mkdir -p $HETS_FOLDER/hets-owl-tools
 cd $HETS_FOLDER/OWL2
@@ -78,7 +100,7 @@ echo ::Done
 
 #creating orig.tar.gz
 echo ::Creating orig.tar.gz archive
-tar -czf hets_$HETS_FULL_VERSION.orig.tar.gz hets-$HETS_FULL_VERSION
+tar -czf hets_$HETS_FULL_VERSION.orig.tar.gz $HETS_FOLDER
 echo ::Done
 
 #detecting distributions for which to build
