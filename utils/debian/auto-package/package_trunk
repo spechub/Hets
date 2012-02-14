@@ -26,6 +26,7 @@ else
         svn checkout -q $REPO $REPO_FOLDER
 fi
 echo ::Exporting $REPO ...
+rm -fr $FOLDER
 svn -q --force export $REPO_FOLDER $FOLDER
 echo ::Done
 }
@@ -46,7 +47,7 @@ fi
 installed svn
 installed ant
 
-dpkg -s "openjdk-6-jdk" 1>/dev/null 2>/dev/null || { echo "Package openjdk-6-jre not installed
+dpkg -s "openjdk-6-jdk" 1>/dev/null 2>/dev/null || { echo "Package openjdk-6-jdk not installed
 Bye." && exit; }
 
 dpkg -s "devscripts" 1>/dev/null 2>/dev/null || { echo "Package devscripts not installed

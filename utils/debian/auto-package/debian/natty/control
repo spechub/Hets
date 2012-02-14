@@ -39,6 +39,7 @@ Build-Depends:
  darwin,
  lib32stdc++6[amd64],
  texlive-latex-base,
+ texlive-latex-extra,
  texlive-pictures
 Standards-Version: 3.9.1
 Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
