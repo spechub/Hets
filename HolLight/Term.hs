@@ -19,13 +19,14 @@ Definition of terms for HolLight logic
 module HolLight.Term where
 
 data HolType = TyVar String | TyApp String [HolType]
-  deriving  (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read)
 
 data HolProof = NoProof deriving (Eq, Ord, Show)
 
-data HolParseType = Normal | Prefix | InfixL Int | InfixR Int | Binder deriving (Eq, Ord, Show, Read)
+data HolParseType = Normal | Prefix
+ | InfixL Int | InfixR Int | Binder deriving (Eq, Ord, Show, Read)
 
-data HolTermInfo = HolTermInfo (HolParseType,Maybe (String,HolParseType))
+data HolTermInfo = HolTermInfo (HolParseType, Maybe (String, HolParseType))
   deriving (Eq, Ord, Show, Read)
 
 data Term = Var String HolType HolTermInfo

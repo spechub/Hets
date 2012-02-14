@@ -45,12 +45,12 @@ instance Language HolLight where
 instance GetRange Sentence
 
 instance Syntax HolLight () () () where
-    parse_basic_spec HolLight = Nothing --Just basicSpec
-    -- default implementation should be sufficient
+    parse_basic_spec HolLight = Nothing {- Just basicSpec
+    default implementation should be sufficient -}
 
 instance Sentences HolLight Sentence Sign HolLightMorphism () where
-    map_sen HolLight _ s = return s
-    --other default implementations should be sufficient
+    map_sen HolLight _ = return
+    -- other default implementations should be sufficient
 
 -- | Sublogics
 instance SemiLatticeWithTop HolLightSL where
@@ -111,7 +111,7 @@ instance StaticAnalysis HolLight
     ()                       -- symbol
     ()                       -- raw_symbol
         where
-           --basic_analysis HolLight = Just basicHolAnalysis
+           -- basic_analysis HolLight = Just basicHolAnalysis
            empty_signature HolLight = emptySig
            is_subsig HolLight = isSubSig
            subsig_inclusion HolLight = defaultInclusion

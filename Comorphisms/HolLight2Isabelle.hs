@@ -201,7 +201,7 @@ translateTerm (Comb (Comb (Comb (Const "COND" _ _) i) t) e) vs = IsaSign.If
                                                                (translateTerm t vs)
                                                                (translateTerm e vs)
                                                                IsaSign.NotCont
-translateTerm (Comb c1@(Const c tp _) t) vs = if (is_abs t) || ((isAppT tp) && not (isQuantifier t) && not (isQuantifier c1) && c /= "@")
+translateTerm (Comb c1@(Const c tp _) t) vs = if (isAbs t) || ((isAppT tp) && not (isQuantifier t) && not (isQuantifier c1) && c /= "@")
                                            then IsaSign.App
                                                 (translateTerm c1 vs)
                                                 (translateTerm t vs)
