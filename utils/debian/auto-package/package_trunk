@@ -49,6 +49,10 @@ installed ant
 dpkg -s "openjdk-6-jdk" 1>/dev/null 2>/dev/null || { echo "Package openjdk-6-jre not installed
 Bye." && exit; }
 
+dpkg -s "devscripts" 1>/dev/null 2>/dev/null || { echo "Package devscripts not installed
+Bye." && exit; }
+
+
 #Macro handling
 DIRNAME="`dirname "$0"`"
 PWD="`cd "$DIRNAME" && pwd`"
