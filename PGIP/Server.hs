@@ -60,11 +60,10 @@ import Proofs.AbstractState
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
 
-import Common.AS_Annotation (isAxiom)
+import Common.AS_Annotation (SenAttr (..), isAxiom)
 import Common.Doc
 import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
-import Common.GlobalAnnotations (GlobalAnnos)
 import Common.LibName
 import qualified Common.OrderedMap as OMap
 import Common.PrintLaTeX
@@ -210,8 +209,7 @@ mkHtmlString path dirs = htmlHead ++ mkHtmlElem
 
 mkHtmlElem :: String -> [Element] -> String
 mkHtmlElem title body = ppElement $ unode "html"
-                [ unode "head" $ unode "title" title
-                , unode "body" body ]
+      [ unode "head" $ unode "title" title, unode "body" body ]
 
 mkHtmlPage :: FilePath -> [Element] -> IO Response
 mkHtmlPage path = return . mkOkResponse . mkHtmlString path
@@ -449,30 +447,36 @@ getHetsResult opts updates sessRef file query =
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
+{- | displays the global theory for a node with the option to select and prove
+theorems interactively (TODO: implement!) -}
 showGlobalTh :: DGraph -> G_theory -> String -> String
-showGlobalTh dg gTh fstLine = mkHtmlElem fstLine []
-  ++ "<h2>" ++ fstLine ++ "</h2>"
-  ++ showThmsAndAxs (globalAnnos dg) gTh
+showGlobalTh dg gTh fstLine = case simplifyTh gTh of
+  G_theory lid (ExtSign _ sig) _ thsens _ -> let
+    (axs, thms) = OMap.partition isAxiom thsens
+    prSl = showProverSelection $ sublogicOfTh gTh
+    prBt = add_attr (Attr (unqual "type") "button")
+      $ unode "button" "Prove"
+    ga = globalAnnos dg
+    thmSl = unode "form" $ map mkCB $ toNamedList thms where
+        mkCB (SenAttr s _ _ _ _ _ a) = add_attrs
+          [Attr (unqual "type") "checkbox", Attr (unqual "sentence")
+          (renderText ga $ pretty a)] $ unode "input" s
+    headr = unode "h2" fstLine
+    {- TODO: wrap those blocks differently (or not at all) to NOT screw up
+    html-styles -}
+    axShow = unode "" $ renderHtml ga $ vcat $ map (print_named lid)
+      $ toNamedList axs
+    sbShow = unode "" $ renderHtml ga $ vcat $ map pretty $ Set.toList sig
+    in mkHtmlElem fstLine [headr, unode "h4" "Theorems", prSl, prBt, thmSl,
+      unode "h4" "Axioms", axShow, unode "h4" "Symbols", sbShow]
 
 -- | display nodes local signature elements in html
 showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
-showLocalTh dg (_, lbl) fstLine = let
-  ga = globalAnnos dg
-  in mkHtmlElem fstLine [] ++ "<h2>" ++ fstLine ++ "</h2>"
-    ++ showThmsAndAxs ga (dgn_theory lbl)
+showLocalTh dg (_, lbl) = showGlobalTh dg $ dgn_theory lbl
 
-showThmsAndAxs :: GlobalAnnos -> G_theory -> String
-showThmsAndAxs ga gTh = case simplifyTh gTh of
-  G_theory lid (ExtSign _ sig) _ thsens _ -> let
-      pretty' f s m = case mkPrettyHtml f m of
-                      [] -> printNl $ italic $ "no " ++ s
-                      ls -> (printNl (bold s)) ++ ls
-      mkPrettyHtml f = renderHtml ga . f . map (print_named lid) . toNamedList
-      (axs, thms) = OMap.partition isAxiom thsens
-      printNl e = concatMap ppElement [plain "", e, plain ""]
-      in pretty' vsep "Theorems" thms ++ pretty' vcat "Axioms" axs
-        ++ (printNl $ bold "Signature")
-        ++ renderHtml ga (vcat $ map pretty $ Set.toList sig)
+showProverSelection :: G_sublogics -> Element
+showProverSelection subL = unode "select" $ map (unode "option" . strContent)
+  $ getProversAux Nothing subL
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
@@ -514,7 +518,10 @@ getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
 
 getProvers :: Maybe String -> G_sublogics -> String
-getProvers mt subL = ppTopElement . unode "provers" . map (unode "prover")
+getProvers mt subL = ppTopElement . unode "provers" $ getProversAux mt subL
+
+getProversAux :: Maybe String -> G_sublogics -> [Element]
+getProversAux mt subL = map (unode "prover")
     . nubOrd . map (getWebProverName . fst)
     . filterByComorph mt
     $ getAllAutomaticProvers subL
