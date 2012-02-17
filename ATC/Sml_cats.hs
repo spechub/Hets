@@ -1761,7 +1761,7 @@ instance ATermConvertibleSML LIB_ITEM where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Syntax.AS_Library.Download_items aa' ab' ac')
+                in Syntax.AS_Library.Download_items aa' (ItemMaps ab') ac'
             _ -> from_sml_ShATermError "LIB_ITEM" aterm
         where
             aterm = getATerm att'
@@ -1795,27 +1795,25 @@ skipPosFlag mcon att   =
                     b     = from_sml_ShATerm $ getATermByIndex1 b_i att
     _  -> (nullRange,False,att)
 
-instance ATermConvertibleSML ITEM_NAME_OR_MAP where
+instance ATermConvertibleSML ItemNameMap where
     from_sml_ShATerm att =
         case aterm of
-            (ShAAppl "item-name" [ aa ] _)  ->
+            ShAAppl "item-name" [aa] _ ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
-                in (Item_name aa')
-            (ShAAppl "item-name-map" [ aa,ab ] _)  ->
+                aa' = from_sml_ATermSIMPLE_ID $ getATermByIndex1 aa att
+                in ItemNameMap aa' Nothing
+            ShAAppl "item-name-map" [aa, ab] _ ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
-                ab' = from_sml_ATermSIMPLE_ID (getATermByIndex1 ab att)
-                ac' = pos_l
-                in (Item_name_map aa' ab' ac')
+                aa' = from_sml_ATermSIMPLE_ID $ getATermByIndex1 aa att
+                ab' = from_sml_ATermSIMPLE_ID $ getATermByIndex1 ab att
+                in ItemNameMap aa' $ Just ab'
             _ -> from_sml_ShATermError "ITEM_NAME_OR_MAP" aterm
         where
             aterm = getATerm att'
-            (pos_l,att') =
-                case getATerm att of
-                (ShAAppl "pos-ITEM-NAME-OR-MAP" [reg_i,item_i] _) ->
-                    (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> (nullRange,att)
+            att' = case getATerm att of
+                ShAAppl "pos-ITEM-NAME-OR-MAP" [_, item_i] _ ->
+                    getATermByIndex1 item_i att
+                _ -> att
 
 instance ATermConvertibleSML LibName where
     from_sml_ShATerm att =

@@ -417,7 +417,14 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
             ++ show ln' ++ " available: " ++ show (Map.keys libenv')
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
-            dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 items
+                (realItems, errs) = case items of
+                  ItemMaps ims -> (ims, [])
+                  UniqueItem i -> case Map.keys $ globalEnv dg' of
+                    [j] -> ([ItemNameMap j (Just i)], [])
+                    _ -> ([], [mkError
+                               "non-unique name within imported library" itm])
+            mapM_ liftR errs
+            dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 realItems
             return (itm, dg1, libenv', lg)
   Newlogic_defn ld _ -> ResultT $ do
     dg' <- anaLogicDef ld dg
@@ -428,7 +435,7 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
-  -> [ITEM_NAME_OR_MAP] -> Result DGraph
+  -> [ItemNameMap] -> Result DGraph
 anaItemNamesOrMaps libenv' ln refDG dg items = do
   (genv1, dg1) <- foldM
     (anaItemNameOrMap libenv' ln refDG) (globalEnv dg, dg) items
@@ -498,11 +505,9 @@ anaViewType lg ln dg parSig opts name (View_type aspSrc aspTar pos) = do
           (srcNsig, tarNsig), dg'')
 
 anaItemNameOrMap :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
-  -> ITEM_NAME_OR_MAP -> Result (GlobalEnv, DGraph)
-anaItemNameOrMap libenv ln refDG res itm =
-   anaItemNameOrMap1 libenv ln refDG res $ case itm of
-     Item_name name -> (name, name)
-     Item_name_map old new _ -> (old, new)
+  -> ItemNameMap -> Result (GlobalEnv, DGraph)
+anaItemNameOrMap libenv ln refDG res (ItemNameMap old m) =
+   anaItemNameOrMap1 libenv ln refDG res (old, fromMaybe old m)
 
 -- | Auxiliary function for not yet implemented features
 anaErr :: String -> a

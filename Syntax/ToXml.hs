@@ -50,11 +50,16 @@ libItem ga li = case li of
         ++ concatMap (gmapping ga) mapping
   Download_items n mapping rg ->
     add_attrs (mkNameAttr (show $ getLibId n) : rgAttrs rg)
-      $ unode "Import" $ map itemNameOrMap mapping
+      $ unode "Import" $ downloadItems mapping
   Logic_decl n rg ->
     add_attrs (mkNameAttr (showDoc n "") : rgAttrs rg)
       $ unode "Logic" ()
   _ -> prettyElem "Unsupported" ga li
+
+downloadItems :: DownloadItems -> [Element]
+downloadItems d = case d of
+  ItemMaps l -> map itemNameOrMap l
+  UniqueItem i -> [add_attr (mkAttr "as" $ tokStr i) $ unode "Item" ()]
 
 spec :: GlobalAnnos -> SPEC -> Element
 spec ga s = case s of
@@ -91,11 +96,11 @@ fitArg ga fa = case fa of
     add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
     $ unode "Spec" $ unode "Actuals" $ map (annoted fitArg ga) fargs
 
-itemNameOrMap :: ITEM_NAME_OR_MAP -> Element
-itemNameOrMap itm = (case itm of
-  Item_name name -> add_attr (mkNameAttr $ tokStr name)
-  Item_name_map name as _ ->
-    add_attrs [mkNameAttr $ tokStr name, mkAttr "as" $ tokStr as])
+itemNameOrMap :: ItemNameMap -> Element
+itemNameOrMap (ItemNameMap name m) =
+  add_attrs (mkNameAttr (tokStr name) : case m of
+    Nothing -> []
+    Just as -> [mkAttr "as" $ tokStr as])
   $ unode "Item" ()
 
 gmapping :: GlobalAnnos -> G_mapping -> [Element]

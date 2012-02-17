@@ -84,13 +84,18 @@ instance Pretty LIB_ITEM where
                             $+$ keyword endS
         Download_items l ab _ ->
             topKey fromS <+> fsep ((pretty l <+> keyword getS)
-                                   : punctuate comma (map pretty ab))
+                                   : prettyDownloadItems ab)
         Syntax.AS_Library.Logic_decl aa _ ->
             keyword logicS <+> pretty aa
         Syntax.AS_Library.Newlogic_defn nl _ ->
             pretty nl
         Syntax.AS_Library.Newcomorphism_defn nc _ ->
             pretty nc
+
+prettyDownloadItems :: DownloadItems -> [Doc]
+prettyDownloadItems d = case d of
+  ItemMaps l -> punctuate comma $ map pretty l
+  UniqueItem i -> [mapsto, structSimpleId i]
 
 instance Pretty GENERICITY where
     pretty (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]
@@ -101,11 +106,10 @@ printPARAMS (Params aa) = cat $ map (brackets . rmTopKey . pretty ) aa
 printIMPORTED :: IMPORTED -> Doc
 printIMPORTED (Imported aa) = case aa of
     [] -> empty
-    _ -> sep [ keyword givenS
-              , sepByCommas $ map printGroupSpec aa]
+    _ -> sep [keyword givenS, sepByCommas $ map printGroupSpec aa]
 
-instance Pretty ITEM_NAME_OR_MAP where
-    pretty l = case l of
-        Item_name aa -> structSimpleId aa
-        Item_name_map aa ab _ ->
-            fsep [structSimpleId aa, mapsto, structSimpleId ab]
+instance Pretty ItemNameMap where
+    pretty (ItemNameMap a m) = fsep
+       $ structSimpleId a : case m of
+          Nothing -> []
+          Just b -> [mapsto, structSimpleId b]

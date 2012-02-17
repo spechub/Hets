@@ -149,7 +149,7 @@ libItem l =
     do s1 <- asKey fromS
        iln <- libName
        s2 <- asKey getS
-       (il, ps) <- separatedBy itemNameOrMap anComma
+       (il, ps) <- downloadItems
        q <- optEnd
        return (Download_items iln il
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
@@ -189,6 +189,16 @@ libItem l =
           return (Syntax.AS_Library.Spec_defn (mkSimpleId "")
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
+downloadItems :: AParser st (DownloadItems, [Token])
+downloadItems = do
+    (il, ps) <- separatedBy itemNameOrMap anSemiOrComma
+    return (ItemMaps il, ps)
+  <|> do
+    s <- asKey mapsTo
+    i <- simpleId
+    return (UniqueItem i, [s])
+
+
 -- | Parse view type
 viewType :: LogicGraph -> AParser st VIEW_TYPE
 viewType l = do
@@ -203,17 +213,14 @@ simpleIdOrDDottedId = pToken $ liftM2 (++)
   $ optionL $ try $ string ".." <++> scanAnyWords
 
 -- | Parse item name or name map
-itemNameOrMap :: AParser st ITEM_NAME_OR_MAP
+itemNameOrMap :: AParser st ItemNameMap
 itemNameOrMap = do
     i1 <- simpleIdOrDDottedId
-    i' <- optionMaybe $ do
-        s <- asKey mapsTo
-        i <- if isInfixOf ".." $ tokStr i1
+    i2 <- optionMaybe $ do
+        _ <- asKey mapsTo
+        if isInfixOf ".." $ tokStr i1
              then simpleIdOrDDottedId else simpleId
-        return (i, s)
-    return $ case i' of
-        Nothing -> Item_name i1
-        Just (i2, s) -> Item_name_map i1 i2 $ tokPos s
+    return $ ItemNameMap i1 i2
 
 optEnd :: AParser st (Maybe Token)
 optEnd = try
