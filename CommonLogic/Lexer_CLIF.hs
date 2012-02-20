@@ -32,18 +32,18 @@ name = do
         return $ (tokStr x)
 
 quotedstring :: CharParser st String
-quotedstring = do
+quotedstring = many white >> do
    char '\''
-   s <- (many $ (satisfy clLetters2) <|> (oneOf whitec)
+   s <- (many $ (satisfy clLetters2) <|> oneOf whitec
          <|> char '(' <|> char ')' <|> char '\"')
         <?> "quotedstring: word"
    char '\''
    return $ s
 
 enclosedname :: CharParser st String
-enclosedname = do
+enclosedname = many white >> do
    char '\"'
-   s <- (many $ (satisfy clLetters2) <|> (oneOf whitec)
+   s <- (many $ (satisfy clLetters2) <|> oneOf whitec
          <|> char '(' <|> char ')' <|> char '\'')
          <?> "word"
    char '\"' <?> "\""
@@ -52,9 +52,10 @@ enclosedname = do
 -- | parser for parens
 parens :: CharParser st a -> CharParser st a
 parens p = do
-   spaces
-   oParenT >> p << cParenT
+   many white
+   oParenT >> many white >> p << many white << cParenT
 
+{-
 -- | parser for ignoring parentheses
 -- why do i need that?
 par :: CharParser st a -> CharParser st a
@@ -66,57 +67,87 @@ par p = do
   <|> do
     x <- p
     return x
+-}
 
 -- Parser Keywords
 andKey :: CharParser st Id.Token
-andKey = Lexer.pToken $ string andS
+andKey = do
+  many white
+  Lexer.pToken $ string andS
 
 notKey :: CharParser st Id.Token
-notKey = Lexer.pToken $ string notS
+notKey = do
+  many white
+  Lexer.pToken $ string notS
 
 orKey :: CharParser st Id.Token
-orKey = Lexer.pToken $ string orS
+orKey = do
+  many white
+  Lexer.pToken $ string orS
 
 ifKey :: CharParser st Id.Token
-ifKey = (Lexer.pToken $ string ifS)
+ifKey = do
+  many white
+  Lexer.pToken $ string ifS
 
 iffKey :: CharParser st Id.Token
-iffKey = (Lexer.pToken $ string iffS)
+iffKey = do
+  many white
+  Lexer.pToken $ string iffS
 
 forallKey :: CharParser st Id.Token
-forallKey = Lexer.pToken $ string forallS
+forallKey = do
+  many white
+  Lexer.pToken $ string forallS
 
 existsKey :: CharParser st Id.Token
-existsKey = Lexer.pToken $ string existsS
+existsKey = do
+  many white
+  Lexer.pToken $ string existsS
 
 -- cl :: CharParser st a -> CharParser st a
 -- cl p = string "cl-" >> p
 
 -- cl keys
 clTextKey :: CharParser st Id.Token
-clTextKey = Lexer.pToken $ try (string "cl-text") <|> string "cl:text"
+clTextKey = do
+  many white
+  Lexer.pToken $ try (string "cl-text") <|> string "cl:text"
 
 clModuleKey :: CharParser st Id.Token
-clModuleKey = Lexer.pToken $ try (string "cl-module") <|> string "cl:module"
+clModuleKey = do
+  many white
+  Lexer.pToken $ try (string "cl-module") <|> string "cl:module"
 
 clImportsKey :: CharParser st Id.Token
-clImportsKey = Lexer.pToken $ try (string "cl-imports") <|> string "cl:imports"
+clImportsKey = do
+  many white
+  Lexer.pToken $ try (string "cl-imports") <|> string "cl:imports"
 
 clExcludesKey :: CharParser st Id.Token
-clExcludesKey = Lexer.pToken 
-    $ try (string "cl-excludes") <|> string "cl:excludes"
+clExcludesKey = do
+  many white
+  Lexer.pToken $ try (string "cl-excludes") <|> string "cl:excludes"
 
 clCommentKey :: CharParser st Id.Token
-clCommentKey = Lexer.pToken $ try (string "cl-comment") <|> string "cl:comment"
+clCommentKey = do
+  many white
+  Lexer.pToken $ try (string "cl-comment") <|> string "cl:comment"
 
 clRolesetKey :: CharParser st Id.Token
-clRolesetKey = Lexer.pToken $ string "cl-roleset" <|> string "roleset:"
+clRolesetKey = do
+  many white
+  Lexer.pToken $ string "cl-roleset" <|> string "roleset:"
 
 seqmark :: CharParser st Id.Token
-seqmark = Lexer.pToken $ reserved reservedelement2 $ scanSeqMark
+seqmark = do
+  many white
+  Lexer.pToken $ reserved reservedelement2 $ scanSeqMark
 
 identifier :: CharParser st Id.Token
-identifier = Lexer.pToken $ reserved reservedelement $ scanClWord
+identifier = do
+  many white
+  Lexer.pToken $ reserved reservedelement $ scanClWord
 
 scanSeqMark :: CharParser st String
 scanSeqMark = do
@@ -159,8 +190,36 @@ reservedelement2 = ["=", "and", "or", "iff", "if", "forall", "exists", "not"
                    , "cl:text", "cl:imports", "cl:excludes", "cl:module"
                    , "cl:comment", "roleset:"]
 
+commentBlockOpen :: String
+commentBlockOpen = "/*"
+
+commentBlockClose :: String
+commentBlockClose = "*/"
+
+commentLineStart :: String
+commentLineStart = "//"
+
+newLinec :: String
+newLinec = "\n\r"
+
 whitec :: String
-whitec = "\n\r\t\v\f "
+whitec = newLinec ++ "\t\v\f "
+
+whiteSpace :: CharParser st String
+whiteSpace = many1 $ oneOf whitec
+
+commentBlock :: CharParser st String
+commentBlock =
+  string commentBlockOpen >> manyTill anyChar (try $ string commentBlockClose)
+
+commentLine :: CharParser st String
+commentLine =
+  string commentLineStart >> manyTill anyChar (try $ oneOf newLinec)
 
 white :: CharParser st String
-white = many1 $ oneOf whitec
+white =
+    whiteSpace
+  <|>
+    try commentLine
+  <|>
+    commentBlock

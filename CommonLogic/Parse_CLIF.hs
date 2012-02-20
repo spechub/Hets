@@ -38,9 +38,11 @@ import Text.ParserCombinators.Parsec as Parsec
 cltext :: CharParser st TEXT_META
 cltext = do
     nt <- try namedtext
+    many white
     return $ tm nt
   <|> do
     t <- text
+    many white
     return $ tm t
   where tm :: TEXT -> TEXT_META
         tm t = Text_meta { AS.getText = t
@@ -60,7 +62,7 @@ namedtext = parens $ do
     return $ Named_text n (Text [] nullRange) nullRange
 
 text :: CharParser st TEXT
-text = do
+text = many white >> do
     phr <- many1 phrase --was many1 (not as in standard)
     return $ Text phr nullRange
 
@@ -68,27 +70,29 @@ text = do
 -- keys set here to prevent try in more complex parser to get the right
 -- error message in ex. the following text
 phrase :: CharParser st PHRASE
-phrase = do
-    try (oParenT >> clModuleKey)
+phrase = many white >> (do
+    try (oParenT >> many white >> clModuleKey)
     m <- pModule
+    many white
     cParenT
     return $ Module m
   <|> do
-    try (oParenT >> clImportsKey)
+    try (oParenT >> many white >> clImportsKey)
     i <- importation
+    many white
     cParenT
     return $ Importation i
   <|> do
-    try (oParenT >> clCommentKey)
-    spaces
+    try (oParenT >> many white >> clCommentKey)
     c <- quotedstring <|> enclosedname
-    spaces
     t <- comment_txt <?> "comment: 3"
+    many white
     cParenT
     return $ Comment_text (Comment c nullRange) t nullRange
   <|> do
     s <- sentence
     return $ Sentence s
+  )
 
 comment_txt :: CharParser st TEXT
 comment_txt = do
@@ -108,15 +112,17 @@ pModule = do
 
 -- | parser for
 pModExcl :: CharParser st ([NAME], TEXT)
-pModExcl = do
-    try (oParenT >> clExcludesKey)
+pModExcl = many white >> (do
+    try (oParenT >> many white >> clExcludesKey)
     exs <- many identifier
+    many white
     cParenT
     txt <- text
     return (exs, txt)
   <|> do
     txt <- text
     return ([], txt)
+  )
 
 importation :: CharParser st IMPORTATION
 importation = do
@@ -128,15 +134,14 @@ importation = do
 sentence :: CharParser st SENTENCE
 sentence = parens $ do
     ck <- try clCommentKey
-    spaces
     c <- quotedstring <|> enclosedname
-    spaces
     s <- sentence
     return $ Comment_sent (Comment c $ Range $ rangeSpan c) s
            $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan s]
   <|> do
     t0 <- try rolesetTerm
     nts <- many rolesetNT
+    many white
     cParenT
     return $ rolesetSentence t0 nts
   <|> do
@@ -223,14 +228,17 @@ boundlist = many $ do
     nos <- intNameOrSeqMark
     return $ Right nos
   <|> do
+    many white
     oParenT
     nos <- intNameOrSeqMark
     t <- term
+    many white
     cParenT
     return $ Left $ (nos,t)
 
 atom :: CharParser st ATOM
 atom = do
+    many white
     Lexer.pToken $ string "="
     t1 <- term
     t2 <- term
@@ -249,13 +257,9 @@ term = do
 
 term_fun_cmt :: CharParser st TERM
 term_fun_cmt = parens $ do
-  spaces
   ck <- try clCommentKey
-  spaces
   c <- quotedstring <|> enclosedname
-  spaces
   t <- term
-  spaces
   return $ Comment_term t (Comment c $ Range $ rangeSpan c)
          $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan t]
  <|> do
@@ -274,11 +278,9 @@ termseq = do
 rolesetTerm :: CharParser st TERM
 rolesetTerm = do
   t0 <- term
-  spaces
+  many white
   oParenT
-  spaces
   clRolesetKey
-  spaces
   return t0
 
 rolesetNT :: CharParser st (NAME, TERM)
