@@ -453,30 +453,39 @@ showGlobalTh :: DGraph -> G_theory -> String -> String
 showGlobalTh dg gTh fstLine = case simplifyTh gTh of
   G_theory lid (ExtSign _ sig) _ thsens _ -> let
     (axs, thms) = OMap.partition isAxiom thsens
-    prSl = showProverSelection $ sublogicOfTh gTh
-    prBt = add_attr (Attr (unqual "type") "button")
-      $ unode "button" "Prove"
     ga = globalAnnos dg
-    thmSl = unode "form" $ map mkCB $ toNamedList thms where
+    -- create button and menu for proving
+    prSl = showProverSelection $ sublogicOfTh gTh
+    prBt = [ Attr (unqual "type") "submit"
+           , Attr (unqual "value") "Prove"
+           , Attr (unqual "enctype") "multipart/form-data"
+           , Attr (unqual "method") "post"
+           , Attr (unqual "action") "?prove" ]
+           `add_attrs` (unode "input" ())
+    -- create list of theorems, selectable for proving
+    thmSl = map mkCB $ toNamedList thms where
         mkCB (SenAttr s _ _ _ _ _ a) = add_attrs
-          [Attr (unqual "type") "checkbox", Attr (unqual "sentence")
-          (renderText ga $ pretty a)] $ unode "input" s
+          [Attr (unqual "type") "checkbox", Attr (unqual "name") s
+          , Attr (unqual "sentence") (renderText ga $ pretty a)] $
+          unode "input" s
+    -- combine elements within a form
+    thmMenu = unode "form" $ prSl : 
+      (intersperse (unode "br " ()) $ prBt : thmSl)
+    -- formatting stuff
     headr = unode "h2" fstLine
-    {- TODO: wrap those blocks differently (or not at all) to NOT screw up
-    html-styles -}
-    axShow = unode "" $ renderHtml ga $ vcat $ map (print_named lid)
-      $ toNamedList axs
-    sbShow = unode "" $ renderHtml ga $ vcat $ map pretty $ Set.toList sig
-    in mkHtmlElem fstLine [headr, unode "h4" "Theorems", prSl, prBt, thmSl,
-      unode "h4" "Axioms", axShow, unode "h4" "Symbols", sbShow]
+    axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
+    sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
+    in mkHtmlElem fstLine [headr, unode "h4" "Theorems", thmMenu] --prSl, prBt
+      ++ axShow ++ "\n<br>" ++ sbShow
 
 -- | display nodes local signature elements in html
 showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
 showLocalTh dg (_, lbl) = showGlobalTh dg $ dgn_theory lbl
 
 showProverSelection :: G_sublogics -> Element
-showProverSelection subL = unode "select" $ map (unode "option" . strContent)
-  $ getProversAux Nothing subL
+showProverSelection subL = add_attr (Attr (unqual "name") "prover")
+  $ unode "select" $ map (( \p -> add_attr (Attr (unqual "value") p)
+  $ unode "option" p) . strContent) $ getProversAux Nothing subL
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
