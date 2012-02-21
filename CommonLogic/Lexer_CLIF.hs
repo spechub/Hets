@@ -19,12 +19,21 @@ module CommonLogic.Lexer_CLIF where
 
 import CommonLogic.AS_CommonLogic
 import Common.Id as Id
-import Common.Lexer as Lexer
+import qualified Common.Lexer as Lexer
 import Common.Parsec
 import Common.Keywords
 
 import Text.ParserCombinators.Parsec as Parsec
 import Data.Char (ord)
+
+pToken :: CharParser st String -> CharParser st Token
+pToken p = Lexer.pToken p << many white
+
+oParenT :: CharParser st Token
+oParenT = Lexer.oParenT << many white
+
+cParenT :: CharParser st Token
+cParenT = Lexer.cParenT << many white
 
 name :: CharParser st String
 name = do
@@ -51,9 +60,7 @@ enclosedname = many white >> do
 
 -- | parser for parens
 parens :: CharParser st a -> CharParser st a
-parens p = do
-   many white
-   oParenT >> many white >> p << many white << cParenT
+parens p = oParenT >> p << cParenT
 
 {-
 -- | parser for ignoring parentheses
@@ -71,83 +78,53 @@ par p = do
 
 -- Parser Keywords
 andKey :: CharParser st Id.Token
-andKey = do
-  many white
-  Lexer.pToken $ string andS
+andKey = pToken $ string andS
 
 notKey :: CharParser st Id.Token
-notKey = do
-  many white
-  Lexer.pToken $ string notS
+notKey = pToken $ string notS
 
 orKey :: CharParser st Id.Token
-orKey = do
-  many white
-  Lexer.pToken $ string orS
+orKey = pToken $ string orS
 
 ifKey :: CharParser st Id.Token
-ifKey = do
-  many white
-  Lexer.pToken $ string ifS
+ifKey = pToken $ string ifS
 
 iffKey :: CharParser st Id.Token
-iffKey = do
-  many white
-  Lexer.pToken $ string iffS
+iffKey = pToken $ string iffS
 
 forallKey :: CharParser st Id.Token
-forallKey = do
-  many white
-  Lexer.pToken $ string forallS
+forallKey = pToken $ string forallS
 
 existsKey :: CharParser st Id.Token
-existsKey = do
-  many white
-  Lexer.pToken $ string existsS
+existsKey = pToken $ string existsS
 
 -- cl :: CharParser st a -> CharParser st a
 -- cl p = string "cl-" >> p
 
 -- cl keys
 clTextKey :: CharParser st Id.Token
-clTextKey = do
-  many white
-  Lexer.pToken $ try (string "cl-text") <|> string "cl:text"
+clTextKey = pToken $ try (string "cl-text") <|> string "cl:text"
 
 clModuleKey :: CharParser st Id.Token
-clModuleKey = do
-  many white
-  Lexer.pToken $ try (string "cl-module") <|> string "cl:module"
+clModuleKey = pToken $ try (string "cl-module") <|> string "cl:module"
 
 clImportsKey :: CharParser st Id.Token
-clImportsKey = do
-  many white
-  Lexer.pToken $ try (string "cl-imports") <|> string "cl:imports"
+clImportsKey = pToken $ try (string "cl-imports") <|> string "cl:imports"
 
 clExcludesKey :: CharParser st Id.Token
-clExcludesKey = do
-  many white
-  Lexer.pToken $ try (string "cl-excludes") <|> string "cl:excludes"
+clExcludesKey = pToken $ try (string "cl-excludes") <|> string "cl:excludes"
 
 clCommentKey :: CharParser st Id.Token
-clCommentKey = do
-  many white
-  Lexer.pToken $ try (string "cl-comment") <|> string "cl:comment"
+clCommentKey = pToken $ try (string "cl-comment") <|> string "cl:comment"
 
 clRolesetKey :: CharParser st Id.Token
-clRolesetKey = do
-  many white
-  Lexer.pToken $ string "cl-roleset" <|> string "roleset:"
+clRolesetKey = pToken $ string "cl-roleset" <|> string "roleset:"
 
 seqmark :: CharParser st Id.Token
-seqmark = do
-  many white
-  Lexer.pToken $ reserved reservedelement2 $ scanSeqMark
+seqmark = pToken $ reserved reservedelement2 $ scanSeqMark
 
 identifier :: CharParser st Id.Token
-identifier = do
-  many white
-  Lexer.pToken $ reserved reservedelement $ scanClWord
+identifier = pToken $ reserved reservedelement $ scanClWord
 
 scanSeqMark :: CharParser st String
 scanSeqMark = do
@@ -214,7 +191,7 @@ commentBlock =
 
 commentLine :: CharParser st String
 commentLine =
-  string commentLineStart >> manyTill anyChar (try $ oneOf newLinec)
+  string commentLineStart >> many (noneOf newLinec)
 
 white :: CharParser st String
 white =

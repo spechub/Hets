@@ -19,7 +19,7 @@ module CommonLogic.Parse_Symbols
 
 import CommonLogic.AS_CommonLogic
 import Common.Id as Id
-import Common.Lexer as Lexer
+import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken)
 import Common.Keywords as Keywords
 
 import CommonLogic.Lexer_CLIF
@@ -77,8 +77,7 @@ symbMap = do
 symbMapS :: GenParser Char st SYMB_OR_MAP
 symbMapS = do
   s <- seqmark
-  do  many white
-      f <- pToken $ toKey mapsTo
+  do  f <- pToken $ toKey mapsTo
       t <- seqmark
       return (Symb_mapS s t $ tokPos f)
     <|> return (Symb $ SeqMark s)
@@ -86,8 +85,7 @@ symbMapS = do
 symbMapN :: GenParser Char st SYMB_OR_MAP
 symbMapN = do
   s <- identifier
-  do  many white
-      f <- pToken $ toKey mapsTo
+  do  f <- pToken $ toKey mapsTo
       t <- identifier
       return (Symb_mapN s t $ tokPos f)
     <|> return (Symb $ Name s)

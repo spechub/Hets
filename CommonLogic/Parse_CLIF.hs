@@ -21,7 +21,7 @@ import qualified Common.AnnoState as AnnoState
 import qualified Common.AS_Annotation as Annotation
 import CommonLogic.AS_CommonLogic as AS
 import Common.Id as Id
-import Common.Lexer as Lexer
+import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken)
 
 import Data.Either (lefts, rights)
 import qualified Data.Set as Set
@@ -37,12 +37,12 @@ import Text.ParserCombinators.Parsec as Parsec
 -- | parser for getText
 cltext :: CharParser st TEXT_META
 cltext = do
-    nt <- try namedtext
     many white
+    nt <- try namedtext
     return $ tm nt
   <|> do
-    t <- text
     many white
+    t <- text
     return $ tm t
   where tm :: TEXT -> TEXT_META
         tm t = Text_meta { AS.getText = t
@@ -62,8 +62,9 @@ namedtext = parens $ do
     return $ Named_text n (Text [] nullRange) nullRange
 
 text :: CharParser st TEXT
-text = many white >> do
-    phr <- many1 phrase --was many1 (not as in standard)
+text = do
+    phr <- many1 phrase
+    many white
     return $ Text phr nullRange
 
 -- remove the try
@@ -71,22 +72,19 @@ text = many white >> do
 -- error message in ex. the following text
 phrase :: CharParser st PHRASE
 phrase = many white >> (do
-    try (oParenT >> many white >> clModuleKey)
+    try (oParenT >> clModuleKey)
     m <- pModule
-    many white
     cParenT
     return $ Module m
   <|> do
-    try (oParenT >> many white >> clImportsKey)
+    try (oParenT >> clImportsKey)
     i <- importation
-    many white
     cParenT
     return $ Importation i
   <|> do
-    try (oParenT >> many white >> clCommentKey)
+    try (oParenT >> clCommentKey)
     c <- quotedstring <|> enclosedname
     t <- comment_txt <?> "comment: 3"
-    many white
     cParenT
     return $ Comment_text (Comment c nullRange) t nullRange
   <|> do
@@ -113,9 +111,8 @@ pModule = do
 -- | parser for
 pModExcl :: CharParser st ([NAME], TEXT)
 pModExcl = many white >> (do
-    try (oParenT >> many white >> clExcludesKey)
+    try (oParenT >> clExcludesKey)
     exs <- many identifier
-    many white
     cParenT
     txt <- text
     return (exs, txt)
@@ -141,7 +138,6 @@ sentence = parens $ do
   <|> do
     t0 <- try rolesetTerm
     nts <- many rolesetNT
-    many white
     cParenT
     return $ rolesetSentence t0 nts
   <|> do
@@ -228,18 +224,15 @@ boundlist = many $ do
     nos <- intNameOrSeqMark
     return $ Right nos
   <|> do
-    many white
     oParenT
     nos <- intNameOrSeqMark
     t <- term
-    many white
     cParenT
     return $ Left $ (nos,t)
 
 atom :: CharParser st ATOM
 atom = do
-    many white
-    Lexer.pToken $ string "="
+    pToken $ string "="
     t1 <- term
     t2 <- term
     return $ Equation t1 t2
@@ -278,7 +271,6 @@ termseq = do
 rolesetTerm :: CharParser st TERM
 rolesetTerm = do
   t0 <- term
-  many white
   oParenT
   clRolesetKey
   return t0
