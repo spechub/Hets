@@ -24,6 +24,7 @@ import Common.Result
 import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.ToXml
+import Common.XUpdate
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -183,4 +184,5 @@ annoted f ga a = let
   in e { elContent = map Elem l ++ elContent e ++ map Elem r }
 
 withRg :: Range -> Element -> Element
-withRg = add_attrs . rgAttrs
+withRg r e = if isJust (getAttrVal "range" e) then e else
+   add_attrs (rgAttrs r) e
