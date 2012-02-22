@@ -175,9 +175,10 @@ dgrule r =
       _ -> []
 
 showSymbols :: DGNodeLab -> String
-showSymbols lbl = ppTopElement . unode "Symbols"
-  $ case signOf $ dgn_theory lbl of
+showSymbols lbl = case signOf $ dgn_theory lbl of
   G_sign lid (ExtSign sig _) _ ->
-     map (\ s -> add_attr (mkNameAttr . show $ sym_name lid s)
-         $ prettySymbol emptyGlobalAnnos s)
-       $ symlist_of lid sig
+     ppTopElement . add_attr (mkAttr "logic" $ language_name lid)
+     . unode "Symbols"
+     . map (\ s -> add_attr (mkNameAttr . show $ sym_name lid s)
+            $ prettySymbol emptyGlobalAnnos s)
+           $ symlist_of lid sig
