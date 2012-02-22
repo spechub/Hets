@@ -36,14 +36,15 @@ import Text.ParserCombinators.Parsec as Parsec
 
 -- | parser for getText
 cltext :: CharParser st TEXT_META
-cltext = do
-    many white
-    nt <- try namedtext
+cltext = many white >> (do
+    try $ oParenT >> clTextKey
+    nt <- namedtext
+    cParenT
     return $ tm nt
   <|> do
-    many white
-    t <- text
+    t <- text <?> "text"
     return $ tm t
+  )
   where tm :: TEXT -> TEXT_META
         tm t = Text_meta { AS.getText = t
                          , metarelation = metarelations t
@@ -51,20 +52,17 @@ cltext = do
                          }
 
 namedtext :: CharParser st TEXT
-namedtext = parens $ do
-    clTextKey
-    n <- name
+namedtext = do
+    n <- name <?> "name after \"cl-text\""
     t <- text
     return $ Named_text n t nullRange
   <|> do
-    clTextKey
-    n <- name
+    n <- name <?> "name after \"cl-text\""
     return $ Named_text n (Text [] nullRange) nullRange
 
 text :: CharParser st TEXT
 text = do
     phr <- many1 phrase
-    many white
     return $ Text phr nullRange
 
 -- remove the try
@@ -83,12 +81,12 @@ phrase = many white >> (do
     return $ Importation i
   <|> do
     try (oParenT >> clCommentKey)
-    c <- quotedstring <|> enclosedname
-    t <- comment_txt <?> "comment: 3"
+    c <- quotedstring <|> enclosedname <?> "comment after \"cl-comment\""
+    t <- comment_txt <?> "text after \"cl-comment <comment>\""
     cParenT
     return $ Comment_text (Comment c nullRange) t nullRange
   <|> do
-    s <- sentence
+    s <- sentence <?> "sentence"
     return $ Sentence s
   )
 
@@ -102,8 +100,8 @@ comment_txt = do
 -- | parser for module
 pModule :: CharParser st MODULE
 pModule = do
-    t <- identifier
-    (exs,txt) <- pModExcl
+    t <- identifier <?> "module name after \"cl-module\""
+    (exs,txt) <- pModExcl <?> "text in module"
     case exs of
          [] -> return $ Mod t txt nullRange
          _  -> return $ Mod_ex t exs txt nullRange
@@ -112,7 +110,7 @@ pModule = do
 pModExcl :: CharParser st ([NAME], TEXT)
 pModExcl = many white >> (do
     try (oParenT >> clExcludesKey)
-    exs <- many identifier
+    exs <- many identifier <?> "only names in module-exclusion list"
     cParenT
     txt <- text
     return (exs, txt)
@@ -124,15 +122,15 @@ pModExcl = many white >> (do
 importation :: CharParser st IMPORTATION
 importation = do
      -- clImportsKey
-     n <- identifier
+     n <- identifier <?> "importation name after \"cl-imports\""
      return $ Imp_name n
 
 -- | parser for sentences
 sentence :: CharParser st SENTENCE
-sentence = parens $ do
+sentence = parens (do
     ck <- try clCommentKey
-    c <- quotedstring <|> enclosedname
-    s <- sentence
+    c <- quotedstring <|> enclosedname <?> "comment after \"cl-comment\""
+    s <- sentence <?> "sentence after \"cl-comment <comment>\""
     return $ Comment_sent (Comment c $ Range $ rangeSpan c) s
            $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan s]
   <|> do
@@ -141,7 +139,7 @@ sentence = parens $ do
     cParenT
     return $ rolesetSentence t0 nts
   <|> do
-    at <- atom <?> "predicate"
+    at <- atom
     return $ Atom_sent at $ Range $ rangeSpan at
   <|> do
     c <- andKey
@@ -155,19 +153,19 @@ sentence = parens $ do
                rangeSpan s]
   <|> do
     c <- notKey
-    s <- sentence
+    s <- sentence <?> "sentence after \"not\""
     return $ Bool_sent (Negation s) $ Range $ joinRanges [rangeSpan c,
                rangeSpan s]
   <|> do
     c <- try iffKey
-    s1 <- sentence
-    s2 <- sentence
+    s1 <- sentence <?> "sentence after \"iff\""
+    s2 <- sentence <?> "second sentence after \"iff\""
     return $ Bool_sent (Biconditional s1 s2) $ Range $ joinRanges [rangeSpan c,
                                                    rangeSpan s1, rangeSpan s1]
   <|> do
     c <- ifKey
-    s1 <- sentence
-    s2 <- sentence
+    s1 <- sentence <?> "sentence after \"if\""
+    s2 <- sentence <?> "second sentence after \"if\""
     return $ Bool_sent (Implication s1 s2) $ Range $ joinRanges [rangeSpan c,
                                                    rangeSpan s1, rangeSpan s1]
   <|> do
@@ -176,10 +174,11 @@ sentence = parens $ do
   <|> do
     c <- existsKey
     quantsent1 False c
+  )
 
 quantsent1 :: Bool -> Token -> CharParser st SENTENCE
 quantsent1 t c = do
-    g <- identifier
+    g <- identifier <?> "predicate after quantifier"
     quantsent2 t c $ Just g -- Quant_sent using syntactic sugar
   <|>
     quantsent2 t c Nothing -- normal Quant_sent
@@ -220,24 +219,24 @@ quantsent3 t mg bs [] s rn =
               [Atom_sent functerm nullRange, s]) rn)) rn
 
 boundlist :: CharParser st [Either (NAME_OR_SEQMARK, TERM) NAME_OR_SEQMARK]
-boundlist = many $ do
+boundlist = many (do
     nos <- intNameOrSeqMark
     return $ Right nos
-  <|> do
-    oParenT
+  <|> parens (do
     nos <- intNameOrSeqMark
     t <- term
-    cParenT
     return $ Left $ (nos,t)
+    )
+  )
 
 atom :: CharParser st ATOM
 atom = do
-    pToken $ string "="
-    t1 <- term
-    t2 <- term
+    clEqualsKey
+    t1 <- term <?> "term after \"=\""
+    t2 <- term <?> "second term after \"=\""
     return $ Equation t1 t2
   <|> do
-    t <- term
+    t <- term <?> "term"
     ts <- many termseq
     return $ Atom t ts
 
@@ -249,24 +248,26 @@ term = do
      term_fun_cmt
 
 term_fun_cmt :: CharParser st TERM
-term_fun_cmt = parens $ do
-  ck <- try clCommentKey
-  c <- quotedstring <|> enclosedname
-  t <- term
-  return $ Comment_term t (Comment c $ Range $ rangeSpan c)
-         $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan t]
- <|> do
-  t <- term
-  ts <- many1 termseq -- many1? yes, because it's a functional term
-  return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t, rangeSpan ts]
+term_fun_cmt = parens (do
+    ck <- try clCommentKey
+    c <- quotedstring <|> enclosedname <?> "comment after \"cl-comment\""
+    t <- term <?> "term after \"cl-comment <comment>\""
+    return $ Comment_term t (Comment c $ Range $ rangeSpan c)
+           $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan t]
+  <|> do
+    t <- term
+    ts <- many1 termseq -- many1? yes, because it's a functional term
+    return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t, rangeSpan ts]
+ )
 
 termseq :: CharParser st TERM_SEQ
 termseq = do
-  x <- seqmark
-  return $ Seq_marks $ x
+   x <- seqmark
+   return $ Seq_marks $ x
   <|> do
    t <- term
    return $ Term_seq t
+  <?> "term or sequence marker in term sequence"
 
 rolesetTerm :: CharParser st TERM
 rolesetTerm = do
@@ -278,7 +279,7 @@ rolesetTerm = do
 rolesetNT :: CharParser st (NAME, TERM)
 rolesetNT = parens $ do
   n <- identifier
-  t <- term
+  t <- term <?> "term"
   return (n,t)
   
 rolesetSentence :: TERM -> [(NAME, TERM)] -> SENTENCE

@@ -41,90 +41,82 @@ name = do
         return $ (tokStr x)
 
 quotedstring :: CharParser st String
-quotedstring = many white >> do
+quotedstring = do
    char '\''
    s <- (many $ (satisfy clLetters2) <|> oneOf whitec
          <|> char '(' <|> char ')' <|> char '\"')
         <?> "quotedstring: word"
    char '\''
+   many white
    return $ s
 
 enclosedname :: CharParser st String
-enclosedname = many white >> do
+enclosedname = do
    char '\"'
    s <- (many $ (satisfy clLetters2) <|> oneOf whitec
          <|> char '(' <|> char ')' <|> char '\'')
          <?> "word"
    char '\"' <?> "\""
+   many white
    return s
 
 -- | parser for parens
 parens :: CharParser st a -> CharParser st a
 parens p = oParenT >> p << cParenT
 
-{-
--- | parser for ignoring parentheses
--- why do i need that?
-par :: CharParser st a -> CharParser st a
-par p = do
-    try oParenT
-    x <- p
-    cParenT
-    return x
-  <|> do
-    x <- p
-    return x
--}
-
 -- Parser Keywords
 andKey :: CharParser st Id.Token
-andKey = pToken $ string andS
+andKey = (pToken $ string andS) <?> "conjunction"
 
 notKey :: CharParser st Id.Token
-notKey = pToken $ string notS
+notKey = (pToken $ string notS) <?> "negation"
 
 orKey :: CharParser st Id.Token
-orKey = pToken $ string orS
+orKey = (pToken $ string orS) <?> "disjunction"
 
 ifKey :: CharParser st Id.Token
-ifKey = pToken $ string ifS
+ifKey = (pToken $ string ifS) <?> "implication"
 
 iffKey :: CharParser st Id.Token
-iffKey = pToken $ string iffS
+iffKey = (pToken $ string iffS) <?> "equivalence"
 
 forallKey :: CharParser st Id.Token
-forallKey = pToken $ string forallS
+forallKey = (pToken $ string forallS) <?> "universal quantification"
 
 existsKey :: CharParser st Id.Token
-existsKey = pToken $ string existsS
-
--- cl :: CharParser st a -> CharParser st a
--- cl p = string "cl-" >> p
+existsKey = (pToken $ string existsS) <?> "existential quantification"
 
 -- cl keys
 clTextKey :: CharParser st Id.Token
-clTextKey = pToken $ try (string "cl-text") <|> string "cl:text"
+clTextKey = (pToken $ try (string "cl-text") <|> string "cl:text") <?> "text"
 
 clModuleKey :: CharParser st Id.Token
-clModuleKey = pToken $ try (string "cl-module") <|> string "cl:module"
+clModuleKey = (pToken $ try (string "cl-module") <|> string "cl:module")
+              <?> "module"
 
 clImportsKey :: CharParser st Id.Token
-clImportsKey = pToken $ try (string "cl-imports") <|> string "cl:imports"
+clImportsKey = (pToken $ try (string "cl-imports") <|> string "cl:imports")
+               <?> "importation"
 
 clExcludesKey :: CharParser st Id.Token
-clExcludesKey = pToken $ try (string "cl-excludes") <|> string "cl:excludes"
+clExcludesKey = (pToken $ try (string "cl-excludes") <|> string "cl:excludes")
+                <?> "exclusion list"
+
+clEqualsKey :: CharParser st Id.Token
+clEqualsKey = (pToken $ string "=") <?> "equation"
 
 clCommentKey :: CharParser st Id.Token
-clCommentKey = pToken $ try (string "cl-comment") <|> string "cl:comment"
+clCommentKey = (pToken $ try (string "cl-comment") <|> string "cl:comment")
+               <?> "comment"
 
 clRolesetKey :: CharParser st Id.Token
-clRolesetKey = pToken $ string "cl-roleset" <|> string "roleset:"
+clRolesetKey = (pToken $ string "cl-roleset" <|> string "roleset:") <?> "roleset"
 
 seqmark :: CharParser st Id.Token
-seqmark = pToken $ reserved reservedelement2 $ scanSeqMark
+seqmark = (pToken $ reserved reservedelement2 $ scanSeqMark) <?> "sequence marker"
 
 identifier :: CharParser st Id.Token
-identifier = pToken $ reserved reservedelement $ scanClWord
+identifier = (pToken $ reserved reservedelement $ scanClWord) <?> "name"
 
 scanSeqMark :: CharParser st String
 scanSeqMark = do
@@ -187,11 +179,11 @@ whiteSpace = many1 $ oneOf whitec
 
 commentBlock :: CharParser st String
 commentBlock =
-  string commentBlockOpen >> manyTill anyChar (try $ string commentBlockClose)
+  string commentBlockOpen >> manyTill anyChar (try $ string commentBlockClose) <?> ""
 
 commentLine :: CharParser st String
 commentLine =
-  string commentLineStart >> many (noneOf newLinec)
+  string commentLineStart >> many (noneOf newLinec) <?> ""
 
 white :: CharParser st String
 white =
