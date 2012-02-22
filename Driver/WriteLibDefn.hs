@@ -90,7 +90,7 @@ writeLibDefn ga file opts ld = do
 
 writeLibDefnLatex :: GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 writeLibDefnLatex ga oup =
-  writeEncFile Latin1 oup . renderLatex Nothing . toLatex ga . pretty
+  writeFile oup . renderLatex Nothing . toLatex ga . pretty
 
 toShATermString :: ShATermLG a => a -> IO String
 toShATermString = fmap AT.writeSharedATerm . versionedATermTable

@@ -2,11 +2,11 @@ a
 a->b
 a->?b
 a*b
-a×b
+aÃ—b
 a -> b
 a ->? b
 a * b
-a × b
+a Ã— b
 ?->? %[id]%
 ?? ->? ??
 *->* %[id]%
@@ -59,26 +59,26 @@ a->?(b->?(c->?d))
 (a->?(b->?(c->?d)))
 ((a->?(b->?c))->?d)
 (((a->?b)->?c)->?d)
-(a×b)
-(a×b×c)
-a×b×c
-a×(b×c)
-(a×b)×c
-(a×(b×c))
-((a×b)×c)
-a×b×c×d
-a×((b×c)×d)
-a×(b×(c×d))
-(a×(b×c))×d
-((a×b)×c)×d
-(a×((b×c)×d))
-(a×(b×(c×d)))
-((a×(b×c))×d)
-(((a×b)×c)×d)
-a*b*c×d 
-a×b*c×d
-a×b*c*d
-a×b×c*d
+(aÃ—b)
+(aÃ—bÃ—c)
+aÃ—bÃ—c
+aÃ—(bÃ—c)
+(aÃ—b)Ã—c
+(aÃ—(bÃ—c))
+((aÃ—b)Ã—c)
+aÃ—bÃ—cÃ—d
+aÃ—((bÃ—c)Ã—d)
+aÃ—(bÃ—(cÃ—d))
+(aÃ—(bÃ—c))Ã—d
+((aÃ—b)Ã—c)Ã—d
+(aÃ—((bÃ—c)Ã—d))
+(aÃ—(bÃ—(cÃ—d)))
+((aÃ—(bÃ—c))Ã—d)
+(((aÃ—b)Ã—c)Ã—d)
+a*b*cÃ—d 
+aÃ—b*cÃ—d
+aÃ—b*c*d
+aÃ—bÃ—c*d
 a->b->?c->d
 a->?b->?c->d
 a->b->?c->?d

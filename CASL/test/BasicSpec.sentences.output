@@ -2,7 +2,7 @@
        Data3, Data4, Forest, Int, List, Nat, Pos, Rat, Set, Tree, a, a',
        a'b''2, a_b_c, ab2, ab_2_3_a, abc, abcdefghijlklmnopqrstuvwxyz, b,
        c, d, e, nat, s, s1, s2, t, x0123456789,
-       ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïñòóôõöøùúûüıÿ
+       Ã€ÃÃ‚ÃƒÃ„Ã…Ã†Ã‡ÃˆÃ‰ÃŠÃ‹ÃŒÃÃÃÃ‘Ã’Ã“Ã”Ã•Ã–Ã˜Ã™ÃšÃ›ÃœÃÃŸÃ Ã¡Ã¢Ã£Ã¤Ã¥Ã¦Ã§Ã¨Ã©ÃªÃ«Ã¬Ã­Ã®Ã¯Ã±Ã²Ã³Ã´ÃµÃ¶Ã¸Ã¹ÃºÃ»Ã¼Ã½Ã¿
  sorts a = b = c = d = e; s = t; Data1 < Data2; Nat < Int;
        Pos < Nat; Int < Rat; s1, s2 < s
  op ' ' : Char
@@ -905,103 +905,103 @@
  op '|' : Char
  op '}' : Char
  op '~' : Char
- op '¡' : Char
- op '¢' : Char
- op '£' : Char
- op '¤' : Char
- op '¥' : Char
- op '¦' : Char
- op '§' : Char
- op '§' : s
- op '¨' : Char
- op '©' : Char
- op 'ª' : Char
- op '«' : Char
- op '¬' : Char
- op '­' : Char
- op '®' : Char
- op '¯' : Char
- op '°' : Char
- op '±' : Char
- op '²' : Char
- op '³' : Char
- op '´' : Char
- op 'µ' : Char
- op '¶' : Char
- op '·' : Char
- op '¸' : Char
- op '¹' : Char
- op 'º' : Char
- op '»' : Char
- op '¼' : Char
- op '½' : Char
- op '¾' : Char
- op '¿' : Char
- op 'À' : Char
- op 'Á' : Char
- op 'Â' : Char
- op 'Ã' : Char
- op 'Ä' : Char
- op 'Å' : Char
- op 'Æ' : Char
- op 'Ç' : Char
- op 'È' : Char
- op 'É' : Char
- op 'Ê' : Char
- op 'Ë' : Char
- op 'Ì' : Char
- op 'Í' : Char
- op 'Î' : Char
- op 'Ï' : Char
- op 'Ğ' : Char
- op 'Ñ' : Char
- op 'Ò' : Char
- op 'Ó' : Char
- op 'Ô' : Char
- op 'Õ' : Char
- op 'Ö' : Char
- op '×' : Char
- op 'Ø' : Char
- op 'Ù' : Char
- op 'Ú' : Char
- op 'Û' : Char
- op 'Ü' : Char
- op 'İ' : Char
- op 'Ş' : Char
- op 'ß' : Char
- op 'ß' : s
- op 'à' : Char
- op 'á' : Char
- op 'â' : Char
- op 'ã' : Char
- op 'ä' : Char
- op 'å' : Char
- op 'æ' : Char
- op 'ç' : Char
- op 'è' : Char
- op 'é' : Char
- op 'ê' : Char
- op 'ë' : Char
- op 'ì' : Char
- op 'í' : Char
- op 'î' : Char
- op 'ï' : Char
- op 'ğ' : Char
- op 'ñ' : Char
- op 'ò' : Char
- op 'ó' : Char
- op 'ô' : Char
- op 'õ' : Char
- op 'ö' : Char
- op '÷' : Char
- op 'ø' : Char
- op 'ù' : Char
- op 'ú' : Char
- op 'û' : Char
- op 'ü' : Char
- op 'ı' : Char
- op 'ş' : Char
- op 'ÿ' : Char
+ op 'Â¡' : Char
+ op 'Â¢' : Char
+ op 'Â£' : Char
+ op 'Â¤' : Char
+ op 'Â¥' : Char
+ op 'Â¦' : Char
+ op 'Â§' : Char
+ op 'Â§' : s
+ op 'Â¨' : Char
+ op 'Â©' : Char
+ op 'Âª' : Char
+ op 'Â«' : Char
+ op 'Â¬' : Char
+ op 'Â­' : Char
+ op 'Â®' : Char
+ op 'Â¯' : Char
+ op 'Â°' : Char
+ op 'Â±' : Char
+ op 'Â²' : Char
+ op 'Â³' : Char
+ op 'Â´' : Char
+ op 'Âµ' : Char
+ op 'Â¶' : Char
+ op 'Â·' : Char
+ op 'Â¸' : Char
+ op 'Â¹' : Char
+ op 'Âº' : Char
+ op 'Â»' : Char
+ op 'Â¼' : Char
+ op 'Â½' : Char
+ op 'Â¾' : Char
+ op 'Â¿' : Char
+ op 'Ã€' : Char
+ op 'Ã' : Char
+ op 'Ã‚' : Char
+ op 'Ãƒ' : Char
+ op 'Ã„' : Char
+ op 'Ã…' : Char
+ op 'Ã†' : Char
+ op 'Ã‡' : Char
+ op 'Ãˆ' : Char
+ op 'Ã‰' : Char
+ op 'ÃŠ' : Char
+ op 'Ã‹' : Char
+ op 'ÃŒ' : Char
+ op 'Ã' : Char
+ op 'Ã' : Char
+ op 'Ã' : Char
+ op 'Ã' : Char
+ op 'Ã‘' : Char
+ op 'Ã’' : Char
+ op 'Ã“' : Char
+ op 'Ã”' : Char
+ op 'Ã•' : Char
+ op 'Ã–' : Char
+ op 'Ã—' : Char
+ op 'Ã˜' : Char
+ op 'Ã™' : Char
+ op 'Ãš' : Char
+ op 'Ã›' : Char
+ op 'Ãœ' : Char
+ op 'Ã' : Char
+ op 'Ã' : Char
+ op 'ÃŸ' : Char
+ op 'ÃŸ' : s
+ op 'Ã ' : Char
+ op 'Ã¡' : Char
+ op 'Ã¢' : Char
+ op 'Ã£' : Char
+ op 'Ã¤' : Char
+ op 'Ã¥' : Char
+ op 'Ã¦' : Char
+ op 'Ã§' : Char
+ op 'Ã¨' : Char
+ op 'Ã©' : Char
+ op 'Ãª' : Char
+ op 'Ã«' : Char
+ op 'Ã¬' : Char
+ op 'Ã­' : Char
+ op 'Ã®' : Char
+ op 'Ã¯' : Char
+ op 'Ã°' : Char
+ op 'Ã±' : Char
+ op 'Ã²' : Char
+ op 'Ã³' : Char
+ op 'Ã´' : Char
+ op 'Ãµ' : Char
+ op 'Ã¶' : Char
+ op 'Ã·' : Char
+ op 'Ã¸' : Char
+ op 'Ã¹' : Char
+ op 'Ãº' : Char
+ op 'Ã»' : Char
+ op 'Ã¼' : Char
+ op 'Ã½' : Char
+ op 'Ã¾' : Char
+ op 'Ã¿' : Char
  op +__ : Int -> Int
  op +__ : Nat -> Nat
  op +__ : Rat -> Rat
@@ -1093,7 +1093,7 @@
  op __+__ : Pos * Nat -> Pos
  op __+__ : Rat * Rat -> Rat
  op __+__ : s * s -> s
- op __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°|__ : s * s -> s
+ op __+-*/\&=<>!?:.$@#^~Â¡Â¿Ã—Ã·Â£Â©Â±Â¶Â§Â¹Â²Â³Â·Â¢Â¬Â°|__ : s * s -> s
  op __-__ : Int * Int -> Int
  op __-__ : Nat * Nat -> Int
  op __-__ : Rat * Rat -> Rat
@@ -1718,54 +1718,54 @@
   'y' = '\121' %(printable_121)%, 'z' = '\122' %(printable_122)%,
   '{' = '\123' %(printable_123)%, '|' = '\124' %(printable_124)%,
   '}' = '\125' %(printable_125)%, '~' = '\126' %(printable_126)%,
-  ' ' = '\160' %(printable_160)%, '¡' = '\161' %(printable_161)%,
-  '¢' = '\162' %(printable_162)%, '£' = '\163' %(printable_163)%,
-  '¤' = '\164' %(printable_164)%, '¥' = '\165' %(printable_165)%,
-  '¦' = '\166' %(printable_166)%, '§' = '\167' %(printable_167)%,
-  '¨' = '\168' %(printable_168)%, '©' = '\169' %(printable_169)%,
-  'ª' = '\170' %(printable_170)%, '«' = '\171' %(printable_171)%,
-  '¬' = '\172' %(printable_172)%, '­' = '\173' %(printable_173)%,
-  '®' = '\174' %(printable_174)%, '¯' = '\175' %(printable_175)%,
-  '°' = '\176' %(printable_176)%, '±' = '\177' %(printable_177)%,
-  '²' = '\178' %(printable_178)%, '³' = '\179' %(printable_179)%,
-  '´' = '\180' %(printable_180)%, 'µ' = '\181' %(printable_181)%,
-  '¶' = '\182' %(printable_182)%, '·' = '\183' %(printable_183)%,
-  '¸' = '\184' %(printable_184)%, '¹' = '\185' %(printable_185)%,
-  'º' = '\186' %(printable_186)%, '»' = '\187' %(printable_187)%,
-  '¼' = '\188' %(printable_188)%, '½' = '\189' %(printable_189)%,
-  '¾' = '\190' %(printable_190)%, '¿' = '\191' %(printable_191)%,
-  'À' = '\192' %(printable_192)%, 'Á' = '\193' %(printable_193)%,
-  'Â' = '\194' %(printable_194)%, 'Ã' = '\195' %(printable_195)%,
-  'Ä' = '\196' %(printable_196)%, 'Å' = '\197' %(printable_197)%,
-  'Æ' = '\198' %(printable_198)%, 'Ç' = '\199' %(printable_199)%,
-  'È' = '\200' %(printable_200)%, 'É' = '\201' %(printable_201)%,
-  'Ê' = '\202' %(printable_202)%, 'Ë' = '\203' %(printable_203)%,
-  'Ì' = '\204' %(printable_204)%, 'Í' = '\205' %(printable_205)%,
-  'Î' = '\206' %(printable_206)%, 'Ï' = '\207' %(printable_207)%,
-  'Ğ' = '\208' %(printable_208)%, 'Ñ' = '\209' %(printable_209)%,
-  'Ò' = '\210' %(printable_210)%, 'Ó' = '\211' %(printable_211)%,
-  'Ô' = '\212' %(printable_212)%, 'Õ' = '\213' %(printable_213)%,
-  'Ö' = '\214' %(printable_214)%, '×' = '\215' %(printable_215)%,
-  'Ø' = '\216' %(printable_216)%, 'Ù' = '\217' %(printable_217)%,
-  'Ú' = '\218' %(printable_218)%, 'Û' = '\219' %(printable_219)%,
-  'Ü' = '\220' %(printable_220)%, 'İ' = '\221' %(printable_221)%,
-  'Ş' = '\222' %(printable_222)%, 'ß' = '\223' %(printable_223)%,
-  'à' = '\224' %(printable_224)%, 'á' = '\225' %(printable_225)%,
-  'â' = '\226' %(printable_226)%, 'ã' = '\227' %(printable_227)%,
-  'ä' = '\228' %(printable_228)%, 'å' = '\229' %(printable_229)%,
-  'æ' = '\230' %(printable_230)%, 'ç' = '\231' %(printable_231)%,
-  'è' = '\232' %(printable_232)%, 'é' = '\233' %(printable_233)%,
-  'ê' = '\234' %(printable_234)%, 'ë' = '\235' %(printable_235)%,
-  'ì' = '\236' %(printable_236)%, 'í' = '\237' %(printable_237)%,
-  'î' = '\238' %(printable_238)%, 'ï' = '\239' %(printable_239)%,
-  'ğ' = '\240' %(printable_240)%, 'ñ' = '\241' %(printable_241)%,
-  'ò' = '\242' %(printable_242)%, 'ó' = '\243' %(printable_243)%,
-  'ô' = '\244' %(printable_244)%, 'õ' = '\245' %(printable_245)%,
-  'ö' = '\246' %(printable_246)%, '÷' = '\247' %(printable_247)%,
-  'ø' = '\248' %(printable_248)%, 'ù' = '\249' %(printable_249)%,
-  'ú' = '\250' %(printable_250)%, 'û' = '\251' %(printable_251)%,
-  'ü' = '\252' %(printable_252)%, 'ı' = '\253' %(printable_253)%,
-  'ş' = '\254' %(printable_254)%, 'ÿ' = '\255' %(printable_255)%,
+  ' ' = '\160' %(printable_160)%, 'Â¡' = '\161' %(printable_161)%,
+  'Â¢' = '\162' %(printable_162)%, 'Â£' = '\163' %(printable_163)%,
+  'Â¤' = '\164' %(printable_164)%, 'Â¥' = '\165' %(printable_165)%,
+  'Â¦' = '\166' %(printable_166)%, 'Â§' = '\167' %(printable_167)%,
+  'Â¨' = '\168' %(printable_168)%, 'Â©' = '\169' %(printable_169)%,
+  'Âª' = '\170' %(printable_170)%, 'Â«' = '\171' %(printable_171)%,
+  'Â¬' = '\172' %(printable_172)%, 'Â­' = '\173' %(printable_173)%,
+  'Â®' = '\174' %(printable_174)%, 'Â¯' = '\175' %(printable_175)%,
+  'Â°' = '\176' %(printable_176)%, 'Â±' = '\177' %(printable_177)%,
+  'Â²' = '\178' %(printable_178)%, 'Â³' = '\179' %(printable_179)%,
+  'Â´' = '\180' %(printable_180)%, 'Âµ' = '\181' %(printable_181)%,
+  'Â¶' = '\182' %(printable_182)%, 'Â·' = '\183' %(printable_183)%,
+  'Â¸' = '\184' %(printable_184)%, 'Â¹' = '\185' %(printable_185)%,
+  'Âº' = '\186' %(printable_186)%, 'Â»' = '\187' %(printable_187)%,
+  'Â¼' = '\188' %(printable_188)%, 'Â½' = '\189' %(printable_189)%,
+  'Â¾' = '\190' %(printable_190)%, 'Â¿' = '\191' %(printable_191)%,
+  'Ã€' = '\192' %(printable_192)%, 'Ã' = '\193' %(printable_193)%,
+  'Ã‚' = '\194' %(printable_194)%, 'Ãƒ' = '\195' %(printable_195)%,
+  'Ã„' = '\196' %(printable_196)%, 'Ã…' = '\197' %(printable_197)%,
+  'Ã†' = '\198' %(printable_198)%, 'Ã‡' = '\199' %(printable_199)%,
+  'Ãˆ' = '\200' %(printable_200)%, 'Ã‰' = '\201' %(printable_201)%,
+  'ÃŠ' = '\202' %(printable_202)%, 'Ã‹' = '\203' %(printable_203)%,
+  'ÃŒ' = '\204' %(printable_204)%, 'Ã' = '\205' %(printable_205)%,
+  'Ã' = '\206' %(printable_206)%, 'Ã' = '\207' %(printable_207)%,
+  'Ã' = '\208' %(printable_208)%, 'Ã‘' = '\209' %(printable_209)%,
+  'Ã’' = '\210' %(printable_210)%, 'Ã“' = '\211' %(printable_211)%,
+  'Ã”' = '\212' %(printable_212)%, 'Ã•' = '\213' %(printable_213)%,
+  'Ã–' = '\214' %(printable_214)%, 'Ã—' = '\215' %(printable_215)%,
+  'Ã˜' = '\216' %(printable_216)%, 'Ã™' = '\217' %(printable_217)%,
+  'Ãš' = '\218' %(printable_218)%, 'Ã›' = '\219' %(printable_219)%,
+  'Ãœ' = '\220' %(printable_220)%, 'Ã' = '\221' %(printable_221)%,
+  'Ã' = '\222' %(printable_222)%, 'ÃŸ' = '\223' %(printable_223)%,
+  'Ã ' = '\224' %(printable_224)%, 'Ã¡' = '\225' %(printable_225)%,
+  'Ã¢' = '\226' %(printable_226)%, 'Ã£' = '\227' %(printable_227)%,
+  'Ã¤' = '\228' %(printable_228)%, 'Ã¥' = '\229' %(printable_229)%,
+  'Ã¦' = '\230' %(printable_230)%, 'Ã§' = '\231' %(printable_231)%,
+  'Ã¨' = '\232' %(printable_232)%, 'Ã©' = '\233' %(printable_233)%,
+  'Ãª' = '\234' %(printable_234)%, 'Ã«' = '\235' %(printable_235)%,
+  'Ã¬' = '\236' %(printable_236)%, 'Ã­' = '\237' %(printable_237)%,
+  'Ã®' = '\238' %(printable_238)%, 'Ã¯' = '\239' %(printable_239)%,
+  'Ã°' = '\240' %(printable_240)%, 'Ã±' = '\241' %(printable_241)%,
+  'Ã²' = '\242' %(printable_242)%, 'Ã³' = '\243' %(printable_243)%,
+  'Ã´' = '\244' %(printable_244)%, 'Ãµ' = '\245' %(printable_245)%,
+  'Ã¶' = '\246' %(printable_246)%, 'Ã·' = '\247' %(printable_247)%,
+  'Ã¸' = '\248' %(printable_248)%, 'Ã¹' = '\249' %(printable_249)%,
+  'Ãº' = '\250' %(printable_250)%, 'Ã»' = '\251' %(printable_251)%,
+  'Ã¼' = '\252' %(printable_252)%, 'Ã½' = '\253' %(printable_253)%,
+  'Ã¾' = '\254' %(printable_254)%, 'Ã¿' = '\255' %(printable_255)%,
   forall v1 : Char
   . isLetter(v1)
     <=> (ord('A') <= ord(v1) /\ ord(v1) <= ord('Z'))
@@ -1777,7 +1777,7 @@
   forall v1 : Char
   . isPrintable(v1)
     <=> (ord(' ') <= ord(v1) /\ ord(v1) <= ord('~'))
-        \/ (ord(' ') <= ord(v1) /\ ord(v1) <= ord('ÿ'))
+        \/ (ord(' ') <= ord(v1) /\ ord(v1) <= ord('Ã¿'))
                                                  %(isPrintable_def)%,
   '\o000' : Char = '\000' : Char %(slash_o000)%,
   '\o001' = '\001' %(slash_o001)%, '\o002' = '\002' %(slash_o002)%,

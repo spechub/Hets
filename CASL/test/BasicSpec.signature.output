@@ -2,7 +2,7 @@ sorts ABCDEFGHIJKLMONOPQRSTUVWXYZ, Boolean, Char, Data1, Data2,
       Data3, Data4, Forest, Int, List, Nat, Pos, Rat, Set, Tree, a, a',
       a'b''2, a_b_c, ab2, ab_2_3_a, abc, abcdefghijlklmnopqrstuvwxyz, b,
       c, d, e, nat, s, s1, s2, t, x0123456789,
-      ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïñòóôõöøùúûüıÿ
+      Ã€ÃÃ‚ÃƒÃ„Ã…Ã†Ã‡ÃˆÃ‰ÃŠÃ‹ÃŒÃÃÃÃ‘Ã’Ã“Ã”Ã•Ã–Ã˜Ã™ÃšÃ›ÃœÃÃŸÃ Ã¡Ã¢Ã£Ã¤Ã¥Ã¦Ã§Ã¨Ã©ÃªÃ«Ã¬Ã­Ã®Ã¯Ã±Ã²Ã³Ã´ÃµÃ¶Ã¸Ã¹ÃºÃ»Ã¼Ã½Ã¿
 sorts a = b = c = d = e; s = t; Data1 < Data2; Nat < Int;
       Pos < Nat; Int < Rat; s1, s2 < s
 op ' ' : Char
@@ -905,103 +905,103 @@ op '{' : Char
 op '|' : Char
 op '}' : Char
 op '~' : Char
-op '¡' : Char
-op '¢' : Char
-op '£' : Char
-op '¤' : Char
-op '¥' : Char
-op '¦' : Char
-op '§' : Char
-op '§' : s
-op '¨' : Char
-op '©' : Char
-op 'ª' : Char
-op '«' : Char
-op '¬' : Char
-op '­' : Char
-op '®' : Char
-op '¯' : Char
-op '°' : Char
-op '±' : Char
-op '²' : Char
-op '³' : Char
-op '´' : Char
-op 'µ' : Char
-op '¶' : Char
-op '·' : Char
-op '¸' : Char
-op '¹' : Char
-op 'º' : Char
-op '»' : Char
-op '¼' : Char
-op '½' : Char
-op '¾' : Char
-op '¿' : Char
-op 'À' : Char
-op 'Á' : Char
-op 'Â' : Char
-op 'Ã' : Char
-op 'Ä' : Char
-op 'Å' : Char
-op 'Æ' : Char
-op 'Ç' : Char
-op 'È' : Char
-op 'É' : Char
-op 'Ê' : Char
-op 'Ë' : Char
-op 'Ì' : Char
-op 'Í' : Char
-op 'Î' : Char
-op 'Ï' : Char
-op 'Ğ' : Char
-op 'Ñ' : Char
-op 'Ò' : Char
-op 'Ó' : Char
-op 'Ô' : Char
-op 'Õ' : Char
-op 'Ö' : Char
-op '×' : Char
-op 'Ø' : Char
-op 'Ù' : Char
-op 'Ú' : Char
-op 'Û' : Char
-op 'Ü' : Char
-op 'İ' : Char
-op 'Ş' : Char
-op 'ß' : Char
-op 'ß' : s
-op 'à' : Char
-op 'á' : Char
-op 'â' : Char
-op 'ã' : Char
-op 'ä' : Char
-op 'å' : Char
-op 'æ' : Char
-op 'ç' : Char
-op 'è' : Char
-op 'é' : Char
-op 'ê' : Char
-op 'ë' : Char
-op 'ì' : Char
-op 'í' : Char
-op 'î' : Char
-op 'ï' : Char
-op 'ğ' : Char
-op 'ñ' : Char
-op 'ò' : Char
-op 'ó' : Char
-op 'ô' : Char
-op 'õ' : Char
-op 'ö' : Char
-op '÷' : Char
-op 'ø' : Char
-op 'ù' : Char
-op 'ú' : Char
-op 'û' : Char
-op 'ü' : Char
-op 'ı' : Char
-op 'ş' : Char
-op 'ÿ' : Char
+op 'Â¡' : Char
+op 'Â¢' : Char
+op 'Â£' : Char
+op 'Â¤' : Char
+op 'Â¥' : Char
+op 'Â¦' : Char
+op 'Â§' : Char
+op 'Â§' : s
+op 'Â¨' : Char
+op 'Â©' : Char
+op 'Âª' : Char
+op 'Â«' : Char
+op 'Â¬' : Char
+op 'Â­' : Char
+op 'Â®' : Char
+op 'Â¯' : Char
+op 'Â°' : Char
+op 'Â±' : Char
+op 'Â²' : Char
+op 'Â³' : Char
+op 'Â´' : Char
+op 'Âµ' : Char
+op 'Â¶' : Char
+op 'Â·' : Char
+op 'Â¸' : Char
+op 'Â¹' : Char
+op 'Âº' : Char
+op 'Â»' : Char
+op 'Â¼' : Char
+op 'Â½' : Char
+op 'Â¾' : Char
+op 'Â¿' : Char
+op 'Ã€' : Char
+op 'Ã' : Char
+op 'Ã‚' : Char
+op 'Ãƒ' : Char
+op 'Ã„' : Char
+op 'Ã…' : Char
+op 'Ã†' : Char
+op 'Ã‡' : Char
+op 'Ãˆ' : Char
+op 'Ã‰' : Char
+op 'ÃŠ' : Char
+op 'Ã‹' : Char
+op 'ÃŒ' : Char
+op 'Ã' : Char
+op 'Ã' : Char
+op 'Ã' : Char
+op 'Ã' : Char
+op 'Ã‘' : Char
+op 'Ã’' : Char
+op 'Ã“' : Char
+op 'Ã”' : Char
+op 'Ã•' : Char
+op 'Ã–' : Char
+op 'Ã—' : Char
+op 'Ã˜' : Char
+op 'Ã™' : Char
+op 'Ãš' : Char
+op 'Ã›' : Char
+op 'Ãœ' : Char
+op 'Ã' : Char
+op 'Ã' : Char
+op 'ÃŸ' : Char
+op 'ÃŸ' : s
+op 'Ã ' : Char
+op 'Ã¡' : Char
+op 'Ã¢' : Char
+op 'Ã£' : Char
+op 'Ã¤' : Char
+op 'Ã¥' : Char
+op 'Ã¦' : Char
+op 'Ã§' : Char
+op 'Ã¨' : Char
+op 'Ã©' : Char
+op 'Ãª' : Char
+op 'Ã«' : Char
+op 'Ã¬' : Char
+op 'Ã­' : Char
+op 'Ã®' : Char
+op 'Ã¯' : Char
+op 'Ã°' : Char
+op 'Ã±' : Char
+op 'Ã²' : Char
+op 'Ã³' : Char
+op 'Ã´' : Char
+op 'Ãµ' : Char
+op 'Ã¶' : Char
+op 'Ã·' : Char
+op 'Ã¸' : Char
+op 'Ã¹' : Char
+op 'Ãº' : Char
+op 'Ã»' : Char
+op 'Ã¼' : Char
+op 'Ã½' : Char
+op 'Ã¾' : Char
+op 'Ã¿' : Char
 op +__ : Int -> Int
 op +__ : Nat -> Nat
 op +__ : Rat -> Rat
@@ -1093,7 +1093,7 @@ op __+__ : Nat * Pos -> Pos
 op __+__ : Pos * Nat -> Pos
 op __+__ : Rat * Rat -> Rat
 op __+__ : s * s -> s
-op __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°|__ : s * s -> s
+op __+-*/\&=<>!?:.$@#^~Â¡Â¿Ã—Ã·Â£Â©Â±Â¶Â§Â¹Â²Â³Â·Â¢Â¬Â°|__ : s * s -> s
 op __-__ : Int * Int -> Int
 op __-__ : Nat * Nat -> Int
 op __-__ : Rat * Rat -> Rat

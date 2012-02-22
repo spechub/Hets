@@ -252,12 +252,9 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
         PrettyLatex -> return latex
       Nothing -> lift $ do
          tmpDir <- getTemporaryDirectory
-         (tmpFile, hdl) <- openTempFile tmpDir "temp.tex"
+         tmpFile <- writeTempFile (latexHeader ++ latex ++ latexFooter)
+           tmpDir "temp.tex"
          copyPermissions (tmpDir </> "empty.txt") tmpFile
-         hSetEncoding hdl latin1
-         hPutStr hdl $ latexHeader ++ latex ++ latexFooter
-         hFlush hdl
-         hClose hdl
          mapM_ (\ s -> do
             let sty = (</> "hetcasl.sty")
                 f = sty s
