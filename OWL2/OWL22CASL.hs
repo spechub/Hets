@@ -111,11 +111,11 @@ indiConst :: OpType
 indiConst = OpType Total [] thing
 
 uriToIdM :: IRI -> Result Id
-uriToIdM = return . uriToId
+uriToIdM = return . uriToCaslId
 
 -- | Extracts Id from URI
-uriToId :: IRI -> Id
-uriToId urI =
+uriToCaslId :: IRI -> Id
+uriToCaslId urI =
     let l = localPart urI
         ur = if isThing urI then mkQName l else urI
         repl a = if isAlphaNum a then [a] else "_u"
@@ -203,16 +203,16 @@ mapMorphism oMor = do
       ccd <- mapSign $ otarget oMor
       let emap = mmaps oMor
           preds = Map.foldWithKey (\ (Entity ty u1) u2 -> let
-              i1 = uriToId u1
-              i2 = uriToId u2
+              i1 = uriToCaslId u1
+              i2 = uriToCaslId u2
               in case ty of
                 Class -> Map.insert (i1, conceptPred) i2
                 ObjectProperty -> Map.insert (i1, objectPropPred) i2
                 DataProperty -> Map.insert (i1, dataPropPred) i2
                 _ -> id) Map.empty emap
           ops = Map.foldWithKey (\ (Entity ty u1) u2 -> case ty of
-                NamedIndividual ->
-                    Map.insert (uriToId u1, indiConst) (uriToId u2, Total)
+                NamedIndividual -> Map.insert (uriToCaslId u1, indiConst)
+                  (uriToCaslId u2, Total)
                 _ -> id) Map.empty emap
       return (embedMorphism () cdm ccd)
                  { op_map = ops
@@ -220,7 +220,7 @@ mapMorphism oMor = do
 
 mapSymbol :: Entity -> Set.Set Symbol
 mapSymbol (Entity ty iri) = let
-  syN = Set.singleton . Symbol (uriToId iri)
+  syN = Set.singleton . Symbol (uriToCaslId iri)
   in case ty of
     Class -> syN $ PredAsItemType conceptPred
     ObjectProperty -> syN $ PredAsItemType objectPropPred
@@ -232,7 +232,7 @@ mapSymbol (Entity ty iri) = let
 mapSign :: OS.Sign -> Result CASLSign
 mapSign sig =
       let conc = OS.concepts sig
-          cvrt = map uriToId . Set.toList
+          cvrt = map uriToCaslId . Set.toList
           tMp k = MapSet.fromList . map (\ u -> (u, [k]))
           cPreds = thing : nothing : cvrt conc
           oPreds = cvrt $ OS.objectProperties sig
@@ -255,7 +255,7 @@ mapTheory (owlSig, owlSens) = let sl = topS in do
     cSig <- mapSign owlSig
     let pSig = loadDataInformation sl
         dTypes = (emptySign ()) {sortRel = Rel.transClosure $ Rel.fromList
-                    $ map (\ d -> (uriToId d, dataS))
+                    $ map (\ d -> (uriToCaslId d, dataS))
                     $ predefIRIs ++ Set.toList (OS.datatypes owlSig)}
     (cSens, nSig) <- foldM (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
@@ -393,7 +393,7 @@ mapComObjectPropsList cSig mol props a b = do
 mapDataRange :: CASLSign -> DataRange -> Int -> Result (CASLFORMULA, CASLSign)
 mapDataRange cSig dr i = case dr of
     DataType d fl -> do
-        let dt = mkMember (qualData i) $ uriToId d
+        let dt = mkMember (qualData i) $ uriToCaslId d
         (sens, s) <- mapAndUnzipM (mapFacet cSig i) fl
         return (conjunct $ dt : sens, uniteL $ cSig : s)
     DataComplementOf drc -> do
@@ -504,7 +504,8 @@ mapDescription cSig desc var = case desc of
             AllValuesFrom -> (mkVDataDecl [n] $ mkImpl oprop0 desc0, ts)
     DataHasValue dpe c -> do
         con <- mapLiteral c
-        return (mkPred dataPropPred [qualThing var, con] $ uriToId dpe, cSig)
+        return (mkPred dataPropPred [qualThing var, con]
+                           $ uriToCaslId dpe, cSig)
     DataCardinality (Cardinality ct n dpe dr) -> mapCard False cSig ct n
         (Right dpe) (fmap Right dr) var
 
@@ -741,7 +742,7 @@ mapAnnFrameBit cSig ex afb =
         SimpleEntity (Entity Datatype iri) -> do
             (odes, s) <- mapDataRange cSig dr 2
             return ([mkVDataDecl [2] $ mkEqv odes $ mkMember
-                    (qualData 2) $ uriToId iri], uniteCASLSign cSig s)
+                    (qualData 2) $ uriToCaslId iri], uniteCASLSign cSig s)
         _ -> err
     ClassDisjointUnion clsl -> case ex of
         SimpleEntity (Entity Class iri) -> do

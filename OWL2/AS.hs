@@ -282,6 +282,18 @@ getPredefName iri =
                 [s] -> s
                 _ -> showQN iri
 
+-- | Extracts Token from IRI
+uriToTok :: IRI -> Token
+uriToTok urI = mkSimpleId $ getPredefName urI
+
+-- | Extracts Id from IRI
+uriToId :: IRI -> Id
+uriToId = simpleIdToId . uriToTok
+
+-- | Extracts Id from Entities
+entityToId :: Entity -> Id
+entityToId (Entity _ iri) = uriToId iri
+
 printDatatype :: IRI -> String
 printDatatype dt = showQU $
     if isDatatypeKey dt then stripReservedPrefix dt else dt

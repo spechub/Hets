@@ -12,7 +12,7 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
-import PGIP.Query
+import PGIP.Query as Query
 
 import Driver.Options
 import Driver.ReadFn
@@ -423,7 +423,10 @@ getHetsResult opts updates sessRef file query =
                   -- showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
                 -- TODO: work on html-style nodeview
-                NcInfo -> return $ showLocalTh dg (i, dgnode) fstLine
+                NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
+                  -> case cmd of
+                   Symbols -> return $ showSymbols dgnode
+                   _ -> return $ showLocalTh dg nl fstLine
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
@@ -437,7 +440,8 @@ getHetsResult opts updates sessRef file query =
                            map (\ (n, e) -> unode "goal"
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
-                      NcTheory -> showGlobalTh dg gTh fstLine -- ++ showN gTh
+                      NcCmd Query.Theory ->
+                          showGlobalTh dg gTh fstLine -- ++ showN gTh
                       NcProvers mt -> getProvers mt subL
                       NcTranslations mp -> getComorphs mp subL
                       _ -> error "getHetsResult.NodeQuery."
@@ -461,7 +465,7 @@ showGlobalTh dg gTh fstLine = case simplifyTh gTh of
            , Attr (unqual "enctype") "multipart/form-data"
            , Attr (unqual "method") "post"
            , Attr (unqual "action") "?prove" ]
-           `add_attrs` (unode "input" ())
+           `add_attrs` unode "input" ()
     -- create list of theorems, selectable for proving
     thmSl = map mkCB $ toNamedList thms where
         mkCB (SenAttr s _ _ _ _ _ a) = add_attrs
@@ -469,14 +473,14 @@ showGlobalTh dg gTh fstLine = case simplifyTh gTh of
           , Attr (unqual "sentence") (renderText ga $ pretty a)] $
           unode "input" s
     -- combine elements within a form
-    thmMenu = unode "form" $ prSl : 
-      (intersperse (unode "br " ()) $ prBt : thmSl)
+    thmMenu = unode "form" $ prSl :
+      intersperse (unode "br " ()) (prBt : thmSl)
     -- formatting stuff
     headr = unode "h2" fstLine
     axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
     sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
-    in mkHtmlElem fstLine [headr, unode "h4" "Theorems", thmMenu] --prSl, prBt
-      ++ axShow ++ "\n<br>" ++ sbShow
+    in mkHtmlElem fstLine [headr, unode "h4" "Theorems", thmMenu] -- prSl, prBt
+      ++ axShow ++ "\n<br />" ++ sbShow
 
 -- | display nodes local signature elements in html
 showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
@@ -484,7 +488,7 @@ showLocalTh dg (_, lbl) = showGlobalTh dg $ dgn_theory lbl
 
 showProverSelection :: G_sublogics -> Element
 showProverSelection subL = add_attr (Attr (unqual "name") "prover")
-  $ unode "select" $ map (( \p -> add_attr (Attr (unqual "value") p)
+  $ unode "select" $ map ((\ p -> add_attr (Attr (unqual "value") p)
   $ unode "option" p) . strContent) $ getProversAux Nothing subL
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]

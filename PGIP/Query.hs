@@ -3,10 +3,12 @@ Module      :  $Header$
 Description :  hets server queries
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
+
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (via imports)
 
+query strings
 -}
 
 module PGIP.Query where
@@ -76,8 +78,17 @@ displayTypes =
 comorphs :: [String]
 comorphs = ["provers", "translations"]
 
+data NodeCmd = Node | Info | Theory | Symbols
+  deriving (Show, Eq, Bounded, Enum)
+
+nodeCmds :: [NodeCmd]
+nodeCmds = [minBound .. maxBound]
+
+showNodeCmd :: NodeCmd -> String
+showNodeCmd = map toLower . show
+
 nodeCommands :: [String]
-nodeCommands = ["node", "theory"] ++ comorphs ++ ["prove"]
+nodeCommands = map showNodeCmd nodeCmds ++ comorphs ++ ["prove"]
 
 proveParams :: [String]
 proveParams = ["timeout", "include", "prover", "translation", "theorems"]
@@ -116,8 +127,7 @@ data QueryKind =
   | EdgeQuery EdgeId String
 
 data NodeCommand =
-    NcTheory
-  | NcInfo
+    NcCmd NodeCmd
   | NcProvers (Maybe String)
   | NcTranslations (Maybe String)
   | ProveNode
@@ -270,17 +280,18 @@ anaNodeQuery mi ans i incls pss =
         prover trans timeLimit theorems
       noPP = null incls && null pps
       noIncl = null incls && isNothing incl && isNothing timeLimit
+      cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds
   in case ans of
        [] -> Right (mi, NodeQuery i
-         $ if noPP then NcInfo else pp)
+         $ if noPP then NcCmd minBound else pp)
        [cmd] -> case cmd of
          "prove" -> Right (mi, NodeQuery i pp)
-         "node" | noPP -> Right (mi, NodeQuery i NcInfo)
-         "theory" | noPP -> Right (mi, NodeQuery i NcTheory)
          "provers" | noIncl && isNothing prover ->
             Right (mi, NodeQuery i $ NcProvers trans)
          "translations" | noIncl && isNothing trans ->
             Right (mi, NodeQuery i $ NcTranslations prover)
-         _ -> Left $ "unknown node command '" ++ cmd ++ "' "
-              ++ shows incls " " ++ show pss
+         _ -> case lookup cmd cmds of
+           Just nc | noPP -> Right (mi, NodeQuery i $ NcCmd nc)
+           _ -> Left $ "unknown node command '" ++ cmd ++ "' "
+                ++ shows incls " " ++ show pss
        _ -> Left $ "non-unique node command " ++ show ans

@@ -30,9 +30,6 @@ import OWL2.Logic_OWL2
 import OWL2.AS
 import OWL2.Keywords
 import OWL2.MS
--- import OWL2.Parse
--- import OWL2.ManchesterParser
--- import Text.ParserCombinators.Parsec
 import OWL2.ProfilesAndSublogics
 import OWL2.Morphism
 import OWL2.Symbols
@@ -114,14 +111,6 @@ varToInt v = case v of
 
 uriToTokM :: IRI -> Result Token
 uriToTokM = return . uriToTok
-
--- | Extracts Token from IRI
-uriToTok :: IRI -> Token
-uriToTok urI = mkSimpleId $ getPredefName urI
-
--- | Extracts Id from IRI
-uriToId :: IRI -> Id
-uriToId = simpleIdToId . uriToTok
 
 mkQuants :: QUANT_SENT -> SENTENCE
 mkQuants qs = Quant_sent qs nullRange
@@ -340,10 +329,6 @@ mapSentence :: Sign                             -- ^ CommonLogic Signature
 mapSentence cSig inSen = do
     (outAx, outSig) <- mapAxioms cSig $ CommonAnno.sentence inSen
     return (map (flip CommonAnno.mapNamed inSen . const) outAx, outSig)
-
--- | Extracts Id from Entities
-entityToId :: Entity -> Id
-entityToId (Entity _ iri) = uriToId iri
 
 -- | Mapping of Class IRIs
 mapClassIRI :: Sign -> Class -> Token -> Result SENTENCE

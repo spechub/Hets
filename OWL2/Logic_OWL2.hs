@@ -74,6 +74,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
             (sentence namedSen)
     sym_of OWL2 = singletonList . symOf
     symmap_of OWL2 = symMapOf
+    sym_name OWL2 = entityToId
 
 instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems

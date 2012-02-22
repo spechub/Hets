@@ -10,7 +10,7 @@ Portability :  non-portable(Grothendieck)
 Xml of Hets DGs
 -}
 
-module Static.ToXml (dGraph, lnode) where
+module Static.ToXml (dGraph, lnode, showSymbols) where
 
 import Static.DgUtils
 import Static.DevGraph
@@ -74,6 +74,9 @@ prettyRangeElem :: (GetRange a, Pretty a) => String -> GlobalAnnos -> a
 prettyRangeElem s ga a =
   add_attrs (rangeAttrs $ getRangeSpan a) $ prettyElem s ga a
 
+prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> Element
+prettySymbol = prettyRangeElem "Symbol"
+
 lnode :: GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
 lnode ga lenv (_, lbl) =
   let nm = dgn_name lbl
@@ -96,10 +99,10 @@ lnode ga lenv (_, lbl) =
           DGNode orig cs -> consStatus cs ++ case orig of
                    DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ ->
                      subnodes "Declarations"
-                       $ map (prettyRangeElem "Symbol" ga)
+                       $ map (prettySymbol ga)
                        $ mostSymsOf lid dsig
                    DGRestriction _ hidSyms -> subnodes "Hidden"
-                       $ map (prettyRangeElem "Symbol" ga)
+                       $ map (prettySymbol ga)
                        $ Set.toList hidSyms
                    _ -> []
       ++ case simplifyTh $ dgn_theory lbl of
@@ -170,3 +173,11 @@ dgrule r =
         [ add_attr (mkAttr "linkref" $ showEdgeId e)
         $ unode "RuleTarget" () ]
       _ -> []
+
+showSymbols :: DGNodeLab -> String
+showSymbols lbl = ppTopElement . unode "Symbols"
+  $ case signOf $ dgn_theory lbl of
+  G_sign lid (ExtSign sig _) _ ->
+     map (\ s -> add_attr (mkNameAttr . show $ sym_name lid s)
+         $ prettySymbol emptyGlobalAnnos s)
+       $ symlist_of lid sig
