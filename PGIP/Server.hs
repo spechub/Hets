@@ -160,6 +160,7 @@ hetsServer opts1 = do
            else mkHtmlPage path dirs
     "POST" -> do
       (params, files) <- parseRequestBody tempFileSink re
+      liftRun $ print params
       mTmpFile <- liftRun $ case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
@@ -172,7 +173,11 @@ hetsServer opts1 = do
           mRes = maybe (return $ mkResponse status400 "nothing submitted")
             res mTmpFile
       liftRun $ case files of
-        [] -> mRes
+        [] -> if isPrefixOf "?prove=" query then
+           getHetsResponse opts [] sessRef path
+             $ splitQuery ++ map
+                   (\ (a, b) -> (B8.unpack a, Just $ B8.unpack b)) params
+           else mRes
         [(_, f)] | query /= "?update" -> do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
