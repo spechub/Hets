@@ -438,7 +438,7 @@ getHetsResult opts updates sessRef file query =
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
                       NcCmd Query.Theory ->
-                          showGlobalTh dg gTh fstLine -- ++ showN gTh
+                          showGlobalTh dg i gTh fstLine -- ++ showN gTh
                       NcProvers mt -> getProvers mt subL
                       NcTranslations mp -> getComorphs mp subL
                       _ -> error "getHetsResult.NodeQuery."
@@ -450,18 +450,15 @@ getHetsResult opts updates sessRef file query =
 
 {- | displays the global theory for a node with the option to select and prove
 theorems interactively (TODO: implement!) -}
-showGlobalTh :: DGraph -> G_theory -> String -> String
-showGlobalTh dg gTh fstLine = case simplifyTh gTh of
+showGlobalTh :: DGraph -> Int -> G_theory -> String -> String
+showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
   G_theory lid (ExtSign _ sig) _ thsens _ -> let
     (axs, thms) = OMap.partition isAxiom thsens
     ga = globalAnnos dg
     -- create button and menu for proving
     prSl = showProverSelection $ sublogicOfTh gTh
     prBt = [ Attr (unqual "type") "submit"
-           , Attr (unqual "value") "Prove"
-           , Attr (unqual "enctype") "multipart/form-data"
-           , Attr (unqual "method") "post"
-           , Attr (unqual "action") "?prove" ]
+           , Attr (unqual "value") "Prove"]
            `add_attrs` unode "input" ()
     -- create list of theorems, selectable for proving
     thmSl = map mkCB $ toNamedList thms where
@@ -470,7 +467,7 @@ showGlobalTh dg gTh fstLine = case simplifyTh gTh of
           , Attr (unqual "sentence") (renderText ga $ pretty a)] $
           unode "input" s
     -- combine elements within a form
-    thmMenu = unode "form" $ prSl :
+    thmMenu = mkForm ("?prove=" ++ show i) $ prSl :
       intersperse (unode "br " ()) (prBt : thmSl)
     -- formatting stuff
     headr = unode "h2" fstLine
@@ -481,7 +478,7 @@ showGlobalTh dg gTh fstLine = case simplifyTh gTh of
 
 -- | display nodes local signature elements in html
 showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
-showLocalTh dg (_, lbl) = showGlobalTh dg $ dgn_theory lbl
+showLocalTh dg (i, lbl) = showGlobalTh dg i $ dgn_theory lbl
 
 showProverSelection :: G_sublogics -> Element
 showProverSelection subL = add_attr (Attr (unqual "name") "prover")

@@ -194,23 +194,25 @@ anaQuery q =
            ais = nubOrd $ is ++ snds is2
            aids = nubOrd . snds $ ns2 ++ es2 ++ ids ++ nns
            mi = fmap read $ listToMaybe ais
-           noPP = null pps && null incls
-       in if null qr && length ais < 2 then case (afs, ags, ans, aes, aids) of
+           (theorems, qqr) = partition ((== Just "on") . snd) qr
+           noPP = null pps && null incls && null theorems
+       in if null qqr && length ais < 2 then case (afs, ags, ans, aes, aids) of
          (_, [], [], [], []) | noPP -> if length afs > 1
            then Left $ "non-unique format " ++ show afs
            else Right (mi, DisplayQuery $ listToMaybe afs)
          (_, c : r, [], [], []) | noPP -> if null r
            then Right (mi, GlobCmdQuery c)
            else Left $ "non-unique command " ++ show r
-         (_, [], _, [], [_]) | null es2 ->
-           anaNodeQuery mi ans (getIdOrName ids nns ns2) incls pps
+         (_, [], _, [], [_]) ->
+           anaNodeQuery mi ans (getIdOrName ids nns ns2) (map fst theorems)
+             incls pps
          (_, [], [], e : r, i : s) | noPP ->
            if null r && null s && null nns && null ns2
            then Right (mi, EdgeQuery (EdgeId $ read i) e)
            else Left $ "non-unique edge " ++ show (aes ++ aids)
          _ -> Left $ "non-unique query " ++ show q
-       else Left $ if null qr then "non-unique dg " ++ show q else
-                       "ill-formed query " ++ show qr
+       else Left $ if null qqr then "non-unique dg " ++ show q else
+                       "ill-formed query " ++ show qqr
 
 getIdOrName :: [QueryPair] -> [QueryPair] -> [QueryPair] -> NodeIdOrName
 getIdOrName ids nns ns2 = case ids of
@@ -261,16 +263,16 @@ decodeQueryCode s = case s of
   c : r
       -> decodePlus c : decodeQueryCode r
 
-anaNodeQuery :: Maybe Int -> [String] -> NodeIdOrName -> [String]
+anaNodeQuery :: Maybe Int -> [String] -> NodeIdOrName -> [String] -> [String]
   -> [QueryPair] -> Either String (Maybe Int, QueryKind)
-anaNodeQuery mi ans i incls pss =
+anaNodeQuery mi ans i moreTheorems incls pss =
   let pps = foldr (\ l -> case l of
                 (x, Just y) -> ((x, y) :)
                 _ -> id) [] pss
       incl = lookup "include" pps
       trans = lookup "translation" pps
       prover = lookup "prover" pps
-      theorems = case lookup "theorems" pps of
+      theorems = moreTheorems ++ case lookup "theorems" pps of
         Nothing -> []
         Just str -> map unEsc $ splitOn ' ' $ decodeQueryCode str
       timeLimit = fmap read $ lookup "timeout" pps
