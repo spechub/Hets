@@ -320,12 +320,10 @@ filterMapWithSet s = Map.filterWithKey (\ k _ -> Set.member k s)
 
 {- | get, parse and check an environment variable; provide the default
   value, only if the envionment variable is not set or the
-  parse-check-function returns a Left value -}
+  parse-check-function returns Nothing -}
 getEnvSave :: a                   -- ^ default value
            -> String              -- ^ name of environment variable
-           -> (String -> Maybe a)
-              {- ^ parse and check value of variable;
-                   for every b the default value is returned -}
+           -> (String -> Maybe a) -- ^ parse and check value of variable
            -> IO a
 getEnvSave defValue envVar readFun =
     liftM (maybe defValue (fromMaybe defValue . readFun)
