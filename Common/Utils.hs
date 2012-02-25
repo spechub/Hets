@@ -27,6 +27,7 @@ module Common.Utils
   , readMaybe
   , mapAccumLM
   , mapAccumLCM
+  , concatMapM
   , composeMap
   , keepMins
   , splitOn
@@ -188,6 +189,11 @@ mapAccumLCM g f s l = case l of
     (s', y) <- f s x
     (s'', ys) <- mapAccumLCM g f s' xs
     return (s'', g x y : ys)
+
+-- | Monadic version of concatMap
+-- taken from http://darcs.haskell.org/ghc/compiler/utils/MonadUtils.hs
+concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
+concatMapM f xs = liftM concat (mapM f xs)
 
 -- | composition of arbitrary maps
 composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
