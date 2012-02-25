@@ -462,23 +462,28 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
     ga = globalAnnos dg
     -- create button and menu for proving
     prSl = showProverSelection $ sublogicOfTh gTh
-    prBt = [ Attr (unqual "type") "submit"
-           , Attr (unqual "value") "Prove"]
-           `add_attrs` unode "input" ()
+    prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
+          `add_attrs` inputNode
     -- create list of theorems, selectable for proving
     thmSl = map mkCB $ toNamedList thms where
         mkCB (SenAttr s _ _ _ _ _ a) = add_attrs
-          [Attr (unqual "type") "checkbox", Attr (unqual "name") s
-          , Attr (unqual "sentence") (renderText ga $ pretty a)] $
+          [mkAttr "type" "checkbox", mkAttr "name" s
+          , mkAttr "sentence" $ renderText ga $ pretty a] $
           unode "input" s
+    -- hidden param field
+    hidStr = add_attrs [mkAttr "style" "display:none;"
+           , mkAttr "name" "prove"
+           , mkAttr "value" $ show i]
+           inputNode 
     -- combine elements within a form
-    thmMenu = mkForm ("?prove=" ++ show i) $ prSl :
+    thmMenu = --mkForm ("?prove=" ++ show i) $ prSl :
+      add_attr (mkAttr "method" "get") $ unode "form" $ hidStr : prSl : 
       intersperse (unode "br " ()) (prBt : thmSl)
     -- formatting stuff
     headr = unode "h2" fstLine
     axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
     sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
-    in mkHtmlElem fstLine [headr, unode "h4" "Theorems", thmMenu] -- prSl, prBt
+    in mkHtmlElem fstLine [headr, unode "h4" "Theorems", thmMenu]
       ++ axShow ++ "\n<br />" ++ sbShow
 
 -- | display nodes local signature elements in html
@@ -486,8 +491,8 @@ showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
 showLocalTh dg (i, lbl) = showGlobalTh dg i $ dgn_theory lbl
 
 showProverSelection :: G_sublogics -> Element
-showProverSelection subL = add_attr (Attr (unqual "name") "prover")
-  $ unode "select" $ map ((\ p -> add_attr (Attr (unqual "value") p)
+showProverSelection subL = add_attr (mkAttr "name" "prover")
+  $ unode "select" $ map ((\ p -> add_attr (mkAttr "value" p)
   $ unode "option" p) . strContent) $ getProversAux Nothing subL
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
