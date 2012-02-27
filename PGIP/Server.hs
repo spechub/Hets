@@ -76,6 +76,7 @@ import Common.XUpdate
 import Control.Monad
 
 import qualified Data.Map as Map
+import Data.Map (Map)
 import qualified Data.IntMap as IntMap
 import qualified Data.Set as Set
 import Data.Char
@@ -215,6 +216,10 @@ mkHtmlString path dirs = htmlHead ++ mkHtmlElem
 mkHtmlElem :: String -> [Element] -> String
 mkHtmlElem title body = ppElement $ unode "html"
       [ unode "head" $ unode "title" title, unode "body" body ]
+
+mkHtmlElemScript :: String -> Element -> [Element] -> String
+mkHtmlElemScript title scr body = ppElement $ unode "html"
+      [ unode "head" [unode "title" title, scr], unode "body" body ]
 
 mkHtmlPage :: FilePath -> [Element] -> IO Response
 mkHtmlPage path = return . mkOkResponse . mkHtmlString path
@@ -466,24 +471,48 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
           `add_attrs` inputNode
     -- create list of theorems, selectable for proving
     thmSl = map mkCB $ toNamedList thms where
+        -- TODO: get rid of constructor!
         mkCB (SenAttr s _ _ _ _ _ a) = add_attrs
-          [mkAttr "type" "checkbox", mkAttr "name" s
+          [mkAttr "type" "checkbox", mkAttr "name" $ escStr s
           , mkAttr "sentence" $ renderText ga $ pretty a] $
           unode "input" s
+
+    -- select or deselect all theorems by button
+    selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
+           , mkAttr "onClick" "selAll()"] inputNode
+    deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
+           , mkAttr "onClick" "deSelAll()"]
+           inputNode
+    jvScrpt = add_attr (mkAttr "type" "text/javascript")
+            $ unode "script" $ "\nfunction selAll() {\n"
+            ++ "  var f = document.forms[0];\n"
+            ++ "  for (i = 0; i < f.elements.length; i++) {\n"
+            ++ "    var e = f.elements[i];\n"
+            ++ "    if( e.type == 'checkbox' ) e.checked = true;\n"
+            ++ "  }\n"
+            ++ "}\n"
+            ++ "function deSelAll(chk) {\n"
+            ++ "  var f = document.forms[0];\n"
+            ++ "  for (i = 0; i < f.elements.length; i++) {\n"
+            ++ "    var e = f.elements[i];\n"
+            ++ "    if( e.type == 'checkbox' ) e.checked = false;\n"
+            ++ "  }\n"
+            ++ "}\n"
+
     -- hidden param field
-    hidStr = add_attrs [mkAttr "style" "display:none;"
+    hidStr = add_attrs [mkAttr "type" "hidden" --mkAttr "style" "display:none;"
            , mkAttr "name" "prove"
            , mkAttr "value" $ show i]
-           inputNode 
+           inputNode
     -- combine elements within a form
-    thmMenu = --mkForm ("?prove=" ++ show i) $ prSl :
-      add_attr (mkAttr "method" "get") $ unode "form" $ hidStr : prSl : 
-      intersperse (unode "br " ()) (prBt : thmSl)
+    thmMenu = add_attrs [mkAttr "name" "thmSel", mkAttr "method" "get"]
+      $ unode "form" $ hidStr : prSl : intersperse (unode "br " ())
+      (prBt : thmSl ++ [selAll]) ++ [deSelAll]
     -- formatting stuff
     headr = unode "h2" fstLine
     axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
     sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
-    in mkHtmlElem fstLine [headr, unode "h4" "Theorems", thmMenu]
+    in mkHtmlElemScript fstLine jvScrpt [headr, unode "h4" "Theorems", thmMenu]
       ++ axShow ++ "\n<br />" ++ sbShow
 
 -- | display nodes local signature elements in html
@@ -492,8 +521,8 @@ showLocalTh dg (i, lbl) = showGlobalTh dg i $ dgn_theory lbl
 
 showProverSelection :: G_sublogics -> Element
 showProverSelection subL = add_attr (mkAttr "name" "prover")
-  $ unode "select" $ map ((\ p -> add_attr (mkAttr "value" p)
-  $ unode "option" p) . strContent) $ getProversAux Nothing subL
+  $ unode "select" $ map (\ p -> add_attr (mkAttr "value" p)
+  $ unode "option" p) $ Map.keys $ getProversAux Nothing subL
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
@@ -535,13 +564,13 @@ getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
 
 getProvers :: Maybe String -> G_sublogics -> String
-getProvers mt subL = ppTopElement . unode "provers" $ getProversAux mt subL
+getProvers mt subL = ppTopElement . unode "provers" $ map (unode "prover")
+  $ Map.keys $ getProversAux mt subL
 
-getProversAux :: Maybe String -> G_sublogics -> [Element]
-getProversAux mt subL = map (unode "prover")
-    . nubOrd . map (getWebProverName . fst)
-    . filterByComorph mt
-    $ getAllAutomaticProvers subL
+getProversAux :: Maybe String -> G_sublogics -> Map String [AnyComorphism]
+getProversAux mt subL = foldr
+  (\ (p, c) -> Map.insertWith (++) (getWebProverName p) [c]) Map.empty
+    $ filterByComorph mt $ getAllAutomaticProvers subL
 
 getComorphs :: Maybe String -> G_sublogics -> String
 getComorphs mp subL = ppTopElement . unode "translations"
