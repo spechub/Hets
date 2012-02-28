@@ -217,9 +217,12 @@ mkHtmlElem :: String -> [Element] -> String
 mkHtmlElem title body = ppElement $ unode "html"
       [ unode "head" $ unode "title" title, unode "body" body ]
 
-mkHtmlElemScript :: String -> Element -> [Element] -> String
-mkHtmlElemScript title scr body = ppElement $ unode "html"
-      [ unode "head" [unode "title" title, scr], unode "body" body ]
+-- include a script within page (manual tags to avoid encoding)
+mkHtmlElemScript :: String -> String -> [Element] -> String
+mkHtmlElemScript title scr body = "<html>\n<head>\n"
+  ++ ppElement (unode "title" title) ++ "\n<script type=text/javascript>"
+  ++ scr ++ "</script>\n</head>\n" ++ ppElement (unode "body" body)
+  ++ "</html>"
 
 mkHtmlPage :: FilePath -> [Element] -> IO Response
 mkHtmlPage path = return . mkOkResponse . mkHtmlString path
@@ -471,34 +474,20 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
           `add_attrs` inputNode
     -- create list of theorems, selectable for proving
     thmSl = map mkCB $ toNamedList thms where
-        -- TODO: get rid of constructor!
-        mkCB (SenAttr s _ _ _ _ _ a) = add_attrs
-          [mkAttr "type" "checkbox", mkAttr "name" $ escStr s
-          , mkAttr "sentence" $ renderText ga $ pretty a] $
-          unode "input" s
-
+        mkCB sa = let (a, s) = (senAttr sa, sentence sa) in add_attrs
+          [ mkAttr "type" "checkbox", mkAttr "name" $ escStr a
+          , mkAttr "sentence" $ renderText ga $ pretty s] $
+          unode "input" a
     -- select or deselect all theorems by button
     selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-           , mkAttr "onClick" "selAll()"] inputNode
+           , mkAttr "onClick" "chkAll(true)"] inputNode
     deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-           , mkAttr "onClick" "deSelAll()"]
-           inputNode
-    jvScrpt = add_attr (mkAttr "type" "text/javascript")
-            $ unode "script" $ "\nfunction selAll() {\n"
-            ++ "  var f = document.forms[0];\n"
-            ++ "  for (i = 0; i < f.elements.length; i++) {\n"
-            ++ "    var e = f.elements[i];\n"
-            ++ "    if( e.type == 'checkbox' ) e.checked = true;\n"
-            ++ "  }\n"
-            ++ "}\n"
-            ++ "function deSelAll(chk) {\n"
-            ++ "  var f = document.forms[0];\n"
-            ++ "  for (i = 0; i < f.elements.length; i++) {\n"
-            ++ "    var e = f.elements[i];\n"
-            ++ "    if( e.type == 'checkbox' ) e.checked = false;\n"
-            ++ "  }\n"
-            ++ "}\n"
-
+           , mkAttr "onClick" "chkAll(false)"] inputNode
+    jvScrpt = "\nfunction chkAll(b) {\n"
+           ++ "  var e = document.forms[0].elements;\n"
+           ++ "  for (i = 0; i < e.length; i++) {\n"
+           ++ "    if( e[i].type == 'checkbox' ) e[i].checked = b;\n"
+           ++ "  }\n}\n"
     -- hidden param field
     hidStr = add_attrs [mkAttr "type" "hidden" --mkAttr "style" "display:none;"
            , mkAttr "name" "prove"
@@ -512,7 +501,8 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
     headr = unode "h2" fstLine
     axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
     sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
-    in mkHtmlElemScript fstLine jvScrpt [headr, unode "h4" "Theorems", thmMenu]
+    in mkHtmlElemScript fstLine jvScrpt [headr, unode "h4" "Theorems", thmMenu
+      , unode "h4" "Axioms & Symbols"]
       ++ axShow ++ "\n<br />" ++ sbShow
 
 -- | display nodes local signature elements in html
