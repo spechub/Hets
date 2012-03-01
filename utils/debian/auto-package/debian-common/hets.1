@@ -162,6 +162,9 @@ defines the path to the TWELF root directory.
 .B MAUDE_LIB
 defines the path to the MAUDE library directory.
 .TP
+.B HETS_HOLLIGHT_TOOLS
+defines the path to the HolLight image.
+.TP
 Some of these variables are set inside the script
 .B /usr/bin/hets
 .BR
@@ -189,6 +192,10 @@ can be proven, while the other cannot.
 .TP
 .B hets -g -A /usr/lib/hets/hets-lib/HidingOWL.het
 Choose Edit/Consistency Checker and prove the goals.
+.TP
+.B hets -g /usr/lib/hets/hets-lib/HolLight/example_binom.hol
+Import the full HolLight theory and a small lemma on binomials. You can
+use the translation to Isabelle.
 .BR
 .SH "SEE ALSO"
 .BR

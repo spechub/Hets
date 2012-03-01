@@ -89,6 +89,7 @@ fi
 # Detecting Isabelle version
 #
 
+if which isabelle 2> /dev/null 1> /dev/null; then
 ISABELLE_VERSION=`isabelle version | awk '{ print $1 }' | sed "s/Isabelle//g" | sed "s/://g"`
 case "$ISABELLE_VERSION"
 in
@@ -99,6 +100,7 @@ in
         HETS_ISABELLE_DIR=/usr/lib/hets/hets-lib/Isabelle
     ;;
 esac
+fi
 
 #
 # Setting environment variables
