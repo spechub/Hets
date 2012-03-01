@@ -127,6 +127,7 @@ do
 	# Copying debian folder
 	echo ::Creating debian folder and changelog
 	cp -rf $DIST $HETS_FOLDER/debian
+	cp -rf $PWD/debian-comon/* $HETS_FOLDER/debian
 	rm -rf $HETS_FOLDER/debian/.svn
 
 	# Creating the changelog
