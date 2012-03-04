@@ -272,7 +272,8 @@ anaNodeQuery mi ans i moreTheorems incls pss =
       incl = lookup "include" pps
       trans = lookup "translation" pps
       prover = lookup "prover" pps
-      theorems = moreTheorems ++ case lookup "theorems" pps of
+      theorems = map unEsc moreTheorems
+          ++ case lookup "theorems" pps of
         Nothing -> []
         Just str -> map unEsc $ splitOn ' ' $ decodeQueryCode str
       timeLimit = fmap read $ lookup "timeout" pps
