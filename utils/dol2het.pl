@@ -16,6 +16,9 @@ my $dolfile = $ARGV[0];
 open(INPUT, $dolfile) || die "Cannot open file $dolfile";
 open(OUTPUT, ">$hetfile") || die "Cannot create file $hetfile";
 
+print OUTPUT '%% generated using $HeadURL$; do not edit';
+print OUTPUT "\n\n";
+
 # libraries for which we need "from ... get ..." declarations (a hash used as a set)
 my %download_items;
 
