@@ -462,14 +462,14 @@ getHetsResult opts updates sessRef file query =
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
 {- | displays the global theory for a node with the option to select and prove
-theorems interactively (TODO: implement!) -}
+theorems interactively -}
 showGlobalTh :: DGraph -> Int -> G_theory -> String -> String
 showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
   G_theory lid (ExtSign _ sig) _ thsens _ -> let
     (axs, thms) = OMap.partition isAxiom thsens
     ga = globalAnnos dg
-    -- create button and menu for proving
-    prSl = showProverSelection $ sublogicOfTh gTh
+    -- create prove button and prover/comorphism selection
+    (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
     prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
           `add_attrs` inputNode
     -- create list of theorems, selectable for proving
@@ -483,36 +483,67 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
            , mkAttr "onClick" "chkAll(true)"] inputNode
     deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
            , mkAttr "onClick" "chkAll(false)"] inputNode
-    jvScrpt = "\nfunction chkAll(b) {\n"
+    jvScr2 = "\nfunction chkAll(b) {\n"
            ++ "  var e = document.forms[0].elements;\n"
            ++ "  for (i = 0; i < e.length; i++) {\n"
            ++ "    if( e[i].type == 'checkbox' ) e[i].checked = b;\n"
            ++ "  }\n}\n"
     -- hidden param field
-    hidStr = add_attrs [mkAttr "type" "hidden" --mkAttr "style" "display:none;"
+    hidStr = add_attrs [mkAttr "type" "hidden" -- mkAttr "style" "display:none;"
            , mkAttr "name" "prove"
            , mkAttr "value" $ show i]
            inputNode
     -- combine elements within a form
     thmMenu = add_attrs [mkAttr "name" "thmSel", mkAttr "method" "get"]
-      $ unode "form" $ hidStr : prSl : intersperse (unode "br " ())
+      $ unode "form" $ hidStr : prSl : cmrSl : intersperse (unode "br " ())
       (prBt : thmSl ++ [selAll]) ++ [deSelAll]
     -- formatting stuff
     headr = unode "h2" fstLine
     axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
     sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
-    in mkHtmlElemScript fstLine jvScrpt [headr, unode "h4" "Theorems", thmMenu
-      , unode "h4" "Axioms & Symbols"]
+    in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2)
+      [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Axioms & Symbols"]
       ++ axShow ++ "\n<br />" ++ sbShow
 
 -- | display nodes local signature elements in html
 showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
 showLocalTh dg (i, lbl) = showGlobalTh dg i $ dgn_theory lbl
 
-showProverSelection :: G_sublogics -> Element
-showProverSelection subL = add_attr (mkAttr "name" "prover")
-  $ unode "select" $ map (\ p -> add_attr (mkAttr "value" p)
-  $ unode "option" p) $ Map.keys $ getProversAux Nothing subL
+-- | create prover and comorphism menu and combine them using javascript
+showProverSelection :: G_sublogics -> (Element, Element, String)
+showProverSelection subL = let
+  jvScr = "\nfunction updCmSel(pr) {\n" -- the chosen prover is passed as param
+    ++ "  var cmrSl = document.forms[0].elements.namedItem('comorphism');\n"
+    -- then, all selectable comorphisms are gathered and iterated
+    ++ "  var opts = cmrSl.getElementsByTagName('option');\n"
+    ++ "  for( i = 0; i < opts.length; i++ ) {\n"
+    ++ "    var cmr = opts.item( i );\n"
+    -- the list of supported provers is extracted
+    ++ "    var prs = cmr.getAttribute('4prover').split(';');\n"
+    ++ "    var b = false;\n"
+    ++ "    for( j = 0; j < prs.length; j++ ) {\n"
+    ++ "      if( prs[j] == pr ) b = true;\n    }\n"
+    -- if prover is supported, remove disabled attribute
+    ++ "    if( b ) {\n"
+    ++ "        cmr.removeAttribute('disabled');\n"
+    -- else create and append a disabled attribute
+    ++ "    } else {\n"
+    ++ "      var ds = document.createAttribute('disabled');\n"
+    ++ "      ds.value = 'disabled';\n"
+    ++ "      cmr.setAttributeNode(ds);\n    }\n  }\n}\n"
+  allPrCm = Map.toList $ getProversAux Nothing subL
+  -- create prover selection (drop-down)
+  prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
+    add_attrs [mkAttr "value" p, mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"]
+    $ unode "option" p) $ map fst allPrCm
+  -- create comorphism selection (drop-down)
+  cmrs = add_attr (mkAttr "name" "comorphism") $ unode "select"
+    $ map (\ (c, ps) ->
+    add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
+    -- create a sorted list of (comorphism, [supported provers])
+    $ unode "option" c) $ Map.toList $ foldl (\ mp (pr, cm) ->
+    foldr (\ c -> Map.insertWith (++) (show c) [pr]) mp cm) Map.empty allPrCm
+  in (prs, cmrs, jvScr)
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
