@@ -26,7 +26,6 @@ import Common.Keywords
 import qualified Common.AS_Annotation as AS_Anno
 
 import Data.Set (Set)
-import qualified Data.Set as Set (empty)
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -39,11 +38,9 @@ data BASIC_ITEMS = Axiom_items [AS_Anno.Annoted TEXT_META]
 
 emptyTextMeta :: TEXT_META
 emptyTextMeta = Text_meta { getText = Text [] nullRange
-                          , metarelation = Set.empty
                           , nondiscourseNames = Nothing }
 
 data TEXT_META = Text_meta { getText :: TEXT
-                           , metarelation :: Set METARELATION
                            , nondiscourseNames :: Maybe (Set NAME)
                            } deriving (Show, Ord, Eq)
 -- TODO: check static analysis and other features on discourse names, as soon as parsers of segregated dialects are implemented
@@ -121,22 +118,6 @@ data SYMB_ITEMS = Symb_items [NAME_OR_SEQMARK] Id.Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Ord, Eq)
 
-data METARELATION = RelativeInterprets NAME NAME [SYMB_MAP_ITEMS]
-                    -- pos: delta, t2 - (this_text + delta entails t2)
-                  | DefinablyInterprets NAME [SYMB_MAP_ITEMS]
-                    -- pos: t2 - (this_text definably interprets t2)
-                  | FaithfullyInterprets NAME NAME [SYMB_MAP_ITEMS]
-                    -- pos: delta, t2 - (forall sigma. not (this_text + delta entails sigma) => not (t2 entails sigma))
-                  | DefinablyEquivalent NAME [SYMB_MAP_ITEMS]
-                    -- pos: t2 - (this_text ist definably equivalent to t2)
-                  | NonconservativeExtends NAME [SYMB_MAP_ITEMS]
-                    -- pos: t2 - (forall sigma. this_text entails sigma => t2 entails sigma)
-                  | ConservativeExtends NAME [SYMB_MAP_ITEMS]
-                    -- pos: t2 (this_text conservatively extends t2)
-                  | IncludeLibs [NAME]
-                    -- include the Libraries in the DevGraph
-                  deriving (Show, Ord, Eq)
-
 
 -- pretty printing using CLIF
 instance Pretty BASIC_SPEC where
@@ -145,8 +126,6 @@ instance Pretty BASIC_ITEMS where
     pretty = printBasicItems
 instance Pretty TEXT_META where
    pretty = printTextMeta
-instance Pretty METARELATION where
-   pretty = printMetarelation
 instance Pretty TEXT where
    pretty = printText
 instance Pretty PHRASE where
@@ -186,9 +165,6 @@ printBasicItems (Axiom_items xs) = vcat $ map pretty xs
 
 printTextMeta :: TEXT_META -> Doc
 printTextMeta tm = pretty $ getText tm
-
-printMetarelation :: METARELATION -> Doc
-printMetarelation _ = empty
 
 -- print basic spec as pure clif-texts, without any annotations
 exportCLIF :: [AS_Anno.Named TEXT_META] -> Doc

@@ -77,8 +77,7 @@ convertToLibDefN fn specs =
                               Nothing
                               Nothing
                           ) nullRange)
-      : (map convertToLibItems specs
-        ++ concatMap convertMetarelsToLibItems specs)
+      : (map convertToLibItems specs)
     )
     nullRange
     []
@@ -114,66 +113,16 @@ specName def i = def ++ "_" ++ show i
 cnvImportName :: NAME -> NAME
 cnvImportName = mkSimpleId . convertFileToLibStr . tokStr
 
-convertMetarelsToLibItems :: (BASIC_SPEC, NAME) -> [Anno.Annoted LIB_ITEM]
-convertMetarelsToLibItems (CL.Basic_spec abis, n) =
-  concatMap (metarelsBI n . Anno.item) abis
-
-metarelsBI :: NAME -> BASIC_ITEMS -> [Anno.Annoted LIB_ITEM]
-metarelsBI n (Axiom_items axs) = concatMap (metarelsTM n) axs
-
-metarelsTM :: NAME -> Anno.Annoted TEXT_META -> [Anno.Annoted LIB_ITEM]
-metarelsTM n annoTm =
-  concatMap (metarelsMR n) $ Set.elems $ metarelation $ Anno.item annoTm
-
-metarelsMR :: NAME -> METARELATION -> [Anno.Annoted LIB_ITEM]
-metarelsMR n mr = case mr of
-  RelativeInterprets delta t2 smaps ->
-      [emptyAnno $ View_defn
-                          (mkSimpleId $ concat [ "RelativeInterprets_"
-                                               , show n, "_"
-                                               , show delta, "_"
-                                               , show t2 ])
-                          emptyGenericity
-                          (View_type
-                            (specFromName t2)
-                            (emptyAnno
-                             (Union
-                              [specFromName n, specFromName delta] nullRange))
-                            nullRange)
-                          [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
-                          nullRange]
-  NonconservativeExtends t2 smaps ->
-      [emptyAnno $ View_defn
-                          (mkSimpleId $ concat [ "NonconservativeExtends_"
-                                               , show n, "_"
-                                               , show t2 ])
-                          emptyGenericity
-                          (View_type
-                            (specFromName t2)
-                            (specFromName n)
-                            nullRange)
-                          [G_symb_map $ G_symb_map_items_list CommonLogic smaps]
-                          nullRange]
-  IncludeLibs _ -> []
-  _ -> error "metarelsMR"
--- TODO: implement this for the other metarelations
-
 collectDownloads :: HetcatsOpts -> SpecMap -> (String, SpecInfo) -> IO SpecMap
 collectDownloads opts specMap (n, (b, topTexts, importedBy)) =
-  let -- directDls = Set.elems $ Set.map tokStr $ directDownloads b
-      directMrs = Set.elems $ Set.map tokStr $ directMetarels b
-      directImps = Set.elems $ Set.map tokStr $ directImports b
+  let directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
   in do
-      sm2 <- foldM (\ sm d -> do
+      foldM (\ sm d -> do
           newDls <- downloadSpec opts sm newTopTexts newImportedBy True d
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
-      foldM (\ sm d -> do
-          newDls <- downloadSpec opts sm newTopTexts Set.empty False d
-          return (Map.unionWith unify newDls sm)
-        ) sm2 directMrs -- metarelations have no "importedBy"s
 
 downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> Set String
                 -> Bool -> String -> IO SpecMap
@@ -280,26 +229,6 @@ impName :: PHRASE -> NAME
 impName (Importation (Imp_name n)) = n
 impName _ = undefined -- not necessary because filtered out
 
-directMetarels :: BASIC_SPEC -> Set NAME
-directMetarels (CL.Basic_spec abis) =
-  Set.unions $ map (metarelDownloadsBI . Anno.item) abis
-
-metarelDownloadsBI :: BASIC_ITEMS -> Set NAME
-metarelDownloadsBI (Axiom_items axs) =
-  Set.unions $ map (metarelDownloadsTM . Anno.item) axs
-
-metarelDownloadsTM :: TEXT_META -> Set NAME
-metarelDownloadsTM tm =
-  Set.fold Set.union Set.empty $ Set.map metarelDownloadsMR $ metarelation tm
-
-metarelDownloadsMR :: METARELATION -> Set NAME
-metarelDownloadsMR mr = case mr of
-  RelativeInterprets delta t2 _ -> Set.fromList [delta, t2]
-  NonconservativeExtends t2 _ -> Set.singleton t2
-  IncludeLibs ns -> Set.fromList ns
-  _ -> error "metarelDownloadsMR"
--- TODO: implement this for the other metarelations
-
 anaImports :: HetcatsOpts -> SpecMap -> IO [(BASIC_SPEC, NAME)]
 anaImports opts specMap = do
   downloads <- foldM
@@ -312,8 +241,7 @@ anaImports opts specMap = do
       -- sort by putting the latest imported specs to the beginning
   return $ bsNamePairs sortedSpecs
 
-{- not fast (O(n+m)), but almost reliable
-(not working when mixing imports and metarelations) -}
+{- not fast (O(n+m)), but reliable -}
 usingImportedByCount :: (String, SpecInfo) -> (String, SpecInfo) -> Ordering
 usingImportedByCount (_, (_, _, importedBy1)) (_, (_, _, importedBy2)) =
   compare (Set.size importedBy2) (Set.size importedBy1)

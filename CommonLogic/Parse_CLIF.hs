@@ -30,8 +30,6 @@ import qualified CommonLogic.Tools as Tools
 import CommonLogic.Lexer_CLIF
 import CommonLogic.Parse_Symbols (intNameOrSeqMark)
 
-import CommonLogic.Parse_Metarelations
-
 import Text.ParserCombinators.Parsec as Parsec
 
 -- | parser for getText
@@ -47,7 +45,6 @@ cltext = many white >> (do
   )
   where tm :: TEXT -> TEXT_META
         tm t = Text_meta { AS.getText = t
-                         , metarelation = metarelations t
                          , nondiscourseNames = Nothing
                          }
 
