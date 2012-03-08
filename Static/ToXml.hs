@@ -10,7 +10,7 @@ Portability :  non-portable(Grothendieck)
 Xml of Hets DGs
 -}
 
-module Static.ToXml (dGraph, lnode, showSymbols) where
+module Static.ToXml (dGraph, lnode, showSymbols, showSymbolsTh) where
 
 import Static.DgUtils
 import Static.DevGraph
@@ -175,7 +175,10 @@ dgrule r =
       _ -> []
 
 showSymbols :: DGNodeLab -> String
-showSymbols lbl = case dgn_theory lbl of
+showSymbols lbl = showSymbolsTh $ dgn_theory lbl 
+
+showSymbolsTh :: G_theory -> String
+showSymbolsTh th = case th of
   G_theory lid (ExtSign sig _) _ sens _ ->
      ppTopElement . add_attr (mkAttr "logic" $ language_name lid)
      $ unode "Ontology"

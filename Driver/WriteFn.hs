@@ -213,6 +213,8 @@ writeTheory opts filePrefix ga
         let (sign', _sens') = addUniformRestr sign sens
         writeVerbFile opts (f ++ ".sexpr")
           $ shows (prettySExpr $ vseSignToSExpr sign') "\n"
+    SymXml -> do
+      writeVerbFile opts f $ ToXml.showSymbolsTh raw_gTh      
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->
@@ -320,6 +322,7 @@ writeSpecFiles opts file lenv ln dg = do
             FreeCADOut -> True
             HaskellOut -> True
             ComptableXml -> True
+            SymXml -> True
             _ -> False) outTypes
         allSpecs = null ns
         noViews = null vs

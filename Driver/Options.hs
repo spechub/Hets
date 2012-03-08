@@ -411,6 +411,7 @@ data OutType =
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
   | RDFOut
+  | SymXml
 
 instance Show OutType where
   show o = case o of
@@ -432,11 +433,12 @@ instance Show OutType where
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
     RDFOut -> "nt"
+    SymXml -> "sym.xml"
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
   [Prf, EnvOut, OWLOut, CLIFOut, OmdocOut, XmlOut, ExperimentalOut,
-      HaskellOut, ThyFile, ComptableXml, FreeCADOut, RDFOut]
+      HaskellOut, ThyFile, ComptableXml, FreeCADOut, RDFOut, SymXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
