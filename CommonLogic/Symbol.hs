@@ -21,6 +21,7 @@ module CommonLogic.Symbol (
        , idToRaw
        , matches
        , addSymbToSign
+       , symKind
        )
        where
 
@@ -78,3 +79,12 @@ addSymbToSign sig symb = Result [] $ Just $
   else sig { Sign.discourseNames =
                     Set.insert (symName symb) $ Sign.discourseNames sig
            }
+
+symKind :: Symbol -> String
+symKind s = if Sign.isSeqMark $ symName s then symKindSeqMark else symKindName
+
+symKindName :: String
+symKindName = "Name"
+
+symKindSeqMark :: String
+symKindSeqMark = "SequenceMarker"

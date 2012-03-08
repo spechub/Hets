@@ -302,3 +302,8 @@ nosToSymbol nos = case nos of
 
 symbToSymbol :: Id.Token -> Symbol.Symbol
 symbToSymbol tok = Symbol.Symbol{Symbol.symName = Id.simpleIdToId tok}
+
+symsOfTextMeta :: AS.TEXT_META -> [Symbol.Symbol]
+symsOfTextMeta tm =
+  Set.toList $ Symbol.symOf $ retrieveSign Sign.emptySig (AS_Anno.emptyAnno tm)
+

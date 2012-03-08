@@ -21,7 +21,7 @@ import Common.ProofTree
 
 import CommonLogic.ATC_CommonLogic ()
 import CommonLogic.Sign
-import CommonLogic.AS_CommonLogic
+import CommonLogic.AS_CommonLogic as AS
 import CommonLogic.Symbol as Symbol
 import CommonLogic.Analysis
 import CommonLogic.Parse_CLIF
@@ -61,6 +61,8 @@ instance Sentences CommonLogic
       symmap_of CommonLogic = getSymbolMap -- returns the symbol map
       sym_name CommonLogic = getSymbolName -- returns the name of a symbol
       map_sen CommonLogic = mapSentence -- TODO
+      symsOfSen CommonLogic = symsOfTextMeta
+      symKind CommonLogic = Symbol.symKind
 
 instance Syntax CommonLogic
     BASIC_SPEC
