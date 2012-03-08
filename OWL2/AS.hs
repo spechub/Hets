@@ -292,7 +292,7 @@ uriToId = simpleIdToId . uriToTok
 
 -- | Extracts Id from Entities
 entityToId :: Entity -> Id
-entityToId (Entity _ iri) = uriToId iri
+entityToId = uriToId . cutIRI
 
 printDatatype :: IRI -> String
 printDatatype dt = showQU $
@@ -339,10 +339,13 @@ type RestrictionValue = Literal
 
 -- * ENTITIES
 
-data Entity = Entity EntityType IRI deriving (Show, Eq, Ord)
+data Entity = Entity
+  { entityKind :: EntityType
+  , cutIRI :: IRI }
+  deriving (Show, Eq, Ord)
 
 instance GetRange Entity where
-  getRange (Entity _ iri) = iriPos iri
+  getRange = iriPos . cutIRI
 
 data EntityType =
     Datatype
@@ -364,9 +367,6 @@ showEntityType e = case e of
 
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
-
-cutIRI :: Entity -> IRI
-cutIRI (Entity _ iri) = iri
 
 -- * LITERALS
 

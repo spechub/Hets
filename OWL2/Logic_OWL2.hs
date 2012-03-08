@@ -23,6 +23,9 @@ import Common.DefaultMorphism
 import Common.Consistency
 import Common.ProverTools
 
+import Data.Char (isAlpha)
+import qualified Data.Set as Set
+
 import ATC.ProofTree ()
 
 import Logic.Logic
@@ -75,6 +78,8 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     sym_of OWL2 = singletonList . symOf
     symmap_of OWL2 = symMapOf
     sym_name OWL2 = entityToId
+    symKind OWL2 = takeWhile isAlpha . showEntityType . entityKind
+    symsOfSen OWL2 = Set.toList . symsOfAxiom
 
 instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems

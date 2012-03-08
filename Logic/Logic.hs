@@ -309,6 +309,12 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = statError l "sym_name"
+      -- | a logic dependent kind of a symbol
+      symKind :: lid -> symbol -> String
+      symKind _ _ = ""
+      -- | the symbols occuring in a sentence (any order)
+      symsOfSen :: lid -> sentence -> [symbol]
+      symsOfSen _ _ = []
 
 -- | makes a singleton list from the given value
 singletonList :: a -> [a]
