@@ -175,10 +175,22 @@ dgrule r =
       _ -> []
 
 showSymbols :: DGNodeLab -> String
-showSymbols lbl = case signOf $ dgn_theory lbl of
-  G_sign lid (ExtSign sig _) _ ->
+showSymbols lbl = case dgn_theory lbl of
+  G_theory lid (ExtSign sig _) _ sens _ ->
      ppTopElement . add_attr (mkAttr "logic" $ language_name lid)
-     . unode "Symbols"
-     . map (\ s -> add_attr (mkNameAttr . show $ sym_name lid s)
+     $ unode "Ontology"
+     [ unode "Symbols" . map (\ s -> add_attrs
+            [ mkNameAttr . show $ sym_name lid s
+            , mkAttr "kind" $ symKind lid s]
             $ prettySymbol emptyGlobalAnnos s)
            $ symlist_of lid sig
+     , unode "Axioms" . map (\ ns ->
+           add_attrs
+             (mkNameAttr (senAttr ns) :
+             rangeAttrs (getRangeSpan $ sentence ns))
+           . unode "Axiom" $ map (\ s -> add_attrs
+            [ mkNameAttr . show $ sym_name lid s
+            , mkAttr "kind" $ symKind lid s]
+            $ prettySymbol emptyGlobalAnnos s)
+            . symsOfSen lid $ sentence ns)
+            $ toNamedList sens ]
