@@ -39,7 +39,6 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.List (sortBy)
 
-import System.IO
 import System.FilePath (combine, addExtension)
 import System.Directory (doesFileExist, getCurrentDirectory)
 
@@ -62,9 +61,9 @@ parseCL_CLIF filename opts = do
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
-parseCL_CLIF_contents filename =
+parseCL_CLIF_contents filename contents =
   runParser (many basicSpec) (emptyAnnos ())
-     ("Error while parsing CLIF-File \"" ++ filename ++ "\"")
+     ("Error while parsing CLIF-File \"" ++ filename ++ "\"") contents
 
 {- maps imports in basic spec to global definition links (extensions) in
 development graph -}
@@ -188,8 +187,7 @@ localFileContents :: HetcatsOpts -> String -> IO String
 localFileContents opts filename = do
   curDir <- getCurrentDirectory
   file <- findLibFile (curDir : libdirs opts) filename
-  handle <- openFile file ReadMode
-  hGetContents handle
+  readFile file
 
 findLibFile :: [FilePath] -> String -> IO FilePath
 findLibFile ds f = do
