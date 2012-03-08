@@ -56,7 +56,11 @@ import FreeCAD.Logic_FreeCAD
 
 readLibDefnM :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath -> String
   -> m LIB_DEFN
-readLibDefnM lgraph opts file input =
+readLibDefnM lgraph opts file = readLibDefnAux lgraph opts file file
+
+readLibDefnAux :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath
+  -> FilePath -> String -> m LIB_DEFN
+readLibDefnAux lgraph opts file fileForPos input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
@@ -71,7 +75,7 @@ readLibDefnM lgraph opts file input =
       RDFIn -> liftIO $ parseRDF file
 #endif
       _ -> case runParser (library $ setCurLogic (defLogic opts) lgraph)
-          (emptyAnnos ()) file input of
+          (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
          Right ast -> return ast
 

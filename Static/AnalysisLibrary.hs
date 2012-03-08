@@ -137,7 +137,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           Just gLn | useLibPos opts -> show $ getLibId gLn
           _ -> if checkUri file then file else realFileName
 
-  Lib_defn pln is ps ans <- readLibDefnM lgraph opts posFileName input
+  Lib_defn pln is ps ans <- readLibDefnAux lgraph opts file posFileName input
 
   let noSuffixFile = rmSuffix file
       spN = convertFileToLibStr file
