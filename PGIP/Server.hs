@@ -531,7 +531,7 @@ showProverSelection subL = let
   jvScr = unlines
         -- the chosen prover is passed as param
         [ "\nfunction updCmSel(pr) {"
-        , "  var cmrSl = document.forms[0].elements.namedItem('comorphism');"
+        , "  var cmrSl = document.forms[0].elements.namedItem('translation');"
         -- then, all selectable comorphisms are gathered and iterated
         , "  var opts = cmrSl.getElementsByTagName('option');"
         , "  for( i = opts.length-1; i >= 0; i-- ) {"
@@ -561,12 +561,13 @@ showProverSelection subL = let
     add_attrs [mkAttr "value" p, mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"]
     $ unode "option" p) $ map fst allPrCm
   -- create comorphism selection (drop-down)
-  cmrs = add_attr (mkAttr "name" "comorphism") $ unode "select"
+  cmrs = add_attr (mkAttr "name" "translation") $ unode "select"
     $ map (\ (c, ps) ->
     add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
     -- create a sorted list of (comorphism, [supported provers])
     $ unode "option" c) $ Map.toList $ foldl (\ mp (pr, cm) ->
-    foldr (\ c -> Map.insertWith (++) (show c) [pr]) mp cm) Map.empty allPrCm
+    foldr (\ c -> Map.insertWith (++) (showComorph c) [pr]) mp cm)
+    Map.empty allPrCm
   in (prs, cmrs, jvScr)
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]

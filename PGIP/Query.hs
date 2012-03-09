@@ -270,14 +270,16 @@ anaNodeQuery mi ans i moreTheorems incls pss =
                 (x, Just y) -> ((x, y) :)
                 _ -> id) [] pss
       incl = lookup "include" pps
-      trans = lookup "translation" pps
+      -- TODO: didn't figure out how trans is used so-far. maybe decodeQuery
+      -- screws things up (?)
+      trans = maybe Nothing (Just . decodeQueryCode) $ lookup "translation" pps
       prover = lookup "prover" pps
       theorems = map unEsc moreTheorems
           ++ case lookup "theorems" pps of
         Nothing -> []
         Just str -> map unEsc $ splitOn ' ' $ decodeQueryCode str
       timeLimit = fmap read $ lookup "timeout" pps
-      pp = ProveNode (not (null incls) || case lookup "include" pps of
+      pp = ProveNode (not (null incls) || case incl of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
         prover trans timeLimit theorems
