@@ -495,14 +495,29 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
            , mkAttr "value" $ show i ]
            inputNode
     -- combine elements within a form
-    thmMenu = add_attrs [mkAttr "name" "thmSel", mkAttr "method" "get"]
-      $ unode "form" $ hidStr : prSl : cmrSl : intersperse (unode "br " ())
-      (prBt : thmSl ++ [selAll]) ++ [deSelAll]
+    thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel"
+      , mkAttr "method" "get"] $ unode "form" $ hidStr : prSl : cmrSl : br
+      : selAll : deSelAll : intersperse br (prBt : thmSl)
+    -- autoselect SPASS if possible
+    jvScr3 = unlines ["\nwindow.onload = function() {"
+           , "  prSel = document.forms[0].elements.namedItem('prover');"
+           , "  prs = prSel.getElementsByTagName('option');"
+           , "  for ( i=0; i<prs.length; i++ ) {"
+           , "    if( prs[i].value == 'SPASS' ) {"
+           , "      prs[i].selected = 'selected';"
+           , "      updCmSel('SPASS');"
+           , "      return;"
+           , "    }"
+           , "  }"
+           -- if SPASS unable, select first one in list
+           , "  prs[0].selected = 'selected';"
+           , "  updCmSel( prs[0].value );"
+           , "}" ]
     -- formatting stuff
     headr = unode "h2" fstLine
     axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
     sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
-    in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2)
+    in mkHtmlElemScript fstLine (jvScr3 ++ jvScr1 ++ jvScr2)
       [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Axioms & Symbols"]
       ++ axShow ++ "\n<br />" ++ sbShow
 
@@ -519,7 +534,7 @@ showProverSelection subL = let
         , "  var cmrSl = document.forms[0].elements.namedItem('comorphism');"
         -- then, all selectable comorphisms are gathered and iterated
         , "  var opts = cmrSl.getElementsByTagName('option');"
-        , "  for( i = 0; i < opts.length; i++ ) {"
+        , "  for( i = opts.length-1; i >= 0; i-- ) {"
         , "    var cmr = opts.item( i );"
         -- the list of supported provers is extracted
         , "    var prs = cmr.getAttribute('4prover').split(';');"
@@ -530,6 +545,8 @@ showProverSelection subL = let
         -- if prover is supported, remove disabled attribute
         , "    if( b ) {"
         , "        cmr.removeAttribute('disabled');"
+        -- any fit comorphism is selected
+        , "        cmr.selected = 'selected';"
         -- else create and append a disabled attribute
         , "    } else {"
         , "      var ds = document.createAttribute('disabled');"
