@@ -483,15 +483,16 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
            , mkAttr "onClick" "chkAll(true)"] inputNode
     deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
            , mkAttr "onClick" "chkAll(false)"] inputNode
-    jvScr2 = "\nfunction chkAll(b) {\n"
-           ++ "  var e = document.forms[0].elements;\n"
-           ++ "  for (i = 0; i < e.length; i++) {\n"
-           ++ "    if( e[i].type == 'checkbox' ) e[i].checked = b;\n"
-           ++ "  }\n}\n"
+    jvScr2 = unlines ["\nfunction chkAll(b) {"
+           , "  var e = document.forms[0].elements;"
+           , "  for (i = 0; i < e.length; i++) {"
+           , "    if( e[i].type == 'checkbox' ) e[i].checked = b;"
+           , "  }"
+           , "}" ]
     -- hidden param field
-    hidStr = add_attrs [mkAttr "type" "hidden" -- mkAttr "style" "display:none;"
-           , mkAttr "name" "prove"
-           , mkAttr "value" $ show i]
+    hidStr = add_attrs [ mkAttr "name" "prove"
+           , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+           , mkAttr "value" $ show i ]
            inputNode
     -- combine elements within a form
     thmMenu = add_attrs [mkAttr "name" "thmSel", mkAttr "method" "get"]
@@ -512,25 +513,31 @@ showLocalTh dg (i, lbl) = showGlobalTh dg i $ dgn_theory lbl
 -- | create prover and comorphism menu and combine them using javascript
 showProverSelection :: G_sublogics -> (Element, Element, String)
 showProverSelection subL = let
-  jvScr = "\nfunction updCmSel(pr) {\n" -- the chosen prover is passed as param
-    ++ "  var cmrSl = document.forms[0].elements.namedItem('comorphism');\n"
-    -- then, all selectable comorphisms are gathered and iterated
-    ++ "  var opts = cmrSl.getElementsByTagName('option');\n"
-    ++ "  for( i = 0; i < opts.length; i++ ) {\n"
-    ++ "    var cmr = opts.item( i );\n"
-    -- the list of supported provers is extracted
-    ++ "    var prs = cmr.getAttribute('4prover').split(';');\n"
-    ++ "    var b = false;\n"
-    ++ "    for( j = 0; j < prs.length; j++ ) {\n"
-    ++ "      if( prs[j] == pr ) b = true;\n    }\n"
-    -- if prover is supported, remove disabled attribute
-    ++ "    if( b ) {\n"
-    ++ "        cmr.removeAttribute('disabled');\n"
-    -- else create and append a disabled attribute
-    ++ "    } else {\n"
-    ++ "      var ds = document.createAttribute('disabled');\n"
-    ++ "      ds.value = 'disabled';\n"
-    ++ "      cmr.setAttributeNode(ds);\n    }\n  }\n}\n"
+  jvScr = unlines
+        -- the chosen prover is passed as param
+        [ "\nfunction updCmSel(pr) {"
+        , "  var cmrSl = document.forms[0].elements.namedItem('comorphism');"
+        -- then, all selectable comorphisms are gathered and iterated
+        , "  var opts = cmrSl.getElementsByTagName('option');"
+        , "  for( i = 0; i < opts.length; i++ ) {"
+        , "    var cmr = opts.item( i );"
+        -- the list of supported provers is extracted
+        , "    var prs = cmr.getAttribute('4prover').split(';');"
+        , "    var b = false;"
+        , "    for( j = 0; j < prs.length; j++ ) {"
+        , "      if( prs[j] == pr ) b = true;"
+        , "    }"
+        -- if prover is supported, remove disabled attribute
+        , "    if( b ) {"
+        , "        cmr.removeAttribute('disabled');"
+        -- else create and append a disabled attribute
+        , "    } else {"
+        , "      var ds = document.createAttribute('disabled');"
+        , "      ds.value = 'disabled';"
+        , "      cmr.setAttributeNode(ds);"
+        , "    }"
+        , "  }"
+        , "}" ]
   allPrCm = Map.toList $ getProversAux Nothing subL
   -- create prover selection (drop-down)
   prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
