@@ -182,18 +182,19 @@ showSymbolsTh th = case th of
   G_theory lid (ExtSign sig _) _ sens _ ->
      ppTopElement . add_attr (mkAttr "logic" $ language_name lid)
      $ unode "Ontology"
-     [ unode "Symbols" . map (\ s -> add_attrs
-            [ mkNameAttr . show $ sym_name lid s
-            , mkAttr "kind" $ symKind lid s]
-            $ prettySymbol emptyGlobalAnnos s)
+     [ unode "Symbols" . map (showSym lid)
            $ symlist_of lid sig
      , unode "Axioms" . map (\ ns ->
            add_attrs
-             (mkNameAttr (senAttr ns) :
+             (mkNameAttr (senAttr ns) : mkAttr "text" (showDoc (sentence ns) "") :
              rangeAttrs (getRangeSpan $ sentence ns))
-           . unode "Axiom" $ map (\ s -> add_attrs
-            [ mkNameAttr . show $ sym_name lid s
-            , mkAttr "kind" $ symKind lid s]
-            $ prettySymbol emptyGlobalAnnos s)
+           . unode "Axiom" $ map (showSym lid)
             . symsOfSen lid $ sentence ns)
             $ toNamedList sens ]
+
+showSym :: (Sentences lid sentence sign morphism symbol) =>
+           lid -> symbol -> Element
+showSym lid s = add_attrs
+            [ mkNameAttr . show $ sym_name lid s
+            , mkAttr "kind" $ symKind lid s]
+            $ prettySymbol emptyGlobalAnnos s
