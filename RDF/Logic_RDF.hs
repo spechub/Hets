@@ -28,7 +28,7 @@ import ATC.ProofTree ()
 import Logic.Logic
 
 import RDF.AS
-import RDF.ATC_RDF ()
+-- import RDF.ATC_RDF ()
 import RDF.Parse
 import RDF.Symbols
 import RDF.Print

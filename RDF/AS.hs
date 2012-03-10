@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Francisc-Nicolae Bungiu
+Copyright   :  (c) Felix Gabriel Mance, Francisc-Nicolae Bungiu
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -10,6 +10,7 @@ Portability :  portable
 RDF abstract syntax
 
 References:
+    <http://www.w3.org/TeamSubmission/turtle/>
     <http://www.informatik.uni-bremen.de/~till/papers/ontotrans.pdf>
     <http://www.w3.org/TR/rdf-concepts/#section-Graph-syntax>
 -}
@@ -19,24 +20,39 @@ module RDF.AS where
 import Common.Id
 import OWL2.AS
 
+import qualified Data.Map as Map
+
 -- * Graphs
 
-type Subject = IRI
-type Predicate = IRI
-type Object = Either IRI Literal
+data Term =
+    IRITerm IRI
+  | LiteralTerm Literal 
+  | Collection [IRI]
+  deriving (Show, Eq, Ord)
 
-getIRIFromObject :: Object -> Maybe IRI
-getIRIFromObject obj = case obj of
-    Left iri -> Just iri
-    _ -> Nothing
+type Subject = Term
+type Predicate = Term
+type Object = Term
+  
+data Triple =
+      NTriple Subject Predicate Object
+    | AbbreviatedTriple Subject [(Maybe Predicate, Object)]
+    deriving (Show, Eq, Ord)
 
--- Axiom represents a RDF Triple
+data BaseIRI = Base IRI
+    deriving (Show, Eq, Ord)
+
+data Prefix = Prefix String IRI
+    deriving (Show, Eq, Ord)
+    
 data Axiom = Axiom Subject Predicate Object
     deriving (Show, Eq, Ord)
-
-data RDFGraph = RDFGraph [Axiom]
-    deriving (Show, Eq, Ord)
-
+    
+data TurtleDocument = TurtleDocument
+    { prefixMap :: Map.Map String IRI
+    , triples :: [Triple] 
+    } deriving (Show, Eq, Ord)
+    
 data RDFEntityType = Subject | Predicate | Object
     deriving (Show, Eq, Ord, Bounded, Enum)
 
@@ -47,6 +63,6 @@ data RDFEntity = RDFEntity RDFEntityType IRI
 rdfEntityTypes :: [RDFEntityType]
 rdfEntityTypes = [minBound .. maxBound]
 
-instance GetRange RDFGraph where
+instance GetRange TurtleDocument where
 instance GetRange Axiom where
 instance GetRange RDFEntity where

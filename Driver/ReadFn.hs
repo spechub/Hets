@@ -29,7 +29,7 @@ import CommonLogic.ParseCLAsLibDefn
 import OWL2.ParseOWLAsLibDefn
 #endif
 #ifdef RDFLOGIC
-import RDF.ParseRDFAsLibDefn
+-- import RDF.ParseRDFAsLibDefn
 #endif
 
 import Driver.Options
@@ -72,7 +72,7 @@ readLibDefnAux lgraph opts file fileForPos input =
       OWLIn -> liftIO $ parseOWL file
 #endif
 #ifdef RDFLOGIC
-      RDFIn -> liftIO $ parseRDF file
+--      RDFIn -> liftIO $ parseRDF file
 #endif
       _ -> case runParser (library $ setCurLogic (defLogic opts) lgraph)
           (emptyAnnos ()) fileForPos input of
