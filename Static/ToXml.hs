@@ -186,7 +186,8 @@ showSymbolsTh th = case th of
            $ symlist_of lid sig
      , unode "Axioms" . map (\ ns ->
            add_attrs
-             (mkNameAttr (senAttr ns) : mkAttr "text" (showDoc (sentence ns) "") :
+             (mkNameAttr (senAttr ns) : mkAttr "text" 
+                (replace  (showDoc (sentence ns) "") "\n" "&#10;") :
              rangeAttrs (getRangeSpan $ sentence ns))
            . unode "Axiom" $ map (showSym lid)
             . symsOfSen lid $ sentence ns)
@@ -198,3 +199,10 @@ showSym lid s = add_attrs
             [ mkNameAttr . show $ sym_name lid s
             , mkAttr "kind" $ symKind lid s]
             $ prettySymbol emptyGlobalAnnos s
+
+replace :: Eq a => [a] -> [a] -> [a] -> [a]
+replace [] _ _ = []
+replace s find repl =
+    if take (length find) s == find
+        then repl ++ (replace (drop (length find) s) find repl)
+        else [head s] ++ (replace (tail s) find repl)
