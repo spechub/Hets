@@ -21,43 +21,8 @@ import OWL2.Parse
 import RDF.AS
 import RDF.Symbols
 
+import Data.List
 import Text.ParserCombinators.Parsec
-
--- * ntriples parser
-
--- | parses an object
-parseObj :: CharParser st Object
-parseObj = fmap Right literal <|> fmap Left uriP
-
--- | parses a comment
-comment :: CharParser st ()
-comment = do
-    skipChar '#'
-    forget $ manyTill anyChar $ char '\n'
-
--- | parses one ntriple (subject, predicate, object)
-parseNTriple :: CharParser st Axiom
-parseNTriple = do
-    many space
-    subj <- uriP
-    pre <- uriP
-    obj <- parseObj
-    skips $ char '.'
-    return $ Axiom subj pre obj
-
--- | parses a string containing several ntriples
-basicSpec :: CharParser st RDFGraph
-basicSpec = do
-    many $ forget space <|> comment
-    fmap RDFGraph $ many parseNTriple
-
--- | parses an ntriple file
-parseNTriplesFile :: String -> IO RDFGraph
-parseNTriplesFile file = do
-  str <- readFile file
-  case runParser (basicSpec << eof) () file str of
-    Right g -> return g
-    Left err -> error $ show err
 
 -- * hets symbols parser
 
@@ -95,3 +60,36 @@ rdfSymbPairs = uriPair >>= \ u -> do
     us <- rdfSymbPairs
     return $ u : us
   <|> return [u]
+
+parse1Base :: CharParser st BaseIRI
+parse1Base = do
+	skips $ string "@base"
+	base <- skips fullIri
+	skips $ string "."
+	return $ BaseIRI base
+
+parseAndResolveBases :: CharParser st BaseIRI
+parseAndResolveBases = do
+	bl <- many parse1Base
+	return $ resolveBases bl
+
+startsWithScheme :: IRI -> Bool
+startsWithScheme iri = isPrefixOf "//" $ localPart iri
+
+baseStartsWithScheme :: BaseIRI -> Bool
+baseStartsWithScheme (BaseIRI iri) = startsWithScheme iri
+
+resolveBases :: [BaseIRI] -> BaseIRI
+resolveBases ls = if null ls then BaseIRI dummyQName else
+	let h : t = ls
+	in if null $ filter baseStartsWithScheme t
+		then appendAllBases ls
+		else resolveBases t
+	
+appendTwoBases :: BaseIRI -> BaseIRI -> BaseIRI
+appendTwoBases (BaseIRI b1) (BaseIRI b2) =
+	let lp = localPart b1 ++ localPart b2
+	in BaseIRI $ b1 {localPart = lp}
+	
+appendAllBases :: [BaseIRI] -> BaseIRI
+appendAllBases bl = foldl1 appendTwoBases bl

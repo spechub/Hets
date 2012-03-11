@@ -24,35 +24,39 @@ import qualified Data.Map as Map
 
 -- * Graphs
 
+{- | A term is either an IRI, a literal (only for objects) or a collection of
+         IRIs and literals -}
 data Term =
     IRITerm IRI
-  | LiteralTerm Literal 
+  | LiteralTerm Literal
   | Collection [IRI]
   deriving (Show, Eq, Ord)
 
 type Subject = Term
 type Predicate = Term
 type Object = Term
-  
-data Triple =
+
+{- | Triples can also be abbreviated using a comma (subject and predicate stay
+        the same) or using a semicolon (subject stays the same) -}
+data Triples =
       NTriple Subject Predicate Object
-    | AbbreviatedTriple Subject [(Maybe Predicate, Object)]
+    | AbbreviatedTriples Subject [(Maybe Predicate, Object)]
     deriving (Show, Eq, Ord)
 
-data BaseIRI = Base IRI
+data BaseIRI = BaseIRI IRI
     deriving (Show, Eq, Ord)
 
 data Prefix = Prefix String IRI
     deriving (Show, Eq, Ord)
-    
+
 data Axiom = Axiom Subject Predicate Object
     deriving (Show, Eq, Ord)
-    
+
 data TurtleDocument = TurtleDocument
     { prefixMap :: Map.Map String IRI
-    , triples :: [Triple] 
+    , triples :: [Triples]
     } deriving (Show, Eq, Ord)
-    
+
 data RDFEntityType = Subject | Predicate | Object
     deriving (Show, Eq, Ord, Bounded, Enum)
 
