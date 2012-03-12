@@ -187,7 +187,8 @@ showSymbolsTh ga th = case th of
      , unode "Axioms" . map (\ ns@SenAttr { sentence = s } ->
            add_attrs
              (mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s))
-           . unode "Axiom" $ unode "Text" (showGlobalDoc ga s "")
+           . unode "Axiom" $ unode "Text"
+                 (showGlobalDoc ga (simplify_sen lid sig s) "")
              : map (showSym lid) (symsOfSen lid s))
             $ toNamedList sens ]
 
