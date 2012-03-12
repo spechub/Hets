@@ -543,12 +543,12 @@ showProverSelection subL = let
         , "    var cmr = opts.item( i );"
         -- the list of supported provers is extracted
         , "    var prs = cmr.getAttribute('4prover').split(';');"
-        , "    var b = false;"
-        , "    for( var j = 0; j < prs.length; j++ ) {"
-        , "      if( prs[j] == pr ) b = true;"
+        , "    var pFit = false;"
+        , "    for( var j = 0; ! pFit && j < prs.length; j++ ) {"
+        , "      pFit = prs[j] == pr;"
         , "    }"
         -- if prover is supported, remove disabled attribute
-        , "    if( b ) {"
+        , "    if( pFit ) {"
         , "        cmr.removeAttribute('disabled');"
         , "        selAccept = selAccept || cmr.selected;"
         -- else create and append a disabled attribute
