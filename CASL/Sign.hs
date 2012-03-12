@@ -65,6 +65,12 @@ data SymbType = SortAsItemType
               | PredAsItemType PredType
                 deriving (Show, Eq, Ord)
 
+symbolKind :: SymbType -> SYMB_KIND
+symbolKind t = case t of
+  OpAsItemType _ -> Ops_kind
+  PredAsItemType _ -> Preds_kind
+  _ -> Sorts_kind
+
 data Symbol = Symbol {symName :: Id, symbType :: SymbType}
               deriving (Show, Eq, Ord)
 

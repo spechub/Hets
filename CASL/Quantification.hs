@@ -26,6 +26,21 @@ import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
+symbolsRecord :: (f -> Set.Set Symbol)
+  -> Record f (Set.Set Symbol) (Set.Set Symbol)
+symbolsRecord mf = (constRecord mf Set.unions Set.empty)
+    { foldPredication = \ _ p ts _ -> Set.union (case p of
+        Qual_pred_name i t _ -> Set.singleton . idToPredSymbol i $ toPredType t
+        Pred_name _ -> Set.empty) $ Set.unions ts
+    , foldMembership = \ _ f s _ -> Set.insert (idToSortSymbol s) f
+    , foldQual_var = \ _ _ s _ -> Set.singleton $ idToSortSymbol s
+    , foldApplication = \ _ o ts _ -> Set.union (case o of
+        Qual_op_name i t _ -> Set.singleton . idToOpSymbol i $ toOpType t
+        Op_name _ -> Set.empty) $ Set.unions ts
+    , foldSorted_term = \ _ t s _ -> Set.insert (idToSortSymbol s) t
+    , foldCast = \ _ t s _ -> Set.insert (idToSortSymbol s) t
+    }
+
 flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
 flatVAR_DECLs = concatMap (\ (Var_decl vs s _) -> map (\ v -> (v, s)) vs)
 

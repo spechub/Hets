@@ -174,11 +174,11 @@ dgrule r =
         $ unode "RuleTarget" () ]
       _ -> []
 
-showSymbols :: DGNodeLab -> String
-showSymbols = showSymbolsTh . dgn_theory
+showSymbols :: GlobalAnnos -> DGNodeLab -> String
+showSymbols ga = showSymbolsTh ga . dgn_theory
 
-showSymbolsTh :: G_theory -> String
-showSymbolsTh th = case th of
+showSymbolsTh :: GlobalAnnos -> G_theory -> String
+showSymbolsTh ga th = case th of
   G_theory lid (ExtSign sig _) _ sens _ ->
      ppTopElement . add_attr (mkAttr "logic" $ language_name lid)
      $ unode "Ontology"
@@ -187,7 +187,7 @@ showSymbolsTh th = case th of
      , unode "Axioms" . map (\ ns@SenAttr { sentence = s } ->
            add_attrs
              (mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s))
-           . unode "Axiom" $ unode "Text" (showDoc s "")
+           . unode "Axiom" $ unode "Text" (showGlobalDoc ga s "")
              : map (showSym lid) (symsOfSen lid s))
             $ toNamedList sens ]
 

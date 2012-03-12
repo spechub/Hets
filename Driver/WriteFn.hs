@@ -68,10 +68,12 @@ import qualified OWL2.ManchesterPrint as OWL2 (printOWLBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
 #endif
 
+{-
 #ifdef RDFLOGIC
--- import RDF.Logic_RDF
--- import qualified RDF.Print as RDF (printRDFBasicTheory)
+import RDF.Logic_RDF
+import qualified RDF.Print as RDF (printRDFBasicTheory)
 #endif
+-}
 
 import CommonLogic.Logic_CommonLogic
 import qualified CommonLogic.AS_CommonLogic as CL_AS (exportCLIF)
@@ -103,8 +105,7 @@ writeVerbFiles :: HetcatsOpts -- ^ Hets options
                -> String -- ^ A suffix to be combined with the libname
                -> [(LibName, String)] -- ^ An output list
                -> IO ()
-writeVerbFiles opts suffix outl =
-    mapM_ f outl
+writeVerbFiles opts suffix = mapM_ f
         where f (ln, s) = writeVerbFile opts (libNameToFile ln ++ suffix) s
 
 writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> OutType
@@ -213,8 +214,7 @@ writeTheory opts filePrefix ga
         let (sign', _sens') = addUniformRestr sign sens
         writeVerbFile opts (f ++ ".sexpr")
           $ shows (prettySExpr $ vseSignToSExpr sign') "\n"
-    SymXml -> do
-      writeVerbFile opts f $ ToXml.showSymbolsTh raw_gTh      
+    SymXml -> writeVerbFile opts f $ ToXml.showSymbolsTh ga raw_gTh
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->
@@ -252,9 +252,9 @@ writeTheory opts filePrefix ga
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do
-            (_,th2) <- coerceBasicTheory lid CommonLogic "" th
+            (_, th2) <- coerceBasicTheory lid CommonLogic "" th
             let cltext = shows (CL_AS.exportCLIF th2) "\n"
-            case parse ((many CL_Parse.cltext) >> eof) f cltext of
+            case parse (many CL_Parse.cltext >> eof) f cltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f cltext

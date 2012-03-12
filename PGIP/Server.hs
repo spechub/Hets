@@ -434,7 +434,7 @@ getHetsResult opts updates sessRef file query =
                 -- TODO: work on html-style nodeview
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
-                   Symbols -> return $ showSymbols dgnode
+                   Symbols -> return $ showSymbols (globalAnnos dg) dgnode
                    _ -> return $ showLocalTh dg nl fstLine
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $

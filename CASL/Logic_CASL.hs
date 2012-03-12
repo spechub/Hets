@@ -18,6 +18,9 @@ module CASL.Logic_CASL where
 
 import Common.ProofTree
 import Common.Consistency
+import Common.DocUtils
+
+import qualified Data.Set as Set
 
 import ATC.ProofTree ()
 
@@ -25,6 +28,7 @@ import Logic.Logic
 
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
+import CASL.Fold
 import CASL.ToDoc
 import CASL.ToItem (bsToItem)
 import CASL.SymbolParser
@@ -43,6 +47,7 @@ import CASL.SimplifySen
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint () -- currently unused
 import CASL.Qualify
+import CASL.Quantification
 import qualified CASL.OMDocImport as OMI
 import CASL.OMDocExport
 
@@ -205,6 +210,9 @@ instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       mostSymsOf CASL = sigSymsOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
+      symKind CASL = show . pretty . symbolKind . symbType
+      symsOfSen CASL = Set.toList
+        . foldFormula (symbolsRecord $ const Set.empty)
       simplify_sen CASL = simplifyCASLSen
       print_named CASL = printTheoryFormula
 
