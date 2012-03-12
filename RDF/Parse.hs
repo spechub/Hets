@@ -104,8 +104,8 @@ parseBases :: BaseIRI -> TurtlePrefixMap -> CharParser st (BaseIRI, TurtlePrefix
 parseBases base pm = do
     e <- parse1BaseOrPrefix
     case e of
-        Left b ->
-            if baseStartsWithScheme b || iriType (extractIRI b) /= Full
+        Left b -> if baseStartsWithScheme b then parseBases b pm else
+            if iriType (extractIRI b) /= Full
             then let iri = extractIRI b
                      prefIri = Map.findWithDefault nullQName (namePrefix iri) pm
                      newIri = iri {namePrefix = namePrefix prefIri
