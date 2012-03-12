@@ -22,6 +22,7 @@ import RDF.AS
 import RDF.Symbols
 
 import Data.List
+import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
 -- * hets symbols parser
@@ -63,33 +64,57 @@ rdfSymbPairs = uriPair >>= \ u -> do
 
 parse1Base :: CharParser st BaseIRI
 parse1Base = do
-	skips $ string "@base"
-	base <- skips fullIri
-	skips $ string "."
-	return $ BaseIRI base
-
-parseAndResolveBases :: CharParser st BaseIRI
-parseAndResolveBases = do
-	bl <- many parse1Base
-	return $ resolveBases bl
-
+    pkeyword "@base"
+    base <- skips uriQ
+    skips $ string "."
+    return $ BaseIRI base
+    
+parse1Prefix :: CharParser st Prefix
+parse1Prefix = do
+    pkeyword "@prefix"
+    p <- skips (option "" prefix << char ':')
+    i <- skips fullIri
+    skips $ string "."
+    return $ Prefix p i
+    
+parse1BaseOrPrefix :: CharParser st (Either BaseIRI Prefix)
+parse1BaseOrPrefix = do
+    b <- parse1Base
+    return $ Left b
+  <|> do
+    p <- parse1Prefix
+    return $ Right p
+ 
 startsWithScheme :: IRI -> Bool
 startsWithScheme iri = isPrefixOf "//" $ localPart iri
 
 baseStartsWithScheme :: BaseIRI -> Bool
 baseStartsWithScheme (BaseIRI iri) = startsWithScheme iri
 
-resolveBases :: [BaseIRI] -> BaseIRI
-resolveBases ls = if null ls then BaseIRI dummyQName else
-	let h : t = ls
-	in if null $ filter baseStartsWithScheme t
-		then appendAllBases ls
-		else resolveBases t
-	
 appendTwoBases :: BaseIRI -> BaseIRI -> BaseIRI
 appendTwoBases (BaseIRI b1) (BaseIRI b2) =
-	let lp = localPart b1 ++ localPart b2
-	in BaseIRI $ b1 {localPart = lp}
-	
-appendAllBases :: [BaseIRI] -> BaseIRI
-appendAllBases bl = foldl1 appendTwoBases bl
+    let lpb1 = localPart b1
+        (lp1, ok) = if last lpb1 == '/' then (lpb1, 1) else (lpb1 ++ "/", 0)
+        lp = lp1 ++ localPart b2
+        exp = if ok == 0 then expandedIRI b1 ++ "/" else expandedIRI b1
+    in BaseIRI $ b1 {localPart = lp, expandedIRI = exp ++ localPart b2}
+    
+extractIRI :: BaseIRI -> IRI
+extractIRI (BaseIRI b) = b
+
+parseBases :: BaseIRI -> TurtlePrefixMap -> CharParser st (BaseIRI, TurtlePrefixMap)
+parseBases base pm = do
+    e <- parse1BaseOrPrefix
+    case e of
+        Left b ->
+            if baseStartsWithScheme b || iriType (extractIRI b) /= Full then parseBases b pm
+            else parseBases (appendTwoBases base b) pm
+        Right p@(Prefix s iri) ->
+            if startsWithScheme iri then parseBases base $ Map.insert s iri pm
+            else parseBases base $ Map.insert s (extractIRI $ appendTwoBases base $ BaseIRI iri) pm
+   <|> return (base, pm)
+   
+                
+    
+
+

@@ -48,6 +48,8 @@ data BaseIRI = BaseIRI IRI
 
 data Prefix = Prefix String IRI
     deriving (Show, Eq, Ord)
+    
+type TurtlePrefixMap = Map.Map String IRI
 
 data Axiom = Axiom Subject Predicate Object
     deriving (Show, Eq, Ord)
