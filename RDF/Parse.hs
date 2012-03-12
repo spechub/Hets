@@ -99,6 +99,9 @@ appendTwoBases (BaseIRI b1) (BaseIRI b2) =
         exp = if ok == 0 then expandedIRI b1 ++ "/" else expandedIRI b1
     in BaseIRI $ b1 {localPart = lp, expandedIRI = exp ++ localPart b2}
 
+resolveIRI :: BaseIRI -> IRI -> IRI
+resolveIRI b iri = extractIRI $ appendTwoBases b $ BaseIRI iri
+
 extractIRI :: BaseIRI -> IRI
 extractIRI (BaseIRI b) = b
 
@@ -111,5 +114,37 @@ parseBases base pm = do
             else parseBases (appendTwoBases base b) pm
         Right p@(Prefix s iri) ->
             if startsWithScheme iri then parseBases base $ Map.insert s iri pm
-            else parseBases base $ Map.insert s (extractIRI $ appendTwoBases base $ BaseIRI iri) pm
+            else parseBases base $ Map.insert s (resolveIRI base iri) pm
    <|> return (base, pm)
+
+parseIRI :: BaseIRI -> CharParser st IRI
+parseIRI b = do
+    iri <- uriQ
+    return $ if iriType iri == Full && not (startsWithScheme iri)
+        then resolveIRI b iri else iri
+
+parseTerm :: BaseIRI -> CharParser st Term
+parseTerm b = fmap LiteralTerm literal <|> fmap IRITerm (parseIRI b)
+     <|> fmap Collection (parensP $ many $ skips $ parseIRI b)
+
+
+parseTriples :: BaseIRI -> TurtlePrefixMap -> String -> CharParser st [Triple]
+parseTriples base tpm end = do
+    (b, pm) <- parseBases base tpm
+    t <- case end of
+        "." -> do
+            s <- skips $ parseTerm b
+            p <- skips $ parseTerm b
+            o <- skips $ parseTerm b
+            return $ NTriple s p o
+        "," -> do
+            o <- skips $ parseTerm b
+            return $ AbbreviatedTriple Nothing o
+        ";" -> do
+            p <- skips $ parseTerm b
+            o <- skips $ parseTerm b
+            return $ AbbreviatedTriple (Just p) o
+    sep <- choice $ map (\ s -> skips $ string s >> return s) [".", ",", ";"]
+    tl <- parseTriples b pm sep
+    return $ t : tl
+  <|> return []
