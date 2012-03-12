@@ -105,7 +105,13 @@ parseBases base pm = do
     e <- parse1BaseOrPrefix
     case e of
         Left b ->
-            if baseStartsWithScheme b || iriType (extractIRI b) /= Full then parseBases b pm
+            if baseStartsWithScheme b || iriType (extractIRI b) /= Full
+            then let iri = extractIRI b
+                     prefIri = Map.findWithDefault nullQName (namePrefix iri) pm
+                     newIri = iri {namePrefix = namePrefix prefIri
+                                , localPart = localPart prefIri ++ localPart iri
+                                , iriType = Full}   
+                 in parseBases (BaseIRI newIri) pm
             else parseBases (appendTwoBases base b) pm
         Right p@(Prefix s iri) ->
             if startsWithScheme iri then parseBases base $ Map.insert s iri pm

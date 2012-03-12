@@ -1,6 +1,10 @@
 @base <http://a> .
-<http://b> <c> <d> ,
+@prefix ex: <http://vvv> .
+<http://b> <c> ex:d ,
         <http://e> .
 
-@base <xyz> .
-<p> <http://q> <r> .
+@base ex:xyz .
+@prefix ex: <zzz> .
+<p> <http://q> ex:r .
+
+
