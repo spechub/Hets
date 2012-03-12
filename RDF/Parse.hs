@@ -68,7 +68,7 @@ parse1Base = do
     base <- skips uriQ
     skips $ string "."
     return $ BaseIRI base
-    
+
 parse1Prefix :: CharParser st Prefix
 parse1Prefix = do
     pkeyword "@prefix"
@@ -76,7 +76,7 @@ parse1Prefix = do
     i <- skips fullIri
     skips $ string "."
     return $ Prefix p i
-    
+
 parse1BaseOrPrefix :: CharParser st (Either BaseIRI Prefix)
 parse1BaseOrPrefix = do
     b <- parse1Base
@@ -84,7 +84,7 @@ parse1BaseOrPrefix = do
   <|> do
     p <- parse1Prefix
     return $ Right p
- 
+
 startsWithScheme :: IRI -> Bool
 startsWithScheme iri = isPrefixOf "//" $ localPart iri
 
@@ -98,7 +98,7 @@ appendTwoBases (BaseIRI b1) (BaseIRI b2) =
         lp = lp1 ++ localPart b2
         exp = if ok == 0 then expandedIRI b1 ++ "/" else expandedIRI b1
     in BaseIRI $ b1 {localPart = lp, expandedIRI = exp ++ localPart b2}
-    
+
 extractIRI :: BaseIRI -> IRI
 extractIRI (BaseIRI b) = b
 
@@ -113,8 +113,3 @@ parseBases base pm = do
             if startsWithScheme iri then parseBases base $ Map.insert s iri pm
             else parseBases base $ Map.insert s (extractIRI $ appendTwoBases base $ BaseIRI iri) pm
    <|> return (base, pm)
-   
-                
-    
-
-
