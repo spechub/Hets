@@ -38,7 +38,6 @@ import Common.ToXml
 import Text.XML.Light
 
 import Data.Graph.Inductive.Graph as Graph
-import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
 
@@ -185,13 +184,11 @@ showSymbolsTh th = case th of
      $ unode "Ontology"
      [ unode "Symbols" . map (showSym lid)
            $ symlist_of lid sig
-     , unode "Axioms" . map (\ ns ->
+     , unode "Axioms" . map (\ ns@SenAttr { sentence = s } ->
            add_attrs
-             (mkNameAttr (senAttr ns) : mkAttr "text"
-                (intercalate "&#10;" $ lines (showDoc (sentence ns) "")) :
-             rangeAttrs (getRangeSpan $ sentence ns))
-           . unode "Axiom" $ map (showSym lid)
-            . symsOfSen lid $ sentence ns)
+             (mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s))
+           . unode "Axiom" $ unode "Text" (showDoc s "")
+             : map (showSym lid) (symsOfSen lid s))
             $ toNamedList sens ]
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
