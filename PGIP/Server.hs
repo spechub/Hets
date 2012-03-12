@@ -472,6 +472,10 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
     (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
     prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
           `add_attrs` inputNode
+    -- create timeout field
+    timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
+            , mkAttr "value" "10", mkAttr "size" "3"]
+            $ unode "input" ":timeout(sec) "
     -- create list of theorems, selectable for proving
     thmSl = map mkCB $ toNamedList thms where
         mkCB sa = let (a, s) = (senAttr sa, sentence sa) in add_attrs
@@ -497,7 +501,7 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
     -- combine elements within a form
     thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel"
       , mkAttr "method" "get"] $ unode "form" $ hidStr : prSl : cmrSl : br
-      : selAll : deSelAll : intersperse br (prBt : thmSl)
+      : selAll : deSelAll : timeout : intersperse br (prBt : thmSl)
     -- autoselect SPASS if possible
     jvScr3 = unlines ["\nwindow.onload = function() {"
            , "  prSel = document.forms[0].elements.namedItem('prover');"
