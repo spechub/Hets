@@ -14,7 +14,7 @@ References  :  <http://www.w3.org/TR/owl2-manchester-syntax/>
 
 module OWL2.MS where
 
-import Common.Id (GetRange)
+import Common.Id
 import OWL2.AS
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -80,7 +80,8 @@ getAxioms (Frame e fbl) = map (PlainAxiom e) fbl
 axToFrame :: Axiom -> Frame
 axToFrame (PlainAxiom e fb) = Frame e [fb]
 
-instance GetRange Axiom
+instance GetRange Axiom where
+  getRange = Range . joinRanges . map rangeSpan . Set.toList . symsOfAxiom
 
 data Ontology = Ontology
     { name :: OntologyIRI

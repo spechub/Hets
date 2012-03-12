@@ -49,11 +49,19 @@ instance Ord QName where
     if null n1 || null n2 then compare (b1, p1, l1) (b2, p2, l2) else
       compare n1 n2 -- compare fully expanded names only
 
+qNameRange :: QName -> [Pos]
+qNameRange q = let Range rs = iriPos q in case rs of
+  [p] -> let
+    p0 = if iriType q == Full then incSourceColumn p (-1) else p
+    in tokenRange $ Token (showQN q) $ Range [p0]
+  _ -> rs
+
 instance GetRange QName where
   getRange = iriPos
+  rangeSpan = qNameRange
 
 showQN :: QName -> String
-showQN q = (if iriType q /= Abbreviated then showQI else showQU) q
+showQN q = (if iriType q == Full then showQI else showQU) q
 
 -- | show QName as abbreviated iri
 showQU :: QName -> String
@@ -346,6 +354,7 @@ data Entity = Entity
 
 instance GetRange Entity where
   getRange = iriPos . cutIRI
+  rangeSpan = qNameRange . cutIRI
 
 data EntityType =
     Datatype
