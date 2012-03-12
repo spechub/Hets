@@ -38,6 +38,7 @@ import Common.ToXml
 import Text.XML.Light
 
 import Data.Graph.Inductive.Graph as Graph
+import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
 
@@ -175,7 +176,7 @@ dgrule r =
       _ -> []
 
 showSymbols :: DGNodeLab -> String
-showSymbols lbl = showSymbolsTh $ dgn_theory lbl 
+showSymbols = showSymbolsTh . dgn_theory
 
 showSymbolsTh :: G_theory -> String
 showSymbolsTh th = case th of
@@ -186,8 +187,8 @@ showSymbolsTh th = case th of
            $ symlist_of lid sig
      , unode "Axioms" . map (\ ns ->
            add_attrs
-             (mkNameAttr (senAttr ns) : mkAttr "text" 
-                (replace  (showDoc (sentence ns) "") "\n" "&#10;") :
+             (mkNameAttr (senAttr ns) : mkAttr "text"
+                (intercalate "&#10;" $ lines (showDoc (sentence ns) "")) :
              rangeAttrs (getRangeSpan $ sentence ns))
            . unode "Axiom" $ map (showSym lid)
             . symsOfSen lid $ sentence ns)
@@ -199,10 +200,3 @@ showSym lid s = add_attrs
             [ mkNameAttr . show $ sym_name lid s
             , mkAttr "kind" $ symKind lid s]
             $ prettySymbol emptyGlobalAnnos s
-
-replace :: Eq a => [a] -> [a] -> [a] -> [a]
-replace [] _ _ = []
-replace s find repl =
-    if take (length find) s == find
-        then repl ++ (replace (drop (length find) s) find repl)
-        else [head s] ++ (replace (tail s) find repl)
