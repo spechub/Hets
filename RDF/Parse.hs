@@ -86,13 +86,19 @@ startsWithScheme iri = isPrefixOf "//" $ localPart iri
 baseStartsWithScheme :: BaseIRI -> Bool
 baseStartsWithScheme (BaseIRI iri) = startsWithScheme iri
 
+-- | here we need to take special care of the slash that end or begin the IRI
 appendTwoBases :: BaseIRI -> BaseIRI -> BaseIRI
 appendTwoBases (BaseIRI b1) (BaseIRI b2) =
+    if last $ localPart b2 /= '/' then 
     let lpb1 = localPart b1
-        (lp1, ok) = if last lpb1 == '/' then (lpb1, 1) else (lpb1 ++ "/", 0)
-        lp = lp1 ++ localPart b2
-        exp = if ok == 0 then expandedIRI b1 ++ "/" else expandedIRI b1
-    in BaseIRI $ b1 {localPart = lp, expandedIRI = exp ++ localPart b2}
+        lpb2 = localPart b2
+        endSlash1 = if last lpb1 == '/' then 1 else 0
+        beginSlash2 = if head lpb2 == '/' then 1 else 0
+        (lp, exp) = case (endSlash1, beginSlash2) of
+            (0, 0) -> (lpb1 ++ "/" ++ lpb2, expandedIRI b1 ++ "/" ++ lpb2)
+            (1, 1) -> (lpb1 ++ tail lpb2, expandedIRI b1 ++ tail lpb2)
+            _ -> (lpb1 ++ lpb2, expandedIRI b1 ++ lpb2)
+    in BaseIRI $ b1 {localPart = lp, expandedIRI = exp}
 
 resolveIRI :: BaseIRI -> IRI -> IRI
 resolveIRI b iri = extractIRI $ appendTwoBases b $ BaseIRI iri
