@@ -78,12 +78,7 @@ parse1Prefix = do
     return $ Prefix p i
 
 parse1BaseOrPrefix :: CharParser st (Either BaseIRI Prefix)
-parse1BaseOrPrefix = do
-    b <- parse1Base
-    return $ Left b
-  <|> do
-    p <- parse1Prefix
-    return $ Right p
+parse1BaseOrPrefix = fmap Left parse1Base <|> fmap Right parse1Prefix
 
 startsWithScheme :: IRI -> Bool
 startsWithScheme iri = isPrefixOf "//" $ localPart iri
