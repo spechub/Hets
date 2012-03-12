@@ -75,9 +75,8 @@ import Common.XUpdate
 
 import Control.Monad
 
-import qualified Data.Map as Map
-import Data.Map (Map)
 import qualified Data.IntMap as IntMap
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Char
 import Data.IORef
@@ -559,19 +558,16 @@ showProverSelection subL = let
         , "    }"
         , "  }"
         , "}" ]
-  allPrCm = Map.toList $ getProversAux Nothing subL
+  allPrCm = getProversAux Nothing subL
   -- create prover selection (drop-down)
   prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
     add_attrs [mkAttr "value" p, mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"]
-    $ unode "option" p) $ map fst allPrCm
+    $ unode "option" p) $ showProversOnly allPrCm
   -- create comorphism selection (drop-down)
   cmrs = add_attr (mkAttr "name" "translation") $ unode "select"
-    $ map (\ (c, ps) ->
+    $ map (\ (cm, ps) -> let c = showComorph cm in
     add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
-    -- create a sorted list of (comorphism, [supported provers])
-    $ unode "option" c) $ Map.toList $ foldl (\ mp (pr, cm) ->
-    foldr (\ c -> Map.insertWith (++) (showComorph c) [pr]) mp cm)
-    Map.empty allPrCm
+    $ unode "option" c) allPrCm
   in (prs, cmrs, jvScr)
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
@@ -615,12 +611,19 @@ getWebProverName = removeFunnyChars . getProverName
 
 getProvers :: Maybe String -> G_sublogics -> String
 getProvers mt subL = ppTopElement . unode "provers" $ map (unode "prover")
-  $ Map.keys $ getProversAux mt subL
+  $ showProversOnly $ getProversAux mt subL
 
-getProversAux :: Maybe String -> G_sublogics -> Map String [AnyComorphism]
-getProversAux mt subL = foldr
-  (\ (p, c) -> Map.insertWith (++) (getWebProverName p) [c]) Map.empty
-    $ filterByComorph mt $ getAllAutomaticProvers subL
+showProversOnly :: [(AnyComorphism, [String])] -> [String]
+showProversOnly = nubOrd . concat . map snd
+
+{- | gather provers and comoprhisms and resort them to
+(comorhism, supported provers) while not changing orig comorphism order  -}
+getProversAux :: Maybe String -> G_sublogics -> [(AnyComorphism, [String])]
+getProversAux mt subL = foldl insertCmL [] $ filterByComorph mt
+                      $ getAllAutomaticProvers subL where
+  insertCmL [] (p, c) = [(c, [getWebProverName p])]
+  insertCmL ((c', pL) : r) (p, c) | c' == c = (c, getWebProverName p : pL) : r
+                                  | otherwise = (c', pL) : insertCmL r (p, c)
 
 getComorphs :: Maybe String -> G_sublogics -> String
 getComorphs mp subL = ppTopElement . unode "translations"
