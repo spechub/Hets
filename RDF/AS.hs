@@ -54,10 +54,8 @@ type TurtlePrefixMap = Map.Map String IRI
 data Axiom = Axiom Subject Predicate Object
     deriving (Show, Eq, Ord)
 
-data TurtleDocument = TurtleDocument
-    { prefixMap :: Map.Map String IRI
-    , triples :: [Triple]
-    } deriving (Show, Eq, Ord)
+data TurtleDocument = TurtleDocument [(Triple, BaseIRI, TurtlePrefixMap)]
+    deriving (Show, Eq, Ord)
 
 data RDFEntityType = Subject | Predicate | Object
     deriving (Show, Eq, Ord, Bounded, Enum)

@@ -123,7 +123,8 @@ parseTerm b = fmap LiteralTerm literal <|> fmap IRITerm (parseIRI b)
      <|> fmap Collection (parensP $ many $ skips $ parseTerm b)
 
 
-parseTriples :: BaseIRI -> TurtlePrefixMap -> String -> CharParser st [Triple]
+parseTriples :: BaseIRI -> TurtlePrefixMap -> String
+    -> CharParser st [(Triple, BaseIRI, TurtlePrefixMap)]
 parseTriples base tpm end = do
     (b, pm) <- parseBases base tpm
     t <- case end of
@@ -141,5 +142,7 @@ parseTriples base tpm end = do
             return $ AbbreviatedTriple (Just p) o
     sep <- choice $ map (\ s -> skips $ string s >> return s) [".", ",", ";"]
     tl <- parseTriples b pm sep
-    return $ t : tl
+    return $ (t, b, pm) : tl
   <|> return []
+
+      

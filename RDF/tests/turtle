@@ -1,0 +1,6 @@
+@base <http://a> .
+<http://b> <c> <d> ,
+        <http://e> .
+
+@base <xyz> .
+<p> <http://q> <r> .
