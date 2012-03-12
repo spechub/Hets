@@ -125,7 +125,7 @@ parseIRI b = do
 
 parseTerm :: BaseIRI -> CharParser st Term
 parseTerm b = fmap LiteralTerm literal <|> fmap IRITerm (parseIRI b)
-     <|> fmap Collection (parensP $ many $ skips $ parseIRI b)
+     <|> fmap Collection (parensP $ many $ skips $ parseTerm b)
 
 
 parseTriples :: BaseIRI -> TurtlePrefixMap -> String -> CharParser st [Triple]

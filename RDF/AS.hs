@@ -29,7 +29,7 @@ import qualified Data.Map as Map
 data Term =
     IRITerm IRI
   | LiteralTerm Literal
-  | Collection [IRI]
+  | Collection [Term]
   deriving (Show, Eq, Ord)
 
 type Subject = Term
