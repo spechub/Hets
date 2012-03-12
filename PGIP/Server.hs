@@ -537,24 +537,34 @@ showProverSelection subL = let
         , "  var cmrSl = document.forms[0].elements.namedItem('translation');"
         -- then, all selectable comorphisms are gathered and iterated
         , "  var opts = cmrSl.getElementsByTagName('option');"
-        , "  for( i = opts.length-1; i >= 0; i-- ) {"
+        -- try to keep current comorph-selection
+        , "  var selAccept = false;"
+        , "  for( var i = opts.length-1; i >= 0; i-- ) {"
         , "    var cmr = opts.item( i );"
         -- the list of supported provers is extracted
         , "    var prs = cmr.getAttribute('4prover').split(';');"
         , "    var b = false;"
-        , "    for( j = 0; j < prs.length; j++ ) {"
+        , "    for( var j = 0; j < prs.length; j++ ) {"
         , "      if( prs[j] == pr ) b = true;"
         , "    }"
         -- if prover is supported, remove disabled attribute
         , "    if( b ) {"
         , "        cmr.removeAttribute('disabled');"
-        -- any fit comorphism is selected
-        , "        cmr.selected = 'selected';"
+        , "        selAccept = selAccept || cmr.selected;"
         -- else create and append a disabled attribute
         , "    } else {"
         , "      var ds = document.createAttribute('disabled');"
         , "      ds.value = 'disabled';"
         , "      cmr.setAttributeNode(ds);"
+        , "    }"
+        , "  }"
+        -- check if selected comorphism fits, and select fst. in list otherwise
+        , "  if( ! selAccept ) {"
+        , "    for( i = 0; i < opts.length; i++ ) {"
+        , "      if( ! opts.item(i).disabled ) {"
+        , "        opts.item(i).selected = 'selected';"
+        , "        return;"
+        , "      }"
         , "    }"
         , "  }"
         , "}" ]
@@ -614,7 +624,7 @@ getProvers mt subL = ppTopElement . unode "provers" $ map (unode "prover")
   $ showProversOnly $ getProversAux mt subL
 
 showProversOnly :: [(AnyComorphism, [String])] -> [String]
-showProversOnly = nubOrd . concat . map snd
+showProversOnly = nubOrd . concatMap snd
 
 {- | gather provers and comoprhisms and resort them to
 (comorhism, supported provers) while not changing orig comorphism order  -}
