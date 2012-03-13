@@ -76,6 +76,7 @@ data Symbol = Symbol {symName :: Id, symbType :: SymbType}
 
 instance GetRange Symbol where
     getRange = getRange . symName
+    rangeSpan = rangeSpan . symName
 
 idToSortSymbol :: Id -> Symbol
 idToSortSymbol idt = Symbol idt SortAsItemType
