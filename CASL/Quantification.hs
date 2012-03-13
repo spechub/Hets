@@ -35,7 +35,8 @@ symbolsRecord mf = (constRecord mf Set.unions Set.empty)
     , foldMembership = \ _ f s _ -> Set.insert (idToSortSymbol s) f
     , foldQual_var = \ _ _ s _ -> Set.singleton $ idToSortSymbol s
     , foldApplication = \ _ o ts _ -> Set.union (case o of
-        Qual_op_name i t _ -> Set.singleton . idToOpSymbol i $ toOpType t
+        Qual_op_name i t _ -> Set.fromList
+          [idToOpSymbol i $ toOpType t, idToSortSymbol $ res_OP_TYPE t]
         Op_name _ -> Set.empty) $ Set.unions ts
     , foldSorted_term = \ _ t s _ -> Set.insert (idToSortSymbol s) t
     , foldCast = \ _ t s _ -> Set.insert (idToSortSymbol s) t
