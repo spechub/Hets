@@ -51,6 +51,7 @@ import LF.Twelf2DG (anaTwelfFile)
 import OMDoc.Import (anaOMDocFile)
 #ifdef HEXPAT
 import HolLight.HolLight2DG (anaHolLightFile)
+import Isabelle.Isa2DG (anaIsaFile)
 #endif
 
 main :: IO ()
@@ -74,6 +75,7 @@ processFile opts file = do
 #endif
 #ifdef HEXPAT
       HolLightIn -> anaHolLightFile opts file
+      IsaIn -> anaIsaFile opts file
 #endif
       PrfIn -> anaLibReadPrfs opts file
       ProofCommand -> do

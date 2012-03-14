@@ -141,16 +141,19 @@ struct
                                   val ts' = map (fn s => (String.extract (s,tl+1,NONE),Datatype.get_info T s)) (List.filter (String.isPrefix tname) ts)
 			      in restructure_rec_types T ts' end
 	fun filter rem d = remove' id #1 ((mergesort id rem),(mergesort #1 d))
+        fun remove_hol_true_prop t = case t of 
+         $ (Const ("HOL.Trueprop",_), tm) => tm
+         | tm => tm
 	fun termListToXML section l = XML.Elem ((section,[]),List.map (
-         fn (s,t) => XML.Elem (("Term",[("name",s)]),[XML_Syntax.xml_of_term t])) l)
+         fn (s,t) => XML.Elem (("Term",[("name",s)]),[XML_Syntax.xml_of_term (remove_hol_true_prop t)])) l)
 	fun termTypListToXML section l = XML.Elem ((section,[]),List.map (
 	 fn (s,(t,v)) => let val v' = case v of
           SOME(tm) => (("Term",[("name",s)]),[XML_Syntax.xml_of_term tm])
 	  | NONE => (("NoTerm",[]),[])
-         in XML.Elem (("Const",[("name",s)]),[XML_Syntax.xml_of_type t,XML.Elem v']) end) l)
+         in XML.Elem (("ConstDecl",[("name",s)]),[XML_Syntax.xml_of_type t,XML.Elem v']) end) l)
 	fun dtypToXML (Datatype.DtTFree s) = XML.Elem (("DtTFree",[("s",s)]),[])
            | dtypToXML (Datatype.DtType (s,dtl)) = XML.Elem (("DtType",[("s",s)]),List.map dtypToXML dtl)
-    	   | dtypToXML (Datatype.DtRec i) = XML.Elem (("DtType",[("i",Int.toString i)]),[])
+    	   | dtypToXML (Datatype.DtRec i) = XML.Elem (("DtRec",[("i",Int.toString i)]),[])
 	fun constructorToXML (name,dtl) = XML.Elem
          (("Constructor",[("val",Long_Name.base_name name)]),List.map dtypToXML dtl)
 	fun typeToXML d = List.map
@@ -164,5 +167,5 @@ struct
           end)
          (#descr d)
 	fun typesListToXML section l = XML.Elem ((section,[]),List.map (
-	fn (s,d) => XML.Elem (("Type",[("name",s)]),typeToXML d)) l)
+	fn (s,d) => XML.Elem (("TypeDecl",[("name",s)]),typeToXML d)) l)
 end;

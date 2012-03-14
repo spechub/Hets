@@ -25,9 +25,10 @@ if [ ! -z $ISABELLE_BIN_PATH ]; then
   echo "Cannot find isabelle executable. Maybe you didn't specify ISABELLE_BIN_PATH correctly?"
  fi
 else
- ISABELLE=`which isabelle`
- if [ $? ]; then
-  echo "Cannot find isabelle executable. Maybe you need to specify ISABELLE_BIN_PATH"
+ if which isabelle > /dev/null ; then
+   ISABELLE=`which isabelle`
+ else
+  echo "Cannot find isabelle executable. Maybe you need to specify ISABELLE_BIN_PATH?"
   exit 1
  fi
 fi
@@ -50,11 +51,11 @@ val name = Context.theory_name T;
 val types = ExportHelper.get_datatypes T;
 val consts = ExportHelper.filter (ExportHelper.get_gen_consts T name types)
                                  (ExportHelper.get_consts T);
-val axioms = ExportHelper.filter (ExportHelper.get_gen_axioms T name types)
-                                 (ExportHelper.get_axioms T);
 val ths = ExportHelper.get_theorems T;
 val theorems = ExportHelper.filter (ExportHelper.get_gen_theorems T name types (List.map #1 ths))
                                    ths;
+val axioms = ExportHelper.filter ((ExportHelper.get_gen_axioms T name types)@(List.map #1 ths))
+                                 (ExportHelper.get_axioms T);
 val num_consts = List.length consts;
 val num_axioms = List.length axioms;
 val num_theorems = List.length theorems;
@@ -69,4 +70,4 @@ File.write (Path.explode \"$TRANS.isa\") (XML.string_of xml);
  echo "*}"
  echo "end;"
 
-) | ($ISABELLE tty -p "")
+) | ($ISABELLE tty)

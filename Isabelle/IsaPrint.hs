@@ -161,6 +161,7 @@ printTypeAux a t = case t of
                      $ tail s then c else doubleQuotes c
          Unquoted -> d <> doubleColon <> c
          Null -> d, 1000)
+ TVar iv s -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
  Type name _ args -> case args of
     [t1, t2] | elem name [prodS, sProdS, funS, cFunS, lFunS, sSumS] ->
        printTypeOp a name t1 t2
@@ -371,7 +372,10 @@ printTrm b trm = case trm of
                         a : aa -> printTrm b $ App (App
                                   lpairTerm a $ IsCont False)
                                      (Tuplex aa c) (IsCont False)
-    App f a c -> printMixfixAppl b c f [a]
+    App f a c -> case f of
+     App (Const (VName "HOL.implies" _) _) a' _ ->
+         (fsep [ printParenTerm b (isaEqPrio + 1) a' <+> text "-->",printParenTerm b isaEqPrio a],isaEqPrio)
+     _ -> printMixfixAppl b c f [a]
     Set setdecl -> (printSetDecl setdecl, lowPrio)
 
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
@@ -634,12 +638,14 @@ printSign sig = let dt = ordDoms $ domainTab sig
             where sa = concatMap ((sp ++) . showArg) args
           showArg (TFree [] _) = "varName"
           showArg (TFree (n : ns) _) = toLower n : ns
+          showArg (TVar v s) = showArg (TFree (unindexed v) s)
           showArg (Type [] _ _) = "varName"
           showArg (Type m@(n : ns) _ s) =
             if elem m ["typeAppl", "fun", "*"]
                then concatMap showArg s
                else toLower n : ns
           showName (TFree v _) = v
+          showName (TVar v _) = unindexed v
           showName (Type n _ _) = n
           proof' = "apply (case_tac caseVar)\napply (auto)\ndone\n"
       in

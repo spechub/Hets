@@ -1,0 +1,47 @@
+<!ELEMENT IsaExport (Consts, Axioms, Theorems, Types)>
+  <!ATTLIST IsaExport file CDATA #REQUIRED>
+<!ELEMENT Consts (ConstDecl*)>
+<!ELEMENT ConstDecl ((TVar|TFree|Type),(Term|NoTerm))>
+  <!ATTLIST ConstDecl name CDATA #REQUIRED>
+<!ELEMENT Axioms (Term*)>
+<!ELEMENT Theorems (Term*)>
+<!ELEMENT Types (TypeDecl*)>
+<!ELEMENT NoTerm EMPTY>
+<!ELEMENT Term (Bound|Free|Var|Const|App|Abs)>
+  <!ATTLIST Term name CDATA #REQUIRED>
+<!ELEMENT TypeDecl (RecType*)>
+  <!ATTLIST TypeDecl name CDATA #REQUIRED>
+<!ELEMENT RecType (Vars,Constructors)>
+  <!ATTLIST RecType i CDATA #REQUIRED>
+  <!ATTLIST RecType name CDATA #REQUIRED>
+<!ELEMENT Vars (DtTFree|DtType|DtRec)*>
+<!ELEMENT DtTFree EMPTY>
+  <!ATTLIST DtTFree s CDATA #REQUIRED>
+<!ELEMENT DtType (DtTFree|DtType|DtRec)*>
+  <!ATTLIST DtType s CDATA #REQUIRED>
+<!ELEMENT DtRec EMPTY>
+  <!ATTLIST DtRec i CDATA #REQUIRED>
+<!ELEMENT Constructors (Constructor*)>
+<!ELEMENT Constructor (DtTFree|DtType|DtRec)*>
+  <!ATTLIST Constructor val CDATA #REQUIRED>
+<!ELEMENT Bound EMPTY>
+  <!ATTLIST Bound index CDATA #REQUIRED>
+<!ELEMENT Free (TVar|TFree|Type)>
+  <!ATTLIST Free name CDATA #REQUIRED>
+<!ELEMENT Var (TVar|TFree|Type)>
+  <!ATTLIST Var name CDATA #REQUIRED>
+  <!ATTLIST Var index CDATA #IMPLIED>
+<!ELEMENT Const (TVar|TFree|Type)>
+  <!ATTLIST Const name CDATA #REQUIRED>
+<!ELEMENT App ((Bound|Free|Var|Const|App|Abs), (Bound|Free|Var|Const|App|Abs))>
+<!ELEMENT Abs ((TVar|TFree|Type), (Bound|Free|Var|Const|App|Abs))>
+  <!ATTLIST Abs vname CDATA #REQUIRED>
+<!ELEMENT TVar (class*)>
+  <!ATTLIST TVar name CDATA #REQUIRED>
+  <!ATTLIST TVar index CDATA #REQUIRED>
+<!ELEMENT TFree (class*)>
+  <!ATTLIST TFree name CDATA #REQUIRED>
+<!ELEMENT Type (TVar|TFree|Type)*>
+  <!ATTLIST Type name CDATA #REQUIRED>
+<!ELEMENT class EMPTY>
+  <!ATTLIST class name CDATA #REQUIRED>
