@@ -607,7 +607,8 @@ printSign sig = let dt = ordDoms $ domainTab sig
        printTyp (if isDomain then Quoted else Null) t <+> equals <+>
        fsep (bar $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
-       text opname <+> hsep (map (printDOpArg opname) $ number args)
+       text (if any isSpace opname then show opname else opname)
+       <+> hsep (map (printDOpArg opname) $ number args)
        <+> printAlt vn
     printDOpArg o (a, i) = let
       d = case a of
