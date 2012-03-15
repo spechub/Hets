@@ -51,6 +51,9 @@ import LF.Twelf2DG (anaTwelfFile)
 import OMDoc.Import (anaOMDocFile)
 #ifdef HEXPAT
 import HolLight.HolLight2DG (anaHolLightFile)
+#endif
+
+#ifdef HAXML
 import Isabelle.Isa2DG (anaIsaFile)
 #endif
 
@@ -75,6 +78,8 @@ processFile opts file = do
 #endif
 #ifdef HEXPAT
       HolLightIn -> anaHolLightFile opts file
+#endif
+#ifdef HAXML
       IsaIn -> anaIsaFile opts file
 #endif
       PrfIn -> anaLibReadPrfs opts file

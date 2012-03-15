@@ -20,6 +20,11 @@ HC = ghc -optl-s -XTemplateHaskell -threaded $(GHC7RTSOPTS)
 
 HCPKG = ghc-pkg
 
+HAXMLVERSION = $(shell $(HCPKG) latest HaXml)
+ifneq ($(findstring HaXml-1.20, $(HAXMLVERSION)),)
+HAXML_PACKAGE = -DHAXML
+endif
+
 TIMEVERSION = $(shell $(HCPKG) latest time)
 ifneq ($(findstring time-1.1.2, $(TIMEVERSION)),)
 TIME_PACKAGE = -DTIME_WITHOUT_TYPEABLE
@@ -103,7 +108,7 @@ endif
 HC_OPTS_WITHOUTGLADE = $(GHC7OPTS) $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
-  $(PFE_FLAGS) $(SERVER_FLAG) -DRDFLOGIC -DCASLEXTENSIONS
+  $(PFE_FLAGS) $(SERVER_FLAG) $(HAXML_PACKAGE) -DRDFLOGIC -DCASLEXTENSIONS
 
 # for profiling (or a minimal hets) comment out the previous two package lines
 # and the $(GLADE_PACKAGE) below
