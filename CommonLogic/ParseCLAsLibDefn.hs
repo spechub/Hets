@@ -48,8 +48,6 @@ import Network.HTTP
 import Network.Stream (Result)
 #endif
 
-import Debug.HTrace
-
 type SpecMap = Map String SpecInfo
 type SpecInfo = (BASIC_SPEC, Set String, Set String)
                 -- (spec, topTexts, importedBy)
@@ -172,7 +170,6 @@ unify (_, s, p) (a, t, q) = (a, Set.union s t, Set.union p q)
 getCLIFContents :: HetcatsOpts -> (String,String) -> IO String
 getCLIFContents opts dirFile@(_,file) =
   let filename = (uncurry combine) dirFile in
-  htrace ("File: " ++ show filename) $
   case parseURIReference filename of
     Nothing -> do
       putStrLn ("Not an URI: " ++ filename)
@@ -195,8 +192,7 @@ getCLIFContentsHTTP uriS extension =
   let (Just uri) = parseURIReference (uriS ++ extension) in do
     res <- simpleHTTP (defaultGETRequest $ uri)
     rb <- getResponseBody res
-    htrace ("checking for file " ++ show uri ++ "\n") $
-      case httpResponseCode res of
+    case httpResponseCode res of
         (2,0,0) -> return rb
         _ -> case extension of
           ""     -> getCLIFContentsHTTP uriS ".clf"
