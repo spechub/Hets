@@ -194,10 +194,10 @@ getCLIFContentsHTTP uriS extension =
     rb <- getResponseBody res
     case httpResponseCode res of
         (2,0,0) -> return rb
-        _ -> case extension of
+        (x,y,z) -> case extension of
           ""     -> getCLIFContentsHTTP uriS ".clf"
           ".clf" -> getCLIFContentsHTTP uriS ".clif"
-          _      -> error $ "File not found via HTTP: " ++ uriS ++ "[.clf | .clif]"
+          _      -> error $ "File not found via HTTP: " ++ uriS ++ "[.clf | .clif]\nHTTP-code " ++ show x ++ show y ++ show z
 
 localFileContents :: HetcatsOpts -> String -> IO String
 localFileContents opts filename = do
