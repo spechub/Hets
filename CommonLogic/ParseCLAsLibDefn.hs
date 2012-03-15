@@ -39,13 +39,16 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.List (sortBy)
 
-import System.FilePath (combine, addExtension)
+import System.FilePath (combine, splitFileName, addExtension)
 import System.Directory (doesFileExist, getCurrentDirectory)
 
 import Network.URI
 #ifndef NOHTTP
 import Network.HTTP
+import Network.Stream (Result)
 #endif
+
+import Debug.HTrace
 
 type SpecMap = Map String SpecInfo
 type SpecInfo = (BASIC_SPEC, Set String, Set String)
@@ -54,8 +57,9 @@ type SpecInfo = (BASIC_SPEC, Set String, Set String)
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
 parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
 parseCL_CLIF filename opts = do
-  specMap <- downloadSpec opts Map.empty Set.empty Set.empty False filename
-  specs <- anaImports opts specMap
+  let dirFile@(dir,_) = splitFileName filename
+  specMap <- downloadSpec opts Map.empty Set.empty Set.empty False dirFile
+  specs <- anaImports opts dir specMap
   return $ convertToLibDefN (convertFileToLibStr filename) specs
 
 
@@ -111,20 +115,22 @@ specName def i = def ++ "_" ++ show i
 cnvImportName :: NAME -> NAME
 cnvImportName = mkSimpleId . convertFileToLibStr . tokStr
 
-collectDownloads :: HetcatsOpts -> SpecMap -> (String, SpecInfo) -> IO SpecMap
-collectDownloads opts specMap (n, (b, topTexts, importedBy)) =
+collectDownloads :: HetcatsOpts -> String -> SpecMap -> (String, SpecInfo)
+                    -> IO SpecMap
+collectDownloads opts dir specMap (n, (b, topTexts, importedBy)) =
   let directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
   in do
       foldM (\ sm d -> do
-          newDls <- downloadSpec opts sm newTopTexts newImportedBy True d
+          newDls <- downloadSpec opts sm newTopTexts newImportedBy True (dir,d)
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
 
 downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> Set String
-                -> Bool -> String -> IO SpecMap
-downloadSpec opts specMap topTexts importedBy isImport filename =
+                -> Bool -> (String,String) -> IO SpecMap
+downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir,_) =
+  let filename = (uncurry combine) dirFile in
   let fn = convertFileToLibStr filename in
   case Map.lookup fn specMap of
       Just (b, t, i)
@@ -142,9 +148,9 @@ downloadSpec opts specMap topTexts importedBy isImport filename =
           let newTopTexts = Set.union t topTexts
           let newImportedBy = Set.union i importedBy
           let newSpecMap = Map.insert fn (b, newTopTexts, newImportedBy) specMap
-          collectDownloads opts newSpecMap (fn, (b, newTopTexts, newImportedBy))
+          collectDownloads opts dir newSpecMap (fn, (b, newTopTexts, newImportedBy))
       Nothing -> do
-          contents <- getCLIFContents opts filename
+          contents <- getCLIFContents opts dirFile
           case parseCL_CLIF_contents filename contents of
               Left err -> error $ show err
               Right bs ->
@@ -154,7 +160,7 @@ downloadSpec opts specMap topTexts importedBy isImport filename =
                         Map.insertWith unify n bti sm
                       ) specMap nbtis
                 in foldM (\ sm nbt -> do
-                          newDls <- collectDownloads opts sm nbt
+                          newDls <- collectDownloads opts dir sm nbt
                           return (Map.unionWith unify newDls sm)
                       ) newSpecMap nbtis
 
@@ -163,24 +169,39 @@ unify (_, s, p) (a, t, q) = (a, Set.union s t, Set.union p q)
 
 {- one could add support for uri fragments/query
 (perhaps select a text from the file) -}
-getCLIFContents :: HetcatsOpts -> String -> IO String
-getCLIFContents opts filename = case parseURIReference filename of
-  Nothing -> do
-    putStrLn ("Not an URI: " ++ filename)
-    localFileContents opts filename
-  Just uri ->
-    case uriScheme uri of
-      "" ->
-        localFileContents opts (uriToString id uri "")
-      "file:" ->
-        localFileContents opts (uriPath uri)
+getCLIFContents :: HetcatsOpts -> (String,String) -> IO String
+getCLIFContents opts dirFile@(_,file) =
+  let filename = (uncurry combine) dirFile in
+  htrace ("File: " ++ show filename) $
+  case parseURIReference filename of
+    Nothing -> do
+      putStrLn ("Not an URI: " ++ filename)
+      localFileContents opts file
+    Just uri ->
+      case uriScheme uri of
+        "" ->
+          localFileContents opts (uriToString id uri "")
+        "file:" ->
+          localFileContents opts (uriPath uri)
 #ifndef NOHTTP
-      "http:" ->
-        simpleHTTP (defaultGETRequest uri) >>= getResponseBody
-      "https:" ->
-        simpleHTTP (defaultGETRequest uri) >>= getResponseBody
+        "http:" -> getCLIFContentsHTTP filename ""
+        "https:" ->
+          simpleHTTP (defaultGETRequest uri) >>= getResponseBody
 #endif
-      x -> error ("Unsupported URI scheme: " ++ x)
+        x -> error ("Unsupported URI scheme: " ++ x)
+
+getCLIFContentsHTTP :: String -> String -> IO String
+getCLIFContentsHTTP uriS extension =
+  let (Just uri) = parseURIReference (uriS ++ extension) in do
+    res <- simpleHTTP (defaultGETRequest $ uri)
+    rb <- getResponseBody res
+    htrace ("checking for file " ++ show uri ++ "\n") $
+      case httpResponseCode res of
+        (2,0,0) -> return rb
+        _ -> case extension of
+          ""     -> getCLIFContentsHTTP uriS ".clf"
+          ".clf" -> getCLIFContentsHTTP uriS ".clif"
+          _      -> error $ "File not found via HTTP: " ++ uriS ++ "[.clf | .clif]"
 
 localFileContents :: HetcatsOpts -> String -> IO String
 localFileContents opts filename = do
@@ -226,11 +247,11 @@ impName :: PHRASE -> NAME
 impName (Importation (Imp_name n)) = n
 impName _ = undefined -- not necessary because filtered out
 
-anaImports :: HetcatsOpts -> SpecMap -> IO [(BASIC_SPEC, NAME)]
-anaImports opts specMap = do
+anaImports :: HetcatsOpts -> String -> SpecMap -> IO [(BASIC_SPEC, NAME)]
+anaImports opts dir specMap = do
   downloads <- foldM
     (\ sm nbt -> do
-      newSpecs <- collectDownloads opts sm nbt
+      newSpecs <- collectDownloads opts dir sm nbt
       return (Map.unionWith unify newSpecs sm)
     ) specMap $ Map.assocs specMap
   let specAssocs = Map.assocs downloads
@@ -245,3 +266,9 @@ usingImportedByCount (_, (_, _, importedBy1)) (_, (_, _, importedBy2)) =
 
 bsNamePairs :: [(String, SpecInfo)] -> [(BASIC_SPEC, NAME)]
 bsNamePairs = foldr (\ (n, (b, _, _)) r -> (b, mkSimpleId n) : r) []
+
+
+httpResponseCode :: Result (Response a) -> (Int, Int, Int)
+httpResponseCode res = case res of
+    Left _ -> (0,0,0)
+    Right r -> rspCode r
