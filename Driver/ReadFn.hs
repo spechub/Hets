@@ -44,6 +44,7 @@ import Common.DocUtils
 import Common.LibName
 
 import Text.ParserCombinators.Parsec
+import Text.XML.Light
 
 import System.FilePath
 
@@ -53,6 +54,38 @@ import Data.List (isPrefixOf)
 import Data.Maybe
 
 import FreeCAD.Logic_FreeCAD
+
+isDgXml :: QName -> Bool
+isDgXml q = qName q == "DGraph" && qPrefix q == Nothing
+
+isPpXml :: QName -> Bool
+isPpXml q = qName q == "Lib" && qPrefix q == Nothing
+
+isDMU :: QName -> Bool
+isDMU q = qName q == "ClashResult" && qPrefix q == Nothing
+
+isRDF :: QName -> Bool
+isRDF q = qName q == "RDF" && qPrefix q == Just "rdf"
+
+isOWLOnto :: QName -> Bool
+isOWLOnto q = qName q == "Ontology" && qPrefix q == Just "owl"
+
+guessXmlContent :: String -> Either String InType
+guessXmlContent str = case parseXMLDoc str of
+  Nothing -> Right GuessIn
+  Just e -> let q = elName e in
+    if isDgXml q then Left ".xml" else
+    if isRDF q then  
+      Right $ if any (isOWLOnto . elName) $ elChildren e then OWLIn else RDFIn
+    else if isDMU q then Left "DMU" else
+       if isPpXml q then Left ".pp.xml" else Right GuessIn
+
+quessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
+quessInput opts file input = let fty = guess file (intype opts) in
+  if elem fty [GuessIn, RDFIn] then case guessXmlContent input of
+    Left ty -> fail $ "unexpected xml format: " ++ ty
+    Right ty -> return ty
+  else return fty 
 
 readLibDefnM :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath -> String
   -> m LIB_DEFN
@@ -66,7 +99,9 @@ readLibDefnAux lgraph opts file fileForPos input =
     ATermIn _ -> return $ from_sml_ATermString input
     FreeCADIn ->
       liftIO $ readFreeCADLib file $ fileToLibName opts file
-    _ -> case guess file (intype opts) of
+    _ -> do 
+     ty <- quessInput opts file input
+     case ty of
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
 #ifndef NOOWLLOGIC
       OWLIn -> liftIO $ parseOWL file

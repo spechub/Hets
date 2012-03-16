@@ -336,6 +336,7 @@ data InType =
   | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
   | RDFIn
+  deriving Eq
 
 instance Show InType where
   show i = case i of
@@ -366,7 +367,7 @@ instance Read InType where
                            | at <- [BAF, NonBAF]]
 
 -- | 'ATType' describes distinct types of ATerms
-data ATType = BAF | NonBAF
+data ATType = BAF | NonBAF deriving Eq
 
 instance Show ATType where
   show a = case a of
