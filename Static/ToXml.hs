@@ -174,15 +174,15 @@ dgrule r =
         $ unode "RuleTarget" () ]
       _ -> []
 
-showSymbols :: GlobalAnnos -> DGNodeLab -> String
-showSymbols ga = showSymbolsTh ga . dgn_theory
+showSymbols :: [String] -> GlobalAnnos -> DGNodeLab -> String
+showSymbols ins ga = showSymbolsTh ins ga . dgn_theory
 
-showSymbolsTh :: GlobalAnnos -> G_theory -> String
-showSymbolsTh ga th = case th of
+showSymbolsTh :: [String] -> GlobalAnnos -> G_theory -> String
+showSymbolsTh ins ga th = case th of
   G_theory lid (ExtSign sig _) _ sens _ ->
      ppTopElement . add_attr (mkAttr "logic" $ language_name lid)
-     $ unode "Ontology"
-     [ unode "Symbols" . map (showSym lid)
+     . unode "Ontology"
+     $ [ unode "Symbols" . map (showSym lid)
            $ symlist_of lid sig
      , unode "Axioms" . map (\ ns@SenAttr { sentence = s } ->
            add_attrs
@@ -191,6 +191,7 @@ showSymbolsTh ga th = case th of
                  (showGlobalDoc ga (simplify_sen lid sig s) "")
              : map (showSym lid) (symsOfSen lid s))
             $ toNamedList sens ]
+     ++ map (unode "Import") ins
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element

@@ -13,6 +13,7 @@ compute the theory of a node
 
 module Static.ComputeTheory
     ( computeTheory
+    , globalNodeTheory
     , getGlobalTheory
     , theoremsToAxioms
     , computeDGraphTheories
@@ -22,6 +23,7 @@ module Static.ComputeTheory
     , markHiding
     , markFree
     , renumberDGLinks
+    , getImportNames
     ) where
 
 import Logic.Prover
@@ -144,9 +146,15 @@ computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
          translateG_theory (dgl_morphism l) $ theoremsToAxioms th)
          $ sortBy
             (flip $ comparing (\ (_, _, l) -> dgl_id l))
-            $ filter (liftE $ liftOr isGlobalDef isLocalDef)
-            $ innDG dg n
+            $ getImports dg n
       flatG_sentences localTh ths
+
+getImports :: DGraph -> Node -> [LEdge DGLinkLab]
+getImports dg = filter (liftE $ liftOr isGlobalDef isLocalDef) . innDG dg
+
+getImportNames :: DGraph -> Node -> [String]
+getImportNames dg = map (\ (s, _, _) -> getDGNodeName $ labDG dg s)
+  . getImports dg
 
 reduceTheory :: G_theory -> G_theory
 reduceTheory (G_theory lid sig ind sens _) =
@@ -187,9 +195,8 @@ renumberDGLinks (EdgeId i1) (EdgeId i2) dg = if i1 >= i2 then dg else
       (b, pBids) = foldl (\ (bR, eiR) ei' -> let bi = needUpd ei' in
         (bR || bi, if bi then add ei' : eiR else ei' : eiR))
           (False, []) $ Set.toList $ proofBasis pB
-      in (b, (if b then (flip updThmProofBasis)
-        (ProofBasis $ Set.fromList pBids) else id) $ dgl_type l)
+      in (b, (if b then flip updThmProofBasis
+        . ProofBasis $ Set.fromList pBids else id) $ dgl_type l)
     -- update in dg unless no updates conducted
     in if upd || upd' then [DeleteEdge e, InsertEdge (s, t, l
       { dgl_id = newId, dgl_type = newTp })] else []
-

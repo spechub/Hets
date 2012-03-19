@@ -429,12 +429,13 @@ getHetsResult opts updates sessRef file query =
               let fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
                     "node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
+                  ins = getImportNames dg i
                   -- showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
                 -- TODO: work on html-style nodeview
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
-                   Symbols -> return $ showSymbols (globalAnnos dg) dgnode
+                   Symbols -> return $ showSymbols ins (globalAnnos dg) dgnode
                    _ -> return $ showLocalTh dg nl fstLine
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
@@ -627,7 +628,7 @@ showProversOnly :: [(AnyComorphism, [String])] -> [String]
 showProversOnly = nubOrd . concatMap snd
 
 {- | gather provers and comoprhisms and resort them to
-(comorhism, supported provers) while not changing orig comorphism order  -}
+(comorhism, supported provers) while not changing orig comorphism order -}
 getProversAux :: Maybe String -> G_sublogics -> [(AnyComorphism, [String])]
 getProversAux mt subL = foldl insertCmL [] $ filterByComorph mt
                       $ getAllAutomaticProvers subL where

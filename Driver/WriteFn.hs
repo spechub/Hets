@@ -86,7 +86,7 @@ import Static.CheckGlobalContext
 import Static.DotGraph
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
-import Static.ComputeTheory (theoremsToAxioms, computeTheory)
+import Static.ComputeTheory
 
 import Driver.Options
 import Driver.ReadFn (libNameToFile)
@@ -182,9 +182,9 @@ writeIsaFile opts filePrefix raw_gTh ln i = do
            in writeVerbFile opts tf $ shows
                    (printIsaTheory tnf sign $ s : axs) "\n") rest
 
-writeTheory :: HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory -> LibName
-            -> SIMPLE_ID -> OutType -> IO ()
-writeTheory opts filePrefix ga
+writeTheory :: [String] -> HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory
+  -> LibName -> SIMPLE_ID -> OutType -> IO ()
+writeTheory ins opts filePrefix ga
   raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
     let fp = filePrefix ++ "_" ++ show i
         f = fp ++ "." ++ show ot
@@ -214,7 +214,7 @@ writeTheory opts filePrefix ga
         let (sign', _sens') = addUniformRestr sign sens
         writeVerbFile opts (f ++ ".sexpr")
           $ shows (prettySExpr $ vseSignToSExpr sign') "\n"
-    SymXml -> writeVerbFile opts f $ ToXml.showSymbolsTh ga raw_gTh
+    SymXml -> writeVerbFile opts f $ ToXml.showSymbolsTh ins ga raw_gTh
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->
@@ -280,7 +280,9 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LibName -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
-    case computeTheory lenv ln n of
+  let dg = lookupDGraph ln lenv
+      ins = getImportNames dg n
+  in case globalNodeTheory dg n of
       Nothing -> putIfVerbose opts 0 $ "could not compute theory of spec "
                  ++ show i
       Just raw_gTh0 -> do
@@ -300,7 +302,8 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
                    show (sublogicOfTh raw_gTh)
                unless (modelSparQ opts == "") $
                    modelSparQCheck opts (theoremsToAxioms raw_gTh) i
-               mapM_ (writeTheory opts filePrefix ga raw_gTh ln i) specOutTypes
+               mapM_ (writeTheory ins opts filePrefix ga raw_gTh ln i)
+                 specOutTypes
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> DGraph
                -> IO ()
