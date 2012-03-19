@@ -83,7 +83,7 @@ import Data.IORef
 import Data.Maybe
 import Data.List
 import Data.Ord
-import Data.Graph.Inductive.Graph (lab, LNode)
+import Data.Graph.Inductive.Graph (lab)
 import Data.Time.Clock
 
 import System.Random
@@ -430,13 +430,13 @@ getHetsResult opts updates sessRef file query =
                     if isInternalNode dgnode then ("internal " ++) else id)
                     "node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
                   ins = getImportNames dg i
-                  -- showN d = showGlobalDoc (globalAnnos dg) d "\n"
+                  showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
                 -- TODO: work on html-style nodeview
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
                    Symbols -> return $ showSymbols ins (globalAnnos dg) dgnode
-                   _ -> return $ showLocalTh dg nl fstLine
+                   _ -> return $ fstLine ++ showN dgnode
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
@@ -524,10 +524,6 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
     in mkHtmlElemScript fstLine (jvScr3 ++ jvScr1 ++ jvScr2)
       [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Axioms & Symbols"]
       ++ axShow ++ "\n<br />" ++ sbShow
-
--- | display nodes local signature elements in html
-showLocalTh :: DGraph -> LNode DGNodeLab -> String -> String
-showLocalTh dg (i, lbl) = showGlobalTh dg i $ dgn_theory lbl
 
 -- | create prover and comorphism menu and combine them using javascript
 showProverSelection :: G_sublogics -> (Element, Element, String)
