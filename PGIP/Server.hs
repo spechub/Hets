@@ -446,7 +446,7 @@ getHetsResult opts updates sessRef file query =
                                   gTh subL incl mp mt tl thms
                       if null sens then return "nothing to prove" else do
                         lift $ nextSess sessRef newLib k
-                        return $ ppTopElement $ unode "results" $
+                        return $ formatResults $ unode "results" $
                            map (\ (n, e) -> unode "goal"
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
@@ -460,6 +460,17 @@ getHetsResult opts updates sessRef file query =
               [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
+
+formatResults :: Element -> String
+formatResults rs = case lines $ ppTopElement rs of
+  h : t -> unlines $ h : ["<!DOCTYPE results ["
+        , "  <!ELEMENT results (goal)>"
+        , "  <!ELEMENT goal (name, result)>"
+        , "  <!ELEMENT name (#PCDATA)>"
+        , "  <!ELEMENT result (#PCDATA)>"
+        , "]>"
+        , "<?xml-stylesheet type=\"text/css\" ?>"] ++ t
+  [] -> error "empty results request"
 
 {- | displays the global theory for a node with the option to select and prove
 theorems interactively -}
