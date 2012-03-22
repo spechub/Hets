@@ -80,7 +80,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Char
 import Data.IORef
-import Data.Maybe
 import Data.List
 import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
@@ -472,6 +471,12 @@ formatResults rs = case lines $ ppTopElement rs of
         , "<?xml-stylesheet type=\"text/css\" ?>"] ++ t
   [] -> error "empty results request"
 
+-- TODO: proof-status plus select-unproven button
+-- TODO: format proof results
+-- TODO: catch empty theory // check empty proof results
+-- TODO: enable decimal timeout value
+
+
 {- | displays the global theory for a node with the option to select and prove
 theorems interactively -}
 showGlobalTh :: DGraph -> Int -> G_theory -> String -> String
@@ -485,8 +490,8 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
           `add_attrs` inputNode
     -- create timeout field
     timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
-            , mkAttr "value" "10", mkAttr "size" "3"]
-            $ unode "input" ":timeout(sec) "
+            , mkAttr "value" "1", mkAttr "size" "3"]
+            $ unode "input" "[timeout] "
     -- create list of theorems, selectable for proving
     thmSl = map mkCB $ toNamedList thms where
         mkCB sa = let (a, s) = (senAttr sa, sentence sa) in add_attrs
@@ -661,7 +666,8 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
           diffs = Set.difference (Set.fromList thms)
                   $ Set.fromList ks
       unless (Set.null diffs) $ fail $ "unknown theorems: " ++ show diffs
-      (res, prfs) <- lift $ autoProofAtNode useTh (fromMaybe 5 tl) thms gTh cp
+      (res, prfs) <- lift
+        $ autoProofAtNode useTh (maybe 1 (max 1) tl) thms gTh cp
       case prfs of
         Nothing -> fail "proving failed"
         Just sens -> if null sens then return (le, sens) else

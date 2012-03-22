@@ -164,15 +164,17 @@ anaQuery q =
                         _ -> False) q
            (q2, qr) = partition (\ l -> case l of
                         (x, Just y) ->
-                            elem x (["dg", "id", "session", "timeout"]
+                            elem x (["dg", "id", "session"]
                                     ++ edgeCommands)
                             && isNat y
-                                  || x == "command" &&
-                                     elem y globals
-                                  || x == "format" && elem y displayTypes
-                                  || elem x ("name" : tail proveParams
-                                             ++ nodeCommands)
-                                     -- without timeout, see above
+                               || x == "command" &&
+                                  elem y globals
+                               || x == "format" && elem y displayTypes
+                               || elem x ("name" : tail proveParams
+                                          ++ nodeCommands)
+                                  -- note: allows illegal timeout values
+                               || x == "timeout"
+                                  -- without timeout, see above
                         _ -> False) qm
            (fs, r1) = partition (`elem` displayTypes) $ map fst q1
            (gs, r2) = partition (`elem` globals) r1
@@ -270,15 +272,13 @@ anaNodeQuery mi ans i moreTheorems incls pss =
                 (x, Just y) -> ((x, y) :)
                 _ -> id) [] pss
       incl = lookup "include" pps
-      -- TODO: didn't figure out how trans is used so-far. maybe decodeQuery
-      -- screws things up (?)
       trans = maybe Nothing (Just . decodeQueryCode) $ lookup "translation" pps
       prover = lookup "prover" pps
       theorems = map unEsc moreTheorems
           ++ case lookup "theorems" pps of
         Nothing -> []
         Just str -> map unEsc $ splitOn ' ' $ decodeQueryCode str
-      timeLimit = fmap read $ lookup "timeout" pps
+      timeLimit = maybe Nothing readMaybe $ lookup "timeout" pps
       pp = ProveNode (not (null incls) || case incl of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
