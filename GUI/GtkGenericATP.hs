@@ -26,6 +26,7 @@ import Control.Concurrent.MVar
 import Control.Monad (unless, when)
 
 import Common.AS_Annotation as AS_Anno
+import Common.GtkGoal
 import Common.Result
 import Common.Utils (getEnvSave, readMaybe)
 

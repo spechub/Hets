@@ -18,9 +18,9 @@ module GUI.GtkAutomaticProofs
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
-import GUI.GtkUtils as GtkUtils
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
+import GUI.GtkUtils
 
 import Static.DevGraph
 import Static.DgUtils
@@ -39,6 +39,7 @@ import Comorphisms.LogicGraph (logicGraph)
 
 import Common.LibName (LibName)
 import Common.Result
+import Common.GtkGoal
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
@@ -71,7 +72,7 @@ data FNode = FNode { name     :: String
                    , results  :: G_theory }
 
 {- | mostly for the purpose of proper display, the resulting G_theory of each
-FNode can be converted into a list of Goals ( GtkUtils.Goal ). -}
+FNode can be converted into a list of Goals. -}
 toGtkGoals :: FNode -> [Goal]
 toGtkGoals fn = map toGtkGoal . filter ((`elem` goals fn) . fst) . getThGoals
   $ results fn
@@ -85,7 +86,7 @@ goalsToPrefix gs = let p = length $ filter (\ g -> gStatus g == GProved) gs
 {- | Displays every goal of a Node with a prefix showing the status and the
 goal name. -}
 showStatus :: FNode -> String
-showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
+showStatus fn = intercalate "\n" . map (\ g -> statusToPrefix
                  (gStatus g) ++ show (gName g)) $ toGtkGoals fn
 
 -- | Get a markup string containing name and color
@@ -93,7 +94,7 @@ instance Show FNode where
   show fn = let gs = toGtkGoals fn
                 gmin = gStatus $ minimum gs
             in
-    "<span color=\"" ++ GtkUtils.statusToColor gmin ++ "\">"
+    "<span color=\"" ++ statusToColor gmin ++ "\">"
      ++ goalsToPrefix gs ++ name fn ++ "</span>"
 
 instance Eq FNode where

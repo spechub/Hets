@@ -25,6 +25,7 @@ import qualified Common.Doc as Pretty
 import Common.Result
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
+import Common.GtkGoal
 import Common.Utils
 
 import Control.Concurrent.MVar
