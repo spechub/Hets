@@ -80,22 +80,14 @@ import qualified GUI.Glade.Utils as Utils
 import Static.GTheory
 
 import Common.DocUtils (showDoc)
-import Common.GtkGoal
+import Common.Utils (getTempFile)
 
 import Control.Concurrent (forkIO)
 import Control.Monad (when)
 
-import Data.List (isInfixOf)
-import Data.Char (toLower)
-
 import System.Directory ( removeFile, doesFileExist
                         , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
-import Common.Utils (getTempFile)
-
-import Logic.Prover
-
-import Interfaces.GenericATPState
 
 -- | Returns a GladeXML Object of a xmlstring.
 getGladeXML :: (String, String) -> IO GladeXML
