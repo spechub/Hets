@@ -64,6 +64,7 @@ import Common.AS_Annotation (SenAttr (..), isAxiom)
 import Common.Doc
 import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
+import Common.GtkGoal
 import Common.LibName
 import qualified Common.OrderedMap as OMap
 import Common.PrintLaTeX
@@ -471,18 +472,15 @@ formatResults rs = case lines $ ppTopElement rs of
         , "<?xml-stylesheet type=\"text/css\" ?>"] ++ t
   [] -> error "empty results request"
 
--- TODO: proof-status plus select-unproven button
 -- TODO: format proof results
 -- TODO: catch empty theory // check empty proof results
--- TODO: enable decimal timeout value
-
 
 {- | displays the global theory for a node with the option to select and prove
 theorems interactively -}
 showGlobalTh :: DGraph -> Int -> G_theory -> String -> String
 showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
-  G_theory lid (ExtSign _ sig) _ thsens _ -> let
-    (axs, thms) = OMap.partition isAxiom thsens
+  sGTh@(G_theory lid (ExtSign _ sig) _ thsens _) -> let
+    (axs, _) = OMap.partition isAxiom thsens
     ga = globalAnnos dg
     -- create prove button and prover/comorphism selection
     (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
@@ -491,53 +489,63 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
     -- create timeout field
     timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
             , mkAttr "value" "1", mkAttr "size" "3"]
-            $ unode "input" "[timeout] "
+            $ unode "input" "Sec/Goal "
     -- create list of theorems, selectable for proving
-    thmSl = map mkCB $ toNamedList thms where
-        mkCB sa = let (a, s) = (senAttr sa, sentence sa) in add_attrs
-          [ mkAttr "type" "checkbox", mkAttr "name" $ escStr a
-          , mkAttr "sentence" $ renderText ga $ pretty s] $
-          unode "input" a
+    thmSl = map mkCB $ getThGoals sGTh where
+      mkCB (nm, bp) = let gSt = maybe GOpen basicProofToGStatus bp in add_attrs
+        [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
+        , mkAttr "goalstatus" $ showSimple gSt ]
+        $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")"
+    -- select unproven goals by button
+    selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
+          , mkAttr "onClick" "chkUnproven()"] inputNode
+    jvScr2 = unlines ["\nfunction chkUnproven() {"
+          , "  var e = document.forms[0].elements;"
+          , "  for (i = 0; i < e.length; i++) {"
+          , "    if( e[i].type == 'checkbox' )"
+          , "      e[i].checked = e[i].getAttribute('goalstatus') != 'Proved';"
+          , "  }"
+          , "}" ]
     -- select or deselect all theorems by button
     selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-           , mkAttr "onClick" "chkAll(true)"] inputNode
+          , mkAttr "onClick" "chkAll(true)"] inputNode
     deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-           , mkAttr "onClick" "chkAll(false)"] inputNode
-    jvScr2 = unlines ["\nfunction chkAll(b) {"
-           , "  var e = document.forms[0].elements;"
-           , "  for (i = 0; i < e.length; i++) {"
-           , "    if( e[i].type == 'checkbox' ) e[i].checked = b;"
-           , "  }"
-           , "}" ]
+          , mkAttr "onClick" "chkAll(false)"] inputNode
+    jvScr3 = unlines ["\nfunction chkAll(b) {"
+          , "  var e = document.forms[0].elements;"
+          , "  for (i = 0; i < e.length; i++) {"
+          , "    if( e[i].type == 'checkbox' ) e[i].checked = b;"
+          , "  }"
+          , "}" ]
     -- hidden param field
     hidStr = add_attrs [ mkAttr "name" "prove"
-           , mkAttr "type" "hidden", mkAttr "style" "display:none;"
-           , mkAttr "value" $ show i ]
-           inputNode
+          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+          , mkAttr "value" $ show i ]
+          inputNode
     -- combine elements within a form
     thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel"
       , mkAttr "method" "get"] $ unode "form" $ hidStr : prSl : cmrSl : br
-      : selAll : deSelAll : timeout : intersperse br (prBt : thmSl)
+      : selAll : deSelAll : selUnPr : timeout : intersperse br (prBt : thmSl)
     -- autoselect SPASS if possible
-    jvScr3 = unlines ["\nwindow.onload = function() {"
-           , "  prSel = document.forms[0].elements.namedItem('prover');"
-           , "  prs = prSel.getElementsByTagName('option');"
-           , "  for ( i=0; i<prs.length; i++ ) {"
-           , "    if( prs[i].value == 'SPASS' ) {"
-           , "      prs[i].selected = 'selected';"
-           , "      updCmSel('SPASS');"
-           , "      return;"
-           , "    }"
-           , "  }"
-           -- if SPASS unable, select first one in list
-           , "  prs[0].selected = 'selected';"
-           , "  updCmSel( prs[0].value );"
-           , "}" ]
+    jvScr4 = unlines ["\nwindow.onload = function() {"
+          , "  prSel = document.forms[0].elements.namedItem('prover');"
+          , "  prs = prSel.getElementsByTagName('option');"
+          , "  for ( i=0; i<prs.length; i++ ) {"
+          , "    if( prs[i].value == 'SPASS' ) {"
+          , "      prs[i].selected = 'selected';"
+          , "      updCmSel('SPASS');"
+          , "      return;"
+          , "    }"
+          , "  }"
+          -- if SPASS unable, select first one in list
+          , "  prs[0].selected = 'selected';"
+          , "  updCmSel( prs[0].value );"
+          , "}" ]
     -- formatting stuff
     headr = unode "h2" fstLine
     axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
     sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
-    in mkHtmlElemScript fstLine (jvScr3 ++ jvScr1 ++ jvScr2)
+    in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2 ++ jvScr3 ++ jvScr4)
       [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Axioms & Symbols"]
       ++ axShow ++ "\n<br />" ++ sbShow
 

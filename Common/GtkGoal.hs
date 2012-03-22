@@ -45,6 +45,18 @@ instance Show GStatus where
   show GConjectured  = spanString GConjectured  "Conjectured"
   show GHandwritten  = spanString GHandwritten  "Handwritten"
 
+showSimple :: GStatus -> String
+showSimple gs = case gs of
+  GProved       -> "Proved"
+  GInconsistent -> "Inconsistent"
+  GDisproved    -> "Disproved"
+  GOpen         -> "Open"
+  GTimeout      -> "Open (Timeout!)"
+  GGuessed      -> "Guessed"
+  GConjectured  -> "Conjectured"
+  GHandwritten  -> "Handwritten"
+
+
 statusToColor :: GStatus -> String
 statusToColor s = case s of
   GOpen         -> "black"
