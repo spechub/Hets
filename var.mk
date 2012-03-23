@@ -31,7 +31,7 @@ TIME_PACKAGE = -DTIME_WITHOUT_TYPEABLE
 endif
 
 TARVERSION = $(shell $(HCPKG) latest tar)
-ifneq ($(findstring 0.3, $(TARVERSION)),)
+ifneq ($(findstring 0., $(TARVERSION)),)
 TAR_PACKAGE = -DTAR_PACKAGE
 endif
 
