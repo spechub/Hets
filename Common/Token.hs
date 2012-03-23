@@ -267,7 +267,7 @@ varId ks = pToken (reserved (ks ++ casl_reserved_fwords) scanAnyWords)
 -- | non-skipping version for simple ids
 nonSkippingSimpleId :: GenParser Char st Token
 nonSkippingSimpleId =
-  parseToken $ reserved casl_structured_reserved_words scanAnyWords
+  parseToken $ reserved casl_reserved_words scanAnyWords
 
 -- | like 'varId'.  'Common.Id.SIMPLE_ID' for spec- and view names
 simpleId :: GenParser Char st Token
