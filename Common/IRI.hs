@@ -123,11 +123,7 @@ import Debug.Trace (trace)
 import Numeric (showIntAtBase)
 
 import Data.Typeable (Typeable)
-#ifdef BASE4
 import Data.Data (Data)
-#else
-import Data.Generics (Data)
-#endif
 
 ------------------------------------------------------------
 --  The IRI datatype
@@ -159,14 +155,14 @@ data IRI = IRI
     , prefixName    :: String           -- ^ @prefix@
     , abbrevPath    :: String           -- ^ @abbrevPath@
     -- ^ prefix name part from "prefixName:path"
-    } deriving (Eq, Typeable, Data, Ord)
+    } deriving (Eq, Typeable, Data, Ord, Show)
 
 -- |Type for authority value within a IRI
 data IRIAuth = IRIAuth
     { iriUserInfo   :: String           -- ^ @anonymous\@@
     , iriRegName    :: String           -- ^ @www.haskell.org@
     , iriPort       :: String           -- ^ @:42@
-    } deriving (Eq, Typeable, Data, Ord)
+    } deriving (Eq, Typeable, Data, Ord, Show)
 
 data IRIType = Full | Abbreviated | Simple
   deriving (Eq, Show, Typeable, Data, Ord)
@@ -200,8 +196,8 @@ iriType i =
 --  but providing a function to return a new IRI value with iuserinfo
 --  data exposed by show.]]]
 --
-instance Show IRI where
-    showsPrec _ iri = iriToString defaultUserInfoMap iri
+-- instance Show IRI where
+--     showsPrec _ iri = iriToString defaultUserInfoMap iri
 
 defaultUserInfoMap :: String -> String
 defaultUserInfoMap uinf = user++newpass
@@ -380,14 +376,94 @@ iunreservedChar :: IRIParser st String
 iunreservedChar = do { c <- satisfy isUnreserved ; return [c] }
 
 
+{- BEGIN CURIE -}
+
+-- http://www.w3.org/TR/rdfa-core/#s_curies
+
+curie :: IRIParser st IRI
+curie = do
+    c <- string ":"
+    i <- reference
+    return $ i { prefixName = c }
+  <|> do
+    p <- try (do
+        n <- ncname
+        c <- string ":"
+        return $ n++c
+      )
+    i <- reference
+    return $ i { prefixName = p }
+  <|> reference
+
+reference :: IRIParser st IRI
+reference = do
+  (_, up) <- ihierPartNoAuth
+  uq <- option "" ( do { char '?' ; uiquery    } )
+  uf <- option "" ( do { char '#' ; uifragment } )
+  return $ IRI
+          { iriScheme    = ""
+          , iriAuthority = Nothing
+          , iriPath      = ""
+          , iriQuery     = uq
+          , iriFragment  = uf
+          , prefixName   = ""
+          , abbrevPath   = up
+          }
+
+-- http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName
+ncname :: GenParser Char st String
+ncname = do
+  c <- nameStartChar
+  s <- many nameChar
+  return $ c:s
+
+nameStartChar :: GenParser Char st Char
+nameStartChar = satisfy nameStartCharP
+
+nameChar :: GenParser Char st Char
+nameChar = satisfy nameCharP
+
+-- NOTE: Usually ':' is allowed. Here, only ncname uses nameStartChar, however.
+-- Thus we disallow ':'
+nameStartCharP :: Char -> Bool
+nameStartCharP c =
+  let n = ord c in
+  (c == '_') ||       -- usually: (c `elem` ":_") ||
+  isAlphaChar c ||
+  (0x00C0 <= n && n <= 0x00D6) ||
+  (0x00D8 <= n && n <= 0x00F6) ||
+  (0x00F8 <= n && n <= 0x02FF) ||
+  (0x0370 <= n && n <= 0x037D) ||
+  (0x037F <= n && n <= 0x1FFF) ||
+  (0x200C <= n && n <= 0x200D) ||
+  (0x2070 <= n && n <= 0x218F) ||
+  (0x2C00 <= n && n <= 0x2FEF) ||
+  (0x3001 <= n && n <= 0xD7FF) ||
+  (0xF900 <= n && n <= 0xFDCF) ||
+  (0xFDF0 <= n && n <= 0xFFFD) ||
+  (0x10000 <= n && n <= 0xEFFFF)
+
+nameCharP :: Char -> Bool
+nameCharP c =
+  let n = ord c in
+  nameStartCharP c ||
+  isDigitChar c ||
+  c `elem` "-." ||
+  n == 0xB7 ||
+  (0x0300 <= n && n <= 0x036F) ||
+  (0x203F <= n && n <= 0x2040)
+
+{-  END CURIE  -}
+
+{- BEGIN SPARQL -}
+
 -- http://www.w3.org/TR/2008/REC-rdf-sparql-query-20080115/
 -- Section 4.1
 
 pn_chars_baseP :: Char -> Bool
 pn_chars_baseP c =
   let n = ord c in
-  ('A' <= c && c <= 'Z') ||
-  ('a' <= c && c <= 'z') ||
+  isAlphaChar c ||
   (0x00C0 <= n && n <= 0x00D6) ||
   (0x00D8 <= n && n <= 0x00F6) ||
   (0x00F8 <= n && n <= 0x02FF) ||
@@ -405,25 +481,24 @@ pn_chars_baseP c =
 pn_chars_base :: GenParser Char st Char
 pn_chars_base = satisfy pn_chars_baseP
 
-pn_chars_uP :: Char -> Bool
-pn_chars_uP c = (pn_chars_baseP c) || (c == '_')
-
 pn_chars_u :: GenParser Char st Char
 pn_chars_u = satisfy pn_chars_uP
-
-pn_charsP :: Char -> Bool
-pn_charsP c =
-  let n = ord c in
-  (pn_charsP c) ||
-  (n == 0x00B7) ||
-  (0x0300 <= n && n <= 0x036F) ||
-  (0x203F <= n && n <= 0x2040)
 
 pn_chars :: GenParser Char st Char
 pn_chars = satisfy pn_charsP
 
-pn_localP :: Char -> Bool
-pn_localP c = (pn_chars_uP c) || (c == '-') || (isDigitChar c)
+pn_chars_uP :: Char -> Bool
+pn_chars_uP c = (pn_chars_baseP c) || (c == '_')
+
+pn_charsP :: Char -> Bool
+pn_charsP c =
+  let n = ord c in
+  c == '-'       ||
+  pn_chars_uP c  ||
+  isDigitChar c ||
+  (n == 0x00B7)  ||
+  (0x0300 <= n && n <= 0x036F) ||
+  (0x203F <= n && n <= 0x2040)
 
 -- http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/
 -- section 2.1
@@ -500,7 +575,7 @@ pn_prefix = do
 
 pn_local :: GenParser Char st PN_LOCAL
 pn_local = do
-    c1 <- (pn_chars_u <|> oneOf "0123456789")
+    c1 <- (pn_chars_u <|> digit)
     t <- (
       do
           s1 <- many (pn_chars <|> char '.')
@@ -512,6 +587,8 @@ pn_local = do
     case t of
       Just str -> return $ c1:str
       Nothing -> return [c1]
+
+{-  END SPARQL  -}
 
 
 --  RFC3987, section 2.2
@@ -549,13 +626,17 @@ ihierPart =
             ; up <- ipathAbEmpty
             ; return (ua,up)
             }
-    <|> do  { up <- ipathAbs
-            ; return (Nothing,up)
+    <|> ihierPartNoAuth
+
+ihierPartNoAuth :: IRIParser st ((Maybe IRIAuth),String)
+ihierPartNoAuth =
+        do  { up <- ipathAbs
+            ; return  (Nothing, up)
             }
     <|> do  { up <- ipathRootLess
-            ; return (Nothing,up)
+            ; return  (Nothing, up)
             }
-    <|> do  { return (Nothing,"")
+    <|> do  { return  (Nothing, "")
             }
 
 --  RFC3986, section 3.1
@@ -858,8 +939,6 @@ iriReference = iri <|> irelativeRef
 irelativeRef :: IRIParser st IRI
 irelativeRef =
     do  { notMatching uscheme
-        -- ; ua <- option Nothing ( do { try (string "//") ; uiauthority } )
-        -- ; up <- upath
         ; (ua,up) <- irelativePart
         ; uq <- option "" ( do { char '?' ; uiquery    } )
         ; uf <- option "" ( do { char '#' ; uifragment } )
