@@ -106,12 +106,6 @@ module Common.IRI
     , normalizeCase
     , normalizeEscape
     , normalizePathSegments
-
-    -- * Deprecated functions
-    , parseabsoluteIRI
-    , escapeString
-    , reserved, unreserved
-    , scheme, authority, path, query, fragment
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -128,20 +122,12 @@ import Data.Maybe (isJust)
 import Debug.Trace (trace)
 import Numeric (showIntAtBase)
 
-#ifdef __GLASGOW_HASKELL__
 import Data.Typeable (Typeable)
 #ifdef BASE4
 import Data.Data (Data)
 #else
 import Data.Generics (Data)
 #endif
-#else
-import Data.Typeable (Typeable(..), TyCon, mkTyCon, mkTyConApp)
-#endif
-
-import Data.Maybe (fromJust)
-
-import ATerm.Lib
 
 ------------------------------------------------------------
 --  The IRI datatype
@@ -173,53 +159,17 @@ data IRI = IRI
     , prefixName    :: String           -- ^ @prefix@
     , abbrevPath    :: String           -- ^ @abbrevPath@
     -- ^ prefix name part from "prefixName:path"
-    } deriving (Eq
-#ifdef __GLASGOW_HASKELL__
-    , Typeable, Data
-#endif
-    , Ord)
-
-#ifndef __GLASGOW_HASKELL__
-uriTc :: TyCon
-uriTc = mkTyCon "IRI"
-
-instance Typeable URI where
-  typeOf _ = mkTyConApp uriTc []
-#endif
+    } deriving (Eq, Typeable, Data, Ord)
 
 -- |Type for authority value within a IRI
 data IRIAuth = IRIAuth
     { iriUserInfo   :: String           -- ^ @anonymous\@@
     , iriRegName    :: String           -- ^ @www.haskell.org@
     , iriPort       :: String           -- ^ @:42@
-    } deriving (Eq
-#ifdef __GLASGOW_HASKELL__
-    , Typeable, Data
-#endif
-    , Ord)
-
-#ifndef __GLASGOW_HASKELL__
-iriAuthTc :: TyCon
-iriAuthTc = mkTyCon "IRIAuth"
-
-instance Typeable IRIAuth where
-  typeOf _ = mkTyConApp iriAuthTc []
-#endif
+    } deriving (Eq, Typeable, Data, Ord)
 
 data IRIType = Full | Abbreviated | Simple
-  deriving (Eq, Show
-#ifdef __GLASGOW_HASKELL__
-    , Typeable, Data
-#endif
-    , Ord)
-
-#ifndef __GLASGOW_HASKELL__
-iriTypeTc :: TyCon
-iriTypeTc = mkTyCon "IRIType"
-
-instance Typeable IRIType where
-  typeOf _ = mkTyConApp iriTypeTc []
-#endif
+  deriving (Eq, Show, Typeable, Data, Ord)
 
 -- |Blank IRI
 
@@ -237,9 +187,8 @@ nullIRI = IRI
 -- |Returns Type of an IRI
 iriType :: IRI -> IRIType
 iriType i =
-  if (not.null) $ path i then Full else
+  if (not.null) $ iriPath i then Full else
   if null $ prefixName i then Simple else Abbreviated
-  
 
 --  IRI as instance of Show.  Note that for secirity reasons, the default
 --  behaviour is to suppress any iuserinfo field (see RFC3986, section 7.5).
@@ -265,54 +214,6 @@ defaultUserInfoMap uinf = user++newpass
 
 iriToStringUnsecure :: IRI -> String
 iriToStringUnsecure i = (iriToString id i) ""
-
-testDefaultUserInfoMap =
-     [ defaultUserInfoMap ""                == ""
-     , defaultUserInfoMap "@"               == "@"
-     , defaultUserInfoMap "user@"           == "user@"
-     , defaultUserInfoMap "user:@"          == "user:@"
-     , defaultUserInfoMap "user:anonymous@" == "user:...@"
-     , defaultUserInfoMap "user:pass@"      == "user:...@"
-     , defaultUserInfoMap "user:pass"       == "user:...@"
-     , defaultUserInfoMap "user:anonymous"  == "user:...@"
-     ]
-
-testParseIRIManchester =
-  map (\(s,p) -> (isJust $ parseIRIManchester s) == p)
-    [ ("<http://foo.bar/baz?que=ry&str=ing#frag>", True)
-    , ( "http://foo.bar/baz?que=ry&str=ing#frag",  False)
-    , ("<h[t]tp://foo.bar/baz?que=ry&str=ing#frag>", False)
-    , ("<http://f[o]o.bar/baz?que=ry&str=ing#frag>", False)
-    , ("<http://foo.bar/b[a]z?que=ry&str=ing#frag>", False)
-    , ("<http://foo.bar/baz?q[u]e=ry&str=ing#frag>", False)
-    , ("<http://foo.bar/baz?que=ry&str=ing#fr[a]g>", False)
-    , ("<../.././path/file?que=ry&str=ing#frag>", True)
-    , ( "../.././path/file?que=ry&str=ing#frag",  False)
-    , ( "../.././p[a]th/file?que=ry&str=ing#frag",  False)
-    , ("prefix:localpart", True)
-    , ("p.r.e_f.i.x_:3local.pa_rt", True)
-    , ("prefix:_localpart", True)
-    , (":localpart", True)
-    , ("prefix.:localpart", False)
-    , (".prefix:localpart", False)
-    , ("_prefix:localpart", False)
-    , ("pr[e]fix:localpart", False)
-    , ("prefix:loc[a]lpart", False)
-    , (":localpart.", False)
-    , (":.localpart", False)
-    , (":local/part", False)
-    , (":localpart?query", False)
-    , (":localpart#frag", False)
-    ]
-
-testIRIType :: [Bool]
-testIRIType = map (\(s,p) -> (iriType $ fromJust $ parseIRIManchester s) == p)
-    [ ("<http://foo.bar/baz?que=ry&str=ing#frag>", Full)
-    , ("<baz?que=ry&str=ing#frag>", Full)
-    , ("prefix:localpart", Abbreviated)
-    , (":localpart", Abbreviated)
-    , ("localpart", Simple)
-    ]
 
 ------------------------------------------------------------
 --  Parse a IRI
@@ -1261,7 +1162,6 @@ removeDotSegments ps       = elimDots ps []
 
 --  Second arg accumulates isegments processed so far in reverse order
 elimDots :: String -> [String] -> String
--- elimDots ps rs | traceVal "\nps " ps $ traceVal "rs " rs $ False = error ""
 elimDots [] [] = ""
 elimDots [] rs = concat (reverse rs)
 elimDots (    '.':'/':ps)     rs = elimDots ps rs
@@ -1387,11 +1287,6 @@ relPathFrom1 pabs base = relName
 --  "directory" segtments.
 --
 relSegsFrom :: String -> String -> String
-{-
-relSegsFrom sabs base
-    | traceVal "\nrelSegsFrom\nsabs " sabs $ traceVal "base " base $
-      False = error ""
--}
 relSegsFrom []   []   = ""      -- paths are identical
 relSegsFrom sabs base =
     if sa1 == sb1
@@ -1410,11 +1305,6 @@ relSegsFrom sabs base =
 --  base.  Thus, when base is empty, the desired path has been found.
 --
 difSegsFrom :: String -> String -> String
-{-
-difSegsFrom sabs base
-    | traceVal "\ndifSegsFrom\nsabs " sabs $ traceVal "base " base $
-      False = error ""
--}
 difSegsFrom sabs ""   = sabs
 difSegsFrom sabs base = difSegsFrom ("../"++sabs) (snd $ nextSegment base)
 
@@ -1455,66 +1345,6 @@ normalizePathSegments iristr = normstr jiri
         normstr Nothing  = iristr
         normstr (Just u) = show (normiri u)
         normiri u = u { iriPath = removeDotSegments (iriPath u) }
-
-------------------------------------------------------------
---  Local trace helper functions
-------------------------------------------------------------
-
-traceShow :: Show a => String -> a -> a
-traceShow msg x = trace (msg ++ show x) x
-
-traceVal :: Show a => String -> a -> b -> b
-traceVal msg x y = trace (msg ++ show x) y
-
-------------------------------------------------------------
---  Deprecated functions
-------------------------------------------------------------
-
-{-# DEPRECATED parseabsoluteIRI "use parseAbsoluteIRI" #-}
-parseabsoluteIRI :: String -> Maybe IRI
-parseabsoluteIRI = parseAbsoluteIRI
-
-{-# DEPRECATED escapeString "use escapeIRIString, and note the flipped arguments" #-}
-escapeString :: String -> (Char->Bool) -> String
-escapeString = flip escapeIRIString
-
-{-# DEPRECATED reserved "use isReserved" #-}
-reserved :: Char -> Bool
-reserved = isReserved
-
-{-# DEPRECATED unreserved "use isUnreserved" #-}
-unreserved :: Char -> Bool
-unreserved = isUnreserved
-
---  Additional component access functions for backward compatibility
-
-{-# DEPRECATED scheme "use iriScheme" #-}
-scheme :: IRI -> String
-scheme = orNull init . iriScheme
-
-{-# DEPRECATED authority "use iriAuthority, and note changed functionality" #-}
-authority :: IRI -> String
-authority = dropss . ($"") . iriAuthToString id . iriAuthority
-    where
-        -- Old-style authority component does not include leading '//'
-        dropss ('/':'/':s) = s
-        dropss s           = s
-
-{-# DEPRECATED path "use iriPath" #-}
-path :: IRI -> String
-path = iriPath
-
-{-# DEPRECATED query "use iriQuery, and note changed functionality" #-}
-query :: IRI -> String
-query = orNull tail . iriQuery
-
-{-# DEPRECATED fragment "use iriFragment, and note changed functionality" #-}
-fragment :: IRI -> String
-fragment = orNull tail . iriFragment
-
-orNull :: ([a]->[a]) -> [a] -> [a]
-orNull _ [] = []
-orNull f as = f as
 
 --------------------------------------------------------------------------------
 --
