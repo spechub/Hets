@@ -414,16 +414,16 @@ pn_chars_u = satisfy pn_chars_uP
 pn_charsP :: Char -> Bool
 pn_charsP c =
   let n = ord c in
-  (pn_chars_uP c) || (c `elem` "-01223456789") ||
-  (n == 0x00B7) || (0x0300 <= n && n <= 0x036F) || (0x203F <= n && n <= 0x2040)
+  (pn_charsP c) ||
+  (n == 0x00B7) ||
+  (0x0300 <= n && n <= 0x036F) ||
+  (0x203F <= n && n <= 0x2040)
 
 pn_chars :: GenParser Char st Char
 pn_chars = satisfy pn_charsP
 
 pn_localP :: Char -> Bool
-pn_localP c =
-  let n = ord c in
-  (pn_chars_uP c) || (c `elem` "-01223456789")
+pn_localP c = (pn_chars_uP c) || (c == '-') || (isDigitChar c)
 
 -- http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/
 -- section 2.1
