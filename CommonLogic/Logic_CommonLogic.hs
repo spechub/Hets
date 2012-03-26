@@ -21,7 +21,7 @@ import Common.ProofTree
 
 import CommonLogic.ATC_CommonLogic ()
 import CommonLogic.Sign
-import CommonLogic.AS_CommonLogic as AS
+import CommonLogic.AS_CommonLogic
 import CommonLogic.Symbol as Symbol
 import CommonLogic.Analysis
 import CommonLogic.Parse_CLIF
