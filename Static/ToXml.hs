@@ -175,12 +175,15 @@ dgrule r =
       _ -> []
 
 showSymbols :: [String] -> GlobalAnnos -> DGNodeLab -> String
-showSymbols ins ga = showSymbolsTh ins ga . dgn_theory
+showSymbols ins ga lbl = showSymbolsTh ins (getDGNodeName lbl) ga
+  $ dgn_theory lbl
 
-showSymbolsTh :: [String] -> GlobalAnnos -> G_theory -> String
-showSymbolsTh ins ga th = case th of
+showSymbolsTh :: [String] -> String -> GlobalAnnos -> G_theory -> String
+showSymbolsTh ins name ga th = case th of
   G_theory lid (ExtSign sig _) _ sens _ ->
-     ppTopElement . add_attr (mkAttr "logic" $ language_name lid)
+     ppTopElement . add_attrs 
+     [ mkAttr "logic" $ language_name lid
+     , mkNameAttr name ]
      . unode "Ontology"
      $ [ unode "Symbols" . map (showSym lid)
            $ symlist_of lid sig

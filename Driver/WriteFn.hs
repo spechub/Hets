@@ -182,9 +182,9 @@ writeIsaFile opts filePrefix raw_gTh ln i = do
            in writeVerbFile opts tf $ shows
                    (printIsaTheory tnf sign $ s : axs) "\n") rest
 
-writeTheory :: [String] -> HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory
-  -> LibName -> SIMPLE_ID -> OutType -> IO ()
-writeTheory ins opts filePrefix ga
+writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
+  -> G_theory -> LibName -> SIMPLE_ID -> OutType -> IO ()
+writeTheory ins nam opts filePrefix ga
   raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
     let fp = filePrefix ++ "_" ++ show i
         f = fp ++ "." ++ show ot
@@ -214,7 +214,7 @@ writeTheory ins opts filePrefix ga
         let (sign', _sens') = addUniformRestr sign sens
         writeVerbFile opts (f ++ ".sexpr")
           $ shows (prettySExpr $ vseSignToSExpr sign') "\n"
-    SymXml -> writeVerbFile opts f $ ToXml.showSymbolsTh ins ga raw_gTh
+    SymXml -> writeVerbFile opts f $ ToXml.showSymbolsTh ins nam ga raw_gTh
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->
@@ -281,6 +281,7 @@ writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LibName -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
   let dg = lookupDGraph ln lenv
+      nam = getDGNodeName $ labDG dg n
       ins = getImportNames dg n
   in case globalNodeTheory dg n of
       Nothing -> putIfVerbose opts 0 $ "could not compute theory of spec "
@@ -302,7 +303,7 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
                    show (sublogicOfTh raw_gTh)
                unless (modelSparQ opts == "") $
                    modelSparQCheck opts (theoremsToAxioms raw_gTh) i
-               mapM_ (writeTheory ins opts filePrefix ga raw_gTh ln i)
+               mapM_ (writeTheory ins nam opts filePrefix ga raw_gTh ln i)
                  specOutTypes
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> DGraph
