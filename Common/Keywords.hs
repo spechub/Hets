@@ -279,18 +279,6 @@ interpretationS = "interpretation"
 ontologyS :: String
 ontologyS = "ontology"
 
-pConsS :: String
-pConsS = "%cons"
-
-pDefS :: String
-pDefS = "%def"
-
-pImpliedS :: String
-pImpliedS = "%implied"
-
-pMonoS :: String
-pMonoS = "%mono"
-
 -- * frameworks
 
 lfS :: String
