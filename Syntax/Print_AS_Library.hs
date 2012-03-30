@@ -12,7 +12,7 @@ Pretty printing of CASL specification libaries
 
 module Syntax.Print_AS_Library () where
 
-import Common.Id
+import Common.IRI
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
@@ -47,18 +47,18 @@ instance Pretty LIB_ITEM where
                           Union u@(_ : _) _ ->
                               printUnion $ moveAnnos ac u
                           _ -> [pretty ac]
-                spid = indexed (tokStr si)
+                spid = indexed (iriToStringUnsecure si)
                 sphead = if null il then
                              if null pl then spid <+> sa
                              else cat [spid, printPARAMS aa <+> sa]
                          else sep [ cat [spid, printPARAMS aa]
                                   , printIMPORTED ab <+> sa]
-             in if null (tokStr si) && null pl then pretty ac' else
+             in if null (iriToStringUnsecure si) && null pl then pretty ac' else
                     vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa@(Params pl) ab@(Imported il) _)
                       (View_type frm to _) ad _ ->
-            let spid = structSimpleId si
+            let spid = structIRI si
                 sphead = if null il then
                              if null pl then spid <+> colon
                              else cat [spid, printPARAMS aa <+> colon]
@@ -76,11 +76,11 @@ instance Pretty LIB_ITEM where
                            $+$ keyword endS
         Unit_spec_defn si ab _ ->
             topKey unitS <+>
-                   fsep [keyword specS, structSimpleId si <+> equals, pretty ab]
+                   fsep [keyword specS, structIRI si <+> equals, pretty ab]
                            $+$ keyword endS
         Ref_spec_defn si ab _ ->
             keyword refinementS <+>
-                    fsep [structSimpleId si <+> equals, pretty ab]
+                    fsep [structIRI si <+> equals, pretty ab]
                             $+$ keyword endS
         Download_items l ab _ ->
             topKey fromS <+> fsep ((pretty l <+> keyword getS)
@@ -95,7 +95,7 @@ instance Pretty LIB_ITEM where
 prettyDownloadItems :: DownloadItems -> [Doc]
 prettyDownloadItems d = case d of
   ItemMaps l -> punctuate comma $ map pretty l
-  UniqueItem i -> [mapsto, structSimpleId i]
+  UniqueItem i -> [mapsto, structIRI i]
 
 instance Pretty GENERICITY where
     pretty (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]
@@ -110,6 +110,6 @@ printIMPORTED (Imported aa) = case aa of
 
 instance Pretty ItemNameMap where
     pretty (ItemNameMap a m) = fsep
-       $ structSimpleId a : case m of
+       $ structIRI a : case m of
           Nothing -> []
-          Just b -> [mapsto, structSimpleId b]
+          Just b -> [mapsto, structIRI b]

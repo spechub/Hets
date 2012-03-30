@@ -18,6 +18,7 @@ import Syntax.Print_AS_Library ()
 
 import Common.AS_Annotation
 import Common.Id
+import Common.IRI (iriToStringUnsecure)
 import Common.Item
 import Common.LibName
 import Common.Result
@@ -41,10 +42,10 @@ xmlLibDefn ga (Lib_defn n il rg an) =
 libItem :: GlobalAnnos -> LIB_ITEM -> Element
 libItem ga li = case li of
   Spec_defn n g as rg ->
-    add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
+    add_attrs (mkNameAttr (iriToStringUnsecure n) : rgAttrs rg)
       $ unode "SpecDefn" $ genericity ga g ++ [annoted spec ga as]
   View_defn n g (View_type from to _) mapping rg ->
-    add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
+    add_attrs (mkNameAttr (iriToStringUnsecure n) : rgAttrs rg)
       $ unode "ViewDefn" $ genericity ga g
         ++ [ unode "Source" $ annoted spec ga from
            , unode "Target" $ annoted spec ga to ]
@@ -60,7 +61,7 @@ libItem ga li = case li of
 downloadItems :: DownloadItems -> [Element]
 downloadItems d = case d of
   ItemMaps l -> map itemNameOrMap l
-  UniqueItem i -> [add_attr (mkAttr "as" $ tokStr i) $ unode "Item" ()]
+  UniqueItem i -> [add_attr (mkAttr "as" $ iriToStringUnsecure i) $ unode "Item" ()]
 
 spec :: GlobalAnnos -> SPEC -> Element
 spec ga s = case s of
@@ -81,7 +82,7 @@ spec ga s = case s of
   Closed_spec as rg -> withRg rg $ unode "Closed" $ annoted spec ga as
   Group as rg -> withRg rg $ unode "Group" $ annoted spec ga as
   Spec_inst n fa rg ->
-    add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
+    add_attrs (mkNameAttr (iriToStringUnsecure n) : rgAttrs rg)
     $ unode "Actuals" $ map (annoted fitArg ga) fa
   Qualified_spec ln as rg -> withRg rg $ unode "Qualified"
     [prettyElem "Logic" ga ln, annoted spec ga as]
@@ -94,14 +95,14 @@ fitArg ga fa = case fa of
   Fit_spec as m rg -> withRg rg $ unode "Spec"
     $ annoted spec ga as : concatMap (gmapping ga) m
   Fit_view n fargs rg ->
-    add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
+    add_attrs (mkNameAttr (iriToStringUnsecure n) : rgAttrs rg)
     $ unode "Spec" $ unode "Actuals" $ map (annoted fitArg ga) fargs
 
 itemNameOrMap :: ItemNameMap -> Element
 itemNameOrMap (ItemNameMap name m) =
-  add_attrs (mkNameAttr (tokStr name) : case m of
+  add_attrs (mkNameAttr (iriToStringUnsecure name) : case m of
     Nothing -> []
-    Just as -> [mkAttr "as" $ tokStr as])
+    Just as -> [mkAttr "as" $ iriToStringUnsecure as])
   $ unode "Item" ()
 
 gmapping :: GlobalAnnos -> G_mapping -> [Element]

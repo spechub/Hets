@@ -265,6 +265,32 @@ sourceS = "source"
 targetS :: String 
 targetS = "target"
 
+-- * DOL keywords
+
+alignmentS :: String
+alignmentS = "alignment"
+
+distributedOntologyS :: String
+distributedOntologyS = "distributed-ontology"
+
+interpretationS :: String
+interpretationS = "interpretation"
+
+ontologyS :: String
+ontologyS = "ontology"
+
+pConsS :: String
+pConsS = "%cons"
+
+pDefS :: String
+pDefS = "%def"
+
+pImpliedS :: String
+pImpliedS = "%implied"
+
+pMonoS :: String
+pMonoS = "%mono"
+
 -- * frameworks
 
 lfS :: String

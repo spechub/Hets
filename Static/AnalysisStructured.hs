@@ -51,6 +51,7 @@ import Common.Consistency
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
+import Common.IRI (IRI, iriToStringUnsecure, iriPos)
 import Common.LibName
 import Common.Result
 import Common.Utils (number)
@@ -187,7 +188,7 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
     case mt of
       Nothing -> return (Nothing, lG1 { currentTargetBase = Nothing })
       Just sp -> do
-        let ssp = tokStr sp
+        let ssp = iriToStringUnsecure sp
         (s, t@(libName, _, (_, lbl))) <- case Map.lookup logicLibN libenv of
           Just dg2 | logicLibN /= ln -> getNamedSpec sp logicLibN dg2 libenv
           _ -> getNamedSpec sp ln dg libenv
@@ -449,7 +450,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           anaSpecTop conser addSyms lg ln dg nsig name opts (item asp)
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
   Spec_inst spname afitargs pos0 -> let
-       pos = if null afitargs then tokPos spname else pos0
+       pos = if null afitargs then iriPos spname else pos0
     in adjustPos pos $ case lookupGlobalEnvDG spname dg of
     Just (SpecEntry gs@(ExtGenSig (GenSig _ params _)
                         body@(NodeSig nB gsigmaB))) ->
@@ -527,12 +528,13 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
 
-instMismatchError :: SIMPLE_ID -> Int -> Int -> Range -> Result a
-instMismatchError spname lp la = fatal_error $ tokStr spname ++ " expects "
-    ++ show lp ++ " arguments" ++ " but was given " ++ show la
+instMismatchError :: IRI -> Int -> Int -> Range -> Result a
+instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname
+    ++ " expects " ++ show lp ++ " arguments" ++ " but was given " ++ show la
 
-notFoundError :: String -> SIMPLE_ID -> Range -> Result a
-notFoundError str sid = fatal_error $ str ++ " " ++ tokStr sid ++ " not found"
+notFoundError :: String -> IRI -> Range -> Result a
+notFoundError str sid = fatal_error $ str ++ " " ++ iriToStringUnsecure sid
+    ++ " not found"
 
 gsigUnionMaybe :: LogicGraph -> MaybeNode -> G_sign -> Result G_sign
 gsigUnionMaybe lg mn gsig = case mn of
@@ -745,7 +747,7 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) asig@(G_sign lidA sigmaA _)
       -- also output symbols that are affected
    -}
 
-anaFitArg :: LogicGraph -> LibName -> DGraph -> SIMPLE_ID -> MaybeNode
+anaFitArg :: LogicGraph -> LibName -> DGraph -> IRI -> MaybeNode
   -> NodeSig -> HetcatsOpts -> NodeName -> FIT_ARG
   -> Result (FIT_ARG, DGraph, (G_morphism, NodeSig))
 anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
@@ -816,7 +818,7 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
          | otherwise -> instMismatchError spname lp la pos
     _ -> notFoundError "View" vn pos
 
-anaFitArgs :: LogicGraph -> HetcatsOpts -> LibName -> SIMPLE_ID -> MaybeNode
+anaFitArgs :: LogicGraph -> HetcatsOpts -> LibName -> IRI -> MaybeNode
   -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
   -> (NodeSig, FIT_ARG)
   -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
@@ -826,7 +828,7 @@ anaFitArgs lg opts ln spname imps (fas', dg1, args, name') (nsig', fa) = do
     return (fa' : fas', dg', arg : args, n1)
 
 anaAllFitArgs :: LogicGraph -> HetcatsOpts -> LibName -> DGraph -> MaybeNode
-  -> NodeName -> SIMPLE_ID -> ExtGenSig -> [Annoted FIT_ARG]
+  -> NodeName -> IRI -> ExtGenSig -> [Annoted FIT_ARG]
   -> Result ([Annoted FIT_ARG], DGraph, (GMorphism, G_sign, NodeSig))
 anaAllFitArgs lg opts ln dg nsig name spname
   gs@(ExtGenSig (GenSig imps params _) _)

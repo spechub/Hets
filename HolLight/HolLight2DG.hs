@@ -26,6 +26,7 @@ import Logic.Grothendieck
 
 import Common.LibName
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.AS_Annotation
 import Common.Result
 import Common.ProverTools
@@ -366,7 +367,7 @@ _insNodeDG sig sens n (dg, m) =
            (toThSens sens) startThId
      n' = snd (System.FilePath.Posix.splitFileName n)
      labelK = newInfoNodeLab
-      (makeName (mkSimpleId n'))
+      (makeName (simpleIdToIRI $ mkSimpleId n'))
       (newNodeInfo DGEmpty)
       gt
      k = getNewNodeDG dg

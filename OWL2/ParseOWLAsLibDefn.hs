@@ -19,6 +19,7 @@ import OWL2.Rename
 import Data.Char
 
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation hiding (isAxiom, isDef)
@@ -67,7 +68,7 @@ cnvimport :: QName -> Annoted SPEC
 cnvimport i = emptyAnno $ Spec_inst (cnvtoSimpleId i) [] nullRange
 
 cnvtoSimpleId :: QName -> SPEC_NAME
-cnvtoSimpleId = mkSimpleId . filter isAlphaNum . showQN
+cnvtoSimpleId = simpleIdToIRI . mkSimpleId . filter isAlphaNum . showQN
 
 createSpec :: OntologyDocument -> Annoted SPEC
 createSpec o = let

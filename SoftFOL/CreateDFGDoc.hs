@@ -25,7 +25,7 @@ import Common.AS_Annotation as AS_Anno
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
-import Common.Id
+import Common.IRI (IRI)
 import Common.LibName
 import Common.ProofUtils
 import Common.Result
@@ -47,7 +47,7 @@ import SoftFOL.PrintTPTP
 spassConsTimeLimit :: Int
 spassConsTimeLimit = 500
 
-printTheoryAsSoftFOL :: LibName -> SIMPLE_ID
+printTheoryAsSoftFOL :: LibName -> IRI
          -> Int -- ^ 0 = DFG, 1 = TPTP
          -> Bool
             {- ^ if True a conjecture false is added otherwise

@@ -19,6 +19,8 @@ import Common.Id
 import Common.Keywords
 import Common.Utils
 
+import Common.IRI (IRI)
+
 import Data.Char
 import Data.List
 import Data.Ord
@@ -76,8 +78,8 @@ emptyLibName :: String -> LibName
 emptyLibName s = LibName (IndirectLink s nullRange "" noTime) Nothing
 
 data LibId =
-    DirectLink URL Range
-              -- pos: start of URL
+    DirectLink IRI Range
+              -- pos: start of IRI
   | IndirectLink PATH Range FilePath ClockTime
               -- pos: start of PATH
 
@@ -108,7 +110,6 @@ getFilePath ln =
 data VersionNumber = VersionNumber [String] Range
                       -- pos: "version", start of first string
 
-type URL = String
 type PATH = String
 
 instance GetRange LibId where
@@ -118,7 +119,7 @@ instance GetRange LibId where
 
 instance Show LibId where
   show li = case li of
-    DirectLink s _ -> s
+    DirectLink i _ -> show i
     IndirectLink s1 _ _ _ -> s1
 
 instance GetRange LibName where
@@ -188,3 +189,4 @@ stripLibChars = filter (\ c -> isAlphaNum c || elem c "'_/")
 
 mkLibStr :: String -> String
 mkLibStr = dropWhile (== '/') . stripLibChars
+

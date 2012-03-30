@@ -12,13 +12,14 @@ Portability :  portable
 module Framework.AS where
 
 import Common.Id
+import Common.IRI (IRI)
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
 
-type NAME = Token
-type SIG_NAME = Token
-type MORPH_NAME = Token
+type NAME = IRI
+type SIG_NAME = IRI
+type MORPH_NAME = IRI
 type PATTERN_NAME = Token
 
 data FRAM = LF | Isabelle | Maude deriving (Ord, Eq, Show)

@@ -43,6 +43,7 @@ import Common.AnnoState
 import Common.Lexer
 import Common.Token
 import Common.Id
+import Common.IRI (iriToStringUnsecure, nullIRI)
 import Common.Keywords
 import Common.ExtSign
 
@@ -86,7 +87,7 @@ anaLogicDefH :: LogicFram lid sublogics basic_spec sentence symb_items
 anaLogicDefH ml ld dg = do
   case retrieveDiagram ml ld dg of
        Result _ (Just (ltruth, lmod, found, lpf)) -> do
-           let l = tokStr $ newlogicName ld
+           let l = iriToStringUnsecure $ newlogicName ld
            buildLogic ml l ltruth lmod found lpf
            addLogic2LogicList l
            return $ addLogicDef2DG ld dg
@@ -102,15 +103,15 @@ retrieveDiagram :: LogicFram lid sublogics basic_spec sentence symb_items
                               Maybe sign, Maybe morphism)
 retrieveDiagram ml (LogicDef _ _ s m f p _) dg = do
   ltruth <- lookupMorph ml s dg
-  lmod <- if (m == nullTok)
+  lmod <- if (m == nullIRI)
              then return Nothing
              else do v <- lookupMorph ml m dg
                      return $ Just v
-  found <- if (f == nullTok)
+  found <- if (f == nullIRI)
               then return Nothing
               else do v <- lookupSig ml f dg
                       return $ Just v
-  lpf <- if (p == nullTok)
+  lpf <- if (p == nullIRI)
             then return Nothing
             else do v <- lookupMorph ml p dg
                     return $ Just v
@@ -197,9 +198,9 @@ anaComorphismDefH :: LogicFram lid sublogics basic_spec sentence symb_items
                             proof_tree
                      => lid -> ComorphismDef -> DGraph -> IO DGraph
 anaComorphismDefH ml (ComorphismDef nc m sL tL sM pM mM) dg =
-   let c = tokStr nc
-       s = tokStr sL
-       t = tokStr tL
+   let c = iriToStringUnsecure nc
+       s = iriToStringUnsecure sL
+       t = iriToStringUnsecure tL
    in case anaComH ml (ComorphismDef nc m sL tL sM pM mM) dg of
         Result _ (Just (symM, pfM, modM)) -> do
              buildComorphism ml c s t symM pfM modM
@@ -213,8 +214,8 @@ anaComH :: LogicFram lid sublogics basic_spec sentence symb_items
                      => lid -> ComorphismDef -> DGraph -> Result (morphism,
                             morphism, morphism)
 anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
-     let sLName = tokStr sL
-         tLName = tokStr tL
+     let sLName = iriToStringUnsecure sL
+         tLName = iriToStringUnsecure tL
          sLSyn = getMorphL ml sLName "Syntax"
          sLPf = getMorphL ml sLName "Proof"
          sLMod = getMorphL ml sLName "Model"

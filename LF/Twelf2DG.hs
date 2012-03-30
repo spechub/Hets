@@ -29,6 +29,7 @@ import qualified Data.Map as Map
 
 import Common.LibName
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.Keywords
 import qualified Common.Consistency as Cons
 
@@ -79,7 +80,7 @@ addNodes le nm b sigs =
 addSigToDG :: Sign -> DGraph -> (Node, DGraph)
 addSigToDG sig dg =
   let node = getNewNodeDG dg
-      name = Token (sigModule sig) nullRange
+      name = simpleIdToIRI $ Token (sigModule sig) nullRange
       nodeName = emptyNodeName { getName = name }
       info = newNodeInfo DGBasic
       extSign = makeExtSign LF sig
@@ -123,7 +124,7 @@ addMorphToDG morph dg nm le =
 
       in if k == Definitional && null n then dg3 else
         let n' = if k == Postulated then m else m ++ sigDelimS ++ n
-            name = Token n' nullRange
+            name = simpleIdToIRI $ Token n' nullRange
             extSignSrc = makeExtSign LF $ source morph
             extSignTar = makeExtSign LF $ target morph
             nodeSigSrc = NodeSig node1 $ G_sign LF extSignSrc startSigId
@@ -154,7 +155,7 @@ insRefSigToDG :: Sign -> DGNodeInfo -> DGraph -> LibEnv -> (Node, DGraph)
 insRefSigToDG sig info dg le =
   let node = getNewNodeDG dg
       m = sigModule sig
-      nodeName = emptyNodeName { getName = Token m nullRange }
+      nodeName = emptyNodeName { getName = simpleIdToIRI $ Token m nullRange }
       extSign = makeExtSign LF sig
       gth = noSensGTheory LF extSign startSigId
       nodeLabel1 = newInfoNodeLab nodeName info gth

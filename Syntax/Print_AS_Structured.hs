@@ -12,6 +12,7 @@ Pretty printing of CASL structured specifications
 
 module Syntax.Print_AS_Structured
     ( structSimpleId
+    , structIRI
     , printGroupSpec
     , skipVoidGroup
     , printUnion
@@ -20,6 +21,7 @@ module Syntax.Print_AS_Structured
     ) where
 
 import Common.Id
+import Common.IRI
 import Common.Keywords
 import Common.Doc
 import Common.DocUtils
@@ -31,6 +33,9 @@ import Syntax.AS_Structured
 
 structSimpleId :: SIMPLE_ID -> Doc
 structSimpleId = structId . tokStr
+
+structIRI :: IRI -> Doc
+structIRI = structId . iriToStringUnsecure -- also print user information
 
 instance Pretty SPEC where
     pretty = printSPEC
@@ -76,7 +81,7 @@ printSPEC spec = case spec of
         [keyword localS, pretty aa, keyword withinS, condBracesWithin ab]
     Closed_spec aa _ -> sep [keyword closedS, printGroupSpec aa]
     Group aa _ -> pretty aa
-    Spec_inst aa ab _ -> cat [structSimpleId aa, print_fit_arg_list ab]
+    Spec_inst aa ab _ -> cat [structIRI aa, print_fit_arg_list ab]
     Qualified_spec ln asp _ -> printLogicEncoding ln <> colon $+$ pretty asp
     Data _ _ s1 s2 _ -> keyword dataS <+> printGroupSpec s1 $+$ pretty s2
 
@@ -125,7 +130,7 @@ printFIT_ARG fit = case fit of
                fsep $ aa' : keyword fitS
                         : punctuate comma (map printG_mapping ab)
     Fit_view si ab _ ->
-        sep [keyword viewS, cat [structSimpleId si, print_fit_arg_list ab]]
+        sep [keyword viewS, cat [structIRI si, print_fit_arg_list ab]]
 
 instance Pretty Logic_code where
     pretty = printLogic_code

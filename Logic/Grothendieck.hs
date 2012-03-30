@@ -110,6 +110,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
+import Common.IRI (IRI)
 import Common.Lexer
 import Common.Parsec
 import Common.Result
@@ -416,7 +417,7 @@ lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
     in Logic lid2 == Logic lid1
         && isSubElem (forceCoerceSublogic lid1 lid2 sub1) (sourceSublogic cid)
 
-type SublogicBasedTheories = Map.Map Token (LibName, String)
+type SublogicBasedTheories = Map.Map IRI (LibName, String)
 
 -- | Logic graph
 data LogicGraph = LogicGraph

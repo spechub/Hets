@@ -36,6 +36,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.Keywords
 import Common.Lexer
 import Common.Parsec
@@ -67,7 +68,10 @@ logicName = do
     e <- nonSkippingSimpleId -- name of the logic or comorphism
     ms <- optionMaybe $ char '.' >> sublogicName
     skipSmart
-    mt <- optionMaybe $ oParenT >> simpleId << cParenT
+    mt' <- optionMaybe $ oParenT >> simpleId << cParenT
+    let mt = case mt' of
+            Nothing -> Nothing
+            Just x -> Just $ simpleIdToIRI x
     return $ Logic_name e ms mt
 
 -- * parse Logic_code
@@ -335,7 +339,8 @@ groupSpec l = do
       c <- cBraceT
       return $ Group a $ catRange [b, c]
   <|> do
-    n <- simpleId
+    n' <- simpleId
+    let n = simpleIdToIRI n'
     (f, ps) <- fitArgs l
     return (Spec_inst n f ps)
 
@@ -355,7 +360,8 @@ fitArg l = do
 fittingArg :: LogicGraph -> AParser st FIT_ARG
 fittingArg l = do
     s <- asKey viewS
-    vn <- simpleId
+    vn' <- simpleId
+    let vn = simpleIdToIRI vn'
     (fa, ps) <- fitArgs l
     return (Fit_view vn fa (tokPos s `appRange` ps))
   <|> do

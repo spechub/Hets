@@ -20,6 +20,7 @@ import CASL.Sign
 
 import Common.AS_Annotation
 import Common.Id
+import Common.IRI (IRI)
 import Common.DocUtils
 import Common.Result
 import qualified Common.Lib.Rel as Rel
@@ -28,7 +29,7 @@ import Data.Maybe
 import qualified Data.Set as Set
 
 -- | given a specfication (name and theory), compute the composition table
-computeCompTable :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)])
+computeCompTable :: IRI -> (Sign f e, [Named (FORMULA f)])
                        -> Result Table
 computeCompTable spName (sig,nsens) = do
   {- look for something isomorphic to

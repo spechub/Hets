@@ -57,6 +57,7 @@ import Common.Utils (trim)
 import Common.Result
 import Common.ResultT
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.AS_Annotation
 
 
@@ -262,9 +263,9 @@ cAddView input state = let iState = intState state in case i_state iState of
         opts = hetsOpts state
         dg = lookupDGraph ln libenv
         [vn, spec1, spec2] = words input
-        mkSpecInst s = Spec_inst (mkSimpleId s) [] nullRange
+        mkSpecInst s = Spec_inst (simpleIdToIRI $ mkSimpleId s) [] nullRange
     Result ds tmp <- runResultT $ liftR $ anaViewDefn lg ln libenv dg opts
-      (mkSimpleId vn) (Genericity (Params []) (Imported []) nullRange)
+      (simpleIdToIRI $ mkSimpleId vn) (Genericity (Params []) (Imported []) nullRange)
       (View_type (emptyAnno $ mkSpecInst spec1)
        (emptyAnno $ mkSpecInst spec2) nullRange) [] nullRange
     return $ case tmp of

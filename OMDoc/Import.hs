@@ -40,6 +40,7 @@ import Common.Result
 import Common.ResultT
 import Common.ExtSign
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.LibName
 import Common.Utils
 import Common.XmlParser (readXmlFile)
@@ -467,7 +468,7 @@ computeViewMorphism e ln (ImportInfo ( (mSLn, (from, lblS))
 
 
 mkLinkOrigin :: String -> DGLinkOrigin
-mkLinkOrigin s = DGLinkMorph $ mkSimpleId s
+mkLinkOrigin s = DGLinkMorph $ simpleIdToIRI $ mkSimpleId s
 
 {- | For each entry (s, n) in l we enter the mapping (n, m(s))
 to the name symbol map -}

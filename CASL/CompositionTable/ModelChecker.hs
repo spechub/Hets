@@ -23,6 +23,7 @@ import Logic.Logic
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
+import Common.IRI (IRI)
 import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
 
@@ -30,7 +31,7 @@ import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
 
-modelCheck :: SIMPLE_ID -> (Sign () (), [Named (FORMULA ())])
+modelCheck :: IRI -> (Sign () (), [Named (FORMULA ())])
            -> Table -> Result Bool
 modelCheck _ (_, []) _ = (warning True "not implemented" nullRange)
 modelCheck _ (sign, sent) t =

@@ -53,6 +53,7 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
+import Common.IRI (IRI)
 import Common.LibName
 import Common.Consistency
 
@@ -119,9 +120,9 @@ data DGOrigin =
   | DGData
   | DGFormalParams
   | DGImports
-  | DGInst SIMPLE_ID
+  | DGInst IRI
   | DGFitSpec
-  | DGFitView SIMPLE_ID
+  | DGFitView IRI
   | DGProof
   | DGNormalForm Node
   | DGintegratedSCC
@@ -238,16 +239,16 @@ data DGLinkOrigin =
   | DGLinkTranslation
   | DGLinkClosedLenv
   | DGLinkImports
-  | DGLinkMorph SIMPLE_ID
-  | DGLinkInst SIMPLE_ID Fitted
-  | DGLinkInstArg SIMPLE_ID
-  | DGLinkView SIMPLE_ID Fitted
-  | DGLinkFitView SIMPLE_ID
-  | DGLinkFitViewImp SIMPLE_ID
+  | DGLinkMorph IRI
+  | DGLinkInst IRI Fitted
+  | DGLinkInstArg IRI
+  | DGLinkView IRI Fitted
+  | DGLinkFitView IRI
+  | DGLinkFitViewImp IRI
   | DGLinkProof
   | DGLinkFlatteningUnion
   | DGLinkFlatteningRename
-  | DGLinkRefinement SIMPLE_ID
+  | DGLinkRefinement IRI
     deriving (Show, Eq)
 
 {- | Link types of development graphs,
@@ -624,7 +625,7 @@ data GlobalEntry =
   | UnitEntry UnitSig
     deriving Show
 
-type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
+type GlobalEnv = Map.Map IRI GlobalEntry
 
 -- ** change and history types
 
@@ -1045,7 +1046,7 @@ morMapI = getMapAndMaxIndex startMorId morMap
 
 -- ** lookup other graph parts
 
-lookupGlobalEnvDG :: SIMPLE_ID -> DGraph -> Maybe GlobalEntry
+lookupGlobalEnvDG :: IRI -> DGraph -> Maybe GlobalEntry
 lookupGlobalEnvDG sid = Map.lookup sid . globalEnv
 
 -- | lookup a reference node for a given libname and node

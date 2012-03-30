@@ -64,11 +64,16 @@ module Common.IRI
     , nullIRI
     , iriType
 
+    -- * Conversion
+    , simpleIdToIRI
+
     -- * Parsing
     , parseIRI
     , parseIRIReference
     , parseRelativeReference
     , parseAbsoluteIRI
+    , parseCurie
+    , parseIRICurie
     , parseIRIManchester
 
     -- * Test for strings containing various kinds of IRI
@@ -76,6 +81,9 @@ module Common.IRI
     , isIRIReference
     , isRelativeReference
     , isAbsoluteIRI
+    , isCurie
+    , isIRICurie
+    , isIRIManchester
     , isIPv6address
     , isIPv4address
 
@@ -100,6 +108,8 @@ module Common.IRI
     , iriReference
     , irelativeRef
     , absoluteIRI
+    , iriCurie
+    , curie
     , iriManchester
 
     -- * IRI Normalization functions
@@ -109,21 +119,25 @@ module Common.IRI
     ) where
 
 import Text.ParserCombinators.Parsec
-    ( GenParser(..), ParseError(..)
+    ( GenParser, ParseError
     , parse, (<|>), (<?>), try
-    , option, many, many1, count, notFollowedBy, lookAhead
-    , char, satisfy, oneOf, string, letter, digit, hexDigit, eof
+    , option, many, many1, count, notFollowedBy
+    , char, satisfy, oneOf, string, digit, eof
     , unexpected
     )
 
 import Control.Monad (MonadPlus(..))
-import Data.Char (ord, chr, isHexDigit, isSpace, toLower, toUpper, digitToInt)
-import Data.Maybe (isJust)
-import Debug.Trace (trace)
+import Data.Char (ord, chr, isHexDigit, toLower, toUpper, digitToInt)
 import Numeric (showIntAtBase)
 
 import Data.Typeable (Typeable)
-import Data.Data (Data)
+
+
+import Common.Id
+import Common.Lexer
+import Common.Doc (text)
+import Common.DocUtils
+import ATerm.Lib
 
 ------------------------------------------------------------
 --  The IRI datatype
@@ -154,18 +168,19 @@ data IRI = IRI
     , iriFragment   :: String           -- ^ @#frag@
     , prefixName    :: String           -- ^ @prefix@
     , abbrevPath    :: String           -- ^ @abbrevPath@
+    , iriPos        :: Range
     -- ^ prefix name part from "prefixName:path"
-    } deriving (Eq, Typeable, Data, Ord, Show)
+    } deriving (Eq, Typeable, Ord)
 
 -- |Type for authority value within a IRI
 data IRIAuth = IRIAuth
     { iriUserInfo   :: String           -- ^ @anonymous\@@
     , iriRegName    :: String           -- ^ @www.haskell.org@
     , iriPort       :: String           -- ^ @:42@
-    } deriving (Eq, Typeable, Data, Ord, Show)
+    } deriving (Eq, Typeable, Ord, Show)
 
 data IRIType = Full | Abbreviated | Simple
-  deriving (Eq, Show, Typeable, Data, Ord)
+  deriving (Eq, Show, Typeable, Ord)
 
 -- |Blank IRI
 
@@ -178,6 +193,7 @@ nullIRI = IRI
     , iriFragment   = ""
     , prefixName    = ""
     , abbrevPath    = ""
+    , iriPos        = nullRange
     }
 
 -- |Returns Type of an IRI
@@ -196,8 +212,14 @@ iriType i =
 --  but providing a function to return a new IRI value with iuserinfo
 --  data exposed by show.]]]
 --
--- instance Show IRI where
---     showsPrec _ iri = iriToString defaultUserInfoMap iri
+instance Show IRI where
+    showsPrec _ i = iriToString defaultUserInfoMap i
+
+instance GetRange IRI where
+    getRange = iriPos
+
+instance Pretty IRI where
+  pretty = text . show
 
 defaultUserInfoMap :: String -> String
 defaultUserInfoMap uinf = user++newpass
@@ -211,39 +233,57 @@ defaultUserInfoMap uinf = user++newpass
 iriToStringUnsecure :: IRI -> String
 iriToStringUnsecure i = (iriToString id i) ""
 
+-- |Converts a Simple_ID to an IRI
+simpleIdToIRI :: SIMPLE_ID -> IRI
+simpleIdToIRI sid = nullIRI { abbrevPath = tokStr sid
+                            , iriPos     = tokPos sid
+                            }
+
 ------------------------------------------------------------
 --  Parse a IRI
 ------------------------------------------------------------
 
--- |Turn a string containing an RFC3987 IRI into a 'IRI'.
+-- |Turn a string containing an RFC3987 IRI into an 'IRI'.
 --  Returns 'Nothing' if the string is not a valid IRI;
 --  (an absolute IRI with optional fragment identifier).
 --
 parseIRI :: String -> Maybe IRI
 parseIRI = parseIRIAny iri
 
--- |Parse a IRI reference to a 'IRI' value.
+-- |Parse a IRI reference to an 'IRI' value.
 --  Returns 'Nothing' if the string is not a valid IRI reference.
 --  (an absolute or relative IRI with optional fragment identifier).
 --
 parseIRIReference :: String -> Maybe IRI
 parseIRIReference = parseIRIAny iriReference
 
--- |Parse a relative IRI to a 'IRI' value.
+-- |Parse a relative IRI to an 'IRI' value.
 --  Returns 'Nothing' if the string is not a valid relative IRI.
 --  (a relative IRI with optional fragment identifier).
 --
 parseRelativeReference :: String -> Maybe IRI
 parseRelativeReference = parseIRIAny irelativeRef
 
--- |Parse an absolute IRI to a 'IRI' value.
+-- |Parse an absolute IRI to an 'IRI' value.
 --  Returns 'Nothing' if the string is not a valid absolute IRI.
 --  (an absolute IRI without a fragment identifier).
 --
 parseAbsoluteIRI :: String -> Maybe IRI
 parseAbsoluteIRI = parseIRIAny absoluteIRI
 
--- |Turn a string containing an IRI (by Manchester-syntax) into a 'IRI'.
+-- |Turn a string containing a CURIE into an 'IRI'
+parseCurie :: String -> Maybe IRI
+parseCurie = parseIRIAny curie
+
+-- |Turn a string containing an IRI or a CURIE into an 'IRI'.
+--  Returns 'Nothing' if the string is not a valid IRI;
+--  (an absolute IRI enclosed in '<' and '>' with optional fragment identifier
+-- or a CURIE).
+--
+parseIRICurie :: String -> Maybe IRI
+parseIRICurie = parseIRIAny iriCurie
+
+-- |Turn a string containing an IRI (by Manchester-syntax) into an 'IRI'.
 --  Returns 'Nothing' if the string is not a valid IRI;
 --  (an absolute IRI enclosed in '<' and '>' with optional fragment identifier,
 -- an abbreviated IRI or a simple IRI).
@@ -275,6 +315,18 @@ isRelativeReference = isValidParse irelativeRef
 isAbsoluteIRI :: String -> Bool
 isAbsoluteIRI = isValidParse absoluteIRI
 
+-- |Test if string contains a valid IRI or CURIE
+--  (an absolute IRI enclosed in '<' and '>' with optional fragment identifier
+-- or a CURIE).
+--
+isIRICurie :: String -> Bool
+isIRICurie = isValidParse iriCurie
+
+-- |Test if string contains a valid CURIE
+--
+isCurie :: String -> Bool
+isCurie = isValidParse curie
+
 -- |Test if string contains a valid IRI by Manchester-syntax
 --  (an absolute IRI enclosed in '<' and '>' with optional fragment identifier,
 -- an abbreviated IRI or a simple IRI).
@@ -292,11 +344,6 @@ isIPv6address = isValidParse ipv6address
 isIPv4address :: String -> Bool
 isIPv4address = isValidParse ipv4address
 
--- |Test function: parse and reconstruct a IRI reference
---
-testIRIReference :: String -> String
-testIRIReference iristr = show (parseAll iriReference "" iristr)
-
 --  Helper function for turning a string into a IRI
 --
 parseIRIAny :: IRIParserDirect IRI -> String -> Maybe IRI
@@ -308,9 +355,8 @@ parseIRIAny parser iristr = case parseAll parser "" iristr of
 --
 isValidParse :: IRIParserDirect a -> String -> Bool
 isValidParse parser iristr = case parseAll parser "" iristr of
-        -- Left  e -> error (show e)
         Left  _ -> False
-        Right u -> True
+        Right _ -> True
 
 parseAll :: IRIParserDirect a -> String -> String -> Either ParseError a
 parseAll parser filename iristr = parse newparser filename iristr
@@ -352,12 +398,11 @@ escaped =
 isReserved :: Char -> Bool
 isReserved c = isGenDelims c || isSubDelims c
 
+isGenDelims :: Char -> Bool
 isGenDelims c = c `elem` ":/?#[]@"
 
+isSubDelims :: Char -> Bool
 isSubDelims c = c `elem` "!$&'()*+,;="
-
-genDelims :: IRIParser st String
-genDelims = do { c <- satisfy isGenDelims ; return [c] }
 
 subDelims :: IRIParser st String
 subDelims = do { c <- satisfy isSubDelims ; return [c] }
@@ -376,27 +421,61 @@ iunreservedChar :: IRIParser st String
 iunreservedChar = do { c <- satisfy isUnreserved ; return [c] }
 
 
+
+iriWithPos :: IRIParser st IRI -> IRIParser st IRI
+iriWithPos parser = do
+  p <- getPos
+  i <- parser
+  q <- getPos
+  return $ i {iriPos = appRange (Range [p,q]) $ iriPos i}
+
+
 {- BEGIN CURIE -}
+-- |Parses an absolute IRI enclosed in '<', '>' or a CURIE
+iriCurie :: IRIParser st IRI
+iriCurie = do
+    char '<'
+    i <- iri
+    char '>'
+    skipSmart
+    return i
+  <|> curie
 
+-- |Parses an absolute or relative IRI enclosed in '<', '>' or a CURIE
+-- see @iriReference@
+iriReferenceCurie :: IRIParser st IRI
+iriReferenceCurie = do
+    char '<'
+    i <- iri <|> irelativeRef
+    char '>'
+    skipSmart
+    return i
+  <|> curie
+
+-- |Parses a CURIE
 -- http://www.w3.org/TR/rdfa-core/#s_curies
-
 curie :: IRIParser st IRI
-curie = do
+curie = iriWithPos $ do
     c <- string ":"
     i <- reference
+    skipSmart
     return $ i { prefixName = c }
   <|> do
-    p <- try (do
+    pn <- try (do
         n <- ncname
         c <- string ":"
         return $ n++c
       )
     i <- reference
-    return $ i { prefixName = p }
-  <|> reference
+    skipSmart
+    return $ i { prefixName = pn }
+  <|> do
+    r <- reference
+    skipSmart
+    return r
 
 reference :: IRIParser st IRI
-reference = do
+reference = iriWithPos $ do
   (_, up) <- ihierPartNoAuth
   uq <- option "" ( do { char '?' ; uiquery    } )
   uf <- option "" ( do { char '#' ; uifragment } )
@@ -408,6 +487,7 @@ reference = do
           , iriFragment  = uf
           , prefixName   = ""
           , abbrevPath   = up
+          , iriPos       = nullRange
           }
 
 -- http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName
@@ -510,7 +590,7 @@ pn_charsP c =
 -- IRI := fullIRI | abbreviatedIRI | simpleIRI
 
 iriManchester :: IRIParser st IRI
-iriManchester = do
+iriManchester = iriWithPos $ do
     char '<'
     i <- iri <|> irelativeRef
     char '>'
@@ -525,6 +605,7 @@ iriManchester = do
             , iriFragment  = ""
             , prefixName   = prefix
             , abbrevPath   = loc
+            , iriPos       = nullRange
             }
   <|> do
     loc <- pn_local
@@ -536,6 +617,7 @@ iriManchester = do
             , iriFragment  = ""
             , prefixName   = ""
             , abbrevPath   = loc
+            , iriPos       = nullRange
             }
 
 data PNAME_LN = PName_Ln PNAME_NS PN_LOCAL deriving (Show, Eq, Ord)
@@ -601,10 +683,8 @@ pn_local = do
 --               / ipath-empty
 
 iri :: IRIParser st IRI
-iri =
+iri = iriWithPos $
     do  { us <- try uscheme
-        -- ; ua <- option Nothing ( do { try (string "//") ; uiauthority } )
-        -- ; up <- upath
         ; (ua,up) <- ihierPart
         ; uq <- option "" ( do { char '?' ; uiquery    } )
         ; uf <- option "" ( do { char '#' ; uifragment } )
@@ -616,6 +696,7 @@ iri =
             , iriFragment  = uf
             , prefixName   = ""
             , abbrevPath   = ""
+            , iriPos       = nullRange
             }
         }
 
@@ -694,6 +775,7 @@ ipvFuture =
         ; return $ 'c':h:'.':a
         }
 
+isIpvFutureChar :: Char -> Bool
 isIpvFutureChar c = isUnreserved c || isSubDelims c || (c==';')
 
 ipv6address :: IRIParser st String
@@ -794,7 +876,7 @@ ipv4address =
 decOctet :: IRIParser st String
 decOctet =
     do  { a1 <- countMinMax 1 3 digitChar
-        ; if read a1 > 255 then
+        ; if (read a1 :: Int) > 255 then
             fail "Decimal octet value too large"
           else
             return a1
@@ -937,7 +1019,7 @@ iriReference = iri <|> irelativeRef
 --                        / ipath-absolute
 
 irelativeRef :: IRIParser st IRI
-irelativeRef =
+irelativeRef = iriWithPos $
     do  { notMatching uscheme
         ; (ua,up) <- irelativePart
         ; uq <- option "" ( do { char '?' ; uiquery    } )
@@ -950,6 +1032,7 @@ irelativeRef =
             , iriFragment  = uf
             , prefixName   = ""
             , abbrevPath   = ""
+            , iriPos       = nullRange
             }
         }
 
@@ -972,7 +1055,7 @@ irelativePart =
 --  RFC3987, section 2.2
 
 absoluteIRI :: IRIParser st IRI
-absoluteIRI =
+absoluteIRI = iriWithPos $
     do  { us <- uscheme
         -- ; ua <- option Nothing ( do { try (string "//") ; uiauthority } )
         -- ; up <- upath
@@ -986,6 +1069,7 @@ absoluteIRI =
             , iriFragment  = ""
             , prefixName   = ""
             , abbrevPath   = ""
+            , iriPos       = nullRange
             }
         }
 
@@ -999,12 +1083,16 @@ absoluteIRI =
     --    certainly be allowed.
     -- ]]]
 
+isAlphaChar :: Char -> Bool
 isAlphaChar c    = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
 
+isDigitChar :: Char -> Bool
 isDigitChar c    = (c >= '0' && c <= '9')
 
+isAlphaNumChar :: Char -> Bool
 isAlphaNumChar c = isAlphaChar c || isDigitChar c
 
+isUcsChar :: Char -> Bool
 isUcsChar c =
   let n = ord c
   in (0xA0    <= n && n <= 0xD7FF)  ||
@@ -1022,15 +1110,17 @@ isUcsChar c =
      (0xD0000 <= n && n <= 0xDFFFD) ||
      (0xE0000 <= n && n <= 0xEFFFD)
 
+isIprivate :: Char -> Bool
 isIprivate c =
   let n = ord c
   in (0xE000 <= n && n <= 0xF8FF) ||
      (0xF000 <= n && n <= 0xFFFD) ||
      (0x100000 <= n && n <= 0x10FFFD)
 
-
+isHexDigitChar :: Char -> Bool
 isHexDigitChar c = isHexDigit c
 
+isSchemeChar :: Char -> Bool
 isSchemeChar c   = (isAlphaNumChar c) || (c `elem` "+-.")
 
 alphaChar :: IRIParser st Char
@@ -1039,14 +1129,8 @@ alphaChar = satisfy isAlphaChar         -- or: Parsec.letter ?
 digitChar :: IRIParser st Char
 digitChar = satisfy isDigitChar         -- or: Parsec.digit ?
 
-alphaNumChar :: IRIParser st Char
-alphaNumChar = satisfy isAlphaNumChar
-
 hexDigitChar :: IRIParser st Char
 hexDigitChar = satisfy isHexDigitChar   -- or: Parsec.hexDigit ?
-
-ucsChar :: IRIParser st Char
-ucsChar = satisfy isUcsChar
 
 iprivate :: IRIParser st Char
 iprivate = satisfy isIprivate
@@ -1080,7 +1164,7 @@ notMatching p = do { a <- try p ; unexpected (show a) } <|> return ()
 --  Reconstruct a IRI string
 ------------------------------------------------------------
 --
--- |Turn a 'IRI' into a string.
+-- |Turn an 'IRI' into a string.
 --
 --  Uses a supplied function to map the iuserinfo part of the IRI.
 --
@@ -1254,7 +1338,7 @@ elimDots ps rs = elimDots ps1 (r:rs)
 --  Return tail of non-null list, otherwise return null list
 dropHead :: [a] -> [a]
 dropHead []     = []
-dropHead (r:rs) = rs
+dropHead (_:rs) = rs
 
 --  Returns the next isegment and the rest of the path from a path string.
 --  Each isegment ends with the next '/' or the end of string.
@@ -1325,7 +1409,7 @@ relativeFrom uabs base
                 (p1,p2) = splitLast p
 
 relPathFrom :: String -> String -> String
-relPathFrom []   base = "/"
+relPathFrom []   _ = "/"
 relPathFrom pabs []   = pabs
 relPathFrom pabs base =                 -- Construct a relative path isegments
     if sa1 == sb1                       -- if the paths share a leading isegment
@@ -1424,6 +1508,24 @@ normalizePathSegments iristr = normstr jiri
         normstr Nothing  = iristr
         normstr (Just u) = show (normiri u)
         normiri u = u { iriPath = removeDotSegments (iriPath u) }
+
+
+-- FIX: where do the instances fit the best?
+instance ShATermConvertible IRI where
+  toShATermAux att0 u = do
+    (att1, is) <- toShATerm' att0 ((iriToString id u) "")
+    return $ addATerm (ShAAppl "IRI" [is] []) att1
+  fromShATermAux ix att0 =
+    case getShATerm ix att0 of
+      x@(ShAAppl "IRI" [is] _) ->
+        case fromShATerm' is att0 of
+          (att1, is') ->
+            case parseIRIReference is' of --TODO apply most tolerating parser
+              Nothing ->
+                fromShATermError "IRI" x
+              Just i ->
+                (att1, i)
+      i -> fromShATermError "IRI" i
 
 --------------------------------------------------------------------------------
 --

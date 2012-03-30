@@ -17,6 +17,7 @@ module Syntax.AS_Library where
 {-! global: GetRange !-}
 
 import Common.Id
+import Common.IRI
 import Common.AS_Annotation
 import Common.LibName
 
@@ -42,6 +43,8 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "spec", "=", opt "end"
               | View_defn VIEW_NAME GENERICITY VIEW_TYPE [G_mapping] Range
               -- pos: "view", ":", opt "=", opt "end"
+              | Align_defn ALIGN_NAME GENERICITY ALIGN_TYPE [CORRESPONDENCE] Range
+              -- TODO: CORRESPONDENCE of align-defn
               | Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) Range
               -- pos: "arch", "spec", "=", opt "end"
               | Unit_spec_defn SPEC_NAME UNIT_SPEC Range
@@ -76,11 +79,13 @@ data IMPORTED = Imported [Annoted SPEC] deriving Show
 data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
                  -- pos: "to"
 
+data ALIGN_TYPE = Align_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
+
 data ItemNameMap =
     ItemNameMap ItemName (Maybe ItemName)
     deriving (Show, Eq)
 
-type ItemName = SIMPLE_ID
+type ItemName = IRI
 
 fromBasicSpec :: LibName -> SPEC_NAME -> G_basic_spec -> LIB_DEFN
 fromBasicSpec ln sn gbs =
@@ -89,3 +94,30 @@ fromBasicSpec ln sn gbs =
         mkAnno = emptyAnno
         li = Spec_defn sn emptyGenericity (mkAnno sp) rg
     in Lib_defn ln [mkAnno li] rg []
+
+
+
+
+
+data CORRESPONDENCE = Correspondence
+                      (Maybe CORRESPONDENCE_ID)
+                      ENTITY_REF
+                      TERM_OR_ENTITY_REF
+                      (Maybe RELATION_REF)
+                      (Maybe CONFIDENCE)
+                      deriving (Show, Eq)
+
+type CORRESPONDENCE_ID = IRI
+
+type ENTITY_REF = IRI
+
+data TERM_OR_ENTITY_REF = Term LOGIC_SPECIFIC_TERM 
+                        | Entity_ref ENTITY_REF
+                          deriving (Show, Eq)
+
+type RELATION_REF = IRI
+
+type CONFIDENCE = Double -- TODO: will be revised
+
+instance GetRange Double where
+  getRange = const nullRange

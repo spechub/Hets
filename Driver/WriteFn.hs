@@ -21,6 +21,7 @@ import Data.List (partition, (\\))
 
 import Common.AS_Annotation
 import Common.Id
+import Common.IRI (IRI, simpleIdToIRI)
 import Common.DocUtils
 import Common.ExtSign
 import Common.LibName
@@ -128,7 +129,7 @@ writeLibEnv opts filePrefix lenv ln ot =
         $ dotGraph f showInternalNodeLabels "" dg
       _ -> return ()
 
-writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
+writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LibName -> IRI
              -> SPFType -> Int -> String -> IO ()
 writeSoftFOL opts f gTh ln i c n msg = do
       let cc = case c of
@@ -146,14 +147,14 @@ writeSoftFOL opts f gTh ln i c n msg = do
                 _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
               writeVerbFile opts f str) mDoc
 
-writeFreeCADFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
+writeFreeCADFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> IRI
              -> IO ()
 writeFreeCADFile opts filePrefix (G_theory lid (ExtSign sign _) _ _ _) _ _ = do
   fcSign <- coercePlainSign lid FreeCAD
             "Expecting a FreeCAD signature for writing FreeCAD xml" sign
   writeVerbFile opts (filePrefix ++ ".xml") $ exportXMLFC fcSign
 
-writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
+writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> IRI
              -> IO ()
 writeIsaFile opts filePrefix raw_gTh ln i = do
   let Result ds mTh = createIsaTheory raw_gTh
@@ -183,7 +184,7 @@ writeIsaFile opts filePrefix raw_gTh ln i = do
                    (printIsaTheory tnf sign $ s : axs) "\n") rest
 
 writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
-  -> G_theory -> LibName -> SIMPLE_ID -> OutType -> IO ()
+  -> G_theory -> LibName -> IRI -> OutType -> IO ()
 writeTheory ins nam opts filePrefix ga
   raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
     let fp = filePrefix ++ "_" ++ show i
@@ -262,7 +263,7 @@ writeTheory ins nam opts filePrefix ga
                                                                             ++ f
     _ -> return () -- ignore other file types
 
-modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
+modelSparQCheck :: HetcatsOpts -> G_theory -> IRI -> IO ()
 modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
     case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
     Just th2 -> do
@@ -278,7 +279,7 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
          ++ showDoc gTh ""
 
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
-                 -> GlobalAnnos -> LibName -> SIMPLE_ID -> Int -> IO ()
+                 -> GlobalAnnos -> LibName -> IRI -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
   let dg = lookupDGraph ln lenv
       nam = getDGNodeName $ labDG dg n
@@ -341,17 +342,17 @@ writeSpecFiles opts file lenv ln dg = do
         _ -> unless allSpecs
                $ putIfVerbose opts 0 $ "Unknown spec name: " ++ show i
       ) $ if ignore then [] else
-        if allSpecs then Map.keys gctx else ns
+        if allSpecs then Map.keys gctx else map simpleIdToIRI ns
     unless noViews $
       mapM_ ( \ i -> case Map.lookup i gctx of
         Just (ViewOrStructEntry _ (ExtViewSig _ (GMorphism cid _ _ m _) _)) ->
             writeVerbFile opts (filePrefix ++ "_" ++ show i ++ ".view")
               $ shows (pretty $ Map.toList $ symmap_of (targetLogic cid) m) "\n"
         _ -> putIfVerbose opts 0 $ "Unknown view name: " ++ show i
-        ) vs
+      ) $ map simpleIdToIRI vs
     mapM_ ( \ n ->
       writeTheoryFiles opts specOutTypes filePrefix lenv ga ln
-         (genToken $ 'n' : show n) n)
+         (simpleIdToIRI $ genToken $ 'n' : show n) n)
       $ if ignore || not allSpecs then [] else
       nodesDG dg
       \\ Map.fold ( \ e l -> case e of

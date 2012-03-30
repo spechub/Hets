@@ -45,6 +45,7 @@ import Common.Result
 import Common.ResultT
 import Common.LibName
 import Common.Id
+import Common.IRI (IRI, iriToStringUnsecure, simpleIdToIRI, iriPos)
 import Common.IO
 import qualified Common.Unlit as Unlit
 
@@ -146,8 +147,8 @@ anaString mln lgraph opts topLns libenv initDG input file = do
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
       nIs = case is of
         [Annoted (Spec_defn spn gn as qs) rs [] []]
-            | noLibName && null (tokStr spn)
-                -> [Annoted (Spec_defn (mkSimpleId spN) gn as qs) rs [] []]
+            | noLibName && null (iriToStringUnsecure spn)
+                -> [Annoted (Spec_defn (simpleIdToIRI $ mkSimpleId spN) gn as qs) rs [] []]
         _ -> is
       ast = Lib_defn ln nIs ps ans
   case analysis opts of
@@ -313,7 +314,7 @@ anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
   -> LIB_ITEM -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph)
 anaLibItem lg opts topLns currLn libenv dg itm = case itm of
   Spec_defn spn gen asp pos -> do
-    let spstr = tokStr spn
+    let spstr = iriToStringUnsecure spn
         nName = makeName spn
     analyzing opts $ "spec " ++ spstr
     (gen', gsig@(GenSig _ _args allparams), dg') <-
@@ -337,7 +338,7 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
                   $ ExtGenSig gsig body) genv }
          , libenv, lg)
   View_defn vn gen vt gsis pos -> do
-    analyzing opts $ "view " ++ tokStr vn
+    analyzing opts $ "view " ++ iriToStringUnsecure vn
     liftR $ anaViewDefn lg currLn libenv dg opts vn gen vt gsis pos
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
@@ -346,7 +347,7 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
       opts emptyExtStUnitCtx Nothing $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
-    if Map.member asn genv
+    if Map.member (simpleIdToIRI asn) genv
       then liftR $ plain_error (asd', dg', libenv, lg)
                (alreadyDefined asstr) pos
       else do
@@ -356,10 +357,10 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
                            Map.insert (show asn) diag
                            $ archSpecDiags dg''}
             return (asd', dg3
-              { globalEnv = Map.insert asn (ArchOrRefEntry True archSig) genv }
+              { globalEnv = Map.insert (simpleIdToIRI asn) (ArchOrRefEntry True archSig) genv }
               , libenv, lg)
   Unit_spec_defn usn usp pos -> do
-    let usstr = tokStr usn
+    let usstr = iriToStringUnsecure usn
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lg
     (rSig, dg', usp') <-
@@ -374,7 +375,7 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
              libenv, lg)
   Ref_spec_defn rn rsp pos -> do
-    let rnstr = tokStr rn
+    let rnstr = iriToStringUnsecure rn
     l <- lookupCurrentLogic "Ref_spec_defn" lg
     (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lg currLn dg opts
       (EmptyNode l) rn emptyExtStUnitCtx Nothing rsp
@@ -446,7 +447,7 @@ anaItemNamesOrMaps libenv' ln refDG dg items = do
 
 -- | analyse genericity and view type and construct gmorphism
 anaViewDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
-  -> SIMPLE_ID -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
+  -> IRI -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
   -> Result (LIB_ITEM, DGraph, LibEnv, LogicGraph)
 anaViewDefn lg ln libenv dg opts vn gen vt gsis pos = do
   let vName = makeName vn
@@ -458,7 +459,7 @@ anaViewDefn lg ln libenv dg opts vn gen vt gsis pos = do
   let genv = globalEnv dg''
   if Map.member vn genv
     then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv, lg)
-                    (alreadyDefined $ tokStr vn) pos
+                    (alreadyDefined $ iriToStringUnsecure vn) pos
     else do
       let (tsis, hsis) = partitionGmaps gsis
       (gsigmaS', tmor) <- if null tsis then do
@@ -477,8 +478,8 @@ anaViewDefn lg ln libenv dg opts vn gen vt gsis pos = do
       let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
           voidView = nodeS == nodeT && isInclusion gmor
       when voidView $ warning ()
-        ("identity mapping of source to same target for view: " ++ tokStr vn)
-        pos
+        ("identity mapping of source to same target for view: " ++
+            iriToStringUnsecure vn) pos
       return (View_defn vn gen' vt' gsis pos,
                 (if voidView then dg'' else insLink dg'' gmor globalThm
                  (DGLinkView vn $ Fitted gsis) nodeS nodeT)
@@ -514,11 +515,12 @@ anaErr :: String -> a
 anaErr f = error $ "*** Analysis of " ++ f ++ " is not yet implemented!"
 
 anaItemNameOrMap1 :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
-  -> (SIMPLE_ID, SIMPLE_ID) -> Result (GlobalEnv, DGraph)
+  -> (IRI, IRI) -> Result (GlobalEnv, DGraph)
 anaItemNameOrMap1 libenv ln refDG (genv, dg) (old, new) = do
-  entry <- maybeToResult (tokPos old)
-            (tokStr old ++ " not found") (Map.lookup old $ globalEnv refDG)
-  maybeToResult (tokPos new) (tokStr new ++ " already used")
+  entry <- maybeToResult (iriPos old)
+            (iriToStringUnsecure old ++ " not found")
+            (Map.lookup old $ globalEnv refDG)
+  maybeToResult (iriPos new) (iriToStringUnsecure new ++ " already used")
     $ case Map.lookup new genv of
     Nothing -> Just ()
     Just _ -> Nothing
@@ -555,7 +557,7 @@ refNodesigs :: LibEnv -> LibName -> DGraph -> DGraph -> [(NodeName, NodeSig)]
 refNodesigs libenv ln = mapAccumR . refNodesig libenv ln
 
 refExtsigAndInsert :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
-  -> SIMPLE_ID -> ExtGenSig -> (ExtGenSig, (GlobalEnv, DGraph))
+  -> IRI -> ExtGenSig -> (ExtGenSig, (GlobalEnv, DGraph))
 refExtsigAndInsert libenv ln refDG (genv, dg) new extsig =
   let (dg1, extsig1) = refExtsig libenv ln refDG dg (makeName new) extsig
       genv1 = Map.insert new (SpecEntry extsig1) genv

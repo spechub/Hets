@@ -23,6 +23,8 @@ import Syntax.Parse_AS_Architecture
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
+import Common.IRI (IRI, nullIRI, simpleIdToIRI)
+
 import Common.Keywords
 import Common.Lexer
 import Common.LibName
@@ -99,7 +101,8 @@ libItem :: LogicGraph -> AParser st LIB_ITEM
 libItem l =
      -- spec defn
     do s <- asKey specS
-       n <- simpleId
+       n' <- simpleId
+       let n = simpleIdToIRI n'
        g <- generics l
        e <- equalT
        a <- aSpec l
@@ -108,7 +111,8 @@ libItem l =
                (catRange ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS
-       vn <- simpleId
+       vn' <- simpleId
+       let vn = simpleIdToIRI vn'
        g <- generics l
        s2 <- asKey ":"
        vt <- viewType l
@@ -122,7 +126,8 @@ libItem l =
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
-       name <- simpleId
+       name' <- simpleId
+       let name = simpleIdToIRI name'
        kEqu <- equalT
        usp <- unitSpec l
        kEnd <- optEnd
@@ -130,7 +135,8 @@ libItem l =
                 (catRange ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)))
   <|> -- ref spec
     do kRef <- asKey refinementS
-       name <- simpleId
+       name' <- simpleId
+       let name = simpleIdToIRI name'
        kEqu <- equalT
        rsp <- refSpec l
        kEnd <- optEnd
@@ -186,7 +192,7 @@ libItem l =
         a <- aSpec l
         p2 <- getPos
         if p1 == p2 then fail "cannot parse spec" else
-          return (Syntax.AS_Library.Spec_defn (mkSimpleId "")
+          return (Syntax.AS_Library.Spec_defn nullIRI
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
 downloadItems :: AParser st (DownloadItems, [Token])
@@ -196,7 +202,7 @@ downloadItems = do
   <|> do
     s <- asKey mapsTo
     i <- simpleId
-    return (UniqueItem i, [s])
+    return (UniqueItem $ simpleIdToIRI i, [s])
 
 
 -- | Parse view type
@@ -219,8 +225,13 @@ itemNameOrMap = do
     i2 <- optionMaybe $ do
         _ <- asKey mapsTo
         if isInfixOf ".." $ tokStr i1
-             then simpleIdOrDDottedId else simpleId
-    return $ ItemNameMap i1 i2
+             then do
+               s <- simpleIdOrDDottedId
+               return $ simpleIdToIRI s
+             else do
+               s <- simpleId
+               return $ simpleIdToIRI s
+    return $ ItemNameMap (simpleIdToIRI i1) i2
 
 optEnd :: AParser st (Maybe Token)
 optEnd = try
@@ -252,11 +263,11 @@ imports l = do
     (sps, ps) <- separatedBy (annoParser $ groupSpec l) anComma
     return (sps, catRange (s : ps))
 
-newlogicP :: AParser st (Token, Token)
+newlogicP :: AParser st (IRI, Token)
 newlogicP = do
   s <- asKey newlogicS
   n <- simpleId
-  return (n, s)
+  return (simpleIdToIRI n, s)
 
 metaP :: AParser st (FRAM, Token)
 metaP = do
@@ -275,32 +286,32 @@ framP = do
     asKey maudeS
     return Maude
 
-syntaxP :: AParser st (Token, Token)
+syntaxP :: AParser st (IRI, Token)
 syntaxP = do
   s <- asKey syntaxS
   t <- simpleIdOrDDottedId
-  return (t, s)
+  return (simpleIdToIRI t, s)
 
-modelsP :: AParser st (Token, Token)
+modelsP :: AParser st (IRI, Token)
 modelsP = do
     s <- asKey modelsS
     m <- simpleIdOrDDottedId
-    return (m, s)
-  <|> return (nullTok, nullTok)
+    return (simpleIdToIRI m, s)
+  <|> return (nullIRI, nullTok)
 
-foundationP :: AParser st (Token, Token)
+foundationP :: AParser st (IRI, Token)
 foundationP = do
     s <- asKey foundationS
     f <- simpleId
-    return (f, s)
-  <|> return (nullTok, nullTok)
+    return (simpleIdToIRI f, s)
+  <|> return (nullIRI, nullTok)
 
-proofsP :: AParser st (Token, Token)
+proofsP :: AParser st (IRI, Token)
 proofsP = do
     s <- asKey proofsS
     p <- simpleIdOrDDottedId
-    return (p, s)
-  <|> return (nullTok, nullTok)
+    return (simpleIdToIRI p, s)
+  <|> return (nullIRI, nullTok)
 
 patternsP :: AParser st (Token, Token)
 patternsP = do
@@ -309,21 +320,21 @@ patternsP = do
     return (p, s)
   <|> return (nullTok, nullTok)
 
-newcomorphismP :: AParser st (Token, Token)
+newcomorphismP :: AParser st (IRI, Token)
 newcomorphismP = do
   -- add newcomorphismS = "newcomorphism" in
   s <- asKey newcomorphismS
   n <- simpleId
-  return (n, s)
+  return (simpleIdToIRI n, s)
 
-sourceP :: AParser st (Token, Token)
+sourceP :: AParser st (IRI, Token)
 sourceP = do
   s <- asKey sourceS
   sl <- simpleIdOrDDottedId
-  return (sl, s)
+  return (simpleIdToIRI sl, s)
 
-targetP :: AParser st (Token, Token)
+targetP :: AParser st (IRI, Token)
 targetP = do
   s <- asKey targetS
   tl <- simpleIdOrDDottedId
-  return (tl, s)
+  return (simpleIdToIRI tl, s)

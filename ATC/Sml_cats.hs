@@ -38,6 +38,8 @@ import Common.AS_Annotation
 import Common.LibName
 import Common.IO
 
+import Common.IRI (IRI, nullIRI, parseIRICurie)
+
 import CASL.AS_Basic_CASL
 
 import CASL.Logic_CASL
@@ -904,7 +906,7 @@ from_sml_ATermTERMS att =
                        (posFromRegion reg_i att,getATermByIndex1 item_i att)
               _  -> (nullRange,att)
 
----- a helper for SIMPLE_IDs --------------------------------------------
+---- a helper for SIMPLE_IDs and IRIs ----------------------------------
 
 from_sml_ATermSIMPLE_ID :: ATermTable -> SIMPLE_ID
 from_sml_ATermSIMPLE_ID att =
@@ -914,6 +916,19 @@ from_sml_ATermSIMPLE_ID att =
           let s = from_sml_ShATerm $ getATermByIndex1 si att
           in mkSimpleId s
       _ -> from_sml_ShATermError "SIMPLE_ID" aterm
+    where aterm = getATerm att
+
+from_sml_ATermIRI :: ATermTable -> IRI
+from_sml_ATermIRI att =
+    case aterm of
+      (ShAAppl "" [ si, _ ] _) -> -- snd element is 'None'
+                                  -- (CASL.grm:((WORDS,None)))
+          let s = from_sml_ShATerm $ getATermByIndex1 si att
+          in case parseIRICurie s of
+                  Just i -> i
+                  Nothing -> error $ "parsing error: not an IRI \"" ++ s
+                                      ++ "\" \n(from_sml_ATermIRI)"
+      _ -> from_sml_ShATermError "IRI" aterm
     where aterm = getATerm att
 
 ---- a helper for [VAR] -------------------------------------------------
@@ -1226,7 +1241,7 @@ instance ATermConvertibleSML SPEC where
                 in group (Closed_spec aa'' ab') group_flag
             (ShAAppl "spec-inst" [ aa,ab ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 in (Spec_inst aa' ab' nullRange)
             _ -> from_sml_ShATermError "SPEC" aterm
@@ -1353,7 +1368,7 @@ instance ATermConvertibleSML FIT_ARG where
                 in (Fit_spec aa' ab'' ac')
             (ShAAppl "fit-view" [ aa,ab ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
                 in (Fit_view aa' ab' ac')
@@ -1543,7 +1558,7 @@ instance ATermConvertibleSML UNIT_SPEC where
                 in (Unit_type aa' ab' ac')
             (ShAAppl "spec-name-case" [ aa ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 in (Spec_name aa')
             (ShAAppl "closed" [ aa ] _)  ->
                 let
@@ -1569,7 +1584,7 @@ instance ATermConvertibleSML REF_SPEC where
                 in Unit_spec $ Unit_type aa' ab' ac'
             (ShAAppl "spec-name-case" [ aa ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 in (Unit_spec $ Spec_name aa')
             (ShAAppl "arch-spec-case" [ aa,ab ] _)  ->
                 let
@@ -1727,7 +1742,7 @@ instance ATermConvertibleSML LIB_ITEM where
         case aterm of
             (ShAAppl "spec-defn" [ aa,ab,ac,ad ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 as  = toAnnoList ad att
@@ -1736,7 +1751,7 @@ instance ATermConvertibleSML LIB_ITEM where
                 in Syntax.AS_Library.Spec_defn aa' ab' ac'' ad'
             (ShAAppl "view-defn" [ aa,ab,ac,ad,_ ] _)  ->
                 let  -- the annotation list is lost !!!!
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 ad''= case from_sml_ShATerm (getATermByIndex1 ad att) of
@@ -1752,7 +1767,7 @@ instance ATermConvertibleSML LIB_ITEM where
                 in (Syntax.AS_Library.Arch_spec_defn aa' ab' ac')
             (ShAAppl "unit-spec-defn" [ aa,ab,_ ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
                 in (Syntax.AS_Library.Unit_spec_defn aa' ab' ac')
@@ -1800,12 +1815,12 @@ instance ATermConvertibleSML ItemNameMap where
         case aterm of
             ShAAppl "item-name" [aa] _ ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID $ getATermByIndex1 aa att
+                aa' = from_sml_ATermIRI $ getATermByIndex1 aa att
                 in ItemNameMap aa' Nothing
             ShAAppl "item-name-map" [aa, ab] _ ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID $ getATermByIndex1 aa att
-                ab' = from_sml_ATermSIMPLE_ID $ getATermByIndex1 ab att
+                aa' = from_sml_ATermIRI $ getATermByIndex1 aa att
+                ab' = from_sml_ATermIRI $ getATermByIndex1 ab att
                 in ItemNameMap aa' $ Just ab'
             _ -> from_sml_ShATermError "ITEM_NAME_OR_MAP" aterm
         where
@@ -1857,6 +1872,10 @@ instance ATermConvertibleSML LibId where
                 (ShAAppl "pos-LIB-ID" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> (nullRange,att)
+
+-- nothing special implemented, since not used for CASL
+instance ATermConvertibleSML IRI where
+    from_sml_ShATerm _ = nullIRI
 
 instance ATermConvertibleSML VersionNumber where
     from_sml_ShATerm att =

@@ -27,6 +27,7 @@ import Common.Result
 import Common.ResultT
 import Common.LibName
 import Common.Id as Id
+import Common.IRI (simpleIdToIRI)
 import Common.ExtSign
 
 import Data.Graph.Inductive.Graph
@@ -96,7 +97,7 @@ getSpec ::
 getSpec b lid ln lenv sp =
     let dg = lookupDGraph ln lenv
         SpecEntry (ExtGenSig _ (NodeSig node _)) =
-            case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
+            case Map.lookup (simpleIdToIRI $ Id.mkSimpleId sp) $ globalEnv dg of
               Just x -> x
               _ -> error $ "getSpec: Specification " ++ sp ++ " not found"
         f nL gth =

@@ -23,6 +23,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.LibName
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -89,7 +90,7 @@ instance Logic FreeCAD
 readFreeCADLib :: FilePath -> LibName -> IO LIB_DEFN
 readFreeCADLib fp ln = do
   bs <- processFile fp
-  let sn = mkSimpleId "FreeCAD-Design"
+  let sn = simpleIdToIRI $ mkSimpleId "FreeCAD-Design"
   return $ fromBasicSpec ln sn $ G_basic_spec FreeCAD bs
 
 basicFCAnalysis :: (Document, Sign, GlobalAnnos)

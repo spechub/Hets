@@ -39,6 +39,7 @@ import Static.History
 import Common.GlobalAnnotations
 import Common.LibName
 import Common.Id
+import Common.IRI (IRI, iriToStringUnsecure)
 import Common.Consistency
 import Common.Doc as Doc
 import Common.DocUtils
@@ -56,12 +57,12 @@ import qualified Data.Set as Set
 import Data.List
 import Data.Char
 
-printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
+printTh :: GlobalAnnos -> IRI -> G_theory -> Doc
 printTh oga sn g =
     let ga = removeProblematicListAnnos oga in
     useGlobalAnnos ga $ pretty ga $+$ prettyGTheorySL g $+$
-    sep [if null (tokStr sn) then Doc.empty else
-             keyword specS <+> sidDoc sn <+> equals, prettyGTheory g]
+    sep [if null (iriToStringUnsecure sn) then Doc.empty else
+             keyword specS <+> pretty sn <+> equals, prettyGTheory g]
 
 removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
 removeProblematicListAnnos ga = let
@@ -97,7 +98,7 @@ instance Pretty NodeSig where
 instance Pretty NodeName where
   pretty n = text $ showName n
 
-dgOriginSpec :: DGOrigin -> Maybe SIMPLE_ID
+dgOriginSpec :: DGOrigin -> Maybe IRI
 dgOriginSpec o = case o of
     DGInst n -> Just n
     DGFitView n -> Just n
@@ -175,7 +176,7 @@ instance Pretty DGNodeLab where
 instance Pretty EdgeId where
    pretty (EdgeId i) = text $ show i
 
-dgLinkOriginSpec :: DGLinkOrigin -> Maybe SIMPLE_ID
+dgLinkOriginSpec :: DGLinkOrigin -> Maybe IRI
 dgLinkOriginSpec o = case o of
     DGLinkMorph n -> Just n
     DGLinkInst n _ -> Just n

@@ -39,6 +39,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.ExtSign
 import Common.Id
+import Common.IRI (simpleIdToIRI, iriToStringUnsecure, iriPos)
 import Common.LibName
 import Common.Result
 import Common.Amalgamate
@@ -88,7 +89,8 @@ anaArchSpec lgraph ln dg opts sharedCtx nP archSp = case archSp of
                 dg3, Basic_arch_spec udd'
                            (replaceAnnoted uexpr' uexpr) pos)
   Group_arch_spec asp _ -> anaArchSpec lgraph ln dg opts sharedCtx nP (item asp)
-  Arch_spec_name asn@(Token astr pos) -> case lookupGlobalEnvDG asn dg of
+  Arch_spec_name asn@(Token astr pos) ->
+      case lookupGlobalEnvDG (simpleIdToIRI asn) dg of
             Just (ArchOrRefEntry True asig@(BranchRefSig
                         (NPBranch n f) (UnitSig nsList resNs _, _))) -> do
               let (rN, dg', asig') =
@@ -178,11 +180,12 @@ anaUnitDeclDefn :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
   Unit_decl un@(Token ustr unpos) usp uts pos -> do
+       let unIRI = simpleIdToIRI un
        (dns, diag', dg', uts') <-
            anaUnitImported lgraph ln dg opts uctx pos uts
        let impSig = toMaybeNode dns
        (nodes, maybeRes, mDiag, rsig', dg0, usp') <-
-           anaRefSpec lgraph ln dg' opts impSig un (buc, diag') Nothing usp
+           anaRefSpec lgraph ln dg' opts impSig unIRI (buc, diag') Nothing usp
        usig@(UnitSig argSigs resultSig unionSig) <- getUnitSigFromRef rsig'
        let (n, dg1, rsig0) =
               case getPointerFromRef rsig' of
@@ -303,6 +306,7 @@ development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitRef lgraph ln dg opts
              _uctx@(_ggbuc, _diag') rN
              (Unit_ref un@(Token _ustr _unpos) usp pos) = do
+  let unIRI = simpleIdToIRI un
   let n = case rN of
            Nothing -> Nothing
            Just (NPComp f) -> Just $ Map.findWithDefault
@@ -312,7 +316,7 @@ anaUnitRef lgraph ln dg opts
            _ -> error "components!"
   curl <- lookupCurrentLogic "UNIT_REF" lgraph
   let impSig = EmptyNode curl
-  ( _, _, _, rsig, dg'', usp') <- anaRefSpec lgraph ln dg opts impSig un
+  ( _, _, _, rsig, dg'', usp') <- anaRefSpec lgraph ln dg opts impSig unIRI
                         emptyExtStUnitCtx n usp
   let ud' = Unit_ref un usp' pos
   return ((un, rsig), dg'', ud')
@@ -737,7 +741,7 @@ anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
            rsig = mkRefSigFromUnit usig
        return (rsig, dg3, Unit_type argSpecs'
                                 (replaceAnnoted resultSpec' resultSpec) poss)
-  Spec_name usn@(Token ustr pos) -> case lookupGlobalEnvDG usn dg of
+  Spec_name usn -> case lookupGlobalEnvDG usn dg of
     Just (UnitEntry usig) -> return (mkRefSigFromUnit usig, dg, usp)
     Just (SpecEntry (ExtGenSig _gsig@(GenSig _ args unSig) nsig) ) -> do
       let uSig = case unSig of
@@ -772,7 +776,8 @@ anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
                                  np' = compPointer (NPUnit x) p'
                              in return (setPointerInRef rsig np', dg', usp)
                        _ -> error "can't compose signatures!"
-    _ -> fatal_error (ustr ++ " is not a unit specification") pos
+    _ -> fatal_error (iriToStringUnsecure usn
+                          ++ " is not a unit specification") $ iriPos usn
   Closed_unit_spec usp' _ -> do
     curl <- lookupCurrentLogic "UnitSpec" lgraph
     anaUnitSpec lgraph ln dg opts (EmptyNode curl) rN usp'
@@ -829,7 +834,8 @@ lambda expressions, like you do in the following -}
                                         trace (show rN') $ do
           (_, _, _, rsig', dgr', rsp') <-
                                anaRefSpec lgraph ln dgr opts nsig
-                               (mkSimpleId $ show rn ++ "gen_ref_name" ++
+                               (simpleIdToIRI $ mkSimpleId $
+                                             show rn ++ "gen_ref_name" ++
                                              show (length rList) )
                                sharedCtx rN' rsp0
           return (dgr', rList ++ [(rsig', rsp')],

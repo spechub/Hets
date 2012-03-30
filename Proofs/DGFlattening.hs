@@ -46,6 +46,7 @@ module Proofs.DGFlattening
 
 import Common.ExtSign
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.LibName
 import Common.Result
 
@@ -326,7 +327,7 @@ createLabels dg tripls = case tripls of
              s_id = mkSimpleId . intercalate "'"
                $ map (`getNameOfNode` dg) x
              n_theory = noSensGTheory lid (ExtSign sign symb) ind
-             n_name = makeName s_id
+             n_name = makeName $ simpleIdToIRI s_id
              n_info = newNodeInfo DGFlattening
             in
              (y, newInfoNodeLab n_name n_info n_theory)) tripls

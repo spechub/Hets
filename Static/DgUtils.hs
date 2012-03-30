@@ -13,6 +13,7 @@ module Static.DgUtils where
 
 import qualified Common.Lib.Rel as Rel
 import Common.Id
+import Common.IRI (IRI, nullIRI, iriToStringUnsecure, parseCurie)
 import Common.Utils (numberSuffix, splitByList, splitOn, readMaybe)
 import Common.LibName
 import Common.Consistency
@@ -31,7 +32,7 @@ data XPathPart = ElemName String | ChildIndex Int deriving Show
 {- | name of a node in a DG; auxiliary nodes may have extension string
      and non-zero number (for these, names are usually hidden). -}
 data NodeName = NodeName
-  { getName :: SIMPLE_ID
+  { getName :: IRI
   , extString :: String
   , extIndex :: Int
   , xpath :: [XPathPart]
@@ -363,24 +364,24 @@ refTarget x = error ("refTarget:" ++ show x)
 -- ** for node names
 
 emptyNodeName :: NodeName
-emptyNodeName = NodeName (mkSimpleId "") "" 0 []
+emptyNodeName = NodeName nullIRI "" 0 []
 
 showExt :: NodeName -> String
 showExt n = let i = extIndex n in extString n ++ if i == 0 then "" else show i
 
 showName :: NodeName -> String
 showName n = let ext = showExt n in
-    tokStr (getName n) ++ if null ext then ext else "__" ++ ext
+    iriToStringUnsecure (getName n) ++ if null ext then ext else "__" ++ ext
 
-makeName :: SIMPLE_ID -> NodeName
-makeName n = NodeName n "" 0 [ElemName $ tokStr n]
+makeName :: IRI -> NodeName
+makeName n = NodeName n "" 0 [ElemName $ iriToStringUnsecure n]
 
 parseNodeName :: String -> NodeName
 parseNodeName s = case splitByList "__" s of
                     [i] ->
-                        makeName $ mkSimpleId i
+                        makeName $ fromJust $ parseCurie i
                     [i, e] ->
-                        let n = makeName $ mkSimpleId i
+                        let n = makeName $ fromJust $ parseCurie i
                             mSf = numberSuffix e
                             (es, sf) = fromMaybe (e, 0) mSf
                         in n { extString = es

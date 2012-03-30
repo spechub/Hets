@@ -14,6 +14,7 @@ Analyses CommonLogic files.
 module CommonLogic.ParseCLAsLibDefn (parseCL_CLIF) where
 
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.LibName
 import Common.AS_Annotation as Anno
 import Common.AnnoState
@@ -84,7 +85,7 @@ convertToLibDefN fn specs =
 
 convertToLibItems :: (BASIC_SPEC, NAME) -> Anno.Annoted LIB_ITEM
 convertToLibItems (b, n) =
-  emptyAnno $ Spec_defn n emptyGenericity (createSpec b) nullRange
+  emptyAnno $ Spec_defn (simpleIdToIRI n) emptyGenericity (createSpec b) nullRange
 
 createSpec :: BASIC_SPEC -> Anno.Annoted SPEC
 createSpec b =
@@ -100,7 +101,7 @@ createSpec b =
             ] nullRange
 
 specFromName :: NAME -> Annoted SPEC
-specFromName n = emptyAnno $ Spec_inst (cnvImportName n) [] nullRange
+specFromName n = emptyAnno $ Spec_inst (simpleIdToIRI $ cnvImportName n) [] nullRange
 
 specNameL :: [BASIC_SPEC] -> String -> [String]
 specNameL [_] def = [def]

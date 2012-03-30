@@ -37,7 +37,7 @@
   </DGNode>
   <DGNode name="s2__PU1" logic="CASL" refname="s2" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
-      <Symbol range="ParamView:8.15">sort p2</Symbol>
+      <Symbol range="ParamView:8.15-8.16">sort p2</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__A1V" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]" />

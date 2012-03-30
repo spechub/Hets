@@ -137,6 +137,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
+import Common.IRI (IRI)
 import Common.Item
 import Common.Lib.Graph
 import Common.LibName
@@ -381,7 +382,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
              -> Result (basic_spec, ExtSign sign symbol, [Named sentence]))
          basic_analysis _ = Nothing
          -- | a basic analysis with additional arguments
-         extBasicAnalysis :: lid -> SIMPLE_ID -> LibId
+         extBasicAnalysis :: lid -> IRI -> LibId
              -> basic_spec -> sign -> GlobalAnnos
              -> Result (basic_spec, ExtSign sign symbol, [Named sentence])
          extBasicAnalysis l _ _ b s g = case basic_analysis l of
