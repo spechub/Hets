@@ -17,6 +17,7 @@ import Text.ParserCombinators.Parsec
 import qualified Data.Map as Map
 import Common.Result
 import Common.Id
+import Common.IRI (simpleIdToIRI)
 import Common.GlobalAnnotations
 import Common.LibName
 import Common.Utils
@@ -50,7 +51,7 @@ anaHaskellFile opts file = do
            return Nothing
          Result _ (Just (_, sig, sens)) -> do
           let (bas, _, _) = fileparse downloadExtensions file
-              mName = mkSimpleId bas
+              mName = simpleIdToIRI $ mkSimpleId bas
               name = makeName $ mName
               node_contents = newNodeLab name DGBasic
                 $ G_theory Haskell sig startSigId (toThSens sens) startThId
