@@ -227,7 +227,7 @@ iriToStringUnsecure i = (iriToString id i) ""
 
 -- | Converts a Simple_ID to an IRI
 simpleIdToIRI :: SIMPLE_ID -> IRI
-simpleIdToIRI sid = nullIRI { abbrevPath = tokStr sid
+simpleIdToIRI sid = nullIRI { iriPath = tokStr sid
                             , iriPos = tokPos sid
                             }
 
