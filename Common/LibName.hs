@@ -19,8 +19,6 @@ import Common.Id
 import Common.Keywords
 import Common.Utils
 
-import Common.IRI (IRI)
-
 import Data.Char
 import Data.List
 import Data.Ord
@@ -77,10 +75,7 @@ data LibName = LibName
 emptyLibName :: String -> LibName
 emptyLibName s = LibName (IndirectLink s nullRange "" noTime) Nothing
 
-data LibId =
-    DirectLink IRI Range
-              -- pos: start of IRI
-  | IndirectLink PATH Range FilePath ClockTime
+data LibId = IndirectLink PATH Range FilePath ClockTime
               -- pos: start of PATH
 
 noTime :: ClockTime
@@ -88,14 +83,10 @@ noTime = TOD 0 0
 
 -- | Returns the LibId of a LibName
 getModTime :: LibId -> ClockTime
-getModTime li = case li of
-    DirectLink _ _ -> noTime
-    IndirectLink _ _ _ m -> m
+getModTime (IndirectLink _ _ _ m) = m
 
 updFilePathOfLibId :: FilePath -> ClockTime -> LibId -> LibId
-updFilePathOfLibId fp mt li = case li of
-  DirectLink _ _ -> li
-  IndirectLink p r _ _ -> IndirectLink p r fp mt
+updFilePathOfLibId fp mt (IndirectLink p r _ _) = IndirectLink p r fp mt
 
 setFilePath :: FilePath -> ClockTime -> LibName -> LibName
 setFilePath fp mt ln =
@@ -105,7 +96,6 @@ getFilePath :: LibName -> FilePath
 getFilePath ln =
     case getLibId ln of
       IndirectLink _ _ fp _ -> fp
-      _ -> error "getFilePath: No IndirectLink"
 
 data VersionNumber = VersionNumber [String] Range
                       -- pos: "version", start of first string
@@ -113,14 +103,10 @@ data VersionNumber = VersionNumber [String] Range
 type PATH = String
 
 instance GetRange LibId where
-  getRange li = case li of
-    DirectLink _ r -> r
-    IndirectLink _ r _ _ -> r
+  getRange (IndirectLink _ r _ _) = r
 
 instance Show LibId where
-  show li = case li of
-    DirectLink i _ -> show i
-    IndirectLink s1 _ _ _ -> s1
+  show (IndirectLink s1 _ _ _) = s1
 
 instance GetRange LibName where
   getRange = getRange . getLibId
@@ -138,15 +124,10 @@ prettyLibName (LibName i mv) = pretty i : case mv of
         Just v -> prettyVersionNumber v
 
 instance Eq LibId where
-  DirectLink s1 _ == DirectLink s2 _ = s1 == s2
   IndirectLink s1 _ _ _ == IndirectLink s2 _ _ _ = s1 == s2
-  _ == _ = False
 
 instance Ord LibId where
-  DirectLink s1 _ <= DirectLink s2 _ = s1 <= s2
   IndirectLink s1 _ _ _ <= IndirectLink s2 _ _ _ = s1 <= s2
-  DirectLink _ _ <= _ = True
-  IndirectLink _ _ _ _ <= _ = False
 
 instance Eq LibName where
   ln1 == ln2 = compare ln1 ln2 == EQ

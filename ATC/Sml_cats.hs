@@ -38,7 +38,7 @@ import Common.AS_Annotation
 import Common.LibName
 import Common.IO
 
-import Common.IRI (IRI, nullIRI, parseIRICurie)
+import Common.IRI (IRI, parseIRICurie)
 
 import CASL.AS_Basic_CASL
 
@@ -1854,12 +1854,7 @@ instance ATermConvertibleSML LibName where
 instance ATermConvertibleSML LibId where
     from_sml_ShATerm att =
         case aterm of
-            (ShAAppl "url" [ aa ] _)  ->
-                let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = pos_l
-                in (DirectLink aa' ab')
-            (ShAAppl "path-name" [ aa ] _)  ->
+            (ShAAppl str [ aa ] _) | elem str ["path-name", "url"] ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
@@ -1872,10 +1867,6 @@ instance ATermConvertibleSML LibId where
                 (ShAAppl "pos-LIB-ID" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> (nullRange,att)
-
--- nothing special implemented, since not used for CASL
-instance ATermConvertibleSML IRI where
-    from_sml_ShATerm _ = nullIRI
 
 instance ATermConvertibleSML VersionNumber where
     from_sml_ShATerm att =

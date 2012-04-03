@@ -75,7 +75,7 @@ guessXmlContent str = case parseXMLDoc str of
   Nothing -> Right GuessIn
   Just e -> let q = elName e in
     if isDgXml q then Left ".xml" else
-    if isRDF q then  
+    if isRDF q then
       Right $ if any (isOWLOnto . elName) $ elChildren e then OWLIn else RDFIn
     else if isDMU q then Left "DMU" else
        if isPpXml q then Left ".pp.xml" else Right GuessIn
@@ -85,7 +85,7 @@ quessInput opts file input = let fty = guess file (intype opts) in
   if elem fty [GuessIn, RDFIn] then case guessXmlContent input of
     Left ty -> fail $ "unexpected xml format: " ++ ty
     Right ty -> return ty
-  else return fty 
+  else return fty
 
 readLibDefnM :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath -> String
   -> m LIB_DEFN
@@ -99,7 +99,7 @@ readLibDefnAux lgraph opts file fileForPos input =
     ATermIn _ -> return $ from_sml_ATermString input
     FreeCADIn ->
       liftIO $ readFreeCADLib file $ fileToLibName opts file
-    _ -> do 
+    _ -> do
      ty <- quessInput opts file input
      case ty of
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
@@ -157,7 +157,6 @@ libNameToFile ln = case getLibId ln of
   IndirectLink file _ ofile _ ->
       if null ofile then file
       else rmSuffix ofile
-  DirectLink _ _ -> error "libNameToFile"
 
 findFileOfLibNameAux :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 findFileOfLibNameAux opts file = do
