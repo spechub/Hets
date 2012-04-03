@@ -188,6 +188,7 @@ getCLIFContents opts dirFile@(_,file) =
 #endif
         x -> error ("Unsupported URI scheme: " ++ x)
 
+#ifndef NOHTTP
 getCLIFContentsHTTP :: String -> String -> IO String
 getCLIFContentsHTTP uriS extension =
   let (Just uri) = parseURIReference (uriS ++ extension) in do
@@ -199,6 +200,12 @@ getCLIFContentsHTTP uriS extension =
           ""     -> getCLIFContentsHTTP uriS ".clf"
           ".clf" -> getCLIFContentsHTTP uriS ".clif"
           _      -> error $ "File not found via HTTP: " ++ uriS ++ "[.clf | .clif]\nHTTP-code " ++ show x ++ show y ++ show z
+
+httpResponseCode :: Result (Response a) -> (Int, Int, Int)
+httpResponseCode res = case res of
+    Left _ -> (0,0,0)
+    Right r -> rspCode r
+#endif
 
 localFileContents :: HetcatsOpts -> String -> IO String
 localFileContents opts filename = do
@@ -263,9 +270,3 @@ usingImportedByCount (_, (_, _, importedBy1)) (_, (_, _, importedBy2)) =
 
 bsNamePairs :: [(String, SpecInfo)] -> [(BASIC_SPEC, NAME)]
 bsNamePairs = foldr (\ (n, (b, _, _)) r -> (b, mkSimpleId n) : r) []
-
-
-httpResponseCode :: Result (Response a) -> (Int, Int, Int)
-httpResponseCode res = case res of
-    Left _ -> (0,0,0)
-    Right r -> rspCode r
