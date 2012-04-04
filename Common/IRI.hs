@@ -170,7 +170,7 @@ data IRI = IRI
     , prefixName :: String        -- ^ @prefix@
     , abbrevPath :: String        -- ^ @abbrevPath@
     , iriPos :: Range             -- ^ prefix name part from "prefixName:path"
-    } deriving (Eq, Typeable, Show, Ord)
+    } deriving (Typeable, Ord)
 
 -- | Type for authority value within a IRI
 data IRIAuth = IRIAuth
@@ -199,8 +199,8 @@ nullIRI = IRI
 iriType :: IRI -> IRIType
 iriType i =
   if (not . null) $ iriPath i then (
-      if null $ prefixName i then ExpandedSimple else
-      if null $ abbrevPath i then Full else ExpandedAbbrev
+      if (null $ abbrevPath i) && (null $ prefixName i) then Full else
+      if null $ prefixName i then ExpandedSimple else ExpandedAbbrev
   ) else if null $ prefixName i then Simple else Abbreviated
 
 {- IRI as instance of Show.  Note that for secirity reasons, the default
@@ -213,9 +213,18 @@ the IRIAuth value, with the default value suppressing iuserinfo formatting,
 but providing a function to return a new IRI value with iuserinfo
 data exposed by show.]]]
 -}
--- instance Show IRI where
---     showsPrec _ i = iriToString defaultUserInfoMap i
+instance Show IRI where
+    showsPrec _ i = iriToString defaultUserInfoMap i
 
+-- equal iff expansion is equal or abbreviation is equal
+instance Eq IRI where
+    (==) i j = case (iriType i, iriType j) of
+        (Simple, Simple) -> abbrevPath i == abbrevPath j
+        (Abbreviated, Abbreviated) -> and $ map (\f -> ((f i) == (f j)))
+                                              [abbrevPath, prefixName]
+        _ -> iriAuthority i == iriAuthority j
+                      && (and $ map (\f -> f i == f j)
+                                  [iriScheme, iriPath, iriQuery, iriFragment])
 
 -- |converts IRI to String of expanded form, also showing Auth info
 iriToStringUnsecure :: IRI -> String
