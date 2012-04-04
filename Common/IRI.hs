@@ -10,7 +10,7 @@ Portability :  portable
 
 This module defines functions for handling IRIs.  It is substantially the
 same as the Network.URI module by Graham Klyne, but is extended to IRI
-support [2] and even Manchester-Syntax-IRI [3], [4].
+support [2] and even Manchester-Syntax-IRI [3], [4] and CURIE [5].
 
 Four methods are provided for parsing different
 kinds of IRI string (as noted in [1], [2]):
@@ -20,7 +20,7 @@ kinds of IRI string (as noted in [1], [2]):
 'parseAbsoluteIRI'.
 
 An additional method is provided for parsing an abbreviated IRI according to
-[3], [4]: 'parseIRIManchester'
+[3], [4]: 'parseIRIManchester' and according to [5]: 'parseIRICurie'
 
 Further, four methods are provided for classifying different
 kinds of IRI string (as noted in  [1], [2]):
@@ -30,14 +30,14 @@ kinds of IRI string (as noted in  [1], [2]):
 'isAbsoluteIRI'.
 
 Additionally, classification of full, abbreviated and simple IRI is provided
-by 'isIRIManchester'.
+by 'isIRIManchester', isIRICurie.
 
-The Manchester-syntax [3], [4] provides three different kinds of IRI: full,
-abbreviated and simple. An existing element of type IRI can be classified in
-one of those kinds with 'iriType'.
+The abbreviated syntaxs [3], [4], [5] provide three different kinds of IRI: full,
+abbreviated, simple, expandedAbbreviated and expandedSimple. An existing element
+of type IRI can be classified in one of those kinds with 'iriType'.
 
 Most of the code has been copied from the Network.URI implementation,
-but it is extended to IRI and Manchester-syntax.
+but it is extended to IRI, Manchester-syntax and CURIE.
 
 References
 
@@ -48,6 +48,8 @@ References
 (3) <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 
 (4) <http://www.w3.org/TR/2008/REC-rdf-sparql-query-20080115/>
+
+(5) <http://www.w3.org/TR/curie/#s_syntax>
 
 -}
 
@@ -94,6 +96,8 @@ module Common.IRI
     escaped format and getting them back again. -}
     , iriToString
     , iriToStringUnsecure
+    , iriToStringShort
+    , iriToStringShortUnsecure
     , isReserved, isUnreserved
     , isAllowedInIRI, isUnescapedInIRI
     , escapeIRIChar
@@ -110,6 +114,7 @@ module Common.IRI
     , iriManchester
 
     -- * IRI Normalization functions
+    , expandCurie
     , normalizeCase
     , normalizeEscape
     , normalizePathSegments
@@ -128,6 +133,8 @@ import Data.Char (ord, chr, isHexDigit, toLower, toUpper, digitToInt)
 import Numeric (showIntAtBase)
 
 import Data.Typeable (Typeable)
+
+import Data.Map (Map, findWithDefault)
 
 import Common.Id
 import Common.Lexer
@@ -163,7 +170,7 @@ data IRI = IRI
     , prefixName :: String        -- ^ @prefix@
     , abbrevPath :: String        -- ^ @abbrevPath@
     , iriPos :: Range             -- ^ prefix name part from "prefixName:path"
-    } deriving (Eq, Typeable, Ord)
+    } deriving (Eq, Typeable, Show, Ord)
 
 -- | Type for authority value within a IRI
 data IRIAuth = IRIAuth
@@ -172,7 +179,7 @@ data IRIAuth = IRIAuth
     , iriPort :: String           -- ^ @:42@
     } deriving (Eq, Typeable, Ord, Show)
 
-data IRIType = Full | Abbreviated | Simple
+data IRIType = Full | ExpandedAbbrev | ExpandedSimple | Abbreviated | Simple
   deriving (Eq, Show, Typeable, Ord)
 
 -- | Blank IRI
@@ -191,8 +198,10 @@ nullIRI = IRI
 -- | Returns Type of an IRI
 iriType :: IRI -> IRIType
 iriType i =
-  if (not . null) $ iriPath i then Full else
-  if null $ prefixName i then Simple else Abbreviated
+  if (not . null) $ iriPath i then (
+      if null $ prefixName i then ExpandedSimple else
+      if null $ abbrevPath i then Full else ExpandedAbbrev
+  ) else if null $ prefixName i then Simple else Abbreviated
 
 {- IRI as instance of Show.  Note that for secirity reasons, the default
 behaviour is to suppress any iuserinfo field (see RFC3986, section 7.5).
@@ -204,14 +213,17 @@ the IRIAuth value, with the default value suppressing iuserinfo formatting,
 but providing a function to return a new IRI value with iuserinfo
 data exposed by show.]]]
 -}
-instance Show IRI where
-    showsPrec _ i = iriToString defaultUserInfoMap i
+-- instance Show IRI where
+--     showsPrec _ i = iriToString defaultUserInfoMap i
 
-instance GetRange IRI where
-    getRange = iriPos
 
-instance Pretty IRI where
-  pretty = text . show
+-- |converts IRI to String of expanded form, also showing Auth info
+iriToStringUnsecure :: IRI -> String
+iriToStringUnsecure i = (iriToString id i) ""
+
+-- |converts IRI to String of abbreviated form, also showing Auth info
+iriToStringShortUnsecure :: IRI -> String
+iriToStringShortUnsecure i = (iriToStringShort id i) ""
 
 defaultUserInfoMap :: String -> String
 defaultUserInfoMap uinf = user ++ newpass
@@ -222,8 +234,11 @@ defaultUserInfoMap uinf = user ++ newpass
                         then pass
                         else ":...@"
 
-iriToStringUnsecure :: IRI -> String
-iriToStringUnsecure i = (iriToString id i) ""
+instance GetRange IRI where
+    getRange = iriPos
+
+instance Pretty IRI where
+  pretty = text . iriToStringShortUnsecure
 
 -- | Converts a Simple_ID to an IRI
 simpleIdToIRI :: SIMPLE_ID -> IRI
@@ -1142,8 +1157,21 @@ iriToString iuserinfomap i@(IRI { iriScheme = scheme
                             }) = case iriType i of
   Simple -> (aPath ++)
   Abbreviated -> (pname ++) . (aPath ++)
+  _ -> (scheme ++) . (iriAuthToString iuserinfomap authority)
+                 . (path ++) . (query ++) . (fragment ++)
+  
+iriToStringShort :: (String -> String) -> IRI -> ShowS
+iriToStringShort iuserinfomap i@(IRI { iriScheme = scheme
+                            , iriAuthority = authority
+                            , iriPath = path
+                            , iriQuery = query
+                            , iriFragment = fragment
+                            , prefixName = pname
+                            , abbrevPath = aPath
+                            }) = case iriType i of
   Full -> (scheme ++) . (iriAuthToString iuserinfomap authority)
                  . (path ++) . (query ++) . (fragment ++)
+  _ -> (pname ++) . (aPath ++)
 
 iriAuthToString :: (String -> String) -> (Maybe IRIAuth) -> ShowS
 iriAuthToString _ Nothing = id          -- shows ""
@@ -1413,6 +1441,23 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 
 -- * Other normalization functions
 
+-- |Expands a CURIE to an IRI
+expandCurie :: Map String IRI -> IRI -> IRI
+expandCurie prefixMap c =
+  if iriType c == Full then c else
+  let i = findWithDefault nullIRI (prefixName c) prefixMap in
+  mergeCurie c $ i { prefixName = prefixName c
+                                , abbrevPath = abbrevPath c
+                                }
+
+-- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending path and query-part of @c@ to @i@. Also replacing fragment of @c@ with @i@ if both are not empty.
+mergeCurie :: IRI -> IRI -> IRI
+mergeCurie c i =
+  i { iriPath = iriPath i ++ abbrevPath c
+    , iriQuery = iriQuery i ++ if null $ iriQuery c then [] else '&':(tail $ iriQuery c)
+    , iriFragment = if null $ iriFragment i then iriFragment c else iriFragment i
+    }
+
 {- | Case normalization; cf. RFC3986 section 6.2.2.1
 NOTE:  authority case normalization is not performed -}
 normalizeCase :: String -> String
@@ -1456,9 +1501,10 @@ instance ShATermConvertible IRI where
       x@(ShAAppl "IRI" [is] _) ->
         case fromShATerm' is att0 of
           (att1, is') ->
-            case parseIRIReference is' of -- TODO apply most tolerating parser
+            case parseIRICurie is' of
               Nothing ->
-                fromShATermError "IRI" x
-              Just i ->
-                (att1, i)
+                case parseIRIReference is' of
+                  Nothing -> fromShATermError "IRI" x
+                  Just i -> (att1, i)
+              Just i -> (att1, i)
       i -> fromShATermError "IRI" i
