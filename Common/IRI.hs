@@ -110,6 +110,7 @@ module Common.IRI
     , irelativeRef
     , absoluteIRI
     , iriCurie
+    , iriReferenceCurie
     , curie
     , iriManchester
 
@@ -259,7 +260,7 @@ instance GetRange IRI where
 
 -- | Converts a Simple_ID to an IRI
 simpleIdToIRI :: SIMPLE_ID -> IRI
-simpleIdToIRI sid = nullIRI { iriPath = tokStr sid
+simpleIdToIRI sid = nullIRI { abbrevPath = tokStr sid
                             , iriPos = tokPos sid
                             }
 
