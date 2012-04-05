@@ -16,6 +16,7 @@ module Common.DocUtils where
 import Common.AS_Annotation
 import Common.Doc
 import Common.Id
+import Common.IRI (IRI, iriPos)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Common.GlobalAnnotations
@@ -224,3 +225,6 @@ showDoc = shows . pretty
 -- | like showDoc but considers global annotations
 showGlobalDoc :: Pretty a => GlobalAnnos -> a -> ShowS
 showGlobalDoc ga = shows . useGlobalAnnos ga . pretty
+
+instance Pretty IRI where
+  pretty = text . iriToStringShortUnsecure

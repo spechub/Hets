@@ -139,8 +139,6 @@ import Data.Map (Map, findWithDefault)
 import Common.Id
 import Common.Lexer
 import Common.Parsec
-import Common.Doc (text)
-import Common.DocUtils
 import ATerm.Lib
 
 -- * The IRI datatype
@@ -170,7 +168,7 @@ data IRI = IRI
     , prefixName :: String        -- ^ @prefix@
     , abbrevPath :: String        -- ^ @abbrevPath@
     , iriPos :: Range             -- ^ prefix name part from "prefixName:path"
-    } deriving (Typeable, Ord)
+    } deriving (Typeable)
 
 -- | Type for authority value within a IRI
 data IRIAuth = IRIAuth
@@ -218,13 +216,26 @@ instance Show IRI where
 
 -- equal iff expansion is equal or abbreviation is equal
 instance Eq IRI where
-    (==) i j = case (iriType i, iriType j) of
-        (Simple, Simple) -> abbrevPath i == abbrevPath j
-        (Abbreviated, Abbreviated) -> and $ map (\f -> ((f i) == (f j)))
-                                              [abbrevPath, prefixName]
-        _ -> iriAuthority i == iriAuthority j
-                      && (and $ map (\f -> f i == f j)
-                                  [iriScheme, iriPath, iriQuery, iriFragment])
+    (==) i j = compare i j == EQ
+
+-- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
+instance Ord IRI where
+    compare i j = case (iriType i, iriType j) of
+        (Simple, Simple) -> abbrevPath i `compare` abbrevPath j
+        (Abbreviated, Abbreviated) ->
+            let pnC = prefixName i `compare` prefixName j
+                apC = abbrevPath i `compare` abbrevPath j
+            in if pnC /= EQ then pnC else apC
+        _ ->
+            let scC = iriScheme i    `compare` iriScheme j
+                auC = iriAuthority i `compare` iriAuthority j
+                paC = iriPath i      `compare` iriPath j
+                quC = iriQuery i     `compare` iriQuery j
+                frC = iriFragment i  `compare` iriFragment j
+            in if scC /= EQ then scC else
+               if auC /= EQ then auC else
+               if paC /= EQ then paC else
+               if quC /= EQ then quC else frC
 
 -- |converts IRI to String of expanded form, also showing Auth info
 iriToStringUnsecure :: IRI -> String
@@ -245,9 +256,6 @@ defaultUserInfoMap uinf = user ++ newpass
 
 instance GetRange IRI where
     getRange = iriPos
-
-instance Pretty IRI where
-  pretty = text . iriToStringShortUnsecure
 
 -- | Converts a Simple_ID to an IRI
 simpleIdToIRI :: SIMPLE_ID -> IRI
