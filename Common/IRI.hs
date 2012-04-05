@@ -167,7 +167,7 @@ data IRI = IRI
     , iriFragment :: String       -- ^ @#frag@
     , prefixName :: String        -- ^ @prefix@
     , abbrevPath :: String        -- ^ @abbrevPath@
-    , iriPos :: Range             -- ^ prefix name part from "prefixName:path"
+    , iriPos :: Range             -- ^ position
     } deriving (Typeable)
 
 -- | Type for authority value within a IRI
@@ -1176,7 +1176,7 @@ iriToString iuserinfomap i@(IRI { iriScheme = scheme
   Abbreviated -> (pname ++) . (aPath ++)
   _ -> (scheme ++) . (iriAuthToString iuserinfomap authority)
                  . (path ++) . (query ++) . (fragment ++)
-  
+
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i@(IRI { iriScheme = scheme
                             , iriAuthority = authority
