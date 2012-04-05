@@ -32,9 +32,8 @@ kinds of IRI string (as noted in  [1], [2]):
 Additionally, classification of full, abbreviated and simple IRI is provided
 by 'isIRIManchester', isIRICurie.
 
-The abbreviated syntaxs [3], [4], [5] provide three different kinds of IRI: full,
-abbreviated, simple, expandedAbbreviated and expandedSimple. An existing element
-of type IRI can be classified in one of those kinds with 'iriType'.
+The abbreviated syntaxes  [3], [4], [5] provide three different kinds of IRI.
+An existing element f type IRI can be classified in one of those kinds.
 
 Most of the code has been copied from the Network.URI implementation,
 but it is extended to IRI, Manchester-syntax and CURIE.
@@ -58,7 +57,6 @@ module Common.IRI
     -- * The IRI type
       IRI (..)
     , IRIAuth (..)
-    , IRIType (..)
     , nullIRI
     , iriType
 
@@ -220,7 +218,7 @@ iriType i =
       if null $ prefixName i then ExpandedSimple else ExpandedAbbrev
   ) else if null $ prefixName i then Simple else Abbreviated
 
-{- IRI as instance of Show.  Note that for secirity reasons, the default
+{- IRI as instance of Show.  Note that for security reasons, the default
 behaviour is to suppress any iuserinfo field (see RFC3986, section 7.5).
 This can be overridden by using iriToString directly with first
 argument @id@ (noting that this returns a ShowS value rather than a string).
@@ -246,11 +244,11 @@ instance Ord IRI where
                 apC = abbrevPath i `compare` abbrevPath j
             in if pnC /= EQ then pnC else apC
         _ ->
-            let scC = iriScheme i    `compare` iriScheme j
+            let scC = iriScheme i `compare` iriScheme j
                 auC = iriAuthority i `compare` iriAuthority j
-                paC = iriPath i      `compare` iriPath j
-                quC = iriQuery i     `compare` iriQuery j
-                frC = iriFragment i  `compare` iriFragment j
+                paC = iriPath i `compare` iriPath j
+                quC = iriQuery i `compare` iriQuery j
+                frC = iriFragment i `compare` iriFragment j
             in if scC /= EQ then scC else
                if auC /= EQ then auC else
                if paC /= EQ then paC else
@@ -396,12 +394,7 @@ type IRIParser st a = GenParser Char st a
 
 -- | Parse and return a 'pct-encoded' sequence
 escaped :: IRIParser st String
-escaped =
-    do { char '%'
-        ; h1 <- hexDigitChar
-        ; h2 <- hexDigitChar
-        ; return $ ['%', h1, h2]
-        }
+escaped = char '%' <:> hexDigitChar <:> single hexDigitChar
 
 -- RFC3986, section 2.2
 
@@ -418,7 +411,7 @@ isSubDelims :: Char -> Bool
 isSubDelims c = c `elem` "!$&'()*+,;="
 
 subDelims :: IRIParser st String
-subDelims = do { c <- satisfy isSubDelims ; return [c] }
+subDelims = single $ satisfy isSubDelims
 
 -- RFC3986, section 2.3
 
@@ -430,7 +423,7 @@ isUnreserved :: Char -> Bool
 isUnreserved c = isAlphaNumChar c || (c `elem` "-_.~") || (isUcsChar c)
 
 iunreservedChar :: IRIParser st String
-iunreservedChar = do { c <- satisfy isUnreserved ; return [c] }
+iunreservedChar = single $ satisfy isUnreserved
 
 iriWithPos :: IRIParser st IRI -> IRIParser st IRI
 iriWithPos parser = do
@@ -486,10 +479,10 @@ curie = iriWithPos $ do
 
 reference :: IRIParser st IRI
 reference = iriWithPos $ do
-  (_, up) <- ihierPartNoAuth
-  uq <- option "" ( do { char '?' ; uiquery } )
-  uf <- option "" ( do { char '#' ; uifragment } )
-  return $ IRI
+  up <- ihierPartNoAuth
+  uq <- option "" uiquery
+  uf <- option "" uifragment
+  return IRI
           { iriScheme = ""
           , iriAuthority = Nothing
           , iriPath = ""
@@ -502,10 +495,7 @@ reference = iriWithPos $ do
 
 -- http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName
 ncname :: GenParser Char st String
-ncname = do
-  c <- nameStartChar
-  s <- many nameChar
-  return $ c : s
+ncname = nameStartChar <:> many nameChar
 
 nameStartChar :: GenParser Char st Char
 nameStartChar = satisfy nameStartCharP
@@ -646,40 +636,30 @@ pname_ln = do
   return $ PName_Ln ns loc
 
 pname_ns :: GenParser Char st PNAME_NS
-pname_ns = do
-    char ':'
-    return ":"
-  <|> do
-    prefix <- pn_prefix
-    char ':'
-    return $ prefix ++ ":"
+pname_ns = string ":" <|> pn_prefix <++> string ":"
 
 pn_prefix :: GenParser Char st PN_PREFIX
 pn_prefix = do
     c1 <- pn_chars_base
-    t <- (
-      do
+    t <- do
           s1 <- many (pn_chars <|> char '.')
           if null s1 then return Nothing else case last s1 of
                '.' -> fail "Last character in prefix must not be '.'"
                _ -> return $ Just s1
         <|> return Nothing
-      )
     case t of
       Just str -> return $ c1 : str
       Nothing -> return [c1]
 
 pn_local :: GenParser Char st PN_LOCAL
 pn_local = do
-    c1 <- (pn_chars_u <|> digit)
-    t <- (
-      do
+    c1 <- pn_chars_u <|> digit
+    t <- do
           s1 <- many (pn_chars <|> char '.')
           if null s1 then return Nothing else case last s1 of
                '.' -> fail "Last character in prefix must not be '.'"
                _ -> return $ Just s1
         <|> return Nothing
-      )
     case t of
       Just str -> return $ c1 : str
       Nothing -> return [c1]
@@ -697,12 +677,12 @@ pn_local = do
 / ipath-empty -}
 
 iri :: IRIParser st IRI
-iri = iriWithPos $
-    do { us <- try uscheme
-        ; (ua, up) <- ihierPart
-        ; uq <- option "" ( do { char '?' ; uiquery } )
-        ; uf <- option "" ( do { char '#' ; uifragment } )
-        ; return $ IRI
+iri = iriWithPos $ do
+  us <- try uscheme
+  (ua, up) <- ihierPart
+  uq <- option "" uiquery
+  uf <- option "" uifragment
+  return IRI
             { iriScheme = us
             , iriAuthority = ua
             , iriPath = up
@@ -712,59 +692,40 @@ iri = iriWithPos $
             , abbrevPath = ""
             , iriPos = nullRange
             }
-        }
 
-ihierPart :: IRIParser st ((Maybe IRIAuth), String)
-ihierPart =
-        do { try (string "//")
-            ; ua <- uiauthority
-            ; up <- ipathAbEmpty
-            ; return (ua, up)
-            }
-    <|> ihierPartNoAuth
+ihierPart :: IRIParser st (Maybe IRIAuth, String)
+ihierPart = do
+        try (string "//")
+        ua <- uiauthority
+        up <- ipathAbEmpty
+        return (ua, up)
+    <|> fmap (\ s -> (Nothing, s)) ihierPartNoAuth
 
-ihierPartNoAuth :: IRIParser st ((Maybe IRIAuth), String)
-ihierPartNoAuth =
-        do { up <- ipathAbs
-            ; return (Nothing, up)
-            }
-    <|> do { up <- ipathRootLess
-            ; return (Nothing, up)
-            }
-    <|> do { return (Nothing, "")
-            }
+ihierPartNoAuth :: IRIParser st String
+ihierPartNoAuth = ipathAbs <|> ipathRootLess <|> return ""
 
 -- RFC3986, section 3.1
 
 uscheme :: IRIParser st String
-uscheme =
-    do { s <- oneThenMany alphaChar (satisfy isSchemeChar)
-        ; char ':'
-        ; return $ s ++ ":"
-        }
+uscheme = oneThenMany alphaChar (satisfy isSchemeChar) <++> string ":"
 
 -- RFC3987, section 2.2
 
 uiauthority :: IRIParser st (Maybe IRIAuth)
-uiauthority =
-    do { uu <- option "" (try iuserinfo)
-        ; uh <- ihost
-        ; up <- option "" port
-        ; return $ Just $ IRIAuth
+uiauthority = do
+  uu <- option "" (try iuserinfo)
+  uh <- ihost
+  up <- option "" port
+  return $ Just $ IRIAuth
             { iriUserInfo = uu
             , iriRegName = uh
             , iriPort = up
             }
-        }
 
 -- RFC3987, section 2.2
 
 iuserinfo :: IRIParser st String
-iuserinfo =
-    do { uu <- many (uchar ";:&=+$,")
-        ; char '@'
-        ; return (concat uu ++ "@")
-        }
+iuserinfo = flat (many $ uchar ";:&=+$,") <++> string "@"
 
 -- RFC3987, section 2.2
 
@@ -772,25 +733,15 @@ ihost :: IRIParser st String
 ihost = ipLiteral <|> try ipv4address <|> iregName
 
 ipLiteral :: IRIParser st String
-ipLiteral =
-    do { char '['
-        ; ua <- ( ipv6address <|> ipvFuture )
-        ; char ']'
-        ; return $ "[" ++ ua ++ "]"
-        }
+ipLiteral = char '[' <:> (ipv6address <|> ipvFuture) <++> string "]"
     <?> "IP address literal"
 
 ipvFuture :: IRIParser st String
-ipvFuture =
-    do { char 'v'
-        ; h <- hexDigitChar
-        ; char '.'
-        ; a <- many1 (satisfy isIpvFutureChar)
-        ; return $ 'c' : h : '.' : a
-        }
+ipvFuture = char 'v' <:> hexDigitChar <:> char '.'
+    <:> many1 (satisfy isIpvFutureChar)
 
 isIpvFutureChar :: Char -> Bool
-isIpvFutureChar c = isUnreserved c || isSubDelims c || (c == ';')
+isIpvFutureChar c = isUnreserved c || isSubDelims c || c == ';'
 
 ipv6address :: IRIParser st String
 ipv6address =
@@ -853,65 +804,41 @@ ipv6address =
     <?> "IPv6 address"
 
 opt_n_h4c_h4 :: Int -> IRIParser st String
-opt_n_h4c_h4 n = option "" $
-    do { a1 <- countMinMax 0 n h4c
-        ; a2 <- h4
-        ; return $ concat a1 ++ a2
-        }
+opt_n_h4c_h4 n = option "" $ flat (countMinMax 0 n h4c) <++> h4
 
 ls32 :: IRIParser st String
-ls32 = try ( do
-                { a1 <- h4c
-                ; a2 <- h4
-                ; return (a1 ++ a2)
-                } )
+ls32 = try (h4c <++> h4)
     <|> ipv4address
 
 h4c :: IRIParser st String
-h4c = try $
-    do { a1 <- h4
-        ; char ':'
-        ; notFollowedBy (char ':')
-        ; return $ a1 ++ ":"
-        }
+h4c = try $ h4 <++> (string ":" << notFollowedBy (char ':'))
 
 h4 :: IRIParser st String
 h4 = countMinMax 1 4 hexDigitChar
 
 ipv4address :: IRIParser st String
-ipv4address =
-    do { a1 <- decOctet ; char '.'
-        ; a2 <- decOctet ; char '.'
-        ; a3 <- decOctet ; char '.'
-        ; a4 <- decOctet
-        ; return $ a1 ++ "." ++ a2 ++ "." ++ a3 ++ "." ++ a4
-        }
+ipv4address = decOctet <++> string "."
+    <++> decOctet <++> string "."
+    <++> decOctet <++> string "."
+    <++> decOctet
 
 decOctet :: IRIParser st String
-decOctet =
-    do { a1 <- countMinMax 1 3 digitChar
-        ; if (read a1 :: Int) > 255 then
+decOctet = do
+  a1 <- countMinMax 1 3 digitChar
+  if (read a1 :: Int) > 255 then
             fail "Decimal octet value too large"
           else
             return a1
-        }
 
 iregName :: IRIParser st String
 iregName =
-    do { ss <- countMinMax 0 255 ( iunreservedChar <|> escaped <|> subDelims )
-        ; return $ concat ss
-        }
+    flat (countMinMax 0 255 $ iunreservedChar <|> escaped <|> subDelims)
     <?> "Registered name"
 
 -- RFC3986, section 3.2.3
 
 port :: IRIParser st String
-port =
-    do { char ':'
-        ; p <- many digitChar
-        ; return (':' : p)
-        }
-
+port = char ':' <:> many digitChar
 
 -- RFC3987, section 2.2
 
@@ -937,56 +864,28 @@ iisegment-nz-nc = 1*( iunreserved / pct-encoded / sub-delims
 / "@" -}
 
 ipathAbEmpty :: IRIParser st String
-ipathAbEmpty =
-    do { ss <- many slashIsegment
-        ; return $ concat ss
-        }
+ipathAbEmpty = flat $ many slashIsegment
 
 ipathAbs :: IRIParser st String
-ipathAbs =
-    do { char '/'
-        ; ss <- option "" ipathRootLess
-        ; return $ '/' : ss
-        }
+ipathAbs = char '/' <:> option "" ipathRootLess
 
 ipathRootLess :: IRIParser st String
-ipathRootLess =
-    do { s1 <- isegmentNz
-        ; ss <- many slashIsegment
-        ; return $ concat (s1 : ss)
-        }
+ipathRootLess = flat $ isegmentNz <:> many slashIsegment
 
 ipathNoScheme :: IRIParser st String
-ipathNoScheme =
-    do { s1 <- isegmentNzc
-        ; ss <- many slashIsegment
-        ; return $ concat (s1 : ss)
-        }
+ipathNoScheme = flat $ isegmentNzc <:> many slashIsegment
 
 slashIsegment :: IRIParser st String
-slashIsegment =
-    do { char '/'
-        ; s <- isegment
-        ; return ('/' : s)
-        }
+slashIsegment = char '/' <:> isegment
 
 isegment :: IRIParser st String
-isegment =
-    do { ps <- many ipchar
-        ; return $ concat ps
-        }
+isegment = flat $ many ipchar
 
 isegmentNz :: IRIParser st String
-isegmentNz =
-    do { ps <- many1 ipchar
-        ; return $ concat ps
-        }
+isegmentNz = flat $ many1 ipchar
 
 isegmentNzc :: IRIParser st String
-isegmentNzc =
-    do { ps <- many1 (uchar "@")
-        ; return $ concat ps
-        }
+isegmentNzc = flat . many1 $ uchar "@"
 
 ipchar :: IRIParser st String
 ipchar = uchar ":@"
@@ -997,26 +896,20 @@ uchar extras =
         iunreservedChar
     <|> escaped
     <|> subDelims
-    <|> do { c <- oneOf extras ; return [c] }
+    <|> single (oneOf extras)
 
 -- RFC3987, section 2.2
 
 uiquery :: IRIParser st String
-uiquery =
-    do { ss <- many iqueryPart
-        ; return $ '?' : concat ss
-        }
+uiquery = char '?' <:> flat (many iqueryPart)
 
 iqueryPart :: IRIParser st String
-iqueryPart = (many1 iprivate) <|> (uchar $ ":@" ++ "/?")
+iqueryPart = many1 iprivate <|> uchar ":@/?"
 
 -- RFC3987, section 2.2
 
 uifragment :: IRIParser st String
-uifragment =
-    do { ss <- many $ uchar (":@" ++ "/?")
-        ; return $ '#' : concat ss
-        }
+uifragment = char '#' <:> flat (many $ uchar ":@/?")
 
 -- Reference, Relative and Absolute IRI forms
 
@@ -1033,12 +926,12 @@ iriReference = iri <|> irelativeRef
 / ipath-absolute -}
 
 irelativeRef :: IRIParser st IRI
-irelativeRef = iriWithPos $
-    do { notMatching uscheme
-        ; (ua, up) <- irelativePart
-        ; uq <- option "" ( do { char '?' ; uiquery } )
-        ; uf <- option "" ( do { char '#' ; uifragment } )
-        ; return $ IRI
+irelativeRef = iriWithPos $ do
+  notMatching uscheme
+  (ua, up) <- irelativePart
+  uq <- option "" uiquery
+  uf <- option "" uifragment
+  return IRI
             { iriScheme = ""
             , iriAuthority = ua
             , iriPath = up
@@ -1048,34 +941,24 @@ irelativeRef = iriWithPos $
             , abbrevPath = ""
             , iriPos = nullRange
             }
-        }
 
 irelativePart :: IRIParser st ((Maybe IRIAuth), String)
-irelativePart =
-        do { try (string "//")
-            ; ua <- uiauthority
-            ; up <- ipathAbEmpty
-            ; return (ua, up)
-            }
-    <|> do { up <- ipathAbs
-            ; return (Nothing, up)
-            }
-    <|> do { up <- ipathNoScheme
-            ; return (Nothing, up)
-            }
-    <|> do { return (Nothing, "")
-            }
+irelativePart = do
+    try (string "//")
+    ua <- uiauthority
+    up <- ipathAbEmpty
+    return (ua, up)
+  <|> fmap (\ s -> (Nothing, s)) (ipathAbs <|> ipathNoScheme <|> return "")
 
 -- RFC3987, section 2.2
 
 absoluteIRI :: IRIParser st IRI
-absoluteIRI = iriWithPos $
-    do { us <- uscheme
-        {- ; ua <- option Nothing ( do { try (string "//") ; uiauthority } )
-        ; up <- upath -}
-        ; (ua, up) <- ihierPart
-        ; uq <- option "" ( do { char '?' ; uiquery } )
-        ; return $ IRI
+absoluteIRI = iriWithPos $ do
+  us <- uscheme
+  -- stuff deleted
+  (ua, up) <- ihierPart
+  uq <- option "" uiquery
+  return IRI
             { iriScheme = us
             , iriAuthority = ua
             , iriPath = up
@@ -1085,7 +968,6 @@ absoluteIRI = iriWithPos $
             , abbrevPath = ""
             , iriPos = nullRange
             }
-        }
 
 -- Imports from RFC 2234
 
@@ -1152,27 +1034,18 @@ iprivate = satisfy isIprivate
 -- Additional parser combinators for common patterns
 
 oneThenMany :: GenParser t s a -> GenParser t s a -> GenParser t s [a]
-oneThenMany p1 pr =
-    do { a1 <- p1
-        ; ar <- many pr
-        ; return (a1 : ar)
-        }
+oneThenMany p1 pr = p1 <:> many pr
 
 countMinMax :: Int -> Int -> GenParser t s a -> GenParser t s [a]
-countMinMax m n p | m > 0 =
-    do { a1 <- p
-        ; ar <- countMinMax (m - 1) (n - 1) p
-        ; return (a1 : ar)
-        }
+countMinMax m n p | m > 0 = p <:> countMinMax (m - 1) (n - 1) p
 countMinMax _ n _ | n <= 0 = return []
-countMinMax _ n p = option [] $
-    do { a1 <- p
-        ; ar <- countMinMax 0 (n - 1) p
-        ; return (a1 : ar)
-        }
+countMinMax _ n p = option [] $ p <:> countMinMax 0 (n - 1) p
 
 notMatching :: Show a => GenParser tok st a -> GenParser tok st ()
-notMatching p = do { a <- try p ; unexpected (show a) } <|> return ()
+notMatching p = do
+    a <- try p
+    unexpected (show a)
+ <|> return ()
 
 -- * Reconstruct a IRI string
 
@@ -1482,16 +1355,23 @@ expandCurie :: Map String IRI -> IRI -> IRI
 expandCurie prefixMap c =
   if iriType c == Full then c else
   let i = findWithDefault nullIRI (prefixName c) prefixMap in
-  mergeCurie c $ i { prefixName = prefixName c
-                                , abbrevPath = abbrevPath c
-                                }
+  mergeCurie c i
+     { prefixName = prefixName c
+     , abbrevPath = abbrevPath c
+     }
 
--- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending path and query-part of @c@ to @i@. Also replacing fragment of @c@ with @i@ if both are not empty.
+{- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending path and
+query-part of @c@ to @i@. Also replacing fragment of @c@ with @i@
+if both are not empty. -}
 mergeCurie :: IRI -> IRI -> IRI
 mergeCurie c i =
   i { iriPath = iriPath i ++ abbrevPath c
-    , iriQuery = iriQuery i ++ if null $ iriQuery c then [] else '&':(tail $ iriQuery c)
-    , iriFragment = if null $ iriFragment i then iriFragment c else iriFragment i
+    , iriQuery = iriQuery i ++ case iriQuery c of
+        "" -> ""
+        _ : r -> '&' : r
+    , iriFragment = case iriFragment i of
+         "" -> iriFragment c
+         f -> f
     }
 
 {- | Case normalization; cf. RFC3986 section 6.2.2.1
