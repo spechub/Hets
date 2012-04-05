@@ -159,7 +159,8 @@ or the simple IRI
 
 >  abbrevPath
 
-the components are: -}
+If an iri (or abbrev) path is empty then so are the other iri parts
+(resp. the prefix name). -}
 data IRI = IRI
     { iriScheme :: String         -- ^ @foo:@
     , iriAuthority :: Maybe IRIAuth -- ^ @\/\/anonymous\@www.haskell.org:42@
@@ -171,7 +172,7 @@ data IRI = IRI
     , iriPos :: Range             -- ^ position
     } deriving (Typeable)
 
--- | Type for authority value within a IRI
+-- | Type for authority value within a IRI (at least one part is non-empty)
 data IRIAuth = IRIAuth
     { iriUserInfo :: String       -- ^ @anonymous\@@
     , iriRegName :: String        -- ^ @www.haskell.org@
@@ -193,6 +194,23 @@ nullIRI = IRI
     , abbrevPath = ""
     , iriPos = nullRange
     }
+
+-- | do we have a full (possibly expanded) IRI (i.e. for comparisons)
+hasFullIRI :: IRI -> Bool
+hasFullIRI = not . null . iriPath
+
+-- | do we have an abbreviated IRI (i.e. for pretty printing)
+isAbbrev :: IRI -> Bool
+isAbbrev = not . null . abbrevPath
+
+-- | do we have an expanded IRI with a full and an abbreviated IRI
+isExpanded :: IRI -> Bool
+isExpanded i = hasFullIRI i && isAbbrev i
+
+{- | do we have a simple IRI that is a (possibly expanded) abbreviated IRI
+without prefix -}
+isSimple :: IRI -> Bool
+isSimple i = null (prefixName i) && isAbbrev i
 
 -- | Returns Type of an IRI
 iriType :: IRI -> IRIType
