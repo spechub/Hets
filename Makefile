@@ -443,7 +443,7 @@ HADDOCK_OPTS = $(addprefix --optghc=, $(HC_OPTS))
 docs/index.html:
 	$(RM) -r docs
 	mkdir docs
-	$(HADDOCK) --ignore-all-exports -o docs -h -s ../%F $(HAD_INTS) \
+	$(HADDOCK) -o docs -h -s ../%F $(HAD_INTS) \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
              Syntax/ADoc.hs $(filter-out Scratch.hs, $(wildcard *.hs))
