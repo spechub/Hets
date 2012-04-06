@@ -53,7 +53,7 @@ libItem ga li = case li of
   Download_items n mapping rg ->
     add_attrs (mkNameAttr (show $ getLibId n) : rgAttrs rg)
       $ unode "Import" $ downloadItems mapping
-  Logic_decl n rg ->
+  Logic_decl n _ rg ->
     add_attrs (mkNameAttr (showDoc n "") : rgAttrs rg)
       $ unode "Logic" ()
   _ -> prettyElem "Unsupported" ga li
@@ -143,7 +143,7 @@ logicCode :: Logic_code -> [Attr]
 logicCode (Logic_code enc src trg _) =
   (case enc of
     Nothing -> []
-    Just t -> [mkAttr "encoding" $ tokStr t])
+    Just t -> [mkAttr "encoding" $ iriToStringUnsecure t])
   ++ (case src of
         Nothing -> []
         Just l -> [mkAttr "source" $ show $ pretty l])

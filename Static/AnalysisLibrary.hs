@@ -388,7 +388,7 @@ anaLibItem lg opts topLns currLn libenv dg itm = case itm of
       else return ( rsd', dg'
         { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv }
         , libenv, lg)
-  Logic_decl logN pos -> do
+  Logic_decl logN _ pos -> do
     putMessageIORes opts 1 $ showDoc itm ""
     (mth, newLg) <- liftR
       $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lg

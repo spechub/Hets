@@ -56,12 +56,14 @@ addGlobalAnnos ga all_annos = do
   n_display_annos <- store_display_annos (display_annos ga) annos
   n_literal_annos <- store_literal_annos (literal_annos ga) annos
   n_literal_map <- store_literal_map (literal_map ga) annos
+  n_prefix_map <- store_prefix_map (prefix_map ga) annos
   return ga
     { prec_annos = n_prec_annos
     , assoc_annos = n_assoc_annos
     , display_annos = n_display_annos
     , literal_annos = n_literal_annos
-    , literal_map = n_literal_map }
+    , literal_map = n_literal_map
+    , prefix_map = n_prefix_map }
 
 -- | add precedences
 store_prec_annos :: PrecedenceGraph -> [Annotation] -> Result PrecedenceGraph
@@ -153,6 +155,14 @@ store_literal_map = foldM $ \ m a -> case a of
       in if c == oc && n == on
          then return $ Map.insert id2 n $ Map.insert id3 c m
          else Result [mkDiag Error ("conflict: " ++ showDoc a "") id1] $ Just m
+  _ -> return m
+
+{- | add prefix annotation to 'PrefixMap' -}
+store_prefix_map :: PrefixMap -> [Annotation] -> Result PrefixMap
+store_prefix_map = foldM $ \ m a -> case a of
+  Prefix_anno assoc _ ->
+      let newPrefixesMap = Map.fromList assoc in
+      return $ Map.union m newPrefixesMap
   _ -> return m
 
 {- | add literal annotation to 'LiteralAnnos'

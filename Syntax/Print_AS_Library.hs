@@ -85,8 +85,11 @@ instance Pretty LIB_ITEM where
         Download_items l ab _ ->
             topKey fromS <+> fsep ((pretty l <+> keyword getS)
                                    : prettyDownloadItems ab)
-        Syntax.AS_Library.Logic_decl aa _ ->
-            keyword logicS <+> pretty aa
+        Syntax.AS_Library.Logic_decl aa syn _ ->
+            let p = keyword logicS <+> pretty aa in
+            case syn of
+                Nothing -> p
+                Just sRef -> p <+> keyword serializationS <+> pretty sRef
         Syntax.AS_Library.Newlogic_defn nl _ ->
             pretty nl
         Syntax.AS_Library.Newcomorphism_defn nc _ ->

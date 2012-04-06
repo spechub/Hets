@@ -469,7 +469,7 @@ instance Pretty LogicGraph where
 lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic
 lookupLogic error_prefix logname logicGraph =
     case Map.lookup logname $ logics logicGraph of
-    Nothing -> fail $ error_prefix ++ "unkown logic: " ++ logname
+    Nothing -> fail $ error_prefix ++ "unknown logic: " ++ logname
     Just lid -> return lid
 
 lookupCurrentLogic :: Monad m => String -> LogicGraph -> m AnyLogic

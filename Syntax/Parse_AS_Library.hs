@@ -17,13 +17,13 @@ import Logic.Grothendieck (LogicGraph)
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
-    (logicName, groupSpec, aSpec, parseMapping)
+    (logicName, groupSpec, aSpec, parseMapping, parseCorrespondences)
 import Syntax.Parse_AS_Architecture
 
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
-import Common.IRI (IRI, nullIRI, simpleIdToIRI)
+import Common.IRI (IRI, nullIRI, simpleIdToIRI, iriCurie, iriPos, iriToStringUnsecure, expandCurie)
 
 import Common.Keywords
 import Common.Lexer
@@ -33,6 +33,7 @@ import Common.Token
 
 import Text.ParserCombinators.Parsec
 import Data.List
+import qualified Data.Map as Map (empty)
 import Data.Maybe (maybeToList)
 import Data.Char
 import Control.Monad
@@ -45,7 +46,7 @@ import Framework.AS
 library :: LogicGraph -> AParser st LIB_DEFN
 library lG = do
     (ps, ln) <- option (nullRange, emptyLibName "") $ do
-      s1 <- asKey libraryS
+      s1 <- asKey libraryS <|> asKey distributedOntologyS
       n <- libName
       return (tokPos s1, n)
     an <- annos
@@ -70,7 +71,12 @@ version = do
 
 -- | Parse library ID
 libId :: AParser st LibId
-libId = do
+libId =  try (do
+      pos <- getPos
+      i <- iriCurie
+      return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) "" noTime
+    )
+  <|> do
     pos <- getPos
     path <- sepBy1 (many1 $ satisfy $ \ c -> isAlphaNum c || elem c "_-+'")
             (string "/")
@@ -88,7 +94,7 @@ libItems l =
       la <- lineAnnos
       an <- annos
       is <- libItems $ case r of
-             Logic_decl logN _ ->
+             Logic_decl logN _ _ ->
                  setLogicName logN l
              _ -> l
       case is of
@@ -100,9 +106,8 @@ libItems l =
 libItem :: LogicGraph -> AParser st LIB_ITEM
 libItem l =
      -- spec defn
-    do s <- asKey specS
-       n' <- simpleId
-       let n = simpleIdToIRI n'
+    do s <- asKey specS <|> asKey ontologyS
+       n <- iriCurie
        g <- generics l
        e <- equalT
        a <- aSpec l
@@ -110,7 +115,7 @@ libItem l =
        return (Syntax.AS_Library.Spec_defn n g a
                (catRange ([s, e] ++ maybeToList q)))
   <|> -- view defn
-    do s1 <- asKey viewS
+    do s1 <- asKey viewS <|> asKey interpretationS
        vn' <- simpleId
        let vn = simpleIdToIRI vn'
        g <- generics l
@@ -122,6 +127,19 @@ libItem l =
          return (m, [s])
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap
+                    (catRange ([s1, s2] ++ ps ++ maybeToList q)))
+  <|> -- align defn
+    do s1 <- asKey alignmentS
+       an <- iriCurie
+       g <- generics l
+       s2 <- asKey ":"
+       at <- alignType l
+       (corresps, ps) <- option ([], []) $ do
+         s <- equalT
+         cs <- parseCorrespondences
+         return (cs, [s])
+       q <- optEnd
+       return (Syntax.AS_Library.Align_defn an g at corresps
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- unit spec
     do kUnit <- asKey unitS
@@ -162,7 +180,10 @@ libItem l =
   <|> -- logic
     do s <- asKey logicS
        logN@(Logic_name t _ _) <- logicName
-       return (Logic_decl logN (catRange [s, t]))
+       syn <- optionMaybe $ do
+            asKey serializationS
+            iriCurie
+       return (Logic_decl logN syn (Range $ concatMap rangeToList [tokPos s, iriPos t]))
   <|> -- newlogic
     do (n, s1) <- newlogicP
        s2 <- equalT
@@ -201,17 +222,28 @@ downloadItems = do
     return (ItemMaps il, ps)
   <|> do
     s <- asKey mapsTo
-    i <- simpleId
-    return (UniqueItem $ simpleIdToIRI i, [s])
+    i <- (liftM simpleIdToIRI) simpleId
+    return (UniqueItem i, [s])
 
 
 -- | Parse view type
 viewType :: LogicGraph -> AParser st VIEW_TYPE
 viewType l = do
+    (sp1, sp2, r) <- viewOrAlignType l
+    return (View_type sp1 sp2 r)
+
+-- | Parse align type
+alignType :: LogicGraph -> AParser st ALIGN_TYPE
+alignType l = do
+    (sp1, sp2, r) <- viewOrAlignType l
+    return (Align_type sp1 sp2 r)
+
+viewOrAlignType :: LogicGraph -> AParser st (Annoted SPEC, Annoted SPEC, Range)
+viewOrAlignType l = do
     sp1 <- annoParser (groupSpec l)
     s <- asKey toS
     sp2 <- annoParser (groupSpec l)
-    return (View_type sp1 sp2 $ tokPos s)
+    return (sp1, sp2, tokPos s)
 
 simpleIdOrDDottedId :: GenParser Char st Token
 simpleIdOrDDottedId = pToken $ liftM2 (++)
@@ -221,17 +253,13 @@ simpleIdOrDDottedId = pToken $ liftM2 (++)
 -- | Parse item name or name map
 itemNameOrMap :: AParser st ItemNameMap
 itemNameOrMap = do
-    i1 <- simpleIdOrDDottedId
+    i1 <- (liftM ((expandCurie Map.empty) . simpleIdToIRI)) simpleIdOrDDottedId
     i2 <- optionMaybe $ do
         _ <- asKey mapsTo
-        if isInfixOf ".." $ tokStr i1
-             then do
-               s <- simpleIdOrDDottedId
-               return $ simpleIdToIRI s
-             else do
-               s <- simpleId
-               return $ simpleIdToIRI s
-    return $ ItemNameMap (simpleIdToIRI i1) i2
+        if isInfixOf ".." $ iriToStringUnsecure i1
+            then (liftM simpleIdToIRI) simpleIdOrDDottedId
+            else (liftM simpleIdToIRI) simpleId
+    return $ ItemNameMap i1 i2
 
 optEnd :: AParser st (Maybe Token)
 optEnd = try

@@ -18,6 +18,7 @@ module Syntax.Parse_AS_Structured
     , aSpec
     , logicName
     , parseMapping
+    , parseCorrespondences
     , translationList
     ) where
 
@@ -36,7 +37,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
-import Common.IRI (simpleIdToIRI)
+import Common.IRI (IRI, simpleIdToIRI, iriCurie, nullIRI, iriToStringUnsecure)
 import Common.Keywords
 import Common.Lexer
 import Common.Parsec
@@ -65,14 +66,18 @@ sublogicName = parseToken
 decide after seeing ".", ":" or "->" what was meant -}
 logicName :: AParser st Logic_name
 logicName = do
-    e <- nonSkippingSimpleId -- name of the logic or comorphism
-    ms <- optionMaybe $ char '.' >> sublogicName
-    skipSmart
-    mt' <- optionMaybe $ oParenT >> simpleId << cParenT
-    let mt = case mt' of
-            Nothing -> Nothing
-            Just x -> Just $ simpleIdToIRI x
-    return $ Logic_name e ms mt
+      (e, ms) <- try $ do
+            e <- nonSkippingSimpleId -- name of the logic or comorphism
+            lookAhead (char ':' >> fail "")
+            ms <- optionMaybe $ char '.' >> sublogicName
+            return (e,ms)
+      skipSmart
+      mt <- optionMaybe $ oParenT >> iriCurie << cParenT
+      return $ Logic_name (simpleIdToIRI e) ms mt
+    <|> do
+      i <- iriCurie
+      mt <- optionMaybe $ oParenT >> iriCurie << cParenT
+      return $ Logic_name i Nothing mt
 
 -- * parse Logic_code
 
@@ -105,7 +110,7 @@ parseLogicAux =
                                        $ tokPos l `appRange` tokPos f
 
 -- parse optional logic source and target after a colon (given an encoding e)
-parseLogAfterColon :: Maybe Token -> [Token] -> AParser st Logic_code
+parseLogAfterColon :: Maybe IRI -> [Token] -> AParser st Logic_code
 parseLogAfterColon e l =
     do s <- logicName
        parseOptLogTarget e (Just s) l
@@ -113,7 +118,7 @@ parseLogAfterColon e l =
     <|> parseOptLogTarget e Nothing l
 
 -- parse an optional logic target (given encoding e or source s)
-parseOptLogTarget :: Maybe Token -> Maybe Logic_name -> [Token]
+parseOptLogTarget :: Maybe IRI -> Maybe Logic_name -> [Token]
                   -> AParser st Logic_code
 parseOptLogTarget e s l =
     do f <- asKey funS
@@ -272,11 +277,13 @@ translation l sp ftrans frestr =
     do r <- restriction l
        return (frestr sp r)
 
-groupSpecLookhead :: AParser st Token
-groupSpecLookhead = oBraceT <|> followedWith (simpleId << annos)
-  (choice (map asKey criticalKeywords)
-   <|> cBraceT <|> oBracketT <|> cBracketT
-   <|> (eof >> return (Token "" nullRange)))
+groupSpecLookhead :: AParser st IRI
+groupSpecLookhead =
+  let tok2IRI = liftM simpleIdToIRI in
+  (tok2IRI oBraceT) <|> followedWith (iriCurie << annos)
+  (choice (map (tok2IRI . asKey) criticalKeywords)
+   <|> tok2IRI cBraceT <|> tok2IRI oBracketT <|> tok2IRI cBracketT
+   <|> (eof >> return nullIRI))
 
 specD :: LogicGraph -> AParser st SPEC
            -- do some lookahead for free spec, to avoid clash with free type
@@ -296,6 +303,7 @@ specD l = do
 
 specE :: LogicGraph -> AParser st SPEC
 specE l = logicSpec l
+      <|> combineSpec
       <|> (lookAhead groupSpecLookhead >> groupSpec l)
       <|> (lookupCurrentLogic "basic spec" l >>= basicSpec)
 
@@ -320,9 +328,22 @@ logicSpec lG = do
    sp <- annoParser $ specD $ setLogicName ln lG
    return $ Qualified_spec ln sp $ toRange s1 [] s2
 
-lookupAndSetComorphismName :: Token -> LogicGraph -> AParser st LogicGraph
-lookupAndSetComorphismName ctok lg = do
-    Comorphism cid <- lookupComorphism (tokStr ctok) lg
+combineSpec :: AParser st SPEC
+combineSpec = do
+    s1 <- asKey combineS
+    oir <- commaSep1 iriCurie
+    (exl, ps) <- (do
+          s2 <- try $ asKey excludingS
+          e <- commaSep1 iriCurie
+          p <- getPos
+          return (e,appRange (tokPos s2) $ Range [p])
+        <|> return ([], nullRange)
+      )
+    return $ Combination oir exl $ appRange (tokPos s1) ps
+
+lookupAndSetComorphismName :: IRI -> LogicGraph -> AParser st LogicGraph
+lookupAndSetComorphismName cIRI lg = do
+    Comorphism cid <- lookupComorphism (iriToStringUnsecure cIRI) lg
     return $ setCurLogic (language_name $ targetLogic cid) lg
 
 aSpec :: LogicGraph -> AParser st (Annoted SPEC)
@@ -339,8 +360,7 @@ groupSpec l = do
       c <- cBraceT
       return $ Group a $ catRange [b, c]
   <|> do
-    n' <- simpleId
-    let n = simpleIdToIRI n'
+    n <- iriCurie
     (f, ps) <- fitArgs l
     return (Spec_inst n f ps)
 
@@ -360,8 +380,7 @@ fitArg l = do
 fittingArg :: LogicGraph -> AParser st FIT_ARG
 fittingArg l = do
     s <- asKey viewS
-    vn' <- simpleId
-    let vn = simpleIdToIRI vn'
+    vn <- iriCurie
     (fa, ps) <- fitArgs l
     return (Fit_view vn fa (tokPos s `appRange` ps))
   <|> do
@@ -371,3 +390,84 @@ fittingArg l = do
         (m, qs) <- parseMapping l
         return (m, catRange $ s : qs)
     return (Fit_spec sp symbit ps)
+
+
+
+parseCorrespondences :: AParser st [CORRESPONDENCE]
+parseCorrespondences = commaSep1 correspondence
+
+
+correspondence :: AParser st CORRESPONDENCE
+correspondence = do
+  (cid, entityRef, relationRef) <- correspIRIs
+  conf <- optionMaybe confidence
+  skipSmart
+  toer <- termOrEntityRef
+  return $ Correspondence cid entityRef toer relationRef conf
+
+correspIRIs :: AParser st (Maybe IRI, IRI, Maybe IRI)
+correspIRIs = do
+  i1 <- iriCurie
+  (i2m, i3m) <- (do
+          try $ asKey equalS
+          i2 <- iriCurie
+          i3 <- (lookAheadConfidence >> return Nothing)
+                <|> (lookAhead (try twoIriCurie) >> (liftM Just) iriCurie)
+                <|> return Nothing
+          return (Just i2, i3)
+        <|> do
+          i3 <- (lookAheadConfidence >> return Nothing)
+                <|> (lookAhead (try twoIriCurie) >> (liftM Just) iriCurie)
+                <|> return Nothing
+          return (Nothing, i3)
+    )
+  return $ case i2m of
+              Nothing -> (Nothing, i1, i3m)
+              Just i2j -> (Just i1, i2j, i3m)
+
+twoIriCurie :: AParser st ()
+twoIriCurie = iriCurie >> (
+      (try commaT >> fail "") -- comma is also iriCurie
+    <|>
+      (try (asKey endS) >> fail "")  -- "end" is also iriCurie
+    <|> do
+      iriCurie
+      return ()
+  )
+
+lookAheadConfidence :: AParser st ()
+lookAheadConfidence = lookAhead (try confidence) >> return ()
+
+termOrEntityRef :: AParser st TERM_OR_ENTITY_REF
+termOrEntityRef = do
+    i <- iriCurie
+    return $ Entity_ref i
+  <|> term -- TODO: reverse order
+
+-- TODO: implement
+term :: AParser st a
+term = undefined
+
+confidence :: AParser st Double
+confidence = char '(' >> confidenceNumber << char ')'
+
+confidenceNumber :: AParser st Double
+confidenceNumber = do
+    d1 <- char '0'
+    d <- (do
+          d2 <- char '.'
+          ds <- many digit
+          return $ read $ d1:d2:ds
+        <|>
+          return 0
+      )
+    return d
+  <|> do
+    char '1'
+    (do
+          char '.'
+          many $ char '0'
+          return 1
+        <|>
+          return 1
+      )

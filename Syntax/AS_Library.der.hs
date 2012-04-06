@@ -53,7 +53,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "ref", "spec", "=", opt "end"
               | Download_items LibName DownloadItems Range
               -- pos: "from", "get", "|->", commas, opt "end"
-              | Logic_decl Logic_name Range
+              | Logic_decl Logic_name (Maybe SYNTAX_REF) Range
               -- pos:  "logic", Logic_name
               | Newlogic_defn LogicDef Range
               -- pos:  "newlogic", Logic_name, "=", opt "end"
@@ -81,6 +81,8 @@ data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
 
 data ALIGN_TYPE = Align_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
 
+type SYNTAX_REF = IRI
+
 data ItemNameMap =
     ItemNameMap ItemName (Maybe ItemName)
     deriving (Show, Eq)
@@ -94,30 +96,3 @@ fromBasicSpec ln sn gbs =
         mkAnno = emptyAnno
         li = Spec_defn sn emptyGenericity (mkAnno sp) rg
     in Lib_defn ln [mkAnno li] rg []
-
-
-
-
-
-data CORRESPONDENCE = Correspondence
-                      (Maybe CORRESPONDENCE_ID)
-                      ENTITY_REF
-                      TERM_OR_ENTITY_REF
-                      (Maybe RELATION_REF)
-                      (Maybe CONFIDENCE)
-                      deriving (Show, Eq)
-
-type CORRESPONDENCE_ID = IRI
-
-type ENTITY_REF = IRI
-
-data TERM_OR_ENTITY_REF = Term LOGIC_SPECIFIC_TERM 
-                        | Entity_ref ENTITY_REF
-                          deriving (Show, Eq)
-
-type RELATION_REF = IRI
-
-type CONFIDENCE = Double -- TODO: will be revised
-
-instance GetRange Double where
-  getRange = const nullRange

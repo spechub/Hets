@@ -26,7 +26,7 @@ import Data.List
 import Common.AS_Annotation hiding (Annotation)
 import Common.DocUtils
 import Common.Result
-import Common.GlobalAnnotations
+import Common.GlobalAnnotations hiding (PrefixMap)
 import Common.ExtSign
 import Common.Lib.State
 

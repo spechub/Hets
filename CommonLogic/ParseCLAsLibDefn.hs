@@ -74,10 +74,10 @@ convertToLibDefN fn specs =
   Lib_defn
     (emptyLibName fn)
     (emptyAnno (Logic_decl (Logic_name
-                              (mkSimpleId $ show CommonLogic)
+                              (simpleIdToIRI $ mkSimpleId $ show CommonLogic)
                               Nothing
                               Nothing
-                          ) nullRange)
+                          ) Nothing nullRange)
       : (map convertToLibItems specs)
     )
     nullRange

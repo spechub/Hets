@@ -170,7 +170,7 @@ anaSublogic :: HetcatsOpts -> Logic_name -> LibName -> DGraph -> LibEnv
   -> LogicGraph
   -> Result (Maybe (ExtGenSig, (LibName, DGraph, LNode DGNodeLab)), LogicGraph)
 anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
-    logN@(Logic lid) <- lookupLogic "" (tokStr lt) lG
+    logN@(Logic lid) <- lookupLogic "" (iriToStringUnsecure lt) lG
     mgs <- case ms of
       Nothing -> return Nothing
       Just subL -> do
@@ -608,10 +608,10 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
     in adj1 $ do
     G_sign srcLid srcSig ind <- return (cod gmor)
     c <- case tok of
-            Just ctok -> lookupComorphism (tokStr ctok) lg
+            Just cIRI -> lookupComorphism (iriToStringUnsecure cIRI) lg
             Nothing -> case tar of
                Just (Logic_name l _ _) ->
-                 lookupLogic "with logic: " (tokStr l) lg
+                 lookupLogic "with logic: " (iriToStringUnsecure l) lg
                  >>= logicInclusion lg (Logic srcLid)
                Nothing -> fail "with logic: cannot determine comorphism"
     checkSrcOrTarLogic True c src
@@ -622,12 +622,12 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
 checkSrcOrTarLogic :: Bool -> AnyComorphism -> Maybe Logic_name -> Result ()
 checkSrcOrTarLogic b (Comorphism cid) ml = case ml of
   Nothing -> return ()
-  Just (Logic_name l _ _) -> let s = tokStr l in
+  Just (Logic_name l _ _) -> let s = iriToStringUnsecure l in
       when (s /= if b then language_name $ sourceLogic cid
                  else language_name $ targetLogic cid)
         $ plain_error () (s ++ " is is not the "
            ++ (if b then "source" else "target") ++ " logic of "
-           ++ language_name cid) (tokPos l)
+           ++ language_name cid) (iriPos l)
 
 anaRenaming :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
   -> Result GMorphism

@@ -32,6 +32,7 @@ import Common.Parsec
 import Common.Lexer
 import Common.Token
 import Common.Id as Id
+import Common.IRI as IRI
 import Common.Keywords
 import Common.AS_Annotation
 import Common.Utils (trimRight)
@@ -119,17 +120,31 @@ annoIdent = fmap Annote_word $ string percentS >>
      fail "wrong comment or annotation starting with a single %")
 
 annoteGroup :: Pos -> Annote_word -> GenParser Char st Annotation
-annoteGroup p s = do
-    annoteLines <- plainBlock "(" ")%"
-    q <- getPos
-    return $ Unparsed_anno s (Group_anno $ mylines annoteLines)
-               $ Range [p, dec q]
+annoteGroup p s =
+  let aP = do
+        annoteLines <- plainBlock "(" ")%"
+        q <- getPos
+        return $ Unparsed_anno s (Group_anno $ mylines annoteLines)
+                  $ Range [p, dec q]
+  in  case s of
+        Annote_word w ->
+            if elem w singleWordAnnos
+            then aP <|> (return $ Unparsed_anno s (Group_anno []) $ Range [p])
+            else aP
+        _ -> aP
 
 annoteLine :: Pos -> Annote_word -> GenParser Char st Annotation
-annoteLine p s = do
-    line <- manyTill anyChar newlineOrEof
-    q <- getPos
-    return $ Unparsed_anno s (mkLineAnno line) $ Range [p, dec q]
+annoteLine p s =
+  let aP = do
+        line <- manyTill anyChar newlineOrEof
+        q <- getPos
+        return $ Unparsed_anno s (mkLineAnno line) $ Range [p, dec q]
+  in case s of
+        Annote_word w ->
+            if elem w singleWordAnnos
+            then aP <|> (return $ Unparsed_anno s (Line_anno "") $ Range [p])
+            else aP
+        _ -> aP
 
 annotationL :: GenParser Char st Annotation
 annotationL = comment <|> annote <?> "\"%\""
@@ -164,7 +179,8 @@ parseAnno anno sp = case anno of
              , (numberS , numberAnno qs)
              , (stringS , stringAnno qs)
              , (listS , listAnno qs)
-             , (floatingS, floatingAnno qs) ]
+             , (floatingS, floatingAnno qs)
+             , (prefixS, prefixAnno qs)]
     _ -> Right anno
 
 fromPos :: Pos -> SourcePos
@@ -226,6 +242,21 @@ listAnno ps = do
 stringAnno ps = literal2idsAnno ps String_anno
 
 floatingAnno ps = literal2idsAnno ps Float_anno
+
+prefixAnno :: Range -> GenParser Char st Annotation
+prefixAnno ps = do
+    prefixes <- many $ do
+        p <- do
+              c <- try $ string colonS
+              return $ c
+            <|> do
+              n <- IRI.ncname
+              c <- string colonS
+              return $ n ++ c
+        skip
+        i <- char '<' >> iri << char '>' << skip
+        return (p, i)
+    return $ Prefix_anno prefixes ps
 
 literal2idsAnno :: Range -> (Id -> Id -> Range -> Annotation)
                 -> GenParser Char st Annotation

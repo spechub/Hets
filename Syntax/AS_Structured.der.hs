@@ -37,7 +37,7 @@ data SPEC = Basic_spec G_basic_spec Range
           | Union [Annoted SPEC] Range
             -- pos: "and"s
           | Extension [Annoted SPEC] Range
-            -- TODO: EXTENSION_NAME (IRI) into SPEC (Spec_inst). But how?
+            -- TODO: EXTENSION_NAME (IRI) into SPEC (Spec_inst)
             -- pos: "then"s
             -- (last SPEC must be Basic_spec)
           | Free_spec (Annoted SPEC) Range
@@ -56,8 +56,9 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "logic", Logic_name,":"
           | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) Range
             -- pos: "data"
-          | Combination [ONTO_OR_INTPR_REF] EXCLUDE_IMPORTS
-            -- there must be at least one ONTO_OR_INTPR_REF
+          | Combination [ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
+            -- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
+            -- excludung EXTENSION_REF, ..., EXTENSION_REF
             deriving Show
 
 {- Renaming and Hiding can be performend with intermediate Logic
@@ -84,7 +85,6 @@ data G_hiding = G_symb_list G_symb_items_list
 
 data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
                -- pos: opt "fit"
-               -- TODO: ONTO_REF (IRI) in Spec_inst
              | Fit_view VIEW_NAME [Annoted FIT_ARG] Range
                -- annotations before the view keyword are stored in Spec_inst
                deriving Show
@@ -93,7 +93,7 @@ type SPEC_NAME = IRI
 type VIEW_NAME = IRI
 type ALIGN_NAME = IRI
 
-data Logic_code = Logic_code (Maybe Token)
+data Logic_code = Logic_code (Maybe IRI)
                              (Maybe Logic_name)
                              (Maybe Logic_name) Range
                  {- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
@@ -109,16 +109,13 @@ data Logic_code = Logic_code (Maybe Token)
                  "logic bla1: ->bla2" => <encoding> and <targ-logic> -}
                   deriving (Show, Eq)
 
-data Logic_name = Logic_name SIMPLE_ID (Maybe Token) (Maybe SPEC_NAME)
+data Logic_name = Logic_name IRI (Maybe Token) (Maybe SPEC_NAME)
   deriving (Show, Eq)
-
-data EXCLUDE_IMPORTS = Exclude_imports [EXTENSION_REF] deriving (Show, Eq)
 
 type ONTO_NAME = IRI
 type EXTENSION_NAME = IRI
 type IMPORT_NAME = IRI
 
--- type INTPR_REF = IRI -- NOTE: not used
 type ONTO_OR_INTPR_REF = IRI
 type ONTO_REF = IRI
 type EXTENSION_REF = IRI
@@ -130,5 +127,29 @@ type LOGIC_SPECIFIC_TERM = G_basic_spec
 
 
 setLogicName :: Logic_name -> LogicGraph -> LogicGraph
-setLogicName (Logic_name lid _ _) = setCurLogic (tokStr lid)
+setLogicName (Logic_name lid _ _) = setCurLogic (iriToStringUnsecure lid)
+
+
+data CORRESPONDENCE = Correspondence
+                      (Maybe CORRESPONDENCE_ID)
+                      ENTITY_REF
+                      TERM_OR_ENTITY_REF
+                      (Maybe RELATION_REF)
+                      (Maybe CONFIDENCE)
+                      deriving (Show, Eq)
+
+type CORRESPONDENCE_ID = IRI
+
+type ENTITY_REF = IRI
+
+data TERM_OR_ENTITY_REF = Term LOGIC_SPECIFIC_TERM
+                        | Entity_ref ENTITY_REF
+                          deriving (Show, Eq)
+
+type RELATION_REF = IRI
+
+type CONFIDENCE = Double -- NOTE: will be revised
+
+instance GetRange Double where
+  getRange = const nullRange
 

@@ -17,6 +17,7 @@ import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.Id
+import Common.IRI (IRI)
 
 -- | all global annotations and a field for pretty printing stuff
 data GlobalAnnos = GA
@@ -25,6 +26,7 @@ data GlobalAnnos = GA
   , display_annos  :: DisplayMap -- ^ display annotations
   , literal_annos  :: LiteralAnnos -- ^ literal annotations
   , literal_map    :: LiteralMap -- ^ redundant literal map
+  , prefix_map     :: PrefixMap -- ^ abbreviated IRI prefixes
   } deriving (Show,Eq)
 
 -- | empty (or initial) global annotations
@@ -34,7 +36,8 @@ emptyGlobalAnnos = GA
   , assoc_annos   = Map.empty
   , display_annos = Map.empty
   , literal_annos = emptyLiteralAnnos
-  , literal_map   = Map.empty }
+  , literal_map   = Map.empty
+  , prefix_map    = Map.empty }
 
 -- | literal annotations for string, lists, number and floating
 data LiteralAnnos = LA
@@ -57,6 +60,9 @@ type DisplayMap = Map.Map Id (Map.Map Display_format [Token])
 
 -- | a redundant map for 'LiteralAnnos'
 type LiteralMap = Map.Map Id LiteralType
+
+-- | a map for expansion of abbreviated/simple IRI to full IRI
+type PrefixMap = Map.Map String IRI
 
 -- | description of the type of a literal for a given 'Id' in 'LiteralMap'
 data LiteralType =

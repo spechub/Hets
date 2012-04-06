@@ -53,6 +53,7 @@ of
 op
 prec
 pred
+prefix
 program
 prop
 refined

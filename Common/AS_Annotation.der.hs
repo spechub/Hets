@@ -15,6 +15,7 @@ Datastructures for annotations of (Het)CASL.
 
 module Common.AS_Annotation where
 import Common.Id
+import Common.IRI (IRI)
 import Data.Maybe
 
 -- DrIFT command
@@ -63,12 +64,13 @@ data AssocEither = ALeft | ARight deriving (Show, Eq, Ord)
 {- | semantic (line) annotations without further information.
 Use the same drop-3-trick as for the 'Display_format'. -}
 data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono | SA_implied
+                   | SA_mcons | SA_ccons
     deriving (Show, Eq, Ord)
 
 -- | a lookup table for the textual representation of semantic annos
 semantic_anno_table :: [(Semantic_anno, String)]
 semantic_anno_table =
-    toTable [SA_cons, SA_def, SA_implies, SA_mono, SA_implied]
+  toTable [SA_cons, SA_def, SA_implies, SA_mono, SA_implied, SA_mcons, SA_ccons]
 
 {- | lookup the textual representation of a semantic anno
 in 'semantic_anno_table' -}
@@ -76,6 +78,10 @@ lookupSemanticAnno :: Semantic_anno -> String
 lookupSemanticAnno sa =
     fromMaybe (error "lookupSemanticAnno: no semantic anno")
         $ lookup sa semantic_anno_table
+
+-- | Annotations with only a single word (no newline needed for parsing)
+singleWordAnnos :: [String]
+singleWordAnnos = map snd semantic_anno_table
 
 -- | all possible annotations (without comment-outs)
 data Annotation = -- | constructor for comments or unparsed annotes
@@ -96,6 +102,8 @@ data Annotation = -- | constructor for comments or unparsed annotes
                 Lower = "< "  BothDirections = "<>" -}
                 | Assoc_anno AssocEither [Id] Range -- position of commas
                 | Label [String] Range
+                -- position of anno start and anno end
+                | Prefix_anno [(String, IRI)] Range
                 -- position of anno start and anno end
 
                 -- All annotations below are only as annote line allowed

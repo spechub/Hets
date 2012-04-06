@@ -270,14 +270,23 @@ targetS = "target"
 alignmentS :: String
 alignmentS = "alignment"
 
+combineS :: String
+combineS = "combine"
+
 distributedOntologyS :: String
 distributedOntologyS = "distributed-ontology"
+
+excludingS :: String
+excludingS = "excluding"
 
 interpretationS :: String
 interpretationS = "interpretation"
 
 ontologyS :: String
 ontologyS = "ontology"
+
+serializationS :: String
+serializationS = "serialization"
 
 -- * frameworks
 
@@ -482,6 +491,9 @@ precS = "prec"
 
 predS :: String
 predS = "pred"
+
+prefixS :: String
+prefixS = "prefix"
 
 programS :: String
 programS = "program"
