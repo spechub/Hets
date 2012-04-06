@@ -70,6 +70,7 @@ module Common.IRI
     , parseAbsoluteIRI
     , parseCurie
     , parseIRICurie
+    , parseIRIReferenceCurie
     , parseIRIManchester
 
     -- * Test for strings containing various kinds of IRI
@@ -79,6 +80,7 @@ module Common.IRI
     , isAbsoluteIRI
     , isCurie
     , isIRICurie
+    , isIRIReferenceCurie
     , isIRIManchester
     , isIPv6address
     , isIPv4address
@@ -110,6 +112,7 @@ module Common.IRI
     , iriCurie
     , iriReferenceCurie
     , curie
+    , ncname
     , iriManchester
 
     -- * IRI Normalization functions
@@ -133,7 +136,7 @@ import Numeric (showIntAtBase)
 
 import Data.Typeable (Typeable)
 
-import Data.Map (Map, findWithDefault)
+import Data.Map (Map, findWithDefault, empty)
 
 import Common.Id
 import Common.Lexer
@@ -233,10 +236,32 @@ instance Show IRI where
 
 -- equal iff expansion is equal or abbreviation is equal
 instance Eq IRI where
-    (==) i j = compare i j == EQ
+  (==) i j = compare i j == EQ
 
 -- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
 instance Ord IRI where
+<<<<<<< .mine
+  compare i j = case (iriType i, iriType j) of
+    (Simple, Simple) -> abbrevPath i `compare` abbrevPath j
+    (Abbreviated, Abbreviated) ->
+        let pnC = prefixName i `compare` prefixName j
+            apC = abbrevPath i `compare` abbrevPath j
+        in if pnC /= EQ then pnC else apC
+    (Simple, _) -> compare (expandCurie empty i) j
+    (_, Simple) -> compare i (expandCurie empty j)
+    (Abbreviated, _) -> compare (expandCurie empty i) j
+    (_, Abbreviated) -> compare i (expandCurie empty j)
+    _ ->
+        let scC = iriScheme i    `compare` iriScheme j
+            auC = iriAuthority i `compare` iriAuthority j
+            paC = iriPath i      `compare` iriPath j
+            quC = iriQuery i     `compare` iriQuery j
+            frC = iriFragment i  `compare` iriFragment j
+        in if scC /= EQ then scC else
+           if auC /= EQ then auC else
+           if paC /= EQ then paC else
+           if quC /= EQ then quC else frC
+=======
     compare i j = case (iriType i, iriType j) of
         (Simple, Simple) -> abbrevPath i `compare` abbrevPath j
         (Abbreviated, Abbreviated) ->
@@ -253,6 +278,7 @@ instance Ord IRI where
                if auC /= EQ then auC else
                if paC /= EQ then paC else
                if quC /= EQ then quC else frC
+>>>>>>> .r16766
 
 -- |converts IRI to String of expanded form, also showing Auth info
 iriToStringUnsecure :: IRI -> String
@@ -317,6 +343,11 @@ or a CURIE). -}
 parseIRICurie :: String -> Maybe IRI
 parseIRICurie = parseIRIAny iriCurie
 
+{- | Parse an absolute or relative IRI enclosed in '<', '>' or a CURIE to an 'IRI' value.
+Returns 'Nothing' if the string is not a valid IRI reference or CURIE. -}
+parseIRIReferenceCurie :: String -> Maybe IRI
+parseIRIReferenceCurie = parseIRIAny iriReferenceCurie
+
 {- | Turn a string containing an IRI (by Manchester-syntax) into an 'IRI'.
 Returns 'Nothing' if the string is not a valid IRI;
 (an absolute IRI enclosed in '<' and '>' with optional fragment identifier,
@@ -349,6 +380,10 @@ isAbsoluteIRI = isValidParse absoluteIRI
 or a CURIE). -}
 isIRICurie :: String -> Bool
 isIRICurie = isValidParse iriCurie
+
+{- | Test if string contains a valid absolute or relative IRI enclosed in '<', '>' or a CURIE -}
+isIRIReferenceCurie :: String -> Bool
+isIRIReferenceCurie = isValidParse iriReferenceCurie
 
 -- | Test if string contains a valid CURIE
 isCurie :: String -> Bool
@@ -493,6 +528,7 @@ reference = iriWithPos $ do
           , iriPos = nullRange
           }
 
+-- | Prefix part of CURIE in @prefix_part:reference@
 -- http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName
 ncname :: GenParser Char st String
 ncname = nameStartChar <:> many nameChar
