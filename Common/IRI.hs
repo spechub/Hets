@@ -240,7 +240,6 @@ instance Eq IRI where
 
 -- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
 instance Ord IRI where
-<<<<<<< .mine
   compare i j = case (iriType i, iriType j) of
     (Simple, Simple) -> abbrevPath i `compare` abbrevPath j
     (Abbreviated, Abbreviated) ->
@@ -261,24 +260,6 @@ instance Ord IRI where
            if auC /= EQ then auC else
            if paC /= EQ then paC else
            if quC /= EQ then quC else frC
-=======
-    compare i j = case (iriType i, iriType j) of
-        (Simple, Simple) -> abbrevPath i `compare` abbrevPath j
-        (Abbreviated, Abbreviated) ->
-            let pnC = prefixName i `compare` prefixName j
-                apC = abbrevPath i `compare` abbrevPath j
-            in if pnC /= EQ then pnC else apC
-        _ ->
-            let scC = iriScheme i `compare` iriScheme j
-                auC = iriAuthority i `compare` iriAuthority j
-                paC = iriPath i `compare` iriPath j
-                quC = iriQuery i `compare` iriQuery j
-                frC = iriFragment i `compare` iriFragment j
-            in if scC /= EQ then scC else
-               if auC /= EQ then auC else
-               if paC /= EQ then paC else
-               if quC /= EQ then quC else frC
->>>>>>> .r16766
 
 -- |converts IRI to String of expanded form, also showing Auth info
 iriToStringUnsecure :: IRI -> String
