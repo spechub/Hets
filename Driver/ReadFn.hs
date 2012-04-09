@@ -55,8 +55,6 @@ import Data.Maybe
 
 import FreeCAD.Logic_FreeCAD
 
-import Debug.Trace
-
 isDgXml :: QName -> Bool
 isDgXml q = qName q == "DGraph" && qPrefix q == Nothing
 
@@ -114,7 +112,7 @@ readLibDefnAux lgraph opts file fileForPos input =
       _ -> case runParser (library $ setCurLogic (defLogic opts) lgraph)
           (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
-         Right ast -> return $ trace (show $ input) ast
+         Right ast -> return ast
 
 readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
 readShATermFile lg fp = do
