@@ -17,7 +17,6 @@ import Logic.Grothendieck (LogicGraph)
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
-    (logicName, groupSpec, aSpec, parseMapping, parseCorrespondences)
 import Syntax.Parse_AS_Architecture
 
 import Common.AS_Annotation
@@ -35,7 +34,6 @@ import Text.ParserCombinators.Parsec
 import Data.List
 import qualified Data.Map as Map (empty)
 import Data.Maybe (maybeToList)
-import Data.Char
 import Control.Monad
 
 import Framework.AS
@@ -75,14 +73,6 @@ libId = do
       pos <- getPos
       i <- try iriCurie
       return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) "" noTime
-  <|> do -- is this case still relevant?
-    pos <- getPos
-    path <- sepBy1 (many1 $ satisfy $ \ c -> isAlphaNum c || elem c "_-+'")
-            (string "/")
-    skip
-    return $ IndirectLink (intercalate "/" path) (Range [pos])
-        "" noTime
-    -- ??? URL need to be added
 
 -- | Parse the library elements
 libItems :: LogicGraph -> AParser st [Annoted LIB_ITEM]
@@ -106,7 +96,7 @@ libItem :: LogicGraph -> AParser st LIB_ITEM
 libItem l =
      -- spec defn
     do s <- asKey specS <|> asKey ontologyS
-       n <- iriCurie
+       n <- hetIRI
        g <- generics l
        e <- equalT
        a <- aSpec l
@@ -128,7 +118,7 @@ libItem l =
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- align defn
     do s1 <- asKey alignmentS
-       an <- iriCurie
+       an <- hetIRI
        g <- generics l
        s2 <- asKey ":"
        at <- alignType l

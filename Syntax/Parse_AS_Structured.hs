@@ -20,6 +20,7 @@ module Syntax.Parse_AS_Structured
     , parseMapping
     , parseCorrespondences
     , translationList
+    , hetIRI
     ) where
 
 import Logic.Logic (AnyLogic (..), language_name, data_logic, Syntax (..))
@@ -37,7 +38,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
-import Common.IRI (IRI, simpleIdToIRI, iriCurie, nullIRI, iriToStringUnsecure)
+import Common.IRI
 import Common.Keywords
 import Common.Lexer
 import Common.Parsec
@@ -48,6 +49,14 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import Data.Maybe
 import Control.Monad
+
+hetIRI :: GenParser Char st IRI
+hetIRI = do
+  i <- iriManchester
+  skipSmart
+  if iriToStringUnsecure i `elem` casl_reserved_words then
+      unexpected $ show i
+    else return i
 
 -- | parse annotations and then still call an annotation parser
 annoParser2 :: AParser st (Annoted a) -> AParser st (Annoted a)
@@ -280,7 +289,7 @@ translation l sp ftrans frestr =
 groupSpecLookhead :: AParser st IRI
 groupSpecLookhead =
   let tok2IRI = liftM simpleIdToIRI in
-  (tok2IRI oBraceT) <|> followedWith (iriCurie << annos)
+  (tok2IRI oBraceT) <|> followedWith (hetIRI << annos)
   (choice (map (tok2IRI . asKey) criticalKeywords)
    <|> tok2IRI cBraceT <|> tok2IRI oBracketT <|> tok2IRI cBracketT
    <|> (eof >> return nullIRI))
@@ -331,10 +340,10 @@ logicSpec lG = do
 combineSpec :: AParser st SPEC
 combineSpec = do
     s1 <- asKey combineS
-    oir <- commaSep1 iriCurie
+    oir <- commaSep1 hetIRI
     (exl, ps) <- (do
           s2 <- try $ asKey excludingS
-          e <- commaSep1 iriCurie
+          e <- commaSep1 hetIRI
           p <- getPos
           return (e,appRange (tokPos s2) $ Range [p])
         <|> return ([], nullRange)
@@ -360,7 +369,7 @@ groupSpec l = do
       c <- cBraceT
       return $ Group a $ catRange [b, c]
   <|> do
-    n <- iriCurie
+    n <- hetIRI
     (f, ps) <- fitArgs l
     return (Spec_inst n f ps)
 
@@ -380,7 +389,7 @@ fitArg l = do
 fittingArg :: LogicGraph -> AParser st FIT_ARG
 fittingArg l = do
     s <- asKey viewS
-    vn <- iriCurie
+    vn <- hetIRI
     (fa, ps) <- fitArgs l
     return (Fit_view vn fa (tokPos s `appRange` ps))
   <|> do
@@ -407,17 +416,17 @@ correspondence = do
 
 correspIRIs :: AParser st (Maybe IRI, IRI, Maybe IRI)
 correspIRIs = do
-  i1 <- iriCurie
+  i1 <- hetIRI
   (i2m, i3m) <- (do
           try $ asKey equalS
-          i2 <- iriCurie
+          i2 <- hetIRI
           i3 <- (lookAheadConfidence >> return Nothing)
-                <|> (lookAhead (try twoIriCurie) >> (liftM Just) iriCurie)
+                <|> (lookAhead (try twoIriCurie) >> (liftM Just) hetIRI)
                 <|> return Nothing
           return (Just i2, i3)
         <|> do
           i3 <- (lookAheadConfidence >> return Nothing)
-                <|> (lookAhead (try twoIriCurie) >> (liftM Just) iriCurie)
+                <|> (lookAhead (try twoIriCurie) >> (liftM Just) hetIRI)
                 <|> return Nothing
           return (Nothing, i3)
     )
@@ -426,21 +435,14 @@ correspIRIs = do
               Just i2j -> (Just i1, i2j, i3m)
 
 twoIriCurie :: AParser st ()
-twoIriCurie = iriCurie >> (
-      (try commaT >> fail "") -- comma is also iriCurie
-    <|>
-      (try (asKey endS) >> fail "")  -- "end" is also iriCurie
-    <|> do
-      iriCurie
-      return ()
-  )
+twoIriCurie = forget $ hetIRI >> hetIRI
 
 lookAheadConfidence :: AParser st ()
 lookAheadConfidence = lookAhead (try confidence) >> return ()
 
 termOrEntityRef :: AParser st TERM_OR_ENTITY_REF
 termOrEntityRef = do
-    i <- iriCurie
+    i <- hetIRI
     return $ Entity_ref i
   <|> term -- TODO: reverse order
 
