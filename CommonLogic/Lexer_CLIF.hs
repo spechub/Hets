@@ -112,6 +112,9 @@ clCommentKey = (pToken $ try (string "cl-comment") <|> string "cl:comment")
 clRolesetKey :: CharParser st Id.Token
 clRolesetKey = (pToken $ string "cl-roleset" <|> string "roleset:") <?> "roleset"
 
+clPrefixKey :: CharParser st Id.Token
+clPrefixKey = (pToken $ string "cl-prefix") <?> "prefix"
+
 seqmark :: CharParser st Id.Token
 seqmark = (pToken $ reserved reservedelement2 $ scanSeqMark) <?> "sequence marker"
 

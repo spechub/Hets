@@ -21,7 +21,9 @@ import qualified Common.AnnoState as AnnoState
 import qualified Common.AS_Annotation as Annotation
 import CommonLogic.AS_CommonLogic as AS
 import Common.Id as Id
+import Common.IRI
 import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken)
+import Common.Keywords (colonS)
 
 import Data.Either (lefts, rights)
 import qualified Data.Set as Set
@@ -32,88 +34,106 @@ import CommonLogic.Parse_Symbols (intNameOrSeqMark)
 
 import Text.ParserCombinators.Parsec as Parsec
 
+import Debug.Trace
+
 -- | parser for getText
 cltext :: CharParser st TEXT_META
 cltext = many white >> (do
     try $ oParenT >> clTextKey
-    nt <- namedtext
+    (nt, prfxs) <- namedtext
     cParenT
-    return $ tm nt
+    return $ tm nt prfxs
   <|> do
-    t <- text <?> "text"
-    return $ tm t
+    (t, prfxs) <- text <?> "text"
+    return $ tm t prfxs
   )
-  where tm :: TEXT -> TEXT_META
-        tm t = Text_meta { AS.getText = t
+  where tm :: TEXT -> [PrefixMapping] -> TEXT_META
+        tm t prfxs = Text_meta { AS.getText = t
                          , nondiscourseNames = Nothing
+                         , prefix_map = prfxs
                          }
 
-namedtext :: CharParser st TEXT
+namedtext :: CharParser st (TEXT, [PrefixMapping])
 namedtext = do
     n <- name <?> "name after \"cl-text\""
-    t <- text
-    return $ Named_text n t nullRange
+    (t, prfxs) <- text
+    return $ (Named_text n t nullRange, prfxs)
   <|> do
     n <- name <?> "name after \"cl-text\""
-    return $ Named_text n (Text [] nullRange) nullRange
+    return $ (Named_text n (Text [] nullRange) nullRange, [])
 
-text :: CharParser st TEXT
+text :: CharParser st (TEXT, [PrefixMapping])
 text = do
-    phr <- many1 phrase
-    return $ Text phr nullRange
+    phrPrfxs <- many1 phrase
+    let (phr, prfxs) = unzip phrPrfxs
+    return (Text (concat $ trace (show prfxs) phr) nullRange, concat prfxs)
 
 -- remove the try
 -- keys set here to prevent try in more complex parser to get the right
 -- error message in ex. the following text
-phrase :: CharParser st PHRASE
+phrase :: CharParser st ([PHRASE], [PrefixMapping])
 phrase = many white >> (do
     try (oParenT >> clModuleKey)
-    m <- pModule
+    (m, prfxs) <- pModule
     cParenT
-    return $ Module m
+    return ([Module m], prfxs)
   <|> do
     try (oParenT >> clImportsKey)
     i <- importation
     cParenT
-    return $ Importation i
+    return ([Importation i], [])
   <|> do
     try (oParenT >> clCommentKey)
     c <- quotedstring <|> enclosedname <?> "comment after \"cl-comment\""
-    t <- comment_txt <?> "text after \"cl-comment <comment>\""
+    (t, prfxs) <- comment_txt <?> "text after \"cl-comment <comment>\""
     cParenT
-    return $ Comment_text (Comment c nullRange) t nullRange
+    return ([Comment_text (Comment c nullRange) t nullRange], prfxs)
+  <|> do
+    try (oParenT >> clPrefixKey)
+    p <- (do
+            string colonS
+            return colonS
+          <|> do
+            x <- ncname
+            string colonS
+            return $ x ++ colonS
+          )
+    many white
+    i <- iriCurie
+    cParenT
+    return ([], [(p, i)])
   <|> do
     s <- sentence <?> "sentence"
-    return $ Sentence s
+    return ([Sentence s], [])
   )
 
-comment_txt :: CharParser st TEXT
+comment_txt :: CharParser st (TEXT, [PrefixMapping])
 comment_txt = do
-   t <- try text
-   return $ t
+   tp <- try text
+   return tp
   <|> do
-   return $ Text [] nullRange
+   return (Text [] nullRange, [])
 
 -- | parser for module
-pModule :: CharParser st MODULE
+pModule :: CharParser st (MODULE, [PrefixMapping])
 pModule = do
     t <- identifier <?> "module name after \"cl-module\""
-    (exs,txt) <- pModExcl <?> "text in module"
+    (exs,(txt, prfxs)) <- pModExcl <?> "text in module"
     case exs of
-         [] -> return $ Mod t txt nullRange
-         _  -> return $ Mod_ex t exs txt nullRange
+         [] -> return (Mod t txt nullRange, prfxs)
+         _  -> return (Mod_ex t exs txt nullRange, prfxs)
 
 -- | parser for
-pModExcl :: CharParser st ([NAME], TEXT)
+pModExcl :: CharParser st ([NAME], (TEXT, [PrefixMapping]))
 pModExcl = many white >> (do
     try (oParenT >> clExcludesKey)
     exs <- many identifier <?> "only names in module-exclusion list"
     cParenT
-    txt <- text
-    return (exs, txt)
+    tp <- text
+    return (exs, tp)
   <|> do
-    txt <- text
-    return ([], txt)
+    tp <- text
+    return ([], tp)
   )
 
 importation :: CharParser st IMPORTATION

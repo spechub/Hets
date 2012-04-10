@@ -20,6 +20,7 @@ Definition of abstract syntax for common logic
 module CommonLogic.AS_CommonLogic where
 
 import Common.Id as Id
+import Common.IRI
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
@@ -36,12 +37,16 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
 data BASIC_ITEMS = Axiom_items [AS_Anno.Annoted TEXT_META]
                    deriving (Show, Ord, Eq)
 
+type PrefixMapping = (String, IRI)
+
 emptyTextMeta :: TEXT_META
 emptyTextMeta = Text_meta { getText = Text [] nullRange
-                          , nondiscourseNames = Nothing }
+                          , nondiscourseNames = Nothing
+                          , prefix_map = [] }
 
 data TEXT_META = Text_meta { getText :: TEXT
                            , nondiscourseNames :: Maybe (Set NAME)
+                           , prefix_map :: [PrefixMapping]
                            } deriving (Show, Ord, Eq)
 -- TODO: check static analysis and other features on discourse names, as soon as parsers of segregated dialects are implemented
 
