@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) DFKI GmbH 2012
@@ -57,6 +56,8 @@ module Common.IRI
     -- * The IRI type
       IRI (..)
     , IRIAuth (..)
+    , IRIType(..)
+    , PNAME_LN(..)
     , nullIRI
     , iriType
 
@@ -134,14 +135,11 @@ import Control.Monad (MonadPlus (..))
 import Data.Char (ord, chr, isHexDigit, toLower, toUpper, digitToInt)
 import Numeric (showIntAtBase)
 
-import Data.Typeable (Typeable)
-
 import Data.Map (Map, findWithDefault, empty)
 
 import Common.Id
 import Common.Lexer
 import Common.Parsec
-import ATerm.Lib
 
 -- * The IRI datatype
 
@@ -169,17 +167,17 @@ data IRI = IRI
     , prefixName :: String        -- ^ @prefix@
     , abbrevPath :: String        -- ^ @abbrevPath@
     , iriPos :: Range             -- ^ position
-    } deriving (Typeable)
+    }
 
 -- | Type for authority value within a IRI
 data IRIAuth = IRIAuth
     { iriUserInfo :: String       -- ^ @anonymous\@@
     , iriRegName :: String        -- ^ @www.haskell.org@
     , iriPort :: String           -- ^ @:42@
-    } deriving (Eq, Typeable, Ord, Show)
+    } deriving (Eq, Ord, Show)
 
 data IRIType = Full | ExpandedAbbrev | ExpandedSimple | Abbreviated | Simple
-  deriving (Eq, Show, Typeable, Ord)
+  deriving (Eq, Show, Ord)
 
 -- | Blank IRI
 nullIRI :: IRI
@@ -1420,22 +1418,3 @@ normalizePathSegments iristr = normstr jiri
         normstr Nothing = iristr
         normstr (Just u) = show (normiri u)
         normiri u = u { iriPath = removeDotSegments (iriPath u) }
-
-
--- FIX: where do the instances fit the best?
-instance ShATermConvertible IRI where
-  toShATermAux att0 u = do
-    (att1, is) <- toShATerm' att0 ((iriToString id u) "")
-    return $ addATerm (ShAAppl "IRI" [is] []) att1
-  fromShATermAux ix att0 =
-    case getShATerm ix att0 of
-      x@(ShAAppl "IRI" [is] _) ->
-        case fromShATerm' is att0 of
-          (att1, is') ->
-            case parseIRICurie is' of
-              Nothing ->
-                case parseIRIReference is' of
-                  Nothing -> fromShATermError "IRI" x
-                  Just i -> (att1, i)
-              Just i -> (att1, i)
-      i -> fromShATermError "IRI" i
