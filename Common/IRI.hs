@@ -233,7 +233,7 @@ instance Ord IRI where
       (iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
     (False, False) -> comparing
-       (\ j -> (prefixName j, abbrevPath j)) i k
+       (\ j -> (prefixName j, abbrevPath j, iriQuery j, iriFragment j)) i k
     (b1, b2) -> compare b1 b2
 
 -- |converts IRI to String of expanded form, also showing Auth info
