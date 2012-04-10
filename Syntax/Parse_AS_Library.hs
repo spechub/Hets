@@ -23,7 +23,7 @@ import Syntax.Parse_AS_Architecture
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
-import Common.IRI (IRI, nullIRI, simpleIdToIRI, iriCurie, iriPos, iriToStringUnsecure, expandCurie)
+import Common.IRI
 
 import Common.Keywords
 import Common.Lexer
@@ -71,12 +71,11 @@ version = do
 
 -- | Parse library ID
 libId :: AParser st LibId
-libId =  try (do
+libId = do
       pos <- getPos
-      i <- iriCurie
+      i <- try iriCurie
       return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) "" noTime
-    )
-  <|> do
+  <|> do -- is this case still relevant?
     pos <- getPos
     path <- sepBy1 (many1 $ satisfy $ \ c -> isAlphaNum c || elem c "_-+'")
             (string "/")
@@ -116,8 +115,7 @@ libItem l =
                (catRange ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS <|> asKey interpretationS
-       vn' <- simpleId
-       let vn = simpleIdToIRI vn'
+       vn <- liftM simpleIdToIRI simpleId
        g <- generics l
        s2 <- asKey ":"
        vt <- viewType l
@@ -144,8 +142,7 @@ libItem l =
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
-       name' <- simpleId
-       let name = simpleIdToIRI name'
+       name <- liftM simpleIdToIRI simpleId
        kEqu <- equalT
        usp <- unitSpec l
        kEnd <- optEnd
@@ -183,7 +180,8 @@ libItem l =
        syn <- optionMaybe $ do
             asKey serializationS
             iriCurie
-       return (Logic_decl logN syn (Range $ concatMap rangeToList [tokPos s, iriPos t]))
+       return $ Logic_decl logN syn $ Range $ concatMap rangeToList
+                  [tokPos s, iriPos t]
   <|> -- newlogic
     do (n, s1) <- newlogicP
        s2 <- equalT
@@ -222,7 +220,7 @@ downloadItems = do
     return (ItemMaps il, ps)
   <|> do
     s <- asKey mapsTo
-    i <- (liftM simpleIdToIRI) simpleId
+    i <- liftM simpleIdToIRI simpleId
     return (UniqueItem i, [s])
 
 
@@ -253,12 +251,12 @@ simpleIdOrDDottedId = pToken $ liftM2 (++)
 -- | Parse item name or name map
 itemNameOrMap :: AParser st ItemNameMap
 itemNameOrMap = do
-    i1 <- (liftM ((expandCurie Map.empty) . simpleIdToIRI)) simpleIdOrDDottedId
-    i2 <- optionMaybe $ do
+    i1 <- liftM (expandCurie Map.empty . simpleIdToIRI) simpleIdOrDDottedId
+    i2 <- optionMaybe $ liftM simpleIdToIRI $ do
         _ <- asKey mapsTo
         if isInfixOf ".." $ iriToStringUnsecure i1
-            then (liftM simpleIdToIRI) simpleIdOrDDottedId
-            else (liftM simpleIdToIRI) simpleId
+            then simpleIdOrDDottedId
+            else simpleId
     return $ ItemNameMap i1 i2
 
 optEnd :: AParser st (Maybe Token)
