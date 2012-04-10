@@ -34,8 +34,6 @@ import CommonLogic.Parse_Symbols (intNameOrSeqMark)
 
 import Text.ParserCombinators.Parsec as Parsec
 
-import Debug.Trace
-
 -- | parser for getText
 cltext :: CharParser st TEXT_META
 cltext = many white >> (do
@@ -57,16 +55,16 @@ namedtext :: CharParser st (TEXT, [PrefixMapping])
 namedtext = do
     n <- name <?> "name after \"cl-text\""
     (t, prfxs) <- text
-    return $ (Named_text n t nullRange, prfxs)
+    return (Named_text n t nullRange, prfxs)
   <|> do
     n <- name <?> "name after \"cl-text\""
-    return $ (Named_text n (Text [] nullRange) nullRange, [])
+    return (Named_text n (Text [] nullRange) nullRange, [])
 
 text :: CharParser st (TEXT, [PrefixMapping])
 text = do
     phrPrfxs <- many1 phrase
     let (phr, prfxs) = unzip phrPrfxs
-    return (Text (concat $ trace (show prfxs) phr) nullRange, concat prfxs)
+    return (Text (concat phr) nullRange, concat prfxs)
 
 -- remove the try
 -- keys set here to prevent try in more complex parser to get the right
@@ -108,11 +106,7 @@ phrase = many white >> (do
   )
 
 comment_txt :: CharParser st (TEXT, [PrefixMapping])
-comment_txt = do
-   tp <- try text
-   return tp
-  <|> do
-   return (Text [] nullRange, [])
+comment_txt = try text <|> return (Text [] nullRange, [])
 
 -- | parser for module
 pModule :: CharParser st (MODULE, [PrefixMapping])
@@ -213,11 +207,11 @@ quantsent3 t mg bs ((n,trm):nts) s rn = -- Quant_sent using syntactic sugar
   let functerm = case n of
        Name nm -> Atom (Funct_term trm [Term_seq $ Name_term nm] nullRange) []
        SeqMark sqm -> Atom (Funct_term trm [Seq_marks sqm] nullRange) []
-  in case t of
-        True -> Quant_sent (Universal [n] $ quantsent3 t mg bs nts (
+  in if t
+        then Quant_sent (Universal [n] $ quantsent3 t mg bs nts (
                   Bool_sent (Implication (Atom_sent functerm rn) s) rn
                 ) rn) rn
-        False -> Quant_sent (Universal [n] $ quantsent3 t mg bs nts (
+        else Quant_sent (Universal [n] $ quantsent3 t mg bs nts (
                   Bool_sent (Conjunction [Atom_sent functerm rn, s]) rn
                 ) rn) rn
 quantsent3 t mg bs [] s rn =
@@ -227,11 +221,10 @@ quantsent3 t mg bs [] s rn =
     Just g ->                                -- Quant_sent using syntactic sugar
       let functerm = Atom (Funct_term (Name_term g) (map (Term_seq . Name_term)
                       $ Set.elems $ Tools.indvC_sen s) nullRange) []
-      in case t of
-          True  ->
-            Quant_sent (Universal bs (Bool_sent (Implication
+      in if t
+          then Quant_sent (Universal bs (Bool_sent (Implication
               (Atom_sent functerm nullRange) s) rn)) rn
-          False ->
+          else 
             Quant_sent (Existential bs (Bool_sent (Conjunction
               [Atom_sent functerm nullRange, s]) rn)) rn
 
@@ -242,7 +235,7 @@ boundlist = many (do
   <|> parens (do
     nos <- intNameOrSeqMark
     t <- term
-    return $ Left $ (nos,t)
+    return $ Left (nos,t)
     )
   )
 
@@ -261,8 +254,7 @@ term :: CharParser st TERM
 term = do
      t <- identifier
      return $ Name_term t
-   <|> do
-     term_fun_cmt
+   <|> term_fun_cmt
 
 term_fun_cmt :: CharParser st TERM
 term_fun_cmt = parens (do
@@ -280,7 +272,7 @@ term_fun_cmt = parens (do
 termseq :: CharParser st TERM_SEQ
 termseq = do
    x <- seqmark
-   return $ Seq_marks $ x
+   return $ Seq_marks x
   <|> do
    t <- term
    return $ Term_seq t
@@ -303,7 +295,7 @@ rolesetSentence :: TERM -> [(NAME, TERM)] -> SENTENCE
 rolesetSentence t0 nts =
   let x = rolesetFreeName t0 nts
   in  Quant_sent (Existential [Name x] (Bool_sent (Conjunction $
-          (rolesetAddToTerm x t0) : map (rolesetMixTerm x) nts
+          rolesetAddToTerm x t0 : map (rolesetMixTerm x) nts
         ) nullRange)) $ Range $ rangeSpan t0
 
 rolesetFreeName :: TERM -> [(NAME, TERM)] -> NAME
@@ -325,10 +317,10 @@ rolesetMixTerm  x (n, t) =
 basicSpec :: AnnoState.AParser st BASIC_SPEC
 basicSpec = do
     bi <- parseAxItems
-    return $ bi
+    return bi
   <|> do
     bi <- AnnoState.allAnnoParser parseBasicItems
-    return $ Basic_spec $ [bi]
+    return $ Basic_spec [bi]
 
 -- function to parse different syntaxes
 -- parsing: axiom items with dots, clif sentences, clif text
@@ -356,19 +348,18 @@ textToAn = map (\x -> Annotation.Annoted x nullRange [] [])
 parseAxItems :: AnnoState.AParser st BASIC_SPEC
 parseAxItems = do
        d <- AnnoState.dotT
-       (fs, ds) <- (AnnoState.allAnnoParser parseAx) `Lexer.separatedBy` AnnoState.dotT
+       (fs, ds) <- AnnoState.allAnnoParser parseAx `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
        let _ = Id.catRange (d : ds)
            ns = init fs ++ [Annotation.appendAnno (last fs) an]
        return $ Basic_spec ns
 
 -- | Toplevel parser for formulae
-parseAx :: AnnoState.AParser st (BASIC_ITEMS)
+parseAx :: AnnoState.AParser st BASIC_ITEMS
 parseAx = do
   t <- many aFormula
   return $ Axiom_items t
 
 -- | Toplevel parser for formulae
 aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT_META)
-aFormula = do
-     AnnoState.allAnnoParser cltext
+aFormula = AnnoState.allAnnoParser cltext

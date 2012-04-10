@@ -267,7 +267,7 @@ mkStatSymbMapItem xs =
     }
 
 statSymbMapItem :: [AS.SYMB_OR_MAP] -> Map.Map Symbol.Symbol Symbol.Symbol
-statSymbMapItem xs =
+statSymbMapItem =
     foldl
     (
      \ mmap x ->
@@ -279,7 +279,6 @@ statSymbMapItem xs =
              -> Map.insert (symbToSymbol s1) (symbToSymbol s2) mmap
     )
     Map.empty
-    xs
 
 -- | Retrieve raw symbols
 mkStatSymbItems :: [AS.SYMB_ITEMS] -> Result.Result [Symbol.Symbol]
@@ -290,7 +289,7 @@ mkStatSymbItems a = Result.Result
                     }
 
 statSymbItems :: [AS.SYMB_ITEMS] -> [Symbol.Symbol]
-statSymbItems si = concat $ map symbItemsToSymbol si
+statSymbItems = concatMap symbItemsToSymbol
 
 symbItemsToSymbol :: AS.SYMB_ITEMS -> [Symbol.Symbol]
 symbItemsToSymbol (AS.Symb_items syms _) = map nosToSymbol syms

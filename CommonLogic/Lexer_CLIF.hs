@@ -38,22 +38,22 @@ cParenT = Lexer.cParenT << many white
 name :: CharParser st String
 name = do
         x <- identifier
-        return $ (tokStr x)
+        return (tokStr x)
 
 quotedstring :: CharParser st String
 quotedstring = do
    char '\''
-   s <- (many $ (satisfy clLetters2) <|> oneOf whitec
+   s <- many (satisfy clLetters2 <|> oneOf whitec
          <|> char '(' <|> char ')' <|> char '\"')
         <?> "quotedstring: word"
    char '\''
    many white
-   return $ s
+   return s
 
 enclosedname :: CharParser st String
 enclosedname = do
    char '\"'
-   s <- (many $ (satisfy clLetters2) <|> oneOf whitec
+   s <- many (satisfy clLetters2 <|> oneOf whitec
          <|> char '(' <|> char ')' <|> char '\'')
          <?> "word"
    char '\"' <?> "\""
@@ -66,60 +66,60 @@ parens p = oParenT >> p << cParenT
 
 -- Parser Keywords
 andKey :: CharParser st Id.Token
-andKey = (pToken $ string andS) <?> "conjunction"
+andKey = pToken (string andS) <?> "conjunction"
 
 notKey :: CharParser st Id.Token
-notKey = (pToken $ string notS) <?> "negation"
+notKey = pToken (string notS) <?> "negation"
 
 orKey :: CharParser st Id.Token
-orKey = (pToken $ string orS) <?> "disjunction"
+orKey = pToken (string orS) <?> "disjunction"
 
 ifKey :: CharParser st Id.Token
-ifKey = (pToken $ string ifS) <?> "implication"
+ifKey = pToken (string ifS) <?> "implication"
 
 iffKey :: CharParser st Id.Token
-iffKey = (pToken $ string iffS) <?> "equivalence"
+iffKey = pToken (string iffS) <?> "equivalence"
 
 forallKey :: CharParser st Id.Token
-forallKey = (pToken $ string forallS) <?> "universal quantification"
+forallKey = pToken (string forallS) <?> "universal quantification"
 
 existsKey :: CharParser st Id.Token
-existsKey = (pToken $ string existsS) <?> "existential quantification"
+existsKey = pToken (string existsS) <?> "existential quantification"
 
 -- cl keys
 clTextKey :: CharParser st Id.Token
-clTextKey = (pToken $ try (string "cl-text") <|> string "cl:text") <?> "text"
+clTextKey = pToken (try (string "cl-text") <|> string "cl:text") <?> "text"
 
 clModuleKey :: CharParser st Id.Token
-clModuleKey = (pToken $ try (string "cl-module") <|> string "cl:module")
+clModuleKey = pToken (try (string "cl-module") <|> string "cl:module")
               <?> "module"
 
 clImportsKey :: CharParser st Id.Token
-clImportsKey = (pToken $ try (string "cl-imports") <|> string "cl:imports")
+clImportsKey = pToken (try (string "cl-imports") <|> string "cl:imports")
                <?> "importation"
 
 clExcludesKey :: CharParser st Id.Token
-clExcludesKey = (pToken $ try (string "cl-excludes") <|> string "cl:excludes")
+clExcludesKey = pToken (try (string "cl-excludes") <|> string "cl:excludes")
                 <?> "exclusion list"
 
 clEqualsKey :: CharParser st Id.Token
-clEqualsKey = (pToken $ string "=") <?> "equation"
+clEqualsKey = pToken (string "=") <?> "equation"
 
 clCommentKey :: CharParser st Id.Token
-clCommentKey = (pToken $ try (string "cl-comment") <|> string "cl:comment")
+clCommentKey = pToken (try (string "cl-comment") <|> string "cl:comment")
                <?> "comment"
 
 clRolesetKey :: CharParser st Id.Token
-clRolesetKey = (pToken $ string "cl-roleset" <|> string "roleset:") <?> "roleset"
+clRolesetKey = pToken (string "cl-roleset" <|> string "roleset:") <?> "roleset"
 
 clPrefixKey :: CharParser st Id.Token
-clPrefixKey = (pToken $ string "cl-prefix") <?> "prefix"
+clPrefixKey = pToken (string "cl-prefix") <?> "prefix"
 
 seqmark :: CharParser st Id.Token
-seqmark = (pToken $ reserved reservedelement2 $ scanSeqMark) <?> "sequence marker"
+seqmark = pToken (reserved reservedelement2 scanSeqMark) <?> "sequence marker"
 
 identifier :: CharParser st Id.Token
-identifier = (pToken $ reserved reservedelement $ scanClWord) <?> "name"
+identifier = pToken (reserved reservedelement scanClWord) <?> "name"
 
 scanSeqMark :: CharParser st String
 scanSeqMark = do
@@ -132,15 +132,13 @@ scanClWord = quotedstring <|> enclosedname <|> (many1 clLetter <?> "words")
 
 clLetters :: Char -> Bool
 clLetters ch = let c = ord ch in
-   if c >= 33 && c <= 126 then c <= 38 && c /= 34
-      || c >= 42 && c /= 64 && c /= 92
-   else False
+   c >= 33 && c <= 126 && (c <= 38 && c /= 34
+      || c >= 42 && c /= 64 && c /= 92)
 
 clLetters2 :: Char -> Bool
 clLetters2 ch = let c = ord ch in
-   if c >= 32 && c <= 126 then c <= 38 && c /= 34
-      || c >= 42 && c /= 64 && c /= 92
-   else False
+   c >= 32 && c <= 126 && (c <= 38 && c /= 34
+      || c >= 42 && c /= 64 && c /= 92)
 
 -- a..z, A..z, 0..9, ~!#$%^&*_+{}|:<>?`-=[];,.
 

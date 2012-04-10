@@ -1,12 +1,7 @@
-
-(cl-prefix foo:<http://example.com/some/path?que=ry&str=ing#frag>)
-
-(cl-prefix fooooo:<http://exampleeee.com/some/path?que=ry&str=ing#frag>)
-
-(cl-prefix foo:<http://exampleeee.com/some>)
-
-(cl-prefix fooS:<https://exampleeee.com/some>)
+(cl-text moduleElim
 
 (P x)
 
 (cl-module M (cl-excludes x y z) (forall (a b c) (and (P a) (Q b) (R c))))
+
+)
