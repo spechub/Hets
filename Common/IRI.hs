@@ -56,10 +56,12 @@ module Common.IRI
     -- * The IRI type
       IRI (..)
     , IRIAuth (..)
-    , IRIType(..)
-    , PNAME_LN(..)
+    , PNameLn(..)
     , nullIRI
-    , iriType
+    , hasFullIRI
+    , isAbbrev
+    , isSimple
+    , isExpanded
 
     -- * Conversion
     , simpleIdToIRI
@@ -135,7 +137,8 @@ import Control.Monad (MonadPlus (..))
 import Data.Char (ord, chr, isHexDigit, toLower, toUpper, digitToInt)
 import Numeric (showIntAtBase)
 
-import Data.Map (Map, findWithDefault, empty)
+import Data.Ord (comparing)
+import Data.Map (Map, findWithDefault)
 
 import Common.Id
 import Common.Lexer
@@ -176,9 +179,6 @@ data IRIAuth = IRIAuth
     , iriPort :: String           -- ^ @:42@
     } deriving (Eq, Ord, Show)
 
-data IRIType = Full | ExpandedAbbrev | ExpandedSimple | Abbreviated | Simple
-  deriving (Eq, Show, Ord)
-
 -- | Blank IRI
 nullIRI :: IRI
 nullIRI = IRI
@@ -209,14 +209,6 @@ without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
 
--- | Returns Type of an IRI
-iriType :: IRI -> IRIType
-iriType i =
-  if (not . null) $ iriPath i then (
-      if (null $ abbrevPath i) && (null $ prefixName i) then Full else
-      if null $ prefixName i then ExpandedSimple else ExpandedAbbrev
-  ) else if null $ prefixName i then Simple else Abbreviated
-
 {- IRI as instance of Show.  Note that for security reasons, the default
 behaviour is to suppress any iuserinfo field (see RFC3986, section 7.5).
 This can be overridden by using iriToString directly with first
@@ -228,7 +220,7 @@ but providing a function to return a new IRI value with iuserinfo
 data exposed by show.]]]
 -}
 instance Show IRI where
-    showsPrec _ i = iriToString defaultUserInfoMap i
+    showsPrec _ = iriToString defaultUserInfoMap
 
 -- equal iff expansion is equal or abbreviation is equal
 instance Eq IRI where
@@ -236,41 +228,27 @@ instance Eq IRI where
 
 -- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
 instance Ord IRI where
-  compare i j = case (iriType i, iriType j) of
-    (Simple, Simple) -> abbrevPath i `compare` abbrevPath j
-    (Abbreviated, Abbreviated) ->
-        let pnC = prefixName i `compare` prefixName j
-            apC = abbrevPath i `compare` abbrevPath j
-        in if pnC /= EQ then pnC else apC
-    (Simple, _) -> compare (expandCurie empty i) j
-    (_, Simple) -> compare i (expandCurie empty j)
-    (Abbreviated, _) -> compare (expandCurie empty i) j
-    (_, Abbreviated) -> compare i (expandCurie empty j)
-    _ ->
-        let scC = iriScheme i    `compare` iriScheme j
-            auC = iriAuthority i `compare` iriAuthority j
-            paC = iriPath i      `compare` iriPath j
-            quC = iriQuery i     `compare` iriQuery j
-            frC = iriFragment i  `compare` iriFragment j
-        in if scC /= EQ then scC else
-           if auC /= EQ then auC else
-           if paC /= EQ then paC else
-           if quC /= EQ then quC else frC
+  compare i k = case (hasFullIRI i, hasFullIRI k) of
+    (True, True) -> comparing (\ j ->
+      (iriScheme j, iriAuthority j, iriPath j,
+       iriQuery j, iriFragment j)) i k
+    (False, False) -> comparing
+       (\ j -> (prefixName j, abbrevPath j)) i k
+    (b1, b2) -> compare b1 b2
 
 -- |converts IRI to String of expanded form, also showing Auth info
 iriToStringUnsecure :: IRI -> String
-iriToStringUnsecure i = (iriToString id i) ""
+iriToStringUnsecure i = iriToString id i ""
 
 -- |converts IRI to String of abbreviated form, also showing Auth info
 iriToStringShortUnsecure :: IRI -> String
-iriToStringShortUnsecure i = (iriToStringShort id i) ""
+iriToStringShortUnsecure i = iriToStringShort id i ""
 
 defaultUserInfoMap :: String -> String
 defaultUserInfoMap uinf = user ++ newpass
     where
         (user, pass) = break (== ':') uinf
-        newpass = if null pass || (pass == "@")
-                                   || (pass == ":@")
+        newpass = if null pass || pass `elem` ["@", ":@"]
                         then pass
                         else ":...@"
 
@@ -432,7 +410,7 @@ a IRI.  These characters do not need to be escaped in a IRI.  The
 only characters allowed in a IRI are either \"reserved\",
 \"unreserved\", or an escape sequence (@%@ followed by two hex digits). -}
 isUnreserved :: Char -> Bool
-isUnreserved c = isAlphaNumChar c || (c `elem` "-_.~") || (isUcsChar c)
+isUnreserved c = isAlphaNumChar c || c `elem` "-_.~" || isUcsChar c
 
 iunreservedChar :: IRIParser st String
 iunreservedChar = single $ satisfy isUnreserved
@@ -449,24 +427,15 @@ iriWithPos parser = do
 
 -- | Parses an absolute IRI enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
-iriCurie = do
-    char '<'
-    i <- iri
-    char '>'
-    skipSmart
-    return i
-  <|> curie
+iriCurie = brackets iri <|> curie
 
 {- | Parses an absolute or relative IRI enclosed in '<', '>' or a CURIE
 see @iriReference@ -}
 iriReferenceCurie :: IRIParser st IRI
-iriReferenceCurie = do
-    char '<'
-    i <- iri <|> irelativeRef
-    char '>'
-    skipSmart
-    return i
-  <|> curie
+iriReferenceCurie = brackets (iri <|> irelativeRef) <|> curie
+
+brackets :: IRIParser st IRI -> IRIParser st IRI
+brackets p = char '<' >> p << char '>' << skipSmart
 
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI
@@ -553,8 +522,8 @@ nameCharP c =
 {- http://www.w3.org/TR/2008/REC-rdf-sparql-query-20080115/
 Section 4.1 -}
 
-pn_chars_baseP :: Char -> Bool
-pn_chars_baseP c =
+pnCharsBaseP :: Char -> Bool
+pnCharsBaseP c =
   let n = ord c in
   isAlphaChar c ||
   (0x00C0 <= n && n <= 0x00D6) ||
@@ -571,23 +540,23 @@ pn_chars_baseP c =
   (0xFDF0 <= n && n <= 0xFFFD) ||
   (0x10000 <= n && n <= 0xEFFFF)
 
-pn_chars_base :: GenParser Char st Char
-pn_chars_base = satisfy pn_chars_baseP
+pnCharsBase :: GenParser Char st Char
+pnCharsBase = satisfy pnCharsBaseP
 
-pn_chars_u :: GenParser Char st Char
-pn_chars_u = satisfy pn_chars_uP
+pnCharsU :: GenParser Char st Char
+pnCharsU = satisfy pnCharsUP
 
-pn_chars :: GenParser Char st Char
-pn_chars = satisfy pn_charsP
+pnChars :: GenParser Char st Char
+pnChars = satisfy pnCharsP
 
-pn_chars_uP :: Char -> Bool
-pn_chars_uP c = (pn_chars_baseP c) || (c == '_')
+pnCharsUP :: Char -> Bool
+pnCharsUP c = pnCharsBaseP c || c == '_'
 
-pn_charsP :: Char -> Bool
-pn_charsP c =
+pnCharsP :: Char -> Bool
+pnCharsP c =
   let n = ord c in
   c == '-' ||
-  pn_chars_uP c ||
+  pnCharsUP c ||
   isDigitChar c ||
   (n == 0x00B7) ||
   (0x0300 <= n && n <= 0x036F) ||
@@ -613,8 +582,8 @@ iriManchester = iriWithPos $ do
     char '>'
     return i
   <|> do
-    (PName_Ln prefix loc) <- try pname_ln
-    return $ IRI
+    (PNameLn prefix loc) <- try pnameLn
+    return IRI
             { iriScheme = ""
             , iriAuthority = Nothing
             , iriPath = ""
@@ -625,8 +594,8 @@ iriManchester = iriWithPos $ do
             , iriPos = nullRange
             }
   <|> do
-    loc <- pn_local
-    return $ IRI
+    loc <- pnLocal
+    return IRI
             { iriScheme = ""
             , iriAuthority = Nothing
             , iriPath = ""
@@ -637,25 +606,25 @@ iriManchester = iriWithPos $ do
             , iriPos = nullRange
             }
 
-data PNAME_LN = PName_Ln PNAME_NS PN_LOCAL deriving (Show, Eq, Ord)
-type PNAME_NS = String
-type PN_PREFIX = String
-type PN_LOCAL = String
+data PNameLn = PNameLn PNameNs PnLocal deriving (Show, Eq, Ord)
+type PNameNs = String
+type PnPrefix = String
+type PnLocal = String
 
-pname_ln :: GenParser Char st PNAME_LN
-pname_ln = do
-  ns <- pname_ns
-  loc <- pn_local
-  return $ PName_Ln ns loc
+pnameLn :: GenParser Char st PNameLn
+pnameLn = do
+  ns <- pnameNs
+  loc <- pnLocal
+  return $ PNameLn ns loc
 
-pname_ns :: GenParser Char st PNAME_NS
-pname_ns = string ":" <|> pn_prefix <++> string ":"
+pnameNs :: GenParser Char st PNameNs
+pnameNs = string ":" <|> pnPrefix <++> string ":"
 
-pn_prefix :: GenParser Char st PN_PREFIX
-pn_prefix = do
-    c1 <- pn_chars_base
+pnPrefix :: GenParser Char st PnPrefix
+pnPrefix = do
+    c1 <- pnCharsBase
     t <- do
-          s1 <- many (pn_chars <|> char '.')
+          s1 <- many (pnChars <|> char '.')
           if null s1 then return Nothing else case last s1 of
                '.' -> fail "Last character in prefix must not be '.'"
                _ -> return $ Just s1
@@ -664,11 +633,11 @@ pn_prefix = do
       Just str -> return $ c1 : str
       Nothing -> return [c1]
 
-pn_local :: GenParser Char st PN_LOCAL
-pn_local = do
-    c1 <- pn_chars_u <|> digit
+pnLocal :: GenParser Char st PnLocal
+pnLocal = do
+    c1 <- pnCharsU <|> digit
     t <- do
-          s1 <- many (pn_chars <|> char '.')
+          s1 <- many (pnChars <|> char '.')
           if null s1 then return Nothing else case last s1 of
                '.' -> fail "Last character in prefix must not be '.'"
                _ -> return $ Just s1
@@ -706,12 +675,16 @@ iri = iriWithPos $ do
             , iriPos = nullRange
             }
 
+
+ihierOrIrelativePart :: IRIParser st (Maybe IRIAuth, String)
+ihierOrIrelativePart = do
+  try (string "//")
+  ua <- uiauthority
+  up <- ipathAbEmpty
+  return (ua, up)
+
 ihierPart :: IRIParser st (Maybe IRIAuth, String)
-ihierPart = do
-        try (string "//")
-        ua <- uiauthority
-        up <- ipathAbEmpty
-        return (ua, up)
+ihierPart = ihierOrIrelativePart
     <|> fmap (\ s -> (Nothing, s)) ihierPartNoAuth
 
 ihierPartNoAuth :: IRIParser st String
@@ -729,7 +702,7 @@ uiauthority = do
   uu <- option "" (try iuserinfo)
   uh <- ihost
   up <- option "" port
-  return $ Just $ IRIAuth
+  return $ Just IRIAuth
             { iriUserInfo = uu
             , iriRegName = uh
             , iriPort = up
@@ -955,12 +928,8 @@ irelativeRef = iriWithPos $ do
             , iriPos = nullRange
             }
 
-irelativePart :: IRIParser st ((Maybe IRIAuth), String)
-irelativePart = do
-    try (string "//")
-    ua <- uiauthority
-    up <- ipathAbEmpty
-    return (ua, up)
+irelativePart :: IRIParser st (Maybe IRIAuth, String)
+irelativePart = ihierOrIrelativePart
   <|> fmap (\ s -> (Nothing, s)) (ipathAbs <|> ipathNoScheme <|> return "")
 
 -- RFC3987, section 2.2
@@ -993,10 +962,10 @@ absoluteIRI = iriWithPos $ do
     ]]] -}
 
 isAlphaChar :: Char -> Bool
-isAlphaChar c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+isAlphaChar c = c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z'
 
 isDigitChar :: Char -> Bool
-isDigitChar c = (c >= '0' && c <= '9')
+isDigitChar c = c >= '0' && c <= '9'
 
 isAlphaNumChar :: Char -> Bool
 isAlphaNumChar c = isAlphaChar c || isDigitChar c
@@ -1027,10 +996,10 @@ isIprivate c =
      (0x100000 <= n && n <= 0x10FFFD)
 
 isHexDigitChar :: Char -> Bool
-isHexDigitChar c = isHexDigit c
+isHexDigitChar = isHexDigit
 
 isSchemeChar :: Char -> Bool
-isSchemeChar c = (isAlphaNumChar c) || (c `elem` "+-.")
+isSchemeChar c = isAlphaNumChar c || c `elem` "+-."
 
 alphaChar :: IRIParser st Char
 alphaChar = satisfy isAlphaChar         -- or: Parsec.letter ?
@@ -1076,11 +1045,11 @@ iriToString iuserinfomap i@(IRI { iriScheme = scheme
                             , iriFragment = fragment
                             , prefixName = pname
                             , abbrevPath = aPath
-                            }) = case iriType i of
-  Simple -> (aPath ++)
-  Abbreviated -> (pname ++) . (aPath ++)
-  _ -> (scheme ++) . (iriAuthToString iuserinfomap authority)
-                 . (path ++) . (query ++) . (fragment ++)
+                            })
+  | hasFullIRI i =
+        ("<" ++) . (scheme ++) . iriAuthToString iuserinfomap authority
+                 . (path ++) . (query ++) . (fragment ++) . (">" ++)
+  | otherwise = (pname ++) . (aPath ++)
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i@(IRI { iriScheme = scheme
@@ -1090,12 +1059,13 @@ iriToStringShort iuserinfomap i@(IRI { iriScheme = scheme
                             , iriFragment = fragment
                             , prefixName = pname
                             , abbrevPath = aPath
-                            }) = case iriType i of
-  Full -> (scheme ++) . (iriAuthToString iuserinfomap authority)
-                 . (path ++) . (query ++) . (fragment ++)
-  _ -> (pname ++) . (aPath ++)
+                            })
+  | hasFullIRI i && not (isAbbrev i) =
+        ("<" ++) . (scheme ++) . iriAuthToString iuserinfomap authority
+                 . (path ++) . (query ++) . (fragment ++) . (">" ++)
+  | otherwise = (pname ++) . (aPath ++)
 
-iriAuthToString :: (String -> String) -> (Maybe IRIAuth) -> ShowS
+iriAuthToString :: (String -> String) -> Maybe IRIAuth -> ShowS
 iriAuthToString _ Nothing = id          -- shows ""
 iriAuthToString iuserinfomap
         (Just IRIAuth { iriUserInfo = uinfo
@@ -1126,7 +1096,7 @@ escapeIRIChar p c
     | otherwise = '%' : myShowHex (ord c) ""
     where
         myShowHex :: Int -> ShowS
-        myShowHex n r = case showIntAtBase 16 (toChrHex) n r of
+        myShowHex n r = case showIntAtBase 16 toChrHex n r of
             [] -> "00"
             [d] -> ['0', d]
             cs -> cs
@@ -1140,7 +1110,7 @@ escapeIRIString
                         if the character should be escaped -}
     -> String           -- ^ the string to process
     -> String           -- ^ the resulting IRI string
-escapeIRIString p s = concatMap (escapeIRIChar p) s
+escapeIRIString p = concatMap (escapeIRIChar p)
 
 {- | Turns all instances of escaped characters in the string back
 into literal characters. -}
@@ -1179,7 +1149,7 @@ relativeTo ref base
     | isDefined ( iriAuthority ref ) =
         just_isegments ref { iriScheme = iriScheme base }
     | isDefined ( iriPath ref ) =
-        if (head (iriPath ref) == '/') then
+        if head (iriPath ref) == '/' then
             just_isegments ref
                 { iriScheme = iriScheme base
                 , iriAuthority = iriAuthority base
@@ -1305,8 +1275,8 @@ relPathFrom [] _ = "/"
 relPathFrom pabs [] = pabs
 relPathFrom pabs base =                 -- Construct a relative path isegments
     if sa1 == sb1                       -- if the paths share a leading isegment
-        then if (sa1 == "/")            -- other than a leading '/'
-            then if (sa2 == sb2)
+        then if sa1 == "/"              -- other than a leading '/'
+            then if sa2 == sb2
                 then relPathFrom1 ra2 rb2
                 else pabs
             else relPathFrom1 ra1 rb1
@@ -1327,7 +1297,7 @@ relPathFrom1 pabs base = relName
         (sb, nb) = splitLast base
         rp = relSegsFrom sa sb
         relName = if null rp then
-                      if (na == nb) then ""
+                      if na == nb then ""
                       else if protect na then "./" ++ na
                       else na
                   else
@@ -1366,7 +1336,7 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 -- |Expands a CURIE to an IRI
 expandCurie :: Map String IRI -> IRI -> IRI
 expandCurie prefixMap c =
-  if iriType c == Full then c else
+  if hasFullIRI c then c else
   let i = findWithDefault nullIRI (prefixName c) prefixMap in
   mergeCurie c i
      { prefixName = prefixName c

@@ -32,7 +32,6 @@ import Common.Token
 
 import Text.ParserCombinators.Parsec
 import Data.List
-import qualified Data.Map as Map (empty)
 import Data.Maybe (maybeToList)
 import Control.Monad
 
@@ -241,7 +240,7 @@ simpleIdOrDDottedId = pToken $ liftM2 (++)
 -- | Parse item name or name map
 itemNameOrMap :: AParser st ItemNameMap
 itemNameOrMap = do
-    i1 <- liftM (expandCurie Map.empty . simpleIdToIRI) simpleIdOrDDottedId
+    i1 <- (liftM simpleIdToIRI) simpleIdOrDDottedId
     i2 <- optionMaybe $ liftM simpleIdToIRI $ do
         _ <- asKey mapsTo
         if isInfixOf ".." $ iriToStringUnsecure i1
