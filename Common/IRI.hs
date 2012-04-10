@@ -128,7 +128,7 @@ module Common.IRI
 import Text.ParserCombinators.Parsec
     ( GenParser, ParseError
     , parse, (<|>), (<?>), try
-    , option, many, many1, count, notFollowedBy
+    , option, many, many1
     , char, satisfy, oneOf, string, digit, eof
     , unexpected
     )
@@ -730,81 +730,32 @@ isIpvFutureChar :: Char -> Bool
 isIpvFutureChar c = isUnreserved c || isSubDelims c || c == ';'
 
 ipv6address :: IRIParser st String
-ipv6address =
-        try ( do
-                { a2 <- count 6 h4c
-                ; a3 <- ls32
-                ; return $ concat a2 ++ a3
-                } )
-    <|> try ( do
-                { string "::"
-                ; a2 <- count 5 h4c
-                ; a3 <- ls32
-                ; return $ "::" ++ concat a2 ++ a3
-                } )
-    <|> try ( do
-                { a1 <- opt_n_h4c_h4 0
-                ; string "::"
-                ; a2 <- count 4 h4c
-                ; a3 <- ls32
-                ; return $ a1 ++ "::" ++ concat a2 ++ a3
-                } )
-    <|> try ( do
-                { a1 <- opt_n_h4c_h4 1
-                ; string "::"
-                ; a2 <- count 3 h4c
-                ; a3 <- ls32
-                ; return $ a1 ++ "::" ++ concat a2 ++ a3
-                } )
-    <|> try ( do
-                { a1 <- opt_n_h4c_h4 2
-                ; string "::"
-                ; a2 <- count 2 h4c
-                ; a3 <- ls32
-                ; return $ a1 ++ "::" ++ concat a2 ++ a3
-                } )
-    <|> try ( do
-                { a1 <- opt_n_h4c_h4 3
-                ; string "::"
-                ; a2 <- h4c
-                ; a3 <- ls32
-                ; return $ a1 ++ "::" ++ a2 ++ a3
-                } )
-    <|> try ( do
-                { a1 <- opt_n_h4c_h4 4
-                ; string "::"
-                ; a3 <- ls32
-                ; return $ a1 ++ "::" ++ a3
-                } )
-    <|> try ( do
-                { a1 <- opt_n_h4c_h4 5
-                ; string "::"
-                ; a3 <- h4
-                ; return $ a1 ++ "::" ++ a3
-                } )
-    <|> try ( do
-                { a1 <- opt_n_h4c_h4 6
-                ; string "::"
-                ; return $ a1 ++ "::"
-                } )
-    <?> "IPv6 address"
+ipv6address = do
+    hs <- countMinMax 0 7 h4c
+    fmap (concat hs ++) $ case length hs of
+      7 -> h4 <|> string ":"
+      6 -> ipv4address <|> char ':' <:> (h4 <|> return "")
+      0 -> string "::" <++> ipv6rest 7
+      n -> char ':' <:> ipv6rest (7 - n)
+  <?> "IPv6 address"
 
-opt_n_h4c_h4 :: Int -> IRIParser st String
-opt_n_h4c_h4 n = option "" $ flat (countMinMax 0 n h4c) <++> h4
-
-ls32 :: IRIParser st String
-ls32 = try (h4c <++> h4)
-    <|> ipv4address
+ipv6rest :: Int -> IRIParser st String
+ipv6rest m = do
+    fs <- countMinMax 0 (m - 1) h4c
+    fmap (concat fs ++) $ if null fs then
+       ipv4address <|> h4 <|> return ""
+       else if length fs == m - 1 then h4 else
+        ipv4address <|> h4
 
 h4c :: IRIParser st String
-h4c = try $ h4 <++> (string ":" << notFollowedBy (char ':'))
+h4c = try $ h4 <++> string ":"
 
 h4 :: IRIParser st String
 h4 = countMinMax 1 4 hexDigitChar
 
 ipv4address :: IRIParser st String
-ipv4address = decOctet <++> string "."
-    <++> decOctet <++> string "."
+ipv4address = try (decOctet <++> string "."
+    <++> decOctet) <++> string "."
     <++> decOctet <++> string "."
     <++> decOctet
 
