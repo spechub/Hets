@@ -33,7 +33,7 @@ Additionally, classification of full, abbreviated and simple IRI is provided
 by 'isIRIManchester', isIRICurie.
 
 The abbreviated syntaxes  [3], [4], [5] provide three different kinds of IRI.
-An existing element f type IRI can be classified in one of those kinds.
+An existing element of type IRI can be classified in one of those kinds.
 
 Most of the code has been copied from the Network.URI implementation,
 but it is extended to IRI, Manchester-syntax and CURIE.
@@ -159,9 +159,7 @@ or the abbreviated IRI
 or the simple IRI
 
 >  abbrevPath
-
-If an iri (or abbrev) path is empty then so are the other iri parts
-(resp. the prefix name). -}
+-}
 data IRI = IRI
     { iriScheme :: String         -- ^ @foo:@
     , iriAuthority :: Maybe IRIAuth -- ^ @\/\/anonymous\@www.haskell.org:42@
@@ -173,7 +171,7 @@ data IRI = IRI
     , iriPos :: Range             -- ^ position
     } deriving (Typeable)
 
--- | Type for authority value within a IRI (at least one part is non-empty)
+-- | Type for authority value within a IRI
 data IRIAuth = IRIAuth
     { iriUserInfo :: String       -- ^ @anonymous\@@
     , iriRegName :: String        -- ^ @www.haskell.org@
@@ -198,11 +196,11 @@ nullIRI = IRI
 
 -- | do we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
-hasFullIRI = not . null . iriPath
+hasFullIRI i = not . null $ iriScheme i ++ iriPath i
 
 -- | do we have an abbreviated IRI (i.e. for pretty printing)
 isAbbrev :: IRI -> Bool
-isAbbrev = not . null . abbrevPath
+isAbbrev i = not . null $ prefixName i ++ abbrevPath i
 
 -- | do we have an expanded IRI with a full and an abbreviated IRI
 isExpanded :: IRI -> Bool
