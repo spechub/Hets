@@ -47,7 +47,7 @@ References
 
 (4) <http://www.w3.org/TR/2008/REC-rdf-sparql-query-20080115/>
 
-(5) <http://www.w3.org/TR/curie/#s_syntax>
+(5) <http://www.w3.org/TR/rdfa-core/#s_curies>
 
 -}
 
