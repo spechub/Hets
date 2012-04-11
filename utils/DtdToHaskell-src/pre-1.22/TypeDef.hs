@@ -2,7 +2,7 @@
 --   that correspond to the XML DTD types, and provides pretty-printers to
 --   convert these types into the 'Doc' type of "Text.PrettyPrint.HughesPJ".
 
-module Text.XML.HaXml.DtdToHaskell.TypeDef
+module DtdToHaskell.TypeDef
   ( -- * Internal representation of types
     TypeDef(..)
   , Constructors
@@ -18,8 +18,8 @@ module Text.XML.HaXml.DtdToHaskell.TypeDef
   , name, name_, name_a, name_ac, name_f, mangle, manglef
   ) where
 
-import Char (isLower, isUpper, toLower, toUpper, isDigit)
-import List (intersperse)
+import Data.Char (isLower, isUpper, toLower, toUpper, isDigit)
+import Data.List (intersperse)
 import Text.PrettyPrint.HughesPJ
 
 
@@ -74,11 +74,11 @@ ppTypeDef :: TypeDef -> Doc
 --      no attrs, no constructors
 ppTypeDef (DataDef _ n [] []) =
     let nme = ppHName n in
-    text "data" <+> nme <+> text "=" <+> nme <+> text "\t\t" <> derives
+    text "data" <+> nme <+> text "=" <+> nme <+> derives
 
 --      no attrs, single constructor
 ppTypeDef (DataDef _ n [] [c@(_,[_])]) =
-    text "newtype" <+> ppHName n <+> text "=" <+> ppC c <+> text "\t\t" <> derives
+    text "newtype" <+> ppHName n <+> text "=" <+> ppC c <+> derives
 
 --      no attrs, multiple constrs
 ppTypeDef (DataDef _ n [] cs) =

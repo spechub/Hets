@@ -1,14 +1,14 @@
 -- | This module performs the translation of a parsed XML DTD into the
 --   internal representation of corresponding Haskell data\/newtypes.
 
-module Text.XML.HaXml.DtdToHaskell.Convert
+module DtdToHaskell.Convert
   ( dtd2TypeDef
   ) where
 
-import List (intersperse,nub)
+import Data.List (intersperse,nub)
 
 import Text.XML.HaXml.Types hiding (Name)
-import Text.XML.HaXml.DtdToHaskell.TypeDef
+import DtdToHaskell.TypeDef
 
 
 ---- Internal representation for database of DTD decls ----

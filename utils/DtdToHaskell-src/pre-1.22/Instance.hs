@@ -1,10 +1,10 @@
-module Text.XML.HaXml.DtdToHaskell.Instance
+module DtdToHaskell.Instance
   ( mkInstance
   ) where
 
-import List (intersperse)
+import Data.List (intersperse)
 
-import Text.XML.HaXml.DtdToHaskell.TypeDef
+import DtdToHaskell.TypeDef
 import Text.PrettyPrint.HughesPJ
 
 -- | Convert typedef to appropriate instance declaration, either @XmlContent@,
@@ -18,7 +18,7 @@ mkInstance (DataDef _ n fs []) =
         topatval = if null fs then ppHName n else topat
     in
     text "instance HTypeable" <+> ppHName n <+> text "where" $$
-    nest 4 ( text "toHType x = Defined \"" <> ppXName n <> text "\" [] []" )
+    nest 4 ( text "toHType _ = Defined \"" <> ppXName n <> text "\" [] []" )
     $$
     text "instance XmlContent" <+> ppHName n <+> text "where" $$
     nest 4 (
@@ -27,7 +27,8 @@ mkInstance (DataDef _ n fs []) =
                           <+> toattr <+> text "[]) ()]")
            $$
              text "parseContents = do" $$
-             nest 4 (text "{ (Elem _ as []) <- element [\""
+             nest 4 (text ("{ (Elem _ " ++ (if null fs then "_" else
+	     	    	      "as") ++ " []) <- element [\"")
                              <> ppXName n <> text "\"]" $$
                      text "; return" <+> frretval $$
                      text "} `adjustErr` (\"in <" <> ppXName n
@@ -43,7 +44,7 @@ mkInstance (DataDef False n fs [(n0,sts)]) =
         (frpat, frattr, topat, toattr) = attrpats fs
     in
     text "instance HTypeable" <+> ppHName n <+> text "where" $$
-    nest 4 ( text "toHType x = Defined \"" <> ppXName n <> text "\" [] []" )
+    nest 4 ( text "toHType _ = Defined \"" <> ppXName n <> text "\" [] []" )
     $$
     text "instance XmlContent" <+> ppHName n <+> text "where" $$
     nest 4 (
@@ -69,7 +70,7 @@ mkInstance (DataDef True n [] [(n0,sts)]) =
     let vs = nameSupply sts
     in
     text "instance HTypeable" <+> ppHName n <+> text "where" $$
-    nest 4 ( text "toHType x = Defined \"" <> ppXName n <> text "\" [] []" )
+    nest 4 ( text "toHType _ = Defined \"" <> ppXName n <> text "\" [] []" )
     $$
     text "instance XmlContent" <+> ppHName n <+> text "where" $$
     nest 4 ( text "toContents" <+> parens (mkCpat n0 empty vs)
@@ -86,7 +87,7 @@ mkInstance (DataDef False n fs cs) =
         _ = if null fs then False else True
     in
     text "instance HTypeable" <+> ppHName n <+> text "where" $$
-    nest 4 ( text "toHType x = Defined \"" <> ppXName n <> text "\" [] []" )
+    nest 4 ( text "toHType _ = Defined \"" <> ppXName n <> text "\" [] []" )
     $$
     text "instance XmlContent" <+> ppHName n <+> text "where" $$
     nest 4 ( vcat (map (mkToMult n topat toattr) cs)
@@ -113,7 +114,7 @@ mkInstance (DataDef True n fs cs) =
         mixattrs = if null fs then False else True
     in
     text "instance HTypeable" <+> ppHName n <+> text "where" $$
-    nest 4 ( text "toHType x = Defined \"" <> ppXName n <> text "\" [] []" )
+    nest 4 ( text "toHType _ = Defined \"" <> ppXName n <> text "\" [] []" )
     $$
     text "instance XmlContent" <+> ppHName n <+> text "where" $$
     nest 4 ( vcat (map (mkToAux mixattrs) cs)
