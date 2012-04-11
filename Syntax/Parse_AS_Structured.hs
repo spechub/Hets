@@ -66,9 +66,8 @@ annoParser2 =
 -- * logic and encoding names
 
 -- within sublogics we allow some further symbol characters
-sublogicName :: AParser st Token
-sublogicName = parseToken
-    $ many1 $ satisfy $ \ c -> notElem c ":./\\" && isSignChar c
+sublogicName :: AParser st String
+sublogicName = many $ satisfy $ \ c -> notElem c ":./\\" && isSignChar c
     || elem c "_'" || isAlphaNum c
 
 {- keep these identical in order to
@@ -77,9 +76,10 @@ logicName :: AParser st Logic_name
 logicName = do
       i <- iriManchester
       let (ft, rt) = break (== '.') $ abbrevPath i
-      (e, ms) <- if null rt then
-         fmap (\ m -> (i, m)) . optionMaybe $ char '.' >> sublogicName
-         else return (i { abbrevPath = ft}, Just . mkSimpleId $ tail rt)
+      (e, ms) <- if null rt then return (i, Nothing)
+         else do
+           s <- sublogicName -- try more sublogic characters
+           return (i { abbrevPath = ft}, Just . mkSimpleId $ tail rt ++ s)
       skipSmart
       mt <- optionMaybe $ oParenT >> iriCurie << cParenT
       return $ Logic_name e ms mt
