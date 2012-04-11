@@ -145,12 +145,12 @@ struct
          $ (Const ("HOL.Trueprop",_), tm) => tm
          | tm => tm
 	fun termListToXML section l = XML.Elem ((section,[]),List.map (
-         fn (s,t) => XML.Elem (("Term",[("name",s)]),[XML_Syntax.xml_of_term (remove_hol_true_prop t)])) l)
+         fn (s,t) => XML.Elem (("Term",[("name",Long_Name.base_name s)]),[XML_Syntax.xml_of_term (remove_hol_true_prop t)])) l)
 	fun termTypListToXML section l = XML.Elem ((section,[]),List.map (
 	 fn (s,(t,v)) => let val v' = case v of
-          SOME(tm) => (("Term",[("name",s)]),[XML_Syntax.xml_of_term tm])
+          SOME(tm) => (("Term",[("name",Long_Name.base_name s)]),[XML_Syntax.xml_of_term tm])
 	  | NONE => (("NoTerm",[]),[])
-         in XML.Elem (("ConstDecl",[("name",s)]),[XML_Syntax.xml_of_type t,XML.Elem v']) end) l)
+         in XML.Elem (("ConstDecl",[("name",Long_Name.base_name s)]),[XML_Syntax.xml_of_type t,XML.Elem v']) end) l)
 	fun dtypToXML (Datatype.DtTFree s) = XML.Elem (("DtTFree",[("s",s)]),[])
            | dtypToXML (Datatype.DtType (s,dtl)) = XML.Elem (("DtType",[("s",s)]),List.map dtypToXML dtl)
     	   | dtypToXML (Datatype.DtRec i) = XML.Elem (("DtRec",[("i",Int.toString i)]),[])
