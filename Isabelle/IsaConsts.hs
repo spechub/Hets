@@ -36,6 +36,7 @@ getTypeIds :: Typ -> Set.Set TName
 getTypeIds ty = case ty of
   Type { typeId = n, typeArgs = args }
     -> Set.insert n $ Set.unions $ map getTypeIds args
+  TVar _ _ -> Set.empty
   TFree {} -> Set.empty
 
 deDepOn :: DomainEntry -> DomainEntry -> Bool

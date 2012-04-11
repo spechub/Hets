@@ -998,6 +998,7 @@ typLEq ls1 ls2 = case (ls1, ls2) of
 applyTyRen :: Int -> Typ -> Typ
 applyTyRen n t = case t of
       TFree x s -> TFree (x ++ "XX" ++ show n) s
+      TVar _ _ -> t
       IsaSign.Type a b cs -> IsaSign.Type a b $ map (applyTyRen n) cs
 
 ------------------------- type var maps ---------------------------------
