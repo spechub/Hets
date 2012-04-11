@@ -153,14 +153,14 @@ basicRefSpec l = -- component spec
        (us, ps) <- unitRef l `separatedBy` anComma
        c <- cBraceT
        return (Component_ref us $ toRange c ps o)
-    <|> -- unit spec
-    do uSpec <- unitSpec l
-       refinedRestSpec l uSpec <|> return (Unit_spec uSpec)
     <|> -- architectural spec
     do kArch <- asKey archS
        kSpec <- asKey specS
        asp <- groupArchSpec l
        return (Arch_unit_spec asp (toRange kArch [] kSpec))
+    <|> -- unit spec
+    do uSpec <- unitSpec l
+       refinedRestSpec l uSpec <|> return (Unit_spec uSpec)
 
 refinedRestSpec :: LogicGraph -> UNIT_SPEC -> AParser st REF_SPEC
 refinedRestSpec l u = do
