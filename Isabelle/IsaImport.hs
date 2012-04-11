@@ -1,7 +1,7 @@
 module Isabelle.IsaImport where
 
 import Text.XML.HaXml.OneOfN
-import Text.XML.HaXml.XmlContent
+import Text.XML.HaXml.XmlContent (fReadXml)
 import Isabelle.IsaExport
 import qualified Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
@@ -69,8 +69,8 @@ hXmlConst2IsaTerm c = case c of
   ConstType attrs c1 -> const' attrs (ThreeOf3 c1)
  where const' a d = IsaSign.Const ((IsaSign.mkVName . constName) a)
                                  $ IsaSign.Disp (hXmlOneOf3_2IsaTyp d)
-                                    IsaSign.TCon -- ? - was war das nochmal?
-                                    Nothing -- Warum überhaupt eine arity? - cf. src/Pure/term.ML line 202
+                                    IsaSign.TCon
+                                    Nothing
 
 hXmlApp2IsaTerm :: App -> IsaSign.Term
 hXmlApp2IsaTerm (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm f1)
@@ -79,8 +79,8 @@ hXmlApp2IsaTerm (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm f1)
 -- Not present in Isabelle ?!?
 
 hXmlAbs2IsaTerm :: Abs -> IsaSign.Term
-hXmlAbs2IsaTerm (Abs attrs t f) = IsaSign.Abs
- (IsaSign.Free (IsaSign.mkVName . absVname $ attrs)) -- In isabelle we have a type too, but frees don't have types and vars do not even exist ... 
+hXmlAbs2IsaTerm (Abs attrs _ f) = IsaSign.Abs
+ (IsaSign.Free (IsaSign.mkVName . absVname $ attrs)) 
  (hXmlOneOf6_2IsaTerm f)
  IsaSign.NotCont
 
@@ -121,7 +121,7 @@ hXmlClass2IsaClass :: Class -> IsaSign.IsaClass
 hXmlClass2IsaClass = IsaSign.IsaClass . className
 
 hXmlTypeDecl2IsaTypeDecl :: TypeDecl -> [IsaSign.DomainEntry]
-hXmlTypeDecl2IsaTypeDecl (TypeDecl a rs) = 
+hXmlTypeDecl2IsaTypeDecl (TypeDecl _ rs) = 
  let recmap = foldl (\m (RecType ra _ _) ->
                       Map.insert ((read (recTypeI ra))::Int) 
                                  (recTypeName ra) m) Map.empty rs

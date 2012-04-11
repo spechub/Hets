@@ -1,0 +1,7 @@
+These source files are adapted for the special purposes of Hets!
+
+For the original or most recent sources, license, and authors see:
+http://hackage.haskell.org/package/HaXml-1.20
+http://hackage.haskell.org/package/HaXml-1.22.5
+
+Currently DtdToHaskell is only used to convert Isabelle/IsaExport.dtd

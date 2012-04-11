@@ -32,6 +32,20 @@ GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \
 DRIFT = utils/DrIFT
 HADDOCK = haddock
 
+DTD2HS = utils/DtdToHaskell
+ifneq ($(strip $(HAXML_PACKAGE_COMPAT)),)
+DTD2HS_src = utils/DtdToHaskell-src/pre-1.22/
+else
+DTD2HS_src = utils/DtdToHaskell-src/current/
+endif
+
+ifneq ($(strip $(HAXML_PACKAGE)),)
+derived_sources += Isabelle/IsaExport.hs
+endif
+
+DTD2HS_deps = $(DTD2HS_src)*hs
+
+
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
 GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
@@ -455,6 +469,17 @@ derivedSources: $(derived_sources)
 
 $(DRIFT): $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
+
+$(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
+	(mkdir /tmp/DtdToHaskell/; \
+         cp $(DTD2HS_src)*hs /tmp/DtdToHaskell/; \
+         cp utils/DtdToHaskell-src/DtdToHaskell.hs /tmp/; \
+         export PWD=`pwd`; \
+	 cd /tmp/; \
+         $(HC) --make DtdToHaskell.hs -o $(PWD)/utils/DtdToHaskell $(HC_OPTS))
+
+Isabelle/IsaExport.hs: $(DTD2HS) Isabelle/IsaExport.dtd
+	($(DTD2HS) Isabelle/IsaExport.dtd Isabelle/IsaExport.hs Isabelle.)
 
 $(GENRULES): $(DRIFT) $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
