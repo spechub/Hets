@@ -637,7 +637,7 @@ pnLocal :: GenParser Char st PnLocal
 pnLocal = do
     c1 <- pnCharsU <|> digit
     t <- do
-          s1 <- many (pnChars <|> char '.')
+          s1 <- many (pnChars <|> oneOf "./'")
           if null s1 then return Nothing else case last s1 of
                '.' -> fail "Last character in prefix must not be '.'"
                _ -> return $ Just s1
