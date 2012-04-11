@@ -26,6 +26,7 @@ import Logic.Grothendieck
 import Common.LibName
 import Common.Id
 import Common.AS_Annotation
+import Common.IRI (simpleIdToIRI)
 
 import Isabelle.Logic_Isabelle
 import Isabelle.IsaSign
@@ -46,7 +47,7 @@ _insNodeDG sig sens n dg =
  let gt = G_theory Isabelle (makeExtSign Isabelle sig) startSigId
            (toThSens sens) startThId
      labelK = newInfoNodeLab
-      (makeName (mkSimpleId n))
+      (makeName (simpleIdToIRI (mkSimpleId n)))
       (newNodeInfo DGEmpty)
       gt
      k = getNewNodeDG dg
