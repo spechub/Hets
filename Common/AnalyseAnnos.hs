@@ -162,7 +162,7 @@ store_prefix_map :: PrefixMap -> [Annotation] -> Result PrefixMap
 store_prefix_map = foldM $ \ m a -> case a of
   Prefix_anno assoc _ ->
       let newPrefixesMap = Map.fromList assoc in
-      return $ Map.union m newPrefixesMap
+      return $ Map.unionWith (\_ p2 -> p2) m newPrefixesMap
   _ -> return m
 
 {- | add literal annotation to 'LiteralAnnos'

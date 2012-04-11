@@ -45,7 +45,7 @@ import Common.Result
 import Common.ResultT
 import Common.LibName
 import Common.Id
-import Common.IRI (IRI, iriToStringUnsecure, simpleIdToIRI, iriPos)
+import Common.IRI (IRI, iriToStringUnsecure, simpleIdToIRI, iriPos, parseIRIReference, nullIRI)
 import Common.IO
 import qualified Common.Unlit as Unlit
 
@@ -155,7 +155,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
       Skip -> do
           lift $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
-          ga <- liftR $ addGlobalAnnos emptyGlobalAnnos ans
+          ga <- liftR $ addGlobalAnnos (defPrefixGlobalAnnos file) ans
           lift $ writeLibDefn ga file opts ast
           liftR mzero
       _ -> do
@@ -167,7 +167,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           lift $ putIfVerbose opts 1 $ "Analyzing "
                ++ (if noLibName then "file " ++ file ++ " as " else "")
                ++ "library " ++ show ln
-          (_, ld, ga, lenv) <- anaLibDefn lgraph opts topLns libenv initDG ast
+          (_, ld, ga, lenv) <- anaLibDefn lgraph opts topLns libenv initDG ast file
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
@@ -236,9 +236,9 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
 >       mapM_ (putStrLn . show) diags
 -}
 anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
-  -> ResultT IO (LibName, LIB_DEFN, GlobalAnnos, LibEnv)
-anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
-  gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
+  -> FilePath -> ResultT IO (LibName, LIB_DEFN, GlobalAnnos, LibEnv)
+anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file = do
+  gannos <- showDiags1 opts $ liftR $ addGlobalAnnos (defPrefixGlobalAnnos file) ans
   (libItems', dg', libenv', _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = gannos }, libenv
       , setCurLogic (defLogic opts) lgraph) (map item alibItems)
@@ -248,6 +248,13 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
         (zipWith replaceAnnoted (reverse libItems') alibItems) pos ans
       dg2 = dg1 { optLibDefn = Just newLD }
   return (ln, newLD, globalAnnos dg2, Map.insert ln dg2 libenv')
+
+defPrefixGlobalAnnos :: FilePath -> GlobalAnnos
+defPrefixGlobalAnnos file =
+  let fileIRI = case parseIRIReference (file++"#") of
+                  Nothing -> nullIRI
+                  Just iri -> iri
+  in emptyGlobalAnnos { prefix_map = Map.singleton ":" fileIRI}
 
 anaLibItemAux :: HetcatsOpts -> LNS -> LibName
   -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
