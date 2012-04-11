@@ -85,7 +85,10 @@ unexpected end of input
 expecting "%"
 
 %% one word annotes
-%implies
+parse error at 27.9:
+unexpected " "
+expecting casl char, "_" or end of input
+
 %def
 parse error at 29.1:
 unexpected " "

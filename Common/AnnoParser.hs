@@ -13,6 +13,8 @@ Parsers for annotations and annoted items
    Follows Chap. II:5 of the CASL Reference Manual.
 
    uses Lexer, Keywords and Token rather than CaslLanguage
+
+   semantic annotations now end immediately after the keyword!
 -}
 
 module Common.AnnoParser
@@ -39,7 +41,6 @@ import Common.Utils (trimRight)
 
 import qualified Data.Map as Map
 import Data.List
-import Data.Char
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
@@ -126,25 +127,18 @@ annoteGroup p s =
         q <- getPos
         return $ Unparsed_anno s (Group_anno $ mylines annoteLines)
                   $ Range [p, dec q]
-  in  case s of
-        Annote_word w ->
-            if elem w singleWordAnnos
-            then aP <|> (return $ Unparsed_anno s (Group_anno []) $ Range [p])
-            else aP
+  in case s of
+        Annote_word w -> case lookup w $ swapTable semantic_anno_table of
+          Just sa -> return $ Semantic_anno sa
+            $ Range [p, Id.incSourceColumn p $ length (show sa) - 3]
+          Nothing -> aP
         _ -> aP
 
 annoteLine :: Pos -> Annote_word -> GenParser Char st Annotation
-annoteLine p s =
-  let aP = do
+annoteLine p s = do
         line <- manyTill anyChar newlineOrEof
         q <- getPos
         return $ Unparsed_anno s (mkLineAnno line) $ Range [p, dec q]
-  in case s of
-        Annote_word w ->
-            if elem w singleWordAnnos
-            then aP <|> (return $ Unparsed_anno s (Line_anno "") $ Range [p])
-            else aP
-        _ -> aP
 
 annotationL :: GenParser Char st Annotation
 annotationL = comment <|> annote <?> "\"%\""
@@ -161,10 +155,7 @@ commaIds = commaSep1 parseAnnoId
 
 parseAnno :: Annotation -> Pos -> Either ParseError Annotation
 parseAnno anno sp = case anno of
-    Unparsed_anno (Annote_word kw) txt qs ->
-        case lookup kw $ swapTable semantic_anno_table of
-        Just sa -> semanticAnno sa txt sp
-        _ -> let
+    Unparsed_anno (Annote_word kw) txt qs -> let
           nsp = Id.incSourceColumn sp (length kw + 1)
           inp = annoArg txt
           mkAssoc dir p = do
@@ -278,12 +269,3 @@ dispSymb (dfSymb, symb) = do
   tryString (percentS ++ symb) << skip
   str <- manyTill anyChar $ lookAhead $ charOrEof '%'
   return (dfSymb, trimRight str)
-
-semanticAnno :: Semantic_anno -> Annote_text -> Pos
-              -> Either ParseError Annotation
-semanticAnno sa text sp =
-  if all isSpace $ annoArg text
-  then Right . Semantic_anno sa
-           $ Range [sp, Id.incSourceColumn sp $ length (show sa) - 3]
-  else Left $ newErrorMessage
-           (UnExpect $ "garbage after %" ++ lookupSemanticAnno sa) $ fromPos sp
