@@ -65,7 +65,7 @@ annoParser2 =
 
 -- * logic and encoding names
 
-{- within sublogics we allow some further symbol characters -}
+-- within sublogics we allow some further symbol characters
 sublogicName :: AParser st Token
 sublogicName = parseToken
     $ many1 $ satisfy $ \ c -> notElem c ":./\\" && isSignChar c
@@ -75,18 +75,14 @@ sublogicName = parseToken
 decide after seeing ".", ":" or "->" what was meant -}
 logicName :: AParser st Logic_name
 logicName = do
-      (e, ms) <- try $ do
-            e <- nonSkippingSimpleId -- name of the logic or comorphism
-            lookAhead (char ':' >> fail "")
-            ms <- optionMaybe $ char '.' >> sublogicName
-            return (e,ms)
+      i <- iriManchester
+      let (ft, rt) = break (== '.') $ abbrevPath i
+      (e, ms) <- if null rt then
+         fmap (\ m -> (i, m)) . optionMaybe $ char '.' >> sublogicName
+         else return (i { abbrevPath = ft}, Just . mkSimpleId $ tail rt)
       skipSmart
       mt <- optionMaybe $ oParenT >> iriCurie << cParenT
-      return $ Logic_name (simpleIdToIRI e) ms mt
-    <|> do
-      i <- iriCurie
-      mt <- optionMaybe $ oParenT >> iriCurie << cParenT
-      return $ Logic_name i Nothing mt
+      return $ Logic_name e ms mt
 
 -- * parse Logic_code
 
@@ -345,7 +341,7 @@ combineSpec = do
           s2 <- try $ asKey excludingS
           e <- commaSep1 hetIRI
           p <- getPos
-          return (e,appRange (tokPos s2) $ Range [p])
+          return (e, appRange (tokPos s2) $ Range [p])
         <|> return ([], nullRange)
       )
     return $ Combination oir exl $ appRange (tokPos s1) ps
@@ -399,7 +395,6 @@ fittingArg l = do
         (m, qs) <- parseMapping l
         return (m, catRange $ s : qs)
     return (Fit_spec sp symbit ps)
-
 
 
 parseCorrespondences :: AParser st [CORRESPONDENCE]
@@ -459,7 +454,7 @@ confidenceNumber = do
     d <- (do
           d2 <- char '.'
           ds <- many digit
-          return $ read $ d1:d2:ds
+          return $ read $ d1 : d2 : ds
         <|>
           return 0
       )
