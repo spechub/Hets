@@ -473,7 +473,7 @@ lookupLogic error_prefix logname logicGraph =
     Just lid -> return lid
 
 lookupCurrentLogic :: Monad m => String -> LogicGraph -> m AnyLogic
-lookupCurrentLogic msg lg = lookupLogic msg (currentLogic lg) lg
+lookupCurrentLogic msg lg = lookupLogic (msg ++ " ") (currentLogic lg) lg
 
 -- | union to two logics
 logicUnion :: LogicGraph -> AnyLogic -> AnyLogic

@@ -924,7 +924,7 @@ anaArgSpecs :: LogicGraph -> LibName -> DGraph -> HetcatsOpts -> [Annoted SPEC]
 anaArgSpecs lgraph ln dg opts args = case args of
   [] -> return ([], dg, [])
   argSpec : argSpecs -> do
-       l <- lookupLogic "anaArgSpecs" (currentLogic lgraph) lgraph
+       l <- lookupLogic "anaArgSpecs " (currentLogic lgraph) lgraph
        (argSpec', argSig, dg') <-
            anaSpec False lgraph ln dg (EmptyNode l) emptyNodeName
                                            opts (item argSpec)

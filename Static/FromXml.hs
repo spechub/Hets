@@ -228,7 +228,7 @@ generateNodeLab opts lg mGt xNd (dg, lv) = case xNd of
   XNode nm lN (hid, syb) spc cc -> do
         -- StartOff-Theory. Taken from LogicGraph for initial Nodes
         gt0 <- case mGt of
-          Nothing -> fmap emptyTheory $ lookupLogic "logic was not found" lN lg
+          Nothing -> fmap emptyTheory $ lookupLogic "generateNodeLab " lN lg
           Just gt -> return gt
         -- hidden symbols use a different parser
         gt1 <- if hid then parseHidden gt0 syb
