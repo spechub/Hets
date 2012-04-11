@@ -161,7 +161,7 @@ transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
 -- datatype with name (tyId) + args (tyArgs) and alternatives
 transDataEntry :: DataEntry -> [DomainEntry]
 transDataEntry (DataEntry _ tyId Le.Free tyArgs _ alts) =
-    [(transDName tyId tyArgs, map transAltDefn $ Set.toList alts)]
+    [((transDName tyId tyArgs, Nothing), map transAltDefn $ Set.toList alts)]
   where transDName ti ta = Type (showIsaTypeT ti baseSign) []
                            $ map transTypeArg ta
 transDataEntry _ = error "HasCASL2IsabelleHOL.transDataEntry"

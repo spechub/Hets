@@ -157,10 +157,12 @@ struct
 	fun constructorToXML (name,dtl) = XML.Elem
          (("Constructor",[("val",Long_Name.base_name name)]),List.map dtypToXML dtl)
 	fun typeToXML d = List.map
-         (fn (i,(s,vs,dt)) => let val name = case (#alt_names d) of
-            SOME(ns) => List.nth (ns,i)
-            | NONE => s
-          in XML.Elem (("RecType",[("i",Int.toString i),("name",name)]),[
+         (fn (i,(s,vs,dt)) => let val attrs = case (#alt_names d) of
+            SOME(ns) => if (List.nth (ns,i)) = (Long_Name.base_name s)
+             then [("i",Int.toString i),("name",Long_Name.base_name s)]
+             else [("i",Int.toString i),("name",Long_Name.base_name s),("altname",List.nth (ns,i))]
+            | NONE => [("i",Int.toString i),("name",Long_Name.base_name s)]
+          in XML.Elem (("RecType",attrs),[
                XML.Elem (("Vars",[]),List.map dtypToXML vs),
 	       XML.Elem (("Constructors",[]),List.map constructorToXML dt)
               ])

@@ -144,10 +144,11 @@ hXmlRecType2IsaTypeDecl recmap (RecType a (Vars vs) (Constructors cs)) =
                  hXmlOneOf3_2IsaTyp
                   (ThreeOf3 (Type (Type_Attrs (Map.findWithDefault ""
                     ((read r)::Int) recmap)) []))
- in (IsaSign.Type (recTypeName a) holType
+ in ((IsaSign.Type (recTypeName a) holType
       (map (\v -> case v of
              Vars_DtTFree f -> trans (Constructor_DtTFree f)
              Vars_DtType t -> trans (Constructor_DtType t)
              Vars_DtRec r -> trans (Constructor_DtRec r)) vs),
+      recTypeAltname a),
       map (\(Constructor ca cs') ->
        (IsaSign.mkVName (constructorVal ca),map trans cs')) cs)

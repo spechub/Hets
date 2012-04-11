@@ -81,7 +81,7 @@ addPreAlphabet sortList isaTh =
 -- | Make a Domain Entry for the PreAlphabet from a list of sorts.
 mkPreAlphabetDE :: [SORT] -> DomainEntry
 mkPreAlphabetDE sorts =
-    (mkSType preAlphabetS,
+    ((mkSType preAlphabetS, Nothing),
          map (\ sort ->
                   (mkVName (mkPreAlphabetConstructor sort),
                                [mkSType $ convertSort2String sort])
@@ -630,7 +630,7 @@ mkEventDE _ chanNameMap =
         mkAllChanCons = map mkChanCon $ CASLSign.mapSetToList chanNameMap
         -- We build the event type out of the flat constructions and the list of
         -- channel constructions
-    in (eventType, (flat : mkAllChanCons))
+    in ((eventType,Nothing), (flat : mkAllChanCons))
 
 -- | Add the eq function to an Isabelle theory using a list of sorts
 addProjFlatFun :: IsaTheory -> IsaTheory
@@ -711,7 +711,7 @@ mkFQProcNameDE fqProcesses =
           _ -> error "CspCASLProver.Utils.mkFQProcNameDE: Applied to non fully\
                       \ qualified processes name."
     in
-    (procNameType, constructors)
+    ((procNameType,Nothing), constructors)
 
 -- -----------------------------------------------------------------------
 -- Functions adding the process map function to an Isabelle theory     --

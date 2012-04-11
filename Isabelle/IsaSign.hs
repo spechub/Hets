@@ -270,9 +270,10 @@ data Sign = Sign
 type ConstTab = Map.Map VName Typ
 
 -- same types for data types and domains
+-- the optional string is only relevant for alternative type names
 
 type DomainTab = [[DomainEntry]]
-type DomainEntry = (Typ, [(VName, [Typ])])
+type DomainEntry = ((Typ,Maybe String), [(VName, [Typ])])
 
 emptySign :: Sign
 emptySign = Sign

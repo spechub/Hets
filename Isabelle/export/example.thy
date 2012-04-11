@@ -4,16 +4,16 @@ imports Datatype
 
 begin
 
-datatype (type4) type1 =
+datatype (type4) 'a type1 =
        foo |
-       bar type2
-and (type5) type2 = "nat * type1"
-and type3 = "nat * type2"
+       bar "'a type2"
+and (type5) 'a type2 = "a * nat * 'a type1"
+and 'a type3 = "nat * 'a type2"
 
 datatype 'a type6 = bar 'a
 
 consts
-I :: type1
+I :: "nat type1"
 
 axioms
 tt : "test --> test"

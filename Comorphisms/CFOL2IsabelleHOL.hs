@@ -158,14 +158,14 @@ transTheory trSig trForm (sign, sens) =
              (transPredType t) m1) m $ number $ Set.toList ts
 
 makeDtDefs :: CASL.Sign.Sign f e -> Set.Set String -> [[Constraint]]
-           -> [[(Typ, [(VName, [Typ])])]]
+           -> [[((Typ, Maybe String), [(VName, [Typ])])]]
 makeDtDefs sign = map . makeDtDef sign
 
 makeDtDef :: CASL.Sign.Sign f e -> Set.Set String -> [Constraint]
-          -> [(Typ, [(VName, [Typ])])]
+          -> [((Typ, Maybe String), [(VName, [Typ])])]
 makeDtDef sign tyToks constrs = map makeDt srts where
     (srts, ops, _maps) = recover_Sort_gen_ax constrs
-    makeDt s = (transSort s, map makeOp (filter (hasTheSort s) ops))
+    makeDt s = ((transSort s, Nothing), map makeOp (filter (hasTheSort s) ops))
     makeOp opSym = (transOpSymb sign tyToks opSym, transArgs opSym)
     hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
     hasTheSort _ _ = error "CFOL2IsabelleHOL.hasTheSort"

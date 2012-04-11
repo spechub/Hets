@@ -40,7 +40,7 @@ getTypeIds ty = case ty of
   TFree {} -> Set.empty
 
 deDepOn :: DomainEntry -> DomainEntry -> Bool
-deDepOn (_, l) (t, _) =
+deDepOn (_, l) ((t,_), _) =
   Set.member (typeId t) $ Set.unions $ concatMap (map getTypeIds . snd) l
 
 ordDoms :: DomainTab -> DomainTab

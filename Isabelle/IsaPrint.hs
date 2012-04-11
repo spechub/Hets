@@ -532,7 +532,7 @@ brackMapList f ws = brackets $ hsep $ punctuate comma
 -- filter out types that are given in the domain table
 printTypeDecls :: BaseSig -> DomainTab -> Arities -> Doc
 printTypeDecls bs odt ars =
-    let dt = Map.fromList $ map (\ (t, _) -> (typeId t, [])) $ concat odt
+    let dt = Map.fromList $ map (\ ((t,_), _) -> (typeId t, [])) $ concat odt
     in vcat $ map (printTycon bs) $ Map.toList $ Map.difference ars dt
 
 printTycon :: BaseSig -> (TName, [(IsaClass, [(Typ, Sort)])]) -> Doc
@@ -603,7 +603,10 @@ printSign sig = let dt = ordDoms $ domainTab sig
     printDomainDef dts = if null dts then empty else
         text (if isDomain then domainS else datatypeS)
         <+> and_docs (map printDomain dts)
-    printDomain (t, ops) =
+    printDomain ((t,t_alt), ops) =
+       (case t_alt of
+         Just s -> parens (text s)
+         Nothing -> empty) <+>
        printTyp (if isDomain then Quoted else Null) t <+> equals <+>
        fsep (bar $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
@@ -620,8 +623,8 @@ printSign sig = let dt = ordDoms $ domainTab sig
            else d
     showCaseLemmata dtDefs = text (concatMap showCaseLemmata1 dtDefs)
     showCaseLemmata1 = concatMap showCaseLemma
-    showCaseLemma (_, []) = ""
-    showCaseLemma (tyCons, c : cns) =
+    showCaseLemma ((_,_), []) = ""
+    showCaseLemma ((tyCons,_), c : cns) =
       let cs = "case caseVar of" ++ sp
           sc b = showCons b c ++ concatMap (("   | " ++) . showCons b) cns
           clSome = sc True
