@@ -51,7 +51,7 @@ import Data.Maybe
 import Control.Monad
 
 hetIRI :: GenParser Char st IRI
-hetIRI = do
+hetIRI = try $ do
   i <- iriManchester
   skipSmart
   if iriToStringUnsecure i `elem` casl_reserved_words then
