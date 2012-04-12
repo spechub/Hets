@@ -79,10 +79,6 @@ lookupSemanticAnno sa =
     fromMaybe (error "lookupSemanticAnno: no semantic anno")
         $ lookup sa semantic_anno_table
 
--- | Annotations with only a single word (no newline needed for parsing)
-singleWordAnnos :: [String]
-singleWordAnnos = map snd semantic_anno_table
-
 -- | all possible annotations (without comment-outs)
 data Annotation = -- | constructor for comments or unparsed annotes
                 Unparsed_anno Annote_word Annote_text Range
