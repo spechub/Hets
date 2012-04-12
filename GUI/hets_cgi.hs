@@ -208,7 +208,7 @@ anaInput contents selectedBoxes outputfiles =
 anaInput contents selectedBoxes outputfiles = do
   ast <- readLibDefnM logicGraph webOpts "<stdin>" contents
   CRes.Result ds mres <- runResultT
-         $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast
+      $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast ""
   let ds1 = filter diagFilter ds
   if CRes.hasErrors ds1 then return $ CRes.Result ds1 Nothing else
     maybe (return $ CRes.Result ds1 Nothing)
