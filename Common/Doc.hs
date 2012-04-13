@@ -646,7 +646,7 @@ textToHtml dis k s = let
     IdLabel appl tk i -> let
         d = textToHtml dis tk s
         si = escapeHtml (showId i "") ""
-        in if not (Set.member i dis) then d else Pretty.hcat
+        in if True {- not (Set.member i dis) -} then d else Pretty.hcat
         [zeroText $ "<a " ++ (if appl == IdAppl then "href=\"#" else "name=\"")
         ++ si ++ "\">", d, zeroText "</a>"]
     _ -> h
