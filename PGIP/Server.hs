@@ -473,13 +473,14 @@ resultStyles = unlines
   , "result { display:inline; padding:30px; }" ]
 
 -- TODO: catch empty theory // check empty proof results
+-- TODO: implement button to go back to initial page WITH prove results etc..
 
 {- | displays the global theory for a node with the option to select and prove
 theorems interactively -}
 showGlobalTh :: DGraph -> Int -> G_theory -> String -> String
 showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
   sGTh@(G_theory lid (ExtSign _ sig) _ thsens _) -> let
-    (axs, _) = OMap.partition isAxiom thsens
+    (axs, thms) = OMap.partition isAxiom thsens
     ga = globalAnnos dg
     -- create prove button and prover/comorphism selection
     (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
@@ -542,11 +543,12 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
           , "}" ]
     -- formatting stuff
     headr = unode "h2" fstLine
+    thmShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thms
     axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
     sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
     in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2 ++ jvScr3 ++ jvScr4)
-      [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Axioms & Symbols"]
-      ++ axShow ++ "\n<br />" ++ sbShow
+      [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Signature"]
+      ++ thmShow ++ "\n<br />" ++ axShow ++ "\n<br />" ++ sbShow
 
 -- | create prover and comorphism menu and combine them using javascript
 showProverSelection :: G_sublogics -> (Element, Element, String)
