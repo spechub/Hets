@@ -13,12 +13,12 @@ cd /tmp
 cd /local/home/maeder/haskell
 . ../cronjob.sh
 
-ssh bigmac /Users/Shared/maeder/haskell/job.sh &
+#ssh bigmac /Users/Shared/maeder/haskell/job.sh &
 ssh a01 /Users/Shared/maeder/haskell/job.sh &
 
 makeHets
 
-ssh bigmac date
+#ssh bigmac date
 
 makeLibCheck
 installHetsBinary linux
@@ -49,7 +49,7 @@ moreChecks
 checkEnvs
 checkPrfs
 date
-updateOMDoc
+#updateOMDoc
 
 #cd /home/linux-bkb/twelf/twelf-mod
 #svn up --force
