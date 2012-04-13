@@ -432,7 +432,6 @@ getHetsResult opts updates sessRef file query =
                   ins = getImportNames dg i
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
-                -- TODO: work on html-style nodeview
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
                    Symbols -> return $ showSymbols ins (globalAnnos dg) dgnode
@@ -462,17 +461,17 @@ getHetsResult opts updates sessRef file query =
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
 formatResults :: Element -> String
-formatResults rs = case lines $ ppTopElement rs of
-  h : t -> unlines $ h : ["<!DOCTYPE results ["
-        , "  <!ELEMENT results (goal)>"
-        , "  <!ELEMENT goal (name, result)>"
-        , "  <!ELEMENT name (#PCDATA)>"
-        , "  <!ELEMENT result (#PCDATA)>"
-        , "]>"
-        , "<?xml-stylesheet type=\"text/css\" ?>"] ++ t
-  [] -> error "empty results request"
+formatResults rs = ppElement $ unode "html" [ unode "head"
+  [ unode "title" "Results", (add_attr (mkAttr "type" "text/css")
+  $ unode "style" resultStyles) ], rs ]
 
--- TODO: format proof results
+resultStyles :: String
+resultStyles = unlines
+  [ "results { margin: 5px; padding:5px; display:block; }"
+  , "goal { display:block; margin-left:15px; }"
+  , "name { display:inline; margin:5px; padding:10px; font-weight:bold; }"
+  , "result { display:inline; padding:30px; }" ]
+
 -- TODO: catch empty theory // check empty proof results
 
 {- | displays the global theory for a node with the option to select and prove
