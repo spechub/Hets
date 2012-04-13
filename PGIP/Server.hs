@@ -60,13 +60,11 @@ import Proofs.AbstractState
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
 
-import Common.AS_Annotation (SenAttr (..), isAxiom)
 import Common.Doc
 import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
 import Common.LibName
-import qualified Common.OrderedMap as OMap
 import Common.PrintLaTeX
 import Common.Result
 import Common.ResultT
@@ -474,13 +472,15 @@ resultStyles = unlines
 
 -- TODO: catch empty theory // check empty proof results
 -- TODO: implement button to go back to initial page WITH prove results etc..
+-- TODO: move provers/translations into theory view
+-- TODO: link svg-nodes onClick with theory view
+-- TODO: merge command buttons with svg-graph view
 
 {- | displays the global theory for a node with the option to select and prove
 theorems interactively -}
 showGlobalTh :: DGraph -> Int -> G_theory -> String -> String
 showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
-  sGTh@(G_theory lid (ExtSign _ sig) _ thsens _) -> let
-    (axs, thms) = OMap.partition isAxiom thsens
+  sGTh@(G_theory lid (ExtSign sig _) _ thsens _) -> let
     ga = globalAnnos dg
     -- create prove button and prover/comorphism selection
     (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
@@ -543,12 +543,11 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
           , "}" ]
     -- formatting stuff
     headr = unode "h2" fstLine
-    thmShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thms
-    axShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList axs
-    sbShow = renderHtml ga $ vcat $ map pretty $ Set.toList sig
+    thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
+    sbShow = renderHtml ga $ pretty sig
     in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2 ++ jvScr3 ++ jvScr4)
-      [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Signature"]
-      ++ thmShow ++ "\n<br />" ++ axShow ++ "\n<br />" ++ sbShow
+      [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Theory"]
+      ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | create prover and comorphism menu and combine them using javascript
 showProverSelection :: G_sublogics -> (Element, Element, String)
