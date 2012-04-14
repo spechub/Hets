@@ -138,7 +138,7 @@ import Data.Char (ord, chr, isHexDigit, toLower, toUpper, digitToInt)
 import Numeric (showIntAtBase)
 
 import Data.Ord (comparing)
-import Data.Map (Map, findWithDefault)
+import Data.Map as Map (Map, lookup)
 
 import Common.Id
 import Common.Lexer
@@ -989,21 +989,26 @@ The Show instance for IRI uses a mapping that hides any password
 that may be present in the IRI.  Use this function with argument @id@
 to preserve the password in the formatted output. -}
 iriToString :: (String -> String) -> IRI -> ShowS
-iriToString iuserinfomap i@(IRI { iriScheme = scheme
-                            , iriAuthority = authority
-                            , iriPath = path
-                            , iriQuery = query
-                            , iriFragment = fragment
-                            , prefixName = pname
-                            , abbrevPath = aPath
-                            })
-  | hasFullIRI i =
-        ("<" ++) . (scheme ++) . iriAuthToString iuserinfomap authority
-                 . (path ++) . (query ++) . (fragment ++) . (">" ++)
-  | otherwise = (pname ++) . (aPath ++)
+iriToString iuserinfomap i@(IRI { iriQuery = query
+                                , iriFragment = fragment
+                                , prefixName = pname
+                                , abbrevPath = aPath
+                                })
+  | hasFullIRI i = ("<" ++) . iriToStringUnsecureFull iuserinfomap i . (">" ++)
+  | otherwise = (pname ++) . (aPath ++) . (query ++) . (fragment ++)
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
-iriToStringShort iuserinfomap i@(IRI { iriScheme = scheme
+iriToStringShort iuserinfomap i@(IRI { iriQuery = query
+                                     , iriFragment = fragment
+                                     , prefixName = pname
+                                     , abbrevPath = aPath
+                                     })
+  | hasFullIRI i && not (isAbbrev i) =
+        ("<" ++) . iriToStringUnsecureFull iuserinfomap i . (">" ++)
+  | otherwise = (pname ++) . (aPath ++) . (query ++) . (fragment ++)
+
+iriToStringUnsecureFull :: (String -> String) -> IRI -> ShowS
+iriToStringUnsecureFull iuserinfomap i@(IRI { iriScheme = scheme
                             , iriAuthority = authority
                             , iriPath = path
                             , iriQuery = query
@@ -1011,10 +1016,9 @@ iriToStringShort iuserinfomap i@(IRI { iriScheme = scheme
                             , prefixName = pname
                             , abbrevPath = aPath
                             })
-  | hasFullIRI i && not (isAbbrev i) =
-        ("<" ++) . (scheme ++) . iriAuthToString iuserinfomap authority
-                 . (path ++) . (query ++) . (fragment ++) . (">" ++)
-  | otherwise = (pname ++) . (aPath ++)
+  | isAbbrev i = (aPath ++) . (query ++) . (fragment ++)
+  | otherwise = (scheme ++) . iriAuthToString iuserinfomap authority
+                 . (path ++) . (query ++) . (fragment ++)
 
 iriAuthToString :: (String -> String) -> Maybe IRIAuth -> ShowS
 iriAuthToString _ Nothing = id          -- shows ""
@@ -1285,28 +1289,23 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 -- * Other normalization functions
 
 -- |Expands a CURIE to an IRI
-expandCurie :: Map String IRI -> IRI -> IRI
+-- @Nothing@ iff there is no IRI @i@ assigned to the prefix of @c@ or the concatenation of @i@ and @abbrevPath c@ is not a valid IRI
+expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie prefixMap c =
-  if hasFullIRI c then c else
-  let i = findWithDefault nullIRI (prefixName c) prefixMap in
-  mergeCurie c i
-     { prefixName = prefixName c
-     , abbrevPath = abbrevPath c
-     }
+  if hasFullIRI c then Just c else
+  case Map.lookup (prefixName c) prefixMap of
+       Nothing -> Nothing
+       Just i -> case mergeCurie c i of
+                Nothing -> Nothing
+                Just j -> Just $ j { prefixName = prefixName c
+                                   , abbrevPath = abbrevPath c }
 
 {- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending path and
 query-part of @c@ to @i@. Also replacing fragment of @c@ with @i@
 if both are not empty. -}
-mergeCurie :: IRI -> IRI -> IRI
+mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  i { iriPath = iriPath i ++ abbrevPath c
-    , iriQuery = iriQuery i ++ case iriQuery c of
-        "" -> ""
-        _ : r -> '&' : r
-    , iriFragment = case iriFragment i of
-         "" -> iriFragment c
-         f -> f
-    }
+  parseIRI $ iriToStringUnsecureFull id i "" ++ iriToStringUnsecureFull id c ""
 
 {- | Case normalization; cf. RFC3986 section 6.2.2.1
 NOTE:  authority case normalization is not performed -}
