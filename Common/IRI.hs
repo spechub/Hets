@@ -456,7 +456,7 @@ curie = iriWithPos $ do
   <|> do
     r <- reference
     skipSmart
-    return r { prefixName = ":" }
+    return r
 
 reference :: IRIParser st IRI
 reference = iriWithPos $ do
