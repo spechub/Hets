@@ -456,7 +456,7 @@ curie = iriWithPos $ do
   <|> do
     r <- reference
     skipSmart
-    return r
+    return r { prefixName = ":" }
 
 reference :: IRIParser st IRI
 reference = iriWithPos $ do
@@ -1013,7 +1013,6 @@ iriToStringUnsecureFull iuserinfomap i@(IRI { iriScheme = scheme
                             , iriPath = path
                             , iriQuery = query
                             , iriFragment = fragment
-                            , prefixName = pname
                             , abbrevPath = aPath
                             })
   | isAbbrev i = (aPath ++) . (query ++) . (fragment ++)
@@ -1293,7 +1292,8 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie prefixMap c =
   if hasFullIRI c then Just c else
-  case Map.lookup (prefixName c) prefixMap of
+  let pn = if null $ prefixName c then ":" else prefixName c in
+  case Map.lookup pn prefixMap of
        Nothing -> Nothing
        Just i -> case mergeCurie c i of
                 Nothing -> Nothing
