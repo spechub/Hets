@@ -82,28 +82,33 @@ phrase = many white >> (do
     return ([Importation i], [])
   <|> do
     try (oParenT >> clCommentKey)
-    c <- quotedstring <|> enclosedname <?> "comment after \"cl-comment\""
+    c <- quotedstring <?> "comment after \"cl-comment\""
     (t, prfxs) <- comment_txt <?> "text after \"cl-comment <comment>\""
     cParenT
     return ([Comment_text (Comment c nullRange) t nullRange], prfxs)
   <|> do
     try (oParenT >> clPrefixKey)
-    p <- (do
-            string colonS
-            return colonS
-          <|> do
-            x <- ncname
-            string colonS
-            return $ x ++ colonS
-          )
-    many white
-    i <- iriCurie
+    pm <- prefix
     cParenT
-    return ([], [(p, i)])
+    return ([], pm)
   <|> do
     s <- sentence <?> "sentence"
     return ([Sentence s], [])
   )
+
+prefix :: CharParser st [PrefixMapping]
+prefix = do
+  p <- (do
+      string colonS
+      return colonS
+    <|> do
+      x <- ncname
+      string colonS
+      return $ x ++ colonS
+    )
+  many white
+  i <- iriCurie
+  return [(p, i)]
 
 comment_txt :: CharParser st (TEXT, [PrefixMapping])
 comment_txt = try text <|> return (Text [] nullRange, [])
@@ -140,7 +145,7 @@ importation = do
 sentence :: CharParser st SENTENCE
 sentence = parens (do
     ck <- try clCommentKey
-    c <- quotedstring <|> enclosedname <?> "comment after \"cl-comment\""
+    c <- quotedstring <?> "comment after \"cl-comment\""
     s <- sentence <?> "sentence after \"cl-comment <comment>\""
     return $ Comment_sent (Comment c $ Range $ rangeSpan c) s
            $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan s]
@@ -259,7 +264,7 @@ term = do
 term_fun_cmt :: CharParser st TERM
 term_fun_cmt = parens (do
     ck <- try clCommentKey
-    c <- quotedstring <|> enclosedname <?> "comment after \"cl-comment\""
+    c <- quotedstring <?> "comment after \"cl-comment\""
     t <- term <?> "term after \"cl-comment <comment>\""
     return $ Comment_term t (Comment c $ Range $ rangeSpan c)
            $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan t]

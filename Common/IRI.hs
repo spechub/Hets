@@ -101,6 +101,7 @@ module Common.IRI
     , iriToStringUnsecure
     , iriToStringShort
     , iriToStringShortUnsecure
+    , iriToStringFullUnsecure
     , isReserved, isUnreserved
     , isAllowedInIRI, isUnescapedInIRI
     , escapeIRIChar
@@ -243,6 +244,10 @@ iriToStringUnsecure i = iriToString id i ""
 -- |converts IRI to String of abbreviated form, also showing Auth info
 iriToStringShortUnsecure :: IRI -> String
 iriToStringShortUnsecure i = iriToStringShort id i ""
+
+-- |converts IRI to String of full/expanded form, also showing Auth info, no enclosing brackets
+iriToStringFullUnsecure :: IRI -> String
+iriToStringFullUnsecure i = iriToStringFull id i ""
 
 defaultUserInfoMap :: String -> String
 defaultUserInfoMap uinf = user ++ newpass
@@ -994,7 +999,7 @@ iriToString iuserinfomap i@(IRI { iriQuery = query
                                 , prefixName = pname
                                 , abbrevPath = aPath
                                 })
-  | hasFullIRI i = ("<" ++) . iriToStringUnsecureFull iuserinfomap i . (">" ++)
+  | hasFullIRI i = ("<" ++) . iriToStringFull iuserinfomap i . (">" ++)
   | otherwise = (pname ++) . (aPath ++) . (query ++) . (fragment ++)
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
@@ -1004,18 +1009,18 @@ iriToStringShort iuserinfomap i@(IRI { iriQuery = query
                                      , abbrevPath = aPath
                                      })
   | hasFullIRI i && not (isAbbrev i) =
-        ("<" ++) . iriToStringUnsecureFull iuserinfomap i . (">" ++)
+        ("<" ++) . iriToStringFull iuserinfomap i . (">" ++)
   | otherwise = (pname ++) . (aPath ++) . (query ++) . (fragment ++)
 
-iriToStringUnsecureFull :: (String -> String) -> IRI -> ShowS
-iriToStringUnsecureFull iuserinfomap i@(IRI { iriScheme = scheme
+iriToStringFull :: (String -> String) -> IRI -> ShowS
+iriToStringFull iuserinfomap i@(IRI { iriScheme = scheme
                             , iriAuthority = authority
                             , iriPath = path
                             , iriQuery = query
                             , iriFragment = fragment
                             , abbrevPath = aPath
                             })
-  | isAbbrev i = (aPath ++) . (query ++) . (fragment ++)
+  | isAbbrev i && not (hasFullIRI i) = (aPath ++) . (query ++) . (fragment ++)
   | otherwise = (scheme ++) . iriAuthToString iuserinfomap authority
                  . (path ++) . (query ++) . (fragment ++)
 
@@ -1300,12 +1305,10 @@ expandCurie prefixMap c =
                 Just j -> Just $ j { prefixName = prefixName c
                                    , abbrevPath = abbrevPath c }
 
-{- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending path and
-query-part of @c@ to @i@. Also replacing fragment of @c@ with @i@
-if both are not empty. -}
+{- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending their string representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  parseIRI $ iriToStringUnsecureFull id i "" ++ iriToStringUnsecureFull id c ""
+  parseIRI $ iriToStringFull id i "" ++ iriToStringFull id c ""
 
 {- | Case normalization; cf. RFC3986 section 6.2.2.1
 NOTE:  authority case normalization is not performed -}

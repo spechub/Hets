@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  Basic analysis for common logic
-Copyright   :  (c) Karl Luc, Uni Bremen 2010
+Copyright   :  (c) Eugen Kuksa, Karl Luc, Uni Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  kluc@informatik.uni-bremen.de
+Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
@@ -23,6 +23,7 @@ import CommonLogic.Symbol as Symbol
 import qualified CommonLogic.AS_CommonLogic as AS
 import CommonLogic.Morphism as Morphism
 import CommonLogic.Sign as Sign
+import CommonLogic.ExpandCurie
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -188,10 +189,11 @@ basicCommonLogicAnalysis :: (AS.BASIC_SPEC, Sign.Sign, a)
   -> Result (AS.BASIC_SPEC,
              ExtSign Sign.Sign Symbol.Symbol,
              [AS_Anno.Named AS.TEXT_META])
-basicCommonLogicAnalysis (bs, sig, _) =
+basicCommonLogicAnalysis (bs', sig, _) =
    Result.Result [] $ if exErrs then Nothing else
      Just (bs, ExtSign sigItems newSyms, sentences)
     where
+      bs = expandCurieBS bs'
       sigItems = makeSig bs sig
       newSyms = Set.map Symbol.Symbol
                   $ Set.difference (Sign.allItems sigItems) $ Sign.allItems sig

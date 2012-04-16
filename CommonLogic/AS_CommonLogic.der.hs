@@ -195,7 +195,7 @@ printPhrase s = case s of
   Module x -> parens $ text clModuleS <+> pretty x
   Sentence x -> pretty x
   Importation x -> parens $ text clImportS <+> pretty x
-  Comment_text x y _ -> parens $ text clCommentS <+> quotes (pretty x) <+> pretty y
+  Comment_text x y _ -> parens $ text clCommentS <+> pretty x <+> pretty y
 
 printModule :: MODULE -> Doc
 printModule (Mod x z _) = pretty x <+> pretty z
@@ -210,7 +210,7 @@ printSentence s = case s of
     Quant_sent xs _ -> parens $ pretty xs
     Bool_sent xs _ -> parens $ pretty xs
     Atom_sent xs _ -> pretty xs
-    Comment_sent x y _ -> parens $ text clCommentS <+> quotes (pretty x) <+> pretty y
+    Comment_sent x y _ -> parens $ text clCommentS <+> pretty x <+> pretty y
     Irregular_sent xs _ -> parens $ pretty xs
 
 printComment :: COMMENT -> Doc
@@ -239,7 +239,7 @@ printTerm :: TERM -> Doc
 printTerm s = case s of
    Name_term a -> pretty a
    Funct_term t ts _ -> parens $ pretty t <+> (fsep $ map pretty ts)
-   Comment_term t c _ -> parens $ text clCommentS <+> quotes (pretty c) <+> pretty t
+   Comment_term t c _ -> parens $ text clCommentS <+> pretty c <+> pretty t
 
 printTermSeq :: TERM_SEQ -> Doc
 printTermSeq s = case s of
@@ -265,7 +265,6 @@ printSymbMapItems (Symb_map_items xs _) = ppWithCommas xs
 
 printSymbItems :: SYMB_ITEMS -> Doc
 printSymbItems (Symb_items xs _) = fsep $ map pretty xs
-
 
 -- keywords, reservednames in CLIF
 orS :: String

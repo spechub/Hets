@@ -1,0 +1,16 @@
+(cl-text "foo:curie"
+
+  (cl-prefix foo: <http://foo.com/#>)
+
+  (cl-prefix bar: <https://bar.com/path/to/file#>)
+
+  ('foo:test')
+
+  (bar:anchor)
+
+  (Bar baz)
+
+  (and ((cl-comment 'stays the same because expansion yields an invalid IRI' bar:#bar) x)
+       (baz y))
+
+)

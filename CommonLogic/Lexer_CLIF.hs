@@ -37,23 +37,23 @@ cParenT = Lexer.cParenT << many white
 
 quotedstring :: CharParser st String
 quotedstring = do
-   char '\''
+   c1 <- char '\''
    s <- many (satisfy clLetters2 <|> oneOf whitec
          <|> char '(' <|> char ')' <|> char '\"')
         <?> "quotedstring: word"
-   char '\''
+   c2 <- char '\''
    many white
-   return s
+   return $ c1:s++[c2]
 
 enclosedname :: CharParser st String
 enclosedname = do
-   char '\"'
+   c1 <- char '\"'
    s <- many (satisfy clLetters2 <|> oneOf whitec
          <|> char '(' <|> char ')' <|> char '\'')
          <?> "word"
-   char '\"' <?> "\""
+   c2 <- char '\"' <?> "\""
    many white
-   return s
+   return $ c1:s++[c2]
 
 -- | parser for parens
 parens :: CharParser st a -> CharParser st a
