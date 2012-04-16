@@ -1,4 +1,6 @@
-(cl-text "foo:curie"
+(cl-text foo:curie
+
+  (cl-prefix : <http://bla.com/>)
 
   (cl-prefix foo: <http://foo.com/#>)
 
@@ -8,7 +10,7 @@
 
   (bar:anchor)
 
-  (Bar baz)
+  (Bar :baz)
 
   (and ((cl-comment 'stays the same because expansion yields an invalid IRI' bar:#bar) x)
        (baz y))
