@@ -371,7 +371,7 @@ parseIRIAny parser iristr = case parseAll parser "" iristr of
 
 -- Helper function to test a string match to a parser
 isValidParse :: IRIParserDirect a -> String -> Bool
-isValidParse parser iristr = case parseAll parser "" iristr of
+isValidParse parser iristr = case parseAll (parser << eof) "" iristr of
         Left _ -> False
         Right _ -> True
 
