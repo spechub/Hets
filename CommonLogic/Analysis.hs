@@ -103,7 +103,7 @@ makeNamed f i =
   (AS_Anno.makeNamed (
       if null label
         then case text of
-                AS.Named_text s _ _ -> s
+                AS.Named_text n _ _ -> Id.tokStr n
                 _ ->  "Ax_" ++ show i
         else label
     ) $ AS_Anno.item f)

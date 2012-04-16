@@ -52,7 +52,7 @@ data TEXT_META = Text_meta { getText :: TEXT
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
-          | Named_text String TEXT Id.Range
+          | Named_text NAME TEXT Id.Range
             deriving (Show, Ord, Eq)
 
 data PHRASE = Module MODULE
@@ -188,7 +188,7 @@ exportTextMeta = pretty . getText
 printText :: TEXT -> Doc
 printText s = case s of
   Text x _ -> fsep $ map pretty x
-  Named_text x y _ -> parens $ text clTextS <+> text x <+> pretty y
+  Named_text x y _ -> parens $ text clTextS <+> pretty x <+> pretty y
 
 printPhrase :: PHRASE -> Doc
 printPhrase s = case s of

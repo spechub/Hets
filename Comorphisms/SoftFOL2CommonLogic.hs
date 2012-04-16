@@ -150,7 +150,7 @@ sortRelText m =
         ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just $ emptyTextMeta { getText = Named_text sortRelTrS
+        else Just $ emptyTextMeta { getText = Named_text (mkSimpleId sortRelTrS)
                                                 (Text ps nullRange) nullRange
                                   }
 
@@ -186,7 +186,7 @@ funcMapText m =
           ) ++ phrs) [] m
   in if null ps
         then Nothing
-        else Just $ emptyTextMeta { getText = Named_text funcMapTrS
+        else Just $ emptyTextMeta { getText = Named_text (mkSimpleId funcMapTrS)
                                                 (Text ps nullRange) nullRange
                                   }
 
@@ -210,7 +210,7 @@ predMapText m =
   in if null ps
         then Nothing
         else Just $ emptyTextMeta { getText = Named_text
-                                                predMapTrS
+                                                (mkSimpleId predMapTrS)
                                                 (Text ps nullRange)
                                                 nullRange
                                   }

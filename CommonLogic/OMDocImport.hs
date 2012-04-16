@@ -66,7 +66,7 @@ toText e om = case om of
       if op == const_and then Text (map (toPhrase e) subl) nullRange
       else if op == const_textName
       then case subl of
-        [OMV (OMName n _), txt@(OMA _)] -> Named_text n (toText e txt) nullRange
+        [OMV (OMName n _), txt@(OMA _)] -> Named_text (strToToken n) (toText e txt) nullRange
         _ -> error $ "toText: only two arguments supported, but found " ++ show subl
       else error $ concat $ ["toText: only ", show const_and , " and ",
             show const_textName, " and Named_text supported, but found " ++ show op]

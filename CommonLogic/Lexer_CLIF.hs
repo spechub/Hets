@@ -35,11 +35,6 @@ oParenT = Lexer.oParenT << many white
 cParenT :: CharParser st Token
 cParenT = Lexer.cParenT << many white
 
-name :: CharParser st String
-name = do
-        x <- identifier
-        return (tokStr x)
-
 quotedstring :: CharParser st String
 quotedstring = do
    char '\''

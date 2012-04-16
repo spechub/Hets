@@ -53,11 +53,11 @@ cltext = many white >> (do
 
 namedtext :: CharParser st (TEXT, [PrefixMapping])
 namedtext = do
-    n <- name <?> "name after \"cl-text\""
+    n <- identifier <?> "name after \"cl-text\""
     (t, prfxs) <- text
     return (Named_text n t nullRange, prfxs)
   <|> do
-    n <- name <?> "name after \"cl-text\""
+    n <- identifier <?> "name after \"cl-text\""
     return (Named_text n (Text [] nullRange) nullRange, [])
 
 text :: CharParser st (TEXT, [PrefixMapping])

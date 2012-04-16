@@ -47,7 +47,7 @@ exportText en vars txt = case txt of
   Text phrs _ ->
       OMA $ const_and : map (exportPhr en vars) (filter nonImportation phrs)
   Named_text n t _ ->
-      OMA [const_textName, OMV (mkSimpleName n), exportText en vars t]
+      OMA [const_textName, OMV $ mkSimpleName $ tokStr n, exportText en vars t]
   where nonImportation p = case p of
           Importation _ -> False
           _ -> True
