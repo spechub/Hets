@@ -99,7 +99,7 @@ lnode ga lenv (_, lbl) =
           DGNode orig cs -> consStatus cs ++ case orig of
                    DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ ->
                      subnodes "Declarations"
-                       $ map (prettySymbol ga)
+                       $ map (showSym lid)
                        $ mostSymsOf lid dsig
                    DGRestriction _ hidSyms -> subnodes "Hidden"
                        $ map (prettySymbol ga)
@@ -181,7 +181,7 @@ showSymbols ins ga lbl = showSymbolsTh ins (getDGNodeName lbl) ga
 showSymbolsTh :: [String] -> String -> GlobalAnnos -> G_theory -> String
 showSymbolsTh ins name ga th = case th of
   G_theory lid (ExtSign sig _) _ sens _ ->
-     ppTopElement . add_attrs 
+     ppTopElement . add_attrs
      [ mkAttr "logic" $ language_name lid
      , mkNameAttr name ]
      . unode "Ontology"
