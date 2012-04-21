@@ -251,7 +251,17 @@ termSeqForm sig ts = case ts of
                   }
     ClBasic.Funct_term _ _ _ -> termForm sig trm
     ClBasic.Comment_term _ _ _ -> termForm sig trm
-  ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
+  ClBasic.Seq_marks seqm ->
+      if ClSign.isSubSigOf (ClSign.emptySig {
+              ClSign.discourseNames =
+                  Set.singleton (Id.simpleIdToId seqm)
+            }) sig
+      then CBasic.Application
+            (CBasic.Qual_op_name (Id.simpleIdToId seqm)
+              (CBasic.Op_type CBasic.Total [] individual Id.nullRange)
+              Id.nullRange)
+            [] $ Id.tokPos seqm
+      else CBasic.Qual_var seqm individual Id.nullRange
 
 bindingSeq :: ClBasic.NAME_OR_SEQMARK -> CBasic.VAR
 bindingSeq bs = case bs of
