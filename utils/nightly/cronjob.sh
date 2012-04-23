@@ -172,7 +172,8 @@ for i in Basic/*.xml;
 makeLibCheck ()
 {
 rm -rf Hets-lib
-svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
+svn co --ignore-externals \
+  https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 cd Hets-lib
 mv ../Hets/Hets/hets .
 \cp ../Hets/utils/hetcasl.sty .
@@ -313,7 +314,8 @@ makeCofiLib ()
 {
 cd /tmp
 rm -rf Hets-lib
-svn export https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
+svn export --ignore-externals \
+  https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 $TAR czvf lib.tgz Hets-lib
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
@@ -397,5 +399,5 @@ svn ci -m "nightly change"
 updateLibForCgi ()
 {
 cd /home/cofi/Hets-lib
-svn update
+svn update --ignore-externals
 }
