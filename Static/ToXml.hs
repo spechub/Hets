@@ -199,6 +199,6 @@ showSymbolsTh ins name ga th = case th of
 showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element
 showSym lid s = add_attrs
-            [ mkNameAttr . show $ sym_name lid s
-            , mkAttr "kind" $ symKind lid s]
+            [ mkAttr "kind" $ symKind lid s
+            , mkNameAttr . show $ sym_name lid s ]
             $ prettySymbol emptyGlobalAnnos s
