@@ -555,7 +555,8 @@ distclean: clean clean_genRules
 	$(RM) $(derived_sources)
 	$(RM) utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules
-	$(RM) $(DTD2HS) /tmp/DtdToHaskell.* /tmp/DtdToHaskell
+	$(RM) $(DTD2HS) /tmp/DtdToHaskell.*
+	$(RM) -r /tmp/DtdToHaskell
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
 	$(RM) -r docs
 
