@@ -448,7 +448,7 @@ getHetsResult opts updates sessRef file query =
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
                       NcCmd Query.Theory ->
-                          showGlobalTh dg i gTh fstLine -- ++ showN gTh
+                          showGlobalTh dg i gTh k fstLine
                       NcProvers mt -> getProvers mt subL
                       NcTranslations mp -> getComorphs mp subL
                       _ -> error "getHetsResult.NodeQuery."
@@ -478,14 +478,16 @@ resultStyles = unlines
 
 {- | displays the global theory for a node with the option to select and prove
 theorems interactively -}
-showGlobalTh :: DGraph -> Int -> G_theory -> String -> String
-showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
+showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> String
+showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
   sGTh@(G_theory lid (ExtSign sig _) _ thsens _) -> let
     ga = globalAnnos dg
     -- create prove button and prover/comorphism selection
     (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
     prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
           `add_attrs` inputNode
+    transBt = aRef ("/" ++ show sessId ++ "?translations=" ++ show i) "translations"
+    prvsBt = aRef ("/" ++ show sessId ++ "?provers=" ++ show i) "provers"
     -- create timeout field
     timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
             , mkAttr "value" "1", mkAttr "size" "3"]
@@ -542,11 +544,11 @@ showGlobalTh dg i gTh fstLine = case simplifyTh gTh of
           , "  updCmSel( prs[0].value );"
           , "}" ]
     -- formatting stuff
-    headr = unode "h2" fstLine
+    headr = unode "h3" fstLine
     thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
     sbShow = renderHtml ga $ pretty sig
     in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2 ++ jvScr3 ++ jvScr4)
-      [headr, unode "h4" "Theorems", thmMenu, unode "h4" "Theory"]
+      [headr, transBt, prvsBt, unode "h4" "Theorems", thmMenu, unode "h4" "Theory"]
       ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | create prover and comorphism menu and combine them using javascript
