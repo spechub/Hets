@@ -482,12 +482,14 @@ showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> String
 showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
   sGTh@(G_theory lid (ExtSign sig _) _ thsens _) -> let
     ga = globalAnnos dg
+    -- links to translations and provers xml view
+    transBt = aRef ("/" ++ show sessId ++ "?translations=" ++ show i)
+      "translations"
+    prvsBt = aRef ("/" ++ show sessId ++ "?provers=" ++ show i) "provers"
     -- create prove button and prover/comorphism selection
     (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
     prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
           `add_attrs` inputNode
-    transBt = aRef ("/" ++ show sessId ++ "?translations=" ++ show i) "translations"
-    prvsBt = aRef ("/" ++ show sessId ++ "?provers=" ++ show i) "provers"
     -- create timeout field
     timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
             , mkAttr "value" "1", mkAttr "size" "3"]
@@ -498,38 +500,23 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
         [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
         , mkAttr "goalstatus" $ showSimple gSt ]
         $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")"
-    -- select unproven goals by button
-    selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
-          , mkAttr "onClick" "chkUnproven()"] inputNode
-    jvScr2 = unlines ["\nfunction chkUnproven() {"
+    -- javascript features
+    jvScr = unlines [ jvScr1
+          -- select unproven goals by button
+          , "\nfunction chkUnproven() {"
           , "  var e = document.forms[0].elements;"
           , "  for (i = 0; i < e.length; i++) {"
           , "    if( e[i].type == 'checkbox' )"
           , "      e[i].checked = e[i].getAttribute('goalstatus') != 'Proved';"
           , "  }"
-          , "}" ]
-    -- select or deselect all theorems by button
-    selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-          , mkAttr "onClick" "chkAll(true)"] inputNode
-    deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-          , mkAttr "onClick" "chkAll(false)"] inputNode
-    jvScr3 = unlines ["\nfunction chkAll(b) {"
+          -- select or deselect all theorems by button
+          , "}\nfunction chkAll(b) {"
           , "  var e = document.forms[0].elements;"
           , "  for (i = 0; i < e.length; i++) {"
           , "    if( e[i].type == 'checkbox' ) e[i].checked = b;"
           , "  }"
-          , "}" ]
-    -- hidden param field
-    hidStr = add_attrs [ mkAttr "name" "prove"
-          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
-          , mkAttr "value" $ show i ]
-          inputNode
-    -- combine elements within a form
-    thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel"
-      , mkAttr "method" "get"] $ unode "form" $ hidStr : prSl : cmrSl : br
-      : selAll : deSelAll : selUnPr : timeout : intersperse br (prBt : thmSl)
-    -- autoselect SPASS if possible
-    jvScr4 = unlines ["\nwindow.onload = function() {"
+          -- autoselect SPASS if possible
+          , "}\nwindow.onload = function() {"
           , "  prSel = document.forms[0].elements.namedItem('prover');"
           , "  prs = prSel.getElementsByTagName('option');"
           , "  for ( i=0; i<prs.length; i++ ) {"
@@ -543,12 +530,29 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , "  prs[0].selected = 'selected';"
           , "  updCmSel( prs[0].value );"
           , "}" ]
+    -- select unproven goals by button
+    selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
+          , mkAttr "onClick" "chkUnproven()"] inputNode
+    -- select or deselect all theorems by button
+    selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
+          , mkAttr "onClick" "chkAll(true)"] inputNode
+    deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
+          , mkAttr "onClick" "chkAll(false)"] inputNode
+    -- hidden param field
+    hidStr = add_attrs [ mkAttr "name" "prove"
+          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+          , mkAttr "value" $ show i ]
+          inputNode
+    -- combine elements within a form
+    thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel"
+      , mkAttr "method" "get"] $ unode "form" $ hidStr : prSl : cmrSl : br
+      : selAll : deSelAll : selUnPr : timeout : intersperse br (prBt : thmSl)
     -- formatting stuff
     headr = unode "h3" fstLine
     thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
     sbShow = renderHtml ga $ pretty sig
-    in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2 ++ jvScr3 ++ jvScr4)
-      [headr, transBt, prvsBt, unode "h4" "Theorems", thmMenu, unode "h4" "Theory"]
+    in mkHtmlElemScript fstLine jvScr [ headr, transBt, prvsBt
+      , unode "h4" "Theorems", thmMenu, unode "h4" "Theory" ]
       ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | create prover and comorphism menu and combine them using javascript
