@@ -474,8 +474,9 @@ $(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
 	(mkdir /tmp/DtdToHaskell/; \
          cp $(DTD2HS_src)*hs /tmp/DtdToHaskell/; \
          cp utils/DtdToHaskell-src/DtdToHaskell.hs /tmp/; \
-         export PWD=`pwd`; \
-	 cd /tmp/; \
+         PWD=`pwd`; \
+         export PWD; \
+         cd /tmp/; \
          $(HC) --make DtdToHaskell.hs -o $(PWD)/utils/DtdToHaskell $(HC_OPTS))
 
 Isabelle/IsaExport.hs: $(DTD2HS) Isabelle/IsaExport.dtd
