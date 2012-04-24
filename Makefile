@@ -309,7 +309,7 @@ OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
   OWL2/Profiles.hs
 
 RDF_files = RDF/AS.hs OWL2/AS.hs # RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
-	#RDF/Sublogic.hs
+  #RDF/Sublogic.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
@@ -421,7 +421,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
 ### targets
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
-    real_clean bin_clean distclean maintainer-clean annos \
+    real_clean bin_clean distclean annos \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc fromKif derivedSources release cgi ghci build callghc
 
@@ -471,7 +471,7 @@ $(DRIFT): $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
 
 $(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
-	(mkdir /tmp/DtdToHaskell/; \
+	(mkdir -p /tmp/DtdToHaskell/; \
          cp $(DTD2HS_src)*hs /tmp/DtdToHaskell/; \
          cp utils/DtdToHaskell-src/DtdToHaskell.hs /tmp/; \
          PWD=`pwd`; \
@@ -550,16 +550,14 @@ clean_javastuff:
 ### additionally removes the library files
 real_clean: clean
 
-### additionally removes generated files not in the CVS tree
+### additionally removes generated files not in the repository tree
 distclean: clean clean_genRules
 	$(RM) $(derived_sources)
 	$(RM) utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules
+	$(RM) $(DTD2HS) /tmp/DtdToHaskell.* /tmp/DtdToHaskell
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
 	$(RM) -r docs
-
-maintainer-clean: distclean
-	$(RM) -r $(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 ### interactive
 ghci: $(derived_sources)
