@@ -2,48 +2,48 @@
 <DGraph filename="ParamView" libname="ParamView" nextlinkid="18">
   <DGNode name="s__IU1" logic="CASL" refname="s" relxpath="/Imports/Union/Spec[1]">
     <Declarations>
-      <Symbol range="ParamView:3.29">sort i</Symbol>
+      <Symbol kind="sort" name="i" range="ParamView:3.29">sort i</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s__PU1" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
-      <Symbol range="ParamView:3.14">sort p</Symbol>
+      <Symbol kind="sort" name="p" range="ParamView:3.14">sort p</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s" logic="CASL" refname="s" relxpath="/">
     <Declarations>
-      <Symbol range="ParamView:3.39">sort s</Symbol>
+      <Symbol kind="sort" name="s" range="ParamView:3.39">sort s</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__IU1" logic="CASL" refname="v" relxpath="/Imports/Union/Spec[1]">
     <Declarations>
-      <Symbol range="ParamView:5.28">sort j</Symbol>
+      <Symbol kind="sort" name="j" range="ParamView:5.28">sort j</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__PU1" logic="CASL" refname="v" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
-      <Symbol range="ParamView:5.13">sort r</Symbol>
+      <Symbol kind="sort" name="r" range="ParamView:5.13">sort r</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__S" logic="CASL" refname="v" relxpath="/Source">
     <Declarations>
-      <Symbol range="ParamView:5.39">sort p</Symbol>
+      <Symbol kind="sort" name="p" range="ParamView:5.39">sort p</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__T" logic="CASL" refname="v" relxpath="/Target">
     <Declarations>
-      <Symbol range="ParamView:5.51">sort q</Symbol>
+      <Symbol kind="sort" name="q" range="ParamView:5.51">sort q</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__PU1" logic="CASL" refname="s2" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
-      <Symbol range="ParamView:8.15-8.16">sort p2</Symbol>
+      <Symbol kind="sort" name="p2" range="ParamView:8.15-8.16">sort p2</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__A1V" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]" />
   <DGNode name="s2__A1A1" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
     <Declarations>
-      <Symbol range="ParamView:8.35">sort t</Symbol>
+      <Symbol kind="sort" name="t" range="ParamView:8.35">sort t</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__A1" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]" />
