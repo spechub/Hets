@@ -389,7 +389,7 @@ getHetsResult opts updates sessRef file query =
       case sessGraph dgQ sess of
         Nothing -> fail $ "unknown library given by: " ++ file
         Just (ln, dg) -> let title = show $ getLibId ln in do
-          svg <- getSVG title ('/' : file) dg
+          svg <- getSVG title ('/' : show k) dg
           case qk of
             DisplayQuery ms -> case ms of
               Just "svg" -> return svg
