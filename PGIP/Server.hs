@@ -388,10 +388,11 @@ getHetsResult opts updates sessRef file query =
       let libEnv = sessLibEnv sess
       case sessGraph dgQ sess of
         Nothing -> fail $ "unknown library given by: " ++ file
-        Just (ln, dg) -> let title = show $ getLibId ln in
+        Just (ln, dg) -> let title = show $ getLibId ln in do
+          svg <- getSVG title ('/' : file) dg
           case qk of
             DisplayQuery ms -> case ms of
-              Just "svg" -> getSVG title ('/' : file) dg
+              Just "svg" -> return svg
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph libEnv ln dg
               Just "dot" -> liftR $ return $ dotGraph title False title dg
@@ -399,7 +400,7 @@ getHetsResult opts updates sessRef file query =
                 $ aRef (mkPath sess ln k) (show k)
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
-              _ -> liftR $ return $ sessAns ln sk
+              _ -> liftR $ return $ sessAns ln svg sk
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == "update" then
@@ -409,13 +410,13 @@ getHetsResult opts updates sessRef file query =
                   str <- lift $ readFile $ fileContent ch
                   (newLn, newLib) <- dgXUpdate opts str libEnv ln dg
                   newSess <- lift $ nextSess sessRef newLib k
-                  liftR $ return $ sessAns newLn (newSess, k)
-                [] -> liftR $ return $ sessAns ln sk
+                  liftR $ return $ sessAns newLn svg (newSess, k)
+                [] -> liftR $ return $ sessAns ln svg sk
                 else fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess sessRef newLib k
-                liftR $ return $ sessAns ln (newSess, k)
+                liftR $ return $ sessAns ln svg (newSess, k)
             NodeQuery ein nc -> do
               nl@(i, dgnode) <- case ein of
                 Right n -> case lookupNodeByName n dg of
@@ -472,9 +473,6 @@ resultStyles = unlines
   , "name { display:inline; margin:5px; padding:10px; font-weight:bold; }"
   , "result { display:inline; padding:30px; }" ]
 
--- TODO: link svg-nodes onClick with theory view
--- TODO: merge command buttons with svg-graph view
-
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
 showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> String
@@ -488,10 +486,9 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
     headr = unode "h3" fstLine
     thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
     sbShow = renderHtml ga $ pretty sig
-    goBack = aRef ('/' : show sessId) "return to DGraph"
     in case getThGoals sGTh of
       -- show simple view if no goals are found
-      [] -> mkHtmlElem fstLine [ headr, transBt, prvsBt, goBack,
+      [] -> mkHtmlElem fstLine [ headr, transBt, prvsBt,
         unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
       -- else create proving functionality
       gs -> let
@@ -525,6 +522,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
         thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel",
            mkAttr "method" "get"] $ unode "form" $ [hidStr, prSl, cmrSl, br,
            selAll, deSelAll, selUnPr, timeout] ++ intersperse br (prBt : thmSl)
+        goBack = aRef ('/' : show sessId) "return to DGraph"
         -- javascript features
         jvScr = unlines [ jvScr1
           -- select unproven goals by button
@@ -555,8 +553,8 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , "  prs[0].selected = 'selected';"
           , "  updCmSel( prs[0].value );"
           , "}" ]
-        in mkHtmlElemScript fstLine jvScr [ headr, transBt, prvsBt, goBack,
-          unode "h4" "Theorems", thmMenu, unode "h4" "Theory" ]
+        in mkHtmlElemScript fstLine jvScr [ headr, transBt, prvsBt, plain " ",
+          goBack, unode "h4" "Theorems", thmMenu, unode "h4" "Theory" ]
           ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | create prover and comorphism menu and combine them using javascript
@@ -704,8 +702,8 @@ extPath :: Session -> LibName -> Int -> String
 extPath sess l k = mkPath sess l k ++
         if l /= sessLibName sess then "&" else "?"
 
-sessAns :: LibName -> (Session, Int) -> String
-sessAns libName (sess, k) =
+sessAns :: LibName -> String -> (Session, Int) -> String
+sessAns libName svg (sess, k) =
   let libEnv = sessLibEnv sess
       ln = show $ getLibId libName
       libref l =
@@ -713,37 +711,7 @@ sessAns libName (sess, k) =
          aRef (extPath sess l k ++ d) d) displayTypes
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d
-      noderef (n, lbl) =
-        let s = show n
-            lTh = dgn_theory lbl
-            gTh = globOrLocTh lbl
-            gs = getThGoals gTh
-            noProvers = null $ getAllAutomaticProvers $ sublogicOfTh gTh
-            lgs = map fst (getThGoals lTh) \\ map fst gs
-            (ps, os) = partition (maybe False isProvedBasically . snd) gs
-            subsumed = if null lgs then "" else
-              " (" ++ shows (length lgs) " subsumed)"
-            goalInfo = '[' : shows (length ps) "/" ++ shows (length gs) "]"
-              ++ subsumed
-        in
-        italic (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
-          let isProve = c == "prove" in
-          if isProve && (null gs || noProvers) then
-            italic (if null gs then "no goals" ++ subsumed else
-                   "no provers available " ++ goalInfo)
-          else aRef (libPath ++ c ++ "=" ++ s
-              ++ if isProve then "&theorems="
-                 ++ encodeForQuery (intercalate "+"
-                   $ map (escStr . fst) $ if null os then gs else os)
-                 else "")
-              $ if isProve then c ++ goalInfo else c)
-        (if noProvers then nodeCommands \\ comorphs else nodeCommands)
-      edgeref e@(_, _, lbl) =
-        aRef (libPath ++ "edge=" ++ showEdgeId (dgl_id lbl))
-                 $ showLEdge e
-      dg = lookupDGraph libName libEnv
-      nlabs = labNodesDG dg
-      elabs = labEdgesDG dg
+{- the html quicklinks to nodes and edges have been removed with R.16827 -}
   in htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
            (bold ("library " ++ ln)
@@ -753,13 +721,7 @@ sessAns libName (sess, k) =
             ++ [mkUnorderedList $ map ref globalCommands]
             ++ [plain "imported libraries:"]
             ++ [mkUnorderedList $ map libref $ Map.keys libEnv]
-            ++ [plain (show (length nlabs)
-                 ++ " nodes with local and global theories:")]
-            ++ [mkUnorderedList $ map noderef nlabs]
-            ++ [plain (show (length elabs) ++ " edges:")]
-            ++ [mkUnorderedList $ map edgeref
-                 $ sortBy (comparing (\ (_, _, l) -> dgl_id l)) elabs]
-           )
+           ) ++ svg
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
 getHetsLibContent opts dir query = do
