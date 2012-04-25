@@ -43,8 +43,7 @@ ifneq ($(strip $(HAXML_PACKAGE)),)
 derived_sources += Isabelle/IsaExport.hs
 endif
 
-DTD2HS_deps = $(DTD2HS_src)*hs
-
+DTD2HS_deps = $(DTD2HS_src)*.hs
 
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
@@ -471,13 +470,10 @@ $(DRIFT): $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
 
 $(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
-	(mkdir -p /tmp/DtdToHaskell/; \
-         cp $(DTD2HS_src)*hs /tmp/DtdToHaskell/; \
-         cp utils/DtdToHaskell-src/DtdToHaskell.hs /tmp/; \
-         PWD=`pwd`; \
-         export PWD; \
-         cd /tmp/; \
-         $(HC) --make DtdToHaskell.hs -o $(PWD)/utils/DtdToHaskell $(HC_OPTS))
+	mkdir -p utils/DtdToHaskell-src/DtdToHaskell
+	cp -f $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell
+	$(HC) --make -iutils/DtdToHaskell-src \
+            utils/DtdToHaskell-src/DtdToHaskell.hs -o $@ $(HC_OPTS)
 
 Isabelle/IsaExport.hs: $(DTD2HS) Isabelle/IsaExport.dtd
 	($(DTD2HS) Isabelle/IsaExport.dtd Isabelle/IsaExport.hs Isabelle.)
@@ -555,8 +551,8 @@ distclean: clean clean_genRules
 	$(RM) $(derived_sources)
 	$(RM) utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules
-	$(RM) $(DTD2HS) /tmp/DtdToHaskell.*
-	$(RM) -r /tmp/DtdToHaskell
+	$(RM) $(DTD2HS)
+	$(RM) -r utils/DtdToHaskell-src/DtdToHaskell
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
 	$(RM) -r docs
 
