@@ -470,14 +470,12 @@ resultStyles = unlines
   , "name { display:inline; margin:5px; padding:10px; font-weight:bold; }"
   , "result { display:inline; padding:30px; }" ]
 
--- TODO: catch empty theory // check empty proof results
 -- TODO: implement button to go back to initial page WITH prove results etc..
--- TODO: move provers/translations into theory view
 -- TODO: link svg-nodes onClick with theory view
 -- TODO: merge command buttons with svg-graph view
 
-{- | displays the global theory for a node with the option to select and prove
-theorems interactively -}
+{- | displays the global theory for a node with the option to prove theorems
+and select proving options -}
 showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> String
 showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
   sGTh@(G_theory lid (ExtSign sig _) _ thsens _) -> let
@@ -486,22 +484,47 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
     transBt = aRef ("/" ++ show sessId ++ "?translations=" ++ show i)
       "translations"
     prvsBt = aRef ("/" ++ show sessId ++ "?provers=" ++ show i) "provers"
-    -- create prove button and prover/comorphism selection
-    (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
-    prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
-          `add_attrs` inputNode
-    -- create timeout field
-    timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
-            , mkAttr "value" "1", mkAttr "size" "3"]
-            $ unode "input" "Sec/Goal "
-    -- create list of theorems, selectable for proving
-    thmSl = map mkCB $ getThGoals sGTh where
-      mkCB (nm, bp) = let gSt = maybe GOpen basicProofToGStatus bp in add_attrs
-        [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
-        , mkAttr "goalstatus" $ showSimple gSt ]
-        $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")"
-    -- javascript features
-    jvScr = unlines [ jvScr1
+    headr = unode "h3" fstLine
+    thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
+    sbShow = renderHtml ga $ pretty sig
+    in case getThGoals sGTh of
+      -- show simple view if no goals are found
+      [] -> mkHtmlElem fstLine [ headr, transBt, prvsBt, unode "h4" "Theory" ]
+            ++ sbShow ++ "\n<br />" ++ thShow
+      -- else create proving functionality
+      gs -> let
+        -- create list of theorems, selectable for proving
+        thmSl = map (\(nm, bp) -> let gSt = maybe GOpen basicProofToGStatus bp
+          in add_attrs [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
+          , mkAttr "goalstatus" $ showSimple gSt ] $ unode "input" $ nm
+          ++ "   (" ++ showSimple gSt ++ ")" ) gs
+        -- create prove button and prover/comorphism selection
+        (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
+        prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
+               `add_attrs` inputNode
+        -- create timeout field
+        timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
+               , mkAttr "value" "1", mkAttr "size" "3"]
+               $ unode "input" "Sec/Goal "
+        -- select unproven goals by button
+        selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
+          , mkAttr "onClick" "chkUnproven()"] inputNode
+        -- select or deselect all theorems by button
+        selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
+          , mkAttr "onClick" "chkAll(true)"] inputNode
+        deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
+          , mkAttr "onClick" "chkAll(false)"] inputNode
+        -- hidden param field
+        hidStr = add_attrs [ mkAttr "name" "prove"
+          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+          , mkAttr "value" $ show i ]
+          inputNode
+        -- combine elements within a form
+        thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel",
+           mkAttr "method" "get"] $ unode "form" $ [hidStr, prSl, cmrSl, br,
+           selAll, deSelAll, selUnPr, timeout] ++ intersperse br (prBt : thmSl)
+        -- javascript features
+        jvScr = unlines [ jvScr1
           -- select unproven goals by button
           , "\nfunction chkUnproven() {"
           , "  var e = document.forms[0].elements;"
@@ -530,30 +553,9 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , "  prs[0].selected = 'selected';"
           , "  updCmSel( prs[0].value );"
           , "}" ]
-    -- select unproven goals by button
-    selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
-          , mkAttr "onClick" "chkUnproven()"] inputNode
-    -- select or deselect all theorems by button
-    selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-          , mkAttr "onClick" "chkAll(true)"] inputNode
-    deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-          , mkAttr "onClick" "chkAll(false)"] inputNode
-    -- hidden param field
-    hidStr = add_attrs [ mkAttr "name" "prove"
-          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
-          , mkAttr "value" $ show i ]
-          inputNode
-    -- combine elements within a form
-    thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel"
-      , mkAttr "method" "get"] $ unode "form" $ hidStr : prSl : cmrSl : br
-      : selAll : deSelAll : selUnPr : timeout : intersperse br (prBt : thmSl)
-    -- formatting stuff
-    headr = unode "h3" fstLine
-    thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
-    sbShow = renderHtml ga $ pretty sig
-    in mkHtmlElemScript fstLine jvScr [ headr, transBt, prvsBt
-      , unode "h4" "Theorems", thmMenu, unode "h4" "Theory" ]
-      ++ sbShow ++ "\n<br />" ++ thShow
+        in mkHtmlElemScript fstLine jvScr [ headr, transBt, prvsBt
+        , unode "h4" "Theorems", thmMenu, unode "h4" "Theory" ]
+        ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | create prover and comorphism menu and combine them using javascript
 showProverSelection :: G_sublogics -> (Element, Element, String)
