@@ -443,11 +443,11 @@ getHetsResult opts updates sessRef file query =
                                   gTh subL incl mp mt tl thms
                       if null sens then return "nothing to prove" else do
                         lift $ nextSess sessRef newLib k
-                        return $ formatResults $ unode "results" $
+                        return $ formatResults k $ unode "results" $
                            map (\ (n, e) -> unode "goal"
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
-                      NcCmd Query.Theory ->
+                      NcCmd Query.Theory -> 
                           showGlobalTh dg i gTh k fstLine
                       NcProvers mt -> getProvers mt subL
                       NcTranslations mp -> getComorphs mp subL
@@ -458,10 +458,12 @@ getHetsResult opts updates sessRef file query =
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
-formatResults :: Element -> String
-formatResults rs = ppElement $ unode "html" [ unode "head"
-  [ unode "title" "Results", (add_attr (mkAttr "type" "text/css")
-  $ unode "style" resultStyles) ], rs ]
+formatResults :: Int -> Element -> String
+formatResults sessId rs = let
+  goBack = aRef ('/' : show sessId) "return to DGraph"
+  in ppElement $ unode "html" [ unode "head"
+    [ unode "title" "Results", (add_attr (mkAttr "type" "text/css")
+    $ unode "style" resultStyles), goBack ], rs ]
 
 resultStyles :: String
 resultStyles = unlines
@@ -470,7 +472,6 @@ resultStyles = unlines
   , "name { display:inline; margin:5px; padding:10px; font-weight:bold; }"
   , "result { display:inline; padding:30px; }" ]
 
--- TODO: implement button to go back to initial page WITH prove results etc..
 -- TODO: link svg-nodes onClick with theory view
 -- TODO: merge command buttons with svg-graph view
 
@@ -481,16 +482,17 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
   sGTh@(G_theory lid (ExtSign sig _) _ thsens _) -> let
     ga = globalAnnos dg
     -- links to translations and provers xml view
-    transBt = aRef ("/" ++ show sessId ++ "?translations=" ++ show i)
+    transBt = aRef ('/' : show sessId ++ "?translations=" ++ show i)
       "translations"
-    prvsBt = aRef ("/" ++ show sessId ++ "?provers=" ++ show i) "provers"
+    prvsBt = aRef ('/' : show sessId ++ "?provers=" ++ show i) "provers"
     headr = unode "h3" fstLine
     thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
     sbShow = renderHtml ga $ pretty sig
+    goBack = aRef ('/' : show sessId) "return to DGraph"
     in case getThGoals sGTh of
       -- show simple view if no goals are found
-      [] -> mkHtmlElem fstLine [ headr, transBt, prvsBt, unode "h4" "Theory" ]
-            ++ sbShow ++ "\n<br />" ++ thShow
+      [] -> mkHtmlElem fstLine [ headr, transBt, prvsBt, goBack,
+        unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
       -- else create proving functionality
       gs -> let
         -- create list of theorems, selectable for proving
@@ -553,9 +555,9 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , "  prs[0].selected = 'selected';"
           , "  updCmSel( prs[0].value );"
           , "}" ]
-        in mkHtmlElemScript fstLine jvScr [ headr, transBt, prvsBt
-        , unode "h4" "Theorems", thmMenu, unode "h4" "Theory" ]
-        ++ sbShow ++ "\n<br />" ++ thShow
+        in mkHtmlElemScript fstLine jvScr [ headr, transBt, prvsBt, goBack,
+          unode "h4" "Theorems", thmMenu, unode "h4" "Theory" ]
+          ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | create prover and comorphism menu and combine them using javascript
 showProverSelection :: G_sublogics -> (Element, Element, String)
