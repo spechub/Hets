@@ -85,8 +85,8 @@ ifneq ($(findstring 0.4, $(WARPVERSION)),)
   SERVER_FLAG = -DSERVER
   endif
 endif
-ifneq ($(findstring 1.1, $(WARPVERSION)),)
-  ifneq ($(findstring 1.1, $(WAIEXTVERSION)),)
+ifneq ($(findstring 1., $(WARPVERSION)),)
+  ifneq ($(findstring 1., $(WAIEXTVERSION)),)
   SERVER_FLAG = -DSERVER
   endif
 endif

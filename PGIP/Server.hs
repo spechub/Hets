@@ -118,7 +118,6 @@ hetsServer opts1 = do
   sessRef <- newIORef IntMap.empty
   run 8000 $ \ re -> do
    let (query, splitQuery) = queryToString $ queryString re
-       path = pathToString $ pathInfo re
        rhost = shows (remoteHost re) "\n"
        bots = ["crawl", "ffff:66.249."]
 #ifdef OLDSERVER
@@ -129,7 +128,8 @@ hetsServer opts1 = do
               x : t -> (x, Just $ intercalate "=" t))
               . splitOn '=') . concatMap (splitOn ';') . splitOn '&'
               . dropWhile (== '?') $ filter (not . isSpace) r)
-       pathToString = dropWhile (== '/') . B8.unpack
+       path = dropWhile (== '/') . B8.unpack $ pathInfo re
+       pathBits = splitOn '/' path
        liftRun = id
 #else
        queryToString s = let
@@ -138,7 +138,8 @@ hetsServer opts1 = do
                 (\ (x, ms) -> x ++ case ms of
                   Nothing -> ""
                   Just y -> '=' : y) r, r)
-       pathToString = intercalate "/" . map T.unpack
+       pathBits = map T.unpack $ pathInfo re
+       path = intercalate "/" pathBits
        liftRun = liftIO
 #endif
    liftRun $ do
