@@ -73,7 +73,7 @@ ppList = map (show . PrettyOut) prettyList ++ ["pdf"]
 
 displayTypes :: [String]
 displayTypes =
-  ["svg", "xml", "dot", "session"] ++ ppList
+  ["svg", "xml", "dot", "symbols", "session"] ++ ppList
 
 comorphs :: [String]
 comorphs = ["provers", "translations"]
@@ -105,6 +105,7 @@ globalCommands = concat
   , getGlobCmds globLibResultAct
   , getGlobCmds globResultAct ]
 
+-- Lib- and node name can be IRIs now
 data DGQuery = DGQuery
   { queryId :: Int
   , optQueryLibPath :: Maybe PATH

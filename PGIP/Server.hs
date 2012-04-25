@@ -397,6 +397,8 @@ getHetsResult opts updates sessRef file query =
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph libEnv ln dg
               Just "dot" -> liftR $ return $ dotGraph title False title dg
+              Just "symbols" -> liftR $ return $ ppTopElement
+                $ ToXml.dGraph libEnv ln dg -- TODO implement ToXml.dgSymbols
               Just "session" -> liftR $ return $ ppElement
                 $ aRef (mkPath sess ln k) (show k)
               Just str | elem str ppList
@@ -449,7 +451,7 @@ getHetsResult opts updates sessRef file query =
                            map (\ (n, e) -> unode "goal"
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
-                      NcCmd Query.Theory -> 
+                      NcCmd Query.Theory ->
                           showGlobalTh dg i gTh k fstLine
                       NcProvers mt -> getProvers mt subL
                       NcTranslations mp -> getComorphs mp subL
