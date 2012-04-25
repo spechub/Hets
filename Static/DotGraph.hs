@@ -79,7 +79,7 @@ nodeAttribute showInternal la = concatMap (", " ++)
 dotNode :: Bool -> String -> LNode DGNodeLab -> String
 dotNode showInternal url (n, ncontents) = let ns = show n in
   ns ++ " [id=" ++ ns
-  ++ (if null url then "" else ", URL=" ++ show (url ++ "?node=" ++ ns))
+  ++ (if null url then "" else ", URL=" ++ show (url ++ "?theory=" ++ ns))
   ++ nodeAttribute showInternal ncontents ++ "];"
 
 -- | Generate a dot term representation out of a development graph
