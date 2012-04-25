@@ -10,11 +10,13 @@ Portability :  non-portable(Grothendieck)
 Xml of Hets DGs
 -}
 
-module Static.ToXml (dGraph, lnode, showSymbols, showSymbolsTh) where
+module Static.ToXml (dGraph, lnode, dgSymbols, showSymbols, showSymbolsTh)
+where
 
 import Static.DgUtils
 import Static.DevGraph
 import Static.GTheory
+import Static.ComputeTheory (getImportNames)
 import Static.PrintDevGraph
 
 import Logic.Prover
@@ -174,14 +176,19 @@ dgrule r =
         $ unode "RuleTarget" () ]
       _ -> []
 
-showSymbols :: [String] -> GlobalAnnos -> DGNodeLab -> String
+-- | collects all symbols from dg and displays them as xml
+dgSymbols :: DGraph -> Element
+dgSymbols dg = let ga = globalAnnos dg in unode "Ontologies"
+  $ map (\(i, lbl) -> let ins = getImportNames dg i in
+    showSymbols ins ga lbl) $ labNodesDG dg
+
+showSymbols :: [String] -> GlobalAnnos -> DGNodeLab -> Element
 showSymbols ins ga lbl = showSymbolsTh ins (getDGNodeName lbl) ga
   $ dgn_theory lbl
 
-showSymbolsTh :: [String] -> String -> GlobalAnnos -> G_theory -> String
+showSymbolsTh :: [String] -> String -> GlobalAnnos -> G_theory -> Element
 showSymbolsTh ins name ga th = case th of
-  G_theory lid (ExtSign sig _) _ sens _ ->
-     ppTopElement . add_attrs
+  G_theory lid (ExtSign sig _) _ sens _ -> add_attrs
      [ mkAttr "logic" $ language_name lid
      , mkNameAttr name ]
      . unode "Ontology"

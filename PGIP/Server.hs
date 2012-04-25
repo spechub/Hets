@@ -152,6 +152,9 @@ hetsServer opts1 = do
      appendFile permFile $ shows (requestHeaders re) "\n"
    -- better try to read hosts to exclude from a file
    if any (`isInfixOf` rhost) bots then return $ mkResponse status403 "" else
+
+    -- TODO pass pathBits to anaUri and analyse them
+    -- TODO lookup cookies at Yesod
     case B8.unpack (requestMethod re) of
     "GET" -> liftRun $ if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
@@ -398,7 +401,7 @@ getHetsResult opts updates sessRef file query =
                 $ ToXml.dGraph libEnv ln dg
               Just "dot" -> liftR $ return $ dotGraph title False title dg
               Just "symbols" -> liftR $ return $ ppTopElement
-                $ ToXml.dGraph libEnv ln dg -- TODO implement ToXml.dgSymbols
+                $ ToXml.dgSymbols dg
               Just "session" -> liftR $ return $ ppElement
                 $ aRef (mkPath sess ln k) (show k)
               Just str | elem str ppList
@@ -436,7 +439,8 @@ getHetsResult opts updates sessRef file query =
               case nc of
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
-                   Symbols -> return $ showSymbols ins (globalAnnos dg) dgnode
+                   Symbols -> return $ ppTopElement
+                           $ showSymbols ins (globalAnnos dg) dgnode
                    _ -> return $ fstLine ++ showN dgnode
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $

@@ -215,7 +215,8 @@ writeTheory ins nam opts filePrefix ga
         let (sign', _sens') = addUniformRestr sign sens
         writeVerbFile opts (f ++ ".sexpr")
           $ shows (prettySExpr $ vseSignToSExpr sign') "\n"
-    SymXml -> writeVerbFile opts f $ ToXml.showSymbolsTh ins nam ga raw_gTh
+    SymXml -> writeVerbFile opts f $ ppTopElement
+           $ ToXml.showSymbolsTh ins nam ga raw_gTh
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->
