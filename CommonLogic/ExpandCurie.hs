@@ -9,7 +9,6 @@ import Common.Id
 import Common.IRI
 import CommonLogic.AS_CommonLogic
 
-import Data.Functor ((<$>))
 import qualified Data.Map as Map
 
 expandCurieBS :: BASIC_SPEC -> BASIC_SPEC
@@ -87,7 +86,7 @@ expTseq pm nos = case nos of
   Seq_marks s -> Seq_marks $ expName pm s
 
 expName :: Map.Map String IRI -> NAME -> NAME
-expName pm n = case expandCurie pm <$> parseCurie (strippedQuotesStr n) of
+expName pm n = case fmap (expandCurie pm) $ parseCurie (strippedQuotesStr n) of
   Just (Just x) -> mkSimpleId $ "\"" ++ iriToStringFullUnsecure x ++ "\""
   _ -> n
 
