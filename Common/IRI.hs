@@ -485,12 +485,18 @@ nameStartChar = satisfy nameStartCharP
 nameChar :: GenParser Char st Char
 nameChar = satisfy nameCharP
 
+nameStartCharW3C :: GenParser Char st Char
+nameStartCharW3C = satisfy nameStartCharW3CP
+
+nameCharW3C :: GenParser Char st Char
+nameCharW3C = satisfy nameCharW3CP
+
 {- NOTE: Usually ':' is allowed. Here, only ncname uses nameStartChar, however.
 Thus we disallow ':' -}
 nameStartCharP :: Char -> Bool
 nameStartCharP c =
   let n = ord c in
-  (c == '_') ||       -- usually: (c `elem` ":_") ||
+  (c == '_') ||       -- W3C: (c `elem` ":_") ||
   isAlphaChar c ||
   (0x00C0 <= n && n <= 0x00D6) ||
   (0x00D8 <= n && n <= 0x00F6) ||
@@ -514,6 +520,12 @@ nameCharP c =
   n == 0xB7 ||
   (0x0300 <= n && n <= 0x036F) ||
   (0x203F <= n && n <= 0x2040)
+
+nameStartCharW3CP :: Char ->Bool
+nameStartCharW3CP c = c == ':' || nameStartCharP c
+
+nameCharW3CP :: Char -> Bool
+nameCharW3CP c = c == ':' || nameCharP c
 
 -- END CURIE
 
@@ -1304,6 +1316,26 @@ expandCurie prefixMap c =
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
   parseIRI $ iriToStringFull id i "" ++ iriToStringFull id c ""
+
+localname :: IRI -> String
+localname i@(IRI { iriScheme = scheme
+                            , iriAuthority = authority
+                            , iriPath = path
+                            , iriQuery = query
+                            , iriFragment = fragment
+                            , abbrevPath = aPath
+                            })
+  | hasFullIRI i =
+      if not $ null fragment then fragment else
+      if not $ null query then nmTokenSuffix query else nmTokenSuffix path
+  | otherwise =
+      if not $ null fragment then fragment else
+      if not $ null query then nmTokenSuffix query else nmTokenSuffix aPath
+
+nmTokenSuffix :: String -> String
+nmTokenSuffix s = case parse (many1 nameCharW3C >>= return) "" $ reverse s of
+      Left _ -> ""
+      Right u -> reverse u
 
 {- | Case normalization; cf. RFC3986 section 6.2.2.1
 NOTE:  authority case normalization is not performed -}
