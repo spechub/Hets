@@ -1333,9 +1333,7 @@ localname i@(IRI { iriScheme = scheme
       if not $ null query then nmTokenSuffix query else nmTokenSuffix aPath
 
 nmTokenSuffix :: String -> String
-nmTokenSuffix s = case parse (many1 nameCharW3C >>= return) "" $ reverse s of
-      Left _ -> ""
-      Right u -> reverse u
+nmTokenSuffix = reverse . takeWhile nameCharW3CP . reverse
 
 {- | Case normalization; cf. RFC3986 section 6.2.2.1
 NOTE:  authority case normalization is not performed -}
