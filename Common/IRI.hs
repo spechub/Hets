@@ -101,7 +101,6 @@ module Common.IRI
     , iriToStringUnsecure
     , iriToStringShort
     , iriToStringShortUnsecure
-    , iriToStringFullUnsecure
     , isReserved, isUnreserved
     , isAllowedInIRI, isUnescapedInIRI
     , escapeIRIChar
@@ -156,7 +155,7 @@ For example, for the (full) IRI
 
 or the abbreviated IRI
 
->   prefix:abbrevPath
+>   prefix:abbrevPath?abbrevQuery#abbrevFragment
 
 or the simple IRI
 
@@ -170,6 +169,8 @@ data IRI = IRI
     , iriFragment :: String       -- ^ @#frag@
     , prefixName :: String        -- ^ @prefix@
     , abbrevPath :: String        -- ^ @abbrevPath@
+    , abbrevQuery :: String       -- ^ @abbrevQueryh@
+    , abbrevFragment :: String    -- ^ @abbrevFragment@
     , iriPos :: Range             -- ^ position
     }
 
@@ -190,6 +191,8 @@ nullIRI = IRI
     , iriFragment = ""
     , prefixName = ""
     , abbrevPath = ""
+    , abbrevQuery = ""
+    , abbrevFragment = ""
     , iriPos = nullRange
     }
 
@@ -244,10 +247,6 @@ iriToStringUnsecure i = iriToString id i ""
 -- |converts IRI to String of abbreviated form, also showing Auth info
 iriToStringShortUnsecure :: IRI -> String
 iriToStringShortUnsecure i = iriToStringShort id i ""
-
--- |converts IRI to String of full/expanded form, also showing Auth info, no enclosing brackets
-iriToStringFullUnsecure :: IRI -> String
-iriToStringFullUnsecure i = iriToStringFull id i ""
 
 defaultUserInfoMap :: String -> String
 defaultUserInfoMap uinf = user ++ newpass
@@ -432,7 +431,7 @@ iriWithPos parser = do
 
 -- | Parses an absolute IRI enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
-iriCurie = brackets iri <|> curie
+iriCurie = brackets iriReference <|> curie
 
 {- | Parses an absolute or relative IRI enclosed in '<', '>' or a CURIE
 see @iriReference@ -}
@@ -467,10 +466,12 @@ reference = iriWithPos $ do
           { iriScheme = ""
           , iriAuthority = Nothing
           , iriPath = ""
-          , iriQuery = uq
-          , iriFragment = uf
+          , iriQuery = ""
+          , iriFragment = ""
           , prefixName = ""
           , abbrevPath = up
+          , abbrevQuery = uq
+          , abbrevFragment = uf
           , iriPos = nullRange
           }
 
@@ -603,6 +604,8 @@ iriManchester = iriWithPos $ do
             , iriFragment = ""
             , prefixName = prefix
             , abbrevPath = loc
+            , abbrevQuery = ""
+            , abbrevFragment = ""
             , iriPos = nullRange
             }
   <|> do
@@ -615,6 +618,8 @@ iriManchester = iriWithPos $ do
             , iriFragment = ""
             , prefixName = ""
             , abbrevPath = loc
+            , abbrevQuery = ""
+            , abbrevFragment = ""
             , iriPos = nullRange
             }
 
@@ -684,6 +689,8 @@ iri = iriWithPos $ do
             , iriFragment = uf
             , prefixName = ""
             , abbrevPath = ""
+            , abbrevQuery = ""
+            , abbrevFragment = ""
             , iriPos = nullRange
             }
 
@@ -888,6 +895,8 @@ irelativeRef = iriWithPos $ do
             , iriFragment = uf
             , prefixName = ""
             , abbrevPath = ""
+            , abbrevQuery = ""
+            , abbrevFragment = ""
             , iriPos = nullRange
             }
 
@@ -911,6 +920,8 @@ absoluteIRI = iriWithPos $ do
             , iriFragment = ""
             , prefixName = ""
             , abbrevPath = ""
+            , abbrevQuery = ""
+            , abbrevFragment = ""
             , iriPos = nullRange
             }
 
@@ -1001,35 +1012,35 @@ The Show instance for IRI uses a mapping that hides any password
 that may be present in the IRI.  Use this function with argument @id@
 to preserve the password in the formatted output. -}
 iriToString :: (String -> String) -> IRI -> ShowS
-iriToString iuserinfomap i@(IRI { iriQuery = query
-                                , iriFragment = fragment
-                                , prefixName = pname
-                                , abbrevPath = aPath
-                                })
-  | hasFullIRI i = ("<" ++) . iriToStringFull iuserinfomap i . (">" ++)
-  | otherwise = (pname ++) . (aPath ++) . (query ++) . (fragment ++)
+iriToString iuserinfomap i
+  | hasFullIRI i = iriToStringFull iuserinfomap i
+  | otherwise = iriToStringAbbrev i
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
-iriToStringShort iuserinfomap i@(IRI { iriQuery = query
-                                     , iriFragment = fragment
-                                     , prefixName = pname
-                                     , abbrevPath = aPath
-                                     })
-  | hasFullIRI i && not (isAbbrev i) =
-        ("<" ++) . iriToStringFull iuserinfomap i . (">" ++)
-  | otherwise = (pname ++) . (aPath ++) . (query ++) . (fragment ++)
+iriToStringShort iuserinfomap i
+  | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
+  | otherwise = iriToStringAbbrev i
 
 iriToStringFull :: (String -> String) -> IRI -> ShowS
-iriToStringFull iuserinfomap i@(IRI { iriScheme = scheme
-                            , iriAuthority = authority
-                            , iriPath = path
-                            , iriQuery = query
-                            , iriFragment = fragment
-                            , abbrevPath = aPath
-                            })
-  | isAbbrev i && not (hasFullIRI i) = (aPath ++) . (query ++) . (fragment ++)
-  | otherwise = (scheme ++) . iriAuthToString iuserinfomap authority
-                 . (path ++) . (query ++) . (fragment ++)
+iriToStringFull iuserinfomap (IRI { iriScheme = scheme
+                                  , iriAuthority = authority
+                                  , iriPath = path
+                                  , iriQuery = query
+                                  , iriFragment = fragment
+                                  }) =
+  (scheme ++) . iriAuthToString iuserinfomap authority
+              . (path ++) . (query ++) . (fragment ++)
+
+iriToStringAbbrev :: IRI -> ShowS
+iriToStringAbbrev (IRI { prefixName = pname
+                       , abbrevPath = aPath
+                       , abbrevQuery = aQuery
+                       , abbrevFragment = aFragment
+                       }) =
+  (pname ++) . (aPath ++) . (aQuery ++) . (aFragment ++)
+
+
+
 
 iriAuthToString :: (String -> String) -> Maybe IRIAuth -> ShowS
 iriAuthToString _ Nothing = id          -- shows ""
@@ -1304,8 +1315,7 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie prefixMap c =
   if hasFullIRI c then Just c else
-  let pn = if null $ prefixName c then ":" else prefixName c in
-  case Map.lookup pn prefixMap of
+  case Map.lookup (prefixName c) prefixMap of
        Nothing -> Nothing
        Just i -> case mergeCurie c i of
                 Nothing -> Nothing
@@ -1315,7 +1325,7 @@ expandCurie prefixMap c =
 {- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending their string representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  parseIRI $ iriToStringFull id i "" ++ iriToStringFull id c ""
+  parseIRIReference $ iriToStringFull id i "" ++ iriToStringAbbrev c ""
 
 localname :: IRI -> String
 localname i@(IRI { iriScheme = scheme
