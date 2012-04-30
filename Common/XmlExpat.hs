@@ -65,7 +65,7 @@ strToQName s = case break (':' == ) s of
 
 parseXml :: BS.ByteString -> Either String Element
 parseXml bs =
-    let (nd, pe) = Expat.parse Expat.defaultParserOptions bs
+    let (nd, pe) = Expat.parse Expat.defaultParseOptions bs
         contl = nodesToContent [nd]
     in case pe of
          Just e -> Left $ "Expat.parse: " ++ show e
