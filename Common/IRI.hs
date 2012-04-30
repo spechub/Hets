@@ -445,11 +445,6 @@ brackets p = char '<' >> p << char '>' << skipSmart
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI
 curie = iriWithPos $ do
-    c <- string ":"
-    i <- reference
-    skipSmart
-    return $ i { prefixName = c }
-  <|> do
     pn <- try (do
         n <- ncname
         c <- string ":"
