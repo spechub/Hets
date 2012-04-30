@@ -66,6 +66,9 @@ module Common.IRI
     -- * Conversion
     , simpleIdToIRI
 
+    -- * Extraction
+    , localname
+
     -- * Parsing
     , parseIRI
     , parseIRIReference
@@ -486,12 +489,6 @@ nameStartChar = satisfy nameStartCharP
 nameChar :: GenParser Char st Char
 nameChar = satisfy nameCharP
 
-nameStartCharW3C :: GenParser Char st Char
-nameStartCharW3C = satisfy nameStartCharW3CP
-
-nameCharW3C :: GenParser Char st Char
-nameCharW3C = satisfy nameCharW3CP
-
 {- NOTE: Usually ':' is allowed. Here, only ncname uses nameStartChar, however.
 Thus we disallow ':' -}
 nameStartCharP :: Char -> Bool
@@ -521,9 +518,6 @@ nameCharP c =
   n == 0xB7 ||
   (0x0300 <= n && n <= 0x036F) ||
   (0x203F <= n && n <= 0x2040)
-
-nameStartCharW3CP :: Char ->Bool
-nameStartCharW3CP c = c == ':' || nameStartCharP c
 
 nameCharW3CP :: Char -> Bool
 nameCharW3CP c = c == ':' || nameCharP c
@@ -1039,6 +1033,13 @@ iriToStringAbbrev (IRI { prefixName = pname
                        }) =
   (pname ++) . (aPath ++) . (aQuery ++) . (aFragment ++)
 
+iriToStringAbbrevMerge :: IRI -> ShowS
+iriToStringAbbrevMerge (IRI { abbrevPath = aPath
+                            , abbrevQuery = aQuery
+                            , abbrevFragment = aFragment
+                            }) =
+  (aPath ++) . (aQuery ++) . (aFragment ++)
+
 
 
 
@@ -1325,16 +1326,14 @@ expandCurie prefixMap c =
 {- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending their string representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  parseIRIReference $ iriToStringFull id i "" ++ iriToStringAbbrev c ""
+  parseIRIReference $ iriToStringFull id i "" ++ iriToStringAbbrevMerge c ""
 
 localname :: IRI -> String
-localname i@(IRI { iriScheme = scheme
-                            , iriAuthority = authority
-                            , iriPath = path
-                            , iriQuery = query
-                            , iriFragment = fragment
-                            , abbrevPath = aPath
-                            })
+localname i@(IRI { iriPath = path
+                 , iriQuery = query
+                 , iriFragment = fragment
+                 , abbrevPath = aPath
+                 })
   | hasFullIRI i =
       if not $ null fragment then fragment else
       if not $ null query then nmTokenSuffix query else nmTokenSuffix path
