@@ -16,7 +16,7 @@ module Common.DocUtils where
 import Common.AS_Annotation
 import Common.Doc
 import Common.Id
-import Common.IRI (IRI, iriToStringShortUnsecure)
+import Common.IRI (IRI, isAbbrev, iriToStringShortUnsecure)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Common.GlobalAnnotations
@@ -227,4 +227,6 @@ showGlobalDoc :: Pretty a => GlobalAnnos -> a -> ShowS
 showGlobalDoc ga = shows . useGlobalAnnos ga . pretty
 
 instance Pretty IRI where
-  pretty = text . iriToStringShortUnsecure
+  pretty i = text $ if isAbbrev i
+                       then iriToStringShortUnsecure i
+                       else "<" ++ iriToStringShortUnsecure i ++ ">"

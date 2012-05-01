@@ -28,6 +28,8 @@ module Static.AnalysisStructured
     , insLink
     , extendMorphism
     , insGTheory
+    , expCurie
+    , ExpOverrides
     ) where
 
 import Driver.Options
@@ -50,8 +52,9 @@ import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.Consistency
 import Common.DocUtils
 import Common.ExtSign
+import Common.GlobalAnnotations
 import Common.Id
-import Common.IRI (IRI, iriToStringUnsecure, iriPos)
+import Common.IRI
 import Common.LibName
 import Common.Result
 import Common.Utils (number)
@@ -63,6 +66,9 @@ import qualified Data.Map as Map
 import Data.List (find)
 
 import Control.Monad
+
+-- overrides CUIRIE expansion for Download_items
+type ExpOverrides = Map.Map IRI FilePath
 
 coerceMaybeNode :: LogicGraph -> DGraph -> MaybeNode -> NodeName -> AnyLogic
                 -> Result (MaybeNode, DGraph)
@@ -226,9 +232,9 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
               , currentTargetBase = Just (libName, nName) })
 
 anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
-  -> MaybeNode -> NodeName -> HetcatsOpts -> SPEC
+  -> MaybeNode -> NodeName -> HetcatsOpts -> GlobalAnnos -> ExpOverrides -> SPEC
   -> Result (SPEC, NodeSig, DGraph)
-anaSpecTop conser addSyms lg ln dg nsig name opts sp =
+anaSpecTop conser addSyms lg ln dg nsig name opts ga eo sp =
  if conser == None || case sp of
       -- for these cases def-links are re-used
     Basic_spec _ _ -> True
@@ -236,20 +242,20 @@ anaSpecTop conser addSyms lg ln dg nsig name opts sp =
     Spec_inst _ _ _ -> True
     Group _ _ -> True -- in this case we recurse
     _ -> False
-  then anaSpecAux conser addSyms lg ln dg nsig name opts sp else do
+    then anaSpecAux conser addSyms lg ln dg nsig name opts ga eo sp else do
   let provenThmLink =
         ThmLink $ Proven (DGRule "static analysis") emptyProofBasis
-  (rsp, ns, rdg) <- anaSpec addSyms lg ln dg nsig name opts sp
+  (rsp, ns, rdg) <- anaSpec addSyms lg ln dg nsig name opts ga eo sp
   ndg <- createConsLink provenThmLink conser lg rdg nsig ns SeeTarget
   return (rsp, ns, ndg)
 
 anaFreeOrCofreeSpec :: Bool -> LogicGraph -> HetcatsOpts -> LibName -> DGraph
-  -> MaybeNode -> NodeName -> FreeOrCofree -> Annoted SPEC -> Range
+  -> MaybeNode -> NodeName -> FreeOrCofree  -> GlobalAnnos -> ExpOverrides -> Annoted SPEC -> Range
   -> Result (Annoted SPEC, NodeSig, DGraph)
-anaFreeOrCofreeSpec addSyms lg opts ln dg nsig name dglType asp pos =
+anaFreeOrCofreeSpec addSyms lg opts ln dg nsig name dglType ga eo asp pos =
   adjustPos pos $ do
       (sp', NodeSig n' gsigma, dg') <-
-          anaSpec addSyms lg ln dg nsig (extName (show dglType) name) opts
+          anaSpec addSyms lg ln dg nsig (extName (show dglType) name) opts ga eo
             $ item asp
       let (ns@(NodeSig node _), dg2) =
               insGSig dg' name (DGFreeOrCofree dglType) gsigma
@@ -265,13 +271,13 @@ anaFreeOrCofreeSpec addSyms lg opts ln dg nsig name dglType asp pos =
 be ignored. The options are needed to check: shall only the structure be
 analysed? -}
 anaSpec :: Bool -> LogicGraph -> LibName -> DGraph -> MaybeNode -> NodeName
-  -> HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
+  -> HetcatsOpts -> GlobalAnnos -> ExpOverrides -> SPEC -> Result (SPEC, NodeSig, DGraph)
 anaSpec = anaSpecAux None
 
 anaSpecAux :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
-  -> MaybeNode -> NodeName -> HetcatsOpts -> SPEC
+  -> MaybeNode -> NodeName -> HetcatsOpts -> GlobalAnnos -> ExpOverrides -> SPEC
   -> Result (SPEC, NodeSig, DGraph)
-anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
+anaSpecAux conser addSyms lg ln dg nsig name opts ga eo sp = case sp of
   Basic_spec (G_basic_spec lid bspec) pos -> adjustPos pos $ do
        let curLogic = Logic lid
        (nsig', dg0) <- coerceMaybeNode lg dg nsig name curLogic
@@ -317,7 +323,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', ns'@(NodeSig n' gsigma), dg') <-
-        anaSpec addSyms lg ln dg nsig (extName "Translation" name) opts sp1
+        anaSpec addSyms lg ln dg nsig (extName "Translation" name) opts ga eo sp1
       mor <- anaRenaming lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       when (isIdentity mor) $ warning ()
@@ -332,7 +338,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
   Reduction asp restr ->
    do let sp1 = item asp
           rname = extName "Restriction" name
-      (sp1', ns0, dg0) <- anaSpec addSyms lg ln dg nsig rname opts sp1
+      (sp1', ns0, dg0) <- anaSpec addSyms lg ln dg nsig rname opts ga eo sp1
       rLid <- getRestrLogic restr
       p1@(NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname rLid
       (hmor, tmor) <- anaRestriction lg (getMaybeSig nsig) gsigma' opts restr
@@ -364,14 +370,14 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       return (Reduction (replaceAnnoted sp1' asp) restr, fs, dgf)
   Union asps pos -> do
     (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg ln dg nsig
-      name opts asps
+      name opts ga eo asps
     return (Union newAsps pos, ns, dg')
   Extension asps pos -> do
    let namedSps = map (\ (asp, n) ->
          let nn = incBy n (extName "Extension" name) in
          if n < length asps then (nn, asp)
          else (name { xpath = xpath nn }, asp)) $ number asps
-   (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg opts ln pos)
+   (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg opts ga eo ln pos)
      ([], nsig, dg, conser, addSyms) namedSps
    case nsig1' of
        EmptyNode _ -> fail "empty extension"
@@ -380,20 +386,20 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                                  pos, nsig1, dg1)
   Free_spec asp poss -> do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
-        name Free asp poss
+        name Free ga eo asp poss
       return (Free_spec nasp poss, nsig', dg')
   Cofree_spec asp poss -> do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
-        name Cofree asp poss
+        name Cofree ga eo asp poss
       return (Cofree_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss -> adjustPos poss $ do
       let sp1 = item asp
           sp1' = item asp'
           lname = extName "Local" name
       (sp2, nsig'@(NodeSig _ gsig1), dg') <-
-        anaSpec False lg ln dg nsig (extName "Spec" lname) opts sp1
+        anaSpec False lg ln dg nsig (extName "Spec" lname) opts ga eo sp1
       (sp2', NodeSig n'' gsig2@(G_sign lid2 sigma2 _), dg'') <- anaSpec False lg
-        ln dg' (JustNode nsig') (extName "Within" lname) opts sp1'
+        ln dg' (JustNode nsig') (extName "Within" lname) opts ga eo sp1'
       let gSigN = getMaybeSig nsig
       (G_sign lid sigmaN _, _) <- gSigCoerce lg gSigN (Logic lid2)
       sigma <- coerceSign lid lid2 "Analysis of local spec1" sigmaN
@@ -427,7 +433,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           l = getLogic nsig
       -- analyse spec with empty local env
       (sp', NodeSig n' gsigma', dg') <- anaSpec False lg ln dg
-        (EmptyNode l) (extName "Closed" name) opts sp1
+        (EmptyNode l) (extName "Closed" name) opts ga eo sp1
       gsigma2 <- gsigUnionMaybe lg nsig gsigma'
       let (ns@(NodeSig node _), dg2) = insGSig dg' name DGClosed gsigma2
       incl2 <- ginclusion lg gsigma' gsigma2
@@ -441,16 +447,18 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
           qname = extName "Qualified" name
-      (sp', ns', dg') <- anaSpec addSyms newLG ln dg newNSig qname opts
+      (sp', ns', dg') <- anaSpec addSyms newLG ln dg newNSig qname opts ga eo
         $ item asp
       (ns, dg2) <- coerceNode lg dg' ns' qname l
       return (Qualified_spec lognm asp { item = sp' } pos, ns, dg2)
   Group asp pos -> do
       (sp', nsig', dg') <-
-          anaSpecTop conser addSyms lg ln dg nsig name opts (item asp)
+          anaSpecTop conser addSyms lg ln dg nsig name opts ga eo (item asp)
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
-  Spec_inst spname afitargs pos0 -> let
-       pos = if null afitargs then iriPos spname else pos0
+  Spec_inst spname' afitargs pos0 -> case expCurie ga eo spname' of
+   Nothing -> prefixErrorIRI spname'
+   Just spname ->
+    let pos = if null afitargs then iriPos spname else pos0
     in adjustPos pos $ case lookupGlobalEnvDG spname dg of
     Just (SpecEntry gs@(ExtGenSig (GenSig _ params _)
                         body@(NodeSig nB gsigmaB))) ->
@@ -476,7 +484,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       -- now the case with parameters
       (la, lp) | la == lp -> do
        (ffitargs, dg', (morDelta, gsigmaA, ns@(NodeSig nA gsigmaRes))) <-
-               anaAllFitArgs lg opts ln dg nsig name spname gs afitargs
+               anaAllFitArgs lg opts ga eo ln dg nsig name spname gs afitargs
        GMorphism cid _ _ _ _ <- return morDelta
        morDelta' <- case nsig of
          EmptyNode _
@@ -504,7 +512,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       let dname = extName "Data" name
       -- analyse SPEC1
       (sp1', ns', dg') <- anaSpec False (setCurLogic (language_name lidD) lg)
-         ln dg (EmptyNode lD) dname opts sp1
+         ln dg (EmptyNode lD) dname opts ga eo sp1
       -- force the result to be in the data logic
       (ns'', dg'') <- coerceNode lg dg' ns' (extName "Qualified" dname) lD
       -- translate SPEC1's signature along the comorphism
@@ -522,7 +530,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           return (ns, dg4)
       -- analyse SPEC2
       (sp2', nsig3, udg3) <-
-          anaSpec addSyms lg ln udg (JustNode usig) name opts sp2
+          anaSpec addSyms lg ln udg (JustNode usig) name opts ga eo sp2
       return (Data lD lP
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
@@ -542,16 +550,16 @@ gsigUnionMaybe lg mn gsig = case mn of
   JustNode ns -> gsigUnion lg (getSig ns) gsig
 
 anaUnion :: Bool -> LogicGraph -> LibName -> DGraph -> MaybeNode -> NodeName
-  -> HetcatsOpts -> [Annoted SPEC]
+  -> HetcatsOpts -> GlobalAnnos -> ExpOverrides -> [Annoted SPEC]
   -> Result ([Annoted SPEC], [NodeSig], NodeSig, DGraph)
-anaUnion addSyms lg ln dg nsig name opts asps = case asps of
+anaUnion addSyms lg ln dg nsig name opts ga eo asps = case asps of
   [] -> fail "empty union"
   _ -> do
       let sps = map item asps
       (sps', nsigs, dg', _) <-
           let ana (sps1, nsigs, dg', n) sp' = do
                 let n1 = inc n
-                (sp1, nsig', dg1) <- anaSpec addSyms lg ln dg' nsig n1 opts sp'
+                (sp1, nsig', dg1) <- anaSpec addSyms lg ln dg' nsig n1 opts ga eo sp'
                 return (sp1 : sps1, nsig' : nsigs, dg1, n1)
            in foldM ana ([], [], dg, extName "Union" name) sps
       let newAsps = zipWith replaceAnnoted (reverse sps') asps
@@ -748,12 +756,12 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) asig@(G_sign lidA sigmaA _)
    -}
 
 anaFitArg :: LogicGraph -> LibName -> DGraph -> IRI -> MaybeNode
-  -> NodeSig -> HetcatsOpts -> NodeName -> FIT_ARG
+  -> NodeSig -> HetcatsOpts -> NodeName -> GlobalAnnos -> ExpOverrides -> FIT_ARG
   -> Result (FIT_ARG, DGraph, (G_morphism, NodeSig))
-anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
+anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name ga eo fv =
   case fv of
   Fit_spec asp gsis pos -> do
-   (sp', nsigA, dg') <- anaSpec False lg ln dg nsigI name opts (item asp)
+   (sp', nsigA, dg') <- anaSpec False lg ln dg nsigI name opts ga eo (item asp)
    (_, Comorphism aid) <-
        logicUnion lg (getNodeLogic nsigP) (getNodeLogic nsigA)
    let tl = Logic $ targetLogic aid
@@ -767,7 +775,9 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
                 insLink dg'' eGmor globalThm
                    (DGLinkInst spname $ Fitted gsis) nP nA'
           , (gmor, nsigA'))
-  Fit_view vn afitargs pos -> case lookupGlobalEnvDG vn dg of
+  Fit_view vn' afitargs pos -> case expCurie ga eo vn' of
+   Nothing -> prefixErrorIRI vn'
+   Just vn -> case lookupGlobalEnvDG vn dg of
     Just (ViewOrStructEntry _ (ExtViewSig (NodeSig nSrc gsigmaS) mor
       gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar _))))
         -> adjustPos pos $ do
@@ -805,7 +815,7 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
         -- now the case with parameters
         (la, lp) | la == lp -> do
           (ffitargs, dg', (gmor_f, _, ns@(NodeSig nA _))) <-
-            anaAllFitArgs lg opts ln dg5 (EmptyNode $ Logic lid)
+            anaAllFitArgs lg opts ga eo ln dg5 (EmptyNode $ Logic lid)
               name vn gs afitargs
           mor1 <- comp mor gmor_f
           GMorphism cid1 _ _ theta _ <- return mor1
@@ -818,23 +828,25 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
          | otherwise -> instMismatchError spname lp la pos
     _ -> notFoundError "View" vn pos
 
-anaFitArgs :: LogicGraph -> HetcatsOpts -> LibName -> IRI -> MaybeNode
+anaFitArgs :: LogicGraph -> HetcatsOpts -> GlobalAnnos -> ExpOverrides -> LibName -> IRI
+  -> MaybeNode
   -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
   -> (NodeSig, FIT_ARG)
   -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
-anaFitArgs lg opts ln spname imps (fas', dg1, args, name') (nsig', fa) = do
+anaFitArgs lg opts ga eo ln spname imps (fas', dg1, args, name') (nsig', fa) = do
     let n1 = inc name'
-    (fa', dg', arg) <- anaFitArg lg ln dg1 spname imps nsig' opts n1 fa
+    (fa', dg', arg) <- anaFitArg lg ln dg1 spname imps nsig' opts n1 ga eo fa
     return (fa' : fas', dg', arg : args, n1)
 
-anaAllFitArgs :: LogicGraph -> HetcatsOpts -> LibName -> DGraph -> MaybeNode
+anaAllFitArgs :: LogicGraph -> HetcatsOpts -> GlobalAnnos -> ExpOverrides -> LibName -> DGraph
+  -> MaybeNode
   -> NodeName -> IRI -> ExtGenSig -> [Annoted FIT_ARG]
   -> Result ([Annoted FIT_ARG], DGraph, (GMorphism, G_sign, NodeSig))
-anaAllFitArgs lg opts ln dg nsig name spname
+anaAllFitArgs lg opts ga eo ln dg nsig name spname
   gs@(ExtGenSig (GenSig imps params _) _)
   afitargs = do
   let fitargs = map item afitargs
-  (fitargs', dg', args, _) <- foldM (anaFitArgs lg opts ln spname imps)
+  (fitargs', dg', args, _) <- foldM (anaFitArgs lg opts ga eo ln spname imps)
            ([], dg, [], extName "Actuals" name) (zip params fitargs)
   let actualargs = reverse args
   (gsigma', morDelta) <- applyGS lg gs actualargs
@@ -1005,16 +1017,16 @@ getSpecAnnos pos a = do
   return (sanno1, impliesA)
 
 -- only consider addSyms for the first spec
-anaExtension :: LogicGraph -> HetcatsOpts -> LibName -> Range
+anaExtension :: LogicGraph -> HetcatsOpts -> GlobalAnnos -> ExpOverrides -> LibName -> Range
     -> ([SPEC], MaybeNode, DGraph, Conservativity, Bool)
     -> (NodeName, Annoted SPEC)
     -> Result ([SPEC], MaybeNode, DGraph, Conservativity, Bool)
-anaExtension lg opts ln pos (sps', nsig', dg', conser, addSyms) (name', asp')
+anaExtension lg opts ga eo ln pos (sps', nsig', dg', conser, addSyms) (name', asp')
   = do
   (sanno1, impliesA) <- getSpecAnnos pos asp'
   -- attach conservativity to definition link
   (sp1', nsig1@(NodeSig n1 sig1), dg1) <- anaSpecTop (max conser sanno1)
-    addSyms lg ln dg' nsig' name' opts (item asp')
+    addSyms lg ln dg' nsig' name' opts ga eo (item asp')
   dg2 <- if impliesA then case nsig' of
     JustNode (NodeSig n' sig') -> do
       -- is the extension going between real nodes?
@@ -1025,3 +1037,22 @@ anaExtension lg opts ln pos (sps', nsig', dg', conser, addSyms) (name', asp')
     _ -> return dg1
    else return dg1
   return (sp1' : sps', JustNode nsig1, dg2, None, True)
+
+
+{- BEGIN CURIE expansion -}
+
+expCurie :: GlobalAnnos -> ExpOverrides -> IRI -> Maybe IRI
+expCurie ga eo i =
+  let pm = prefix_map ga
+  in  case Map.lookup i eo of
+        Nothing -> expandCurie pm i
+        Just path -> case parseIRIReference $ path ++ "#" of
+          Nothing -> Nothing
+          Just p -> expandCurie (Map.fromList [("",p), (":",p)]) i
+
+prefixErrorIRI :: IRI -> Result a
+prefixErrorIRI i = fatal_error ("No prefix found for CURIE " ++
+    iriToStringUnsecure i ++ " or expansion does not yield a valid IRI.")
+    $ iriPos i
+
+{- END CURIE expansion -}

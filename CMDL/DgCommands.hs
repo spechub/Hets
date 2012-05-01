@@ -58,6 +58,7 @@ import Common.Result
 import Common.ResultT
 import Common.Id
 import Common.IRI (simpleIdToIRI)
+import Common.GlobalAnnotations
 import Common.AS_Annotation
 
 
@@ -265,13 +266,14 @@ cAddView input state = let iState = intState state in case i_state iState of
         [vn, spec1, spec2] = words input
         mkSpecInst s = Spec_inst (simpleIdToIRI $ mkSimpleId s) [] nullRange
     Result ds tmp <- runResultT $ liftR $ anaViewDefn lg ln libenv dg opts
+      emptyGlobalAnnos Map.empty -- not sure if no CURIE-to-IRI mapping shall be done
       (simpleIdToIRI $ mkSimpleId vn) (Genericity (Params []) (Imported []) nullRange)
       (View_type (emptyAnno $ mkSpecInst spec1)
        (emptyAnno $ mkSpecInst spec2) nullRange) [] nullRange
     return $ case tmp of
       Nothing -> genErrorMsg
           ("View analysis failed:\n" ++ showRelDiags (verbose opts) ds) state
-      Just (_, nwDg, nwLibEnv, _) ->
+      Just (_, nwDg, nwLibEnv, _, _) ->
         let newLibEnv' = Map.insert ln nwDg nwLibEnv
         in state
           { intState = iState

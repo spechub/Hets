@@ -1,7 +1,5 @@
 module CommonLogic.ExpandCurie
   ( expandCurieBS
-  , expandCurieAnnotedTextMeta
-  , expandCurieTextMeta
   ) where
 
 import qualified Common.AS_Annotation as Anno
@@ -11,21 +9,24 @@ import CommonLogic.AS_CommonLogic
 
 import qualified Data.Map as Map
 
-expandCurieBS :: BASIC_SPEC -> BASIC_SPEC
-expandCurieBS (Basic_spec abis) =
+expandCurieBS :: Map.Map String IRI -> BASIC_SPEC -> BASIC_SPEC
+expandCurieBS gpm (Basic_spec abis) =
   Basic_spec $ map
-          (\abi@Anno.Annoted{Anno.item = bi} -> abi{Anno.item = expBI bi}) abis
+      (\abi@Anno.Annoted{Anno.item = bi} -> abi{Anno.item = expBI gpm bi}) abis
 
-expBI :: BASIC_ITEMS -> BASIC_ITEMS
-expBI (Axiom_items atms) = Axiom_items $ map expandCurieAnnotedTextMeta atms
+expBI :: Map.Map String IRI -> BASIC_ITEMS -> BASIC_ITEMS
+expBI gpm (Axiom_items atms) =
+  Axiom_items $ map (expAnTextMeta gpm) atms
 
-expandCurieAnnotedTextMeta :: Anno.Annoted TEXT_META -> Anno.Annoted TEXT_META
-expandCurieAnnotedTextMeta an@Anno.Annoted{Anno.item = tm} =
-  an{Anno.item = expandCurieTextMeta tm}
+expAnTextMeta :: Map.Map String IRI
+  -> Anno.Annoted TEXT_META -> Anno.Annoted TEXT_META
+expAnTextMeta gpm an@Anno.Annoted{Anno.item = tm} =
+  an{Anno.item = expTextMeta gpm tm}
 
-expandCurieTextMeta :: TEXT_META -> TEXT_META
-expandCurieTextMeta tm =
-  tm { getText = expTxt (Map.fromList $ prefix_map tm) (getText tm) }
+expTextMeta :: Map.Map String IRI -> TEXT_META -> TEXT_META
+expTextMeta gpm tm =
+  tm { getText = expTxt (Map.unionWith (\_ p2 -> p2) gpm $
+                            Map.fromList $ prefix_map tm) (getText tm) }
 
 expTxt :: Map.Map String IRI -> TEXT -> TEXT
 expTxt pm t = case t of

@@ -37,9 +37,7 @@ data SPEC = Basic_spec G_basic_spec Range
           | Union [Annoted SPEC] Range
             -- pos: "and"s
           | Extension [Annoted SPEC] Range
-            -- TODO: EXTENSION_NAME (IRI) into SPEC (Spec_inst)
             -- pos: "then"s
-            -- (last SPEC must be Basic_spec)
           | Free_spec (Annoted SPEC) Range
             -- pos: "free"
           | Cofree_spec (Annoted SPEC) Range

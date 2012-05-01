@@ -16,6 +16,7 @@ module CommonLogic.Analysis
 
 import Common.ExtSign
 import Common.Result as Result
+import Common.GlobalAnnotations
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import Common.IRI (parseIRIReference)
@@ -193,15 +194,15 @@ uniteMap :: (a -> Sign.Sign) -> [a] -> Sign
 uniteMap p = List.foldl (\ sig -> Sign.unite sig . p)
    Sign.emptySig
 
-basicCommonLogicAnalysis :: (AS.BASIC_SPEC, Sign.Sign, a)
+basicCommonLogicAnalysis :: (AS.BASIC_SPEC, Sign.Sign, GlobalAnnos)
   -> Result (AS.BASIC_SPEC,
              ExtSign Sign.Sign Symbol.Symbol,
              [AS_Anno.Named AS.TEXT_META])
-basicCommonLogicAnalysis (bs', sig, _) =
+basicCommonLogicAnalysis (bs', sig, ga) =
    Result.Result [] $ if exErrs then Nothing else
      Just (bs, ExtSign sigItems newSyms, sentences)
     where
-      bs = expandCurieBS bs'
+      bs = expandCurieBS (prefix_map ga) bs'
       sigItems = makeSig bs sig
       newSyms = Set.map Symbol.Symbol
                   $ Set.difference (Sign.allItems sigItems) $ Sign.allItems sig

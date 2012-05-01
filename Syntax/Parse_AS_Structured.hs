@@ -415,25 +415,28 @@ correspIRIs = do
   (i2m, i3m) <- (do
           try $ asKey equalS
           i2 <- hetIRI
-          i3 <- (lookAheadConfidence >> return Nothing)
-                <|> (lookAhead (try twoIriCurie) >> (liftM Just) hetIRI)
-                <|> return Nothing
+          i3 <- correspThirdIRI
           return (Just i2, i3)
         <|> do
-          i3 <- (lookAheadConfidence >> return Nothing)
-                <|> (lookAhead (try twoIriCurie) >> (liftM Just) hetIRI)
-                <|> return Nothing
+          i3 <- correspThirdIRI
           return (Nothing, i3)
     )
   return $ case i2m of
               Nothing -> (Nothing, i1, i3m)
-              Just i2j -> (Just i1, i2j, i3m)
+              Just i2 -> (Just i1, i2, i3m)
+
+correspThirdIRI :: AParser st (Maybe IRI)
+correspThirdIRI =
+  (lookAhead confidenceBegin >> return Nothing)
+  <|> (lookAhead (try twoIriCurie) >> (liftM Just) hetIRI)
+  <|> (lookAhead (try (hetIRI >> confidenceBegin)) >> (liftM Just) hetIRI)
+  <|> return Nothing
 
 twoIriCurie :: AParser st ()
 twoIriCurie = forget $ hetIRI >> hetIRI
 
-lookAheadConfidence :: AParser st ()
-lookAheadConfidence = lookAhead (try confidence) >> return ()
+confidenceBegin :: AParser st Char
+confidenceBegin = char '('
 
 termOrEntityRef :: AParser st TERM_OR_ENTITY_REF
 termOrEntityRef = do

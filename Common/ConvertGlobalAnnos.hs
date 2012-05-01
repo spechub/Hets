@@ -38,7 +38,8 @@ printGlobalAnnos :: GlobalAnnos -> Doc
 printGlobalAnnos = printAnnotationList . convertGlobalAnnos
 
 convertGlobalAnnos :: GlobalAnnos -> [Annotation]
-convertGlobalAnnos ga = convertPrec (prec_annos ga)
+convertGlobalAnnos ga = convertPrefixMap (prefix_map ga)
+              ++ convertPrec (prec_annos ga)
               ++ convertAssoc (assoc_annos ga)
               ++ convertDispl (display_annos ga)
               ++ convertLiteralAnnos (literal_annos ga)
@@ -89,3 +90,7 @@ convertLiteralAnnos la = let
           Just (a, b) -> [Float_anno a b nullRange]
           _ -> []
   in str ++ lis ++ number ++ flo
+
+convertPrefixMap :: PrefixMap -> [Annotation]
+convertPrefixMap pm =
+  if Map.null pm then [] else [Prefix_anno (Map.toList pm) nullRange]

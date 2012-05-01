@@ -1,4 +1,4 @@
-(cl-text foo:curie
+(cl-text foo:curieText
 
   (cl-prefix : <http://bla.com/>)
 

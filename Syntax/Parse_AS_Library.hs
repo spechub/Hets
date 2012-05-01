@@ -70,7 +70,7 @@ version = do
 libId :: AParser st LibId
 libId = do
       pos <- getPos
-      i <- try iriCurie
+      i <- try hetIRI
       return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) "" noTime
 
 -- | Parse the library elements
@@ -168,7 +168,7 @@ libItem l =
        logN@(Logic_name t _ _) <- logicName
        syn <- optionMaybe $ do
             asKey serializationS
-            iriCurie
+            hetIRI
        return $ Logic_decl logN syn $ Range $ concatMap rangeToList
                   [tokPos s, iriPos t]
   <|> -- newlogic
