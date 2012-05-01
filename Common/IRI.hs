@@ -243,11 +243,11 @@ instance Ord IRI where
        (\ j -> (prefixName j, abbrevPath j, iriQuery j, iriFragment j)) i k
     (b1, b2) -> compare b1 b2
 
--- |converts IRI to String of expanded form, also showing Auth info
+-- |converts IRI to String of expanded form. if available. Also showing Auth
 iriToStringUnsecure :: IRI -> String
 iriToStringUnsecure i = iriToString id i ""
 
--- |converts IRI to String of abbreviated form, also showing Auth info
+-- |converts IRI to String of abbreviated form. if available. Also showing Auth info
 iriToStringShortUnsecure :: IRI -> String
 iriToStringShortUnsecure i = iriToStringShort id i ""
 
