@@ -239,7 +239,7 @@ prefixAnno ps = do
     prefixes <- many $ do
         p <- do
               c <- try $ string colonS
-              return $ c
+              return ""
             <|> do
               n <- IRI.ncname
               c <- string colonS
