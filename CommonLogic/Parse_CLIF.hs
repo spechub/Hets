@@ -46,10 +46,9 @@ cltext = many white >> (do
     return $ tm t prfxs
   )
   where tm :: TEXT -> [PrefixMapping] -> TEXT_META
-        tm t prfxs = Text_meta { AS.getText = t
-                         , nondiscourseNames = Nothing
-                         , prefix_map = prfxs
-                         }
+        tm t prfxs = emptyTextMeta { AS.getText = t
+                                   , prefix_map = prfxs
+                                   }
 
 namedtext :: CharParser st (TEXT, [PrefixMapping])
 namedtext = do

@@ -41,10 +41,12 @@ type PrefixMapping = (String, IRI)
 
 emptyTextMeta :: TEXT_META
 emptyTextMeta = Text_meta { getText = Text [] nullRange
+                          , textIri = Nothing
                           , nondiscourseNames = Nothing
                           , prefix_map = [] }
 
 data TEXT_META = Text_meta { getText :: TEXT
+                           , textIri :: Maybe IRI
                            , nondiscourseNames :: Maybe (Set NAME)
                            , prefix_map :: [PrefixMapping]
                            } deriving (Show, Ord, Eq)

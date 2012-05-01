@@ -18,6 +18,7 @@ import Common.ExtSign
 import Common.Result as Result
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
+import Common.IRI (parseIRIReference)
 
 import CommonLogic.Symbol as Symbol
 import qualified CommonLogic.AS_CommonLogic as AS
@@ -84,7 +85,7 @@ addFormula :: [DIAG_FORM]
            -> [DIAG_FORM]
 addFormula formulae nf _ = formulae ++
                           [DiagForm {
-                             formula = makeNamed f i
+                             formula = makeNamed (setTextIRI f) i
                            , diagnosis = Result.Diag
                            {
                              Result.diagKind = Result.Hint
@@ -116,6 +117,13 @@ makeNamed f i =
       isImplies = any AS_Anno.isImplies annos
       isImplied = any AS_Anno.isImplied annos
       isTheorem = isImplies || isImplied
+
+setTextIRI :: AS_Anno.Annoted AS.TEXT_META -> AS_Anno.Annoted AS.TEXT_META
+setTextIRI atm@(AS_Anno.Annoted{ AS_Anno.item = tm }) =
+  let mi = case AS.getText tm of
+            AS.Named_text n _ _ -> parseIRIReference $ init $ tail $ Id.tokStr n
+            _ -> Nothing
+  in  atm { AS_Anno.item = tm { AS.textIri = mi } }
 
 -- | Retrives the signature of a sentence
 propsOfFormula :: AS.TEXT -> Sign.Sign
