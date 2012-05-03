@@ -45,7 +45,7 @@ Description: Package containing the core of Hets - the Heterogeneous Tool Set.
 
 Package: hets-ontology
 Architecture: all
-Depends: hets-core, protege-owl, libfactplusplusjni, pellet, ekrhyper, swap-cwm, ${misc:Depends}
+Depends: hets-core, protege-owl, libfactplusplusjni, pellet, ekrhyper, ${misc:Depends}
 Description: Package containing the Hets-Ontology system.
  This is a meta-package containing the Hets-Ontology system.
 
