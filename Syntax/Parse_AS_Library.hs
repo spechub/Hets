@@ -38,8 +38,6 @@ import Control.Monad
 
 import Framework.AS
 
-import Debug.Trace
-
 -- * Parsing functions
 
 -- | Parse a library of specifications
