@@ -33,9 +33,12 @@ import Common.Token
 import Text.ParserCombinators.Parsec
 import Data.List
 import Data.Maybe (maybeToList)
+import qualified Data.Map as Map
 import Control.Monad
 
 import Framework.AS
+
+import Debug.Trace
 
 -- * Parsing functions
 
@@ -47,7 +50,7 @@ library lG = do
       n <- libName
       return (tokPos s1, n)
     an <- annos
-    ls <- libItems lG
+    ls <- libItems lG $ prefixes an
     return (Lib_defn ln ls ps an)
 
 -- | Parse library name
@@ -74,25 +77,25 @@ libId = do
       return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) "" noTime
 
 -- | Parse the library elements
-libItems :: LogicGraph -> AParser st [Annoted LIB_ITEM]
-libItems l =
+libItems :: LogicGraph -> Map.Map String IRI -> AParser st [Annoted LIB_ITEM]
+libItems l pm =
      (eof >> return [])
     <|> do
-      r <- libItem l
+      r <- libItem l pm
       la <- lineAnnos
       an <- annos
-      is <- libItems $ case r of
+      is <- libItems (case r of
              Logic_decl logN _ _ ->
                  setLogicName logN l
-             _ -> l
+             _ -> l) pm
       case is of
         [] -> return [Annoted r nullRange [] $ la ++ an]
         Annoted i p nl ra : rs ->
           return $ Annoted r nullRange [] la : Annoted i p (an ++ nl) ra : rs
 
 -- | Parse an element of the library
-libItem :: LogicGraph -> AParser st LIB_ITEM
-libItem l =
+libItem :: LogicGraph -> Map.Map String IRI -> AParser st LIB_ITEM
+libItem l pm =
      -- spec defn
     do s <- asKey specS <|> asKey ontologyS
        n <- hetIRI
@@ -165,12 +168,18 @@ libItem l =
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- logic
     do s <- asKey logicS
-       logN@(Logic_name t _ _) <- logicName
-       syn <- optionMaybe $ do
+       logN'@(Logic_name t' sub sn) <- logicName
+       syn' <- optionMaybe $ do
             asKey serializationS
             hetIRI
+       let logN = case expandCurie pm t' of
+                    Nothing -> logN'
+                    Just t -> Logic_name t sub sn
+           syn = case fmap (expandCurie pm) syn' of
+                    Just (Just i) -> Just i
+                    _ -> syn'
        return $ Logic_decl logN syn $ Range $ concatMap rangeToList
-                  [tokPos s, iriPos t]
+                  [tokPos s, iriPos t']
   <|> -- newlogic
     do (n, s1) <- newlogicP
        s2 <- equalT
@@ -353,3 +362,11 @@ targetP = do
   s <- asKey targetS
   tl <- simpleIdOrDDottedId
   return (simpleIdToIRI tl, s)
+
+prefixes :: [Annotation] -> Map.Map String IRI
+prefixes ans = foldr (\m r -> Map.union r $ prefixMap m) Map.empty ans
+
+prefixMap :: Annotation -> Map.Map String IRI
+prefixMap an = case an of
+  Prefix_anno l _ -> Map.fromList l
+  _ -> Map.empty
