@@ -37,9 +37,9 @@ type Env = SigMapI Symbol
 omdocToSym :: Env -> TCElement -> String -> Result Symbol
 omdocToSym _ (TCSymbol _ _ sr _) n =
      case sr of
-       Obj -> return $  (Symbol (nameToId n)) 
-       _ -> fail $ concat ["omdocToSym: only objects are allowed as symbol roles, but found", show sr]
-omdocToSym _ symb _ = fail $ concat ["omdocToSym: only TCSymbols are allowed, but found: ", show symb] 
+       Obj -> return $ Symbol (nameToId n)
+       _ -> fail $ "omdocToSym: only objects are allowed as symbol roles, but found" ++ show sr
+omdocToSym _ symb _ = fail $ "omdocToSym: only TCSymbols are allowed, but found: " ++ show symb
 
 
 
@@ -62,14 +62,13 @@ omdocToSen _ sym _ = fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
 
 toText :: Env -> OMElement -> TEXT
 toText e om = case om of
-  OMA (op : subl) ->
-      if op == const_and then Text (map (toPhrase e) subl) nullRange
-      else if op == const_textName
-      then case subl of
+  OMA (op : subl)
+    | op == const_and -> Text (map (toPhrase e) subl) nullRange
+    | op == const_textName -> case subl of
         [OMV (OMName n _), txt@(OMA _)] -> Named_text (strToToken n) (toText e txt) nullRange
         _ -> error $ "toText: only two arguments supported, but found " ++ show subl
-      else error $ concat $ ["toText: only ", show const_and , " and ",
-            show const_textName, " and Named_text supported, but found " ++ show op]
+    | otherwise -> error $ concat ["toText: only ", show const_and , " and ",
+            show const_textName, " and Named_text supported, but found ", show op]
   _ -> error $ "toText: only OMA with at lease one argument is allowed, but found " ++ show om
  
 toPhrase :: Env -> OMElement -> PHRASE
@@ -130,14 +129,14 @@ toNameSeqmark (OMV (OMName n _)) =  let dec = strToToken n
                                      in if isSeqMark n
                                         then SeqMark dec
                                         else AS.Name dec
-toNameSeqmark _ = error $ "toNameSeqmark: only variables allowed"
+toNameSeqmark _ = error "toNameSeqmark: only variables allowed"
 
 omdocToTerm :: Env -> OMElement -> TERM
 omdocToTerm e (OMA (omh : om)) 
                      | omh == const_comment_term
                         && length om > 0 = let t:[] = map (omdocToTerm e) $ tail om
                                            in Comment_term t (varToComment $ head om) nullRange
-                     | omh == const_comment_term = error $ "omdocToTerm: commented term has no comment"
+                     | omh == const_comment_term = error "omdocToTerm: commented term has no comment"
                      | otherwise = let th = omdocToTerm e omh 
                                        ts = map (omdocToTermSeq e) om
                                     in Funct_term th ts nullRange

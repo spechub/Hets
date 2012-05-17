@@ -30,6 +30,7 @@ import Common.Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
+import Data.List (isPrefixOf)
 
 -- | Datatype for common logic Signatures
 
@@ -59,12 +60,12 @@ emptySig = Sign { discourseNames = Set.empty
 printSign :: Sign -> Doc
 printSign s =
   vsep [ text "%{"
-       , (text "discourseNames: ")
-          <+> (sepByCommas $ map pretty $ Set.toList $ discourseNames s)
-       , (text "nondiscourseNames: ")
-          <+> (sepByCommas $ map pretty $ Set.toList $ nondiscourseNames s)
-       , (text "sequenceMarkers: ")
-          <+> (sepByCommas $ map pretty $ Set.toList $ sequenceMarkers s)
+       , text "discourseNames: "
+          <+> sepByCommas (map pretty $ Set.toList $ discourseNames s)
+       , text "nondiscourseNames: "
+          <+> sepByCommas (map pretty $ Set.toList $ nondiscourseNames s)
+       , text "sequenceMarkers: "
+          <+> sepByCommas (map pretty $ Set.toList $ sequenceMarkers s)
        , text "}%"]
 
 -- | Determines if sig1 is subsignature of sig2
@@ -94,11 +95,11 @@ sigUnionL [] = return emptySig
 
 -- | Union of two signatures. Behaves like Set.union, i.e. is fast with @bigsig `union` smallsig@.
 unite :: Sign -> Sign -> Sign
-unite sig1 sig2 = Sign {
-  discourseNames = Set.union (discourseNames sig1) (discourseNames sig2),
-  nondiscourseNames = Set.union (nondiscourseNames sig1) (nondiscourseNames sig2),
-  sequenceMarkers = Set.union (sequenceMarkers sig1) (sequenceMarkers sig2)
-}
+unite sig1 sig2 = Sign
+  { discourseNames = discourseNames sig1 `Set.union` discourseNames sig2
+  , nondiscourseNames = nondiscourseNames sig1 `Set.union` nondiscourseNames sig2
+  , sequenceMarkers = sequenceMarkers sig1 `Set.union` sequenceMarkers sig2
+  }
 
 -- | Union of a list of signatures.
 uniteL :: [Sign] -> Sign
@@ -109,4 +110,4 @@ isSeqMark = isStringSeqMark . tokStr . idToSimpleId
 
 -- | Checks whether a String is a sequence marker
 isStringSeqMark :: String -> Bool
-isStringSeqMark s = take 3 s == "..."
+isStringSeqMark s = "..." `isPrefixOf` s

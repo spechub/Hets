@@ -111,7 +111,7 @@ strippedQuotesStr :: NAME -> String
 strippedQuotesStr n =
   let str = tokStr n
       middleStr = init $ tail str
-  in case head $ str of
+  in case head str of
         '\"' -> middleStr
         '\'' -> middleStr
         _ -> str

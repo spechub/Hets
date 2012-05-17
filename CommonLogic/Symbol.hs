@@ -61,7 +61,7 @@ getSymbolMap f =
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
-getSymbolName sym = symName sym
+getSymbolName = symName
 
 symbolToRaw :: Symbol -> Symbol
 symbolToRaw = id
@@ -74,7 +74,7 @@ matches :: Symbol -> Symbol -> Bool
 matches s1 s2 = s1 == s2
 
 -- | Adds a symbol to a signature
-addSymbToSign :: Sign.Sign -> Symbol -> Result (Sign.Sign)
+addSymbToSign :: Sign.Sign -> Symbol -> Result Sign.Sign
 addSymbToSign sig symb = Result [] $ Just $
   if Sign.isSeqMark $ symName symb
   then sig { Sign.sequenceMarkers =

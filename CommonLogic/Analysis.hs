@@ -225,7 +225,7 @@ inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
 inducedFromMorphism m s = let
-  p = Map.mapKeys (\s1 -> symName s1) $ Map.map (\s2 -> symName s2) m
+  p = Map.mapKeys symName $ Map.map symName m
   t = Sign.emptySig { discourseNames = Set.map (applyMap p) $ discourseNames s
                     , nondiscourseNames = Set.map (applyMap p) $ nondiscourseNames s
                     , sequenceMarkers = Set.map (applyMap p) $ sequenceMarkers s

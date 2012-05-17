@@ -107,7 +107,7 @@ exportSen en vars s = case s of
 
 exportTerm :: Env -> [NAME_OR_SEQMARK] -> TERM -> OMElement
 exportTerm e vars t = case t of
-     Name_term n -> if elem (AS.Name n) vars
+     Name_term n -> if AS.Name n `elem` vars
                     then exportVar (AS.Name n)
                     else oms e n
      Funct_term ft tss _ ->
@@ -119,7 +119,7 @@ exportTerm e vars t = case t of
 exportTermSeq :: Env -> [NAME_OR_SEQMARK] -> TERM_SEQ -> OMElement
 exportTermSeq e vars ts = case ts of
      Term_seq t -> exportTerm e vars t
-     Seq_marks s -> if elem (SeqMark s) vars
+     Seq_marks s -> if SeqMark s `elem` vars
                     then exportVar (SeqMark s)
                     else oms e s
 

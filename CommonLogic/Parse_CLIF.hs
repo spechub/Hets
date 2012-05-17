@@ -96,14 +96,13 @@ phrase = many white >> (do
 
 prefix :: CharParser st [PrefixMapping]
 prefix = do
-  p <- (do
+  p <- do
       string colonS
       return colonS
     <|> do
       x <- ncname
       string colonS
       return $ x ++ colonS
-    )
   many white
   i <- iriCurie
   return [(p, i)]
@@ -357,12 +356,7 @@ symbMaps = do
 
 -- | parsing one symbol or a mapping of one to a second symbol
 symbMap :: GenParser Char st SYMB_OR_MAP
-symbMap = do
-    seqMarkMap <- symbMapS
-    return seqMarkMap
-  <|> do
-    nameMap <- symbMapN
-    return nameMap
+symbMap = symbMapS <|> symbMapN
 
 symbMapS :: GenParser Char st SYMB_OR_MAP
 symbMapS = do
@@ -383,9 +377,7 @@ symbMapN = do
 
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC
-basicSpec = do
-    bi <- parseAxItems
-    return bi
+basicSpec = parseAxItems
   <|> do
     bi <- AnnoState.allAnnoParser parseBasicItems
     return $ Basic_spec [bi]

@@ -111,7 +111,7 @@ indvC_boolsent b =
 indvC_atomsent :: ATOM -> Set NAME
 indvC_atomsent a =
     case a of
-         Equation t1 t2 -> Set.union (indvC_term t1) (indvC_term t2)
+         Equation t1 t2 -> indvC_term t1 `Set.union` indvC_term t2
          Atom t ts ->
             if null ts
                then indvC_term t --constant
@@ -140,8 +140,7 @@ indvC_termSeq t =
 
 
 unifyPredicates :: (a -> Set.Set NAME) -> [a] -> Set.Set NAME
-unifyPredicates prd_item items =
-    foldl (\ns i -> Set.union ns (prd_item i)) Set.empty items
+unifyPredicates prd_item = foldl (\ns i -> Set.union ns (prd_item i)) Set.empty
 
 -- | Retrieves all predicates from a text
 prd_text :: TEXT -> Set.Set NAME
@@ -151,7 +150,7 @@ prd_text t =
          Named_text _ nt _ -> prd_text nt
 
 prd_phrases :: [PHRASE] -> Set.Set NAME
-prd_phrases ps = unifyPredicates prd_phrase ps
+prd_phrases = unifyPredicates prd_phrase
 
 prd_phrase :: PHRASE -> Set.Set NAME
 prd_phrase p =
@@ -216,7 +215,7 @@ prd_term :: TERM -> Set.Set NAME
 prd_term t =
   case t of
     Name_term n -> prd_name n
-    Funct_term ft tseqs _ -> Set.union (prd_add_term ft) (prd_termSeqs tseqs)
+    Funct_term ft tseqs _ -> prd_add_term ft `Set.union` prd_termSeqs tseqs
     Comment_term ct _ _ -> prd_term ct
 
 prd_name :: NAME -> Set.Set NAME
@@ -226,7 +225,7 @@ prd_seqmark :: SEQ_MARK -> Set.Set NAME
 prd_seqmark _ = Set.empty
 
 prd_termSeqs :: [TERM_SEQ] -> Set.Set NAME
-prd_termSeqs tsecs = unifyPredicates prd_termSeq tsecs
+prd_termSeqs = unifyPredicates prd_termSeq
 
 prd_termSeq :: TERM_SEQ -> Set.Set NAME
 prd_termSeq tsec =
@@ -238,8 +237,8 @@ prd_add_term :: TERM -> Set.Set NAME
 prd_add_term t =
   case t of
     Name_term n -> prd_add_name n
-    Funct_term ft tseqs _ -> Set.union (prd_add_term ft) (prd_termSeqs tseqs)
+    Funct_term ft tseqs _ -> prd_add_term ft `Set.union` prd_termSeqs tseqs
     Comment_term ct _ _ -> prd_term ct
 
 prd_add_name :: NAME -> Set.Set NAME
-prd_add_name n = Set.singleton n
+prd_add_name = Set.singleton

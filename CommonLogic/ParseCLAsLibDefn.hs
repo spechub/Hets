@@ -64,8 +64,7 @@ parseCL_CLIF filename opts = do
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
-parseCL_CLIF_contents filename contents =
-  runParser (many basicSpec) (emptyAnnos ()) filename contents
+parseCL_CLIF_contents = runParser (many basicSpec) (emptyAnnos ())
 
 {- maps imports in basic spec to global definition links (extensions) in
 development graph -}
@@ -78,7 +77,7 @@ convertToLibDefN fn specs =
                               Nothing
                               Nothing
                           ) Nothing nullRange)
-      : (map convertToLibItems specs)
+      : map convertToLibItems specs
     )
     nullRange
     []
@@ -120,8 +119,7 @@ collectDownloads opts dir specMap (n, (b, topTexts, importedBy)) =
   let directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
-  in do
-      foldM (\ sm d -> do
+  in  foldM (\ sm d -> do
           newDls <- downloadSpec opts sm newTopTexts newImportedBy True (dir,d)
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
@@ -129,7 +127,7 @@ collectDownloads opts dir specMap (n, (b, topTexts, importedBy)) =
 downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> Set String
                 -> Bool -> (String,String) -> IO SpecMap
 downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir,_) =
-  let filename = (uncurry combine) dirFile in
+  let filename = uncurry combine dirFile in
   let fn = convertFileToLibStr filename in
   case Map.lookup fn specMap of
       Just (b, t, i)
@@ -144,8 +142,8 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir,_) =
         | t == topTexts
           -> return specMap
         | otherwise -> do
-          let newTopTexts = Set.union t topTexts
-          let newImportedBy = Set.union i importedBy
+          let newTopTexts = t `Set.union` topTexts
+          let newImportedBy = i `Set.union` importedBy
           let newSpecMap = Map.insert fn (b, newTopTexts, newImportedBy) specMap
           collectDownloads opts dir newSpecMap (fn, (b, newTopTexts, newImportedBy))
       Nothing -> do
@@ -164,13 +162,13 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir,_) =
                       ) newSpecMap nbtis
 
 unify :: SpecInfo -> SpecInfo -> SpecInfo
-unify (_, s, p) (a, t, q) = (a, Set.union s t, Set.union p q)
+unify (_, s, p) (a, t, q) = (a, s `Set.union` t, p `Set.union` q)
 
 {- one could add support for uri fragments/query
 (perhaps select a text from the file) -}
 getCLIFContents :: HetcatsOpts -> (String,String) -> IO String
 getCLIFContents opts dirFile@(_,file) =
-  let filename = (uncurry combine) dirFile in
+  let filename = uncurry combine dirFile in
   case parseURIReference filename of
     Nothing -> do
       putStrLn ("Not an URI: " ++ filename)
@@ -192,7 +190,7 @@ getCLIFContents opts dirFile@(_,file) =
 getCLIFContentsHTTP :: String -> String -> IO String
 getCLIFContentsHTTP uriS extension =
   let (Just uri) = parseURIReference (uriS ++ extension) in do
-    res <- simpleHTTP (defaultGETRequest $ uri)
+    res <- simpleHTTP $ defaultGETRequest uri
     rb <- getResponseBody res
     case httpResponseCode res of
         (2,0,0) -> return rb

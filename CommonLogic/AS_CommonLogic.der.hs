@@ -226,8 +226,8 @@ printQuantSent s = case s of
 
 printBoolSent :: BOOL_SENT -> Doc
 printBoolSent s = case s of
-   Conjunction xs -> text andS <+> (fsep $ map pretty xs)
-   Disjunction xs -> text orS <+> (fsep $ map pretty xs)
+   Conjunction xs -> text andS <+> fsep (map pretty xs)
+   Disjunction xs -> text orS <+> fsep (map pretty xs)
    Negation xs -> text notS <+> pretty xs
    Implication x y -> text ifS <+> pretty x <+> pretty y
    Biconditional x y -> text iffS <+> pretty x <+> pretty y
@@ -235,12 +235,12 @@ printBoolSent s = case s of
 printAtom :: ATOM -> Doc
 printAtom s = case s of
    Equation a b -> parens $ equals <+> pretty a <+> pretty b
-   Atom t ts -> parens $ pretty t <+> (sep $ map pretty ts)
+   Atom t ts -> parens $ pretty t <+> sep (map pretty ts)
 
 printTerm :: TERM -> Doc
 printTerm s = case s of
    Name_term a -> pretty a
-   Funct_term t ts _ -> parens $ pretty t <+> (fsep $ map pretty ts)
+   Funct_term t ts _ -> parens $ pretty t <+> fsep (map pretty ts)
    Comment_term t c _ -> parens $ text clCommentS <+> pretty c <+> pretty t
 
 printTermSeq :: TERM_SEQ -> Doc

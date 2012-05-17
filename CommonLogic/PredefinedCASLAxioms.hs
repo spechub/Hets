@@ -89,8 +89,8 @@ ga_injective_cons = AS_Anno.makeNamed "ga_injective_cons" $
               (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
               Id.nullRange
             )
-            [ CBasic.Qual_var (x1) individual Id.nullRange
-            , CBasic.Qual_var (x2) list Id.nullRange
+            [ CBasic.Qual_var x1 individual Id.nullRange
+            , CBasic.Qual_var x2 list Id.nullRange
             ] Id.nullRange
           )
           (CBasic.Application
@@ -98,18 +98,18 @@ ga_injective_cons = AS_Anno.makeNamed "ga_injective_cons" $
               (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
               Id.nullRange
             )
-            [ CBasic.Qual_var (y1) individual Id.nullRange
-            , CBasic.Qual_var (y2) list Id.nullRange
+            [ CBasic.Qual_var y1 individual Id.nullRange
+            , CBasic.Qual_var y2 list Id.nullRange
             ] Id.nullRange
           ) Id.nullRange)
         (CBasic.Conjunction
           [ CBasic.Strong_equation
-              (CBasic.Qual_var (x1) individual Id.nullRange)
-              (CBasic.Qual_var (y1) individual Id.nullRange)
+              (CBasic.Qual_var x1 individual Id.nullRange)
+              (CBasic.Qual_var y1 individual Id.nullRange)
               Id.nullRange
           , CBasic.Strong_equation
-              (CBasic.Qual_var (x2) list Id.nullRange)
-              (CBasic.Qual_var (y2) list Id.nullRange)
+              (CBasic.Qual_var x2 list Id.nullRange)
+              (CBasic.Qual_var y2 list Id.nullRange)
               Id.nullRange
           ] Id.nullRange
         ) Id.nullRange
@@ -134,8 +134,8 @@ ga_disjoint_nil_cons = AS_Anno.makeNamed "ga_disjoint_nil_cons" $
             (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
             Id.nullRange
           )
-          [ CBasic.Qual_var (y1) individual Id.nullRange
-          , CBasic.Qual_var (y2) list Id.nullRange
+          [ CBasic.Qual_var y1 individual Id.nullRange
+          , CBasic.Qual_var y2 list Id.nullRange
           ] Id.nullRange
         ) Id.nullRange
       ) Id.nullRange

@@ -138,7 +138,7 @@ sublogics_max a b = if compareLE a b then b else a
 -- compute sublogics from a list of sublogics
 --
 comp_list :: [CommonLogicSL] -> CommonLogicSL
-comp_list l = foldl sublogics_max bottom l
+comp_list = foldl sublogics_max bottom
 
 ------------------------------------------------------------------------------
 -- Functions to compute minimal sublogic for a given element, these work    --
@@ -245,7 +245,7 @@ sl_atomSent prds cs a =
         AS.Atom t [] -> sl_term prds cs t 
         AS.Atom t tseq ->
             let base = case t of
-                  AS.Funct_term _ _ _ -> fullclsl
+                  AS.Funct_term{} -> fullclsl
                   _ -> folsl
             in  comp_list $ base
                             : sl_term prds cs t : map (sl_termSeq prds cs) tseq
@@ -312,8 +312,8 @@ sl_termInSeq prds cs term =
 -- | determines sublogic for basic items
 sl_basic_items :: CommonLogicSL -> AS.BASIC_ITEMS -> CommonLogicSL
 sl_basic_items cs (AS.Axiom_items axs) = comp_list $ map
-  (\(AS_Anno.Annoted tm _ _ _) ->
-    (uncurry $ flip sl_text cs) $ getPreds $ AS.getText tm
+  (\AS_Anno.Annoted {AS_Anno.item=tm} ->
+    uncurry (`sl_text` cs) $ getPreds $ AS.getText tm
   ) axs
   where getPreds :: AS.TEXT -> (Set.Set AS.NAME, AS.TEXT)
         getPreds txt = (prd_text txt, txt)
@@ -321,7 +321,7 @@ sl_basic_items cs (AS.Axiom_items axs) = comp_list $ map
 -- | determines sublogic for basic spec
 sl_basic_spec :: CommonLogicSL -> AS.BASIC_SPEC -> CommonLogicSL
 sl_basic_spec cs (AS.Basic_spec spec) =
-  comp_list $ map ((sl_basic_items cs) . AS_Anno.item) spec
+  comp_list $ map (sl_basic_items cs . AS_Anno.item) spec
 
 -- | determines sublogc for symb items
 sl_symitems :: CommonLogicSL -> AS.SYMB_ITEMS -> CommonLogicSL
@@ -347,7 +347,7 @@ sublogics_name f = case format f of
 
 -- | projection of a symbol to a sublogic
 prSymbolM :: CommonLogicSL -> Symbol.Symbol -> Maybe Symbol.Symbol
-prSymbolM _ sym = Just sym
+prSymbolM _ = Just
 
 prSymItemsM :: CommonLogicSL -> AS.SYMB_ITEMS -> Maybe AS.SYMB_ITEMS
 prSymItemsM cs si@(AS.Symb_items noss r) = case format cs of
@@ -359,7 +359,7 @@ prSymItemsM cs si@(AS.Symb_items noss r) = case format cs of
 
 -- | projection of a signature to a sublogic
 prSig :: CommonLogicSL -> Sign.Sign -> Sign.Sign
-prSig _ sig = sig
+prSig _ = id
 
 -- | projection of a morphism to a sublogic
 prMor :: CommonLogicSL -> Morphism.Morphism -> Morphism.Morphism
@@ -369,11 +369,11 @@ prMor _ mor = mor
 prSymMapM :: CommonLogicSL
           -> AS.SYMB_MAP_ITEMS
           -> Maybe AS.SYMB_MAP_ITEMS
-prSymMapM _ sMap = Just sMap
+prSymMapM _ = Just
 
 -- | projection of a name to a sublogic
 prName :: CommonLogicSL -> AS.NAME -> Maybe AS.NAME
-prName _ n = Just n
+prName _ = Just
 
 -- | filters all TEXTs inside the BASIC_SPEC of which the sublogic is less than
 -- or equal to @cs@
@@ -381,12 +381,12 @@ prBasicSpec :: CommonLogicSL -> AS.BASIC_SPEC -> AS.BASIC_SPEC
 prBasicSpec cs (AS.Basic_spec items) = AS.Basic_spec $ map (maybeLE cs) items
 
 maybeLE :: CommonLogicSL ->
-            AS_Anno.Annoted (AS.BASIC_ITEMS) -> AS_Anno.Annoted (AS.BASIC_ITEMS)
+            AS_Anno.Annoted AS.BASIC_ITEMS -> AS_Anno.Annoted AS.BASIC_ITEMS
 maybeLE cs items = items { AS_Anno.item =
         AS.Axiom_items $ filter (isSL_LE cs) (case AS_Anno.item items of
                                                   AS.Axiom_items i -> i)
   }
 
-isSL_LE :: CommonLogicSL -> AS_Anno.Annoted (AS.TEXT_META) -> Bool
+isSL_LE :: CommonLogicSL -> AS_Anno.Annoted AS.TEXT_META -> Bool
 isSL_LE cs at =
   compareLE (sublogic_text bottom $ AS.getText $ AS_Anno.item at) cs
