@@ -1,3 +1,16 @@
+{- |
+Module      :  $Header$
+Description :  Expansion of abbreviated IRI to full IRI
+Copyright   :  (c) Eugen Kuksa, Uni Bremen 2012
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  eugenk@informatik.uni-bremen.de
+Stability   :  experimental
+Portability :  portable
+
+Provides a function to expand each abbreviated IRI to a full IRI in a basic spec.
+-}
+
 module CommonLogic.ExpandCurie
   ( expandCurieBS
   ) where
@@ -9,6 +22,9 @@ import CommonLogic.AS_CommonLogic
 
 import qualified Data.Map as Map
 
+-- | Expands each abbreviated IRI to a full IRI in the basic spec according to
+-- the supplemented map @gpm@. An IRI is stored in a name (quoted string). If
+-- the prefix of an abbreviated IRI is not in the map, the IRI won't be expanded.
 expandCurieBS :: Map.Map String IRI -> BASIC_SPEC -> BASIC_SPEC
 expandCurieBS gpm (Basic_spec abis) =
   Basic_spec $ map

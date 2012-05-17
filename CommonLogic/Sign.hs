@@ -92,6 +92,7 @@ sigUnionL :: [Sign] -> Result Sign
 sigUnionL (sig : sigL) = sigUnion sig (uniteL sigL)
 sigUnionL [] = return emptySig
 
+-- | Union of two signatures. Behaves like Set.union, i.e. is fast with @bigsig `union` smallsig@.
 unite :: Sign -> Sign -> Sign
 unite sig1 sig2 = Sign {
   discourseNames = Set.union (discourseNames sig1) (discourseNames sig2),
@@ -99,11 +100,13 @@ unite sig1 sig2 = Sign {
   sequenceMarkers = Set.union (sequenceMarkers sig1) (sequenceMarkers sig2)
 }
 
+-- | Union of a list of signatures.
 uniteL :: [Sign] -> Sign
 uniteL = foldr unite emptySig
 
 isSeqMark :: Id -> Bool
 isSeqMark = isStringSeqMark . tokStr . idToSimpleId
 
+-- | Checks whether a String is a sequence marker
 isStringSeqMark :: String -> Bool
 isStringSeqMark s = take 3 s == "..."

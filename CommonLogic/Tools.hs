@@ -11,13 +11,13 @@ Portability :  portable
 Tools for CommonLogic static analysis
 -}
 
-module CommonLogic.Tools (
-      freeName        -- finds a free discourse name
-      , indvC_text    -- retrieves all discourse names from a text
-      , indvC_sen     -- retrieves all discourse names from a sentence
-      , indvC_term    -- retrieves all discourse names from a term
-      , prd_text      -- retrieves all predicates from a text,
-      , setUnion_list -- maps function @f@ to the list @ts@ and unifies the results
+module CommonLogic.Tools
+    ( freeName      -- finds a free discourse name
+    , indvC_text    -- retrieves all discourse names from a text
+    , indvC_sen     -- retrieves all discourse names from a sentence
+    , indvC_term    -- retrieves all discourse names from a term
+    , prd_text      -- retrieves all predicates from a text
+    , setUnion_list -- maps function @f@ to the list @ts@ and unifies the results
     )
     where
 
@@ -143,6 +143,7 @@ unifyPredicates :: (a -> Set.Set NAME) -> [a] -> Set.Set NAME
 unifyPredicates prd_item items =
     foldl (\ns i -> Set.union ns (prd_item i)) Set.empty items
 
+-- | Retrieves all predicates from a text
 prd_text :: TEXT -> Set.Set NAME
 prd_text t =
     case t of

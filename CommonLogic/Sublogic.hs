@@ -57,11 +57,11 @@ import qualified CommonLogic.Morphism as Morphism
 
 -- | types of sublogics
 data CLTextType =
-    Propositional      -- Text without quantifiers
-  | FirstOrder         -- Text in First Order Logic
-  | Compact            -- Text beyond FOL, but without SeqMarks
-  | FuncNoPred         -- beyond Compact, but no function returns a predicate
-  | FullCommonLogic    -- Text without any constraints
+    Propositional      -- ^ Text without quantifiers
+  | FirstOrder         -- ^ Text in First Order Logic
+  | Compact            -- ^ Text beyond FOL, but without SeqMarks
+  | FuncNoPred         -- ^ beyond Compact, but no function returns a predicate
+  | FullCommonLogic    -- ^ Text without any constraints
   deriving (Show, Eq, Ord)
 
 -- | sublogics for CommonLogic
@@ -96,25 +96,30 @@ sublogics_all = [fullclsl, funcNoPredsl, compactsl, folsl, bottom]
 -- Special elements in the Lattice of logics                                --
 ------------------------------------------------------------------------------
 
+-- | Greates sublogc: FullCommonLogic
 top :: CommonLogicSL
 top = fullclsl
 
+-- | Smallest sublogic: Propositional
 bottom :: CommonLogicSL
 bottom = propsl
 
 fullclsl :: CommonLogicSL
 fullclsl = CommonLogicSL {format = FullCommonLogic}
 
+-- | FuncNoPred as Sublogic
 funcNoPredsl :: CommonLogicSL
 funcNoPredsl = CommonLogicSL {format = FuncNoPred}
 
+-- | Compact as Sublogic
 compactsl :: CommonLogicSL
 compactsl = CommonLogicSL {format = Compact}
 
+-- | FirstOrder as Sublogic
 folsl :: CommonLogicSL
 folsl = CommonLogicSL {format = FirstOrder}
 
-
+-- | Propositional as Sublogic
 propsl :: CommonLogicSL
 propsl = CommonLogicSL {format = Propositional}
 
@@ -122,6 +127,7 @@ propsl = CommonLogicSL {format = Propositional}
 -- join and max                                                              --
 -------------------------------------------------------------------------------
 
+-- | Yields the greater sublogic
 sublogics_max :: CommonLogicSL -> CommonLogicSL -> CommonLogicSL
 sublogics_max a b = if compareLE a b then b else a
 
@@ -317,6 +323,7 @@ sl_basic_spec :: CommonLogicSL -> AS.BASIC_SPEC -> CommonLogicSL
 sl_basic_spec cs (AS.Basic_spec spec) =
   comp_list $ map ((sl_basic_items cs) . AS_Anno.item) spec
 
+-- | determines sublogc for symb items
 sl_symitems :: CommonLogicSL -> AS.SYMB_ITEMS -> CommonLogicSL
 sl_symitems _ (AS.Symb_items noss _) =
   comp_list $ map (sl_nameOrSeqmark Set.empty bottom) noss
@@ -325,6 +332,7 @@ sl_symitems _ (AS.Symb_items noss _) =
 -- Conversion functions to String                                            --
 -------------------------------------------------------------------------------
 
+-- | String representation of a Sublogic
 sublogics_name :: CommonLogicSL -> String
 sublogics_name f = case format f of
                      Propositional   -> "Propositional"
@@ -337,6 +345,7 @@ sublogics_name f = case format f of
 -- Projections to sublogics                                                  --
 -------------------------------------------------------------------------------
 
+-- | projection of a symbol to a sublogic
 prSymbolM :: CommonLogicSL -> Symbol.Symbol -> Maybe Symbol.Symbol
 prSymbolM _ sym = Just sym
 
@@ -348,17 +357,21 @@ prSymItemsM cs si@(AS.Symb_items noss r) = case format cs of
           AS.Name _ -> True
           _ -> False
 
+-- | projection of a signature to a sublogic
 prSig :: CommonLogicSL -> Sign.Sign -> Sign.Sign
 prSig _ sig = sig
 
+-- | projection of a morphism to a sublogic
 prMor :: CommonLogicSL -> Morphism.Morphism -> Morphism.Morphism
 prMor _ mor = mor
 
+-- | projection of symb map items to a sublogic
 prSymMapM :: CommonLogicSL
           -> AS.SYMB_MAP_ITEMS
           -> Maybe AS.SYMB_MAP_ITEMS
 prSymMapM _ sMap = Just sMap
 
+-- | projection of a name to a sublogic
 prName :: CommonLogicSL -> AS.NAME -> Maybe AS.NAME
 prName _ n = Just n
 

@@ -106,7 +106,6 @@ mkMorphism s t p =
 
 -- | sentence (text) translation along signature morphism
 -- here just the renaming of formulae
-
 mapSentence :: Morphism -> AS.TEXT_META -> Result.Result AS.TEXT_META
 mapSentence mor tm =
   return $ tm { getText = mapSen_txt mor $ getText tm }
@@ -175,11 +174,7 @@ mapSen_trmSeq mor ts = case ts of
 mapSen_tok :: Morphism -> Id.Token -> Id.Token
 mapSen_tok mor tok = Id.idToSimpleId $ applyMorphism mor $ Id.simpleIdToId tok
 
-{-
-  AS.Predication predH -> AS.Predication
-      $ id2SimpleId $ applyMorphism mor $ Id.simpleIdToId predH
--}
-
+-- | Union of two morphisms.
 morphismUnion :: Morphism -> Morphism -> Result.Result Morphism
 morphismUnion mor1 mor2 =
   let pmap1 = propMap mor1
@@ -194,7 +189,8 @@ morphismUnion mor1 mor2 =
               (Diag Error
                ("incompatible mapping of prop " ++ showId i " to "
                 ++ showId j " and " ++ showId k "")
-               nullRange : ds, m)) ([], pmap1)
+               nullRange : ds, m))
+          ([], pmap1)
           (Map.toList pmap2 ++ map (\ a -> (a, a))
                       (Set.toList $ Set.union up1 up2))
    in if null pds then return Morphism

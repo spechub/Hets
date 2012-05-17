@@ -12,6 +12,13 @@ Basic and static analysis for common logic
 -}
 
 module CommonLogic.Analysis
+    ( basicCommonLogicAnalysis
+    , negForm
+    , symsOfTextMeta
+    , mkStatSymbItems
+    , mkStatSymbMapItem
+    , inducedFromMorphism
+    )
     where
 
 import Common.ExtSign
@@ -194,6 +201,7 @@ uniteMap :: (a -> Sign.Sign) -> [a] -> Sign
 uniteMap p = List.foldl (\ sig -> Sign.unite sig . p)
    Sign.emptySig
 
+-- | Common Logic static analysis
 basicCommonLogicAnalysis :: (AS.BASIC_SPEC, Sign.Sign, GlobalAnnos)
   -> Result (AS.BASIC_SPEC,
              ExtSign Sign.Sign Symbol.Symbol,
@@ -212,12 +220,12 @@ basicCommonLogicAnalysis (bs', sig, ga) =
   -- Annoted Sentences (Ax_), numbering, DiagError
       exErrs = False
 
+-- | creates a morphism from a symbol map
 inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
 inducedFromMorphism m s = let
-  p = Map.fromList . map (\ (s1, s2) -> (symName s1, symName s2))
-       $ Map.toList m
+  p = Map.mapKeys (\s1 -> symName s1) $ Map.map (\s2 -> symName s2) m
   t = Sign.emptySig { discourseNames = Set.map (applyMap p) $ discourseNames s
                     , nondiscourseNames = Set.map (applyMap p) $ nondiscourseNames s
                     , sequenceMarkers = Set.map (applyMap p) $ sequenceMarkers s
@@ -225,8 +233,7 @@ inducedFromMorphism m s = let
   in return $ mkMorphism s t p
 
 
-
--- negate sentence (text) - propagates negation to sentences
+-- | negate sentence (text) - propagates negation to sentences
 negForm :: AS.TEXT_META -> AS.TEXT_META
 negForm tm = tm { AS.getText = negForm_txt $ AS.getText tm }
 
@@ -313,7 +320,8 @@ nosToSymbol nos = case nos of
 symbToSymbol :: Id.Token -> Symbol.Symbol
 symbToSymbol tok = Symbol.Symbol{Symbol.symName = Id.simpleIdToId tok}
 
+-- | retrieves all symbols from the text
 symsOfTextMeta :: AS.TEXT_META -> [Symbol.Symbol]
 symsOfTextMeta tm =
-  Set.toList $ Symbol.symOf $ retrieveSign Sign.emptySig (AS_Anno.emptyAnno tm)
+  Set.toList $ Symbol.symOf $ retrieveSign Sign.emptySig $ AS_Anno.emptyAnno tm
 

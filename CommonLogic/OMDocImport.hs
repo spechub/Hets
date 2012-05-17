@@ -33,7 +33,7 @@ import Common.AS_Annotation
 
 type Env = SigMapI Symbol
 
- --------------- TCSymbol is transformed into a CommonLogic Symbol with given name
+-- | TCSymbol is transformed into a CommonLogic Symbol with given name
 omdocToSym :: Env -> TCElement -> String -> Result Symbol
 omdocToSym _ (TCSymbol _ _ sr _) n =
      case sr of
@@ -44,7 +44,7 @@ omdocToSym _ symb _ = fail $ concat ["omdocToSym: only TCSymbols are allowed, bu
 
 
 
- --------------- Sentences from OMElements
+-- | Sentences from OMElements
 omdocToSen :: Env -> TCElement -> String -> Result (Maybe (Named TEXT_META))
 omdocToSen e (TCSymbol _ t sr _) n =
     case nameDecode n of

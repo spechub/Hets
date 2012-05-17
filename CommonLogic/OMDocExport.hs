@@ -32,12 +32,12 @@ import qualified Data.Map as Map
 
 type Env = NameMap Symbol
 
-
+-- | Exports the symbol @n@ to OMDoc
 exportSymToOmdoc :: Env -> Symbol -> String -> Result TCElement
 exportSymToOmdoc _ _ n = return $ TCSymbol n const_symbol Obj Nothing
 
 
--- ----------------------------------------------------------
+-- | Exports the text @tm@ to OMDoc
 exportSenToOmdoc :: Env -> TEXT_META
                  -> Result TCorOMElement
 exportSenToOmdoc en tm = return $ Right $ exportText en [] $ AS.getText tm

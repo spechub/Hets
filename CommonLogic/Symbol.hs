@@ -44,9 +44,11 @@ instance Id.GetRange Symbol where
 instance Pretty Symbol where
     pretty = printSymbol
 
+-- | Pretty prints the symbol @x@
 printSymbol :: Symbol -> Doc
 printSymbol x = pretty $ symName x
 
+-- | Converts a signature to a set of symbols
 symOf :: Sign.Sign -> Set.Set Symbol
 symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
            Sign.allItems x
@@ -67,9 +69,11 @@ symbolToRaw = id
 idToRaw :: Id.Id -> Symbol
 idToRaw mid = Symbol {symName = mid}
 
+-- | Checks two symbols on equality
 matches :: Symbol -> Symbol -> Bool
 matches s1 s2 = s1 == s2
 
+-- | Adds a symbol to a signature
 addSymbToSign :: Sign.Sign -> Symbol -> Result (Sign.Sign)
 addSymbToSign sig symb = Result [] $ Just $
   if Sign.isSeqMark $ symName symb
@@ -80,6 +84,7 @@ addSymbToSign sig symb = Result [] $ Just $
                     Set.insert (symName symb) $ Sign.discourseNames sig
            }
 
+-- | Returns a string classifying the symbol as name or sequence marker
 symKind :: Symbol -> String
 symKind s = if Sign.isSeqMark $ symName s then symKindSeqMark else symKindName
 
