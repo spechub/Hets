@@ -29,10 +29,11 @@ import ExtModal.AS_ExtModal
 import ExtModal.Keywords
 
 import Data.Maybe
+import Data.List
 
 -- | List of reserved words
 ext_modal_reserved_words :: [String]
-ext_modal_reserved_words =
+ext_modal_reserved_words = map show [Intersection, Union] ++
   [ untilS
   , sinceS
   , allPathsS
@@ -215,10 +216,12 @@ parseAxioms :: ([AnEModForm] -> Range -> EM_BASIC_ITEM) -> Range
   -> AParser st EM_BASIC_ITEM
 parseAxioms mki pos =
          do o <- oBraceT
-            (someAxioms, qs) <- annoParser (formula ext_modal_reserved_words)
-                  `separatedBy` anSemi
+            (someAxioms, qs) <- auxItemList
+              (delete diamondS ext_modal_reserved_words) []
+                      (formula ext_modal_reserved_words) (,)
             c <- cBraceT
-            return $ mki someAxioms $ pos `appRange` toRange o qs c
+            return $ mki someAxioms
+              $ pos `appRange` qs `appRange` toRange o [] c
          <|> return (mki [] pos)
 
 instance AParsable EM_BASIC_ITEM where
