@@ -30,8 +30,10 @@ import CASL.AS_Basic_CASL (FORMULA (..))
 import CASL.ToDoc
 
 instance Pretty EM_BASIC_ITEM where
-        pretty (Simple_mod_decl time id_list ax_list _) = fsep
-          [(if time then keyword timeS else empty) <+> keyword modalityS
+        pretty (ModDecl time term id_list ax_list _) = fsep
+          [(if time then keyword timeS else empty)
+           <+> (if term then keyword termS else empty)
+           <+> keyword modalityS
           , semiAnnos pretty id_list
           , if null ax_list then empty else
                 specBraces (semiAnnos pretty ax_list)]
@@ -40,11 +42,13 @@ instance Pretty EM_BASIC_ITEM where
 
 modPrec :: MODALITY -> Int
 modPrec m = case m of
-  Simple_modality _ -> 0 -- strongest
+  SimpleMod _ -> 0 -- strongest
+  TermMod _ -> 0 -- strongest
   Guard _ -> 1
-  TransitiveClosure _ -> 2
-  Composition _ _ -> 3
-  Union _ _ -> 4 -- weakest
+  TransClos _ -> 2
+  ModOp Composition _ _ -> 3
+  ModOp Intersection _ _ -> 4
+  ModOp Union _ _ -> 5 -- weakest
 
 printMPrec :: Bool -> MODALITY -> MODALITY -> Doc
 printMPrec b oP cP =
@@ -53,16 +57,14 @@ printMPrec b oP cP =
 
 instance Pretty MODALITY where
         pretty mdl = case mdl of
-          Simple_modality idt ->
+          SimpleMod idt ->
             if tokStr idt == emptyS then empty else pretty idt
-          Guard sen -> prJunct sen <> keyword tmGuardS
-          TransitiveClosure md -> printMPrec False mdl md
+          TermMod t -> pretty t
+          Guard sen -> prJunct sen <> keyword quMark
+          TransClos md -> printMPrec False mdl md
             <> keyword tmTransClosS
-          Composition md1 md2 -> printMPrec True mdl md1
-            <> keyword tmCompositionS
-            <> printMPrec False mdl md2
-          Union md1 md2 -> printMPrec True mdl md1
-            <> keyword tmUnionS
+          ModOp o md1 md2 -> printMPrec True mdl md1
+            <> keyword (show o)
             <> printMPrec False mdl md2
 
 instance Pretty RIGOR where
@@ -97,7 +99,7 @@ instance Pretty EM_FORMULA where
   pretty ef = case ef of
     BoxOrDiamond choice modality leq_geq number s _ ->
       let sp = case modality of
-                 Simple_modality _ -> (<>)
+                 SimpleMod _ -> (<>)
                  _ -> (<+>)
           mdl = pretty modality
       in sep [ (if choice then brackets mdl else less `sp` mdl `sp` greater)
@@ -140,16 +142,16 @@ printEModalSign sim sign =
         $+$
         (if Map.null mds then empty else fsep
           [ keyword modalitiesS
-          , sepBySemis (map sidDoc (Map.keys mds))
+          , sepBySemis (map idDoc (Map.keys mds))
           , let fs = Map.elems mds in if null $ concat fs then empty else
             specBraces $ printFormulaOfEModalSign sim fs ])
         $+$
         (if Set.null tms then empty else
         keyword timeS <+> keyword modalitiesS
-                    <+> sepBySemis (map sidDoc (Set.toList tms)))
+                    <+> sepBySemis (map idDoc (Set.toList tms)))
         $+$
         (if Set.null nms then empty else
-        keyword nominalsS <+> sepBySemis (map sidDoc (Set.toList nms)))
+        keyword nominalS <+> sepBySemis (map sidDoc (Set.toList nms)))
 
 printFormulaOfEModalSign :: FormExtension f => (FORMULA f -> FORMULA f)
   -> [[Annoted (FORMULA f)]] -> Doc

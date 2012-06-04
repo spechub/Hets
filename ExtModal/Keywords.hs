@@ -57,28 +57,8 @@ hereS = "Here"
 nominalS :: String
 nominalS = "nominal"
 
-nominalsS :: String
-nominalsS = "nominals"
-
 timeS :: String
 timeS = "time"
 
-tmCompositionS :: String
-tmCompositionS = ";"
-
-tmUnionS :: String
-tmUnionS = "|"
-
 tmTransClosS :: String
 tmTransClosS = "*"
-
-tmGuardS :: String
-tmGuardS = "?"
-
-tmOParanthS :: String
-tmOParanthS = "("
-
-tmCParanthS :: String
-tmCParanthS = ")"
-
-

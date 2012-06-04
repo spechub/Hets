@@ -27,7 +27,7 @@ import ExtModal.Print_AS ()
 data MorphExtension = MorphExtension
         { source :: EModalSign
         , target :: EModalSign
-        , mod_map :: Map.Map SIMPLE_ID SIMPLE_ID
+        , mod_map :: Map.Map Id Id
         , nom_map :: Map.Map SIMPLE_ID SIMPLE_ID
         } deriving (Show, Eq, Ord)
 

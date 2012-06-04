@@ -20,7 +20,6 @@ import Common.Token
 import Common.Lexer
 import Common.AnnoState
 import Common.Keywords
-import Common.AS_Annotation
 
 import CASL.AS_Basic_CASL
 import CASL.Formula
@@ -43,10 +42,11 @@ ext_modal_reserved_words =
   , generallyS
   , eventuallyS
   , atS
+  , quMark
   , hereS
   , timeS
   , nominalS
-  , nominalsS
+  , nominalS ++ sS
   , hithertoS
   , previouslyS
   , muS
@@ -74,7 +74,7 @@ diamondParser = do
   <|> do
     d <- asKey diamondS
     let p = tokPos d
-    return (Simple_modality $ Token emptyS p, False, p)
+    return (SimpleMod $ Token emptyS p, False, p)
 
 rekPrimParser :: AParser st (FORMULA EM_FORMULA)
 rekPrimParser = genPrimFormula modalPrimFormulaParser ext_modal_reserved_words
@@ -141,40 +141,35 @@ parsePrimModality = do
            t <- parseModality
            cParenT
            return t
-        <|> do
-           mf <- optionMaybe $ formula $ greaterS : ext_modal_reserved_words
-           case mf of
-             Nothing ->
-               fmap (Simple_modality . Token emptyS . Range . (: [])) getPos
-             Just f -> do
-                asSeparator tmGuardS
-                return $ Guard f
-              <|> case f of
-                Mixfix_formula (Mixfix_token t) | isSimpleToken t ->
-                  return $ Simple_modality t
-                _ -> pzero
+        <|> try
+          (fmap Guard (formula $ greaterS : ext_modal_reserved_words)
+          << asSeparator quMark)
+        <|> try
+          (fmap TermMod $ term $ greaterS : ext_modal_reserved_words)
+        <|> fmap (SimpleMod . Token emptyS . Range . (: [])) getPos
 
 parseTransClosModality :: AParser st MODALITY
 parseTransClosModality = do
   t <- parsePrimModality
   mt <- many $ asKey tmTransClosS
-  return $ if null mt then t else TransitiveClosure t
+  return $ if null mt then t else TransClos t
 
 parseCompModality :: AParser st MODALITY
-parseCompModality = do
-  t1 <- parseTransClosModality
+parseCompModality = parseBinModality Composition parseTransClosModality
+
+parseInterModality :: AParser st MODALITY
+parseInterModality = parseBinModality Intersection parseCompModality
+
+parseBinModality :: ModOp -> AParser st MODALITY -> AParser st MODALITY
+parseBinModality c p = do
+  t1 <- p
   option t1 $ do
-    asKey tmCompositionS
-    t2 <- parseCompModality
-    return $ Composition t1 t2
+    asKey $ show c
+    t2 <- parseBinModality c p
+    return $ ModOp c t1 t2
 
 parseModality :: AParser st MODALITY
-parseModality = do
-  t1 <- parseCompModality
-  option t1 $ do
-    asKey tmUnionS
-    t2 <- parseModality
-    return $ Union t1 t2
+parseModality = parseBinModality Union parseInterModality
 
 instance TermParser EM_FORMULA where
     termParser = aToTermParser modalFormulaParser
@@ -200,28 +195,31 @@ mKey :: AParser st Token
 mKey = asKey modalityS <|> asKey modalitiesS
 
 nKey :: AParser st Token
-nKey = asKey nominalS <|> asKey nominalsS
+nKey = asKey nominalS <|> asKey (nominalS ++ sS)
 
 basicItemParser :: AParser st EM_BASIC_ITEM
 basicItemParser =
-        do mt <- optionMaybe $ asKey timeS
+        do mtime <- optionMaybe $ asKey timeS
+           mterm <- optionMaybe $ asKey termS
            k <- mKey
-           (annoId, ks) <- separatedBy (annoParser simpleId) anSemiOrComma
-           parseAxioms (isJust mt) annoId $ catRange $ k : ks
+           (ids, ks) <- separatedBy
+             (annoParser $ sortId ext_modal_reserved_words) anSemiOrComma
+           parseAxioms (ModDecl (isJust mtime) (isJust mterm) ids)
+                           $ catRange $ k : ks
         <|>
         do k <- nKey
            (annoId, ks) <- separatedBy (annoParser simpleId) anSemiOrComma
            return $ Nominal_decl annoId $ catRange $ k : ks
 
-parseAxioms :: Bool -> [Annoted SIMPLE_ID] -> Range -> AParser st EM_BASIC_ITEM
-parseAxioms b annoId pos =
+parseAxioms :: ([AnEModForm] -> Range -> EM_BASIC_ITEM) -> Range
+  -> AParser st EM_BASIC_ITEM
+parseAxioms mki pos =
          do o <- oBraceT
             (someAxioms, qs) <- annoParser (formula ext_modal_reserved_words)
                   `separatedBy` anSemi
             c <- cBraceT
-            return (Simple_mod_decl b annoId someAxioms
-                   $ pos `appRange` toRange o qs c)
-         <|> return (Simple_mod_decl b annoId [] pos)
+            return $ mki someAxioms $ pos `appRange` toRange o qs c
+         <|> return (mki [] pos)
 
 instance AParsable EM_BASIC_ITEM where
         aparser = basicItemParser

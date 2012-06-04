@@ -60,22 +60,43 @@ basicEModalAnalysis =
 frmTypeAna :: Min EM_FORMULA EModalSign
 frmTypeAna sign form = let
   checkMod term_mod = case term_mod of
-    Simple_modality s_id ->
+    SimpleMod s_id ->
       if tokStr s_id == emptyS
-         || Map.member s_id (modalities $ extendedInfo sign)
-      then return $ Simple_modality s_id
+         || Map.member (simpleIdToId s_id) (modalities $ extendedInfo sign)
+      then return $ SimpleMod s_id
       else Result [mkDiag Error "unknown modality" s_id]
-               $ Just $ Simple_modality s_id
-    Composition md1 md2 -> do
+               $ Just $ SimpleMod s_id
+    ModOp o md1 md2 -> do
       new_md1 <- checkMod md1
       new_md2 <- checkMod md2
-      return $ Composition new_md1 new_md2
-    Union md1 md2 -> do
-      new_md1 <- checkMod md1
-      new_md2 <- checkMod md2
-      return $ Union new_md1 new_md2
-    TransitiveClosure md -> fmap TransitiveClosure $ checkMod md
+      return $ ModOp o new_md1 new_md2
+    TransClos md -> fmap TransClos $ checkMod md
     Guard frm -> fmap Guard $ minExpFORMULA frmTypeAna sign frm
+    TermMod t -> let
+                    ms = modalities $ extendedInfo sign
+                    r = do
+                      t2 <- oneExpTerm frmTypeAna sign t
+                      let srt = sortOfTerm t2
+                          trm = TermMod t2
+                      if Map.member srt ms
+                         then return trm
+                         else Result [mkDiag Error
+                              ("unknown term modality sort '"
+                               ++ showId srt "' for term") t ]
+                              $ Just trm
+                    in case t of
+                       Mixfix_token tm ->
+                           if Map.member (simpleIdToId tm) ms
+                              || tokStr tm == emptyS
+                              then return $ SimpleMod tm
+                              else Result
+                                      [mkDiag Error "unknown modality" tm]
+                                      $ Just $ SimpleMod tm
+                       Application (Op_name (Id [tm] [] _)) [] _ ->
+                           if Map.member (simpleIdToId tm) ms
+                           then return $ SimpleMod tm
+                           else r
+                       _ -> r
   in case form of
        BoxOrDiamond choice md leq_geq number f pos -> do
          new_md <- checkMod md
@@ -112,22 +133,22 @@ frmTypeAna sign form = let
 basItemStatAna
   :: Ana EM_BASIC_ITEM EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
 basItemStatAna mix basic_item = case basic_item of
-  Simple_mod_decl is_time anno_list forms pos -> do
+  ModDecl is_time isTerm anno_list forms pos -> do
     mapM_ ( (updateExtInfo . preAddMod) . item ) anno_list
     new_forms <- mapAnM (ana_FORMULA mix) forms
     res_forms <- mapAnM (return . fst) new_forms
     ana_forms <- mapAnM (return . snd) new_forms
     mapM_ ( (updateExtInfo . addMod ana_forms) . item ) anno_list
     if not is_time
-      then return $ Simple_mod_decl is_time anno_list res_forms pos
+      then return $ ModDecl is_time isTerm anno_list res_forms pos
       else do
         mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list
-        return $ Simple_mod_decl is_time anno_list res_forms pos
+        return $ ModDecl is_time isTerm anno_list res_forms pos
   Nominal_decl anno_list pos -> do
     mapM_ ( (updateExtInfo . addNom) . item ) anno_list
     return $ Nominal_decl anno_list pos
 
-addTimeMod :: SIMPLE_ID -> EModalSign -> Result EModalSign
+addTimeMod :: Id -> EModalSign -> Result EModalSign
 addTimeMod tmi sgn = let tm = time_modalities sgn in
   if Set.member tmi tm
   then Result [mkDiag Hint "repeated time modality" tmi] $ Just sgn
@@ -135,14 +156,14 @@ addTimeMod tmi sgn = let tm = time_modalities sgn in
        then Result [mkDiag Hint "more than one time modality" tmi] $ Just sgn
        else return sgn { time_modalities = Set.insert tmi tm }
 
-preAddMod :: SIMPLE_ID -> EModalSign -> Result EModalSign
+preAddMod :: Id -> EModalSign -> Result EModalSign
 preAddMod mi sgn =
         let m = modalities sgn in
         if Map.member mi m then
                 Result [mkDiag Hint "repeated modality" mi] $ Just sgn
                 else return sgn { modalities = Map.insert mi [] m }
 
-addMod :: [AnEModForm] -> SIMPLE_ID -> EModalSign -> Result EModalSign
+addMod :: [AnEModForm] -> Id -> EModalSign -> Result EModalSign
 addMod forms mi sgn = return sgn
   { modalities = Map.insertWith List.union mi forms $ modalities sgn }
 

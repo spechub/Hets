@@ -32,6 +32,8 @@ import CASL.SimplifySen
 import CASL.Taxonomy
 import CASL.Logic_CASL ()
 
+import Common.Id
+
 import Logic.Logic
 
 import qualified Data.Map as Map
@@ -64,13 +66,14 @@ instance Syntax ExtModal EM_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
 map_EM_FORMULA :: MapSen EM_FORMULA EModalSign MorphExtension
 map_EM_FORMULA morph (BoxOrDiamond choice t_m leq_geq number f pos) =
   let new_tm tm = case tm of
-        Simple_modality sm ->
-            let mds = mod_map (extended_map morph) in
-            if Map.member sm mds then Simple_modality (mds Map.! sm) else tm
-        Composition tm1 tm2 -> Composition (new_tm tm1) (new_tm tm2)
-        Union tm1 tm2 -> Union (new_tm tm1) (new_tm tm2)
-        TransitiveClosure tm1 -> TransitiveClosure (new_tm tm1)
-        Guard frm -> Guard (mapSen map_EM_FORMULA morph frm)
+        SimpleMod sm -> case Map.lookup (simpleIdToId sm)
+          $ mod_map $ extended_map morph of
+            Just ni -> SimpleMod $ idToSimpleId ni
+            Nothing -> tm
+        ModOp o tm1 tm2 -> ModOp o (new_tm tm1) (new_tm tm2)
+        TransClos tm1 -> TransClos $ new_tm tm1
+        Guard frm -> Guard $ mapSen map_EM_FORMULA morph frm
+        TermMod trm -> TermMod $ mapTerm map_EM_FORMULA morph trm
       new_f = mapSen map_EM_FORMULA morph f
   in BoxOrDiamond choice (new_tm t_m) leq_geq number new_f pos
 

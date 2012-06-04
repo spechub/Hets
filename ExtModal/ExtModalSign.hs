@@ -26,13 +26,14 @@ import ExtModal.AS_ExtModal
 data EModalSign = EModalSign
         { rigidOps :: OpMap
         , rigidPreds :: PredMap
-        , modalities :: Map.Map SIMPLE_ID [AnEModForm]
-        , time_modalities :: Set.Set SIMPLE_ID
+        , modalities :: Map.Map Id [AnEModForm]
+        , time_modalities :: Set.Set Id
         , nominals :: Set.Set SIMPLE_ID
         } deriving (Show, Eq, Ord)
 
 emptyEModalSign :: EModalSign
-emptyEModalSign = EModalSign MapSet.empty MapSet.empty Map.empty Set.empty Set.empty
+emptyEModalSign =
+    EModalSign MapSet.empty MapSet.empty Map.empty Set.empty Set.empty
 
 addEModalSign :: EModalSign -> EModalSign -> EModalSign
 addEModalSign ms1 ms2 = ms1
@@ -66,7 +67,8 @@ diffEModalSign ms1 ms2 = ms1
         , time_modalities = Set.difference (time_modalities ms1)
                             (time_modalities ms2)
         , nominals = Set.difference (nominals ms1) (nominals ms2)
-        } where difflist l1 l2 = let res = l1 List.\\ l2 in
+        } where
+    difflist l1 l2 = let res = l1 List.\\ l2 in
                         if null res then Nothing else Just res
 
 isSubEModalSign :: EModalSign -> EModalSign -> Bool
