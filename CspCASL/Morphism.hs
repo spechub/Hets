@@ -63,7 +63,7 @@ respect to the CASL signature sub-sort relation (at source) and also the
 target communications alphabet must be downward closed with respect to the
 CASL signature sub-sort relation (at target). -}
 type ProcessMap =
-  Map.Map (PROCESS_NAME, ProcProfile) (PROCESS_NAME, CommAlpha)
+  Map.Map (PROCESS_NAME, ProcProfile) PROCESS_NAME
 
 type ChanMap = Map.Map (CHANNEL_NAME, SORT) CHANNEL_NAME
 
@@ -135,10 +135,10 @@ mapProcProfile sm cm (ProcProfile sl cs) =
 mapProcId :: Sort_map -> ChanMap -> ProcessMap
   -> (PROCESS_NAME, ProcProfile) -> (PROCESS_NAME, ProcProfile)
 mapProcId sm cm pm (i, p) = let
-  n@(ProcProfile args _) = mapProcProfile sm cm p
+  n@(ProcProfile args alpha) = mapProcProfile sm cm p
   in case Map.lookup (i, p) pm of
        Nothing -> (i, n)
-       Just (j, alpha) -> (j, ProcProfile args alpha)
+       Just j -> (j, ProcProfile args alpha)
 
 mapProcess :: Morphism f CspSign CspAddMorphism
   -> (PROCESS_NAME, ProcProfile) -> (PROCESS_NAME, ProcProfile)
