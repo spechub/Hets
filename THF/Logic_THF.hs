@@ -38,7 +38,7 @@ data THF = THF deriving Show
 
 instance Language THF where
     description _ =
-        "THF is a Languag for Higher Order Logic from the TPTP standard.\n" ++
+        "THF is a language for Higher Order Logic from the TPTP standard.\n" ++
         "For further information please refer to" ++
         "http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
