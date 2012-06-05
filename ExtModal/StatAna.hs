@@ -224,28 +224,52 @@ extraSigItems s = let e = Set.empty in case s of
         Rigid_pred_items _ annoted_list _ ->
             ((e, e), Set.unions $ map (ids_PRED_ITEM . item) annoted_list)
 
+parenMod :: MODALITY -> MODALITY
+parenMod m = case m of
+    ModOp o md1 md2 -> ModOp o (parenMod md1) $ parenMod md2
+    TransClos md -> TransClos $ parenMod md
+    Guard frm -> Guard $ mapFormula parenExtForm frm
+    TermMod t -> TermMod $ mapTerm parenExtForm t
+    _ -> m
+
 parenExtForm :: EM_FORMULA -> EM_FORMULA
-parenExtForm (BoxOrDiamond choice md leq_geq nr frm pos) =
-        BoxOrDiamond choice md leq_geq nr (mapFormula parenExtForm frm) pos
-parenExtForm (Hybrid choice nom frm pos) =
+parenExtForm f = case f of
+    BoxOrDiamond choice md leq_geq nr frm pos ->
+        BoxOrDiamond choice (parenMod md) leq_geq nr
+            (mapFormula parenExtForm frm) pos
+    Hybrid choice nom frm pos ->
         Hybrid choice nom (mapFormula parenExtForm frm) pos
-parenExtForm (UntilSince choice f1 f2 pos) =
+    UntilSince choice f1 f2 pos ->
         UntilSince choice (mapFormula parenExtForm f1)
                        (mapFormula parenExtForm f2) pos
-parenExtForm (PathQuantification choice frm pos) =
+    PathQuantification choice frm pos ->
         PathQuantification choice (mapFormula parenExtForm frm) pos
-parenExtForm (StateQuantification t_dir choice frm pos) =
+    StateQuantification t_dir choice frm pos ->
         StateQuantification t_dir choice (mapFormula parenExtForm frm) pos
-parenExtForm (NextY choice frm pos) =
+    NextY choice frm pos ->
         NextY choice (mapFormula parenExtForm frm) pos
-parenExtForm (FixedPoint choice fpvar frm pos) =
+    FixedPoint choice fpvar frm pos ->
         FixedPoint choice fpvar (mapFormula parenExtForm frm) pos
+
+resolveMod :: MixResolve MODALITY
+resolveMod ga ids m = case m of
+    ModOp o md1 md2 -> do
+      new_md1 <- resolveMod ga ids md1
+      new_md2 <- resolveMod ga ids md2
+      return $ ModOp o new_md1 new_md2
+    TransClos md -> fmap TransClos $ resolveMod ga ids md
+    Guard frm -> fmap Guard
+      $ resolveMixFrm parenExtForm resolveExtForm ga ids frm
+    TermMod t -> fmap TermMod
+      $ resolveMixTrm parenExtForm resolveExtForm ga ids t
+    _ -> return m
 
 resolveExtForm :: MixResolve EM_FORMULA
 resolveExtForm ga ids f = case f of
         BoxOrDiamond choice ms leq_geq nr frm pos -> do
+                nms <- resolveMod ga ids ms
                 new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-                return $ BoxOrDiamond choice ms leq_geq nr new_frm pos
+                return $ BoxOrDiamond choice nms leq_geq nr new_frm pos
         Hybrid choice nom frm pos -> do
                 new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
                 return $ Hybrid choice nom new_frm pos
