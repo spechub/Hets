@@ -142,11 +142,11 @@ parsePrimModality = do
            t <- parseModality
            cParenT
            return t
-        <|> try
-          (fmap Guard (formula $ greaterS : ext_modal_reserved_words)
-          << asSeparator quMark)
-        <|> try
-          (fmap TermMod $ term $ greaterS : ext_modal_reserved_words)
+        <|> do
+          f <- formula $ greaterS : ext_modal_reserved_words
+          case f of
+            Mixfix_formula t -> return $ TermMod t
+            _ -> asSeparator quMark >> return (Guard f)
         <|> fmap (SimpleMod . Token emptyS . Range . (: [])) getPos
 
 parseTransClosModality :: AParser st MODALITY
