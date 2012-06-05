@@ -213,7 +213,7 @@ insertProcSym sm rel cm pn rsy pf@(ProcProfile _ al) m = do
       (p1, al1) <- mappedProcSym sm rel cm pn pf rsy
       let otsy = toProcSymbol (pn, pf)
           pos = getRange rsy
-          m2 = Map.insert (pn, pf) (p1, al1) m1
+          m2 = Map.insert (pn, pf) p1 m1
       case Map.lookup (pn, pf) m1 of
         Nothing -> if pn == p1 && al == al1 then
             case rsy of
@@ -221,8 +221,8 @@ insertProcSym sm rel cm pn rsy pf@(ProcProfile _ al) m = do
               _ -> hint m1 ("identity mapping of "
                                ++ showDoc otsy "") pos
             else return m2
-        Just (p2, al2) -> if p1 == p2 then
-             warning (if al1 /= al2 then m2 else m1)
+        Just p2 -> if p1 == p2 then
+             warning m1
              ("ignoring duplicate mapping of " ++ showDoc otsy "")
              pos
             else plain_error m1
@@ -260,7 +260,7 @@ compatibleProcTypes rel (ProcProfile l1 al1) (ProcProfile l2 al2) =
 
 liamsRelatedCommAlpha :: Rel.Rel SORT -> CommAlpha -> CommAlpha -> Bool
 liamsRelatedCommAlpha rel al1 al2 =
-  all (\ a2 -> any (\a1 -> liamsRelatedCommTypes rel a1 a2) $ Set.toList al1)
+  all (\ a2 -> any (\ a1 -> liamsRelatedCommTypes rel a1 a2) $ Set.toList al1)
   $ Set.toList al2
 
 liamsRelatedCommTypes :: Rel.Rel SORT -> CommType -> CommType -> Bool

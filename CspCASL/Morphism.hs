@@ -40,7 +40,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Result
-import Common.Utils (composeMap, isSingleton)
+import Common.Utils (composeMap)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
@@ -165,7 +165,7 @@ composeCspAddMorphism m1 m2 = let
                              mapProcess m2 $ mapProcess m1 pp
                            oa = mapCommAlphaAux sMap cMap a
                        in if p == ni && oa == na then id else
-                              Map.insert pp (ni, na))
+                              Map.insert pp ni)
                       Map.empty $ procSet cSrc
   in return emptyCspAddMorphism
   { channelMap = cMap
@@ -268,8 +268,6 @@ cspAddMorphismUnion mor1 mor2 = let
     up1 = foldr delProc (procSet s1) $ Map.keys proc1
     up2 = foldr delProc (procSet s2) $ Map.keys proc2
     up = MapSet.union up1 up2
-    showAlpha (i, s) l = shows i (if null l then "" else "(..)") ++ ":"
-      ++ if isSingleton s then showDoc (Set.findMin s) "" else showDoc s ""
     (cds, cMap) = foldr ( \ (isc@(i, s), j) (ds, m) ->
           case Map.lookup isc m of
           Nothing -> (ds, Map.insert isc j m)
@@ -281,16 +279,16 @@ cspAddMorphismUnion mor1 mor2 = let
           (Map.toList chan2 ++ concatMap ( \ (c, ts) -> map
               ( \ s -> ((c, s), c)) ts) (MapSet.toList uc))
     (pds, pMap) =
-      foldr ( \ (isc@(i, pt@(ProcProfile args _)), j) (ds, m) ->
+      foldr ( \ (isc@(i, pt), j) (ds, m) ->
           case Map.lookup isc m of
           Nothing -> (ds, Map.insert isc j m)
           Just k -> if j == k then (ds, m) else
               (Diag Error
                ("incompatible mapping of process " ++ shows i " "
-                ++ showDoc pt " to " ++ showAlpha j args ++ " and "
-                ++ showAlpha k args) nullRange : ds, m)) (cds, proc1)
+                ++ showDoc pt " to " ++ show j ++ " and "
+                ++ show k) nullRange : ds, m)) (cds, proc1)
           (Map.toList proc2 ++ concatMap ( \ (p, pts) -> map
-              ( \ pt@(ProcProfile _ al) -> ((p, pt), (p, al))) pts)
+              ( \ pt -> ((p, pt), p)) pts)
               (MapSet.toList up))
      in if null pds then return emptyCspAddMorphism
         { channelMap = cMap
