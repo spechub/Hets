@@ -135,9 +135,7 @@ hetsServer opts1 = do
        queryToString s = let
          r = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms)) s
          in (('?' :) . intercalate "&" $ map
-                (\ (x, ms) -> x ++ case ms of
-                  Nothing -> ""
-                  Just y -> '=' : y) r, r)
+                (\ (x, ms) -> x ++ maybe "" ('=' :) ms) r, r)
        pathBits = map T.unpack $ pathInfo re
        path = intercalate "/" pathBits
        liftRun = liftIO
