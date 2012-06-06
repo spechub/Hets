@@ -105,7 +105,7 @@ globalCommands = concat
   , getGlobCmds globLibResultAct
   , getGlobCmds globResultAct ]
 
--- Lib- and node name can be IRIs now
+-- Lib- and node name can be IRIs now (the query id is the session number)
 data DGQuery = DGQuery
   { queryId :: Int
   , optQueryLibPath :: Maybe PATH
@@ -155,7 +155,7 @@ anaUri pathBits query = let path = intercalate "/" pathBits in
 isNat :: String -> Bool
 isNat s = all isDigit s && not (null s) && length s < 11
 
--- | a leading question mark is removed
+-- | a leading question mark is removed, possibly a session id is returned
 anaQuery :: [QueryPair] -> Either String (Maybe Int, QueryKind)
 anaQuery q =
        let globals = "update" : globalCommands
@@ -274,7 +274,7 @@ anaNodeQuery mi ans i moreTheorems incls pss =
                 (x, Just y) -> ((x, y) :)
                 _ -> id) [] pss
       incl = lookup "include" pps
-      trans = maybe Nothing (Just . decodeQueryCode) $ lookup "translation" pps
+      trans = fmap decodeQueryCode $ lookup "translation" pps
       prover = lookup "prover" pps
       theorems = map unEsc moreTheorems
           ++ case lookup "theorems" pps of
