@@ -145,7 +145,9 @@ basItemStatAna mix basic_item = case basic_item of
         mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list
         return $ ModDecl is_time isTerm anno_list res_forms pos
   Nominal_decl anno_list pos -> do
-    mapM_ ( (updateExtInfo . addNom) . item ) anno_list
+    mapM_ (updateExtInfo . addNom . item) anno_list
+    mapM_ (addPred (emptyAnno ()) (PredType []) . mkId . (: []) . item)
+       anno_list
     return $ Nominal_decl anno_list pos
 
 addTimeMod :: Id -> EModalSign -> Result EModalSign
