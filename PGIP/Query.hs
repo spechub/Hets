@@ -140,8 +140,9 @@ data NodeCommand =
   deriving Show
 
 -- | the path is not empty and leading slashes are removed
-anaUri :: FilePath -> [QueryPair] -> Either String Query
-anaUri path query = case anaQuery query of
+anaUri :: [String] -> [QueryPair] -> Either String Query
+anaUri pathBits query = let path = intercalate "/" pathBits in
+    case anaQuery query of
     Right (mi, qk) -> case (mi, readMaybe path) of
       (Just i, Just j) | i /= j -> Left "different dg ids"
       (_, mj) -> Right $ Query
