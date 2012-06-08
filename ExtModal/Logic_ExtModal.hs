@@ -32,11 +32,7 @@ import CASL.SimplifySen
 import CASL.Taxonomy
 import CASL.Logic_CASL ()
 
-import Common.Id
-
 import Logic.Logic
-
-import qualified Data.Map as Map
 
 data ExtModal = ExtModal deriving Show
 
@@ -62,74 +58,31 @@ instance Syntax ExtModal EM_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
         parse_symb_map_items ExtModal =
             Just $ symbMapItems ext_modal_reserved_words
 
--- Modal formula mapping via signature morphism
-map_EM_FORMULA :: MapSen EM_FORMULA EModalSign MorphExtension
-map_EM_FORMULA morph (BoxOrDiamond choice t_m leq_geq number f pos) =
-  let new_tm tm = case tm of
-        SimpleMod sm -> case Map.lookup (simpleIdToId sm)
-          $ mod_map $ extended_map morph of
-            Just ni -> SimpleMod $ idToSimpleId ni
-            Nothing -> tm
-        ModOp o tm1 tm2 -> ModOp o (new_tm tm1) (new_tm tm2)
-        TransClos tm1 -> TransClos $ new_tm tm1
-        Guard frm -> Guard $ mapSen map_EM_FORMULA morph frm
-        TermMod trm -> TermMod $ mapTerm map_EM_FORMULA morph trm
-      new_f = mapSen map_EM_FORMULA morph f
-  in BoxOrDiamond choice (new_tm t_m) leq_geq number new_f pos
-
-
-map_EM_FORMULA morph (Hybrid choice nm f pos) =
-  let new_nom = case nm of
-        Nominal nom -> let nms = nom_map (extended_map morph) in
-          if Map.member nom nms then Nominal (nms Map.! nom) else nm
-      new_f = mapSen map_EM_FORMULA morph f
-  in Hybrid choice new_nom new_f pos
-
-
-map_EM_FORMULA morph (UntilSince choice f1 f2 pos) =
-        let new_f1 = mapSen map_EM_FORMULA morph f1
-            new_f2 = mapSen map_EM_FORMULA morph f2
-        in UntilSince choice new_f1 new_f2 pos
-
-map_EM_FORMULA morph (NextY choice f pos) =
-        let new_f = mapSen map_EM_FORMULA morph f
-        in NextY choice new_f pos
-
-map_EM_FORMULA morph (PathQuantification choice f pos) =
-        let new_f = mapSen map_EM_FORMULA morph f
-        in PathQuantification choice new_f pos
-
-map_EM_FORMULA morph (StateQuantification t_dir choice f pos) =
-        let new_f = mapSen map_EM_FORMULA morph f
-        in StateQuantification t_dir choice new_f pos
-
-map_EM_FORMULA morph (FixedPoint choice p_var f pos) =
-        let new_f = mapSen map_EM_FORMULA morph f
-        in FixedPoint choice p_var new_f pos
+simEMmod :: Sign EM_FORMULA EModalSign -> MODALITY -> MODALITY
+simEMmod sign tm = case tm of
+  ModOp o tm1 tm2 -> ModOp o (simEMmod sign tm1) $ simEMmod sign tm2
+  TransClos tm1 -> TransClos $ simEMmod sign tm1
+  Guard frm -> Guard $ simplifySen frmTypeAna simEMSen sign frm
+  TermMod trm -> TermMod $ simplifyTerm frmTypeAna simEMSen sign trm
+  _ -> tm
 
 -- Simplification of formulas - simplifySen for ExtFORMULA
 simEMSen :: Sign EM_FORMULA EModalSign -> EM_FORMULA -> EM_FORMULA
-simEMSen sign (BoxOrDiamond choice tm leq_geq number f pos) =
-        BoxOrDiamond choice tm leq_geq number
-            (simplifySen frmTypeAna simEMSen sign f) pos
-simEMSen sign (Hybrid choice nom f pos) =
-        Hybrid choice nom (simplifySen frmTypeAna simEMSen sign f) pos
-simEMSen sign (UntilSince choice f1 f2 pos) =
-        UntilSince choice (simplifySen frmTypeAna simEMSen sign f1)
-                (simplifySen frmTypeAna simEMSen sign f2) pos
-simEMSen sign (NextY choice f pos) =
-        NextY choice (simplifySen frmTypeAna simEMSen sign f) pos
-simEMSen sign (PathQuantification choice f pos) =
-        PathQuantification choice (simplifySen frmTypeAna simEMSen sign f) pos
-simEMSen sign (StateQuantification t_dir choice f pos) =
-        StateQuantification t_dir choice
-            (simplifySen frmTypeAna simEMSen sign f) pos
-simEMSen sign (FixedPoint choice p_var f pos) =
-        FixedPoint choice p_var (simplifySen frmTypeAna simEMSen sign f) pos
+simEMSen sign frm =
+  let rsimf = simplifySen frmTypeAna simEMSen sign in case frm of
+  BoxOrDiamond choice tm leq_geq number f pos -> BoxOrDiamond choice
+      (simEMmod sign tm) leq_geq number (rsimf f) pos
+  Hybrid choice nom f pos -> Hybrid choice nom (rsimf f) pos
+  UntilSince choice f1 f2 pos -> UntilSince choice (rsimf f1) (rsimf f2) pos
+  NextY choice f pos -> NextY choice (rsimf f) pos
+  PathQuantification choice f pos -> PathQuantification choice (rsimf f) pos
+  StateQuantification t_dir choice f pos ->
+    StateQuantification t_dir choice (rsimf f) pos
+  FixedPoint choice p_var f pos -> FixedPoint choice p_var (rsimf f) pos
 
 instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
     where
-        map_sen ExtModal morph = return . mapSen map_EM_FORMULA morph
+        map_sen ExtModal morph = return . mapSen mapEMform morph
         simplify_sen ExtModal = simplifySen frmTypeAna simEMSen
         print_sign ExtModal sig = printSign
                 (printEModalSign $ simplifySen frmTypeAna simEMSen sig) sig

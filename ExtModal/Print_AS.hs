@@ -132,7 +132,8 @@ printEModalSign :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA) -> EModalSign
                 -> Doc
 printEModalSign sim sign =
         let mds = modalities sign
-            tms = time_modalities sign
+            tims = time_modalities sign
+            terms = termMods sign
             nms = nominals sign in
         printSetMap (keyword rigidS <+> keyword opS) empty
             (MapSet.toMap $ rigidOps sign)
@@ -140,15 +141,12 @@ printEModalSign sim sign =
         printSetMap (keyword rigidS <+> keyword predS) empty
             (MapSet.toMap $ rigidPreds sign)
         $+$
-        (if Map.null mds then empty else fsep
-          [ keyword modalitiesS
-          , sepBySemis (map idDoc (Map.keys mds))
-          , let fs = Map.elems mds in if null $ concat fs then empty else
-            specBraces $ printFormulaOfEModalSign sim fs ])
-        $+$
-        (if Set.null tms then empty else
-        keyword timeS <+> keyword modalitiesS
-                    <+> sepBySemis (map idDoc (Set.toList tms)))
+        vcat (map (\ (i, fs) -> fsep
+          $ [keyword timeS | Set.member i tims]
+          ++ [keyword termS | Set.member i terms]
+          ++ [keyword modalityS, idDoc i, sepBySemis
+             $ map (printAnnoted $ pretty . sim) fs])
+            $ Map.toList mds)
         $+$
         (if Set.null nms then empty else
         keyword nominalS <+> sepBySemis (map sidDoc (Set.toList nms)))

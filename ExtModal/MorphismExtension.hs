@@ -16,12 +16,14 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import CASL.Morphism
+import CASL.MapSentence
 
 import Common.Doc
 import Common.DocUtils
 import Common.Id
 
 import ExtModal.ExtModalSign
+import ExtModal.AS_ExtModal
 import ExtModal.Print_AS ()
 
 data MorphExtension = MorphExtension
@@ -94,3 +96,30 @@ instance MorphismExtension EModalSign MorphExtension where
                 let target_ide = ideMorphismExtension (target me) in
                 Map.isSubmapOf (mod_map me) (mod_map target_ide)
                         && Map.isSubmapOf (nom_map me) (nom_map target_ide)
+
+mapEMmod :: Morphism EM_FORMULA EModalSign MorphExtension -> MODALITY
+  -> MODALITY
+mapEMmod morph tm = case tm of
+  SimpleMod sm -> case Map.lookup (simpleIdToId sm) $ mod_map
+      $ extended_map morph of
+    Just ni -> SimpleMod $ idToSimpleId ni
+    Nothing -> tm
+  ModOp o tm1 tm2 -> ModOp o (mapEMmod morph tm1) $ mapEMmod morph tm2
+  TransClos tm1 -> TransClos $ mapEMmod morph tm1
+  Guard frm -> Guard $ mapSen mapEMform morph frm
+  TermMod trm -> TermMod $ mapTerm mapEMform morph trm
+
+-- Modal formula mapping via signature morphism
+mapEMform :: MapSen EM_FORMULA EModalSign MorphExtension
+mapEMform morph frm = let rmapf = mapSen mapEMform morph in case frm of
+  BoxOrDiamond choice tm leq_geq number f pos ->
+    BoxOrDiamond choice (mapEMmod morph tm) leq_geq number (rmapf f) pos
+  Hybrid choice (Nominal nom) f pos -> Hybrid choice
+    (Nominal $ Map.findWithDefault nom nom $ nom_map $ extended_map morph)
+    (rmapf f) pos
+  UntilSince choice f1 f2 pos -> UntilSince choice (rmapf f1) (rmapf f2) pos
+  NextY choice f pos -> NextY choice (rmapf f) pos
+  PathQuantification choice f pos -> PathQuantification choice (rmapf f) pos
+  StateQuantification t_dir choice f pos ->
+    StateQuantification t_dir choice (rmapf f) pos
+  FixedPoint choice p_var f pos -> FixedPoint choice p_var (rmapf f) pos
