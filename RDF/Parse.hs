@@ -105,6 +105,9 @@ resolveBases (BaseIRI rel) (BaseIRI base) =
 extractIRI :: BaseIRI -> IRI
 extractIRI (BaseIRI b) = b
 
+parsePredicate :: CharParser st Predicate
+parsePredicate = fmap Predicate uriQ
+
 {-
 parseBases :: BaseIRI -> TurtlePrefixMap -> CharParser st (BaseIRI, TurtlePrefixMap)
 parseBases base pm = do

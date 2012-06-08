@@ -169,7 +169,7 @@ fullIri = do
     char '<'
     QN pre r _ _ p <- abbrIri
     char '>'
-    return $ QN pre r Full (pre ++ ":" ++ r) p
+    return $ QN pre r Full (if null pre then r else pre ++ ":" ++ r) p
 
 uriQ :: CharParser st QName
 uriQ = fullIri <|> abbrIri
