@@ -25,6 +25,7 @@ import CASL.Overload
 import CASL.Quantification
 
 import Common.AS_Annotation
+import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.Keywords
 import Common.Lib.State
@@ -159,8 +160,12 @@ addTermMod fullSign tmi sgn = let
   in if Set.member tmi srts then
      if Set.member tmi tm
      then Result [mkDiag Hint "repeated term modality" tmi] $ Just sgn
-       else return sgn { termMods = Set.union tm
-         $ Set.insert tmi $ subsortsOf tmi fullSign }
+     else let sps = Set.difference tm $ supersortsOf tmi fullSign in
+       if Set.null sps
+       then return sgn { termMods = Set.insert tmi tm }
+       else Result [mkDiag Warning
+         ("term modality known for supersorts " ++ showDoc sps "")
+         tmi] $ Just sgn
   else Result [mkDiag Error "unknown sort in term modality" tmi] $ Just sgn
 
 addTimeMod :: Id -> EModalSign -> Result EModalSign
