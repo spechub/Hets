@@ -114,8 +114,8 @@ mapEMform :: MapSen EM_FORMULA EModalSign MorphExtension
 mapEMform morph frm = let rmapf = mapSen mapEMform morph in case frm of
   BoxOrDiamond choice tm leq_geq number f pos ->
     BoxOrDiamond choice (mapEMmod morph tm) leq_geq number (rmapf f) pos
-  Hybrid choice (Nominal nom) f pos -> Hybrid choice
-    (Nominal $ Map.findWithDefault nom nom $ nom_map $ extended_map morph)
+  Hybrid choice nom f pos -> Hybrid choice
+    (Map.findWithDefault nom nom $ nom_map $ extended_map morph)
     (rmapf f) pos
   UntilSince choice f1 f2 pos -> UntilSince choice (rmapf f1) (rmapf f2) pos
   NextY choice f pos -> NextY choice (rmapf f) pos

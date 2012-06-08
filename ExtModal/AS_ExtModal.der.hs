@@ -45,16 +45,13 @@ data MODALITY =
   | Guard (FORMULA EM_FORMULA)
         deriving (Eq, Ord, Show)
 
-data RIGOR = Rigid | Flexible deriving Show
-
+-- True booleans for rigid items, False for flexible ones
 data EM_SIG_ITEM =
-          Rigid_op_items RIGOR [Annoted (OP_ITEM EM_FORMULA)] Range
+          Rigid_op_items Bool [Annoted (OP_ITEM EM_FORMULA)] Range
                  -- pos: op, semi colons
-        | Rigid_pred_items RIGOR [Annoted (PRED_ITEM EM_FORMULA)] Range
+        | Rigid_pred_items Bool [Annoted (PRED_ITEM EM_FORMULA)] Range
                  -- pos: pred, semi colons
              deriving Show
-
-data NOMINAL = Nominal SIMPLE_ID deriving (Show, Eq, Ord)
 
 data EM_FORMULA
   = BoxOrDiamond Bool MODALITY Bool Int (FORMULA EM_FORMULA) Range
@@ -63,7 +60,7 @@ data EM_FORMULA
     The second identifier is used for grading:
     pos: "<=" or ">=", True if Leq (less than/equal),
     False if Geq (greater than/equal), positive integers -}
-  | Hybrid Bool NOMINAL (FORMULA EM_FORMULA) Range
+  | Hybrid Bool SIMPLE_ID (FORMULA EM_FORMULA) Range
                 {- True if @, False if Here
                 pos: "@", "Here" -}
   | UntilSince Bool (FORMULA EM_FORMULA) (FORMULA EM_FORMULA) Range

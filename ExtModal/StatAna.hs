@@ -110,8 +110,7 @@ frmTypeAna sign form = let
                   $ Just $ BoxOrDiamond choice new_md leq_geq number new_f pos
        Hybrid choice nm f pos -> do
          new_f <- minExpFORMULA frmTypeAna sign f
-         let id_of_nom ( Nominal sid ) = sid
-         if Set.member (id_of_nom nm) (nominals $ extendedInfo sign)
+         if Set.member nm (nominals $ extendedInfo sign)
            then return $ Hybrid choice nm new_f pos
            else Result [mkDiag Error "unknown nominal" nm]
                     $ Just $ Hybrid choice nm new_f pos
@@ -199,8 +198,7 @@ sigItemStatAna
 sigItemStatAna mix sig_item = case sig_item of
   Rigid_op_items rig ann_list pos -> do
     new_list <- mapM (ana_OP_ITEM frmTypeAna mix) ann_list
-    case rig of
-      Rigid -> mapM_
+    when rig $ mapM_
         (\ nlitem -> case item nlitem of
           Op_decl ops typ _ _ ->
               mapM_ (updateExtInfo . addRigidOp (toOpType typ)) ops
@@ -208,18 +206,15 @@ sigItemStatAna mix sig_item = case sig_item of
               (\ ty -> updateExtInfo $ addRigidOp (toOpType ty) op)
               $ headToType hd
         ) new_list
-      _ -> return ()
     return $ Rigid_op_items rig new_list pos
   Rigid_pred_items rig ann_list pos -> do
     new_list <- mapM (ana_PRED_ITEM frmTypeAna mix) ann_list
-    case rig of
-      Rigid -> mapM_ ( \ nlitem -> case item nlitem of
+    when rig $ mapM_ ( \ nlitem -> case item nlitem of
           Pred_decl preds typ _ ->
               mapM_ (updateExtInfo . addRigidPred (toPredType typ) ) preds
           Pred_defn prd (Pred_head args _ ) _ _ ->
               updateExtInfo $ addRigidPred (PredType $ sortsOfArgs args) prd
                      ) new_list
-      _ -> return ()
     return $ Rigid_pred_items rig new_list pos
 
 addRigidOp :: OpType -> Id -> EModalSign -> Result EModalSign

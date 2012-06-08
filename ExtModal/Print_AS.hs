@@ -67,20 +67,16 @@ instance Pretty MODALITY where
             <> keyword (show o)
             <> printMPrec False mdl md2
 
-instance Pretty RIGOR where
-        pretty Rigid = keyword rigidS
-        pretty Flexible = keyword flexibleS
+prettyRigor :: Bool -> Doc
+prettyRigor b = keyword $ if b then rigidS else flexibleS
 
 instance Pretty EM_SIG_ITEM where
         pretty (Rigid_op_items rig op_list _) =
-                cat [pretty rig <+> keyword (opS ++ pluralS op_list),
+                cat [prettyRigor rig <+> keyword (opS ++ pluralS op_list),
                      space <> semiAnnos pretty op_list]
         pretty (Rigid_pred_items rig pred_list _) =
-                cat [pretty rig <+> keyword (predS ++ pluralS pred_list),
+                cat [prettyRigor rig <+> keyword (predS ++ pluralS pred_list),
                      space <> semiAnnos pretty pred_list]
-
-instance Pretty NOMINAL where
-        pretty (Nominal idt) = pretty idt
 
 instance FormExtension EM_FORMULA where
   isQuantifierLike ef = case ef of

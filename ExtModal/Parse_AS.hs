@@ -117,7 +117,7 @@ prefixModifier = let mkF f r = return $ flip f $ tokPos r in
     ahb <- (asKey atS >> return True)
       <|> (asKey hereS >> return False)
     nom <- simpleId
-    mkF (Hybrid ahb $ Nominal nom) nom
+    mkF (Hybrid ahb nom) nom
 
 -- | Modal formula parser
 modalPrimFormulaParser :: AParser st EM_FORMULA
@@ -177,9 +177,9 @@ instance TermParser EM_FORMULA where
 
 -- Signature parser
 
-rigor :: AParser st RIGOR
-rigor = (asKey rigidS >> return Rigid)
-        <|> (asKey flexibleS >> return Flexible)
+rigor :: AParser st Bool
+rigor = (asKey rigidS >> return True)
+        <|> (asKey flexibleS >> return False)
 
 sigItemParser :: AParser st EM_SIG_ITEM
 sigItemParser = do
