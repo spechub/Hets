@@ -28,32 +28,34 @@ data TurtleDocument = TurtleDocument
     { prefixMap :: Map.Map String IRI
     , statements :: [Statement] }
     deriving (Show, Eq, Ord)
-    
+
+emptyTurtleDocument :: TurtleDocument
+emptyTurtleDocument = TurtleDocument Map.empty []
+
 data Statement = Statement Triples | Prefix String IRI | Base IRI
     deriving (Show, Eq, Ord)
-    
-data Triples = Triples Subject PredicateObjectList
+
+data Triples = Triples Subject [PredicateObjectList]
     deriving (Show, Eq, Ord)
-    
+
 data Subject =
     Subject IRI
   | SubjectList [PredicateObjectList]
   | SubjectCollection [Object]
     deriving (Show, Eq, Ord)
-  
+
 data Predicate = Predicate IRI
     deriving (Show, Eq, Ord)
-    
+
 data Object = Object Subject
   | ObjectLiteral Literal
     deriving (Show, Eq, Ord)
 
-data PredicateObjectList = PredicateObjectList Predicate [Object] 
+data PredicateObjectList = PredicateObjectList Predicate [Object]
     deriving (Show, Eq, Ord)
-    
 
 -- * Datatypes for Hets manipulation
-    
+
 data Axiom = Axiom Subject Predicate Object
     deriving (Show, Eq, Ord)
 
@@ -69,4 +71,4 @@ rdfEntityTypes = [minBound .. maxBound]
 
 instance GetRange TurtleDocument where
 instance GetRange Axiom where
-instance GetRange RDFEntity where
+

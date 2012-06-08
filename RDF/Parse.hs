@@ -19,7 +19,7 @@ import Common.Lexer
 import OWL2.AS
 import OWL2.Parse
 import RDF.AS
--- import RDF.Symbols
+import RDF.Symbols
 import Network.URI
 
 import Data.Maybe
@@ -27,7 +27,6 @@ import Data.List
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
-{-
 -- * hets symbols parser
 
 rdfEntityType :: CharParser st RDFEntityType
@@ -64,13 +63,12 @@ rdfSymbPairs = uriPair >>= \ u -> do
     us <- rdfSymbPairs
     return $ u : us
   <|> return [u]
--}
 
 parseBase :: CharParser st Statement
 parseBase = do
     pkeyword "@base"
     base <- skips uriQ
-    skips $ string "."
+    skips $ char '.'
     return $ Base base
 
 parsePrefix :: CharParser st Statement
@@ -78,7 +76,7 @@ parsePrefix = do
     pkeyword "@prefix"
     p <- skips (option "" prefix << char ':')
     i <- skips uriQ
-    skips $ string "."
+    skips $ char '.'
     return $ Prefix p i
 
 parsePredicate :: CharParser st Predicate
@@ -94,13 +92,35 @@ parseSubject =
 
 parseObject :: CharParser st Object
 parseObject = fmap ObjectLiteral literal <|> fmap Object parseSubject
-    
+
 parsePredObjects :: CharParser st PredicateObjectList
 parsePredObjects = do
     pred <- parsePredicate
     objs <- sepBy parseObject $ skips $ char ','
     return $ PredicateObjectList pred objs
-   
+
 parsePredObjList :: CharParser st [PredicateObjectList]
 parsePredObjList = sepEndBy parsePredObjects $ skips $ char ';'
+
+parseTriples :: CharParser st Triples
+parseTriples = do
+    s <- parseSubject
+    ls <- parsePredObjList
+    skips $ char '.'
+    return $ Triples s ls
+
+parseStatement :: CharParser st Statement
+parseStatement = parseBase <|> parsePrefix <|> fmap Statement parseTriples
+
+extractPrefixMap :: [Statement] -> Map.Map String IRI
+extractPrefixMap ls = case ls of
+    [] -> Map.empty
+    h : t -> case h of
+        Prefix p iri -> Map.insert p iri $ extractPrefixMap t
+        _ -> extractPrefixMap t
+
+basicSpec :: CharParser st TurtleDocument
+basicSpec = do
+    ls <- many parseStatement
+    return $ TurtleDocument (extractPrefixMap ls) ls
 
