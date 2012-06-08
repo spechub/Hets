@@ -13,7 +13,7 @@ import Text.ParserCombinators.Parsec
 processFile :: String -> IO ()
 processFile file = do
   str <- readFile file
-  case runParser (parseTriples (BaseIRI dummyQName) Map.empty "." << eof) () file str of
+  case runParser (basicSpec << eof) () file str of
     Right o -> putStrLn $ show o
     Left err -> print err
 
