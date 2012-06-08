@@ -34,20 +34,17 @@ data Statement = Statement Triples | Prefix String IRI | Base IRI
     
 data Triples = Triples Subject PredicateObjectList
     deriving (Show, Eq, Ord)
-
+    
 data Subject =
     Subject IRI
-  | SubjectList PredicateObjectList
+  | SubjectList [PredicateObjectList]
   | SubjectCollection [Object]
     deriving (Show, Eq, Ord)
   
 data Predicate = Predicate IRI
     deriving (Show, Eq, Ord)
     
-data Object =
-    Object IRI
-  | ObjectList PredicateObjectList
-  | ObjectCollection [Object]
+data Object = Object Subject
   | ObjectLiteral Literal
     deriving (Show, Eq, Ord)
 

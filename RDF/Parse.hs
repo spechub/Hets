@@ -67,74 +67,40 @@ rdfSymbPairs = uriPair >>= \ u -> do
 -}
 
 parseBase :: CharParser st Statement
-parse1Base = do
+parseBase = do
     pkeyword "@base"
     base <- skips uriQ
     skips $ string "."
     return $ Base base
 
 parsePrefix :: CharParser st Statement
-parse1Prefix = do
+parsePrefix = do
     pkeyword "@prefix"
     p <- skips (option "" prefix << char ':')
     i <- skips uriQ
     skips $ string "."
     return $ Prefix p i
 
-
 parsePredicate :: CharParser st Predicate
-parsePredicate = fmap Predicate uriQ
+parsePredicate = fmap Predicate $ skips uriQ
 
-{-
-parseBases :: BaseIRI -> TurtlePrefixMap -> CharParser st (BaseIRI, TurtlePrefixMap)
-parseBases base pm = do
-    e <- parse1BaseOrPrefix
-    case e of
-        Left b -> if baseStartsWithScheme b then parseBases b pm else
-            if iriType (extractIRI b) /= Full
-            then let iri = extractIRI b
-                     prefIri = Map.findWithDefault nullQName (namePrefix iri) pm
-                     newIri = iri {namePrefix = namePrefix prefIri
-                                , localPart = localPart prefIri ++ localPart iri
-                                , iriType = Full}
-                 in parseBases (BaseIRI newIri) pm
-            else parseBases (appendTwoBases base b) pm
-        Right p@(Prefix s iri) ->
-            if startsWithScheme iri then parseBases base $ Map.insert s iri pm
-            else parseBases base $ Map.insert s (resolveIRI base iri) pm
-   <|> return (base, pm)
+parseSubject :: CharParser st Subject
+parseSubject =
+    fmap Subject (skips uriQ)
+  <|> fmap SubjectList
+            (between (skips $ char '[') (skips $ char ']') $ skips parsePredObjList)
+  <|> fmap SubjectCollection
+            (between (skips $ char '(') (skips $ char ')') $ many parseObject)
 
-parseIRI :: BaseIRI -> CharParser st IRI
-parseIRI b = do
-    iri <- uriQ
-    return $ if iriType iri == Full && not (startsWithScheme iri)
-        then resolveIRI b iri else iri
-
-parseTerm :: BaseIRI -> CharParser st Term
-parseTerm b = fmap LiteralTerm literal <|> fmap IRITerm (parseIRI b)
-     <|> fmap Collection (parensP $ many $ skips $ parseTerm b)
-
-
-parseTriples :: BaseIRI -> TurtlePrefixMap -> String
-    -> CharParser st [(Triple, BaseIRI, TurtlePrefixMap)]
-parseTriples base tpm end = do
-    (b, pm) <- parseBases base tpm
-    t <- case end of
-        "." -> do
-            s <- skips $ parseTerm b
-            p <- skips $ parseTerm b
-            o <- skips $ parseTerm b
-            return $ NTriple s p o
-        "," -> do
-            o <- skips $ parseTerm b
-            return $ AbbreviatedTriple Nothing o
-        ";" -> do
-            p <- skips $ parseTerm b
-            o <- skips $ parseTerm b
-            return $ AbbreviatedTriple (Just p) o
-    sep <- choice $ map (\ s -> skips $ string s >> return s) [".", ",", ";"]
-    tl <- parseTriples b pm sep
-    return $ (t, b, pm) : tl
-  <|> return []
--}
+parseObject :: CharParser st Object
+parseObject = fmap ObjectLiteral literal <|> fmap Object parseSubject
+    
+parsePredObjects :: CharParser st PredicateObjectList
+parsePredObjects = do
+    pred <- parsePredicate
+    objs <- sepBy parseObject $ skips $ char ','
+    return $ PredicateObjectList pred objs
+   
+parsePredObjList :: CharParser st [PredicateObjectList]
+parsePredObjList = sepEndBy parsePredObjects $ skips $ char ';'
 
