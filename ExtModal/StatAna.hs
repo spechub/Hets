@@ -37,6 +37,8 @@ import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Control.Monad
+
 instance TermExtension EM_FORMULA where
         freeVarsOfExt sign ( BoxOrDiamond _ _ _ _ f _ ) = freeVars sign f
         freeVarsOfExt sign ( Hybrid _ _ f _ ) = freeVars sign f
@@ -139,16 +141,27 @@ basItemStatAna mix basic_item = case basic_item of
     res_forms <- mapAnM (return . fst) new_forms
     ana_forms <- mapAnM (return . snd) new_forms
     mapM_ ( (updateExtInfo . addMod ana_forms) . item ) anno_list
-    if not is_time
-      then return $ ModDecl is_time isTerm anno_list res_forms pos
-      else do
-        mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list
-        return $ ModDecl is_time isTerm anno_list res_forms pos
+    when is_time $ mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list
+    when isTerm $ do
+      sig <- get
+      mapM_ ( (updateExtInfo . addTermMod sig) . item ) anno_list
+    return $ ModDecl is_time isTerm anno_list res_forms pos
   Nominal_decl anno_list pos -> do
     mapM_ (updateExtInfo . addNom . item) anno_list
     mapM_ (addPred (emptyAnno ()) (PredType []) . mkId . (: []) . item)
        anno_list
     return $ Nominal_decl anno_list pos
+
+addTermMod :: Sign f e -> Id -> EModalSign -> Result EModalSign
+addTermMod fullSign tmi sgn = let
+  tm = termMods sgn
+  srts = sortSet fullSign
+  in if Set.member tmi srts then
+     if Set.member tmi tm
+     then Result [mkDiag Hint "repeated term modality" tmi] $ Just sgn
+       else return sgn { termMods = Set.union tm
+         $ Set.insert tmi $ subsortsOf tmi fullSign }
+  else Result [mkDiag Error "unknown sort in term modality" tmi] $ Just sgn
 
 addTimeMod :: Id -> EModalSign -> Result EModalSign
 addTimeMod tmi sgn = let tm = time_modalities sgn in
