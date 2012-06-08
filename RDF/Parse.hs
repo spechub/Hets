@@ -19,12 +19,15 @@ import Common.Lexer
 import OWL2.AS
 import OWL2.Parse
 import RDF.AS
-import RDF.Symbols
+-- import RDF.Symbols
+import Network.URI
 
+import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
+{-
 -- * hets symbols parser
 
 rdfEntityType :: CharParser st RDFEntityType
@@ -61,6 +64,7 @@ rdfSymbPairs = uriPair >>= \ u -> do
     us <- rdfSymbPairs
     return $ u : us
   <|> return [u]
+-}
 
 parse1Base :: CharParser st BaseIRI
 parse1Base = do
@@ -73,9 +77,10 @@ parse1Prefix :: CharParser st Prefix
 parse1Prefix = do
     pkeyword "@prefix"
     p <- skips (option "" prefix << char ':')
-    i <- skips fullIri
+    i <- skips uriQ
     skips $ string "."
     return $ Prefix p i
+
 
 parse1BaseOrPrefix :: CharParser st (Either BaseIRI Prefix)
 parse1BaseOrPrefix = fmap Left parse1Base <|> fmap Right parse1Prefix
@@ -83,29 +88,24 @@ parse1BaseOrPrefix = fmap Left parse1Base <|> fmap Right parse1Prefix
 startsWithScheme :: IRI -> Bool
 startsWithScheme iri = isPrefixOf "//" $ localPart iri
 
+
 baseStartsWithScheme :: BaseIRI -> Bool
 baseStartsWithScheme (BaseIRI iri) = startsWithScheme iri
 
--- | here we need to take special care of the slash that end or begin the IRI
-appendTwoBases :: BaseIRI -> BaseIRI -> BaseIRI
-appendTwoBases (BaseIRI b1) (BaseIRI b2) =
-    if last $ localPart b2 /= '/' then 
-    let lpb1 = localPart b1
-        lpb2 = localPart b2
-        endSlash1 = if last lpb1 == '/' then 1 else 0
-        beginSlash2 = if head lpb2 == '/' then 1 else 0
-        (lp, exp) = case (endSlash1, beginSlash2) of
-            (0, 0) -> (lpb1 ++ "/" ++ lpb2, expandedIRI b1 ++ "/" ++ lpb2)
-            (1, 1) -> (lpb1 ++ tail lpb2, expandedIRI b1 ++ tail lpb2)
-            _ -> (lpb1 ++ lpb2, expandedIRI b1 ++ lpb2)
-    in BaseIRI $ b1 {localPart = lp, expandedIRI = exp}
 
-resolveIRI :: BaseIRI -> IRI -> IRI
-resolveIRI b iri = extractIRI $ appendTwoBases b $ BaseIRI iri
+resolveBases :: BaseIRI -> BaseIRI -> BaseIRI
+resolveBases (BaseIRI rel) (BaseIRI base) =
+    let uri1 = fromJust $ parseURIReference $ expandedIRI rel
+        uri2 = fromJust $ parseURIReference $ expandedIRI base
+        resolved = (uriToString id $ fromJust $ relativeTo uri1 uri2) ""
+        Right newIri = parse uriQ "" resolved
+    in BaseIRI newIri
+
 
 extractIRI :: BaseIRI -> IRI
 extractIRI (BaseIRI b) = b
 
+{-
 parseBases :: BaseIRI -> TurtlePrefixMap -> CharParser st (BaseIRI, TurtlePrefixMap)
 parseBases base pm = do
     e <- parse1BaseOrPrefix
@@ -116,7 +116,7 @@ parseBases base pm = do
                      prefIri = Map.findWithDefault nullQName (namePrefix iri) pm
                      newIri = iri {namePrefix = namePrefix prefIri
                                 , localPart = localPart prefIri ++ localPart iri
-                                , iriType = Full}   
+                                , iriType = Full}
                  in parseBases (BaseIRI newIri) pm
             else parseBases (appendTwoBases base b) pm
         Right p@(Prefix s iri) ->
@@ -156,5 +156,5 @@ parseTriples base tpm end = do
     tl <- parseTriples b pm sep
     return $ (t, b, pm) : tl
   <|> return []
+-}
 
-      
