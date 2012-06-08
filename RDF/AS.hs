@@ -22,7 +22,18 @@ import OWL2.AS
 
 import qualified Data.Map as Map
 
--- * Graphs
+-- * RDF Turtle Document
+
+data TurtleDocument = TurtleDocument
+    { prefixMap :: Map.Map String IRI
+    , statements :: [Statement] }
+    deriving (Show, Eq, Ord)
+    
+data Statement = Statement Triples | Prefix String IRI | Base IRI
+    deriving (Show, Eq, Ord)
+    
+data Triples = Triples Subject PredicateObjectList
+    deriving (Show, Eq, Ord)
 
 data Subject =
     Subject IRI
@@ -40,26 +51,13 @@ data Object =
   | ObjectLiteral Literal
     deriving (Show, Eq, Ord)
 
-{- | Triples can also be abbreviated using a comma (subject and predicate stay
-        the same) or using a semicolon (subject stays the same) -}
-data Triples = Triples Subject PredicateObjectList
-    deriving (Show, Eq, Ord)
-    
 data PredicateObjectList = PredicateObjectList Predicate [Object] 
     deriving (Show, Eq, Ord)
     
-data BaseIRI = BaseIRI IRI
-    deriving (Show, Eq, Ord)
 
-data Prefix = Prefix String IRI
-    deriving (Show, Eq, Ord)
-
-type TurtlePrefixMap = Map.Map String IRI
-
+-- * Datatypes for Hets manipulation
+    
 data Axiom = Axiom Subject Predicate Object
-    deriving (Show, Eq, Ord)
-
-data TurtleDocument = TurtleDocument [(Triples, BaseIRI, TurtlePrefixMap)]
     deriving (Show, Eq, Ord)
 
 data RDFEntityType = SubjectEntity | PredicateEntity | ObjectEntity
