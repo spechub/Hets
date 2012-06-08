@@ -28,12 +28,13 @@ data EModalSign = EModalSign
         , rigidPreds :: PredMap
         , modalities :: Map.Map Id [AnEModForm]
         , time_modalities :: Set.Set Id
+        , termMods :: Set.Set Id -- sorts that need to be mapped
         , nominals :: Set.Set SIMPLE_ID
         } deriving (Show, Eq, Ord)
 
 emptyEModalSign :: EModalSign
 emptyEModalSign =
-    EModalSign MapSet.empty MapSet.empty Map.empty Set.empty Set.empty
+  EModalSign MapSet.empty MapSet.empty Map.empty Set.empty Set.empty Set.empty
 
 addEModalSign :: EModalSign -> EModalSign -> EModalSign
 addEModalSign ms1 ms2 = ms1
@@ -43,6 +44,7 @@ addEModalSign ms1 ms2 = ms1
                        (modalities ms2)
         , time_modalities = Set.union (time_modalities ms1)
                             (time_modalities ms2)
+        , termMods = Set.union (termMods ms1) $ termMods ms2
         , nominals = Set.union (nominals ms1) (nominals ms2)
         }
 
@@ -55,6 +57,7 @@ interEModalSign ms1 ms2 = ms1
                   $ modalities ms2
         , time_modalities = Set.intersection (time_modalities ms1)
                             (time_modalities ms2)
+        , termMods = Set.intersection (termMods ms1) $ termMods ms2
         , nominals = Set.intersection (nominals ms1) (nominals ms2)
         }
 
@@ -66,6 +69,7 @@ diffEModalSign ms1 ms2 = ms1
                        (modalities ms2)
         , time_modalities = Set.difference (time_modalities ms1)
                             (time_modalities ms2)
+        , termMods = Set.difference (termMods ms1) $ termMods ms2
         , nominals = Set.difference (nominals ms1) (nominals ms2)
         } where
     difflist l1 l2 = let res = l1 List.\\ l2 in
@@ -77,5 +81,6 @@ isSubEModalSign ms1 ms2 =
         && MapSet.isSubmapOf (rigidPreds ms1) (rigidPreds ms2)
         && Map.isSubmapOfBy sublist (modalities ms1) (modalities ms2)
         && Set.isSubsetOf (time_modalities ms1) (time_modalities ms2)
+        && Set.isSubsetOf (termMods ms1) (termMods ms2)
         && Set.isSubsetOf (nominals ms1) (nominals ms2)
         where sublist l1 l2 = List.union l2 l1 == l2
