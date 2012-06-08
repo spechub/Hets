@@ -82,3 +82,12 @@ basicRDFAnalysis (gr, inSign, _) = do
         accSign = execState (createSign gr) inSign
     (axl, newgraph) <- createAxioms accSign gr
     return (newgraph, ExtSign accSign syms, axl)
+    
+
+resolveBases :: Statement -> Statement -> Statement
+resolveBases (Base rel) (Base base) =
+    let uri1 = fromJust $ parseURIReference $ expandedIRI rel
+        uri2 = fromJust $ parseURIReference $ expandedIRI base
+        resolved = (uriToString id $ fromJust $ relativeTo uri1 uri2) ""
+        Right newIri = parse uriQ "" resolved
+    in Base newIri

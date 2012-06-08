@@ -66,14 +66,14 @@ rdfSymbPairs = uriPair >>= \ u -> do
   <|> return [u]
 -}
 
-parse1Base :: CharParser st BaseIRI
+parseBase :: CharParser st Statement
 parse1Base = do
     pkeyword "@base"
     base <- skips uriQ
     skips $ string "."
-    return $ BaseIRI base
+    return $ Base base
 
-parse1Prefix :: CharParser st Prefix
+parsePrefix :: CharParser st Statement
 parse1Prefix = do
     pkeyword "@prefix"
     p <- skips (option "" prefix << char ':')
@@ -81,29 +81,6 @@ parse1Prefix = do
     skips $ string "."
     return $ Prefix p i
 
-
-parse1BaseOrPrefix :: CharParser st (Either BaseIRI Prefix)
-parse1BaseOrPrefix = fmap Left parse1Base <|> fmap Right parse1Prefix
-
-startsWithScheme :: IRI -> Bool
-startsWithScheme iri = isPrefixOf "//" $ localPart iri
-
-
-baseStartsWithScheme :: BaseIRI -> Bool
-baseStartsWithScheme (BaseIRI iri) = startsWithScheme iri
-
-
-resolveBases :: BaseIRI -> BaseIRI -> BaseIRI
-resolveBases (BaseIRI rel) (BaseIRI base) =
-    let uri1 = fromJust $ parseURIReference $ expandedIRI rel
-        uri2 = fromJust $ parseURIReference $ expandedIRI base
-        resolved = (uriToString id $ fromJust $ relativeTo uri1 uri2) ""
-        Right newIri = parse uriQ "" resolved
-    in BaseIRI newIri
-
-
-extractIRI :: BaseIRI -> IRI
-extractIRI (BaseIRI b) = b
 
 parsePredicate :: CharParser st Predicate
 parsePredicate = fmap Predicate uriQ
