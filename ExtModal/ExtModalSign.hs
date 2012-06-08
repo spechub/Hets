@@ -78,4 +78,4 @@ isSubEModalSign ms1 ms2 =
         && Map.isSubmapOfBy sublist (modalities ms1) (modalities ms2)
         && Set.isSubsetOf (time_modalities ms1) (time_modalities ms2)
         && Set.isSubsetOf (nominals ms1) (nominals ms2)
-        where sublist l1 l2 = List.union l1 l2 == l2
+        where sublist l1 l2 = List.union l2 l1 == l2
