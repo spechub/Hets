@@ -150,6 +150,7 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
         empty_signature ExtModal = emptySign emptyEModalSign
         signature_union ExtModal sgn = return . addSig addEModalSign sgn
         intersection ExtModal sgn = return . interSig interEModalSign sgn
+        signatureDiff ExtModal sgn = return . diffSig diffEModalSign sgn
         final_union ExtModal = finalUnion addEModalSign
         morphism_union ExtModal = plainMorphismUnion addEModalSign
         is_subsig ExtModal = isSubSig isSubEModalSign
