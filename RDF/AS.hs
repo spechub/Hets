@@ -24,25 +24,30 @@ import qualified Data.Map as Map
 
 -- * Graphs
 
-{- | A term is either an IRI, a literal (only for objects) or a collection of
-         IRIs and literals -}
-data Term =
-    IRITerm IRI
-  | LiteralTerm Literal
-  | Collection [Term]
-  deriving (Show, Eq, Ord)
-
-type Subject = Term
-type Predicate = Term
-type Object = Term
+data Subject =
+    Subject IRI
+  | SubjectList PredicateObjectList
+  | SubjectCollection [Object]
+    deriving (Show, Eq, Ord)
+  
+data Predicate = Predicate IRI
+    deriving (Show, Eq, Ord)
+    
+data Object =
+    Object IRI
+  | ObjectList PredicateObjectList
+  | ObjectCollection [Object]
+  | ObjectLiteral Literal
+    deriving (Show, Eq, Ord)
 
 {- | Triples can also be abbreviated using a comma (subject and predicate stay
         the same) or using a semicolon (subject stays the same) -}
-data Triple =
-      NTriple Subject Predicate Object
-    | AbbreviatedTriple (Maybe Predicate) Object
+data Triples = Triples Subject PredicateObjectList
     deriving (Show, Eq, Ord)
-
+    
+data PredicateObjectList = PredicateObjectList Predicate [Object] 
+    deriving (Show, Eq, Ord)
+    
 data BaseIRI = BaseIRI IRI
     deriving (Show, Eq, Ord)
 
@@ -54,10 +59,10 @@ type TurtlePrefixMap = Map.Map String IRI
 data Axiom = Axiom Subject Predicate Object
     deriving (Show, Eq, Ord)
 
-data TurtleDocument = TurtleDocument [(Triple, BaseIRI, TurtlePrefixMap)]
+data TurtleDocument = TurtleDocument [(Triples, BaseIRI, TurtlePrefixMap)]
     deriving (Show, Eq, Ord)
 
-data RDFEntityType = Subject | Predicate | Object
+data RDFEntityType = SubjectEntity | PredicateEntity | ObjectEntity
     deriving (Show, Eq, Ord, Bounded, Enum)
 
 -- | entities used for morphisms
