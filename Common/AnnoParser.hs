@@ -24,6 +24,7 @@ module Common.AnnoParser
     , parseAnno
     , parseAnnoId
     , commentLine
+    , newlineOrEof
     ) where
 
 import Text.ParserCombinators.Parsec

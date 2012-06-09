@@ -14,18 +14,84 @@ Printer for N-triples
 module RDF.Print where
 
 import Common.AS_Annotation
-import Common.Doc
-import Common.DocUtils
+import Common.Doc hiding (sepBySemis, sepByCommas)
+import Common.DocUtils hiding (ppWithCommas)
 
 import OWL2.AS
 import OWL2.Print ()
 
 import RDF.AS
 import RDF.Symbols
-import RDF.Sign
+--import RDF.Sign
+import RDF.Parse
+import Text.ParserCombinators.Parsec
 
 import qualified Data.Set as Set
 
+sepBySemis :: [Doc] -> Doc
+sepBySemis = vsep . punctuate (text " ;")
+
+ppWithSemis :: Pretty a => [a] -> Doc
+ppWithSemis = sepBySemis . map pretty
+
+sepByCommas :: [Doc] -> Doc
+sepByCommas = vsep . punctuate (text " ,")
+
+ppWithCommas :: Pretty a => [a] -> Doc
+ppWithCommas = sepByCommas . map pretty
+
+instance Pretty Predicate where
+    pretty = printPredicate
+
+printPredicate :: Predicate -> Doc
+printPredicate (Predicate iri) = pretty iri
+
+instance Pretty PredicateObjectList where
+    pretty = printPredObjList
+    
+printPredObjList :: PredicateObjectList -> Doc
+printPredObjList (PredicateObjectList p ol) = pretty p <+> ppWithCommas ol
+
+instance Pretty Subject where
+    pretty = printSubject
+    
+printSubject :: Subject -> Doc
+printSubject subj = case subj of
+    Subject iri -> pretty iri
+    SubjectList ls -> brackets $ ppWithSemis ls
+    SubjectCollection c -> parens $ (hsep . map pretty) c
+    
+instance Pretty Object where
+    pretty = printObject
+   
+printObject :: Object -> Doc
+printObject obj = case obj of
+    Object s -> pretty s
+    ObjectLiteral l -> pretty l
+
+instance Pretty Triples where
+    pretty = printTriples
+    
+printTriples :: Triples -> Doc
+printTriples (Triples s ls) = pretty s <+> ppWithSemis ls <+> dot
+
+instance Pretty Statement where
+    pretty = printStatement
+    
+printStatement :: Statement -> Doc
+printStatement s = case s of
+    Statement t -> pretty t
+    Prefix p iri -> text "@prefix" <+> pretty p <> colon <+> pretty iri <+> dot
+    Base iri -> text "@base" <+> pretty iri <+> dot
+    Comment c -> text "#" <+> pretty c
+    
+instance Pretty TurtleDocument where
+    pretty = printDocument
+    
+printDocument :: TurtleDocument -> Doc
+printDocument doc = (vcat . map pretty) (statements doc)
+
+{-}
 -- | RDF signature printing
 printRDFBasicTheory :: (Sign, [Named Axiom]) -> Doc
 printRDFBasicTheory (_, l) = vsep (map (pretty . sentence) l)
@@ -60,7 +126,9 @@ instance Pretty RDFGraph where
 
 printGraph :: RDFGraph -> Doc
 printGraph (RDFGraph sl) = vcat $ map pretty sl
+-}
 
+{-}
 -- | Symbols printing
 
 instance Pretty RDFEntityType where
@@ -85,3 +153,4 @@ instance Pretty RawSymb where
     pretty rs = case rs of
         ASymbol e -> pretty e
         AnUri u -> pretty u
+        -}

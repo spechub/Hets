@@ -8,20 +8,20 @@ Stability   :  provisional
 Portability :  portable
 
 RDF syntax parser
-
 -}
 
 module RDF.Parse where
 
 import Common.Parsec
 import Common.Lexer
+import Common.AnnoParser (newlineOrEof)
 
 import OWL2.AS
-import OWL2.Parse
+import OWL2.Parse hiding (stringLiteral, literal)
 import RDF.AS
 import RDF.Symbols
-import Network.URI
 
+import Network.URI
 import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
@@ -63,6 +63,35 @@ rdfSymbPairs = uriPair >>= \ u -> do
     us <- rdfSymbPairs
     return $ u : us
   <|> return [u]
+
+-- * turtle syntax parser
+
+longLiteral :: CharParser st String
+longLiteral = do
+    string "\"\"\""
+    ls <- flat $ many $ single (noneOf "\"")
+    string "\"\"\""
+    return $ '\n' : ls
+    
+stringLiteral :: CharParser st Literal
+stringLiteral = do
+  s <- try longLiteral <|> fmap rmQuotes stringLit
+  do
+      string cTypeS
+      d <- datatypeUri
+      return $ Literal s $ Typed d
+    <|> do
+        string "@"
+        t <- skips $ optionMaybe languageTag
+        return $ Literal s $ Untyped t
+    <|> skips (return $ Literal s $ Typed $ mkQName "string")
+
+literal :: CharParser st Literal
+literal = do
+    f <- skips $ try floatingPointLit
+         <|> fmap decToFloat decimalLit
+    return $ NumberLit f
+  <|> stringLiteral
 
 parseBase :: CharParser st Statement
 parseBase = do
@@ -108,9 +137,15 @@ parseTriples = do
     ls <- parsePredObjList
     skips $ char '.'
     return $ Triples s ls
+    
+parseComment :: CharParser st Statement
+parseComment = do
+    tryString "#"
+    fmap Comment $ manyTill anyChar newlineOrEof
 
 parseStatement :: CharParser st Statement
-parseStatement = parseBase <|> parsePrefix <|> fmap Statement parseTriples
+parseStatement = parseComment <|> parseBase <|> parsePrefix
+                            <|> fmap Statement parseTriples
 
 extractPrefixMap :: [Statement] -> Map.Map String IRI
 extractPrefixMap ls = case ls of

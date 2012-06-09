@@ -32,7 +32,7 @@ data TurtleDocument = TurtleDocument
 emptyTurtleDocument :: TurtleDocument
 emptyTurtleDocument = TurtleDocument Map.empty []
 
-data Statement = Statement Triples | Prefix String IRI | Base IRI
+data Statement = Statement Triples | Prefix String IRI | Base IRI | Comment String
     deriving (Show, Eq, Ord)
 
 data Triples = Triples Subject [PredicateObjectList]
