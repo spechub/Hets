@@ -17,7 +17,7 @@ import Common.Lexer
 import Common.AnnoParser (newlineOrEof)
 
 import OWL2.AS
-import OWL2.Parse hiding (stringLiteral, literal)
+import OWL2.Parse hiding (stringLiteral, literal, skips)
 import RDF.AS
 import RDF.Symbols
 
@@ -65,6 +65,10 @@ rdfSymbPairs = uriPair >>= \ u -> do
   <|> return [u]
 
 -- * turtle syntax parser
+
+skips :: CharParser st a -> CharParser st a
+skips = (<< skipMany
+        (forget space <|> parseComment <|> nestCommentOut <?> ""))
 
 longLiteral :: CharParser st String
 longLiteral = do
@@ -138,14 +142,13 @@ parseTriples = do
     skips $ char '.'
     return $ Triples s ls
     
-parseComment :: CharParser st Statement
+parseComment :: CharParser st ()
 parseComment = do
     tryString "#"
-    fmap Comment $ manyTill anyChar newlineOrEof
+    forget $ skips $ manyTill anyChar newlineOrEof
 
 parseStatement :: CharParser st Statement
-parseStatement = parseComment <|> parseBase <|> parsePrefix
-                            <|> fmap Statement parseTriples
+parseStatement = parseBase <|> parsePrefix <|> fmap Statement parseTriples
 
 extractPrefixMap :: [Statement] -> Map.Map String IRI
 extractPrefixMap ls = case ls of
@@ -156,6 +159,7 @@ extractPrefixMap ls = case ls of
 
 basicSpec :: CharParser st TurtleDocument
 basicSpec = do
+    many parseComment
     ls <- many parseStatement
     return $ TurtleDocument (extractPrefixMap ls) ls
 

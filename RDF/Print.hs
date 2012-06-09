@@ -29,13 +29,13 @@ import Text.ParserCombinators.Parsec
 import qualified Data.Set as Set
 
 sepBySemis :: [Doc] -> Doc
-sepBySemis = vsep . punctuate (text " ;")
+sepBySemis = vcat . punctuate (text " ;")
 
 ppWithSemis :: Pretty a => [a] -> Doc
 ppWithSemis = sepBySemis . map pretty
 
 sepByCommas :: [Doc] -> Doc
-sepByCommas = vsep . punctuate (text " ,")
+sepByCommas = vcat . punctuate (text " ,")
 
 ppWithCommas :: Pretty a => [a] -> Doc
 ppWithCommas = sepByCommas . map pretty
@@ -83,7 +83,6 @@ printStatement s = case s of
     Statement t -> pretty t
     Prefix p iri -> text "@prefix" <+> pretty p <> colon <+> pretty iri <+> dot
     Base iri -> text "@base" <+> pretty iri <+> dot
-    Comment c -> text "#" <+> pretty c
     
 instance Pretty TurtleDocument where
     pretty = printDocument
