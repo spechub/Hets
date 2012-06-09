@@ -128,12 +128,26 @@ setLogicName :: Logic_name -> LogicGraph -> LogicGraph
 setLogicName (Logic_name lid _ _) = setCurLogic (iriToStringUnsecure lid)
 
 
+{-
 data CORRESPONDENCE = Correspondence
                       (Maybe CORRESPONDENCE_ID)
                       ENTITY_REF
                       TERM_OR_ENTITY_REF
                       (Maybe RELATION_REF)
                       (Maybe CONFIDENCE)
+                      deriving (Show, Eq)
+-}
+data CORRESPONDENCE = Correspondence_block
+                        (Maybe RELATION_REF)
+                        (Maybe CONFIDENCE)
+                        [CORRESPONDENCE]
+                    | Single_correspondence
+                        (Maybe CORRESPONDENCE_ID)
+                        ENTITY_REF
+                        TERM_OR_ENTITY_REF
+                        (Maybe RELATION_REF)
+                        (Maybe CONFIDENCE)
+                    | Default_correspondence
                       deriving (Show, Eq)
 
 type CORRESPONDENCE_ID = IRI
@@ -144,7 +158,10 @@ data TERM_OR_ENTITY_REF = Term LOGIC_SPECIFIC_TERM
                         | Entity_ref ENTITY_REF
                           deriving (Show, Eq)
 
-type RELATION_REF = IRI
+data RELATION_REF = Subsumes | IsSubsumed | Equivalent | Incompatible
+                  | HasInstance | InstanceOf | DefaultRelation
+                  | Iri IRI
+                    deriving (Show, Eq)
 
 type CONFIDENCE = Double -- NOTE: will be revised
 

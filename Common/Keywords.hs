@@ -267,6 +267,12 @@ targetS = "target"
 
 -- * DOL keywords
 
+alignArityBackwardS :: String
+alignArityBackwardS = "align-arity-backward"
+
+alignArityForwardS :: String
+alignArityForwardS = "align-arity-forward"
+
 alignmentS :: String
 alignmentS = "alignment"
 
@@ -284,6 +290,9 @@ interpretationS = "interpretation"
 
 ontologyS :: String
 ontologyS = "ontology"
+
+relationS :: String
+relationS = "relation"
 
 serializationS :: String
 serializationS = "serialization"

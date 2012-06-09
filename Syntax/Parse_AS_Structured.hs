@@ -400,16 +400,25 @@ fittingArg l = do
 parseCorrespondences :: AParser st [CORRESPONDENCE]
 parseCorrespondences = commaSep1 correspondence
 
-
 correspondence :: AParser st CORRESPONDENCE
 correspondence = do
-  (cid, entityRef, relationRef) <- correspIRIs
-  conf <- optionMaybe confidence
-  skipSmart
-  toer <- termOrEntityRef
-  return $ Correspondence cid entityRef toer relationRef conf
+    asKey "*"
+    return Default_correspondence
+  <|> do
+    asKey relationS
+    rref <- optionMaybe relationRef
+    conf <- optionMaybe confidence
+    oBraceT
+    cs <- parseCorrespondences
+    cBraceT
+    return $ Correspondence_block rref conf cs
+  <|> do
+    (cid, entityRef, rRef) <- correspIRIs
+    conf <- optionMaybe confidence
+    toer <- termOrEntityRef
+    return $ Single_correspondence cid entityRef toer rRef conf
 
-correspIRIs :: AParser st (Maybe IRI, IRI, Maybe IRI)
+correspIRIs :: AParser st (Maybe IRI, IRI, Maybe RELATION_REF)
 correspIRIs = do
   i1 <- hetIRI
   (i2m, i3m) <- (do
@@ -425,15 +434,21 @@ correspIRIs = do
               Nothing -> (Nothing, i1, i3m)
               Just i2 -> (Just i1, i2, i3m)
 
-correspThirdIRI :: AParser st (Maybe IRI)
-correspThirdIRI =
-  (lookAhead confidenceBegin >> return Nothing)
-  <|> (lookAhead (try twoIriCurie) >> (liftM Just) hetIRI)
-  <|> (lookAhead (try (hetIRI >> confidenceBegin)) >> (liftM Just) hetIRI)
+correspThirdIRI :: AParser st (Maybe RELATION_REF)
+correspThirdIRI = (lookAhead confidenceBegin >> return Nothing)
+  <|> do
+    lookAhead (try iriThenRRef)
+    (liftM Just) relationRef
+  <|> do
+    lookAhead (try $ do
+      hetIRI
+      confidenceBegin
+     )
+    (liftM Just) relationRef
   <|> return Nothing
 
-twoIriCurie :: AParser st ()
-twoIriCurie = forget $ hetIRI >> hetIRI
+iriThenRRef :: AParser st ()
+iriThenRRef = forget $ hetIRI >> relationRef
 
 confidenceBegin :: AParser st Char
 confidenceBegin = char '('
@@ -444,12 +459,40 @@ termOrEntityRef = do
     return $ Entity_ref i
   <|> term -- TODO: reverse order
 
+
+-- TODO: keys are not recognized
+relationRef :: AParser st RELATION_REF
+relationRef = do
+    asKey ">"
+    return Subsumes
+  <|> do
+    asKey "<"
+    return IsSubsumed
+  <|> do
+    asKey "="
+    return Equivalent
+  <|> do
+    asKey "%"
+    return Incompatible
+  <|> do
+    try $ asKey "$\\ni$"
+    return HasInstance
+  <|> do
+    try $ asKey "$\\in$"
+    return InstanceOf
+  <|> do
+    asKey "$\\mapsto$"
+    return DefaultRelation
+  <|> do
+    i <- hetIRI
+    return $ Iri i
+
 -- TODO: implement
 term :: AParser st a
 term = undefined
 
 confidence :: AParser st Double
-confidence = char '(' >> confidenceNumber << char ')'
+confidence = char '(' >> confidenceNumber << char ')' << skipSmart
 
 confidenceNumber :: AParser st Double
 confidenceNumber = do

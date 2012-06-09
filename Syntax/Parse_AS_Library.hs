@@ -119,7 +119,7 @@ libItem l pm =
   <|> -- align defn
     do s1 <- asKey alignmentS
        an <- hetIRI
-       g <- generics l
+       ar <- optionMaybe alignArities
        s2 <- asKey ":"
        at <- alignType l
        (corresps, ps) <- option ([], []) $ do
@@ -127,7 +127,7 @@ libItem l pm =
          cs <- parseCorrespondences
          return (cs, [s])
        q <- optEnd
-       return (Syntax.AS_Library.Align_defn an g at corresps
+       return (Syntax.AS_Library.Align_defn an ar at corresps
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- unit spec
     do kUnit <- asKey unitS
@@ -231,6 +231,28 @@ alignType :: LogicGraph -> AParser st ALIGN_TYPE
 alignType l = do
     (sp1, sp2, r) <- viewOrAlignType l
     return (Align_type sp1 sp2 r)
+
+alignArities :: AParser st ALIGN_ARITIES
+alignArities = do
+  asKey alignArityForwardS
+  f <- alignArity
+  asKey alignArityBackwardS
+  b <- alignArity
+  return $ Align_arities f b
+
+alignArity :: AParser st ALIGN_ARITY
+alignArity = do
+    asKey "1"
+    return AA_InjectiveAndTotal
+  <|> do
+    asKey "?"
+    return AA_Injective
+  <|> do
+    asKey "+"
+    return AA_Total
+  <|> do
+    asKey "*"
+    return AA_NeitherInjectiveNorTotal
 
 viewOrAlignType :: LogicGraph -> AParser st (Annoted SPEC, Annoted SPEC, Range)
 viewOrAlignType l = do
