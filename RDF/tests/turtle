@@ -2,12 +2,19 @@
 #comment1
 @base <http://a> .
 @prefix ex: <http://vvv> .
-<http://b> <c> a, b, c,d ; e f ; g h, i  . # a lot of stuff
+<http://b> <c> a, b, c,d ; e [p q ; r [a b], v] ; g h, a  . # a lot of stuff
 
 #setting new base
 @base ex:xyz . #comment1
 @prefix ex: a . #   comment 2
-<p> <http://q> "ssdf" .
+<p> <http://q> """sdf
+        sdsdf
+        assdf
+        sdfsdf
+        sfd
+        """,
+        123 ;
+        asd sd .
 #comment 3
 
 
