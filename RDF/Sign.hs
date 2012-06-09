@@ -19,14 +19,12 @@ data Sign = Sign
     , objects :: Set.Set IRI
     } deriving (Show, Eq, Ord)
 
-
 emptySign :: Sign
 emptySign = Sign
   { subjects = Set.empty
   , predicates = Set.empty
   , objects = Set.empty
   }
-
 
 diffSig :: Sign -> Sign -> Sign
 diffSig a b =

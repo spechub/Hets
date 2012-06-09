@@ -258,7 +258,7 @@ floatingPointLit = do
    b <- optSign
    d <- floatDecimal
    i <- option zeroInt (oneOf "eE" >> intLit)
-   oneOf "fF"
+   optionMaybe $ oneOf "fF"
    return $ FloatLit (negDec b d) i
 
 languageTag :: CharParser st String

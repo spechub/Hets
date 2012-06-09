@@ -75,7 +75,7 @@ longLiteral = do
     string "\"\"\""
     ls <- flat $ many $ single (noneOf "\"")
     string "\"\"\""
-    return $ '\n' : (filter (/= ' ') ls)
+    return $ '\n' : ls
     
 stringLiteral :: CharParser st Literal
 stringLiteral = do
