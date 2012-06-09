@@ -47,13 +47,13 @@ instance Pretty LIB_ITEM where
                           Union u@(_ : _) _ ->
                               printUnion $ moveAnnos ac u
                           _ -> [pretty ac]
-                spid = indexed (iriToStringUnsecure si)
+                spid = indexed (iriToStringShortUnsecure si)
                 sphead = if null il then
                              if null pl then spid <+> sa
                              else cat [spid, printPARAMS aa <+> sa]
                          else sep [ cat [spid, printPARAMS aa]
                                   , printIMPORTED ab <+> sa]
-             in if null (iriToStringUnsecure si) && null pl then pretty ac' else
+             in if null (iriToStringShortUnsecure si) && null pl then pretty ac' else
                     vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa@(Params pl) ab@(Imported il) _)

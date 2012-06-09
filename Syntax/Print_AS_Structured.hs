@@ -35,7 +35,7 @@ structSimpleId :: SIMPLE_ID -> Doc
 structSimpleId = structId . tokStr
 
 structIRI :: IRI -> Doc
-structIRI = structId . iriToStringUnsecure -- also print user information
+structIRI = structId . iriToStringShortUnsecure -- also print user information
 
 instance Pretty SPEC where
     pretty = printSPEC
