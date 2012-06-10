@@ -24,8 +24,10 @@ import qualified Data.Map as Map
 
 -- * RDF Turtle Document
 
+type RDFPrefixMap = Map.Map String IRI
+
 data TurtleDocument = TurtleDocument
-    { prefixMap :: Map.Map String IRI
+    { prefixMap :: RDFPrefixMap
     , statements :: [Statement] }
     deriving (Show, Eq, Ord)
 

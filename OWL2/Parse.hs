@@ -162,7 +162,8 @@ abbrIri :: CharParser st QName
 abbrIri = do
   p <- getPos
   q <- abbrIriNoPos
-  return q { iriPos = Range [p] }
+  return q { iriPos = Range [p],
+                iriType = if namePrefix q == "_" then NodeID else Abbreviated }
 
 fullIri :: CharParser st QName
 fullIri = do

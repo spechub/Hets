@@ -26,6 +26,10 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
 
+
+
+
+{-
 -- | takes an entity and modifies the sign according to the given function
 modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> RDFEntity -> State Sign ()
 modEntity f (RDFEntity ty u) = do
@@ -91,3 +95,5 @@ resolveBases (Base rel) (Base base) =
         resolved = (uriToString id $ fromJust $ relativeTo uri1 uri2) ""
         Right newIri = parse uriQ "" resolved
     in Base newIri
+    
+-}
