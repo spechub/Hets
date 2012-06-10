@@ -50,6 +50,8 @@ import Data.Char
 import Data.Maybe
 import Control.Monad
 
+import Debug.Trace -- only commented out for future debugging purposes
+
 hetIRI :: GenParser Char st IRI
 hetIRI = try $ do
   i <- iriManchester
@@ -413,42 +415,79 @@ correspondence = do
     cBraceT
     return $ Correspondence_block rref conf cs
   <|> do
-    (cid, entityRef, rRef) <- correspIRIs
-    conf <- optionMaybe confidence
+    (mcid, eRef, mrRef, mconf, toer) <- corr1
+    trace (concat ["\t", show mcid, "    \t", show eRef, "\t", show mrRef, "    \t", show mconf, "   \t", show toer]) $ return () -- only commented out for future debugging purposes
+    return $ Single_correspondence mcid eRef toer mrRef mconf
+
+corr1 :: AParser st ( Maybe CORRESPONDENCE_ID, ENTITY_REF
+                    , Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
+corr1 = do
+    cid <- try correspondenceIdLookahead
+    eRef <- hetIRI
+    (mrRef, mconf, toer) <- corr2
+    return (Just cid, eRef, mrRef, mconf, toer)
+  <|> do
+    eRef <- hetIRI
+    (mrRef, mconf, toer) <- corr2
+    return (Nothing, eRef, mrRef, mconf, toer)
+
+corr2 :: AParser st (Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
+corr2 = do
+    rRef <- try relationRefLookAhead
+    (mconf, toer) <- corr3
+    return (Just rRef, mconf, toer)
+  <|> do
+    (mconf, toer) <- corr3
+    return (Nothing, mconf, toer)
+
+corr3 :: AParser st (Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
+corr3 = do
+    conf <- try confidence
     toer <- termOrEntityRef
-    return $ Single_correspondence cid entityRef toer rRef conf
-
-correspIRIs :: AParser st (Maybe IRI, IRI, Maybe RELATION_REF)
-correspIRIs = do
-  i1 <- hetIRI
-  (i2m, i3m) <- (do
-          try $ asKey equalS
-          i2 <- hetIRI
-          i3 <- correspThirdIRI
-          return (Just i2, i3)
-        <|> do
-          i3 <- correspThirdIRI
-          return (Nothing, i3)
-    )
-  return $ case i2m of
-              Nothing -> (Nothing, i1, i3m)
-              Just i2 -> (Just i1, i2, i3m)
-
-correspThirdIRI :: AParser st (Maybe RELATION_REF)
-correspThirdIRI = (lookAhead confidenceBegin >> return Nothing)
+    return (Just conf, toer)
   <|> do
-    lookAhead (try iriThenRRef)
-    (liftM Just) relationRef
-  <|> do
-    lookAhead (try $ do
-      hetIRI
-      confidenceBegin
-     )
-    (liftM Just) relationRef
-  <|> return Nothing
+    toer <- termOrEntityRef
+    return (Nothing, toer)
 
-iriThenRRef :: AParser st ()
-iriThenRRef = forget $ hetIRI >> relationRef
+correspondenceIdLookahead :: AParser st CORRESPONDENCE_ID
+correspondenceIdLookahead = do
+  cid <- hetIRI
+  asKey equalS
+  lookAhead (try $ hetIRI >> corr2)
+  return cid
+
+relationRefLookAhead :: AParser st RELATION_REF
+relationRefLookAhead = do
+    r <- relationRef
+    lookAhead (confidenceBegin >> return ()) <|> lookAhead (try hetIRI >> return ())
+    return r
+
+relationRef :: AParser st RELATION_REF
+relationRef = ((do
+      asKey ">"
+      return Subsumes
+    <|> do
+      asKey "<"
+      return IsSubsumed
+    <|> do
+      asKey "="
+      return Equivalent
+    <|> do
+      asKey "%"
+      return Incompatible
+    <|> do
+      try $ asKey "$\\ni$"
+      return HasInstance
+    <|> do
+      try $ asKey "$\\in$"
+      return InstanceOf
+    <|> do
+      asKey "$\\mapsto$"
+      return DefaultRelation
+    ) << skipSmart)
+  <|> do
+    i <- hetIRI
+    return $ Iri i
 
 confidenceBegin :: AParser st Char
 confidenceBegin = char '('
@@ -457,39 +496,11 @@ termOrEntityRef :: AParser st TERM_OR_ENTITY_REF
 termOrEntityRef = do
     i <- hetIRI
     return $ Entity_ref i
-  <|> term -- TODO: reverse order
-
-
--- TODO: keys are not recognized
-relationRef :: AParser st RELATION_REF
-relationRef = do
-    asKey ">"
-    return Subsumes
-  <|> do
-    asKey "<"
-    return IsSubsumed
-  <|> do
-    asKey "="
-    return Equivalent
-  <|> do
-    asKey "%"
-    return Incompatible
-  <|> do
-    try $ asKey "$\\ni$"
-    return HasInstance
-  <|> do
-    try $ asKey "$\\in$"
-    return InstanceOf
-  <|> do
-    asKey "$\\mapsto$"
-    return DefaultRelation
-  <|> do
-    i <- hetIRI
-    return $ Iri i
+  <|> term
 
 -- TODO: implement
 term :: AParser st a
-term = undefined
+term = fail "term parser not implemented yet"
 
 confidence :: AParser st Double
 confidence = char '(' >> confidenceNumber << char ')' << skipSmart
