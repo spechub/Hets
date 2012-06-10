@@ -71,8 +71,7 @@ skips = (<< skipMany
         (forget space <|> parseComment <|> nestCommentOut <?> ""))
         
 charOrQuoteEscape :: CharParser st String
-charOrQuoteEscape = try (string "\\\"")
-    <|> fmap return anyChar
+charOrQuoteEscape = try (string "\\\"") <|> fmap return anyChar
 
 longLiteral :: CharParser st (String, Bool)
 longLiteral = do
