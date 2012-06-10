@@ -139,18 +139,45 @@ data NodeCommand =
   , ncTheorems :: [String] }
   deriving Show
 
+data RequestMethod = GET | POST | PUT deriving Eq
+
 -- | the path is not empty and leading slashes are removed
-anaUri :: [String] -> [QueryPair] -> Either String Query
-anaUri pathBits query = let path = intercalate "/" pathBits in
-    case anaQuery query of
-    Right (mi, qk) -> case (mi, readMaybe path) of
+anaUri :: RequestMethod -> [String] -> [QueryPair] -> Either String Query
+anaUri reqMeth pathBits query =
+  case maybe (anaQuery query) Right $ anaPath reqMeth pathBits query of
+    Left err -> Left err
+    Right (mi, qk) -> let path = intercalate "/" pathBits in
+     case (mi, readMaybe path) of
       (Just i, Just j) | i /= j -> Left "different dg ids"
       (_, mj) -> Right $ Query
         (case catMaybes [mi, mj] of
           [] -> NewDGQuery path
           i : _ -> DGQuery i $ if isJust mj then Nothing else Just path)
         qk
-    Left err -> Left err
+
+{- | analyse request in accordance with RESTfullInterface and generate
+a QueryKind to yield the appropriate response.
+http://trac.informatik.uni-bremen.de:8080/hets/wiki/RESTfulInterface -}
+anaPath :: RequestMethod -> [String] -> [QueryPair]
+        -> Maybe (Maybe Int, QueryKind)
+anaPath reqMeth pathBits query = let err = Nothing in case reqMeth of
+  GET -> case pathBits of
+    "dir" : dirs : [] -> undefined
+    "hets-lib" : file : format -> undefined
+    "libraries" : libnm : mode : format | mode == "development_graph"
+      -> undefined
+    "session" : sessid : format -> undefined
+    "menues" : [] -> undefined
+    "nodes" : nodeid : params -> undefined
+    "edges" : edgeid : params -> undefined
+    _ -> err
+  POST -> case pathBits of
+    "libraries" : libnm : ["sessions"] -> undefined
+    _ -> err
+  PUT -> case pathBits of
+    "libraries" : libnm : "proofs" : prid : prcommand : [] -> undefined
+    "session" : sessid : mode : params -> undefined
+    _ -> err
 
 isNat :: String -> Bool
 isNat s = all isDigit s && not (null s) && length s < 11

@@ -153,7 +153,8 @@ hetsServer opts1 = do
     case B8.unpack (requestMethod re) of
     "GET" -> liftRun $ if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
-         if null cs then getHetsResponse opts [] sessRef pathBits splitQuery
+         if null cs
+           then getHetsResponse opts [] sessRef pathBits GET splitQuery
            else mkHtmlPage path dirs
     "POST" -> do
       (params, files) <- parseRequestBody tempFileSink re
@@ -166,12 +167,13 @@ hetsServer opts1 = do
                    tmpFile <- getTempFile content "temp.het"
                    copyPermissions permFile tmpFile
                    return $ Just tmpFile
-      let res tmpFile = getHetsResponse opts [] sessRef [tmpFile] splitQuery
+      let res tmpFile =
+            getHetsResponse opts [] sessRef [tmpFile] POST splitQuery
           mRes = maybe (return $ mkResponse status400 "nothing submitted")
             res mTmpFile
       liftRun $ case files of
         [] -> if isPrefixOf "?prove=" query then
-           getHetsResponse opts [] sessRef pathBits
+           getHetsResponse opts [] sessRef pathBits POST
              $ splitQuery ++ map
                    (\ (a, b) -> (B8.unpack a, Just $ B8.unpack b)) params
            else mRes
@@ -184,7 +186,8 @@ hetsServer opts1 = do
              copyFile snkFile tmpFile
              maybe (res tmpFile) res mTmpFile
             else mRes
-        _ -> getHetsResponse opts (map snd files) sessRef pathBits splitQuery
+        _ -> getHetsResponse
+               opts (map snd files) sessRef pathBits PUT splitQuery
     _ -> return $ mkResponse status405 ""
 
 mkMenuResponse :: IO Response
@@ -368,19 +371,19 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   c -> c
 
 getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
-  -> IORef (IntMap.IntMap Session) -> [String]
+  -> IORef (IntMap.IntMap Session) -> [String] -> RequestMethod
   -> [QueryPair] -> IO Response
-getHetsResponse opts updates sessRef pathBits query = do
-  Result ds ms <- getHetsResult opts updates sessRef pathBits query
+getHetsResponse opts updates sessRef pathBits reqMeth query = do
+  Result ds ms <- getHetsResult opts updates sessRef pathBits reqMeth query
   return $ case ms of
     Nothing -> mkResponse status400 $ showRelDiags 1 ds
     Just s -> mkOkResponse s
 
 getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> [String]
-  -> [QueryPair] -> IO (Result String)
-getHetsResult opts updates sessRef pathBits query =
-  runResultT $ case anaUri pathBits query of
+  -> RequestMethod -> [QueryPair] -> IO (Result String)
+getHetsResult opts updates sessRef pathBits reqMeth query =
+  runResultT $ case anaUri reqMeth pathBits query of
     Left err -> fail err
     Right (Query dgQ qk) -> do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
@@ -496,7 +499,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
       -- else create proving functionality
       gs -> let
         -- create list of theorems, selectable for proving
-        thmSl = map (\(nm, bp) -> let gSt = maybe GOpen basicProofToGStatus bp
+        thmSl = map (\ (nm, bp) -> let gSt = maybe GOpen basicProofToGStatus bp
           in add_attrs [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
           , mkAttr "goalstatus" $ showSimple gSt ] $ unode "input" $ nm
           ++ "   (" ++ showSimple gSt ++ ")" ) gs
