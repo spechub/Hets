@@ -145,7 +145,7 @@ ihierPart =
   iauthorityWithPath <|> ipathAbsolute <|> ipathRootless
 
 hierPartWithOpts :: CharParser st String
-hierPartWithOpts = ihierPart <++> optQueryOrFrag
+hierPartWithOpts = (char '#' <:> ifragment) <|> ihierPart <++> optQueryOrFrag
 
 skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
@@ -230,7 +230,7 @@ optSign :: CharParser st Bool
 optSign = option False $ fmap (== '-') (oneOf "+-")
 
 postDecimal :: CharParser st NNInt
-postDecimal = char '.' >> getNNInt
+postDecimal = char '.' >> option zeroNNInt getNNInt
 
 getNNInt :: CharParser st NNInt
 getNNInt = fmap (NNInt . map digitToInt) getNumber

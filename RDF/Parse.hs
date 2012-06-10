@@ -69,7 +69,7 @@ rdfSymbPairs = uriPair >>= \ u -> do
 skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
         (forget space <|> parseComment <|> nestCommentOut <?> ""))
-        
+
 charOrQuoteEscape :: CharParser st String
 charOrQuoteEscape = try (string "\\\"") <|> fmap return anyChar
 
@@ -83,8 +83,8 @@ shortLiteral :: CharParser st (String, Bool)
 shortLiteral = do
     char '"'
     ls <- flat $ manyTill charOrQuoteEscape $ try $ string "\""
-    return (ls, False) 
-    
+    return (ls, False)
+
 stringLiteral :: CharParser st RDFLiteral
 stringLiteral = do
   (s, b) <- try longLiteral <|> shortLiteral
@@ -149,7 +149,7 @@ parseTriples = do
     ls <- parsePredObjList
     skips $ char '.'
     return $ Triples s ls
-    
+
 parseComment :: CharParser st ()
 parseComment = do
     tryString "#"
