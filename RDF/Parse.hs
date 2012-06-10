@@ -72,7 +72,7 @@ skips = (<< skipMany
         
 charOrQuoteEscape :: CharParser st String
 charOrQuoteEscape = try (string "\\\"")
-    <|> liftM return anyChar
+    <|> fmap return anyChar
 
 longLiteral :: CharParser st (String, Bool)
 longLiteral = do
