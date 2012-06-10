@@ -46,6 +46,16 @@ instance Pretty Predicate where
 printPredicate :: Predicate -> Doc
 printPredicate (Predicate iri) = pretty iri
 
+instance Pretty RDFLiteral where
+    pretty lit = case lit of
+        RDFLiteral b lexi ty -> (if not b
+                then text ('"' : lexi ++ "\"")
+                else text ("\"\"\"" ++ lexi ++ "\"\"\"")) <> case ty of
+            Typed u -> keyword cTypeS <> pretty u
+            Untyped tag -> if tag == Nothing then empty
+                    else let Just tag2 = tag in text "@" <> text tag2
+        RDFNumberLit f -> text (show f)
+
 instance Pretty PredicateObjectList where
     pretty = printPredObjList
     

@@ -48,10 +48,14 @@ data Predicate = Predicate IRI
     deriving (Show, Eq, Ord)
 
 data Object = Object Subject
-  | ObjectLiteral Literal
+  | ObjectLiteral RDFLiteral
     deriving (Show, Eq, Ord)
 
 data PredicateObjectList = PredicateObjectList Predicate [Object]
+    deriving (Show, Eq, Ord)
+    
+data RDFLiteral = RDFLiteral Bool LexicalForm TypedOrUntyped
+  | RDFNumberLit FloatLit
     deriving (Show, Eq, Ord)
 
 -- * Datatypes for Hets manipulation

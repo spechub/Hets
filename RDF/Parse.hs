@@ -69,32 +69,43 @@ rdfSymbPairs = uriPair >>= \ u -> do
 skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
         (forget space <|> parseComment <|> nestCommentOut <?> ""))
+        
+charOrQuoteEscape :: CharParser st String
+charOrQuoteEscape = try (string "\\\"")
+    <|> do
+      s <- anyChar
+      return [s]
 
-longLiteral :: CharParser st String
+longLiteral :: CharParser st (String, Bool)
 longLiteral = do
     string "\"\"\""
-    ls <- flat $ many $ single (noneOf "\"")
-    string "\"\"\""
-    return $ '\n' : ls
+    ls <- flat $ manyTill charOrQuoteEscape $ try $ string "\"\"\""
+    return (ls, True)
+
+shortLiteral :: CharParser st (String, Bool)
+shortLiteral = do
+    char '"'
+    ls <- flat $ manyTill charOrQuoteEscape $ try $ string "\""
+    return (ls, False) 
     
-stringLiteral :: CharParser st Literal
+stringLiteral :: CharParser st RDFLiteral
 stringLiteral = do
-  s <- try longLiteral <|> fmap rmQuotes stringLit
+  (s, b) <- try longLiteral <|> shortLiteral
   do
       string cTypeS
       d <- datatypeUri
-      return $ Literal s $ Typed d
+      return $ RDFLiteral b s $ Typed d
     <|> do
         string "@"
         t <- skips $ optionMaybe languageTag
-        return $ Literal s $ Untyped t
-    <|> skips (return $ Literal s $ Typed $ mkQName "string")
+        return $ RDFLiteral b s $ Untyped t
+    <|> skips (return $ RDFLiteral b s $ Typed $ mkQName "string")
 
-literal :: CharParser st Literal
+literal :: CharParser st RDFLiteral
 literal = do
     f <- skips $ try floatingPointLit
          <|> fmap decToFloat decimalLit
-    return $ NumberLit f
+    return $ RDFNumberLit f
   <|> stringLiteral
 
 parseBase :: CharParser st Statement
