@@ -21,9 +21,9 @@ import OWL2.Parse hiding (stringLiteral, literal, skips)
 import RDF.AS
 import RDF.Symbols
 
-import Network.URI
 import Data.Maybe
 import Data.List
+import Control.Monad
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
@@ -72,9 +72,7 @@ skips = (<< skipMany
         
 charOrQuoteEscape :: CharParser st String
 charOrQuoteEscape = try (string "\\\"")
-    <|> do
-      s <- anyChar
-      return [s]
+    <|> liftM return anyChar
 
 longLiteral :: CharParser st (String, Bool)
 longLiteral = do
