@@ -61,8 +61,8 @@ inducedEMsign sm om pm m sig =
   let ms = extendedInfo sig
       mods = mod_map m
       tmods = termMods ms
-      msm i = if Set.member i tmods then Map.findWithDefault i i sm
-            else Map.findWithDefault i i mods
+      msm i = Map.findWithDefault i i
+        $ if Set.member i tmods then sm else mods
   in ms
   { rigidOps = inducedOpMap sm om $ rigidOps ms
   , rigidPreds = inducedPredMap sm pm $ rigidPreds ms
@@ -87,11 +87,14 @@ mapEMmod morph tm = case tm of
 
 -- Modal formula mapping via signature morphism
 mapEMform :: MapSen EM_FORMULA EModalSign MorphExtension
-mapEMform morph frm = let rmapf = mapSen mapEMform morph in case frm of
+mapEMform morph frm =
+  let rmapf = mapSen mapEMform morph
+      em = extended_map morph
+  in case frm of
   BoxOrDiamond choice tm leq_geq num f pos ->
     BoxOrDiamond choice (mapEMmod morph tm) leq_geq num (rmapf f) pos
   Hybrid choice nom f pos -> Hybrid choice
-    (Map.findWithDefault nom nom $ nom_map $ extended_map morph)
+    (Map.findWithDefault nom nom $ nom_map em)
     (rmapf f) pos
   UntilSince choice f1 f2 pos -> UntilSince choice (rmapf f1) (rmapf f2) pos
   NextY choice f pos -> NextY choice (rmapf f) pos
@@ -99,5 +102,8 @@ mapEMform morph frm = let rmapf = mapSen mapEMform morph in case frm of
   StateQuantification t_dir choice f pos ->
     StateQuantification t_dir choice (rmapf f) pos
   FixedPoint choice p_var f pos -> FixedPoint choice p_var (rmapf f) pos
-  ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te is
+  ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te
+    (map (fmap $ \ i -> Map.findWithDefault i i
+         $ if Set.member i $ sortSet $ msource morph then
+         sort_map morph else mod_map em) is)
     (map (fmap rmapf) fs) pos
