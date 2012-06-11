@@ -22,7 +22,7 @@ import Network.Wai.Handler.SimpleServer
 import Control.Monad.Trans (lift)
 #else
 import Network.Wai.Handler.Warp
-import Network.HTTP.Types
+import Network.HTTP.Types (Status, status200, status400, status403, status405)
 import Control.Monad.Trans (lift, liftIO)
 import qualified Data.Text as T
 #endif
