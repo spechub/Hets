@@ -34,21 +34,21 @@ import Common.Result
 import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.List as List
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Control.Monad
 
 instance TermExtension EM_FORMULA where
-        freeVarsOfExt sign ( BoxOrDiamond _ _ _ _ f _ ) = freeVars sign f
-        freeVarsOfExt sign ( Hybrid _ _ f _ ) = freeVars sign f
-        freeVarsOfExt sign ( UntilSince _ f1 f2 _ ) = Set.union
-          (freeVars sign f1) (freeVars sign f2)
-        freeVarsOfExt sign ( PathQuantification _ f _ ) = freeVars sign f
-        freeVarsOfExt sign ( StateQuantification _ _ f _ ) = freeVars sign f
-        freeVarsOfExt sign ( NextY _ f _ ) = freeVars sign f
-        freeVarsOfExt sign ( FixedPoint _ _ f _ ) = freeVars sign f
+  freeVarsOfExt sign frm = case frm of
+    BoxOrDiamond _ _ _ _ f _ -> freeVars sign f
+    Hybrid _ _ f _ -> freeVars sign f
+    UntilSince _ f1 f2 _ -> Set.union (freeVars sign f1) $ freeVars sign f2
+    PathQuantification _ f _ -> freeVars sign f
+    StateQuantification _ _ f _ -> freeVars sign f
+    NextY _ f _ -> freeVars sign f
+    FixedPoint _ _ f _ -> freeVars sign f
+    ModForm (ModDefn _ _ _ afs _) ->
+        Set.unions $ map (freeVars sign . item) afs
 
 basicEModalAnalysis
         :: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
@@ -59,13 +59,12 @@ basicEModalAnalysis
 basicEModalAnalysis =
   basicAnalysis frmTypeAna basItemStatAna sigItemStatAna mixfixAna
 
-
 frmTypeAna :: Min EM_FORMULA EModalSign
 frmTypeAna sign form = let
   checkMod term_mod = case term_mod of
     SimpleMod s_id ->
       if tokStr s_id == emptyS
-         || Map.member (simpleIdToId s_id) (modalities $ extendedInfo sign)
+         || Set.member (simpleIdToId s_id) (modalities $ extendedInfo sign)
       then return $ SimpleMod s_id
       else Result [mkDiag Error "unknown modality" s_id]
                $ Just $ SimpleMod s_id
@@ -81,7 +80,7 @@ frmTypeAna sign form = let
                       t2 <- oneExpTerm frmTypeAna sign t
                       let srt = sortOfTerm t2
                           trm = TermMod t2
-                      if Map.member srt ms
+                      if Set.member srt ms
                          then return trm
                          else Result [mkDiag Error
                               ("unknown term modality sort '"
@@ -89,14 +88,14 @@ frmTypeAna sign form = let
                               $ Just trm
                     in case t of
                        Mixfix_token tm ->
-                           if Map.member (simpleIdToId tm) ms
+                           if Set.member (simpleIdToId tm) ms
                               || tokStr tm == emptyS
                               then return $ SimpleMod tm
                               else Result
                                       [mkDiag Error "unknown modality" tm]
                                       $ Just $ SimpleMod tm
                        Application (Op_name (Id [tm] [] _)) [] _ ->
-                           if Map.member (simpleIdToId tm) ms
+                           if Set.member (simpleIdToId tm) ms
                            then return $ SimpleMod tm
                            else r
                        _ -> r
@@ -130,22 +129,30 @@ frmTypeAna sign form = let
        FixedPoint choice fpvar f pos -> do
          new_f <- minExpFORMULA frmTypeAna sign f
          return $ FixedPoint choice fpvar new_f pos
+       ModForm (ModDefn is_time isTerm anno_list forms pos) -> do
+         new_forms <- mapAnM (minExpFORMULA frmTypeAna sign) forms
+         return $ ModForm $ ModDefn is_time isTerm anno_list new_forms pos
 
-
-basItemStatAna
-  :: Ana EM_BASIC_ITEM EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
-basItemStatAna mix basic_item = case basic_item of
-  ModDecl is_time isTerm anno_list forms pos -> do
-    mapM_ ( (updateExtInfo . preAddMod) . item ) anno_list
+modItemStatAna
+  :: Ana ModDefn EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
+modItemStatAna mix (ModDefn is_time isTerm anno_list forms pos) = do
+    mapM_ ( (updateExtInfo . addMod) . item ) anno_list
     new_forms <- mapAnM (ana_FORMULA mix) forms
-    res_forms <- mapAnM (return . fst) new_forms
-    ana_forms <- mapAnM (return . snd) new_forms
-    mapM_ ( (updateExtInfo . addMod ana_forms) . item ) anno_list
+    let res_forms = map (fmap fst) new_forms
+        ana_forms = map (fmap snd) new_forms
+    unless (null forms)
+      $ addSentences [makeNamed "" $ ExtFORMULA $ ModForm
+        $ ModDefn is_time isTerm anno_list ana_forms pos]
     when is_time $ mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list
     when isTerm $ do
       sig <- get
       mapM_ ( (updateExtInfo . addTermMod sig) . item ) anno_list
-    return $ ModDecl is_time isTerm anno_list res_forms pos
+    return $ ModDefn is_time isTerm anno_list res_forms pos
+
+basItemStatAna
+  :: Ana EM_BASIC_ITEM EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
+basItemStatAna mix basic_item = case basic_item of
+  ModItem md -> fmap ModItem $ modItemStatAna mix md
   Nominal_decl anno_list pos -> do
     mapM_ (updateExtInfo . addNom . item) anno_list
     mapM_ (addPred (emptyAnno ()) (PredType []) . mkId . (: []) . item)
@@ -175,16 +182,12 @@ addTimeMod tmi sgn = let tm = time_modalities sgn in
        then Result [mkDiag Hint "more than one time modality" tmi] $ Just sgn
        else return sgn { time_modalities = Set.insert tmi tm }
 
-preAddMod :: Id -> EModalSign -> Result EModalSign
-preAddMod mi sgn =
+addMod :: Id -> EModalSign -> Result EModalSign
+addMod mi sgn =
         let m = modalities sgn in
-        if Map.member mi m then
+        if Set.member mi m then
                 Result [mkDiag Hint "repeated modality" mi] $ Just sgn
-                else return sgn { modalities = Map.insert mi [] m }
-
-addMod :: [AnEModForm] -> Id -> EModalSign -> Result EModalSign
-addMod forms mi sgn = return sgn
-  { modalities = Map.insertWith List.union mi forms $ modalities sgn }
+                else return sgn { modalities = Set.insert mi m }
 
 addNom :: SIMPLE_ID -> EModalSign -> Result EModalSign
 addNom ni sgn =
@@ -265,6 +268,8 @@ parenExtForm f = case f of
         NextY choice (mapFormula parenExtForm frm) pos
     FixedPoint choice fpvar frm pos ->
         FixedPoint choice fpvar (mapFormula parenExtForm frm) pos
+    ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn
+        ti te is (map (fmap $ mapFormula parenExtForm) fs) pos
 
 resolveMod :: MixResolve MODALITY
 resolveMod ga ids m = case m of
@@ -281,29 +286,32 @@ resolveMod ga ids m = case m of
 
 resolveExtForm :: MixResolve EM_FORMULA
 resolveExtForm ga ids f = case f of
-        BoxOrDiamond choice ms leq_geq nr frm pos -> do
-                nms <- resolveMod ga ids ms
-                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-                return $ BoxOrDiamond choice nms leq_geq nr new_frm pos
-        Hybrid choice nom frm pos -> do
-                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-                return $ Hybrid choice nom new_frm pos
-        UntilSince choice f1 f2 pos -> do
-                new_f1 <- resolveMixFrm parenExtForm resolveExtForm ga ids f1
-                new_f2 <- resolveMixFrm parenExtForm resolveExtForm ga ids f2
-                return $ UntilSince choice new_f1 new_f2 pos
-        PathQuantification choice frm pos -> do
-                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-                return $ PathQuantification choice new_frm pos
-        StateQuantification t_dir choice frm pos -> do
-                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-                return $ StateQuantification t_dir choice new_frm pos
-        NextY choice frm pos -> do
-                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-                return $ NextY choice new_frm pos
-        FixedPoint choice fpvar frm pos -> do
-                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-                return $ FixedPoint choice fpvar new_frm pos
+    BoxOrDiamond choice ms leq_geq nr frm pos -> do
+      nms <- resolveMod ga ids ms
+      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      return $ BoxOrDiamond choice nms leq_geq nr new_frm pos
+    Hybrid choice nom frm pos -> do
+      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      return $ Hybrid choice nom new_frm pos
+    UntilSince choice f1 f2 pos -> do
+      new_f1 <- resolveMixFrm parenExtForm resolveExtForm ga ids f1
+      new_f2 <- resolveMixFrm parenExtForm resolveExtForm ga ids f2
+      return $ UntilSince choice new_f1 new_f2 pos
+    PathQuantification choice frm pos -> do
+      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      return $ PathQuantification choice new_frm pos
+    StateQuantification t_dir choice frm pos -> do
+      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      return $ StateQuantification t_dir choice new_frm pos
+    NextY choice frm pos -> do
+      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      return $ NextY choice new_frm pos
+    FixedPoint choice fpvar frm pos -> do
+      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      return $ FixedPoint choice fpvar new_frm pos
+    ModForm (ModDefn ti te is fs pos) -> do
+      nfs <- mapAnM (resolveMixFrm parenExtForm resolveExtForm ga ids) fs
+      return $ ModForm $ ModDefn ti te is nfs pos
 
 ana_FORMULA :: Mix EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
             -> FORMULA EM_FORMULA -> State (Sign EM_FORMULA EModalSign)

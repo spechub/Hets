@@ -13,13 +13,11 @@ printing AS_ExtModal ExtModalSign data types
 module ExtModal.Print_AS where
 
 import Common.Keywords
-import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import ExtModal.AS_ExtModal
@@ -29,16 +27,19 @@ import ExtModal.Keywords
 import CASL.AS_Basic_CASL (FORMULA (..))
 import CASL.ToDoc
 
-instance Pretty EM_BASIC_ITEM where
-        pretty (ModDecl time term id_list ax_list _) = fsep
+instance Pretty ModDefn where
+  pretty (ModDefn time term id_list ax_list _) = fsep
           [(if time then keyword timeS else empty)
            <+> (if term then keyword termS else empty)
            <+> keyword modalityS
           , semiAnnos pretty id_list
           , if null ax_list then empty else
                 specBraces (semiAnnos pretty ax_list)]
-        pretty (Nominal_decl id_list _) = sep
-          [ keyword nominalS, semiAnnos pretty id_list ]
+
+instance Pretty EM_BASIC_ITEM where
+  pretty itm = case itm of
+    ModItem md -> pretty md
+    Nominal_decl id_list _ -> sep [keyword nominalS, semiAnnos pretty id_list]
 
 modPrec :: MODALITY -> Int
 modPrec m = case m of
@@ -120,13 +121,10 @@ instance Pretty EM_FORMULA where
     FixedPoint choice p_var s _ -> sep
       [ keyword (if choice then muS else nuS) <+> pretty p_var
       , bullet <+> prJunct s]
+    ModForm md -> pretty md
 
 instance Pretty EModalSign where
-        pretty = printEModalSign id
-
-printEModalSign :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA) -> EModalSign
-                -> Doc
-printEModalSign sim sign =
+    pretty sign =
         let mds = modalities sign
             tims = time_modalities sign
             terms = termMods sign
@@ -137,17 +135,11 @@ printEModalSign sim sign =
         printSetMap (keyword rigidS <+> keyword predS) empty
             (MapSet.toMap $ rigidPreds sign)
         $+$
-        vcat (map (\ (i, fs) -> fsep
+        vcat (map (\ i -> fsep
           $ [keyword timeS | Set.member i tims]
           ++ [keyword termS | Set.member i terms]
-          ++ [keyword modalityS, idDoc i, sepBySemis
-             $ map (printAnnoted $ pretty . sim) fs])
-            $ Map.toList mds)
+          ++ [keyword modalityS, idDoc i])
+            $ Set.toList mds)
         $+$
         (if Set.null nms then empty else
         keyword nominalS <+> sepBySemis (map sidDoc (Set.toList nms)))
-
-printFormulaOfEModalSign :: FormExtension f => (FORMULA f -> FORMULA f)
-  -> [[Annoted (FORMULA f)]] -> Doc
-printFormulaOfEModalSign sim = vcat . map
-  (sepBySemis . map (printAnnoted $ pretty . sim))

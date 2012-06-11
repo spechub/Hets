@@ -48,7 +48,8 @@ instance MorphismExtension EModalSign MorphExtension where
           src = msource fme1
           mSrc = extendedInfo src
           in return $ MorphExtension
-             (composeMap (modalities mSrc) (mod_map me1) $ mod_map me2)
+             (composeMap (MapSet.setToMap $ modalities mSrc) (mod_map me1)
+             $ mod_map me2)
              $ composeMap (MapSet.setToMap $ nominals mSrc) (nom_map me1)
              $ nom_map me2
         -- ignore inverses
@@ -59,21 +60,15 @@ inducedEMsign :: InducedSign EM_FORMULA EModalSign MorphExtension EModalSign
 inducedEMsign sm om pm m sig =
   let ms = extendedInfo sig
       mods = mod_map m
+      tmods = termMods ms
+      msm i = if Set.member i tmods then Map.findWithDefault i i sm
+            else Map.findWithDefault i i mods
   in ms
   { rigidOps = inducedOpMap sm om $ rigidOps ms
   , rigidPreds = inducedPredMap sm pm $ rigidPreds ms
-  , modalities = Map.fromListWith (++)
-    $ map (\ (i, l) ->
-        (if Set.member i $ termMods ms then Map.findWithDefault i i sm
-            else Map.findWithDefault i i mods
-        , map (fmap $ mapSen mapEMform (embedMorphism m sig sig)
-                  { sort_map = sm
-                  , op_map = om
-                  , pred_map = pm }) l)) $ Map.toList $ modalities ms
-  , time_modalities = Set.map (\ i -> Map.findWithDefault i i mods)
-    $ time_modalities ms
-  , termMods = Set.map (\ i -> Map.findWithDefault i i sm)
-    $ termMods ms
+  , modalities = Set.map msm $ modalities ms
+  , time_modalities = Set.map msm $ time_modalities ms
+  , termMods = Set.map (\ i -> Map.findWithDefault i i sm) tmods
   , nominals = Set.map (\ i -> Map.findWithDefault i i $ nom_map m)
     $ nominals ms
   }
@@ -104,3 +99,5 @@ mapEMform morph frm = let rmapf = mapSen mapEMform morph in case frm of
   StateQuantification t_dir choice f pos ->
     StateQuantification t_dir choice (rmapf f) pos
   FixedPoint choice p_var f pos -> FixedPoint choice p_var (rmapf f) pos
+  ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te is
+    (map (fmap rmapf) fs) pos

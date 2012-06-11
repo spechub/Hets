@@ -23,9 +23,12 @@ type EM_BASIC_SPEC = BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
 
 type AnEModForm = Annoted (FORMULA EM_FORMULA)
 
-data EM_BASIC_ITEM =
-        ModDecl Bool Bool [Annoted Id] [AnEModForm] Range
+data ModDefn = ModDefn Bool Bool [Annoted Id] [AnEModForm] Range
         -- Booleans: time (True) or not and term (True) or simple modality
+    deriving (Show, Eq, Ord)
+
+data EM_BASIC_ITEM =
+        ModItem ModDefn
         | Nominal_decl [Annoted SIMPLE_ID] Range
         deriving Show
 
@@ -79,4 +82,5 @@ data EM_FORMULA
                 pos: "G", "H", "F", "P" -}
   | FixedPoint Bool VAR (FORMULA EM_FORMULA) Range
                 -- pos: "mu", "nu", True if "mu", False if "nu"
+  | ModForm ModDefn
     deriving (Eq, Ord, Show)

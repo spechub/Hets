@@ -121,7 +121,7 @@ prefixModifier = let mkF f r = return $ flip f $ tokPos r in
 
 -- | Modal formula parser
 modalPrimFormulaParser :: AParser st EM_FORMULA
-modalPrimFormulaParser = do
+modalPrimFormulaParser = fmap ModForm modDefnParser <|> do
     (modal, b, r) <- boxParser <|> diamondParser
     (lgb, val) <- option (False, 1) $ do
        lgb <- (asKey lessEq >> return True)
@@ -198,22 +198,23 @@ mKey = asKey modalityS <|> asKey modalitiesS
 nKey :: AParser st Token
 nKey = asKey nominalS <|> asKey (nominalS ++ sS)
 
-basicItemParser :: AParser st EM_BASIC_ITEM
-basicItemParser =
-        do mtime <- optionMaybe $ asKey timeS
-           mterm <- optionMaybe $ asKey termS
-           k <- mKey
-           (ids, ks) <- separatedBy
-             (annoParser $ sortId ext_modal_reserved_words) anSemiOrComma
-           parseAxioms (ModDecl (isJust mtime) (isJust mterm) ids)
+modDefnParser :: AParser st ModDefn
+modDefnParser = do
+    mtime <- optionMaybe $ asKey timeS
+    mterm <- optionMaybe $ asKey termS
+    k <- mKey
+    (ids, ks) <- separatedBy
+      (annoParser $ sortId ext_modal_reserved_words) anSemiOrComma
+    parseAxioms (ModDefn (isJust mtime) (isJust mterm) ids)
                            $ catRange $ k : ks
-        <|>
-        do k <- nKey
-           (annoId, ks) <- separatedBy (annoParser simpleId) anSemiOrComma
-           return $ Nominal_decl annoId $ catRange $ k : ks
 
-parseAxioms :: ([AnEModForm] -> Range -> EM_BASIC_ITEM) -> Range
-  -> AParser st EM_BASIC_ITEM
+basicItemParser :: AParser st EM_BASIC_ITEM
+basicItemParser = fmap ModItem modDefnParser <|> do
+    k <- nKey
+    (annoId, ks) <- separatedBy (annoParser simpleId) anSemiOrComma
+    return $ Nominal_decl annoId $ catRange $ k : ks
+
+parseAxioms :: ([AnEModForm] -> Range -> a) -> Range -> AParser st a
 parseAxioms mki pos =
          do o <- oBraceT
             (someAxioms, qs) <- auxItemList

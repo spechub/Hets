@@ -17,7 +17,6 @@ import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 import ExtModal.ATC_ExtModal ()
 import ExtModal.Parse_AS
-import ExtModal.Print_AS
 import ExtModal.StatAna
 import ExtModal.MorphismExtension
 
@@ -33,6 +32,8 @@ import CASL.Taxonomy
 import CASL.Logic_CASL ()
 
 import Logic.Logic
+
+import Common.DocUtils
 
 data ExtModal = ExtModal deriving Show
 
@@ -79,13 +80,14 @@ simEMSen sign frm =
   StateQuantification t_dir choice f pos ->
     StateQuantification t_dir choice (rsimf f) pos
   FixedPoint choice p_var f pos -> FixedPoint choice p_var (rsimf f) pos
+  ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te is
+    (map (fmap rsimf) fs) pos
 
 instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
     where
         map_sen ExtModal morph = return . mapSen mapEMform morph
         simplify_sen ExtModal = simplifySen frmTypeAna simEMSen
-        print_sign ExtModal sig = printSign
-                (printEModalSign $ simplifySen frmTypeAna simEMSen sig) sig
+        print_sign ExtModal sig = printSign pretty sig
         sym_of ExtModal = symOf
         symmap_of ExtModal = morphismToSymbMap
         sym_name ExtModal = symName
