@@ -21,7 +21,7 @@ import Data.List (partition, (\\))
 
 import Common.AS_Annotation
 import Common.Id
-import Common.IRI (IRI, simpleIdToIRI)
+import Common.IRI (IRI, simpleIdToIRI, iriToStringShortUnsecure)
 import Common.DocUtils
 import Common.ExtSign
 import Common.LibName
@@ -187,7 +187,7 @@ writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
   -> G_theory -> LibName -> IRI -> OutType -> IO ()
 writeTheory ins nam opts filePrefix ga
   raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
-    let fp = filePrefix ++ "_" ++ show i
+    let fp = filePrefix ++ "_" ++ iriToStringShortUnsecure i
         f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
         lang = language_name lid
@@ -345,12 +345,12 @@ writeSpecFiles opts file lenv ln dg = do
       ) $ if ignore then [] else
         if allSpecs then Map.keys gctx else map simpleIdToIRI ns
     unless noViews $
-      mapM_ ( \ i -> case Map.lookup i gctx of
+      mapM_ ( \ si -> let i = simpleIdToIRI si in case Map.lookup i gctx of
         Just (ViewOrStructEntry _ (ExtViewSig _ (GMorphism cid _ _ m _) _)) ->
             writeVerbFile opts (filePrefix ++ "_" ++ show i ++ ".view")
               $ shows (pretty $ Map.toList $ symmap_of (targetLogic cid) m) "\n"
         _ -> putIfVerbose opts 0 $ "Unknown view name: " ++ show i
-      ) $ map simpleIdToIRI vs
+      ) vs
     mapM_ ( \ n ->
       writeTheoryFiles opts specOutTypes filePrefix lenv ga ln
          (simpleIdToIRI $ genToken $ 'n' : show n) n)
