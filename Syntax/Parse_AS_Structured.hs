@@ -50,7 +50,7 @@ import Data.Char
 import Data.Maybe
 import Control.Monad
 
-import Debug.Trace -- only commented out for future debugging purposes
+--import Debug.Trace -- only commented out for future debugging purposes
 
 hetIRI :: GenParser Char st IRI
 hetIRI = try $ do
@@ -399,11 +399,11 @@ fittingArg l = do
     return (Fit_spec sp symbit ps)
 
 
-parseCorrespondences :: AParser st [CORRESPONDENCE]
-parseCorrespondences = commaSep1 correspondence
+parseCorrespondences :: LogicGraph -> AParser st [CORRESPONDENCE]
+parseCorrespondences l = commaSep1 $ correspondence l
 
-correspondence :: AParser st CORRESPONDENCE
-correspondence = do
+correspondence :: LogicGraph -> AParser st CORRESPONDENCE
+correspondence l = do
     asKey "*"
     return Default_correspondence
   <|> do
@@ -411,53 +411,55 @@ correspondence = do
     rref <- optionMaybe relationRef
     conf <- optionMaybe confidence
     oBraceT
-    cs <- parseCorrespondences
+    cs <- parseCorrespondences l
     cBraceT
     return $ Correspondence_block rref conf cs
   <|> do
-    (mcid, eRef, mrRef, mconf, toer) <- corr1
-    trace (concat ["\t", show mcid, "    \t", show eRef, "\t", show mrRef, "    \t", show mconf, "   \t", show toer]) $ return () -- only commented out for future debugging purposes
+    (mcid, eRef, mrRef, mconf, toer) <- corr1 l
+    --trace (concat ["\t", show mcid, "    \t", show eRef, "\t", show mrRef, "    \t", show mconf, "   \t", show toer]) $ return () -- only commented out for future debugging purposes
     return $ Single_correspondence mcid eRef toer mrRef mconf
 
-corr1 :: AParser st ( Maybe CORRESPONDENCE_ID, ENTITY_REF
+corr1 :: LogicGraph
+      -> AParser st ( Maybe CORRESPONDENCE_ID, ENTITY_REF
                     , Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
-corr1 = do
-    cid <- try correspondenceIdLookahead
+corr1 l = do
+    cid <- try $ correspondenceIdWithLookahead l
     eRef <- hetIRI
-    (mrRef, mconf, toer) <- corr2
+    (mrRef, mconf, toer) <- corr2 l
     return (Just cid, eRef, mrRef, mconf, toer)
   <|> do
     eRef <- hetIRI
-    (mrRef, mconf, toer) <- corr2
+    (mrRef, mconf, toer) <- corr2 l
     return (Nothing, eRef, mrRef, mconf, toer)
 
-corr2 :: AParser st (Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
-corr2 = do
-    rRef <- try relationRefLookAhead
-    (mconf, toer) <- corr3
+corr2 :: LogicGraph
+      -> AParser st (Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
+corr2 l = do
+    rRef <- try relationRefWithLookAhead
+    (mconf, toer) <- corr3 l
     return (Just rRef, mconf, toer)
   <|> do
-    (mconf, toer) <- corr3
+    (mconf, toer) <- corr3 l
     return (Nothing, mconf, toer)
 
-corr3 :: AParser st (Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
-corr3 = do
+corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
+corr3 l = do
     conf <- try confidence
-    toer <- termOrEntityRef
+    toer <- termOrEntityRef l
     return (Just conf, toer)
   <|> do
-    toer <- termOrEntityRef
+    toer <- termOrEntityRef l
     return (Nothing, toer)
 
-correspondenceIdLookahead :: AParser st CORRESPONDENCE_ID
-correspondenceIdLookahead = do
+correspondenceIdWithLookahead :: LogicGraph -> AParser st CORRESPONDENCE_ID
+correspondenceIdWithLookahead l = do
   cid <- hetIRI
   asKey equalS
-  lookAhead (try $ hetIRI >> corr2)
+  lookAhead (try $ hetIRI >> corr2 l)
   return cid
 
-relationRefLookAhead :: AParser st RELATION_REF
-relationRefLookAhead = do
+relationRefWithLookAhead :: AParser st RELATION_REF
+relationRefWithLookAhead = do
     r <- relationRef
     lookAhead (confidenceBegin >> return ()) <|> lookAhead (try hetIRI >> return ())
     return r
@@ -492,15 +494,20 @@ relationRef = ((do
 confidenceBegin :: AParser st Char
 confidenceBegin = char '('
 
-termOrEntityRef :: AParser st TERM_OR_ENTITY_REF
-termOrEntityRef = do
+termOrEntityRef :: LogicGraph -> AParser st TERM_OR_ENTITY_REF
+termOrEntityRef l = do
     i <- hetIRI
     return $ Entity_ref i
-  <|> term
+  <|> (lookupCurrentLogic "term" l >>= term)
 
 -- TODO: implement
-term :: AParser st a
-term = fail "term parser not implemented yet"
+term :: AnyLogic -> AParser st TERM_OR_ENTITY_REF
+term (Logic lid) = do
+    p <- getPos
+    symbs <- callParser (parse_symb_items lid) (language_name lid) "term"
+    q <- getPos
+    --return $ Term (G_symb_items_list lid [symbs]) $ Range [p, q]
+    fail "term not implemented yet"
 
 confidence :: AParser st Double
 confidence = char '(' >> confidenceNumber << char ')' << skipSmart

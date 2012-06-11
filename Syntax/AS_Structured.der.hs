@@ -119,24 +119,9 @@ type ONTO_REF = IRI
 type EXTENSION_REF = IRI
 type LOGIC_REF = IRI
 
-
---TODO: FIX IT!
-type LOGIC_SPECIFIC_TERM = G_basic_spec
-
-
 setLogicName :: Logic_name -> LogicGraph -> LogicGraph
 setLogicName (Logic_name lid _ _) = setCurLogic (iriToStringUnsecure lid)
 
-
-{-
-data CORRESPONDENCE = Correspondence
-                      (Maybe CORRESPONDENCE_ID)
-                      ENTITY_REF
-                      TERM_OR_ENTITY_REF
-                      (Maybe RELATION_REF)
-                      (Maybe CONFIDENCE)
-                      deriving (Show, Eq)
--}
 data CORRESPONDENCE = Correspondence_block
                         (Maybe RELATION_REF)
                         (Maybe CONFIDENCE)
@@ -154,7 +139,7 @@ type CORRESPONDENCE_ID = IRI
 
 type ENTITY_REF = IRI
 
-data TERM_OR_ENTITY_REF = Term LOGIC_SPECIFIC_TERM
+data TERM_OR_ENTITY_REF = Term G_symb_items_list Range
                         | Entity_ref ENTITY_REF
                           deriving (Show, Eq)
 

@@ -124,7 +124,7 @@ libItem l pm =
        at <- alignType l
        (corresps, ps) <- option ([], []) $ do
          s <- equalT
-         cs <- parseCorrespondences
+         cs <- parseCorrespondences l
          return (cs, [s])
        q <- optEnd
        return (Syntax.AS_Library.Align_defn an ar at corresps
