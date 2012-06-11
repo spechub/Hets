@@ -64,9 +64,8 @@ instance Pretty MODALITY where
           Guard sen -> prJunct sen <> keyword quMark
           TransClos md -> printMPrec False mdl md
             <> keyword tmTransClosS
-          ModOp o md1 md2 -> printMPrec True mdl md1
-            <> keyword (show o)
-            <> printMPrec False mdl md2
+          ModOp o md1 md2 -> fsep [printMPrec True mdl md1
+            , keyword (show o) <+> printMPrec False mdl md2]
 
 prettyRigor :: Bool -> Doc
 prettyRigor b = keyword $ if b then rigidS else flexibleS
