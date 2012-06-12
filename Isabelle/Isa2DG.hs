@@ -60,12 +60,12 @@ _insNodeDG sig sens n dg =
 
 anaIsaFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaIsaFile _ path = do
- (name,consts,axioms,theorems,types) <- importIsaDataIO path
+ (name,imps,consts,axioms,theorems,types) <- importIsaDataIO path
  let sens = map makeNamedSentence (axioms ++ theorems
              ++ (foldl (\ l c -> case c of 
                           (_,_,Nothing) -> l
                           (n,_,Just tm) -> (n,tm):l) [] consts))
- let sgn = emptySign { constTab = foldl (\ m (n,t,_) -> Map.insert (mkVName n) t m) Map.empty consts, domainTab = types }
+ let sgn = emptySign { constTab = foldl (\ m (n,t,_) -> Map.insert (mkVName n) t m) Map.empty consts, domainTab = types, imports = imps }
  let dg = _insNodeDG sgn sens name emptyDG
      le = Map.insert (emptyLibName
             (System.FilePath.Posix.takeBaseName path))

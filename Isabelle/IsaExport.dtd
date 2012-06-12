@@ -1,5 +1,8 @@
-<!ELEMENT IsaExport (Consts, Axioms, Theorems, Types)>
+<!ELEMENT IsaExport (Imports, Consts, Axioms, Theorems, Types)>
   <!ATTLIST IsaExport file CDATA #REQUIRED>
+<!ELEMENT Imports (Import*)>
+<!ELEMENT Import EMPTY>
+  <!ATTLIST Import name CDATA #REQUIRED>
 <!ELEMENT Consts (ConstDecl*)>
 <!ELEMENT ConstDecl ((TVar|TFree|Type),(Term|NoTerm))>
   <!ATTLIST ConstDecl name CDATA #REQUIRED>

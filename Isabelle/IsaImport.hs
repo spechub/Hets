@@ -10,7 +10,7 @@ import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 
 importIsaDataIO :: String ->
- IO (String,[(String,IsaSign.Typ,Maybe IsaSign.Term)],
+ IO (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
      [(String,IsaSign.Term)], [(String,IsaSign.Term)],
      IsaSign.DomainTab)
 importIsaDataIO p = do
@@ -18,18 +18,21 @@ importIsaDataIO p = do
  return $ importIsaData d'
 
 importIsaData :: IsaExport ->
- (String,[(String,IsaSign.Typ,Maybe IsaSign.Term)],
+ (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
   [(String,IsaSign.Term)], [(String,IsaSign.Term)],
   IsaSign.DomainTab)
-importIsaData (IsaExport attrs (Consts consts)
+importIsaData (IsaExport attrs
+               (Imports imports)
+               (Consts consts)
                (Axioms axioms) 
                (Theorems theorems)
                (Types types)) =
- let consts'   = map mapConst                      consts
+ let imports'  = map importName imports
+     consts'   = map mapConst consts
      axioms'   = map (hXmlTerm2IsaTerm []) axioms
      theorems' = map (hXmlTerm2IsaTerm []) theorems
      types'    = map hXmlTypeDecl2IsaTypeDecl      types
- in (isaExportFile attrs,consts',axioms',theorems',types')
+ in (isaExportFile attrs,imports',consts',axioms',theorems',types')
 
 mapConst :: ConstDecl -> (String,IsaSign.Typ, Maybe IsaSign.Term)
 mapConst (ConstDecl attrs tp tm) =
