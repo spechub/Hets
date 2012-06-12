@@ -13,12 +13,19 @@ Static analysis for RDF
 module RDF.StaticAnalysis where
 
 import OWL2.AS
+import OWL2.Parse
 import RDF.AS
-import RDF.Sign
+--import RDF.Sign
 import RDF.Function
+import RDF.Print
+import RDF.Parse
 
+import Data.Maybe
+import Network.URI
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import Text.ParserCombinators.Parsec
 
 import Common.AS_Annotation hiding (Annotation)
 import Common.Result
@@ -26,8 +33,57 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
 
+resolveIRI :: IRI -> IRI -> IRI
+resolveIRI abs rel = if isAbsoluteIRI rel || iriType rel /= Full then rel else
+    let r = fromJust $ parseURIReference $ expandedIRI rel
+        a = fromJust $ parseURI $ expandedIRI abs
+        resolved = (uriToString id $ fromJust $ relativeTo r a) ""
+        Right new = parse uriQ "" $ "<" ++ resolved ++ ">"
+    in new
+    
+resolvePrefix :: Statement -> Statement -> Statement
+resolvePrefix (Base base) (Prefix s iri) = Prefix s $ resolveIRI base iri
 
+resolveBase :: Statement -> Statement -> Statement
+resolveBase (Base base) (Base new) = if iriType new == Full
+    then Base $ resolveIRI base new
+    else 
 
+resolvePredicate :: Statement -> Predicate -> Predicate
+resolvePredicate (Base base) (Predicate p) = Predicate $ resolveIRI base p
+
+resolveSubject :: Statement -> Subject -> Subject
+resolveSubject b@(Base base) s = case s of
+    Subject iri -> Subject $ resolveIRI base iri
+    SubjectList ls -> SubjectList $ map (resolvePOList b) ls
+    SubjectCollection ls -> SubjectCollection $ map (resolveObject b) ls
+    
+resolvePOList :: Statement -> PredicateObjectList -> PredicateObjectList
+resolvePOList b (PredicateObjectList p ol) =
+    PredicateObjectList (resolvePredicate b p) $ map (resolveObject b) ol
+    
+resolveObject :: Statement -> Object -> Object
+resolveObject b@(Base base) o = case o of
+    Object s -> Object $ resolveSubject b s
+    ObjectLiteral lit -> case lit of
+        RDFLiteral bool lf (Typed dt) ->
+                ObjectLiteral $ RDFLiteral bool lf $ Typed $ resolveIRI base dt
+        _ -> o 
+       
+resolveTriples :: Statement -> Triples -> Triples
+resolveTriples b (Triples s ls) = Triples (resolveSubject b s) $ map (resolvePOList b) ls
+
+resolveStatements :: Statement -> [Statement] -> [Statement]
+resolveStatements b ls = case ls of
+    [] -> []
+    h@(Base _) : t -> let new = resolveBase b h in new : resolveStatements new t
+    h@(Prefix _ _) : t -> resolvePrefix b h : resolveStatements b t
+    h@(Statement triples) : t -> Statement (resolveTriples b triples) : resolveStatements b t
+    
+resolveDocument :: Statement -> TurtleDocument -> TurtleDocument
+resolveDocument b doc = let newStatements = resolveStatements b $ statements doc
+    in doc {statements = newStatements, prefixMap = extractPrefixMap newStatements} 
+    
 
 {-
 -- | takes an entity and modifies the sign according to the given function
@@ -86,14 +142,4 @@ basicRDFAnalysis (gr, inSign, _) = do
         accSign = execState (createSign gr) inSign
     (axl, newgraph) <- createAxioms accSign gr
     return (newgraph, ExtSign accSign syms, axl)
-    
-
-resolveBases :: Statement -> Statement -> Statement
-resolveBases (Base rel) (Base base) =
-    let uri1 = fromJust $ parseURIReference $ expandedIRI rel
-        uri2 = fromJust $ parseURIReference $ expandedIRI base
-        resolved = (uriToString id $ fromJust $ relativeTo uri1 uri2) ""
-        Right newIri = parse uriQ "" resolved
-    in Base newIri
-    
 -}

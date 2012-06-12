@@ -57,7 +57,9 @@ instance Function IRI where
                     NodeID -> iri {expandedIRI = np ++ ":" ++ lp}
                     Abbreviated -> let miri = Map.lookup np pm
                          in case miri of
-                            Just rp -> iri {expandedIRI = expandedIRI rp ++ lp}
+                            Just rp -> if isAbsoluteIRI rp
+                                then iri {expandedIRI = expandedIRI rp ++ lp}
+                                else iri
                             Nothing -> error $ np ++ ": prefix not found"
                     _ -> iri
         _ -> iri

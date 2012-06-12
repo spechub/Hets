@@ -158,13 +158,6 @@ parseComment = do
 parseStatement :: CharParser st Statement
 parseStatement = parseBase <|> parsePrefix <|> fmap Statement parseTriples
 
-extractPrefixMap :: [Statement] -> Map.Map String IRI
-extractPrefixMap ls = case ls of
-    [] -> Map.empty
-    h : t -> case h of
-        Prefix p iri -> Map.insert p iri $ extractPrefixMap t
-        _ -> extractPrefixMap t
-
 basicSpec :: CharParser st TurtleDocument
 basicSpec = do
     many parseComment

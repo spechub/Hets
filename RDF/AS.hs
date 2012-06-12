@@ -20,6 +20,7 @@ module RDF.AS where
 import Common.Id
 import OWL2.AS
 
+import Data.List
 import qualified Data.Map as Map
 
 -- * RDF Turtle Document
@@ -34,7 +35,13 @@ data TurtleDocument = TurtleDocument
 emptyTurtleDocument :: TurtleDocument
 emptyTurtleDocument = TurtleDocument Map.empty []
 
-data Statement = Statement Triples | Prefix String IRI | Base IRI
+data Statement = Statement Triples | PrefixStatement Prefix | BaseStatement Base
+    deriving (Show, Eq, Ord)
+    
+data Prefix = Prefix String IRI
+    deriving (Show, Eq, Ord)
+    
+data Base = Base IRI
     deriving (Show, Eq, Ord)
 
 data Triples = Triples Subject [PredicateObjectList]
@@ -78,3 +85,14 @@ rdfEntityTypes = [minBound .. maxBound]
 instance GetRange TurtleDocument where
 instance GetRange Axiom where
 
+isAbsoluteIRI :: IRI -> Bool
+isAbsoluteIRI iri = iriType iri == Full && (isPrefixOf "//" $ localPart iri)
+
+{-}
+extractPrefixMap :: [Statement] -> Map.Map String IRI
+extractPrefixMap ls = case ls of
+    [] -> Map.empty
+    h : t -> case h of
+        Prefix p iri -> Map.insert p iri $ extractPrefixMap t
+        _ -> extractPrefixMap t
+        -}
