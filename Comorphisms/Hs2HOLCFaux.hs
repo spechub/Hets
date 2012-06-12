@@ -1030,8 +1030,7 @@ mkTVarMap f t = case t of
 applyTVM :: Map.Map Typ Typ -> Typ -> Typ
 applyTVM f t = case t of
     IsaSign.Type n s vs -> IsaSign.Type n s (map (applyTVM f) vs)
-    IsaSign.TFree _ _ -> maybe t id $ Map.lookup t f
-    IsaSign.TVar _ _ -> maybe t id $ Map.looukp t f
+    _ -> maybe t id $ Map.lookup t f
 
 ------------------------ replacement functions -------------------------
 -- constrains variables in t with sort constraints in cs
