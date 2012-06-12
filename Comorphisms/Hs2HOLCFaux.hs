@@ -1054,6 +1054,7 @@ typeVarsRep :: (a -> TName -> Sort -> Maybe IsaType) -> a ->
 typeVarsRep f ls t = case t of
     IsaSign.Type n s vs -> IsaSign.Type n s (map (typeVarsRep f ls) vs)
     IsaSign.TFree n s -> maybe t id $ f ls n s
+    _ -> t
 
 -- replace type var in t with type x; used in instantiation; assumed
 -- that t has just one variable
