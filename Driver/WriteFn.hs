@@ -147,9 +147,8 @@ writeSoftFOL opts f gTh ln i c n msg = do
                 _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
               writeVerbFile opts f str) mDoc
 
-writeFreeCADFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> IRI
-             -> IO ()
-writeFreeCADFile opts filePrefix (G_theory lid (ExtSign sign _) _ _ _) _ _ = do
+writeFreeCADFile :: HetcatsOpts -> FilePath -> G_theory -> IO ()
+writeFreeCADFile opts filePrefix (G_theory lid (ExtSign sign _) _ _ _) = do
   fcSign <- coercePlainSign lid FreeCAD
             "Expecting a FreeCAD signature for writing FreeCAD xml" sign
   writeVerbFile opts (filePrefix ++ ".xml") $ exportXMLFC fcSign
@@ -158,7 +157,7 @@ writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> IRI
              -> IO ()
 writeIsaFile opts filePrefix raw_gTh ln i = do
   let Result ds mTh = createIsaTheory raw_gTh
-      addThn = (++ '_' : show i)
+      addThn = (++ '_' : iriToStringShortUnsecure i)
       fp = addThn filePrefix
   showDiags opts ds
   case mTh of
@@ -192,7 +191,7 @@ writeTheory ins nam opts filePrefix ga
         th = (sign0, toNamedList sens0)
         lang = language_name lid
     in case ot of
-    FreeCADOut -> writeFreeCADFile opts filePrefix raw_gTh ln i
+    FreeCADOut -> writeFreeCADFile opts filePrefix raw_gTh
     ThyFile -> writeIsaFile opts filePrefix raw_gTh ln i
     DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
     TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
