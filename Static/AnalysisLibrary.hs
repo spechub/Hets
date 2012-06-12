@@ -202,6 +202,7 @@ anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
                    -> LibName -> FilePath -> ResultT IO (LibName, LibEnv)
 anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
      let envFile = rmSuffix file ++ envSuffix
+         libFileName = show $ getLibId ln
      recent_envFile <- checkRecentEnv opts envFile file
      if recent_envFile
         then do
@@ -210,7 +211,8 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
                  Nothing -> runResultT $ do
                      lift $ putIfVerbose opts 1 $ "Deleting " ++ envFile
                      lift $ removeFile envFile
-                     anaSource (Just ln) lgraph opts topLns libenv initDG file
+                     anaSource (Just ln) lgraph opts topLns libenv initDG
+                               libFileName
                  Just (ld, gc) -> do
                      writeLibDefn (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
@@ -229,7 +231,7 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
                      return $ Result ds $ fmap
                                 ( \ rEnv -> (ln, rEnv)) mEnv
         else runResultT
-          $ anaSource (Just ln) lgraph opts topLns libenv initDG file
+          $ anaSource (Just ln) lgraph opts topLns libenv initDG libFileName
 
 {- | analyze a LIB_DEFN.
   Parameters: logic graph, default logic, opts, library env, LIB_DEFN.
