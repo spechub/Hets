@@ -96,8 +96,12 @@ hXmlApp2IsaTerm l (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm l f1)
                                           (hXmlOneOf6_2IsaTerm l f2)
                                           IsaSign.NotCont
 hXmlAbs2IsaTerm :: [String] -> Abs -> IsaSign.Term
-hXmlAbs2IsaTerm l (Abs attrs _ f) = IsaSign.Abs
- (IsaSign.Free (IsaSign.mkVName . absVname $ attrs)) 
+hXmlAbs2IsaTerm l (Abs attrs t f) = IsaSign.Abs
+ (IsaSign.Const (IsaSign.mkVName . absVname $ attrs)
+              $ IsaSign.Disp (hXmlOneOf3_2IsaTyp t)
+                             IsaSign.NA
+                             Nothing)
+ {-(IsaSign.Free (IsaSign.mkVName . absVname $ attrs))-}
  (hXmlOneOf6_2IsaTerm (absVname attrs:l) f)
  IsaSign.NotCont
 
