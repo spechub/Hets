@@ -16,7 +16,7 @@ import OWL2.AS
 import OWL2.Parse
 import RDF.AS
 --import RDF.Sign
-import RDF.Function
+--import RDF.Function
 import RDF.Print
 import RDF.Parse
 
@@ -33,58 +33,84 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
 
-resolveIRI :: IRI -> IRI -> IRI
-resolveIRI abs rel = if isAbsoluteIRI rel || iriType rel /= Full then rel else
+resolveFullIRI :: IRI -> IRI -> IRI
+resolveFullIRI abs rel = if isAbsoluteIRI rel then rel else
     let r = fromJust $ parseURIReference $ expandedIRI rel
         a = fromJust $ parseURI $ expandedIRI abs
         resolved = (uriToString id $ fromJust $ relativeTo r a) ""
         Right new = parse uriQ "" $ "<" ++ resolved ++ ">"
-    in new
+    in rel {expandedIRI = expandedIRI new}
     
-resolvePrefix :: Statement -> Statement -> Statement
-resolvePrefix (Base base) (Prefix s iri) = Prefix s $ resolveIRI base iri
-
-resolveBase :: Statement -> Statement -> Statement
-resolveBase (Base base) (Base new) = if iriType new == Full
-    then Base $ resolveIRI base new
-    else 
-
-resolvePredicate :: Statement -> Predicate -> Predicate
-resolvePredicate (Base base) (Predicate p) = Predicate $ resolveIRI base p
-
-resolveSubject :: Statement -> Subject -> Subject
-resolveSubject b@(Base base) s = case s of
-    Subject iri -> Subject $ resolveIRI base iri
-    SubjectList ls -> SubjectList $ map (resolvePOList b) ls
-    SubjectCollection ls -> SubjectCollection $ map (resolveObject b) ls
+resolveAbbreviatedIRI :: RDFPrefixMap -> IRI -> IRI
+resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
+        Nothing -> error $ namePrefix new ++ ": prefix not declared"
+        Just iri -> new {expandedIRI = expandedIRI iri ++ localPart new}
     
-resolvePOList :: Statement -> PredicateObjectList -> PredicateObjectList
-resolvePOList b (PredicateObjectList p ol) =
-    PredicateObjectList (resolvePredicate b p) $ map (resolveObject b) ol
+resolveIRI :: Base -> RDFPrefixMap -> IRI -> IRI
+resolveIRI (Base current) pm new = if iriType new == Full
+    then resolveFullIRI current new
+    else resolveAbbreviatedIRI pm new
+
+resolveBase :: Base -> RDFPrefixMap -> Base -> Base
+resolveBase b pm (Base new) = Base $ resolveIRI b pm new
     
-resolveObject :: Statement -> Object -> Object
-resolveObject b@(Base base) o = case o of
-    Object s -> Object $ resolveSubject b s
+resolvePrefix :: Base -> RDFPrefixMap -> Prefix -> (Prefix, RDFPrefixMap)
+resolvePrefix b pm (Prefix s new) = let res = resolveIRI b pm new
+    in (Prefix s res, Map.insert s res pm) 
+
+resolvePredicate :: Base -> RDFPrefixMap -> Predicate -> Predicate
+resolvePredicate b pm (Predicate p) =
+    if null (namePrefix p) && localPart p == "a" then Predicate $
+        p { expandedIRI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+          , iriType = Full }
+    else Predicate $ resolveIRI b pm p
+
+resolveSubject :: Base -> RDFPrefixMap -> Subject -> Subject
+resolveSubject b pm s = case s of
+    Subject iri -> Subject $ resolveIRI b pm iri
+    SubjectList ls -> SubjectList $ map (resolvePOList b pm) ls
+    SubjectCollection ls -> SubjectCollection $ map (resolveObject b pm) ls
+    
+resolvePOList :: Base -> RDFPrefixMap -> PredicateObjectList
+    -> PredicateObjectList
+resolvePOList b pm (PredicateObjectList p ol) =
+    PredicateObjectList (resolvePredicate b pm p) $ map (resolveObject b pm) ol
+    
+resolveObject :: Base -> RDFPrefixMap -> Object -> Object
+resolveObject b pm o = case o of
+    Object s -> Object $ resolveSubject b pm s
     ObjectLiteral lit -> case lit of
         RDFLiteral bool lf (Typed dt) ->
-                ObjectLiteral $ RDFLiteral bool lf $ Typed $ resolveIRI base dt
+                ObjectLiteral $ RDFLiteral bool lf $ Typed $ resolveIRI b pm dt
         _ -> o 
        
-resolveTriples :: Statement -> Triples -> Triples
-resolveTriples b (Triples s ls) = Triples (resolveSubject b s) $ map (resolvePOList b) ls
+resolveTriples :: Base -> RDFPrefixMap -> Triples -> Triples
+resolveTriples b pm (Triples s ls) =
+    Triples (resolveSubject b pm s) $ map (resolvePOList b pm) ls
 
-resolveStatements :: Statement -> [Statement] -> [Statement]
-resolveStatements b ls = case ls of
+resolveStatements :: Base -> RDFPrefixMap -> [Statement] -> [Statement]
+resolveStatements b pm ls = case ls of
     [] -> []
-    h@(Base _) : t -> let new = resolveBase b h in new : resolveStatements new t
-    h@(Prefix _ _) : t -> resolvePrefix b h : resolveStatements b t
-    h@(Statement triples) : t -> Statement (resolveTriples b triples) : resolveStatements b t
+    BaseStatement base : t -> let newBase = resolveBase b pm base
+            in BaseStatement newBase : resolveStatements newBase pm t
+    PrefixStatement pref : t -> let (newPref, newPrefMap) = resolvePrefix b pm pref
+            in PrefixStatement newPref : resolveStatements b newPrefMap t
+    Statement triples : t ->
+            Statement (resolveTriples b pm triples) : resolveStatements b pm t
     
-resolveDocument :: Statement -> TurtleDocument -> TurtleDocument
-resolveDocument b doc = let newStatements = resolveStatements b $ statements doc
-    in doc {statements = newStatements, prefixMap = extractPrefixMap newStatements} 
-    
+resolveDocument :: TurtleDocument -> TurtleDocument
+resolveDocument doc = let newStatements = resolveStatements
+                            (Base $ documentName doc) Map.empty $ statements doc
+    in doc { statements = newStatements
+           , prefixMap = extractPrefixMap newStatements } 
 
+extractPrefixMap :: [Statement] -> Map.Map String IRI
+extractPrefixMap ls = case ls of
+    [] -> Map.empty
+    h : t -> case h of
+        PrefixStatement (Prefix p iri) -> Map.insert p iri $ extractPrefixMap t
+        _ -> extractPrefixMap t
+    
 {-
 -- | takes an entity and modifies the sign according to the given function
 modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> RDFEntity -> State Sign ()

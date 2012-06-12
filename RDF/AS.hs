@@ -28,12 +28,13 @@ import qualified Data.Map as Map
 type RDFPrefixMap = Map.Map String IRI
 
 data TurtleDocument = TurtleDocument
-    { prefixMap :: RDFPrefixMap
+    { documentName :: IRI
+    , prefixMap :: RDFPrefixMap
     , statements :: [Statement] }
     deriving (Show, Eq, Ord)
 
 emptyTurtleDocument :: TurtleDocument
-emptyTurtleDocument = TurtleDocument Map.empty []
+emptyTurtleDocument = TurtleDocument nullQName Map.empty []
 
 data Statement = Statement Triples | PrefixStatement Prefix | BaseStatement Base
     deriving (Show, Eq, Ord)
@@ -88,11 +89,3 @@ instance GetRange Axiom where
 isAbsoluteIRI :: IRI -> Bool
 isAbsoluteIRI iri = iriType iri == Full && (isPrefixOf "//" $ localPart iri)
 
-{-}
-extractPrefixMap :: [Statement] -> Map.Map String IRI
-extractPrefixMap ls = case ls of
-    [] -> Map.empty
-    h : t -> case h of
-        Prefix p iri -> Map.insert p iri $ extractPrefixMap t
-        _ -> extractPrefixMap t
-        -}

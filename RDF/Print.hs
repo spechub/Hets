@@ -91,8 +91,9 @@ instance Pretty Statement where
 printStatement :: Statement -> Doc
 printStatement s = case s of
     Statement t -> pretty t
-    Prefix p iri -> text "@prefix" <+> pretty p <> colon <+> pretty iri <+> dot
-    Base iri -> text "@base" <+> pretty iri <+> dot
+    PrefixStatement (Prefix p iri)
+        -> text "@prefix" <+> pretty p <> colon <+> pretty iri <+> dot
+    BaseStatement (Base iri) -> text "@base" <+> pretty iri <+> dot
     
 instance Pretty TurtleDocument where
     pretty = printDocument

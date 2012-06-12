@@ -105,14 +105,14 @@ literal = do
     return $ RDFNumberLit f
   <|> stringLiteral
 
-parseBase :: CharParser st Statement
+parseBase :: CharParser st Base
 parseBase = do
     pkeyword "@base"
     base <- skips uriQ
     skips $ char '.'
     return $ Base base
 
-parsePrefix :: CharParser st Statement
+parsePrefix :: CharParser st Prefix
 parsePrefix = do
     pkeyword "@prefix"
     p <- skips (option "" prefix << char ':')
@@ -156,11 +156,12 @@ parseComment = do
     forget $ skips $ manyTill anyChar newlineOrEof
 
 parseStatement :: CharParser st Statement
-parseStatement = parseBase <|> parsePrefix <|> fmap Statement parseTriples
+parseStatement = fmap BaseStatement parseBase
+    <|> fmap PrefixStatement parsePrefix <|> fmap Statement parseTriples
 
 basicSpec :: CharParser st TurtleDocument
 basicSpec = do
     many parseComment
     ls <- many parseStatement
-    return $ TurtleDocument (extractPrefixMap ls) ls
+    return $ TurtleDocument nullQName Map.empty ls
 
