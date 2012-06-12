@@ -24,17 +24,12 @@ fi
 opts="--enable-documentation --global --prefix=$pre"
 
 #installing the binaries
-BINARIES="alex gtk2hsC2hs gtk2hsHookGenerator gtk2hsTypeGen"
-if which $BINARIES &> /dev/null; then
-    echo Binaries already installed
-else
     echo Installing binaries...
-    cabal install alex gtk2hs-buildtools $opts
-fi
+    cabal install cabal-install-0.14.0 gtk2hs-buildtools $opts
 
 #installing the libraries
 echo Installing libraries...
-cabal install aterm random xml fgl HTTP tar glade haskeline \
+cabal install aterm random xml fgl HTTP tar glade haskeline HaXml \
               hexpat wai-extra warp uni-uDrawGraph parsec1 $opts
 
 cabal install \
