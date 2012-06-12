@@ -17,7 +17,7 @@ I :: "nat type1"
 
 axioms
 tt : "test --> test"
-same_ax : "ALL (g1::'a=>'a) g2 a b. (a & b) --> g1 = g2"
+same_ax : "ALL (g1::'a=>'a) g2 a b. (a & ~b) --> g1 = g2"
 
 lemma I: "A --> A"
 proof

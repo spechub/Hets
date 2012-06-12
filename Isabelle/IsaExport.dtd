@@ -34,6 +34,10 @@
   <!ATTLIST Var index CDATA #IMPLIED>
 <!ELEMENT Const (TVar|TFree|Type)>
   <!ATTLIST Const name CDATA #REQUIRED>
+  <!ATTLIST Const infix CDATA #IMPLIED>
+  <!ATTLIST Const infixl CDATA #IMPLIED>
+  <!ATTLIST Const infixr CDATA #IMPLIED>
+  <!ATTLIST Const mixfix_i CDATA #IMPLIED>
 <!ELEMENT App ((Bound|Free|Var|Const|App|Abs), (Bound|Free|Var|Const|App|Abs))>
 <!ELEMENT Abs ((TVar|TFree|Type), (Bound|Free|Var|Const|App|Abs))>
   <!ATTLIST Abs vname CDATA #REQUIRED>

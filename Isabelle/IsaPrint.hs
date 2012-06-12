@@ -376,10 +376,7 @@ printTrm b trm = case trm of
                         a : aa -> printTrm b $ App (App
                                   lpairTerm a $ IsCont False)
                                      (Tuplex aa c) (IsCont False)
-    App f a c -> case f of
-     App (Const (VName "HOL.implies" _) _) a' _ ->
-         (fsep [ printParenTerm b (isaEqPrio + 1) a' <+> text "-->",printParenTerm b isaEqPrio a],isaEqPrio)
-     _ -> printMixfixAppl b c f [a]
+    App f a c -> printMixfixAppl b c f [a]
     Set setdecl -> (printSetDecl setdecl, lowPrio)
 
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)

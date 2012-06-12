@@ -6,7 +6,7 @@ import Isabelle.IsaExport
 import qualified Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
+import Data.Maybe (isJust,fromMaybe)
 
 importIsaDataIO :: String ->
  IO (String,[(String,IsaSign.Typ,Maybe IsaSign.Term)],
@@ -63,10 +63,32 @@ hXmlConst2IsaTerm c = case c of
   ConstTVar attrs c1 -> const' attrs (OneOf3 c1)
   ConstTFree attrs c1 -> const' attrs (TwoOf3 c1)
   ConstType attrs c1 -> const' attrs (ThreeOf3 c1)
- where const' a d = IsaSign.Const ((IsaSign.mkVName . constName) a)
-                                 $ IsaSign.Disp (hXmlOneOf3_2IsaTyp d)
-                                    IsaSign.TCon
-                                    Nothing
+ where const' a d = 
+        let vname = IsaSign.VName {
+          IsaSign.new = constName a,
+          IsaSign.altSyn = case constMixfix_i a of
+           Just i' -> let i = (read i') :: Int
+            in case (constInfix a,constInfixl a,constInfixr a) of
+                (Just s,_,_) -> Just $ IsaSign.AltSyntax (t s) [i,i] i
+                (_,Just s,_) -> Just $ IsaSign.AltSyntax (t s) [i+1,i] i
+                (_,_,Just s) -> Just $ IsaSign.AltSyntax (t s) [i,i+1] i
+                _ -> Nothing
+              where t s = "(_ "++s++"/ _)"
+              {- We need to do this so that pretty printing actually works
+                 (see IsaConsts.hs 550+ and
+                 IsaPrint.hs 319 (replaceUnderlines 399)
+                 Maybe the use of alternative Syntax needs to be
+                 completely overhauled?
+              -}
+           Nothing -> Nothing
+         }
+        in IsaSign.Const vname
+              $ (if isJust $ constMixfix_i a
+                  then IsaSign.Hide
+                  else IsaSign.Disp)
+                 (hXmlOneOf3_2IsaTyp d)
+                 IsaSign.TCon
+                 Nothing
 
 hXmlApp2IsaTerm :: App -> IsaSign.Term
 hXmlApp2IsaTerm (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm f1)

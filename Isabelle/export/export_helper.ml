@@ -8,8 +8,8 @@ sig
 	val get_gen_theorems : theory -> string -> (string * Datatype.info) list -> string list -> string list
 	val get_datatypes : theory -> (string * Datatype.info) list
 	val filter : string list -> (string * 'a) list -> (string * 'a) list
-	val termListToXML : string -> (string * term) list -> XML.tree
-	val termTypListToXML : string -> (string * (typ * term option)) list -> XML.tree
+	val termListToXML : theory -> string -> (string * term) list -> XML.tree
+	val termTypListToXML : theory -> string -> (string * (typ * term option)) list -> XML.tree
 	val typesListToXML : string -> (string * Datatype.info) list -> XML.tree
 end;
 
@@ -144,11 +144,29 @@ struct
         fun remove_hol_true_prop t = case t of 
          $ (Const ("HOL.Trueprop",_), tm) => tm
          | tm => tm
-	fun termListToXML section l = XML.Elem ((section,[]),List.map (
-         fn (s,t) => XML.Elem (("Term",[("name",Long_Name.base_name s)]),[XML_Syntax.xml_of_term (remove_hol_true_prop t)])) l)
-	fun termTypListToXML section l = XML.Elem ((section,[]),List.map (
+        fun xml_of_term' T t =
+          case t of
+           XML.Elem (("Const",a),t) =>
+              let val b =
+                      (case (Syntax.guess_infix (Sign.syn_of T) (Lexicon.mark_const ((#2 o List.hd) a))) of
+                          SOME(Mixfix.Infixl (s,j)) =>
+                                               [("infixl",s),
+                                                ("mixfix_i",string_of_int j)]
+                        | SOME(Mixfix.Infixr (s,j)) =>
+                                               [("infixr",s),
+                                                ("mixfix_i",string_of_int j)]
+                        | SOME(Mixfix.Infix (s,j))  =>
+                                               [("infix",s),
+                                                ("mixifix_i",string_of_int j)]
+                        | NONE => [])
+              in XML.Elem (("Const",a@b),map (xml_of_term' T) t) end
+           | XML.Elem ((s,a),t) => XML.Elem ((s,a),map (xml_of_term' T) t)
+        fun xml_of_term T t = xml_of_term' T (XML_Syntax.xml_of_term t)
+	fun termListToXML T section l = XML.Elem ((section,[]),List.map (
+         fn (s,t) => XML.Elem (("Term",[("name",Long_Name.base_name s)]),[xml_of_term T (remove_hol_true_prop t)])) l)
+	fun termTypListToXML T section l = XML.Elem ((section,[]),List.map (
 	 fn (s,(t,v)) => let val v' = case v of
-          SOME(tm) => (("Term",[("name",Long_Name.base_name s)]),[XML_Syntax.xml_of_term tm])
+          SOME(tm) => (("Term",[("name",Long_Name.base_name s)]),[xml_of_term T tm])
 	  | NONE => (("NoTerm",[]),[])
          in XML.Elem (("ConstDecl",[("name",Long_Name.base_name s)]),[XML_Syntax.xml_of_type t,XML.Elem v']) end) l)
 	fun dtypToXML (Datatype.DtTFree s) = XML.Elem (("DtTFree",[("s",s)]),[])
