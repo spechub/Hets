@@ -6,7 +6,7 @@ import Isabelle.IsaExport
 import qualified Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import qualified Data.Map as Map
-import Data.Maybe (isJust,fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 
 importIsaDataIO :: String ->
@@ -25,29 +25,31 @@ importIsaData (IsaExport attrs (Consts consts)
                (Axioms axioms) 
                (Theorems theorems)
                (Types types)) =
- let consts'   = map mapConst                 consts
-     axioms'   = map hXmlTerm2IsaTerm         axioms
-     theorems' = map hXmlTerm2IsaTerm         theorems
-     types'    = map hXmlTypeDecl2IsaTypeDecl types
+ let consts'   = map mapConst                      consts
+     axioms'   = map (hXmlTerm2IsaTerm []) axioms
+     theorems' = map (hXmlTerm2IsaTerm []) theorems
+     types'    = map hXmlTypeDecl2IsaTypeDecl      types
  in (isaExportFile attrs,consts',axioms',theorems',types')
 
 mapConst :: ConstDecl -> (String,IsaSign.Typ, Maybe IsaSign.Term)
 mapConst (ConstDecl attrs tp tm) =
  let tm' = case tm of
-      OneOf2 t -> Just $ snd . hXmlTerm2IsaTerm $ t
+      OneOf2 t -> Just $ snd . (hXmlTerm2IsaTerm []) $ t
       TwoOf2 _ -> Nothing
  in (constDeclName attrs, hXmlOneOf3_2IsaTyp tp, tm')
 
-hXmlTerm2IsaTerm :: Term -> (String,IsaSign.Term)
-hXmlTerm2IsaTerm (TermBound attrs (Bound bindex)) =
-  (termName attrs, IsaSign.Bound ((read bindex) :: Int))
-hXmlTerm2IsaTerm (TermFree attrs f) = case f of
+hXmlTerm2IsaTerm :: [String] -> Term -> (String,IsaSign.Term)
+hXmlTerm2IsaTerm l (TermBound attrs (Bound bindex)) =
+  (termName attrs, 
+    let idx = (read bindex) :: Int
+    in IsaSign.Free . IsaSign.mkVName $ (l!!idx))
+hXmlTerm2IsaTerm _ (TermFree attrs f) = case f of
   FreeTVar a _ -> (n, free a)
   FreeTFree a _ -> (n, free a)
   FreeType a _ -> (n, free a)
  where n = termName attrs
        free = IsaSign.Free . IsaSign.mkVName . freeName
-hXmlTerm2IsaTerm (TermVar attrs v) =
+hXmlTerm2IsaTerm _ (TermVar attrs v) =
  let vattrs = case v of
                VarTVar d _ -> d
                VarTFree d _ -> d
@@ -55,9 +57,9 @@ hXmlTerm2IsaTerm (TermVar attrs v) =
 
  in (termName attrs,
      IsaSign.Free . IsaSign.mkVName . varName $ vattrs)
-hXmlTerm2IsaTerm (TermConst attrs c) = (termName attrs, hXmlConst2IsaTerm c)
-hXmlTerm2IsaTerm (TermApp attrs a) = (termName attrs, hXmlApp2IsaTerm a)
-hXmlTerm2IsaTerm (TermAbs attrs a) = (termName attrs, hXmlAbs2IsaTerm a)
+hXmlTerm2IsaTerm _ (TermConst attrs c) = (termName attrs, hXmlConst2IsaTerm c)
+hXmlTerm2IsaTerm l (TermApp attrs a) = (termName attrs, hXmlApp2IsaTerm l a)
+hXmlTerm2IsaTerm l (TermAbs attrs a) = (termName attrs, hXmlAbs2IsaTerm l a)
 
 hXmlConst2IsaTerm :: Const -> IsaSign.Term
 hXmlConst2IsaTerm c = case c of
@@ -84,32 +86,30 @@ hXmlConst2IsaTerm c = case c of
            Nothing -> Nothing
          }
         in IsaSign.Const vname
-              $ (if isJust $ constMixfix_i a
-                  then IsaSign.Hide
-                  else IsaSign.Disp)
+              $ IsaSign.Hide
                  (hXmlOneOf3_2IsaTyp d)
-                 IsaSign.TCon
+                 IsaSign.NA
                  Nothing
 
-hXmlApp2IsaTerm :: App -> IsaSign.Term
-hXmlApp2IsaTerm (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm f1)
-                                          (hXmlOneOf6_2IsaTerm f2)
+hXmlApp2IsaTerm :: [String] -> App -> IsaSign.Term
+hXmlApp2IsaTerm l (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm l f1)
+                                          (hXmlOneOf6_2IsaTerm l f2)
                                           IsaSign.NotCont
-hXmlAbs2IsaTerm :: Abs -> IsaSign.Term
-hXmlAbs2IsaTerm (Abs attrs _ f) = IsaSign.Abs
+hXmlAbs2IsaTerm :: [String] -> Abs -> IsaSign.Term
+hXmlAbs2IsaTerm l (Abs attrs _ f) = IsaSign.Abs
  (IsaSign.Free (IsaSign.mkVName . absVname $ attrs)) 
- (hXmlOneOf6_2IsaTerm f)
+ (hXmlOneOf6_2IsaTerm (absVname attrs:l) f)
  IsaSign.NotCont
 
-hXmlOneOf6_2IsaTerm :: OneOf6 Bound Free Var Const App Abs -> IsaSign.Term
-hXmlOneOf6_2IsaTerm o = case o of
+hXmlOneOf6_2IsaTerm :: [String] -> OneOf6 Bound Free Var Const App Abs -> IsaSign.Term
+hXmlOneOf6_2IsaTerm l o = case o of
   (OneOf6 b) -> tm $ TermBound n b
   (TwoOf6 f) -> tm $ TermFree n f
   (ThreeOf6 v) -> tm $ TermVar n v
   (FourOf6 c) -> tm $ TermConst n c
   (FiveOf6 a) -> tm $ TermApp n a
   (SixOf6 a) -> tm $ TermAbs n a
- where tm = snd . hXmlTerm2IsaTerm
+ where tm = snd . (hXmlTerm2IsaTerm l)
        n = Term_Attrs ""
 
 hXmlType_2IsaTyp :: Type_ -> IsaSign.Typ
