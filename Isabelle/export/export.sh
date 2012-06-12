@@ -49,7 +49,6 @@ echo $ISABELLE
  echo "val T = Thy_Info.get_theory \"$TRANS_T\";
 val name = Context.theory_name T;
 val types = ExportHelper.get_datatypes T;
-val tp = List.nth (types,0);
 val consts = ExportHelper.filter (ExportHelper.get_gen_consts T name types)
                                  (ExportHelper.get_consts T);
 val ths = ExportHelper.get_theorems T;

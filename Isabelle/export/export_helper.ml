@@ -143,7 +143,9 @@ struct
 			      in restructure_rec_types T ts' end
 	fun filter rem d = remove' id #1 ((mergesort id rem),(mergesort #1 d))
         fun remove_hol_true_prop t = case t of 
-         $ (Const ("HOL.Trueprop",_), tm) => tm
+           $ (Const ("HOL.Trueprop",_), tm) => tm
+         | (t $ u) => (remove_hol_true_prop t) $ (remove_hol_true_prop u)
+         | Abs (s,T,t) => Abs (s,T,remove_hol_true_prop t)
          | tm => tm
         fun xml_of_term' T t =
           case t of
