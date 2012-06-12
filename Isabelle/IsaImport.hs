@@ -6,6 +6,7 @@ import Isabelle.IsaExport
 import qualified Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 
 importIsaDataIO :: String ->
  IO (String,[(String,IsaSign.Typ,Maybe IsaSign.Term)],
@@ -40,14 +41,12 @@ hXmlTerm2IsaTerm :: Term -> (String,IsaSign.Term)
 hXmlTerm2IsaTerm (TermBound attrs (Bound bindex)) =
 -- (termName attrs, IsaSign.Free . IsaSign.mkVName $ bindex)
  error "Bound not yet implemented"
--- Why is Bound not found in IsaSign.Term? cf. src/Pure/term.ML line 206
 hXmlTerm2IsaTerm (TermFree attrs f) = case f of
   FreeTVar a _ -> (n, free a)
   FreeTFree a _ -> (n, free a)
   FreeType a _ -> (n, free a)
  where n = termName attrs
        free = IsaSign.Free . IsaSign.mkVName . freeName
--- Why are Frees in IsaSign.Term missing a type? cf. src/Pure/term.Ml line 205
 hXmlTerm2IsaTerm (TermVar attrs v) =
  let vattrs = case v of
                VarTVar d _ -> d
@@ -56,8 +55,6 @@ hXmlTerm2IsaTerm (TermVar attrs v) =
 
  in (termName attrs,
      IsaSign.Free . IsaSign.mkVName . varName $ vattrs)
--- error "Var not yet implemented"
--- Why is Var missing in IsaSign.Term? cf. src/Pure/term.ML line 205
 hXmlTerm2IsaTerm (TermConst attrs c) = (termName attrs, hXmlConst2IsaTerm c)
 hXmlTerm2IsaTerm (TermApp attrs a) = (termName attrs, hXmlApp2IsaTerm a)
 hXmlTerm2IsaTerm (TermAbs attrs a) = (termName attrs, hXmlAbs2IsaTerm a)
@@ -76,8 +73,6 @@ hXmlApp2IsaTerm :: App -> IsaSign.Term
 hXmlApp2IsaTerm (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm f1)
                                           (hXmlOneOf6_2IsaTerm f2)
                                           IsaSign.NotCont
--- Not present in Isabelle ?!?
-
 hXmlAbs2IsaTerm :: Abs -> IsaSign.Term
 hXmlAbs2IsaTerm (Abs attrs _ f) = IsaSign.Abs
  (IsaSign.Free (IsaSign.mkVName . absVname $ attrs)) 
@@ -112,7 +107,7 @@ hXmlTFree2IsaTyp (TFree attrs cls) =
 hXmlOneOf3_2IsaTyp :: (OneOf3 TVar TFree Type) -> IsaSign.Typ
 hXmlOneOf3_2IsaTyp (OneOf3 (TVar a cls)) =
  IsaSign.TVar (IsaSign.Indexname (tVarName a)
-    ((read (tVarIndex a)) :: Int))
+    (read (fromMaybe "0" (tVarIndex a)) :: Int))
   (map hXmlClass2IsaClass cls)
 hXmlOneOf3_2IsaTyp (TwoOf3 f) = hXmlTFree2IsaTyp f
 hXmlOneOf3_2IsaTyp (ThreeOf3 t) = hXmlType2IsaTyp t

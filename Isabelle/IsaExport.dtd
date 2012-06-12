@@ -39,7 +39,7 @@
   <!ATTLIST Abs vname CDATA #REQUIRED>
 <!ELEMENT TVar (class*)>
   <!ATTLIST TVar name CDATA #REQUIRED>
-  <!ATTLIST TVar index CDATA #REQUIRED>
+  <!ATTLIST TVar index CDATA #IMPLIED>
 <!ELEMENT TFree (class*)>
   <!ATTLIST TFree name CDATA #REQUIRED>
 <!ELEMENT Type (TVar|TFree|Type)*>
