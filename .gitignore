@@ -5,6 +5,12 @@ ATC_*.hs
 AS_*.hs
 hets
 
+Isabelle/IsaExport.hs
+
+utils/DtdToHaskell
+utils/DtdToHaskell-src/DtdToHaskell/
+
+ATC/IRI.hs
 ATC/Consistency.hs
 ATC/DefaultMorphism.hs
 ATC/DevGraph.hs
