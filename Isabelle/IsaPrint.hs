@@ -333,6 +333,10 @@ printTrm b trm = case trm of
           Just (AltSyntax s is i) -> if b && null is then
               (fsep $ replaceUnderlines s [], i) else (nvn, maxPrio)
     Free vn -> (text $ new vn, maxPrio)
+    Bound idx -> (text $ "bound_" ++ (show idx), maxPrio)
+    -- This hopefully amounts to a unique name - maybe a warning
+    -- that users shouldn't utilize frees named bound_*
+    -- would be sensible
     Abs v t c -> (text (case c of
         NotCont -> "%"
         IsCont _ -> "Lam") <+> printPlainTerm False v <> dot

@@ -39,8 +39,7 @@ mapConst (ConstDecl attrs tp tm) =
 
 hXmlTerm2IsaTerm :: Term -> (String,IsaSign.Term)
 hXmlTerm2IsaTerm (TermBound attrs (Bound bindex)) =
--- (termName attrs, IsaSign.Free . IsaSign.mkVName $ bindex)
- error "Bound not yet implemented"
+  (termName attrs, IsaSign.Bound ((read bindex) :: Int))
 hXmlTerm2IsaTerm (TermFree attrs f) = case f of
   FreeTVar a _ -> (n, free a)
   FreeTFree a _ -> (n, free a)

@@ -94,6 +94,7 @@ data Term =
         Const { termName   :: VName,
                 termType   :: DTyp }
       | Free  { termName     :: VName }
+      | Bound { index :: Int }
       | Abs   { absVar     :: Term,
                 termId     :: Term,
                 continuity :: Continuity }  -- lambda abstraction
