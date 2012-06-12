@@ -43,8 +43,8 @@ rdfSymbItems = do
 
 -- | parse a comma separated list of uris
 rdfSymbs :: GenParser Char st [IRI]
-rdfSymbs = uriP >>= \ u -> do
-    commaP `followedWith` uriP
+rdfSymbs = uriQ >>= \ u -> do
+    commaP `followedWith` uriQ
     us <- rdfSymbs
     return $ u : us
   <|> return [u]
@@ -59,7 +59,7 @@ rdfSymbMapItems = do
 -- | parse a comma separated list of uri pairs
 rdfSymbPairs :: GenParser Char st [(IRI, Maybe IRI)]
 rdfSymbPairs = uriPair >>= \ u -> do
-    commaP `followedWith` uriP
+    commaP `followedWith` uriQ
     us <- rdfSymbPairs
     return $ u : us
   <|> return [u]

@@ -43,9 +43,14 @@ resolveFullIRI abs rel = if isAbsoluteIRI rel then rel else
     
 resolveAbbreviatedIRI :: RDFPrefixMap -> IRI -> IRI
 resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
-        Nothing -> error $ namePrefix new ++ ": prefix not declared"
-        Just iri -> new {expandedIRI = expandedIRI iri ++ localPart new}
-    
+    Nothing -> error $ namePrefix new ++ ": prefix not declared"
+    Just iri -> let new2 = if null (namePrefix new)
+                                        && length (localPart new) > 0
+                                        && head (localPart new) == ':'
+                            then new {localPart = tail $ localPart new}
+                            else new
+                in new2 {expandedIRI = expandedIRI iri ++ localPart new2}
+                
 resolveIRI :: Base -> RDFPrefixMap -> IRI -> IRI
 resolveIRI (Base current) pm new = if iriType new == Full
     then resolveFullIRI current new
@@ -102,14 +107,16 @@ resolveDocument :: TurtleDocument -> TurtleDocument
 resolveDocument doc = let newStatements = resolveStatements
                             (Base $ documentName doc) Map.empty $ statements doc
     in doc { statements = newStatements
-           , prefixMap = extractPrefixMap newStatements } 
+           , prefixMap = extractPrefixMap Map.empty newStatements } 
 
-extractPrefixMap :: [Statement] -> Map.Map String IRI
-extractPrefixMap ls = case ls of
-    [] -> Map.empty
+extractPrefixMap :: RDFPrefixMap -> [Statement] -> RDFPrefixMap
+extractPrefixMap pm ls = case ls of
+    [] -> pm
     h : t -> case h of
-        PrefixStatement (Prefix p iri) -> Map.insert p iri $ extractPrefixMap t
-        _ -> extractPrefixMap t
+        PrefixStatement (Prefix p iri) -> extractPrefixMap (Map.insert p iri pm) t
+        _ -> extractPrefixMap pm t
+        
+        
     
 {-
 -- | takes an entity and modifies the sign according to the given function
