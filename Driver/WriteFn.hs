@@ -129,13 +129,13 @@ writeLibEnv opts filePrefix lenv ln ot =
         $ dotGraph f showInternalNodeLabels "" dg
       _ -> return ()
 
-writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LibName -> IRI
+writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> IRI
              -> SPFType -> Int -> String -> IO ()
-writeSoftFOL opts f gTh ln i c n msg = do
+writeSoftFOL opts f gTh i c n msg = do
       let cc = case c of
                  ConsistencyCheck -> True
                  ProveTheory -> False
-      mDoc <- printTheoryAsSoftFOL ln i n cc
+      mDoc <- printTheoryAsSoftFOL i n cc
               $ (if cc then theoremsToAxioms else id) gTh
       maybe (putIfVerbose opts 0 $
              "could not translate to " ++ msg ++ " file: " ++ f)
@@ -193,8 +193,8 @@ writeTheory ins nam opts filePrefix ga
     in case ot of
     FreeCADOut -> writeFreeCADFile opts filePrefix raw_gTh
     ThyFile -> writeIsaFile opts filePrefix raw_gTh ln i
-    DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
-    TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
+    DfgFile c -> writeSoftFOL opts f raw_gTh i c 0 "DFG"
+    TPTPFile c -> writeSoftFOL opts f raw_gTh i c 1 "TPTP"
     TheoryFile d -> do
       if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"

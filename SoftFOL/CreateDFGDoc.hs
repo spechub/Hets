@@ -26,7 +26,6 @@ import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.IRI (IRI)
-import Common.LibName
 import Common.ProofUtils
 import Common.Result
 
@@ -47,13 +46,13 @@ import SoftFOL.PrintTPTP
 spassConsTimeLimit :: Int
 spassConsTimeLimit = 500
 
-printTheoryAsSoftFOL :: LibName -> IRI
+printTheoryAsSoftFOL :: IRI
          -> Int -- ^ 0 = DFG, 1 = TPTP
          -> Bool
             {- ^ if True a conjecture false is added otherwise
                  its a theory without its own conjectures. -}
          -> G_theory -> IO (Maybe Doc)
-printTheoryAsSoftFOL ln sn lang checkConsistency
+printTheoryAsSoftFOL sn lang checkConsistency
   gth@(G_theory lid (ExtSign sign _) _ thSens _) =
     maybe (return Nothing)
           (\ (sign1, sens1) ->
@@ -97,7 +96,7 @@ printTheoryAsSoftFOL ln sn lang checkConsistency
                      1 -> printTPTP
                      _ -> pretty
         sens = toNamedList thSens
-        thName = shows (getLibId ln) "_" ++ show sn
+        thName = show sn
 
         spLogicalPart sig sen =
                             foldl insertSentence
