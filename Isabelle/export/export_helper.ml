@@ -11,6 +11,7 @@ sig
 	val termListToXML : theory -> string -> (string * term) list -> XML.tree
 	val termTypListToXML : theory -> string -> (string * (typ * term option)) list -> XML.tree
 	val typesListToXML : string -> (string * Datatype.info) list -> XML.tree
+        val fixTypeNames : string -> XML.tree -> XML.tree
 end;
 
 structure ExportHelper : ExportHelper =
@@ -188,4 +189,14 @@ struct
          (#descr d)
 	fun typesListToXML section l = XML.Elem ((section,[]),List.map (
 	fn (s,d) => XML.Elem (("TypeDecl",[("name",s)]),typeToXML d)) l)
+        fun fixTypeNames moduleName t = case t of
+             XML.Elem (("Type",a),c) => XML.Elem (("Type",
+                List.map (fn (n,s) =>
+                 if n = "name" andalso String.isPrefix (moduleName^".") s
+                  then (n,String.extract (s,(String.size moduleName)+1,NONE))
+                  else (n,s)) a),
+                List.map (fixTypeNames moduleName) c)
+             | XML.Elem (d,c) =>
+                XML.Elem (d,List.map (fixTypeNames moduleName) c)
+             | _ => t
 end;

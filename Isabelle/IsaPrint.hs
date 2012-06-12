@@ -161,7 +161,7 @@ printTypeAux a t = case t of
                      $ tail s then c else doubleQuotes c
          Unquoted -> d <> doubleColon <> c
          Null -> d, 1000)
- TVar iv s -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
+ TVar iv s -> printTypeAux a $ TFree (unindexed iv) s
  Type name _ args -> case args of
     [t1, t2] | elem name [prodS, sProdS, funS, cFunS, lFunS, sSumS] ->
        printTypeOp a name t1 t2

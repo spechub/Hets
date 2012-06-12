@@ -7,6 +7,7 @@ import qualified Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import qualified Data.Map as Map
 import Data.Maybe (isJust,fromMaybe)
+import Data.List (intercalate)
 
 importIsaDataIO :: String ->
  IO (String,[(String,IsaSign.Typ,Maybe IsaSign.Term)],
@@ -138,10 +139,18 @@ hXmlClass2IsaClass = IsaSign.IsaClass . className
 
 hXmlTypeDecl2IsaTypeDecl :: TypeDecl -> [IsaSign.DomainEntry]
 hXmlTypeDecl2IsaTypeDecl (TypeDecl _ rs) = 
- let recmap = foldl (\m (RecType ra _ _) ->
+ let recmap = foldl (\m (RecType ra vs _) ->
                       Map.insert ((read (recTypeI ra))::Int) 
-                                 (recTypeName ra) m) Map.empty rs
+                                 ((if length (recTypeVsToString vs) > 0
+                                    then (recTypeVsToString vs) ++ " "
+                                    else "") ++ (recTypeName ra))
+                                 m) Map.empty rs
+      where recTypeVsToString (Vars vs) = intercalate " "
+             (map (\v -> case v of
+                          Vars_DtTFree f -> dtTFreeS f
+                          _ -> "") vs)
  in map (hXmlRecType2IsaTypeDecl recmap) rs
+
 
 hXmlRecType2IsaTypeDecl :: Map.Map Int String ->
  RecType -> IsaSign.DomainEntry

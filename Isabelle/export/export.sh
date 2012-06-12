@@ -65,7 +65,7 @@ val xml_consts = ExportHelper.termTypListToXML T \"Consts\" consts;
 val xml_axioms = ExportHelper.termListToXML T \"Axioms\" axioms;
 val xml_theorems = ExportHelper.termListToXML T \"Theorems\" theorems;
 val xml_types = ExportHelper.typesListToXML \"Types\" types;
-val xml = XML.Elem ((\"IsaExport\",[(\"file\",\"$TRANS_T\")]),[xml_consts,xml_axioms,xml_theorems,xml_types]);
+val xml = ExportHelper.fixTypeNames name (XML.Elem ((\"IsaExport\",[(\"file\",\"$TRANS_T\")]),[xml_consts,xml_axioms,xml_theorems,xml_types]));
 File.write (Path.explode \"$TRANS.isa\") (XML.string_of xml);
 "
  echo "*}"
