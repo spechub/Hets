@@ -486,7 +486,7 @@ anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
 anaItemNamesOrMaps libenv' ln refDG dg items = do
   (genv1, dg1) <- foldM
     (anaItemNameOrMap libenv' ln refDG) (globalEnv dg, dg) items
-  gannos'' <- globalAnnos dg `mergeGlobalAnnos` globalAnnos refDG
+  gannos'' <- mergeGlobalAnnos (globalAnnos refDG) $ globalAnnos dg
   return dg1
     { globalAnnos = gannos''
     , globalEnv = genv1 }
