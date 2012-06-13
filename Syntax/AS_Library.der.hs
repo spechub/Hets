@@ -43,8 +43,8 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "spec", "=", opt "end"
               | View_defn VIEW_NAME GENERICITY VIEW_TYPE [G_mapping] Range
               -- pos: "view", ":", opt "=", opt "end"
-              | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) ALIGN_TYPE [CORRESPONDENCE] Range
-              --
+              | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) ALIGN_TYPE
+                [CORRESPONDENCE] Range
               | Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) Range
               -- pos: "arch", "spec", "=", opt "end"
               | Unit_spec_defn SPEC_NAME UNIT_SPEC Range
@@ -61,6 +61,9 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "newcomorphism", Comorphism_name, "=", opt "end"
                 deriving Show
 
+{- Item maps are the documented CASL renamed entities whereas a unique item
+contains the new target name of the single arbitrarily named item from the
+downloaded library. -}
 data DownloadItems =
     ItemMaps [ItemNameMap]
   | UniqueItem ItemName
