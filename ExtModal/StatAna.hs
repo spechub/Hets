@@ -75,31 +75,31 @@ frmTypeAna sign form = let
     TransClos md -> fmap TransClos $ checkMod md
     Guard frm -> fmap Guard $ minExpFORMULA frmTypeAna sign frm
     TermMod t -> let
-                    ms = modalities $ extendedInfo sign
-                    r = do
-                      t2 <- oneExpTerm frmTypeAna sign t
-                      let srt = sortOfTerm t2
-                          trm = TermMod t2
-                          supers = supersortsOf srt sign
-                      if Set.null $ Set.intersection (Set.insert srt supers) ms
-                         then Result [mkDiag Error
-                              ("unknown term modality sort '"
-                               ++ showId srt "' for term") t ]
-                              $ Just trm
-                         else return trm
-                    in case t of
-                       Mixfix_token tm ->
-                           if Set.member (simpleIdToId tm) ms
-                              || tokStr tm == emptyS
-                              then return $ SimpleMod tm
-                              else Result
-                                      [mkDiag Error "unknown modality" tm]
-                                      $ Just $ SimpleMod tm
-                       Application (Op_name (Id [tm] [] _)) [] _ ->
-                           if Set.member (simpleIdToId tm) ms
-                           then return $ SimpleMod tm
-                           else r
-                       _ -> r
+      ms = modalities $ extendedInfo sign
+      r = do
+        t2 <- oneExpTerm frmTypeAna sign t
+        let srt = sortOfTerm t2
+            trm = TermMod t2
+            supers = supersortsOf srt sign
+        if Set.null $ Set.intersection (Set.insert srt supers) ms
+           then Result [mkDiag Error
+                ("unknown term modality sort '"
+                 ++ showId srt "' for term") t ]
+                $ Just trm
+           else return trm
+      in case t of
+         Mixfix_token tm ->
+             if Set.member (simpleIdToId tm) ms
+                || tokStr tm == emptyS
+                then return $ SimpleMod tm
+                else Result
+                        [mkDiag Error "unknown modality" tm]
+                        $ Just $ SimpleMod tm
+         Application (Op_name (Id [tm] [] _)) [] _ ->
+             if Set.member (simpleIdToId tm) ms
+             then return $ SimpleMod tm
+             else r
+         _ -> r
   in case form of
        BoxOrDiamond choice md leq_geq number f pos -> do
          new_md <- checkMod md
