@@ -243,7 +243,7 @@ anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
 anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln' alibItems pos ans) file = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos (defPrefixGlobalAnnos file) ans
   let ln = fromMaybe ln' $ expandCurieLibName gannos ln'
-  (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln gannos)
+  (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = gannos }, libenv
       , setCurLogic (defLogic opts) lgraph, Map.empty) (map item alibItems)
   let dg1 = computeDGraphTheories libenv' $ markFree libenv' $
@@ -261,16 +261,16 @@ defPrefixGlobalAnnos file =
   in emptyGlobalAnnos { prefix_map =
                             Map.fromList [("", fileIRI)] }
 
-anaLibItemAux :: HetcatsOpts -> LNS -> LibName -> GlobalAnnos
+anaLibItemAux :: HetcatsOpts -> LNS -> LibName
   -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph, ExpOverrides)
   -> LIB_ITEM -> ResultT IO ([LIB_ITEM], DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaLibItemAux opts topLns ln ga q@(libItems', dg1, libenv1, lg, eo) libItem = let
+anaLibItemAux opts topLns ln q@(libItems', dg1, libenv1, lg, eo) libItem = let
   currLog = currentLogic lg
   newOpts = if elem currLog ["DMU", "Framework"] then
               opts { defLogic = currLog } else opts
   in ResultT $ do
       res2@(Result diags2 res) <- runResultT
-        $ anaLibItem lg newOpts topLns ln libenv1 dg1 ga eo libItem
+        $ anaLibItem lg newOpts topLns ln libenv1 dg1 eo libItem
       runResultT $ showDiags1 opts (liftR res2)
       let mRes = case res of
              Just (libItem', dg1', libenv1', newLG, eo') ->
@@ -295,9 +295,9 @@ alreadyDefined :: String -> String
 alreadyDefined str = "Name " ++ str ++ " already defined"
 
 -- | analyze a GENERICITY
-anaGenericity :: LogicGraph -> LibName -> DGraph -> HetcatsOpts -> GlobalAnnos
+anaGenericity :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
   -> ExpOverrides -> NodeName -> GENERICITY -> Result (GENERICITY, GenSig, DGraph)
-anaGenericity lg ln dg opts ga eo name
+anaGenericity lg ln dg opts eo name
     gen@(Genericity (Params psps) (Imported isps) pos) =
   let ms = currentBaseTheory dg in
   adjustPos pos $ case psps of
@@ -314,33 +314,33 @@ anaGenericity lg ln dg opts ga eo name
      [] -> return ([], baseNode, dg)
      _ -> do
       (is', _, nsig', dgI) <- anaUnion False lg ln dg baseNode
-          (extName "Imports" name) opts ga eo isps
+          (extName "Imports" name) opts eo isps
       return (is', JustNode nsig', dgI)
    (ps', nsigPs, ns, dg'') <- anaUnion False lg ln dg' nsigI
-          (extName "Parameters" name) opts ga eo psps
+          (extName "Parameters" name) opts eo psps
    return (Genericity (Params ps') (Imported imps') pos,
      GenSig nsigI nsigPs $ JustNode ns, dg'')
 
 -- | analyse a LIB_ITEM
 anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
-  -> GlobalAnnos -> ExpOverrides -> LIB_ITEM
+  -> ExpOverrides -> LIB_ITEM
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaLibItem lg opts topLns currLn libenv dg ga eo itm =
+anaLibItem lg opts topLns currLn libenv dg eo itm =
  case itm of
-  Spec_defn spn' gen asp pos -> case expCurie ga eo spn' of
+  Spec_defn spn' gen asp pos -> case expCurie (globalAnnos dg) eo spn' of
    Nothing -> fail $ failPrefixIRI spn'
    Just spn -> do
     let spstr = iriToStringUnsecure spn
         nName = makeName spn
     analyzing opts $ "spec " ++ spstr
     (gen', gsig@(GenSig _ _args allparams), dg') <-
-      liftR $ anaGenericity lg currLn dg opts ga eo nName gen
+      liftR $ anaGenericity lg currLn dg opts eo nName gen
     (sanno1, impliesA) <- liftR $ getSpecAnnos pos asp
     when impliesA $ liftR $ plain_error ()
       "unexpected initial %implies in spec-defn" pos
     (sp', body, dg'') <-
       liftR (anaSpecTop sanno1 True lg currLn dg'
-            allparams nName opts ga eo (item asp))
+            allparams nName opts eo (item asp))
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg
     if Map.member spn genv
@@ -353,16 +353,16 @@ anaLibItem lg opts topLns currLn libenv dg ga eo itm =
         , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }
         , libenv, lg, eo)
-  View_defn vn' gen vt gsis pos -> case expCurie ga eo vn' of
+  View_defn vn' gen vt gsis pos -> case expCurie (globalAnnos dg) eo vn' of
    Nothing -> fail $ failPrefixIRI vn'
    Just vn -> do
     analyzing opts $ "view " ++ iriToStringUnsecure vn
-    liftR $ anaViewDefn lg currLn libenv dg opts ga eo vn gen vt gsis pos
+    liftR $ anaViewDefn lg currLn libenv dg opts eo vn gen vt gsis pos
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
     (_, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lg currLn dg
-      opts ga eo emptyExtStUnitCtx Nothing $ item asp
+      opts eo emptyExtStUnitCtx Nothing $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
     if Map.member (simpleIdToIRI asn) genv
@@ -377,14 +377,14 @@ anaLibItem lg opts topLns currLn libenv dg ga eo itm =
             return (asd', dg3
               { globalEnv = Map.insert (simpleIdToIRI asn) (ArchOrRefEntry True archSig) genv }
               , libenv, lg, eo)
-  Unit_spec_defn usn' usp pos -> case expCurie ga eo usn' of
+  Unit_spec_defn usn' usp pos -> case expCurie (globalAnnos dg) eo usn' of
    Nothing -> fail $ failPrefixIRI usn'
    Just usn -> do
     let usstr = iriToStringUnsecure usn
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lg
     (rSig, dg', usp') <-
-      liftR $ anaUnitSpec lg currLn dg opts ga eo (EmptyNode l) Nothing usp
+      liftR $ anaUnitSpec lg currLn dg opts eo (EmptyNode l) Nothing usp
     unitSig <- liftR $ getUnitSigFromRef rSig
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
@@ -394,12 +394,12 @@ anaLibItem lg opts topLns currLn libenv dg ga eo itm =
       else return (usd', dg'
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
              libenv, lg, eo)
-  Ref_spec_defn rn' rsp pos -> case expCurie ga eo rn' of
+  Ref_spec_defn rn' rsp pos -> case expCurie (globalAnnos dg) eo rn' of
    Nothing -> fail $ failPrefixIRI rn'
    Just rn -> do
     let rnstr = iriToStringUnsecure rn
     l <- lookupCurrentLogic "Ref_spec_defn" lg
-    (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lg currLn dg opts ga eo
+    (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lg currLn dg opts eo
       (EmptyNode l) rn emptyExtStUnitCtx Nothing rsp
     analyzing opts $ "ref spec " ++ rnstr
     let rsd' = Ref_spec_defn rn rsp' pos
@@ -411,7 +411,7 @@ anaLibItem lg opts topLns currLn libenv dg ga eo itm =
         { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv }
         , libenv, lg, eo)
   Logic_decl logN' _ pos ->
-   let logN = case expandCurieLogicName ga logN' of
+   let logN = case expandCurieLogicName (globalAnnos dg) logN' of
                   Left _ -> logN'
                   Right x -> x
    in do
@@ -430,7 +430,7 @@ anaLibItem lg opts topLns currLn libenv dg ga eo itm =
               else dg { currentBaseTheory = Just $ extGenBody s }
         return (itm, dg2, libenv, newLg, eo)
   Download_items lnOrig items pos ->
-    let ln = fromMaybe lnOrig $ expandCurieLibName ga lnOrig in
+   let ln = fromMaybe lnOrig $ expandCurieLibName (globalAnnos dg) lnOrig in
     if Set.member ln topLns then
      liftR $ mkError "illegal cyclic library import"
        $ Set.map getLibId topLns
@@ -461,9 +461,9 @@ anaLibItem lg opts topLns currLn libenv dg ga eo itm =
                         then ([], map fail leftExpIms, itemNameMapsToIRIs ims)
                         else (rights expIms, [], itemNameMapsToIRIs ims)
                   UniqueItem i -> case Map.keys $ globalEnv dg' of
-                    [j] -> case expCurie ga eo i of
+                    [j] -> case expCurie (globalAnnos dg) eo i of
                             Nothing -> ([], fail $ failPrefixIRI i, [i])
-                            Just expI -> case expCurie ga eo j of
+                            Just expI -> case expCurie (globalAnnos dg) eo j of
                               Nothing -> ([], fail $ failPrefixIRI j, [i,j])
                               Just expJ -> ([ItemNameMap expJ (Just expI)], [], [i,j])
                     _ -> ([], [mkError
@@ -493,16 +493,16 @@ anaItemNamesOrMaps libenv' ln refDG dg items = do
 
 -- | analyse genericity and view type and construct gmorphism
 anaViewDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
-  -> GlobalAnnos -> ExpOverrides -> IRI -> GENERICITY -> VIEW_TYPE
+  -> ExpOverrides -> IRI -> GENERICITY -> VIEW_TYPE
   -> [G_mapping] -> Range
   -> Result (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaViewDefn lg ln libenv dg opts ga eo vn gen vt gsis pos = do
+anaViewDefn lg ln libenv dg opts eo vn gen vt gsis pos = do
   let vName = makeName vn
   (gen', gsig@(GenSig _ _ allparams), dg') <-
-       anaGenericity lg ln dg opts ga eo vName gen
+       anaGenericity lg ln dg opts eo vName gen
   (vt', (src@(NodeSig nodeS gsigmaS)
         , tar@(NodeSig nodeT gsigmaT@(G_sign lidT _ _))), dg'') <-
-       anaViewType lg ln dg' allparams opts ga eo vName vt
+       anaViewType lg ln dg' allparams opts eo vName vt
   let genv = globalEnv dg''
   if Map.member vn genv
     then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv, lg, eo)
@@ -540,14 +540,14 @@ The AnyLogic is the current logic
 The NodeSig is the signature of the parameter of the view
 flag, whether just the structure shall be analysed -}
 anaViewType :: LogicGraph -> LibName -> DGraph -> MaybeNode -> HetcatsOpts
-  -> GlobalAnnos -> ExpOverrides
+  -> ExpOverrides
   -> NodeName -> VIEW_TYPE -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
-anaViewType lg ln dg parSig opts ga eo name (View_type aspSrc aspTar pos) = do
+anaViewType lg ln dg parSig opts eo name (View_type aspSrc aspTar pos) = do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
   (spSrc', srcNsig, dg') <- adjustPos pos $ anaSpec False lg ln dg (EmptyNode l)
-    (extName "Source" name) opts ga eo (item aspSrc)
+    (extName "Source" name) opts eo (item aspSrc)
   (spTar', tarNsig, dg'') <- adjustPos pos $ anaSpec True lg ln dg' parSig
-    (extName "Target" name) opts ga eo (item aspTar)
+    (extName "Target" name) opts eo (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
                     pos,
