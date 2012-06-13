@@ -258,16 +258,13 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln' alibItems pos ans) file
   return (ln, newLD, globalAnnos dg2, Map.insert ln dg2 libenv')
 
 defPrefixGlobalAnnos :: FilePath -> GlobalAnnos
-defPrefixGlobalAnnos file =
-  let fileIRI = case parseIRIReference (file++"#") of
-                  Nothing -> nullIRI
-                  Just i -> i
-  in emptyGlobalAnnos { prefix_map =
-                            Map.fromList [("", fileIRI)] }
+defPrefixGlobalAnnos file = emptyGlobalAnnos
+  { prefix_map = Map.singleton ""
+    $ fromMaybe nullIRI $ parseIRIReference $ file ++ "#" }
 
 anaLibItemAux :: HetcatsOpts -> LNS -> LibName
-  -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph, ExpOverrides)
-  -> LIB_ITEM -> ResultT IO ([LIB_ITEM], DGraph, LibEnv, LogicGraph, ExpOverrides)
+  -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph, ExpOverrides) -> LIB_ITEM
+  -> ResultT IO ([LIB_ITEM], DGraph, LibEnv, LogicGraph, ExpOverrides)
 anaLibItemAux opts topLns ln q@(libItems', dg1, libenv1, lg, eo) libItem = let
   currLog = currentLogic lg
   newOpts = if elem currLog ["DMU", "Framework"] then
@@ -300,7 +297,8 @@ alreadyDefined str = "Name " ++ str ++ " already defined"
 
 -- | analyze a GENERICITY
 anaGenericity :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
-  -> ExpOverrides -> NodeName -> GENERICITY -> Result (GENERICITY, GenSig, DGraph)
+  -> ExpOverrides -> NodeName -> GENERICITY
+  -> Result (GENERICITY, GenSig, DGraph)
 anaGenericity lg ln dg opts eo name
     gen@(Genericity (Params psps) (Imported isps) pos) =
   let ms = currentBaseTheory dg in
@@ -379,7 +377,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                            Map.insert (show asn) diag
                            $ archSpecDiags dg''}
             return (asd', dg3
-              { globalEnv = Map.insert (simpleIdToIRI asn) (ArchOrRefEntry True archSig) genv }
+              { globalEnv = Map.insert (simpleIdToIRI asn)
+                            (ArchOrRefEntry True archSig) genv }
               , libenv, lg, eo)
   Unit_spec_defn usn' usp pos -> case expCurie (globalAnnos dg) eo usn' of
    Nothing -> fail $ failPrefixIRI usn'
@@ -423,7 +422,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     (mth, newLg) <- liftR
       $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lg
     case mth of
-      Nothing -> return (itm, dg { currentBaseTheory = Nothing }, libenv, newLg, eo)
+      Nothing ->
+        return (itm, dg { currentBaseTheory = Nothing }, libenv, newLg, eo)
       Just (s, (libName, refDG, (_, lbl))) -> do
             -- store th-lbl in newDG
         let dg2 = if libName /= currLn then
@@ -455,21 +455,22 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                   ItemMaps ims ->
                     let expIms = map (expandCurieItemNameMap fn) ims
                         leftExpIms = lefts expIms
-                    in  if not $ null leftExpIms
+                    in if not $ null leftExpIms
                         then ([], map fail leftExpIms, itemNameMapsToIRIs ims)
                         else (rights expIms, [], itemNameMapsToIRIs ims)
                   UniqueItem i -> case Map.keys $ globalEnv dg' of
                     [j] -> case expCurie (globalAnnos dg) eo i of
                       Nothing -> ([], fail $ failPrefixIRI i, [i])
                       Just expI -> case expCurie (globalAnnos dg) eo j of
-                        Nothing -> ([], fail $ failPrefixIRI j, [i,j])
-                        Just expJ -> ([ItemNameMap expJ (Just expI)], [], [i,j])
+                        Nothing -> ([], fail $ failPrefixIRI j, [i, j])
+                        Just expJ ->
+                            ([ItemNameMap expJ (Just expI)], [], [i, j])
                     _ ->
                      ( []
                      , [mkError "non-unique name within imported library" itm]
                      , [])
                 additionalEo = Map.fromList $ zip origItems $ repeat fn
-                eo' = Map.unionWith (\_ p2 -> p2) eo additionalEo
+                eo' = Map.unionWith (\ _ p2 -> p2) eo additionalEo
             mapM_ liftR errs
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 realItems
             return (itm, dg1, libenv', lg, eo')
@@ -640,26 +641,26 @@ refViewsig libenv ln refDG dg name (ExtViewSig src mor extsig) = let
   in (dg2, ExtViewSig src1 mor extsig1)
 
 
-{- BEGIN CURIE expansion -}
+-- BEGIN CURIE expansion
 
 failPrefixIRI :: IRI -> String
 failPrefixIRI i =
   let pos = iriPos i
       posStr = if pos == nullRange then "" else "(" ++ show pos ++ ") "
-  in  failPrefixStr posStr $ iriToStringShortUnsecure i
+  in failPrefixStr posStr $ iriToStringShortUnsecure i
 
 failPrefixStr :: String -> String -> String
 failPrefixStr pos s = "No prefix found for CURIE \"" ++ s ++
-    "\" "++pos++"or expansion does not yield a valid IRI."
+    "\" " ++ pos ++ "or expansion does not yield a valid IRI."
 
 -- | expands iff ':' is in the name (path)
 expandCurieLibName :: GlobalAnnos -> LibName -> Maybe LibName
 expandCurieLibName ga ln'@(LibName (IndirectLink path ilRn ilFp ilCl) _) =
   if elem ':' path
   then let mi = expandCurie (prefix_map ga) $ fromJust $ parseIRICurie path
-       in  case mi of
+       in case mi of
             Nothing -> Nothing
-            Just i ->  Just ln' { getLibId = IndirectLink (iriToStringUnsecure i)
+            Just i -> Just ln' { getLibId = IndirectLink (iriToStringUnsecure i)
                                                                 ilRn ilFp ilCl }
   else Just ln'
 
@@ -675,18 +676,19 @@ expandCurieLogicName ga ln@(Logic_name i1 mt mi2) =
 expandCurieItemNameMap :: FilePath -> ItemNameMap -> Either String ItemNameMap
 expandCurieItemNameMap fn (ItemNameMap i1 mi2) =
   let i = fromJust $ parseIRIReference $ fn ++ "#"
-      m = Map.fromList [("", i),(":",i)]
+      m = Map.fromList [("", i), (":", i)]
       g = emptyGlobalAnnos {prefix_map = m}
-  in  case expandCurie2M g (i1, mi2) of
+  in case expandCurie2M g (i1, mi2) of
           Right (e1, e2m) -> Right $ ItemNameMap e1 e2m
           Left s -> Left s
 
-expandCurie2M :: GlobalAnnos -> (IRI, Maybe IRI) -> Either String (IRI, Maybe IRI)
+expandCurie2M :: GlobalAnnos -> (IRI, Maybe IRI)
+  -> Either String (IRI, Maybe IRI)
 expandCurie2M ga (i1, mi2) =
   let pm = prefix_map ga
       e1m = expandCurie pm i1
-      e2m = (liftM (expandCurie pm)) mi2
-  in  if not $ isJust e1m
+      e2m = liftM (expandCurie pm) mi2
+  in if isNothing e1m
       then Left $ failPrefixIRI i1
       else case e2m of
               Nothing -> Right (fromJust e1m, Nothing)
@@ -694,6 +696,6 @@ expandCurie2M ga (i1, mi2) =
               Just e2 -> Right (fromJust e1m, e2)
 
 itemNameMapsToIRIs :: [ItemNameMap] -> [IRI]
-itemNameMapsToIRIs = concatMap (\(ItemNameMap i mi) -> i : maybeToList mi)
+itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> i : maybeToList mi)
 
-{- END CURIE expansion -}
+-- END CURIE expansion
