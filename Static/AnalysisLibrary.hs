@@ -240,8 +240,12 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
 -}
 anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
   -> FilePath -> ResultT IO (LibName, LIB_DEFN, GlobalAnnos, LibEnv)
-anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln' alibItems pos ans) file = do
-  gannos <- showDiags1 opts $ liftR $ addGlobalAnnos (defPrefixGlobalAnnos file) ans
+anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln' alibItems pos ans) file
+  = do
+  let libStr = show (getLibId ln')
+      isDOLlib = elem ':' libStr
+  gannos <- showDiags1 opts $ liftR $ addGlobalAnnos
+    (defPrefixGlobalAnnos $ if isDOLlib then file else libStr) ans
   let ln = fromMaybe ln' $ expandCurieLibName gannos ln'
   (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = gannos }, libenv
@@ -434,14 +438,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     if Set.member ln topLns then
      liftR $ mkError "illegal cyclic library import"
        $ Set.map getLibId topLns
-    else
-      let LibName (IndirectLink fn _ _ _) _ = ln
-          ffoln :: FilePath -> ResultT IO FilePath
-          ffoln s = ResultT $ do
-            p <- findFileOfLibName opts fn
-            return $ return $ fromMaybe s p
-      in do
-        fname <- ffoln fn
+    else do
         (ln', libenv') <- anaLibFile lg opts topLns libenv
           (cpIndexMaps dg emptyDG) ln
         unless (ln == ln')
@@ -453,22 +450,25 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
             ++ show ln' ++ " available: " ++ show (Map.keys libenv')
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
+                fn = show $ getLibId ln
                 (realItems, errs, origItems) = case items of
                   ItemMaps ims ->
-                    let expIms = map (expandCurieItemNameMap fname) ims
+                    let expIms = map (expandCurieItemNameMap fn) ims
                         leftExpIms = lefts expIms
                     in  if not $ null leftExpIms
                         then ([], map fail leftExpIms, itemNameMapsToIRIs ims)
                         else (rights expIms, [], itemNameMapsToIRIs ims)
                   UniqueItem i -> case Map.keys $ globalEnv dg' of
                     [j] -> case expCurie (globalAnnos dg) eo i of
-                            Nothing -> ([], fail $ failPrefixIRI i, [i])
-                            Just expI -> case expCurie (globalAnnos dg) eo j of
-                              Nothing -> ([], fail $ failPrefixIRI j, [i,j])
-                              Just expJ -> ([ItemNameMap expJ (Just expI)], [], [i,j])
-                    _ -> ([], [mkError
-                               "non-unique name within imported library" itm], [])
-                additionalEo = Map.fromList $ zip origItems $ repeat fname
+                      Nothing -> ([], fail $ failPrefixIRI i, [i])
+                      Just expI -> case expCurie (globalAnnos dg) eo j of
+                        Nothing -> ([], fail $ failPrefixIRI j, [i,j])
+                        Just expJ -> ([ItemNameMap expJ (Just expI)], [], [i,j])
+                    _ ->
+                     ( []
+                     , [mkError "non-unique name within imported library" itm]
+                     , [])
+                additionalEo = Map.fromList $ zip origItems $ repeat fn
                 eo' = Map.unionWith (\_ p2 -> p2) eo additionalEo
             mapM_ liftR errs
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 realItems
