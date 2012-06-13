@@ -147,18 +147,17 @@ anaString mln lgraph opts topLns libenv initDG input file = do
       nIs = case is of
         [Annoted (Spec_defn spn gn as qs) rs [] []]
             | noLibName && null (iriToStringUnsecure spn)
-                -> [Annoted (Spec_defn (simpleIdToIRI $ mkSimpleId spN) gn as qs) rs [] []]
+                -> [Annoted (Spec_defn (simpleIdToIRI $ mkSimpleId spN)
+                             gn as qs) rs [] []]
         _ -> is
-      ln' = setFilePath posFileName mt
+      ln = setFilePath posFileName mt
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
-  gannos <- liftR $ addGlobalAnnos (defPrefixGlobalAnnos file) ans
-  let ln = fromMaybe ln' $ expandCurieLibName gannos ln'
-  let ast = Lib_defn ln nIs ps ans
+      ast = Lib_defn ln nIs ps ans
   case analysis opts of
       Skip -> do
           lift $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
-          ga <- liftR $ addGlobalAnnos (defPrefixGlobalAnnos file) ans
+          ga <- liftR $ addGlobalAnnos emptyGlobalAnnos ans
           lift $ writeLibDefn ga file opts ast
           liftR mzero
       _ -> do
@@ -170,7 +169,8 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           lift $ putIfVerbose opts 1 $ "Analyzing "
               ++ (if noLibName then "file " ++ file ++ " as " else "")
               ++ "library " ++ show ln
-          (_, ld, ga, lenv) <- anaLibDefn lgraph opts topLns libenv initDG ast file
+          (_, ld, ga, lenv) <-
+              anaLibDefn lgraph opts topLns libenv initDG ast file
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
