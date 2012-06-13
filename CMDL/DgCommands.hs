@@ -58,9 +58,7 @@ import Common.Result
 import Common.ResultT
 import Common.Id
 import Common.IRI (simpleIdToIRI)
-import Common.GlobalAnnotations
 import Common.AS_Annotation
-
 
 import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Map as Map
