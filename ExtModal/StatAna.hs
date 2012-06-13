@@ -80,12 +80,13 @@ frmTypeAna sign form = let
                       t2 <- oneExpTerm frmTypeAna sign t
                       let srt = sortOfTerm t2
                           trm = TermMod t2
-                      if Set.member srt ms
-                         then return trm
-                         else Result [mkDiag Error
+                          supers = supersortsOf srt sign
+                      if Set.null $ Set.intersection (Set.insert srt supers) ms
+                         then Result [mkDiag Error
                               ("unknown term modality sort '"
                                ++ showId srt "' for term") t ]
                               $ Just trm
+                         else return trm
                     in case t of
                        Mixfix_token tm ->
                            if Set.member (simpleIdToId tm) ms
