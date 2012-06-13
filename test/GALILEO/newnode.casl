@@ -1,3 +1,4 @@
+library GALILEO/Heat
 spec Ot = Energy_Dissipation
 then %implies
   forall h:H2O; f:Process 
