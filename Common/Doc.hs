@@ -1011,7 +1011,8 @@ codeOutAnno m a = case a of
                             then HetsLabel
                             else Comment
                   _ -> Comment) (percent <> lparen) l annoRparen
-    Prefix_anno pm _ -> annoLparen prefixS <> vcat
+    Prefix_anno l _ -> let pm = filter (not . null . iriScheme . snd) l in
+      if null pm then empty else annoLparen prefixS <> vcat
         ( map ( \ (s, i) -> text (if null s then ":" else s)
                 <+> text "<" <> text (iriToStringUnsecure i)
                  <> text ">") pm) <> annoRparen

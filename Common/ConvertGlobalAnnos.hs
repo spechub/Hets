@@ -25,7 +25,6 @@ import Common.AnalyseAnnos
 import Common.Result
 import Common.Doc
 import Common.DocUtils
-import Common.IRI
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -93,5 +92,5 @@ convertLiteralAnnos la = let
   in str ++ lis ++ number ++ flo
 
 convertPrefixMap :: PrefixMap -> [Annotation]
-convertPrefixMap m = let pm = Map.filter (not . null . iriScheme) m in
+convertPrefixMap pm =
   if Map.null pm then [] else [Prefix_anno (Map.toList pm) nullRange]
