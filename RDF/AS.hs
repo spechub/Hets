@@ -36,6 +36,18 @@ data TurtleDocument = TurtleDocument
 emptyTurtleDocument :: TurtleDocument
 emptyTurtleDocument = TurtleDocument nullQName Map.empty []
 
+rdfFirst :: IRI
+rdfFirst = QN "rdf" "first" Abbreviated
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#first" nullRange
+
+rdfRest :: IRI
+rdfRest = QN "rdf" "rest" Abbreviated
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest" nullRange
+    
+rdfNil :: IRI
+rdfNil = QN "rdf" "nil" Abbreviated
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" nullRange
+
 data Statement = Statement Triples | PrefixStatement Prefix | BaseStatement Base
     deriving (Show, Eq, Ord)
     
@@ -70,7 +82,7 @@ data RDFLiteral = RDFLiteral Bool LexicalForm TypedOrUntyped
 
 -- * Datatypes for Hets manipulation
 
-data Axiom = Axiom Subject Predicate Object
+data Axiom = Axiom IRI IRI (Either IRI RDFLiteral)
     deriving (Show, Eq, Ord)
 
 data RDFEntityType = SubjectEntity | PredicateEntity | ObjectEntity
