@@ -15,15 +15,16 @@ module Common.ConvertGlobalAnnos
   ( mergeGlobalAnnos
   , convertGlobalAnnos
   , convertLiteralAnnos
+  , removeHetCASLprefixes
   ) where
 
 import Common.Id
+import Common.IRI
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import qualified Common.Lib.Rel as Rel
 import Common.AnalyseAnnos
 import Common.Result
-import Common.Doc
 import Common.DocUtils
 
 import qualified Data.Map as Map
@@ -32,10 +33,11 @@ import Data.List (partition, groupBy, sortBy)
 import Data.Ord
 
 instance Pretty GlobalAnnos where
-    pretty = printGlobalAnnos
+  pretty = printAnnotationList . convertGlobalAnnos . removeHetCASLprefixes
 
-printGlobalAnnos :: GlobalAnnos -> Doc
-printGlobalAnnos = printAnnotationList . convertGlobalAnnos
+removeHetCASLprefixes :: GlobalAnnos -> GlobalAnnos
+removeHetCASLprefixes ga = ga
+  { prefix_map = Map.filter (not. null . iriScheme) $ prefix_map ga }
 
 convertGlobalAnnos :: GlobalAnnos -> [Annotation]
 convertGlobalAnnos ga = convertPrefixMap (prefix_map ga)

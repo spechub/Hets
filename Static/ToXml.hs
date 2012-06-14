@@ -52,7 +52,8 @@ dGraph lenv ln dg =
                , mkAttr "libname" $ show $ getLibId ln
                , mkAttr "nextlinkid" $ showEdgeId $ getNewEdgeId dg ]
      $ unode "DGraph" $
-         subnodes "Global" (annotations ga $ convertGlobalAnnos ga)
+         subnodes "Global" (annotations ga $ convertGlobalAnnos
+                            $ removeHetCASLprefixes ga)
          ++ map (lnode ga lenv) lnodes
          ++ map (ledge ga dg) (labEdges body)
 
