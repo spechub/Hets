@@ -15,7 +15,7 @@ module RDF.StaticAnalysis where
 import OWL2.AS
 import OWL2.Parse
 import RDF.AS
---import RDF.Sign
+import RDF.Sign
 --import RDF.Function
 import RDF.Print
 import RDF.Parse
@@ -25,7 +25,7 @@ import Network.URI
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec hiding (State)
 
 import Common.AS_Annotation hiding (Annotation)
 import Common.Id
@@ -201,7 +201,7 @@ expandTripleList i tl = case tl of
 simpleTripleToAxiom :: Triples -> Axiom
 simpleTripleToAxiom (Triples s pol) = case (s, pol) of
     (Subject sub, [PredicateObjectList (Predicate pred) [o]]) ->
-        Axiom sub pred $ case o of
+        Axiom (SubjectTerm sub) (PredicateTerm pred) $ ObjectTerm $ case o of
             ObjectLiteral lit -> Right lit
             Object (Subject obj) -> Left obj
             _ -> error "object should be an URI"
@@ -210,17 +210,16 @@ simpleTripleToAxiom (Triples s pol) = case (s, pol) of
 createAxioms :: TurtleDocument -> [Axiom]
 createAxioms doc = map simpleTripleToAxiom $ snd $ expandTripleList 1
                                     $ triplesOfDocument $ resolveDocument doc
-
-{-
+                                    
 -- | takes an entity and modifies the sign according to the given function
-modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> RDFEntity -> State Sign ()
+modEntity :: (Term -> Set.Set Term -> Set.Set Term) -> RDFEntity -> State Sign ()
 modEntity f (RDFEntity ty u) = do
   s <- get
   let chg = f u
   put $ case ty of
-    Subject -> s { subjects = chg $ subjects s }
-    Predicate -> s { predicates = chg $ predicates s }
-    Object -> s { objects = chg $ objects s }
+    SubjectEntity -> s { subjects = chg $ subjects s }
+    PredicateEntity -> s { predicates = chg $ predicates s }
+    ObjectEntity -> s { objects = chg $ objects s }
 
 -- | adding entities to the signature
 addEntity :: RDFEntity -> State Sign ()
@@ -228,44 +227,22 @@ addEntity = modEntity Set.insert
 
 collectEntities :: Axiom -> State Sign ()
 collectEntities (Axiom sub pre obj) = do
-    addEntity (RDFEntity Subject sub)
-    addEntity (RDFEntity Predicate pre)
-    case obj of
-        Left iri -> addEntity (RDFEntity Object iri)
-        _ -> return ()
+    addEntity (RDFEntity SubjectEntity sub)
+    addEntity (RDFEntity PredicateEntity pre)
+    addEntity (RDFEntity ObjectEntity obj)
 
--- | collects all entites from the graph
-createSign :: RDFGraph -> State Sign ()
-createSign (RDFGraph gr) =
-    mapM_ (collectEntities . function Expand (StringMap Map.empty)) gr
+-- | collects all entites from the axioms
+createSign :: TurtleDocument -> State Sign ()
+createSign = mapM_ collectEntities . createAxioms
 
--- | corrects the axioms according to the signature
-createAxioms :: Sign -> RDFGraph -> Result ([Named Axiom], RDFGraph)
-createAxioms _ (RDFGraph gr) = do
-    let cf = map (function Expand $ StringMap Map.empty) gr
-    return (map anaAxiom cf, RDFGraph cf)
-
--- | adding annotations for theorems
 anaAxiom :: Axiom -> Named Axiom
-anaAxiom ax = findImplied ax $ makeNamed "" ax
+anaAxiom ax = makeNamed "" ax
 
-findImplied :: Axiom -> Named Axiom -> Named Axiom
-findImplied ax sent =
-  if prove ax then sent
-         { isAxiom = False
-         , isDef = False
-         , wasTheorem = False }
-   else sent { isAxiom = True }
-
-prove :: Axiom -> Bool
-prove _ = False
-
--- | static analysis of graph with incoming sign.
-basicRDFAnalysis :: (RDFGraph, Sign, GlobalAnnos)
-    -> Result (RDFGraph, ExtSign Sign RDFEntity, [Named Axiom])
-basicRDFAnalysis (gr, inSign, _) = do
+-- | static analysis of document with incoming sign.
+basicRDFAnalysis :: (TurtleDocument, Sign, GlobalAnnos)
+    -> Result (TurtleDocument, ExtSign Sign RDFEntity, [Named Axiom])
+basicRDFAnalysis (doc, inSign, _) = do
     let syms = Set.difference (symOf accSign) $ symOf inSign
-        accSign = execState (createSign gr) inSign
-    (axl, newgraph) <- createAxioms accSign gr
-    return (newgraph, ExtSign accSign syms, axl)
--}
+        accSign = execState (createSign doc) inSign
+        axioms = map anaAxiom $ createAxioms doc
+    return (doc, ExtSign accSign syms, axioms)

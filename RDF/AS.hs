@@ -92,14 +92,20 @@ data RDFLiteral = RDFLiteral Bool LexicalForm TypedOrUntyped
 
 -- * Datatypes for Hets manipulation
 
-data Axiom = Axiom IRI IRI (Either IRI RDFLiteral)
+data Term =
+    SubjectTerm IRI
+  | PredicateTerm IRI
+  | ObjectTerm (Either IRI RDFLiteral)
+    deriving (Show, Eq, Ord) 
+
+data Axiom = Axiom Term Term Term
     deriving (Show, Eq, Ord)
 
 data RDFEntityType = SubjectEntity | PredicateEntity | ObjectEntity
     deriving (Show, Eq, Ord, Bounded, Enum)
 
 -- | entities used for morphisms
-data RDFEntity = RDFEntity RDFEntityType IRI
+data RDFEntity = RDFEntity RDFEntityType Term
     deriving (Show, Eq, Ord)
 
 rdfEntityTypes :: [RDFEntityType]

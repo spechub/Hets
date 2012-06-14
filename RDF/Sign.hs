@@ -14,9 +14,9 @@ import OWL2.AS
 import qualified Data.Set as Set
 
 data Sign = Sign
-    { subjects :: Set.Set IRI
-    , predicates :: Set.Set IRI
-    , objects :: Set.Set IRI
+    { subjects :: Set.Set Term
+    , predicates :: Set.Set Term
+    , objects :: Set.Set Term
     } deriving (Show, Eq, Ord)
 
 emptySign :: Sign
@@ -51,6 +51,6 @@ uniteSign s1 s2 = return $ addSign s1 s2
 
 symOf :: Sign -> Set.Set RDFEntity
 symOf s = Set.unions
-  [ Set.map (RDFEntity Subject) $ subjects s
-  , Set.map (RDFEntity Predicate) $ predicates s
-  , Set.map (RDFEntity Object) $ objects s ]
+  [ Set.map (RDFEntity SubjectEntity) $ subjects s
+  , Set.map (RDFEntity PredicateEntity) $ predicates s
+  , Set.map (RDFEntity ObjectEntity) $ objects s ]

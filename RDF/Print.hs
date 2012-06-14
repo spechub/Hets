@@ -22,7 +22,7 @@ import OWL2.Print ()
 
 import RDF.AS
 import RDF.Symbols
---import RDF.Sign
+import RDF.Sign
 import RDF.Parse
 import Text.ParserCombinators.Parsec
 
@@ -104,16 +104,25 @@ printDocument doc = (vcat . map pretty) (statements doc)
 printExpandedIRI :: IRI -> Doc
 printExpandedIRI iri = if iriType iri == NodeID then text $ showQU iri
     else text $ expandedIRI iri
+    
+instance Pretty Term where
+    pretty = printTerm
+    
+printTerm :: Term -> Doc
+printTerm t = case t of
+    SubjectTerm iri -> printExpandedIRI iri
+    PredicateTerm iri -> printExpandedIRI iri
+    ObjectTerm obj -> case obj of
+        Right lit -> pretty lit
+        Left iri -> printExpandedIRI iri
 
 instance Pretty Axiom where
     pretty = printAxiom
 
 printAxiom :: Axiom -> Doc
-printAxiom (Axiom sub pre obj)
-    = printExpandedIRI sub <+> printExpandedIRI pre <+> (case obj of
-        Right lit -> pretty lit
-        Left iri -> printExpandedIRI iri) <+> text "."
-        
+printAxiom (Axiom sub pre obj) = pretty sub <+> pretty pre <+> pretty obj
+                                                                    <+> text "."
+
 printAxioms :: [Axiom] -> Doc
 printAxioms al = (vcat . map pretty) al
 
