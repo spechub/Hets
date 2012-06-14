@@ -121,7 +121,7 @@ extractPrefixMap pm ls = case ls of
 -- * Axiom extraction
 
 generateBNode :: Int -> IRI
-generateBNode i = setPrefix "_" $ mkQName $ "hets_rdf_bnode_" ++ show i
+generateBNode i = setPrefix "_" $ mkQName $ "bnode" ++ show i
 {-}
 decodeSubject :: Int -> Subject -> (Int, Subject, [Triples])
 decodeSubject i s = case s of
@@ -165,7 +165,7 @@ decodeSingleTriple i (Triple s ls) =
 
 collectionToPOList :: [Object] -> [PredicateObjectList]
 collectionToPOList objs = case objs of
-    [] -> [PredicateObjectList (Predicate rdfNil) []]
+    [] -> []
     h : t -> [ PredicateObjectList (Predicate rdfFirst) [h]
              , PredicateObjectList (Predicate rdfRest) [Object $ if null t
                 then Subject rdfNil else SubjectList $ collectionToPOList t]]
@@ -180,21 +180,57 @@ expandPOList2 (Triples s pols) = case pols of
         map (\ obj -> Triples s [PredicateObjectList p [obj]]) objs
     _ -> error "unexpected ; abbreviated triple"
     
+-- | converts a triple to a list of triples with one predicate and one object
 expandPOList :: Triples -> [Triples]
 expandPOList = concatMap expandPOList2 . expandPOList1
 
 -- | this assumes exactly one subject, one predicate and one object
-expandObject :: Int -> Triples -> [Triples]
-expandObject i t@(Triples s ls) = case ls of
+expandObject1 :: Int -> Triples -> (Int, [Triples])
+expandObject1 i t@(Triples s ls) = case ls of
     [PredicateObjectList p [obj]] -> case obj of
-        ObjectLiteral _ -> [t]
-        Object (Subject _) -> [t]
+        ObjectLiteral _ -> (i, [t])
+        Object (Subject _) -> (i, [t])
         Object (SubjectList pol) ->
             let bnode = Subject $ generateBNode i
                 newTriple = Triples s [PredicateObjectList p [Object bnode]]
-                connectedTriples = Triples bnode pol
-            in [newTriple, connectedTriples]
+                connectedTriples = expandPOList $ Triples bnode pol
+                (j, expandedTriples) = expandObject2 (i + 1) connectedTriples
+            in (j, newTriple : expandedTriples)
+        Object (SubjectCollection col) -> let pol = collectionToPOList col
+            in if null pol then
+                (i, [Triples s [PredicateObjectList p [Object $ Subject rdfNil]]])
+               else expandObject1 i $ Triples s [PredicateObjectList p [Object $ SubjectList pol]]
     _ -> error "unexpected , or ; abbreviated triple"
+
+-- | this assumes each triple has one subject, one predicate and one object
+expandObject2 :: Int -> [Triples] -> (Int, [Triples])
+expandObject2 i tl = case tl of
+    [] -> (i, [])
+    h : t -> let (j, triples1) = expandObject1 i h
+                 (k, triples2) = expandObject2 j t
+             in (k, triples1 ++ triples2)
+             
+expandObject :: Int -> Triples -> (Int, [Triples])
+expandObject i t = expandObject2 i $ expandPOList t
+             
+expandSubject :: Int -> Triples -> (Int, [Triples])
+expandSubject i t@(Triples s ls) = case s of
+    Subject _ -> (i, [t])
+    SubjectList pol -> let bnode = Subject $ generateBNode i
+        in (i + 1, map (Triples bnode) [ls, pol])
+    SubjectCollection col -> let pol = collectionToPOList col
+        in if null col then (i, [Triples (Subject rdfNil) ls])
+           else expandSubject i $ Triples (SubjectList pol) ls
+
+expandTriple :: Int -> Triples -> (Int, [Triples])
+expandTriple i t = let (j, sst) = expandSubject i t in case sst of
+    [triple] -> expandObject j triple
+    [triple, connectedTriple] ->
+        let (k, tl1) = expandObject j triple
+            (l, tl2) = expandObject k connectedTriple
+        in (l, tl1 ++ tl2)
+
+
 
 {-}
 {- | this assumes the subject is only IRI and the PredicateObjectList
