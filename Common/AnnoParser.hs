@@ -50,7 +50,7 @@ parseAnnoId :: GenParser Char st Id
 parseAnnoId = let keys = ([], []) in mixId keys keys
 
 charOrEof :: Char -> GenParser Char st ()
-charOrEof c = (char c >> return ()) <|> eof
+charOrEof c = forget (char c) <|> eof
 
 newlineOrEof :: GenParser Char st ()
 newlineOrEof = lookAhead $ charOrEof '\n'
@@ -182,7 +182,7 @@ parseInternal :: GenParser Char () a -> Pos -> String -> Either ParseError a
 parseInternal p sp = parse
   (do
     setPosition $ fromPos sp
-    skip
+    spaces
     res <- p
     eof
     return res) (Id.sourceName sp)
@@ -211,7 +211,7 @@ precAnno, numberAnno, stringAnno, listAnno, floatingAnno
     :: Range -> GenParser Char st Annotation
 precAnno ps = do
     leftIds <- braces commaIds
-    sign <- (tryString "<>" <|> string "<") << skip
+    sign <- (tryString "<>" <|> string "<") << spaces
     rightIds <- braces commaIds
     return $ Prec_anno
                (if sign == "<" then Lower else BothDirections)
@@ -238,15 +238,11 @@ floatingAnno ps = literal2idsAnno ps Float_anno
 prefixAnno :: Range -> GenParser Char st Annotation
 prefixAnno ps = do
     prefixes <- many $ do
-        p <- do
-              c <- try $ string colonS
-              return ""
-            <|> do
-              n <- IRI.ncname
-              c <- string colonS
-              return $ n ++ c
-        skip
-        i <- char '<' >> iri << char '>' << skip
+        p <- (string colonS >> return "") <|>
+             (IRI.ncname <++> string colonS)
+        spaces
+        i <- char '<' >> iri << char '>'
+        spaces
         return (p, i)
     return $ Prefix_anno prefixes ps
 
@@ -267,6 +263,6 @@ displayAnno ps = do
 dispSymb :: (Display_format, String)
           -> GenParser Char st (Display_format, String)
 dispSymb (dfSymb, symb) = do
-  tryString (percentS ++ symb) << skip
+  tryString (percentS ++ symb) << spaces
   str <- manyTill anyChar $ lookAhead $ charOrEof '%'
   return (dfSymb, trimRight str)
