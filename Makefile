@@ -55,7 +55,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2
+    FreeCAD OWL2 RDF
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -307,8 +307,8 @@ OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
   OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
   OWL2/Profiles.hs
 
-RDF_files = RDF/AS.hs OWL2/AS.hs # RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
-  #RDF/Sublogic.hs
+RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
+  RDF/Sublogic.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)

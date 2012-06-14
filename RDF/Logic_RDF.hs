@@ -28,7 +28,7 @@ import ATC.ProofTree ()
 import Logic.Logic
 
 import RDF.AS
--- import RDF.ATC_RDF ()
+import RDF.ATC_RDF ()
 import RDF.Parse
 import RDF.Symbols
 import RDF.Print
@@ -45,45 +45,45 @@ instance Language RDF where
     "RDF -- Resource Description Framework http://www.w3.org/RDF/"
 
 instance Category Sign RDFMorphism where
-    ide sig = inclRDFMorphism sig sig
+    {-}ide sig = inclRDFMorphism sig sig
     dom = osource
     cod = otarget
     legal_mor = legalMor
     isInclusion = isRDFInclusion
     composeMorphisms = composeMor
-
-instance Syntax RDF RDFGraph SymbItems SymbMapItems where
+-}
+instance Syntax RDF TurtleDocument SymbItems SymbMapItems where
     parse_basic_spec RDF = Just basicSpec
     parse_symb_items RDF = Just rdfSymbItems
     parse_symb_map_items RDF = Just rdfSymbMapItems
 
 instance Sentences RDF Axiom Sign RDFMorphism RDFEntity where
-    map_sen RDF = mapSen
+    --map_sen RDF = mapSen
     print_named RDF namedSen = pretty $ sentence namedSen
-    sym_of RDF = singletonList . symOf
-    symmap_of RDF = symMapOf
+    --sym_of RDF = singletonList . symOf
+    --symmap_of RDF = symMapOf
 
-instance StaticAnalysis RDF RDFGraph Axiom
+instance StaticAnalysis RDF TurtleDocument Axiom
                SymbItems SymbMapItems
                Sign
                RDFMorphism
                RDFEntity RawSymb where
       basic_analysis RDF = Just basicRDFAnalysis
-      stat_symb_items RDF _ = return . statSymbItems
-      stat_symb_map_items RDF _ _ = statSymbMapItems
+      --stat_symb_items RDF _ = return . statSymbItems
+      --stat_symb_map_items RDF _ _ = statSymbMapItems
       empty_signature RDF = emptySign
       signature_union RDF = uniteSign
       signatureDiff RDF s = return . diffSig s
       final_union RDF = signature_union RDF
       is_subsig RDF = isSubSign
-      subsig_inclusion RDF s = return . inclRDFMorphism s
-      matches RDF = matchesSym
+      --subsig_inclusion RDF s = return . inclRDFMorphism s
+      --matches RDF = matchesSym
       symbol_to_raw RDF = ASymbol
-      induced_from_morphism RDF = inducedFromMor
-      cogenerated_sign RDF = cogeneratedSign
-      generated_sign RDF = generatedSign
+      --induced_from_morphism RDF = inducedFromMor
+      --cogenerated_sign RDF = cogeneratedSign
+      --generated_sign RDF = generatedSign
 
-instance Logic RDF RDFSub RDFGraph Axiom SymbItems SymbMapItems
+instance Logic RDF RDFSub TurtleDocument Axiom SymbItems SymbMapItems
                Sign
                RDFMorphism RDFEntity RawSymb ProofTree where
          empty_proof_tree RDF = emptyProofTree

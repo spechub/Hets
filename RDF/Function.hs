@@ -13,18 +13,13 @@ Instances for some of the functions used in RDF
 -}
 
 module RDF.Function where
-
 import OWL2.AS
 import RDF.AS
-import RDF.Parse
-import Text.ParserCombinators.Parsec
-import OWL2.Parse
 --import RDF.Sign
 
-import Data.Maybe
 import qualified Data.Map as Map
-import qualified Data.Set as Set
-
+--import qualified Data.Set as Set
+{-}
 {- | this class contains general functions which operate on the ontology
     document, such as prefix renaming, IRI expansion or Morphism mapping -}
 class Function a where
@@ -32,10 +27,10 @@ class Function a where
 
 data Action = Rename | Expand
     deriving (Show, Eq, Ord)
-
+-}
 type StringMap = Map.Map String String
 type MorphMap = Map.Map RDFEntity IRI
-
+{-}
 data AMap =
       StringMap StringMap
     | PrefixMap RDFPrefixMap
@@ -109,7 +104,7 @@ instance Function TurtleDocument where
                         { statements = map (function m) $ statements doc
                         , prefixMap = function m $ prefixMap doc }
     
-{-}
+
 getIri :: RDFEntityType -> IRI -> Map.Map RDFEntity IRI -> IRI
 getIri ty u = fromMaybe u . Map.lookup (RDFEntity ty u)
 

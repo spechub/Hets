@@ -112,6 +112,7 @@ rdfEntityTypes :: [RDFEntityType]
 rdfEntityTypes = [minBound .. maxBound]
 
 instance GetRange TurtleDocument where
+instance GetRange RDFEntity where
 instance GetRange Axiom where
 
 isAbsoluteIRI :: IRI -> Bool

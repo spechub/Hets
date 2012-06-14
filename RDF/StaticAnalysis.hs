@@ -16,9 +16,6 @@ import OWL2.AS
 import OWL2.Parse
 import RDF.AS
 import RDF.Sign
---import RDF.Function
-import RDF.Print
-import RDF.Parse
 
 import Data.Maybe
 import Network.URI
@@ -37,9 +34,9 @@ import Common.Lib.State
 -- * URI Resolution
 
 resolveFullIRI :: IRI -> IRI -> IRI
-resolveFullIRI abs rel = if isAbsoluteIRI rel then rel else
+resolveFullIRI absol rel = if isAbsoluteIRI rel then rel else
     let r = fromJust $ parseURIReference $ expandedIRI rel
-        a = fromJust $ parseURI $ expandedIRI abs
+        a = fromJust $ parseURI $ expandedIRI absol
         resolved = (uriToString id $ fromJust $ relativeTo r a) ""
         Right new = parse uriQ "" $ "<" ++ resolved ++ ">"
     in rel {expandedIRI = expandedIRI new}
@@ -190,6 +187,7 @@ expandTriple i t = let (j, sst) = expandSubject i t in case sst of
         let (k, tl1) = expandObject j triple
             (l, tl2) = expandObject k connectedTriple
         in (l, tl1 ++ tl2)
+    _ -> error "expanding triple before expanding subject"
 
 expandTripleList :: Int -> [Triples] -> (Int, [Triples])
 expandTripleList i tl = case tl of
@@ -200,8 +198,8 @@ expandTripleList i tl = case tl of
              
 simpleTripleToAxiom :: Triples -> Axiom
 simpleTripleToAxiom (Triples s pol) = case (s, pol) of
-    (Subject sub, [PredicateObjectList (Predicate pred) [o]]) ->
-        Axiom (SubjectTerm sub) (PredicateTerm pred) $ ObjectTerm $ case o of
+    (Subject sub, [PredicateObjectList (Predicate pr) [o]]) ->
+        Axiom (SubjectTerm sub) (PredicateTerm pr) $ ObjectTerm $ case o of
             ObjectLiteral lit -> Right lit
             Object (Subject obj) -> Left obj
             _ -> error "object should be an URI"

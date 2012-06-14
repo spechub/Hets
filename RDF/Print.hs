@@ -23,8 +23,6 @@ import OWL2.Print ()
 import RDF.AS
 import RDF.Symbols
 import RDF.Sign
-import RDF.Parse
-import Text.ParserCombinators.Parsec
 
 import qualified Data.Set as Set
 
@@ -126,7 +124,6 @@ printAxiom (Axiom sub pre obj) = pretty sub <+> pretty pre <+> pretty obj
 printAxioms :: [Axiom] -> Doc
 printAxioms al = (vcat . map pretty) al
 
-{-}
 -- | RDF signature printing
 printRDFBasicTheory :: (Sign, [Named Axiom]) -> Doc
 printRDFBasicTheory (_, l) = vsep (map (pretty . sentence) l)
@@ -134,30 +131,15 @@ printRDFBasicTheory (_, l) = vsep (map (pretty . sentence) l)
 instance Pretty Sign where
     pretty = printSign
 
-printNodes :: String -> Set.Set IRI -> Doc
-printNodes s iris = text "#" <+> text s $+$
-    vcat (map ((text "#\t\t" <+>) . pretty) (Set.toList iris))
+printNodes :: String -> Set.Set Term -> Doc
+printNodes s terms = text "#" <+> text s $+$
+    vcat (map ((text "#\t\t" <+>) . pretty) (Set.toList terms))
 
 printSign :: Sign -> Doc
-printSign s = text "# signature" $+$ printNodes "subjects:" (subjects s)
+printSign s = printNodes "subjects:" (subjects s)
     $+$ printNodes "predicates:" (predicates s)
     $+$ printNodes "objects:" (objects s)
-    $+$ text "# end signature"
 
-
-printObject :: Object -> Doc
-printObject obj = case obj of
-    Left iri -> pretty iri
-    Right lit -> pretty lit
-
-instance Pretty RDFGraph where
-    pretty = printGraph
-
-printGraph :: RDFGraph -> Doc
-printGraph (RDFGraph sl) = vcat $ map pretty sl
--}
-
-{-}
 -- | Symbols printing
 
 instance Pretty RDFEntityType where
@@ -182,4 +164,3 @@ instance Pretty RawSymb where
     pretty rs = case rs of
         ASymbol e -> pretty e
         AnUri u -> pretty u
-        -}

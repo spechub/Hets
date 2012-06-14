@@ -10,7 +10,6 @@ module RDF.Sign where
 
 import RDF.AS
 import Common.Result
-import OWL2.AS
 import qualified Data.Set as Set
 
 data Sign = Sign

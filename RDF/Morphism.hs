@@ -14,30 +14,31 @@ Morphisms for RDF
 module RDF.Morphism where
 
 import Common.DocUtils
-import Common.Doc
+{-}import Common.Doc
 import Common.Lib.State
 import Common.Lib.MapSet (setToMap)
 import Common.Result
 
 import OWL2.AS
 import RDF.AS
+-}
 import RDF.Sign
 import RDF.Function
-import RDF.StaticAnalysis
-import RDF.Symbols
+--import RDF.StaticAnalysis
+--import RDF.Symbols
 import RDF.Print ()
-
+{-}
 import Control.Monad
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-
+-}
 data RDFMorphism = RDFMorphism
   { osource :: Sign
   , otarget :: Sign
   , mmaps :: MorphMap
   } deriving (Show, Eq, Ord)
-
+{-}
 inclRDFMorphism :: Sign -> Sign -> RDFMorphism
 inclRDFMorphism s t = RDFMorphism
  { osource = s
@@ -78,9 +79,9 @@ inducedFromMor rm sig = do
 
 symMapOf :: RDFMorphism -> Map.Map RDFEntity RDFEntity
 symMapOf mor = Map.union (symMap $ mmaps mor) $ setToMap $ symOf $ osource mor
-
+-}
 instance Pretty RDFMorphism where
-  pretty m = let
+{-}  pretty m = let
     s = osource m
     srcD = specBraces $ space <> pretty s
     t = otarget m
@@ -101,7 +102,6 @@ legalMor m = let mm = mmaps m in unless
   (Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
   && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m))
         $ fail "illegal RDF morphism"
-
 composeMor :: RDFMorphism -> RDFMorphism -> Result RDFMorphism
 composeMor m1 m2 =
   let nm = Set.fold (\ s@(RDFEntity ty u) -> let
@@ -155,3 +155,4 @@ statSymbMapItems =
 
 mapSen :: RDFMorphism -> Axiom -> Result Axiom
 mapSen m a = return $ function Rename (MorphMap $ mmaps m) a
+-}

@@ -21,9 +21,6 @@ import OWL2.Parse hiding (stringLiteral, literal, skips)
 import RDF.AS
 import RDF.Symbols
 
-import Data.Maybe
-import Data.List
-import Control.Monad
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
@@ -136,9 +133,9 @@ parseObject = fmap ObjectLiteral literal <|> fmap Object parseSubject
 
 parsePredObjects :: CharParser st PredicateObjectList
 parsePredObjects = do
-    pred <- parsePredicate
+    pr <- parsePredicate
     objs <- sepBy parseObject $ skips $ char ','
-    return $ PredicateObjectList pred objs
+    return $ PredicateObjectList pr objs
 
 parsePredObjList :: CharParser st [PredicateObjectList]
 parsePredObjList = sepEndBy parsePredObjects $ skips $ char ';'

@@ -1,20 +1,7 @@
-#comment1
-#comment1
-@base <http://a> .
-@prefix ex: <http://vvv> .
-<http://b> <c> a, b, c,d ; e [p q ; r [a b], v] ; g h, a  . # a lot of stuff
+@prefix : <http://example.com/> .
 
-#setting new base
-@base ex:xyz . #comment1
-@prefix ex: a . #   comment 2
-<p> <http://q> """sdf
-        sdsdf
-        assdf
-        sdfsdf
-        sfd
-        """,
-        123 ;
-        asd sd .
-#comment 3
+#comment
+
+:s :p :o .
 
 
