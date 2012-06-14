@@ -36,6 +36,16 @@ data TurtleDocument = TurtleDocument
 emptyTurtleDocument :: TurtleDocument
 emptyTurtleDocument = TurtleDocument nullQName Map.empty []
 
+extractTripleStatements :: [Statement] -> [Triples]
+extractTripleStatements ls = case ls of
+    [] -> []
+    h : t -> case h of
+        Statement triple -> triple : extractTripleStatements t
+        _ -> extractTripleStatements t
+        
+triplesOfDocument :: TurtleDocument -> [Triples]
+triplesOfDocument doc = extractTripleStatements $ statements doc
+
 rdfFirst :: IRI
 rdfFirst = QN "rdf" "first" Abbreviated
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#first" nullRange

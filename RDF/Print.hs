@@ -101,6 +101,22 @@ instance Pretty TurtleDocument where
 printDocument :: TurtleDocument -> Doc
 printDocument doc = (vcat . map pretty) (statements doc)
 
+printExpandedIRI :: IRI -> Doc
+printExpandedIRI iri = if iriType iri == NodeID then text $ showQU iri
+    else text $ expandedIRI iri
+
+instance Pretty Axiom where
+    pretty = printAxiom
+
+printAxiom :: Axiom -> Doc
+printAxiom (Axiom sub pre obj)
+    = printExpandedIRI sub <+> printExpandedIRI pre <+> (case obj of
+        Right lit -> pretty lit
+        Left iri -> printExpandedIRI iri) <+> text "."
+        
+printAxioms :: [Axiom] -> Doc
+printAxioms al = (vcat . map pretty) al
+
 {-}
 -- | RDF signature printing
 printRDFBasicTheory :: (Sign, [Named Axiom]) -> Doc
@@ -119,12 +135,6 @@ printSign s = text "# signature" $+$ printNodes "subjects:" (subjects s)
     $+$ printNodes "objects:" (objects s)
     $+$ text "# end signature"
 
-instance Pretty Axiom where
-    pretty = printAxiom
-
-printAxiom :: Axiom -> Doc
-printAxiom (Axiom sub pre obj)
-    = pretty sub <+> pretty pre <+> printObject obj <+> text "."
 
 printObject :: Object -> Doc
 printObject obj = case obj of

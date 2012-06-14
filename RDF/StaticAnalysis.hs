@@ -28,6 +28,7 @@ import qualified Data.Set as Set
 import Text.ParserCombinators.Parsec
 
 import Common.AS_Annotation hiding (Annotation)
+import Common.Id
 import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
@@ -105,63 +106,23 @@ resolveStatements b pm ls = case ls of
     Statement triples : t ->
             Statement (resolveTriples b pm triples) : resolveStatements b pm t
     
+extractPrefixMap :: RDFPrefixMap -> [Statement] -> RDFPrefixMap
+extractPrefixMap pm ls = case ls of
+    [] -> pm
+    h : t -> case h of
+        PrefixStatement (Prefix p iri) -> extractPrefixMap (Map.insert p iri pm) t
+        _ -> extractPrefixMap pm t    
+
 resolveDocument :: TurtleDocument -> TurtleDocument
 resolveDocument doc = let newStatements = resolveStatements
                             (Base $ documentName doc) Map.empty $ statements doc
     in doc { statements = newStatements
            , prefixMap = extractPrefixMap Map.empty newStatements } 
 
-extractPrefixMap :: RDFPrefixMap -> [Statement] -> RDFPrefixMap
-extractPrefixMap pm ls = case ls of
-    [] -> pm
-    h : t -> case h of
-        PrefixStatement (Prefix p iri) -> extractPrefixMap (Map.insert p iri pm) t
-        _ -> extractPrefixMap pm t
-        
 -- * Axiom extraction
 
 generateBNode :: Int -> IRI
-generateBNode i = setPrefix "_" $ mkQName $ "bnode" ++ show i
-{-}
-decodeSubject :: Int -> Subject -> (Int, Subject, [Triples])
-decodeSubject i s = case s of
-    Subject _ -> (i, s, [])
-    SubjectList ls -> let (j, bnode, tl) = decodePredicateObjectList i ls
-                      in (j, Subject bnode, tl)
-    SubjectCollection ol -> case ol of
-        [] -> (i, Subject rdfNil, [])
-        h : t -> let (j, bnode, tl) = decodePredicateObjectList i
-            [ PredicateObjectList (Predicate rdfFirst) h
-            , PredicateObjectList (Predicate rdfRest) $ SubjectCollection t ]
-                 in (j, Subject bnode, tl)
-                                                        
-expandPOList :: Int -> PredicateObjectList -> [PredicateObjectList]
-expandPOList (PredicateObjectList p objs) = if null objs
-    then [PredicateObjectList p [Object $ Subject $ generateBNode i]]
-    else 
-    map (\ obj -> PredicateObjectList p [obj]) objs
-    
-decodePredicateObjectList :: Int -> Subject -> [PredicateObjectList]
-    -> (Int, [Triples])
-decodePredicateObjectList i subj ls = case ls of
-    [] -> (i, [])
-    _ -> let poList = concatMap expandPOList ls
-             tripleList = map (\ po -> Triples (Subject iri) [po]) poList
-             (j, triples) = decodeTriples i tripleList
-         in (j, triples)
-         
-decodeObject :: Int -> Object -> (Int, Object, [Triples])
-decodeObject i o = case o of
-    Object s -> let (j, s, tl) = decodeSubject i s in (j, Object s, tl)
-    _ -> (i, o, [])
-    
-decodeSingleTriple :: Int -> Triples -> (Int, [Triples])
-decodeSingleTriple i (Triple s ls) =
-    let (j, s, tl) = decodeSubject i s
-    in case tl of
-        Nothing -> 
-    
--}
+generateBNode i = QN "_" ("bnode" ++ show i) NodeID ("_:bnode" ++ show i) nullRange
 
 collectionToPOList :: [Object] -> [PredicateObjectList]
 collectionToPOList objs = case objs of
@@ -230,17 +191,26 @@ expandTriple i t = let (j, sst) = expandSubject i t in case sst of
             (l, tl2) = expandObject k connectedTriple
         in (l, tl1 ++ tl2)
 
+expandTripleList :: Int -> [Triples] -> (Int, [Triples])
+expandTripleList i tl = case tl of
+    [] -> (i, [])
+    h : t -> let (j, tl1) = expandTriple i h
+                 (k, tl2) = expandTripleList j t
+             in (k, tl1 ++ tl2)
+             
+simpleTripleToAxiom :: Triples -> Axiom
+simpleTripleToAxiom (Triples s pol) = case (s, pol) of
+    (Subject sub, [PredicateObjectList (Predicate pred) [o]]) ->
+        Axiom sub pred $ case o of
+            ObjectLiteral lit -> Right lit
+            Object (Subject obj) -> Left obj
+            _ -> error "object should be an URI"
+    _ -> error "subject should be an URI or triple should not be abbreviated"
+    
+createAxioms :: TurtleDocument -> [Axiom]
+createAxioms doc = map simpleTripleToAxiom $ snd $ expandTripleList 1
+                                    $ triplesOfDocument $ resolveDocument doc
 
-
-{-}
-{- | this assumes the subject is only IRI and the PredicateObjectList
-has only one element -}
-expandForSimpleSubjPOList :: Triples -> [Axiom]
-expandForSimpleSubjPOList (Triples s pol) = case (s, pol) of
-    (Subject subjIri, [PredicateObjectList predIri obj]) -> case obj of
-        ObjectLiteral lit -> [Axiom subjIri predIri $ Right lit]
-    _ -> error $ "expanding triple with non-simple IRI subject"
-    -}
 {-
 -- | takes an entity and modifies the sign according to the given function
 modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> RDFEntity -> State Sign ()
