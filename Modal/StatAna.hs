@@ -95,12 +95,15 @@ minExpForm s form =
                       t2 <- oneExpTerm minExpForm s t
                       let srt = sortOfTerm t2
                           trm = Term_mod t2
-                      if Map.member srt $ termModies $ extendedInfo s
-                         then return trm
-                         else Result [mkDiag Error
+                          supers = supersortsOf srt s
+                      if Set.null $ Set.intersection
+                        (Set.insert srt supers)
+                         $ Map.keysSet $ termModies $ extendedInfo s
+                         then Result [mkDiag Error
                               ("unknown term modality sort '"
                                ++ showId srt "' for term") t ]
                               $ Just trm
+                         else return trm
                     in case t of
                        Mixfix_token tm ->
                            if Map.member tm (modies $ extendedInfo s)
