@@ -82,7 +82,8 @@ isNullQName qn = case qn of
 
 dummyQName :: QName
 dummyQName =
-  QN "http" "//www.dfki.de/sks/hets/ontology/unamed" Full "" nullRange
+  QN "http" "//www.dfki.de/sks/hets/ontology/unamed" Full
+            "http://www.dfki.de/sks/hets/ontology/unamed" nullRange
 
 mkQName :: String -> QName
 mkQName s = nullQName { localPart = s }

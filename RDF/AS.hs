@@ -36,28 +36,6 @@ data TurtleDocument = TurtleDocument
 emptyTurtleDocument :: TurtleDocument
 emptyTurtleDocument = TurtleDocument nullQName Map.empty []
 
-extractTripleStatements :: [Statement] -> [Triples]
-extractTripleStatements ls = case ls of
-    [] -> []
-    h : t -> case h of
-        Statement triple -> triple : extractTripleStatements t
-        _ -> extractTripleStatements t
-        
-triplesOfDocument :: TurtleDocument -> [Triples]
-triplesOfDocument doc = extractTripleStatements $ statements doc
-
-rdfFirst :: IRI
-rdfFirst = QN "rdf" "first" Abbreviated
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#first" nullRange
-
-rdfRest :: IRI
-rdfRest = QN "rdf" "rest" Abbreviated
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest" nullRange
-    
-rdfNil :: IRI
-rdfNil = QN "rdf" "nil" Abbreviated
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" nullRange
-
 data Statement = Statement Triples | PrefixStatement Prefix | BaseStatement Base
     deriving (Show, Eq, Ord)
     
@@ -114,6 +92,30 @@ rdfEntityTypes = [minBound .. maxBound]
 instance GetRange TurtleDocument where
 instance GetRange RDFEntity where
 instance GetRange Axiom where
+
+-- | useful functions
+
+extractTripleStatements :: [Statement] -> [Triples]
+extractTripleStatements ls = case ls of
+    [] -> []
+    h : t -> case h of
+        Statement triple -> triple : extractTripleStatements t
+        _ -> extractTripleStatements t
+        
+triplesOfDocument :: TurtleDocument -> [Triples]
+triplesOfDocument doc = extractTripleStatements $ statements doc
+
+rdfFirst :: IRI
+rdfFirst = QN "rdf" "first" Abbreviated
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#first" nullRange
+
+rdfRest :: IRI
+rdfRest = QN "rdf" "rest" Abbreviated
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest" nullRange
+    
+rdfNil :: IRI
+rdfNil = QN "rdf" "nil" Abbreviated
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" nullRange
 
 isAbsoluteIRI :: IRI -> Bool
 isAbsoluteIRI iri = iriType iri == Full && (isPrefixOf "//" $ localPart iri)

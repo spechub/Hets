@@ -22,6 +22,7 @@ import OWL2.Parse hiding (stringLiteral, literal, skips, uriP)
 import RDF.AS
 import RDF.Symbols
 
+import Data.Either
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
@@ -166,5 +167,16 @@ basicSpec :: CharParser st TurtleDocument
 basicSpec = do
     many parseComment
     ls <- many parseStatement
-    return $ TurtleDocument nullQName Map.empty ls
-
+    return $ TurtleDocument dummyQName Map.empty ls
+    
+predefinedPrefixes :: RDFPrefixMap
+predefinedPrefixes = Map.fromList $ zip
+    ["rdf", "rdfs", "dc", "owl", "ex", "xsd"]
+    $ rights $ map (parse uriQ "")
+    [ "<http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+    , "<http://www.w3.org/2000/01/rdf-schema#>"
+    , "<http://purl.org/dc/elements/1.1/>"
+    , "<http://www.w3.org/2002/07/owl#>"
+    , "<http://www.example.org/>"
+    , "<http://www.w3.org/2001/XMLSchema#>" ]
+    

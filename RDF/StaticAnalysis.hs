@@ -16,6 +16,7 @@ import OWL2.AS
 import OWL2.Parse
 import RDF.AS
 import RDF.Sign
+import RDF.Parse (predefinedPrefixes)
 
 import Data.Maybe
 import Network.URI
@@ -112,9 +113,10 @@ extractPrefixMap pm ls = case ls of
 
 resolveDocument :: TurtleDocument -> TurtleDocument
 resolveDocument doc = let newStatements = resolveStatements
-                            (Base $ documentName doc) Map.empty $ statements doc
+                            (Base $ documentName doc) predefinedPrefixes $ statements doc
     in doc { statements = newStatements
-           , prefixMap = extractPrefixMap Map.empty newStatements } 
+           , prefixMap = Map.union predefinedPrefixes $
+                                extractPrefixMap Map.empty newStatements } 
 
 -- * Axiom extraction
 
