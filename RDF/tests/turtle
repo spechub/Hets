@@ -4,4 +4,6 @@
 
 :s :p :o .
 
+<http://bla> <foo://bar> <ftp://a> .
+
 

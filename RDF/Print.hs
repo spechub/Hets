@@ -100,8 +100,8 @@ printDocument :: TurtleDocument -> Doc
 printDocument doc = (vcat . map pretty) (statements doc)
 
 printExpandedIRI :: IRI -> Doc
-printExpandedIRI iri = if iriType iri == NodeID then text $ showQU iri
-    else text $ expandedIRI iri
+printExpandedIRI iri = if iriType iri == NodeID then text $ showQI iri
+    else text "<" <> text (expandedIRI iri) <> text ">"
     
 instance Pretty Term where
     pretty = printTerm

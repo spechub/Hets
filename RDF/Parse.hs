@@ -15,14 +15,20 @@ module RDF.Parse where
 import Common.Parsec
 import Common.Lexer
 import Common.AnnoParser (newlineOrEof)
+import Common.Token (criticalKeywords)
 
 import OWL2.AS
-import OWL2.Parse hiding (stringLiteral, literal, skips)
+import OWL2.Parse hiding (stringLiteral, literal, skips, uriP)
 import RDF.AS
 import RDF.Symbols
 
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
+
+uriP :: CharParser st QName
+uriP =
+  skips $ try $ checkWithUsing showQN uriQ $ \ q ->
+    if null $ namePrefix q then notElem (localPart q) criticalKeywords else True
 
 -- * hets symbols parser
 
@@ -40,8 +46,8 @@ rdfSymbItems = do
 
 -- | parse a comma separated list of uris
 rdfSymbs :: GenParser Char st [IRI]
-rdfSymbs = uriQ >>= \ u -> do
-    commaP `followedWith` uriQ
+rdfSymbs = uriP >>= \ u -> do
+    commaP `followedWith` uriP
     us <- rdfSymbs
     return $ u : us
   <|> return [u]
@@ -56,7 +62,7 @@ rdfSymbMapItems = do
 -- | parse a comma separated list of uri pairs
 rdfSymbPairs :: GenParser Char st [(IRI, Maybe IRI)]
 rdfSymbPairs = uriPair >>= \ u -> do
-    commaP `followedWith` uriQ
+    commaP `followedWith` uriP
     us <- rdfSymbPairs
     return $ u : us
   <|> return [u]
@@ -105,7 +111,7 @@ literal = do
 parseBase :: CharParser st Base
 parseBase = do
     pkeyword "@base"
-    base <- skips uriQ
+    base <- skips uriP
     skips $ char '.'
     return $ Base base
 
@@ -113,16 +119,16 @@ parsePrefix :: CharParser st Prefix
 parsePrefix = do
     pkeyword "@prefix"
     p <- skips (option "" prefix << char ':')
-    i <- skips uriQ
+    i <- skips uriP
     skips $ char '.'
     return $ Prefix p i
 
 parsePredicate :: CharParser st Predicate
-parsePredicate = fmap Predicate $ skips uriQ
+parsePredicate = fmap Predicate $ skips uriP
 
 parseSubject :: CharParser st Subject
 parseSubject =
-    fmap Subject (skips uriQ)
+    fmap Subject (skips uriP)
   <|> fmap SubjectList
             (between (skips $ char '[') (skips $ char ']') $ skips parsePredObjList)
   <|> fmap SubjectCollection
