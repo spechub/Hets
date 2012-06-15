@@ -53,9 +53,10 @@ resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
                 in new2 {expandedIRI = expandedIRI iri ++ localPart new2}
                 
 resolveIRI :: Base -> RDFPrefixMap -> IRI -> IRI
-resolveIRI (Base current) pm new = if iriType new == Full
-    then resolveFullIRI current new
-    else resolveAbbreviatedIRI pm new
+resolveIRI (Base current) pm new = case iriType new of
+    Full -> resolveFullIRI current new
+    Abbreviated -> resolveAbbreviatedIRI pm new
+    NodeID -> new
 
 resolveBase :: Base -> RDFPrefixMap -> Base -> Base
 resolveBase b pm (Base new) = Base $ resolveIRI b pm new
