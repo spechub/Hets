@@ -13,7 +13,7 @@ module Static.DgUtils where
 
 import qualified Common.Lib.Rel as Rel
 import Common.Id
-import Common.IRI (IRI, nullIRI, iriToStringUnsecure, parseCurie)
+import Common.IRI (IRI, nullIRI, iriToStringShortUnsecure, parseCurie)
 import Common.Utils (numberSuffix, splitByList, splitOn, readMaybe)
 import Common.LibName
 import Common.Consistency
@@ -301,7 +301,7 @@ listDGEdgeTypes =
 -- | check an EdgeType and see if its a definition link
 isDefEdgeType :: DGEdgeType -> Bool
 isDefEdgeType edgeTp = case edgeTypeModInc edgeTp of
-    ThmType _ _ _ _ -> False
+    ThmType {} -> False
     _ -> True
 
 
@@ -371,10 +371,11 @@ showExt n = let i = extIndex n in extString n ++ if i == 0 then "" else show i
 
 showName :: NodeName -> String
 showName n = let ext = showExt n in
-    iriToStringUnsecure (getName n) ++ if null ext then ext else "__" ++ ext
+    iriToStringShortUnsecure (getName n)
+    ++ if null ext then ext else "__" ++ ext
 
 makeName :: IRI -> NodeName
-makeName n = NodeName n "" 0 [ElemName $ iriToStringUnsecure n]
+makeName n = NodeName n "" 0 [ElemName $ iriToStringShortUnsecure n]
 
 parseNodeName :: String -> NodeName
 parseNodeName s = case splitByList "__" s of
