@@ -676,7 +676,7 @@ expandCurieLogicName ga ln@(Logic_name i1 mt mi2) =
 expandCurieItemNameMap :: FilePath -> ItemNameMap -> Either String ItemNameMap
 expandCurieItemNameMap fn (ItemNameMap i1 mi2) =
   let i = fromJust $ parseIRIReference $ fn ++ "#"
-      m = Map.fromList [("", i), (":", i)]
+      m = Map.singleton "" i
       g = emptyGlobalAnnos {prefix_map = m}
   in case expandCurie2M g (i1, mi2) of
           Right (e1, e2m) -> Right $ ItemNameMap e1 e2m
@@ -696,6 +696,8 @@ expandCurie2M ga (i1, mi2) =
               Just e2 -> Right (fromJust e1m, e2)
 
 itemNameMapsToIRIs :: [ItemNameMap] -> [IRI]
-itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> i : maybeToList mi)
+itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> case mi of
+                                                          Nothing -> [i]
+                                                          Just j  -> [j] )
 
 -- END CURIE expansion
