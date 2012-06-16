@@ -51,8 +51,8 @@ parseOWL filename = do
     if hasJar then do
        (exitCode, result, errStr) <- readProcessWithExitCode "java"
          ["-jar", toolPath </> jar, absfile, "xml"] ""
-       case exitCode of
-         ExitSuccess -> return $ parseProc filename result
+       case (exitCode, errStr) of
+         (ExitSuccess, "") -> return $ parseProc filename result
          _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
