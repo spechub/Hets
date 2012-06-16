@@ -45,6 +45,9 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "view", ":", opt "=", opt "end"
               | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) ALIGN_TYPE
                 [CORRESPONDENCE] Range
+              | Module_defn MODULE_NAME MODULE_TYPE RESTRICTION_SIGNATURE Range
+              -- G_symb_items_list is RESTRICTION-SIGNATURE
+              -- TODO: CONSERVATIVE?
               | Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) Range
               -- pos: "arch", "spec", "=", opt "end"
               | Unit_spec_defn SPEC_NAME UNIT_SPEC Range
@@ -83,6 +86,8 @@ data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
                  -- pos: "to"
 
 data ALIGN_TYPE = Align_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
+
+data MODULE_TYPE = Module_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
 
 data ALIGN_ARITIES = Align_arities ALIGN_ARITY ALIGN_ARITY deriving (Show, Eq)
 

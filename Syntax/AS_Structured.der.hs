@@ -90,6 +90,8 @@ data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
 type SPEC_NAME = IRI
 type VIEW_NAME = IRI
 type ALIGN_NAME = IRI
+type MODULE_NAME = IRI
+type RESTRICTION_SIGNATURE = ()
 
 data Logic_code = Logic_code (Maybe IRI)
                              (Maybe Logic_name)

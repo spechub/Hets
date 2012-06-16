@@ -285,8 +285,14 @@ distributedOntologyS = "distributed-ontology"
 excludingS :: String
 excludingS = "excluding"
 
+forS :: String
+forS = "for"
+
 interpretationS :: String
 interpretationS = "interpretation"
+
+moduleS :: String
+moduleS = "module"
 
 ontologyS :: String
 ontologyS = "ontology"

@@ -129,6 +129,14 @@ libItem l pm =
        q <- optEnd
        return (Syntax.AS_Library.Align_defn an ar at corresps
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
+  <|> -- module defn
+    do s1 <- asKey moduleS
+       mn <- hetIRI
+       s2 <- asKey ":"
+       mt <- moduleType l
+       s3 <- asKey forS
+       rs <- restrictionSignature
+       return (Syntax.AS_Library.Module_defn mn mt rs (catRange [s1, s2, s3]))
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
@@ -260,6 +268,19 @@ viewOrAlignType l = do
     s <- asKey toS
     sp2 <- annoParser (groupSpec l)
     return (sp1, sp2, tokPos s)
+
+moduleType :: LogicGraph -> AParser st MODULE_TYPE
+moduleType l = do
+  sp1 <- aSpec l
+  s   <- asKey ofS
+  sp2 <- aSpec l
+  return $ Module_type sp1 sp2 (tokPos s)
+
+-- TODO: implement correct type and parser
+restrictionSignature :: AParser st RESTRICTION_SIGNATURE
+restrictionSignature = do
+  hetIRI
+  return ()
 
 simpleIdOrDDottedId :: GenParser Char st Token
 simpleIdOrDDottedId = pToken $ liftM2 (++)
