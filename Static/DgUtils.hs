@@ -375,7 +375,7 @@ showName n = let ext = showExt n in
     ++ if null ext then ext else "__" ++ ext
 
 makeName :: IRI -> NodeName
-makeName n = NodeName n "" 0 [ElemName $ iriToStringShortUnsecure n]
+makeName n = NodeName n "" 0 []
 
 parseNodeName :: String -> NodeName
 parseNodeName s = case splitByList "__" s of
