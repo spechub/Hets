@@ -1,66 +1,66 @@
 <?xml version='1.0' ?>
 <DGraph filename="ParamView" libname="ParamView" nextlinkid="18">
-  <DGNode name="ParamView#s__IU1" logic="CASL" refname="ParamView#s" relxpath="/Imports/Union/Spec[1]">
+  <DGNode name="s__IU1" logic="CASL" refname="s" relxpath="/Imports/Union/Spec[1]">
     <Declarations>
       <Symbol kind="sort" name="i" range="ParamView:3.29">sort i</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#s__PU1" logic="CASL" refname="ParamView#s" relxpath="/Parameters/Union/Spec[1]">
+  <DGNode name="s__PU1" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
       <Symbol kind="sort" name="p" range="ParamView:3.14">sort p</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#s" logic="CASL" refname="ParamView#s" relxpath="/">
+  <DGNode name="s" logic="CASL" refname="s" relxpath="/">
     <Declarations>
       <Symbol kind="sort" name="s" range="ParamView:3.39">sort s</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#v__IU1" logic="CASL" refname="ParamView#v" relxpath="/Imports/Union/Spec[1]">
+  <DGNode name="v__IU1" logic="CASL" refname="v" relxpath="/Imports/Union/Spec[1]">
     <Declarations>
       <Symbol kind="sort" name="j" range="ParamView:5.28">sort j</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#v__PU1" logic="CASL" refname="ParamView#v" relxpath="/Parameters/Union/Spec[1]">
+  <DGNode name="v__PU1" logic="CASL" refname="v" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
       <Symbol kind="sort" name="r" range="ParamView:5.13">sort r</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#v__S" logic="CASL" refname="ParamView#v" relxpath="/Source">
+  <DGNode name="v__S" logic="CASL" refname="v" relxpath="/Source">
     <Declarations>
       <Symbol kind="sort" name="p" range="ParamView:5.39">sort p</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#v__T" logic="CASL" refname="ParamView#v" relxpath="/Target">
+  <DGNode name="v__T" logic="CASL" refname="v" relxpath="/Target">
     <Declarations>
       <Symbol kind="sort" name="q" range="ParamView:5.51">sort q</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#s2__PU1" logic="CASL" refname="ParamView#s2" relxpath="/Parameters/Union/Spec[1]">
+  <DGNode name="s2__PU1" logic="CASL" refname="s2" relxpath="/Parameters/Union/Spec[1]">
     <Declarations>
       <Symbol kind="sort" name="p2" range="ParamView:8.15-8.16">sort p2</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#s2__A1V" logic="CASL" refname="ParamView#s" relxpath="/Parameters/Union/Spec[1]" />
-  <DGNode name="ParamView#s2__A1A1" logic="CASL" refname="ParamView#s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
+  <DGNode name="s2__A1V" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]" />
+  <DGNode name="s2__A1A1" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
     <Declarations>
       <Symbol kind="sort" name="t" range="ParamView:8.35">sort t</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="ParamView#s2__A1" logic="CASL" refname="ParamView#s2" relxpath="/Actuals/Spec[1]" />
-  <DGNode name="ParamView#s2" logic="CASL" refname="ParamView#s2" relxpath="/" />
-  <DGLink source="ParamView#s__IU1" target="ParamView#s__PU1" linkid="0">
+  <DGNode name="s2__A1" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]" />
+  <DGNode name="s2" logic="CASL" refname="s2" relxpath="/" />
+  <DGLink source="s__IU1" target="s__PU1" linkid="0">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#s__IU1" target="ParamView#s2__A1V" linkid="5">
+  <DGLink source="s__IU1" target="s2__A1V" linkid="5">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#s__PU1" target="ParamView#s" linkid="1">
+  <DGLink source="s__PU1" target="s" linkid="1">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#s__PU1" target="ParamView#s2__A1V" linkid="7">
+  <DGLink source="s__PU1" target="s2__A1V" linkid="7">
     <Type>GlobalProvenThmInc</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="7" />
@@ -68,12 +68,12 @@
     <ProofBasis linkref="15" />
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#s__PU1" target="ParamView#s2__A1V" linkid="15">
+  <DGLink source="s__PU1" target="s2__A1V" linkid="15">
     <Type>LocalProvenThmInc</Type>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#s" target="ParamView#s2" linkid="13">
+  <DGLink source="s" target="s2" linkid="13">
     <Type>GlobalDef</Type>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
@@ -82,19 +82,19 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="ParamView#v__IU1" target="ParamView#v__PU1" linkid="2">
+  <DGLink source="v__IU1" target="v__PU1" linkid="2">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#v__IU1" target="ParamView#s2__A1A1" linkid="8">
+  <DGLink source="v__IU1" target="s2__A1A1" linkid="8">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#v__PU1" target="ParamView#v__T" linkid="3">
+  <DGLink source="v__PU1" target="v__T" linkid="3">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#v__PU1" target="ParamView#s2__A1A1" linkid="9">
+  <DGLink source="v__PU1" target="s2__A1A1" linkid="9">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="9" />
@@ -107,7 +107,7 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="ParamView#v__PU1" target="ParamView#s2__A1A1" linkid="16">
+  <DGLink source="v__PU1" target="s2__A1A1" linkid="16">
     <Type>LocalProvenThm</Type>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E">
@@ -117,7 +117,7 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="ParamView#v__S" target="ParamView#v__T" linkid="4">
+  <DGLink source="v__S" target="v__T" linkid="4">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="4" />
@@ -129,7 +129,7 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="ParamView#v__S" target="ParamView#v__T" linkid="17">
+  <DGLink source="v__S" target="v__T" linkid="17">
     <Type>LocalProvenThm</Type>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E">
@@ -139,11 +139,11 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="ParamView#v__S" target="ParamView#s2__A1V" linkid="6">
+  <DGLink source="v__S" target="s2__A1V" linkid="6">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#v__T" target="ParamView#s2__A1" linkid="11">
+  <DGLink source="v__T" target="s2__A1" linkid="11">
     <Type>GlobalDef</Type>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
@@ -152,15 +152,15 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="ParamView#s2__PU1" target="ParamView#s2" linkid="14">
+  <DGLink source="s2__PU1" target="s2" linkid="14">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#s2__A1A1" target="ParamView#s2__A1" linkid="10">
+  <DGLink source="s2__A1A1" target="s2__A1" linkid="10">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="ParamView#s2__A1" target="ParamView#s2" linkid="12">
+  <DGLink source="s2__A1" target="s2" linkid="12">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
