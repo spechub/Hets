@@ -149,36 +149,52 @@ hetsServer opts1 = do
      appendFile permFile rhost
      appendFile permFile $ shows (requestHeaders re) "\n"
    -- better try to read hosts to exclude from a file
-   if any (`isInfixOf` rhost) bots then return $ mkResponse status403 "" else
-    case B8.unpack (requestMethod re) of
+   if any (`isInfixOf` rhost) bots then return $ mkResponse status403 ""
+    else let
+    -- extract params from query for later use
+    mNot f = maybe Nothing f
+    format = mNot id $ lookup "format" splitQuery
+    session = mNot (mNot readMaybe) $ lookup "session" splitQuery
+    library = mNot (mNot (Just . decodeQueryCode))
+      $ lookup "library" splitQuery
+    dgQ = case (session, library) of
+          (Just i, _) -> DGQuery i library
+          (_, Just l) -> NewDGQuery l
+          _ -> undefined -- TODO proper error code!
+    -- TODO use Common.Iri to parse and use Iris correctly!!
+    in case B8.unpack (requestMethod re) of
     "GET" -> liftRun $ case pathBits of
       "menues" : [] -> mkMenuResponse
-      "dir" : r -> let path = intercalate "/" r in
-        getHetsLibContent opts path query >>= mkHtmlPage path -- TODO check if dirs are generated correctly
+      "dir" : r -> getHetsLibContent opts (intercalate "/" r) query
+        >>= mkHtmlPage path
       "hets-lib" : r -> let file = intercalate "/" r in
         getHetsResponse' opts [] sessRef $ Query (NewDGQuery file)
-          $ DisplayQuery $ Just query -- TODO parse format, IMPORTANT
+          $ DisplayQuery format
       "libraries" : libIri : "development_graph" : [] -> let
-        libnm = decodeQueryCode libIri in undefined
-      "session" : sessIri : [] -> let
-        sessid :: Maybe Int
-        sessid = readMaybe $ decodeQueryCode sessIri in  undefined
+        libnm = decodeQueryCode libIri in
+          getHetsResponse' opts [] sessRef $ Query (NewDGQuery libnm)
+          $ DisplayQuery format
+      "sessions" : sessIri : [] -> case readMaybe $ decodeQueryCode sessIri of
+        Just i -> getHetsResponse' opts [] sessRef $ Query (DGQuery i Nothing)
+          $ DisplayQuery format
+        Nothing -> undefined -- TODO what kind of error message
       "nodes" : nodeIri : cmd -> let
-        i = case decodeQueryCode nodeIri of
-          x | isNat x -> Left x
-          s -> Right s
-        in case cmd of
-          "theory" : [] -> undefined
-          _ -> undefined --node info-}
+        i = (\ s -> if isNat s then Left (read s) else Right s) $
+          decodeQueryCode nodeIri
+        in getHetsResponse' opts [] sessRef $ Query dgQ $ NodeQuery i
+          $ case cmd of
+          ["theory"] -> NcCmd Query.Theory
+          _ -> NcCmd Query.Info
       "edges" : edgeIri : [] -> let
         i = EdgeId $ maybe (-1) id $ readMaybe $ decodeQueryCode edgeIri
-        in undefined
+        in getHetsResponse' opts [] sessRef $ Query dgQ $ EdgeQuery i "edge"
       -- default case if query doesn't comply with RESTFullInterface
       _ -> if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs
-           then getHetsResponse opts [] sessRef pathBits GET splitQuery
+           then getHetsResponse opts [] sessRef pathBits splitQuery
            else mkHtmlPage path dirs
+    -- TODO continue implementing restfull interface responses here
     m | m == "PUT" || m == "POST" -> do
       (params, files) <- parseRequestBody tempFileSink re
       liftRun $ print params
@@ -191,12 +207,12 @@ hetsServer opts1 = do
                    copyPermissions permFile tmpFile
                    return $ Just tmpFile
       let res tmpFile =
-            getHetsResponse opts [] sessRef [tmpFile] GET splitQuery
+            getHetsResponse opts [] sessRef [tmpFile] splitQuery
           mRes = maybe (return $ mkResponse status400 "nothing submitted")
             res mTmpFile
       liftRun $ case files of
         [] -> if isPrefixOf "?prove=" query then
-           getHetsResponse opts [] sessRef pathBits PUT
+           getHetsResponse opts [] sessRef pathBits
              $ splitQuery ++ map
                    (\ (a, b) -> (B8.unpack a, Just $ B8.unpack b)) params
            else mRes
@@ -210,7 +226,7 @@ hetsServer opts1 = do
              maybe (res tmpFile) res mTmpFile
             else mRes
         _ -> getHetsResponse
-               opts (map snd files) sessRef pathBits POST splitQuery
+               opts (map snd files) sessRef pathBits splitQuery
     _ -> return $ mkResponse status405 ""
 
 mkMenuResponse :: IO Response
@@ -394,12 +410,11 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   c -> c
 
 getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
-  -> IORef (IntMap.IntMap Session) -> [String] -> RequestMethod
-  -> [QueryPair] -> IO Response
-getHetsResponse opts updates sessRef pathBits reqMeth query = do
-  Result ds ms <- runResultT $ case anaUri reqMeth pathBits query of
+  -> IORef (IntMap.IntMap Session) -> [String] -> [QueryPair] -> IO Response
+getHetsResponse opts updates sessRef pathBits query = do
+  Result ds ms <- runResultT $ case anaUri pathBits query of
     Left err -> fail err
-    Right q -> getHetsResult' opts updates sessRef q
+    Right q -> getHetsResult opts updates sessRef q
   return $ case ms of
     Nothing -> mkResponse status400 $ showRelDiags 1 ds
     Just s -> mkOkResponse s
@@ -407,14 +422,14 @@ getHetsResponse opts updates sessRef pathBits reqMeth query = do
 getHetsResponse' :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> Query -> IO Response
 getHetsResponse' opts updates sessRef query = do
-  Result ds ms <- runResultT $ getHetsResult' opts updates sessRef query
+  Result ds ms <- runResultT $ getHetsResult opts updates sessRef query
   return $ case ms of
     Nothing -> mkResponse status400 $ showRelDiags 1 ds
     Just s -> mkOkResponse s
 
-getHetsResult' :: HetcatsOpts -> [FileInfo FilePath]
+getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> Query -> ResultT IO String
-getHetsResult' opts updates sessRef (Query dgQ qk) = do
+getHetsResult opts updates sessRef (Query dgQ qk) = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
       case sessGraph dgQ sess of
