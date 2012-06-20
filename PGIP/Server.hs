@@ -211,7 +211,6 @@ hetsServer opts1 = do
             else mRes
         _ -> getHetsResponse
                opts (map snd files) sessRef pathBits POST splitQuery
-    "PUT" -> getHetsResponse opts [] sessRef pathBits PUT splitQuery
     _ -> return $ mkResponse status405 ""
 
 mkMenuResponse :: IO Response
