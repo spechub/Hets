@@ -151,12 +151,35 @@ hetsServer opts1 = do
    -- better try to read hosts to exclude from a file
    if any (`isInfixOf` rhost) bots then return $ mkResponse status403 "" else
     case B8.unpack (requestMethod re) of
-    "GET" -> liftRun $ if query == "?menus" then mkMenuResponse else do
+    "GET" -> liftRun $ case pathBits of
+      "menues" : [] -> mkMenuResponse
+      "dir" : r -> let path = intercalate "/" r in
+        getHetsLibContent opts path query >>= mkHtmlPage path -- TODO check if dirs are generated correctly
+      "hets-lib" : r -> let file = intercalate "/" r in
+        getHetsResponse' opts [] sessRef $ Query (NewDGQuery file)
+          $ DisplayQuery $ Just query -- TODO parse format, IMPORTANT
+      "libraries" : libIri : "development_graph" : [] -> let
+        libnm = decodeQueryCode libIri in undefined
+      "session" : sessIri : [] -> let
+        sessid :: Maybe Int
+        sessid = readMaybe $ decodeQueryCode sessIri in  undefined
+      "nodes" : nodeIri : cmd -> let
+        i = case decodeQueryCode nodeIri of
+          x | isNat x -> Left x
+          s -> Right s
+        in case cmd of
+          "theory" : [] -> undefined
+          _ -> undefined --node info-}
+      "edges" : edgeIri : [] -> let
+        i = EdgeId $ maybe (-1) id $ readMaybe $ decodeQueryCode edgeIri
+        in undefined
+      -- default case if query doesn't comply with RESTFullInterface
+      _ -> if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs
            then getHetsResponse opts [] sessRef pathBits GET splitQuery
            else mkHtmlPage path dirs
-    "POST" -> do
+    m | m == "PUT" || m == "POST" -> do
       (params, files) <- parseRequestBody tempFileSink re
       liftRun $ print params
       mTmpFile <- liftRun $ case lookup "content"
@@ -168,12 +191,12 @@ hetsServer opts1 = do
                    copyPermissions permFile tmpFile
                    return $ Just tmpFile
       let res tmpFile =
-            getHetsResponse opts [] sessRef [tmpFile] POST splitQuery
+            getHetsResponse opts [] sessRef [tmpFile] GET splitQuery
           mRes = maybe (return $ mkResponse status400 "nothing submitted")
             res mTmpFile
       liftRun $ case files of
         [] -> if isPrefixOf "?prove=" query then
-           getHetsResponse opts [] sessRef pathBits POST
+           getHetsResponse opts [] sessRef pathBits PUT
              $ splitQuery ++ map
                    (\ (a, b) -> (B8.unpack a, Just $ B8.unpack b)) params
            else mRes
@@ -187,7 +210,8 @@ hetsServer opts1 = do
              maybe (res tmpFile) res mTmpFile
             else mRes
         _ -> getHetsResponse
-               opts (map snd files) sessRef pathBits PUT splitQuery
+               opts (map snd files) sessRef pathBits POST splitQuery
+    "PUT" -> getHetsResponse opts [] sessRef pathBits PUT splitQuery
     _ -> return $ mkResponse status405 ""
 
 mkMenuResponse :: IO Response
@@ -374,23 +398,29 @@ getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> [String] -> RequestMethod
   -> [QueryPair] -> IO Response
 getHetsResponse opts updates sessRef pathBits reqMeth query = do
-  Result ds ms <- getHetsResult opts updates sessRef pathBits reqMeth query
+  Result ds ms <- runResultT $ case anaUri reqMeth pathBits query of
+    Left err -> fail err
+    Right q -> getHetsResult' opts updates sessRef q
   return $ case ms of
     Nothing -> mkResponse status400 $ showRelDiags 1 ds
     Just s -> mkOkResponse s
 
-getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
-  -> IORef (IntMap.IntMap Session) -> [String]
-  -> RequestMethod -> [QueryPair] -> IO (Result String)
-getHetsResult opts updates sessRef pathBits reqMeth query =
-  runResultT $ case anaUri reqMeth pathBits query of
-    Left err -> fail err
-    Right (Query dgQ qk) -> do
+getHetsResponse' :: HetcatsOpts -> [FileInfo FilePath]
+  -> IORef (IntMap.IntMap Session) -> Query -> IO Response
+getHetsResponse' opts updates sessRef query = do
+  Result ds ms <- runResultT $ getHetsResult' opts updates sessRef query
+  return $ case ms of
+    Nothing -> mkResponse status400 $ showRelDiags 1 ds
+    Just s -> mkOkResponse s
+
+getHetsResult' :: HetcatsOpts -> [FileInfo FilePath]
+  -> IORef (IntMap.IntMap Session) -> Query -> ResultT IO String
+getHetsResult' opts updates sessRef (Query dgQ qk) = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
       case sessGraph dgQ sess of
         Nothing -> fail $ "unknown library given by: "
-          ++ intercalate "/" pathBits
+          ++ getQueryPath dgQ
         Just (ln, dg) -> let title = show $ getLibId ln in do
           svg <- getSVG title ('/' : show k) dg
           case qk of

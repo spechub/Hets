@@ -112,6 +112,10 @@ data DGQuery = DGQuery
   }
   | NewDGQuery { queryLib :: FilePath }
 
+getQueryPath :: DGQuery -> FilePath
+getQueryPath (DGQuery _ p) = maybe "Nothing" id p
+getQueryPath (NewDGQuery l) = l
+
 data Query = Query
   { dgQuery :: DGQuery
   , queryKind :: QueryKind
@@ -162,21 +166,58 @@ anaPath :: RequestMethod -> [String] -> [QueryPair]
         -> Maybe (Maybe Int, QueryKind)
 anaPath reqMeth pathBits query = let err = Nothing in case reqMeth of
   GET -> case pathBits of
-    "dir" : dirs : [] -> undefined
-    "hets-lib" : file : format -> undefined
-    "libraries" : libnm : mode : format | mode == "development_graph"
-      -> undefined
-    "session" : sessid : format -> undefined
+    "dir" : r -> let dir = intercalate "/" r in undefined
+    "hets-lib" : r -> let file = intercalate "/" r in undefined
+    "libraries" : libIri : "development_graph" : [] -> let
+      libnm = decodeQueryCode libIri in undefined
+    "session" : sessIri : [] -> let
+      sessid :: Maybe Int
+      sessid = readMaybe $ decodeQueryCode sessIri in  undefined
     "menues" : [] -> undefined
-    "nodes" : nodeid : params -> undefined
-    "edges" : edgeid : params -> undefined
+    "nodes" : nodeIri : cmd -> let
+      i = case decodeQueryCode nodeIri of
+        x | isNat x -> Left x
+        s -> Right s
+        in case cmd of
+        "theory" : [] -> undefined
+        _ -> undefined --node info-}
+    "edges" : edgeIri : [] -> let
+      i = EdgeId $ maybe (-1) id $ readMaybe $ decodeQueryCode edgeIri
+      in undefined
     _ -> err
   POST -> case pathBits of
-    "libraries" : libnm : ["sessions"] -> undefined
+    "libraries" : libIri : ["sessions"] -> let libnm = decodeQueryCode libIri
+      in undefined
     _ -> err
   PUT -> case pathBits of
     "libraries" : libnm : "proofs" : prid : prcommand : [] -> undefined
-    "session" : sessid : mode : params -> undefined
+    "session" : sessIri : cmd : [] -> let
+      sessid = readMaybe $ decodeQueryCode sessIri
+      in case cmd of
+      "proof" -> let
+        pps = foldr (\ (x, my) -> maybe id (\ y -> ((x, y) :)) my) [] query
+        in case lookup "node" pps of
+        Nothing -> Just (sessid, GlobCmdQuery "proof")
+        Just ndIri -> let
+          i = read $ decodeQueryCode ndIri
+          incl = lookup "include" pps
+          incls = [] -- TODO add values here
+          trans = fmap decodeQueryCode $  lookup "translation" pps
+          prover = lookup "prover" pps
+          theorems = {--map unEsc moreTheorems ++ -}
+            case lookup "theorems" pps of
+              Nothing -> []
+              Just str -> map unEsc $ splitOn ' ' $ decodeQueryCode str
+          timeLimit = maybe Nothing readMaybe $ lookup "timeout" pps
+          pp = ProveNode (not (null incls) || case incl of
+            Nothing -> True
+            Just str -> map toLower str `notElem` ["f", "false"])
+            prover trans timeLimit theorems
+          noPP = null incls && null pps
+          noIncl = null incls && isNothing incl && isNothing timeLimit
+          cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds
+          in Just (sessid, NodeQuery i pp)
+      _ -> err
     _ -> err
 
 isNat :: String -> Bool
