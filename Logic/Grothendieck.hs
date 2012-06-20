@@ -714,11 +714,11 @@ gEmbedComorphism (Comorphism cid) (G_sign lid sig ind) = do
   return (GMorphism cid sig' ind (ide sigTar) startMorId)
 
 -- | heterogeneous union of two Grothendieck signatures
-gsigUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
-gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
+gsigUnion :: LogicGraph -> Bool -> G_sign -> G_sign -> Result G_sign
+gsigUnion lg both gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
           gsig2@(G_sign lid2 (ExtSign sigma2 _) _) =
  if Logic lid1 == Logic lid2
-    then homogeneousGsigUnion gsig1 gsig2
+    then homogeneousGsigUnion both gsig1 gsig2
     else do
       (Comorphism cid1, Comorphism cid2) <-
             logicUnion lg (Logic lid1) (Logic lid2)
@@ -732,14 +732,17 @@ gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
       (sigma2'', _) <- map_sign cid2 sigma2'  -- where to put axioms???
       sigma2''' <- coercePlainSign lidT2 lidT1 "Union of signaturesc" sigma2''
       sigma3 <- signature_union lidT1 sigma1'' sigma2'''
-      return (G_sign lidT1 (makeExtSign lidT1 sigma3) startSigId)
+      return $ G_sign lidT1 (ExtSign sigma3 $ symset_of lidT1
+                            $ if both then sigma3 else sigma2''') startSigId
 
 -- | homogeneous Union of two Grothendieck signatures
-homogeneousGsigUnion :: G_sign -> G_sign -> Result G_sign
-homogeneousGsigUnion (G_sign lid1 sigma1 _) (G_sign lid2 sigma2 _) = do
-  sigma2' <- coerceSign lid2 lid1 "Union of signatures" sigma2
-  sigma3 <- ext_signature_union lid1 sigma1 sigma2'
-  return (G_sign lid1 sigma3 startSigId)
+homogeneousGsigUnion :: Bool -> G_sign -> G_sign -> Result G_sign
+homogeneousGsigUnion both (G_sign lid1 sigma1 _) (G_sign lid2 sigma2 _) = do
+  sigma2'@(ExtSign sig2 _) <- coerceSign lid2 lid1 "Union of signatures" sigma2
+  sigma3@(ExtSign sig3 _) <- ext_signature_union lid1 sigma1 sigma2'
+  return $ G_sign lid1
+             (if both then sigma3 else ExtSign sig3 $ symset_of lid1 sig2)
+         startSigId
 
 homGsigDiff :: G_sign -> G_sign -> Result G_sign
 homGsigDiff (G_sign lid1 (ExtSign s1 _) _) (G_sign lid2 (ExtSign s2 _) _) = do
@@ -752,7 +755,7 @@ gsigManyUnion :: LogicGraph -> [G_sign] -> Result G_sign
 gsigManyUnion _ [] =
   fail "union of emtpy list of signatures"
 gsigManyUnion lg (gsigma : gsigmas) =
-  foldM (gsigUnion lg) gsigma gsigmas
+  foldM (gsigUnion lg True) gsigma gsigmas
 
 -- | homogeneous Union of a list of morphisms
 homogeneousMorManyUnion :: [G_morphism] -> Result G_morphism

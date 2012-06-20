@@ -600,7 +600,7 @@ localSig clf nsmap gSig =
             sig <- foldM (add_symb_to_sign lid) (empty_signature lid) symbs
             let locGSig = G_sign lid (makeExtSign lid sig) startSigId
             -- combining the local and the given signature
-            gSig' <- gsigUnion logicGraph gSig locGSig
+            gSig' <- gsigUnion logicGraph True gSig locGSig
             return (G_mapofsymbol lid $ sigMapISymbs sm', gSig')
 
 

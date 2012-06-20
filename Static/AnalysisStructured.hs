@@ -521,7 +521,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
       (usig, udg) <- case nsig of
         EmptyNode _ -> return (nsig2, dg2)
         JustNode ns2 -> do
-          gsigma2 <- gsigUnion lg (getSig ns2) gsigmaD
+          gsigma2 <- gsigUnion lg True (getSig ns2) gsigmaD
           let (ns@(NodeSig node2a _), dg2a) =
                 insGSig dg2 (extName "Union" name) DGUnion gsigma2
           incl2 <- ginclusion lg gsigmaD gsigma2
@@ -547,7 +547,7 @@ notFoundError str sid = fatal_error $ str ++ " " ++ iriToStringUnsecure sid
 gsigUnionMaybe :: LogicGraph -> MaybeNode -> G_sign -> Result G_sign
 gsigUnionMaybe lg mn gsig = case mn of
   EmptyNode _ -> return gsig
-  JustNode ns -> gsigUnion lg (getSig ns) gsig
+  JustNode ns -> gsigUnion lg False (getSig ns) gsig
 
 anaUnion :: Bool -> LogicGraph -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> ExpOverrides -> [Annoted SPEC]
