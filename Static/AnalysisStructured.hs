@@ -64,6 +64,7 @@ import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List (find)
+import Data.Function
 
 import Control.Monad
 
@@ -239,7 +240,7 @@ anaSpecTop conser addSyms lg ln dg nsig name opts eo sp =
       -- for these cases def-links are re-used
     Basic_spec _ _ -> True
     Closed_spec _ _ -> True
-    Spec_inst _ _ _ -> True
+    Spec_inst {} -> True
     Group _ _ -> True -- in this case we recurse
     _ -> False
     then anaSpecAux conser addSyms lg ln dg nsig name opts eo sp else do
@@ -250,8 +251,8 @@ anaSpecTop conser addSyms lg ln dg nsig name opts eo sp =
   return (rsp, ns, ndg)
 
 anaFreeOrCofreeSpec :: Bool -> LogicGraph -> HetcatsOpts -> LibName -> DGraph
-  -> MaybeNode -> NodeName -> FreeOrCofree  -> ExpOverrides -> Annoted SPEC -> Range
-  -> Result (Annoted SPEC, NodeSig, DGraph)
+  -> MaybeNode -> NodeName -> FreeOrCofree -> ExpOverrides -> Annoted SPEC
+  -> Range -> Result (Annoted SPEC, NodeSig, DGraph)
 anaFreeOrCofreeSpec addSyms lg opts ln dg nsig name dglType eo asp pos =
   adjustPos pos $ do
       (sp', NodeSig n' gsigma, dg') <-
@@ -455,7 +456,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
       (sp', nsig', dg') <-
           anaSpecTop conser addSyms lg ln dg nsig name opts eo (item asp)
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
-  Spec_inst spname' afitargs pos0 -> case expCurie (globalAnnos dg) eo spname' of
+  Spec_inst spname' afitargs pos0 ->
+      case expCurie (globalAnnos dg) eo spname' of
    Nothing -> prefixErrorIRI spname'
    Just spname ->
     let pos = if null afitargs then iriPos spname else pos0
@@ -559,7 +561,8 @@ anaUnion addSyms lg ln dg nsig name opts eo asps = case asps of
       (sps', nsigs, dg', _) <-
           let ana (sps1, nsigs, dg', n) sp' = do
                 let n1 = inc n
-                (sp1, nsig', dg1) <- anaSpec addSyms lg ln dg' nsig n1 opts eo sp'
+                (sp1, nsig', dg1) <-
+                    anaSpec addSyms lg ln dg' nsig n1 opts eo sp'
                 return (sp1 : sps1, nsig' : nsigs, dg1, n1)
            in foldM ana ([], [], dg, extName "Union" name) sps
       let newAsps = zipWith replaceAnnoted (reverse sps') asps
@@ -912,18 +915,12 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
       symsB = ext_sym_of lid sigmaB
       idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
-      symbMapToRawSymbMap =
-          Map.foldWithKey (\ sy1 sy2 -> Map.insert (symbol_to_raw lid sy1)
-                                                  (symbol_to_raw lid sy2))
-                          Map.empty
+      symbMapToRawSymbMap = Map.foldWithKey
+          (on Map.insert $ symbol_to_raw lid) Map.empty
       rh = symbMapToRawSymbMap h
-      idh = Map.foldWithKey
-             (\ sy1 sy2 -> setInsert (sym_name lid sy1) (sym_name lid sy2))
-             Map.empty h
+      idh = Map.foldWithKey (on setInsert $ sym_name lid) Map.empty h
   idhExt <- extID idsB idh
-  let rIdExt = Map.foldWithKey (\ id1 id2 -> Map.insert
-                                (id_to_raw lid id1) (id_to_raw lid id2))
-                Map.empty
+  let rIdExt = Map.foldWithKey (on Map.insert $ id_to_raw lid) Map.empty
                 (foldr Map.delete idhExt $ Map.keys idh)
       r = rh `Map.union` rIdExt
       -- do we need combining function catching the clashes???
@@ -985,8 +982,8 @@ applyGS lg (ExtGenSig (GenSig nsigI _ gsigmaP) nsigB) args = do
       return (gsig, GMorphism bid sigB' indB mor4 mId)
 
 homogenizeGM :: AnyLogic -> [G_mapping] -> Result G_symb_map_items_list
-homogenizeGM (Logic lid) gsis =
-  foldM homogenize1 (G_symb_map_items_list lid []) gsis
+homogenizeGM (Logic lid) =
+  foldM homogenize1 (G_symb_map_items_list lid [])
   where
   homogenize1 (G_symb_map_items_list lid2 sis) sm = case sm of
     G_symb_map (G_symb_map_items_list lid1 sis1) -> do
@@ -1040,20 +1037,20 @@ anaExtension lg opts eo ln pos (sps', nsig', dg', conser, addSyms) (name', asp')
   return (sp1' : sps', JustNode nsig1, dg2, None, True)
 
 
-{- BEGIN CURIE expansion -}
+-- BEGIN CURIE expansion
 
 expCurie :: GlobalAnnos -> ExpOverrides -> IRI -> Maybe IRI
 expCurie ga eo i =
   let pm = prefix_map ga
-  in  case Map.lookup i eo of
+  in case Map.lookup i eo of
         Nothing -> expandCurie pm i
         Just path -> case parseIRIReference $ path ++ "#" of
           Nothing -> Nothing
-          Just p -> expandCurie (Map.fromList [("",p), (":",p)]) i
+          Just p -> expandCurie (Map.fromList [("", p), (":", p)]) i
 
 prefixErrorIRI :: IRI -> Result a
 prefixErrorIRI i = fatal_error ("No prefix found for CURIE " ++
     iriToStringUnsecure i ++ " or expansion does not yield a valid IRI.")
     $ iriPos i
 
-{- END CURIE expansion -}
+-- END CURIE expansion
