@@ -16,6 +16,13 @@ module Main where
 import Data.Char
 import qualified Data.Map as Map
 
+camelCase :: Bool -> String -> String
+camelCase up s = case s of
+  "" -> ""
+  c : r -> if elem c "_-" then camelCase True r else
+    [(if up then toUpper else toLower) c | isAlphaNum c]
+    ++ camelCase False r
+
 main :: IO ()
 main = getContents >>=
     mapM_ (\ (k, v) ->
@@ -24,7 +31,7 @@ main = getContents >>=
       >> putStrLn (k ++ " = \"" ++ v ++ "\""))
   . Map.toList
   . Map.fromList
-  . map (\ s@(c : r) -> (toLower c : r ++ "S", s))
+  . map (\ s -> (camelCase False s ++ "S", s))
   . filter (not . null)
-  . map (takeWhile $ \ c -> isAlpha c || c == '_')
+  . map (takeWhile $ \ c -> isAlpha c || elem c "-_?")
   . lines
