@@ -53,6 +53,15 @@ import Control.Monad (foldM)
 
 import Debug.Trace
 
+first :: (a, b, c) -> a
+first (a, _, _) = a
+
+second :: (a, b, c) -> b
+second (_, b, _) = b
+
+third :: (a, b, c) -> c
+third (_, _, c) = c
+
 {- | Analyse an architectural specification
 @
 ARCH-SPEC ::= BASIC-ARCH-SPEC | GROUP-ARCH-SPEC | ARCH-SPEC-NAME
@@ -89,9 +98,11 @@ anaArchSpec lgraph ln dg opts eo sharedCtx nP archSp = case archSp of
                 BranchRefSig rP (usig, Just $ BranchStaticContext (ctx uctx)),
                 dg3, Basic_arch_spec udd'
                            (replaceAnnoted uexpr' uexpr) pos)
-  Group_arch_spec asp _ -> anaArchSpec lgraph ln dg opts eo sharedCtx nP (item asp)
-  Arch_spec_name asi ->
-      case lookupGlobalEnvDG asi dg of
+  Group_arch_spec asp _ ->
+      anaArchSpec lgraph ln dg opts eo sharedCtx nP (item asp)
+  Arch_spec_name un' -> case expCurie (globalAnnos dg) eo un' of
+    Nothing -> prefixErrorIRI un'
+    Just asi -> case lookupGlobalEnvDG asi dg of
             Just (ArchOrRefEntry True asig@(BranchRefSig
                         (NPBranch n f) (UnitSig nsList resNs _, _))) -> do
               let (rN, dg', asig') =
@@ -152,7 +163,8 @@ anaUnitDeclDefns' lgraph ln dg opts eo uctx rNodes uds = case uds of
   [] -> return (rNodes, uctx, dg, [])
 
 alreadyDefinedUnit :: IRI -> String
-alreadyDefinedUnit u = "Unit " ++ iriToStringUnsecure u ++ " already declared/defined"
+alreadyDefinedUnit u =
+    "Unit " ++ iriToStringUnsecure u ++ " already declared/defined"
 
 -- | Create a node that represents a union of signatures
 nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin
@@ -183,13 +195,15 @@ anaUnitDeclDefn :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitDeclDefn lgraph ln dg opts eo uctx@(buc, _) udd = case udd of
-  Unit_decl unIRI usp uts pos -> do
+  Unit_decl un' usp uts pos -> case expCurie (globalAnnos dg) eo un' of
+    Nothing -> prefixErrorIRI un'
+    Just unIRI -> do
        let ustr = iriToStringShortUnsecure unIRI
        (dns, diag', dg', uts') <-
            anaUnitImported lgraph ln dg opts eo uctx pos uts
        let impSig = toMaybeNode dns
-       (nodes, maybeRes, mDiag, rsig', dg0, usp') <-
-           anaRefSpec lgraph ln dg' opts eo impSig unIRI (buc, diag') Nothing usp
+       (nodes, maybeRes, mDiag, rsig', dg0, usp') <- anaRefSpec lgraph ln
+           dg' opts eo impSig unIRI (buc, diag') Nothing usp
        usig@(UnitSig argSigs resultSig unionSig) <- getUnitSigFromRef rsig'
        let (n, dg1, rsig0) =
               case getPointerFromRef rsig' of
@@ -275,7 +289,9 @@ TO DO -}
                       return (Map.fromList [(unIRI, getPointerFromRef rsig)],
                        (Map.insert unIRI basedParUSig buc, diag'''),
                                   dg'', ud')
-  Unit_defn un uexp poss -> do
+  Unit_defn un' uexp poss -> case expCurie (globalAnnos dg) eo un' of
+    Nothing -> prefixErrorIRI un'
+    Just un -> do
        (nodes, usig, diag, dg'', uexp') <-
          anaUnitExpression lgraph ln dg opts eo uctx uexp
        let ud' = Unit_defn un uexp' poss
@@ -310,9 +326,10 @@ anaUnitRef :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
              -> Result ((UNIT_NAME, RefSig), DGraph, UNIT_REF)
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
-anaUnitRef lgraph ln dg opts eo
-             _uctx@(_ggbuc, _diag') rN
-             (Unit_ref un usp pos) = do
+anaUnitRef lgraph ln dg opts eo _uctx@(_ggbuc, _diag') rN
+    (Unit_ref un' usp pos) = case expCurie (globalAnnos dg) eo un' of
+ Nothing -> prefixErrorIRI un'
+ Just un -> do
   let n = case rN of
            Nothing -> Nothing
            Just (NPComp f) -> Just $ Map.findWithDefault
@@ -440,7 +457,10 @@ anaUnitBindings :: LogicGraph -> LibName -> DGraph
     -> Result ([(IRI, NodeSig)], DGraph, [UNIT_BINDING])
 anaUnitBindings lgraph ln dg opts eo uctx@(buc, _) bs = case bs of
           [] -> return ([], dg, [])
-          Unit_binding un usp poss : ubs -> do
+          Unit_binding un' usp poss : ubs ->
+              case expCurie (globalAnnos dg) eo un' of
+            Nothing -> prefixErrorIRI un'
+            Just un -> do
                let unpos = iriPos un
                curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
                (BranchRefSig _ (UnitSig argSigs nsig _, _), dg', usp') <-
@@ -548,7 +568,9 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
            anaUnitTerm lgraph ln dg1 opts eo uctx' (item ut)
        return (dnsig, diag', dg',
                Local_unit udds' (replaceAnnoted ut' ut) poss)
-  Unit_appl un fargus _ -> do
+  Unit_appl un' fargus _ -> case expCurie (globalAnnos dg) eo un' of
+    Nothing -> prefixErrorIRI un'
+    Just un -> do
        let ustr = iriToStringUnsecure un
            argStr = showDoc fargus ""
        case Map.lookup un buc of
@@ -564,9 +586,6 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                    (morphSigs, dg'', diagA) <-
                        anaFitArgUnits lgraph ln dg' opts eo
                             uctx utrm pos argSigs fargus
-                   let first (e, _, _) = e
-                       second (_, e, _) = e
-                       third (_, _, e) = e
                    (sigA, dg''') <- nodeSigUnion lgraph dg''
                        (toMaybeNode pI : map (JustNode . second) morphSigs)
                               DGFitSpec
@@ -622,9 +641,6 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                    (morphSigs, dg'', diagA) <-
                        anaFitArgUnits lgraph ln dg' opts eo
                             uctx utrm pos argSigs fargus
-                   let first (e, _, _) = e
-                       second (_, e, _) = e
-                       third (_, _, e) = e
                    (sigA, dg''') <- trace (show $ edges $ diagGraph diagA)
                                     $ nodeSigUnion lgraph dg''
                        (map (JustNode . second) morphSigs)
@@ -734,7 +750,8 @@ anaUnitSpec lgraph ln dg opts eo impsig rN usp = case usp of
    case argSpecs of
     [] -> case resultSpec of
       Annoted (Spec_inst spn [] _) _ _ _
-        | case lookupGlobalEnvDG spn dg of
+        | case lookupGlobalEnvDG (fromMaybe spn
+                                 $ expCurie (globalAnnos dg) eo spn) dg of
             Just (UnitEntry _) -> True
             Just (SpecEntry _) -> True
               -- this is needed because there are no REF_NAME in REF_SPEC
@@ -762,7 +779,9 @@ anaUnitSpec lgraph ln dg opts eo impsig rN usp = case usp of
            rsig = mkRefSigFromUnit usig
        return (rsig, dg3, Unit_type argSpecs'
                                 (replaceAnnoted resultSpec' resultSpec) poss)
-  Spec_name usn -> case lookupGlobalEnvDG usn dg of
+  Spec_name un' ->  case expCurie (globalAnnos dg) eo un' of
+   Nothing -> prefixErrorIRI un'
+   Just usn -> case lookupGlobalEnvDG usn dg of
     Just (UnitEntry usig) -> return (mkRefSigFromUnit usig, dg, usp)
     Just (SpecEntry (ExtGenSig _gsig@(GenSig _ args unSig) nsig) ) -> do
       let uSig = case unSig of
@@ -888,7 +907,7 @@ lambda expressions, like you do in the following -}
      (_rsig@(BranchRefSig _ (usig, _)), dg', asp') <-
            anaUnitSpec lgraph ln dg opts eo nsig nP uspec
      (_, _, _, _rsig'@(BranchRefSig n2 (usig', bsig)), dgr', rsp') <-
-           anaRefSpec lgraph ln dg' opts eo nsig rn emptyExtStUnitCtx Nothing rspec
+       anaRefSpec lgraph ln dg' opts eo nsig rn emptyExtStUnitCtx Nothing rspec
              -- here Nothing is fine
      case (usig, usig') of
        (UnitSig _ls ns _, UnitSig _ls' ns' _) -> do
@@ -907,11 +926,12 @@ lambda expressions, like you do in the following -}
 
  where
   name usp = case usp of
-              Spec_name x -> show x
+              Spec_name x -> iriToStringShortUnsecure x
               Unit_type argSpecs resultSpec _ ->
                 case argSpecs of
                  [] -> case resultSpec of
-                        Annoted (Spec_inst spn [] _) _ _ _ -> show spn
+                        Annoted (Spec_inst spn [] _) _ _ _ ->
+                            iriToStringShortUnsecure spn
                         _ -> ""
                  _ -> ""
               _ -> ""
