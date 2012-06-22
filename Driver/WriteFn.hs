@@ -265,8 +265,9 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
     Just th2 -> do
       table <- parseSparQTableFromFile $ modelSparQ opts
       case table of
-        Left _ -> putIfVerbose opts 0
+        Left err -> putIfVerbose opts 0
           $ "could not parse SparQTable from file: " ++ modelSparQ opts
+          ++ "\n" ++ show err
         Right y -> let Result d _ = modelCheck i th2 y in
             if length d > 0 then showDiags opts {verbose = 2 } $ take 10 d
             else putIfVerbose opts 0 "Modelcheck suceeded, no errors found"
