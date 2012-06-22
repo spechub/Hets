@@ -41,6 +41,7 @@ import qualified Static.ToXml as ToXml
 
 import CASL.Logic_CASL
 
+import CASL.CompositionTable.Pretty
 import CASL.CompositionTable.ToXml
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.ModelChecker
@@ -268,9 +269,12 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
         Left err -> putIfVerbose opts 0
           $ "could not parse SparQTable from file: " ++ modelSparQ opts
           ++ "\n" ++ show err
-        Right y -> let Result d _ = modelCheck i th2 y in
+        Right y -> do
+            putIfVerbose opts 4 $ unlines
+               ["lisp file content:", show $ table2Doc y, "lisp file end."]
+            let Result d _ = modelCheck i th2 y
             if length d > 0 then showDiags opts {verbose = 2 } $ take 10 d
-            else putIfVerbose opts 0 "Modelcheck suceeded, no errors found"
+             else putIfVerbose opts 0 "Modelcheck succeeded, no errors found"
     _ ->
       putIfVerbose opts 0 $ "could not translate Theory to CASL:\n "
          ++ showDoc gTh ""
