@@ -566,17 +566,8 @@ anaErr f = error $ "*** Analysis of " ++ f ++ " is not yet implemented!"
 anaItemNameOrMap1 :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
   -> (IRI, IRI) -> Result (GlobalEnv, DGraph)
 anaItemNameOrMap1 libenv ln refDG (genv, dg) (old, new) = do
-  let refGlEnv = globalEnv refDG
-      mlookupIRI = Map.lookup old refGlEnv
-      shortIRI = iriToStringShortUnsecure old
-      mlookupSimpl = Map.lookup (nullIRI { abbrevPath = shortIRI }) refGlEnv
-  case mlookupIRI of
-    Nothing -> warning ()
-      ("qualified name '" ++ iriToStringUnsecure old ++ "' not found")
-      (iriPos old)
-    Just _ -> return ()
-  entry <- maybeToResult (iriPos old) (shortIRI ++ " not found")
-            $ listToMaybe $ catMaybes [mlookupIRI, mlookupSimpl]
+  entry <- maybe (notFoundError "item" old) return
+            $ lookupGlobalEnvDG old refDG
   maybeToResult (iriPos new) (iriToStringUnsecure new ++ " already used")
     $ case Map.lookup new genv of
     Nothing -> Just ()

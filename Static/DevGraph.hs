@@ -53,7 +53,7 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
-import Common.IRI (IRI)
+import Common.IRI
 import Common.LibName
 import Common.Consistency
 
@@ -1047,7 +1047,12 @@ morMapI = getMapAndMaxIndex startMorId morMap
 -- ** lookup other graph parts
 
 lookupGlobalEnvDG :: IRI -> DGraph -> Maybe GlobalEntry
-lookupGlobalEnvDG sid = Map.lookup sid . globalEnv
+lookupGlobalEnvDG sid dg = let
+    gEnv = globalEnv dg
+    shortIRI = iriToStringShortUnsecure sid
+    in case Map.lookup sid gEnv of
+    Nothing -> Map.lookup (nullIRI { abbrevPath = shortIRI }) gEnv
+    m -> m
 
 -- | lookup a reference node for a given libname and node
 lookupInAllRefNodesDG :: DGNodeInfo -> DGraph -> Maybe Node

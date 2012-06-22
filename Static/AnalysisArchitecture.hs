@@ -39,7 +39,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.ExtSign
 import Common.Id
-import Common.IRI (simpleIdToIRI, iriToStringUnsecure, iriPos)
+import Common.IRI
 import Common.LibName
 import Common.Result
 import Common.Amalgamate
@@ -90,8 +90,8 @@ anaArchSpec lgraph ln dg opts eo sharedCtx nP archSp = case archSp of
                 dg3, Basic_arch_spec udd'
                            (replaceAnnoted uexpr' uexpr) pos)
   Group_arch_spec asp _ -> anaArchSpec lgraph ln dg opts eo sharedCtx nP (item asp)
-  Arch_spec_name asn@(Token astr pos) ->
-      case lookupGlobalEnvDG (simpleIdToIRI asn) dg of
+  Arch_spec_name asn -> let asi = simpleIdToIRI asn in
+      case lookupGlobalEnvDG asi dg of
             Just (ArchOrRefEntry True asig@(BranchRefSig
                         (NPBranch n f) (UnitSig nsList resNs _, _))) -> do
               let (rN, dg', asig') =
@@ -121,8 +121,7 @@ anaArchSpec lgraph ln dg opts eo sharedCtx nP archSp = case archSp of
                 (dns, diag'') <-
                    extendDiagramIncl lgraph diag' dnsigs resNs "arch sig"
                 return (dns : dnsigs, Nothing, diag'', asig', dg', archSp)
-            _ -> fatal_error (astr ++
-                              " is not an architectural specification") pos
+            _ -> notFoundError "architectural specification" asi
 
 -- | Analyse a list of unit declarations and definitions
 anaUnitDeclDefns :: LogicGraph -> LibName -> DGraph
@@ -795,8 +794,7 @@ anaUnitSpec lgraph ln dg opts eo impsig rN usp = case usp of
                                  np' = compPointer (NPUnit x) p'
                              in return (setPointerInRef rsig np', dg', usp)
                        _ -> error "can't compose signatures!"
-    _ -> fatal_error (iriToStringUnsecure usn
-                          ++ " is not a unit specification") $ iriPos usn
+    _ -> notFoundError "unit specification" usn
   Closed_unit_spec usp' _ -> do
     curl <- lookupCurrentLogic "UnitSpec" lgraph
     anaUnitSpec lgraph ln dg opts eo (EmptyNode curl) rN usp'

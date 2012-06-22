@@ -30,6 +30,7 @@ module Static.AnalysisStructured
     , insGTheory
     , expCurie
     , ExpOverrides
+    , notFoundError
     ) where
 
 import Driver.Options
@@ -502,7 +503,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
        return (Spec_inst spname ffitargs pos, ns, dg5)
        | otherwise -> instMismatchError spname lp la pos
-    _ -> notFoundError "Structured specification" spname pos
+    _ -> notFoundError "structured specification" spname
 
   -- analyse "data SPEC1 SPEC2"
   Data lD@(Logic lidD) lP asp1 asp2 pos -> adjustPos pos $ do
@@ -542,9 +543,9 @@ instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname
     ++ " expects " ++ show lp ++ " arguments" ++ " but was given " ++ show la
 
-notFoundError :: String -> IRI -> Range -> Result a
-notFoundError str sid = fatal_error $ str ++ " " ++ iriToStringUnsecure sid
-    ++ " not found"
+notFoundError :: String -> IRI -> Result a
+notFoundError str sid = fatal_error (str ++ " '" ++ iriToStringUnsecure sid
+    ++ "' or '" ++ iriToStringShortUnsecure sid ++ "' not found") $ iriPos sid
 
 gsigUnionMaybe :: LogicGraph -> Bool -> MaybeNode -> G_sign -> Result G_sign
 gsigUnionMaybe lg both mn gsig = case mn of
@@ -830,7 +831,7 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo fv =
           let dg9 = insLink dg' gmor_f globalDef (DGLinkMorph vn) nTar nA
           return (Fit_view vn ffitargs pos, dg9, (mkG_morphism lid1 theta, ns))
          | otherwise -> instMismatchError spname lp la pos
-    _ -> notFoundError "View" vn pos
+    _ -> notFoundError "view" vn
 
 anaFitArgs :: LogicGraph -> HetcatsOpts -> ExpOverrides -> LibName -> IRI
   -> MaybeNode
