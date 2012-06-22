@@ -31,6 +31,7 @@ module Static.AnalysisStructured
     , expCurie
     , ExpOverrides
     , notFoundError
+    , prefixErrorIRI
     ) where
 
 import Driver.Options

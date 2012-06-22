@@ -330,7 +330,7 @@ anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
 anaLibItem lg opts topLns currLn libenv dg eo itm =
  case itm of
   Spec_defn spn' gen asp pos -> case expCurie (globalAnnos dg) eo spn' of
-   Nothing -> fail $ failPrefixIRI spn'
+   Nothing -> liftR $ prefixErrorIRI spn'
    Just spn -> do
     let spstr = iriToStringUnsecure spn
         nName = makeName spn
@@ -356,11 +356,13 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                   $ ExtGenSig gsig body) genv }
         , libenv, lg, eo)
   View_defn vn' gen vt gsis pos -> case expCurie (globalAnnos dg) eo vn' of
-   Nothing -> fail $ failPrefixIRI vn'
+   Nothing -> liftR $ prefixErrorIRI vn'
    Just vn -> do
     analyzing opts $ "view " ++ iriToStringUnsecure vn
     liftR $ anaViewDefn lg currLn libenv dg opts eo vn gen vt gsis pos
-  Arch_spec_defn asn asp pos -> do
+  Arch_spec_defn asn' asp pos -> case expCurie (globalAnnos dg) eo asn' of
+   Nothing -> liftR $ prefixErrorIRI asn'
+   Just asn -> do
     let asstr = iriToStringUnsecure asn
     analyzing opts $ "arch spec " ++ asstr
     (_, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lg currLn dg
@@ -381,7 +383,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                             (ArchOrRefEntry True archSig) genv }
               , libenv, lg, eo)
   Unit_spec_defn usn' usp pos -> case expCurie (globalAnnos dg) eo usn' of
-   Nothing -> fail $ failPrefixIRI usn'
+   Nothing -> liftR $ prefixErrorIRI usn'
    Just usn -> do
     let usstr = iriToStringUnsecure usn
     analyzing opts $ "unit spec " ++ usstr
@@ -398,7 +400,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
              libenv, lg, eo)
   Ref_spec_defn rn' rsp pos -> case expCurie (globalAnnos dg) eo rn' of
-   Nothing -> fail $ failPrefixIRI rn'
+   Nothing -> liftR $ prefixErrorIRI rn'
    Just rn -> do
     let rnstr = iriToStringUnsecure rn
     l <- lookupCurrentLogic "Ref_spec_defn" lg
@@ -460,9 +462,9 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                         else (rights expIms, [], itemNameMapsToIRIs ims)
                   UniqueItem i -> case Map.keys $ globalEnv dg' of
                     [j] -> case expCurie (globalAnnos dg) eo i of
-                      Nothing -> ([], fail $ failPrefixIRI i, [i])
+                      Nothing -> ([], [prefixErrorIRI i], [i])
                       Just expI -> case expCurie (globalAnnos dg) eo j of
-                        Nothing -> ([], fail $ failPrefixIRI j, [i, j])
+                        Nothing -> ([], [prefixErrorIRI j], [i, j])
                         Just expJ ->
                             ([ItemNameMap expJ (Just expI)], [], [i, j])
                     _ ->
