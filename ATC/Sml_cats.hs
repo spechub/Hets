@@ -1421,7 +1421,7 @@ instance ATermConvertibleSML ARCH_SPEC where
                 in (Basic_arch_spec aa'' ab' ac')
             (ShAAppl "named-arch-spec" [ aa ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 in (Arch_spec_name aa')
             _ -> from_sml_ShATermError "ARCH_SPEC" aterm
         where
@@ -1463,7 +1463,7 @@ instance ATermConvertibleSML UNIT_REF where
                     aterm2 = getATerm att2
                 in case aterm2 of
                    ShAAppl "unit-decl" [aa,ab,_] _ ->
-                      let aa'  = from_sml_ATermSIMPLE_ID $
+                      let aa'  = from_sml_ATermIRI $
                                getATermByIndex1 aa att
                           ab'  = from_sml_ShATerm (getATermByIndex1 ab att)
                           ad'  = ps
@@ -1491,7 +1491,7 @@ instance ATermConvertibleSML UNIT_DECL_DEFN where
                     aterm2 = getATerm att2
                 in case aterm2 of
                    ShAAppl "unit-decl" [aa,ab,ac] _ ->
-                    let aa' = from_sml_ATermSIMPLE_ID $ getATermByIndex1 aa att
+                    let aa' = from_sml_ATermIRI $ getATermByIndex1 aa att
                         ab' = from_sml_ShATerm $ getATermByIndex1 ab att
                         ac' = from_sml_ATermUNIT_IMPORTS $
                                          getATermByIndex1 ac att
@@ -1532,7 +1532,7 @@ from_sml_ATermUNIT_DEFN :: ATermTable -> UNIT_DECL_DEFN
 from_sml_ATermUNIT_DEFN att =
     case aterm of
     ShAAppl "unit-defn" [aa,ab] _ ->
-        let aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+        let aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
             ab' = from_sml_ShATerm (getATermByIndex1 ab att)
             ac' = ps
         in (Unit_defn aa' ab' ac')
@@ -1650,7 +1650,7 @@ instance ATermConvertibleSML UNIT_BINDING where
         case aterm of
             (ShAAppl "unit-binding" [ aa,ab ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
                 in (Unit_binding aa' ab' ac')
@@ -1689,7 +1689,7 @@ instance ATermConvertibleSML UNIT_TERM where
                 in group (Local_unit aa' ab' ac') group_flag
             (ShAAppl "unit-appl" [ aa,ab ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
                 in group (Unit_appl aa' ab' ac') group_flag
@@ -1761,7 +1761,7 @@ instance ATermConvertibleSML LIB_ITEM where
                 in (Syntax.AS_Library.View_defn aa' ab' ac' ad'' ae')
             (ShAAppl "arch-spec-defn" [ aa,ab,_ ] _)  ->
                 let
-                aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
+                aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
                 in (Syntax.AS_Library.Arch_spec_defn aa' ab' ac')

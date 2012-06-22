@@ -72,7 +72,7 @@ instance Pretty LIB_ITEM where
                           $+$ keyword endS
         Arch_spec_defn si ab _ ->
             topKey archS <+>
-                   fsep [keyword specS, structSimpleId si <+> equals, pretty ab]
+                   fsep [keyword specS, structIRI si <+> equals, pretty ab]
                            $+$ keyword endS
         Unit_spec_defn si ab _ ->
             topKey unitS <+>

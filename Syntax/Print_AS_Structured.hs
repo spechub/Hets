@@ -11,8 +11,7 @@ Pretty printing of CASL structured specifications
 -}
 
 module Syntax.Print_AS_Structured
-    ( structSimpleId
-    , structIRI
+    ( structIRI
     , printGroupSpec
     , skipVoidGroup
     , printUnion
@@ -31,8 +30,8 @@ import Logic.Grothendieck ()
 
 import Syntax.AS_Structured
 
-structSimpleId :: SIMPLE_ID -> Doc
-structSimpleId = structId . tokStr
+sublogicId :: SIMPLE_ID -> Doc
+sublogicId = structId . tokStr
 
 structIRI :: IRI -> Doc
 structIRI = structId . iriToStringShortUnsecure -- also print user information
@@ -148,7 +147,7 @@ printLogic_name :: Logic_name -> Doc
 printLogic_name (Logic_name mlog slog ms) = let d = structIRI mlog in
     case slog of
       Nothing -> d
-      Just sub -> d <> dot <> structSimpleId sub
+      Just sub -> d <> dot <> sublogicId sub
     <> maybe empty (parens . pretty) ms
 
 {- |

@@ -30,6 +30,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.Result
 import Common.Id
+import Common.IRI
 
 import Static.GTheory
 import Static.DevGraph
@@ -72,7 +73,7 @@ instance Show BasedUnitSig where
  show (Based_par_unit_sig mdn _) = show mdn
  show (Based_lambda_unit_sig _ usig) = show usig
 
-type StBasedUnitCtx = Map.Map SIMPLE_ID BasedUnitSig
+type StBasedUnitCtx = Map.Map IRI BasedUnitSig
 emptyStBasedUnitCtx :: StBasedUnitCtx
 emptyStBasedUnitCtx = Map.empty
 

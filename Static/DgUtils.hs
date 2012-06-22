@@ -12,7 +12,6 @@ Portability :  portable
 module Static.DgUtils where
 
 import qualified Common.Lib.Rel as Rel
-import Common.Id
 import Common.IRI (IRI, nullIRI, iriToStringShortUnsecure, parseCurie)
 import Common.Utils (numberSuffix, splitByList, splitOn, readMaybe)
 import Common.LibName
@@ -310,10 +309,10 @@ isDefEdgeType edgeTp = case edgeTypeModInc edgeTp of
 data RTPointer =
    RTNone
  | NPUnit Node
- | NPBranch Node (Map.Map SIMPLE_ID RTPointer)
+ | NPBranch Node (Map.Map IRI RTPointer)
         -- here the leaves can be either NPUnit or NPComp
  | NPRef Node Node
- | NPComp (Map.Map SIMPLE_ID RTPointer)
+ | NPComp (Map.Map IRI RTPointer)
          {- here the leaves can be NPUnit or NPComp
          and roots are needed for inserting edges -}
  deriving (Show, Eq)
@@ -351,7 +350,7 @@ refSource (NPBranch n _) = n
 refSource (NPRef n _) = n
 refSource x = error ("refSource:" ++ show x)
 
-data RTLeaves = RTLeaf Node | RTLeaves (Map.Map SIMPLE_ID RTLeaves)
+data RTLeaves = RTLeaf Node | RTLeaves (Map.Map IRI RTLeaves)
  deriving Show
 
 refTarget :: RTPointer -> RTLeaves

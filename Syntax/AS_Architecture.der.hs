@@ -17,6 +17,7 @@ module Syntax.AS_Architecture where
 {-! global: GetRange !-}
 
 import Common.Id
+import Common.IRI
 import Common.AS_Annotation
 
 import Syntax.AS_Structured
@@ -86,5 +87,5 @@ data FIT_ARG_UNIT = Fit_arg_unit (Annoted UNIT_TERM) [G_mapping] Range
                     -- pos: opt "fit"
                     deriving (Show)
 
-type ARCH_SPEC_NAME = SIMPLE_ID
-type UNIT_NAME = SIMPLE_ID
+type ARCH_SPEC_NAME = IRI
+type UNIT_NAME = IRI

@@ -29,15 +29,15 @@ instance Pretty ARCH_SPEC where
 
 instance Pretty UNIT_REF where
     pretty (Unit_ref aa ab _) =
-        fsep [structSimpleId aa, keyword toS, pretty ab]
+        fsep [structIRI aa, keyword toS, pretty ab]
 
 instance Pretty UNIT_DECL_DEFN where
     pretty ud = case ud of
         Unit_decl aa ab ac _ ->
-            fsep $ [structSimpleId aa, colon, pretty ab] ++
+            fsep $ [structIRI aa, colon, pretty ab] ++
                  if null ac then [] else
                      keyword givenS : punctuate comma (map pretty ac)
-        Unit_defn aa ab _ -> fsep [structSimpleId aa, equals, pretty ab]
+        Unit_defn aa ab _ -> fsep [structIRI aa, equals, pretty ab]
 
 instance Pretty UNIT_SPEC where
     pretty u = case u of
@@ -98,7 +98,7 @@ instance Pretty UNIT_TERM where
         Local_unit aa ab _ ->
             fsep $ keyword localS : punctuate semi (map pretty aa)
                         ++ [keyword withinS, pretty ab]
-        Unit_appl aa ab _ -> fsep $ structSimpleId aa : map pretty ab
+        Unit_appl aa ab _ -> fsep $ structIRI aa : map pretty ab
         Group_unit_term aa _ -> specBraces $ pretty aa
 
 instance Pretty FIT_ARG_UNIT where

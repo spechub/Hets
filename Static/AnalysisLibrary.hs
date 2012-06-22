@@ -361,13 +361,13 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     analyzing opts $ "view " ++ iriToStringUnsecure vn
     liftR $ anaViewDefn lg currLn libenv dg opts eo vn gen vt gsis pos
   Arch_spec_defn asn asp pos -> do
-    let asstr = tokStr asn
+    let asstr = iriToStringUnsecure asn
     analyzing opts $ "arch spec " ++ asstr
     (_, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lg currLn dg
       opts eo emptyExtStUnitCtx Nothing $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
-    if Map.member (simpleIdToIRI asn) genv
+    if Map.member asn genv
       then liftR $ plain_error (asd', dg', libenv, lg, eo)
                (alreadyDefined asstr) pos
       else do
@@ -377,7 +377,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                            Map.insert (show asn) diag
                            $ archSpecDiags dg''}
             return (asd', dg3
-              { globalEnv = Map.insert (simpleIdToIRI asn)
+              { globalEnv = Map.insert asn
                             (ArchOrRefEntry True archSig) genv }
               , libenv, lg, eo)
   Unit_spec_defn usn' usp pos -> case expCurie (globalAnnos dg) eo usn' of

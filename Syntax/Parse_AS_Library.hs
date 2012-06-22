@@ -158,7 +158,7 @@ libItem l pm =
   <|> -- arch spec
     do kArch <- asKey archS
        kASpec <- asKey specS
-       name <- simpleId
+       name <- hetIRI
        kEqu <- equalT
        asp <- annotedArchSpec l
        kEnd <- optEnd

@@ -90,7 +90,7 @@ anaArchSpec lgraph ln dg opts eo sharedCtx nP archSp = case archSp of
                 dg3, Basic_arch_spec udd'
                            (replaceAnnoted uexpr' uexpr) pos)
   Group_arch_spec asp _ -> anaArchSpec lgraph ln dg opts eo sharedCtx nP (item asp)
-  Arch_spec_name asn -> let asi = simpleIdToIRI asn in
+  Arch_spec_name asi ->
       case lookupGlobalEnvDG asi dg of
             Just (ArchOrRefEntry True asig@(BranchRefSig
                         (NPBranch n f) (UnitSig nsList resNs _, _))) -> do
@@ -128,7 +128,7 @@ anaUnitDeclDefns :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts
     -> ExpOverrides
     -> ExtStUnitCtx -> [Annoted UNIT_DECL_DEFN]
-    -> Result (Map.Map SIMPLE_ID RTPointer, ExtStUnitCtx,
+    -> Result (Map.Map IRI RTPointer, ExtStUnitCtx,
                DGraph, [Annoted UNIT_DECL_DEFN])
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified list of unit declarations and
@@ -138,9 +138,9 @@ anaUnitDeclDefns lgraph ln dg opts eo sharedCtx =
 
 anaUnitDeclDefns' :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
     -> ExpOverrides
-    -> ExtStUnitCtx -> Map.Map SIMPLE_ID RTPointer
+    -> ExtStUnitCtx -> Map.Map IRI RTPointer
     -> [Annoted UNIT_DECL_DEFN]
-    -> Result (Map.Map SIMPLE_ID RTPointer, ExtStUnitCtx,
+    -> Result (Map.Map IRI RTPointer, ExtStUnitCtx,
                DGraph, [Annoted UNIT_DECL_DEFN])
 anaUnitDeclDefns' lgraph ln dg opts eo uctx rNodes uds = case uds of
   udd : udds -> do
@@ -151,8 +151,8 @@ anaUnitDeclDefns' lgraph ln dg opts eo uctx rNodes uds = case uds of
     return (rNodes2, uctx'', dg'', replaceAnnoted udd' udd : udds')
   [] -> return (rNodes, uctx, dg, [])
 
-alreadyDefinedUnit :: SIMPLE_ID -> String
-alreadyDefinedUnit u = "Unit " ++ tokStr u ++ " already declared/defined"
+alreadyDefinedUnit :: IRI -> String
+alreadyDefinedUnit u = "Unit " ++ iriToStringUnsecure u ++ " already declared/defined"
 
 -- | Create a node that represents a union of signatures
 nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin
@@ -179,12 +179,12 @@ nodeSigUnion lgraph dg nodeSigs orig =
 anaUnitDeclDefn :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
   -> ExpOverrides
   -> ExtStUnitCtx -> UNIT_DECL_DEFN
-  -> Result (Map.Map SIMPLE_ID RTPointer, ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
+  -> Result (Map.Map IRI RTPointer, ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitDeclDefn lgraph ln dg opts eo uctx@(buc, _) udd = case udd of
-  Unit_decl un@(Token ustr unpos) usp uts pos -> do
-       let unIRI = simpleIdToIRI un
+  Unit_decl unIRI usp uts pos -> do
+       let ustr = iriToStringShortUnsecure unIRI
        (dns, diag', dg', uts') <-
            anaUnitImported lgraph ln dg opts eo uctx pos uts
        let impSig = toMaybeNode dns
@@ -194,7 +194,7 @@ anaUnitDeclDefn lgraph ln dg opts eo uctx@(buc, _) udd = case udd of
        let (n, dg1, rsig0) =
               case getPointerFromRef rsig' of
                RTNone -> let
-                             (n', d') = addNodeRT dg0 usig $ show un
+                             (n', d') = addNodeRT dg0 usig ustr
                              r' = setPointerInRef rsig' (NPUnit n')
                          in (n', d', r')
                _ -> (refSource $ getPointerFromRef rsig', dg0, rsig')
@@ -206,11 +206,11 @@ TO DO -}
               Just x -> nodeSigUnion lgraph dg1
                           [JustNode x, JustNode resultSig] DGImports
               _ -> return (resultSig, dg1)
-          return (updateNodeNameRT dg2 n $ show un,
+          return (updateNodeNameRT dg2 n ustr,
                   setUnitSigInRef rsig0 $ UnitSig argSigs resultSig' unionSig)
               -- S -> T becomes S -> S \cup T
          JustNode ns -> do
-           let dg2 = updateNodeNameRT dg1 n $ show un
+           let dg2 = updateNodeNameRT dg1 n ustr
                 -- this changes the name of the node in the RT
            (argUnion, dg3) <- nodeSigUnion lgraph dg2
                               (map JustNode argSigs ++ [impSig])
@@ -225,23 +225,25 @@ TO DO -}
                 -- now stores S \cup T
                usig' = UnitSig (ns : argSigs) resultSig' $ Just argUnion
                (newN, dgU') = addNodeRT dgU usig' ""
-               newP = NPBranch n $ Map.fromList [(mkSimpleId "a", NPUnit newN)]
+               newP = NPBranch n $ Map.fromList
+                      [(simpleIdToIRI $ mkSimpleId "a", NPUnit newN)]
                rUnit = UnitSig argSigs resultSig' $ Just argUnion
                rSig = BranchRefSig newP (rUnit, Just $ BranchStaticContext $
-                         Map.insert (mkSimpleId "a") (mkRefSigFromUnit usig')
+                         Map.insert (simpleIdToIRI $ mkSimpleId "a")
+                                (mkRefSigFromUnit usig')
                             Map.empty)
            return (addEdgesToNodeRT dgU' [newN] n, rSig)
              -- check the pointer
        let diag = fromMaybe diag' mDiag
-           ud' = Unit_decl un usp' uts' pos
+           ud' = Unit_decl unIRI usp' uts' pos
        case rsig of
           ComponentRefSig _ _ -> error $
                      "component refinement forbidden in arch spec: unit"
-                     ++ show un
+                     ++ ustr
           _ ->
-           if Map.member un buc
+           if Map.member unIRI buc
             then plain_error (Map.empty, uctx, dg'', ud')
-               (alreadyDefinedUnit un) unpos
+               (alreadyDefinedUnit unIRI) (iriPos unIRI)
             else do
                       _usigN@(UnitSig argSigsN resultSig' unionSigN) <-
                           getUnitSigFromRef rsig
@@ -270,8 +272,8 @@ TO DO -}
                                               (NPUnit n)
                                  return (Based_lambda_unit_sig nodes rsig'',
                                          diag)
-                      return (Map.fromList [(un, getPointerFromRef rsig)],
-                       (Map.insert un basedParUSig buc, diag'''),
+                      return (Map.fromList [(unIRI, getPointerFromRef rsig)],
+                       (Map.insert unIRI basedParUSig buc, diag'''),
                                   dg'', ud')
   Unit_defn un uexp poss -> do
        (nodes, usig, diag, dg'', uexp') <-
@@ -279,7 +281,7 @@ TO DO -}
        let ud' = Unit_defn un uexp' poss
        if Map.member un buc then
           plain_error (Map.empty, uctx, dg'', ud')
-                      (alreadyDefinedUnit un) $ tokPos un
+                      (alreadyDefinedUnit un) $ iriPos un
           else case usig of
                {- we can use Map.insert as there are no mappings for
                   un in ps and bs (otherwise there would have been a
@@ -310,8 +312,7 @@ anaUnitRef :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitRef lgraph ln dg opts eo
              _uctx@(_ggbuc, _diag') rN
-             (Unit_ref un@(Token _ustr _unpos) usp pos) = do
-  let unIRI = simpleIdToIRI un
+             (Unit_ref un usp pos) = do
   let n = case rN of
            Nothing -> Nothing
            Just (NPComp f) -> Just $ Map.findWithDefault
@@ -321,7 +322,7 @@ anaUnitRef lgraph ln dg opts eo
            _ -> error "components!"
   curl <- lookupCurrentLogic "UNIT_REF" lgraph
   let impSig = EmptyNode curl
-  ( _, _, _, rsig, dg'', usp') <- anaRefSpec lgraph ln dg opts eo impSig unIRI
+  ( _, _, _, rsig, dg'', usp') <- anaRefSpec lgraph ln dg opts eo impSig un
                         emptyExtStUnitCtx n usp
   let ud' = Unit_ref un usp' pos
   return ((un, rsig), dg'', ud')
@@ -436,18 +437,20 @@ anaUnitBindings :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts
     -> ExpOverrides
     -> ExtStUnitCtx -> [UNIT_BINDING]
-    -> Result ([(SIMPLE_ID, NodeSig)], DGraph, [UNIT_BINDING])
+    -> Result ([(IRI, NodeSig)], DGraph, [UNIT_BINDING])
 anaUnitBindings lgraph ln dg opts eo uctx@(buc, _) bs = case bs of
           [] -> return ([], dg, [])
-          Unit_binding un@(Token ustr unpos) usp poss : ubs -> do
+          Unit_binding un usp poss : ubs -> do
+               let unpos = iriPos un
                curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
                (BranchRefSig _ (UnitSig argSigs nsig _, _), dg', usp') <-
                    anaUnitSpec lgraph ln dg opts eo (EmptyNode curl) Nothing usp
                let ub' = Unit_binding un usp' poss
                case argSigs of
                     _ : _ -> plain_error ([], dg', [])
-                             ("An argument unit " ++
-                              ustr ++ " must not be parameterized") unpos
+                             ("An argument unit "
+                              ++ iriToStringUnsecure un
+                              ++ " must not be parameterized") unpos
                     [] ->
                         do (args, dg'', ubs') <- anaUnitBindings lgraph ln
                                dg' opts eo uctx ubs
@@ -546,7 +549,7 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
        return (dnsig, diag', dg',
                Local_unit udds' (replaceAnnoted ut' ut) poss)
   Unit_appl un fargus _ -> do
-       let ustr = tokStr un
+       let ustr = iriToStringUnsecure un
            argStr = showDoc fargus ""
        case Map.lookup un buc of
             Just (Based_unit_sig dnsig _rsig) -> case fargus of
@@ -995,7 +998,7 @@ getPosUnitTerm ut = case ut of
   Unit_translation _ (Renaming _ poss) -> poss
   Amalgamation _ poss -> poss
   Local_unit _ _ poss -> poss
-  Unit_appl u _ poss -> appRange (tokPos u) poss
+  Unit_appl u _ poss -> appRange (iriPos u) poss
   Group_unit_term _ poss -> poss
 
 -- | Get a position within the source file of UNIT-IMPORTED

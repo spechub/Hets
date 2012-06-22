@@ -440,7 +440,7 @@ the node is needed for consistency checks -}
 data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig
    deriving (Show, Eq)
 
-type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
+type StUnitCtx = Map.Map IRI ImpUnitSigOrSig
 
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
@@ -448,8 +448,8 @@ emptyStUnitCtx = Map.empty
 {- data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
 this type is superseeded by RefSig -}
 
-type RefSigMap = Map.Map SIMPLE_ID RefSig
-type BStContext = Map.Map SIMPLE_ID RefSig
+type RefSigMap = Map.Map IRI RefSig
+type BStContext = Map.Map IRI RefSig
 -- there should be only BranchRefSigs
 
 data RefSig = BranchRefSig RTPointer (UnitSig, Maybe BranchSig)
@@ -504,7 +504,7 @@ data BranchSig = UnitSigAsBranchSig UnitSig
                | BranchStaticContext BStContext
                  deriving (Show, Eq)
 
-type RefStUnitCtx = Map.Map SIMPLE_ID RefSig
+type RefStUnitCtx = Map.Map IRI RefSig
 -- only BranchRefSigs allowed
 
 emptyRefStUnitCtx :: RefStUnitCtx
@@ -521,7 +521,7 @@ equalSigs (UnitSig ls1 ns1 _) (UnitSig ls2 ns2 _) =
   length ls1 == length ls2 && getSig ns1 == getSig ns2
     && all (\ (x1, x2) -> getSig x1 == getSig x2) (zip ls1 ls2)
 
-namesMatchCtx :: [SIMPLE_ID] -> BStContext -> RefSigMap -> Bool
+namesMatchCtx :: [IRI] -> BStContext -> RefSigMap -> Bool
 namesMatchCtx [] _ _ = True
 namesMatchCtx (un : unitNames) bstc rsmap =
  case Map.findWithDefault (error "namesMatchCtx")
@@ -551,7 +551,7 @@ namesMatchCtx (un : unitNames) bstc rsmap =
                    namesMatchCtx unitNames bstc rsmap
   _ -> False -- this should never be the case
 
-modifyCtx :: [SIMPLE_ID] -> RefSigMap -> BStContext -> BStContext
+modifyCtx :: [IRI] -> RefSigMap -> BStContext -> BStContext
 modifyCtx [] _ bstc = bstc
 modifyCtx (un : unitNames) rsmap bstc =
  case bstc Map.! un of

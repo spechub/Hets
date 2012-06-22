@@ -23,11 +23,12 @@ import Logic.Grothendieck (LogicGraph)
 import Syntax.AS_Structured
 import Syntax.AS_Architecture
 import Syntax.Parse_AS_Structured
-    (annoParser2, groupSpec, parseMapping, translationList)
+    (hetIRI, annoParser2, groupSpec, parseMapping, translationList)
 
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
+import Common.IRI
 import Common.Keywords
 import Common.Lexer
 import Common.Token
@@ -58,7 +59,7 @@ groupArchSpec l = do
     kClBr <- cBraceT
     return $ replaceAnnoted
       (Group_arch_spec (item asp) $ toRange kOpBr [] kClBr) asp
-  <|> fmap (emptyAnno . Arch_spec_name) simpleId
+  <|> fmap (emptyAnno . Arch_spec_name) hetIRI
 
 {- | Parse basic architectural specification
 @
@@ -81,7 +82,7 @@ UNIT-DECL-DEFN ::= UNIT-DECL | UNIT-DEFN
 @ -}
 unitDeclDefn :: LogicGraph -> AParser st UNIT_DECL_DEFN
 unitDeclDefn l = do
-    name <- simpleId
+    name <- hetIRI
     do c <- colonT     -- unit declaration
        decl <- refSpec l
        (gs, ps) <- option ([], []) $ do
@@ -98,7 +99,7 @@ UNIT-REF ::= UNIT-NAME : REF-SPEC
 @ -}
 unitRef :: LogicGraph -> AParser st UNIT_REF
 unitRef l = do
-  name <- simpleId
+  name <- hetIRI
   sep1 <- asKey toS
   usp <- refSpec l
   return $ Unit_ref name usp $ tokPos sep1
@@ -186,7 +187,7 @@ UNIT-NAME FIT-ARG-UNITS
 groupUnitTerm :: LogicGraph -> AParser st (Annoted UNIT_TERM)
 groupUnitTerm l = annoParser $
         -- unit name/application
-    do name <- simpleId
+    do name <- hetIRI
        args <- many (fitArgUnit l)
        return (Unit_appl name args nullRange)
     <|> -- unit term in brackets
@@ -286,7 +287,7 @@ UNIT-BINDING ::= UNIT-NAME : UNIT-SPEC
 @ -}
 unitBinding :: LogicGraph -> AParser st UNIT_BINDING
 unitBinding l = do
-  name <- simpleId
+  name <- hetIRI
   kCol <- colonT
   usp <- unitSpec l
   return $ Unit_binding name usp $ tokPos kCol
@@ -296,9 +297,9 @@ unitBinding l = do
 UNIT-DEFN ::= UNIT-NAME = UNIT-EXPRESSION
 @ -}
 unitDefn :: LogicGraph -> AParser st UNIT_DECL_DEFN
-unitDefn l = simpleId >>= unitDefn' l
+unitDefn l = hetIRI >>= unitDefn' l
 
-unitDefn' :: LogicGraph -> SIMPLE_ID -> AParser st UNIT_DECL_DEFN
+unitDefn' :: LogicGraph -> IRI -> AParser st UNIT_DECL_DEFN
 unitDefn' l name = do
   kEqu <- equalT
   expr <- annoParser2 $ unitExpr l
