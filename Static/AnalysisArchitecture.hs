@@ -779,7 +779,7 @@ anaUnitSpec lgraph ln dg opts eo impsig rN usp = case usp of
            rsig = mkRefSigFromUnit usig
        return (rsig, dg3, Unit_type argSpecs'
                                 (replaceAnnoted resultSpec' resultSpec) poss)
-  Spec_name un' ->  case expCurie (globalAnnos dg) eo un' of
+  Spec_name un' -> case expCurie (globalAnnos dg) eo un' of
    Nothing -> prefixErrorIRI un'
    Just usn -> case lookupGlobalEnvDG usn dg of
     Just (UnitEntry usig) -> return (mkRefSigFromUnit usig, dg, usp)
