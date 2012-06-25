@@ -529,7 +529,9 @@ inducedSignAux f sm om pm em src =
   , emptySortSet = msorts $ emptySortSet src
   , opMap = inducedOpMap sm om $ opMap src
   , assocOps = inducedOpMap sm om $ assocOps src
-  , predMap = inducedPredMap sm pm $ predMap src }
+  , predMap = inducedPredMap sm pm $ predMap src
+  , annoMap = inducedAnnoMap sm om pm $ annoMap src
+  }
 
 inducedOpMap :: Sort_map -> Op_map -> OpMap -> OpMap
 inducedOpMap sm fm = MapSet.foldWithKey
@@ -540,6 +542,20 @@ inducedPredMap :: Sort_map -> Pred_map -> PredMap -> PredMap
 inducedPredMap sm pm = MapSet.foldWithKey
   ( \ i pt -> let (j, nt) = mapPredSym sm pm (i, pt)
       in MapSet.insert j nt) MapSet.empty
+
+inducedAnnoMap :: Sort_map -> Op_map -> Pred_map -> AnnoMap -> AnnoMap
+inducedAnnoMap sm om pm = MapSet.foldWithKey
+  ( \ sy s -> MapSet.insert (mapSymbol sm om pm sy) s) MapSet.empty
+
+mapSymbol :: Sort_map -> Op_map -> Pred_map -> Symbol -> Symbol
+mapSymbol sm om pm (Symbol i ty) = case ty of
+  SortAsItemType -> Symbol (mapSort sm i) SortAsItemType
+  SubsortAsItemType j ->
+    Symbol (mapSort sm i) $ SubsortAsItemType $ mapSort sm j
+  OpAsItemType ot -> let (j, nt) = mapOpSym sm om (i, ot) in
+    Symbol j $ OpAsItemType nt
+  PredAsItemType pt -> let (j, nt) = mapPredSym sm pm (i, pt) in
+    Symbol j $ PredAsItemType nt
 
 legalMor :: MorphismExtension e m => Morphism f e m -> Result ()
 legalMor mor =

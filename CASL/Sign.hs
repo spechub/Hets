@@ -56,6 +56,7 @@ isBinPredType (PredType l) = case l of
 
 type OpMap = MapSet.MapSet OP_NAME OpType
 type PredMap = MapSet.MapSet PRED_NAME PredType
+type AnnoMap = MapSet.MapSet Symbol Annotation
 
 data SymbType = SortAsItemType
               | SubsortAsItemType SORT -- special symbols for xml output
@@ -111,7 +112,7 @@ data Sign f e = Sign
     , sentences :: [Named (FORMULA f)] -- ^ current sentences
     , declaredSymbols :: Set.Set Symbol -- ^ introduced or redeclared symbols
     , envDiags :: [Diagnosis] -- ^ diagnostics for basic spec
-    , annoMap :: MapSet.MapSet Symbol Annotation -- ^ annotated symbols
+    , annoMap :: AnnoMap -- ^ annotated symbols
     , globAnnos :: GlobalAnnos -- ^ global annotations to use
     , extendedInfo :: e
     } deriving Show
