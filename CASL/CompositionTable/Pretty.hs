@@ -25,10 +25,10 @@ table2Doc (Table (Table_Attrs name br brs)
            (Models ms)) =
    parens $ text defCalculusS <+> doubleQuotes (text name)
    $+$ ctxt identityRelationS <+> baserel br
-   $+$ conversetable ct
    $+$ (if null brs then empty else
         ctxt baseRelationsS <+> parens
              (hsep $ map baserel brs))
+   $+$ conversetable ct
    $+$ (if null cs then empty else
         colon <> (text compositionOperationS $+$
                   parens (vcat $ map cmptabentry cs)))
