@@ -88,7 +88,7 @@ skip = skipMany $ single space <|> nestedComment ";;#|" ";;|#"
 
 parseCalculusName :: Parser String
 parseCalculusName =
-  string "def-calculus" >> skip >> stringLit << skip
+  string "def-calculus" >> skip >> fmap (init . tail) stringLit << skip
 
 word :: Parser String
 word = many1 (letter <|> oneOf "_.-?" <|> digit) << skip
@@ -134,7 +134,7 @@ parseConverse :: Parser [Contabentry]
 parseConverse = cKey converseOperationS
   >> inParens (many1 parseContabentry)
 
-parseContabentry:: Parser Contabentry
+parseContabentry :: Parser Contabentry
 parseContabentry = inParens $ do
   id1 <- parseRelationId
   id2 <- parseRelationId
