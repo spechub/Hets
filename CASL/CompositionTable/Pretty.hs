@@ -28,10 +28,10 @@ table2Doc (Table (Table_Attrs name br brs)
    $+$ conversetable ct
    $+$ (if null brs then empty else
         ctxt baseRelationsS <+> parens
-             (fsep $ map baserel brs))
+             (hsep $ map baserel brs))
    $+$ (if null cs then empty else
-        ctxt compositionOperationS <+>
-             parens (vcat $ map cmptabentry cs))
+        colon <> (text compositionOperationS $+$
+                  parens (vcat $ map cmptabentry cs)))
    $+$ (if null rs then empty else
             text ";; reflectiontable" <+>
              parens (vcat $ map reftabentry rs))
@@ -49,8 +49,8 @@ cmptabentry (Cmptabentry (Cmptabentry_Attrs a1 a2) l) = parens
 conversetable :: Conversetable -> Doc
 conversetable ct = case ct of
   Conversetable l -> if null l then empty else
-        ctxt converseOperationS <+>
-             parens (vcat $ map contabentry l)
+        colon <> (text converseOperationS $+$
+             parens (vcat $ map contabentry l))
   Conversetable_Ternary l1 l2 l3 ->
     vcat [ contab3 inverseOperationS l1
          , contab3 shortcutOperationS l2
@@ -58,7 +58,7 @@ conversetable ct = case ct of
 
 contab3 :: String -> [Contabentry_Ternary] -> Doc
 contab3 t l = if null l then empty else
-   ctxt t <+> parens (vcat $ map contabentry3 l)
+   colon <> (text t $+$ parens (vcat $ map contabentry3 l))
 
 contabentry3 :: Contabentry_Ternary -> Doc
 contabentry3 (Contabentry_Ternary a l) =
