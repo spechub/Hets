@@ -12,253 +12,157 @@ Parses CompositionTables in SparQ(Lisp)-Format using Parsec
  <http://www.cs.uu.nl/~daan/parsec.html>
 -}
 
-module CASL.CompositionTable.ParseSparQ (parseSparQTableFromFile) where
+module CASL.CompositionTable.ParseSparQ
+  ( parseSparQTableFromFile
+  , parseSparQTable
+  , skip
+  ) where
 
 import Text.ParserCombinators.Parsec
 import CASL.CompositionTable.CompositionTable
-import Common.Lexer
+import CASL.CompositionTable.Keywords
 import Common.Parsec
 
+import Data.Char
+
 parseSparQTableFromFile :: String -> IO (Either ParseError Table)
-parseSparQTableFromFile = parseFromFile parseSparQTable
+parseSparQTableFromFile = parseFromFile (skip >> parseSparQTable << eof)
 
 parseSparQTable :: Parser Table
-parseSparQTable = do
-  skipMany skippable
+parseSparQTable = inParens $ do
   calculusName <- parseCalculusName
-  skipMany skippable
-  identityRelation <- parseCalculusProperties
-  skipMany skippable
+  (i1, rs1) <- parseIdBaOths
   ct <- parseConversetable
-  try (do
-      skipMany skippable
-      parseReflectionOperations
-      skipMany skippable)
-    <|> skipMany skippable
-  br <- parseBaseRelations
-  skipMany skippable
+  (i2, rs2) <- parseIdBaOths
   compt <- parseCompTable
-  return $ Table
-    (Table_Attrs calculusName (Baserel identityRelation) br)
-    compt ct (Reflectiontable []) (Models [])
+  (i3, rs3) <- parseIdBaOths
+  case i1 ++ i2 ++ i3 of
+    [i] -> return $ Table
+      (Table_Attrs calculusName i $ rs1 ++ rs2 ++ rs3)
+      compt ct (Reflectiontable []) $ Models []
+    [] -> fail "missing identity relation"
+    is -> fail $ "non-unique identity relation " ++ show is
 
-parseArBaPa :: Parser String
-parseArBaPa = try parseArity <|> try parseBasisEntity <|> try parseQualifier
+parseIdBaOths :: Parser ([Baserel], [Baserel])
+parseIdBaOths = fmap (\ l ->
+   (concatMap fst l, concatMap snd l))
+   $ many parseIdBaOth
 
-parseCalculusProperties :: Parser String
-parseCalculusProperties = do
-  many (parseArBaPa <|> try parseParametric)
-  ide <- parseIdentityRelation
-  many parseArBaPa
-  many skippable
-  return ide
+parseIdBaOth :: Parser ([Baserel], [Baserel])
+parseIdBaOth = try $ do
+  s <- cWord
+  case () of
+    _ | s == identityRelationS
+        -> do
+            i <- parseRelationId
+            return ([i], [])
+    _ | s == baseRelationsS
+        -> do
+            rs <- inParens (many1 parseRelationId)
+            return ([], rs)
+    _ | elem s [converseOperationS
+            , compositionOperationS, homingOperationS, inverseOperationS
+            , shortcutOperationS]
+        -> pzero
+    _ | s == parametricS
+        -> forget word >> return ([], [])
+    _ -> (skipMany parseQualifierBrace <|> forget cWord)
+         >> return ([], [])
 
-parseParametric :: Parser String
-parseParametric = do
-  many skippable
-  string ":parametric?"
-  many space
-  word
-
-parseArity :: Parser String
-parseArity = do
-  many skippable
-  string ":arity"
-  many space
-  string ":"
-  word
-
-parseBasisEntity :: Parser String
-parseBasisEntity = do
-  many skippable
-  string ":basis-entity"
-  many space
-  string ":"
-  word
-
-parseIdentityRelation :: Parser String
-parseIdentityRelation = do
-  many skippable
-  string ":identity-relation"
-  many space
-  ide <- parseRelationId
-  return (baserelBaserel ide)
-
-parseQualifier :: Parser String
-parseQualifier = do
-  many skippable
-  string ":qualifier"
-  many space
-  parseQualifierBrace
-
-parseQualifierBrace :: Parser String
+parseQualifierBrace :: Parser ()
 parseQualifierBrace = do
-  string "(" <|> string "#'("
-  many (many1 (noneOf "()") <|> try parseQualifierBrace)
-  string ")"
-  return ""
+  string "(" <|> tryString "#'("
+  skip
+  many $ parseQualifierBrace <|> ((stringLit <|> many1 (noneOf ";()")) >> skip)
+  cParenT
 
-skippable :: Parser String
-skippable = many1 space <|> parseAnnotation
+cKey :: String -> Parser ()
+cKey s = tryString (':' : s) >> skip
 
-parseAnnotation :: Parser String
-parseAnnotation = try (do
-     string ";;#|"
-     many (many1 (noneOf ";") <|>
-           try (string ";" << notFollowedBy (char ';')))
-     string ";;|#")
-   <|> do
-     many space
-     string ";"
-     many (string ";")
-     many (noneOf "\n")
-     string "\n"
+cWord :: Parser String
+cWord = char ':' >> word
+
+skip :: Parser ()
+skip = skipMany $ single space <|> nestedComment ";;#|" ";;|#"
+  <|> char ';' <:> many (noneOf "\n")
 
 parseCalculusName :: Parser String
-parseCalculusName = do
-  many skippable
-  string "(def-calculus"
-  many space
-  s <- parseQuotedStrings
-  space
-  return s
-
-parseQuotedStrings :: Parser String
-parseQuotedStrings = do
-  char '"'
-  cs <- many1 (noneOf "\"")
-  char '"'
-  return cs
+parseCalculusName =
+  string "def-calculus" >> skip >> stringLit << skip
 
 word :: Parser String
-word = many1 (letter <|> char '_' <|> char '.' <|> char '-' <|> digit)
+word = many1 (letter <|> oneOf "_.-?" <|> digit) << skip
 
-parseBaseRelations :: Parser [Baserel]
-parseBaseRelations = do
-  many skippable
-  string ":base-relations"
-  many skippable
-  oParenT
-  baserels <- many1 parseRelationId
-  cParenT
-  return baserels
+oParenT :: Parser ()
+oParenT = char '(' >> skip
+
+cParenT :: Parser ()
+cParenT = char ')' >> skip
+
+inParens :: Parser a -> Parser a
+inParens p = oParenT >> p << cParenT
 
 parseCompTable :: Parser Compositiontable
-parseCompTable = do
-  many skippable
-  string ":composition-operation"
-  many skippable
-  oParenT
-  cmptabentries <- parseComptabentryList
-  cParenT
-  return (Compositiontable cmptabentries)
+parseCompTable = cKey compositionOperationS
+  >> inParens (fmap Compositiontable parseComptabentryList)
 
 parseComptabentryList :: Parser [Cmptabentry]
 parseComptabentryList = many1 parseComptabentry
 
 parseComptabentry :: Parser Cmptabentry
-parseComptabentry = do
-  many skippable
-  oParenT
+parseComptabentry = inParens $ do
   rel1 <- parseRelationId
   rel2 <- parseRelationId
   results <- parseComptabentryResults
-  cParenT
   return (Cmptabentry (Cmptabentry_Attrs rel1 rel2) results)
 
 parseComptabentryResults :: Parser [Baserel]
-parseComptabentryResults = try (do
-    oParenT
-    results <- many1 parseRelationId
-    cParenT
-    return results)
-  <|> (tryString "NIL" >> return [])
+parseComptabentryResults = inParens (many parseRelationId)
   <|> do
-    result <- parseRelationId
-    return [result]
-  <|> do
-    oParenT
-    many space
-    cParenT
-    return []
+    result@(Baserel str) <- parseRelationId
+    return $ if map toUpper str == "NIL" then [] else [result]
 
 parseConversetable :: Parser Conversetable
-parseConversetable = try (do
+parseConversetable = do
     entry1 <- parseInverse
     entry3 <- parseShortcut
     entry2 <- parseHoming
-    return (Conversetable_Ternary entry1 entry3 entry2))
-  <|> do
-    entry <- parseConverse
-    return (Conversetable entry)
+    return $ Conversetable_Ternary entry1 entry3 entry2
+  <|> fmap Conversetable parseConverse
 
 parseConverse :: Parser [Contabentry]
-parseConverse = do
-  many skippable
-  string ":converse-operation"
-  many skippable
-  oParenT
-  invrels <- many1 parseContabentry
-  cParenT
-  return invrels
+parseConverse = cKey converseOperationS
+  >> inParens (many1 parseContabentry)
 
 parseContabentry:: Parser Contabentry
-parseContabentry = do
-  many skippable
-  oParenT
+parseContabentry = inParens $ do
   id1 <- parseRelationId
   id2 <- parseRelationId
-  cParenT
   return (Contabentry id1 id2)
 
 parseContabentryList :: String -> Parser [Contabentry_Ternary]
-parseContabentryList s = do
-  many skippable
-  string s
-  many skippable
-  oParenT
-  invrels <- many1 parseContabentryTernary
-  cParenT
-  return invrels
+parseContabentryList s = cKey s
+  >> inParens (many1 parseContabentryTernary)
 
 parseContabentryTernary :: Parser Contabentry_Ternary
-parseContabentryTernary = do
-  many skippable
-  oParenT
+parseContabentryTernary = inParens $ do
   id1 <- parseRelationId
   ids <- many1 parseRelationId <|> parseBracedRelationIds
-  cParenT
   return (Contabentry_Ternary id1 ids)
 
 parseBracedRelationIds :: Parser [Baserel]
-parseBracedRelationIds = do
-  many skippable
-  oParenT
-  ids <- many1 parseRelationId
-  cParenT
-  return ids
-
-parseReflectionOperations :: Parser String
-parseReflectionOperations =  do
-  many skippable
-  string ":reflection-operation"
-  many skippable
-  oParenT
-  many1 parseContabentry
-  cParenT
-  return ""
+parseBracedRelationIds = inParens $ many1 parseRelationId
 
 parseInverse :: Parser [Contabentry_Ternary]
-parseInverse = parseContabentryList ":inverse-operation"
+parseInverse = parseContabentryList inverseOperationS
 
 parseHoming :: Parser [Contabentry_Ternary]
-parseHoming = parseContabentryList ":homing-operation"
+parseHoming = parseContabentryList homingOperationS
 
 parseShortcut :: Parser [Contabentry_Ternary]
-parseShortcut = parseContabentryList ":shortcut-operation"
+parseShortcut = parseContabentryList shortcutOperationS
 
 parseRelationId :: Parser Baserel
-parseRelationId = do
-  chars <- many1 (noneOf "() \r\v\f\t\160\n")
-  skip
-  return (Baserel chars)
+parseRelationId =
+  fmap Baserel (many1 $ satisfy $ \ c ->
+            not (isSpace c) && notElem c "():;#'\"") << skip

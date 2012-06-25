@@ -25,10 +25,10 @@ table2Doc (Table (Table_Attrs name br brs)
            (Models ms)) =
    parens $ text defCalculusS <+> doubleQuotes (text name)
    $+$ ctxt identityRelationS <+> baserel br
+   $+$ conversetable ct
    $+$ (if null brs then empty else
         ctxt baseRelationsS <+> parens
              (fsep $ map baserel brs))
-   $+$ conversetable ct
    $+$ (if null cs then empty else
         ctxt compositionOperationS <+>
              parens (vcat $ map cmptabentry cs))
@@ -62,7 +62,9 @@ contab3 t l = if null l then empty else
 
 contabentry3 :: Contabentry_Ternary -> Doc
 contabentry3 (Contabentry_Ternary a l) =
-   vcat (map (\ x -> parens $ baserel a <+> baserel x) l)
+  parens $ baserel a <+> case l of
+           [b] -> baserel b
+           _ -> parens $ hsep $ map baserel l
 
 contabentry :: Contabentry -> Doc
 contabentry (Contabentry a b) = parens $ baserel a <+> baserel b
