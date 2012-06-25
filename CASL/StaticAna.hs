@@ -446,7 +446,7 @@ ana_OP_ITEM mef mix aoi =
            maybe (return ()) (\ ty -> addOp aoi (toOpType ty) i) mty
            sign <- putVarsInEmptyMap vs
            let Result ds mt = anaTerm mef mix sign
-                 (maybe Nothing (Just . res_OP_TYPE) mty) ps $ item at
+                 (fmap res_OP_TYPE mty) ps $ item at
            addDiags ds
            case mt of
              Nothing -> return $ maybe aoi
@@ -878,6 +878,7 @@ basicAnalysis mef anab anas mix (bs, inSig, ga) =
                    , opMap = opMap accSig
                    , assocOps = assocOps accSig
                    , predMap = predMap accSig
+                   , annoMap = annoMap accSig
                    , globAnnos = ga }
     in Result (ds ++ warnUnused accSig sents) $
        Just (newBs, ExtSign cleanSig $ declaredSymbols accSig, sents)
