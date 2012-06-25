@@ -273,8 +273,11 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
             putIfVerbose opts 4 $ unlines
                ["lisp file content:", show $ table2Doc y, "lisp file end."]
             let Result d _ = modelCheck i th2 y
-            if length d > 0 then showDiags opts {verbose = 2 } $ take 10 d
-             else putIfVerbose opts 0 "Modelcheck succeeded, no errors found"
+            if null d then
+                putIfVerbose opts 0 "Modelcheck succeeded, no errors found"
+             else showDiags
+               (if verbose opts >= 2 then opts else opts {verbose = 2})
+               $ reverse d
     _ ->
       putIfVerbose opts 0 $ "could not translate Theory to CASL:\n "
          ++ showDoc gTh ""
@@ -312,9 +315,12 @@ writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> DGraph
                -> IO ()
 writeSpecFiles opts file lenv ln dg = do
     let gctx = globalEnv dg
+        gns = Map.keys gctx
+        mns = map $ \ t -> Map.findWithDefault (simpleIdToIRI t) (tokStr t)
+          $ Map.fromList $ map (\ i -> (iriToStringShortUnsecure i, i)) gns
         ga = globalAnnos dg
-        ns = specNames opts
-        vs = viewNames opts
+        ns = mns $ specNames opts
+        vs = mns $ viewNames opts
         filePrefix = snd $ getFilePrefix opts file
         outTypes = outtypes opts
         specOutTypes = filter ( \ ot -> case ot of
@@ -343,9 +349,9 @@ writeSpecFiles opts file lenv ln dg = do
         _ -> unless allSpecs
                $ putIfVerbose opts 0 $ "Unknown spec name: " ++ show i
       ) $ if ignore then [] else
-        if allSpecs then Map.keys gctx else map simpleIdToIRI ns
+        if allSpecs then gns else ns
     unless noViews $
-      mapM_ ( \ si -> let i = simpleIdToIRI si in case Map.lookup i gctx of
+      mapM_ ( \ i -> case Map.lookup i gctx of
         Just (ViewOrStructEntry _ (ExtViewSig _ (GMorphism cid _ _ m _) _)) ->
             writeVerbFile opts (filePrefix ++ "_" ++ show i ++ ".view")
               $ shows (pretty $ Map.toList $ symmap_of (targetLogic cid) m) "\n"
