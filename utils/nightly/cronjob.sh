@@ -111,6 +111,8 @@ checkCalculi ()
 {
 date
 for i in Calculi/*/*.casl Calculi/*/*.het; do ./hets -v2 $i; done
+./hets -v4 -n RelationAlgebraSimple -m ConstraintCASL/RCC8.lisp \
+  Calculi/Algebra/RelationAlgebraSimple.casl 
 }
 
 reCheckBasicCASLThs ()
