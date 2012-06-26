@@ -29,6 +29,7 @@ module Static.AnalysisStructured
     , extendMorphism
     , insGTheory
     , expCurie
+    , expandCurieByPath
     , ExpOverrides
     , notFoundError
     , prefixErrorIRI
@@ -1046,9 +1047,12 @@ expCurie ga eo i =
   let pm = prefix_map ga
   in case Map.lookup i eo of
         Nothing -> expandCurie pm i
-        Just path -> case parseIRIReference $ path ++ "#" of
+        Just path -> expandCurieByPath path i
+
+expandCurieByPath :: FilePath -> IRI -> Maybe IRI
+expandCurieByPath path i = case parseIRIReference $ path ++ "#" of
           Nothing -> Nothing
-          Just p -> expandCurie (Map.fromList [("", p), (":", p)]) i
+          Just p -> expandCurie (Map.singleton "" p) i
 
 prefixErrorIRI :: IRI -> Result a
 prefixErrorIRI i = fatal_error ("No prefix found for CURIE " ++

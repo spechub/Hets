@@ -453,9 +453,10 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
                 fn = show $ getLibId ln
+                currFn = show $ getLibId currLn
                 (realItems, errs, origItems) = case items of
                   ItemMaps ims ->
-                    let expIms = map (expandCurieItemNameMap fn) ims
+                    let expIms = map (expandCurieItemNameMap fn currFn) ims
                         leftExpIms = lefts expIms
                     in if not $ null leftExpIms
                         then ([], map fail leftExpIms, itemNameMapsToIRIs ims)
@@ -471,7 +472,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                      ( []
                      , [mkError "non-unique name within imported library" itm]
                      , [])
-                additionalEo = Map.fromList $ zip origItems $ repeat fn
+                additionalEo = Map.fromList $ map (\ o -> (o, fn)) origItems
                 eo' = Map.unionWith (\ _ p2 -> p2) eo additionalEo
             mapM_ liftR errs
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 realItems
@@ -674,14 +675,16 @@ expandCurieLogicName ga ln@(Logic_name i1 mt mi2) =
             Left s -> Left s
      else Right ln
 
-expandCurieItemNameMap :: FilePath -> ItemNameMap -> Either String ItemNameMap
-expandCurieItemNameMap fn (ItemNameMap i1 mi2) =
-  let i = fromJust $ parseIRIReference $ fn ++ "#"
-      m = Map.singleton "" i
-      g = emptyGlobalAnnos {prefix_map = m}
-  in case expandCurie2M g (i1, mi2) of
-          Right (e1, e2m) -> Right $ ItemNameMap e1 e2m
-          Left s -> Left s
+expandCurieItemNameMap :: FilePath -> FilePath -> ItemNameMap
+  -> Either String ItemNameMap
+expandCurieItemNameMap fn newFn (ItemNameMap i1 mi2) =
+    case expandCurieByPath fn i1 of
+        Just i -> case mi2 of
+            Nothing -> Right $ ItemNameMap i mi2
+            Just j -> case expandCurieByPath newFn j of
+                Nothing -> Left $ failPrefixIRI j
+                mj -> Right $ ItemNameMap i mj
+        Nothing -> Left $ failPrefixIRI i1
 
 expandCurie2M :: GlobalAnnos -> (IRI, Maybe IRI)
   -> Either String (IRI, Maybe IRI)
@@ -697,6 +700,8 @@ expandCurie2M ga (i1, mi2) =
               Just e2 -> Right (fromJust e1m, e2)
 
 itemNameMapsToIRIs :: [ItemNameMap] -> [IRI]
-itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> [fromMaybe i mi])
+itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> case mi of
+    Nothing -> [i]
+    Just j -> [i | i == j])
 
 -- END CURIE expansion
