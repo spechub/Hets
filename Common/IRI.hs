@@ -1321,7 +1321,8 @@ expandCurie prefixMap c =
        Just i -> case mergeCurie c i of
                 Nothing -> Nothing
                 Just j -> Just $ j { prefixName = prefixName c
-                                   , abbrevPath = abbrevPath c }
+                                   , abbrevPath = abbrevPath c
+                                   , iriPos = iriPos c }
 
 {- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending their string representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
