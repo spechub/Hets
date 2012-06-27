@@ -478,7 +478,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess sessRef newLib k
-                liftR $ return $ sessAns ln svg (newSess, k)
+                -- calculate updated SVG-view from modified development graph
+                newSvg <- getSVG title ('/' : show k) $ lookupDGraph ln newLib
+                liftR $ return $ sessAns ln newSvg (newSess, k)
             NodeQuery ein nc -> do
               nl@(i, dgnode) <- case ein of
                 Right n -> case lookupNodeByName n dg of
