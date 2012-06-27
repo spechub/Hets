@@ -112,10 +112,6 @@ data DGQuery = DGQuery
   }
   | NewDGQuery { queryLib :: FilePath }
 
-getQueryPath :: DGQuery -> FilePath
-getQueryPath (DGQuery _ p) = maybe "Nothing" id p
-getQueryPath (NewDGQuery l) = l
-
 data Query = Query
   { dgQuery :: DGQuery
   , queryKind :: QueryKind

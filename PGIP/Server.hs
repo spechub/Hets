@@ -64,6 +64,7 @@ import Common.Doc
 import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
+import Common.IRI
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
@@ -106,6 +107,8 @@ sessGraph dgQ (Session le ln _ _) = case dgQ of
       find (\ (n, _) -> show (getLibId n) == path)
         $ Map.toList le
   _ -> fmap (\ dg -> (ln, dg)) $ Map.lookup ln le
+
+-- TODO reload after global command has been issued
 
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
@@ -152,48 +155,59 @@ hetsServer opts1 = do
    if any (`isInfixOf` rhost) bots then return $ mkResponse status403 ""
     else let
     -- extract params from query for later use
-    mNot f = maybe Nothing f
-    format = mNot id $ lookup "format" splitQuery
-    session = mNot (mNot readMaybe) $ lookup "session" splitQuery
-    library = mNot (mNot (Just . decodeQueryCode))
+    format = maybe Nothing id $ lookup "format" splitQuery
+    session = maybe Nothing (maybe Nothing readMaybe)
+      $ lookup "session" splitQuery
+    library = maybe Nothing (fmap iriPath . maybe Nothing parseIRI)
       $ lookup "library" splitQuery
-    dgQ = case (session, library) of
-          (Just i, _) -> DGQuery i library
-          (_, Just l) -> NewDGQuery l
-          _ -> undefined -- TODO proper error code!
-    -- TODO use Common.Iri to parse and use Iris correctly!!
+    -- respond depending on request Method
     in case B8.unpack (requestMethod re) of
+    -- LIST OF GET REQUEST RESPONSES
     "GET" -> liftRun $ case pathBits of
+      -- show all menue options
       "menues" : [] -> mkMenuResponse
-      "dir" : r -> getHetsLibContent opts (intercalate "/" r) query
-        >>= mkHtmlPage path
+      -- list files from directory
+      "dir" : r -> let path' = (intercalate "/" r) in
+        getHetsLibContent opts path' query >>= mkHtmlPage path'
+      -- get dgraph from file
       "hets-lib" : r -> let file = intercalate "/" r in
         getHetsResponse' opts [] sessRef $ Query (NewDGQuery file)
           $ DisplayQuery format
-      "libraries" : libIri : "development_graph" : [] -> let
-        libnm = decodeQueryCode libIri in
-          getHetsResponse' opts [] sessRef $ Query (NewDGQuery libnm)
-          $ DisplayQuery format
-      "sessions" : sessIri : [] -> case readMaybe $ decodeQueryCode sessIri of
-        Just i -> getHetsResponse' opts [] sessRef $ Query (DGQuery i Nothing)
-          $ DisplayQuery format
-        Nothing -> undefined -- TODO what kind of error message
-      "nodes" : nodeIri : cmd -> let
-        i = (\ s -> if isNat s then Left (read s) else Right s) $
-          decodeQueryCode nodeIri
-        in getHetsResponse' opts [] sessRef $ Query dgQ $ NodeQuery i
-          $ case cmd of
-          ["theory"] -> NcCmd Query.Theory
-          _ -> NcCmd Query.Info
-      "edges" : edgeIri : [] -> let
-        i = EdgeId $ maybe (-1) id $ readMaybe $ decodeQueryCode edgeIri
-        in getHetsResponse' opts [] sessRef $ Query dgQ $ EdgeQuery i "edge"
+      -- get library (complies with get/hets-lib for now)
+      "libraries" : libIri : "development_graph" : [] ->
+        case parseIRI libIri of
+          Just lib -> getHetsResponse' opts [] sessRef
+            $ Query (NewDGQuery $ iriPath lib) $ DisplayQuery format
+          Nothing -> fail $ "failed to parse IRI from " ++ libIri
+      -- get previously created session
+      "sessions" : sessId : [] -> case readMaybe sessId of
+          Just i -> getHetsResponse' opts [] sessRef
+            $ Query (DGQuery i Nothing) $ DisplayQuery format
+          Nothing -> fail $ "failed to read session number from " ++ sessId
+      -- get node or edge view
+      nodeOrEdge : codedIri : c | nodeOrEdge `elem` ["node", "egde"] -> let
+        dgQ ir = maybe (NewDGQuery $ maybe (iriPath ir) id library)
+                 (`DGQuery` library) session
+        in case (nodeOrEdge, parseIRI codedIri) of
+          ("node", Just n) -> let
+            s = iriFragment n
+            i = maybe (Right s) Left $ readMaybe s in
+            getHetsResponse' opts [] sessRef $ Query (dgQ n) $ NodeQuery i
+              $ case c of
+                ["theory"] -> NcCmd Query.Theory
+                _ -> NcCmd Query.Info
+          ("edge", Just l) -> case readMaybe $ iriFragment l of
+            Just i -> getHetsResponse' opts [] sessRef
+              $ Query (dgQ l) $ EdgeQuery (EdgeId i) "edge"
+            Nothing -> fail $ "failed to read edgeId from " ++ iriFragment l
+          _ -> fail $ "failed to parse IRI from " ++ codedIri
       -- default case if query doesn't comply with RESTFullInterface
       _ -> if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs
            then getHetsResponse opts [] sessRef pathBits splitQuery
            else mkHtmlPage path dirs
+    -- LIST OF PUT/POST REQUEST RESPONSES
     -- TODO continue implementing restfull interface responses here
     m | m == "PUT" || m == "POST" -> do
       (params, files) <- parseRequestBody tempFileSink re
@@ -432,12 +446,11 @@ getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
 getHetsResult opts updates sessRef (Query dgQ qk) = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
-      case sessGraph dgQ sess of
-        Nothing -> fail $ "unknown library given by: "
-          ++ getQueryPath dgQ
-        Just (ln, dg) -> let title = show $ getLibId ln in do
-          svg <- getSVG title ('/' : show k) dg
-          case qk of
+      (ln, dg) <- maybe (fail "unknown development graph") return
+        $ sessGraph dgQ sess
+      let title = show $ getLibId ln
+      svg <- getSVG title ('/' : show k) dg
+      case qk of
             DisplayQuery ms -> case ms of
               Just "svg" -> return svg
               Just "xml" -> liftR $ return $ ppTopElement
@@ -494,7 +507,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                                   gTh subL incl mp mt tl thms
                       if null sens then return "nothing to prove" else do
                         lift $ nextSess sessRef newLib k
-                        return $ formatResults k $ unode "results" $
+                        return $ formatResults k i $ unode "results" $
                            map (\ (n, e) -> unode "goal"
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
@@ -509,12 +522,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
-formatResults :: Int -> Element -> String
-formatResults sessId rs = let
-  goBack = aRef ('/' : show sessId) "return to DGraph"
+formatResults :: Int -> Int -> Element -> String
+formatResults sessId i rs = let
+  goBack1 = aRef ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
+  goBack2 = aRef ('/' : show sessId) "return to DGraph"
   in ppElement $ unode "html" [ unode "head"
     [ unode "title" "Results", (add_attr (mkAttr "type" "text/css")
-    $ unode "style" resultStyles), goBack ], rs ]
+    $ unode "style" resultStyles), goBack1, plain " ", goBack2 ], rs ]
 
 resultStyles :: String
 resultStyles = unlines
