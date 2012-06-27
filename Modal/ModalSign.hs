@@ -23,8 +23,8 @@ import qualified Data.List as List
 import qualified Data.Map as Map
 
 data ModalSign = ModalSign
-  { rigidOps :: OpMap
-  , rigidPreds :: PredMap
+  { flexOps :: OpMap
+  , flexPreds :: PredMap
   , modies :: Map.Map SIMPLE_ID [AnModFORM]
   , termModies :: Map.Map Id [AnModFORM] --SORT
   } deriving (Show, Eq, Ord)
@@ -34,8 +34,8 @@ emptyModalSign = ModalSign MapSet.empty MapSet.empty Map.empty Map.empty
 
 addModalSign :: ModalSign -> ModalSign -> ModalSign
 addModalSign a b = a
-  { rigidOps = addOpMapSet (rigidOps a) $ rigidOps b
-  , rigidPreds = addMapSet (rigidPreds a) $ rigidPreds b
+  { flexOps = addOpMapSet (flexOps a) $ flexOps b
+  , flexPreds = addMapSet (flexPreds a) $ flexPreds b
   , modies = Map.unionWith  List.union (modies a) $ modies b
   , termModies = Map.unionWith List.union (termModies a) $ termModies b }
 
@@ -45,15 +45,15 @@ interMap f m = Map.filter (not . null) . Map.intersectionWith f m
 
 interModalSign :: ModalSign -> ModalSign -> ModalSign
 interModalSign a b = a
-  { rigidOps = interOpMapSet (rigidOps a) $ rigidOps b
-  , rigidPreds = interMapSet (rigidPreds a) $ rigidPreds b
+  { flexOps = interOpMapSet (flexOps a) $ flexOps b
+  , flexPreds = interMapSet (flexPreds a) $ flexPreds b
   , modies = interMap List.intersect (modies a) $ modies b
   , termModies = interMap List.intersect (termModies a) $ termModies b }
 
 diffModalSign :: ModalSign -> ModalSign -> ModalSign
 diffModalSign a b = a
-  { rigidOps = diffOpMapSet (rigidOps a) $ rigidOps b
-  , rigidPreds = diffMapSet (rigidPreds a) $ rigidPreds b
+  { flexOps = diffOpMapSet (flexOps a) $ flexOps b
+  , flexPreds = diffMapSet (flexPreds a) $ flexPreds b
   , modies = Map.differenceWith diffList (modies a) $ modies b
   , termModies = Map.differenceWith diffList (termModies a) $ termModies b
   } where diffList c d = let e = c List.\\ d in
@@ -61,8 +61,8 @@ diffModalSign a b = a
 
 isSubModalSign :: ModalSign -> ModalSign -> Bool
 isSubModalSign a b =
-    isSubOpMap (rigidOps a) (rigidOps b)
-    && isSubMap (rigidPreds a) (rigidPreds b)
+    isSubOpMap (flexOps a) (flexOps b)
+    && isSubMap (flexPreds a) (flexPreds b)
     && Map.isSubmapOfBy sublist (modies a) (modies b)
     && Map.isSubmapOfBy sublist (termModies a) (termModies b)
     where sublist l1 l2 = List.union l2 l1 == l2

@@ -202,32 +202,32 @@ sigItemStatAna
 sigItemStatAna mix sig_item = case sig_item of
   Rigid_op_items rig ann_list pos -> do
     new_list <- mapM (ana_OP_ITEM frmTypeAna mix) ann_list
-    when rig $ mapM_
+    unless rig $ mapM_
         (\ nlitem -> case item nlitem of
           Op_decl ops typ _ _ ->
-              mapM_ (updateExtInfo . addRigidOp (toOpType typ)) ops
+              mapM_ (updateExtInfo . addFlexOp (toOpType typ)) ops
           Op_defn op hd _ _ -> maybe (return ())
-              (\ ty -> updateExtInfo $ addRigidOp (toOpType ty) op)
+              (\ ty -> updateExtInfo $ addFlexOp (toOpType ty) op)
               $ headToType hd
         ) new_list
     return $ Rigid_op_items rig new_list pos
   Rigid_pred_items rig ann_list pos -> do
     new_list <- mapM (ana_PRED_ITEM frmTypeAna mix) ann_list
-    when rig $ mapM_ ( \ nlitem -> case item nlitem of
+    unless rig $ mapM_ ( \ nlitem -> case item nlitem of
           Pred_decl preds typ _ ->
-              mapM_ (updateExtInfo . addRigidPred (toPredType typ) ) preds
+              mapM_ (updateExtInfo . addFlexPred (toPredType typ) ) preds
           Pred_defn prd (Pred_head args _ ) _ _ ->
-              updateExtInfo $ addRigidPred (PredType $ sortsOfArgs args) prd
+              updateExtInfo $ addFlexPred (PredType $ sortsOfArgs args) prd
                      ) new_list
     return $ Rigid_pred_items rig new_list pos
 
-addRigidOp :: OpType -> Id -> EModalSign -> Result EModalSign
-addRigidOp typ i sgn = return
-        sgn { rigidOps = addOpTo i typ $ rigidOps sgn }
+addFlexOp :: OpType -> Id -> EModalSign -> Result EModalSign
+addFlexOp typ i sgn = return
+        sgn { flexOps = addOpTo i typ $ flexOps sgn }
 
-addRigidPred :: PredType -> Id -> EModalSign -> Result EModalSign
-addRigidPred typ i sgn = return
-        sgn { rigidPreds = MapSet.insert i typ $ rigidPreds sgn }
+addFlexPred :: PredType -> Id -> EModalSign -> Result EModalSign
+addFlexPred typ i sgn = return
+        sgn { flexPreds = MapSet.insert i typ $ flexPreds sgn }
 
 mixfixAna :: Mix EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
 mixfixAna = emptyMix

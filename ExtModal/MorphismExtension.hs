@@ -64,8 +64,8 @@ inducedEMsign sm om pm m sig =
       msm i = Map.findWithDefault i i
         $ if Set.member i tmods then sm else mods
   in ms
-  { rigidOps = inducedOpMap sm om $ rigidOps ms
-  , rigidPreds = inducedPredMap sm pm $ rigidPreds ms
+  { flexOps = inducedOpMap sm om $ flexOps ms
+  , flexPreds = inducedPredMap sm pm $ flexPreds ms
   , modalities = Set.map msm $ modalities ms
   , time_modalities = Set.map msm $ time_modalities ms
   , termMods = Set.map (\ i -> Map.findWithDefault i i sm) tmods

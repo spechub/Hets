@@ -77,9 +77,10 @@ printModalSign :: (FORMULA M_FORMULA -> FORMULA M_FORMULA) -> ModalSign -> Doc
 printModalSign sim s =
     let ms = modies s
         tms = termModies s in
-    printSetMap (keyword rigidS <+> keyword opS) empty (MapSet.toMap $ rigidOps s)
-    $+$ printSetMap (keyword rigidS <+> keyword predS) space
-        (MapSet.toMap $ rigidPreds s)
+    printSetMap (keyword flexibleS <+> keyword opS) empty
+        (MapSet.toMap $ flexOps s)
+    $+$ printSetMap (keyword flexibleS <+> keyword predS) space
+        (MapSet.toMap $ flexPreds s)
     $+$ (if Map.null ms then empty else
         cat [keyword modalitiesS <+> sepBySemis (map sidDoc $ Map.keys ms)
             , specBraces (printFormulaOfModalSign sim $ Map.elems ms)])

@@ -128,11 +128,11 @@ instance Pretty EModalSign where
             tims = time_modalities sign
             terms = termMods sign
             nms = nominals sign in
-        printSetMap (keyword rigidS <+> keyword opS) empty
-            (MapSet.toMap $ rigidOps sign)
+        printSetMap (keyword flexibleS <+> keyword opS) empty
+            (MapSet.toMap $ flexOps sign)
         $+$
-        printSetMap (keyword rigidS <+> keyword predS) empty
-            (MapSet.toMap $ rigidPreds sign)
+        printSetMap (keyword flexibleS <+> keyword predS) empty
+            (MapSet.toMap $ flexPreds sign)
         $+$
         vcat (map (\ i -> fsep
           $ [keyword timeS | Set.member i tims]

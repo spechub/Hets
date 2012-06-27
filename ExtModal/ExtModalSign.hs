@@ -20,8 +20,8 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Set as Set
 
 data EModalSign = EModalSign
-        { rigidOps :: OpMap
-        , rigidPreds :: PredMap
+        { flexOps :: OpMap
+        , flexPreds :: PredMap
         , modalities :: Set.Set Id -- do not store sentences in signature
         , time_modalities :: Set.Set Id
         , termMods :: Set.Set Id -- sorts that need to be mapped
@@ -34,8 +34,8 @@ emptyEModalSign =
 
 addEModalSign :: EModalSign -> EModalSign -> EModalSign
 addEModalSign ms1 ms2 = ms1
-        { rigidOps = addOpMapSet (rigidOps ms1) (rigidOps ms2)
-        , rigidPreds = MapSet.union (rigidPreds ms1) (rigidPreds ms2)
+        { flexOps = addOpMapSet (flexOps ms1) (flexOps ms2)
+        , flexPreds = MapSet.union (flexPreds ms1) (flexPreds ms2)
         , modalities = Set.union (modalities ms1) $ modalities ms2
         , time_modalities = Set.union (time_modalities ms1)
                             (time_modalities ms2)
@@ -45,8 +45,8 @@ addEModalSign ms1 ms2 = ms1
 
 interEModalSign :: EModalSign -> EModalSign -> EModalSign
 interEModalSign ms1 ms2 = ms1
-        { rigidOps = interOpMapSet (rigidOps ms1) (rigidOps ms2)
-        , rigidPreds = MapSet.intersection (rigidPreds ms1) (rigidPreds ms2)
+        { flexOps = interOpMapSet (flexOps ms1) (flexOps ms2)
+        , flexPreds = MapSet.intersection (flexPreds ms1) (flexPreds ms2)
         , modalities = Set.intersection (modalities ms1) $ modalities ms2
         , time_modalities = Set.intersection (time_modalities ms1)
                             (time_modalities ms2)
@@ -56,8 +56,8 @@ interEModalSign ms1 ms2 = ms1
 
 diffEModalSign :: EModalSign -> EModalSign -> EModalSign
 diffEModalSign ms1 ms2 = ms1
-        { rigidOps = diffOpMapSet (rigidOps ms1) (rigidOps ms2)
-        , rigidPreds = MapSet.difference (rigidPreds ms1) (rigidPreds ms2)
+        { flexOps = diffOpMapSet (flexOps ms1) (flexOps ms2)
+        , flexPreds = MapSet.difference (flexPreds ms1) (flexPreds ms2)
         , modalities = Set.difference (modalities ms1) $ modalities ms2
         , time_modalities = Set.difference (time_modalities ms1)
                             (time_modalities ms2)
@@ -67,8 +67,8 @@ diffEModalSign ms1 ms2 = ms1
 
 isSubEModalSign :: EModalSign -> EModalSign -> Bool
 isSubEModalSign ms1 ms2 =
-        isSubOpMap (rigidOps ms1) (rigidOps ms2)
-        && MapSet.isSubmapOf (rigidPreds ms1) (rigidPreds ms2)
+        isSubOpMap (flexOps ms1) (flexOps ms2)
+        && MapSet.isSubmapOf (flexPreds ms1) (flexPreds ms2)
         && Set.isSubsetOf (modalities ms1) (modalities ms2)
         && Set.isSubsetOf (time_modalities ms1) (time_modalities ms2)
         && Set.isSubsetOf (termMods ms1) (termMods ms2)

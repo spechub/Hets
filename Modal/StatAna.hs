@@ -129,33 +129,33 @@ ana_M_SIG_ITEM mix mi =
     Rigid_op_items r al ps ->
         do ul <- mapM (ana_OP_ITEM minExpForm mix) al
            case r of
-               Rigid -> mapM_ (\ aoi -> case item aoi of
+               Flexible -> mapM_ (\ aoi -> case item aoi of
                    Op_decl ops ty _ _ ->
-                       mapM_ (updateExtInfo . addRigidOp (toOpType ty)) ops
+                       mapM_ (updateExtInfo . addFlexOp (toOpType ty)) ops
                    Op_defn i par _ _ -> maybe (return ())
-                       (\ ty -> updateExtInfo $ addRigidOp (toOpType ty) i)
+                       (\ ty -> updateExtInfo $ addFlexOp (toOpType ty) i)
                        $ headToType par) ul
-               _ -> return ()
+               Rigid -> return ()
            return $ Rigid_op_items r ul ps
     Rigid_pred_items r al ps ->
         do ul <- mapM (ana_PRED_ITEM minExpForm mix) al
            case r of
-               Rigid -> mapM_ (\ aoi -> case item aoi of
+               Flexible -> mapM_ (\ aoi -> case item aoi of
                    Pred_decl ops ty _ ->
-                       mapM_ (updateExtInfo . addRigidPred (toPredType ty)) ops
+                       mapM_ (updateExtInfo . addFlexPred (toPredType ty)) ops
                    Pred_defn i (Pred_head args _) _ _ ->
-                       updateExtInfo $ addRigidPred
+                       updateExtInfo $ addFlexPred
                                 (PredType $ sortsOfArgs args) i ) ul
-               _ -> return ()
+               Rigid -> return ()
            return $ Rigid_pred_items r ul ps
 
-addRigidOp :: OpType -> Id -> ModalSign -> Result ModalSign
-addRigidOp ty i m = return
-       m { rigidOps = addOpTo i ty $ rigidOps m }
+addFlexOp :: OpType -> Id -> ModalSign -> Result ModalSign
+addFlexOp ty i m = return
+       m { flexOps = addOpTo i ty $ flexOps m }
 
-addRigidPred :: PredType -> Id -> ModalSign -> Result ModalSign
-addRigidPred ty i m = return
-       m { rigidPreds = MapSet.insert i ty $ rigidPreds m }
+addFlexPred :: PredType -> Id -> ModalSign -> Result ModalSign
+addFlexPred ty i m = return
+       m { flexPreds = MapSet.insert i ty $ flexPreds m }
 
 ana_M_BASIC_ITEM
     :: Ana M_BASIC_ITEM M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign

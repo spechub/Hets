@@ -89,8 +89,8 @@ data ModMapEnv = MME
     { caslSign :: CASLSign
     , worldSort :: SORT
     , modalityRelMap :: ModalityRelMap
-    , flexOps :: Map.Map OP_NAME (Set.Set OpType)
-    , flexPreds :: Map.Map PRED_NAME (Set.Set PredType)
+    , flexiOps :: OpMap
+    , flexiPreds :: PredMap
     , relFormulas :: [Named CASLFORMULA] }
 
 transSig :: MSign -> ModMapEnv
@@ -103,10 +103,10 @@ transSig sign =
                     . addWorldRels False relsMod
                     . Map.foldWithKey (addWorld_PRED fws)
                                     Map.empty $ MapSet.toMap flexiblePreds
-       rigOps' = rigidOps $ extendedInfo sign
-       rigPreds' = rigidPreds $ extendedInfo sign
-       flexibleOps = diffOpMapSet (opMap sign) rigOps'
-       flexiblePreds = diffMapSet (predMap sign) rigPreds'
+       flexibleOps = flexOps $ extendedInfo sign
+       flexiblePreds = flexPreds $ extendedInfo sign
+       rigOps' = diffOpMapSet (opMap sign) flexibleOps
+       rigPreds' = diffMapSet (predMap sign) flexiblePreds
        relations = Map.union relsMod relsTermMod
        genRels f = Map.foldWithKey (\ me _ nm -> f me nm) Map.empty
        genModFrms f = Map.foldWithKey f []
@@ -142,8 +142,8 @@ transSig sign =
                , predMap = addMapSet flexPreds' rigPreds'},
          worldSort = fws,
          modalityRelMap = relations,
-         flexOps = MapSet.toMap flexibleOps,
-         flexPreds = MapSet.toMap flexiblePreds,
+         flexiOps = flexibleOps,
+         flexiPreds = flexiblePreds,
          relFormulas = []}
       in partMME { relFormulas = relModFrms ++ relTermModFrms}
 
@@ -178,7 +178,7 @@ mapSenTop mapEnv@(MME {worldSort = fws}) f =
 
 -- head [VAR] is always the current world variable (for predication)
 mapSen :: ModMapEnv -> [VAR] -> ModalFORMULA -> CASLFORMULA
-mapSen mapEnv@(MME {worldSort = fws, flexPreds = fPreds}) vars
+mapSen mapEnv@(MME {worldSort = fws, flexiPreds = fPreds}) vars
        f = case f of
            Quantification q vs frm ps ->
                   Quantification q vs (mapSen mapEnv vars frm) ps
@@ -208,12 +208,10 @@ mapSen mapEnv@(MME {worldSort = fws, flexPreds = fPreds}) vars
                                              (Pred_type (fws : sorts) pps) ps,
                                        fwsTerm : as')
                              defTup = (pn, as') in
-                          maybe defTup
-                            (\ ts -> assert (not $ Set.null ts)
-                                 (if Set.member (toPredType pType) ts
+                                 if Set.member (toPredType pType)
+                                     $ MapSet.lookup prn fPreds
                                      then addTup
-                                     else defTup))
-                            (Map.lookup prn fPreds)
+                                     else defTup
                in Predication pn' as'' qs
            Definedness t ps -> Definedness (mapTERM mapEnv vars t) ps
            Membership t ty ps -> Membership (mapTERM mapEnv vars t) ty ps
@@ -272,7 +270,7 @@ mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
 
 -- head [VAR] is always the current world variable (for Application)
 mapTERM :: ModMapEnv -> [VAR] -> TERM M_FORMULA -> TERM ()
-mapTERM mapEnv@(MME {worldSort = fws, flexOps = fOps}) vars t = case t of
+mapTERM mapEnv@(MME {worldSort = fws, flexiOps = fOps}) vars t = case t of
     Qual_var v ty ps -> Qual_var v ty ps
     Application opsym as qs ->
         let as' = map (mapTERM mapEnv vars) as
@@ -287,12 +285,10 @@ mapTERM mapEnv@(MME {worldSort = fws, flexOps = fOps}) vars t = case t of
                                                (addFws opType) ps,
                                   fwsTerm : as')
                         defTup = (opsym, as') in
-                    maybe defTup
-                          (\ ts -> assert (not $ Set.null ts)
-                            (if Set.member (toOpType opType) ts
+                            if Set.member (toOpType opType)
+                                $ MapSet.lookup on fOps
                                 then addTup
-                                else defTup))
-                          (Map.lookup on fOps)
+                                else defTup
         in Application opsym' as'' qs
     Sorted_term trm ty ps -> Sorted_term (mapTERM mapEnv vars trm) ty ps
     Cast trm ty ps -> Cast (mapTERM mapEnv vars trm) ty ps
