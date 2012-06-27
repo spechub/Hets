@@ -108,8 +108,6 @@ sessGraph dgQ (Session le ln _ _) = case dgQ of
         $ Map.toList le
   _ -> fmap (\ dg -> (ln, dg)) $ Map.lookup ln le
 
--- TODO reload after global command has been issued
-
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
@@ -207,12 +205,22 @@ hetsServer opts1 = do
          if null cs
            then getHetsResponse opts [] sessRef pathBits splitQuery
            else mkHtmlPage path dirs
-    -- LIST OF PUT/POST REQUEST RESPONSES
+    -- LIST OF PUT REQUEST RESPONSES
     -- TODO continue implementing restfull interface responses here
-    m | m == "PUT" || m == "POST" -> do
-      (params, files) <- parseRequestBody tempFileSink re
-      liftRun $ print params
-      mTmpFile <- liftRun $ case lookup "content"
+    "PUT" -> case pathBits of
+      _ -> fail "not implemented jet"
+    -- LIST OF POST REQUEST RESPONSES (inhabits old proving mechanism)
+    "POST" -> case pathBits of
+      -- open new session for dg. NOTE:does not differ from GET/library for now
+      "libraries" : libIri : "sessions" : [] -> case parseIRI libIri of
+          Just lib -> getHetsResponse' opts [] sessRef
+            $ Query (NewDGQuery $ iriPath lib) $ DisplayQuery format
+          Nothing -> fail $ "failed to parse IRI from " ++ libIri
+      -- default case if query doesn't comply with RESTFullInterface     
+      _ -> do
+        (params, files) <- parseRequestBody tempFileSink re
+        liftRun $ print params
+        mTmpFile <- liftRun $ case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
               Just areatext -> let content = B8.unpack areatext in
@@ -220,17 +228,17 @@ hetsServer opts1 = do
                    tmpFile <- getTempFile content "temp.het"
                    copyPermissions permFile tmpFile
                    return $ Just tmpFile
-      let res tmpFile =
-            getHetsResponse opts [] sessRef [tmpFile] splitQuery
-          mRes = maybe (return $ mkResponse status400 "nothing submitted")
-            res mTmpFile
-      liftRun $ case files of
-        [] -> if isPrefixOf "?prove=" query then
-           getHetsResponse opts [] sessRef pathBits
+        let res tmpFile =
+              getHetsResponse opts [] sessRef [tmpFile] splitQuery
+            mRes = maybe (return $ mkResponse status400 "nothing submitted")
+              res mTmpFile
+        liftRun $ case files of
+          [] -> if isPrefixOf "?prove=" query then
+            getHetsResponse opts [] sessRef pathBits
              $ splitQuery ++ map
                    (\ (a, b) -> (B8.unpack a, Just $ B8.unpack b)) params
-           else mRes
-        [(_, f)] | query /= "?update" -> do
+            else mRes
+          [(_, f)] | query /= "?update" -> do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
              let tmpFile = tempHetsLib </> fn
@@ -239,8 +247,8 @@ hetsServer opts1 = do
              copyFile snkFile tmpFile
              maybe (res tmpFile) res mTmpFile
             else mRes
-        _ -> getHetsResponse
-               opts (map snd files) sessRef pathBits splitQuery
+          _ -> getHetsResponse
+                 opts (map snd files) sessRef pathBits splitQuery
     _ -> return $ mkResponse status405 ""
 
 mkMenuResponse :: IO Response
