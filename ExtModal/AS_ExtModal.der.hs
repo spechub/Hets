@@ -56,6 +56,22 @@ data EM_SIG_ITEM =
                  -- pos: pred, semi colons
              deriving Show
 
+{-
+Note, that a diamond formula "<m> f" stand for "<m>1 f" or "<m> >=1 f"
+Generally "<m>n f" or "<m> >=n f" (n positive) means, that there are at least n
+successor worlds (wrt m) in which f holds. (This is called grading.)
+
+"<m> <=n f" is rarely used (there are at most n successor worlds that fufill f)
+
+By definition "[m]n f" is "not <m>n not f" and thus means: f holds in all
+successor worlds except in at most n-1 successor worlds.
+A notation like "[m]<n f" or "[m]<=0 f" would be illegal
+(only <= or >= with positive n is allowed),
+thus here "[m]n f" stands for "[m]>=n f" and "[m]<=n f" for "not <m> <=n not f"
+
+Also box formulas using n (> 1) are rarely used!
+-}
+
 data EM_FORMULA
   = BoxOrDiamond Bool MODALITY Bool Int (FORMULA EM_FORMULA) Range
     {- The first identifier and the term specify the kind of the modality
