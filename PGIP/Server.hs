@@ -213,10 +213,10 @@ hetsServer opts1 = do
     "POST" -> case pathBits of
       -- open new session for dg. NOTE:does not differ from GET/library for now
       "libraries" : libIri : "sessions" : [] -> case parseIRI libIri of
-          Just lib -> getHetsResponse' opts [] sessRef
+          Just lib -> liftRun $ getHetsResponse' opts [] sessRef
             $ Query (NewDGQuery $ iriPath lib) $ DisplayQuery format
           Nothing -> fail $ "failed to parse IRI from " ++ libIri
-      -- default case if query doesn't comply with RESTFullInterface     
+      -- default case if query doesn't comply with RESTFullInterface
       _ -> do
         (params, files) <- parseRequestBody tempFileSink re
         liftRun $ print params
