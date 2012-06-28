@@ -86,7 +86,7 @@ instance Show G_theory where
      shows sign $ '\n' : show sens
 
 instance Pretty G_theory where
-  pretty g = prettyGTheorySL g $+$ prettyGTheory g
+  pretty g = prettyGTheorySL g $++$ prettyGTheory g
 
 prettyGTheorySL :: G_theory -> Doc
 prettyGTheorySL g = keyword logicS <+> structId (show $ sublogicOfTh g)
