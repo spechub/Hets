@@ -418,7 +418,7 @@ consDocBarSep d r = case r of
 -- end of term printing
 
 printClassrel :: Classrel -> Doc
-printClassrel = vsep . map printClassR . Map.toList
+printClassrel = vsep . map printClassR . orderCDecs . Map.toList
 
 printClassR :: (IsaClass,ClassDecl) -> Doc
 printClassR (y, (parents, assumptions,fixes)) =
@@ -439,6 +439,12 @@ printClassR (y, (parents, assumptions,fixes)) =
             then text "+" else empty,
           (if length a' > 0 then text "assumes" else empty) <+> vcat a',
           (if length f' > 0 then text "fixes" else empty) <+> vcat f']
+
+orderCDecs :: [(IsaClass,ClassDecl)] -> [(IsaClass,ClassDecl)]
+orderCDecs =
+   topSort crord
+ where
+   crord (_,(cs,_,_)) (c,_) = elem c cs
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
