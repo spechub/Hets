@@ -190,8 +190,9 @@ isRefute s = case s of
   (already defined in Pure/term.ML)
 
   classrel:
-    table representing the proper subclass relation; entries (c, cs)
-    represent the superclasses cs of c;
+    table representing the proper subclass relation; entries (c, (cs,a,f))
+    represent the superclasses cs, the assumptions a and the fixed
+    names f of c
 
   arities:
     table of association lists of all type arities; (t, ars) means
@@ -199,7 +200,8 @@ isRefute s = case s of
     ars represents the arity t::(Ss)c;
 -}
 
-type Classrel = Map.Map IsaClass (Maybe [IsaClass])
+type ClassDecl = ([IsaClass],[(String,Term)],[(String,Typ)])
+type Classrel = Map.Map IsaClass ClassDecl
 type Arities = Map.Map TName [(IsaClass, [(Typ, Sort)])]
 type Abbrs = Map.Map TName ([TName], Typ)
 

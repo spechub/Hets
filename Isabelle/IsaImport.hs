@@ -6,13 +6,13 @@ import Isabelle.IsaExport
 import qualified Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe,catMaybes)
 import Data.List (intercalate)
 
 importIsaDataIO :: String ->
  IO (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
      [(String,IsaSign.Term)], [(String,IsaSign.Term)],
-     IsaSign.DomainTab)
+     IsaSign.DomainTab, [(IsaSign.IsaClass,IsaSign.ClassDecl)])
 importIsaDataIO p = do
  d' <- fReadXml p
  return $ importIsaData d'
@@ -20,19 +20,21 @@ importIsaDataIO p = do
 importIsaData :: IsaExport ->
  (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
   [(String,IsaSign.Term)], [(String,IsaSign.Term)],
-  IsaSign.DomainTab)
+  IsaSign.DomainTab, [(IsaSign.IsaClass,IsaSign.ClassDecl)])
 importIsaData (IsaExport attrs
                (Imports imports)
                (Consts consts)
                (Axioms axioms) 
                (Theorems theorems)
-               (Types types)) =
- let imports'  = map importName imports
-     consts'   = map mapConst consts
-     axioms'   = map (hXmlTerm2IsaTerm []) axioms
-     theorems' = map (hXmlTerm2IsaTerm []) theorems
-     types'    = map hXmlTypeDecl2IsaTypeDecl      types
- in (isaExportFile attrs,imports',consts',axioms',theorems',types')
+               (Types types)
+               (Classes classes)) =
+ let imports'  = map importName                 imports
+     consts'   = map mapConst                   consts
+     axioms'   = map (hXmlTerm2IsaTerm [])      axioms
+     theorems' = map (hXmlTerm2IsaTerm [])      theorems
+     types'    = map hXmlTypeDecl2IsaTypeDecl   types
+     classes'  = map hXmlClassDecl2IsaClassDecl classes
+ in (isaExportFile attrs,imports',consts',axioms',theorems',types',classes')
 
 mapConst :: ConstDecl -> (String,IsaSign.Typ, Maybe IsaSign.Term)
 mapConst (ConstDecl attrs tp tm) =
@@ -158,6 +160,44 @@ hXmlTypeDecl2IsaTypeDecl (TypeDecl _ rs) =
                           _ -> "") vs)
  in map (hXmlRecType2IsaTypeDecl recmap) rs
 
+hXmlClassDecl2IsaClassDecl :: ClassDecl -> (IsaSign.IsaClass,IsaSign.ClassDecl)
+hXmlClassDecl2IsaClassDecl (ClassDecl a cls) =
+ let axioms = catMaybes $
+      map (\ c -> case c of
+                   ClassDecl_Axiom ax -> Just ax
+                   _ -> Nothing) cls
+     params = catMaybes $
+      map (\ c -> case c of
+                   ClassDecl_Param p -> Just p
+                   _ -> Nothing) cls
+     parents = catMaybes $
+      map (\ c -> case c of
+                   ClassDecl_Parent pa -> Just pa
+                   _ -> Nothing) cls
+ in
+ (IsaSign.IsaClass . classDeclName $ a,
+  (map (IsaSign.IsaClass . parentName) parents,
+  map (\ ax ->
+            let (n,t) = case ax of
+                  AxiomBound attr b -> (axiomName attr,
+                   hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
+                  AxiomFree attr f -> (axiomName attr,
+                   hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
+                  AxiomVar attr v -> (axiomName attr,
+                   hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
+                  AxiomConst attr c -> (axiomName attr,
+                   hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
+                  AxiomApp attr app -> (axiomName attr,
+                   hXmlOneOf6_2IsaTerm [] $ FiveOf6 app)
+                  AxiomAbs attr ab -> (axiomName attr,
+                   hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
+            in (n,t)
+        ) axioms,
+  map (\ p -> case p of
+               ParamTVar a' t -> (paramName a',hXmlOneOf3_2IsaTyp (OneOf3 t))
+               ParamTFree a' t -> (paramName a',hXmlOneOf3_2IsaTyp (TwoOf3 t))
+               ParamType a' t -> (paramName a',hXmlOneOf3_2IsaTyp (ThreeOf3 t)))
+   params))
 
 hXmlRecType2IsaTypeDecl :: Map.Map Int String ->
  RecType -> IsaSign.DomainEntry

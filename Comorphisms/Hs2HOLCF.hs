@@ -925,14 +925,14 @@ getClassrel :: Continuity -> TyMap -> Classrel
 getClassrel c f = liftMapByList Map.toList Map.fromList
                   (IsaClass . showIsaName) (transClassInfo c) f
 
-transClassInfo :: Continuity -> (Kind, HsTypeInfo) -> Maybe [IsaClass]
+transClassInfo :: Continuity -> (Kind, HsTypeInfo) -> ClassDecl
 transClassInfo c p = case snd p of
   TiTypes.Class _ _ _ _ ->
-    Just $ remove_duplicates $ (case c of
+    ((remove_duplicates $ (case c of
                        IsCont _ -> dom
                        NotCont -> holType)
-             ++ map transClass (extClassInfo $ snd p)
-  _ -> Nothing
+             ++ map transClass (extClassInfo $ snd p)),[],[])
+  _ -> ([],[],[])
 
 ------------------- translation of Abbrs (from KEnv) --------------------
 

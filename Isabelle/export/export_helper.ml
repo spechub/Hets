@@ -3,6 +3,9 @@ sig
 	type const_info    = (string * (typ * term option)) list
         type term_info     = (string * term) list
         type datatype_info = (string * Datatype.info) list
+	type class_info	   = (string * (string list) * term_info *
+         ((string * typ) list)) list
+                             (* name * parents * assumes * fixes *)
 	type theory_info   = 
            string        (* theory name *)
          * string list   (* imports     *)
@@ -10,6 +13,7 @@ sig
          * term_info     (* axioms      *)
          * term_info     (* theorems    *)
          * datatype_info (* data types  *)
+         * class_info    (* class info  *)
         val theory_info : theory -> theory_info
         val tinfo2xml : theory -> string -> theory_info -> XML.tree
 end;
@@ -20,13 +24,18 @@ struct
 	type const_info    = (string * (typ * term option)) list
         type term_info     = (string * term) list
         type datatype_info = (string * Datatype.info) list
-	type theory_info   =
+	type class_info    = (string * (string list) * term_info *
+         ((string * typ) list)) list
+                             (* name * parents * assumes * fixes *)
+        type theory_info   = 
            string        (* theory name *)
          * string list   (* imports     *)
          * const_info    (* constants   *)
          * term_info     (* axioms      *)
          * term_info     (* theorems    *)
          * datatype_info (* data types  *)
+         * class_info    (* class info  *)
+
 (* General helper functions *)
 	fun id x = x
 	fun mergesort _ []  	   = []
@@ -80,6 +89,14 @@ struct
          (n,SOME(v)) => if check_rec T (n,v) then (n,v)::l
                         else l
          | (_,NONE) => l) [] ts
+        fun unfold_conjunction tm =
+         case tm of
+            (Const ("Pure.conjunction",_)) $ t => unfold_conjunction t
+          | t $ (Const ("Pure.conjunction",_)) => unfold_conjunction t
+          | t1 $ t2                            =>
+             (unfold_conjunction t1)
+            @(unfold_conjunction t2)
+          | _                                  => [tm]
 (* get raw theory information *)
 	fun get_consts T =
          let val consts_of = (Name_Space.dest_table (Syntax.init_pretty_global T)) o
@@ -97,6 +114,39 @@ struct
              val ts' = map (fn s => (String.extract (s,tl+1,NONE),Datatype.get_info T s))
                   (List.filter (String.isPrefix tname) ts)
          in restructure_rec_types T ts' end
+	fun get_classes T thms = 
+         let val cls_suffix = "_class_def"
+             val cls_names = List.map (fn n => String.substring
+              (n,0,String.size n-String.size cls_suffix))
+              (List.filter (fn n =>
+               if String.isSuffix cls_suffix n
+               then true else false) (List.map #1 thms))
+         in List.map (fn name =>
+          let val name' = String.substring (name,String.size "Class.",
+                       String.size name - String.size "Class.")
+	      val i = AxClass.get_info T name
+              val parents = let fun split tms = case tms of
+                             (Const ("HOL.Trueprop",_))::tms' => []
+                           | (Const ("TYPE",_))::tms' => (split tms')
+                           | (Const (s,_))::tms' => let val s' = 
+                              if String.isPrefix "Class." s
+                              then String.substring (s,String.size "Class.",
+                                    String.size s - String.size "Class."
+                                     - String.size "_class")
+                               else s
+                              in s'::(split tms') end
+                           | _::tms' => (split tms')
+                           | [] => []
+               in case (Thm.prop_of o #def) i of
+                     _ $ t => (split o unfold_conjunction) t
+                   | _ => [] end
+              val axioms' = List.filter
+               (fn (n,_) => String.isPrefix (name^".") n) thms
+              val axioms = List.map (fn (n,t) => case t of
+                 _ $ (_ $ t') => (n,t')
+               | _ => (n,t)) axioms'
+              val params = #params i
+          in (name',parents,axioms,params) end) cls_names end
 (* Guess the names of generated axioms, consts and theorem *)
         fun prefix p s = List.map (fn x => p^s^x)
         fun postfix s p = List.map (fn x => x^s^p)
@@ -266,6 +316,7 @@ struct
              val consts     = get_consts T
              val thms       = get_theorems T
              val axioms     = get_axioms T
+	     val classes    = get_classes T thms
              val gen_consts = get_gen_consts T name types
              val gen_thms   = get_gen_theorems T name types (List.map #1 thms)
              val gen_axioms = (get_gen_axioms T name types)@(List.map #1 thms)
@@ -273,15 +324,26 @@ struct
              (filter gen_consts consts),
              (filter gen_axioms axioms),
              (filter gen_thms thms),
-             types) end
+             types,classes) end
 	(* export theory info as xml *)
-	fun tinfo2xml T fname (name,imports,consts,axioms,thms,types) =
+	fun tinfo2xml T fname (name,imports,consts,axioms,thms,types,classes) =
          let val xml_imports  = XML.Elem
               (("Imports",[]), List.map (fn s => XML.Elem (("Import",[("name",s)]),[])) imports)
              val xml_consts   = termTypListToXML T "Consts" consts
              val xml_axioms   = termListToXML T "Axioms" axioms
              val xml_theorems = termListToXML T "Theorems" thms
              val xml_types    = typeListToXML "Types" types
+             val xml_classes  = XML.Elem (("Classes",[]),List.map
+              (fn (name,parents,axioms,params) =>
+                XML.Elem (("ClassDecl",[("name",name)]),
+                (List.map (fn (s,t) => XML.Elem 
+                 (("Axiom",[("name",Long_Name.base_name s)]),
+                 [xml_of_term T (remove_hol_true_prop t)])) axioms)
+               @((List.map (fn (s,t) => XML.Elem 
+                 (("Param",[("name",Long_Name.base_name s)]),
+                 [XML_Syntax.xml_of_type t])) params))
+               @(List.map (fn n => XML.Elem
+                 (("Parent",[("name",n)]),[])) parents))) classes)
          in fixTypeNames name (XML.Elem (("IsaExport",[("file",fname)]),
-             [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types])) end
+             [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types,xml_classes])) end
 end;

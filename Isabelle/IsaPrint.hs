@@ -33,7 +33,6 @@ import Common.Utils (number)
 
 import Data.Char
 import Data.List
-import Data.Maybe
 
 printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
 printIsaTheory tn sign sens = let
@@ -419,21 +418,22 @@ consDocBarSep d r = case r of
 -- end of term printing
 
 printClassrel :: Classrel -> Doc
-printClassrel = vcat . map printClassR . orderCDecs . Map.toList
+printClassrel = vsep . map printClassR . Map.toList
 
-printClassR :: (IsaClass, [IsaClass]) -> Doc
-printClassR (y, ys) = case ys of
-  [] -> empty
-  z : zs -> text axclassS <+> printClass y <+> less <+> printClass z
-    $+$ vcat (map (\ x ->
-                  text instanceS <+> printClass y <+> less <+>
-                                  printClass x <+> text dotDot) zs)
-
-orderCDecs :: [(IsaClass, Maybe [IsaClass])] -> [(IsaClass, [IsaClass])]
-orderCDecs =
-   topSort crord . map (\ (x, y) -> (x, fromMaybe [] y))
- where
-   crord (_, xs) (y, _) = elem y xs
+printClassR :: (IsaClass,ClassDecl) -> Doc
+printClassR (y, (parents, assumptions,fixes)) =
+ let a' = Data.List.intersperse (text "and") $
+       map (\ (s,t) -> text s <+> text ":" <+> printTerm t) assumptions
+     f' = Data.List.intersperse (text "and") $
+       map (\ (s,t) -> text s <+> text "::" <+> printType t) fixes
+     p' = Data.List.intersperse (text "+") $ map printClass parents
+ in vcat [text "class" <+> printClass y <+>
+          (if length (p'++a'++f') > 0 then text "=" else empty)
+          <+> hsep p' <+> if length p' > 0 &&
+            (length a' > 0 || length f' > 0)
+            then text "+" else empty,
+          (if length a' > 0 then text "assumes" else empty) <+> hsep a',
+          (if length f' > 0 then text "fixes" else empty) <+> hsep f']
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
