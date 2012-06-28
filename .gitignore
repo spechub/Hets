@@ -34,6 +34,10 @@ GUI/Glade/NodeChecker.hs
 GUI/Glade/ProverGUI.hs
 GUI/Glade/TextField.hs
 GUI/Glade/Utils.hs
+Haskell/PreludeString.hs
+Haskell/TiATC.hs
+Haskell/TiDecorateATC.hs
+Haskell/TiPropATC.hs
 RelationalScheme/AS.hs
 utils/DrIFT
 utils/appendHaskellPreludeString
