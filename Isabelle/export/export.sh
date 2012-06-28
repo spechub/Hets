@@ -47,27 +47,10 @@ echo $ISABELLE
  echo "begin"
  echo "ML {*"
  echo "val T = Thy_Info.get_theory \"$TRANS_T\";
-val name = Context.theory_name T;
-val imports = List.map Context.theory_name (Theory.parents_of T);
-val types = ExportHelper.get_datatypes T;
-val consts = ExportHelper.filter (ExportHelper.get_gen_consts T name types)
-                                 (ExportHelper.get_consts T);
-val ths = ExportHelper.get_theorems T;
-val theorems = ExportHelper.filter (ExportHelper.get_gen_theorems T name types (List.map #1 ths))
-                                   ths;
-val axioms = ExportHelper.filter ((ExportHelper.get_gen_axioms T name types)@(List.map #1 ths))
-                                 (ExportHelper.get_axioms T);
-val num_consts = List.length consts;
-val num_axioms = List.length axioms;
-val num_theorems = List.length theorems;
 
-val xml_imports =
- XML.Elem ((\"Imports\",[]),List.map (fn s => XML.Elem ((\"Import\",[(\"name\",s)]),[])) imports);
-val xml_consts = ExportHelper.termTypListToXML T \"Consts\" consts;
-val xml_axioms = ExportHelper.termListToXML T \"Axioms\" axioms;
-val xml_theorems = ExportHelper.termListToXML T \"Theorems\" theorems;
-val xml_types = ExportHelper.typesListToXML \"Types\" types;
-val xml = ExportHelper.fixTypeNames name (XML.Elem ((\"IsaExport\",[(\"file\",\"$TRANS_T\")]),[xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types]));
+val xml = ExportHelper.tinfo2xml T \"$TRANS_T\"
+           (ExportHelper.theory_info T);
+
 File.write (Path.explode \"$TRANS.isa\") (XML.string_of xml);
 "
  echo "*}"

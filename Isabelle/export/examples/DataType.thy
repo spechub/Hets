@@ -1,4 +1,4 @@
-theory example
+theory DataType
  
 imports Datatype 
 
