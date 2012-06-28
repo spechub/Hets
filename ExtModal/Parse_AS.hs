@@ -124,7 +124,7 @@ modalPrimFormulaParser :: AParser st EM_FORMULA
 modalPrimFormulaParser = fmap ModForm modDefnParser <|> do
     (modal, b, r) <- boxParser <|> diamondParser
     (lgb, val) <- option (False, 1) $ do
-       lgb <- (asKey lessEq >> return True)
+       lgb <- option False $ (asKey lessEq >> return True)
          <|> (asKey greaterEq >> return False)
        number <- getNumber << skipSmart
        return (lgb, value 10 number)
