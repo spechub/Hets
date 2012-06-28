@@ -422,18 +422,23 @@ printClassrel = vsep . map printClassR . Map.toList
 
 printClassR :: (IsaClass,ClassDecl) -> Doc
 printClassR (y, (parents, assumptions,fixes)) =
- let a' = Data.List.intersperse (text "and") $
-       map (\ (s,t) -> text s <+> text ":" <+> printTerm t) assumptions
-     f' = Data.List.intersperse (text "and") $
-       map (\ (s,t) -> text s <+> text "::" <+> printType t) fixes
-     p' = Data.List.intersperse (text "+") $ map printClass parents
+ let a = map (\ (s,t) -> text s <+> text ":" 
+          <+> (doubleQuotes . printTerm) t) assumptions
+     a' = if null a then []
+      else (head a):(map (text "and" <+>) (tail a))
+     f = map (\ (s,t) -> text s <+> text "::"
+          <+> (doubleQuotes . (printTyp Null)) t) fixes
+     f' = if null f then []
+      else (head f):(map (text "and" <+>) (tail f))
+     parents' = filter (\ (IsaClass s) -> s /= "HOL.type_class") parents
+     p' = Data.List.intersperse (text "+") $ map printClass parents'
  in vcat [text "class" <+> printClass y <+>
           (if length (p'++a'++f') > 0 then text "=" else empty)
           <+> hsep p' <+> if length p' > 0 &&
             (length a' > 0 || length f' > 0)
             then text "+" else empty,
-          (if length a' > 0 then text "assumes" else empty) <+> hsep a',
-          (if length f' > 0 then text "fixes" else empty) <+> hsep f']
+          (if length a' > 0 then text "assumes" else empty) <+> vcat a',
+          (if length f' > 0 then text "fixes" else empty) <+> vcat f']
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
