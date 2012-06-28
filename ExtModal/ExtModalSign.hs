@@ -7,7 +7,9 @@ Maintainer  :  codruta.liliana@gmail.com
 Stability   :  experimental
 Portability :  portable
 
-Signatures for extended modal logic, as extension of CASL signatures.
+Signatures for extended modal logic as extension of CASL signatures.
+In contrast to theoretical descriptions we keep separate sets of the flexible
+operations to ensure that operations i.e. from CASL free types are rigid by default.
 -}
 
 module ExtModal.ExtModalSign where
