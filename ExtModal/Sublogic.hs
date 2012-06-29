@@ -44,8 +44,8 @@ maxSublogic = Sublogic
     , hasFixPoints = True
     }
 
-minSublogic :: Sublogic
-minSublogic = Sublogic
+botSublogic :: Sublogic
+botSublogic = Sublogic
     { hasModalities = None
     , hasTermMods = False
     , hasTransClos = False
@@ -65,17 +65,17 @@ joinSublogic a b = Sublogic
     }
 
 joinSublogics :: [Sublogic] -> Sublogic
-joinSublogics = foldr joinSublogic minSublogic
+joinSublogics = foldr joinSublogic botSublogic
 
 minSublogicOfForm :: FORMULA EM_FORMULA -> Sublogic --ExtModalFORMULA
 minSublogicOfForm = foldFormula (constRecord minSublogicOfEM 
-                    joinSublogics minSublogic) 
+                    joinSublogics botSublogic) 
 
 minSublogicOfMod :: MODALITY -> Sublogic
 minSublogicOfMod m = case m of 
-    SimpleMod _ -> minSublogic
+    SimpleMod _ -> botSublogic
     TermMod t -> foldTerm (constRecord minSublogicOfEM 
-                    joinSublogics minSublogic) t
+                    joinSublogics botSublogic) t
     ModOp _ m1 m2 -> joinSublogic (minSublogicOfMod m1)
       (minSublogicOfMod m2)
     TransClos c -> (minSublogicOfMod c) {hasTransClos = True}

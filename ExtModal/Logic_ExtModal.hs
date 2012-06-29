@@ -19,6 +19,7 @@ import ExtModal.ATC_ExtModal ()
 import ExtModal.Parse_AS
 import ExtModal.StatAna
 import ExtModal.MorphismExtension
+import ExtModal.Sublogic
 
 import CASL.Sign
 import CASL.Morphism
@@ -119,7 +120,54 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
            (\ _ _ -> return emptyMorphExtension) isSubEModalSign diffEModalSign
         theory_to_taxonomy ExtModal = convTaxo
 
-instance Logic ExtModal () EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+instance Logic ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
     SYMB_MAP_ITEMS ExtModalSign ExtModalMorph Symbol RawSymbol () where
         stability _ = Experimental
         empty_proof_tree _ = ()
+
+instance SemiLatticeWithTop Sublogic where
+    join = joinSublogic
+    top = maxSublogic
+
+
+instance MinSublogic Sublogic (FORMULA EM_FORMULA) where
+    minSublogic = minSublogicOfForm
+
+instance ProjectSublogic Sublogic EM_BASIC_SPEC where
+    projectSublogic _ = id
+
+instance MinSublogic Sublogic EM_BASIC_SPEC where
+    minSublogic _ = botSublogic
+
+instance ProjectSublogicM Sublogic SYMB_ITEMS where
+    projectSublogicM _ = Just
+
+instance MinSublogic Sublogic SYMB_ITEMS where
+    minSublogic _ = botSublogic
+
+instance ProjectSublogicM Sublogic SYMB_MAP_ITEMS where
+    projectSublogicM _ = Just
+
+instance MinSublogic Sublogic SYMB_MAP_ITEMS where
+    minSublogic _ = botSublogic
+
+instance ProjectSublogic Sublogic ExtModalSign where
+    projectSublogic _ = id
+
+instance MinSublogic Sublogic ExtModalSign where
+    minSublogic _ = botSublogic
+
+instance ProjectSublogic Sublogic ExtModalMorph where
+    projectSublogic _ = id
+
+instance MinSublogic Sublogic ExtModalMorph where
+    minSublogic _ = botSublogic
+
+instance ProjectSublogicM Sublogic Symbol where 
+    projectSublogicM _ = Just
+
+instance MinSublogic Sublogic Symbol where 
+    minSublogic _ = botSublogic
+
+instance SublogicName Sublogic where
+    sublogicName = show
