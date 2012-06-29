@@ -71,17 +71,28 @@ minSublogicOfForm :: FORMULA EM_FORMULA -> Sublogic --ExtModalFORMULA
 minSublogicOfForm = foldFormula (constRecord minSublogicOfEM 
                     joinSublogics minSublogic) 
 
+minSublogicOfMod :: MODALITY -> Sublogic
+minSublogicOfMod m = case m of 
+    SimpleMod _ -> minSublogic
+    TermMod t -> foldTerm (constRecord minSublogicOfEM 
+                    joinSublogics minSublogic) t
+    ModOp _ m1 m2 -> joinSublogic (minSublogicOfMod m1)
+      (minSublogicOfMod m2)
+    TransClos c -> (minSublogicOfMod c) {hasTransClos = True}
+    Guard f -> minSublogicOfForm f 
+
 
 minSublogicOfEM :: EM_FORMULA -> Sublogic
-minSublogicOfEM f = case f of 
-    BoxOrDiamond _ _ _ _ f _ -> minSublogicOfForm f
+minSublogicOfEM ef = case ef of 
+    BoxOrDiamond _ m _ _ f _ -> joinSublogic (minSublogicOfMod m) 
+        (minSublogicOfForm f)
     Hybrid _ _ f _ -> (minSublogicOfForm f) {hasNominals = True}
     UntilSince _ f1 f2 _ -> joinSublogic (minSublogicOfForm f1)
       (minSublogicOfForm f2)
     PathQuantification _ f _ -> minSublogicOfForm f
     NextY _ f _ -> minSublogicOfForm f
     StateQuantification _ _ f _ -> minSublogicOfForm f
-    FixedPoint _ _ f _ -> minSublogicOfForm f
+    FixedPoint _ _ f _ -> (minSublogicOfForm f) {hasFixPoints = True}
     ModForm md -> minSublogicOfModDefn md
 
 
