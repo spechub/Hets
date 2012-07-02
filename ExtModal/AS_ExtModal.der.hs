@@ -34,6 +34,11 @@ data EM_BASIC_ITEM =
 
 data ModOp = Composition | Intersection | Union deriving (Eq, Ord)
 
+{- Union corresponds to alternative and intersection to parallel composition.
+The symbols used (like for logical "and" and "or") may be confusing!
+Guarded alternatives may be used to simulate if-then-else.
+-}
+
 instance Show ModOp where
   show o = case o of
     Composition -> ";"
