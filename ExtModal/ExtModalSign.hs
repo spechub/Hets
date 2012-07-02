@@ -9,7 +9,8 @@ Portability :  portable
 
 Signatures for extended modal logic as extension of CASL signatures.
 In contrast to theoretical descriptions we keep separate sets of the flexible
-operations to ensure that operations i.e. from CASL free types are rigid by default.
+operations to ensure that operations i.e. from CASL free types are rigid
+by default.
 -}
 
 module ExtModal.ExtModalSign where
@@ -29,6 +30,12 @@ data EModalSign = EModalSign
         , termMods :: Set.Set Id -- sorts that need to be mapped
         , nominals :: Set.Set SIMPLE_ID
         } deriving (Show, Eq, Ord)
+
+correctSign :: Sign f EModalSign -> Sign f EModalSign
+correctSign s = let e = extendedInfo s in
+  s { extendedInfo = e
+      { flexOps = interOpMapSet (flexOps e) $ opMap s
+      , flexPreds = interMapSet (flexPreds e) $ predMap s }}
 
 emptyEModalSign :: EModalSign
 emptyEModalSign =

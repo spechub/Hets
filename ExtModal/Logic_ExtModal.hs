@@ -84,11 +84,16 @@ simEMSen sign frm =
   ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te is
     (map (fmap rsimf) fs) pos
 
+correctTarget :: Morphism f EModalSign m -> Morphism f EModalSign m
+correctTarget m = m
+  { mtarget = correctSign $ mtarget m
+  , msource = correctSign $ msource m }
+
 instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
     where
         map_sen ExtModal morph = return . mapSen mapEMform morph
         simplify_sen ExtModal = simplifySen frmTypeAna simEMSen
-        print_sign ExtModal sig = printSign pretty sig
+        print_sign ExtModal = printSign pretty
         sym_of ExtModal = symOf
         symmap_of ExtModal = morphismToSymbMap
         sym_name ExtModal = symName
@@ -111,13 +116,18 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
         morphism_union ExtModal = plainMorphismUnion addEModalSign
         is_subsig ExtModal = isSubSig isSubEModalSign
         subsig_inclusion ExtModal = sigInclusion emptyMorphExtension
-        generated_sign ExtModal = generatedSign emptyMorphExtension
-        cogenerated_sign ExtModal = cogeneratedSign emptyMorphExtension
-        induced_from_morphism ExtModal = inducedFromMorphismExt inducedEMsign
+        generated_sign ExtModal s = fmap correctTarget
+          . generatedSign emptyMorphExtension s
+        cogenerated_sign ExtModal s = fmap correctTarget
+          . cogeneratedSign emptyMorphExtension s
+        induced_from_morphism ExtModal rm = fmap correctTarget
+          . inducedFromMorphismExt inducedEMsign
+          (constMorphExt emptyMorphExtension) rm
+        induced_from_to_morphism ExtModal rm s = fmap correctTarget
+          . inducedFromToMorphismExt inducedEMsign
           (constMorphExt emptyMorphExtension)
-        induced_from_to_morphism ExtModal = inducedFromToMorphismExt
-          inducedEMsign (constMorphExt emptyMorphExtension)
-           (\ _ _ -> return emptyMorphExtension) isSubEModalSign diffEModalSign
+          (\ _ _ -> return emptyMorphExtension) isSubEModalSign diffEModalSign
+          rm s
         theory_to_taxonomy ExtModal = convTaxo
 
 instance Logic ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
@@ -163,10 +173,10 @@ instance ProjectSublogic Sublogic ExtModalMorph where
 instance MinSublogic Sublogic ExtModalMorph where
     minSublogic _ = botSublogic
 
-instance ProjectSublogicM Sublogic Symbol where 
+instance ProjectSublogicM Sublogic Symbol where
     projectSublogicM _ = Just
 
-instance MinSublogic Sublogic Symbol where 
+instance MinSublogic Sublogic Symbol where
     minSublogic _ = botSublogic
 
 instance SublogicName Sublogic where
