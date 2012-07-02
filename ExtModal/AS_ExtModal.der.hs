@@ -61,13 +61,29 @@ Note, that a diamond formula "<m> f" stand for "<m>1 f" or "<m> >=1 f"
 Generally "<m>n f" or "<m> >=n f" (n positive) means, that there are at least n
 successor worlds (wrt m) in which f holds. (This is called grading.)
 
-"<m> <=n f" is rarely used (there are at most n successor worlds that fufill f)
+"<m> <=n f" is rarely used (there are at most n successor worlds that fulfill f)
 
 By definition "[m]n f" is "not <m>n not f" and thus means: f holds in all
 successor worlds except in at most n-1 successor worlds.
 A notation like "[m]<n f" or "[m]<=0 f" would be illegal
 (only <= or >= with positive n is allowed),
 thus here "[m]n f" stands for "[m]>=n f" and "[m]<=n f" for "not <m> <=n not f"
+
+Another interpretation of "[m]n f" is that any subset with n successor worlds
+contains at least one successor world fulfilling f.
+
+"<m> <=n f" seems to identical "[m]>=n+1 not f"
+(at most n successor worlds fulfill f)
+
+By duality: [m]<=n f <=> not <m> <=n not f <=> not [m]>=n+1 f
+and: "<m> <=n f" <=> [m]>=n+1 not f <=> not <m> >=n+1 f
+thus: <m> >=n f <=> not <m> <=n-1 f <=> [m]<=n-1 not f
+and: [m]>=n f <=> not [m] <=n-1 f
+
+There are exactly n successor worlds can be expressed as:
+<m> >=n f /\ <m> <=n f
+or: <m> >=n f /\ not <m> >=n+1 f
+or: [m]>=n+1 not f /\ [m]<=n-1 not f
 
 Also box formulas using n (> 1) are rarely used!
 -}
