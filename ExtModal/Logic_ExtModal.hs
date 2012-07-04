@@ -120,14 +120,13 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
           . generatedSign emptyMorphExtension s
         cogenerated_sign ExtModal s = fmap correctTarget
           . cogeneratedSign emptyMorphExtension s
-        induced_from_morphism ExtModal rm = fmap correctTarget
-          . inducedFromMorphismExt inducedEMsign
-          (constMorphExt emptyMorphExtension) rm
-        induced_from_to_morphism ExtModal rm s = fmap correctTarget
-          . inducedFromToMorphismExt inducedEMsign
+        induced_from_morphism ExtModal =
+          inducedFromMorphismExt inducedEMsign
+          (constMorphExt emptyMorphExtension)
+        induced_from_to_morphism ExtModal =
+          inducedFromToMorphismExt inducedEMsign
           (constMorphExt emptyMorphExtension)
           (\ _ _ -> return emptyMorphExtension) isSubEModalSign diffEModalSign
-          rm s
         theory_to_taxonomy ExtModal = convTaxo
 
 instance Logic ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
