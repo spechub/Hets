@@ -18,7 +18,6 @@
 <!ELEMENT RecType (Vars,Constructors)>
   <!ATTLIST RecType i CDATA #REQUIRED>
   <!ATTLIST RecType name CDATA #REQUIRED>
-  <!ATTLIST RecType altname CDATA #IMPLIED>
 <!ELEMENT Vars (DtTFree|DtType|DtRec)*>
 <!ELEMENT DtTFree EMPTY>
   <!ATTLIST DtTFree s CDATA #REQUIRED>

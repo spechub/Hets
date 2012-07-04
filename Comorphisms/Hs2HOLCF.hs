@@ -913,7 +913,7 @@ getDomainTab c f =  let
 getDomainEntry :: AConstTab -> HsId -> [DomainEntry]
 getDomainEntry ctab t = case t of
   HsCon (PNT _ (TypedIds.ConstrOf _ d) _) ->
-     [((getDomType ctab (mkVName $ showIsaName t), Nothing),
+     [(getDomType ctab (mkVName $ showIsaName t),
        [(b, getFieldTypes ctab b)
            | b <- [ mkVName $ showIsaName c
                      | PN c _ <-  map conName (constructors d)]])]
@@ -964,7 +964,7 @@ getTypeInsts :: Continuity -> DomainTab -> HsInstances -> [IsaTypeInsts]
 getTypeInsts c dt db =
     [(typeId $ transType c [] $ getMainInstType x,
                                              [transInst c x]) | x <- db]
-    ++ [(u, [(IsaClass "Eq", [])]) | [((IsaSign.Type u _ [], _), _)] <- dt]
+    ++ [(u, [(IsaClass "Eq", [])]) | [(IsaSign.Type u _ [], _)] <- dt]
 
 transInst :: Continuity -> HsInstance ->
                          (IsaClass, [(IsaType, [IsaClass])])

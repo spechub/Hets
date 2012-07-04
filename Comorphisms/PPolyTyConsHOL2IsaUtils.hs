@@ -201,7 +201,7 @@ transDataEntries env tyToks t@(dt, tys, cs) l = do
     if any isNothing ms then return t
         else do
         let des = catMaybes ms
-            ntys = map (Isa.typeId . fst . fst) des
+            ntys = map (Isa.typeId . fst) des
             ncs = concatMap (map fst . snd) des
             foldF str cnv = foldM ( \ s i ->
                    if Set.member i s then
@@ -223,7 +223,7 @@ transDataEntry env tyToks de@(DataEntry _ _ gk _ _ alts) =
       nalts <- mapM (transAltDefn env tyToks dp) $ Set.toList alts
       let transDName ti = Type (showIsaTypeT ti baseSign) []
                              . map transTypeArg
-      return ((transDName i tyArgs, Nothing), nalts)
+      return (transDName i tyArgs, nalts)
     _ -> fatal_error ("not a free type: " ++ show i)
          $ posOfId i
 

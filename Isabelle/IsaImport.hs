@@ -220,7 +220,6 @@ hXmlRecType2IsaTypeDecl recmap (RecType a (Vars vs) (Constructors cs)) =
       (map (\v -> case v of
              Vars_DtTFree f -> trans (Constructor_DtTFree f)
              Vars_DtType t -> trans (Constructor_DtType t)
-             Vars_DtRec r -> trans (Constructor_DtRec r)) vs),
-      recTypeAltname a),
+             Vars_DtRec r -> trans (Constructor_DtRec r)) vs)),
       map (\(Constructor ca cs') ->
        (IsaSign.mkVName (constructorVal ca),map trans cs')) cs)
