@@ -430,7 +430,8 @@ printClassR (y, (parents, assumptions,fixes)) =
           <+> (doubleQuotes . (printTyp Null)) t) fixes
      f' = if null f then []
       else (head f):(map (text "and" <+>) (tail f))
-     parents' = filter (\ (IsaClass s) -> s /= "HOL.type_class") parents
+     parents' = filter (\ (IsaClass s) -> elem s
+       ["HOL.type_class","HOL.type","type","type_class"]) parents
      p' = Data.List.intersperse (text "+") $ map printClass parents'
  in vcat [text "class" <+> printClass y <+>
           (if length (p'++a'++f') > 0 then text "=" else empty)
