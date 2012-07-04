@@ -75,15 +75,9 @@ struct
 	(* full name of a name used in theory T *)
 	fun full_name T name = Name_Space.full_name (Sign.naming_of T) (Binding.name name)
         (* remove unnecessary information from (recursive) datatypes *)
-	fun is_mutually_rec_type T (n,i) = (case (#alt_names i) of
-		SOME(names) => List.exists
-  				(Option.isSome o (Datatype.get_info T) o (full_name T))
-                                names
-               | NONE => false)
+	fun is_mutually_rec_type T (n,i) = length (#descr i) > 1
 	fun check_rec T (n,v) = if is_mutually_rec_type T (n,v)
-         then case String.compare (((#1 o #2 o List.hd o #descr) v),full_name T n) of
-               EQUAL => true
-               | _ => false
+         then (#index v) < 1
          else true
         fun restructure_rec_types T ts = List.foldl (fn (d,l) => case d of
          (n,SOME(v)) => if check_rec T (n,v) then (n,v)::l
@@ -154,10 +148,9 @@ struct
          (List.tl (List.rev (List.foldl (fn (_,x::xs) => (x+1)::x::xs) [0] l)))
 	fun get_type_names T ts =
             let
-	     val rec_types = List.filter (is_mutually_rec_type T) ts
-	     val grouped_rec_names = List.map (fn x => case (#alt_names o #2) x of
-                               SOME(v) => v
-                             | NONE => []) rec_types
+	     val rec_types = List.filter (check_rec T) ts
+	     val grouped_rec_names = List.map (fn x => 
+                   List.map (Long_Name.base_name o #1 o #2) ((#descr o #2) x)) rec_types
   	     val def_names = (List.map (Long_Name.base_name o #1 o #2) 
                               (List.concat (List.map (#descr o #2) rec_types)))
 	     val all_rec_names = (List.concat grouped_rec_names)@def_names
@@ -271,7 +264,7 @@ struct
 	  | NONE => (("NoTerm",[]),[])
          in XML.Elem (("ConstDecl",[("name",Long_Name.base_name s)]),
              [XML_Syntax.xml_of_type t,XML.Elem v']) end) l)
-	fun dtypToXML (Datatype.DtTFree s) = XML.Elem (("DtTFree",[("s",s)]),[])
+	fun dtypToXML (Datatype.DtTFree (s,_)) = XML.Elem (("DtTFree",[("s",s)]),[])
            | dtypToXML (Datatype.DtType (s,dtl)) =
               XML.Elem (("DtType",[("s",s)]),List.map dtypToXML dtl)
     	   | dtypToXML (Datatype.DtRec i) =
@@ -279,11 +272,8 @@ struct
 	fun constructorToXML (name,dtl) = XML.Elem
          (("Constructor",[("val",Long_Name.base_name name)]),List.map dtypToXML dtl)
 	fun typeToXML d = List.map
-         (fn (i,(s,vs,dt)) => let val attrs = case (#alt_names d) of
-            SOME(ns) => if (List.nth (ns,i)) = (Long_Name.base_name s)
-             then [("i",Int.toString i),("name",Long_Name.base_name s)]
-             else [("i",Int.toString i),("name",Long_Name.base_name s),("altname",List.nth (ns,i))]
-            | NONE => [("i",Int.toString i),("name",Long_Name.base_name s)]
+         (fn (i,(s,vs,dt)) => let val attrs = 
+              [("i",Int.toString i),("name",Long_Name.base_name s)]
           in XML.Elem (("RecType",attrs),[
                XML.Elem (("Vars",[]),List.map dtypToXML vs),
 	       XML.Elem (("Constructors",[]),List.map constructorToXML dt)

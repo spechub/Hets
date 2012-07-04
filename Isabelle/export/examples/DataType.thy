@@ -4,13 +4,13 @@ imports Datatype
 
 begin
 
-datatype (type4) 'a type1 =
+datatype 'a type1 =
        foo |
        bar "'a type2"
-and (type5) 'a type2 = "a * nat * 'a type1"
+and 'a type2 = "a * nat * 'a type1"
 and 'a type3 = "nat * 'a type2"
 
-datatype 'a type6 = bar 'a
+datatype ('a,'b) type6 = bar "'a * 'b"
 
 consts
 I :: "nat type1"
