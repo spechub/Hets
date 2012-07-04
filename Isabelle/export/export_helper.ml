@@ -157,7 +157,7 @@ struct
 	     val constructors = List.map #1 (List.concat (List.map (#3 o #2) 
                                  (List.concat (List.map (#descr o #2) ts))))
             in (grouped_rec_names,all_rec_names,constructors,def_names) end
-	fun get_gen_consts T name ts =
+	fun get_gen_consts T name ts consts =
          let val (grouped_rec_names,all_rec_names,constructors,_) = get_type_names T ts
 	     val rec_names = List.concat grouped_rec_names
 	     val mutually_rec_names =
@@ -181,7 +181,8 @@ struct
                              (fn y => [comb^"."^comb^"_rec_"^y,
                                        comb^"."^comb^"_rec_set_"^y,
                                        comb^"."^comb^"_rep_set_"^y])
-                             (l_to_intl x))) end) mutually_rec_names)])) end
+                             (l_to_intl x))) end) mutually_rec_names)]))
+            @(List.filter (String.isPrefix "Class.") consts) end
 	fun get_gen_axioms T name ts =
          let val (grouped_rec_names,all_rec_names,constructors,def_names) =
                   get_type_names T ts
@@ -229,7 +230,8 @@ struct
             List.filter (String.isPrefix (name^"."^x^".")) ths) (unique (rec_names@def_names))))
          @(List.concat (List.map (fn x =>
             List.filter (String.isPrefix (name^"."^(space_implode "_" x)^".")) ths)
-           mutually_rec_names)) end
+           mutually_rec_names))
+         @(List.filter (String.isPrefix "Class.") ths) end
 (* Represent collected data as XML *)
 	(* Enrich the (isabelle-builtin) XML representation of terms with infix information *)
         fun xml_of_term' T t =
@@ -307,7 +309,7 @@ struct
              val thms       = get_theorems T
              val axioms     = get_axioms T
 	     val classes    = get_classes T thms
-             val gen_consts = get_gen_consts T name types
+             val gen_consts = get_gen_consts T name types (List.map #1 consts)
              val gen_thms   = get_gen_theorems T name types (List.map #1 thms)
              val gen_axioms = (get_gen_axioms T name types)@(List.map #1 thms)
          in (name, imports,
