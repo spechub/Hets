@@ -206,7 +206,7 @@ hetsServer opts1 = do
            then getHetsResponse opts [] sessRef pathBits splitQuery
            else mkHtmlPage path dirs
     -- LIST OF PUT REQUEST RESPONSES
-    "PUT" -> case pathBits of
+    "PUT" -> liftRun $ case pathBits of
       -- execute global commands
       "libraries" : libIri : "proofs" : prId : cmd : [] ->
          case readMaybe prId of
