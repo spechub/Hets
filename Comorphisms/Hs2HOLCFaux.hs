@@ -801,7 +801,7 @@ extAxType s = case sentence s of
 extFunTerm :: Named Sentence -> Term
 extFunTerm s = case sentence s of
   ConstDef (IsaEq t _) -> fst $ extTBody t
-  RecDef _ ((App (App _ x _) _ _ : _) : _) -> fst $ extTBody x
+  RecDef _ _ _ (App (App _ x _) _ _ : _) -> fst $ extTBody x
   _ -> error "Hs2HOLCFaux.extFunTerm"
 
 extLeftH :: Named Sentence -> Term
@@ -858,15 +858,18 @@ fixPoint :: Continuity -> [Named Sentence] -> [Named Sentence]
 fixPoint c xs = case xs of
   [a] -> if sentDepOn a a then [mapNamed ( \ s -> case s of
            ConstDef (IsaEq lh rh) -> case c of
-             IsCont _ -> RecDef fixrecS [[holEq lh rh]]
-             NotCont -> RecDef primrecS [destCaseS c lh rh]
+             IsCont _ -> RecDef (Just fixrecS) (mkVName . senAttr $ a)
+              Nothing [holEq lh rh]
+             NotCont -> RecDef Nothing (mkVName . senAttr $ a)
+              Nothing (concat [destCaseS c lh rh])
            _ -> error "Hs2HOLCFaux.fixPoint") a]
          else xs
   _ : _ -> case c of
     IsCont _ -> let
          jn = joinNames (map extAxName xs) -- name is ininfluential here
          ys = map (\ x -> [holEq (extLeftH x) $ extRightH x]) xs
-         ps = [makeNamed jn $ RecDef fixrecS ys]
+         ps = [makeNamed jn $ RecDef (Just fixrecS) (mkVName jn)
+          Nothing (concat ys)]
       in ps
     NotCont -> let
          jj = joinNames (map extAxName xs)
@@ -884,7 +887,7 @@ fixPoint c xs = case xs of
                       (map (renFuns (newFCons (Const jn noType) ls)) ts)
                       NotCont)) $ Map.toList yyys
          os = map (\ (x,m) -> mkNewDef x jj n m jt) $ number xs
-         ps = makeNamed jj (makeRecDef jl zs) : os
+         ps = makeNamed jj (makeRecDef jj jl zs) : os
       in ps
   [] -> []
 
@@ -902,9 +905,10 @@ mkNewDef s z x y t = let      -- x is the max
       _ -> error "Hs2HOLCFaux.mkNewDef1"
     _ -> error "Hs2HOLCFaux.mkNewDef2") s
 
-makeRecDef :: Term -> [(Term,Term)] -> Sentence
-makeRecDef t ls =
- RecDef primrecS [map (\ (a, b) -> holEq (App t a NotCont) b) ls]
+makeRecDef :: String -> Term -> [(Term,Term)] -> Sentence
+makeRecDef n t ls =
+ RecDef Nothing (mkVName n)
+  Nothing (concat [map (\ (a, b) -> holEq (App t a NotCont) b) ls])
 
 reassemble :: [[(Term,Term)]] -> Map.Map Term [Term]
 reassemble ls = foldr

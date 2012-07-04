@@ -126,11 +126,10 @@ data Sentence =
              , definitions :: [(String, Term)]
              , instProof :: IsaProof }
   | ConstDef { senTerm :: Term }
-  | RecDef { keyWord :: String
-           , senTerms :: [[Term]] }
-  | PrimRecDef { constName :: VName
-               , constType :: Typ
-               , primRecSenTerms :: [Term] }
+  | RecDef { keyword :: Maybe String
+           , constName :: VName
+           , constType :: (Maybe Typ)
+           , primRecSenTerms :: [Term] }
   | TypeDef { newType :: Typ
             , typeDef :: SetDecl
             , nonEmptyPr :: IsaProof}

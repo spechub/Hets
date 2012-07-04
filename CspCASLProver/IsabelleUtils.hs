@@ -98,8 +98,9 @@ addPrimRec :: String -> Typ -> [Term] -> IsaTheory -> IsaTheory
 addPrimRec cName cType terms isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
-        primRecDef = PrimRecDef {
-          constName = mkVName cName, constType = cType, primRecSenTerms = terms}
+        primRecDef = RecDef {
+          keyword = Nothing, constName = mkVName cName,
+          constType = Just cType, primRecSenTerms = terms}
         namedPrimRecDef = (makeNamed "BUG_what_does_this_word_do?" primRecDef) {
           isAxiom = False,
           isDef = True}

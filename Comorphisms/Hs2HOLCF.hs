@@ -98,9 +98,8 @@ notDummy  ::   Named Sentence -> Bool
 notDummy s = case sentence s of
   ConstDef (IsaEq t _)     ->
           if t /= xDummy then True else False
-  RecDef _ []              -> False
-  RecDef _ [[]]              -> False
-  RecDef _ ((IsaEq t _ : _) : _) ->
+  RecDef _ _ _ []              -> False
+  RecDef _ _ _ (IsaEq t _ : _) ->
           if t /= xDummy then True else False
   _  -> True
 

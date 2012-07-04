@@ -203,7 +203,6 @@ printNamedSen ns =
   in case s of
   TypeDef {} -> d
   RecDef {} -> d
-  PrimRecDef {} -> d
   Lemmas {} -> d
   Instance {} -> d
   _ -> let dd = doubleQuotes d in
@@ -229,14 +228,17 @@ printSentence s = case s of
                    <+> equals
                    <+> doubleQuotes (printSetDecl td)
                    $+$ pretty pr
-  RecDef kw xs -> text kw <+>
-     and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
-  PrimRecDef cName cType xs ->
+  RecDef kw cName cType xs ->
     let preparedEq = map (doubleQuotes . printTerm) xs
         preparedEqWithBars =
           map (<+> text barS) (init preparedEq) ++ [last preparedEq]
-    in text primrecS <+> text (new cName) <+> doubleColon <+>
-       doubleQuotes (printType cType) <+> printAlt cName <+> text whereS $+$
+        tp = case cType of
+              Just t -> doubleColon <+> doubleQuotes (printType t)
+              Nothing -> empty
+        kw' = case kw of
+               Just s -> text s
+               Nothing -> text primrecS
+    in kw' <+> text (new cName) <+> tp <+> printAlt cName <+> text whereS $+$
        vcat preparedEqWithBars
   Instance { tName = t, arityArgs = args, arityRes = res, definitions = defs,
              instProof = prf } ->
@@ -430,7 +432,7 @@ printClassR (y, (parents, assumptions,fixes)) =
           <+> (doubleQuotes . (printTyp Null)) t) fixes
      f' = if null f then []
       else (head f):(map (text "and" <+>) (tail f))
-     parents' = filter (\ (IsaClass s) -> elem s
+     parents' = filter (\ (IsaClass s) -> not $ elem s
        ["HOL.type_class","HOL.type","type","type_class"]) parents
      p' = Data.List.intersperse (text "+") $ map printClass parents'
  in vcat [text "class" <+> printClass y <+>
