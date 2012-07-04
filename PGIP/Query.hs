@@ -207,8 +207,8 @@ anaQuery q =
          (_, c : r, [], [], []) | noPP -> if null r
            then Right (mi, GlobCmdQuery c)
            else Left $ "non-unique command " ++ show r
-         (_, [], _, [], [_]) ->
-           anaNodeQuery mi ans (getIdOrName ids nns ns2) (map fst theorems)
+         (_, [], _, [], [_]) -> fmap (\ qk -> (mi, qk)) $
+           anaNodeQuery ans (getIdOrName ids nns ns2) (map fst theorems)
              incls pps
          (_, [], [], e : r, i : s) | noPP ->
            if null r && null s && null nns && null ns2
@@ -267,9 +267,9 @@ decodeQueryCode s = case s of
   c : r
       -> decodePlus c : decodeQueryCode r
 
-anaNodeQuery :: Maybe Int -> [String] -> NodeIdOrName -> [String] -> [String]
-  -> [QueryPair] -> Either String (Maybe Int, QueryKind)
-anaNodeQuery mi ans i moreTheorems incls pss =
+anaNodeQuery :: [String] -> NodeIdOrName -> [String] -> [String]
+  -> [QueryPair] -> Either String QueryKind
+anaNodeQuery ans i moreTheorems incls pss =
   let pps = foldr (\ l -> case l of
                 (x, Just y) -> ((x, y) :)
                 _ -> id) [] pss
@@ -289,16 +289,16 @@ anaNodeQuery mi ans i moreTheorems incls pss =
       noIncl = null incls && isNothing incl && isNothing timeLimit
       cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds
   in case ans of
-       [] -> Right (mi, NodeQuery i
-         $ if noPP then NcCmd minBound else pp)
+       [] -> Right $ NodeQuery i
+         $ if noPP then NcCmd minBound else pp
        [cmd] -> case cmd of
-         "prove" -> Right (mi, NodeQuery i pp)
+         "prove" -> Right $ NodeQuery i pp
          "provers" | noIncl && isNothing prover ->
-            Right (mi, NodeQuery i $ NcProvers trans)
+            Right $ NodeQuery i $ NcProvers trans
          "translations" | noIncl && isNothing trans ->
-            Right (mi, NodeQuery i $ NcTranslations prover)
+            Right $ NodeQuery i $ NcTranslations prover
          _ -> case lookup cmd cmds of
-           Just nc | noPP -> Right (mi, NodeQuery i $ NcCmd nc)
+           Just nc | noPP -> Right $ NodeQuery i $ NcCmd nc
            _ -> Left $ "unknown node command '" ++ cmd ++ "' "
                 ++ shows incls " " ++ show pss
        _ -> Left $ "non-unique node command " ++ show ans

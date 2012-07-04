@@ -152,12 +152,12 @@ hetsServer opts1 = do
    -- better try to read hosts to exclude from a file
    if any (`isInfixOf` rhost) bots then return $ mkResponse status403 ""
     else let
-    -- extract params from query for later use
-    format = maybe Nothing id $ lookup "format" splitQuery
-    session = maybe Nothing (maybe Nothing readMaybe)
-      $ lookup "session" splitQuery
-    library = maybe Nothing (fmap iriPath . maybe Nothing parseIRI)
-      $ lookup "library" splitQuery
+    -- when using lookup upon querybits, you need to unpack Maybe twice
+    lookup2 str = maybe Nothing id $ lookup str splitQuery
+    -- some parameters from the paths query part might be needed more than once
+    session = lookup2 "session" >>= readMaybe
+    library = lookup2 "library" >>= fmap iriPath . parseIRI
+    format = lookup2 "format"
     -- respond depending on request Method
     in case B8.unpack (requestMethod re) of
     -- LIST OF GET REQUEST RESPONSES
@@ -206,9 +206,44 @@ hetsServer opts1 = do
            then getHetsResponse opts [] sessRef pathBits splitQuery
            else mkHtmlPage path dirs
     -- LIST OF PUT REQUEST RESPONSES
-    -- TODO continue implementing restfull interface responses here
     "PUT" -> case pathBits of
-      _ -> fail "not implemented jet"
+      -- execute global commands
+      "libraries" : libIri : "proofs" : prId : cmd : [] ->
+         case readMaybe prId of
+           Nothing -> fail $ "failed to read sessionId from " ++ prId
+           Just sessId -> let
+             dgQ = DGQuery sessId $ fmap iriPath $ parseIRI libIri in
+             getHetsResponse' opts [] sessRef $ Query dgQ $ GlobCmdQuery cmd
+      -- execute a proof or calculus request
+      "sessions" : sessId : cmd : [] -> case readMaybe sessId of
+        Nothing -> fail $ "failed to read sessionId from " ++ sessId
+        -- look for (optional) specification of node OR edge
+        Just sId -> case (lookup2 "node", lookup2 "edge") of
+          (Just ndIri, Nothing) -> case parseIRI ndIri of
+            Nothing -> fail $ "failed to parse nodeIRI from " ++ ndIri
+            Just nd -> let
+              s = iriFragment nd
+              i = maybe (Right s) Left $ readMaybe s
+              -- TODO where to find 'moreTheorems', 'incls'?
+              in case anaNodeQuery [cmd] i [] [] splitQuery of
+                -- call command upon a single node
+                Right qk -> getHetsResponse' opts [] sessRef
+                  $ Query (DGQuery sId (Just $ iriPath nd)) qk
+                Left err -> fail err
+          (Nothing, Just edIri) -> case parseIRI edIri
+                        >>= readMaybe . iriFragment of
+            -- call command upon a single edge
+            Just i -> getHetsResponse' opts [] sessRef $ Query
+              (DGQuery sId Nothing) $ EdgeQuery (EdgeId i) "edge"
+            Nothing -> fail $ "illegal edgeIri: " ++ edIri
+          -- prove all nodes if no singleton is selected
+          (Nothing, Nothing) | cmd == "prove" -> getHetsResponse'
+            opts [] sessRef $ Query (DGQuery sId Nothing) $ GlobCmdQuery cmd
+          _ -> fail $ "cannot execute command (" ++ cmd
+              ++ ") for node AND edge at the same time!"
+      -- fail if request doesn't comply
+      _ -> fail $ "illegal request: " ++ intercalate "/" pathBits
+    -- TODO continue implementing restfull interface responses here
     -- LIST OF POST REQUEST RESPONSES (inhabits old proving mechanism)
     "POST" -> case pathBits of
       -- open new session for dg. NOTE:does not differ from GET/library for now
@@ -431,6 +466,7 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   EQ -> compare f1 f2
   c -> c
 
+-- | with the 'old' call of getHetsResponse, anaUri is called upon the path
 getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> [String] -> [QueryPair] -> IO Response
 getHetsResponse opts updates sessRef pathBits query = do
@@ -441,6 +477,9 @@ getHetsResponse opts updates sessRef pathBits query = do
     Nothing -> mkResponse status400 $ showRelDiags 1 ds
     Just s -> mkOkResponse s
 
+{- | the new call of getHetsResponse responses to a RESTFull query, that has
+already been pre-analysed within runServer. Thus, a query is passed as a
+parameter. -}
 getHetsResponse' :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> Query -> IO Response
 getHetsResponse' opts updates sessRef query = do
