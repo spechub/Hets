@@ -33,6 +33,7 @@ import Common.Utils (number)
 
 import Data.Char
 import Data.List
+import Data.Maybe (catMaybes)
 
 printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
 printIsaTheory tn sign sens = let
@@ -53,13 +54,38 @@ printIsaTheory tn sign sens = let
 
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
-    callSetup "initialize" (brackets $ sepByCommas
+ let (sens',recFuns) = findTypesForRecFuns sens (constTab sig)
+     sig' = sig { constTab = 
+      Map.filterWithKey (\k _ -> not $ (new k) `elem` recFuns) (constTab sig) }
+ in  callSetup "initialize" (brackets $ sepByCommas
       $ map (text . show . Quote . senAttr)
       $ filter (\ s -> not (isConstDef s || isRecDef s || isInstance s)
-                && senAttr s /= "") sens)
-    $++$ printSign sig
-    $++$ printNamedSentences sens
-    $++$ printMonSign sig
+                && senAttr s /= "") sens')
+      $++$ printSign sig'
+      $++$ printNamedSentences sens'
+      $++$ printMonSign sig'
+
+findTypesForRecFuns :: [Named Sentence] -> ConstTab
+ -> ([Named Sentence], [String])
+findTypesForRecFuns ns ctab = 
+ let (sens,recFuns') = unzip $ map (\ sen ->
+      let (sen',recFns') =
+           case sentence sen of
+             RecDef kw cName cType tm ->
+              ((case Map.toList $ 
+                 Map.filterWithKey (\k _ -> (new k) == (new cName)) ctab of
+                 (_,t):_ ->
+                  case cType of
+                   Nothing ->
+                    RecDef kw cName (Just t) tm
+                   Just t' ->
+                    if t /= t' then error "recFun: two types given"
+                    else sentence sen
+                 [] -> sentence sen),
+               Just cName)
+             _ -> (sentence sen,Nothing)
+      in (sen {sentence=sen'},recFns')) ns
+ in (sens,map new $ catMaybes recFuns')
 
 printNamedSentences :: [Named Sentence] -> Doc
 printNamedSentences sens = case sens of
@@ -236,7 +262,7 @@ printSentence s = case s of
               Just t -> doubleColon <+> doubleQuotes (printType t)
               Nothing -> empty
         kw' = case kw of
-               Just s -> text s
+               Just str -> text str
                Nothing -> text primrecS
     in kw' <+> text (new cName) <+> tp <+> printAlt cName <+> text whereS $+$
        vcat preparedEqWithBars
