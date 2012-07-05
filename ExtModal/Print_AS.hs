@@ -72,11 +72,11 @@ prettyRigor b = keyword $ if b then rigidS else flexibleS
 
 instance Pretty EM_SIG_ITEM where
         pretty (Rigid_op_items rig op_list _) =
-                cat [prettyRigor rig <+> keyword (opS ++ pluralS op_list),
-                     space <> semiAnnos pretty op_list]
+                fsep [prettyRigor rig <+> keyword (opS ++ pluralS op_list),
+                     semiAnnos pretty op_list]
         pretty (Rigid_pred_items rig pred_list _) =
-                cat [prettyRigor rig <+> keyword (predS ++ pluralS pred_list),
-                     space <> semiAnnos pretty pred_list]
+                fsep [prettyRigor rig <+> keyword (predS ++ pluralS pred_list),
+                     semiAnnos pretty pred_list]
 
 instance FormExtension EM_FORMULA where
   isQuantifierLike ef = case ef of
@@ -131,7 +131,7 @@ instance Pretty EModalSign where
         printSetMap (keyword flexibleS <+> keyword opS) empty
             (MapSet.toMap $ flexOps sign)
         $+$
-        printSetMap (keyword flexibleS <+> keyword predS) empty
+        printSetMap (keyword flexibleS <+> keyword predS) space
             (MapSet.toMap $ flexPreds sign)
         $+$
         vcat (map (\ i -> fsep
