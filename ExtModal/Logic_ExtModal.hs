@@ -93,7 +93,9 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
     where
         map_sen ExtModal morph = return . mapSen mapEMform morph
         simplify_sen ExtModal = simplifySen frmTypeAna simEMSen
-        print_sign ExtModal = printSign pretty
+        print_sign ExtModal sig = let e = extendedInfo sig in pretty sig
+          { opMap = diffOpMapSet (opMap sig) $ flexOps e
+          , predMap = diffMapSet (predMap sig) $ flexPreds e }
         sym_of ExtModal = symOf
         symmap_of ExtModal = morphismToSymbMap
         sym_name ExtModal = symName

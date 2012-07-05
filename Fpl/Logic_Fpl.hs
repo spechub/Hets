@@ -31,8 +31,6 @@ import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.Logic_CASL ()
 
-import Common.DocUtils
-
 data Fpl = Fpl deriving Show
 
 instance Language Fpl where
@@ -53,7 +51,6 @@ instance Sentences Fpl FplForm FplSign FplMor Symbol where
       symmap_of Fpl = morphismToSymbMap
       sym_name Fpl = symName
       simplify_sen Fpl = simplifySen minFplTerm simplifyTermExt . addBuiltins
-      print_sign Fpl = printSign pretty
 
 instance StaticAnalysis Fpl FplBasicSpec FplForm
                SYMB_ITEMS SYMB_MAP_ITEMS
