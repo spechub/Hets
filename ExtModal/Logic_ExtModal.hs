@@ -134,6 +134,7 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
 instance Logic ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
     SYMB_MAP_ITEMS ExtModalSign ExtModalMorph Symbol RawSymbol () where
         stability _ = Experimental
+        all_sublogics _ = sublogics_all
         empty_proof_tree _ = ()
 
 instance SemiLatticeWithTop Sublogic where
@@ -181,4 +182,4 @@ instance MinSublogic Sublogic Symbol where
     minSublogic _ = botSublogic
 
 instance SublogicName Sublogic where
-    sublogicName = show
+    sublogicName = sublogic_name

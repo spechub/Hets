@@ -16,11 +16,12 @@ module ExtModal.Sublogic where
 import CASL.Fold
 import CASL.AS_Basic_CASL
 import ExtModal.AS_ExtModal
-import ExtModal.ExtModalSign
 import Common.AS_Annotation
+-- import ExtModal.ExtModalSign
 
-data Frequency = None 
-               | One 
+
+data Frequency = None
+               | One
                | Many
                deriving (Show, Eq, Ord)
 
@@ -33,6 +34,7 @@ data Sublogic = Sublogic
     , hasFixPoints :: Bool
     }
     deriving (Show, Eq, Ord)
+
 
 maxSublogic :: Sublogic
 maxSublogic = Sublogic
@@ -67,28 +69,28 @@ joinSublogic a b = Sublogic
 joinSublogics :: [Sublogic] -> Sublogic
 joinSublogics = foldr joinSublogic botSublogic
 
-minSublogicOfForm :: FORMULA EM_FORMULA -> Sublogic --ExtModalFORMULA
-minSublogicOfForm = foldFormula (constRecord minSublogicOfEM 
-                    joinSublogics botSublogic) 
+minSublogicOfForm :: FORMULA EM_FORMULA -> Sublogic
+minSublogicOfForm = foldFormula (constRecord minSublogicOfEM
+                    joinSublogics botSublogic)
 
 minSublogicOfMod :: MODALITY -> Sublogic
-minSublogicOfMod m = case m of 
+minSublogicOfMod m = case m of
     SimpleMod _ -> botSublogic
-    TermMod t -> foldTerm (constRecord minSublogicOfEM 
-                    joinSublogics botSublogic) t
+    TermMod t -> foldTerm (constRecord minSublogicOfEM
+        joinSublogics botSublogic) t
     ModOp _ m1 m2 -> joinSublogic (minSublogicOfMod m1)
-      (minSublogicOfMod m2)
+        (minSublogicOfMod m2)
     TransClos c -> (minSublogicOfMod c) {hasTransClos = True}
-    Guard f -> minSublogicOfForm f 
+    Guard f -> minSublogicOfForm f
 
 
 minSublogicOfEM :: EM_FORMULA -> Sublogic
-minSublogicOfEM ef = case ef of 
-    BoxOrDiamond _ m _ _ f _ -> joinSublogic (minSublogicOfMod m) 
+minSublogicOfEM ef = case ef of
+    BoxOrDiamond _ m _ _ f _ -> joinSublogic (minSublogicOfMod m)
         (minSublogicOfForm f)
     Hybrid _ _ f _ -> (minSublogicOfForm f) {hasNominals = True}
     UntilSince _ f1 f2 _ -> joinSublogic (minSublogicOfForm f1)
-      (minSublogicOfForm f2)
+        (minSublogicOfForm f2)
     PathQuantification _ f _ -> minSublogicOfForm f
     NextY _ f _ -> minSublogicOfForm f
     StateQuantification _ _ f _ -> minSublogicOfForm f
@@ -99,9 +101,10 @@ minSublogicOfEM ef = case ef of
 minSublogicOfModDefn :: ModDefn -> Sublogic
 minSublogicOfModDefn (ModDefn time term il fl _) =
     setModalities il
-    $ setTermMods term    
-    $ setTimeMods time il 
+    $ setTermMods term
+    $ setTimeMods time il
     $ joinSublogics (map (minSublogicOfForm . item) fl)
+
 
 setModalities :: [a] -> Sublogic -> Sublogic
 setModalities il s = case il of
@@ -115,7 +118,37 @@ setTimeMods :: Bool -> [a] -> Sublogic -> Sublogic
 setTimeMods b il s = if b then case il of
     [_] -> s {hasTimeMods = max One (hasTimeMods s)}
     _ -> s {hasTimeMods = Many}
-    else s 
-    
+    else s
 
+sublogics_all :: [Sublogic]
+sublogics_all = let bools = [True, False] in
+    [Sublogic
+    { hasModalities = h_m
+    , hasTermMods = h_term
+    , hasTransClos = h_tc
+    , hasNominals = h_n
+    , hasTimeMods = h_time
+    , hasFixPoints = h_fp
+    }
+    | h_m <- [None, One, Many]
+    , h_term <- bools
+    , h_tc <- bools
+    , h_n <- bools
+    , h_time <- [None, One, Many]
+    , h_fp <- bools
+    ]
 
+sublogic_name :: Sublogic -> String
+sublogic_name s = if hasTransClos s then
+                     if hasModalities s == Many then
+                        if hasNominals s then "FOHML"
+                        else if hasTermMods s then "FODL"
+                             else if hasFixPoints s then "FOU"
+                                  else "MFOML"
+                     else "FOML"
+                  else if hasModalities s == Many then
+                          if hasNominals s then "PHML"
+                          else if hasTermMods s then "PD"
+                               else if hasFixPoints s then "PU"
+                                    else "MPML"
+                       else "PML"
