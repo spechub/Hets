@@ -23,7 +23,7 @@ import Common.AS_Annotation
 data Frequency = None
                | One
                | Many
-               deriving (Show, Eq, Ord)
+               deriving (Show, Eq, Ord, Enum)
 
 data Sublogic = Sublogic
     { hasModalities :: Frequency
@@ -130,25 +130,19 @@ sublogics_all = let bools = [True, False] in
     , hasTimeMods = h_time
     , hasFixPoints = h_fp
     }
-    | h_m <- [None, One, Many]
+    | h_time <- [None, One, Many]
     , h_term <- bools
+    , h_m <- if h_term && h_time /= None then [Many] 
+        else [max h_time (if h_term then One else None) .. Many]
     , h_tc <- bools
     , h_n <- bools
-    , h_time <- [None, One, Many]
     , h_fp <- bools
     ]
 
 sublogic_name :: Sublogic -> String
-sublogic_name s = if hasTransClos s then
-                     if hasModalities s == Many then
-                        if hasNominals s then "FOHML"
-                        else if hasTermMods s then "FODL"
-                             else if hasFixPoints s then "FOU"
-                                  else "MFOML"
-                     else "FOML"
-                  else if hasModalities s == Many then
-                          if hasNominals s then "PHML"
-                          else if hasTermMods s then "PD"
-                               else if hasFixPoints s then "PU"
-                                    else "MPML"
-                       else "PML"
+sublogic_name s = (if hasModalities s == Many then "Many" else "One") 
+    ++ (if hasTermMods s then "Dyn" else "")
+    ++ (if hasNominals s then "Hybr" else "")
+    ++ (if hasTimeMods s == Many then "MTime"
+       else if hasTimeMods s == One then "OTime" else "")
+    ++ (if hasFixPoints s then "Fix" else "")
