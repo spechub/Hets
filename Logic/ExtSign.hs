@@ -131,7 +131,8 @@ checkRawSyms l rsyms syms = do
           ( \ rsy -> Set.null $ Set.filter (flip (matches l) rsy) syms)
           rsyms
   unless (null unknownSyms)
-    $ Result [mkDiag Error "unknown symbols" unknownSyms] $ Just ()
+    $ Result [mkDiag Error ("unknown symbols (from "
+                            ++ showDoc syms ")") unknownSyms] $ Just ()
 
 ext_induced_from_to_morphism :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
