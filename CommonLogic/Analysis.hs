@@ -211,7 +211,7 @@ basicCommonLogicAnalysis :: (AS.BASIC_SPEC, Sign.Sign, GlobalAnnos)
              [AS_Anno.Named AS.TEXT_META])
 basicCommonLogicAnalysis (bs', sig, ga) =
    Result.Result [] $ if exErrs then Nothing else
-     Just (bs, ExtSign sigItems newSyms, sentences)
+     Just (bs', ExtSign sigItems newSyms, sentences)
     where
       bs = expandCurieBS (prefix_map ga) bs'
       sigItems = makeSig bs sig
