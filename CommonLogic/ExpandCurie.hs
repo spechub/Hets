@@ -8,7 +8,8 @@ Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
-Provides a function to expand each abbreviated IRI to a full IRI in a basic spec.
+Provides a function to expand each abbreviated IRI to a full IRI
+in a basic spec.
 -}
 
 module CommonLogic.ExpandCurie
@@ -22,13 +23,14 @@ import CommonLogic.AS_CommonLogic
 
 import qualified Data.Map as Map
 
--- | Expands each abbreviated IRI to a full IRI in the basic spec according to
--- the supplemented map @gpm@. An IRI is stored in a name (quoted string). If
--- the prefix of an abbreviated IRI is not in the map, the IRI won't be expanded.
+{- | Expands each abbreviated IRI to a full IRI in the basic spec according to
+the supplemented map @gpm@. An IRI is stored in a name (quoted string). If
+the prefix of an abbreviated IRI is not in the map, the IRI won't be expanded.
+-}
 expandCurieBS :: Map.Map String IRI -> BASIC_SPEC -> BASIC_SPEC
-expandCurieBS gpm (Basic_spec abis) =
-  Basic_spec $ map
-      (\abi@Anno.Annoted{Anno.item = bi} -> abi{Anno.item = expBI gpm bi}) abis
+expandCurieBS gpm (Basic_spec abis) = Basic_spec $ map
+    (\ abi@Anno.Annoted {Anno.item = bi} -> abi {Anno.item = expBI gpm bi})
+    abis
 
 expBI :: Map.Map String IRI -> BASIC_ITEMS -> BASIC_ITEMS
 expBI gpm (Axiom_items atms) =
@@ -36,12 +38,12 @@ expBI gpm (Axiom_items atms) =
 
 expAnTextMeta :: Map.Map String IRI
   -> Anno.Annoted TEXT_META -> Anno.Annoted TEXT_META
-expAnTextMeta gpm an@Anno.Annoted{Anno.item = tm} =
-  an{Anno.item = expTextMeta gpm tm}
+expAnTextMeta gpm an@Anno.Annoted {Anno.item = tm} =
+  an {Anno.item = expTextMeta gpm tm}
 
 expTextMeta :: Map.Map String IRI -> TEXT_META -> TEXT_META
 expTextMeta gpm tm =
-  tm { getText = expTxt (Map.unionWith (\_ p2 -> p2) gpm $
+  tm { getText = expTxt (Map.unionWith (\ _ p2 -> p2) gpm $
                             Map.fromList $ prefix_map tm) (getText tm) }
 
 expTxt :: Map.Map String IRI -> TEXT -> TEXT
@@ -104,14 +106,21 @@ expTseq pm nos = case nos of
 
 expName :: Map.Map String IRI -> NAME -> NAME
 expName pm n = case fmap (expandCurie pm) $ parseCurie (strippedQuotesStr n) of
-  Just (Just x) -> mkSimpleId $ "\"" ++ iriToStringUnsecure x ++ "\""
+  Just (Just x) ->
+    mkSimpleId $ getQuote n ++ iriToStringUnsecure x ++ getQuote n
   _ -> n
+
+getQuote :: NAME -> String
+getQuote s = case tokStr s of
+  '\"' : _ -> "\""
+  '\'' : _ -> "\'"
+  _ -> ""
 
 strippedQuotesStr :: NAME -> String
 strippedQuotesStr n =
   let str = tokStr n
       middleStr = init $ tail str
-  in case head str of
-        '\"' -> middleStr
-        '\'' -> middleStr
+  in case str of
+        '\"' : _ : _ -> middleStr
+        '\'' : _ : _ -> middleStr
         _ -> str
