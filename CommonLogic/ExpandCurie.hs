@@ -106,15 +106,8 @@ expTseq pm nos = case nos of
 
 expName :: Map.Map String IRI -> NAME -> NAME
 expName pm n = case fmap (expandCurie pm) $ parseCurie (strippedQuotesStr n) of
-  Just (Just x) ->
-    Token (getQuote n ++ iriToStringUnsecure x ++ getQuote n) $ tokPos n
+  Just (Just x) -> Token iriToStringUnsecure x $ tokPos n
   _ -> n
-
-getQuote :: NAME -> String
-getQuote s = case tokStr s of
-  '\"' : _ -> "\""
-  '\'' : _ -> "\'"
-  _ -> ""
 
 strippedQuotesStr :: NAME -> String
 strippedQuotesStr n =
