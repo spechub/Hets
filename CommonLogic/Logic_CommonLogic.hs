@@ -115,6 +115,7 @@ instance StaticAnalysis CommonLogic
       stat_symb_items CommonLogic _ = mkStatSymbItems
       stat_symb_map_items CommonLogic _ _ = mkStatSymbMapItem
       induced_from_morphism CommonLogic = inducedFromMorphism
+      induced_from_to_morphism CommonLogic = inducedFromToMorphism
       add_symb_to_sign CommonLogic = addSymbToSign -- TODO
 
 {-

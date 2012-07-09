@@ -18,6 +18,7 @@ module CommonLogic.Analysis
     , mkStatSymbItems
     , mkStatSymbMapItem
     , inducedFromMorphism
+    , inducedFromToMorphism
     )
     where
 
@@ -25,8 +26,9 @@ import Common.ExtSign
 import Common.Result as Result
 import Common.GlobalAnnotations
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Id as Id
+import Common.Id as Id
 import Common.IRI (parseIRIReference)
+import Common.DocUtils
 
 import CommonLogic.Symbol as Symbol
 import qualified CommonLogic.AS_CommonLogic as AS
@@ -36,6 +38,7 @@ import CommonLogic.ExpandCurie
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Common.Lib.MapSet as MapSet
 import qualified Data.List as List
 
 data DIAG_FORM = DiagForm
@@ -232,6 +235,32 @@ inducedFromMorphism m s = let
                     }
   in return $ mkMorphism s t p
 
+splitFragment :: Id -> (String, String)
+splitFragment = span (/= '#') . show
+
+inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+                    -> ExtSign Sign.Sign Symbol.Symbol
+                    -> ExtSign Sign.Sign Symbol.Symbol
+                    -> Result.Result Morphism.Morphism
+inducedFromToMorphism m (ExtSign s sys) (ExtSign t ty) = let
+  tsy = Set.fold (\ r -> let (q, f) = splitFragment $ symName r
+          in MapSet.insert f q) MapSet.empty ty
+  p = Set.fold (\ sy -> let n = symName sy in case Map.lookup sy m of
+         Just r -> Map.insert n $ symName r
+         Nothing -> if Set.member sy ty then id else
+           let (_, f) = splitFragment n
+           in case Set.toList $ MapSet.lookup f tsy of
+                [q] -> Map.insert n $ simpleIdToId
+                    $ mkSimpleId $ q ++ f
+                _ -> id) Map.empty sys
+  t2 = Sign.emptySig
+       { discourseNames = Set.map (applyMap p) $ discourseNames s
+       , nondiscourseNames = Set.map (applyMap p) $ nondiscourseNames s
+       , sequenceMarkers = Set.map (applyMap p) $ sequenceMarkers s
+       }
+  in if isSubSigOf t2 t then return $ mkMorphism s t p else
+        fail $ "cannot map symbols from\n" ++ showDoc (sigDiff t2 t) "\nto\n"
+          ++ showDoc t ""
 
 -- | negate sentence (text) - propagates negation to sentences
 negForm :: AS.TEXT_META -> AS.TEXT_META
