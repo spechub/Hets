@@ -20,6 +20,7 @@ import qualified Common.AS_Annotation as Anno
 import Common.Id
 import Common.IRI
 import CommonLogic.AS_CommonLogic
+import CommonLogic.Lexer_CLIF (clLetters)
 
 import qualified Data.Map as Map
 
@@ -106,7 +107,10 @@ expTseq pm nos = case nos of
 
 expName :: Map.Map String IRI -> NAME -> NAME
 expName pm n = case fmap (expandCurie pm) $ parseCurie (strippedQuotesStr n) of
-  Just (Just x) -> Token (iriToStringUnsecure x) $ tokPos n
+  Just (Just x) -> let s = iriToStringShortUnsecure x
+                   in Token (if not $ all clLetters s
+                              then "\"" ++ s ++ "\""
+                              else s) $ tokPos n
   _ -> n
 
 strippedQuotesStr :: NAME -> String
