@@ -209,6 +209,7 @@ localFileContents :: HetcatsOpts -> String -> IO String
 localFileContents opts filename = do
   curDir <- getCurrentDirectory
   file <- findLibFile (curDir : libdirs opts) filename
+  putIfVerbose opts 2 $ "Reading CLIF file " ++ file
   readFile file
 
 findLibFile :: [FilePath] -> String -> IO FilePath
