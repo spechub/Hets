@@ -296,7 +296,7 @@ itemNameOrMap = do
         if isInfixOf ".." $ iriToStringUnsecure i1
             then simpleIdOrDDottedId
             else simpleId
-    return $ ItemNameMap i1 $ if Just i1 == i2 then Nothing else i2
+    return $ ItemNameMap i1 i2
 
 optEnd :: AParser st (Maybe Token)
 optEnd = try

@@ -455,12 +455,18 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                 fn = show $ getLibId ln
                 currFn = show $ getLibId currLn
                 (realItems, errs, origItems) = case items of
-                  ItemMaps ims ->
-                    let expIms = map (expandCurieItemNameMap fn currFn) ims
+                  ItemMaps rawIms ->
+                    let (ims, warns) = foldr (\ im@(ItemNameMap i mi)
+                          (is, ws) -> if Just i == mi then
+                            (ItemNameMap i Nothing : is
+                            , warning () (show i ++ " item no renamed")
+                              (getRange mi) : ws)
+                            else (im : is, ws)) ([], []) rawIms
+                        expIms = map (expandCurieItemNameMap fn currFn) ims
                         leftExpIms = lefts expIms
                     in if not $ null leftExpIms
                         then ([], map fail leftExpIms, itemNameMapsToIRIs ims)
-                        else (rights expIms, [], itemNameMapsToIRIs ims)
+                        else (rights expIms, warns, itemNameMapsToIRIs ims)
                   UniqueItem i -> case Map.keys $ globalEnv dg' of
                     [j] -> case expCurie (globalAnnos dg) eo i of
                       Nothing -> ([], [prefixErrorIRI i], [i])
