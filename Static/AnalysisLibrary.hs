@@ -700,8 +700,6 @@ expandCurie2M ga (i1, mi2) =
               Just e2 -> Right (fromJust e1m, e2)
 
 itemNameMapsToIRIs :: [ItemNameMap] -> [IRI]
-itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> case mi of
-    Nothing -> [i]
-    Just j -> [i | i == j])
+itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> [i | isNothing mi])
 
 -- END CURIE expansion

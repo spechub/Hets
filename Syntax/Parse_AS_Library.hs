@@ -272,7 +272,7 @@ viewOrAlignType l = do
 moduleType :: LogicGraph -> AParser st MODULE_TYPE
 moduleType l = do
   sp1 <- aSpec l
-  s   <- asKey ofS
+  s <- asKey ofS
   sp2 <- aSpec l
   return $ Module_type sp1 sp2 (tokPos s)
 
@@ -290,13 +290,13 @@ simpleIdOrDDottedId = pToken $ liftM2 (++)
 -- | Parse item name or name map
 itemNameOrMap :: AParser st ItemNameMap
 itemNameOrMap = do
-    i1 <- (liftM simpleIdToIRI) simpleIdOrDDottedId
+    i1 <- liftM simpleIdToIRI simpleIdOrDDottedId
     i2 <- optionMaybe $ liftM simpleIdToIRI $ do
         _ <- asKey mapsTo
         if isInfixOf ".." $ iriToStringUnsecure i1
             then simpleIdOrDDottedId
             else simpleId
-    return $ ItemNameMap i1 i2
+    return $ ItemNameMap i1 $ if Just i1 == i2 then Nothing else i2
 
 optEnd :: AParser st (Maybe Token)
 optEnd = try
@@ -405,7 +405,7 @@ targetP = do
   return (simpleIdToIRI tl, s)
 
 prefixes :: [Annotation] -> Map.Map String IRI
-prefixes ans = foldr (\m r -> Map.union r $ prefixMap m) Map.empty ans
+prefixes = foldr (\ m r -> Map.union r $ prefixMap m) Map.empty
 
 prefixMap :: Annotation -> Map.Map String IRI
 prefixMap an = case an of
