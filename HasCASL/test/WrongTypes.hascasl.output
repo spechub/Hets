@@ -1,33 +1,33 @@
 parse error at 1.3:
-unexpected "->"
+unexpected keyword "->"
 expecting words, "__", casl sign, "[", "{" or "("
 
 parse error at 2.1:
-unexpected "*"
+unexpected keyword "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 3.6:
-unexpected "*"
+unexpected keyword "*"
 expecting "%", "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 4.1:
-unexpected "*"
+unexpected keyword "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 5.1:
-unexpected "\215"
+unexpected keyword "\215"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 6.1:
-unexpected "*"
+unexpected keyword "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 7.1:
-unexpected "\215"
+unexpected keyword "\215"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 8.1:
-unexpected "*"
+unexpected keyword "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 9.3:
@@ -39,15 +39,15 @@ unexpected ")"
 expecting casl char, "_", "?", words, "__", signs, "[", "{", "(", "%", ":", "*", "->" or end of input
 
 parse error at 11.5:
-unexpected "->"
+unexpected keyword "->"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 12.1:
-unexpected "*"
+unexpected keyword "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 13.1:
-unexpected "->?"
+unexpected keyword "->?"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 14.6:
@@ -55,11 +55,11 @@ unexpected end of input
 expecting "?", words, "__", signs, "[", "{" or "("
 
 parse error at 15.1:
-unexpected "*"
+unexpected keyword "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 16.1:
-unexpected "\215"
+unexpected keyword "\215"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 17.8:

@@ -40,7 +40,7 @@ expecting "%", "(", "{", "[" or id/literal
 
 1 b1
 parse error at 15.1:
-unexpected "as"
+unexpected keyword "as"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 16.1:
@@ -57,15 +57,15 @@ expecting casl char, "%", "(", "{", "[", id/literal, ":", "as", "when" or end of
 
 __
 parse error at 20.1-20.2:
-unexpected "."
+unexpected keyword "."
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 21.1:
-unexpected "::="
+unexpected keyword "::="
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 22.1:
-unexpected "|->"
+unexpected keyword "|->"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 23.2:
@@ -94,15 +94,15 @@ expecting "%", "(", "{", "[" or id/literal
 wrong comment or annotation starting with a single %
 
 parse error at 29.1-29.2:
-unexpected "."
+unexpected keyword "."
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 30.1-30.2:
-unexpected "."
+unexpected keyword "."
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 31.3:
-unexpected "="
+unexpected keyword "="
 expecting "%", "(", "{", "[", id/literal or "]"
 
 a [__]
@@ -116,7 +116,7 @@ unexpected ","
 expecting "%", "(", "{", "[", id/literal or "]"
 
 parse error at 36.4:
-unexpected "="
+unexpected keyword "="
 expecting "%", "(", "{", "[", id/literal or "]"
 
 __ < [bla] __ < __
@@ -130,34 +130,34 @@ expecting "%", "when" or end of input
 < [__] >
 | [__] |
 parse error at 44.3:
-unexpected "="
+unexpected keyword "="
 expecting "%", "(", "{", "[", id/literal or "]"
 
 parse error at 45.1:
-unexpected "when"
+unexpected keyword "when"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 46.1:
-unexpected "else"
+unexpected keyword "else"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 47.1:
-unexpected "if"
+unexpected keyword "if"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 48.1:
-unexpected "=>"
+unexpected keyword "=>"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 49.1:
-unexpected "<=>"
+unexpected keyword "<=>"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 50.1:
-unexpected "type"
+unexpected keyword "type"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 51.1:
-unexpected "cotype"
+unexpected keyword "cotype"
 expecting "%", "(", "{", "[" or id/literal
 

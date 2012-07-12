@@ -3,7 +3,7 @@ unexpected "="
 expecting "[", "%", ",", "<", ":", "{", ";", casl sign or words
 
 parse error at 2.5:
-unexpected "<"
+unexpected keyword "<"
 expecting id
 
 parse error at 3.16:

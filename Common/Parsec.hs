@@ -90,4 +90,4 @@ reserved :: [String] -> CharParser st String -> CharParser st String
 -- | reject keywords
 reserved l p = try $ do
   s <- p
-  if elem s l then unexpected $ show s else return s
+  if elem s l then unexpected $ "keyword " ++ show s else return s

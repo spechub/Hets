@@ -125,15 +125,15 @@ a{>}
 a[b[c]]
 :=
 parse error at 127.1:
-unexpected "@"
+unexpected keyword "@"
 expecting id
 
 parse error at 128.1:
-unexpected "\\"
+unexpected keyword "\\"
 expecting id
 
 parse error at 129.1-129.2:
-unexpected ".!"
+unexpected keyword ".!"
 expecting id
 
 .?

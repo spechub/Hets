@@ -7,31 +7,31 @@ unexpected "."
 expecting casl sign, "%", "when" or end of input
 
 parse error at 3.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 4.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 5.5:
-unexpected "="
+unexpected keyword "="
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 6.1:
-unexpected "as"
+unexpected keyword "as"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 7.1:
-unexpected ":"
+unexpected keyword ":"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 8.1:
-unexpected "true"
+unexpected keyword "true"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 9.1:
-unexpected "false"
+unexpected keyword "false"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 10.14:
@@ -39,7 +39,7 @@ unexpected end of input
 expecting casl char, "_", "%", "(", "{", "[" or id/literal
 
 parse error at 11.1:
-unexpected "var"
+unexpected keyword "var"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 12.8:
@@ -47,34 +47,34 @@ unexpected "?"
 expecting "%"
 
 parse error at 13.1:
-unexpected "not"
+unexpected keyword "not"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 14.1:
-unexpected "def"
+unexpected keyword "def"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 15.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 16.1:
-unexpected "=>"
+unexpected keyword "=>"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 17.1:
-unexpected "if"
+unexpected keyword "if"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 18.1:
-unexpected "<=>"
+unexpected keyword "<=>"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 19.1:
-unexpected "/\\"
+unexpected keyword "/\\"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 20.1:
-unexpected "\\/"
+unexpected keyword "\\/"
 expecting "%", "(", "{", "[" or id/literal
 

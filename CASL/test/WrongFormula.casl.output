@@ -3,30 +3,30 @@ unexpected "-"
 expecting casl char, "_", "[", "%" or ")"
 
 parse error at 2.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 3.6:
 unexpected sign following =e=
 
 parse error at 4.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 5.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 6.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 7.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 8.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 9.5:
@@ -38,46 +38,46 @@ unexpected end of input
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 11.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 12.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 13.1:
-unexpected "="
+unexpected keyword "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 14.6:
-unexpected "="
+unexpected keyword "=" or "="
 expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
 
 parse error at 15.6:
-unexpected "="
+unexpected keyword "=" or "="
 expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
 
 parse error at 16.6:
-unexpected "="
+unexpected keyword "=" or "="
 expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
 
 parse error at 17.5:
-unexpected "<=>" or "<"
+unexpected keyword "<=>" or "<"
 expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "=>" or end of input
 
 parse error at 18.8:
-unexpected "<=>" or "<"
+unexpected keyword "<=>" or "<"
 expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "if" or end of input
 
 parse error at 19.8:
-unexpected "\\/" or "\\"
+unexpected keyword "\\/" or "\\"
 expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "=>", "if", "<=>" or end of input
 
 parse error at 20.8:
-unexpected "=>", ">" or "="
+unexpected keyword "=>", ">" or "="
 expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "if" or end of input
 
 parse error at 21.8:
-unexpected "if" or "i"
+unexpected keyword "if" or "i"
 expecting "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "=>" or end of input
 

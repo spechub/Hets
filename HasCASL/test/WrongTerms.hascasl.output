@@ -31,7 +31,7 @@ unexpected ")"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 9.1-9.2:
-unexpected "."
+unexpected keyword "."
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 10.1:
@@ -39,11 +39,11 @@ unexpected "_"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 11.1:
-unexpected ":"
+unexpected keyword ":"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 12.1:
-unexpected ":?"
+unexpected keyword ":?"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 13.1:
@@ -63,15 +63,15 @@ unexpected ")"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun" or "pred"
 
 parse error at 17.1:
-unexpected "as"
+unexpected keyword "as"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 18.1:
-unexpected ":"
+unexpected keyword ":"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 19.1:
-unexpected "in"
+unexpected keyword "in"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 20.15:
@@ -79,7 +79,7 @@ unexpected ")"
 expecting "__", "[" or ":"
 
 parse error at 21.8:
-unexpected "<"
+unexpected keyword "<"
 expecting simple-id, "{", "[" or "__"
 
 parse error at 22.13:
@@ -103,11 +103,11 @@ unexpected "a"
 expecting "{", "[", "__", "%", "," or ":"
 
 parse error at 27.13:
-unexpected ".!" or "!"
+unexpected keyword ".!" or "!"
 expecting "?", words, "__", casl sign, "[", "{", "(", "%", ":", "*", "->", ";" or "."
 
 parse error at 28.13:
-unexpected ".!" or "!"
+unexpected keyword ".!" or "!"
 expecting "?", words, "__", casl sign, "[", "{", "(", "%", ":", "*", "->", ";" or "."
 
 parse error at 29.10:
@@ -115,31 +115,31 @@ unexpected "a"
 expecting "{", "[", "__", "%", "," or ":"
 
 parse error at 30.14:
-unexpected ".!" or "!"
+unexpected keyword ".!" or "!"
 expecting "?", words, "__", casl sign, "[", "{", "(", "%", ":", "*", "->", ";" or "."
 
 parse error at 31.1:
-unexpected "pred"
+unexpected keyword "pred"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 32.1:
-unexpected "var"
+unexpected keyword "var"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 33.1:
-unexpected "op"
+unexpected keyword "op"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 34.3:
-unexpected "and" or "a"
+unexpected keyword "and" or "a"
 expecting "%", ":", "as", "in", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
 
 parse error at 35.1:
-unexpected "then"
+unexpected keyword "then"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 36.4:
-unexpected "then"
+unexpected keyword "then"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 37.3:
@@ -155,6 +155,6 @@ unexpected end of input
 expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 40.11:
-unexpected "@"
+unexpected keyword "@"
 expecting "%", ":", quoted char, digit, words, "__", casl sign, "_", "[", "{", "(", "," or ")"
 
