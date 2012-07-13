@@ -543,7 +543,7 @@ options = let
     , Option "d" ["dump"] (ReqArg Dump "STRING")
       "dump various strings"
     , Option "e" ["encoding"] (ReqArg parseEncoding "ENCODING")
-      "latin1 (default) or utf8 encoding"
+      "latin1 or utf8 (default) encoding"
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
