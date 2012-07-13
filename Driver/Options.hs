@@ -63,6 +63,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Data.Char
 import Data.List
+import Data.Maybe
 
 -- | short version without date for ATC files
 hetsVersion :: String
@@ -74,10 +75,11 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, skipS, structS, transS, viewS,
      guiS, libdirsS, outdirS, amalgS, specS, recursiveS,
-     interactiveS, modelSparQS, connectS, xmlS, listenS,
+     interactiveS, modelSparQS, counterSparQS, connectS, xmlS, listenS,
      applyAutomaticRuleS, normalFormS, unlitS :: String
 
 modelSparQS = "modelSparQ"
+counterSparQS = "counterSparQ"
 verboseS = "verbose"
 intypeS = "input-type"
 outtypesS = "output-types"
@@ -141,6 +143,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , intype :: InType
   , libdirs :: [FilePath]
   , modelSparQ :: FilePath
+  , counterSparQ :: Int
   , outdir :: FilePath
   , outtypes :: [OutType]
   , xupdate :: FilePath
@@ -177,6 +180,7 @@ defaultHetcatsOpts = HcOpt
   , intype = GuessIn
   , libdirs = []
   , modelSparQ = ""
+  , counterSparQ = 3
   , outdir = ""
   , outtypes = [] -- no default
   , xupdate = ""
@@ -205,15 +209,18 @@ instance Show HetcatsOpts where
     ++ (if interactive opts then showOpt interactiveS else "")
     ++ show (analysis opts)
     ++ showEqOpt libdirsS (intercalate ":" $ libdirs opts)
-    ++ (if modelSparQ opts /= "" then showEqOpt modelSparQS (modelSparQ opts)
-        else "")
+    ++ (case modelSparQ opts of
+          "" -> ""
+          f -> showEqOpt modelSparQS f)
+    ++ (case counterSparQ opts of
+          n | n /= counterSparQ defaultHetcatsOpts
+              -> showEqOpt counterSparQS $ show n
+          _ -> "")
     ++ (if xmlFlag opts then showOpt xmlS else "")
     ++ (if connectP opts /= -1 then showOpt connectS else "")
     ++ (if listen opts /= -1 then showOpt listenS else "")
     ++ concatMap (showEqOpt "dump") (dumpOpts opts)
-    ++ case ioEncoding opts of
-         Latin1 -> ""
-         Utf8 -> showEqOpt "encoding" "utf8"
+    ++ showEqOpt "encoding" (map toLower $ show $ ioEncoding opts)
     ++ (if unlit opts then showOpt unlitS else "")
     ++ (if useLibPos opts then showOpt relposS else "")
     ++ showEqOpt intypeS (show $ intype opts)
@@ -249,6 +256,7 @@ data Flag =
   | OutDir FilePath
   | XUpdate FilePath
   | ModelSparQ FilePath
+  | CounterSparQ Int
   | OutTypes [OutType]
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
@@ -276,6 +284,7 @@ makeOpts opts flg = case flg of
     InType x -> opts { intype = x }
     LibDirs x -> opts { libdirs = splitOn ':' x }
     ModelSparQ x -> opts { modelSparQ = x }
+    CounterSparQ x -> opts { counterSparQ = x }
     OutDir x -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
     XUpdate x -> opts { xupdate = x }
@@ -524,6 +533,8 @@ options = let
        ++ crS ++ "containing HetCASL libraries")
     , Option "m" [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
+    , Option "" [counterSparQS] (ReqArg parseCounter "0-99")
+      "maximal number of counter examples"
     , Option "x" [xmlS] (NoArg XML)
        "use xml packets to communicate"
 #ifdef SERVER
@@ -585,9 +596,13 @@ options = let
 parseVerbosity :: Maybe String -> Flag
 parseVerbosity ms = case ms of
     Nothing -> Verbose 2
-    Just s -> case reads s of
-      [(i, "")] -> Verbose i
-      _ -> hetsError (s ++ " is not a valid INT")
+    Just s -> Verbose $ parseInt s
+
+parseInt :: String -> Int
+parseInt s = fromMaybe (hetsError $ s ++ " is not a valid INT") $ readMaybe s
+
+parseCounter :: String -> Flag
+parseCounter = CounterSparQ . parseInt
 
 divideIntoPortHost :: String -> Bool -> (String, String) -> (String, String)
 divideIntoPortHost s sw (accP, accH) = case s of
@@ -768,16 +783,11 @@ checkFlags fs = do
                         . collectVerbosity
                         . collectSpecOpts
                         -- collect some more here?
-    if not $ null [ () | Help <- fs]
-      then do
-        putStrLn hetsUsage
-        exitWith ExitSuccess
-      else return [] -- fall through
-    if not $ null [ () | Version <- fs]
-      then do
-        putStrLn ("version of hets: " ++ hetcats_version)
-        exitWith ExitSuccess
-       else return [] -- fall through
+        h = null [ () | Help <- fs]
+        v = null [ () | Version <- fs]
+    unless h $ putStrLn hetsUsage
+    unless v $ putStrLn ("version of hets: " ++ hetcats_version)
+    unless (v && h) $ exitWith ExitSuccess
     collectFlags fs
 
 -- | 'checkInFiles' checks all given input files for sanity

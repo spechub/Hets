@@ -260,8 +260,8 @@ writeTheory ins nam opts filePrefix ga
                                                                             ++ f
     _ -> return () -- ignore other file types
 
-modelSparQCheck :: HetcatsOpts -> G_theory -> IRI -> IO ()
-modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
+modelSparQCheck :: HetcatsOpts -> G_theory -> IO ()
+modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) =
     case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
     Just th2 -> do
       table <- parseSparQTableFromFile $ modelSparQ opts
@@ -272,7 +272,7 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
         Right y -> do
             putIfVerbose opts 4 $ unlines
                ["lisp file content:", show $ table2Doc y, "lisp file end."]
-            let Result d _ = modelCheck i th2 y
+            let Result d _ = modelCheck (counterSparQ opts) th2 y
             if null d then
                 putIfVerbose opts 0 "Modelcheck succeeded, no errors found"
              else showDiags
@@ -307,7 +307,7 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
                putIfVerbose opts 4 $ "Sublogic of " ++ show i ++ ": " ++
                    show (sublogicOfTh raw_gTh)
                unless (modelSparQ opts == "") $
-                   modelSparQCheck opts (theoremsToAxioms raw_gTh) i
+                   modelSparQCheck opts (theoremsToAxioms raw_gTh)
                mapM_ (writeTheory ins nam opts filePrefix ga raw_gTh ln i)
                  specOutTypes
 

@@ -29,7 +29,7 @@ module Common.IO
 
 import System.IO
 
-data Enc = Latin1 | Utf8
+data Enc = Latin1 | Utf8 deriving Show
 
 readEncFile :: Enc -> String -> IO String
 writeEncFile :: Enc -> String -> String -> IO ()

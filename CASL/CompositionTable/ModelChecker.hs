@@ -23,7 +23,6 @@ import Logic.Logic
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
-import Common.IRI (IRI)
 import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
 
@@ -31,11 +30,11 @@ import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
 
-modelCheck :: IRI -> (Sign () (), [Named (FORMULA ())])
+modelCheck :: Int -> (Sign () (), [Named (FORMULA ())])
            -> Table -> Result Bool
 modelCheck _ (_, []) _ = (warning True "not implemented" nullRange)
-modelCheck _ (sign, sent) t =
-    modelCheckTest (extractAnnotations (annoMap sign)) (sign, sent) t
+modelCheck c (sign, sent) t =
+    modelCheckTest c (extractAnnotations (annoMap sign)) (sign, sent) t
 
 extractAnnotations :: MapSet.MapSet Symbol Annotation -> [(OP_SYMB, String)]
 extractAnnotations m =
@@ -64,26 +63,27 @@ getAnnoAux a = case a of
 showDiagStrings:: [Diagnosis] -> [Char]
 showDiagStrings = intercalate "\n" . map diagString
 
-modelCheckTest ::  [(OP_SYMB, String)] -> (Sign () (), [Named (FORMULA ())])
-               -> Table -> Result Bool
-modelCheckTest _ (_, []) _ =
+modelCheckTest :: Int -> [(OP_SYMB, String)]
+  -> (Sign () (), [Named (FORMULA ())]) -> Table -> Result Bool
+modelCheckTest _ _ (_, []) _ =
  error "CASL.CompositionTable.ModelChecker.modelCheckTest"
-modelCheckTest symbs (sign, xs) t = case xs of
+modelCheckTest c symbs (sign, xs) t = case xs of
   [] -> error "CASL.CompositionTable.ModelChecker.modelCheckTest"
   [x] -> let
     Result d _ = modelCheckTest1 (sign, x) t symbs
+    n = length d
     fstr = shows(printTheoryFormula(mapNamed (simplify_sen CASL sign) x)) "\n"
       in if null d
-      then hint True ("Formula succeeded: " ++ fstr)  nullRange
-      else warning False ("Formula failed: \n" ++ fstr ++
-               " some Counterexamples: \n"
-               ++ showDiagStrings(take 10 d)) nullRange
+      then hint True ("Formula succeeded:\n" ++ fstr) nullRange
+      else warning False ("Formula failed:\n" ++ fstr ++ show n
+               ++ " counter example" ++ (if n > 1 then "s" else "")
+               ++ ":\n" ++ showDiagStrings(take c d)) nullRange
   x : r -> do
-    modelCheckTest symbs (sign, r) t
-    modelCheckTest symbs (sign, [x]) t
+    modelCheckTest c symbs (sign, r) t
+    modelCheckTest c symbs (sign, [x]) t
 
 modelCheckTest1 :: (Sign () (), Named (FORMULA ())) -> Table
-                -> [(OP_SYMB,String)] -> Result Bool
+                -> [(OP_SYMB, String)] -> Result Bool
 modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
     Conjunction formulas range -> let
         varass = Variable_Assignment []
