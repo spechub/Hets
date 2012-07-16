@@ -30,6 +30,7 @@ import CASL.Parse_AS_Basic
 import CASL.SymbolParser
 import CASL.SimplifySen
 import CASL.Taxonomy
+import CASL.ToDoc
 import CASL.Logic_CASL ()
 
 import Logic.Logic
@@ -96,6 +97,7 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
     where
         map_sen ExtModal morph = return . mapSen mapEMform morph
         simplify_sen ExtModal = simplifySen frmTypeAna simEMSen
+        print_named ExtModal = printTheoryFormula
         print_sign ExtModal sig = let e = extendedInfo sig in pretty sig
           { opMap = diffOpMapSet (opMap sig) $ flexOps e
           , predMap = Set.foldr (\ i ->

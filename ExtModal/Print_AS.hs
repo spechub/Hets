@@ -82,6 +82,9 @@ instance FormExtension EM_FORMULA where
   isQuantifierLike ef = case ef of
     UntilSince {} -> False
     _ -> True
+  prefixExt ef = case ef of
+    ModForm _ -> id
+    _ -> (bullet <+>)
 
 isEMJunct :: FORMULA EM_FORMULA -> Bool
 isEMJunct f = case f of
