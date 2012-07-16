@@ -16,6 +16,7 @@ import ExtModal.AS_ExtModal
 import ExtModal.Print_AS ()
 import ExtModal.ExtModalSign
 
+import CASL.Fold
 import CASL.Sign
 import CASL.MixfixParser
 import CASL.StaticAna
@@ -138,7 +139,7 @@ modItemStatAna
   :: Ana ModDefn EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
 modItemStatAna mix (ModDefn is_time isTerm anno_list forms pos) = do
     mapM_ ( (updateExtInfo . addMod) . item ) anno_list
-    new_forms <- mapAnM (ana_FORMULA mix) forms
+    new_forms <- mapAnM (anaFORMULA mix) forms
     let res_forms = map (fmap fst) new_forms
         ana_forms = map (fmap snd) new_forms
     unless (null forms)
@@ -314,10 +315,10 @@ resolveExtForm ga ids f = case f of
       nfs <- mapAnM (resolveMixFrm parenExtForm resolveExtForm ga ids) fs
       return $ ModForm $ ModDefn ti te is nfs pos
 
-ana_FORMULA :: Mix EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
+anaFORMULA :: Mix EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
             -> FORMULA EM_FORMULA -> State (Sign EM_FORMULA EModalSign)
                (FORMULA EM_FORMULA, FORMULA EM_FORMULA)
-ana_FORMULA mix f = do
+anaFORMULA mix f = do
            let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
            pm <- gets predMap
            mapM_ (addPred (emptyAnno ()) $ PredType []) ps
@@ -335,44 +336,21 @@ ana_FORMULA mix f = do
            put e2 {predMap = pm}
            return phi
 
-getFormPredToks :: FORMULA EM_FORMULA -> Set.Set Token
-getFormPredToks frm = case frm of
-    Quantification _ _ f _ -> getFormPredToks f
-    Conjunction fs _ -> Set.unions $ map getFormPredToks fs
-    Disjunction fs _ -> Set.unions $ map getFormPredToks fs
-    Implication f1 f2 _ _ ->
-        Set.union (getFormPredToks f1) $ getFormPredToks f2
-    Equivalence f1 f2 _ ->
-        Set.union (getFormPredToks f1) $ getFormPredToks f2
-    Negation f _ -> getFormPredToks f
-    Mixfix_formula (Mixfix_token t) -> Set.singleton t
-    Mixfix_formula t -> getTermPredToks t
-    ExtFORMULA (BoxOrDiamond _ _ _ _ f _) -> getFormPredToks f
-    ExtFORMULA (Hybrid _ _ f _ ) -> getFormPredToks f
-    ExtFORMULA (UntilSince _ f1 f2 _ ) ->
+getEFormPredToks :: EM_FORMULA -> Set.Set Token
+getEFormPredToks ef = case ef of
+    BoxOrDiamond _ _ _ _ f _ -> getFormPredToks f
+    Hybrid _ _ f _ -> getFormPredToks f
+    UntilSince _ f1 f2 _ ->
         Set.union (getFormPredToks f1) (getFormPredToks f2)
-    ExtFORMULA (NextY _ f _ ) -> getFormPredToks f
-    ExtFORMULA (PathQuantification _ f _ ) -> getFormPredToks f
-    ExtFORMULA (StateQuantification _ _ f _ ) -> getFormPredToks f
-    ExtFORMULA (FixedPoint _ _ f _ ) -> getFormPredToks f
-    Predication _ ts _ -> Set.unions $ map getTermPredToks ts
-    Definedness t _ -> getTermPredToks t
-    Existl_equation t1 t2 _ ->
-        Set.union (getTermPredToks t1) $ getTermPredToks t2
-    Strong_equation t1 t2 _ ->
-        Set.union (getTermPredToks t1) $ getTermPredToks t2
-    Membership t _ _ -> getTermPredToks t
-    _ -> Set.empty
+    NextY _ f _ -> getFormPredToks f
+    PathQuantification _ f _ -> getFormPredToks f
+    StateQuantification _ _ f _ -> getFormPredToks f
+    FixedPoint _ _ f _ -> getFormPredToks f
+    ModForm _ -> Set.empty
 
-getTermPredToks :: TERM EM_FORMULA -> Set.Set Token
-getTermPredToks trm = case trm of
-    Application _ ts _ -> Set.unions $ map getTermPredToks ts
-    Sorted_term t _ _ -> getTermPredToks t
-    Cast t _ _ -> getTermPredToks t
-    Conditional t1 f t2 _ -> Set.union (getTermPredToks t1) $
-        Set.union (getFormPredToks f) $ getTermPredToks t2
-    Mixfix_term ts -> Set.unions $ map getTermPredToks ts
-    Mixfix_parenthesized ts _ -> Set.unions $ map getTermPredToks ts
-    Mixfix_bracketed ts _ -> Set.unions $ map getTermPredToks ts
-    Mixfix_braced ts _ -> Set.unions $ map getTermPredToks ts
-    _ -> Set.empty
+getFormPredToks :: FORMULA EM_FORMULA -> Set.Set Token
+getFormPredToks = foldFormula
+  (constRecord getEFormPredToks Set.unions Set.empty)
+    { foldMixfix_formula = \ f ts -> case f of
+         Mixfix_formula (Mixfix_token t) -> Set.singleton t
+         _ -> ts }
