@@ -34,7 +34,14 @@ instance Pretty ModDefn where
            <+> keyword modalityS
           , semiAnnos pretty id_list
           , if null ax_list then empty else
-                specBraces (semiAnnos pretty ax_list)]
+                specBraces (vcat $ map pretty ax_list)]
+
+instance Pretty FrameForm where
+  pretty (FrameForm l f _)
+    | null l = printAnnotedBulletFormulas f
+    | null f = topSigKey (varS ++ pluralS l) <+> printVarDecls l
+    | otherwise = fsep [fsep $ forallDoc : printVarDeclL l
+                       , printAnnotedBulletFormulas f]
 
 instance Pretty EM_BASIC_ITEM where
   pretty itm = case itm of

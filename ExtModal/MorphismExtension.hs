@@ -106,4 +106,9 @@ mapEMform morph frm =
     (map (fmap $ \ i -> Map.findWithDefault i i
          $ if Set.member i $ sortSet $ msource morph then
          sort_map morph else mod_map em) is)
-    (map (fmap rmapf) fs) pos
+    (map (mapEMframe morph) fs) pos
+
+mapEMframe :: Morphism EM_FORMULA EModalSign MorphExtension -> FrameForm
+  -> FrameForm
+mapEMframe morph (FrameForm vs fs r) =
+    FrameForm vs (map (fmap $ mapSen mapEMform morph) fs) r

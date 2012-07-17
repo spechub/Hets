@@ -103,7 +103,8 @@ minSublogicOfModDefn (ModDefn time term il fl _) =
     setModalities il
     $ setTermMods term
     $ setTimeMods time il
-    $ joinSublogics (map (minSublogicOfForm . item) fl)
+    $ joinSublogics (map (minSublogicOfForm . item)
+                     $ concatMap frameForms fl)
 
 
 setModalities :: [a] -> Sublogic -> Sublogic
@@ -132,7 +133,7 @@ sublogics_all = let bools = [True, False] in
     }
     | h_time <- [None, One, Many]
     , h_term <- bools
-    , h_m <- if h_term && h_time /= None then [Many] 
+    , h_m <- if h_term && h_time /= None then [Many]
         else [max h_time (if h_term then One else None) .. Many]
     , h_tc <- bools
     , h_n <- bools
@@ -140,7 +141,7 @@ sublogics_all = let bools = [True, False] in
     ]
 
 sublogic_name :: Sublogic -> String
-sublogic_name s = (if hasModalities s == Many then "Many" else "One") 
+sublogic_name s = (if hasModalities s == Many then "Many" else "One")
     ++ (if hasTermMods s then "Dyn" else "")
     ++ (if hasNominals s then "Hybr" else "")
     ++ (if hasTimeMods s == Many then "MTime"

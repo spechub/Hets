@@ -177,15 +177,25 @@ unionGenAx = foldr (\ (s1, r1, f1) (s2, r2, f2) ->
 
 anaVarForms :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> [VAR_DECL] -> [Annoted (FORMULA f)] -> Range
+  -> State (Sign f e) [Annoted (FORMULA f)]
+anaVarForms mef mix vs fs r = do
+   (resFs, fufs) <- anaLocalVarForms (anaForm mef mix) vs fs r
+   addSentences $ map makeNamedSen fufs
+   return resFs
+
+anaLocalVarForms :: TermExtension f
+  => (Sign f e -> FORMULA f -> Result (FORMULA f, FORMULA f))
+  -> [VAR_DECL] -> [Annoted (FORMULA f)] -> Range
   -> State (Sign f e) ([Annoted (FORMULA f)], [Annoted (FORMULA f)])
-anaVarForms mef mix il afs ps = do
+anaLocalVarForms anaFrm il afs ps = do
            e <- get -- save
            mapM_ addVars il
            vds <- gets envDiags
            sign <- get
-           put e { envDiags = vds } -- restore with shadowing warnings
+           unless (null il) $ put e { envDiags = vds }
+           -- restore with shadowing warnings
            let (es, resFs, anaFs) = foldr (\ f (dss, ress, ranas) ->
-                      let Result ds m = anaForm mef mix sign $ item f
+                      let Result ds m = anaFrm sign $ item f
                       in case m of
                          Nothing -> (ds ++ dss, ress, ranas)
                          Just (resF, anaF) ->
@@ -208,27 +218,25 @@ ana_BASIC_ITEMS mef ab anas mix bi =
     case bi of
     Sig_items sis -> fmap Sig_items $
                      ana_SIG_ITEMS mef anas mix Loose sis
-    Free_datatype sk al ps ->
-        do mapM_ (\ i -> case item i of
+    Free_datatype sk al ps -> do
+           mapM_ (\ i -> case item i of
                   Datatype_decl s _ _ -> addSort sk i s) al
            mapAnM (ana_DATATYPE_DECL Free) al
            toSortGenAx ps True $ getDataGenSig al
            closeSubsortRel
            return bi
-    Sort_gen al ps ->
-        do (gs, ul) <- ana_Generated mef anas mix al
+    Sort_gen al ps -> do
+           (gs, ul) <- ana_Generated mef anas mix al
            toSortGenAx ps False $ unionGenAx gs
            return $ Sort_gen ul ps
-    Var_items il _ ->
-        do mapM_ addVars il
+    Var_items il _ -> do
+           mapM_ addVars il
            return bi
     Local_var_axioms il afs ps -> do
-        (resFs, fufs) <- anaVarForms mef mix il afs ps
-        addSentences $ map makeNamedSen fufs
+        resFs <- anaVarForms mef mix il afs ps
         return $ Local_var_axioms il resFs ps
     Axiom_items afs ps -> do
-        (resFs, fufs) <- anaVarForms mef mix [] afs ps
-        addSentences $ map makeNamedSen fufs
+        resFs <- anaVarForms mef mix [] afs ps
         return $ Axiom_items resFs ps
     Ext_BASIC_ITEMS b -> fmap Ext_BASIC_ITEMS $ ab mix b
 

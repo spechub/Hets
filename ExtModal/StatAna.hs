@@ -35,6 +35,7 @@ import Common.Result
 import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Control.Monad
@@ -49,7 +50,7 @@ instance TermExtension EM_FORMULA where
     NextY _ f _ -> freeVars sign f
     FixedPoint _ _ f _ -> freeVars sign f
     ModForm (ModDefn _ _ _ afs _) ->
-        Set.unions $ map (freeVars sign . item) afs
+        Set.unions $ map (freeVars sign . item) $ concatMap frameForms afs
 
 basicEModalAnalysis
         :: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
@@ -101,6 +102,9 @@ frmTypeAna sign form = let
              then return $ SimpleMod tm
              else r
          _ -> r
+  checkFrame (FrameForm vs fs r) = do
+    nfs <- mapAnM (minExpFORMULA frmTypeAna sign . mkForall vs) fs
+    return $ FrameForm [] nfs r
   in case form of
        BoxOrDiamond choice md leq_geq number f pos -> do
          new_md <- checkMod md
@@ -132,16 +136,28 @@ frmTypeAna sign form = let
          new_f <- minExpFORMULA frmTypeAna sign f
          return $ FixedPoint choice fpvar new_f pos
        ModForm (ModDefn is_time isTerm anno_list forms pos) -> do
-         new_forms <- mapAnM (minExpFORMULA frmTypeAna sign) forms
+         new_forms <- mapM checkFrame forms
          return $ ModForm $ ModDefn is_time isTerm anno_list new_forms pos
+
+anaFrameForm :: Mix b s EM_FORMULA EModalSign -> FrameForm
+  -> State (Sign EM_FORMULA EModalSign) (FrameForm, FrameForm)
+anaFrameForm mix ff@(FrameForm vs fs r) = if null fs then do
+    mapM_ addVars vs
+    return (ff, ff)
+  else do
+    (resFs, fufs) <- anaLocalVarForms (anaFORMULA mix) vs fs r
+    return (FrameForm vs resFs r, FrameForm [] fufs r)
 
 modItemStatAna
   :: Ana ModDefn EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
 modItemStatAna mix (ModDefn is_time isTerm anno_list forms pos) = do
     mapM_ ( (updateExtInfo . addMod) . item ) anno_list
-    new_forms <- mapAnM (anaFORMULA mix) forms
-    let res_forms = map (fmap fst) new_forms
-        ana_forms = map (fmap snd) new_forms
+    e <- get -- forget vars beyond this point
+    put e { varMap = Map.empty }
+    new_forms <- mapM (anaFrameForm mix) forms
+    put e { varMap = Map.empty }
+    let res_forms = map fst new_forms
+        ana_forms = map snd new_forms
     unless (null forms)
       $ addSentences [makeNamed "" $ ExtFORMULA $ ModForm
         $ ModDefn is_time isTerm anno_list ana_forms pos]
@@ -271,7 +287,11 @@ parenExtForm f = case f of
     FixedPoint choice fpvar frm pos ->
         FixedPoint choice fpvar (mapFormula parenExtForm frm) pos
     ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn
-        ti te is (map (fmap $ mapFormula parenExtForm) fs) pos
+        ti te is (map parenFrameForm fs) pos
+
+parenFrameForm :: FrameForm -> FrameForm
+parenFrameForm (FrameForm vs fs r) =
+    FrameForm vs (map (fmap $ mapFormula parenExtForm) fs) r
 
 resolveMod :: MixResolve MODALITY
 resolveMod ga ids m = case m of
@@ -312,29 +332,35 @@ resolveExtForm ga ids f = case f of
       new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
       return $ FixedPoint choice fpvar new_frm pos
     ModForm (ModDefn ti te is fs pos) -> do
-      nfs <- mapAnM (resolveMixFrm parenExtForm resolveExtForm ga ids) fs
+      nfs <- mapM (resolveFrameForm ga ids) fs
       return $ ModForm $ ModDefn ti te is nfs pos
 
-anaFORMULA :: Mix EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
-            -> FORMULA EM_FORMULA -> State (Sign EM_FORMULA EModalSign)
-               (FORMULA EM_FORMULA, FORMULA EM_FORMULA)
-anaFORMULA mix f = do
-           let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
-           pm <- gets predMap
-           mapM_ (addPred (emptyAnno ()) $ PredType []) ps
-           newGa <- gets globAnnos
-           let Result es m = resolveFormula parenExtForm
-                             resolveExtForm newGa (mixRules mix) f
-           addDiags es
-           e <- get
-           phi <- case m of
-               Nothing -> return (f, f)
-               Just r -> do
-                   n <- resultToState (minExpFORMULA frmTypeAna e) r
-                   return (r, n)
-           e2 <- get
-           put e2 {predMap = pm}
-           return phi
+resolveFrameForm :: MixResolve FrameForm
+resolveFrameForm ga ids (FrameForm vs fs r) = do
+    let ts = varDeclTokens vs
+    nfs <- mapAnM (resolveMixFrm parenExtForm
+                   (extendMixResolve ts resolveExtForm) ga
+                  $ extendRules ts ids) fs
+    return $ FrameForm vs nfs r
+
+anaFORMULA :: Mix b s EM_FORMULA EModalSign -> Sign EM_FORMULA EModalSign
+  -> FORMULA EM_FORMULA -> Result (FORMULA EM_FORMULA, FORMULA EM_FORMULA)
+anaFORMULA mix sig f = let
+    mix2 = extendMix (Map.keysSet $ varMap sig) mix
+    pts = Set.toList $ getFormPredToks f
+    ps = map (mkId . (: [])) pts
+    Result es m = resolveFormula parenExtForm
+                  resolveExtForm (globAnnos sig) (mixRules mix2) f
+    in case m of
+         Nothing -> Result es $ Just (f, f)
+         Just r -> let
+           pm2 = foldr (\ t -> MapSet.insert t (PredType []))
+                             (predMap sig) ps
+           sig2 = sig { predMap = pm2 }
+           Result ds mf = minExpFORMULA frmTypeAna sig2 r
+           in Result (es ++ ds) $ Just $ case mf of
+                Nothing -> (r, r)
+                Just n -> (r, n)
 
 getEFormPredToks :: EM_FORMULA -> Set.Set Token
 getEFormPredToks ef = case ef of

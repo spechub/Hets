@@ -21,9 +21,13 @@ import CASL.AS_Basic_CASL
 
 type EM_BASIC_SPEC = BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
 
-type AnEModForm = Annoted (FORMULA EM_FORMULA)
+data FrameForm = FrameForm
+  { frameVars :: [VAR_DECL]
+  , frameForms :: [Annoted (FORMULA EM_FORMULA)]
+  , frameFormRange :: Range
+  } deriving (Show, Eq, Ord)
 
-data ModDefn = ModDefn Bool Bool [Annoted Id] [AnEModForm] Range
+data ModDefn = ModDefn Bool Bool [Annoted Id] [FrameForm] Range
         -- Booleans: time (True) or not and term (True) or simple modality
     deriving (Show, Eq, Ord)
 

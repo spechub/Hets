@@ -14,6 +14,7 @@ module ExtModal.Parse_AS (ext_modal_reserved_words) where
 
 import Text.ParserCombinators.Parsec
 
+import Common.AS_Annotation
 import Common.Id
 import Common.Parsec
 import Common.Token
@@ -24,12 +25,12 @@ import Common.Keywords
 import CASL.AS_Basic_CASL
 import CASL.Formula
 import CASL.OpItem
+import CASL.Parse_AS_Basic
 
 import ExtModal.AS_ExtModal
 import ExtModal.Keywords
 
 import Data.Maybe
-import Data.List
 
 -- | List of reserved words
 ext_modal_reserved_words :: [String]
@@ -214,16 +215,38 @@ basicItemParser = fmap ModItem modDefnParser <|> do
     (annoId, ks) <- separatedBy (annoParser simpleId) anSemiOrComma
     return $ Nominal_decl annoId $ catRange $ k : ks
 
-parseAxioms :: ([AnEModForm] -> Range -> a) -> Range -> AParser st a
+parseAxioms :: ([FrameForm] -> Range -> a) -> Range -> AParser st a
 parseAxioms mki pos =
          do o <- oBraceT
-            (someAxioms, qs) <- auxItemList
-              (delete diamondS ext_modal_reserved_words) []
-                      (formula ext_modal_reserved_words) (,)
+            someAxioms <- many parseFrames
             c <- cBraceT
             return $ mki someAxioms
-              $ pos `appRange` qs `appRange` toRange o [] c
+              $ pos `appRange` toRange o [] c
          <|> return (mki [] pos)
+
+parseFrames :: AParser st FrameForm
+parseFrames = do
+    v <- pluralKeyword varS
+    (vs, ps) <- varItems ext_modal_reserved_words
+    return $ FrameForm vs [] $ catRange $ v : ps
+  <|> do
+    f <- forallT
+    (vs, ps) <- varDecls ext_modal_reserved_words
+    a <- annos
+    emDotFormulae a vs $ catRange $ f : ps
+  <|> emDotFormulae [] [] nullRange
+
+axiomsToFrames :: [Annotation] -> [VAR_DECL] -> Range
+  -> BASIC_ITEMS () () EM_FORMULA -> FrameForm
+axiomsToFrames a vs posl ais = case ais of
+  Axiom_items (Annoted ft qs as rs : fs) ds ->
+         let aft = Annoted ft qs (a ++ as) rs
+         in FrameForm vs (aft : fs) (posl `appRange` ds)
+  _ -> error "axiomsToFrames"
+
+emDotFormulae :: [Annotation] -> [VAR_DECL] -> Range -> AParser st FrameForm
+emDotFormulae a v p = fmap (axiomsToFrames a v p)
+  $ dotFormulae ext_modal_reserved_words
 
 instance AParsable EM_BASIC_ITEM where
         aparser = basicItemParser
