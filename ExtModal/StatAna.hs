@@ -50,7 +50,8 @@ instance TermExtension EM_FORMULA where
     NextY _ f _ -> freeVars sign f
     FixedPoint _ _ f _ -> freeVars sign f
     ModForm (ModDefn _ _ _ afs _) ->
-        Set.unions $ map (freeVars sign . item) $ concatMap frameForms afs
+        Set.unions $ map (freeVars sign . item)
+               $ concatMap (frameForms . item) afs
 
 basicEModalAnalysis
         :: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
@@ -136,7 +137,7 @@ frmTypeAna sign form = let
          new_f <- minExpFORMULA frmTypeAna sign f
          return $ FixedPoint choice fpvar new_f pos
        ModForm (ModDefn is_time isTerm anno_list forms pos) -> do
-         new_forms <- mapM checkFrame forms
+         new_forms <- mapAnM checkFrame forms
          return $ ModForm $ ModDefn is_time isTerm anno_list new_forms pos
 
 anaFrameForm :: Mix b s EM_FORMULA EModalSign -> FrameForm
@@ -154,13 +155,18 @@ modItemStatAna mix (ModDefn is_time isTerm anno_list forms pos) = do
     mapM_ ( (updateExtInfo . addMod) . item ) anno_list
     e <- get -- forget vars beyond this point
     put e { varMap = Map.empty }
-    new_forms <- mapM (anaFrameForm mix) forms
+    new_forms <- mapAnM (anaFrameForm mix) forms
     put e { varMap = Map.empty }
-    let res_forms = map fst new_forms
-        ana_forms = map snd new_forms
-    unless (null forms)
-      $ addSentences [makeNamed "" $ ExtFORMULA $ ModForm
+    let res_forms = map (fmap fst) new_forms
+        ana_forms = filter (not . null . frameForms . item)
+          $ map (fmap snd) new_forms
+    if null ana_forms then
+       addSentences [makeNamed "" $ ExtFORMULA $ ModForm
         $ ModDefn is_time isTerm anno_list ana_forms pos]
+      else addSentences $ map (\ af ->
+           makeNamed (getRLabel af) $ ExtFORMULA $ ModForm
+             $ ModDefn is_time isTerm anno_list [emptyAnno $ item af] pos)
+           ana_forms
     when is_time $ mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list
     when isTerm $ do
       sig <- get
@@ -287,7 +293,7 @@ parenExtForm f = case f of
     FixedPoint choice fpvar frm pos ->
         FixedPoint choice fpvar (mapFormula parenExtForm frm) pos
     ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn
-        ti te is (map parenFrameForm fs) pos
+        ti te is (map (fmap parenFrameForm) fs) pos
 
 parenFrameForm :: FrameForm -> FrameForm
 parenFrameForm (FrameForm vs fs r) =
@@ -332,7 +338,7 @@ resolveExtForm ga ids f = case f of
       new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
       return $ FixedPoint choice fpvar new_frm pos
     ModForm (ModDefn ti te is fs pos) -> do
-      nfs <- mapM (resolveFrameForm ga ids) fs
+      nfs <- mapAnM (resolveFrameForm ga ids) fs
       return $ ModForm $ ModDefn ti te is nfs pos
 
 resolveFrameForm :: MixResolve FrameForm

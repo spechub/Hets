@@ -86,7 +86,7 @@ simEMSen sign frm =
     StateQuantification t_dir choice (rsimf f) pos
   FixedPoint choice p_var f pos -> FixedPoint choice p_var (rsimf f) pos
   ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te is
-    (map (simEMFrame sign) fs) pos
+    (map (fmap $ simEMFrame sign) fs) pos
 
 simEMFrame :: Sign EM_FORMULA EModalSign -> FrameForm -> FrameForm
 simEMFrame sign (FrameForm vs fs r) =

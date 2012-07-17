@@ -215,10 +215,10 @@ basicItemParser = fmap ModItem modDefnParser <|> do
     (annoId, ks) <- separatedBy (annoParser simpleId) anSemiOrComma
     return $ Nominal_decl annoId $ catRange $ k : ks
 
-parseAxioms :: ([FrameForm] -> Range -> a) -> Range -> AParser st a
+parseAxioms :: ([Annoted FrameForm] -> Range -> a) -> Range -> AParser st a
 parseAxioms mki pos =
          do o <- oBraceT
-            someAxioms <- many parseFrames
+            someAxioms <- annosParser parseFrames
             c <- cBraceT
             return $ mki someAxioms
               $ pos `appRange` toRange o [] c

@@ -27,7 +27,7 @@ data FrameForm = FrameForm
   , frameFormRange :: Range
   } deriving (Show, Eq, Ord)
 
-data ModDefn = ModDefn Bool Bool [Annoted Id] [FrameForm] Range
+data ModDefn = ModDefn Bool Bool [Annoted Id] [Annoted FrameForm] Range
         -- Booleans: time (True) or not and term (True) or simple modality
     deriving (Show, Eq, Ord)
 

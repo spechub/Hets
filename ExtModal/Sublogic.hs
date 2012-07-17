@@ -104,7 +104,7 @@ minSublogicOfModDefn (ModDefn time term il fl _) =
     $ setTermMods term
     $ setTimeMods time il
     $ joinSublogics (map (minSublogicOfForm . item)
-                     $ concatMap frameForms fl)
+                     $ concatMap (frameForms . item) fl)
 
 
 setModalities :: [a] -> Sublogic -> Sublogic
