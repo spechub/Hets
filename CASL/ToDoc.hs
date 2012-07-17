@@ -26,6 +26,7 @@ module CASL.ToDoc
     , printALTERNATIVE
     , typeString
     , printVarDecl
+    , printVarDeclL
     , printVarDecls
     , printOptArgDecls
     , printSortItem
@@ -34,6 +35,7 @@ module CASL.ToDoc
     , printPredHead
     , printRecord
     , printAttr
+    , printAnnotedBulletFormulas
     , FormExtension (..)
     ) where
 

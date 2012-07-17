@@ -175,6 +175,32 @@ unionGenAx = foldr (\ (s1, r1, f1) (s2, r2, f2) ->
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
 
+anaVarForms :: (FormExtension f, TermExtension f)
+  => Min f e -> Mix b s f e -> [VAR_DECL] -> [Annoted (FORMULA f)] -> Range
+  -> State (Sign f e) ([Annoted (FORMULA f)], [Annoted (FORMULA f)])
+anaVarForms mef mix il afs ps = do
+           e <- get -- save
+           mapM_ addVars il
+           vds <- gets envDiags
+           sign <- get
+           put e { envDiags = vds } -- restore with shadowing warnings
+           let (es, resFs, anaFs) = foldr (\ f (dss, ress, ranas) ->
+                      let Result ds m = anaForm mef mix sign $ item f
+                      in case m of
+                         Nothing -> (ds ++ dss, ress, ranas)
+                         Just (resF, anaF) ->
+                             (ds ++ dss, f {item = resF} : ress,
+                                 f {item = anaF} : ranas))
+                     ([], [], []) afs
+               fufs = map (mapAn (\ f -> let
+                         qf = mkForallRange il f ps
+                         vs = map (\ (v, s) -> Var_decl [v] s ps)
+                              $ Set.toList $ freeVars sign qf
+                         in stripQuant sign $ mkForallRange vs qf ps))
+                      anaFs
+           addDiags es
+           return (resFs, fufs)
+
 ana_BASIC_ITEMS :: (FormExtension f, TermExtension f)
   => Min f e -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
     -> BASIC_ITEMS b s f -> State (Sign f e) (BASIC_ITEMS b s f)
@@ -196,49 +222,14 @@ ana_BASIC_ITEMS mef ab anas mix bi =
     Var_items il _ ->
         do mapM_ addVars il
            return bi
-    Local_var_axioms il afs ps ->
-        do e <- get -- save
-           mapM_ addVars il
-           vds <- gets envDiags
-           sign <- get
-           put e { envDiags = vds } -- restore with shadowing warnings
-           let (es, resFs, anaFs) = foldr (\ f (dss, ress, ranas) ->
-                      let Result ds m = anaForm mef mix sign $ item f
-                      in case m of
-                         Nothing -> (ds ++ dss, ress, ranas)
-                         Just (resF, anaF) ->
-                             (ds ++ dss, f {item = resF} : ress,
-                                 f {item = anaF} : ranas))
-                     ([], [], []) afs
-               fufs = map (mapAn (\ f -> let
-                         qf = mkForallRange il f ps
-                         vs = map (\ (v, s) -> Var_decl [v] s ps)
-                              $ Set.toList $ freeVars sign qf
-                         in stripQuant sign $ mkForallRange vs qf ps))
-                      anaFs
-               sens = map makeNamedSen fufs
-           addDiags es
-           addSentences sens
-           return $ Local_var_axioms il resFs ps
-    Axiom_items afs ps ->
-        do sign <- get
-           let (es, resFs, anaFs) = foldr (\ f (dss, ress, ranas) ->
-                      let Result ds m = anaForm mef mix
-                                        sign $ item f
-                      in case m of
-                         Nothing -> (ds ++ dss, ress, ranas)
-                         Just (resF, anaF) ->
-                             (ds ++ dss, f {item = resF} : ress,
-                                 f {item = anaF} : ranas))
-                     ([], [], []) afs
-               fufs = map (mapAn (\ f -> let
-                         vs = map (\ (v, s) -> Var_decl [v] s ps)
-                                 $ Set.toList $ freeVars sign f
-                         in stripQuant sign $ mkForallRange vs f ps)) anaFs
-               sens = map makeNamedSen fufs
-           addDiags es
-           addSentences sens
-           return $ Axiom_items resFs ps
+    Local_var_axioms il afs ps -> do
+        (resFs, fufs) <- anaVarForms mef mix il afs ps
+        addSentences $ map makeNamedSen fufs
+        return $ Local_var_axioms il resFs ps
+    Axiom_items afs ps -> do
+        (resFs, fufs) <- anaVarForms mef mix [] afs ps
+        addSentences $ map makeNamedSen fufs
+        return $ Axiom_items resFs ps
     Ext_BASIC_ITEMS b -> fmap Ext_BASIC_ITEMS $ ab mix b
 
 mapAn :: (a -> b) -> Annoted a -> Annoted b
