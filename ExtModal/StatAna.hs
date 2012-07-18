@@ -173,10 +173,8 @@ modItemStatAna mix (ModDefn is_time isTerm anno_list forms pos) = do
     let res_forms = map (fmap fst) new_forms
         ana_forms = filter (not . null . frameForms . item)
           $ map (fmap snd) new_forms
-    if null ana_forms then
-       addSentences [makeNamed "" $ ExtFORMULA $ ModForm
-        $ ModDefn is_time isTerm anno_list ana_forms pos]
-      else addSentences $ map (\ af ->
+    unless (null ana_forms)
+      $ addSentences $ map (\ af ->
            makeNamed (getRLabel af) $ ExtFORMULA $ ModForm
              $ ModDefn is_time isTerm anno_list [emptyAnno $ item af] pos)
            ana_forms
