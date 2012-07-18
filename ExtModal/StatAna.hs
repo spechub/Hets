@@ -149,14 +149,18 @@ anaFrameForm mix ff@(FrameForm vs fs r) = if null fs then do
     (resFs, fufs) <- anaLocalVarForms (anaFORMULA mix) vs fs r
     return (FrameForm vs resFs r, FrameForm [] fufs r)
 
+clearVarMap :: State (Sign f e) ()
+clearVarMap = do
+  e <- get
+  put e { varMap = Map.empty }
+
 modItemStatAna
   :: Ana ModDefn EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
 modItemStatAna mix (ModDefn is_time isTerm anno_list forms pos) = do
     mapM_ ( (updateExtInfo . addMod) . item ) anno_list
-    e <- get -- forget vars beyond this point
-    put e { varMap = Map.empty }
+    clearVarMap -- forget vars beyond this point
     new_forms <- mapAnM (anaFrameForm mix) forms
-    put e { varMap = Map.empty }
+    clearVarMap -- forget vars after this point
     let res_forms = map (fmap fst) new_forms
         ana_forms = filter (not . null . frameForms . item)
           $ map (fmap snd) new_forms
@@ -313,29 +317,31 @@ resolveMod ga ids m = case m of
     _ -> return m
 
 resolveExtForm :: MixResolve EM_FORMULA
-resolveExtForm ga ids f = case f of
+resolveExtForm ga ids f =
+  let recResolve = resolveMixFrm parenExtForm resolveExtForm ga ids
+  in case f of
     BoxOrDiamond choice ms leq_geq nr frm pos -> do
       nms <- resolveMod ga ids ms
-      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      new_frm <- recResolve frm
       return $ BoxOrDiamond choice nms leq_geq nr new_frm pos
     Hybrid choice nom frm pos -> do
-      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      new_frm <- recResolve frm
       return $ Hybrid choice nom new_frm pos
     UntilSince choice f1 f2 pos -> do
-      new_f1 <- resolveMixFrm parenExtForm resolveExtForm ga ids f1
-      new_f2 <- resolveMixFrm parenExtForm resolveExtForm ga ids f2
+      new_f1 <- recResolve f1
+      new_f2 <- recResolve f2
       return $ UntilSince choice new_f1 new_f2 pos
     PathQuantification choice frm pos -> do
-      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      new_frm <- recResolve frm
       return $ PathQuantification choice new_frm pos
     StateQuantification t_dir choice frm pos -> do
-      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      new_frm <- recResolve frm
       return $ StateQuantification t_dir choice new_frm pos
     NextY choice frm pos -> do
-      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      new_frm <- recResolve frm
       return $ NextY choice new_frm pos
     FixedPoint choice fpvar frm pos -> do
-      new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+      new_frm <- recResolve frm
       return $ FixedPoint choice fpvar new_frm pos
     ModForm (ModDefn ti te is fs pos) -> do
       nfs <- mapAnM (resolveFrameForm ga ids) fs
@@ -351,22 +357,18 @@ resolveFrameForm ga ids (FrameForm vs fs r) = do
 
 anaFORMULA :: Mix b s EM_FORMULA EModalSign -> Sign EM_FORMULA EModalSign
   -> FORMULA EM_FORMULA -> Result (FORMULA EM_FORMULA, FORMULA EM_FORMULA)
-anaFORMULA mix sig f = let
-    mix2 = extendMix (Map.keysSet $ varMap sig) mix
-    pts = Set.toList $ getFormPredToks f
-    ps = map (mkId . (: [])) pts
-    Result es m = resolveFormula parenExtForm
+anaFORMULA mix sig f = do
+    let mix2 = extendMix (Map.keysSet $ varMap sig) mix
+    -- the unknown predicates are not needed for mixfix resolution
+    r <- resolveFormula parenExtForm
                   resolveExtForm (globAnnos sig) (mixRules mix2) f
-    in case m of
-         Nothing -> Result es $ Just (f, f)
-         Just r -> let
-           pm2 = foldr (\ t -> MapSet.insert t (PredType []))
-                             (predMap sig) ps
-           sig2 = sig { predMap = pm2 }
-           Result ds mf = minExpFORMULA frmTypeAna sig2 r
-           in Result (es ++ ds) $ Just $ case mf of
-                Nothing -> (r, r)
-                Just n -> (r, n)
+    let pm2 = Set.foldr
+          (\ t -> MapSet.insert (simpleIdToId t) (PredType []))
+          (predMap sig)
+          $ getFormPredToks f
+        sig2 = sig { predMap = pm2 }
+    n <- minExpFORMULA frmTypeAna sig2 r
+    return (r, n)
 
 getEFormPredToks :: EM_FORMULA -> Set.Set Token
 getEFormPredToks ef = case ef of
