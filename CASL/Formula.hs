@@ -251,7 +251,7 @@ clParenFormula k o = do
       l <- restTerms []  -- optional arguments
       termFormula k $ if null l then q else Mixfix_term $ q : l
     <|> do
-      f <- formula [] << addAnnos
+      f <- formula k << addAnnos
       case f of
         Mixfix_formula t -> do
           c <- cParenT
