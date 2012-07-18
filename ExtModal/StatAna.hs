@@ -42,7 +42,8 @@ import Control.Monad
 
 instance TermExtension EM_FORMULA where
   freeVarsOfExt sign frm = case frm of
-    BoxOrDiamond _ _ _ _ f _ -> freeVars sign f
+    BoxOrDiamond _ m _ _ f _ ->
+        Set.union (freeModVars sign m) $ freeVars sign f
     Hybrid _ _ f _ -> freeVars sign f
     UntilSince _ f1 f2 _ -> Set.union (freeVars sign f1) $ freeVars sign f2
     PathQuantification _ f _ -> freeVars sign f
@@ -52,6 +53,14 @@ instance TermExtension EM_FORMULA where
     ModForm (ModDefn _ _ _ afs _) ->
         Set.unions $ map (freeVars sign . item)
                $ concatMap (frameForms . item) afs
+
+freeModVars :: Sign EM_FORMULA e -> MODALITY -> Set.Set (VAR, SORT)
+freeModVars sign md = case md of
+  SimpleMod _ -> Set.empty
+  TermMod t -> freeTermVars sign t
+  ModOp _ m1 m2 -> Set.union (freeModVars sign m1) $ freeModVars sign m2
+  TransClos m -> freeModVars sign m
+  Guard f -> freeVars sign f
 
 basicEModalAnalysis
         :: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
