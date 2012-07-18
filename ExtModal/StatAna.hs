@@ -369,7 +369,7 @@ anaFORMULA mix sig f = do
     -- the unknown predicates are not needed for mixfix resolution
     r <- resolveFormula parenExtForm
                   resolveExtForm (globAnnos sig) (mixRules mix2) f
-    let pm2 = Set.foldr
+    let pm2 = Set.fold
           (\ t -> MapSet.insert (simpleIdToId t) (PredType []))
           (predMap sig)
           $ getFormPredToks f
