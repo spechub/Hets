@@ -57,12 +57,16 @@ botSublogic = Sublogic
     }
 
 joinSublogic :: Sublogic -> Sublogic -> Sublogic
-joinSublogic a b = Sublogic
-    { hasModalities = hasModalities a `max` hasModalities b
-    , hasTermMods = hasTermMods a `max` hasTermMods b
+joinSublogic a b =
+  let termM = hasTermMods a `max` hasTermMods b
+      timeM = hasTimeMods a `max` hasTimeMods b
+  in Sublogic
+    { hasModalities = minMod termM timeM
+        `max` hasModalities a `max` hasModalities b
+    , hasTermMods = termM
     , hasTransClos = hasTransClos a `max` hasTransClos b
     , hasNominals = hasNominals a `max` hasNominals b
-    , hasTimeMods = hasTimeMods a `max` hasTimeMods b
+    , hasTimeMods = timeM
     , hasFixPoints = hasFixPoints a `max` hasFixPoints b
     }
 
@@ -121,6 +125,11 @@ setTimeMods b il s = if b then case il of
     _ -> s {hasTimeMods = Many}
     else s
 
+minMod :: Bool -> Frequency -> Frequency
+minMod h_term h_time = if h_term then
+  if h_time == None then One else Many
+  else h_time
+
 sublogics_all :: [Sublogic]
 sublogics_all = let bools = [True, False] in
     [Sublogic
@@ -131,10 +140,9 @@ sublogics_all = let bools = [True, False] in
     , hasTimeMods = h_time
     , hasFixPoints = h_fp
     }
-    | h_time <- [None, One, Many]
+    | h_time <- [None .. Many]
     , h_term <- bools
-    , h_m <- if h_term && h_time /= None then [Many]
-        else [max h_time (if h_term then One else None) .. Many]
+    , h_m <- [minMod h_term h_time .. Many]
     , h_tc <- bools
     , h_n <- bools
     , h_fp <- bools
