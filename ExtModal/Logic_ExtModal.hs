@@ -104,7 +104,7 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
         print_named ExtModal = printTheoryFormula
         print_sign ExtModal sig = let e = extendedInfo sig in pretty sig
           { opMap = diffOpMapSet (opMap sig) $ flexOps e
-          , predMap = Set.foldr (\ i ->
+          , predMap = Set.fold (\ i ->
                   MapSet.delete (simpleIdToId i) (PredType []))
             (diffMapSet (predMap sig) $ flexPreds e) $ nominals e
           }
