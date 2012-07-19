@@ -155,7 +155,7 @@ calculateQuantification (sign, qf) vardecls t symbs = case qf of
                 in if res then (res, "") else (res, " " ++ show ass))
               vardecls
         in case quant of
-        Universal -> let failedtuples = take 10 $ filter (not.fst) tuples
+        Universal -> let failedtuples = filter (not . fst) tuples
           in if null failedtuples then return True else do
              mapM_ (\ (_, msg)-> warning () msg range) failedtuples
              return False
