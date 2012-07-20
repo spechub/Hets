@@ -19,7 +19,8 @@ lib = "/opt/local/lib/"
 handleLibs :: String -> String -> IO ()
 handleLibs binOrLib s = do
    rawSystem "cp" $ (lib ++ s) : ["."]
-   rawSystem "install_name_tool" ["-id", s, s]
-   rawSystem "install_name_tool" ["-change", lib ++ s, "@executable_path/" ++ s, binOrLib]
+   let name = "@executable_path/" ++ s
+   rawSystem "install_name_tool" ["-id", name, s]
+   rawSystem "install_name_tool" ["-change", lib ++ s, name, binOrLib]
    putStrLn s
    getDepLibs s
