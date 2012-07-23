@@ -239,6 +239,10 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
     => Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec symb_items symb_map_items
       where
+         -- | parsers and printers
+         parsersAndPrinters :: lid -> Map.Map String
+            (AParser st basic_spec, basic_spec -> Doc)
+         parsersAndPrinters _ = Map.empty
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (AParser st basic_spec)
          -- | parser for symbol lists
