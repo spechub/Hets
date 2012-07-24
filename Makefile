@@ -138,7 +138,7 @@ NO_BIND_WARNING = -fno-warn-unused-do-bind
 endif
 
 ifneq ($(findstring 7, $(GHCVERSION)),)
-NO_BIND_WARNING = -fno-warn-unused-do-bind -fno-warn-warnings-deprecations
+NO_BIND_WARNING = -fno-warn-unused-do-bind
 endif
 
 HC_WARN = -Wall -fwarn-tabs \
