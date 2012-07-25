@@ -71,7 +71,7 @@ nestedComment op cl =
 
 -- | a literal enclosed in quotes and a backslash as escape character
 quotedLit :: Char -> CharParser st String
-quotedLit q = enclosedBy (flat $ many $ single (noneOf $ '\\' : [q])
+quotedLit q = enclosedBy (flat $ many $ single (noneOf ['\\', q])
                         <|> char '\\' <:> single anyChar) $ char q
 
 -- | text in double quotes
