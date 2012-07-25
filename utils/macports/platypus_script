@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash
 export PATH=`pwd`/uDrawGraph-3.1/bin:$PATH
 export HETS_LIB=`pwd`/Hets-lib
-./hets -v2 -g $@
+./hets "$@"

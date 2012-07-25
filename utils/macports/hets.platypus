@@ -52,7 +52,11 @@
 	<key>Role</key>
 	<string>Viewer</string>
 	<key>ScriptArgs</key>
-	<array/>
+        <array>
+                <string>-v</string>
+                <string>-g</string>
+                <string>-A</string>
+        </array>
 	<key>ScriptPath</key>
 	<string>/Users/Shared/maeder/haskell/Hets/utils/macports/platypus_script</string>
 	<key>Secure</key>
