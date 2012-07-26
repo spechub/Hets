@@ -36,11 +36,12 @@ data EM_BASIC_ITEM =
         | Nominal_decl [Annoted SIMPLE_ID] Range
         deriving Show
 
-data ModOp = Composition | Intersection | Union deriving (Eq, Ord)
+data ModOp = Composition | Intersection | Union | OrElse deriving (Eq, Ord)
 
 {- Union corresponds to alternative and intersection to parallel composition.
 The symbols used (like for logical "and" and "or") may be confusing!
-Guarded alternatives may be used to simulate if-then-else.
+Guarded alternatives joined with "orElse" may be used to simulate
+consecutive cases.
 -}
 
 instance Show ModOp where
@@ -48,6 +49,7 @@ instance Show ModOp where
     Composition -> ";"
     Intersection -> "&"
     Union -> "|"
+    OrElse -> "orElse"
 
 data MODALITY =
     SimpleMod SIMPLE_ID
@@ -97,10 +99,15 @@ or: [m]>=n+1 not f /\ [m]<=n-1 not f
 Also box formulas using n (> 1) are rarely used!
 -}
 
+
+data BoxOp = Box | Diamond | EBox deriving (Show, Eq, Ord)
+{- the EBox is a short cut for a box and a diamond asserting
+that a next world exists and that the formula holds in all of them. -}
+
 data EM_FORMULA
-  = BoxOrDiamond Bool MODALITY Bool Int (FORMULA EM_FORMULA) Range
+  = BoxOrDiamond BoxOp MODALITY Bool Int (FORMULA EM_FORMULA) Range
     {- The first identifier and the term specify the kind of the modality
-    pos: "[]" or  "<>", True if Box, False if Diamond;
+    pos: "[]", "<>" or "<[]>"
     The second identifier is used for grading:
     pos: "<=" or ">=", True if Leq (less than/equal),
     False if Geq (greater than/equal), positive integers -}

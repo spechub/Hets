@@ -95,9 +95,9 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
     f <- forallT
     (vs, ps) <- varDecls ks
     a <- annos
-    ai <- dotFormulae ks
+    ai <- dotFormulae True ks
     return (axiomToLocalVarAxioms ai a vs $ catRange (f : ps))
-  <|> dotFormulae ks
+  <|> dotFormulae True ks
   <|> itemList ks axiomS formula Axiom_items
 
 varItems :: [String] -> AParser st ([VAR_DECL], [Token])
@@ -112,9 +112,9 @@ varItems ks =
          <|> return ([v], [])
 
 dotFormulae :: (AParsable b, AParsable s, TermParser f) =>
-               [String] -> AParser st (BASIC_ITEMS b s f)
-dotFormulae ks =
-    do d <- dotT
+  Bool -> [String] -> AParser st (BASIC_ITEMS b s f)
+dotFormulae requireDot ks =
+    do d <- (if requireDot then id else option $ mkSimpleId ".") dotT
        (fs, ds) <- aFormula ks `separatedBy` dotT
        (m, an) <- optSemi
        let ps = catRange (d : ds)

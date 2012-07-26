@@ -54,29 +54,34 @@ ext_modal_reserved_words = map show [Intersection, Union] ++
   , muS
   , nuS
   , diamondS
+  , orElseS
+  , oB
+  , cB
   , termS
   , rigidS
   , flexibleS
   , modalityS
   , modalitiesS ]
 
-boxParser :: AParser st (MODALITY, Bool, Range)
+boxParser :: AParser st (MODALITY, BoxOp, Range)
 boxParser = do
-    open <- oBracketT
+    let asESep = pToken . tryString
+    open <- oBracketT <|> asESep oB
+    let isBox = tokStr open == "["
     modal <- parseModality
-    close <- cBracketT
-    return (modal, True, toRange open [] close)
+    close <- if isBox then cBracketT else asESep cB
+    return (modal, if isBox then Box else EBox, toRange open [] close)
 
-diamondParser :: AParser st (MODALITY, Bool, Range)
+diamondParser :: AParser st (MODALITY, BoxOp, Range)
 diamondParser = do
     open <- asKey lessS
     modal <- parseModality
     close <- asKey greaterS
-    return (modal, False, toRange open [] close)
+    return (modal, Diamond, toRange open [] close)
   <|> do
     d <- asKey diamondS
     let p = tokPos d
-    return (SimpleMod $ Token emptyS p, False, p)
+    return (SimpleMod $ Token emptyS p, Diamond, p)
 
 rekPrimParser :: AParser st (FORMULA EM_FORMULA)
 rekPrimParser = genPrimFormula modalPrimFormulaParser ext_modal_reserved_words
@@ -160,6 +165,9 @@ parseCompModality = parseBinModality Composition parseTransClosModality
 parseInterModality :: AParser st MODALITY
 parseInterModality = parseBinModality Intersection parseCompModality
 
+parseUnionModality :: AParser st MODALITY
+parseUnionModality = parseBinModality Union parseInterModality
+
 parseBinModality :: ModOp -> AParser st MODALITY -> AParser st MODALITY
 parseBinModality c p = do
   t1 <- p
@@ -168,8 +176,9 @@ parseBinModality c p = do
     t2 <- parseBinModality c p
     return $ ModOp c t1 t2
 
+-- | orElse binds weakest
 parseModality :: AParser st MODALITY
-parseModality = parseBinModality Union parseInterModality
+parseModality = parseBinModality OrElse parseUnionModality
 
 instance TermParser EM_FORMULA where
     termParser = aToTermParser modalFormulaParser
@@ -244,7 +253,7 @@ axiomsToFrames a vs posl ais = case ais of
 
 emDotFormulae :: [Annotation] -> [VAR_DECL] -> Range -> AParser st FrameForm
 emDotFormulae a v p = fmap (axiomsToFrames a v p)
-  $ dotFormulae ext_modal_reserved_words
+  $ dotFormulae False ext_modal_reserved_words
 
 instance AParsable EM_BASIC_ITEM where
         aparser = basicItemParser

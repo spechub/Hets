@@ -62,3 +62,12 @@ timeS = "time"
 
 tmTransClosS :: String
 tmTransClosS = "*"
+
+oB :: String
+oB = "<["
+
+cB :: String
+cB = "]>"
+
+orElseS :: String
+orElseS = "orElse"

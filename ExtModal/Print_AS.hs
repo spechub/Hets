@@ -57,7 +57,8 @@ modPrec m = case m of
   TransClos _ -> 2
   ModOp Composition _ _ -> 3
   ModOp Intersection _ _ -> 4
-  ModOp Union _ _ -> 5 -- weakest
+  ModOp Union _ _ -> 5
+  ModOp OrElse _ _ -> 6 -- weakest
 
 printMPrec :: Bool -> MODALITY -> MODALITY -> Doc
 printMPrec b oP cP =
@@ -109,7 +110,10 @@ instance Pretty EM_FORMULA where
                  SimpleMod _ -> (<>)
                  _ -> (<+>)
           mdl = pretty modality
-      in sep [ (if choice then brackets mdl else less `sp` mdl `sp` greater)
+      in sep [ (case choice of
+                  Box -> brackets mdl
+                  Diamond -> less `sp` mdl `sp` greater
+                  EBox -> text oB <> mdl <> text cB)
                <+> if not leq_geq && number == 1 then empty else
                 (if leq_geq then keyword lessEq else empty)
                 <> text (show number)
