@@ -5,12 +5,18 @@ else
   VERSION=$1
 fi
 IMAGE=Hets-$VERSION.dmg
+RES=Hets.app/Contents/Resources
 /Users/Shared/maeder/Platypus-4.7/Platypus.app/Contents/Resources/platypus_clt \
  -P ../Hets/utils/macports/hets.platypus Hets.app
-cp hets Hets.app/Contents/Resources/
-cp -r /Users/Shared/maeder/uDrawGraph-3.1 Hets.app/Contents/Resources/
+cp hets $RES/
+cp -r /Users/Shared/maeder/uDrawGraph-3.1 $RES/
 tar zxf /home/www.informatik.uni-bremen.de/cofi/Libraries/daily/lib.tgz \
- -C Hets.app/Contents/Resources
+ -C $RES
+OWLSRC=/home/linux-bkb/hets-owl-tools
+mkdir -p $RES/hets-owl-tools/lib
+cp $OWLSRC/AProVE.jar $OWLSRC/OWL2Parser.jar $OWLSRC/OWLLocality.jar  $RES/hets-owl-tools/
+cp $OWLSRC/lib/owl2api-bin.jar $RES/hets-owl-tools/lib/
+
 hdiutil create -srcfolder Hets.app $IMAGE
 cp $IMAGE /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/dmgs/
 
