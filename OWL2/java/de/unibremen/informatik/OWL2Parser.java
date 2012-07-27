@@ -34,53 +34,37 @@ public class OWL2Parser {
 			System.exit(1);
 		}
 
-		String filename = "";
-		BufferedWriter out;
-
 		// A simple example of how to load and save an ontology
 		try {
 			OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-			if (args.length == 3) {
+                        op = OPTION.MANCHESTER;
+                        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(System.out));
+			if (args.length > 1) {
                                 // args[0]: IRI
                                 // args[1]: name of output file
                                 // args[2]: type of output file: xml, rdf, or otherwise assume Manchester syntax
-				filename = args[1];
-				out = new BufferedWriter(new FileWriter(filename));
-				if (args[2].equals("xml"))
+				String filename = args[1];
+				if (args.length == 3) {
+                                    out = new BufferedWriter(new FileWriter(filename));
+                                    if (args[2].equals("xml"))
 					op = OPTION.OWL_XML;
-				else	{
-						if (args[1].equals("rdf"))
-							op = OPTION.RDF_XML;
-						else
-							op = OPTION.MANCHESTER;
-					}
-
-			} else {
+                                    else
+                                        if (args[2].equals("rdf"))
+                                            op = OPTION.RDF_XML;
+                                } else
                                 // args[0]: IRI
-                                // args[1]: type of output:
+                                // args[1]: type of output (or output file for  Manchester syntax)
                                 //   xml (OWL XML),
                                 //   rdf (RDF/XML),
-                                //   or otherwise use Manchester syntax
-                                // Output goes to standard output, i.e. System.out
-				if (args.length == 2) {
-					if (args[1].equals("xml"))
-						op = OPTION.OWL_XML;
-					else	{
-						if (args[1].equals("rdf"))
-							op = OPTION.RDF_XML;
-						else
-							op = OPTION.MANCHESTER;			
-					}
-				}
-				else 
-				{
-                                        // args[0]: IRI
-                                        // Output goes to standard output, i.e. System.out
-                                        // and will be made in Manchester syntax
-					if (args.length == 1)
-						op = OPTION.MANCHESTER;
-				}
-				out = new BufferedWriter(new OutputStreamWriter(System.out));
+                                //   or otherwise use argument as file name for Manchester syntax
+                                // for xml and rdf output goes to standard output, i.e. System.out
+                                    if (args[1].equals("xml"))
+					op = OPTION.OWL_XML;
+                                    else
+                                        if (args[1].equals("rdf"))
+                                            op = OPTION.RDF_XML;
+                                        else
+                                            out = new BufferedWriter(new FileWriter(filename));
 			}
 
 			/* Load an ontology from a physical IRI */
@@ -91,7 +75,7 @@ public class OWL2Parser {
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
 			getImportsList(ontology, manager);
 
-			if (loadedImportsList.size() == 0)			
+			if (loadedImportsList.size() == 0)
 				parsing_option(ontology, out, manager);
 			else {
 				if(importsIRI.contains(ontology.getOntologyID().getOntologyIRI())) {
@@ -139,12 +123,9 @@ public class OWL2Parser {
 				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 					parsing_option(merged, out, manager);
 				}
-				else	
+				else
 					parseZeroImports(out, ontology);
 			}
-		} catch (IOException e) {
-			System.err.println("Error: can not build file: " + filename);
-			e.printStackTrace();
 		} catch (Exception ex) {
 			System.err.println("OWL parse error: " + ex.getMessage());
 			ex.printStackTrace();
