@@ -1,5 +1,9 @@
 #!/bin/bash
-export PATH=`pwd`/uDrawGraph-3.1/bin:$PATH
-export HETS_LIB=`pwd`/Hets-lib
-export HETS_OWL_TOOLS=`pwd`/hets-owl-tools
-./hets "$@"
+hetsdir=`dirname "$0"`
+export PATH=$hetsdir/uDrawGraph-3.1/bin:$PATH
+export HETS_LIB=$hetsdir/Hets-lib
+export HETS_OWL_TOOLS=$hetsdir/hets-owl-tools
+export HETS_APROVE=$HETS_OWL_TOOLS/AProVE.jar
+export HETS_ONTODMU=$HETS_OWL_TOOLS/OntoDMU.jar
+export PELLET_PATH=$hetsdir/pellet
+"$hetsdir/hets" "$@"

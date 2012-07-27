@@ -14,8 +14,9 @@ tar zxf /home/www.informatik.uni-bremen.de/cofi/Libraries/daily/lib.tgz \
  -C $RES
 OWLSRC=/home/linux-bkb/hets-owl-tools
 mkdir -p $RES/hets-owl-tools/lib
-cp $OWLSRC/AProVE.jar $OWLSRC/OWL2Parser.jar $OWLSRC/OWLLocality.jar  $RES/hets-owl-tools/
+cp $OWLSRC/OntoDMU.jar $OWLSRC/AProVE.jar $OWLSRC/OWL2Parser.jar $OWLSRC/OWLLocality.jar  $RES/hets-owl-tools/
 cp $OWLSRC/lib/owl2api-bin.jar $RES/hets-owl-tools/lib/
+cp -RH /home/linux-bkb/pellet $RES
 
 hdiutil create -srcfolder Hets.app $IMAGE
 cp $IMAGE /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/dmgs/
