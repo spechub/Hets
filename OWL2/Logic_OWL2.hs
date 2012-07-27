@@ -108,6 +108,8 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
                OWLMorphism Entity RawSymb ProofTree where
          empty_proof_tree OWL2 = emptyProofTree
+         all_sublogics OWL2 = allProfSubs
+         parseSublogic OWL2 _ = Just topS -- ignore sublogics
 #ifdef UNI_PACKAGE
          provers OWL2 = unsafeFileCheck pelletJar pelletEnv pelletProver ++
             unsafeFileCheck pelletJar pelletEnv pelletEL ++

@@ -25,6 +25,9 @@ data ProfSub = ProfSub
     , sublogic :: OWLSub
     } deriving (Show, Eq, Ord)
 
+allProfSubs :: [ProfSub]
+allProfSubs = [ProfSub a b | a <- allProfiles, b <- allSublogics]
+
 bottomS :: ProfSub
 bottomS = ProfSub topProfile slBottom
 

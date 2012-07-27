@@ -185,7 +185,7 @@ anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
       Nothing -> return Nothing
       Just subL -> do
         let s = tokStr subL
-        case lookup s $ map (\ l -> (sublogicName l, l)) $ all_sublogics lid of
+        case parseSublogic lid s of
           Nothing -> fail $ "unknown sublogic of logic " ++ show logN
             ++ ": " ++ s
           Just sl ->

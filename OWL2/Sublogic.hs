@@ -40,6 +40,16 @@ data OWLSub = OWLSub
     , datatype :: Set.Set Datatype
     } deriving (Show, Eq, Ord)
 
+allSublogics :: [OWLSub]
+allSublogics = let
+  b = [False, True]
+  powerset = foldr (\ x acc -> acc ++ map (x :) acc) [[]]
+ in
+  [ OWLSub nr n ir rt rh cr a (Set.fromList d)
+  | nr <- [None, Unqualified, Qualified]
+  , n <- b, ir <- b, rt <- b, rh <- b, cr <- b, a <- b
+  , d <- powerset $ Set.toList owlDatatypes]
+
 -- | sROIQ(D)
 slTop :: OWLSub
 slTop = OWLSub

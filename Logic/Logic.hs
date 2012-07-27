@@ -634,6 +634,11 @@ class (StaticAnalysis lid
          all_sublogics :: lid -> [sublogics]
          all_sublogics li = [top_sublogic li]
 
+         -- | parse sublogic (override more efficiently)
+         parseSublogic :: lid -> String -> Maybe sublogics
+         parseSublogic li s = lookup s $ map (\ l -> (sublogicName l, l))
+           $ all_sublogics li
+
          {- | provide the embedding of a projected signature into the
               original signature -}
          proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism

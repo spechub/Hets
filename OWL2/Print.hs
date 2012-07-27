@@ -36,8 +36,9 @@ instance Pretty QName where
 
 printIRI :: QName -> Doc
 printIRI q
-    | (isPredefPropOrClass q && namePrefix q `elem` ["owl", "rdfs"]) ||
-        isDatatypeKey q = keyword $ getPredefName q
+    | ((iriType q == Full || namePrefix q `elem` ["", "owl", "rdfs"])
+       && isPredefPropOrClass q)
+       || isDatatypeKey q = keyword $ getPredefName q
     | otherwise = text $ showQN q
 
 -- | Symbols printing
@@ -105,8 +106,9 @@ instance Pretty Literal where
     pretty lit = case lit of
         Literal lexi ty -> text ('"' : lexi ++ "\"") <> case ty of
             Typed u -> keyword cTypeS <> pretty u
-            Untyped tag -> if tag == Nothing then empty
-                    else let Just tag2 = tag in text asP <> text tag2
+            Untyped tag -> case tag of
+              Nothing -> empty
+              Just tag2 -> text asP <> text tag2
         NumberLit f -> text (show f)
 
 instance Pretty ObjectPropertyExpression where
@@ -175,16 +177,16 @@ instance Pretty ClassExpression where
 
 printPrimary :: ClassExpression -> Doc
 printPrimary d = let dd = pretty d in case d of
-  ObjectJunction _ _ -> parens dd
+  ObjectJunction {} -> parens dd
   _ -> dd
 
 printNegatedPrimary :: ClassExpression -> Doc
 printNegatedPrimary d = let r = parens $ pretty d in case d of
   ObjectComplementOf _ -> r
-  ObjectValuesFrom _ _ _ -> r
-  DataValuesFrom _ _ _ -> r
-  ObjectHasValue _ _ -> r
-  DataHasValue _ _ -> r
+  ObjectValuesFrom {} -> r
+  DataValuesFrom {} -> r
+  ObjectHasValue {} -> r
+  DataHasValue {} -> r
   _ -> printPrimary d
 
 -- | annotations printing

@@ -248,10 +248,10 @@ isDatatypeKey iri = any (\ (l, p) -> checkPredef l p iri) [(xsdKeys, "xsd"),
 checkPredef :: [String] -> String -> IRI -> Bool
 checkPredef sl pref u =
     localPart u `elem` sl && elem (namePrefix u) ["", pref]
-        || showQU u `elem` map (Map.findWithDefault
-                (error $ "not predefined prefix: " ++ show pref)
-                pref (predefPrefixes `Map.difference`
-                        Map.fromList [("", showQU dummyQName ++ "#")]) ++) sl
+        || showQU u `elem` concatMap (\ pn ->
+                [ Map.findWithDefault "" pref predefPrefixes ++ pn
+                , showQU dummyQName ++ "#" ++ pn]) sl
+
 
 isOWLPredef :: [String] -> IRI -> Bool
 isOWLPredef sl = checkPredef sl "owl"
