@@ -242,31 +242,35 @@ predefIRIs = map (setPrefix "xsd" . mkQName) xsdKeys
         setPrefix "rdfs" $ mkQName xmlLiteral]
 
 isDatatypeKey :: IRI -> Bool
-isDatatypeKey iri = any (\ (l, p) -> checkPredef l p iri) [(xsdKeys, "xsd"),
-    (owlNumbers, "owl"), ([xmlLiteral], "rdf"), ([rdfsLiteral], "rdfs")]
+isDatatypeKey = not . null . isDatatypeKeyAux
+
+isDatatypeKeyAux :: IRI -> [(String, String)]
+isDatatypeKeyAux iri = mapMaybe (\ (l, p) -> checkPredefAux l p iri)
+  [ (xsdKeys, "xsd"), (owlNumbers, "owl"), ([xmlLiteral], "rdf")
+  , ([rdfsLiteral], "rdfs")]
+
+checkPredefAux :: [String] -> String -> IRI -> Maybe (String, String)
+checkPredefAux sl pref u =
+   let m1 = if elem (namePrefix u) ["", pref] then
+              lookup (localPart u) $ map (\ a -> (a, (pref, a))) sl
+            else Nothing
+   in case m1 of
+        Nothing -> lookup (showQU u) $ concatMap (\ a ->
+           [ (Map.findWithDefault "" pref predefPrefixes ++ a, (pref, a))
+           , (showQU dummyQName ++ "#" ++ a, (pref, a))]) sl
+        _ -> m1
 
 checkPredef :: [String] -> String -> IRI -> Bool
-checkPredef sl pref u =
-    localPart u `elem` sl && elem (namePrefix u) ["", pref]
-        || showQU u `elem` concatMap (\ pn ->
-                [ Map.findWithDefault "" pref predefPrefixes ++ pn
-                , showQU dummyQName ++ "#" ++ pn]) sl
-
+checkPredef sl pref = isJust . checkPredefAux sl pref
 
 isOWLPredef :: [String] -> IRI -> Bool
 isOWLPredef sl = checkPredef sl "owl"
 
 -- | sets the correct prefix for the predefined datatypes
 setDatatypePrefix :: IRI -> IRI
-setDatatypePrefix iri = let lp = localPart iri in
-    if lp `elem` xsdKeys
-        then setPrefix "xsd" iri
-        else if lp `elem` owlNumbers
-                then setPrefix "owl" iri
-                else case lp of
-                   "XMLLiteral" -> setPrefix "rdf" iri
-                   "Literal" -> setPrefix "rdfs" iri
-                   _ -> error $ showQU iri ++ " is not a predefined datatype"
+setDatatypePrefix iri = case isDatatypeKeyAux iri of
+  (p, l) : _ -> setPrefix p $ mkQName l
+  _ -> error $ showQU iri ++ " is not a predefined datatype"
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
 setReservedPrefix :: IRI -> IRI
