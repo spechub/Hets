@@ -13,292 +13,292 @@ Prefix: owl11: <http://www.w3.org/2006/12/owl11#>
 Ontology: <http://www.example.org/family>
 
 
-Annotations: 
+Annotations:
     rdfs:comment "An example to test features from OWL 1.1"
 
 AnnotationProperty: rdfs:comment
 
-    
+
 Datatype: xsd:int
 
-    
-Datatype: <http://org.semanticweb.owlapi/error#Error1>
 
-    
+Class: <http://org.semanticweb.owlapi/error#Error1>
+
+
 Datatype: xsd:nonNegativeInteger
 
-    
-Datatype: <http://org.semanticweb.owlapi/error#Error2>
 
-    
-Datatype: <http://org.semanticweb.owlapi/error#Error3>
+Class: <http://org.semanticweb.owlapi/error#Error2>
 
-    
-Datatype: <http://org.semanticweb.owlapi/error#Error5>
 
-    
+Class: <http://org.semanticweb.owlapi/error#Error3>
+
+
+Class: <http://org.semanticweb.owlapi/error#Error5>
+
+
 Datatype: rdfs:Literal
 
-    
+
 Datatype: xsd:integer
 
-    
+
 ObjectProperty: family:hasFather
 
-    SubPropertyOf: 
+    SubPropertyOf:
         family:hasParent
-    
-    Characteristics: 
+
+    Characteristics:
         Functional
-    
-    Range: 
+
+    Range:
         family:Male
-    
-    
+
+
 ObjectProperty: family:hasDescendant
 
-    InverseOf: 
+    InverseOf:
         family:hasAncestor
-    
-    
+
+
 ObjectProperty: family:hasChild
 
-    InverseOf: 
+    InverseOf:
         family:hasParent
-    
-    
+
+
 ObjectProperty: family:hasAncestor
 
-    Domain: 
+    Domain:
         family:Person
-    
-    Range: 
+
+    Range:
         family:Person
-    
-    InverseOf: 
+
+    InverseOf:
         family:hasDescendant
-    
-    
+
+
 ObjectProperty: family:dislikes
 
-    
+
 ObjectProperty: family:isMarriedTo
 
-    Domain: 
+    Domain:
         family:Person
-    
-    Range: 
+
+    Range:
         family:Person
-    
-    InverseOf: 
+
+    InverseOf:
         family:isMarriedTo
-    
-    
+
+
 ObjectProperty: family:hasDaughter
 
-    SubPropertyOf: 
+    SubPropertyOf:
         family:hasChild
-    
-    Range: 
+
+    Range:
         family:Female
-    
-    
+
+
 ObjectProperty: family:hasSibling
 
-    Characteristics: 
+    Characteristics:
         Irreflexive,
         Symmetric
-    
-    Range: 
+
+    Range:
         family:Person
-    
-    
+
+
 ObjectProperty: family:likes
 
-    
+
 ObjectProperty: family:genid59
 
-    
+
 ObjectProperty:  family:genid59
 
-    SubPropertyOf: 
+    SubPropertyOf:
         family:hasAncestor
-    
-    
+
+
 ObjectProperty: family:hasBrother
 
-    SubPropertyOf: 
+    SubPropertyOf:
         family:hasSibling
-    
-    Range: 
+
+    Range:
         family:Male
-    
-    
+
+
 ObjectProperty: family:hasMother
 
-    SubPropertyOf: 
+    SubPropertyOf:
         family:hasParent
-    
-    Characteristics: 
+
+    Characteristics:
         Functional
-    
-    Range: 
+
+    Range:
         family:Female
-    
-    
+
+
 ObjectProperty: family:hasSon
 
-    SubPropertyOf: 
+    SubPropertyOf:
         family:hasChild
-    
-    Range: 
+
+    Range:
         family:Male
-    
-    
+
+
 ObjectProperty: family:hasSister
 
-    SubPropertyOf: 
+    SubPropertyOf:
         family:hasSibling
-    
-    Range: 
+
+    Range:
         family:Female
-    
-    
+
+
 ObjectProperty: family:hasAge
 
-    
+
 ObjectProperty: family:hasParent
 
-    SubPropertyOf: 
+    SubPropertyOf:
         family:hasAncestor
-    
-    InverseOf: 
+
+    InverseOf:
         family:hasChild
-    
-    
+
+
 DataProperty: family:hasAge
 
-    Characteristics: 
+    Characteristics:
         Functional
-    
-    Range: 
+
+    Range:
         xsd:nonNegativeInteger
-    
-    
+
+
 DataProperty: family:isOfAge
 
-    Range: 
+    Range:
         xsd:integer
-    
-    
+
+
 Class: owl:Thing
 
-    
+
 Class: family:PersonWithAtLeastFourChildren
 
-    EquivalentTo: 
+    EquivalentTo:
         family:hasChild min 4 owl:Thing
-    
-    
+
+
 Class: family:Teenager
 
-    EquivalentTo: 
+    EquivalentTo:
         family:Person
          and (family:hasAge only <http://org.semanticweb.owlapi/error#Error5>)
-    
-    
+
+
 Class: family:PersonWithAtLeastTwoChildren
 
-    EquivalentTo: 
+    EquivalentTo:
         family:hasChild min 2 owl:Thing
-    
-    
+
+
 Class: family:Senior
 
-    EquivalentTo: 
+    EquivalentTo:
         family:Person
          and (family:hasAge only <http://org.semanticweb.owlapi/error#Error2>)
-    
-    
+
+
 Class: family:PersonWithAtLeastTwoFemaleChildren
 
-    EquivalentTo: 
+    EquivalentTo:
         family:hasChild min 2 family:Female
-    
-    
+
+
 Class: family:Female
 
-    SubClassOf: 
+    SubClassOf:
         family:isMarriedTo only family:Male
-    
-    
+
+
 Class: family:Teen
 
-    EquivalentTo: 
+    EquivalentTo:
         family:Person
          and (not (family:Adult))
          and (family:hasAge only (not (<http://org.semanticweb.owlapi/error#Error4>)))
-    
-    
+
+
 Class: family:Child
 
-    EquivalentTo: 
+    EquivalentTo:
         family:Person
          and (family:hasAge only <http://org.semanticweb.owlapi/error#Error3>)
-    
-    
+
+
 Class: family:FamilyMembers
 
-    EquivalentTo: 
+    EquivalentTo:
         {family:daughter , family:father , family:grandfather , family:grandmother , family:mother , family:son , family:uncle}
-    
-    
+
+
 Class: family:Person
 
-    SubClassOf: 
+    SubClassOf:
         family:isMarriedTo max 1 owl:Thing,
         family:hasParent max 2 owl:Thing,
         family:hasFather exactly 1 owl:Thing,
         family:hasMother exactly 1 owl:Thing,
-        family:hasAge exactly 1 rdfs:Literal,
-        family:likes some  Self 
-    
-    
+        family:hasAge exactly 1 owl:Thing,
+        family:likes some  Self
+
+
 Class: family:PersonWithExactlyTwoChildren
 
-    EquivalentTo: 
+    EquivalentTo:
         family:hasChild exactly 2 owl:Thing
-    
-    
+
+
 Class: family:Male
 
-    SubClassOf: 
+    SubClassOf:
         family:isMarriedTo only family:Female
-    
-    
+
+
 Class: family:PersonWithAtLeastTwoMaleChildren
 
-    EquivalentTo: 
+    EquivalentTo:
         family:hasChild min 2 family:Male
-    
-    
+
+
 Class: <http://org.semanticweb.owlapi/error#Error4>
 
-    
+
 Class: family:Adult
 
-    EquivalentTo: 
+    EquivalentTo:
         family:Person
          and (family:hasAge only <http://org.semanticweb.owlapi/error#Error1>)
-    
-    
+
+
 Individual: family:father
 
-    Types: 
+    Types:
         family:hasChild only family:FamilyMembers,
         family:Person
-    
-    Facts:  
+
+    Facts:
      family:dislikes  family:personZ,
      family:hasSon  family:son,
      family:likes  family:personX,
@@ -306,96 +306,96 @@ Individual: family:father
      family:dislikes  family:personY,
      family:hasMother  family:grandmother,
      family:hasAge  "38"^^xsd:int
-    
-    SameAs: 
+
+    SameAs:
         family:mother
-    
-    DifferentFrom: 
+
+    DifferentFrom:
         family:personY
-    
-    
+
+
 Individual: family:grandmother
 
-    Types: 
+    Types:
         family:Person
-    
-    Facts:  
+
+    Facts:
      family:isMarriedTo  family:grandfather,
      family:hasAge  "66"^^xsd:int
-    
-    
+
+
 Individual: family:uncle
 
-    Types: 
+    Types:
         family:Male,
         family:Person
-    
-    
+
+
 Individual: family:daughter
 
-    Types: 
+    Types:
         family:Person
-    
-    Facts:  
+
+    Facts:
      family:hasParent  family:father,
      family:hasAge  "9"^^xsd:int
-    
-    
+
+
 Individual: family:personZ
 
-    Types: 
+    Types:
         family:Person
-    
-    
+
+
 Individual: family:son
 
-    Types: 
+    Types:
         family:Person
-    
-    Facts:  
+
+    Facts:
      family:hasSister  family:daughter,
      family:hasAge  "17"^^xsd:int
-    
-    
+
+
 Individual: family:personY
 
-    Types: 
+    Types:
         family:Person
-    
-    Facts:  
+
+    Facts:
      family:isMarriedTo  family:personZ
-    
-    DifferentFrom: 
+
+    DifferentFrom:
         family:father
-    
-    
+
+
 Individual: family:personX
 
-    Types: 
+    Types:
         family:Person
-    
-    
+
+
 Individual: family:grandfather
 
-    Types: 
+    Types:
         family:Person
-    
-    Facts:  
+
+    Facts:
      family:hasChild  family:uncle,
      family:hasSon  family:father,
      family:hasAge  "66"^^xsd:int
-    
-    
+
+
 Individual: family:mother
 
-    Types: 
+    Types:
         family:Female,
         family:Person
-    
-    Facts:  
+
+    Facts:
      family:hasChild  family:daughter
-    
-    SameAs: 
+
+    SameAs:
         family:father
-    
-    
+
+
