@@ -27,8 +27,7 @@ data Profiles = Profiles
 
 allProfiles :: [[Profiles]]
 allProfiles =
-  [ [Profiles True False False], [Profiles False True False]
-  , [Profiles False False True]]
+  [[qlrlProfile], [elrlProfile], [elqlProfile]]
 
 bottomProfile :: Profiles
 bottomProfile = Profiles False False False
@@ -54,9 +53,6 @@ elrlProfile = Profiles True False True
 qlrlProfile :: Profiles
 qlrlProfile = Profiles False True True
 
-all3Profile :: Profiles
-all3Profile = Profiles True True True
-
 printProfile :: Profiles -> String
 printProfile p@(Profiles e q r) = case p of
     (Profiles False False False) -> "NP"
@@ -65,7 +61,7 @@ printProfile p@(Profiles e q r) = case p of
             ++ (if r then "RL" else "")
 
 andProfileList :: [Profiles] -> Profiles
-andProfileList pl = bottomProfile
+andProfileList pl = topProfile
     { el = all el pl
     , ql = all ql pl
     , rl = all rl pl }

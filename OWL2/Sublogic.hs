@@ -140,7 +140,7 @@ requireInverseRoles sl = sl {inverseRoles = True}
 
 slDatatype :: Datatype -> OWLSub
 slDatatype dt = slBottom {datatype = if isDatatypeKey dt then
-    Set.singleton dt else Set.empty}
+    Set.singleton $ setDatatypePrefix dt else Set.empty}
 
 slObjProp :: ObjectPropertyExpression -> OWLSub
 slObjProp o = case o of

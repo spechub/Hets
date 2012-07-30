@@ -64,7 +64,7 @@ ObjectProperty: <http://www.w3.org/2002/03owlt/description-logic/consistent908#i
         <http://www.w3.org/2002/03owlt/description-logic/consistent908#q-M-to-1>
 
 
-Class: owl:Thing
+Class: owl:Thing2
 
 
 Class: <http://www.w3.org/2002/03owlt/description-logic/consistent908#cardinality-N>
@@ -87,4 +87,4 @@ Class: <http://www.w3.org/2002/03owlt/description-logic/consistent908#cardinalit
         <http://www.w3.org/2002/03owlt/description-logic/consistent908#q-M-to-1> some <http://www.w3.org/2002/03owlt/description-logic/consistent908#cardinality-N>,
         <http://www.w3.org/2002/03owlt/description-logic/consistent908#r-N-times-M-to-1> some <http://www.w3.org/2002/03owlt/description-logic/consistent908#infinite>
 
-with Class owl:Thing |-> Thingie
+with Class owl:Thing2 |-> Thingie
