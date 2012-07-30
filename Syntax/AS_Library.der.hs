@@ -22,6 +22,7 @@ import Common.AS_Annotation
 import Common.LibName
 
 import Logic.Grothendieck (G_basic_spec)
+import Logic.Logic
 
 import Syntax.AS_Architecture
 import Syntax.AS_Structured
@@ -46,8 +47,8 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) ALIGN_TYPE
                 [CORRESPONDENCE] Range
               | Module_defn MODULE_NAME MODULE_TYPE RESTRICTION_SIGNATURE Range
-              -- G_symb_items_list is RESTRICTION-SIGNATURE
-              -- TODO: CONSERVATIVE?
+              {- G_symb_items_list is RESTRICTION-SIGNATURE
+              TODO: CONSERVATIVE? -}
               | Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) Range
               -- pos: "arch", "spec", "=", opt "end"
               | Unit_spec_defn SPEC_NAME UNIT_SPEC Range
@@ -103,10 +104,15 @@ data ItemNameMap =
 
 type ItemName = IRI
 
+makeLogicItem :: Language lid => lid -> Annoted LIB_ITEM
+makeLogicItem lid = emptyAnno $ Logic_decl
+  (Logic_name (simpleIdToIRI $ mkSimpleId $ language_name lid)
+   Nothing Nothing) Nothing nullRange
+
+makeSpecItem :: SPEC_NAME -> Annoted SPEC -> Annoted LIB_ITEM
+makeSpecItem sn as =
+    emptyAnno $ Spec_defn sn emptyGenericity as nullRange
+
 fromBasicSpec :: LibName -> SPEC_NAME -> G_basic_spec -> LIB_DEFN
 fromBasicSpec ln sn gbs =
-    let rg = nullRange
-        sp = Basic_spec gbs rg
-        mkAnno = emptyAnno
-        li = Spec_defn sn emptyGenericity (mkAnno sp) rg
-    in Lib_defn ln [mkAnno li] rg []
+    Lib_defn ln [makeSpecItem sn $ makeSpec gbs] nullRange []

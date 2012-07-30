@@ -31,7 +31,7 @@ import CommonLogic.Logic_CommonLogic
 import CommonLogic.Parse_CLIF (basicSpec)
 
 import Syntax.AS_Library
-import Syntax.AS_Structured as Struc
+import Syntax.AS_Structured
 
 import Control.Monad (foldM)
 import Data.Set (Set)
@@ -56,7 +56,7 @@ type SpecInfo = (BASIC_SPEC, Set String, Set String)
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
 parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
 parseCL_CLIF filename opts = do
-  let dirFile@(dir,_) = splitFileName filename
+  let dirFile@(dir, _) = splitFileName filename
   specMap <- downloadSpec opts Map.empty Set.empty Set.empty False dirFile
   specs <- anaImports opts dir specMap
   return $ convertToLibDefN (convertFileToLibStr filename) specs
@@ -69,38 +69,17 @@ parseCL_CLIF_contents = runParser (many basicSpec) (emptyAnnos ())
 {- maps imports in basic spec to global definition links (extensions) in
 development graph -}
 convertToLibDefN :: String -> [(BASIC_SPEC, NAME)] -> LIB_DEFN
-convertToLibDefN fn specs =
-  Lib_defn
-    (emptyLibName fn)
-    (emptyAnno (Logic_decl (Logic_name
-                              (simpleIdToIRI $ mkSimpleId $ show CommonLogic)
-                              Nothing
-                              Nothing
-                          ) Nothing nullRange)
-      : map convertToLibItems specs
-    )
-    nullRange
-    []
+convertToLibDefN fn specs = Lib_defn (emptyLibName fn)
+    (makeLogicItem CommonLogic : map convertToLibItems specs)
+    nullRange []
 
 convertToLibItems :: (BASIC_SPEC, NAME) -> Anno.Annoted LIB_ITEM
-convertToLibItems (b, n) =
-  emptyAnno $ Spec_defn (simpleIdToIRI n) emptyGenericity (createSpec b) nullRange
+convertToLibItems (b, n) = makeSpecItem (simpleIdToIRI n) $ createSpec b
 
 createSpec :: BASIC_SPEC -> Anno.Annoted SPEC
-createSpec b =
-  let imports = Set.elems $ directImports b
-      bs = emptyAnno $ Struc.Basic_spec (G_basic_spec CommonLogic b) nullRange
-  in case imports of
-          [] -> bs
-          _ -> emptyAnno $ Extension [
-              case imports of
-                [n] -> specFromName n
-                _ -> emptyAnno $ Union (map specFromName imports) nullRange
-              , bs
-            ] nullRange
-
-specFromName :: NAME -> Annoted SPEC
-specFromName n = emptyAnno $ Spec_inst (simpleIdToIRI $ cnvImportName n) [] nullRange
+createSpec b = addImports
+  (map (simpleIdToIRI . cnvImportName) . Set.elems $ directImports b)
+  . makeSpec $ G_basic_spec CommonLogic b
 
 specNameL :: [BASIC_SPEC] -> String -> [String]
 specNameL [_] def = [def]
@@ -119,14 +98,14 @@ collectDownloads opts dir specMap (n, (b, topTexts, importedBy)) =
   let directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
-  in  foldM (\ sm d -> do
-          newDls <- downloadSpec opts sm newTopTexts newImportedBy True (dir,d)
+  in foldM (\ sm d -> do
+          newDls <- downloadSpec opts sm newTopTexts newImportedBy True (dir, d)
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
 
 downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> Set String
-                -> Bool -> (String,String) -> IO SpecMap
-downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir,_) =
+                -> Bool -> (String, String) -> IO SpecMap
+downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir, _) =
   let filename = uncurry combine dirFile in
   let fn = convertFileToLibStr filename in
   case Map.lookup fn specMap of
@@ -145,7 +124,8 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir,_) =
           let newTopTexts = t `Set.union` topTexts
           let newImportedBy = i `Set.union` importedBy
           let newSpecMap = Map.insert fn (b, newTopTexts, newImportedBy) specMap
-          collectDownloads opts dir newSpecMap (fn, (b, newTopTexts, newImportedBy))
+          collectDownloads opts dir newSpecMap
+                       (fn, (b, newTopTexts, newImportedBy))
       Nothing -> do
           contents <- getCLIFContents opts dirFile
           case parseCL_CLIF_contents filename contents of
@@ -166,8 +146,8 @@ unify (_, s, p) (a, t, q) = (a, s `Set.union` t, p `Set.union` q)
 
 {- one could add support for uri fragments/query
 (perhaps select a text from the file) -}
-getCLIFContents :: HetcatsOpts -> (String,String) -> IO String
-getCLIFContents opts dirFile@(_,file) =
+getCLIFContents :: HetcatsOpts -> (String, String) -> IO String
+getCLIFContents opts dirFile@(_, file) =
   let filename = uncurry combine dirFile in
   case parseURIReference filename of
     Nothing -> do
@@ -193,15 +173,16 @@ getCLIFContentsHTTP uriS extension =
     res <- simpleHTTP $ defaultGETRequest uri
     rb <- getResponseBody res
     case httpResponseCode res of
-        (2,0,0) -> return rb
-        (x,y,z) -> case extension of
-          ""     -> getCLIFContentsHTTP uriS ".clf"
+        (2, 0, 0) -> return rb
+        (x, y, z) -> case extension of
+          "" -> getCLIFContentsHTTP uriS ".clf"
           ".clf" -> getCLIFContentsHTTP uriS ".clif"
-          _      -> error $ "File not found via HTTP: " ++ uriS ++ "[.clf | .clif]\nHTTP-code " ++ show x ++ show y ++ show z
+          _ -> error $ "File not found via HTTP: " ++ uriS
+             ++ "[.clf | .clif]\nHTTP-code " ++ show x ++ show y ++ show z
 
 httpResponseCode :: Result (Response a) -> (Int, Int, Int)
 httpResponseCode res = case res of
-    Left _ -> (0,0,0)
+    Left _ -> (0, 0, 0)
     Right r -> rspCode r
 #endif
 
@@ -262,7 +243,7 @@ anaImports opts dir specMap = do
       -- sort by putting the latest imported specs to the beginning
   return $ bsNamePairs sortedSpecs
 
-{- not fast (O(n+m)), but reliable -}
+-- not fast (O(n+m)), but reliable
 usingImportedByCount :: (String, SpecInfo) -> (String, SpecInfo) -> Ordering
 usingImportedByCount (_, (_, _, importedBy1)) (_, (_, _, importedBy2)) =
   compare (Set.size importedBy2) (Set.size importedBy1)

@@ -64,33 +64,17 @@ parseProc filename str = convertToLibDefN filename
         $ concatMap (filterElementsName $ isSmth "Ontology")
         $ onlyElems $ parseXML str
 
-cnvimport :: QName -> Annoted SPEC
-cnvimport i = emptyAnno $ Spec_inst (cnvtoSimpleId i) [] nullRange
-
 cnvtoSimpleId :: QName -> SPEC_NAME
 cnvtoSimpleId = simpleIdToIRI . mkSimpleId . filter isAlphaNum . showQN
 
 createSpec :: OntologyDocument -> Annoted SPEC
-createSpec o = let
-  bs = emptyAnno $ Basic_spec (G_basic_spec OWL2 o) nullRange
-  in case imports $ ontology o of
-  [] -> bs
-  is -> emptyAnno $ Extension
-         [case is of
-           [i] -> cnvimport i
-           _ -> emptyAnno $ Union (map cnvimport is) nullRange
-         , bs] nullRange
+createSpec o = addImports (map cnvtoSimpleId . imports $ ontology o)
+  . makeSpec $ G_basic_spec OWL2 o
 
 convertone :: OntologyDocument -> Annoted LIB_ITEM
-convertone o = emptyAnno $ Spec_defn
-  (cnvtoSimpleId $ name $ ontology o)
-  emptyGenericity
-  (createSpec o)
-  nullRange
+convertone o = makeSpecItem (cnvtoSimpleId $ name $ ontology o) $ createSpec o
 
 convertToLibDefN :: FilePath -> [OntologyDocument] -> LIB_DEFN
 convertToLibDefN filename l = Lib_defn
   (emptyLibName $ convertFileToLibStr filename)
-  (map convertone l)
-  nullRange
-  []
+  (makeLogicItem OWL2 : map convertone l) nullRange []

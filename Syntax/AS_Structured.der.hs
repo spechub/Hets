@@ -55,8 +55,8 @@ data SPEC = Basic_spec G_basic_spec Range
           | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) Range
             -- pos: "data"
           | Combination [ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
-            -- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
-            -- excludung EXTENSION_REF, ..., EXTENSION_REF
+            {- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
+            excludung EXTENSION_REF, ..., EXTENSION_REF -}
             deriving Show
 
 {- Renaming and Hiding can be performend with intermediate Logic
@@ -124,6 +124,19 @@ type LOGIC_REF = IRI
 setLogicName :: Logic_name -> LogicGraph -> LogicGraph
 setLogicName (Logic_name lid _ _) = setCurLogic (iriToStringUnsecure lid)
 
+makeSpec :: G_basic_spec -> Annoted SPEC
+makeSpec gbs = emptyAnno $ Basic_spec gbs nullRange
+
+makeSpecInst :: SPEC_NAME -> Annoted SPEC
+makeSpecInst n = emptyAnno $ Spec_inst n [] nullRange
+
+addImports :: [SPEC_NAME] -> Annoted SPEC -> Annoted SPEC
+addImports is bs = case map makeSpecInst is of
+  [] -> bs
+  js@(i : rs) -> emptyAnno $ Extension
+    [ if null rs then i else
+          emptyAnno $ Union js nullRange, bs] nullRange
+
 data CORRESPONDENCE = Correspondence_block
                         (Maybe RELATION_REF)
                         (Maybe CONFIDENCE)
@@ -154,4 +167,3 @@ type CONFIDENCE = Double -- NOTE: will be revised
 
 instance GetRange Double where
   getRange = const nullRange
-
