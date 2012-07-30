@@ -634,6 +634,15 @@ class (StaticAnalysis lid
          all_sublogics :: lid -> [sublogics]
          all_sublogics li = [top_sublogic li]
 
+         {- a bottom sublogic can be extended along several dimensions
+         joining all last elements of a dimension should yield the top-sublogic
+         -}
+         bottomSublogic :: lid -> Maybe sublogics
+         bottomSublogic _ = Nothing
+
+         sublogicDimensions :: lid -> [[sublogics]]
+         sublogicDimensions li = [all_sublogics li]
+
          -- | parse sublogic (override more efficiently)
          parseSublogic :: lid -> String -> Maybe sublogics
          parseSublogic li s = lookup s $ map (\ l -> (sublogicName l, l))

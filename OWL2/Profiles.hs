@@ -25,9 +25,10 @@ data Profiles = Profiles
     , rl :: Bool
     } deriving (Show, Eq, Ord)
 
-allProfiles :: [Profiles]
-allProfiles = let l = [False, True] in
-  [Profiles a b c | a <- l, b <- l, c <- l]
+allProfiles :: [[Profiles]]
+allProfiles =
+  [ [Profiles True False False], [Profiles False True False]
+  , [Profiles False False True]]
 
 bottomProfile :: Profiles
 bottomProfile = Profiles False False False

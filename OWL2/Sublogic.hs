@@ -40,15 +40,20 @@ data OWLSub = OWLSub
     , datatype :: Set.Set Datatype
     } deriving (Show, Eq, Ord)
 
-allSublogics :: [OWLSub]
+allSublogics :: [[OWLSub]]
 allSublogics = let
-  b = [False, True]
-  powerset = foldr (\ x acc -> acc ++ map (x :) acc) [[]]
- in
-  [ OWLSub nr n ir rt rh cr a (Set.fromList d)
-  | nr <- [None, Unqualified, Qualified]
-  , n <- b, ir <- b, rt <- b, rh <- b, cr <- b, a <- b
-  , d <- powerset $ Set.toList owlDatatypes]
+  t = True
+  b = slBottom
+  in
+  [ [ b { numberRestrictions = Unqualified }
+    , b { numberRestrictions = Qualified } ]
+  , [b { nominals = t } ]
+  , [b { inverseRoles = t } ]
+  , [b { roleTransitivity = t } ]
+  , [b { roleHierarchy = t } ]
+  , [b { complexRoleInclusions = t } ]
+  , [b { addFeatures = t } ]
+  , map (\ d -> b { datatype = Set.singleton d }) $ Set.toList owlDatatypes ]
 
 -- | sROIQ(D)
 slTop :: OWLSub
