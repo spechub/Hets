@@ -41,6 +41,10 @@ printIRI q
        || isDatatypeKey q = keyword $ getPredefName q
     | otherwise = text $ showQN q
 
+printDataIRI :: QName -> Doc
+printDataIRI q = if isDatatypeKey q then text $ showQN $ setDatatypePrefix q
+ else printIRI q
+
 -- | Symbols printing
 
 instance Pretty ExtEntityType where
@@ -105,7 +109,7 @@ instance Pretty Entity where
 instance Pretty Literal where
     pretty lit = case lit of
         Literal lexi ty -> text ('"' : lexi ++ "\"") <> case ty of
-            Typed u -> keyword cTypeS <> pretty u
+            Typed u -> keyword cTypeS <> printDataIRI u
             Untyped tag -> case tag of
               Nothing -> empty
               Just tag2 -> text asP <> text tag2
