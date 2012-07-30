@@ -99,7 +99,7 @@ uniteL :: [CASLSign] -> CASLSign
 uniteL = foldl1 uniteCASLSign
 
 failMsg :: Pretty a => a -> Result b
-failMsg a = fail $ "cannot translate " ++ showDoc a "\n"
+failMsg a = fail $ "cannot translate: " ++ showDoc a "\n"
 
 objectPropPred :: PredType
 objectPropPred = PredType [thing, thing]
@@ -618,7 +618,9 @@ mkEDPairs s il mr pairs = do
 -- | Mapping of ListFrameBit
 mapListFrameBit :: CASLSign -> Extended -> Maybe Relation -> ListFrameBit
        -> Result ([CASLFORMULA], CASLSign)
-mapListFrameBit cSig ex rel lfb = case lfb of
+mapListFrameBit cSig ex rel lfb =
+    let err = failMsg $ PlainAxiom ex $ ListFrameBit rel lfb
+    in case lfb of
     AnnotationBit _ -> return ([], cSig)
     ExpressionBit cls -> case ex of
           Misc _ -> let cel = map snd cls in do
@@ -636,9 +638,9 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                   let vars = (mkNName 1, mkNName 2)
                   return (map (mkFEI [tokDecl $ fst vars]
                        [mkVarDecl (snd vars) dataS] oEx) els, uniteL $ cSig : s)
-                _ -> failMsg lfb
+                _ -> err
           ObjectEntity oe -> case rel of
-              Nothing -> failMsg lfb
+              Nothing -> err
               Just re -> case re of
                   DRRelation r -> do
                     tobjP <- mapObjProp cSig oe 1 2
@@ -651,7 +653,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                                 ARange -> (mkNName 2, mkNName 1)
                     return (map (mkFEI [tokDecl $ fst vars]
                             [tokDecl $ snd vars] tobjP) tdsc, uniteL $ cSig : s)
-                  _ -> failMsg lfb
+                  _ -> err
           ClassEntity ce -> let cel = map snd cls in case rel of
               Nothing -> return ([], cSig)
               Just r -> case r of
@@ -663,9 +665,9 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                   (codT, s2) <- mapDescriptionList cSig 1 cel
                   return (map (mk1VDecl . mkImpl domT) codT,
                         uniteL [cSig, s1, s2])
-                _ -> failMsg lfb
+                _ -> err
     ObjectBit ol -> let opl = map snd ol in case rel of
-      Nothing -> failMsg lfb
+      Nothing -> err
       Just r -> case ex of
         Misc _ -> do
             pairs <- mapComObjectPropsList cSig Nothing opl 1 2
@@ -682,8 +684,8 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                 os1 <- mapM (\ o1 -> mapObjProp cSig o1 1 2) opl
                 o2 <- mapObjProp cSig op 2 1
                 return (map (mkVDecl [1, 2] . mkEqv o2) os1, cSig)
-            _ -> failMsg lfb
-        _ -> failMsg lfb
+            _ -> err
+        _ -> err
     DataBit anl -> let dl = map snd anl in case rel of
       Nothing -> return ([], cSig)
       Just r -> case ex of
@@ -700,14 +702,16 @@ mapListFrameBit cSig ex rel lfb = case lfb of
                 pairs <- mapComDataPropsList cSig (Just iri) dl 1 2
                 mkEDPairs cSig [1, 2] rel pairs
             _ -> return ([], cSig)
-        _ -> failMsg lfb
+        _ -> err
     IndividualSameOrDifferent al -> case rel of
-        Nothing -> failMsg lfb
+        Nothing -> err
         Just (SDRelation re) -> do
-            let SimpleEntity (Entity NamedIndividual iri) = ex
-            fs <- mapComIndivList cSig re (Just iri) $ map snd al
+            let mi = case ex of
+                    SimpleEntity (Entity NamedIndividual iri) -> Just iri
+                    _ -> Nothing
+            fs <- mapComIndivList cSig re mi $ map snd al
             return (fs, cSig)
-        _ -> failMsg lfb
+        _ -> err
     DataPropRange dpr -> case ex of
         SimpleEntity (Entity DataProperty iri) -> do
             oEx <- mapDataProp cSig iri 1 2
@@ -715,7 +719,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             let vars = (mkNName 1, mkNName 2)
             return (map (mkFEI [tokDecl $ fst vars]
                         [tokDataDecl $ snd vars] oEx) odes, uniteL $ cSig : s)
-        _ -> failMsg lfb
+        _ -> err
     IndividualFacts indf -> do
         fl <- mapM (mapFact cSig ex . snd) indf
         return (fl, cSig)
@@ -723,13 +727,14 @@ mapListFrameBit cSig ex rel lfb = case lfb of
         ObjectEntity ope -> do
             cl <- mapM (mapCharact cSig ope . snd) ace
             return (cl, cSig)
-        _ -> failMsg ace
+        _ -> err
 
 -- | Mapping of AnnFrameBit
-mapAnnFrameBit :: CASLSign -> Extended -> AnnFrameBit
+mapAnnFrameBit :: CASLSign -> Extended -> Annotations -> AnnFrameBit
             -> Result ([CASLFORMULA], CASLSign)
-mapAnnFrameBit cSig ex afb =
-    let err = fail $ "could not translate " ++ show afb in case afb of
+mapAnnFrameBit cSig ex ans afb =
+    let err = failMsg $ PlainAxiom ex $ AnnFrameBit ans afb
+    in case afb of
     AnnotationFrameBit _ -> return ([], cSig)
     DataFunctional -> case ex of
         SimpleEntity (Entity _ iri) -> do
@@ -745,7 +750,7 @@ mapAnnFrameBit cSig ex afb =
                     (qualData 2) $ uriToCaslId iri], uniteCASLSign cSig s)
         _ -> err
     ClassDisjointUnion clsl -> case ex of
-        SimpleEntity (Entity Class iri) -> do
+        ClassEntity (Expression iri) -> do
             (decrs, s1) <- mapDescriptionList cSig 1 clsl
             (decrsS, s2) <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
             let decrsP = map (\ (x, y) -> conjunct [x, y]) decrsS
@@ -787,4 +792,4 @@ mapKey cSig ce pl npl p i h = do
 mapAxioms :: CASLSign -> Axiom -> Result ([CASLFORMULA], CASLSign)
 mapAxioms cSig (PlainAxiom ex fb) = case fb of
     ListFrameBit rel lfb -> mapListFrameBit cSig ex rel lfb
-    AnnFrameBit _ afb -> mapAnnFrameBit cSig ex afb
+    AnnFrameBit ans afb -> mapAnnFrameBit cSig ex ans afb
