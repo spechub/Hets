@@ -31,6 +31,8 @@ import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos ()
 import Common.IO
 
+import Control.Exception as Exception
+
 import ATerm.AbstractSyntax
 import qualified ATerm.ReadWrite as AT
 
@@ -115,8 +117,9 @@ writeFileInfo opts ln file ld gctx =
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)
-      catch (writeShATermFileSDoc envFile (ln, (ld, gctx))) $ \ err -> do
+      Exception.catch (writeShATermFileSDoc envFile (ln, (ld, gctx)))
+           $ \ err -> do
               putIfVerbose opts 2 (envFile ++ " not written")
               putIfVerbose opts 3 ("see following error description:\n"
-                                   ++ shows err "\n")
+                                   ++ shows (err :: SomeException) "\n")
   _ -> putIfVerbose opts 2 ("Not writing " ++ envFile)

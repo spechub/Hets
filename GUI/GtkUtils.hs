@@ -80,6 +80,7 @@ import qualified GUI.Glade.Utils as Utils
 import Static.GTheory
 
 import Common.DocUtils (showDoc)
+import Common.IO
 import Common.Utils (getTempFile)
 
 import Control.Concurrent (forkIO)
@@ -212,7 +213,7 @@ fileDialog :: FileChooserAction -- ^ Action
            -> Maybe (FilePath -> IO ()) -- ^ Action on open
            -> IO (Maybe FilePath)
 fileDialog fAction fname' filters mAction = do
-  fname <- catch (canonicalizePath fname') $ \ _ -> return fname'
+  fname <- catchIOException fname' $ canonicalizePath fname'
   dlg <- case fAction of
     FileChooserActionOpen -> do
       dlg' <- fileChooserDialogNew Nothing Nothing FileChooserActionOpen

@@ -31,6 +31,7 @@ import qualified Logic.Prover as LP
 import Interfaces.GenericATPState
 import GUI.GenericATP
 
+import Common.IO
 import Common.ProofTree
 import Common.Utils
 import qualified Common.AS_Annotation as AS_Anno
@@ -219,7 +220,7 @@ runZchaff pState cfg saveDIMACS thName nGoal = do
                                     (/= AS_Anno.senAttr nGoal) usedAxs
                                 , LP.proofTree = ProofTree zchaffOut })
                       Left a -> (a, defaultProofStatus)
-      catch (removeFile zFileName) (const $ return ())
+      catchIOException () $ removeFile zFileName
       return (err, cfg
               { proofStatus = retval
               , resultOutput = [zchaffOut]

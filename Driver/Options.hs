@@ -699,13 +699,12 @@ removePrfOut opts =
 gets two Paths and checks if the first file is not older than the
 second one and should return True for two identical files -}
 checkRecentEnv :: HetcatsOpts -> FilePath -> FilePath -> IO Bool
-checkRecentEnv opts fp1 base2 = catch (do
+checkRecentEnv opts fp1 base2 = catchIOException False $ do
     fp1_time <- getModificationTime fp1
     maybe_source_file <- existsAnSource opts {intype = GuessIn} base2
     maybe (return False) ( \ fp2 -> do
        fp2_time <- getModificationTime fp2
        return (fp1_time >= fp2_time)) maybe_source_file
-    ) (const $ return False)
 
 -- | 'parseInType' parses an 'InType' Flag from user input
 parseInType :: String -> Flag

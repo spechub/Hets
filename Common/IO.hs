@@ -25,9 +25,15 @@ module Common.IO
   , readEncFile
   , writeEncFile
   , setStdEnc
+  , catchIOException
   ) where
 
 import System.IO
+import Control.Exception as Exception
+
+catchIOException :: a -> IO a -> IO a
+catchIOException d a = catchJust (\ e ->
+  fromException e :: Maybe IOException) a . const $ return d
 
 data Enc = Latin1 | Utf8 deriving Show
 

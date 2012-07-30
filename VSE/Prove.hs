@@ -19,6 +19,7 @@ import VSE.As
 import VSE.Ana
 import VSE.ToSExpr
 import Common.AS_Annotation
+import Common.IO
 import Common.SExpr
 import Common.Utils
 
@@ -87,11 +88,15 @@ readUntilMatchParenAux n cp h str =
     JustChar c -> readUntilMatchParen cp h $ c : str
 
 myGetChar :: ProcessHandle -> Handle -> IO MaybeChar
-myGetChar cp h = catch (fmap JustChar $ hGetChar h) $ \ _ -> do
-  ms <- getProcessExitCode cp
-  return $ case ms of
-    Nothing -> Wait
-    Just _ -> Stop
+myGetChar cp h = do
+  mc <- catchIOException Wait (fmap JustChar $ hGetChar h)
+  case mc of
+    Wait -> do
+      ms <- getProcessExitCode cp
+      return $ case ms of
+        Nothing -> mc
+        Just _ -> Stop
+    _ -> return mc
 
 readMyMsg :: ProcessHandle -> Handle -> String -> IO String
 readMyMsg = readMyMsgAux 1000
@@ -117,7 +122,7 @@ readMyMsgAux n cp h expect = if n < 1 then do
         readMyMsgAux (n - 1) cp h expect -- try again
 
 sendMyMsg :: Handle -> String -> IO ()
-sendMyMsg cp str = catch (hPutStrLn cp str >> hFlush cp) $ \ _ -> return ()
+sendMyMsg cp str = catchIOException () $ hPutStrLn cp str >> hFlush cp
 
 readRest :: ProcessHandle -> Handle -> String -> IO String
 readRest cp out str = do

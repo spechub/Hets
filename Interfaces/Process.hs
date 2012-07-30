@@ -37,7 +37,7 @@ data IntelligentReadState = IRS { timeout :: DTime     -- ^ total timeout
                                 , updated :: Time      -- ^ last update stamp
                                 , readtime :: Time     -- ^ stamp of last read
                                 , hasread :: Bool      -- ^ got data
-                                , waitForRead :: Bool  -- ^  
+                                , waitForRead :: Bool  -- ^
                                 , waittimeInp :: Int   -- ^ same as waitForInp
                                 } deriving Show
 
@@ -46,7 +46,7 @@ data TimeConfig = TimeConfig { waitForInp :: Int
                              , startTimeout :: DTime
                              -- ^ Give the application some time to come up
                              , cleanTimeout :: DTime
-                             -- ^ 
+                             -- ^
                              } deriving Show
 
 defaultConfig :: TimeConfig
@@ -95,7 +95,7 @@ instance ReadState IntelligentReadState where
           ts <- getCurrentTime
           return $ if ngd then irs{ updated = ts, readtime = ts, hasread = ngd}
                           else irs{ updated = ts }
-          
+
     abort (IRS to st lus slr gd b _) =
         to <= diffUTCTime lus st
                || ((not b || gd)
@@ -114,8 +114,8 @@ getOutput' :: (ReadState a) => a -> Handle -> String -> IO String
 getOutput' rs hdl s = do
   b <- if abort rs then return Nothing -- timeout gone
        -- eventually error on eof so abort
-       else catch (liftM Just $ hWaitForInput hdl $ waitInp rs) $ const
-                $ return Nothing
+       else catchIOException Nothing
+                $ liftM Just $ hWaitForInput hdl $ waitInp rs
   case b of Nothing -> return s
             Just b' ->
                 do
@@ -136,7 +136,7 @@ getOutp hdl w t = initIRS w t True >>= getOutput hdl
 -- | This is just a type to hold the information returned by
 --  System.Process.runInteractiveCommand
 data CommandState = CS { inp :: Handle, outp :: Handle, err :: Handle
-                       , pid :: SP.ProcessHandle,  verbosity:: Int 
+                       , pid :: SP.ProcessHandle,  verbosity:: Int
                        , tc :: TimeConfig }
 
 -- | The IO State-Monad with state CommandState
@@ -154,7 +154,7 @@ start shcmd v mTc = do
   let cs = CS i o e p v $ fromMaybe defaultConfig mTc
 
   verbMessageIO cs 3 "start: Setting buffer modes"
-  -- configure the handles 
+  -- configure the handles
   mapM_ (flip hSetBinaryMode False) [i, o, e]
   mapM_ (flip hSetBuffering NoBuffering) [o, e]
   hSetBuffering i LineBuffering
@@ -202,7 +202,7 @@ call t str = do
 
 
 verbMessageIO :: CommandState -> Int -> String -> IO String
-verbMessageIO cs v s = 
+verbMessageIO cs v s =
     if verbosity cs >= v then putStrLn s >> return s else return ""
 
 verbMessage :: CommandState -> Int -> String -> Command String
