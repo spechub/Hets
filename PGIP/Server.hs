@@ -67,6 +67,7 @@ import Common.GtkGoal
 import Common.IRI
 import Common.LibName
 import Common.PrintLaTeX
+import Common.ProverTools (missingExecutableInPath)
 import Common.Result
 import Common.ResultT
 import Common.ToXml
@@ -440,11 +441,15 @@ getDGraph opts sessRef dgQ = case dgQ of
 
 getSVG :: String -> String -> DGraph -> ResultT IO String
 getSVG title url dg = do
-    (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
+    nodot <- lift $ missingExecutableInPath "dot"
+    if nodot
+      then fail "cannot find dot. use \"sudo apt-get install graphviz\" to fix."
+      else do
+        (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
           $ dotGraph title False url dg
-    case exCode of
-      ExitSuccess -> liftR $ extractSVG dg out
-      _ -> fail err
+        case exCode of
+          ExitSuccess -> liftR $ extractSVG dg out
+          _ -> fail err
 
 enrichSVG :: DGraph -> Element -> Element
 enrichSVG dg e = processSVG dg $ fromElement e
