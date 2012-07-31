@@ -101,6 +101,7 @@ import Comorphisms.Adl2CASL
 #ifndef NOOWLLOGIC
 import OWL2.DMU2OWL2
 import OWL2.OWL22CASL
+import OWL2.CASL2OWL
 import OWL2.OWL22CommonLogic
 import OWL2.Propositional2OWL2
 #endif
@@ -167,6 +168,7 @@ comorphismList =
 #endif
 #ifndef NOOWLLOGIC
     , Comorphism OWL22CASL
+    , Comorphism CASL2OWL
     , Comorphism OWL22CommonLogic
     , Comorphism DMU2OWL2
     , Comorphism Propositional2OWL2
@@ -230,7 +232,7 @@ squareMap = Map.empty -- for now
 
 logicGraph :: LogicGraph
 logicGraph = emptyLogicGraph
-    { logics = Map.fromList $ dolLogicNames ++ (map addLogicName $ logicList
+    { logics = Map.fromList $ dolLogicNames ++ map addLogicName (logicList
         ++ concatMap (\ (Comorphism cid) ->
              [Logic $ sourceLogic cid, Logic $ targetLogic cid])
            comorphismList)
