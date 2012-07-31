@@ -307,10 +307,17 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
               (DGQuery sId Nothing) $ EdgeQuery (EdgeId i) "edge"
             Nothing -> fail $ "failed to read edgeId from edgeIRI: " ++ edIri
           -- prove all nodes if no singleton is selected
-          {- TODO (big): implement proving function for ALL nodes
-          (like automaticProofs)! -}
-          _ -> getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
+          _ -> if cmd /= "prove" then
+            getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
               $ GlobCmdQuery cmd
+            else getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
+              $ GlobAutoProve incl prover translation timeout where
+              incl = maybe False (\s ->
+                not $ elem (map toLower s) ["f", "false"]) $ lookup2 "include"
+              prover = lookup2 "prover"
+              translation = lookup2 "translation"
+                >>= fmap iriFragment . parseIRI
+              timeout = lookup2 "timeout" >>= readMaybe
       -- fail if request doesn't comply
       _ -> queryFailure
     {- create failure response if request method is not known
@@ -546,6 +553,16 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> liftR $ return $ sessAns ln svg sk
+
+            GlobAutoProve incl mp mt tl -> do
+                (newLib, sens) <- proveAllNodes libEnv ln dg incl mp mt tl
+                if null sens then return "nothing to prove" else do
+                    lift $ nextSess sessRef newLib k
+                    -- TODO adjust formatResult to show multiple nodes results
+                    return $ formatResults k 0 $ unode "results" $
+                       map (\ (n, e) -> unode "goal"
+                         [unode "name" n, unode "result" e]) sens
+
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == "update" then
@@ -840,6 +857,18 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
             Nothing -> error "proveNode"
             Just nTh -> return
               (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
+
+proveAllNodes :: LibEnv -> LibName -> DGraph -> Bool -> Maybe String
+  -> Maybe String -> Maybe Int -> ResultT IO (LibEnv, [(String, String)])
+proveAllNodes le ln dg useTh mp mt tl = foldM
+  (\ (le', sens) nl@(_, dgn) -> case maybeResult $ getGlobalTheory dgn of
+      Nothing -> fail $
+                    "cannot compute global theory of:\n" ++ show dgn
+      Just gTh -> let subL = sublogicOfTh gTh in do
+        (le'', sens') <- proveNode le' ln dg nl gTh subL useTh mp mt tl
+          $ map fst $ getThGoals gTh
+        return (le'', sens ++ sens')) (le, []) $ labNodesDG dg
+
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =

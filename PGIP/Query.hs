@@ -124,6 +124,11 @@ type QueryPair = (String, Maybe String)
 data QueryKind =
     DisplayQuery (Maybe String)
   | GlobCmdQuery String
+  | GlobAutoProve
+  { apInclTheorems :: Bool
+  , apProver :: Maybe String
+  , apTranslation :: Maybe String
+  , apTimeout :: Maybe Int }
   | NodeQuery NodeIdOrName NodeCommand
   | EdgeQuery EdgeId String
 
