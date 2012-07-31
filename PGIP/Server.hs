@@ -287,7 +287,14 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
       "sessions" : sessId : cmd : [] -> case readMaybe sessId of
         Nothing -> fail $ "failed to read sessionId from " ++ sessId
         -- look for (optional) specification of node OR edge
-        Just sId -> case (lookup2 "node", lookup2 "edge") of
+        Just sId -> let
+          incl = maybe False (\s ->
+            not $ elem (map toLower s) ["f", "false"]) $ lookup2 "include"
+          prover = lookup2 "prover"
+          translation = lookup2 "translation" >>= fmap iriFragment . parseIRI
+          timeout = lookup2 "timeout" >>= readMaybe
+          in
+          case (lookup2 "node", lookup2 "edge") of
           (Just _, Just _) -> fail "pleace specify only either node or edge"
           -- call command upon a single node
           (Just ndIri, _) -> case parseIRI ndIri of
@@ -295,11 +302,18 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
             Just nd -> let
               s = iriFragment nd
               i = maybe (Right s) Left $ readMaybe s
-              -- TODO where to find 'moreTheorems', 'incls'?
-              in case anaNodeQuery [cmd] i [] [] splitQuery of
-                Right qk -> getHetsResponse' opts sessRef
-                  $ Query (DGQuery sId (Just $ iriPath nd)) qk
-                Left err -> fail err
+              in do
+              nodeQuery <- fmap (NodeQuery i) $ case cmd of
+                "prove" -> return -- TODO how to select theorems now?
+                  $ ProveNode incl prover translation timeout []
+                "provers" -> return $ NcProvers translation
+                "translations" -> return $ NcTranslations prover
+                _ ->
+                  case lookup cmd $ map (\ a -> (showNodeCmd a, a)) nodeCmds of
+                    Just nc -> return $ NcCmd nc
+                    _ -> fail $ "unknown node command '" ++ cmd ++ "' "
+              getHetsResponse' opts sessRef $ Query (DGQuery sId
+                (Just $ iriPath nd)) $ nodeQuery
           -- call command upon a single edge
           (_, Just edIri) -> case parseIRI edIri
                         >>= readMaybe . iriFragment of
@@ -307,17 +321,12 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
               (DGQuery sId Nothing) $ EdgeQuery (EdgeId i) "edge"
             Nothing -> fail $ "failed to read edgeId from edgeIRI: " ++ edIri
           -- prove all nodes if no singleton is selected
-          _ -> if cmd /= "prove" then
-            getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
-              $ GlobCmdQuery cmd
+          _ -> if cmd == "prove"
+            then getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
+              $ GlobAutoProve incl prover translation timeout
             else getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
-              $ GlobAutoProve incl prover translation timeout where
-              incl = maybe False (\s ->
-                not $ elem (map toLower s) ["f", "false"]) $ lookup2 "include"
-              prover = lookup2 "prover"
-              translation = lookup2 "translation"
-                >>= fmap iriFragment . parseIRI
-              timeout = lookup2 "timeout" >>= readMaybe
+              $ GlobCmdQuery cmd
+
       -- fail if request doesn't comply
       _ -> queryFailure
     {- create failure response if request method is not known
