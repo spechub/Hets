@@ -18,8 +18,6 @@ import Common.Utils
 import System.Directory
 import System.IO.Unsafe
 import System.FilePath
-import System.IO.Error
-import Control.Exception as Exception
 
 -- | Checks if a Prover Binary exists and is executable in an unsafe manner
 unsafeProverCheck :: String -- ^ prover Name
@@ -35,17 +33,9 @@ check4Prover :: String -- ^ prover Name
              -> IO [a]
 check4Prover name env a = do
       ex <- check4FileAux name env
-      case ex of
-        [] -> return []
-        _ -> do
-          execI <- mapM (tryPermissions . (</> name)) ex
-          return [ a | any executable execI ]
-
--- assume executability if permissions cannot be read (on Mac)
-tryPermissions :: FilePath -> IO Permissions
-tryPermissions f = Exception.catch (getPermissions f) $ \ e ->
-  return $ (if isPermissionError e then setOwnerExecutable True else id)
-    emptyPermissions
+      return $ case ex of
+        [] -> []
+        _ -> [a]
 
 missingExecutableInPath :: String -> IO Bool
 missingExecutableInPath name = do
