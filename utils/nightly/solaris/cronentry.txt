@@ -1,1 +1,0 @@
-5 0 * * * nice /home/maeder/haskell/V240-solaris/haskell/cronjob.sh > /home/maeder/haskell/V240-solaris/haskell/cron.log 2>&1
