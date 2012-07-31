@@ -151,109 +151,22 @@ hetsServer opts1 = do
      appendFile permFile $ shows (requestHeaders re) "\n"
    -- better try to read hosts to exclude from a file
    if any (`isInfixOf` rhost) bots then return $ mkResponse status403 ""
-    else let
-    -- when using lookup upon querybits, you need to unpack Maybe twice
-    lookup2 str = maybe Nothing id $ lookup str splitQuery
-    -- some parameters from the paths query part might be needed more than once
-    session = lookup2 "session" >>= readMaybe
-    library = lookup2 "library" >>= fmap iriPath . parseIRI
-    format = lookup2 "format"
-    -- respond depending on request Method
-    in case B8.unpack (requestMethod re) of
-    -- LIST OF GET REQUEST RESPONSES
-    "GET" -> liftRun $ case pathBits of
-      -- show all menue options
-      "menues" : [] -> mkMenuResponse
-      -- list files from directory
-      "dir" : r -> let path' = (intercalate "/" r) in
-        getHetsLibContent opts path' query >>= mkHtmlPage path'
-      -- get dgraph from file
-      "hets-lib" : r -> let file = intercalate "/" r in
-        getHetsResponse' opts [] sessRef $ Query (NewDGQuery file)
-          $ DisplayQuery format
-      -- get library (complies with get/hets-lib for now)
-      "libraries" : libIri : "development_graph" : [] ->
-        case parseIRI libIri of
-          Just lib -> getHetsResponse' opts [] sessRef
-            $ Query (NewDGQuery $ iriPath lib) $ DisplayQuery format
-          Nothing -> fail $ "failed to parse IRI from " ++ libIri
-      -- get previously created session
-      "sessions" : sessId : [] -> case readMaybe sessId of
-          Just i -> getHetsResponse' opts [] sessRef
-            $ Query (DGQuery i Nothing) $ DisplayQuery format
-          Nothing -> fail $ "failed to read session number from " ++ sessId
-      -- get node or edge view
-      nodeOrEdge : codedIri : c | nodeOrEdge `elem` ["node", "egde"] -> let
-        dgQ ir = maybe (NewDGQuery $ maybe (iriPath ir) id library)
-                 (`DGQuery` library) session
-        in case (nodeOrEdge, parseIRI codedIri) of
-          ("node", Just n) -> let
-            s = iriFragment n
-            i = maybe (Right s) Left $ readMaybe s in
-            getHetsResponse' opts [] sessRef $ Query (dgQ n) $ NodeQuery i
-              $ case c of
-                ["theory"] -> NcCmd Query.Theory
-                _ -> NcCmd Query.Info
-          ("edge", Just l) -> case readMaybe $ iriFragment l of
-            Just i -> getHetsResponse' opts [] sessRef
-              $ Query (dgQ l) $ EdgeQuery (EdgeId i) "edge"
-            Nothing -> fail $ "failed to read edgeId from " ++ iriFragment l
-          _ -> fail $ "failed to parse IRI from " ++ codedIri
-      -- default case if query doesn't comply with RESTFullInterface
-      _ -> if query == "?menus" then mkMenuResponse else do
+    -- if path could be a RESTfull request, try to parse it
+    else if isRESTfull pathBits then liftRun $
+      parseRESTfull opts sessRef pathBits query splitQuery re
+    -- only ohterwise stick to the old response methods
+    else case B8.unpack (requestMethod re) of
+      "GET" -> liftRun $ do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs
            then getHetsResponse opts [] sessRef pathBits splitQuery
            else mkHtmlPage path dirs
-    -- LIST OF PUT REQUEST RESPONSES
-    "PUT" -> liftRun $ case pathBits of
-      -- execute global commands
-      "libraries" : libIri : "proofs" : prId : cmd : [] ->
-         case readMaybe prId of
-           Nothing -> fail $ "failed to read sessionId from " ++ prId
-           Just sessId -> let
-             dgQ = DGQuery sessId $ fmap iriPath $ parseIRI libIri in
-             getHetsResponse' opts [] sessRef $ Query dgQ $ GlobCmdQuery cmd
-      -- execute a proof or calculus request
-      "sessions" : sessId : cmd : [] -> case readMaybe sessId of
-        Nothing -> fail $ "failed to read sessionId from " ++ sessId
-        -- look for (optional) specification of node OR edge
-        Just sId -> case (lookup2 "node", lookup2 "edge") of
-          (Just ndIri, Nothing) -> case parseIRI ndIri of
-            Nothing -> fail $ "failed to parse nodeIRI from " ++ ndIri
-            Just nd -> let
-              s = iriFragment nd
-              i = maybe (Right s) Left $ readMaybe s
-              -- TODO where to find 'moreTheorems', 'incls'?
-              in case anaNodeQuery [cmd] i [] [] splitQuery of
-                -- call command upon a single node
-                Right qk -> getHetsResponse' opts [] sessRef
-                  $ Query (DGQuery sId (Just $ iriPath nd)) qk
-                Left err -> fail err
-          (Nothing, Just edIri) -> case parseIRI edIri
-                        >>= readMaybe . iriFragment of
-            -- call command upon a single edge
-            Just i -> getHetsResponse' opts [] sessRef $ Query
-              (DGQuery sId Nothing) $ EdgeQuery (EdgeId i) "edge"
-            Nothing -> fail $ "illegal edgeIri: " ++ edIri
-          -- prove all nodes if no singleton is selected
-          (Nothing, Nothing) | cmd == "prove" -> getHetsResponse'
-            opts [] sessRef $ Query (DGQuery sId Nothing) $ GlobCmdQuery cmd
-          _ -> fail $ "cannot execute command (" ++ cmd
-              ++ ") for node AND edge at the same time!"
-      -- fail if request doesn't comply
-      _ -> fail $ "illegal request: " ++ intercalate "/" pathBits
-    -- TODO continue implementing restfull interface responses here
-    -- LIST OF POST REQUEST RESPONSES (inhabits old proving mechanism)
-    "POST" -> case pathBits of
-      -- open new session for dg. NOTE:does not differ from GET/library for now
-      "libraries" : libIri : "sessions" : [] -> case parseIRI libIri of
-          Just lib -> liftRun $ getHetsResponse' opts [] sessRef
-            $ Query (NewDGQuery $ iriPath lib) $ DisplayQuery format
-          Nothing -> fail $ "failed to parse IRI from " ++ libIri
-      -- default case if query doesn't comply with RESTFullInterface
-      _ -> do
+      "POST" -> do
+#ifdef OLDSERVER
         (params, files) <- parseRequestBody tempFileSink re
+#else
+        (params, files) <- parseRequestBody tempFileBackEnd re
+#endif
         liftRun $ print params
         mTmpFile <- liftRun $ case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
@@ -284,7 +197,125 @@ hetsServer opts1 = do
             else mRes
           _ -> getHetsResponse
                  opts (map snd files) sessRef pathBits splitQuery
+      _ -> return $ mkResponse status405 ""
+
+
+-- quick approach to whether or not the query can be a RESTfull request
+isRESTfull :: [String] -> Bool
+isRESTfull pathBits = pathBits /= [] &&
+  elem (head pathBits) listRESTfullIdentifiers
+
+listRESTfullIdentifiers :: [String]
+listRESTfullIdentifiers = [ "libraries", "sessions", "menus", "hets-lib", "dir"
+                          , "nodes", "edges" ]
+
+-- query is analysed and processed in accordance with RESTfull interface
+parseRESTfull :: HetcatsOpts -> IORef (IntMap.IntMap Session)
+              -> [String] -> String -> [(String, Maybe String)]
+              -> Request -> IO Response
+parseRESTfull opts sessRef pathBits query splitQuery re = let
+    {- some parameters from the paths query part might be needed more than once
+    (when using lookup upon querybits, you need to unpack Maybe twice) -}
+    lookup2 str = maybe Nothing id $ lookup str splitQuery
+    session = lookup2 "session" >>= readMaybe
+    library = lookup2 "library" >>= fmap iriPath . parseIRI
+    format = lookup2 "format"
+    queryFailure = fail $
+      "this query does not comply with RESTfull interface: "
+      ++ intercalate "/" pathBits
+    -- respond depending on request Method
+    in case B8.unpack (requestMethod re) of
+    "POST" -> case pathBits of
+      -- open new session for dg. NOTE:does not differ from GET/library for now
+      "libraries" : libIri : "sessions" : [] -> case parseIRI libIri of
+          Just lib -> getHetsResponse' opts sessRef
+            $ Query (NewDGQuery $ iriPath lib) $ DisplayQuery format
+          Nothing -> fail $ "failed to parse IRI from " ++ libIri
+      -- fail if query doesn't comply with RESTFullInterface
+      _ -> queryFailure
+    "GET" -> case pathBits of
+      -- show all menue options
+      "menus" : [] -> mkMenuResponse
+      -- list files from directory
+      "dir" : r -> let path' = (intercalate "/" r) in
+        getHetsLibContent opts path' query >>= mkHtmlPage path'
+      -- get dgraph from file
+      "hets-lib" : r -> let file = intercalate "/" r in
+        getHetsResponse' opts sessRef $ Query (NewDGQuery file)
+          $ DisplayQuery format
+      -- get library (complies with get/hets-lib for now)
+      "libraries" : libIri : "development_graph" : [] ->
+        case parseIRI libIri of
+          Just lib -> getHetsResponse' opts sessRef
+            $ Query (NewDGQuery $ iriPath lib) $ DisplayQuery format
+          Nothing -> fail $ "failed to parse IRI from " ++ libIri
+      -- get previously created session
+      "sessions" : sessId : [] -> case readMaybe sessId of
+          Just i -> getHetsResponse' opts sessRef
+            $ Query (DGQuery i Nothing) $ DisplayQuery format
+          Nothing -> fail $ "failed to read session number from " ++ sessId
+      -- get node or edge view
+      nodeOrEdge : codedIri : c | nodeOrEdge `elem` ["node", "egde"] -> let
+        dgQ ir = maybe (NewDGQuery $ maybe (iriPath ir) id library)
+                 (`DGQuery` library) session
+        in case (nodeOrEdge, parseIRI codedIri) of
+          ("node", Just n) -> let
+            s = iriFragment n
+            i = maybe (Right s) Left $ readMaybe s in
+            getHetsResponse' opts sessRef $ Query (dgQ n) $ NodeQuery i
+              $ case c of
+                ["theory"] -> NcCmd Query.Theory
+                _ -> NcCmd Query.Info
+          ("edge", Just l) -> case readMaybe $ iriFragment l of
+            Just i -> getHetsResponse' opts sessRef
+              $ Query (dgQ l) $ EdgeQuery (EdgeId i) "edge"
+            Nothing -> fail $ "failed to read edgeId from " ++ iriFragment l
+          _ -> fail $ "failed to parse IRI from " ++ codedIri
+      -- fail if query doesn't seem to comply
+      _ -> queryFailure
+    "PUT" -> case pathBits of
+      -- execute global commands
+      -- TODO load other library ???
+      "libraries" : libIri : "proofs" : prId : cmd : [] ->
+         case readMaybe prId of
+           Nothing -> fail $ "failed to read sessionId from " ++ prId
+           Just sessId -> let
+             dgQ = DGQuery sessId $ fmap iriPath $ parseIRI libIri in
+             getHetsResponse' opts sessRef $ Query dgQ $ GlobCmdQuery cmd
+      -- execute a proof or calculus request
+      "sessions" : sessId : cmd : [] -> case readMaybe sessId of
+        Nothing -> fail $ "failed to read sessionId from " ++ sessId
+        -- look for (optional) specification of node OR edge
+        Just sId -> case (lookup2 "node", lookup2 "edge") of
+          (Just _, Just _) -> fail "pleace specify only either node or edge"
+          -- call command upon a single node
+          (Just ndIri, _) -> case parseIRI ndIri of
+            Nothing -> fail $ "failed to parse nodeIRI from " ++ ndIri
+            Just nd -> let
+              s = iriFragment nd
+              i = maybe (Right s) Left $ readMaybe s
+              -- TODO where to find 'moreTheorems', 'incls'?
+              in case anaNodeQuery [cmd] i [] [] splitQuery of
+                Right qk -> getHetsResponse' opts sessRef
+                  $ Query (DGQuery sId (Just $ iriPath nd)) qk
+                Left err -> fail err
+          -- call command upon a single edge
+          (_, Just edIri) -> case parseIRI edIri
+                        >>= readMaybe . iriFragment of
+            Just i -> getHetsResponse' opts sessRef $ Query
+              (DGQuery sId Nothing) $ EdgeQuery (EdgeId i) "edge"
+            Nothing -> fail $ "failed to read edgeId from edgeIRI: " ++ edIri
+          -- prove all nodes if no singleton is selected
+          {- TODO (big): implement proving function for ALL nodes
+          (like automaticProofs)! -}
+          _ -> getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
+              $ GlobCmdQuery cmd
+      -- fail if request doesn't comply
+      _ -> queryFailure
+    {- create failure response if request method is not known
+    (should never happen) -}
     _ -> return $ mkResponse status405 ""
+
 
 mkMenuResponse :: IO Response
 mkMenuResponse = return $ mkOkResponse $ ppTopElement $ unode "menus" mkMenus
@@ -480,10 +511,10 @@ getHetsResponse opts updates sessRef pathBits query = do
 {- | the new call of getHetsResponse responses to a RESTFull query, that has
 already been pre-analysed within runServer. Thus, a query is passed as a
 parameter. -}
-getHetsResponse' :: HetcatsOpts -> [FileInfo FilePath]
-  -> IORef (IntMap.IntMap Session) -> Query -> IO Response
-getHetsResponse' opts updates sessRef query = do
-  Result ds ms <- runResultT $ getHetsResult opts updates sessRef query
+getHetsResponse' :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> Query
+                 -> IO Response
+getHetsResponse' opts sessRef query = do
+  Result ds ms <- runResultT $ getHetsResult opts [] sessRef query
   return $ case ms of
     Nothing -> mkResponse status400 $ showRelDiags 1 ds
     Just s -> mkOkResponse s
