@@ -82,6 +82,7 @@ import qualified Data.Set as Set
 import Data.Char
 import Data.IORef
 import Data.List
+import Data.Maybe
 import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
 import Data.Time.Clock
@@ -217,7 +218,7 @@ parseRESTfull :: HetcatsOpts -> IORef (IntMap.IntMap Session)
 parseRESTfull opts sessRef pathBits query splitQuery re = let
     {- some parameters from the paths query part might be needed more than once
     (when using lookup upon querybits, you need to unpack Maybe twice) -}
-    lookup2 str = maybe Nothing id $ lookup str splitQuery
+    lookup2 str = fromMaybe Nothing $ lookup str splitQuery
     session = lookup2 "session" >>= readMaybe
     library = lookup2 "library" >>= fmap iriPath . parseIRI
     format = lookup2 "format"
@@ -257,7 +258,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
           Nothing -> fail $ "failed to read session number from " ++ sessId
       -- get node or edge view
       nodeOrEdge : codedIri : c | nodeOrEdge `elem` ["node", "egde"] -> let
-        dgQ ir = maybe (NewDGQuery $ maybe (iriPath ir) id library)
+        dgQ ir = maybe (NewDGQuery $ fromMaybe (iriPath ir) library)
                  (`DGQuery` library) session
         in case (nodeOrEdge, parseIRI codedIri) of
           ("node", Just n) -> let
@@ -275,8 +276,8 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
       -- fail if query doesn't seem to comply
       _ -> queryFailure
     "PUT" -> case pathBits of
-      -- execute global commands
-      -- TODO load other library ???
+      {- execute global commands
+         TODO load other library ??? -}
       "libraries" : libIri : "proofs" : prId : cmd : [] ->
          case readMaybe prId of
            Nothing -> fail $ "failed to read sessionId from " ++ prId
@@ -288,8 +289,8 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
         Nothing -> fail $ "failed to read sessionId from " ++ sessId
         -- look for (optional) specification of node OR edge
         Just sId -> let
-          incl = maybe False (\s ->
-            not $ elem (map toLower s) ["f", "false"]) $ lookup2 "include"
+          incl = maybe False (\ s ->
+            notElem (map toLower s) ["f", "false"]) $ lookup2 "include"
           prover = lookup2 "prover"
           translation = lookup2 "translation" >>= fmap iriFragment . parseIRI
           timeout = lookup2 "timeout" >>= readMaybe
@@ -313,7 +314,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
                     Just nc -> return $ NcCmd nc
                     _ -> fail $ "unknown node command '" ++ cmd ++ "' "
               getHetsResponse' opts sessRef $ Query (DGQuery sId
-                (Just $ iriPath nd)) $ nodeQuery
+                (Just $ iriPath nd)) nodeQuery
           -- call command upon a single edge
           (_, Just edIri) -> case parseIRI edIri
                         >>= readMaybe . iriFragment of
@@ -638,8 +639,8 @@ formatResults sessId i rs = let
   goBack1 = aRef ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
   goBack2 = aRef ('/' : show sessId) "return to DGraph"
   in ppElement $ unode "html" [ unode "head"
-    [ unode "title" "Results", (add_attr (mkAttr "type" "text/css")
-    $ unode "style" resultStyles), goBack1, plain " ", goBack2 ], rs ]
+    [ unode "title" "Results", add_attr (mkAttr "type" "text/css")
+    $ unode "style" resultStyles, goBack1, plain " ", goBack2 ], rs ]
 
 resultStyles :: String
 resultStyles = unlines
@@ -898,7 +899,7 @@ sessAns libName svg (sess, k) =
          aRef (extPath sess l k ++ d) d) displayTypes
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d
-{- the html quicklinks to nodes and edges have been removed with R.16827 -}
+-- the html quicklinks to nodes and edges have been removed with R.16827
   in htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
            (bold ("library " ++ ln)
