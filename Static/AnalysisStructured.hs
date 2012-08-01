@@ -540,6 +540,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
+  Combination {} -> return (sp, error "AnalysisStructured.Combination", dg)
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname
