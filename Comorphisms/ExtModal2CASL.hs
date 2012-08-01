@@ -13,8 +13,9 @@ module Comorphisms.ExtModal2CASL where
 
 import Logic.Logic
 import Logic.Comorphism
-
 import Common.ProofTree
+import Common.Id
+import qualified Common.Lib.Rel as Rel
 
 -- CASL
 import CASL.Logic_CASL
@@ -45,9 +46,9 @@ instance Comorphism ExtModal2CASL
     sourceSublogic ExtModal2CASL = maxSublogic
     targetLogic ExtModal2CASL = CASL
     mapSublogic ExtModal2CASL _ = Just SL.caslTop
-    map_theory ExtModal2CASL _ = fail "ExtModal2CASL.map_theory" 
-    {-(sig, sens) = case transSig sig of
+    map_theory ExtModal2CASL (sig, _sens) = case transSig sig of
       mme -> return (mme, [])
+    {-
     map_morphism ExtModal2CASL = return . mapMor
     map_sentence ExtModal2CASL sig = return . transSen sig
     map_symbol ExtModal2CASL _ = Set.singleton . mapSym
@@ -55,11 +56,19 @@ instance Comorphism ExtModal2CASL
     has_model_expansion ExtModal2CASL = True
     is_weakly_amalgamable ExtModal2CASL = True
 
-{-
+
 transSig :: ExtModalSign -> CASLSign
-transSig sign =
-   let sorSet = sortSet sign
-       fws = freshWorldSort sorSet
+transSig sign = let 
+   s1 = embedSign () sign 
+   _modExt = extendedInfo sign
+   fws = mkId [mkSimpleId "g_World"]
+   s2 = s1 {sortRel = Rel.insertKey fws $ sortRel s1}
+   in s2
+
+
+
+{-
+
        flexOps' = MapSet.fromMap . Map.foldWithKey (addWorld_OP fws)
                                     Map.empty $ MapSet.toMap flexibleOps
        flexPreds' = MapSet.fromMap . addWorldRels True relsTermMod
