@@ -169,15 +169,15 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           lift $ putIfVerbose opts 1 $ "Analyzing "
               ++ (if noLibName then "file " ++ file ++ " as " else "")
               ++ "library " ++ show ln
-          (_, ld, ga, lenv) <-
+          (lnFinal, ld, ga, lenv) <-
               anaLibDefn lgraph opts topLns libenv initDG ast file
-          case Map.lookup ln lenv of
-              Nothing -> error $ "anaString: missing library: " ++ show ln
+          case Map.lookup lnFinal lenv of
+              Nothing -> error $ "anaString: missing library: " ++ show lnFinal
               Just dg -> lift $ do
                   writeLibDefn ga file opts ld
                   when (hasEnvOut opts)
-                        (writeFileInfo opts ln file ld dg)
-                  return (ln, lenv)
+                        (writeFileInfo opts lnFinal file ld dg)
+                  return (lnFinal, lenv)
 
 -- lookup or read a library
 anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LibName
