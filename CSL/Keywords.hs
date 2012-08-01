@@ -26,7 +26,7 @@ antisymmetricS = "antisymmetric"
 arrayS :: String
 arrayS = "array"
 
-clearS :: String 
+clearS :: String
 clearS = "clear"
 
 byeS :: String
@@ -174,7 +174,7 @@ printprecisionS :: String
 printprecisionS = "printprecision"
 
 procedureS :: String
-procedureS ="procedure"
+procedureS = "procedure"
 
 quitS :: String
 quitS = "quit"
@@ -293,7 +293,7 @@ sym_plusS = "+"
 sym_minusS :: String
 sym_minusS = "-"
 
-sym_expS :: String 
+sym_expS :: String
 sym_expS = "^"
 
 sym_divS :: String
@@ -320,7 +320,7 @@ equalS = "equal"
 neqS :: String
 neqS = "neq"
 
-eqS :: String 
+eqS :: String
 eqS = "eq"
 
 geqS :: String
@@ -446,7 +446,7 @@ logbS = "logb"
 log10S :: String
 log10S = "log10"
 
-nextprimeS ::String
+nextprimeS :: String
 nextprimeS = "nextprime"
 
 roundS :: String
@@ -478,199 +478,198 @@ numericalKeywords = [absS, acosS, acoshS, acothS, acscS, acschS, asecS, asechS, 
 
 
 -- prefix operators
-appendS :: String 
+appendS :: String
 appendS = "append"
 
-arglengthS :: String 
-arglengthS =" arglenght"
+arglengthS :: String
+arglengthS = " arglenght"
 
-ceilingS :: String 
+ceilingS :: String
 ceilingS = "ceiling"
 
-coeffS :: String 
+coeffS :: String
 coeffS = "coeff"
 
-coeffnS :: String 
+coeffnS :: String
 coeffnS = "coeffn"
 
-cofactorS :: String 
+cofactorS :: String
 cofactorS = "cofactor"
 
-conjS :: String 
+conjS :: String
 conjS = "conj"
 
-degS :: String 
+degS :: String
 degS = "deg"
 
-denS :: String 
+denS :: String
 denS = "den"
 
-detS :: String 
+detS :: String
 detS = "det"
 
-defS :: String 
+defS :: String
 defS = "def"
 
-dilogS :: String 
+dilogS :: String
 dilogS = "dilog"
 
-eiS :: String 
+eiS :: String
 eiS = "ei"
 
-epsS :: String 
+epsS :: String
 epsS = "eps"
 
-erfS :: String 
+erfS :: String
 erfS = "erf"
 
-factorizeS :: String 
+factorizeS :: String
 factorizeS = "factorize"
 
-firstS :: String 
+firstS :: String
 firstS = "first"
 
-gcdS :: String 
+gcdS :: String
 gcdS = "gcd"
 
 
-gS :: String 
+gS :: String
 gS = "g"
 
-impartS :: String 
+impartS :: String
 impartS = "impart"
 
-intS :: String 
+intS :: String
 intS = "int"
 
-interpolS :: String 
+interpolS :: String
 interpolS = "interpol"
 
-lcmS :: String 
+lcmS :: String
 lcmS = "lcm"
 
-lcofS :: String 
+lcofS :: String
 lcofS = "lcof"
 
-lengthS :: String 
+lengthS :: String
 lengthS = "length"
 
-lhsS :: String 
+lhsS :: String
 lhsS = "lhs"
 
 linelengthS :: String
 linelengthS = "linelength"
 
-lltermS :: String 
+lltermS :: String
 lltermS = "llterm"
 
-mainvarS :: String 
+mainvarS :: String
 mainvarS = "mainvar"
 
-matS :: String 
+matS :: String
 matS = "mat"
 
-mateigenS :: String 
+mateigenS :: String
 mateigenS = "mateigen"
 
-maxS :: String 
+maxS :: String
 maxS = "max"
 
-minS :: String 
+minS :: String
 minS = "min"
 
-mkidS :: String 
+mkidS :: String
 mkidS = "mkid"
 
-nullspaceS :: String 
+nullspaceS :: String
 nullspaceS = "nullspace"
 
-numS :: String 
+numS :: String
 numS = "num"
 
-partS :: String 
+partS :: String
 partS = "part"
 
-pfS :: String 
+pfS :: String
 pfS = "pf"
 
-precisionS :: String 
+precisionS :: String
 precisionS = "precision"
 
-prodS :: String 
+prodS :: String
 prodS = "prod"
 
-randomS :: String 
+randomS :: String
 randomS = "random"
 
-randomnewseedS :: String 
+randomnewseedS :: String
 randomnewseedS = "randomnewseed"
 
-rankS :: String 
+rankS :: String
 rankS = "rank"
 
-rederrS :: String 
+rederrS :: String
 rederrS = "rederr"
 
-reductS :: String 
+reductS :: String
 reductS = "reduct"
 
-remainderS :: String 
+remainderS :: String
 remainderS = "remainder"
 
-repartS :: String 
+repartS :: String
 repartS = "repart"
 
-restS :: String 
+restS :: String
 restS = "rest"
 
-resultantS :: String 
+resultantS :: String
 resultantS = "resultant"
 
-reverseS :: String 
+reverseS :: String
 reverseS = "reverse"
 
-rhsS :: String 
+rhsS :: String
 rhsS = "rhs"
 
-secondS :: String 
+secondS :: String
 secondS = "second"
 
-setS :: String 
+setS :: String
 setS = "set"
 
-showrulesS :: String 
+showrulesS :: String
 showrulesS = "showrules"
 
-signS :: String 
+signS :: String
 signS = "sign"
 
-solveS :: String 
+solveS :: String
 solveS = "solve"
 
-structrS :: String 
+structrS :: String
 structrS = "structr"
 
-subS :: String 
+subS :: String
 subS = "sub"
 
-sumS :: String 
+sumS :: String
 sumS = "sum"
 
-thirdS :: String 
+thirdS :: String
 thirdS = "third"
 
-tpS :: String 
+tpS :: String
 tpS = "tp"
 
-traceS :: String 
+traceS :: String
 traceS = "trace"
 
 varnameS :: String
 varnameS = "varname"
 
 prefixKeywords :: [String]
-prefixKeywords = [appendS, arglengthS, ceilingS, coeffS, coeffnS, cofactorS, conjS, degS, denS, detS, defS, dilogS, eiS, epsS, erfS, factorizeS, firstS, gcdS, gS, impartS, intS, interpolS, lcmS, lcofS, lengthS, lhsS, linelengthS, lltermS, mainvarS, matS, mateigenS, maxS, minS, mkidS, nullspaceS, numS, partS, pfS, precisionS, prodS, randomS, randomnewseedS, rankS, rederrS, reductS, remainderS, repartS, restS, resultantS, reverseS, rhsS, secondS, setS, showrulesS, signS, solveS, structrS, subS, sumS, thirdS, tpS, traceS, varnameS] 
-
+prefixKeywords = [appendS, arglengthS, ceilingS, coeffS, coeffnS, cofactorS, conjS, degS, denS, detS, defS, dilogS, eiS, epsS, erfS, factorizeS, firstS, gcdS, gS, impartS, intS, interpolS, lcmS, lcofS, lengthS, lhsS, linelengthS, lltermS, mainvarS, matS, mateigenS, maxS, minS, mkidS, nullspaceS, numS, partS, pfS, precisionS, prodS, randomS, randomnewseedS, rankS, rederrS, reductS, remainderS, repartS, restS, resultantS, reverseS, rhsS, secondS, setS, showrulesS, signS, solveS, structrS, subS, sumS, thirdS, tpS, traceS, varnameS]
 
 
 -- reserved variables
@@ -719,154 +718,154 @@ varKeywords = [cardnoS, eS, evalmodeS, fortwidthS, highpowS, iS, infinityS, kexl
 
 -- switches
 
-adjprecS :: String 
+adjprecS :: String
 adjprecS = "adjprec"
 
-algintS :: String 
+algintS :: String
 algintS = "algint"
 
-allbranchS :: String 
+allbranchS :: String
 allbranchS = "allbranch"
 
-allfacS :: String 
+allfacS :: String
 allfacS = "allfac"
 
-balancemodS :: String 
+balancemodS :: String
 balancemodS = "balancemod"
 
-bfspaceS :: String 
+bfspaceS :: String
 bfspaceS = "bfspace"
 
-combineexptS :: String 
+combineexptS :: String
 combineexptS = "comineexpt"
 
-defnS :: String 
+defnS :: String
 defnS = "defn"
 
-demoS :: String 
+demoS :: String
 demoS = "demo"
 
-divS :: String 
+divS :: String
 divS = "div"
 
-echoS :: String 
+echoS :: String
 echoS = "echo"
 
-errcontS :: String 
+errcontS :: String
 errcontS = "errcont"
 
-evallhseqpS :: String 
+evallhseqpS :: String
 evallhseqpS = "evallhseqp"
 
 
-expandlogsS :: String 
-expandlogsS = "expandlogs" 
+expandlogsS :: String
+expandlogsS = "expandlogs"
 
-ezgcdS :: String 
+ezgcdS :: String
 ezgcdS = "ezgcd"
 
-fortS :: String 
+fortS :: String
 fortS = "fort"
 
-fullrootsS :: String 
+fullrootsS :: String
 fullrootsS = "fullroots"
 
-ifactorS :: String 
+ifactorS :: String
 ifactorS = "ifactor"
 
 
-intstrS :: String 
+intstrS :: String
 intstrS = "intstr"
 
 
-listS :: String 
+listS :: String
 listS = "list"
 
-listargsS :: String 
+listargsS :: String
 listargsS = "listargs"
 
-mcdS :: String 
+mcdS :: String
 mcdS = "mcd"
 
-modularS :: String 
+modularS :: String
 modularS = "modular"
 
-msgS :: String 
+msgS :: String
 msgS = "msg"
 
-multiplicitiesS :: String 
+multiplicitiesS :: String
 multiplicitiesS = "multiplicities"
 
-natS :: String 
+natS :: String
 natS = "nat"
 
-neroS :: String 
+neroS :: String
 neroS = "nero"
 
-nosplitS :: String 
+nosplitS :: String
 nosplitS = "nosplit"
 
-outputS :: String 
+outputS :: String
 outputS = "output"
 
-periodS :: String 
+periodS :: String
 periodS = "period"
 
-preciseS :: String 
+preciseS :: String
 preciseS = "precise"
 
-pretS :: String 
+pretS :: String
 pretS = "pret"
 
-priS :: String 
+priS :: String
 priS = "pri"
 
-ratS :: String 
+ratS :: String
 ratS = "rat"
 
-ratargS :: String 
+ratargS :: String
 ratargS = "ratargs"
 
-rationalS :: String 
+rationalS :: String
 rationalS = "rational"
 
-rationalizeS :: String 
+rationalizeS :: String
 rationalizeS = "rationalize"
 
-ratrpiS :: String 
+ratrpiS :: String
 ratrpiS = "ratrpi"
 
-revpriS :: String 
+revpriS :: String
 revpriS = "repvpri"
 
-rlisp88S :: String 
+rlisp88S :: String
 rlisp88S = "rlisp88"
 
-roundallS :: String 
+roundallS :: String
 roundallS = "roundall"
 
-roundbdS :: String 
+roundbdS :: String
 roundbdS = "roundbd"
 
-roundedS :: String 
+roundedS :: String
 roundedS = "rounded"
 
-savestructrS :: String 
+savestructrS :: String
 savestructrS = "savestructr"
 
-solvesingularS :: String 
+solvesingularS :: String
 solvesingularS = "solvesingular"
 
-timeS :: String 
+timeS :: String
 timeS = "times"
 
-traS ::String 
+traS :: String
 traS = "tra"
 
-trfacS :: String 
+trfacS :: String
 trfacS = "trafac"
 
-trigformS :: String 
+trigformS :: String
 trigformS = "trigform"
 
 
@@ -875,7 +874,6 @@ trintS = "trint"
 
 switchKeywords :: [String]
 switchKeywords = [adjprecS, algintS, allbranchS, allfacS, balancemodS, bfspaceS, combineexptS, defnS, demoS, divS, echoS, errcontS, evallhseqpS, expS, expandlogsS, ezgcdS, factorS, fortS, fullrootsS, gcdS, ifactorS, intS, intstrS, lcmS, listS, listargsS, mcdS, modularS, msgS, multiplicitiesS, natS, neroS, nosplitS, outputS, periodS, preciseS, pretS, priS, ratS, ratargS, rationalS, rationalizeS, ratrpiS, revpriS, rlisp88S, roundallS, roundbdS, roundedS, savestructrS, solvesingularS, timeS, traS, trfacS, trigformS, trintS]
-
 
 
 -- others
@@ -915,13 +913,13 @@ whenS = "when"
 whileS :: String
 whileS = "while"
 
-wsS :: String 
+wsS :: String
 wsS = "ws"
 
 otherKeywords :: [String]
 otherKeywords = [beginS, doS, exprS, fexprS, inputS, lambdaS, lispS, macroS, productS, repeatS, smacroS, sumS, untilS, whenS, whileS, wsS]
 
 
--- 
+--
 allKeywords :: [String]
 allKeywords = commandKeywords ++ booleanKeywords ++ infixKeywords ++ numericalKeywords ++ prefixKeywords ++ varKeywords ++ switchKeywords ++ otherKeywords
