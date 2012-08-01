@@ -22,6 +22,12 @@ ontology o1 =
      (Q x) )
 end
 
+ontology foo:a = {}
+ontology bar:b = {}
+ontology bar:a = {}
+ontology foo:b = {}
+ontology foo:bar = {}
+
 interpretation i0 : foo:a to bar:b
 end
 
@@ -68,10 +74,10 @@ alignment a8 : foo:owltime_instant_l to bar:owltime_le
 , eRef1 $\ni$            ERef2
 , eRef1 $\in$            ERef2
 , eRef1 $\mapsto$        ERef2
-, relation < (0.1) {eRef1 ERef2} 
-, relation <       {eRef1 ERef2} 
-, relation   (0.1) {eRef1 ERef2} 
-, relation         {eRef1 ERef2} 
+, relation < (0.1) {eRef1 ERef2}
+, relation <       {eRef1 ERef2}
+, relation   (0.1) {eRef1 ERef2}
+, relation         {eRef1 ERef2}
 end
 
 
