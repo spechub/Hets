@@ -489,6 +489,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
+  _ -> return (itm, dg, libenv, lg, eo)
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
