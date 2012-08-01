@@ -400,7 +400,7 @@ fittingArg l = do
 
 
 parseCorrespondences :: LogicGraph -> AParser st [CORRESPONDENCE]
-parseCorrespondences l = commaSep1 $ correspondence l
+parseCorrespondences l = commaSep1 $ correspondence l << addAnnos
 
 correspondence :: LogicGraph -> AParser st CORRESPONDENCE
 correspondence l = do
