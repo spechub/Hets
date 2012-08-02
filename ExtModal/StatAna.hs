@@ -194,7 +194,7 @@ addTermMod fullSign tmi sgn = let
   in if Set.member tmi srts then
      if Set.member tmi tm
      then Result [mkDiag Hint "repeated term modality" tmi] $ Just sgn
-     else let sps = Set.difference tm $ supersortsOf tmi fullSign in
+     else let sps = Set.intersection tm $ supersortsOf tmi fullSign in
        if Set.null sps
        then return sgn { termMods = Set.insert tmi tm }
        else Result [mkDiag Warning
