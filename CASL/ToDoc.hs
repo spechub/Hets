@@ -37,6 +37,7 @@ module CASL.ToDoc
     , printAttr
     , printAnnotedBulletFormulas
     , FormExtension (..)
+    , isQuant
     ) where
 
 import Common.Id

@@ -90,7 +90,7 @@ instance Pretty EM_SIG_ITEM where
 instance FormExtension EM_FORMULA where
   isQuantifierLike ef = case ef of
     UntilSince {} -> False
-
+    PrefixForm _ f _ -> isQuant f
     _ -> True
   prefixExt ef = case ef of
     ModForm _ -> id
@@ -132,7 +132,11 @@ instance Pretty FormPrefix where
 
 instance Pretty EM_FORMULA where
   pretty ef = case ef of
-    PrefixForm p s _ -> pretty p <+> prJunct s
+    PrefixForm p s _ -> (case p of
+      BoxOrDiamond _ m _ _ -> case m of
+        SimpleMod _ -> hsep
+        _ -> sep
+      _ -> hsep) [pretty p, prJunct s]
     UntilSince choice s1 s2 _ -> printInfix True sep (prJunct s1)
       (keyword $ if choice then untilS else sinceS)
       $ prJunct s2
