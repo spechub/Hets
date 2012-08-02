@@ -87,18 +87,19 @@ minSublogicOfMod m = case m of
     TransClos c -> (minSublogicOfMod c) {hasTransClos = True}
     Guard f -> minSublogicOfForm f
 
+minSublogicOfPrefix :: FormPrefix -> Sublogic
+minSublogicOfPrefix fp = case fp of
+    BoxOrDiamond _ m _ _ -> minSublogicOfMod m
+    Hybrid _ _ -> botSublogic {hasNominals = True}
+    FixedPoint _ _ -> botSublogic {hasFixPoints = True}
+    _ -> botSublogic
 
 minSublogicOfEM :: EM_FORMULA -> Sublogic
 minSublogicOfEM ef = case ef of
-    BoxOrDiamond _ m _ _ f _ -> joinSublogic (minSublogicOfMod m)
+    PrefixForm pf f _ -> joinSublogic (minSublogicOfPrefix pf)
         (minSublogicOfForm f)
-    Hybrid _ _ f _ -> (minSublogicOfForm f) {hasNominals = True}
     UntilSince _ f1 f2 _ -> joinSublogic (minSublogicOfForm f1)
         (minSublogicOfForm f2)
-    PathQuantification _ f _ -> minSublogicOfForm f
-    NextY _ f _ -> minSublogicOfForm f
-    StateQuantification _ _ f _ -> minSublogicOfForm f
-    FixedPoint _ _ f _ -> (minSublogicOfForm f) {hasFixPoints = True}
     ModForm md -> minSublogicOfModDefn md
 
 

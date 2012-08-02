@@ -103,8 +103,8 @@ modalFormulaParser = do
     f2 <- rekPrimParser
     return $ UntilSince b f1 f2 $ tokPos t
 
-prefixModifier :: AParser st (FORMULA EM_FORMULA -> EM_FORMULA)
-prefixModifier = let mkF f r = return $ flip f $ tokPos r in
+prefixModifier :: AParser st (FormPrefix, Range)
+prefixModifier = let mkF f r = return (f, tokPos r) in
       (asKey allPathsS >>= mkF (PathQuantification True))
   <|> (asKey somePathsS >>= mkF (PathQuantification False))
   <|> (asKey nextS >>= mkF (NextY True))
@@ -124,22 +124,21 @@ prefixModifier = let mkF f r = return $ flip f $ tokPos r in
       <|> (asKey hereS >> return False)
     nom <- simpleId
     mkF (Hybrid ahb nom) nom
-
--- | Modal formula parser
-modalPrimFormulaParser :: AParser st EM_FORMULA
-modalPrimFormulaParser = fmap ModForm modDefnParser <|> do
+  <|> do
     (modal, b, r) <- boxParser <|> diamondParser
     (lgb, val) <- option (False, 1) $ do
        lgb <- option False $ (asKey lessEq >> return True)
          <|> (asKey greaterEq >> return False)
        number <- getNumber << skipSmart
        return (lgb, value 10 number)
+    return (BoxOrDiamond b modal lgb val, r)
+
+-- | Modal formula parser
+modalPrimFormulaParser :: AParser st EM_FORMULA
+modalPrimFormulaParser = fmap ModForm modDefnParser <|> do
+    (f, r) <- prefixModifier
     em_formula <- rekPrimParser
-    return $ BoxOrDiamond b modal lgb val em_formula r
-  <|> do
-    f <- prefixModifier
-    em_formula <- rekPrimParser
-    return $ f em_formula
+    return $ PrefixForm f em_formula r
 
 -- | Term modality parser
 parsePrimModality :: AParser st MODALITY

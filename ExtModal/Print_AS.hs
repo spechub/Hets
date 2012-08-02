@@ -90,6 +90,7 @@ instance Pretty EM_SIG_ITEM where
 instance FormExtension EM_FORMULA where
   isQuantifierLike ef = case ef of
     UntilSince {} -> False
+
     _ -> True
   prefixExt ef = case ef of
     ModForm _ -> id
@@ -103,38 +104,38 @@ isEMJunct f = case f of
 prJunct :: FORMULA EM_FORMULA -> Doc
 prJunct f = (if isEMJunct f then parens else id) $ pretty f
 
-instance Pretty EM_FORMULA where
-  pretty ef = case ef of
-    BoxOrDiamond choice modality leq_geq number s _ ->
+instance Pretty FormPrefix where
+  pretty fp = case fp of
+    BoxOrDiamond choice modality leq_geq number ->
       let sp = case modality of
                  SimpleMod _ -> (<>)
                  _ -> (<+>)
           mdl = pretty modality
-      in sep [ (case choice of
+      in (case choice of
                   Box -> brackets mdl
                   Diamond -> less `sp` mdl `sp` greater
                   EBox -> text oB <> mdl <> text cB)
                <+> if not leq_geq && number == 1 then empty else
                 (if leq_geq then keyword lessEq else empty)
                 <> text (show number)
-              , prJunct s]
-    Hybrid choice nom s _ ->
+    Hybrid choice nom ->
       keyword (if choice then atS else hereS) <+> pretty nom
-      <+> prJunct s
+    PathQuantification choice ->
+      keyword (if choice then allPathsS else somePathsS)
+    NextY choice ->
+      keyword (if choice then nextS else yesterdayS)
+    StateQuantification dir_choice choice ->
+      keyword (if dir_choice then if choice then generallyS else eventuallyS
+               else if choice then hithertoS else previouslyS)
+    FixedPoint choice p_var ->
+      keyword (if choice then muS else nuS) <+> pretty p_var <+> bullet
+
+instance Pretty EM_FORMULA where
+  pretty ef = case ef of
+    PrefixForm p s _ -> pretty p <+> prJunct s
     UntilSince choice s1 s2 _ -> printInfix True sep (prJunct s1)
       (keyword $ if choice then untilS else sinceS)
       $ prJunct s2
-    PathQuantification choice s _ ->
-      keyword (if choice then allPathsS else somePathsS) <+> prJunct s
-    NextY choice s _ ->
-      keyword (if choice then nextS else yesterdayS) <+> prJunct s
-    StateQuantification dir_choice choice s _ ->
-      keyword (if dir_choice then if choice then generallyS else eventuallyS
-               else if choice then hithertoS else previouslyS)
-      <+> prJunct s
-    FixedPoint choice p_var s _ -> sep
-      [ keyword (if choice then muS else nuS) <+> pretty p_var
-      , bullet <+> prJunct s]
     ModForm md -> pretty md
 
 instance Pretty EModalSign where

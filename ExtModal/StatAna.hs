@@ -42,17 +42,17 @@ import Control.Monad
 
 instance TermExtension EM_FORMULA where
   freeVarsOfExt sign frm = case frm of
-    BoxOrDiamond _ m _ _ f _ ->
-        Set.union (freeModVars sign m) $ freeVars sign f
-    Hybrid _ _ f _ -> freeVars sign f
+    PrefixForm p f _ ->
+        Set.union (freePrefixVars sign p) $ freeVars sign f
     UntilSince _ f1 f2 _ -> Set.union (freeVars sign f1) $ freeVars sign f2
-    PathQuantification _ f _ -> freeVars sign f
-    StateQuantification _ _ f _ -> freeVars sign f
-    NextY _ f _ -> freeVars sign f
-    FixedPoint _ _ f _ -> freeVars sign f
     ModForm (ModDefn _ _ _ afs _) ->
         Set.unions $ map (freeVars sign . item)
                $ concatMap (frameForms . item) afs
+
+freePrefixVars :: Sign EM_FORMULA e -> FormPrefix -> Set.Set (VAR, SORT)
+freePrefixVars sign fp = case fp of
+    BoxOrDiamond _ m _ _ -> freeModVars sign m
+    _ -> Set.empty
 
 freeModVars :: Sign EM_FORMULA e -> MODALITY -> Set.Set (VAR, SORT)
 freeModVars sign md = case md of
@@ -115,36 +115,29 @@ frmTypeAna sign form = let
   checkFrame (FrameForm vs fs r) = do
     nfs <- mapAnM (minExpFORMULA frmTypeAna sign . mkForall vs) fs
     return $ FrameForm [] nfs r
-  in case form of
-       BoxOrDiamond choice md leq_geq number f pos -> do
+  checkPrefix pf = case pf of
+       BoxOrDiamond choice md leq_geq number -> do
          new_md <- checkMod md
-         new_f <- minExpFORMULA frmTypeAna sign f
+         let new_pf = BoxOrDiamond choice new_md leq_geq number
          if number >= 0
-           then return $ BoxOrDiamond choice new_md leq_geq number new_f pos
+           then return new_pf
            else Result [mkDiag Error "negative number grading" number]
-                  $ Just $ BoxOrDiamond choice new_md leq_geq number new_f pos
-       Hybrid choice nm f pos -> do
-         new_f <- minExpFORMULA frmTypeAna sign f
+                  $ Just new_pf
+       Hybrid _ nm ->
          if Set.member nm (nominals $ extendedInfo sign)
-           then return $ Hybrid choice nm new_f pos
+           then return pf
            else Result [mkDiag Error "unknown nominal" nm]
-                    $ Just $ Hybrid choice nm new_f pos
+                    $ Just pf
+       _ -> return pf
+  in case form of
+       PrefixForm pf f pos -> do
+         new_pf <- checkPrefix pf
+         new_f <- minExpFORMULA frmTypeAna sign f
+         return $ PrefixForm new_pf new_f pos
        UntilSince choice f1 f2 pos -> do
          new_f1 <- minExpFORMULA frmTypeAna sign f1
          new_f2 <- minExpFORMULA frmTypeAna sign f2
          return $ UntilSince choice new_f1 new_f2 pos
-       PathQuantification choice f pos -> do
-         new_f <- minExpFORMULA frmTypeAna sign f
-         return $ PathQuantification choice new_f pos
-       StateQuantification t_dir choice f pos -> do
-         new_f <- minExpFORMULA frmTypeAna sign f
-         return $ StateQuantification t_dir choice new_f pos
-       NextY choice f pos -> do
-         new_f <- minExpFORMULA frmTypeAna sign f
-         return $ NextY choice new_f pos
-       FixedPoint choice fpvar f pos -> do
-         new_f <- minExpFORMULA frmTypeAna sign f
-         return $ FixedPoint choice fpvar new_f pos
        ModForm (ModDefn is_time isTerm anno_list forms pos) -> do
          new_forms <- mapAnM checkFrame forms
          return $ ModForm $ ModDefn is_time isTerm anno_list new_forms pos
@@ -285,24 +278,19 @@ parenMod m = case m of
     TermMod t -> TermMod $ mapTerm parenExtForm t
     _ -> m
 
+parenPrefix :: FormPrefix -> FormPrefix
+parenPrefix pf = case pf of
+    BoxOrDiamond choice md leq_geq nr ->
+        BoxOrDiamond choice (parenMod md) leq_geq nr
+    _ -> pf
+
 parenExtForm :: EM_FORMULA -> EM_FORMULA
 parenExtForm f = case f of
-    BoxOrDiamond choice md leq_geq nr frm pos ->
-        BoxOrDiamond choice (parenMod md) leq_geq nr
-            (mapFormula parenExtForm frm) pos
-    Hybrid choice nom frm pos ->
-        Hybrid choice nom (mapFormula parenExtForm frm) pos
+    PrefixForm p frm pos ->
+        PrefixForm (parenPrefix p) (mapFormula parenExtForm frm) pos
     UntilSince choice f1 f2 pos ->
         UntilSince choice (mapFormula parenExtForm f1)
                        (mapFormula parenExtForm f2) pos
-    PathQuantification choice frm pos ->
-        PathQuantification choice (mapFormula parenExtForm frm) pos
-    StateQuantification t_dir choice frm pos ->
-        StateQuantification t_dir choice (mapFormula parenExtForm frm) pos
-    NextY choice frm pos ->
-        NextY choice (mapFormula parenExtForm frm) pos
-    FixedPoint choice fpvar frm pos ->
-        FixedPoint choice fpvar (mapFormula parenExtForm frm) pos
     ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn
         ti te is (map (fmap parenFrameForm) fs) pos
 
@@ -323,33 +311,25 @@ resolveMod ga ids m = case m of
       $ resolveMixTrm parenExtForm resolveExtForm ga ids t
     _ -> return m
 
+resolvePrefix :: MixResolve FormPrefix
+resolvePrefix ga ids pf = case pf of
+    BoxOrDiamond choice ms leq_geq nr -> do
+      nms <- resolveMod ga ids ms
+      return $ BoxOrDiamond choice nms leq_geq nr
+    _ -> return pf
+
 resolveExtForm :: MixResolve EM_FORMULA
 resolveExtForm ga ids f =
   let recResolve = resolveMixFrm parenExtForm resolveExtForm ga ids
   in case f of
-    BoxOrDiamond choice ms leq_geq nr frm pos -> do
-      nms <- resolveMod ga ids ms
+    PrefixForm p frm pos -> do
+      np <- resolvePrefix ga ids p
       new_frm <- recResolve frm
-      return $ BoxOrDiamond choice nms leq_geq nr new_frm pos
-    Hybrid choice nom frm pos -> do
-      new_frm <- recResolve frm
-      return $ Hybrid choice nom new_frm pos
+      return $ PrefixForm np new_frm pos
     UntilSince choice f1 f2 pos -> do
       new_f1 <- recResolve f1
       new_f2 <- recResolve f2
       return $ UntilSince choice new_f1 new_f2 pos
-    PathQuantification choice frm pos -> do
-      new_frm <- recResolve frm
-      return $ PathQuantification choice new_frm pos
-    StateQuantification t_dir choice frm pos -> do
-      new_frm <- recResolve frm
-      return $ StateQuantification t_dir choice new_frm pos
-    NextY choice frm pos -> do
-      new_frm <- recResolve frm
-      return $ NextY choice new_frm pos
-    FixedPoint choice fpvar frm pos -> do
-      new_frm <- recResolve frm
-      return $ FixedPoint choice fpvar new_frm pos
     ModForm (ModDefn ti te is fs pos) -> do
       nfs <- mapAnM (resolveFrameForm ga ids) fs
       return $ ModForm $ ModDefn ti te is nfs pos
@@ -379,14 +359,9 @@ anaFORMULA mix sig f = do
 
 getEFormPredToks :: EM_FORMULA -> Set.Set Token
 getEFormPredToks ef = case ef of
-    BoxOrDiamond _ _ _ _ f _ -> getFormPredToks f
-    Hybrid _ _ f _ -> getFormPredToks f
+    PrefixForm _ f _ -> getFormPredToks f
     UntilSince _ f1 f2 _ ->
         Set.union (getFormPredToks f1) (getFormPredToks f2)
-    NextY _ f _ -> getFormPredToks f
-    PathQuantification _ f _ -> getFormPredToks f
-    StateQuantification _ _ f _ -> getFormPredToks f
-    FixedPoint _ _ f _ -> getFormPredToks f
     ModForm _ -> Set.empty
 
 getFormPredToks :: FORMULA EM_FORMULA -> Set.Set Token

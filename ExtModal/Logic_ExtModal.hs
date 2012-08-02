@@ -72,19 +72,18 @@ simEMmod sign tm = case tm of
   TermMod trm -> TermMod $ simplifyTerm frmTypeAna simEMSen sign trm
   _ -> tm
 
+simEMprefix :: Sign EM_FORMULA EModalSign -> FormPrefix -> FormPrefix
+simEMprefix sign pf = case pf of
+  BoxOrDiamond choice tm leq_geq number ->
+    BoxOrDiamond choice (simEMmod sign tm) leq_geq number
+  _ -> pf
+
 -- Simplification of formulas - simplifySen for ExtFORMULA
 simEMSen :: Sign EM_FORMULA EModalSign -> EM_FORMULA -> EM_FORMULA
 simEMSen sign frm =
   let rsimf = simplifySen frmTypeAna simEMSen sign in case frm of
-  BoxOrDiamond choice tm leq_geq number f pos -> BoxOrDiamond choice
-      (simEMmod sign tm) leq_geq number (rsimf f) pos
-  Hybrid choice nom f pos -> Hybrid choice nom (rsimf f) pos
+  PrefixForm p f pos -> PrefixForm (simEMprefix sign p) (rsimf f) pos
   UntilSince choice f1 f2 pos -> UntilSince choice (rsimf f1) (rsimf f2) pos
-  NextY choice f pos -> NextY choice (rsimf f) pos
-  PathQuantification choice f pos -> PathQuantification choice (rsimf f) pos
-  StateQuantification t_dir choice f pos ->
-    StateQuantification t_dir choice (rsimf f) pos
-  FixedPoint choice p_var f pos -> FixedPoint choice p_var (rsimf f) pos
   ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te is
     (map (fmap $ simEMFrame sign) fs) pos
 

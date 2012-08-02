@@ -85,23 +85,21 @@ mapEMmod morph tm = case tm of
   Guard frm -> Guard $ mapSen mapEMform morph frm
   TermMod trm -> TermMod $ mapTerm mapEMform morph trm
 
+mapEMprefix :: Morphism EM_FORMULA EModalSign MorphExtension -> FormPrefix
+  -> FormPrefix
+mapEMprefix morph pf = case pf of
+  BoxOrDiamond choice tm leq_geq num ->
+    BoxOrDiamond choice (mapEMmod morph tm) leq_geq num
+  _ -> pf
+
 -- Modal formula mapping via signature morphism
 mapEMform :: MapSen EM_FORMULA EModalSign MorphExtension
 mapEMform morph frm =
   let rmapf = mapSen mapEMform morph
       em = extended_map morph
   in case frm of
-  BoxOrDiamond choice tm leq_geq num f pos ->
-    BoxOrDiamond choice (mapEMmod morph tm) leq_geq num (rmapf f) pos
-  Hybrid choice nom f pos -> Hybrid choice
-    (Map.findWithDefault nom nom $ nom_map em)
-    (rmapf f) pos
+  PrefixForm p f pos -> PrefixForm (mapEMprefix morph p) (rmapf f) pos
   UntilSince choice f1 f2 pos -> UntilSince choice (rmapf f1) (rmapf f2) pos
-  NextY choice f pos -> NextY choice (rmapf f) pos
-  PathQuantification choice f pos -> PathQuantification choice (rmapf f) pos
-  StateQuantification t_dir choice f pos ->
-    StateQuantification t_dir choice (rmapf f) pos
-  FixedPoint choice p_var f pos -> FixedPoint choice p_var (rmapf f) pos
   ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te
     (map (fmap $ \ i -> Map.findWithDefault i i
          $ if Set.member i $ sortSet $ msource morph then

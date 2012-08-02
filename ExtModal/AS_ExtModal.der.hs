@@ -104,23 +104,21 @@ data BoxOp = Box | Diamond | EBox deriving (Show, Eq, Ord)
 {- the EBox is a short cut for a box and a diamond asserting
 that a next world exists and that the formula holds in all of them. -}
 
-data EM_FORMULA
-  = BoxOrDiamond BoxOp MODALITY Bool Int (FORMULA EM_FORMULA) Range
+data FormPrefix
+  = BoxOrDiamond BoxOp MODALITY Bool Int
     {- The first identifier and the term specify the kind of the modality
     pos: "[]", "<>" or "<[]>"
     The second identifier is used for grading:
     pos: "<=" or ">=", True if Leq (less than/equal),
     False if Geq (greater than/equal), positive integers -}
-  | Hybrid Bool SIMPLE_ID (FORMULA EM_FORMULA) Range
+  | Hybrid Bool SIMPLE_ID
                 {- True if @, False if Here
                 pos: "@", "Here" -}
-  | UntilSince Bool (FORMULA EM_FORMULA) (FORMULA EM_FORMULA) Range
-                -- pos: "Until", "Since", True if  Until, False if Since
-  | PathQuantification Bool (FORMULA EM_FORMULA) Range
+  | PathQuantification Bool
     -- pos: "A", "E", True if Universal (A), False if Existential (E)
-  | NextY Bool (FORMULA EM_FORMULA) Range
+  | NextY Bool
                 -- pos: "X", "Y", True if Next (X), False if Yesterday (Y)
-  | StateQuantification Bool Bool (FORMULA EM_FORMULA) Range
+  | StateQuantification Bool Bool
     {- The time direction (past vs future) and
     quantification type must be given, as follows:
                 (True, True) if (Future, Universal), i.e. Generally (G);
@@ -128,7 +126,13 @@ data EM_FORMULA
                 (False, True) if (Past, Universal), i.e. Hitherto (H);
                 (False, False) if (Past, Existential), i.e. Previously (P);
                 pos: "G", "H", "F", "P" -}
-  | FixedPoint Bool VAR (FORMULA EM_FORMULA) Range
+  | FixedPoint Bool VAR
                 -- pos: "mu", "nu", True if "mu", False if "nu"
+    deriving (Eq, Ord, Show)
+
+data EM_FORMULA
+  = PrefixForm FormPrefix (FORMULA EM_FORMULA) Range
+  | UntilSince Bool (FORMULA EM_FORMULA) (FORMULA EM_FORMULA) Range
+                -- pos: "Until", "Since", True if  Until, False if Since
   | ModForm ModDefn
     deriving (Eq, Ord, Show)
