@@ -18,12 +18,10 @@ import Common.AS_Annotation
 import Common.Consistency
 import Common.Id
 import Common.Result
-import Common.ProverTools
-import Common.Utils (getTempFile)
+import Common.Utils
 
 import System.Directory
 import System.Exit
-import System.Process
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -99,12 +97,8 @@ showQDimacs inSym exSym sigMap fforms =
 runSKizzo :: String                  -- ^ File in qdimacs syntax
           -> IO Conservativity
 runSKizzo qd = do
-      noProg <- missingExecutableInPath proverName
-      if noProg then
-        return $ Unknown (proverName ++ " not found in your $PATH$")
-        else do
               path <- getTempFile qd "sKizzoTemp.qdimacs"
-              (exCode, _, _) <- readProcessWithExitCode proverName
+              (exCode, _, err) <- executeProcess proverName
                 (words defOptions ++ [path]) ""
               removeFile path
               return $ case exCode of
@@ -113,6 +107,7 @@ runSKizzo qd = do
                   20 -> Inconsistent
                   30 -> Unknown "Timeout"
                   40 -> Unknown "Cannot solve"
+                  127 -> Unknown err
                   250 -> Unknown "Out of memory"
                   251 -> Unknown "sKizzo crashed"
                   254 -> Unknown "File not found"

@@ -36,7 +36,6 @@ import Proofs.BatchProcessing
 import Interfaces.GenericATPState
 
 import System.Directory
-import System.Process
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
@@ -123,7 +122,7 @@ runDepQBF ps cfg saveQDIMACS thName nGoal = do
     when saveQDIMACS (writeFile saveFile prob)
     stpTmpFile <- getTempFile prob saveFile
     t_start <- getHetsTime
-    (exitCode, stdoutC, stderrC) <- readProcessWithExitCode "depqbf"
+    (exitCode, stdoutC, stderrC) <- executeProcess "depqbf"
         (show tl : extraOpts cfg ++ [stpTmpFile]) ""
     t_end <- getHetsTime
     removeFile stpTmpFile

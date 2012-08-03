@@ -67,7 +67,6 @@ import Common.GtkGoal
 import Common.IRI
 import Common.LibName
 import Common.PrintLaTeX
-import Common.ProverTools (missingExecutableInPath)
 import Common.Result
 import Common.ResultT
 import Common.ToXml
@@ -88,7 +87,6 @@ import Data.Graph.Inductive.Graph (lab)
 import Data.Time.Clock
 
 import System.Random
-import System.Process
 import System.Directory
 import System.Exit
 import System.FilePath
@@ -420,8 +418,8 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
               [ "utils", "Hets/utils"
               , "/home/www.informatik.uni-bremen.de/cofi/hets-tmp" ]
          withinDirectory tmpDir $ do
-           (ex1, out1, err1) <- readProcessWithExitCode "pdflatex" [tmpFile] ""
-           (ex2, out2, err2) <- readProcessWithExitCode "pdflatex" [tmpFile] ""
+           (ex1, out1, err1) <- executeProcess "pdflatex" [tmpFile] ""
+           (ex2, out2, err2) <- executeProcess "pdflatex" [tmpFile] ""
            let pdfFile = replaceExtension tmpFile "pdf"
            pdf <- doesFileExist pdfFile
            if ex1 == ExitSuccess && ex2 == ExitSuccess && pdf then do
@@ -458,11 +456,7 @@ getDGraph opts sessRef dgQ = case dgQ of
 
 getSVG :: String -> String -> DGraph -> ResultT IO String
 getSVG title url dg = do
-    nodot <- lift $ missingExecutableInPath "dot"
-    if nodot
-      then fail "cannot find dot. use \"sudo apt-get install graphviz\" to fix."
-      else do
-        (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
+        (exCode, out, err) <- lift $ executeProcess "dot" ["-Tsvg"]
           $ dotGraph title False url dg
         case exCode of
           ExitSuccess -> liftR $ extractSVG dg out

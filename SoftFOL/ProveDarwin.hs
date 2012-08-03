@@ -33,7 +33,7 @@ import qualified Common.Result as Result
 import Common.ProofTree
 import Common.ProverTools
 import Common.SZSOntology
-import Common.Utils (basename, getTempFile)
+import Common.Utils
 
 import Data.Char (isDigit)
 import Data.List
@@ -45,7 +45,6 @@ import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 
 import System.Directory
-import System.Process
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -232,7 +231,7 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
     else do
     timeTmpFile <- getTempFile prob tmpFile
     (_, pout, perr) <-
-      readProcessWithExitCode bin (words options ++ [timeTmpFile]) ""
+      executeProcess bin (words options ++ [timeTmpFile]) ""
     let l = lines $ pout ++ perr
         (res, _, tUsed) = parseOutput l
     removeFile timeTmpFile

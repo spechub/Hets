@@ -29,7 +29,6 @@ import Common.Id
 import Common.IRI (simpleIdToIRI)
 import Common.AS_Annotation
 import Common.Result
-import Common.ProverTools
 import Common.Utils
 import Common.SAX
 import Control.Monad
@@ -53,7 +52,6 @@ import Data.Maybe (fromMaybe)
 import System.Exit
 import System.FilePath.Posix
 import System.Directory
-import System.Process
 
 readTuple :: (Show a, Show b) => MSaxState a -> MSaxState b -> MSaxState (a, b)
 readTuple f1 f2 = do
@@ -222,8 +220,6 @@ importData opts fp' = do
   fp <- canonicalizePath fp'
   let image = "hol_light.dmtcp"
       dmtcpBin = "dmtcp_restart"
-  missBin <- missingExecutableInPath dmtcpBin
-  when missBin $ fail $ "HolLight.importData: " ++ dmtcpBin ++ " not found"
   tmpImage <- getTempFile "" image
   imageFile <- fmap (</> image) $ getEnvDef
    "HETS_HOLLIGHT_TOOLS" "HolLight/OcamlTools/"
@@ -232,7 +228,7 @@ importData opts fp' = do
   e2 <- doesFileExist imageFile
   unless e2 $ fail $ image ++ " not found"
   tempFile <- getTempFile "" (takeBaseName fp)
-  (ex, sout, err) <- readProcessWithExitCode dmtcpBin [tmpImage]
+  (ex, sout, err) <- executeProcess dmtcpBin [tmpImage]
     $ "use_file " ++ show fp ++ ";;\n"
     ++ "inject_hol_include " ++ show fp ++ ";;\n"
     ++ "export_libs (get_libs()) " ++ show tempFile ++ ";;\n"

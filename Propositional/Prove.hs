@@ -46,7 +46,6 @@ import Data.Maybe
 import Data.Time (TimeOfDay, timeToTimeOfDay, midnight)
 
 import System.Directory
-import System.Process
 import System.Exit
 
 -- * Prover implementation
@@ -90,10 +89,11 @@ consCheck thName _ tm _ =
             dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc")
                              sig axioms Nothing
             tmpFile <- getTempFile dimacsOutput thName_clean
-            (exitCode, resultHf, _) <-
-              readProcessWithExitCode zchaffS [tmpFile] ""
+            (exitCode, resultHf, err) <-
+              executeProcess zchaffS [tmpFile] ""
             return $ if exitCode /= ExitSuccess then LP.CCStatus
-                   (ProofTree $ "error by call zchaff " ++ thName)
+                   (ProofTree $ (if null err then "" else err ++ "\n")
+                                  ++ "error by call zchaff " ++ thName)
                    midnight Nothing
                else LP.CCStatus (ProofTree resultHf) midnight
                        $ searchResult resultHf
@@ -202,7 +202,7 @@ runZchaff pState cfg saveDIMACS thName nGoal = do
               basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs"
       when saveDIMACS (writeFile thName_clean prob)
       zFileName <- getTempFile prob thName_clean
-      (_, zchaffOut, _) <- readProcessWithExitCode zchaffS
+      (_, zchaffOut, _) <- executeProcess zchaffS
         (zFileName : createZchaffOptions cfg) ""
       (res, usedAxs, tUsed) <- analyzeZchaff zchaffOut pState
       let defaultProofStatus =

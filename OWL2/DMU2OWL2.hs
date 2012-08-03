@@ -45,7 +45,6 @@ import Text.ParserCombinators.Parsec (eof, runParser)
 import Control.Monad
 
 import System.Directory
-import System.Process
 import System.IO.Unsafe (unsafePerformIO)
 
 -- | The identity of the comorphism
@@ -74,7 +73,7 @@ runOntoDMU :: String -> IO String
 runOntoDMU str = if null str then return "" else do
   ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
   tmpFile <- getTempFile str "ontoDMU.xml"
-  (_, out, _) <- readProcessWithExitCode "java"
+  (_, out, _) <- executeProcess "java"
     ["-jar", ontoDMUpath, "-f", tmpFile] ""
   removeFile tmpFile
   return out

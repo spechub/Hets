@@ -49,7 +49,6 @@ import Data.Time.Clock
 
 import System.Directory
 import System.Exit
-import System.Process
 
 -- * Prover implementation
 
@@ -94,11 +93,12 @@ consCheck v thName _ tm _ = case LP.tTarget tm of
     dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc") sig
           axioms Nothing
     tmpFile <- getTempFile dimacsOutput tmpl
-    (exitCode, _, _) <- readProcessWithExitCode bin [tmpFile] ""
+    (exitCode, _, err) <- executeProcess bin [tmpFile] ""
     removeFile tmpFile
     (res, out) <- case exitCode of
       ExitFailure 10 -> return (Just True, "consistent.")
       ExitFailure 20 -> return (Just False, "inconsistent.")
+      ExitFailure 127 -> return (Nothing, err)
       _ -> return (Nothing, "error by calling " ++ bin ++ " " ++ thName)
     return LP.CCStatus { LP.ccResult = res
                        , LP.ccUsedTime = midnight

@@ -36,7 +36,6 @@ import Data.Time (TimeOfDay, midnight)
 
 import System.Exit
 import System.Environment
-import System.Process
 import System.Directory
 import System.FilePath
 
@@ -154,7 +153,7 @@ runTimedFact tmpFileName prob mEnt tLimit = do
       jlibName = "libFaCTPlusPlusJNI.so"
   (progTh, toolPath) <- check4HetsOWLjar jar
   hasJniLib <- doesFileExist $ "/lib/" ++ jlibName
-  (_, arch, _) <- readProcessWithExitCode "uname" ["-m"] ""
+  (_, arch, _) <- executeProcess "uname" ["-m"] ""
   if progTh then
         withinDirectory toolPath $ do
           mJni <- fmap (lookup "HETS_JNI_LIBS") getEnvironment

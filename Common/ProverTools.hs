@@ -81,10 +81,9 @@ check4jarFileWithDefault
   -> String -- ^ jar file name
   -> IO (Bool, FilePath)
 check4jarFileWithDefault def var jar = do
-  noJava <- missingExecutableInPath "java"
   pPath <- getEnvDef var def
   hasJar <- doesFileExist $ pPath </> jar
-  return (not noJava && hasJar, pPath)
+  return (hasJar, pPath)
 
 -- | environment variable for HETS_OWL_TOOLS
 hetsOWLenv :: String

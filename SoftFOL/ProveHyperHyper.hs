@@ -34,7 +34,6 @@ import GUI.GenericATP
 import Proofs.BatchProcessing
 import Interfaces.GenericATPState
 
-import System.Process
 import System.Directory
 
 import Control.Monad (when)
@@ -220,7 +219,7 @@ runHyperProcess prob saveFile tl opts runTxtA = do
   writeFile stpPrelFile $ prelTxt tl ++ opts
   writeFile stpRunFile runTxtA
   t_start <- getHetsTime
-  (_, stdoutC, stderrC) <- readProcessWithExitCode "ekrh"
+  (_, stdoutC, stderrC) <- executeProcess "ekrh"
     [stpPrelFile, stpTmpFile, stpRunFile] ""
   t_end <- getHetsTime
   removeFile stpPrelFile

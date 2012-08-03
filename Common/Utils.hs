@@ -44,6 +44,7 @@ module Common.Utils
   , getEnvDef
   , filterMapWithList
   , timeoutSecs
+  , executeProcess
   , timeoutCommand
   , withinDirectory
   , writeTempFile
@@ -350,12 +351,25 @@ timeoutSecs time = timeout $ let
      if time < 1 then 100000 -- 1/10 of a second
      else m * time
 
+
+-- | like readProcessWithExitCode, but checks the command argument first
+executeProcess
+    :: FilePath                 -- ^ command to run
+    -> [String]                 -- ^ any arguments
+    -> String                   -- ^ standard input
+    -> IO (ExitCode,String,String) -- ^ exitcode, stdout, stderr
+executeProcess cmd args input = do
+  mp <- findExecutable cmd
+  case mp of
+    Nothing -> return (ExitFailure 127, "", "command not found: " ++ cmd)
+    Just exe -> readProcessWithExitCode exe args input
+
 -- | runs a command with timeout
 timeoutCommand :: Int -> FilePath -> [String]
   -> IO (Maybe (ExitCode, String, String))
 timeoutCommand time cmd args =
   timeoutSecs time $
-    readProcessWithExitCode cmd args "" -- no input from stdin
+    executeProcess cmd args "" -- no input from stdin
 
 {- | runs an action in a different directory without changing the current
      directory globally. -}

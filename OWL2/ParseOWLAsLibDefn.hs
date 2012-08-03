@@ -23,6 +23,7 @@ import Common.IRI (simpleIdToIRI)
 import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation hiding (isAxiom, isDef)
+import Common.Utils (executeProcess)
 
 import Logic.Grothendieck
 import OWL2.Logic_OWL2
@@ -36,7 +37,6 @@ import Syntax.AS_Structured
 import System.Directory
 import System.Exit
 import System.FilePath
-import System.Process
 
 import Text.XML.Light (parseXML, onlyElems, filterElementsName)
 
@@ -49,7 +49,7 @@ parseOWL filename = do
       fmap ("file://" ++) $ canonicalizePath filename
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
-       (exitCode, result, errStr) <- readProcessWithExitCode "java"
+       (exitCode, result, errStr) <- executeProcess "java"
          ["-jar", toolPath </> jar, absfile, "xml"] ""
        case (exitCode, errStr) of
          (ExitSuccess, "") -> return $ parseProc filename result

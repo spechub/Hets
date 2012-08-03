@@ -41,7 +41,6 @@ import SoftFOL.Translate
 
 import System.Directory
 import System.Exit
-import System.Process
 
 -- | The Prover implementation.
 metisProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
@@ -126,7 +125,7 @@ runMetis sps cfg saveTPTP thName nGoal = do
   timeTmpFile <- getTempFile prob saveFile
   start <- getHetsTime
   -- try timeout using perl
-  (ex, out, err) <- readProcessWithExitCode "perl"
+  (ex, out, err) <- executeProcess "perl"
     ["-e", "alarm shift @ARGV; exec @ARGV"
     , show (configTimeLimit cfg), "metis", timeTmpFile] ""
   finish <- getHetsTime

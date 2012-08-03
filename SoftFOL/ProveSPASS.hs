@@ -37,11 +37,10 @@ import Proofs.BatchProcessing
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 import Common.ProofTree
-import Common.Utils (splitOn, trimLeft, basename)
+import Common.Utils
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
-import System.Process
 
 import Data.Char
 import Data.List
@@ -191,7 +190,7 @@ runSpass sps cfg saveDFG thName nGoal = do
   prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
   when saveDFG
     $ writeFile (basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dfg") prob
-  (_, pout, _) <- readProcessWithExitCode spassName allOptions prob
+  (_, pout, _) <- executeProcess spassName allOptions prob
   -- SPASS 3.7 does not properly stop, but fails with an exit code
   let out = lines pout
       (res, usedAxs, startFound, tUsed) = parseSpassOutput out
