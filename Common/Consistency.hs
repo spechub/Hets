@@ -35,14 +35,13 @@ data Conservativity =
 showConsistency :: Conservativity -> String
 showConsistency c = case c of
   Cons -> "Consistent"
-  Unknown str -> "unkown if being consistent. Cause is : " ++ str
+  Unknown str -> "Unkown if being consistent. Cause is : " ++ str
   _ -> show c
 
 showConsistencyStatus :: Conservativity -> String
 showConsistencyStatus cs = case cs of
   Inconsistent -> "not conservative"
-  Unknown str -> "unkown if being conservative. Cause is : " ++ str
-  _ -> map toLower $ show cs
+  _ -> map toLower $ showConsistency cs
 
 instance Pretty Conservativity where
   pretty = text . showConsistencyStatus
