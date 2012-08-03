@@ -98,21 +98,27 @@ runSKizzo :: String                  -- ^ File in qdimacs syntax
           -> IO Conservativity
 runSKizzo qd = do
               path <- getTempFile qd "sKizzoTemp.qdimacs"
-              (exCode, _, err) <- executeProcess proverName
+              (exCode, out, err1) <- executeProcess proverName
                 (words defOptions ++ [path]) ""
+              let err = out ++ err1
               removeFile path
               return $ case exCode of
                 ExitFailure n -> case n of
                   10 -> Cons
                   20 -> Inconsistent
-                  30 -> Unknown "Timeout"
-                  40 -> Unknown "Cannot solve"
-                  127 -> Unknown err
-                  250 -> Unknown "Out of memory"
-                  251 -> Unknown "sKizzo crashed"
-                  254 -> Unknown "File not found"
-                  -4 -> Unknown "Parse error"
-                  -5 -> Unknown "sKizzo crashed"
-                  -6 -> Unknown "Out of memory"
-                  _ -> Unknown $ "Unkown, exit was: " ++ show n
-                _ -> Unknown $ "Unkown, exit was: " ++ show exCode
+                  _ -> Unknown $ case n of
+                    30 -> "Timeout"
+                    40 -> "unable to decide"
+                    127 -> err
+                    250 -> "Out of memory"
+                    251 -> "sKizzo crashed"
+                    254 -> "File not found"
+                    -1 -> "sKizzo internal error"
+                    -2 -> "I/O error or unexisting file"
+                    -3 -> "commandline parse error"
+                    -4 -> "DIMACS parse error"
+                    -5 -> "sKizzo SIGBUS/SIGSEV crash"
+                    -6 -> "unmanaged out of memory"
+                    _ -> "Unkown, exit was: " ++ show n
+                   ++ if null err then "" else ' ' : err
+                _ -> Unknown "Unkown, but successful exit."
