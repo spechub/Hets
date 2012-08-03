@@ -47,6 +47,9 @@ showConsistencyStatus cs = case cs of
 instance Pretty Conservativity where
   pretty = text . showConsistencyStatus
 
+{- | All target sentences must be implied by the source translated
+along the morphism. They are axioms only and not identical to any
+translated sentence of the source. -}
 data ConservativityChecker sign sentence morphism = ConservativityChecker
     { checkerId :: String
     , checkConservativity
