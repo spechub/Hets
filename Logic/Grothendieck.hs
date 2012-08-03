@@ -423,6 +423,7 @@ type SublogicBasedTheories = Map.Map IRI (LibName, String)
 data LogicGraph = LogicGraph
     { logics :: Map.Map String AnyLogic
     , currentLogic :: String
+    , currentSerialization :: Maybe String
     , currentSublogic :: Maybe G_sublogics
     , currentTargetBase :: Maybe (LibName, String)
     , sublogicBasedTheories :: Map.Map AnyLogic SublogicBasedTheories
@@ -439,6 +440,7 @@ emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph
     { logics = Map.empty
     , currentLogic = "CASL"
+    , currentSerialization = Nothing
     , currentSublogic = Nothing
     , currentTargetBase = Nothing
     , sublogicBasedTheories = Map.empty
