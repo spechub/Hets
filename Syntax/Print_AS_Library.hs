@@ -53,7 +53,8 @@ instance Pretty LIB_ITEM where
                              else cat [spid, printPARAMS aa <+> sa]
                          else sep [ cat [spid, printPARAMS aa]
                                   , printIMPORTED ab <+> sa]
-             in if null (iriToStringShortUnsecure si) && null pl then pretty ac' else
+             in if null (iriToStringShortUnsecure si) && null pl
+                then pretty ac' else
                     vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa@(Params pl) ab@(Imported il) _)
@@ -85,14 +86,10 @@ instance Pretty LIB_ITEM where
         Download_items l ab _ ->
             topKey fromS <+> fsep ((pretty l <+> keyword getS)
                                    : prettyDownloadItems ab)
-        Syntax.AS_Library.Logic_decl aa syn _ ->
-            let p = keyword logicS <+> pretty aa in
-            case syn of
-                Nothing -> p
-                Just sRef -> p <+> keyword serializationS <+> pretty sRef
-        Syntax.AS_Library.Newlogic_defn nl _ ->
+        Logic_decl aa _ -> sep [keyword logicS, pretty aa]
+        Newlogic_defn nl _ ->
             pretty nl
-        Syntax.AS_Library.Newcomorphism_defn nc _ ->
+        Newcomorphism_defn nc _ ->
             pretty nc
 
 prettyDownloadItems :: DownloadItems -> [Doc]

@@ -57,7 +57,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "ref", "spec", "=", opt "end"
               | Download_items LibName DownloadItems Range
               -- pos: "from", "get", "|->", commas, opt "end"
-              | Logic_decl Logic_name (Maybe SYNTAX_REF) Range
+              | Logic_decl LogicDescr Range
               -- pos:  "logic", Logic_name
               | Newlogic_defn LogicDef Range
               -- pos:  "newlogic", Logic_name, "=", opt "end"
@@ -70,7 +70,7 @@ contains the new target name of the single arbitrarily named item from the
 downloaded library. -}
 data DownloadItems =
     ItemMaps [ItemNameMap]
-  | UniqueItem ItemName
+  | UniqueItem IRI
     deriving Show
 
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
@@ -96,18 +96,14 @@ data ALIGN_ARITY = AA_InjectiveAndTotal | AA_Injective | AA_Total
                  | AA_NeitherInjectiveNorTotal
                    deriving (Show, Eq)
 
-type SYNTAX_REF = IRI
-
 data ItemNameMap =
-    ItemNameMap ItemName (Maybe ItemName)
+    ItemNameMap IRI (Maybe IRI)
     deriving (Show, Eq)
-
-type ItemName = IRI
 
 makeLogicItem :: Language lid => lid -> Annoted LIB_ITEM
 makeLogicItem lid = emptyAnno $ Logic_decl
-  (Logic_name (simpleIdToIRI $ mkSimpleId $ language_name lid)
-   Nothing Nothing) Nothing nullRange
+  (nameToLogicDescr $ Logic_name
+   (simpleIdToIRI $ mkSimpleId $ language_name lid) Nothing Nothing) nullRange
 
 makeSpecItem :: SPEC_NAME -> Annoted SPEC -> Annoted LIB_ITEM
 makeSpecItem sn as =

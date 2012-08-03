@@ -16,7 +16,7 @@ module Syntax.Parse_AS_Structured
     ( annoParser2
     , groupSpec
     , aSpec
-    , logicName
+    , logicDescr
     , parseMapping
     , parseCorrespondences
     , translationList
@@ -49,8 +49,6 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import Data.Maybe
 import Control.Monad
-
---import Debug.Trace -- only commented out for future debugging purposes
 
 hetIRI :: GenParser Char st IRI
 hetIRI = try $ do
@@ -86,13 +84,22 @@ logicName = do
       mt <- optionMaybe $ oParenT >> iriCurie << cParenT
       return $ Logic_name e ms mt
 
+logicDescr :: AParser st LogicDescr
+logicDescr = do
+  n <- logicName
+  option (nameToLogicDescr n) $ do
+     r <- asKey serializationS
+     s <- hetIRI
+     return $ LogicDescr n (Just s) $ tokPos r
+
 -- * parse Logic_code
 
 parseLogic :: LogicGraph -> AParser st (Logic_code, LogicGraph)
 parseLogic lG = do
    lc <- parseLogicAux
    case lc of
-     Logic_code _ _ (Just l) _ -> return (lc, setLogicName l lG)
+     Logic_code _ _ (Just l) _ ->
+         return (lc, setLogicName (nameToLogicDescr l) lG)
      Logic_code (Just c) _ _ _ -> do
          nLg <- lookupAndSetComorphismName c lG
          return (lc, nLg)
@@ -287,7 +294,7 @@ translation l sp ftrans frestr =
 groupSpecLookhead :: AParser st IRI
 groupSpecLookhead =
   let tok2IRI = liftM simpleIdToIRI in
-  (tok2IRI oBraceT) <|> followedWith (hetIRI << annos)
+  tok2IRI oBraceT <|> followedWith (hetIRI << annos)
   (choice (map (tok2IRI . asKey) criticalKeywords)
    <|> tok2IRI cBraceT <|> tok2IRI oBracketT <|> tok2IRI cBracketT
    <|> (eof >> return nullIRI))
@@ -330,7 +337,7 @@ basicSpec (Logic lid) = do
 logicSpec :: LogicGraph -> AParser st SPEC
 logicSpec lG = do
    s1 <- asKey logicS
-   ln <- logicName
+   ln <- logicDescr
    s2 <- colonT
    sp <- annoParser $ specD $ setLogicName ln lG
    return $ Qualified_spec ln sp $ toRange s1 [] s2
@@ -338,15 +345,12 @@ logicSpec lG = do
 combineSpec :: AParser st SPEC
 combineSpec = do
     s1 <- asKey combineS
-    oir <- commaSep1 hetIRI
-    (exl, ps) <- (do
-          s2 <- try $ asKey excludingS
-          e <- commaSep1 hetIRI
-          p <- getPos
-          return (e, appRange (tokPos s2) $ Range [p])
-        <|> return ([], nullRange)
-      )
-    return $ Combination oir exl $ appRange (tokPos s1) ps
+    (oir, ps1) <- separatedBy hetIRI commaT
+    (exl, ps) <- option ([], []) $ do
+          s2 <- asKey excludingS
+          (e, ps2) <- separatedBy hetIRI commaT
+          return (e, s2 : ps2)
+    return $ Combination oir exl $ catRange $ s1 : ps1 ++ ps
 
 lookupAndSetComorphismName :: IRI -> LogicGraph -> AParser st LogicGraph
 lookupAndSetComorphismName cIRI lg = do
@@ -416,7 +420,9 @@ correspondence l = do
     return $ Correspondence_block rref conf cs
   <|> do
     (mcid, eRef, mrRef, mconf, toer) <- corr1 l
-    --trace (concat ["\t", show mcid, "    \t", show eRef, "\t", show mrRef, "    \t", show mconf, "   \t", show toer]) $ return () -- only commented out for future debugging purposes
+    {- trace (concat ["\t", show mcid, "    \t", show eRef, "\t", show mrRef,
+       "    \t", show mconf, "   \t", show toer]) $ return ()
+    only commented out for future debugging purposes -}
     return $ Single_correspondence mcid eRef toer mrRef mconf
 
 corr1 :: LogicGraph
@@ -461,7 +467,8 @@ correspondenceIdWithLookahead l = do
 relationRefWithLookAhead :: AParser st RELATION_REF
 relationRefWithLookAhead = do
     r <- relationRef
-    lookAhead (confidenceBegin >> return ()) <|> lookAhead (try hetIRI >> return ())
+    lookAhead (confidenceBegin >> return nullIRI)
+      <|> lookAhead (try hetIRI)
     return r
 
 relationRef :: AParser st RELATION_REF
@@ -503,10 +510,8 @@ termOrEntityRef l = do
 -- TODO: implement
 term :: AnyLogic -> AParser st TERM_OR_ENTITY_REF
 term (Logic lid) = do
-    p <- getPos
-    symbs <- callParser (parse_symb_items lid) (language_name lid) "term"
-    q <- getPos
-    --return $ Term (G_symb_items_list lid [symbs]) $ Range [p, q]
+    _symbs <- callParser (parse_symb_items lid) (language_name lid) "term"
+    -- return $ Term (G_symb_items_list lid [symbs]) $ Range [p, q]
     fail "term not implemented yet"
 
 confidence :: AParser st Double
@@ -515,20 +520,13 @@ confidence = char '(' >> confidenceNumber << char ')' << skipSmart
 confidenceNumber :: AParser st Double
 confidenceNumber = do
     d1 <- char '0'
-    d <- (do
+    option 0 $ do
           d2 <- char '.'
           ds <- many digit
           return $ read $ d1 : d2 : ds
-        <|>
-          return 0
-      )
-    return d
   <|> do
     char '1'
-    (do
+    option 1 $ do
           char '.'
           many $ char '0'
           return 1
-        <|>
-          return 1
-      )

@@ -50,13 +50,13 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "{","}"
           | Spec_inst SPEC_NAME [Annoted FIT_ARG] Range
             -- pos: many of "[","]"; one balanced pair per FIT_ARG
-          | Qualified_spec Logic_name (Annoted SPEC) Range
+          | Qualified_spec LogicDescr (Annoted SPEC) Range
             -- pos: "logic", Logic_name,":"
           | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) Range
             -- pos: "data"
           | Combination [ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
             {- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
-            excludung EXTENSION_REF, ..., EXTENSION_REF -}
+            excluding EXTENSION_REF, ..., EXTENSION_REF -}
             deriving Show
 
 {- Renaming and Hiding can be performend with intermediate Logic
@@ -93,6 +93,11 @@ type ALIGN_NAME = IRI
 type MODULE_NAME = IRI
 type RESTRICTION_SIGNATURE = ()
 
+-- | a logic with serialization
+data LogicDescr = LogicDescr Logic_name (Maybe IRI) Range
+  -- pos: "serialization"
+  deriving Show
+
 data Logic_code = Logic_code (Maybe IRI)
                              (Maybe Logic_name)
                              (Maybe Logic_name) Range
@@ -121,8 +126,12 @@ type ONTO_REF = IRI
 type EXTENSION_REF = IRI
 type LOGIC_REF = IRI
 
-setLogicName :: Logic_name -> LogicGraph -> LogicGraph
-setLogicName (Logic_name lid _ _) = setCurLogic (iriToStringUnsecure lid)
+nameToLogicDescr :: Logic_name -> LogicDescr
+nameToLogicDescr n = LogicDescr n Nothing nullRange
+
+setLogicName :: LogicDescr -> LogicGraph -> LogicGraph
+setLogicName (LogicDescr (Logic_name lid _ _) _ _) =
+  setCurLogic (iriToStringUnsecure lid)
 
 makeSpec :: G_basic_spec -> Annoted SPEC
 makeSpec gbs = emptyAnno $ Basic_spec gbs nullRange

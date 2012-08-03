@@ -53,7 +53,7 @@ libItem ga li = case li of
   Download_items n mapping rg ->
     add_attrs (mkNameAttr (show $ getLibId n) : rgAttrs rg)
       $ unode "Import" $ downloadItems mapping
-  Logic_decl n _ rg ->
+  Logic_decl n rg ->
     add_attrs (mkNameAttr (showDoc n "") : rgAttrs rg)
       $ unode "Logic" ()
   _ -> prettyElem "Unsupported" ga li
@@ -61,7 +61,8 @@ libItem ga li = case li of
 downloadItems :: DownloadItems -> [Element]
 downloadItems d = case d of
   ItemMaps l -> map itemNameOrMap l
-  UniqueItem i -> [add_attr (mkAttr "as" $ iriToStringUnsecure i) $ unode "Item" ()]
+  UniqueItem i -> [add_attr (mkAttr "as" $ iriToStringUnsecure i)
+    $ unode "Item" ()]
 
 spec :: GlobalAnnos -> SPEC -> Element
 spec ga s = case s of
@@ -89,6 +90,7 @@ spec ga s = case s of
   Data l1 _ s1 s2 rg ->
     add_attrs (mkAttr "data-logic" (show l1) : rgAttrs rg)
       $ unode "Data" [annoted spec ga s1, annoted spec ga s2]
+  Combination {} -> prettyElem "Unsupported" ga s
 
 fitArg :: GlobalAnnos -> FIT_ARG -> Element
 fitArg ga fa = case fa of

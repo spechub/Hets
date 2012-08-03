@@ -61,7 +61,7 @@ printExtension :: [Annoted SPEC] -> [Doc]
 printExtension l = case l of
     [] -> []
     x : r -> printOptUnion x ++
-             concatMap (( \ u -> case u of
+             concatMap ((\ u -> case u of
                             [] -> []
                             d : s -> (topKey thenS <+> d) : s) .
                         printOptUnion) r
@@ -83,6 +83,8 @@ printSPEC spec = case spec of
     Spec_inst aa ab _ -> cat [structIRI aa, print_fit_arg_list ab]
     Qualified_spec ln asp _ -> printLogicEncoding ln <> colon $+$ pretty asp
     Data _ _ s1 s2 _ -> keyword dataS <+> printGroupSpec s1 $+$ pretty s2
+    Combination cs es _ -> fsep $ keyword combineS : ppWithCommas cs
+      : if null es then [] else [keyword excludingS, ppWithCommas es]
 
 instance Pretty RENAMING where
     pretty = printRENAMING
@@ -140,6 +142,10 @@ printLogic_code (Logic_code menc msrc mtar _) =
    fsep $ maybe [] ((: [colon]) . pretty) menc
         ++ pm msrc ++ funArrow : pm mtar
 
+instance Pretty LogicDescr where
+    pretty (LogicDescr n s _) = sep [pretty n,
+      maybe empty (\ r -> sep [keyword serializationS, pretty r]) s]
+
 instance Pretty Logic_name where
     pretty = printLogic_name
 
@@ -162,7 +168,7 @@ print_fit_arg_list = cat . map (brackets . pretty)
 printGroupSpec :: Annoted SPEC -> Doc
 printGroupSpec s = let d = pretty s in
     case skip_Group $ item s of
-                 Spec_inst _ _ _ -> d
+                 Spec_inst {} -> d
                  _ -> specBraces d
 
 {- |
@@ -171,9 +177,9 @@ printGroupSpec s = let d = pretty s in
 condBracesTransReduct :: Annoted SPEC -> Doc
 condBracesTransReduct s = let d = pretty s in
     case skip_Group $ item s of
-                 Extension _ _ -> specBraces d
-                 Union _ _ -> specBraces d
-                 Local_spec _ _ _ -> specBraces d
+                 Extension {} -> specBraces d
+                 Union {} -> specBraces d
+                 Local_spec {} -> specBraces d
                  _ -> d
 
 {- |

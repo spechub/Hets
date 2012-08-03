@@ -415,8 +415,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
       else return ( rsd', dg'
         { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv }
         , libenv, lg, eo)
-  Logic_decl logN' _ pos ->
-   let logN = case expandCurieLogicName (globalAnnos dg) logN' of
+  Logic_decl logN' pos ->
+   let logN = case expandCurieLogicDescr (globalAnnos dg) logN' of
                   Left _ -> logN'
                   Right x -> x
    in do
@@ -672,6 +672,16 @@ expandCurieLibName ga ln'@(LibName (IndirectLink path ilRn ilFp ilCl) _) =
             Just i -> Just ln' { getLibId = IndirectLink (iriToStringUnsecure i)
                                                                 ilRn ilFp ilCl }
   else Just ln'
+
+-- | expands iff ':' is in the name
+expandCurieLogicDescr :: GlobalAnnos -> LogicDescr -> Either String LogicDescr
+expandCurieLogicDescr ga (LogicDescr n s r) =
+     case expandCurieLogicName ga n of
+            Right n1 -> Right $ LogicDescr n1
+              (case fmap (expandCurie $ prefix_map ga) s of
+                 Just i@(Just _) -> i
+                 _ -> s) r
+            Left e -> Left e
 
 -- | expands iff ':' is in the name
 expandCurieLogicName :: GlobalAnnos -> Logic_name -> Either String Logic_name

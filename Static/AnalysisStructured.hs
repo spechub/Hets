@@ -176,10 +176,11 @@ getNamedSpec sp ln dg libenv = case lookupGlobalEnvDG sp dg of
                   _ -> mkError "theory reference error" sp
           _ -> mkError "unknown theory" sp
 
-anaSublogic :: HetcatsOpts -> Logic_name -> LibName -> DGraph -> LibEnv
+anaSublogic :: HetcatsOpts -> LogicDescr -> LibName -> DGraph -> LibEnv
   -> LogicGraph
   -> Result (Maybe (ExtGenSig, (LibName, DGraph, LNode DGNodeLab)), LogicGraph)
-anaSublogic _opts itm@(Logic_name lt ms mt) ln dg libenv lG = do
+anaSublogic _opts itm@(LogicDescr (Logic_name lt ms mt) _ _) ln dg libenv lG
+  = do
     logN@(Logic lid) <- lookupLogic "" (iriToStringUnsecure lt) lG
     mgs <- case ms of
       Nothing -> return Nothing
