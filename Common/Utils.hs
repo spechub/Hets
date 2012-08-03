@@ -191,8 +191,8 @@ mapAccumLCM g f s l = case l of
     (s'', ys) <- mapAccumLCM g f s' xs
     return (s'', g x y : ys)
 
--- | Monadic version of concatMap
--- taken from http://darcs.haskell.org/ghc/compiler/utils/MonadUtils.hs
+{- | Monadic version of concatMap
+     taken from http://darcs.haskell.org/ghc/compiler/utils/MonadUtils.hs -}
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f xs = liftM concat (mapM f xs)
 
@@ -357,7 +357,7 @@ executeProcess
     :: FilePath                 -- ^ command to run
     -> [String]                 -- ^ any arguments
     -> String                   -- ^ standard input
-    -> IO (ExitCode,String,String) -- ^ exitcode, stdout, stderr
+    -> IO (ExitCode, String, String) -- ^ exitcode, stdout, stderr
 executeProcess cmd args input = do
   mp <- findExecutable cmd
   case mp of
