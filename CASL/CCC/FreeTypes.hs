@@ -14,7 +14,6 @@ Consistency checking of free types
 module CASL.CCC.FreeTypes (checkFreeType) where
 
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
-import CASL.MapSentence(mapSen)
 import CASL.Morphism
 import CASL.Sign(OpType(..), PredType(..), Sign(..), sortSet, sortOfTerm)
 import CASL.SimplifySen(simplifyCASLSen)
