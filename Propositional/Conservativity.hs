@@ -52,7 +52,7 @@ conserCheck (_, inSens) mor cForms = do
         Result _ (Just inFormsM) -> do
           let checkForm = Implication
                  (Conjunction inFormsM nullRange)
-                 (Conjunction cForms nullRange)
+                 (Conjunction (map sentence cForms) nullRange)
                  nullRange
           doConservCheck inSig cSig checkForm
 
