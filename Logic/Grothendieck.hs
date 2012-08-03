@@ -62,10 +62,12 @@ module Logic.Grothendieck
   , lessSublogicComor
   , LogicGraph (..)
   , setCurLogic
+  , setSyntax
   , setCurSublogic
   , emptyLogicGraph
   , lookupLogic
   , lookupCurrentLogic
+  , lookupCurrentSyntax
   , lookupCompComorphism
   , lookupComorphism
   , lookupModification
@@ -119,7 +121,7 @@ import Common.Utils
 import Common.LibName
 
 import Control.Monad (foldM)
-import Data.Maybe (mapMaybe)
+import Data.Maybe
 import Data.Typeable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -423,7 +425,7 @@ type SublogicBasedTheories = Map.Map IRI (LibName, String)
 data LogicGraph = LogicGraph
     { logics :: Map.Map String AnyLogic
     , currentLogic :: String
-    , currentSerialization :: Maybe String
+    , currentSyntax :: Maybe IRI
     , currentSublogic :: Maybe G_sublogics
     , currentTargetBase :: Maybe (LibName, String)
     , sublogicBasedTheories :: Map.Map AnyLogic SublogicBasedTheories
@@ -440,7 +442,7 @@ emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph
     { logics = Map.empty
     , currentLogic = "CASL"
-    , currentSerialization = Nothing
+    , currentSyntax = Nothing
     , currentSublogic = Nothing
     , currentTargetBase = Nothing
     , sublogicBasedTheories = Map.empty
@@ -452,8 +454,18 @@ emptyLogicGraph = LogicGraph
     , squares = Map.empty
     , qTATranslations = Map.empty }
 
+setCurLogicAux :: String -> LogicGraph -> LogicGraph
+setCurLogicAux s lg = lg { currentLogic = s }
+
 setCurLogic :: String -> LogicGraph -> LogicGraph
-setCurLogic s lg = lg { currentLogic = s }
+setCurLogic s lg = if s == currentLogic lg then
+       lg else setSyntaxAux Nothing $ setCurLogicAux s lg
+
+setSyntaxAux :: Maybe IRI -> LogicGraph -> LogicGraph
+setSyntaxAux s lg = lg { currentSyntax = s }
+
+setSyntax :: Maybe IRI -> LogicGraph -> LogicGraph
+setSyntax s lg = if isNothing s then lg else setSyntaxAux s lg
 
 setCurSublogic :: Maybe G_sublogics -> LogicGraph -> LogicGraph
 setCurSublogic s lg = lg { currentSublogic = s }
@@ -476,6 +488,12 @@ lookupLogic error_prefix logname logicGraph =
 
 lookupCurrentLogic :: Monad m => String -> LogicGraph -> m AnyLogic
 lookupCurrentLogic msg lg = lookupLogic (msg ++ " ") (currentLogic lg) lg
+
+lookupCurrentSyntax :: Monad m => String -> LogicGraph
+  -> m (AnyLogic, Maybe IRI)
+lookupCurrentSyntax msg lg = do
+  l <- lookupLogic (msg ++ " ") (currentLogic lg) lg
+  return (l, currentSyntax lg)
 
 -- | union to two logics
 logicUnion :: LogicGraph -> AnyLogic -> AnyLogic

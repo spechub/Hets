@@ -137,7 +137,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
-import Common.IRI (IRI)
+import Common.IRI (IRI, nullIRI)
 import Common.Item
 import Common.Lib.Graph
 import Common.LibName
@@ -240,9 +240,11 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
         | lid -> basic_spec symb_items symb_map_items
       where
          -- | parsers and printers
-         parsersAndPrinters :: lid -> Map.Map String
+         parsersAndPrinters :: lid -> Map.Map IRI
             (AParser st basic_spec, basic_spec -> Doc)
-         parsersAndPrinters _ = Map.empty
+         parsersAndPrinters li = case parse_basic_spec li of
+            Nothing -> Map.empty
+            Just p -> Map.singleton nullIRI (p, pretty)
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (AParser st basic_spec)
          -- | parser for symbol lists

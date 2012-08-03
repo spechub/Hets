@@ -26,7 +26,8 @@ import Logic.Grothendieck
     , G_symb_items_list
     , G_symb_map_items_list
     , LogicGraph
-    , setCurLogic )
+    , setCurLogic
+    , setSyntax )
 
 -- for spec-defn and view-defn see AS_Library
 
@@ -130,8 +131,8 @@ nameToLogicDescr :: Logic_name -> LogicDescr
 nameToLogicDescr n = LogicDescr n Nothing nullRange
 
 setLogicName :: LogicDescr -> LogicGraph -> LogicGraph
-setLogicName (LogicDescr (Logic_name lid _ _) _ _) =
-  setCurLogic (iriToStringUnsecure lid)
+setLogicName (LogicDescr (Logic_name lid _ _) s _) =
+  setSyntax s . setCurLogic (iriToStringUnsecure lid)
 
 makeSpec :: G_basic_spec -> Annoted SPEC
 makeSpec gbs = emptyAnno $ Basic_spec gbs nullRange
