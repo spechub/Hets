@@ -24,7 +24,6 @@ module Common.OrderedMap
   , insert
   , map, mapWithKey
   , update
-  , difference
   , filter, filterWithKey
   , partition, partitionWithKey
   , fromList, toList
@@ -74,9 +73,6 @@ filter = filterWithKey . const
 
 filterWithKey :: Ord k => (k -> a -> Bool) -> OMap k a -> OMap k a
 filterWithKey p = Map.filterWithKey (\ k -> p k . ele)
-
-difference :: Ord k => OMap k a -> OMap k b -> OMap k a
-difference = Map.difference
 
 map :: Ord k => (a -> b) -> OMap k a -> OMap k b
 map = mapWithKey . const
