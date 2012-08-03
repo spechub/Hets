@@ -70,11 +70,6 @@ instance Syntax Temporal
     AS_BASIC.BASIC_SPEC
     ()
     ()
-    where
-        parse_basic_spec     Temporal = Nothing --Just Parse_AS.basicSpec
-        parse_symb_items     _        = Nothing
-        parse_symb_map_items _        = Nothing
-
 
 -- | Instance of Logic for propositional logc
 instance Logic Temporal
@@ -88,14 +83,6 @@ instance Logic Temporal
     Symbol.Symbol                       -- symbol
     Symbol.Symbol                       -- raw_symbol
     ()                                  -- proof_tree
-    where
-        stability           Temporal = Experimental
-        top_sublogic        Temporal = ()
-        all_sublogics       Temporal = []
-        provers             Temporal = []
-        cons_checkers       Temporal = []
-        conservativityCheck Temporal = []
-
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Temporal
@@ -108,22 +95,10 @@ instance StaticAnalysis Temporal
     Symbol.Symbol                      -- symbol
     Symbol.Symbol                      -- raw_symbol
         where
-          basic_analysis           Temporal = Nothing
-          -- Just Analysis.basicTemporalAnalysis
           empty_signature          Temporal = Sign.emptySig
           is_subsig                Temporal = Sign.isSubSigOf
-          subsig_inclusion       Temporal s = return . Morphism.inclusionMap s
+          subsig_inclusion Temporal s = return . Morphism.inclusionMap s
           signature_union          Temporal = Sign.sigUnion
           symbol_to_raw            Temporal = Symbol.symbolToRaw
           id_to_raw                Temporal = Symbol.idToRaw
           matches                  Temporal = Symbol.matches
-          stat_symb_items          Temporal = undefined
-          -- Analysis.mkStatSymbItems
-          stat_symb_map_items      Temporal = undefined
-          -- Analysis.mkStatSymbMapItem
-          induced_from_morphism    Temporal = undefined
-          -- Analysis.inducedFromMorphism
-          induced_from_to_morphism Temporal = undefined
-          -- Analysis.inducedFromToMorphism
-          signature_colimit        Temporal = undefined
-          -- Analysis.signatureColimit
