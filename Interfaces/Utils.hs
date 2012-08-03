@@ -60,6 +60,7 @@ import Logic.Coerce
 import Comorphisms.LogicGraph (logicGraph)
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.OrderedMap as OMap
 import Common.Utils (splitOn)
 import Common.Result
@@ -140,7 +141,7 @@ proofTreeToProve fn st pcm pt =
       -- selected prover
       prvr = maybe (selectedProver st) (Just . getProverName . fst) pcm
       -- selected translation
-      trans = maybe Nothing (Just . snd) pcm
+      trans = fmap snd pcm
       {- 1. filter out the not proven goals
       2. reverse the list, because the last proven goals are on top
       3. convert all proof-trees to goals
@@ -256,6 +257,7 @@ checkConservativityEdge :: Bool -> LEdge DGLinkLab -> LibEnv -> LibName
   -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
 checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
  = do
+
     Just (G_theory lidT _ _ sensT _) <-
       return $ computeTheory libEnv ln target
     GMorphism cid _ _ morphism _ <- return $ dgl_morphism linklab
@@ -283,8 +285,12 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
         Nothing -> return (concatMap diagString $ diags checkerR,
                            libEnv, link, SizedList.empty)
         Just theChecker -> do
-               let inputThSens = toNamedList $
-                                 sensT `OMap.difference` transSensSrc
+               let inputThSens1 = toNamedList sensT
+                   transSrcSens = Set.fromList
+                      $ map sentence $ toNamedList transSensSrc
+                   inputThSens = filter
+                     ((`Set.notMember` transSrcSens) . sentence)
+                     inputThSens1
                Result ds res <-
                        checkConservativity theChecker
                           (plainSign signS', toNamedList sensS')
