@@ -57,9 +57,9 @@ conserCheck (_, inSens) mor cSens = do
                  nullRange
           doConservCheck inSig cSig checkForm
 
--- | Extraction of needed formulas, removes all Axioms and Annotations
+-- | Extraction of needed formulas, removes all Theorems and Annotations
 getFormulas :: [Named FORMULA] -> [FORMULA]
-getFormulas = foldl (\ out sen -> out ++ [sentence sen | isAxiom sen]) []
+getFormulas = map sentence . filter isAxiom
 
 doConservCheck :: Sign       -- ^ Initial  Sign
                -> Sign       -- ^ Extended Sign
@@ -69,9 +69,12 @@ doConservCheck inSig oSig form = do
              let iMap = createSignMap oSig 1 Map.empty
                  iSym = items inSig
                  eSym = items oSig `Set.difference` iSym
-                 qdim = showQDimacs iSym eSym iMap $ getConj $ cnf form
-             res <- runSKizzo qdim
-             return (return (Just (res, [])))
+                 fs = getConj $ cnf form
+                 qdim = showQDimacs iSym eSym iMap fs
+             -- exclude the trivial case that makes sKizzo fail
+             if null fs then return $ return $ Just (Cons, []) else do
+               res <- runSKizzo qdim
+               return $ return $ Just (res, [])
 
 -- | Printer for QDimacs Format
 showQDimacs :: Set.Set Id               -- ^ Symbols of initial  Sign
