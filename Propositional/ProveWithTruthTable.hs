@@ -400,9 +400,8 @@ ttConservativityChecker ::
            -> PMorphism.Morphism              -- ^ morhpism between specs
            -> [AS_Anno.Named FORMULA]         -- ^ Formulas of extended spec
            -> IO (Result.Result (Maybe (Conservativity, [FORMULA])))
-ttConservativityChecker (_, srcSens) mor tarSens =
+ttConservativityChecker (_, srcSens) mor tarAxs =
   let srcAxs        = filter AS_Anno.isAxiom srcSens
-      tarAxs        = filter AS_Anno.isAxiom tarSens
       srcSig        = items $ PMorphism.source mor
       imageSig      = Set.map (PMorphism.applyMorphism mor) srcSig
       imageSigList  = Set.toList imageSig

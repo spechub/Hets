@@ -44,9 +44,8 @@ conserCheck :: (Sign, [Named FORMULA])      -- ^ Initial sign and formulas
            -> Morphism                      -- ^ morhpism between specs
            -> [Named FORMULA]               -- ^ Formulas of extended spec
            -> IO (Result (Maybe (Conservativity, [FORMULA])))
-conserCheck (_, inSens) mor cSens = do
-      let cForms = getFormulas cSens
-          inSig = source mor
+conserCheck (_, inSens) mor cForms = do
+      let inSig = source mor
           cSig = target mor
       case mapM (mapSentence mor) $ getFormulas inSens of
         Result ds Nothing -> return $ Result ds Nothing

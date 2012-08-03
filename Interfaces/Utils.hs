@@ -285,7 +285,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
         Nothing -> return (concatMap diagString $ diags checkerR,
                            libEnv, link, SizedList.empty)
         Just theChecker -> do
-               let inputThSens1 = toNamedList sensT
+               let inputThSens1 = filter isAxiom $ toNamedList sensT
                    transSrcSens = Set.fromList
                       $ map sentence $ toNamedList transSensSrc
                    inputThSens = filter

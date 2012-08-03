@@ -479,10 +479,7 @@ checkPositive fsn
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> IO (Result (Maybe (Conservativity, [FORMULA ()])))
-checkFreeType (osig, osens) m fsn = do
-  let axs = filter isAxiom $
-               deleteFirstsBy (\ a b -> sentence a == sentence b) fsn $
-               map (mapNamed $ mapSen (const id) m) osens
+checkFreeType (osig, osens) m axs = do
   ms <- mapM ($ axs)
     [ return . checkDefinitional osig
     , return . checkSort (osig, osens) m
