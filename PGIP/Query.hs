@@ -124,7 +124,9 @@ type QueryPair = (String, Maybe String)
 data QueryKind =
     DisplayQuery (Maybe String)
   | GlobCmdQuery String
-  | GlobAutoProve
+  | GlProvers (Maybe String)
+  | GlTranslations
+  | GlAutoProve
   { apInclTheorems :: Bool
   , apProver :: Maybe String
   , apTranslation :: Maybe String

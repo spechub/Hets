@@ -285,15 +285,14 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
       -- execute a proof or calculus request
       "sessions" : sessId : cmd : [] -> case readMaybe sessId of
         Nothing -> fail $ "failed to read sessionId from " ++ sessId
-        -- look for (optional) specification of node OR edge
         Just sId -> let
           incl = maybe False (\ s ->
             notElem (map toLower s) ["f", "false"]) $ lookup2 "include"
           prover = lookup2 "prover"
           translation = lookup2 "translation" >>= fmap iriFragment . parseIRI
           timeout = lookup2 "timeout" >>= readMaybe
-          in
-          case (lookup2 "node", lookup2 "edge") of
+          -- look for (optional) specification of node OR edge
+          in case (lookup2 "node", lookup2 "edge") of
           (Just _, Just _) -> fail "pleace specify only either node or edge"
           -- call command upon a single node
           (Just ndIri, _) -> case parseIRI ndIri of
@@ -301,18 +300,17 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
             Just nd -> let
               s = iriFragment nd
               i = maybe (Right s) Left $ readMaybe s
-              in do
-              nodeQuery <- fmap (NodeQuery i) $ case cmd of
-                "prove" -> return -- TODO how to select theorems now?
-                  $ ProveNode incl prover translation timeout []
+              in fmap (Query (DGQuery sId (Just $ iriPath nd)) . NodeQuery i)
+                (case cmd of
+                "prove" -> return $ -- TODO how to select theorems now?
+                  ProveNode incl prover translation timeout []
                 "provers" -> return $ NcProvers translation
                 "translations" -> return $ NcTranslations prover
                 _ ->
                   case lookup cmd $ map (\ a -> (showNodeCmd a, a)) nodeCmds of
                     Just nc -> return $ NcCmd nc
-                    _ -> fail $ "unknown node command '" ++ cmd ++ "' "
-              getHetsResponse' opts sessRef $ Query (DGQuery sId
-                (Just $ iriPath nd)) nodeQuery
+                    _ -> fail $ "unknown node command '" ++ cmd ++ "' ")
+                >>= getHetsResponse' opts sessRef
           -- call command upon a single edge
           (_, Just edIri) -> case parseIRI edIri
                         >>= readMaybe . iriFragment of
@@ -320,12 +318,13 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
               (DGQuery sId Nothing) $ EdgeQuery (EdgeId i) "edge"
             Nothing -> fail $ "failed to read edgeId from edgeIRI: " ++ edIri
           -- prove all nodes if no singleton is selected
-          _ -> if cmd == "prove"
-            then getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
-              $ GlobAutoProve incl prover translation timeout
-            else getHetsResponse' opts sessRef $ Query (DGQuery sId Nothing)
-              $ GlobCmdQuery cmd
-
+          _ -> let
+            glQ = Query (DGQuery sId Nothing) $ case cmd of
+              "prove" -> GlAutoProve incl prover translation timeout
+              "translations" -> GlTranslations
+              "provers" -> GlProvers translation
+              _ -> GlobCmdQuery cmd
+            in getHetsResponse' opts sessRef glQ
       -- fail if request doesn't comply
       _ -> queryFailure
     {- create failure response if request method is not known
@@ -558,7 +557,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> liftR $ return $ sessAns ln svg sk
 
-            GlobAutoProve incl mp mt tl -> do
+            GlProvers mt -> return $ getFullProverList mt dg
+            GlTranslations -> return $ getFullComorphList dg
+            GlAutoProve incl mp mt tl -> do
                 (newLib, sens) <- proveAllNodes libEnv ln dg incl mp mt tl
                 if null sens then return "nothing to prove" else do
                     lift $ nextSess sessRef newLib k
@@ -819,8 +820,12 @@ getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
 
 getProvers :: Maybe String -> G_sublogics -> String
-getProvers mt subL = ppTopElement . unode "provers" $ map (unode "prover")
-  $ showProversOnly $ getProversAux mt subL
+getProvers mt subL = formatProvers $ getProversAux mt subL
+
+getFullProverList :: Maybe String -> DGraph -> String
+getFullProverList mt = formatProvers . foldr
+  (\ nd ls -> maybe ls ((++ ls) . getProversAux mt . sublogicOfTh)
+    $ maybeResult $ getGlobalTheory nd) [] . map snd . labNodesDG
 
 showProversOnly :: [(AnyComorphism, [String])] -> [String]
 showProversOnly = nubOrd . concatMap snd
@@ -834,12 +839,22 @@ getProversAux mt subL = foldl insertCmL [] $ filterByComorph mt
   insertCmL ((c', pL) : r) (p, c) | c' == c = (c, getWebProverName p : pL) : r
                                   | otherwise = (c', pL) : insertCmL r (p, c)
 
+formatProvers :: [(AnyComorphism, [String])] -> String
+formatProvers = ppTopElement . unode "provers" . map (unode "prover")
+  . showProversOnly
+
 getComorphs :: Maybe String -> G_sublogics -> String
-getComorphs mp subL = ppTopElement . unode "translations"
-    . map (unode "comorphism")
-    . nubOrd . map (showComorph . snd)
-    . filterByProver mp
+getComorphs mp subL = formatComorphs . filterByProver mp
     $ getAllAutomaticProvers subL
+
+getFullComorphList :: DGraph -> String
+getFullComorphList = formatComorphs . foldr
+  (\ nd ls -> maybe ls ((++ ls) . getAllAutomaticProvers . sublogicOfTh)
+    $ maybeResult $ getGlobalTheory nd) [] . map snd . labNodesDG
+
+formatComorphs :: [(G_prover, AnyComorphism)] -> String
+formatComorphs = ppTopElement . unode "translations"
+    . map (unode "comorphism") . nubOrd . map (showComorph . snd)
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
