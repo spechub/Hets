@@ -160,7 +160,7 @@ data CORRESPONDENCE = Correspondence_block
                     | Default_correspondence
                       deriving (Show, Eq)
 
-type CORRESPONDENCE_ID = IRI
+type CORRESPONDENCE_ID = Annotation
 
 type ENTITY_REF = IRI
 

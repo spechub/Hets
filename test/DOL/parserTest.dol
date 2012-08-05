@@ -15,12 +15,13 @@ bar: <http://www.example.com/bar.dol#>
 
 distributed-ontology foo:chocolate
 
-logic log:CommonLogic serialization ser:CLIF
-
+%[logic log:CASL serialization ser:HetCASL
 ontology o1 =
 (and (P x)
      (Q x) )
 end
+]%
+
 
 ontology foo:a = {}
 ontology bar:b = {}
@@ -96,8 +97,10 @@ end
 alignment a14 align-arity-forward ? align-arity-backward 1 : foo:foo_bar to foo:baz
 end
 
+%[
 module m20 :
     (P x)
   of
     (Q x)
   for FOO
+]%

@@ -12,6 +12,8 @@ Pretty printing of CASL specification libaries
 
 module Syntax.Print_AS_Library () where
 
+import Data.Maybe (maybeToList)
+
 import Common.IRI
 import Common.Doc
 import Common.DocUtils
@@ -71,6 +73,19 @@ instance Pretty LIB_ITEM where
                                     $ printGroupSpec to]]
                        ++ [ppWithCommas ad])
                           $+$ keyword endS
+        Align_defn si ar (Align_type frm to _) corresps _ ->
+            let spid = indexed (iriToStringShortUnsecure si)
+                sphead = case ar of
+                  Nothing -> spid <+> colon
+                  Just alignArities -> sep [spid, printAlignArities alignArities
+                                                  <+> colon ]
+            in topKey alignmentS <+>
+               (sep ([sphead, sep [ printGroupSpec frm <+> keyword toS,
+                                    printGroupSpec to]]
+                     ++ if null corresps then []
+                        else [equals,
+                              printCorrespondences corresps]))
+               $+$ keyword endS
         Arch_spec_defn si ab _ ->
             topKey archS <+>
                    fsep [keyword specS, structIRI si <+> equals, pretty ab]
@@ -107,6 +122,56 @@ printIMPORTED :: IMPORTED -> Doc
 printIMPORTED (Imported aa) = case aa of
     [] -> empty
     _ -> sep [keyword givenS, sepByCommas $ map printGroupSpec aa]
+
+printAlignArities :: ALIGN_ARITIES -> Doc
+printAlignArities (Align_arities f b) =
+  sep [text alignArityForwardS, printAlignArity f,
+       text alignArityBackwardS, printAlignArity b]
+
+printAlignArity :: ALIGN_ARITY -> Doc
+printAlignArity AA_InjectiveAndTotal        = text "1"
+printAlignArity AA_Injective                = text "?"
+printAlignArity AA_Total                    = text "+"
+printAlignArity AA_NeitherInjectiveNorTotal = text "*"
+
+printCorrespondences :: [CORRESPONDENCE] -> Doc
+printCorrespondences = vsep . (punctuate comma) . (map printCorrespondence)
+
+printCorrespondence :: CORRESPONDENCE -> Doc
+printCorrespondence Default_correspondence              = text "*"
+printCorrespondence (Correspondence_block mrref mconf cs) =
+  sep $ concat
+  [[text relationS],
+   map printRelationRef $ maybeToList mrref,
+   map printConfidence $ maybeToList mconf,
+   [text "{"],
+   [printCorrespondences cs],
+   [text "}"]]
+       
+printCorrespondence (Single_correspondence mcid eRef toer mrRef mconf) =
+  sep $ concat
+  [[indexed $ iriToStringShortUnsecure eRef],
+   map printRelationRef $ maybeToList mrRef,
+   map printConfidence $ maybeToList mconf,
+   [case toer of
+       -- TODO: implement (parser doesn't exist, either)
+       Term _ _ -> undefined
+       Entity_ref i -> indexed $ iriToStringShortUnsecure i],
+   map pretty $ maybeToList mcid]
+
+printConfidence :: CONFIDENCE -> Doc
+   -- "show" should work in [0,1]
+printConfidence = text . ('(':) . (++ ")") . show
+
+printRelationRef :: RELATION_REF -> Doc
+printRelationRef Subsumes        = text ">"
+printRelationRef IsSubsumed      = text "<"
+printRelationRef Equivalent      = text "="
+printRelationRef Incompatible    = text "%"
+printRelationRef HasInstance     = text "$\\ni$"
+printRelationRef InstanceOf      = text "$\\in$"
+printRelationRef DefaultRelation = text "$\\mapsto$"
+printRelationRef (Iri i)         = indexed $ iriToStringShortUnsecure i
 
 instance Pretty ItemNameMap where
     pretty (ItemNameMap a m) = fsep

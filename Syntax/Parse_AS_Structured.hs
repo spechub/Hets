@@ -407,7 +407,7 @@ fittingArg l = do
 
 
 parseCorrespondences :: LogicGraph -> AParser st [CORRESPONDENCE]
-parseCorrespondences l = commaSep1 $ correspondence l << addAnnos
+parseCorrespondences l = commaSep1 $ correspondence l
 
 correspondence :: LogicGraph -> AParser st CORRESPONDENCE
 correspondence l = do
@@ -432,14 +432,12 @@ corr1 :: LogicGraph
       -> AParser st ( Maybe CORRESPONDENCE_ID, ENTITY_REF
                     , Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
 corr1 l = do
-    cid <- try $ correspondenceIdWithLookahead l
     eRef <- hetIRI
     (mrRef, mconf, toer) <- corr2 l
-    return (Just cid, eRef, mrRef, mconf, toer)
-  <|> do
-    eRef <- hetIRI
-    (mrRef, mconf, toer) <- corr2 l
-    return (Nothing, eRef, mrRef, mconf, toer)
+    cids <- annos
+    if not (null cids || null (tail cids))
+      then fail "more than one correspondence id"
+      else return (listToMaybe cids, eRef, mrRef, mconf, toer)
 
 corr2 :: LogicGraph
       -> AParser st (Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
@@ -459,13 +457,6 @@ corr3 l = do
   <|> do
     toer <- termOrEntityRef l
     return (Nothing, toer)
-
-correspondenceIdWithLookahead :: LogicGraph -> AParser st CORRESPONDENCE_ID
-correspondenceIdWithLookahead l = do
-  cid <- hetIRI
-  asKey equalS
-  lookAhead (try $ hetIRI >> corr2 l)
-  return cid
 
 relationRefWithLookAhead :: AParser st RELATION_REF
 relationRefWithLookAhead = do
