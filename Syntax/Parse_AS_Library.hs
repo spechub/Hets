@@ -70,7 +70,7 @@ version = do
 libId :: AParser st LibId
 libId = do
       pos <- getPos
-      i <- try hetIRI
+      i <- hetIRI
       return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) "" noTime
 
 -- | Parse the library elements
@@ -131,6 +131,7 @@ libItem l =
   <|> -- module defn
     do s1 <- asKey moduleS
        mn <- hetIRI
+       -- TODO: parse annotations
        s2 <- asKey ":"
        mt <- moduleType l
        s3 <- asKey forS
@@ -265,11 +266,12 @@ moduleType l = do
   sp2 <- aSpec l
   return $ Module_type sp1 sp2 (tokPos s)
 
--- TODO: implement correct type and parser
 restrictionSignature :: AParser st RESTRICTION_SIGNATURE
 restrictionSignature = do
-  hetIRI
-  return ()
+  entities <- many hetIRI
+  if null entities
+    then fail "expecting at least one entity in restriction signature"
+    else return entities
 
 simpleIdOrDDottedId :: GenParser Char st Token
 simpleIdOrDDottedId = pToken $ liftM2 (++)

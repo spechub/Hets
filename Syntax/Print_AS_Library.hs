@@ -95,6 +95,15 @@ instance PrettyLG LIB_ITEM where
                         else [equals,
                               printCorrespondences corresps]))
                $+$ keyword endS
+        Module_defn mn mt rs _ ->
+            let spid = indexed (iriToStringShortUnsecure mn)
+                sphead = spid <+> colon
+                spmt = case mt of
+                  Module_type sp1 sp2 _ -> sep [prettyLG lg sp1,
+                                                text ofS,
+                                                prettyLG lg sp2]
+            in topKey moduleS <+>
+               sep [sphead, spmt, text forS, sep $ map structIRI rs]
         Arch_spec_defn si ab _ ->
             topKey archS <+>
                    fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
@@ -139,10 +148,11 @@ printAlignArities (Align_arities f b) =
        text alignArityBackwardS, printAlignArity b]
 
 printAlignArity :: ALIGN_ARITY -> Doc
-printAlignArity AA_InjectiveAndTotal        = text "1"
-printAlignArity AA_Injective                = text "?"
-printAlignArity AA_Total                    = text "+"
-printAlignArity AA_NeitherInjectiveNorTotal = text "*"
+printAlignArity ar = text $ case ar of
+  AA_InjectiveAndTotal        -> "1"
+  AA_Injective                -> "?"
+  AA_Total                    -> "+"
+  AA_NeitherInjectiveNorTotal -> "*"
 
 printCorrespondences :: [CORRESPONDENCE] -> Doc
 printCorrespondences = vsep . (punctuate comma) . (map printCorrespondence)
@@ -174,14 +184,15 @@ printConfidence :: CONFIDENCE -> Doc
 printConfidence = text . ('(':) . (++ ")") . show
 
 printRelationRef :: RELATION_REF -> Doc
-printRelationRef Subsumes        = text ">"
-printRelationRef IsSubsumed      = text "<"
-printRelationRef Equivalent      = text "="
-printRelationRef Incompatible    = text "%"
-printRelationRef HasInstance     = text "$\\ni$"
-printRelationRef InstanceOf      = text "$\\in$"
-printRelationRef DefaultRelation = text "$\\mapsto$"
-printRelationRef (Iri i)         = indexed $ iriToStringShortUnsecure i
+printRelationRef rref = case rref of
+  Subsumes        -> text ">"
+  IsSubsumed      -> text "<"
+  Equivalent      -> text "="
+  Incompatible    -> text "%"
+  HasInstance     -> text "$\\ni$"
+  InstanceOf      -> text "$\\in$"
+  DefaultRelation -> text "$\\mapsto$"
+  (Iri i)         -> structIRI i
 
 instance Pretty ItemNameMap where
     pretty (ItemNameMap a m) = fsep

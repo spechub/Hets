@@ -92,7 +92,8 @@ type SPEC_NAME = IRI
 type VIEW_NAME = IRI
 type ALIGN_NAME = IRI
 type MODULE_NAME = IRI
-type RESTRICTION_SIGNATURE = ()
+type ENTITY = IRI
+type RESTRICTION_SIGNATURE = [ENTITY]
 
 -- | a logic with serialization
 data LogicDescr = LogicDescr Logic_name (Maybe IRI) Range
