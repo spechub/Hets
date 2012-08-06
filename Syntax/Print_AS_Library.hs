@@ -14,29 +14,38 @@ module Syntax.Print_AS_Library () where
 
 import Data.Maybe (maybeToList)
 
+import Common.AS_Annotation
 import Common.IRI
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
 import Common.LibName
 
+import Logic.Grothendieck
+
 import Syntax.AS_Structured
 import Syntax.AS_Library
-import Common.AS_Annotation
 
 import Syntax.Print_AS_Architecture ()
 import Syntax.Print_AS_Structured
 
-instance Pretty LIB_DEFN where
-    pretty (Lib_defn aa ab _ ad) =
+instance PrettyLG LIB_DEFN where
+    prettyLG lg (Lib_defn aa ab _ ad) =
         let aa' = pretty aa            -- lib name
-            ab' = vsep $ map pretty ab -- LIB_ITEMs
+            ab' = vsep $ printLibItems lg ab -- LIB_ITEMs
             ad' = vcat $ map pretty ad -- global ANNOTATIONs
         in (if aa == emptyLibName "" then empty else
                keyword libraryS <+> aa') $++$ ad' $++$ ab'
 
-instance Pretty LIB_ITEM where
-    pretty li = case li of
+printLibItems :: LogicGraph -> [Annoted LIB_ITEM] -> [Doc]
+printLibItems lg is = case is of
+  [] -> []
+  i : rs -> prettyLG lg i : printLibItems (case item i of
+    Logic_decl aa _ -> setLogicName aa lg
+    _ -> lg) rs
+
+instance PrettyLG LIB_ITEM where
+    prettyLG lg li = case li of
         Spec_defn si (Genericity aa@(Params pl) ab@(Imported il) _) ac' _ ->
             let las = l_annos ac'
                 (sa, ac) = if startsWithSemanticAnno las then
@@ -45,18 +54,18 @@ instance Pretty LIB_ITEM where
                            else (equals, ac')
                 x : r = case skipVoidGroup $ item ac of
                           Extension e@(_ : _) _ ->
-                              printExtension $ moveAnnos ac e
+                              printExtension lg $ moveAnnos ac e
                           Union u@(_ : _) _ ->
-                              printUnion $ moveAnnos ac u
-                          _ -> [pretty ac]
+                              printUnion lg $ moveAnnos ac u
+                          _ -> [prettyLG lg ac]
                 spid = indexed (iriToStringShortUnsecure si)
                 sphead = if null il then
                              if null pl then spid <+> sa
-                             else cat [spid, printPARAMS aa <+> sa]
-                         else sep [ cat [spid, printPARAMS aa]
-                                  , printIMPORTED ab <+> sa]
+                             else cat [spid, printPARAMS lg aa <+> sa]
+                         else sep [ cat [spid, printPARAMS lg aa]
+                                  , printIMPORTED lg ab <+> sa]
              in if null (iriToStringShortUnsecure si) && null pl
-                then pretty ac' else
+                then prettyLG lg ac' else
                     vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa@(Params pl) ab@(Imported il) _)
@@ -64,13 +73,13 @@ instance Pretty LIB_ITEM where
             let spid = structIRI si
                 sphead = if null il then
                              if null pl then spid <+> colon
-                             else cat [spid, printPARAMS aa <+> colon]
-                         else sep [ cat [spid, printPARAMS aa]
-                                  , printIMPORTED ab <+> colon]
+                             else cat [spid, printPARAMS lg aa <+> colon]
+                         else sep [ cat [spid, printPARAMS lg aa]
+                                  , printIMPORTED lg ab <+> colon]
             in topKey viewS <+>
-               sep ([sphead, sep [ printGroupSpec frm <+> keyword toS
+               sep ([sphead, sep [ printGroupSpec lg frm <+> keyword toS
                                   , (if null ad then id else (<+> equals))
-                                    $ printGroupSpec to]]
+                                    $ printGroupSpec lg to]]
                        ++ [ppWithCommas ad])
                           $+$ keyword endS
         Align_defn si ar (Align_type frm to _) corresps _ ->
@@ -80,23 +89,23 @@ instance Pretty LIB_ITEM where
                   Just alignArities -> sep [spid, printAlignArities alignArities
                                                   <+> colon ]
             in topKey alignmentS <+>
-               (sep ([sphead, sep [ printGroupSpec frm <+> keyword toS,
-                                    printGroupSpec to]]
+               (sep ([sphead, sep [ printGroupSpec lg frm <+> keyword toS,
+                                    printGroupSpec lg to]]
                      ++ if null corresps then []
                         else [equals,
                               printCorrespondences corresps]))
                $+$ keyword endS
         Arch_spec_defn si ab _ ->
             topKey archS <+>
-                   fsep [keyword specS, structIRI si <+> equals, pretty ab]
+                   fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
                            $+$ keyword endS
         Unit_spec_defn si ab _ ->
             topKey unitS <+>
-                   fsep [keyword specS, structIRI si <+> equals, pretty ab]
+                   fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
                            $+$ keyword endS
         Ref_spec_defn si ab _ ->
             keyword refinementS <+>
-                    fsep [structIRI si <+> equals, pretty ab]
+                    fsep [structIRI si <+> equals, prettyLG lg ab]
                             $+$ keyword endS
         Download_items l ab _ ->
             topKey fromS <+> fsep ((pretty l <+> keyword getS)
@@ -112,16 +121,17 @@ prettyDownloadItems d = case d of
   ItemMaps l -> punctuate comma $ map pretty l
   UniqueItem i -> [mapsto, structIRI i]
 
-instance Pretty GENERICITY where
-    pretty (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]
+instance PrettyLG GENERICITY where
+    prettyLG lg (Genericity aa ab _) =
+        sep [printPARAMS lg aa, printIMPORTED lg ab]
 
-printPARAMS :: PARAMS -> Doc
-printPARAMS (Params aa) = cat $ map (brackets . rmTopKey . pretty ) aa
+printPARAMS :: LogicGraph -> PARAMS -> Doc
+printPARAMS lg (Params aa) = cat $ map (brackets . rmTopKey . prettyLG lg ) aa
 
-printIMPORTED :: IMPORTED -> Doc
-printIMPORTED (Imported aa) = case aa of
+printIMPORTED :: LogicGraph -> IMPORTED -> Doc
+printIMPORTED lg (Imported aa) = case aa of
     [] -> empty
-    _ -> sep [keyword givenS, sepByCommas $ map printGroupSpec aa]
+    _ -> sep [keyword givenS, sepByCommas $ map (printGroupSpec lg) aa]
 
 printAlignArities :: ALIGN_ARITIES -> Doc
 printAlignArities (Align_arities f b) =
@@ -147,7 +157,7 @@ printCorrespondence (Correspondence_block mrref mconf cs) =
    [text "{"],
    [printCorrespondences cs],
    [text "}"]]
-       
+
 printCorrespondence (Single_correspondence mcid eRef toer mrRef mconf) =
   sep $ concat
   [[indexed $ iriToStringShortUnsecure eRef],

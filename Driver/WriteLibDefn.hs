@@ -24,7 +24,6 @@ module Driver.WriteLibDefn
 
 import Common.Utils
 import Common.Doc
-import Common.DocUtils
 import Common.LibName
 import Common.PrintLaTeX
 import Common.GlobalAnnotations (GlobalAnnos)
@@ -40,8 +39,11 @@ import ATC.AS_Library ()
 import ATC.DevGraph ()
 import ATC.Grothendieck
 
+import Logic.Grothendieck
+
 import Syntax.AS_Library (LIB_DEFN ())
 import Syntax.Print_AS_Library ()
+import Syntax.Print_AS_Structured
 import Syntax.ToXml
 
 import Text.XML.Light (ppTopElement)
@@ -68,14 +70,15 @@ getFilePrefixGeneric suffs odir' file =
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
   Filenames are determined by the output formats.
 -}
-writeLibDefn :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
-writeLibDefn ga file opts ld = do
+writeLibDefn :: LogicGraph -> GlobalAnnos -> FilePath -> HetcatsOpts
+  -> LIB_DEFN -> IO ()
+writeLibDefn lg ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld)
         printAscii fn = writeEncFile (ioEncoding opts) fn
-          $ showGlobalDoc ga ld "\n"
+          $ renderText ga (prettyLG lg ld) ++ "\n"
         printHtml fn = writeEncFile (ioEncoding opts) fn
-          $ renderHtml ga $ pretty ld
+          $ renderHtml ga $ prettyLG lg ld
         write_type :: OutType -> IO ()
         write_type ty = case ty of
             PrettyOut pty -> do
@@ -85,14 +88,14 @@ writeLibDefn ga file opts ld = do
                 PrettyXml -> printXml fn
                 PrettyAscii -> printAscii fn
                 PrettyHtml -> printHtml fn
-                PrettyLatex -> writeLibDefnLatex ga fn ld
+                PrettyLatex -> writeLibDefnLatex lg ga fn ld
             _ -> return () -- implemented elsewhere
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opts
 
-writeLibDefnLatex :: GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-writeLibDefnLatex ga oup =
-  writeFile oup . renderLatex Nothing . toLatex ga . pretty
+writeLibDefnLatex :: LogicGraph -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
+writeLibDefnLatex lg ga oup =
+  writeFile oup . renderLatex Nothing . toLatex ga . prettyLG lg
 
 toShATermString :: ShATermLG a => a -> IO String
 toShATermString = fmap AT.writeSharedATerm . versionedATermTable

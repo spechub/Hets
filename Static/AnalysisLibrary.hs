@@ -26,6 +26,7 @@ import Logic.Logic
 import Logic.Grothendieck
 
 import Syntax.AS_Structured
+import Syntax.Print_AS_Structured
 import Syntax.AS_Library
 
 import Static.GTheory
@@ -37,7 +38,6 @@ import Static.AnalysisArchitecture
 import Static.ArchDiagram (emptyExtStUnitCtx)
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
-import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
@@ -158,7 +158,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           lift $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
           ga <- liftR $ addGlobalAnnos emptyGlobalAnnos ans
-          lift $ writeLibDefn ga file opts ast
+          lift $ writeLibDefn lgraph ga file opts ast
           liftR mzero
       _ -> do
           let libstring = show $ getLibId ln
@@ -174,7 +174,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           case Map.lookup lnFinal lenv of
               Nothing -> error $ "anaString: missing library: " ++ show lnFinal
               Just dg -> lift $ do
-                  writeLibDefn ga file opts ld
+                  writeLibDefn lgraph ga file opts ld
                   when (hasEnvOut opts)
                         (writeFileInfo opts lnFinal file ld dg)
                   return (lnFinal, lenv)
@@ -212,7 +212,7 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
                      lift $ removeFile envFile
                      anaSource (Just ln) lgraph opts topLns libenv initDG file
                  Just (ld, gc) -> do
-                     writeLibDefn (globalAnnos gc) file opts ld
+                     writeLibDefn lgraph (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
                      Result ds mEnv <- runResultT $ foldl
                          ( \ ioLibEnv labOfDG -> let node = snd labOfDG in
@@ -420,7 +420,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                   Left _ -> logN'
                   Right x -> x
    in do
-    putMessageIORes opts 1 $ showDoc itm ""
+    putMessageIORes opts 1 . show $ prettyLG lg itm
     (mth, newLg) <- liftR
       $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lg
     case mth of
@@ -476,8 +476,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                             ([ItemNameMap expJ (Just expI)], [], [i, j])
                     _ ->
                      ( []
-                     , [mkError "non-unique name within imported library" itm]
-                     , [])
+                     , [ mkError "non-unique name within imported library"
+                         lnOrig], [])
                 additionalEo = Map.fromList $ map (\ o -> (o, fn)) origItems
                 eo' = Map.unionWith (\ _ p2 -> p2) eo additionalEo
             mapM_ liftR errs
@@ -709,12 +709,12 @@ expandCurie2M ga (i1, mi2) =
   let pm = prefix_map ga
       e1m = expandCurie pm i1
       e2m = liftM (expandCurie pm) mi2
-  in if isNothing e1m
-      then Left $ failPrefixIRI i1
-      else case e2m of
-              Nothing -> Right (fromJust e1m, Nothing)
+  in case e1m of
+      Nothing -> Left $ failPrefixIRI i1
+      Just e1 -> case e2m of
+              Nothing -> Right (e1, Nothing)
               Just Nothing -> Left $ failPrefixIRI $ fromJust mi2
-              Just e2 -> Right (fromJust e1m, e2)
+              Just e2 -> Right (e1, e2)
 
 itemNameMapsToIRIs :: [ItemNameMap] -> [IRI]
 itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> [i | isNothing mi])

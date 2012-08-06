@@ -34,6 +34,7 @@ import Static.AnalysisStructured
 
 import Syntax.Print_AS_Architecture ()
 import Syntax.AS_Architecture
+import Syntax.Print_AS_Structured
 import Syntax.AS_Structured
 
 import Common.AS_Annotation
@@ -43,7 +44,7 @@ import Common.IRI
 import Common.LibName
 import Common.Result
 import Common.Amalgamate
-import Common.DocUtils
+import Common.Doc
 import qualified Data.Map as Map
 
 import Data.Maybe
@@ -363,8 +364,8 @@ anaUnitImported lgraph ln dg opts eo uctx@(_, diag) poss terms =
        let pos = getPosUnitImported poss
        sink <- inclusionSink lgraph dnsigs sig
        () <- assertAmalgamability opts pos diag' sink
-       (dnsig, diag'') <- extendDiagramIncl lgraph diag' dnsigs
-                          sig $ showDoc terms ""
+       (dnsig, diag'') <- extendDiagramIncl lgraph diag' dnsigs sig
+         . show . sepByCommas $ map (prettyLG lgraph) terms
        return (JustDiagNode dnsig, diag'', dg'', terms')
 
 anaUnitImported' :: LogicGraph -> LibName -> DGraph
@@ -397,7 +398,7 @@ anaUnitExpression lgraph ln dg opts eo uctx@(buc, diag)
   _ -> do
        (args, dg', ubs') <-
            anaUnitBindings lgraph ln dg opts eo uctx ubs
-       let dexp = showDoc uexp ""
+       let dexp = show $ prettyLG lgraph uexp
            insNodes diag0 [] buc0 = return ([], diag0, buc0)
            insNodes diag0 ((un, nsig) : args0) buc0 =
                do (dnsig, diag') <- extendDiagramIncl lgraph diag0 []
@@ -505,7 +506,7 @@ anaUnitTerm :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
   -> ExtStUnitCtx -> UNIT_TERM -> Result (DiagNodeSig, Diag, DGraph, UNIT_TERM)
 anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
   let pos = getPosUnitTerm utrm
-      utStr = showDoc utrm ""
+      utStr = show $ prettyLG lgraph utrm
   in case utrm of
   Unit_reduction ut restr -> do
        let orig = DGRestriction (Restricted restr) Set.empty
@@ -572,7 +573,7 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
     Nothing -> prefixErrorIRI un'
     Just un -> do
        let ustr = iriToStringUnsecure un
-           argStr = showDoc fargus ""
+           argStr = show . sepByCommas $ map (prettyLG lgraph) fargus
        case Map.lookup un buc of
             Just (Based_unit_sig dnsig _rsig) -> case fargus of
               [] -> return (dnsig, diag, dg, utrm)
@@ -705,7 +706,7 @@ anaFitArgUnits lgraph ln dg opts eo uctx@(buc, diag)
   ([], []) -> return ([], dg, diag)
   _ -> plain_error ([], dg, diag)
        ("non-matching number of arguments given in application\n"
-                    ++ showDoc appl "") pos
+                    ++ show (prettyLG lgraph appl)) pos
 
 -- | Analyse unit argument
 anaFitArgUnit :: LogicGraph -> LibName -> DGraph

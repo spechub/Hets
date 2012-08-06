@@ -17,9 +17,9 @@ import Syntax.Parse_AS_Library
 import System.Environment
 import Text.ParserCombinators.Parsec
 import Common.AnnoState
-import Common.DocUtils
 import Comorphisms.LogicGraph
 import Syntax.Print_AS_Library ()
+import Syntax.Print_AS_Structured
 
 parsefile :: FilePath -> IO ()
 parsefile fname = do
@@ -27,7 +27,7 @@ parsefile fname = do
   case runParser (library logicGraph)
            (emptyAnnos ()) fname input of
     Left err -> error $ show err
-    Right x -> putStrLn $ shows (pretty x) "\n..."
+    Right x -> putStrLn $ shows (prettyLG logicGraph x) "\n"
 
 main :: IO ()
 main = do

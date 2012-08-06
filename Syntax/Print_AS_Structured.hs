@@ -17,6 +17,7 @@ module Syntax.Print_AS_Structured
     , printUnion
     , printExtension
     , moveAnnos
+    , PrettyLG (..)
     ) where
 
 import Common.Id
@@ -26,7 +27,11 @@ import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation
 
-import Logic.Grothendieck ()
+import qualified Data.Map as Map
+import Data.Maybe
+
+import Logic.Grothendieck
+import Logic.Logic
 
 import Syntax.AS_Structured
 
@@ -36,11 +41,17 @@ sublogicId = structId . tokStr
 structIRI :: IRI -> Doc
 structIRI = structId . iriToStringShortUnsecure -- also print user information
 
-instance Pretty SPEC where
-    pretty = printSPEC
+class PrettyLG a where
+  prettyLG :: LogicGraph -> a -> Doc
 
-printUnion :: [Annoted SPEC] -> [Doc]
-printUnion = prepPunctuate (topKey andS <> space) . map condBracesAnd
+instance PrettyLG a => PrettyLG (Annoted a) where
+    prettyLG lg = printAnnoted $ prettyLG lg
+
+instance PrettyLG SPEC where
+    prettyLG = printSPEC
+
+printUnion :: LogicGraph -> [Annoted SPEC] -> [Doc]
+printUnion lg = prepPunctuate (topKey andS <> space) . map (condBracesAnd lg)
 
 moveAnnos :: Annoted SPEC -> [Annoted SPEC] -> [Annoted SPEC]
 moveAnnos x l = appAnno $ case l of
@@ -51,38 +62,49 @@ moveAnnos x l = appAnno $ case l of
                  [h] -> [appendAnno h (r_annos x)]
                  h : r -> h : appAnno r
 
-printOptUnion :: Annoted SPEC -> [Doc]
-printOptUnion x = case skipVoidGroup $ item x of
-        Union e@(_ : _) _ -> printUnion $ moveAnnos x e
-        Extension e@(_ : _) _ -> printExtension $ moveAnnos x e
-        _ -> [pretty x]
+printOptUnion :: LogicGraph -> Annoted SPEC -> [Doc]
+printOptUnion lg x = case skipVoidGroup $ item x of
+        Union e@(_ : _) _ -> printUnion lg $ moveAnnos x e
+        Extension e@(_ : _) _ -> printExtension lg $ moveAnnos x e
+        _ -> [prettyLG lg x]
 
-printExtension :: [Annoted SPEC] -> [Doc]
-printExtension l = case l of
+printExtension :: LogicGraph -> [Annoted SPEC] -> [Doc]
+printExtension lg l = case l of
     [] -> []
-    x : r -> printOptUnion x ++
+    x : r -> printOptUnion lg x ++
              concatMap ((\ u -> case u of
                             [] -> []
                             d : s -> (topKey thenS <+> d) : s) .
-                        printOptUnion) r
+                        printOptUnion lg) r
 
-printSPEC :: SPEC -> Doc
-printSPEC spec = case spec of
-    Basic_spec aa _ -> pretty aa
+printSPEC :: LogicGraph -> SPEC -> Doc
+printSPEC lg spec = case spec of
+    Basic_spec (G_basic_spec lid basic_spec) _ ->
+        case lookupCurrentSyntax "" lg of
+      Just (Logic lid2, sm) -> if language_name lid2 /= language_name lid
+          then error "internal printSPEC error"
+          else case fmap snd $ Map.lookup (fromMaybe nullIRI sm)
+                   $ parsersAndPrinters lid of
+        Just p -> p basic_spec
+        _ -> error $ "missing basic spec printer: " ++ showDoc sm ""
+      _ -> error "printSPEC: incomplete logic graph"
     EmptySpec _ -> specBraces empty
-    Translation aa ab -> sep [condBracesTransReduct aa, printRENAMING ab]
-    Reduction aa ab -> sep [condBracesTransReduct aa, printRESTRICTION ab]
-    Union aa _ -> sep $ printUnion aa
-    Extension aa _ -> sep $ printExtension aa
-    Free_spec aa _ -> sep [keyword freeS, printGroupSpec aa]
-    Cofree_spec aa _ -> sep [keyword cofreeS, printGroupSpec aa]
+    Translation aa ab -> sep [condBracesTransReduct lg aa, printRENAMING ab]
+    Reduction aa ab -> sep [condBracesTransReduct lg aa, printRESTRICTION ab]
+    Union aa _ -> sep $ printUnion lg aa
+    Extension aa _ -> sep $ printExtension lg aa
+    Free_spec aa _ -> sep [keyword freeS, printGroupSpec lg aa]
+    Cofree_spec aa _ -> sep [keyword cofreeS, printGroupSpec lg aa]
     Local_spec aa ab _ -> fsep
-        [keyword localS, pretty aa, keyword withinS, condBracesWithin ab]
-    Closed_spec aa _ -> sep [keyword closedS, printGroupSpec aa]
-    Group aa _ -> pretty aa
-    Spec_inst aa ab _ -> cat [structIRI aa, print_fit_arg_list ab]
-    Qualified_spec ln asp _ -> printLogicEncoding ln <> colon $+$ pretty asp
-    Data _ _ s1 s2 _ -> keyword dataS <+> printGroupSpec s1 $+$ pretty s2
+      [keyword localS, prettyLG lg aa, keyword withinS, condBracesWithin lg ab]
+    Closed_spec aa _ -> sep [keyword closedS, printGroupSpec lg aa]
+    Group aa _ -> prettyLG lg aa
+    Spec_inst aa ab _ -> cat [structIRI aa, print_fit_arg_list lg ab]
+    Qualified_spec ln asp _ -> printLogicEncoding ln <> colon
+      $+$ prettyLG (setLogicName ln lg) asp
+    Data ld _ s1 s2 _ -> keyword dataS
+        <+> printGroupSpec (setCurLogic (show ld) lg) s1
+        $+$ prettyLG lg s2
     Combination cs es _ -> fsep $ keyword combineS : ppWithCommas cs
       : if null es then [] else [keyword excludingS, ppWithCommas es]
 
@@ -120,18 +142,18 @@ printG_hiding ghid = case ghid of
     G_symb_list gsil -> pretty gsil
     G_logic_projection enc -> printLogicEncoding enc
 
-instance Pretty FIT_ARG where
-    pretty = printFIT_ARG
+instance PrettyLG FIT_ARG where
+    prettyLG = printFIT_ARG
 
-printFIT_ARG :: FIT_ARG -> Doc
-printFIT_ARG fit = case fit of
+printFIT_ARG :: LogicGraph -> FIT_ARG -> Doc
+printFIT_ARG lg fit = case fit of
     Fit_spec aa ab _ ->
-        let aa' = rmTopKey $ pretty aa
+        let aa' = rmTopKey $ prettyLG lg aa
         in if null ab then aa' else
                fsep $ aa' : keyword fitS
                         : punctuate comma (map printG_mapping ab)
     Fit_view si ab _ ->
-        sep [keyword viewS, cat [structIRI si, print_fit_arg_list ab]]
+        sep [keyword viewS, cat [structIRI si, print_fit_arg_list lg ab]]
 
 instance Pretty Logic_code where
     pretty = printLogic_code
@@ -159,14 +181,14 @@ printLogic_name (Logic_name mlog slog ms) = let d = structIRI mlog in
 {- |
   specialized printing of 'FIT_ARG's
 -}
-print_fit_arg_list :: [Annoted FIT_ARG] -> Doc
-print_fit_arg_list = cat . map (brackets . pretty)
+print_fit_arg_list :: LogicGraph -> [Annoted FIT_ARG] -> Doc
+print_fit_arg_list lg = cat . map (brackets . prettyLG lg)
 
 {- |
    conditional generation of grouping braces for Union and Extension
 -}
-printGroupSpec :: Annoted SPEC -> Doc
-printGroupSpec s = let d = pretty s in
+printGroupSpec :: LogicGraph -> Annoted SPEC -> Doc
+printGroupSpec lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
                  Spec_inst {} -> d
                  _ -> specBraces d
@@ -174,8 +196,8 @@ printGroupSpec s = let d = pretty s in
 {- |
   generate grouping braces for Tanslations and Reductions
 -}
-condBracesTransReduct :: Annoted SPEC -> Doc
-condBracesTransReduct s = let d = pretty s in
+condBracesTransReduct :: LogicGraph -> Annoted SPEC -> Doc
+condBracesTransReduct lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
                  Extension {} -> specBraces d
                  Union {} -> specBraces d
@@ -185,8 +207,8 @@ condBracesTransReduct s = let d = pretty s in
 {- |
   generate grouping braces for Within
 -}
-condBracesWithin :: Annoted SPEC -> Doc
-condBracesWithin s = let d = pretty s in
+condBracesWithin :: LogicGraph -> Annoted SPEC -> Doc
+condBracesWithin lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
                  Extension _ _ -> specBraces d
                  Union _ _ -> specBraces d
@@ -194,8 +216,8 @@ condBracesWithin s = let d = pretty s in
 {- |
   only Extensions inside of Unions (and) need grouping braces
 -}
-condBracesAnd :: Annoted SPEC -> Doc
-condBracesAnd s = let d = pretty s in
+condBracesAnd :: LogicGraph -> Annoted SPEC -> Doc
+condBracesAnd lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
                  Extension _ _ -> specBraces d
                  _ -> d

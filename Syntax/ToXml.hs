@@ -13,6 +13,7 @@ Xml printing of Hets specification libaries
 module Syntax.ToXml (xmlLibDefn) where
 
 import Syntax.AS_Structured
+import Syntax.Print_AS_Structured
 import Syntax.AS_Library
 import Syntax.Print_AS_Library ()
 
@@ -39,6 +40,10 @@ xmlLibDefn ga (Lib_defn n il rg an) =
   add_attrs (mkNameAttr (show $ getLibId n) : rgAttrs rg)
      $ unode "Lib" $ annos "Global" ga an ++ map (annoted libItem ga) il
 
+unsupported :: PrettyLG a => GlobalAnnos -> a -> Element
+unsupported ga =
+  unode "Unsupported" . show . useGlobalAnnos ga . prettyLG emptyLogicGraph
+
 libItem :: GlobalAnnos -> LIB_ITEM -> Element
 libItem ga li = case li of
   Spec_defn n g as rg ->
@@ -56,7 +61,7 @@ libItem ga li = case li of
   Logic_decl n rg ->
     add_attrs (mkNameAttr (showDoc n "") : rgAttrs rg)
       $ unode "Logic" ()
-  _ -> prettyElem "Unsupported" ga li
+  _ -> unsupported ga li
 
 downloadItems :: DownloadItems -> [Element]
 downloadItems d = case d of
@@ -90,7 +95,7 @@ spec ga s = case s of
   Data l1 _ s1 s2 rg ->
     add_attrs (mkAttr "data-logic" (show l1) : rgAttrs rg)
       $ unode "Data" [annoted spec ga s1, annoted spec ga s2]
-  Combination {} -> prettyElem "Unsupported" ga s
+  Combination {} -> unsupported ga s
 
 fitArg :: GlobalAnnos -> FIT_ARG -> Element
 fitArg ga fa = case fa of

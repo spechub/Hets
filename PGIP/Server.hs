@@ -44,6 +44,7 @@ import Static.PrintDevGraph
 import Static.ToXml as ToXml
 
 import Syntax.ToXml
+import Syntax.Print_AS_Structured
 
 import Interfaces.Command
 import Interfaces.CmdAction
@@ -324,10 +325,8 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
                     NodeQuery i $ ProveNode incl prover translation timeout [])
               >>= getHetsResponse' opts sessRef
           _ -> case (lookup2 "node", lookup2 "edge") of
-            -- look for (optional) specification of node OR edge
-            (Just _, Just _) -> fail "pleace specify only either node or edge"
             -- call command upon a single node
-            (Just ndIri, _) -> case parseIRI ndIri of
+            (Just ndIri, Nothing) -> case parseIRI ndIri of
               Nothing -> fail $ "failed to parse nodeIRI from " ++ ndIri
               Just nd -> let
                 s = iriFragment nd
@@ -338,11 +337,13 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
                     _ -> fail $ "unknown node command '" ++ cmd ++ "' ")
                 >>= getHetsResponse' opts sessRef
             -- call command upon a single edge :TODO no command passed on. why?
-            (_, Just edIri) -> case parseIRI edIri
+            (Nothing, Just edIri) -> case parseIRI edIri
                         >>= readMaybe . iriFragment of
               Just i -> getHetsResponse' opts sessRef $ Query
                 (DGQuery sId Nothing) $ EdgeQuery (EdgeId i) "edge"
               Nothing -> fail $ "failed to read edgeId from edgeIRI: " ++ edIri
+            -- look for (optional) specification of node OR edge
+            _ -> fail "please specify only either node or edge"
       -- fail if request doesn't comply
       _ -> queryFailure
     {- create failure response if request method is not known
@@ -416,11 +417,13 @@ ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO String
 ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
     Nothing -> fail "parsed LIB-DEFN not avaible"
     Just ld ->
-      let latex = renderLatex Nothing (toLatex ga $ pretty ld) in case mt of
+      let d = prettyLG logicGraph ld
+          latex = renderLatex Nothing $ toLatex ga d
+      in case mt of
       Just pty -> case pty of
         PrettyXml -> return $ ppTopElement $ xmlLibDefn ga ld
-        PrettyAscii -> return $ showGlobalDoc ga ld "\n"
-        PrettyHtml -> return $ htmlHead ++ renderHtml ga (pretty ld)
+        PrettyAscii -> return $ renderText ga d ++ "\n"
+        PrettyHtml -> return $ htmlHead ++ renderHtml ga d
         PrettyLatex -> return latex
       Nothing -> lift $ do
          tmpDir <- getTemporaryDirectory
