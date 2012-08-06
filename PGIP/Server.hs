@@ -231,7 +231,12 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
       s = iriFragment nd
       i = maybe (Right s) Left $ readMaybe s
       in return . Query (DGQuery sId (Just $ iriPath nd)) . NodeQuery i
-  getResponse = getHetsResponse' opts sessRef
+  -- call getHetsResult with the properly generated query (Final Result)
+  getResponse qr = do
+    Result ds ms <- runResultT $ getHetsResult opts [] sessRef qr
+    return $ case ms of
+      Nothing -> mkResponse status400 $ showRelDiags 1 ds
+      Just s -> mkOkResponse s
   -- respond depending on request Method
   in case B8.unpack (requestMethod re) of
     "POST" -> case pathBits of
@@ -316,7 +321,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
               -- otherwise run prover for single node only
               Just ndIri -> parseNodeQuery ndIri sId $ return
                 $ ProveNode incl prover translation timeout []) >>= getResponse
-          -- look for (optional) specification of node OR edge
+          -- OTHER CMD ¦ look for (optional) specification of node OR edge
           _ -> (case (lookup2 "node", lookup2 "edge") of
             -- fail if both are specified
             (Just _, Just _) -> fail "please specify only either node or edge"
@@ -535,17 +540,6 @@ getHetsResponse opts updates sessRef pathBits query = do
     Nothing -> mkResponse status400 $ showRelDiags 1 ds
     Just s -> mkOkResponse s
 
-{- | the new call of getHetsResponse responses to a RESTFull query, that has
-already been pre-analysed within runServer. Thus, a query is passed as a
-parameter. -}
-getHetsResponse' :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> Query
-                 -> IO Response
-getHetsResponse' opts sessRef query = do
-  Result ds ms <- runResultT $ getHetsResult opts [] sessRef query
-  return $ case ms of
-    Nothing -> mkResponse status400 $ showRelDiags 1 ds
-    Just s -> mkOkResponse s
-
 getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
   -> IORef (IntMap.IntMap Session) -> Query -> ResultT IO String
 getHetsResult opts updates sessRef (Query dgQ qk) = do
@@ -568,7 +562,6 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> liftR $ return $ sessAns ln svg sk
-
             GlProvers mt -> return $ getFullProverList mt dg
             GlTranslations -> return $ getFullComorphList dg
             GlAutoProve incl mp mt tl -> do
@@ -579,7 +572,6 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                     return $ formatResults k 0 $ unode "results" $
                        map (\ (n, e) -> unode "goal"
                          [unode "name" n, unode "result" e]) sens
-
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == "update" then
@@ -889,6 +881,7 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
             Just nTh -> return
               (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
+-- run over all dgnodes and prove available goals for each
 proveAllNodes :: LibEnv -> LibName -> DGraph -> Bool -> Maybe String
   -> Maybe String -> Maybe Int -> ResultT IO (LibEnv, [(String, String)])
 proveAllNodes le ln dg useTh mp mt tl = foldM
@@ -899,7 +892,6 @@ proveAllNodes le ln dg useTh mp mt tl = foldM
         (le'', sens') <- proveNode le' ln dg nl gTh subL useTh mp mt tl
           $ map fst $ getThGoals gTh
         return (le'', sens ++ sens')) (le, []) $ labNodesDG dg
-
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
