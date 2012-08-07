@@ -61,6 +61,7 @@ import Proofs.AbstractState
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
 
+import qualified Common.AutoProofUtils as ProofUtils
 import Common.Doc
 import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
@@ -564,6 +565,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               _ -> liftR $ return $ sessAns ln svg sk
             GlProvers mt -> return $ getFullProverList mt dg
             GlTranslations -> return $ getFullComorphList dg
+            GlShowProverWindow proofOrCons -> return $ showAutoProofWindow dg k
             GlAutoProve incl mp mt tl -> do
                 (newLib, sens) <- proveAllNodes libEnv ln dg incl mp mt tl
                 if null sens then return "nothing to prove" else do
@@ -784,6 +786,16 @@ showProverSelection subL = let
     $ unode "option" c) allPrCm
   in (prs, cmrs, jvScr)
 
+showAutoProofWindow :: DGraph -> Int -> String 
+showAutoProofWindow dg sessId = let
+  fnodes = ProofUtils.initFNodes $ labNodesDG dg
+  nodeSel = map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
+    , mkAttr "name" $ escStr $ ProofUtils.name fn ] $ unode "input" $ show fn)
+    fnodes
+  br = unode "br " ()
+  in mkHtmlElem "autoProofs" $ intersperse br nodeSel
+
+
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
 
@@ -912,16 +924,18 @@ sessAns libName svg (sess, k) =
          aRef (extPath sess l k ++ d) d) displayTypes
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d
+      autoProofBt = aRef ('/' : show k ++ "?autoproof") "automatic proofs"
 -- the html quicklinks to nodes and edges have been removed with R.16827
   in htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
            (bold ("library " ++ ln)
             : map ref displayTypes
             ++ menuElement : loadXUpdate (libPath ++ "update")
-            : [plain "commands:"]
-            ++ [mkUnorderedList $ map ref globalCommands]
-            ++ [plain "imported libraries:"]
-            ++ [mkUnorderedList $ map libref $ Map.keys libEnv]
+            : plain "tools:" : mkUnorderedList [autoProofBt]
+            : plain "commands:"
+            : (mkUnorderedList $ map ref globalCommands)
+            : plain "imported libraries:"
+            : [mkUnorderedList $ map libref $ Map.keys libEnv]
            ) ++ svg
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]

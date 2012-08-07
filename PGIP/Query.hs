@@ -126,6 +126,7 @@ data QueryKind =
   | GlobCmdQuery String
   | GlProvers (Maybe String)
   | GlTranslations
+  | GlShowProverWindow ProverWindowMode
   | GlAutoProve
   { apInclTheorems :: Bool
   , apProver :: Maybe String
@@ -133,6 +134,8 @@ data QueryKind =
   , apTimeout :: Maybe Int }
   | NodeQuery NodeIdOrName NodeCommand
   | EdgeQuery EdgeId String
+
+data ProverWindowMode = GlProofs | GlConsistency
 
 data NodeCommand =
     NcCmd NodeCmd
@@ -164,11 +167,13 @@ isNat s = all isDigit s && not (null s) && length s < 11
 
 -- | a leading question mark is removed, possibly a session id is returned
 anaQuery :: [QueryPair] -> Either String (Maybe Int, QueryKind)
-anaQuery q =
+anaQuery q' =
        let globals = "update" : globalCommands
+           (atP, q) = partition ((== "autoproof") . fst) q'
            (q1, qm) = partition (\ l -> case l of
                         (x, Nothing) -> isNat x || elem x
-                               (displayTypes ++ globals ++ ["include"]
+                               (displayTypes ++ globals
+                                ++ ["include", "autoproof"]
                                 ++ nodeCommands ++ edgeCommands)
                         _ -> False) q
            (q2, qr) = partition (\ l -> case l of
@@ -207,7 +212,9 @@ anaQuery q =
            mi = fmap read $ listToMaybe ais
            (theorems, qqr) = partition ((== Just "on") . snd) qr
            noPP = null pps && null incls && null theorems
-       in if null qqr && length ais < 2 then case (afs, ags, ans, aes, aids) of
+       -- TODO i kind of abused this functions structure for autoproofs here
+       in if not $ null atP then Right(mi, GlShowProverWindow GlProofs) else
+          if null qqr && length ais < 2 then case (afs, ags, ans, aes, aids) of
          (_, [], [], [], []) | noPP -> if length afs > 1
            then Left $ "non-unique format " ++ show afs
            else Right (mi, DisplayQuery $ listToMaybe afs)
