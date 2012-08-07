@@ -43,13 +43,13 @@ scanLiteral = do
                         if c == '@' then AtWord else KToken) s
 
 eolOrEof :: GenParser Char st ()
-eolOrEof = (oneOf "\n\r" >> return ()) <|> eof
+eolOrEof = forget (oneOf "\n\r") <|> eof
 
 commentOut :: CharParser st ()
-commentOut = char ';' >> manyTill anyChar eolOrEof >> return ()
+commentOut = forget $ char ';' >> manyTill anyChar eolOrEof
 
 skip :: CharParser st [()]
-skip = many ((satisfy isSpace >> return ()) <|> commentOut)
+skip = many $ forget (satisfy isSpace) <|> commentOut
 
 lexem :: CharParser st a -> CharParser st a
 lexem = (<< skip)
@@ -69,6 +69,9 @@ kifProg = do
   l <- many1 nestedList
   eof
   return l
+
+kifBasic :: CharParser st [ListOfList]
+kifBasic = many1 nestedList
 
 ppListOfList :: ListOfList -> Doc.Doc
 ppListOfList e = case e of

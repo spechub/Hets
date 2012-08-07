@@ -245,7 +245,7 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
             (AParser st basic_spec, basic_spec -> Doc)
          parsersAndPrinters li = case parse_basic_spec li of
             Nothing -> Map.empty
-            Just p -> Map.singleton nullIRI (p, pretty)
+            Just p -> makeDefault (p, pretty)
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (AParser st basic_spec)
          -- | parser for symbol lists
@@ -267,6 +267,12 @@ lookupDefault sm m = if Map.size m == 1 then Just $ head $ Map.elems m else
 showSyntax :: Language lid => lid -> Maybe IRI -> String
 showSyntax lid = (("logic " ++ language_name lid) ++)
    . maybe "" ((" serialization " ++) . iriToStringUnsecure)
+
+makeDefault :: b -> Map.Map IRI b
+makeDefault = Map.singleton nullIRI
+
+addSyntax :: String -> b -> Map.Map IRI b -> Map.Map IRI b
+addSyntax = Map.insert . simpleIdToIRI . mkSimpleId
 
 {- | Sentences, provers and symbols.
      Provers capture the entailment relation between sets of sentences

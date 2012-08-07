@@ -28,6 +28,8 @@ import Logic.Logic
 
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
+import CASL.Kif
+import CASL.Kif2CASL
 import CASL.Fold
 import CASL.ToDoc
 import CASL.ToItem (bsToItem)
@@ -114,7 +116,9 @@ instance (Ord f, Ord e, Ord m, MorphismExtension e m) =>
 instance Syntax CASL CASLBasicSpec
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
-         parse_basic_spec CASL = Just $ basicSpec []
+         parsersAndPrinters CASL = addSyntax "KIF"
+           (fmap kif2CASL kifBasic, pretty)
+           $ makeDefault (basicSpec [], pretty)
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
          toItem CASL = bsToItem
