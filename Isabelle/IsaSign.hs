@@ -30,7 +30,7 @@ data VName = VName
     , altSyn :: Maybe AltSyntax  -- ^ mixfix template syntax
     } deriving Show
 
-data AltSyntax = AltSyntax String [Int] Int deriving Show
+data AltSyntax = AltSyntax String [Int] Int deriving (Show, Eq, Ord)
 
 -- | the original (Haskell) name
 orig :: VName -> String
@@ -198,12 +198,17 @@ isRefute s = case s of
 
 type ClassDecl = ([IsaClass],[(String,Term)],[(String,Typ)])
 type Classrel = Map.Map IsaClass ClassDecl
+type LocaleDecl = ([String],[(String,Term)],[(String,Term)],
+      [(String,Typ,Maybe AltSyntax)])
+      -- parents * internal axioms * external axiosm * params
+type Locales = Map.Map String LocaleDecl
 type Arities = Map.Map TName [(IsaClass, [(Typ, Sort)])]
 type Abbrs = Map.Map TName ([TName], Typ)
 
 data TypeSig =
   TySg {
     classrel:: Classrel,  -- domain of the map yields the classes
+    locales:: Locales,
     defaultSort:: Sort,
     log_types:: [TName],
     univ_witness:: Maybe (Typ, Sort),
@@ -215,6 +220,7 @@ data TypeSig =
 emptyTypeSig :: TypeSig
 emptyTypeSig = TySg {
     classrel = Map.empty,
+    locales = Map.empty,
     defaultSort = [],
     log_types = [],
     univ_witness = Nothing,

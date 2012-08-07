@@ -1,4 +1,4 @@
-<!ELEMENT IsaExport (Imports, Consts, Axioms, Theorems, Types, Classes)>
+<!ELEMENT IsaExport (Imports, Consts, Axioms, Theorems, Types, Classes, Locales)>
   <!ATTLIST IsaExport file CDATA #REQUIRED>
 <!ELEMENT Imports (Import*)>
 <!ELEMENT Import EMPTY>
@@ -10,6 +10,7 @@
 <!ELEMENT Theorems (Term*)>
 <!ELEMENT Types (TypeDecl*)>
 <!ELEMENT Classes (ClassDecl*)>
+<!ELEMENT Locales (LocaleDecl*)>
 <!ELEMENT NoTerm EMPTY>
 <!ELEMENT Term (Bound|Free|Var|Const|App|Abs)>
   <!ATTLIST Term name CDATA #REQUIRED>
@@ -34,8 +35,20 @@
   <!ATTLIST Axiom name CDATA #REQUIRED>
 <!ELEMENT Param (TVar|TFree|Type)>
   <!ATTLIST Param name CDATA #REQUIRED>
+<!ELEMENT LocaleDecl (LocaleParam|IAxiom|EAxiom|Parent)*>
+  <!ATTLIST LocaleDecl name CDATA #REQUIRED>
 <!ELEMENT Parent EMPTY>
   <!ATTLIST Parent name CDATA #REQUIRED>
+<!ELEMENT IAxiom (Bound|Free|Var|Const|App|Abs)>
+  <!ATTLIST IAxiom name CDATA #REQUIRED>
+<!ELEMENT EAxiom (Bound|Free|Var|Const|App|Abs)>
+  <!ATTLIST EAxiom name CDATA #REQUIRED>
+<!ELEMENT LocaleParam (TVar|TFree|Type)>
+  <!ATTLIST LocaleParam name CDATA #REQUIRED>
+  <!ATTLIST LocaleParam infix CDATA #IMPLIED>
+  <!ATTLIST LocaleParam infixl CDATA #IMPLIED>
+  <!ATTLIST LocaleParam infixr CDATA #IMPLIED>
+  <!ATTLIST LocaleParam mixfix_i CDATA #IMPLIED>
 <!ELEMENT Bound EMPTY>
   <!ATTLIST Bound index CDATA #REQUIRED>
 <!ELEMENT Free (TVar|TFree|Type)>

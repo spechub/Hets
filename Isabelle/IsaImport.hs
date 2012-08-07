@@ -12,7 +12,8 @@ import Data.List (intercalate)
 importIsaDataIO :: String ->
  IO (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
      [(String,IsaSign.Term)], [(String,IsaSign.Term)],
-     IsaSign.DomainTab, [(IsaSign.IsaClass,IsaSign.ClassDecl)])
+     IsaSign.DomainTab, [(IsaSign.IsaClass,IsaSign.ClassDecl)],
+     [(String,IsaSign.LocaleDecl)])
 importIsaDataIO p = do
  d' <- fReadXml p
  return $ importIsaData d'
@@ -20,21 +21,25 @@ importIsaDataIO p = do
 importIsaData :: IsaExport ->
  (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
   [(String,IsaSign.Term)], [(String,IsaSign.Term)],
-  IsaSign.DomainTab, [(IsaSign.IsaClass,IsaSign.ClassDecl)])
+  IsaSign.DomainTab, [(IsaSign.IsaClass,IsaSign.ClassDecl)],
+  [(String,IsaSign.LocaleDecl)])
 importIsaData (IsaExport attrs
                (Imports imports)
                (Consts consts)
                (Axioms axioms) 
                (Theorems theorems)
                (Types types)
-               (Classes classes)) =
+               (Classes classes)
+               (Locales locales)) =
  let imports'  = map importName                 imports
      consts'   = map mapConst                   consts
      axioms'   = map (hXmlTerm2IsaTerm [])      axioms
      theorems' = map (hXmlTerm2IsaTerm [])      theorems
      types'    = map hXmlTypeDecl2IsaTypeDecl   types
      classes'  = map hXmlClassDecl2IsaClassDecl classes
- in (isaExportFile attrs,imports',consts',axioms',theorems',types',classes')
+     locales'  = map hXmlLocaleDecl2IsaLocale locales
+ in (isaExportFile attrs,imports',consts',
+     axioms',theorems',types',classes',locales')
 
 mapConst :: ConstDecl -> (String,IsaSign.Typ, Maybe IsaSign.Term)
 mapConst (ConstDecl attrs tp tm) =
@@ -159,6 +164,67 @@ hXmlTypeDecl2IsaTypeDecl (TypeDecl _ rs) =
                           Vars_DtTFree f -> dtTFreeS f
                           _ -> "") vs)
  in map (hXmlRecType2IsaTypeDecl recmap) rs
+
+hXmlLocaleDecl2IsaLocale :: LocaleDecl -> (String,IsaSign.LocaleDecl)
+hXmlLocaleDecl2IsaLocale (LocaleDecl a l) =
+ let parents = catMaybes $
+      map (\ lc -> case lc of
+                    LocaleDecl_Parent p -> Just (parentName p)
+                    _ -> Nothing) l
+     i_ax = catMaybes $
+      map (\ lc -> case lc of
+                    LocaleDecl_IAxiom ax -> case ax of
+                     IAxiomBound at b -> Just (iAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
+                     IAxiomFree at f -> Just (iAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
+                     IAxiomVar at v -> Just (iAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
+                     IAxiomConst at c -> Just (iAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
+                     IAxiomApp at ap -> Just (iAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
+                     IAxiomAbs at ab -> Just (iAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
+                    _ -> Nothing) l
+     e_ax = catMaybes $
+      map (\ lc -> case lc of
+                    LocaleDecl_EAxiom ax -> case ax of
+                     EAxiomBound at b -> Just (eAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
+                     EAxiomFree at f -> Just (eAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
+                     EAxiomVar at v -> Just (eAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
+                     EAxiomConst at c -> Just (eAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
+                     EAxiomApp at ap -> Just (eAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
+                     EAxiomAbs at ab -> Just (eAxiomName at,
+                      hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
+                    _ -> Nothing) l
+     altSyn = \at -> case localeParamMixfix_i at of
+                      Just i' ->
+                       let i = (read i') :: Int
+                       in case (localeParamInfix at,localeParamInfixl at,
+                               localeParamInfixr at) of
+                          (Just s,_,_) -> Just $ IsaSign.AltSyntax (t s) [i,i] i
+                          (_,Just s,_) -> Just $ IsaSign.AltSyntax (t s) [i+1,i] i
+                          (_,_,Just s) -> Just $ IsaSign.AltSyntax (t s) [i,i+1] i
+                          _ -> Nothing
+                      _ -> Nothing
+                    where t s = "(_ "++s++"/ _)"
+     params = catMaybes $
+      map (\lc -> case lc of
+             LocaleDecl_LocaleParam p -> case p of
+                  LocaleParamTVar at tv -> Just (localeParamName at,
+                   hXmlOneOf3_2IsaTyp (OneOf3 tv), altSyn at)
+                  LocaleParamTFree at tf -> Just (localeParamName at,
+                   hXmlOneOf3_2IsaTyp (TwoOf3 tf), altSyn at)
+                  LocaleParamType at t -> Just (localeParamName at,
+                   hXmlOneOf3_2IsaTyp (ThreeOf3 t), altSyn at)
+             _ -> Nothing) l
+ in (localeDeclName a,(parents,i_ax,e_ax,params))
 
 hXmlClassDecl2IsaClassDecl :: ClassDecl -> (IsaSign.IsaClass,IsaSign.ClassDecl)
 hXmlClassDecl2IsaClassDecl (ClassDecl a cls) =
