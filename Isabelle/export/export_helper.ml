@@ -120,6 +120,11 @@ struct
          | (_,t1 $ t2) => (strip_hol_all l false t1) $ 
                           (strip_hol_all l false t2)
 	 | _ => tm
+	fun remove_hol_true_prop t = case t of
+           $ (Const ("HOL.Trueprop",_), tm) => tm
+         | (t $ u) => (remove_hol_true_prop t) $ (remove_hol_true_prop u)
+         | Abs (s,T,t) => Abs (s,T,remove_hol_true_prop t)
+         | tm => tm
 
 (* get raw theory information *)
 	fun get_consts T =
@@ -171,9 +176,26 @@ struct
                | _ => (n,t)) axioms'
               val params = #params i
           in (name',parents,axioms,params) end) cls_names end
-	fun get_locales T = 
-         let val names = List.filter (String.isPrefix (Context.theory_name T))
+        fun fix_consts' params t = case t of
+          Var ((s,_),_) => (case List.find (fn ((s',_),_) => s'=s) params of
+                             SOME ((s,tp),_) => Const (s,tp)
+                           | NONE => t)
+         | Abs (s,tp,tm) => Abs (s,tp,fix_consts' params tm)
+         | t1 $ t2 => (fix_consts' params t1) $ (fix_consts' params t2)
+         | _ => t
+        fun fix_consts params ts = List.map (fn (s,t) =>
+         (s,fix_consts' params t)) ts
+	fun get_locales T thms = 
+         let val cls_suffix = "_class_def"
+             val cls_names = List.map (fn n => String.substring
+              (n,0,String.size n-String.size cls_suffix))
+              (List.filter (fn n =>
+               if String.isSuffix cls_suffix n
+               then true else false) (List.map #1 thms))
+             val names' = List.filter (String.isPrefix (Context.theory_name T))
                       (Locale.all_locales T)
+             val names = List.filter
+              (fn s => not (List.exists (fn s' => s = s') cls_names)) names'
              val (_,tb) = Locale.locale_deps T
              val tb_list = List.map (fn (k,t) => 
                   (k,Symtab.dest t)) (Symtab.dest tb)
@@ -197,16 +219,22 @@ struct
                                 (Global_Theory.all_thms_of T)
                val axioms'  = List.filter
                     (fn t => (not (List.exists
-                              (fn s => #1 t = name ^ s) filter))) axs
+                              (fn s => String.isPrefix (name ^ s) (#1 t))
+                             filter))) axs
                val axioms   = List.map (fn (s,t) =>
-                    (s,((fn Const ("==>",_) $ _ $ t => t) o Thm.prop_of) t))
+                    (s,(remove_hol_true_prop o
+                      (fn Const ("==>",_) $ _ $ t => t) o Thm.prop_of) t))
                     axioms'
                val in_locale_axioms =
                 case (List.find (fn x => (#1 x) = (name^"_axioms_def")) axs) of
                    SOME v => List.map (strip_hol_all [] true)
                   ((unfold_hol_conjunction o
                    (fn _ $ _ $ tm => tm) o Thm.prop_of o #2) v)
-                 | _ => []
+                 | _ => case (List.find (fn x => (#1 x) = (name^"_def")) axs) of
+                         SOME v => List.map (strip_hol_all [] true)
+                          ((unfold_hol_conjunction o
+                           (fn _ $ _ $ tm => tm) o Thm.prop_of o #2) v)
+                       | _ => []
                val in_loc = List.filter (fn (s,t) => 
                     List.exists (fn t' => t = t') in_locale_axioms) axioms
                val ex_loc = List.filter (fn (s,t) => 
@@ -214,7 +242,7 @@ struct
                val ps = case Symtab.lookup parents name of
                   SOME(v,_) => v
                 | _ => []
-           in (name,params,in_loc,ex_loc,ps) end
+           in (name,params,fix_consts params' in_loc,fix_consts params' ex_loc,ps) end
           ) names end
 (* Guess the names of generated axioms, consts and theorem *)
         fun prefix p s = List.map (fn x => p^s^x)
@@ -343,11 +371,6 @@ struct
            | XML.Elem ((s,a),t) => XML.Elem ((s,a),map (xml_of_term' T tbl) t)
         fun xml_of_term T t = xml_of_term' T Symtab.empty
              (XML_Syntax.xml_of_term t)
-	fun remove_hol_true_prop t = case t of
-           $ (Const ("HOL.Trueprop",_), tm) => tm
-         | (t $ u) => (remove_hol_true_prop t) $ (remove_hol_true_prop u)
-         | Abs (s,T,t) => Abs (s,T,remove_hol_true_prop t)
-         | tm => tm
 	fun termListToXML T section l = XML.Elem ((section,[]),List.map (
          fn (s,t) => XML.Elem (("Term",[("name",Long_Name.base_name s)]),
                       [xml_of_term T (remove_hol_true_prop t)])) l)
@@ -403,7 +426,7 @@ struct
              val gen_consts = get_gen_consts T name types (List.map #1 consts)
              val gen_thms   = get_gen_theorems T name types (List.map #1 thms)
              val gen_axioms = (get_gen_axioms T name types)@(List.map #1 thms)
-             val locales    = get_locales T
+             val locales    = get_locales T thms
          in (name, imports,
              (filter gen_consts consts),
              (filter gen_axioms axioms),
@@ -434,7 +457,7 @@ struct
                   (fn (name,params,in_loc,ex_loc,parents) =>
                   let val tbl = List.foldl (fn (((s,_),m),t) => 
                              Symtab.update (s,m) t)
-                            Symtab.empty params in
+                            Symtab.empty (Locale.params_of T name) in
                     XML.Elem (("LocaleDecl",[("name",b name)]),
                      (List.map (fn ((s,t),m) =>
                        XML.Elem (("LocaleParam",[("name",s)]
@@ -449,7 +472,7 @@ struct
                          [xml_of_term' T tbl (XML_Syntax.xml_of_term t)]))
                       ex_loc)
                     @(List.map (fn n => XML.Elem
-                      (("Parent",[("name",n)]),[])) parents)
+                      (("Parent",[("name",b n)]),[])) parents)
                     )end) locales)
          in fixTypeNames name (XML.Elem (("IsaExport",[("file",fname)]),
              [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types,xml_classes,xml_locales])) end

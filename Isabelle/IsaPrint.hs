@@ -445,6 +445,41 @@ consDocBarSep d r = case r of
 
 -- end of term printing
 
+printLocales :: Locales -> Doc
+printLocales = vsep . map printLocale . orderLDecs . Map.toList
+
+printLocale :: (String,LocaleDecl) -> Doc
+printLocale (n,(parents,in_ax,ex_ax,params)) = 
+ let p' = Data.List.intersperse (text "+") $ map text parents
+     a  = map (\ (s,t) -> text s <+> text ":"
+           <+> (doubleQuotes . printTerm) t) in_ax
+     a' = if null a then []
+          else (head a):(map (text "and" <+>) (tail a))
+     f  = map (\ (s,t,alt) -> text s <+> text "::"
+                 <+> (doubleQuotes . (printTyp Null)) t
+                 <+> (case alt of
+                       Just (AltSyntax s' [i1,i2] i) -> parens ((
+                        if i1==i2 then text "infix "
+                        else if i1 < i2 then text "infixr "
+                        else text "infixl ") <+> doubleQuotes (text s')
+                        <+> text (show i))
+                       _ -> empty
+                 )) params
+     f' = if null f then []
+          else (head f):(map (text "and" <+>) (tail f))
+ in vcat [
+     vcat [text "locale" <+> text n <+>
+       (if length (p'++a'++f') > 0
+        then text "=" else empty) <+>
+       hsep p' <+> if length p' > 0 &&
+       (length a' > 0 || length f' > 0)
+        then text "+" else empty,
+       (if length a' > 0 then text "assumes" else empty) <+> vcat a',
+       (if length f' > 0 then text "fixes" else empty) <+> vcat f'],
+     vcat (map (\ (s,t) -> text ("theorem (in "++ n  ++")")
+           <+> text s <+> text ":"
+           <+> (doubleQuotes . printTerm) t) ex_ax)]
+
 printClassrel :: Classrel -> Doc
 printClassrel = vsep . map printClassR . orderCDecs . Map.toList
 
@@ -474,6 +509,12 @@ orderCDecs =
    topSort crord
  where
    crord (_,(cs,_,_)) (c,_) = elem c cs
+
+orderLDecs :: [(String,LocaleDecl)] -> [(String,LocaleDecl)]
+orderLDecs =
+   topSort crord
+ where
+   crord (_,(cs,_,_,_)) (c,_) = elem c cs
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
@@ -612,6 +653,7 @@ printSign sig = let dt = ordDoms $ domainTab sig
                 in
     printAbbrs (abbrs $ tsig sig) $++$
     printTypeDecls (baseSig sig) dt ars $++$
+    printLocales (locales $ tsig sig) $++$
     printClassrel (classrel $ tsig sig) $++$
     printDomainDefs dt $++$
     printConstTab (Map.difference (constTab sig)

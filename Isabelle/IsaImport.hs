@@ -208,12 +208,11 @@ hXmlLocaleDecl2IsaLocale (LocaleDecl a l) =
                        let i = (read i') :: Int
                        in case (localeParamInfix at,localeParamInfixl at,
                                localeParamInfixr at) of
-                          (Just s,_,_) -> Just $ IsaSign.AltSyntax (t s) [i,i] i
-                          (_,Just s,_) -> Just $ IsaSign.AltSyntax (t s) [i+1,i] i
-                          (_,_,Just s) -> Just $ IsaSign.AltSyntax (t s) [i,i+1] i
+                          (Just s,_,_) -> Just $ IsaSign.AltSyntax s [i,i] i
+                          (_,Just s,_) -> Just $ IsaSign.AltSyntax s [i+1,i] i
+                          (_,_,Just s) -> Just $ IsaSign.AltSyntax s [i,i+1] i
                           _ -> Nothing
                       _ -> Nothing
-                    where t s = "(_ "++s++"/ _)"
      params = catMaybes $
       map (\lc -> case lc of
              LocaleDecl_LocaleParam p -> case p of
