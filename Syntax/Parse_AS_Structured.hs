@@ -318,15 +318,14 @@ specE l = logicSpec l
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
 callParser p name itemType =
-  fromMaybe (fail $ "no " ++ itemType ++ " parser for language " ++ name) p
+  fromMaybe (fail $ "no " ++ itemType ++ " parser for " ++ name) p
 
 basicSpec :: (AnyLogic, Maybe IRI) -> AParser st SPEC
 basicSpec (Logic lid, sm) = do
     p <- getPos
     bspec <- callParser
       (fmap fst $ lookupDefault sm $ parsersAndPrinters lid)
-      (language_name lid ++ maybe ""
-       ((" serialization " ++) . iriToStringUnsecure) sm)
+      (showSyntax lid sm)
       "basic specification"
     q <- getPos
     return $ Basic_spec (G_basic_spec lid bspec) $ Range [p, q]

@@ -137,7 +137,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
-import Common.IRI (IRI, nullIRI)
+import Common.IRI
 import Common.Item
 import Common.Lib.Graph
 import Common.LibName
@@ -147,6 +147,7 @@ import Common.Taxonomy
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
@@ -259,9 +260,13 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
 -- | function to lookup parser or printer
-lookupDefault :: Ord a => Maybe a -> Map.Map a b -> Maybe b
-lookupDefault ma m = if Map.size m == 1 then Just $ head $ Map.elems m else
-   maybe Nothing (`Map.lookup` m) ma
+lookupDefault :: Maybe IRI -> Map.Map IRI b -> Maybe b
+lookupDefault sm m = if Map.size m == 1 then Just $ head $ Map.elems m else
+   Map.lookup (fromMaybe nullIRI sm) m
+
+showSyntax :: Language lid => lid -> Maybe IRI -> String
+showSyntax lid = (("logic " ++ language_name lid) ++)
+   . maybe "" ((" serialization " ++) . iriToStringUnsecure)
 
 {- | Sentences, provers and symbols.
      Provers capture the entailment relation between sets of sentences

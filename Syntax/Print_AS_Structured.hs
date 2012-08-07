@@ -82,7 +82,8 @@ printSPEC lg spec = case spec of
           then error "printSPEC: logic mismatch"
           else case fmap snd $ lookupDefault sm $ parsersAndPrinters lid of
         Just p -> p basic_spec
-        _ -> error "printSPEC: no basic spec printer"
+        _ -> error $ "printSPEC: no basic spec printer for "
+             ++ showSyntax lid sm
       _ -> error "printSPEC: incomplete logic graph"
     EmptySpec _ -> specBraces empty
     Translation aa ab -> sep [condBracesTransReduct lg aa, printRENAMING ab]
