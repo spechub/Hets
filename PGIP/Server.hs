@@ -61,7 +61,7 @@ import Proofs.AbstractState
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
 
-import qualified Common.AutoProofUtils as ProofUtils
+import Common.AutoProofUtils
 import Common.Doc
 import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
@@ -565,7 +565,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               _ -> liftR $ return $ sessAns ln svg sk
             GlProvers mt -> return $ getFullProverList mt dg
             GlTranslations -> return $ getFullComorphList dg
-            GlShowProverWindow proofOrCons -> return $ showAutoProofWindow dg k
+            GlShowProverWindow proofOrCons -> showAutoProofWindow dg k
             GlAutoProve incl mp mt tl -> do
                 (newLib, sens) <- proveAllNodes libEnv ln dg incl mp mt tl
                 if null sens then return "nothing to prove" else do
@@ -675,7 +675,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , mkAttr "goalstatus" $ showSimple gSt ] $ unode "input" $ nm
           ++ "   (" ++ showSimple gSt ++ ")" ) gs
         -- create prove button and prover/comorphism selection
-        (prSl, cmrSl, jvScr1) = showProverSelection $ sublogicOfTh gTh
+        (prSl, cmrSl, jvScr1) = showProverSelection [sublogicOfTh gTh]
         prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
                `add_attrs` inputNode
         -- create timeout field
@@ -735,8 +735,8 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | create prover and comorphism menu and combine them using javascript
-showProverSelection :: G_sublogics -> (Element, Element, String)
-showProverSelection subL = let
+showProverSelection :: [G_sublogics] -> (Element, Element, String)
+showProverSelection subLs = let
   jvScr = unlines
         -- the chosen prover is passed as param
         [ "\nfunction updCmSel(pr) {"
@@ -774,7 +774,7 @@ showProverSelection subL = let
         , "    }"
         , "  }"
         , "}" ]
-  allPrCm = getProversAux Nothing subL
+  allPrCm = nub $ concatMap (getProversAux Nothing) subLs
   -- create prover selection (drop-down)
   prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
     add_attrs [mkAttr "value" p, mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"]
@@ -786,15 +786,26 @@ showProverSelection subL = let
     $ unode "option" c) allPrCm
   in (prs, cmrs, jvScr)
 
-showAutoProofWindow :: DGraph -> Int -> String 
+showAutoProofWindow :: DGraph -> Int -> ResultT IO String
 showAutoProofWindow dg sessId = let
-  fnodes = ProofUtils.initFNodes $ labNodesDG dg
+  prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
+         `add_attrs` inputNode
+  fnodes = initFNodes $ labNodesDG dg
   nodeSel = map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
-    , mkAttr "name" $ escStr $ ProofUtils.name fn ] $ unode "input" $ show fn)
-    fnodes
+    , mkAttr "name" $ escStr $ name fn ]
+    $ unode "input" $ showHtml fn) fnodes
   br = unode "br " ()
-  in mkHtmlElem "autoProofs" $ intersperse br nodeSel
+  jvScr = unlines
+    [ "function updPrSel()" ]
+  in do
+    prSel <- fmap showProverSelection $ mapM (\ (_, nd) ->
+      case maybeResult $ getGlobalTheory nd of
+        Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
+        Just gTh -> return $ sublogicOfTh gTh) $ labNodesDG dg
+    return $ mkHtmlElem "autoProofs" $ intersperse br nodeSel
 
+showHtml :: FNode -> String
+showHtml fn = name fn ++ " " ++ (goalsToPrefix $ toGtkGoals fn)
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
@@ -879,19 +890,13 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
     getProverAndComorph mp mt subL of
   [] -> fail "no prover found"
   cp : _ -> do
-      let ks = map fst $ getThGoals gTh
-          diffs = Set.difference (Set.fromList thms)
-                  $ Set.fromList ks
-      unless (Set.null diffs) $ fail $ "unknown theorems: " ++ show diffs
-      (res, prfs) <- lift
-        $ autoProofAtNode useTh (maybe 1 (max 1) tl) thms gTh cp
-      case prfs of
-        Nothing -> fail "proving failed"
-        Just sens -> if null sens then return (le, sens) else
-          case res of
-            Nothing -> error "proveNode"
-            Just nTh -> return
-              (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
+    let ks = map fst $ getThGoals gTh
+        diffs = Set.difference (Set.fromList thms)
+                $ Set.fromList ks
+    unless (Set.null diffs) $ fail $ "unknown theorems: " ++ show diffs
+    (nTh, sens) <- autoProofAtNode useTh (maybe 1 (max 1) tl) thms gTh cp
+    if null sens then return (le, sens) else return
+        (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
 -- run over all dgnodes and prove available goals for each
 proveAllNodes :: LibEnv -> LibName -> DGraph -> Bool -> Maybe String
@@ -994,9 +999,9 @@ inputNode :: Element
 inputNode = unode "input" ()
 
 loadNode :: String -> Element
-loadNode name = add_attrs
+loadNode nm = add_attrs
     [ mkAttr "type" "file"
-    , mkAttr "name" name
+    , mkAttr "name" nm
     , mkAttr "size" "40"]
     inputNode
 

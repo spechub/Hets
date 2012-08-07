@@ -40,6 +40,7 @@ import Comorphisms.LogicGraph (logicGraph)
 import Common.LibName (LibName)
 import Common.AutoProofUtils
 import Common.Result
+import Common.ResultT (runResultT)
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
@@ -244,10 +245,11 @@ performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
       c = cs !! i
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
-           res <- case globalTheory . snd $ node fn of
-                    Nothing -> return Nothing
-                    Just g_th -> fmap fst
+           res <- maybe (return Nothing) (\ g_th -> do
+                    Result ds ms <- runResultT
                       $ autoProofAtNode inclThms timeout [] g_th (pr, c)
+                    maybe (fail $ showRelDiags 1 ds) (return . Just . fst) ms)
+                  $ globalTheory $ snd $ node fn
            case res of
              Just gt -> postGUISync $ listStoreSetValue listNodes row
                fn { results = propagateProofs (results fn) gt }

@@ -47,9 +47,11 @@ import qualified Data.Map as Map
 import Data.Typeable
 
 import Control.Concurrent.MVar
+import Control.Monad.Trans
 
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
+import Common.ResultT
 import Common.AS_Annotation
 import Common.ExtSign
 import Common.Utils
@@ -407,7 +409,7 @@ autoProofAtNode :: -- use theorems is subsequent proofs
                    -- selected Prover and Comorphism
                   -> ( G_prover, AnyComorphism )
                    -- returns new GoalStatus for the Node
-                  -> IO (Maybe G_theory, Maybe [(String, String)])
+                  -> ResultT IO (G_theory, [(String, String)])
 autoProofAtNode useTh timeout goals g_th p_cm = do
       let knpr = propagateErrors "autoProofAtNode"
             $ knownProversWithKind ProveCMDLautomatic
@@ -416,21 +418,22 @@ autoProofAtNode useTh timeout goals g_th p_cm = do
             { selectedGoals = filter (`elem` goals) $ selectedGoals pf_st }
           st = recalculateSublogicAndSelectedTheory sg_st
       -- try to prepare the theory
-      if null $ selectedGoals st then return (Nothing, Just []) else
-        case maybeResult $ prepareForProving st p_cm of
-        Nothing -> return (Nothing, Nothing)
-        Just (G_theory_with_prover lid1 th p) ->
+      if null $ selectedGoals st then fail "autoProofAtNode: no goals selected"
+        else do
+          (G_theory_with_prover lid1 th p) <- liftR $ prepareForProving st p_cm
           case proveCMDLautomaticBatch p of
-            Nothing -> return (Nothing, Nothing)
+            Nothing ->
+              fail "autoProofAtNode: failed to init CMDLautomaticBatch"
             Just fn -> do
-              -- mVar to poll the prover for results
-              answ <- newMVar (return [])
-              (_, mV) <- fn useTh False answ (theoryName st)
+              d <- lift $ do
+                -- mVar to poll the prover for results
+                answ <- newMVar (return [])
+                (_, mV) <- fn useTh False answ (theoryName st)
                                        (TacticScript $ show timeout) th []
-              takeMVar mV
-              d <- takeMVar answ
-              return $ case maybeResult d of
-                Nothing -> (Nothing, Nothing)
-                Just d' ->
-                  ( Just $ currentTheory $ markProved (snd p_cm) lid1 d' st
-                  , Just $ map (\ ps -> (goalName ps, show $ goalStatus ps)) d')
+                takeMVar mV
+                takeMVar answ
+              case maybeResult d of
+                Nothing -> fail "autoProofAtNode: proving failed"
+                Just d' -> return $
+                  ( currentTheory $ markProved (snd p_cm) lid1 d' st
+                  , map (\ ps -> (goalName ps, show $ goalStatus ps)) d')
