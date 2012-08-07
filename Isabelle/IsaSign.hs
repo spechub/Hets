@@ -32,9 +32,6 @@ data VName = VName
 
 data AltSyntax = AltSyntax String [Int] Int deriving Show
 
-mkVName :: String -> VName
-mkVName s = VName { new = s, altSyn = Nothing }
-
 -- | the original (Haskell) name
 orig :: VName -> String
 orig = new

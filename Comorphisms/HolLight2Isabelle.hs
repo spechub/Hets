@@ -85,17 +85,17 @@ constMap :: Map.Map String IsaSign.VName
 constMap = Map.fromList [("+", IsaConsts.plusV)
                         , ("-", IsaConsts.minusV)
                         , ("*", IsaConsts.timesV)
-                        , ("!", IsaSign.mkVName IsaConsts.allS)
-                        , ("?", IsaSign.mkVName IsaConsts.exS)
-                        , ("?!", IsaSign.mkVName IsaConsts.ex1S)
+                        , ("!", IsaConsts.mkVName IsaConsts.allS)
+                        , ("?", IsaConsts.mkVName IsaConsts.exS)
+                        , ("?!", IsaConsts.mkVName IsaConsts.ex1S)
                         , ("=", IsaConsts.eqV)
                         , ("<=>", IsaConsts.eqV)
                         , ("/\\", IsaConsts.conjV)
                         , ("\\/", IsaConsts.disjV)
                         , ("==>", IsaConsts.implV)
                         , ("~", IsaConsts.notV)
-                        , ("T", IsaSign.mkVName IsaConsts.cTrue)
-                        , ("F", IsaSign.mkVName IsaConsts.cFalse)
+                        , ("T", IsaConsts.mkVName IsaConsts.cTrue)
+                        , ("F", IsaConsts.mkVName IsaConsts.cFalse)
                         ]
 
 notIgnore :: [String]
@@ -107,7 +107,7 @@ ignore = (map fst $ Map.toList constMap) \\ notIgnore
 transConstS :: String -> HolType -> IsaSign.VName
 transConstS s t = case (Map.lookup s constMap, elem s notIgnore) of
                    (Just v, False) -> v
-                   (_, _) -> IsaSign.mkVName $ typedName s t
+                   (_, _) -> IsaConsts.mkVName $ typedName s t
 
 typedName :: String -> HolType -> String
 typedName s _t = transConstStringT bs $ s -- ++ "_" ++ (show $ pp_print_type t)
@@ -141,7 +141,7 @@ handleGabs :: Bool -> Term -> [String] -> IsaSign.Term
 handleGabs b t vs = case t of
  (Comb (Const "GABS" _ _) (Abs (Var "f" _ _) tm)) ->
    let (q, vars, pat, res) = unpack_gabs tm vs in
-   let n = IsaSign.Free $ IsaSign.mkVName (freeName ((varNames vars)++vs)) in
+   let n = IsaSign.Free $ IsaConsts.mkVName (freeName ((varNames vars)++vs)) in
    let t1 = IsaSign.Abs n
              (IsaSign.Case n [(pat, res)])
              IsaSign.NotCont
@@ -153,20 +153,20 @@ handleGabs b t vs = case t of
 mkAbs :: Term -> [String] -> IsaSign.Term
 mkAbs t vs = let name = freeName vs in
              IsaSign.Abs
-              (IsaSign.Free (IsaSign.mkVName name))
+              (IsaSign.Free (IsaConsts.mkVName name))
               (IsaSign.App (translateTerm t (name:vs))
-                (IsaSign.Free (IsaSign.mkVName name))
+                (IsaSign.Free (IsaConsts.mkVName name))
                 IsaSign.NotCont)
               IsaSign.NotCont
 
 mkQuantifier :: Term -> [String] -> IsaSign.Term
 mkQuantifier t vs = let name = freeName vs in
                     IsaSign.Abs
-                     (IsaSign.Free (IsaSign.mkVName name))
+                     (IsaSign.Free (IsaConsts.mkVName name))
                      (IsaSign.App (translateTerm t (name:vs))
                        (IsaSign.Abs
-                        (IsaSign.Free (IsaSign.mkVName name))
-                        (IsaSign.Free (IsaSign.mkVName name))
+                        (IsaSign.Free (IsaConsts.mkVName name))
+                        (IsaSign.Free (IsaConsts.mkVName name))
                         IsaSign.NotCont)
                        IsaSign.NotCont)
                      IsaSign.NotCont

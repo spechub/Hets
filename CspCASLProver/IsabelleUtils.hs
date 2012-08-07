@@ -36,8 +36,9 @@ import qualified Data.Map as Map
 import Isabelle.IsaParse (parseTheory)
 import Isabelle.IsaPrint (getAxioms, printIsaTheory)
 import Isabelle.IsaSign (DomainEntry, IsaProof (..), mkCond, mkSen
-                         , mkVName, Sentence (..), Sign (..), Sort
+                         , Sentence (..), Sign (..), Sort
                          , Term (..), Typ (..))
+import Isabelle.IsaConsts (mkVName)
 import Isabelle.Translate (transString)
 
 import Logic.Prover (Theory (..), toNamedList)

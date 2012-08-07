@@ -30,6 +30,7 @@ import Common.IRI (simpleIdToIRI)
 
 import Isabelle.Logic_Isabelle
 import Isabelle.IsaSign
+import Isabelle.IsaConsts (mkVName)
 import Isabelle.IsaImport (importIsaDataIO)
 
 import Driver.Options

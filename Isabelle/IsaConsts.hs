@@ -18,6 +18,7 @@ module Isabelle.IsaConsts where
 import Isabelle.IsaSign
 import qualified Data.Set as Set
 import Data.List
+import qualified Data.Map as Map
 
 -- | a topological sort with a @uses@ predicate
 topSort :: (a -> a -> Bool) -> [a] -> [a]
@@ -78,6 +79,9 @@ impl = "op -->"
 
 eq :: String
 eq = "op ="
+
+neq :: String
+neq = "op ~="
 
 plusS :: String
 plusS = "op +"
@@ -558,6 +562,9 @@ implV = VName impl $ Just $ AltSyntax "(_ -->/ _)" [26, 25] 25
 eqV :: VName
 eqV = VName eq $ Just $ AltSyntax "(_ =/ _)" [50, 51] 50
 
+neqV :: VName
+neqV = VName neq $ Just $ AltSyntax "(_ ~=/ _)" [50, 51] 50
+
 plusV :: VName
 plusV = VName plusS $ Just $ AltSyntax "(_ +/ _)" [65, 66] 65
 
@@ -596,6 +603,19 @@ imageV = VName imageS $ Just $ AltSyntax "(_ `/ _)" [65, 66] 65
 
 rangeV :: VName
 rangeV = VName rangeS Nothing
+
+vMap' :: Map.Map String VName
+vMap' = Map.fromList [(conj,conjV), (disj,disjV), (impl,implV), (eq,eqV),
+        (neq,neqV), (plusS,plusV), (minusS,minusV), (divS,divV), (modS,modV),
+        (timesS,timesV), (consS,consV), (lconsS,lconsV), (compS,compV),
+        (eqvSimS,eqvSimV), (unionS,unionV), (membershipS,membershipV),
+        (imageS,imageV), (rangeS,rangeV)]
+
+vMap :: Map.Map String VName
+vMap = Map.union vMap' (Map.fromList
+ (map (\(k,v) -> if take 3 k == "op "
+                 then (drop 3 k,v)
+                 else (k,v)) (Map.toList vMap')))
 
 -- * keywords in theory files from the Isar Reference Manual 2005
 
@@ -814,3 +834,8 @@ usedTopKeys = markups ++
 isaKeywords :: [String]
 isaKeywords = "::" : andS : theoryS : map (: []) ":=<|"
               ++ usedTopKeys ++ ignoredKeys
+
+mkVName :: String -> VName
+mkVName s = case Map.lookup s vMap of
+ Just v -> v
+ Nothing -> VName { new = s, altSyn = Nothing }

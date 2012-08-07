@@ -4,7 +4,7 @@ import Text.XML.HaXml.OneOfN
 import Text.XML.HaXml.XmlContent (fReadXml)
 import Isabelle.IsaExport
 import qualified Isabelle.IsaSign as IsaSign
-import Isabelle.IsaConsts
+import qualified Isabelle.IsaConsts as IsaConsts
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe,catMaybes)
 import Data.List (intercalate)
@@ -47,13 +47,13 @@ hXmlTerm2IsaTerm :: [String] -> Term -> (String,IsaSign.Term)
 hXmlTerm2IsaTerm l (TermBound attrs (Bound bindex)) =
   (termName attrs, 
     let idx = (read bindex) :: Int
-    in IsaSign.Free . IsaSign.mkVName $ (l!!idx))
+    in IsaSign.Free . IsaConsts.mkVName $ (l!!idx))
 hXmlTerm2IsaTerm _ (TermFree attrs f) = case f of
   FreeTVar a _ -> (n, free a)
   FreeTFree a _ -> (n, free a)
   FreeType a _ -> (n, free a)
  where n = termName attrs
-       free = IsaSign.Free . IsaSign.mkVName . freeName
+       free = IsaSign.Free . IsaConsts.mkVName . freeName
 hXmlTerm2IsaTerm _ (TermVar attrs v) =
  let vattrs = case v of
                VarTVar d _ -> d
@@ -61,7 +61,7 @@ hXmlTerm2IsaTerm _ (TermVar attrs v) =
                VarType d _ -> d
 
  in (termName attrs,
-     IsaSign.Free . IsaSign.mkVName . varName $ vattrs)
+     IsaSign.Free . IsaConsts.mkVName . varName $ vattrs)
 hXmlTerm2IsaTerm _ (TermConst attrs c) = (termName attrs, hXmlConst2IsaTerm c)
 hXmlTerm2IsaTerm l (TermApp attrs a) = (termName attrs, hXmlApp2IsaTerm l a)
 hXmlTerm2IsaTerm l (TermAbs attrs a) = (termName attrs, hXmlAbs2IsaTerm l a)
@@ -102,7 +102,7 @@ hXmlApp2IsaTerm l (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm l f1)
                                           IsaSign.NotCont
 hXmlAbs2IsaTerm :: [String] -> Abs -> IsaSign.Term
 hXmlAbs2IsaTerm l (Abs attrs t f) = IsaSign.Abs
- (IsaSign.Const (IsaSign.mkVName . absVname $ attrs)
+ (IsaSign.Const (IsaConsts.mkVName . absVname $ attrs)
               $ IsaSign.Disp (hXmlOneOf3_2IsaTyp t)
                              IsaSign.NA
                              Nothing)
@@ -128,7 +128,7 @@ hXmlType_2IsaTyp (Type_Type t) = hXmlOneOf3_2IsaTyp (ThreeOf3 t)
 
 hXmlType2IsaTyp :: Type -> IsaSign.Typ
 hXmlType2IsaTyp (Type attrs tps) =
- IsaSign.Type (typeName attrs) holType (map hXmlType_2IsaTyp tps)
+ IsaSign.Type (typeName attrs) IsaConsts.holType (map hXmlType_2IsaTyp tps)
 
 hXmlTFree2IsaTyp :: TFree -> IsaSign.Typ
 hXmlTFree2IsaTyp (TFree attrs cls) =
@@ -207,7 +207,7 @@ hXmlRecType2IsaTypeDecl recmap (RecType a (Vars vs) (Constructors cs)) =
                  hXmlOneOf3_2IsaTyp
                   (TwoOf3 (TFree (TFree_Attrs f) []))
                 Constructor_DtType (DtType ta dts) ->
-                 IsaSign.Type (dtTypeS ta) holType
+                 IsaSign.Type (dtTypeS ta) IsaConsts.holType
                   (map (\dt -> case dt of
                      DtType_DtTFree f -> trans (Constructor_DtTFree f)
                      DtType_DtType t -> trans (Constructor_DtType t)
@@ -216,10 +216,10 @@ hXmlRecType2IsaTypeDecl recmap (RecType a (Vars vs) (Constructors cs)) =
                  hXmlOneOf3_2IsaTyp
                   (ThreeOf3 (Type (Type_Attrs (Map.findWithDefault ""
                     ((read r)::Int) recmap)) []))
- in ((IsaSign.Type (recTypeName a) holType
+ in ((IsaSign.Type (recTypeName a) IsaConsts.holType
       (map (\v -> case v of
              Vars_DtTFree f -> trans (Constructor_DtTFree f)
              Vars_DtType t -> trans (Constructor_DtType t)
              Vars_DtRec r -> trans (Constructor_DtRec r)) vs)),
       map (\(Constructor ca cs') ->
-       (IsaSign.mkVName (constructorVal ca),map trans cs')) cs)
+       (IsaConsts.mkVName (constructorVal ca),map trans cs')) cs)
