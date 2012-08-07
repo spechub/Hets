@@ -22,7 +22,7 @@ import Driver.Version
 import qualified Data.Set as Set
 
 import qualified Common.Result as CRes
-import Common.DocUtils (showGlobalDoc)
+import Common.Doc (renderText)
 import Common.GlobalAnnotations
 import Common.LibName
 import Common.ResultT
@@ -34,6 +34,7 @@ import Static.AnalysisLibrary
 import Static.DevGraph
 
 import Syntax.AS_Library
+import Syntax.Print_AS_Structured
 import Syntax.ToXml
 
 import Text.XML.Light
@@ -237,7 +238,7 @@ anaInput contents selectedBoxes outputfiles = do
                         latexFile = outputfile ++ ".tex"
                         pdfFile = outputfile ++ ".pdf"
                         tmpFile = outputfile ++ ".tmp"
-                    writeLibDefnLatex gannos pptexFile libDefn
+                    writeLibDefnLatex logicGraph gannos pptexFile libDefn
                     writeFile latexFile (latexHeader ++
                                          "\\input{" ++ pptexFile ++
                                          "}\n \\end{document}\n")
@@ -250,7 +251,8 @@ anaInput contents selectedBoxes outputfiles = do
                     setFileMode pdfFile fMode
              when (outputTxt conf) $ do
                     let txtFile = outputfile ++ ".txt"
-                    writeFile txtFile $ showGlobalDoc gannos libDefn "\n"
+                    writeFile txtFile $ show (renderText gannos $
+                      prettyLG logicGraph libDefn) ++ "\n"
                     setFileMode txtFile fMode
              when (outputTree conf) $ do
                     let txtFile = outputfile ++ ".pp.xml"
@@ -259,7 +261,8 @@ anaInput contents selectedBoxes outputfiles = do
              return (CRes.Result ds $ Just $ selectOut conf libDefn gannos)
       selectOut :: SelectedBoxes -> LIB_DEFN -> GlobalAnnos -> Output
       selectOut conf ld ga = defaultOutput
-        { asciiTxt = if outputTxt conf then showGlobalDoc ga ld "" else ""
+        { asciiTxt = if outputTxt conf
+            then show $ renderText ga $ prettyLG logicGraph ld else ""
         , parseTree = if outputTree conf then ppElement $ xmlLibDefn ga ld
             else "" }
       -- log file
@@ -284,9 +287,6 @@ anaInput contents selectedBoxes outputfiles = do
       sizeof fd = do
             fstatus <- getFdStatus fd
             return $ fileSize fstatus
-
-catcher :: IO a -> IO String
-catcher act = catch (act >> return "") (return . show)
 
 -- Print the result
 printR :: String -> CRes.Result Output -> SelectedBoxes
