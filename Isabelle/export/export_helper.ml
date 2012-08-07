@@ -5,6 +5,7 @@ sig
         type datatype_info = (string * Datatype.info) list
 	type class_info	   = (string * (string list) * term_info *
          ((string * typ) list)) list
+        type locale_info   = class_info
                              (* name * parents * assumes * fixes *)
 	type theory_info   = 
            string        (* theory name *)
@@ -14,8 +15,11 @@ sig
          * term_info     (* theorems    *)
          * datatype_info (* data types  *)
          * class_info    (* class info  *)
+         * locale_info   (* locale info *)
         val theory_info : theory -> theory_info
         val tinfo2xml : theory -> string -> theory_info -> XML.tree
+	val unfold_hol_conjunction : term -> term list
+	val strip_hol_all : (string * typ) list -> bool -> term -> term
 end;
 
 structure ExportHelper : ExportHelper =
@@ -27,6 +31,7 @@ struct
 	type class_info    = (string * (string list) * term_info *
          ((string * typ) list)) list
                              (* name * parents * assumes * fixes *)
+        type locale_info   = class_info
         type theory_info   = 
            string        (* theory name *)
          * string list   (* imports     *)
@@ -35,6 +40,7 @@ struct
          * term_info     (* theorems    *)
          * datatype_info (* data types  *)
          * class_info    (* class info  *)
+         * locale_info   (* locale info *)
 
 (* General helper functions *)
 	fun id x = x
@@ -91,6 +97,22 @@ struct
              (unfold_conjunction t1)
             @(unfold_conjunction t2)
           | _                                  => [tm]
+        fun unfold_hol_conjunction tm = case tm of
+	   Const ("HOL.conj",_) $ t $ t1 => (unfold_hol_conjunction t)@(unfold_hol_conjunction t1)
+         | Const ("HOL.conj",_) $ t => [t]
+         | _ => [tm]
+	fun strip_hol_all l b tm = case (b,tm) of
+           (true,Const ("HOL.All",_) $ Abs (s,t,tm)) =>
+            strip_hol_all ((s,t)::l) true tm
+         | (_,Bound i) => if List.length l > i
+                          then let val (s,t) = List.nth(l,i)
+                               in Var ((s,0),t) end
+                          else tm
+         | (_,Abs (s,t,tm)) => Abs (s,t,strip_hol_all l false tm)
+         | (_,t1 $ t2) => (strip_hol_all l false t1) $ 
+                          (strip_hol_all l false t2)
+	 | _ => tm
+
 (* get raw theory information *)
 	fun get_consts T =
          let val consts_of = (Name_Space.dest_table (Syntax.init_pretty_global T)) o
@@ -141,6 +163,44 @@ struct
                | _ => (n,t)) axioms'
               val params = #params i
           in (name',parents,axioms,params) end) cls_names end
+	fun get_locales T = 
+         let val names = List.filter (String.isPrefix (Context.theory_name T))
+                      (Locale.all_locales T)
+             val (_,tb) = Locale.locale_deps T
+             val tb_list = List.map (fn (k,t) => 
+                  (k,Symtab.dest t)) (Symtab.dest tb)
+             val parents = List.foldl (fn ((s,l),t') =>
+                  List.foldl (fn ((s1,l1),t) => Symtab.map_default (s1,([],[]))
+                   (fn (parents,pfixes) => (s::parents,(
+                   ((List.map (fn Free (s,_) => s))
+                     o List.concat) l1)@pfixes)) t
+                  ) t' l) Symtab.empty tb_list;
+             val filter = ["_axioms.intro","_axioms_def",
+              "_def",".intro",".axioms_"]
+         in List.map (fn name => 
+           let val params'   = Locale.params_of T name
+               val parent_params =
+                    #2 (Option.valOf (Symtab.lookup parents name))
+               val params    = List.filter (fn ((s,_),_) =>
+                   List.exists (fn p => p = s) parent_params) params'
+               val axs       = List.filter (fn t => String.isPrefix name (#1 t))
+                                (Global_Theory.all_thms_of T)
+               val axioms'  = List.filter
+                    (fn t => (not (List.exists
+                              (fn s => #1 t = name ^ s) filter))) axs
+               val axioms   = List.map (fn (s,t) =>
+                    (s,((fn Const ("==>",_) $ _ $ t => t) o Thm.prop_of) t))
+                    axioms'
+               val in_locale_axioms = List.map
+                    (strip_hol_all [] true) ((unfold_hol_conjunction o
+                     (fn _ $ _ $ tm => tm) o Thm.prop_of o #2 o Option.valOf)
+                     (List.find (fn x => #1 x = name^"_axioms_def") axs))
+               val in_loc = List.filter (fn (s,t) => 
+                    List.exists (fn t' => t = t') in_locale_axioms) axioms
+               val ex_loc = List.filter (fn (s,t) => 
+                    not (List.exists (fn t' => t = t') in_locale_axioms)) axioms
+           in (name,params,in_loc,ex_loc) end
+          ) names end
 (* Guess the names of generated axioms, consts and theorem *)
         fun prefix p s = List.map (fn x => p^s^x)
         fun postfix s p = List.map (fn x => x^s^p)
@@ -312,13 +372,15 @@ struct
              val gen_consts = get_gen_consts T name types (List.map #1 consts)
              val gen_thms   = get_gen_theorems T name types (List.map #1 thms)
              val gen_axioms = (get_gen_axioms T name types)@(List.map #1 thms)
+             val locales    = []
          in (name, imports,
              (filter gen_consts consts),
              (filter gen_axioms axioms),
              (filter gen_thms thms),
-             types,classes) end
+             types,classes,locales) end
 	(* export theory info as xml *)
-	fun tinfo2xml T fname (name,imports,consts,axioms,thms,types,classes) =
+	fun tinfo2xml T fname (name,imports,consts,axioms,thms,
+                                types,classes,locales) =
          let val xml_imports  = XML.Elem
               (("Imports",[]), List.map (fn s => XML.Elem (("Import",[("name",s)]),[])) imports)
              val xml_consts   = termTypListToXML T "Consts" consts
