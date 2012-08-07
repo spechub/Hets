@@ -877,7 +877,7 @@ fixPoint c xs = case xs of
          jt1 = headTailsType (map extAxType xs)
          (jta, jts) = headTailsMT jt1
          jt = mkFunType jta (typTuple NotCont jts)
-         jl = Const jn $ dispNN jt
+         jl = Const jn $ hideNN jt
          n = length xs
          rs = map extRightH xs
          ls = map extFunTerm xs
@@ -899,7 +899,7 @@ mkNewDef s z x y t = let      -- x is the max
   in mapNamed ( \ sen -> case sen of
     ConstDef (IsaEq lh rh) -> case (lh, extFBody rh) of
       (Const nam _, (_, w : ws)) ->
-         ConstDef $ IsaEq (Const nam $ dispNN zy) $
+         ConstDef $ IsaEq (Const nam $ hideNN zy) $
             termMAbs a (w:ws) $ termMAppl a (tupleSelector x y
                   (termSAppl a (Const (mkVName z) noType) w) a) ws
       _ -> error "Hs2HOLCFaux.mkNewDef1"
