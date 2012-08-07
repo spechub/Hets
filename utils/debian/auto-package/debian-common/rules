@@ -27,6 +27,9 @@ override_dh_installman:
 override_dh_install:
 	install -m 755 -d debian/hets-core/usr/lib/hets
 	install -m 755  hets debian/hets-core/usr/lib/hets
+	install -m 755 -d debian/hets-cor/usr/lib/hets/hets-isa-tools
+	install -m 755 Isabelle/export/export.sh debian/hets-cor/usr/lib/hets/hets-isa-tools
+	cp Isabelle/export/export_helper.ml debian/hets-cor/usr/lib/hets/hets-isa-tools
 	cp -r hets-lib debian/hets-core/usr/lib/hets
 	cp -r hets-owl-tools debian/hets-core/usr/lib/hets
 	install -m 755 -d debian/hets-core/usr/lib/hets/hets-maude-lib

@@ -37,6 +37,11 @@ import Driver.Options
 
 import qualified Data.Map as Map
 
+import Control.Monad (unless)
+
+import Common.Utils
+import System.Exit
+import System.Directory
 import System.FilePath.Posix
 
 makeNamedSentence :: (String, Term) -> Named Sentence
@@ -58,6 +63,25 @@ _insNodeDG sig sens n dg =
       { globalTheory = computeLabelTheory Map.empty newDG
         (k, labelK) })]
      newDG1 = changesDGH newDG labCh in newDG1
+
+anaThyFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
+anaThyFile opts path = do
+ fp <- canonicalizePath path
+ tempFile <- getTempFile "" (takeBaseName fp)
+ exportScript' <- fmap (</> "export.sh") $ getEnvDef
+  "HETS_ISA_TOOLS" "./Isabelle/export/"
+ exportScript <- canonicalizePath exportScript'
+ e1 <- doesFileExist exportScript
+ unless e1 $ fail $ "Couldn't find export script"
+ (ex, sout, err) <- executeProcess exportScript [fp,tempFile] ""
+ case ex of
+  ExitFailure _ -> do
+   removeFile tempFile
+   fail $ "Export Failed!" ++ sout ++ err
+  ExitSuccess -> do
+   ret <- anaIsaFile opts tempFile
+   removeFile tempFile
+   return ret
 
 anaIsaFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaIsaFile _ path = do

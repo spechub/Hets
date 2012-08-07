@@ -10,6 +10,10 @@ if [ -z $1 ]; then
  exit 1
 fi
 
+if [ ! -z $2 ]; then
+ OUT_FILE="$2"
+fi
+
 TRANS=$(readlink -f $1)
 TRANS_T=$(basename $TRANS .thy)
 TRANS=$(dirname $TRANS)/$TRANS_T
@@ -38,6 +42,10 @@ if [ ! -x $ISABELLE ]; then
  exit 1
 fi
 
+if [ -z $OUT_FILE ]; then
+ OUT_FILE="$TRANS.isa"
+fi
+
 echo $ISABELLE
 
 (
@@ -51,7 +59,7 @@ echo $ISABELLE
 val xml = ExportHelper.tinfo2xml T \"$TRANS_T\"
            (ExportHelper.theory_info T);
 
-File.write (Path.explode \"$TRANS.isa\") (XML.string_of xml);
+File.write (Path.explode \"$OUT_FILE\") (XML.string_of xml);
 "
  echo "*}"
  echo "end;"

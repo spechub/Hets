@@ -54,7 +54,7 @@ import HolLight.HolLight2DG (anaHolLightFile)
 #endif
 
 #ifdef HAXML
-import Isabelle.Isa2DG (anaIsaFile)
+import Isabelle.Isa2DG (anaIsaFile,anaThyFile)
 #endif
 
 main :: IO ()
@@ -81,6 +81,7 @@ processFile opts file = do
 #endif
 #ifdef HAXML
       IsaIn -> anaIsaFile opts file
+      ThyIn -> anaThyFile opts file
 #endif
       PrfIn -> anaLibReadPrfs opts file
       ProofCommand -> do
