@@ -886,16 +886,16 @@ fixPoint c xs = case xs of
          zs = map (\ (p,ts) -> (p, Tuplex
                       (map (renFuns (newFCons (Const jn noType) ls)) ts)
                       NotCont)) $ Map.toList yyys
-         os = map (\ (x,m) -> mkNewDef x jj n m jt) $ number xs
+         os = map (\ (x,m) -> mkNewDef x jj n m jt1) $ number xs
          ps = makeNamed jj (makeRecDef jj jl zs) : os
       in ps
   [] -> []
 
 mkNewDef :: Named Sentence -> String ->
-                    Int -> Int -> Typ -> Named Sentence
+                    Int -> Int -> [(Typ,Typ)] -> Named Sentence
 mkNewDef s z x y t = let      -- x is the max
        a  = NotCont
-       zy = typeTupleSel t y
+       zy = (uncurry mkFunType) (t!!(y-1))
   in mapNamed ( \ sen -> case sen of
     ConstDef (IsaEq lh rh) -> case (lh, extFBody rh) of
       (Const nam _, (_, w : ws)) ->
@@ -933,17 +933,6 @@ typTuple c ts = case ts of
   [a] -> a
   a : as ->
       (if isCont c then mkContProduct else prodType) a (typTuple c as)
-
-typeTupleSel :: Typ -> Int -> Typ
-typeTupleSel t n = let
-    (p,c) = splitFunT t
-    q = tupleDes c !! (n-1)
-  in mkFunType p q
-
-tupleDes :: Typ -> [Typ]
-tupleDes t = case t of
-     IsaSign.Type "*" _ [t1,t2] -> t1:(tupleDes t2)
-     _ -> [t]
 
 -------------------- function types -----------------------------------
 
