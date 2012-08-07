@@ -258,6 +258,11 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          parse_symb_map_items _ = Nothing
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
+-- | function to lookup parser or printer
+lookupDefault :: Ord a => Maybe a -> Map.Map a b -> Maybe b
+lookupDefault ma m = if Map.size m == 1 then Just $ head $ Map.elems m else
+   maybe Nothing (`Map.lookup` m) ma
+
 {- | Sentences, provers and symbols.
      Provers capture the entailment relation between sets of sentences
      and sentences. They may return proof trees witnessing proofs.

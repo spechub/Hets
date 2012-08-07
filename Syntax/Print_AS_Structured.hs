@@ -27,9 +27,6 @@ import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation
 
-import qualified Data.Map as Map
-import Data.Maybe
-
 import Logic.Grothendieck
 import Logic.Logic
 
@@ -82,11 +79,10 @@ printSPEC lg spec = case spec of
     Basic_spec (G_basic_spec lid basic_spec) _ ->
         case lookupCurrentSyntax "" lg of
       Just (Logic lid2, sm) -> if language_name lid2 /= language_name lid
-          then error "internal printSPEC error"
-          else case fmap snd $ Map.lookup (fromMaybe nullIRI sm)
-                   $ parsersAndPrinters lid of
+          then error "printSPEC: logic mismatch"
+          else case fmap snd $ lookupDefault sm $ parsersAndPrinters lid of
         Just p -> p basic_spec
-        _ -> error $ "missing basic spec printer: " ++ showDoc sm ""
+        _ -> error "printSPEC: no basic spec printer"
       _ -> error "printSPEC: incomplete logic graph"
     EmptySpec _ -> specBraces empty
     Translation aa ab -> sep [condBracesTransReduct lg aa, printRENAMING ab]

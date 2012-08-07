@@ -23,17 +23,10 @@ module Syntax.Parse_AS_Structured
     , hetIRI
     ) where
 
-import Logic.Logic (AnyLogic (..), language_name, data_logic, Syntax (..))
-import Logic.Comorphism (targetLogic, AnyComorphism (..))
+import Logic.Logic
+import Logic.Comorphism
 import Logic.Grothendieck
-    ( LogicGraph
-    , setCurLogic
-    , G_basic_spec (..)
-    , G_symb_map_items_list (..)
-    , G_symb_items_list (..)
-    , lookupCurrentLogic
-    , lookupCurrentSyntax
-    , lookupComorphism)
+
 import Syntax.AS_Structured
 
 import Common.AS_Annotation
@@ -47,7 +40,6 @@ import Common.Token
 
 import Text.ParserCombinators.Parsec
 
-import qualified Data.Map as Map
 import Data.Char
 import Data.Maybe
 import Control.Monad
@@ -68,8 +60,8 @@ annoParser2 =
 -- * logic and encoding names
 
 -- within sublogics we allow some further symbol characters
-sublogicName :: AParser st String
-sublogicName = many $ satisfy $ \ c -> notElem c ":./\\" && isSignChar c
+sublogicChars :: AParser st String
+sublogicChars = many $ satisfy $ \ c -> notElem c ":./\\" && isSignChar c
     || elem c "_'" || isAlphaNum c
 
 {- keep these identical in order to
@@ -80,7 +72,7 @@ logicName = do
       let (ft, rt) = break (== '.') $ abbrevPath i
       (e, ms) <- if null rt then return (i, Nothing)
          else do
-           s <- sublogicName -- try more sublogic characters
+           s <- sublogicChars -- try more sublogic characters
            return (i { abbrevPath = ft}, Just . mkSimpleId $ tail rt ++ s)
       skipSmart
       mt <- optionMaybe $ oParenT >> iriCurie << cParenT
@@ -332,8 +324,10 @@ basicSpec :: (AnyLogic, Maybe IRI) -> AParser st SPEC
 basicSpec (Logic lid, sm) = do
     p <- getPos
     bspec <- callParser
-      (fmap fst $ Map.lookup (fromMaybe nullIRI sm) $ parsersAndPrinters lid)
-      (language_name lid) "basic specification"
+      (fmap fst $ lookupDefault sm $ parsersAndPrinters lid)
+      (language_name lid ++ maybe ""
+       ((" serialization " ++) . iriToStringUnsecure) sm)
+      "basic specification"
     q <- getPos
     return $ Basic_spec (G_basic_spec lid bspec) $ Range [p, q]
 
