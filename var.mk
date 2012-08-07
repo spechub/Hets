@@ -80,11 +80,6 @@ endif
 WAIEXTVERSION = $(shell $(HCPKG) latest wai-extra)
 WAIVERSION = $(shell $(HCPKG) latest wai)
 WARPVERSION = $(shell $(HCPKG) latest warp)
-ifneq ($(findstring 0.4, $(WARPVERSION)),)
-  ifneq ($(findstring 0.4, $(WAIEXTVERSION)),)
-  SERVER_FLAG = -DSERVER
-  endif
-endif
 ifneq ($(findstring 1., $(WARPVERSION)),)
   ifneq ($(findstring 1., $(WAIEXTVERSION)),)
   SERVER_FLAG = -DSERVER
