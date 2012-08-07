@@ -365,7 +365,7 @@ mthFunctor  = ["fmap"]
 mthFractional = ["/","recip","fromRational"]
 mthAll     = mthEq ++ mthOrd ++ mthEnum ++ mthNum
               ++ mthIntegral ++ mthFractional ++ mthBounded
-aweLits     = mthMonad ++ mthFunctor ++ mthEq
+aweLits     = mthMonad ++ mthFunctor ++ mthEq ++ ["+", "-", "*"]
 
 nameListA, nameListB, nameListC, nameListD :: [String]
 nameListE, nameListF, nameListH :: [String]
@@ -423,9 +423,9 @@ trOSym s = case s of
      "<="      -> "leq"
      ">"       -> "more"
      ">="      -> "meq"
-     "+"       -> "add"
-     "*"       -> "prod"
-     "-"       -> "diff"
+     "+"       -> "+"
+     "*"       -> "*"
+     "-"       -> "-"
      "^"       -> "pow"
      "^^"      -> "fpow"
      "++"      -> "bconcat"
