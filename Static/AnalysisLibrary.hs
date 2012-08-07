@@ -86,7 +86,8 @@ anaSourceFile = anaSource Nothing
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
-anaSource mln lgraph opts topLns libenv initDG fname = ResultT $
+anaSource mln lg opts topLns libenv initDG fname =
+  let lgraph = setCurLogic (defLogic opts) lg in ResultT $
 #ifndef NOHTTP
   if checkUri fname then do
        putIfVerbose opts 2 $ "Downloading file " ++ fname
@@ -249,7 +250,7 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln' alibItems pos ans) file
   let ln = fromMaybe ln' $ expandCurieLibName gannos ln'
   (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = gannos }, libenv
-      , setCurLogic (defLogic opts) lgraph, Map.empty) (map item alibItems)
+      , lgraph, Map.empty) (map item alibItems)
   let dg1 = computeDGraphTheories libenv' $ markFree libenv' $
             markHiding libenv' dg'
       newLD = Lib_defn ln
