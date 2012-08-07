@@ -14,6 +14,7 @@ theory translation for the embedding comorphism from Haskell to Isabelle.
 module Comorphisms.Hs2HOLCF (transTheory) where
 
 import qualified Data.Map as Map
+import Data.Maybe (catMaybes)
 
 import Common.Utils (number)
 import Common.Result
@@ -114,7 +115,9 @@ transSentence c a (TiPropDecorate.Dec d) =
            return [k]
       (FunDef,  HsPatBind _ q (HsBody e) _) -> do
            k <- transCProp FunDef c q e
-           return [k]
+           case k of
+            Just k' -> return [k']
+            Nothing -> return []
       (InstDef, HsInstDecl _ _ _ t (TiPropDecorate.Decs ds _)) -> do
            k <- mapM (transIMatch c t)
                 [y | TiPropDecorate.Dec (PropSyntaxStruct.Base
@@ -123,7 +126,7 @@ transSentence c a (TiPropDecorate.Dec d) =
               mapM (uncurry $ transCProp InstDef c) [(q,e) |
                  TiPropDecorate.Dec (PropSyntaxStruct.Base
                     (HsDeclStruct.HsPatBind _ q (HsBody e) _)) <- ds]
-           return (k ++ w)
+           return $ catMaybes $ k ++ w
       _ -> return []
    _ -> return []
 
@@ -147,7 +150,7 @@ constTabM = TSt $ \sign -> return (constTab sign, sign)
 
 transCProp :: ExpRole -> Continuity
             -> PrPat -> PrExp
-            -> TSt (Named Sentence)
+            -> TSt (Maybe (Named Sentence))
 transCProp j a p e = do
    cs <- constTabM
    case (transPatBindX True a cs p e) of
@@ -169,7 +172,7 @@ transCProp j a p e = do
                            trace ("\n ER222: " ++ show e) $
                                      error "Hs2HOLCF.transCProp3"
               _     -> error "Hs2HOLCF.transCProp4"
-            FunDef  -> return $ makeNamed nm $ ConstDef $ IsaEq x y
+            FunDef  -> return $ Just $ makeNamed nm $ ConstDef $ IsaEq x y
       _          -> trace ("\n PAT: " ++ show p) $
                     trace ("\n EXP: " ++ show e) $
                     error "Hs2HOLCF.transCProp5"
@@ -229,7 +232,7 @@ elimDic ls = case ls of
 {- translates method definitions -}
 transIMatch :: (Show ds) => Continuity -> HsType
             -> HsDeclStruct.HsMatchI PNT PrExp PrPat ds
-            -> TSt (Named Sentence)
+            -> TSt (Maybe (Named Sentence))
 transIMatch a t s = do
   ct <- constTabM
   case s of
@@ -247,8 +250,12 @@ transIMatch a t s = do
 
 transInstEx :: Continuity -> String -> VName ->
       IsaClass -> IsaType -> IsaType ->
-        [IsaTerm] -> IsaTerm -> TSt (Named Sentence)
-transInstEx a nam df c@(IsaClass k) x x2 qs tx = TSt $ \sign ->
+        [IsaTerm] -> IsaTerm -> TSt (Maybe (Named Sentence))
+transInstEx a nam df c@(IsaClass k) x x2 qs tx = 
+ if and [enElem nam mthEq]
+ then TSt (\sig -> return (Nothing,sig))
+ else
+       TSt $ \sign ->
          let ct  = constTab sign
              xx  = typeId x
              w   = maybe [] id $ Map.lookup xx (arities $ tsig sign)
@@ -277,36 +284,11 @@ transInstEx a nam df c@(IsaClass k) x x2 qs tx = TSt $ \sign ->
              nty = instTyp mty c x cs
                  -- in mty, replaces the variable of class c with type x,
                  -- constraining variables in x with cs
-             ntx = if enElem nam mthEq
-                   then (case tx of
-                              IsaSign.Const bb _ ->
-                                 if new bb == (xdf ++ "DF")
-                                 then defaultDef a nam x c cs
-                                 else tx
-                              _  -> tx)
-                   else tx
-             tst = makeSentence InstDef a ndf nty pdf qs ntx
-         in return (tst, nsg)
+             tst = makeSentence InstDef a ndf nty pdf qs tx
+         in return (Just tst, nsg)
 
 instTyp :: IsaType -> IsaClass -> IsaType -> [(IsaType,Sort)] -> IsaType
 instTyp t c x cs = repVarClass t c (constrVarClass x cs)
-
-defaultDef :: Continuity -> String -> IsaType -> IsaClass ->
-                         [(IsaType,Sort)] -> IsaTerm
-defaultDef c x t k@(IsaClass r) ks = let
-      w = mthTy c r x
-      z = instTyp w k t ks
-   in if enElem x ["=="] then eqDef c z
-      else if enElem x ["/="] then neqDef c z
-      else error "HsHOLCFaux, defaultDef"
-
-eqDef :: Continuity -> IsaType -> IsaTerm
-eqDef c t = let vs = [mkFree "x", mkFree "y"]
-  in termMAbs c vs $ termMAppl c (notPT c) $ [termMAppl c (neqTPT t) vs]
-
-neqDef :: Continuity -> IsaType -> IsaTerm
-neqDef c t = let vs = [mkFree "x", mkFree "y"]
-  in termMAbs c vs $ termMAppl c (notPT c) $ [termMAppl c (eqTPT t) vs]
 
 -------------------- theory trans auxiliaries ------------------------
 -------------------- transMMatch auxs -------------------------------
