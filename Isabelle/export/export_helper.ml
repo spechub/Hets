@@ -5,8 +5,13 @@ sig
         type datatype_info = (string * Datatype.info) list
 	type class_info	   = (string * (string list) * term_info *
          ((string * typ) list)) list
-        type locale_info   = class_info
                              (* name * parents * assumes * fixes *)
+        type locale_info   = (string * ((string * typ) * mixfix) list
+                             (* name * fixes *)
+                             * (string * term) list * (string * term) list
+                             (* in-locale axioms    * ex-locale axioms *)
+                             * string list) list
+                             (* parents *) 
 	type theory_info   = 
            string        (* theory name *)
          * string list   (* imports     *)
@@ -18,8 +23,6 @@ sig
          * locale_info   (* locale info *)
         val theory_info : theory -> theory_info
         val tinfo2xml : theory -> string -> theory_info -> XML.tree
-	val unfold_hol_conjunction : term -> term list
-	val strip_hol_all : (string * typ) list -> bool -> term -> term
 end;
 
 structure ExportHelper : ExportHelper =
@@ -31,8 +34,13 @@ struct
 	type class_info    = (string * (string list) * term_info *
          ((string * typ) list)) list
                              (* name * parents * assumes * fixes *)
-        type locale_info   = class_info
-        type theory_info   = 
+	type locale_info   = (string * ((string * typ) * mixfix) list
+                             (* name * fixes *)
+                             * (string * term) list * (string * term) list
+                             (* in-locale axioms    * ex-locale axioms *)
+                             * string list) list
+                             (* parents *)
+	type theory_info   = 
            string        (* theory name *)
          * string list   (* imports     *)
          * const_info    (* constants   *)
@@ -180,9 +188,11 @@ struct
          in List.map (fn name => 
            let val params'   = Locale.params_of T name
                val parent_params =
-                    #2 (Option.valOf (Symtab.lookup parents name))
+                    case Symtab.lookup parents name of
+                      SOME (_,v) => v
+                     | _ => []
                val params    = List.filter (fn ((s,_),_) =>
-                   List.exists (fn p => p = s) parent_params) params'
+                   not (List.exists (fn p => p = s) parent_params)) params'
                val axs       = List.filter (fn t => String.isPrefix name (#1 t))
                                 (Global_Theory.all_thms_of T)
                val axioms'  = List.filter
@@ -191,15 +201,20 @@ struct
                val axioms   = List.map (fn (s,t) =>
                     (s,((fn Const ("==>",_) $ _ $ t => t) o Thm.prop_of) t))
                     axioms'
-               val in_locale_axioms = List.map
-                    (strip_hol_all [] true) ((unfold_hol_conjunction o
-                     (fn _ $ _ $ tm => tm) o Thm.prop_of o #2 o Option.valOf)
-                     (List.find (fn x => #1 x = name^"_axioms_def") axs))
+               val in_locale_axioms =
+                case (List.find (fn x => (#1 x) = (name^"_axioms_def")) axs) of
+                   SOME v => List.map (strip_hol_all [] true)
+                  ((unfold_hol_conjunction o
+                   (fn _ $ _ $ tm => tm) o Thm.prop_of o #2) v)
+                 | _ => []
                val in_loc = List.filter (fn (s,t) => 
                     List.exists (fn t' => t = t') in_locale_axioms) axioms
                val ex_loc = List.filter (fn (s,t) => 
                     not (List.exists (fn t' => t = t') in_locale_axioms)) axioms
-           in (name,params,in_loc,ex_loc) end
+               val ps = case Symtab.lookup parents name of
+                  SOME(v,_) => v
+                | _ => []
+           in (name,params,in_loc,ex_loc,ps) end
           ) names end
 (* Guess the names of generated axioms, consts and theorem *)
         fun prefix p s = List.map (fn x => p^s^x)
@@ -224,6 +239,9 @@ struct
                   List.filter (fn x => List.length x > 1) grouped_rec_names
 	     val simple_names = List.map List.hd
                   (List.filter (fn x => List.length x = 1) grouped_rec_names)
+             val locale_names = List.filter
+                  (String.isPrefix (Context.theory_name T))
+                  (Locale.all_locales T)
          in constructors@(prefix name "." (List.concat
              [prefix "Abs" "_" rec_names,
               prefix "Rep" "_" rec_names,
@@ -242,7 +260,9 @@ struct
                                        comb^"."^comb^"_rec_set_"^y,
                                        comb^"."^comb^"_rep_set_"^y])
                              (l_to_intl x))) end) mutually_rec_names)]))
-            @(List.filter (String.isPrefix "Class.") consts) end
+            @(List.filter (String.isPrefix "Class.") consts)
+            @(List.filter (fn s => List.exists
+              (fn l => String.isPrefix l s) locale_names) consts) end
 	fun get_gen_axioms T name ts =
          let val (grouped_rec_names,all_rec_names,constructors,def_names) =
                   get_type_names T ts
@@ -279,6 +299,10 @@ struct
                   grouped_rec_names
              val simple_names = List.map List.hd
                   (List.filter (fn x => List.length x = 1) grouped_rec_names)
+             val locale_names = List.filter
+                  (String.isPrefix (Context.theory_name T))
+                  (Locale.all_locales T)
+	     val locale_filter = ["_axioms.intro","_axioms_def","_def","."]
          in prefix name "." (List.concat
           [prefix "arity_equal" "_" def_names,
            prefix "arity_type" "_" def_names,
@@ -291,14 +315,13 @@ struct
          @(List.concat (List.map (fn x =>
             List.filter (String.isPrefix (name^"."^(space_implode "_" x)^".")) ths)
            mutually_rec_names))
-         @(List.filter (String.isPrefix "Class.") ths) end
+         @(List.filter (String.isPrefix "Class.") ths)
+         @(List.filter (fn s => (List.exists 
+           (fn l => List.exists
+           (fn f => String.isPrefix (l^f) s) locale_filter) locale_names)) ths) end
 (* Represent collected data as XML *)
 	(* Enrich the (isabelle-builtin) XML representation of terms with infix information *)
-        fun xml_of_term' T t =
-          case t of
-           XML.Elem (("Const",a),t) =>
-              let val b =
-                (case (Syntax.guess_infix (Sign.syn_of T) (Lexicon.mark_const ((#2 o List.hd) a))) of
+        fun mixfix_to_args m = case m of
                      SOME(Mixfix.Infixl (s,j)) =>
                        [("infixl",s),
                         ("mixfix_i",string_of_int j)]
@@ -308,10 +331,18 @@ struct
                    | SOME(Mixfix.Infix (s,j))  =>
                        [("infix",s),
                         ("mixifix_i",string_of_int j)]
-                   | NONE => [])
-              in XML.Elem (("Const",a@b),map (xml_of_term' T) t) end
-           | XML.Elem ((s,a),t) => XML.Elem ((s,a),map (xml_of_term' T) t)
-        fun xml_of_term T t = xml_of_term' T (XML_Syntax.xml_of_term t)
+                   | NONE => []
+        fun xml_of_term' T tbl t =
+          case t of
+           XML.Elem (("Const",a),t) =>
+              let val b = case (Syntax.guess_infix (Sign.syn_of T)
+                 (Lexicon.mark_const ((#2 o List.hd) a))) of
+                  SOME(mx) => mixfix_to_args (SOME mx)
+                 |NONE => mixfix_to_args (Symtab.lookup tbl ((#2 o List.hd) a))
+              in XML.Elem (("Const",a@b),map (xml_of_term' T tbl) t) end
+           | XML.Elem ((s,a),t) => XML.Elem ((s,a),map (xml_of_term' T tbl) t)
+        fun xml_of_term T t = xml_of_term' T Symtab.empty
+             (XML_Syntax.xml_of_term t)
 	fun remove_hol_true_prop t = case t of
            $ (Const ("HOL.Trueprop",_), tm) => tm
          | (t $ u) => (remove_hol_true_prop t) $ (remove_hol_true_prop u)
@@ -372,7 +403,7 @@ struct
              val gen_consts = get_gen_consts T name types (List.map #1 consts)
              val gen_thms   = get_gen_theorems T name types (List.map #1 thms)
              val gen_axioms = (get_gen_axioms T name types)@(List.map #1 thms)
-             val locales    = []
+             val locales    = get_locales T
          in (name, imports,
              (filter gen_consts consts),
              (filter gen_axioms axioms),
@@ -381,7 +412,8 @@ struct
 	(* export theory info as xml *)
 	fun tinfo2xml T fname (name,imports,consts,axioms,thms,
                                 types,classes,locales) =
-         let val xml_imports  = XML.Elem
+         let val b = Long_Name.base_name
+             val xml_imports  = XML.Elem
               (("Imports",[]), List.map (fn s => XML.Elem (("Import",[("name",s)]),[])) imports)
              val xml_consts   = termTypListToXML T "Consts" consts
              val xml_axioms   = termListToXML T "Axioms" axioms
@@ -398,6 +430,27 @@ struct
                  [XML_Syntax.xml_of_type t])) params))
                @(List.map (fn n => XML.Elem
                  (("Parent",[("name",n)]),[])) parents))) classes)
+             val xml_locales  = XML.Elem (("Locales",[]),List.map
+                  (fn (name,params,in_loc,ex_loc,parents) =>
+                  let val tbl = List.foldl (fn (((s,_),m),t) => 
+                             Symtab.update (s,m) t)
+                            Symtab.empty params in
+                    XML.Elem (("LocaleDecl",[("name",b name)]),
+                     (List.map (fn ((s,t),m) =>
+                       XML.Elem (("LocaleParam",[("name",s)]
+                         @(mixfix_to_args (SOME m))),
+                       [XML_Syntax.xml_of_type t])) params)
+                    @(List.map (fn (s,t) => XML.Elem
+                        (("IAxiom",[("name",b s)]),
+                         [xml_of_term' T tbl (XML_Syntax.xml_of_term t)]))
+                      in_loc)
+                    @(List.map (fn (s,t) => XML.Elem
+                        (("EAxiom",[("name",b s)]),
+                         [xml_of_term' T tbl (XML_Syntax.xml_of_term t)]))
+                      ex_loc)
+                    @(List.map (fn n => XML.Elem
+                      (("Parent",[("name",n)]),[])) parents)
+                    )end) locales)
          in fixTypeNames name (XML.Elem (("IsaExport",[("file",fname)]),
-             [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types,xml_classes])) end
+             [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types,xml_classes,xml_locales])) end
 end;
