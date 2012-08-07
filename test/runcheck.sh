@@ -2,9 +2,9 @@
 
 for i in *
 do
-  if [ -d $i ]; then
+  if [ -d "$i" ]; then
     echo "processing $i"
-    cd $i
+    cd "$i"
     if [ -f Makefile ]
       then gmake
     elif [ -x run.sh ]
