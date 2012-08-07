@@ -414,7 +414,7 @@ notPT a = case a of
 
 bottomPT :: Continuity -> Term
 bottomPT a = conDouble $ case a of
-  NotCont -> "arbitrary"
+  NotCont -> "undefined"
   IsCont _ -> "UU"
 
 nilPT :: Continuity -> Term
