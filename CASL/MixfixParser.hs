@@ -102,7 +102,7 @@ ids_anDATATYPE_DECLs al =
 -- | get all ids of a sig items
 ids_SIG_ITEMS :: (s -> IdSets) -> SIG_ITEMS s f -> IdSets
 ids_SIG_ITEMS f si = let e = Set.empty in case si of
-    Sort_items _ _ _ -> emptyIdSets
+    Sort_items {} -> emptyIdSets
     Op_items al _ -> (unite2 $ map (ids_OP_ITEM . item) al, e)
     Pred_items al _ -> ((e, e), Set.unions $ map (ids_PRED_ITEM . item) al)
     Datatype_items _ al _ -> ids_anDATATYPE_DECLs al
@@ -302,10 +302,13 @@ iterateCharts par extR g terms c =
               self tl (oneStep (t, typeTok {tokPos = ps}))
             t@(Qual_var _ _ ps) ->
               self tl (oneStep (t, varTok {tokPos = ps}))
-            t@(Application (Qual_op_name _ _ ps) _ _) ->
-                self tl (oneStep (t, exprTok {tokPos = ps} ))
-            t@(Application (Op_name o) [] _) ->
-                self tl (oneStep (t, varTok {tokPos = posOfId o} ))
+            Application opNam ts ps -> let
+              Result mds v = mapM resolveTerm ts
+              c2 = self tl $ oneStep (Application opNam (fromMaybe ts v) ps
+                                     , case opNam of
+                     Qual_op_name _ _ qs -> exprTok {tokPos = qs}
+                     Op_name o -> varTok {tokPos = posOfId o})
+              in mixDiags mds c2
             t@(Mixfix_qual_pred (Qual_pred_name _ _ ps)) ->
                 self tl (oneStep (t, exprTok {tokPos = ps} ))
             Sorted_term t s ps -> let

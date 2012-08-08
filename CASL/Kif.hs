@@ -64,14 +64,10 @@ nestedList = do
  <|> lexem scanLiteral
 
 kifProg :: CharParser st [ListOfList]
-kifProg = do
-  skip
-  l <- many1 nestedList
-  eof
-  return l
+kifProg = kifBasic << eof
 
 kifBasic :: CharParser st [ListOfList]
-kifBasic = many1 nestedList
+kifBasic = skip >> many1 nestedList
 
 ppListOfList :: ListOfList -> Doc.Doc
 ppListOfList e = case e of
