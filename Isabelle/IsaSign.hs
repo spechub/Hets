@@ -42,12 +42,12 @@ instance Eq VName where
 instance Ord VName where
     v1 <= v2 = new v1 <= new v2
 
-{- | Indexnames can be quickly renamed by adding an offset to 
-   the integer part, for resolution. -} 
-data Indexname = Indexname 
-    { unindexed :: String 
-    , indexOffset :: Int 
-    } deriving (Ord, Eq, Show) 
+{- | Indexnames can be quickly renamed by adding an offset to
+   the integer part, for resolution. -}
+data Indexname = Indexname
+    { unindexed :: String
+    , indexOffset :: Int
+    } deriving (Ord, Eq, Show)
 
 {- Types are classified by sorts. -}
 
@@ -231,6 +231,7 @@ isSubTypeSig :: TypeSig -> TypeSig -> Bool
 isSubTypeSig t1 t2 =
   null (defaultSort t1 \\ defaultSort t2) &&
   Map.isSubmapOf (classrel t1) (classrel t2) &&
+  Map.isSubmapOf (locales t1) (locales t2) &&
   null (log_types t1 \\ log_types t2) &&
   (case univ_witness t1 of
      Nothing -> True
