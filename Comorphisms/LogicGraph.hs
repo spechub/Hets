@@ -81,7 +81,7 @@ import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CASL2Modal
 import Comorphisms.CASL2ExtModal
 import Comorphisms.Modal2CASL
-import Comorphisms.ExtModal2CASL
+import Comorphisms.ExtModal2CASL ()
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
@@ -102,7 +102,7 @@ import Comorphisms.Adl2CASL
 #ifndef NOOWLLOGIC
 import OWL2.DMU2OWL2
 import OWL2.OWL22CASL
-import OWL2.CASL2OWL
+import OWL2.CASL2OWL ()
 import OWL2.OWL22CommonLogic
 import OWL2.Propositional2OWL2
 #endif
@@ -146,7 +146,6 @@ comorphismList =
     , Comorphism CASL2Modal
     , Comorphism CASL2ExtModal
     , Comorphism Modal2CASL
-    , Comorphism ExtModal2CASL
     , Comorphism CASL2CoCASL
     , Comorphism CASL2CspCASL
     , Comorphism CspCASL2Modal
@@ -170,7 +169,6 @@ comorphismList =
 #endif
 #ifndef NOOWLLOGIC
     , Comorphism OWL22CASL
-    , Comorphism CASL2OWL
     , Comorphism OWL22CommonLogic
     , Comorphism DMU2OWL2
     , Comorphism Propositional2OWL2
