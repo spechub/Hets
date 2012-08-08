@@ -87,7 +87,10 @@ anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSource mln lg opts topLns libenv initDG fname =
-  let lgraph = setCurLogic (defLogic opts) lg in ResultT $
+  let syn = case defSyntax opts of
+        "" -> Nothing
+        s -> Just $ simpleIdToIRI $ mkSimpleId s
+      lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg in ResultT $
 #ifndef NOHTTP
   if checkUri fname then do
        putIfVerbose opts 2 $ "Downloading file " ++ fname

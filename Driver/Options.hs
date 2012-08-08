@@ -54,6 +54,7 @@ import Common.Id
 import Common.Result
 import Common.ResultT
 import Common.Amalgamate
+import Common.Keywords
 
 import System.Directory
 import System.Console.GetOpt
@@ -73,8 +74,8 @@ bracket :: String -> String
 bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
-verboseS, intypeS, outtypesS, skipS, structS, transS, viewS,
-     guiS, libdirsS, outdirS, amalgS, specS, recursiveS,
+verboseS, intypeS, outtypesS, skipS, justStructuredS, transS,
+     guiS, libdirsS, outdirS, amalgS, recursiveS, namedSpecsS,
      interactiveS, modelSparQS, counterSparQS, connectS, xmlS, listenS,
      applyAutomaticRuleS, normalFormS, unlitS :: String
 
@@ -84,14 +85,13 @@ verboseS = "verbose"
 intypeS = "input-type"
 outtypesS = "output-types"
 skipS = "just-parse"
-structS = "just-structured"
+justStructuredS = "just-structured"
 guiS = "gui"
 libdirsS = "hets-libdirs"
 outdirS = "output-dir"
 amalgS = "casl-amalg"
-specS = "named-specs"
+namedSpecsS = "named-specs"
 transS = "translation"
-viewS = "view"
 recursiveS = "recursive"
 interactiveS = "interactive"
 connectS = "connect"
@@ -150,6 +150,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , recurse :: Bool
   , verbose :: Int
   , defLogic :: String
+  , defSyntax :: String
   , outputToStdout :: Bool    -- ^ send messages to stdout?
   , caslAmalg :: [CASLAmalgOpt]
   , interactive :: Bool
@@ -186,6 +187,7 @@ defaultHetcatsOpts = HcOpt
   , xupdate = ""
   , recurse = False
   , defLogic = "CASL"
+  , defSyntax = ""
   , verbose = 1
   , outputToStdout = True
   , caslAmalg = [Cell]
@@ -208,6 +210,12 @@ instance Show HetcatsOpts where
     ++ show (guiType opts)
     ++ (if interactive opts then showOpt interactiveS else "")
     ++ show (analysis opts)
+    ++ (case defLogic opts of
+          s | s /= defLogic defaultHetcatsOpts -> showEqOpt logicS s
+          _ -> "")
+    ++ (case defSyntax opts of
+          s | s /= defSyntax defaultHetcatsOpts -> showEqOpt serializationS s
+          _ -> "")
     ++ showEqOpt libdirsS (intercalate ":" $ libdirs opts)
     ++ (case modelSparQ opts of
           "" -> ""
@@ -229,7 +237,7 @@ instance Show HetcatsOpts where
     ++ (if recurse opts then showOpt recursiveS else "")
     ++ (if applyAutomatic opts then showOpt applyAutomaticRuleS else "")
     ++ (if computeNormalForm opts then showOpt normalFormS else "")
-    ++ showEqOpt specS (intercalate "," $ map show $ specNames opts)
+    ++ showEqOpt namedSpecsS (intercalate "," $ map show $ specNames opts)
     ++ showEqOpt transS (intercalate ":" $ map show $ transNames opts)
     ++ showEqOpt viewS (intercalate "," $ map show $ viewNames opts)
     ++ showEqOpt amalgS (tail $ init $ show $
@@ -251,6 +259,7 @@ data Flag =
   | Gui GuiType
   | Analysis AnaType
   | DefaultLogic String
+  | DefaultSyntax String
   | InType InType
   | LibDirs String
   | OutDir FilePath
@@ -296,6 +305,7 @@ makeOpts opts flg = case flg of
     Views x -> opts { viewNames = x }
     Verbose x -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
+    DefaultSyntax x -> opts { defSyntax = x }
     CASLAmalg x -> opts { caslAmalg = x }
     Quiet -> opts { verbose = 0 }
     Uncolored -> opts { uncolored = True }
@@ -313,7 +323,7 @@ data AnaType = Basic | Structured | Skip
 instance Show AnaType where
   show a = case a of
     Basic -> ""
-    Structured -> showOpt structS
+    Structured -> showOpt justStructuredS
     Skip -> showOpt skipS
 
 -- | 'GuiType' determines if we want the GUI shown
@@ -503,7 +513,7 @@ graphList = [Dot True, Dot False]
 information -}
 options :: [OptDescr Flag]
 options = let
-    listS = "is a comma-separated list"
+    cslst = "is a comma-separated list"
        ++ crS ++ "of one or more from:"
     crS = "\n  "
     bS = "| "
@@ -526,10 +536,12 @@ options = let
       "run in interactive (console) mode"
     , Option "p" [skipS] (NoArg $ Analysis Skip)
       "skip static analysis, only parse"
-    , Option "s" [structS] (NoArg $ Analysis Structured)
+    , Option "s" [justStructuredS] (NoArg $ Analysis Structured)
       "skip basic, just do structured analysis"
-    , Option "l" ["logic"] (ReqArg DefaultLogic "LOGIC")
+    , Option "l" [logicS] (ReqArg DefaultLogic "LOGIC")
       "choose logic, default is CASL"
+    , Option "y" [serializationS] (ReqArg DefaultSyntax "SER")
+      "choose different logic syntax"
     , Option "L" [libdirsS] (ReqArg LibDirs "DIR")
       ("colon-separated list of directories"
        ++ crS ++ "containing HetCASL libraries")
@@ -563,7 +575,7 @@ options = let
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default nothing," ++ crS ++
-       listS ++ crS ++ concatMap ( \ t -> bS ++ show t ++ crS)
+       cslst ++ crS ++ concatMap ( \ t -> bS ++ show t ++ crS)
              plainOutTypeList
        ++ bS ++ joinBar (map show [SigFile Fully,
                                    TheoryFile Fully])
@@ -580,16 +592,16 @@ options = let
       "apply automatic dev-graph strategy"
     , Option "N" [normalFormS] (NoArg NormalForm)
       "compute normal forms (takes long)"
-    , Option "n" [specS] (ReqArg (Specs . parseSIdOpts) "NSPECS")
-      ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
+    , Option "n" [namedSpecsS] (ReqArg (Specs . parseSIdOpts) "NSPECS")
+      ("process specs option " ++ crS ++ cslst ++ " SIMPLE-ID")
     , Option "w" [viewS] (ReqArg (Views . parseSIdOpts) "NVIEWS")
-      ("process views option " ++ crS ++ listS ++ " SIMPLE-ID")
+      ("process views option " ++ crS ++ cslst ++ " SIMPLE-ID")
     , Option "t" [transS] (ReqArg parseTransOpt "TRANS")
       ("translation option " ++ crS ++
           "is a colon-separated list" ++
           crS ++ "of one or more from: SIMPLE-ID")
     , Option "a" [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
-      ("CASL amalgamability analysis options" ++ crS ++ listS ++
+      ("CASL amalgamability analysis options" ++ crS ++ cslst ++
        crS ++ joinBar (map show caslAmalgOpts)) ]
 
 -- parser functions returning Flags --
