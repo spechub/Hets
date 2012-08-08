@@ -16,6 +16,7 @@ module CASL.Kif2CASL where
 import Common.Id
 import Common.AS_Annotation
 import Common.ToId
+import Common.Lexer
 import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Text.PrettyPrint.HughesPJ as Doc
@@ -27,38 +28,42 @@ import CASL.Fold
 universe :: SORT
 universe = toId "U"
 
+llRange :: RangedLL -> Range
+llRange (RangedLL p _ q) = Range [fromSourcePos p, fromSourcePos q]
+
 -- | translation of formulas
-kif2CASLFormula :: ListOfList -> CASLFORMULA
-kif2CASLFormula x = case x of
-  List (Literal KToken p : phis) -> case (p, phis) of
-    ("and", _) -> Conjunction (map kif2CASLFormula phis) nullRange
-    ("or", _) -> Disjunction (map kif2CASLFormula phis) nullRange
+kif2CASLFormula :: RangedLL -> CASLFORMULA
+kif2CASLFormula rl@(RangedLL _ x _) = let r = llRange rl in case x of
+  List (pr@(RangedLL _ (Literal KToken p) _) : phis) -> case (p, phis) of
+    ("and", _) -> Conjunction (map kif2CASLFormula phis) r
+    ("or", _) -> Disjunction (map kif2CASLFormula phis) r
     ("=>", [phi1, phi2]) ->
-      Implication (kif2CASLFormula phi1) (kif2CASLFormula phi2) True nullRange
+      Implication (kif2CASLFormula phi1) (kif2CASLFormula phi2) True r
     ("<=>", [phi1, phi2]) ->
-      Equivalence (kif2CASLFormula phi1) (kif2CASLFormula phi2) nullRange
-    ("not", [phi]) -> Negation (kif2CASLFormula phi) nullRange
-    ("True", []) -> True_atom nullRange
-    ("False", []) -> False_atom nullRange
-    ("exists", [List vl, phi]) ->
+      Equivalence (kif2CASLFormula phi1) (kif2CASLFormula phi2) r
+    ("not", [phi]) -> Negation (kif2CASLFormula phi) r
+    ("True", []) -> True_atom r
+    ("False", []) -> False_atom r
+    ("exists", [RangedLL _ (List vl) _, phi]) ->
       Quantification Existential (kif2CASLvardeclList vl) (kif2CASLFormula phi)
-      nullRange
-    ("forall", [List vl, phi]) ->
+      r
+    ("forall", [RangedLL _ (List vl) _, phi]) ->
       Quantification Universal (kif2CASLvardeclList vl) (kif2CASLFormula phi)
-      nullRange
+      r
     ("equal", [t1, t2]) ->
-      Strong_equation (kif2CASLTerm t1) (kif2CASLTerm t2) nullRange
-    _ -> Predication (Pred_name (toId p)) (map kif2CASLTerm phis) nullRange
+      Strong_equation (kif2CASLTerm t1) (kif2CASLTerm t2) r
+    _ -> Predication (Pred_name (simpleIdToId $ Token p $ llRange pr))
+      (map kif2CASLTerm phis) r
 -- also translate 2nd order applications to 1st order, using holds predicate
   List l -> Predication (Pred_name (toId "holds"))
-                  (map kif2CASLTerm l) nullRange
+                  (map kif2CASLTerm l) r
 -- a variable in place of a formula; coerce from Booleans
-  Literal QWord v -> Strong_equation (Mixfix_token $ toVar v)
+  Literal QWord v -> Strong_equation (Mixfix_token $ toVar v r)
                   trueTerm
-                  nullRange
-  Literal AtWord v -> Strong_equation (Mixfix_token $ toVar v)
+                  r
+  Literal AtWord v -> Strong_equation (Mixfix_token $ toVar v r)
                   trueTerm
-                  nullRange
+                  r
   _ -> error $ "kif2CASLFormula : cannot translate " ++ show x
 
 trueTerm :: TERM ()
@@ -67,56 +72,57 @@ trueTerm = varOrConst $ toSimpleId "True"
 falseTerm :: TERM ()
 falseTerm = varOrConst $ toSimpleId "False"
 
-toVar :: String -> Token
-toVar v = toSimpleId $ 'v' : tail v
+toVar :: String -> Range -> Token
+toVar v = Token $ 'v' : tail v
 
-kif2CASLTerm :: ListOfList -> TERM ()
-kif2CASLTerm ll = case ll of
-    Literal QWord v -> Mixfix_token $ toVar v
-    Literal AtWord v -> Mixfix_token $ toVar v
-    Literal _ s -> varOrConst $ toSimpleId s
+kif2CASLTerm :: RangedLL -> TERM ()
+kif2CASLTerm rl@(RangedLL _ x _) = let r = llRange rl in case x of
+    Literal QWord v -> Mixfix_token $ toVar v r
+    Literal AtWord v -> Mixfix_token $ toVar v r
+    Literal _ s -> varOrConst $ Token s r
     -- a formula in place of a term; coerce to Booleans
-    List (Literal l f : args) ->
+    List (rf@(RangedLL _ (Literal _ f) _) : args) ->
       if f `elem` ["forall", "exists"] -- ,"and","or","=>","<=>","not"]
        then Conditional trueTerm
-         (kif2CASLFormula (List (Literal l f : args))) falseTerm nullRange
-        else Application (Op_name $ toId f) (map kif2CASLTerm args) nullRange
-    _ -> error $ "kif2CASLTerm : cannot translate " ++ show (ppListOfList ll)
+         (kif2CASLFormula rl) falseTerm r
+        else Application (Op_name $ simpleIdToId $ Token f $ llRange rf)
+                 (map kif2CASLTerm args) r
+    _ -> error $ "kif2CASLTerm : cannot translate " ++ show (ppRangedLL rl)
 
 -- | translation of variable declaration lists
-kif2CASLvardeclList :: [ListOfList] -> [VAR_DECL]
+kif2CASLvardeclList :: [RangedLL] -> [VAR_DECL]
 kif2CASLvardeclList = map kif2CASLvardecl
 
 -- | translation of variable declarations
-kif2CASLvardecl :: ListOfList -> VAR_DECL
-kif2CASLvardecl l = case l of
-    Literal _ v -> Var_decl [toVar v] universe nullRange
+kif2CASLvardecl :: RangedLL -> VAR_DECL
+kif2CASLvardecl rl@(RangedLL _ l _) = let r = llRange rl in case l of
+    Literal _ v -> Var_decl [toVar v r] universe r
     _ -> error $ "kif2CASLvardecl " ++ show (ppListOfList l)
 
 -- | first pass of translation, just collecting the formulas
-kif2CASLpass1 :: [ListOfList] -> [Annoted CASLFORMULA]
+kif2CASLpass1 :: [RangedLL] -> [Annoted CASLFORMULA]
 kif2CASLpass1 [] = []
 kif2CASLpass1 (phi : rest) =
   (emptyAnno phi') { r_annos = annos } : kif2CASLpass1 rest'
   where phi' = kif2CASLFormula phi
         (annos, rest') = skipComments [] rest
 
--- | chech for comment
+-- | check for comment
 isKifComment :: ListOfList -> Bool
-isKifComment (List (Literal KToken "documentation" : _)) = True
+isKifComment (List (RangedLL _ (Literal KToken "documentation") _ : _)) = True
 isKifComment _ = False
 
 -- | convert comment to annotation
 toAnno :: ListOfList -> Annotation
 toAnno (List (_ : l)) =
   Unparsed_anno Comment_start
-    (Group_anno [show $ Doc.vcat $ map ppListOfList l]) nullRange
+    (Group_anno [show $ Doc.vcat $ map ppRangedLL l]) nullRange
 toAnno _ = error "Kif2CASL.toAnno: wrong format of comment"
 
 -- | skip the first comments; they belong to the whole file
-skipComments :: [Annotation] -> [ListOfList] -> ([Annotation], [ListOfList])
+skipComments :: [Annotation] -> [RangedLL] -> ([Annotation], [RangedLL])
 skipComments acc [] = (reverse acc, [])
-skipComments acc l@(x : rest) =
+skipComments acc l@(RangedLL _ x _ : rest) =
   if isKifComment x
    then skipComments (toAnno x : acc) rest
    else (reverse acc, l)
@@ -174,7 +180,7 @@ nonEmpty bi = case item bi of
   _ -> True
 
 -- | main translation function
-kif2CASL :: [ListOfList] -> BASIC_SPEC () () ()
+kif2CASL :: [RangedLL] -> BASIC_SPEC () () ()
 kif2CASL l = Basic_spec $ filter nonEmpty
                            [(emptyAnno sorts) { l_annos = ans },
                             emptyAnno ops, emptyAnno preds,

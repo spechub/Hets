@@ -20,8 +20,10 @@ import Data.Char
 
 data StringKind = Quoted | KToken | QWord | AtWord deriving Show
 
-data ListOfList = Literal StringKind String | List [ListOfList]
+data ListOfList = Literal StringKind String | List [RangedLL]
      deriving Show
+
+data RangedLL = RangedLL SourcePos ListOfList SourcePos deriving Show
 
 -- | skip white spaces and comments for the lexer
 
@@ -54,29 +56,40 @@ skip = many $ forget (satisfy isSpace) <|> commentOut
 lexem :: CharParser st a -> CharParser st a
 lexem = (<< skip)
 
+rangedLL :: CharParser st RangedLL
+rangedLL = do
+  p <- getPosition
+  l <- nestedList
+  q <- getPosition
+  skip
+  return $ RangedLL p l q
+
 nestedList :: CharParser st ListOfList
 nestedList = do
     lexem $ char '('
-    l <- many nestedList
-    lexem $ char ')'
+    l <- many rangedLL
+    char ')'
     return $ List l
- <|> fmap (Literal Quoted) (lexem scanString)
- <|> lexem scanLiteral
+ <|> fmap (Literal Quoted) scanString
+ <|> scanLiteral
 
-kifProg :: CharParser st [ListOfList]
+kifProg :: CharParser st [RangedLL]
 kifProg = kifBasic << eof
 
-kifBasic :: CharParser st [ListOfList]
-kifBasic = skip >> many1 nestedList
+kifBasic :: CharParser st [RangedLL]
+kifBasic = skip >> many1 rangedLL
+
+ppRangedLL :: RangedLL -> Doc.Doc
+ppRangedLL (RangedLL _ l _) = ppListOfList l
 
 ppListOfList :: ListOfList -> Doc.Doc
 ppListOfList e = case e of
     Literal _ s -> Doc.text s
-    List l -> Doc.parens $ Doc.fsep $ map ppListOfList l
+    List l -> Doc.parens $ Doc.fsep $ map ppRangedLL l
 
 kifParse :: String -> IO ()
 kifParse s = do
   e <- parseFromFile kifProg s
   case e of
     Left err -> print err
-    Right l -> print $ Doc.vcat $ map ppListOfList l
+    Right l -> print $ Doc.vcat $ map ppRangedLL l
