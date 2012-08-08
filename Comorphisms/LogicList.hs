@@ -140,10 +140,14 @@ preLogicGraph =
   emptyLogicGraph { logics = Map.fromList $ map addLogicName logicList}
 
 
--- quick fix for support of LOGIC-REF in DOL
--- only used in Comorphisms.LogicGraph.logicGraph
+{- quick fix for support of LOGIC-REF in DOL
+only used in Comorphisms.LogicGraph.logicGraph -}
 dolLogicNames :: [(String, AnyLogic)]
 dolLogicNames =
-  [ ("http://purl.net/dol/logic/CommonLogic", Logic CommonLogic)
-  , ("http://purl.net/dol/logic/OWL", Logic OWL2)
-  ]
+  []
+#ifdef CASLEXTENSIONS
+  ++ [("http://purl.net/dol/logic/CommonLogic", Logic CommonLogic)]
+#endif
+#ifndef NOOWLLOGIC
+  ++ [("http://purl.net/dol/logic/OWL", Logic OWL2)]
+#endif
