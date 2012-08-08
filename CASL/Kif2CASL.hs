@@ -13,20 +13,27 @@ Parser for SUMO (suggested upper merged ontology) .kif files
 
 module CASL.Kif2CASL where
 
-import Common.Id
 import Common.AS_Annotation
-import Common.ToId
+import Common.Id
 import Common.Lexer
+import Common.Parsec
+import Common.ProofUtils
+import Common.Token
+
 import qualified Data.List as List
 import qualified Data.Set as Set
+import qualified Data.Map as Map
+
 import qualified Text.PrettyPrint.HughesPJ as Doc
+import Text.ParserCombinators.Parsec
+
 import CASL.Kif
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
 -- | the universal sort
 universe :: SORT
-universe = toId "U"
+universe = toId "U" nullRange
 
 llRange :: RangedLL -> Range
 llRange (RangedLL p _ q) = Range [fromSourcePos p, fromSourcePos q]
@@ -52,10 +59,10 @@ kif2CASLFormula rl@(RangedLL _ x _) = let r = llRange rl in case x of
       r
     ("equal", [t1, t2]) ->
       Strong_equation (kif2CASLTerm t1) (kif2CASLTerm t2) r
-    _ -> Predication (Pred_name (simpleIdToId $ Token p $ llRange pr))
+    _ -> Predication (Pred_name (toId p $ llRange pr))
       (map kif2CASLTerm phis) r
 -- also translate 2nd order applications to 1st order, using holds predicate
-  List l -> Predication (Pred_name (toId "holds"))
+  List l -> Predication (Pred_name (toId "holds" r))
                   (map kif2CASLTerm l) r
 -- a variable in place of a formula; coerce from Booleans
   Literal QWord v -> Strong_equation (Mixfix_token $ toVar v r)
@@ -67,25 +74,37 @@ kif2CASLFormula rl@(RangedLL _ x _) = let r = llRange rl in case x of
   _ -> error $ "kif2CASLFormula : cannot translate " ++ show x
 
 trueTerm :: TERM ()
-trueTerm = varOrConst $ toSimpleId "True"
+trueTerm = varOrConst $ mkSimpleId "True"
 
 falseTerm :: TERM ()
-falseTerm = varOrConst $ toSimpleId "False"
+falseTerm = varOrConst $ mkSimpleId "False"
 
 toVar :: String -> Range -> Token
-toVar v = Token $ 'v' : tail v
+toVar v = toSId $ 'v' : tail v
+
+toId :: String -> Range -> Id
+toId s = simpleIdToId . toSId s
+
+-- | convert a string to a legal CASL identifier
+toSId :: String -> Range -> Token
+toSId s = Token $ case parse (reserved (casl_reserved_words
+                                        ++ formula_words) scanAnyWords >> eof)
+             "Kif2CASL.toId" s of
+    Left _ -> 'a' : concatMap ( \ c -> '_' : Map.findWithDefault [c] c
+                              (Map.insert '_' "U" charMap)) s
+    Right _ -> s
 
 kif2CASLTerm :: RangedLL -> TERM ()
 kif2CASLTerm rl@(RangedLL _ x _) = let r = llRange rl in case x of
     Literal QWord v -> Mixfix_token $ toVar v r
     Literal AtWord v -> Mixfix_token $ toVar v r
-    Literal _ s -> varOrConst $ Token s r
+    Literal _ s -> varOrConst $ toSId s r
     -- a formula in place of a term; coerce to Booleans
     List (rf@(RangedLL _ (Literal _ f) _) : args) ->
       if f `elem` ["forall", "exists"] -- ,"and","or","=>","<=>","not"]
        then Conditional trueTerm
          (kif2CASLFormula rl) falseTerm r
-        else Application (Op_name $ simpleIdToId $ Token f $ llRange rf)
+        else Application (Op_name $ toId f $ llRange rf)
                  (map kif2CASLTerm args) r
     _ -> error $ "kif2CASLTerm : cannot translate " ++ show (ppRangedLL rl)
 

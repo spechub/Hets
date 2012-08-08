@@ -81,8 +81,6 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.Token"                parsing identifiers
 
- * "Common.ToId"                 identifier translation (i.e. for Kif)
-
  * "Common.Utils"                some functions for lists
 
  * "Common.Lib.Pretty"           adapted printer for latex
