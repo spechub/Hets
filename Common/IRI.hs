@@ -131,15 +131,17 @@ module Common.IRI
 import Text.ParserCombinators.Parsec
 
 import Control.Monad (MonadPlus (..))
-import Data.Char
-import Numeric (showHex)
 
+import Data.Char
 import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
+import Data.Maybe
 
 import Common.Id
 import Common.Lexer
 import Common.Parsec
+
+import Numeric (showHex)
 
 -- * The IRI datatype
 
@@ -363,25 +365,18 @@ isIPv4address :: String -> Bool
 isIPv4address = isValidParse ipv4address
 
 -- Helper function for turning a string into a IRI
-parseIRIAny :: IRIParserDirect IRI -> String -> Maybe IRI
-parseIRIAny parser iristr = case parseAll parser "" iristr of
+parseIRIAny :: IRIParser () a -> String -> Maybe a
+parseIRIAny parser iristr = case parse (parser << eof) "" iristr of
         Left _ -> Nothing
         Right u -> Just u
 
 -- Helper function to test a string match to a parser
-isValidParse :: IRIParserDirect a -> String -> Bool
-isValidParse parser iristr = case parseAll (parser << eof) "" iristr of
-        Left _ -> False
-        Right _ -> True
-
-parseAll :: IRIParserDirect a -> String -> String -> Either ParseError a
-parseAll parser = parse (parser << eof)
+isValidParse :: IRIParser () a -> String -> Bool
+isValidParse parser = isJust . parseIRIAny parser
 
 -- * IRI parser body based on Parsec elements and combinators
 
 -- Parser parser type. Currently:
-type IRIParserDirect a = GenParser Char () a
-
 type IRIParser st a = GenParser Char st a
 
 -- RFC3986, section 2.1
