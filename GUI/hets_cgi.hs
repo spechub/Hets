@@ -256,15 +256,16 @@ anaInput contents selectedBoxes outputfiles = do
                     setFileMode txtFile fMode
              when (outputTree conf) $ do
                     let txtFile = outputfile ++ ".pp.xml"
-                    writeFile txtFile $ ppTopElement $ xmlLibDefn gannos libDefn
+                    writeFile txtFile . ppTopElement
+                      $ xmlLibDefn logicGraph gannos libDefn
                     setFileMode txtFile fMode
              return (CRes.Result ds $ Just $ selectOut conf libDefn gannos)
       selectOut :: SelectedBoxes -> LIB_DEFN -> GlobalAnnos -> Output
       selectOut conf ld ga = defaultOutput
         { asciiTxt = if outputTxt conf
             then show $ renderText ga $ prettyLG logicGraph ld else ""
-        , parseTree = if outputTree conf then ppElement $ xmlLibDefn ga ld
-            else "" }
+        , parseTree = if outputTree conf
+            then ppElement $ xmlLibDefn logicGraph ga ld else "" }
       -- log file
       saveLog :: Bool -> IO ()
       saveLog willSave = when willSave $ do

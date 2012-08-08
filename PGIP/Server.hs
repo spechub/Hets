@@ -322,7 +322,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
               -- otherwise run prover for single node only
               Just ndIri -> parseNodeQuery ndIri sId $ return
                 $ ProveNode incl prover translation timeout []) >>= getResponse
-          -- OTHER CMD ¦ look for (optional) specification of node OR edge
+          -- OTHER CMD | look for (optional) specification of node OR edge
           _ -> (case (lookup2 "node", lookup2 "edge") of
             -- fail if both are specified
             (Just _, Just _) -> fail "please specify only either node or edge"
@@ -418,7 +418,7 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
           latex = renderLatex Nothing $ toLatex ga d
       in case mt of
       Just pty -> case pty of
-        PrettyXml -> return $ ppTopElement $ xmlLibDefn ga ld
+        PrettyXml -> return $ ppTopElement $ xmlLibDefn logicGraph ga ld
         PrettyAscii -> return $ renderText ga d ++ "\n"
         PrettyHtml -> return $ htmlHead ++ renderHtml ga d
         PrettyLatex -> return latex

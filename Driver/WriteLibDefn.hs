@@ -74,7 +74,7 @@ writeLibDefn :: LogicGraph -> GlobalAnnos -> FilePath -> HetcatsOpts
   -> LIB_DEFN -> IO ()
 writeLibDefn lg ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
-        printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld)
+        printXml fn = writeFile fn $ ppTopElement (xmlLibDefn lg ga ld)
         printAscii fn = writeEncFile (ioEncoding opts) fn
           $ renderText ga (prettyLG lg ld) ++ "\n"
         printHtml fn = writeEncFile (ioEncoding opts) fn
