@@ -510,18 +510,18 @@ pnCharsBaseP :: Char -> Bool
 pnCharsBaseP c =
   let n = ord c in
   isAlphaChar c ||
-  (0x00C0 >= n && n <= 0x00D6) ||
-  (0x00D8 >= n && n <= 0x00F6) ||
-  (0x00F8 >= n && n <= 0x02FF) ||
-  (0x0370 >= n && n <= 0x037D) ||
-  (0x037F >= n && n <= 0x1FFF) ||
-  (0x200C >= n && n <= 0x200D) ||
-  (0x2070 >= n && n <= 0x218F) ||
-  (0x2C00 >= n && n <= 0x2FEF) ||
-  (0x3001 >= n && n <= 0xD7FF) ||
-  (0xF900 >= n && n <= 0xFDCF) ||
-  (0xFDF0 >= n && n <= 0xFFFD) ||
-  (0x10000 >= n && n <= 0xEFFFF)
+  (0x00C0 <= n && n <= 0x00D6) ||
+  (0x00D8 <= n && n <= 0x00F6) ||
+  (0x00F8 <= n && n <= 0x02FF) ||
+  (0x0370 <= n && n <= 0x037D) ||
+  (0x037F <= n && n <= 0x1FFF) ||
+  (0x200C <= n && n <= 0x200D) ||
+  (0x2070 <= n && n <= 0x218F) ||
+  (0x2C00 <= n && n <= 0x2FEF) ||
+  (0x3001 <= n && n <= 0xD7FF) ||
+  (0xF900 <= n && n <= 0xFDCF) ||
+  (0xFDF0 <= n && n <= 0xFFFD) ||
+  (0x10000 <= n && n <= 0xEFFFF)
 
 pnCharsBase :: GenParser Char st Char
 pnCharsBase = satisfy pnCharsBaseP
@@ -540,8 +540,8 @@ pnCharsPAux c =
   let n = ord c in
   isDigit c ||
   (n == 0x00B7) ||
-  (0x0300 >= n && n <= 0x036F) ||
-  (0x203F >= n && n <= 0x2040)
+  (0x0300 <= n && n <= 0x036F) ||
+  (0x203F <= n && n <= 0x2040)
 
 pnCharsP :: Char -> Bool
 pnCharsP c = pnCharsUP c || c == '-' || pnCharsPAux c
@@ -918,27 +918,27 @@ isSchemeChar c = isAlphaNumChar c || c `elem` "+-."
 isUcsChar :: Char -> Bool
 isUcsChar c =
   let n = ord c
-  in (0xA0 >= n && n <= 0xD7FF) ||
-     (0x20000 >= n && n <= 0x2FFFD) ||
-     (0x30000 >= n && n <= 0x3FFFD) ||
-     (0x40000 >= n && n <= 0x4FFFD) ||
-     (0x50000 >= n && n <= 0x5FFFD) ||
-     (0x60000 >= n && n <= 0x6FFFD) ||
-     (0x70000 >= n && n <= 0x7FFFD) ||
-     (0x80000 >= n && n <= 0x8FFFD) ||
-     (0x90000 >= n && n <= 0x9FFFD) ||
-     (0xA0000 >= n && n <= 0xAFFFD) ||
-     (0xB0000 >= n && n <= 0xBFFFD) ||
-     (0xC0000 >= n && n <= 0xCFFFD) ||
-     (0xD0000 >= n && n <= 0xDFFFD) ||
-     (0xE0000 >= n && n <= 0xEFFFD)
+  in (0xA0 <= n && n <= 0xD7FF) ||
+     (0x20000 <= n && n <= 0x2FFFD) ||
+     (0x30000 <= n && n <= 0x3FFFD) ||
+     (0x40000 <= n && n <= 0x4FFFD) ||
+     (0x50000 <= n && n <= 0x5FFFD) ||
+     (0x60000 <= n && n <= 0x6FFFD) ||
+     (0x70000 <= n && n <= 0x7FFFD) ||
+     (0x80000 <= n && n <= 0x8FFFD) ||
+     (0x90000 <= n && n <= 0x9FFFD) ||
+     (0xA0000 <= n && n <= 0xAFFFD) ||
+     (0xB0000 <= n && n <= 0xBFFFD) ||
+     (0xC0000 <= n && n <= 0xCFFFD) ||
+     (0xD0000 <= n && n <= 0xDFFFD) ||
+     (0xE0000 <= n && n <= 0xEFFFD)
 
 isIprivate :: Char -> Bool
 isIprivate c =
   let n = ord c
-  in (0xE000 >= n && n <= 0xF8FF) ||
-     (0xF000 >= n && n <= 0xFFFD) ||
-     (0x100000 >= n && n <= 0x10FFFD)
+  in (0xE000 <= n && n <= 0xF8FF) ||
+     (0xF000 <= n && n <= 0xFFFD) ||
+     (0x100000 <= n && n <= 0x10FFFD)
 
 iprivate :: IRIParser st Char
 iprivate = satisfy isIprivate
