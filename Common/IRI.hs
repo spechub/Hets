@@ -56,7 +56,7 @@ module Common.IRI
     -- * The IRI type
       IRI (..)
     , IRIAuth (..)
-    , PNameLn(..)
+    , PNameLn (..)
     , nullIRI
     , hasFullIRI
     , isAbbrev
@@ -129,16 +129,10 @@ module Common.IRI
     ) where
 
 import Text.ParserCombinators.Parsec
-    ( GenParser, ParseError
-    , parse, (<|>), (<?>), try
-    , option, many, many1
-    , char, satisfy, oneOf, string, digit, eof
-    , unexpected
-    )
 
 import Control.Monad (MonadPlus (..))
-import Data.Char (ord, chr, isHexDigit, toLower, toUpper, digitToInt)
-import Numeric (showIntAtBase)
+import Data.Char
+import Numeric (showHex)
 
 import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
@@ -247,7 +241,8 @@ instance Ord IRI where
 iriToStringUnsecure :: IRI -> String
 iriToStringUnsecure i = iriToString id i ""
 
--- |converts IRI to String of abbreviated form. if available. Also showing Auth info
+{- |converts IRI to String of abbreviated form. if available.
+Also showing Auth info. -}
 iriToStringShortUnsecure :: IRI -> String
 iriToStringShortUnsecure i = iriToStringShort id i ""
 
@@ -305,7 +300,8 @@ or a CURIE). -}
 parseIRICurie :: String -> Maybe IRI
 parseIRICurie = parseIRIAny iriCurie
 
-{- | Parse an absolute or relative IRI enclosed in '<', '>' or a CURIE to an 'IRI' value.
+{- | Parse an absolute or relative IRI enclosed in '<', '>' or a CURIE
+to an 'IRI' value.
 Returns 'Nothing' if the string is not a valid IRI reference or CURIE. -}
 parseIRIReferenceCurie :: String -> Maybe IRI
 parseIRIReferenceCurie = parseIRIAny iriReferenceCurie
@@ -343,7 +339,8 @@ or a CURIE). -}
 isIRICurie :: String -> Bool
 isIRICurie = isValidParse iriCurie
 
-{- | Test if string contains a valid absolute or relative IRI enclosed in '<', '>' or a CURIE -}
+{- | Test if string contains a valid absolute or relative IRI
+enclosed in '<', '>' or a CURIE -}
 isIRIReferenceCurie :: String -> Bool
 isIRIReferenceCurie = isValidParse iriReferenceCurie
 
@@ -391,7 +388,7 @@ type IRIParser st a = GenParser Char st a
 
 -- | Parse and return a 'pct-encoded' sequence
 escaped :: IRIParser st String
-escaped = char '%' <:> hexDigitChar <:> single hexDigitChar
+escaped = char '%' <:> hexDigit <:> single hexDigit
 
 -- RFC3986, section 2.2
 
@@ -478,8 +475,8 @@ reference = iriWithPos $ do
           , iriPos = nullRange
           }
 
--- | Prefix part of CURIE in @prefix_part:reference@
--- http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName
+{- | Prefix part of CURIE in @prefix_part:reference@
+  <http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName> -}
 ncname :: GenParser Char st String
 ncname = nameStartChar <:> many nameChar
 
@@ -493,27 +490,14 @@ nameChar = satisfy nameCharP
 Thus we disallow ':' -}
 nameStartCharP :: Char -> Bool
 nameStartCharP c =
-  let n = ord c in
   (c == '_') ||       -- W3C: (c `elem` ":_") ||
-  isAlphaChar c ||
-  (0x00C0 <= n && n <= 0x00D6) ||
-  (0x00D8 <= n && n <= 0x00F6) ||
-  (0x00F8 <= n && n <= 0x02FF) ||
-  (0x0370 <= n && n <= 0x037D) ||
-  (0x037F <= n && n <= 0x1FFF) ||
-  (0x200C <= n && n <= 0x200D) ||
-  (0x2070 <= n && n <= 0x218F) ||
-  (0x2C00 <= n && n <= 0x2FEF) ||
-  (0x3001 <= n && n <= 0xD7FF) ||
-  (0xF900 <= n && n <= 0xFDCF) ||
-  (0xFDF0 <= n && n <= 0xFFFD) ||
-  (0x10000 <= n && n <= 0xEFFFF)
+  pnCharsBaseP c
 
 nameCharP :: Char -> Bool
 nameCharP c =
   let n = ord c in
   nameStartCharP c ||
-  isDigitChar c ||
+  isDigit c ||
   c `elem` "-." ||
   n == 0xB7 ||
   (0x0300 <= n && n <= 0x036F) ||
@@ -541,7 +525,6 @@ pnCharsBaseP c =
   (0x200C <= n && n <= 0x200D) ||
   (0x2070 <= n && n <= 0x218F) ||
   (0x2C00 <= n && n <= 0x2FEF) ||
-  (0x00D8 <= n && n <= 0x00F6) ||
   (0x3001 <= n && n <= 0xD7FF) ||
   (0xF900 <= n && n <= 0xFDCF) ||
   (0xFDF0 <= n && n <= 0xFFFD) ||
@@ -564,7 +547,7 @@ pnCharsP c =
   let n = ord c in
   c == '-' ||
   pnCharsUP c ||
-  isDigitChar c ||
+  isDigit c ||
   (n == 0x00B7) ||
   (0x0300 <= n && n <= 0x036F) ||
   (0x203F <= n && n <= 0x2040)
@@ -706,7 +689,7 @@ ihierPartNoAuth = ipathAbs <|> ipathRootLess <|> return ""
 -- RFC3986, section 3.1
 
 uscheme :: IRIParser st String
-uscheme = oneThenMany alphaChar (satisfy isSchemeChar) <++> string ":"
+uscheme = satisfy isAlphaChar <:> many (satisfy isSchemeChar) <++> string ":"
 
 -- RFC3987, section 2.2
 
@@ -736,7 +719,7 @@ ipLiteral = char '[' <:> (ipv6address <|> ipvFuture) <++> string "]"
     <?> "IP address literal"
 
 ipvFuture :: IRIParser st String
-ipvFuture = char 'v' <:> hexDigitChar <:> char '.'
+ipvFuture = char 'v' <:> hexDigit <:> char '.'
     <:> many1 (satisfy isIpvFutureChar)
 
 isIpvFutureChar :: Char -> Bool
@@ -764,7 +747,7 @@ h4c :: IRIParser st String
 h4c = try $ h4 <++> string ":"
 
 h4 :: IRIParser st String
-h4 = countMinMax 1 4 hexDigitChar
+h4 = countMinMax 1 4 hexDigit
 
 ipv4address :: IRIParser st String
 ipv4address = try (decOctet <++> string "."
@@ -774,7 +757,7 @@ ipv4address = try (decOctet <++> string "."
 
 decOctet :: IRIParser st String
 decOctet = do
-  a1 <- countMinMax 1 3 digitChar
+  a1 <- countMinMax 1 3 octDigit
   if (read a1 :: Int) > 255 then
             fail "Decimal octet value too large"
           else
@@ -788,7 +771,7 @@ iregName =
 -- RFC3986, section 3.2.3
 
 port :: IRIParser st String
-port = char ':' <:> many digitChar
+port = char ':' <:> many digit
 
 -- RFC3987, section 2.2
 
@@ -930,13 +913,13 @@ absoluteIRI = iriWithPos $ do
     ]]] -}
 
 isAlphaChar :: Char -> Bool
-isAlphaChar c = c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z'
-
-isDigitChar :: Char -> Bool
-isDigitChar c = c >= '0' && c <= '9'
+isAlphaChar c = isAlpha c && isAscii c
 
 isAlphaNumChar :: Char -> Bool
-isAlphaNumChar c = isAlphaChar c || isDigitChar c
+isAlphaNumChar c = isAlphaNum c && isAscii c
+
+isSchemeChar :: Char -> Bool
+isSchemeChar c = isAlphaNumChar c || c `elem` "+-."
 
 isUcsChar :: Char -> Bool
 isUcsChar c =
@@ -963,28 +946,10 @@ isIprivate c =
      (0xF000 <= n && n <= 0xFFFD) ||
      (0x100000 <= n && n <= 0x10FFFD)
 
-isHexDigitChar :: Char -> Bool
-isHexDigitChar = isHexDigit
-
-isSchemeChar :: Char -> Bool
-isSchemeChar c = isAlphaNumChar c || c `elem` "+-."
-
-alphaChar :: IRIParser st Char
-alphaChar = satisfy isAlphaChar         -- or: Parsec.letter ?
-
-digitChar :: IRIParser st Char
-digitChar = satisfy isDigitChar         -- or: Parsec.digit ?
-
-hexDigitChar :: IRIParser st Char
-hexDigitChar = satisfy isHexDigitChar   -- or: Parsec.hexDigit ?
-
 iprivate :: IRIParser st Char
 iprivate = satisfy isIprivate
 
 -- Additional parser combinators for common patterns
-
-oneThenMany :: GenParser t s a -> GenParser t s a -> GenParser t s [a]
-oneThenMany p1 pr = p1 <:> many pr
 
 countMinMax :: Int -> Int -> GenParser t s a -> GenParser t s [a]
 countMinMax m n p | m > 0 = p <:> countMinMax (m - 1) (n - 1) p
@@ -1040,9 +1005,6 @@ iriToStringAbbrevMerge (IRI { abbrevPath = aPath
                             }) =
   (aPath ++) . (aQuery ++) . (aFragment ++)
 
-
-
-
 iriAuthToString :: (String -> String) -> Maybe IRIAuth -> ShowS
 iriAuthToString _ Nothing = id          -- shows ""
 iriAuthToString iuserinfomap
@@ -1071,16 +1033,13 @@ otherwise return character as singleton string. -}
 escapeIRIChar :: (Char -> Bool) -> Char -> String
 escapeIRIChar p c
     | p c = [c]
-    | otherwise = '%' : myShowHex (ord c) ""
+    | otherwise = '%' : myShowHex (ord c)
     where
-        myShowHex :: Int -> ShowS
-        myShowHex n r = case showIntAtBase 16 toChrHex n r of
+        myShowHex :: Int -> String
+        myShowHex n = case showHex n "" of
             [] -> "00"
             [d] -> ['0', d]
             cs -> cs
-        toChrHex d
-            | d < 10 = chr (ord '0' + fromIntegral d)
-            | otherwise = chr (ord 'A' + fromIntegral (d - 10))
 
 -- | Can be used to make a string valid for use in a IRI.
 escapeIRIString
@@ -1311,8 +1270,9 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 
 -- * Other normalization functions
 
--- |Expands a CURIE to an IRI
--- @Nothing@ iff there is no IRI @i@ assigned to the prefix of @c@ or the concatenation of @i@ and @abbrevPath c@ is not a valid IRI
+{- |Expands a CURIE to an IRI. @Nothing@ iff there is no IRI @i@ assigned
+to the prefix of @c@ or the concatenation of @i@ and @abbrevPath c@
+is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie prefixMap c =
   if hasFullIRI c then Just c else
@@ -1324,7 +1284,8 @@ expandCurie prefixMap c =
                                    , abbrevPath = abbrevPath c
                                    , iriPos = iriPos c }
 
-{- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending their string representations -}
+{- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending their string
+representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
   parseIRIReference $ iriToStringFull id i "" ++ iriToStringAbbrevMerge c ""
