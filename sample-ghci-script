@@ -1,5 +1,6 @@
 :l Scratch.hs
 :m +Common.Id
+:m +Common.IRI
 :m +Logic.Grothendieck
 :m +Logic.Coerce
 :m +CASL.Logic_CASL
@@ -10,7 +11,8 @@
 -- show all types
 Just (ln,libenv)<-process "../Hets-lib/Basic/Numbers.casl" -- load CASL library
 let Just libNumbers = Map.lookup ln libenv -- get library Numbers
-let Just entryNat = Map.lookup (mkSimpleId "Nat") (globalEnv libNumbers) -- get entry for "Nat" in global environment
+let Just natIRI = parseIRIReference "Basic/Numbers#Nat"
+let Just entryNat = Map.lookup natIRI (globalEnv libNumbers) -- get entry for "Nat" in global environment
 let SpecEntry gensigNat = entryNat -- Nat is a specification...
 let ExtGenSig _ nodeSigNat = gensigNat -- extract the nodeSig for the body
 let gSignNat = getSig nodeSigNat -- get the Grothendieck signature
