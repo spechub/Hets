@@ -746,7 +746,7 @@ ipv4address = try (decOctet <++> string "."
 
 decOctet :: IRIParser st String
 decOctet = do
-  a1 <- countMinMax 1 3 octDigit
+  a1 <- countMinMax 1 3 digit
   if (read a1 :: Int) > 255 then
             fail "Decimal octet value too large"
           else
