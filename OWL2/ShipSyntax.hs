@@ -180,12 +180,14 @@ notOrInv :: CharParser st NotOrInverse
 notOrInv = (char '~' >> return NotR)
   <|> (key "inv" >> return InvR)
 
+nomPair :: (String -> String -> a) -> CharParser st a
+nomPair f = parent $ liftM2 f nominal $ skipChar ',' >> nominal
+
 primRole :: CharParser st Role
 primRole = do
     o <- notOrInv << skip
     fmap (UnOp o) primRole
-  <|>
-    braced (parent $ liftM2 NominalR nominal $ skipChar ',' >> nominal)
+  <|> braced (nomPair NominalR)
   <|> parent role
   <|> fmap RName nominal
 
@@ -240,7 +242,47 @@ showCharacter c = case c of
     Antisymmetric -> "Dis"
     Transitive -> "Trans"
 
+character :: CharParser st Character
+character = choice $ map (\ a -> key (showCharacter a) >> return a)
+  [minBound .. maxBound]
+
+eqOrLess :: CharParser st EqOrLess
+eqOrLess = (skipChar '=' >> return Eq) <|> (skipChar '<' >> return Less)
+
+box :: CharParser st Box
+box = do
+    f <- nomPair NominalRDecl
+    skipChar ':'
+    fmap f role
+  <|> do
+    c <- character
+    fmap (RoleKind c) $ parent role
+  <|> do
+    n <- nominal
+    do
+        el <- eqOrLess
+        c <- concept
+        return $ ConceptDecl n $ Just (el, c)
+      <|> do
+        skipChar ':'
+        c1 <- concept
+        do
+            skipChar '*'
+            c2 <- concept
+            let t1 = RoleType (RName n) c1 c2
+            m <- optionMaybe $ do
+              el <- eqOrLess
+              r <- role
+              skipChar ':'
+              c3 <- concept
+              skipChar '*'
+              c4 <- concept
+              return (el, RoleType r c3 c4)
+            return $ RoleDecl t1 m
+          <|> return (NominalCDecl n c1)
+      <|> return (ConceptDecl n Nothing)
+
 ppp :: (a -> Doc) -> CharParser () a -> String -> String
-ppp pr pa s = case parse (pa << eof) "" s of
+ppp pr pa s = case parse (skip >> pa << eof) "" s of
   Right a -> show $ pr a
   Left e -> show e
