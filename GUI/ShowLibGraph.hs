@@ -31,7 +31,7 @@ import GUI.Utils
 
 import GUI.GraphTypes
 import GUI.GraphLogic (translateGraph, showDGraph)
-import GUI.ShowLogicGraph (showLogicGraph)
+import GUI.ShowLogicGraph
 import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
 
@@ -73,7 +73,7 @@ showLibGraph gi = do
           , Button "Experimental reload changed Library"
                        $ changeLibGraph gi graph nodesEdges
           , Button "Translate Library" $ translate gi
-          , Button "Show Logic Graph" $ showLogicGraph daVinciSort
+          , Button "Show Logic Graph" showLG
           ])
       graphParms = globalMenu $$
                    GraphTitle "Library Graph" $$

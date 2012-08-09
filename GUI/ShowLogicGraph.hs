@@ -79,30 +79,32 @@ isInclComorphism (Comorphism cid) =
     isProperSublogic (G_sublogics (sourceLogic cid) (sourceSublogic cid))
                       (G_sublogics (targetLogic cid) (targetSublogic cid))
 
-showLogicGraph ::
-   GraphAllConfig graph graphParms node nodeType nodeTypeParms
-      arc arcType arcTypeParms
-   => Graph graph graphParms node nodeType nodeTypeParms
-         arc arcType arcTypeParms
-   -> IO ()
-showLogicGraph displaySrt = do
+showLogicGraph :: Bool -> IO ()
+showLogicGraph plain = do
            -- disp s tD = debug (s ++ (show tD))
-       logicG <- newGraph displaySrt (GlobalMenu (UDG.Menu Nothing [
-                Button "Show detailed logic graph" showHSG ]) $$
-                                      graphParms displaySrt "Logic Graph"
-                                     )
-       let logicNodeMenu = LocalMenu (UDG.Menu (Just "Info")
-               [Button "Tools" (\ lg -> createTextDisplay
+       logicG <- newGraph daVinciSort
+                $ (if plain then (GlobalMenu (UDG.Menu Nothing [
+                Button "Show detailed logic graph" showHSG ]) $$)
+                else id)
+                $ graphParms daVinciSort $ if plain then "Logic Graph" else
+                  "Heterogeneous Sublogic Graph"
+       let logicNodeMenu = LocalMenu $ UDG.Menu (Just "Info")
+                $ [Button "Tools" $ \ slg -> let lg = toAnyLogic slg in
+                      createTextDisplay
                       ("Parsers, Provers and Cons_Checker of "
-                       ++ show lg) (showTools lg) [size (80, 25)]),
-                Button "Sublogic" (\ lg -> createTextDisplay ("Sublogics of "
-                       ++ show lg) (showSublogic lg) [size (80, 25)]),
-                Button "Sublogic Graph" showSubLogicGraph,
-                Button "Description" (\ lg -> createTextDisplay
+                       ++ show lg) (showTools lg) [size (80, 25)]]
+                ++ (if plain then
+                [Button "Sublogic" $ \ slg -> let lg = toAnyLogic slg in
+                       createTextDisplay ("Sublogics of "
+                       ++ show lg) (showSublogic lg) [size (80, 25)]]
+                else [])
+                ++ [Button "Sublogic Graph" $ showSubLogicGraph . toAnyLogic,
+                Button "Description" $ \ slg -> let lg = toAnyLogic slg in
+                      createTextDisplay
                       ("Description of " ++ show lg) (showDescription lg)
-                                      [size (83, 25)])
-               ])
-           makeLogicNodeMenu = makeNodeMenu displaySrt (return . show)
+                                      [size (83, 25)]]
+           makeLogicNodeMenu = makeNodeMenu daVinciSort
+             (return . if plain then show . toAnyLogic else show)
                             logicNodeMenu
        stableNodeType <- newNodeType logicG $ makeLogicNodeMenu stableColor
        testingNodeType <- newNodeType logicG $ makeLogicNodeMenu testingColor
@@ -112,7 +114,7 @@ showLogicGraph displaySrt = do
        proverNodeType <-
            newNodeType logicG $ makeLogicNodeMenu proverColor
        let newNode' logic =
-             case logic of
+             case toAnyLogic logic of
                Logic lid -> if null $ provers lid then let
                    nodeType = case stability lid of
                      Stable -> stableNodeType
@@ -121,15 +123,18 @@ showLogicGraph displaySrt = do
                      Experimental -> experimentalNodeType
                    in newNode logicG nodeType logic
                  else newNode logicG proverNodeType logic
+           myMap = if plain then Map.map (\ (Logic l) ->
+                        G_sublogics l $ top_sublogic l) $ logics logicGraph
+                   else sublogicNodes hetSublogicGraph
 
        -- production of the nodes (in a list)
-       nodeList <- mapM newNode' (Map.elems (logics logicGraph))
+       nodeList <- mapM newNode' $ Map.elems myMap
        -- build the map with the node's name and the node.
-       let namesAndNodes = Map.fromList (zip (Map.keys (logics logicGraph))
+       let namesAndNodes = Map.fromList (zip (Map.keys myMap)
                                              nodeList)
-           lookupLogi (Logic lid) =
+           lookupLogi gslStr =
                Map.findWithDefault (error "lookupLogi: Logic not found")
-                                   (language_name lid)
+                                   gslStr
                                    namesAndNodes
            {- each edge can also show the informations (the
              description of comorphism and names of
@@ -138,42 +143,49 @@ showLogicGraph displaySrt = do
                LocalMenu (Button "Info"
                  (\ c -> createTextDisplay (show c) (showComoDescription c)
                               [size (80, 25)]))
+           acmName = (\ (Comorphism cid) -> return $ language_name cid)
            normalArcTypeParms = logicArcMenu $$$         -- normal comorphism
                                 Color normalArcColor $$$
-                                ValueTitle (\ c -> case c of
-                                    Comorphism cid ->
-                                        return $ language_name cid) $$$
+                                ValueTitle acmName $$$
                                 emptyArcTypeParms
+           insertArcType tp ((src, trg), acm) =
+                  newArc logicG tp acm (lookupLogi src) (lookupLogi trg)
            inclArcTypeParms = logicArcMenu $$$           -- inclusion
                                Color inclusionArcColor $$$
+                               (if plain then id else (ValueTitle acmName $$$))
                                emptyArcTypeParms
        normalArcType <- newArcType logicG normalArcTypeParms
        inclArcType <- newArcType logicG inclArcTypeParms
-       let insertComo =            -- for cormophism
-             (\ c ->
-                case c of
-                  Comorphism cid ->
-                    let sid = Logic (sourceLogic cid)
-                        tid = Logic (targetLogic cid)
-                    in newArc logicG normalArcType c (lookupLogi sid)
-                            (lookupLogi tid))
-           insertIncl =            -- for inclusion
-             (\ i ->
-                case i of
-                  Comorphism cid ->
-                    let sid = Logic (sourceLogic cid)
-                        tid = Logic (targetLogic cid)
-                    in newArc logicG inclArcType i (lookupLogi sid)
-                            (lookupLogi tid))
-       mapM_ insertIncl inclusionList
-       mapM_ insertComo $ filter (`notElem` inclusionList) comorphismList
+       if plain then do
+         let toPair co@(Comorphism c) = ((language_name (sourceLogic c)
+               , language_name (targetLogic c)), co)
+             insertComo = insertArcType normalArcType . toPair -- for cormophism
+             insertIncl = insertArcType inclArcType . toPair   -- for inclusion
+         mapM_ insertIncl inclusionList
+         mapM_ insertComo $ filter (`notElem` inclusionList) comorphismList
+        else do
+         let (inclCom, notInclCom) =
+               partition ((`elem` inclusionList) . snd) $
+               concatMap (\ (x, ys) -> zip (repeat x) ys) $
+                   Map.toList -- [((String,String),[AnyComorphism])]
+                          (comorphismEdges hetSublogicGraph)
+             (adhocCom, normalCom) =
+               partition (isInclComorphism . snd) notInclCom
+             adhocInclArcTypeParms =
+                             Color inclusionArcColor $$$ -- ad-hoc inclusion
+                             emptyArcTypeParms
+         adhocInclArcType <- newArcType logicG adhocInclArcTypeParms
+         mapM_ (insertArcType inclArcType) inclCom
+         mapM_ (insertArcType adhocInclArcType) adhocCom
+         mapM_ (insertArcType normalArcType) normalCom
        redraw logicG
-       where
-        showSubLogicGraph subl =
+
+showSubLogicGraph :: AnyLogic -> IO ()
+showSubLogicGraph subl =
           case subl of
             Logic sublid ->
-              do subLogicG <- newGraph displaySrt
-                                     (graphParms displaySrt "SubLogic Graph")
+              do subLogicG <- newGraph daVinciSort
+                                     (graphParms daVinciSort "SubLogic Graph")
                  let listG_Sublogics = -- map (\sbl -> G_sublogics sublid sbl)
                                        (all_sublogics sublid)
                      subNodeMenu = LocalMenu (UDG.Menu Nothing [])
@@ -211,95 +223,6 @@ showLogicGraph displaySrt = do
                           ]
                  mapM_ insertSubArc subl_nodes
                  redraw subLogicG
-
-showHetSublogicGraph ::
-   GraphAllConfig graph graphParms node nodeType nodeTypeParms
-      arc arcType arcTypeParms
-   => Graph graph graphParms node nodeType nodeTypeParms
-         arc arcType arcTypeParms
-   -> IO ()
-showHetSublogicGraph displaySrt = do
-       logicG <- newGraph displaySrt (graphParms displaySrt
-                                                "Heterogeneous Sublogic Graph")
-       let logicNodeMenu = LocalMenu (UDG.Menu (Just "Info")
-               [Button "Tools" (\ lg -> createTextDisplay
-                      ("Parsers, Provers and Cons_Checker of "
-                       ++ show lg) (showTools $ toAnyLogic lg) [size (80, 25)]),
-                Button "Sublogic" (\ lg -> createTextDisplay ("Sublogics of "
-                       ++ show lg) (showSublogic $ toAnyLogic lg)
-                                   [size (80, 25)]),
-                Button "Description" (\ lg -> createTextDisplay
-                      ("Description of " ++ show lg)
-                        (showDescription $ toAnyLogic lg)
-                                      [size (83, 25)])
-               ])
-           makeLogicNodeMenu = makeNodeMenu displaySrt (return . show)
-               logicNodeMenu
-       stableNodeType <- newNodeType logicG $ makeLogicNodeMenu stableColor
-       testingNodeType <- newNodeType logicG $ makeLogicNodeMenu testingColor
-       unstableNodeType <- newNodeType logicG $ makeLogicNodeMenu unstableColor
-       experimentalNodeType <-
-           newNodeType logicG $ makeLogicNodeMenu experimentalColor
-       proverNodeType <-
-           newNodeType logicG $ makeLogicNodeMenu proverColor
-       let newNode' gsl@(G_sublogics lid _) =
-               if not $ null $ provers lid
-               then newNode logicG proverNodeType gsl
-               else let nodeType = case stability lid of
-                                     Stable -> stableNodeType
-                                     Testing -> testingNodeType
-                                     Unstable -> unstableNodeType
-                                     Experimental -> experimentalNodeType
-                    in newNode logicG nodeType gsl
-
-       -- production of the nodes (in a list)
-       nodeList <- mapM newNode' (Map.elems (sublogicNodes hetSublogicGraph))
-       -- build the map with the node's name and the node.
-       let namesAndNodes =
-               Map.fromList (zip (Map.keys (sublogicNodes hetSublogicGraph))
-                                 nodeList)
-           lookupLogi gslStr =
-               Map.findWithDefault (error "lookupLogi: Logic not found")
-                                   gslStr
-                                   namesAndNodes
-           {- each edge can also show the informations (the
-             description of comorphism and names of
-             source/target-Logic as well as the sublogics). -}
-           logicArcMenu =
-               LocalMenu (Button "Info"
-                 (\ c -> createTextDisplay (show c) (showComoDescription c)
-                  [size (80, 25)]))
-           acmName = (\ (Comorphism cid) -> return $ language_name cid)
-           normalArcTypeParms = logicArcMenu $$$         -- normal comorphism
-                                Color normalArcColor $$$
-                                ValueTitle acmName $$$
-                                emptyArcTypeParms
-           inclArcTypeParms = logicArcMenu $$$           -- inclusion
-                               Color inclusionArcColor $$$
-                               ValueTitle acmName $$$
-                               emptyArcTypeParms
-           adhocInclArcTypeParms =
-                            Color inclusionArcColor $$$ -- ad-hoc inclusion
-                            emptyArcTypeParms
-       normalArcType <- newArcType logicG normalArcTypeParms
-       inclArcType <- newArcType logicG inclArcTypeParms
-       adhocInclArcType <- newArcType logicG adhocInclArcTypeParms
-       let insertArcType tp =
-             (\ ((src, trg), acm) ->
-                  newArc logicG tp acm (lookupLogi src)
-                            (lookupLogi trg))
-           (inclCom, notInclCom) =
-               partition ((`elem` inclusionList) . snd) $
-               concatMap (\ (x, ys) -> zip (repeat x) ys) $
-                   Map.toList -- [((String,String),[AnyComorphism])]
-                          (comorphismEdges hetSublogicGraph)
-           (adhocCom, normalCom) =
-               partition (isInclComorphism . snd) notInclCom
-       mapM_ (insertArcType inclArcType) inclCom
-       mapM_ (insertArcType adhocInclArcType) adhocCom
-       mapM_ (insertArcType normalArcType) normalCom
-       redraw logicG
-
 
 toAnyLogic :: G_sublogics -> AnyLogic
 toAnyLogic (G_sublogics lid _) = Logic lid
@@ -341,17 +264,17 @@ showTools (Logic li) =
   ++ case data_logic li of
        Just _ -> "is a process logic.\n"
        Nothing -> ""
-  ++ "\nProvers: "
+  ++ "\nProvers:\n"
   ++ case provers li of
        [] -> "None"
        ls -> unlines $ map proverName ls
-  ++ "\nConsistency checkers: "
+  ++ "\nConsistency checkers:\n"
   ++ case cons_checkers li of
        [] -> "None"
        ls -> unlines $ map ccName ls
 
 showHSG :: IO ()
-showHSG = showHetSublogicGraph daVinciSort
+showHSG = showLogicGraph False
 
 showLG :: IO ()
-showLG = showLogicGraph daVinciSort
+showLG = showLogicGraph True
