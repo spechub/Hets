@@ -16,6 +16,7 @@ import GUI.UDGUtils as UDG
 import GUI.HTkUtils
 
 import Comorphisms.LogicGraph
+import Comorphisms.LogicList
 import Comorphisms.HetLogicGraph
 import Logic.Grothendieck
 import Logic.Logic
@@ -123,7 +124,9 @@ showLogicGraph plain = do
                    in newNode logicG nodeType logic
                  else newNode logicG proverNodeType logic
            myMap = if plain then Map.map (\ (Logic l) ->
-                        G_sublogics l $ top_sublogic l) $ logics logicGraph
+                                          G_sublogics l $ top_sublogic l)
+                     $ Map.fromList $ map addLogicName
+                     $ Map.elems $ logics logicGraph
                    else sublogicNodes hetSublogicGraph
 
        -- production of the nodes (in a list)
