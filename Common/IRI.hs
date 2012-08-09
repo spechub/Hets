@@ -661,11 +661,8 @@ iri = iriWithPos $ do
 
 
 ihierOrIrelativePart :: IRIParser st (Maybe IRIAuth, String)
-ihierOrIrelativePart = do
-  try (string "//")
-  ua <- uiauthority
-  up <- ipathAbEmpty
-  return (ua, up)
+ihierOrIrelativePart =
+  try (string "//") >> pair uiauthority ipathAbEmpty
 
 ihierPart :: IRIParser st (Maybe IRIAuth, String)
 ihierPart = ihierOrIrelativePart
