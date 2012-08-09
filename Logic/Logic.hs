@@ -179,7 +179,7 @@ class Show lid => Language lid where
     language_name = show
     description :: lid -> String
     -- default implementation
-    description _ = "No description available"
+    description _ = ""
 
 {- | Categories are given as usual: objects, morphisms, identities,
      domain, codomain and composition. The type id is the name, or

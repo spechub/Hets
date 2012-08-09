@@ -232,8 +232,9 @@ showSubTitle :: G_sublogics -> String
 showSubTitle (G_sublogics _ lid) = sublogicName lid
 
 showDescription :: AnyLogic -> String
-showDescription (Logic lid) =
-    description lid ++ "\n\nStability: " ++ show (stability lid)
+showDescription (Logic lid) = let s = description lid in
+    (if null s then "No description available" else s) ++ "\n\nStability: "
+    ++ show (stability lid)
 
 showComoDescription :: AnyComorphism -> String
 showComoDescription (Comorphism cid) =
