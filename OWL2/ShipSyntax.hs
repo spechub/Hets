@@ -126,7 +126,7 @@ quant = choice $ map (\ a -> key (showQuant a) >> return a)
         [AllValuesFrom, SomeValuesFrom]
 
 card :: CharParser st CardinalityType
-card = choice $ map (\ a -> key (showCard a) >> return a)
+card = choice $ map (\ a -> tryString (showCard a) >> return a)
        [MinCardinality, MaxCardinality, ExactCardinality]
 
 quantOrCard :: CharParser st (Either QuantifierType (CardinalityType, Integer))
