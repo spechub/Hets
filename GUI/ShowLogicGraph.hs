@@ -25,6 +25,7 @@ import Logic.Prover
 import qualified Data.Map as Map
 import Data.List
 import qualified Common.Lib.Rel as Rel
+import Common.Consistency
 
 import Data.Typeable
 
@@ -93,11 +94,9 @@ showLogicGraph plain = do
                       createTextDisplay
                       ("Parsers, Provers and Cons_Checker of "
                        ++ show lg) (showTools lg) [size (80, 25)]]
-                ++ (if plain then
-                [Button "Sublogic" $ \ slg -> let lg = toAnyLogic slg in
+                ++ [Button "Sublogic" $ \ slg -> let lg = toAnyLogic slg in
                        createTextDisplay ("Sublogics of "
-                       ++ show lg) (showSublogic lg) [size (80, 25)]]
-                else [])
+                       ++ show lg) (showSublogic lg) [size (80, 25)] | plain]
                 ++ [Button "Sublogic Graph" $ showSubLogicGraph . toAnyLogic,
                 Button "Description" $ \ slg -> let lg = toAnyLogic slg in
                       createTextDisplay
@@ -140,10 +139,10 @@ showLogicGraph plain = do
              description of comorphism and names of
              source/target-Logic as well as the sublogics). -}
            logicArcMenu =
-               LocalMenu (Button "Info"
-                 (\ c -> createTextDisplay (show c) (showComoDescription c)
-                              [size (80, 25)]))
-           acmName = (\ (Comorphism cid) -> return $ language_name cid)
+               LocalMenu $ Button "Info"
+                 $ \ c -> createTextDisplay (show c) (showComoDescription c)
+                              [size (80, 25)]
+           acmName (Comorphism cid) = return $ language_name cid
            normalArcTypeParms = logicArcMenu $$$         -- normal comorphism
                                 Color normalArcColor $$$
                                 ValueTitle acmName $$$
@@ -185,9 +184,8 @@ showSubLogicGraph subl =
           case subl of
             Logic sublid ->
               do subLogicG <- newGraph daVinciSort
-                                     (graphParms daVinciSort "SubLogic Graph")
-                 let listG_Sublogics = -- map (\sbl -> G_sublogics sublid sbl)
-                                       (all_sublogics sublid)
+                   $ graphParms daVinciSort "SubLogic Graph"
+                 let listG_Sublogics = all_sublogics sublid
                      subNodeMenu = LocalMenu (UDG.Menu Nothing [])
                      subNodeTypeParms =
                          subNodeMenu $$$
@@ -241,7 +239,8 @@ showComoDescription :: AnyComorphism -> String
 showComoDescription (Comorphism cid) =
   let ssid = G_sublogics (sourceLogic cid) (sourceSublogic cid)
       tsid = G_sublogics (targetLogic cid) (targetSublogic cid)
-  in description cid ++ "\n\n"
+      s = description cid
+  in (if null s then "" else s ++ "\n\n")
   ++ "source logic:     " ++ language_name (sourceLogic cid) ++ "\n\n"
   ++ "target logic:     " ++ language_name (targetLogic cid) ++ "\n"
   ++ "source sublogic:  " ++ showSubTitle ssid ++ "\n"
@@ -249,9 +248,12 @@ showComoDescription (Comorphism cid) =
 
 showTools :: AnyLogic -> String
 showTools (Logic li) =
-    case basicSpecParser li of
-      Just _ -> "Parser for basic specifications.\n"
-      Nothing -> ""
+    case Map.keys $ parsersAndPrinters li of
+      s@(_ : r) -> "Parser for basic specifications.\n"
+        ++ if null r then "" else
+           unlines . filter (not . null) $ "Additional serializations:"
+             : map show s
+      [] -> ""
   ++ case parse_symb_items li of
        Just _ -> "Parser for symbol lists.\n"
        Nothing -> ""
@@ -264,14 +266,16 @@ showTools (Logic li) =
   ++ case data_logic li of
        Just _ -> "is a process logic.\n"
        Nothing -> ""
-  ++ "\nProvers:\n"
   ++ case provers li of
-       [] -> "None"
-       ls -> unlines $ map proverName ls
-  ++ "\nConsistency checkers:\n"
+       [] -> ""
+       ls -> unlines $ "\nProvers:" : map proverName ls
   ++ case cons_checkers li of
-       [] -> "None"
-       ls -> unlines $ map ccName ls
+       [] -> ""
+       ls -> unlines $ "\nConsistency checkers:" : map ccName ls
+  ++ case conservativityCheck li of
+       [] -> ""
+       ls -> unlines $ "\nConservatity checkers:" : map checkerId ls
+
 
 showHSG :: IO ()
 showHSG = showLogicGraph False
