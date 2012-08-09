@@ -426,15 +426,18 @@ iriWithPos parser = do
 
 -- | Parses an absolute IRI enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
-iriCurie = brackets iriReference <|> curie
+iriCurie = brackets iri <|> curie
 
 {- | Parses an absolute or relative IRI enclosed in '<', '>' or a CURIE
 see @iriReference@ -}
 iriReferenceCurie :: IRIParser st IRI
-iriReferenceCurie = brackets (iri <|> irelativeRef) <|> curie
+iriReferenceCurie = brackets iriReference <|> curie
 
 brackets :: IRIParser st IRI -> IRIParser st IRI
-brackets p = char '<' >> p << char '>' << skipSmart
+brackets p = ankles p << skipSmart
+
+ankles :: IRIParser st IRI -> IRIParser st IRI
+ankles p = char '<' >> p << char '>'
 
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI
@@ -555,13 +558,9 @@ simpleIRI := a finite sequence of characters matching the PN_LOCAL production
 IRI := fullIRI | abbreviatedIRI | simpleIRI -}
 
 iriManchester :: IRIParser st IRI
-iriManchester = iriWithPos $ do
-    char '<'
-    i <- iri <|> irelativeRef
-    char '>'
-    return i
+iriManchester = iriWithPos $ ankles iriReference
   <|> do
-    (PNameLn prefix loc) <- try pnameLn
+    PNameLn prefix loc <- try pnameLn
     return IRI
             { iriScheme = ""
             , iriAuthority = Nothing
