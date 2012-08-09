@@ -259,6 +259,10 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          parse_symb_map_items _ = Nothing
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
+basicSpecParser :: Syntax lid basic_spec symb_items symb_map_items
+  => lid -> Maybe (AParser st basic_spec)
+basicSpecParser = fmap fst . lookupDefault Nothing . parsersAndPrinters
+
 -- | function to lookup parser or printer
 lookupDefault :: Maybe IRI -> Map.Map IRI b -> Maybe b
 lookupDefault sm m = if Map.size m == 1 then Just $ head $ Map.elems m else

@@ -326,7 +326,7 @@ showComoDescription (Comorphism cid) =
 
 showTools :: AnyLogic -> String
 showTools (Logic li) =
-    case parse_basic_spec li of
+    case basicSpecParser li of
       Just _ -> "Parser for basic specifications.\n"
       Nothing -> ""
   ++ case parse_symb_items li of
