@@ -22,7 +22,6 @@ import qualified Data.ByteString.Lazy as BS
 import qualified Common.XmlExpat as XE
 #else
 import qualified Data.ByteString.Lazy.Char8 as Char8
-import Data.ByteString.Lazy.UTF8
 #endif
 
 readXmlFile :: FilePath -> IO BS.ByteString
