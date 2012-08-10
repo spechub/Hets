@@ -57,7 +57,7 @@ HASKELINE_PACKAGE = -DHASKELINE
 endif
 
 HEXPATVERSION = $(shell $(HCPKG) latest hexpat)
-ifneq ($(findstring 0.1, $(HEXPATVERSION)),)
+ifneq ($(findstring 0., $(HEXPATVERSION)),)
 HEXPAT_PACKAGE = -DHEXPAT
 endif
 
