@@ -1021,7 +1021,7 @@ escapeIRIChar p c
     | otherwise = '%' : myShowHex (ord c)
     where
         myShowHex :: Int -> String
-        myShowHex n = case showHex n "" of
+        myShowHex n = case map toUpper $ showHex n "" of
             [] -> "00"
             [d] -> ['0', d]
             cs -> cs

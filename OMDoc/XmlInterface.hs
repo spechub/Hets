@@ -27,12 +27,10 @@ import OMDoc.DataTypes
 import Common.Utils (splitBy)
 import Common.Result
 import Common.Id
-
+import Common.IRI (isUnescapedInIRI, escapeIRIString, unEscapeString)
 
 import Data.Maybe
 import Data.List
-
-import Network.URI (isUnescapedInURI, escapeURIString, unEscapeString)
 
 import Common.XmlParser (XmlParseable, parseXml)
 import Text.XML.Light
@@ -170,7 +168,7 @@ toOmobj c = inAContent el_omobj [attr_om] $ Just c
 -- url escaping and unescaping.
 -- We use ? and / as special characters, so we need them to be encoded in names
 urlEscape :: String -> String
-urlEscape = escapeURIString isUnescapedInURI
+urlEscape = escapeIRIString isUnescapedInIRI
 
 urlUnescape :: String -> String
 urlUnescape = unEscapeString
