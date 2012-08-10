@@ -53,6 +53,13 @@ ppJunction t = text $ case t of
   UnionOf -> "+ "
   IntersectionOf -> "& "
 
+pppNegConcept :: Concept -> Doc
+pppNegConcept c = case c of
+    DisjointC {} -> parens
+    JoinedC {} -> parens
+    _ -> id
+  $ ppConcept c
+
 pppConcept :: Bool -> JunctionType -> Concept -> Doc
 pppConcept notLast t c = case c of
     Quant {} | notLast -> parens
@@ -65,7 +72,7 @@ ppConcept :: Concept -> Doc
 ppConcept co = case co of
   CName s -> (if co == topC then keyword else text) s
   NominalC s -> braces $ text s
-  NotC c -> keyword "not" <> parens (ppConcept c)
+  NotC c -> text "~" <> pppNegConcept c
   JoinedC t l -> case reverse l of
     [] -> ppConcept $ if t == IntersectionOf then topC else NotC topC
     f : r -> fsep . prepPunctuate (ppJunction t)
@@ -74,7 +81,7 @@ ppConcept co = case co of
     [pppConcept True UnionOf c1, text "<+>", ppConcept c2]
   Quant q r c -> fsep [(case q of
     Left v -> keyword (showQuant v)
-    Right (n, i) -> text (showCard n ++ show i)
+    Right (n, i) -> text (showCard n) <+> text (show i)
     ) <+> ppRole r, dot <+> ppConcept c]
 
 showQuant :: QuantifierType -> String
@@ -204,6 +211,7 @@ data RoleType = RoleType Role Concept Concept deriving (Show, Eq, Ord)
 data Box
   = ConceptDecl String (Maybe (EqOrLess, Concept))
   | NominalCDecl String Concept
+  | DisjointCs [Concept]
   | RoleDecl RoleType (Maybe (EqOrLess, RoleType))
   | NominalRDecl String String Role
   | RoleKind Character Role
@@ -224,6 +232,7 @@ ppBox b = case b of
     Nothing -> empty
     Just (o, c) -> ppEqOrLess o <+> ppConcept c
   NominalCDecl n c -> text n <+> colon <+> ppConcept c
+  DisjointCs cs -> keyword "Disjoint" <> parens (sepByCommas $ map ppConcept cs)
   RoleDecl r m -> fsep [ppRoleType r, case m of
     Nothing -> empty
     Just (o, t) -> ppEqOrLess o <+> ppRoleType t]
@@ -257,6 +266,10 @@ box = do
   <|> do
     c <- character
     fmap (RoleKind c) $ parent role
+  <|> do
+    key "Disjoint"
+    fmap DisjointCs $ parent
+      $ concept <:> many (skipChar ',' >> concept)
   <|> do
     n <- nominal
     do
