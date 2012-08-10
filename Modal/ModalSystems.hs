@@ -13,7 +13,6 @@ Portability :  portable
 
 module Modal.ModalSystems (transSchemaMFormula) where
 
-import Common.DocUtils
 import Common.AS_Annotation
 import Common.Id
 
@@ -39,7 +38,7 @@ isBoxOrDiamond form = case form of
 
 isPred :: FORMULA f -> Bool
 isPred form = case form of
-  Predication _ _ _ -> True
+  Predication {} -> True
   _ -> False
 
 -- matches: [](p=>q) => []p => []q
@@ -162,5 +161,6 @@ transSchemaMFormula mapT world rel vars anMF = case vars of
             (Just l, cf) : _ -> addTerm mapT rel (map modToTerm l) vars
                $ Just $ cf (mkVarDecl w1 world) (mkVarDecl w2 world)
                  (mkVarDecl w3 world) relPred
-            _ -> error ("Modal2CASL: unknown formula: " ++ showDoc f "") Nothing
+            _ -> Nothing
+              -- was error ("Modal2CASL: unknown formula: " ++ showDoc f "")
   _ -> error "transSchemaMFormula"
