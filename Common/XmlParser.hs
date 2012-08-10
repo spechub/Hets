@@ -21,7 +21,7 @@ import qualified Data.ByteString.Lazy as BS
 #ifdef HEXPAT
 import qualified Common.XmlExpat as XE
 #else
-import qualified Data.ByteString.Lazy.Char8 as Char8
+import Data.ByteString.Lazy.UTF8
 #endif
 
 readXmlFile :: FilePath -> IO BS.ByteString
@@ -43,7 +43,7 @@ instance XmlParseable BS.ByteString where
 -- 169MB on Basic/Algebra_I
 #else
 instance XmlParseable BS.ByteString where
-    parseXml s = case parseXMLDoc $ Char8.unpack s of
+    parseXml s = case parseXMLDoc $ toString s of
                    Just x -> Right x
                    _ -> Left "parseXMLDoc: parse error"
 
