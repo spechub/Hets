@@ -30,7 +30,7 @@ data Concept
   | NotC Concept
   | JoinedC JunctionType [Concept]
   | DisjointC Concept Concept
-  | Quant (Either QuantifierType (CardinalityType, Integer)) Role Concept
+  | Quant (Either QuantifierType (CardinalityType, Int)) Role Concept
   deriving (Show, Eq, Ord)
 
 topC :: Concept
@@ -136,7 +136,7 @@ card :: CharParser st CardinalityType
 card = choice $ map (\ a -> tryString (showCard a) >> return a)
        [MinCardinality, MaxCardinality, ExactCardinality]
 
-quantOrCard :: CharParser st (Either QuantifierType (CardinalityType, Integer))
+quantOrCard :: CharParser st (Either QuantifierType (CardinalityType, Int))
 quantOrCard = fmap Left quant
   <|> do
   c <- card << skip
@@ -209,7 +209,7 @@ data EqOrLess = Eq | Less deriving (Show, Eq, Ord)
 data RoleType = RoleType Role Concept Concept deriving (Show, Eq, Ord)
 
 data Box
-  = ConceptDecl String (Maybe (EqOrLess, Concept))
+  = ConceptDecl Concept (Maybe (EqOrLess, Concept))
   | NominalCDecl String Concept
   | DisjointCs [Concept]
   | RoleDecl RoleType (Maybe (EqOrLess, RoleType))
@@ -228,7 +228,7 @@ ppRoleType (RoleType r s t) =
 
 ppBox :: Box -> Doc
 ppBox b = case b of
-  ConceptDecl s m -> text s <+> case m of
+  ConceptDecl d m -> ppConcept d <+> case m of
     Nothing -> empty
     Just (o, c) -> ppEqOrLess o <+> ppConcept c
   NominalCDecl n c -> text n <+> colon <+> ppConcept c
@@ -272,10 +272,11 @@ box = do
       $ concept <:> many (skipChar ',' >> concept)
   <|> do
     n <- nominal
+    let c0 = CName n
     do
         el <- eqOrLess
         c <- concept
-        return $ ConceptDecl n $ Just (el, c)
+        return $ ConceptDecl c0 $ Just (el, c)
       <|> do
         skipChar ':'
         c1 <- concept
@@ -293,7 +294,7 @@ box = do
               return (el, RoleType r c3 c4)
             return $ RoleDecl t1 m
           <|> return (NominalCDecl n c1)
-      <|> return (ConceptDecl n Nothing)
+      <|> return (ConceptDecl c0 Nothing)
 
 ppp :: (a -> Doc) -> CharParser () a -> String -> String
 ppp pr pa s = case parse (skip >> pa << eof) "" s of
