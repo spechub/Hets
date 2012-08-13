@@ -26,7 +26,8 @@ import CommonLogic.Sign
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Symbol as Symbol
 import CommonLogic.Analysis
-import CommonLogic.Parse_CLIF
+import qualified CommonLogic.Parse_CLIF as CLIF
+import qualified CommonLogic.Parse_KIF as KIF
 import CommonLogic.Morphism
 
 import qualified Data.Map as Map
@@ -70,11 +71,13 @@ instance Syntax CommonLogic
     SYMB_ITEMS
     SYMB_MAP_ITEMS
     where
-      parsersAndPrinters CommonLogic = Map.singleton
-                                       (simpleIdToIRI $ mkSimpleId "CLIF")
-                                       (basicSpec, pretty)
-      parse_symb_items CommonLogic = Just symbItems
-      parse_symb_map_items CommonLogic = Just symbMapItems
+      parsersAndPrinters CommonLogic = Map.fromList
+                                       [((simpleIdToIRI $ mkSimpleId "CLIF"),
+                                         (CLIF.basicSpec, pretty)),
+                                        ((simpleIdToIRI $ mkSimpleId "KIF"),
+                                         (KIF.basicSpec, pretty))]
+      parse_symb_items CommonLogic = Just CLIF.symbItems
+      parse_symb_map_items CommonLogic = Just CLIF.symbMapItems
 
 instance Logic CommonLogic
     CommonLogicSL     -- Sublogics

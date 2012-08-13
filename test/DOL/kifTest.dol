@@ -1,0 +1,24 @@
+%prefix( :      <http://www.example.org/SUMO#>
+         log:   <http://purl.net/dol/logics/>
+         ser:   <http://purl.net/dol/serializations/> )%
+
+distributed-ontology SUMO
+
+logic CommonLogic serialization KIF
+
+ontology Merge =
+  (instance instance BinaryPredicate)
+  (domain instance 1 Entity)
+  (domain instance 2 SetOrClass)
+  (=>
+   (immediateInstance ?ENTITY ?CLASS)
+   (not (exists (?SUBCLASS)
+     (and
+        (subclass ?SUBCLASS ?CLASS)
+        (not (equal ?SUBCLASS ?CLASS))
+        (instance ?ENTITY ?SUBCLASS)))))
+end
+
+ontology Test2 =
+  (/= 1 2)
+end

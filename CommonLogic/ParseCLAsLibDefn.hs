@@ -28,7 +28,7 @@ import Logic.Grothendieck
 
 import CommonLogic.AS_CommonLogic as CL
 import CommonLogic.Logic_CommonLogic
-import CommonLogic.Parse_CLIF (basicSpec)
+import qualified CommonLogic.Parse_CLIF as CLIF (basicSpec)
 
 import Syntax.AS_Library
 import Syntax.AS_Structured
@@ -64,7 +64,7 @@ parseCL_CLIF filename opts = do
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
-parseCL_CLIF_contents = runParser (many basicSpec) (emptyAnnos ())
+parseCL_CLIF_contents = runParser (many CLIF.basicSpec) (emptyAnnos ())
 
 {- maps imports in basic spec to global definition links (extensions) in
 development graph -}
