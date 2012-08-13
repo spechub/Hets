@@ -104,7 +104,7 @@ xGraph xml = do
     if Map.member s m then fail $ "duplicate node name: " ++ s
        else return $ Map.insert s n m) Map.empty allNodes
   let (thmLk, defLk) = partition (\ l -> case edgeTypeModInc $ lType l of
-                         ThmType _ _ _ _ -> True
+                         ThmType {} -> True
                          _ -> False) allLinks
       edgeMap = mkEdgeMap defLk
       (initN, restN) = Map.partitionWithKey
@@ -149,14 +149,17 @@ extractXLinks :: Monad m => Element -> m [XLink]
 extractXLinks = mapM mkXLink . findChildren (unqual "DGLink")
 
 mkXNode :: Monad m => Element -> m XNode
-mkXNode el = let get f s = f . map strContent . deepSearch [s]
+mkXNode el = let spcs = unlines . map strContent
+                   . concatMap (filterChildrenName (unqual "Text" ==))
+                   $ deepSearch ["Axiom", "Theorem"] el
+                 get f s = f . map strContent . deepSearch [s]
                  get' = get unlines in do
   nm <- extractNodeName el
   case findChild (unqual "Reference") el of
     Just rf -> do
       rfNm <- getAttrVal "node" rf
       rfLib <- getAttrVal "library" rf
-      return $ XRef nm rfNm rfLib $ get' "Axiom" el ++ get' "Theorem" el
+      return $ XRef nm rfNm rfLib spcs
     Nothing -> let
       hdSyms = case findChild (unqual "Hidden") el of
             Nothing -> case findChild (unqual "Declarations") el of
@@ -166,7 +169,6 @@ mkXNode el = let get f s = f . map strContent . deepSearch [s]
               Just ch -> (False, get' "Symbol" ch)
             -- Case #3: Node has hidden symbols (DGRestricted)
             Just ch -> (True, get (intercalate ", ") "Symbol" ch)
-      spcs = get' "Axiom" el ++ get' "Theorem" el
       in do
         lgN <- getAttrVal "logic" el
         xp0 <- getAttrVal "relxpath" el
@@ -218,10 +220,8 @@ readEdgeId = EdgeId . fromMaybe (-1) . readMaybe
 
 -- | custom xml-search for not only immediate children
 deepSearch :: [String] -> Element -> [Element]
-deepSearch tags' ele = rekSearch ele where
-  tags = map unqual tags'
-  rekSearch e = filtr e ++ concatMap filtr (elChildren e)
-  filtr = filterChildrenName (`elem` tags)
+deepSearch tags e = filtr e ++ concatMap filtr (elChildren e) where
+  filtr = filterChildrenName (`elem` map unqual tags)
 
 -- | extracts the global annotations from the xml-graph
 extractGlobalAnnos :: Element -> Result GlobalAnnos

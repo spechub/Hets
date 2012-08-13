@@ -27,7 +27,6 @@ import Logic.Grothendieck
 import Common.AS_Annotation
 import Common.ConvertGlobalAnnos
 import Common.Consistency
-import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
@@ -40,6 +39,7 @@ import Common.ToXml
 import Text.XML.Light
 
 import Data.Graph.Inductive.Graph as Graph
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
 
@@ -62,14 +62,14 @@ gmorph ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
   case map_sign cid ssig of
     Result _ mr -> case mr of
       Nothing -> error $ "Static.ToXml.gmorph: " ++ showGlobalDoc ga gm ""
-      Just (_, tsens) -> let
+      Just (tsig, tsens) -> let
         tid = targetLogic cid
         sl = Map.toList . Map.filterWithKey (/=) $ symmap_of tid tmor
         psym = prettyElem "Symbol" ga
         in add_attr (mkNameAttr $ language_name cid)
            $ unode "GMorphism" $
              subnodes "Axioms"
-             (map (mkAxDocNode ga . print_named (targetLogic cid)) tsens)
+             (map (showSen (targetLogic cid) ga Nothing tsig) tsens)
              ++ map (\ (s, t) -> unode "map" [psym s, psym t]) sl
 
 prettyRangeElem :: (GetRange a, Pretty a) => String -> GlobalAnnos -> a
@@ -108,20 +108,15 @@ lnode ga lenv (_, lbl) =
                        $ map (prettySymbol ga)
                        $ Set.toList hidSyms
                    _ -> []
-      ++ case simplifyTh $ dgn_theory lbl of
-        G_theory lid _ _ thsens _ -> let
+      ++ case dgn_theory lbl of
+        G_theory lid (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom thsens
                  in subnodes "Axioms"
-                    (map (mkAxDocNode ga . print_named lid) $ toNamedList axs)
+                    (map (showSen lid ga Nothing sig) $ toNamedList axs)
                     ++ subnodes "Theorems"
-                    (map (\ (s, t) -> mkThmNode ga
-                            (print_named lid $ toNamed s t)
-                            (isProvenSenStatus t)
-                         ) $ OMap.toList thms)
-
-mkThmNode :: GlobalAnnos -> Doc -> Bool -> Element
-mkThmNode ga d a = add_attr
-  (mkProvenAttr a) . unode "Theorem" . show $ useGlobalAnnos ga d
+                    (map (\ (s, t) -> showSen lid ga
+                         (Just $ isProvenSenStatus t) sig $ toNamed s t)
+                         $ OMap.toList thms)
 
 -- | a status may be open, proven or outdated
 mkStatusAttr :: String -> Attr
@@ -129,9 +124,6 @@ mkStatusAttr = mkAttr "status"
 
 mkProvenAttr :: Bool -> Attr
 mkProvenAttr b = mkStatusAttr $ if b then "proven" else "open"
-
-mkAxDocNode :: GlobalAnnos -> Doc -> Element
-mkAxDocNode ga = unode "Axiom" . show . useGlobalAnnos ga
 
 consStatus :: ConsStatus -> [Element]
 consStatus cs = case getConsOfStatus cs of
@@ -180,7 +172,7 @@ dgrule r =
 -- | collects all symbols from dg and displays them as xml
 dgSymbols :: DGraph -> Element
 dgSymbols dg = let ga = globalAnnos dg in unode "Ontologies"
-  $ map (\(i, lbl) -> let ins = getImportNames dg i in
+  $ map (\ (i, lbl) -> let ins = getImportNames dg i in
     showSymbols ins ga lbl) $ labNodesDG dg
 
 showSymbols :: [String] -> GlobalAnnos -> DGNodeLab -> Element
@@ -193,16 +185,22 @@ showSymbolsTh ins name ga th = case th of
      [ mkAttr "logic" $ language_name lid
      , mkNameAttr name ]
      . unode "Ontology"
-     $ [ unode "Symbols" . map (showSym lid)
-           $ symlist_of lid sig
-     , unode "Axioms" . map (\ ns@SenAttr { sentence = s } ->
-           add_attrs
-             (mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s))
-           . unode "Axiom" $ unode "Text"
-                 (showGlobalDoc ga (simplify_sen lid sig s) "")
-             : map (showSym lid) (symsOfSen lid s))
-            $ toNamedList sens ]
+     $ [ unode "Symbols" . map (showSym lid) $ symlist_of lid sig
+       , unode "Axioms" . map (showSen lid ga Nothing sig) $ toNamedList sens ]
      ++ map (unode "Import") ins
+
+showSen :: ( GetRange sentence, Pretty sentence
+           , Sentences lid sentence sign morphism symbol) =>
+   lid -> GlobalAnnos -> Maybe Bool -> sign -> Named sentence -> Element
+showSen lid ga mt sig ns = let s = sentence ns in add_attrs
+    (case mt of
+       Nothing -> []
+       Just b -> [mkProvenAttr b]
+     ++ mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s))
+    . unode (if isJust mt then "Theorem" else "Axiom") $ unode "Text"
+          (show $ useGlobalAnnos ga (print_named lid
+                            $ mapNamed (simplify_sen lid sig) ns))
+          : map (showSym lid) (symsOfSen lid s)
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element
