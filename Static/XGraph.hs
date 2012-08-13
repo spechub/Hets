@@ -150,7 +150,7 @@ extractXLinks = mapM mkXLink . findChildren (unqual "DGLink")
 
 mkXNode :: Monad m => Element -> m XNode
 mkXNode el = let spcs = unlines . map strContent
-                   . concatMap (filterChildrenName (unqual "Text" ==))
+                   . concatMap (findChildren $ unqual "Text")
                    $ deepSearch ["Axiom", "Theorem"] el
                  get f s = f . map strContent . deepSearch [s]
                  get' = get unlines in do
