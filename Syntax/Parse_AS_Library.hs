@@ -267,11 +267,7 @@ moduleType l = do
   return $ Module_type sp1 sp2 (tokPos s)
 
 restrictionSignature :: AParser st RESTRICTION_SIGNATURE
-restrictionSignature = do
-  entities <- many hetIRI
-  if null entities
-    then fail "expecting at least one entity in restriction signature"
-    else return entities
+restrictionSignature = many1 hetIRI
 
 simpleIdOrDDottedId :: GenParser Char st Token
 simpleIdOrDDottedId = pToken $ liftM2 (++)
