@@ -48,6 +48,9 @@ data Role
 topR :: Role
 topR = RName "TxT"
 
+botR :: Role
+botR = UnOp NotR topR
+
 ppJunction :: JunctionType -> Doc
 ppJunction t = text $ case t of
   UnionOf -> "+ "
@@ -112,7 +115,7 @@ ppRole ro = case ro of
       _ | o == InvR -> parens
       _ -> id) (ppRole r)
   JoinedR t l -> case l of
-    [] -> ppRole $ if t == IntersectionOf then topR else UnOp NotR topR
+    [] -> ppRole $ if t == IntersectionOf then topR else botR
     _ -> fsep . prepPunctuate (ppJunction t) $ map (pppRole t) l
 
 skip :: CharParser st ()
