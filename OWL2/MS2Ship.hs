@@ -42,6 +42,7 @@ classAnnFrame2Boxes :: Concept -> AnnFrameBit -> [Box]
 classAnnFrame2Boxes c fb = case fb of
   ClassDisjointUnion cs@(_ : _) -> [ConceptDecl c
     $ Just (Eq, foldr1 DisjointC $ map ce2Concept cs)]
+  AnnotationFrameBit Declaration -> [ConceptDecl c Nothing]
   _ -> []
 
 classListFrame2Boxes :: Concept -> Maybe Relation -> ListFrameBit -> [Box]
@@ -59,7 +60,9 @@ classListFrame2Boxes c mr lfb = case lfb of
 opFrame2Boxes :: Role -> FrameBit -> [Box]
 opFrame2Boxes r b = case b of
   ListFrameBit mr lfb -> opListFrame2Boxes r mr lfb
-  AnnFrameBit {} -> []
+  AnnFrameBit _ fb -> case fb of
+    AnnotationFrameBit Declaration -> [RoleDecl (r2RT r) Nothing]
+    _ -> []
 
 opListFrame2Boxes :: Role -> Maybe Relation -> ListFrameBit -> [Box]
 opListFrame2Boxes r mr lfb = case mr of
