@@ -17,7 +17,12 @@ import OWL2.Keywords
 import OWL2.MS
 import OWL2.ShipSyntax
 
+import Common.Doc
+
 import Data.Maybe
+
+ppShipOnt :: OntologyDocument -> Doc
+ppShipOnt = vcat . map ppBox . concatMap frame2Boxes . ontFrames . ontology
 
 frame2Boxes :: Frame -> [Box]
 frame2Boxes (Frame e bs) = case e of

@@ -32,6 +32,7 @@ import Logic.Logic
 
 import OWL2.AS
 import OWL2.MS
+import OWL2.MS2Ship
 import OWL2.Theorem
 import OWL2.Parse
 import OWL2.ManchesterParser
@@ -66,7 +67,8 @@ instance Category Sign OWLMorphism where
     composeMorphisms = composeMor
 
 instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
-    parse_basic_spec OWL2 = Just basicSpec
+    parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, ppShipOnt)
+      $ makeDefault (basicSpec, pretty)
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
 
