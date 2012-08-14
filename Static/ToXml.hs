@@ -31,6 +31,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
+import Common.IRI
 import Common.LibName
 import qualified Common.OrderedMap as OMap
 import Common.Result
@@ -143,9 +144,12 @@ ledge ga dg (f, t, lbl) = let
                 add_attr (mkAttr "linkref" $ showEdgeId e)
                 $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls)
   in add_attrs
-  [ mkAttr "source" $ getNameOfNode f dg
+  ([ mkAttr "source" $ getNameOfNode f dg
   , mkAttr "target" $ getNameOfNode t dg
-  , mkAttr "linkid" $ showEdgeId $ dgl_id lbl ]
+  , mkAttr "linkid" $ showEdgeId $ dgl_id lbl
+  ] ++ case dgl_origin lbl of
+         DGLinkView i _ -> [mkNameAttr $ iriToStringShortUnsecure i]
+         _ -> [])
   $ unode "DGLink"
     $ unode "Type" (getDGLinkType lbl) : lnkSt
     ++ consStatus (getLinkConsStatus typ)
