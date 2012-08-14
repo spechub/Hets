@@ -80,7 +80,7 @@ anaThyFile opts path = do
  tempFile <- getTempFile "" (takeBaseName fp)
  fifo <- getTempFifo (takeBaseName fp)
  exportScript' <- fmap (</> "export.sh") $ getEnvDef
-  "HETS_ISA_TOOLS" "./Isabelle/export/"
+  "HETS_ISA_TOOLS" "./Isabelle/export"
  exportScript <- canonicalizePath exportScript'
  e1 <- doesFileExist exportScript
  unless e1 $ fail $ "Export script not available! Maybe you need to specify HETS_ISA_TOOLS"

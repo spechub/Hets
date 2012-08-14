@@ -166,7 +166,7 @@ fi
 export HETS_LIB=/usr/lib/hets/hets-lib
 export HETS_OWL_TOOLS=/usr/lib/hets/hets-owl-tools
 export HETS_ISABELLE_LIB=/usr/lib/hets/hets-lib/Isabelle
-export HETS_ISA_LIB=/usr/lib/hets/hets-isa-tools/
+export HETS_ISA_TOOLS=/usr/lib/hets/hets-isa-tools/
 export HETS_APROVE=$HETS_OWL_TOOLS/AProVE.jar
 export HETS_ONTODMU=$HETS_OWL_TOOLS/OntoDMU.jar
 export HETS_MAUDE_LIB=/usr/lib/hets/hets-maude-lib
