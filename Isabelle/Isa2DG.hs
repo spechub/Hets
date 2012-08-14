@@ -38,6 +38,7 @@ import Driver.Options
 import qualified Data.Map as Map
 
 import Control.Monad (unless)
+import Control.Concurrent (forkIO,killThread)
 
 import Common.Utils
 import System.Exit
@@ -64,20 +65,38 @@ _insNodeDG sig sens n dg =
         (k, labelK) })]
      newDG1 = changesDGH newDG labCh in newDG1
 
+analyzeMessages :: Int -> [String] -> IO ()
+analyzeMessages _ []     = return ()
+analyzeMessages i (x:xs) = do
+ case x of
+  'v':i':':':msg -> if (read [i']) < i then putStr $ msg ++ "\n"
+                                 else return ()
+  _ -> putStr $ x ++ "\n"
+ analyzeMessages i xs
+
 anaThyFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaThyFile opts path = do
  fp <- canonicalizePath path
  tempFile <- getTempFile "" (takeBaseName fp)
+ fifo <- getTempFifo (takeBaseName fp)
  exportScript' <- fmap (</> "export.sh") $ getEnvDef
   "HETS_ISA_TOOLS" "./Isabelle/export/"
  exportScript <- canonicalizePath exportScript'
  e1 <- doesFileExist exportScript
- unless e1 $ fail $ "Couldn't find export script"
- (ex, sout, err) <- executeProcess exportScript [fp,tempFile] ""
+ unless e1 $ fail $ "Export script not available! Maybe you need to specify HETS_ISA_TOOLS"
+ (l,close) <- readFifo fifo
+ tid <- forkIO $ analyzeMessages (verbose opts) (lines . concat $ l)
+ (ex, sout, err) <- executeProcess exportScript [fp,tempFile,fifo] ""
+ close
+ killThread tid
+ removeFile fifo
  case ex of
   ExitFailure _ -> do
    removeFile tempFile
-   fail $ "Export Failed!" ++ sout ++ err
+   soutF <- getTempFile sout ((takeBaseName fp) ++ ".sout")
+   errF <- getTempFile err ((takeBaseName fp) ++ ".serr")
+   fail $ "Export Failed! - Export script died prematurely. See " ++ soutF
+          ++ " and " ++ errF ++ " for details."
   ExitSuccess -> do
    ret <- anaIsaFile opts tempFile
    removeFile tempFile
@@ -95,9 +114,7 @@ anaIsaFile _ path = do
    tsig = emptyTypeSig { classrel = Map.fromList classes,
    locales = Map.fromList locales' }}
  let dg = _insNodeDG sgn sens name emptyDG
-     le = Map.insert (emptyLibName
-            (System.FilePath.Posix.takeBaseName path))
+     le = Map.insert (emptyLibName name)
            dg Map.empty
- return $ Just (emptyLibName
-  (System.FilePath.Posix.takeBaseName path),
+ return $ Just (emptyLibName name,
   computeLibEnvTheories le)

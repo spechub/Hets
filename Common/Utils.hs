@@ -49,6 +49,8 @@ module Common.Utils
   , withinDirectory
   , writeTempFile
   , getTempFile
+  , getTempFifo
+  , readFifo
   , verbMsg
   , verbMsgLn
   , verbMsgIO
@@ -68,8 +70,17 @@ import System.FilePath (joinPath, makeRelative, equalFilePath, takeDirectory)
 import System.IO
 import System.Process
 import System.Timeout
+import System.Posix.Files (createNamedPipe, unionFileModes,
+                           ownerReadMode, ownerWriteMode)
+import System.Posix.IO (OpenMode(ReadWrite), defaultFileFlags,
+                        openFd, closeFd, fdRead)
+import System.Posix.Types (Fd)
 
 import Control.Monad
+import Control.Concurrent (threadDelay, forkIO, killThread)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar)
+import Control.Exception (throwIO)
+import System.IO.Unsafe (unsafeInterleaveIO)
 
 {- | Writes the message to the given handle unless the verbosity is less than
 the message level. -}
@@ -400,3 +411,39 @@ getTempFile :: String -- ^ Content
 getTempFile str file = do
   tmpDir <- getTemporaryDirectory
   writeTempFile str tmpDir file
+
+getTempFifo :: String -> IO FilePath
+getTempFifo f = do
+ tmpDir <- getTemporaryDirectory
+ (tmpFile, hdl) <- openTempFile tmpDir f
+ hClose hdl
+ removeFile tmpFile
+ createNamedPipe tmpFile (unionFileModes ownerReadMode ownerWriteMode)
+ return tmpFile
+
+type Pipe = (IO (),MVar String,Fd)
+
+openFifo :: FilePath -> IO Pipe
+openFifo fp = do
+  mvar <- newEmptyMVar
+  let readF = \fd -> (forever $ do (s,_) <- fdRead fd 100
+                                   putMVar mvar s)
+                       `catch` (\_ -> threadDelay 100)
+  fd  <- openFd fp ReadWrite Nothing defaultFileFlags
+  let reader = forever $ (readF fd) `catch` (\e -> do closeFd fd; throwIO e)
+  return (reader,mvar,fd)
+
+readFifo' :: MVar String -> IO [String]
+readFifo' mvar = do
+ x  <- unsafeInterleaveIO $ takeMVar mvar
+ xs <- unsafeInterleaveIO $ readFifo' mvar
+ return $ x:xs
+
+readFifo :: FilePath -> IO ([String], IO ())
+readFifo fp = do
+ (reader,pipe,fd) <- openFifo fp
+ tid <- forkIO $ reader
+ l <- readFifo' pipe
+ m <- newEmptyMVar
+ forkIO $ (do takeMVar m; killThread tid; closeFd fd)
+ return (l,putMVar m ())
