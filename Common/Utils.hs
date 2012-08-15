@@ -79,7 +79,7 @@ import System.Posix.Types (Fd)
 import Control.Monad
 import Control.Concurrent (threadDelay, forkIO, killThread)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar)
-import Control.Exception (throwIO)
+import Control.Exception as Exception
 import System.IO.Unsafe (unsafeInterleaveIO)
 
 {- | Writes the message to the given handle unless the verbosity is less than
@@ -428,9 +428,12 @@ openFifo fp = do
   mvar <- newEmptyMVar
   let readF = \fd -> (forever $ do (s,_) <- fdRead fd 100
                                    putMVar mvar s)
-                       `catch` (\_ -> threadDelay 100)
+                       `Exception.catch`
+                       (\ e -> const (threadDelay 100)
+                               (e :: Exception.IOException))
   fd  <- openFd fp ReadWrite Nothing defaultFileFlags
-  let reader = forever $ (readF fd) `catch` (\e -> do closeFd fd; throwIO e)
+  let reader = forever $ (readF fd) `Exception.catch`
+               (\ e -> do closeFd fd; throwIO (e :: Exception.IOException))
   return (reader,mvar,fd)
 
 readFifo' :: MVar String -> IO [String]
