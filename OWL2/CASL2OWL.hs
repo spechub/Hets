@@ -17,8 +17,8 @@ import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Result
 import qualified Data.Set as Set
-{-
 import Common.Id
+{-
 import Control.Monad
 import Data.Char
 import qualified Data.Map as Map
@@ -42,7 +42,7 @@ import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
-import qualified OWL2.Sign as OS
+import OWL2.Sign as OS
 -- CASL = domain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
@@ -100,79 +100,27 @@ instance Comorphism
 -- | Mapping of CASL morphisms
 mapMorphism :: CASLMor -> Result OWLMorphism
 mapMorphism _ = fail "CASL2OWL.mapMorphism"
-{-
-      cdm <- mapSign $ osource oMor
-      ccd <- mapSign $ otarget oMor
-      let emap = mmaps oMor
-          preds = Map.foldWithKey (\ (Entity ty u1) u2 -> let
-              i1 = uriToCaslId u1
-              i2 = uriToCaslId u2
-              in case ty of
-                Class -> Map.insert (i1, conceptPred) i2
-                ObjectProperty -> Map.insert (i1, objectPropPred) i2
-                DataProperty -> Map.insert (i1, dataPropPred) i2
-                _ -> id) Map.empty emap
-          ops = Map.foldWithKey (\ (Entity ty u1) u2 -> case ty of
-                NamedIndividual -> Map.insert (uriToCaslId u1, indiConst)
-                  (uriToCaslId u2, Total)
-                _ -> id) Map.empty emap
-      return (embedMorphism () cdm ccd)
-                 { op_map = ops
-                 , pred_map = preds }
--}
 
 mapSymbol :: Symbol -> Set.Set Entity
 mapSymbol _ = Set.empty
-{-
-(Entity ty iri) = let
-  syN = Set.singleton . Symbol (uriToCaslId iri)
-  in case ty of
-    Class -> syN $ PredAsItemType conceptPred
-    ObjectProperty -> syN $ PredAsItemType objectPropPred
-    DataProperty -> syN $ PredAsItemType dataPropPred
-    NamedIndividual -> syN $ OpAsItemType indiConst
-    AnnotationProperty -> Set.empty
-    Datatype -> Set.empty
--}
 
-mapSign :: CASLSign -> Result OS.Sign
-mapSign _ = fail "CASL2OWL.mapSign"
-{-
-      let conc = OS.concepts sig
-          cvrt = map uriToCaslId . Set.toList
-          tMp k = MapSet.fromList . map (\ u -> (u, [k]))
-          cPreds = thing : nothing : cvrt conc
-          oPreds = cvrt $ OS.objectProperties sig
-          dPreds = cvrt $ OS.dataProperties sig
-          aPreds = foldr MapSet.union MapSet.empty
-            [ tMp conceptPred cPreds
-            , tMp objectPropPred oPreds
-            , tMp dataPropPred dPreds ]
-     in return $ uniteCASLSign predefSign (emptySign ())
-             { predMap = aPreds
-             , opMap = tMp indiConst . cvrt $ OS.individuals sig
-             }
+{- names must be disambiguated as is done in CASL.Qualify or SuleCFOL2SoftFOL.
+   May ops or preds in the overload relation denote the same objectProperty?
+-}
+idToIRI :: Id -> QName
+idToIRI i = nullQName
+  { localPart = show i, iriPos = rangeOfId i }
+
+mapSign :: CASLSign -> OS.Sign
+mapSign csig = OS.emptySign
+  { concepts = Set.map idToIRI $ sortSet csig }  -- map sorts to concepts
+
+{- binary predicates and single argument functions should become
+   objectProperties.
+   Serge also turned constructors into concepts.
+   How to treat multi-argument predicates and functions?
+   Maybe create tuple concepts?
 -}
 
 mapTheory :: (CASLSign, [Named CASLFORMULA]) -> Result (OS.Sign, [Named Axiom])
-mapTheory _ = fail "CASL2OWL.mapSign"
-{-
-    cSig <- mapSign owlSig
-    let pSig = loadDataInformation sl
-        dTypes = (emptySign ()) {sortRel = Rel.transClosure $ Rel.fromList
-                    $ map (\ d -> (uriToCaslId d, dataS))
-                    $ predefIRIs ++ Set.toList (OS.datatypes owlSig)}
-    (cSens, nSig) <- foldM (\ (x, y) z -> do
-            (sen, sig) <- mapSentence y z
-            return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
-    return (foldl1 uniteCASLSign [nSig, pSig, dTypes],
-                predefinedAxioms ++ cSens)
--}
-
-{-
--- | mapping of OWL to CASL_DL formulae
-mapSentence :: CASLSign -> Named Axiom -> Result ([Named CASLFORMULA], CASLSign)
-mapSentence cSig inSen = do
-    (outAx, outSig) <- mapAxioms cSig $ sentence inSen
-    return (map (flip mapNamed inSen . const) outAx, outSig)
--}
+mapTheory (sig, _sens) = return (mapSign sig, [])
