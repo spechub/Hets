@@ -20,13 +20,13 @@ data Sign = Sign
             { concepts :: Set.Set Class
               -- classes
             , datatypes :: Set.Set Datatype -- datatypes
-            , objectProperties :: Set.Set Individual
+            , objectProperties :: Set.Set ObjectProperty
               -- object properties
             , dataProperties :: Set.Set DataProperty
               -- data properties
             , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
-            , individuals :: Set.Set NamedIndividual  -- named individuals
+            , individuals :: Set.Set Individual  -- named individuals
             , prefixMap :: PrefixMap
             } deriving (Show, Eq, Ord)
 
@@ -34,7 +34,7 @@ data SignAxiom =
     Subconcept ClassExpression ClassExpression   -- subclass, superclass
   | Role (DomainOrRangeOrFunc (RoleKind, RoleType)) ObjectPropertyExpression
   | Data (DomainOrRangeOrFunc ()) DataPropertyExpression
-  | Conceptmembership NamedIndividual ClassExpression
+  | Conceptmembership Individual ClassExpression
     deriving (Show, Eq, Ord)
 
 data RoleKind = FuncRole | RefRole deriving (Show, Eq, Ord)

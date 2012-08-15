@@ -127,7 +127,6 @@ type Datatype = IRI
 type ObjectProperty = IRI
 type DataProperty = IRI
 type AnnotationProperty = IRI
-type NamedIndividual = IRI
 type Individual = IRI
 
 data EquivOrDisjoint = Equivalent | Disjoint
