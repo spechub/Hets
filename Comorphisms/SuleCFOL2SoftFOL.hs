@@ -29,6 +29,7 @@ import Common.Id
 import Common.Result
 import Common.DocUtils
 import Common.ProofTree
+import Common.Utils
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
@@ -39,6 +40,7 @@ import qualified Data.Set as Set
 import Data.List as List
 import Data.Maybe
 import Data.Char
+import Data.Function
 
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
@@ -184,14 +186,12 @@ transFuncMap :: IdTypeSPIdMap ->
 transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
   . MapSet.toMap $ CSign.opMap sign
     where toSPOpType iden typeSet (fm, im) =
-              if not (Set.null typeSet) && Set.null (Set.deleteMin typeSet) then
+              if isSingleton typeSet then
                  let oType = Set.findMin typeSet
                      sid' = sid fm oType
                  in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
-              else Set.fold insOIdSet (fm, im) $
-                         partOverload (leqF sign)
-                           (partArities (length . CSign.opArgs) typeSet)
+              else foldr insOIdSet (fm, im) $ Rel.partSet (leqF sign) typeSet
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transOpType tset) fm',
@@ -203,23 +203,6 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
                                            (elemsSPIdSet idMap))
                     uType t = fst t ++ [snd t]
 
--- 1. devide into sets with different arities
-partArities :: (Ord a) => (a -> Int) -> Set.Set a -> Set.Set (Set.Set a)
-partArities len = part 0 Set.empty
-    where part i acc s
-              | Set.null s = acc
-              | otherwise =
-                  case Set.partition (\ x -> len x == i) s of
-                  (ar_i, rest) ->
-                      part (i + 1) (if Set.null ar_i
-                                  then acc
-                                  else Set.insert ar_i acc) rest
-
-partOverload :: Ord a => (a -> a -> Bool) -> Set.Set (Set.Set a)
-             -> Set.Set (Set.Set a)
-partOverload leq =
-  Set.fold (Set.union . Set.fromList . Rel.partSet leq) Set.empty
-
 transPredMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
                 (SPSign.PredMap, IdTypeSPIdMap, [Named SPTerm])
@@ -227,18 +210,17 @@ transPredMap idMap sign =
     Map.foldWithKey toSPPredType (Map.empty, idMap, []) . MapSet.toMap
       $ CSign.predMap sign
     where toSPPredType iden typeSet (fm, im, sen) =
-              if not (Set.null typeSet) && Set.null (Set.deleteMin typeSet) then
+              if isSingleton typeSet then
                 let pType = Set.findMin typeSet
                     sid' = sid fm pType
                 in (Map.insert sid' (Set.singleton (transPredType pType)) fm
                    , insertSPId iden (CPred pType) sid' im
                    , sen)
               else case -- genPredImplicationDisjunctions sign $
-                        partOverload (leqP sign)
-                          (Set.singleton typeSet) of
-                     (splitTySet) ->
+                        Rel.partSet (leqP sign) typeSet of
+                     splitTySet ->
                          let (fm', im') =
-                                 Set.fold insOIdSet (fm, im) splitTySet
+                                 foldr insOIdSet (fm, im) splitTySet
                          in (fm', im', sen)
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
@@ -531,11 +513,10 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
           (pMap, idMap'', predImplications) = transPredMap idMap' sign
 
 nonEmptySortSens :: Set.Set SPIdentifier -> SortMap -> [Named SPTerm]
-nonEmptySortSens emptySorts sm =
+nonEmptySortSens emptySorts =
     Map.foldWithKey
-      (\ s _ res ->
-         if s `Set.member` emptySorts then res else extSen s : res)
-      [] sm
+      (\ s _ res -> [extSen s | s `Set.member` emptySorts] ++ res)
+      []
     where extSen s = makeNamed ("ga_non_empty_sort_" ++ show s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
               where varTerm = simpTerm $ spSym $ mkSimpleId $ newVar s
@@ -639,10 +620,10 @@ findEqPredicates (eqPreds, sens) sen =
         else validSens
     isStrong_eq vars f1 f2 =
       let f1n = case f1 of
-                  Strong_equation _ _ _ -> f1
+                  Strong_equation {} -> f1
                   _ -> f2
           f2n = case f1 of
-                  Strong_equation _ _ _ -> f2
+                  Strong_equation {} -> f2
                   _ -> f1
       in case f1n of
             Strong_equation eq_t1 eq_t2 _ -> case f2n of
@@ -914,8 +895,7 @@ createDomain sign m l = do
               $ if null r then mkStEq (toQualVar v) trm else
                    disjunct $ map (mkStEq $ toQualVar v) ts)
     . Rel.partList
-      (\ p1 p2 -> haveCommonSupersorts True sign (fst p1) $ fst p2)
-    $ zip tys l
+      (on (haveCommonSupersorts True sign) fst) $ zip tys l
   return $ conjunct cs
 
 typeCheckForm :: Bool -> CASLSign -> RMap -> SPTerm -> ([String], RMap)
