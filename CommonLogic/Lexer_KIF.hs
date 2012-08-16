@@ -56,25 +56,13 @@ quotedString = do
 variable :: CharParser st String
 variable = oneOf "?@" <:> word
 
-sign :: Num a => CharParser st a
-sign = liftM (maybe 1 (const (-1))) (optionMaybe $ char '-')
+sign :: CharParser st String
+sign = option "" (string "-")
 
 number :: CharParser st String
-number = do sgn <- sign
-            prePoint <- many1 (satisfy kifDigit)
-            postPoint <- optionMaybe $ char '.' >> many1 (satisfy kifDigit)
-            ex <- optionMaybe $ liftM fromIntegral expo
-            return $ show $ (sgn::Double) * case (postPoint, ex) of
-              (Just pp, Just e)  -> (read $ prePoint ++ '.' : pp) * 10**e
-              (Just pp, Nothing) -> (read $ prePoint ++ '.' : pp)
-              (Nothing, Just e)  -> (read prePoint) * 10**e
-              (Nothing, Nothing) -> read prePoint
-
-expo :: CharParser st Int
-expo = do char 'e'
-          sgn <- sign
-          e <- many1 (satisfy kifDigit)
-          return $ sgn*(read e)
+number = sign <++> many1 (satisfy kifDigit)
+         <++> option "" (char '.' <:> many1 (satisfy kifDigit))
+         <++> option "" (oneOf "eE" <:> sign <++> many1 (satisfy kifDigit))
 
 kifUpper :: Char -> Bool
 kifUpper ch = Data.Char.isUpper ch && Data.Char.isAscii ch
