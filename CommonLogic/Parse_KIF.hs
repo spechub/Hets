@@ -24,46 +24,55 @@ import CommonLogic.Lexer_KIF
 import Text.ParserCombinators.Parsec as Parsec
 import Control.Monad (liftM)
 
-quantsent :: CharParser st SENTENCE
-quantsent = do
-  quant <- (key forallS <|> key existsS) <?> "quantifier"
-  vars <- (parens $ many1 (pToken variable)) <?> "quantified variables"
-  sent <- sentence
-  return $ Quant_sent ((case tokStr quant of
-                          s | s == forallS -> Universal
-                          s | s == existsS -> Existential
-                          _ -> error "Unknown quantifier in \"quantsent\"")
-                       (map Name vars) sent)
-    (Range (joinRanges [rangeSpan quant, rangeSpan vars, rangeSpan sent]))
+boolop_unary :: [(String, SENTENCE -> BOOL_SENT, String)]
+boolop_unary = [(notS, Negation, "negation")]
+
+boolop_nary :: [(String, [SENTENCE] -> BOOL_SENT, String)]
+boolop_nary = [(andS, Conjunction, "conjunction"),
+               (orS, Disjunction, "disjunction")]
+
+boolop_binary :: [(String, SENTENCE -> SENTENCE -> BOOL_SENT, String)]
+boolop_binary = [(equivS, Biconditional, "equivalence"),
+                 (implS, Implication, "implication")]
+
+boolop_quant :: [(String, [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT, String)]
+boolop_quant = [(forallS, Universal, "universal quantifier"),
+                (existsS, Existential, "existiantial quantifier")]
 
 logsent :: CharParser st SENTENCE
-logsent = do
-    c <- key andS <?> "conjunction"
-    s <- many sentence -- joinRanges with s = []?
-    return $ Bool_sent (Conjunction s) $ Range $ joinRanges [rangeSpan c,
-             rangeSpan s]
-  <|> do
-    c <- key orS <?> "disjunction"
-    s <- many sentence
-    return $ Bool_sent (Disjunction s) $ Range $ joinRanges [rangeSpan c,
-               rangeSpan s]
-  <|> do
-    c <- key notS <?> "negation"
-    s <- sentence <?> "sentence after \"" ++ notS ++ "\""
-    return $ Bool_sent (Negation s) $ Range $ joinRanges [rangeSpan c,
-               rangeSpan s]
-  <|> do
-    c <- key equivS <?> "equivalence"
-    s1 <- sentence <?> "sentence after \"" ++ equivS ++ "\""
-    s2 <- sentence <?> "second sentence after \"" ++ equivS ++ "\""
-    return $ Bool_sent (Biconditional s1 s2) $ Range $ joinRanges [rangeSpan c,
-                                                   rangeSpan s1, rangeSpan s1]
-  <|> do
-    c <- key implS <?> "implication"
-    s1 <- sentence <?> "sentence after \"" ++ implS ++ "\""
-    s2 <- sentence <?> "second sentence after \"" ++ implS ++ "\""
-    return $ Bool_sent (Implication s1 s2) $ Range $ joinRanges [rangeSpan c,
-                                                   rangeSpan s1, rangeSpan s1]
+logsent = (choice $
+           map (\(ident, con, desc) -> do
+                   c <- key ident <?> desc
+                   s <- sentence <?> "sentence after \"" ++ ident ++ "\""
+                   return $ Bool_sent (con s)
+                     $ Range $ joinRanges [rangeSpan c, rangeSpan s])
+           boolop_unary)
+      <|> (choice $
+           map (\(ident, con, desc) -> do
+                   c <- key ident <?> desc
+                   s <- many sentence <?> "sentences after \"" ++ ident ++ "\""
+                   return $ Bool_sent (con s)
+                     $ Range $ joinRanges [rangeSpan c, rangeSpan s])
+           boolop_nary)
+      <|> (choice $
+           map (\(ident, con, desc) -> do
+                   c <- key ident <?> desc
+                   s1 <- sentence <?> "first sentence after \"" ++ ident ++ "\""
+                   s2 <- sentence <?> "second sentence after \"" ++ ident ++ "\""
+                   return $ Bool_sent (con s1 s2)
+                     $ Range $ joinRanges [rangeSpan c, rangeSpan s1,
+                                           rangeSpan s2])
+           boolop_binary)
+      <|> (choice $
+           map (\(ident, con, desc) -> do
+                   c <- key ident <?> desc
+                   vars <- ((parens $ many1 (pToken variable))
+                            <?> "quantified variables")
+                   s <- sentence <?> "sentence after \"" ++ ident ++ "\""
+                   return $ Quant_sent (con (map Name vars) s)
+                     $ Range $ joinRanges [rangeSpan c, rangeSpan vars,
+                                           rangeSpan s])
+           boolop_quant)
 
 equalAtom :: CharParser st ATOM
 equalAtom = do
@@ -84,7 +93,7 @@ plainsent :: CharParser st SENTENCE
 plainsent = atomsent plainAtom
 
 parensent :: CharParser st SENTENCE
-parensent = parens $ quantsent <|> logsent <|> relsent <|> eqsent <|> neqsent
+parensent = parens $ logsent <|> relsent <|> eqsent <|> neqsent
 
 funterm :: CharParser st TERM
 funterm = do relword <- pToken (word <|> variable) <?> "funword"
