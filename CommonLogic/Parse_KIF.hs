@@ -16,6 +16,7 @@ import qualified Common.AS_Annotation as Annotation
 import CommonLogic.AS_CommonLogic as AS
 import Common.Id as Id
 import Common.Keywords
+import Common.Lexer (notFollowedWith)
 import Common.Token
 
 import CommonLogic.Lexer_KIF
@@ -120,7 +121,8 @@ sentence :: CharParser st SENTENCE
 sentence = parensent <|> plainsent
 
 topLevelSentence :: CharParser st SENTENCE
-topLevelSentence = notFollowedBy (foldr (<|>) pzero (map key terminatingKeywords))
+topLevelSentence = notFollowedWith (return ())
+                   (choice (map key terminatingKeywords))
                    >> sentence
 
 basicSpec :: AnnoState.AParser st BASIC_SPEC
