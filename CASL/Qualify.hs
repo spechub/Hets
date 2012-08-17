@@ -18,6 +18,7 @@ module CASL.Qualify
   ) where
 
 import CASL.AS_Basic_CASL
+import CASL.Disambiguate
 import CASL.Sign
 import CASL.Morphism
 import CASL.Monoton
@@ -31,10 +32,6 @@ import qualified Common.Lib.MapSet as MapSet
 import Control.Monad
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-
-mkOverloadedId :: Int -> Id -> Id
-mkOverloadedId n i = if n <= 1 then i else
-  Id [genToken "Over"] (i : map (stringToId . (: [])) (show n)) $ posOfId i
 
 mkOrReuseQualSortName :: Sort_map -> SIMPLE_ID -> LibId -> Id -> Id
 mkOrReuseQualSortName sm nodeId libId i =
@@ -79,10 +76,6 @@ qualOverloaded oMap rn nodeId libId f g =
          _ -> mkQualName nodeId libId $ mkOverloadedId n i, f e)) m
                   $ zip (Set.toList s) [1 + Map.findWithDefault 0 i oMap ..])
     Map.empty . MapSet.toMap
-
-createOpMorMap :: Map.Map (Id, OpType) (Id, OpType)
-             -> Map.Map (Id, OpType) (Id, OpKind)
-createOpMorMap = Map.map (\ (i, t) -> (i, opKind t))
 
 inverseMorphism :: (Morphism f e m -> Result m) -> Morphism f e m
   -> Result (Morphism f e m)
