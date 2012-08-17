@@ -18,8 +18,6 @@ import Logic.Logic
 
 import ATC.ProofTree ()
 import Common.ProofTree
-import Common.IRI
-import Common.Id
 
 import CommonLogic.ATC_CommonLogic ()
 import CommonLogic.Sign
@@ -71,11 +69,10 @@ instance Syntax CommonLogic
     SYMB_ITEMS
     SYMB_MAP_ITEMS
     where
-      parsersAndPrinters CommonLogic = Map.fromList
-                                       [((simpleIdToIRI $ mkSimpleId "CLIF"),
-                                         (CLIF.basicSpec, pretty)),
-                                        ((simpleIdToIRI $ mkSimpleId "KIF"),
-                                         (KIF.basicSpec, pretty))]
+      parsersAndPrinters CommonLogic =
+        addSyntax "KIF" (KIF.basicSpec, pretty)
+        $ addSyntax "CLIF" (CLIF.basicSpec, pretty)
+        $ makeDefault (CLIF.basicSpec, pretty)
       parse_symb_items CommonLogic = Just CLIF.symbItems
       parse_symb_map_items CommonLogic = Just CLIF.symbMapItems
 
