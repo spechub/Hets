@@ -25,10 +25,11 @@ import CommandP
 import ParseLib2
 import System.Environment
 import Control.Monad
+import qualified Control.Exception as Exception
 
 -- GHC version
 try :: IO a -> IO (Either IOError a)
-try x = catch (fmap Right x) (return . Left)
+try x = Exception.catch (fmap Right x) (return . Left)
 
 -- Parser - extract data and newtypes from code
 
@@ -62,8 +63,8 @@ chaseImports' text indats =
     where
         action :: (ToDo, ToDo) -> FilePath -> IO (ToDo, ToDo)
         action (dats, done) m = if null dats then return ([], done) else do
-             mp <- catch (fmap return $ getEnv "DERIVEPATH")
-                   $ return . fail . show
+             mp <- Exception.catch (fmap return $ getEnv "DERIVEPATH")
+                   $ \ e -> return . fail $ show (e :: Exception.IOException)
              let paths = maybe [] breakPaths mp
              mc <- findModule paths m
              return $ case mc of
