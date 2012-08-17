@@ -17,7 +17,7 @@ chgrp macbkb hets
 \cp -fp hets /home/mac-bkb/intel/hets/hets-latest/bin/
 
 createLogFiles
-#runIsaBasic
+runIsaBasic
 runSPASSBasic
 runDarwinBasic
 
