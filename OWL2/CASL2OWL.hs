@@ -18,11 +18,12 @@ import Common.AS_Annotation
 import Common.Result
 import qualified Data.Set as Set
 import Common.Id
+import qualified Common.Lib.MapSet as MapSet
+
 {-
 import Control.Monad
 import Data.Char
 import qualified Data.Map as Map
-import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 -- the DL with the initial signature for OWL
@@ -46,6 +47,7 @@ import OWL2.Sign as OS
 -- CASL = domain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
+import CASL.Disambiguate
 import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic
@@ -105,15 +107,25 @@ mapSymbol :: Symbol -> Set.Set Entity
 mapSymbol _ = Set.empty
 
 {- names must be disambiguated as is done in CASL.Qualify or SuleCFOL2SoftFOL.
-   May ops or preds in the overload relation denote the same objectProperty?
+   Ops or preds in the overload relation denote the same objectProperty!
 -}
 idToIRI :: Id -> QName
 idToIRI i = nullQName
   { localPart = show i, iriPos = rangeOfId i }
 
 mapSign :: CASLSign -> OS.Sign
-mapSign csig = OS.emptySign
-  { concepts = Set.map idToIRI $ sortSet csig }  -- map sorts to concepts
+mapSign csig = let
+  om = opMap csig
+  pm = predMap csig
+  in OS.emptySign
+  { concepts = Set.map idToIRI $ Set.unions
+      [ sortSet csig
+      , MapSet.keysSet $ MapSet.filter (null . opArgs) om
+      , MapSet.keysSet $ MapSet.filter (isSingle . predArgs) pm ]
+  , objectProperties = Set.map idToIRI $ Set.union (MapSet.keysSet
+      $ MapSet.filter isSingleArgOp om)
+      $ MapSet.keysSet $ MapSet.filter isBinPredType pm
+  }
 
 {- binary predicates and single argument functions should become
    objectProperties.
@@ -123,4 +135,5 @@ mapSign csig = OS.emptySign
 -}
 
 mapTheory :: (CASLSign, [Named CASLFORMULA]) -> Result (OS.Sign, [Named Axiom])
-mapTheory (sig, _sens) = return (mapSign sig, [])
+mapTheory (sig, _sens) = let mor = disambigSig sig in
+  return (mapSign $ mtarget mor, [])

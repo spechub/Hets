@@ -44,6 +44,9 @@ mkTotOpType = OpType Total
 sortToOpType :: SORT -> OpType
 sortToOpType = mkTotOpType []
 
+isSingleArgOp :: OpType -> Bool
+isSingleArgOp = isSingle . opArgs
+
 data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 
 sortToPredType :: SORT -> PredType
