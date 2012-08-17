@@ -191,7 +191,8 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
                      sid' = sid fm oType
                  in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
-              else foldr insOIdSet (fm, im) $ Rel.partSet (leqF sign) typeSet
+              else Set.foldr insOIdSet (fm, im)
+                $ Set.fromList $ Rel.partSet (leqF sign) typeSet
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transOpType tset) fm',
@@ -217,10 +218,10 @@ transPredMap idMap sign =
                    , insertSPId iden (CPred pType) sid' im
                    , sen)
               else case -- genPredImplicationDisjunctions sign $
-                        Rel.partSet (leqP sign) typeSet of
+                        Set.fromList $ Rel.partSet (leqP sign) typeSet of
                      splitTySet ->
                          let (fm', im') =
-                                 foldr insOIdSet (fm, im) splitTySet
+                                 Set.fold insOIdSet (fm, im) splitTySet
                          in (fm', im', sen)
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
