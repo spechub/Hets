@@ -39,40 +39,31 @@ boolop_quant :: [(String, [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT, String)]
 boolop_quant = [(forallS, Universal, "universal quantifier"),
                 (existsS, Existential, "existiantial quantifier")]
 
+parse_boolop :: [(String, op_t, String)] -> CharParser st (Token, op_t, String)
+parse_boolop = choice . map
+               (\(ident, con, desc) ->
+                 liftM (\ch -> (ch, con, ident)) (key ident <?> desc))
+
 logsent :: CharParser st SENTENCE
-logsent = (choice $
-           map (\(ident, con, desc) -> do
-                   c <- key ident <?> desc
-                   s <- sentence <?> "sentence after \"" ++ ident ++ "\""
-                   return $ Bool_sent (con s)
-                     $ Range $ joinRanges [rangeSpan c, rangeSpan s])
-           boolop_unary)
-      <|> (choice $
-           map (\(ident, con, desc) -> do
-                   c <- key ident <?> desc
-                   s <- many sentence <?> "sentences after \"" ++ ident ++ "\""
-                   return $ Bool_sent (con s)
-                     $ Range $ joinRanges [rangeSpan c, rangeSpan s])
-           boolop_nary)
-      <|> (choice $
-           map (\(ident, con, desc) -> do
-                   c <- key ident <?> desc
-                   s1 <- sentence <?> "first sentence after \"" ++ ident ++ "\""
-                   s2 <- sentence <?> "second sentence after \"" ++ ident ++ "\""
-                   return $ Bool_sent (con s1 s2)
-                     $ Range $ joinRanges [rangeSpan c, rangeSpan s1,
-                                           rangeSpan s2])
-           boolop_binary)
-      <|> (choice $
-           map (\(ident, con, desc) -> do
-                   c <- key ident <?> desc
-                   vars <- ((parens $ many1 (pToken variable))
-                            <?> "quantified variables")
-                   s <- sentence <?> "sentence after \"" ++ ident ++ "\""
-                   return $ Quant_sent (con (map Name vars) s)
-                     $ Range $ joinRanges [rangeSpan c, rangeSpan vars,
-                                           rangeSpan s])
-           boolop_quant)
+logsent = do (ch,con,ident) <- parse_boolop boolop_unary
+             s <- sentence <?> "sentence after \"" ++ ident ++ "\""
+             return $ Bool_sent (con s)
+               $ Range $ joinRanges [rangeSpan ch, rangeSpan s]
+      <|> do (ch,con,ident) <- parse_boolop boolop_nary
+             s <- many sentence <?> "sentences after \"" ++ ident ++ "\""
+             return $ Bool_sent (con s)
+               $ Range $ joinRanges [rangeSpan ch, rangeSpan s]
+      <|> do (ch,con,ident) <- parse_boolop boolop_binary
+             s1 <- sentence <?> "first sentence after \"" ++ ident ++ "\""
+             s2 <- sentence <?> "second sentence after \"" ++ ident ++ "\""
+             return $ Bool_sent (con s1 s2)
+               $ Range $ joinRanges [rangeSpan ch, rangeSpan s1, rangeSpan s2]
+      <|> do (ch,con,ident) <- parse_boolop boolop_quant
+             vars <- ((parens $ many1 (pToken variable))
+                      <?> "quantified variables")
+             s <- sentence <?> "sentence after \"" ++ ident ++ "\""
+             return $ Quant_sent (con (map Name vars) s)
+               $ Range $ joinRanges [rangeSpan ch, rangeSpan vars, rangeSpan s]
 
 equalAtom :: CharParser st ATOM
 equalAtom = do
