@@ -87,15 +87,23 @@ parensent :: CharParser st SENTENCE
 parensent = parens $ logsent <|> relsent <|> eqsent <|> neqsent
 
 funterm :: CharParser st TERM
-funterm = do relword <- pToken (word <|> variable) <?> "funword"
-             t <- many1 term
-             return $ Funct_term (Name_term relword) (map Term_seq t)
-               (Range $ joinRanges [rangeSpan relword, rangeSpan t])
+funterm = parens funterm
+      <|> do relword <- pToken (word <|> variable) <?> "funword"
+             let nt = Name_term relword
+             t <- many term <?> "arguments"
+             if null t
+               then return nt
+               else return $ Funct_term nt (map Term_seq t)
+                    (Range $ joinRanges [rangeSpan relword, rangeSpan t])
 
 relsent :: CharParser st SENTENCE
 relsent = do
-  Funct_term p args rn <- funterm
-  return $ Atom_sent (Atom p args) rn
+  ft <- funterm
+  let a = case ft of
+        p@(Name_term _) -> Atom p []
+        Funct_term p args _ -> Atom p args
+        _ -> error "unknown TERM in relsent"
+  atomsent $ return a
 
 eqsent :: CharParser st SENTENCE
 eqsent = atomsent equalAtom
