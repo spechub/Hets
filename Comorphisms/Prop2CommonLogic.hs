@@ -121,7 +121,7 @@ translate f =
   emptyTextMeta {
         getText = Text [Sentence singletonUniv, Sentence $ toSen f] nullRange
   }
-  where singletonUniv = Quant_sent (Universal [Name xName, Name yName]
+  where singletonUniv = Quant_sent (QUANT_SENT Universal [Name xName, Name yName]
             $ Atom_sent (Equation (Name_term xName) (Name_term yName)) nullRange
           ) nullRange
 
@@ -131,17 +131,19 @@ toSen x = case x of
   PBasic.True_atom _ -> clTrue
   PBasic.Predication n -> Atom_sent (Atom (Name_term n) []) nullRange
   PBasic.Negation f _ -> Bool_sent (Negation $ toSen f) nullRange
-  PBasic.Conjunction fs _ -> Bool_sent (Conjunction $ map toSen fs) nullRange
-  PBasic.Disjunction fs _ -> Bool_sent (Disjunction $ map toSen fs) nullRange
+  PBasic.Conjunction fs _ ->
+    Bool_sent (Junction Conjunction $ map toSen fs) nullRange
+  PBasic.Disjunction fs _ ->
+    Bool_sent (Junction Disjunction $ map toSen fs) nullRange
   PBasic.Implication f1 f2 _ ->
-    Bool_sent (Implication (toSen f1) (toSen f2)) nullRange
+    Bool_sent (BinOp Implication (toSen f1) (toSen f2)) nullRange
   PBasic.Equivalence f1 f2 _ ->
-    Bool_sent (Biconditional (toSen f1) (toSen f2)) nullRange
+    Bool_sent (BinOp Biconditional (toSen f1) (toSen f2)) nullRange
 
 clTrue :: SENTENCE --forall x. x=x
-clTrue = Quant_sent (Universal [Name xName]
-            $ Atom_sent (Equation (Name_term xName) (Name_term xName)) nullRange
-          ) nullRange
+clTrue = Quant_sent (QUANT_SENT Universal [Name xName]
+                     $ Atom_sent (Equation (Name_term xName) (Name_term xName))
+                     nullRange) nullRange
 
 xName :: NAME
 xName = mkSimpleId "x"

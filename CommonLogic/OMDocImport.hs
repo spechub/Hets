@@ -96,33 +96,39 @@ toModule e om n = case om of
 
 toSen :: Env -> OMElement -> SENTENCE
 toSen e om = case om of
-                        OMBIND binder args body -> let vars = map toNameSeqmark args
-                                                       sent = toSen e body
-                                                       quant 
-                                                             | binder == const_forall = Universal
-                                                             | binder == const_exists = Existential
-                                                             | otherwise = error "toSen: not supported binder"
-                                                    in Quant_sent (quant vars sent) nullRange
-                        OMA (omh : os)
-                                | omh == const_and -> Bool_sent (Conjunction (map (toSen e) os)) nullRange
-                                | omh == const_or -> Bool_sent (Disjunction (map (toSen e) os)) nullRange
-                                | omh == const_implies -> let s1:s2:[] = map (toSen e) os
-                                                           in Bool_sent (Implication s1 s2) nullRange
-                                | omh == const_equivalent -> let s1:s2:[] = map (toSen e) os
-                                                              in Bool_sent (Biconditional s1 s2) nullRange
-                                | omh == const_not -> let ns:[] = map (toSen e) os
-                                                       in Bool_sent (Negation ns) nullRange
-                                | omh == const_eq -> let t1:t2:[] = map (omdocToTerm e) os
-                                                      in Atom_sent (Equation t1 t2) nullRange
-                                | omh == const_comment
-                                  && length os > 0 -> let s:[] = map (toSen e) $ tail os
-                                                       in Comment_sent (varToComment $ head os) s nullRange
-                                | omh == const_comment -> error "toSen: commented sentence has no comment"
-                                | omh == const_irregular -> let s:[] = map (toSen e) os
-                                                             in Irregular_sent s nullRange
-                                | otherwise ->  Atom_sent (Atom (omdocToTerm e omh)  (map (omdocToTermSeq e) os)) nullRange
-                        _ -> error $ concat [ "toSen: only applications and quantifications are allowed,"
-                                              , " but found: ", show om ]
+  OMBIND binder args body ->
+    let vars = map toNameSeqmark args
+        sent = toSen e body
+        quant | binder == const_forall = Universal
+              | binder == const_exists = Existential
+              | otherwise = error "toSen: not supported binder"
+        in Quant_sent (QUANT_SENT quant vars sent) nullRange
+  OMA (omh : os)
+    | omh == const_and ->
+      Bool_sent (Junction Conjunction (map (toSen e) os)) nullRange
+    | omh == const_or ->
+      Bool_sent (Junction Disjunction (map (toSen e) os)) nullRange
+    | omh == const_implies ->
+      let s1:s2:[] = map (toSen e) os
+      in Bool_sent (BinOp Implication s1 s2) nullRange
+    | omh == const_equivalent ->
+      let s1:s2:[] = map (toSen e) os
+      in Bool_sent (BinOp Biconditional s1 s2) nullRange
+    | omh == const_not -> let ns:[] = map (toSen e) os
+                          in Bool_sent (Negation ns) nullRange
+    | omh == const_eq -> let t1:t2:[] = map (omdocToTerm e) os
+                         in Atom_sent (Equation t1 t2) nullRange
+    | omh == const_comment && length os > 0 ->
+      let s:[] = map (toSen e) $ tail os
+      in Comment_sent (varToComment $ head os) s nullRange
+    | omh == const_comment -> error "toSen: commented sentence has no comment"
+    | omh == const_irregular -> let s:[] = map (toSen e) os
+                                in Irregular_sent s nullRange
+    | otherwise -> Atom_sent (Atom (omdocToTerm e omh)
+                              (map (omdocToTermSeq e) os)) nullRange
+  _ -> error $
+       concat [ "toSen: only applications and quantifications are allowed,"
+              , " but found: ", show om ]
 
 toNameSeqmark :: OMElement -> NAME_OR_SEQMARK 
 toNameSeqmark (OMV (OMName n _)) =  let dec = strToToken n

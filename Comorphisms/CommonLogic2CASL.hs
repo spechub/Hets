@@ -173,23 +173,25 @@ senForm sig form =
      ClBasic.Bool_sent bs rn
         -> case bs of
              ClBasic.Negation s -> CBasic.Negation (senForm sig s) rn
-             ClBasic.Conjunction [] -> CBasic.True_atom Id.nullRange
-             ClBasic.Disjunction [] -> CBasic.True_atom Id.nullRange
-             ClBasic.Conjunction ss ->
+             ClBasic.Junction ClBasic.Conjunction [] ->
+               CBasic.True_atom Id.nullRange
+             ClBasic.Junction ClBasic.Disjunction [] ->
+               CBasic.False_atom Id.nullRange
+             ClBasic.Junction ClBasic.Conjunction ss ->
                 CBasic.Conjunction (map (senForm sig) ss) rn
-             ClBasic.Disjunction ss ->
+             ClBasic.Junction ClBasic.Disjunction ss ->
                 CBasic.Disjunction (map (senForm sig) ss) rn
-             ClBasic.Implication s1 s2 ->
+             ClBasic.BinOp ClBasic.Implication s1 s2 ->
                 CBasic.Implication (senForm sig s1) (senForm sig s2) True rn
-             ClBasic.Biconditional s1 s2 -> CBasic.Equivalence
-                                             (senForm sig s1) (senForm sig s2) rn
+             ClBasic.BinOp ClBasic.Biconditional s1 s2 ->
+               CBasic.Equivalence (senForm sig s1) (senForm sig s2) rn
      ClBasic.Quant_sent qs rn
         -> case qs of
-             ClBasic.Universal bs s ->
+             ClBasic.QUANT_SENT ClBasic.Universal bs s ->
                CBasic.Quantification CBasic.Universal
                [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
                (senForm sig s) rn
-             ClBasic.Existential bs s ->
+             ClBasic.QUANT_SENT ClBasic.Existential bs s ->
                CBasic.Quantification CBasic.Existential
                [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
                (senForm sig s) rn

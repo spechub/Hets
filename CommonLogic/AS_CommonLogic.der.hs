@@ -80,16 +80,22 @@ data SENTENCE = Quant_sent QUANT_SENT Id.Range
               | Irregular_sent SENTENCE Id.Range
                 deriving (Show, Ord, Eq)
 
-data QUANT_SENT = Universal [NAME_OR_SEQMARK] SENTENCE
-                | Existential [NAME_OR_SEQMARK] SENTENCE
-                  deriving (Show, Ord, Eq)
+data QUANT = Universal | Existential
+             deriving (Show, Ord, Eq)
+                    
+data QUANT_SENT = QUANT_SENT QUANT [NAME_OR_SEQMARK] SENTENCE
+             deriving (Show, Ord, Eq)
 
-data BOOL_SENT = Conjunction [SENTENCE]
-               | Disjunction [SENTENCE]
+data BOOL_SENT = Junction AndOr [SENTENCE]
                | Negation SENTENCE
-               | Implication SENTENCE SENTENCE
-               | Biconditional SENTENCE SENTENCE
+               | BinOp ImplEq SENTENCE SENTENCE
                  deriving (Show, Ord, Eq)
+
+data AndOr = Conjunction | Disjunction
+             deriving (Show, Ord, Eq)
+
+data ImplEq = Implication | Biconditional 
+              deriving (Show, Ord, Eq)
 
 data ATOM = Equation TERM TERM
           | Atom TERM [TERM_SEQ]
@@ -145,8 +151,14 @@ instance Pretty SENTENCE where
    pretty = printSentence
 instance Pretty BOOL_SENT where
    pretty = printBoolSent
+instance Pretty AndOr where
+   pretty = printAndOr
+instance Pretty ImplEq where
+   pretty = printImplEq
 instance Pretty QUANT_SENT where
    pretty = printQuantSent
+instance Pretty QUANT where
+   pretty = printQuant
 instance Pretty ATOM where
    pretty = printAtom
 instance Pretty TERM where
@@ -221,16 +233,28 @@ printComment s = case s of
 
 printQuantSent :: QUANT_SENT -> Doc
 printQuantSent s = case s of
-   Universal x y -> text forallS <+> parens (sep $ map pretty x) <+> pretty y
-   Existential x y -> text existsS <+> parens (sep $ map pretty x) <+> pretty y
+  QUANT_SENT q x y -> pretty q <+> parens (sep $ map pretty x) <+> pretty y
+
+printQuant :: QUANT -> Doc
+printQuant s = case s of
+  Universal -> text forallS
+  Existential -> text existsS
 
 printBoolSent :: BOOL_SENT -> Doc
 printBoolSent s = case s of
-   Conjunction xs -> text andS <+> fsep (map pretty xs)
-   Disjunction xs -> text orS <+> fsep (map pretty xs)
+   Junction q xs -> pretty q <+> fsep (map pretty xs)
    Negation xs -> text notS <+> pretty xs
-   Implication x y -> text ifS <+> pretty x <+> pretty y
-   Biconditional x y -> text iffS <+> pretty x <+> pretty y
+   BinOp q x y -> pretty q <+> pretty x <+> pretty y
+
+printAndOr :: AndOr -> Doc
+printAndOr s = case s of
+  Conjunction -> text andS
+  Disjunction -> text orS
+
+printImplEq :: ImplEq -> Doc
+printImplEq s = case s of
+  Implication -> text ifS
+  Biconditional -> text iffS
 
 printAtom :: ATOM -> Doc
 printAtom s = case s of

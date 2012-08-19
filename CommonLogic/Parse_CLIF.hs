@@ -157,13 +157,13 @@ sentence = parens (do
   <|> do
     c <- andKey
     s <- many sentence -- joinRanges with s = []?
-    return $ Bool_sent (Conjunction s) $ Range $ joinRanges [rangeSpan c,
-             rangeSpan s]
+    return $ Bool_sent (Junction Conjunction s)
+      $ Range $ joinRanges [rangeSpan c, rangeSpan s]
   <|> do
     c <- orKey
     s <- many sentence
-    return $ Bool_sent (Disjunction s) $ Range $ joinRanges [rangeSpan c,
-               rangeSpan s]
+    return $ Bool_sent (Junction Disjunction s)
+      $ Range $ joinRanges [rangeSpan c, rangeSpan s]
   <|> do
     c <- notKey
     s <- sentence <?> "sentence after \"not\""
@@ -173,14 +173,14 @@ sentence = parens (do
     c <- try iffKey
     s1 <- sentence <?> "sentence after \"iff\""
     s2 <- sentence <?> "second sentence after \"iff\""
-    return $ Bool_sent (Biconditional s1 s2) $ Range $ joinRanges [rangeSpan c,
-                                                   rangeSpan s1, rangeSpan s1]
+    return $ Bool_sent (BinOp Biconditional s1 s2)
+      $ Range $ joinRanges [rangeSpan c, rangeSpan s1, rangeSpan s1]
   <|> do
     c <- ifKey
     s1 <- sentence <?> "sentence after \"if\""
     s2 <- sentence <?> "second sentence after \"if\""
-    return $ Bool_sent (Implication s1 s2) $ Range $ joinRanges [rangeSpan c,
-                                                   rangeSpan s1, rangeSpan s1]
+    return $ Bool_sent (BinOp Implication s1 s2)
+      $ Range $ joinRanges [rangeSpan c, rangeSpan s1, rangeSpan s1]
   <|> do
     c <- forallKey
     quantsent1 True c
@@ -210,24 +210,24 @@ quantsent3 t mg bs ((n,trm):nts) s rn = -- Quant_sent using syntactic sugar
        Name nm -> Atom (Funct_term trm [Term_seq $ Name_term nm] nullRange) []
        SeqMark sqm -> Atom (Funct_term trm [Seq_marks sqm] nullRange) []
   in if t
-        then Quant_sent (Universal [n] $ quantsent3 t mg bs nts (
-                  Bool_sent (Implication (Atom_sent functerm rn) s) rn
+        then Quant_sent (QUANT_SENT Universal [n] $ quantsent3 t mg bs nts (
+                  Bool_sent (BinOp Implication (Atom_sent functerm rn) s) rn
                 ) rn) rn
-        else Quant_sent (Universal [n] $ quantsent3 t mg bs nts (
-                  Bool_sent (Conjunction [Atom_sent functerm rn, s]) rn
+        else Quant_sent (QUANT_SENT Universal [n] $ quantsent3 t mg bs nts (
+                  Bool_sent (Junction Conjunction [Atom_sent functerm rn, s]) rn
                 ) rn) rn
 quantsent3 t mg bs [] s rn =
-  let quantType = if t then Universal else Existential
+  let quantType = QUANT_SENT $ if t then Universal else Existential
   in case mg of
     Nothing -> Quant_sent (quantType bs s) rn -- normal Quant_sent
     Just g ->                                -- Quant_sent using syntactic sugar
       let functerm = Atom (Funct_term (Name_term g) (map (Term_seq . Name_term)
                       $ Set.elems $ Tools.indvC_sen s) nullRange) []
       in if t
-          then Quant_sent (Universal bs (Bool_sent (Implication
+          then Quant_sent (QUANT_SENT Universal bs (Bool_sent (BinOp Implication
               (Atom_sent functerm nullRange) s) rn)) rn
           else 
-            Quant_sent (Existential bs (Bool_sent (Conjunction
+            Quant_sent (QUANT_SENT Existential bs (Bool_sent (Junction Conjunction
               [Atom_sent functerm nullRange, s]) rn)) rn
 
 boundlist :: CharParser st [Either (NAME_OR_SEQMARK, TERM) NAME_OR_SEQMARK]
@@ -296,7 +296,7 @@ rolesetNT = parens $ do
 rolesetSentence :: TERM -> [(NAME, TERM)] -> SENTENCE
 rolesetSentence t0 nts =
   let x = rolesetFreeName t0 nts
-  in  Quant_sent (Existential [Name x] (Bool_sent (Conjunction $
+  in  Quant_sent (QUANT_SENT Existential [Name x] (Bool_sent (Junction Conjunction $
           rolesetAddToTerm x t0 : map (rolesetMixTerm x) nts
         ) nullRange)) $ Range $ rangeSpan t0
 

@@ -73,24 +73,20 @@ exportSen :: Env -> [NAME_OR_SEQMARK] -> SENTENCE
                   -> OMElement
 exportSen en vars s = case s of
       Quant_sent qs _ -> case qs of
-          Universal vars2 s2 -> OMBIND const_forall
-                                (map exportVar vars2)
-                                (exportSen en (vars ++ vars2) s2)
-          Existential vars2 s2 -> OMBIND const_exists
-                                  (map exportVar vars2)
-                                  (exportSen en (vars ++ vars2) s2)
+          QUANT_SENT q vars2 s2 -> OMBIND (case q of
+                                                Universal -> const_forall
+                                                Existential -> const_exists)
+                                   (map exportVar vars2)
+                                   (exportSen en (vars ++ vars2) s2)
       Bool_sent bs _ -> case bs of
-          Conjunction ss ->
-              OMA $ const_and : map (exportSen en vars) ss
-          Disjunction ss ->
-             OMA $ const_or : map (exportSen en vars) ss
+          Junction j ss ->
+            OMA $ (case j of Conjunction -> const_and 
+                             Disjunction -> const_or)
+            : map (exportSen en vars) ss
           Negation s1 -> OMA [ const_not, exportSen en vars s1]
-          Implication s1 s2 -> OMA
-              [ const_implies
-              , exportSen en vars s1
-              , exportSen en vars s2]
-          Biconditional s1 s2 -> OMA
-              [ const_equivalent
+          BinOp op s1 s2 -> OMA
+              [ case op of Implication -> const_implies
+                           Biconditional -> const_equivalent
               , exportSen en vars s1
               , exportSen en vars s2]
       Atom_sent at _ -> case at of

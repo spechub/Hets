@@ -243,25 +243,27 @@ senForm bndVars form = case form of
       Cl.Negation s -> do
           sen <- senForm bndVars s
           return $ CBasic.Negation sen rn
-      Cl.Conjunction [] -> return $ CBasic.True_atom Id.nullRange
-      Cl.Disjunction [] -> return $ CBasic.False_atom Id.nullRange
-      Cl.Conjunction ss -> do
+      Cl.Junction Cl.Conjunction [] -> return $ CBasic.True_atom Id.nullRange
+      Cl.Junction Cl.Disjunction [] -> return $ CBasic.False_atom Id.nullRange
+      Cl.Junction Cl.Conjunction ss -> do
           sens <- mapM (senForm bndVars) ss
           return $ CBasic.Conjunction sens rn
-      Cl.Disjunction ss -> do
+      Cl.Junction Cl.Disjunction ss -> do
           sens <- mapM (senForm bndVars) ss
           return $ CBasic.Disjunction sens rn 
-      Cl.Implication s1 s2 -> do
+      Cl.BinOp Cl.Implication s1 s2 -> do
           sen1 <- senForm bndVars s1
           sen2 <- senForm bndVars s2
           return $ CBasic.Implication sen1 sen2 True rn
-      Cl.Biconditional s1 s2 -> do
+      Cl.BinOp Cl.Biconditional s1 s2 -> do
           sen1 <- senForm bndVars s1
           sen2 <- senForm bndVars s2
           return $ CBasic.Equivalence sen1 sen2 rn
   Cl.Quant_sent qs rn -> case qs of
-      Cl.Universal bs s -> quantSentForm Universal rn bndVars bs s
-      Cl.Existential bs s -> quantSentForm Existential rn  bndVars bs s
+      Cl.QUANT_SENT Cl.Universal bs s ->
+        quantSentForm Universal rn bndVars bs s
+      Cl.QUANT_SENT Cl.Existential bs s ->
+        quantSentForm Existential rn  bndVars bs s
   Cl.Atom_sent at rn -> case at of
       Cl.Equation trm1 trm2 -> do
           t1 <- termForm bndVars $ uncurryTerm trm1
@@ -380,26 +382,16 @@ colTi_phr p = case p of
 colTi_sen :: Cl.SENTENCE -> Result TextInfo
 colTi_sen sen = case sen of
   Cl.Quant_sent q _ -> case q of
-      Cl.Universal noss s -> do
-          cti <- colTi_sen s
-          nossR <- mapM nosStrnig noss
-          return $ foldr (\n r -> removeFromTI n r) cti nossR
-      Cl.Existential noss s -> do
+      Cl.QUANT_SENT _ noss s -> do
           cti <- colTi_sen s
           nossR <- mapM nosStrnig noss
           return $ foldr (\n r -> removeFromTI n r) cti nossR
   Cl.Bool_sent b _ -> case b of
-      Cl.Conjunction sens -> do
-          cti <- mapM colTi_sen sens
-          return $ unionsTI cti
-      Cl.Disjunction sens -> do
+      Cl.Junction _ sens -> do
           cti <- mapM colTi_sen sens
           return $ unionsTI cti
       Cl.Negation s -> colTi_sen s
-      Cl.Implication s1 s2 -> do
-          cti <- mapM colTi_sen [s1,s2]
-          return $ unionsTI cti
-      Cl.Biconditional s1 s2 -> do
+      Cl.BinOp _ s1 s2 -> do
           cti <- mapM colTi_sen [s1,s2]
           return $ unionsTI cti
   Cl.Atom_sent a _ -> case a of

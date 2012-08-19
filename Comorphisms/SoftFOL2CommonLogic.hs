@@ -143,10 +143,12 @@ sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
 sortRelText m =
   let ps = Map.foldWithKey (\subSrt set phrs -> (
         Set.fold (\superSrt phrs2 ->
-            Sentence (Quant_sent (Universal [Name xName] (Bool_sent (Implication
-                (predicateNames subSrt [xName]) (predicateNames superSrt [xName])
-              ) nullRange)) nullRange)
-          : phrs2) [] set
+            Sentence (Quant_sent (QUANT_SENT Universal [Name xName]
+                                  (Bool_sent (BinOp Implication
+                                              (predicateNames subSrt [xName])
+                                              (predicateNames superSrt [xName])
+                                             ) nullRange)) nullRange)
+            : phrs2) [] set
         ) ++ phrs) [] m
   in if null ps
         then Nothing
@@ -169,9 +171,10 @@ funcMapText m =
                   if null args
                   then predicateNames res [f]
                   else
-                    Quant_sent (Universal (map (Name . snd) argsAndNames) (
-                      Bool_sent (Implication
-                          (Bool_sent (Conjunction $
+                    Quant_sent (QUANT_SENT Universal
+                                (map (Name . snd) argsAndNames) (
+                      Bool_sent (BinOp Implication
+                          (Bool_sent (Junction Conjunction $
                               map (\(p, x) -> predicateNames p [x]) argsAndNames
                             ) nullRange)
                           (Atom_sent (Atom
@@ -197,10 +200,11 @@ predMapText m =
   let ps = Map.foldWithKey (\prd set phrs -> (
           Set.fold (\args phrs2 ->
             let argsAndNames = typesWithIndv args
-            in  Sentence (Quant_sent (Universal (map (Name . snd) argsAndNames) (
-                    Bool_sent (Implication
+            in  Sentence (Quant_sent (QUANT_SENT Universal
+                                      (map (Name . snd) argsAndNames) (
+                    Bool_sent (BinOp Implication
                         (predicateNames prd (map snd argsAndNames))
-                        (Bool_sent (Conjunction $
+                        (Bool_sent (Junction Conjunction $
                             map (\(p, x) -> predicateNames p [x]) argsAndNames
                           ) nullRange)
                       ) nullRange
@@ -223,16 +227,16 @@ trmToSen s t = case t of
         [x,y] -> toEquation (x,y)
         l@(_:_:_) -> do
             eqs <- mapM toEquation $ zip l $ tail l
-            return $ Bool_sent (Conjunction eqs) nullRange
+            return $ Bool_sent (Junction Conjunction eqs) nullRange
         x -> fail $ "equation needs at least two arguments, but found: " ++ show x
     FOLSign.SPTrue -> return $ clTrue
     FOLSign.SPFalse -> return $ clFalse
     FOLSign.SPOr -> do
         sens <-mapM (trmToSen s) args
-        return $ Bool_sent (Disjunction sens) nullRange
+        return $ Bool_sent (Junction Disjunction sens) nullRange
     FOLSign.SPAnd -> do
         sens <-mapM (trmToSen s) args
-        return $ Bool_sent (Conjunction sens) nullRange
+        return $ Bool_sent (Junction Conjunction sens) nullRange
     FOLSign.SPNot -> case args of
         [x] -> do
           sen <- trmToSen s x
@@ -244,7 +248,7 @@ trmToSen s t = case t of
         [x,y] -> do
             sen1 <- (trmToSen s x)
             sen2 <- (trmToSen s y)
-            return $ Bool_sent (Implication sen1 sen2) nullRange
+            return $ Bool_sent (BinOp Implication sen1 sen2) nullRange
         _ -> fail $
               "implication can only be applied to two arguments, but found: "
               ++ show t
@@ -252,7 +256,7 @@ trmToSen s t = case t of
         [x,y] ->  do
             sen1 <- (trmToSen s x)
             sen2 <- (trmToSen s y)
-            return $ Bool_sent (Implication sen2 sen1) nullRange
+            return $ Bool_sent (BinOp Implication sen2 sen1) nullRange
         _ -> fail $
               "implication can only be applied to two arguments, but found: "
               ++ show t
@@ -260,7 +264,7 @@ trmToSen s t = case t of
         [x,y] -> do
             sen1 <- (trmToSen s x)
             sen2 <- (trmToSen s y)
-            return $ Bool_sent (Biconditional sen1 sen2) nullRange
+            return $ Bool_sent (BinOp Biconditional sen1 sen2) nullRange
         _ -> fail $
               "equivalence can only be applied to two arguments, but found: "
               ++ show t
@@ -304,12 +308,12 @@ quantTrm sig qsymm vs f = do
              else do
                sen1 <- typeSentence sig functions_quant
                sen2 <- trmToSen sig f
-               return $ Bool_sent (Implication sen1 sen2) nullRange
+               return $ Bool_sent (BinOp Implication sen1 sen2) nullRange
   quantifier <- case qsymm of
         FOLSign.SPForall -> return Universal
         FOLSign.SPExists -> return Existential
         _ -> fail "custom quantifiers not allowed"
-  return $ Quant_sent (quantifier trans_vs trans_f) nullRange
+  return $ Quant_sent (QUANT_SENT quantifier trans_vs trans_f) nullRange
 
 typeSentence :: FOLSign.Sign -> [FOLSign.SPTerm] -> Result SENTENCE
 typeSentence sig vs = case vs of
@@ -317,7 +321,7 @@ typeSentence sig vs = case vs of
   [v] -> typeSentence1 sig v      -- v = f(x,y,z)
   _ -> do
       sens <- mapM (typeSentence1 sig) vs
-      return $ Bool_sent (Conjunction sens) nullRange
+      return $ Bool_sent (Junction Conjunction sens) nullRange
 
 typeSentence1 :: FOLSign.Sign -> FOLSign.SPTerm -> Result SENTENCE
 typeSentence1 sig v = case v of
@@ -350,7 +354,7 @@ typeSentencesSort args srt = case args of
                      funtrm <- trmToFunctTrm arg
                      return $ predicateTerm srt funtrm
                    ) args
-      return $ Bool_sent (Conjunction sens) nullRange
+      return $ Bool_sent (Junction Conjunction sens) nullRange
 
 typeSentencesDisjPred :: FOLSign.Sign -> [FOLSign.SPTerm]
                          -> [[FOLSign.SPIdentifier]]
@@ -359,7 +363,7 @@ typeSentencesDisjPred sig args typeSet = case typeSet of
   [t] -> tsdp1 t
   _ -> do
     sens <- mapM tsdp1 typeSet
-    return $ Bool_sent (Disjunction sens) nullRange
+    return $ Bool_sent (Junction Disjunction sens) nullRange
   where tsdp1 :: [FOLSign.SPIdentifier] -> Result SENTENCE
         tsdp1 t = do
           sens <- mapM (\(arg, argType) -> case arg of
@@ -370,7 +374,7 @@ typeSentencesDisjPred sig args typeSet = case typeSet of
               FOLSign.SPQuantTerm _ _ _ ->
                 fail "quantification not allowed in quantifier-argument list"
             ) $ zip args t
-          return $ Bool_sent (Conjunction sens) nullRange
+          return $ Bool_sent (Junction Conjunction sens) nullRange
 
 typeSentencesDisjFunc :: FOLSign.Sign -> [FOLSign.SPTerm]
                          -> [([FOLSign.SPIdentifier], FOLSign.SPIdentifier)]
@@ -379,7 +383,7 @@ typeSentencesDisjFunc sig args typeSet = case typeSet of
   [t] -> tsdf1 t
   _ -> do
       sens <- mapM tsdf1 typeSet
-      return $ Bool_sent (Disjunction sens) nullRange
+      return $ Bool_sent (Junction Disjunction sens) nullRange
   where tsdf1 :: ([FOLSign.SPIdentifier], FOLSign.SPIdentifier) -> Result SENTENCE
         tsdf1 (t, resType) = do
           sens <- concatMapM (\(arg, argType) -> case arg of
@@ -392,7 +396,7 @@ typeSentencesDisjFunc sig args typeSet = case typeSet of
               FOLSign.SPQuantTerm _ _ _ ->
                 fail "quantification not allowed in quantifier-argument list"
             ) $ zip args t
-          return $ Bool_sent (Conjunction sens) nullRange
+          return $ Bool_sent (Junction Conjunction sens) nullRange
 
 trmToName :: FOLSign.SPTerm -> NAME
 trmToName t  = case t of
@@ -456,7 +460,7 @@ isNullary t = case t of
 
 -- representation for true in CL
 clTrue :: SENTENCE --forall x. x=x
-clTrue = Quant_sent (Universal [Name xName]
+clTrue = Quant_sent (QUANT_SENT Universal [Name xName]
             $ Atom_sent (Equation (Name_term xName) (Name_term xName)) nullRange
           ) nullRange
 

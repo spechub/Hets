@@ -122,25 +122,25 @@ mkAtoms :: ATOM -> SENTENCE
 mkAtoms as = Atom_sent as nullRange
 
 mkUnivQ :: [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT
-mkUnivQ = Universal
+mkUnivQ = QUANT_SENT Universal
 
 mkExist :: [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT
-mkExist = Existential
+mkExist = QUANT_SENT Existential
 
 cnjct :: [SENTENCE] -> BOOL_SENT
-cnjct = Conjunction
+cnjct = Junction Conjunction
 
 dsjct :: [SENTENCE] -> BOOL_SENT
-dsjct = Disjunction
+dsjct = Junction Disjunction
 
 mkNeg :: SENTENCE -> BOOL_SENT
 mkNeg = Negation
 
 mkImpl :: SENTENCE -> SENTENCE -> BOOL_SENT
-mkImpl = Implication
+mkImpl = BinOp Implication
 
 mkBicnd :: SENTENCE -> SENTENCE -> BOOL_SENT
-mkBicnd = Biconditional
+mkBicnd = BinOp Biconditional
 
 mkNAME :: Int -> NAME_OR_SEQMARK
 mkNAME n = Name (mkNName n)

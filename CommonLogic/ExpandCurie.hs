@@ -71,15 +71,12 @@ expImp pm (Imp_name n) = Imp_name $ expName pm n
 expSen :: Map.Map String IRI -> SENTENCE -> SENTENCE
 expSen pm s = case s of
   Quant_sent qs rn -> Quant_sent (case qs of
-      Universal noss s2 -> Universal (map (expNos pm) noss) (expSen pm s2)
-      Existential noss s2 -> Existential (map (expNos pm) noss) (expSen pm s2)
+      QUANT_SENT q noss s2 -> QUANT_SENT q (map (expNos pm) noss) (expSen pm s2)
     ) rn
   Bool_sent bs rn -> Bool_sent (case bs of
-      Conjunction ss -> Conjunction $ map (expSen pm) ss
-      Disjunction ss -> Disjunction $ map (expSen pm) ss
+      Junction j ss -> Junction j $ map (expSen pm) ss
       Negation s2 -> Negation $ expSen pm s2
-      Implication s1 s2 -> Implication (expSen pm s1) (expSen pm s2)
-      Biconditional s1 s2 -> Biconditional (expSen pm s1) (expSen pm s2)
+      BinOp op s1 s2 -> BinOp op (expSen pm s1) (expSen pm s2)
     ) rn
   Atom_sent as rn -> Atom_sent (case as of
       Equation t1 t2 -> Equation (expTrm pm t1) (expTrm pm t2)

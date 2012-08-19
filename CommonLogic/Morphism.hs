@@ -133,19 +133,14 @@ mapSen_mod mor m = case m of
 mapSen_sen :: Morphism -> AS.SENTENCE -> AS.SENTENCE
 mapSen_sen mor frm = case frm of
   AS.Quant_sent qs rn -> AS.Quant_sent (case qs of
-      AS.Universal xs sen ->
-          AS.Universal (map (mapSen_nos mor) xs) (mapSen_sen mor sen)
-      AS.Existential xs sen ->
-          AS.Existential (map (mapSen_nos mor) xs) (mapSen_sen mor sen)
+      QUANT_SENT q xs sen ->
+          QUANT_SENT q (map (mapSen_nos mor) xs) (mapSen_sen mor sen)
       ) rn
   AS.Bool_sent bs rn -> AS.Bool_sent (case bs of
-      AS.Conjunction sens ->  AS.Conjunction (map (mapSen_sen mor) sens)
-      AS.Disjunction sens -> AS.Disjunction (map (mapSen_sen mor) sens)
+      AS.Junction j sens ->  AS.Junction j (map (mapSen_sen mor) sens)
       AS.Negation sen -> AS.Negation (mapSen_sen mor sen)
-      AS.Implication s1 s2 ->
-          AS.Implication (mapSen_sen mor s1) (mapSen_sen mor s2)
-      AS.Biconditional s1 s2 ->
-          AS.Biconditional (mapSen_sen mor s1) (mapSen_sen mor s2)
+      AS.BinOp op s1 s2 ->
+          AS.BinOp op (mapSen_sen mor s1) (mapSen_sen mor s2)
     ) rn
   AS.Atom_sent atom rn -> AS.Atom_sent (case atom of
       AS.Equation t1 t2 -> AS.Equation (mapSen_trm mor t1) (mapSen_trm mor t2)

@@ -83,12 +83,9 @@ indvC_sen s =
          Comment_sent _ c _ -> indvC_sen c
          Irregular_sent i _ -> indvC_sen i
 
--- | retrieves the individual constants from a qantified sentence
+-- | retrieves the individual constants from a quantified sentence
 indvC_quantsent ::QUANT_SENT -> Set NAME
-indvC_quantsent q =
-    case q of
-        Universal noss s -> quant noss s
-        Existential noss s -> quant noss s
+indvC_quantsent (QUANT_SENT _ noss s) = quant noss s
     where quant :: [NAME_OR_SEQMARK] -> SENTENCE -> Set NAME
           quant nss s = Set.difference (indvC_sen s) $ setUnion_list nameof nss
           nameof :: NAME_OR_SEQMARK -> Set NAME
@@ -101,11 +98,9 @@ indvC_quantsent q =
 indvC_boolsent :: BOOL_SENT -> Set NAME
 indvC_boolsent b =
     case b of
-         Conjunction ss      -> setUnion_list indvC_sen ss
-         Disjunction ss      -> setUnion_list indvC_sen ss
-         Negation s          -> indvC_sen s
-         Implication s1 s2   -> setUnion_list indvC_sen [s1,s2]
-         Biconditional s1 s2 -> setUnion_list indvC_sen [s1,s2]
+         Junction _ ss -> setUnion_list indvC_sen ss
+         Negation s -> indvC_sen s
+         BinOp _ s1 s2 -> setUnion_list indvC_sen [s1,s2]
 
 -- | retrieves the individual constants from an atom
 indvC_atomsent :: ATOM -> Set NAME
@@ -179,12 +174,8 @@ prd_importation :: IMPORTATION -> Set.Set NAME
 prd_importation (Imp_name n) = prd_name n
 
 prd_quantSent :: QUANT_SENT -> Set.Set NAME
-prd_quantSent q =
-    case q of
-         Universal noss s ->
-            Set.union (unifyPredicates prd_nameOrSeqmark noss) $ prd_sentence s
-         Existential noss s ->
-            Set.union (unifyPredicates prd_nameOrSeqmark noss) $ prd_sentence s
+prd_quantSent (QUANT_SENT _ noss s) =
+  Set.union (unifyPredicates prd_nameOrSeqmark noss) $ prd_sentence s
 --TODO SequenceMarker Handling
 
 prd_nameOrSeqmark :: NAME_OR_SEQMARK -> Set.Set NAME
@@ -196,11 +187,9 @@ prd_nameOrSeqmark nos =
 prd_boolSent :: BOOL_SENT -> Set.Set NAME
 prd_boolSent b =
     case b of
-         Conjunction ss -> unifyPredicates prd_sentence ss
-         Disjunction ss -> unifyPredicates prd_sentence ss
+         Junction _ ss -> unifyPredicates prd_sentence ss
          Negation s -> prd_sentence s
-         Implication s1 s2 -> unifyPredicates prd_sentence [s1,s2]
-         Biconditional s1 s2 -> unifyPredicates prd_sentence [s1,s2]
+         BinOp _ s1 s2 -> unifyPredicates prd_sentence [s1,s2]
 
 prd_atomSent :: ATOM -> Set.Set NAME
 prd_atomSent a =

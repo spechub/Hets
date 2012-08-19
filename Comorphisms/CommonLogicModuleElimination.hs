@@ -127,7 +127,7 @@ me_phrases newName modules phrs =
     case length phrs of
          1 -> me_phrase newName modules $ head phrs
          _ -> Bool_sent (
-                Conjunction (
+                Junction Conjunction (
                     map (me_phrase newName modules) (filter mod_sen phrs)
                 )
             ) nullRange
@@ -158,24 +158,17 @@ me_sentence newName modules sen =
 me_boolsent :: NAME -> [NAME] -> BOOL_SENT -> BOOL_SENT
 me_boolsent newName modules bs =
     case bs of
-         Conjunction sens -> Conjunction $ map me_sen_mod sens
-         Disjunction sens -> Disjunction $ map me_sen_mod sens
+         Junction j sens -> Junction j $ map me_sen_mod sens
          Negation sen -> Negation $ me_sen_mod sen
-         Implication s1 s2 -> Implication (me_sen_mod s1) (me_sen_mod s2)
-         Biconditional s1 s2 -> Biconditional (me_sen_mod s1) (me_sen_mod s2)
+         BinOp op s1 s2 -> BinOp op (me_sen_mod s1) (me_sen_mod s2)
     where me_sen_mod = me_sentence newName modules --TODO: check whether dn stays the same
 
 -- Table 2: R3a - R3b
 me_quantsent :: NAME -> [NAME] -> QUANT_SENT -> QUANT_SENT
 me_quantsent newName modules qs =
     case qs of 
-        Universal noss sen -> Universal noss (
-            Bool_sent (Implication 
-                (anticedent modules noss)
-                (me_sentence newName modules sen)
-            ) nullRange)
-        Existential noss sen -> Existential noss (
-            Bool_sent (Implication 
+        QUANT_SENT q noss sen -> QUANT_SENT q noss (
+            Bool_sent (BinOp Implication 
                 (anticedent modules noss)
                 (me_sentence newName modules sen)
             ) nullRange)
@@ -184,12 +177,13 @@ anticedent :: [NAME] -> [NAME_OR_SEQMARK] -> SENTENCE
 anticedent modules noss = 
     case modules of
          [m] -> anticedent1 m noss
-         _ -> Bool_sent (Conjunction (map (flip anticedent1 noss) modules)) nullRange
+         _ -> Bool_sent (Junction Conjunction (map (flip anticedent1 noss) modules)) nullRange
 
 anticedent1 :: NAME -> [NAME_OR_SEQMARK] -> SENTENCE
 anticedent1 m noss = case noss of
   [nos] -> Atom_sent (Atom (Name_term m) [nos2termseq nos]) nullRange
-  _ -> Bool_sent (Conjunction $ map (\nos -> anticedent1 m [nos]) noss) nullRange
+  _ -> Bool_sent (Junction Conjunction $
+                  map (\nos -> anticedent1 m [nos]) noss) nullRange
 
 nos2termseq :: NAME_OR_SEQMARK -> TERM_SEQ
 nos2termseq nos = case nos of 
@@ -200,12 +194,12 @@ nos2termseq nos = case nos of
 me_module :: NAME -> [NAME] -> MODULE -> SENTENCE
 me_module newName modules m =
     case m of
-        Mod n t _ -> Bool_sent (Conjunction (
+        Mod n t _ -> Bool_sent (Junction Conjunction (
             (me_text newName (n:modules) t)
             : (ex_conj newName (n:modules))
             : (map (ex_conj_indvC newName (n:modules)) $ Set.elems $ indvC_text t)
           )) nullRange
-        Mod_ex n excl t _ -> Bool_sent (Conjunction (
+        Mod_ex n excl t _ -> Bool_sent (Junction Conjunction (
             (me_text newName (n:modules) t)
             : (ex_conj newName (n:modules))
             : (map (ex_conj_indvC newName (n:modules)) $ Set.elems $ indvC_text t)
@@ -215,14 +209,14 @@ me_module newName modules m =
 -- Table 2 R4: each line in the conjunction
 ex_conj :: NAME -> [NAME] -> SENTENCE
 ex_conj n modules =
-  Quant_sent (Existential [Name n] (Bool_sent ( Conjunction (
+  Quant_sent (QUANT_SENT Existential [Name n] (Bool_sent (Junction Conjunction (
         map (modNameToPredicate n) modules
     )) nullRange)) nullRange
 
 -- Table 2 R4: each line with indvC-elements in the conjunction
 ex_conj_indvC :: NAME -> [NAME] -> NAME -> SENTENCE
 ex_conj_indvC n modules c =
-    Quant_sent (Existential [Name n] (Bool_sent ( Conjunction (
+    Quant_sent (QUANT_SENT Existential [Name n] (Bool_sent (Junction Conjunction (
             (Atom_sent (Equation (Name_term n) (Name_term c)) nullRange)
             : map (modNameToPredicate n) modules
         )) nullRange)) nullRange

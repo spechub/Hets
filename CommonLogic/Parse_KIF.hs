@@ -28,16 +28,16 @@ boolop_unary :: [(String, SENTENCE -> BOOL_SENT, String)]
 boolop_unary = [(notS, Negation, "negation")]
 
 boolop_nary :: [(String, [SENTENCE] -> BOOL_SENT, String)]
-boolop_nary = [(andS, Conjunction, "conjunction"),
-               (orS, Disjunction, "disjunction")]
+boolop_nary = [(andS, Junction Conjunction, "conjunction"),
+               (orS, Junction Disjunction, "disjunction")]
 
 boolop_binary :: [(String, SENTENCE -> SENTENCE -> BOOL_SENT, String)]
-boolop_binary = [(equivS, Biconditional, "equivalence"),
-                 (implS, Implication, "implication")]
+boolop_binary = [(equivS, BinOp Biconditional, "equivalence"),
+                 (implS, BinOp Implication, "implication")]
 
 boolop_quant :: [(String, [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT, String)]
-boolop_quant = [(forallS, Universal, "universal quantifier"),
-                (existsS, Existential, "existiantial quantifier")]
+boolop_quant = [(forallS, QUANT_SENT Universal, "universal quantifier"),
+                (existsS, QUANT_SENT Existential, "existiantial quantifier")]
 
 parse_boolop :: [(String, op_t, String)] -> CharParser st (Token, op_t, String)
 parse_boolop = choice . map

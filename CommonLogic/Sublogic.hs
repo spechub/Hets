@@ -213,26 +213,18 @@ sl_importation _ cs _ = cs
 -- given predicates of the super-text
 sl_quantSent :: Set.Set AS.NAME -> CommonLogicSL -> AS.QUANT_SENT 
     -> CommonLogicSL
-sl_quantSent prds cs q = 
-    case q of
-        AS.Universal noss s -> 
-            comp_list $ folsl : sl_sentence prds cs s 
-                              : map (sl_nameOrSeqmark prds cs) noss
-        AS.Existential noss s -> 
-            comp_list $ folsl : sl_sentence prds cs s 
-                              : map (sl_nameOrSeqmark prds cs) noss
+sl_quantSent prds cs (AS.QUANT_SENT _ noss s) =
+  comp_list $ folsl : sl_sentence prds cs s
+  : map (sl_nameOrSeqmark prds cs) noss
 
 -- | determines the sublogic for boolean sentences,
 -- given predicates of the super-text
 sl_boolSent :: Set.Set AS.NAME -> CommonLogicSL -> AS.BOOL_SENT -> CommonLogicSL
 sl_boolSent prds cs b = 
     case b of
-      AS.Conjunction ss -> comp_list $ map (sl_sentence prds cs) ss
-      AS.Disjunction ss -> comp_list $ map (sl_sentence prds cs) ss
+      AS.Junction _ ss -> comp_list $ map (sl_sentence prds cs) ss
       AS.Negation s -> sl_sentence prds cs s
-      AS.Implication s1 s2 -> 
-        sublogics_max (sl_sentence prds cs s1) (sl_sentence prds cs s2)
-      AS.Biconditional s1 s2 -> 
+      AS.BinOp _ s1 s2 -> 
         sublogics_max (sl_sentence prds cs s1) (sl_sentence prds cs s2)
 
 -- | determines the sublogic for atoms,

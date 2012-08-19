@@ -163,16 +163,12 @@ propsOfSentence (AS.Atom_sent form _) = case form of
     AS.Atom term ts -> Sign.unite (propsOfTerm term)
       (uniteMap propsOfTermSeq ts)
 propsOfSentence (AS.Quant_sent qs _) = case qs of
-    AS.Universal xs s -> Sign.sigDiff (propsOfSentence s)
-                                      (uniteMap propsOfNames xs)
-    AS.Existential xs s -> Sign.sigDiff (propsOfSentence s)
-                                        (uniteMap propsOfNames xs)
+    AS.QUANT_SENT _ xs s -> Sign.sigDiff (propsOfSentence s)
+                            (uniteMap propsOfNames xs)
 propsOfSentence (AS.Bool_sent bs _) = case bs of
-    AS.Conjunction xs -> uniteMap propsOfSentence xs
-    AS.Disjunction xs -> uniteMap propsOfSentence xs
+    AS.Junction _ xs -> uniteMap propsOfSentence xs
     AS.Negation x -> propsOfSentence x
-    AS.Implication s1 s2 -> Sign.unite (propsOfSentence s1) (propsOfSentence s2)
-    AS.Biconditional s1 s2 -> Sign.unite (propsOfSentence s1) (propsOfSentence s2)
+    AS.BinOp _ s1 s2 -> Sign.unite (propsOfSentence s1) (propsOfSentence s2)
 propsOfSentence (AS.Comment_sent _ s _) = propsOfSentence s
 propsOfSentence (AS.Irregular_sent s _) = propsOfSentence s
 
