@@ -50,6 +50,7 @@ module Common.Lib.MapSet
   , mapSet
   , foldWithKey
   , filter
+  , partition
   , filterWithKey
   , all
   , isSubmapOf
@@ -220,6 +221,11 @@ foldWithKey f e = Map.foldWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
 -- | filter elements
 filter :: (Ord a, Ord b) => (b -> Bool) -> MapSet a b -> MapSet a b
 filter p = fromMap . Map.map (Set.filter p) . toMap
+
+-- | partition elements
+partition :: (Ord a, Ord b) => (b -> Bool) -> MapSet a b
+  -> (MapSet a b, MapSet a b)
+partition p m = (filter p m, filter (not . p) m)
 
 -- | filter complete entries
 filterWithKey :: Ord a => (a -> Set.Set b -> Bool) -> MapSet a b -> MapSet a b
