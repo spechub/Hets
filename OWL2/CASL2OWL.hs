@@ -15,6 +15,7 @@ module OWL2.CASL2OWL where
 import Logic.Logic as Logic
 import Logic.Comorphism
 import Common.AS_Annotation
+import Common.DocUtils
 import Common.Result
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -51,8 +52,11 @@ import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Disambiguate
 import CASL.Sign
+import qualified CASL.MapSentence as MapSen
 import CASL.Morphism
+import CASL.SimplifySen
 import CASL.Sublogic
+import CASL.ToDoc
 import CASL.Overload
 
 import Common.ProofTree
@@ -128,9 +132,9 @@ mapSign csig = let
   mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
   toIris = Set.map idToIRI
   (cs, ncs) = MapSet.partition (null . opArgs) om
-  (sos, _os) = MapSet.partition isSingleArgOp ncs
+  (sos, os) = MapSet.partition isSingleArgOp ncs
   (sps, rps) = MapSet.partition (isSingle . predArgs) pm
-  (bps, _ps) = MapSet.partition isBinPredType rps
+  (bps, ps) = MapSet.partition isBinPredType rps
   pm = predMap csig
   osig = OS.emptySign
     { concepts = toIris $ Set.unions
@@ -180,6 +184,14 @@ mapSign csig = let
               $ ListFrameBit (Just SubClass) $ toEBit i) : l
        ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
+  MapSet.foldWithKey (\ i s m -> do
+    m
+    justWarn () $ "not translated op " ++ shows i " :" ++ showDoc s "")
+    (return ()) os
+  MapSet.foldWithKey (\ i s m -> do
+    m
+    justWarn () $ "not translated pred " ++ shows i " : " ++ showDoc s "")
+    (return ()) ps
   return (osig, s4)
 
 {- binary predicates and single argument functions should become
@@ -190,5 +202,10 @@ mapSign csig = let
 -}
 
 mapTheory :: (CASLSign, [Named CASLFORMULA]) -> Result (OS.Sign, [Named Axiom])
-mapTheory (sig, _sens) = let mor = disambigSig sig in
-  mapSign $ mtarget mor
+mapTheory (sig, sens) = do
+  let mor = disambigSig sig
+      tar = mtarget mor
+      ns = map (mapNamed $ MapSen.mapSen (const id) mor) sens
+  mapM_ (justWarn () . ("not translated\n" ++) . show . printTheoryFormula
+         . mapNamed (simplifyCASLSen tar)) ns
+  mapSign tar
