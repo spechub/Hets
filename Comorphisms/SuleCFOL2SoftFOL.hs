@@ -191,8 +191,8 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
                      sid' = sid fm oType
                  in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
-              else Set.foldr insOIdSet (fm, im)
-                $ Set.fromList $ Rel.partSet (leqF sign) typeSet
+              else foldr insOIdSet (fm, im)
+                $ Rel.partSet (leqF sign) typeSet
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transOpType tset) fm',
@@ -218,10 +218,10 @@ transPredMap idMap sign =
                    , insertSPId iden (CPred pType) sid' im
                    , sen)
               else case -- genPredImplicationDisjunctions sign $
-                        Set.fromList $ Rel.partSet (leqP sign) typeSet of
+                        Rel.partSet (leqP sign) typeSet of
                      splitTySet ->
                          let (fm', im') =
-                                 Set.fold insOIdSet (fm, im) splitTySet
+                                 foldr insOIdSet (fm, im) splitTySet
                          in (fm', im', sen)
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
@@ -516,7 +516,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
 nonEmptySortSens :: Set.Set SPIdentifier -> SortMap -> [Named SPTerm]
 nonEmptySortSens emptySorts =
     Map.foldWithKey
-      (\ s _ res -> [extSen s | s `Set.member` emptySorts] ++ res)
+      (\ s _ res -> [extSen s | not $ Set.member s emptySorts] ++ res)
       []
     where extSen s = makeNamed ("ga_non_empty_sort_" ++ show s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
