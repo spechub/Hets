@@ -17,6 +17,8 @@ import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Result
 import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.List
 import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
@@ -51,6 +53,7 @@ import CASL.Disambiguate
 import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic
+import CASL.Overload
 
 import Common.ProofTree
 {-
@@ -113,19 +116,60 @@ idToIRI :: Id -> QName
 idToIRI i = nullQName
   { localPart = show i, iriPos = rangeOfId i }
 
-mapSign :: CASLSign -> OS.Sign
+mapSign :: CASLSign -> (OS.Sign, [Named Axiom])
 mapSign csig = let
   om = opMap csig
+  keepMaxs = keepMinimals1 False csig id
+  mk s i m = makeNamed (s ++ show i ++ m) . PlainAxiom
+       (ObjectEntity $ ObjectProp $ idToIRI i)
+  toC = Expression . idToIRI
+  toEBit i = ExpressionBit [([], toC i)]
+  mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
+  toIris = Set.map idToIRI
+  (cs, ncs) = MapSet.partition (null . opArgs) om
+  (sos, _os) = MapSet.partition isSingleArgOp ncs
+  (sps, rps) = MapSet.partition (isSingle . predArgs) pm
+  (bps, _ps) = MapSet.partition isBinPredType rps
   pm = predMap csig
-  in OS.emptySign
-  { concepts = Set.map idToIRI $ Set.unions
-      [ sortSet csig
-      , MapSet.keysSet $ MapSet.filter (null . opArgs) om
-      , MapSet.keysSet $ MapSet.filter (isSingle . predArgs) pm ]
-  , objectProperties = Set.map idToIRI $ Set.union (MapSet.keysSet
-      $ MapSet.filter isSingleArgOp om)
-      $ MapSet.keysSet $ MapSet.filter isBinPredType pm
+  in (OS.emptySign
+  { concepts = toIris $ Set.unions
+      [ sortSet csig, MapSet.keysSet sps ]
+  , objectProperties = toIris $ Set.union (MapSet.keysSet sos)
+      $ MapSet.keysSet bps
+  , individuals = toIris $ MapSet.keysSet cs
   }
+  , Map.foldWithKey (\ i s ->
+    case keepMinimals csig id . map opRes $ Set.toList s of
+    [t] -> (makeNamed ("individual " ++ show i ++ " of class " ++ show t)
+           (PlainAxiom (SimpleEntity $ Entity NamedIndividual $ idToIRI i)
+           $ ListFrameBit (Just Types) $ toEBit t) :)
+    _ -> error "CASL2OWL.mapSign1") [] (MapSet.toMap cs)
+  ++ Map.foldWithKey (\ i s -> let
+     l = Set.toList s
+     mki = mk "plain function " i
+     in case (keepMaxs $ concatMap opArgs l, keepMaxs $ map opRes l) of
+       ([a], [r]) -> (
+         [ mki " character" $ ListFrameBit Nothing
+           $ ObjectCharacteristics [([], Functional)]
+         , mki " domain" $ mkDR ADomain a
+         , mki " range" $ mkDR ARange r
+         ] ++)
+       _ -> error "CASL2OWL.mapSign2") [] (MapSet.toMap sos)
+  ++ Map.foldWithKey (\ i s ->
+     let mkp = mk "binary predicate " i
+     in case map keepMaxs . transpose . map predArgs $ Set.toList s of
+       [[a], [r]] -> (
+         [ mkp " domain" $ mkDR ADomain a
+         , mkp " range" $ mkDR ARange r
+         ] ++)
+       _ -> error "CASL2OWL.mapSign3") [] (MapSet.toMap bps)
+  ++ Map.foldWithKey (\ i s ->
+     case keepMaxs $ concatMap predArgs $ Set.toList s of
+       [r] -> (makeNamed ("plain predicate " ++ show i)
+              (PlainAxiom (ClassEntity $ toC r)
+              $ ListFrameBit (Just SubClass) $ toEBit i) :)
+       _ -> error "CASL2OWL.mapSign4") [] (MapSet.toMap sps)
+ )
 
 {- binary predicates and single argument functions should become
    objectProperties.
@@ -136,4 +180,4 @@ mapSign csig = let
 
 mapTheory :: (CASLSign, [Named CASLFORMULA]) -> Result (OS.Sign, [Named Axiom])
 mapTheory (sig, _sens) = let mor = disambigSig sig in
-  return (mapSign $ mtarget mor, [])
+  return $ mapSign $ mtarget mor
