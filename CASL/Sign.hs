@@ -219,14 +219,22 @@ instance Pretty Symbol where
        PredAsItemType pt -> keyword predS <+> n <+> colon <+> pretty pt
        OpAsItemType ot -> keyword opS <+> n <+> colon <> pretty ot
 
+eqAndSubsorts :: Bool -> Rel.Rel SORT -> ([[SORT]], [(SORT, [SORT])])
+eqAndSubsorts groupSubsorts srel = let
+  cs = Rel.sccOfClosure srel
+  in ( filter ((> 1) . length) $ map Set.toList cs
+     , Map.toList . Map.map Set.toList . Rel.toMap . Rel.rmNullSets
+       . (if groupSubsorts then Rel.transpose else id)
+       . Rel.transReduce . Rel.irreflex $ Rel.collaps cs srel)
+
 printSign :: (e -> Doc) -> Sign f e -> Doc
 printSign fE s = let
   printRel (supersort, subsorts) =
-            ppWithCommas (Set.toList subsorts) <+> text lessS <+>
+            ppWithCommas subsorts <+> text lessS <+>
                idDoc supersort
   esorts = emptySortSet s
   srel = sortRel s
-  cs = Rel.sccOfClosure srel
+  (es, ss) = eqAndSubsorts True srel
   nsorts = Set.difference (sortSet s) esorts in
     (if Set.null nsorts then empty else text (sortS ++ sS) <+>
        sepByCommas (map idDoc (Set.toList nsorts))) $+$
@@ -235,12 +243,8 @@ printSign fE s = let
     (if Rel.noPairs srel then empty
       else text (sortS ++ sS) <+>
        fsep (punctuate semi $
-          map (fsep . punctuate (space <> equals) . map pretty)
-           (filter ((> 1) . length) $ map Set.toList cs)
-         ++ map printRel (Map.toList
-         $ Rel.toMap
-         $ Rel.rmNullSets $ Rel.transpose $ Rel.transReduce $ Rel.irreflex
-         $ Rel.collaps cs srel)))
+          map (fsep . punctuate (space <> equals) . map pretty) es
+         ++ map printRel ss))
     $+$ printSetMap (text opS) empty (MapSet.toMap $ opMap s)
     $+$ printSetMap (text predS) space (MapSet.toMap $ predMap s)
     $+$ fE (extendedInfo s)

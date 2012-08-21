@@ -118,33 +118,48 @@ mapSymbol _ = Set.empty
    Ops or preds in the overload relation denote the same objectProperty!
 -}
 idToIRI :: Id -> QName
-idToIRI i = nullQName
-  { localPart = show i, iriPos = rangeOfId i }
+idToIRI = idToAnonIRI False
+
+idToAnonIRI :: Bool -> Id -> QName
+idToAnonIRI b i = nullQName
+  { localPart = (if b then ('_' :) else id) $ show i
+  , iriPos = rangeOfId i }
 
 mapSign :: CASLSign -> Result (OS.Sign, [Named Axiom])
 mapSign csig = let
+  esorts = emptySortSet csig
+  (eqs, subss) = eqAndSubsorts False $ sortRel csig
   ss = sortSet csig
-  sortSens s = if Set.size s <= 1 then [] else
+  nsorts = Set.difference ss esorts
+  mkMisc ed l = PlainAxiom (Misc []) $ ListFrameBit (Just $ EDRelation ed)
+          $ ExpressionBit $ map toACE l
+  disjSorts s = if Set.size s <= 1 then [] else
     let (m, r) = Set.deleteFindMin s
-        sssen a b = [makeNamed ("subsort " ++ show a ++ " of " ++ show b)
-          $ toSC a b]
     in concatMap (\ t -> case t of
-      _ | leqSort csig m t -> sssen m t
-        | leqSort csig t m -> sssen t m
-        | haveCommonSubsorts csig t m
+      _ | haveCommonSubsorts csig t m
           || haveCommonSupersorts True csig t m -> []
         | otherwise -> [makeNamed ("disjoint " ++ show m ++ " and " ++ show t)
-          $ PlainAxiom (Misc []) $ ListFrameBit (Just $ EDRelation Disjoint)
-          $ ExpressionBit $ map toACE [m, t]]
-      ) (Set.toList r) ++ sortSens r
-
+          $ mkMisc Disjoint [m, t]]
+      ) (Set.toList r) ++ disjSorts r
+  eqSorts = map (\ es -> makeNamed ("equal sorts " ++ show es)
+                 $ mkMisc Equivalent es) eqs
+  subSens = map (\ (s, ts) -> makeNamed
+    ("subsort " ++ show s ++ " of " ++ show ts) $ toSC s ts) subss
+  nonEmptySens = map (\ s -> mkIndi True s [s]) $ Set.toList nsorts
+  sortSens = eqSorts ++ disjSorts ss ++ subSens ++ nonEmptySens
+  mkIndi b i ts = makeNamed
+        ("individual " ++ show i ++ " of class " ++ showDoc ts "")
+        $ PlainAxiom (SimpleEntity $ Entity NamedIndividual
+        $ idToAnonIRI b i)
+        $ ListFrameBit (Just Types) $ ExpressionBit
+        $ map toACE ts
   om = opMap csig
   keepMaxs = keepMinimals1 False csig id
   mk s i m = makeNamed (s ++ show i ++ m) . PlainAxiom
        (ObjectEntity $ ObjectProp $ idToIRI i)
   toC = Expression . idToIRI
   toSC i = PlainAxiom (ClassEntity $ toC i) . ListFrameBit (Just SubClass)
-    . toEBit
+    . ExpressionBit . map toACE
   toACE i = ([], toC i)
   toEBit i = ExpressionBit [toACE i]
   mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
@@ -165,13 +180,9 @@ mapSign csig = let
   in do
   s1 <- Map.foldWithKey (\ i s ml -> do
       l <- ml
-      let ts = keepMinimals csig id $ map opRes $ Set.toList s
-      return $ makeNamed
-        ("individual " ++ show i ++ " of class " ++ showDoc ts "")
-        (PlainAxiom (SimpleEntity $ Entity NamedIndividual $ idToIRI i)
-        $ ListFrameBit (Just Types) $ ExpressionBit
-        $ map toACE ts) : l)
-    (return $ sortSens ss) (MapSet.toMap cs)
+      return $ mkIndi False i
+        (keepMinimals csig id $ map opRes $ Set.toList s) : l)
+    (return sortSens) (MapSet.toMap cs)
   s2 <- Map.foldWithKey (\ i s ml -> do
     l <- ml
     let sl = Set.toList s
@@ -198,7 +209,7 @@ mapSign csig = let
      case keepMaxs $ concatMap predArgs $ Set.toList s of
        [r] -> do
          l <- ml
-         return $ makeNamed ("plain predicate " ++ show i) (toSC r i) : l
+         return $ makeNamed ("plain predicate " ++ show i) (toSC r [i]) : l
        ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
   MapSet.foldWithKey (\ i s m -> m >> mkHint True i s) (return ()) os
