@@ -231,6 +231,7 @@ termForm sig trm = case trm of
                         ([termForm sig term] ++
                           (consSeq sig ts) : []) Id.nullRange
                  ClBasic.Comment_term term _ _ -> termForm sig term
+                 -- TODO: implement ClBasic.That_term s -> ...
 
 consSeq :: ClSign.Sign -> [ClBasic.TERM_SEQ] -> CBasic.TERM a
 consSeq _ [] = CBasic.Application (CBasic.Qual_op_name nil
@@ -253,6 +254,7 @@ termSeqForm sig ts = case ts of
                   }
     ClBasic.Funct_term _ _ _ -> termForm sig trm
     ClBasic.Comment_term _ _ _ -> termForm sig trm
+    -- TODO: implement ClBasic.That_term s -> ...
   ClBasic.Seq_marks seqm ->
       if ClSign.isSubSigOf (ClSign.emptySig {
               ClSign.discourseNames =

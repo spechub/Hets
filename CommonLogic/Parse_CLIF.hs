@@ -32,6 +32,7 @@ import qualified CommonLogic.Tools as Tools
 import CommonLogic.Lexer_CLIF
 
 import Text.ParserCombinators.Parsec as Parsec
+import Control.Monad (liftM)
 
 -- | parser for getText
 cltext :: CharParser st TEXT_META
@@ -265,6 +266,13 @@ term_fun_cmt = parens (do
     t <- term <?> "term after \"cl-comment <comment>\""
     return $ Comment_term t (Comment c $ Range $ rangeSpan c)
            $ Range $ joinRanges [rangeSpan ck, rangeSpan c, rangeSpan t]
+  <|> do
+    c <- try thatKey
+    s <- sentence
+    return $ That_term s $ Range $ joinRanges [rangeSpan c, rangeSpan s]
+  <|> do
+    t <- liftM Name_term $ pToken quotedstring
+    return $ Funct_term t [] $ Range $ rangeSpan t
   <|> do
     t <- term
     ts <- many1 termseq -- many1? yes, because it's a functional term

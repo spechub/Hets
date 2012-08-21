@@ -96,6 +96,7 @@ expTrm pm trm = case trm of
   Funct_term t tseqs rn ->
       Funct_term (expTrm pm t) (map (expTseq pm) tseqs) rn
   Comment_term t c rn -> Comment_term (expTrm pm t) c rn
+  That_term s rn -> That_term (expSen pm s) rn
 
 expTseq :: Map.Map String IRI -> TERM_SEQ -> TERM_SEQ
 expTseq pm nos = case nos of

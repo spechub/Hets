@@ -122,8 +122,9 @@ term = liftM Name_term (pToken variable)
    <|> liftM Name_term (pToken word)
    <|> liftM Name_term (pToken quotedString)
    <|> liftM Name_term (pToken number)
-   <|> parens funterm
---   <|> sentence
+   <|> parens (funterm <|> do
+               s <- logsent <|> eqsent <|> neqsent
+               return $ That_term s $ Range $ rangeSpan s)
 
 sentence :: CharParser st SENTENCE
 sentence = parensent <|> plainsent

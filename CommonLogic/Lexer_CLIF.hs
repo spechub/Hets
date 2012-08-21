@@ -81,6 +81,9 @@ forallKey = pToken (string forallS) <?> "universal quantification"
 existsKey :: CharParser st Id.Token
 existsKey = pToken (string existsS) <?> "existential quantification"
 
+thatKey :: CharParser st Id.Token
+thatKey = pToken (string "that") <?> "\"that\" term"
+
 -- cl keys
 clTextKey :: CharParser st Id.Token
 clTextKey = pToken (try (string "cl-text") <|> string "cl:text") <?> "text"
@@ -142,8 +145,8 @@ clLetter = satisfy clLetters <?> "cl letter"
 
 reservedelement :: [String]
 reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not"
-                  , "...", "cl:text", "cl:imports", "cl:excludes", "cl:module"
-                  , "cl:comment", "roleset:"] ++ reservedcl
+                  , "that", "...", "cl:text", "cl:imports", "cl:excludes"
+                  , "cl:module", "cl:comment", "roleset:"] ++ reservedcl
 
 reservedcl :: [String]
 reservedcl = ["cl-text", "cl-imports", "cl-excludes", "cl-module"
@@ -152,7 +155,7 @@ reservedcl = ["cl-text", "cl-imports", "cl-excludes", "cl-module"
 -- reserved elements for sequence marker
 reservedelement2 :: [String]
 reservedelement2 = ["=", "and", "or", "iff", "if", "forall", "exists", "not"
-                   , "cl:text", "cl:imports", "cl:excludes", "cl:module"
+                   , "that", "cl:text", "cl:imports", "cl:excludes", "cl:module"
                    , "cl:comment", "roleset:"]
 
 commentBlockOpen :: String

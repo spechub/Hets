@@ -336,6 +336,7 @@ termForm bndVars trm = case trm of
       trmSF <- mapM (termSeqForm bndVars) tseqs
       return $ CBasic.Application trmFA trmSF rn
   Cl.Comment_term term _ _ -> termForm bndVars (uncurryTerm term)
+  -- TODO: implement Cl.That_term s -> ...
 
 termFormApp :: Cl.TERM -> Int -> Result CBasic.OP_SYMB
 termFormApp trm ar = case trm of

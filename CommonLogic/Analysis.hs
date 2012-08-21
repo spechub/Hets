@@ -180,6 +180,7 @@ propsOfTerm term = case term of
     AS.Funct_term t ts _ -> Sign.unite (propsOfTerm t)
                                        (uniteMap propsOfTermSeq ts)
     AS.Comment_term t _ _ -> propsOfTerm t -- fix
+    AS.That_term s _ -> propsOfSentence s
 
 propsOfNames :: AS.NAME_OR_SEQMARK -> Sign.Sign
 propsOfNames (AS.Name x) = Sign.emptySig {

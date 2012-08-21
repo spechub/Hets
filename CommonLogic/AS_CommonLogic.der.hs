@@ -104,6 +104,7 @@ data ATOM = Equation TERM TERM
 data TERM = Name_term NAME
           | Funct_term TERM [TERM_SEQ] Id.Range
           | Comment_term TERM COMMENT Id.Range
+          | That_term SENTENCE Id.Range
             deriving (Show, Ord, Eq)
 
 data TERM_SEQ = Term_seq TERM
@@ -266,6 +267,7 @@ printTerm s = case s of
    Name_term a -> pretty a
    Funct_term t ts _ -> parens $ pretty t <+> fsep (map pretty ts)
    Comment_term t c _ -> parens $ text clCommentS <+> pretty c <+> pretty t
+   That_term sent _ -> parens $ text "that" <+> pretty sent
 
 printTermSeq :: TERM_SEQ -> Doc
 printTermSeq s = case s of

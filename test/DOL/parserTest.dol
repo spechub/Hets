@@ -19,7 +19,13 @@ logic CommonLogic serialization CLIF
 
 ontology o1 =
 (and (P x)
-     (Q x) )
+     (Q x)
+     ((that (exists (x) (R x)))) // possible in IKL
+     (iff (R x) ((that (R x))))  // a tautology
+     (forall (p) (iff (p) ((that (p))))) // another one
+     (forall (p) (= p (that (p)))) // NOT a tautology (see IKL-SPEC)
+     (= ('foo') foo) // should become a tautology
+     )
 end
 
 ontology foo:a = {}

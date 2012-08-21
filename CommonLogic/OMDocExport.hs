@@ -110,7 +110,8 @@ exportTerm e vars t = case t of
          OMA $ exportTerm e vars ft : map (exportTermSeq e vars) tss
      Comment_term t1 _com _ ->
          OMA [ const_comment_term, varFromComment _com, exportTerm e vars t1 ]
-
+     That_term s _ ->
+         OMA [ const_that, exportSen e vars s ]
 
 exportTermSeq :: Env -> [NAME_OR_SEQMARK] -> TERM_SEQ -> OMElement
 exportTermSeq e vars ts = case ts of

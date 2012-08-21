@@ -155,6 +155,7 @@ mapSen_trm mor trm = case trm of
   AS.Funct_term t ts rn ->
       AS.Funct_term (mapSen_trm mor t) (map (mapSen_trmSeq mor) ts) rn
   AS.Comment_term t c rn -> AS.Comment_term (mapSen_trm mor t) c rn
+  AS.That_term s rn -> AS.That_term (mapSen_sen mor s) rn
 
 mapSen_nos :: Morphism -> AS.NAME_OR_SEQMARK -> AS.NAME_OR_SEQMARK
 mapSen_nos mor nos = case nos of
