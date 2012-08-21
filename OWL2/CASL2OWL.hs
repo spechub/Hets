@@ -123,11 +123,28 @@ idToIRI i = nullQName
 
 mapSign :: CASLSign -> Result (OS.Sign, [Named Axiom])
 mapSign csig = let
+  ss = sortSet csig
+  sortSens s = if Set.size s <= 1 then [] else
+    let (m, r) = Set.deleteFindMin s
+        sssen a b = [makeNamed ("subsort " ++ show a ++ " of " ++ show b)
+          $ toSC a b]
+    in concatMap (\ t -> case t of
+      _ | leqSort csig m t -> sssen m t
+        | leqSort csig t m -> sssen t m
+        | haveCommonSubsorts csig t m
+          || haveCommonSupersorts True csig t m -> []
+        | otherwise -> [makeNamed ("disjoint " ++ show m ++ " and " ++ show t)
+          $ PlainAxiom (Misc []) $ ListFrameBit (Just $ EDRelation Disjoint)
+          $ ExpressionBit [([], toC m), ([], toC t)]]
+      ) (Set.toList r) ++ sortSens r
+
   om = opMap csig
   keepMaxs = keepMinimals1 False csig id
   mk s i m = makeNamed (s ++ show i ++ m) . PlainAxiom
        (ObjectEntity $ ObjectProp $ idToIRI i)
   toC = Expression . idToIRI
+  toCE = ClassEntity . toC
+  toSC i = PlainAxiom (toCE i) . ListFrameBit (Just SubClass) . toEBit
   toEBit i = ExpressionBit [([], toC i)]
   mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
   toIris = Set.map idToIRI
@@ -137,12 +154,13 @@ mapSign csig = let
   (bps, ps) = MapSet.partition isBinPredType rps
   pm = predMap csig
   osig = OS.emptySign
-    { concepts = toIris $ Set.unions
-      [ sortSet csig, MapSet.keysSet sps ]
+    { concepts = toIris $ Set.unions [ ss, MapSet.keysSet sps ]
     , objectProperties = toIris $ Set.union (MapSet.keysSet sos)
       $ MapSet.keysSet bps
     , individuals = toIris $ MapSet.keysSet cs
     }
+  mkHint b i s = hint () ("not translated" ++ (if b then " op " else " pred ")
+     ++ shows i (if b then " :" else " : ") ++ showDoc s "") $ posOfId i
   in do
   s1 <- Map.foldWithKey (\ i s ml ->
     case keepMinimals csig id . map opRes $ Set.toList s of
@@ -152,7 +170,7 @@ mapSign csig = let
                  (PlainAxiom (SimpleEntity $ Entity NamedIndividual $ idToIRI i)
                  $ ListFrameBit (Just Types) $ toEBit t) : l
     ts -> fail $ "CASL2OWL.mapSign1: " ++ show i ++ " types: " ++ show ts)
-    (return []) (MapSet.toMap cs)
+    (return $ sortSens ss) (MapSet.toMap cs)
   s2 <- Map.foldWithKey (\ i s ml -> do
     l <- ml
     let sl = Set.toList s
@@ -179,19 +197,11 @@ mapSign csig = let
      case keepMaxs $ concatMap predArgs $ Set.toList s of
        [r] -> do
          l <- ml
-         return $ makeNamed ("plain predicate " ++ show i)
-              (PlainAxiom (ClassEntity $ toC r)
-              $ ListFrameBit (Just SubClass) $ toEBit i) : l
+         return $ makeNamed ("plain predicate " ++ show i) (toSC r i) : l
        ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
-  MapSet.foldWithKey (\ i s m -> do
-    m
-    justWarn () $ "not translated op " ++ shows i " :" ++ showDoc s "")
-    (return ()) os
-  MapSet.foldWithKey (\ i s m -> do
-    m
-    justWarn () $ "not translated pred " ++ shows i " : " ++ showDoc s "")
-    (return ()) ps
+  MapSet.foldWithKey (\ i s m -> m >> mkHint True i s) (return ()) os
+  MapSet.foldWithKey (\ i s m -> m >> mkHint False i s)(return ()) ps
   return (osig, s4)
 
 {- binary predicates and single argument functions should become
@@ -206,6 +216,7 @@ mapTheory (sig, sens) = do
   let mor = disambigSig sig
       tar = mtarget mor
       ns = map (mapNamed $ MapSen.mapSen (const id) mor) sens
-  mapM_ (justWarn () . ("not translated\n" ++) . show . printTheoryFormula
+  mapM_ (flip (hint ()) nullRange
+         . ("not translated\n" ++) . show . printTheoryFormula
          . mapNamed (simplifyCASLSen tar)) ns
   mapSign tar

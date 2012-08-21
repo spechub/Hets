@@ -31,6 +31,7 @@ module CASL.Overload
   , minimalSupers
   , maximalSubs
   , haveCommonSupersorts
+  , haveCommonSubsorts
   , keepMinimals1
   , keepMinimals
   ) where
