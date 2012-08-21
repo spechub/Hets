@@ -24,7 +24,6 @@ import Data.List
 import Data.Ord
 
 import System.FilePath
-import System.Time
 
 import Data.Graph.Inductive.Graph
 
@@ -73,29 +72,22 @@ data LibName = LibName
     , libVersion :: Maybe VersionNumber }
 
 emptyLibName :: String -> LibName
-emptyLibName s = LibName (IndirectLink s nullRange "" noTime) Nothing
+emptyLibName s = LibName (IndirectLink s nullRange "") Nothing
 
-data LibId = IndirectLink PATH Range FilePath ClockTime
+data LibId = IndirectLink PATH Range FilePath
               -- pos: start of PATH
 
-noTime :: ClockTime
-noTime = TOD 0 0
+updFilePathOfLibId :: FilePath -> LibId -> LibId
+updFilePathOfLibId fp (IndirectLink p r _) = IndirectLink p r fp
 
--- | Returns the LibId of a LibName
-getModTime :: LibId -> ClockTime
-getModTime (IndirectLink _ _ _ m) = m
-
-updFilePathOfLibId :: FilePath -> ClockTime -> LibId -> LibId
-updFilePathOfLibId fp mt (IndirectLink p r _ _) = IndirectLink p r fp mt
-
-setFilePath :: FilePath -> ClockTime -> LibName -> LibName
-setFilePath fp mt ln =
-  ln { getLibId = updFilePathOfLibId fp mt $ getLibId ln }
+setFilePath :: FilePath -> LibName -> LibName
+setFilePath fp ln =
+  ln { getLibId = updFilePathOfLibId fp $ getLibId ln }
 
 getFilePath :: LibName -> FilePath
 getFilePath ln =
     case getLibId ln of
-      IndirectLink _ _ fp _ -> fp
+      IndirectLink _ _ fp -> fp
 
 data VersionNumber = VersionNumber [String] Range
                       -- pos: "version", start of first string
@@ -103,10 +95,10 @@ data VersionNumber = VersionNumber [String] Range
 type PATH = String
 
 instance GetRange LibId where
-  getRange (IndirectLink _ r _ _) = r
+  getRange (IndirectLink _ r _) = r
 
 instance Show LibId where
-  show (IndirectLink s1 _ _ _) = s1
+  show (IndirectLink s1 _ _) = s1
 
 instance GetRange LibName where
   getRange = getRange . getLibId
@@ -124,10 +116,10 @@ prettyLibName (LibName i mv) = pretty i : case mv of
         Just v -> prettyVersionNumber v
 
 instance Eq LibId where
-  IndirectLink s1 _ _ _ == IndirectLink s2 _ _ _ = s1 == s2
+  IndirectLink s1 _ _ == IndirectLink s2 _ _ = s1 == s2
 
 instance Ord LibId where
-  IndirectLink s1 _ _ _ <= IndirectLink s2 _ _ _ = s1 <= s2
+  IndirectLink s1 _ _ <= IndirectLink s2 _ _ = s1 <= s2
 
 instance Eq LibName where
   ln1 == ln2 = compare ln1 ln2 == EQ
@@ -170,4 +162,3 @@ stripLibChars = filter (\ c -> isAlphaNum c || elem c "'_/")
 
 mkLibStr :: String -> String
 mkLibStr = dropWhile (== '/') . stripLibChars
-

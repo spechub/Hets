@@ -71,7 +71,7 @@ libId :: AParser st LibId
 libId = do
       pos <- getPos
       i <- hetIRI
-      return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) "" noTime
+      return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) ""
 
 -- | Parse the library elements
 libItems :: LogicGraph -> AParser st [Annoted LIB_ITEM]

@@ -153,7 +153,7 @@ readVerbose lg opts ln file = do
 -- | create a file name without suffix from a library name
 libNameToFile :: LibName -> FilePath
 libNameToFile ln = case getLibId ln of
-  IndirectLink file _ ofile _ ->
+  IndirectLink file _ ofile ->
       if null ofile then file
       else rmSuffix ofile
 

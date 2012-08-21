@@ -167,8 +167,7 @@ exportLibEnv b odir ln le =
         f (ln', o) = let fp = Map.findWithDefault
                               (error $ "exportLibEnv: filepath not mapped")
                               ln' fpm
-                         mt = getModTime $ getLibId ln'
-                     in (setFilePath fp mt ln', o)
+                     in (setFilePath fp ln', o)
     in do
       l <- mapAccumLCM cmbnF (exportDGraph le) im inputList >>= return . snd
       return $ map f l

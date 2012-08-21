@@ -175,11 +175,8 @@ toURI s = case parseURIReference s of
             Just u -> u
             _ -> error $ "toURI: can't parse as uri " ++ s
 
-libNameFromURL :: String -> URI -> IO LibName
-libNameFromURL s u = do
-  let fp = uriPath u
-  mt <- getModificationTime fp
-  return $ setFilePath fp mt $ emptyLibName s
+libNameFromURL :: String -> URI -> LibName
+libNameFromURL s u = setFilePath (uriPath u) $ emptyLibName s
 
 -- | Compute an absolute URI for a supplied URI relative to the given filepath.
 resolveURI :: URI -> FilePath -> URI
@@ -265,7 +262,7 @@ readLib e u = do
   OMDoc n l <- liftR $ xmlIn xmlString
   {- the name of the omdoc is used as the libname, no relationship between the
   libname and the filepath! -}
-  ln <- lift $ libNameFromURL n u
+  let ln = libNameFromURL n u
   rPut e $ "Importing library " ++ show ln
   (e', dg) <- foldM (addTLToDGraph ln) (e, emptyDG) l
   rPut e $ "... loaded " ++ show u

@@ -136,8 +136,6 @@ anaString :: Maybe LibName -- ^ suggested library name
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaString mln lgraph opts topLns libenv initDG input file = do
   curDir <- lift getCurrentDirectory -- get full path for parser positions
-  mt <- if checkUri file then return noTime
-    else lift $ getModificationTime file
   let realFileName = curDir </> file
       posFileName = case mln of
           Just gLn | useLibPos opts -> show $ getLibId gLn
@@ -154,7 +152,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
                 -> [Annoted (Spec_defn (simpleIdToIRI $ mkSimpleId spN)
                              gn as qs) rs [] []]
         _ -> is
-      ln = setFilePath posFileName mt
+      ln = setFilePath posFileName
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
       ast = Lib_defn ln nIs ps ans
   case analysis opts of
@@ -668,13 +666,13 @@ failPrefixStr pos s = "No prefix found for CURIE \"" ++ s ++
 
 -- | expands iff ':' is in the name (path)
 expandCurieLibName :: GlobalAnnos -> LibName -> Maybe LibName
-expandCurieLibName ga ln'@(LibName (IndirectLink path ilRn ilFp ilCl) _) =
+expandCurieLibName ga ln'@(LibName (IndirectLink path ilRn ilFp) _) =
   if elem ':' path
   then let mi = expandCurie (prefix_map ga) $ fromJust $ parseIRICurie path
        in case mi of
             Nothing -> Nothing
             Just i -> Just ln' { getLibId = IndirectLink (iriToStringUnsecure i)
-                                                                ilRn ilFp ilCl }
+                                                                ilRn ilFp }
   else Just ln'
 
 -- | expands iff ':' is in the name
