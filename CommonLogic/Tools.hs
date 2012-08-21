@@ -87,7 +87,8 @@ indvC_sen s =
 indvC_quantsent ::QUANT_SENT -> Set NAME
 indvC_quantsent (QUANT_SENT _ noss s) = quant noss s
     where quant :: [NAME_OR_SEQMARK] -> SENTENCE -> Set NAME
-          quant nss s = Set.difference (indvC_sen s) $ setUnion_list nameof nss
+          quant nss se = Set.difference (indvC_sen se)
+            $ setUnion_list nameof nss
           nameof :: NAME_OR_SEQMARK -> Set NAME
           nameof nsm =
               case nsm of
