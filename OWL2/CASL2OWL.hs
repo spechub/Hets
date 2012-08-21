@@ -135,7 +135,7 @@ mapSign csig = let
           || haveCommonSupersorts True csig t m -> []
         | otherwise -> [makeNamed ("disjoint " ++ show m ++ " and " ++ show t)
           $ PlainAxiom (Misc []) $ ListFrameBit (Just $ EDRelation Disjoint)
-          $ ExpressionBit [([], toC m), ([], toC t)]]
+          $ ExpressionBit $ map toACE [m, t]]
       ) (Set.toList r) ++ sortSens r
 
   om = opMap csig
@@ -143,9 +143,10 @@ mapSign csig = let
   mk s i m = makeNamed (s ++ show i ++ m) . PlainAxiom
        (ObjectEntity $ ObjectProp $ idToIRI i)
   toC = Expression . idToIRI
-  toCE = ClassEntity . toC
-  toSC i = PlainAxiom (toCE i) . ListFrameBit (Just SubClass) . toEBit
-  toEBit i = ExpressionBit [([], toC i)]
+  toSC i = PlainAxiom (ClassEntity $ toC i) . ListFrameBit (Just SubClass)
+    . toEBit
+  toACE i = ([], toC i)
+  toEBit i = ExpressionBit [toACE i]
   mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
   toIris = Set.map idToIRI
   (cs, ncs) = MapSet.partition (null . opArgs) om
@@ -162,14 +163,14 @@ mapSign csig = let
   mkHint b i s = hint () ("not translated" ++ (if b then " op " else " pred ")
      ++ shows i (if b then " :" else " : ") ++ showDoc s "") $ posOfId i
   in do
-  s1 <- Map.foldWithKey (\ i s ml ->
-    case keepMinimals csig id . map opRes $ Set.toList s of
-    [t] -> do
+  s1 <- Map.foldWithKey (\ i s ml -> do
       l <- ml
-      return $ makeNamed ("individual " ++ show i ++ " of class " ++ show t)
-                 (PlainAxiom (SimpleEntity $ Entity NamedIndividual $ idToIRI i)
-                 $ ListFrameBit (Just Types) $ toEBit t) : l
-    ts -> fail $ "CASL2OWL.mapSign1: " ++ show i ++ " types: " ++ show ts)
+      let ts = keepMinimals csig id $ map opRes $ Set.toList s
+      return $ makeNamed
+        ("individual " ++ show i ++ " of class " ++ showDoc ts "")
+        (PlainAxiom (SimpleEntity $ Entity NamedIndividual $ idToIRI i)
+        $ ListFrameBit (Just Types) $ ExpressionBit
+        $ map toACE ts) : l)
     (return $ sortSens ss) (MapSet.toMap cs)
   s2 <- Map.foldWithKey (\ i s ml -> do
     l <- ml
@@ -181,7 +182,7 @@ mapSign csig = let
              $ ObjectCharacteristics [([], Functional)]
            , mki " domain" $ mkDR ADomain a, mki " range" $ mkDR ARange r]
          ++ l
-      (as, rs) -> fail $ "CASL2OWL.mapSignw: " ++ show i ++ " args: "
+      (as, rs) -> fail $ "CASL2OWL.mapSign2: " ++ show i ++ " args: "
                    ++ show as ++ " resulttypes: " ++ show rs)
     (return s1) (MapSet.toMap sos)
   s3 <- Map.foldWithKey (\ i s ml -> do
@@ -201,7 +202,7 @@ mapSign csig = let
        ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
   MapSet.foldWithKey (\ i s m -> m >> mkHint True i s) (return ()) os
-  MapSet.foldWithKey (\ i s m -> m >> mkHint False i s)(return ()) ps
+  MapSet.foldWithKey (\ i s m -> m >> mkHint False i s) (return ()) ps
   return (osig, s4)
 
 {- binary predicates and single argument functions should become
