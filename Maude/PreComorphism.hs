@@ -149,27 +149,19 @@ rename sm tok = new_tok
 
 -- | translates a Maude sentence into a CASL formula
 mapSentence :: MSign.Sign -> MSentence.Sentence -> Result CAS.CASLFORMULA
-mapSentence sg sen@(MSentence.Equation eq) = case any MAS.owise ats of
-             False -> return $ sentence $ noOwiseSen2Formula mk named
-             True -> let
-                       sg_sens = map (makeNamed "") $ Set.toList $ MSign.sentences sg
-                       (no_owise_sens, _, _) = splitOwiseEqs sg_sens
-                       no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
-                       trans = sentence $ owiseSen2Formula mk no_owise_forms named
-                     in return trans
-          where mk = kindMapId $ MSign.kindRel sg
-                MAS.Eq _ _ _ ats = eq
-                named = makeNamed "" sen
-mapSentence sg sen@(MSentence.Membership mb) = return $ sentence form
-          where mk = kindMapId $ MSign.kindRel sg
-                MAS.Mb _ _ _ _ = mb
-                named = makeNamed "" sen
-                form = mb_rl2formula mk named
-mapSentence sg sen@(MSentence.Rule rl) = return $ sentence form
-          where mk = kindMapId $ MSign.kindRel sg
-                MAS.Rl _ _ _ _ = rl
-                named = makeNamed "" sen
-                form = mb_rl2formula mk named
+mapSentence sg sen = let
+    mk = kindMapId $ MSign.kindRel sg
+    named = makeNamed "" sen
+    form = mb_rl2formula mk named
+  in return $ sentence $ case sen of
+       MSentence.Equation (MAS.Eq _ _ _ ats) -> if any MAS.owise ats then let
+           sg_sens = map (makeNamed "") $ Set.toList $ MSign.sentences sg
+           (no_owise_sens, _, _) = splitOwiseEqs sg_sens
+           no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
+           in owiseSen2Formula mk no_owise_forms named
+           else noOwiseSen2Formula mk named
+       MSentence.Membership (MAS.Mb _ _ _ _) -> form
+       MSentence.Rule (MAS.Rl _ _ _ _) -> form
 
 -- | applies maude2casl to compute the CASL signature and sentences from
 -- the Maude ones, and wraps them into a Result datatype
