@@ -112,20 +112,17 @@ varToInt v = case v of
 uriToTokM :: IRI -> Result Token
 uriToTokM = return . uriToTok
 
-mkQuants :: QUANT_SENT -> SENTENCE
-mkQuants qs = Quant_sent qs nullRange
-
 mkBools :: BOOL_SENT -> SENTENCE
 mkBools bs = Bool_sent bs nullRange
 
 mkAtoms :: ATOM -> SENTENCE
 mkAtoms as = Atom_sent as nullRange
 
-mkUnivQ :: [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT
-mkUnivQ = QUANT_SENT Universal
+mkUnivQ :: [NAME_OR_SEQMARK] -> SENTENCE -> Id.Range -> SENTENCE
+mkUnivQ = Quant_sent Universal
 
-mkExist :: [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT
-mkExist = QUANT_SENT Existential
+mkExist :: [NAME_OR_SEQMARK] -> SENTENCE -> Id.Range -> SENTENCE
+mkExist = Quant_sent Existential
 
 cnjct :: [SENTENCE] -> BOOL_SENT
 cnjct = Junction Conjunction
@@ -167,10 +164,10 @@ mk1NAME :: NAME_OR_SEQMARK
 mk1NAME = mkNAME 1
 
 mk1QU :: SENTENCE -> SENTENCE
-mk1QU = mkQuants . mkUnivQ [mk1NAME]
+mk1QU s = mkUnivQ [mk1NAME] s nullRange
 
 mkQU :: [NAME_OR_SEQMARK] -> SENTENCE -> SENTENCE
-mkQU l = mkQuants . mkUnivQ l
+mkQU l s = mkUnivQ l s nullRange
 
 mkBI :: SENTENCE -> SENTENCE -> SENTENCE
 mkBI s = mkBools . mkImpl s
@@ -192,7 +189,7 @@ mkBB :: SENTENCE -> SENTENCE -> SENTENCE
 mkBB s = mkBools . mkBicnd s
 
 mkQE :: [NAME_OR_SEQMARK] -> SENTENCE -> SENTENCE
-mkQE l = mkQuants . mkExist l
+mkQE l s = mkExist l s nullRange
 
 mkAE :: TERM -> TERM -> SENTENCE
 mkAE t = mkAtoms . Equation t

@@ -162,9 +162,8 @@ propsOfSentence (AS.Atom_sent form _) = case form of
       (propsOfTerm term2)
     AS.Atom term ts -> Sign.unite (propsOfTerm term)
       (uniteMap propsOfTermSeq ts)
-propsOfSentence (AS.Quant_sent qs _) = case qs of
-    AS.QUANT_SENT _ xs s -> Sign.sigDiff (propsOfSentence s)
-                            (uniteMap propsOfNames xs)
+propsOfSentence (AS.Quant_sent _ xs s _) =
+    Sign.sigDiff (propsOfSentence s) (uniteMap propsOfNames xs)
 propsOfSentence (AS.Bool_sent bs _) = case bs of
     AS.Junction _ xs -> uniteMap propsOfSentence xs
     AS.Negation x -> propsOfSentence x
@@ -285,7 +284,7 @@ negForm_mod m = case m of
 -- negate sentence
 negForm_sen :: AS.SENTENCE -> AS.SENTENCE
 negForm_sen f = case f of
-  AS.Quant_sent _ r -> AS.Bool_sent (AS.Negation f) r
+  AS.Quant_sent _ _ _ r -> AS.Bool_sent (AS.Negation f) r
   AS.Bool_sent bs r -> case bs of
     AS.Negation s -> s
     _ -> AS.Bool_sent (AS.Negation f) r

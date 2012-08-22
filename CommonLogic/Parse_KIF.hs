@@ -35,9 +35,9 @@ boolop_binary :: [(String, SENTENCE -> SENTENCE -> BOOL_SENT, String)]
 boolop_binary = [(equivS, BinOp Biconditional, "equivalence"),
                  (implS, BinOp Implication, "implication")]
 
-boolop_quant :: [(String, [NAME_OR_SEQMARK] -> SENTENCE -> QUANT_SENT, String)]
-boolop_quant = [(forallS, QUANT_SENT Universal, "universal quantifier"),
-                (existsS, QUANT_SENT Existential, "existiantial quantifier")]
+boolop_quant :: [(String, QUANT, String)]
+boolop_quant = [(forallS, Universal, "universal quantifier"),
+                (existsS, Existential, "existiantial quantifier")]
 
 parse_boolop :: [(String, op_t, String)] -> CharParser st (Token, op_t, String)
 parse_boolop = choice . map
@@ -58,11 +58,11 @@ logsent = do (ch,con,ident) <- parse_boolop boolop_unary
              s2 <- sentence <?> "second sentence after \"" ++ ident ++ "\""
              return $ Bool_sent (con s1 s2)
                $ Range $ joinRanges [rangeSpan ch, rangeSpan s1, rangeSpan s2]
-      <|> do (ch,con,ident) <- parse_boolop boolop_quant
+      <|> do (ch,q,ident) <- parse_boolop boolop_quant
              vars <- ((parens $ many1 (pToken variable))
                       <?> "quantified variables")
              s <- sentence <?> "sentence after \"" ++ ident ++ "\""
-             return $ Quant_sent (con (map Name vars) s)
+             return $ Quant_sent q (map Name vars) s
                $ Range $ joinRanges [rangeSpan ch, rangeSpan vars, rangeSpan s]
 
 equalAtom :: CharParser st ATOM

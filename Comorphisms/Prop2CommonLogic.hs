@@ -121,9 +121,10 @@ translate f =
   emptyTextMeta {
         getText = Text [Sentence singletonUniv, Sentence $ toSen f] nullRange
   }
-  where singletonUniv = Quant_sent (QUANT_SENT Universal [Name xName, Name yName]
-            $ Atom_sent (Equation (Name_term xName) (Name_term yName)) nullRange
-          ) nullRange
+  where singletonUniv = Quant_sent Universal [Name xName, Name yName]
+                        (Atom_sent (Equation
+                                    (Name_term xName)
+                                    (Name_term yName)) nullRange) nullRange
 
 toSen :: PBasic.FORMULA -> SENTENCE
 toSen x = case x of
@@ -141,9 +142,9 @@ toSen x = case x of
     Bool_sent (BinOp Biconditional (toSen f1) (toSen f2)) nullRange
 
 clTrue :: SENTENCE --forall x. x=x
-clTrue = Quant_sent (QUANT_SENT Universal [Name xName]
-                     $ Atom_sent (Equation (Name_term xName) (Name_term xName))
-                     nullRange) nullRange
+clTrue = Quant_sent Universal [Name xName]
+         (Atom_sent (Equation (Name_term xName) (Name_term xName))
+          nullRange) nullRange
 
 xName :: NAME
 xName = mkSimpleId "x"

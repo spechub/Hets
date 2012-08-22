@@ -143,11 +143,11 @@ sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
 sortRelText m =
   let ps = Map.foldWithKey (\subSrt set phrs -> (
         Set.fold (\superSrt phrs2 ->
-            Sentence (Quant_sent (QUANT_SENT Universal [Name xName]
-                                  (Bool_sent (BinOp Implication
-                                              (predicateNames subSrt [xName])
-                                              (predicateNames superSrt [xName])
-                                             ) nullRange)) nullRange)
+            Sentence (Quant_sent Universal [Name xName]
+                      (Bool_sent (BinOp Implication
+                                  (predicateNames subSrt [xName])
+                                  (predicateNames superSrt [xName])
+                                 ) nullRange) nullRange)
             : phrs2) [] set
         ) ++ phrs) [] m
   in if null ps
@@ -171,7 +171,7 @@ funcMapText m =
                   if null args
                   then predicateNames res [f]
                   else
-                    Quant_sent (QUANT_SENT Universal
+                    Quant_sent Universal
                                 (map (Name . snd) argsAndNames) (
                       Bool_sent (BinOp Implication
                           (Bool_sent (Junction Conjunction $
@@ -184,7 +184,7 @@ funcMapText m =
                                 ) nullRange]
                             ) nullRange)
                         ) nullRange
-                      )) nullRange)
+                      ) nullRange)
             : phrs2) [] set
           ) ++ phrs) [] m
   in if null ps
@@ -200,7 +200,7 @@ predMapText m =
   let ps = Map.foldWithKey (\prd set phrs -> (
           Set.fold (\args phrs2 ->
             let argsAndNames = typesWithIndv args
-            in  Sentence (Quant_sent (QUANT_SENT Universal
+            in  Sentence (Quant_sent Universal
                                       (map (Name . snd) argsAndNames) (
                     Bool_sent (BinOp Implication
                         (predicateNames prd (map snd argsAndNames))
@@ -208,7 +208,7 @@ predMapText m =
                             map (\(p, x) -> predicateNames p [x]) argsAndNames
                           ) nullRange)
                       ) nullRange
-                    )) nullRange)
+                    ) nullRange)
             : phrs2) [] set
           ) ++ phrs) [] m
   in if null ps
@@ -313,7 +313,7 @@ quantTrm sig qsymm vs f = do
         FOLSign.SPForall -> return Universal
         FOLSign.SPExists -> return Existential
         _ -> fail "custom quantifiers not allowed"
-  return $ Quant_sent (QUANT_SENT quantifier trans_vs trans_f) nullRange
+  return $ Quant_sent quantifier trans_vs trans_f nullRange
 
 typeSentence :: FOLSign.Sign -> [FOLSign.SPTerm] -> Result SENTENCE
 typeSentence sig vs = case vs of
@@ -460,9 +460,9 @@ isNullary t = case t of
 
 -- representation for true in CL
 clTrue :: SENTENCE --forall x. x=x
-clTrue = Quant_sent (QUANT_SENT Universal [Name xName]
-            $ Atom_sent (Equation (Name_term xName) (Name_term xName)) nullRange
-          ) nullRange
+clTrue = Quant_sent Universal [Name xName]
+         (Atom_sent (Equation (Name_term xName) (Name_term xName)) nullRange
+         ) nullRange
 
 -- representation for false in CL
 clFalse :: SENTENCE

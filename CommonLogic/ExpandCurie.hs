@@ -70,9 +70,8 @@ expImp pm (Imp_name n) = Imp_name $ expName pm n
 
 expSen :: Map.Map String IRI -> SENTENCE -> SENTENCE
 expSen pm s = case s of
-  Quant_sent qs rn -> Quant_sent (case qs of
-      QUANT_SENT q noss s2 -> QUANT_SENT q (map (expNos pm) noss) (expSen pm s2)
-    ) rn
+  Quant_sent q noss s2 rn ->
+    Quant_sent q (map (expNos pm) noss) (expSen pm s2) rn
   Bool_sent bs rn -> Bool_sent (case bs of
       Junction j ss -> Junction j $ map (expSen pm) ss
       Negation s2 -> Negation $ expSen pm s2

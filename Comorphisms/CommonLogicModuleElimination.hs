@@ -151,7 +151,8 @@ me_sentence newName modules sen =
     if null modules then sen else -- this keeps the sentence simple
     case sen of
         Bool_sent bs _ -> Bool_sent (me_boolsent newName modules bs) nullRange
-        Quant_sent qs _ -> Quant_sent (me_quantsent newName modules qs) nullRange
+        Quant_sent q vs is _ ->
+          Quant_sent q vs (me_quantsent newName modules q vs is) nullRange
         x -> x                              -- Table 2: R1a - R2b
 
 -- Table 2: R2a - R2e
@@ -164,14 +165,12 @@ me_boolsent newName modules bs =
     where me_sen_mod = me_sentence newName modules --TODO: check whether dn stays the same
 
 -- Table 2: R3a - R3b
-me_quantsent :: NAME -> [NAME] -> QUANT_SENT -> QUANT_SENT
-me_quantsent newName modules qs =
-    case qs of 
-        QUANT_SENT q noss sen -> QUANT_SENT q noss (
-            Bool_sent (BinOp Implication 
-                (anticedent modules noss)
-                (me_sentence newName modules sen)
-            ) nullRange)
+me_quantsent :: NAME -> [NAME] -> QUANT -> [NAME_OR_SEQMARK] -> SENTENCE
+                -> SENTENCE
+me_quantsent newName modules _ noss sen =
+  Bool_sent (BinOp Implication
+             (anticedent modules noss)
+             (me_sentence newName modules sen)) nullRange
 
 anticedent :: [NAME] -> [NAME_OR_SEQMARK] -> SENTENCE
 anticedent modules noss = 
@@ -209,17 +208,17 @@ me_module newName modules m =
 -- Table 2 R4: each line in the conjunction
 ex_conj :: NAME -> [NAME] -> SENTENCE
 ex_conj n modules =
-  Quant_sent (QUANT_SENT Existential [Name n] (Bool_sent (Junction Conjunction (
+  Quant_sent Existential [Name n] (Bool_sent (Junction Conjunction (
         map (modNameToPredicate n) modules
-    )) nullRange)) nullRange
+    )) nullRange) nullRange
 
 -- Table 2 R4: each line with indvC-elements in the conjunction
 ex_conj_indvC :: NAME -> [NAME] -> NAME -> SENTENCE
 ex_conj_indvC n modules c =
-    Quant_sent (QUANT_SENT Existential [Name n] (Bool_sent (Junction Conjunction (
+    Quant_sent Existential [Name n] (Bool_sent (Junction Conjunction (
             (Atom_sent (Equation (Name_term n) (Name_term c)) nullRange)
             : map (modNameToPredicate n) modules
-        )) nullRange)) nullRange
+        )) nullRange) nullRange
 
 -- Table 2 R4: each line with excluded elements in the conjunction
 not_ex_conj_excl :: NAME -> [NAME] -> NAME -> SENTENCE

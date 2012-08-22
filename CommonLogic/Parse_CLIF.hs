@@ -211,25 +211,25 @@ quantsent3 t mg bs ((n,trm):nts) s rn = -- Quant_sent using syntactic sugar
        Name nm -> Atom (Funct_term trm [Term_seq $ Name_term nm] nullRange) []
        SeqMark sqm -> Atom (Funct_term trm [Seq_marks sqm] nullRange) []
   in if t
-        then Quant_sent (QUANT_SENT Universal [n] $ quantsent3 t mg bs nts (
+        then Quant_sent Universal [n] (quantsent3 t mg bs nts (
                   Bool_sent (BinOp Implication (Atom_sent functerm rn) s) rn
                 ) rn) rn
-        else Quant_sent (QUANT_SENT Universal [n] $ quantsent3 t mg bs nts (
+        else Quant_sent Universal [n] (quantsent3 t mg bs nts (
                   Bool_sent (Junction Conjunction [Atom_sent functerm rn, s]) rn
                 ) rn) rn
 quantsent3 t mg bs [] s rn =
-  let quantType = QUANT_SENT $ if t then Universal else Existential
+  let quantType = if t then Universal else Existential
   in case mg of
-    Nothing -> Quant_sent (quantType bs s) rn -- normal Quant_sent
+    Nothing -> Quant_sent quantType bs s rn -- normal Quant_sent
     Just g ->                                -- Quant_sent using syntactic sugar
       let functerm = Atom (Funct_term (Name_term g) (map (Term_seq . Name_term)
                       $ Set.elems $ Tools.indvC_sen s) nullRange) []
       in if t
-          then Quant_sent (QUANT_SENT Universal bs (Bool_sent (BinOp Implication
-              (Atom_sent functerm nullRange) s) rn)) rn
+          then Quant_sent Universal bs (Bool_sent (BinOp Implication
+              (Atom_sent functerm nullRange) s) rn) rn
           else 
-            Quant_sent (QUANT_SENT Existential bs (Bool_sent (Junction Conjunction
-              [Atom_sent functerm nullRange, s]) rn)) rn
+            Quant_sent Existential bs (Bool_sent (Junction Conjunction
+              [Atom_sent functerm nullRange, s]) rn) rn
 
 boundlist :: CharParser st [Either (NAME_OR_SEQMARK, TERM) NAME_OR_SEQMARK]
 boundlist = many (do
@@ -304,9 +304,9 @@ rolesetNT = parens $ do
 rolesetSentence :: TERM -> [(NAME, TERM)] -> SENTENCE
 rolesetSentence t0 nts =
   let x = rolesetFreeName t0 nts
-  in  Quant_sent (QUANT_SENT Existential [Name x] (Bool_sent (Junction Conjunction $
+  in  Quant_sent Existential [Name x] (Bool_sent (Junction Conjunction $
           rolesetAddToTerm x t0 : map (rolesetMixTerm x) nts
-        ) nullRange)) $ Range $ rangeSpan t0
+        ) nullRange) $ Range $ rangeSpan t0
 
 rolesetFreeName :: TERM -> [(NAME, TERM)] -> NAME
 rolesetFreeName trm nts =

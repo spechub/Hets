@@ -180,7 +180,7 @@ sl_module prds cs m =
 sl_sentence :: Set.Set AS.NAME -> CommonLogicSL -> AS.SENTENCE -> CommonLogicSL
 sl_sentence prds cs sen =
     case sen of
-        AS.Quant_sent q _ -> sl_quantSent prds cs q
+        AS.Quant_sent q vs is _ -> sl_quantSent prds cs q vs is
         AS.Bool_sent b _ -> sl_boolSent prds cs b
         AS.Atom_sent a _ -> sl_atomSent prds cs a
         AS.Comment_sent _ s _ -> sl_sentence prds cs s
@@ -193,9 +193,10 @@ sl_importation _ cs _ = cs
 
 {- | determines the sublogic for quantified sentences,
 given predicates of the super-text -}
-sl_quantSent :: Set.Set AS.NAME -> CommonLogicSL -> AS.QUANT_SENT
-    -> CommonLogicSL
-sl_quantSent prds cs (AS.QUANT_SENT _ noss s) =
+sl_quantSent :: Set.Set AS.NAME -> CommonLogicSL
+                -> AS.QUANT -> [AS.NAME_OR_SEQMARK] -> AS.SENTENCE
+                -> CommonLogicSL
+sl_quantSent prds cs _ noss s =
   comp_list $ folsl : sl_sentence prds cs s
   : map (sl_nameOrSeqmark prds cs) noss
 

@@ -132,10 +132,8 @@ mapSen_mod mor m = case m of
 
 mapSen_sen :: Morphism -> AS.SENTENCE -> AS.SENTENCE
 mapSen_sen mor frm = case frm of
-  AS.Quant_sent qs rn -> AS.Quant_sent (case qs of
-      QUANT_SENT q xs sen ->
-          QUANT_SENT q (map (mapSen_nos mor) xs) (mapSen_sen mor sen)
-      ) rn
+  AS.Quant_sent q vs is rn ->
+    AS.Quant_sent q (map (mapSen_nos mor) vs) (mapSen_sen mor is) rn
   AS.Bool_sent bs rn -> AS.Bool_sent (case bs of
       AS.Junction j sens ->  AS.Junction j (map (mapSen_sen mor) sens)
       AS.Negation sen -> AS.Negation (mapSen_sen mor sen)

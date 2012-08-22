@@ -72,12 +72,12 @@ exportModule en vars m = case m of
 exportSen :: Env -> [NAME_OR_SEQMARK] -> SENTENCE
                   -> OMElement
 exportSen en vars s = case s of
-      Quant_sent qs _ -> case qs of
-          QUANT_SENT q vars2 s2 -> OMBIND (case q of
-                                                Universal -> const_forall
-                                                Existential -> const_exists)
-                                   (map exportVar vars2)
-                                   (exportSen en (vars ++ vars2) s2)
+      Quant_sent q vars2 s2 _ ->
+        OMBIND (case q of
+                   Universal -> const_forall
+                   Existential -> const_exists)
+        (map exportVar vars2)
+        (exportSen en (vars ++ vars2) s2)
       Bool_sent bs _ -> case bs of
           Junction j ss ->
             OMA $ (case j of Conjunction -> const_and 

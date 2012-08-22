@@ -73,7 +73,7 @@ data MODULE = Mod NAME TEXT Id.Range
 data IMPORTATION = Imp_name NAME
                    deriving (Show, Ord, Eq)
 
-data SENTENCE = Quant_sent QUANT_SENT Id.Range
+data SENTENCE = Quant_sent QUANT [NAME_OR_SEQMARK] SENTENCE Id.Range
               | Bool_sent BOOL_SENT Id.Range
               | Atom_sent ATOM Id.Range
               | Comment_sent COMMENT SENTENCE Id.Range
@@ -83,9 +83,6 @@ data SENTENCE = Quant_sent QUANT_SENT Id.Range
 data QUANT = Universal | Existential
              deriving (Show, Ord, Eq)
                     
-data QUANT_SENT = QUANT_SENT QUANT [NAME_OR_SEQMARK] SENTENCE
-             deriving (Show, Ord, Eq)
-
 data BOOL_SENT = Junction AndOr [SENTENCE]
                | Negation SENTENCE
                | BinOp ImplEq SENTENCE SENTENCE
@@ -156,8 +153,6 @@ instance Pretty AndOr where
    pretty = printAndOr
 instance Pretty ImplEq where
    pretty = printImplEq
-instance Pretty QUANT_SENT where
-   pretty = printQuantSent
 instance Pretty QUANT where
    pretty = printQuant
 instance Pretty ATOM where
@@ -222,7 +217,8 @@ printImportation (Imp_name x) = pretty x
 
 printSentence :: SENTENCE -> Doc
 printSentence s = case s of
-    Quant_sent xs _ -> parens $ pretty xs
+    Quant_sent q vs is _ ->
+      pretty q <+> parens (sep $ map pretty vs) <+> pretty is
     Bool_sent xs _ -> parens $ pretty xs
     Atom_sent xs _ -> pretty xs
     Comment_sent x y _ -> parens $ text clCommentS <+> pretty x <+> pretty y
@@ -231,10 +227,6 @@ printSentence s = case s of
 printComment :: COMMENT -> Doc
 printComment s = case s of
    Comment x _ -> text x
-
-printQuantSent :: QUANT_SENT -> Doc
-printQuantSent s = case s of
-  QUANT_SENT q x y -> pretty q <+> parens (sep $ map pretty x) <+> pretty y
 
 printQuant :: QUANT -> Doc
 printQuant s = case s of

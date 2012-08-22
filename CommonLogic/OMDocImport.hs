@@ -102,7 +102,7 @@ toSen e om = case om of
         quant | binder == const_forall = Universal
               | binder == const_exists = Existential
               | otherwise = error "toSen: not supported binder"
-        in Quant_sent (QUANT_SENT quant vars sent) nullRange
+        in Quant_sent quant vars sent nullRange
   OMA (omh : os)
     | omh == const_and ->
       Bool_sent (Junction Conjunction (map (toSen e) os)) nullRange

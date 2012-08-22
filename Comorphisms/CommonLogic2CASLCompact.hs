@@ -252,8 +252,8 @@ senForm bndVars form = case form of
           return $ (case j of
             Cl.Implication -> \ a b -> CBasic.Implication a b True
             Cl.Biconditional -> CBasic.Equivalence) sen1 sen2 rn
-  Cl.Quant_sent (Cl.QUANT_SENT j bs s) rn ->
-        quantSentForm (case j of
+  Cl.Quant_sent q bs s rn ->
+        quantSentForm (case q of
           Cl.Universal -> Universal
           Cl.Existential -> Existential) rn bndVars bs s
   Cl.Atom_sent at rn -> case at of
@@ -376,8 +376,7 @@ colTi_phr p = case p of
 
 colTi_sen :: Cl.SENTENCE -> Result TextInfo
 colTi_sen sen = case sen of
-  Cl.Quant_sent q _ -> case q of
-      Cl.QUANT_SENT _ noss s -> do
+  Cl.Quant_sent _ noss s _ -> do
           cti <- colTi_sen s
           nossR <- mapM nosStrnig noss
           return $ foldr removeFromTI cti nossR

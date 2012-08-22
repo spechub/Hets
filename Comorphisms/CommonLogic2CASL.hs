@@ -181,8 +181,8 @@ senForm sig form = case form of
                ClBasic.Implication -> \ a b -> CBasic.Implication a b True
                ClBasic.Biconditional -> CBasic.Equivalence)
                  (senForm sig s1) (senForm sig s2) rn
-     ClBasic.Quant_sent (ClBasic.QUANT_SENT j bs s) rn ->
-         CBasic.Quantification (case j of
+     ClBasic.Quant_sent q bs s rn ->
+         CBasic.Quantification (case q of
                   ClBasic.Universal -> CBasic.Universal
                   ClBasic.Existential -> CBasic.Existential)
                [CBasic.Var_decl (map bindingSeq bs) individual rn]
