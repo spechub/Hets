@@ -513,11 +513,12 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
           (fMap, idMap') = transFuncMap idMap sign
           (pMap, idMap'', predImplications) = transPredMap idMap' sign
 
-nonEmptySortSens :: Set.Set SPIdentifier -> SortMap -> [Named SPTerm]
-nonEmptySortSens emptySorts =
-    Map.foldWithKey
-      (\ s _ res -> [extSen s | not $ Set.member s emptySorts] ++ res)
-      []
+nonEmptySortSens :: CSign.Sign f e -> IdTypeSPIdMap -> SortMap -> [Named SPTerm]
+nonEmptySortSens sig idMap sm =
+  let es = Set.difference (sortSet sig) $ emptySortSet sig
+  in [ extSen s | nes <- Set.toList es
+     , let s = fromMaybe (transIdSort nes) $ lookupSPId nes CSort idMap
+     , Set.member s $ Map.keysSet sm ]
     where extSen s = makeNamed ("ga_non_empty_sort_" ++ show s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
               where varTerm = simpTerm $ spSym $ mkSimpleId $ newVar s
@@ -558,12 +559,11 @@ transTheory trSig trForm (sign, sens) =
                integrateGenerated idMap genSens tSign
            let tSignElim = if SPSign.singleSortNotGen tSign'
                              then tSign' {sortMap = Map.empty} else tSign'
-               emptySorts = Set.map transIdSort (emptySortSet sign)
            return (tSignElim,
                     sign_sens ++
                     disjointTopSorts sign idMap' ++
                     sentencesAndGoals ++
-                    nonEmptySortSens emptySorts (sortMap tSignElim) ++
+                    nonEmptySortSens sign idMap' (sortMap tSignElim) ++
                     map (mapNamed (transFORM (singleSortNotGen tSign') eqPreds
                                      sign idMap' trForm))
                         realSens'))
