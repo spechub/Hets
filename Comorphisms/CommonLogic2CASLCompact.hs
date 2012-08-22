@@ -212,10 +212,8 @@ trForm :: Cl.TEXT -> Result CBasic.CASLFORMULA
 trForm form =
    case form of
      Cl.Text phrs rn -> do
-        let ps = filter nonImportAndNonEmpty phrs
-        phrsfrm <- mapM phraseForm ps
-        return $ if null phrsfrm then CBasic.True_atom rn else
-          CBasic.Conjunction phrsfrm rn
+        phrsfrm <- mapM phraseForm $ filter nonImportAndNonEmpty phrs
+        return $ CBasic.conjunctRange phrsfrm rn
      Cl.Named_text _ t _ -> trForm t
    where nonImportAndNonEmpty :: Cl.PHRASE -> Bool
          nonImportAndNonEmpty p = case p of
