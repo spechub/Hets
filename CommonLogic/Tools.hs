@@ -12,14 +12,13 @@ Tools for CommonLogic static analysis
 -}
 
 module CommonLogic.Tools
-    ( freeName      -- finds a free discourse name
-    , indvC_text    -- retrieves all discourse names from a text
-    , indvC_sen     -- retrieves all discourse names from a sentence
-    , indvC_term    -- retrieves all discourse names from a term
-    , prd_text      -- retrieves all predicates from a text
-    , setUnion_list -- maps function @f@ to the list @ts@ and unifies the results
-    )
-    where
+  ( freeName      -- finds a free discourse name
+  , indvC_text    -- retrieves all discourse names from a text
+  , indvC_sen     -- retrieves all discourse names from a sentence
+  , indvC_term    -- retrieves all discourse names from a term
+  , prd_text      -- retrieves all predicates from a text
+  , setUnion_list -- maps function @f@ to the list @ts@ and unifies the results
+  ) where
 
 import Data.Char (intToDigit)
 import Data.Set (Set)
@@ -28,27 +27,27 @@ import CommonLogic.AS_CommonLogic
 import Common.Id
 
 
--------------------------------------------------------------------------------
--- Misc functions                                                            --
--------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Misc functions                                                            --
+----------------------------------------------------------------------------- -}
 
--- | Finds a free discourse name (appends "_" at the end until free name found)
--- given the set of all discourse names
+{- | Finds a free discourse name (appends "_" at the end until free name found)
+given the set of all discourse names -}
 freeName :: (String, Int) -> Set NAME -> (NAME, Int)
 freeName (s, i) ns =
     if Set.member n ns
-       then freeName (s, i+1) ns
-       else (n, i+1)
-    where n = mkSimpleId (s++"_"++[intToDigit i])
+       then freeName (s, i + 1) ns
+       else (n, i + 1)
+    where n = mkSimpleId (s ++ "_" ++ [intToDigit i])
 
--------------------------------------------------------------------------------
--- Functions to compute the set of individual constants (discourse items),   --
--- these work by recursing into all subelements                              --
--------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Functions to compute the set of individual constants (discourse items),   --
+these work by recursing into all subelements                              --
+----------------------------------------------------------------------------- -}
 
 -- | maps @f@ to @ts@ and unifies the results
 setUnion_list :: (Ord b) => (a -> Set b) -> [a] -> Set b
-setUnion_list f ts = foldl Set.union Set.empty $ map f ts
+setUnion_list f = Set.unions . map f
 
 -- | retrieves the individual constants from a text
 indvC_text :: TEXT -> Set NAME
@@ -77,14 +76,14 @@ indvC_module m =
 indvC_sen :: SENTENCE -> Set NAME
 indvC_sen s =
     case s of
-         Quant_sent q _     -> indvC_quantsent q
-         Bool_sent b _      -> indvC_boolsent b
-         Atom_sent a _      -> indvC_atomsent a
+         Quant_sent q _ -> indvC_quantsent q
+         Bool_sent b _ -> indvC_boolsent b
+         Atom_sent a _ -> indvC_atomsent a
          Comment_sent _ c _ -> indvC_sen c
          Irregular_sent i _ -> indvC_sen i
 
 -- | retrieves the individual constants from a quantified sentence
-indvC_quantsent ::QUANT_SENT -> Set NAME
+indvC_quantsent :: QUANT_SENT -> Set NAME
 indvC_quantsent (QUANT_SENT _ noss s) = quant noss s
     where quant :: [NAME_OR_SEQMARK] -> SENTENCE -> Set NAME
           quant nss se = Set.difference (indvC_sen se)
@@ -93,7 +92,7 @@ indvC_quantsent (QUANT_SENT _ noss s) = quant noss s
           nameof nsm =
               case nsm of
                    Name n -> Set.singleton n
-                   SeqMark _ -> Set.empty --FIXME: what to do with seqmarks?
+                   SeqMark _ -> Set.empty -- see indvC_termSeq
 
 -- | retrieves the individual constants from a boolean sentence
 indvC_boolsent :: BOOL_SENT -> Set NAME
@@ -101,42 +100,44 @@ indvC_boolsent b =
     case b of
          Junction _ ss -> setUnion_list indvC_sen ss
          Negation s -> indvC_sen s
-         BinOp _ s1 s2 -> setUnion_list indvC_sen [s1,s2]
+         BinOp _ s1 s2 -> setUnion_list indvC_sen [s1, s2]
 
 -- | retrieves the individual constants from an atom
 indvC_atomsent :: ATOM -> Set NAME
 indvC_atomsent a =
     case a of
          Equation t1 t2 -> indvC_term t1 `Set.union` indvC_term t2
-         Atom t ts ->
-            if null ts
-               then indvC_term t --constant
-               else setUnion_list indvC_termSeq ts -- arguments
+         Atom t ts -> Set.union (nonToplevelNames t)
+                    $ setUnion_list indvC_termSeq ts -- arguments
+
+-- | omit predicate names
+nonToplevelNames :: TERM -> Set NAME
+nonToplevelNames trm = case trm of
+        Name_term _ -> Set.empty
+        Comment_term t _ _ -> nonToplevelNames t
+        _ -> indvC_term trm
 
 -- | retrieves the individual constants from a term
 indvC_term :: TERM -> Set NAME
-indvC_term t =
-    case t of
+indvC_term trm =
+    case trm of
         Name_term n -> Set.singleton n
-        Funct_term _ ts _ -> setUnion_list indvC_termSeq ts -- arguments
-        Comment_term t1 _ _ -> indvC_term t1
+        Funct_term t ts _ -> Set.union (indvC_term t)
+          $ setUnion_list indvC_termSeq ts -- arguments
+        Comment_term t _ _ -> indvC_term t
+        That_term s _ -> indvC_sen s
 
 -- | retrieves the individual constant from a single argument
 indvC_termSeq :: TERM_SEQ -> Set NAME
 indvC_termSeq t =
     case t of
         Term_seq txt -> indvC_term txt
-        Seq_marks _ -> Set.empty -- FIXME: what to do with seqmarks?
+        Seq_marks _ -> Set.empty
 
-
-------------------------------------------------------------------------------
--- Functions to compute the set of predicates, these work by recursing      --
--- into all subelements                                                     --
-------------------------------------------------------------------------------
-
-
-unifyPredicates :: (a -> Set.Set NAME) -> [a] -> Set.Set NAME
-unifyPredicates prd_item = foldl (\ns i -> Set.union ns (prd_item i)) Set.empty
+{- ----------------------------------------------------------------------------
+Functions to compute the set of predicates, these work by recursing      --
+into all subelements                                                     --
+---------------------------------------------------------------------------- -}
 
 -- | Retrieves all predicates from a text
 prd_text :: TEXT -> Set.Set NAME
@@ -146,21 +147,21 @@ prd_text t =
          Named_text _ nt _ -> prd_text nt
 
 prd_phrases :: [PHRASE] -> Set.Set NAME
-prd_phrases = unifyPredicates prd_phrase
+prd_phrases = setUnion_list prd_phrase
 
 prd_phrase :: PHRASE -> Set.Set NAME
 prd_phrase p =
     case p of
          Module m -> prd_module m
          Sentence s -> prd_sentence s
-         Importation i -> prd_importation i
+         Importation _ -> Set.empty
          Comment_text _ t _ -> prd_text t
 
 prd_module :: MODULE -> Set.Set NAME
 prd_module m =
     case m of
          Mod _ t _ -> prd_text t
-         Mod_ex _ _ t  _ -> prd_text t
+         Mod_ex _ _ t _ -> prd_text t
 
 prd_sentence :: SENTENCE -> Set.Set NAME
 prd_sentence s =
@@ -171,64 +172,46 @@ prd_sentence s =
          Comment_sent _ c _ -> prd_sentence c
          Irregular_sent i _ -> prd_sentence i
 
-prd_importation :: IMPORTATION -> Set.Set NAME
-prd_importation (Imp_name n) = prd_name n
-
 prd_quantSent :: QUANT_SENT -> Set.Set NAME
-prd_quantSent (QUANT_SENT _ noss s) =
-  Set.union (unifyPredicates prd_nameOrSeqmark noss) $ prd_sentence s
---TODO SequenceMarker Handling
-
-prd_nameOrSeqmark :: NAME_OR_SEQMARK -> Set.Set NAME
-prd_nameOrSeqmark nos =
-    case nos of
-         Name n -> prd_name n
-         SeqMark s -> prd_seqmark s
+prd_quantSent (QUANT_SENT _ _ s) = prd_sentence s
+{- we do not know if variables are predicates, we assume no, and only
+check the body -}
 
 prd_boolSent :: BOOL_SENT -> Set.Set NAME
 prd_boolSent b =
     case b of
-         Junction _ ss -> unifyPredicates prd_sentence ss
+         Junction _ ss -> setUnion_list prd_sentence ss
          Negation s -> prd_sentence s
-         BinOp _ s1 s2 -> unifyPredicates prd_sentence [s1,s2]
+         BinOp _ s1 s2 -> setUnion_list prd_sentence [s1, s2]
 
 prd_atomSent :: ATOM -> Set.Set NAME
 prd_atomSent a =
     case a of
-         Equation t1 t2 -> unifyPredicates prd_term [t1,t2]
-         Atom t tseq ->
-            if null tseq
-               then prd_term t
-               else Set.union (prd_termSeqs tseq) $ prd_add_term t
+         Equation t1 t2 -> setUnion_list prd_term [t1, t2]
+         Atom t tseq -> -- the predicate name is in t
+           Set.unions [prd_termSeqs tseq, prd_term t, prd_add_term t]
 
 prd_term :: TERM -> Set.Set NAME
 prd_term t =
   case t of
-    Name_term n -> prd_name n
-    Funct_term ft tseqs _ -> prd_add_term ft `Set.union` prd_termSeqs tseqs
+    Name_term _ -> Set.empty
+    Funct_term ft tseqs _ -> prd_term ft `Set.union` prd_termSeqs tseqs
+      -- the function name is not a predicate
     Comment_term ct _ _ -> prd_term ct
-
-prd_name :: NAME -> Set.Set NAME
-prd_name _ = Set.empty
-
-prd_seqmark :: SEQ_MARK -> Set.Set NAME
-prd_seqmark _ = Set.empty
+    That_term s _ -> prd_sentence s
 
 prd_termSeqs :: [TERM_SEQ] -> Set.Set NAME
-prd_termSeqs = unifyPredicates prd_termSeq
+prd_termSeqs = setUnion_list prd_termSeq
 
 prd_termSeq :: TERM_SEQ -> Set.Set NAME
 prd_termSeq tsec =
     case tsec of
          Term_seq t -> prd_term t
-         Seq_marks s -> prd_seqmark s
+         Seq_marks _ -> Set.empty
 
 prd_add_term :: TERM -> Set.Set NAME
 prd_add_term t =
   case t of
-    Name_term n -> prd_add_name n
-    Funct_term ft tseqs _ -> prd_add_term ft `Set.union` prd_termSeqs tseqs
-    Comment_term ct _ _ -> prd_term ct
-
-prd_add_name :: NAME -> Set.Set NAME
-prd_add_name = Set.singleton
+    Name_term n -> Set.singleton n
+    Comment_term ct _ _ -> prd_add_term ct
+    _ -> Set.empty -- from all other terms we do not extract the predicate name
