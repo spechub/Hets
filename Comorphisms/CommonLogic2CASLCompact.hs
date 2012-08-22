@@ -9,7 +9,8 @@ Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (via Logic.Logic)
 
-Translating comorphism from Common Logic (compact, that is without sequence markers) to CASL
+Translating comorphism from Common Logic
+(compact, that is without sequence markers) to CASL
 
 -}
 
@@ -115,7 +116,7 @@ unionTI s t = TextInfo { vars = Set.union (vars s) (vars t)
                        }
 
 unionsTI :: [TextInfo] -> TextInfo
-unionsTI = foldr (\ti r -> unionTI r ti) emptyTI
+unionsTI = foldr unionTI emptyTI
 
 removeFromTI :: String -> TextInfo -> TextInfo
 removeFromTI n ti = ti { vars = Set.delete n $ vars ti
@@ -125,7 +126,6 @@ removeFromTI n ti = ti { vars = Set.delete n $ vars ti
                        , arityFunc = MapSet.fromMap $
                                       Map.delete n $ MapSet.toMap $ arityFunc ti
                        }
-
 
 
 mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
@@ -163,19 +163,19 @@ mapTheory (sig, form) = do
 
 mapSig :: TextInfo -> ClSign.Sign -> CSign.CASLSign
 mapSig ti _ =
-  let constOpMap = Set.fold (\n res ->
+  let constOpMap = Set.fold (\ n res ->
           MapSet.insert (Id.stringToId n) (opTypeSign 0) res
         ) MapSet.empty (vars ti)
-      constPredMap = Set.fold (\n res ->
+      constPredMap = Set.fold (\ n res ->
           MapSet.insert (Id.stringToId n) (predTypeSign 0) res
         ) MapSet.empty (props ti)
-      opMap = MapSet.foldWithKey (\n ar ops ->
+      opMap = MapSet.foldWithKey (\ n ar ops ->
           MapSet.insert (Id.stringToId n) (opTypeSign ar) ops
         ) MapSet.empty (arityFunc ti)
-      predMap = MapSet.foldWithKey (\n ar preds ->
+      predMap = MapSet.foldWithKey (\ n ar preds ->
           MapSet.insert (Id.stringToId n) (predTypeSign ar) preds
         ) MapSet.empty (arityPred ti)
-  in  CSign.uniteCASLSign (
+  in CSign.uniteCASLSign (
           (CSign.emptySign ()) {
               CSign.opMap = MapSet.union constOpMap opMap
             , CSign.predMap = MapSet.union constPredMap predMap
@@ -197,27 +197,25 @@ caslSig = (CSign.emptySign ())
 individual :: Id.Id
 individual = Id.stringToId "individual"
 
-trNamedForm :: AS_Anno.Named (Cl.TEXT_META)
-            -> Result (AS_Anno.Named (CBasic.CASLFORMULA))
-trNamedForm form = AS_Anno.mapNamedM (trFormMeta . eliminateModules) form
+trNamedForm :: AS_Anno.Named Cl.TEXT_META
+            -> Result (AS_Anno.Named CBasic.CASLFORMULA)
+trNamedForm = AS_Anno.mapNamedM $ trFormMeta . eliminateModules
 
 mapSentence :: ClSign.Sign -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
-mapSentence _ form = do
-  frm <- trFormMeta $ eliminateModules form
-  return frm
+mapSentence _ = trFormMeta . eliminateModules
 
 -- ignores importations
-trFormMeta ::  Cl.TEXT_META -> Result CBasic.CASLFORMULA
+trFormMeta :: Cl.TEXT_META -> Result CBasic.CASLFORMULA
 trFormMeta tm = trForm $ Cl.getText tm
 
-trForm ::Cl.TEXT -> Result CBasic.CASLFORMULA
+trForm :: Cl.TEXT -> Result CBasic.CASLFORMULA
 trForm form =
    case form of
-     Cl.Text phrs rn ->
-        let ps = filter nonImportAndNonEmpty phrs in
-        if null ps then return $ CBasic.True_atom Id.nullRange else
-        do  phrsfrm <- mapM phraseForm ps
-            return $ CBasic.Conjunction phrsfrm rn
+     Cl.Text phrs rn -> do
+        let ps = filter nonImportAndNonEmpty phrs
+        phrsfrm <- mapM phraseForm ps
+        return $ if null phrsfrm then CBasic.True_atom rn else
+          CBasic.Conjunction phrsfrm rn
      Cl.Named_text _ t _ -> trForm t
    where nonImportAndNonEmpty :: Cl.PHRASE -> Bool
          nonImportAndNonEmpty p = case p of
@@ -232,9 +230,11 @@ trForm form =
 
 phraseForm :: Cl.PHRASE -> Result CBasic.CASLFORMULA
 phraseForm phr = case phr of
-  Cl.Module _ -> undefined -- cannot occur because module elimination applied
+  Cl.Module _ -> error "CL2CASLCompact.phraseForm.Module"
+  -- cannot occur because module elimination applied
   Cl.Sentence s -> senForm Set.empty s
-  Cl.Importation _ -> undefined -- cannot occur, because filtered
+  Cl.Importation _ -> error "CL2CASLCompact.phraseForm.Importation"
+  -- cannot occur, because filtered
   Cl.Comment_text _ t _ -> trForm t
 
 senForm :: Set.Set Cl.NAME -> Cl.SENTENCE -> Result CBasic.CASLFORMULA
@@ -243,27 +243,21 @@ senForm bndVars form = case form of
       Cl.Negation s -> do
           sen <- senForm bndVars s
           return $ CBasic.Negation sen rn
-      Cl.Junction Cl.Conjunction [] -> return $ CBasic.True_atom Id.nullRange
-      Cl.Junction Cl.Disjunction [] -> return $ CBasic.False_atom Id.nullRange
-      Cl.Junction Cl.Conjunction ss -> do
+      Cl.Junction j ss -> do
           sens <- mapM (senForm bndVars) ss
-          return $ CBasic.Conjunction sens rn
-      Cl.Junction Cl.Disjunction ss -> do
-          sens <- mapM (senForm bndVars) ss
-          return $ CBasic.Disjunction sens rn 
-      Cl.BinOp Cl.Implication s1 s2 -> do
+          return $ (case j of
+            Cl.Conjunction -> CBasic.conjunctRange
+            Cl.Disjunction -> CBasic.disjunctRange) sens rn
+      Cl.BinOp j s1 s2 -> do
           sen1 <- senForm bndVars s1
           sen2 <- senForm bndVars s2
-          return $ CBasic.Implication sen1 sen2 True rn
-      Cl.BinOp Cl.Biconditional s1 s2 -> do
-          sen1 <- senForm bndVars s1
-          sen2 <- senForm bndVars s2
-          return $ CBasic.Equivalence sen1 sen2 rn
-  Cl.Quant_sent qs rn -> case qs of
-      Cl.QUANT_SENT Cl.Universal bs s ->
-        quantSentForm Universal rn bndVars bs s
-      Cl.QUANT_SENT Cl.Existential bs s ->
-        quantSentForm Existential rn  bndVars bs s
+          return $ (case j of
+            Cl.Implication -> \ a b -> CBasic.Implication a b True
+            Cl.Biconditional -> CBasic.Equivalence) sen1 sen2 rn
+  Cl.Quant_sent (Cl.QUANT_SENT j bs s) rn ->
+        quantSentForm (case j of
+          Cl.Universal -> Universal
+          Cl.Existential -> Existential) rn bndVars bs s
   Cl.Atom_sent at rn -> case at of
       Cl.Equation trm1 trm2 -> do
           t1 <- termForm bndVars $ uncurryTerm trm1
@@ -283,12 +277,12 @@ quantSentForm qt rn bndVars bs sen = do
   ti <- colTi_sen sen
   bSs <- mapM nosStrnig bs
   let (predSs, opsVars) = partition
-          (\n -> Map.member n $ MapSet.toMap $ arityPred ti) bSs
+          (\ n -> Map.member n $ MapSet.toMap $ arityPred ti) bSs
   let (opSs, predsVars) = partition
-          (\n -> Map.member n $ MapSet.toMap $ arityFunc ti) bSs
+          (\ n -> Map.member n $ MapSet.toMap $ arityFunc ti) bSs
   let vs = map (Cl.Name . Id.mkSimpleId) $ intersect opsVars predsVars
-  let preds = MapSet.filterWithKey (\s _ -> elem s predSs) $ arityPred ti
-  let ops = MapSet.filterWithKey (\s _ -> elem s opSs) $ arityFunc ti
+  let preds = MapSet.filterWithKey (\ s _ -> elem s predSs) $ arityPred ti
+  let ops = MapSet.filterWithKey (\ s _ -> elem s opSs) $ arityFunc ti
   let quantifier = case qt of
           Universal -> CBasic.Universal
           Existential -> CBasic.Existential
@@ -300,10 +294,10 @@ quantSentForm qt rn bndVars bs sen = do
               bindSeq <- mapM bindingSeq bs
               return $ CBasic.Quantification quantifier
                          [CBasic.Var_decl bindSeq individual Id.nullRange] sf rn
-  let predSen = MapSet.foldWithKey (\prd ar s ->
+  let predSen = MapSet.foldWithKey (\ prd ar s ->
           CBasic.QuantPred (Id.stringToId prd) (predType ar) s
         ) folSen preds
-  let opSen = MapSet.foldWithKey (\op ar s ->
+  let opSen = MapSet.foldWithKey (\ op ar s ->
           CBasic.QuantOp (Id.stringToId op) (opType ar) s
         ) predSen ops
   return opSen
@@ -315,9 +309,10 @@ opType ar =
 predType :: Int -> CBasic.PRED_TYPE
 predType ar = CBasic.Pred_type (replicate ar individual) Id.nullRange
 
-bndVarsToSet :: Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK] -> Result (Set.Set Cl.NAME)
+bndVarsToSet :: Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK]
+  -> Result (Set.Set Cl.NAME)
 bndVarsToSet bndVars bs = do
-  res <- mapM (\nos -> case nos of
+  res <- mapM (\ nos -> case nos of
                   Cl.Name n -> return n
                   Cl.SeqMark s -> fail $ errSeqMark s)
         bs
@@ -336,7 +331,7 @@ termForm bndVars trm = case trm of
       trmSF <- mapM (termSeqForm bndVars) tseqs
       return $ CBasic.Application trmFA trmSF rn
   Cl.Comment_term term _ _ -> termForm bndVars (uncurryTerm term)
-  -- TODO: implement Cl.That_term s -> ...
+  Cl.That_term {} -> fail "CommonLogic2CASLCompact.termForm"
 
 termFormApp :: Cl.TERM -> Int -> Result CBasic.OP_SYMB
 termFormApp trm ar = case trm of
@@ -350,7 +345,8 @@ termFormPrd trm ar = case trm of
   Cl.Name_term n ->
       return $ CBasic.Qual_pred_name (Id.mkId [n]) (predType ar) Id.nullRange
   Cl.Comment_term t _ _ -> termFormPrd t ar
-  Cl.Funct_term _ _ _ -> fail $ errFunctionReturnedPredicateS trm
+  Cl.Funct_term {} -> fail $ errFunctionReturnedPredicateS trm
+  Cl.That_term {} -> fail "CommonLogic2CASLCompact.termFormPrd"
 
 termSeqForm :: Set.Set Cl.NAME -> Cl.TERM_SEQ -> Result (CBasic.TERM a)
 termSeqForm bndVars tseq = case tseq of
@@ -386,14 +382,14 @@ colTi_sen sen = case sen of
       Cl.QUANT_SENT _ noss s -> do
           cti <- colTi_sen s
           nossR <- mapM nosStrnig noss
-          return $ foldr (\n r -> removeFromTI n r) cti nossR
+          return $ foldr removeFromTI cti nossR
   Cl.Bool_sent b _ -> case b of
       Cl.Junction _ sens -> do
           cti <- mapM colTi_sen sens
           return $ unionsTI cti
       Cl.Negation s -> colTi_sen s
       Cl.BinOp _ s1 s2 -> do
-          cti <- mapM colTi_sen [s1,s2]
+          cti <- mapM colTi_sen [s1, s2]
           return $ unionsTI cti
   Cl.Atom_sent a _ -> case a of
       Cl.Equation t1 t2 -> do
@@ -426,6 +422,7 @@ colTi_trm trm = case trm of
   Cl.Name_term _ -> return emptyTI
   Cl.Funct_term t tseqs _ -> colTi_addArity Func t tseqs
   Cl.Comment_term t _ _ -> colTi_trm $ uncurryTerm t
+  Cl.That_term {} -> fail "CommonLogic2CASLCompact.colTi_trm"
 
 colTi_trmSeq :: Cl.TERM_SEQ -> Result TextInfo
 colTi_trmSeq tseq = case tseq of
@@ -437,17 +434,18 @@ colTi_addArity ty trm tseqs = case trm of
   Cl.Name_term n -> do
       cti <- mapM colTi_trmSeq tseqs
       return $ unionsTI
-             $ (  if ty == Pred
+             $ ( if ty == Pred
                   then emptyTI { arityPred = MapSet.insert
                                   (Id.tokStr n) (length tseqs) MapSet.empty}
                   else emptyTI { arityFunc = MapSet.insert
                                   (Id.tokStr n) (length tseqs) MapSet.empty}
                   ) : cti
-  Cl.Funct_term _ _ _ -> colTi_trm $ uncurryTerm trm -- FIX predicate "(f x) y"
+  Cl.Funct_term {} -> colTi_trm $ uncurryTerm trm -- FIX predicate "(f x) y"
   Cl.Comment_term t _ _ -> colTi_addArity ty t tseqs
+  Cl.That_term {} -> fail "CommonLogic2CASLCompact.colTi_addArity"
 
--- If curried, uncurries term. Otherwise original term returned
--- removes comments
+{- If curried, uncurries term. Otherwise original term returned
+removes comments -}
 uncurryTerm :: Cl.TERM -> Cl.TERM
 uncurryTerm trm = case trm of
   Cl.Funct_term t tseqs rn ->
@@ -463,10 +461,13 @@ uncurryTermWithArgs trm tseqs = case trm of
   _ -> (trm, tseqs)
 
 errSeqMark :: Cl.SEQ_MARK -> String
-errSeqMark s = "Comorphism CommonLogic2CASLCompact error: Sequence marks not allowed in this comorphism. Found: " ++ Id.tokStr s
+errSeqMark s = "Comorphism CommonLogic2CASLCompact error: "
+  ++ "Sequence marks not allowed in this comorphism. Found: " ++ Id.tokStr s
 
 errCurriedFunctionS :: String
-errCurriedFunctionS = "Comorphism CommonLogic2CASLCompact error: Found curried function"
+errCurriedFunctionS = "Comorphism CommonLogic2CASLCompact error: "
+  ++ "Found curried function"
 
 errFunctionReturnedPredicateS :: Cl.TERM -> String
-errFunctionReturnedPredicateS t = "Comorphism CommonLogic2CASLCompact error: Function returned predicate "++ (show $ pretty t)
+errFunctionReturnedPredicateS t = "Comorphism CommonLogic2CASLCompact error: "
+  ++ "Function returned predicate " ++ show (pretty t)

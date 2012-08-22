@@ -118,9 +118,9 @@ mapTheory :: (ClSign.Sign,
               -> Result
                   (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
-mapTheory (sig, form) =  Result [] $
-  Just (mapSig sig, Predefined.baseCASLAxioms ++ (map (trNamedForm sig) form))
-  
+mapTheory (sig, form) = return
+  (mapSig sig, Predefined.baseCASLAxioms ++ map (trNamedForm sig) form)
+
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
@@ -129,9 +129,9 @@ mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
                                 MapSet.empty $ ClSign.allItems sign
                }) Predefined.caslSig
 
-trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.TEXT_META)
-            -> AS_Anno.Named (CBasic.CASLFORMULA)
-trNamedForm sig form = AS_Anno.mapNamed (trFormMeta sig . eliminateModules) form
+trNamedForm :: ClSign.Sign -> AS_Anno.Named ClBasic.TEXT_META
+            -> AS_Anno.Named CBasic.CASLFORMULA
+trNamedForm sig = AS_Anno.mapNamed $ trFormMeta sig . eliminateModules
 
 mapSentence :: ClSign.Sign -> ClBasic.TEXT_META -> Result CBasic.CASLFORMULA
 mapSentence sig form = Result [] $ Just $ trFormMeta sig (eliminateModules form)
@@ -141,7 +141,7 @@ trFormMeta :: ClSign.Sign -> ClBasic.TEXT_META -> CBasic.CASLFORMULA
 trFormMeta sig tm = trForm sig $ ClBasic.getText tm
 
 trForm :: ClSign.Sign -> ClBasic.TEXT -> CBasic.CASLFORMULA
-trForm sig form = 
+trForm sig form =
    case form of
      ClBasic.Text phrs rn ->
         let ps = filter nonImportAndNonEmpty phrs in
@@ -162,76 +162,64 @@ trForm sig form =
 phraseForm :: ClSign.Sign -> ClBasic.PHRASE -> CBasic.CASLFORMULA
 phraseForm sig phr =
    case phr of
-     ClBasic.Module _ -> undefined -- cannot occur because module elimination applied
+     ClBasic.Module _ -> error "CL2CASL.phraseForm.Module"
+     -- cannot occur because module elimination applied
      ClBasic.Sentence s -> senForm sig s
-     ClBasic.Importation _ -> undefined -- cannot occur, because filtered
+     ClBasic.Importation _ -> error "CL2CASL.phraseForm.Importation"
+     -- cannot occur, because filtered
      ClBasic.Comment_text _ t _ -> trForm sig t
 
 senForm :: ClSign.Sign -> ClBasic.SENTENCE -> CBasic.CASLFORMULA
-senForm sig form =
-   case form of
-     ClBasic.Bool_sent bs rn
-        -> case bs of
+senForm sig form = case form of
+     ClBasic.Bool_sent bs rn -> case bs of
              ClBasic.Negation s -> CBasic.Negation (senForm sig s) rn
-             ClBasic.Junction ClBasic.Conjunction [] ->
-               CBasic.True_atom Id.nullRange
-             ClBasic.Junction ClBasic.Disjunction [] ->
-               CBasic.False_atom Id.nullRange
-             ClBasic.Junction ClBasic.Conjunction ss ->
-                CBasic.Conjunction (map (senForm sig) ss) rn
-             ClBasic.Junction ClBasic.Disjunction ss ->
-                CBasic.Disjunction (map (senForm sig) ss) rn
-             ClBasic.BinOp ClBasic.Implication s1 s2 ->
-                CBasic.Implication (senForm sig s1) (senForm sig s2) True rn
-             ClBasic.BinOp ClBasic.Biconditional s1 s2 ->
-               CBasic.Equivalence (senForm sig s1) (senForm sig s2) rn
-     ClBasic.Quant_sent qs rn
-        -> case qs of
-             ClBasic.QUANT_SENT ClBasic.Universal bs s ->
-               CBasic.Quantification CBasic.Universal
-               [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
+             ClBasic.Junction j ss -> (case j of
+               ClBasic.Conjunction -> CBasic.conjunctRange
+               ClBasic.Disjunction -> CBasic.disjunctRange)
+                   (map (senForm sig) ss) rn
+             ClBasic.BinOp j s1 s2 -> (case j of
+               ClBasic.Implication -> \ a b -> CBasic.Implication a b True
+               ClBasic.Biconditional -> CBasic.Equivalence)
+                 (senForm sig s1) (senForm sig s2) rn
+     ClBasic.Quant_sent (ClBasic.QUANT_SENT j bs s) rn ->
+         CBasic.Quantification (case j of
+                  ClBasic.Universal -> CBasic.Universal
+                  ClBasic.Existential -> CBasic.Existential)
+               [CBasic.Var_decl (map bindingSeq bs) individual rn]
                (senForm sig s) rn
-             ClBasic.QUANT_SENT ClBasic.Existential bs s ->
-               CBasic.Quantification CBasic.Existential
-               [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-               (senForm sig s) rn
-     ClBasic.Atom_sent at rn
-        -> case at of
-             ClBasic.Equation trm1 trm2 ->
-                CBasic.Strong_equation (termForm sig trm1) (termForm sig trm2) rn
-             ClBasic.Atom trm ts -> CBasic.Predication
-                                       (CBasic.Qual_pred_name rel
-                                       (CBasic.Pred_type [individual, list]
-                                        Id.nullRange)
-                                        Id.nullRange) ([termForm sig trm] ++
-                                    (consSeq sig ts) : []) Id.nullRange
+     ClBasic.Atom_sent at rn -> case at of
+         ClBasic.Equation trm1 trm2 ->
+             CBasic.Strong_equation (termForm sig trm1) (termForm sig trm2) rn
+         ClBasic.Atom trm ts -> CBasic.Predication
+             (CBasic.Qual_pred_name rel
+              (CBasic.Pred_type [individual, list] rn)
+              Id.nullRange) [termForm sig trm, consSeq sig ts] rn
      ClBasic.Comment_sent _ s _ -> senForm sig s
      ClBasic.Irregular_sent s _ -> senForm sig s
 
 termForm :: ClSign.Sign -> ClBasic.TERM -> CBasic.TERM a
 termForm sig trm = case trm of
-                 ClBasic.Name_term name ->
+                 ClBasic.Name_term name -> let rn = Id.tokPos name in
                     if ClSign.isSubSigOf (ClSign.emptySig {
                             ClSign.discourseNames =
                                 Set.singleton (Id.simpleIdToId name)
                           }) sig
                     then CBasic.Application
                           (CBasic.Qual_op_name (Id.simpleIdToId name)
-                            (CBasic.Op_type CBasic.Total [] individual Id.nullRange)
-                            Id.nullRange)
-                          [] $ Id.tokPos name
-                    else CBasic.Qual_var name individual Id.nullRange
-                 ClBasic.Funct_term term ts _ ->
+                            (CBasic.Op_type CBasic.Total [] individual rn)
+                           rn)
+                          [] rn
+                    else CBasic.Qual_var name individual rn
+                 ClBasic.Funct_term term ts rn ->
                     CBasic.Application
                         (CBasic.Qual_op_name fun
                           (CBasic.Op_type
                             CBasic.Total [individual, list]
-                            individual Id.nullRange)
-                          Id.nullRange)
-                        ([termForm sig term] ++
-                          (consSeq sig ts) : []) Id.nullRange
+                            individual rn)
+                         rn)
+                        [termForm sig term, consSeq sig ts] rn
                  ClBasic.Comment_term term _ _ -> termForm sig term
-                 -- TODO: implement ClBasic.That_term s -> ...
+                 ClBasic.That_term {} -> error "CommonLogic2CASL.termForm"
 
 consSeq :: ClSign.Sign -> [ClBasic.TERM_SEQ] -> CBasic.TERM a
 consSeq _ [] = CBasic.Application (CBasic.Qual_op_name nil
@@ -248,13 +236,11 @@ termSeqForm sig ts = case ts of
       CBasic.Qual_var name individual Id.nullRange else
           termForm sig trm
       where subSig = ClSign.isSubSigOf new sig
-            new    = ClSign.emptySig
+            new = ClSign.emptySig
                   {
                     ClSign.discourseNames = Set.singleton $ Id.simpleIdToId name
                   }
-    ClBasic.Funct_term _ _ _ -> termForm sig trm
-    ClBasic.Comment_term _ _ _ -> termForm sig trm
-    -- TODO: implement ClBasic.That_term s -> ...
+    _ -> termForm sig trm
   ClBasic.Seq_marks seqm ->
       if ClSign.isSubSigOf (ClSign.emptySig {
               ClSign.discourseNames =
