@@ -17,6 +17,7 @@ import CommonLogic.AS_CommonLogic as AS
 import Common.Id as Id
 import Common.Keywords
 import Common.Lexer (notFollowedWith)
+import Common.Parsec (reserved)
 import Common.Token
 
 import CommonLogic.Lexer_KIF
@@ -74,7 +75,7 @@ equalAtom = do
 
 plainAtom :: CharParser st ATOM
 plainAtom = do
-  t <- pToken word <?> "word"
+  t <- pToken (word <|> variable) <?> "word"
   return $ Atom (Name_term t) []
 
 atomsent :: CharParser st ATOM -> CharParser st SENTENCE
@@ -88,7 +89,9 @@ parensent = parens $ logsent <|> relsent <|> eqsent <|> neqsent
 
 funterm :: CharParser st TERM
 funterm = parens funterm
-      <|> do relword <- pToken (word <|> variable) <?> "funword"
+      <|> do relword <- pToken (reserved
+               ["=", "/=", "and", "or", "iff", "if", "forall", "exists", "not"]
+               (word <|> variable)) <?> "funword"
              let nt = Name_term relword
              t <- many term <?> "arguments"
              if null t
