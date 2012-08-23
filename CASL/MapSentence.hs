@@ -41,10 +41,13 @@ mapMorphism mf m = (mapRecord $ mf m)
 mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> TERM f
 mapTerm mf = foldTerm . mapMorphism mf
 
+mapMorphForm :: MapSen f e m -> Morphism f e m -> FORMULA f -> FORMULA f
+mapMorphForm mf = foldFormula . mapMorphism mf
+
 mapSen :: MorphismExtension e m => MapSen f e m -> Morphism f e m -> FORMULA f
   -> FORMULA f
 mapSen mf m = if isInclusionMorphism isInclusionMorphismExtension m then id
-  else foldFormula $ mapMorphism mf m
+  else mapMorphForm mf m
 
 mapOpSymb :: Morphism f e m -> OP_SYMB -> OP_SYMB
 mapOpSymb m (Qual_op_name i t ps) =

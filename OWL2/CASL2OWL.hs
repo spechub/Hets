@@ -14,32 +14,20 @@ module OWL2.CASL2OWL where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
+
 import Common.AS_Annotation
 import Common.DocUtils
 import Common.Result
+import Common.Id
+import Common.ProofTree
+import qualified Common.Lib.MapSet as MapSet
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
-import Common.Id
-import qualified Common.Lib.MapSet as MapSet
-
-{-
-import Control.Monad
-import Data.Char
-import qualified Data.Map as Map
-import qualified Common.Lib.Rel as Rel
-
--- the DL with the initial signature for OWL
-import CASL_DL.PredefinedCASLAxioms
--}
 
 -- OWL = codomain
 import OWL2.Logic_OWL2
-{-
-import OWL2.Keywords
-import OWL2.Parse
-import OWL2.Print
--}
 import OWL2.MS
 import OWL2.AS
 import OWL2.ProfilesAndSublogics
@@ -47,25 +35,18 @@ import OWL2.ManchesterPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
 import OWL2.Sign as OS
+
 -- CASL = domain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Disambiguate
-import CASL.Sign
+import CASL.Sign as CS
 import qualified CASL.MapSentence as MapSen
 import CASL.Morphism
 import CASL.SimplifySen
 import CASL.Sublogic
 import CASL.ToDoc
 import CASL.Overload
-
-import Common.ProofTree
-{-
-import Common.DocUtils
-
-import Data.Maybe
-import Text.ParserCombinators.Parsec
--}
 
 data CASL2OWL = CASL2OWL deriving Show
 
@@ -108,7 +89,7 @@ instance Comorphism
       has_model_expansion CASL2OWL = True
 
 -- | Mapping of CASL morphisms
-mapMorphism :: CASLMor -> Result OWLMorphism
+mapMorphism :: Morphism f e m -> Result OWLMorphism
 mapMorphism _ = fail "CASL2OWL.mapMorphism"
 
 mapSymbol :: Symbol -> Set.Set Entity
@@ -125,7 +106,7 @@ idToAnonIRI b i = nullQName
   { localPart = (if b then ('_' :) else id) $ show i
   , iriPos = rangeOfId i }
 
-mapSign :: CASLSign -> Result (OS.Sign, [Named Axiom])
+mapSign :: CS.Sign f e -> Result (OS.Sign, [Named Axiom])
 mapSign csig = let
   esorts = emptySortSet csig
   (eqs, subss) = eqAndSubsorts False $ sortRel csig
@@ -223,12 +204,13 @@ mapSign csig = let
    Maybe create tuple concepts?
 -}
 
-mapTheory :: (CASLSign, [Named CASLFORMULA]) -> Result (OS.Sign, [Named Axiom])
+mapTheory :: (FormExtension f, TermExtension f)
+  => (CS.Sign f e, [Named (FORMULA f)]) -> Result (OS.Sign, [Named Axiom])
 mapTheory (sig, sens) = do
   let mor = disambigSig sig
       tar = mtarget mor
-      ns = map (mapNamed $ MapSen.mapSen (const id) mor) sens
+      ns = map (mapNamed $ MapSen.mapMorphForm (const id) mor) sens
   mapM_ (flip (hint ()) nullRange
          . ("not translated\n" ++) . show . printTheoryFormula
-         . mapNamed (simplifyCASLSen tar)) ns
+         . mapNamed (simplifySen (const return) (const id) tar)) ns
   mapSign tar
