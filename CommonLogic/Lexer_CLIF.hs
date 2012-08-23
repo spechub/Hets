@@ -11,9 +11,7 @@ Portability :  portable
 Parser of common logic interchange format
 -}
 
-{-
-  Ref. Common Logic ISO/IEC IS 24707:2007(E)
--}
+-- Ref. Common Logic ISO/IEC IS 24707:2007(E)
 
 module CommonLogic.Lexer_CLIF where
 
@@ -38,22 +36,20 @@ cParenT = Lexer.cParenT << many white
 quotedstring :: CharParser st String
 quotedstring = do
    c1 <- char '\''
-   s <- many (satisfy clLetters2 <|> oneOf whitec
-         <|> char '(' <|> char ')' <|> char '\"')
+   s <- many (satisfy clLetters2 <|> oneOf (whitec ++ "()\""))
         <?> "quotedstring: word"
    c2 <- char '\''
    many white
-   return $ c1:s++[c2]
+   return $ c1 : s ++ [c2]
 
 enclosedname :: CharParser st String
 enclosedname = do
    c1 <- char '\"'
-   s <- many (satisfy clLetters2 <|> oneOf whitec
-         <|> char '(' <|> char ')' <|> char '\'')
+   s <- many (satisfy clLetters2 <|> oneOf (whitec ++ "@()'"))
          <?> "word"
    c2 <- char '\"' <?> "\""
    many white
-   return $ c1:s++[c2]
+   return $ c1 : s ++ [c2]
 
 -- | parser for parens
 parens :: CharParser st a -> CharParser st a
@@ -178,7 +174,8 @@ whiteSpace = many1 $ oneOf whitec
 
 commentBlock :: CharParser st String
 commentBlock =
-  string commentBlockOpen >> manyTill anyChar (try $ string commentBlockClose) <?> ""
+  string commentBlockOpen >> manyTill anyChar (try $ string commentBlockClose)
+  <?> ""
 
 commentLine :: CharParser st String
 commentLine =
