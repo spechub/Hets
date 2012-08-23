@@ -50,7 +50,8 @@ data TEXT_META = Text_meta { getText :: TEXT
                            , nondiscourseNames :: Maybe (Set NAME)
                            , prefix_map :: [PrefixMapping]
                            } deriving (Show, Ord, Eq)
--- TODO: check static analysis and other features on discourse names, as soon as parsers of segregated dialects are implemented
+{- TODO: check static analysis and other features on discourse names,
+as soon as parsers of segregated dialects are implemented -}
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
@@ -82,7 +83,7 @@ data SENTENCE = Quant_sent QUANT [NAME_OR_SEQMARK] SENTENCE Id.Range
 
 data QUANT = Universal | Existential
              deriving (Show, Ord, Eq)
-                    
+
 data BOOL_SENT = Junction AndOr [SENTENCE]
                | Negation SENTENCE
                | BinOp ImplEq SENTENCE SENTENCE
@@ -91,7 +92,7 @@ data BOOL_SENT = Junction AndOr [SENTENCE]
 data AndOr = Conjunction | Disjunction
              deriving (Show, Ord, Eq)
 
-data ImplEq = Implication | Biconditional 
+data ImplEq = Implication | Biconditional
               deriving (Show, Ord, Eq)
 
 data ATOM = Equation TERM TERM
@@ -186,10 +187,12 @@ exportCLIF :: [AS_Anno.Named TEXT_META] -> Doc
 exportCLIF xs = vsep $ map (exportTextMeta . AS_Anno.sentence) xs
 
 exportBasicSpec :: BASIC_SPEC -> Doc
-exportBasicSpec (Basic_spec xs) = vsep $ map (exportBasicItems . AS_Anno.item) xs
+exportBasicSpec (Basic_spec xs) =
+  vsep $ map (exportBasicItems . AS_Anno.item) xs
 
 exportBasicItems :: BASIC_ITEMS -> Doc
-exportBasicItems (Axiom_items xs) = vsep $ map (exportTextMeta . AS_Anno.item) xs
+exportBasicItems (Axiom_items xs) =
+  vsep $ map (exportTextMeta . AS_Anno.item) xs
 
 exportTextMeta :: TEXT_META -> Doc
 exportTextMeta = pretty . getText
@@ -218,7 +221,7 @@ printImportation (Imp_name x) = pretty x
 printSentence :: SENTENCE -> Doc
 printSentence s = case s of
     Quant_sent q vs is _ ->
-      pretty q <+> parens (sep $ map pretty vs) <+> pretty is
+      parens $ pretty q <+> parens (sep $ map pretty vs) <+> pretty is
     Bool_sent xs _ -> parens $ pretty xs
     Atom_sent xs _ -> pretty xs
     Comment_sent x y _ -> parens $ text clCommentS <+> pretty x <+> pretty y
@@ -275,10 +278,12 @@ printNameOrSeqMark s = case s of
 
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap (Symb nos) = pretty nos
-printSymbOrMap (Symb_mapN source dest  _) =
+printSymbOrMap (Symb_mapN source dest _) =
   pretty source <+> mapsto <+> pretty dest <> space
-printSymbOrMap (Symb_mapS source dest  _) =
-  pretty source <+> mapsto <+> pretty dest <> space -- space needed. without space the comma (from printSymbMapItems) would be part of the name @dest@
+printSymbOrMap (Symb_mapS source dest _) =
+  pretty source <+> mapsto <+> pretty dest <> space
+{- space needed. without space the comma (from printSymbMapItems)
+would be part of the name @dest@ -}
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
 printSymbMapItems (Symb_map_items xs _) = ppWithCommas xs
