@@ -25,9 +25,6 @@ import CommonLogic.Lexer_KIF
 import Text.ParserCombinators.Parsec as Parsec
 import Control.Monad (liftM)
 
-boolop_unary :: [(String, SENTENCE -> BOOL_SENT, String)]
-boolop_unary = [(notS, Negation, "negation")]
-
 boolop_nary :: [(String, [SENTENCE] -> BOOL_SENT, String)]
 boolop_nary = [(andS, Junction Conjunction, "conjunction"),
                (orS, Junction Disjunction, "disjunction")]
@@ -40,38 +37,31 @@ boolop_quant :: [(String, QUANT, String)]
 boolop_quant = [(forallS, Universal, "universal quantifier"),
                 (existsS, Existential, "existiantial quantifier")]
 
-parse_boolop :: [(String, op_t, String)] -> CharParser st (Token, op_t, String)
-parse_boolop = choice . map
-               (\(ident, con, desc) ->
-                 liftM (\ch -> (ch, con, ident)) (key ident <?> desc))
+parse_keys :: [(String, op_t, String)] -> CharParser st (Token, op_t, String)
+parse_keys = choice . map
+             (\(ident, con, desc) ->
+               liftM (\ch -> (ch, con, ident)) (key ident <?> desc))
 
 logsent :: CharParser st SENTENCE
-logsent = do (ch,con,ident) <- parse_boolop boolop_unary
-             s <- sentence <?> "sentence after \"" ++ ident ++ "\""
-             return $ Bool_sent (con s)
+logsent = do ch <- key notS <?> "negation"
+             s <- sentence <?> "sentence after \"" ++ notS ++ "\""
+             return $ Bool_sent (Negation s)
                $ Range $ joinRanges [rangeSpan ch, rangeSpan s]
-      <|> do (ch,con,ident) <- parse_boolop boolop_nary
+      <|> do (ch,con,ident) <- parse_keys boolop_nary
              s <- many sentence <?> "sentences after \"" ++ ident ++ "\""
              return $ Bool_sent (con s)
                $ Range $ joinRanges [rangeSpan ch, rangeSpan s]
-      <|> do (ch,con,ident) <- parse_boolop boolop_binary
+      <|> do (ch,con,ident) <- parse_keys boolop_binary
              s1 <- sentence <?> "first sentence after \"" ++ ident ++ "\""
              s2 <- sentence <?> "second sentence after \"" ++ ident ++ "\""
              return $ Bool_sent (con s1 s2)
                $ Range $ joinRanges [rangeSpan ch, rangeSpan s1, rangeSpan s2]
-      <|> do (ch,q,ident) <- parse_boolop boolop_quant
-             vars <- ((parens $ many1 (pToken variable))
-                      <?> "quantified variables")
+      <|> do (ch,q,ident) <- parse_keys boolop_quant
+             vars <- parens (many1 (pToken variable))
+                     <?> "quantified variables"
              s <- sentence <?> "sentence after \"" ++ ident ++ "\""
              return $ Quant_sent q (map Name vars) s
                $ Range $ joinRanges [rangeSpan ch, rangeSpan vars, rangeSpan s]
-
-equalAtom :: CharParser st ATOM
-equalAtom = do
-  key equalS
-  t1 <- term <?> "term after \"" ++ equalS ++ "\""
-  t2 <- term <?> "second term after \"" ++ equalS ++ "\""
-  return $ Equation t1 t2
 
 plainAtom :: CharParser st ATOM
 plainAtom = do
@@ -85,7 +75,7 @@ plainsent :: CharParser st SENTENCE
 plainsent = atomsent plainAtom
 
 parensent :: CharParser st SENTENCE
-parensent = parens $ logsent <|> relsent <|> eqsent <|> neqsent
+parensent = parens $ logsent <|> relsent <|> eqsent
 
 funterm :: CharParser st TERM
 funterm = parens funterm
@@ -108,20 +98,20 @@ relsent = do
         _ -> error "unknown TERM in relsent"
   atomsent $ return a
 
-eqsent :: CharParser st SENTENCE
-eqsent = atomsent equalAtom
-
 neqS :: String
 neqS = "/="
 
-neqsent :: CharParser st SENTENCE
-neqsent = do
-  key neqS
-  t1 <- term <?> "term after \"/=\""
-  t2 <- term <?> "second term after \"/=\""
-  let eq = (Equation t1 t2)
-  let rn = Range $ rangeSpan eq
-  return $ Bool_sent (Negation (Atom_sent eq rn)) rn
+eq_ops :: [(String, SENTENCE -> Id.Range -> SENTENCE, String)]
+eq_ops = [(equalS, \e _ -> e, "equation"),
+          (neqS, \e rn -> Bool_sent (Negation e) rn, "inequality")]
+
+eqsent :: CharParser st SENTENCE
+eqsent = do
+  (ch,con,ident) <- parse_keys eq_ops
+  t1 <- term <?> "term after \"" ++ ident ++ "\""
+  t2 <- term <?> "second term after \"" ++ ident ++ "\""
+  let rn = Range $ joinRanges [rangeSpan ch, rangeSpan t1, rangeSpan t2]
+  return $ con (Atom_sent (Equation t1 t2) rn) rn
 
 term :: CharParser st TERM
 term = liftM Name_term (pToken variable)
@@ -129,7 +119,7 @@ term = liftM Name_term (pToken variable)
    <|> liftM Name_term (pToken quotedString)
    <|> liftM Name_term (pToken number)
    <|> parens (funterm <|> do
-               s <- logsent <|> eqsent <|> neqsent
+               s <- logsent <|> eqsent
                return $ That_term s $ Range $ rangeSpan s)
 
 sentence :: CharParser st SENTENCE
