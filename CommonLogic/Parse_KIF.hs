@@ -90,7 +90,7 @@ parensent = parens $ logsent <|> relsent <|> eqsent <|> neqsent
 funterm :: CharParser st TERM
 funterm = parens funterm
       <|> do relword <- pToken (reserved
-               ["=", "/=", "and", "or", "iff", "if", "forall", "exists", "not"]
+               [equalS, neqS, andS, orS, equivS, implS, forallS, existsS, notS]
                (word <|> variable)) <?> "funword"
              let nt = Name_term relword
              t <- many term <?> "arguments"
@@ -111,9 +111,12 @@ relsent = do
 eqsent :: CharParser st SENTENCE
 eqsent = atomsent equalAtom
 
+neqS :: String
+neqS = "/="
+
 neqsent :: CharParser st SENTENCE
 neqsent = do
-  key "/="
+  key neqS
   t1 <- term <?> "term after \"/=\""
   t2 <- term <?> "second term after \"/=\""
   let eq = (Equation t1 t2)
