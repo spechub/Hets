@@ -64,5 +64,4 @@ instance Comorphism
       map_theory ExtModal2OWL = mapTheory
       map_morphism ExtModal2OWL = mapMorphism
       map_symbol ExtModal2OWL _ = mapSymbol
-      isInclusionComorphism ExtModal2OWL = True
       has_model_expansion ExtModal2OWL = True

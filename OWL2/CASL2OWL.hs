@@ -85,7 +85,6 @@ instance Comorphism
       map_theory CASL2OWL = mapTheory
       map_morphism CASL2OWL = mapMorphism
       map_symbol CASL2OWL _ = mapSymbol
-      isInclusionComorphism CASL2OWL = True
       has_model_expansion CASL2OWL = True
 
 -- | Mapping of CASL morphisms
