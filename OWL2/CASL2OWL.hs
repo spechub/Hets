@@ -99,14 +99,20 @@ toSubClass :: Id -> [ClassExpression] -> Axiom
 toSubClass i = PlainAxiom (ClassEntity $ toC i) . ListFrameBit (Just SubClass)
   . ExpressionBit . map (\ c -> ([], c))
 
-getPropsAndSens :: Id -> [SORT] -> Maybe SORT -> ([QName], Named Axiom)
-getPropsAndSens i args mres =
-   let ps = number args
-   in (map (idToNumberedIRI i . snd) ps, makeNamed
+getPropSens :: Id -> [SORT] -> Maybe SORT -> Named Axiom
+getPropSens i args mres = makeNamed
          ((if isJust mres then "op " else "pred ") ++ show i)
          $ toSubClass i $ maybeToList (fmap toC mres)
             ++ map (\ (a, n) -> ObjectValuesFrom SomeValuesFrom
-                 (ObjectProp $ idToNumberedIRI i n) $ toC a) ps)
+                 (ObjectProp $ idToNumberedIRI i n) $ toC a) (number args)
+
+getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set QName
+getPropNames f = Map.foldWithKey (\ i s l ->
+    case Set.toList s of
+      [] -> l
+      h : _ -> Set.union l $ Set.fromList
+        $ map (idToNumberedIRI i . snd) $ number $ f h)
+    Set.empty . MapSet.toMap
 
 commonType :: CS.Sign f e -> [[SORT]] -> Result [SORT]
 commonType csig l =
@@ -133,7 +139,7 @@ getCommonSupers csig s = let supers t = Set.insert t $ supersortsOf t csig in
    if null s then Set.empty else foldr1 Set.intersection $ map supers s
 
 keepMaximals :: CS.Sign f e -> [SORT] -> [SORT]
-keepMaximals csig = keepMinimals1 False csig id . Set.toList
+keepMaximals csig = keepMinimals1 True csig id . Set.toList
   . getCommonSupers csig
 
 mapSign :: CS.Sign f e -> Result (OS.Sign, [Named Axiom])
@@ -181,13 +187,13 @@ mapSign csig = let
   pm = predMap csig
   osig = OS.emptySign
     { concepts = toIris $ Set.unions
-      [ ss, MapSet.keysSet sps, MapSet.keysSet props ]
-    , objectProperties = toIris $ Set.union (MapSet.keysSet sos)
-      $ MapSet.keysSet bps
+      [ ss, MapSet.keysSet sps, MapSet.keysSet props
+      , MapSet.keysSet os, MapSet.keysSet ps]
+    , objectProperties = Set.unions
+      [ toIris $ Set.union (MapSet.keysSet sos) $ MapSet.keysSet bps
+      , getPropNames predArgs ps, getPropNames opArgs os ]
     , individuals = toIris $ MapSet.keysSet cs
     }
-  mkHint b i s = hint () ("not translated" ++ (if b then " op " else " pred ")
-     ++ shows i (if b then " :" else " : ") ++ showDoc s "") $ posOfId i
   in do
   s1 <- Map.foldWithKey (\ i s ml -> do
       l <- ml
@@ -224,9 +230,17 @@ mapSign csig = let
          return $ makeNamed ("plain predicate " ++ show i) (toSC r [i]) : l
        ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
-  MapSet.foldWithKey (\ i s m -> m >> mkHint True i s) (return ()) os
-  MapSet.foldWithKey (\ i s m -> m >> mkHint False i s) (return ()) ps
-  return (osig, s4)
+  s5 <- Map.foldWithKey (\ i s ml -> do
+     l <- ml
+     ot <- commonOpType csig s
+     return $ getPropSens i (opArgs ot) (Just $ opRes ot) : l
+     ) (return s4) (MapSet.toMap os)
+  s6 <- Map.foldWithKey (\ i s ml -> do
+     l <- ml
+     pt <- commonPredType csig s
+     return $ getPropSens i (predArgs pt) Nothing : l
+     ) (return s5) (MapSet.toMap ps)
+  return (osig, s6)
 
 {- binary predicates and single argument functions should become
    objectProperties.
