@@ -65,7 +65,7 @@ import VSE.Logic_VSE
 import VSE.ToSExpr
 
 #ifndef NOOWLLOGIC
-import OWL2.Logic_OWL2
+import OWL2.CreateOWL
 import qualified OWL2.ManchesterPrint as OWL2 (printOWLBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
 #endif
@@ -230,15 +230,16 @@ writeTheory ins nam opts filePrefix ga
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #ifndef NOOWLLOGIC
-    OWLOut
-      | lang == language_name OWL2 -> do
-            th2 <- coerceBasicTheory lid OWL2 "" th
+    OWLOut -> case createOWLTheory raw_gTh of
+      Result _ Nothing ->
+        putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
+      Result ds (Just th2) -> do
             let owltext = shows (OWL2.printOWLBasicTheory th2) "\n"
+            showDiags opts ds
             case parse (OWL2.basicSpec >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
-      | otherwise -> putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
 #endif
 #ifdef RDFLOGIC
     RDFOut
