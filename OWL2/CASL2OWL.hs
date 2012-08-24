@@ -20,11 +20,13 @@ import Common.DocUtils
 import Common.Result
 import Common.Id
 import Common.ProofTree
+import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
+import Data.Maybe
 
 -- OWL = codomain
 import OWL2.Logic_OWL2
@@ -90,6 +92,50 @@ instance Comorphism
    Ops or preds in the overload relation denote the same objectProperty!
 -}
 
+toC :: Id -> ClassExpression
+toC = Expression . idToIRI
+
+toSubClass :: Id -> [ClassExpression] -> Axiom
+toSubClass i = PlainAxiom (ClassEntity $ toC i) . ListFrameBit (Just SubClass)
+  . ExpressionBit . map (\ c -> ([], c))
+
+getPropsAndSens :: Id -> [SORT] -> Maybe SORT -> ([QName], Named Axiom)
+getPropsAndSens i args mres =
+   let ps = number args
+   in (map (idToNumberedIRI i . snd) ps, makeNamed
+         ((if isJust mres then "op " else "pred ") ++ show i)
+         $ toSubClass i $ maybeToList (fmap toC mres)
+            ++ map (\ (a, n) -> ObjectValuesFrom SomeValuesFrom
+                 (ObjectProp $ idToNumberedIRI i n) $ toC a) ps)
+
+commonType :: CS.Sign f e -> [[SORT]] -> Result [SORT]
+commonType csig l =
+  case map (keepMaximals csig) $ transpose l of
+    hl | all (not . null) hl -> return $ map head hl
+    _ -> fail $ "no common types for " ++ show l
+
+commonOpType :: CS.Sign f e -> Set.Set OpType -> Result OpType
+commonOpType csig os = do
+  l <- commonType csig $ map (\ o -> opRes o : opArgs o) $ Set.toList os
+  case l of
+    r : args -> return $ mkTotOpType args r
+    _ -> fail $ "no common types for " ++ showDoc os ""
+
+commonPredType :: CS.Sign f e -> Set.Set PredType -> Result PredType
+commonPredType csig ps = do
+  args <- commonType csig $ map predArgs $ Set.toList ps
+  case args of
+    _ : _ -> return $ PredType args
+    _ -> fail $ "no common types for " ++ showDoc ps ""
+
+getCommonSupers :: CS.Sign f e -> [SORT] -> Set.Set SORT
+getCommonSupers csig s = let supers t = Set.insert t $ supersortsOf t csig in
+   if null s then Set.empty else foldr1 Set.intersection $ map supers s
+
+keepMaximals :: CS.Sign f e -> [SORT] -> [SORT]
+keepMaximals csig = keepMinimals1 False csig id . Set.toList
+  . getCommonSupers csig
+
 mapSign :: CS.Sign f e -> Result (OS.Sign, [Named Axiom])
 mapSign csig = let
   esorts = emptySortSet csig
@@ -119,12 +165,10 @@ mapSign csig = let
         $ ListFrameBit (Just Types) $ ExpressionBit
         $ map toACE ts
   om = opMap csig
-  keepMaxs = keepMinimals1 False csig id
+  keepMaxs = keepMaximals csig
   mk s i m = makeNamed (s ++ show i ++ m) . PlainAxiom
        (ObjectEntity $ ObjectProp $ idToIRI i)
-  toC = Expression . idToIRI
-  toSC i = PlainAxiom (ClassEntity $ toC i) . ListFrameBit (Just SubClass)
-    . ExpressionBit . map toACE
+  toSC i = toSubClass i . map toC
   toACE i = ([], toC i)
   toEBit i = ExpressionBit [toACE i]
   mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
@@ -166,8 +210,9 @@ mapSign csig = let
   s3 <- Map.foldWithKey (\ i s ml -> do
     l <- ml
     let mkp = mk "binary predicate " i
-    case map keepMaxs . transpose . map predArgs $ Set.toList s of
-      [[a], [r]] -> return
+    pTy <- commonPredType csig s
+    case predArgs pTy of
+      [a, r] -> return
          $ [mkp " domain" $ mkDR ADomain a, mkp " range" $ mkDR ARange r]
          ++ l
       ts -> fail $ "CASL2OWL.mapSign3: " ++ show i ++ " types: " ++ show ts)

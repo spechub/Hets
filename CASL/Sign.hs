@@ -38,6 +38,10 @@ import Control.Monad (when, unless)
 data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
               deriving (Show, Eq, Ord)
 
+-- | result sort added to argument sorts
+opSorts :: OpType -> [SORT]
+opSorts o = opRes o : opArgs o
+
 mkTotOpType :: [SORT] -> SORT -> OpType
 mkTotOpType = OpType Total
 

@@ -531,7 +531,7 @@ revealSym sy sigma1 = let
     SubsortAsItemType _ -> sigma1 -- ignore
     OpAsItemType ot ->     -- 4.1.2./4.1.3.
       sigma1 { sortRel = foldr insSort (sortRel sigma1)
-               $ opRes ot : opArgs ot
+               $ opSorts ot
              , opMap = MapSet.insert n ot $ opMap sigma1 }
     PredAsItemType pt ->   -- 4.1.4.
       sigma1 { sortRel = foldr insSort (sortRel sigma1) $ predArgs pt
@@ -579,7 +579,7 @@ hideSym sy set1 = let set2 = Set.delete sy set1 in case symbType sy of
 
 profileContainsSort :: SORT -> SymbType -> Bool
 profileContainsSort s symbT = elem s $ case symbT of
-    OpAsItemType ot -> opRes ot : opArgs ot
+    OpAsItemType ot -> opSorts ot
     PredAsItemType pt -> predArgs pt
     SubsortAsItemType t -> [t]
     SortAsItemType -> []

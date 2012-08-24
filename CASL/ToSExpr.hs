@@ -24,6 +24,7 @@ import Common.Result
 import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
+import Data.Function
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
@@ -45,8 +46,8 @@ opToSSymbol sign o = case o of
     Qual_op_name i t _ -> opIdToSSymbol sign i $ toOpType t
 
 opIdToSSymbol :: Sign f e -> Id -> OpType -> SExpr
-opIdToSSymbol sign i (OpType _ args res) = case List.findIndex
-      (\ r -> opArgs r == args && opRes r == res) . Set.toList
+opIdToSSymbol sign i t = case List.findIndex
+      (on (==) opSorts t) . Set.toList
       . MapSet.lookup i $ opMap sign of
         Nothing -> error $ "opIdToSSymbol " ++ show i
         Just n -> idToSSymbol (n + 1) i

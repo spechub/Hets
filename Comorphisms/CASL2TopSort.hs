@@ -255,12 +255,12 @@ mkProfMapPred ssm = Set.fold seperate Map.empty
 mkProfMapOp :: SubSortMap -> Set.Set OpType
             -> Map.Map [SORT] (OpKind, Set.Set [Maybe PRED_NAME])
 mkProfMapOp ssm = Set.fold seperate Map.empty
-    where seperate ot mp =
+    where seperate ot =
               Map.insertWith (\ (k1, s1) (k2, s2) ->
                                            (min k1 k2, Set.union s1 s2))
                 (pt2topSorts joinedList)
-                (fKind, Set.singleton $ pt2preds joinedList) mp
-              where joinedList = opRes ot : opArgs ot
+                (fKind, Set.singleton $ pt2preds joinedList)
+              where joinedList = opSorts ot
                     fKind = opKind ot
                     pt2topSorts = map (lkupTop ssm)
                     pt2preds = map (lkupPredM ssm)

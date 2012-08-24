@@ -173,7 +173,7 @@ mapOpSym sMap oMap (i, ot) = let mot = mapOpType sMap ot in
 
 -- | Check if two OpTypes are equal modulo totality or partiality
 compatibleOpTypes :: OpType -> OpType -> Bool
-compatibleOpTypes ot1 ot2 = opArgs ot1 == opArgs ot2 && opRes ot1 == opRes ot2
+compatibleOpTypes ot1 ot2 = opSorts ot1 == opSorts ot2
 
 mapPredType :: Sort_map -> PredType -> PredType
 mapPredType sorts t = if Map.null sorts then t else

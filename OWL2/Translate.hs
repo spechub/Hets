@@ -22,8 +22,15 @@ idToIRI :: Id -> QName
 idToIRI = idToAnonIRI False
 
 idToAnonIRI :: Bool -> Id -> QName
-idToAnonIRI b i = nullQName
-  { localPart = (if b then ('_' :) else id) . transString $ show i
+idToAnonIRI = idToAnonNumberedIRI (-1)
+
+idToNumberedIRI :: Id -> Int -> QName
+idToNumberedIRI i n = idToAnonNumberedIRI n False i
+
+idToAnonNumberedIRI :: Int -> Bool -> Id -> QName
+idToAnonNumberedIRI n b i = nullQName
+  { localPart = (if b then ('_' :) else id) $ transString (show i)
+      ++ if n < 0 then "" else '_' : show n
   , iriPos = rangeOfId i }
 
 -- | translate to a valid OWL string
