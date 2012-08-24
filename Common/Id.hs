@@ -196,7 +196,7 @@ genName str = mkId [genToken str]
 mkGenName :: Id -> Id
 mkGenName i@(Id ts cs r) = case ts of
   t : s -> let st = tokStr t in case st of
-    c : _ | isAlpha c || isDigit c -> Id (genToken st : s) cs r
+    c : _ | isAlphaNum c -> Id (genToken st : s) cs r
           | isPlace t -> Id (mkSimpleId "gn" : ts) cs r
           | c == '\'' -> i
     _ -> Id (mkSimpleId "gn_n" : ts) cs r
@@ -340,11 +340,11 @@ expandPos f (o, c) ts (Range ps) =
       diff = n - length ps
       commas j = if j == 2 then [c] else "," : commas (j - 1)
       ocs = o : commas n
-      seps = map f
+      hsep : tseps = map f
         $ if diff == 0
           then zipWith (\ s p -> Token s (Range [p])) ocs ps
           else map mkSimpleId ocs
-    in head seps : concat (zipWith (\ t s -> [t, s]) ts (tail seps))
+    in hsep : concat (zipWith (\ t s -> [t, s]) ts tseps)
 
 {- | reconstruct the token list of an 'Id'
    including square brackets and commas of (nested) compound lists. -}
