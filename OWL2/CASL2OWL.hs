@@ -20,8 +20,10 @@ import Common.DocUtils
 import Common.Result
 import Common.Id
 import Common.ProofTree
+import Common.ProofUtils
 import qualified Common.Lib.MapSet as MapSet
 
+import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
@@ -102,7 +104,7 @@ idToIRI = idToAnonIRI False
 
 idToAnonIRI :: Bool -> Id -> QName
 idToAnonIRI b i = nullQName
-  { localPart = (if b then ('_' :) else id) $ show i
+  { localPart = (if b then ('_' :) else id) . transString $ show i
   , iriPos = rangeOfId i }
 
 mapSign :: CS.Sign f e -> Result (OS.Sign, [Named Axiom])
@@ -213,3 +215,21 @@ mapTheory (sig, sens) = do
          . ("not translated\n" ++) . show . printTheoryFormula
          . mapNamed (simplifySen (const return) (const id) tar)) ns
   mapSign tar
+
+-- | translate to a valid OWL string
+transString :: String -> String
+transString str = let
+    x = 'X'
+    replaceChar1 d | d == x = [x, x]  -- code out existing x!
+                   | isAlphaNum d = [d]
+                   | otherwise = x : replaceChar d
+    in case str of
+    "" -> [x]
+    c : s -> let l = replaceChar1 c in
+             (if isDigit c then [x, c]
+             else l) ++ concatMap replaceChar1 s
+
+-- | injective replacement of special characters
+replaceChar :: Char -> String
+-- <http://www.htmlhelp.com/reference/charset/>
+replaceChar c = if isAlphaNum c then [c] else lookupCharMap c

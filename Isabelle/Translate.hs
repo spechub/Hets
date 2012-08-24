@@ -233,4 +233,4 @@ replaceChar :: Char -> String
 -- <http://www.htmlhelp.com/reference/charset/>
 replaceChar c = if isIsaChar c then [c] else let n = ord c in
     if n <= 32 || n >= 127 && n < 160 || n > 255 then "Slash_" ++ show n
-    else fromMaybe (error "Isabelle.replaceChar") $ Map.lookup c charMap
+    else lookupCharMap c

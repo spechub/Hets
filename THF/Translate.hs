@@ -16,6 +16,9 @@ module THF.Translate where
 import Common.Id
 import Common.Result
 
+import qualified Common.ProofUtils as CM (charMap)
+import Common.Utils (mapHead)
+
 import HasCASL.Builtin
 import HasCASL.AsUtils
 
@@ -67,12 +70,10 @@ stringToConstant :: String -> THFAs.Constant
 stringToConstant = A_Lower_Word . stringToLowerWord
 
 stringToLowerWord :: String -> THFAs.LowerWord
-stringToLowerWord (c1 : rc)  = toLower c1 : rc
-stringToLowerWord [] = []
+stringToLowerWord = mapHead toLower
 
 stringToVariable :: String -> THFAs.Variable
-stringToVariable (c1 : rc) = toUpper c1 : rc
-stringToVariable [] = []
+stringToVariable = mapHead toUpper
 
 transVarId :: Id -> Result THFAs.Variable
 transVarId id1 = case transToTHFString $ show id1 of
@@ -82,8 +83,8 @@ transVarId id1 = case transToTHFString $ show id1 of
 
 transToTHFString :: String -> Maybe String
 transToTHFString s = case s of
-    []       -> Just []
-    (c : rc) ->
+    "" -> Just []
+    c : rc ->
         if isTHFChar c
         then fmap (c :) (transToTHFString rc)
         else case Map.lookup c charMap of
@@ -91,7 +92,7 @@ transToTHFString s = case s of
             Nothing  -> Nothing
 
 isTHFChar :: Char -> Bool
-isTHFChar c = (isAlphaNum c && isAscii c) || c == '_'
+isTHFChar c = isAlphaNum c && isAscii c || c == '_'
 
 isLowerTHFChar :: Char -> Bool
 isLowerTHFChar c = isLower c && isAscii c
@@ -142,134 +143,7 @@ myEqId (Id t1 c1 _) (Id t2 c2 _) = (t1, c1) == (t2, c2)
 
 -- | a separate Map speeds up lookup
 charMap :: Map.Map Char String
-charMap = Map.fromList
- [(' ' , "Space"),
-  ('\n', "Newline"),
-  ('\t', "Tab"),
-  ('!' , "Exclam"),
-  ('"' , "Quot"),
-  ('#' , "Hash"),
-  ('$' , "Dollar"),
-  ('%' , "Percent"),
-  ('&' , "Amp"),
-  ('\'', "Apostrophe"),
-  ('(' , "OBr"),
-  (')' , "CBr"),
-  ('*' , "X"),
-  ('+' , "Plus"),
-  (',' , "Comma"),
-  ('-' , "Minus"),
-  ('.' , "Dot"),
-  ('/' , "Slash"),
-  (':' , "Colon"),
-  (';' , "Semi"),
-  ('<' , "Lt"),
-  ('=' , "Eq"),
-  ('>' , "Gt"),
-  ('?' , "Quest"),
-  ('@' , "At"),
-  ('[' , "OSqBr"),
-  ('\\' , "Bslash"),
-  (']' , "CSqBr"),
-  ('^' , "Caret"), -- Hat?
-  ('`' , "Grave"),
-  ('{' , "LBrace"),
-  ('|' , "VBar"),
-  ('}' , "RBrace"),
-  ('~' , "Tilde"),
-  ('\160', "Nbsp"),
-  ('\161', "Iexcl"),
-  ('\162', "Cent"),
-  ('\163', "Pound"),
-  ('\164', "Curren"),
-  ('\165', "Yen"),
-  ('\166', "Brvbar"),
-  ('\167', "Sect"),
-  ('\168', "Uml"),
-  ('\169', "Copy"),
-  ('\170', "Ordf"),
-  ('\171', "Laquo"),
-  ('\172', "Not"),
-  ('\173', "Shy"),
-  ('\174', "Reg"),
-  ('\175', "Macr"),
-  ('\176', "Deg"),
-  ('\177', "Plusmn"),
-  ('\178', "Sup2"),
-  ('\179', "Sup3"),
-  ('\180', "Acute"),
-  ('\181', "Micro"),
-  ('\182', "Para"),
-  ('\183', "Middot"),
-  ('\184', "Cedil"),
-  ('\185', "Sup1"),
-  ('\186', "Ordm"),
-  ('\187', "Raquo"),
-  ('\188', "Quarter"),
-  ('\189', "Half"),
-  ('\190', "Frac34"),
-  ('\191', "Iquest"),
-  ('\192', "Agrave"),
-  ('\193', "Aacute"),
-  ('\194', "Acirc"),
-  ('\195', "Atilde"),
-  ('\196', "Auml"),
-  ('\197', "Aring"),
-  ('\198', "AElig"),
-  ('\199', "Ccedil"),
-  ('\200', "Egrave"),
-  ('\201', "Eacute"),
-  ('\202', "Ecirc"),
-  ('\203', "Euml"),
-  ('\204', "Igrave"),
-  ('\205', "Iacute"),
-  ('\206', "Icirc"),
-  ('\207', "Iuml"),
-  ('\208', "ETH"),
-  ('\209', "Ntilde"),
-  ('\210', "Ograve"),
-  ('\211', "Oacute"),
-  ('\212', "Ocirc"),
-  ('\213', "Otilde"),
-  ('\214', "Ouml"),
-  ('\215', "Times"),
-  ('\216', "OSlash"),
-  ('\217', "Ugrave"),
-  ('\218', "Uacute"),
-  ('\219', "Ucirc"),
-  ('\220', "Uuml"),
-  ('\221', "Yacute"),
-  ('\222', "THORN"),
-  ('\223', "Szlig"),
-  ('\224', "Agrave"),
-  ('\225', "Aacute"),
-  ('\226', "Acirc"),
-  ('\227', "Atilde"),
-  ('\228', "Auml"),
-  ('\229', "Aring"),
-  ('\230', "Aelig"),
-  ('\231', "Ccedil"),
-  ('\232', "Egrave"),
-  ('\233', "Eacute"),
-  ('\234', "Ecirc"),
-  ('\235', "Euml"),
-  ('\236', "Igrave"),
-  ('\237', "Iacute"),
-  ('\238', "Icirc"),
-  ('\239', "Iuml"),
-  ('\240', "Eth"),
-  ('\241', "Ntilde"),
-  ('\242', "Ograve"),
-  ('\243', "Oacute"),
-  ('\244', "Ocirc"),
-  ('\245', "Otilde"),
-  ('\246', "Ouml"),
-  ('\247', "Divide"),
-  ('\248', "Oslash"),
-  ('\249', "Ugrave"),
-  ('\250', "Uacute"),
-  ('\251', "Ucirc"),
-  ('\252', "Uuml"),
-  ('\253', "Yacute"),
-  ('\254', "Thorn"),
-  ('\255', "Yuml")]
+charMap = Map.insert '\'' "Apostrophe"
+  . Map.insert '.' "Dot"
+  $ Map.map stringToVariable CM.charMap
+  -- this map is no longer injective

@@ -16,6 +16,7 @@ Isabelle.IsaProve.
 
 module Common.ProofUtils where
 
+import Data.Char
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
@@ -76,6 +77,9 @@ collectNameMapping :: [Named a] -> [Named a] -> Map.Map String String
 collectNameMapping ns os = if any (null . senAttr) os
   then error "Common.ProofUtils.collectNameMapping"
   else Map.fromList $ zipWith (\ n o -> (senAttr n, senAttr o)) ns os
+
+lookupCharMap :: Char -> String
+lookupCharMap c = Map.findWithDefault ("Slash_" ++ show (ord c)) c charMap
 
 -- | a separate Map speeds up lookup
 charMap :: Map.Map Char String

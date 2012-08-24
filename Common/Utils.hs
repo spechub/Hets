@@ -18,6 +18,7 @@ module Common.Utils
   , hasMany
   , number
   , combine
+  , mapHead
   , trim
   , trimLeft
   , trimRight
@@ -72,7 +73,7 @@ import System.Process
 import System.Timeout
 import System.Posix.Files (createNamedPipe, unionFileModes,
                            ownerReadMode, ownerWriteMode)
-import System.Posix.IO (OpenMode(ReadWrite), defaultFileFlags,
+import System.Posix.IO (OpenMode (ReadWrite), defaultFileFlags,
                         openFd, closeFd, fdRead)
 import System.Posix.Types (Fd)
 
@@ -131,6 +132,12 @@ hasMany s = Set.size s > 1
 combine :: [[a]] -> [[a]]
 combine = sequence
 -- see http://www.haskell.org/pipermail/haskell-cafe/2009-November/069490.html
+
+-- | only change the head element
+mapHead :: (a -> a) -> [a] -> [a]
+mapHead f l = case l of
+  [] -> []
+  r : t -> f r : t
 
 -- | trims a string both on left and right hand side
 trim :: String -> String

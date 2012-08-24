@@ -21,7 +21,6 @@ module SoftFOL.Translate
 
 import Data.Char
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 import Common.Id
 import Common.ProofUtils
@@ -100,8 +99,7 @@ transIdString t str = case str of
 
 transToSPChar :: Char -> String
 transToSPChar c = if checkSPChar c then [c] else
-  if elem c " \n" then "_" else
-  Map.findWithDefault ("Slash_"++ show (ord c)) c charMap
+  if elem c " \n" then "_" else lookupCharMap c
 
 substDigit :: Char -> String
 substDigit c = case c of
