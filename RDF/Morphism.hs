@@ -14,7 +14,8 @@ Morphisms for RDF
 module RDF.Morphism where
 
 import Common.DocUtils
-{-}import Common.Doc
+import Common.Doc
+{-
 import Common.Lib.State
 import Common.Lib.MapSet (setToMap)
 import Common.Result
@@ -30,9 +31,10 @@ import RDF.Print ()
 {-}
 import Control.Monad
 import Data.Maybe
-import qualified Data.Set as Set
-import qualified Data.Map as Map
 -}
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
 data RDFMorphism = RDFMorphism
   { osource :: Sign
   , otarget :: Sign
@@ -44,9 +46,6 @@ inclRDFMorphism s t = RDFMorphism
  { osource = s
  , otarget = t
  , mmaps = Map.empty }
-
-isRDFInclusion :: RDFMorphism -> Bool
-isRDFInclusion m = Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
 symMap :: MorphMap -> Map.Map RDFEntity RDFEntity
 symMap = Map.mapWithKey (\ (RDFEntity ty _) -> RDFEntity ty)
@@ -80,8 +79,12 @@ inducedFromMor rm sig = do
 symMapOf :: RDFMorphism -> Map.Map RDFEntity RDFEntity
 symMapOf mor = Map.union (symMap $ mmaps mor) $ setToMap $ symOf $ osource mor
 -}
+
+isRDFInclusion :: RDFMorphism -> Bool
+isRDFInclusion m = Map.null (mmaps m) && isSubSign (osource m) (otarget m)
+
 instance Pretty RDFMorphism where
-{-}  pretty m = let
+  pretty m = let
     s = osource m
     srcD = specBraces $ space <> pretty s
     t = otarget m
@@ -96,7 +99,7 @@ instance Pretty RDFMorphism where
        else fsep
          [ pretty $ mmaps m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
-
+{-
 legalMor :: RDFMorphism -> Result ()
 legalMor m = let mm = mmaps m in unless
   (Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
