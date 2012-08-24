@@ -71,8 +71,8 @@ instance Comorphism Propositional2OWL2
         targetLogic Propositional2OWL2 = OWLLogic.OWL2
         mapSublogic Propositional2OWL2 = Just . mapSub -- TODO
         map_theory Propositional2OWL2 = mapTheory
-        -- map_morphism Propositional2OWL2 = mapMorphism
-        -- map_symbol Propositional2OWL2 _ = mapSymbol
+        {- map_morphism Propositional2OWL2 = mapMorphism
+        map_symbol Propositional2OWL2 _ = mapSymbol -}
         isInclusionComorphism Propositional2OWL2 = True
         has_model_expansion Propositional2OWL2 = True
 
@@ -114,11 +114,8 @@ mapSign ps = OWLSign.emptySign {OWLSign.concepts = Set.fromList
 
 mapTheory :: (PSign.Sign, [Named FORMULA])
     -> Result (OWLSign.Sign, [Named Axiom])
-mapTheory (psig, fl) = return (mapSign psig, map (makeNamed "")
-    $ map (mkOWLDeclaration . mapFormula . sentence) fl)
+mapTheory (psig, fl) = return (mapSign psig, map
+    (mapNamed $ mkOWLDeclaration . mapFormula) fl)
 
 mapSub :: PSL.PropSL -> OWLSub.ProfSub
 mapSub _ = OWLSub.topS
-
-
-
