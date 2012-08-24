@@ -131,11 +131,13 @@ mapSign csig = let
   toIris = Set.map idToIRI
   (cs, ncs) = MapSet.partition (null . opArgs) om
   (sos, os) = MapSet.partition isSingleArgOp ncs
-  (sps, rps) = MapSet.partition (isSingle . predArgs) pm
+  (props, nps) = MapSet.partition (null . predArgs) pm
+  (sps, rps) = MapSet.partition (isSingle . predArgs) nps
   (bps, ps) = MapSet.partition isBinPredType rps
   pm = predMap csig
   osig = OS.emptySign
-    { concepts = toIris $ Set.unions [ ss, MapSet.keysSet sps ]
+    { concepts = toIris $ Set.unions
+      [ ss, MapSet.keysSet sps, MapSet.keysSet props ]
     , objectProperties = toIris $ Set.union (MapSet.keysSet sos)
       $ MapSet.keysSet bps
     , individuals = toIris $ MapSet.keysSet cs
