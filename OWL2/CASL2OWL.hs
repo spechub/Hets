@@ -20,10 +20,8 @@ import Common.DocUtils
 import Common.Result
 import Common.Id
 import Common.ProofTree
-import Common.ProofUtils
 import qualified Common.Lib.MapSet as MapSet
 
-import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
@@ -37,6 +35,7 @@ import OWL2.ManchesterPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
 import OWL2.Sign as OS
+import OWL2.Translate
 
 -- CASL = domain
 import CASL.Logic_CASL
@@ -85,27 +84,11 @@ instance Comorphism
       targetLogic CASL2OWL = OWL2
       mapSublogic CASL2OWL _ = Just topS
       map_theory CASL2OWL = mapTheory
-      map_morphism CASL2OWL = mapMorphism
-      map_symbol CASL2OWL _ = mapSymbol
       has_model_expansion CASL2OWL = True
-
--- | Mapping of CASL morphisms
-mapMorphism :: Morphism f e m -> Result OWLMorphism
-mapMorphism _ = fail "CASL2OWL.mapMorphism"
-
-mapSymbol :: Symbol -> Set.Set Entity
-mapSymbol _ = Set.empty
 
 {- names must be disambiguated as is done in CASL.Qualify or SuleCFOL2SoftFOL.
    Ops or preds in the overload relation denote the same objectProperty!
 -}
-idToIRI :: Id -> QName
-idToIRI = idToAnonIRI False
-
-idToAnonIRI :: Bool -> Id -> QName
-idToAnonIRI b i = nullQName
-  { localPart = (if b then ('_' :) else id) . transString $ show i
-  , iriPos = rangeOfId i }
 
 mapSign :: CS.Sign f e -> Result (OS.Sign, [Named Axiom])
 mapSign csig = let
@@ -215,21 +198,3 @@ mapTheory (sig, sens) = do
          . ("not translated\n" ++) . show . printTheoryFormula
          . mapNamed (simplifySen (const return) (const id) tar)) ns
   mapSign tar
-
--- | translate to a valid OWL string
-transString :: String -> String
-transString str = let
-    x = 'X'
-    replaceChar1 d | d == x = [x, x]  -- code out existing x!
-                   | isAlphaNum d = [d]
-                   | otherwise = x : replaceChar d
-    in case str of
-    "" -> [x]
-    c : s -> let l = replaceChar1 c in
-             (if isDigit c then [x, c]
-             else l) ++ concatMap replaceChar1 s
-
--- | injective replacement of special characters
-replaceChar :: Char -> String
--- <http://www.htmlhelp.com/reference/charset/>
-replaceChar c = if isAlphaNum c then [c] else lookupCharMap c

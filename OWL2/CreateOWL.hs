@@ -21,7 +21,6 @@ import Static.GTheory
 import Logic.Prover
 
 import Common.ExtSign
-import Common.ProofUtils
 
 import OWL2.Sign
 import OWL2.MS
@@ -60,4 +59,4 @@ createOWLTheory (G_theory lid (ExtSign sign0 _) _ sens0 _) = do
                  _ -> r2'
                _ -> r1'
     (sign, sens) <- r6
-    return (sign, prepareSenNames transString $ toNamedList $ toThSens sens)
+    return (sign, toNamedList $ toThSens sens)

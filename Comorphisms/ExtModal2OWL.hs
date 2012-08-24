@@ -62,6 +62,4 @@ instance Comorphism
       targetLogic ExtModal2OWL = OWL2
       mapSublogic ExtModal2OWL _ = Just topS
       map_theory ExtModal2OWL = mapTheory
-      map_morphism ExtModal2OWL = mapMorphism
-      map_symbol ExtModal2OWL _ = mapSymbol
       has_model_expansion ExtModal2OWL = True

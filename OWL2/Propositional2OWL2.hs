@@ -23,6 +23,7 @@ import Common.Result
 import OWL2.AS
 import OWL2.Keywords
 import OWL2.MS
+import OWL2.Translate
 import qualified OWL2.Morphism as OWLMor
 import qualified OWL2.ProfilesAndSublogics as OWLSub
 import qualified OWL2.Sign as OWLSign
@@ -71,8 +72,6 @@ instance Comorphism Propositional2OWL2
         targetLogic Propositional2OWL2 = OWLLogic.OWL2
         mapSublogic Propositional2OWL2 = Just . mapSub -- TODO
         map_theory Propositional2OWL2 = mapTheory
-        {- map_morphism Propositional2OWL2 = mapMorphism
-        map_symbol Propositional2OWL2 _ = mapSymbol -}
         isInclusionComorphism Propositional2OWL2 = True
         has_model_expansion Propositional2OWL2 = True
 
@@ -80,11 +79,14 @@ mkOWLDeclaration :: ClassExpression -> Axiom
 mkOWLDeclaration ex = PlainAxiom (ClassEntity $ Expression $ setPrefix "owl"
     $ mkQName thingS) $ ListFrameBit (Just SubClass) $ ExpressionBit [([], ex)]
 
+tokToQName :: Token -> QName
+tokToQName = idToIRI . simpleIdToId
+
 mapFormula :: FORMULA -> ClassExpression
 mapFormula f = case f of
     False_atom _ -> Expression $ mkQName nothingS
     True_atom _ -> Expression $ mkQName thingS
-    Predication p -> Expression $ mkQName $ tokStr p
+    Predication p -> Expression $ tokToQName p
     Negation nf _ -> ObjectComplementOf $ mapFormula nf
     Conjunction fl _ -> ObjectJunction IntersectionOf $ map mapFormula fl
     Disjunction fl _ -> ObjectJunction UnionOf $ map mapFormula fl
@@ -95,7 +97,7 @@ mapFormula f = case f of
 
 mapPredDecl :: PRED_ITEM -> [Axiom]
 mapPredDecl (Pred_item il _) = map (mkOWLDeclaration . Expression
-    . mkQName . tokStr) il
+    . tokToQName) il
 
 mapAxiomItems :: Annoted FORMULA -> Axiom
 mapAxiomItems = mkOWLDeclaration . mapFormula . item
@@ -110,7 +112,7 @@ mapBasicSpec (Basic_spec il) = concatMap (mapBasicItems . item) il
 
 mapSign :: PSign.Sign -> OWLSign.Sign
 mapSign ps = OWLSign.emptySign {OWLSign.concepts = Set.fromList
-    $ map (mkQName . tokStr . idToSimpleId) $ Set.toList $ PSign.items ps}
+    $ map idToIRI $ Set.toList $ PSign.items ps}
 
 mapTheory :: (PSign.Sign, [Named FORMULA])
     -> Result (OWLSign.Sign, [Named Axiom])
