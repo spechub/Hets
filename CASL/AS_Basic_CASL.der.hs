@@ -242,17 +242,19 @@ recover_Sort_gen_ax constrs =
   indOp _ _ = error
       "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
 
-{- | from a free Sort_gex_ax, recover:
+{- | from a Sort_gen_ax, recover:
+the sorts, each paired with the constructors -}
+recoverSortGen :: [Constraint] -> [(SORT, [OP_SYMB])]
+recoverSortGen = map $ \ c -> (newSort c, map fst $ opSymbs c)
+
+{- | from a free Sort_gen_ax, recover:
 the sorts, each paired with the constructors
 fails (i.e. delivers Nothing) if the sort map is not injective -}
 recover_free_Sort_gen_ax :: [Constraint] -> Maybe [(SORT, [OP_SYMB])]
 recover_free_Sort_gen_ax constrs =
-  if isInjectiveList sorts
-     then Just $ map getOpProfile constrs
+  if isInjectiveList $ map newSort constrs
+     then Just $ recoverSortGen constrs
      else Nothing
-  where
-  sorts = map newSort constrs
-  getOpProfile constr = (newSort constr, map fst $ opSymbs constr)
 
 data QUANTIFIER = Universal | Existential | Unique_existential
                   deriving (Show, Eq, Ord)

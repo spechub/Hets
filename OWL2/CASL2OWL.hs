@@ -272,8 +272,25 @@ mapTheory :: (FormExtension f, TermExtension f)
 mapTheory (sig, sens) = do
   let mor = disambigSig sig
       tar = mtarget mor
-      ns = map (mapNamed $ MapSen.mapMorphForm (const id) mor) sens
-  mapM_ (flip (hint ()) nullRange
+      nss = map (mapNamed $ MapSen.mapMorphForm (const id) mor) sens
+  (s, l) <- mapSign tar
+  ll <- mapM (\ ns -> case sentence ns of
+    Sort_gen_ax cs b -> return $ mapSortGenAx cs b
+    _ -> flip (hint []) nullRange
          . ("not translated\n" ++) . show . printTheoryFormula
-         . mapNamed (simplifySen (const return) (const id) tar)) ns
-  mapSign tar
+         $ mapNamed (simplifySen (const return) (const id) tar) ns
+             ) nss
+  return (s, l ++ concat ll)
+
+mapSortGenAx :: [Constraint] -> Bool -> [Named Axiom]
+mapSortGenAx cs b = map (\ (s, as) ->
+  let is = map (\ (Qual_op_name n ty _) ->
+                if null $ args_OP_TYPE ty then ObjectOneOf [idToIRI n]
+                else toC n) as
+  in makeNamed ("generated " ++ show s)
+         $ PlainAxiom (ClassEntity $ toC s)
+         $ if b && not (isSingle is) then AnnFrameBit [] $ ClassDisjointUnion is
+           else ListFrameBit (Just $ EDRelation Equivalent)
+             $ ExpressionBit [([], if isSingle is then head is else
+                                       ObjectJunction UnionOf is)])
+  $ recoverSortGen cs
