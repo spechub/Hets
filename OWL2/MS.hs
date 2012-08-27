@@ -71,8 +71,10 @@ data FrameBit =
 data Frame = Frame Extended [FrameBit]
     deriving (Show, Eq, Ord)
 
-data Axiom = PlainAxiom Extended FrameBit
-    deriving (Show, Eq, Ord)
+data Axiom = PlainAxiom
+  { axiomTopic :: Extended
+  , axiomBit :: FrameBit
+  } deriving (Show, Eq, Ord)
 
 getAxioms :: Frame -> [Axiom]
 getAxioms (Frame e fbl) = map (PlainAxiom e) fbl

@@ -95,16 +95,38 @@ instance Comorphism
 toC :: Id -> ClassExpression
 toC = Expression . idToIRI
 
+toO :: Id -> Int -> ObjectPropertyExpression
+toO i = ObjectProp . idToNumberedIRI i
+
+toACE :: Id -> (Annotations, ClassExpression)
+toACE i = ([], toC i)
+
+toEBit :: Id -> ListFrameBit
+toEBit i = ExpressionBit [toACE i]
+
+mkDR :: DomainOrRange -> Id -> FrameBit
+mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
+
+mkObjEnt :: String -> Id -> Int -> String -> FrameBit -> Named Axiom
+mkObjEnt s i n m = makeNamed (s ++ show i
+  ++ (if n < 0 then "" else '_' : show n) ++ m) . PlainAxiom
+       (ObjectEntity $ toO i n)
+
 toSubClass :: Id -> [ClassExpression] -> Axiom
 toSubClass i = PlainAxiom (ClassEntity $ toC i) . ListFrameBit (Just SubClass)
   . ExpressionBit . map (\ c -> ([], c))
 
-getPropSens :: Id -> [SORT] -> Maybe SORT -> Named Axiom
-getPropSens i args mres = makeNamed
-         ((if isJust mres then "op " else "pred ") ++ show i)
-         $ toSubClass i $ maybeToList (fmap toC mres)
+getPropSens :: Id -> [SORT] -> Maybe SORT -> [Named Axiom]
+getPropSens i args mres = let
+  ncs = number args
+  opOrPred = if isJust mres then "op " else "pred "
+  in makeNamed (opOrPred ++ show i)
+         (toSubClass i $ maybeToList (fmap toC mres)
             ++ map (\ (a, n) -> ObjectValuesFrom SomeValuesFrom
-                 (ObjectProp $ idToNumberedIRI i n) $ toC a) (number args)
+                 (toO i n) $ toC a) ncs)
+  : concatMap (\ (a, n) -> let mki = mkObjEnt opOrPred i n in
+      maybeToList (fmap (mki " domain" . mkDR ADomain) mres)
+      ++ [mki " range" $ mkDR ARange a]) ncs
 
 getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set QName
 getPropNames f = Map.foldWithKey (\ i s l ->
@@ -172,12 +194,8 @@ mapSign csig = let
         $ map toACE ts
   om = opMap csig
   keepMaxs = keepMaximals csig
-  mk s i m = makeNamed (s ++ show i ++ m) . PlainAxiom
-       (ObjectEntity $ ObjectProp $ idToIRI i)
+  mk s i = mkObjEnt s i (-1)
   toSC i = toSubClass i . map toC
-  toACE i = ([], toC i)
-  toEBit i = ExpressionBit [toACE i]
-  mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
   toIris = Set.map idToIRI
   (cs, ncs) = MapSet.partition (null . opArgs) om
   (sos, os) = MapSet.partition isSingleArgOp ncs
@@ -233,12 +251,12 @@ mapSign csig = let
   s5 <- Map.foldWithKey (\ i s ml -> do
      l <- ml
      ot <- commonOpType csig s
-     return $ getPropSens i (opArgs ot) (Just $ opRes ot) : l
+     return $ getPropSens i (opArgs ot) (Just $ opRes ot) ++ l
      ) (return s4) (MapSet.toMap os)
   s6 <- Map.foldWithKey (\ i s ml -> do
      l <- ml
      pt <- commonPredType csig s
-     return $ getPropSens i (predArgs pt) Nothing : l
+     return $ getPropSens i (predArgs pt) Nothing ++ l
      ) (return s5) (MapSet.toMap ps)
   return (osig, s6)
 

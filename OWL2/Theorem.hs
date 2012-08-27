@@ -12,9 +12,16 @@ Adds the "implied" annotation - for specifying theorems
 
 module OWL2.Theorem where
 
+import qualified Common.AS_Annotation as Anno
+import Common.Doc
+import Common.DocUtils
+
 import OWL2.AS
 import OWL2.MS
+import OWL2.ManchesterPrint ()
+
 import Data.List
+import Data.Function
 
 implied :: Annotation
 implied = Annotation [] (mkQName "Implied")
@@ -44,8 +51,13 @@ rmFB fb = case fb of
 
 rmImplied :: Axiom -> Axiom
 rmImplied (PlainAxiom eith fb) = case eith of
-      Misc ans -> PlainAxiom (Misc (rmList ans)) $ rmFB fb
+      Misc ans -> PlainAxiom (Misc $ rmList ans) $ rmFB fb
       _ -> PlainAxiom eith $ rmFB fb
+
+rmImpliedFrame :: Frame -> Frame
+rmImpliedFrame (Frame eith l) = case eith of
+      Misc ans -> Frame (Misc $ rmList ans) $ map rmFB l
+      _ -> Frame eith $ map rmFB l
 
 addAnnList :: AnnotatedList a -> AnnotatedList a
 addAnnList [] = []
@@ -62,15 +74,22 @@ addListFB lfb = case lfb of
     DataPropRange a -> DataPropRange $ addAnnList a
     IndividualFacts a -> IndividualFacts $ addAnnList a
 
+addImpliedFrameBit :: FrameBit -> FrameBit
+addImpliedFrameBit fb = case fb of
+    ListFrameBit mr lfb -> ListFrameBit mr (addListFB lfb)
+    AnnFrameBit ans afb -> AnnFrameBit (implied : ans) afb
+
 addImplied :: Axiom -> Axiom
 addImplied a = case rmImplied a of
       PlainAxiom eith fb -> case eith of
-        Misc ans -> PlainAxiom (Misc (implied : ans)) fb
-        _ -> case fb of
-              ListFrameBit mr lfb -> PlainAxiom eith
-                      $ ListFrameBit mr (addListFB lfb)
-              AnnFrameBit ans afb -> PlainAxiom eith
-                      $ AnnFrameBit (implied : ans) afb
+        Misc ans -> PlainAxiom (Misc $ implied : ans) fb
+        _ -> PlainAxiom eith $ addImpliedFrameBit fb
+
+addImpliedFrame :: Frame -> Frame
+addImpliedFrame a = case rmImpliedFrame a of
+      Frame eith l -> case eith of
+        Misc ans -> Frame (Misc $ implied : ans) l
+        _ -> Frame eith $ map addImpliedFrameBit l
 
 prove1 :: Annotation -> Bool
 prove1 anno = case anno of
@@ -104,3 +123,18 @@ prove :: Axiom -> Bool
 prove (PlainAxiom eith fb) = case eith of
       Misc ans -> any prove1 ans || proveFB fb
       _ -> proveFB fb
+
+printOneNamed :: Anno.Named Axiom -> Doc
+printOneNamed ns = pretty
+  $ (if Anno.isAxiom ns then rmImplied else addImplied) $ Anno.sentence ns
+
+printNamed :: [Anno.Named Axiom] -> Doc
+printNamed l = let
+  (axs, ths) = partition Anno.isAxiom l
+  pr f = map (pretty . f) . groupAxioms . map Anno.sentence
+ in vsep $ pr rmImpliedFrame axs ++ pr addImpliedFrame ths
+
+groupAxioms :: [Axiom] -> [Frame]
+groupAxioms =
+  map (\ l@(PlainAxiom e _ : _) -> Frame e $ map axiomBit l)
+  . groupBy (on (==) axiomTopic) . sortBy (on compare axiomTopic)

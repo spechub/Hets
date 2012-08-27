@@ -313,6 +313,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       print_named :: lid -> Named sentence -> Doc
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
 
+      printAllNamed :: lid -> [Named sentence] -> Doc
+      printAllNamed l = vsep . map (print_named l)
+
       -- --------------------- symbols ---------------------------
 
       -- | dependency ordered list of symbol sets for a signature
