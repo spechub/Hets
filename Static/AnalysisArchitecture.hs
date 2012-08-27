@@ -52,8 +52,6 @@ import Data.Graph.Inductive.Graph as Graph (Node, edges)
 import qualified Data.Set as Set
 import Control.Monad (foldM)
 
-import Debug.Trace
-
 first :: (a, b, c) -> a
 first (a, _, _) = a
 
@@ -62,6 +60,9 @@ second (_, b, _) = b
 
 third :: (a, b, c) -> c
 third (_, _, c) = c
+
+trace :: String -> a -> a
+trace _ = id
 
 {- | Analyse an architectural specification
 @
