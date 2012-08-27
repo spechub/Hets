@@ -28,9 +28,9 @@ type AnnotatedList a = [(Annotations, a)]
 -- | this datatype extends the Manchester Syntax to also allow GCIs
 data Extended =
     Misc Annotations
-  | SimpleEntity Entity
-  | ObjectEntity ObjectPropertyExpression
   | ClassEntity ClassExpression
+  | ObjectEntity ObjectPropertyExpression
+  | SimpleEntity Entity
     deriving (Show, Eq, Ord)
 
 -- | frames with annotated lists
