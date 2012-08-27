@@ -149,7 +149,7 @@ getEntity b e = Entity (getEntityType $ (qName . elName) e) $ getIRI b e
 getDeclaration :: XMLBase -> Element -> Axiom
 getDeclaration b e = case getName e of
    "Declaration" ->
-        PlainAxiom (SimpleEntity $ getEntity b $ filterCL entityList e)
+        PlainAxiom (mkExtendedEntity $ getEntity b $ filterCL entityList e)
             $ AnnFrameBit (getAllAnnos b e) $ AnnotationFrameBit Declaration
    _ -> err "not declaration"
 

@@ -171,7 +171,7 @@ toDecl s =
         dp = map (Entity DataProperty) $ Set.toList (dataProperties s)
         i = map (Entity NamedIndividual) $ Set.toList (individuals s)
         ans = map (Entity AnnotationProperty) $ Set.toList (annotationRoles s)
-    in map (\ c -> Frame (SimpleEntity c)
+    in map (\ c -> Frame (mkExtendedEntity c)
         [AnnFrameBit [] $ AnnotationFrameBit Declaration])
             (cls ++ dt ++ op ++ dp ++ i ++ ans)
 

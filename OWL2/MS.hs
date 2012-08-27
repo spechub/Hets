@@ -76,6 +76,12 @@ data Axiom = PlainAxiom
   , axiomBit :: FrameBit
   } deriving (Show, Eq, Ord)
 
+mkExtendedEntity :: Entity -> Extended
+mkExtendedEntity e@(Entity ty iri) = case ty of
+  Class -> ClassEntity $ Expression iri
+  ObjectProperty -> ObjectEntity $ ObjectProp iri
+  _ -> SimpleEntity e
+
 getAxioms :: Frame -> [Axiom]
 getAxioms (Frame e fbl) = map (PlainAxiom e) fbl
 
