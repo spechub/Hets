@@ -12,16 +12,10 @@ Adds the "implied" annotation - for specifying theorems
 
 module OWL2.Theorem where
 
-import qualified Common.AS_Annotation as Anno
-import Common.Doc
-import Common.DocUtils
-
 import OWL2.AS
 import OWL2.MS
-import OWL2.ManchesterPrint ()
 
 import Data.List
-import Data.Function
 
 implied :: Annotation
 implied = Annotation [] (mkQName "Implied")
@@ -123,18 +117,3 @@ prove :: Axiom -> Bool
 prove (PlainAxiom eith fb) = case eith of
       Misc ans -> any prove1 ans || proveFB fb
       _ -> proveFB fb
-
-printOneNamed :: Anno.Named Axiom -> Doc
-printOneNamed ns = pretty
-  $ (if Anno.isAxiom ns then rmImplied else addImplied) $ Anno.sentence ns
-
-printNamed :: [Anno.Named Axiom] -> Doc
-printNamed l = let
-  (axs, ths) = partition Anno.isAxiom l
-  pr f = map (pretty . f) . groupAxioms . map Anno.sentence
- in vsep $ pr rmImpliedFrame axs ++ pr addImpliedFrame ths
-
-groupAxioms :: [Axiom] -> [Frame]
-groupAxioms =
-  map (\ l@(PlainAxiom e _ : _) -> Frame e $ map axiomBit l)
-  . groupBy (on (==) axiomTopic) . sortBy (on compare axiomTopic)

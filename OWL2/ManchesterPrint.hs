@@ -14,23 +14,52 @@ module OWL2.ManchesterPrint where
 
 import Common.Doc
 import Common.DocUtils
-import Common.AS_Annotation
+import Common.AS_Annotation as Anno
+import Common.Lib.State
 
 import OWL2.AS
 import OWL2.MS
 import OWL2.Sign
+import OWL2.Theorem
 import OWL2.Print
 import OWL2.Keywords
 import OWL2.ColonKeywords
+import OWL2.StaticAnalysis
+
+import Data.Function
+import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 -- | OWL2 signature printing
 
+printOneNamed :: Anno.Named Axiom -> Doc
+printOneNamed ns = pretty
+  $ (if Anno.isAxiom ns then rmImplied else addImplied) $ Anno.sentence ns
+
+delTopic :: Extended -> Sign -> Sign
+delTopic e s = case e of
+  ClassEntity (Expression c) -> s { concepts = Set.delete c $ concepts s }
+  ObjectEntity (ObjectProp o) -> s
+    { objectProperties = Set.delete o $ objectProperties s }
+  SimpleEntity et -> execState (modEntity Set.delete et) s
+  _ -> s
+
+groupAxioms :: [Axiom] -> [Frame]
+groupAxioms =
+  map (\ l@(PlainAxiom e _ : _) -> Frame e $ map axiomBit l)
+  . groupBy (on (==) axiomTopic) . sortBy (on compare axiomTopic)
+
 printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
-printOWLBasicTheory (s, l) =
-    printSign s { prefixMap = Map.union (prefixMap s) predefPrefixes }
-    $++$ vsep (map (pretty . sentence) l)
+printOWLBasicTheory (s, l) = printBasicTheory
+  (s { prefixMap = Map.union (prefixMap s) predefPrefixes }, l)
+
+printBasicTheory :: (Sign, [Named Axiom]) -> Doc
+printBasicTheory (sig, l) = let
+  (axs, ths) = partition Anno.isAxiom l
+  pr f = map (pretty . f) . groupAxioms . map Anno.sentence
+  s = foldr (delTopic . axiomTopic . sentence) sig l
+  in printSign s $++$ vsep (pr rmImpliedFrame axs ++ pr addImpliedFrame ths)
 
 instance Pretty Sign where
     pretty = printSign
