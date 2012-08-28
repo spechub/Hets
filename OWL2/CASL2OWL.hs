@@ -246,7 +246,7 @@ mapSign csig = let
      case keepMaxs $ concatMap predArgs $ Set.toList s of
        [r] -> do
          l <- ml
-         return $ makeNamed ("plain predicate " ++ show i) (toSC r [i]) : l
+         return $ makeNamed ("plain predicate " ++ show i) (toSC i [r]) : l
        ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
   s5 <- Map.foldWithKey (\ i s ml -> do
