@@ -26,8 +26,8 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 mkOverloadedId :: Int -> Id -> Id
-mkOverloadedId n i = if n <= 1 then i else
-  Id [genToken "Over"] (i : map (stringToId . (: [])) (show n)) $ posOfId i
+mkOverloadedId n i@(Id ts cs rs) = if n <= 1 then i else
+  Id (ts ++ [mkSimpleId $ '_' : shows n "o"]) cs rs
 
 disambigSig :: Sign f e -> Morphism f e ()
 disambigSig = disambigSigExt (\ _ _ _ _ -> extendedInfo) ()
