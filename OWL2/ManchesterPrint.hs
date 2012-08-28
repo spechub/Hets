@@ -63,7 +63,7 @@ convertBasicTheory (sig, l) = let
   (axs, ths) = partition Anno.isAxiom l
   cnvrt f = map f . groupAxioms . map Anno.sentence
   s = foldr (delTopic . axiomTopic . sentence) sig l
-  in OntologyDocument Map.empty $ emptyOntology
+  in OntologyDocument (prefixMap s) $ emptyOntology
   $ toDecl s ++ cnvrt rmImpliedFrame axs ++ cnvrt addImpliedFrame ths
 
 instance Pretty Sign where
