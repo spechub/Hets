@@ -61,8 +61,9 @@ printTh :: GlobalAnnos -> IRI -> G_theory -> Doc
 printTh oga sn g =
     let ga = removeProblematicListAnnos oga in
     useGlobalAnnos ga $ pretty ga $+$ prettyGTheorySL g $+$
-    sep [if null (iriToStringUnsecure sn) then Doc.empty else
-             keyword specS <+> pretty sn <+> equals, prettyGTheory Nothing g]
+    sep [ if null (iriToStringUnsecure sn) then Doc.empty else
+             keyword specS <+> pretty sn <+> equals
+        , prettyGTheory (gTheorySyntax g) g]
 
 removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
 removeProblematicListAnnos ga = let
