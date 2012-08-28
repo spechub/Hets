@@ -80,7 +80,7 @@ printSPEC lg spec = case spec of
         case lookupCurrentSyntax "" lg of
       Just (Logic lid2, sm) -> if language_name lid2 /= language_name lid
           then error "printSPEC: logic mismatch"
-          else case fmap snd $ lookupDefault sm $ parsersAndPrinters lid of
+          else case basicSpecPrinter sm lid of
         Just p -> p basic_spec
         _ -> error $ "printSPEC: no basic spec printer for "
              ++ showSyntax lid sm

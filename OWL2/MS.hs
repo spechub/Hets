@@ -105,11 +105,11 @@ data OntologyDocument = OntologyDocument
 
 instance GetRange OntologyDocument
 
-emptyOntology :: Ontology
-emptyOntology = Ontology nullQName [] [] []
+emptyOntology :: [Frame] -> Ontology
+emptyOntology = Ontology nullQName [] []
 
 emptyOntologyDoc :: OntologyDocument
-emptyOntologyDoc = OntologyDocument Map.empty emptyOntology
+emptyOntologyDoc = OntologyDocument Map.empty $ emptyOntology []
 
 isEmptyOntology :: Ontology -> Bool
 isEmptyOntology (Ontology oiri annoList impList fs) = isNullQName oiri

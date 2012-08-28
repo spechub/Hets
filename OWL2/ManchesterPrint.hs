@@ -18,6 +18,7 @@ import Common.AS_Annotation as Anno
 import Common.Lib.State
 
 import OWL2.AS
+import OWL2.Extract
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Theorem
@@ -55,11 +56,15 @@ printOWLBasicTheory (s, l) = printBasicTheory
   (s { prefixMap = Map.union (prefixMap s) predefPrefixes }, l)
 
 printBasicTheory :: (Sign, [Named Axiom]) -> Doc
-printBasicTheory (sig, l) = let
+printBasicTheory = pretty . convertBasicTheory
+
+convertBasicTheory :: (Sign, [Named Axiom]) -> OntologyDocument
+convertBasicTheory (sig, l) = let
   (axs, ths) = partition Anno.isAxiom l
-  pr f = map (pretty . f) . groupAxioms . map Anno.sentence
+  cnvrt f = map f . groupAxioms . map Anno.sentence
   s = foldr (delTopic . axiomTopic . sentence) sig l
-  in printSign s $++$ vsep (pr rmImpliedFrame axs ++ pr addImpliedFrame ths)
+  in OntologyDocument Map.empty $ emptyOntology
+  $ toDecl s ++ cnvrt rmImpliedFrame axs ++ cnvrt addImpliedFrame ths
 
 instance Pretty Sign where
     pretty = printSign

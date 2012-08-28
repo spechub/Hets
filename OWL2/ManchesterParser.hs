@@ -259,11 +259,9 @@ basicSpec = do
     ie <- many importEntry
     ans <- many annotations
     as <- frames
-    return emptyOntologyDoc
-        { ontology = emptyOntology
-            { ontFrames = as
-            , imports = ie
+    return $ OntologyDocument
+        (Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss)
+        (emptyOntology as)
+            { imports = ie
             , ann = ans
             , name = ou }
-            , prefixDeclaration =
-                    Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss }

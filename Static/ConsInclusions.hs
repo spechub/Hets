@@ -62,10 +62,10 @@ dumpConsIncl opts dg (s, t, l) = do
            writeVerbFile opts file
              $ show $ useGlobalAnnos ga $ vcat
              [ text $ "spec source_" ++ nm ++ " ="
-             , prettyGTheory g1
+             , prettyGTheory Nothing g1
              , text "end"
              , text $ "spec target_" ++ nm ++ " = source_" ++ nm
              , text "then %cons"
-             , prettyGTheory
+             , prettyGTheory Nothing
                $ G_theory lid2 (mkExtSign diffSig) startSigId sens startThId
              ]

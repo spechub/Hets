@@ -504,11 +504,5 @@ xmlOntologyDoc s od =
             ++ signToDec s
 
 mkODoc :: Sign -> [Named Axiom] -> String
-mkODoc s na = ppTopElement $ xmlOntologyDoc s $ emptyOntologyDoc
-    {
-      ontology = emptyOntology
-        {
-        ontFrames = map (axToFrame . sentence) na
-        },
-      prefixDeclaration = prefixMap s
-    }
+mkODoc s = ppTopElement . xmlOntologyDoc s . OntologyDocument (prefixMap s)
+  . emptyOntology . map (axToFrame . sentence)

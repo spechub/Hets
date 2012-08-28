@@ -31,6 +31,7 @@ import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
+import Common.IRI
 import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
@@ -86,16 +87,16 @@ instance Show G_theory where
      shows sign $ '\n' : show sens
 
 instance Pretty G_theory where
-  pretty g = prettyGTheorySL g $++$ prettyGTheory g
+  pretty g = prettyGTheorySL g $++$ prettyGTheory Nothing g
 
 prettyGTheorySL :: G_theory -> Doc
 prettyGTheorySL g = keyword logicS <+> structId (show $ sublogicOfTh g)
 
-prettyGTheory :: G_theory -> Doc
-prettyGTheory g = case simplifyTh g of
+prettyGTheory :: Maybe IRI -> G_theory -> Doc
+prettyGTheory sm g = case simplifyTh g of
      G_theory lid sign@(ExtSign s _) _ sens _ -> let l = toNamedList sens in
          if null l && ext_is_subsig lid sign (ext_empty_signature lid) then
-             specBraces Common.Doc.empty else printTheory lid (s, l)
+             specBraces Common.Doc.empty else printTheory sm lid (s, l)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics

@@ -323,9 +323,7 @@ callParser p name itemType =
 basicSpec :: (AnyLogic, Maybe IRI) -> AParser st SPEC
 basicSpec (Logic lid, sm) = do
     p <- getPos
-    bspec <- callParser
-      (fmap fst $ lookupDefault sm $ parsersAndPrinters lid)
-      (showSyntax lid sm)
+    bspec <- callParser (basicSpecParser sm lid) (showSyntax lid sm)
       "basic specification"
     q <- getPos
     return $ Basic_spec (G_basic_spec lid bspec) $ Range [p, q]

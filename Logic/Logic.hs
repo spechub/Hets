@@ -260,8 +260,16 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
 basicSpecParser :: Syntax lid basic_spec symb_items symb_map_items
-  => lid -> Maybe (AParser st basic_spec)
-basicSpecParser = fmap fst . lookupDefault Nothing . parsersAndPrinters
+  => Maybe IRI -> lid -> Maybe (AParser st basic_spec)
+basicSpecParser sm = fmap fst . parserAndPrinter sm
+
+basicSpecPrinter :: Syntax lid basic_spec symb_items symb_map_items
+  => Maybe IRI -> lid -> Maybe (basic_spec -> Doc)
+basicSpecPrinter sm = fmap snd . parserAndPrinter sm
+
+parserAndPrinter :: Syntax lid basic_spec symb_items symb_map_items
+  => Maybe IRI -> lid -> Maybe (AParser st basic_spec, basic_spec -> Doc)
+parserAndPrinter sm = lookupDefault sm . parsersAndPrinters
 
 -- | function to lookup parser or printer
 lookupDefault :: Maybe IRI -> Map.Map IRI b -> Maybe b
@@ -312,10 +320,6 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | print a sentence with comments
       print_named :: lid -> Named sentence -> Doc
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
-
-      printTheory :: lid -> (sign, [Named sentence]) -> Doc
-      printTheory lid (s, l) = print_sign lid s
-         $++$ vsep (map (print_named lid) l)
 
       -- --------------------- symbols ---------------------------
 
@@ -425,6 +429,10 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | static analysis of symbol lists, see CASL RefMan p. 221f.
          stat_symb_items :: lid -> sign -> [symb_items] -> Result [raw_symbol]
          stat_symb_items l _ _ = statFail l "stat_symb_items"
+
+         -- | convert a theory to basic specs for different serializations
+         convertTheory :: lid -> Maybe ((sign, [Named sentence]) -> basic_spec)
+         convertTheory _ = Nothing
 
          {- ----------------------- amalgamation ---------------------------
             Computation of colimits of signature diagram.
@@ -548,6 +556,15 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                             -> sign -> [Named sentence]
                             -> Result MMiSSOntology
          theory_to_taxonomy l _ _ _ _ = statFail l "theory_to_taxonomy"
+
+-- | print a whole theory
+printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
+               sign morphism symbol raw_symbol
+  => Maybe IRI -> lid -> (sign, [Named sentence]) -> Doc
+printTheory sm lid th@(s, l) = case
+           (convertTheory lid, basicSpecPrinter sm lid) of
+             (Just c, Just p) -> p (c th)
+             _ -> print_sign lid s $++$ vsep (map (print_named lid) l)
 
 -- | guarded inclusion
 inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items

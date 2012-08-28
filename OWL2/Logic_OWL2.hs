@@ -75,7 +75,6 @@ instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
 instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     map_sen OWL2 = mapSen
     print_named OWL2 = printOneNamed
-    printTheory OWL2 = printBasicTheory
     sym_of OWL2 = singletonList . symOf
     symmap_of OWL2 = symMapOf
     sym_name OWL2 = entityToId
@@ -90,6 +89,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       basic_analysis OWL2 = Just basicOWL2Analysis
       stat_symb_items OWL2 _ = return . statSymbItems
       stat_symb_map_items OWL2 _ _ = statSymbMapItems
+      convertTheory OWL2 = Just convertBasicTheory
       empty_signature OWL2 = emptySign
       signature_union OWL2 = uniteSign
       signatureDiff OWL2 s = return . diffSig s

@@ -37,7 +37,7 @@ extendByBasicSpec :: GlobalAnnos -> String -> G_theory
 extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
   let tstr = trimLeft str in
   if null tstr then (Success gt 0 Set.empty True, "") else
-  case basicSpecParser lid of
+  case basicSpecParser Nothing lid of
     Nothing -> (Failure True, "missing basic spec parser")
     Just p -> case basic_analysis lid of
       Nothing -> (Failure True, "missing basic analysis")
