@@ -158,7 +158,7 @@ hetsServer opts1 = do
       parseRESTfull opts sessRef pathBits query splitQuery re
     -- only ohterwise stick to the old response methods
     else case B8.unpack (requestMethod re) of
-      "GET" -> liftRun $ do
+      "GET" -> liftRun $ if isInfixOf "menus" query then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs
            then getHetsResponse opts [] sessRef pathBits splitQuery
