@@ -284,13 +284,15 @@ mapTheory (sig, sens) = do
 
 mapSortGenAx :: [Constraint] -> Bool -> [Named Axiom]
 mapSortGenAx cs b = map (\ (s, as) ->
-  let is = map (\ (Qual_op_name n ty _) ->
-                if null $ args_OP_TYPE ty then ObjectOneOf [idToIRI n]
-                else toC n) as
+  let is = map (\ (Qual_op_name n ty _) -> case args_OP_TYPE ty of
+                [] -> ObjectOneOf [idToIRI n]
+                [_] -> ObjectValuesFrom SomeValuesFrom (toO n (-1)) $ toC s
+                _ -> toC n) as
   in makeNamed ("generated " ++ show s)
          $ PlainAxiom (ClassEntity $ toC s)
          $ if b && not (isSingle is) then AnnFrameBit [] $ ClassDisjointUnion is
            else ListFrameBit (Just $ EDRelation Equivalent)
-             $ ExpressionBit [([], if isSingle is then head is else
-                                       ObjectJunction UnionOf is)])
+             $ ExpressionBit [([], case is of
+                 [i] -> i
+                 _ -> ObjectJunction UnionOf is)])
   $ recoverSortGen cs
