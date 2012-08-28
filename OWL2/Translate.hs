@@ -38,12 +38,12 @@ transString :: String -> String
 transString str = let
     x = 'X'
     replaceChar1 d | d == x = [x, x]  -- code out existing x!
-                   | isAlphaNum d = [d]
+                   | isAlphaNum d || d == '_' = [d]
                    | otherwise = x : replaceChar d
     in case str of
     "" -> [x]
     c : s -> let l = replaceChar1 c in
-             (if isDigit c then [x, c]
+             (if isDigit c || c == '_' then [x, c]
              else l) ++ concatMap replaceChar1 s
 
 -- | injective replacement of special characters
