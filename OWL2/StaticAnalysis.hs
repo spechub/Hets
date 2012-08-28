@@ -308,9 +308,10 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
                 SimpleEntity (Entity _ iri) -> checkAssertion s iri ans
                 ClassEntity (Expression iri) -> checkAssertion s iri ans
                 ObjectEntity (ObjectProp iri) -> checkAssertion s iri ans
-                _ -> do next <- checkExtended s ext
-                        -- could rarely happen, and only in our extended syntax
-                        return [PlainAxiom next ab]
+                _ -> do
+                  next <- checkExtended s ext
+                  -- could rarely happen, and only in our extended syntax
+                  return [PlainAxiom next ab]
             Declaration -> return [ax]
         _ -> do
             next <- checkExtended s ext
