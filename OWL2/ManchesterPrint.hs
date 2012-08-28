@@ -52,7 +52,10 @@ groupAxioms =
   . groupBy (on (==) axiomTopic) . sortBy (on compare axiomTopic)
 
 printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
-printOWLBasicTheory (s, l) = printBasicTheory
+printOWLBasicTheory = printBasicTheory . prepareBasicTheory
+
+prepareBasicTheory :: (Sign, [Named Axiom]) -> (Sign, [Named Axiom])
+prepareBasicTheory (s, l) =
   (s { prefixMap = Map.union (prefixMap s) predefPrefixes }, l)
 
 printBasicTheory :: (Sign, [Named Axiom]) -> Doc

@@ -147,10 +147,9 @@ import Common.Taxonomy
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.Maybe
 import Data.Ord
 import Data.Typeable
-import Control.Monad (unless)
+import Control.Monad (unless, mplus)
 
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
@@ -274,7 +273,10 @@ parserAndPrinter sm = lookupDefault sm . parsersAndPrinters
 -- | function to lookup parser or printer
 lookupDefault :: Maybe IRI -> Map.Map IRI b -> Maybe b
 lookupDefault sm m = if Map.size m == 1 then Just $ head $ Map.elems m else
-   Map.lookup (fromMaybe nullIRI sm) m
+   let mr = Map.lookup nullIRI m
+   in case sm of
+     Just s -> mplus (Map.lookup s m) mr
+     Nothing -> mr
 
 showSyntax :: Language lid => lid -> Maybe IRI -> String
 showSyntax lid = (("logic " ++ language_name lid) ++)

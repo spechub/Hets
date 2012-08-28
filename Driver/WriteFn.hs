@@ -66,7 +66,8 @@ import VSE.ToSExpr
 
 #ifndef NOOWLLOGIC
 import OWL2.CreateOWL
-import qualified OWL2.ManchesterPrint as OWL2 (printOWLBasicTheory)
+import OWL2.Logic_OWL2
+import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
 #endif
 
@@ -234,9 +235,14 @@ writeTheory ins nam opts filePrefix ga
       Result _ Nothing ->
         putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
       Result ds (Just th2) -> do
-            let owltext = shows (OWL2.printOWLBasicTheory th2) "\n"
+            let sy = defSyntax opts
+                ms = if null sy then Nothing
+                     else Just $ simpleIdToIRI $ mkSimpleId sy
+                owltext = shows
+                  (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
             showDiags opts ds
-            case parse (OWL2.basicSpec >> eof) f owltext of
+            when (null sy)
+                $ case parse (OWL2.basicSpec >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
