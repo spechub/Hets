@@ -121,9 +121,10 @@ getPropSens i args mres = let
   ncs = number args
   opOrPred = if isJust mres then "op " else "pred "
   in makeNamed (opOrPred ++ show i)
-         (toSubClass i $ maybeToList (fmap toC mres)
+         (toSubClass i $ [ObjectJunction IntersectionOf
+            $ maybeToList (fmap toC mres)
             ++ map (\ (a, n) -> ObjectValuesFrom SomeValuesFrom
-                 (toO i n) $ toC a) ncs)
+                 (toO i n) $ toC a) ncs])
   : concatMap (\ (a, n) -> let mki = mkObjEnt opOrPred i n in
       maybeToList (fmap (mki " domain" . mkDR ADomain) mres)
       ++ [mki " range" $ mkDR ARange a]) ncs
