@@ -432,8 +432,8 @@ getTempFifo f = do
  createNamedPipe tmpFile (unionFileModes ownerReadMode ownerWriteMode)
  return tmpFile
 #else
-getTempFifo :: String -> IO Filepath
-getTempFifo = return ""
+getTempFifo :: String -> IO FilePath
+getTempFifo _ = return ""
 #endif
 
 #ifdef UNIX
@@ -472,8 +472,8 @@ readFifo fp = do
  return (l,putMVar m ())
 #else
 openFifo :: FilePath -> IO Pipe
-openFifo = return ()
+openFifo _ = return ()
 
 readFifo :: FilePath -> IO ([String], IO ())
-readFifo = return ([],return ())
+readFifo _ = return ([],return ())
 #endif
