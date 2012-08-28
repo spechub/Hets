@@ -318,18 +318,14 @@ bracketsP :: CharParser st a -> CharParser st a
 bracketsP = between (skipChar '[') (skipChar ']')
 
 commaP :: CharParser st ()
-commaP = skipChar ',' >> return ()
+commaP = forget $ skipChar ','
 
 sepByComma :: CharParser st a -> CharParser st [a]
 sepByComma p = sepBy1 p commaP
 
--- | parse character case insensitive
-ichar :: Char -> CharParser st Char
-ichar c = char (toUpper c) <|> char (toLower c) <?> show [c]
-
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
-pkeyword s = keywordNotFollowedBy s (alphaNum <|> char '/') >> return ()
+pkeyword s = forget . keywordNotFollowedBy s $ alphaNum <|> char '/'
 
 keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
 keywordNotFollowedBy s c = skips $ try $ string s << notFollowedBy c

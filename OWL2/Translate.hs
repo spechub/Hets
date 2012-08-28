@@ -17,6 +17,7 @@ import Common.ProofUtils
 import Data.Char
 
 import OWL2.AS
+import OWL2.Parse
 
 idToIRI :: Id -> QName
 idToIRI = idToAnonIRI False
@@ -36,9 +37,9 @@ idToAnonNumberedIRI n b i = nullQName
 -- | translate to a valid OWL string
 transString :: String -> String
 transString str = let
-    x = 'X'
+    x = 'x'
     replaceChar1 d | d == x = [x, x]  -- code out existing x!
-                   | isAlphaNum d || d == '_' = [d]
+                   | iunreserved d = [d]
                    | otherwise = x : replaceChar d
     in case str of
     "" -> [x]
