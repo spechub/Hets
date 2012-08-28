@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  utility functions that can't be found in the libraries
@@ -71,11 +72,13 @@ import System.FilePath (joinPath, makeRelative, equalFilePath, takeDirectory)
 import System.IO
 import System.Process
 import System.Timeout
+#ifdef UNIX
 import System.Posix.Files (createNamedPipe, unionFileModes,
                            ownerReadMode, ownerWriteMode)
 import System.Posix.IO (OpenMode (ReadWrite), defaultFileFlags,
                         openFd, closeFd, fdRead)
 import System.Posix.Types (Fd)
+#endif
 
 import Control.Monad
 import Control.Concurrent (threadDelay, forkIO, killThread)
@@ -419,6 +422,7 @@ getTempFile str file = do
   tmpDir <- getTemporaryDirectory
   writeTempFile str tmpDir file
 
+#ifdef UNIX
 getTempFifo :: String -> IO FilePath
 getTempFifo f = do
  tmpDir <- getTemporaryDirectory
@@ -427,9 +431,18 @@ getTempFifo f = do
  removeFile tmpFile
  createNamedPipe tmpFile (unionFileModes ownerReadMode ownerWriteMode)
  return tmpFile
+#else
+getTempFifo :: String -> IO Filepath
+getTempFifo = return ""
+#endif
 
+#ifdef UNIX
 type Pipe = (IO (),MVar String,Fd)
+#else
+type Pipe = ()
+#endif
 
+#ifdef UNIX
 openFifo :: FilePath -> IO Pipe
 openFifo fp = do
   mvar <- newEmptyMVar
@@ -457,3 +470,10 @@ readFifo fp = do
  m <- newEmptyMVar
  forkIO $ (do takeMVar m; killThread tid; closeFd fd)
  return (l,putMVar m ())
+#else
+openFifo :: FilePath -> IO Pipe
+openFifo = return ()
+
+readFifo :: FilePath -> IO ([String], IO ())
+readFifo = return ([],return ())
+#endif

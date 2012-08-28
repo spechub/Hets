@@ -43,7 +43,7 @@ import Control.Concurrent (forkIO,killThread)
 import Common.Utils
 import System.Exit
 import System.Directory
-import System.FilePath.Posix
+import System.FilePath
 
 makeNamedSentence :: (String, Term) -> Named Sentence
 makeNamedSentence (n, t) = makeNamed n $ mkSen t

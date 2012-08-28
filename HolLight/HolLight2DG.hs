@@ -50,8 +50,8 @@ import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 
 import System.Exit
-import System.FilePath.Posix
 import System.Directory
+import System.FilePath
 
 readTuple :: (Show a, Show b) => MSaxState a -> MSaxState b -> MSaxState (a, b)
 readTuple f1 f2 = do
@@ -361,7 +361,7 @@ _insNodeDG :: Sign -> [Named Sentence] -> String
 _insNodeDG sig sens n (dg, m) =
  let gt = G_theory HolLight Nothing (makeExtSign HolLight sig) startSigId
            (toThSens sens) startThId
-     n' = snd (System.FilePath.Posix.splitFileName n)
+     n' = snd (System.FilePath.splitFileName n)
      labelK = newInfoNodeLab
       (makeName (simpleIdToIRI $ mkSimpleId n'))
       (newNodeInfo DGEmpty)
@@ -424,8 +424,8 @@ imported files not imported by the file imported last -}
          Nothing -> dg
        Nothing -> dg) dg' lnks'
      le = Map.insert (emptyLibName
-            (System.FilePath.Posix.takeBaseName path))
+            (System.FilePath.takeBaseName path))
            dg'' Map.empty
  return (Just (emptyLibName
-  (System.FilePath.Posix.takeBaseName path),
+  (System.FilePath.takeBaseName path),
   computeLibEnvTheories le))
