@@ -58,6 +58,7 @@ data G_theory = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree => G_theory
     { gTheoryLogic :: lid
+    , gTheorySyntax :: Maybe IRI
     , gTheorySign :: ExtSign sign symbol
     , gTheorySignIdx :: SigId -- ^ index to lookup 'G_sign' (using 'signOf')
     , gTheorySens :: ThSens sentence (AnyComorphism, BasicProof)
@@ -65,7 +66,8 @@ data G_theory = forall lid sublogics
     } deriving Typeable
 
 createGThWith :: G_theory -> SigId -> ThId -> G_theory
-createGThWith (G_theory gtl gts _ _ _) si = G_theory gtl gts si noSens
+createGThWith (G_theory gtl gsub gts _ _ _) si =
+  G_theory gtl gsub gts si noSens
 
 coerceThSens ::
    ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -77,30 +79,34 @@ coerceThSens ::
 coerceThSens = primCoerce
 
 instance Eq G_theory where
-  G_theory l1 sig1 ind1 sens1 ind1' == G_theory l2 sig2 ind2 sens2 ind2' =
-     G_sign l1 sig1 ind1 == G_sign l2 sig2 ind2
+  G_theory l1 ser1 sig1 ind1 sens1 ind1'
+    == G_theory l2 ser2 sig2 ind2 sens2 ind2' = ser1 == ser2
+     && G_sign l1 sig1 ind1 == G_sign l2 sig2 ind2
      && (ind1' > startThId && ind2' > startThId && ind1' == ind2'
          || coerceThSens l1 l2 "" sens1 == Just sens2)
 
 instance Show G_theory where
-  show (G_theory _ sign _ sens _) =
+  show (G_theory _ _ sign _ sens _) =
      shows sign $ '\n' : show sens
 
 instance Pretty G_theory where
-  pretty g = prettyGTheorySL g $++$ prettyGTheory Nothing g
+  pretty g = prettyFullGTheory (gTheorySyntax g) g
+
+prettyFullGTheory :: Maybe IRI -> G_theory -> Doc
+prettyFullGTheory sm g = prettyGTheorySL g $++$ prettyGTheory sm g
 
 prettyGTheorySL :: G_theory -> Doc
 prettyGTheorySL g = keyword logicS <+> structId (show $ sublogicOfTh g)
 
 prettyGTheory :: Maybe IRI -> G_theory -> Doc
 prettyGTheory sm g = case simplifyTh g of
-     G_theory lid sign@(ExtSign s _) _ sens _ -> let l = toNamedList sens in
+     G_theory lid _ sign@(ExtSign s _) _ sens _ -> let l = toNamedList sens in
          if null l && ext_is_subsig lid sign (ext_empty_signature lid) then
              specBraces Common.Doc.empty else printTheory sm lid (s, l)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
-sublogicOfTh (G_theory lid (ExtSign sigma _) _ sens _) =
+sublogicOfTh (G_theory lid _ (ExtSign sigma _) _ sens _) =
   let sub = foldl join
                   (minSublogic sigma)
                   (map snd $ OMap.toList $
@@ -110,55 +116,55 @@ sublogicOfTh (G_theory lid (ExtSign sigma _) _ sens _) =
 
 -- | get theorem names with their best proof results
 getThGoals :: G_theory -> [(String, Maybe BasicProof)]
-getThGoals (G_theory _ _ _ sens _) = map toGoal . OMap.toList
+getThGoals (G_theory _ _ _ _ sens _) = map toGoal . OMap.toList
     $ OMap.filter (not . isAxiom) sens
   where toGoal (n, st) = let ts = thmStatus st in
                (n, if null ts then Nothing else Just $ maximum $ map snd ts)
 
 -- | get axiom names plus True for former theorem
 getThAxioms :: G_theory -> [(String, Bool)]
-getThAxioms (G_theory _ _ _ sens _) = map
+getThAxioms (G_theory _ _ _ _ sens _) = map
     (\ (k, s) -> (k, wasTheorem s))
     $ OMap.toList $ OMap.filter isAxiom sens
 
 
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory
-simplifyTh (G_theory lid sigma@(ExtSign s _) ind1 sens ind2) =
-    G_theory lid sigma ind1
+simplifyTh (G_theory lid gsyn sigma@(ExtSign s _) ind1 sens ind2) =
+    G_theory lid gsyn sigma ind1
       (OMap.map (mapValue $ simplify_sen lid s) sens) ind2
 
 -- | apply a comorphism to a theory
 mapG_theory :: AnyComorphism -> G_theory -> Result G_theory
-mapG_theory (Comorphism cid) (G_theory lid (ExtSign sign _) ind1 sens ind2) =
+mapG_theory (Comorphism cid) (G_theory lid _ (ExtSign sign _) ind1 sens ind2) =
   do
   bTh <- coerceBasicTheory lid (sourceLogic cid)
     ("unapplicable comorphism '" ++ language_name cid ++ "'\n")
     (sign, toNamedList sens)
   (sign', sens') <- wrapMapTheory cid bTh
-  return $ G_theory (targetLogic cid) (mkExtSign sign')
+  return $ G_theory (targetLogic cid) Nothing (mkExtSign sign')
          ind1 (toThSens sens') ind2
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
 translateG_theory (GMorphism cid _ _ morphism2 _)
-                      (G_theory lid (ExtSign sign _) _ sens _) = do
+                      (G_theory lid _ (ExtSign sign _) _ sens _) = do
   let tlid = targetLogic cid
   bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "translateG_theory" (sign, toNamedList sens)
   (_, sens'') <- wrapMapTheory cid bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
-  return $ G_theory tlid (mkExtSign $ cod morphism2)
+  return $ G_theory tlid Nothing (mkExtSign $ cod morphism2)
              startSigId (toThSens sens''') startThId
 
 -- | Join the sentences of two G_theories
 joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
-joinG_sentences (G_theory lid1 sig1 ind sens1 _)
-                    (G_theory lid2 sig2 _ sens2 _) = do
+joinG_sentences (G_theory lid1 syn sig1 ind sens1 _)
+                    (G_theory lid2 _ sig2 _ sens2 _) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
   sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
   return $ assert (plainSign sig1 == plainSign sig2')
-             $ G_theory lid1 sig1 ind (joinSens sens1 sens2') startThId
+             $ G_theory lid1 syn sig1 ind (joinSens sens1 sens2') startThId
 
 -- | flattening the sentences form a list of G_theories
 flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
@@ -166,13 +172,13 @@ flatG_sentences = foldM joinG_sentences
 
 -- | Get signature of a theory
 signOf :: G_theory -> G_sign
-signOf (G_theory lid sign ind _ _) = G_sign lid sign ind
+signOf (G_theory lid _ sign ind _ _) = G_sign lid sign ind
 
 -- | create theory without sentences
 noSensGTheory :: Logic lid sublogics basic_spec sentence symb_items
     symb_map_items sign morphism symbol raw_symbol proof_tree
     => lid -> ExtSign sign symbol -> SigId -> G_theory
-noSensGTheory lid sig si = G_theory lid sig si noSens startThId
+noSensGTheory lid sig si = G_theory lid Nothing sig si noSens startThId
 
 data BasicProof =
   forall lid sublogics
@@ -234,8 +240,8 @@ getValidAxioms
   -> G_theory -- ^ new global theory
   -> [String] -- ^ unchanged axioms
 getValidAxioms
-  (G_theory lid1 _ _ sens1 _)
-  (G_theory lid2 _ _ sens2 _) =
+  (G_theory lid1 _ _ _ sens1 _)
+  (G_theory lid2 _ _ _ sens2 _) =
   case coerceThSens lid1 lid2 "" sens1 of
     Nothing -> []
     Just sens -> OMap.keys $ OMap.filterWithKey (\ k s ->
@@ -248,7 +254,7 @@ invalidateProofs
   -> G_theory -- ^ new global theory
   -> G_theory -- ^ local theory with proven goals
   -> G_theory -- ^ new local theory with deleted proofs
-invalidateProofs oTh nTh (G_theory lid sig si sens _) =
+invalidateProofs oTh nTh (G_theory lid syn sig si sens _) =
   let vAxs = getValidAxioms oTh nTh
       validProofs (_, bp) = case bp of
         BasicProof _ pst -> all (`elem` vAxs) $ usedAxioms pst
@@ -257,7 +263,7 @@ invalidateProofs oTh nTh (G_theory lid sig si sens _) =
         (\ s -> if isAxiom s then s else
              s { senAttr = ThmStatus $ filter validProofs
                    $ thmStatus s }) sens
-  in G_theory lid sig si newSens startThId
+  in G_theory lid syn sig si newSens startThId
 
 {- | mark sentences as proven if an identical axiom or other proven sentence
      is part of the same theory. -}
@@ -270,9 +276,10 @@ proveSens lid sens = let
   in Map.union axs $ proveSensAux lid axs ths
 
 proveLocalSens :: G_theory -> G_theory -> G_theory
-proveLocalSens (G_theory glid _ _ gsens _) lth@(G_theory lid sig ind sens _) =
+proveLocalSens (G_theory glid _ _ _ gsens _)
+  lth@(G_theory lid syn sig ind sens _) =
   case coerceThSens glid lid "proveLocalSens" gsens of
-    Just lsens -> G_theory lid sig ind
+    Just lsens -> G_theory lid syn sig ind
       (proveSensAux lid (OMap.filter (\ s -> isAxiom s || isProvenSenStatus s)
        lsens) sens) startThId
     Nothing -> lth
@@ -302,12 +309,12 @@ over a global theory (with the same signature) as proven.  Also mark
 duplicates of proven sentences as proven.  Assume that the sentence names of
 the local theory are identical to the global theory. -}
 propagateProofs :: G_theory -> G_theory -> G_theory
-propagateProofs locTh@(G_theory lid1 sig ind lsens _)
-  (G_theory lid2 _ _ gsens _) =
+propagateProofs locTh@(G_theory lid1 syn sig ind lsens _)
+  (G_theory lid2 _ _ _ gsens _) =
   case coerceThSens lid2 lid1 "" gsens of
     Just ps ->
       if Map.null ps then locTh else
-          G_theory lid1 sig ind
+          G_theory lid1 syn sig ind
             (proveSens lid1 $ Map.union (Map.intersection ps lsens) lsens)
             startThId
     Nothing -> error "propagateProofs"
@@ -395,7 +402,7 @@ gEnsuresAmalgamability :: [CASLAmalgOpt] -- the options
 gEnsuresAmalgamability options gd sink =
   if isHomogeneousGDiagram gd && all (isHomogeneous . snd) sink then
       case labNodes gd of
-       (_, G_theory lid _ _ _ _) : _ -> do
+       (_, G_theory lid _ _ _ _ _) : _ -> do
           diag <- homogeniseGDiagram lid gd
           sink' <- homogeniseSink lid sink
           ensures_amalgamability lid (options, diag, sink', Graph.empty)

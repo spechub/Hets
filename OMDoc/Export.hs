@@ -195,7 +195,7 @@ exportNodeLab le ln dg s (n, lb) =
   if isDGRef lb then return (s, Nothing) else
       let (lb', ln') = getNodeData le ln lb in
       case dgn_theory lb' of
-        G_theory lid (ExtSign sig _) _ sens _ ->
+        G_theory lid _ (ExtSign sig _) _ sens _ ->
             do
               let sn = getDGNodeName lb'
                   nsens = toNamedList sens
@@ -292,7 +292,7 @@ makeImportMapping le ln dg toInfo s (from, _, lbl)
                       else edgName
         in
          case dgn_theory lb' of
-          G_theory lid (ExtSign sig _) _ sens _ ->
+          G_theory lid _ (ExtSign sig _) _ sens _ ->
               do
                 let sn = getDGNodeName lb'
                     nsens = toNamedList sens
@@ -327,8 +327,8 @@ exportLinkLab le ln dg s (from, to, lbl) =
          (_, _, True) -> withWarning "Hiding"
          _ ->
              case (dgn_theory lb1, dgn_theory lb2) of
-               { ((G_theory lid1 (ExtSign sig1 _) _ sens1 _) ,
-                  (G_theory lid2 (ExtSign sig2 _) _ sens2 _ )) ->
+               { ((G_theory lid1 _ (ExtSign sig1 _) _ sens1 _) ,
+                  (G_theory lid2 _ (ExtSign sig2 _) _ sens2 _ )) ->
                  do
                    let sn1 = getDGNodeName lb1
                        sn2 = getDGNodeName lb2

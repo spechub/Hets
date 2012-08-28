@@ -194,7 +194,7 @@ obtainNodeList lN allNodes = mapAndSplit
 nodeContainsGoals :: LNode DGNodeLab -> G_theory -> Bool
 nodeContainsGoals (_, l) th =
    (case th of
-       G_theory _ _ _ sens _ ->
+       G_theory _ _ _ _ sens _ ->
          not $ Map.null $ OMap.filter
            (\ s -> not (isAxiom s) && not (isProvenSenStatus s)) sens) ||
            hasOpenNodeConsStatus False l

@@ -163,7 +163,7 @@ data ProofState =
 
 resetSelection :: ProofState -> ProofState
 resetSelection s = case currentTheory s of
-  G_theory _ _ _ sens _ ->
+  G_theory _ _ _ _ sens _ ->
     let (aMap, gMap) = OMap.partition isAxiom sens
         gs = Map.keys gMap
     in s
@@ -212,7 +212,7 @@ initialState thN th pm = resetSelection
 
 logicId :: ProofState -> String
 logicId s = case currentTheory s of
-  G_theory lid _ _ _ _ -> language_name lid
+  G_theory lid _ _ _ _ _ -> language_name lid
 
 sublogicOfTheory :: ProofState -> G_sublogics
 sublogicOfTheory = sublogicOfTh . selectedTheory
@@ -241,7 +241,7 @@ prepareForConsChecking :: ProofState
     -> Result G_theory_with_cons_checker
 prepareForConsChecking st (G_cons_checker lid4 p, Comorphism cid) =
     case selectedTheory st of
-     G_theory lid (ExtSign sign _) _ sens _ ->
+     G_theory lid _ (ExtSign sign _) _ sens _ ->
        do
         let lidT = targetLogic cid
         bTh' <- coerceBasicTheory lid (sourceLogic cid)
@@ -271,7 +271,7 @@ prepareForProving :: ProofState
     -> Result G_theory_with_prover
 prepareForProving st (G_prover lid4 p, Comorphism cid) =
     case selectedTheory st of
-    G_theory lid (ExtSign sign _) _ sens _ ->
+    G_theory lid _ (ExtSign sign _) _ sens _ ->
       do
         let lidT = targetLogic cid
         bTh' <- coerceBasicTheory lid (sourceLogic cid)
@@ -285,11 +285,11 @@ prepareForProving st (G_prover lid4 p, Comorphism cid) =
 -- | creates the currently selected theory
 makeSelectedTheory :: ProofState -> G_theory
 makeSelectedTheory s = case currentTheory s of
-  G_theory lid sig si sens _ ->
+  G_theory lid syn sig si sens _ ->
     let (aMap, gMap) = OMap.partition isAxiom sens
         pMap = OMap.filter isProvenSenStatus gMap
     in
-    G_theory lid sig si
+    G_theory lid syn sig si
       (Map.unions
         [ filterMapWithList (selectedGoals s) gMap
         , filterMapWithList (includedAxioms s) aMap
@@ -391,11 +391,11 @@ markProvedGoalMap ::
     => AnyComorphism -> lid -> [ProofStatus proof_tree]
     -> G_theory -> G_theory
 markProvedGoalMap c lid status th = case th of
-  G_theory lid1 sig si thSens _ ->
+  G_theory lid1 syn sig si thSens _ ->
       let updStat ps s = Just $
                 s { senAttr = ThmStatus $ (c, BasicProof lid ps) : thmStatus s }
           upd pStat = OMap.update (updStat pStat) (goalName pStat)
-      in G_theory lid1 sig si (foldl (flip upd) thSens status)
+      in G_theory lid1 syn sig si (foldl (flip upd) thSens status)
         startThId
 
 autoProofAtNode :: -- use theorems is subsequent proofs

@@ -38,7 +38,7 @@ import Propositional.Logic_Propositional
 
 
 createOWLTheory :: G_theory -> Result (Sign, [Named Axiom])
-createOWLTheory (G_theory lid (ExtSign sign0 _) _ sens0 _) = do
+createOWLTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
     let th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th
         r1' = r1 >>= wrapMapTheory CASL2OWL

@@ -92,7 +92,7 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
       ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
       mTimeout = "No results within: " ++ show t'
   case do
-        (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
+        (G_theory lid1 _ (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
         let namedSens = toNamedList axs
             sens = if includeTheorems then
               map (\ s -> s { isAxiom = True }) namedSens
@@ -124,8 +124,8 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
               ("consistent, but could not reconstruct a model" : msgLines)
             Just (sig3, sens3) -> let
               thTxt = showDoc
-                (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
-                        startThId) ""
+                (G_theory lidS Nothing (mkExtSign sig3) startSigId
+                 (toThSens sens3) startThId) ""
               in ConsistencyStatus CSConsistent $
                  case filterDiags 2 ds of
                    [] -> thTxt

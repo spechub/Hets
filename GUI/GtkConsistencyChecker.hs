@@ -111,7 +111,7 @@ showConsistencyChecker mn gi@(GInfo { libName = ln }) le =
       dg = lookupDGraph ln le
       lbl = labDG dg n
       in if case globalTheory lbl of
-        Just (G_theory _ _ _ sens _) -> Map.null sens
+        Just (G_theory _ _ _ _ sens _) -> Map.null sens
         Nothing -> True
         then do
           infoDialogExt "No sentences" $ "Node " ++
@@ -180,7 +180,7 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
   let dg = lookupDGraph ln le
       nodes = labNodesDG dg
       selNodes = partition (\ (FNode { node = (_, l)}) -> case globalTheory l of
-        Just (G_theory _ _ _ sens _) -> Map.null sens
+        Just (G_theory _ _ _ _ sens _) -> Map.null sens
         Nothing -> True)
       sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
 

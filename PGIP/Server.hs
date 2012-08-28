@@ -654,7 +654,7 @@ resultStyles = unlines
 and select proving options -}
 showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> String
 showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
-  sGTh@(G_theory lid (ExtSign sig _) _ thsens _) -> let
+  sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> let
     ga = globalAnnos dg
     -- links to translations and provers xml view
     transBt = aRef ('/' : show sessId ++ "?translations=" ++ show i)

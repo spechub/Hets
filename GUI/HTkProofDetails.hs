@@ -226,7 +226,7 @@ doShowProofDetails prGUISt =
     pack ptBut [PadX 5, PadY 5]
     pack sBut  [PadX 5, PadY 5]
     pack qBut  [PadX 8, PadY 5]
-    G_theory _ _ _ sSens _ <- return $ selectedTheory prGUISt
+    G_theory _ _ _ _ sSens _ <- return $ selectedTheory prGUISt
     let sttDesc = "Tactic script"
         sptDesc = "Proof tree"
         sens = OMap.filter (not . isAxiom) sSens

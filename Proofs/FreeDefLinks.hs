@@ -68,13 +68,13 @@ getFreeDefMorphism libEnv ln dg path = case path of
   (s, t, l) : rp -> do
     gmor@(GMorphism cid _ _ fmor _) <- return $ dgl_morphism l
     let tlid = targetLogic cid
-    G_theory lidth (ExtSign _sign _) _ axs _ <-
+    G_theory lidth _ (ExtSign _sign _) _ axs _ <-
       computeTheory libEnv ln s
     if isHomogeneous gmor then do
         sens <- coerceSens lidth tlid "getFreeDefMorphism4" (toNamedList axs)
         case rp of
           [] -> do
-            G_theory lid2 (ExtSign sig _) _ _ _ <-
+            G_theory lid2 _ (ExtSign sig _) _ _ _ <-
                      return $ dgn_theory $ labDG dg t
             sig2 <- coercePlainSign lid2 tlid "getFreeDefMorphism2" sig
             return $ GFreeDefMorphism tlid $ mkFreeDefMor sens fmor $ ide sig2

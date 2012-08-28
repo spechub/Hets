@@ -89,7 +89,7 @@ gWeaklyAmalgamableCocone :: GDiagram
 gWeaklyAmalgamableCocone diag =
  if isHomogeneousGDiagram diag then do
   case head $ labNodes diag of
-   (_, G_theory lid _ _ _ _) -> do
+   (_, G_theory lid _ _ _ _ _) -> do
     graph <- homogeniseGDiagram lid diag
     (sig, mor) <- weakly_amalgamable_colimit lid graph
     let gth = noSensGTheory lid (mkExtSign sig) startSigId

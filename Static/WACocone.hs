@@ -248,9 +248,9 @@ addNodeToGraph :: GDiagram -> G_theory -> G_theory -> G_theory -> Int -> Int
                -> Map.Map Node [(Node, G_theory)] -> [(Int, G_theory)]
                -> Result (GDiagram, Map.Map Node [(Node, G_theory)])
 addNodeToGraph oldGraph
-               (G_theory lid extSign _ _ _)
-               gt1@(G_theory lid1 extSign1 idx1 _ _)
-               gt2@(G_theory lid2 extSign2 idx2 _ _)
+               (G_theory lid _ extSign _ _ _)
+               gt1@(G_theory lid1 _ extSign1 idx1 _ _)
+               gt2@(G_theory lid2 _ extSign2 idx2 _ _)
                n
                n1
                n2
@@ -297,7 +297,7 @@ computeCoeqs oldGraph funDesc (n1,_) (n2,_) (newN, newGt) gmor1 gmor2 [] = do
                 (nub $ (Map.!)funDesc n1 ++ (Map.!) funDesc n2 ) funDesc
  return $ (newGraph, descFun1)
 computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
-                    (newN, _newGt@(G_theory tlid tsign _ _ _))
+                    (newN, _newGt@(G_theory tlid _ tsign _ _ _))
                     _gmor1@(GMorphism cid1 sig1 idx1 mor1 _ )
                     _gmor2@(GMorphism cid2 sig2 idx2 mor2 _ ) ((n,gt):descs)= do
  _rho1@(GMorphism cid3 _ _ mor3 _)<- dijkstra graph n n1
@@ -305,7 +305,7 @@ computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
  com1 <- compComorphism (Comorphism cid1) (Comorphism cid3)
  com2 <- compComorphism (Comorphism cid1) (Comorphism cid3)
  if com1 /= com2 then  fail "Unable to compute coequalizer" else do
-   _gtM@(G_theory lidM signM _idxM _ _)<- mapG_theory com1 gt
+   _gtM@(G_theory lidM _ signM _idxM _ _)<- mapG_theory com1 gt
    s1 <- coerceSign lidM tlid "coequalizers" signM
    mor3' <- coerceMorphism (targetLogic cid3) (sourceLogic cid1) "coeqs" mor3
    mor4' <- coerceMorphism (targetLogic cid4) (sourceLogic cid2) "coeqs" mor4
@@ -393,15 +393,15 @@ buildSpan graph
           _d2@(Comorphism _cidD2)
           _m1@(Modification cidM1)
           _m2@(Modification cidM2)
-          gt@(G_theory lid sign _ _ _)
-          gt1@(G_theory lid1 sign1 _ _ _)
-          gt2@(G_theory lid2 sign2 _ _ _)
+          gt@(G_theory lid _ sign _ _ _)
+          gt1@(G_theory lid1 _ sign1 _ _ _)
+          gt2@(G_theory lid2 _ sign2 _ _ _)
           _phi1@(GMorphism cid1 _  _ mor1 _)
           _phi2@(GMorphism cid2 _  _ mor2 _)
           n n1 n2
           maxNodes
            =  do
- sig@(G_theory _lid0 _sign0 _ _ _)  <-  mapG_theory d gt -- phi^d(Sigma)
+ sig@(G_theory _lid0 _ _sign0 _ _ _)  <-  mapG_theory d gt -- phi^d(Sigma)
  sig1 <- mapG_theory e1 gt1 -- phi^e1(Sigma1)
  sig2 <- mapG_theory e2 gt2 -- phi^e2(Sigma2)
  mor1' <- coerceMorphism (targetLogic cid1) (sourceLogic cidE1) "buildSpan" mor1

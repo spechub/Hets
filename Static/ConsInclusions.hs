@@ -50,8 +50,8 @@ dumpConsIncl opts dg (s, t, l) = do
        g1 = globOrLocTh src
        g2 = globOrLocTh tar
    case g1 of
-     G_theory lid1 sig1 _ sens1 _ -> case g2 of
-       G_theory lid2 sig2 _ sens2 _ -> do
+     G_theory lid1 _ sig1 _ sens1 _ -> case g2 of
+       G_theory lid2 syn sig2 _ sens2 _ -> do
            insig <- coerceSign lid1 lid2 "dumpConsIncl1" sig1
            inSens <- coerceThSens lid1 lid2 "dumpConsIncl2" sens1
            let pSig2 = plainSign sig2
@@ -62,10 +62,10 @@ dumpConsIncl opts dg (s, t, l) = do
            writeVerbFile opts file
              $ show $ useGlobalAnnos ga $ vcat
              [ text $ "spec source_" ++ nm ++ " ="
-             , prettyGTheory Nothing g1
+             , pretty g1
              , text "end"
              , text $ "spec target_" ++ nm ++ " = source_" ++ nm
              , text "then %cons"
-             , prettyGTheory Nothing
-               $ G_theory lid2 (mkExtSign diffSig) startSigId sens startThId
+             , pretty
+               $ G_theory lid2 syn (mkExtSign diffSig) startSigId sens startThId
              ]

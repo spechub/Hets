@@ -26,6 +26,7 @@ import Static.AnalysisStructured
 import Logic.Logic
 import Logic.Prover
 import Logic.ExtSign
+import Logic.Comorphism
 import Logic.Grothendieck
 
 import Maude.Sign
@@ -46,6 +47,7 @@ import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
 import Common.Consistency
+import Common.ExtSign
 import Common.Id
 import Common.IRI (simpleIdToIRI)
 import Common.Result
@@ -122,6 +124,10 @@ insertSpecs (s : ss) pdg ptim tim vm ths dg =
   insertSpecs ss pdg ptim' tim' vm' ths' dg'
   where (ptim', tim', vm', ths', dg') = insertSpec s pdg ptim tim vm ths dg
 
+maudeTheory :: ExtSign Sign Symbol -> SigId
+  -> ThSens Sentence (AnyComorphism, BasicProof) -> ThId -> G_theory
+maudeTheory = G_theory Maude Nothing
+
 {- | inserts the given specification in the development graph, updating
 the data structures -}
 insertSpec :: Spec -> DGraph -> TokenInfoMap -> TokenInfoMap -> ViewMap
@@ -142,7 +148,7 @@ insertSpec (SpecMod sp_mod) pdg ptim tim vm ths dg =
     ext_sg = makeExtSign Maude sg
     nm_sns = map (makeNamed "") $ Maude.Sentence.fromSpec sp_mod
     sens = toThSens nm_sns
-    gt = G_theory Maude ext_sg startSigId sens startThId
+    gt = maudeTheory ext_sg startSigId sens startThId
     tok = HasName.getName sp_mod
     name = makeName $ simpleIdToIRI tok
     (ns, dg3) = insGTheory dg2 name DGBasic gt
@@ -161,7 +167,7 @@ insertSpec (SpecTh sp_th) pdg ptim tim vm ths dg =
     ext_sg = makeExtSign Maude sg
     nm_sns = map (makeNamed "") $ Maude.Sentence.fromSpec sp_th
     sens = toThSens nm_sns
-    gt = G_theory Maude ext_sg startSigId sens startThId
+    gt = maudeTheory ext_sg startSigId sens startThId
     tok = HasName.getName sp_th
     name = makeName $ simpleIdToIRI tok
     (ns, dg2) = insGTheory dg1 name DGBasic gt
@@ -232,7 +238,7 @@ incPredImpME (ModExp m_id) pdg (ptim, tim, dg) = up where
          ptim1 = Map.delete q ptim
          ptim2 = Map.delete q' ptim1
          ext_sg1 = makeExtSign Maude sg1
-         gt1 = G_theory Maude ext_sg1 startSigId noSens startThId
+         gt1 = maudeTheory ext_sg1 startSigId noSens startThId
          name1 = makeName $ simpleIdToIRI q
          new = newInfoNodeLab name1 refInfo gt1
          newNode = getNewNodeDG dg
@@ -241,7 +247,7 @@ incPredImpME (ModExp m_id) pdg (ptim, tim, dg) = up where
          -- (ns1, dg1) = insGTheory dg name1 DGBasic gt1
          dg1 = insNodeDG (newNode, nodeCont) dg
          ext_sg2 = makeExtSign Maude sg2
-         gt2 = G_theory Maude ext_sg2 startSigId noSens startThId
+         gt2 = maudeTheory ext_sg2 startSigId noSens startThId
          name2 = makeName $ simpleIdToIRI q'
          new' = newInfoNodeLab name2 refInfo' gt2
          newNode' = getNewNodeDG dg1
@@ -578,7 +584,7 @@ insertNode :: Token -> Sign -> TokenInfoMap -> Symbols
 insertNode tok sg tim ss deps dg =
   if Map.member tok tim then (tim, dg) else let
     ext_sg = makeExtSign Maude sg
-    gt = G_theory Maude ext_sg startSigId noSens startThId
+    gt = maudeTheory ext_sg startSigId noSens startThId
     name = makeName $ simpleIdToIRI tok
     (ns, dg') = insGTheory dg name DGBasic gt
     tim' = Map.insert tok (getNode ns, sg, ss, deps, []) tim
@@ -600,14 +606,14 @@ insertInnerNode nod tim tok morph sg sens dg =
     th_sens = toThSens $ map (makeNamed "") sens
     sg' = Maude.Sign.union sg $ target morph
     ext_sg = makeExtSign Maude sg'
-    gt = G_theory Maude ext_sg startSigId th_sens startThId
+    gt = maudeTheory ext_sg startSigId th_sens startThId
     nm' = inc nm
     (ns, dg1) = insGTheory dg nm' DGBasic gt
     nod2 = getNode ns
     morph' = setTarget sg' morph
     dg2 = insertDefEdgeMorphism nod2 nod morph' dg1
     -- inserting the free node
-    gt2 = G_theory Maude ext_sg startSigId noSens startThId
+    gt2 = maudeTheory ext_sg startSigId noSens startThId
     (ns2, dg3) = insGTheory dg2 (inc nm') DGBasic gt2
     nod3 = getNode ns2
     -- inserting the free link
@@ -698,7 +704,7 @@ insertFreeNode2 :: Token -> TokenInfoMap -> ProcInfo -> DGraph
   -> (TokenInfoMap, DGraph)
 insertFreeNode2 t tim (_, sg, _, _, _) dg = (tim', dg')
               where ext_sg = makeExtSign Maude sg
-                    gt = G_theory Maude ext_sg startSigId noSens startThId
+                    gt = maudeTheory ext_sg startSigId noSens startThId
                     name = makeName $ simpleIdToIRI t
                     (ns, dg') = insGTheory dg name DGBasic gt
                     tim' = Map.insert t (getNode ns, sg, [], [], []) tim

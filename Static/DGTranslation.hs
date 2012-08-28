@@ -80,7 +80,7 @@ updateEdges (Comorphism cidMor) gc (s, t, lbl) = case dgl_morphism lbl of
 updateNodes :: AnyComorphism -> LNode DGNodeLab -> Result (LNode DGNodeLab)
 updateNodes (Comorphism cidMor) (node, dgNodeLab) =
   case dgn_theory dgNodeLab of
-    G_theory lid esig _ thSens _ -> do
+    G_theory lid _ esig _ thSens _ -> do
       let slid = sourceLogic cidMor
       ExtSign sign' sys' <- coerceSign lid slid "DGTranslation.fTh.sign" esig
       thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
@@ -88,7 +88,7 @@ updateNodes (Comorphism cidMor) (node, dgNodeLab) =
       return (node, dgNodeLab
         { dgn_nf = Nothing
         , dgn_sigma = Nothing
-        , dgn_theory = G_theory (targetLogic cidMor)
+        , dgn_theory = G_theory (targetLogic cidMor) Nothing
             (ExtSign sign'' $ Set.unions
             $ map (map_symbol cidMor sign') $ Set.toList sys')
             startSigId (toThSens namedS) startThId })
@@ -140,7 +140,7 @@ testAndGetSublogicFromEdge l@(_, _, lbl) =
 getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab -> Result G_sublogics
 getSubLogicsFromNodes logic (_, lnode) =
         case dgn_theory lnode of
-          th@(G_theory lid _ _ _ _) ->
+          th@(G_theory lid _ _ _ _ _) ->
               if Logic lid == logic then return $ sublogicOfTh th
                  else fail $ "the node " ++ getDGNodeName lnode ++
                                "  has a different logic \"" ++ show lid ++
@@ -150,5 +150,5 @@ getSubLogicsFromNodes logic (_, lnode) =
 getFirstLogic :: [LNode DGNodeLab] -> AnyLogic
 getFirstLogic list = case list of
   (_, nlab) : _ -> case dgn_theory nlab of
-          G_theory lid _ _ _ _ -> Logic lid
+          G_theory lid _ _ _ _ _ -> Logic lid
   _ -> error "Static.DGTranslation.getFirstLogic"

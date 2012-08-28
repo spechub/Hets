@@ -59,7 +59,7 @@ theory. -}
 showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
 showDisproveGUI gi le dg (i, lbl) = case globalTheory lbl of
   Nothing -> error "GtkDisprove.showDisproveGUI(no global theory found)"
-  Just gt@(G_theory _ _ _ sens _) -> let
+  Just gt@(G_theory _ _ _ _ sens _) -> let
     fg g th = let
       l = lbl { dgn_theory = th }
       l' = l { globalTheory = computeLabelTheory le dg (i, l) }
@@ -89,7 +89,7 @@ showDisproveGUI gi le dg (i, lbl) = case globalTheory lbl of
 containing all axioms in addition to the one negated sentence. -}
 negate_th :: G_theory -> String -> Maybe G_theory
 negate_th g_th goal = case g_th of
-  G_theory lid1 (ExtSign sign symb) i1 sens i2 ->
+  G_theory lid1 syn (ExtSign sign symb) i1 sens _ ->
     case OMap.lookup goal sens of
       Nothing -> Nothing
       Just sen ->
@@ -98,7 +98,7 @@ negate_th g_th goal = case g_th of
           Just sen' -> let
             negSen = sen { sentence = sen', isAxiom = True }
             sens' = OMap.insert goal negSen $ OMap.filter isAxiom sens
-            in Just $ G_theory lid1 (ExtSign sign symb) i1 sens' i2
+            in Just $ G_theory lid1 syn (ExtSign sign symb) i1 sens' startThId
 
 {- | this function is being called from outside and manages the locking-
 mechanism of the node being called upon. -}
@@ -279,7 +279,7 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
     maybe_F <- getSelectedSingle trvFinder listFinder
     case maybe_F of
       Just (_, f) -> case g_th of
-        G_theory lid _s _i1 sens _i2 -> let
+        G_theory lid syn sig i1 sens _ -> let
           sens' = foldr (\ fg t -> if (sType . cStatus) fg == CSInconsistent
             then let
               n' = name fg
@@ -292,7 +292,7 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
               s' = s { senAttr = ThmStatus $ (c, bp) : thmStatus s } in
               Map.insert n' es { OMap.ele = s' } t
             else t ) sens fnodes'
-          in putMVar res $ return (G_theory lid _s _i1 sens' _i2)
+          in putMVar res $ return (G_theory lid syn sig i1 sens' startThId)
       _ -> putMVar res $ return g_th
 
   selectWith (== ConsistencyStatus CSUnchecked "") upd

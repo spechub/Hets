@@ -110,7 +110,7 @@ lnode ga lenv (_, lbl) =
                        $ Set.toList hidSyms
                    _ -> []
       ++ case dgn_theory lbl of
-        G_theory lid (ExtSign sig _) _ thsens _ -> let
+        G_theory lid _ (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom thsens
                  in subnodes "Axioms"
                     (map (showSen lid ga Nothing sig) $ toNamedList axs)
@@ -185,7 +185,7 @@ showSymbols ins ga lbl = showSymbolsTh ins (getDGNodeName lbl) ga
 
 showSymbolsTh :: [String] -> String -> GlobalAnnos -> G_theory -> Element
 showSymbolsTh ins name ga th = case th of
-  G_theory lid (ExtSign sig _) _ sens _ -> add_attrs
+  G_theory lid _ (ExtSign sig _) _ sens _ -> add_attrs
      [ mkAttr "logic" $ language_name lid
      , mkNameAttr name ]
      . unode "Ontology"

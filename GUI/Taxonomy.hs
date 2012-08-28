@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
@@ -35,7 +34,7 @@ displaySubsortGraph :: String -> G_theory -> IO ()
 displaySubsortGraph = displayGraph KSubsort
 
 displayGraph :: TaxoGraphKind -> String -> G_theory -> IO ()
-displayGraph kind thyName (G_theory lid (ExtSign sign _) _ sens _) =
+displayGraph kind thyName (G_theory lid _ (ExtSign sign _) _ sens _) =
     case theory_to_taxonomy lid kind
                        (emptyMMiSSOntology thyName AutoInsert)
                        sign $ toNamedList sens of

@@ -153,7 +153,7 @@ addParentNode libenv dg refl refDg refn =
    creates an empty GTh, please check the definition of this function
    because there can be some problem or errors at this place. -}
    newGTh = case dgn_theory nodelab of
-     G_theory lid sig ind _ _ -> noSensGTheory lid sig ind
+     G_theory lid _ sig ind _ _ -> noSensGTheory lid sig ind
    refInfo = newRefInfo newRefl newRefn
    newRefNode = (newInfoNodeLab (dgn_name nodelab) refInfo newGTh)
      { globalTheory = globalTheory nodelab }

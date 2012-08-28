@@ -91,8 +91,8 @@ getGoalThS useTrans x state
     Nothing -> []
     Just th ->
       let nwth = case th of
-                  G_theory x1 x2 x3 thSens x4 ->
-                    G_theory x1 x2 x3
+                  G_theory x1 syn x2 x3 thSens x4 ->
+                    G_theory x1 syn x2 x3
                        (OMap.filter (\ s -> not (isAxiom s) &&
                                           not (isProvenSenStatus s))
                        thSens) x4
@@ -127,7 +127,7 @@ cShowFromNode f input state =
                 case getTh Dont_translate n state of
                   Nothing -> []
                   Just th -> case th of
-                                 G_theory _ _ _ sens _ -> OMap.keys $
+                                 G_theory _ _ _ _ sens _ -> OMap.keys $
                                    OMap.filter f sens)) state
 
 cShowNodeProvenGoals :: String -> CmdlState -> IO CmdlState

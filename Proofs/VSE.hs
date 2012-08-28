@@ -82,7 +82,7 @@ prove (ln, node) libEnv =
         dg3 = getSubGraph node dg2
         oLbl = labDG dg3 node
         ostr = thName ln (node, oLbl)
-    G_theory olid _ _ _ _ <- return $ dgn_theory oLbl
+    G_theory olid _ _ _ _ _ <- return $ dgn_theory oLbl
     let mcm = if Logic CASL == Logic olid then Just (Comorphism CASL2VSE) else
              Nothing
     dGraph <- liftR $ maybe return (flip $ dg_translation qLibEnv) mcm dg3
@@ -91,7 +91,7 @@ prove (ln, node) libEnv =
     ts <- liftR $ mapM
       (\ lbl -> do
          let lbln = getDGNodeName lbl
-         G_theory lid (ExtSign sign0 _) _ sens0 _ <- return $ dgn_theory lbl
+         G_theory lid _ (ExtSign sign0 _) _ sens0 _ <- return $ dgn_theory lbl
          (sign1, sens1) <-
            addErrorDiag "failure when proving VSE nodes of" (getLibId ln)
            $ coerceBasicTheory lid VSE
@@ -134,7 +134,7 @@ prove (ln, node) libEnv =
                      in case lab (dgBody dg) n of
                      Nothing -> le -- node missing in original graph
                      Just olbl -> case dgn_theory olbl of
-                       G_theory lid sig sigId sens _ -> let
+                       G_theory lid syn sig sigId sens _ -> let
                          axs = Map.keys $ OMap.filter isAxiom sens
                          nsens = OMap.mapWithKey (\ name sen ->
                              if not (isAxiom sen) && Set.member
@@ -147,7 +147,7 @@ prove (ln, node) libEnv =
                                        : thmStatus sen }
                              else sen) sens
                          nlbl = olbl { dgn_theory
-                           = G_theory lid sig sigId nsens startThId }
+                           = G_theory lid syn sig sigId nsens startThId }
                          flbl = nlbl { globalTheory
                            = computeLabelTheory le dg (n, nlbl) }
                          ndg = changeDGH dg $ SetNodeLab olbl (n, flbl)

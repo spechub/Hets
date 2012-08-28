@@ -258,7 +258,7 @@ checkConservativityEdge :: Bool -> LEdge DGLinkLab -> LibEnv -> LibName
 checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
  = do
 
-    Just (G_theory lidT _ _ sensT _) <-
+    Just (G_theory lidT _ _ _ sensT _) <-
       return $ computeTheory libEnv ln target
     GMorphism cid _ _ morphism _ <- return $ dgl_morphism linklab
     morphism' <- coerceMorphism (targetLogic cid) lidT
@@ -271,7 +271,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                >>= comp morphism' of
                  Result _ (Just phi) -> phi
                  _ -> error "checkconservativityOfEdge: comp"
-    Just (G_theory lidS signS _ sensS _) <-
+    Just (G_theory lidS _ signS _ sensS _) <-
       return $ computeTheory libEnv ln source
     case coerceSign lidS lidT "checkconservativityOfEdge.coerceSign" signS of
      Nothing -> return ( "no implementation for heterogeneous links"
@@ -319,7 +319,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                         _ -> []
                    namedNewSens = toThSens [(makeNamed "" o) {isAxiom = False} |
                                              o <- obligations]
-               G_theory glid gsign gsigid gsens gid <- return $ dgn_theory
+               G_theory glid gsyn gsign gsigid gsens gid <- return $ dgn_theory
                                                                   nodelab
                namedNewSens' <- coerceThSens lidT glid "" namedNewSens
                let oldSens = OMap.toList gsens
@@ -329,7 +329,8 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                      (\ (_, a) (_, b) -> sentence a == sentence b)
                      $ oldSens ++ OMap.toList namedNewSens'
                    (newTheory, nodeChange) =
-                     (G_theory glid gsign gsigid (OMap.fromList mergedSens) gid,
+                     (G_theory glid gsyn gsign gsigid
+                      (OMap.fromList mergedSens) gid,
                       length oldSens /= length mergedSens)
                    newTargetNode = (target
                                    , nodelab { dgn_theory = newTheory })

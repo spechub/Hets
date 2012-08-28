@@ -54,7 +54,8 @@ anaHaskellFile opts file = do
               mName = simpleIdToIRI $ mkSimpleId bas
               name = makeName $ mName
               node_contents = newNodeLab name DGBasic
-                $ G_theory Haskell sig startSigId (toThSens sens) startThId
+                $ G_theory Haskell Nothing sig startSigId (toThSens sens)
+                  startThId
               dg = emptyDG
               node = getNewNodeDG dg
               dg1 = insNodeDG (node, node_contents) dg

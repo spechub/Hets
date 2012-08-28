@@ -63,7 +63,7 @@ handleEdge libEnv dg edge@(m,n,x) = do
                   Nothing -> dgn_theory $ labDG dg m
                   Just t -> t
       case gth of
-       G_theory lid sig _ sen _ -> do
+       G_theory lid syn sig _ sen _ -> do
         case phi of
          GMorphism cid _ _ mor1 _ -> do
           mor <- coerceMorphism (targetLogic cid) lid "free" mor1
@@ -71,7 +71,7 @@ handleEdge libEnv dg edge@(m,n,x) = do
           case maybeResult res of
            Just (sigK, axK) -> do
                -- success in logic lid
-            let thK = G_theory lid (makeExtSign lid sigK)
+            let thK = G_theory lid syn (makeExtSign lid sigK)
                              startSigId (toThSens axK) startThId
             incl <- subsig_inclusion lid (plainSign sig) sigK
             let inclM = gEmbed $ mkG_morphism lid incl

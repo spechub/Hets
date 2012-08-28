@@ -458,7 +458,7 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
     Just ist -> do
       let libEnv = i_libEnv ist
       case computeTheory libEnv ln node of
-        Just th@(G_theory lid sign _ sens _) -> do
+        Just th@(G_theory lid _ sign _ sens _) -> do
           -- find all comorphism paths starting from lid
           let paths = findComorphismPaths logicGraph (sublogicOfTh th)
           -- let the user choose one
@@ -480,8 +480,8 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
                 Just (sign'', sens1) -> displayTheoryWithWarning
                   "Translated Theory" (getNameOfNode node dgraph)
                   (addHasInHidingWarning dgraph node)
-                  $ G_theory lidT (mkExtSign sign'') startSigId (toThSens sens1)
-                             startThId
+                  $ G_theory lidT Nothing (mkExtSign sign'') startSigId
+                      (toThSens sens1) startThId
         Nothing ->
           errorDialog "Error" $ "no global theory for node " ++ show node
 
@@ -495,7 +495,7 @@ showProofStatusOfNode _ descr dgraph =
 
 showStatusAux :: DGNodeLab -> String
 showStatusAux dgnode = case dgn_theory dgnode of
-  G_theory _ _ _ sens _ ->
+  G_theory _ _ _ _ sens _ ->
      let goals = OMap.filter (not . isAxiom) sens
          (proven, open) = OMap.partition isProvenSenStatus goals
          consGoal = "\nconservativity of this node"

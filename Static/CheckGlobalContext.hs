@@ -66,7 +66,7 @@ incrRightGMorphism :: Statistics -> Statistics
 incrRightGMorphism s = s { rightMor = succ $ rightMor s }
 
 checkG_theory :: G_theory -> DGraph -> State Statistics ()
-checkG_theory g@(G_theory _ _ si _ ti) dgraph = do
+checkG_theory g@(G_theory _ _ _ si _ ti) dgraph = do
     if si == startSigId then modify incrZeroSign
        else case lookupSigMapDG si dgraph of
           Nothing -> error "checkG_theory: Sign"

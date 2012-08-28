@@ -53,7 +53,7 @@ printTheoryAsSoftFOL :: IRI
                  its a theory without its own conjectures. -}
          -> G_theory -> IO (Maybe Doc)
 printTheoryAsSoftFOL sn lang checkConsistency
-  gth@(G_theory lid (ExtSign sign _) _ thSens _) =
+  gth@(G_theory lid _ (ExtSign sign _) _ thSens _) =
     maybe (return Nothing)
           (\ (sign1, sens1) ->
                do prob <- genSoftFOLProblem

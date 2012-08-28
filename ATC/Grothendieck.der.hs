@@ -365,23 +365,26 @@ instance (ShATermLG a) => ShATermLG (IntMap.IntMap a) where
 
 
 instance ShATermLG G_theory where
-  toShATermLG att0 (G_theory lid sign si sens ti) = do
-         (att1, i1) <- toShATermLG' att0 (language_name lid)
+  toShATermLG att0 (G_theory lid syn sign si sens ti) = do
+         (att1a, i1) <- toShATermLG' att0 (language_name lid)
+         (att1, i1a) <- toShATermLG' att1a syn
          (att2, i2) <- toShATermLG' att1 sign
          (att3, i3) <- toShATermLG' att2 si
          (att4, i4) <- toShATermLG' att3 sens
          (att5, i5) <- toShATermLG' att4 ti
-         return $ addATerm (ShAAppl "G_theory" [i1, i2, i3, i4, i5] []) att5
+         return $ addATerm (ShAAppl "G_theory" [i1, i1a, i2, i3, i4, i5] [])
+                att5
   fromShATermLG lg ix att =
          case getShATerm ix att of
-            ShAAppl "G_theory" [i1, i2, i3, i4, i5] _ ->
-                case fromShATermLG' lg i1 att of { (att1, i1') ->
+            ShAAppl "G_theory" [i1, i1a, i2, i3, i4, i5] _ ->
+                case fromShATermLG' lg i1 att of { (att1a, i1') ->
                 case atcLogicLookup lg "G_theory" i1' of { Logic lid ->
+                case fromShATermLG' lg i1a att1a of { (att1, i1a') ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
                 case fromShATermLG' lg i3 att2 of { (att3, i3') ->
                 case fromShATermLG' lg i4 att3 of { (att4, i4') ->
                 case fromShATermLG' lg i5 att4 of { (att5, i5') ->
-                (att5, G_theory lid i2' i3' i4' i5') }}}}}}
+                (att5, G_theory lid i1a' i2' i3' i4' i5') }}}}}}}
             u -> fromShATermError "G_theory" u
 
 instance Typeable a => ShATermConvertible (MVar a) where

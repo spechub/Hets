@@ -84,8 +84,8 @@ computeTheory :: LibEnv -> LibName -> Node -> Maybe G_theory
 computeTheory libEnv ln = globalNodeTheory $ lookupDGraph ln libEnv
 
 theoremsToAxioms :: G_theory -> G_theory
-theoremsToAxioms (G_theory lid sign ind1 sens ind2) =
-     G_theory lid sign ind1 (markAsAxiom True sens) ind2
+theoremsToAxioms (G_theory lid syn sign ind1 sens ind2) =
+     G_theory lid syn sign ind1 (markAsAxiom True sens) ind2
 
 getGlobalTheory :: DGNodeLab -> Result G_theory
 getGlobalTheory = maybe (fail "no global theory") return . globalTheory
@@ -116,7 +116,7 @@ recomputeNodeLabel le dg l@(n, lbl) =
               { dgn_theory = invalidateProofs oTh th $ dgn_theory lbl })
           ngTh = if chg then computeLabelTheory le dg (n, lbl1) else gTh
       in case ngTh of
-        Just nth@(G_theory _ _ _ sens _) ->
+        Just nth@(G_theory _ _ _ _ sens _) ->
           (if Map.null sens then markNodeConsistent "ByNoSentences" lbl1
            else lbl1 { dgn_theory = proveLocalSens nth (dgn_theory lbl1) })
            { globalTheory = ngTh }
@@ -157,8 +157,8 @@ getImportNames dg = map (\ (s, _, _) -> getDGNodeName $ labDG dg s)
   . getImports dg
 
 reduceTheory :: G_theory -> G_theory
-reduceTheory (G_theory lid sig ind sens _) =
-  G_theory lid sig ind (reduceSens sens) startThId
+reduceTheory (G_theory lid syn sig ind sens _) =
+  G_theory lid syn sig ind (reduceSens sens) startThId
 
 updateLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> G_theory -> DGraph
 updateLabelTheory le dg (i, l) gth = let

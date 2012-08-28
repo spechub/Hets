@@ -229,7 +229,7 @@ showProverGUI prGuiAcs thName warn th knownProvers comorphList = do
 -- | Called whenever the button "Display" is clicked.
 displayGoals :: ProofState -> IO ()
 displayGoals s = case currentTheory s of
-  G_theory lid1 (ExtSign sig1 _) _ sens1 _ -> do
+  G_theory lid1 _ (ExtSign sig1 _) _ sens1 _ -> do
     let thName = theoryName s
         goalsText = show . Pretty.vsep
           . map (print_named lid1 . AS_Anno.mapNamed (simplify_sen lid1 sig1))
@@ -348,7 +348,7 @@ setSelectedProver trvProvers listProvers cbComorphism shC s = do
 
 wasATheorem :: ProofState -> String -> Bool
 wasATheorem st i = case currentTheory st of
-   G_theory _ _ _ sens _ -> maybe False wasTheorem $ OMap.lookup i sens
+   G_theory _ _ _ _ sens _ -> maybe False wasTheorem $ OMap.lookup i sens
 
 toGoals :: ProofState -> [Goal]
 toGoals = sort . map toGtkGoal . getGoals

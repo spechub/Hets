@@ -401,7 +401,7 @@ computeMorphism :: ImpEnv -- ^ The import environment for lookup purposes
                 -> ResultT IO ((NameSymbolMap, G_sign), LinkInfo)
 computeMorphism e ln nots (nsmap, tGSig) (ImportInfo (mLn, (from, lbl)) n morph)
     = case dgn_theory lbl of
-        G_theory sLid (ExtSign sSig _) _ _ _ ->
+        G_theory sLid _ (ExtSign sSig _) _ _ _ ->
             case tGSig of
               G_sign tLid (ExtSign tSig _) sigId ->
                   do
@@ -442,7 +442,7 @@ computeViewMorphism :: ImpEnv -- ^ The import environment for lookup purposes
 computeViewMorphism e ln (ImportInfo ( (mSLn, (from, lblS))
                                      , (mTLn, (to, lblT))) n morph)
     = case (dgn_theory lblS, dgn_theory lblT) of
-        (G_theory sLid eSSig _ _ _, G_theory tLid eTSig _ _ _) ->
+        (G_theory sLid _ eSSig _ _ _, G_theory tLid _ eTSig _ _ _) ->
             do
               let nsmapS = lookupNSMap e ln mSLn $ getDGNodeName lblS
                   nsmapT = lookupNSMap e ln mTLn $ getDGNodeName lblT
@@ -622,7 +622,7 @@ addSentences clf nsmap gsig =
             (sig'', sens'') <- addOmdocToTheory lid sigm (sig', sens')
                                $ sentences clf
 
-            return $ G_theory lid (mkExtSign sig'') ind1
+            return $ G_theory lid Nothing (mkExtSign sig'') ind1
                        (toThSens sens'') startThId
 
 

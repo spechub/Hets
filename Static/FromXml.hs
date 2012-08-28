@@ -276,7 +276,7 @@ loadRefLib opts ln lv = do
 -- | creates an entirely empty theory
 emptyTheory :: AnyLogic -> G_theory
 emptyTheory (Logic lid) =
-  G_theory lid (ext_empty_signature lid) startSigId noSens startThId
+  G_theory lid Nothing (ext_empty_signature lid) startSigId noSens startThId
 
 {- | A Node is looked up via its name in the DGraph. Returns the nodes
 signature, but only if one single node is found for the respective name.

@@ -114,7 +114,7 @@ qualifyLabNode :: LibName -> (DGraph, RenameMap) -> LNode DGNodeLab
                -> Result (DGraph, RenameMap)
 qualifyLabNode ln (dg, mormap) (n, lb) =
    if isDGRef lb then return (dg, mormap) else case dgn_theory lb of
-    G_theory lid (ExtSign sig _) _ sens _ -> do
+    G_theory lid syn (ExtSign sig _) _ sens _ -> do
         let inss = properInEdges dg n
         hins <- foldM (\ l (GMorphism cid _ _ mor _) ->
             if isIdComorphism (Comorphism cid) && language_name lid ==
@@ -132,7 +132,7 @@ qualifyLabNode ln (dg, mormap) (n, lb) =
         rm <- inverse m1
         nThSens <- mapThSensValueM (map_sen lid m1) $ joinSens sens
           $ toThSens osens
-        let nlb = lb { dgn_theory = G_theory lid
+        let nlb = lb { dgn_theory = G_theory lid syn
                        (makeExtSign lid (cod m1)) startSigId
                        nThSens startThId }
             gp = ( gEmbed $ G_morphism lid m1 startMorId

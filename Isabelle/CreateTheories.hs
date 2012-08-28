@@ -41,7 +41,7 @@ import Haskell.Logic_Haskell
 #endif
 
 createIsaTheory :: G_theory -> Result (Sign, [Named Sentence])
-createIsaTheory (G_theory lid (ExtSign sign0 _) _ sens0 _) = do
+createIsaTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
     let th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th
         r1' = do

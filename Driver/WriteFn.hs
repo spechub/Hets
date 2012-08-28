@@ -147,7 +147,7 @@ writeSoftFOL opts f gTh i c n msg = do
               writeVerbFile opts f str) mDoc
 
 writeFreeCADFile :: HetcatsOpts -> FilePath -> G_theory -> IO ()
-writeFreeCADFile opts filePrefix (G_theory lid (ExtSign sign _) _ _ _) = do
+writeFreeCADFile opts filePrefix (G_theory lid _ (ExtSign sign _) _ _ _) = do
   fcSign <- coercePlainSign lid FreeCAD
             "Expecting a FreeCAD signature for writing FreeCAD xml" sign
   writeVerbFile opts (filePrefix ++ ".xml") $ exportXMLFC fcSign
@@ -184,7 +184,7 @@ writeIsaFile opts filePrefix raw_gTh ln i = do
 writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
   -> G_theory -> LibName -> IRI -> OutType -> IO ()
 writeTheory ins nam opts filePrefix ga
-  raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
+  raw_gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) ln i ot =
     let fp = filePrefix ++ "_" ++ iriToStringShortUnsecure i
         f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
@@ -262,7 +262,7 @@ writeTheory ins nam opts filePrefix ga
     _ -> return () -- ignore other file types
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> IO ()
-modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) =
+modelSparQCheck opts gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) =
     case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
     Just th2 -> do
       table <- parseSparQTableFromFile $ modelSparQ opts

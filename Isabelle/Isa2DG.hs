@@ -51,7 +51,7 @@ makeNamedSentence (n, t) = makeNamed n $ mkSen t
 _insNodeDG :: Sign -> [Named Sentence] -> String
               -> DGraph -> DGraph
 _insNodeDG sig sens n dg =
- let gt = G_theory Isabelle (makeExtSign Isabelle sig) startSigId
+ let gt = G_theory Isabelle Nothing (makeExtSign Isabelle sig) startSigId
            (toThSens sens) startThId
      labelK = newInfoNodeLab
       (makeName (simpleIdToIRI (mkSimpleId n)))
@@ -107,7 +107,7 @@ anaIsaFile _ path = do
  (name,imps,consts,axioms,theorems,types,classes,locales')
    <- importIsaDataIO path
  let sens = map makeNamedSentence (axioms ++ theorems
-             ++ (foldl (\ l c -> case c of 
+             ++ (foldl (\ l c -> case c of
                           (_,_,Nothing) -> l
                           (n,_,Just tm) -> (n,tm):l) [] consts))
  let sgn = emptySign { constTab = foldl (\ m (n,t,_) -> Map.insert (mkVName n) t m) Map.empty consts, domainTab = types, imports = imps,

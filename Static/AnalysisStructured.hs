@@ -106,14 +106,14 @@ coerceNodeByComorph c dg (NodeSig n s) nn = do
             return (NodeSig t $ signOf $ dgn_theory $ labDG dg t, dg)
 
 insGTheory :: DGraph -> NodeName -> DGOrigin -> G_theory -> (NodeSig, DGraph)
-insGTheory dg name orig (G_theory lid sig ind sens tind) =
+insGTheory dg name orig (G_theory lid syn sig ind sens tind) =
     let (sgMap, s) = sigMapI dg
         (tMap, t) = thMapI dg
         nind = if ind == startSigId then succ s else ind
         tb = tind == startThId && not (Map.null sens)
         ntind = if tb then succ t else tind
         nsig = G_sign lid sig nind
-        nth = G_theory lid sig nind sens ntind
+        nth = G_theory lid syn sig nind sens ntind
         node_contents = newNodeLab name orig nth
         node = getNewNodeDG dg
     in (NodeSig node nsig,
@@ -309,7 +309,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
            (ns, dg') = insGTheory dg0 name
              (DGBasicSpec (Just $ G_basic_spec lid bspec')
              (G_sign lid (mkExtSign diffSig) startSigId) gsysd)
-               $ G_theory lid (ExtSign sigma_complete
+               $ G_theory lid (currentSyntax lg) (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
                $ symset_of lid sigma_complete)

@@ -359,7 +359,7 @@ _insNodeDG :: Sign -> [Named Sentence] -> String
               -> (DGraph, Map.Map String
                (String, Data.Graph.Inductive.Graph.Node, DGNodeLab))
 _insNodeDG sig sens n (dg, m) =
- let gt = G_theory HolLight (makeExtSign HolLight sig) startSigId
+ let gt = G_theory HolLight Nothing (makeExtSign HolLight sig) startSigId
            (toThSens sens) startThId
      n' = snd (System.FilePath.Posix.splitFileName n)
      labelK = newInfoNodeLab

@@ -134,8 +134,8 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
     Just thSrc ->
       case (computeLocalNodeTheory libEnv dgraph tgt,
                         maybeResult $ translateG_theory morphism thSrc) of
-        (Just th@(G_theory lidTgt sig ind sensTgt _),
-              Just (G_theory lidSrc _ _ sentensSrc _)) ->
+        (Just th@(G_theory lidTgt syn sig ind sensTgt _),
+              Just (G_theory lidSrc _ _ _ sentensSrc _)) ->
           case maybeResult (coerceThSens lidSrc lidTgt "" sentensSrc) of
             Nothing -> dgraph
             Just sensSrc ->
@@ -151,7 +151,7 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
                          . flip OMap.lookup provenSens)
                         $ map snd renms
                   newTh = if noGoals then th else
-                    G_theory lidTgt sig ind provenSens startThId
+                    G_theory lidTgt syn sig ind provenSens startThId
                   newContents = oldContents { dgn_theory = newTh }
                   locInferRule = DGRuleLocalInference renms
                   newLab = edgeLab

@@ -168,7 +168,7 @@ isDGRef l = case nodeInfo l of
 
 sensWithKind :: (forall a . SenStatus a (AnyComorphism, BasicProof) -> Bool)
              -> G_theory -> [String]
-sensWithKind f (G_theory _lid _sigma _ sens _) = Map.keys $ OMap.filter f sens
+sensWithKind f (G_theory _ _ _ _ sens _) = Map.keys $ OMap.filter f sens
 
 hasSenKind :: (forall a . SenStatus a (AnyComorphism, BasicProof) -> Bool)
            -> DGNodeLab -> Bool
@@ -943,7 +943,7 @@ newRefInfo ln n = DGRef
 
 -- | create a new node label
 newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
-newInfoNodeLab name info gTh@(G_theory lid _ _ _ _) = DGNodeLab
+newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
   , globalTheory = Nothing
@@ -1490,7 +1490,7 @@ changedPendingEdges dg = let
 changedLocalTheorems :: DGraph -> LNode DGNodeLab -> [LEdge DGLinkLab]
 changedLocalTheorems dg (v, lbl) =
   case dgn_theory lbl of
-    G_theory _ _ _ sens _ ->
+    G_theory _ _ _ _ sens _ ->
       foldr (\ e@(_, _, el) l ->
         let pend = dglPending el
             psens = Map.keysSet $ OMap.filter isProvenSenStatus sens

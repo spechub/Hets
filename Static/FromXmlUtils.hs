@@ -34,8 +34,9 @@ data BasicExtResponse = Failure Bool  -- True means fatal (give up)
 
 extendByBasicSpec :: GlobalAnnos -> String -> G_theory
   -> (BasicExtResponse, String)
-extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
-  let tstr = trimLeft str in
+extendByBasicSpec ga str
+  gt@(G_theory lid syn eSig@(ExtSign sign syms) si sens _)
+  = let tstr = trimLeft str in
   if null tstr then (Success gt 0 Set.empty True, "") else
   case basicSpecParser Nothing lid of
     Nothing -> (Failure True, "missing basic spec parser")
@@ -50,7 +51,7 @@ extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
               let sameSig = sign2 == sign
                   finExtSign = ExtSign sign2 $ Set.union syms syms2
               in
-              (Success (G_theory lid (if sameSig then eSig else finExtSign)
+              (Success (G_theory lid syn (if sameSig then eSig else finExtSign)
                       (if sameSig then si else startSigId)
                       (joinSens (toThSens sens2) sens) startThId)
                       (length sens2)

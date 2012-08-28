@@ -285,12 +285,12 @@ loadLibraries ss om = case natImported ss om of
 -- | loads the sentences associated to the natural numbers
 loadNaturalNatSens :: [Named CAS.CASLFORMULA]
 loadNaturalNatSens =
-         let lib = head $ unsafePerformIO $ readLib "Maude/MaudeNumbers.casl"
-         in case lib of
-             G_theory lid _ _ thSens _ -> let sens = toNamedList thSens
-                                          in do
-                                              sens' <- coerceSens lid CASL "" sens
-                                              filter (not . ctorCons) sens'
+    case unsafePerformIO $ readLib "Maude/MaudeNumbers.casl" of
+      G_theory lid _ _ _ thSens _ : _ -> do
+        let sens = toNamedList thSens
+        sens' <- coerceSens lid CASL "" sens
+        filter (not . ctorCons) sens'
+      _ -> error "Maude.loadNaturalNatSens"
 
 -- | checks if a sentence is an constructor sentence
 ctorCons :: Named CAS.CASLFORMULA -> Bool
