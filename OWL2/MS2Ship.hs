@@ -18,8 +18,11 @@ import OWL2.MS
 import OWL2.ShipSyntax
 
 import Common.Doc
+import Common.Utils
 
+import Data.Function
 import Data.Maybe
+import qualified Data.Set as Set
 
 ppShipOnt :: OntologyDocument -> Doc
 ppShipOnt = vcat . map ppBox . concatMap frame2Boxes . ontFrames . ontology
@@ -27,7 +30,12 @@ ppShipOnt = vcat . map ppBox . concatMap frame2Boxes . ontFrames . ontology
 frame2Boxes :: Frame -> [Box]
 frame2Boxes (Frame e bs) = case e of
   ClassEntity ce -> concatMap (classFrame2Boxes $ ce2Concept ce) bs
-  ObjectEntity ope -> concatMap (opFrame2Boxes $ ope2Role ope) bs
+  ObjectEntity ope -> let
+    r = ope2Role ope
+    es = concatMap (opFrame2Boxes r) bs
+    (ds, rs) = getRoleType r es
+    rt = on (RoleType r) intersectConcepts ds rs
+    in nubOrd $ map (setRoleType rt) es
   SimpleEntity (Entity et i) -> case et of
     NamedIndividual -> concatMap (indFrame2Boxes $ localPart i) bs
     _ -> []
@@ -87,6 +95,28 @@ opListFrame2Boxes r mr lfb = case mr of
     Nothing -> case lfb of
         ObjectCharacteristics l -> map ((`RoleKind` r) . snd) l
         _ -> []
+
+getRoleType :: Role -> [Box] -> ([Concept], [Concept])
+getRoleType r = foldr (\ b p@(ds, rs) -> case b of
+  RoleDecl (RoleType r2 d e) _ | r == r2 -> (d : ds, e : rs)
+  _ -> p) ([], [])
+
+setRoleType :: RoleType -> Box -> Box
+setRoleType r@(RoleType r1 _ _) b = case b of
+  RoleDecl (RoleType r2 _ _) m | r1 == r2 -> RoleDecl r m
+  _ -> b
+
+flatIntersection :: Concept -> [Concept]
+flatIntersection c = case c of
+  JoinedC IntersectionOf cs -> concatMap flatIntersection cs
+  _ -> [c]
+
+intersectConcepts :: [Concept] -> Concept
+intersectConcepts = (\ l -> case l of
+  [] -> topC
+  [c] -> c
+  _ -> JoinedC IntersectionOf l)
+  . Set.toList . Set.delete topC . Set.fromList . concatMap flatIntersection
 
 indFrame2Boxes :: String -> FrameBit -> [Box]
 indFrame2Boxes i b = case b of
