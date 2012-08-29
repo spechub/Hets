@@ -14,9 +14,8 @@ Instance of class Logic for the common logic
 
 module CommonLogic.Logic_CommonLogic where
 
-import Logic.Logic
-
 import ATC.ProofTree ()
+
 import Common.ProofTree
 
 import CommonLogic.ATC_CommonLogic ()
@@ -27,19 +26,20 @@ import CommonLogic.Analysis
 import qualified CommonLogic.Parse_CLIF as CLIF
 import qualified CommonLogic.Parse_KIF as KIF
 import CommonLogic.Morphism
-
-import qualified Data.Map as Map
-
 import CommonLogic.OMDocExport
 import CommonLogic.OMDocImport as OMDocImport
 import CommonLogic.OMDoc
 import CommonLogic.Sublogic
 
+import qualified Data.Map as Map
+import Data.Monoid
+
+import Logic.Logic
+
 data CommonLogic = CommonLogic deriving Show
 
 instance Language CommonLogic where
     description _ = "CommonLogic Logic\n"
-        ++ ""
 
 instance Category Sign Morphism
     where
@@ -63,6 +63,10 @@ instance Sentences CommonLogic
       map_sen CommonLogic = mapSentence -- TODO
       symsOfSen CommonLogic = symsOfTextMeta
       symKind CommonLogic = Symbol.symKind
+
+instance Monoid BASIC_SPEC where
+    mempty = Basic_spec []
+    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 instance Syntax CommonLogic
     BASIC_SPEC

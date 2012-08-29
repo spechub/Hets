@@ -31,22 +31,24 @@ module QBF.Logic_QBF where
 import Logic.Logic
 
 import Propositional.Sign
-import QBF.Morphism
+
 import QBF.AS_BASIC_QBF
 import QBF.ATC_QBF ()
-import QBF.Symbol as Symbol
-import QBF.Parse_AS_Basic
 import QBF.Analysis
+import QBF.Morphism
+import QBF.Parse_AS_Basic
+import QBF.ProveDepQBF
 import QBF.Sublogic as Sublogic
+import QBF.Symbol as Symbol
 import QBF.Tools
 
 import ATC.ProofTree ()
-import Common.ProofTree
 
+import Common.ProofTree
 import Common.ProverTools
-import QBF.ProveDepQBF
 
 import qualified Data.Map as Map
+import Data.Monoid
 
 -- | Lid for propositional logic
 data QBF = QBF deriving Show
@@ -86,6 +88,10 @@ instance Sentences QBF FORMULA
     map_sen QBF = mapSentence
     -- there is nothing to leave out
     simplify_sen QBF _ = simplify
+
+instance Monoid BASICSPEC where
+    mempty = BasicSpec []
+    mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 -- | Syntax of Propositional logic
 instance Syntax QBF BASICSPEC

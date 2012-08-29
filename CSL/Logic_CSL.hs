@@ -16,19 +16,22 @@ Instance of class Logic for the CSL logic
 
 module CSL.Logic_CSL where
 
-import Logic.Logic
-
-import CSL.Sign
-import CSL.Morphism
-import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic
-import CSL.Analysis
-import CSL.Tools
-import CSL.Symbol
-import CSL.ATC_CSL ()
-import CSL.ReduceProve
-import qualified Data.Map as Map
 import ATC.ProofTree ()
+
+import CSL.AS_BASIC_CSL
+import CSL.ATC_CSL ()
+import CSL.Analysis
+import CSL.Morphism
+import CSL.Parse_AS_Basic
+import CSL.ReduceProve
+import CSL.Sign
+import CSL.Symbol
+import CSL.Tools
+
+import qualified Data.Map as Map
+import Data.Monoid
+
+import Logic.Logic
 
 -- | Lid for reduce logic
 data CSL = CSL
@@ -70,6 +73,10 @@ instance Sentences CSL CMD
     map_sen CSL = mapSentence
     -- there is nothing to leave out
     simplify_sen CSL _ = id
+
+instance Monoid BASIC_SPEC where
+    mempty = Basic_spec []
+    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- | Syntax of CSL logic
 instance Syntax CSL BASIC_SPEC

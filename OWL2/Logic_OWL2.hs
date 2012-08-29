@@ -15,41 +15,43 @@ Here is the place where the class Logic is instantiated for OWL2.
 
 module OWL2.Logic_OWL2 where
 
+import ATC.ProofTree ()
+
 import Common.AS_Annotation
+import Common.Consistency
+import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
-import Common.DefaultMorphism
-import Common.Consistency
 import Common.ProverTools
 
 import Data.Char (isAlpha)
+import Data.Monoid
+import qualified Data.Map as Map
 import qualified Data.Set as Set
-
-import ATC.ProofTree ()
 
 import Logic.Logic
 
 import OWL2.AS
+import OWL2.ATC_OWL2 ()
+import OWL2.ColimSign
+import OWL2.Conservativity
 import OWL2.MS
 import OWL2.MS2Ship
-import OWL2.Theorem
-import OWL2.Parse
 import OWL2.ManchesterParser
 import OWL2.ManchesterPrint
-import OWL2.Symbols
+import OWL2.Morphism
+import OWL2.Parse
 import OWL2.Print ()
-import OWL2.ATC_OWL2 ()
+import OWL2.ProfilesAndSublogics
+import OWL2.ProveFact
+import OWL2.ProvePellet
+import OWL2.Rename
 import OWL2.Sign
 import OWL2.StaticAnalysis
-import OWL2.Morphism
-import OWL2.ProvePellet
-import OWL2.ProveFact
-import OWL2.Conservativity
-import OWL2.ColimSign
+import OWL2.Symbols
 import OWL2.Taxonomy
-import OWL2.ProfilesAndSublogics
-import OWL2.Rename
+import OWL2.Theorem
 
 data OWL2 = OWL2 deriving Show
 
@@ -65,6 +67,16 @@ instance Category Sign OWLMorphism where
     legal_mor = legalMor
     isInclusion = isOWLInclusion
     composeMorphisms = composeMor
+
+instance Monoid Ontology where
+    mempty = emptyOntology []
+    mappend (Ontology n i1 a1 f1) (Ontology _ i2 a2 f2) =
+        Ontology n (i1 ++ i2) (a1 ++ a2) $ f1 ++ f2
+
+instance Monoid OntologyDocument where
+    mempty = emptyOntologyDoc
+    mappend (OntologyDocument p1 o1) (OntologyDocument p2 o2) =
+      OntologyDocument (Map.union p1 p2) $ mappend o1 o2
 
 instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
     parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, ppShipOnt)

@@ -29,13 +29,15 @@ module Haskell.Logic_Haskell
 
 import Common.AS_Annotation
 import Common.DefaultMorphism
+import Common.Doc as Doc
+import Common.DocUtils
+import Common.Id
+
+import Data.Monoid
 
 import Haskell.TiPropATC()
 import Haskell.HatParser
 import Haskell.HatAna
-import Common.Doc
-import Common.DocUtils
-import Common.Id
 
 import Logic.Logic
 
@@ -59,6 +61,10 @@ type HaskellMorphism = DefaultMorphism Sign
 type SYMB_ITEMS = ()
 type SYMB_MAP_ITEMS = ()
 
+instance Monoid HsDecls where
+    mempty = HsDecls []
+    mappend (HsDecls l1) (HsDecls l2) = HsDecls $ l1 ++ l2
+
 instance Syntax Haskell HsDecls
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
@@ -76,10 +82,10 @@ instance GetRange (TiDecl PNT)
 instance Sentences Haskell (TiDecl PNT) Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell sen =
-        pretty (sentence sen) <>
+        pretty (sentence sen) Doc.<>
         case senAttr sen of
           [] -> empty
-          lab -> space <> text "{-" <+> text lab <+> text "-}"
+          lab -> space Doc.<> text "{-" <+> text lab <+> text "-}"
 
 instance StaticAnalysis Haskell HsDecls
                (TiDecl PNT)

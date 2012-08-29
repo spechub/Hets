@@ -15,15 +15,18 @@ Here is the place where the class Logic is instantiated for RDF
 
 module RDF.Logic_RDF where
 
+import ATC.ProofTree ()
+
 import Common.AS_Annotation
+import Common.Consistency
+import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
-import Common.DefaultMorphism
-import Common.Consistency
 import Common.ProverTools
 
-import ATC.ProofTree ()
+import qualified Data.Map as Map
+import Data.Monoid
 
 import Logic.Logic
 
@@ -52,6 +55,12 @@ instance Category Sign RDFMorphism where
     isInclusion = isRDFInclusion
     composeMorphisms = composeMor
 -}
+
+instance Monoid TurtleDocument where
+    mempty = emptyTurtleDocument
+    mappend (TurtleDocument i p1 l1) (TurtleDocument _ p2 l2) =
+      TurtleDocument i (Map.union p1 p2) $ l1 ++ l2
+
 instance Syntax RDF TurtleDocument SymbItems SymbMapItems where
     parse_basic_spec RDF = Just basicSpec
     parse_symb_items RDF = Just rdfSymbItems

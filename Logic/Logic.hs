@@ -147,6 +147,7 @@ import Common.Taxonomy
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Monoid
 import Data.Ord
 import Data.Typeable
 import Control.Monad (unless, mplus)
@@ -234,6 +235,7 @@ instance Ord sign => Category sign (DefaultMorphism sign) where
      symb_map_items is for symbol maps (see CASL RefMan p. 35ff.).
 -}
 class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
+       Monoid basic_spec, -- for joining converted signatures and sentences
        EqPrintTypeConv symb_items,
        EqPrintTypeConv symb_map_items)
     => Syntax lid basic_spec symb_items symb_map_items

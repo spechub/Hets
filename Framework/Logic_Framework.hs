@@ -26,6 +26,8 @@ import Framework.ATC_Framework ()
 
 import Logic.Logic
 
+import Data.Monoid
+
 import Common.DefaultMorphism
 
 type Morphism = DefaultMorphism LogicDef
@@ -35,6 +37,10 @@ data Framework = Framework deriving Show
 
 instance Language Framework where
    description _ = "A framework allowing to add logics dynamically."
+
+instance Monoid LogicDef where
+   mempty = error "Framework.Logic_Framework: Monoid LogicDef"
+   mappend _ _ = mempty
 
 -- syntax for Framework
 instance Syntax Framework LogicDef () ()
@@ -62,6 +68,10 @@ instance Language FrameworkCom where
    description _ = "A framework allowing to add comorphisms between " ++
                    "logics dynamically."
 
+instance Monoid ComorphismDef where
+   mempty = error "Framework.Logic_Framework Monoid ComorphismDef"
+   mappend _ _ = mempty
+
 -- syntax for Framework
 instance Syntax FrameworkCom ComorphismDef () ()
 
@@ -75,5 +85,5 @@ instance StaticAnalysis FrameworkCom ComorphismDef () () ()
        "Logic FrameworkCom does not have an empty signature."
 
 -- instance of logic for Framework
-instance Logic FrameworkCom () ComorphismDef () () () ComorphismDef 
+instance Logic FrameworkCom () ComorphismDef () () () ComorphismDef
          MorphismCom () () ()

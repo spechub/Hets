@@ -16,6 +16,12 @@ Ref: Florian Rabe: First-Order Logic with Dependent Types.
 
 module DFOL.Logic_DFOL where
 
+import Common.Result
+
+import Data.Monoid
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
 import DFOL.AS_DFOL
 import DFOL.Sign
 import DFOL.Morphism
@@ -24,10 +30,8 @@ import DFOL.ATC_DFOL ()
 import DFOL.Analysis_DFOL
 import DFOL.Symbol
 import DFOL.Colimit
+
 import Logic.Logic
-import Common.Result
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 -- lid for first-order logic with dependent types
 data DFOL = DFOL deriving Show
@@ -45,6 +49,10 @@ instance Category Sign Morphism where
    composeMorphisms = compMorph
    legal_mor m = if isValidMorph m then return () else
                      fail "illegal DFOL morphism"
+
+instance Monoid BASIC_SPEC where
+    mempty = Basic_spec []
+    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- syntax for DFOL
 instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where

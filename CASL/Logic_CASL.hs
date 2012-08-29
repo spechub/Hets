@@ -16,15 +16,7 @@ Instance of class Logic for the CASL logic
 
 module CASL.Logic_CASL where
 
-import Common.ProofTree
-import Common.Consistency
-import Common.DocUtils
-
-import qualified Data.Set as Set
-
 import ATC.ProofTree ()
-
-import Logic.Logic
 
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
@@ -52,12 +44,20 @@ import CASL.Qualify
 import CASL.Quantification
 import qualified CASL.OMDocImport as OMI
 import CASL.OMDocExport
+import CASL.Freeness
 
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
 #endif
 
-import CASL.Freeness
+import Common.ProofTree
+import Common.Consistency
+import Common.DocUtils
+
+import Data.Monoid
+import qualified Data.Set as Set
+
+import Logic.Logic
 
 data CASL = CASL deriving Show
 
@@ -110,6 +110,10 @@ instance (Ord f, Ord e, Ord m, MorphismExtension e m) =>
     cod = mtarget
     isInclusion = isInclusionMorphism isInclusionMorphismExtension
     legal_mor = legalMor
+
+instance Monoid (BASIC_SPEC b s f) where
+    mempty = Basic_spec []
+    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- abstract syntax, parsing (and printing)
 

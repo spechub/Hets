@@ -26,6 +26,8 @@ Instance of class Logic for the propositional logic
 
 module Propositional.Logic_Propositional where
 
+import ATC.ProofTree ()
+
 import Logic.Logic
 
 import Propositional.Sign
@@ -37,21 +39,20 @@ import Propositional.Symbol as Symbol
 import Propositional.Parse_AS_Basic
 import Propositional.Analysis
 import Propositional.Sublogic as Sublogic
-
 #ifdef UNI_PACKAGE
-import Common.ProverTools
-import Common.Consistency
 import Propositional.ProveWithTruthTable
 import Propositional.Prove
 import Propositional.Conservativity
 import Propositional.ProveMinisat
-#endif
 
-import ATC.ProofTree ()
+import Common.ProverTools
+import Common.Consistency
+#endif
 import Common.ProofTree
 import Common.Id
 
 import qualified Data.Map as Map
+import Data.Monoid
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show
@@ -91,7 +92,11 @@ instance Sentences Propositional FORMULA
     -- there is nothing to leave out
     simplify_sen Propositional _ = simplify
 
--- | Syntax of Propositional logic
+instance Monoid BASIC_SPEC where
+    mempty = Basic_spec []
+    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
+
+--- | Syntax of Propositional logic
 instance Syntax Propositional BASIC_SPEC
     SYMB_ITEMS SYMB_MAP_ITEMS where
          parse_basic_spec Propositional = Just basicSpec

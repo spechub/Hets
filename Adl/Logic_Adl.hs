@@ -13,8 +13,6 @@ Portability :  non-portable (import Logic.Logic)
 
 module Adl.Logic_Adl where
 
-import Logic.Logic
-
 import Adl.As
 import Adl.Parse
 import Adl.Print ()
@@ -22,12 +20,16 @@ import Adl.Sign
 import Adl.StatAna
 import Adl.ATC_Adl ()
 
+import ATC.ProofTree ()
+
 import Common.DefaultMorphism
 import Common.ProofTree
 
-import ATC.ProofTree ()
-
+import Control.Monad
 import qualified Data.Map as Map
+import Data.Monoid
+
+import Logic.Logic
 
 data Adl = Adl deriving Show
 
@@ -47,6 +49,10 @@ instance Sentences Adl
       sym_name Adl = symName
       map_sen Adl _ = return . id
       print_named Adl = printNSen
+
+instance Monoid Context where
+    mempty = Context Nothing []
+    mappend (Context m1 l1) (Context m2 l2) = Context (mplus m1 m2) $ l1 ++ l2
 
 instance Syntax Adl
     Context
