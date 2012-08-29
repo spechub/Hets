@@ -57,11 +57,13 @@ check4FileAux :: String -- ^ file name
               -> IO [String]
 check4FileAux name env = do
       pPath <- getEnvDef env ""
+      let path = "" : splitOn
 #ifdef UNIX
-	  let path = "" : splitOn ":" pPath
+            ':'
 #else
-      let path = "" : splitOn ';' pPath
+            ';'
 #endif
+            pPath
       exIT <- mapM (doesFileExist . (</> name)) path
       return $ map fst $ filter snd $ zip path exIT
 
