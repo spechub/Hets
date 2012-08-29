@@ -57,10 +57,11 @@ logsent = do ch <- key notS <?> "negation"
              return $ Bool_sent (con s1 s2)
                $ Range $ joinRanges [rangeSpan ch, rangeSpan s1, rangeSpan s2]
       <|> do (ch,q,ident) <- parse_keys boolop_quant
-             vars <- parens (many1 (pToken variable))
+             vars <- parens (many1 (liftM Name (pToken variable)
+                                    <|> liftM SeqMark (pToken rowvar)))
                      <?> "quantified variables"
              s <- sentence <?> "sentence after \"" ++ ident ++ "\""
-             return $ Quant_sent q (map Name vars) s
+             return $ Quant_sent q vars s
                $ Range $ joinRanges [rangeSpan ch, rangeSpan vars, rangeSpan s]
 
 plainAtom :: CharParser st ATOM
@@ -83,10 +84,11 @@ funterm = parens funterm
                [equalS, neqS, andS, orS, equivS, implS, forallS, existsS, notS]
                (word <|> variable)) <?> "funword"
              let nt = Name_term relword
-             t <- many term <?> "arguments"
+             t <- many (liftM Seq_marks (pToken rowvar)
+                        <|> liftM Term_seq term) <?> "arguments"
              if null t
                then return nt
-               else return $ Funct_term nt (map Term_seq t)
+               else return $ Funct_term nt t
                     (Range $ joinRanges [rangeSpan relword, rangeSpan t])
 
 relsent :: CharParser st SENTENCE

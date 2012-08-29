@@ -54,7 +54,11 @@ quotedString = do
   return $ q1:s++[q2]
 
 variable :: CharParser st String
-variable = oneOf "?@" <:> word
+variable = char '?' <:> word
+
+-- Row variables are called Sequences Markers in CommonLogic
+rowvar :: CharParser st String
+rowvar = char '@' <:> word
 
 sign :: CharParser st String
 sign = option "" (string "-")
