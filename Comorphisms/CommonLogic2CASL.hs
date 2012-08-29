@@ -90,9 +90,8 @@ instance Comorphism
       has_model_expansion CommonLogic2CASL = True
 
 mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
-mapSub _ = CSL.caslTop
-        { CSL.cons_features = CSL.emptyMapConsFeature
-        , CSL.sub_features = CSL.NoSub }
+mapSub _ = CSL.cFol
+        { CSL.cons_features = CSL.emptyMapConsFeature }
 
 mapMor :: ClMor.Morphism -> Result CMor.CASLMor
 mapMor mor = Result [] $ Just (CMor.embedMorphism ()
