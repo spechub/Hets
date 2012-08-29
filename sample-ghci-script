@@ -25,7 +25,7 @@ zeroProfile -- and print it
 let nodeNat = getNode nodeSigNat -- get development graph node index for Nat
 let dgNodeLabNat = labDG libNumbers nodeNat -- get node label for Nat
 let gtheoryNat = dgn_theory dgNodeLabNat -- get G_theory for Nat
-let Just sensNat = case gtheoryNat of G_theory lid _ _ s _ -> coerceThSens lid CASL "" s
+let Just sensNat = case gtheoryNat of G_theory lid _ _ _ s _ -> coerceThSens lid CASL "" s
 -- extract CASL sentences from theory
 let Just power_Nat = Map.lookup "power_Nat" sensNat -- get formula named power_Nat
 :m +Common.OrderedMap
