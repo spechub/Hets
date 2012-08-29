@@ -198,7 +198,7 @@ doSelectAllEntries selectAll lb =
 doDisplayGoals :: ProofState -> IO ()
 doDisplayGoals s =
     case currentTheory s of
-      G_theory lid1 (ExtSign sig1 _) _ sens1 _ -> do
+      G_theory lid1 _ (ExtSign sig1 _) _ sens1 _ -> do
        let thName = theoryName s
            goalsText = show . Pretty.vsep .
                           map (print_named lid1 .
