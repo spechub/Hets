@@ -121,7 +121,7 @@ getPropSens i args mres = let
   ncs = number args
   opOrPred = if isJust mres then "op " else "pred "
   in makeNamed (opOrPred ++ show i)
-         (toSubClass i $ [ObjectJunction IntersectionOf
+         (toSubClass i [ObjectJunction IntersectionOf
             $ maybeToList (fmap toC mres)
             ++ map (\ (a, n) -> ObjectValuesFrom SomeValuesFrom
                  (toO i n) $ toC a) ncs])
@@ -168,25 +168,22 @@ keepMaximals csig = keepMinimals1 True csig id . Set.toList
 mapSign :: CS.Sign f e -> Result (OS.Sign, [Named Axiom])
 mapSign csig = let
   esorts = emptySortSet csig
-  (eqs, subss) = eqAndSubsorts False $ sortRel csig
+  srel = sortRel csig
+  (eqs, subss) = eqAndSubsorts False srel
+  (isos, rels) = singleAndRelatedSorts srel
+  disjSorts = concatMap (\ l -> case l of
+    _ : _ : _ -> [makeNamed ("disjoint " ++ show l) $ mkMisc Disjoint l]
+    _ -> []) . sequence $ map (: []) isos ++ map (keepMaximals csig) rels
   ss = sortSet csig
   nsorts = Set.difference ss esorts
   mkMisc ed l = PlainAxiom (Misc []) $ ListFrameBit (Just $ EDRelation ed)
           $ ExpressionBit $ map toACE l
-  disjSorts s = if Set.size s <= 1 then [] else
-    let (m, r) = Set.deleteFindMin s
-    in concatMap (\ t -> case t of
-      _ | haveCommonSubsorts csig t m
-          || haveCommonSupersorts True csig t m -> []
-        | otherwise -> [makeNamed ("disjoint " ++ show m ++ " and " ++ show t)
-          $ mkMisc Disjoint [m, t]]
-      ) (Set.toList r) ++ disjSorts r
   eqSorts = map (\ es -> makeNamed ("equal sorts " ++ show es)
                  $ mkMisc Equivalent es) eqs
   subSens = map (\ (s, ts) -> makeNamed
     ("subsort " ++ show s ++ " of " ++ show ts) $ toSC s ts) subss
   nonEmptySens = map (\ s -> mkIndi True s [s]) $ Set.toList nsorts
-  sortSens = eqSorts ++ disjSorts ss ++ subSens ++ nonEmptySens
+  sortSens = eqSorts ++ disjSorts ++ subSens ++ nonEmptySens
   mkIndi b i ts = makeNamed
         ("individual " ++ show i ++ " of class " ++ showDoc ts "")
         $ PlainAxiom (SimpleEntity $ Entity NamedIndividual

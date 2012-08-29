@@ -231,6 +231,14 @@ eqAndSubsorts groupSubsorts srel = let
        . (if groupSubsorts then Rel.transpose else id)
        . Rel.transReduce . Rel.irreflex $ Rel.collaps cs srel)
 
+singleAndRelatedSorts :: Rel.Rel SORT -> ([SORT], [[SORT]])
+singleAndRelatedSorts srel = let
+  ss = Rel.keysSet srel
+  rs = Rel.sccOfClosure
+     . Rel.transClosure . Rel.union srel $ Rel.transpose srel
+  is = Set.difference ss $ Set.unions rs
+  in (Set.toList is, map Set.toList rs)
+
 printSign :: (e -> Doc) -> Sign f e -> Doc
 printSign fE s = let
   printRel (supersort, subsorts) =
