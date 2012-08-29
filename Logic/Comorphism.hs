@@ -74,12 +74,14 @@ class (Language cid,
     the source sublogic is the maximal one for which the comorphism works -}
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
+    sourceSublogic cid = top_sublogic $ sourceLogic cid
     minSourceTheory :: cid -> Maybe (LibName, String)
     minSourceTheory _ = Nothing
     targetLogic :: cid -> lid2
     {- finer information of target sublogics corresponding to source sublogics
     this function must be partial because mapTheory is partial -}
     mapSublogic :: cid -> sublogics1 -> Maybe sublogics2
+    mapSublogic cid _ = Just $ top_sublogic $ targetLogic cid
     {- the translation functions are partial
     because the target may be a sublanguage
     map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
