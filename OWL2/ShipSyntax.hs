@@ -227,7 +227,7 @@ ppEqOrLess s = case s of
 
 ppRoleType :: RoleType -> Doc
 ppRoleType (RoleType r s t) =
-  fsep [ppRole r, colon <+> ppConcept s, cross <+> ppConcept t]
+  ppRole r <+> fsep [colon <+> ppConcept s, cross <+> ppConcept t]
 
 ppBox :: Box -> Doc
 ppBox b = case b of
