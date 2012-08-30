@@ -30,7 +30,7 @@ import GMP.Logics.Mon
 import GMP.Logics.C
 import GMP.Logics.P
 import GMP.Logics.G
-import GMP.Logics.Con
+import GMP.Logics.Cond
 import GMP.Logics.CKCM
 import GMP.Logics.SysS
 import GMP.Logics.DisjUnion
@@ -39,7 +39,7 @@ import GMP.Logics.DisjUnion
 -- | Runs the parser and the prover and prints the result(s) of obtained.
 runLex :: (SigFeature b c d, SigFeature a b (c d), Eq (a (b (c d)))) => Parser (Formula (a (b (c d)))) -> String -> [Bool] -> IO ()
 runLex p_rL input flags = run (do spaces
-                                  x <- p_rL 
+                                  x <- p_rL
                                   eof
                                   return x
                               ) input flags
@@ -83,7 +83,7 @@ runTest ml input flags = do
      _ -> showHelp
    return ()
 
--- | Function for displaying user help 
+-- | Function for displaying user help
 showHelp :: IO()
 showHelp = do
     putStrLn ( "Usage:\n" ++

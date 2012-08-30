@@ -1,7 +1,7 @@
 {- | Module     : $Header$
  -  Description : Implementation of logic instance CK+CEM
  -  Copyright   : (c) Daniel Hausmann & Georgel Calin & Lutz Schroeder, DFKI Lab Bremen,
- -                Rob Myers & Dirk Pattinson, Department of Computing, ICL 
+ -                Rob Myers & Dirk Pattinson, Department of Computing, ICL
  -  License     : GPLv2 or higher, see LICENSE.txt
  -  Maintainer  : hausmann@dfki.de
  -  Stability   : provisional
@@ -11,7 +11,7 @@
  - conditional excluded middle.
  -}
 
-module GMP.Logics.Con where
+module GMP.Logics.Cond where
 import List
 import Ratio
 import Maybe
@@ -26,7 +26,7 @@ import GMP.Parser
 -- instance of feature for CK+CEM
 --------------------------------------------------------------------------------
 
-data Con a = Con [Formula a] deriving (Eq,Show)	
+data Con a = Con [Formula a] deriving (Eq,Show)
 
 instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature Con b c d where
 -- For any set of logically equivalent premises A1,...,An, there are two premises:
@@ -37,7 +37,7 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature Con b c d
   nefMatch flags seq = let neglits premises = [ (Neg phi) | (Neg(Mod (Con (psi:phi:_)))) <- seq, psi `elem` premises]
                            poslits premises = [ phi | (Mod (Con (psi:phi:_))) <- seq, psi `elem` premises]
                        in if (flags!!1)
-                            then 
+                            then
                               [ trace ("  <Trying to match... Current antecedents:>     ["
                                        ++ (pretty_list prems) ++ "]") $
                                 [[Sequent (are_equiv prems)]] ++
@@ -62,11 +62,11 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature Con b c d
 -- to the input formula.
 are_equiv :: (Feature a b) => [Formula (a b)] -> [Formula (a b)]
 are_equiv [] = []
-are_equiv (psi:[]) = -- trace ("  <Identity not needed to prove:>               " 
-                     --        ++ (pretty psi) ++ " = " ++ (pretty psi)) $ 
+are_equiv (psi:[]) = -- trace ("  <Identity not needed to prove:>               "
+                     --        ++ (pretty psi) ++ " = " ++ (pretty psi)) $
                      []
 are_equiv (psi:phi:xs) =  -- trace ("  <One pair to prove:>                          "
-                          --        ++ (pretty phi) ++ " = " ++ (pretty psi)) $ 
+                          --        ++ (pretty phi) ++ " = " ++ (pretty psi)) $
                           (And (Neg (And (Neg psi) phi)) (Neg (And (Neg phi) psi))) :
                           (are_equiv (psi:xs))
 
