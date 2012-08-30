@@ -43,7 +43,10 @@ missingExecutableInPath name = do
   mp <- findExecutable name
   case mp of
     Nothing -> return True
-    Just name' -> fmap null $ check4Prover (takeFileName name') "PATH" ()
+    Just name' -> do
+      p1 <- check4Prover (takeFileName name') "PATH" ()
+      p2 <- check4Prover (takeFileName name') "Path" ()
+      return $ null p1 && null p2
 
 -- | Checks if a file exists in an unsafe manner
 unsafeFileCheck :: String -- ^ prover Name
