@@ -48,6 +48,7 @@ import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.CFOL2IsabelleHOL
+import Comorphisms.CommonLogic2IsabelleHOL
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCASL2CoPCFOL
 import Comorphisms.CoCASL2CoSubCFOL
@@ -146,6 +147,7 @@ isaComorphisms = do
        -- CommonLogic
        return
          [ Comorphism CFOL2IsabelleHOL
+         , Comorphism CommonLogic2IsabelleHOL
          , Comorphism QBF2Prop
          , Comorphism Prop2QBF
          , subpc2IHOLviaHasCASL

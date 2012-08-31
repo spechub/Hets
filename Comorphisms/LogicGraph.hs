@@ -61,6 +61,7 @@ import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2HasCASL
 import Comorphisms.CFOL2IsabelleHOL
+import Comorphisms.CommonLogic2IsabelleHOL
 import Comorphisms.HolLight2Isabelle
 import Comorphisms.SuleCFOL2SoftFOL
 import Comorphisms.Prop2CASL
@@ -140,6 +141,7 @@ comorphismList :: [AnyComorphism]
 comorphismList =
     [ Comorphism CASL2HasCASL
     , Comorphism CFOL2IsabelleHOL
+    , Comorphism CommonLogic2IsabelleHOL
     , Comorphism HolLight2Isabelle
     , Comorphism Prop2CASL
     , Comorphism CASL2Prop
