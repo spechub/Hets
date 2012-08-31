@@ -45,8 +45,13 @@ missingExecutableInPath name = do
     Nothing -> return True
     Just name' -> do
       p1 <- check4Prover (takeFileName name') "PATH" ()
-      p2 <- check4Prover (takeFileName name') "Path" ()
-      return $ null p1 && null p2
+      p2 <-
+#ifdef UNIX
+        return []
+#else
+        check4Prover (takeFileName name') "Path" ()
+#endif
+      return . null $ p1 ++ p2
 
 -- | Checks if a file exists in an unsafe manner
 unsafeFileCheck :: String -- ^ prover Name
