@@ -599,8 +599,8 @@ check: $(TESTTARGETS)
 ## Preparing the version of Hets
 Driver/Version.hs: Driver/Version.in version_nr
 	$(RM) $@
-	LANG=C $(PERL) utils/build_version.pl version_nr \
-            < Driver/Version.in > $@
+	cp Driver/Version.in $@
+	echo "  ++ \"$(shell cat version_nr), $(shell date +"%d %b %Y")\"" >> $@
 	chmod 444 $@
 
 ## two hardcoded dependencies for a correct generation of Version.hs
