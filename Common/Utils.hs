@@ -79,13 +79,15 @@ import System.Posix.Files (createNamedPipe, unionFileModes,
 import System.Posix.IO (OpenMode (ReadWrite), defaultFileFlags,
                         openFd, closeFd, fdRead)
 import System.Posix.Types (Fd)
-#endif
 
-import Control.Monad
 import Control.Concurrent (threadDelay, forkIO, killThread)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar)
 import Control.Exception as Exception
+
 import System.IO.Unsafe (unsafeInterleaveIO)
+#endif
+
+import Control.Monad
 
 {- | Writes the message to the given handle unless the verbosity is less than
 the message level. -}
