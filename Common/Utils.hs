@@ -218,7 +218,7 @@ mapAccumLCM g f s l = case l of
 {- | Monadic version of concatMap
      taken from http://darcs.haskell.org/ghc/compiler/utils/MonadUtils.hs -}
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
-concatMapM f xs = liftM concat (mapM f xs)
+concatMapM f = liftM concat . mapM f
 
 -- | composition of arbitrary maps
 composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
@@ -437,19 +437,19 @@ getTempFile str file = do
 #ifdef UNIX
 getTempFifo :: String -> IO FilePath
 getTempFifo f = do
- tmpDir <- getTemporaryDirectory
- (tmpFile, hdl) <- openTempFile tmpDir f
- hClose hdl
- removeFile tmpFile
- createNamedPipe tmpFile (unionFileModes ownerReadMode ownerWriteMode)
- return tmpFile
+  tmpDir <- getTemporaryDirectory
+  (tmpFile, hdl) <- openTempFile tmpDir f
+  hClose hdl
+  removeFile tmpFile
+  createNamedPipe tmpFile $ unionFileModes ownerReadMode ownerWriteMode
+  return tmpFile
 #else
 getTempFifo :: String -> IO FilePath
 getTempFifo _ = return ""
 #endif
 
 #ifdef UNIX
-type Pipe = (IO (),MVar String,Fd)
+type Pipe = (IO (), MVar String, Fd)
 #else
 type Pipe = ()
 #endif
@@ -458,34 +458,29 @@ type Pipe = ()
 openFifo :: FilePath -> IO Pipe
 openFifo fp = do
   mvar <- newEmptyMVar
-  let readF = \fd -> (forever $ do (s,_) <- fdRead fd 100
-                                   putMVar mvar s)
-                       `Exception.catch`
-                       (\ e -> const (threadDelay 100)
-                               (e :: Exception.IOException))
-  fd  <- openFd fp ReadWrite Nothing defaultFileFlags
-  let reader = forever $ (readF fd) `Exception.catch`
-               (\ e -> do closeFd fd; throwIO (e :: Exception.IOException))
-  return (reader,mvar,fd)
+  let readF fd = forever (fmap fst (fdRead fd 100) >>= putMVar mvar)
+        `Exception.catch`
+        \ e -> const (threadDelay 100) (e :: Exception.IOException)
+  fd <- openFd fp ReadWrite Nothing defaultFileFlags
+  let reader = forever $ readF fd `Exception.catch`
+               \ e -> closeFd fd >> throwIO (e :: Exception.IOException)
+  return (reader, mvar, fd)
 
 readFifo' :: MVar String -> IO [String]
 readFifo' mvar = do
- x  <- unsafeInterleaveIO $ takeMVar mvar
- xs <- unsafeInterleaveIO $ readFifo' mvar
- return $ x:xs
+  x <- unsafeInterleaveIO $ takeMVar mvar
+  xs <- unsafeInterleaveIO $ readFifo' mvar
+  return $ x : xs
 
 readFifo :: FilePath -> IO ([String], IO ())
 readFifo fp = do
- (reader,pipe,fd) <- openFifo fp
- tid <- forkIO $ reader
- l <- readFifo' pipe
- m <- newEmptyMVar
- forkIO $ (do takeMVar m; killThread tid; closeFd fd)
- return (l,putMVar m ())
+  (reader, pipe, fd) <- openFifo fp
+  tid <- forkIO reader
+  l <- readFifo' pipe
+  m <- newEmptyMVar
+  forkIO $ takeMVar m >> killThread tid >> closeFd fd
+  return (l, putMVar m ())
 #else
-openFifo :: FilePath -> IO Pipe
-openFifo _ = return ()
-
 readFifo :: FilePath -> IO ([String], IO ())
-readFifo _ = return ([],return ())
+readFifo _ = return ([], return ())
 #endif
