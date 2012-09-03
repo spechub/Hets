@@ -450,8 +450,6 @@ getTempFifo _ = return ""
 
 #ifdef UNIX
 type Pipe = (IO (), MVar String, Fd)
-#else
-type Pipe = ()
 #endif
 
 #ifdef UNIX
