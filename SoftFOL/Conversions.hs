@@ -14,7 +14,7 @@ Functions to convert to internal SP* data structures.
 module SoftFOL.Conversions where
 
 import Control.Exception
-import System.Time
+import Data.Time
 import Data.Maybe
 import Data.List
 
@@ -157,7 +157,7 @@ insertSentence lp nSen = lp {formulaLists = fLists'}
 genSoftFOLProblem :: String -> SPLogicalPart
                 -> Maybe (Named SPTerm) -> IO SPProblem
 genSoftFOLProblem thName lp m_nGoal =
-    do d <- getClockTime
+    do d <- getCurrentTime
        return $ problem $ show d
     where
     problem sd = SPProblem
