@@ -291,7 +291,7 @@ makeOpts opts flg = case flg of
     Analysis x -> opts { analysis = x }
     Gui x -> opts { guiType = x }
     InType x -> opts { intype = x }
-    LibDirs x -> opts { libdirs = splitOn ':' x }
+    LibDirs x -> opts { libdirs = splitPaths x }
     ModelSparQ x -> opts { modelSparQ = x }
     CounterSparQ x -> opts { counterSparQ = x }
     OutDir x -> opts { outdir = x }
@@ -745,7 +745,7 @@ parseSIdOpts = map mkSimpleId . splitOn ','
 
 -- | 'parseTransOpt' parses a 'Trans' Flag from user input
 parseTransOpt :: String -> Flag
-parseTransOpt = Trans . map mkSimpleId . splitOn ':'
+parseTransOpt = Trans . map mkSimpleId . splitPaths
 
 -- | guesses the InType
 guess :: String -> InType -> InType

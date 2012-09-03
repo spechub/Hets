@@ -69,7 +69,8 @@ checkPresenceProvers ls = case ls of
     [] -> return []
     s@"SPASS" : l -> do
                   path <- getEnvDef "PATH" ""
-                  let lsPaths = map trim $ splitOn ':' path
+                  path2 <- getEnvDef "Path" ""
+                  let lsPaths = map trim $ splitPaths path ++ splitPaths path2
                       completePath x = x </> s
                   result <- anyIO (doesFileExist . completePath)
                                lsPaths

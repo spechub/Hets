@@ -33,6 +33,7 @@ module Common.Utils
   , composeMap
   , keepMins
   , splitOn
+  , splitPaths
   , splitBy
   , splitByList
   , numberSuffix
@@ -242,6 +243,15 @@ splitOn :: Eq a => a -- ^ separator
         -> [a] -- ^ list to split
         -> [[a]]
 splitOn x = filter (not . null) . splitBy x
+
+-- | split a colon (or on windows semicolon) separated list of paths
+splitPaths :: String -> [FilePath]
+splitPaths = splitOn
+#ifdef UNIX
+            ':'
+#else
+            ';'
+#endif
 
 {- |
   Same as splitOn but empty lists are kept. Even the empty list is split into

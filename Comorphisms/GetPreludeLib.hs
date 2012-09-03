@@ -36,7 +36,7 @@ import System.FilePath
 readLib :: FilePath -> IO [G_theory]
 readLib fp0 = do
   lib <- getEnvDef "HETS_LIB" ""
-  let opts = defaultHetcatsOpts { libdirs = splitOn ':' lib }
+  let opts = defaultHetcatsOpts { libdirs = splitPaths lib }
       fp = lib </> fp0
   Result _ mLib <- runResultT $ anaLibFileOrGetEnv preLogicGraph
     opts Set.empty Map.empty emptyDG (fileToLibName opts fp) fp

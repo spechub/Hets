@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  Check for availability of provers
@@ -45,12 +44,7 @@ missingExecutableInPath name = do
     Nothing -> return True
     Just name' -> do
       p1 <- check4Prover (takeFileName name') "PATH" ()
-      p2 <-
-#ifdef UNIX
-        return []
-#else
-        check4Prover (takeFileName name') "Path" ()
-#endif
+      p2 <- check4Prover (takeFileName name') "Path" ()
       return . null $ p1 ++ p2
 
 -- | Checks if a file exists in an unsafe manner
@@ -65,13 +59,7 @@ check4FileAux :: String -- ^ file name
               -> IO [String]
 check4FileAux name env = do
       pPath <- getEnvDef env ""
-      let path = "" : splitOn
-#ifdef UNIX
-            ':'
-#else
-            ';'
-#endif
-            pPath
+      let path = "" : splitPaths pPath
       exIT <- mapM (doesFileExist . (</> name)) path
       return $ map fst $ filter snd $ zip path exIT
 
