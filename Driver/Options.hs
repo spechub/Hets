@@ -844,7 +844,7 @@ checkLibDirs fs =
                 let d = LibDirs s
                 checkLibDirs [d]
                 return [d]
-        [LibDirs f] -> mapM_ checkLibDir (splitOn ':' f) >> return fs
+        [LibDirs f] -> mapM_ checkLibDir (splitPaths f) >> return fs
         _ -> hetsError
             "Only one library path may be specified on the command line"
 
