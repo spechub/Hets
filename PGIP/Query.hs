@@ -126,16 +126,18 @@ data QueryKind =
   | GlobCmdQuery String
   | GlProvers (Maybe String)
   | GlTranslations
-  | GlShowProverWindow ProverWindowMode
+  | GlShowProverWindow ProverMode
   | GlAutoProve
-  { apInclTheorems :: Bool
+  { apProverMode :: ProverMode
+  , apInclTheorems :: Bool
   , apProver :: Maybe String
   , apTranslation :: Maybe String
-  , apTimeout :: Maybe Int }
+  , apTimeout :: Maybe Int
+  , apNodeSel :: [String] }
   | NodeQuery NodeIdOrName NodeCommand
   | EdgeQuery EdgeId String
 
-data ProverWindowMode = GlProofs | GlConsistency
+data ProverMode = GlProofs | GlConsistency
 
 data NodeCommand =
     NcCmd NodeCmd
@@ -213,7 +215,7 @@ anaQuery q' =
            (theorems, qqr) = partition ((== Just "on") . snd) qr
            noPP = null pps && null incls && null theorems
        -- TODO i kind of abused this functions structure for autoproofs here
-       in if not $ null atP then Right(mi, GlShowProverWindow GlProofs) else
+       in if not $ null atP then Right (mi, GlShowProverWindow GlProofs) else
           if null qqr && length ais < 2 then case (afs, ags, ans, aes, aids) of
          (_, [], [], [], []) | noPP -> if length afs > 1
            then Left $ "non-unique format " ++ show afs

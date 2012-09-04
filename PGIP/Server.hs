@@ -160,9 +160,19 @@ hetsServer opts1 = do
     else case B8.unpack (requestMethod re) of
       "GET" -> liftRun $ if isInfixOf "menus" query then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
-         if null cs
-           then getHetsResponse opts [] sessRef pathBits splitQuery
-           else mkHtmlPage path dirs
+         if not $ null cs then mkHtmlPage path dirs
+           -- AUTOMATIC PROOFS (parsing)
+           else if isPrefixOf "?autoproof=" query then
+             let qr k = Query (DGQuery k Nothing) $
+                   anaAutoProofQuery splitQuery in do
+               Result ds ms <- runResultT $ case readMaybe $ head pathBits of
+                 Nothing -> fail "cannot read session id for automatic proofs"
+                 Just k' -> getHetsResult opts [] sessRef (qr k')
+               return $ case ms of
+                 Nothing -> mkResponse status400 $ showRelDiags 1 ds
+                 Just s -> mkOkResponse s
+           -- AUTOMATIC PROOFS E.N.D.
+           else getHetsResponse opts [] sessRef pathBits splitQuery
       "POST" -> do
 #ifdef OLDSERVER
         (params, files) <- parseRequestBody tempFileSink re
@@ -184,9 +194,9 @@ hetsServer opts1 = do
               res mTmpFile
         liftRun $ case files of
           [] -> if isPrefixOf "?prove=" query then
-            getHetsResponse opts [] sessRef pathBits
-             $ splitQuery ++ map
-                   (\ (a, b) -> (B8.unpack a, Just $ B8.unpack b)) params
+               getHetsResponse opts [] sessRef pathBits
+                 $ splitQuery ++ map (\ (a, b)
+                 -> (B8.unpack a, Just $ B8.unpack b)) params
             else mRes
           [(_, f)] | query /= "?update" -> do
            let fn = takeFileName $ B8.unpack $ fileName f
@@ -200,6 +210,20 @@ hetsServer opts1 = do
           _ -> getHetsResponse
                  opts (map snd files) sessRef pathBits splitQuery
       _ -> return $ mkResponse status405 ""
+
+anaAutoProofQuery :: [(String, Maybe String)] -> QueryKind
+anaAutoProofQuery splitQuery = let
+  lookup2 str = fromMaybe Nothing $ lookup str splitQuery
+  prover = lookup2 "prover"
+  trans = lookup2 "translation"
+  timeout = lookup2 "timeout" >>= readMaybe
+  nodeSel = map fst $ filter ((== Just "on") . snd) splitQuery
+  prOrCons = case lookup2 "autoProof" of
+    Just "proof" -> GlProofs
+    Just "cons" -> GlConsistency
+    _ -> error "lost value of autoProof on the way. what happened?"
+  -- TODO add include theorems! and add timeout!
+  in GlAutoProve prOrCons False prover trans timeout nodeSel
 
 
 -- quick approach to whether or not the query can be a RESTfull request
@@ -318,7 +342,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
             in (case lookup2 "node" of
               -- prove all nodes if no singleton is selected
               Nothing -> return $ Query (DGQuery sId Nothing)
-                $ GlAutoProve incl prover translation timeout
+                $ GlAutoProve GlProofs incl prover translation timeout []
               -- otherwise run prover for single node only
               Just ndIri -> parseNodeQuery ndIri sId $ return
                 $ ProveNode incl prover translation timeout []) >>= getResponse
@@ -566,14 +590,14 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
             GlProvers mt -> return $ getFullProverList mt dg
             GlTranslations -> return $ getFullComorphList dg
             GlShowProverWindow proofOrCons -> showAutoProofWindow dg k
-            GlAutoProve incl mp mt tl -> do
-                (newLib, sens) <- proveAllNodes libEnv ln dg incl mp mt tl
-                if null sens then return "nothing to prove" else do
-                    lift $ nextSess sessRef newLib k
-                    -- TODO adjust formatResult to show multiple nodes results
-                    return $ formatResults k 0 $ unode "results" $
-                       map (\ (n, e) -> unode "goal"
-                         [unode "name" n, unode "result" e]) sens
+            GlAutoProve proofOrCons incl mp mt tl nds -> do
+              (newLib, sens) <- proveMultiNodes libEnv ln dg incl mp mt tl nds
+              if null sens then return "nothing to prove" else do
+                  lift $ nextSess sessRef newLib k
+                  -- TODO adjust formatResult to show multiple nodes results
+                  return $ formatResults k 0 $ unode "results" $
+                     map (\ (n, e) -> unode "goal"
+                       [unode "name" n, unode "result" e]) sens
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == "update" then
@@ -792,17 +816,68 @@ showAutoProofWindow dg sessId = let
          `add_attrs` inputNode
   fnodes = initFNodes $ labNodesDG dg
   nodeSel = map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
+    , mkAttr "hasOpenGoals" $ show $ not $ allProved fn
     , mkAttr "name" $ escStr $ name fn ]
     $ unode "input" $ showHtml fn) fnodes
-  br = unode "br " ()
+
+
+  -- select unproven goals by button
+  selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
+    , mkAttr "onClick" "chkUnproven()"] inputNode
+  -- select or deselect all theorems by button
+  selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
+    , mkAttr "onClick" "chkAll(true)"] inputNode
+  deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
+    , mkAttr "onClick" "chkAll(false)"] inputNode
+
   jvScr = unlines
-    [ "function updPrSel()" ]
+        -- select unproven goals by button
+        [ "\nfunction chkUnproven() {"
+        , "  var e = document.forms[0].elements;"
+        , "  for (i = 0; i < e.length; i++) {"
+        , "    if( e[i].type == 'checkbox' )"
+        , "      e[i].checked = e[i].hasOpenGoals != 'True';"
+        , "  }"
+        -- select or deselect all theorems by button
+        , "}\nfunction chkAll(b) {"
+        , "  var e = document.forms[0].elements;"
+        , "  for (i = 0; i < e.length; i++) {"
+        , "    if( e[i].type == 'checkbox' ) e[i].checked = b;"
+        , "  }"
+        -- autoselect SPASS if possible
+        , "}\nwindow.onload = function() {"
+        , "  prSel = document.forms[0].elements.namedItem('prover');"
+        , "  prs = prSel.getElementsByTagName('option');"
+        , "  for ( i=0; i<prs.length; i++ ) {"
+        , "    if( prs[i].value == 'SPASS' ) {"
+        , "      prs[i].selected = 'selected';"
+        , "      updCmSel('SPASS');"
+        , "      return;"
+        , "    }"
+        , "  }"
+        -- if SPASS unable, select first one in list
+        , "  prs[0].selected = 'selected';"
+        , "  updCmSel( prs[0].value );"
+        , "}" ]
+
+
   in do
-    prSel <- fmap showProverSelection $ mapM (\ (_, nd) ->
+    (prSel, cmSel, jvScr1) <- fmap showProverSelection $ mapM (\ (_, nd) ->
       case maybeResult $ getGlobalTheory nd of
         Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
         Just gTh -> return $ sublogicOfTh gTh) $ labNodesDG dg
-    return $ mkHtmlElem "autoProofs" $ intersperse br nodeSel
+
+    -- combine elements within a form
+    let hidStr = add_attrs [ mkAttr "name" "autoproof"
+          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+          , mkAttr "value" "proof" ] inputNode -- use val=cons for consChecker
+        nodeMenu = let br = unode "br " () in add_attrs [
+          mkAttr "name" "nodeSel", mkAttr "method" "get"]
+          $ unode "form" $ [ hidStr, prSel, cmSel, br,
+          selAll, deSelAll, selUnPr] ++ intersperse br (prBt : nodeSel)
+
+
+    return $ mkHtmlElemScript "autoProofs" (jvScr1 ++ jvScr) $ [ nodeMenu ]
 
 showHtml :: FNode -> String
 showHtml fn = name fn ++ " " ++ (goalsToPrefix $ toGtkGoals fn)
@@ -899,16 +974,19 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
         (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
 -- run over all dgnodes and prove available goals for each
-proveAllNodes :: LibEnv -> LibName -> DGraph -> Bool -> Maybe String
-  -> Maybe String -> Maybe Int -> ResultT IO (LibEnv, [(String, String)])
-proveAllNodes le ln dg useTh mp mt tl = foldM
+proveMultiNodes :: LibEnv -> LibName -> DGraph -> Bool -> Maybe String
+  -> Maybe String -> Maybe Int -> [String]
+  -> ResultT IO (LibEnv, [(String, String)])
+proveMultiNodes le ln dg useTh mp mt tl nodeSel = foldM
   (\ (le', sens) nl@(_, dgn) -> case maybeResult $ getGlobalTheory dgn of
       Nothing -> fail $
                     "cannot compute global theory of:\n" ++ show dgn
       Just gTh -> let subL = sublogicOfTh gTh in do
         (le'', sens') <- proveNode le' ln dg nl gTh subL useTh mp mt tl
           $ map fst $ getThGoals gTh
-        return (le'', sens ++ sens')) (le, []) $ labNodesDG dg
+        return (le'', sens ++ sens')) (le, []) $ filter (case nodeSel of
+          [] -> hasOpenGoals . snd
+          _ -> (`elem` nodeSel) . showName . dgn_name . snd) $ labNodesDG dg
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
