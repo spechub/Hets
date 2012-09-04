@@ -156,7 +156,7 @@ defined :: TermExtension f => Set.Set SORT -> TERM f -> Range -> FORMULA f
 defined bsorts t ps = let s = sortOfTerm t in
   if Set.member s bsorts then Predication
          (Qual_pred_name defPred (Pred_type [s] nullRange) nullRange) [t] ps
-  else True_atom ps
+  else Atom True ps
 
 defVards :: TermExtension f => Set.Set SORT -> [VAR_DECL] -> FORMULA f
 defVards bs = conjunct . concatMap (defVars bs)
@@ -297,13 +297,13 @@ codeRecord :: TermExtension f => Bool -> Set.Set SORT -> (f -> f)
 codeRecord uniBot bsrts mf = (mapRecord mf)
     { foldQuantification = \ _ q vs qf ps ->
       case q of
-      Universal ->
-          Quantification q vs (Implication (defVards bsrts vs) qf True ps) ps
-      _ -> Quantification q vs (Conjunction [defVards bsrts vs, qf] ps) ps
+      Universal -> Quantification q vs
+        (Relation (defVards bsrts vs) Implication qf ps) ps
+      _ -> Quantification q vs (Junction Con [defVards bsrts vs, qf] ps) ps
     , foldDefinedness = const $ defined bsrts
-    , foldExistl_equation = \ _ t1 t2 ps ->
-      Conjunction [Strong_equation t1 t2 ps,
-                  defined bsrts t1 ps] ps
+    , foldEquation = \ _ t1 e t2 ps -> if e == Existl then
+      Junction Con [Equation t1 Strong t2 ps,
+                  defined bsrts t1 ps] ps else Equation t1 e t2 ps
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) ps
     , foldSort_gen_ax = \ _ cs b -> if uniBot then

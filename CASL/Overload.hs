@@ -87,17 +87,11 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
         Result (envDiags sign') $ Just ()
         f' <- minExpFORMULA mef sign' f
         return (Quantification q vars f' pos)
-    Conjunction fs pos -> do
+    Junction j fs pos -> do
         fs' <- mapR (minExpFORMULA mef sign) fs
-        return (Conjunction fs' pos)
-    Disjunction fs pos -> do
-        fs' <- mapR (minExpFORMULA mef sign) fs
-        return (Disjunction fs' pos)
-    Implication f1 f2 b pos ->
-        joinResultWith (\ f1' f2' -> Implication f1' f2' b pos)
-              (minExpFORMULA mef sign f1) $ minExpFORMULA mef sign f2
-    Equivalence f1 f2 pos ->
-        joinResultWith (\ f1' f2' -> Equivalence f1' f2' pos)
+        return (Junction j fs' pos)
+    Relation f1 c f2 pos ->
+        joinResultWith (\ f1' f2' -> Relation f1' c f2' pos)
               (minExpFORMULA mef sign f1) $ minExpFORMULA mef sign f2
     Negation f pos -> do
         f' <- minExpFORMULA mef sign f
@@ -107,10 +101,8 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
     Predication (Qual_pred_name ide ty pos1) terms pos2
         -> minExpFORMULApred mef sign ide (Just $ toPredType ty)
            terms (pos1 `appRange` pos2)
-    Existl_equation term1 term2 pos
-        -> minExpFORMULAeq mef sign Existl_equation term1 term2 pos
-    Strong_equation term1 term2 pos
-        -> minExpFORMULAeq mef sign Strong_equation term1 term2 pos
+    Equation term1 e term2 pos
+        -> minExpFORMULAeq mef sign (`Equation` e) term1 term2 pos
     Definedness term pos -> do
         t <- oneExpTerm mef sign term
         return (Definedness t pos)

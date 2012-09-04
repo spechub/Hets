@@ -32,7 +32,7 @@ import Data.List
 
 modelCheck :: Int -> (Sign () (), [Named (FORMULA ())])
            -> Table -> Result Bool
-modelCheck _ (_, []) _ = (warning True "not implemented" nullRange)
+modelCheck _ (_, []) _ = justWarn True "not implemented"
 modelCheck c (sign, sent) t =
     modelCheckTest c (extractAnnotations (annoMap sign)) (sign, sent) t
 
@@ -60,7 +60,7 @@ getAnnoAux a = case a of
     Unparsed_anno (Annote_word word) _ _ -> word
     _ -> ""
 
-showDiagStrings:: [Diagnosis] -> [Char]
+showDiagStrings :: [Diagnosis] -> String
 showDiagStrings = intercalate "\n" . map diagString
 
 modelCheckTest :: Int -> [(OP_SYMB, String)]
@@ -72,12 +72,12 @@ modelCheckTest c symbs (sign, xs) t = case xs of
   [x] -> let
     Result d _ = modelCheckTest1 (sign, x) t symbs
     n = length d
-    fstr = shows(printTheoryFormula(mapNamed (simplify_sen CASL sign) x)) "\n"
+    fstr = shows (printTheoryFormula (mapNamed (simplify_sen CASL sign) x)) "\n"
       in if null d
       then hint True ("Formula succeeded:\n" ++ fstr) nullRange
       else warning False ("Formula failed:\n" ++ fstr ++ show n
                ++ " counter example" ++ (if n > 1 then "s" else "")
-               ++ ":\n" ++ showDiagStrings(take c d)) nullRange
+               ++ ":\n" ++ showDiagStrings (take c d)) nullRange
   x : r -> do
     modelCheckTest c symbs (sign, r) t
     modelCheckTest c symbs (sign, [x]) t
@@ -85,55 +85,38 @@ modelCheckTest c symbs (sign, xs) t = case xs of
 modelCheckTest1 :: (Sign () (), Named (FORMULA ())) -> Table
                 -> [(OP_SYMB, String)] -> Result Bool
 modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
-    Conjunction formulas range -> let
+    Junction j formulas range -> let
         varass = Variable_Assignment []
-        res = and [ calculateFormula (sign, formula) varass t symbs
-                  | formula <- formulas ]
-        in if res then return True
-           else warning False ("Conjunction does not hold:"
-                                 ++ showDoc(map (simplify_sen CASL sign)
+        bs = map (\ f -> calculateFormula (sign, f) varass t symbs)
+             formulas
+        res = if j == Con then and else or
+        in if res bs then return True else
+            warning False (show j ++ "junction does not hold:"
+                                 ++ showDoc (map (simplify_sen CASL sign)
                                  formulas) "") range
-    Disjunction formulas range -> let
-        varass = Variable_Assignment []
-        res = or [ calculateFormula (sign, formula) varass t symbs
-                 | formula <- formulas ]
-        in if res then return True
-           else warning False ("Disjunction does not hold:"
-                                  ++ showDoc((map (simplify_sen
-                                  CASL sign) formulas)) "") range
-    Implication f1 f2 _ range ->
+    f@(Relation f1 c f2 range) ->
                   let varass = Variable_Assignment []
                       test1 = calculateFormula (sign, f1) varass t symbs
                       test2 = calculateFormula (sign, f2) varass t symbs
                       res = not (test1 && not test2)
-                  in if res then return True
-                     else warning False ("Implication does not hold: f1 is" ++
-                          showDoc(simplify_sen CASL sign f1) "" ++ "f2 is " ++
-                          showDoc(simplify_sen CASL sign f2) "") range
-    Equivalence f1 f2 range ->
-                  let varass = Variable_Assignment []
-                      test1 = calculateFormula (sign, f1) varass t symbs
-                      test2 = calculateFormula (sign, f2) varass t symbs
-                      res = test1 == test2
-                 in  if res then return True
-                     else warning False ("Equivalence does not hold: f1 is"
-                           ++ showDoc (simplify_sen CASL sign f1) "" ++
-                           "f2 is " ++ showDoc (simplify_sen CASL sign f2) "")
-                           range
+                  in if if c == Equivalence then test1 == test2 else res
+                     then return True
+                     else warning False ("Relation does not hold: " ++
+                          showDoc (simplify_sen CASL sign f) "") range
     Negation f range ->
                   let varass = Variable_Assignment []
-                      res = calculateFormula (sign,f) varass t symbs
+                      res = calculateFormula (sign, f) varass t symbs
                   in if not res then return True
                     else warning False
                                         ("Negation does not hold:"
-                                        ++ showDoc(simplify_sen CASL
+                                        ++ showDoc (simplify_sen CASL
                                                    sign f) "") range
-    True_atom _ -> return True
-    False_atom range -> warning False "False-atom can't be fulfilled!" range
-    Strong_equation t1 t2 range ->
+    Atom b range -> if b then return True else
+      warning False "False-atom can't be fulfilled!" range
+    Equation t1 Strong t2 range ->
                   let varass = Variable_Assignment []
-                      res1 = calculateTerm (sign,t1) varass t symbs
-                      res2 = calculateTerm (sign,t2) varass t symbs
+                      res1 = calculateTerm (sign, t1) varass t symbs
+                      res2 = calculateTerm (sign, t2) varass t symbs
                       equal = equalElements res1 res2
                   in if equal then return True
                      else warning False
@@ -152,12 +135,12 @@ calculateQuantification (sign, qf) vardecls t symbs = case qf of
     Quantification quant _ f range ->
         let tuples = map ( \ ass -> let
                 res = calculateFormula (sign, f) ass t symbs
-                in if res then (res, "") else (res, " " ++ show ass))
+                in if res then (res, "") else (res, ' ' : show ass))
               vardecls
         in case quant of
         Universal -> let failedtuples = filter (not . fst) tuples
           in if null failedtuples then return True else do
-             mapM_ (\ (_, msg)-> warning () msg range) failedtuples
+             mapM_ (\ (_, msg) -> warning () msg range) failedtuples
              return False
         Existential -> let suceededTuples = filter fst tuples
           in if not (null suceededTuples) then return True else
@@ -187,14 +170,14 @@ concatAssignment (Variable_Assignment l1) (Variable_Assignment l2) =
   Variable_Assignment $ l1 ++ l2
 
 calculateTerm :: (Sign () (), TERM ()) -> VARIABLE_ASSIGNMENT -> Table
-              -> [(OP_SYMB,String)] -> [Baserel]
+              -> [(OP_SYMB, String)] -> [Baserel]
 calculateTerm (sign, trm) ass t symbs = case trm of
     Qual_var var _ _ -> getBaseRelForVariable var ass
     Application opSymb terms _ ->
               applyOperation (getIdentifierForSymb opSymb symbs) (sign, terms)
               t ass symbs
     Sorted_term term _ _ -> calculateTerm (sign, term) ass t symbs
-    Cast _ _ _ -> error "CASL.CompositionTable.ModelChecker.calculateTerm"
+    Cast {} -> error "CASL.CompositionTable.ModelChecker.calculateTerm"
     Conditional t1 fo t2 _ ->
               let res = calculateFormula (sign, fo) ass t symbs
               in if res then calculateTerm (sign, t1) ass t symbs
@@ -207,55 +190,55 @@ getIdentifierForSymb symb = concatMap (getIdentifierForSymbAtomar symb)
 getIdentifierForSymbAtomar :: OP_SYMB -> (OP_SYMB, String) -> String
 getIdentifierForSymbAtomar symb (symb2, s) = if symb == symb2 then s else ""
 
-applyOperation :: String -> (Sign () (), [(TERM ())]) -> Table
-               -> VARIABLE_ASSIGNMENT -> [(OP_SYMB,String)]-> [Baserel]
+applyOperation :: String -> (Sign () (), [TERM ()]) -> Table
+               -> VARIABLE_ASSIGNMENT -> [(OP_SYMB, String)] -> [Baserel]
 applyOperation "RA_zero" (_, []) _ _ _ = []
 applyOperation "RA_one" _ (Table (Table_Attrs _ _ baserels)
               _ _ _ _) _ _ = baserels
-applyOperation "RA_intersection" (sign,terms) table ass symbs = intersect
-              (calculateTerm (sign,(head terms)) ass table symbs)
-              (calculateTerm (sign,(head (tail terms))) ass table symbs)
-applyOperation "RA_composition" (sign,terms) (Table attrs
+applyOperation "RA_intersection" (sign, ft : sd : _) table ass symbs = intersect
+              (calculateTerm (sign, ft) ass table symbs)
+              (calculateTerm (sign, sd) ass table symbs)
+applyOperation "RA_composition" (sign, ft : sd : _) (Table attrs
               (Compositiontable cmpentries) convtbl refltbl models)
               ass symbs = calculateComposition cmpentries
-              (calculateTerm (sign,(head terms)) ass (Table attrs
+              (calculateTerm (sign, ft) ass (Table attrs
               (Compositiontable cmpentries) convtbl refltbl models) symbs)
-              (calculateTerm (sign,(head (tail terms))) ass (Table attrs
+              (calculateTerm (sign, sd) ass (Table attrs
               (Compositiontable cmpentries) convtbl refltbl models) symbs)
-applyOperation "RA_union" (sign,terms) table ass symbs = union
-              (calculateTerm (sign,(head terms)) ass table symbs)
-              (calculateTerm (sign,(head(tail terms))) ass table symbs)
-applyOperation "RA_complement" (sign,terms) (Table (Table_Attrs name id_
+applyOperation "RA_union" (sign, ft : sd : _) table ass symbs = union
+              (calculateTerm (sign, ft) ass table symbs)
+              (calculateTerm (sign, sd) ass table symbs)
+applyOperation "RA_complement" (sign, ft : _) (Table (Table_Attrs name id_
                baserels) comptbl convtbl refltbl models) ass symbs =
                complement
-               (calculateTerm (sign,(head terms)) ass (Table (Table_Attrs
+               (calculateTerm (sign, ft) ass (Table (Table_Attrs
                name id_ baserels) comptbl convtbl refltbl models)
                symbs) baserels
 applyOperation "RA_identity" _ (Table (Table_Attrs _ id_ _)
                _ _ _ _) _ _ = [id_]
-applyOperation "RA_converse" (sign,terms)
+applyOperation "RA_converse" (sign, ft : _)
     (Table attrs cmptable cnvtable refltbl models) ass symbs =
   calculateConverse cnvtable
-    (calculateTerm (sign,(head terms)) ass
+    (calculateTerm (sign, ft) ass
      (Table attrs cmptable cnvtable refltbl models) symbs)
 
-applyOperation "RA_shortcut" (sign,terms) (Table attrs comptbl
+applyOperation "RA_shortcut" (sign, ft : _) (Table attrs comptbl
                 (Conversetable_Ternary inv shortc hom) refltbl
                 models) ass symbs = calculateConverseTernary shortc
-                (calculateTerm (sign,(head terms)) ass (Table attrs comptbl
+                (calculateTerm (sign, ft) ass (Table attrs comptbl
                 (Conversetable_Ternary inv shortc hom) refltbl
                 models) symbs)
-applyOperation "RA_inverse" (sign,terms) (Table attrs comptbl
+applyOperation "RA_inverse" (sign, ft : _) (Table attrs comptbl
                 (Conversetable_Ternary inv shortc hom) refltbl
                 models) ass symbs = calculateConverseTernary inv
-                (calculateTerm (sign,(head terms)) ass (Table attrs comptbl
+                (calculateTerm (sign, ft) ass (Table attrs comptbl
                 (Conversetable_Ternary inv shortc hom) refltbl
                 models) symbs)
 
-applyOperation "RA_homing" (sign,terms) (Table attrs comptbl
+applyOperation "RA_homing" (sign, ft : _) (Table attrs comptbl
                 (Conversetable_Ternary inv shortc hom) refltbl
                 models) ass symbs = calculateConverseTernary hom
-                (calculateTerm (sign,(head terms)) ass (Table attrs comptbl
+                (calculateTerm (sign, ft) ass (Table attrs comptbl
                 (Conversetable_Ternary inv shortc hom) refltbl
                 models) symbs)
 applyOperation _ _ _ _ _ = []
@@ -272,14 +255,14 @@ calculateCompositionAux rels1 rels2
     (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
   if elem rel1 rels1 && elem rel2 rels2 then baserels else []
 
-calculateConverse:: Conversetable -> [Baserel] -> [Baserel]
-calculateConverse (Conversetable_Ternary _ _ _) _ = []
+calculateConverse :: Conversetable -> [Baserel] -> [Baserel]
+calculateConverse (Conversetable_Ternary {}) _ = []
 calculateConverse (Conversetable centries) rels =
     concatMap (calculateConverseAtomar rels) centries
 
 calculateConverseAtomar :: [Baserel] -> Contabentry -> [Baserel]
 calculateConverseAtomar rels (Contabentry rel1 rel2) =
-   if elem rel1 rels then [rel2] else []
+   [rel2 | elem rel1 rels]
 
 calculateConverseTernary :: [Contabentry_Ternary] -> [Baserel]
                          -> [Baserel]
@@ -290,13 +273,12 @@ calculateConverseTernaryAtomar :: [Baserel] -> Contabentry_Ternary -> [Baserel]
 calculateConverseTernaryAtomar rels2 (Contabentry_Ternary rel1 rels1) =
   if elem rel1 rels2 then rels1 else []
 
-getBaseRelForVariable :: VAR -> VARIABLE_ASSIGNMENT ->[Baserel]
+getBaseRelForVariable :: VAR -> VARIABLE_ASSIGNMENT -> [Baserel]
 getBaseRelForVariable var (Variable_Assignment tuples) =
     concatMap (getBaseRelForVariableAtomar var) tuples
 
 getBaseRelForVariableAtomar :: VAR -> (VAR, Baserel) -> [Baserel]
-getBaseRelForVariableAtomar v (var, baserel) =
-  if v == var then [baserel] else []
+getBaseRelForVariableAtomar v (var, baserel) = [baserel | v == var]
 
 calculateFormula :: (Sign () (), FORMULA ()) -> VARIABLE_ASSIGNMENT -> Table
                  -> [(OP_SYMB, String)] -> Bool
@@ -306,28 +288,19 @@ calculateFormula (sign, qf) varass t symbs = case qf of
                                        (appendVariableAssignments
                                        varass vardecls t) t symbs)
                  in res == Just True
-    Conjunction formulas _ ->
-        and [calculateFormula (sign,x) varass t symbs | x <- formulas]
-
-    Disjunction formulas _ ->
-        or [calculateFormula (sign,x) varass t symbs | x <- formulas]
-    Implication f1 f2 _ _ ->
-                 let test1 = calculateFormula (sign,f1) varass t symbs
-                     test2 = calculateFormula (sign,f2) varass t symbs
-                 in not (test1 && not test2)
-    Equivalence f1 f2 _ ->
-                 let test1 = calculateFormula (sign,f1) varass t symbs
-                     test2 = calculateFormula (sign,f2) varass t symbs
-                 in test1 == test2
-
-    Negation f _ -> not (calculateFormula (sign,f) varass t symbs)
-    True_atom _ -> True
-    False_atom _ -> False
-    Strong_equation term1 term2 _ ->
-                 let t1 = calculateTerm (sign,term1) varass t symbs
-                     t2 = calculateTerm (sign,term2) varass t symbs
-                 in if equalElements t1 t2 then True
-                    else False
+    Junction j formulas _ -> (if j == Con then and else or)
+        [calculateFormula (sign, x) varass t symbs | x <- formulas]
+    Relation f1 c f2 _ ->
+                 let test1 = calculateFormula (sign, f1) varass t symbs
+                     test2 = calculateFormula (sign, f2) varass t symbs
+                 in if c == Equivalence then test1 == test2 else
+                        not (test1 && not test2)
+    Negation f _ -> not (calculateFormula (sign, f) varass t symbs)
+    Atom b _ -> b
+    Equation term1 Strong term2 _ ->
+                 let t1 = calculateTerm (sign, term1) varass t symbs
+                     t2 = calculateTerm (sign, term2) varass t symbs
+                 in equalElements t1 t2
     _ -> error $ "CASL.CompositionTable.ModelChecker.calculateFormula "
          ++ showDoc qf ""
 
@@ -351,7 +324,7 @@ appendAssignments _ _ [] = []
 appendAssignments tuples [] _ = tuples
 appendAssignments tuples (x : xs) baserels = appendAssignments
                                            (appendAssignmentsAux tuples x
-                                           baserels)   xs
+                                           baserels) xs
                                            baserels
 
 appendAssignmentsAux :: [[(VAR, Baserel)]] -> VAR -> [Baserel]
@@ -367,15 +340,15 @@ appendAssignmentSingle var rels assignment = map (appendAssignmentSingle1
 
 appendAssignmentSingle1 :: [(VAR, Baserel)] -> VAR -> Baserel
                         -> [(VAR, Baserel)]
-appendAssignmentSingle1 acc var rel  = (var, rel) : acc
+appendAssignmentSingle1 acc var rel = (var, rel) : acc
 
-getVars:: [VAR_DECL] -> [VAR]
+getVars :: [VAR_DECL] -> [VAR]
 getVars = concatMap getVarsAtomic
 
-getVarsAtomic:: VAR_DECL -> [VAR]
+getVarsAtomic :: VAR_DECL -> [VAR]
 getVarsAtomic (Var_decl vars _ _) = vars
 
-getBaseRelations:: Table -> [Baserel]
+getBaseRelations :: Table -> [Baserel]
 getBaseRelations (Table (Table_Attrs _ _ br) _ _ _ _) = br
 
 appendVariableAssignments :: VARIABLE_ASSIGNMENT -> [VAR_DECL] -> Table

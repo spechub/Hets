@@ -31,7 +31,7 @@ import CASL_DL.PredefinedCASLAxioms
 import OWL2.Logic_OWL2
 import OWL2.Keywords
 import OWL2.MS
-import OWL2.AS
+import OWL2.AS as O
 import OWL2.Parse
 import OWL2.Print
 import OWL2.ProfilesAndSublogics
@@ -605,7 +605,7 @@ mapSubObjProp cSig e1 e2 a = do
     r <- mapObjProp cSig e2 a b
     return $ mkForallRange (map thingDecl [a, b]) (mkImpl l r) nullRange
 
-mkEDPairs :: CASLSign -> [Int] -> Maybe Relation -> [(FORMULA f, FORMULA f)]
+mkEDPairs :: CASLSign -> [Int] -> Maybe O.Relation -> [(FORMULA f, FORMULA f)]
     -> Result ([FORMULA f], CASLSign)
 mkEDPairs s il mr pairs = do
     let ls = map (\ (x, y) -> mkVDecl il
@@ -616,7 +616,7 @@ mkEDPairs s il mr pairs = do
     return (ls, s)
 
 -- | Mapping of ListFrameBit
-mapListFrameBit :: CASLSign -> Extended -> Maybe Relation -> ListFrameBit
+mapListFrameBit :: CASLSign -> Extended -> Maybe O.Relation -> ListFrameBit
        -> Result ([CASLFORMULA], CASLSign)
 mapListFrameBit cSig ex rel lfb =
     let err = failMsg $ PlainAxiom ex $ ListFrameBit rel lfb

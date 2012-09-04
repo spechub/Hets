@@ -13,7 +13,7 @@ Portability :  non-portable (via Logic.Logic)
 
 module Comorphisms.CASL_DL2CASL
     (
-     CASL_DL2CASL(..)
+     CASL_DL2CASL (..)
     )
     where
 
@@ -25,15 +25,15 @@ import Common.ProofTree
 import Common.Result
 import qualified Common.Lib.Rel as Rel
 
---CASL_DL = domain
+-- CASL_DL = domain
 import CASL_DL.PredefinedCASLAxioms
 import CASL_DL.Logic_CASL_DL
 import CASL_DL.AS_CASL_DL
-import CASL_DL.Sign()
+import CASL_DL.Sign ()
 import CASL_DL.StatAna -- DLSign
 import CASL_DL.Sublogics
 
---CASL = codomain
+-- CASL = codomain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -71,21 +71,21 @@ instance Comorphism
     RawSymbol       -- rawsymbol codomain
     ProofTree     -- proof tree domain
     where
-      sourceLogic CASL_DL2CASL    = CASL_DL
-      targetLogic CASL_DL2CASL    = CASL
+      sourceLogic CASL_DL2CASL = CASL_DL
+      targetLogic CASL_DL2CASL = CASL
       sourceSublogic CASL_DL2CASL = SROIQ
-      mapSublogic CASL_DL2CASL _  = Just $ Sublogic.caslTop
+      mapSublogic CASL_DL2CASL _ = Just $ Sublogic.caslTop
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature }
-      map_symbol  CASL_DL2CASL _  = Set.singleton
-      map_sentence CASL_DL2CASL   = trSentence
-      map_morphism CASL_DL2CASL   = mapMor
-      map_theory   CASL_DL2CASL   = trTheory
+      map_symbol CASL_DL2CASL _ = Set.singleton
+      map_sentence CASL_DL2CASL = trSentence
+      map_morphism CASL_DL2CASL = mapMor
+      map_theory CASL_DL2CASL = trTheory
       isInclusionComorphism CASL_DL2CASL = True
       has_model_expansion CASL_DL2CASL = True
 
--- ^ mapping of morphims, we just forget the
--- ^ additional features
+{- | mapping of morphims, we just forget the
+additional features -}
 mapMor :: DLMor -> Result CASLMor
 mapMor inMor =
     let
@@ -99,7 +99,7 @@ mapMor inMor =
         , op_map = fm
         , pred_map = pm }
 
--- ^ we forget additional information in the signature
+-- | we forget additional information in the signature
 projectToCASL :: DLSign -> CASLSign
 projectToCASL dls = dls
                     {
@@ -107,15 +107,15 @@ projectToCASL dls = dls
                     , extendedInfo = ()
                     }
 
--- ^ Thing is established as the TopSort of all sorts
--- ^ defined in the CASL_DL spec, a predefined signature
--- ^ is added
+{- | Thing is established as the TopSort of all sorts
+defined in the CASL_DL spec, a predefined signature
+is added -}
 trSign :: DLSign -> CASLSign
 trSign inSig =
     let
         inC = projectToCASL inSig `uniteCASLSign` predefSign
-        inSorts  = sortSet inSig
-        inData   = sortSet predefSign
+        inSorts = sortSet inSig
+        inData = sortSet predefSign
     in
       inC
       {
@@ -127,55 +127,44 @@ trSign inSig =
           $ Set.delete dataS inData
       }
 
--- ^ translation of the signature
--- ^ predefined axioms are added
+-- * translation of the signature predefined axioms are added
 
--- Translation of theories
+-- | Translation of theories
 trTheory :: (DLSign, [Named (FORMULA DL_FORMULA)]) ->
             Result (CASLSign, [Named (FORMULA ())])
 trTheory (inSig, inForms) = do
       outForms <- mapR (trNamedSentence inSig) inForms
       return (trSign inSig, predefinedAxioms ++ outForms)
 
--- ^ translation of named sentences
+-- | translation of named sentences
 trNamedSentence :: DLSign -> Named (FORMULA DL_FORMULA) ->
                    Result (Named (FORMULA ()))
 trNamedSentence inSig inForm = do
         outSen <- trSentence inSig $ sentence inForm
         return $ mapNamed (const outSen) inForm
 
--- ^ translation of sentences
-trSentence ::  DLSign -> FORMULA DL_FORMULA -> Result (FORMULA ())
+-- | translation of sentences
+trSentence :: DLSign -> FORMULA DL_FORMULA -> Result (FORMULA ())
 trSentence inSig inF =
       case inF of
         Quantification qf vs frm rn ->
             do
               outF <- trSentence inSig frm
               return (Quantification qf vs outF rn)
-        Conjunction fns rn ->
+        Junction j fns rn ->
             do
               outF <- mapR (trSentence inSig) fns
-              return (Conjunction outF rn)
-        Disjunction fns rn ->
-            do
-              outF <- mapR (trSentence inSig) fns
-              return (Disjunction outF rn)
-        Implication f1 f2 b rn ->
+              return (Junction j outF rn)
+        Relation f1 c f2 rn ->
             do
               out1 <- trSentence inSig f1
               out2 <- trSentence inSig f2
-              return (Implication out1 out2 b rn)
-        Equivalence f1 f2 rn ->
-            do
-              out1 <- trSentence inSig f1
-              out2 <- trSentence inSig f2
-              return (Equivalence out1 out2 rn)
+              return (Relation out1 c out2 rn)
         Negation frm rn ->
             do
               outF <- trSentence inSig frm
               return (Negation outF rn)
-        True_atom rn -> return (True_atom rn)
-        False_atom rn -> return (False_atom rn)
+        Atom b rn -> return (Atom b rn)
         Predication pr trm rn ->
             do
               ot <- mapR (trTerm inSig) trm
@@ -184,16 +173,11 @@ trSentence inSig inF =
             do
               ot <- trTerm inSig tm
               return (Definedness ot rn)
-        Existl_equation t1 t2 rn ->
+        Equation t1 e t2 rn ->
             do
               ot1 <- trTerm inSig t1
               ot2 <- trTerm inSig t2
-              return (Existl_equation ot1 ot2 rn)
-        Strong_equation t1 t2 rn ->
-            do
-              ot1 <- trTerm inSig t1
-              ot2 <- trTerm inSig t2
-              return (Strong_equation ot1 ot2 rn)
+              return (Equation ot1 e ot2 rn)
         Membership t1 st rn ->
             do
               ot <- trTerm inSig t1
@@ -206,14 +190,14 @@ trSentence inSig inF =
             return (Unparsed_formula str rn)
         Sort_gen_ax cstr ft ->
             return (Sort_gen_ax cstr ft)
-        QuantOp _ _ _ -> fail "CASL_DL2CASL.QuantOp"
-        QuantPred _ _ _ -> fail "CASL_DL2CASL.QuantPred"
+        QuantOp {} -> fail "CASL_DL2CASL.QuantOp"
+        QuantPred {} -> fail "CASL_DL2CASL.QuantPred"
         ExtFORMULA form ->
             case form of
-              Cardinality _ _ _ _ _ _ ->
+              Cardinality {} ->
                     fail "Mapping of cardinality not implemented"
 
--- ^ translation of terms
+-- | translation of terms
 trTerm :: DLSign -> TERM DL_FORMULA -> Result (TERM ())
 trTerm inSig inF =
     case inF of
@@ -237,14 +221,14 @@ trTerm inSig inF =
             of1 <- trSentence inSig frm
             return (Conditional ot1 of1 ot2 rn)
       Unparsed_term str rn -> return (Unparsed_term str rn)
-      Mixfix_qual_pred ps  -> return (Mixfix_qual_pred ps)
+      Mixfix_qual_pred ps -> return (Mixfix_qual_pred ps)
       Mixfix_term trm ->
           do
             ot <- mapR (trTerm inSig) trm
             return (Mixfix_term ot)
-      Mixfix_token tok         -> return (Mixfix_token tok)
+      Mixfix_token tok -> return (Mixfix_token tok)
       Mixfix_sorted_term st rn -> return (Mixfix_sorted_term st rn)
-      Mixfix_cast st rn        -> return (Mixfix_cast st rn)
+      Mixfix_cast st rn -> return (Mixfix_cast st rn)
       Mixfix_parenthesized trm rn ->
           do
             ot <- mapR (trTerm inSig) trm
@@ -255,6 +239,6 @@ trTerm inSig inF =
             return (Mixfix_bracketed ot rn)
       Mixfix_braced trm rn ->
           do
-            ot <-  mapR (trTerm inSig) trm
+            ot <- mapR (trTerm inSig) trm
             return (Mixfix_braced ot rn)
       ExtTERM _ -> return $ ExtTERM ()

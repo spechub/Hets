@@ -278,10 +278,10 @@ comakeInjective a = do
     let p = posOfId c
     return $ makeNamed ("ga_injective_" ++ showId c "") $
        mkForallRange (v1 ++ v2)
-       (Equivalence (Strong_equation t1 t2 p)
-        (let ces = zipWith (\ w1 w2 -> Strong_equation
-                             (toQualVar w1) (toQualVar w2) p) v1 v2
-         in if isSingle ces then head ces else Conjunction ces p)
+       (Relation (Equation t1 Strong t2 p) Equivalence
+        (let ces = zipWith (\ w1 w2 -> Equation
+                             (toQualVar w1) Strong (toQualVar w2) p) v1 v2
+         in conjunctRange ces p)
         p) p
 
 comakeDisjoint :: [(Maybe Id, OpType, [COCOMPONENTS])] -> [Named (FORMULA f)]
@@ -299,7 +299,7 @@ comakeDisj a1 a2 = do
     (c2, t2) <- i2
     let p = posOfId c1 `appRange` posOfId c2
     return $ makeNamed ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "")
-      $ mkForallRange (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
+      $ mkForallRange (v1 ++ v2) (Negation (Equation t1 Strong t2 p) p) p
 
 -- | return the constructor and the set of total selectors
 ana_COALTERNATIVE :: SORT -> Annoted COALTERNATIVE

@@ -362,25 +362,22 @@ sl_form_level ff (isCompound, leftImp) phi =
    Quantification q _ f _ ->
        let ql = sl_form_level ff (isCompound, leftImp) f
        in if is_atomic_q q then ql else max FOL ql
-   Conjunction l _ -> maximum $ map (sl_form_level ff (True, leftImp)) l
-   Disjunction l _ -> maximum $ FOL :
-       map (sl_form_level ff (False, False)) l
-   Implication l1 l2 _ _ -> maximum
-       [ sl_form_level ff (True, True) l1
-       , sl_form_level ff (True, False) l2
-       , if leftImp then FOL else
-             if isCompound then GHorn else Horn ]
-   Equivalence l1 l2 _ -> maximum
-       [ sl_form_level ff (True, True) l1
-       , sl_form_level ff (True, True) l2
-       , if leftImp then FOL else GHorn ]
+   Junction j l _ -> maximum $ case j of
+      Con -> map (sl_form_level ff (True, leftImp)) l
+      Dis -> FOL : map (sl_form_level ff (False, False)) l
+   Relation l1 c l2 _ -> maximum $ sl_form_level ff (True, True) l1
+     : case c of
+         Equivalence -> [ sl_form_level ff (True, True) l2
+                        , if leftImp then FOL else GHorn ]
+         _ -> [ sl_form_level ff (True, False) l2
+              , if leftImp then FOL else
+                    if isCompound then GHorn else Horn ]
    Negation f _ -> max FOL $ sl_form_level ff (False, False) f
-   True_atom _ -> Atomic
-   False_atom _ -> FOL
+   Atom b _ -> if b then Atomic else FOL
    Predication _ _ _ -> Atomic
    Definedness _ _ -> Atomic
-   Existl_equation _ _ _ -> Atomic
-   Strong_equation _ _ _ -> if leftImp then FOL else Horn
+   Equation _ e _ _ -> if e == Existl then Atomic else
+     if leftImp then FOL else Horn
    Membership _ _ _ -> Atomic
    Sort_gen_ax _ _ -> Atomic
    QuantOp _ _ _ -> SOL  -- it can't get worse
@@ -535,18 +532,14 @@ sl_form :: Lattice a => (f -> CASL_SL a)
         -> FORMULA f -> CASL_SL a
 sl_form ff frm = case frm of
     Quantification _ _ f _ -> sl_form ff f
-    Conjunction l _ -> comp_list $ map (sl_form ff) l
-    Disjunction l _ -> comp_list $ map (sl_form ff) l
-    Implication f g _ _ -> sublogics_max (sl_form ff f) (sl_form ff g)
-    Equivalence f g _ -> sublogics_max (sl_form ff f) (sl_form ff g)
+    Junction _ l _ -> comp_list $ map (sl_form ff) l
+    Relation f _ g _ -> sublogics_max (sl_form ff f) (sl_form ff g)
     Negation f _ -> sl_form ff f
-    True_atom _ -> bottom
-    False_atom _ -> bottom
+    Atom _ _ -> bottom
     Predication _ l _ -> comp_list $ need_pred : map (sl_term ff) l
 -- need_part is tested elsewhere (need_pred not required)
     Definedness t _ -> sl_term ff t
-    Existl_equation t u _ -> comp_list [need_eq, sl_term ff t, sl_term ff u]
-    Strong_equation t u _ -> comp_list [need_eq, sl_term ff t, sl_term ff u]
+    Equation t _ u _ -> comp_list [need_eq, sl_term ff t, sl_term ff u]
 -- need_sub is tested elsewhere (need_pred not required)
     Membership t _ _ -> sl_term ff t
     Sort_gen_ax constraints _ -> case recover_Sort_gen_ax constraints of

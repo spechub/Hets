@@ -295,8 +295,8 @@ genPredAppl pName sl terms = Predication (Qual_pred_name pName
 
 genOpEquation :: OpKind -> OP_NAME -> [VAR_DECL] -> FORMULA f
 genOpEquation kind opName vars = case vars of
-  resV@(Var_decl _ s _) : argVs -> Strong_equation opTerm resTerm nullRange
-    where opTerm = mkAppl (Qual_op_name opName opType nullRange) argTerms
+  resV@(Var_decl _ s _) : argVs -> mkStEq opTerm resTerm
+    where opTerm = mkAppl (mkQualOp opName opType) argTerms
           opType = Op_type kind argSorts s nullRange
           argSorts = sortsOfArgs argVs
           resTerm = toQualVar resV
@@ -421,7 +421,7 @@ genEitherAxiom ssMap =
                else Result [mkDiag Hint
                             "ignoring generating constructors"
                             constrs]
-                    $ Just $ True_atom nullRange
+                    $ Just trueForm
           isInjOp ops =
               case ops of
               Op_name _ -> error "CASL2TopSort.genEitherAxiom.isInjObj"
@@ -447,6 +447,6 @@ genEitherAxiom ssMap =
           genProp qon =
               genPredication (lPredName $ resultSort qon) [mkXVarDecl qon]
           lPredName = lkupPred ssMap
-          genDisj qons = Disjunction (map genPred qons) nullRange
+          genDisj qons = disjunct (map genPred qons)
           genPred qon =
               genPredication (lPredName $ argSort qon) [mkXVarDecl qon]

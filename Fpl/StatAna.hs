@@ -234,12 +234,12 @@ minFplTerm sig te = case te of
     return $ Let rfd rt r
   IfThenElse i t e r -> do
     ri <- oneExpTerm minFplTerm sig $ Sorted_term i boolSort r
-    Strong_equation rt re _ <-
-        minExpFORMULAeq minFplTerm sig Strong_equation t e r
+    Equation rt Strong re _ <-
+        minExpFORMULAeq minFplTerm sig (\ trm -> Equation trm Strong) t e r
     return $ IfThenElse ri rt re r
   EqTerm t e r -> do
-    Strong_equation rt re _ <-
-        minExpFORMULAeq minFplTerm sig Strong_equation t e r
+    Equation rt Strong re _ <-
+        minExpFORMULAeq minFplTerm sig (\ trm -> Equation trm Strong) t e r
     return $ EqTerm rt re r
   BoolTerm t -> fmap BoolTerm $ oneExpTerm minFplTerm sig t
 

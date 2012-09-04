@@ -15,7 +15,7 @@ identity comorphism from SROIQ(D) to SROIQ(D)
 
 module Comorphisms.RelScheme2CASL
     (
-     RelScheme2CASL(..)
+     RelScheme2CASL (..)
     )
     where
 
@@ -38,14 +38,12 @@ import RelationalScheme.Logic_Rel as LRel
 import RelationalScheme.AS as ARel
 import qualified RelationalScheme.Sign as SRel
 
---CASL = codomain
+-- CASL = codomain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.Morphism
-
-import Data.List(nub)
 
 data RelScheme2CASL = RelScheme2CASL deriving (Show)
 
@@ -76,12 +74,12 @@ instance Comorphism
     RawSymbol       -- rawsymbol codomain
     ProofTree              -- proof tree domain
         where
-          sourceLogic RelScheme2CASL    = RelScheme
+          sourceLogic RelScheme2CASL = RelScheme
           sourceSublogic RelScheme2CASL = ()
-          targetLogic RelScheme2CASL    = CASL
-          mapSublogic RelScheme2CASL _  = Just SL.caslTop
-          map_theory RelScheme2CASL     = map_RelScheme_theory
-          map_morphism RelScheme2CASL   = return . mapMorphism
+          targetLogic RelScheme2CASL = CASL
+          mapSublogic RelScheme2CASL _ = Just SL.caslTop
+          map_theory RelScheme2CASL = map_RelScheme_theory
+          map_morphism RelScheme2CASL = return . mapMorphism
           map_sentence RelScheme2CASL = mapSen
           isInclusionComorphism RelScheme2CASL = True
 
@@ -91,13 +89,13 @@ map_RelScheme_theory (sig, n_sens) = do
      let tsign = mapSign sig
      tax <- mapM genAxioms $ Set.toList $ SRel.tables sig
      tsens <- mapM (mapNamedSen sig) n_sens
-     return (tsign, concat (tsens:tax))
+     return (tsign, concat (tsens : tax))
 
 mapSign :: SRel.Sign -> CASLSign
 mapSign sig = let
- (sorts,ops,preds) = genCASLSig (Set.toList $ SRel.tables sig)
+ (sorts, ops, preds) = genCASLSig (Set.toList $ SRel.tables sig)
                                 Set.empty MapSet.empty MapSet.empty
-              in (emptySign ()){
+              in (emptySign ()) {
                   sortRel = Rel.fromKeysSet sorts,
                   opMap = ops,
                   predMap = preds
@@ -112,27 +110,25 @@ mapMorphism phi = let
    mtarget = mapSign $ SRel.codomain phi,
    sort_map = Map.empty,
    op_map = Map.fromList $
-     map (\(tab,(c1,c2)) -> let
-          t = head $ filter (\tb -> SRel.t_name tb == tab) $
+     map (\ (tab, (c1, c2)) -> let
+          t : _ = filter (\ tb -> SRel.t_name tb == tab) $
               Set.toList $ SRel.tables $ SRel.domain phi
-          types = map stringToId $ map show $
-                  map SRel.c_data $ SRel.columns t
+          types = getTypes t
           resType = stringToId $ show $ SRel.c_data $
-                    head $ filter (\col -> SRel.c_name col == c1) $
+                    head $ filter (\ col -> SRel.c_name col == c1) $
                     SRel.columns t
-          fname = stringToId $ (show tab) ++ "_" ++ (show c1)
+          fname = stringToId $ show tab ++ '_' : show c1
           ftype = mkTotOpType types resType
           rname = stringToId $
-                  (show $ (Map.!)(SRel.table_map phi) tab)
-                          ++ "_" ++ (show c2)
+                  show (SRel.table_map phi Map.! tab) ++ '_' : show c2
                             in
-            ((fname, ftype),(rname, Partial))
-                               ) $
-     concatMap (\(x,f)-> map (\y-> (x,y)) $ Map.toList $ SRel.col_map f) $
-      Map.toList $ SRel.column_map phi,
+            ((fname, ftype), (rname, Partial))
+                               )
+     $ concatMap (\ (x, f) -> map (\ y -> (x, y)) $ Map.toList $ SRel.col_map f)
+       $ Map.toList $ SRel.column_map phi,
    pred_map = Map.fromList $ concatMap
-               (\(i, pSet) ->
-                     [((i, pt),(Map.!) (SRel.table_map phi) i)
+               (\ (i, pSet) ->
+                     [((i, pt), SRel.table_map phi Map.! i)
                              | pt <- pSet]) $
                MapSet.toList $ predMap ssign,
    extended_map = ()
@@ -143,123 +139,88 @@ genCASLSig :: [SRel.RSTable] -> Set.Set SORT -> OpMap -> PredMap
 genCASLSig tabList sorts ops preds = case tabList of
   [] -> (sorts, ops, preds)
   t : tList -> let
-   sorts' =  Set.fromList $ map stringToId $ map show $
-             nub $ map SRel.c_data $ SRel.columns t
-   ops' = let
-     arity = map stringToId $ map show $ map SRel.c_data $
-             SRel.columns t
-          in
+   arity = getTypes t
+   sorts' = Set.fromList arity
+   ops' =
     MapSet.fromList $
-     map ( \ c -> (stringToId $ (show $ SRel.t_name t) ++ "_"
-                                ++ (show $ SRel.c_name c),
+     map ( \ c -> (stringToId $ show (SRel.t_name t) ++ '_'
+                                : show (SRel.c_name c),
                   [OpType Total arity $ stringToId $ show $ SRel.c_data c]))
      $ SRel.columns t
    preds' = MapSet.insert (SRel.t_name t)
-                       (PredType $ map stringToId $
-                        map show $ map SRel.c_data $
-                        SRel.columns t) preds
+                       (PredType arity) preds
              in genCASLSig tList
                            (Set.union sorts sorts')
                            (MapSet.union ops ops')
                            preds'
 
 genAxioms :: SRel.RSTable -> Result [Named CASLFORMULA]
-genAxioms tab = do
-  case (Set.null $ SRel.t_keys tab) of
-    True ->  projections tab
-    _ -> do
+genAxioms tab =
+  if Set.null $ SRel.t_keys tab then projections tab else do
           axK <- axiomsForKeys tab
           axP <- projections tab
           return $ axK ++ axP
 
+genTypedVars :: Char -> [Id] -> [(Token, Id)]
+genTypedVars c = map (\ (t, n) -> (genToken (c : show n), t)) . number
+
 axiomsForKeys :: SRel.RSTable -> Result [Named CASLFORMULA]
 axiomsForKeys tab = do
  let
-  types = map stringToId $ map show $ map SRel.c_data $ SRel.columns tab
-  vars_x = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
-           number types
-  vars_y = map (\(t,n) -> (genToken ("y"++ (show n)), t)) $
-           number types
-  vardecls = map (\(v,t) -> Var_decl [v] t nullRange)
-  qual_vars = map (\(v,t) -> Qual_var v t nullRange )
-  conjuncts = map (\(x,y) -> Strong_equation x y nullRange) $
-              zip (qual_vars vars_x)(qual_vars vars_y)
+  types = getTypes tab
+  vars_x = genTypedVars 'x' types
+  vars_y = genTypedVars 'y' types
+  qual_vars = map (uncurry mkVarTerm)
+  qXs = qual_vars vars_x
+  qYs = qual_vars vars_y
+  conjuncts = zipWith mkStEq qXs qYs
   keys = Set.toList $ SRel.t_keys tab
-  keysEqual = map (\(cid, ctype) ->
-               Strong_equation
-                (Application
-                  (Qual_op_name
-                   (stringToId $ (show $ SRel.t_name tab)++ "_" ++ (show cid))
-                   (Op_type Total types (stringToId $ show ctype) nullRange)
-                   nullRange)
-                  (qual_vars vars_x)
-                  nullRange)
-                (Application
-                  (Qual_op_name
-                    (stringToId $ (show $ SRel.t_name tab)++ "_" ++ (show cid))
-                    (Op_type Total types (stringToId $ show ctype) nullRange)
-                    nullRange)
-                   (qual_vars vars_y)
-                   nullRange)
-                nullRange) keys
- return $ [makeNamed "" $
-            Quantification
-            Universal
-            ((vardecls vars_x) ++ (vardecls vars_y))
-            (Implication
-              (Conjunction
-                ([Predication
-                   (Qual_pred_name
+  keysEqual = map (\ (cid, ctype) -> let
+                  qualOp = mkQualOp
+                     (stringToId $ show (SRel.t_name tab) ++ '_' : show cid)
+                     (Op_type Total types (stringToId $ show ctype) nullRange)
+                  in mkStEq
+                         (mkAppl qualOp qXs)
+                         (mkAppl qualOp qYs)
+                  ) keys
+ return [makeNamed "" $ mkForall
+            (map (uncurry mkVarDecl) $ vars_x ++ vars_y)
+            (mkImpl
+              (let qualPred = mkQualPred
                      (SRel.t_name tab)
-                     (Pred_type
-                        types
-                        nullRange)
-                     nullRange)
-                   (qual_vars vars_x)
-                   nullRange,
-                  Predication
-                   (Qual_pred_name
-                     (SRel.t_name tab)
-                     (Pred_type
-                       types
-                       nullRange)
-                     nullRange)
-                    (qual_vars vars_y)
-                    nullRange]
+                     (Pred_type types nullRange)
+               in conjunct
+                ([ mkPredication qualPred qXs
+                 , mkPredication qualPred qYs ]
                  ++ keysEqual)
-              nullRange)
-              (Conjunction
-                conjuncts
-                nullRange)
-             True
-             nullRange)
-          nullRange]
+              )
+              (conjunct conjuncts)
+            )
+          ]
+
+getTypes :: SRel.RSTable -> [Id]
+getTypes = map (stringToId . show . SRel.c_data) . SRel.columns
 
 projections :: SRel.RSTable -> Result [Named CASLFORMULA]
-projections tab = do
- let
-  types = map stringToId $ map show $ map SRel.c_data $ SRel.columns tab
-  vars_x = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
-           number types
-  vardecls = map (\(v,t) -> Var_decl [v] t nullRange)
-  qual_vars = map (\(v,t) -> Qual_var v t nullRange )
-  fields = map show $ map SRel.c_name $ SRel.columns tab
-  projAx (c, (vRes,typeRes)) = makeNamed "" $
-            Quantification
-             Universal
+projections tab = let
+  types = getTypes tab
+  vars_x = genTypedVars 'x' types
+  vardecls = map (uncurry mkVarDecl)
+  qual_vars = map (uncurry mkVarTerm)
+  fields = map (show . SRel.c_name) $ SRel.columns tab
+  projAx c (vRes, typeRes) = makeNamed "" $ mkForall
              (vardecls vars_x)
-             (Strong_equation
-               (Application
-                  (Qual_op_name
-                     (stringToId $ (show $ SRel.t_name tab)++ "_" ++ c)
+             (mkStEq
+               (mkAppl
+                  (mkQualOp
+                     (stringToId $ show (SRel.t_name tab) ++ '_' : c)
                      (Op_type Total types typeRes nullRange)
-                     nullRange)
+                    )
                   (qual_vars vars_x)
-                  nullRange)
-                  (Qual_var vRes typeRes nullRange)
-               nullRange)
-            nullRange
- return $ map projAx $ zip fields vars_x
+                  )
+                  (mkVarTerm vRes typeRes)
+               )
+  in return $ zipWith projAx fields vars_x
 
 
 mapNamedSen :: SRel.Sign -> Named Sentence -> Result (Named CASLFORMULA)
@@ -272,76 +233,60 @@ mapNamedSen sign n_sens =
         return $ n_sens {sentence = ts}
 
 mapSen :: SRel.Sign -> Sentence -> Result CASLFORMULA
-mapSen sign sen = do
- let
+mapSen sign sen = let
   linkedcols = zip (map column $ r_lhs sen)
                    (map column $ r_rhs sen)
-  rtableName = head $ map table $ r_rhs sen
-  ltableName = head $ map table $ r_lhs sen
-  ltable = head $ filter (\t -> SRel.t_name t == ltableName) $
+  rtableName : _ = map table $ r_rhs sen
+  ltableName : _ = map table $ r_lhs sen
+  ltable : _ = filter (\ t -> SRel.t_name t == ltableName) $
            Set.toList $ SRel.tables sign
-  rtable = head $ filter (\t -> SRel.t_name t == rtableName) $
+  rtable : _ = filter (\ t -> SRel.t_name t == rtableName) $
            Set.toList $ SRel.tables sign
   allRcols = number $ SRel.columns rtable
-  typesL = map stringToId $ map show $
-           map SRel.c_data $ SRel.columns ltable
-  typesR = map stringToId $ map show $
-           map SRel.c_data $ SRel.columns rtable
-  vars_x = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
-           number typesL
-  vardecls = map (\(v,t) -> Var_decl [v] t nullRange)
-  qual_vars = map (\(v,t) -> Qual_var v t nullRange )
+  typesL = getTypes ltable
+  typesR = getTypes rtable
+  vars_x = genTypedVars 'x' typesL
+  vardecls = map (uncurry mkVarDecl)
+  qual_vars = map (uncurry mkVarTerm)
   quantif = case r_type sen of
              RSone_to_one -> Unique_existential
              _ -> Existential
-  (decls,terms) = foldl (\(dList,tList) (c,i) ->
-                    case SRel.c_name c `elem` (map snd linkedcols) of
-                     True -> let
-                       ti = Application
-                             (Qual_op_name
+  (decls, terms) = foldl (\ (dList, tList) (c, i) ->
+                    if SRel.c_name c `elem` map snd linkedcols then let
+                       ti = mkAppl
+                             (mkQualOp
                                (stringToId $
-                                 (show ltableName) ++ "_" ++
-                                 (show $ fst $ head $
-                                  filter(\(_,y) -> y == SRel.c_name c)
+                                 show ltableName ++ "_" ++
+                                 show (fst $ head $
+                                  filter (\ (_, y) -> y == SRel.c_name c)
                                   linkedcols))
                                (Op_type
                                  Total
                                  typesL
                                  (stringToId $ show $ SRel.c_data c)
                                   nullRange)
-                                nullRange)
+                                )
                              (qual_vars vars_x)
-                             nullRange
-                             in (dList,ti:tList)
-                     _ -> let
-                       di = Var_decl
-                             [genToken ("y"++ (show i))]
+                             in (dList, ti : tList)
+                     else let
+                       di = mkVarDecl
+                             (genToken $ 'y' : show i)
                              (stringToId $ show $ SRel.c_data c)
-                             nullRange
-                       ti = Qual_var
-                             (genToken ("y"++ (show i)))
-                             (stringToId $ show $ SRel.c_data c)
-                             nullRange
-                             in (di:dList,ti:tList)
-                           ) ([],[]) allRcols
+                       ti = toQualVar di
+                             in (di : dList, ti : tList)
+                           ) ([], []) allRcols
 
- return $ Quantification Universal (vardecls vars_x)
-          (Implication
-                    (Predication
-                       (Qual_pred_name ltableName
+  in return $ mkForall (vardecls vars_x) $ mkImpl
+                    (mkPredication
+                       (mkQualPred ltableName
                           (Pred_type typesL nullRange)
-                          nullRange) (qual_vars vars_x)
-                       nullRange)
+                          ) (qual_vars vars_x)
+                       )
 
-                    (Quantification quantif (reverse decls)
-                       (Predication
-                          (Qual_pred_name rtableName
+                    $ Quantification quantif (reverse decls)
+                       (mkPredication
+                          (mkQualPred rtableName
                              (Pred_type typesR nullRange)
-                             nullRange)
+                          )
                           (reverse terms)
-                          nullRange)
-                       nullRange)
-
-                    True
-                    nullRange)
-            nullRange
+                       ) nullRange

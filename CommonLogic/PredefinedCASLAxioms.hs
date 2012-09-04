@@ -54,6 +54,12 @@ y1 = Id.mkSimpleId "Y1"
 y2 :: Id.Token
 y2 = Id.mkSimpleId "Y2"
 
+nilType :: CBasic.OP_TYPE
+nilType = CBasic.Op_type CBasic.Total [] list Id.nullRange
+
+consType :: CBasic.OP_TYPE
+consType = CBasic.Op_type CBasic.Total [individual, list] list Id.nullRange
+
 baseCASLAxioms :: [AS_Anno.Named CBasic.CASLFORMULA]
 baseCASLAxioms = [ga_injective_cons, ga_disjoint_nil_cons, ga_generated_list]
 
@@ -63,83 +69,60 @@ caslSig = (CSign.emptySign ())
                { CSign.sortRel = Rel.fromKeysSet
                    $ Set.fromList [list, individual]
                , CSign.opMap = MapSet.fromList
-                         [ (cons, [CSign.mkTotOpType
-                                   [individual, list]
-                                   list])
+                         [ (cons, [CSign.toOpType consType])
                          , (fun, [CSign.mkTotOpType
                                   [individual, list]
                                   individual])
-                         , (nil, [CSign.mkTotOpType [] list])]
+                         , (nil, [CSign.toOpType nilType])]
                , CSign.predMap = MapSet.fromList
                 [(rel, [CSign.PredType [individual, list]])]
                }
+vy1 :: CBasic.VAR_DECL
+vy1 = CBasic.mkVarDecl y1 individual
+
+vy2 :: CBasic.VAR_DECL
+vy2 = CBasic.mkVarDecl y2 list
+
+tx1, tx2, ty1, ty2 :: CBasic.TERM f
+
+tx1 = CBasic.mkVarTerm x1 individual
+tx2 = CBasic.mkVarTerm x2 list
+
+ty1 = CBasic.mkVarTerm y1 individual
+ty2 = CBasic.mkVarTerm y2 list
 
 ga_injective_cons :: AS_Anno.Named CBasic.CASLFORMULA
 ga_injective_cons = AS_Anno.makeNamed "ga_injective_cons" $
-  CBasic.Quantification CBasic.Universal
-    [ CBasic.Var_decl [x1] individual Id.nullRange
-    , CBasic.Var_decl [x2] list Id.nullRange
-    , CBasic.Var_decl [y1] individual Id.nullRange
-    , CBasic.Var_decl [y2] list Id.nullRange
+  CBasic.mkForall
+    [ CBasic.mkVarDecl x1 individual
+    , CBasic.mkVarDecl x2 list
+    , vy1
+    , vy2
     ]
-    (CBasic.Equivalence
-        (CBasic.Strong_equation
-          (CBasic.Application
-            (CBasic.Qual_op_name cons
-              (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
-              Id.nullRange
-            )
-            [ CBasic.Qual_var x1 individual Id.nullRange
-            , CBasic.Qual_var x2 list Id.nullRange
-            ] Id.nullRange
+    $ CBasic.mkEqv
+        (CBasic.mkStEq
+          (CBasic.mkAppl
+            (CBasic.mkQualOp cons consType)
+            [tx1, tx2]
           )
-          (CBasic.Application
-            (CBasic.Qual_op_name cons
-              (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
-              Id.nullRange
-            )
-            [ CBasic.Qual_var y1 individual Id.nullRange
-            , CBasic.Qual_var y2 list Id.nullRange
-            ] Id.nullRange
-          ) Id.nullRange)
-        (CBasic.Conjunction
-          [ CBasic.Strong_equation
-              (CBasic.Qual_var x1 individual Id.nullRange)
-              (CBasic.Qual_var y1 individual Id.nullRange)
-              Id.nullRange
-          , CBasic.Strong_equation
-              (CBasic.Qual_var x2 list Id.nullRange)
-              (CBasic.Qual_var y2 list Id.nullRange)
-              Id.nullRange
-          ] Id.nullRange
-        ) Id.nullRange
-    ) Id.nullRange
+          $ CBasic.mkAppl
+            (CBasic.mkQualOp cons consType)
+            [ty1, ty2]
+          )
+        $ CBasic.conjunct
+          [ CBasic.mkStEq tx1 ty1
+          , CBasic.mkStEq tx2 ty2
+          ]
 
 ga_disjoint_nil_cons :: AS_Anno.Named CBasic.CASLFORMULA
 ga_disjoint_nil_cons = AS_Anno.makeNamed "ga_disjoint_nil_cons" $
-  CBasic.Quantification CBasic.Universal
-    [ CBasic.Var_decl [y1] individual Id.nullRange
-    , CBasic.Var_decl [y2] list Id.nullRange
-    ]
-    (CBasic.Negation
-      (CBasic.Strong_equation
-        (CBasic.Application
-          (CBasic.Qual_op_name nil
-            (CBasic.Op_type CBasic.Total [] list Id.nullRange)
-            Id.nullRange
-          ) [] Id.nullRange
-        )
-        (CBasic.Application
-          (CBasic.Qual_op_name cons
-            (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
-            Id.nullRange
-          )
-          [ CBasic.Qual_var y1 individual Id.nullRange
-          , CBasic.Qual_var y2 list Id.nullRange
-          ] Id.nullRange
-        ) Id.nullRange
-      ) Id.nullRange
-    ) Id.nullRange
+  CBasic.mkForall [vy1, vy2]
+    $ CBasic.mkNeg
+      $ CBasic.mkStEq
+        (CBasic.mkAppl (CBasic.mkQualOp nil nilType) [])
+        $ CBasic.mkAppl
+          (CBasic.mkQualOp cons consType)
+          [ty1, ty2]
 
 ga_generated_list :: AS_Anno.Named CBasic.CASLFORMULA
 ga_generated_list = AS_Anno.makeNamed "ga_generated_list" $
@@ -147,14 +130,8 @@ ga_generated_list = AS_Anno.makeNamed "ga_generated_list" $
     [ CBasic.Constraint
       { CBasic.newSort = list
       , CBasic.opSymbs =
-          [ (CBasic.Qual_op_name cons
-              (CBasic.Op_type CBasic.Total [individual,list] list Id.nullRange)
-              Id.nullRange
-            , [-1,0] )
-          , (CBasic.Qual_op_name nil
-              (CBasic.Op_type CBasic.Total [] list Id.nullRange)
-              Id.nullRange
-              , [])
+          [ (CBasic.mkQualOp cons consType, [-1, 0] )
+          , (CBasic.mkQualOp nil nilType, [])
           ]
       , CBasic.origSort = list
       }

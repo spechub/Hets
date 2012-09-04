@@ -17,7 +17,6 @@ module Comorphisms.CspCASL2Modal where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
 
 -- CASL
 import CASL.Sign
@@ -56,4 +55,4 @@ instance Comorphism CspCASL2Modal
     map_sentence CspCASL2Modal _ = return . mapSen
 
 mapSen :: CspCASLSen -> ModalFORMULA
-mapSen _ = True_atom nullRange
+mapSen _ = trueForm

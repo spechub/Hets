@@ -366,41 +366,40 @@ printRecord = Record
     { foldQuantification = \ _ q l r _ ->
           fsep $ printQuant q : printVarDeclL l
                                 ++ [addBullet r]
-    , foldConjunction = \ o l _ -> case o of
-          Conjunction ol@(_ : _) _ -> fsep $ prepPunctuate (andDoc <> space)
+    , foldJunction = \ o j l _ ->
+        let (n, p) = case j of
+                  Con -> (trueS, andDoc)
+                  Dis -> (falseS, orDoc)
+        in case o of
+          Junction _ ol@(_ : _) _ -> fsep $ prepPunctuate (p <> space)
                $ zipWith (mkJunctDoc True) (init ol) (init l) ++
                  [mkJunctDoc False (last ol) (last l)]
-          _ -> text trueS
-    , foldDisjunction = \ o l _ -> case o of
-          Disjunction ol@(_ : _) _ -> fsep $ prepPunctuate (orDoc <> space)
-               $ zipWith (mkJunctDoc True) (init ol) (init l) ++
-                 [mkJunctDoc False (last ol) (last l)]
-          _ -> text falseS
-    , foldImplication = \ o l r _ _ ->
-          let Implication oL oR b _ = o
+          _ -> text n
+    , foldRelation = \ o l c r _ ->
+          let Relation oL _ oR _ = o
+              b = c == Implication
               nl = if isAnyImpl oL || b && isQuant oL
                    then parens l else l
-              nr = if isImpl b oR || not b && isQuant oR
+              nr = if isImpl c oR || not b && isQuant oR
                    then parens r else r
-          in if b then printInfix True sep nl implies nr
-             else printInfix True sep nr (text ifS) nl
-    , foldEquivalence = \ o l r _ -> case o of
-          Equivalence oL oR _ -> printInfix True sep
-            (if isQuant oL then parens l else mkEquivDoc oL l)
-            equiv $ mkEquivDoc oR r
-          _ -> error "CASL.ToDoc.printRecord.foldEquivalence"
+          in case c of
+               Implication -> printInfix True sep nl implies nr
+               RevImpl -> printInfix True sep nr (text ifS) nl
+               Equivalence -> printInfix True sep
+                 (if isQuant oL then parens l else mkEquivDoc oL l)
+                 equiv $ mkEquivDoc oR r
     , foldNegation = \ orig r _ -> case orig of
           Negation o _ -> hsep [notDoc, mkJunctDoc False o r]
           _ -> error "CASL.ToDoc.printRecord.foldNegation"
-    , foldTrue_atom = \ _ _ -> text trueS
-    , foldFalse_atom = \ _ _ -> text falseS
+    , foldAtom = \ _ b _ -> text $ if b then trueS else falseS
     , foldPredication = \ o p l _ -> case (p, o) of
           (Pred_name i, Predication _ ol _) -> predIdApplDoc i $ zipConds ol l
           _ -> if null l then printPredSymb p else
               fcat [printPredSymb p, parens $ sepByCommas l]
     , foldDefinedness = \ _ r _ -> hsep [text defS, r]
-    , foldExistl_equation = \ _ l r _ -> printInfix True sep l exequal r
-    , foldStrong_equation = \ _ l r _ -> printInfix True sep l equals r
+    , foldEquation = \ _ l e r _ -> printInfix True sep l (case e of
+        Existl -> exequal
+        Strong -> equals) r
     , foldMembership = \ _ r t _ -> fsep [r, inDoc, idDoc t]
     , foldMixfix_formula = \ _ r -> r
     , foldSort_gen_ax = \ o _ _ ->
@@ -470,31 +469,26 @@ instance FormExtension f => Pretty (TERM f) where
 
 isQuant :: FormExtension f => FORMULA f -> Bool
 isQuant f = case f of
-    Quantification _ _ _ _ -> True
+    Quantification {} -> True
     ExtFORMULA ef -> isQuantifierLike ef
-    Conjunction l _ -> case l of
+    Junction _ l _ -> case l of
         [] -> False
         _ -> isQuant $ last l
-    Disjunction l _ -> case l of
-        [] -> False
-        _ -> isQuant $ last l
-    Implication a b impl _ -> isQuant $ if impl then b else a
-    Equivalence _ b _ -> isQuant b
+    Relation a c b _ -> isQuant $ if c == RevImpl then a else b
     Negation a _ -> isQuant a
     _ -> False
 
 isEquiv :: FORMULA f -> Bool
 isEquiv f = case f of
-    Equivalence _ _ _ -> True
+    Relation _ c _ _ -> c == Equivalence
     _ -> False
 
 isAnyImpl :: FORMULA f -> Bool
-isAnyImpl f = isImpl True f || isImpl False f
+isAnyImpl f = isImpl Implication f || isImpl RevImpl f
 
 isJunct :: FORMULA f -> Bool
 isJunct f = case f of
-    Conjunction _ _ -> True
-    Disjunction _ _ -> True
+    Junction {} -> True
     _ -> isAnyImpl f
 
 -- true for non-final
@@ -504,14 +498,14 @@ mkJunctDoc b f = if isJunct f || b && isQuant f then parens else id
 mkEquivDoc :: FORMULA f -> Doc -> Doc
 mkEquivDoc f = if isEquiv f then parens else id
 
-isImpl :: Bool -> FORMULA f -> Bool
+isImpl :: Relation -> FORMULA f -> Bool
 isImpl a f = case f of
-    Implication _ _ b _ -> a /= b
-    _ -> isEquiv f
+    Relation _ c _ _ -> c == Equivalence || a /= c
+    _ -> False
 
 isCond :: TERM f -> Bool
 isCond t = case t of
-    Conditional _ _ _ _ -> True
+    Conditional {} -> True
     _ -> False
 
 -- | a helper class for calculating the pluralS of e.g. ops
@@ -544,17 +538,17 @@ appendS l = if isSingle l then "" else "s"
 instance ListCheck (SORT_ITEM f) where
     innerList (Sort_decl l _) = innerList l
     innerList (Subsort_decl l _ _) = innerList l
-    innerList (Subsort_defn _ _ _ _ _) = [()]
+    innerList (Subsort_defn {}) = [()]
     innerList (Iso_decl l _) = innerList $ drop 1 l
       -- assume last sort is known
 
 instance ListCheck (OP_ITEM f) where
     innerList (Op_decl l _ _ _) = innerList l
-    innerList (Op_defn _ _ _ _) = [()]
+    innerList (Op_defn {}) = [()]
 
 instance ListCheck (PRED_ITEM f) where
     innerList (Pred_decl l _ _) = innerList l
-    innerList (Pred_defn _ _ _ _) = [()]
+    innerList (Pred_defn {}) = [()]
 
 instance ListCheck VAR_DECL where
     innerList (Var_decl l _ _) = innerList l

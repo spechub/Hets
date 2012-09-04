@@ -377,20 +377,13 @@ resolveMixFrm par extR g ids frm =
               fNew <- resolveMixFrm par (extendMixResolve ts extR)
                 g (extendRules ts ids) fOld
               return $ Quantification q vs fNew ps
-       Conjunction fsOld ps ->
+       Junction j fsOld ps ->
            do fsNew <- mapM self fsOld
-              return $ Conjunction fsNew ps
-       Disjunction fsOld ps ->
-           do fsNew <- mapM self fsOld
-              return $ Disjunction fsNew ps
-       Implication f1 f2 b ps ->
+              return $ Junction j fsNew ps
+       Relation f1 c f2 ps ->
            do f3 <- self f1
               f4 <- self f2
-              return $ Implication f3 f4 b ps
-       Equivalence f1 f2 ps ->
-           do f3 <- self f1
-              f4 <- self f2
-              return $ Equivalence f3 f4 ps
+              return $ Relation f3 c f4 ps
        Negation fOld ps ->
            do fNew <- self fOld
               return $ Negation fNew ps
@@ -400,14 +393,10 @@ resolveMixFrm par extR g ids frm =
        Definedness tOld ps ->
            do tNew <- resolveTerm tOld
               return $ Definedness tNew ps
-       Existl_equation t1 t2 ps ->
+       Equation t1 e t2 ps ->
            do t3 <- resolveTerm t1
               t4 <- resolveTerm t2
-              return $ Existl_equation t3 t4 ps
-       Strong_equation t1 t2 ps ->
-           do t3 <- resolveTerm t1
-              t4 <- resolveTerm t2
-              return $ Strong_equation t3 t4 ps
+              return $ Equation t3 e t4 ps
        Membership tOld s ps ->
            do tNew <- resolveTerm tOld
               return $ Membership tNew s ps

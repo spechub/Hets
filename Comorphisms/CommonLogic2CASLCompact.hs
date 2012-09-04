@@ -32,6 +32,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Id as Id
 
+import Data.Function (on)
 import Data.List (partition, intersect)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -93,7 +94,7 @@ instance Comorphism
       has_model_expansion CommonLogic2CASLCompact = True
 
 data Q_TYPE = Universal | Existential deriving (Eq, Ord, Show)
-data Pred_Or_Func = Pred | Func deriving (Eq, Ord, Show)
+data PredOrFunc = Pred | Func deriving (Eq, Ord, Show)
 data TextInfo = TextInfo {
     vars :: Set.Set String
   , props :: Set.Set String
@@ -109,10 +110,10 @@ emptyTI = TextInfo { vars = Set.empty
                    }
 
 unionTI :: TextInfo -> TextInfo -> TextInfo
-unionTI s t = TextInfo { vars = Set.union (vars s) (vars t)
-                       , props = Set.union (props s) (props t)
-                       , arityPred = MapSet.union (arityPred s) (arityPred t)
-                       , arityFunc = MapSet.union (arityFunc s) (arityFunc t)
+unionTI s t = TextInfo { vars = on Set.union vars s t
+                       , props = on Set.union props s t
+                       , arityPred = on MapSet.union arityPred s t
+                       , arityFunc = on MapSet.union arityFunc s t
                        }
 
 unionsTI :: [TextInfo] -> TextInfo
@@ -249,9 +250,9 @@ senForm bndVars form = case form of
       Cl.BinOp j s1 s2 -> do
           sen1 <- senForm bndVars s1
           sen2 <- senForm bndVars s2
-          return $ (case j of
-            Cl.Implication -> \ a b -> CBasic.Implication a b True
-            Cl.Biconditional -> CBasic.Equivalence) sen1 sen2 rn
+          return $ CBasic.Relation sen1 (case j of
+            Cl.Implication -> CBasic.Implication
+            Cl.Biconditional -> CBasic.Equivalence) sen2 rn
   Cl.Quant_sent q bs s rn ->
         quantSentForm (case q of
           Cl.Universal -> Universal
@@ -260,7 +261,7 @@ senForm bndVars form = case form of
       Cl.Equation trm1 trm2 -> do
           t1 <- termForm bndVars $ uncurryTerm trm1
           t2 <- termForm bndVars $ uncurryTerm trm2
-          return $ CBasic.Strong_equation t1 t2 rn
+          return $ CBasic.Equation t1 CBasic.Strong t2 rn
       Cl.Atom trm tseqs -> do
           trmFP <- termFormPrd (uncurryTerm trm) (length tseqs)
           trmSeqs <- mapM (termSeqForm bndVars) tseqs
@@ -272,7 +273,7 @@ senForm bndVars form = case form of
 quantSentForm :: Q_TYPE -> Id.Range -> Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK]
                  -> Cl.SENTENCE -> Result CBasic.CASLFORMULA
 quantSentForm qt rn bndVars bs sen = do
-  ti <- colTi_sen sen
+  ti <- colTiSen sen
   bSs <- mapM nosStrnig bs
   let (predSs, opsVars) = partition
           (\ n -> Map.member n $ MapSet.toMap $ arityPred ti) bSs
@@ -357,79 +358,79 @@ bindingSeq bs = case bs of
   Cl.SeqMark s -> fail $ errSeqMark s
 
 collectTextInfo :: Cl.TEXT_META -> Result TextInfo
-collectTextInfo tm = colTi_txt $ Cl.getText tm
+collectTextInfo tm = colTiTxt $ Cl.getText tm
 
-colTi_txt :: Cl.TEXT -> Result TextInfo
-colTi_txt txt = case txt of
-  Cl.Named_text _ t _ -> colTi_txt t
+colTiTxt :: Cl.TEXT -> Result TextInfo
+colTiTxt txt = case txt of
+  Cl.Named_text _ t _ -> colTiTxt t
   Cl.Text ps _ -> do
-    cti <- mapM colTi_phr ps
+    cti <- mapM colTiPhr ps
     return $ unionsTI cti
 
-colTi_phr :: Cl.PHRASE -> Result TextInfo
-colTi_phr p = case p of
-  Cl.Module (Cl.Mod _ t _) -> colTi_txt t
-  Cl.Module (Cl.Mod_ex _ _ t _) -> colTi_txt t
+colTiPhr :: Cl.PHRASE -> Result TextInfo
+colTiPhr p = case p of
+  Cl.Module (Cl.Mod _ t _) -> colTiTxt t
+  Cl.Module (Cl.Mod_ex _ _ t _) -> colTiTxt t
   Cl.Importation _ -> return emptyTI
-  Cl.Comment_text _ t _ -> colTi_txt t
-  Cl.Sentence s -> colTi_sen s
+  Cl.Comment_text _ t _ -> colTiTxt t
+  Cl.Sentence s -> colTiSen s
 
-colTi_sen :: Cl.SENTENCE -> Result TextInfo
-colTi_sen sen = case sen of
+colTiSen :: Cl.SENTENCE -> Result TextInfo
+colTiSen sen = case sen of
   Cl.Quant_sent _ noss s _ -> do
-          cti <- colTi_sen s
+          cti <- colTiSen s
           nossR <- mapM nosStrnig noss
           return $ foldr removeFromTI cti nossR
   Cl.Bool_sent b _ -> case b of
       Cl.Junction _ sens -> do
-          cti <- mapM colTi_sen sens
+          cti <- mapM colTiSen sens
           return $ unionsTI cti
-      Cl.Negation s -> colTi_sen s
+      Cl.Negation s -> colTiSen s
       Cl.BinOp _ s1 s2 -> do
-          cti <- mapM colTi_sen [s1, s2]
+          cti <- mapM colTiSen [s1, s2]
           return $ unionsTI cti
   Cl.Atom_sent a _ -> case a of
       Cl.Equation t1 t2 -> do
-          cti <- mapM (colTi_trm_var . uncurryTerm) [t1, t2]
+          cti <- mapM (colTiTrmVar . uncurryTerm) [t1, t2]
           return $ unionsTI cti
-      Cl.Atom t [] -> colTi_trm_prop $ uncurryTerm t
-      Cl.Atom t tseqs -> colTi_addArity Pred (uncurryTerm t) tseqs
-  Cl.Comment_sent _ s _ -> colTi_sen s
-  Cl.Irregular_sent s _ -> colTi_sen s
+      Cl.Atom t [] -> colTiTrmProp $ uncurryTerm t
+      Cl.Atom t tseqs -> colTiAddArity Pred (uncurryTerm t) tseqs
+  Cl.Comment_sent _ s _ -> colTiSen s
+  Cl.Irregular_sent s _ -> colTiSen s
 
 nosStrnig :: Cl.NAME_OR_SEQMARK -> Result String
 nosStrnig nos = case nos of
   Cl.Name n -> return $ Id.tokStr n
   Cl.SeqMark s -> fail $ errSeqMark s
 
-colTi_trm_var :: Cl.TERM -> Result TextInfo
-colTi_trm_var trm = case trm of
+colTiTrmVar :: Cl.TERM -> Result TextInfo
+colTiTrmVar trm = case trm of
   Cl.Name_term n -> return $ emptyTI {vars = Set.singleton (Id.tokStr n)}
-  Cl.Comment_term t _ _ -> colTi_trm_var t
-  _ -> colTi_trm $ uncurryTerm trm
+  Cl.Comment_term t _ _ -> colTiTrmVar t
+  _ -> colTiTrm $ uncurryTerm trm
 
-colTi_trm_prop :: Cl.TERM -> Result TextInfo
-colTi_trm_prop trm = case trm of
+colTiTrmProp :: Cl.TERM -> Result TextInfo
+colTiTrmProp trm = case trm of
   Cl.Name_term n -> return $ emptyTI {props = Set.singleton (Id.tokStr n)}
-  Cl.Comment_term t _ _ -> colTi_trm_prop t
-  _ -> colTi_trm $ uncurryTerm trm
+  Cl.Comment_term t _ _ -> colTiTrmProp t
+  _ -> colTiTrm $ uncurryTerm trm
 
-colTi_trm :: Cl.TERM -> Result TextInfo
-colTi_trm trm = case trm of
+colTiTrm :: Cl.TERM -> Result TextInfo
+colTiTrm trm = case trm of
   Cl.Name_term _ -> return emptyTI
-  Cl.Funct_term t tseqs _ -> colTi_addArity Func t tseqs
-  Cl.Comment_term t _ _ -> colTi_trm $ uncurryTerm t
-  Cl.That_term {} -> fail "CommonLogic2CASLCompact.colTi_trm"
+  Cl.Funct_term t tseqs _ -> colTiAddArity Func t tseqs
+  Cl.Comment_term t _ _ -> colTiTrm $ uncurryTerm t
+  Cl.That_term {} -> fail "CommonLogic2CASLCompact.colTiTrm"
 
-colTi_trmSeq :: Cl.TERM_SEQ -> Result TextInfo
-colTi_trmSeq tseq = case tseq of
-  Cl.Term_seq trm -> colTi_trm_var trm
+colTiTrmSeq :: Cl.TERM_SEQ -> Result TextInfo
+colTiTrmSeq tseq = case tseq of
+  Cl.Term_seq trm -> colTiTrmVar trm
   Cl.Seq_marks s -> fail $ errSeqMark s
 
-colTi_addArity :: Pred_Or_Func -> Cl.TERM -> [Cl.TERM_SEQ] -> Result TextInfo
-colTi_addArity ty trm tseqs = case trm of
+colTiAddArity :: PredOrFunc -> Cl.TERM -> [Cl.TERM_SEQ] -> Result TextInfo
+colTiAddArity ty trm tseqs = case trm of
   Cl.Name_term n -> do
-      cti <- mapM colTi_trmSeq tseqs
+      cti <- mapM colTiTrmSeq tseqs
       return $ unionsTI
              $ ( if ty == Pred
                   then emptyTI { arityPred = MapSet.insert
@@ -437,9 +438,9 @@ colTi_addArity ty trm tseqs = case trm of
                   else emptyTI { arityFunc = MapSet.insert
                                   (Id.tokStr n) (length tseqs) MapSet.empty}
                   ) : cti
-  Cl.Funct_term {} -> colTi_trm $ uncurryTerm trm -- FIX predicate "(f x) y"
-  Cl.Comment_term t _ _ -> colTi_addArity ty t tseqs
-  Cl.That_term {} -> fail "CommonLogic2CASLCompact.colTi_addArity"
+  Cl.Funct_term {} -> colTiTrm $ uncurryTerm trm -- FIX predicate "(f x) y"
+  Cl.Comment_term t _ _ -> colTiAddArity ty t tseqs
+  Cl.That_term {} -> fail "CommonLogic2CASLCompact.colTiAddArity"
 
 {- If curried, uncurries term. Otherwise original term returned
 removes comments -}

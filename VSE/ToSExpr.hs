@@ -36,13 +36,13 @@ import Data.Char (toLower)
 import Data.List (sortBy)
 import Data.Ord (comparing)
 
-addUniformRestr :: Sign f Procs -> [Named Sentence] ->
-                   (Sign f Procs, [Named Sentence])
+addUniformRestr :: Sign f Procs -> [Named Sentence]
+  -> (Sign f Procs, [Named Sentence])
 addUniformRestr sig nsens = let
   namedConstr = filter (\ ns -> case sentence ns of
                                 ExtFORMULA
                                  (Ranged
-                                   (RestrictedConstraint _ _ _)
+                                   (RestrictedConstraint {})
                                   _) -> True
                                 _ -> False ) nsens
   restrConstr = map sentence namedConstr
@@ -86,22 +86,15 @@ addUniformRestr sig nsens = let
                                       (map toQualVar vs)
                                       nullRange))
                                    nullRange)
-                        (Ranged (If (Strong_equation
-                               (Application
+                        (Ranged (If (mkStEq
+                               (mkAppl
                                  (
-                                  Qual_op_name
+                                  mkQualOp
                                    (gnEqName s)
                                    (Op_type Partial [s, s]
                                     uBoolean nullRange)
-                                  nullRange
-                                 ) [Qual_var
-                                      xVar
-                                      s nullRange,
-                                     Qual_var
-                                      yVar
-                                      s nullRange
-                                    ] nullRange)
-                               aTrue nullRange)
+                                 ) [mkVarTerm xVar s, mkVarTerm yVar s])
+                               aTrue)
                           (Ranged Skip nullRange)
                           prg) nullRange))
                 nullRange )) nullRange) ) nullRange
@@ -124,21 +117,14 @@ addUniformRestr sig nsens = let
                                       (map toQualVar vs)
                                       nullRange))
                                    nullRange)
-                                (Ranged (If (Strong_equation
-                                 ( Application
-                                 ( Qual_op_name
+                                (Ranged (If (mkStEq
+                                 ( mkAppl
+                                 ( mkQualOp
                                    (gnEqName s)
                                    (Op_type Partial [s, s]
                                     uBoolean nullRange)
-                                  nullRange
-                                 ) [Qual_var
-                                      xVar
-                                      s nullRange,
-                                     Qual_var
-                                      yVar
-                                      s nullRange
-                                    ] nullRange)
-                                aTrue nullRange)
+                                 ) [mkVarTerm xVar s, mkVarTerm yVar s])
+                                aTrue)
                                (Ranged Skip nullRange) prg) nullRange))
                                nullRange )) nullRange)) nullRange) ) nullRange
                              in
@@ -154,7 +140,7 @@ addUniformRestr sig nsens = let
      nullRange,
      (makeNamed "" $
      Quantification Universal [Var_decl [xVar] s nullRange]
-      (Implication
+      (mkImpl
        ( ExtFORMULA $ Ranged
           (Dlformula Diamond ( Ranged
             (Call $ Predication
@@ -162,7 +148,7 @@ addUniformRestr sig nsens = let
                 (Map.findWithDefault (gnRestrName s) s restr)
                 (Pred_type [s] nullRange) nullRange)
                [Qual_var xVar s nullRange] nullRange) nullRange)
-            (True_atom nullRange))
+            trueForm)
           nullRange)
        ( ExtFORMULA $ Ranged
           (Dlformula Diamond (Ranged
@@ -170,8 +156,8 @@ addUniformRestr sig nsens = let
               (Qual_pred_name (gnUniformName s)
                 (Pred_type [s] nullRange) nullRange)
                [Qual_var xVar s nullRange] nullRange) nullRange)
-            (True_atom nullRange))
-          nullRange) True nullRange) nullRange) {isAxiom = False}]
+            trueForm)
+          nullRange)) nullRange) {isAxiom = False}]
     procDefs = concatMap (genUniform genSorts genOps) genSorts
     procs' = Map.fromList $
              map (\ s -> (gnUniformName s,
@@ -220,7 +206,7 @@ vseFormsToSExpr sig vf = case vf of
          Diamond -> "diamond", progToSExpr sig p, sentenceToSExpr sig s]
   Defprocs ds ->
     SList $ SSymbol "defprocs" : map (defprocToSExpr sig) ds
-  RestrictedConstraint _ _ _ ->
+  RestrictedConstraint {} ->
    error "restricted constraints should be handled separately"
 
 vDeclToSExpr :: Sign f Procs -> VarDecl -> SExpr

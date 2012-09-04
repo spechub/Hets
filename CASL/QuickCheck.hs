@@ -125,7 +125,7 @@ insertSen qm sen = if not $ AS_Anno.isAxiom sen then qm else
                      ins = foldr $ uncurry $ Map.insertWith (++)
                   in qm { carrierSens = ins (carrierSens qm) s }
                -- axiom forcing empty carrier?
-               Quantification Universal [Var_decl [_] s _] (False_atom _) _ ->
+               Quantification Universal [Var_decl [_] s _] (Atom False _) _ ->
                  qm { carrierSens = Map.insertWith (++) s [f] (carrierSens qm) }
                _ -> qm
       insertPred p args body q =
@@ -138,18 +138,13 @@ insertSen qm sen = if not $ AS_Anno.isAxiom sen then qm else
      insertPred predsymb args trueForm qm1
    Negation (Predication predsymb args _) _ ->
      insertPred predsymb args falseForm qm1
-   Equivalence (Predication predsymb args _) body _ ->
+   Relation (Predication predsymb args _) Equivalence body _ ->
      insertPred predsymb args body qm1
-   Strong_equation (Application opsymb args _) body _ ->
-     insertOp opsymb args body qm1
-   Existl_equation (Application opsymb args _) body _ ->
+   Equation (Application opsymb args _) _ body _ ->
      insertOp opsymb args body qm1
    {- treat equality as special predicate symbol, for detecting inequalities
    also exploit that inequality is symmetric -}
-   Negation (Strong_equation t1 t2 _) _ ->
-     insertPred eqSymb [t1, t2] falseForm $
-       insertPred eqSymb [t2, t1] falseForm qm1
-   Negation (Existl_equation t1 t2 _) _ ->
+   Negation (Equation t1 _ t2 _) _ ->
      insertPred eqSymb [t1, t2] falseForm $
        insertPred eqSymb [t2, t1] falseForm qm1
    _ -> qm1
@@ -197,12 +192,11 @@ calculateTerm qm ass trm = case trm of
     Application opSymb terms _ ->
               applyOperation qm ass opSymb terms
     Sorted_term term _ _ -> calculateTerm qm ass term
-    Cast _ _ _ -> error "Cast not implemented"
     Conditional t1 fo t2 _ -> do
               res <- calculateFormula False qm ass fo
               if res then calculateTerm qm ass t1
                      else calculateTerm qm ass t2
-    _ -> fail "unsopprted term"
+    _ -> fail $ "QuickCheck.calculateTerm: unsupported: " ++ showDoc trm ""
 
 lookupVar :: VAR -> VariableAssignment -> Result CASLTERM
 lookupVar v (VariableAssignment _ ass) = case lookup v ass of
@@ -245,24 +239,21 @@ match bodies args msg =
 -- match against a single body
 match1 :: [CASLTERM] -> ([CASLTERM], a) -> Maybe (a, [(VAR, CASLTERM)])
 match1 args (vars, body) = do
-  substs <- mapM (uncurry match2) (zip vars args)
-  let subst = concat substs
+  subst <- fmap concat $ zipWithM match2 vars args
   if consistent subst then return (body, subst) else Nothing
 
 match2 :: CASLTERM -> CASLTERM -> Maybe [(VAR, CASLTERM)]
 match2 (Qual_var v _ _) t = Just [(v, t)]
 match2 (Application opsymb1 terms1 _) (Application opsymb2 terms2 _) =
    -- direct match of operation symbols?
-   if opsymb1 == opsymb2 then do
-     substs <- mapM (uncurry match2) (zip terms1 terms2)
-     return (concat substs)
+   if opsymb1 == opsymb2 then
+     fmap concat $ zipWithM match2 terms1 terms2
    -- if not, try to exploit overloading relation
     else do
       let (opsymb1', terms1', w1) = stripInj opsymb1 terms1
           (opsymb2', terms2', w2) = stripInj opsymb2 terms2
       when (opSymbName opsymb1' /= opSymbName opsymb2' || w1 /= w2) Nothing
-      substs <- mapM (uncurry match2) (zip terms1' terms2')
-      return (concat substs)
+      fmap concat $ zipWithM match2 terms1' terms2'
 match2 (Sorted_term t1 _ _) t2 = match2 t1 t2
 match2 t1 (Sorted_term t2 _ _) = match2 t1 t2
 match2 _ _ = Nothing
@@ -310,9 +301,11 @@ ternaryOr (Result d1 Nothing) b2 =
 calculateFormula :: Bool -> QModel -> VariableAssignment -> CASLFORMULA
     -> Result Bool
 calculateFormula isOuter qm varass f = case f of
-    Quantification _ _ _ _ ->
+    Quantification {} ->
        calculateQuantification isOuter qm varass f
-    Conjunction formulas _ -> do
+    Junction j formulas _ ->
+       let newFs = map (calculateFormula False qm varass) formulas
+       in if j == Dis then foldl ternaryOr (return False) newFs else do
        let (res, f1) =
              foldl ternaryAnd (return True, f)
                (zip (map (calculateFormula False qm varass) formulas) formulas)
@@ -322,25 +315,15 @@ calculateFormula isOuter qm varass f = case f of
                          ++ "Formula that failed: " ++ showDoc f1 ""
          _ -> return ()
        res
-    Disjunction formulas _ ->
-        foldl ternaryOr (return False)
-               (map (calculateFormula False qm varass) formulas)
-    Implication f1 f2 _ _ ->
-        ternaryOr (fmap not (calculateFormula False qm varass f1))
-                  (calculateFormula False qm varass f2)
-    Equivalence f1 f2 _ -> do
-        res1 <- calculateFormula False qm varass f1
-        res2 <- calculateFormula False qm varass f2
-        return (res1 == res2)
+    Relation f1 c f2 _ ->
+        let res1 = calculateFormula False qm varass f1
+            res2 = calculateFormula False qm varass f2
+        in if c == Equivalence then liftM2 (==) res1 res2 else
+               ternaryOr (fmap not res1) res2
     Negation f1 _ ->
         fmap not $ calculateFormula False qm varass f1
-    True_atom _ -> return True
-    False_atom _ -> return False
-    Strong_equation term1 term2 _ -> do
-        t1 <- calculateTerm qm varass term1
-        t2 <- calculateTerm qm varass term2
-        equalElements qm t1 t2
-    Existl_equation term1 term2 _ -> do
+    Atom b _ -> return b
+    Equation term1 _ term2 _ -> do
         t1 <- calculateTerm qm varass term1
         t2 <- calculateTerm qm varass term2
         equalElements qm t1 t2
@@ -461,7 +444,7 @@ termSort (Sort_gen_ax constr _) =
           constant _ = False
           mkTerm op = mkAppl op []
 -- axiom forcing empty carrier
-termSort (Quantification Universal [Var_decl [_] s _] (False_atom _) _) =
+termSort (Quantification Universal [Var_decl [_] s _] (Atom False _) _) =
   Just (s, [])
 termSort _ = Nothing
 

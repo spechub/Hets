@@ -234,19 +234,23 @@ omdocRec e mf = Record
                 Unique_existential -> const_existsunique
           vl = map (varDeclToOMDoc e) $ flatVAR_DECLs vs
       in OMBIND s vl f
-    , foldConjunction = \ _ fs _ -> OMA $ const_and : fs
-    , foldDisjunction = \ _ fs _ -> OMA $ const_or : fs
-    , foldImplication = \ _ f1 f2 b _ ->
-        OMA [if b then const_implies else const_implied, f1, f2]
-    , foldEquivalence = \ _ f1 f2 _ ->
-                        OMA [const_equivalent, f1, f2]
+    , foldJunction = \ _ j fs _ -> OMA $ case j of
+          Con -> const_and
+          Dis -> const_or
+        : fs
+    , foldRelation = \ _ f1 c f2 _ -> OMA $ case c of
+          Implication -> const_implies
+          RevImpl -> const_implied
+          Equivalence -> const_equivalent
+        : [f1, f2]
     , foldNegation = \ _ f _ -> OMA [const_not, f]
-    , foldTrue_atom = \ _ _ -> const_true
-    , foldFalse_atom = \ _ _ -> const_false
+    , foldAtom = \ _ b _ -> if b then const_true else const_false
     , foldPredication = \ _ p ts _ -> appOrConst e p ts
     , foldDefinedness = \ _ t _ -> OMA [const_def, t]
-    , foldExistl_equation = \ _ t1 t2 _ -> OMA [const_eeq, t1, t2]
-    , foldStrong_equation = \ _ t1 t2 _ -> OMA [const_eq, t1, t2]
+    , foldEquation = \ _ t1 r t2 _ -> OMA $ case r of
+          Existl -> const_eeq
+          Strong -> const_eq
+        : [t1, t2]
     , foldMembership = \ _ t s _ -> OMA [const_in, t, oms e s]
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
     , foldQuantOp = \ _ o _ _ -> sfail ("QuantOp " ++ show o) $ getRange o

@@ -15,17 +15,17 @@ module CASL.CCC.FreeTypes (checkFreeType) where
 
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import CASL.Morphism
-import CASL.Sign(OpType(..), PredType(..), Sign(..), sortSet, sortOfTerm)
-import CASL.SimplifySen(simplifyCASLSen)
+import CASL.Sign (OpType (..), PredType (..), Sign (..), sortSet, sortOfTerm)
+import CASL.SimplifySen (simplifyCASLSen)
 import CASL.CCC.TermFormula
-import CASL.CCC.TerminationProof(terminationProof, opSymName, predSymName)
+import CASL.CCC.TerminationProof (terminationProof, opSymName, predSymName)
 
 import Common.AS_Annotation
-import Common.Consistency(Conservativity(..))
-import Common.DocUtils(showDoc)
+import Common.Consistency (Conservativity (..))
+import Common.DocUtils (showDoc)
 import Common.Id
-import Common.Result(Result, warning)
-import Common.Utils(nubOrd)
+import Common.Result (Result, warning)
+import Common.Utils (nubOrd)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
@@ -36,26 +36,25 @@ import qualified Data.Set as Set
 
 inhabited :: [SORT] -> [Constraint] -> [SORT]
 inhabited sorts constrs = iterateInhabited sorts
-    where (_,ops,_) = recover_Sort_gen_ax constrs
+    where (_, ops, _) = recover_Sort_gen_ax constrs
           argsRes = concatMap (\ os -> case os of
-                                 Op_name _->[]
-                                 Qual_op_name _ ot _->
-                                     case ot of
-                                       Op_type _ args res _ -> [(args,res)]) ops
+                                 Op_name _ -> []
+                                 Qual_op_name _ (Op_type _ args res _) _ ->
+                                   [(args, res)]) ops
           iterateInhabited l =
                     if l == newL then newL else iterateInhabited newL
                             where newL = foldr (\ (ags, rs) l' ->
-                                                  if all (flip elem l') ags
+                                                  if all (`elem` l') ags
                                                       && notElem rs l'
                                                   then rs : l'
                                                   else l') l argsRes
 
 isUserOrSortGen :: Named (FORMULA f) -> Bool
 isUserOrSortGen ax = "ga_generated" `isPrefixOf` name ||
-                     not ("ga_" `isPrefixOf` name)
+                     not ("ga_" `isPrefixOf` name) || isSortGen (sentence ax)
     where name = senAttr ax
 
-getFs :: [Named (FORMULA ())] -> [FORMULA ()]
+getFs :: [Named (FORMULA f)] -> [FORMULA f]
 getFs = map sentence . filter isUserOrSortGen
 
 getExAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
@@ -84,20 +83,20 @@ getAxGroup fsn = axGroup
         ax_without_dom = filter (not . isDomain) axioms'
         axGroup = groupAxioms ax_without_dom
 
+recoverSortsAndConstructors :: [Named (FORMULA f)] -> [Named (FORMULA f)]
+  -> ([SORT], [OP_SYMB])
+recoverSortsAndConstructors osens fsn = let
+  (srts, cons, _) = recover_Sort_gen_ax
+    . concatMap constraintOfAxiom . getFs $ osens ++ fsn
+  in (srts, cons)
+
 getConstructors :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())] -> [OP_SYMB]
-getConstructors osens m fsn = constructors
-    where
-        fs = getFs fsn
-        ofs = getFs osens
-        tsig = mtarget m
-        fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
-        (_, constructors_o, _) = recover_Sort_gen_ax fconstrs
-        constructors = constructorOverload tsig (opMap tsig) constructors_o
+getConstructors osens m fsn = let tsig = mtarget m in
+    constructorOverload tsig (opMap tsig)
+          . snd $ recoverSortsAndConstructors osens fsn
 
-{-
-   check that patterns do not overlap, if not, return proof obligation.
--}
+-- check that patterns do not overlap, if not, return proof obligation.
 getOverlapQuery :: [Named (FORMULA ())] -> [FORMULA ()]
 getOverlapQuery fsn = overlap_query
     where
@@ -169,7 +168,7 @@ getNotFreeSorts osig m fsn = notFreeSorts
         notFreeSorts = filter (\ s -> isFreeGenSort s axOfS == Just False)
                        nSorts
 
-getNefsorts :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+getNefsorts :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> [SORT]
 getNefsorts (osig, osens) m fsn = nefsorts
     where
@@ -183,27 +182,22 @@ getNefsorts (osig, osens) m fsn = nefsorts
         fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
         (srts, _, _) = recover_Sort_gen_ax fconstrs
         f_Inhabited = inhabited oSorts fconstrs
-        fsorts = filter (\ s -> notElem s esorts) $ intersect nSorts srts
-        nefsorts = filter (\ s -> notElem s f_Inhabited) fsorts
+        fsorts = filter (`notElem` esorts) $ intersect nSorts srts
+        nefsorts = filter (`notElem` f_Inhabited) fsorts
 
-getDataStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+getDataStatus :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> Conservativity
 getDataStatus (osig, osens) m fsn = dataStatus
     where
-        fs = getFs fsn
-        ofs = getFs osens
         tsig = mtarget m
         sR = Rel.toList $ sortRel tsig
         subs = map fst sR
         nSorts = getNSorts osig m
-        fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
-        (srts, _, _) = recover_Sort_gen_ax fconstrs
-        gens = intersect nSorts srts
-        dataStatus = if null nSorts then Def
-                     else if any (\ s -> notElem s subs &&
-                             notElem s gens) nSorts
-                          then Cons
-                          else Mono
+        gens = intersect nSorts . fst $ recoverSortsAndConstructors osens fsn
+        dataStatus
+          | null nSorts = Def
+          | any (\ s -> notElem s subs && notElem s gens) nSorts = Cons
+          | otherwise = Mono
 
 getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())] -> [[FORMULA ()]]
@@ -217,39 +211,31 @@ getNotComplete osens m fsn = not_complete
         not_complete = filter (not . completePatterns constructors
                                . map patternsOfAxiom) axGroups
 
-getConStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+getOpsPredsAndExAxioms :: Morphism () () () -> [Named (FORMULA ())]
+  -> [FORMULA ()]
+getOpsPredsAndExAxioms m fsn =
+  getOOps m fsn ++ getOPreds m fsn ++ getExAxioms fsn
+
+getConStatus :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> Conservativity
-getConStatus (osig,osens) m fsn = conStatus
+getConStatus (osig, osens) m fsn = min dataStatus defStatus
     where
         dataStatus = getDataStatus (osig, osens) m fsn
-        ex_axioms = getExAxioms fsn
-        oOps = getOOps m fsn
-        oPreds = getOPreds m fsn
-        overlap_query = getOverlapQuery fsn
-        defStatus = if null $ oOps ++ oPreds ++ ex_axioms ++ overlap_query
+        defStatus = if null $ getOpsPredsAndExAxioms m fsn
+                       ++ getOverlapQuery fsn
                     then Def
                     else Cons
-        conStatus = min dataStatus defStatus
 
 getObligations :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
-getObligations m fsn = obligations
-    where
-        ex_axioms = getExAxioms fsn
-        oOps = getOOps m fsn
-        oPreds = getOPreds m fsn
-        info_subsort = getInfoSubsort m fsn
-        overlap_query = getOverlapQuery fsn
-        obligations = oOps ++ oPreds ++ ex_axioms ++ info_subsort ++
-                      overlap_query
+getObligations m fsn = getOpsPredsAndExAxioms m fsn
+  ++ getInfoSubsort m fsn ++ getOverlapQuery fsn
 
-{-
-   check the definitional form of the partial axioms
--}
+-- check the definitional form of the partial axioms
 checkDefinitional :: Sign () () -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkDefinitional osig fsn
     | elem Nothing l_Syms =
-        let ax = head [ a | a<-axioms, isNothing $ leadingSym a ]
+        let ax = head [ a | a <- axioms, isNothing $ leadingSym a ]
             ax' = quanti ax
             pos = snd $ leadingSymPos ax'
         in Just $ warning Nothing ("The following " ++ prettyType ax' ++
@@ -262,12 +248,12 @@ checkDefinitional osig fsn
         in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
                " is not definitional:\n" ++ formatAxiom ax) pos
     | length dom_l /= length (nubOrd dom_l) =
-        let ax = head $ filter (\ f -> domainOs f dualOS) $
+        let ax = head $ filter (`domainOs` dualOS) $
                  filter partialAxiom axioms
             ax' = head dualDom
             pos = getRange $ take 1 dualDom
             dualOS = head $ filter (\ o -> elem o $ delete o dom_l) dom_l
-            dualDom = filter (\ f -> domainOs f dualOS) p_axioms
+            dualDom = filter (`domainOs` dualOS) p_axioms
         in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
                " is not definitional:\n" ++ formatAxiom ax) pos
     | not $ null pcheck =
@@ -315,7 +301,7 @@ checkDefinitional osig fsn
                                  Implication   Predication    Equivalence
   if there are axioms not being of this form, output "don't know"
 -}
-checkSort :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+checkSort :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkSort (osig, osens) m fsn
@@ -327,13 +313,13 @@ checkSort (osig, osens) m fsn
     | not $ null nefsorts =
         let Id ts _ pos = head nefsorts
             sname = concatMap tokStr ts
-        in Just $ warning (Just (Inconsistent,[]))
+        in Just $ warning (Just (Inconsistent, []))
                       (sname ++ " is not inhabited") pos
     | otherwise = Nothing
     where
         nSorts = getNSorts osig m
         notFreeSorts = getNotFreeSorts osig m fsn
-        nefsorts = getNefsorts (osig,osens) m fsn
+        nefsorts = getNefsorts (osig, osens) m fsn
 
 checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
@@ -372,17 +358,15 @@ checkLeadingTerms osens m fsn
         constructors = getConstructors osens m fsn
         axioms = getAxioms fsn
         axioms' = map quanti axioms
-        ltp = map leadingTermPredication axioms'       --  leadingTermPred
+        ltp = map leadingTermPredication axioms'       -- leadingTermPred
         leadingTerms = concatMap (\ tp -> case tp of
-                                             Just (Left t)->[t]
+                                             Just (Left t) -> [t]
                                              _ -> []) ltp      -- leading Term
         leadingPreds = concatMap (\ tp -> case tp of
-                                             Just (Right f)->[f]
+                                             Just (Right f) -> [f]
                                              _ -> []) ltp
 
-{-
-   check the sufficient completeness
--}
+-- check the sufficient completeness
 checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
@@ -390,7 +374,7 @@ checkIncomplete osens m fsn
     | not $ null notcomplete =
         let symb_p = leadingSymPos $ head $ head notcomplete
             pos = snd symb_p
-            sname = case (fst symb_p) of
+            sname = case fst symb_p of
                       Just (Left opS) -> opSymName opS
                       Just (Right pS) -> predSymName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
@@ -402,7 +386,7 @@ checkIncomplete osens m fsn
        notcomplete = getNotComplete osens m fsn
        obligations = getObligations m fsn
 
-checkTerminal  :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+checkTerminal :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
     -> IO (Maybe (Result (Maybe (Conservativity, [FORMULA ()]))))
 checkTerminal (osig, osens) m fsn = do
@@ -426,27 +410,26 @@ checkTerminal (osig, osens) m fsn = do
 checkPositive :: [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkPositive fsn
-    | allPos     = Just $ return (Just (Cons, []))
-    | otherwise  = Nothing
+    | allPos = Just $ return (Just (Cons, []))
+    | otherwise = Nothing
     where
         allPos = all checkPos $ getFs fsn
         checkPos :: FORMULA () -> Bool
         checkPos f =
             case quanti f of
-                Conjunction     cs      _ -> all checkPos cs
-                Disjunction     ds      _ -> any checkPos ds
-                Implication     i1 i2 _ _ -> not (checkPos i1) || checkPos i2
-                Equivalence     e1 e2   _ -> checkPos e1 == checkPos e2
-                Negation        n       _ -> not $ checkPos n
-                True_atom               _ -> True
-                False_atom              _ -> False
-                Predication     _  _    _ -> True
-                Definedness     _       _ -> True
-                Existl_equation _  _    _ -> True
-                Strong_equation _  _    _ -> True
-                _                         -> False
+                Junction _ cs _ -> all checkPos cs
+                Relation i1 c i2 _ -> let
+                    c1 = checkPos i1
+                    c2 = checkPos i2
+                    in if c == Equivalence then c1 == c2 else c1 <= c2
+                Negation n _ -> not $ checkPos n
+                Atom b _ -> b
+                Predication {} -> True
+                Definedness {} -> True
+                Equation {} -> True
+                _ -> False
 
-{------------------------------------------------------------------------
+{- -----------------------------------------------------------------------
    function checkFreeType:
    - check if leading symbols are new (not in the image of morphism),
            if not, return them as obligations
@@ -473,9 +456,9 @@ checkPositive fsn
                               constructor in each group
   - sufficient completeness
   - termination proof
--------------------------------------------------------------------------}
--- | free datatypes and recursive equations are consistent
-checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+------------------------------------------------------------------------
+free datatypes and recursive equations are consistent -}
+checkFreeType :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> IO (Result (Maybe (Conservativity, [FORMULA ()])))
 checkFreeType (osig, osens) m axs = do
@@ -492,64 +475,63 @@ checkFreeType (osig, osens) m axs = do
 
 prettyType :: FORMULA () -> String
 prettyType fm = case fm of
-    Quantification _ _ _ _ -> "quantification"
-    Conjunction _ _        -> "conjunction"
-    Disjunction _ _        -> "disjunction"
-    Implication _ _ _ _    -> "implication"
-    Equivalence _ _ _      -> "equivalence"
-    Negation _ _           -> "negation"
-    True_atom _            -> "true atom"
-    False_atom _           -> "false atom"
-    Predication _ _ _      -> "predication"
-    Definedness _ _        -> "definedness"
-    Existl_equation _ _ _  -> "existantial equation"
-    Strong_equation _ _ _  -> "strong equation"
-    Membership _ _ _       -> "membership"
-    Mixfix_formula _       -> "mixfix formula"
-    Unparsed_formula _ _   -> "unparsed formula"
-    Sort_gen_ax _ _        -> "sort_gen_ax"
-    QuantOp _ _ _          -> "forall op"
-    QuantPred _ _ _        -> "forall pred"
-    ExtFORMULA _           -> "extended formula"
+    Quantification {} -> "quantification"
+    Junction j _ _ -> (if j == Con then "con" else "dis") ++ "junction"
+    Relation _ c _ _ -> if c == Equivalence then "equivalence"
+                                       else "implication"
+    Negation _ _ -> "negation"
+    Atom b _ -> (if b then "true" else "false") ++ " atom"
+    Predication {} -> "predication"
+    Definedness _ _ -> "definedness"
+    Equation _ e _ _ -> (if e == Strong then "strong" else "existantial")
+                         ++ " equation"
+    Membership {} -> "membership"
+    Mixfix_formula _ -> "mixfix formula"
+    Unparsed_formula _ _ -> "unparsed formula"
+    Sort_gen_ax _ _ -> "sort_gen_ax"
+    QuantOp {} -> "forall op"
+    QuantPred {} -> "forall pred"
+    ExtFORMULA _ -> "extended formula"
 
--- | group the axioms according to their leading symbol,
---   output Nothing if there is some axiom in incorrect form
-groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB,[FORMULA f])]
+{- | group the axioms according to their leading symbol,
+output Nothing if there is some axiom in incorrect form -}
+groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB, [FORMULA f])]
 groupAxioms phis = do
   symbs <- mapM leadingSym phis
   return (filterA (zip symbs phis) [])
   where filterA [] _ = []
-        filterA (p:ps) symb =
+        filterA (p : ps) symb =
             let fp = fst p
-                p'= if elem fp symb then []
-                    else [(fp,snd $ unzip $ filter (\ x -> fst x == fp) (p:ps))]
-                symb'= if notElem fp symb then fp:symb else symb
+                p' = if elem fp symb then []
+                    else [(fp, snd $ unzip $ filter ((== fp) . fst) (p : ps))]
+                symb' = if notElem fp symb then fp : symb else symb
             in p' ++ filterA ps symb'
 
 
-filterOp :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,OpType)]
+filterOp :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME, OpType)]
 filterOp symb = case symb of
-                  Just (Left (Qual_op_name ident (Op_type k ags rs _) _))->
-                      [(ident, OpType {opKind=k, opArgs=ags, opRes=rs})]
+                  Just (Left (Qual_op_name ident (Op_type k ags rs _) _)) ->
+                      [(ident, OpType {opKind = k, opArgs = ags, opRes = rs})]
                   _ -> []
 
 
-filterPred :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,PredType)]
+filterPred :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME, PredType)]
 filterPred symb = case symb of
                     Just (Right (Qual_pred_name ident (Pred_type s _) _)) ->
-                        [(ident, PredType {predArgs=s})]
+                        [(ident, PredType {predArgs = s})]
                     _ -> []
 
 
--- | a leading term and a predication consist of
--- | variables and constructors only
+{- | a leading term and a predication consist of
+variables and constructors only -}
 checkTerms :: Sign f e -> [OP_SYMB] -> [TERM f] -> Bool
-checkTerms sig cons ts = all checkT ts
-  where checkT (Sorted_term tt _ _) = checkT tt
-        checkT (Qual_var _ _ _) = True
-        checkT (Application subop subts _) =
+checkTerms sig cons = all checkT
+  where checkT t = case t of
+          Sorted_term tt _ _ -> checkT tt
+          Qual_var {} -> True
+          Application subop subts _ ->
             isCons sig cons subop && all checkT subts
-        checkT _ = False
+          _ -> False
 
 
 -- |  no variable occurs twice in a leading term
@@ -575,27 +557,26 @@ pairs ps = case ps of
 -- | get the patterns of a term
 patternsOfTerm :: TERM f -> [TERM f]
 patternsOfTerm t = case t of
-                     Qual_var _ _ _ -> [t]
-                     Application (Qual_op_name _ _ _) ts _-> ts
-                     Sorted_term t' _ _ -> patternsOfTerm t'
-                     Cast t' _ _ -> patternsOfTerm t'
-                     _ -> []
+    Qual_var {} -> [t]
+    Application (Qual_op_name {}) ts _ -> ts
+    Sorted_term t' _ _ -> patternsOfTerm t'
+    Cast t' _ _ -> patternsOfTerm t'
+    _ -> []
 
 -- | get the patterns of a axiom
 patternsOfAxiom :: FORMULA f -> [TERM f]
 patternsOfAxiom f = case f of
-                      Quantification _ _ f' _ -> patternsOfAxiom f'
-                      Negation f' _ -> patternsOfAxiom f'
-                      Implication _ f' _ _ -> patternsOfAxiom f'
-                      Equivalence f' _ _ -> patternsOfAxiom f'
-                      Predication _ ts _ -> ts
-                      Existl_equation t _ _ -> patternsOfTerm t
-                      Strong_equation t _ _ -> patternsOfTerm t
-                      _ -> []
+    Quantification _ _ f' _ -> patternsOfAxiom f'
+    Negation f' _ -> patternsOfAxiom f'
+    Relation _ c f' _ | c /= Equivalence -> patternsOfAxiom f'
+    Relation f' Equivalence _ _ -> patternsOfAxiom f'
+    Predication _ ts _ -> ts
+    Equation t _ _ _ -> patternsOfTerm t
+    _ -> []
 
 
 -- | check whether two patterns are overlapped
-checkPatterns :: (Eq f) => ([TERM f],[TERM f]) -> Bool
+checkPatterns :: (Eq f) => ([TERM f], [TERM f]) -> Bool
 checkPatterns (ps1, ps2) = case (ps1, ps2) of
   (hd1 : tl1, hd2 : tl2) ->
       if isVar hd1 || isVar hd2 then checkPatterns (tl1, tl2)
@@ -603,72 +584,65 @@ checkPatterns (ps1, ps2) = case (ps1, ps2) of
                                                 patternsOfTerm hd2 ++ tl2)
   _ -> True
 
--- | get the axiom from left hand side of a implication,
--- | if there is no implication, then return atomic formula true
-conditionAxiom ::  FORMULA f -> [FORMULA f]
+{- | get the axiom from left hand side of a implication,
+if there is no implication, then return atomic formula true -}
+conditionAxiom :: FORMULA f -> [FORMULA f]
 conditionAxiom f = case f of
                      Quantification _ _ f' _ -> conditionAxiom f'
-                     Implication f' _ _ _ -> [f']
-                     _ -> [True_atom nullRange]
+                     Relation f' c _ _ | c /= Equivalence -> [f']
+                     _ -> [trueForm]
 
--- | get the axiom from right hand side of a equivalence,
--- | if there is no equivalence, then return atomic formula true
-resultAxiom ::  FORMULA f -> [FORMULA f]
+{- | get the axiom from right hand side of a equivalence,
+if there is no equivalence, then return atomic formula true -}
+resultAxiom :: FORMULA f -> [FORMULA f]
 resultAxiom f = case f of
                   Quantification _ _ f' _ -> resultAxiom f'
-                  Implication _ f' _ _ -> resultAxiom f'
-                  Equivalence _ f' _ -> [f']
-                  _ -> [True_atom nullRange]
+                  Relation _ c f' _ | c /= Equivalence -> resultAxiom f'
+                  Relation _ Equivalence f' _ -> [f']
+                  _ -> [trueForm]
 
--- | get the term from left hand side of a equation in a formula,
--- | if there is no equation, then return a simple id
+{- | get the term from left hand side of a equation in a formula,
+if there is no equation, then return a simple id -}
 resultTerm :: FORMULA f -> [TERM f]
 resultTerm f = case f of
                  Quantification _ _ f' _ -> resultTerm f'
-                 Implication _ f' _ _ -> resultTerm f'
+                 Relation _ c f' _ | c /= Equivalence -> resultTerm f'
                  Negation (Definedness _ _) _ ->
                    [varOrConst (mkSimpleId "undefined")]
-                 Strong_equation _ t _ -> [t]
-                 Existl_equation _ t _ -> [t]
+                 Equation _ _ t _ -> [t]
                  _ -> [varOrConst (mkSimpleId "unknown")]
 
 -- | create the proof obligation for a pair of overlapped formulas
-overlapQuery :: Eq f => ((FORMULA f,[(TERM f,TERM f)]),
-                         (FORMULA f,[(TERM f,TERM f)])) -> FORMULA f
+overlapQuery :: Eq f => ((FORMULA f, [(TERM f, TERM f)]),
+                         (FORMULA f, [(TERM f, TERM f)])) -> FORMULA f
 overlapQuery ((a1, s1), (a2, s2)) =
         case leadingSym a1 of
           Just (Left _)
             | containNeg a1 && not (containNeg a2) ->
-                Implication (Conjunction [con1,con2] nullRange)
-                            (Negation (Definedness resT2 nullRange) nullRange)
-                            True nullRange
+                mkImpl (conjunct [con1, con2])
+                            (mkNeg (Definedness resT2 nullRange))
             | containNeg a2 && not (containNeg a1) ->
-                Implication (Conjunction [con1,con2] nullRange)
-                            (Negation (Definedness resT1 nullRange) nullRange)
-                            True nullRange
-            | containNeg a1 && containNeg a2 -> True_atom nullRange
+                mkImpl (conjunct [con1, con2])
+                            (mkNeg (Definedness resT1 nullRange))
+            | containNeg a1 && containNeg a2 -> trueForm
             | otherwise ->
-                Implication (Conjunction [con1,con2] nullRange)
-                            (Strong_equation resT1 resT2 nullRange)
-                            True nullRange
+                mkImpl (conjunct [con1, con2])
+                            (mkStEq resT1 resT2)
           Just (Right _)
             | containNeg a1 && not (containNeg a2) ->
-                Implication (Conjunction [con1,con2] nullRange)
-                            (Negation resA2 nullRange)
-                            True nullRange
+                mkImpl (conjunct [con1, con2])
+                            (mkNeg resA2)
             | containNeg a2 && not (containNeg a1) ->
-                Implication (Conjunction [con1,con2] nullRange)
-                            (Negation resA1 nullRange)
-                            True nullRange
-            | containNeg a1 && containNeg a2 -> True_atom nullRange
+                mkImpl (conjunct [con1, con2])
+                            (mkNeg resA1)
+            | containNeg a1 && containNeg a2 -> trueForm
             | otherwise ->
-                Implication (Conjunction [con1,con2] nullRange)
-                            (Conjunction [resA1,resA2] nullRange)
-                            True nullRange
+                mkImpl (conjunct [con1, con2])
+                            (conjunct [resA1, resA2])
           _ -> error "CASL.CCC.FreeTypes.<overlapQuery>"
-      where cond = concatMap conditionAxiom [a1,a2]
-            resT = concatMap resultTerm [a1,a2]
-            resA = concatMap resultAxiom [a1,a2]
+      where cond = concatMap conditionAxiom [a1, a2]
+            resT = concatMap resultTerm [a1, a2]
+            resA = concatMap resultAxiom [a1, a2]
             con1 = substiF s1 $ head cond
             con2 = substiF s2 $ last cond
             resT1 = substitute s1 $ head resT
@@ -677,7 +651,7 @@ overlapQuery ((a1, s1), (a2, s2)) =
             resA2 = substiF s2 $ last resA
 
 -- | check whether the patterns of a function or predicate are complete
-completePatterns :: [OP_SYMB] -> ([[TERM ()]]) -> Bool
+completePatterns :: [OP_SYMB] -> [[TERM ()]] -> Bool
 completePatterns cons pas
     | all null pas = True
     | all isVar $ map head pas = completePatterns cons (map tail pas)
@@ -685,7 +659,7 @@ completePatterns cons pas
                   all id (map (completePatterns cons) $ pa_group pas)
     where s_op_os c = case c of
                         Op_name _ -> []
-                        Qual_op_name on ot _ -> [(res_OP_TYPE ot,on)]
+                        Qual_op_name on ot _ -> [(res_OP_TYPE ot, on)]
           s_sum sns = map (\ s -> (s, map snd $
                       filter (\ c -> fst c == s) sns)) $ nubOrd $ map fst sns
           s_cons = s_sum $ concatMap s_op_os cons

@@ -43,22 +43,12 @@ mapSig sign = (CSign.emptySign ())
 
 -- | Which is the target sublogic?
 mapSub :: PSL.PropSL -> CSL.CASL_Sublogics
-mapSub sl =
-    case (PSL.isHC sl) of
-      True -> CSL.bottom
-              { CSL.cons_features = CSL.NoSortGen
-              , CSL.sub_features = CSL.NoSub
-              , CSL.has_pred = True
-              , CSL.has_eq = False
-              , CSL.which_logic = CSL.Horn
-              }
-      False -> CSL.bottom
-              { CSL.cons_features = CSL.NoSortGen
-              , CSL.sub_features = CSL.NoSub
-              , CSL.has_pred = True
-              , CSL.has_eq = False
-              , CSL.which_logic = CSL.FOL
-              }
+mapSub sl = CSL.bottom
+  { CSL.cons_features = CSL.NoSortGen
+  , CSL.sub_features = CSL.NoSub
+  , CSL.has_pred = True
+  , CSL.has_eq = False
+  , CSL.which_logic = if PSL.isHC sl then CSL.Horn else CSL.FOL }
 
 -- | Translation of morphisms
 mapMor :: PMor.Morphism -> Result.Result CMor.CASLMor
@@ -67,8 +57,8 @@ mapMor mor = Result.Result [] $ Just (CMor.embedMorphism ()
     { CMor.pred_map = trMor $ PMor.propMap mor }
 
 -- | Mapping of a theory
-mapTheory :: (PSign.Sign, [AS_Anno.Named (PBasic.FORMULA)])
-  -> Result.Result (CSign.CASLSign, [AS_Anno.Named (CBasic.CASLFORMULA)])
+mapTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
+  -> Result.Result (CSign.CASLSign, [AS_Anno.Named CBasic.CASLFORMULA])
 mapTheory (sig, form) = Result.Result [] $
     Just (mapSig sig, map trNamedForm form)
 
@@ -81,40 +71,40 @@ mapSym sym = Set.singleton $
 mapSentence :: PSign.Sign -> PBasic.FORMULA -> Result.Result CBasic.CASLFORMULA
 mapSentence _ form = Result.Result [] $ Just $ trForm form
 
--------------------------------------------------------------------------------
--- Helpers                                                                   --
--------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Helpers                                                                   --
+----------------------------------------------------------------------------- -}
 
 -- | Helper for map theory
-trNamedForm :: AS_Anno.Named (PBasic.FORMULA)
-            -> AS_Anno.Named (CBasic.CASLFORMULA)
-trNamedForm form = AS_Anno.mapNamed trForm form
+trNamedForm :: AS_Anno.Named PBasic.FORMULA -> AS_Anno.Named CBasic.CASLFORMULA
+trNamedForm = AS_Anno.mapNamed trForm
 
 -- | Helper for map sentence and map theory
 trForm :: PBasic.FORMULA -> CBasic.CASLFORMULA
 trForm form =
       case form of
-        PBasic.Negation fn rn ->  CBasic.Negation (trForm fn) rn
-        PBasic.Conjunction fn rn -> CBasic.Conjunction (map trForm fn) rn
-        PBasic.Disjunction fn rn -> CBasic.Disjunction (map trForm fn) rn
+        PBasic.Negation fn rn -> CBasic.Negation (trForm fn) rn
+        PBasic.Conjunction fn rn ->
+            CBasic.Junction CBasic.Con (map trForm fn) rn
+        PBasic.Disjunction fn rn ->
+            CBasic.Junction CBasic.Dis (map trForm fn) rn
         PBasic.Implication f1 f2 rn ->
-                CBasic.Implication (trForm f1) (trForm f2) True rn
+            CBasic.Relation (trForm f1) CBasic.Implication (trForm f2) rn
         PBasic.Equivalence f1 f2 rn ->
-                CBasic.Equivalence (trForm f1) (trForm f2) rn
-        PBasic.True_atom rn -> CBasic.True_atom rn
-        PBasic.False_atom rn -> CBasic.False_atom rn
-        PBasic.Predication pid -> CBasic.Predication
-                                 (CBasic.Qual_pred_name (Id.simpleIdToId pid)
+            CBasic.Relation (trForm f1) CBasic.Equivalence (trForm f2) rn
+        PBasic.True_atom rn -> CBasic.Atom True rn
+        PBasic.False_atom rn -> CBasic.Atom False rn
+        PBasic.Predication pid -> CBasic.mkPredication
+                                 (CBasic.mkQualPred (Id.simpleIdToId pid)
                                         (CBasic.Pred_type [] Id.nullRange)
-                                        Id.nullRange
                                  )
-                                 [] Id.nullRange
+                                 []
 
 -- | Helper for map mor
 trMor :: Map.Map Id.Id Id.Id -> Map.Map (Id.Id, CSign.PredType) Id.Id
 trMor mp =
     let
-        pt = CSign.PredType{CSign.predArgs = []}
+        pt = CSign.PredType {CSign.predArgs = []}
     in
       Map.foldWithKey
              (\ k a ->

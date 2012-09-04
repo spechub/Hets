@@ -99,8 +99,8 @@ mapSig sign =
                                                       genToken "y"] s nullRange
                                            , Var_decl [genToken "b"]
                                               uBoolean nullRange]
-                  (Implication
-                  (Conjunction [
+                  (mkImpl
+                  (conjunct [
                    ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
@@ -119,7 +119,7 @@ mapSig sign =
                             [vary] nullRange))
                           nullRange)
                       trueForm ) nullRange
-                   ] nullRange)
+                   ])
                   (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
@@ -132,12 +132,12 @@ mapSig sign =
                              [varx, vary] nullRange))
                           nullRange)
                       trueForm ) nullRange)
-                  True nullRange) nullRange ,
+                  ) nullRange ,
                   makeNamed ("ga_refl_eq_" ++ show s) $
                   Quantification Universal [Var_decl [genToken "x"] s nullRange
                                            , Var_decl [genToken "b"]
                                               uBoolean nullRange]
-                  (Implication
+                  (mkImpl
                   (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
@@ -159,23 +159,23 @@ mapSig sign =
                               nullRange)
                              [varx, varx] nullRange))
                         nullRange)
-                      (Strong_equation
+                      (mkStEq
                          varb
                          (Application (Qual_op_name uTrue
                                           (Op_type Total []
                                             uBoolean
                                            nullRange) nullRange)
-                          [] nullRange) nullRange
+                          [] nullRange)
                       )) nullRange)
-                  True nullRange) nullRange
+                  ) nullRange
                  , makeNamed ("ga_sym_eq_" ++ show s) $
                   Quantification Universal [Var_decl [genToken "x",
                                                       genToken "y"] s nullRange
                                            , Var_decl [genToken "b1",
                                                       genToken "b2"]
                                               uBoolean nullRange]
-                  (Implication
-                   (Conjunction [
+                  (mkImpl
+                   (conjunct [
                    ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
@@ -205,11 +205,9 @@ mapSig sign =
                               nullRange)
                              [varx, vary] nullRange))
                           nullRange)
-                      (Strong_equation varb1 aTrue nullRange
-                      )) nullRange
-                   ] nullRange)
-
-
+                      (mkStEq varb1 aTrue)
+                     ) nullRange
+                   ])
                      (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
@@ -221,10 +219,9 @@ mapSig sign =
                               nullRange)
                              [vary, varx] nullRange))
                           nullRange)
-                      (Strong_equation
-                         varb2 aTrue nullRange
-                      )) nullRange)
-                  True nullRange) nullRange
+                      (mkStEq varb2 aTrue)
+                     ) nullRange)
+                  ) nullRange
                   , makeNamed ("ga_trans_eq_" ++ show s) $
                   Quantification Universal [Var_decl [genToken "x",
                                                       genToken "y",
@@ -233,8 +230,8 @@ mapSig sign =
                                                       genToken "b2",
                                                       genToken "b"]
                                               uBoolean nullRange]
-                  (Implication
-                   (Conjunction [
+                  (mkImpl
+                   (conjunct [
                    ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
@@ -273,9 +270,8 @@ mapSig sign =
                               nullRange)
                              [varx, vary] nullRange))
                           nullRange)
-                      (Strong_equation
-                         varb1 aTrue nullRange
-                      )) nullRange,
+                      (mkStEq varb1 aTrue)
+                      ) nullRange,
                     ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
@@ -287,12 +283,9 @@ mapSig sign =
                               nullRange)
                              [vary, varz] nullRange))
                           nullRange)
-                      (Strong_equation
-                         varb2 aTrue nullRange
-                      )) nullRange
-                   ] nullRange)
-
-
+                      (mkStEq varb2 aTrue)
+                     ) nullRange
+                   ])
                      (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
@@ -304,10 +297,9 @@ mapSig sign =
                               nullRange)
                              [varx, varz] nullRange))
                           nullRange)
-                      (Strong_equation
-                         varb aTrue nullRange
-                      )) nullRange)
-                  True nullRange) nullRange ]
+                      (mkStEq varb aTrue)
+                     ) nullRange)
+                  ) nullRange ]
                                           in
         (sProcs ++ procsym, sSens ++ axs)
      (sortProcs, sortSens) = foldl wrapSort ([], []) $
@@ -356,8 +348,8 @@ mapSig sign =
                                              nullRange)
                                              (zip (zip xtokens ytokens) w)
                                             )
-               (Implication
-                  (Conjunction
+               (mkImpl
+                  (conjunct
                    (concatMap (\ (si, ii) -> let
                      xv = (Qual_var (genNumVar "x" ii)
                            si nullRange)
@@ -397,11 +389,10 @@ mapSig sign =
                               nullRange)
                              [xv, yv] nullRange))
                                 nullRange)
-                              (Strong_equation
-                                  bi1 aTrue nullRange)
+                              (mkStEq bi1 aTrue)
                      ] ) $
                     number w )
-                   nullRange ) -- hypothesis
+                   ) -- hypothesis
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
 
@@ -438,12 +429,11 @@ mapSig sign =
                              [xvar, yvar] nullRange))
                           nullRange
                           )
-                          (Strong_equation
-                                  bvar aTrue nullRange)
+                          (mkStEq bvar aTrue)
                         ) nullRange)
                         ) nullRange)
                    ) nullRange) -- conclusion
-                  True nullRange )
+                  )
                nullRange
               ]
           termF = if not $ null w then
@@ -451,8 +441,8 @@ mapSig sign =
                      (Var_decl [xtoken] s nullRange
                       : map (\ (t1, si) -> Var_decl [t1] si nullRange)
                         (zip xtokens w))
-                     (Implication
-                        (Conjunction
+                     (mkImpl
+                        (conjunct
                          (concatMap (\ (si, ii) -> let
                      xv = Qual_var (genNumVar "x" ii) si nullRange in
                      [ExtFORMULA $ Ranged ( Dlformula Diamond
@@ -467,7 +457,7 @@ mapSig sign =
                           trueForm ) nullRange
                      ] ) $
                     number w )
-                         nullRange)
+                        )
                         (ExtFORMULA $ Ranged
                        (
                        Dlformula Diamond
@@ -492,7 +482,7 @@ mapSig sign =
                           )
                          nullRange)
                        ) nullRange)
-                        True nullRange)
+                       )
                      nullRange
                    ]
                   else
@@ -559,8 +549,8 @@ mapSig sign =
               (Var_decl (btoken : r1 : r2 : btokens) uBoolean nullRange
                : map (\ ((t1, t2), si) -> Var_decl [t1, t2] si nullRange)
                  (zip (zip xtokens ytokens) w))
-               (Implication
-                  (Conjunction
+               (mkImpl
+                  (conjunct
                    (concatMap (\ (si, ii) -> let
                      xv = (Qual_var (genNumVar "x" ii)
                            si nullRange)
@@ -599,11 +589,11 @@ mapSig sign =
                               nullRange)
                              [xv, yv] nullRange))
                                nullRange)
-                              (Strong_equation
-                                  bi1 aTrue nullRange)
+                              (mkStEq
+                                  bi1 aTrue)
                      ] ) $
                     number w )
-                   nullRange ) -- hypothesis
+                   ) -- hypothesis
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
                       (Ranged (Call (Predication
@@ -626,14 +616,13 @@ mapSig sign =
                   Qual_var (genNumVar "y" ii )
                   si nullRange )
                    (number w) ++ [rvar2]) nullRange)) nullRange)
-                       (Strong_equation
+                       (mkStEq
                                   rvar1
                                   rvar2
-                                  nullRange
-                        )
+                          )
                         ) nullRange)
                    ) nullRange) -- conclusion
-                  True nullRange )
+                  )
                nullRange
               ]
           termP = [ makeNamed "" $ Quantification Universal
@@ -644,8 +633,8 @@ mapSig sign =
                                               (zip xtokens w)
                                       ++ [Var_decl [r1]
                                               uBoolean nullRange])
-                      (Implication
-                         (Conjunction
+                      (mkImpl
+                         (conjunct
                           (concatMap (\ (si, ii) -> let
                       xv = (Qual_var (genNumVar "x" ii)
                             si nullRange)
@@ -662,7 +651,7 @@ mapSig sign =
                            trueForm ) nullRange
                       ] ) $
                      number w )
-                          nullRange)
+                          )
                          (ExtFORMULA $ Ranged
                         (
                         Dlformula Diamond
@@ -675,7 +664,7 @@ mapSig sign =
                          nullRange)
                         trueForm
                         ) nullRange)
-                         True nullRange)
+                        )
                       nullRange
                     ]
                                    in congrP ++ termP
@@ -741,9 +730,8 @@ mapCASLSenAux f = case f of
                 (Map.fromList $ map (\ s -> (s, gnRestrName s)) genSorts)
               isFree)
             nullRange
-  True_atom _ps -> return trueForm
-  False_atom _ps -> return falseForm
-  Strong_equation t1 t2 _ps -> do
+  Atom b _ps -> return $ boolForm b
+  Equation t1 Strong t2 _ps -> do
      let sort1 = sortOfTerm t1
      n1 <- freshIndex sort1 -- (typeof t1)
      prg1 <- mapCASLTerm n1 t1
@@ -769,8 +757,8 @@ mapCASLSenAux f = case f of
                  ) nullRange)
            )
         nullRange)
-       (Strong_equation (Qual_var (genNumVar "x" n) uBoolean nullRange)
-                        aTrue nullRange)
+       (mkStEq (Qual_var (genNumVar "x" n) uBoolean nullRange)
+                        aTrue)
       )
       nullRange
      {- here i have to return smth like
@@ -802,29 +790,22 @@ mapCASLSenAux f = case f of
                           xvars nullRange))
               nullRange))
          nullRange)
-        (Strong_equation
+        (mkStEq
           (Qual_var (genNumVar "x" n) uBoolean nullRange)
-                        aTrue nullRange))
+                        aTrue))
        nullRange
      {- <: xi := prgi;
            x:= gn_p(x1,..,xn):> x = True -}
-  Conjunction fs _r -> do
+  Junction j fs _r -> do
    mapFs <- mapM mapCASLSenAux fs
-   return $ Conjunction mapFs nullRange
-  Disjunction fs _r -> do
-   mapFs <- mapM mapCASLSenAux fs
-   return $ Disjunction mapFs nullRange
-  Implication f1 f2 flag _r -> do
+   return $ Junction j mapFs nullRange
+  Relation f1 c f2 _r -> do
    trf1 <- mapCASLSenAux f1
    trf2 <- mapCASLSenAux f2
-   return $ Implication trf1 trf2 flag nullRange
-  Equivalence f1 f2 _r -> do
-   trf1 <- mapCASLSenAux f1
-   trf2 <- mapCASLSenAux f2
-   return $ Equivalence trf1 trf2 nullRange
+   return $ Relation trf1 c trf2 nullRange
   Negation f1 _r -> do
    trf <- mapCASLSenAux f1
-   return $ Negation trf nullRange
+   return $ mkNeg trf
   Quantification q vars sen _ ->
    case q of
     Universal -> do
@@ -848,11 +829,11 @@ mapCASLSenAux f = case f of
                                   trueForm) nullRange)
                  varS
                                          in
-           Conjunction restrs nullRange)
+           conjunct restrs)
              vars
-     let sen' = Implication
-                 (foldr1 (\ sen1 sen2 -> Conjunction [sen1, sen2] nullRange) h)
-                 trSen True nullRange
+     let sen' = mkImpl
+                 (foldr1 (\ sen1 sen2 -> conjunct [sen1, sen2]) h)
+                 trSen
      return $ Quantification q vars sen' nullRange
     Existential -> do
      trSen <- mapCASLSenAux sen
@@ -875,11 +856,11 @@ mapCASLSenAux f = case f of
                                   trueForm) nullRange)
                  varS
                                          in
-           Conjunction restrs nullRange)
+           conjunct restrs)
              vars
-     let sen' = Conjunction
-                 [foldr1 (\ sen1 sen2 -> Conjunction [sen1, sen2] nullRange) h,
-                 trSen] nullRange
+     let sen' = conjunct
+                 [foldr1 (\ sen1 sen2 -> conjunct [sen1, sen2]) h,
+                 trSen]
      return $ Quantification q vars sen' nullRange
     Unique_existential -> fail "nyi Unique_existential"
   _ -> fail "Comorphisms.CASL2VSERefine.mapCASLSenAux"

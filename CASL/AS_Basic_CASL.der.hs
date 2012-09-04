@@ -136,30 +136,28 @@ varDeclRange (Var_decl vs s _) = case vs of
    other Pos informations which encode the brackets of every kind
 -}
 
+data Junctor = Con | Dis deriving (Show, Eq, Ord)
+
+data Relation = Implication | RevImpl | Equivalence deriving (Show, Eq, Ord)
+
+data Equality = Strong | Existl deriving (Show, Eq, Ord)
+
 data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
                -- pos: QUANTIFIER, semi colons, dot
-             | Conjunction [FORMULA f] Range
-               -- pos: "/\"s
-             | Disjunction [FORMULA f] Range
-               -- pos: "\/"s
-             | Implication (FORMULA f) (FORMULA f) Bool Range
-               -- pos: "=>" or "if" (True -> "=>")
-             | Equivalence (FORMULA f) (FORMULA f) Range
-               -- pos: "<=>"
+             | Junction Junctor [FORMULA f] Range
+               -- pos: "/\"s or "\/"s
+             | Relation (FORMULA f) Relation (FORMULA f) Range
+               -- pos: "<=>", "=>" or "if"
              | Negation (FORMULA f) Range
                -- pos: not
-             | True_atom Range
-               -- pos: true
-             | False_atom Range
-               -- pos: false
+             | Atom Bool Range
+               -- pos: true or false
              | Predication PRED_SYMB [TERM f] Range
                -- pos: opt. "(",commas,")"
              | Definedness (TERM f) Range
                -- pos: def
-             | Existl_equation (TERM f) (TERM f) Range
-               -- pos: =e=
-             | Strong_equation (TERM f) (TERM f) Range
-               -- pos: =
+             | Equation (TERM f) Equality (TERM f) Range
+               -- pos: =e= or =
              | Membership (TERM f) SORT Range
                -- pos: in
              | Mixfix_formula (TERM f)
@@ -174,21 +172,25 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
              -- needed for CASL extensions
                deriving (Show, Eq, Ord)
 
+
 is_True_atom :: FORMULA f -> Bool
 is_True_atom f = case f of
-  True_atom _ -> True
+  Atom b _ -> b
   _ -> False
 
 is_False_atom :: FORMULA f -> Bool
 is_False_atom f = case f of
-  False_atom _ -> True
+  Atom b _ -> not b
   _ -> False
 
+boolForm :: Bool -> FORMULA f
+boolForm b = Atom b nullRange
+
 trueForm :: FORMULA f
-trueForm = True_atom nullRange
+trueForm = boolForm True
 
 falseForm :: FORMULA f
-falseForm = False_atom nullRange
+falseForm = boolForm False
 
 {- In the CASL institution, sort generation constraints have an
 additional signature morphism component (Sect. III:2.1.3, p.134 of the
@@ -332,17 +334,23 @@ toQualVar :: VAR_DECL -> TERM f
 toQualVar (Var_decl v s ps) =
     if isSingle v then Qual_var (head v) s ps else error "toQualVar"
 
+mkRel :: Relation -> FORMULA f -> FORMULA f -> FORMULA f
+mkRel r f f' = Relation f r f' nullRange
+
 mkImpl :: FORMULA f -> FORMULA f -> FORMULA f
-mkImpl f f' = Implication f f' True nullRange
+mkImpl = mkRel Implication
+
+mkAnyEq :: Equality -> TERM f -> TERM f -> FORMULA f
+mkAnyEq e f f' = Equation f e f' nullRange
 
 mkExEq :: TERM f -> TERM f -> FORMULA f
-mkExEq f f' = Existl_equation f f' nullRange
+mkExEq = mkAnyEq Existl
 
 mkStEq :: TERM f -> TERM f -> FORMULA f
-mkStEq u v = Strong_equation u v nullRange
+mkStEq = mkAnyEq Strong
 
 mkEqv :: FORMULA f -> FORMULA f -> FORMULA f
-mkEqv u v = Equivalence u v nullRange
+mkEqv = mkRel Equivalence
 
 mkAppl :: OP_SYMB -> [TERM f] -> TERM f
 mkAppl op_symb fs = Application op_symb fs nullRange
@@ -361,18 +369,18 @@ mkVarTerm v = toQualVar . mkVarDecl v
 -- | optimized conjunction
 conjunctRange :: [FORMULA f] -> Range -> FORMULA f
 conjunctRange fs ps = case fs of
-  [] -> True_atom ps
+  [] -> Atom True ps
   [phi] -> phi
-  _ -> Conjunction fs ps
+  _ -> Junction Con fs ps
 
 conjunct :: [FORMULA f] -> FORMULA f
 conjunct fs = conjunctRange fs nullRange
 
 disjunctRange :: [FORMULA f] -> Range -> FORMULA f
 disjunctRange fs ps = case fs of
-  [] -> False_atom ps
+  [] -> Atom False ps
   [phi] -> phi
-  _ -> Disjunction fs ps
+  _ -> Junction Dis fs ps
 
 disjunct :: [FORMULA f] -> FORMULA f
 disjunct fs = disjunctRange fs nullRange
@@ -385,8 +393,7 @@ mkQualPred f ty = Qual_pred_name f ty nullRange
 
 negateForm :: FORMULA f -> Range -> FORMULA f
 negateForm f r = case f of
-  False_atom ps -> True_atom ps
-  True_atom ps -> False_atom ps
+  Atom b ps -> Atom (not b) ps
   Negation nf _ -> nf
   _ -> Negation f r
 

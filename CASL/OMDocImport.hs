@@ -234,18 +234,16 @@ type VarMap = Map.Map VAR SORT
 
 type TermEnv = (Env, VarMap)
 
-mkConjunction, mkDisjunction, mkImplication, mkImplied, mkEquivalence
+mkImplication, mkImplied, mkEquivalence
                  , mkNegation :: [FORMULA f] -> FORMULA f
 
-mkConjunction l = Conjunction l nullRange
-mkDisjunction l = Disjunction l nullRange
-mkImplication [x, y] = Implication x y True nullRange
+mkImplication [x, y] = mkImpl x y
 mkImplication _ = error "Malformed implication"
-mkImplied [x, y] = Implication x y False nullRange
+mkImplied [x, y] = mkRel RevImpl x y
 mkImplied _ = error "Malformed if"
-mkEquivalence [x, y] = Equivalence x y nullRange
+mkEquivalence [x, y] = mkEqv x y
 mkEquivalence _ = error "Malformed equivalence"
-mkNegation [x] = Negation x nullRange
+mkNegation [x] = mkNeg x
 mkNegation _ = error "Malformed negation"
 
 mkDefinedness, mkExistl_equation, mkStrong_equation
@@ -253,9 +251,9 @@ mkDefinedness, mkExistl_equation, mkStrong_equation
 
 mkDefinedness [x] = Definedness x nullRange
 mkDefinedness _ = error "Malformed definedness"
-mkExistl_equation [x, y] = Existl_equation x y nullRange
+mkExistl_equation [x, y] = mkExEq x y
 mkExistl_equation _ = error "Malformed existl equation"
-mkStrong_equation [x, y] = Strong_equation x y nullRange
+mkStrong_equation [x, y] = mkStEq x y
 mkStrong_equation _ = error "Malformed strong equation"
 
 -- Quantification, Predication and Membership are handled inside omdocToFormula
@@ -367,9 +365,9 @@ omdocToFormula' e@(ie, _) f =
                                                   ie s) nullRange
                 _ -> error "Malformed membership"
           | h == const_and ->
-              mkFF e mkConjunction args
+              mkFF e conjunct args
           | h == const_or ->
-              mkFF e mkDisjunction args
+              mkFF e disjunct args
           | h == const_implies ->
               mkFF e mkImplication args
           | h == const_implied ->
@@ -393,8 +391,8 @@ omdocToFormula' e@(ie, _) f =
       OMBIND binder args body ->
           mkBinder e (getQuantifier binder) args body
 
-      OMS _ | f == const_true -> True_atom nullRange
-            | f == const_false -> False_atom nullRange
+      OMS _ | f == const_true -> trueForm
+            | f == const_false -> falseForm
             -- Propositional Constants (0-ary predicates):
             | otherwise ->
                 Predication (toPredSymb

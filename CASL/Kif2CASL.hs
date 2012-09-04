@@ -42,15 +42,15 @@ llRange (RangedLL p _ q) = Range [fromSourcePos p, fromSourcePos q]
 kif2CASLFormula :: RangedLL -> CASLFORMULA
 kif2CASLFormula rl@(RangedLL _ x _) = let r = llRange rl in case x of
   List (pr@(RangedLL _ (Literal KToken p) _) : phis) -> case (p, phis) of
-    ("and", _) -> Conjunction (map kif2CASLFormula phis) r
-    ("or", _) -> Disjunction (map kif2CASLFormula phis) r
+    ("and", _) -> Junction Con (map kif2CASLFormula phis) r
+    ("or", _) -> Junction Dis (map kif2CASLFormula phis) r
     ("=>", [phi1, phi2]) ->
-      Implication (kif2CASLFormula phi1) (kif2CASLFormula phi2) True r
+      Relation (kif2CASLFormula phi1) Implication (kif2CASLFormula phi2) r
     ("<=>", [phi1, phi2]) ->
-      Equivalence (kif2CASLFormula phi1) (kif2CASLFormula phi2) r
+      Relation (kif2CASLFormula phi1) Equivalence (kif2CASLFormula phi2) r
     ("not", [phi]) -> Negation (kif2CASLFormula phi) r
-    ("True", []) -> True_atom r
-    ("False", []) -> False_atom r
+    ("True", []) -> Atom True r
+    ("False", []) -> Atom False r
     ("exists", [RangedLL _ (List vl) _, phi]) ->
       Quantification Existential (kif2CASLvardeclList vl) (kif2CASLFormula phi)
       r
@@ -58,19 +58,15 @@ kif2CASLFormula rl@(RangedLL _ x _) = let r = llRange rl in case x of
       Quantification Universal (kif2CASLvardeclList vl) (kif2CASLFormula phi)
       r
     ("equal", [t1, t2]) ->
-      Strong_equation (kif2CASLTerm t1) (kif2CASLTerm t2) r
+      Equation (kif2CASLTerm t1) Strong (kif2CASLTerm t2) r
     _ -> Predication (Pred_name (toId p $ llRange pr))
       (map kif2CASLTerm phis) r
 -- also translate 2nd order applications to 1st order, using holds predicate
   List l -> Predication (Pred_name (toId "holds" r))
                   (map kif2CASLTerm l) r
 -- a variable in place of a formula; coerce from Booleans
-  Literal QWord v -> Strong_equation (Mixfix_token $ toVar v r)
-                  trueTerm
-                  r
-  Literal AtWord v -> Strong_equation (Mixfix_token $ toVar v r)
-                  trueTerm
-                  r
+  Literal k v | elem k [QWord, AtWord] ->
+    Equation (Mixfix_token $ toVar v r) Strong trueTerm r
   _ -> error $ "kif2CASLFormula : cannot translate " ++ show x
 
 trueTerm :: TERM ()
@@ -96,8 +92,7 @@ toSId s = Token $ case parse (reserved (casl_reserved_words
 
 kif2CASLTerm :: RangedLL -> TERM ()
 kif2CASLTerm rl@(RangedLL _ x _) = let r = llRange rl in case x of
-    Literal QWord v -> Mixfix_token $ toVar v r
-    Literal AtWord v -> Mixfix_token $ toVar v r
+    Literal k v| elem k [QWord, AtWord] -> Mixfix_token $ toVar v r
     Literal _ s -> varOrConst $ toSId s r
     -- a formula in place of a term; coerce to Booleans
     List (rf@(RangedLL _ (Literal _ f) _) : args) ->

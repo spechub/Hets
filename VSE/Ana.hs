@@ -316,7 +316,7 @@ checkRec :: Bool -> Record f Bool Bool
 checkRec b = (constRecord (const False) and True)
   { foldQuantification = \ _ _ _ _ _ -> b
   , foldDefinedness = \ _ _ _ -> False
-  , foldExistl_equation = \ _ _ _ _ -> False
+  , foldEquation = \ _ _ e _ _ -> e == Strong
   , foldMembership = \ _ _ _ _ -> False
   , foldCast = \ _ _ _ _ -> False
   , foldConditional = \ _ _ _ _ _ -> False
@@ -543,7 +543,7 @@ simpDlformula sign (Ranged f r) = let sig = castSign sign in case f of
     n = simplifySen minExpForm simpDlformula sign s
     in Ranged (Dlformula b q n) r
   Defprocs ps -> Ranged (Defprocs $ map (simpDefproc sig) ps) r
-  RestrictedConstraint _ _ _ -> Ranged f r
+  RestrictedConstraint {} -> Ranged f r
     -- how should this be for restricted constraints?
 
 -- | free variables to be universally bound on the top level
@@ -564,7 +564,7 @@ freeDlVars sig (Ranged f _) = case f of
   Dlformula _ p s -> Set.union (freeProgVars (castSign sig) p) $
           freeVars sig s
   Defprocs _ -> Set.empty
-  RestrictedConstraint _ _ _ -> Set.empty
+  RestrictedConstraint {} -> Set.empty
 
 instance TermExtension Dlformula where
   freeVarsOfExt = freeDlVars

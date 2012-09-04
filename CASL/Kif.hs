@@ -18,7 +18,7 @@ import Text.ParserCombinators.Parsec
 import qualified Text.PrettyPrint.HughesPJ as Doc
 import Data.Char
 
-data StringKind = Quoted | KToken | QWord | AtWord deriving Show
+data StringKind = Quoted | KToken | QWord | AtWord deriving (Eq, Show)
 
 data ListOfList = Literal StringKind String | List [RangedLL]
      deriving Show

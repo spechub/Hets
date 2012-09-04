@@ -17,9 +17,10 @@ Check for truth in one-point model
 module CASL.CCC.OnePoint where
 
 import CASL.AS_Basic_CASL
-import CASL.Morphism(Morphism, imageOfMorphism)
+import CASL.Morphism (Morphism, imageOfMorphism)
 import CASL.Sign (Sign, predMap, sortSet, supersortsOf, toPredType)
 
+import Data.Maybe
 import qualified Data.Set as Set
 
 import qualified Common.Lib.MapSet as MapSet
@@ -66,9 +67,9 @@ not t f *
 evaluateOnePoint :: Morphism f e m -> [FORMULA f] -> Maybe Bool
 evaluateOnePoint m fs =
      let p = map (evaluateOnePointFORMULA (imageOfMorphism m)) fs
-     in if elem (Just False) p then  Just False
-        else if elem Nothing p then  Nothing
-                               else  Just True
+     in if elem (Just False) p then Just False
+        else if elem Nothing p then Nothing
+                               else Just True
 
 {-
 evaluateOnePoint :: Morphism f e m-> [FORMULA f] -> Maybe Bool
@@ -82,45 +83,31 @@ evaluateOnePointFORMULA :: Sign f e -> FORMULA f -> Maybe Bool
 evaluateOnePointFORMULA sig (Quantification _ _ f _) =
                       evaluateOnePointFORMULA sig f
 
-evaluateOnePointFORMULA sig (Conjunction fs _) =
-     let p = map (evaluateOnePointFORMULA sig) fs
-     in if elem (Just False) p then Just False
-        else if elem Nothing p then Nothing
-                               else Just True
-
-evaluateOnePointFORMULA sig (Disjunction fs _) =
+evaluateOnePointFORMULA sig (Junction j fs _) =
       let p = map (evaluateOnePointFORMULA sig) fs
-      in if elem (Just True) p then Just True
+          b = j == Dis
+      in if elem (Just b) p then Just b
          else if elem Nothing p then Nothing
-                                else Just False
+                                else Just $ not b
 
-evaluateOnePointFORMULA sig (Implication f1 f2 _ _) =
-        let p1 = evaluateOnePointFORMULA sig f1
-            p2 = evaluateOnePointFORMULA sig f2
-        in if p1 == Just False || p2 == Just True then Just True
-           else if p1 == Just True && p2 == Just False then Just False
-                                                       else Nothing
-
-evaluateOnePointFORMULA sig (Equivalence f1 f2 _) =
+evaluateOnePointFORMULA sig (Relation f1 c f2 _) =
          let p1 = evaluateOnePointFORMULA sig f1
              p2 = evaluateOnePointFORMULA sig f2
-         in if p1 == Nothing || p2 == Nothing then Nothing
-            else if p1 == p2 then Just True
-                             else Just False
+         in case c of
+         Equivalence -> if isNothing p1 || isNothing p2 then Nothing
+              else Just $ p1 == p2
+         _ | p1 == Just False || p2 == Just True -> Just True
+           | p1 == Just True && p2 == Just False -> Just False
+           | otherwise -> Nothing
 
-evaluateOnePointFORMULA sig (Negation f _)=
-      case evaluateOnePointFORMULA sig f of
-       Just True -> Just False
-       Just False ->Just True
-       _ -> Nothing
+evaluateOnePointFORMULA sig (Negation f _) =
+      fmap not $ evaluateOnePointFORMULA sig f
 
-evaluateOnePointFORMULA _ (True_atom _) = Just True
-
-evaluateOnePointFORMULA _ (False_atom _) = Just False
+evaluateOnePointFORMULA _ (Atom b _) = Just b
 
 evaluateOnePointFORMULA sig (Predication pred_symb _ _) =
      case pred_symb of
-       Pred_name _ ->  Nothing
+       Pred_name _ -> Nothing
        Qual_pred_name pname ptype _ ->
            if MapSet.member pname (toPredType ptype) (predMap sig)
            then Nothing
@@ -129,27 +116,21 @@ evaluateOnePointFORMULA sig (Predication pred_symb _ _) =
 evaluateOnePointFORMULA sig (Definedness (Sorted_term _ sort _) _) =
       if Set.member sort (sortSet sig) then Nothing else Just True
 
-evaluateOnePointFORMULA sig (Existl_equation (Sorted_term _ sort1 _)
-    (Sorted_term _ sort2 _) _) =
-        if not (Set.member sort1 (sortSet sig))
-             && not (Set.member sort2 (sortSet sig)) then Just True
-        else Nothing
-
-evaluateOnePointFORMULA sig (Strong_equation (Sorted_term _ sort1 _)
+evaluateOnePointFORMULA sig (Equation (Sorted_term _ sort1 _) _
     (Sorted_term _ sort2 _) _) =
         if not (Set.member sort1 (sortSet sig))
              && not (Set.member sort2 (sortSet sig)) then Just True
         else Nothing
 
 -- todo: auch pruefen, ob Sorte von t in sortSet sig
-evaluateOnePointFORMULA sig (Membership (Sorted_term _ sort1 _) sort2 _)=
+evaluateOnePointFORMULA sig (Membership (Sorted_term _ sort1 _) sort2 _) =
         if not (Set.member sort1 (sortSet sig))
              && not (Set.member sort2 (sortSet sig)) then Just True
         else Nothing
 
 evaluateOnePointFORMULA _ (Mixfix_formula _) = error "Fehler Mixfix_formula"
 
-evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error
+evaluateOnePointFORMULA _ (Unparsed_formula _ _) = error
                                                   "Fehler Unparsed_formula"
 
 {-
@@ -172,30 +153,27 @@ evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error
 -}
 
 evaluateOnePointFORMULA sig (Sort_gen_ax constrs _) =
-      let (srts,ops,_) = recover_Sort_gen_ax constrs
+      let (srts, ops, _) = recover_Sort_gen_ax constrs
           sorts = sortSet sig
           argsAndres = concatMap (\ os -> case os of
-                                          Op_name _->[]
-                                          Qual_op_name _ ot _->
-                                            case ot of
-                                             Op_type _ args res _->[(args,res)]
-                                  ) ops
+              Op_name _ -> []
+              Qual_op_name _ (Op_type _ args res _) _ -> [(args, res)]) ops
           iterateInhabited l =
-                    if l == newL then newL else iterateInhabited newL
-                             where newL = foldr (\ (as,rs) l'->
-                                                   if all (\s->elem s l') as
-                                                       && notElem rs l'
-                                                   then rs:l'
-                                                   else l') l argsAndres
-    --      inhabited = iterateInhabited []
+              if l == newL then newL else iterateInhabited newL
+                  where newL = foldr (\ (as, rs) l' ->
+                                          if all (`elem` l') as
+                                                 && notElem rs l'
+                                          then rs : l'
+                                          else l') l argsAndres
+    -- inhabited = iterateInhabited []
           inhabited = iterateInhabited $ Set.toList sorts
-      in if any (\ s -> Set.member s sorts) srts then Nothing
-         else if all (\ s -> elem s inhabited) srts then Just True
+      in if any (`Set.member` sorts) srts then Nothing
+         else if all (`elem` inhabited) srts then Just True
               else Nothing
 
-evaluateOnePointFORMULA _ (ExtFORMULA _)=error "Fehler ExtFORMULA"
+evaluateOnePointFORMULA _ (ExtFORMULA _) = error "Fehler ExtFORMULA"
 
-evaluateOnePointFORMULA _ _=error "Fehler" -- or Just False
+evaluateOnePointFORMULA _ _ = error "Fehler" -- or Just False
 
 -- | Test whether a signature morphism adds new supersorts
 addsNewSupersorts :: Morphism f e m -> Bool

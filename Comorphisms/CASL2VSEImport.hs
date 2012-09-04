@@ -13,7 +13,7 @@ Portability :  non-portable (imports Logic.Logic)
 The embedding comorphism from CASL to VSE.
 -}
 
-module Comorphisms.CASL2VSEImport (CASL2VSEImport(..)) where
+module Comorphisms.CASL2VSEImport (CASL2VSEImport (..)) where
 
 import Logic.Logic
 import Logic.Comorphism
@@ -69,12 +69,12 @@ instance Comorphism CASL2VSEImport
 
 mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
                  Result (VSESign, [Named Sentence])
-mapCASLTheory (sig, n_sens) = do
+mapCASLTheory (sig, n_sens) =
   let (tsig, genAx) = mapSig sig
       tsens = map (mapNamed mapFORMULA) n_sens
-  case not $ null $ checkCases tsig (tsens ++ genAx) of
-   True -> fail "case error in signature"
-   _ -> return (tsig, tsens ++ genAx)
+  in if not $ null $ checkCases tsig (tsens ++ genAx)
+     then fail "case error in signature"
+     else return (tsig, tsens ++ genAx)
 
 mkIfProg :: FORMULA () -> Program
 mkIfProg f =
@@ -95,23 +95,23 @@ mapSig sign =
                    [Defproc Proc restrName [xVar]
                    (mkRanged (Block [] (mkRanged Skip)))
                            nullRange])
-                ,makeNamed ("ga_equality_" ++ show s) $ ExtFORMULA $
+                , makeNamed ("ga_equality_" ++ show s) $ ExtFORMULA $
                  mkRanged
                   (Defprocs
                    [Defproc Func eqName (map mkSimpleId ["x", "y"])
-                   (mkRanged (Block [] (mkIfProg (Strong_equation
+                   (mkRanged (Block [] (mkIfProg (mkStEq
                         (Qual_var (mkSimpleId "x") s nullRange)
                         (Qual_var (mkSimpleId "y") s nullRange)
-                        nullRange))))
+                        ))))
                            nullRange])
                 ]
                                           in
-        (sProcs ++ procsym,  sSens ++ axs)
-     (sortProcs, sortSens) = foldl wrapSort ([],[]) $
+        (sProcs ++ procsym, sSens ++ axs)
+     (sortProcs, sortSens) = foldl wrapSort ([], []) $
                                         Set.toList $ sortSet sign
      wrapOp (procsym, axs) (i, opTypes) = let
        funName = mkGenName i
-       fProcs = map (\profile ->
+       fProcs = map (\ profile ->
                        (funName,
                         Profile
                            (map (Procparam In) $ opArgs profile)
@@ -134,7 +134,7 @@ mapSig sign =
                                       (Qual_op_name i
                                         (Op_type fKind w s nullRange)
                                        nullRange )
-                                      (map  (\(v, ss) ->
+                                      (map (\ (v, ss) ->
                                               Qual_var v ss nullRange) vars)
                                       nullRange))
                                    nullRange)
@@ -144,10 +144,10 @@ mapSig sign =
                                     (Qual_var yVar s nullRange))
                                    nullRange)
 
-                                )--end seq
+                                ) -- end seq
                                nullRange)
-                              )--end block
-                            nullRange)-- end procedure body
+                              ) -- end block
+                            nullRange) -- end procedure body
                             ) nullRange)
                          nullRange]
                      )
@@ -159,7 +159,7 @@ mapSig sign =
                                         MapSet.toList $ opMap sign
      wrapPred (procsym, axs) (i, predTypes) = let
        procName = mkGenName i
-       pProcs = map (\profile -> (procName,
+       pProcs = map (\ profile -> (procName,
                         Profile
                            (map (Procparam In) $ predArgs profile)
                            (Just uBoolean))) predTypes
@@ -174,7 +174,7 @@ mapSig sign =
                                           i
                                          (Pred_type w nullRange)
                                         nullRange)
-                                        (map (\(v, ss) ->
+                                        (map (\ (v, ss) ->
                                                Qual_var v ss nullRange) vars)
                                        nullRange))))
                           nullRange]
@@ -182,12 +182,12 @@ mapSig sign =
                    ) predTypes
                                                 in
       (procsym ++ pProcs, axs ++ pSens)
-     (predProcs, predSens) = foldl wrapPred ([],[]) $
+     (predProcs, predSens) = foldl wrapPred ([], []) $
                                         MapSet.toList $ predMap sign
      procs = Procs $ Map.fromList (sortProcs ++ opProcs ++ predProcs)
      newPreds = procsToPredMap procs
      newOps = procsToOpMap procs
- in(sign { opMap = addOpMapSet (opMap sign) newOps,
+ in (sign { opMap = addOpMapSet (opMap sign) newOps,
            predMap = addMapSet (predMap sign) newPreds,
            extendedInfo = procs,
            sentences = [] }, sortSens ++ opSens ++ predSens)

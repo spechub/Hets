@@ -107,9 +107,7 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
             eqForms (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
               if sor1 == sor2 then zipWith (eqFor sor1) vars1 vars2
               else error "codeOutUniqueRecord1"
-            eqFor s v1 v2 = Strong_equation (mkVarTerm v1 s)
-                                          (mkVarTerm v2 s)
-                                          nullRange
+            eqFor s v1 v2 = mkStEq (mkVarTerm v1 s) (mkVarTerm v2 s)
             {- freshVars produces new variables based on a list
             of defined variables
             args: (1) set of already used variable names
@@ -128,16 +126,12 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
             (_vSet'', vDecl'') = freshVars vSet' vDecl
             f'_rep_x = replaceVarsF (buildVMap vDecl vDecl') rf f'
             f'_rep_y = replaceVarsF (buildVMap vDecl vDecl'') rf f'
-            allForm = Quantification Universal (vDecl' ++ vDecl'')
-                           (Implication
-                              (Conjunction [f'_rep_x, f'_rep_y] nullRange)
-                              implForm True ps) nullRange
-            implForm = let fs = concat (zipWith eqForms vDecl' vDecl'') in
-              case fs of
-                [] -> error "codeOutUniqueRecord2"
-                [hd] -> hd
-                _ -> Conjunction fs nullRange
-            in Conjunction
+            allForm = mkForallRange (vDecl' ++ vDecl'')
+                        (mkImpl
+                              (conjunct [f'_rep_x, f'_rep_y])
+                              implForm) ps
+            implForm = conjunct $ concat (zipWith eqForms vDecl' vDecl'')
+            in Junction Con
                    [Quantification Existential vDecl f' ps,
                     allForm] ps
          _ -> Quantification q vDecl f' ps
@@ -159,30 +153,21 @@ codeOutCondRecord :: (Eq f) => (f -> f)
                   -> Record f (FORMULA f) (TERM f)
 codeOutCondRecord fun =
     (mapRecord fun)
-          { foldPredication =
-                \ phi _ _ _ ->
+          { foldPredication = \ phi _ _ _ ->
                     either (codeOutConditionalF fun) id
                                (codeOutCondPredication phi)
-          , foldExistl_equation = \ o _ _ _ -> case o of
-                Existl_equation t1 t2 ps ->
+          , foldEquation = \ o _ _ _ _ ->
+                let Equation t1 e t2 ps = o in
                   either (codeOutConditionalF fun) id
-                    (mkEquationAtom Existl_equation t1 t2 ps)
-                _ -> error "codeOutCondRecord.foldExistl_equation"
-          , foldStrong_equation = \ o _ _ _ -> case o of
-                Strong_equation t1 t2 ps ->
-                  either (codeOutConditionalF fun) id
-                    (mkEquationAtom Strong_equation t1 t2 ps)
-                _ -> error "codeOutCondRecord.foldStrong_equation"
-          , foldMembership = \ o _ _ _ -> case o of
-                Membership t s ps ->
+                    (mkEquationAtom (`Equation` e) t1 t2 ps)
+          , foldMembership = \ o _ _ _ ->
+                let Membership t s ps = o in
                   either (codeOutConditionalF fun) id
                     (mkSingleTermF (`Membership` s) t ps)
-                _ -> error "codeOutCondRecord.foldMembership"
-          , foldDefinedness = \ o _ _ -> case o of
-                Definedness t ps ->
+          , foldDefinedness = \ o _ _ ->
+                let Definedness t ps = o in
                   either (codeOutConditionalF fun) id
                     (mkSingleTermF Definedness t ps)
-                _ -> error "codeOutCondRecord.foldDefinedness"
           }
 
 codeOutCondPredication :: (Eq f) => FORMULA f
@@ -198,9 +183,9 @@ constructExpansion :: (Eq f) => FORMULA f
                    -> TERM f
                    -> FORMULA f
 constructExpansion atom c@(Conditional t1 phi t2 ps) =
-    Conjunction [ Implication phi (substConditionalF c t1 atom) False ps
-                , Implication (Negation phi ps)
-                              (substConditionalF c t2 atom) False ps] ps
+    Junction Con [ Relation phi Implication (substConditionalF c t1 atom) ps
+                 , Relation (Negation phi ps) Implication
+                              (substConditionalF c t2 atom) ps] ps
 constructExpansion _ _ = error "CASL.Utils: Conditional expected"
 
 mkEquationAtom :: (Eq f) => (TERM f -> TERM f -> Range -> FORMULA f)
@@ -285,7 +270,7 @@ eqSubstRecord eqPredSet extFun =
       (mapRecord extFun) {foldPredication = foldPred}
     where foldPred _ psymb tList rng =
             if Set.member psymb eqPredSet
-              then Strong_equation (head tList) (tList !! 1) rng
+              then let [f, s] = tList in Equation f Strong s rng
               else Predication psymb tList rng
 
 substEqPreds :: Set.Set PRED_SYMB -> (f -> f) -> FORMULA f -> FORMULA f

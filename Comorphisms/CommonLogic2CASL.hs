@@ -144,8 +144,7 @@ trForm sig form =
    case form of
      ClBasic.Text phrs rn ->
         let ps = filter nonImportAndNonEmpty phrs in
-        if null ps then CBasic.True_atom Id.nullRange else
-        CBasic.Conjunction (map (phraseForm sig) ps) rn
+        CBasic.conjunctRange (map (phraseForm sig) ps) rn
      ClBasic.Named_text _ t _ -> trForm sig t
    where nonImportAndNonEmpty :: ClBasic.PHRASE -> Bool
          nonImportAndNonEmpty p = case p of
@@ -176,10 +175,11 @@ senForm sig form = case form of
                ClBasic.Conjunction -> CBasic.conjunctRange
                ClBasic.Disjunction -> CBasic.disjunctRange)
                    (map (senForm sig) ss) rn
-             ClBasic.BinOp j s1 s2 -> (case j of
-               ClBasic.Implication -> \ a b -> CBasic.Implication a b True
+             ClBasic.BinOp j s1 s2 -> CBasic.Relation (senForm sig s1)
+               (case j of
+               ClBasic.Implication -> CBasic.Implication
                ClBasic.Biconditional -> CBasic.Equivalence)
-                 (senForm sig s1) (senForm sig s2) rn
+               (senForm sig s2) rn
      ClBasic.Quant_sent q bs s rn ->
          CBasic.Quantification (case q of
                   ClBasic.Universal -> CBasic.Universal
@@ -187,8 +187,8 @@ senForm sig form = case form of
                [CBasic.Var_decl (map bindingSeq bs) individual rn]
                (senForm sig s) rn
      ClBasic.Atom_sent at rn -> case at of
-         ClBasic.Equation trm1 trm2 ->
-             CBasic.Strong_equation (termForm sig trm1) (termForm sig trm2) rn
+         ClBasic.Equation trm1 trm2 -> CBasic.Equation (termForm sig trm1)
+             CBasic.Strong (termForm sig trm2) rn
          ClBasic.Atom trm ts -> CBasic.Predication
              (CBasic.Qual_pred_name rel
               (CBasic.Pred_type [individual, list] rn)

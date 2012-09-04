@@ -49,19 +49,14 @@ simplifySen minF simpF sign formula =
             -- add 'vars' to signature
            let sign' = execState (mapM_ addVars vars) sign
            in Quantification q vars (simplifySen minF simpF sign' f) pos
-    Conjunction fs pos -> Conjunction (map simplifySenCall fs) pos
-    Disjunction fs pos -> Disjunction (map simplifySenCall fs) pos
-    Implication f1 f2 bool pos ->
-        Implication (simplifySenCall f1) (simplifySenCall f2) bool pos
-    Equivalence f1 f2 pos ->
-        Equivalence (simplifySenCall f1) (simplifySenCall f2) pos
+    Junction j fs pos -> Junction j (map simplifySenCall fs) pos
+    Relation f1 c f2 pos ->
+        Relation (simplifySenCall f1) c (simplifySenCall f2) pos
     Negation f pos -> Negation (simplifySenCall f) pos
-    True_atom x -> True_atom x
-    False_atom x -> False_atom x
-    f@(Predication _ _ _) -> anaFormulaCall f
+    Atom b x -> Atom b x
+    f@(Predication {}) -> anaFormulaCall f
     Definedness t pos -> Definedness (simplifyTermC t) pos
-    f@(Existl_equation _ _ _) -> anaFormulaCall f
-    f@(Strong_equation _ _ _) -> anaFormulaCall f
+    f@(Equation {}) -> anaFormulaCall f
     Membership t sort pos -> Membership (simplifyTermC t) sort pos
     ExtFORMULA f -> ExtFORMULA $ simpF sign f
     QuantOp o ty f ->
@@ -207,16 +202,12 @@ anaFormula minF simpF sign form1 =
     let minForm = maybeResult . minExpFORMULA minF sign
         simplifyTermC = simplifyTerm minF simpF sign
         simpForm = case form1 of
-            Existl_equation t1 t2 pos -> Existl_equation
-              (simplifyTermC t1) (simplifyTermC t2) pos
-            Strong_equation t1 t2 pos -> Strong_equation
-              (simplifyTermC t1) (simplifyTermC t2) pos
+            Equation t1 e t2 pos -> Equation
+              (simplifyTermC t1) e (simplifyTermC t2) pos
             _ -> error "anaFormula1"
         rmForm = case simpForm of
-            Existl_equation t1 t2 pos -> Existl_equation
-              (rmSort t1) (rmSort t2) pos
-            Strong_equation t1 t2 pos -> Strong_equation
-              (rmSort t1) (rmSort t2) pos
+            Equation t1 e t2 pos -> Equation
+              (rmSort t1) e (rmSort t2) pos
             _ -> error "anaFormula2"
      in case form1 of
         Predication predSymb@(Pred_name _) tl pos ->

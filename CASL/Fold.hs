@@ -20,17 +20,13 @@ import CASL.AS_Basic_CASL
 data Record f a b = Record
     { foldQuantification :: FORMULA f -> QUANTIFIER -> [VAR_DECL] ->
                           a -> Range -> a
-    , foldConjunction :: FORMULA f -> [a] -> Range -> a
-    , foldDisjunction :: FORMULA f -> [a] -> Range -> a
-    , foldImplication :: FORMULA f -> a -> a -> Bool -> Range -> a
-    , foldEquivalence :: FORMULA f -> a -> a -> Range -> a
+    , foldJunction :: FORMULA f -> Junctor -> [a] -> Range -> a
+    , foldRelation :: FORMULA f -> a -> Relation -> a -> Range -> a
     , foldNegation :: FORMULA f -> a -> Range -> a
-    , foldTrue_atom :: FORMULA f -> Range -> a
-    , foldFalse_atom :: FORMULA f -> Range -> a
+    , foldAtom :: FORMULA f -> Bool -> Range -> a
     , foldPredication :: FORMULA f -> PRED_SYMB -> [b] -> Range -> a
     , foldDefinedness :: FORMULA f -> b -> Range -> a
-    , foldExistl_equation :: FORMULA f -> b -> b -> Range -> a
-    , foldStrong_equation :: FORMULA f -> b -> b -> Range -> a
+    , foldEquation :: FORMULA f -> b -> Equality -> b -> Range -> a
     , foldMembership :: FORMULA f -> b -> SORT -> Range -> a
     , foldMixfix_formula :: FORMULA f -> b -> a
     , foldSort_gen_ax :: FORMULA f -> [Constraint] -> Bool -> a
@@ -56,17 +52,13 @@ data Record f a b = Record
 mapRecord :: (f -> g) -> Record f (FORMULA g) (TERM g)
 mapRecord mf = Record
     { foldQuantification = const Quantification
-    , foldConjunction = const Conjunction
-    , foldDisjunction = const Disjunction
-    , foldImplication = const Implication
-    , foldEquivalence = const Equivalence
+    , foldJunction = const Junction
+    , foldRelation = const Relation
     , foldNegation = const Negation
-    , foldTrue_atom = const True_atom
-    , foldFalse_atom = const False_atom
+    , foldAtom = const Atom
     , foldPredication = const Predication
     , foldDefinedness = const Definedness
-    , foldExistl_equation = const Existl_equation
-    , foldStrong_equation = const Strong_equation
+    , foldEquation = const Equation
     , foldMembership = const Membership
     , foldMixfix_formula = const Mixfix_formula
     , foldSort_gen_ax = const Sort_gen_ax
@@ -92,17 +84,13 @@ mapRecord mf = Record
 constRecord :: (f -> a) -> ([a] -> a) -> a -> Record f a a
 constRecord mf join c = Record
     { foldQuantification = \ _ _ _ r _ -> r
-    , foldConjunction = \ _ l _ -> join l
-    , foldDisjunction = \ _ l _ -> join l
-    , foldImplication = \ _ l r _ _ -> join [l, r]
-    , foldEquivalence = \ _ l r _ -> join [l, r]
+    , foldJunction = \ _ _ l _ -> join l
+    , foldRelation = \ _ l _ r _ -> join [l, r]
     , foldNegation = \ _ r _ -> r
-    , foldTrue_atom = \ _ _ -> c
-    , foldFalse_atom = \ _ _ -> c
+    , foldAtom = \ _ _ _ -> c
     , foldPredication = \ _ _ l _ -> join l
     , foldDefinedness = \ _ r _ -> r
-    , foldExistl_equation = \ _ l r _ -> join [l, r]
-    , foldStrong_equation = \ _ l r _ -> join [l, r]
+    , foldEquation = \ _ l _ r _ -> join [l, r]
     , foldMembership = \ _ r _ _ -> r
     , foldMixfix_formula = \ _ r -> r
     , foldSort_gen_ax = \ _ _ _ -> c
@@ -128,20 +116,14 @@ constRecord mf join c = Record
 foldFormula :: Record f a b -> FORMULA f -> a
 foldFormula r f = case f of
    Quantification q vs e ps -> foldQuantification r f q vs (foldFormula r e) ps
-   Conjunction fs ps -> foldConjunction r f (map (foldFormula r) fs) ps
-   Disjunction fs ps -> foldDisjunction r f (map (foldFormula r) fs) ps
-   Implication f1 f2 b ps -> foldImplication r f (foldFormula r f1)
-      (foldFormula r f2) b ps
-   Equivalence f1 f2 ps -> foldEquivalence r f (foldFormula r f1)
+   Junction j fs ps -> foldJunction r f j (map (foldFormula r) fs) ps
+   Relation f1 c f2 ps -> foldRelation r f (foldFormula r f1) c
       (foldFormula r f2) ps
    Negation e ps -> foldNegation r f (foldFormula r e) ps
-   True_atom ps -> foldTrue_atom r f ps
-   False_atom ps -> foldFalse_atom r f ps
+   Atom b ps -> foldAtom r f b ps
    Predication p ts ps -> foldPredication r f p (map (foldTerm r) ts) ps
    Definedness t ps -> foldDefinedness r f (foldTerm r t) ps
-   Existl_equation t1 t2 ps -> foldExistl_equation r f (foldTerm r t1)
-      (foldTerm r t2) ps
-   Strong_equation t1 t2 ps -> foldStrong_equation r f (foldTerm r t1)
+   Equation t1 e t2 ps -> foldEquation r f (foldTerm r t1) e
       (foldTerm r t2) ps
    Membership t s ps -> foldMembership r f (foldTerm r t) s ps
    Mixfix_formula t -> foldMixfix_formula r f (foldTerm r t)

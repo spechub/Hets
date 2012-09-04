@@ -28,7 +28,7 @@ import Data.Maybe (isJust)
 
 isImpl :: FORMULA f -> Maybe (FORMULA f, FORMULA f)
 isImpl form = case form of
-  Implication f1 f2 b _ -> if b then Just (f1, f2) else Just (f2, f1)
+  Relation f1 c f2 _ | c /= Equivalence -> Just (f1, f2)
   _ -> Nothing
 
 isBoxOrDiamond :: FORMULA M_FORMULA -> Maybe (Bool, MODALITY, FORMULA M_FORMULA)

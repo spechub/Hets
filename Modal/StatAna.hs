@@ -36,6 +36,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List as List
+import Data.Function
 
 instance TermExtension M_FORMULA where
     freeVarsOfExt sign (BoxOrDiamond _ _ f _) = freeVars sign f
@@ -224,22 +225,15 @@ ana_FORMULA mix f = do
 getFormPredToks :: FORMULA M_FORMULA -> Set.Set Token
 getFormPredToks frm = case frm of
     Quantification _ _ f _ -> getFormPredToks f
-    Conjunction fs _ -> Set.unions $ map getFormPredToks fs
-    Disjunction fs _ -> Set.unions $ map getFormPredToks fs
-    Implication f1 f2 _ _ ->
-        Set.union (getFormPredToks f1) $ getFormPredToks f2
-    Equivalence f1 f2 _ ->
-        Set.union (getFormPredToks f1) $ getFormPredToks f2
+    Junction _ fs _ -> Set.unions $ map getFormPredToks fs
+    Relation f1 _ f2 _ -> on Set.union getFormPredToks f1 f2
     Negation f _ -> getFormPredToks f
     Mixfix_formula (Mixfix_token t) -> Set.singleton t
     Mixfix_formula t -> getTermPredToks t
     ExtFORMULA (BoxOrDiamond _ _ f _) -> getFormPredToks f
     Predication _ ts _ -> Set.unions $ map getTermPredToks ts
     Definedness t _ -> getTermPredToks t
-    Existl_equation t1 t2 _ ->
-        Set.union (getTermPredToks t1) $ getTermPredToks t2
-    Strong_equation t1 t2 _ ->
-        Set.union (getTermPredToks t1) $ getTermPredToks t2
+    Equation t1 _ t2 _ -> on Set.union getTermPredToks t1 t2
     Membership t _ _ -> getTermPredToks t
     _ -> Set.empty
 

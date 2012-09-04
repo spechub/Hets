@@ -616,24 +616,24 @@ findEqPredicates (eqPreds, sens) sen =
       If more than two variables should be compared, use foldl. -}
       if (length vars == 2) && (snd (head vars) == snd (vars !! 1))
        then case qf of
-          Equivalence f1 f2 _ -> isStrong_eq vars f1 f2
+          Relation f1 Equivalence f2 _ -> isStrong_eq vars f1 f2
           _ -> validSens
         else validSens
     isStrong_eq vars f1 f2 =
       let f1n = case f1 of
-                  Strong_equation {} -> f1
+                  Equation _ Strong _ _ -> f1
                   _ -> f2
           f2n = case f1 of
-                  Strong_equation {} -> f2
+                  Equation _ Strong _ _ -> f2
                   _ -> f1
       in case f1n of
-            Strong_equation eq_t1 eq_t2 _ -> case f2n of
+            Equation eq_t1 Strong eq_t2 _ -> case f2n of
               Predication eq_pred_symb pterms _ ->
-                if (Map.toAscList (Map.fromList $ sortedVarTermList pterms)
-                     == Map.toAscList (Map.fromList vars))
-                 && (Map.toAscList
+                if Map.toList (Map.fromList $ sortedVarTermList pterms)
+                     == Map.toList (Map.fromList vars)
+                 && Map.toList
                          (Map.fromList $ sortedVarTermList [eq_t1, eq_t2])
-                     == Map.toAscList (Map.fromList vars))
+                     == Map.toList (Map.fromList vars)
                   then (Set.insert eq_pred_symb eqPreds, sens)
                   else validSens
               _ -> validSens
@@ -731,22 +731,17 @@ transFORMULA siSo sign idMap tr form = case form of
                             e'))
                         (sidSet, idMap) (flatVAR_DECLs vdecl)
           sidSet = elemsSPIdSet idMap
-  Conjunction phis _ -> if null phis then simpTerm SPTrue else
-    foldl1 mkConj (map (transFORMULA siSo sign idMap tr) phis)
-  Disjunction phis _ -> if null phis then simpTerm SPFalse else
-    foldl1 mkDisj (map (transFORMULA siSo sign idMap tr) phis)
-  Implication phi1 phi2 _ _ -> compTerm SPImplies
+  Junction j phis _ -> let
+    (n, op) = if j == Dis then (SPFalse, mkDisj) else (SPTrue, mkConj)
+    in if null phis then simpTerm n else
+    foldl1 op (map (transFORMULA siSo sign idMap tr) phis)
+  Relation phi1 c phi2 _ -> compTerm
+    (if c == Equivalence then SPEquiv else SPImplies)
     [transFORMULA siSo sign idMap tr phi1, transFORMULA siSo sign idMap tr phi2]
-  Equivalence phi1 phi2 _ -> compTerm SPEquiv
-    [transFORMULA siSo sign idMap tr phi1, transFORMULA siSo sign idMap tr phi2]
-  Negation phi _ -> compTerm SPNot [transFORMULA siSo sign idMap tr phi]
-  True_atom _ -> simpTerm SPTrue
-  False_atom _ -> simpTerm SPFalse
+  Atom b _ -> simpTerm $ if b then SPTrue else SPFalse
   Predication psymb args _ -> compTerm (spSym (transPREDSYMB idMap psymb))
            (map (transTERM siSo sign idMap tr) args)
-  Existl_equation t1 t2 _ -> -- sortOfTerm t1 == sortOfTerm t2
-       mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
-  Strong_equation t1 t2 _ -> -- sortOfTerm t1 == sortOfTerm t2
+  Equation t1 _ t2 _ -> -- sortOfTerm t1 == sortOfTerm t2
        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
   ExtFORMULA phi -> tr sign idMap phi
   Definedness _ _ -> simpTerm SPTrue -- assume totality
@@ -1007,23 +1002,22 @@ toForm sign m t = case t of
               ts <- mapM (toTERM m) args
               case mi of
                 Nothing -> case args of
-                  [_] -> return (True_atom nullRange)
+                  [_] -> return trueForm
                   _ -> fail $ "unkown predicate: " ++ show cst
-                Just i -> return (Predication
-                  (Qual_pred_name i (toPRED_TYPE pt) nullRange)
-                  ts nullRange)
+                Just i -> return $ mkPredication
+                      (mkQualPred i $ toPRED_TYPE pt) ts
           _ -> fail $ "inconsistent pred symbol: " ++ show cst
     SPComplexTerm symb args -> do
          fs <- mapM (toForm sign m) args
          case (symb, fs) of
-           (SPNot, [f]) -> return (Negation f nullRange)
+           (SPNot, [f]) -> return (mkNeg f)
            (SPImplies, [f1, f2]) -> return (mkImpl f1 f2)
-           (SPImplied, [f2, f1]) -> return (Implication f1 f2 False nullRange)
+           (SPImplied, [f2, f1]) -> return (Relation f1 RevImpl f2 nullRange)
            (SPEquiv, [f1, f2]) -> return (mkEqv f1 f2)
            (SPAnd, _) -> return (conjunct fs)
-           (SPOr, _) -> return (Disjunction fs nullRange)
-           (SPTrue, []) -> return (True_atom nullRange)
-           (SPFalse, []) -> return (False_atom nullRange)
+           (SPOr, _) -> return (disjunct fs)
+           (SPTrue, []) -> return trueForm
+           (SPFalse, []) -> return falseForm
            _ -> fail $ "wrong boolean formula: " ++ showDoc t ""
 
 toTERM :: Monad m => RMap -> SPTerm -> m (TERM ())

@@ -130,23 +130,17 @@ trForm form = case form of
   Negation fn rn -> do
     t <- trForm fn
     return $ PBasic.Negation t rn
-  Conjunction fn rn -> do
+  Junction j fn rn -> do
     ts <- mapM trForm fn
-    return $ PBasic.Conjunction ts rn
-  Disjunction fn rn -> do
-    ts <- mapM trForm fn
-    return $ PBasic.Disjunction ts rn
-  Implication f1 f2 b rn -> do
+    return $ (case j of
+      Con -> PBasic.Conjunction
+      Dis -> PBasic.Disjunction) ts rn
+  Relation f1 c f2 rn -> do
     t1 <- trForm f1
     t2 <- trForm f2
-    return $ if b then PBasic.Implication t1 t2 rn else
-      PBasic.Implication t2 t1 rn
-  Equivalence f1 f2 rn -> do
-    t1 <- trForm f1
-    t2 <- trForm f2
-    return $ PBasic.Equivalence t1 t2 rn
-  True_atom rn -> return $ PBasic.True_atom rn
-  False_atom rn -> return $ PBasic.False_atom rn
+    return $ (if c == Equivalence then PBasic.Equivalence else
+      PBasic.Implication) t1 t2 rn
+  Atom b rn -> return $ (if b then PBasic.True_atom else PBasic.False_atom) rn
   Predication (Qual_pred_name pid (Pred_type [] _) _) [] _ ->
     return . PBasic.Predication . mkSimpleId $ show pid
   _ -> fail $ "not a propositional formula: " ++ showDoc form ""

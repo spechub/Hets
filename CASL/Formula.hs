@@ -265,14 +265,14 @@ termFormula :: TermParser f => [String] -> TERM f -> AParser st (FORMULA f)
 termFormula k t = do
     e <- asKey exEqual
     r <- term k
-    return $ Existl_equation t r $ tokPos e
+    return $ Equation t Existl r $ tokPos e
   <|> do
     tryString exEqual
     unexpected $ "sign following " ++ exEqual
   <|> do
     e <- equalT
     r <- term k
-    return $ Strong_equation t r $ tokPos e
+    return $ Equation t Strong r $ tokPos e
   <|> do
     e <- asKey inS
     s <- sortId k
@@ -292,10 +292,10 @@ genPrimFormula p k = do
 primCASLFormula :: TermParser f => [String] -> AParser st (FORMULA f)
 primCASLFormula k = do
     c <- asKey trueS
-    return . True_atom . Range $ tokenRange c
+    return . Atom True . Range $ tokenRange c
   <|> do
     c <- asKey falseS
-    return . False_atom . Range $ tokenRange c
+    return . Atom False . Range $ tokenRange c
   <|> do
     c <- asKey defS
     t <- term k
@@ -321,11 +321,11 @@ optAndOr :: TermParser f => [String] -> FORMULA f -> AParser st (FORMULA f)
 optAndOr k f = do
       c <- andKey
       (fs, ps) <- primFormula k `separatedBy` andKey
-      return $ Conjunction (f : fs) $ catRange $ c : ps
+      return $ Junction Con (f : fs) $ catRange $ c : ps
     <|> do
       c <- orKey
       (fs, ps) <- primFormula k `separatedBy` orKey
-      return $ Disjunction (f : fs) $ catRange $ c : ps
+      return $ Junction Dis (f : fs) $ catRange $ c : ps
     <|> return f
 
 implKey :: AParser st Token
@@ -341,7 +341,7 @@ optImplForm :: TermParser f => [String] -> FORMULA f -> AParser st (FORMULA f)
 optImplForm k f = do
       c <- implKey
       (fs, ps) <- andOrFormula k `separatedBy` implKey
-      return $ makeImpl True (f : fs) $ catPosAux $ c : ps
+      return $ makeImpl Implication (f : fs) $ catPosAux $ c : ps
     <|> do
       c <- ifKey
       (fs, ps) <- andOrFormula k `separatedBy` ifKey
@@ -349,14 +349,14 @@ optImplForm k f = do
     <|> do
       c <- asKey equivS
       g <- andOrFormula k
-      return $ Equivalence f g $ tokPos c
+      return $ Relation f Equivalence g $ tokPos c
     <|> return f
 
-makeImpl :: Bool -> [FORMULA f] -> [Pos] -> FORMULA f
+makeImpl :: Relation -> [FORMULA f] -> [Pos] -> FORMULA f
 makeImpl b l p = case (l, p) of
-  ([f, g], _) -> Implication f g b (Range p)
-  (f : r, c : q) -> Implication f (makeImpl b r q) b (Range [c])
+  ([f, g], _) -> Relation f b g (Range p)
+  (f : r, c : q) -> Relation f b (makeImpl b r q) (Range [c])
   _ -> error "makeImpl got illegal argument"
 
 makeIf :: [FORMULA f] -> [Pos] -> FORMULA f
-makeIf l p = makeImpl False (reverse l) $ reverse p
+makeIf l p = makeImpl RevImpl (reverse l) $ reverse p

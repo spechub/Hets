@@ -21,12 +21,12 @@ import Logic.Comorphism
 
 -- Adl
 import Adl.Logic_Adl as A
-import Adl.As
+import Adl.As as A
 import Adl.Sign as A
 
 -- CASL
 import CASL.Logic_CASL
-import CASL.AS_Basic_CASL
+import CASL.AS_Basic_CASL as C
 import CASL.Sublogic
 import CASL.Sign as C
 import CASL.Morphism as C
@@ -102,7 +102,7 @@ mapSign :: A.Sign -> CASLSign
 mapSign s = (C.emptySign ())
   { sortRel = Rel.transClosure $ Rel.union
        (Rel.fromKeysSet $ Set.fold (\ sy -> case sy of
-                 Con (C i) -> Set.insert $ simpleIdToId i
+                 A.Con (C i) -> Set.insert $ simpleIdToId i
                  _ -> id) Set.empty $ A.symOf s)
        $ Rel.map conceptToId $ isas s
   , predMap = MapSet.fromList
@@ -128,7 +128,7 @@ mapMor mor = return $ embedMorphism ()
 
 mapSym :: A.Symbol -> C.Symbol
 mapSym s = case s of
-  Con c -> idToSortSymbol $ conceptToId c
+  A.Con c -> idToSortSymbol $ conceptToId c
   Rel (Sgn n t) -> idToPredSymbol (transRelId n) $ relTypeToPred t
 
 next :: State Int Int
@@ -137,7 +137,7 @@ next = do
   put $ i + 1
   return i
 
-getRelPred :: CASLSign -> Relation -> PRED_SYMB
+getRelPred :: CASLSign -> A.Relation -> PRED_SYMB
 getRelPred sig m@(Sgn t (RelType c1 c2)) = let
   ty1 = conceptToId c1
   ty2 = conceptToId c2
@@ -151,7 +151,7 @@ getRelPred sig m@(Sgn t (RelType c1 c2)) = let
            Qual_pred_name i (toPRED_TYPE ty) $ tokPos t
        _ -> error $ "getRelPred " ++ showDoc m ""
 
-getRelProp :: CASLSign -> Relation -> RangedProp -> CASLFORMULA
+getRelProp :: CASLSign -> A.Relation -> RangedProp -> CASLFORMULA
 getRelProp sig r p =
   let qp@(Qual_pred_name _ (Pred_type [fr, to] _) _) = getRelPred sig r
       q = propRange p
@@ -165,42 +165,43 @@ getRelProp sig r p =
       eqs = fr == to
   in case propProp p of
        Uni -> mkForallRange [q1, q2, q3]
-            (Implication
-             (Conjunction
+            (Relation
+             (conjunctRange
               [pAppl, Predication qp [t3, t2] q] q)
-             (Strong_equation t1 t3 q)
-             True q) q
+             Implication (Equation t1 Strong t3 q)
+             q) q
        Tot -> mkForallRange [q1] (Quantification Existential [q2] pAppl q) q
        Sur -> mkForallRange [q2] (Quantification Existential [q1] pAppl q) q
        Inj -> let
          q4 = Var_decl [mkSimpleId "c"] to q
          t4 = toQualVar q4
          in mkForallRange [q1, q2, q4]
-            (Implication
-             (Conjunction
+            (Relation
+             (conjunctRange
               [pAppl, Predication qp [t1, t4] q] q)
-             (Strong_equation t2 t4 q)
-             True q) q
+             Implication (Equation t2 Strong t4 q)
+             q) q
        Sym | eqs -> mkForallRange [q1, q2]
-         (Equivalence pAppl (Predication qp [t2, t1] q) q) q
+         (Relation pAppl Equivalence (Predication qp [t2, t1] q) q) q
        Asy | eqs -> mkForallRange [q1, q2]
-         (Implication pAppl (Negation (Predication qp [t2, t1] q) q) True q) q
+         (Relation pAppl Implication
+          (Negation (Predication qp [t2, t1] q) q) q) q
        Trn | eqs -> mkForallRange [q1, q2, q3]
-          (Implication
-           (Conjunction [pAppl, Predication qp [t2, t3] q] q)
-             (Predication qp [t1, t3] q)
-             True q) q
+          (Relation
+           (conjunctRange [pAppl, Predication qp [t2, t3] q] q)
+             Implication (Predication qp [t1, t3] q)
+             q) q
        Rfx | eqs -> mkForallRange [q1] (Predication qp [t1, t1] q) q
        pr -> error $ "getRelProp " ++ showDoc pr ""
 
 transRule :: CASLSign -> Rule
           -> State Int ((VAR, SORT), (VAR, SORT), CASLFORMULA)
 transRule sig rule =
-  let myMin v@(ta, sa) (_, sb) =
-               if leqSort sig sa sb then v else
-               if leqSort sig sb sa then (ta, sb) else
-                   error $ "transRule.myMin " ++ showDoc (sa, sb) "\n "
-                   ++ showDoc rule ""
+  let myMin v@(ta, sa) (_, sb)
+        | leqSort sig sa sb = v
+        | leqSort sig sb sa = (ta, sb)
+        | otherwise = error $
+            "transRule.myMin " ++ showDoc (sa, sb) "\n " ++ showDoc rule ""
       myVarDecl = uncurry mkVarDecl
   in case rule of
   Tm m@(Sgn (Token s p) (RelType c1 c2)) -> do
@@ -216,9 +217,9 @@ transRule sig rule =
           q1 = Qual_var v1 ty1 p
           q2 = Qual_var v2 ty2 p
       return ((v1, ty1), (v2, ty2),
-        if s == "V" then True_atom p else
+        if s == "V" then Atom True p else
         if isI then
-            if ty1 == ty2 then Strong_equation q1 q2 p else
+            if ty1 == ty2 then Equation q1 Strong q2 p else
                 error $ "transRule.I " ++ showDoc rule ""
         else
           let qp@(Qual_pred_name _ (Pred_type [fr, to] _) _) = getRelPred sig m
@@ -264,7 +265,7 @@ transRule sig rule =
              Fi -> conjunct [f3, f4]
              Fu -> disjunct [f3, f4]
              Ri -> mkImpl f3 f4
-             Rr -> Implication f4 f3 False nullRange
+             Rr -> Relation f4 RevImpl f3 nullRange
              Re -> mkEqv f3 f4
              _ -> error "transRule,MulExp")
 

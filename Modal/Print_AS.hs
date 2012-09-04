@@ -95,14 +95,12 @@ condParensInnerF :: Pretty f => (FORMULA f -> Doc)
                     -> FORMULA f -> Doc
 condParensInnerF pf parens_fun f =
     case f of
-    Quantification _ _ _ _ -> f'
-    True_atom _ -> f'
-    False_atom _ -> f'
-    Predication _ _ _ -> f'
+    Quantification {} -> f'
+    Atom _ _ -> f'
+    Predication {} -> f'
     Definedness _ _ -> f'
-    Existl_equation _ _ _ -> f'
-    Strong_equation _ _ _ -> f'
-    Membership _ _ _ -> f'
+    Equation {} -> f'
+    Membership {} -> f'
     ExtFORMULA _ -> f'
     _ -> parens_fun f'
     where f' = pf f

@@ -74,19 +74,18 @@ sRec sign mf = Record
               Unique_existential -> "ex1"
             vl = SList $ map varDeclToSExpr $ flatVAR_DECLs vs
         in SList [s, vl, f]
-    , foldConjunction = \ _ fs _ -> SList $ SSymbol "and" : fs
-    , foldDisjunction = \ _ fs _ -> SList $ SSymbol "or" : fs
-    , foldImplication = \ _ f1 f2 b _ ->
-        SList $ SSymbol "implies" : if b then [f1, f2] else [f2, f1]
-    , foldEquivalence = \ _ f1 f2 _ -> SList [SSymbol "equiv", f1, f2]
+    , foldJunction = \ _ j fs _ -> SList $ SSymbol (case j of
+        Con -> "and"
+        Dis -> "or") : fs
+    , foldRelation = \ _ f1 c f2 _ -> SList
+        [ SSymbol (if c == Equivalence then "equiv" else "implies"), f1, f2]
     , foldNegation = \ _ f _ -> SList [SSymbol "not", f]
-    , foldTrue_atom = \ _ _ -> SSymbol "true"
-    , foldFalse_atom = \ _ _ -> SSymbol "false"
+    , foldAtom = \ _ b _ -> SSymbol $ if b then "true" else "false"
     , foldPredication = \ _ p ts _ ->
         SList $ SSymbol "papply" : predToSSymbol sign p : ts
     , foldDefinedness = \ _ t _ -> SList [SSymbol "def", t]
-    , foldExistl_equation = \ _ t1 t2 _ -> SList [SSymbol "eeq", t1, t2]
-    , foldStrong_equation = \ _ t1 t2 _ -> SList [SSymbol "eq", t1, t2]
+    , foldEquation = \ _ t1 e t2 _ -> SList
+        [ SSymbol $ if e == Existl then "eeq" else "eq", t1, t2]
     , foldMembership = \ _ t s _ ->
         SList [SSymbol "member", t, sortToSSymbol s]
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t

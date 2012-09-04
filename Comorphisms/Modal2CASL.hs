@@ -182,21 +182,14 @@ mapSen mapEnv@(MME {worldSort = fws, flexiPreds = fPreds}) vars
        f = case f of
            Quantification q vs frm ps ->
                   Quantification q vs (mapSen mapEnv vars frm) ps
-           Conjunction fs ps ->
-               Conjunction (map (mapSen mapEnv vars) fs) ps
-           Disjunction fs ps ->
-               Disjunction (map (mapSen mapEnv vars) fs) ps
-           Implication f1 f2 b ps ->
-               Implication (mapSen mapEnv vars f1) (mapSen mapEnv vars f2) b ps
-           Equivalence f1 f2 ps ->
-               Equivalence (mapSen mapEnv vars f1) (mapSen mapEnv vars f2) ps
+           Junction j fs ps ->
+               Junction j (map (mapSen mapEnv vars) fs) ps
+           Relation f1 c f2 ps ->
+               Relation (mapSen mapEnv vars f1) c (mapSen mapEnv vars f2) ps
            Negation frm ps -> Negation (mapSen mapEnv vars frm) ps
-           True_atom ps -> True_atom ps
-           False_atom ps -> False_atom ps
-           Existl_equation t1 t2 ps -> Existl_equation
-               (mapTERM mapEnv vars t1) (mapTERM mapEnv vars t2) ps
-           Strong_equation t1 t2 ps -> Strong_equation
-               (mapTERM mapEnv vars t1) (mapTERM mapEnv vars t2) ps
+           Atom b ps -> Atom b ps
+           Equation t1 e t2 ps -> Equation
+               (mapTERM mapEnv vars t1) e (mapTERM mapEnv vars t2) ps
            Predication pn as qs ->
                let as' = map (mapTERM mapEnv vars) as
                    fwsTerm = sortedWorldTerm fws (head vars)

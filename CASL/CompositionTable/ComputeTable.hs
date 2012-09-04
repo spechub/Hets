@@ -31,7 +31,7 @@ import qualified Data.Set as Set
 -- | given a specfication (name and theory), compute the composition table
 computeCompTable :: IRI -> (Sign f e, [Named (FORMULA f)])
                        -> Result Table
-computeCompTable spName (sig,nsens) = do
+computeCompTable spName (sig, nsens) = do
   {- look for something isomorphic to
        sorts BaseRel < Rel
        ops
@@ -47,25 +47,25 @@ computeCompTable spName (sig,nsens) = do
      . inv(id) = id
   -}
   let name = showDoc spName ""
-      errmsg = "cannot determine composition table of specification "++name
+      errmsg = "cannot determine composition table of specification " ++ name
       errSorts = errmsg
                    ++ "\nneed exactly two sorts s,t, with s<t, but found:\n"
-                   ++ showDoc ((emptySign ()::Sign () ())
+                   ++ showDoc ((emptySign () :: Sign () ())
                                      { sortRel = sortRel sig }) ""
       errOps ops prof =
-        errmsg ++ "\nneed exactly one operation "++prof++", but found:\n"
+        errmsg ++ "\nneed exactly one operation " ++ prof ++ ", but found:\n"
                ++ showDoc ops ""
   -- look for sorts
-  (baseRel,rel) <-
+  (baseRel, rel) <-
      case map Set.toList $ Rel.topSort $ sortRel sig of
-       [[b],[r]] -> return (b,r)
+       [[b], [r]] -> return (b, r)
        _ -> fail errSorts
   -- types of operation symbols
   let opTypes = mapSetToList (opMap sig)
-      invt   = mkTotOpType [baseRel] baseRel
-      cmpt   = mkTotOpType [baseRel, baseRel] rel
+      invt = mkTotOpType [baseRel] baseRel
+      cmpt = mkTotOpType [baseRel, baseRel] rel
       complt = mkTotOpType [rel] rel
-      cupt   = mkTotOpType [rel, rel] rel
+      cupt = mkTotOpType [rel, rel] rel
   -- look for operation symbols
   let mlookup t = map fst $ filter ((== t) . snd) opTypes
   let oplookup typ msg =
@@ -80,34 +80,34 @@ computeCompTable spName (sig,nsens) = do
      forall x:BaseRel
      . x cmps id = x
      . id cmps x = x
-     . inv(id) = id  -}
-  -- let idaxioms idt =
-  --    [Quantification Universal [Var_decl [x] baseRel nullRange ....
-  -- let ids = mlookup idt
+     . inv(id) = id
+  let idaxioms idt =
+  [Quantification Universal [Var_decl [x] baseRel nullRange ....
+  let ids = mlookup idt -}
   let sens = map (stripQuant . sentence) nsens
   let cmpTab sen = case sen of
-       Strong_equation (Application (Qual_op_name c _ _)
+       Equation (Application (Qual_op_name c _ _)
                         [Application (Qual_op_name arg1 _ _) [] _,
                          Application (Qual_op_name arg2 _ _) [] _] _)
-                       res _ ->
-         if c==cmps
+                       Strong res _ ->
+         if c == cmps
            then
-            Just (Cmptabentry
-                   (Cmptabentry_Attrs {
+            Just $ Cmptabentry
+                   Cmptabentry_Attrs {
                       cmptabentryArgBaserel1 = Baserel (showDoc arg1 ""),
-                      cmptabentryArgBaserel2 = Baserel (showDoc arg2 "") })
-                   (extractRel cup res) )
+                      cmptabentryArgBaserel2 = Baserel (showDoc arg2 "") }
+                   $ extractRel cup res
            else Nothing
        _ -> Nothing
   let invTab sen = case sen of
-       Strong_equation (Application (Qual_op_name i _ _)
+       Equation (Application (Qual_op_name i _ _)
                         [Application (Qual_op_name arg _ _) [] _] _)
-                       (Application (Qual_op_name res _ _) [] _) _ ->
-         if i==inv
+                       Strong (Application (Qual_op_name res _ _) [] _) _ ->
+         if i == inv
            then
-            Just (Contabentry {
+            Just Contabentry {
                    contabentryArgBaseRel = Baserel (showDoc arg ""),
-                   contabentryConverseBaseRel = Baserel (showDoc res "") } )
+                   contabentryConverseBaseRel = Baserel (showDoc res "") }
            else Nothing
        _ -> Nothing
   let attrs = Table_Attrs
@@ -125,8 +125,8 @@ stripQuant (Quantification _ _ f _) = stripQuant f
 stripQuant f = f
 
 extractRel :: Id -> TERM f -> [Baserel]
-extractRel cup (Application (Qual_op_name cup' _ _) [arg1,arg2] _) =
-  if cup==cup'
+extractRel cup (Application (Qual_op_name cup' _ _) [arg1, arg2] _) =
+  if cup == cup'
     then extractRel cup arg1 ++ extractRel cup arg2
     else []
 extractRel _ (Application (Qual_op_name b _ _) [] _) =

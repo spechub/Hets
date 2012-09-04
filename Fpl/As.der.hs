@@ -132,7 +132,7 @@ instance Pretty TermExt where
         fsep [ keyword ifS <+> pretty i
              , keyword thenS <+> pretty d
              , keyword elseS <+> pretty e ]
-    EqTerm t1 t2 r -> pretty $ Strong_equation t1 t2 r
+    EqTerm t1 t2 r -> pretty $ Equation t1 Strong t2 r
     BoolTerm f -> pretty f
 
 fplReservedWords :: [String]

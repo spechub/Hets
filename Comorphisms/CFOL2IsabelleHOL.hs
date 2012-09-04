@@ -192,7 +192,8 @@ getAssumpsToks sign = Map.foldWithKey ( \ i ops s ->
     (Map.foldWithKey ( \ i prds s ->
     Set.union s $ Set.unions
         $ map ( \ (_, o) -> getConstIsaToks i o baseSign)
-              $ number $ Set.toList prds) Set.empty . MapSet.toMap $ predMap sign)
+              $ number $ Set.toList prds) Set.empty . MapSet.toMap
+    $ predMap sign)
     . MapSet.toMap $ opMap sign
 
 transVar :: Set.Set String -> VAR -> String
@@ -206,8 +207,8 @@ quantifyIsa q (v, _) phi =
   termAppl (conDouble q) (Abs (mkFree v) phi NotCont)
 
 quantify :: Set.Set String -> QUANTIFIER -> (VAR, SORT) -> Term -> Term
-quantify toks q (v, t) phi =
-  quantifyIsa (qname q) (transVar toks v, transSort t) phi
+quantify toks q (v, t) =
+  quantifyIsa (qname q) (transVar toks v, transSort t)
   where
   qname Universal = allS
   qname Existential = exS
@@ -252,20 +253,19 @@ transRecord :: CASL.Sign.Sign f e -> Set.Set String -> FormulaTranslator f e
 transRecord sign tyToks tr toks = Record
     { foldQuantification = \ _ qu vdecl phi _ ->
           foldr (quantify toks qu) phi (flatVAR_DECLs vdecl)
-    , foldConjunction = \ _ phis _ ->
-          if null phis then true else foldr1 binConj phis
-    , foldDisjunction = \ _ phis _ ->
-          if null phis then false else foldr1 binDisj phis
-    , foldImplication = \ _ phi1 phi2 _ _ -> binImpl phi1 phi2
-    , foldEquivalence = \ _ phi1 phi2 _ -> binEqv phi1 phi2
+    , foldJunction = \ _ j phis _ -> let
+          (n, op) = case j of
+              Con -> (true, binConj)
+              Dis -> (false, binDisj)
+          in if null phis then n else foldr1 op phis
+    , foldRelation = \ _ phi1 c phi2 _ -> (if c == Equivalence
+         then binEqv else binImpl) phi1 phi2
     , foldNegation = \ _ phi _ -> termAppl notOp phi
-    , foldTrue_atom = \ _ _ -> true
-    , foldFalse_atom = \ _ _ -> false
+    , foldAtom = \ _ b _ -> if b then true else false
     , foldPredication = \ _ psymb args _ ->
           foldl termAppl (con $ transPredSymb sign tyToks psymb) args
     , foldDefinedness = \ _ _ _ -> true -- totality assumed
-    , foldExistl_equation = \ _ t1 t2 _ -> binEq t1 t2 -- equal types assumed
-    , foldStrong_equation = \ _ t1 t2 _ -> binEq t1 t2 -- equal types assumed
+    , foldEquation = \ _ t1 _ t2 _ -> binEq t1 t2 -- equal types assumed
     , foldMembership = \ _ _ _ _ -> true -- no subsorting assumed
     , foldMixfix_formula = error "transRecord: Mixfix_formula"
     , foldSort_gen_ax = error "transRecord: Sort_gen_ax"
