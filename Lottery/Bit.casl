@@ -1,6 +1,0 @@
-spec Bit =
-sorts Bit
-ops 0,1: Bit;
-    __+__, __xor__: Bit * Bit -> Bit;
-
-end
