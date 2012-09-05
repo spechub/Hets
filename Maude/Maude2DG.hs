@@ -331,7 +331,7 @@ createEdgeImport tok1 (Inc, tok2, _, morph, _, _) sg tim dg = (tim, dg')
 
 -- | extracts the sorts provided by the theories
 getThSorts :: [ImportProc] -> Symbols
-getThSorts = foldr ((++) . getThSortsAux) []
+getThSorts = concatMap getThSortsAux
 
 -- | extracts the not-bounded-yet sorts related to the given identifier
 getThSortsAux :: ImportProc -> Symbols
@@ -364,10 +364,10 @@ getOpDeclSet :: OpDeclSet -> Symbols -> SymbolMap -> OpDeclSet
 getOpDeclSet ods ss sm = Set.singleton (op_sym', ats)
          where f ~(Operator _ x _) b = x == ss || b
                g = Set.fold f False . fst
-               (ods', ats) = head $ Set.toList $ Set.filter g ods
+               (ods', ats) : _ = Set.toList $ Set.filter g ods
                h ~(Operator _ y _) = y == ss
                ods'' = Set.filter h ods'
-               op_sym = head $ Set.toList ods''
+               op_sym : _ = Set.toList ods''
                op_sym' = applyRenamingOpSymbol op_sym sm
 
 -- | applies the renaming in the map to the operator declaration

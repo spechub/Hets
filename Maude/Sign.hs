@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances  #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Maude Signatures
@@ -14,8 +14,9 @@ Definition of signatures for Maude.
 
 module Maude.Sign (
     -- * Types
+
     -- ** The Signature type
-    Sign(..),
+    Sign (..),
     -- ** Auxiliary types
     SortSet,
     KindRel,
@@ -62,7 +63,8 @@ import qualified Data.List as List
 
 import Common.Doc hiding (empty)
 import qualified Common.Doc as Doc
-import Common.DocUtils (Pretty(..))
+import Common.DocUtils (Pretty (..))
+import Common.Utils (nubOrd)
 
 -- * Types
 
@@ -78,6 +80,7 @@ type Sentences = Set Sentence
 type KindRel = Map Symbol Symbol
 
 -- ** The Signature type
+
 -- | The Signature of a Maude 'Module'.
 data Sign = Sign {
         sorts :: SortSet,               -- ^ The 'Set' of 'Sort's
@@ -85,7 +88,8 @@ data Sign = Sign {
         subsorts :: SubsortRel,         -- ^ The 'Rel'ation of 'Sort's
         ops :: OpMap,                   -- ^ The 'Map' of 'Operator's
         sentences :: Sentences,         -- ^ The 'Set' of 'Sentence's
-        kindRel :: KindRel              -- ^ The 'Set' of 'Sentence's for the kind function
+        kindRel :: KindRel
+        -- ^ The 'Set' of 'Sentence's for the kind function
     } deriving (Show, Ord, Eq)
 
 -- ** 'Sign' instances
@@ -114,10 +118,10 @@ instance Pretty Sign where
                 , pr'kinds $ Set.elems $ kinds sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
                 , pr'ops $ ops sign]
-                -- , pretty "op kind : Sort -> Kind ."
-                -- , prettyPrint $ kindRel sign
-                -- NOTE: Leaving out Sentences for now.
-                -- , pretty $ Set.toList $ sentences sign ]
+                {- , pretty "op kind : Sort -> Kind ."
+                , prettyPrint $ kindRel sign
+                NOTE: Leaving out Sentences for now.
+                , pretty $ Set.toList $ sentences sign ] -}
 
 instance HasSorts Sign where
     getSorts = sorts
@@ -127,8 +131,8 @@ instance HasSorts Sign where
         subsorts = mapSorts mp $ subsorts sign,
         ops = mapSorts mp $ ops sign,
         kindRel = mapSorts mp $ kindRel sign
-        -- NOTE: Leaving out Sentences for now.
-        -- sentences = mapSorts mp $ sentences sign
+        {- NOTE: Leaving out Sentences for now.
+        sentences = mapSorts mp $ sentences sign -}
     }
 
 instance HasSorts KindRel where
@@ -173,8 +177,8 @@ fromSpec (Module _ _ stmts) = let
     sents = filter (not . Sen.isRule) . Sen.fromStatements $ stmts
     (sort'list, sub'list, op'list) = partitionStmts stmts
     ins'sorts = flip (foldr insertSort) sort'list
-    ins'subs  = flip (foldr insertSubsort) sub'list
-    ins'ops   = flip (foldr insertOp) op'list
+    ins'subs = flip (foldr insertSubsort) sub'list
+    ins'ops = flip (foldr insertOp) op'list
     sign = ins'ops . ins'subs . ins'sorts $ empty
     sbs = Rel.transClosure $ subsorts sign
     kr = getkindRel (sorts sign) sbs
@@ -187,17 +191,18 @@ fromSpec (Module _ _ stmts) = let
     }
 
 addPartial :: OpMap -> OpMap
-addPartial om = Map.map partialODS om
+addPartial = Map.map partialODS
 
 partialODS :: OpDeclSet -> OpDeclSet
-partialODS ods = Set.map partialSet ods
+partialODS = Set.map partialSet
 
 partialSet :: (Set Symbol, [Attr]) -> (Set Symbol, [Attr])
 partialSet (ss, ats) = (Set.union ss ss', ats)
       where ss' = Set.map partialOp ss
 
 partialOp :: Symbol -> Symbol
-partialOp (Operator q ss s) = Operator q (map sortSym2kindSym ss) $ sortSym2kindSym s
+partialOp (Operator q ss s) =
+  Operator q (map sortSym2kindSym ss) $ sortSym2kindSym s
 partialOp s = s
 
 sortSym2kindSym :: Symbol -> Symbol
@@ -254,9 +259,9 @@ insertSubsort decl sign = let
 insertOpDecl :: SymbolRel -> Symbol -> [Attr] -> OpMap -> OpMap
 insertOpDecl rel symb attrs opmap = let
     merge decls = let
-        decl = head $ Set.toList decls
+        decl : _ = Set.toList decls
         syms = Set.insert symb $ fst decl
-        attr = removeReps $ mergeAttrs attrs $ snd decl
+        attr = nubOrd $ mergeAttrs attrs $ snd decl
         in if Set.null decls
            then Set.insert (asSymbolSet symb, attrs)
            else Set.insert (syms, attr)
@@ -270,13 +275,12 @@ insertOpDecl rel symb attrs opmap = let
 -- | Map 'Operator' declarations of the given 'Kind' in an 'Operator' 'Map'.
 mapOpDecl :: SymbolRel -> Symbol -> Symbol -> [Attr] -> OpMap -> OpMap
 mapOpDecl rel src tgt attrs opmap = let
-    merge decls = let
-        decl = head $ Set.toList decls
-        syms = mapOps (Map.singleton src tgt) $ fst decl
-        attr = removeReps $ mergeAttrs attrs $ snd decl
-        in if Set.null decls
-           then id
-           else Set.insert (syms, attr)
+    merge decls = case Set.toList decls of
+        [] -> id
+        (ft, sd) : _ -> let
+          syms = mapOps (Map.singleton src tgt) ft
+          attr = nubOrd $ mergeAttrs attrs sd
+          in Set.insert (syms, attr)
     src'name = getName src
     tgt'name = getName tgt
     same'kind = Fold.any (sameKind rel src) . fst
@@ -298,17 +302,13 @@ insertOp op sign = let
 -- | Merge new 'Attr'ibutes with the old ones.
 mergeAttrs :: [Attr] -> [Attr] -> [Attr]
 mergeAttrs = let
-    similar (Prec _)   (Prec _)   = True
+    similar (Prec _) (Prec _) = True
     similar (Gather _) (Gather _) = True
     similar (Format _) (Format _) = True
     -- Other Attributes don't change in Renamings.
     similar _ _ = False
     update new = (:) new . filter (not . similar new)
     in flip $ foldl $ flip update
-
-removeReps :: [Attr] -> [Attr]
-removeReps [] = []
-removeReps (a : as) = a : (filter (/= a) $ removeReps as)
 
 -- * Combination
 
@@ -348,7 +348,6 @@ symbols sign = Set.unions [ getSorts sign, getOps sign, getLabels sign ]
 
 -- * Testing
 
--- TODO: Add more checks, e.g. whether all Symbols in SortSet are Sorts. Maybe.
 -- | True iff the argument is a legal 'Sign'ature.
 isLegal :: Sign -> Bool
 isLegal sign = let
@@ -372,7 +371,7 @@ subODS ods1 ods2 = Set.isSubsetOf ods1' ods2'
           ods2' = removeAttsODS ods2
 
 removeAttsODS :: OpDeclSet -> OpDeclSet
-removeAttsODS ods = Set.map removeAtts ods
+removeAttsODS = Set.map removeAtts
 
 removeAtts :: (Set Symbol, [Attr]) -> (Set Symbol, [Attr])
 removeAtts (ss, _) = (ss, [])
@@ -380,6 +379,7 @@ removeAtts (ss, _) = (ss, [])
 -- * Modification
 
 -- TODO: Add real implementation of simplification. Maybe.
+
 -- | Simplification of sentences (leave out qualifications)
 simplifySentence :: Sign -> Sentence -> Sentence
 simplifySentence _ = id
@@ -409,7 +409,7 @@ kindRelList l@(s : _) r m = kindRelList not_rel r m'
       where (top : _) = List.sort $ getTop r s
             tc = Rel.transClosure r
             (rel, not_rel) = sameKindList s tc l
-            f = \ x y z -> Map.insert y (sortSym2kindSym x) z
+            f x y = Map.insert y (sortSym2kindSym x)
             m' = foldr (f top) m rel
 
 sameKindList :: Symbol -> SubsortRel -> [Symbol] -> ([Symbol], [Symbol])
@@ -422,31 +422,20 @@ sameKindList t r (t' : ts) = if sameKind r t t'
 getTop :: SubsortRel -> Symbol -> [Symbol]
 getTop r tok = case succs of
            [] -> [tok]
-           toks@(_:_) -> foldr ((++) . (getTop r)) [] toks
+           toks@(_ : _) -> concatMap (getTop r) toks
       where succs = Set.toList $ Rel.succs r tok
 
 kindsFromMap :: KindRel -> KindSet
-kindsFromMap kr = foldr (\ (_,y) z -> Set.insert y z) Set.empty krl
+kindsFromMap kr = foldr (\ (_, y) z -> Set.insert y z) Set.empty krl
       where krl = Map.toList kr
 
 getSortsKindRel :: KindRel -> SymbolSet
 getSortsKindRel = Map.foldWithKey f Set.empty
-      where f = \ k _ s -> Set.insert k s
+      where f k _ = Set.insert k
 
 renameSortKindRel :: Map Symbol Symbol -> KindRel -> KindRel
 renameSortKindRel m kr = kr'
       where krl = Map.toList kr
-            f = \ mss (x,y) z -> (mapSorts mss x, mapSorts mss y) : z
+            f mss (x, y) = ((mapSorts mss x, mapSorts mss y) :)
             krl' = foldr (f m) [] krl
             kr' = Map.fromList krl'
-
-{- Used if printing the function 'kind'
-prettyPrint :: KindRel -> Doc
-prettyPrint kr = foldr f Doc.empty krl
-      where krl = Map.toList kr
-            f = \ x y -> vsep [prettyKindPair x, y]
-
-prettyKindPair :: (Symbol, Symbol) -> Doc
-prettyKindPair (s, k) = hsep [keyword "eq", pretty "kind" <> (parens . pretty $ s),
-                              equals, pretty k, dot]
--}

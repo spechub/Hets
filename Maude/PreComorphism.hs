@@ -510,8 +510,7 @@ translateOpDecl :: IdMap -> MSign.OpDecl -> OpTransTuple -> OpTransTuple
 translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
         [] -> (ops', assoc_ops', cs')
         _ -> translateOpDecl im (syms', ats) (ops', assoc_ops', cs')
-      where sym = head $ Set.toList syms
-            tl = tail $ Set.toList syms
+      where sym : tl = Set.toList syms
             syms' = Set.fromList tl
             (cop_id, ot, _) = fromJust $ maudeSym2CASLOp im sym
             ops' = MapSet.insert cop_id ot ops
@@ -653,7 +652,7 @@ owiseEq2Formula im no_owise_form eq = form
 existencialNegationOtherEqs :: CAS.OP_SYMB -> [CAS.CASLTERM] ->
                                [Named CAS.CASLFORMULA] -> CAS.CASLFORMULA
 existencialNegationOtherEqs op ts forms = form
-      where ex_forms = foldr ((++) . existencialNegationOtherEq op ts) [] forms
+      where ex_forms = concatMap (existencialNegationOtherEq op ts) forms
             form = CAS.conjunct ex_forms
 
 {- | given a formula, if it refers to the same operator indicated by the
@@ -949,7 +948,7 @@ sortsTranslationList (s : ss) r = Set.insert (sort2id tops) res
 getTop :: MSign.SubsortRel -> MSym.Symbol -> [MSym.Symbol]
 getTop r tok = case succs of
            [] -> [tok]
-           toks@(_ : _) -> foldr ((++) . getTop r) [] toks
+           toks@(_ : _) -> concatMap (getTop r) toks
       where succs = Set.toList $ Rel.succs r tok
 
 -- | delete from the list of sorts those in the same kind that the parameter
@@ -1214,13 +1213,12 @@ it in the map of associative operators, generating the membership predicate
 induced by the operator declaration, and checking if it has the ctor
 attribute to introduce the operator in the generators sentence -}
 translateOpDecl' :: IdMap -> MSign.OpDecl -> OpTransTuple -> OpTransTuple
-translateOpDecl' im (syms, ats) (ops, assoc_ops, cs) = case tl of
-        [] -> (ops', assoc_ops', cs')
-        _ -> translateOpDecl' im (syms', ats) (ops', assoc_ops', cs')
-      where sym = head $ Set.toList syms
-            tl = tail $ Set.toList syms
-            syms' = Set.fromList tl
-            (cop_id, ot, _) = fromJust $ maudeSym2CASLOp' im sym
+translateOpDecl' im (syms, ats) (ops, assoc_ops, cs) =
+        if Set.null syms'
+        then (ops', assoc_ops', cs')
+        else translateOpDecl' im (syms', ats) (ops', assoc_ops', cs')
+      where (sym, syms') = Set.deleteFindMin syms
+            Just (cop_id, ot, _) = maudeSym2CASLOp' im sym
             ops' = MapSet.insert cop_id ot ops
             assoc_ops' = if any MAS.assoc ats
                          then MapSet.insert cop_id ot assoc_ops

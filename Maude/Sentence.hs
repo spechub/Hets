@@ -12,9 +12,8 @@ Definition of sentences for Maude.
 -}
 
 module Maude.Sentence (
-    -- * Types
-    -- ** The Sentence type
-    Sentence(..),
+    -- * The Sentence type
+    Sentence (..),
     -- * Contruction
     fromSpec,
     fromStatements,
@@ -28,11 +27,10 @@ import Maude.Printing ()
 
 import Common.Id (mkSimpleId, GetRange)
 import Common.Doc (vcat)
-import Common.DocUtils (Pretty(..))
+import Common.DocUtils (Pretty (..))
 
--- * Types
+-- * The Sentence type
 
--- ** The Sentence type
 -- | A 'Membership', 'Equation' or 'Rule'.
 data Sentence = Membership Membership
               | Equation Equation
@@ -46,39 +44,39 @@ instance GetRange Sentence
 instance Pretty Sentence where
     pretty sent = case sent of
         Membership mb -> pretty mb
-        Equation eq   -> pretty eq
-        Rule rl       -> pretty rl
+        Equation eq -> pretty eq
+        Rule rl -> pretty rl
     pretties = vcat . map pretty
 
 instance HasSorts Sentence where
     getSorts sen = case sen of
         Membership mb -> getSorts mb
-        Equation eq   -> getSorts eq
-        Rule rl       -> getSorts rl
+        Equation eq -> getSorts eq
+        Rule rl -> getSorts rl
     mapSorts mp sen = case sen of
         Membership mb -> Membership $ mapSorts mp mb
-        Equation eq   -> Equation $ mapSorts mp eq
-        Rule rl       -> Rule $ mapSorts mp rl
+        Equation eq -> Equation $ mapSorts mp eq
+        Rule rl -> Rule $ mapSorts mp rl
 
 instance HasOps Sentence where
     getOps sen = case sen of
         Membership mb -> getOps mb
-        Equation eq   -> getOps eq
-        Rule rl       -> getOps rl
+        Equation eq -> getOps eq
+        Rule rl -> getOps rl
     mapOps mp sen = case sen of
         Membership mb -> Membership $ mapOps mp mb
-        Equation eq   -> Equation $ mapOps mp eq
-        Rule rl       -> Rule $ mapOps mp rl
+        Equation eq -> Equation $ mapOps mp eq
+        Rule rl -> Rule $ mapOps mp rl
 
 instance HasLabels Sentence where
     getLabels sen = case sen of
         Membership mb -> getLabels mb
-        Equation eq   -> getLabels eq
-        Rule rl       -> getLabels rl
+        Equation eq -> getLabels eq
+        Rule rl -> getLabels rl
     mapLabels mp sen = case sen of
         Membership mb -> Membership $ mapLabels mp mb
-        Equation eq   -> Equation $ mapLabels mp eq
-        Rule rl       -> Rule $ mapLabels mp rl
+        Equation eq -> Equation $ mapLabels mp eq
+        Rule rl -> Rule $ mapLabels mp rl
 
 -- * Contruction
 
@@ -109,8 +107,7 @@ fromSubsort (Subsort s1 s2) = Membership mb
 fromOperator :: Operator -> [Sentence]
 fromOperator (Op op dom cod attrs) = let
     name = getName op
-    first = head dom
-    second = head $ tail dom
+    first : second : _ = dom
     convert attr = case attr of
         Assoc -> assocEq name first second cod
         Comm -> commEq name first second cod
@@ -183,4 +180,4 @@ const2kind t = t
 isRule :: Sentence -> Bool
 isRule sent = case sent of
     Rule _ -> True
-    _      -> False
+    _ -> False
