@@ -182,9 +182,8 @@ generateInductionLemmasAux b sort_gen_axs goals = let
                        in (c, (removeVarsort vs s $ sentence f, (vs, s))))
                     $ zip cons formulas
 
-                sName = (if null formulas then id else tail)
-                        (foldr ((++) . (++) "_" . senAttr . fst) "" formulas
-                         ++ "_induction")
+                sName = tail $ concatMap (('_' :) . senAttr . fst) formulas
+                        ++ "_induction"
             in makeNamed sName formula
          ) combis
     else map toIndPrem simpleIndGoals ++ rest2 ++ restGoals
