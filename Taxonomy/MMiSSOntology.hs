@@ -229,7 +229,7 @@ insertClass onto className optText superCs maybeType =
                    in foldl (insClass node1) g1 superCls
        in hasValue $ (addOnlyClasses onto cList) { getClassGraph = newgraph }
     getInsNode g cl clType =
-        maybe (let n = head (newNodes 1 g)
+        maybe (let n : _ = newNodes 1 g
                in (insNode (n,(cl,"", getClassNodeType clType)) g, n))
               (\ node -> (g, node))
               (findLNode g cl)
@@ -361,7 +361,7 @@ insertObject onto objectName defText className =
   where
     addObjectToGraph nam classNam g =
        case findLNode g nam of
-         Nothing -> let n = head (newNodes 1 g)
+         Nothing -> let n : _ = newNodes 1 g
                     in insNode (n, ("_" ++ nam ++ "_", classNam,
                                              OntoObject)) g
          Just _ -> g
@@ -589,5 +589,5 @@ addClassNodeWithoutDecl :: ClassGraph -> (String, ClassDecl) -> ClassGraph
 addClassNodeWithoutDecl g (cn, _) = case findLNode g cn of
     Just _ -> g
     Nothing ->
-      let node = head (newNodes 1 g)
+      let node : _ = newNodes 1 g
       in  insNode (node, (cn, "", OntoClass)) g
