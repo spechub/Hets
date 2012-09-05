@@ -738,6 +738,7 @@ transFORMULA siSo sign idMap tr form = case form of
   Relation phi1 c phi2 _ -> compTerm
     (if c == Equivalence then SPEquiv else SPImplies)
     [transFORMULA siSo sign idMap tr phi1, transFORMULA siSo sign idMap tr phi2]
+  Negation phi _ -> compTerm SPNot [transFORMULA siSo sign idMap tr phi]
   Atom b _ -> simpTerm $ if b then SPTrue else SPFalse
   Predication psymb args _ -> compTerm (spSym (transPREDSYMB idMap psymb))
            (map (transTERM siSo sign idMap tr) args)
@@ -750,10 +751,8 @@ transFORMULA siSo sign idMap tr form = case form of
                   showDoc s "\""))
           (\ si -> compTerm (spSym si) [transTERM siSo sign idMap tr t])
           (lookupSPId s CSort idMap)
-  Sort_gen_ax _ _ ->
-    error "SuleCFOL2SoftFOL.transFORMULA: Sort_gen_ax"
   _ -> error
-    ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '" ++ showDoc form "'")
+    $ "SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '" ++ showDoc form "'"
 
 transTERM :: FormExtension f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
           -> FormulaTranslator f e -> TERM f -> SPTerm
