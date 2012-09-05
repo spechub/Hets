@@ -378,7 +378,7 @@ if [ $OPT_CREATE -eq 0 ]; then
     rm -rf GMP Search mini Lottery
     mkdir -p programatica
     wget http://www.dfki.de/sks/hets/src-distribution/$PROGRAMATICA.tar.gz
-    tar -xf -z $PROGRAMATICA.tar.gz
+    tar -xf $PROGRAMATICA.tar.gz
     mv $PROGRAMATICA programatica/tools
     cd $OLD_PWD
     touch $DATA_DIR/clean.done
