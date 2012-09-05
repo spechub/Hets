@@ -1,18 +1,9 @@
-{- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher, see LICENSE.txt
+{-# LANGUAGE ExistentialQuantification #-}
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<optional description>
--}
-module Grothendieck (module Logic, module Grothendieck) where
+module Grothendieck where
 
 import Logic
+import Data.Dynamic
 
 data AnyLogic =
         forall id s m sen b sy .

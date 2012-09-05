@@ -1,20 +1,14 @@
-{- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher, see LICENSE.txt
+{-# LANGUAGE ScopedTypeVariables #-}
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<optional description>
--}
 module Parser where
 
-import Parsec
-import ParsecExpr
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Expr
+import Logic
+import Grothendieck
 import Structured
+
+import Data.Dynamic
 
 hetParse :: LogicGraph -> String -> SPEC
 hetParse (logics@((_,defaultLogic):_), translations) input =
@@ -33,16 +27,16 @@ hetParse (logics@((_,defaultLogic):_), translations) input =
                         setState (case lookup name logics of
                           Nothing -> error ("logic "++name++" unknown")
                           Just id -> id);
-                        spaces; return (\x->x) } )],
+                        spaces; return id } )],
            [Postfix (do
              string "with"; spaces;
               do string "logic"; spaces
                  name <- many1 alphaNum
-                 G_logic (id::src) <- getState
+                 G_logic (id :: src) <- getState
                  case lookup name translations of
                    Nothing -> error ("translation "++name++" unknown")
                    Just (G_LTR tr) ->
-                     case coerce(source tr)::Maybe src of
+                     case coerce(source tr) :: Maybe src of
                        Nothing -> error ("translation type mismatch")
                        Just _ -> do
                          setState (G_logic (target tr))

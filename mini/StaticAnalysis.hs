@@ -1,18 +1,10 @@
-{- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher, see LICENSE.txt
-
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<optional description>
--}
 module StaticAnalysis where
 
+import Logic
+import Grothendieck
 import Structured
+
+import Data.Dynamic
 
 staticAnalysis :: SPEC -> Maybe (Env, G_theory)
 staticAnalysis sp = staticAna1 initial_theory sp

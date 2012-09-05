@@ -1,19 +1,9 @@
-{- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher, see LICENSE.txt
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+module Logic where
 
-<optional description>
--}
-module Logic (module Logic, module Dynamic) where
-
-import Dynamic
-import Parsec
+import Data.Dynamic as Dynamic
+import Text.ParserCombinators.Parsec
 
 -- the identity of a language
 class (Show id, Typeable id) => Language id where
@@ -71,8 +61,7 @@ class (Category id sign morphism,
                        -> IO Proof_status
 
 -- logic translations
-data (Logic id1 s1 m1 sen1 b1 sy1, Logic id2 s2 m2 sen2 b2 sy2) =>
-     Logic_translation id1 s1 m1 sen1 b1 sy1 id2 s2 m2 sen2 b2 sy2 =
+data Logic_translation id1 s1 m1 sen1 b1 sy1 id2 s2 m2 sen2 b2 sy2 =
      Logic_translation { source :: id1,
                          target :: id2,
                          tr_sign :: s1 -> s2,

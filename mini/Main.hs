@@ -1,38 +1,23 @@
-{- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher, see LICENSE.txt
+{-# LANGUAGE ScopedTypeVariables, MultiParamTypeClasses, DeriveDataTypeable #-}
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<optional description>
--}
 module Main where
 
-import Parsec
-import ParsecExpr
+import Text.ParserCombinators.Parsec
 import Logic
 import Grothendieck
 import Parser
---import StaticAnalysis
-import Dynamic
+import StaticAnalysis
 
+import Data.Dynamic
 
-data L1 = L1 deriving Show
-data L2 = L2 deriving Show
-instance Typeable L1 where typeOf _ = mkAppTy (mkTyCon "L1") []
-instance Typeable L2 where typeOf _ = mkAppTy (mkTyCon "L2") []
+data L1 = L1 deriving (Typeable, Show)
+data L2 = L2 deriving (Typeable, Show)
+
 instance Language L1 where language_name _ = "L1"
 instance Language L2 where language_name _ = "L2"
 
-data B1 = B1 deriving (Show, Eq)
-data B2 = B2 deriving (Show, Eq)
-instance Typeable B1 where typeOf _ = mkAppTy (mkTyCon "B1") []
-instance Typeable B2 where typeOf _ = mkAppTy (mkTyCon "B2") []
-
+data B1 = B1 deriving (Typeable, Show, Eq)
+data B2 = B2 deriving (Typeable, Show, Eq)
 
 instance Category L1 B1 B1 where
          identity = undefined
