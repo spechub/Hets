@@ -14,6 +14,8 @@ OPTERR=0
 HETS_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
 HETS_LIB_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
 
+PROGRAMATICA=programatica-1.0.0.4
+
 DIRNAME="`dirname "$0"`"
 OLD_PWD="`cd $DIRNAME && pwd`"
 DISTRO_DIR=$OLD_PWD/debian
@@ -66,7 +68,7 @@ print_help()
   echo "Options:"
   echo "  -h Print this help"
   echo "  -i Try to install dependencies of this script
-     automatically using apt-get (note requires 
+     automatically using apt-get (note requires
      you to be root are to be able to call sudo)
   -a Execute commands for all available distros
   -s DISTRO
@@ -192,7 +194,7 @@ export_repo()
      exit 1
    fi
    git --git-dir=$HETS_REPO_FOLDER/.git svn info | grep "Last Changed Rev: " | cut -d':' -f2 | cut -d' ' -f2 > $DATA_DIR/revision_$SUFF
- else 
+ else
    echo "Export of $REPO is up to date"
  fi
 }
@@ -313,7 +315,7 @@ do
   $CMD create --basetgz "$OLD_PWD/pbuilder/${DIST}_base.tgz" --distribution $DIST --othermirror "deb http://archive.ubuntu.com/ubuntu $DIST main restricted universe multiverse|deb http://ppa.launchpad.net/hets/hets/ubuntu $DIST main" > "$OLD_PWD/logs/pbuilder_${DIST}_base.tgz.log`date +%s`"
   echo ":: Done"
 done
-fi 
+fi
 
 if [ $OPT_CLEAN -eq 0 ]; then
   echo "=== Cleaning"
@@ -374,8 +376,11 @@ if [ $OPT_CREATE -eq 0 ]; then
     make distclean 1>/dev/null 2>/dev/null
     rm programatica 2>/dev/null
     rm -rf GMP Search mini Lottery
+    mkdir -p programatica
+    wget http://www.dfki.de/sks/hets/src-distribution/$PROGRAMATICA.tar.gz
+    tar -xf -z $PROGRAMATICA.tar.gz
+    mv $PROGRAMATICA programatica/tools
     cd $OLD_PWD
-    tar -xf programatica.tar.gz -C $HETS_FOLDER
     touch $DATA_DIR/clean.done
   fi
   if [ ! -f $DATA_DIR/orig.done ]; then
@@ -438,7 +443,7 @@ if [ $OPT_UPLOAD -eq 0 ]; then
   if [ ! $OPT_CREATE -eq 0 ]; then
     echo "You need to (re-)create the packages for uploading"
     exit
-  fi 
+  fi
 
 echo "=== Uploading source packages"
 for DIST in $SELECTED_DISTROS
