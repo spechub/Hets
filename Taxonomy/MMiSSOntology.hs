@@ -38,10 +38,10 @@ module Taxonomy.MMiSSOntology
     , Cardinality
     , SuperRel
     , RelName
-    , RelationProperty(..)
-    , InsertMode(..)
-    , OntoObjectType(..)
-    , ClassType(..)
+    , RelationProperty (..)
+    , InsertMode (..)
+    , OntoObjectType (..)
+    , ClassType (..)
     , weither
     , fromWithError
     , WithError
@@ -103,7 +103,7 @@ fromWithError = either fail return
 
 data RelationProperty = InversOf String | Functional deriving (Eq, Read, Show)
 
-{--
+{- -
    AutoInsert: When a new class is to be inserted and the given
                SuperClass is not present in the ontology, it is
                automatically inserted with just it's name.  The caller
@@ -113,7 +113,7 @@ data RelationProperty = InversOf String | Functional deriving (Eq, Read, Show)
                present when a new relation is inserted.
    ThrowError: The insertClass or insertRelation function calls will
                throw an error instead of performing an autoinsert.
---}
+- -}
 
 data InsertMode = AutoInsert | ThrowError deriving (Eq, Read, Show)
 
@@ -184,7 +184,7 @@ dupErr str nam = mkMsgStr str nam
     " is already defined in Ontology.\n"
 
 insertClass :: MMiSSOntology -> ClassName -> DefaultText -> [SuperClass]
-            -> (Maybe ClassType) -> WithError MMiSSOntology
+            -> Maybe ClassType -> WithError MMiSSOntology
 insertClass onto className optText superCs maybeType =
   maybe
     (myInsertClass className optText superCs maybeType)
@@ -198,21 +198,21 @@ insertClass onto className optText superCs maybeType =
     $ Map.lookup className $ classes onto
   where
     myInsertClass cn opt super classType =
-      let class1 = (cn, (ClassDecl cn opt super [] False classType))
+      let class1 = (cn, ClassDecl cn opt super [] False classType)
       in case super of
-           []          -> addClasses' [class1] super
+           [] -> addClasses' [class1] super
            superClasses ->
                let undefSC =
                        filter ( \ sC -> not $ Map.member sC $ classes onto)
                               superClasses
                    sClassDecls =
-                       map ( \ sC -> (sC, (ClassDecl sC "" [] []
-                                              True Nothing))) undefSC
+                       map ( \ sC -> (sC, ClassDecl sC "" [] []
+                                              True Nothing)) undefSC
                in if null undefSC
                 then addClasses' [class1] super
                 else case mode onto of
                       AutoInsert -> addClasses' (class1 : sClassDecls) super
-                      _  -> insErr $ "class: " ++ cn ++
+                      _ -> insErr $ "class: " ++ cn ++
                                      " -> Superclass " ++ show undefSC
     addClasses' :: [(String, ClassDecl)] -> [SuperClass]
                 -> WithError MMiSSOntology
@@ -230,14 +230,14 @@ insertClass onto className optText superCs maybeType =
        in hasValue $ (addOnlyClasses onto cList) { getClassGraph = newgraph }
     getInsNode g cl clType =
         maybe (let n : _ = newNodes 1 g
-               in (insNode (n,(cl,"", getClassNodeType clType)) g, n))
+               in (insNode (n, (cl, "", getClassNodeType clType)) g, n))
               (\ node -> (g, node))
               (findLNode g cl)
     insClass node1 g1 sC =
         case getInsNode g1 sC Nothing of
-        -- at this place all autoinserted classes have type
-        -- Nothing (s. def. of sClassDecls)
-        (g2,node2) -> insEdge (node1, node2, "isa") g2
+        {- at this place all autoinserted classes have type
+        Nothing (s. def. of sClassDecls) -}
+        (g2, node2) -> insEdge (node1, node2, "isa") g2
     addIsaEdge node1 g1 =
         maybe g1 (\ sNode -> insEdge (node1, sNode, "isa") g1)
                  . findLNode g1
@@ -257,7 +257,7 @@ insertBaseRelation :: MMiSSOntology -> RelName -> DefaultText
 insertBaseRelation onto relName defText superRel card =
   case Map.lookup relName (relations onto) of
     Nothing -> myInsertRel relName defText superRel card
-    Just(RelationDecl _ _ _ _ _ auto) ->
+    Just (RelationDecl _ _ _ _ _ auto) ->
       case mode onto of
         AutoInsert ->
           if auto
@@ -267,7 +267,7 @@ insertBaseRelation onto relName defText superRel card =
   where
     addRels = hasValue . addRelations onto
     myInsertRel rn def super c =
-      let rel1 = (rn, (RelationDecl rn c def [] super False))
+      let rel1 = (rn, RelationDecl rn c def [] super False)
       in case super of
            Nothing -> addRels [rel1]
            Just superR ->
@@ -275,10 +275,10 @@ insertBaseRelation onto relName defText superRel card =
                then addRels [rel1]
                else case mode onto of
                       AutoInsert ->
-                          let rel2 = (superR, (RelationDecl superR Nothing ""
-                                               [] Nothing True))
+                          let rel2 = (superR, RelationDecl superR Nothing ""
+                                               [] Nothing True)
                           in addRels [rel1, rel2]
-                      _  -> insErr $ "relation: " ++ rn ++
+                      _ -> insErr $ "relation: " ++ rn ++
                                      " -> Superrelation " ++ superR
 
 addOnlyClasses :: MMiSSOntology -> [(String, ClassDecl)] -> MMiSSOntology
@@ -314,7 +314,7 @@ insertRelationType onto relName source target =
                let newType = RelationTypeDecl source target
                    newRel = (RelationDecl nam card defText
                              (typeList ++ [newType]) super inserted)
-               in  return (addRelations o2 [(nam, newRel)])
+               in return (addRelations o2 [(nam, newRel)])
      addEdge o3 (getClassGraph o3) relName source target
   where
     lookupClass o className =
@@ -329,13 +329,13 @@ insertRelationType onto relName source target =
                       newTypeList = deleteBy isEqualTypelist (relName, [])
                                      typeList ++ [(relName, newClassList)]
                   in return (addClasses o
-                             [(className, (ClassDecl cn defT sup newTypeList
-                                                     ai classType))])
+                             [(className, ClassDecl cn defT sup newTypeList
+                                                     ai classType)])
              else return o
     addEdge ontol g rel src tar =
       case findLNode g src of
         Nothing -> return ontol
-        Just snode  -> case findLNode g tar of
+        Just snode -> case findLNode g tar of
                          Nothing -> return ontol
                          Just tnode -> return ontol
                              { getClassGraph = insEdge (snode, tnode, rel) g }
@@ -347,7 +347,7 @@ insertObject :: MMiSSOntology -> ObjectName -> DefaultText -> ClassName
              -> WithError MMiSSOntology
 insertObject onto objectName defText className =
   do o1 <- if Map.member objectName (objects onto)
-             then hasError("Insertion of object: " ++ objectName
+             then hasError ("Insertion of object: " ++ objectName
                            ++ " already exists.")
              else return onto
      o2 <- insertClasses o1 className $
@@ -392,7 +392,7 @@ insertLink onto source target relName = do
     addObjectLinkToGraph src tar relNam g =
        case findLNode g $ "_" ++ src ++ "_" of
          Nothing -> g
-         Just sNode  -> case findLNode g $ "_" ++ tar ++ "_"  of
+         Just sNode -> case findLNode g $ "_" ++ tar ++ "_" of
                           Nothing -> g
                           Just tNode -> insEdge (sNode, tNode, relNam) g
 
@@ -421,7 +421,7 @@ exportOWL :: MMiSSOntology -> String
 exportOWL onto =
   let startStr = owlStart $ getOntologyName onto
       relationsStr = foldl writeOWLRelation "" $ Map.elems $ relations onto
-      classesStr =  foldl writeOWLClass "" $ Map.elems $ classes onto
+      classesStr = foldl writeOWLClass "" $ Map.elems $ classes onto
       objectsStr = foldl writeOWLObject "" $ Map.elems $ objects onto
       linksStr = foldl writeOWLLink "" $ objectLinks onto
       endStr = "</rdf:RDF>"
@@ -485,23 +485,23 @@ writePropRestriction inStr (relName, classList) =
 
 writeSingleClassRestriction :: String -> ClassName -> String
 writeSingleClassRestriction inStr className =
-    inStr ++ "<owl:Class rdf:about=\"#" ++ className ++  "\"/>\n"
+    inStr ++ "<owl:Class rdf:about=\"#" ++ className ++ "\"/>\n"
 
 writeOWLRelation :: String -> RelationDecl -> String
 writeOWLRelation inStr (RelationDecl relName card relText _ super _) =
  let start = "<owl:ObjectProperty rdf:ID=\"" ++ relName ++ "\">\n"
      propStr = case card of
-       Just "->"  -> "  <rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>"
-       Just ">"   -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
-       Just ">="  -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
-       Just "="   -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
+       Just "->" -> "  <rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>"
+       Just ">" -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
+       Just ">=" -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
+       Just "=" -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
            ++ "  <rdf:type rdf:resource=\"&owl;SymmetricProperty\"/>"
        Just "<->" -> "  <rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>"
            ++ "  <rdf:type rdf:resource=\"&owl;InverseFunctionalProperty\"/>"
        _ -> ""
      cardStr = case card of
                  Just str -> "  <MCardinality>" ++ latexToEntity str
-                              ++  "</MCardinality>\n"
+                              ++ "</MCardinality>\n"
                  Nothing -> ""
      defText = "  <MPhrase>" ++ relText ++ "</MPhrase>\n"
      superStr = case super of
@@ -558,9 +558,9 @@ applyTranslation :: String -> String -> (String, String) -> String
 applyTranslation outStr inStr (search, replaceStr)
    | lenInStr < lenSearch = outStr ++ inStr
    | isPrefixOf search inStr = applyTranslation (outStr ++ replaceStr)
-                     (genericDrop lenSearch inStr)  (search, replaceStr)
+                     (genericDrop lenSearch inStr) (search, replaceStr)
    | otherwise = applyTranslation (outStr ++ take 1 inStr)
-                     (drop 1 inStr)  (search, replaceStr)
+                     (drop 1 inStr) (search, replaceStr)
    where
    lenInStr = genericLength inStr
    lenSearch = genericLength search :: Integer
@@ -590,4 +590,4 @@ addClassNodeWithoutDecl g (cn, _) = case findLNode g cn of
     Just _ -> g
     Nothing ->
       let node : _ = newNodes 1 g
-      in  insNode (node, (cn, "", OntoClass)) g
+      in insNode (node, (cn, "", OntoClass)) g
