@@ -46,9 +46,9 @@ replacePropPredication mTerm pSymb frmIns =
                   (pSymbT, var, term) = fromJust mTerm
               in case qpn of
               Qual_pred_name symb (Pred_type s _) _
-                 | symb == pSymb && null ts && null s -> frmIns
-                 | isJust mTerm && symb == pSymbT -> case ts of
-                   Sorted_term (Qual_var v1 _ _) _ _ : args
+                  | symb == pSymb && null ts && null s -> frmIns
+                  | isJust mTerm && symb == pSymbT -> case ts of
+                   Qual_var v1 _ _ : args
                        | v1 == var -> Predication qpn (term : args) ps
                    _ -> Predication qpn ts ps
               _ -> Predication qpn ts ps

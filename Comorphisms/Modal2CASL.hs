@@ -251,7 +251,7 @@ mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
         Term_mod t ->
          let tt = getModTermSort rel
              vtt = mkVarDecl t_var tt
-             newFormula = quantForm b [vtt, vw1, vw2]
+             newFormula = quantForm b [vw1, vw2]
                           $ joinPreds b
                             (mkPredication
                              (mkQualPred rel $ mkPredType [tt, fws, fws])
