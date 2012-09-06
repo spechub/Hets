@@ -145,7 +145,7 @@ instance Pretty EM_FORMULA where
 instance Pretty EModalSign where
     pretty sign =
         let mds = modalities sign
-            tims = time_modalities sign
+            tims = timeMods sign
             terms = termMods sign
             nms = nominals sign in
         printSetMap (keyword flexibleS <+> keyword opS) empty

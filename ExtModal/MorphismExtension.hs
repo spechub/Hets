@@ -67,7 +67,7 @@ inducedEMsign sm om pm m sig =
   { flexOps = inducedOpMap sm om $ flexOps ms
   , flexPreds = inducedPredMap sm pm $ flexPreds ms
   , modalities = Set.map msm $ modalities ms
-  , time_modalities = Set.map msm $ time_modalities ms
+  , timeMods = Set.map msm $ timeMods ms
   , termMods = Set.map (\ i -> Map.findWithDefault i i sm) tmods
   , nominals = Set.map (\ i -> Map.findWithDefault i i $ nom_map m)
     $ nominals ms

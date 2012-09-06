@@ -72,7 +72,7 @@ transSig sign = let
     rigOps' = diffOpMapSet (opMap sign) flexibleOps
     rigPreds' = diffMapSet (predMap sign) flexiblePreds
     termMs = termMods extInf
-    timeMs = time_modalities extInf
+    timeMs = timeMods extInf
     rels = Set.fold (\ m ->
       insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
       MapSet.empty $ modalities extInf

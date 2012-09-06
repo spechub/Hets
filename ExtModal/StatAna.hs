@@ -203,12 +203,12 @@ addTermMod fullSign tmi sgn = let
   else Result [mkDiag Error "unknown sort in term modality" tmi] $ Just sgn
 
 addTimeMod :: Id -> EModalSign -> Result EModalSign
-addTimeMod tmi sgn = let tm = time_modalities sgn in
+addTimeMod tmi sgn = let tm = timeMods sgn in
   if Set.member tmi tm
   then Result [mkDiag Hint "repeated time modality" tmi] $ Just sgn
   else if Set.size tm >= 1
        then Result [mkDiag Hint "more than one time modality" tmi] $ Just sgn
-       else return sgn { time_modalities = Set.insert tmi tm }
+       else return sgn { timeMods = Set.insert tmi tm }
 
 addMod :: Id -> EModalSign -> Result EModalSign
 addMod mi sgn =
