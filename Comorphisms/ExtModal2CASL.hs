@@ -13,8 +13,12 @@ module Comorphisms.ExtModal2CASL where
 
 import Logic.Logic
 import Logic.Comorphism
+
 import Common.ProofTree
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
+
+import qualified Data.Set as Set
 
 -- CASL
 import CASL.Logic_CASL
@@ -56,7 +60,7 @@ instance Comorphism ExtModal2CASL
     has_model_expansion ExtModal2CASL = True
     is_weakly_amalgamable ExtModal2CASL = True
 
--- | add world arguments to flexible ops and preds
+-- | add world arguments to flexible ops and preds; and add relations
 transSig :: ExtModalSign -> CASLSign
 transSig sign = let
     s1 = embedSign () sign
@@ -67,8 +71,13 @@ transSig sign = let
     flexPreds' = addWorldPred world addPlace flexiblePreds
     rigOps' = diffOpMapSet (opMap sign) flexibleOps
     rigPreds' = diffMapSet (predMap sign) flexiblePreds
+    termMs = termMods extInf
+    timeMs = time_modalities extInf
+    rels = Set.fold (\ m ->
+      insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
+      MapSet.empty $ modalities extInf
     in s1
     { sortRel = Rel.insertKey world $ sortRel sign
     , opMap = addOpMapSet flexOps' rigOps'
     , assocOps = diffOpMapSet (assocOps sign) flexibleOps
-    , predMap = addMapSet flexPreds' rigPreds'}
+    , predMap = addMapSet rels $ addMapSet flexPreds' rigPreds'}
