@@ -31,6 +31,12 @@ data EModalSign = EModalSign
         , nominals :: Set.Set SIMPLE_ID
         } deriving (Show, Eq, Ord)
 
+nomPType :: PredType
+nomPType = PredType []
+
+nomPId :: Token -> Id
+nomPId t = mkId [t]
+
 correctSign :: Sign f EModalSign -> Sign f EModalSign
 correctSign s = let e = extendedInfo s in
   s { extendedInfo = e

@@ -14,6 +14,7 @@ module Comorphisms.ExtModal2CASL where
 import Logic.Logic
 import Logic.Comorphism
 
+import Common.Id
 import Common.ProofTree
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
@@ -60,6 +61,12 @@ instance Comorphism ExtModal2CASL
     has_model_expansion ExtModal2CASL = True
     is_weakly_amalgamable ExtModal2CASL = True
 
+nomName :: Token -> Id
+nomName t = Id [genToken "N"] [mkId [t]] $ tokPos t
+
+nomOpType :: OpType
+nomOpType = mkTotOpType [] world
+
 -- | add world arguments to flexible ops and preds; and add relations
 transSig :: ExtModalSign -> CASLSign
 transSig sign = let
@@ -71,13 +78,17 @@ transSig sign = let
     flexPreds' = addWorldPred world addPlace flexiblePreds
     rigOps' = diffOpMapSet (opMap sign) flexibleOps
     rigPreds' = diffMapSet (predMap sign) flexiblePreds
+    noms = nominals extInf
+    noNomsPreds = Set.fold (\ n -> MapSet.delete (nomPId n) nomPType)
+      rigPreds' noms
     termMs = termMods extInf
     timeMs = timeMods extInf
     rels = Set.fold (\ m ->
       insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
       MapSet.empty $ modalities extInf
+    nomOps = Set.fold (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
     in s1
     { sortRel = Rel.insertKey world $ sortRel sign
-    , opMap = addOpMapSet flexOps' rigOps'
+    , opMap = addOpMapSet flexOps' nomOps
     , assocOps = diffOpMapSet (assocOps sign) flexibleOps
-    , predMap = addMapSet rels $ addMapSet flexPreds' rigPreds'}
+    , predMap = addMapSet rels $ addMapSet flexPreds' noNomsPreds}

@@ -183,8 +183,7 @@ basItemStatAna mix basic_item = case basic_item of
   ModItem md -> fmap ModItem $ modItemStatAna mix md
   Nominal_decl anno_list pos -> do
     mapM_ (updateExtInfo . addNom . item) anno_list
-    mapM_ (addPred (emptyAnno ()) (PredType []) . mkId . (: []) . item)
-       anno_list
+    mapM_ (addPred (emptyAnno ()) nomPType . nomPId . item) anno_list
     return $ Nominal_decl anno_list pos
 
 addTermMod :: Sign f e -> Id -> EModalSign -> Result EModalSign

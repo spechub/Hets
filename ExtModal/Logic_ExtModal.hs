@@ -36,7 +36,6 @@ import CASL.Logic_CASL ()
 import Logic.Logic
 
 import Common.DocUtils
-import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Set as Set
 
@@ -104,7 +103,7 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
         print_sign ExtModal sig = let e = extendedInfo sig in pretty sig
           { opMap = diffOpMapSet (opMap sig) $ flexOps e
           , predMap = Set.fold (\ i ->
-                  MapSet.delete (simpleIdToId i) (PredType []))
+                  MapSet.delete (nomPId i) nomPType)
             (diffMapSet (predMap sig) $ flexPreds e) $ nominals e
           }
         sym_of ExtModal = symOf
