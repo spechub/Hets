@@ -1,12 +1,12 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
-Copyright   :  (c) Mihaela Turcu, DFKI 2012
+Copyright   :  (c) Christian Maeder, DFKI 2012
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  m.turcu@jacobs-university.de
-Stability   :  
-Portability :  
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  non-portable (MPTC-FD)
 -}
 
 module Comorphisms.ExtModal2CASL where
@@ -34,7 +34,7 @@ data ExtModal2CASL = ExtModal2CASL deriving (Show)
 instance Language ExtModal2CASL
 
 instance Comorphism ExtModal2CASL
-               ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS 
+               ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
                SYMB_MAP_ITEMS ExtModalSign ExtModalMorph
                Symbol RawSymbol ()
                CASL CASL_Sublogics
@@ -58,8 +58,8 @@ instance Comorphism ExtModal2CASL
 
 
 transSig :: ExtModalSign -> CASLSign
-transSig sign = let 
-   s1 = embedSign () sign 
+transSig sign = let
+   s1 = embedSign () sign
    _modExt = extendedInfo sign
    fws = mkId [mkSimpleId "g_World"]
    s2 = s1 {sortRel = Rel.insertKey fws $ sortRel s1}

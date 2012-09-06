@@ -33,6 +33,7 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Utils
+import CASL.World
 
 -- ModalCASL
 import Modal.Logic_Modal
@@ -95,36 +96,36 @@ data ModMapEnv = MME
 
 transSig :: MSign -> ModMapEnv
 transSig sign =
-   let sorSet = sortSet sign
-       fws = freshWorldSort sorSet
-       flexOps' = MapSet.fromMap . Map.foldWithKey (addWorld_OP fws)
-                                    Map.empty $ MapSet.toMap flexibleOps
+   let extInf = extendedInfo sign
+       flexibleOps = flexOps extInf
+       flexiblePreds = flexPreds extInf
+       fws = world
+       flexOps' = addWorldOp fws addPlace flexibleOps
        flexPreds' = MapSet.fromMap . addWorldRels True relsTermMod
-                    . addWorldRels False relsMod
-                    . Map.foldWithKey (addWorld_PRED fws)
-                                    Map.empty $ MapSet.toMap flexiblePreds
-       flexibleOps = flexOps $ extendedInfo sign
-       flexiblePreds = flexPreds $ extendedInfo sign
+                    . addWorldRels False relsMod . MapSet.toMap
+                    $ addWorldPred fws addPlace flexiblePreds
        rigOps' = diffOpMapSet (opMap sign) flexibleOps
        rigPreds' = diffMapSet (predMap sign) flexiblePreds
        relations = Map.union relsMod relsTermMod
        genRels f = Map.foldWithKey (\ me _ nm -> f me nm) Map.empty
        genModFrms f = Map.foldWithKey f []
-       relSymbS me = Id [mkSimpleId "g_R"] [mkId [me]] nullRange
-       relSymbT me = Id [mkSimpleId "g_R_t"] [me] nullRange
+       relSymbS me = Id [genToken "R"] [mkId [me]] $ tokPos me
+       relSymbT me = Id [genToken "R_t"] [me] $ rangeOfId me
+       modiesInf = modies extInf
+       trmMods = termModies extInf
        relsMod = genRels (\ me nm -> Map.insert (SimpleM me) (relSymbS me) nm)
-                         (modies $ extendedInfo sign)
+                         modiesInf
        relsTermMod = genRels (\ me nm ->
                                   Map.insert (SortM me) (relSymbT me) nm)
-                             (termModies $ extendedInfo sign)
+                             trmMods
        relModFrms = genModFrms (\ me frms trFrms -> trFrms ++
                                          transSchemaMFormulas partMME
                                                   fws (relSymbS me) frms)
-                               (modies $ extendedInfo sign)
+                               modiesInf
        relTermModFrms = genModFrms (\ me frms trFrms -> trFrms ++
                                          transSchemaMFormulas partMME
                                                   fws (relSymbT me) frms)
-                               (termModies $ extendedInfo sign)
+                               trmMods
        addWorldRels isTermMod rels mp =
               let argSorts rs = if isTermMod
                              then [getModTermSort rs, fws, fws]
@@ -217,9 +218,8 @@ mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
    = let trans_f1 = mkId [mkSimpleId "Placeholder for Formula"]
          t_var = mkSimpleId "Placeholder for Modality Term"
          (w1, w2, newVars) = assert (not (null vars))
-                           (let nVars =
-                                 freshWorldVar vars : vars
-                            in (head vars, head nVars, nVars))
+                           (let hd = freshWorldVar vars
+                            in (head vars, hd, hd : vars))
          getRel mo =
               Map.findWithDefault
                     (error ("Modal2CASL: Undefined modality " ++ show mo))
@@ -291,12 +291,6 @@ mapTERM mapEnv@(MME {worldSort = fws, flexiOps = fOps}) vars t = case t of
                    (mapTERM mapEnv vars t2) ps
     _ -> error "Modal2CASL.mapTERM"
 
-addPlace :: Id -> Id
-addPlace i@(Id ts ids ps)
-    | isMixfix i = Id ((\ (x, y) -> x ++ mkSimpleId place : y)
-                          (break isPlace ts)) ids ps
-    | otherwise = i
-
 modalityToModName :: MODALITY -> ModName
 modalityToModName (Simple_mod sid) = SimpleM sid
 modalityToModName (Term_mod t) =
@@ -307,28 +301,9 @@ modalityToModName (Term_mod t) =
 sortedWorldTerm :: SORT -> VAR -> TERM ()
 sortedWorldTerm fws v = Sorted_term (Qual_var v fws nullRange) fws nullRange
 
-addWorld_OP :: SORT -> OP_NAME -> Set.Set OpType
-            -> Map.Map OP_NAME (Set.Set OpType)
-            -> Map.Map OP_NAME (Set.Set OpType)
-addWorld_OP = addWorld_ (\ ws t -> t { opArgs = ws : opArgs t})
-
-addWorld_PRED :: SORT -> PRED_NAME -> Set.Set PredType
-              -> Map.Map PRED_NAME (Set.Set PredType)
-              -> Map.Map PRED_NAME (Set.Set PredType)
-addWorld_PRED = addWorld_ (\ ws t -> t {predArgs = ws : predArgs t})
-
-addWorld_ :: (Ord a) => (SORT -> a -> a)
-          -> SORT -> Id -> Set.Set a
-          -> Map.Map OP_NAME (Set.Set a)
-          -> Map.Map OP_NAME (Set.Set a)
-addWorld_ f fws k set = Map.insert (addPlace k) (Set.map (f fws) set)
-
-freshWorldSort :: Set.Set SORT -> SORT
-freshWorldSort _sorSet = mkId [mkSimpleId "g_World"]
-
 -- List of variables for worlds
 worldVars :: [SIMPLE_ID]
-worldVars = map (mkSimpleId . ("g_w" ++) . show) [(1 :: Int) ..]
+worldVars = map (genNumVar "w") [1 ..]
 
 freshWorldVar :: [SIMPLE_ID] -> SIMPLE_ID
 freshWorldVar vs = head $ filter notKnown worldVars
