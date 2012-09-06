@@ -14,7 +14,6 @@ module Comorphisms.ExtModal2CASL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.ProofTree
-import Common.Id
 import qualified Common.Lib.Rel as Rel
 
 -- CASL
@@ -23,11 +22,12 @@ import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
+import CASL.World
 
 -- ExtModalCASL
 import ExtModal.Logic_ExtModal
 import ExtModal.AS_ExtModal
---import ExtModal.ExtModalSign
+import ExtModal.ExtModalSign
 import ExtModal.Sublogic
 
 data ExtModal2CASL = ExtModal2CASL deriving (Show)
@@ -56,24 +56,19 @@ instance Comorphism ExtModal2CASL
     has_model_expansion ExtModal2CASL = True
     is_weakly_amalgamable ExtModal2CASL = True
 
-
+-- | add world arguments to flexible ops and preds
 transSig :: ExtModalSign -> CASLSign
 transSig sign = let
-   s1 = embedSign () sign
-   _modExt = extendedInfo sign
-   fws = mkId [mkSimpleId "g_World"]
-   s2 = s1 {sortRel = Rel.insertKey fws $ sortRel s1}
-   in s2
-
-
-
-{-
-
-       flexOps' = MapSet.fromMap . Map.foldWithKey (addWorld_OP fws)
-                                    Map.empty $ MapSet.toMap flexibleOps
-       flexPreds' = MapSet.fromMap . addWorldRels True relsTermMod
-                    . addWorldRels False relsMod
-                    . Map.foldWithKey (addWorld_PRED fws)
-                                    Map.empty $ MapSet.toMap
--}
-
+    s1 = embedSign () sign
+    extInf = extendedInfo sign
+    flexibleOps = flexOps extInf
+    flexiblePreds = flexPreds extInf
+    flexOps' = addWorldOp world addPlace flexibleOps
+    flexPreds' = addWorldPred world addPlace flexiblePreds
+    rigOps' = diffOpMapSet (opMap sign) flexibleOps
+    rigPreds' = diffMapSet (predMap sign) flexiblePreds
+    in s1
+    { sortRel = Rel.insertKey world $ sortRel sign
+    , opMap = addOpMapSet flexOps' rigOps'
+    , assocOps = diffOpMapSet (assocOps sign) flexibleOps
+    , predMap = addMapSet flexPreds' rigPreds'}
