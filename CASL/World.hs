@@ -43,13 +43,19 @@ addWorld :: Ord a => (a -> a) -> (Id -> Id) -> MapSet.MapSet Id a
 addWorld f ren =
   MapSet.fromMap . Map.mapKeys ren . MapSet.toMap . MapSet.map f
 
--- | the changed op map
-addWorldOp :: SORT -> (Id -> Id) -> OpMap -> OpMap
-addWorldOp ws = addWorld $ \ t -> t { opArgs = ws : opArgs t}
+worldOpType :: SORT -> OpType -> OpType
+worldOpType ws t = t { opArgs = ws : opArgs t}
 
 -- | the changed op map
+addWorldOp :: SORT -> (Id -> Id) -> OpMap -> OpMap
+addWorldOp = addWorld . worldOpType
+
+worldPredType :: SORT -> PredType -> PredType
+worldPredType ws t = t { predArgs = ws : predArgs t}
+
+-- | the changed pred map
 addWorldPred :: SORT -> (Id -> Id) -> PredMap -> PredMap
-addWorldPred ws = addWorld $ \ t -> t { predArgs = ws : predArgs t}
+addWorldPred = addWorld . worldPredType
 
 -- | the renaming as part of a morphism
 renMorphism :: Ord a => (Id -> Id) -> MapSet.MapSet Id a -> Map.Map (Id, a) Id

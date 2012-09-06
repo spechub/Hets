@@ -294,9 +294,9 @@ mapTERM mapEnv@(MME {worldSort = fws, flexiOps = fOps}) vars t = case t of
 modalityToModName :: MODALITY -> ModName
 modalityToModName (Simple_mod sid) = SimpleM sid
 modalityToModName (Term_mod t) =
-    case t of
-    Sorted_term _ srt _ -> SortM srt
-    _ -> error ("Modal2CASL: modalityToModName: Wrong term: " ++ show t)
+    case optTermSort t of
+    Just srt -> SortM srt
+    Nothing -> error ("Modal2CASL: modalityToModName: Wrong term: " ++ show t)
 
 sortedWorldTerm :: SORT -> VAR -> TERM ()
 sortedWorldTerm fws v = Sorted_term (Qual_var v fws nullRange) fws nullRange
