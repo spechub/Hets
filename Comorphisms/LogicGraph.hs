@@ -82,7 +82,7 @@ import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CASL2Modal
 import Comorphisms.CASL2ExtModal
 import Comorphisms.Modal2CASL
-import Comorphisms.ExtModal2CASL ()
+import Comorphisms.ExtModal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
@@ -151,6 +151,7 @@ comorphismList =
     , Comorphism CASL2Modal
     , Comorphism CASL2ExtModal
     , Comorphism Modal2CASL
+    , Comorphism ExtModal2CASL
     , Comorphism CASL2CoCASL
     , Comorphism CASL2CspCASL
     , Comorphism CspCASL2Modal
