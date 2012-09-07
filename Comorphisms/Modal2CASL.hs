@@ -213,8 +213,6 @@ mapSen mapEnv@(MME {worldSort = fws, flexiPreds = fPreds}) vars
 mapMSen :: ModMapEnv -> [VAR] -> M_FORMULA -> CASLFORMULA
 mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
    = let w1 : w2 : tl = vars
-         -- keep the current world in head
-         newVars = w1 : tl
          getRel mo =
               Map.findWithDefault
                     (error ("Modal2CASL: Undefined modality " ++ show mo))
@@ -234,8 +232,8 @@ mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
             [toQualVar vw1, toQualVar vw2]
         Term_mod t -> mkPredication
             (mkQualPred rel $ mkPredType [getModTermSort rel, fws, fws])
-            [mapTERM mapEnv newVars t, toQualVar vw1, toQualVar vw2]
-       ) $ mapSen mapEnv newVars f1
+            [mapTERM mapEnv (w1 : tl) t, toQualVar vw1, toQualVar vw2]
+       ) $ mapSen mapEnv (w2 : tl) f1
 
 -- head [VAR] is always the current world variable (for Application)
 mapTERM :: ModMapEnv -> [VAR] -> TERM M_FORMULA -> TERM ()
