@@ -212,9 +212,9 @@ mapSen mapEnv@(MME {worldSort = fws, flexiPreds = fPreds}) vars
 
 mapMSen :: ModMapEnv -> [VAR] -> M_FORMULA -> CASLFORMULA
 mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
-   = let hd : w1 : w2 : tl = vars
+   = let w1 : w2 : tl = vars
          -- keep the current world in head
-         newVars = hd : tl
+         newVars = w1 : tl
          getRel mo =
               Map.findWithDefault
                     (error ("Modal2CASL: Undefined modality " ++ show mo))
@@ -223,13 +223,11 @@ mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
          vw2 = mkVarDecl w2 fws
          mkPredType ts = Pred_type ts nullRange
          joinPreds b t1 t2 = if b then mkImpl t1 t2 else conjunct [t1, t2]
-         quantForm b vs = if b then mkForall vs else
-           mkForall (init vs) . mkExist [last vs]
      in
      case f of
      BoxOrDiamond b moda f1 _ ->
        let rel = getRel moda pwRelMap
-       in quantForm b [vw1, vw2] $ joinPreds b
+       in (if b then mkForall else mkExist) [vw2] $ joinPreds b
        (case moda of
         Simple_mod _ -> mkPredication
             (mkQualPred rel $ mkPredType [fws, fws])
