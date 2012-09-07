@@ -32,7 +32,6 @@ import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
-import CASL.Utils
 import CASL.World
 
 -- ModalCASL
@@ -47,8 +46,6 @@ import Modal.ModalSystems
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
-import Control.Exception (assert)
-
 
 -- | The identity of the comorphism
 data Modal2CASL = Modal2CASL deriving (Show)
@@ -173,8 +170,8 @@ mapSenTop mapEnv@(MME {worldSort = fws}) f =
     Quantification q@Universal vs frm ps ->
         Quantification q (qwv : vs) (mapSen mapEnv wvs frm) ps
     f1 -> Quantification Universal [qwv] (mapSen mapEnv wvs f1) nullRange
-    where qwv = Var_decl wvs fws nullRange
-          wvs = [head worldVars]
+    where qwv = mkVarDecl v1 fws
+          wvs@(v1 : _) = worldVars
 
 
 -- head [VAR] is always the current world variable (for predication)
@@ -193,7 +190,7 @@ mapSen mapEnv@(MME {worldSort = fws, flexiPreds = fPreds}) vars
                (mapTERM mapEnv vars t1) e (mapTERM mapEnv vars t2) ps
            Predication pn as qs ->
                let as' = map (mapTERM mapEnv vars) as
-                   fwsTerm = sortedWorldTerm fws (head vars)
+                   fwsTerm = mkVarTerm (head vars) fws
                    (pn', as'') =
                        case pn of
                        Pred_name _ -> error "Modal2CASL: untyped predication"
@@ -215,51 +212,32 @@ mapSen mapEnv@(MME {worldSort = fws, flexiPreds = fPreds}) vars
 
 mapMSen :: ModMapEnv -> [VAR] -> M_FORMULA -> CASLFORMULA
 mapMSen mapEnv@(MME {worldSort = fws, modalityRelMap = pwRelMap}) vars f
-   = let trans_f1 = mkId [mkSimpleId "Placeholder for Formula"]
-         t_var = mkSimpleId "Placeholder for Modality Term"
-         (w1, w2, newVars) = assert (not (null vars))
-                           (let hd = freshWorldVar vars
-                            in (head vars, hd, hd : vars))
+   = let hd : w1 : w2 : tl = vars
+         -- keep the current world in head
+         newVars = hd : tl
          getRel mo =
               Map.findWithDefault
                     (error ("Modal2CASL: Undefined modality " ++ show mo))
                     (modalityToModName mo)
-         trans' mTerm propSymb trForm nvs f1 =
-             replacePropPredication mTerm
-                                    propSymb (mapSen mapEnv nvs f1) trForm
-         mapT = mapTERM mapEnv newVars
          vw1 = mkVarDecl w1 fws
          vw2 = mkVarDecl w2 fws
          mkPredType ts = Pred_type ts nullRange
          joinPreds b t1 t2 = if b then mkImpl t1 t2 else conjunct [t1, t2]
          quantForm b vs = if b then mkForall vs else
            mkForall (init vs) . mkExist [last vs]
-         transPred = mkPredication (mkQualPred trans_f1 $ mkPredType []) []
      in
      case f of
      BoxOrDiamond b moda f1 _ ->
-       let rel = getRel moda pwRelMap in
-        case moda of
-        Simple_mod _ -> let
-          newFormula = quantForm b [vw1, vw2]
-                          $ joinPreds b
-                            (mkPredication
-                             (mkQualPred rel $ mkPredType [fws, fws])
-                             [toQualVar vw1, toQualVar vw2])
-                          transPred
-          in trans' Nothing trans_f1 newFormula newVars f1
-        Term_mod t ->
-         let tt = getModTermSort rel
-             vtt = mkVarDecl t_var tt
-             newFormula = quantForm b [vw1, vw2]
-                          $ joinPreds b
-                            (mkPredication
-                             (mkQualPred rel $ mkPredType [tt, fws, fws])
-                             [toQualVar vtt, toQualVar vw1, toQualVar vw2])
-                          transPred
-         in trans' (Just (rel, t_var, mapT t))
-                                          trans_f1 newFormula
-                                          newVars f1
+       let rel = getRel moda pwRelMap
+       in quantForm b [vw1, vw2] $ joinPreds b
+       (case moda of
+        Simple_mod _ -> mkPredication
+            (mkQualPred rel $ mkPredType [fws, fws])
+            [toQualVar vw1, toQualVar vw2]
+        Term_mod t -> mkPredication
+            (mkQualPred rel $ mkPredType [getModTermSort rel, fws, fws])
+            [mapTERM mapEnv newVars t, toQualVar vw1, toQualVar vw2]
+       ) $ mapSen mapEnv newVars f1
 
 -- head [VAR] is always the current world variable (for Application)
 mapTERM :: ModMapEnv -> [VAR] -> TERM M_FORMULA -> TERM ()
@@ -267,7 +245,7 @@ mapTERM mapEnv@(MME {worldSort = fws, flexiOps = fOps}) vars t = case t of
     Qual_var v ty ps -> Qual_var v ty ps
     Application opsym as qs ->
         let as' = map (mapTERM mapEnv vars) as
-            fwsTerm = sortedWorldTerm fws (head vars)
+            fwsTerm = mkVarTerm (head vars) fws
             addFws (Op_type k sorts res pps) =
                 Op_type k (fws : sorts) res pps
             (opsym', as'') =
@@ -298,13 +276,6 @@ modalityToModName (Term_mod t) =
     Just srt -> SortM srt
     Nothing -> error ("Modal2CASL: modalityToModName: Wrong term: " ++ show t)
 
-sortedWorldTerm :: SORT -> VAR -> TERM ()
-sortedWorldTerm fws v = Sorted_term (Qual_var v fws nullRange) fws nullRange
-
 -- List of variables for worlds
 worldVars :: [SIMPLE_ID]
 worldVars = map (genNumVar "w") [1 ..]
-
-freshWorldVar :: [SIMPLE_ID] -> SIMPLE_ID
-freshWorldVar vs = head $ filter notKnown worldVars
-    where notKnown v = notElem v vs

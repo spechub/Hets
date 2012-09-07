@@ -25,35 +25,6 @@ import Common.Id
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
-{- |
-replacePropPredication replaces a propositional predication of a
-given symbol with an also given formula. Optionally a given variable
-is replaced in the predication of another predicate symbol with a
-given term, the variable must occur in the first argument position
-of the predication. -}
-
-replacePropPredication :: Maybe (PRED_NAME, VAR, TERM ())
-                        {- ^ Just (pSymb,x,t) replace x
-                        with t in Predication of pSymb -}
-                       -> PRED_NAME -- ^ propositional symbol to replace
-                       -> FORMULA () -- ^ Formula to insert
-                       -> FORMULA () -- ^ Formula with placeholder
-                       -> FORMULA ()
-replacePropPredication mTerm pSymb frmIns =
-    foldFormula (mapRecord $ const ())
-        { foldPredication = \ orig _ ts _ ->
-              let Predication qpn _ ps = orig
-                  (pSymbT, var, term) = fromJust mTerm
-              in case qpn of
-              Qual_pred_name symb (Pred_type s _) _
-                  | symb == pSymb && null ts && null s -> frmIns
-                  | isJust mTerm && symb == pSymbT -> case ts of
-                   Qual_var v1 _ _ : args
-                       | v1 == var -> Predication qpn (term : args) ps
-                   _ -> Predication qpn ts ps
-              _ -> Predication qpn ts ps
-         , foldConditional = \ t _ _ _ _ -> t }
-
 type FreshVARMap f = Map.Map VAR (TERM f)
 
 {- | buildVMap constructs a mapping between a list of old variables and
