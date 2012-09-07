@@ -169,7 +169,7 @@ mapSenTop mapEnv@(MME {worldSort = fws}) f =
     case f of
     Quantification q@Universal vs frm ps ->
         Quantification q (qwv : vs) (mapSen mapEnv wvs frm) ps
-    f1 -> Quantification Universal [qwv] (mapSen mapEnv wvs f1) nullRange
+    f1 -> mkForall [qwv] (mapSen mapEnv wvs f1)
     where qwv = mkVarDecl v1 fws
           wvs@(v1 : _) = worldVars
 
