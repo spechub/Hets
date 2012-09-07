@@ -244,7 +244,7 @@ instance PrintTPTP SPLogState where
       SPStateUnknown -> "unknown"
 
 instance PrintTPTP SPSetting where
-    printTPTP s = spCommentText "Option  " "" <+> case s of
+    printTPTP s = spCommentText "Option " "" <+> case s of
       SPGeneralSettings e -> text $ show e
       SPSettings _ settingText -> hsep $ map printTPTP settingText
 
