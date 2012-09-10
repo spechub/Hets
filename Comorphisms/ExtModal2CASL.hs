@@ -96,8 +96,8 @@ transSig sign = let
     , predMap = addMapSet rels $ addMapSet flexPreds' noNomsPreds}
 
 data Args = Args
-  { currentW, futureW :: TERM ()  -- world variables
-  , currentN, futureN :: TERM ()  -- world numbering
+  { currentW, futureW :: Int  -- world variables
+  , currentN, futureN :: Int  -- world numbering
   , transPredName :: Id
   , modSig :: ExtModalSign
   }
@@ -110,24 +110,23 @@ natSort = stringToId "Nat"
 transTop :: ExtModalSign -> CASLSign -> FORMULA EM_FORMULA -> FORMULA ()
 transTop msig csig = let
     vd = mkVarDecl (genNumVar "w" 1) world
-    vt = toQualVar vd
     vn = mkVarDecl (genNumVar "n" 1) natSort
-    nt = toQualVar vn
     in stripQuant csig . mkForall [vd, vn]
-           . transMF (Args vt vt nt nt (stringToId "Z") msig)
+           . transMF (Args 1 1 1 1 (stringToId "Z") msig)
 
 transMF :: Args -> FORMULA EM_FORMULA -> FORMULA ()
 transMF as = let
     extInf = extendedInfo $ modSig as
+    currW = mkVarTerm (genNumVar "w" $ futureW as) world
     in foldFormula (mapRecord $ const ())
   { foldPredication = \ _ ps args r -> case ps of
       Qual_pred_name pn pTy@(Pred_type srts q) p
         | MapSet.member pn (toPredType pTy) $ flexPreds extInf
           -> Predication
             (Qual_pred_name (addPlace pn) (Pred_type (world : srts) q) p)
-            (futureW as : args) r
+            (currW : args) r
         | null srts && Set.member pn (nominals extInf)
-          -> mkStEq (futureW as) $ mkAppl
+          -> mkStEq (currW) $ mkAppl
              (mkQualOp (nomName pn) $ toOP_TYPE nomOpType) []
       _ -> Predication ps args r
   , foldExtFORMULA = \ _ f -> transEMF as f
@@ -136,12 +135,17 @@ transMF as = let
         | MapSet.member on (toOpType oTy) $ flexOps extInf
           -> Application
             (Qual_op_name (addPlace on) (Op_type ok (world : srts) res q) p)
-            (futureW as : args) r
+            (currW : args) r
       _ -> Application os args r
   }
 
 transEMF :: Args -> EM_FORMULA -> FORMULA ()
 transEMF as emf = case emf of
-  PrefixForm _pf f _ -> transMF as f
+  PrefixForm pf f _ -> case pf of
+    BoxOrDiamond _bOp _m _grad i -> let
+      tf = transMF as { futureW = futureW as + i } f
+      -- tM = transMod as m
+      in tf
+    _ -> transMF as f
   UntilSince _isUntil f1 f2 r -> conjunctRange [transMF as f1, transMF as f2] r
   ModForm _ -> trueForm
