@@ -23,12 +23,13 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Set as Set
 
 -- CASL
+import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.Logic_CASL
-import CASL.Sublogic as SL
-import CASL.Sign
-import CASL.AS_Basic_CASL
 import CASL.Morphism
+import CASL.Quantification
+import CASL.Sign
+import CASL.Sublogic as SL
 import CASL.World
 
 -- ExtModalCASL
@@ -54,7 +55,7 @@ instance Comorphism ExtModal2CASL
     targetLogic ExtModal2CASL = CASL
     mapSublogic ExtModal2CASL _ = Just SL.caslTop
     map_theory ExtModal2CASL (sig, sens) = case transSig sig of
-      mme -> return (mme, map (mapNamed $ transTop sig) sens)
+      mme -> return (mme, map (mapNamed $ transTop sig mme) sens)
     {-
     map_morphism ExtModal2CASL = return . mapMor
     map_sentence ExtModal2CASL sig = return . transSen sig
@@ -98,38 +99,41 @@ data Args = Args
   { currentW, futureW :: TERM ()  -- world variables
   , currentN, futureN :: TERM ()  -- world numbering
   , transPredName :: Id
-  , signature :: ExtModalSign }
+  , modSig :: ExtModalSign
+  }
 
 natSort :: SORT
 natSort = stringToId "Nat"
 
-transTop :: ExtModalSign -> FORMULA EM_FORMULA -> FORMULA ()
-transTop sig f = case f of
-  Sort_gen_ax cs b -> Sort_gen_ax cs b
-  _ -> let
+-- TODO: check that constructors are not flexible!
+
+transTop :: ExtModalSign -> CASLSign -> FORMULA EM_FORMULA -> FORMULA ()
+transTop msig csig = let
     vd = mkVarDecl (genNumVar "w" 1) world
     vt = toQualVar vd
     vn = mkVarDecl (genNumVar "n" 1) natSort
     nt = toQualVar vn
-    in mkForall [vd] $ transMF (Args vt vt nt nt (stringToId "Z") sig) f
+    in stripQuant csig . mkForall [vd, vn]
+           . transMF (Args vt vt nt nt (stringToId "Z") msig)
 
 transMF :: Args -> FORMULA EM_FORMULA -> FORMULA ()
 transMF as = let
-    extInf = extendedInfo $ signature as
-    flexibleOps = flexOps extInf
-    flexiblePreds = flexPreds extInf
+    extInf = extendedInfo $ modSig as
     in foldFormula (mapRecord $ const ())
   { foldPredication = \ _ ps args r -> case ps of
       Qual_pred_name pn pTy@(Pred_type srts q) p
-        | MapSet.member pn (toPredType pTy) flexiblePreds
+        | MapSet.member pn (toPredType pTy) $ flexPreds extInf
           -> Predication
             (Qual_pred_name (addPlace pn) (Pred_type (world : srts) q) p)
             (futureW as : args) r
+        | null srts && Set.member pn (nominals extInf)
+          -> mkStEq (futureW as) $ mkAppl
+             (mkQualOp (nomName pn) $ toOP_TYPE nomOpType) []
       _ -> Predication ps args r
   , foldExtFORMULA = \ _ f -> transEMF as f
   , foldApplication = \ _ os args r -> case os of
       Qual_op_name on oTy@(Op_type ok srts res q) p
-        | MapSet.member on (toOpType oTy) flexibleOps
+        | MapSet.member on (toOpType oTy) $ flexOps extInf
           -> Application
             (Qual_op_name (addPlace on) (Op_type ok (world : srts) res q) p)
             (futureW as : args) r
