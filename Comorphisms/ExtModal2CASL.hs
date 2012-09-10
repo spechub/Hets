@@ -14,6 +14,7 @@ module Comorphisms.ExtModal2CASL where
 import Logic.Logic
 import Logic.Comorphism
 
+import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
 import qualified Common.Lib.Rel as Rel
@@ -22,6 +23,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Set as Set
 
 -- CASL
+import CASL.Fold
 import CASL.Logic_CASL
 import CASL.Sublogic as SL
 import CASL.Sign
@@ -51,8 +53,8 @@ instance Comorphism ExtModal2CASL
     sourceSublogic ExtModal2CASL = maxSublogic
     targetLogic ExtModal2CASL = CASL
     mapSublogic ExtModal2CASL _ = Just SL.caslTop
-    map_theory ExtModal2CASL (sig, _sens) = case transSig sig of
-      mme -> return (mme, [])
+    map_theory ExtModal2CASL (sig, sens) = case transSig sig of
+      mme -> return (mme, map (mapNamed $ transTop sig) sens)
     {-
     map_morphism ExtModal2CASL = return . mapMor
     map_sentence ExtModal2CASL sig = return . transSen sig
@@ -92,3 +94,51 @@ transSig sign = let
     , opMap = addOpMapSet flexOps' nomOps
     , assocOps = diffOpMapSet (assocOps sign) flexibleOps
     , predMap = addMapSet rels $ addMapSet flexPreds' noNomsPreds}
+
+data Args = Args
+  { currentW, futureW :: TERM ()  -- world variables
+  , currentN, futureN :: TERM ()  -- world numbering
+  , transPredName :: Id
+  , signature :: ExtModalSign }
+
+natSort :: SORT
+natSort = stringToId "Nat"
+
+transTop :: ExtModalSign -> FORMULA EM_FORMULA -> FORMULA ()
+transTop sig f = case f of
+  Sort_gen_ax cs b -> Sort_gen_ax cs b
+  _ -> let
+    vd = mkVarDecl (genNumVar "w" 1) world
+    vt = toQualVar vd
+    vn = mkVarDecl (genNumVar "n" 1) natSort
+    nt = toQualVar vn
+    in mkForall [vd] $ transMF (Args vt vt nt nt (stringToId "Z") sig) f
+
+transMF :: Args -> FORMULA EM_FORMULA -> FORMULA ()
+transMF as = let
+    extInf = extendedInfo $ signature as
+    flexibleOps = flexOps extInf
+    flexiblePreds = flexPreds extInf
+    in foldFormula (mapRecord $ const ())
+  { foldPredication = \ _ ps args r -> case ps of
+      Qual_pred_name pn pTy@(Pred_type srts q) p
+        | MapSet.member pn (toPredType pTy) flexiblePreds
+          -> Predication
+            (Qual_pred_name (addPlace pn) (Pred_type (world : srts) q) p)
+            (futureW as : args) r
+      _ -> Predication ps args r
+  , foldExtFORMULA = \ _ f -> transEMF as f
+  , foldApplication = \ _ os args r -> case os of
+      Qual_op_name on oTy@(Op_type ok srts res q) p
+        | MapSet.member on (toOpType oTy) flexibleOps
+          -> Application
+            (Qual_op_name (addPlace on) (Op_type ok (world : srts) res q) p)
+            (futureW as : args) r
+      _ -> Application os args r
+  }
+
+transEMF :: Args -> EM_FORMULA -> FORMULA ()
+transEMF as emf = case emf of
+  PrefixForm _pf f _ -> transMF as f
+  UntilSince _isUntil f1 f2 r -> conjunctRange [transMF as f1, transMF as f2] r
+  ModForm _ -> trueForm
