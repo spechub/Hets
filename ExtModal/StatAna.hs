@@ -124,7 +124,7 @@ frmTypeAna sign form = let
            else Result [mkDiag Error "negative number grading" number]
                   $ Just new_pf
        Hybrid _ nm ->
-         if Set.member nm (nominals $ extendedInfo sign)
+         if Set.member (nomPId nm) (nominals $ extendedInfo sign)
            then return pf
            else Result [mkDiag Error "unknown nominal" nm]
                     $ Just pf
@@ -182,7 +182,7 @@ basItemStatAna
 basItemStatAna mix basic_item = case basic_item of
   ModItem md -> fmap ModItem $ modItemStatAna mix md
   Nominal_decl anno_list pos -> do
-    mapM_ (updateExtInfo . addNom . item) anno_list
+    mapM_ (updateExtInfo . addNom . nomPId . item) anno_list
     mapM_ (addPred (emptyAnno ()) nomPType . nomPId . item) anno_list
     return $ Nominal_decl anno_list pos
 
@@ -216,7 +216,7 @@ addMod mi sgn =
                 Result [mkDiag Hint "repeated modality" mi] $ Just sgn
                 else return sgn { modalities = Set.insert mi m }
 
-addNom :: SIMPLE_ID -> EModalSign -> Result EModalSign
+addNom :: Id -> EModalSign -> Result EModalSign
 addNom ni sgn =
         let n = nominals sgn in
         if Set.member ni n then

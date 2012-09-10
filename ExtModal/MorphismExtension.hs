@@ -31,7 +31,7 @@ import ExtModal.Print_AS ()
 
 data MorphExtension = MorphExtension
         { mod_map :: Map.Map Id Id
-        , nom_map :: Map.Map SIMPLE_ID SIMPLE_ID
+        , nom_map :: Map.Map Id Id
         } deriving (Show, Eq, Ord)
 
 emptyMorphExtension :: MorphExtension

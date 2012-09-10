@@ -28,7 +28,7 @@ data EModalSign = EModalSign
         , modalities :: Set.Set Id -- do not store sentences in signature
         , timeMods :: Set.Set Id
         , termMods :: Set.Set Id -- sorts that need to be mapped
-        , nominals :: Set.Set SIMPLE_ID
+        , nominals :: Set.Set Id
         } deriving (Show, Eq, Ord)
 
 nomPType :: PredType

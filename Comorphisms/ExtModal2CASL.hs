@@ -63,8 +63,8 @@ instance Comorphism ExtModal2CASL
     has_model_expansion ExtModal2CASL = True
     is_weakly_amalgamable ExtModal2CASL = True
 
-nomName :: Token -> Id
-nomName t = Id [genToken "N"] [mkId [t]] $ tokPos t
+nomName :: Id -> Id
+nomName t = Id [genToken "N"] [t] $ rangeOfId t
 
 nomOpType :: OpType
 nomOpType = mkTotOpType [] world
@@ -81,8 +81,7 @@ transSig sign = let
     rigOps' = diffOpMapSet (opMap sign) flexibleOps
     rigPreds' = diffMapSet (predMap sign) flexiblePreds
     noms = nominals extInf
-    noNomsPreds = Set.fold (\ n -> MapSet.delete (nomPId n) nomPType)
-      rigPreds' noms
+    noNomsPreds = Set.fold (`MapSet.delete` nomPType) rigPreds' noms
     termMs = termMods extInf
     timeMs = timeMods extInf
     rels = Set.fold (\ m ->

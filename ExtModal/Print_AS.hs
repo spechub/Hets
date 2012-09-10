@@ -161,4 +161,4 @@ instance Pretty EModalSign where
             $ Set.toList mds)
         $+$
         (if Set.null nms then empty else
-        keyword nominalS <+> sepBySemis (map sidDoc (Set.toList nms)))
+        keyword nominalS <+> sepBySemis (map idDoc (Set.toList nms)))
