@@ -375,11 +375,12 @@ if [ $OPT_CREATE -eq 0 ]; then
     cd $HETS_FOLDER
     make distclean 1>/dev/null 2>/dev/null
     rm programatica 2>/dev/null
-    rm -rf GMP Search mini Lottery
+    rm -rf GMP mini
     mkdir -p programatica
     wget http://www.dfki.de/sks/hets/src-distribution/$PROGRAMATICA.tar.gz
     tar -xf $PROGRAMATICA.tar.gz
     mv $PROGRAMATICA programatica/tools
+    rm -r $PROGRAMATICA.tar.gz
     cd $OLD_PWD
     touch $DATA_DIR/clean.done
   fi
