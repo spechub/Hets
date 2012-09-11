@@ -21,6 +21,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
+import Data.Function
 
 -- CASL
 import CASL.AS_Basic_CASL
@@ -126,26 +127,55 @@ transMF as = let
             (Qual_pred_name (addPlace pn) (Pred_type (world : srts) q) p)
             (currW : args) r
         | null srts && Set.member pn (nominals extInf)
-          -> mkStEq (currW) $ mkAppl
+          -> mkStEq currW $ mkAppl
              (mkQualOp (nomName pn) $ toOP_TYPE nomOpType) []
       _ -> Predication ps args r
   , foldExtFORMULA = \ _ f -> transEMF as f
   , foldApplication = \ _ os args r -> case os of
-      Qual_op_name on oTy@(Op_type ok srts res q) p
-        | MapSet.member on (toOpType oTy) $ flexOps extInf
+      Qual_op_name opn oTy@(Op_type ok srts res q) p
+        | MapSet.member opn (toOpType oTy) $ flexOps extInf
           -> Application
-            (Qual_op_name (addPlace on) (Op_type ok (world : srts) res q) p)
+            (Qual_op_name (addPlace opn) (Op_type ok (world : srts) res q) p)
             (currW : args) r
       _ -> Application os args r
   }
 
+disjointVars :: [VAR_DECL] -> [FORMULA ()]
+disjointVars vs = case vs of
+  a : r@(b : _) -> mkNeg (on mkStEq toQualVar a b) : disjointVars r
+  _ -> []
+
 transEMF :: Args -> EM_FORMULA -> FORMULA ()
 transEMF as emf = case emf of
-  PrefixForm pf f _ -> case pf of
-    BoxOrDiamond _bOp _m _grad i -> let
-      tf = transMF as { futureW = futureW as + i } f
-      -- tM = transMod as m
-      in tf
+  PrefixForm pf f r -> case pf of
+    BoxOrDiamond bOp m gEq i -> let
+      fW = futureW as
+      ex = bOp == Diamond
+      l = [fW + 1 .. fW + i]
+      vds = map (\ n -> mkVarDecl (genNumVar "w" n) world) l
+      nAs n = as { futureW = n, currentW = fW }
+      tf n = transMF (nAs n) f
+      tM n = transMod (nAs n) m
+      conjF = conjunct $ map tM l ++ map tf l ++ disjointVars vds
+      diam = BoxOrDiamond Diamond m True
+      tr b = transEMF as $ PrefixForm (BoxOrDiamond b m gEq i) f r
+      in if gEq && i > 0 && (i == 1 || ex) then case bOp of
+           Diamond -> mkExist vds conjF
+           Box -> mkForall vds conjF
+           EBox -> conjunct [mkExist vds conjF, mkForall vds conjF]
+         else if i <= 0 && ex && gEq then trueForm
+         else if bOp == EBox then conjunct $ map tr [Diamond, Box]
+         else if ex -- lEq
+              then transMF as . mkNeg . ExtFORMULA $ PrefixForm
+                       (diam $ i + 1) f r
+         else if gEq -- Box
+              then transMF as . mkNeg . ExtFORMULA $ PrefixForm
+                       (diam i) (mkNeg f) r
+              else transMF as . ExtFORMULA $ PrefixForm
+                       (diam $ i + 1) (mkNeg f) r
     _ -> transMF as f
   UntilSince _isUntil f1 f2 r -> conjunctRange [transMF as f1, transMF as f2] r
   ModForm _ -> trueForm
+
+transMod :: Args -> MODALITY -> FORMULA ()
+transMod _ _ = trueForm

@@ -87,6 +87,7 @@ contains at least one successor world fulfilling f.
 (at most n successor worlds fulfill f)
 
 By duality: [m]<=n f <=> not <m> <=n not f <=> not [m]>=n+1 f
+  <=> <m> >=n+1 not f
 and: "<m> <=n f" <=> [m]>=n+1 not f <=> not <m> >=n+1 f
 thus: <m> >=n f <=> not <m> <=n-1 f <=> [m]<=n-1 not f
 and: [m]>=n f <=> not [m] <=n-1 f
