@@ -743,11 +743,12 @@ showAutoProofWindow dg sessId prOrCons = let
     , mkAttr "name" $ escStr $ name fn ]
     $ unode "input" $ showHtml fn) fnodes
   (prBt, timeout) = showProveButton
+  (prMethod, title) = case prOrCons of
+    GlProofs -> ("proof", "automatic proofs")
+    GlConsistency -> ("cons", "consistency checker")
   hidStr = add_attrs [ mkAttr "name" "autoproof"
          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
-         , mkAttr "value" (case prOrCons of
-             GlProofs -> "proof"
-             GlConsistency -> "cons")] inputNode
+         , mkAttr "value" prMethod ] inputNode
   include = add_attrs [ mkAttr "type" "checkbox"
           , mkAttr "name" "includetheorems"] $ unode "input" "include Theorems"
   goBack = aRef ('/' : show sessId) "return to DGraph"
@@ -762,7 +763,7 @@ showAutoProofWindow dg sessId prOrCons = let
           $ unode "form" $
           [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include
           ] ++ intersperse br (prBt : nodeSel)
-    return $ mkHtmlElemScript "autoProofs" (jvScr1 ++ jvScr2) $ [ goBack
+    return $ mkHtmlElemScript title (jvScr1 ++ jvScr2) $ [ goBack
           , plain " ", nodeMenu ]
 
 showProveButton :: (Element, Element)
