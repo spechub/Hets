@@ -171,7 +171,8 @@ isNat s = all isDigit s && not (null s) && length s < 11
 anaQuery :: [QueryPair] -> Either String (Maybe Int, QueryKind)
 anaQuery q' =
        let globals = "update" : globalCommands
-           (atP, q) = partition ((== "autoproof") . fst) q'
+           (atP, q'') = partition ((== "autoproof") . fst) q'
+           (atC, q) = partition ((== "consistency") . fst) q''
            (q1, qm) = partition (\ l -> case l of
                         (x, Nothing) -> isNat x || elem x
                                (displayTypes ++ globals
@@ -216,6 +217,8 @@ anaQuery q' =
            noPP = null pps && null incls && null theorems
        -- TODO i kind of abused this functions structure for autoproofs here
        in if not $ null atP then Right (mi, GlShowProverWindow GlProofs) else
+          if not $ null atC then Right (mi, GlShowProverWindow GlConsistency)
+          else
           if null qqr && length ais < 2 then case (afs, ags, ans, aes, aids) of
          (_, [], [], [], []) | noPP -> if length afs > 1
            then Left $ "non-unique format " ++ show afs

@@ -221,7 +221,7 @@ anaAutoProofQuery splitQuery = let
   include = maybe False (== "on") $ lookup2 "includetheorems"
   nodeSel = filter (/= "includetheorems")
       $ map fst $ filter ((== Just "on") . snd) splitQuery
-  prOrCons = case lookup2 "autoProof" of
+  prOrCons = case lookup2 "autoproof" of
     Just "proof" -> GlProofs
     Just "cons" -> GlConsistency
     err -> error $ "illegal autoproof method: " ++ show err
@@ -591,12 +591,15 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               _ -> liftR $ return $ sessAns ln svg sk
             GlProvers mt -> return $ getFullProverList mt dg
             GlTranslations -> return $ getFullComorphList dg
-            GlShowProverWindow proofOrCons -> showAutoProofWindow dg k
-            GlAutoProve proofOrCons incl mp mt tl nds -> do
-              (newLib, sens) <- proveMultiNodes libEnv ln dg incl mp mt tl nds
-              if null sens then return "nothing to prove" else do
+            GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
+            GlAutoProve prOrCons incl mp mt tl nds -> case prOrCons of
+              GlProofs -> do
+               (newLib, sens) <- proveMultiNodes libEnv ln dg incl mp mt tl nds
+               if null sens then return "nothing to prove" else do
                   lift $ nextSess sessRef newLib k
                   return $ formatResultsMultiple k sens
+              GlConsistency ->
+                return "consistency checker has not yet been built"
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == "update" then
@@ -729,8 +732,8 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | show window of the autoproof function
-showAutoProofWindow :: DGraph -> Int -> ResultT IO String
-showAutoProofWindow dg sessId = let
+showAutoProofWindow :: DGraph -> Int -> ProverMode -> ResultT IO String
+showAutoProofWindow dg sessId prOrCons = let
   fnodes = initFNodes $ labNodesDG dg
   -- select unproven, all or no nodes by button
   (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons
@@ -742,7 +745,9 @@ showAutoProofWindow dg sessId = let
   (prBt, timeout) = showProveButton
   hidStr = add_attrs [ mkAttr "name" "autoproof"
          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
-         , mkAttr "value" "proof" ] inputNode -- use val = cons for consChecker
+         , mkAttr "value" (case prOrCons of
+             GlProofs -> "proof"
+             GlConsistency -> "cons")] inputNode
   include = add_attrs [ mkAttr "type" "checkbox"
           , mkAttr "name" "includetheorems"] $ unode "input" "include Theorems"
   goBack = aRef ('/' : show sessId) "return to DGraph"
@@ -997,13 +1002,14 @@ sessAns libName svg (sess, k) =
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d
       autoProofBt = aRef ('/' : show k ++ "?autoproof") "automatic proofs"
+      consBt = aRef ('/' : show k ++ "?consistency") "consistency checker"
 -- the html quicklinks to nodes and edges have been removed with R.16827
   in htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
            (bold ("library " ++ ln)
             : map ref displayTypes
             ++ menuElement : loadXUpdate (libPath ++ "update")
-            : plain "tools:" : mkUnorderedList [autoProofBt]
+            : plain "tools:" : mkUnorderedList [autoProofBt, consBt]
             : plain "commands:"
             : (mkUnorderedList $ map ref globalCommands)
             : plain "imported libraries:"
