@@ -596,10 +596,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               (newLib, sens) <- proveMultiNodes libEnv ln dg incl mp mt tl nds
               if null sens then return "nothing to prove" else do
                   lift $ nextSess sessRef newLib k
-                  -- TODO adjust formatResult to show multiple nodes results
-                  return $ formatResults k 0 $ unode "results" $
-                     map (\ (n, e) -> unode "goal"
-                       [unode "name" n, unode "result" e]) sens
+                  return $ formatResultsMultiple k sens
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == "update" then
@@ -661,12 +658,22 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
+formatResultsMultiple :: Int -> [Element] -> String
+formatResultsMultiple sessId rs = let
+  goBack1 = aRef ('/' : show sessId ++ "?autoproof") "return to AutoProofs"
+  goBack2 = aRef ('/' : show sessId) "return to DGraph"
+  in ppElement $ unode "html" ( unode "head"
+    [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
+    $ unode "style" resultStyles, goBack1, plain " ", goBack2 ]
+    : foldr (\ el r -> unode "h4" (qName $ elName el) : el : r) [] rs )
+
+-- | display results of proving session (single node)
 formatResults :: Int -> Int -> Element -> String
 formatResults sessId i rs = let
   goBack1 = aRef ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
   goBack2 = aRef ('/' : show sessId) "return to DGraph"
   in ppElement $ unode "html" [ unode "head"
-    [ unode "title" "Results", add_attr (mkAttr "type" "text/css")
+    [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
     $ unode "style" resultStyles, goBack1, plain " ", goBack2 ], rs ]
 
 resultStyles :: String
@@ -953,17 +960,22 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
 -- run over multiple dgnodes and prove available goals for each
 proveMultiNodes :: LibEnv -> LibName -> DGraph -> Bool -> Maybe String
   -> Maybe String -> Maybe Int -> [String]
-  -> ResultT IO (LibEnv, [(String, String)])
+  -> ResultT IO (LibEnv, [Element])
 proveMultiNodes le ln dg useTh mp mt tl nodeSel = foldM
-  (\ (le', sens) nl@(_, dgn) -> case maybeResult $ getGlobalTheory dgn of
+  (\ (le', res) nl@(_, dgn) -> case maybeResult $ getGlobalTheory dgn of
       Nothing -> fail $
                     "cannot compute global theory of:\n" ++ show dgn
       Just gTh -> let subL = sublogicOfTh gTh in do
-        (le'', sens') <- proveNode le' ln dg nl gTh subL useTh mp mt tl
+        (le'', sens) <- proveNode le' ln dg nl gTh subL useTh mp mt tl
           $ map fst $ getThGoals gTh
-        return (le'', sens ++ sens')) (le, []) $ filter (case nodeSel of
-          [] -> hasOpenGoals . snd
-          _ -> (`elem` nodeSel) . showName . dgn_name . snd) $ labNodesDG dg
+        return (le'', formatResultsAux (showName $ dgn_name dgn) sens : res))
+          (le, []) $ filter (case nodeSel of
+            [] -> hasOpenGoals . snd
+            _ -> (`elem` nodeSel) . showName . dgn_name . snd) $ labNodesDG dg
+
+formatResultsAux :: String -> [(String, String)] -> Element
+formatResultsAux nm sens = unode nm $ unode "results" $
+  map (\ (n, e) -> unode "goal" [unode "name" n, unode "result" e]) sens
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
