@@ -342,7 +342,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
             translation = lookup2 "translation" >>= fmap iriFragment . parseIRI
             timeout = lookup2 "timeout" >>= readMaybe
             in (case lookup2 "node" of
-              -- prove all nodes if no singleton is selectedf=proof&prover=SPASS&translation=CASL2SubCFOLCASL2SoftFOL&timeout=1&includetheorems=on&
+              -- prove all nodes if no singleton is selected
               Nothing -> return $ Query (DGQuery sId Nothing)
                 $ GlAutoProve GlProofs incl prover translation timeout []
               -- otherwise run prover for single node only
