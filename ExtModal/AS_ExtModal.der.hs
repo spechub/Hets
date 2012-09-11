@@ -83,7 +83,7 @@ thus here "[m]n f" stands for "[m]>=n f" and "[m]<=n f" for "not <m> <=n not f"
 Another interpretation of "[m]n f" is that any subset with n successor worlds
 contains at least one successor world fulfilling f.
 
-"<m> <=n f" seems to identical "[m]>=n+1 not f"
+"<m> <=n f" seems to be identical "[m]>=n+1 not f"
 (at most n successor worlds fulfill f)
 
 By duality: [m]<=n f <=> not <m> <=n not f <=> not [m]>=n+1 f
@@ -109,8 +109,8 @@ data FormPrefix
     {- The first identifier and the term specify the kind of the modality
     pos: "[]", "<>" or "<[]>"
     The second identifier is used for grading:
-    pos: "<=" or ">=", True if Leq (less than/equal),
-    False if Geq (greater than/equal), positive integers -}
+    pos: "<=" or ">=", False if Leq (less than/equal),
+    True if Geq (greater than/equal), positive integers -}
   | Hybrid Bool SIMPLE_ID
                 {- True if @, False if Here
                 pos: "@", "Here" -}

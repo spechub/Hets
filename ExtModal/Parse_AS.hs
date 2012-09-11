@@ -126,9 +126,9 @@ prefixModifier = let mkF f r = return (f, tokPos r) in
     mkF (Hybrid ahb nom) nom
   <|> do
     (modal, b, r) <- boxParser <|> diamondParser
-    (lgb, val) <- option (False, 1) $ do
-       lgb <- option False $ (asKey lessEq >> return True)
-         <|> (asKey greaterEq >> return False)
+    (lgb, val) <- option (True, 1) $ do
+       lgb <- option False $ (asKey lessEq >> return False)
+         <|> (asKey greaterEq >> return True)
        number <- getNumber << skipSmart
        return (lgb, value 10 number)
     return (BoxOrDiamond b modal lgb val, r)

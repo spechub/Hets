@@ -106,7 +106,7 @@ prJunct f = (if isEMJunct f then parens else id) $ pretty f
 
 instance Pretty FormPrefix where
   pretty fp = case fp of
-    BoxOrDiamond choice modality leq_geq number ->
+    BoxOrDiamond choice modality gEq number ->
       let sp = case modality of
                  SimpleMod _ -> (<>)
                  _ -> (<+>)
@@ -115,8 +115,8 @@ instance Pretty FormPrefix where
                   Box -> brackets mdl
                   Diamond -> less `sp` mdl `sp` greater
                   EBox -> text oB <> mdl <> text cB)
-               <+> if not leq_geq && number == 1 then empty else
-                (if leq_geq then keyword lessEq else empty)
+               <+> if gEq && number == 1 then empty else
+                (if gEq then empty else keyword lessEq)
                 <> text (show number)
     Hybrid choice nom ->
       keyword (if choice then atS else hereS) <+> pretty nom
