@@ -25,7 +25,7 @@ instance PrettyLG ARCH_SPEC where
                 <+> vcat (punctuate semi $ map (prettyLG lg) aa)
                , keyword resultS <+> prettyLG lg ab]
         Arch_spec_name aa -> pretty aa
-        Group_arch_spec aa _ -> specBraces $ prettyLG lg aa
+        Group_arch_spec aa _ -> specBraces . rmTopKey $ prettyLG lg aa
 
 instance PrettyLG UNIT_REF where
     prettyLG lg (Unit_ref aa ab _) =
@@ -42,9 +42,10 @@ instance PrettyLG UNIT_DECL_DEFN where
 instance PrettyLG UNIT_SPEC where
     prettyLG lg u = case u of
         Unit_type aa ab _ ->
-          let ab' = printGroupSpec lg ab
+          let ab' = rmTopKey $ printGroupSpec lg ab
           in if null aa then ab' else sep
-               [ fsep $ punctuate (space <> cross) (map (printGroupSpec lg) aa)
+               [ fsep . punctuate (space <> cross)
+                          $ map (rmTopKey . printGroupSpec lg) aa
                , funArrow <+> ab']
         Spec_name aa -> pretty aa
         Closed_unit_spec aa _ -> fsep [keyword closedS, prettyLG lg aa]
