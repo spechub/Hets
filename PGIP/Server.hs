@@ -714,7 +714,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
         (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons
           "getAttribute('goalstatus') != 'Proved'"
         -- create prove button and prover/comorphism selection
-        (prSl, cmrSl, jvScr2) = showProverSelection [sublogicOfTh gTh]
+        (prSl, cmrSl, jvScr2) = showProverSelection GlProofs [sublogicOfTh gTh]
         (prBt, timeout) = showProveButton
         -- hidden param field
         hidStr = add_attrs [ mkAttr "name" "prove"
@@ -752,8 +752,8 @@ showAutoProofWindow dg sessId prOrCons = let
           , mkAttr "name" "includetheorems"] $ unode "input" "include Theorems"
   goBack = aRef ('/' : show sessId) "return to DGraph"
   in do
-    (prSel, cmSel, jvScr2) <- fmap showProverSelection $ mapM (\ (_, nd) ->
-      case maybeResult $ getGlobalTheory nd of
+    (prSel, cmSel, jvScr2) <- fmap (showProverSelection prOrCons)
+      $ mapM (\ (_, nd) -> case maybeResult $ getGlobalTheory nd of
         Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
         Just gTh -> return $ sublogicOfTh gTh) $ labNodesDG dg
     -- combine elements within a form
@@ -817,8 +817,9 @@ showSelectionButtons testUnproven = (selUnPr, selAll, selNone, jvScr) where
           , "}" ]
 
 -- | create prover and comorphism menu and combine them using javascript
-showProverSelection :: [G_sublogics] -> (Element, Element, String)
-showProverSelection subLs = let
+showProverSelection :: ProverMode -> [G_sublogics]
+  -> (Element, Element, String)
+showProverSelection prOrCons subLs = let
   jvScr = unlines
         -- the chosen prover is passed as param
         [ "\nfunction updCmSel(pr) {"
@@ -856,7 +857,9 @@ showProverSelection subLs = let
         , "    }"
         , "  }"
         , "}" ]
-  allPrCm = nub $ concatMap (getProversAux Nothing) subLs
+  allPrCm = nub $ concatMap (case prOrCons of
+    GlProofs -> getProversAux Nothing
+    GlConsistency -> getConsCheckersAux) subLs
   -- create prover selection (drop-down)
   prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
     add_attrs [mkAttr "value" p, mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"]
@@ -933,6 +936,13 @@ getProversAux mt subL = foldl insertCmL [] $ filterByComorph mt
 formatProvers :: [(AnyComorphism, [String])] -> String
 formatProvers = ppTopElement . unode "provers" . map (unode "prover")
   . showProversOnly
+
+-- | retrieve a list of consitency checkers
+getConsCheckersAux :: G_sublogics -> [(AnyComorphism, [String])]
+getConsCheckersAux subL = let cmrs = findComorphismPaths logicGraph subL in
+  Map.toList $ foldr (\ (g_cons, comorph) -> Map.insertWith (++) comorph
+    [getCcName g_cons]) Map.empty $ filter
+    (\ (G_cons_checker _ cc, _) -> ccBatch cc) $ getConsCheckers cmrs
 
 getComorphs :: Maybe String -> G_sublogics -> String
 getComorphs mp subL = formatComorphs . filterByProver mp
