@@ -21,9 +21,9 @@ import Syntax.Print_AS_Structured
 
 instance PrettyLG ARCH_SPEC where
     prettyLG lg a = case a of
-        Basic_arch_spec aa ab _ -> fsep $ keyword (unitS ++ sS)
-               : punctuate semi (map (prettyLG lg) aa)
-               ++ [keyword resultS, prettyLG lg ab]
+        Basic_arch_spec aa ab _ -> sep [keyword (unitS ++ sS)
+                <+> vcat (punctuate semi $ map (prettyLG lg) aa)
+               , keyword resultS <+> prettyLG lg ab]
         Arch_spec_name aa -> pretty aa
         Group_arch_spec aa _ -> specBraces $ prettyLG lg aa
 
@@ -33,19 +33,19 @@ instance PrettyLG UNIT_REF where
 
 instance PrettyLG UNIT_DECL_DEFN where
     prettyLG lg ud = case ud of
-        Unit_decl aa ab ac _ ->
-            fsep $ [structIRI aa, colon, prettyLG lg ab] ++
+        Unit_decl aa ab ac _ -> sep [structIRI aa <+> colon,
+            fsep $ prettyLG lg ab :
                  if null ac then [] else
-                     keyword givenS : punctuate comma (map (prettyLG lg) ac)
+                     keyword givenS : punctuate comma (map (prettyLG lg) ac)]
         Unit_defn aa ab _ -> fsep [structIRI aa, equals, prettyLG lg ab]
 
 instance PrettyLG UNIT_SPEC where
     prettyLG lg u = case u of
         Unit_type aa ab _ ->
           let ab' = printGroupSpec lg ab
-          in if null aa then ab' else fsep $
-             punctuate (space <> cross) (map (printGroupSpec lg) aa)
-                      ++ [funArrow, ab']
+          in if null aa then ab' else sep
+               [ fsep $ punctuate (space <> cross) (map (printGroupSpec lg) aa)
+               , funArrow <+> ab']
         Spec_name aa -> pretty aa
         Closed_unit_spec aa _ -> fsep [keyword closedS, prettyLG lg aa]
 
