@@ -211,19 +211,21 @@ hetsServer opts1 = do
                  opts (map snd files) sessRef pathBits splitQuery
       _ -> return $ mkResponse status405 ""
 
+-- extract what we need to know from an autoproof request
 anaAutoProofQuery :: [(String, Maybe String)] -> QueryKind
 anaAutoProofQuery splitQuery = let
   lookup2 str = fromMaybe Nothing $ lookup str splitQuery
   prover = lookup2 "prover"
   trans = lookup2 "translation"
   timeout = lookup2 "timeout" >>= readMaybe
-  nodeSel = map fst $ filter ((== Just "on") . snd) splitQuery
+  include = maybe False (== "on") $ lookup2 "includetheorems"
+  nodeSel = filter (/= "includetheorems")
+      $ map fst $ filter ((== Just "on") . snd) splitQuery
   prOrCons = case lookup2 "autoProof" of
     Just "proof" -> GlProofs
     Just "cons" -> GlConsistency
-    _ -> error "lost value of autoProof on the way. what happened?"
-  -- TODO add include theorems! and add timeout!
-  in GlAutoProve prOrCons False prover trans timeout nodeSel
+    err -> error $ "illegal autoproof method: " ++ show err
+  in GlAutoProve prOrCons include prover trans timeout nodeSel
 
 
 -- quick approach to whether or not the query can be a RESTfull request
@@ -340,7 +342,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
             translation = lookup2 "translation" >>= fmap iriFragment . parseIRI
             timeout = lookup2 "timeout" >>= readMaybe
             in (case lookup2 "node" of
-              -- prove all nodes if no singleton is selected
+              -- prove all nodes if no singleton is selectedf=proof&prover=SPASS&translation=CASL2SubCFOLCASL2SoftFOL&timeout=1&includetheorems=on&
               Nothing -> return $ Query (DGQuery sId Nothing)
                 $ GlAutoProve GlProofs incl prover translation timeout []
               -- otherwise run prover for single node only
@@ -698,22 +700,12 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           in add_attrs [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
           , mkAttr "goalstatus" $ showSimple gSt ] $ unode "input" $ nm
           ++ "   (" ++ showSimple gSt ++ ")" ) gs
+        -- select unproven, all or none theorems by button
+        (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons
+          "getAttribute('goalstatus') != 'Proved'"
         -- create prove button and prover/comorphism selection
-        (prSl, cmrSl, jvScr1) = showProverSelection [sublogicOfTh gTh]
-        prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
-               `add_attrs` inputNode
-        -- create timeout field
-        timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
-               , mkAttr "value" "1", mkAttr "size" "3"]
-               $ unode "input" "Sec/Goal "
-        -- select unproven goals by button
-        selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
-          , mkAttr "onClick" "chkUnproven()"] inputNode
-        -- select or deselect all theorems by button
-        selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-          , mkAttr "onClick" "chkAll(true)"] inputNode
-        deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-          , mkAttr "onClick" "chkAll(false)"] inputNode
+        (prSl, cmrSl, jvScr2) = showProverSelection [sublogicOfTh gTh]
+        (prBt, timeout) = showProveButton
         -- hidden param field
         hidStr = add_attrs [ mkAttr "name" "prove"
           , mkAttr "type" "hidden", mkAttr "style" "display:none;"
@@ -722,22 +714,79 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
         -- combine elements within a form
         thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel",
            mkAttr "method" "get"] $ unode "form" $ [hidStr, prSl, cmrSl, br,
-           selAll, deSelAll, selUnPr, timeout] ++ intersperse br (prBt : thmSl)
+           btUnpr, btAll, btNone, timeout] ++ intersperse br (prBt : thmSl)
+        -- save dg and return to svg-view
         goBack = aRef ('/' : show sessId) "return to DGraph"
+        in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2) [ headr, transBt, prvsBt,
+          plain " ", goBack, unode "h4" "Theorems", thmMenu,
+          unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
+
+-- | show window of the autoproof function
+showAutoProofWindow :: DGraph -> Int -> ResultT IO String
+showAutoProofWindow dg sessId = let
+  fnodes = initFNodes $ labNodesDG dg
+  -- select unproven, all or no nodes by button
+  (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons
+    "hasOpenGoals = 'True'"
+  nodeSel = map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
+    , mkAttr "hasOpenGoals" $ show $ not $ allProved fn
+    , mkAttr "name" $ escStr $ name fn ]
+    $ unode "input" $ showHtml fn) fnodes
+  (prBt, timeout) = showProveButton
+  hidStr = add_attrs [ mkAttr "name" "autoproof"
+         , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+         , mkAttr "value" "proof" ] inputNode -- use val = cons for consChecker
+  include = add_attrs [ mkAttr "type" "checkbox"
+          , mkAttr "name" "includetheorems"] $ unode "input" "include Theorems"
+  goBack = aRef ('/' : show sessId) "return to DGraph"
+  in do
+    (prSel, cmSel, jvScr2) <- fmap showProverSelection $ mapM (\ (_, nd) ->
+      case maybeResult $ getGlobalTheory nd of
+        Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
+        Just gTh -> return $ sublogicOfTh gTh) $ labNodesDG dg
+    -- combine elements within a form
+    let nodeMenu = let br = unode "br " () in add_attrs
+          [ mkAttr "name" "nodeSel", mkAttr "method" "get" ]
+          $ unode "form" $
+          [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include
+          ] ++ intersperse br (prBt : nodeSel)
+    return $ mkHtmlElemScript "autoProofs" (jvScr1 ++ jvScr2) $ [ goBack
+          , plain " ", nodeMenu ]
+
+showProveButton :: (Element, Element)
+showProveButton = (prBt, timeout) where
+        prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
+               `add_attrs` inputNode
+        -- create timeout field
+        timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
+               , mkAttr "value" "1", mkAttr "size" "3"]
+               $ unode "input" "Sec/Goal "
+
+-- | select unproven, all or none theorems by button
+showSelectionButtons :: String -> (Element, Element, Element, String)
+showSelectionButtons testUnproven = (selUnPr, selAll, selNone, jvScr) where
+        selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
+          , mkAttr "onClick" "chkUnproven()"] inputNode
+        selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
+          , mkAttr "onClick" "chkAll(true)"] inputNode
+        selNone = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
+          , mkAttr "onClick" "chkAll(false)"] inputNode
         -- javascript features
-        jvScr = unlines [ jvScr1
+        jvScr = unlines
           -- select unproven goals by button
-          , "\nfunction chkUnproven() {"
+          [ "\nfunction chkUnproven() {"
           , "  var e = document.forms[0].elements;"
           , "  for (i = 0; i < e.length; i++) {"
-          , "    if( e[i].type == 'checkbox' )"
-          , "      e[i].checked = e[i].getAttribute('goalstatus') != 'Proved';"
+          , "    if( e[i].type == 'checkbox'"
+          , "      && e[i].name != 'includetheorems' )"
+          , "      e[i].checked = e[i]." ++ testUnproven ++ ";"
           , "  }"
           -- select or deselect all theorems by button
           , "}\nfunction chkAll(b) {"
           , "  var e = document.forms[0].elements;"
           , "  for (i = 0; i < e.length; i++) {"
-          , "    if( e[i].type == 'checkbox' ) e[i].checked = b;"
+          , "    if( e[i].type == 'checkbox'"
+          , "      && e[i].name != 'includetheorems' ) e[i].checked = b;"
           , "  }"
           -- autoselect SPASS if possible
           , "}\nwindow.onload = function() {"
@@ -754,9 +803,6 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , "  prs[0].selected = 'selected';"
           , "  updCmSel( prs[0].value );"
           , "}" ]
-        in mkHtmlElemScript fstLine jvScr [ headr, transBt, prvsBt, plain " ",
-          goBack, unode "h4" "Theorems", thmMenu, unode "h4" "Theory" ]
-          ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | create prover and comorphism menu and combine them using javascript
 showProverSelection :: [G_sublogics] -> (Element, Element, String)
@@ -809,75 +855,6 @@ showProverSelection subLs = let
     add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
     $ unode "option" c) allPrCm
   in (prs, cmrs, jvScr)
-
-showAutoProofWindow :: DGraph -> Int -> ResultT IO String
-showAutoProofWindow dg sessId = let
-  prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
-         `add_attrs` inputNode
-  fnodes = initFNodes $ labNodesDG dg
-  nodeSel = map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
-    , mkAttr "hasOpenGoals" $ show $ not $ allProved fn
-    , mkAttr "name" $ escStr $ name fn ]
-    $ unode "input" $ showHtml fn) fnodes
-
-
-  -- select unproven goals by button
-  selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
-    , mkAttr "onClick" "chkUnproven()"] inputNode
-  -- select or deselect all theorems by button
-  selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-    , mkAttr "onClick" "chkAll(true)"] inputNode
-  deSelAll = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-    , mkAttr "onClick" "chkAll(false)"] inputNode
-
-  jvScr = unlines
-        -- select unproven goals by button
-        [ "\nfunction chkUnproven() {"
-        , "  var e = document.forms[0].elements;"
-        , "  for (i = 0; i < e.length; i++) {"
-        , "    if( e[i].type == 'checkbox' )"
-        , "      e[i].checked = e[i].hasOpenGoals != 'True';"
-        , "  }"
-        -- select or deselect all theorems by button
-        , "}\nfunction chkAll(b) {"
-        , "  var e = document.forms[0].elements;"
-        , "  for (i = 0; i < e.length; i++) {"
-        , "    if( e[i].type == 'checkbox' ) e[i].checked = b;"
-        , "  }"
-        -- autoselect SPASS if possible
-        , "}\nwindow.onload = function() {"
-        , "  prSel = document.forms[0].elements.namedItem('prover');"
-        , "  prs = prSel.getElementsByTagName('option');"
-        , "  for ( i=0; i<prs.length; i++ ) {"
-        , "    if( prs[i].value == 'SPASS' ) {"
-        , "      prs[i].selected = 'selected';"
-        , "      updCmSel('SPASS');"
-        , "      return;"
-        , "    }"
-        , "  }"
-        -- if SPASS unable, select first one in list
-        , "  prs[0].selected = 'selected';"
-        , "  updCmSel( prs[0].value );"
-        , "}" ]
-
-
-  in do
-    (prSel, cmSel, jvScr1) <- fmap showProverSelection $ mapM (\ (_, nd) ->
-      case maybeResult $ getGlobalTheory nd of
-        Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
-        Just gTh -> return $ sublogicOfTh gTh) $ labNodesDG dg
-
-    -- combine elements within a form
-    let hidStr = add_attrs [ mkAttr "name" "autoproof"
-          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
-          , mkAttr "value" "proof" ] inputNode -- use val=cons for consChecker
-        nodeMenu = let br = unode "br " () in add_attrs [
-          mkAttr "name" "nodeSel", mkAttr "method" "get"]
-          $ unode "form" $ [ hidStr, prSel, cmSel, br,
-          selAll, deSelAll, selUnPr] ++ intersperse br (prBt : nodeSel)
-
-
-    return $ mkHtmlElemScript "autoProofs" (jvScr1 ++ jvScr) $ [ nodeMenu ]
 
 showHtml :: FNode -> String
 showHtml fn = name fn ++ " " ++ (goalsToPrefix $ toGtkGoals fn)
@@ -973,7 +950,7 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
     if null sens then return (le, sens) else return
         (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
--- run over all dgnodes and prove available goals for each
+-- run over multiple dgnodes and prove available goals for each
 proveMultiNodes :: LibEnv -> LibName -> DGraph -> Bool -> Maybe String
   -> Maybe String -> Maybe Int -> [String]
   -> ResultT IO (LibEnv, [(String, String)])
