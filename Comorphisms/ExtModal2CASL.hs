@@ -115,11 +115,11 @@ transTop msig csig = let
     in stripQuant csig . mkForall [vd, vn]
            . transMF (Args 1 1 1 1 (stringToId "Z") msig)
 
-transMF :: Args -> FORMULA EM_FORMULA -> FORMULA ()
-transMF as = let
+transRecord :: Args -> Record EM_FORMULA (FORMULA ()) (TERM ())
+transRecord as = let
     extInf = extendedInfo $ modSig as
     currW = mkVarTerm (genNumVar "w" $ futureW as) world
-    in foldFormula (mapRecord $ const ())
+    in (mapRecord $ const ())
   { foldPredication = \ _ ps args r -> case ps of
       Qual_pred_name pn pTy@(Pred_type srts q) p
         | MapSet.member pn (toPredType pTy) $ flexPreds extInf
@@ -139,6 +139,9 @@ transMF as = let
             (currW : args) r
       _ -> Application os args r
   }
+
+transMF :: Args -> FORMULA EM_FORMULA -> FORMULA ()
+transMF = foldFormula . transRecord
 
 disjointVars :: [VAR_DECL] -> [FORMULA ()]
 disjointVars vs = case vs of
@@ -178,4 +181,24 @@ transEMF as emf = case emf of
   ModForm _ -> trueForm
 
 transMod :: Args -> MODALITY -> FORMULA ()
-transMod _ _ = trueForm
+transMod as md = let
+  vts = map (\ n -> mkVarTerm (genNumVar "w" n) world)
+             [currentW as, futureW as]
+  extInf = extendedInfo $ modSig as
+  timeMs = timeMods extInf
+  in case md of
+  SimpleMod i -> let ri = simpleIdToId i in mkPredication
+    (mkQualPred (relOfMod (Set.member ri timeMs) False ri)
+                    . toPRED_TYPE $ modPredType world False ri) vts
+  TermMod t -> case optTermSort t of
+    Just srt | Set.member srt $ termMods extInf -> mkPredication
+      (mkQualPred (relOfMod (Set.member srt timeMs) True srt)
+                    . toPRED_TYPE $ modPredType world True srt)
+      $ foldTerm (transRecord as) t : vts
+    _ -> trueForm
+  _ -> trueForm
+{-
+  | ModOp ModOp MODALITY MODALITY
+  | TransClos MODALITY
+  | Guard (FORMULA EM_FORMULA)
+-}

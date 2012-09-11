@@ -58,18 +58,21 @@ addWorldPred :: SORT -> (Id -> Id) -> PredMap -> PredMap
 addWorldPred = addWorld . worldPredType
 
 -- | create a predicate name for time, simple and term modalities
-relOfMod :: Bool -> Bool -> Id -> Id
+relOfMod :: Bool -> Bool -> SORT -> Id
 relOfMod time term m = let s = if time then "T" else "R" in
   Id [genToken $ if term then s ++ "_t" else s] [m] $ rangeOfId m
 
 -- | create a predicate name for simple and term modalities
-relName :: Bool -> Id -> Id
+relName :: Bool -> SORT -> Id
 relName = relOfMod False
 
 -- | insert a simple or term modality
 insertModPred :: SORT -> Bool -> Bool -> Id -> PredMap -> PredMap
 insertModPred ws time term m = MapSet.insert (relOfMod time term m)
-   . PredType $ (if term then (m :) else id) [ws, ws]
+   $ modPredType ws term m
+
+modPredType :: SORT -> Bool -> SORT -> PredType
+modPredType ws term m = PredType $ (if term then (m :) else id) [ws, ws]
 
 -- | the renaming as part of a morphism
 renMorphism :: Ord a => (Id -> Id) -> MapSet.MapSet Id a -> Map.Map (Id, a) Id
