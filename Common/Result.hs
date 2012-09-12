@@ -38,6 +38,7 @@ module Common.Result
   , resultToMonad
   , resultToMaybe
   , adjustPos
+  , updDiagKind
   , propagateErrors
   , showErr
   , prettyRange
@@ -46,17 +47,21 @@ module Common.Result
   , printDiags
   ) where
 
-import Common.Id
 import Common.Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
+import Common.Id
+import Common.Lexer
+
+import Control.Monad
+import Control.Monad.Identity
+
+import Data.Function
 import Data.List
+
 import Text.ParserCombinators.Parsec.Error
 import Text.ParserCombinators.Parsec.Char (char)
 import Text.ParserCombinators.Parsec (parse)
-import Common.Lexer
-import Control.Monad
-import Control.Monad.Identity
 
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug
@@ -99,6 +104,10 @@ addErrorDiag str a r@(Result ds ms) = if hasErrors ds then
 -- | add range to a diagnosis
 adjustDiagPos :: Range -> Diagnosis -> Diagnosis
 adjustDiagPos r d = if isNullRange $ diagPos d then d { diagPos = r } else d
+
+-- | change the diag kind of a diagnosis
+updDiagKind :: (DiagKind -> DiagKind) -> Diagnosis -> Diagnosis
+updDiagKind f d = d { diagKind = f $ diagKind d }
 
 -- | A uniqueness check yields errors for duplicates in a given list.
 checkUniqueness :: (Pretty a, GetRange a, Ord a) => [a] -> [Diagnosis]
@@ -249,7 +258,7 @@ prettySingleSourceRange sp = let
 
 prettyRange :: [Pos] -> Doc
 prettyRange = sepByCommas . map prettySingleSourceRange
-    . groupBy (\ p1 p2 -> sourceName p1 == sourceName p2) . sort
+    . groupBy (on (==) sourceName) . sort
 
 -- Added this instance because prettyRange is not exported
 instance Pretty Range where

@@ -14,10 +14,13 @@ Writing various formats, according to Hets options
 
 module Driver.WriteFn (writeSpecFiles, writeVerbFile) where
 
-import Control.Monad
 import Text.ParserCombinators.Parsec
 import Text.XML.Light
+
+import Control.Monad
+
 import Data.List (partition, (\\))
+import Data.Maybe
 
 import Common.AS_Annotation
 import Common.Id
@@ -32,15 +35,25 @@ import qualified Data.Map as Map
 import Common.SExpr
 import Common.IO
 
+import Comorphisms.LogicGraph
+
 import Logic.Coerce
 import Logic.Comorphism (targetLogic)
 import Logic.Logic
 import Logic.Grothendieck
-import Comorphisms.LogicGraph
+import Logic.Prover
+
+import Proofs.StatusUtils
+
+import Static.GTheory
+import Static.DevGraph
+import Static.CheckGlobalContext
+import Static.DotGraph
+import qualified Static.PrintDevGraph as DG
+import Static.ComputeTheory
 import qualified Static.ToXml as ToXml
 
 import CASL.Logic_CASL
-
 import CASL.CompositionTable.Pretty
 import CASL.CompositionTable.ToXml
 import CASL.CompositionTable.ComputeTable
@@ -50,16 +63,17 @@ import CASL.CompositionTable.ParseSparQ
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
 #endif
+
 import Isabelle.CreateTheories
 import Isabelle.IsaParse
 import Isabelle.IsaPrint (printIsaTheory)
+
 import SoftFOL.CreateDFGDoc
 import SoftFOL.DFGParser
 import SoftFOL.ParseTPTP
 
 import FreeCAD.XMLPrinter (exportXMLFC)
 import FreeCAD.Logic_FreeCAD
-
 
 import VSE.Logic_VSE
 import VSE.ToSExpr
@@ -79,15 +93,6 @@ import qualified RDF.Print as RDF (printRDFBasicTheory)
 import CommonLogic.Logic_CommonLogic
 import qualified CommonLogic.AS_CommonLogic as CL_AS (exportCLIF)
 import qualified CommonLogic.Parse_CLIF as CL_Parse (cltext)
-
-import Logic.Prover
-import Static.GTheory
-import Static.DevGraph
-import Static.CheckGlobalContext
-import Static.DotGraph
-import qualified Static.PrintDevGraph as DG
-import Proofs.StatusUtils
-import Static.ComputeTheory
 
 import Driver.Options
 import Driver.ReadFn (libNameToFile)
@@ -303,19 +308,17 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
                 Result es mTh = if null tr then return (raw_gTh0, "") else do
                    comor <- lookupCompComorphism (map tokStr tr) logicGraph
                    tTh <- mapG_theory comor raw_gTh0
-                   return (tTh, show comor)
-            showDiags opts es
-            case mTh of
-             Nothing ->
-               putIfVerbose opts 0 "could not translate theory"
-             Just (raw_gTh, tStr) -> do
-               unless (null tStr) $
-                   putIfVerbose opts 2 $ "Translated using comorphism " ++ tStr
-               putIfVerbose opts 4 $ "Sublogic of " ++ show i ++ ": " ++
+                   return (tTh, "Translated using comorphism " ++ show comor)
+                (raw_gTh, tStr) =
+                  fromMaybe (raw_gTh0, "Keeping untranslated theory") mTh
+            showDiags opts $ map (updDiagKind
+                (\ k -> if k == Error then Warning else k)) es
+            unless (null tStr) $ putIfVerbose opts 2 tStr
+            putIfVerbose opts 4 $ "Sublogic of " ++ show i ++ ": " ++
                    show (sublogicOfTh raw_gTh)
-               unless (modelSparQ opts == "") $
+            unless (modelSparQ opts == "") $
                    modelSparQCheck opts (theoremsToAxioms raw_gTh)
-               mapM_ (writeTheory ins nam opts filePrefix ga raw_gTh ln i)
+            mapM_ (writeTheory ins nam opts filePrefix ga raw_gTh ln i)
                  specOutTypes
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> DGraph
