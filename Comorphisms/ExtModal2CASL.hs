@@ -15,6 +15,7 @@ import Logic.Logic
 import Logic.Comorphism
 
 import Common.AS_Annotation
+import Common.DocUtils
 import Common.Id
 import Common.ProofTree
 import qualified Common.Lib.Rel as Rel
@@ -28,6 +29,7 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.Logic_CASL
 import CASL.Morphism
+import CASL.Overload
 import CASL.Quantification
 import CASL.Sign
 import CASL.Sublogic as SL
@@ -184,18 +186,23 @@ transMod :: Args -> MODALITY -> FORMULA ()
 transMod as md = let
   vts = map (\ n -> mkVarTerm (genNumVar "w" n) world)
              [currentW as, futureW as]
-  extInf = extendedInfo $ modSig as
+  msig = modSig as
+  extInf = extendedInfo msig
   timeMs = timeMods extInf
   in case md of
   SimpleMod i -> let ri = simpleIdToId i in mkPredication
     (mkQualPred (relOfMod (Set.member ri timeMs) False ri)
                     . toPRED_TYPE $ modPredType world False ri) vts
   TermMod t -> case optTermSort t of
-    Just srt | Set.member srt $ termMods extInf -> mkPredication
-      (mkQualPred (relOfMod (Set.member srt timeMs) True srt)
-                    . toPRED_TYPE $ modPredType world True srt)
-      $ foldTerm (transRecord as) t : vts
-    _ -> trueForm
+    Just srt -> case keepMinimals msig id . Set.toList
+      . Set.intersection (termMods extInf) . Set.insert srt
+      $ supersortsOf srt msig of
+      [] -> error $ "transMod1: " ++ showDoc t ""
+      st : _ -> mkPredication
+        (mkQualPred (relOfMod (Set.member st timeMs) True st)
+         . toPRED_TYPE $ modPredType world True st)
+        $ foldTerm (transRecord as) t : vts
+    _ -> error $ "transMod2: " ++ showDoc t ""
   _ -> trueForm
 {-
   | ModOp ModOp MODALITY MODALITY
