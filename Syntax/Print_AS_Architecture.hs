@@ -19,6 +19,9 @@ import Common.Keywords
 import Syntax.AS_Architecture
 import Syntax.Print_AS_Structured
 
+sp1 :: Doc
+sp1 = keyword " "
+
 instance PrettyLG ARCH_SPEC where
     prettyLG lg a = case a of
         Basic_arch_spec aa ab _ -> sep [keyword (unitS ++ sS)
@@ -33,11 +36,12 @@ instance PrettyLG UNIT_REF where
 
 instance PrettyLG UNIT_DECL_DEFN where
     prettyLG lg ud = case ud of
-        Unit_decl aa ab ac _ -> sep [structIRI aa <+> colon,
-            fsep $ prettyLG lg ab :
+        Unit_decl aa ab ac _ -> cat [structIRI aa <+> colon,
+            sp1 <> fsep (prettyLG lg ab :
                  if null ac then [] else
-                     keyword givenS : punctuate comma (map (prettyLG lg) ac)]
-        Unit_defn aa ab _ -> fsep [structIRI aa, equals, prettyLG lg ab]
+                     keyword givenS : punctuate comma (map (prettyLG lg) ac))]
+        Unit_defn aa ab _ ->
+            cat [structIRI aa <+> equals, sp1 <> prettyLG lg ab]
 
 instance PrettyLG UNIT_SPEC where
     prettyLG lg u = case u of
