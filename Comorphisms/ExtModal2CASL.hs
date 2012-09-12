@@ -100,7 +100,6 @@ transSig sign = let
 
 data Args = Args
   { currentW, futureW :: Int  -- world variables
-  , currentN, futureN :: Int  -- world numbering
   , transPredName :: Id
   , modSig :: ExtModalSign
   }
@@ -115,7 +114,7 @@ transTop msig csig = let
     vd = mkVarDecl (genNumVar "w" 1) world
     vn = mkVarDecl (genNumVar "n" 1) natSort
     in stripQuant csig . mkForall [vd, vn]
-           . transMF (Args 1 1 1 1 (stringToId "Z") msig)
+           . transMF (Args 1 1 (stringToId "Z") msig)
 
 transRecord :: Args -> Record EM_FORMULA (FORMULA ()) (TERM ())
 transRecord as = let
@@ -154,11 +153,11 @@ transEMF :: Args -> EM_FORMULA -> FORMULA ()
 transEMF as emf = case emf of
   PrefixForm pf f r -> case pf of
     BoxOrDiamond bOp m gEq i -> let
-      fW = futureW as
+      fW = max (futureW as) $ currentW as
       ex = bOp == Diamond
       l = [fW + 1 .. fW + i]
       vds = map (\ n -> mkVarDecl (genNumVar "w" n) world) l
-      nAs n = as { futureW = n, currentW = fW }
+      nAs n = as { futureW = n }
       tf n = transMF (nAs n) f
       tM n = transMod (nAs n) m
       conjF = conjunct $ map tM l ++ map tf l ++ disjointVars vds
@@ -184,8 +183,10 @@ transEMF as emf = case emf of
 
 transMod :: Args -> MODALITY -> FORMULA ()
 transMod as md = let
-  vts = map (\ n -> mkVarTerm (genNumVar "w" n) world)
-             [currentW as, futureW as]
+  fW = futureW as
+  cW = currentW as
+  vts@[t1, t2] = map (\ n -> mkVarTerm (genNumVar "w" n) world)
+             [currentW as, fW]
   msig = modSig as
   extInf = extendedInfo msig
   timeMs = timeMods extInf
@@ -203,9 +204,29 @@ transMod as md = let
          . toPRED_TYPE $ modPredType world True st)
         $ foldTerm (transRecord as) t : vts
     _ -> error $ "transMod2: " ++ showDoc t ""
-  _ -> trueForm
-{-
-  | ModOp ModOp MODALITY MODALITY
-  | TransClos MODALITY
-  | Guard (FORMULA EM_FORMULA)
--}
+  Guard f -> conjunct [mkExEq t1 t2,
+      transMF as { futureW = cW } f]
+  ModOp mOp m1 m2 -> case mOp of
+    Composition -> let
+      nW = max fW cW + 1
+      vd = mkVarDecl (genNumVar "w" nW) world
+      in mkExist [vd] $ conjunct
+           [ transMod as { futureW = nW } m1
+           , transMod as { currentW = nW } m2 ]
+    Intersection -> conjunct [transMod as m1, transMod as m2] -- parallel?
+    Union -> disjunct [transMod as m1, transMod as m2]
+    OrElse -> disjunct . transOrElse [] as $ flatOrElse md
+  TransClos m -> transMod as m -- ignore transitivity for now
+
+flatOrElse :: MODALITY -> [MODALITY]
+flatOrElse md = case md of
+  ModOp OrElse m1 m2 -> flatOrElse m1 ++ flatOrElse m2
+  _ -> [md]
+
+transOrElse :: [FORMULA EM_FORMULA] -> Args -> [MODALITY] -> [FORMULA ()]
+transOrElse nFs as ms = case ms of
+  [] -> []
+  md : r -> case md of
+    Guard f -> transMod as (Guard . conjunct $ f : nFs)
+      : transOrElse (mkNeg f : nFs) as r
+    _ -> transMod as md : transOrElse nFs as r
