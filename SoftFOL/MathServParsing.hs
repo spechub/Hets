@@ -15,18 +15,18 @@ Functions for parsing MathServ output into a MathServResponse structure.
 module SoftFOL.MathServParsing
   ( callMathServ
   , parseMathServOut
-  , MathServServices(..)
-  , MathServOperationTypes(..)
-  , MathServCall(..)
-  , MathServResponse(..)
-  , MWFoAtpResult(..)
-  , MWFormalProof(..)
-  , MWStatus(..)
-  , FoAtpStatus(..)
-  , SolvedStatus(..)
-  , UnsolvedStatus(..)
-  , MWCalculus(..)
-  , MWTimeResource(..)
+  , MathServServices (..)
+  , MathServOperationTypes (..)
+  , MathServCall (..)
+  , MathServResponse (..)
+  , MWFoAtpResult (..)
+  , MWFormalProof (..)
+  , MWStatus (..)
+  , FoAtpStatus (..)
+  , SolvedStatus (..)
+  , UnsolvedStatus (..)
+  , MWCalculus (..)
+  , MWTimeResource (..)
   ) where
 
 import Common.Utils (getEnvSave, readMaybe)
@@ -51,13 +51,13 @@ instance Show ServerAddr where
         (serverName sAdd ++) . showChar ':' . shows (portNumber sAdd)
 
 instance Read ServerAddr where
-    readsPrec _ s = let (n,portRest) = span (/= ':') s
-                        (portS,rest) = if null portRest
-                                      then ("", "")
-                                      else span isDigit $ tail portRest
-                        portN = fromMaybe 8080 $ readMaybe portS
-                    in [(ServerAddr { serverName = n, portNumber = portN },
-                        rest)]
+    readsPrec _ s = let
+        (n, portRest) = span (/= ':') s
+        (portS, rest) = case portRest of
+          "" -> ("", "")
+          _ : r -> span isDigit r
+        portN = fromMaybe 8080 $ readMaybe portS
+       in [(ServerAddr { serverName = n, portNumber = portN }, rest)]
 
 defaultServer :: ServerAddr
 defaultServer = ServerAddr
@@ -111,25 +111,23 @@ data MathServOperationTypes =
   returned by MathServ.
 -}
 data MathServResponse =
-       MathServResponse { foAtpResult  :: Either String MWFoAtpResult,
+       MathServResponse { foAtpResult :: Either String MWFoAtpResult,
                           timeResource :: MWTimeResource
                           } deriving (Eq, Ord, Show)
 
 data MWFoAtpResult =
-       MWFoAtpResult { proof        :: MWFormalProof,
-                       outputStr    :: String,
+       MWFoAtpResult { proof :: MWFormalProof,
+                       outputStr :: String,
                        systemStatus :: MWStatus,
-                       systemStr    :: String,
-                       time         :: MWTimeResource
--- defined, but not needed?
---                       timeRes     :: MWTimeResource,
+                       systemStr :: String,
+                       time :: MWTimeResource
                        } deriving (Eq, Ord, Show)
 
 data MWFormalProof =
        TstpCnfRefutation { formalProof :: String,
-                           proofOf     :: MWProvingProblem,
-                           calculus    :: MWCalculus,
-                           axioms      :: String
+                           proofOf :: MWProvingProblem,
+                           calculus :: MWCalculus,
+                           axioms :: String
                            } deriving (Eq, Ord, Show)
 
 emptyMWFormalProof :: MWFormalProof
@@ -141,16 +139,14 @@ emptyMWFormalProof = TstpCnfRefutation
 
 
 data MWStatus =
-       MWStatus { solved   :: Bool,
+       MWStatus { solved :: Bool,
                   foAtpStatus :: FoAtpStatus
                   } deriving (Eq, Ord, Show)
-
---- data MWStatus = MWStatus Bool SystemStatus deriving (Eq, Ord, Show)
 
 data FoAtpStatus =
        Solved SolvedStatus
      | Unsolved UnsolvedStatus
-     deriving (Eq, Ord, Show,Read)
+     deriving (Eq, Ord, Show, Read)
 
 data SolvedStatus =
        CounterEquivalent
@@ -164,7 +160,7 @@ data SolvedStatus =
      | Theorem
      | Unsatisfiable
      | UnsatisfiableConclusion
-     deriving (Eq, Ord, Show,Read)
+     deriving (Eq, Ord, Show, Read)
 
 data UnsolvedStatus =
        Assumed
@@ -175,7 +171,7 @@ data UnsolvedStatus =
      | Timeout
      | Unknown
      | NoStatus
-     deriving (Eq, Ord, Show,Read)
+     deriving (Eq, Ord, Show, Read)
 
 data MWProvingProblem =
        TstpFOFProblem
@@ -196,7 +192,7 @@ data MWCalculus =
      deriving (Eq, Ord, Show, Read)
 
 data MWTimeResource =
-       MWTimeResource { cpuTime       :: TimeOfDay,
+       MWTimeResource { cpuTime :: TimeOfDay,
                         wallClockTime :: TimeOfDay
                         } deriving (Eq, Ord, Show)
 
@@ -208,8 +204,8 @@ mkProveProblemElem :: MathServCall -- ^ needed data to do a MathServ call
 mkProveProblemElem call = let extOpt = extraOptions call in
      unode ("Prove" ++ show (mathServOperation call)
            ++ if isJust extOpt then "WithOptions" else "")
-       ([ unode "in0" $ toCData $ problem call
-        , unode "in1" $ toCData $ show $ proverTimeLimit call]
+       ([ unode "in0" . toCData . filter isAscii $ problem call
+        , unode "in1" . toCData . show $ proverTimeLimit call]
         ++ case extOpt of
              Nothing -> []
              Just o2 -> [unode "in2" $ toCData o2])
@@ -429,13 +425,11 @@ filterUnderline :: Bool  -- ^ upcase next letter
                 -> String -- ^ input String
                 -> String -- ^ un-dashed output String
 filterUnderline b st = case st of
-    []  -> []
+    [] -> []
     h : r -> case h of
              '_' -> filterUnderline True r
              _ -> (if b then toUpper h else h) : filterUnderline False r
 
 getCalcAttr :: Element -> MWCalculus
-getCalcAttr e = let str = filterUnderline True $ getRdfResource e in
-  case readMaybe str of
-    Just c -> c
-    Nothing -> UnknownCalc
+getCalcAttr =
+  fromMaybe UnknownCalc . readMaybe . filterUnderline True . getRdfResource
