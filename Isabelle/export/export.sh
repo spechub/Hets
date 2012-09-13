@@ -68,7 +68,11 @@ if [ ! -x $ISABELLE ]; then
 fi
 
 if which mktemp > /dev/null ; then
- TEMP_FILE=`mktemp`
+ if uname | grep -q Darwin ; then
+  TEMP_FILE=`mktemp isaexport.out`
+ else
+  TEMP_FILE=`mktemp`
+ fi
 else
  TEMP_FILE="/tmp/isaexport.out"
 fi
