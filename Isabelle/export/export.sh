@@ -68,7 +68,7 @@ if [ ! -x $ISABELLE ]; then
 fi
 
 if which mktemp > /dev/null ; then
- if uname | grep -q Darwin ; then
+ if uname | grep Darwin &> /dev/null ; then
   TEMP_FILE=`mktemp isaexport.out`
  else
   TEMP_FILE=`mktemp`
@@ -112,7 +112,7 @@ handle ExportHelper.ExportError msg => e msg;
 end"
 ) | ($ISABELLE tty) | tee $TEMP_FILE
 
-if grep -q "*** Error" $TEMP_FILE; then
+if grep "*** Error" $TEMP_FILE &> /dev/null ; then
  echo "v0:Loading Theory failed" > $COMM_FILE
  grep "\*\*\* " $TEMP_FILE | head -n-3 > $COMM_FILE
  rm $TEMP_FILE
