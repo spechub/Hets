@@ -71,6 +71,7 @@ import System.Environment
 import System.Exit
 import System.FilePath (joinPath, makeRelative, equalFilePath, takeDirectory)
 import System.IO
+import System.IO.Error (isEOFError)
 import System.Process
 import System.Timeout
 #ifdef UNIX
@@ -449,7 +450,7 @@ getTempFifo _ = return ""
 #endif
 
 #ifdef UNIX
-type Pipe = (IO (), MVar String, Fd)
+type Pipe = (IO (), MVar String)
 #endif
 
 #ifdef UNIX
@@ -460,9 +461,13 @@ openFifo fp = do
         `Exception.catch`
         \ e -> const (threadDelay 100) (e :: Exception.IOException)
   fd <- openFd fp ReadWrite Nothing defaultFileFlags
-  let reader = forever $ readF fd `Exception.catch`
-               \ e -> closeFd fd >> throwIO (e :: Exception.IOException)
-  return (reader, mvar, fd)
+  let reader = forever $ do
+                fd <- openFd fp ReadWrite Nothing defaultFileFlags
+                readF fd `Exception.catch`
+                 \ e -> closeFd fd >>
+                        if isEOFError e then reader
+                        else throwIO (e :: Exception.IOException)
+  return (reader, mvar)
 
 readFifo' :: MVar String -> IO [String]
 readFifo' mvar = do
@@ -472,11 +477,11 @@ readFifo' mvar = do
 
 readFifo :: FilePath -> IO ([String], IO ())
 readFifo fp = do
-  (reader, pipe, fd) <- openFifo fp
+  (reader, pipe) <- openFifo fp
   tid <- forkIO reader
   l <- readFifo' pipe
   m <- newEmptyMVar
-  forkIO $ takeMVar m >> killThread tid >> closeFd fd
+  forkIO $ takeMVar m >> killThread tid
   return (l, putMVar m ())
 #else
 readFifo :: FilePath -> IO ([String], IO ())
