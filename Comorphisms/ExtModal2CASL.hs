@@ -113,7 +113,7 @@ transSig sign = let
                $ if term then toQualVar v : ts else ts) $ Set.toList timeMs])
 
 data Args = Args
-  { currentW, futureW :: Int  -- world variables
+  { currentW, futureW, nomW :: Int  -- world variables
   , modSig :: ExtModalSign
   }
 
@@ -133,7 +133,10 @@ transTop msig csig = let
     vd = mkVarDecl (genNumVar "w" 1) world
     vn = mkVarDecl (genNumVar "n" 1) natSort
     in stripQuant csig . mkForall [vd, vn]
-           . transMF (Args 1 1 msig)
+           . transMF (Args 1 1 1 msig)
+
+mkNomAppl :: Id -> TERM ()
+mkNomAppl pn = mkAppl (mkQualOp (nomName pn) $ toOP_TYPE nomOpType) []
 
 transRecord :: Args -> Record EM_FORMULA (FORMULA ()) (TERM ())
 transRecord as = let
@@ -147,8 +150,7 @@ transRecord as = let
             (Qual_pred_name (addPlace pn) (Pred_type (world : srts) q) p)
             (currW : args) r
         | null srts && Set.member pn (nominals extInf)
-          -> mkStEq currW $ mkAppl
-             (mkQualOp (nomName pn) $ toOP_TYPE nomOpType) []
+          -> mkStEq currW $ mkNomAppl pn
       _ -> Predication ps args r
   , foldExtFORMULA = \ _ f -> transEMF as f
   , foldApplication = \ _ os args r -> case os of
@@ -170,13 +172,14 @@ disjointVars vs = case vs of
 
 transEMF :: Args -> EM_FORMULA -> FORMULA ()
 transEMF as emf = case emf of
-  PrefixForm pf f r -> case pf of
+  PrefixForm pf f r -> let
+    fW = max (futureW as) $ currentW as
+    nAs n = as { futureW = n }
+    in case pf of
     BoxOrDiamond bOp m gEq i -> let
-      fW = max (futureW as) $ currentW as
       ex = bOp == Diamond
       l = [fW + 1 .. fW + i]
       vds = map (\ n -> mkVarDecl (genNumVar "w" n) world) l
-      nAs n = as { futureW = n }
       tf n = transMF (nAs n) f
       tM n = transMod (nAs n) m
       conjF = conjunct $ map tM l ++ map tf l ++ disjointVars vds
@@ -196,6 +199,14 @@ transEMF as emf = case emf of
                        (diam i) (mkNeg f) r
               else transMF as . ExtFORMULA $ PrefixForm
                        (diam $ i + 1) (mkNeg f) r
+    Hybrid at i ->
+      let nF = nomW as
+          vi = mkVarDecl (genNumVar "i" nF) world
+          vw = mkVarTerm (genNumVar "w" $ futureW as) world
+          nP = transMF as { nomW = if at then nF else nF + 1 } f
+          equ = mkStEq vw
+      in if at then conjunct [equ (mkNomAppl $ simpleIdToId i), nP]
+         else mkExist [vi] $ conjunct [equ $ toQualVar vi, nP]
     _ -> transMF as f
   UntilSince _isUntil f1 f2 r -> conjunctRange [transMF as f1, transMF as f2] r
   ModForm _ -> trueForm
