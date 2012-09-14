@@ -58,7 +58,7 @@ instance Comorphism ExtModal2CASL
     targetLogic ExtModal2CASL = CASL
     mapSublogic ExtModal2CASL _ = Just SL.caslTop
     map_theory ExtModal2CASL (sig, sens) = case transSig sig of
-      mme -> return (mme, map (mapNamed $ transTop sig mme) sens)
+      (mme, s) -> return (mme, s ++ map (mapNamed $ transTop sig mme) sens)
     {-
     map_morphism ExtModal2CASL = return . mapMor
     map_sentence ExtModal2CASL sig = return . transSen sig
@@ -74,7 +74,7 @@ nomOpType :: OpType
 nomOpType = mkTotOpType [] world
 
 -- | add world arguments to flexible ops and preds; and add relations
-transSig :: ExtModalSign -> CASLSign
+transSig :: ExtModalSign -> (CASLSign, [Named (FORMULA ())])
 transSig sign = let
     s1 = embedSign () sign
     extInf = extendedInfo sign
@@ -92,20 +92,39 @@ transSig sign = let
       insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
       MapSet.empty $ modalities extInf
     nomOps = Set.fold (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
-    in s1
+    vds = map (\ n -> mkVarDecl (genNumVar "v" n) world) [1, 2]
+    ts = map toQualVar vds
+    in (s1
     { sortRel = Rel.insertKey world $ sortRel sign
     , opMap = addOpMapSet flexOps' nomOps
     , assocOps = diffOpMapSet (assocOps sign) flexibleOps
-    , predMap = addMapSet rels $ addMapSet flexPreds' noNomsPreds}
+    , predMap = (if Set.null timeMs then id else MapSet.insert tauId tauTy)
+                . addMapSet rels
+                $ addMapSet flexPreds' noNomsPreds
+    } , if Set.null timeMs then [] else
+        [makeNamed "tau" . mkForall vds . mkEqv
+        (mkPredication (mkQualPred tauId $ toPRED_TYPE tauTy) ts)
+        . disjunct . map (\ tm ->
+            let v = mkVarDecl (genNumVar "t" 0) tm
+                term = Set.member tm termMs
+            in (if term then mkExist [v] else id) $ mkPredication
+               (mkQualPred (relOfMod True term tm)
+                . toPRED_TYPE $ modPredType world term tm)
+               $ if term then toQualVar v : ts else ts) $ Set.toList timeMs])
 
 data Args = Args
   { currentW, futureW :: Int  -- world variables
-  , transPredName :: Id
   , modSig :: ExtModalSign
   }
 
 natSort :: SORT
 natSort = stringToId "Nat"
+
+tauId :: Id
+tauId = genName "Tau"
+
+tauTy :: PredType
+tauTy = PredType [world, world]
 
 -- TODO: check that constructors are not flexible!
 
@@ -114,7 +133,7 @@ transTop msig csig = let
     vd = mkVarDecl (genNumVar "w" 1) world
     vn = mkVarDecl (genNumVar "n" 1) natSort
     in stripQuant csig . mkForall [vd, vn]
-           . transMF (Args 1 1 (stringToId "Z") msig)
+           . transMF (Args 1 1 msig)
 
 transRecord :: Args -> Record EM_FORMULA (FORMULA ()) (TERM ())
 transRecord as = let
