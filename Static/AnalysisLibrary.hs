@@ -331,7 +331,10 @@ anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
 anaLibItem lg opts topLns currLn libenv dg eo itm =
  case itm of
-  Spec_defn spn' gen asp pos -> case expCurie (globalAnnos dg) eo spn' of
+  Spec_defn spn2 gen asp pos -> let
+    spn' = if null (iriToStringUnsecure spn2) then
+         simpleIdToIRI $ mkSimpleId "Spec" else spn2
+    in case expCurie (globalAnnos dg) eo spn' of
    Nothing -> liftR $ prefixErrorIRI spn'
    Just spn -> do
     let spstr = iriToStringUnsecure spn
