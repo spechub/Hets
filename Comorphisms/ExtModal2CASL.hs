@@ -23,6 +23,7 @@ import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
 import Data.Function
+import Data.Maybe
 
 -- CASL
 import CASL.AS_Basic_CASL
@@ -113,12 +114,21 @@ transSig sign = let
                $ if term then toQualVar v : ts else ts) $ Set.toList timeMs])
 
 data Args = Args
-  { currentW, futureW, nomW :: Int  -- world variables
+  { currentW :: TERM ()
+  , nextW, freeC :: Int  -- world variables
+  , boundNoms :: [(Id, TERM ())]
   , modSig :: ExtModalSign
   }
 
-natSort :: SORT
-natSort = stringToId "Nat"
+transTop :: ExtModalSign -> CASLSign -> FORMULA EM_FORMULA -> FORMULA ()
+transTop msig csig = let
+    vd = mkVarDecl (genNumVar "w" 1) world
+    vt = toQualVar vd
+    in stripQuant csig . mkForall [vd]
+           . transMF (Args vt 1 1 [] msig)
+
+getTermOfNom :: Args -> Id -> TERM ()
+getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
 
 tauId :: Id
 tauId = genName "Tau"
@@ -128,20 +138,13 @@ tauTy = PredType [world, world]
 
 -- TODO: check that constructors are not flexible!
 
-transTop :: ExtModalSign -> CASLSign -> FORMULA EM_FORMULA -> FORMULA ()
-transTop msig csig = let
-    vd = mkVarDecl (genNumVar "w" 1) world
-    vn = mkVarDecl (genNumVar "n" 1) natSort
-    in stripQuant csig . mkForall [vd, vn]
-           . transMF (Args 1 1 1 msig)
-
 mkNomAppl :: Id -> TERM ()
 mkNomAppl pn = mkAppl (mkQualOp (nomName pn) $ toOP_TYPE nomOpType) []
 
 transRecord :: Args -> Record EM_FORMULA (FORMULA ()) (TERM ())
 transRecord as = let
     extInf = extendedInfo $ modSig as
-    currW = mkVarTerm (genNumVar "w" $ futureW as) world
+    currW = currentW as
     in (mapRecord $ const ())
   { foldPredication = \ _ ps args r -> case ps of
       Qual_pred_name pn pTy@(Pred_type srts q) p
@@ -150,7 +153,7 @@ transRecord as = let
             (Qual_pred_name (addPlace pn) (Pred_type (world : srts) q) p)
             (currW : args) r
         | null srts && Set.member pn (nominals extInf)
-          -> mkStEq currW $ mkNomAppl pn
+          -> mkStEq currW $ getTermOfNom as pn
       _ -> Predication ps args r
   , foldExtFORMULA = \ _ f -> transEMF as f
   , foldApplication = \ _ os args r -> case os of
@@ -173,15 +176,15 @@ disjointVars vs = case vs of
 transEMF :: Args -> EM_FORMULA -> FORMULA ()
 transEMF as emf = case emf of
   PrefixForm pf f r -> let
-    fW = max (futureW as) $ currentW as
-    nAs n = as { futureW = n }
+    fW = freeC as
     in case pf of
     BoxOrDiamond bOp m gEq i -> let
       ex = bOp == Diamond
       l = [fW + 1 .. fW + i]
       vds = map (\ n -> mkVarDecl (genNumVar "w" n) world) l
-      tf n = transMF (nAs n) f
-      tM n = transMod (nAs n) m
+      nAs = as { freeC = fW + i }
+      tf n = transMF nAs { currentW = mkVarTerm (genNumVar "w" n) world } f
+      tM n = transMod nAs { nextW = n } m
       conjF = conjunct $ map tM l ++ map tf l ++ disjointVars vds
       diam = BoxOrDiamond Diamond m True
       tr b = transEMF as $ PrefixForm (BoxOrDiamond b m gEq i) f r
@@ -199,24 +202,22 @@ transEMF as emf = case emf of
                        (diam i) (mkNeg f) r
               else transMF as . ExtFORMULA $ PrefixForm
                        (diam $ i + 1) (mkNeg f) r
-    Hybrid at i ->
-      let nF = nomW as
-          vi = mkVarDecl (genNumVar "i" nF) world
-          vw = mkVarTerm (genNumVar "w" $ futureW as) world
-          nP = transMF as { nomW = if at then nF else nF + 1 } f
-          equ = mkStEq vw
-      in if at then conjunct [equ (mkNomAppl $ simpleIdToId i), nP]
-         else mkExist [vi] $ conjunct [equ $ toQualVar vi, nP]
+    Hybrid at i -> let ni = simpleIdToId i in
+      if at then transMF as { currentW = getTermOfNom as ni } f else let
+      vi = mkVarDecl (genNumVar "i" fW) world
+      ti = toQualVar vi
+      in mkExist [vi] $ conjunct
+           [ mkStEq ti $ currentW as
+           , transMF as { boundNoms = (ni, ti) : boundNoms as } f ]
     _ -> transMF as f
   UntilSince _isUntil f1 f2 r -> conjunctRange [transMF as f1, transMF as f2] r
   ModForm _ -> trueForm
 
 transMod :: Args -> MODALITY -> FORMULA ()
 transMod as md = let
-  fW = futureW as
-  cW = currentW as
-  vts@[t1, t2] = map (\ n -> mkVarTerm (genNumVar "w" n) world)
-             [currentW as, fW]
+  t1 = currentW as
+  t2 = mkVarTerm (genNumVar "w" $ nextW as) world
+  vts = [t1, t2]
   msig = modSig as
   extInf = extendedInfo msig
   timeMs = timeMods extInf
@@ -234,15 +235,15 @@ transMod as md = let
          . toPRED_TYPE $ modPredType world True st)
         $ foldTerm (transRecord as) t : vts
     _ -> error $ "transMod2: " ++ showDoc t ""
-  Guard f -> conjunct [mkExEq t1 t2,
-      transMF as { futureW = cW } f]
+  Guard f -> conjunct [mkExEq t1 t2, transMF as f]
   ModOp mOp m1 m2 -> case mOp of
     Composition -> let
-      nW = max fW cW + 1
+      nW = freeC as + 1
+      nAs = as { freeC = nW }
       vd = mkVarDecl (genNumVar "w" nW) world
       in mkExist [vd] $ conjunct
-           [ transMod as { futureW = nW } m1
-           , transMod as { currentW = nW } m2 ]
+           [ transMod nAs { nextW = nW } m1
+           , transMod nAs { currentW = toQualVar vd } m2 ]
     Intersection -> conjunct [transMod as m1, transMod as m2] -- parallel?
     Union -> disjunct [transMod as m1, transMod as m2]
     OrElse -> disjunct . transOrElse [] as $ flatOrElse md
