@@ -204,11 +204,13 @@ transEMF as emf = case emf of
                        (diam $ i + 1) (mkNeg f) r
     Hybrid at i -> let ni = simpleIdToId i in
       if at then transMF as { currentW = getTermOfNom as ni } f else let
-      vi = mkVarDecl (genNumVar "i" fW) world
+      vi = mkVarDecl (genNumVar "i" $ fW + 1) world
       ti = toQualVar vi
       in mkExist [vi] $ conjunct
            [ mkStEq ti $ currentW as
-           , transMF as { boundNoms = (ni, ti) : boundNoms as } f ]
+           , transMF as { boundNoms = (ni, ti) : boundNoms as
+                        , currentW = ti
+                        , freeC = fW + 1 } f ]
     _ -> transMF as f
   UntilSince _isUntil f1 f2 r -> conjunctRange [transMF as f1, transMF as f2] r
   ModForm _ -> trueForm
