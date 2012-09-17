@@ -55,7 +55,7 @@ instance Comorphism ExtModal2CASL
                CASLMor
                Symbol RawSymbol ProofTree where
     sourceLogic ExtModal2CASL = ExtModal
-    sourceSublogic ExtModal2CASL = maxSublogic
+    sourceSublogic ExtModal2CASL = foleml
     targetLogic ExtModal2CASL = CASL
     mapSublogic ExtModal2CASL _ = Just SL.caslTop
     map_theory ExtModal2CASL (sig, sens) = case transSig sig of

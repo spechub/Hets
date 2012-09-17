@@ -27,10 +27,7 @@ import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 import ExtModal.MorphismExtension
 
-data Frequency = None
-               | One
-               | Many
-               deriving (Show, Eq, Ord, Enum)
+data Frequency = None | One | Many deriving (Show, Eq, Ord, Enum)
 
 data Sublogic = Sublogic
     { hasModalities :: Frequency
@@ -39,8 +36,8 @@ data Sublogic = Sublogic
     , hasNominals :: Bool
     , hasTimeMods :: Frequency
     , hasFixPoints :: Bool
-    }
-    deriving (Show, Eq, Ord)
+    , hasFrameAxioms :: Bool
+    } deriving (Show, Eq, Ord)
 
 
 maxSublogic :: Sublogic
@@ -51,6 +48,7 @@ maxSublogic = Sublogic
     , hasNominals = True
     , hasTimeMods = Many
     , hasFixPoints = True
+    , hasFrameAxioms = True
     }
 
 botSublogic :: Sublogic
@@ -61,7 +59,17 @@ botSublogic = Sublogic
     , hasNominals = False
     , hasTimeMods = None
     , hasFixPoints = False
+    , hasFrameAxioms = False
     }
+
+-- | the sublogic that can be translated to FOL
+foleml :: Sublogic
+foleml = maxSublogic
+  { hasTimeMods = None
+  , hasFixPoints = False
+  , hasTransClos = False
+  , hasFrameAxioms = False
+  }
 
 joinSublogic :: Sublogic -> Sublogic -> Sublogic
 joinSublogic a b =
@@ -76,6 +84,7 @@ joinSublogic a b =
     , hasNominals = onMax hasNominals
     , hasTimeMods = timeM
     , hasFixPoints = onMax hasFixPoints
+    , hasFrameAxioms = onMax hasFrameAxioms
     }
 
 joinSublogics :: [Sublogic] -> Sublogic
@@ -113,14 +122,14 @@ minSublogicOfEM ef = case ef of
       $ on joinSublogic minSublogicOfForm f1 f2
     ModForm md -> minSublogicOfModDefn md
 
-
 minSublogicOfModDefn :: ModDefn -> Sublogic
 minSublogicOfModDefn (ModDefn time term il fl _) =
-    setModalities il
-    $ setTermMods term
-    $ setTimeMods time il
-    $ joinSublogics (map (minSublogicOfForm . item)
-                     $ concatMap (frameForms . item) fl)
+    (setModalities il
+    . setTermMods term
+    . setTimeMods time il
+    . joinSublogics . map (minSublogicOfForm . item)
+          $ concatMap (frameForms . item) fl)
+    { hasFrameAxioms = not $ null fl }
 
 minSublogicEMSign :: EModalSign -> Sublogic
 minSublogicEMSign s = botSublogic
@@ -219,6 +228,7 @@ sublogics_all = let bools = [True, False] in
     , hasNominals = h_n
     , hasTimeMods = h_time
     , hasFixPoints = h_fp
+    , hasFrameAxioms = hFA
     }
     | h_time <- [None .. Many]
     , h_term <- bools
@@ -226,12 +236,14 @@ sublogics_all = let bools = [True, False] in
     , h_tc <- bools
     , h_n <- bools
     , h_fp <- bools
+    , hFA <- bools
     ]
 
 sublogic_name :: Sublogic -> String
 sublogic_name s = (if hasModalities s == Many then "Many" else "One")
     ++ (if hasTermMods s then "Dyn" else "")
     ++ (if hasNominals s then "Hybr" else "")
-    ++ (if hasTimeMods s == Many then "MTime"
-       else if hasTimeMods s == One then "OTime" else "")
+    ++ (if hasTimeMods s == Many then "Time"
+       else if hasTimeMods s == One then "SingleTime" else "")
     ++ (if hasFixPoints s then "Fix" else "")
+    ++ (if hasFrameAxioms s then "Frames" else "")
