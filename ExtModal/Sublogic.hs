@@ -13,12 +13,19 @@ Sublogics for ExtModal Logic
 
 module ExtModal.Sublogic where
 
-import CASL.Fold
 import CASL.AS_Basic_CASL
-import ExtModal.AS_ExtModal
-import Common.AS_Annotation
--- import ExtModal.ExtModalSign
+import CASL.Fold
+import CASL.Morphism
+import CASL.Sign
 
+import Common.AS_Annotation
+
+import Data.Function
+import qualified Data.Set as Set
+
+import ExtModal.AS_ExtModal
+import ExtModal.ExtModalSign
+import ExtModal.MorphismExtension
 
 data Frequency = None
                | One
@@ -58,32 +65,36 @@ botSublogic = Sublogic
 
 joinSublogic :: Sublogic -> Sublogic -> Sublogic
 joinSublogic a b =
-  let termM = hasTermMods a `max` hasTermMods b
-      timeM = hasTimeMods a `max` hasTimeMods b
+  let onMax f = on max f a b
+      termM = onMax hasTermMods
+      timeM = onMax hasTimeMods
   in Sublogic
     { hasModalities = minMod termM timeM
-        `max` hasModalities a `max` hasModalities b
+        `max` onMax hasModalities
     , hasTermMods = termM
-    , hasTransClos = hasTransClos a `max` hasTransClos b
-    , hasNominals = hasNominals a `max` hasNominals b
+    , hasTransClos = onMax hasTransClos
+    , hasNominals = onMax hasNominals
     , hasTimeMods = timeM
-    , hasFixPoints = hasFixPoints a `max` hasFixPoints b
+    , hasFixPoints = onMax hasFixPoints
     }
 
 joinSublogics :: [Sublogic] -> Sublogic
 joinSublogics = foldr joinSublogic botSublogic
 
+sublogicRecord :: Record EM_FORMULA Sublogic Sublogic
+sublogicRecord = constRecord minSublogicOfEM joinSublogics botSublogic
+
 minSublogicOfForm :: FORMULA EM_FORMULA -> Sublogic
-minSublogicOfForm = foldFormula (constRecord minSublogicOfEM
-                    joinSublogics botSublogic)
+minSublogicOfForm = foldFormula sublogicRecord
+
+minSublogicOfTerm :: TERM EM_FORMULA -> Sublogic
+minSublogicOfTerm = foldTerm sublogicRecord
 
 minSublogicOfMod :: MODALITY -> Sublogic
 minSublogicOfMod m = case m of
     SimpleMod _ -> botSublogic
-    TermMod t -> foldTerm (constRecord minSublogicOfEM
-        joinSublogics botSublogic) t
-    ModOp _ m1 m2 -> joinSublogic (minSublogicOfMod m1)
-        (minSublogicOfMod m2)
+    TermMod t -> minSublogicOfTerm t
+    ModOp _ m1 m2 -> on joinSublogic minSublogicOfMod m1 m2
     TransClos c -> (minSublogicOfMod c) {hasTransClos = True}
     Guard f -> minSublogicOfForm f
 
@@ -92,14 +103,14 @@ minSublogicOfPrefix fp = case fp of
     BoxOrDiamond _ m _ _ -> minSublogicOfMod m
     Hybrid _ _ -> botSublogic {hasNominals = True}
     FixedPoint _ _ -> botSublogic {hasFixPoints = True}
-    _ -> botSublogic
+    _ -> setTimeMods True [()] botSublogic
 
 minSublogicOfEM :: EM_FORMULA -> Sublogic
 minSublogicOfEM ef = case ef of
     PrefixForm pf f _ -> joinSublogic (minSublogicOfPrefix pf)
         (minSublogicOfForm f)
-    UntilSince _ f1 f2 _ -> joinSublogic (minSublogicOfForm f1)
-        (minSublogicOfForm f2)
+    UntilSince _ f1 f2 _ -> setTimeMods True [()]
+      $ on joinSublogic minSublogicOfForm f1 f2
     ModForm md -> minSublogicOfModDefn md
 
 
@@ -111,6 +122,74 @@ minSublogicOfModDefn (ModDefn time term il fl _) =
     $ joinSublogics (map (minSublogicOfForm . item)
                      $ concatMap (frameForms . item) fl)
 
+minSublogicEMSign :: EModalSign -> Sublogic
+minSublogicEMSign s = botSublogic
+  { hasTermMods = not . Set.null $ termMods s
+  , hasTimeMods = case Set.size $ timeMods s of
+      0 -> None
+      1 -> One
+      _ -> Many
+  , hasNominals = not . Set.null $ nominals s
+  , hasModalities = case Set.size $ modalities s of
+      0 -> None
+      1 -> One
+      _ -> Many
+  }
+
+minSublogicExtModalSign :: Sign EM_FORMULA EModalSign -> Sublogic
+minSublogicExtModalSign = minSublogicEMSign . extendedInfo
+
+-- | mappings do not contribute further nominals or modalities
+minSublogicExtModalMorphism :: Morphism EM_FORMULA EModalSign MorphExtension
+  -> Sublogic
+minSublogicExtModalMorphism m =
+  on joinSublogic minSublogicExtModalSign (msource m) $ mtarget m
+
+minSublogicEMBasic :: EM_BASIC_ITEM -> Sublogic
+minSublogicEMBasic bi = case bi of
+  ModItem md -> minSublogicOfModDefn md
+  Nominal_decl l _ -> botSublogic { hasNominals = not $ null l }
+
+minSublogicEMBasicSpec :: EM_BASIC_SPEC -> Sublogic
+minSublogicEMBasicSpec (Basic_spec is) =
+  joinSublogics $ map (minSLItem . item) is
+
+minSLItem :: BASIC_ITEMS EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA -> Sublogic
+minSLItem bi = case bi of
+  Ext_BASIC_ITEMS b -> minSublogicEMBasic b
+  Axiom_items as _ -> joinSublogics $ map (minSublogicOfForm . item) as
+  Local_var_axioms _ as _ -> joinSublogics $ map (minSublogicOfForm . item) as
+  Sig_items si -> minSLSigItems si
+  Sort_gen is _ -> joinSublogics $ map (minSLSigItems . item) is
+  _ -> botSublogic
+
+minSLSigItems :: SIG_ITEMS EM_SIG_ITEM EM_FORMULA -> Sublogic
+minSLSigItems si = joinSublogics $ case si of
+  Sort_items _ ss _ -> map (minSLSortItem . item) ss
+  Op_items os _ -> map (minSLOpItem . item) os
+  Pred_items ps _ -> map (minSLPredItem . item) ps
+  Datatype_items {} -> []
+  Ext_SIG_ITEMS e -> minSLExtSigItem e
+
+minSLExtSigItem :: EM_SIG_ITEM -> [Sublogic]
+minSLExtSigItem si = case si of
+  Rigid_op_items _ os _ -> map (minSLOpItem . item) os
+  Rigid_pred_items _ ps _ -> map (minSLPredItem . item) ps
+
+minSLSortItem :: SORT_ITEM EM_FORMULA -> Sublogic
+minSLSortItem si = case si of
+  Subsort_defn _ _ _ f _ -> minSublogicOfForm $ item f
+  _ -> botSublogic
+
+minSLOpItem :: OP_ITEM EM_FORMULA -> Sublogic
+minSLOpItem oi = case oi of
+  Op_defn _ _ t _ -> minSublogicOfTerm $ item t
+  _ -> botSublogic
+
+minSLPredItem :: PRED_ITEM EM_FORMULA -> Sublogic
+minSLPredItem oi = case oi of
+  Pred_defn _ _ f _ -> minSublogicOfForm $ item f
+  _ -> botSublogic
 
 setModalities :: [a] -> Sublogic -> Sublogic
 setModalities il s = case il of

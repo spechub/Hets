@@ -150,7 +150,6 @@ instance SemiLatticeWithTop Sublogic where
     join = joinSublogic
     top = maxSublogic
 
-
 instance MinSublogic Sublogic (FORMULA EM_FORMULA) where
     minSublogic = minSublogicOfForm
 
@@ -158,7 +157,7 @@ instance ProjectSublogic Sublogic EM_BASIC_SPEC where
     projectSublogic _ = id
 
 instance MinSublogic Sublogic EM_BASIC_SPEC where
-    minSublogic _ = botSublogic
+    minSublogic = minSublogicEMBasicSpec
 
 instance ProjectSublogicM Sublogic SYMB_ITEMS where
     projectSublogicM _ = Just
@@ -176,13 +175,13 @@ instance ProjectSublogic Sublogic ExtModalSign where
     projectSublogic _ = id
 
 instance MinSublogic Sublogic ExtModalSign where
-    minSublogic _ = botSublogic
+    minSublogic = minSublogicExtModalSign
 
 instance ProjectSublogic Sublogic ExtModalMorph where
     projectSublogic _ = id
 
 instance MinSublogic Sublogic ExtModalMorph where
-    minSublogic _ = botSublogic
+    minSublogic = minSublogicExtModalMorphism
 
 instance ProjectSublogicM Sublogic Symbol where
     projectSublogicM _ = Just
