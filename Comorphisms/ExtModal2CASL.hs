@@ -88,9 +88,8 @@ transSig sign = let
     noms = nominals extInf
     noNomsPreds = Set.fold (`MapSet.delete` nomPType) rigPreds' noms
     termMs = termMods extInf
-    timeMs = timeMods extInf
     rels = Set.fold (\ m ->
-      insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
+      insertModPred world False (Set.member m termMs) m)
       MapSet.empty $ modalities extInf
     nomOps = Set.fold (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
     in s1
@@ -203,10 +202,9 @@ transMod as md = let
   vts = [t1, t2]
   msig = modSig as
   extInf = extendedInfo msig
-  timeMs = timeMods extInf
   in case md of
   SimpleMod i -> let ri = simpleIdToId i in mkPredication
-    (mkQualPred (relOfMod (Set.member ri timeMs) False ri)
+    (mkQualPred (relOfMod False False ri)
                     . toPRED_TYPE $ modPredType world False ri) vts
   TermMod t -> case optTermSort t of
     Just srt -> case keepMinimals msig id . Set.toList
@@ -214,7 +212,7 @@ transMod as md = let
       $ supersortsOf srt msig of
       [] -> error $ "transMod1: " ++ showDoc t ""
       st : _ -> mkPredication
-        (mkQualPred (relOfMod (Set.member st timeMs) True st)
+        (mkQualPred (relOfMod False True st)
          . toPRED_TYPE $ modPredType world True st)
         $ foldTerm (transRecord as) t : vts
     _ -> error $ "transMod2: " ++ showDoc t ""
