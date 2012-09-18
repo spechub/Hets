@@ -105,18 +105,7 @@ fromPredType = simpleTypeScheme . fromPREDTYPE . CasS.toPRED_TYPE
 mapTheory :: (CasS.TermExtension f, FormExtension f) =>
   (CasS.Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
 mapTheory (sig, sents) =
-  (mapSig (getConstructors sents) sig, map (mapNamed toSentence) sents)
-
-getConstructors :: [Named (Cas.FORMULA f)] -> Set.Set (Id, CasS.OpType)
-getConstructors = foldr (\ f s -> case sentence f of
-   Cas.Sort_gen_ax cs _ -> let
-       (_, ops, _) = Cas.recover_Sort_gen_ax cs
-       in foldr ( \ o -> case o of
-             Cas.Qual_op_name i t _ ->
-               Set.insert (i, CasS.mkPartial $ CasS.toOpType t)
-             _ -> error "CASL2HasCASL.getConstructors")
-             s ops
-   _ -> s) Set.empty
+  (mapSig (CasS.getConstructors sents) sig, map (mapNamed toSentence) sents)
 
 mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSig = mapSigAux trId fromOpType fromPredType

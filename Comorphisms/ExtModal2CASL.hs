@@ -116,8 +116,6 @@ transTop msig csig = let
 getTermOfNom :: Args -> Id -> TERM ()
 getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
 
--- TODO: check that constructors are not flexible!
-
 mkNomAppl :: Id -> TERM ()
 mkNomAppl pn = mkAppl (mkQualOp (nomName pn) $ toOP_TYPE nomOpType) []
 

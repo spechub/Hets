@@ -558,6 +558,17 @@ built from the sort list -}
 toSortGenNamed :: FORMULA f -> [SORT] -> Named (FORMULA f)
 toSortGenNamed f sl = makeNamed (mkSortGenName sl) f
 
+getConstructors :: [Named (FORMULA f)] -> Set.Set (Id, OpType)
+getConstructors = foldr (\ f s -> case sentence f of
+   Sort_gen_ax cs _ -> let
+       (_, ops, _) = recover_Sort_gen_ax cs
+       in foldr ( \ o -> case o of
+             Qual_op_name i t _ ->
+               Set.insert (i, mkPartial $ toOpType t)
+             _ -> id)
+             s ops
+   _ -> s) Set.empty
+
 -- | adds a symbol to a given signature
 addSymbToSign :: Sign e f -> Symbol -> Result (Sign e f)
 addSymbToSign sig sy =

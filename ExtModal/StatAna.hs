@@ -26,6 +26,7 @@ import CASL.Overload
 import CASL.Quantification
 
 import Common.AS_Annotation
+import Common.Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.Keywords
@@ -35,6 +36,7 @@ import Common.Result
 import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
+import Data.Function
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -44,7 +46,7 @@ instance TermExtension EM_FORMULA where
   freeVarsOfExt sign frm = case frm of
     PrefixForm p f _ ->
         Set.union (freePrefixVars sign p) $ freeVars sign f
-    UntilSince _ f1 f2 _ -> Set.union (freeVars sign f1) $ freeVars sign f2
+    UntilSince _ f1 f2 _ -> on Set.union (freeVars sign) f1 f2
     ModForm (ModDefn _ _ _ afs _) ->
         Set.unions $ map (freeVars sign . item)
                $ concatMap (frameForms . item) afs
@@ -58,7 +60,7 @@ freeModVars :: Sign EM_FORMULA e -> MODALITY -> Set.Set (VAR, SORT)
 freeModVars sign md = case md of
   SimpleMod _ -> Set.empty
   TermMod t -> freeTermVars sign t
-  ModOp _ m1 m2 -> Set.union (freeModVars sign m1) $ freeModVars sign m2
+  ModOp _ m1 m2 -> on Set.union (freeModVars sign) m1 m2
   TransClos m -> freeModVars sign m
   Guard f -> freeVars sign f
 
@@ -68,8 +70,20 @@ basicEModalAnalysis
         -> Result (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
                   , ExtSign (Sign EM_FORMULA EModalSign) Symbol
                   , [Named (FORMULA EM_FORMULA)])
-basicEModalAnalysis =
-  basicAnalysis frmTypeAna basItemStatAna sigItemStatAna mixfixAna
+basicEModalAnalysis s = do
+  a@(_, ExtSign sig _, sens) <-
+      basicAnalysis frmTypeAna basItemStatAna sigItemStatAna mixfixAna s
+  checkConstr sig sens
+  return a
+
+checkConstr :: Sign EM_FORMULA EModalSign -> [Named (FORMULA EM_FORMULA)]
+  -> Result ()
+checkConstr sig sens =
+  let cs = interOpMapSet
+        (Set.fold (uncurry addOpTo) MapSet.empty $ getConstructors sens)
+        $ flexOps $ extendedInfo sig
+  in unless (MapSet.null cs) $ fail $ "constructors must not be flexible:\n"
+         ++ show (printSetMap empty empty $ MapSet.toMap cs)
 
 frmTypeAna :: Min EM_FORMULA EModalSign
 frmTypeAna sign form = let
@@ -359,8 +373,7 @@ anaFORMULA mix sig f = do
 getEFormPredToks :: EM_FORMULA -> Set.Set Token
 getEFormPredToks ef = case ef of
     PrefixForm _ f _ -> getFormPredToks f
-    UntilSince _ f1 f2 _ ->
-        Set.union (getFormPredToks f1) (getFormPredToks f2)
+    UntilSince _ f1 f2 _ -> on Set.union getFormPredToks f1 f2
     ModForm _ -> Set.empty
 
 getFormPredToks :: FORMULA EM_FORMULA -> Set.Set Token
