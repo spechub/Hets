@@ -86,7 +86,7 @@ anaPolyId (PolyId i@(Id _ cs _) _ _) sc = do
                 , Map.keysSet $ typeMap e
                 , Map.keysSet $ assumps e ]
               es = filter (not . flip Set.member ids) cs
-          addDiags $ map (mkDiag Warning
+          addDiags $ map (mkDiag (if null tvars then Hint else Warning)
             "unexpected identifier in compound list") es
           unless (null cs || null tvars)
             $ addDiags [mkDiag Hint "is polymorphic compound identifier" i]
