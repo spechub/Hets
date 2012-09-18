@@ -82,33 +82,17 @@ instance Comorphism CASL2HasCASL
     is_weakly_amalgamable CASL2HasCASL = True
     isInclusionComorphism CASL2HasCASL = True
 
-fromOPTYPEAux :: Cas.OP_TYPE -> Type
-fromOPTYPEAux ot =
-    let (args, res, total, arr) = case ot of
-                   Cas.Op_type Cas.Total ars rs _ ->
-                       (ars, rs, True, FunArr)
-                   Cas.Op_type Cas.Partial ars rs _ ->
-                       (ars, rs, False, PFunArr)
-        resTy = toType res
-        in if null args then
-           if total then resTy else mkLazyType resTy
-           else mkFunArrType (mkProductType $ map toType args) arr resTy
+fromOPTYPE :: Cas.OP_TYPE -> Type
+fromOPTYPE (Cas.Op_type ok args res ps) = let
+  (total, arr) = case ok of
+    Cas.Total -> (True, FunArr)
+    Cas.Partial -> (False, PFunArr)
+  resTy = toType res
+  in if null args then if total then resTy else mkLazyType resTy
+  else mkFunArrType (mkProductTypeWithRange (map toType args) ps) arr resTy
 
-fromOPTYPE :: Cas.OP_TYPE -> TypeScheme
-fromOPTYPE = simpleTypeScheme . fromOPTYPEAux
-
-fromOpType :: CasS.OpType -> Cas.OpKind -> TypeScheme
-fromOpType ot ok =
-    let args = map toType $ CasS.opArgs ot
-        arg = mkProductType args
-        res = toType $ CasS.opRes ot
-    in simpleTypeScheme $
-      if null args then case ok of
-                Cas.Total -> res
-                Cas.Partial -> mkLazyType res
-       else mkFunArrType arg (case ok of
-                Cas.Total -> FunArr
-                Cas.Partial -> PFunArr) res
+fromOpType :: CasS.OpType -> TypeScheme
+fromOpType = simpleTypeScheme . fromOPTYPE . CasS.toOP_TYPE
 
 fromPREDTYPE :: Cas.PRED_TYPE -> Type
 fromPREDTYPE (Cas.Pred_type args ps) =
@@ -116,9 +100,7 @@ fromPREDTYPE (Cas.Pred_type args ps) =
    else predType ps $ mkProductTypeWithRange (map toType args) ps
 
 fromPredType :: CasS.PredType -> TypeScheme
-fromPredType pt =
-    let args = CasS.predArgs pt
-    in simpleTypeScheme $ fromPREDTYPE $ Cas.Pred_type args $ getRange args
+fromPredType = simpleTypeScheme . fromPREDTYPE . CasS.toPRED_TYPE
 
 mapTheory :: (CasS.TermExtension f, FormExtension f) =>
   (CasS.Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
@@ -143,7 +125,7 @@ getConstructors f s = case sentence f of
 mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSig constr sign =
     let f1 = map ( \ (i, ty) ->
-                   (trId i, fromOpType ty $ CasS.opKind ty,
+                   (trId i, fromOpType ty,
                             if Set.member (i, CasS.mkPartial ty)
                                constr then ConstructData $ CasS.opRes ty
                                else NoOpDefn Op))
@@ -166,9 +148,9 @@ mapSig constr sign =
 mapMor :: CasM.Morphism f e m -> Morphism
 mapMor m = let tm = CasM.sort_map m
                f1 = map ( \ ((i, ot), (j, t)) ->
-                          ((trId i, fromOpType ot (CasS.opKind ot)),
+                          ((trId i, fromOpType ot),
                            (trId j, mapTypeOfScheme (mapType tm)
-                                    $ fromOpType ot t)))
+                                    $ fromOpType ot { CasS.opKind = t })))
                     $ Map.toList $ CasM.op_map m
                f2 = map ( \ ((i, pt), j) ->
                           let sc = fromPredType pt
@@ -183,7 +165,7 @@ mapSym :: CasS.Symbol -> Symbol
 mapSym s = let i = trId $ CasS.symName s in
     case CasS.symbType s of
     CasS.OpAsItemType ot ->
-        idToOpSymbol i $ fromOpType ot $ CasS.opKind ot
+        idToOpSymbol i $ fromOpType ot
     CasS.PredAsItemType pt -> idToOpSymbol i $ fromPredType pt
     CasS.SortAsItemType -> idToTypeSymbol i rStar
     CasS.SubsortAsItemType _ -> idToTypeSymbol i rStar
@@ -264,7 +246,7 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
   , foldMembership = \ _ t -> TypedTerm t InType . toType
   , foldQuantOp = \ _ uo ty frm -> let o = trId uo in
          QuantifiedTerm Universal
-         [GenVarDecl $ VarDecl o (fromOPTYPEAux ty) Other nullRange]
+         [GenVarDecl $ VarDecl o (fromOPTYPE ty) Other nullRange]
          (qualName2var o frm) nullRange
   , foldQuantPred = \ _ up ty frm -> let p = trId up in
          QuantifiedTerm Universal
@@ -275,7 +257,8 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
   , foldApplication = \ _ qon args qs ->
         let Cas.Qual_op_name ui ot ps = qon
             i = trId ui
-            o = QualOp Op (PolyId i [] ps) (fromOPTYPE ot) [] Infer ps
+            sc = simpleTypeScheme $ fromOPTYPE ot
+            o = QualOp Op (PolyId i [] ps) sc [] Infer ps
             at = CasS.toOpType ot
         in if null args then o else TypedTerm
            (ApplTerm o (mkTupleTerm (zipWith
