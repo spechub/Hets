@@ -57,6 +57,7 @@ import Logic.Comorphism
 import Logic.Logic
 
 import Proofs.AbstractState
+import Proofs.ConsistencyCheck
 
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
@@ -592,14 +593,12 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
             GlProvers mt -> return $ getFullProverList mt dg
             GlTranslations -> return $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
-            GlAutoProve prOrCons incl mp mt tl nds -> case prOrCons of
-              GlProofs -> do
-               (newLib, sens) <- proveMultiNodes libEnv ln dg incl mp mt tl nds
+            GlAutoProve prOrCons incl mp mt tl nds -> do
+               (newLib, sens) <-
+                 proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds
                if null sens then return "nothing to prove" else do
                   lift $ nextSess sessRef newLib k
-                  return $ formatResultsMultiple k sens
-              GlConsistency ->
-                return "consistency checker has not yet been built"
+                  return $ formatResultsMultiple k sens prOrCons
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == "update" then
@@ -661,9 +660,11 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
-formatResultsMultiple :: Int -> [Element] -> String
-formatResultsMultiple sessId rs = let
-  goBack1 = aRef ('/' : show sessId ++ "?autoproof") "return to AutoProofs"
+formatResultsMultiple :: Int -> [Element] -> ProverMode -> String
+formatResultsMultiple sessId rs prOrCons = let
+  goBack1 = case prOrCons of
+    GlConsistency -> aRef ('/' : show sessId ++ "?consistency") "return"
+    GlProofs -> aRef ('/' : show sessId ++ "?autoproof") "return"
   goBack2 = aRef ('/' : show sessId) "return to DGraph"
   in ppElement $ unode "html" ( unode "head"
     [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
@@ -712,7 +713,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           ++ "   (" ++ showSimple gSt ++ ")" ) gs
         -- select unproven, all or none theorems by button
         (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons
-          "getAttribute('goalstatus') != 'Proved'"
+          "getAttribute('goalstatus') != 'Proved'" "SPASS"
         -- create prove button and prover/comorphism selection
         (prSl, cmrSl, jvScr2) = showProverSelection GlProofs [sublogicOfTh gTh]
         (prBt, timeout) = showProveButton
@@ -734,22 +735,29 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
 -- | show window of the autoproof function
 showAutoProofWindow :: DGraph -> Int -> ProverMode -> ResultT IO String
 showAutoProofWindow dg sessId prOrCons = let
-  fnodes = initFNodes $ labNodesDG dg
-  -- select unproven, all or no nodes by button
-  (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons
-    "hasOpenGoals = 'True'"
-  nodeSel = map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
-    , mkAttr "hasOpenGoals" $ show $ not $ allProved fn
-    , mkAttr "name" $ escStr $ name fn ]
-    $ unode "input" $ showHtml fn) fnodes
-  (prBt, timeout) = showProveButton
-  (prMethod, title) = case prOrCons of
-    GlProofs -> ("proof", "automatic proofs")
-    GlConsistency -> ("cons", "consistency checker")
+  -- some parameters need to be different for consistency and autoproof mode
+  (prMethod, prChoice, prCond, title, nodeSel) = case prOrCons of
+    GlProofs -> ("proof", "SPASS", "hasOpenGoals = 'True'", "automatic proofs"
+      , map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
+      , mkAttr "hasOpenGoals" $ show $ not $ allProved fn
+      , mkAttr "name" $ escStr $ name fn ]
+      $ unode "input" $ showHtml fn) $ initFNodes $ labNodesDG dg)
+    GlConsistency -> ("cons", "darwin", "cstatus = 'Unchecked'"
+      , "consistency checker", map (\ (_, dgn) ->  
+      let cstat = {-if hasOpenConsStatus True $ getNodeConsStatus dgn
+            then-} ConsistencyStatus CSUnchecked ""
+          nm = showName $ dgn_name dgn in add_attrs [ mkAttr "type" "checkbox"
+      , mkAttr "cstatus" (show cstat) -- TODO messages are very long and ugly!
+      , mkAttr "name" nm]
+      $ unode "input" (cStatusToPrefix cstat ++ nm)) $ labNodesDG dg)
+  -- generate param field for the query string, invisible to the user
   hidStr = add_attrs [ mkAttr "name" "autoproof"
          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
          , mkAttr "value" prMethod ] inputNode
-  include = add_attrs [ mkAttr "type" "checkbox"
+  -- select unproven, all or no nodes by button
+  (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons prCond prChoice
+  (prBt, timeout) = showProveButton
+  include = add_attrs [ mkAttr "type" "checkbox", mkAttr "checked" "true"
           , mkAttr "name" "includetheorems"] $ unode "input" "include Theorems"
   goBack = aRef ('/' : show sessId) "return to DGraph"
   in do
@@ -776,9 +784,9 @@ showProveButton = (prBt, timeout) where
                $ unode "input" "Sec/Goal "
 
 -- | select unproven, all or none theorems by button
-showSelectionButtons :: String -> (Element, Element, Element, String)
-showSelectionButtons testUnproven = (selUnPr, selAll, selNone, jvScr) where
-        selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
+showSelectionButtons :: String -> String -> (Element, Element, Element, String)
+showSelectionButtons testUnproven prChoice = (selUnPr, selAll, selNone, jvScr)
+  where selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
           , mkAttr "onClick" "chkUnproven()"] inputNode
         selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
           , mkAttr "onClick" "chkAll(true)"] inputNode
@@ -806,9 +814,9 @@ showSelectionButtons testUnproven = (selUnPr, selAll, selNone, jvScr) where
           , "  prSel = document.forms[0].elements.namedItem('prover');"
           , "  prs = prSel.getElementsByTagName('option');"
           , "  for ( i=0; i<prs.length; i++ ) {"
-          , "    if( prs[i].value == 'SPASS' ) {"
+          , "    if( prs[i].value == '" ++ prChoice ++ "' ) {"
           , "      prs[i].selected = 'selected';"
-          , "      updCmSel('SPASS');"
+          , "      updCmSel('" ++ prChoice ++ "');"
           , "      return;"
           , "    }"
           , "  }"
@@ -974,20 +982,37 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
         (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
 -- run over multiple dgnodes and prove available goals for each
-proveMultiNodes :: LibEnv -> LibName -> DGraph -> Bool -> Maybe String
-  -> Maybe String -> Maybe Int -> [String]
+-- TODO: as far as I know, consistency check results are NOT stored in dgraph!
+proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
+  -> Maybe String -> Maybe String -> Maybe Int -> [String]
   -> ResultT IO (LibEnv, [Element])
-proveMultiNodes le ln dg useTh mp mt tl nodeSel = foldM
+proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
+  runProof le' gTh nl = let subL = sublogicOfTh gTh in case prOrCons of
+    GlConsistency -> let
+      consList = getConsCheckers $ findComorphismPaths logicGraph subL
+      findCC x = filter ((== x ) . getCcName . fst) consList
+      mcc = maybe (findCC "darwin") findCC mp
+      in case mcc of
+        [] -> fail "no cons checker found"
+        ((cc, c) : _) -> lift $ do
+          cstat <- consistencyCheck useTh cc c ln le' dg nl $ fromMaybe 1 tl
+          return (le', [(" ", show cstat)])
+    GlProofs -> proveNode le' ln dg nl gTh subL useTh mp mt tl
+             $ map fst $ getThGoals gTh
+  in foldM
   (\ (le', res) nl@(_, dgn) -> case maybeResult $ getGlobalTheory dgn of
       Nothing -> fail $
                     "cannot compute global theory of:\n" ++ show dgn
-      Just gTh -> let subL = sublogicOfTh gTh in do
-        (le'', sens) <- proveNode le' ln dg nl gTh subL useTh mp mt tl
-          $ map fst $ getThGoals gTh
+      Just gTh -> do
+        (le'', sens) <- runProof le' gTh nl
         return (le'', formatResultsAux (showName $ dgn_name dgn) sens : res))
           (le, []) $ filter (case nodeSel of
             [] -> hasOpenGoals . snd
             _ -> (`elem` nodeSel) . showName . dgn_name . snd) $ labNodesDG dg
+{-
+consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
+                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
+-}
 
 formatResultsAux :: String -> [(String, String)] -> Element
 formatResultsAux nm sens = unode nm $ unode "results" $

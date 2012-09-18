@@ -14,6 +14,9 @@ module Proofs.ConsistencyCheck
   ( consistencyCheck
   , SType (..)
   , ConsistencyStatus (..)
+  , cStatusToColor
+  , cStatusToPrefix
+  , cInvert
   , basicProofToConStatus
   ) where
 
@@ -62,6 +65,28 @@ instance Eq ConsistencyStatus where
 
 instance Ord ConsistencyStatus where
   compare = comparing sType
+
+cStatusToColor :: ConsistencyStatus -> String
+cStatusToColor s = case sType s of
+  CSUnchecked -> "black"
+  CSConsistent -> "green"
+  CSInconsistent -> "red"
+  CSTimeout -> "blue"
+  CSError -> "darkred"
+
+cStatusToPrefix :: ConsistencyStatus -> String
+cStatusToPrefix s = case sType s of
+  CSUnchecked -> "[ ] "
+  CSConsistent -> "[+] "
+  CSInconsistent -> "[-] "
+  CSTimeout -> "[t] "
+  CSError -> "[f] "
+
+cInvert :: ConsistencyStatus -> ConsistencyStatus
+cInvert cs = case sType cs of
+  CSConsistent -> ConsistencyStatus CSInconsistent (sMessage cs)
+  CSInconsistent -> ConsistencyStatus CSConsistent (sMessage cs)
+  _ -> cs
 
 {- converts a GTheory.BasicProof to ConsistencyStatus.
 The conversion is not exact, but sufficient since this function is only

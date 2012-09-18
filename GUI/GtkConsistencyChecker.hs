@@ -80,28 +80,6 @@ instance Ord FNode where
     EQ -> compare n1 n2
     c -> c
 
-cStatusToColor :: ConsistencyStatus -> String
-cStatusToColor s = case sType s of
-  CSUnchecked -> "black"
-  CSConsistent -> "green"
-  CSInconsistent -> "red"
-  CSTimeout -> "blue"
-  CSError -> "darkred"
-
-cStatusToPrefix :: ConsistencyStatus -> String
-cStatusToPrefix s = case sType s of
-  CSUnchecked -> "[ ] "
-  CSConsistent -> "[+] "
-  CSInconsistent -> "[-] "
-  CSTimeout -> "[t] "
-  CSError -> "[f] "
-
-cInvert :: ConsistencyStatus -> ConsistencyStatus
-cInvert cs = case sType cs of
-  CSConsistent -> ConsistencyStatus CSInconsistent (sMessage cs)
-  CSInconsistent -> ConsistencyStatus CSConsistent (sMessage cs)
-  _ -> cs
-
 -- | Displays the consistency checker window
 showConsistencyChecker :: Maybe Int -> GInfo -> LibEnv -> IO (Result LibEnv)
 showConsistencyChecker mn gi@(GInfo { libName = ln }) le =
