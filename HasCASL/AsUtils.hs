@@ -75,8 +75,9 @@ strippedType = foldType mapTypeRec
     { foldTypeAppl = \ trm f a -> let t = TypeAppl f a in
         case redStep trm of
           Nothing -> case f of
-            TypeName i _ 0 -> if i == lazyTypeId then a else
-              if isArrow i then TypeAppl (toFunType PFunArr) a else t
+            TypeName i _ 0
+              | i == lazyTypeId -> a
+              | isArrow i -> TypeAppl (toFunType PFunArr) a
             _ -> t
           Just r -> strippedType r
     , foldTypeName = \ _ i k v -> TypeName (if v >= 0 then i else typeId) k v
@@ -99,13 +100,13 @@ getTypeApplAux b ty = let (t, args) = getTyAppl ty in (t, reverse args) where
            Just r | b -> getTyAppl r
            _ -> let (t, args) = getTyAppl t1 in (t, t2 : args)
         ExpandedType _ te -> let (t, args) = getTyAppl te in case t of
-           TypeName _ _ _ -> (t, args)
+           TypeName {} -> (t, args)
            _ -> if null args then (typ, []) else (t, args)
         KindedType t _ _ -> getTyAppl t
         _ -> (typ, [])
 
 -- | the builtin function arrows
-data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr deriving (Eq, Ord)
+data Arrow = FunArr | PFunArr | ContFunArr | PContFunArr deriving (Eq, Ord)
 
 instance Show Arrow where
     show a = case a of
@@ -114,9 +115,12 @@ instance Show Arrow where
         ContFunArr -> contFun
         PContFunArr -> pContFun
 
+arrowIdRange :: Range -> Arrow -> Id
+arrowIdRange r a = mkId $ map (`Token` r) [place, show a, place]
+
 -- | construct an infix identifier for a function arrow
 arrowId :: Arrow -> Id
-arrowId a = mkId $ map mkSimpleId [place, show a, place]
+arrowId = arrowIdRange nullRange
 
 -- | test for a function identifier
 isArrow :: Id -> Bool
@@ -195,12 +199,10 @@ mkLazyType = TypeAppl lazyTypeConstr
 
 -- | function type
 mkFunArrType :: Type -> Arrow -> Type -> Type
-mkFunArrType t1 a t2 = mkTypeAppl (toFunType a) [t1, t2]
+mkFunArrType = mkFunArrTypeWithRange nullRange
 
 mkFunArrTypeWithRange :: Range -> Type -> Arrow -> Type -> Type
-mkFunArrTypeWithRange r t1 a t2 =
-    mkTypeAppl (TypeName (mkId [placeTok, Token (show a) r, placeTok])
-                (toRaw $ funKindWithRange r) 0) [t1, t2]
+mkFunArrTypeWithRange r t1 a t2 = mkTypeAppl (toFunTypeRange r a) [t1, t2]
 
 -- | construct a product type
 mkProductType :: [Type] -> Type
@@ -277,9 +279,12 @@ prodKind n r = prodKind1 n r universe
 toType :: Id -> Type
 toType i = TypeName i rStar 0
 
+toFunTypeRange :: Range -> Arrow -> Type
+toFunTypeRange r a = TypeName (arrowIdRange r a) (toRaw $ funKindWithRange r) 0
+
 -- | the type name for a function arrow
 toFunType :: Arrow -> Type
-toFunType a = TypeName (arrowId a) (toRaw funKind) 0
+toFunType = toFunTypeRange nullRange
 
 -- | the type name for a function arrow
 toProdType :: Int -> Range -> Type
@@ -316,16 +321,16 @@ getAppl = thrdM reverse . getRevAppl where
             _ -> getRevAppl trm
         QualOp _ (PolyId i _ _) sc _ _ _ -> Just (i, sc, [])
         QualVar (VarDecl v ty _ _) -> Just (v, simpleTypeScheme ty, [])
-        ApplTerm t1 t2 _ -> thrdM (t2:) $ getRevAppl t1
+        ApplTerm t1 t2 _ -> thrdM (t2 :) $ getRevAppl t1
         _ -> Nothing
 
 -- | split the list of generic variables into values and type variables
 splitVars :: [GenVarDecl] -> ([VarDecl], [TypeArg])
-splitVars l = let f x (vs,tvs) =
+splitVars l = let f x (vs, tvs) =
                       case x of
-                        GenVarDecl vd -> (vd:vs,tvs)
-                        GenTypeVarDecl tv -> (vs,tv:tvs)
-              in foldr f ([],[]) l
+                        GenVarDecl vd -> (vd : vs, tvs)
+                        GenTypeVarDecl tv -> (vs, tv : tvs)
+              in foldr f ([], []) l
 
 
 -- | extract bindings from an analysed pattern
@@ -392,7 +397,7 @@ getFunType :: Type -> Partiality -> [Type] -> Type
 getFunType rty p ts = (case p of
     Total -> id
     Partial -> addPartiality ts)
-    $ foldr (flip mkFunArrType FunArr) rty ts
+    $ foldr (`mkFunArrType` FunArr) rty ts
 
 -- | get the type of a selector given the data type as first arguemnt
 getSelType :: Type -> Partiality -> Type -> Type
@@ -406,7 +411,7 @@ nonVarTypeArg (TypeArg i _ vk rk c o p) = TypeArg i NonVar vk rk c o p
 
 -- | get the type variable
 getTypeVar :: TypeArg -> Id
-getTypeVar(TypeArg v _ _ _ _ _ _) = v
+getTypeVar (TypeArg v _ _ _ _ _ _) = v
 
 -- | construct application left-associative
 mkTypeAppl :: Type -> [Type] -> Type
