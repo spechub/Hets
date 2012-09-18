@@ -83,6 +83,7 @@ import Comorphisms.CASL2Modal
 import Comorphisms.CASL2ExtModal
 import Comorphisms.Modal2CASL
 import Comorphisms.ExtModal2CASL
+import Comorphisms.ExtModal2HasCASL ()
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal

@@ -105,14 +105,10 @@ fromPredType = simpleTypeScheme . fromPREDTYPE . CasS.toPRED_TYPE
 mapTheory :: (CasS.TermExtension f, FormExtension f) =>
   (CasS.Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
 mapTheory (sig, sents) =
-    let constr = foldr getConstructors Set.empty sents
-        env = mapSig constr sig
-        newSents = map (mapNamed toSentence) sents
-        in (env, newSents)
+  (mapSig (getConstructors sents) sig, map (mapNamed toSentence) sents)
 
-getConstructors :: Named (Cas.FORMULA f) -> Set.Set (Id, CasS.OpType)
-                -> Set.Set (Id, CasS.OpType)
-getConstructors f s = case sentence f of
+getConstructors :: [Named (Cas.FORMULA f)] -> Set.Set (Id, CasS.OpType)
+getConstructors = foldr (\ f s -> case sentence f of
    Cas.Sort_gen_ax cs _ -> let
        (_, ops, _) = Cas.recover_Sort_gen_ax cs
        in foldr ( \ o -> case o of
@@ -120,18 +116,24 @@ getConstructors f s = case sentence f of
                Set.insert (i, CasS.mkPartial $ CasS.toOpType t)
              _ -> error "CASL2HasCASL.getConstructors")
              s ops
-   _ -> s
+   _ -> s) Set.empty
 
 mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
-mapSig constr sign =
+mapSig = mapSigAux trId fromOpType fromPredType
+
+-- | sort names or not translated
+mapSigAux :: (Id -> Id) -> (CasS.OpType -> TypeScheme)
+  -> (CasS.PredType -> TypeScheme) -> Set.Set (Id, CasS.OpType)
+  -> CasS.Sign f e -> Env
+mapSigAux trI trO trP constr sign =
     let f1 = map ( \ (i, ty) ->
-                   (trId i, fromOpType ty,
+                   (trI i, trO ty,
                             if Set.member (i, CasS.mkPartial ty)
                                constr then ConstructData $ CasS.opRes ty
                                else NoOpDefn Op))
                          $ CasS.mapSetToList $ CasS.opMap sign
         f2 = map ( \ (i, ty) ->
-                   (trId i, fromPredType ty, NoOpDefn Pred))
+                   (trI i, trP ty, NoOpDefn Pred))
                          $ CasS.mapSetToList $ CasS.predMap sign
         insF (i, ty, defn) m =
             let os = Map.findWithDefault Set.empty i m
@@ -162,13 +164,18 @@ mapMor m = let tm = CasM.sort_map m
            { typeIdMap = tm , funMap = Map.fromList $ f2 ++ f1 }
 
 mapSym :: CasS.Symbol -> Symbol
-mapSym s = let i = trId $ CasS.symName s in
-    case CasS.symbType s of
-    CasS.OpAsItemType ot ->
-        idToOpSymbol i $ fromOpType ot
-    CasS.PredAsItemType pt -> idToOpSymbol i $ fromPredType pt
-    CasS.SortAsItemType -> idToTypeSymbol i rStar
-    CasS.SubsortAsItemType _ -> idToTypeSymbol i rStar
+mapSym = mapSymAux trId fromOpType fromPredType
+
+mapSymAux :: (Id -> Id) -> (CasS.OpType -> TypeScheme)
+  -> (CasS.PredType -> TypeScheme) -> CasS.Symbol -> Symbol
+mapSymAux trI trO trP s = let
+  n = CasS.symName s
+  i = trI n
+  in case CasS.symbType s of
+    CasS.OpAsItemType ot -> idToOpSymbol i $ trO ot
+    CasS.PredAsItemType pt -> idToOpSymbol i $ trP pt
+    CasS.SortAsItemType -> idToTypeSymbol n rStar
+    CasS.SubsortAsItemType _ -> idToTypeSymbol n rStar
 
 toQuant :: Cas.QUANTIFIER -> Quantifier
 toQuant Cas.Universal = Universal
