@@ -67,6 +67,9 @@ instance Comorphism Modal2CASL
     sourceSublogic Modal2CASL = ()
     targetLogic Modal2CASL = CASL
     mapSublogic Modal2CASL _ = Just SL.caslTop
+      { sub_features = LocFilSub
+      , cons_features = NoSortGen
+      } -- to support going to SPASS
     map_theory (Modal2CASL) (sig, sens) = case transSig sig of
       mme -> return (caslSign mme, relFormulas mme
                      ++ map (mapNamed $ transSen sig) sens)
