@@ -172,7 +172,7 @@ thfBinaryTuple = do -- or
 thfUnitaryFormula :: CharParser st THFUnitaryFormula
 thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
   <|> fmap TUF_THF_Quantified_Formula thfQuantifiedFormula
-  <|> thfUnaryFormula
+  <|> try thfUnaryFormula
   <|> fmap TUF_THF_Atom thfAtom
   <|> fmap TUF_THF_Tuple thfTuple
   <|> do
