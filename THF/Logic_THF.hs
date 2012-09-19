@@ -28,6 +28,7 @@ import THF.Cons
 import THF.StaticAnalysisTHF
 import THF.ProveLeoII
 import THF.ProveIsabelle
+import THF.ProveSatallax
 import THF.Sign
 import THF.Print
 
@@ -79,3 +80,4 @@ instance Logic THF () BasicSpecTHF SentenceTHF () ()
                      ++ unsafeProverCheck "isabelle" "PATH" nitpickProver
                      ++ unsafeProverCheck "isabelle" "PATH" refuteProver
                      ++ unsafeProverCheck "isabelle" "PATH" sledgehammerProver
+                     ++ unsafeProverCheck "satallax" "PATH" satallaxProver
