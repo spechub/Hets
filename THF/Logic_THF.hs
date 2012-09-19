@@ -27,6 +27,7 @@ import THF.ATC_THF ()
 import THF.Cons
 import THF.StaticAnalysisTHF
 import THF.ProveLeoII
+import THF.ProveIsabelle
 import THF.Sign
 import THF.Print
 
@@ -74,3 +75,4 @@ instance Logic THF () BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     stability THF = Testing
     provers THF = [] ++ unsafeProverCheck "leo" "PATH" leoIIProver
+                     ++ unsafeProverCheck "isabelle" "PATH" isaProver
