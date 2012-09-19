@@ -40,7 +40,7 @@ instance GetRange AtomicWord
 --------------------------------------------------------------------------------
 
 data BasicSpecTHF =
-    BasicSpecTHF THFBS [TPTP_THF]
+    BasicSpecTHF THFBS [TPTP_THF] --replace THFBS using Sublogic.hs
     deriving (Show, Eq, Ord)
 
 instance GetRange BasicSpecTHF

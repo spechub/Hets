@@ -45,15 +45,16 @@ import qualified Data.Set as Set
 -- The main method for the static analysis
 basicAnalysis :: (BasicSpecTHF, SignTHF, GlobalAnnos) ->
         Result (BasicSpecTHF, ExtSign SignTHF SymbolTHF, [Named SentenceTHF])
-basicAnalysis (BasicSpecTHF BSTHF _, _, _) =
+{-basicAnalysis (BasicSpecTHF BSTHF _, _, _) =
     let err = mkDiag Error
             "Error: Static Analysis for general THF is not supported yet." ()
-    in Result [err] Nothing
-basicAnalysis (bs@(BasicSpecTHF BSTHF0 bs1), sig1, _) =
+    in Result [err] Nothing -} {- fixme: implement proper basicAnalysis -}
+basicAnalysis (bs@(BasicSpecTHF _ bs1), sig1, _) =
     let (diag1, bs2) = filterBS [] bs1
         (diag2, sig2, syms) = execState (fillSig bs2) (diag1, sig1, Set.empty)
-        (diag3, ns) = getSentences bs2 (diag2, [])
-    in Result (reverse diag3) $ Just (bs, ExtSign sig2 syms, ns)
+        ({-diag3-} _, ns) = getSentences bs2 (diag2, [])
+    in Result {-(reverse diag3)-} [] $ Just (bs, ExtSign sig2 syms, ns)
+    {- For now just throw away errors -}
 
 -- This functions delets all Comments and Includes because they are not needed
 -- for the static analysis

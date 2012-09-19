@@ -34,6 +34,7 @@ import THF.Sign
 import THF.Print
 import THF.PrintTHF (printTPTPTHF)
 import qualified THF.Sublogic as SL
+import THF.As (TPTP_THF (..))
 
 -- TODO implement more instance methods
 
@@ -55,7 +56,7 @@ instance Logic.Logic.Syntax THF BasicSpecTHF () () where
         (basicSpec BSTHF,\(BasicSpecTHF _ a) -> printTPTPTHF a)
      $ addSyntax (show SL.THF0)
         (basicSpec BSTHF0,\(BasicSpecTHF _ a) -> printTPTPTHF a)
-     $ makeDefault (basicSpec BSTHF0,\(BasicSpecTHF _ a) -> printTPTPTHF a)
+     $ makeDefault (basicSpec BSTHF,\(BasicSpecTHF _ a) -> printTPTPTHF a)
     -- remaining default implementations are fine!
 
 instance Sentences THF SentenceTHF SignTHF MorphismTHF SymbolTHF where
@@ -93,17 +94,18 @@ instance Logic THF SL.THFSl BasicSpecTHF SentenceTHF () ()
 -- Sublogics
 
 instance SemiLatticeWithTop SL.THFSl where
- join = \sl1 sl2 -> SL.slFromInt $ max (SL.slToInt sl1) (SL.slToInt sl2)
+ join = SL.join
  top = SL.THFX
 
 instance MinSublogic SL.THFSl BasicSpecTHF where
- minSublogic = \ _ -> SL.THF --actually implement this!
+ minSublogic (BasicSpecTHF _ xs) = foldr SL.join SL.THF0 $
+    map (\x -> case x of
+     TPTP_THF_Annotated_Formula _ _ f _ -> minSublogic f
+     _ -> SL.THF0
+    ) xs
 
 instance SublogicName SL.THFSl where
  sublogicName = show
-
-instance MinSublogic SL.THFSl SentenceTHF where
- minSublogic = \ _ -> SL.THF --actually implement this!
 
 instance MinSublogic SL.THFSl SymbolTHF where
  minSublogic = \ _ -> SL.THF --actually implement this!

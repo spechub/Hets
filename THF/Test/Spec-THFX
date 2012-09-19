@@ -1,0 +1,12 @@
+logic THF.THFX serialization THF
+
+spec test =
+
+thf(origin_in_plane,type,(
+ origin_in_plane: $real * $real )).
+
+thf(ax_in,axiom,
+( origin_in_plane = [0,0] )).
+
+thf(th_in,conjecture,
+( origin_in_plane = [0,0] )).
