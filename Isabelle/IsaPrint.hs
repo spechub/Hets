@@ -474,8 +474,8 @@ printLocale (n,(parents,in_ax,ex_ax,params)) =
        hsep p' <+> if length p' > 0 &&
        (length a' > 0 || length f' > 0)
         then text "+" else empty,
-       (if length a' > 0 then text "assumes" else empty) <+> vcat a',
-       (if length f' > 0 then text "fixes" else empty) <+> vcat f'],
+       (if length f' > 0 then text "fixes" else empty) <+> vcat f',
+       (if length a' > 0 then text "assumes" else empty) <+> vcat a'],
      vcat (map (\ (s,t) -> text ("theorem (in "++ n  ++")")
            <+> text s <+> text ":"
            <+> (doubleQuotes . printTerm) t) ex_ax)]
@@ -501,8 +501,8 @@ printClassR (y, (parents, assumptions,fixes)) =
           <+> hsep p' <+> if length p' > 0 &&
             (length a' > 0 || length f' > 0)
             then text "+" else empty,
-          (if length a' > 0 then text "assumes" else empty) <+> vcat a',
-          (if length f' > 0 then text "fixes" else empty) <+> vcat f']
+          (if length f' > 0 then text "fixes" else empty) <+> vcat f',
+          (if length a' > 0 then text "assumes" else empty) <+> vcat a']
 
 orderCDecs :: [(IsaClass,ClassDecl)] -> [(IsaClass,ClassDecl)]
 orderCDecs =
