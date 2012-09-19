@@ -3,9 +3,10 @@
 Module      :  $Header$
 Description :  Instance of class Logic for THF.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
+               (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  Alexis.Tsogias@dfki.de
+Maintainer  :  Jonathan von Schroeder <j.von_schroeder@dfki.de>
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
@@ -31,6 +32,8 @@ import THF.ProveIsabelle
 import THF.ProveSatallax
 import THF.Sign
 import THF.Print
+import THF.PrintTHF (printTPTPTHF)
+import qualified THF.Sublogic as SL
 
 -- TODO implement more instance methods
 
@@ -48,7 +51,11 @@ instance Monoid BasicSpecTHF where
         BasicSpecTHF (max t1 t2) $ l1 ++ l2
 
 instance Logic.Logic.Syntax THF BasicSpecTHF () () where
-    parse_basic_spec THF = Just (basicSpec BSTHF0)
+    parsersAndPrinters THF = addSyntax (show SL.THF)
+        (basicSpec BSTHF,\(BasicSpecTHF _ a) -> printTPTPTHF a)
+     $ addSyntax (show SL.THF0)
+        (basicSpec BSTHF0,\(BasicSpecTHF _ a) -> printTPTPTHF a)
+     $ makeDefault (basicSpec BSTHF0,\(BasicSpecTHF _ a) -> printTPTPTHF a)
     -- remaining default implementations are fine!
 
 instance Sentences THF SentenceTHF SignTHF MorphismTHF SymbolTHF where
@@ -72,8 +79,9 @@ instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
 PATH environment variable leading to the leo executable
 (The executable leo.opt is not supported. In this case there should be a link
 called leo, or something like that.) -}
-instance Logic THF () BasicSpecTHF SentenceTHF () ()
+instance Logic THF SL.THFSl BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
+    all_sublogics THF = SL.sublogics_all
     stability THF = Testing
     provers THF = [] ++ unsafeProverCheck "leo" "PATH" leoIIProver
                      ++ unsafeProverCheck "isabelle" "PATH" isaProver
@@ -81,3 +89,45 @@ instance Logic THF () BasicSpecTHF SentenceTHF () ()
                      ++ unsafeProverCheck "isabelle" "PATH" refuteProver
                      ++ unsafeProverCheck "isabelle" "PATH" sledgehammerProver
                      ++ unsafeProverCheck "satallax" "PATH" satallaxProver
+
+-- Sublogics
+
+instance SemiLatticeWithTop SL.THFSl where
+ join = \sl1 sl2 -> SL.slFromInt $ max (SL.slToInt sl1) (SL.slToInt sl2)
+ top = SL.THFX
+
+instance MinSublogic SL.THFSl BasicSpecTHF where
+ minSublogic = \ _ -> SL.THF --actually implement this!
+
+instance SublogicName SL.THFSl where
+ sublogicName = show
+
+instance MinSublogic SL.THFSl SentenceTHF where
+ minSublogic = \ _ -> SL.THF --actually implement this!
+
+instance MinSublogic SL.THFSl SymbolTHF where
+ minSublogic = \ _ -> SL.THF --actually implement this!
+
+instance MinSublogic SL.THFSl () where
+ minSublogic = \ _ -> SL.THF -- why do we need this?
+
+instance MinSublogic SL.THFSl SignTHF where
+ minSublogic = \ _ -> SL.THF -- actually implement this!
+
+instance MinSublogic SL.THFSl MorphismTHF where
+ minSublogic = \ _ -> SL.THF -- actually implement this!
+
+instance ProjectSublogicM SL.THFSl SymbolTHF where
+ projectSublogicM _ _ = Nothing
+
+instance ProjectSublogicM SL.THFSl () where
+ projectSublogicM _ _ = Nothing
+
+instance ProjectSublogic SL.THFSl SignTHF where
+ projectSublogic _ i = i
+
+instance ProjectSublogic SL.THFSl MorphismTHF where
+ projectSublogic _ i = i
+
+instance ProjectSublogic SL.THFSl BasicSpecTHF where
+ projectSublogic _ i = i

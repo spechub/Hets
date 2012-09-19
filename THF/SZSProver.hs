@@ -20,6 +20,7 @@ import Logic.Prover
 import THF.Cons
 import THF.Sign
 import THF.ProverState
+import THF.Sublogic
 
 import Common.AS_Annotation as AS_Anno
 import Common.Result
@@ -54,11 +55,11 @@ data ProverFuncs = ProverFuncs {
  getTimeUsed :: String -> Maybe Int -- in seconds
 }
 
-type ProverType = Prover SignTHF SentenceTHF MorphismTHF () ProofTree
+type ProverType = Prover SignTHF SentenceTHF MorphismTHF THFSl ProofTree
 
 createSZSProver :: String -> String -> ProverFuncs ->
-                   Prover SignTHF SentenceTHF MorphismTHF () ProofTree
-createSZSProver name hlp d = mkAutomaticProver name ()
+                   ProverType
+createSZSProver name hlp d = mkAutomaticProver name THF
  (proverGUI hlp name d)
  (proverCMDLautomaticBatch hlp name d)
 

@@ -37,6 +37,7 @@ import THF.Cons as THFCons
 import THF.Sign as THFSign
 import THF.Translate
 import THF.HasCASL2THF0Buildins
+import qualified THF.Sublogic as SL
 
 import Control.Monad
 
@@ -61,13 +62,13 @@ instance Comorphism HasCASL2THF0
                 HasCASL Sublogic
                 BasicSpec Sentence SymbItems SymbMapItems
                 Env Morphism Symbol RawSymbol ()
-                THF ()
+                THF SL.THFSl
                 BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic HasCASL2THF0 = HasCASL
     sourceSublogic HasCASL2THF0 = reqSubLogicForTHF0 -- topLogic
     targetLogic HasCASL2THF0 = THF
-    mapSublogic HasCASL2THF0 _ = Just ()
+    mapSublogic HasCASL2THF0 _ = Just SL.THF0
     map_theory HasCASL2THF0 = transTheory
 {-    map_sentence HasCASL2THF0 sig sen =
         transSentence (maybeResult $ genIdConstantMap sig) sig sen -}
