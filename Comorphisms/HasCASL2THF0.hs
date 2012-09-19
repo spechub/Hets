@@ -332,7 +332,7 @@ getFormulaRole :: Named HCLe.Sentence -> FormulaRole
 getFormulaRole ns =
     if isAxiom ns
     then if wasTheorem ns then Theorem else Axiom
-    else Conjecture
+    else Lemma
 
 transTerm :: Env -> IdConstantMap -> IdSet -> HCAs.Term
                         -> Result (THFLogicFormula, IdSet)
