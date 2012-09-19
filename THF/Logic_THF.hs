@@ -76,3 +76,6 @@ instance Logic THF () BasicSpecTHF SentenceTHF () ()
     stability THF = Testing
     provers THF = [] ++ unsafeProverCheck "leo" "PATH" leoIIProver
                      ++ unsafeProverCheck "isabelle" "PATH" isaProver
+                     ++ unsafeProverCheck "isabelle" "PATH" nitpickProver
+                     ++ unsafeProverCheck "isabelle" "PATH" refuteProver
+                     ++ unsafeProverCheck "isabelle" "PATH" sledgehammerProver

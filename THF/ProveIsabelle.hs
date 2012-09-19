@@ -47,7 +47,7 @@ isaName :: String
 isaName = "Isabelle (automated)"
 
 isaHelp :: String
-isaHelp = "Help"
+isaHelp = "Automated Isabelle calling all tools available"
 
 isaTool :: String
 isaTool = "tptp_isabelle_demo"
@@ -55,6 +55,48 @@ isaTool = "tptp_isabelle_demo"
 isaProver :: Prover SignTHF SentenceTHF MorphismTHF () ProofTree
 isaProver = mkAutomaticProver isaName ()
  (isaGUI isaHelp isaName isaTool) (isaCMDLautomaticBatch isaName isaHelp isaTool)
+
+nitpickName :: String
+nitpickName = "Isabelle (nitpick)"
+
+nitpickHelp :: String
+nitpickHelp = "Nitpick for TPTP problems"
+
+nitpickTool :: String
+nitpickTool = "tptp_nitpick"
+
+nitpickProver :: Prover SignTHF SentenceTHF MorphismTHF () ProofTree
+nitpickProver = mkAutomaticProver nitpickName ()
+ (isaGUI nitpickHelp nitpickName nitpickTool)
+ (isaCMDLautomaticBatch nitpickName nitpickHelp nitpickTool)
+
+refuteName :: String
+refuteName = "Isabelle (refute)"
+
+refuteHelp :: String
+refuteHelp = "refute for TPTP problems"
+
+refuteTool :: String
+refuteTool = "tptp_refute"
+
+refuteProver :: Prover SignTHF SentenceTHF MorphismTHF () ProofTree
+refuteProver = mkAutomaticProver refuteName ()
+ (isaGUI refuteHelp refuteName refuteTool)
+ (isaCMDLautomaticBatch refuteName refuteHelp refuteTool)
+
+sledgehammerName :: String
+sledgehammerName = "Isabelle (sledgehammer)"
+
+sledgehammerHelp :: String
+sledgehammerHelp = "sledgehammer for TPTP problems"
+
+sledgehammerTool :: String
+sledgehammerTool = "tptp_sledgehammer"
+
+sledgehammerProver :: Prover SignTHF SentenceTHF MorphismTHF () ProofTree
+sledgehammerProver = mkAutomaticProver sledgehammerName ()
+ (isaGUI sledgehammerHelp sledgehammerName sledgehammerTool)
+ (isaCMDLautomaticBatch sledgehammerName sledgehammerHelp sledgehammerTool)
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
