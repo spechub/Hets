@@ -415,9 +415,9 @@ is_ghorn_conc term = case term of
 
 is_fol_t :: Term -> Bool
 is_fol_t t = case t of
-    LambdaTerm _ _ _ _ -> False
-    CaseTerm _ _ _ -> False
-    LetTerm _ _ _ _ -> False
+    LambdaTerm {} -> False
+    CaseTerm {} -> False
+    LetTerm {} -> False
     _ -> True
 {- FOL:
   no lambda/let/case,
@@ -476,7 +476,7 @@ sl_classItem (ClassItem c l _) =
 sl_classDecl :: ClassDecl -> Sublogic
 sl_classDecl (ClassDecl _ k _) = case k of
     ClassKind _ -> simpleTypeClasses
-    FunKind _ _ _ _ -> constructorClasses
+    FunKind {} -> constructorClasses
 
 -- don't check the variance or kind of builtin type constructors
 sl_Variance :: Variance -> Sublogic
@@ -542,7 +542,7 @@ sl_Basictype ty = case ty of
          (TypeName ide _ _, args) -> comp_list $
             (if isArrow ide || ide == lazyTypeId then need_hol else
                 need_type_constructors) : map sl_Basictype args
-         (_, []) -> error "sl_Basictype"
+         (_, []) -> bottom
          (t, args) -> comp_list $ sl_Basictype t : map sl_Basictype args
 
 sl_BasicProd :: Type -> Sublogic
