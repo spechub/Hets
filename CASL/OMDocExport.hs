@@ -156,9 +156,12 @@ makeADTArgument e s = ADTArg (oms e s) Nothing
 
 -- ------------------------ UTILS --------------------------
 
-findInEnv :: (Ord k) => a -> Map.Map k a -> k -> a
-findInEnv err m x = Map.findWithDefault err x m
-
+findInEnv :: UniqName -> Env -> Symbol -> UniqName
+findInEnv err m x = fromMaybe (case symbType x of
+     OpAsItemType o -> Map.findWithDefault err
+        x { symbType = OpAsItemType
+            $ (if isTotal o then mkPartial else mkTotal) o } m
+     _ -> err) $ Map.lookup x m
 
 sfail :: String -> Range -> a
 sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
