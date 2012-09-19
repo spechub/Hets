@@ -110,7 +110,7 @@ anaIsaFile _ path = do
              ++ (foldl (\ l c -> case c of
                           (_,_,Nothing) -> l
                           (n,_,Just tm) -> (n,tm):l) [] consts))
- let sgn = emptySign { constTab = foldl (\ m (n,t,_) -> Map.insert (mkVName n) t m) Map.empty consts, domainTab = types, imports = imps,
+ let sgn = emptySign { constTab = foldl (\ m (n,t,_) -> Map.insert (mkVName n) t m) Map.empty consts, domainTab = types, imports = imps, baseSig = Custom_thy,
    tsig = emptyTypeSig { classrel = Map.fromList classes,
    locales = Map.fromList locales' }}
  let dg = _insNodeDG sgn sens name emptyDG

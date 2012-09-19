@@ -42,11 +42,14 @@ printIsaTheory tn sign sens = let
     ld = "$HETS_ISABELLE_LIB/"
     use = text usesS <+> doubleQuotes (text $ ld ++ "prelude.ML")
     in text theoryS <+> text tn
-    $+$ text importsS <+> fsep ((if case b of
-        Main_thy -> False
-        HOLCF_thy -> False
-        _ -> True then doubleQuotes $ text $ ld ++ bs else text bs)
-        : map (doubleQuotes . text) (imports sign))
+    $+$ text importsS <+> fsep (case b of
+        Custom_thy -> [] 
+        _ -> (if case b of
+                Main_thy -> False
+                HOLCF_thy -> False
+                Custom_thy -> True
+                _ -> True then [doubleQuotes $ text $ ld ++ bs] else [text bs])
+        ++ map (doubleQuotes . text) (imports sign))
     $+$ use
     $+$ text beginS
     $++$ printTheoryBody sign sens
@@ -322,7 +325,7 @@ parensForTerm d =
 
 printParenTerm :: Bool -> Int -> Term -> Doc
 printParenTerm b i t = case printTrm b t of
-    (d, j) -> if j < i then parensForTerm d else d
+    (d, j) -> if j <= i then parensForTerm d else d
 
 flatTuplex :: [Term] -> Continuity -> [Term]
 flatTuplex cs c = case cs of

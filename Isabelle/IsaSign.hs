@@ -243,6 +243,7 @@ isSubTypeSig t1 t2 =
 
 data BaseSig =
     Main_thy  -- ^ main theory of higher order logic (HOL)
+  | Custom_thy
   | MainHC_thy  -- ^ extend main theory of HOL logic for HasCASL
   | MainHCPairs_thy  -- ^ for HasCASL translation to bool pairs
   | HOLCF_thy   -- ^ higher order logic for continuous functions
