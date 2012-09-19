@@ -374,16 +374,14 @@ sl_form_level ff (isCompound, leftImp) phi =
                     if isCompound then GHorn else Horn ]
    Negation f _ -> max FOL $ sl_form_level ff (False, False) f
    Atom b _ -> if b then Atomic else FOL
-   Predication _ _ _ -> Atomic
-   Definedness _ _ -> Atomic
-   Equation _ e _ _ -> if e == Existl then Atomic else
-     if leftImp then FOL else Horn
-   Membership _ _ _ -> Atomic
-   Sort_gen_ax _ _ -> Atomic
-   QuantOp _ _ _ -> SOL  -- it can't get worse
-   QuantPred _ _ _ -> SOL
+   Equation _ e _ _
+     | e == Existl -> Atomic
+     | leftImp -> FOL
+     | otherwise -> Horn
+   QuantOp {} -> SOL  -- it can't get worse
+   QuantPred {} -> SOL
    ExtFORMULA f -> ff f
-   _ -> error "CASL.Sublogic.sl_form_level: illegal FORMULA type"
+   _ -> Atomic
 
 -- QUANTIFIER
 is_atomic_q :: QUANTIFIER -> Bool
@@ -453,7 +451,7 @@ from more general formulae in the same expression logic -}
 sl_sort_item :: Lattice a => (f -> CASL_SL a)
              -> SORT_ITEM f -> CASL_SL a
 sl_sort_item ff si = case si of
-    Subsort_decl _ _ _ -> need_sub
+    Subsort_decl {} -> need_sub
     Subsort_defn _ _ _ f _ -> sublogics_max
                                         (get_logic_sd ff $ item f)
                                         (sublogics_max need_sub
@@ -488,7 +486,7 @@ sl_op_head oh = case oh of
 sl_pred_item :: Lattice a => (f -> CASL_SL a)
              -> PRED_ITEM f -> CASL_SL a
 sl_pred_item ff i = case i of
-    Pred_decl _ _ _ -> need_pred
+    Pred_decl {} -> need_pred
     Pred_defn _ _ f _ -> sublogics_max need_pred (sl_formula ff $ item f)
 
 sl_datatype_decl :: Lattice a => DATATYPE_DECL -> CASL_SL a
@@ -512,37 +510,13 @@ sl_var_decl _ = bottom
 {- without subsorts casts are trivial and would not even require
    need_part, but testing sortOfTerm is not save for formulas in basic specs
    that are only parsed (and resolved) but not enriched with sorts -}
-sl_term :: Lattice a => (f -> CASL_SL a) -> TERM f -> CASL_SL a
--- the subterms may make it worse than "need_part"
-sl_term ff trm = case trm of
-    Cast t _ _ -> sublogics_max need_part $ sl_term ff t
--- check here also for the formula_level!
-    Conditional t f u _ ->
-        comp_list [sl_term ff t, sl_formula ff f, sl_term ff u]
-    Sorted_term t _ _ -> sl_term ff t
-    Application _ l _ -> comp_list $ map (sl_term ff) l
-    Qual_var _ _ _ -> bottom
-    _ -> error "CASL.Sublogic.sl_term"
 
-sl_formula :: Lattice a => (f -> CASL_SL a)
-           -> FORMULA f -> CASL_SL a
-sl_formula ff f = sublogics_max (get_logic ff f) (sl_form ff f)
-
-sl_form :: Lattice a => (f -> CASL_SL a)
-        -> FORMULA f -> CASL_SL a
-sl_form ff frm = case frm of
-    Quantification _ _ f _ -> sl_form ff f
-    Junction _ l _ -> comp_list $ map (sl_form ff) l
-    Relation f _ g _ -> sublogics_max (sl_form ff f) (sl_form ff g)
-    Negation f _ -> sl_form ff f
-    Atom _ _ -> bottom
-    Predication _ l _ -> comp_list $ need_pred : map (sl_term ff) l
--- need_part is tested elsewhere (need_pred not required)
-    Definedness t _ -> sl_term ff t
-    Equation t _ u _ -> comp_list [need_eq, sl_term ff t, sl_term ff u]
--- need_sub is tested elsewhere (need_pred not required)
-    Membership t _ _ -> sl_term ff t
-    Sort_gen_ax constraints _ -> case recover_Sort_gen_ax constraints of
+slRecord :: Lattice a => (f -> CASL_SL a) -> Record f (CASL_SL a) (CASL_SL a)
+slRecord ff = (constRecord ff comp_list bottom)
+  { foldPredication = \ _ _ l _ -> comp_list $ need_pred : l
+  , foldEquation = \ _ t _ u _ -> comp_list [need_eq, t, u]
+  , foldSort_gen_ax = \ _ constraints _ ->
+      case recover_Sort_gen_ax constraints of
       (_, ops, m) -> case (m, filter (\ o -> case o of
                    Op_name _ -> True
                    Qual_op_name n _ _ ->
@@ -551,10 +525,20 @@ sl_form ff frm = case frm of
         ([], _) -> need_e_cons
         (_, []) -> need_s_cons
         _ -> need_cons
-    QuantOp _ _ f -> sl_form ff f
-    QuantPred _ _ f -> sublogics_max need_pred $ sl_form ff f
-    ExtFORMULA f -> ff f
-    _ -> error "CASL.Sublogic.sl_form"
+  , foldQuantPred = \ _ _ _ f -> sublogics_max need_pred f
+  , foldCast = \ _ t _ _ -> sublogics_max need_part t
+  }
+
+sl_term :: Lattice a => (f -> CASL_SL a) -> TERM f -> CASL_SL a
+sl_term = foldTerm . slRecord
+
+sl_formula :: Lattice a => (f -> CASL_SL a)
+           -> FORMULA f -> CASL_SL a
+sl_formula ff f = sublogics_max (get_logic ff f) (sl_form ff f)
+
+sl_form :: Lattice a => (f -> CASL_SL a)
+        -> FORMULA f -> CASL_SL a
+sl_form = foldFormula . slRecord
 
 sl_symb_items :: Lattice a => SYMB_ITEMS -> CASL_SL a
 sl_symb_items (Symb_items k l _) = sublogics_max (sl_symb_kind k)
