@@ -128,7 +128,7 @@ runLeoII :: ProverStateTHF
 runLeoII pst cfg saveTHF thName nGoal = do
     let options = extraOpts cfg
         tout = maybe leoIITimeout (+ 1) (timeLimit cfg)
-        extraOptions = maybe "-po" (("-po -t " ++) . show) (timeLimit cfg)
+        extraOptions = maybe "-po 1" (("-po 1 -t " ++) . show) (timeLimit cfg)
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showProblemTHF pst nGoal []
     runRes <- runLeoIIProcess tout saveTHF extraOptions tmpFileName prob
