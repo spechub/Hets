@@ -481,7 +481,9 @@ printLocale (n,(parents,in_ax,ex_ax,params)) =
        (if length a' > 0 then text "assumes" else empty) <+> vcat a'],
      vcat (map (\ (s,t) -> text ("theorem (in "++ n  ++")")
            <+> text s <+> text ":"
-           <+> (doubleQuotes . printTerm) t) ex_ax)]
+           <+> (doubleQuotes . printTerm) t
+           <+> text "apply(auto)"
+           <+> text "done") ex_ax)]
 
 printClassrel :: Classrel -> Doc
 printClassrel = vsep . map printClassR . orderCDecs . Map.toList
