@@ -185,19 +185,25 @@ getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
 mkNomAppl :: Id -> Term
 mkNomAppl pn = mkOpTerm (nomName pn) $ trOp nomOpType
 
+eqWorld :: Id -> Term -> Term -> Term
+eqWorld i = mkEqTerm i (toType world) nullRange
+
+eqW :: Term -> Term -> Term
+eqW = eqWorld eqId
+
 trRecord :: Args -> String -> Record EM_FORMULA Term Term
 trRecord as str = let
     extInf = extendedInfo $ modSig as
     currW = currentW as
     in (transRecord str)
   { foldPredication = \ _ ps args _ -> let
-      Qual_pred_name pn pTy@(Pred_type srts q) p = ps
+      Qual_pred_name pn pTy@(Pred_type srts q) _ = ps
       in if MapSet.member pn (toPredType pTy) $ flexPreds extInf
          then mkApplTerm
             (mkOpTerm (trI pn) . simpleTypeScheme . trPrSyn
             $ Pred_type (world : srts) q) $ currW : args
          else if null srts && Set.member pn (nominals extInf)
-              then mkEqTerm eqId (toType world) p currW $ getTermOfNom as pn
+              then eqW currW $ getTermOfNom as pn
          else mkApplTerm
             (mkOpTerm (trI pn) . simpleTypeScheme $ trPrSyn pTy) args
   , foldExtFORMULA = \ _ f -> transEMF as f
@@ -217,7 +223,7 @@ transMF a f = foldFormula (trRecord a $ showDoc f "") f
 disjointVars :: [VarDecl] -> [Term]
 disjointVars vs = case vs of
   a : r@(b : _) -> mkTerm notId notType [] nullRange
-    (on (mkEqTerm eqId (toType world) nullRange) QualVar a b) : disjointVars r
+    (on eqW QualVar a b) : disjointVars r
   _ -> []
 
 transEMF :: Args -> EM_FORMULA -> Term
@@ -233,8 +239,7 @@ transEMF as emf = case emf of
       nAs = as { freeC = fW + i }
       tf n = transMF nAs { currentW = varTerm (genNumVar "w" n) world } f
       tM n = transMod nAs { nextW = n } m
-      conjF = toBinJunctor andId
-        (map tM l ++ map tf l ++ disjointVars vds) r
+      conjF = mkConj $ map tM l ++ map tf l ++ disjointVars vds
       diam = BoxOrDiamond Diamond m True
       tr b = transEMF as $ PrefixForm (BoxOrDiamond b m gEq i) f r
       f1 = QuantifiedTerm HC.Existential gvs conjF r
@@ -242,9 +247,9 @@ transEMF as emf = case emf of
       in if gEq && i > 0 && (i == 1 || ex) then case bOp of
            Diamond -> f1
            Box -> f2
-           EBox -> toBinJunctor andId [f1, f2] r
+           EBox -> mkConj [f1, f2]
          else if i <= 0 && ex && gEq then unitTerm trueId r
-         else if bOp == EBox then toBinJunctor andId (map tr [Diamond, Box]) r
+         else if bOp == EBox then mkConj $ map tr [Diamond, Box]
          else if ex -- lEq
               then transMF as . mkNeg . ExtFORMULA $ PrefixForm
                        (diam $ i + 1) f r
@@ -257,16 +262,21 @@ transEMF as emf = case emf of
       if at then transMF as { currentW = getTermOfNom as ni } f else let
       vi = varDecl (genNumVar "i" $ fW + 1) world
       ti = QualVar vi
-      in QuantifiedTerm HC.Existential [GenVarDecl vi]
-           (toBinJunctor andId
-           [ mkEqTerm eqId (toType world) r ti $ currentW as
+      in mkExConj vi
+           [ eqW ti $ currentW as
            , transMF as { boundNoms = (ni, ti) : boundNoms as
                         , currentW = ti
-                        , freeC = fW + 1 } f ] r) r
+                        , freeC = fW + 1 } f ]
     _ -> transMF as f
-  UntilSince _isUntil f1 f2 r ->
-    toBinJunctor andId [transMF as f1, transMF as f2] r
+  UntilSince _isUntil f1 f2 _ -> mkConj [transMF as f1, transMF as f2]
   ModForm _ -> unitTerm trueId nullRange
+
+mkConj :: [Term] -> Term
+mkConj l = toBinJunctor andId l nullRange
+
+mkExConj :: VarDecl -> [Term] -> Term
+mkExConj vd l =
+  QuantifiedTerm HC.Existential [GenVarDecl vd] (mkConj l) nullRange
 
 transMod :: Args -> MODALITY -> Term
 transMod as md = let
@@ -290,21 +300,19 @@ transMod as md = let
          . trPr $ modPredType world True st)
         $ foldTerm (trRecord as $ showDoc t "") t : vts
     _ -> error $ "transMod2: " ++ showDoc t ""
-  Guard f -> toBinJunctor andId
-    [mkEqTerm exEq (toType world) nullRange t1 t2, transMF as f] nullRange
-  ModOp mOp m1 m2 -> case mOp of
+  Guard f -> mkConj [eqWorld exEq t1 t2, transMF as f]
+  ModOp mOp m1 m2 -> let mkDisj l = toBinJunctor orId l nullRange in
+    case mOp of
     Composition -> let
       nW = freeC as + 1
       nAs = as { freeC = nW }
       vd = varDecl (genNumVar "w" nW) world
-      in QuantifiedTerm HC.Existential [GenVarDecl vd] (toBinJunctor andId
+      in mkExConj vd
            [ transMod nAs { nextW = nW } m1
-           , transMod nAs { currentW = QualVar vd } m2 ] nullRange)
-         nullRange
-    Intersection -> toBinJunctor andId [transMod as m1, transMod as m2]
-       nullRange
-    Union -> toBinJunctor orId [transMod as m1, transMod as m2] nullRange
-    OrElse -> toBinJunctor orId (transOrElse [] as $ flatOrElse md) nullRange
+           , transMod nAs { currentW = QualVar vd } m2 ]
+    Intersection -> mkConj [transMod as m1, transMod as m2]
+    Union -> mkDisj [transMod as m1, transMod as m2]
+    OrElse -> mkDisj $ transOrElse [] as $ flatOrElse md
   TransClos m -> transMod as m -- ignore transitivity for now
 
 flatOrElse :: MODALITY -> [MODALITY]
