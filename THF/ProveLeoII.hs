@@ -185,11 +185,11 @@ runLeoIIProcess tout saveTHF options tmpFileName prob = do
     when saveTHF (writeFile tmpFile prob)
     timeTmpFile <- getTempFile prob tmpFile
     mres <- timeoutCommand tout "leo" (words options ++ [timeTmpFile])
-    maybe (return Nothing) (\ (_, pout, _) -> do
+    maybe (return Nothing) (\ (_, pout, perr) -> do
         let l = lines pout
             (res, _, tUsed) = parseOutput l
         removeFile timeTmpFile
-        return $ Just (res, l, tUsed)) mres
+        return $ Just (res++perr, l, tUsed)) mres
 
 -- parse the output and return the szsStatus and the used time.
 parseOutput :: [String] -> (String, Bool, Int)
