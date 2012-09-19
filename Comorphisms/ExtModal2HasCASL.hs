@@ -9,7 +9,7 @@ Stability   :  provisional
 Portability :  non-portable (MPTC-FD)
 -}
 
-module Comorphisms.ExtModal2HasCASL where
+module Comorphisms.ExtModal2HasCASL (ExtModal2HasCASL (..)) where
 
 import Logic.Logic
 import Logic.Comorphism
@@ -80,8 +80,23 @@ nomOpType = mkTotOpType [] world
 tauId :: Id
 tauId = genName "Tau"
 
-tauTy :: PredType
-tauTy = PredType [world, world]
+tauCaslTy :: PredType
+tauCaslTy = PredType [world, world]
+
+tauTy :: Type
+tauTy = trPrSyn $ toPRED_TYPE tauCaslTy
+
+isTransId :: Id
+isTransId = genName "isTrans"
+
+isTransTy :: Type
+isTransTy = predType nullRange tauTy
+
+containsId :: Id
+containsId = genName "contains"
+
+containsTy :: Type
+containsTy = getFunType unitType HC.Partial [tauTy, tauTy]
 
 -- | mixfix names work for tuples and are lost after currying
 trI :: Id -> Id
@@ -96,16 +111,16 @@ trOpSyn (Op_type ok args res _) = let
   in if null args then if total then resTy else mkLazyType resTy
   else getFunType resTy partial $ map toType args
 
-trOp :: OpType -> TypeScheme
-trOp = simpleTypeScheme . trOpSyn . toOP_TYPE
+trOp :: OpType -> Type
+trOp = trOpSyn . toOP_TYPE
 
 trPrSyn :: PRED_TYPE -> Type
 trPrSyn (Pred_type args ps) = let u = unitTypeWithRange ps in
    if null args then mkLazyType u else
    getFunType u HC.Partial $ map toType args
 
-trPr :: PredType -> TypeScheme
-trPr = simpleTypeScheme . trPrSyn . toPRED_TYPE
+trPr :: PredType -> Type
+trPr = trPrSyn . toPRED_TYPE
 
 -- | add world arguments to flexible ops and preds; and add relations
 transSig :: ExtModalSign -> [Named (FORMULA EM_FORMULA)]
@@ -132,20 +147,27 @@ transSig sign sens = let
     s2 = s1
       { sortRel = Rel.insertKey world $ sortRel sign
       , opMap = addOpMapSet flexOps' nomOps
-      , predMap = (if Set.null timeMs then id else MapSet.insert tauId tauTy)
-                  . addMapSet rels $ addMapSet flexPreds' noNomsPreds
+      , predMap = addMapSet rels $ addMapSet flexPreds' noNomsPreds
       }
-    in ( mapSigAux trI trOp trPr (getConstructors sens) s2
+    env = mapSigAux trI trOp trPr (getConstructors sens) s2
+    insF (i, t) = Map.insert i $ Set.singleton
+         $ OpInfo (simpleTypeScheme t) Set.empty $ NoOpDefn Fun
+    in ( env
+         { assumps = foldr insF (assumps env)
+             [ (tauId, tauTy)
+             , (isTransId, isTransTy)
+             , (containsId, containsTy)]
+         }
        , if Set.null timeMs then [] else
           [makeNamed "tau" . Formula
            . HC.mkForall (map GenVarDecl vds)
            . mkLogTerm eqvId nullRange
-           (mkApplTerm (mkOpTerm tauId $ trPr tauTy) ts)
+           (mkApplTerm (mkOp tauId tauTy) ts)
            . mkDisj . map (\ tm ->
             let v = varDecl (genNumVar "t" 0) tm
                 term = Set.member tm termMs
             in (if term then mkExQ v else id) $ mkApplTerm
-               (mkOpTerm (relOfMod True term tm)
+               (mkOp (relOfMod True term tm)
                 . trPr $ modPredType world term tm)
                $ if term then QualVar v : ts else ts)
            $ Set.toList timeMs])
@@ -159,9 +181,6 @@ data Args = Args
 
 varDecl :: Token -> SORT -> VarDecl
 varDecl i s = VarDecl (simpleIdToId i) (toType s) Other nullRange
-
-genVarDecl :: Token -> SORT -> GenVarDecl
-genVarDecl i = GenVarDecl . varDecl i
 
 varTerm :: Token -> SORT -> Term
 varTerm i = QualVar . varDecl i
@@ -197,8 +216,11 @@ transTop msig env f = let
 getTermOfNom :: Args -> Id -> Term
 getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
 
+mkOp :: Id -> Type -> Term
+mkOp i = mkOpTerm i . simpleTypeScheme
+
 mkNomAppl :: Id -> Term
-mkNomAppl pn = mkOpTerm (nomName pn) $ trOp nomOpType
+mkNomAppl pn = mkOp (nomName pn) $ trOp nomOpType
 
 eqWorld :: Id -> Term -> Term -> Term
 eqWorld i = mkEqTerm i (toType world) nullRange
@@ -228,21 +250,21 @@ trRecord as str = let
       Qual_pred_name pn pTy@(Pred_type srts q) _ = ps
       in if MapSet.member pn (toPredType pTy) $ flexPreds extInf
          then mkApplTerm
-            (mkOpTerm (trI pn) . simpleTypeScheme . trPrSyn
+            (mkOp (trI pn) . trPrSyn
             $ Pred_type (world : srts) q) $ currW : args
          else if null srts && Set.member pn (nominals extInf)
               then eqW currW $ getTermOfNom as pn
          else mkApplTerm
-            (mkOpTerm (trI pn) . simpleTypeScheme $ trPrSyn pTy) args
+            (mkOp (trI pn) $ trPrSyn pTy) args
   , foldExtFORMULA = \ _ f -> transEMF as f
   , foldApplication = \ _ os args _ -> let
       Qual_op_name opn oTy@(Op_type ok srts res q) _ = os
       in if MapSet.member opn (toOpType oTy) $ flexOps extInf
          then mkApplTerm
-            (mkOpTerm (trI opn) . simpleTypeScheme . trOpSyn
+            (mkOp (trI opn) . trOpSyn
             $ Op_type ok (world : srts) res q) $ currW : args
          else mkApplTerm
-            (mkOpTerm (trI opn) . simpleTypeScheme $ trOpSyn oTy) args
+            (mkOp (trI opn) $ trOpSyn oTy) args
   }
 
 transMF :: Args -> FORMULA EM_FORMULA -> Term
@@ -309,7 +331,7 @@ transMod as md = let
   timeMs = timeMods extInf
   in case md of
   SimpleMod i -> let ri = simpleIdToId i in mkApplTerm
-    (mkOpTerm (relOfMod (Set.member ri timeMs) False ri)
+    (mkOp (relOfMod (Set.member ri timeMs) False ri)
                     . trPr $ modPredType world False ri) vts
   TermMod t -> case optTermSort t of
     Just srt -> case keepMinimals msig id . Set.toList
@@ -317,7 +339,7 @@ transMod as md = let
       $ supersortsOf srt msig of
       [] -> error $ "transMod1: " ++ showDoc t ""
       st : _ -> mkApplTerm
-        (mkOpTerm (relOfMod (Set.member st timeMs) True st)
+        (mkOp (relOfMod (Set.member st timeMs) True st)
          . trPr $ modPredType world True st)
         $ foldTerm (trRecord as $ showDoc t "") t : vts
     _ -> error $ "transMod2: " ++ showDoc t ""

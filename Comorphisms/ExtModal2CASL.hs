@@ -9,7 +9,7 @@ Stability   :  provisional
 Portability :  non-portable (MPTC-FD)
 -}
 
-module Comorphisms.ExtModal2CASL where
+module Comorphisms.ExtModal2CASL (ExtModal2CASL (..)) where
 
 import Logic.Logic
 import Logic.Comorphism

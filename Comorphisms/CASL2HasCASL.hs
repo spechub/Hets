@@ -91,16 +91,16 @@ fromOPTYPE (Cas.Op_type ok args res ps) = let
   in if null args then if total then resTy else mkLazyType resTy
   else mkFunArrType (mkProductTypeWithRange (map toType args) ps) arr resTy
 
-fromOpType :: CasS.OpType -> TypeScheme
-fromOpType = simpleTypeScheme . fromOPTYPE . CasS.toOP_TYPE
+fromOpType :: CasS.OpType -> Type
+fromOpType = fromOPTYPE . CasS.toOP_TYPE
 
 fromPREDTYPE :: Cas.PRED_TYPE -> Type
 fromPREDTYPE (Cas.Pred_type args ps) =
    if null args then mkLazyType $ unitTypeWithRange ps
    else predType ps $ mkProductTypeWithRange (map toType args) ps
 
-fromPredType :: CasS.PredType -> TypeScheme
-fromPredType = simpleTypeScheme . fromPREDTYPE . CasS.toPRED_TYPE
+fromPredType :: CasS.PredType -> Type
+fromPredType = fromPREDTYPE . CasS.toPRED_TYPE
 
 mapTheory :: (CasS.TermExtension f, FormExtension f) =>
   (CasS.Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
@@ -111,22 +111,23 @@ mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSig = mapSigAux trId fromOpType fromPredType
 
 -- | sort names or not translated
-mapSigAux :: (Id -> Id) -> (CasS.OpType -> TypeScheme)
-  -> (CasS.PredType -> TypeScheme) -> Set.Set (Id, CasS.OpType)
-  -> CasS.Sign f e -> Env
+mapSigAux :: (Id -> Id) -> (CasS.OpType -> Type) -> (CasS.PredType -> Type)
+  -> Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSigAux trI trO trP constr sign =
     let f1 = map ( \ (i, ty) ->
                    (trI i, trO ty,
                             if Set.member (i, CasS.mkPartial ty)
                                constr then ConstructData $ CasS.opRes ty
                                else NoOpDefn Op))
-                         $ CasS.mapSetToList $ CasS.opMap sign
-        f2 = map ( \ (i, ty) -> let pTy@(TypeScheme _ rt _) = trP ty in
-                   (trI i, pTy, NoOpDefn $ if isPredType rt then Pred else Op))
-                         $ CasS.mapSetToList $ CasS.predMap sign
+             $ CasS.mapSetToList $ CasS.opMap sign
+        f2 = map ( \ (i, ty) -> let pTy = trP ty in
+                   (trI i, pTy, NoOpDefn
+                   $ if isPredType pTy then Pred else Fun))
+             $ CasS.mapSetToList $ CasS.predMap sign
         insF (i, ty, defn) m =
             let os = Map.findWithDefault Set.empty i m
-                in Map.insert i (Set.insert (OpInfo ty Set.empty defn) os) m
+            in Map.insert i (Set.insert
+                             (OpInfo (simpleTypeScheme ty) Set.empty defn) os) m
      in initialEnv
      { classMap = Map.empty,
        typeMap = Map.fromList $ map
@@ -139,14 +140,14 @@ mapSigAux trI trO trP constr sign =
 mapMor :: CasM.Morphism f e m -> Morphism
 mapMor m = let tm = CasM.sort_map m
                f1 = map ( \ ((i, ot), (j, t)) ->
-                          ((trId i, fromOpType ot),
-                           (trId j, mapTypeOfScheme (mapType tm)
-                                    $ fromOpType ot { CasS.opKind = t })))
+                          ((trId i, simpleTypeScheme $ fromOpType ot),
+                           (trId j, simpleTypeScheme $ mapType tm
+                                 $ fromOpType ot { CasS.opKind = t })))
                     $ Map.toList $ CasM.op_map m
                f2 = map ( \ ((i, pt), j) ->
-                          let sc = fromPredType pt
-                          in ( (trId i, sc)
-                             , (trId j, mapTypeOfScheme (mapType tm) sc)))
+                          let ty = fromPredType pt
+                          in ( (trId i, simpleTypeScheme ty)
+                             , (trId j, simpleTypeScheme $ mapType tm ty)))
                     $ Map.toList $ CasM.pred_map m
             in (mkMorphism (mapSig Set.empty $ CasM.msource m)
                                (mapSig Set.empty $ CasM.mtarget m))
@@ -155,14 +156,14 @@ mapMor m = let tm = CasM.sort_map m
 mapSym :: CasS.Symbol -> Symbol
 mapSym = mapSymAux trId fromOpType fromPredType
 
-mapSymAux :: (Id -> Id) -> (CasS.OpType -> TypeScheme)
-  -> (CasS.PredType -> TypeScheme) -> CasS.Symbol -> Symbol
+mapSymAux :: (Id -> Id) -> (CasS.OpType -> Type)
+  -> (CasS.PredType -> Type) -> CasS.Symbol -> Symbol
 mapSymAux trI trO trP s = let
   n = CasS.symName s
   i = trI n
   in case CasS.symbType s of
-    CasS.OpAsItemType ot -> idToOpSymbol i $ trO ot
-    CasS.PredAsItemType pt -> idToOpSymbol i $ trP pt
+    CasS.OpAsItemType ot -> idToOpSymbol i . simpleTypeScheme $ trO ot
+    CasS.PredAsItemType pt -> idToOpSymbol i . simpleTypeScheme $ trP pt
     CasS.SortAsItemType -> idToTypeSymbol n rStar
     CasS.SubsortAsItemType _ -> idToTypeSymbol n rStar
 
