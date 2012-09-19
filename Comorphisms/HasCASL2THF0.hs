@@ -44,6 +44,8 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
+import Char (toLower)
+
 --------------------------------------------------------------------------------
 -- Question:
 --      * are the remeining symbol variants translatable?
@@ -306,8 +308,11 @@ transSymbol sig1 sym1 = case HCLe.symType sym1 of
 
 transNamedSentence :: Maybe IdConstantMap -> IdSet -> Env -> Named Sentence
                             -> Result (Named SentenceTHF, IdSet)
-transNamedSentence micm ids sig ns = do
+transNamedSentence micm ids sig ns' = do
     icm <- maybe (genIdConstantMap sig) return micm
+    let ns = reName (\n -> case n of
+                            []     -> n
+                            (x:xs) -> (toLower x):xs) ns'
     case sentence ns of
         Formula term    -> do
             (lf, nids) <- transTerm sig icm ids term
