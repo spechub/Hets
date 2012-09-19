@@ -62,7 +62,7 @@ instance Comorphism ExtModal2HasCASL
     targetLogic ExtModal2HasCASL = HasCASL
     mapSublogic ExtModal2HasCASL _ = Just HC.caslLogic { which_logic = HOL }
     map_theory ExtModal2HasCASL (sig, sens) = case transSig sig sens of
-      mme -> return (mme, map (mapNamed $ toSen sig mme) sens)
+      (mme, s) -> return (mme, s ++ map (mapNamed $ toSen sig mme) sens)
     {-
     map_morphism ExtModal2HasCASL = return . mapMor
     map_sentence ExtModal2HasCASL sig = return . transSen sig
@@ -108,7 +108,8 @@ trPr :: PredType -> TypeScheme
 trPr = simpleTypeScheme . trPrSyn . toPRED_TYPE
 
 -- | add world arguments to flexible ops and preds; and add relations
-transSig :: ExtModalSign -> [Named (FORMULA EM_FORMULA)] -> Env
+transSig :: ExtModalSign -> [Named (FORMULA EM_FORMULA)]
+  -> (Env, [Named Sentence])
 transSig sign sens = let
     s1 = embedSign () sign
     extInf = extendedInfo sign
@@ -126,14 +127,28 @@ transSig sign sens = let
       insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
       MapSet.empty $ modalities extInf
     nomOps = Set.fold (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
+    vds = map (\ n -> varDecl (genNumVar "v" n) world) [1, 2]
+    ts = map QualVar vds
     s2 = s1
       { sortRel = Rel.insertKey world $ sortRel sign
       , opMap = addOpMapSet flexOps' nomOps
       , predMap = (if Set.null timeMs then id else MapSet.insert tauId tauTy)
                   . addMapSet rels $ addMapSet flexPreds' noNomsPreds
       }
-    in mapSigAux trI trOp trPr (getConstructors sens) s2
-
+    in ( mapSigAux trI trOp trPr (getConstructors sens) s2
+       , if Set.null timeMs then [] else
+          [makeNamed "tau" . Formula
+           . HC.mkForall (map GenVarDecl vds)
+           . mkLogTerm eqvId nullRange
+           (mkApplTerm (mkOpTerm tauId $ trPr tauTy) ts)
+           . mkDisj . map (\ tm ->
+            let v = varDecl (genNumVar "t" 0) tm
+                term = Set.member tm termMs
+            in (if term then mkExQ v else id) $ mkApplTerm
+               (mkOpTerm (relOfMod True term tm)
+                . trPr $ modPredType world term tm)
+               $ if term then QualVar v : ts else ts)
+           $ Set.toList timeMs])
 
 data Args = Args
   { currentW :: Term
@@ -190,6 +205,19 @@ eqWorld i = mkEqTerm i (toType world) nullRange
 
 eqW :: Term -> Term -> Term
 eqW = eqWorld eqId
+
+mkConj :: [Term] -> Term
+mkConj l = toBinJunctor andId l nullRange
+
+mkDisj :: [Term] -> Term
+mkDisj l = toBinJunctor orId l nullRange
+
+mkExQ :: VarDecl -> Term -> Term
+mkExQ vd t =
+  QuantifiedTerm HC.Existential [GenVarDecl vd] t nullRange
+
+mkExConj :: VarDecl -> [Term] -> Term
+mkExConj vd = mkExQ vd . mkConj
 
 trRecord :: Args -> String -> Record EM_FORMULA Term Term
 trRecord as str = let
@@ -271,13 +299,6 @@ transEMF as emf = case emf of
   UntilSince _isUntil f1 f2 _ -> mkConj [transMF as f1, transMF as f2]
   ModForm _ -> unitTerm trueId nullRange
 
-mkConj :: [Term] -> Term
-mkConj l = toBinJunctor andId l nullRange
-
-mkExConj :: VarDecl -> [Term] -> Term
-mkExConj vd l =
-  QuantifiedTerm HC.Existential [GenVarDecl vd] (mkConj l) nullRange
-
 transMod :: Args -> MODALITY -> Term
 transMod as md = let
   t1 = currentW as
@@ -301,8 +322,7 @@ transMod as md = let
         $ foldTerm (trRecord as $ showDoc t "") t : vts
     _ -> error $ "transMod2: " ++ showDoc t ""
   Guard f -> mkConj [eqWorld exEq t1 t2, transMF as f]
-  ModOp mOp m1 m2 -> let mkDisj l = toBinJunctor orId l nullRange in
-    case mOp of
+  ModOp mOp m1 m2 -> case mOp of
     Composition -> let
       nW = freeC as + 1
       nAs = as { freeC = nW }
