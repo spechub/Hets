@@ -285,6 +285,11 @@ anaSpecAux :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
 anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
   Basic_spec (G_basic_spec lid bspec) pos -> adjustPos pos $ do
        let curLogic = Logic lid
+           curSL = currentSublogic lg
+           bsSL = G_sublogics lid $ minSublogic bspec
+       when (maybe False (`isProperSublogic` bsSL) curSL)
+         $ fail $ "sublogic expected: " ++ maybe "" show curSL
+               ++ " found: " ++ show bsSL
        (nsig', dg0) <- coerceMaybeNode lg dg nsig name curLogic
        G_sign lid' sigma' _ <- return $ case nsig' of
            EmptyNode cl -> emptyG_sign cl

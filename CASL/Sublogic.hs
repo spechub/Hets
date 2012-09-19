@@ -420,7 +420,7 @@ sl_basic_items bf sf ff bi = case bi of
     Sig_items i -> sl_sig_items sf ff i
     Free_datatype sk l _ -> needsEmptySorts sk
         $ comp_list $ map (sl_datatype_decl . item) l
-    Sort_gen l _ -> sublogics_max need_cons
+    Sort_gen l _ -> sublogics_max need_se_cons
         $ comp_list $ map (sl_sig_items sf ff . item) l
     Var_items l _ -> comp_list $ map sl_var_decl l
     Local_var_axioms d l _ -> comp_list
@@ -451,12 +451,12 @@ from more general formulae in the same expression logic -}
 sl_sort_item :: Lattice a => (f -> CASL_SL a)
              -> SORT_ITEM f -> CASL_SL a
 sl_sort_item ff si = case si of
-    Subsort_decl {} -> need_sub
+    Subsort_decl {} -> need_sul
     Subsort_defn _ _ _ f _ -> sublogics_max
                                         (get_logic_sd ff $ item f)
-                                        (sublogics_max need_sub
+                                        (sublogics_max need_sul
                                         (sl_formula ff $ item f))
-    Iso_decl _ _ -> need_sub
+    Iso_decl _ _ -> need_sul
     _ -> bottom
 
 sl_op_item :: Lattice a => (f -> CASL_SL a)
@@ -497,7 +497,7 @@ sl_alternative :: Lattice a => ALTERNATIVE -> CASL_SL a
 sl_alternative a = case a of
     Alt_construct Total _ l _ -> comp_list $ map sl_components l
     Alt_construct Partial _ _ _ -> need_part
-    Subsorts _ _ -> need_sub
+    Subsorts _ _ -> need_sul
 
 sl_components :: Lattice a => COMPONENTS -> CASL_SL a
 sl_components c = case c of
