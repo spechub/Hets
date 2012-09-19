@@ -197,7 +197,9 @@ runIsaProcess tool tout saveTHF tmpFileName prob = do
     mres <- timeoutCommand tout "time" ["isabelle", tool, show (tout-10), tmpFile]
     maybe (return Nothing) (\ (_, pout, _) -> do
         let l = lines pout
-            (res, _, tUsed) = parseOutput l
+            (res', _, tUsed) = parseOutput l
+            res = if null res' then concat $ filter (isPrefixOf "*** ") l
+                  else res'
         unless saveTHF $ removeFile tmpFile
         return $ Just (res, l, tUsed)) mres
 
