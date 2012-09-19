@@ -121,8 +121,8 @@ mapSigAux trI trO trP constr sign =
                                constr then ConstructData $ CasS.opRes ty
                                else NoOpDefn Op))
                          $ CasS.mapSetToList $ CasS.opMap sign
-        f2 = map ( \ (i, ty) ->
-                   (trI i, trP ty, NoOpDefn Pred))
+        f2 = map ( \ (i, ty) -> let pTy@(TypeScheme _ rt _) = trP ty in
+                   (trI i, pTy, NoOpDefn $ if isPredType rt then Pred else Op))
                          $ CasS.mapSetToList $ CasS.predMap sign
         insF (i, ty, defn) m =
             let os = Map.findWithDefault Set.empty i m
