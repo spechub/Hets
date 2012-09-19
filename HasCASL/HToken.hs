@@ -91,7 +91,7 @@ hconsId = mixId (barS : hascasl_reserved_ops, hascasl_reserved_words) hcKeys
 
 -- | simple 'Id' without compound list (only a words)
 typeVar :: GenParser Char st Id
-typeVar = fmap (mkId . (: [])) $ pToken scanHCWords
+typeVar = fmap simpleIdToId $ pToken scanHCWords
 
 -- | simple 'Id' possibly with compound list
 classId :: GenParser Char st Id

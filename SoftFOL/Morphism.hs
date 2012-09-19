@@ -25,17 +25,17 @@ symOf sig =
     let opSymbs = Set.unions $ map toOpSymb $ Map.toList $ funcMap sig
         predSymbs = Set.unions $ map toPredSymb $ Map.toList $ predMap sig
         sortSymbs = Set.map toSortSymb $ Map.keysSet $ sortMap sig
-    in Set.unions [opSymbs,predSymbs,sortSymbs]
+    in Set.unions [opSymbs, predSymbs, sortSymbs]
 
-toOpSymb :: (SPIdentifier,Set.Set([SPIdentifier], SPIdentifier))
+toOpSymb :: (SPIdentifier, Set.Set ([SPIdentifier], SPIdentifier))
          -> Set.Set SFSymbol
-toOpSymb (ident,ts) = Set.map toSymb ts
-    where toSymb (args,res) =
+toOpSymb (ident, ts) = Set.map toSymb ts
+    where toSymb (args, res) =
              SFSymbol { sym_ident = ident
                       , sym_type = SFOpType args res}
 
-toPredSymb :: (SPIdentifier,Set.Set [SPIdentifier]) -> Set.Set SFSymbol
-toPredSymb (ident,ts) = Set.map toSymb ts
+toPredSymb :: (SPIdentifier, Set.Set [SPIdentifier]) -> Set.Set SFSymbol
+toPredSymb (ident, ts) = Set.map toSymb ts
     where toSymb args =
              SFSymbol { sym_ident = ident
                       , sym_type = SFPredType args}
@@ -45,4 +45,4 @@ toSortSymb ident = SFSymbol { sym_ident = ident
                             , sym_type = SFSortType}
 
 symbolToId :: SFSymbol -> Id
-symbolToId = mkId . (:[]) . sym_ident
+symbolToId = simpleIdToId . sym_ident

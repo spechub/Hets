@@ -205,7 +205,7 @@ ana_FORMULA :: Mix M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
             -> FORMULA M_FORMULA -> State (Sign M_FORMULA ModalSign)
                (FORMULA M_FORMULA, FORMULA M_FORMULA)
 ana_FORMULA mix f = do
-           let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
+           let ps = map simpleIdToId $ Set.toList $ getFormPredToks f
            pm <- gets predMap
            mapM_ (addPred (emptyAnno ()) $ PredType []) ps
            newGa <- gets globAnnos
