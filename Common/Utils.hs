@@ -79,7 +79,6 @@ import System.Posix.Files (createNamedPipe, unionFileModes,
                            ownerReadMode, ownerWriteMode)
 import System.Posix.IO (OpenMode (ReadWrite), defaultFileFlags,
                         openFd, closeFd, fdRead)
-import System.Posix.Types (Fd)
 
 import Control.Concurrent (threadDelay, forkIO, killThread)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, takeMVar, putMVar)
@@ -224,7 +223,7 @@ concatMapM f = liftM concat . mapM f
 -- | composition of arbitrary maps
 composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
 composeMap s m1 m2 = if Map.null m2 then m1 else Map.intersection
-  (Map.foldWithKey ( \ i j ->
+  (Map.foldrWithKey ( \ i j ->
     let k = Map.findWithDefault j j m2 in
     if i == k then Map.delete i else Map.insert i k) m2 m1) s
 
@@ -460,7 +459,6 @@ openFifo fp = do
   let readF fd = forever (fmap fst (fdRead fd 100) >>= putMVar mvar)
         `Exception.catch`
         \ e -> const (threadDelay 100) (e :: Exception.IOException)
-  fd <- openFd fp ReadWrite Nothing defaultFileFlags
   let reader = forever $ do
                 fd <- openFd fp ReadWrite Nothing defaultFileFlags
                 readF fd `Exception.catch`
