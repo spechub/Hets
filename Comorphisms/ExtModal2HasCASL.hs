@@ -89,14 +89,25 @@ tauCaslTy = PredType [world, world]
 tauTy :: Type
 tauTy = trPrSyn $ toPRED_TYPE tauCaslTy
 
+{- | we now consider numbered worlds:
+     free type WN ::= WN World Nat -}
+nWorldId :: SORT
+nWorldId = genName "WN"
+
+nWorld :: Type
+nWorld = toType nWorldId
+
+predTy :: Type -> Type
+predTy = getFunType unitType HC.Partial . replicate 2
+
 isTransS :: String
 isTransS = "isTrans"
 
 isTransId :: Id
 isTransId = genName isTransS
 
-isTransTy :: Type
-isTransTy = predType nr tauTy
+isTransTy :: Type -> Type
+isTransTy = predType nr . predTy
 
 containsS :: String
 containsS = "contains"
@@ -104,8 +115,8 @@ containsS = "contains"
 containsId :: Id
 containsId = genName containsS
 
-containsTy :: Type
-containsTy = getFunType unitType HC.Partial [tauTy, tauTy]
+containsTy :: Type -> Type
+containsTy = getFunType unitType HC.Partial . replicate 2 . predTy
 
 -- | mixfix names work for tuples and are lost after currying
 trI :: Id -> Id
@@ -162,37 +173,39 @@ transSig sign sens = let
     in ( env
          { assumps = foldr insF (assumps env)
              [ (tauId, tauTy)
-             , (isTransId, isTransTy)
-             , (containsId, containsTy)]
+             , (isTransId, isTransTy nWorld)
+             , (containsId, containsTy nWorld)]
+         , typeMap = Map.insert nWorldId starTypeInfo $ typeMap env
          }
        , map (\ (s, t) -> makeNamed s $ Formula t)
          [ (tauS, tauDef termMs $ Set.toList timeMs)
-         , (isTransS, isTransDef)
-         , (containsS, containsDef) ]
+         , (isTransS, isTransDef nWorld)
+         , (containsS, containsDef nWorld) ]
        )
 
-vTrip :: [VarDecl]
-vTrip = map (\ n -> varDecl (genNumVar "v" n) world) [1, 2, 3]
+vTrip :: Type -> [VarDecl]
+vTrip w = map (\ n -> hcVarDecl (genNumVar "v" n) w) [1, 2, 3]
 
-tripDs :: [GenVarDecl]
-tripDs = map GenVarDecl vTrip
+tripDs :: Type -> [GenVarDecl]
+tripDs = map GenVarDecl . vTrip
 
-pairDs :: [GenVarDecl]
-pairDs = take 2 tripDs
+pairDs :: Type -> [GenVarDecl]
+pairDs = take 2 . tripDs
 
-tTrip :: [Term]
-tTrip = map QualVar vTrip
+tTrip :: Type -> [Term]
+tTrip = map QualVar . vTrip
 
-tPair :: [Term]
-tPair = take 2 tTrip
+tPair :: Type -> [Term]
+tPair = take 2 . tTrip
 
 nr :: Range
 nr = nullRange
 
 tauDef :: Set.Set Id -> [Id] -> Term
-tauDef termMs timeMs = HC.mkForall pairDs
+tauDef termMs timeMs = let ts = tPair $ toType world in
+         HC.mkForall (pairDs $ toType world)
            . mkLogTerm eqvId nr
-           (mkApplTerm (mkOp tauId tauTy) tPair)
+           (mkApplTerm (mkOp tauId tauTy) ts)
            . mkDisj
            $ map (\ tm ->
             let v = varDecl (genToken "t") tm
@@ -200,35 +213,36 @@ tauDef termMs timeMs = HC.mkForall pairDs
             in (if term then mkExQ v else id) $ mkApplTerm
                (mkOp (relOfMod True term tm)
                 . trPr $ modPredType world term tm)
-               $ if term then QualVar v : tPair else tPair)
+               $ if term then QualVar v : ts else ts)
            timeMs
 
-isTransDef :: Term
-isTransDef = let
-  p = hcVarDecl (genToken "p") tauTy
+isTransDef :: Type -> Term
+isTransDef w = let
+  p = hcVarDecl (genToken "p") $ predTy w
   pt = QualVar p
-  [t1, t2, t3] = tTrip
+  [t1, t2, t3] = tTrip w
   in HC.mkForall [GenVarDecl p]
          . mkLogTerm eqvId nr
-             (mkApplTerm (mkOp isTransId isTransTy) [pt])
-             . HC.mkForall tripDs
+             (mkApplTerm (mkOp isTransId $ isTransTy w) [pt])
+             . HC.mkForall (tripDs w)
              . mkLogTerm implId nr
                (mkLogTerm andId nr
                 (mkApplTerm pt [t1, t2])
                 $ mkApplTerm pt [t2, t3])
              $ mkApplTerm pt [t1, t3]
 
-containsDef :: Term
-containsDef = let -- q contains p
-  ps = map (\ c -> hcVarDecl (genToken [c]) tauTy) "pq"
-  ts@[pt, qt] = map QualVar ps
+containsDef :: Type -> Term
+containsDef w = let -- q contains p
+  ps = map (\ c -> hcVarDecl (genToken [c]) $ predTy w) "pq"
+  ts = tPair w
+  [pt, qt] = map QualVar ps
   in HC.mkForall (map GenVarDecl ps)
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp containsId containsTy) ts)
-     . HC.mkForall pairDs
+       (mkApplTerm (mkOp containsId $ containsTy w) [pt, qt])
+     . HC.mkForall (pairDs w)
      . mkLogTerm implId nr
-       (mkApplTerm pt tPair)
-     $ mkApplTerm qt tPair
+       (mkApplTerm pt ts)
+     $ mkApplTerm qt ts
 
 data Args = Args
   { currentW :: Term
