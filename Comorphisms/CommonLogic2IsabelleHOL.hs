@@ -101,6 +101,8 @@ mapSig sig = emptySign {
   constTab = Map.fromList $
              (relSymb, mkCurryFunType [individualT, mkListType individualT]
                        boolType) :
+             (funSymb, mkCurryFunType [individualT, mkListType individualT]
+                       individualT) :
              map
              (\name ->
                (mkIsaConstT True emptyGlobalAnnos 0 name Main_thy Set.empty,
@@ -108,9 +110,13 @@ mapSig sig = emptySign {
              (Set.toList $ ClSign.allItems sig)
   }
 
-relSymb :: VName
+relSymb, funSymb :: VName
 relSymb = mkIsaConstT True emptyGlobalAnnos 2
           (Id.stringToId "rel")
+          Main_thy Set.empty
+
+funSymb = mkIsaConstT False emptyGlobalAnnos 2
+          (Id.stringToId "fun")
           Main_thy Set.empty
 
 quantify :: ClBasic.QUANT -> String -> Term -> Term
@@ -146,8 +152,7 @@ transPhrase sig phr = case phr of
 transTerm :: ClSign.Sign -> ClBasic.TERM -> Term
 transTerm sig trm = case trm of
   ClBasic.Name_term name -> conDouble $ Id.tokStr name
-  -- FIXME: implement (in what way?)
-  ClBasic.Funct_term _ _ _ -> error "functional terms not yet implemented"
+  ClBasic.Funct_term op args _ -> applyTermSeq funSymb sig op args
   ClBasic.Comment_term t _ _ -> transTerm sig t
   ClBasic.That_term sen _ -> transSen sig sen
 
@@ -159,7 +164,17 @@ transNameOrSeqmark _ ts = Id.tokStr $ case ts of
 transTermSeq :: ClSign.Sign -> ClBasic.TERM_SEQ -> Term
 transTermSeq sig ts = case ts of
   ClBasic.Term_seq trm -> transTerm sig trm
+  -- FIXME: handle sequence markers properly
   ClBasic.Seq_marks seqm -> conDouble $ Id.tokStr seqm
+
+applyTermSeq :: VName -> ClSign.Sign -> ClBasic.TERM -> [ClBasic.TERM_SEQ]
+                -> Term
+applyTermSeq metaSymb sig clTrm clArgs = binVNameAppl metaSymb trm args
+  where trm = transTerm sig clTrm
+                -- might use prettier syntax here
+        args = foldr (termAppl . termAppl (conC consV))
+                  (nilPT NotCont)
+                  (map (transTermSeq sig) clArgs)
 
 transSen :: ClSign.Sign -> ClBasic.SENTENCE -> Term
 transSen sig sen = case sen of
@@ -178,11 +193,6 @@ transSen sig sen = case sen of
                                  (map (transNameOrSeqmark sig) bs)
   ClBasic.Atom_sent at _ -> case at of
     ClBasic.Equation t1 t2 -> binEq (transTerm sig t1) (transTerm sig t2)
-    ClBasic.Atom p args -> binVNameAppl relSymb pTerm arglist
-              where pTerm = transTerm sig p
-                    -- might use prettier syntax here
-                    arglist = foldr (termAppl . termAppl (conC consV))
-                              (nilPT NotCont)
-                              (map (transTermSeq sig) args)
+    ClBasic.Atom p args -> applyTermSeq relSymb sig p args
   ClBasic.Comment_sent _ s _ -> transSen sig s
   ClBasic.Irregular_sent s _ -> transSen sig s
