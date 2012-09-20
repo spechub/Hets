@@ -16,6 +16,7 @@ native Isabelle lists.
 module Comorphisms.CommonLogic2IsabelleHOL where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 import Logic.Logic
 import Logic.Comorphism
@@ -23,7 +24,7 @@ import Logic.Comorphism
 import Common.ProofTree
 import Common.Result
 import Common.AS_Annotation as AS_Anno
-import Common.Id as Id
+import qualified Common.Id as Id
 import Common.GlobalAnnotations (emptyGlobalAnnos)
 
 import qualified CommonLogic.Logic_CommonLogic as ClLogic
@@ -74,6 +75,9 @@ instance Comorphism
            targetLogic CommonLogic2IsabelleHOL = Isabelle
            map_theory CommonLogic2IsabelleHOL = mapTheory
            map_sentence CommonLogic2IsabelleHOL = mapSentence
+           has_model_expansion CommonLogic2IsabelleHOL = True
+           is_weakly_amalgamable CommonLogic2IsabelleHOL = True
+           isInclusionComorphism CommonLogic2IsabelleHOL = True
 
 mapSentence :: ClSign.Sign -> ClBasic.TEXT_META -> Result Sentence
 mapSentence sig = return . mkSen . transTextMeta sig
@@ -81,12 +85,31 @@ mapSentence sig = return . mkSen . transTextMeta sig
 mapTheory :: (ClSign.Sign, [AS_Anno.Named ClBasic.TEXT_META])
              -> Result (Sign, [AS_Anno.Named Sentence])
 mapTheory (sig, namedTextMetas) =
-  -- FIXME: implement signature
-  return (emptySign, map (transNamed sig) namedTextMetas)
+  return (mapSig sig, map (transNamed sig) namedTextMetas)
 
--- FIXME: make this emit the correct syntax with parentheses
+individualS :: String
+individualS = "individual"
+
+individualT :: Typ
+individualT = mkSType individualS
+
+mapSig :: ClSign.Sign -> Sign
+mapSig sig = emptySign {
+  tsig = emptyTypeSig {
+     arities = Map.singleton individualS [(isaTerm, [])]
+     },
+  constTab = Map.fromList $
+             (relSymb, mkCurryFunType [individualT, mkListType individualT]
+                       boolType) :
+             map
+             (\name ->
+               (mkIsaConstT True emptyGlobalAnnos 0 name Main_thy Set.empty,
+                individualT))
+             (Set.toList $ ClSign.allItems sig)
+  }
+
 relSymb :: VName
-relSymb = mkIsaConstT True emptyGlobalAnnos (-1)
+relSymb = mkIsaConstT True emptyGlobalAnnos 2
           (Id.stringToId "rel")
           Main_thy Set.empty
 
@@ -122,21 +145,21 @@ transPhrase sig phr = case phr of
 
 transTerm :: ClSign.Sign -> ClBasic.TERM -> Term
 transTerm sig trm = case trm of
-  ClBasic.Name_term name -> conDouble $ tokStr name
+  ClBasic.Name_term name -> conDouble $ Id.tokStr name
   -- FIXME: implement (in what way?)
   ClBasic.Funct_term _ _ _ -> error "functional terms not yet implemented"
   ClBasic.Comment_term t _ _ -> transTerm sig t
   ClBasic.That_term sen _ -> transSen sig sen
 
 transNameOrSeqmark :: ClSign.Sign -> ClBasic.NAME_OR_SEQMARK -> String
-transNameOrSeqmark _ ts = tokStr $ case ts of
+transNameOrSeqmark _ ts = Id.tokStr $ case ts of
   ClBasic.Name name -> name
   ClBasic.SeqMark seqm -> seqm
 
 transTermSeq :: ClSign.Sign -> ClBasic.TERM_SEQ -> Term
 transTermSeq sig ts = case ts of
   ClBasic.Term_seq trm -> transTerm sig trm
-  ClBasic.Seq_marks seqm -> conDouble $ tokStr seqm
+  ClBasic.Seq_marks seqm -> conDouble $ Id.tokStr seqm
 
 transSen :: ClSign.Sign -> ClBasic.SENTENCE -> Term
 transSen sig sen = case sen of
