@@ -45,7 +45,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
-import Char (toLower)
+import Data.Char (toLower)
 
 --------------------------------------------------------------------------------
 -- Question:
