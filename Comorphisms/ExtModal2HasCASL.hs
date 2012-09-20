@@ -77,8 +77,11 @@ nomName t = Id [genToken "N"] [t] $ rangeOfId t
 nomOpType :: OpType
 nomOpType = mkTotOpType [] world
 
+tauS :: String
+tauS = "tau"
+
 tauId :: Id
-tauId = genName "Tau"
+tauId = genName tauS
 
 tauCaslTy :: PredType
 tauCaslTy = PredType [world, world]
@@ -86,14 +89,20 @@ tauCaslTy = PredType [world, world]
 tauTy :: Type
 tauTy = trPrSyn $ toPRED_TYPE tauCaslTy
 
+isTransS :: String
+isTransS = "isTrans"
+
 isTransId :: Id
-isTransId = genName "isTrans"
+isTransId = genName isTransS
 
 isTransTy :: Type
 isTransTy = predType nr tauTy
 
+containsS :: String
+containsS = "contains"
+
 containsId :: Id
-containsId = genName "contains"
+containsId = genName containsS
 
 containsTy :: Type
 containsTy = getFunType unitType HC.Partial [tauTy, tauTy]
@@ -157,8 +166,9 @@ transSig sign sens = let
              , (containsId, containsTy)]
          }
        , map (\ (s, t) -> makeNamed s $ Formula t)
-         [ ("tau", tauDef termMs $ Set.toList timeMs)
-         , ("isTrans", isTransDef) ]
+         [ (tauS, tauDef termMs $ Set.toList timeMs)
+         , (isTransS, isTransDef)
+         , (containsS, containsDef) ]
        )
 
 vTrip :: [VarDecl]
@@ -167,18 +177,22 @@ vTrip = map (\ n -> varDecl (genNumVar "v" n) world) [1, 2, 3]
 tripDs :: [GenVarDecl]
 tripDs = map GenVarDecl vTrip
 
+pairDs :: [GenVarDecl]
+pairDs = take 2 tripDs
+
 tTrip :: [Term]
 tTrip = map QualVar vTrip
+
+tPair :: [Term]
+tPair = take 2 tTrip
 
 nr :: Range
 nr = nullRange
 
 tauDef :: Set.Set Id -> [Id] -> Term
-tauDef termMs timeMs = let
-  ts = take 2 tTrip
-  in HC.mkForall (take 2 tripDs)
+tauDef termMs timeMs = HC.mkForall pairDs
            . mkLogTerm eqvId nr
-           (mkApplTerm (mkOp tauId tauTy) ts)
+           (mkApplTerm (mkOp tauId tauTy) tPair)
            . mkDisj
            $ map (\ tm ->
             let v = varDecl (genToken "t") tm
@@ -186,7 +200,7 @@ tauDef termMs timeMs = let
             in (if term then mkExQ v else id) $ mkApplTerm
                (mkOp (relOfMod True term tm)
                 . trPr $ modPredType world term tm)
-               $ if term then QualVar v : ts else ts)
+               $ if term then QualVar v : tPair else tPair)
            timeMs
 
 isTransDef :: Term
@@ -203,6 +217,18 @@ isTransDef = let
                 (mkApplTerm pt [t1, t2])
                 $ mkApplTerm pt [t2, t3])
              $ mkApplTerm pt [t1, t3]
+
+containsDef :: Term
+containsDef = let -- q contains p
+  ps = map (\ c -> hcVarDecl (genToken [c]) tauTy) "pq"
+  ts@[pt, qt] = map QualVar ps
+  in HC.mkForall (map GenVarDecl ps)
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp containsId containsTy) ts)
+     . HC.mkForall pairDs
+     . mkLogTerm implId nr
+       (mkApplTerm pt tPair)
+     $ mkApplTerm qt tPair
 
 data Args = Args
   { currentW :: Term
