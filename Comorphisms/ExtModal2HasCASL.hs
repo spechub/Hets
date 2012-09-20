@@ -142,8 +142,10 @@ transSig sign sens = let
       insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
       MapSet.empty $ modalities extInf
     nomOps = Set.fold (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
-    vds = map (\ n -> varDecl (genNumVar "v" n) world) [1, 2]
-    ts = map QualVar vds
+    vTrip = map (\ n -> varDecl (genNumVar "v" n) world) [1, 2, 3]
+    tripDs = map GenVarDecl vTrip
+    [t1, t2, t3] = map QualVar vTrip
+    ts = [t1, t2]
     s2 = s1
       { sortRel = Rel.insertKey world $ sortRel sign
       , opMap = addOpMapSet flexOps' nomOps
@@ -152,25 +154,39 @@ transSig sign sens = let
     env = mapSigAux trI trOp trPr (getConstructors sens) s2
     insF (i, t) = Map.insert i $ Set.singleton
          $ OpInfo (simpleTypeScheme t) Set.empty $ NoOpDefn Fun
+    nr = nullRange
     in ( env
          { assumps = foldr insF (assumps env)
              [ (tauId, tauTy)
              , (isTransId, isTransTy)
              , (containsId, containsTy)]
          }
-       , if Set.null timeMs then [] else
-          [makeNamed "tau" . Formula
-           . HC.mkForall (map GenVarDecl vds)
-           . mkLogTerm eqvId nullRange
+       , map (mapNamed Formula)
+         $ (makeNamed "tau"
+           . HC.mkForall (take 2 tripDs)
+           . mkLogTerm eqvId nr
            (mkApplTerm (mkOp tauId tauTy) ts)
            . mkDisj . map (\ tm ->
-            let v = varDecl (genNumVar "t" 0) tm
+            let v = varDecl (genToken "t") tm
                 term = Set.member tm termMs
             in (if term then mkExQ v else id) $ mkApplTerm
                (mkOp (relOfMod True term tm)
                 . trPr $ modPredType world term tm)
                $ if term then QualVar v : ts else ts)
-           $ Set.toList timeMs])
+           $ Set.toList timeMs)
+         : [ let p = hcVarDecl (genToken "p") tauTy
+                 pt = QualVar p
+             in makeNamed "isTrans"
+             . HC.mkForall [GenVarDecl p]
+             . mkLogTerm eqvId nr
+             (mkApplTerm (mkOp isTransId isTransTy) [pt])
+             . HC.mkForall tripDs
+             . mkLogTerm implId nr
+               (mkLogTerm andId nr
+                (mkApplTerm pt ts)
+                $ mkApplTerm pt [t2, t3])
+             $ mkApplTerm pt [t1, t3]]
+       )
 
 data Args = Args
   { currentW :: Term
@@ -180,7 +196,10 @@ data Args = Args
   }
 
 varDecl :: Token -> SORT -> VarDecl
-varDecl i s = VarDecl (simpleIdToId i) (toType s) Other nullRange
+varDecl i = hcVarDecl i . toType
+
+hcVarDecl :: Token -> Type -> VarDecl
+hcVarDecl i t = VarDecl (simpleIdToId i) t Other nullRange
 
 varTerm :: Token -> SORT -> Term
 varTerm i = QualVar . varDecl i
@@ -232,7 +251,8 @@ mkConj :: [Term] -> Term
 mkConj l = toBinJunctor andId l nullRange
 
 mkDisj :: [Term] -> Term
-mkDisj l = toBinJunctor orId l nullRange
+mkDisj l =
+  (if null l then unitTerm falseId else toBinJunctor orId l) nullRange
 
 mkExQ :: VarDecl -> Term -> Term
 mkExQ vd t =
