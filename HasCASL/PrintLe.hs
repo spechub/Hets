@@ -106,11 +106,17 @@ instance Pretty OpDefn where
             sep [text $ "%[ " ++ if isPred b then "<=>" else "="
                 , pretty t <+> text "]%" ]
 
-isPredOpDefn :: OpDefn -> Bool
-isPredOpDefn od = case od of
-  NoOpDefn b -> isPred b
-  Definition b _ -> isPred b
+isOpDefn :: OpBrand -> OpDefn -> Bool
+isOpDefn b od = case od of
+  NoOpDefn c -> c == b
+  Definition c _ -> c == b
   _ -> False
+
+isPredOpDefn :: OpDefn -> Bool
+isPredOpDefn = isOpDefn Pred
+
+isFunOpDefn :: OpDefn -> Bool
+isFunOpDefn = isOpDefn Fun
 
 instance Pretty OpInfo where
     pretty o = let od = opDefn o in
@@ -181,7 +187,10 @@ instance Pretty Env where
       vs = localVars d
       poMap = Map.map (Set.partition (isPredOpDefn . opDefn)) $ assumps d
       pMap = Map.map fst poMap
-      oMap = Map.map snd poMap
+      aoMap = Map.map snd poMap
+      foMap = Map.map (Set.partition (isFunOpDefn . opDefn)) aoMap
+      fMap = Map.map fst foMap
+      oMap = Map.map snd foMap
       ltm = getTypeKinds tm
       stm = getSuperTypes tm
       atm = getTypeAliases tm
@@ -213,6 +222,7 @@ instance Pretty Env where
         $+$ vcat (map annoDoc bas)
         $+$ printSetMap (keyword opS) space oMap
         $+$ printSetMap (keyword predS) space pMap
+        $+$ printSetMap (keyword functS) space fMap
         $+$ noPrint (Map.null vs) (header vs varS)
         $+$ printMap0 vs
         $+$ vcat (map (pretty . fromLabelledSen) . reverse $ sentences d)
