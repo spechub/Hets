@@ -90,7 +90,7 @@ isTransId :: Id
 isTransId = genName "isTrans"
 
 isTransTy :: Type
-isTransTy = predType nullRange tauTy
+isTransTy = predType nr tauTy
 
 containsId :: Id
 containsId = genName "contains"
@@ -142,10 +142,6 @@ transSig sign sens = let
       insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
       MapSet.empty $ modalities extInf
     nomOps = Set.fold (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
-    vTrip = map (\ n -> varDecl (genNumVar "v" n) world) [1, 2, 3]
-    tripDs = map GenVarDecl vTrip
-    [t1, t2, t3] = map QualVar vTrip
-    ts = [t1, t2]
     s2 = s1
       { sortRel = Rel.insertKey world $ sortRel sign
       , opMap = addOpMapSet flexOps' nomOps
@@ -154,39 +150,59 @@ transSig sign sens = let
     env = mapSigAux trI trOp trPr (getConstructors sens) s2
     insF (i, t) = Map.insert i $ Set.singleton
          $ OpInfo (simpleTypeScheme t) Set.empty $ NoOpDefn Fun
-    nr = nullRange
     in ( env
          { assumps = foldr insF (assumps env)
              [ (tauId, tauTy)
              , (isTransId, isTransTy)
              , (containsId, containsTy)]
          }
-       , map (mapNamed Formula)
-         $ (makeNamed "tau"
-           . HC.mkForall (take 2 tripDs)
+       , map (\ (s, t) -> makeNamed s $ Formula t)
+         [ ("tau", tauDef termMs $ Set.toList timeMs)
+         , ("isTrans", isTransDef) ]
+       )
+
+vTrip :: [VarDecl]
+vTrip = map (\ n -> varDecl (genNumVar "v" n) world) [1, 2, 3]
+
+tripDs :: [GenVarDecl]
+tripDs = map GenVarDecl vTrip
+
+tTrip :: [Term]
+tTrip = map QualVar vTrip
+
+nr :: Range
+nr = nullRange
+
+tauDef :: Set.Set Id -> [Id] -> Term
+tauDef termMs timeMs = let
+  ts = take 2 tTrip
+  in HC.mkForall (take 2 tripDs)
            . mkLogTerm eqvId nr
            (mkApplTerm (mkOp tauId tauTy) ts)
-           . mkDisj . map (\ tm ->
+           . mkDisj
+           $ map (\ tm ->
             let v = varDecl (genToken "t") tm
                 term = Set.member tm termMs
             in (if term then mkExQ v else id) $ mkApplTerm
                (mkOp (relOfMod True term tm)
                 . trPr $ modPredType world term tm)
                $ if term then QualVar v : ts else ts)
-           $ Set.toList timeMs)
-         : [ let p = hcVarDecl (genToken "p") tauTy
-                 pt = QualVar p
-             in makeNamed "isTrans"
-             . HC.mkForall [GenVarDecl p]
-             . mkLogTerm eqvId nr
+           timeMs
+
+isTransDef :: Term
+isTransDef = let
+  p = hcVarDecl (genToken "p") tauTy
+  pt = QualVar p
+  [t1, t2, t3] = tTrip
+  in HC.mkForall [GenVarDecl p]
+         . mkLogTerm eqvId nr
              (mkApplTerm (mkOp isTransId isTransTy) [pt])
              . HC.mkForall tripDs
              . mkLogTerm implId nr
                (mkLogTerm andId nr
-                (mkApplTerm pt ts)
+                (mkApplTerm pt [t1, t2])
                 $ mkApplTerm pt [t2, t3])
-             $ mkApplTerm pt [t1, t3]]
-       )
+             $ mkApplTerm pt [t1, t3]
 
 data Args = Args
   { currentW :: Term
@@ -199,7 +215,7 @@ varDecl :: Token -> SORT -> VarDecl
 varDecl i = hcVarDecl i . toType
 
 hcVarDecl :: Token -> Type -> VarDecl
-hcVarDecl i t = VarDecl (simpleIdToId i) t Other nullRange
+hcVarDecl i t = VarDecl (simpleIdToId i) t Other nr
 
 varTerm :: Token -> SORT -> Term
 varTerm i = QualVar . varDecl i
@@ -230,7 +246,7 @@ transTop :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Term
 transTop msig env f = let
     vt = varTerm (genNumVar "w" 1) world
     in mkEnvForall env
-           (transMF (Args vt 1 1 [] msig) f) nullRange
+           (transMF (Args vt 1 1 [] msig) f) nr
 
 getTermOfNom :: Args -> Id -> Term
 getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
@@ -242,21 +258,21 @@ mkNomAppl :: Id -> Term
 mkNomAppl pn = mkOp (nomName pn) $ trOp nomOpType
 
 eqWorld :: Id -> Term -> Term -> Term
-eqWorld i = mkEqTerm i (toType world) nullRange
+eqWorld i = mkEqTerm i (toType world) nr
 
 eqW :: Term -> Term -> Term
 eqW = eqWorld eqId
 
 mkConj :: [Term] -> Term
-mkConj l = toBinJunctor andId l nullRange
+mkConj l = toBinJunctor andId l nr
 
 mkDisj :: [Term] -> Term
 mkDisj l =
-  (if null l then unitTerm falseId else toBinJunctor orId l) nullRange
+  (if null l then unitTerm falseId else toBinJunctor orId l) nr
 
 mkExQ :: VarDecl -> Term -> Term
 mkExQ vd t =
-  QuantifiedTerm HC.Existential [GenVarDecl vd] t nullRange
+  QuantifiedTerm HC.Existential [GenVarDecl vd] t nr
 
 mkExConj :: VarDecl -> [Term] -> Term
 mkExConj vd = mkExQ vd . mkConj
@@ -292,7 +308,7 @@ transMF a f = foldFormula (trRecord a $ showDoc f "") f
 
 disjointVars :: [VarDecl] -> [Term]
 disjointVars vs = case vs of
-  a : r@(b : _) -> mkTerm notId notType [] nullRange
+  a : r@(b : _) -> mkTerm notId notType [] nr
     (on eqW QualVar a b) : disjointVars r
   _ -> []
 
@@ -339,7 +355,7 @@ transEMF as emf = case emf of
                         , freeC = fW + 1 } f ]
     _ -> transMF as f
   UntilSince _isUntil f1 f2 _ -> mkConj [transMF as f1, transMF as f2]
-  ModForm _ -> unitTerm trueId nullRange
+  ModForm _ -> unitTerm trueId nr
 
 transMod :: Args -> MODALITY -> Term
 transMod as md = let
