@@ -177,6 +177,8 @@ transSig sign sens = let
              , (containsId, transTy nWorld)
              , (transContainsId, transTy nWorld)
              , (transId, transTy nWorld)
+             , (reflexId, isTransTy nWorld)
+             , (irreflexId, isTransTy nWorld)
              ]
          , typeMap = Map.insert nWorldId starTypeInfo $ typeMap env
          }
@@ -185,7 +187,9 @@ transSig sign sens = let
          , (isTransS, isTransDef nWorld)
          , (containsS, containsDef nWorld)
          , (transContainsS, transContainsDef nWorld)
-         , (transS, transDef nWorld)
+         , (transS, transDef transContainsId nWorld)
+         , (reflexS, reflexDef True nWorld)
+         , (irreflexS, reflexDef False nWorld)
          ]
        )
 
@@ -260,7 +264,7 @@ transContainsId :: Id
 transContainsId = genName transContainsS
 
 transContainsDef :: Type -> Term
-transContainsDef w = let -- q is transitive and contains p
+transContainsDef w = let -- q is something and contains p
   ps = pAndQ w
   ts@[_, qt] = map QualVar ps
   in HC.mkForall (map GenVarDecl ps)
@@ -276,8 +280,8 @@ transS = "trans"
 transId :: Id
 transId = genName transS
 
-transDef :: Type -> Term
-transDef w = let -- q is the (smallest) transitive closure of p
+transDef :: Id -> Type -> Term
+transDef tId w = let -- q is the (smallest) transitive closure of p
   ps = pAndQ w
   ts@[pt, qt] = map QualVar ps
   z = hcVarDecl (genToken "Z") $ predTy w
@@ -286,11 +290,36 @@ transDef w = let -- q is the (smallest) transitive closure of p
      . mkLogTerm eqvId nr
        (mkApplTerm (mkOp transId $ transTy w) ts)
      . mkLogTerm andId nr
-       (mkApplTerm (mkOp transContainsId $ isTransTy w) ts)
+       (mkApplTerm (mkOp tId $ isTransTy w) ts)
        . HC.mkForall [GenVarDecl z]
        . mkLogTerm implId nr
-         (mkApplTerm (mkOp transContainsId $ transTy w) [pt, zt])
+         (mkApplTerm (mkOp tId $ transTy w) [pt, zt])
          $ mkApplTerm (mkOp containsId $ transTy w) [qt, zt]
+
+reflexS :: String
+reflexS = "reflex"
+
+irreflexS :: String
+irreflexS = "irreflex"
+
+reflexId :: Id
+reflexId = genName reflexS
+
+irreflexId :: Id
+irreflexId = genName irreflexS
+
+reflexDef :: Bool -> Type -> Term
+reflexDef refl w = let
+  x = hcVarDecl (genToken "x") w
+  p = hcVarDecl (genToken "X") $ predTy w
+  pt = QualVar p
+  in HC.mkForall  [GenVarDecl p]
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp (if refl then reflexId else irreflexId)
+                   $ isTransTy w) [pt])
+     . HC.mkForall [GenVarDecl x]
+     . (if refl then id else mkNot)
+     . mkApplTerm pt . replicate 2 $ QualVar x
 
 data Args = Args
   { currentW :: Term
@@ -351,6 +380,9 @@ eqWorld i = mkEqTerm i (toType world) nr
 eqW :: Term -> Term -> Term
 eqW = eqWorld eqId
 
+mkNot :: Term -> Term
+mkNot = mkTerm notId notType [] nr
+
 mkConj :: [Term] -> Term
 mkConj l = toBinJunctor andId l nr
 
@@ -396,7 +428,7 @@ transMF a f = foldFormula (trRecord a $ showDoc f "") f
 
 disjointVars :: [VarDecl] -> [Term]
 disjointVars vs = case vs of
-  a : r@(b : _) -> mkTerm notId notType [] nr
+  a : r@(b : _) -> mkNot
     (on eqW QualVar a b) : disjointVars r
   _ -> []
 
