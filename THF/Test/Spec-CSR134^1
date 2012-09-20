@@ -1,4 +1,4 @@
-logic THF.THF
+logic THF.THF serialization THF0
 
 spec test =
 
