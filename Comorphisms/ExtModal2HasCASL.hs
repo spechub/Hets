@@ -174,13 +174,17 @@ transSig sign sens = let
          { assumps = foldr insF (assumps env)
              [ (tauId, tauTy)
              , (isTransId, isTransTy nWorld)
-             , (containsId, containsTy nWorld)]
+             , (containsId, containsTy nWorld)
+             , (transContainsId, containsTy nWorld)
+             ]
          , typeMap = Map.insert nWorldId starTypeInfo $ typeMap env
          }
        , map (\ (s, t) -> makeNamed s $ Formula t)
          [ (tauS, tauDef termMs $ Set.toList timeMs)
          , (isTransS, isTransDef nWorld)
-         , (containsS, containsDef nWorld) ]
+         , (containsS, containsDef nWorld)
+         , (transContainsS, transContainsDef nWorld)
+         ]
        )
 
 vTrip :: Type -> [VarDecl]
@@ -231,9 +235,12 @@ isTransDef w = let
                 $ mkApplTerm pt [t2, t3])
              $ mkApplTerm pt [t1, t3]
 
+pAndQ :: Type -> [VarDecl]
+pAndQ w = map (\ c -> hcVarDecl (genToken [c]) $ predTy w) "pq"
+
 containsDef :: Type -> Term
 containsDef w = let -- q contains p
-  ps = map (\ c -> hcVarDecl (genToken [c]) $ predTy w) "pq"
+  ps = pAndQ w
   ts = tPair w
   [pt, qt] = map QualVar ps
   in HC.mkForall (map GenVarDecl ps)
@@ -243,6 +250,25 @@ containsDef w = let -- q contains p
      . mkLogTerm implId nr
        (mkApplTerm pt ts)
      $ mkApplTerm qt ts
+
+transContainsS :: String
+transContainsS = "trans_contains"
+
+transContainsId :: Id
+transContainsId = genName transContainsS
+
+-- transContainsTy = containsTy
+
+transContainsDef :: Type -> Term
+transContainsDef w = let -- q is transitive and contains p
+  ps = pAndQ w
+  ts@[_, qt] = map QualVar ps
+  in HC.mkForall (map GenVarDecl ps)
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp transContainsId $ containsTy w) ts)
+     . mkLogTerm andId nr
+       (mkApplTerm (mkOp isTransId $ isTransTy w) [qt])
+       $ mkApplTerm (mkOp containsId $ containsTy w) ts
 
 data Args = Args
   { currentW :: Term
