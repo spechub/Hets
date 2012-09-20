@@ -115,8 +115,8 @@ containsS = "contains"
 containsId :: Id
 containsId = genName containsS
 
-containsTy :: Type -> Type
-containsTy = getFunType unitType HC.Partial . replicate 2 . predTy
+transTy :: Type -> Type
+transTy = getFunType unitType HC.Partial . replicate 2 . predTy
 
 -- | mixfix names work for tuples and are lost after currying
 trI :: Id -> Id
@@ -174,8 +174,9 @@ transSig sign sens = let
          { assumps = foldr insF (assumps env)
              [ (tauId, tauTy)
              , (isTransId, isTransTy nWorld)
-             , (containsId, containsTy nWorld)
-             , (transContainsId, containsTy nWorld)
+             , (containsId, transTy nWorld)
+             , (transContainsId, transTy nWorld)
+             , (transId, transTy nWorld)
              ]
          , typeMap = Map.insert nWorldId starTypeInfo $ typeMap env
          }
@@ -184,6 +185,7 @@ transSig sign sens = let
          , (isTransS, isTransDef nWorld)
          , (containsS, containsDef nWorld)
          , (transContainsS, transContainsDef nWorld)
+         , (transS, transDef nWorld)
          ]
        )
 
@@ -245,7 +247,7 @@ containsDef w = let -- q contains p
   [pt, qt] = map QualVar ps
   in HC.mkForall (map GenVarDecl ps)
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp containsId $ containsTy w) [pt, qt])
+       (mkApplTerm (mkOp containsId $ transTy w) [pt, qt])
      . HC.mkForall (pairDs w)
      . mkLogTerm implId nr
        (mkApplTerm pt ts)
@@ -257,18 +259,38 @@ transContainsS = "trans_contains"
 transContainsId :: Id
 transContainsId = genName transContainsS
 
--- transContainsTy = containsTy
-
 transContainsDef :: Type -> Term
 transContainsDef w = let -- q is transitive and contains p
   ps = pAndQ w
   ts@[_, qt] = map QualVar ps
   in HC.mkForall (map GenVarDecl ps)
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp transContainsId $ containsTy w) ts)
+       (mkApplTerm (mkOp transContainsId $ transTy w) ts)
      . mkLogTerm andId nr
        (mkApplTerm (mkOp isTransId $ isTransTy w) [qt])
-       $ mkApplTerm (mkOp containsId $ containsTy w) ts
+       $ mkApplTerm (mkOp containsId $ transTy w) ts
+
+transS :: String
+transS = "trans"
+
+transId :: Id
+transId = genName transS
+
+transDef :: Type -> Term
+transDef w = let -- q is the (smallest) transitive closure of p
+  ps = pAndQ w
+  ts@[pt, qt] = map QualVar ps
+  z = hcVarDecl (genToken "Z") $ predTy w
+  zt = QualVar z
+  in HC.mkForall (map GenVarDecl ps)
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp transId $ transTy w) ts)
+     . mkLogTerm andId nr
+       (mkApplTerm (mkOp transContainsId $ isTransTy w) ts)
+       . HC.mkForall [GenVarDecl z]
+       . mkLogTerm implId nr
+         (mkApplTerm (mkOp transContainsId $ transTy w) [pt, zt])
+         $ mkApplTerm (mkOp containsId $ transTy w) [qt, zt]
 
 data Args = Args
   { currentW :: Term
