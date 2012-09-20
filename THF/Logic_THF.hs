@@ -17,6 +17,7 @@ module THF.Logic_THF where
 
 import ATC.ProofTree ()
 
+import Common.DefaultMorphism
 import Common.ProofTree
 import Common.ProverTools
 
@@ -73,8 +74,8 @@ instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
     signature_union THF = sigUnion
     signatureDiff THF = sigDiff
     intersection THF = sigIntersect
-    -- is_subsig THF _ _ = True
-
+    is_subsig THF _ _ = True
+    subsig_inclusion THF = defaultInclusion
 
 {- In order to find the LeoII prover there must be an entry in the
 PATH environment variable leading to the leo executable
