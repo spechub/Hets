@@ -104,6 +104,9 @@ consS = "op #"
 lconsS :: String
 lconsS = "op ###"
 
+appendS :: String
+appendS = "op @"
+
 compS :: String
 compS = "comp"
 
@@ -585,6 +588,9 @@ consV = VName consS $ Just $ AltSyntax "(_ #/ _)" [66, 65] 65
 
 lconsV :: VName
 lconsV = VName lconsS $ Just $ AltSyntax "(_ ###/ _)" [66, 65] 65
+
+appendV :: VName
+appendV = VName appendS $ Just $ AltSyntax "(_ @ _)" [66, 65] 65
 
 compV :: VName
 compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55

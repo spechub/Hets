@@ -98,16 +98,18 @@ mapSig sig = emptySign {
   tsig = emptyTypeSig {
      arities = Map.singleton individualS [(isaTerm, [])]
      },
-  constTab = Map.fromList $
-             (relSymb, mkCurryFunType [individualT, mkListType individualT]
-                       boolType) :
-             (funSymb, mkCurryFunType [individualT, mkListType individualT]
-                       individualT) :
-             map
-             (\name ->
-               (mkIsaConstT True emptyGlobalAnnos 0 name Main_thy Set.empty,
-                individualT))
-             (Set.toList $ ClSign.allItems sig)
+  constTab = Map.insert relSymb
+             (mkCurryFunType [individualT, mkListType individualT] boolType) $
+             Map.insert funSymb
+             (mkCurryFunType [individualT, mkListType individualT] individualT) $
+             Map.union (Map.fromList $ map
+                        (\name -> (mkIsaConstT True emptyGlobalAnnos 0 name
+                                   Main_thy Set.empty, individualT))
+                        (Set.toList $ ClSign.discourseNames sig))
+             (Map.fromList $ map
+              (\name -> (mkIsaConstT True emptyGlobalAnnos 0 name
+                         Main_thy Set.empty, mkListType individualT))
+              (Set.toList $ ClSign.sequenceMarkers sig))
   }
 
 relSymb, funSymb :: VName
@@ -163,16 +165,17 @@ transNameOrSeqmark _ ts = Id.tokStr $ case ts of
 
 transTermSeq :: ClSign.Sign -> ClBasic.TERM_SEQ -> Term
 transTermSeq sig ts = case ts of
-  ClBasic.Term_seq trm -> transTerm sig trm
-  -- FIXME: handle sequence markers properly
+  ClBasic.Term_seq trm -> (termAppl . termAppl (conC consV))
+                          (transTerm sig trm) (nilPT NotCont)
   ClBasic.Seq_marks seqm -> conDouble $ Id.tokStr seqm
 
 applyTermSeq :: VName -> ClSign.Sign -> ClBasic.TERM -> [ClBasic.TERM_SEQ]
                 -> Term
 applyTermSeq metaSymb sig clTrm clArgs = binVNameAppl metaSymb trm args
   where trm = transTerm sig clTrm
-                -- might use prettier syntax here
-        args = foldr (termAppl . termAppl (conC consV))
+        -- FIXME: use a prettier syntax
+        -- FIXME: semantic overhead with "@" hinders Isabelle
+        args = foldr (termAppl . termAppl (conC appendV))
                   (nilPT NotCont)
                   (map (transTermSeq sig) clArgs)
 
