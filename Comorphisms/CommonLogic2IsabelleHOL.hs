@@ -169,15 +169,32 @@ transTermSeq sig ts = case ts of
                           (transTerm sig trm) (nilPT NotCont)
   ClBasic.Seq_marks seqm -> conDouble $ Id.tokStr seqm
 
+-- applicable for a non-empty argument list where only the last argument
+-- (or none) is a seqmark
+transArgsSimple :: ClSign.Sign -> [ClBasic.TERM_SEQ] -> Maybe Term
+transArgsSimple sig tss =
+  foldr
+  (\ts trm ->
+    do trm' <- trm
+       case ts of
+         ClBasic.Term_seq clTrm ->
+           Just $ (termAppl . termAppl (conC consV)) (transTerm sig clTrm) trm'
+         _ -> Nothing)
+  (Just $ transTermSeq sig $ last tss)
+  (init tss)
+
+transArgs :: ClSign.Sign -> [ClBasic.TERM_SEQ] -> Term
+transArgs sig tss = case (tss, transArgsSimple sig tss) of
+  ([], _) -> (nilPT NotCont)
+  (_, Just trm) -> trm
+  (_, Nothing) -> foldr1 (termAppl . termAppl (conC appendV))
+                  (map (transTermSeq sig) tss)
+
 applyTermSeq :: VName -> ClSign.Sign -> ClBasic.TERM -> [ClBasic.TERM_SEQ]
                 -> Term
 applyTermSeq metaSymb sig clTrm clArgs = binVNameAppl metaSymb trm args
   where trm = transTerm sig clTrm
-        -- FIXME: use a prettier syntax
-        -- FIXME: semantic overhead with "@" hinders Isabelle
-        args = foldr (termAppl . termAppl (conC appendV))
-                  (nilPT NotCont)
-                  (map (transTermSeq sig) clArgs)
+        args = transArgs sig clArgs
 
 transSen :: ClSign.Sign -> ClBasic.SENTENCE -> Term
 transSen sig sen = case sen of
