@@ -174,37 +174,45 @@ transSig sign sens = let
          { assumps = foldr insF (assumps env)
              [ (tauId, tauTy)
              , (isTransId, isTransTy nWorld)
+             , (reflexId, isTransTy nWorld)
+             , (irreflexId, isTransTy nWorld)
              , (containsId, transTy nWorld)
              , (transId, transTy nWorld)
              , (transReflexId, transTy nWorld)
-             , (reflexId, isTransTy nWorld)
-             , (irreflexId, isTransTy nWorld)
+             , (transLinearOrderId, isTransTy nWorld)
              ]
          , typeMap = Map.insert nWorldId starTypeInfo $ typeMap env
          }
        , map (\ (s, t) -> makeNamed s $ Formula t)
          [ (tauS, tauDef termMs $ Set.toList timeMs)
          , (isTransS, isTransDef nWorld)
+         , (reflexS, reflexDef True nWorld)
+         , (irreflexS, reflexDef False nWorld)
          , (containsS, containsDef nWorld)
          , (transS, someDef transId (transContainsDef nWorld) nWorld)
          , (transReflexS, someDef transReflexId
                         (transReflexContainsDef nWorld) nWorld)
-         , (reflexS, reflexDef True nWorld)
-         , (irreflexS, reflexDef False nWorld)
+         , (transLinearOrderS, transLinearOrderDef nWorld)
          ]
        )
 
-vTrip :: Type -> [VarDecl]
-vTrip w = map (\ n -> hcVarDecl (genNumVar "v" n) w) [1, 2, 3]
+vQuad :: Type -> [VarDecl]
+vQuad w = map (\ n -> hcVarDecl (genNumVar "v" n) w) [1, 2, 3, 4]
+
+quadDs :: Type -> [GenVarDecl]
+quadDs = map GenVarDecl . vQuad
 
 tripDs :: Type -> [GenVarDecl]
-tripDs = map GenVarDecl . vTrip
+tripDs = take 3 . quadDs
 
 pairDs :: Type -> [GenVarDecl]
 pairDs = take 2 . tripDs
 
+tQuad :: Type -> [Term]
+tQuad = map QualVar . vQuad
+
 tTrip :: Type -> [Term]
-tTrip = map QualVar . vTrip
+tTrip = take 3 . tQuad
 
 tPair :: Type -> [Term]
 tPair = take 2 . tTrip
@@ -244,6 +252,46 @@ isTransDef w = let
                 (mkApplTerm pt [t1, t2])
                 $ mkApplTerm pt [t2, t3])
              $ mkApplTerm pt [t1, t3]
+
+trichotomyDef :: Type -> Term -> Term -> Term -> Term
+trichotomyDef w pt t1 t2 = mkLogTerm orId nr
+         (dichotomyDef pt t1 t2)
+         $ mkEqTerm eqId w nr t1 t2
+
+dichotomyDef :: Term -> Term -> Term -> Term
+dichotomyDef pt t1 t2 = mkLogTerm orId nr
+         (mkApplTerm pt [t1, t2])
+         $ mkApplTerm pt [t2, t1]
+
+linearOrderDef :: Type -> Term -> Term
+linearOrderDef w pt = let
+  [t1, t2, t3, t4] = tQuad w
+  in HC.mkForall (pairDs w)
+     . mkLogTerm implId nr
+       (mkExQs (drop 2 $ quadDs w)
+        . mkLogTerm andId nr
+          (dichotomyDef pt t1 t3)
+          $ dichotomyDef pt t2 t4)
+       $ trichotomyDef w pt t1 t2
+
+transLinearOrderS :: String
+transLinearOrderS = "trans_linear_order"
+
+transLinearOrderId :: Id
+transLinearOrderId = genName transLinearOrderS
+
+transLinearOrderDef :: Type -> Term
+transLinearOrderDef w = let
+  ps = pAndQ w
+  [pv, qv] = map GenVarDecl ps
+  ts@[pt, qt] = map QualVar ps
+  in HC.mkForall [pv]
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp transLinearOrderId $ isTransTy w) [pt])
+     . mkExQs [qv]
+     . mkLogTerm andId nr
+       (mkApplTerm (mkOp transId $ transTy w) ts)
+     $ linearOrderDef w qt
 
 pAndQ :: Type -> [VarDecl]
 pAndQ w = map (\ c -> hcVarDecl (genToken [c]) $ predTy w) "pq"
@@ -397,9 +445,12 @@ mkDisj :: [Term] -> Term
 mkDisj l =
   (if null l then unitTerm falseId else toBinJunctor orId l) nr
 
+mkExQs :: [GenVarDecl] -> Term -> Term
+mkExQs vs t =
+  QuantifiedTerm HC.Existential vs t nr
+
 mkExQ :: VarDecl -> Term -> Term
-mkExQ vd t =
-  QuantifiedTerm HC.Existential [GenVarDecl vd] t nr
+mkExQ vd = mkExQs [GenVarDecl vd]
 
 mkExConj :: VarDecl -> [Term] -> Term
 mkExConj vd = mkExQ vd . mkConj
