@@ -62,7 +62,10 @@ instance Comorphism ExtModal2HasCASL
     targetLogic ExtModal2HasCASL = HasCASL
     mapSublogic ExtModal2HasCASL _ = Just HC.caslLogic { which_logic = HOL }
     map_theory ExtModal2HasCASL (sig, sens) = case transSig sig sens of
-      (mme, s) -> return (mme, s ++ map (mapNamed $ toSen sig mme) sens)
+      (mme, s) -> return
+        (mme, map (\ (n, d) -> makeNamed n $ DatatypeSen [d])
+              [("natural numbers", natType), ("numbered worlds", worldType)]
+              ++ s ++ map (mapNamed $ toSen sig mme) sens)
     {-
     map_morphism ExtModal2HasCASL = return . mapMor
     map_sentence ExtModal2HasCASL sig = return . transSen sig
@@ -168,10 +171,12 @@ transSig sign sens = let
       , predMap = addMapSet rels $ addMapSet flexPreds' noNomsPreds
       }
     env = mapSigAux trI trOp trPr (getConstructors sens) s2
-    insF (i, t) = Map.insert i $ Set.singleton
-         $ OpInfo (simpleTypeScheme t) Set.empty $ NoOpDefn Fun
+    mkOpInfo t = Set.singleton . OpInfo (simpleTypeScheme t) Set.empty
+    insOpInfo = Map.insertWith Set.union
+    insF (i, t) = insOpInfo i . mkOpInfo t $ NoOpDefn Fun
     in ( env
-         { assumps = foldr insF (assumps env)
+         { assumps = foldr (uncurry insOpInfo)
+             (foldr insF (assumps env)
              [ (tauId, tauTy)
              , (isTransId, isTransTy nWorld)
              , (reflexId, isTransTy nWorld)
@@ -180,8 +185,18 @@ transSig sign sens = let
              , (transId, transTy nWorld)
              , (transReflexId, transTy nWorld)
              , (transLinearOrderId, isTransTy nWorld)
+             ])
+             [ altToOpInfo natId zeroAlt
+             , altToOpInfo natId sucAlt
+             , altToOpInfo nWorldId worldAlt
+             , selWorldInfo getWorldSel
+             , selWorldInfo numSel
              ]
-         , typeMap = Map.insert nWorldId starTypeInfo $ typeMap env
+         , typeMap = Map.insert nWorldId starTypeInfo
+                       { typeDefn = DatatypeDefn worldType }
+                     . Map.insert natId starTypeInfo
+                       { typeDefn = DatatypeDefn natType }
+                     $ typeMap env
          }
        , map (\ (s, t) -> makeNamed s $ Formula t)
          [ (tauS, tauDef termMs $ Set.toList timeMs)
@@ -220,9 +235,12 @@ tPair = take 2 . tTrip
 nr :: Range
 nr = nullRange
 
+worldTy :: Type
+worldTy = toType world
+
 tauDef :: Set.Set Id -> [Id] -> Term
-tauDef termMs timeMs = let ts = tPair $ toType world in
-         HC.mkForall (pairDs $ toType world)
+tauDef termMs timeMs = let ts = tPair worldTy in
+         HC.mkForall (pairDs worldTy)
            . mkLogTerm eqvId nr
            (mkApplTerm (mkOp tauId tauTy) ts)
            . mkDisj
@@ -292,6 +310,68 @@ transLinearOrderDef w = let
      . mkLogTerm andId nr
        (mkApplTerm (mkOp transId $ transTy w) ts)
      $ linearOrderDef w qt
+
+natId :: SORT
+natId = stringToId "Nat"
+
+natTy :: Type
+natTy = toType natId
+
+sucId :: Id
+sucId = stringToId "suc"
+
+zero :: Id
+zero = stringToId "0"
+
+natType :: DataEntry
+natType =
+  DataEntry Map.empty natId Free [] rStar
+  $ Set.fromList [zeroAlt, sucAlt]
+
+zeroAlt :: AltDefn
+zeroAlt = Construct (Just zero) [] HC.Total []
+
+sucAlt :: AltDefn
+sucAlt = Construct (Just sucId) [natTy] HC.Total [typeToSelector Nothing natTy]
+
+altToType :: Id -> AltDefn -> TypeScheme
+altToType i (Construct _ ts p _) =
+    simpleTypeScheme $ getFunType (toType i) p ts
+
+altToOpInfo :: Id -> AltDefn -> (Id, Set.Set OpInfo)
+altToOpInfo i c@(Construct m _ _ _) = let Just n = m in
+    (n, Set.singleton .
+      OpInfo (altToType i c) Set.empty
+    $ ConstructData i)
+
+getWorldId :: Id
+getWorldId = genName "getWorld"
+
+numId :: Id
+numId = genName "num"
+
+worldType :: DataEntry
+worldType = DataEntry Map.empty nWorldId Free [] rStar $ Set.singleton worldAlt
+
+worldAlt :: AltDefn
+worldAlt = Construct (Just nWorldId) [worldTy, natTy] HC.Total
+    [getWorldSel, numSel]
+
+getWorldSel :: [Selector]
+getWorldSel = typeToSelector (Just getWorldId) worldTy
+
+numSel :: [Selector]
+numSel = typeToSelector (Just numId) natTy
+
+selWorldInfo :: [Selector] -> (Id, Set.Set OpInfo)
+selWorldInfo = selToOpInfo nWorldId . Set.singleton . ConstrInfo nWorldId
+  $ altToType nWorldId worldAlt
+
+selToOpInfo :: Id -> Set.Set ConstrInfo -> [Selector] -> (Id, Set.Set OpInfo)
+selToOpInfo i c s = let [Select (Just n) t p] = s in
+  (n, Set.singleton .
+      OpInfo (simpleTypeScheme $ getFunType t p [toType i]) Set.empty
+      $ SelectData c i)
 
 pAndQ :: Type -> [VarDecl]
 pAndQ w = map (\ c -> hcVarDecl (genToken [c]) $ predTy w) "pq"
@@ -392,6 +472,9 @@ hcVarDecl i t = VarDecl (simpleIdToId i) t Other nr
 varTerm :: Token -> SORT -> Term
 varTerm i = QualVar . varDecl i
 
+typeToSelector :: Maybe Id -> Type -> [Selector]
+typeToSelector m a = [Select m a HC.Total]
+
 toSen :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Sentence
 toSen msig env f = case f of
    Sort_gen_ax cs b -> let
@@ -407,7 +490,7 @@ toSen msig env f = case f of
             let args = map toType $ opArgs t in
             Construct (if isInjName i then Nothing else Just i) args
               (mapPart $ opKind t)
-              $ map (\ a -> [Select Nothing a HC.Total]) args)
+              $ map (typeToSelector Nothing) args)
           $ filter ( \ (_, t) -> opRes t == s)
                 $ map ( \ o -> case o of
                         Qual_op_name i t _ -> (trI i, toOpType t)
