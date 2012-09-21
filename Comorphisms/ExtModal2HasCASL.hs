@@ -175,8 +175,8 @@ transSig sign sens = let
              [ (tauId, tauTy)
              , (isTransId, isTransTy nWorld)
              , (containsId, transTy nWorld)
-             , (transContainsId, transTy nWorld)
              , (transId, transTy nWorld)
+             , (transReflexId, transTy nWorld)
              , (reflexId, isTransTy nWorld)
              , (irreflexId, isTransTy nWorld)
              ]
@@ -186,8 +186,9 @@ transSig sign sens = let
          [ (tauS, tauDef termMs $ Set.toList timeMs)
          , (isTransS, isTransDef nWorld)
          , (containsS, containsDef nWorld)
-         , (transContainsS, transContainsDef nWorld)
-         , (transS, transDef transContainsId nWorld)
+         , (transS, someDef transId (transContainsDef nWorld) nWorld)
+         , (transReflexS, someDef transReflexId
+                        (transReflexContainsDef nWorld) nWorld)
          , (reflexS, reflexDef True nWorld)
          , (irreflexS, reflexDef False nWorld)
          ]
@@ -226,9 +227,12 @@ tauDef termMs timeMs = let ts = tPair $ toType world in
                $ if term then QualVar v : ts else ts)
            timeMs
 
+pVar :: Type -> VarDecl
+pVar = hcVarDecl (genToken "p") . predTy
+
 isTransDef :: Type -> Term
 isTransDef w = let
-  p = hcVarDecl (genToken "p") $ predTy w
+  p = pVar w
   pt = QualVar p
   [t1, t2, t3] = tTrip w
   in HC.mkForall [GenVarDecl p]
@@ -257,22 +261,21 @@ containsDef w = let -- q contains p
        (mkApplTerm pt ts)
      $ mkApplTerm qt ts
 
-transContainsS :: String
-transContainsS = "trans_contains"
-
-transContainsId :: Id
-transContainsId = genName transContainsS
-
-transContainsDef :: Type -> Term
-transContainsDef w = let -- q is something and contains p
-  ps = pAndQ w
-  ts@[_, qt] = map QualVar ps
-  in HC.mkForall (map GenVarDecl ps)
-     . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp transContainsId $ transTy w) ts)
-     . mkLogTerm andId nr
-       (mkApplTerm (mkOp isTransId $ isTransTy w) [qt])
+someContainsDef :: (Term -> Term) -> Type -> Term -> Term -> Term
+someContainsDef sPred w pt qt = let -- q fulfills sPred and contains p
+  ts = [pt, qt]
+  in mkLogTerm andId nr (sPred qt)
        $ mkApplTerm (mkOp containsId $ transTy w) ts
+
+transContainsDef :: Type -> Term -> Term -> Term
+transContainsDef w = someContainsDef
+  (\ qt -> mkApplTerm (mkOp isTransId $ isTransTy w) [qt]) w
+
+transReflexContainsDef :: Type -> Term -> Term -> Term
+transReflexContainsDef w = someContainsDef
+  (\ qt -> mkLogTerm andId nr
+           (mkApplTerm (mkOp isTransId $ isTransTy w) [qt])
+           $ mkApplTerm (mkOp reflexId $ isTransTy w) [qt]) w
 
 transS :: String
 transS = "trans"
@@ -280,20 +283,24 @@ transS = "trans"
 transId :: Id
 transId = genName transS
 
-transDef :: Id -> Type -> Term
-transDef tId w = let -- q is the (smallest) transitive closure of p
+transReflexS :: String
+transReflexS = "trans_reflex"
+
+transReflexId :: Id
+transReflexId = genName transReflexS
+
+someDef :: Id -> (Term -> Term -> Term) -> Type -> Term
+someDef dId op w = let -- q is the (smallest) something containing p
   ps = pAndQ w
   ts@[pt, qt] = map QualVar ps
   z = hcVarDecl (genToken "Z") $ predTy w
   zt = QualVar z
   in HC.mkForall (map GenVarDecl ps)
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp transId $ transTy w) ts)
-     . mkLogTerm andId nr
-       (mkApplTerm (mkOp tId $ isTransTy w) ts)
+       (mkApplTerm (mkOp dId $ transTy w) ts)
+     . mkLogTerm andId nr (op pt qt)
        . HC.mkForall [GenVarDecl z]
-       . mkLogTerm implId nr
-         (mkApplTerm (mkOp tId $ transTy w) [pt, zt])
+       . mkLogTerm implId nr (op pt zt)
          $ mkApplTerm (mkOp containsId $ transTy w) [qt, zt]
 
 reflexS :: String
@@ -311,9 +318,9 @@ irreflexId = genName irreflexS
 reflexDef :: Bool -> Type -> Term
 reflexDef refl w = let
   x = hcVarDecl (genToken "x") w
-  p = hcVarDecl (genToken "X") $ predTy w
+  p = pVar w
   pt = QualVar p
-  in HC.mkForall  [GenVarDecl p]
+  in HC.mkForall [GenVarDecl p]
      . mkLogTerm eqvId nr
        (mkApplTerm (mkOp (if refl then reflexId else irreflexId)
                    $ isTransTy w) [pt])
