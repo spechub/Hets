@@ -43,7 +43,7 @@ printIsaTheory tn sign sens = let
     use = text usesS <+> doubleQuotes (text $ ld ++ "prelude.ML")
     in text theoryS <+> text tn
     $+$ text importsS <+> fsep (case b of
-        Custom_thy -> [] 
+        Custom_thy -> []
         _ -> (if case b of
                 Main_thy -> False
                 HOLCF_thy -> False
@@ -58,7 +58,7 @@ printIsaTheory tn sign sens = let
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
  let (sens',recFuns) = findTypesForRecFuns sens (constTab sig)
-     sig' = sig { constTab = 
+     sig' = sig { constTab =
       Map.filterWithKey (\k _ -> not $ (new k) `elem` recFuns) (constTab sig) }
  in  callSetup "initialize" (brackets $ sepByCommas
       $ map (text . show . Quote . senAttr)
@@ -70,12 +70,12 @@ printTheoryBody sig sens =
 
 findTypesForRecFuns :: [Named Sentence] -> ConstTab
  -> ([Named Sentence], [String])
-findTypesForRecFuns ns ctab = 
+findTypesForRecFuns ns ctab =
  let (sens,recFuns') = unzip $ map (\ sen ->
       let (sen',recFns') =
            case sentence sen of
              RecDef kw cName cType tm ->
-              ((case Map.toList $ 
+              ((case Map.toList $
                  Map.filterWithKey (\k _ -> (new k) == (new cName)) ctab of
                  (_,t):_ ->
                   case cType of
@@ -325,7 +325,7 @@ parensForTerm d =
 
 printParenTerm :: Bool -> Int -> Term -> Doc
 printParenTerm b i t = case printTrm b t of
-    (d, j) -> if j <= i then parensForTerm d else d
+    (d, j) -> if j < i then parensForTerm d else d
 
 flatTuplex :: [Term] -> Continuity -> [Term]
 flatTuplex cs c = case cs of
@@ -452,7 +452,7 @@ printLocales :: Locales -> Doc
 printLocales = vsep . map printLocale . orderLDecs . Map.toList
 
 printLocale :: (String,LocaleDecl) -> Doc
-printLocale (n,(parents,in_ax,ex_ax,params)) = 
+printLocale (n,(parents,in_ax,ex_ax,params)) =
  let p' = Data.List.intersperse (text "+") $ map text parents
      a  = map (\ (s,t) -> text s <+> text ":"
            <+> (doubleQuotes . printTerm) t) in_ax
@@ -490,7 +490,7 @@ printClassrel = vsep . map printClassR . orderCDecs . Map.toList
 
 printClassR :: (IsaClass,ClassDecl) -> Doc
 printClassR (y, (parents, assumptions,fixes)) =
- let a = map (\ (s,t) -> text s <+> text ":" 
+ let a = map (\ (s,t) -> text s <+> text ":"
           <+> (doubleQuotes . printTerm) t) assumptions
      a' = if null a then []
       else (head a):(map (text "and" <+>) (tail a))

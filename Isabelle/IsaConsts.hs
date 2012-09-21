@@ -590,7 +590,7 @@ lconsV :: VName
 lconsV = VName lconsS $ Just $ AltSyntax "(_ ###/ _)" [66, 65] 65
 
 appendV :: VName
-appendV = VName appendS $ Just $ AltSyntax "(_ @ _)" [66, 65] 65
+appendV = VName appendS $ Just $ AltSyntax "(_ @/ _)" [66, 65] 65
 
 compV :: VName
 compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55
