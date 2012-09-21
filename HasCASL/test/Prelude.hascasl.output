@@ -136,7 +136,6 @@ d : Cpo %(var_246)%;
 f : Flatcpo %(var_243)%;
 p : Pcpo %(var_242)%;
 t : Type %(var_2)%
-op Y : forall p : Pcpo . (p --> p) --> p
 op def : forall s : Type . Pred s
 op fst : forall s : Type; t : Type . s * t -> s
          %[ = \ ((var x : s), (var y : t)) .! (var x : s) ]%
@@ -153,6 +152,7 @@ pred eq : forall s : Type . s * s
 pred isBound : forall c : Cpo . c * (nat -> c)
 pred isChain : forall c : Cpo . nat -> c
 pred not : Unit
+fun Y : forall p : Pcpo . (p --> p) --> p
 vars
 f : p --> p;
 g : c --> d;
