@@ -18,14 +18,13 @@ commented sentences and terms get lost, and modules are inlined.
 
 module CommonLogic.Print_KIF where
 
-import qualified CommonLogic.AS_CommonLogic as AS
-
 import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
 import CommonLogic.ModuleElimination
-
+import qualified CommonLogic.AS_CommonLogic as AS
+import qualified Common.AS_Annotation as AS_Anno
 import qualified Data.Set as Set
 
 printBasicSpec :: AS.BASIC_SPEC -> Doc
@@ -36,6 +35,9 @@ printBasicItems (AS.Axiom_items xs) = vcat $ map (printAnnoted printTextMeta) xs
 
 printTextMeta :: AS.TEXT_META -> Doc
 printTextMeta tm = printText $ AS.getText $ eliminateModules tm
+
+exportKIF :: [AS_Anno.Named AS.TEXT_META] -> Doc
+exportKIF xs = vsep $ map (printTextMeta . AS_Anno.sentence) xs
 
 printText :: AS.TEXT -> Doc
 printText s = case s of
@@ -90,6 +92,7 @@ printBoolSent bv s = case s of
 printAtom :: Set.Set String -> AS.ATOM -> Doc
 printAtom bv s = case s of
   AS.Equation a b -> parens $ equals <+> printTerm bv a <+> printTerm bv b
+  AS.Atom t [] -> printTerm bv t
   AS.Atom t ts -> parens $ printTerm bv t <+> sep (map (printTermSeq bv) ts)
   
 stripVar :: String -> String

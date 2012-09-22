@@ -93,6 +93,7 @@ import qualified RDF.Print as RDF (printRDFBasicTheory)
 import CommonLogic.Logic_CommonLogic
 import qualified CommonLogic.AS_CommonLogic as CL_AS (exportCLIF)
 import qualified CommonLogic.Parse_CLIF as CL_Parse (cltext)
+import qualified CommonLogic.Print_KIF as Print_KIF (exportKIF)
 
 import Driver.Options
 import Driver.ReadFn (libNameToFile)
@@ -270,6 +271,13 @@ writeTheory ins nam opts filePrefix ga
             writeVerbFile opts f cltext
       | otherwise -> putIfVerbose opts 0 $ "expected Common Logic theory for: "
                                                                             ++ f
+    KIFOut
+      | lang == language_name CommonLogic -> do
+            (_, th2) <- coerceBasicTheory lid CommonLogic "" th
+            let kiftext = shows (Print_KIF.exportKIF th2) "\n"
+            writeVerbFile opts f kiftext
+      | otherwise -> putIfVerbose opts 0 $ "expected Common Logic theory for: "
+                                                                            ++ f
     _ -> return () -- ignore other file types
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> IO ()
@@ -343,6 +351,7 @@ writeSpecFiles opts file lenv ln dg = do
             SigFile _ -> True
             OWLOut -> True
             CLIFOut -> True
+            KIFOut -> True
             FreeCADOut -> True
             HaskellOut -> True
             ComptableXml -> True

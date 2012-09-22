@@ -83,7 +83,8 @@ kifUnofficial ch = ch `elem` ",()#':{}`;^"
 
 kifWordChar :: Char -> Bool
 kifWordChar ch = kifUpper ch || kifLower ch || kifSpecial ch || kifDigit ch
-                 || ch == '-'
+                 || ch == '-' || ch == '#'
+-- '#' is used in expanded IRIs
 
 kifChar :: Char -> Bool
 kifChar ch = kifUpper ch || kifLower ch || kifSpecial ch || kifDigit ch
