@@ -25,6 +25,7 @@ import CommonLogic.Symbol as Symbol
 import CommonLogic.Analysis
 import qualified CommonLogic.Parse_CLIF as CLIF
 import qualified CommonLogic.Parse_KIF as KIF
+import qualified CommonLogic.Print_KIF as Print_KIF
 import CommonLogic.Morphism
 import CommonLogic.OMDocExport
 import CommonLogic.OMDocImport as OMDocImport
@@ -74,7 +75,7 @@ instance Syntax CommonLogic
     SYMB_MAP_ITEMS
     where
       parsersAndPrinters CommonLogic =
-        addSyntax "KIF" (KIF.basicSpec, pretty)
+        addSyntax "KIF" (KIF.basicSpec, Print_KIF.printBasicSpec)
         $ addSyntax "CLIF" (CLIF.basicSpec, pretty)
         $ makeDefault (CLIF.basicSpec, pretty)
       parse_symb_items CommonLogic = Just CLIF.symbItems

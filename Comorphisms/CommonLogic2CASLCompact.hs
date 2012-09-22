@@ -45,7 +45,7 @@ import qualified CommonLogic.Symbol as ClSymbol
 import qualified CommonLogic.Morphism as ClMor
 import qualified CommonLogic.Sublogic as ClSl
 
-import Comorphisms.CommonLogicModuleElimination (eliminateModules)
+import CommonLogic.ModuleElimination
 
 -- CASL
 import qualified CASL.Logic_CASL as CLogic

@@ -58,7 +58,7 @@ variable = char '?' <:> word
 
 -- Row variables are called Sequences Markers in CommonLogic
 rowvar :: CharParser st String
-rowvar = char '@' <:> word
+rowvar = char '@' >> liftM ("..." ++) word
 
 sign :: CharParser st String
 sign = option "" (string "-")
