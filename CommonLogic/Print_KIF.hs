@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Abstract syntax for common logic
+Description :  Pretty Printer for KIF
 Copyright   :  (c) Soeren Schulze, Uni Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -9,6 +9,11 @@ Stability   :  provisional
 Portability :  portable
 
 Pretty Printer for KIF.  Partially based on "pretty" instances in AS_CommonLogic.
+Note that the output does not perfectly match the input, as CommonLogic does
+not have the concept of "free variables" (as opposed to variables bound by a
+quantifier).  Thus, any free variables are converted into constants and lose
+their '?' prefix.  When CommonLogic code is emitted as KIF, the comments in
+commented sentences and terms get lost, and modules are inlined.
 -}
 
 module CommonLogic.Print_KIF where
@@ -59,6 +64,11 @@ getQuantVarName :: AS.NAME_OR_SEQMARK -> String
 getQuantVarName v = stripVar $ tokStr $ case v of
   AS.Name x -> x
   AS.SeqMark x -> x
+
+-- The "bv" argument contains a set of variables that are bound by quantifiers.
+-- These variables are prepended by a '?' sign when printed.  
+-- Sequence markers are always prepended by '@', without checking if they
+-- are bounded.
 
 printSentence :: Set.Set String -> AS.SENTENCE -> Doc
 printSentence bv s = case s of

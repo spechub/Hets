@@ -5,7 +5,7 @@ Copyright   :  (c) Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  eugenk@informatik.uni-bremen.de
-Stability   :  experimental (not complete: typleclass-instances missing)
+Stability   :  experimental
 Portability :  portable
 
 Used by Comorphisms.CommonLogicModuleElimination and Print_KIF.
