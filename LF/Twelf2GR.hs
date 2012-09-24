@@ -6,8 +6,9 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental
-Portability :  portable    
+Portability :  portable
 -}
+
 module LF.Twelf2GR where
 
 import System.Exit
@@ -16,7 +17,6 @@ import System.Directory
 import System.FilePath
 import System.IO (hGetContents)
 
-import Network.URI
 
 import LF.Sign
 import LF.Morphism
@@ -24,6 +24,7 @@ import LF.Morphism
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Common.IRI
 import Common.Result
 import Common.Utils
 import Common.Keywords
@@ -260,7 +261,7 @@ toTwelf :: FilePath -> FilePath
 toTwelf fp = replaceExtension fp twelfE
 
 getEnv :: Namespace -> String
-getEnv ns = 
+getEnv ns =
   case ns of
     LATIN -> latinEnv
     HETS -> hetsEnv
@@ -275,10 +276,10 @@ getEnvVar var = do
 -- resolves the first file path wrt to the second
 resolve :: FilePath -> FilePath -> FilePath
 resolve fp1 fp2 =
-  case parseURIReference fp1 of
+  case parseIRIReference fp1 of
     Nothing -> er
     Just uri1 -> do
-      case parseURIReference fp2 of
+      case parseIRIReference fp2 of
         Nothing -> er
         Just uri2 -> do
           case relativeTo uri1 uri2 of
@@ -289,10 +290,10 @@ resolve fp1 fp2 =
 -- relativizes the first file path wrt to the second
 relativize :: FilePath -> FilePath -> FilePath
 relativize fp1 fp2 =
-  case parseURIReference fp1 of
+  case parseIRIReference fp1 of
     Nothing -> er
     Just uri1 -> do
-      case parseURIReference fp2 of
+      case parseIRIReference fp2 of
         Nothing -> er
         Just uri2 -> show $ relativeFrom uri1 uri2
   where er = error "Invalid file name."
@@ -314,7 +315,7 @@ toRelativeURI fp = do
 toLibName :: Namespace -> FilePath -> IO BASE
 toLibName ns fp = do
   file <- toAbsoluteURI fp
-  dir <- getEnvVar $ getEnv ns     
+  dir <- getEnvVar $ getEnv ns
   return $ relativize file $ dir ++ "/"
 
 {- converts a library name to a filepath, i.e.
@@ -328,7 +329,7 @@ fromLibName ns lname = do
    the second argument -}
 parseRef :: Namespace -> String -> String -> IO NODE
 parseRef ns ref base = do
-  file <- fromLibName ns base 
+  file <- fromLibName ns base
   case splitBy '?' ref of
        [br,m] -> do let b = toTwelf $ resolve br file
                     lname <- toLibName ns b
@@ -499,7 +500,7 @@ addView ns e libs@(_,(lname,_)) = do
   (b1,m1) <- parseRef ns from lname
   (b2,m2) <- parseRef ns to lname
   libs1 <- addFromFile ns b1 libs
-  libs2 <- addFromFile ns b2 libs1  
+  libs2 <- addFromFile ns b2 libs1
   let srcSig = lookupSig (b1,m1) libs2
   let tarSig = lookupSig (b2,m2) libs2
   (morph,libs3) <- getViewMorph ns name srcSig tarSig (elChildren e) libs2
@@ -532,7 +533,7 @@ addConst ns e (libs,sig) = do
               _ -> fail "Constant element must have a unique type child."
   val <- case findChildren definitionQN e of
               [] -> return Nothing
-              [v] -> fmap Just $ definition2exp ns v ref                   
+              [v] -> fmap Just $ definition2exp ns v ref
               _ -> fail $ "Constant element must have at most " ++
                           "one definition child."
   let sig1 = addDef (Def sym typ val) sig
@@ -653,7 +654,7 @@ addIncl :: Namespace -> Element -> (LIBS_EXT,Sign) -> IO (LIBS_EXT,Sign)
 addIncl ns e (libs@(_,(lname,_)),sig) = do
   let from = getFromAttr e
   (b,m) <- parseRef ns from lname
-  libs1 <- addFromFile ns b libs  
+  libs1 <- addFromFile ns b libs
   let srcSig = lookupSig (b,m) libs1
   let tarSig = addInclSyms srcSig sig
   let morph = getInclMorph srcSig tarSig
@@ -686,7 +687,7 @@ addStruct ns e (libs@(_,(lname,_)),sig) = do
   let name = getNameAttr e
   let from = getFromAttr e
   (b,m) <- parseRef ns from lname
-  libs1 <- addFromFile ns b libs  
+  libs1 <- addFromFile ns b libs
   let srcSig = lookupSig (b,m) libs1
   (tarSig,morph,libs2) <- processStruct ns name srcSig sig (elChildren e) libs1
   let libs3 = addMorphToGraph morph libs2
