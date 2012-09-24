@@ -186,8 +186,9 @@ transSig sign sens = let
              , (transId, transTy nWorld)
              , (transReflexId, transTy nWorld)
              , (transLinearOrderId, isTransTy nWorld)
-             , (hasTauSucId, hasTauSucTy)
+             , (hasTauZeroSucId, hasTauZeroSucTy)
              , (subsetOfTauId, subsetOfTauTy)
+             , (hasTauSucId, isTransTy nWorld)
              ])
              [ altToOpInfo natId zeroAlt
              , altToOpInfo natId sucAlt
@@ -213,8 +214,9 @@ transSig sign sens = let
          , (transReflexS, someDef transReflexId
                         (transReflexContainsDef nWorld) nWorld)
          , (transLinearOrderS, transLinearOrderDef nWorld)
-         , (hasTauSucS, hasTauSucDef)
+         , (hasTauZeroSucS, hasTauSucDef)
          , (subsetOfTauS, subsetOfTauDef)
+         , (hasTauSucS, hasTauSucDefAny)
          ]
        )
 
@@ -487,14 +489,14 @@ varTerm i = QualVar . varDecl i
 typeToSelector :: Maybe Id -> Type -> [Selector]
 typeToSelector m a = [Select m a HC.Total]
 
-hasTauSucS :: String
-hasTauSucS = "has_tau_suc"
+hasTauZeroSucS :: String
+hasTauZeroSucS = "has_tau_zero_suc"
 
-hasTauSucId :: Id
-hasTauSucId = genName hasTauSucS
+hasTauZeroSucId :: Id
+hasTauZeroSucId = genName hasTauZeroSucS
 
-hasTauSucTy :: Type
-hasTauSucTy = getFunType unitType HC.Partial [worldTy, predTy nWorld]
+hasTauZeroSucTy :: Type
+hasTauZeroSucTy = getFunType unitType HC.Partial [worldTy, predTy nWorld]
 
 tauApplTerm :: Term -> Term -> Term
 tauApplTerm t1 t2 = mkApplTerm (mkOp tauId tauTy) [t1, t2]
@@ -502,13 +504,13 @@ tauApplTerm t1 t2 = mkApplTerm (mkOp tauId tauTy) [t1, t2]
 hasTauSucDef :: Term
 hasTauSucDef = let
   zeroT = mkOp zero natTy
-  ([x0, p], tT, rT) = hasTauSucDefAux zeroT
+  ([x0, p], tT, _, rT) = hasTauSucDefAux zeroT
   in HC.mkForall (map GenVarDecl [x0, p])
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp hasTauSucId hasTauSucTy) $ map QualVar [x0, p])
+       (mkApplTerm (mkOp hasTauZeroSucId hasTauZeroSucTy) $ map QualVar [x0, p])
      $ mkLogTerm implId nr tT rT
 
-hasTauSucDefAux :: Term -> ([VarDecl], Term, Term)
+hasTauSucDefAux :: Term -> ([VarDecl], Term, Term, Term)
 hasTauSucDefAux nT = let
   x = hcVarDecl (genToken "x") worldTy
   vs = [hcVarDecl (genNumVar "x" 0) worldTy, pVar nWorld]
@@ -516,12 +518,34 @@ hasTauSucDefAux nT = let
   tauAppl = tauApplTerm xt0 xt
   pairWorld = mkApplTerm $ mkOp nWorldId nWorldTy
   sucTy = altToTy natId sucAlt
-  in (vs, mkExQ x tauAppl,
+  pw = pairWorld [xt0, nT]
+  in (vs, mkExQ x tauAppl, pw,
      mkExQ x
      . mkLogTerm andId nr tauAppl
      $ mkApplTerm pt
      [ pairWorld [xt0, nT]
      , pairWorld [xt, mkApplTerm (mkOp sucId sucTy) [nT]]])
+
+hasTauSucS :: String
+hasTauSucS = "has_tau_suc"
+
+hasTauSucId :: Id
+hasTauSucId = genName hasTauSucS
+
+hasTauSucDefAny :: Term
+hasTauSucDefAny = let
+  nv = hcVarDecl (genToken "n") natTy
+  nt = QualVar nv
+  ([x0, p], tT, pw, rT) = hasTauSucDefAux nt
+  y = hcVarDecl (genToken "y") nWorld
+  in HC.mkForall [GenVarDecl p]
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp hasTauSucId $ isTransTy nWorld) [QualVar p])
+     . HC.mkForall (map GenVarDecl [x0, nv])
+     $ mkLogTerm implId nr
+       (mkLogTerm andId nr
+        (mkExQ y $ mkApplTerm (QualVar p) [QualVar y, pw])
+        tT) rT
 
 subsetOfTauS :: String
 subsetOfTauS = "subset_of_tau"
