@@ -193,6 +193,7 @@ transSig sign sens = let
              , (subsetOfTauId, prOfNwPrTy)
              , (hasTauSucId, prOfNwPrTy)
              , (superpathId, hasSuccessorTy)
+             , (pathId, hasSuccessorTy)
              ])
              [ altToOpInfo natId zeroAlt
              , altToOpInfo natId sucAlt
@@ -222,6 +223,7 @@ transSig sign sens = let
          , (subsetOfTauS, subsetOfTauDef)
          , (hasTauSucS, hasTauSucDefAny)
          , (superpathS, superpathDef)
+         , (pathS, pathDef)
          ]
        )
 
@@ -268,7 +270,7 @@ tauDef termMs timeMs = let ts = tPair worldTy in
            timeMs
 
 pVar :: Type -> VarDecl
-pVar = hcVarDecl (genToken "p") . binPredTy
+pVar = hcVarDecl (genToken "P") . binPredTy
 
 isTransDef :: Type -> Term
 isTransDef w = let
@@ -314,7 +316,7 @@ transLinearOrderId = genName transLinearOrderS
 
 transLinearOrderDef :: Type -> Term
 transLinearOrderDef w = let
-  ps = pAndQ w
+  ps = rAndQ w
   [pv, qv] = map GenVarDecl ps
   ts@[pt, qt] = map QualVar ps
   in HC.mkForall [pv]
@@ -392,24 +394,25 @@ selToOpInfo i c s = let (n, ty) = selToTy i s in
   (n, Set.singleton . OpInfo (simpleTypeScheme ty) Set.empty
       $ SelectData c i)
 
-pAndQ :: Type -> [VarDecl]
-pAndQ w = map (\ c -> hcVarDecl (genToken [c]) $ binPredTy w) "pq"
+rAndQ :: Type -> [VarDecl]
+rAndQ w = map (\ c -> hcVarDecl (genToken [c]) $ binPredTy w) "RQ"
 
 containsDef :: Type -> Term
-containsDef w = let -- q contains p
-  ps = pAndQ w
-  ts = tPair w
-  [pt, qt] = map QualVar ps
+containsDef w = let -- q contains r
+  ps = rAndQ w
+  ts@[pt, qt] = map QualVar ps
   in HC.mkForall (map GenVarDecl ps)
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp containsId $ transTy w) [pt, qt])
-     . HC.mkForall (pairDs w)
-     . mkLogTerm implId nr
-       (mkApplTerm pt ts)
-     $ mkApplTerm qt ts
+       (mkApplTerm (mkOp containsId $ transTy w) ts)
+     $ containsDefAux False implId pt qt w
+
+containsDefAux :: Bool -> Id -> Term -> Term -> Type -> Term
+containsDefAux neg op pt qt w = let ts = tPair w in
+  HC.mkForall (pairDs w) . (if neg then mkNot else id)
+     . mkLogTerm op nr (mkApplTerm pt ts) $ mkApplTerm qt ts
 
 someContainsDef :: (Term -> Term) -> Type -> Term -> Term -> Term
-someContainsDef sPred w pt qt = let -- q fulfills sPred and contains p
+someContainsDef sPred w pt qt = let -- q fulfills sPred and contains r
   ts = [pt, qt]
   in mkLogTerm andId nr (sPred qt)
        $ mkApplTerm (mkOp containsId $ transTy w) ts
@@ -437,10 +440,10 @@ transReflexId :: Id
 transReflexId = genName transReflexS
 
 someDef :: Id -> (Term -> Term -> Term) -> Type -> Term
-someDef dId op w = let -- q is the (smallest) something containing p
-  ps = pAndQ w
+someDef dId op w = let -- q is the (smallest) something containing r
+  ps = rAndQ w
   ts@[pt, qt] = map QualVar ps
-  z = hcVarDecl (genToken "Z") $ binPredTy w
+  z = pVar w
   zt = QualVar z
   in HC.mkForall (map GenVarDecl ps)
      . mkLogTerm eqvId nr
@@ -596,6 +599,33 @@ superpathDef = let
      $ mkApplTerm (mkOp hasSuccessorId hasSuccessorTy) ts
       : map (\ i -> mkApplTerm (mkOp i prOfNwPrTy) [pt])
         [irreflexId, subsetOfTauId, hasTauSucId, transLinearOrderId]
+
+pathS :: String
+pathS = "path"
+
+pathId :: Id
+pathId = genName pathS
+
+pathDef :: Term
+pathDef = let
+  vs = xZeroAndP
+  [rv, qv] = rAndQ nWorld
+  [rt, qt] = map QualVar [rv, qv]
+  ts@[x0, pt] = map QualVar vs
+  in HC.mkForall (map GenVarDecl vs)
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp pathId hasSuccessorTy) ts)
+     . mkExQ rv
+     $ mkConj
+       [ mkApplTerm (mkOp superpathId hasSuccessorTy) [x0, rt]
+       , mkApplTerm (mkOp transReflexId $ transTy nWorld) [rt, pt]
+       , HC.mkForall [GenVarDecl qv]
+         . mkLogTerm implId nr
+           (mkApplTerm (mkOp superpathId hasSuccessorTy) [x0, qt])
+         . mkLogTerm orId nr
+           (containsDefAux True implId qt rt nWorld)
+           $ containsDefAux False eqvId qt rt nWorld
+       ]
 
 toSen :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Sentence
 toSen msig env f = case f of
