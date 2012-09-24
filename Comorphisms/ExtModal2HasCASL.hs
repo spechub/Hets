@@ -43,6 +43,7 @@ import HasCASL.Logic_HasCASL
 import HasCASL.As as HC
 import HasCASL.AsUtils as HC
 import HasCASL.Builtin
+import HasCASL.DataAna
 import HasCASL.Le as HC
 import HasCASL.VarDecl
 import HasCASL.Sublogic as HC
@@ -198,7 +199,9 @@ transSig sign sens = let
                        { typeDefn = DatatypeDefn natType }
                      $ typeMap env
          }
-       , map (\ (s, t) -> makeNamed s $ Formula t)
+       , makeNamed "nat_induction" (Formula $ inductionScheme [natType])
+         : makeDataSelEqs (toDataPat worldType) [worldAlt]
+         ++ map (\ (s, t) -> makeNamed s $ Formula t)
          [ (tauS, tauDef termMs $ Set.toList timeMs)
          , (isTransS, isTransDef nWorld)
          , (reflexS, reflexDef True nWorld)
