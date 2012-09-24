@@ -101,8 +101,8 @@ nWorldId = genName "WN"
 nWorld :: Type
 nWorld = toType nWorldId
 
-predTy :: Type -> Type
-predTy = getFunType unitType HC.Partial . replicate 2
+binPredTy :: Type -> Type
+binPredTy = getFunType unitType HC.Partial . replicate 2
 
 isTransS :: String
 isTransS = "isTrans"
@@ -110,8 +110,11 @@ isTransS = "isTrans"
 isTransId :: Id
 isTransId = genName isTransS
 
-isTransTy :: Type -> Type
-isTransTy = predType nr . predTy
+prOfBinPrTy :: Type -> Type
+prOfBinPrTy = predType nr . binPredTy
+
+prOfNwPrTy :: Type
+prOfNwPrTy = prOfBinPrTy nWorld
 
 containsS :: String
 containsS = "contains"
@@ -120,7 +123,7 @@ containsId :: Id
 containsId = genName containsS
 
 transTy :: Type -> Type
-transTy = getFunType unitType HC.Partial . replicate 2 . predTy
+transTy = getFunType unitType HC.Partial . replicate 2 . binPredTy
 
 -- | mixfix names work for tuples and are lost after currying
 trI :: Id -> Id
@@ -179,16 +182,17 @@ transSig sign sens = let
          { assumps = foldr (uncurry insOpInfo)
              (foldr insF (assumps env)
              [ (tauId, tauTy)
-             , (isTransId, isTransTy nWorld)
-             , (reflexId, isTransTy nWorld)
-             , (irreflexId, isTransTy nWorld)
+             , (isTransId, prOfNwPrTy)
+             , (reflexId, prOfNwPrTy)
+             , (irreflexId, prOfNwPrTy)
              , (containsId, transTy nWorld)
              , (transId, transTy nWorld)
              , (transReflexId, transTy nWorld)
-             , (transLinearOrderId, isTransTy nWorld)
+             , (transLinearOrderId, prOfNwPrTy)
              , (hasSuccessorId, hasSuccessorTy)
-             , (subsetOfTauId, subsetOfTauTy)
-             , (hasTauSucId, isTransTy nWorld)
+             , (subsetOfTauId, prOfNwPrTy)
+             , (hasTauSucId, prOfNwPrTy)
+             , (superpathId, hasSuccessorTy)
              ])
              [ altToOpInfo natId zeroAlt
              , altToOpInfo natId sucAlt
@@ -214,9 +218,10 @@ transSig sign sens = let
          , (transReflexS, someDef transReflexId
                         (transReflexContainsDef nWorld) nWorld)
          , (transLinearOrderS, transLinearOrderDef nWorld)
-         , (hasSuccessorS, hasTauSucDef)
+         , (hasSuccessorS, hasSuccessorDef)
          , (subsetOfTauS, subsetOfTauDef)
          , (hasTauSucS, hasTauSucDefAny)
+         , (superpathS, superpathDef)
          ]
        )
 
@@ -263,7 +268,7 @@ tauDef termMs timeMs = let ts = tPair worldTy in
            timeMs
 
 pVar :: Type -> VarDecl
-pVar = hcVarDecl (genToken "p") . predTy
+pVar = hcVarDecl (genToken "p") . binPredTy
 
 isTransDef :: Type -> Term
 isTransDef w = let
@@ -272,7 +277,7 @@ isTransDef w = let
   [t1, t2, t3] = tTrip w
   in HC.mkForall [GenVarDecl p]
          . mkLogTerm eqvId nr
-             (mkApplTerm (mkOp isTransId $ isTransTy w) [pt])
+             (mkApplTerm (mkOp isTransId $ prOfBinPrTy w) [pt])
              . HC.mkForall (tripDs w)
              . mkLogTerm implId nr
                (mkLogTerm andId nr
@@ -314,7 +319,7 @@ transLinearOrderDef w = let
   ts@[pt, qt] = map QualVar ps
   in HC.mkForall [pv]
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp transLinearOrderId $ isTransTy w) [pt])
+       (mkApplTerm (mkOp transLinearOrderId $ prOfBinPrTy w) [pt])
      . mkExQs [qv]
      . mkLogTerm andId nr
        (mkApplTerm (mkOp transId $ transTy w) ts)
@@ -388,7 +393,7 @@ selToOpInfo i c s = let (n, ty) = selToTy i s in
       $ SelectData c i)
 
 pAndQ :: Type -> [VarDecl]
-pAndQ w = map (\ c -> hcVarDecl (genToken [c]) $ predTy w) "pq"
+pAndQ w = map (\ c -> hcVarDecl (genToken [c]) $ binPredTy w) "pq"
 
 containsDef :: Type -> Term
 containsDef w = let -- q contains p
@@ -411,13 +416,13 @@ someContainsDef sPred w pt qt = let -- q fulfills sPred and contains p
 
 transContainsDef :: Type -> Term -> Term -> Term
 transContainsDef w = someContainsDef
-  (\ qt -> mkApplTerm (mkOp isTransId $ isTransTy w) [qt]) w
+  (\ qt -> mkApplTerm (mkOp isTransId $ prOfBinPrTy w) [qt]) w
 
 transReflexContainsDef :: Type -> Term -> Term -> Term
 transReflexContainsDef w = someContainsDef
   (\ qt -> mkLogTerm andId nr
-           (mkApplTerm (mkOp isTransId $ isTransTy w) [qt])
-           $ mkApplTerm (mkOp reflexId $ isTransTy w) [qt]) w
+           (mkApplTerm (mkOp isTransId $ prOfBinPrTy w) [qt])
+           $ mkApplTerm (mkOp reflexId $ prOfBinPrTy w) [qt]) w
 
 transS :: String
 transS = "trans"
@@ -435,7 +440,7 @@ someDef :: Id -> (Term -> Term -> Term) -> Type -> Term
 someDef dId op w = let -- q is the (smallest) something containing p
   ps = pAndQ w
   ts@[pt, qt] = map QualVar ps
-  z = hcVarDecl (genToken "Z") $ predTy w
+  z = hcVarDecl (genToken "Z") $ binPredTy w
   zt = QualVar z
   in HC.mkForall (map GenVarDecl ps)
      . mkLogTerm eqvId nr
@@ -465,7 +470,7 @@ reflexDef refl w = let
   in HC.mkForall [GenVarDecl p]
      . mkLogTerm eqvId nr
        (mkApplTerm (mkOp (if refl then reflexId else irreflexId)
-                   $ isTransTy w) [pt])
+                   $ prOfBinPrTy w) [pt])
      . HC.mkForall [GenVarDecl x]
      . (if refl then id else mkNot)
      . mkApplTerm pt . replicate 2 $ QualVar x
@@ -496,30 +501,34 @@ hasSuccessorId :: Id
 hasSuccessorId = genName hasSuccessorS
 
 hasSuccessorTy :: Type
-hasSuccessorTy = getFunType unitType HC.Partial [worldTy, predTy nWorld]
+hasSuccessorTy = getFunType unitType HC.Partial [worldTy, binPredTy nWorld]
 
 tauApplTerm :: Term -> Term -> Term
 tauApplTerm t1 t2 = mkApplTerm (mkOp tauId tauTy) [t1, t2]
 
-hasTauSucDef :: Term
-hasTauSucDef = let
+hasSuccessorDef :: Term
+hasSuccessorDef = let
   zeroT = mkOp zero natTy
-  ([x0, p], tT, _, rT) = hasTauSucDefAux zeroT
+  [x0, p] = xZeroAndP
+  (tT, _, rT) = hasTauSucDefAux zeroT
   in HC.mkForall (map GenVarDecl [x0, p])
      . mkLogTerm eqvId nr
        (mkApplTerm (mkOp hasSuccessorId hasSuccessorTy) $ map QualVar [x0, p])
      $ mkLogTerm implId nr tT rT
 
-hasTauSucDefAux :: Term -> ([VarDecl], Term, Term, Term)
+xZeroAndP :: [VarDecl]
+xZeroAndP = [hcVarDecl (genNumVar "x" 0) worldTy, pVar nWorld]
+
+hasTauSucDefAux :: Term -> (Term, Term, Term)
 hasTauSucDefAux nT = let
   x = hcVarDecl (genToken "x") worldTy
-  vs = [hcVarDecl (genNumVar "x" 0) worldTy, pVar nWorld]
+  vs = xZeroAndP
   [xt, xt0, pt] = map QualVar $ x : vs
   tauAppl = tauApplTerm xt0 xt
   pairWorld = mkApplTerm $ mkOp nWorldId nWorldTy
   sucTy = altToTy natId sucAlt
   pw = pairWorld [xt0, nT]
-  in (vs, mkExQ x tauAppl, pw,
+  in (mkExQ x tauAppl, pw,
      mkExQ x
      . mkLogTerm andId nr tauAppl
      $ mkApplTerm pt
@@ -536,11 +545,12 @@ hasTauSucDefAny :: Term
 hasTauSucDefAny = let
   nv = hcVarDecl (genToken "n") natTy
   nt = QualVar nv
-  ([x0, p], tT, pw, rT) = hasTauSucDefAux nt
+  [x0, p] = xZeroAndP
+  (tT, pw, rT) = hasTauSucDefAux nt
   y = hcVarDecl (genToken "y") nWorld
   in HC.mkForall [GenVarDecl p]
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp hasTauSucId $ isTransTy nWorld) [QualVar p])
+       (mkApplTerm (mkOp hasTauSucId prOfNwPrTy) [QualVar p])
      . HC.mkForall (map GenVarDecl [x0, nv])
      $ mkLogTerm implId nr
        (mkLogTerm andId nr
@@ -553,9 +563,6 @@ subsetOfTauS = "subset_of_tau"
 subsetOfTauId :: Id
 subsetOfTauId = genName subsetOfTauS
 
-subsetOfTauTy :: Type
-subsetOfTauTy = isTransTy nWorld
-
 getWorld :: Term -> Term
 getWorld t = mkApplTerm (uncurry mkOp $ selToTy nWorldId getWorldSel) [t]
 
@@ -566,11 +573,29 @@ subsetOfTauDef = let
   ts@[xt, yt] = tPair nWorld
   in HC.mkForall [GenVarDecl p]
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp subsetOfTauId subsetOfTauTy) [pt])
+       (mkApplTerm (mkOp subsetOfTauId prOfNwPrTy) [pt])
      . HC.mkForall (pairDs nWorld)
      . mkLogTerm implId nr
        (mkApplTerm pt ts)
      . tauApplTerm (getWorld xt) $ getWorld yt
+
+superpathS :: String
+superpathS = "superpath"
+
+superpathId :: Id
+superpathId = genName superpathS
+
+superpathDef :: Term
+superpathDef = let
+  vs = xZeroAndP
+  ts@[_, pt] = map QualVar vs
+  in HC.mkForall (map GenVarDecl vs)
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp superpathId hasSuccessorTy) ts)
+     . mkConj
+     $ mkApplTerm (mkOp hasSuccessorId hasSuccessorTy) ts
+      : map (\ i -> mkApplTerm (mkOp i prOfNwPrTy) [pt])
+        [irreflexId, subsetOfTauId, hasTauSucId, transLinearOrderId]
 
 toSen :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Sentence
 toSen msig env f = case f of
