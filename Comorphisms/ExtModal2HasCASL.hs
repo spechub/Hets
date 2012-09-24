@@ -501,23 +501,27 @@ tauApplTerm t1 t2 = mkApplTerm (mkOp tauId tauTy) [t1, t2]
 
 hasTauSucDef :: Term
 hasTauSucDef = let
-  x0 = hcVarDecl (genNumVar "x" 0) worldTy
+  zeroT = mkOp zero natTy
+  ([x0, p], tT, rT) = hasTauSucDefAux zeroT
+  in HC.mkForall (map GenVarDecl [x0, p])
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp hasTauSucId hasTauSucTy) $ map QualVar [x0, p])
+     $ mkLogTerm implId nr tT rT
+
+hasTauSucDefAux :: Term -> ([VarDecl], Term, Term)
+hasTauSucDefAux nT = let
   x = hcVarDecl (genToken "x") worldTy
-  p = pVar nWorld
-  [pt, xt0, xt] = map QualVar [p, x0, x]
+  vs = [hcVarDecl (genNumVar "x" 0) worldTy, pVar nWorld]
+  [xt, xt0, pt] = map QualVar $ x : vs
   tauAppl = tauApplTerm xt0 xt
   pairWorld = mkApplTerm $ mkOp nWorldId nWorldTy
-  zeroT = mkOp zero natTy
   sucTy = altToTy natId sucAlt
-  in HC.mkForall [GenVarDecl x0, GenVarDecl p]
-     . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp hasTauSucId hasTauSucTy) [xt0, pt])
-     . mkLogTerm implId nr (mkExQ x tauAppl)
-     . mkExQ x
+  in (vs, mkExQ x tauAppl,
+     mkExQ x
      . mkLogTerm andId nr tauAppl
      $ mkApplTerm pt
-     [ pairWorld [xt0, zeroT]
-     , pairWorld [xt, mkApplTerm (mkOp sucId sucTy) [zeroT]]]
+     [ pairWorld [xt0, nT]
+     , pairWorld [xt, mkApplTerm (mkOp sucId sucTy) [nT]]])
 
 subsetOfTauS :: String
 subsetOfTauS = "subset_of_tau"
