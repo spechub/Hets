@@ -17,6 +17,7 @@ module Comorphisms.CommonLogic2IsabelleHOL where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 
 import Logic.Logic
 import Logic.Comorphism
@@ -93,6 +94,26 @@ individualS = "individual"
 individualT :: Typ
 individualT = mkSType individualS
 
+type RENAMES = Map.Map String VName
+
+addRenames :: RENAMES -> [String] -> RENAMES
+addRenames m = (Map.union m) . Map.fromList
+               . (map (\name -> (name, mkIsaConstT True emptyGlobalAnnos 0
+                                       (Id.stringToId name) Main_thy Set.empty)))
+
+makeRenames :: [String] -> RENAMES
+makeRenames = addRenames Map.empty
+
+basicRenames :: ClSign.Sign -> RENAMES
+basicRenames sig = makeRenames $
+                   map (Id.tokStr . Id.idToSimpleId)
+                   ((Set.toList $ ClSign.sequenceMarkers sig)
+                    ++ (Set.toList $ ClSign.discourseNames sig))
+
+rename :: RENAMES -> String -> VName
+rename rn s = fromMaybe (error $ "Symbol " ++ show s ++ "not found") $
+              Map.lookup s rn
+
 mapSig :: ClSign.Sign -> Sign
 mapSig sig = emptySign {
   tsig = emptyTypeSig {
@@ -103,14 +124,15 @@ mapSig sig = emptySign {
              Map.insert funSymb
              (mkCurryFunType [individualT, mkListType individualT] individualT) $
              Map.union (Map.fromList $ map
-                        (\name -> (mkIsaConstT True emptyGlobalAnnos 0 name
-                                   Main_thy Set.empty, individualT))
-                        (Set.toList $ ClSign.discourseNames sig))
+                        (\name -> (rename rn name, individualT))
+                        (map (Id.tokStr . Id.idToSimpleId) $ Set.toList $
+                         ClSign.discourseNames sig))
              (Map.fromList $ map
-              (\name -> (mkIsaConstT True emptyGlobalAnnos 0 name
-                         Main_thy Set.empty, mkListType individualT))
-              (Set.toList $ ClSign.sequenceMarkers sig))
+              (\name -> (rename rn name, mkListType individualT))
+              (map (Id.tokStr . Id.idToSimpleId) $ Set.toList $
+               ClSign.sequenceMarkers sig))
   }
+  where rn = basicRenames sig
 
 relSymb, funSymb :: VName
 relSymb = mkIsaConstT True emptyGlobalAnnos 2
@@ -121,98 +143,100 @@ funSymb = mkIsaConstT False emptyGlobalAnnos 2
           (Id.stringToId "fun")
           Main_thy Set.empty
 
-quantify :: ClBasic.QUANT -> String -> Term -> Term
-quantify q v s = termAppl (conDouble $ qname q) (Abs (mkFree v) s NotCont)
+quantify :: RENAMES -> ClBasic.QUANT -> String -> Term -> Term
+quantify rn q v s = termAppl (conDouble $ qname q)
+                 (Abs (Free $ rename rn v) s NotCont)
   where qname ClBasic.Universal = allS
         qname ClBasic.Existential = exS
 
 transTextMeta :: ClSign.Sign -> ClBasic.TEXT_META -> Term
-transTextMeta sig = transText sig . ClBasic.getText . eliminateModules
+transTextMeta sig = transText renames . ClBasic.getText . eliminateModules
+  where renames = basicRenames sig
 
 transNamed :: ClSign.Sign -> AS_Anno.Named ClBasic.TEXT_META
               -> AS_Anno.Named Sentence
 transNamed sig = AS_Anno.mapNamed $ mkSen . transTextMeta sig
 
-transText :: ClSign.Sign -> ClBasic.TEXT -> Term
-transText sig txt = case txt of
+transText :: RENAMES -> ClBasic.TEXT -> Term
+transText rn txt = case txt of
   ClBasic.Text phrs _ ->
     let phrs' = filter nonImport phrs
     in if null phrs' then true
-       else foldl1 binConj (map (transPhrase sig) phrs')
-  ClBasic.Named_text _ t _ -> transText sig t
+       else foldl1 binConj (map (transPhrase rn) phrs')
+  ClBasic.Named_text _ t _ -> transText rn t
   where nonImport p = case p of
           ClBasic.Importation _ -> False
           _ -> True
 
-transPhrase :: ClSign.Sign -> ClBasic.PHRASE -> Term
-transPhrase sig phr = case phr of
+transPhrase :: RENAMES -> ClBasic.PHRASE -> Term
+transPhrase rn phr = case phr of
   ClBasic.Module _ -> error "transPhase: \"module\" found"
-  ClBasic.Sentence s -> transSen sig s
+  ClBasic.Sentence s -> transSen rn s
   ClBasic.Importation _ -> error "transPhase: \"import\" found"
-  ClBasic.Comment_text _ t _ -> transText sig t
+  ClBasic.Comment_text _ t _ -> transText rn t
 
-transTerm :: ClSign.Sign -> ClBasic.TERM -> Term
-transTerm sig trm = case trm of
-  ClBasic.Name_term name -> conDouble $ Id.tokStr name
-  ClBasic.Funct_term op args _ -> applyTermSeq funSymb sig op args
-  ClBasic.Comment_term t _ _ -> transTerm sig t
-  ClBasic.That_term sen _ -> transSen sig sen
+transTerm :: RENAMES -> ClBasic.TERM -> Term
+transTerm rn trm = case trm of
+  ClBasic.Name_term name -> con $ rename rn (Id.tokStr name)
+  ClBasic.Funct_term op args _ -> applyTermSeq funSymb rn op args
+  ClBasic.Comment_term t _ _ -> transTerm rn t
+  ClBasic.That_term sen _ -> transSen rn sen
 
-transNameOrSeqmark :: ClSign.Sign -> ClBasic.NAME_OR_SEQMARK -> String
-transNameOrSeqmark _ ts = Id.tokStr $ case ts of
+transNameOrSeqmark :: ClBasic.NAME_OR_SEQMARK -> String
+transNameOrSeqmark ts = Id.tokStr $ case ts of
   ClBasic.Name name -> name
   ClBasic.SeqMark seqm -> seqm
 
-transTermSeq :: ClSign.Sign -> ClBasic.TERM_SEQ -> Term
-transTermSeq sig ts = case ts of
+transTermSeq :: RENAMES -> ClBasic.TERM_SEQ -> Term
+transTermSeq rn ts = case ts of
   ClBasic.Term_seq trm -> (termAppl . termAppl (conC consV))
-                          (transTerm sig trm) (nilPT NotCont)
-  ClBasic.Seq_marks seqm -> conDouble $ Id.tokStr seqm
+                          (transTerm rn trm) (nilPT NotCont)
+  ClBasic.Seq_marks seqm -> con $ rename rn (Id.tokStr seqm)
 
 -- applicable for a non-empty argument list where only the last argument
 -- (or none) is a seqmark
-transArgsSimple :: ClSign.Sign -> [ClBasic.TERM_SEQ] -> Maybe Term
-transArgsSimple sig tss =
+transArgsSimple :: RENAMES -> [ClBasic.TERM_SEQ] -> Maybe Term
+transArgsSimple rn tss =
   foldr
   (\ts trm ->
     do trm' <- trm
        case ts of
          ClBasic.Term_seq clTrm ->
-           Just $ (termAppl . termAppl (conC consV)) (transTerm sig clTrm) trm'
+           Just $ (termAppl . termAppl (conC consV)) (transTerm rn clTrm) trm'
          _ -> Nothing)
-  (Just $ transTermSeq sig $ last tss)
+  (Just $ transTermSeq rn $ last tss)
   (init tss)
 
-transArgs :: ClSign.Sign -> [ClBasic.TERM_SEQ] -> Term
-transArgs sig tss = case (tss, transArgsSimple sig tss) of
+transArgs :: RENAMES -> [ClBasic.TERM_SEQ] -> Term
+transArgs rn tss = case (tss, transArgsSimple rn tss) of
   ([], _) -> (nilPT NotCont)
   (_, Just trm) -> trm
   (_, Nothing) -> foldr1 (termAppl . termAppl (conC appendV))
-                  (map (transTermSeq sig) tss)
+                  (map (transTermSeq rn) tss)
 
-applyTermSeq :: VName -> ClSign.Sign -> ClBasic.TERM -> [ClBasic.TERM_SEQ]
-                -> Term
-applyTermSeq metaSymb sig clTrm clArgs = binVNameAppl metaSymb trm args
-  where trm = transTerm sig clTrm
-        args = transArgs sig clArgs
+applyTermSeq :: VName -> RENAMES -> ClBasic.TERM -> [ClBasic.TERM_SEQ] -> Term
+applyTermSeq metaSymb rn clTrm clArgs = binVNameAppl metaSymb trm args
+  where trm = transTerm rn clTrm
+        args = transArgs rn clArgs
 
-transSen :: ClSign.Sign -> ClBasic.SENTENCE -> Term
-transSen sig sen = case sen of
+transSen :: RENAMES -> ClBasic.SENTENCE -> Term
+transSen rn sen = case sen of
   ClBasic.Bool_sent bs _ -> case bs of
-    ClBasic.Negation s -> termAppl notOp (transSen sig s)
+    ClBasic.Negation s -> termAppl notOp (transSen rn s)
     ClBasic.Junction j ss ->
       if null ss then true
       else foldr1 (case j of ClBasic.Conjunction -> binConj
                              ClBasic.Disjunction -> binDisj)
-           (map (transSen sig) ss)
+           (map (transSen rn) ss)
     ClBasic.BinOp j s1 s2 ->
       (case j of ClBasic.Implication -> binImpl
                  ClBasic.Biconditional -> binEqv)
-      (transSen sig s1) (transSen sig s2)
-  ClBasic.Quant_sent q bs s _ -> foldr (quantify q) (transSen sig s)
-                                 (map (transNameOrSeqmark sig) bs)
+      (transSen rn s1) (transSen rn s2)
+  ClBasic.Quant_sent q bs s _ -> foldr (quantify rn' q) (transSen rn' s) varNames
+    where rn' = addRenames rn varNames
+          varNames = map transNameOrSeqmark bs
   ClBasic.Atom_sent at _ -> case at of
-    ClBasic.Equation t1 t2 -> binEq (transTerm sig t1) (transTerm sig t2)
-    ClBasic.Atom p args -> applyTermSeq relSymb sig p args
-  ClBasic.Comment_sent _ s _ -> transSen sig s
-  ClBasic.Irregular_sent s _ -> transSen sig s
+    ClBasic.Equation t1 t2 -> binEq (transTerm rn t1) (transTerm rn t2)
+    ClBasic.Atom p args -> applyTermSeq relSymb rn p args
+  ClBasic.Comment_sent _ s _ -> transSen rn s
+  ClBasic.Irregular_sent s _ -> transSen rn s
