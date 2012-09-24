@@ -96,19 +96,28 @@ individualT = mkSType individualS
 
 type RENAMES = Map.Map String VName
 
+mkIndName :: String -> VName
+mkIndName name = mkIsaConstT True emptyGlobalAnnos (-1)
+                 (Id.stringToId name) Main_thy Set.empty
+
 addRenames :: RENAMES -> [String] -> RENAMES
-addRenames m = (Map.union m) . Map.fromList
-               . (map (\name -> (name, mkIsaConstT True emptyGlobalAnnos 0
-                                       (Id.stringToId name) Main_thy Set.empty)))
+addRenames = foldr
+             (\k m -> let k' = unclash k m
+                          v = mkIndName k' in
+                      Map.insert k v $ Map.insert k' v m)
+  where unclash k m = if Map.member k m
+                      then unclash ("X_" ++ k) m
+                      else k
 
 makeRenames :: [String] -> RENAMES
 makeRenames = addRenames Map.empty
 
 basicRenames :: ClSign.Sign -> RENAMES
-basicRenames sig = makeRenames $
-                   map (Id.tokStr . Id.idToSimpleId)
-                   ((Set.toList $ ClSign.sequenceMarkers sig)
-                    ++ (Set.toList $ ClSign.discourseNames sig))
+basicRenames sig = addRenames
+                   (Map.fromList [("rel", relSymb), ("fun", funSymb)])
+                   (map (Id.tokStr . Id.idToSimpleId)
+                    ((Set.toList $ ClSign.sequenceMarkers sig)
+                     ++ (Set.toList $ ClSign.discourseNames sig)))
 
 rename :: RENAMES -> String -> VName
 rename rn s = fromMaybe (error $ "Symbol " ++ show s ++ "not found") $
@@ -145,7 +154,7 @@ funSymb = mkIsaConstT False emptyGlobalAnnos 2
 
 quantify :: RENAMES -> ClBasic.QUANT -> String -> Term -> Term
 quantify rn q v s = termAppl (conDouble $ qname q)
-                 (Abs (Free $ rename rn v) s NotCont)
+                 (Abs (con $ rename rn v) s NotCont)
   where qname ClBasic.Universal = allS
         qname ClBasic.Existential = exS
 
