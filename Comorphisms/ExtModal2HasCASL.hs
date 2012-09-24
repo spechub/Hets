@@ -187,6 +187,7 @@ transSig sign sens = let
              , (transReflexId, transTy nWorld)
              , (transLinearOrderId, isTransTy nWorld)
              , (hasTauSucId, hasTauSucTy)
+             , (subsetOfTauId, subsetOfTauTy)
              ])
              [ altToOpInfo natId zeroAlt
              , altToOpInfo natId sucAlt
@@ -213,6 +214,7 @@ transSig sign sens = let
                         (transReflexContainsDef nWorld) nWorld)
          , (transLinearOrderS, transLinearOrderDef nWorld)
          , (hasTauSucS, hasTauSucDef)
+         , (subsetOfTauS, subsetOfTauDef)
          ]
        )
 
@@ -374,10 +376,13 @@ selWorldInfo :: [Selector] -> (Id, Set.Set OpInfo)
 selWorldInfo = selToOpInfo nWorldId . Set.singleton . ConstrInfo nWorldId
   $ simpleTypeScheme nWorldTy
 
+selToTy :: Id -> [Selector] -> (Id, Type)
+selToTy i s = let [Select (Just n) t p] = s in
+  (n, getFunType t p [toType i])
+
 selToOpInfo :: Id -> Set.Set ConstrInfo -> [Selector] -> (Id, Set.Set OpInfo)
-selToOpInfo i c s = let [Select (Just n) t p] = s in
-  (n, Set.singleton .
-      OpInfo (simpleTypeScheme $ getFunType t p [toType i]) Set.empty
+selToOpInfo i c s = let (n, ty) = selToTy i s in
+  (n, Set.singleton . OpInfo (simpleTypeScheme ty) Set.empty
       $ SelectData c i)
 
 pAndQ :: Type -> [VarDecl]
@@ -491,13 +496,16 @@ hasTauSucId = genName hasTauSucS
 hasTauSucTy :: Type
 hasTauSucTy = getFunType unitType HC.Partial [worldTy, predTy nWorld]
 
+tauApplTerm :: Term -> Term -> Term
+tauApplTerm t1 t2 = mkApplTerm (mkOp tauId tauTy) [t1, t2]
+
 hasTauSucDef :: Term
 hasTauSucDef = let
   x0 = hcVarDecl (genNumVar "x" 0) worldTy
   x = hcVarDecl (genToken "x") worldTy
   p = pVar nWorld
   [pt, xt0, xt] = map QualVar [p, x0, x]
-  tauAppl = mkApplTerm (mkOp tauId tauTy) [xt0, xt]
+  tauAppl = tauApplTerm xt0 xt
   pairWorld = mkApplTerm $ mkOp nWorldId nWorldTy
   zeroT = mkOp zero natTy
   sucTy = altToTy natId sucAlt
@@ -510,6 +518,31 @@ hasTauSucDef = let
      $ mkApplTerm pt
      [ pairWorld [xt0, zeroT]
      , pairWorld [xt, mkApplTerm (mkOp sucId sucTy) [zeroT]]]
+
+subsetOfTauS :: String
+subsetOfTauS = "subset_of_tau"
+
+subsetOfTauId :: Id
+subsetOfTauId = genName subsetOfTauS
+
+subsetOfTauTy :: Type
+subsetOfTauTy = isTransTy nWorld
+
+getWorld :: Term -> Term
+getWorld t = mkApplTerm (uncurry mkOp $ selToTy nWorldId getWorldSel) [t]
+
+subsetOfTauDef :: Term
+subsetOfTauDef = let
+  p = pVar nWorld
+  pt = QualVar p
+  ts@[xt, yt] = tPair nWorld
+  in HC.mkForall [GenVarDecl p]
+     . mkLogTerm eqvId nr
+       (mkApplTerm (mkOp subsetOfTauId subsetOfTauTy) [pt])
+     . HC.mkForall (pairDs nWorld)
+     . mkLogTerm implId nr
+       (mkApplTerm pt ts)
+     . tauApplTerm (getWorld xt) $ getWorld yt
 
 toSen :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Sentence
 toSen msig env f = case f of
