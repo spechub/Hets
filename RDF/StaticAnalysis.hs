@@ -19,7 +19,6 @@ import RDF.Sign
 import RDF.Parse (predefinedPrefixes)
 
 import Data.Maybe
-import Network.URI
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -27,6 +26,7 @@ import Text.ParserCombinators.Parsec hiding (State)
 
 import Common.AS_Annotation hiding (Annotation)
 import Common.Id
+import qualified Common.IRI as IRI
 import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
@@ -36,12 +36,12 @@ import Common.Lib.State
 
 resolveFullIRI :: IRI -> IRI -> IRI
 resolveFullIRI absol rel = if isAbsoluteIRI rel then rel else
-    let r = fromJust $ parseURIReference $ expandedIRI rel
-        a = fromJust $ parseURI $ expandedIRI absol
-        resolved = (uriToString id $ fromJust $ relativeTo r a) ""
+    let r = fromJust $ IRI.parseIRIReference $ expandedIRI rel
+        a = fromJust $ IRI.parseIRI $ expandedIRI absol
+        resolved = (IRI.iriToString id $ fromJust $ IRI.relativeTo r a) ""
         Right new = parse uriQ "" $ "<" ++ resolved ++ ">"
     in rel {expandedIRI = expandedIRI new}
-    
+
 resolveAbbreviatedIRI :: RDFPrefixMap -> IRI -> IRI
 resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
     Nothing -> error $ namePrefix new ++ ": prefix not declared"
@@ -51,7 +51,7 @@ resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
                             then new {localPart = tail $ localPart new}
                             else new
                 in new2 {expandedIRI = expandedIRI iri ++ localPart new2}
-                
+
 resolveIRI :: Base -> RDFPrefixMap -> IRI -> IRI
 resolveIRI (Base current) pm new = case iriType new of
     Full -> resolveFullIRI current new
@@ -60,10 +60,10 @@ resolveIRI (Base current) pm new = case iriType new of
 
 resolveBase :: Base -> RDFPrefixMap -> Base -> Base
 resolveBase b pm (Base new) = Base $ resolveIRI b pm new
-    
+
 resolvePrefix :: Base -> RDFPrefixMap -> Prefix -> (Prefix, RDFPrefixMap)
 resolvePrefix b pm (Prefix s new) = let res = resolveIRI b pm new
-    in (Prefix s res, Map.insert s res pm) 
+    in (Prefix s res, Map.insert s res pm)
 
 resolvePredicate :: Base -> RDFPrefixMap -> Predicate -> Predicate
 resolvePredicate b pm (Predicate p) =
@@ -77,20 +77,20 @@ resolveSubject b pm s = case s of
     Subject iri -> Subject $ resolveIRI b pm iri
     SubjectList ls -> SubjectList $ map (resolvePOList b pm) ls
     SubjectCollection ls -> SubjectCollection $ map (resolveObject b pm) ls
-    
+
 resolvePOList :: Base -> RDFPrefixMap -> PredicateObjectList
     -> PredicateObjectList
 resolvePOList b pm (PredicateObjectList p ol) =
     PredicateObjectList (resolvePredicate b pm p) $ map (resolveObject b pm) ol
-    
+
 resolveObject :: Base -> RDFPrefixMap -> Object -> Object
 resolveObject b pm o = case o of
     Object s -> Object $ resolveSubject b pm s
     ObjectLiteral lit -> case lit of
         RDFLiteral bool lf (Typed dt) ->
                 ObjectLiteral $ RDFLiteral bool lf $ Typed $ resolveIRI b pm dt
-        _ -> o 
-       
+        _ -> o
+
 resolveTriples :: Base -> RDFPrefixMap -> Triples -> Triples
 resolveTriples b pm (Triples s ls) =
     Triples (resolveSubject b pm s) $ map (resolvePOList b pm) ls
@@ -104,20 +104,20 @@ resolveStatements b pm ls = case ls of
             in PrefixStatement newPref : resolveStatements b newPrefMap t
     Statement triples : t ->
             Statement (resolveTriples b pm triples) : resolveStatements b pm t
-    
+
 extractPrefixMap :: RDFPrefixMap -> [Statement] -> RDFPrefixMap
 extractPrefixMap pm ls = case ls of
     [] -> pm
     h : t -> case h of
         PrefixStatement (Prefix p iri) -> extractPrefixMap (Map.insert p iri pm) t
-        _ -> extractPrefixMap pm t    
+        _ -> extractPrefixMap pm t
 
 resolveDocument :: TurtleDocument -> TurtleDocument
 resolveDocument doc = let newStatements = resolveStatements
                             (Base $ documentName doc) predefinedPrefixes $ statements doc
     in doc { statements = newStatements
            , prefixMap = Map.union predefinedPrefixes $
-                                extractPrefixMap Map.empty newStatements } 
+                                extractPrefixMap Map.empty newStatements }
 
 -- * Axiom extraction
 
@@ -130,7 +130,7 @@ collectionToPOList objs = case objs of
     h : t -> [ PredicateObjectList (Predicate rdfFirst) [h]
              , PredicateObjectList (Predicate rdfRest) [Object $ if null t
                 then Subject rdfNil else SubjectList $ collectionToPOList t]]
-                
+
 expandPOList1 :: Triples -> [Triples]
 expandPOList1 (Triples s pols) = map (\ pol -> Triples s [pol]) pols
 
@@ -140,7 +140,7 @@ expandPOList2 (Triples s pols) = case pols of
     [PredicateObjectList p objs] ->
         map (\ obj -> Triples s [PredicateObjectList p [obj]]) objs
     _ -> error "unexpected ; abbreviated triple"
-    
+
 -- | converts a triple to a list of triples with one predicate and one object
 expandPOList :: Triples -> [Triples]
 expandPOList = concatMap expandPOList2 . expandPOList1
@@ -170,10 +170,10 @@ expandObject2 i tl = case tl of
     h : t -> let (j, triples1) = expandObject1 i h
                  (k, triples2) = expandObject2 j t
              in (k, triples1 ++ triples2)
-             
+
 expandObject :: Int -> Triples -> (Int, [Triples])
 expandObject i t = expandObject2 i $ expandPOList t
-             
+
 expandSubject :: Int -> Triples -> (Int, [Triples])
 expandSubject i t@(Triples s ls) = case s of
     Subject _ -> (i, [t])
@@ -198,7 +198,7 @@ expandTripleList i tl = case tl of
     h : t -> let (j, tl1) = expandTriple i h
                  (k, tl2) = expandTripleList j t
              in (k, tl1 ++ tl2)
-             
+
 simpleTripleToAxiom :: Triples -> Axiom
 simpleTripleToAxiom (Triples s pol) = case (s, pol) of
     (Subject sub, [PredicateObjectList (Predicate pr) [o]]) ->
@@ -207,11 +207,11 @@ simpleTripleToAxiom (Triples s pol) = case (s, pol) of
             Object (Subject obj) -> Left obj
             _ -> error "object should be an URI"
     _ -> error "subject should be an URI or triple should not be abbreviated"
-    
+
 createAxioms :: TurtleDocument -> [Axiom]
 createAxioms doc = map simpleTripleToAxiom $ snd $ expandTripleList 1
                                     $ triplesOfDocument $ resolveDocument doc
-                                    
+
 -- | takes an entity and modifies the sign according to the given function
 modEntity :: (Term -> Set.Set Term -> Set.Set Term) -> RDFEntity -> State Sign ()
 modEntity f (RDFEntity ty u) = do
@@ -237,7 +237,7 @@ createSign :: TurtleDocument -> State Sign ()
 createSign = mapM_ collectEntities . createAxioms
 
 anaAxiom :: Axiom -> Named Axiom
-anaAxiom ax = makeNamed "" ax
+anaAxiom = makeNamed ""
 
 -- | static analysis of document with incoming sign.
 basicRDFAnalysis :: (TurtleDocument, Sign, GlobalAnnos)
