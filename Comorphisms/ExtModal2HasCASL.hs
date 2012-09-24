@@ -186,7 +186,7 @@ transSig sign sens = let
              , (transId, transTy nWorld)
              , (transReflexId, transTy nWorld)
              , (transLinearOrderId, isTransTy nWorld)
-             , (hasTauZeroSucId, hasTauZeroSucTy)
+             , (hasSuccessorId, hasSuccessorTy)
              , (subsetOfTauId, subsetOfTauTy)
              , (hasTauSucId, isTransTy nWorld)
              ])
@@ -214,7 +214,7 @@ transSig sign sens = let
          , (transReflexS, someDef transReflexId
                         (transReflexContainsDef nWorld) nWorld)
          , (transLinearOrderS, transLinearOrderDef nWorld)
-         , (hasTauZeroSucS, hasTauSucDef)
+         , (hasSuccessorS, hasTauSucDef)
          , (subsetOfTauS, subsetOfTauDef)
          , (hasTauSucS, hasTauSucDefAny)
          ]
@@ -489,14 +489,14 @@ varTerm i = QualVar . varDecl i
 typeToSelector :: Maybe Id -> Type -> [Selector]
 typeToSelector m a = [Select m a HC.Total]
 
-hasTauZeroSucS :: String
-hasTauZeroSucS = "has_tau_zero_suc"
+hasSuccessorS :: String
+hasSuccessorS = "has_successor"
 
-hasTauZeroSucId :: Id
-hasTauZeroSucId = genName hasTauZeroSucS
+hasSuccessorId :: Id
+hasSuccessorId = genName hasSuccessorS
 
-hasTauZeroSucTy :: Type
-hasTauZeroSucTy = getFunType unitType HC.Partial [worldTy, predTy nWorld]
+hasSuccessorTy :: Type
+hasSuccessorTy = getFunType unitType HC.Partial [worldTy, predTy nWorld]
 
 tauApplTerm :: Term -> Term -> Term
 tauApplTerm t1 t2 = mkApplTerm (mkOp tauId tauTy) [t1, t2]
@@ -507,7 +507,7 @@ hasTauSucDef = let
   ([x0, p], tT, _, rT) = hasTauSucDefAux zeroT
   in HC.mkForall (map GenVarDecl [x0, p])
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp hasTauZeroSucId hasTauZeroSucTy) $ map QualVar [x0, p])
+       (mkApplTerm (mkOp hasSuccessorId hasSuccessorTy) $ map QualVar [x0, p])
      $ mkLogTerm implId nr tT rT
 
 hasTauSucDefAux :: Term -> ([VarDecl], Term, Term, Term)
