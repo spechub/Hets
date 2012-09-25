@@ -637,6 +637,9 @@ pathS = "path"
 pathId :: Id
 pathId = genName pathS
 
+pathAppl :: [Term] -> Term
+pathAppl = mkApplTerm $ mkOp pathId hasSuccessorTy
+
 pathDef :: Term
 pathDef = let
   vs = xZeroAndP
@@ -645,7 +648,7 @@ pathDef = let
   ts@[x0, pt] = map QualVar vs
   in HC.mkForall (map GenVarDecl vs)
      . mkLogTerm eqvId nr
-       (mkApplTerm (mkOp pathId hasSuccessorTy) ts)
+       (pathAppl ts)
      . mkExQ rv
      $ mkConj
        [ mkApplTerm (mkOp superpathId hasSuccessorTy) [x0, rt]
@@ -712,7 +715,7 @@ transTop msig f = let
   vs = [hcVarDecl (genNumVar "w" 1) worldTy, zDecl as]
   in HC.mkForall (map GenVarDecl vs)
      . mkLogTerm implId nr
-     (mkApplTerm (mkOp pathId hasSuccessorTy) $ map QualVar vs)
+     (pathAppl $ map QualVar vs)
      $ transMF as f
 
 getTermOfNom :: Args -> Id -> Term
@@ -767,10 +770,14 @@ disjointVars vs = case vs of
     (on eqW QualVar a b) : disjointVars r
   _ -> []
 
+pathAppl2 :: Term -> VarDecl -> Term
+pathAppl2 t v = pathAppl [t, QualVar v]
+
 transEMF :: Args -> EM_FORMULA -> Term
 transEMF as emf = case emf of
   PrefixForm pf f r -> let
     fW = freeC as
+    pathAppl3 t = mkLogTerm implId nr . pathAppl2 t
     in case pf of
     BoxOrDiamond bOp m gEq i -> let
       ex = bOp == Diamond
@@ -783,8 +790,7 @@ transEMF as emf = case emf of
         newAs = nAs { freeZ = n }
         zd = zDecl newAs
         in HC.mkForall [GenVarDecl zd]
-           . mkLogTerm implId nr
-            (mkApplTerm (mkOp pathId hasSuccessorTy) [vt, QualVar zd])
+           . pathAppl3 vt zd
             $ transMF (resetArgs vt newAs) f
       tM n = transMod nAs { nextW = n } m
       conjF = mkConj $ map tM l ++ map tf l ++ disjointVars vds
@@ -807,7 +813,14 @@ transEMF as emf = case emf of
               else transMF as . ExtFORMULA $ PrefixForm
                        (diam $ i + 1) (mkNeg f) r
     Hybrid at i -> let ni = simpleIdToId i in
-      if at then transMF as { targetW = getTermOfNom as ni } f else let
+      if at then let
+           ti = getTermOfNom as ni
+           nAs = as { freeC = fW + 1, freeZ = fW + 1 }
+           zd = zDecl nAs
+           in mkConj
+           [ zPath as, HC.mkForall [GenVarDecl zd]
+           . pathAppl3 ti zd $ transMF (resetArgs ti as) f ]
+      else let
       vi = varDecl (genNumVar "i" $ fW + 1) world
       ti = QualVar vi
       in mkExConj vi
@@ -852,8 +865,7 @@ transMod as md = let
     newAs = as { freeC = nf, freeZ = nf }
     zd = zDecl newAs
     in mkConj [eqWorld exEq t1 t2, HC.mkForall [GenVarDecl zd] $ mkConj
-         [ mkApplTerm (mkOp pathId hasSuccessorTy) [t1, QualVar zd]
-         , transMF (resetArgs t1 newAs) f]]
+         [ pathAppl2 t1 zd, transMF (resetArgs t1 newAs) f ]]
   ModOp mOp m1 m2 -> case mOp of
     Composition -> let
       nW = freeC as + 1
