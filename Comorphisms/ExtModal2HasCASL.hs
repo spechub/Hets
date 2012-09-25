@@ -718,15 +718,16 @@ transTop msig f = let
 getTermOfNom :: Args -> Id -> Term
 getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
 
+zPath :: Args -> Term
+zPath as = mkApplTerm (QualVar $ zDecl as)
+      [ pairWorld (sourceW as) zeroT
+      , pairWorld (targetW as) $ targetN as ]
+
 trRecord :: Args -> String -> Record EM_FORMULA Term Term
 trRecord as str = let
     extInf = extendedInfo $ modSig as
     currW = targetW as
-    andPath = mkLogTerm andId nr
-      $ mkApplTerm (QualVar $ zDecl as)
-      [ pairWorld (sourceW as) zeroT
-      , pairWorld currW $ targetN as ]
-
+    andPath = mkLogTerm andId nr $ zPath as
     in (transRecord str)
   { foldPredication = \ _ ps args _ -> let
       Qual_pred_name pn pTy@(Pred_type srts q) _ = ps
@@ -777,7 +778,14 @@ transEMF as emf = case emf of
       vds = map (\ n -> varDecl (genNumVar "w" n) world) l
       gvs = map GenVarDecl vds
       nAs = as { freeC = fW + i }
-      tf n = transMF nAs { targetW = varTerm (genNumVar "w" n) world } f
+      tf n = let
+        vt = varTerm (genNumVar "w" n) world
+        newAs = nAs { freeZ = n }
+        zd = zDecl newAs
+        in HC.mkForall [GenVarDecl zd]
+           . mkLogTerm implId nr
+            (mkApplTerm (mkOp pathId hasSuccessorTy) [vt, QualVar zd])
+            $ transMF (resetArgs vt newAs) f
       tM n = transMod nAs { nextW = n } m
       conjF = mkConj $ map tM l ++ map tf l ++ disjointVars vds
       diam = BoxOrDiamond Diamond m True
@@ -811,6 +819,12 @@ transEMF as emf = case emf of
   UntilSince _isUntil f1 f2 _ -> mkConj [transMF as f1, transMF as f2]
   ModForm _ -> unitTerm trueId nr
 
+resetArgs :: Term -> Args -> Args
+resetArgs t as = as
+  { sourceW = t
+  , targetW = t
+  , targetN = zeroT }
+
 transMod :: Args -> MODALITY -> Term
 transMod as md = let
   t1 = targetW as
@@ -831,9 +845,15 @@ transMod as md = let
       st : _ -> mkApplTerm
         (mkOp (relOfMod (Set.member st timeMs) True st)
          . trPr $ modPredType world True st)
-        $ foldTerm (trRecord as $ showDoc t "") t : vts
+        $ foldTerm (trRecord (resetArgs t1 as) $ showDoc t "") t : vts
     _ -> error $ "transMod2: " ++ showDoc t ""
-  Guard f -> mkConj [eqWorld exEq t1 t2, transMF as f]
+  Guard f -> let
+    nf = freeC as + 1
+    newAs = as { freeC = nf, freeZ = nf }
+    zd = zDecl newAs
+    in mkConj [eqWorld exEq t1 t2, HC.mkForall [GenVarDecl zd] $ mkConj
+         [ mkApplTerm (mkOp pathId hasSuccessorTy) [t1, QualVar zd]
+         , transMF (resetArgs t1 newAs) f]]
   ModOp mOp m1 m2 -> case mOp of
     Composition -> let
       nW = freeC as + 1
