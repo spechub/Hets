@@ -62,6 +62,7 @@ instance Pretty Type where
         SType st        -> prettySystemType st
         VType v         -> prettyVariable v
         ParType t1      -> parens $ pretty t1
+        ProdType ts     -> brackets $ sepByCommas $ map pretty ts
 
 instance Pretty TypeInfo where
     pretty ti = text "thf" <> parens (pretty (typeName ti) <> comma

@@ -168,6 +168,10 @@ isTypeConsistent t sig = case t of
     ParType t1      -> isTypeConsistent t1 sig
     CType c         -> if sigHasTypeSymbol c sig then Nothing
                        else Just $ mkDiag Error "Unknown type: " c
+    ProdType ts     -> let ds = map (\tp -> isTypeConsistent tp sig) ts
+                       in case catMaybes ds of
+                           []    -> Nothing
+                           m : _ -> Just m
     SType _         -> Nothing -- how to handle these?
     _               -> Nothing
 
@@ -347,6 +351,12 @@ thfBinaryTypeToType bt = case bt of
     TBT_THF_Mapping_Type (_ : [])   -> Nothing
     TBT_THF_Mapping_Type mt         -> thfMappingTypeToType mt
     T0BT_THF_Binary_Type_Par btp    -> fmap ParType (thfBinaryTypeToType btp)
+    TBT_THF_Xprod_Type []           -> Nothing
+    TBT_THF_Xprod_Type (u : [])     -> thfUnitaryTypeToType u
+    TBT_THF_Xprod_Type us           -> let us' = map thfUnitaryTypeToType us
+                                       in if all isJust us' then
+                                           (Just . ProdType) $ map fromJust us'
+                                          else Nothing
     _                               -> Nothing
 
 thfMappingTypeToType :: [THFUnitaryType] -> Maybe Type

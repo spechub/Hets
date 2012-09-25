@@ -481,6 +481,7 @@ genTHFTopLevelType t = case t of
     VType v         -> return $ T0TLT_Variable v
     MapType _ _     -> fmap T0TLT_THF_Binary_Type (genTHFBinaryType t)
     ParType t1      -> genTHFTopLevelType t1
+    ProdType ts     -> fmap T0TLT_THF_Binary_Type $ genTuple ts
 
 genTHFBinaryType :: THFCons.Type -> Result THFAs.THFBinaryType
 genTHFBinaryType t = case t of
@@ -509,6 +510,13 @@ genTHFUnitaryType t = case t of
     VType v         -> return $ T0UT_Variable v
     MapType _ _     -> fmap T0UT_THF_Binary_Type_Par (genTHFBinaryType t)
     ParType t1      -> fmap T0UT_THF_Binary_Type_Par (genTHFBinaryType t1)
+    ProdType ts     -> fmap T0UT_THF_Binary_Type_Par (genTuple ts)
+
+genTuple :: [THFCons.Type] -> Result THFAs.THFBinaryType
+genTuple ts = case ts of
+  [] -> fatal_error "Empty product type" nullRange
+  tp:[] -> genTHFBinaryType tp
+  _ -> fmap TBT_THF_Xprod_Type $ mapR genTHFUnitaryType ts
 
 -- THFLogicFormula to THFUnitaryFormula
 lfToUf :: THFLogicFormula -> THFUnitaryFormula

@@ -73,6 +73,7 @@ data Type =
   | OType
   | IType
   | MapType Type Type
+  | ProdType [Type]
   | CType Constant
   | SType SystemType
   | VType Variable

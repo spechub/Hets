@@ -31,11 +31,7 @@ sublogics_all :: [THFSl]
 sublogics_all = [THF,THFP,THF0]
 
 instance MinSublogic THFSl SentenceTHF where
- minSublogic s = case senFormula s of
-   TF_THF_Logic_Formula f -> join THF0 $ minSublogic f
-   TF_THF_Sequent s' -> join THF $ minSublogic s'
-   T0F_THF_Typed_Const c -> join THF0 $ minSublogic c -- fixme: Not in THF?
-                                                      -- cf. As.hs 99 ff.
+ minSublogic s = minSublogic $ senFormula s
 
 instance MinSublogic THFSl THFFormula where
  minSublogic f = case f of
