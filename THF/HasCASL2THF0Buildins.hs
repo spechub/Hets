@@ -23,7 +23,7 @@ import HasCASL.Builtin
 import THF.As
 import THF.Cons
 import THF.Sign
-import THF.ParseTHF0
+import THF.ParseTHF
 import THF.Translate
 import THF.PrintTHF ()
 
@@ -149,7 +149,7 @@ mkNSD c f =
         , sentence = s }
 
 genTHFFormula :: Constant -> (Constant -> String) -> THFFormula
-genTHFFormula c f = case parse parseTHF0 "" (f c) of
+genTHFFormula c f = case parse parseTHF "" (f c) of
         Left _ -> error ("Fatal error while generating the predefinied Sentence"
                     ++ " for: " ++ show (pretty c))
         Right x -> thfFormulaAF $ head x

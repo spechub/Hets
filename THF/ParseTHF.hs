@@ -1,15 +1,19 @@
 {- |
 Module      :  $Header$
 Description :  A Parser for the TPTP-THF Syntax
-Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
+Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
+               (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  Alexis.Tsogias@dfki.de
+Maintainer  :  Jonathan von Schroeder <j.von_schroeder@dfki.de>
 Stability   :  provisional
 Portability :  portable
 
 A Parser for the TPTP-THF Input Syntax v5.1.0.2 taken from
-<http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
+<http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html> and THF0
+Syntax taken from <http://www.ags.uni-sb.de/~chris/papers/C25.pdf> P. 15-16
+
+Note: The parser prefers a THF0 parse tree over a THF parse tree
 -}
 
 module THF.ParseTHF (parseTHF) where
@@ -24,8 +28,7 @@ import Data.Char
 import Data.Maybe
 
 --------------------------------------------------------------------------------
--- Parser for the THF Syntax
--- Most methods match those of As.hs
+-- Parser for the THF  and THF0 Syntax
 --------------------------------------------------------------------------------
 
 parseTHF :: CharParser st [TPTP_THF]
@@ -135,18 +138,19 @@ formulaRole = do
         _                       -> fail ("No such Role: " ++ r)
 
 thfFormula :: CharParser st THFFormula
-thfFormula = fmap TF_THF_Logic_Formula thfLogicFormula
+thfFormula = fmap T0F_THF_Typed_Const thfTypedConst
+  <|> fmap TF_THF_Logic_Formula thfLogicFormula
   <|> fmap TF_THF_Sequent thfSequent
 
 thfLogicFormula :: CharParser st THFLogicFormula
 thfLogicFormula = fmap TLF_THF_Binary_Formula thfBinaryFormula
+  <|> fmap TLF_THF_Unitary_Formula thfUnitaryFormula
+  -- different position for unitary formula to prefer thf0 parse
   <|> fmap TLF_THF_Type_Formula thfTypeFormula
   <|> fmap TLF_THF_Sub_Type thfSubType
-  <|> fmap TLF_THF_Unitary_Formula thfUnitaryFormula
 
 thfBinaryFormula :: CharParser st THFBinaryFormula
-thfBinaryFormula = fmap TBF_THF_Binary_Type thfBinaryType
-  <|> fmap TBF_THF_Binary_Tuple thfBinaryTuple
+thfBinaryFormula = fmap TBF_THF_Binary_Tuple thfBinaryTuple
   <|> do
     (uff, pc) <- try $ do
         uff1 <- thfUnitaryFormula
@@ -154,6 +158,8 @@ thfBinaryFormula = fmap TBF_THF_Binary_Type thfBinaryType
         return (uff1, pc1)
     ufb <- thfUnitaryFormula
     return $ TBF_THF_Binary_Pair uff pc ufb
+   <|> fmap TBF_THF_Binary_Type thfBinaryType
+   -- different position for binary type to prefer thf0 parse
 
 thfBinaryTuple :: CharParser st THFBinaryTuple
 thfBinaryTuple = do -- or
@@ -174,6 +180,12 @@ thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
   <|> fmap TUF_THF_Quantified_Formula thfQuantifiedFormula
   <|> try thfUnaryFormula
   <|> fmap TUF_THF_Atom thfAtom
+  <|> do
+    keyChar '^'
+    vl <- brackets thfVariableList; colon
+    uf <- thfUnitaryFormula
+    return $ T0UF_THF_Abstraction vl uf --added this for thf0
+  --changed positions of parses below to prefer th0
   <|> fmap TUF_THF_Tuple thfTuple
   <|> do
     key $ tryString ":="
@@ -189,6 +201,15 @@ thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
 
 thfQuantifiedFormula :: CharParser st THFQuantifiedFormula
 thfQuantifiedFormula = do
+    q <- quantifier
+    vl <- brackets thfVariableList; colon
+    uf <- thfUnitaryFormula
+    return $ T0QF_THF_Quantified_Var q vl uf --added this for thf0
+  <|> do
+    q <- thfQuantifier
+    uf <- parentheses thfUnitaryFormula
+    return $ T0QF_THF_Quantified_Novar q uf --added this for thf0
+  <|> do
     q <- thfQuantifier
     vl <- brackets thfVariableList; colon
     uf <- thfUnitaryFormula
@@ -203,6 +224,13 @@ thfVariable = do
     tlt <- thfTopLevelType
     return $ TV_THF_Typed_Variable v tlt
   <|> fmap TV_Variable variable
+
+thfTypedConst :: CharParser st THFTypedConst --added this for thf0
+thfTypedConst = fmap T0TC_THF_TypedConst_Par (parentheses thfTypedConst)
+  <|> do
+    c <- try (constant << colon)
+    tlt <- thfTopLevelType
+    return $ T0TC_Typed_Const c tlt
 
 thfUnaryFormula :: CharParser st THFUnitaryFormula
 thfUnaryFormula = do
@@ -232,16 +260,30 @@ thfSubType = do
     return $ TST_THF_Sub_Type cf cb
 
 thfTopLevelType :: CharParser st THFTopLevelType
-thfTopLevelType = fmap TTLT_THF_Logic_Formula thfLogicFormula
+thfTopLevelType = fmap T0TLT_THF_Binary_Type thfBinaryType
+  <|> fmap T0TLT_Constant constant
+  <|> fmap T0TLT_Variable variable
+  <|> fmap T0TLT_Defined_Type definedType
+  <|> fmap T0TLT_System_Type systemType
+  <|> fmap TTLT_THF_Logic_Formula thfLogicFormula
+  --added all except for this for thf0
 
 thfUnitaryType :: CharParser st THFUnitaryType
-thfUnitaryType = fmap TUT_THF_Unitary_Formula thfUnitaryFormula
+thfUnitaryType = fmap T0UT_Constant constant
+  <|> fmap T0UT_Variable variable
+  <|> fmap T0UT_Defined_Type definedType
+  <|> fmap T0UT_System_Type systemType
+  <|> fmap T0UT_THF_Binary_Type_Par (parentheses thfBinaryType)
+  <|> fmap TUT_THF_Unitary_Formula thfUnitaryFormula
+  --added all except for this for th0
 
 thfBinaryType :: CharParser st THFBinaryType
-thfBinaryType = do -- mappingType
+thfBinaryType = do
     utf <- try (thfUnitaryType << arrow)
     utb <- sepBy1 thfUnitaryType arrow
     return $ TBT_THF_Mapping_Type (utf : utb)
+  <|> fmap T0BT_THF_Binary_Type_Par (parentheses thfBinaryType)
+  -- added this for thf0
   <|> do -- xprodType
     utf <- try (thfUnitaryType << star)
     utb <- sepBy1 thfUnitaryType star
@@ -252,12 +294,18 @@ thfBinaryType = do -- mappingType
     return $ TBT_THF_Union_Type (utf : utb)
 
 thfAtom :: CharParser st THFAtom
-thfAtom = fmap TA_Defined_Type definedType
+thfAtom = fmap T0A_Constant constant
+  <|> fmap T0A_Defined_Constant atomicDefinedWord
+  <|> fmap T0A_System_Constant atomicSystemWord
+  <|> fmap T0A_Variable variable
+  -- added all above for thf0
+  <|> fmap TA_THF_Conn_Term thfConnTerm
+  -- changed position to prefer thf0
+  <|> fmap TA_Defined_Type definedType
   <|> fmap TA_Defined_Plain_Formula definedPlainFormula
   <|> fmap TA_System_Type systemType
   <|> fmap TA_System_Atomic_Formula systemTerm
   <|> fmap TA_Term term
-  <|> fmap TA_THF_Conn_Term thfConnTerm
 
 thfTuple :: CharParser st THFTuple
 thfTuple = try ((oBracket >> cBracket) >> return [])
@@ -281,15 +329,25 @@ thfConnTerm :: CharParser st THFConnTerm
 thfConnTerm = fmap TCT_THF_Pair_Connective thfPairConnective
   <|> fmap TCT_Assoc_Connective assocConnective
   <|> fmap TCT_THF_Unary_Connective thfUnaryConnective
+  <|> fmap T0CT_THF_Quantifier thfQuantifier
+  -- added for thf0
 
 thfQuantifier :: CharParser st THFQuantifier
-thfQuantifier = (keyChar '!'    >> return TQ_ForAll)
+thfQuantifier = (key (tryString "!!")   >> return T0Q_PiForAll)
+  <|> (key (tryString "??")             >> return T0Q_SigmaExists)
+  --added all above for thf0
+  <|> (keyChar '!'    >> return TQ_ForAll)
   <|> (keyChar '?'              >> return TQ_Exists)
   <|> (keyChar '^'              >> return TQ_Lambda_Binder)
   <|> (key (tryString "!>")     >> return TQ_Dependent_Product)
   <|> (key (tryString "?*")     >> return TQ_Dependent_Sum)
   <|> (key (tryString "@+")     >> return TQ_Indefinite_Description)
   <|> (key (tryString "@-")     >> return TQ_Definite_Description)
+  <?> "thfQuantifier"
+
+quantifier :: CharParser st Quantifier
+quantifier = (keyChar '!'   >> return T0Q_ForAll)
+  <|> (keyChar '?'          >> return T0Q_Exists)
   <?> "quantifier"
 
 thfPairConnective :: CharParser st THFPairConnective
@@ -607,7 +665,9 @@ generalTerms :: CharParser st [GeneralTerm]
 generalTerms = sepBy1 generalTerm comma
 
 name :: CharParser st Name
-name = fmap N_Integer (integer << skipAll)
+name = fmap T0N_Unsigned_Integer (unsignedInteger << skipAll)
+  --added for thf0
+  <|> fmap N_Integer (integer << skipAll)
   <|> fmap N_Atomic_Word atomicWord
 
 atomicWord :: CharParser st AtomicWord
@@ -702,7 +762,7 @@ integer = try (do
   <?> "(signed) integer"
 
 unsignedInteger :: CharParser st String
-unsignedInteger = try ( decimal << notFollowedBy (oneOf "eE/."))
+unsignedInteger = try (decimal << notFollowedBy (oneOf "eE/."))
 
 decimal :: CharParser st String
 decimal = do

@@ -33,9 +33,7 @@ import THF.ProveIsabelle
 import THF.ProveSatallax
 import THF.Sign
 import THF.Print
-import THF.PrintTHF (printTPTPTHF)
 import THF.ParseTHF
-import THF.ParseTHF0
 import qualified THF.Sublogic as SL
 import THF.As (TPTP_THF (..))
 
@@ -55,10 +53,7 @@ instance Monoid BasicSpecTHF where
         BasicSpecTHF $ l1 ++ l2
 
 instance Logic.Logic.Syntax THF BasicSpecTHF () () where
-    parsersAndPrinters THF = addSyntax (show SL.THF0)
-        (fmap BasicSpecTHF parseTHF0,\(BasicSpecTHF a) -> printTPTPTHF a)
-     $ makeDefault (fmap BasicSpecTHF parseTHF,
-                    \(BasicSpecTHF a) -> printTPTPTHF a)
+    parse_basic_spec THF = Just $ fmap BasicSpecTHF parseTHF
     -- remaining default implementations are fine!
 
 instance Sentences THF SentenceTHF SignTHF MorphismTHF SymbolTHF where
