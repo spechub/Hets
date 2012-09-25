@@ -534,9 +534,11 @@ hasSuccessorTy = getFunType unitType HC.Partial [worldTy, binPredTy nWorld]
 tauApplTerm :: Term -> Term -> Term
 tauApplTerm t1 t2 = mkApplTerm (mkOp tauId tauTy) [t1, t2]
 
+zeroT :: Term
+zeroT = mkOp zero natTy
+
 hasSuccessorDef :: Term
 hasSuccessorDef = let
-  zeroT = mkOp zero natTy
   [x0, p] = xZeroAndP
   (tT, _, rT) = hasTauSucDefAux zeroT
   in HC.mkForall (map GenVarDecl [x0, p])
@@ -547,21 +549,26 @@ hasSuccessorDef = let
 xZeroAndP :: [VarDecl]
 xZeroAndP = [hcVarDecl (genNumVar "x" 0) worldTy, pVar nWorld]
 
+pairWorld :: Term -> Term -> Term
+pairWorld t1 t2 = mkApplTerm (mkOp nWorldId nWorldTy) [t1, t2]
+
+sucTy :: Type
+sucTy = altToTy natId sucAlt
+
+sucTerm :: Term -> Term
+sucTerm t = mkApplTerm (mkOp sucId sucTy) [t]
+
 hasTauSucDefAux :: Term -> (Term, Term, Term)
 hasTauSucDefAux nT = let
   x = hcVarDecl (genToken "x") worldTy
   vs = xZeroAndP
   [xt, xt0, pt] = map QualVar $ x : vs
   tauAppl = tauApplTerm xt0 xt
-  pairWorld = mkApplTerm $ mkOp nWorldId nWorldTy
-  sucTy = altToTy natId sucAlt
-  pw = pairWorld [xt0, nT]
+  pw = pairWorld xt0 nT
   in (mkExQ x tauAppl, pw,
      mkExQ x
      . mkLogTerm andId nr tauAppl
-     $ mkApplTerm pt
-     [ pairWorld [xt0, nT]
-     , pairWorld [xt, mkApplTerm (mkOp sucId sucTy) [nT]]])
+     $ mkApplTerm pt [pw, pairWorld xt $ sucTerm nT])
 
 hasTauSucS :: String
 hasTauSucS = "has_tau_suc"
@@ -675,17 +682,30 @@ toSen msig env f = case f of
    _ -> Formula $ transTop msig env f
 
 data Args = Args
-  { currentW :: Term
+  { sourceW, targetW, targetN :: Term
   , nextW, freeC :: Int  -- world variables
+  , freeZ :: Int -- path variable
   , boundNoms :: [(Id, Term)]
   , modSig :: ExtModalSign
   }
 
+startArgs :: ExtModalSign -> Args
+startArgs msig = let
+  vt = varTerm (genNumVar "w" 1) world
+  in Args
+  { sourceW = vt
+  , targetW = vt
+  , targetN = zeroT
+  , nextW = 1
+  , freeC = 1
+  , freeZ = 1
+  , boundNoms = []
+  , modSig = msig
+  }
+
 transTop :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Term
-transTop msig env f = let
-    vt = varTerm (genNumVar "w" 1) world
-    in mkEnvForall env
-           (transMF (Args vt 1 1 [] msig) f) nr
+transTop msig env f = mkEnvForall env
+           (transMF (startArgs msig) f) nr
 
 getTermOfNom :: Args -> Id -> Term
 getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
@@ -693,7 +713,7 @@ getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
 trRecord :: Args -> String -> Record EM_FORMULA Term Term
 trRecord as str = let
     extInf = extendedInfo $ modSig as
-    currW = currentW as
+    currW = targetW as
     in (transRecord str)
   { foldPredication = \ _ ps args _ -> let
       Qual_pred_name pn pTy@(Pred_type srts q) _ = ps
@@ -736,7 +756,7 @@ transEMF as emf = case emf of
       vds = map (\ n -> varDecl (genNumVar "w" n) world) l
       gvs = map GenVarDecl vds
       nAs = as { freeC = fW + i }
-      tf n = transMF nAs { currentW = varTerm (genNumVar "w" n) world } f
+      tf n = transMF nAs { targetW = varTerm (genNumVar "w" n) world } f
       tM n = transMod nAs { nextW = n } m
       conjF = mkConj $ map tM l ++ map tf l ++ disjointVars vds
       diam = BoxOrDiamond Diamond m True
@@ -758,13 +778,13 @@ transEMF as emf = case emf of
               else transMF as . ExtFORMULA $ PrefixForm
                        (diam $ i + 1) (mkNeg f) r
     Hybrid at i -> let ni = simpleIdToId i in
-      if at then transMF as { currentW = getTermOfNom as ni } f else let
+      if at then transMF as { targetW = getTermOfNom as ni } f else let
       vi = varDecl (genNumVar "i" $ fW + 1) world
       ti = QualVar vi
       in mkExConj vi
-           [ eqW ti $ currentW as
+           [ eqW ti $ targetW as
            , transMF as { boundNoms = (ni, ti) : boundNoms as
-                        , currentW = ti
+                        , targetW = ti
                         , freeC = fW + 1 } f ]
     _ -> transMF as f
   UntilSince _isUntil f1 f2 _ -> mkConj [transMF as f1, transMF as f2]
@@ -772,7 +792,7 @@ transEMF as emf = case emf of
 
 transMod :: Args -> MODALITY -> Term
 transMod as md = let
-  t1 = currentW as
+  t1 = targetW as
   t2 = varTerm (genNumVar "w" $ nextW as) world
   vts = [t1, t2]
   msig = modSig as
@@ -800,7 +820,7 @@ transMod as md = let
       vd = varDecl (genNumVar "w" nW) world
       in mkExConj vd
            [ transMod nAs { nextW = nW } m1
-           , transMod nAs { currentW = QualVar vd } m2 ]
+           , transMod nAs { targetW = QualVar vd } m2 ]
     Intersection -> mkConj [transMod as m1, transMod as m2]
     Union -> mkDisj [transMod as m1, transMod as m2]
     OrElse -> mkDisj $ transOrElse [] as $ flatOrElse md
