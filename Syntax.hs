@@ -32,4 +32,4 @@ pretty printing on "Common.Doc".
 "Syntax.Print_AS_Architecture"
 "Syntax.Print_AS_Library"
 -}
-module Syntax.ADoc where
+module Syntax where
