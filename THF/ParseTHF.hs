@@ -261,15 +261,15 @@ thfBinaryTuple = do -- or
 -- <thf_unary_formula>      ::= <thf_unary_connective> (<thf_logic_formula>)
 thfUnitaryFormula :: CharParser st THFUnitaryFormula
 thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
-  <|> fmap TUF_THF_Quantified_Formula thfQuantifiedFormula
-  <|> try thfUnaryFormula
-  <|> fmap TUF_THF_Atom thfAtom
+  <|> fmap TUF_THF_Quantified_Formula (try thfQuantifiedFormula)
   <|> do
     keyChar '^'
     vl <- brackets thfVariableList; colon
     uf <- thfUnitaryFormula
     return $ T0UF_THF_Abstraction vl uf --added this for thf0
   --changed positions of parses below to prefer th0
+  <|> try thfUnaryFormula
+  <|> fmap TUF_THF_Atom thfAtom
   <|> fmap TUF_THF_Tuple thfTuple
   <|> do
     key $ tryString "$itef"; oParentheses
