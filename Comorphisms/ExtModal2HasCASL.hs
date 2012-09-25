@@ -45,7 +45,6 @@ import HasCASL.AsUtils as HC
 import HasCASL.Builtin
 import HasCASL.DataAna
 import HasCASL.Le as HC
-import HasCASL.VarDecl
 import HasCASL.Sublogic as HC
 
 data ExtModal2HasCASL = ExtModal2HasCASL deriving (Show)
@@ -59,14 +58,14 @@ instance Comorphism ExtModal2HasCASL
                BasicSpec Sentence SymbItems SymbMapItems
                Env HC.Morphism HC.Symbol HC.RawSymbol () where
     sourceLogic ExtModal2HasCASL = ExtModal
-    sourceSublogic ExtModal2HasCASL = maxSublogic
+    sourceSublogic ExtModal2HasCASL = maxSublogic { hasTransClos = False }
     targetLogic ExtModal2HasCASL = HasCASL
     mapSublogic ExtModal2HasCASL _ = Just HC.caslLogic { which_logic = HOL }
     map_theory ExtModal2HasCASL (sig, sens) = case transSig sig sens of
       (mme, s) -> return
         (mme, map (\ (n, d) -> makeNamed n $ DatatypeSen [d])
               [("natural numbers", natType), ("numbered worlds", worldType)]
-              ++ s ++ map (mapNamed $ toSen sig mme) sens)
+              ++ s ++ map (mapNamed $ toSen sig) sens)
     {-
     map_morphism ExtModal2HasCASL = return . mapMor
     map_sentence ExtModal2HasCASL sig = return . transSen sig
@@ -659,8 +658,8 @@ pathDef = let
            $ containsDefAux False eqvId qt rt nWorld
        ]
 
-toSen :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Sentence
-toSen msig env f = case f of
+toSen :: ExtModalSign -> FORMULA EM_FORMULA -> Sentence
+toSen msig f = case f of
    Sort_gen_ax cs b -> let
        (sorts, ops, smap) = recover_Sort_gen_ax cs
        genKind = if b then Free else Generated
@@ -679,7 +678,8 @@ toSen msig env f = case f of
                 $ map ( \ o -> case o of
                         Qual_op_name i t _ -> (trI i, toOpType t)
                         _ -> error "ExtModal2HasCASL.toSentence") ops) sorts
-   _ -> Formula $ transTop msig env f
+   ExtFORMULA (ModForm _) -> Formula $ unitTerm trueId nr
+   _ -> Formula $ transTop msig f
 
 data Args = Args
   { sourceW, targetW, targetN :: Term
@@ -703,9 +703,17 @@ startArgs msig = let
   , modSig = msig
   }
 
-transTop :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Term
-transTop msig env f = mkEnvForall env
-           (transMF (startArgs msig) f) nr
+zDecl :: Args -> VarDecl
+zDecl as = hcVarDecl (genNumVar "Z" $ freeZ as) $ binPredTy nWorld
+
+transTop :: ExtModalSign -> FORMULA EM_FORMULA -> Term
+transTop msig f = let
+  as = startArgs msig
+  vs = [hcVarDecl (genNumVar "w" 1) worldTy, zDecl as]
+  in HC.mkForall (map GenVarDecl vs)
+     . mkLogTerm implId nr
+     (mkApplTerm (mkOp pathId hasSuccessorTy) $ map QualVar vs)
+     $ transMF as f
 
 getTermOfNom :: Args -> Id -> Term
 getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
@@ -714,10 +722,16 @@ trRecord :: Args -> String -> Record EM_FORMULA Term Term
 trRecord as str = let
     extInf = extendedInfo $ modSig as
     currW = targetW as
+    andPath = mkLogTerm andId nr
+      $ mkApplTerm (QualVar $ zDecl as)
+      [ pairWorld (sourceW as) zeroT
+      , pairWorld currW $ targetN as ]
+
     in (transRecord str)
   { foldPredication = \ _ ps args _ -> let
       Qual_pred_name pn pTy@(Pred_type srts q) _ = ps
-      in if MapSet.member pn (toPredType pTy) $ flexPreds extInf
+      in andPath
+         $ if MapSet.member pn (toPredType pTy) $ flexPreds extInf
          then mkApplTerm
             (mkOp (trI pn) . trPrSyn
             $ Pred_type (world : srts) q) $ currW : args
@@ -725,6 +739,13 @@ trRecord as str = let
               then eqW currW $ getTermOfNom as pn
          else mkApplTerm
             (mkOp (trI pn) $ trPrSyn pTy) args
+  , foldEquation = \ o t1 e t2 ps ->
+        let Equation c1 _ _ _ = o in
+        andPath $ mkEqTerm (if e == Existl then exEq else eqId)
+                     (typeOfTerm c1) ps t1 t2
+  , foldDefinedness = \ o t ps ->
+        let Definedness c _ = o in
+        andPath $ mkTerm defId defType [typeOfTerm c] ps t
   , foldExtFORMULA = \ _ f -> transEMF as f
   , foldApplication = \ _ os args _ -> let
       Qual_op_name opn oTy@(Op_type ok srts res q) _ = os
