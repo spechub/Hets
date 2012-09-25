@@ -45,16 +45,11 @@ import qualified Data.Set as Set
 -- The main method for the static analysis
 basicAnalysis :: (BasicSpecTHF, SignTHF, GlobalAnnos) ->
         Result (BasicSpecTHF, ExtSign SignTHF SymbolTHF, [Named SentenceTHF])
-{-basicAnalysis (BasicSpecTHF BSTHF _, _, _) =
-    let err = mkDiag Error
-            "Error: Static Analysis for general THF is not supported yet." ()
-    in Result [err] Nothing -} {- fixme: implement proper basicAnalysis -}
-basicAnalysis (bs@(BasicSpecTHF _ bs1), sig1, _) =
+basicAnalysis (bs@(BasicSpecTHF bs1), sig1, _) =
     let (diag1, bs2) = filterBS [] bs1
         (diag2, sig2, syms) = execState (fillSig bs2) (diag1, sig1, Set.empty)
-        ({-diag3-} _, ns) = getSentences bs2 (diag2, [])
-    in Result {-(reverse diag3)-} [] $ Just (bs, ExtSign sig2 syms, ns)
-    {- For now just throw away errors -}
+        (diag3, ns) = getSentences bs2 (diag2, [])
+    in Result (reverse diag3) $ Just (bs, ExtSign sig2 syms, ns)
 
 -- This functions delets all Comments and Includes because they are not needed
 -- for the static analysis
@@ -82,7 +77,7 @@ fillSig bs = mapM_ fillSingleType bs >> mapM_ fillSingleConst bs
                 Type    ->
                     when (isType tf) $ case makeKind tf of
                         Right d         -> appandDiag d
-                        Left (k, c, tc) -> insertType c n k tc a
+                        Left (k, c) -> insertType c n k a
                 _       -> return ()
             _   -> return ()
         fillSingleConst t = case t of
@@ -90,7 +85,7 @@ fillSig bs = mapM_ fillSingleType bs >> mapM_ fillSingleConst bs
                 Type    ->
                     unless (isType tf) $ case makeType tf of
                         Right d             -> appandDiag d
-                        Left (ty, c, tc)    -> insertConst c n ty tc a
+                        Left (ty, c)    -> insertConst c n ty a
                 _       -> return ()
             _ -> return ()
 
@@ -100,9 +95,9 @@ appandDiag :: Diagnosis -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
 appandDiag d = modify (\ (diag, s, syms) -> (d : diag, s, syms))
 
 -- insert the given type into the Signature
-insertType :: Constant -> As.Name -> Kind -> THFTypedConst -> Annotations
+insertType :: Constant -> As.Name -> Kind -> Annotations
                     -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
-insertType c n k tc a = do
+insertType c n k a = do
     (diag, sig, syms) <- get
     if sigHasConstSymbol c sig then appandDiag $ mkDiag Error
         "Duplicate definition a symbol as Type an Constant. Symbol: " c
@@ -113,16 +108,16 @@ insertType c n k tc a = do
                     ++ "but another Kind is already inside the signature") c
          else do -- everythign is fine
             let ti = TypeInfo { typeId = c, typeName = n, typeKind = k
-                              , typeDef = Just tc, typeAnno = a }
+                              , typeAnno = a }
                 sym = Symbol { symId = c, symName = n, symType = ST_Type k }
             put (diag, sig { types = Map.insert c ti (types sig)
                            , symbols = Map.insert c sym (symbols sig) }
                 , Set.insert sym syms)
 
 -- insert the given constant into the Signature
-insertConst :: Constant -> As.Name -> Type -> THFTypedConst -> Annotations
+insertConst :: Constant -> As.Name -> Type -> Annotations
                     -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
-insertConst c n t tc a = do
+insertConst c n t a = do
     (diag, sig, syms) <- get
     if sigHasTypeSymbol c sig then appandDiag $ mkDiag Error
         "Duplicate definition a symbol as Type an Constant. Symbol: " c
@@ -135,7 +130,7 @@ insertConst c n t tc a = do
                  "Type is already inside the signature") c
             else do -- everything is fine
                 let ci = ConstInfo { constId = c, constName = n, constType = t
-                                   , constDef = Just tc , constAnno = a }
+                                   , constAnno = a }
                     sym = Symbol { symId = c, symName = n
                                  , symType = ST_Const t }
                 put (diag, sig { consts = Map.insert c ci (consts sig)
@@ -261,18 +256,18 @@ tptpthfToNS t = case formulaRoleAF t of
 -- Get the Kind of a type
 --------------------------------------------------------------------------------
 
-makeKind :: THFFormula -> Either (Kind, Constant, THFTypedConst) Diagnosis
+makeKind :: THFFormula -> Either (Kind, Constant) Diagnosis
 makeKind t = maybe (Right $ mkDiag Error "Error while parsing the Kind of:" t)
                 Left (thfFormulaToKind t)
 
-thfFormulaToKind :: THFFormula -> Maybe (Kind, Constant, THFTypedConst)
+thfFormulaToKind :: THFFormula -> Maybe (Kind, Constant)
 thfFormulaToKind (T0F_THF_Typed_Const tc) = thfTypedConstToKind tc
 thfFormulaToKind _  = Nothing
 
-thfTypedConstToKind :: THFTypedConst -> Maybe (Kind, Constant, THFTypedConst)
+thfTypedConstToKind :: THFTypedConst -> Maybe (Kind, Constant)
 thfTypedConstToKind (T0TC_THF_TypedConst_Par tcp) = thfTypedConstToKind tcp
-thfTypedConstToKind tc@(T0TC_Typed_Const c tlt) =
-            maybe Nothing (\ k -> Just (k, c, tc))
+thfTypedConstToKind (T0TC_Typed_Const c tlt) =
+            maybe Nothing (\ k -> Just (k, c))
                 (thfTopLevelTypeToKind tlt)
 
 thfTopLevelTypeToKind :: THFTopLevelType -> Maybe Kind
@@ -314,18 +309,18 @@ thfUnitaryTypeToKind ut = case ut of
 -- Get the Type of a constant
 --------------------------------------------------------------------------------
 
-makeType :: THFFormula -> Either (Type, Constant, THFTypedConst) Diagnosis
+makeType :: THFFormula -> Either (Type, Constant) Diagnosis
 makeType t = maybe (Right $ mkDiag Error "Error while parsing the Type of:" t)
                 Left (thfFormulaToType t)
 
-thfFormulaToType :: THFFormula -> Maybe (Type, Constant, THFTypedConst)
+thfFormulaToType :: THFFormula -> Maybe (Type, Constant)
 thfFormulaToType (T0F_THF_Typed_Const tc) = thfTypedConstToType tc
 thfFormulaToType _  = Nothing
 
-thfTypedConstToType :: THFTypedConst -> Maybe (Type, Constant, THFTypedConst)
+thfTypedConstToType :: THFTypedConst -> Maybe (Type, Constant)
 thfTypedConstToType (T0TC_THF_TypedConst_Par tcp) =  thfTypedConstToType tcp
-thfTypedConstToType tc@(T0TC_Typed_Const c tlt) =
-            maybe Nothing (\ t -> Just (t, c, tc))
+thfTypedConstToType (T0TC_Typed_Const c tlt) =
+            maybe Nothing (\ t -> Just (t, c))
                 (thfTopLevelTypeToType tlt)
 
 thfTopLevelTypeToType :: THFTopLevelType -> Maybe Type

@@ -55,13 +55,12 @@ type ConstMap = Map.Map Constant ConstInfo
 type SymbolMap = Map.Map Constant SymbolTHF
 
 -- TypeInfo are containers for types, their name and Kind.
--- In addition the original definitions and Annotaions can be stored as
--- (Maybe THFTypedConst) and Annotations.
+-- In addition the original Annotaions can be stored as
+-- Annotations.
 data TypeInfo = TypeInfo
     { typeId  :: Constant
     , typeName :: Name
     , typeKind  :: Kind
-    , typeDef   :: Maybe THFTypedConst
     , typeAnno  :: Annotations }
     deriving (Show)
 
@@ -77,13 +76,12 @@ instance Eq TypeInfo where
                    (typeId ti2, typeName ti2, typeKind ti2)
 
 -- ConstInfo are containers for constants, their naem and type.
--- In addition the original definitions and Annotaions can be stored as
--- (Maybe THFTypedConst) and Annotations.
+-- In addition the original Annotaions can be stored as
+-- Annotations.
 data ConstInfo = ConstInfo
     { constId   :: Constant
     , constName :: Name
     , constType :: Type
-    , constDef  :: Maybe THFTypedConst
     , constAnno :: Annotations }
     deriving (Show)
 

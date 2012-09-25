@@ -129,7 +129,6 @@ transTypeInfo ti c = THFSign.TypeInfo
     { THFSign.typeId    = c
     , THFSign.typeName  = mkTypesName c
     , THFSign.typeKind  = transRawKind $ HCLe.typeKind ti
-    , THFSign.typeDef   = Nothing
     , THFSign.typeAnno  = THFAs.Null }
 
 transRawKind :: HCAs.RawKind -> THFCons.Kind
@@ -159,7 +158,6 @@ transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
                         { THFSign.constId = c
                         , THFSign.constName = mkConstsName c
                         , THFSign.constType = ty
-                        , THFSign.constDef = Nothing
                         , THFSign.constAnno = THFAs.Null }
                 return $ Map.insert c ci m
             infos -> foldM (\ m' (inf@(OpInfo ts _ _), i) -> do
@@ -169,7 +167,6 @@ transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
                             { THFSign.constId = c
                             , THFSign.constName = mkConstsName c
                             , THFSign.constType = ty
-                            , THFSign.constDef = Nothing
                             , THFSign.constAnno = THFAs.Null }
                     return $ Map.insert c ci m'
                 ) m (number infos)

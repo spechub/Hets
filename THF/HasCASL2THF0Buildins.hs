@@ -64,7 +64,6 @@ o1ci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
     , constType = OType
-    , constDef  = Nothing
     , constAnno = Null }
 
 o2ci :: Constant -> ConstInfo
@@ -72,7 +71,6 @@ o2ci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
     , constType = MapType OType OType
-    , constDef  = Nothing
     , constAnno = Null }
 
 o3ci :: Constant -> ConstInfo
@@ -80,7 +78,6 @@ o3ci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
     , constType = MapType OType (MapType OType OType)
-    , constDef  = Nothing
     , constAnno = Null }
 
 a2o1ci :: Constant -> ConstInfo
@@ -88,7 +85,6 @@ a2o1ci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
     , constType = MapType (VType "A") (MapType (VType "A") OType)
-    , constDef  = Nothing
     , constAnno = Null }
 
 resci :: Constant -> ConstInfo
@@ -96,7 +92,6 @@ resci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
     , constType = MapType (VType "A") (MapType (VType "B") (VType "A"))
-    , constDef  = Nothing
     , constAnno = Null }
 
 botci :: Constant -> ConstInfo
@@ -104,7 +99,6 @@ botci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
     , constType = OType
-    , constDef  = Nothing
     , constAnno = Null }
 
 defci :: Constant -> ConstInfo
@@ -112,7 +106,6 @@ defci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
     , constType = MapType (VType "A") OType
-    , constDef  = Nothing
     , constAnno = Null }
 
 --------------------------------------------------------------------------------

@@ -22,8 +22,7 @@ pfun :: ProverFuncs
 pfun = ProverFuncs {
  cfgTimeout = \ cfg -> maybe 601 (+1) (timeLimit cfg),
  proverCommand = \ _ tmpFile cfg ->
-  let options = extraOpts cfg
-      extraOptions = maybe "-po 1" (("-po 1 -t " ++) . show) (timeLimit cfg)
+  let extraOptions = maybe "-po 1" (("-po 1 -t " ++) . show) (timeLimit cfg)
   in return ("leo",words extraOptions ++ [tmpFile]),
  getMessage = \ res' _ perr -> res' ++ perr,
  getTimeUsed = \ line ->

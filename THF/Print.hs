@@ -29,7 +29,7 @@ import qualified Data.Map as Map
 --------------------------------------------------------------------------------
 
 instance Pretty BasicSpecTHF where
-    pretty (BasicSpecTHF _ a) = printTPTPTHF a
+    pretty (BasicSpecTHF a) = printTPTPTHF a
 
 instance Pretty SymbolTHF where
     pretty s = case symType s of
@@ -65,16 +65,16 @@ instance Pretty Type where
 
 instance Pretty TypeInfo where
     pretty ti = text "thf" <> parens (pretty (typeName ti) <> comma
-            <+> text "type" <> comma <+> maybe
+            <+> text "type" <> comma <+>
                 (pretty (typeId ti) <+> colon <+> pretty (typeKind ti))
-                pretty (typeDef ti) <> pretty (typeAnno ti))
+            <> pretty (typeAnno ti))
             <> text "."
 
 instance Pretty ConstInfo where
     pretty ci = text "thf" <> parens (pretty (constName ci) <> comma
-            <+> text "type" <> comma <+> maybe
+            <+> text "type" <> comma <+>
                 (pretty (constId ci) <+> colon <+> pretty (constType ci))
-                pretty (constDef ci) <> pretty (constAnno ci))
+                <> pretty (constAnno ci))
             <> text "."
 
 -- for now only the THFFormulas of sentences are printed

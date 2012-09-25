@@ -34,6 +34,8 @@ import THF.ProveSatallax
 import THF.Sign
 import THF.Print
 import THF.PrintTHF (printTPTPTHF)
+import THF.ParseTHF
+import THF.ParseTHF0
 import qualified THF.Sublogic as SL
 import THF.As (TPTP_THF (..))
 
@@ -48,16 +50,15 @@ instance Language THF where
         "http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
 instance Monoid BasicSpecTHF where
-    mempty = BasicSpecTHF BSTHF0 []
-    mappend (BasicSpecTHF t1 l1) (BasicSpecTHF t2 l2) =
-        BasicSpecTHF (max t1 t2) $ l1 ++ l2
+    mempty = BasicSpecTHF []
+    mappend (BasicSpecTHF l1) (BasicSpecTHF l2) =
+        BasicSpecTHF $ l1 ++ l2
 
 instance Logic.Logic.Syntax THF BasicSpecTHF () () where
-    parsersAndPrinters THF = addSyntax (show SL.THF)
-        (basicSpec BSTHF,\(BasicSpecTHF _ a) -> printTPTPTHF a)
-     $ addSyntax (show SL.THF0)
-        (basicSpec BSTHF0,\(BasicSpecTHF _ a) -> printTPTPTHF a)
-     $ makeDefault (basicSpec BSTHF,\(BasicSpecTHF _ a) -> printTPTPTHF a)
+    parsersAndPrinters THF = addSyntax (show SL.THF0)
+        (fmap BasicSpecTHF parseTHF0,\(BasicSpecTHF a) -> printTPTPTHF a)
+     $ makeDefault (fmap BasicSpecTHF parseTHF,
+                    \(BasicSpecTHF a) -> printTPTPTHF a)
     -- remaining default implementations are fine!
 
 instance Sentences THF SentenceTHF SignTHF MorphismTHF SymbolTHF where
@@ -96,10 +97,10 @@ instance Logic THF SL.THFSl BasicSpecTHF SentenceTHF () ()
 
 instance SemiLatticeWithTop SL.THFSl where
  join = SL.join
- top = SL.THFX
+ top = SL.THF
 
 instance MinSublogic SL.THFSl BasicSpecTHF where
- minSublogic (BasicSpecTHF _ xs) = foldr SL.join SL.THF0 $
+ minSublogic (BasicSpecTHF xs) = foldr SL.join SL.THF0 $
     map (\x -> case x of
      TPTP_THF_Annotated_Formula _ _ f _ -> minSublogic f
      _ -> SL.THF0
@@ -118,7 +119,8 @@ instance MinSublogic SL.THFSl SignTHF where
  minSublogic = \ _ -> SL.THF -- actually implement this!
 
 instance MinSublogic SL.THFSl MorphismTHF where
- minSublogic = \ _ -> SL.THF -- actually implement this!
+ minSublogic (MkMorphism s1 s2) = join (minSublogic s1)
+                                            (minSublogic s2)
 
 instance ProjectSublogicM SL.THFSl SymbolTHF where
  projectSublogicM _ _ = Nothing

@@ -18,24 +18,17 @@ import THF.As
 import THF.Cons
 import Logic.Logic hiding (join)
 
-data THFSl = THFX | THF | THF0 deriving (Ord,Show,Eq)
-
-slToInt :: THFSl -> Int
-slToInt THFX = 3
-slToInt THF  = 2
-slToInt THF0 = 1
-
-slFromInt :: Int -> THFSl
-slFromInt 3 = THFX
-slFromInt 2 = THF
-slFromInt 1 = THF0
-slFromInt i = if i < 1 then THF0 else THFX
+data THFSl = THF | THFP | THF0 deriving (Ord,Show,Eq)
 
 join :: THFSl -> THFSl -> THFSl
-join sl1 sl2 = slFromInt $ max (slToInt sl1) (slToInt sl2)
+join THF _ = THF
+join _ THF = THF
+join THFP _ = THFP
+join _ THFP = THFP
+join _ _ = THF0
 
 sublogics_all :: [THFSl]
-sublogics_all = [THFX,THF,THF0]
+sublogics_all = [THF,THFP,THF0]
 
 instance MinSublogic THFSl SentenceTHF where
  minSublogic s = case senFormula s of
@@ -58,7 +51,7 @@ instance MinSublogic THFSl THFLogicFormula where
    TLF_THF_Sub_Type st -> join THF $ minSublogic st
 
 instance MinSublogic THFSl THFSequent where
- minSublogic _ = THFX
+ minSublogic _ = THF
 
 instance MinSublogic THFSl THFTypedConst where
  minSublogic c = case c of
@@ -78,8 +71,8 @@ instance MinSublogic THFSl THFUnitaryFormula where
    TUF_THF_Unary_Formula uc f -> join THF0 $ join (minSublogic uc)
                                                   (minSublogic f)
    TUF_THF_Atom a -> join THF0 $ minSublogic a
-   TUF_THF_Tuple _ -> THFX
-   TUF_THF_Let _ _ -> THFX
+   TUF_THF_Tuple uts -> foldr join THFP (map minSublogic uts)
+   TUF_THF_Let _ _ -> THF
    TUF_THF_Conditional f1 f2 f3 -> join THF $ join (minSublogic f1)
                                  (join (minSublogic f2) (minSublogic f3))
    TUF_THF_Logic_Formula_Par f -> join THF0 $ minSublogic f
@@ -109,7 +102,7 @@ instance MinSublogic THFSl THFBinaryType where
  minSublogic bt = case bt of
    TBT_THF_Mapping_Type uts -> join THF0 $ foldr join THF0
                                             (map minSublogic uts)
-   TBT_THF_Xprod_Type _ -> THFX
+   TBT_THF_Xprod_Type ts -> foldr join THFP (map minSublogic ts)
    TBT_THF_Union_Type uts -> join THF $ foldr join THF
                                          (map minSublogic uts)
    T0BT_THF_Binary_Type_Par bt' -> join THF0 $ minSublogic bt'
@@ -184,7 +177,7 @@ instance MinSublogic THFSl THFTopLevelType where
 instance MinSublogic THFSl THFTypeableFormula where
  minSublogic tf = case tf of
    TTyF_THF_Atom a -> join THF $ minSublogic a
-   TTyF_THF_Tuple _ -> THFX
+   TTyF_THF_Tuple ts -> foldr join THFP $ map minSublogic ts
    TTyF_THF_Logic_Formula f -> join THF $ minSublogic f
 
 instance MinSublogic THFSl DefinedType where

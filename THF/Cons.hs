@@ -16,16 +16,7 @@ Note: Some of the implenentations depend on the THF0 Syntax.
 module THF.Cons where
 
 import THF.As
-import THF.ParseTHF
-import THF.ParseTHF0
-
 import Common.Id
-import Text.ParserCombinators.Parsec
-
--- Data structur to differ between the two THF syntaxes
-data THFBS =
-    BSTHF0 | BSTHF
-    deriving (Show, Eq, Ord)
 
 -- Some empty instances
 
@@ -40,15 +31,10 @@ instance GetRange AtomicWord
 --------------------------------------------------------------------------------
 
 data BasicSpecTHF =
-    BasicSpecTHF THFBS [TPTP_THF] --replace THFBS using Sublogic.hs
+    BasicSpecTHF [TPTP_THF] --replace THFBS using Sublogic.hs
     deriving (Show, Eq, Ord)
 
 instance GetRange BasicSpecTHF
-
-basicSpec :: THFBS -> CharParser st BasicSpecTHF
-basicSpec o = case o of
-    BSTHF0    -> fmap (BasicSpecTHF BSTHF0) parseTHF0
-    BSTHF     -> fmap (BasicSpecTHF BSTHF) parseTHF
 
 --------------------------------------------------------------------------------
 -- SentenceTHF
