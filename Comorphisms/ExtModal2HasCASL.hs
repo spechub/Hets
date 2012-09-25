@@ -81,6 +81,38 @@ nomName t = Id [genToken "N"] [t] $ rangeOfId t
 nomOpType :: OpType
 nomOpType = mkTotOpType [] world
 
+mkOp :: Id -> Type -> Term
+mkOp i = mkOpTerm i . simpleTypeScheme
+
+mkNomAppl :: Id -> Term
+mkNomAppl pn = mkOp (nomName pn) $ trOp nomOpType
+
+eqWorld :: Id -> Term -> Term -> Term
+eqWorld i = mkEqTerm i (toType world) nr
+
+eqW :: Term -> Term -> Term
+eqW = eqWorld eqId
+
+mkNot :: Term -> Term
+mkNot = mkTerm notId notType [] nr
+
+mkConj :: [Term] -> Term
+mkConj l = toBinJunctor andId l nr
+
+mkDisj :: [Term] -> Term
+mkDisj l =
+  (if null l then unitTerm falseId else toBinJunctor orId l) nr
+
+mkExQs :: [GenVarDecl] -> Term -> Term
+mkExQs vs t =
+  QuantifiedTerm HC.Existential vs t nr
+
+mkExQ :: VarDecl -> Term -> Term
+mkExQ vd = mkExQs [GenVarDecl vd]
+
+mkExConj :: VarDecl -> [Term] -> Term
+mkExConj vd = mkExQ vd . mkConj
+
 tauS :: String
 tauS = "tau"
 
@@ -478,13 +510,6 @@ reflexDef refl w = let
      . (if refl then id else mkNot)
      . mkApplTerm pt . replicate 2 $ QualVar x
 
-data Args = Args
-  { currentW :: Term
-  , nextW, freeC :: Int  -- world variables
-  , boundNoms :: [(Id, Term)]
-  , modSig :: ExtModalSign
-  }
-
 varDecl :: Token -> SORT -> VarDecl
 varDecl i = hcVarDecl i . toType
 
@@ -649,6 +674,13 @@ toSen msig env f = case f of
                         _ -> error "ExtModal2HasCASL.toSentence") ops) sorts
    _ -> Formula $ transTop msig env f
 
+data Args = Args
+  { currentW :: Term
+  , nextW, freeC :: Int  -- world variables
+  , boundNoms :: [(Id, Term)]
+  , modSig :: ExtModalSign
+  }
+
 transTop :: ExtModalSign -> Env -> FORMULA EM_FORMULA -> Term
 transTop msig env f = let
     vt = varTerm (genNumVar "w" 1) world
@@ -657,38 +689,6 @@ transTop msig env f = let
 
 getTermOfNom :: Args -> Id -> Term
 getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
-
-mkOp :: Id -> Type -> Term
-mkOp i = mkOpTerm i . simpleTypeScheme
-
-mkNomAppl :: Id -> Term
-mkNomAppl pn = mkOp (nomName pn) $ trOp nomOpType
-
-eqWorld :: Id -> Term -> Term -> Term
-eqWorld i = mkEqTerm i (toType world) nr
-
-eqW :: Term -> Term -> Term
-eqW = eqWorld eqId
-
-mkNot :: Term -> Term
-mkNot = mkTerm notId notType [] nr
-
-mkConj :: [Term] -> Term
-mkConj l = toBinJunctor andId l nr
-
-mkDisj :: [Term] -> Term
-mkDisj l =
-  (if null l then unitTerm falseId else toBinJunctor orId l) nr
-
-mkExQs :: [GenVarDecl] -> Term -> Term
-mkExQs vs t =
-  QuantifiedTerm HC.Existential vs t nr
-
-mkExQ :: VarDecl -> Term -> Term
-mkExQ vd = mkExQs [GenVarDecl vd]
-
-mkExConj :: VarDecl -> [Term] -> Term
-mkExConj vd = mkExQ vd . mkConj
 
 trRecord :: Args -> String -> Record EM_FORMULA Term Term
 trRecord as str = let
