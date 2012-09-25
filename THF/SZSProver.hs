@@ -59,7 +59,7 @@ type ProverType = Prover SignTHF SentenceTHF MorphismTHF THFSl ProofTree
 
 createSZSProver :: String -> String -> ProverFuncs ->
                    ProverType
-createSZSProver name hlp d = mkAutomaticProver name THF
+createSZSProver name hlp d = mkAutomaticProver name THF0
  (proverGUI hlp name d)
  (proverCMDLautomaticBatch hlp name d)
 
