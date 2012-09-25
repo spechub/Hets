@@ -2,11 +2,10 @@ logic THF.THFP
 
 spec test =
 
-thf(origin_in_plane,type,(
- origin_in_plane: $real * $real )).
+thf(a,type,b).
 
-thf(ax_in,axiom,
-( origin_in_plane = [0,0] )).
+thf(test_tuple,type,(test_tuple: b * b)).
 
-thf(th_in,conjecture,
-( origin_in_plane = [0,0] )).
+thf(ax_in,axiom,( test_tuple = [a,a] )).
+
+thf(th_in,conjecture,( test_tuple = [a,a] )).
