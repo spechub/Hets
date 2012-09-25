@@ -150,8 +150,11 @@ mkNSD c f =
 
 genTHFFormula :: Constant -> (Constant -> String) -> THFFormula
 genTHFFormula c f = case parse parseTHF "" (f c) of
-        Left _ -> error ("Fatal error while generating the predefinied Sentence"
-                    ++ " for: " ++ show (pretty c))
+        Left msg -> error (unlines
+                   ["Fatal error while generating the predefined Sentence"
+                    ++ " for: " ++ show (pretty c),
+                    "Parsing " ++ show (f c) ++ " failed with message",
+                    show msg])
         Right x -> thfFormulaAF $ head x
 
 --------------------------------------------------------------------------------
