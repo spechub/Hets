@@ -22,6 +22,7 @@ import Common.ProofTree
 import Common.ProverTools
 
 import Data.Monoid
+import Data.Map (isSubmapOf)
 
 import Logic.Logic
 
@@ -70,7 +71,8 @@ instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
     signature_union THF = sigUnion
     signatureDiff THF = sigDiff
     intersection THF = sigIntersect
-    is_subsig THF _ _ = True
+    is_subsig THF s1 s2 = Data.Map.isSubmapOf (types s1) (types s2) &&
+                          Data.Map.isSubmapOf (consts s1) (consts s2)
     subsig_inclusion THF = defaultInclusion
 
 {- In order to find the LeoII prover there must be an entry in the
