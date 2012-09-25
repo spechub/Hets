@@ -18,6 +18,7 @@ module Isabelle.IsaConsts where
 import Isabelle.IsaSign
 import qualified Data.Set as Set
 import Data.List
+import Data.Maybe
 import qualified Data.Map as Map
 
 -- | a topological sort with a @uses@ predicate
@@ -611,17 +612,19 @@ rangeV :: VName
 rangeV = VName rangeS Nothing
 
 vMap' :: Map.Map String VName
-vMap' = Map.fromList [(conj,conjV), (disj,disjV), (impl,implV), (eq,eqV),
-        (neq,neqV), (plusS,plusV), (minusS,minusV), (divS,divV), (modS,modV),
-        (timesS,timesV), (consS,consV), (lconsS,lconsV), (compS,compV),
-        (eqvSimS,eqvSimV), (unionS,unionV), (membershipS,membershipV),
-        (imageS,imageV), (rangeS,rangeV)]
+vMap' = Map.fromList [(conj, conjV), (disj, disjV), (impl, implV), (eq, eqV),
+        (neq, neqV), (plusS, plusV), (minusS, minusV), (divS, divV),
+        (modS, modV),
+        (timesS, timesV), (consS, consV), (lconsS, lconsV), (compS, compV),
+        (eqvSimS, eqvSimV), (unionS, unionV), (membershipS, membershipV),
+        (imageS, imageV), (rangeS, rangeV)]
 
 vMap :: Map.Map String VName
-vMap = Map.union vMap' (Map.fromList
- (map (\(k,v) -> if take 3 k == "op "
-                 then (drop 3 k,v)
-                 else (k,v)) (Map.toList vMap')))
+vMap = Map.union vMap' . Map.fromList
+ . map (\ (k, v) -> case stripPrefix "op " k of
+                     Just r -> (r, v)
+                     Nothing -> (k, v))
+ $ Map.toList vMap'
 
 -- * keywords in theory files from the Isar Reference Manual 2005
 
@@ -648,6 +651,9 @@ contextS = "context"
 
 axiomsS :: String
 axiomsS = "axioms"
+
+axiomatizationS :: String
+axiomatizationS = "axiomatization"
 
 defsS :: String
 defsS = "defs"
@@ -831,7 +837,8 @@ ignoredKeys =
 -- | toplevel keywords currently recognized by IsaParse
 usedTopKeys :: [String]
 usedTopKeys = markups ++
-    [ importsS, usesS, beginS, contextS, mlS, axiomsS, defsS, constsS
+    [ importsS, usesS, beginS, contextS, mlS, axiomatizationS, axiomsS
+    , defsS, constsS
     , constdefsS, lemmasS, theoremsS, lemmaS, corollaryS, theoremS
     , datatypeS
     , classesS, axclassS, instanceS, typesS, typedeclS, endS ]
@@ -842,6 +849,4 @@ isaKeywords = "::" : andS : theoryS : map (: []) ":=<|"
               ++ usedTopKeys ++ ignoredKeys
 
 mkVName :: String -> VName
-mkVName s = case Map.lookup s vMap of
- Just v -> v
- Nothing -> VName { new = s, altSyn = Nothing }
+mkVName s = fromMaybe (VName s Nothing) $ Map.lookup s vMap

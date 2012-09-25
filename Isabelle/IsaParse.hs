@@ -14,12 +14,12 @@ and is adjusted for Isabelle2011-1.
 -}
 
 module Isabelle.IsaParse
-{-    ( parseTheory
-    , Body(..)
-    , TheoryHead(..)
-    , SimpValue(..)
+    ( parseTheory
+    , Body (..)
+    , TheoryHead (..)
+    , SimpValue (..)
     , warnSimpAttr
-    , compatibleBodies) -}
+    , compatibleBodies)
     where
 
 import Isabelle.IsaConsts
@@ -78,7 +78,7 @@ isaString :: Parser String
 isaString = genString '"'
 
 altString :: Parser String
-altString = genString '´'
+altString = genString '`'
 
 verbatim :: Parser String
 verbatim = plainBlock "{*" "*}"
@@ -88,15 +88,6 @@ nestComment = nestedComment "(*" "*)"
 
 nat :: Parser String
 nat = many1 digit <?> "nat"
-
-int :: Parser String
-int = optionL (string "-") <++> nat
-
-float :: Parser String
-float = int <++> char '.' <:> nat
-
-real :: Parser String
-real = int <++> optionL (char '.' <:> nat)
 
 name :: Parser String
 name = ident <|> symident <|> isaString <|> nat
@@ -125,12 +116,6 @@ var = try (char '?' <:> isaLetter) <++> restident <++> indexsuffix
 term :: Parser String -- prop
 term = var <|> nameref
 
-inst :: Parser String
-inst = single (char '_') <|> term
-
-insts :: Parser [Token]
-insts = many $ lexP inst
-
 isaSkip :: Parser ()
 isaSkip = skipMany (many1 space <|> nestComment <?> "")
 
@@ -151,9 +136,6 @@ namerefP = lexP $ reserved isaKeywords nameref
 
 parname :: Parser Token
 parname = lexS "(" >> lexP name << lexS ")"
-
-comment :: Parser Token
-comment = lexS "--"  >> lexP isaText
 
 -- | the theory part before and including the begin keyword with a context
 data TheoryHead = TheoryHead
@@ -338,8 +320,11 @@ prop = lexP $ reserved isaKeywords term
 
 data Axiom = Axiom SenDecl Token
 
+axiomP :: Parser Axiom
+axiomP = liftM2 Axiom axmdecl prop
+
 axiomsP :: Parser [Axiom]
-axiomsP = many1 (liftM2 Axiom axmdecl prop)
+axiomsP = many1 axiomP
 
 defs :: Parser [Axiom]
 defs = lexS defsS >> optionL (parensP $ lexS "overloaded") >>
@@ -347,6 +332,10 @@ defs = lexS defsS >> optionL (parensP $ lexS "overloaded") >>
 
 axioms :: Parser [Axiom]
 axioms = lexS axiomsS >> axiomsP
+
+newAxioms :: Parser [Axiom]
+newAxioms = lexS axiomatizationS >> lexS whereS
+   >> sepBy axiomP (lexS andS)
 
 thmbind :: Parser SenDecl
 thmbind = liftM2 SenDecl nameP optAttributes
@@ -358,8 +347,8 @@ selection = parensP . commalist $
   where natP = lexP nat
 
 thmref :: Parser Token
-thmref = (((namerefP << optional selection) <|> lexP altString)
-          << optionL attributes)
+thmref = ((namerefP << optional selection) <|> lexP altString)
+          << optionL attributes
 
 thmrefs :: Parser [Token]
 thmrefs = flat
@@ -454,6 +443,7 @@ theoryBody = many $
     <|> discard markupP
     <|> discard theorems
     <|> fmap Axioms axioms
+    <|> fmap Axioms newAxioms
     <|> discard instanceP
     <|> fmap Goals lemma
     <|> discard axclass

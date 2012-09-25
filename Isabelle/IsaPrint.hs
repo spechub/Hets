@@ -96,12 +96,13 @@ printNamedSentences sens = case sens of
   s : r
     | isIsaAxiom s ->
       let (axs, rest) = span isAxiom sens in
-      text axiomsS $+$ vsep (map printNamedSen axs)
+      vsep (map (\ a -> text axiomatizationS $+$
+                   text whereS $+$ printNamedSen a) axs)
       $++$ vcat (map ( \ a -> text declareS <+> text (senAttr a)
-                       <+> brackets (text simpS))
-                $ filter ( \ a -> case sentence a of
-                      b@Sentence {} -> isSimp b && senAttr a /= ""
-                      _ -> False) axs)
+                        <+> brackets (text simpS))
+                 $ filter ( \ a -> case sentence a of
+                       b@Sentence {} -> isSimp b && senAttr a /= ""
+                       _ -> False) axs)
       $++$ printNamedSentences rest
     | isConstDef s ->
       let (defs, rest) = span isConstDef sens in
