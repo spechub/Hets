@@ -361,7 +361,7 @@ VSE/ATC_VSE.der.hs: $(VSE_files) $(GENRULES)
 	$(GENRULECALL) -x VSE.As.FoldRec -i CASL.ATC_CASL -o $@ $(VSE_files)
 
 OMDoc/ATC_OMDoc.der.hs: $(OMDoc_files) $(GENRULES)
-	$(GENRULECALL) -i OMDoc.ATerm -o $@ $(OMDoc_files)
+	$(GENRULECALL) -i ATC.IRI -o $@ $(OMDoc_files)
 
 DFOL/ATC_DFOL.der.hs: $(DFOL_files) $(GENRULES)
 	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(DFOL_files)

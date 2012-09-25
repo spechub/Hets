@@ -12,7 +12,7 @@ Model of a handpicked subset from OMDoc
 -}
 module OMDoc.OMDocInterface where
 
-import qualified Network.URI as URI
+import qualified Common.IRI as IRI
 
 import Data.Char
 
@@ -25,34 +25,28 @@ import Common.Id
 omdocDefaultNamespace :: String
 omdocDefaultNamespace = "http://www.mathweb.org/omdoc"
 
-instance Pretty URI.URI where
-  pretty u = text $ (URI.uriToString id u "")
-
-instance Ord URI.URI where
-  compare u1 u2 = compare (showURI u1) (showURI u2)
-
--- | OMDocRef is anyURI
-type OMDocRef = URI.URI
+-- | OMDocRef is anyIRI
+type OMDocRef = IRI.IRI
 
 -- | OMDocRefs modelled as a list
 type OMDocRefs = [OMDocRef]
 
-showURI :: URI.URI -> String
-showURI uri = (URI.uriToString id uri) ""
+showIRI :: IRI.IRI -> String
+showIRI iri = (IRI.iriToString id iri) ""
 
--- Try to parse an URI (so Network.URI needs not be imported)
+-- Try to parse an IRI
 mkOMDocRef :: String -> Maybe OMDocRef
-mkOMDocRef = URI.parseURIReference
+mkOMDocRef = IRI.parseIRIReference
 
 mkSymbolRef :: XmlId -> OMDocRef
 mkSymbolRef xid =
-  case URI.parseURIReference ("#" ++ xid) of
+  case IRI.parseIRIReference ("#" ++ xid) of
     Nothing -> error ("Invalid Symbol-Id! (" ++ xid ++ ")")
     (Just u) -> u
 
 mkExtSymbolRef :: XmlId -> XmlId -> OMDocRef
 mkExtSymbolRef xcd xid =
-  case URI.parseURIReference (xcd ++ "#" ++ xid) of
+  case IRI.parseIRIReference (xcd ++ "#" ++ xid) of
     Nothing -> error "Invalid Reference!"
     (Just u) -> u
 
@@ -222,7 +216,7 @@ mkSymbol xid sr = mkSymbolE Nothing xid sr Nothing
 data Type =
   Type
     {
-        typeSystem :: Maybe URI.URI
+        typeSystem :: Maybe IRI.IRI
       , typeOMDocMathObject :: OMDocMathObject
     }
     deriving (Show, Eq, Ord)
@@ -714,14 +708,14 @@ mkOMEE s e = toElement $ mkOME s e
 data OMReference =
   OMR
     {
-      omrHRef :: URI.URI
+      omrHRef :: IRI.IRI
     }
     deriving (Show, Eq, Ord)
 
-mkOMR :: URI.URI -> OMReference
+mkOMR :: IRI.IRI -> OMReference
 mkOMR = OMR
 
-mkOMRE :: URI.URI -> OMElement
+mkOMRE :: IRI.IRI -> OMElement
 mkOMRE = toElement . mkOMR
 
 -- | OMB

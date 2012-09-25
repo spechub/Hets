@@ -40,7 +40,7 @@ import Common.Result
 import Common.ResultT
 import Common.ExtSign
 import Common.Id
-import Common.IRI (simpleIdToIRI)
+import Common.IRI
 import Common.LibName
 import Common.Utils
 import Common.XmlParser (readXmlFile)
@@ -83,9 +83,6 @@ import qualified Data.Map as Map
 import Control.Monad
 import Control.Monad.Trans
 
-
-import Network.URI
-
 -- * Import Environment Interface
 
 {- | There are three important maps for each theory:
@@ -122,11 +119,11 @@ addNSMapToEnv :: ImpEnv -> LibName -> String -> NameSymbolMap -> ImpEnv
 addNSMapToEnv e ln nm nsm =
     e { nsymbMap = Map.insert (ln, nm) nsm $ nsymbMap e }
 
-lookupLib :: ImpEnv -> URI -> Maybe (LibName, DGraph)
-lookupLib e u = Map.lookup (rmSuffix $ uriPath u) $ libMap e
+lookupLib :: ImpEnv -> IRI -> Maybe (LibName, DGraph)
+lookupLib e u = Map.lookup (rmSuffix $ iriPath u) $ libMap e
 
 
-lookupNode :: ImpEnv -> CurrentLib -> UriCD
+lookupNode :: ImpEnv -> CurrentLib -> IriCD
            -> Maybe ( LibName -- the origin libname of the theory
                     , LNode DGNodeLab -- the (eventually reference) node
                     )
@@ -136,7 +133,7 @@ lookupNode e (ln, dg) ucd =
         case filterLocalNodesByName mn dg of
           [] -> error $ "lookupNode: Node not found: " ++ mn
           lnode : _ -> Just (ln, lnode)
-    else case lookupLib e $ fromJust $ getUri ucd of
+    else case lookupLib e $ fromJust $ getIri ucd of
            Nothing -> Nothing
            Just (ln', dg') ->
                case filterRefNodesByName mn ln' dg of
@@ -163,52 +160,52 @@ rPut e = rPutIfVerbose e 1
 rPut2 :: ImpEnv -> String -> ResultT IO ()
 rPut2 e = rPutIfVerbose e 2
 
--- * URI Functions
+-- * IRI Functions
 
-readFromURL :: (FilePath -> IO a) -> URI -> IO a
-readFromURL f u = if isFileURI u then f $ uriPath u
-                  else error $ "readFromURL: Unsupported URI-scheme "
-                           ++ uriScheme u
+readFromURL :: (FilePath -> IO a) -> IRI -> IO a
+readFromURL f u = if isFileIRI u then f $ iriPath u
+                  else error $ "readFromURL: Unsupported IRI-scheme "
+                           ++ iriScheme u
 
-toURI :: String -> URI
-toURI s = case parseURIReference s of
+toIRI :: String -> IRI
+toIRI s = case parseIRIReference s of
             Just u -> u
-            _ -> error $ "toURI: can't parse as uri " ++ s
+            _ -> error $ "toIRI: can't parse as iri " ++ s
 
-libNameFromURL :: String -> URI -> LibName
-libNameFromURL s u = setFilePath (uriPath u) $ emptyLibName s
+libNameFromURL :: String -> IRI -> LibName
+libNameFromURL s u = setFilePath (iriPath u) $ emptyLibName s
 
--- | Compute an absolute URI for a supplied URI relative to the given filepath.
-resolveURI :: URI -> FilePath -> URI
-resolveURI u fp = fromMaybe (error $ "toURI: can't resolve uri " ++ show u)
-                  $ relativeTo u $ toURI fp
+-- | Compute an absolute IRI for a supplied IRI relative to the given filepath.
+resolveIRI :: IRI -> FilePath -> IRI
+resolveIRI u fp = fromMaybe (error $ "toIRI: can't resolve iri " ++ show u)
+                  $ relativeTo u $ toIRI fp
 
--- | Is the scheme of the uri empty or file?
-isFileURI :: URI -> Bool
-isFileURI u = elem (uriScheme u) ["", "file:"]
+-- | Is the scheme of the iri empty or file?
+isFileIRI :: IRI -> Bool
+isFileIRI u = elem (iriScheme u) ["", "file:"]
 
 
-type UriCD = (Maybe URI, String)
+type IriCD = (Maybe IRI, String)
 
-showUriCD :: UriCD -> String
-showUriCD (mUri, s) = case mUri of
+showIriCD :: IriCD -> String
+showIriCD (mIri, s) = case mIri of
                         Just u -> show u ++ "?" ++ s
                         _ -> s
 
-getUri :: UriCD -> Maybe URI
-getUri = fst
+getIri :: IriCD -> Maybe IRI
+getIri = fst
 
-getModule :: UriCD -> String
+getModule :: IriCD -> String
 getModule = snd
 
 
--- | Compute an absolute URI for a supplied CD relative to the given LibName
-toUriCD :: OMCD -> LibName -> UriCD
-toUriCD cd ln =
+-- | Compute an absolute IRI for a supplied CD relative to the given LibName
+toIriCD :: OMCD -> LibName -> IriCD
+toIriCD cd ln =
     let [base, m] = cdToList cd
         fp = getFilePath ln
         mU = if null base then Nothing
-             else Just $ resolveURI (toURI base) fp
+             else Just $ resolveIRI (toIRI base) fp
     in (mU, m)
 
 getLogicFromMeta :: Maybe OMCD -> AnyLogic
@@ -221,10 +218,10 @@ getLogicFromMeta mCD =
              Just al -> al
              _ -> defaultLogic
 
-cdInLib :: UriCD -> LibName -> Bool
-cdInLib ucd ln = case getUri ucd of
+cdInLib :: IriCD -> LibName -> Bool
+cdInLib ucd ln = case getIri ucd of
                    Nothing -> True
-                   Just url -> isFileURI url && getFilePath ln == uriPath url
+                   Just url -> isFileIRI url && getFilePath ln == iriPath url
 
 
 -- * Main translation functions
@@ -235,7 +232,7 @@ anaOMDocFile opts fp = do
   dir <- getCurrentDirectory
   putIfVerbose opts 2 $ "Importing OMDoc file " ++ fp
   Result ds mEnvLn <- runResultT $ importLib (initialEnv opts)
-                      $ resolveURI (toURI fp) $ dir ++ "/"
+                      $ resolveIRI (toIRI fp) $ dir ++ "/"
   showDiags opts ds
   return $ fmap (\ (env, ln, _) -> (ln, getLibEnv env)) mEnvLn
 
@@ -245,7 +242,7 @@ anaOMDocFile opts fp = do
 {- | If the lib is not already in the environment, the OMDoc file and
 the closure of its imports is added to the environment. -}
 importLib :: ImpEnv -- ^ The import environment
-          -> URI -- ^ The url of the OMDoc file
+          -> IRI -- ^ The url of the OMDoc file
           -> ResultT IO (ImpEnv, LibName, DGraph)
 importLib e u =
     case lookupLib e u of
@@ -254,7 +251,7 @@ importLib e u =
 
 -- | The OMDoc file and the closure of its imports is added to the environment.
 readLib :: ImpEnv -- ^ The import environment
-        -> URI -- ^ The url of the OMDoc file
+        -> IRI -- ^ The url of the OMDoc file
         -> ResultT IO (ImpEnv, LibName, DGraph)
 readLib e u = do
   rPut e $ "Downloading " ++ show u ++ " ..."
@@ -278,8 +275,8 @@ importTheory :: ImpEnv -- ^ The import environment
                            , LNode DGNodeLab -- the corresponding node
                            )
 importTheory e (ln, dg) cd = do
-  let ucd = toUriCD cd ln
-  rPut2 e $ "Looking up theory " ++ showUriCD ucd ++ " ..."
+  let ucd = toIriCD cd ln
+  rPut2 e $ "Looking up theory " ++ showIriCD ucd ++ " ..."
   case lookupNode e (ln, dg) ucd of
     Just (ln', nd)
         | ln == ln' ->
@@ -298,7 +295,7 @@ importTheory e (ln, dg) cd = do
               return (e, ln', dg', lnode)
     -- if lookupNode finds nothing implies that ln is not the current libname!
     _ -> do
-      let u = fromJust $ getUri ucd
+      let u = fromJust $ getIri ucd
       rPut2 e "... node not found, reading lib."
       (e', ln', refDg) <- readLib e u
       case filterLocalNodesByName (getModule ucd) refDg of
