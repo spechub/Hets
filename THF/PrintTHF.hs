@@ -116,9 +116,6 @@ instance Pretty THFUnitaryFormula where
         TUF_THF_Unary_Formula uc lf     -> pretty uc <+> parens (pretty lf)
         TUF_THF_Atom a                  -> pretty a
         TUF_THF_Tuple t                 -> prettyTuple t
-        TUF_THF_Let dvl uf              ->
-            text ":=" <+> brackets (sepByCommas (map pretty dvl))
-            <+> text ":" <+> pretty uf
         TUF_THF_Conditional lf1 lf2 lf3 ->
             text "$itef" <> parens (pretty lf1
             <> comma <+> pretty lf2
@@ -207,12 +204,6 @@ instance Pretty THFAtom where
 
 prettyTuple :: THFTuple -> Doc
 prettyTuple ufl = brackets $ sepByCommas (map pretty ufl)
-
-instance Pretty THFDefinedVar where
-    pretty dv = case dv of
-        TDV_THF_Defined_Var v lf        ->
-            pretty v <+> text ":=" <+> pretty lf
-        TDV_THF_Defined_Var_Par d -> parens (pretty d)
 
 instance Pretty THFSequent where
     pretty (TS_THF_Sequent_Par s) = parens $ pretty s

@@ -100,7 +100,6 @@ data THFUnitaryFormula =
   | TUF_THF_Unary_Formula       THFUnaryConnective THFLogicFormula
   | TUF_THF_Atom                THFAtom
   | TUF_THF_Tuple               THFTuple
-  | TUF_THF_Let                 [THFDefinedVar] THFUnitaryFormula
   | TUF_THF_Conditional         THFLogicFormula THFLogicFormula THFLogicFormula
   | TUF_THF_Logic_Formula_Par   THFLogicFormula
   | T0UF_THF_Abstraction        THFVariableList THFUnitaryFormula
@@ -177,12 +176,7 @@ data THFAtom =
   | T0A_Variable                Variable
     deriving (Show, Eq, Ord)
 
-type THFTuple = [THFUnitaryFormula]
-
-data THFDefinedVar =
-    TDV_THF_Defined_Var     THFVariable THFLogicFormula
-  | TDV_THF_Defined_Var_Par THFDefinedVar
-    deriving (Show, Eq, Ord)
+type THFTuple = [THFLogicFormula]
 
 data THFSequent =
     TS_THF_Sequent      THFTuple THFTuple
@@ -252,8 +246,8 @@ data DefinedProp =
     deriving (Show, Eq, Ord)
 
 data DefinedPred =
-    Equal  | Disrinct | Itef      | Less
-  | Lesseq | Greater  | Greatereq | Evaleq
+    Disrinct | Less | Lesseq | Greater 
+  | Greatereq
   | Is_int | Is_rat
     deriving (Show, Eq, Ord)
 
@@ -293,8 +287,11 @@ data DefinedPlainTerm =
     deriving (Show, Eq, Ord)
 
 data DefinedFunctor =
-    Itett   | Uminus | Sum    | Difference
-  | Product | To_int | To_rat | To_real
+    UMinus | Sum | Difference | Product |
+    Quotient | Quotient_e | Quotient_t | Quotient_f |
+    Remainder_e | Remainder_t | Remainder_f |
+    Floor | Ceiling | Truncate | Round |
+    To_int | To_rat | To_real
     deriving (Show, Eq, Ord)
 
 data SystemTerm =

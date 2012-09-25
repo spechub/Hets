@@ -72,7 +72,6 @@ instance MinSublogic THFSl THFUnitaryFormula where
                                                   (minSublogic f)
    TUF_THF_Atom a -> join THF0 $ minSublogic a
    TUF_THF_Tuple uts -> foldr join THFP (map minSublogic uts)
-   TUF_THF_Let _ _ -> THF
    TUF_THF_Conditional f1 f2 f3 -> join THF $ join (minSublogic f1)
                                  (join (minSublogic f2) (minSublogic f3))
    TUF_THF_Logic_Formula_Par f -> join THF0 $ minSublogic f

@@ -9,11 +9,12 @@ Maintainer  :  Jonathan von Schroeder <j.von_schroeder@dfki.de>
 Stability   :  provisional
 Portability :  portable
 
-A Parser for the TPTP-THF Input Syntax v5.1.0.2 taken from
+A Parser for the TPTP-THF Input Syntax v5.4.0.0 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html> and THF0
 Syntax taken from <http://www.ags.uni-sb.de/~chris/papers/C25.pdf> P. 15-16
 
 Note: The parser prefers a THF0 parse tree over a THF parse tree
+Note: We pretend as if tuples were still part of the syntax
 -}
 
 module THF.ParseTHF (parseTHF) where
@@ -246,9 +247,7 @@ thfBinaryTuple = do -- or
 -- <thf_unitary_formula>    ::= <thf_quantified_formula> | <thf_unary_formula> |
 --                              <thf_atom> | <thf_tuple> | <thf_let> |
 --                              <thf_conditional> | (<thf_logic_formula>)
--- <thf_let>                ::= := [<thf_let_list>] : <thf_unitary_formula>
--- <thf_let_list>           ::= <thf_defined_var> |
---                              <thf_defined_var>,<thf_let_list>
+-- note: thf let is currently not well defined and thus ommited
 -- <thf_conditional>        ::= $itef(<thf_logic_formula>,<thf_logic_formula>,
 --                              <thf_logic_formula>)
 -- THF0:
@@ -272,11 +271,6 @@ thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
     return $ T0UF_THF_Abstraction vl uf --added this for thf0
   --changed positions of parses below to prefer th0
   <|> fmap TUF_THF_Tuple thfTuple
-  <|> do
-    key $ tryString ":="
-    ll <- brackets (sepBy1 thfDefinedVar comma); colon
-    uf <- thfUnitaryFormula
-    return $ TUF_THF_Let ll uf
   <|> do
     key $ tryString "$itef"; oParentheses
     lf1 <- thfLogicFormula; comma
@@ -455,22 +449,12 @@ thfAtom = fmap T0A_Constant constant
 
 -- THF:
 -- <thf_tuple> ::= [] | [<thf_tuple_list>]
--- <thf_tuple_list> ::= <thf_unitary_formula> |
---                      <thf_unitary_formula>,<thf_tuple_list>
+-- <thf_tuple_list> ::= <thf_logic_formula> |
+--                      <thf_logic_formula>,<thf_tuple_list>
 -- THFTupleList must not be empty
 thfTuple :: CharParser st THFTuple
 thfTuple = try ((oBracket >> cBracket) >> return [])
-  <|> brackets (sepBy1 thfUnitaryFormula comma)
-
--- THF:
--- <thf_defined_var> ::= <thf_variable> := <thf_logic_formula> |
---                       (<thf_defined_var>)
-thfDefinedVar :: CharParser st THFDefinedVar
-thfDefinedVar = fmap TDV_THF_Defined_Var_Par (parentheses thfDefinedVar)
-  <|> do
-    v <- try (thfVariable << key ( string ":="))
-    lf <- thfLogicFormula
-    return $ TDV_THF_Defined_Var v lf
+  <|> brackets (sepBy1 thfLogicFormula comma)
 
 -- THF:
 -- <thf_sequent> ::= <thf_tuple> <gentzen_arrow> <thf_tuple> |
@@ -608,28 +592,25 @@ definedProp = do
 
 -- THF:
 -- <defined_pred>       :== <atomic_defined_word>
--- <defined_pred>       :== $equal | $distinct | $itef | $less |
---                          $lesseq | $greater | $greatereq | $evaleq |
+-- <defined_pred>       :== $distinct |
+--                          $less | $lesseq | $greater | $greatereq |
 --                          $is_int | $is_rat
 definedPred :: CharParser st DefinedPred
 definedPred = do
     adw <- atomicDefinedWord
     case adw of
-        "equal"         -> return Equal
         "distinct"      -> return Disrinct
-        "itef"          -> return Itef
         "less"          -> return Less
         "lesseq"        -> return Lesseq
         "greater"       -> return Greater
         "greatereq"     -> return Greatereq
-        "evaleq"        -> return Evaleq
         "is_int"        -> return Is_int
         "is_rat"        -> return Is_rat
         _               -> fail ("No such definedPred: " ++ adw)
 
 -- THF:
 -- <term> ::= <function_term> | <variable> | <conditional_term>
--- %----Conditional terms should not be used by THF.
+-- %----Conditional terms should only be used by TFF and not by THF.
 -- Thus tey are not implemented.
 term :: CharParser st Term
 term = fmap T_Function_Term functionTerm
@@ -686,17 +667,27 @@ definedPlainTerm = try (do
 
 -- THF:
 -- <defined_functor> ::= <atomic_defined_word>
--- <defined_functor> :== $itett | $uminus | $sum | $difference |
---                       $product | $to_int | $to_rat | $to_real
+-- <defined_functor> :== $uminus | $sum | $difference | $product |
+--                       $quotient | $quotient_e | $quotient_t | $quotient_f |
+--                       $remainder_e | $remainder_t | $remainder_f |
+--                       $floor | $ceiling | $truncate | $round |
+--                       $to_int | $to_rat | $to_real
 definedFunctor :: CharParser st DefinedFunctor
 definedFunctor = do
     adw <- atomicDefinedWord
     case adw of
-        "itett"         -> return Itett
-        "uminus"        -> return Uminus
+        "uminus"        -> return UMinus
         "sum"           -> return Sum
         "difference"    -> return Difference
         "product"       -> return Product
+        "quotient"      -> return Quotient
+        "quotient_e"    -> return Quotient_e
+        "quotient_t"    -> return Quotient_t
+        "quotient_f"    -> return Quotient_f
+        "floor"         -> return Floor
+        "ceiling"       -> return Ceiling
+        "truncate"      -> return Truncate
+        "round"         -> return Round
         "to_int"        -> return To_int
         "to_rat"        -> return To_rat
         "to_real"       -> return To_real
