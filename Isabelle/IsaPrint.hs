@@ -44,12 +44,12 @@ printIsaTheory tn sign sens = let
     in text theoryS <+> text tn
     $+$ text importsS <+> fsep (case b of
         Custom_thy -> []
-        _ -> (if case b of
+        _ -> if case b of
                 Main_thy -> False
                 HOLCF_thy -> False
                 Custom_thy -> True
-                _ -> True then [doubleQuotes $ text $ ld ++ bs] else [text bs])
-        ++ map (doubleQuotes . text) (imports sign))
+                _ -> True then [doubleQuotes $ text $ ld ++ bs] else [text bs]
+      ++ map (doubleQuotes . text) (imports sign))
     $+$ use
     $+$ text beginS
     $++$ printTheoryBody sign sens
@@ -57,10 +57,10 @@ printIsaTheory tn sign sens = let
 
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
- let (sens',recFuns) = findTypesForRecFuns sens (constTab sig)
+ let (sens', recFuns) = findTypesForRecFuns sens (constTab sig)
      sig' = sig { constTab =
-      Map.filterWithKey (\k _ -> not $ (new k) `elem` recFuns) (constTab sig) }
- in  callSetup "initialize" (brackets $ sepByCommas
+      Map.filterWithKey (\ k _ -> notElem (new k) recFuns) (constTab sig) }
+ in callSetup "initialize" (brackets $ sepByCommas
       $ map (text . show . Quote . senAttr)
       $ filter (\ s -> not (isConstDef s || isRecDef s || isInstance s)
                 && senAttr s /= "") sens')
@@ -71,24 +71,24 @@ printTheoryBody sig sens =
 findTypesForRecFuns :: [Named Sentence] -> ConstTab
  -> ([Named Sentence], [String])
 findTypesForRecFuns ns ctab =
- let (sens,recFuns') = unzip $ map (\ sen ->
-      let (sen',recFns') =
+ let (sens, recFuns') = unzip $ map (\ sen ->
+      let (sen', recFns') =
            case sentence sen of
              RecDef kw cName cType tm ->
-              ((case Map.toList $
-                 Map.filterWithKey (\k _ -> (new k) == (new cName)) ctab of
-                 (_,t):_ ->
+              (case Map.toList $
+                 Map.filterWithKey (\ k _ -> new k == new cName) ctab of
+                 (_, t) : _ ->
                   case cType of
                    Nothing ->
                     RecDef kw cName (Just t) tm
                    Just t' ->
                     if t /= t' then error "recFun: two types given"
                     else sentence sen
-                 [] -> sentence sen),
-               Just cName)
-             _ -> (sentence sen,Nothing)
-      in (sen {sentence=sen'},recFns')) ns
- in (sens,map new $ catMaybes recFuns')
+                 [] -> sentence sen
+              , Just cName)
+             _ -> (sentence sen, Nothing)
+      in (sen {sentence = sen'}, recFns')) ns
+ in (sens, map new $ catMaybes recFuns')
 
 printNamedSentences :: [Named Sentence] -> Doc
 printNamedSentences sens = case sens of
@@ -337,7 +337,7 @@ flatTuplex cs c = case cs of
 
 printMixfixAppl :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printMixfixAppl b c f args = case f of
-        Const (VName n (Just (AltSyntax s is i))) (Hide _ _ _) ->
+        Const (VName n (Just (AltSyntax s is i))) (Hide {}) ->
              if length is == length args &&
                 (b || n == cNot || isPrefixOf "op " n) then
                    (fsep $ replaceUnderlines s
@@ -357,7 +357,7 @@ printTrm b trm = case trm of
     Const vn ty -> let
         dvn = text $ new vn
         nvn = case ty of
-            Hide _ _ _ -> dvn
+            Hide {} -> dvn
             Disp w _ _ -> parens $ dvn <+> doubleColon <+> printType w
       in case altSyn vn of
           Nothing -> (nvn, maxPrio)
@@ -452,35 +452,35 @@ consDocBarSep d r = case r of
 printLocales :: Locales -> Doc
 printLocales = vsep . map printLocale . orderLDecs . Map.toList
 
-printLocale :: (String,LocaleDecl) -> Doc
-printLocale (n,(parents,in_ax,ex_ax,params)) =
+interAnd :: [Doc] -> Doc
+interAnd = vcat . punctuate (text "and ")
+
+printFixesAssumes :: Doc -> [Doc] -> [Doc] -> [Doc] -> Doc
+printFixesAssumes h p' a f = vcat
+  [ h <+> (if null $ p' ++ a ++ f then empty else text "=") <+> hsep p'
+    <+> if null p' || null a && null f then empty else text "+"
+  , if null f then empty else text "fixes" <+> interAnd f
+  , if null a then empty else text "assumes" <+> interAnd a
+  ]
+
+printLocale :: (String, LocaleDecl) -> Doc
+printLocale (n, (parents, in_ax, ex_ax, params)) =
  let p' = Data.List.intersperse (text "+") $ map text parents
-     a  = map (\ (s,t) -> text s <+> text ":"
+     a = map (\ (s, t) -> text s <+> text ":"
            <+> (doubleQuotes . printTerm) t) in_ax
-     a' = if null a then []
-          else (head a):(map (text "and" <+>) (tail a))
-     f  = map (\ (s,t,alt) -> text s <+> text "::"
-                 <+> (doubleQuotes . (printTyp Null)) t
+     f = map (\ (s, t, alt) -> text s <+> text "::"
+                 <+> (doubleQuotes . printTyp Null) t
                  <+> (case alt of
-                       Just (AltSyntax s' [i1,i2] i) -> parens ((
-                        if i1==i2 then text "infix "
+                       Just (AltSyntax s' [i1, i2] i) -> parens ((
+                        if i1 == i2 then text "infix "
                         else if i1 < i2 then text "infixr "
                         else text "infixl ") <+> doubleQuotes (text s')
                         <+> text (show i))
                        _ -> empty
                  )) params
-     f' = if null f then []
-          else (head f):(map (text "and" <+>) (tail f))
  in vcat [
-     vcat [text "locale" <+> text n <+>
-       (if length (p'++a'++f') > 0
-        then text "=" else empty) <+>
-       hsep p' <+> if length p' > 0 &&
-       (length a' > 0 || length f' > 0)
-        then text "+" else empty,
-       (if length f' > 0 then text "fixes" else empty) <+> vcat f',
-       (if length a' > 0 then text "assumes" else empty) <+> vcat a'],
-     vcat (map (\ (s,t) -> text ("theorem (in "++ n  ++")")
+     printFixesAssumes (text "locale" <+> text n) p' a f,
+     vcat (map (\ (s, t) -> text ("theorem (in " ++ n ++ ")")
            <+> text s <+> text ":"
            <+> (doubleQuotes . printTerm) t
            <+> text "apply(auto)"
@@ -489,38 +489,28 @@ printLocale (n,(parents,in_ax,ex_ax,params)) =
 printClassrel :: Classrel -> Doc
 printClassrel = vsep . map printClassR . orderCDecs . Map.toList
 
-printClassR :: (IsaClass,ClassDecl) -> Doc
-printClassR (y, (parents, assumptions,fixes)) =
- let a = map (\ (s,t) -> text s <+> text ":"
+printClassR :: (IsaClass, ClassDecl) -> Doc
+printClassR (y, (parents, assumptions, fixes)) =
+ let a = map (\ (s, t) -> text s <+> text ":"
           <+> (doubleQuotes . printTerm) t) assumptions
-     a' = if null a then []
-      else (head a):(map (text "and" <+>) (tail a))
-     f = map (\ (s,t) -> text s <+> text "::"
-          <+> (doubleQuotes . (printTyp Null)) t) fixes
-     f' = if null f then []
-      else (head f):(map (text "and" <+>) (tail f))
-     parents' = filter (\ (IsaClass s) -> not $ elem s
-       ["HOL.type_class","HOL.type","type","type_class"]) parents
+     f = map (\ (s, t) -> text s <+> text "::"
+          <+> (doubleQuotes . printTyp Null) t) fixes
+     parents' = filter (\ (IsaClass s) -> notElem s
+       ["HOL.type_class", "HOL.type", "type", "type_class"]) parents
      p' = Data.List.intersperse (text "+") $ map printClass parents'
- in vcat [text "class" <+> printClass y <+>
-          (if length (p'++a'++f') > 0 then text "=" else empty)
-          <+> hsep p' <+> if length p' > 0 &&
-            (length a' > 0 || length f' > 0)
-            then text "+" else empty,
-          (if length f' > 0 then text "fixes" else empty) <+> vcat f',
-          (if length a' > 0 then text "assumes" else empty) <+> vcat a']
+ in printFixesAssumes (text "class" <+> printClass y) p' a f
 
-orderCDecs :: [(IsaClass,ClassDecl)] -> [(IsaClass,ClassDecl)]
+orderCDecs :: [(IsaClass, ClassDecl)] -> [(IsaClass, ClassDecl)]
 orderCDecs =
    topSort crord
  where
-   crord (_,(cs,_,_)) (c,_) = elem c cs
+   crord (_, (cs, _, _)) (c, _) = elem c cs
 
-orderLDecs :: [(String,LocaleDecl)] -> [(String,LocaleDecl)]
+orderLDecs :: [(String, LocaleDecl)] -> [(String, LocaleDecl)]
 orderLDecs =
    topSort crord
  where
-   crord (_,(cs,_,_,_)) (c,_) = elem c cs
+   crord (_, (cs, _, _, _)) (c, _) = elem c cs
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
