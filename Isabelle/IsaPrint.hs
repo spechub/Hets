@@ -96,8 +96,8 @@ printNamedSentences sens = case sens of
   s : r
     | isIsaAxiom s ->
       let (axs, rest) = span isAxiom sens in
-      vsep (map (\ a -> text axiomatizationS $+$
-                   text whereS $+$ printNamedSen a) axs)
+      (if null axs then empty else text axiomatizationS $+$ text whereS)
+      $+$ vcat (intersperse (text andS) $ map printNamedSen axs)
       $++$ vcat (map ( \ a -> text declareS <+> text (senAttr a)
                         <+> brackets (text simpS))
                  $ filter ( \ a -> case sentence a of
@@ -220,8 +220,8 @@ printTypeOp x name r1 r2 =
         d4 = if i2 < r then parens d2 else d2
     in (d3 <+> text name <+> d4, r)
 
-and_docs :: [Doc] -> Doc
-and_docs ds = vcat $ prepPunctuate (text andS <> space) ds
+andDocs :: [Doc] -> Doc
+andDocs = vcat . prepPunctuate (text andS <> space)
 
 -- | printing a named sentence
 printNamedSen :: Named Sentence -> Doc
@@ -452,15 +452,12 @@ consDocBarSep d r = case r of
 printLocales :: Locales -> Doc
 printLocales = vsep . map printLocale . orderLDecs . Map.toList
 
-interAnd :: [Doc] -> Doc
-interAnd = vcat . punctuate (text "and ")
-
 printFixesAssumes :: Doc -> [Doc] -> [Doc] -> [Doc] -> Doc
 printFixesAssumes h p' a f = vcat
   [ h <+> (if null $ p' ++ a ++ f then empty else text "=") <+> hsep p'
     <+> if null p' || null a && null f then empty else text "+"
-  , if null f then empty else text "fixes" <+> interAnd f
-  , if null a then empty else text "assumes" <+> interAnd a
+  , if null f then empty else text "fixes" <+> andDocs f
+  , if null a then empty else text "assumes" <+> andDocs a
   ]
 
 printLocale :: (String, LocaleDecl) -> Doc
@@ -677,7 +674,7 @@ printSign sig = let dt = ordDoms $ domainTab sig
     printDomainDefs dtDefs = vcat $ map printDomainDef dtDefs
     printDomainDef dts = if null dts then empty else
         text (if isDomain then domainS else datatypeS)
-        <+> and_docs (map printDomain dts)
+        <+> andDocs (map printDomain dts)
     printDomain (t, ops) =
        printTyp (if isDomain then Quoted else Null) t <+> equals <+>
        fsep (bar $ map printDOp ops)
