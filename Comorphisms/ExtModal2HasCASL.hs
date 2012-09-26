@@ -784,6 +784,9 @@ transEMF as emf = let
   vds = mkVs 'w' world
   nds = mkVs 'n' natId
   gvs = map GenVarDecl . vds
+  [v1] = vds 1
+  [n1] = nds 1
+  [vt1, nt1] = map QualVar [v1, n1]
   in case emf of
   PrefixForm pf f r -> case pf of
     BoxOrDiamond bOp m gEq i -> let
@@ -837,23 +840,47 @@ transEMF as emf = let
     StateQuantification fut gen -> let
       vt0 = targetW as
       nt0 = targetN as
-      [v1] = vds 1
-      [n1] = nds 1
-      [vt1, nt1] = map QualVar [v1, n1]
       nAs = as { freeC = fW + 1, targetW = vt1, targetN = nt1 }
       in mkLogTerm andId r (zPath as)
          . (if gen then HC.mkForall else mkExQs) (map GenVarDecl [v1, n1])
          . mkLogTerm (if gen then implId else andId) nr
            (if fut then mkZPath vt0 nt0 nAs else mkZPath vt1 nt1 as)
            $ transMF nAs f
+    PathQuantification gen -> if gen then let
+      ws = mkVs 'p' nWorldId 2
+      [w1, w2] = map QualVar ws
+      p = pairWorld (targetW as) $ targetN as
+      nAs = as { freeC = fW + 2, freeZ = fW + 1 }
+      zd = zDecl nAs
+      zt = QualVar zd
+      z = QualVar $ zDecl as
+      in mkLogTerm andId r (zPath as)
+         . HC.mkForall [GenVarDecl zd]
+         . mkLogTerm implId r
+           (mkLogTerm andId r (pathAppl2 (sourceW as) zd)
+            . HC.mkForall (map GenVarDecl [v1, n1])
+            . mkLogTerm andId r
+              (mkLogTerm eqvId r
+               (mkZPath vt1 nt1 as) $ mkZPath vt1 nt1 nAs)
+            . HC.mkForall (map GenVarDecl ws)
+            . mkLogTerm implId r
+              (mkLogTerm andId r
+               (mkApplTerm z [w1, p])
+               $ mkApplTerm z [w2, p])
+            . mkLogTerm eqvId r
+              (mkApplTerm z [w1, w2])
+              $ mkApplTerm zt [w1, w2])
+         $ transMF nAs f
+      else transMF as . mkNeg . ExtFORMULA $ PrefixForm
+               (PathQuantification $ not gen) (mkNeg f) r
     _ -> transMF as f
   UntilSince isUntil f1 f2 r -> let
     nAs = as { freeC = fW + 2 }
     vt0 = targetW as
     nt0 = targetN as
-    [v1, v2] = vds 2
-    [n1, n2] = nds 2
-    [vt1, vt2, nt1, nt2] = map QualVar [v1, v2, n1, n2]
+    [_, v2] = vds 2
+    [_, n2] = nds 2
+    [vt2, nt2] = map QualVar [v2, n2]
     as1 = nAs { targetW = vt1, targetN = nt1 }
     as2 = nAs { targetW = vt2, targetN = nt2 }
     in mkLogTerm andId r (zPath as)
