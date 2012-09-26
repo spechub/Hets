@@ -780,7 +780,9 @@ transEMF as emf = let
   fW = freeC as
   pathAppl3 t = mkLogTerm implId nr . pathAppl2 t
   is i = [fW + 1 .. fW + i]
-  vds = map (\ n -> varDecl (genNumVar "w" n) world) . is
+  mkVs c ty = map (\ n -> varDecl (genNumVar [c] n) ty) . is
+  vds = mkVs 'w' world
+  nds = mkVs 'n' natId
   gvs = map GenVarDecl . vds
   in case emf of
   PrefixForm pf f r -> case pf of
@@ -832,14 +834,25 @@ transEMF as emf = let
            , transMF as { boundNoms = (ni, ti) : boundNoms as
                         , targetW = ti
                         , freeC = fW + 1 } f ]
+    StateQuantification fut gen -> let
+      vt0 = targetW as
+      nt0 = targetN as
+      [v1] = vds 1
+      [n1] = nds 1
+      [vt1, nt1] = map QualVar [v1, n1]
+      nAs = as { freeC = fW + 1, targetW = vt1, targetN = nt1 }
+      in mkLogTerm andId r (zPath as)
+         . (if gen then HC.mkForall else mkExQs) (map GenVarDecl [v1, n1])
+         . mkLogTerm (if gen then implId else andId) nr
+           (if fut then mkZPath vt0 nt0 nAs else mkZPath vt1 nt1 as)
+           $ transMF nAs f
     _ -> transMF as f
   UntilSince isUntil f1 f2 r -> let
     nAs = as { freeC = fW + 2 }
-    l = is 2
     vt0 = targetW as
     nt0 = targetN as
     [v1, v2] = vds 2
-    [n1, n2] = map (\ n -> varDecl (genNumVar "n" n) natId) l
+    [n1, n2] = nds 2
     [vt1, vt2, nt1, nt2] = map QualVar [v1, v2, n1, n2]
     as1 = nAs { targetW = vt1, targetN = nt1 }
     as2 = nAs { targetW = vt2, targetN = nt2 }
