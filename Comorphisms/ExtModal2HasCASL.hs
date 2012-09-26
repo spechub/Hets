@@ -721,10 +721,12 @@ transTop msig f = let
 getTermOfNom :: Args -> Id -> Term
 getTermOfNom as i = fromMaybe (mkNomAppl i) . lookup i $ boundNoms as
 
+mkZPath :: Term -> Term -> Args -> Term
+mkZPath v n as = mkApplTerm (QualVar $ zDecl as)
+    [pairWorld v n, pairWorld (targetW as) $ targetN as]
+
 zPath :: Args -> Term
-zPath as = mkApplTerm (QualVar $ zDecl as)
-      [ pairWorld (sourceW as) zeroT
-      , pairWorld (targetW as) $ targetN as ]
+zPath as = mkZPath (sourceW as) zeroT as
 
 trRecord :: Args -> String -> Record EM_FORMULA Term Term
 trRecord as str = let
@@ -774,16 +776,18 @@ pathAppl2 :: Term -> VarDecl -> Term
 pathAppl2 t v = pathAppl [t, QualVar v]
 
 transEMF :: Args -> EM_FORMULA -> Term
-transEMF as emf = case emf of
-  PrefixForm pf f r -> let
-    fW = freeC as
-    pathAppl3 t = mkLogTerm implId nr . pathAppl2 t
-    in case pf of
+transEMF as emf = let
+  fW = freeC as
+  pathAppl3 t = mkLogTerm implId nr . pathAppl2 t
+  is i = [fW + 1 .. fW + i]
+  vds = map (\ n -> varDecl (genNumVar "w" n) world) . is
+  gvs = map GenVarDecl . vds
+  in case emf of
+  PrefixForm pf f r -> case pf of
     BoxOrDiamond bOp m gEq i -> let
       ex = bOp == Diamond
-      l = [fW + 1 .. fW + i]
-      vds = map (\ n -> varDecl (genNumVar "w" n) world) l
-      gvs = map GenVarDecl vds
+      l = is i
+      gs = gvs i
       nAs = as { freeC = fW + i }
       tf n = let
         vt = varTerm (genNumVar "w" n) world
@@ -793,11 +797,11 @@ transEMF as emf = case emf of
            . pathAppl3 vt zd
             $ transMF (resetArgs vt newAs) f
       tM n = transMod nAs { nextW = n } m
-      conjF = mkConj $ map tM l ++ map tf l ++ disjointVars vds
+      conjF = mkConj $ map tM l ++ map tf l ++ disjointVars (vds i)
       diam = BoxOrDiamond Diamond m True
       tr b = transEMF as $ PrefixForm (BoxOrDiamond b m gEq i) f r
-      f1 = QuantifiedTerm HC.Existential gvs conjF r
-      f2 = HC.mkForall gvs conjF
+      f1 = QuantifiedTerm HC.Existential gs conjF r
+      f2 = HC.mkForall gs conjF
       in if gEq && i > 0 && (i == 1 || ex) then case bOp of
            Diamond -> f1
            Box -> f2
@@ -829,7 +833,30 @@ transEMF as emf = case emf of
                         , targetW = ti
                         , freeC = fW + 1 } f ]
     _ -> transMF as f
-  UntilSince _isUntil f1 f2 _ -> mkConj [transMF as f1, transMF as f2]
+  UntilSince isUntil f1 f2 r -> let
+    nAs = as { freeC = fW + 2 }
+    l = is 2
+    vt0 = targetW as
+    nt0 = targetN as
+    [v1, v2] = vds 2
+    [n1, n2] = map (\ n -> varDecl (genNumVar "n" n) natId) l
+    [vt1, vt2, nt1, nt2] = map QualVar [v1, v2, n1, n2]
+    as1 = nAs { targetW = vt1, targetN = nt1 }
+    as2 = nAs { targetW = vt2, targetN = nt2 }
+    in mkLogTerm andId r (zPath as)
+      . mkExQs (map GenVarDecl [v1, n1])
+      $ mkConj
+      [ if isUntil then mkZPath vt0 nt0 as1 else mkZPath vt1 nt1 as
+      , transMF as1 f2
+      , HC.mkForall (map GenVarDecl [v2, n2])
+        . mkLogTerm orId r
+        (mkConj
+        [ mkLogTerm orId r
+          (if isUntil then mkZPath vt0 nt0 as2 else mkZPath vt2 nt2 as)
+          . mkLogTerm andId r (eqW vt0 vt2)
+          $ mkEqTerm eqId natTy r nt0 nt2
+        , if isUntil then mkZPath vt2 nt2 as1 else mkZPath vt1 nt1 as2 ])
+        $ transMF as2 f1 ]
   ModForm _ -> unitTerm trueId nr
 
 resetArgs :: Term -> Args -> Args
