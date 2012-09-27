@@ -411,6 +411,18 @@ resolveMixFrm par extR g ids frm =
                               Mixfix_parenthesized ts ps] ->
                      return $ Predication qide ts ps
                  _ -> return $ Mixfix_formula tNew
+       QuantOp o t fOld -> let
+         ts = if isSimpleId o then Set.singleton $ idToSimpleId o
+              else Set.empty
+         in fmap (QuantOp o t)
+            $ resolveMixFrm par (extendMixResolve ts extR)
+              g (extendRules ts ids) fOld
+       QuantPred p t fOld -> let
+         ts = if isSimpleId p then Set.singleton $ idToSimpleId p
+              else Set.empty
+         in fmap (QuantPred p t)
+            $ resolveMixFrm par (extendMixResolve ts extR)
+              g (extendRules ts ids) fOld
        ExtFORMULA f ->
            do newF <- extR g ids f
               return $ ExtFORMULA newF

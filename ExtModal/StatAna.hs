@@ -362,12 +362,10 @@ anaFORMULA mix sig f = do
     -- the unknown predicates are not needed for mixfix resolution
     r <- resolveFormula parenExtForm
                   resolveExtForm (globAnnos sig) (mixRules mix2) f
-    let pm2 = Set.fold
-          (\ t -> MapSet.insert (simpleIdToId t) (PredType []))
-          (predMap sig)
-          $ getFormPredToks f
-        sig2 = sig { predMap = pm2 }
-    n <- minExpFORMULA frmTypeAna sig2 r
+    let q = Set.fold
+          (\ t -> QuantPred (simpleIdToId t) (Pred_type [] $ tokPos t))
+          r $ getFormPredToks f
+    n <- minExpFORMULA frmTypeAna sig q
     return (r, n)
 
 getEFormPredToks :: EM_FORMULA -> Set.Set Token
@@ -381,4 +379,7 @@ getFormPredToks = foldFormula
   (constRecord getEFormPredToks Set.unions Set.empty)
     { foldMixfix_formula = \ f ts -> case f of
          Mixfix_formula (Mixfix_token t) -> Set.singleton t
-         _ -> ts }
+         _ -> ts
+    , foldQuantPred = \ _ i _ ts -> if isSimpleId i then
+        Set.delete (idToSimpleId i) ts else ts
+    }

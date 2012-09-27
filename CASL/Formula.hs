@@ -141,13 +141,16 @@ qualVarName o = do
   return $ Qual_var i s $ toRange o [v, c] p
 
 qualOpName :: Token -> AParser st (TERM f)
-qualOpName o = do
+qualOpName = fmap (`mkAppl` []) . qualOpSymb
+
+qualOpSymb :: Token -> AParser st OP_SYMB
+qualOpSymb o = do
   v <- asKey opS
   i <- parseId []
   c <- anColon
   t <- opType [] << addAnnos
   p <- cParenT
-  return $ Application (Qual_op_name i t $ toRange o [v, c] p) [] nullRange
+  return $ Qual_op_name i t $ toRange o [v, c] p
 
 opSort :: [String] -> GenParser Char st (Bool, Id, Range)
 opSort k = fmap (\ s -> (False, s, nullRange)) (sortId k) <|> do
@@ -206,13 +209,32 @@ quant = choice (map (\ (q, s) -> do
 varDecls :: [String] -> AParser st ([VAR_DECL], [Token])
 varDecls ks = separatedBy (varDecl ks) anSemiOrComma
 
+data VarsQualOpOrPred =
+    VarDecls [VAR_DECL] [Token]
+  | BoundOp OP_NAME OP_TYPE
+  | BoundPred PRED_NAME PRED_TYPE
+
+varDeclsOrQual :: [String] -> AParser st VarsQualOpOrPred
+varDeclsOrQual k =
+  fmap (uncurry VarDecls) (varDecls k)
+  <|> do
+    o <- oParenT
+    do Qual_op_name i t _ <- qualOpSymb o
+       return $ BoundOp i t
+     <|> do
+       Qual_pred_name i t _ <- qualPredSymb k o
+       return $ BoundPred i t
+
 quantFormula :: TermParser f => [String] -> AParser st (FORMULA f)
 quantFormula k = do
   (q, p) <- quant
-  (vs, ps) <- varDecls k
+  vdq <- varDeclsOrQual k
   d <- dotT
   f <- formula k
-  return $ Quantification q vs f $ toRange p ps d
+  return $ case vdq of
+    VarDecls vs ps -> Quantification q vs f $ toRange p ps d
+    BoundOp o t -> QuantOp o t f
+    BoundPred i t -> QuantPred i t f
 
 varDecl :: [String] -> AParser st VAR_DECL
 varDecl k = do
@@ -234,13 +256,16 @@ predUnitType = do
   return $ Pred_type [] (tokPos o `appRange` tokPos c)
 
 qualPredName :: [String] -> Token -> AParser st (TERM f)
-qualPredName k o = do
+qualPredName k = fmap Mixfix_qual_pred . qualPredSymb k
+
+qualPredSymb :: [String] -> Token -> AParser st PRED_SYMB
+qualPredSymb k o = do
   v <- asKey predS
   i <- parseId k
   c <- colonT
   s <- predType k << addAnnos
   p <- cParenT
-  return $ Mixfix_qual_pred $ Qual_pred_name i s $ toRange o [v, c] p
+  return $ Qual_pred_name i s $ toRange o [v, c] p
 
 parenFormula :: TermParser f => [String] -> AParser st (FORMULA f)
 parenFormula k = oParenT << addAnnos >>= clParenFormula k
