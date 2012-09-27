@@ -29,6 +29,7 @@ import CASL.Overload
 import CASL.Sign as CASL
 import CASL.World
 
+import Data.List
 import Data.Maybe
 import Data.Function
 import qualified Data.Map as Map
@@ -61,11 +62,14 @@ instance Comorphism ExtModal2HasCASL
     sourceSublogic ExtModal2HasCASL = maxSublogic { hasTransClos = False }
     targetLogic ExtModal2HasCASL = HasCASL
     mapSublogic ExtModal2HasCASL _ = Just HC.caslLogic { which_logic = HOL }
-    map_theory ExtModal2HasCASL (sig, sens) = case transSig sig sens of
+    map_theory ExtModal2HasCASL (sig, allSens) = let
+      (frames, sens) = partition (isFrameAx . sentence) allSens
+      in case transSig sig sens of
       (mme, s) -> return
         (mme, map (\ (n, d) -> makeNamed n $ DatatypeSen [d])
               [("natural numbers", natType), ("numbered worlds", worldType)]
-              ++ s ++ map (mapNamed $ toSen sig) sens)
+              ++ s ++ transFrames sig frames
+              ++ map (mapNamed $ toSen sig) sens)
     {-
     map_morphism ExtModal2HasCASL = return . mapMor
     map_sentence ExtModal2HasCASL sig = return . transSen sig
@@ -96,7 +100,7 @@ mkNot :: Term -> Term
 mkNot = mkTerm notId notType [] nr
 
 mkConj :: [Term] -> Term
-mkConj l = toBinJunctor andId l nr
+mkConj l = (if null l then unitTerm trueId else toBinJunctor andId l) nr
 
 mkDisj :: [Term] -> Term
 mkDisj l =
@@ -681,8 +685,19 @@ toSen msig f = case f of
                 $ map ( \ o -> case o of
                         Qual_op_name i t _ -> (trI i, toOpType t)
                         _ -> error "ExtModal2HasCASL.toSentence") ops) sorts
-   ExtFORMULA (ModForm _) -> Formula $ unitTerm trueId nr
    _ -> Formula $ transTop msig f
+
+transFrames :: ExtModalSign -> [Named (FORMULA EM_FORMULA)] -> [Named Sentence]
+transFrames sig = foldr (\ nf -> case sentence nf of
+  ExtFORMULA (ModForm (ModDefn _ _ _ fs _)) ->
+     (map (\ af -> makeNamed (getRLabel af) $ Formula $ transTop sig (item af))
+     (concatMap (frameForms . item) fs) ++)
+  _ -> id) []
+
+isFrameAx :: FORMULA EM_FORMULA -> Bool
+isFrameAx f = case f of
+  ExtFORMULA (ModForm _) -> True
+  _ -> False
 
 data Args = Args
   { sourceW, targetW, targetN :: Term
@@ -897,7 +912,7 @@ transEMF as emf = let
           $ mkEqTerm eqId natTy r nt0 nt2
         , if isUntil then mkZPath vt2 nt2 as1 else mkZPath vt1 nt1 as2 ])
         $ transMF as2 f1 ]
-  ModForm _ -> unitTerm trueId nr
+  ModForm md -> mkConj $ transModDefn as md
 
 resetArgs :: Term -> Args -> Args
 resetArgs t as = as
@@ -958,3 +973,7 @@ transOrElse nFs as ms = case ms of
     Guard f -> transMod as (Guard . conjunct $ f : nFs)
       : transOrElse (mkNeg f : nFs) as r
     _ -> transMod as md : transOrElse nFs as r
+
+transModDefn :: Args -> ModDefn -> [Term]
+transModDefn as (ModDefn _ _ _ fs _) =
+  concatMap (map (transMF as . item) . frameForms . item) fs
