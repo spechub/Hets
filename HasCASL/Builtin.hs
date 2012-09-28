@@ -54,6 +54,7 @@ module HasCASL.Builtin
     , mkLogTerm
     , toBinJunctor
     , mkTerm
+    , mkTermInst
     , unitTerm
     , unitTypeScheme
     ) where
@@ -337,13 +338,19 @@ bOps = Map.fromList $ map ( \ (i, sc) ->
 preEnv :: Env
 preEnv = initialEnv { classMap = cpoMap, typeMap = bTypes, assumps = bOps }
 
+mkQualOpInst :: InstKind -> Id -> TypeScheme -> [Type] -> Range -> Term
+mkQualOpInst k i sc tys ps = QualOp Fun (PolyId i [] ps) sc tys k ps
+
 mkQualOp :: Id -> TypeScheme -> [Type] -> Range -> Term
-mkQualOp i sc tys ps = QualOp Fun (PolyId i [] ps) sc tys Infer ps
+mkQualOp = mkQualOpInst Infer
 
-mkTerm :: Id -> TypeScheme -> [Type] -> Range -> Term  -> Term
-mkTerm i sc tys ps t = ApplTerm (mkQualOp i sc tys ps) t ps
+mkTermInst :: InstKind -> Id -> TypeScheme -> [Type] -> Range -> Term -> Term
+mkTermInst k i sc tys ps t = ApplTerm (mkQualOpInst k i sc tys ps) t ps
 
-mkBinTerm :: Id -> TypeScheme -> [Type] -> Range -> Term  -> Term -> Term
+mkTerm :: Id -> TypeScheme -> [Type] -> Range -> Term -> Term
+mkTerm = mkTermInst Infer
+
+mkBinTerm :: Id -> TypeScheme -> [Type] -> Range -> Term -> Term -> Term
 mkBinTerm i sc tys ps t1 t2 = mkTerm i sc tys ps $ TupleTerm [t1, t2] ps
 
 mkLogTerm :: Id -> Range -> Term -> Term -> Term

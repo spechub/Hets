@@ -95,7 +95,9 @@ t2term = foldTerm mapRec
           then if q == InType then unitTerm trueId ps else
                    if q == OfType then origTerm else ntrm
           else let
-            prTrm = mkTerm projName (mkInjOrProjType PFunArr) [sty, ty] ps ntrm
+            prTrm = mkTermInst
+              (if q == InType then UserGiven else Infer)
+              projName (mkInjOrProjType PFunArr) [sty, ty] ps ntrm
           in case q of
             InType -> mkTerm defId defType [ty] ps prTrm
             AsType -> TypedTerm prTrm Inferred ty ps
