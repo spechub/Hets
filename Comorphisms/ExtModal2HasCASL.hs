@@ -901,7 +901,7 @@ transEMF as emf = let
                [ mkZPath vt1 nt1 as
                , mkEqNats (sucTerm nt1) nt0
                , transMF as2 f ]
-    _ -> transMF as f
+    FixedPoint _ _ -> error $ "transEMF: " ++ showDoc emf ""
   UntilSince isUntil f1 f2 r -> let
     nAs = as { freeC = fW + 2 }
     [_, v2] = vds 2
