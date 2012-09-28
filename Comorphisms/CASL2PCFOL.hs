@@ -36,7 +36,7 @@ import CASL.Project
 import CASL.Monoton
 
 -- | The identity of the comorphism
-data CASL2PCFOL = CASL2PCFOL deriving (Show)
+data CASL2PCFOL = CASL2PCFOL deriving Show
 
 instance Language CASL2PCFOL -- default definition is okay
 
@@ -108,32 +108,32 @@ mkProjInjName :: SORT -> SORT -> String
 mkProjInjName = mkInjectivityName "projection"
 
 -- | create a quantified injectivity implication
-mkInjectivity :: (TERM () -> TERM ()) -> VAR_DECL -> VAR_DECL -> FORMULA ()
+mkInjectivity :: (TERM f -> TERM f) -> VAR_DECL -> VAR_DECL -> FORMULA f
 mkInjectivity f vx vy =
   mkForall [vx, vy] $ mkInjImpl f (toQualVar vx) $ toQualVar vy
 
 -- | create an injectivity implication over x and y
-mkInjImpl :: (TERM () -> TERM ()) -> TERM () -> TERM () -> FORMULA ()
+mkInjImpl :: (TERM f -> TERM f) -> TERM f -> TERM f -> FORMULA f
 mkInjImpl f x y = mkImpl (mkExEq (f x) (f y)) (mkExEq x y)
 
 -- | apply injection function
-injectTo :: SORT -> TERM () -> TERM ()
+injectTo :: TermExtension f => SORT -> TERM f -> TERM f
 injectTo s q = injectUnique nullRange q s
 
 -- | apply (a partial) projection function
-projectTo :: SORT -> TERM () -> TERM ()
+projectTo :: TermExtension f => SORT -> TERM f -> TERM f
 projectTo s q = projectUnique Partial nullRange q s
 
 {- | Make the named sentence for the embedding injectivity axiom from s to s'
 i.e., forall x,y:s . inj(x)=e=inj(y) => x=e=y -}
-mkEmbInjAxiom :: SORT -> SORT -> Named (FORMULA ())
+mkEmbInjAxiom :: TermExtension f => SORT -> SORT -> Named (FORMULA f)
 mkEmbInjAxiom s s' =
     makeNamed (mkEmbInjName s s')
       $ mkInjectivity (injectTo s') (mkVarDeclStr "x" s) $ mkVarDeclStr "y" s
 
 {- | Make the named sentence for the projection injectivity axiom from s' to s
 i.e., forall x,y:s . pr(x)=e=pr(y) => x=e=y -}
-mkProjInjAxiom :: SORT -> SORT -> Named (FORMULA ())
+mkProjInjAxiom :: TermExtension f => SORT -> SORT -> Named (FORMULA f)
 mkProjInjAxiom s s' =
     makeNamed (mkProjInjName s' s)
       $ mkInjectivity (projectTo s) (mkVarDeclStr "x" s') $ mkVarDeclStr "y" s'
@@ -143,7 +143,7 @@ mkProjName :: SORT -> SORT -> String
 mkProjName = mkAxName "projection"
 
 -- | create a quantified existential equation over x of sort s
-mkXExEq :: SORT -> (TERM () -> TERM ()) -> (TERM () -> TERM ()) -> FORMULA ()
+mkXExEq :: SORT -> (TERM f -> TERM f) -> (TERM f -> TERM f) -> FORMULA f
 mkXExEq s fl fr = let
   vx = mkVarDeclStr "x" s
   qualX = toQualVar vx
@@ -151,7 +151,7 @@ mkXExEq s fl fr = let
 
 {- | Make the named sentence for the projection axiom from s' to s
 i.e., forall x:s . pr(inj(x))=e=x -}
-mkProjAxiom :: SORT -> SORT -> Named (FORMULA ())
+mkProjAxiom :: TermExtension f => SORT -> SORT -> Named (FORMULA f)
 mkProjAxiom s s' = makeNamed (mkProjName s' s)
     $ mkXExEq s (projectTo s . injectTo s') id
 
@@ -162,7 +162,7 @@ mkTransAxiomName s s' s'' =
 
 {- | Make the named sentence for the transitivity axiom from s to s' to s''
 i.e., forall x:s . inj(inj(x))=e=inj(x) -}
-mkTransAxiom :: SORT -> SORT -> SORT -> Named (FORMULA ())
+mkTransAxiom :: TermExtension f => SORT -> SORT -> SORT -> Named (FORMULA f)
 mkTransAxiom s s' s'' = makeNamed (mkTransAxiomName s s' s'')
     $ mkXExEq s (injectTo s'' . injectTo s') $ injectTo s''
 
@@ -172,11 +172,11 @@ mkIdAxiomName = mkAxName "identity"
 
 {- | Make the named sentence for the identity axiom from s to s'
 i.e., forall x:s . inj(inj(x))=e=x -}
-mkIdAxiom :: SORT -> SORT -> Named (FORMULA ())
+mkIdAxiom :: TermExtension f => SORT -> SORT -> Named (FORMULA f)
 mkIdAxiom s s' = makeNamed (mkIdAxiomName s s')
     $ mkXExEq s (injectTo s . injectTo s') id
 
-generateAxioms :: Sign f e -> [Named (FORMULA ())]
+generateAxioms :: TermExtension f => Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = concatMap (\ s ->
     concatMap (\ s' ->
       [mkIdAxiom s s' | Set.member s $ supersortsOf s' sig ]
