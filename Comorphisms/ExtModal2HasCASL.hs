@@ -46,6 +46,7 @@ import HasCASL.AsUtils as HC
 import HasCASL.Builtin
 import HasCASL.DataAna
 import HasCASL.Le as HC
+import HasCASL.Unify
 import HasCASL.Sublogic as HC
 
 data ExtModal2HasCASL = ExtModal2HasCASL deriving (Show)
@@ -745,10 +746,16 @@ trRecord as str = let
     extInf = extendedInfo $ modSig as
     currW = targetW as
     andPath = mkLogTerm andId nr $ zPath as
+    typeTerm hty tr = case getTypeOf tr of
+      Just t | hty == t -> tr
+      _ -> TypedTerm tr Inferred hty nr
+    typeArgs = zipWith (typeTerm . toType)
     in (transRecord str)
-  { foldPredication = \ _ ps args _ -> let
+  { foldPredication = \ _ ps pargs _ -> let
       Qual_pred_name pn pTy@(Pred_type srts q) _ = ps
+      args = typeArgs srts pargs
       in andPath
+         $ typeTerm unitType
          $ if MapSet.member pn (toPredType pTy) $ flexPreds extInf
          then mkApplTerm
             (mkOp (trI pn) . trPrSyn
@@ -765,9 +772,11 @@ trRecord as str = let
         let Definedness c _ = o in
         andPath $ mkTerm defId defType [typeOfTerm c] ps t
   , foldExtFORMULA = \ _ f -> transEMF as f
-  , foldApplication = \ _ os args _ -> let
+  , foldApplication = \ _ os oargs _ -> let
       Qual_op_name opn oTy@(Op_type ok srts res q) _ = os
-      in if MapSet.member opn (toOpType oTy) $ flexOps extInf
+      args = typeArgs srts oargs
+      in typeTerm (toType res)
+         $ if MapSet.member opn (toOpType oTy) $ flexOps extInf
          then mkApplTerm
             (mkOp (trI opn) . trOpSyn
             $ Op_type ok (world : srts) res q) $ currW : args
