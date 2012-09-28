@@ -99,7 +99,7 @@ collectDownloads opts dir specMap (n, (b, topTexts, importedBy)) =
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
   in foldM (\ sm d -> do
-          newDls <- downloadSpec opts sm newTopTexts newImportedBy True (dir, d)
+          newDls <- downloadSpec opts sm newTopTexts newImportedBy True ("", d)
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
 
