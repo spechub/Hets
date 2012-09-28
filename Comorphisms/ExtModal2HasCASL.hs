@@ -59,7 +59,9 @@ instance Comorphism ExtModal2HasCASL
                BasicSpec Sentence SymbItems SymbMapItems
                Env HC.Morphism HC.Symbol HC.RawSymbol () where
     sourceLogic ExtModal2HasCASL = ExtModal
-    sourceSublogic ExtModal2HasCASL = maxSublogic { hasTransClos = False }
+    sourceSublogic ExtModal2HasCASL = maxSublogic
+      { hasTransClos = False
+      , hasFixPoints = False }
     targetLogic ExtModal2HasCASL = HasCASL
     mapSublogic ExtModal2HasCASL _ = Just HC.caslLogic { which_logic = HOL }
     map_theory ExtModal2HasCASL (sig, allSens) = let
@@ -70,11 +72,6 @@ instance Comorphism ExtModal2HasCASL
               [("natural numbers", natType), ("numbered worlds", worldType)]
               ++ s ++ transFrames sig frames
               ++ map (mapNamed $ toSen sig) sens)
-    {-
-    map_morphism ExtModal2HasCASL = return . mapMor
-    map_sentence ExtModal2HasCASL sig = return . transSen sig
-    map_symbol ExtModal2HasCASL _ = Set.singleton . mapSym
-    -}
     has_model_expansion ExtModal2HasCASL = True
     is_weakly_amalgamable ExtModal2HasCASL = True
 
@@ -799,9 +796,13 @@ transEMF as emf = let
   vds = mkVs 'w' world
   nds = mkVs 'n' natId
   gvs = map GenVarDecl . vds
+  vt0 = targetW as
+  nt0 = targetN as
   [v1] = vds 1
   [n1] = nds 1
   [vt1, nt1] = map QualVar [v1, n1]
+  gvs1 = map GenVarDecl [v1, n1]
+  mkEqNats = mkEqTerm eqId natTy nr
   in case emf of
   PrefixForm pf f r -> case pf of
     BoxOrDiamond bOp m gEq i -> let
@@ -848,23 +849,21 @@ transEMF as emf = let
       vi = varDecl (genNumVar "i" $ fW + 1) world
       ti = QualVar vi
       in mkExConj vi
-           [ eqW ti $ targetW as
+           [ eqW ti vt0
            , transMF as { boundNoms = (ni, ti) : boundNoms as
                         , targetW = ti
                         , freeC = fW + 1 } f ]
     StateQuantification fut gen -> let
-      vt0 = targetW as
-      nt0 = targetN as
       nAs = as { freeC = fW + 1, targetW = vt1, targetN = nt1 }
       in mkLogTerm andId r (zPath as)
-         . (if gen then HC.mkForall else mkExQs) (map GenVarDecl [v1, n1])
+         . (if gen then HC.mkForall else mkExQs) gvs1
          . mkLogTerm (if gen then implId else andId) nr
            (if fut then mkZPath vt0 nt0 nAs else mkZPath vt1 nt1 as)
            $ transMF nAs f
     PathQuantification gen -> if gen then let
       ws = mkVs 'p' nWorldId 2
       [w1, w2] = map QualVar ws
-      p = pairWorld (targetW as) $ targetN as
+      p = pairWorld vt0 nt0
       nAs = as { freeC = fW + 2, freeZ = fW + 1 }
       zd = zDecl nAs
       zt = QualVar zd
@@ -873,7 +872,7 @@ transEMF as emf = let
          . HC.mkForall [GenVarDecl zd]
          . mkLogTerm implId r
            (mkLogTerm andId r (pathAppl2 (sourceW as) zd)
-            . HC.mkForall (map GenVarDecl [v1, n1])
+            . HC.mkForall gvs1
             . mkLogTerm andId r
               (mkLogTerm eqvId r
                (mkZPath vt1 nt1 as) $ mkZPath vt1 nt1 nAs)
@@ -888,11 +887,23 @@ transEMF as emf = let
          $ transMF nAs f
       else transMF as . mkNeg . ExtFORMULA $ PrefixForm
                (PathQuantification $ not gen) (mkNeg f) r
+    NextY next -> let
+      nAs = as { freeC = fW + 1, targetW = vt1 }
+      in mkLogTerm andId r (zPath as)
+         . mkExQs (if next then [GenVarDecl v1] else gvs1)
+         $ if next then let
+               as2 = nAs { targetN = sucTerm nt0 }
+               in mkLogTerm andId r (mkZPath vt0 nt0 as2)
+                  $ transMF as2 f
+           else let
+               as2 = nAs { targetN = nt1 }
+               in mkConj
+               [ mkZPath vt1 nt1 as
+               , mkEqNats (sucTerm nt1) nt0
+               , transMF as2 f ]
     _ -> transMF as f
   UntilSince isUntil f1 f2 r -> let
     nAs = as { freeC = fW + 2 }
-    vt0 = targetW as
-    nt0 = targetN as
     [_, v2] = vds 2
     [_, n2] = nds 2
     [vt2, nt2] = map QualVar [v2, n2]
@@ -909,7 +920,7 @@ transEMF as emf = let
         [ mkLogTerm orId r
           (if isUntil then mkZPath vt0 nt0 as2 else mkZPath vt2 nt2 as)
           . mkLogTerm andId r (eqW vt0 vt2)
-          $ mkEqTerm eqId natTy r nt0 nt2
+          $ mkEqNats nt0 nt2
         , if isUntil then mkZPath vt2 nt2 as1 else mkZPath vt1 nt1 as2 ])
         $ transMF as2 f1 ]
   ModForm md -> mkConj $ transModDefn as md
