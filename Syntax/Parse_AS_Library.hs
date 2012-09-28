@@ -174,7 +174,7 @@ libItem l =
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- logic
     do s <- asKey logicS
-       logD <- logicDescr
+       logD <- logicDescr l
        return $ Logic_decl logD $ tokPos s
   <|> -- newlogic
     do (n, s1) <- newlogicP

@@ -78,13 +78,20 @@ logicName = do
       mt <- optionMaybe $ oParenT >> iriCurie << cParenT
       return $ Logic_name e ms mt
 
-logicDescr :: AParser st LogicDescr
-logicDescr = do
+logicDescr :: LogicGraph -> AParser st LogicDescr
+logicDescr l = do
   n <- logicName
   option (nameToLogicDescr n) $ do
      r <- asKey serializationS
-     s <- hetIRI
-     return $ LogicDescr n (Just s) $ tokPos r
+     try (do
+       s <- hetIRI
+       let ld = LogicDescr n (Just s) $ tokPos r
+       (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
+       fromMaybe pzero $ basicSpecParser sm lid
+       return ld)
+      <|> do
+       s <- iriManchester
+       unexpected $ "serialization " ++ show s
 
 -- * parse Logic_code
 
@@ -318,7 +325,7 @@ specE l = logicSpec l
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
 callParser p name itemType =
-  fromMaybe (fail $ "no " ++ itemType ++ " parser for " ++ name) p
+  fromMaybe (unexpected $ "no " ++ itemType ++ " parser for " ++ name) p
 
 basicSpec :: (AnyLogic, Maybe IRI) -> AParser st SPEC
 basicSpec (Logic lid, sm) = do
@@ -331,7 +338,7 @@ basicSpec (Logic lid, sm) = do
 logicSpec :: LogicGraph -> AParser st SPEC
 logicSpec lG = do
    s1 <- asKey logicS
-   ln <- logicDescr
+   ln <- logicDescr lG
    s2 <- colonT
    sp <- annoParser $ specD $ setLogicName ln lG
    return $ Qualified_spec ln sp $ toRange s1 [] s2
