@@ -86,7 +86,6 @@ instance Comorphism
       targetLogic CASL2OWL = OWL2
       mapSublogic CASL2OWL _ = Just topS
       map_theory CASL2OWL = mapTheory
-      has_model_expansion CASL2OWL = True
 
 {- names must be disambiguated as is done in CASL.Qualify or SuleCFOL2SoftFOL.
    Ops or preds in the overload relation denote the same objectProperty!
