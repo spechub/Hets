@@ -87,7 +87,9 @@ logicDescr l = do
        s <- hetIRI
        let ld = LogicDescr n (Just s) $ tokPos r
        (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
-       fromMaybe pzero $ basicSpecParser sm lid
+       case basicSpecParser sm lid of
+         Just _ -> return ()
+         Nothing -> pzero
        return ld)
       <|> do
        s <- iriManchester
