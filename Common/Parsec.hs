@@ -91,3 +91,12 @@ reserved :: [String] -> CharParser st String -> CharParser st String
 reserved l p = try $ do
   s <- p
   if elem s l then unexpected $ "keyword " ++ show s else return s
+
+{- | Similar to 'lookAhead', but runs the parser in an isolated sandbox.
+The function is monadic but in a read-only manner.  Useful if 'lookAhead'
+taints error messages. -}
+sneakAhead :: CharParser st a -> CharParser st (Either ParseError a)
+sneakAhead p = do
+  i <- getInput
+  state <- getParserState
+  return $ runParser (setParserState state >> p) (stateUser state) "" i

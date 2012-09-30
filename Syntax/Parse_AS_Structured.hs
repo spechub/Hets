@@ -83,17 +83,19 @@ logicDescr l = do
   n <- logicName
   option (nameToLogicDescr n) $ do
      r <- asKey serializationS
-     try (do
-       s <- hetIRI
-       let ld = LogicDescr n (Just s) $ tokPos r
-       (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
-       case basicSpecParser sm lid of
-         Just _ -> return ()
-         Nothing -> pzero
-       return ld)
-      <|> do
-       s <- iriManchester
-       unexpected $ "serialization " ++ show s
+     sp <- sneakAhead hetIRI
+     case sp of
+       Left _ -> hetIRI >> error "logicDescr" -- reproduce the error
+       Right s -> do
+         let ld = LogicDescr n (Just s) $ tokPos r
+         (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
+         case basicSpecParser sm lid of
+           Just _ -> hetIRI >> return ld -- consume and return
+           Nothing -> (unexpected $ "serialization \"" ++ show s ++ "\"")
+                      <|> choice (map (\pn -> pzero
+                                              <?> '"' : (show pn) ++ "\"")
+                                  (filter (not . null . show)
+                                   (basicSpecSyntaxes lid)))
 
 -- * parse Logic_code
 

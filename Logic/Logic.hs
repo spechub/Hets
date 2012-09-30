@@ -268,6 +268,10 @@ basicSpecPrinter :: Syntax lid basic_spec symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (basic_spec -> Doc)
 basicSpecPrinter sm = fmap snd . parserAndPrinter sm
 
+basicSpecSyntaxes :: Syntax lid basic_spec symb_items symb_map_items
+  => lid -> [IRI]
+basicSpecSyntaxes = Map.keys . parsersAndPrinters
+
 parserAndPrinter :: Syntax lid basic_spec symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (AParser st basic_spec, basic_spec -> Doc)
 parserAndPrinter sm = lookupDefault sm . parsersAndPrinters
