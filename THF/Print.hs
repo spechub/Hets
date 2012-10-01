@@ -48,7 +48,7 @@ instance Pretty Kind where
     pretty k = case k of
         Kind            -> text "$tType"
         VKind v         -> prettyUpperWord v
-        MapKind k1 k2 _ -> pretty k1  <+> text ">" <+> pretty k2
+        MapKind k1 k2   -> pretty k1  <+> text ">" <+> pretty k2
         ProdKind ks     -> fsep . punctuate (text "*") $ map pretty ks
         SysType st      -> prettyAtomicSystemWord st
         ParKind k1      -> parens $ pretty k1

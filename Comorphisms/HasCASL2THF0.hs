@@ -136,9 +136,9 @@ transRawKind rk = case rk of
     ClassKind ()        -> Kind
     FunKind _ k1 k2 _   -> case k1 of
         FunKind _ _ _ _     -> MapKind (ParKind $ transRawKind k1)
-                                        (transRawKind k2) nullRange
+                                        (transRawKind k2)
         _                   -> MapKind (transRawKind k1)
-                                        (transRawKind k2) nullRange
+                                        (transRawKind k2)
 
 transAssumps :: HCLe.Assumps -> Map.Map Id Constant -> Result THFSign.ConstMap
 transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)

@@ -13,14 +13,13 @@ Static analysis for THF.
 NOTE: This implementation covers only THF0!
 -}
 
-module THF.StaticAnalysisTHF (basicAnalysis) where
+module THF.StaticAnalysisTHF (basicAnalysis,thfTopLevelTypeToType) where
 
 import THF.As as As
 import THF.Cons
 import THF.Print ()
 import THF.Sign
 
-import Common.Id hiding (typeId)
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
@@ -303,7 +302,7 @@ thfMappingTypeToKind (u : ru) =
     let k1 = thfUnitaryTypeToKind u
         k2 = thfMappingTypeToKind ru
     in if isJust k1 && isJust k2
-       then Just $ MapKind (fromJust k1) (fromJust k2) nullRange
+       then Just $ MapKind (fromJust k1) (fromJust k2)
        else Nothing
 
 thfUnitaryTypeToKind :: THFUnitaryType -> Maybe Kind

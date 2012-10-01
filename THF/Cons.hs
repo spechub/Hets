@@ -74,7 +74,7 @@ data Type =
 
 data Kind =
     Kind
-  | MapKind Kind Kind Range
+  | MapKind Kind Kind
   | ProdKind [Kind]
   | SysType Token
   | VKind Token
