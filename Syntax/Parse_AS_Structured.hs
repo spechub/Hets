@@ -31,6 +31,7 @@ import Syntax.AS_Structured
 
 import Common.AS_Annotation
 import Common.AnnoState
+import Common.AnnoParser
 import Common.Id
 import Common.IRI
 import Common.Keywords
@@ -436,7 +437,7 @@ corr1 :: LogicGraph
 corr1 l = do
     eRef <- hetIRI
     (mrRef, mconf, toer) <- corr2 l
-    cids <- annos
+    cids <- annotations
     if not (null cids || null (tail cids))
       then fail "more than one correspondence id"
       else return (listToMaybe cids, eRef, mrRef, mconf, toer)
