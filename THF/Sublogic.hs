@@ -36,7 +36,7 @@ instance MinSublogic THFSl SentenceTHF where
 instance MinSublogic THFSl THFFormula where
  minSublogic f = case f of
    TF_THF_Logic_Formula f' -> join THF0 $ minSublogic f'
-   TF_THF_Sequent s -> join THF0 $ minSublogic s
+   TF_THF_Sequent s -> join THF $ minSublogic s
    T0F_THF_Typed_Const tc -> join THF0 $ minSublogic tc -- fixme: Not in THF?
 
 instance MinSublogic THFSl THFLogicFormula where
