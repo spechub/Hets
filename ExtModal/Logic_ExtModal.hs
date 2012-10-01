@@ -46,7 +46,7 @@ instance Language ExtModal where
          [ "ExtModal is the 'extended modal logic' extension of CASL. "
          , "Syntax for ordinary modalities, multi-modal logic, dynamic "
          , "logic, graded modal logic, hybrid logic, CTL* and mu-calculus  "
-         , "is provided. Specific modal logics can be optained via "
+         , "is provided. Specific modal logics can be obtained via "
          , "restrictions to sublanguages."
          ]
 
