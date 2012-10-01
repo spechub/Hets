@@ -215,8 +215,7 @@ setTimeMods b il s = if b then case il of
     else s
 
 minMod :: Bool -> Frequency -> Frequency
-minMod h_term h_time = if h_term then
-  if h_time == None then One else Many
+minMod h_term h_time = if h_term && h_time == None then One
   else h_time
 
 sublogics_all :: [Sublogic]
