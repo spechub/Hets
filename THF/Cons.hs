@@ -20,12 +20,6 @@ import Common.Id
 
 -- Some empty instances
 
-instance GetRange Include
-
-instance GetRange TPTP_THF
-
-instance GetRange AtomicWord
-
 --------------------------------------------------------------------------------
 -- BasicSpecTHF
 --------------------------------------------------------------------------------
@@ -48,8 +42,6 @@ data SentenceTHF = Sentence
     deriving (Show, Eq, Ord)
 
 instance GetRange SentenceTHF
-
-instance GetRange THFFormula
 
 --------------------------------------------------------------------------------
 -- SymbolTHF
@@ -75,8 +67,8 @@ data Type =
   | MapType Type Type
   | ProdType [Type]
   | CType Constant
-  | SType SystemType
-  | VType Variable
+  | SType Token
+  | VType Token
   | ParType Type
     deriving (Show, Ord, Eq)
 
@@ -84,7 +76,7 @@ data Kind =
     Kind
   | MapKind Kind Kind Range
   | ProdKind [Kind]
-  | SysType SystemType
-  | VKind Variable
+  | SysType Token
+  | VKind Token
   | ParKind Kind
     deriving (Show, Ord, Eq)

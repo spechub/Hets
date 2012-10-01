@@ -84,14 +84,17 @@ a2o1ci :: Constant -> ConstInfo
 a2o1ci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
-    , constType = MapType (VType "A") (MapType (VType "A") OType)
+    , constType = MapType (VType $ mkSimpleId "A")
+                          (MapType (VType $ mkSimpleId "A") OType)
     , constAnno = Null }
 
 resci :: Constant -> ConstInfo
 resci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
-    , constType = MapType (VType "A") (MapType (VType "B") (VType "A"))
+    , constType = MapType (VType $ mkSimpleId "A")
+                          (MapType (VType $ mkSimpleId "B")
+                                    (VType $ mkSimpleId "A"))
     , constAnno = Null }
 
 botci :: Constant -> ConstInfo
@@ -105,7 +108,7 @@ defci :: Constant -> ConstInfo
 defci c = ConstInfo
     { constId   = c
     , constName = mkConstsName c
-    , constType = MapType (VType "A") OType
+    , constType = MapType (VType $ mkSimpleId "A") OType
     , constAnno = Null }
 
 --------------------------------------------------------------------------------

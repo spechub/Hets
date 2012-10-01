@@ -30,18 +30,24 @@ import qualified Data.Map as Map
 
 mkTypesName :: THFAs.Constant -> THFAs.Name
 mkTypesName c = case c of
-    A_Lower_Word w -> N_Atomic_Word $ A_Lower_Word ("type_" ++ w)
-    A_Single_Quoted s -> N_Atomic_Word $ A_Single_Quoted ("type_" ++ s)
+    A_Lower_Word w -> N_Atomic_Word $ A_Lower_Word
+                     $ mkSimpleId ("type_" ++ show w)
+    A_Single_Quoted s -> N_Atomic_Word $ A_Single_Quoted
+                        $ mkSimpleId ("type_" ++ show s)
 
 mkConstsName :: THFAs.Constant -> THFAs.Name
 mkConstsName c = case c of
-    A_Lower_Word w -> N_Atomic_Word $ A_Lower_Word ("const_" ++ w)
-    A_Single_Quoted s -> N_Atomic_Word $ A_Single_Quoted ("const_" ++ s)
+    A_Lower_Word w -> N_Atomic_Word $ A_Lower_Word
+                     $ mkSimpleId ("const_" ++ show w)
+    A_Single_Quoted s -> N_Atomic_Word $ A_Single_Quoted
+                        $ mkSimpleId ("const_" ++ show s)
 
 mkDefName :: THFAs.Constant -> THFAs.Name
 mkDefName c = case c of
-    A_Lower_Word w -> N_Atomic_Word $ A_Lower_Word ("def_" ++ w)
-    A_Single_Quoted s -> N_Atomic_Word $ A_Single_Quoted ("def_" ++ s)
+    A_Lower_Word w -> N_Atomic_Word $ A_Lower_Word
+                     $ mkSimpleId ("def_" ++ show w)
+    A_Single_Quoted s -> N_Atomic_Word $ A_Single_Quoted
+                        $ mkSimpleId ("def_" ++ show s)
 
 transTypeId :: Id -> Result THFAs.Constant
 transTypeId id1 = case maybeElem id1 preDefHCTypeIds of
@@ -69,15 +75,15 @@ transAssumpsId id1 int = if int == 1 then transAssumpId id1 else
 stringToConstant :: String -> THFAs.Constant
 stringToConstant = A_Lower_Word . stringToLowerWord
 
-stringToLowerWord :: String -> THFAs.LowerWord
-stringToLowerWord = mapHead toLower
+stringToLowerWord :: String -> Token
+stringToLowerWord = mkSimpleId . mapHead toLower
 
-stringToVariable :: String -> THFAs.Variable
+stringToVariable :: String -> String
 stringToVariable = mapHead toUpper
 
-transVarId :: Id -> Result THFAs.Variable
+transVarId :: Id -> Result Token
 transVarId id1 = case transToTHFString $ show id1 of
-        Just s  -> return $ stringToVariable s
+        Just s  -> return $ mkSimpleId $ stringToVariable s
         Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Variable.") nullRange
 

@@ -20,6 +20,7 @@ import Data.Char
 
 import Common.Doc
 import Common.DocUtils
+import Common.Id (Token)
 
 --------------------------------------------------------------------------------
 -- Pretty Instances for the THF and THF0 Syntax.
@@ -50,30 +51,30 @@ prettyHeader = foldr (($+$) . pretty) empty
 
 instance Pretty Comment where
     pretty c = case c of
-        Comment_Line s      -> text "%" <> text s
+        Comment_Line s      -> text "%" <> (text . show) s
         Comment_Block sl    -> text "/*"
-                $+$ prettyCommentBlock sl
+                $+$ prettyCommentBlock (lines $ show sl)
                 $+$ text "*/"
 
 instance Pretty DefinedComment where
     pretty dc = case dc of
-        Defined_Comment_Line s      -> text "%$" <> text s
+        Defined_Comment_Line s      -> text "%$" <> (text . show) s
         Defined_Comment_Block sl    -> text "/*$"
-                $+$ prettyCommentBlock sl
+                $+$ prettyCommentBlock (lines $ show sl)
                 $+$ text "*/"
 
 instance Pretty SystemComment where
     pretty sc = case sc of
-        System_Comment_Line s   -> text "%$$" <> text s
+        System_Comment_Line s   -> text "%$$" <> (text . show) s
         System_Comment_Block sl -> text "/*$$"
-                $+$ prettyCommentBlock sl
+                $+$ prettyCommentBlock (lines $ show sl)
                 $+$ text "*/"
 
 prettyCommentBlock :: [String] -> Doc
 prettyCommentBlock = foldr (($+$) . text) empty
 
 instance Pretty Include where
-    pretty (I_Include fn nl) = text "include" <> parens (prettyFileName fn
+    pretty (I_Include fn nl) = text "include" <> parens (prettySingleQuoted fn
         <> maybe empty (\ c -> comma <+> prettyNameList c) nl) <> text "."
 
 instance Pretty Annotations where
@@ -138,9 +139,9 @@ prettyVariableList vl = sepByCommas (map pretty vl)
 
 instance Pretty THFVariable where
     pretty v = case v of
-        TV_THF_Typed_Variable va tlt -> prettyVariable va
+        TV_THF_Typed_Variable va tlt -> prettyUpperWord va
             <+> text ":" <+> pretty tlt
-        TV_Variable var             -> prettyVariable var
+        TV_Variable var              -> prettyUpperWord var
 
 instance Pretty THFTypedConst where
     pretty ttc = case ttc of
@@ -168,18 +169,18 @@ instance Pretty THFTopLevelType where
     pretty tlt = case tlt of
         TTLT_THF_Logic_Formula lf   -> pretty lf
         T0TLT_Constant c            -> prettyConstant c
-        T0TLT_Variable v            -> prettyVariable v
+        T0TLT_Variable v            -> prettyUpperWord v
         T0TLT_Defined_Type dt       -> pretty dt
-        T0TLT_System_Type st        -> prettySystemType st
+        T0TLT_System_Type st        -> prettyAtomicSystemWord st
         T0TLT_THF_Binary_Type bt    -> pretty bt
 
 instance Pretty THFUnitaryType where
     pretty ut = case ut of
         TUT_THF_Unitary_Formula uf  -> pretty uf
         T0UT_Constant c             -> prettyConstant c
-        T0UT_Variable v             -> prettyVariable v
+        T0UT_Variable v             -> prettyUpperWord v
         T0UT_Defined_Type dt        -> pretty dt
-        T0UT_System_Type st         -> prettySystemType st
+        T0UT_System_Type st         -> prettyAtomicSystemWord st
         T0UT_THF_Binary_Type_Par bt -> parens (pretty bt)
 
 instance Pretty THFBinaryType where
@@ -195,12 +196,12 @@ instance Pretty THFAtom where
         TA_THF_Conn_Term ct         -> pretty ct
         TA_Defined_Type dt          -> pretty dt
         TA_Defined_Plain_Formula dp -> pretty dp
-        TA_System_Type st           -> prettySystemType st
+        TA_System_Type st           -> prettyAtomicSystemWord st
         TA_System_Atomic_Formula st -> pretty st
         T0A_Constant c              -> prettyConstant c
         T0A_Defined_Constant dc     -> prettyAtomicDefinedWord dc
         T0A_System_Constant sc      -> prettyAtomicSystemWord sc
-        T0A_Variable v              -> prettyVariable v
+        T0A_Variable v              -> prettyUpperWord v
 
 prettyTuple :: THFTuple -> Doc
 prettyTuple ufl = brackets $ sepByCommas (map pretty ufl)
@@ -258,9 +259,6 @@ instance Pretty AssocConnective where
 instance Pretty DefinedType where
     pretty dt = text $ '$' : drop 3 (show dt)
 
-prettySystemType :: SystemType -> Doc
-prettySystemType = prettyAtomicSystemWord
-
 instance Pretty DefinedPlainFormula where
     pretty dpf = case dpf of
         DPF_Defined_Prop dp         -> pretty dp
@@ -276,7 +274,7 @@ instance Pretty DefinedPred where
 instance Pretty Term where
     pretty t = case t of
         T_Function_Term ft  -> pretty ft
-        T_Variable v        -> prettyVariable v
+        T_Variable v        -> prettyUpperWord v
 
 instance Pretty FunctionTerm where
     pretty ft = case ft of
@@ -287,13 +285,10 @@ instance Pretty FunctionTerm where
 instance Pretty PlainTerm where
     pretty pt = case pt of
         PT_Constant c       -> prettyConstant c
-        PT_Plain_Term f a   -> prettyTPTPFunctor f <> parens (prettyArguments a)
+        PT_Plain_Term f a   -> pretty f <> parens (prettyArguments a)
 
 prettyConstant :: Constant -> Doc
-prettyConstant = prettyTPTPFunctor
-
-prettyTPTPFunctor :: TPTPFunctor -> Doc
-prettyTPTPFunctor = pretty
+prettyConstant = pretty
 
 instance Pretty DefinedTerm where
     pretty dt = case dt of
@@ -315,23 +310,17 @@ instance Pretty DefinedFunctor where
 
 instance Pretty SystemTerm where
     pretty st = case st of
-        ST_System_Constant sf   -> prettySystemFunctor sf
-        ST_System_Term sf a     -> prettySystemFunctor sf
+        ST_System_Constant sf   -> prettyAtomicSystemWord sf
+        ST_System_Term sf a     -> prettyAtomicSystemWord sf
             <> parens (prettyArguments a)
-
-prettySystemFunctor :: SystemFunctor -> Doc
-prettySystemFunctor = prettyAtomicSystemWord
-
-prettyVariable :: Variable -> Doc
-prettyVariable = prettyUpperWord
 
 prettyArguments :: Arguments -> Doc
 prettyArguments = sepByCommas . map pretty
 
 instance Pretty PrincipalSymbol where
     pretty ps = case ps of
-        PS_Functor f    -> prettyTPTPFunctor f
-        PS_Variable v   -> prettyVariable v
+        PS_Functor f    -> pretty f
+        PS_Variable v   -> prettyUpperWord v
 
 instance Pretty Source where
     pretty s = case s of
@@ -368,7 +357,7 @@ instance Pretty ExternalSource where
 instance Pretty FileSource where
     pretty (FS_File fn mn) =
         let n = maybe empty (\ c -> comma <+> pretty c) mn
-        in text "file" <> parens (prettyFileName fn <> n)
+        in text "file" <> parens (prettySingleQuoted fn <> n)
 
 instance Pretty TheoryName where
     pretty tn = text $ map toLower (show tn)
@@ -421,12 +410,12 @@ instance Pretty GeneralData where
     pretty gd = case gd of
         GD_Atomic_Word aw       -> pretty aw
         GD_General_Function gf  -> pretty gf
-        GD_Variable v           -> prettyVariable v
+        GD_Variable v           -> prettyUpperWord v
         GD_Number n             -> pretty n
         GD_Distinct_Object dio  -> prettyDistinctObject dio
         GD_Formula_Data fd      -> pretty fd
         GD_Bind v fd            -> text "bind" <> parens (
-            prettyVariable v <> comma <+> pretty fd)
+            prettyUpperWord v <> comma <+> pretty fd)
 
 instance Pretty GeneralFunction where
     pretty (GF_General_Function aw gts) =
@@ -444,40 +433,37 @@ prettyGeneralTerms = sepByCommas . map pretty
 instance Pretty Name where
     pretty n = case n of
         N_Atomic_Word a         -> pretty a
-        N_Integer s             -> text s
-        T0N_Unsigned_Integer s  -> text s
+        N_Integer s             -> text $ show s
+        T0N_Unsigned_Integer s  -> text $ show s
 
 instance Pretty AtomicWord where
     pretty a = case a of
         A_Single_Quoted s   -> prettySingleQuoted s
         A_Lower_Word l      -> prettyLowerWord l
 
-prettyAtomicSystemWord :: AtomicSystemWord -> Doc
-prettyAtomicSystemWord asw = text ("$$" ++ asw)
+prettyAtomicSystemWord :: Token -> Doc
+prettyAtomicSystemWord asw = text ("$$" ++ show asw)
 
-prettyAtomicDefinedWord :: AtomicDefinedWord -> Doc
-prettyAtomicDefinedWord adw = text ('$' : adw)
+prettyAtomicDefinedWord :: Token -> Doc
+prettyAtomicDefinedWord adw = text ('$' : show adw)
 
 instance Pretty Number where
     pretty n = case n of
-        Num_Integer i   -> text i
-        Num_Rational ra -> text ra
-        Num_Real re     -> text re
+        Num_Integer i   -> text $ show i
+        Num_Rational ra -> text $ show ra
+        Num_Real re     -> text $ show re
 
-prettyFileName :: FileName -> Doc
-prettyFileName = prettySingleQuoted
+prettySingleQuoted :: Token -> Doc
+prettySingleQuoted s = text "\'" <> (text . show) s <> text "\'"
 
-prettySingleQuoted :: SingleQuoted -> Doc
-prettySingleQuoted s = text "\'" <> text s <> text "\'"
+prettyDistinctObject :: Token -> Doc
+prettyDistinctObject s = text "\"" <> (text . show) s <> text "\""
 
-prettyDistinctObject :: DistinctObject -> Doc
-prettyDistinctObject s = text "\"" <> text s <> text "\""
+prettyLowerWord :: Token -> Doc
+prettyLowerWord uw' = let uw = show uw' in text (toLower (head uw) : tail uw)
 
-prettyLowerWord :: UpperWord -> Doc
-prettyLowerWord uw = text (toLower (head uw) : tail uw)
-
-prettyUpperWord :: UpperWord -> Doc
-prettyUpperWord uw = text (toUpper (head uw) : tail uw)
+prettyUpperWord :: Token -> Doc
+prettyUpperWord uw' = let uw = show uw' in text (toUpper (head uw) : tail uw)
 
 orSign :: Doc
 orSign = text "|"

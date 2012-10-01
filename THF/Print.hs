@@ -47,10 +47,10 @@ instance Pretty SignTHF where
 instance Pretty Kind where
     pretty k = case k of
         Kind            -> text "$tType"
-        VKind v         -> prettyVariable v
+        VKind v         -> prettyUpperWord v
         MapKind k1 k2 _ -> pretty k1  <+> text ">" <+> pretty k2
         ProdKind ks     -> fsep . punctuate (text "*") $ map pretty ks
-        SysType st      -> prettySystemType st
+        SysType st      -> prettyAtomicSystemWord st
         ParKind k1      -> parens $ pretty k1
 
 instance Pretty Type where
@@ -60,8 +60,8 @@ instance Pretty Type where
         IType           -> text "$i"
         MapType t1 t2   -> pretty t1 <+> text ">" <+> pretty t2
         CType c         -> prettyConstant c
-        SType st        -> prettySystemType st
-        VType v         -> prettyVariable v
+        SType st        -> prettyAtomicSystemWord st
+        VType v         -> prettyUpperWord v
         ParType t1      -> parens $ pretty t1
         ProdType ts     -> brackets $ sepByCommas $ map pretty ts
 

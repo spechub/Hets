@@ -17,6 +17,10 @@ has been added where needed.
 
 module THF.As where
 
+import Common.Id
+
+{-! global: GetRange !-}
+
 --------------------------------------------------------------------------------
 -- Abstract Syntax for THF in general and THF0
 -- For Explanation of the data types refer to the comments in ParseTHF
@@ -39,22 +43,22 @@ data TPTP_THF =
     deriving (Show, Eq, Ord)
 
 data Comment =
-    Comment_Line    String
-  | Comment_Block   [String]
+    Comment_Line    Token
+  | Comment_Block   Token
     deriving (Show, Eq, Ord)
 
 data DefinedComment =
-    Defined_Comment_Line    String
-  | Defined_Comment_Block   [String]
+    Defined_Comment_Line    Token
+  | Defined_Comment_Block   Token
     deriving (Show, Eq, Ord)
 
 data SystemComment =
-    System_Comment_Line    String
-  | System_Comment_Block   [String]
+    System_Comment_Line    Token
+  | System_Comment_Block   Token
     deriving (Show, Eq, Ord)
 
 data Include =
-    I_Include   FileName (Maybe NameList)
+    I_Include   Token (Maybe NameList)
     deriving (Show, Eq, Ord)
 
 data Annotations =
@@ -114,8 +118,8 @@ data THFQuantifiedFormula =
 type THFVariableList = [THFVariable]
 
 data THFVariable =
-    TV_THF_Typed_Variable   Variable THFTopLevelType
-  | TV_Variable             Variable
+    TV_THF_Typed_Variable   Token THFTopLevelType
+  | TV_Variable             Token
     deriving (Show, Eq, Ord)
 
 data THFTypedConst =
@@ -141,18 +145,18 @@ data THFSubType =
 data THFTopLevelType =
     TTLT_THF_Logic_Formula  THFLogicFormula
   | T0TLT_Constant          Constant
-  | T0TLT_Variable          Variable
+  | T0TLT_Variable          Token
   | T0TLT_Defined_Type      DefinedType
-  | T0TLT_System_Type       SystemType
+  | T0TLT_System_Type       Token
   | T0TLT_THF_Binary_Type   THFBinaryType
     deriving (Show, Eq, Ord)
 
 data THFUnitaryType =
     TUT_THF_Unitary_Formula     THFUnitaryFormula
   | T0UT_Constant               Constant
-  | T0UT_Variable               Variable
+  | T0UT_Variable               Token
   | T0UT_Defined_Type           DefinedType
-  | T0UT_System_Type            SystemType
+  | T0UT_System_Type            Token
   | T0UT_THF_Binary_Type_Par    THFBinaryType
     deriving (Show, Eq, Ord)
 
@@ -168,12 +172,12 @@ data THFAtom =
   | TA_THF_Conn_Term            THFConnTerm
   | TA_Defined_Type             DefinedType
   | TA_Defined_Plain_Formula    DefinedPlainFormula
-  | TA_System_Type              SystemType
+  | TA_System_Type              Token
   | TA_System_Atomic_Formula    SystemTerm
   | T0A_Constant                Constant
-  | T0A_Defined_Constant        AtomicDefinedWord
-  | T0A_System_Constant         AtomicSystemWord
-  | T0A_Variable                Variable
+  | T0A_Defined_Constant        Token
+  | T0A_System_Constant         Token
+  | T0A_Variable                Token
     deriving (Show, Eq, Ord)
 
 type THFTuple = [THFLogicFormula]
@@ -234,8 +238,6 @@ data DefinedType =
   | DT_tType | DT_real | DT_rat   | DT_int
     deriving (Show, Eq, Ord)
 
-type SystemType = AtomicSystemWord
-
 data DefinedPlainFormula =
     DPF_Defined_Prop    DefinedProp
   | DPF_Defined_Formula DefinedPred Arguments
@@ -253,7 +255,7 @@ data DefinedPred =
 
 data Term =
     T_Function_Term     FunctionTerm
-  | T_Variable          Variable
+  | T_Variable          Token
     deriving (Show, Eq, Ord)
 
 data FunctionTerm =
@@ -263,13 +265,11 @@ data FunctionTerm =
     deriving (Show, Eq, Ord)
 
 data PlainTerm =
-    PT_Plain_Term   TPTPFunctor Arguments
+    PT_Plain_Term   AtomicWord Arguments
   | PT_Constant     Constant
     deriving (Show, Eq, Ord)
 
-type Constant = TPTPFunctor
-
-type TPTPFunctor = AtomicWord
+type Constant = AtomicWord
 
 data DefinedTerm =
     DT_Defined_Atom         DefinedAtom
@@ -278,7 +278,7 @@ data DefinedTerm =
 
 data DefinedAtom =
     DA_Number           Number
-  | DA_Distinct_Object  DistinctObject
+  | DA_Distinct_Object  Token
     deriving (Show, Eq, Ord)
 
 data DefinedPlainTerm =
@@ -295,19 +295,15 @@ data DefinedFunctor =
     deriving (Show, Eq, Ord)
 
 data SystemTerm =
-    ST_System_Term      SystemFunctor Arguments
-  | ST_System_Constant  SystemFunctor
+    ST_System_Term      Token Arguments
+  | ST_System_Constant  Token
     deriving (Show, Eq, Ord)
-
-type SystemFunctor = AtomicSystemWord
-
-type Variable = String
 
 type Arguments = [Term]
 
 data PrincipalSymbol =
-    PS_Functor  TPTPFunctor
-  | PS_Variable Variable
+    PS_Functor  AtomicWord
+  | PS_Variable Token
     deriving (Show, Eq, Ord)
 
 data Source =
@@ -338,7 +334,7 @@ data ExternalSource =
     deriving (Show, Eq, Ord)
 
 data FileSource =
-    FS_File FileName (Maybe Name)
+    FS_File Token (Maybe Name)
     deriving (Show, Eq, Ord)
 
 data TheoryName =
@@ -389,11 +385,11 @@ data GeneralTerm =
 
 data GeneralData =
     GD_Atomic_Word      AtomicWord
-  | GD_Variable         Variable
+  | GD_Variable         Token
   | GD_Number           Number
-  | GD_Distinct_Object  DistinctObject
+  | GD_Distinct_Object  Token
   | GD_Formula_Data     FormulaData
-  | GD_Bind             Variable FormulaData
+  | GD_Bind             Token FormulaData
   | GD_General_Function GeneralFunction
     deriving (Show, Eq, Ord)
 
@@ -411,31 +407,17 @@ type GeneralTerms = [GeneralTerm]
 
 data Name =
     N_Atomic_Word           AtomicWord
-  | N_Integer               String
-  | T0N_Unsigned_Integer    String
+  | N_Integer               Token
+  | T0N_Unsigned_Integer    Token
     deriving (Show, Eq, Ord)
 
 data AtomicWord =
-    A_Lower_Word    LowerWord
-  | A_Single_Quoted SingleQuoted
+    A_Lower_Word    Token
+  | A_Single_Quoted Token
     deriving (Show, Eq, Ord)
-
-type AtomicSystemWord = LowerWord
-
-type AtomicDefinedWord = LowerWord
 
 data Number =
-    Num_Integer   String
-  | Num_Rational  String
-  | Num_Real      String
+    Num_Integer   Token
+  | Num_Rational  Token
+  | Num_Real      Token
     deriving (Show, Eq, Ord)
-
-type FileName = SingleQuoted
-
-type SingleQuoted = String
-
-type DistinctObject = String
-
-type LowerWord = String
-
-type UpperWord = String

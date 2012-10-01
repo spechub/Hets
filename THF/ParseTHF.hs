@@ -24,6 +24,8 @@ import THF.As
 import Text.ParserCombinators.Parsec
 
 import Common.Parsec
+import Common.Id (Token(..))
+import Common.Lexer (parseToken)
 
 import Data.Char
 import Data.Maybe
@@ -53,7 +55,7 @@ header = try (do
 headerSE :: CharParser st Comment
 headerSE = do
     try (char '%' >> notFollowedBy (char '$'))
-    c <- many1 $ char '-' << notFollowedBy printableChar
+    c <- parseToken $ many1 $ char '-' << notFollowedBy printableChar
     skipSpaces
     return $ Comment_Line c
 
@@ -65,16 +67,16 @@ headerSE = do
 commentLine :: CharParser st Comment
 commentLine = do
     try (char '%' >> notFollowedBy (char '$'))
-    c <- many printableChar
+    c <- parseToken $ many printableChar
     return $ Comment_Line c
 
 comment :: CharParser st TPTP_THF
 comment = fmap TPTP_Comment commentLine
   <|> do
     try (string "/*" >> notFollowedBy (char '$'))
-    c <- many (noneOf "*/")
+    c <- parseToken $ many (noneOf "*/")
     skipMany1 (char '*'); char '/'
-    return $ TPTP_Comment (Comment_Block (lines c))
+    return $ TPTP_Comment (Comment_Block c)
 
 -- THF & THF0:
 -- <defined_comment>    ::- <def_comment_line>|<def_comment_block>
@@ -84,13 +86,13 @@ comment = fmap TPTP_Comment commentLine
 definedComment :: CharParser st TPTP_THF
 definedComment = do
     try (string "%$" >> notFollowedBy (char '$'))
-    c <- many printableChar
+    c <- parseToken $ many printableChar
     return $ TPTP_Defined_Comment (Defined_Comment_Line c)
   <|> do
     try (string "/*$" >> notFollowedBy (char '$'))
-    c <- many (noneOf "*/")
+    c <- parseToken $ many (noneOf "*/")
     skipMany1 (char '*'); char '/'
-    return $ TPTP_Defined_Comment (Defined_Comment_Block (lines c))
+    return $ TPTP_Defined_Comment (Defined_Comment_Block c)
 
 -- THF & THF0:
 -- <system_comment>     ::- <sys_comment_line>|<sys_comment_block>
@@ -100,13 +102,13 @@ definedComment = do
 systemComment :: CharParser st TPTP_THF
 systemComment = do
     tryString "%$$"
-    c <- many printableChar
+    c <- parseToken $ many printableChar
     return $ TPTP_System_Comment (System_Comment_Line c)
   <|> do
     tryString "/*$$"
-    c <- many (noneOf "*/")
+    c <- parseToken $ many (noneOf "*/")
     skipMany1 (char '*'); char '/'
-    return $ TPTP_System_Comment (System_Comment_Block (lines c))
+    return $ TPTP_System_Comment (System_Comment_Block c)
 
 -- THF & THF0:
 -- <include>            ::= include(<file_name><formula_selection>).
@@ -153,7 +155,7 @@ annotations = do
 formulaRole :: CharParser st FormulaRole
 formulaRole = do
     r <- lowerWord
-    case r of
+    case show r of
         "axiom"                 -> return Axiom
         "hypothesis"            -> return Hypothesis
         "definition"            -> return Definition
@@ -168,7 +170,7 @@ formulaRole = do
         "fi_predicates"         -> return Fi_Predicates
         "type"                  -> return Type
         "unknown"               -> return Unknown
-        _                       -> fail ("No such Role: " ++ r)
+        s                       -> fail ("No such Role: " ++ s)
 
 -- THF
 -- <thf_formula>        ::= <thf_logic_formula> | <thf_sequent>
@@ -553,7 +555,7 @@ assocConnective = (keyChar '|'  >> return OR)
 definedType :: CharParser st DefinedType
 definedType = do
     adw <- atomicDefinedWord
-    case adw of
+    case show adw of
         "oType"     -> return DT_oType
         "o"         -> return DT_o
         "iType"     -> return DT_iType
@@ -562,11 +564,11 @@ definedType = do
         "real"      -> return DT_real
         "rat"       -> return DT_rat
         "int"       -> return DT_int
-        _           -> fail ("No such definedType: " ++ adw)
+        s           -> fail ("No such definedType: " ++ s)
 
 -- THF & THF0:
 -- <system_type>        ::= <atomic_system_word>
-systemType :: CharParser st SystemType
+systemType :: CharParser st Token
 systemType = atomicSystemWord
 
 -- THF:
@@ -585,10 +587,10 @@ definedPlainFormula = fmap DPF_Defined_Prop definedProp
 definedProp :: CharParser st DefinedProp
 definedProp = do
     adw <- atomicDefinedWord
-    case adw of
+    case show adw of
         "true"      -> return DP_True
         "false"     -> return DP_False
-        _           -> fail ("No such definedProp: " ++ adw)
+        s           -> fail ("No such definedProp: " ++ s)
 
 -- THF:
 -- <defined_pred>       :== <atomic_defined_word>
@@ -598,7 +600,7 @@ definedProp = do
 definedPred :: CharParser st DefinedPred
 definedPred = do
     adw <- atomicDefinedWord
-    case adw of
+    case show adw of
         "distinct"      -> return Disrinct
         "less"          -> return Less
         "lesseq"        -> return Lesseq
@@ -606,7 +608,7 @@ definedPred = do
         "greatereq"     -> return Greatereq
         "is_int"        -> return Is_int
         "is_rat"        -> return Is_rat
-        _               -> fail ("No such definedPred: " ++ adw)
+        s               -> fail ("No such definedPred: " ++ s)
 
 -- THF:
 -- <term> ::= <function_term> | <variable> | <conditional_term>
@@ -639,7 +641,7 @@ constant = tptpFunctor
 
 -- THF & THF0:
 -- <functor>  ::= <atomic_word>
-tptpFunctor :: CharParser st TPTPFunctor
+tptpFunctor :: CharParser st AtomicWord
 tptpFunctor = atomicWord
 
 -- THF:
@@ -675,7 +677,7 @@ definedPlainTerm = try (do
 definedFunctor :: CharParser st DefinedFunctor
 definedFunctor = do
     adw <- atomicDefinedWord
-    case adw of
+    case show adw of
         "uminus"        -> return UMinus
         "sum"           -> return Sum
         "difference"    -> return Difference
@@ -691,7 +693,7 @@ definedFunctor = do
         "to_int"        -> return To_int
         "to_rat"        -> return To_rat
         "to_real"       -> return To_real
-        _               -> fail ("No such definedFunctor: " ++ adw)
+        s               -> fail ("No such definedFunctor: " ++ s)
 
 -- THF:
 -- <system_term>        ::= <system_constant> | <system_functor>(<arguments>)
@@ -705,18 +707,19 @@ systemTerm = try (do
 
 -- THF:
 -- <system_functor>     ::= <atomic_system_word>
-systemFunctor :: CharParser st SystemFunctor
+systemFunctor :: CharParser st Token
 systemFunctor = atomicSystemWord
 
 -- THF & THF0:
 -- <variable>           ::= <upper_word>
-variable :: CharParser st Variable
-variable = do
+variable :: CharParser st Token
+variable = parseToken
+  (do
     u <- upper
     an <- many alphaNum
     skipAll
     return (u : an)
-  <?> "Variable"
+   <?> "Variable")
 
 -- THF:
 -- <arguments> ::= <term> | <term>,<arguments>
@@ -987,7 +990,7 @@ generalTerms = sepBy1 generalTerm comma
 --THF0:
 -- <name>               ::= <atomic_word> | <unsigned_integer>
 name :: CharParser st Name
-name = fmap T0N_Unsigned_Integer (unsignedInteger << skipAll)
+name = fmap T0N_Unsigned_Integer (parseToken (unsignedInteger << skipAll))
   --added for thf0
   <|> fmap N_Integer (integer << skipAll)
   <|> fmap N_Atomic_Word atomicWord
@@ -1001,14 +1004,14 @@ atomicWord = fmap A_Lower_Word lowerWord
 
 -- THF & THF0:
 -- <atomic_defined_word> ::= <dollar_word>
-atomicDefinedWord :: CharParser st String
+atomicDefinedWord :: CharParser st Token
 atomicDefinedWord = char '$' >> lowerWord
 
 -- THF & THF0:
 -- <atomic_system_word> ::= <dollar_dollar_word>
 -- <dollar_dollar_word> ::- <dollar><dollar><lower_word>
 -- <dollar>             ::: [$]
-atomicSystemWord :: CharParser st AtomicSystemWord
+atomicSystemWord :: CharParser st Token
 atomicSystemWord = tryString "$$" >> lowerWord
 
 -- THF & THF0:
@@ -1041,15 +1044,15 @@ number = fmap Num_Real (real << skipAll)
 
 -- THF & THF0:
 -- <file_name>          ::= <single_quoted>
-fileName :: CharParser st FileName
+fileName :: CharParser st Token
 fileName = singleQuoted
 
 -- THF & THF0:
 -- <single_quoted>      ::- <single_quote><sq_char><sq_char>*<single_quote>
 -- <single_quote>       ::: [']
 -- <sq_char>            ::: ([\40-\46\50-\133\135-\176]|[\\]['\\])
-singleQuoted :: CharParser st SingleQuoted
-singleQuoted = do
+singleQuoted :: CharParser st Token
+singleQuoted = parseToken $ do
     char '\''
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\'"
         <|> tryString "\\\'"
@@ -1061,8 +1064,8 @@ singleQuoted = do
 -- <distinct_object> ::- <double_quote><do_char>*<double_quote>
 -- <do_char> ::: ([\40-\41\43-\133\135-\176]|[\\]["\\])
 -- <double_quote> ::: ["]
-distinctObject :: CharParser st DistinctObject
-distinctObject = do
+distinctObject :: CharParser st Token
+distinctObject = parseToken $ do
     char '\"'
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\\""
         <|> single ( satisfy (\ c -> printable c && notElem c ['\'', '\\'])))
@@ -1075,12 +1078,12 @@ distinctObject = do
 -- <lower_alpha>        ::: [a-z]
 -- <upper_alpha>        ::: [A-Z]
 -- <numeric>            ::: [0-9]
-lowerWord :: CharParser st LowerWord
-lowerWord = do
+lowerWord :: CharParser st Token
+lowerWord = parseToken (do
     l <- lower
     an <- many (alphaNum <|> char '_'); skipAll
     return (l : an)
-  <?> "alphanumeric word with leading lowercase letter"
+  <?> "alphanumeric word with leading lowercase letter")
 
 printableChar :: CharParser st Char
 printableChar = satisfy printable
@@ -1089,13 +1092,13 @@ printable :: Char -> Bool
 printable c = ord c >= 32 && ord c <= 126
 
 -- Numbers
-real :: CharParser st String
-real = try (do
+real :: CharParser st Token
+real = parseToken (try (do
     s <- oneOf "-+"
     ur <- unsignedReal
     return (s : ur))
   <|> unsignedReal
-  <?> "(signed) real"
+  <?> "(signed) real")
 
 unsignedReal :: CharParser st String
 unsignedReal = do
@@ -1108,13 +1111,13 @@ unsignedReal = do
   <|> decimalFractional
   <?> "unsigned real"
 
-rational :: CharParser st String
-rational = try (do
+rational :: CharParser st Token
+rational = parseToken (try (do
     s <- oneOf "-+"
     ur <- unsignedRational
     return (s : ur))
   <|> unsignedRational
-  <?> "(signed) rational"
+  <?> "(signed) rational")
 
 unsignedRational :: CharParser st String
 unsignedRational = do
@@ -1122,13 +1125,13 @@ unsignedRational = do
     d2 <- positiveDecimal
     return (d1 ++ "/" ++ d2)
 
-integer :: CharParser st String
-integer = try (do
+integer :: CharParser st Token
+integer = parseToken (try (do
     s <- oneOf "-+"
     ui <- unsignedInteger
     return (s : ui))
   <|> unsignedInteger
-  <?> "(signed) integer"
+  <?> "(signed) integer")
 
 unsignedInteger :: CharParser st String
 unsignedInteger = try (decimal << notFollowedBy (oneOf "eE/."))
