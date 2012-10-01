@@ -22,7 +22,7 @@ import Common.ProofTree
 import Common.ProverTools
 
 import Data.Monoid
-import Data.Map (isSubmapOf)
+import Data.Map (isSubmapOf,fold)
 
 import Logic.Logic
 
@@ -107,13 +107,37 @@ instance SublogicName SL.THFSl where
  sublogicName = show
 
 instance MinSublogic SL.THFSl SymbolTHF where
- minSublogic = \ _ -> SL.THF --actually implement this!
+ minSublogic = \ _ -> SL.THF0 --actually implement this!
 
 instance MinSublogic SL.THFSl () where
- minSublogic = \ _ -> SL.THF -- why do we need this?
+ minSublogic _ = SL.THF0
 
 instance MinSublogic SL.THFSl SignTHF where
- minSublogic = \ _ -> SL.THF -- actually implement this!
+ minSublogic (Sign tp c _) = join (Data.Map.fold
+   (\t sl -> join sl $ minSublogic $ typeKind t)
+   SL.THF0 tp)
+  (Data.Map.fold
+   (\cs sl -> join sl $ minSublogic $ constType cs)
+   SL.THF0 c)
+
+instance MinSublogic SL.THFSl Type where
+ minSublogic (ProdType tps) = foldr SL.join SL.THFP $ map minSublogic tps
+ minSublogic TType = SL.THF0
+ minSublogic OType = SL.THF0
+ minSublogic IType = SL.THF0
+ minSublogic (MapType t1 t2) = SL.join (minSublogic t1) (minSublogic t2)
+ minSublogic (CType _) = SL.THF0
+ minSublogic (SType _) = SL.THF0
+ minSublogic (VType _) = SL.THF0
+ minSublogic (ParType t) = minSublogic t
+
+instance MinSublogic SL.THFSl Kind where
+ minSublogic Kind = SL.THF0
+ minSublogic (MapKind k1 k2 _) = join SL.THF0 $
+                               join (minSublogic k1) (minSublogic k2)
+ minSublogic (SysType _) = SL.THF0
+ minSublogic (VKind _) = SL.THF0
+ minSublogic (ParKind k) = minSublogic k
 
 instance MinSublogic SL.THFSl MorphismTHF where
  minSublogic (MkMorphism s1 s2) = join (minSublogic s1)
