@@ -283,33 +283,38 @@ extraSigItems s = let e = Set.empty in case s of
         Rigid_pred_items _ annoted_list _ ->
             ((e, e), Set.unions $ map (ids_PRED_ITEM . item) annoted_list)
 
-parenMod :: MODALITY -> MODALITY
-parenMod m = case m of
-    ModOp o md1 md2 -> ModOp o (parenMod md1) $ parenMod md2
-    TransClos md -> TransClos $ parenMod md
-    Guard frm -> Guard $ mapFormula parenExtForm frm
-    TermMod t -> TermMod $ mapTerm parenExtForm t
+parenExtForm :: EM_FORMULA -> EM_FORMULA
+parenExtForm = mapExtForm (mapFormula parenExtForm)
+
+mapExtMod :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA)
+  -> MODALITY -> MODALITY
+mapExtMod f m = case m of
+    ModOp o md1 md2 -> on (ModOp o) (mapExtMod f) md1 md2
+    TransClos md -> TransClos $ mapExtMod f md
+    Guard frm -> Guard $ f frm
+    TermMod t -> let Mixfix_formula n = f (Mixfix_formula t) in TermMod n
     _ -> m
 
-parenPrefix :: FormPrefix -> FormPrefix
-parenPrefix pf = case pf of
+mapExtPrefix :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA)
+  -> FormPrefix -> FormPrefix
+mapExtPrefix f pf = case pf of
     BoxOrDiamond choice md leq_geq nr ->
-        BoxOrDiamond choice (parenMod md) leq_geq nr
+        BoxOrDiamond choice (mapExtMod f md) leq_geq nr
     _ -> pf
 
-parenExtForm :: EM_FORMULA -> EM_FORMULA
-parenExtForm f = case f of
+mapExtForm :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA)
+  -> EM_FORMULA -> EM_FORMULA
+mapExtForm f ef = case ef of
     PrefixForm p frm pos ->
-        PrefixForm (parenPrefix p) (mapFormula parenExtForm frm) pos
+        PrefixForm (mapExtPrefix f p) (f frm) pos
     UntilSince choice f1 f2 pos ->
-        UntilSince choice (mapFormula parenExtForm f1)
-                       (mapFormula parenExtForm f2) pos
+        UntilSince choice (f f1) (f f2) pos
     ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn
-        ti te is (map (fmap parenFrameForm) fs) pos
+        ti te is (map (fmap $ mapExtFrameForm f) fs) pos
 
-parenFrameForm :: FrameForm -> FrameForm
-parenFrameForm (FrameForm vs fs r) =
-    FrameForm vs (map (fmap $ mapFormula parenExtForm) fs) r
+mapExtFrameForm :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA)
+  -> FrameForm -> FrameForm
+mapExtFrameForm f (FrameForm vs fs r) = FrameForm vs (map (fmap f) fs) r
 
 resolveMod :: MixResolve MODALITY
 resolveMod ga ids m = case m of

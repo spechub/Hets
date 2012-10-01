@@ -63,32 +63,9 @@ instance Syntax ExtModal EM_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
         parse_symb_map_items ExtModal =
             Just $ symbMapItems ext_modal_reserved_words
 
-simEMmod :: Sign EM_FORMULA EModalSign -> MODALITY -> MODALITY
-simEMmod sign tm = case tm of
-  ModOp o tm1 tm2 -> ModOp o (simEMmod sign tm1) $ simEMmod sign tm2
-  TransClos tm1 -> TransClos $ simEMmod sign tm1
-  Guard frm -> Guard $ simplifySen frmTypeAna simEMSen sign frm
-  TermMod trm -> TermMod $ simplifyTerm frmTypeAna simEMSen sign trm
-  _ -> tm
-
-simEMprefix :: Sign EM_FORMULA EModalSign -> FormPrefix -> FormPrefix
-simEMprefix sign pf = case pf of
-  BoxOrDiamond choice tm leq_geq number ->
-    BoxOrDiamond choice (simEMmod sign tm) leq_geq number
-  _ -> pf
-
 -- Simplification of formulas - simplifySen for ExtFORMULA
 simEMSen :: Sign EM_FORMULA EModalSign -> EM_FORMULA -> EM_FORMULA
-simEMSen sign frm =
-  let rsimf = simplifySen frmTypeAna simEMSen sign in case frm of
-  PrefixForm p f pos -> PrefixForm (simEMprefix sign p) (rsimf f) pos
-  UntilSince choice f1 f2 pos -> UntilSince choice (rsimf f1) (rsimf f2) pos
-  ModForm (ModDefn ti te is fs pos) -> ModForm $ ModDefn ti te is
-    (map (fmap $ simEMFrame sign) fs) pos
-
-simEMFrame :: Sign EM_FORMULA EModalSign -> FrameForm -> FrameForm
-simEMFrame sign (FrameForm vs fs r) =
-    FrameForm vs (map (fmap $ simplifySen frmTypeAna simEMSen sign) fs) r
+simEMSen sign = mapExtForm (simplifySen frmTypeAna simEMSen sign)
 
 correctTarget :: Morphism f EModalSign m -> Morphism f EModalSign m
 correctTarget m = m
