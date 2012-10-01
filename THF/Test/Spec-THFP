@@ -2,9 +2,11 @@ logic THF.THFP
 
 spec test =
 
-thf(b,type,(b : $tType)).
+thf(a,type,( a : $tType )).
 
-thf(test_tuple,type,(test_tuple: b * b)).
+thf(c,type,( c : $tType * $tType )).
+
+thf(test_tuple,type,(test_tuple: c)).
 
 thf(ax_in,axiom,( test_tuple = [a,a] )).
 

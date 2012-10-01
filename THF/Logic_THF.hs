@@ -135,6 +135,7 @@ instance MinSublogic SL.THFSl Kind where
  minSublogic Kind = SL.THF0
  minSublogic (MapKind k1 k2 _) = join SL.THF0 $
                                join (minSublogic k1) (minSublogic k2)
+ minSublogic (ProdKind us) = foldr SL.join SL.THFP $ map minSublogic us
  minSublogic (SysType _) = SL.THF0
  minSublogic (VKind _) = SL.THF0
  minSublogic (ParKind k) = minSublogic k

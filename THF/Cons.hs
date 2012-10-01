@@ -83,6 +83,7 @@ data Type =
 data Kind =
     Kind
   | MapKind Kind Kind Range
+  | ProdKind [Kind]
   | SysType SystemType
   | VKind Variable
   | ParKind Kind

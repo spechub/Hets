@@ -288,6 +288,12 @@ thfBinaryTypeToKind bt = case bt of
     TBT_THF_Mapping_Type (_ : [])   -> Nothing
     TBT_THF_Mapping_Type mt         -> thfMappingTypeToKind mt
     T0BT_THF_Binary_Type_Par btp    -> fmap ParKind (thfBinaryTypeToKind btp)
+    TBT_THF_Xprod_Type []           -> Nothing
+    TBT_THF_Xprod_Type (u : [])     -> thfUnitaryTypeToKind u
+    TBT_THF_Xprod_Type us           -> let us' = map thfUnitaryTypeToKind us
+                                       in if all isJust us' then
+                                           (Just . ProdKind) $ map fromJust us'
+                                          else Nothing
     _                               -> Nothing
 
 thfMappingTypeToKind :: [THFUnitaryType] -> Maybe Kind
@@ -410,6 +416,8 @@ thfBinaryTypeIsType bt = case bt of
     TBT_THF_Mapping_Type []         -> False
     TBT_THF_Mapping_Type (_ : [])   -> False
     TBT_THF_Mapping_Type mt         -> thfMappingTypeIsType mt
+    TBT_THF_Xprod_Type []           -> False
+    TBT_THF_Xprod_Type us           -> and $ map thfUnitaryTypeIsType us
     T0BT_THF_Binary_Type_Par btp    -> thfBinaryTypeIsType btp
     _                               -> False
 

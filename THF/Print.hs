@@ -49,6 +49,7 @@ instance Pretty Kind where
         Kind            -> text "$tType"
         VKind v         -> prettyVariable v
         MapKind k1 k2 _ -> pretty k1  <+> text ">" <+> pretty k2
+        ProdKind ks     -> fsep . punctuate (text "*") $ map pretty ks
         SysType st      -> prettySystemType st
         ParKind k1      -> parens $ pretty k1
 
