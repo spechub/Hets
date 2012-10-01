@@ -83,6 +83,8 @@ import Comorphisms.CASL2Modal
 import Comorphisms.CASL2ExtModal
 import Comorphisms.Modal2CASL
 import Comorphisms.ExtModal2CASL
+import Comorphisms.ExtModal2ExtModalNoSubsorts
+import Comorphisms.ExtModal2ExtModalTotal
 import Comorphisms.ExtModal2HasCASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
@@ -153,6 +155,8 @@ comorphismList =
     , Comorphism CASL2ExtModal
     , Comorphism Modal2CASL
     , Comorphism ExtModal2CASL
+    , Comorphism ExtModal2ExtModalNoSubsorts
+    , Comorphism ExtModal2ExtModalTotal
     , Comorphism ExtModal2HasCASL
     , Comorphism CASL2CoCASL
     , Comorphism CASL2CspCASL

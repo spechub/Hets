@@ -220,7 +220,8 @@ mkNotDefBotAxiomName = mkAxNameSingle "notDefBottom"
 mkTotalityAxiomName :: OP_NAME -> String
 mkTotalityAxiomName f = "ga_strictness_" ++ show f
 
-generateAxioms :: Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
+generateAxioms :: (Ord f, TermExtension f) =>
+  Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA f)]
 generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       vx = mkVarDeclStr "x" s
       xt = toQualVar vx

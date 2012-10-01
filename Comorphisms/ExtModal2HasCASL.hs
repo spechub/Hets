@@ -64,7 +64,10 @@ instance Comorphism ExtModal2HasCASL
       { hasTransClos = False
       , hasFixPoints = False }
     targetLogic ExtModal2HasCASL = HasCASL
-    mapSublogic ExtModal2HasCASL _ = Just HC.caslLogic { which_logic = HOL }
+    mapSublogic ExtModal2HasCASL _ = Just HC.caslLogic
+      { which_logic = HOL
+      , has_sub = False
+      , has_part = False }
     map_theory ExtModal2HasCASL (sig, allSens) = let
       (frames, sens) = partition (isFrameAx . sentence) allSens
       in case transSig sig sens of
