@@ -149,9 +149,9 @@ reachable r a = Set.fold reach Set.empty $ succs r a where
 preds :: Ord a => Rel a -> a -> Set.Set a -> Set.Set a
 preds r a = Set.filter ( \ s -> member s a r)
 
--- | get direct predecessors inefficiently
+-- | get direct predecessors
 predecessors :: Ord a => Rel a -> a -> Set.Set a
-predecessors r a = preds r a $ keysSet r
+predecessors (Rel m) a = Map.keysSet $ Map.filter (Set.member a) m
 
 -- | test for 'member' or transitive membership (non-empty path)
 path :: Ord a => a -> a -> Rel a -> Bool
