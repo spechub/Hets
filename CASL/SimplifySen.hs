@@ -34,7 +34,7 @@ import CASL.ToDoc
 {- | simplifies formula\/term informations for 'show theory' of
    HETS-graph representation. -}
 simplifyCASLSen :: Sign () e -> FORMULA () -> FORMULA ()
-simplifyCASLSen = simplifySen dummyMin dummy
+simplifyCASLSen = simplifySen dummyMin dummy . setRevSortRel
 
 simplifyCASLTerm :: Sign () e -> TERM () -> TERM ()
 simplifyCASLTerm = simplifyTerm dummyMin dummy
