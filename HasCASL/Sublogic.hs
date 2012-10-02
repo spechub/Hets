@@ -555,9 +555,7 @@ sl_BasicProd ty = case getTypeAppl ty of
 sl_BasicFun :: Type -> Sublogic
 sl_BasicFun ty = case getTypeAppl ty of
     (TypeName ide _ _, [arg, res]) | isArrow ide -> comp_list
-        [ if isPartialArrow ide then
-              if res == unitType then need_pred else need_part
-          else bottom
+        [ if isPartialArrow ide then need_part else bottom
         , sl_BasicProd arg
         , sl_Basictype res ]
     _ -> sl_Basictype ty
