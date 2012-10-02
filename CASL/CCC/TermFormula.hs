@@ -58,13 +58,6 @@ constraintOfAxiom f =
       Sort_gen_ax constrs _ -> constrs
       _ -> []
 
-
--- | determine whether a formula is a sort generation constraint
-isSortGen :: FORMULA a -> Bool
-isSortGen (Sort_gen_ax _ _) = True
-isSortGen _ = False
-
-
 -- | check whether it contains a membership formula
 isMembership :: FORMULA f -> Bool
 isMembership f =

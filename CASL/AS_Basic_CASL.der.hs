@@ -258,6 +258,12 @@ recover_free_Sort_gen_ax constrs =
      then Just $ recoverSortGen constrs
      else Nothing
 
+-- | determine whether a formula is a sort generation constraint
+isSortGen :: FORMULA f -> Bool
+isSortGen f = case f of
+  Sort_gen_ax _ _ -> True
+  _ -> False
+
 data QUANTIFIER = Universal | Existential | Unique_existential
                   deriving (Show, Eq, Ord)
 
