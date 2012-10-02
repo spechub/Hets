@@ -246,3 +246,4 @@ sublogic_name s = (if hasModalities s == Many then "Many" else "One")
        else if hasTimeMods s == One then "SingleTime" else "")
     ++ (if hasFixPoints s then "Fix" else "")
     ++ (if hasFrameAxioms s then "Frames" else "")
+    ++ if hasTransClos s then "*" else ""
