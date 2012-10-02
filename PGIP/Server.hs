@@ -40,6 +40,7 @@ import Static.DgUtils
 import Static.DotGraph
 import Static.FromXml
 import Static.GTheory
+import Static.History (changeDGH)
 import Static.PrintDevGraph
 import Static.ToXml as ToXml
 
@@ -742,10 +743,10 @@ showAutoProofWindow dg sessId prOrCons = let
       , mkAttr "hasOpenGoals" $ show $ not $ allProved fn
       , mkAttr "name" $ escStr $ name fn ]
       $ unode "input" $ showHtml fn) $ initFNodes $ labNodesDG dg)
+    -- TODO sort out nodes with no sentences!
     GlConsistency -> ("cons", "darwin", "cstatus = 'Unchecked'"
       , "consistency checker", map (\ (_, dgn) ->  
-      let cstat = {-if hasOpenConsStatus True $ getNodeConsStatus dgn
-            then-} ConsistencyStatus CSUnchecked ""
+      let cstat = getConsistencyOf dgn
           nm = showName $ dgn_name dgn in add_attrs [ mkAttr "type" "checkbox"
       , mkAttr "cstatus" (show cstat) -- TODO messages are very long and ugly!
       , mkAttr "name" nm]
@@ -987,7 +988,7 @@ proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String]
   -> ResultT IO (LibEnv, [Element])
 proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
-  runProof le' gTh nl = let subL = sublogicOfTh gTh in case prOrCons of
+  runProof le' gTh nl@(i, lb) = let subL = sublogicOfTh gTh in case prOrCons of
     GlConsistency -> let
       consList = getConsCheckers $ findComorphismPaths logicGraph subL
       findCC x = filter ((== x ) . getCcName . fst) consList
@@ -996,7 +997,11 @@ proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
         [] -> fail "no cons checker found"
         ((cc, c) : _) -> lift $ do
           cstat <- consistencyCheck useTh cc c ln le' dg nl $ fromMaybe 1 tl
-          return (le', [(" ", show cstat)])
+          -- Consistency Results are stored in LibEnv via DGChange object
+          let le'' = Map.insert ln (changeDGH (lookupDGraph ln le)
+                $ SetNodeLab lb (i, if sType cstat == CSInconsistent then
+                markNodeInconsistent "" lb else markNodeConsistent "" lb)) le'
+          return (le'', [(" ", show cstat)])
     GlProofs -> proveNode le' ln dg nl gTh subL useTh mp mt tl
              $ map fst $ getThGoals gTh
   in foldM

@@ -34,10 +34,8 @@ import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import Common.DocUtils
 import Common.LibName (LibName)
 import Common.Result
-import Common.Consistency
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
@@ -162,12 +160,7 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
         Nothing -> True)
       sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
 
-      n2CS n = case getNodeConsStatus n of
-                 ConsStatus _ pc thmls ->
-                   let t = showDoc thmls "" in case pc of
-                   Inconsistent -> ConsistencyStatus CSInconsistent t
-                   Cons -> ConsistencyStatus CSConsistent t
-                   _ -> ConsistencyStatus CSUnchecked t
+      n2CS n = getConsistencyOf n
       (emptyNodes, others) = selNodes
         $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s $ n2CS l)
         $ zip nodes sls

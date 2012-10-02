@@ -18,10 +18,13 @@ module Proofs.ConsistencyCheck
   , cStatusToPrefix
   , cInvert
   , basicProofToConStatus
+  , getConsistencyOf
   ) where
 
 import Static.GTheory
 import Static.DevGraph
+import Static.DgUtils (ConsStatus (..))
+import Static.PrintDevGraph ()
 import Static.ComputeTheory
 
 import Proofs.AbstractState
@@ -32,6 +35,7 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.AS_Annotation
+import Common.Consistency (Conservativity (..))
 import Common.Utils (timeoutSecs)
 
 import Logic.Logic
@@ -101,6 +105,15 @@ basicProofToSType bp = case bp of
     Disproved -> CSInconsistent
     _ -> CSUnchecked
   _ -> CSUnchecked
+
+-- roughly transform the nodes consStatus into ConsistencyStatus
+getConsistencyOf :: DGNodeLab -> ConsistencyStatus
+getConsistencyOf n = case getNodeConsStatus n of
+  ConsStatus _ pc thmls ->
+    let t = showDoc thmls "" in case pc of
+          Inconsistent -> ConsistencyStatus CSInconsistent t
+          Cons -> ConsistencyStatus CSConsistent t
+          _ -> ConsistencyStatus CSUnchecked t
 
 {- TODO instead of LibEnv.. get FreeDefs as Input. create wrapper that calcs
 FreeDefs from LibEnv, DGraph and LibName (so that the call remains the same).
