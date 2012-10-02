@@ -75,7 +75,7 @@ correctTarget m = m
 instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
     where
         map_sen ExtModal morph = return . mapSen mapEMform morph
-        simplify_sen ExtModal = simplifySen frmTypeAna simEMSen
+        simplify_sen ExtModal = simplifySen frmTypeAna simEMSen . setRevSortRel
         print_named ExtModal = printTheoryFormula
         print_sign ExtModal sig = let e = extendedInfo sig in pretty sig
           { opMap = diffOpMapSet (opMap sig) $ flexOps e

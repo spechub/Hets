@@ -110,6 +110,8 @@ processing. -}
 data Sign f e = Sign
     { sortRel :: Rel.Rel SORT
     -- ^ every sort is a subsort of itself
+    , revSortRel :: Maybe (Rel.Rel SORT)
+    -- ^ reverse sort relation for more efficient lookup of subsorts
     , emptySortSet :: Set.Set SORT
     -- ^ a subset of the sort set of possibly empty sorts
     , opMap :: OpMap
@@ -140,6 +142,7 @@ instance Ord e => Ord (Sign f e) where
 emptySign :: e -> Sign f e
 emptySign e = Sign
     { sortRel = Rel.empty
+    , revSortRel = Nothing
     , emptySortSet = Set.empty
     , opMap = MapSet.empty
     , assocOps = MapSet.empty
@@ -187,7 +190,12 @@ instance SignExtension () where
 
 -- | proper subsorts (possibly excluding input sort)
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
-subsortsOf s e = Rel.predecessors (sortRel e) s
+subsortsOf s e = case revSortRel e of
+  Nothing -> Rel.predecessors (sortRel e) s
+  Just r -> Rel.succs r s
+
+setRevSortRel :: Sign f e -> Sign f e
+setRevSortRel s = s { revSortRel = Just . Rel.transpose $ sortRel s }
 
 -- | proper supersorts (possibly excluding input sort)
 supersortsOf :: SORT -> Sign f e -> Set.Set SORT
