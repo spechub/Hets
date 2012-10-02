@@ -76,6 +76,7 @@ logicName = do
            s <- sublogicChars -- try more sublogic characters
            return (i { abbrevPath = ft}, Just . mkSimpleId $ tail rt ++ s)
       skipSmart
+      -- an optional spec name for a sublogic based on a theory #171
       mt <- optionMaybe $ oParenT >> iriCurie << cParenT
       return $ Logic_name e ms mt
 
@@ -92,9 +93,9 @@ logicDescr l = do
          (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
          case basicSpecParser sm lid of
            Just _ -> hetIRI >> return ld -- consume and return
-           Nothing -> (unexpected $ "serialization \"" ++ show s ++ "\"")
-                      <|> choice (map (\pn -> pzero
-                                              <?> '"' : (show pn) ++ "\"")
+           Nothing -> unexpected ("serialization \"" ++ show s ++ "\"")
+                      <|> choice (map (\ pn -> pzero
+                                              <?> '"' : show pn ++ "\"")
                                   (filter (not . null . show)
                                    (basicSpecSyntaxes lid)))
 
