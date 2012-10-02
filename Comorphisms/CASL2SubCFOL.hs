@@ -134,7 +134,7 @@ totalizeSymbType t = case t of
 sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.Set SORT -> Set.Set SORT
 sortsWithBottom m sig formBotSrts =
     let bsrts = treatFormula m Set.empty formBotSrts
-          (Rel.keysSet $ sortRel sig) (sortSet sig)
+          (Rel.keysSet . Rel.rmNullSets $ sortRel sig) (sortSet sig)
         ops = MapSet.elems $ opMap sig
         -- all supersorts inherit the same bottom element
         allSortsWithBottom s =
