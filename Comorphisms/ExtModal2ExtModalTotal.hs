@@ -21,6 +21,7 @@ import Logic.Comorphism
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import qualified Common.Lib.MapSet as MapSet
 import Common.AS_Annotation
 import Common.ProofUtils
 
@@ -33,6 +34,7 @@ import CASL.Simplify
 
 import ExtModal.Logic_ExtModal
 import ExtModal.AS_ExtModal
+import ExtModal.ExtModalSign
 import ExtModal.StatAna
 import ExtModal.Sublogic as EM
 
@@ -59,13 +61,13 @@ instance Comorphism ExtModal2ExtModalTotal
       sens1 = generateAxioms True bsrts sig
       sens2 = map (mapNamed (simplifyEMFormula . codeEMFormula bsrts)) sens
       in return
-             ( encodeSig bsrts sig
+             ( emEncodeSig bsrts sig
              , nameAndDisambiguate $ sens1 ++ sens2)
     map_morphism ExtModal2ExtModalTotal mor@Morphism
      {msource = src, mtarget = tar}
         = return
-        mor { msource = encodeSig (emsortsWithBottom src) src
-            , mtarget = encodeSig (emsortsWithBottom tar) tar
+        mor { msource = emEncodeSig (emsortsWithBottom src) src
+            , mtarget = emEncodeSig (emsortsWithBottom tar) tar
             , op_map = Map.map (\ (i, _) -> (i, Total)) $ op_map mor }
     map_sentence ExtModal2ExtModalTotal sig sen = let
         bsrts = emsortsWithBottom sig
@@ -74,6 +76,11 @@ instance Comorphism ExtModal2ExtModalTotal
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
     has_model_expansion ExtModal2ExtModalTotal = True
     is_weakly_amalgamable ExtModal2ExtModalTotal = True
+
+emEncodeSig :: Set.Set SORT -> Sign f EModalSign -> Sign f EModalSign
+emEncodeSig bsrts sig = (encodeSig bsrts sig)
+  { extendedInfo = let extInfo = extendedInfo sig in
+      extInfo { flexOps = MapSet.map mkTotal $ flexOps extInfo }}
 
 emsortsWithBottom :: Sign f e -> Set.Set SORT
 emsortsWithBottom sig = sortsWithBottom NoMembershipOrCast sig Set.empty
