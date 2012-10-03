@@ -17,6 +17,8 @@ module Common.AS_Annotation where
 import Common.Id
 import Common.IRI (IRI)
 import Data.Maybe
+import Data.List
+import qualified Data.Map as Map
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -142,6 +144,14 @@ isComment c = case c of
 isAnnote :: Annotation -> Bool
 isAnnote = not . isComment
 
+-- | separate prefix annotations and put them into a map 
+partPrefixes :: [Annotation] -> (Map.Map String IRI, [Annotation])
+partPrefixes as = (Map.fromList $ concatMap (\(Prefix_anno p _) -> p)
+                   prefixes, other_annos)
+  where (prefixes, other_annos) =
+          partition (\a -> case a of Prefix_anno _ _ -> True
+                                     _ -> False) as
+  
 {- | an item wrapped in preceding (left 'l_annos')
 and following (right 'r_annos') annotations.
 'opt_pos' should carry the position of an optional semicolon

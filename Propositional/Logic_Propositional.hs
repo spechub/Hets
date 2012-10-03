@@ -99,7 +99,9 @@ instance Monoid BASIC_SPEC where
 --- | Syntax of Propositional logic
 instance Syntax Propositional BASIC_SPEC
     SYMB_ITEMS SYMB_MAP_ITEMS where
-         parse_basic_spec Propositional = Just basicSpec
+         parsersAndPrinters Propositional =
+           addSyntax "Hets" (basicSpec, pretty)
+           $ makeDefault (basicSpec, pretty)
          parse_symb_items Propositional = Just symbItems
          parse_symb_map_items Propositional = Just symbMapItems
 

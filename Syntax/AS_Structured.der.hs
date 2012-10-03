@@ -100,7 +100,7 @@ data LogicDescr = LogicDescr Logic_name (Maybe IRI) Range
   -- pos: "serialization"
   deriving Show
 
-data Logic_code = Logic_code (Maybe IRI)
+data Logic_code = Logic_code (Maybe String)
                              (Maybe Logic_name)
                              (Maybe Logic_name) Range
                  {- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
@@ -116,7 +116,7 @@ data Logic_code = Logic_code (Maybe IRI)
                  "logic bla1: ->bla2" => <encoding> and <targ-logic> -}
                   deriving (Show, Eq)
 
-data Logic_name = Logic_name IRI (Maybe Token) (Maybe SPEC_NAME)
+data Logic_name = Logic_name String (Maybe Token) (Maybe SPEC_NAME)
   deriving (Show, Eq)
 
 type ONTO_NAME = IRI
@@ -133,7 +133,7 @@ nameToLogicDescr n = LogicDescr n Nothing nullRange
 
 setLogicName :: LogicDescr -> LogicGraph -> LogicGraph
 setLogicName (LogicDescr (Logic_name lid _ _) s _) =
-  setSyntax s . setCurLogic (iriToStringUnsecure lid)
+  setSyntax s . setCurLogic lid
 
 makeSpec :: G_basic_spec -> Annoted SPEC
 makeSpec gbs = emptyAnno $ Basic_spec gbs nullRange

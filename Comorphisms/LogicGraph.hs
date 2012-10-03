@@ -250,7 +250,7 @@ squareMap = Map.empty -- for now
 
 logicGraph :: LogicGraph
 logicGraph = emptyLogicGraph
-    { logics = Map.fromList $ dolLogicNames ++ map addLogicName (logicList
+    { logics = Map.fromList $ map addLogicName (logicList
         ++ concatMap (\ (Comorphism cid) ->
              [Logic $ sourceLogic cid, Logic $ targetLogic cid])
            comorphismList)

@@ -13,7 +13,7 @@ Parser for CASL specification librariess
 
 module Syntax.Parse_AS_Library (library) where
 
-import Logic.Grothendieck (LogicGraph)
+import Logic.Grothendieck (LogicGraph, prefixes)
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
@@ -33,27 +33,35 @@ import Common.Token
 import Text.ParserCombinators.Parsec
 import Data.List
 import Data.Maybe (maybeToList)
+import qualified Data.Map as Map
 import Control.Monad
 
 import Framework.AS
+
+lGAnnos :: LogicGraph -> AParser st (LogicGraph, [Annotation])
+lGAnnos lG = do
+  as <- annos
+  let (pfx, an) = partPrefixes as
+  return (lG { prefixes = Map.union (prefixes lG) pfx }, an)
 
 -- * Parsing functions
 
 -- | Parse a library of specifications
 library :: LogicGraph -> AParser st LIB_DEFN
 library lG = do
+    (lG1,an1) <- lGAnnos lG
     (ps, ln) <- option (nullRange, emptyLibName "") $ do
       s1 <- asKey libraryS <|> asKey distributedOntologyS
-      n <- libName
+      n <- libName lG1
       return (tokPos s1, n)
-    an <- annos
-    ls <- libItems lG
-    return (Lib_defn ln ls ps an)
+    (lG2,an2) <- lGAnnos lG1
+    ls <- libItems lG2
+    return (Lib_defn ln ls ps (an1 ++ an2))
 
 -- | Parse library name
-libName :: AParser st LibName
-libName = do
-    libid <- libId
+libName :: LogicGraph -> AParser st LibName
+libName lG = do
+    libid <- libId lG
     v <- optionMaybe version
     return $ LibName libid v
 
@@ -67,10 +75,10 @@ version = do
     return (VersionNumber n (tokPos s `appRange` Range [pos]))
 
 -- | Parse library ID
-libId :: AParser st LibId
-libId = do
+libId :: LogicGraph -> AParser st LibId
+libId lG = do
       pos <- getPos
-      i <- hetIRI
+      i <- hetIRI lG
       return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) ""
 
 -- | Parse the library elements
@@ -80,11 +88,11 @@ libItems l =
     <|> do
       r <- libItem l
       la <- lineAnnos
-      an <- annos
+      (l',an) <- lGAnnos l
       is <- libItems (case r of
              Logic_decl logD _ ->
-                 setLogicName logD l
-             _ -> l)
+                 setLogicName logD l'
+             _ -> l')
       case is of
         [] -> return [Annoted r nullRange [] $ la ++ an]
         Annoted i p nl ra : rs ->
@@ -95,7 +103,7 @@ libItem :: LogicGraph -> AParser st LIB_ITEM
 libItem l =
      -- spec defn
     do s <- asKey specS <|> asKey ontologyS
-       n <- hetIRI
+       n <- hetIRI l
        g <- generics l
        e <- equalT
        a <- aSpec l
@@ -110,6 +118,7 @@ libItem l =
        vt <- viewType l
        (symbMap, ps) <- option ([], []) $ do
          s <- equalT
+         optional $ try $ asKey "translation"
          (m, _) <- parseMapping l
          return (m, [s])
        q <- optEnd
@@ -117,7 +126,7 @@ libItem l =
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- align defn
     do s1 <- asKey alignmentS
-       an <- hetIRI
+       an <- hetIRI l
        ar <- optionMaybe alignArities
        s2 <- asKey ":"
        at <- alignType l
@@ -130,12 +139,12 @@ libItem l =
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- module defn
     do s1 <- asKey moduleS
-       mn <- hetIRI
+       mn <- hetIRI l
        -- TODO: parse annotations
        s2 <- asKey ":"
        mt <- moduleType l
        s3 <- asKey forS
-       rs <- restrictionSignature
+       rs <- restrictionSignature l
        return (Syntax.AS_Library.Module_defn mn mt rs (catRange [s1, s2, s3]))
   <|> -- unit spec
     do kUnit <- asKey unitS
@@ -158,7 +167,7 @@ libItem l =
   <|> -- arch spec
     do kArch <- asKey archS
        kASpec <- asKey specS
-       name <- hetIRI
+       name <- hetIRI l
        kEqu <- equalT
        asp <- annotedArchSpec l
        kEnd <- optEnd
@@ -166,7 +175,7 @@ libItem l =
                 (catRange ([kArch, kASpec, kEqu] ++ maybeToList kEnd)))
   <|> -- download
     do s1 <- asKey fromS
-       iln <- libName
+       iln <- libName l
        s2 <- asKey getS
        (il, ps) <- downloadItems
        q <- optEnd
@@ -266,8 +275,8 @@ moduleType l = do
   sp2 <- aSpec l
   return $ Module_type sp1 sp2 (tokPos s)
 
-restrictionSignature :: AParser st RESTRICTION_SIGNATURE
-restrictionSignature = many1 hetIRI
+restrictionSignature :: LogicGraph -> AParser st RESTRICTION_SIGNATURE
+restrictionSignature lG = many1 $ hetIRI lG
 
 simpleIdOrDDottedId :: GenParser Char st Token
 simpleIdOrDDottedId = pToken $ liftM2 (++)

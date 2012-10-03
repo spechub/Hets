@@ -1,7 +1,7 @@
 
 %prefix(
 
-log: <http://purl.net/dol/logic/>
+log: <http://purl.net/dol/logics/>
 
 ser: <http://purl.net/dol/serializations/CommonLogic/>
 

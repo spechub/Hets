@@ -181,7 +181,7 @@ anaSublogic :: HetcatsOpts -> LogicDescr -> LibName -> DGraph -> LibEnv
   -> Result (Maybe (ExtGenSig, (LibName, DGraph, LNode DGNodeLab)), LogicGraph)
 anaSublogic _opts itm@(LogicDescr (Logic_name lt ms mt) _ _) ln dg libenv lG
   = do
-    logN@(Logic lid) <- lookupLogic "" (iriToStringUnsecure lt) lG
+    logN@(Logic lid) <- lookupLogic "" lt lG
     mgs <- case ms of
       Nothing -> return Nothing
       Just subL -> do
@@ -625,30 +625,32 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
       newMor <- comp gmor gmorTrans
       anaRen lg opts lenv pos newMor gMapping
   G_logic_translation (Logic_code tok src tar pos1) ->
-    let adj1 = adjustPos $ if pos1 == nullRange then pos else pos1
+    let pos2 = if pos1 == nullRange then pos else pos1
+        adj1 = adjustPos pos2
     in adj1 $ do
     G_sign srcLid srcSig ind <- return (cod gmor)
     c <- case tok of
-            Just cIRI -> lookupComorphism (iriToStringUnsecure cIRI) lg
+            Just c -> lookupComorphism c lg
             Nothing -> case tar of
                Just (Logic_name l _ _) ->
-                 lookupLogic "with logic: " (iriToStringUnsecure l) lg
+                 lookupLogic "with logic: " l lg
                  >>= logicInclusion lg (Logic srcLid)
                Nothing -> fail "with logic: cannot determine comorphism"
-    checkSrcOrTarLogic True c src
-    checkSrcOrTarLogic False c tar
+    checkSrcOrTarLogic pos2 True c src
+    checkSrcOrTarLogic pos2 False c tar
     mor1 <- gEmbedComorphism c (G_sign srcLid srcSig ind)
     comp gmor mor1
 
-checkSrcOrTarLogic :: Bool -> AnyComorphism -> Maybe Logic_name -> Result ()
-checkSrcOrTarLogic b (Comorphism cid) ml = case ml of
+checkSrcOrTarLogic :: Range -> Bool -> AnyComorphism -> Maybe Logic_name
+                      -> Result ()
+checkSrcOrTarLogic pos b (Comorphism cid) ml = case ml of
   Nothing -> return ()
-  Just (Logic_name l _ _) -> let s = iriToStringUnsecure l in
+  Just (Logic_name s _ _) ->
       when (s /= if b then language_name $ sourceLogic cid
                  else language_name $ targetLogic cid)
         $ plain_error () (s ++ " is is not the "
            ++ (if b then "source" else "target") ++ " logic of "
-           ++ language_name cid) (iriPos l)
+           ++ language_name cid) pos
 
 anaRenaming :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
   -> Result GMorphism

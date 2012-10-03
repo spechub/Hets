@@ -111,6 +111,7 @@ Provides data structures for logics (with symbols). Logics are
 module Logic.Logic where
 
 import Logic.Prover (Prover, ConsChecker, Theory (..))
+import Logic.KnownIris
 
 import Taxonomy.MMiSSOntology (MMiSSOntology)
 
@@ -242,7 +243,7 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
         | lid -> basic_spec symb_items symb_map_items
       where
          -- | parsers and printers
-         parsersAndPrinters :: lid -> Map.Map IRI
+         parsersAndPrinters :: lid -> Map.Map String
             (AParser st basic_spec, basic_spec -> Doc)
          parsersAndPrinters li = case parse_basic_spec li of
             Nothing -> Map.empty
@@ -269,29 +270,33 @@ basicSpecPrinter :: Syntax lid basic_spec symb_items symb_map_items
 basicSpecPrinter sm = fmap snd . parserAndPrinter sm
 
 basicSpecSyntaxes :: Syntax lid basic_spec symb_items symb_map_items
-  => lid -> [IRI]
-basicSpecSyntaxes = Map.keys . parsersAndPrinters
+  => lid -> [String]
+basicSpecSyntaxes = Map.keys . serializations . show
 
 parserAndPrinter :: Syntax lid basic_spec symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (AParser st basic_spec, basic_spec -> Doc)
-parserAndPrinter sm = lookupDefault sm . parsersAndPrinters
+parserAndPrinter sm l = lookupDefault l sm (parsersAndPrinters l)
 
 -- | function to lookup parser or printer
-lookupDefault :: Maybe IRI -> Map.Map IRI b -> Maybe b
-lookupDefault sm m = case sm of
-     Just s -> Map.lookup s m
+lookupDefault :: Syntax lid basic_spec symb_items symb_map_items
+  => lid -> Maybe IRI -> Map.Map String b -> Maybe b
+lookupDefault l im m = case im of
+     Just i -> do let s = iriToStringUnsecure i
+                  ser <- if isSimple i then return s
+                         else lookupSerialization (show l) s
+                  Map.lookup ser m
      Nothing -> if Map.size m == 1 then Just $ head $ Map.elems m else
-                    Map.lookup nullIRI m
+                    Map.lookup "" m
 
 showSyntax :: Language lid => lid -> Maybe IRI -> String
 showSyntax lid = (("logic " ++ language_name lid) ++)
    . maybe "" ((" serialization " ++) . iriToStringUnsecure)
 
-makeDefault :: b -> Map.Map IRI b
-makeDefault = Map.singleton nullIRI
+makeDefault :: b -> Map.Map String b
+makeDefault = Map.singleton ""
 
-addSyntax :: String -> b -> Map.Map IRI b -> Map.Map IRI b
-addSyntax = Map.insert . simpleIdToIRI . mkSimpleId
+addSyntax :: String -> b -> Map.Map String b -> Map.Map String b
+addSyntax = Map.insert
 
 {- | Sentences, provers and symbols.
      Provers capture the entailment relation between sets of sentences

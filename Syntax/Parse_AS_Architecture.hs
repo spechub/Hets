@@ -59,7 +59,7 @@ groupArchSpec l = do
     kClBr <- cBraceT
     return $ replaceAnnoted
       (Group_arch_spec (item asp) $ toRange kOpBr [] kClBr) asp
-  <|> fmap (emptyAnno . Arch_spec_name) hetIRI
+  <|> fmap (emptyAnno . Arch_spec_name) (hetIRI l)
 
 {- | Parse basic architectural specification
 @
@@ -82,7 +82,7 @@ UNIT-DECL-DEFN ::= UNIT-DECL | UNIT-DEFN
 @ -}
 unitDeclDefn :: LogicGraph -> AParser st UNIT_DECL_DEFN
 unitDeclDefn l = do
-    name <- hetIRI
+    name <- hetIRI l
     do c <- colonT     -- unit declaration
        decl <- refSpec l
        (gs, ps) <- option ([], []) $ do
@@ -99,7 +99,7 @@ UNIT-REF ::= UNIT-NAME : REF-SPEC
 @ -}
 unitRef :: LogicGraph -> AParser st UNIT_REF
 unitRef l = do
-  name <- hetIRI
+  name <- hetIRI l
   sep1 <- asKey toS
   usp <- refSpec l
   return $ Unit_ref name usp $ tokPos sep1
@@ -187,7 +187,7 @@ UNIT-NAME FIT-ARG-UNITS
 groupUnitTerm :: LogicGraph -> AParser st (Annoted UNIT_TERM)
 groupUnitTerm l = annoParser $
         -- unit name/application
-    do name <- hetIRI
+    do name <- hetIRI l
        args <- many (fitArgUnit l)
        return (Unit_appl name args nullRange)
     <|> -- unit term in brackets
@@ -287,7 +287,7 @@ UNIT-BINDING ::= UNIT-NAME : UNIT-SPEC
 @ -}
 unitBinding :: LogicGraph -> AParser st UNIT_BINDING
 unitBinding l = do
-  name <- hetIRI
+  name <- hetIRI l
   kCol <- colonT
   usp <- unitSpec l
   return $ Unit_binding name usp $ tokPos kCol
@@ -297,7 +297,7 @@ unitBinding l = do
 UNIT-DEFN ::= UNIT-NAME = UNIT-EXPRESSION
 @ -}
 unitDefn :: LogicGraph -> AParser st UNIT_DECL_DEFN
-unitDefn l = hetIRI >>= unitDefn' l
+unitDefn l = hetIRI l >>= unitDefn' l
 
 unitDefn' :: LogicGraph -> IRI -> AParser st UNIT_DECL_DEFN
 unitDefn' l name = do

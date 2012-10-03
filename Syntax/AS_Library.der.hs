@@ -103,7 +103,7 @@ data ItemNameMap =
 makeLogicItem :: Language lid => lid -> Annoted LIB_ITEM
 makeLogicItem lid = emptyAnno $ Logic_decl
   (nameToLogicDescr $ Logic_name
-   (simpleIdToIRI $ mkSimpleId $ language_name lid) Nothing Nothing) nullRange
+   (language_name lid) Nothing Nothing) nullRange
 
 makeSpecItem :: SPEC_NAME -> Annoted SPEC -> Annoted LIB_ITEM
 makeSpecItem sn as =

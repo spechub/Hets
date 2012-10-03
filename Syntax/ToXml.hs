@@ -159,7 +159,7 @@ logicCode :: Logic_code -> [Attr]
 logicCode (Logic_code enc src trg _) =
   (case enc of
     Nothing -> []
-    Just t -> [mkAttr "encoding" $ iriToStringUnsecure t])
+    Just t -> [mkAttr "encoding" t])
   ++ (case src of
         Nothing -> []
         Just l -> [mkAttr "source" $ show $ pretty l])
