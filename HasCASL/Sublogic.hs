@@ -552,10 +552,18 @@ sl_BasicProd ty = case getTypeAppl ty of
         -> comp_list $ map sl_Basictype tyArgs
     _ -> sl_Basictype ty
 
+isAnyUnitType :: Type -> Bool
+isAnyUnitType ty = case ty of
+  BracketType Parens [] _ -> True
+  TypeToken t -> tokStr t == unitTypeS
+  _ -> ty == unitType
+
 sl_BasicFun :: Type -> Sublogic
 sl_BasicFun ty = case getTypeAppl ty of
     (TypeName ide _ _, [arg, res]) | isArrow ide -> comp_list
-        [ if isPartialArrow ide then need_part else bottom
+        [ if isPartialArrow ide then
+              if isAnyUnitType res then need_pred else need_part
+          else bottom
         , sl_BasicProd arg
         , sl_Basictype res ]
     _ -> sl_Basictype ty
