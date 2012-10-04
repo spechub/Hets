@@ -60,6 +60,7 @@ import Network.HTTP (simpleHTTP, getRequest, getResponseBody)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
+import Data.Either (lefts, rights)
 
 import Control.Monad
 import Control.Monad.Trans
@@ -451,6 +452,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
                 fn = show $ getLibId ln
+                currFn = show $ getLibId currLn
                 (realItems, errs, origItems) = case items of
                   ItemMaps rawIms ->
                     let (ims, warns) = foldr (\ im@(ItemNameMap i mi)
@@ -459,7 +461,11 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                             , warning () (show i ++ " item no renamed")
                               (getRange mi) : ws)
                             else (im : is, ws)) ([], []) rawIms
-                    in (ims, warns, itemNameMapsToIRIs ims)
+                        expIms = map (expandCurieItemNameMap fn currFn) ims
+                        leftExpIms = lefts expIms
+                    in if not $ null leftExpIms
+                        then ([], map fail leftExpIms, itemNameMapsToIRIs ims)
+                        else (rights expIms, warns, itemNameMapsToIRIs ims)
                   UniqueItem i -> case Map.keys $ globalEnv dg' of
                     [j] -> case expCurie (globalAnnos dg) eo i of
                       Nothing -> ([], [prefixErrorIRI i], [i])
@@ -643,6 +649,27 @@ refViewsig libenv ln refDG dg name (ExtViewSig src mor extsig) = let
   in (dg2, ExtViewSig src1 mor extsig1)
 
 -- BEGIN CURIE expansion
+
+failPrefixIRI :: IRI -> String
+failPrefixIRI i =
+  let pos = iriPos i
+      posStr = if pos == nullRange then "" else "(" ++ show pos ++ ") "
+  in failPrefixStr posStr $ iriToStringShortUnsecure i
+
+failPrefixStr :: String -> String -> String
+failPrefixStr pos s = "No prefix found for CURIE \"" ++ s ++
+    "\" " ++ pos ++ "or expansion does not yield a valid IRI."
+
+expandCurieItemNameMap :: FilePath -> FilePath -> ItemNameMap
+  -> Either String ItemNameMap
+expandCurieItemNameMap fn newFn (ItemNameMap i1 mi2) =
+    case expandCurieByPath fn i1 of
+        Just i -> case mi2 of
+            Nothing -> Right $ ItemNameMap i mi2
+            Just j -> case expandCurieByPath newFn j of
+                Nothing -> Left $ failPrefixIRI j
+                mj -> Right $ ItemNameMap i mj
+        Nothing -> Left $ failPrefixIRI i1
 
 itemNameMapsToIRIs :: [ItemNameMap] -> [IRI]
 itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> [i | isNothing mi])
