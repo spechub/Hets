@@ -31,6 +31,7 @@ import CASL.Fold
 import CASL.Morphism
 import CASL.Sign
 import CASL.Simplify
+import CASL.Utils
 
 import ExtModal.Logic_ExtModal
 import ExtModal.AS_ExtModal
@@ -59,7 +60,8 @@ instance Comorphism ExtModal2ExtModalTotal
     map_theory ExtModal2ExtModalTotal (sig, sens) = let
       bsrts = emsortsWithBottom sig
       sens1 = generateAxioms True bsrts sig
-      sens2 = map (mapNamed (simplifyEMFormula . codeEMFormula bsrts)) sens
+      sens2 = map (mapNamed (noCondsEMFormula . simplifyEMFormula
+                             . codeEMFormula bsrts)) sens
       in return
              ( emEncodeSig bsrts sig
              , nameAndDisambiguate $ sens1 ++ sens2)
@@ -90,6 +92,12 @@ simplifyEM = mapExtForm simplifyEMFormula
 
 simplifyEMFormula :: FORMULA EM_FORMULA -> FORMULA EM_FORMULA
 simplifyEMFormula = simplifyFormula simplifyEM
+
+noCondsEM :: EM_FORMULA -> EM_FORMULA
+noCondsEM = mapExtForm noCondsEMFormula
+
+noCondsEMFormula :: FORMULA EM_FORMULA -> FORMULA EM_FORMULA
+noCondsEMFormula = codeOutConditionalF noCondsEM
 
 codeEM :: Set.Set SORT -> EM_FORMULA -> EM_FORMULA
 codeEM = mapExtForm . codeEMFormula
