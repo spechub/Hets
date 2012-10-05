@@ -86,7 +86,7 @@ mapSentence sig = return . mkSen . transTextMeta sig
 mapTheory :: (ClSign.Sign, [AS_Anno.Named ClBasic.TEXT_META])
              -> Result (Sign, [AS_Anno.Named Sentence])
 mapTheory (sig, namedTextMetas) =
-  return (mapSig sig, map (transNamed sig) namedTextMetas)
+  return (mapSig sig, ax_that : map (transNamed sig) namedTextMetas)
 
 individualS :: String
 individualS = "individual"
@@ -94,6 +94,15 @@ individualS = "individual"
 individualT :: Typ
 individualT = mkSType individualS
 
+ax_that :: AS_Anno.Named Sentence
+ax_that = makeNamed "Ax_that" $ forceSimp $ mkSen $
+          termAppl (conDouble "ALL") (Abs senTrm s NotCont)
+  where s = binEqv senTrm
+            (binVNameAppl
+             relSymb (termAppl (con thatSymb) senTrm) (nilPT NotCont))
+        senTrm = (conDouble "sen")
+        forceSimp sen = sen { isSimp = True }
+                                   
 type RENAMES = Map.Map String VName
 
 mkIndName :: String -> VName
@@ -114,7 +123,8 @@ makeRenames = addRenames Map.empty
 
 basicRenames :: ClSign.Sign -> RENAMES
 basicRenames sig = addRenames
-                   (Map.fromList [("rel", relSymb), ("fun", funSymb)])
+                   (Map.fromList [("rel", relSymb), ("fun", funSymb),
+                                  ("that", thatSymb)])
                    (map (Id.tokStr . Id.idToSimpleId)
                     ((Set.toList $ ClSign.sequenceMarkers sig)
                      ++ (Set.toList $ ClSign.discourseNames sig)))
@@ -132,6 +142,8 @@ mapSig sig = emptySign {
              (mkCurryFunType [individualT, mkListType individualT] boolType) $
              Map.insert funSymb
              (mkCurryFunType [individualT, mkListType individualT] individualT) $
+             Map.insert thatSymb
+             (mkCurryFunType [boolType] individualT) $
              Map.union (Map.fromList $ map
                         (\name -> (rename rn name, individualT))
                         (map (Id.tokStr . Id.idToSimpleId) $ Set.toList $
@@ -143,7 +155,7 @@ mapSig sig = emptySign {
   }
   where rn = basicRenames sig
 
-relSymb, funSymb :: VName
+relSymb, funSymb, thatSymb :: VName
 relSymb = mkIsaConstT True emptyGlobalAnnos 2
           (Id.stringToId "rel")
           Main_thy Set.empty
@@ -151,6 +163,10 @@ relSymb = mkIsaConstT True emptyGlobalAnnos 2
 funSymb = mkIsaConstT False emptyGlobalAnnos 2
           (Id.stringToId "fun")
           Main_thy Set.empty
+
+thatSymb = mkIsaConstT False emptyGlobalAnnos 1
+           (Id.stringToId "that")
+           Main_thy Set.empty
 
 quantify :: RENAMES -> ClBasic.QUANT -> String -> Term -> Term
 quantify rn q v s = termAppl (conDouble $ qname q)
@@ -189,7 +205,7 @@ transTerm rn trm = case trm of
   ClBasic.Name_term name -> con $ rename rn (Id.tokStr name)
   ClBasic.Funct_term op args _ -> applyTermSeq funSymb rn op args
   ClBasic.Comment_term t _ _ -> transTerm rn t
-  ClBasic.That_term sen _ -> transSen rn sen
+  ClBasic.That_term sen _ -> termAppl (con thatSymb) (transSen rn sen)
 
 transNameOrSeqmark :: ClBasic.NAME_OR_SEQMARK -> String
 transNameOrSeqmark ts = Id.tokStr $ case ts of
@@ -220,7 +236,7 @@ transArgs :: RENAMES -> [ClBasic.TERM_SEQ] -> Term
 transArgs rn tss = case (tss, transArgsSimple rn tss) of
   ([], _) -> (nilPT NotCont)
   (_, Just trm) -> trm
-  (_, Nothing) -> foldr1 (termAppl . termAppl (conC appendV))
+  (_, Nothing) -> foldr1 (termAppl . termAppl (con appendV))
                   (map (transTermSeq rn) tss)
 
 applyTermSeq :: VName -> RENAMES -> ClBasic.TERM -> [ClBasic.TERM_SEQ] -> Term
