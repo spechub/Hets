@@ -129,9 +129,12 @@ tauTy :: Type
 tauTy = trPrSyn $ toPRED_TYPE tauCaslTy
 
 {- | we now consider numbered worlds:
-     free type WN ::= WN World Nat -}
+     free type WN ::= mkWN World Nat -}
 nWorldId :: SORT
 nWorldId = genName "WN"
+
+mkNWorldId :: Id
+mkNWorldId = genName "mkWN"
 
 nWorld :: Type
 nWorld = toType nWorldId
@@ -404,7 +407,7 @@ worldType :: DataEntry
 worldType = DataEntry Map.empty nWorldId Free [] rStar $ Set.singleton worldAlt
 
 worldAlt :: AltDefn
-worldAlt = Construct (Just nWorldId) [worldTy, natTy] HC.Total
+worldAlt = Construct (Just mkNWorldId) [worldTy, natTy] HC.Total
     [getWorldSel, numSel]
 
 getWorldSel :: [Selector]
@@ -417,7 +420,7 @@ nWorldTy :: Type
 nWorldTy = altToTy nWorldId worldAlt
 
 selWorldInfo :: [Selector] -> (Id, Set.Set OpInfo)
-selWorldInfo = selToOpInfo nWorldId . Set.singleton . ConstrInfo nWorldId
+selWorldInfo = selToOpInfo nWorldId . Set.singleton . ConstrInfo mkNWorldId
   $ simpleTypeScheme nWorldTy
 
 selToTy :: Id -> [Selector] -> (Id, Type)
@@ -553,7 +556,7 @@ xZeroAndP :: [VarDecl]
 xZeroAndP = [hcVarDecl (genNumVar "x" 0) worldTy, pVar nWorld]
 
 pairWorld :: Term -> Term -> Term
-pairWorld t1 t2 = mkApplTerm (mkOp nWorldId nWorldTy) [t1, t2]
+pairWorld t1 t2 = mkApplTerm (mkOp mkNWorldId nWorldTy) [t1, t2]
 
 sucTy :: Type
 sucTy = altToTy natId sucAlt
