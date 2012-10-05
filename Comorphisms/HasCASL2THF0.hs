@@ -498,7 +498,7 @@ genTHFBinaryType t = case t of
                 uf <- genTHFUnitaryType ty1
                 ufr <- mtbt ty2
                 return (uf : ufr)
-            _               -> genTHFUnitaryType t >>= (\ uf -> return [uf])
+            _               -> genTHFUnitaryType ty >>= (\ uf -> return [uf])
 
 genTHFUnitaryType :: THFCons.Type -> Result THFAs.THFUnitaryType
 genTHFUnitaryType t = case t of
