@@ -143,16 +143,11 @@ transRawKind rk = case rk of
 transAssumps :: HCLe.Assumps -> Map.Map Id Constant -> Result THFSign.ConstMap
 transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
     where
-        myIsPred :: OpInfo -> Bool
-        myIsPred opi = case opDefn opi of
-            HCLe.NoOpDefn br        -> br == Pred
-            HCLe.Definition br _    -> br == Pred
-            _               -> False
         insertConsts :: THFSign.ConstMap -> (Id, Set.Set OpInfo)
                         -> Result THFSign.ConstMap
         insertConsts m (name, ops) = case Set.toList ops of
             [inf@(OpInfo ts _ _)] -> do
-                ty <- if myIsPred inf then transPred ts else transOp ts
+                ty <- transOp ts
                 c <- transAssumpId name
                 let ci = THFSign.ConstInfo
                         { THFSign.constId = c
@@ -161,7 +156,7 @@ transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
                         , THFSign.constAnno = THFAs.Null }
                 return $ Map.insert c ci m
             infos -> foldM (\ m' (inf@(OpInfo ts _ _), i) -> do
-                    ty <- if myIsPred inf then transPred ts else transOp ts
+                    ty <- transOp ts
                     c <- transAssumpsId name i
                     let ci = THFSign.ConstInfo
                             { THFSign.constId = c
@@ -170,8 +165,6 @@ transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
                             , THFSign.constAnno = THFAs.Null }
                     return $ Map.insert c ci m'
                 ) m (number infos)
-        transPred :: TypeScheme -> Result THFCons.Type
-        transPred (TypeScheme _ op _) = fmap (insLast OType) (transType icm op)
         transOp :: TypeScheme -> Result THFCons.Type
         transOp (TypeScheme _ op _) = transType icm op
 
@@ -387,7 +380,8 @@ transApplTerm :: Env -> IdConstantMap -> IdSet -> HCAs.Term -> HCAs.Term
 transApplTerm e icm ids t1 t2 r = do
     let at = ApplTerm t1 t2 r
     case myGetAppl at of
-        Nothing -> fatal_error ("unexpected Term Application: " ++ show at) r
+        Nothing -> fatal_error
+          ("unexpected Term Application: " ++ showDoc at "") r
         Just (t3, i, tl1)
             | elem i [eqId, exEq, andId, orId, eqvId, implId, infixIf, resId] ->
                 case tl1 of
