@@ -47,11 +47,7 @@ import qualified Data.List as List
 
 import Data.Char (toLower)
 
---------------------------------------------------------------------------------
--- Question:
---      * are the remeining symbol variants translatable?
---      * where is the difference between the OpBrands Pred, Op and Fun?
---------------------------------------------------------------------------------
+-- Question: are the remaining symbol variants translatable?
 
 -- | The identity of the comorphism
 data HasCASL2THF0 = HasCASL2THF0 deriving Show
@@ -70,8 +66,6 @@ instance Comorphism HasCASL2THF0
     targetLogic HasCASL2THF0 = THF
     mapSublogic HasCASL2THF0 _ = Just SL.THF0
     map_theory HasCASL2THF0 = transTheory
-{-    map_sentence HasCASL2THF0 sig sen =
-        transSentence (maybeResult $ genIdConstantMap sig) sig sen -}
     map_symbol HasCASL2THF0 = transSymbol
     -- isInclusionComorphism HasCASL2THF0 = True
     has_model_expansion HasCASL2THF0 = True
@@ -87,9 +81,7 @@ reqSubLogicForTHF0 = Sublogic
     , has_type_constructors = False
     , which_logic = HOL }
 
---------------------------------------------------------------------------------
 -- Translation of a Theory
---------------------------------------------------------------------------------
 
 transTheory :: (Env, [Named Sentence]) -> Result (SignTHF, [Named SentenceTHF])
 transTheory (env, hcnsl) = do
@@ -110,10 +102,7 @@ transTheory (env, hcnsl) = do
         (ns, nids) <- transNamedSentence (Just icm) ids env hcns
         return (ns : nsl, nids)
 
-
---------------------------------------------------------------------------------
 -- Translation methods for the components a signature
---------------------------------------------------------------------------------
 
 transTypeMap :: HCLe.TypeMap -> Result (THFSign.TypeMap, Map.Map Id Constant)
 transTypeMap tm = foldM trans (Map.empty, Map.empty) (Map.toList tm)
@@ -126,18 +115,18 @@ transTypeMap tm = foldM trans (Map.empty, Map.empty) (Map.toList tm)
 
 transTypeInfo :: HCLe.TypeInfo -> THFAs.Constant -> THFSign.TypeInfo
 transTypeInfo ti c = THFSign.TypeInfo
-    { THFSign.typeId    = c
-    , THFSign.typeName  = mkTypesName c
-    , THFSign.typeKind  = transRawKind $ HCLe.typeKind ti
-    , THFSign.typeAnno  = THFAs.Null }
+    { THFSign.typeId = c
+    , THFSign.typeName = mkTypesName c
+    , THFSign.typeKind = transRawKind $ HCLe.typeKind ti
+    , THFSign.typeAnno = THFAs.Null }
 
 transRawKind :: HCAs.RawKind -> THFCons.Kind
 transRawKind rk = case rk of
-    ClassKind ()        -> Kind
-    FunKind _ k1 k2 _   -> case k1 of
-        FunKind _ _ _ _     -> MapKind (ParKind $ transRawKind k1)
+    ClassKind () -> Kind
+    FunKind _ k1 k2 _ -> case k1 of
+        FunKind {} -> MapKind (ParKind $ transRawKind k1)
                                         (transRawKind k2)
-        _                   -> MapKind (transRawKind k1)
+        _ -> MapKind (transRawKind k1)
                                         (transRawKind k2)
 
 transAssumps :: HCLe.Assumps -> Map.Map Id Constant -> Result THFSign.ConstMap
@@ -146,7 +135,7 @@ transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
         insertConsts :: THFSign.ConstMap -> (Id, Set.Set OpInfo)
                         -> Result THFSign.ConstMap
         insertConsts m (name, ops) = case Set.toList ops of
-            [inf@(OpInfo ts _ _)] -> do
+            [OpInfo ts _ _] -> do
                 ty <- transOp ts
                 c <- transAssumpId name
                 let ci = THFSign.ConstInfo
@@ -155,7 +144,7 @@ transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
                         , THFSign.constType = ty
                         , THFSign.constAnno = THFAs.Null }
                 return $ Map.insert c ci m
-            infos -> foldM (\ m' (inf@(OpInfo ts _ _), i) -> do
+            infos -> foldM (\ m' (OpInfo ts _ _, i) -> do
                     ty <- transOp ts
                     c <- transAssumpsId name i
                     let ci = THFSign.ConstInfo
@@ -185,12 +174,12 @@ transType icm hct = case getTypeAppl hct of
             if isUnitType $ head tys
             then return OType
             else fatal_error "THF0 does not support partiality." nullRange
-        | List.length tys == 2   -> if isArrow tid then do
+        | List.length tys == 2 -> if isArrow tid then do
                 [ts1, ts2] <- mapM (transType icm) tys
                 case ts1 of
                     THFCons.MapType _ _ ->
                         return $ THFCons.MapType (THFCons.ParType ts1) ts2
-                    _                   -> return (THFCons.MapType ts1 ts2)
+                    _ -> return (THFCons.MapType ts1 ts2)
             else fatal_error ("Application of Types in Constants is not " ++
                                 "possible in THF0: " ++ show tid) (getRange tid)
         | n == 0 && null tys ->
@@ -203,17 +192,17 @@ transType icm hct = case getTypeAppl hct of
 isUnitType :: HCAs.Type -> Bool
 isUnitType t = case t of
     TypeName i _ _ -> myEqId i unitTypeId
-    _               -> False
+    _ -> False
 
--- method used to add a type to the tail of a type
--- it is used e.g. to transform Types of predicates into function types
--- by adding the boolean-Type OType to the tail.
--- Example:
--- insLast OType (OType > A > IType)  -->  OType > A > IType > OType
+{- method used to add a type to the tail of a type
+it is used e.g. to transform Types of predicates into function types
+by adding the boolean-Type OType to the tail.
+Example:
+insLast OType (OType > A > IType)  -->  OType > A > IType > OType -}
 insLast :: THFCons.Type -> THFCons.Type -> THFCons.Type
 insLast it t = case t of
-    MapType t1 t2   -> MapType t1 (insLast it t2)
-    t1              -> MapType t1 it
+    MapType t1 t2 -> MapType t1 (insLast it t2)
+    t1 -> MapType t1 it
 
 mkSymbolMap :: THFSign.TypeMap -> THFSign.ConstMap -> Result THFSign.SymbolMap
 mkSymbolMap tm cm = foldM ins (Map.map typeInfoToSymbol tm) (Map.toList cm)
@@ -227,39 +216,39 @@ mkSymbolMap tm cm = foldM ins (Map.map typeInfoToSymbol tm) (Map.toList cm)
 
 typeInfoToSymbol :: THFSign.TypeInfo -> THFCons.SymbolTHF
 typeInfoToSymbol ti = THFCons.Symbol
-    { THFCons.symId     = THFSign.typeId ti
-    , THFCons.symName   = THFSign.typeName ti
-    , THFCons.symType   = THFCons.ST_Type $ THFSign.typeKind ti }
+    { THFCons.symId = THFSign.typeId ti
+    , THFCons.symName = THFSign.typeName ti
+    , THFCons.symType = THFCons.ST_Type $ THFSign.typeKind ti }
 
 constInfoToSymbol :: THFSign.ConstInfo -> THFCons.SymbolTHF
 constInfoToSymbol ci = THFCons.Symbol
-    { THFCons.symId     = THFSign.constId ci
-    , THFCons.symName   = THFSign.constName ci
-    , THFCons.symType   = THFCons.ST_Const $ THFSign.constType ci }
+    { THFCons.symId = THFSign.constId ci
+    , THFCons.symName = THFSign.constName ci
+    , THFCons.symType = THFCons.ST_Const $ THFSign.constType ci }
 
 
---------------------------------------------------------------------------------
 -- Transation of Symbols
---------------------------------------------------------------------------------
 
--- Not supported symbols:
---      ClassAsItemType RawKind
---      SuperClassSymbol Kind
---      SuperTypeSymbol Id
---      TypeKindInstance Kind
---      TypeAliasSymbol Type
+{- Not supported symbols:
+ ClassAsItemType RawKind
+ SuperClassSymbol Kind
+ SuperTypeSymbol Id
+ TypeKindInstance Kind
+ TypeAliasSymbol Type
+-}
+
 transSymbol :: Env -> Symbol -> Set.Set SymbolTHF
 transSymbol sig1 sym1 = case HCLe.symType sym1 of
-        TypeAsItemType rk   ->
+        TypeAsItemType rk ->
             case maybeResult (transTypeId $ HCLe.symName sym1) of
                 Nothing -> Set.empty
-                Just c  -> Set.singleton THFCons.Symbol
-                        { THFCons.symId   = c
+                Just c -> Set.singleton THFCons.Symbol
+                        { THFCons.symId = c
                         , THFCons.symName = mkTypesName c
                         , THFCons.symType = ST_Type $ transRawKind rk }
-        OpAsItemType ts     -> tsHelper ts tsOpType
-        PredAsItemType ts   -> tsHelper ts tsPredType
-        _   -> Set.empty
+        OpAsItemType ts -> tsHelper ts tsOpType
+        PredAsItemType ts -> tsHelper ts tsPredType
+        _ -> Set.empty
     where
         tsOpType :: IdConstantMap -> TypeScheme -> Result THFCons.Type
         tsOpType icm (TypeScheme _ t _) = transType icm t
@@ -283,39 +272,37 @@ transSymbol sig1 sym1 = case HCLe.symType sym1 of
                     -> TypeScheme -> Result THFCons.Type) -> Set.Set SymbolTHF
         tsHelper2 t rc f = case maybeResult rc of
             Nothing -> Set.empty
-            Just c  -> case maybeResult (genIdConstantMap sig1) of
+            Just c -> case maybeResult (genIdConstantMap sig1) of
                 Nothing -> Set.empty
                 Just icm -> case maybeResult (f icm t) of
                     Nothing -> Set.empty
                     Just tt -> Set.singleton
-                        THFCons.Symbol { THFCons.symId   = c
+                        THFCons.Symbol { THFCons.symId = c
                                        , THFCons.symName = mkConstsName c
                                        , THFCons.symType = ST_Const tt }
 
 
---------------------------------------------------------------------------------
--- Translatin methods for Sentences
---------------------------------------------------------------------------------
+-- Translating methods for Sentences
 
 transNamedSentence :: Maybe IdConstantMap -> IdSet -> Env -> Named Sentence
                             -> Result (Named SentenceTHF, IdSet)
 transNamedSentence micm ids sig ns' = do
     icm <- maybe (genIdConstantMap sig) return micm
-    let ns = reName (\n -> case n of
-                            []     -> n
-                            (x:xs) -> (toLower x):xs) ns'
+    let ns = reName (\ n -> case n of
+                            [] -> n
+                            (x : xs) -> (toLower x) : xs) ns'
     case sentence ns of
-        Formula term    -> do
+        Formula term -> do
             (lf, nids) <- transTerm sig icm ids term
             return ( ns {sentence =
-                THFCons.Sentence { senRole       = getFormulaRole ns
-                                 , senFormula    = TF_THF_Logic_Formula lf
-                                 , senAnno       = Null } }
+                THFCons.Sentence { senRole = getFormulaRole ns
+                                 , senFormula = TF_THF_Logic_Formula lf
+                                 , senAnno = Null } }
                    , nids)
-        ProgEqSen _ _ _ ->
+        ProgEqSen {} ->
             fatal_error "Programm equations are not supported."
                             (getRange ns)
-        DatatypeSen _   ->
+        DatatypeSen _ ->
             fatal_error "Data constructors are not allowed in THF0."
                             (getRange ns)
 
@@ -328,27 +315,27 @@ getFormulaRole ns =
 transTerm :: Env -> IdConstantMap -> IdSet -> HCAs.Term
                         -> Result (THFLogicFormula, IdSet)
 transTerm e icm ids t = case t of
-    QuantifiedTerm q gcdl t1 r  -> myFmap (TLF_THF_Unitary_Formula .
+    QuantifiedTerm q gcdl t1 r -> myFmap (TLF_THF_Unitary_Formula .
         TUF_THF_Quantified_Formula) (transQuantifiedTerm e icm ids q gcdl t1 r)
-    LambdaTerm tl p t1 r        -> transLamdaTerm e icm ids tl p t1 r
-    TypedTerm t1 tq ty r        -> redTypedTerm t1 tq ty r >>=
+    LambdaTerm tl p t1 r -> transLamdaTerm e icm ids tl p t1 r
+    TypedTerm t1 tq ty r -> redTypedTerm t1 tq ty r >>=
         transTerm e icm ids
-    ApplTerm t1 t2 r            -> transApplTerm e icm ids t1 t2 r
-    QualVar (VarDecl i _ _ _)   -> fmap (TLF_THF_Unitary_Formula . TUF_THF_Atom
+    ApplTerm t1 t2 r -> transApplTerm e icm ids t1 t2 r
+    QualVar (VarDecl i _ _ _) -> fmap (TLF_THF_Unitary_Formula . TUF_THF_Atom
             . T0A_Variable) (transVarId i) >>= (\ lf -> return (lf, ids))
-    QualOp ob pid ts tl ik r    -> myFmap (TLF_THF_Unitary_Formula
+    QualOp ob pid ts tl ik r -> myFmap (TLF_THF_Unitary_Formula
             . TUF_THF_Atom . T0A_Constant) (transQualOp e ids ob pid ts tl ik r)
-    TupleTerm _ _               ->
+    TupleTerm _ _ ->
             fatal_error "Tuples are not allowed in THF0." (getRange t)
-    TermToken _                 ->
+    TermToken _ ->
             fatal_error "Missing translation for term tokens." (getRange t)
-    AsPattern _ _ _             ->
+    AsPattern {} ->
             fatal_error "As patterns are not supported in THF0." (getRange t)
-    LetTerm _ _ _ _             ->
+    LetTerm {} ->
             fatal_error "Let terms are not supported in THF0." (getRange t)
-    CaseTerm _ _ _              ->
+    CaseTerm {} ->
             fatal_error "Case statements are not supported in THF." (getRange t)
-    _                           ->
+    _ ->
             fatal_error "HasCASL2THF0.transTerm" (getRange t)
 
 
@@ -357,7 +344,7 @@ redTypedTerm t1 tq1 _ r1 =
     if elem tq1 [Inferred, OfType]
     then case t1 of
         TypedTerm t2 tq2 ty2 r2 -> redTypedTerm t2 tq2 ty2 r2
-        _                       -> return t1
+        _ -> return t1
     else fatal_error "Typed terms are not supported in THF0." r1
 
 transQualOp :: Env -> IdSet -> OpBrand -> PolyId -> TypeScheme
@@ -366,14 +353,14 @@ transQualOp e ids _ (PolyId i _ _) ts _ _ r = do
     let nids = if elem i (map fst bList) then Set.insert i ids else ids
     case Map.lookup i (assumps e) of
         Just s
-            | Set.size s <= 0   -> fatal_error ("unknown op: " ++ show i) r
-            | Set.size s == 1   -> transAssumpId i >>= (\ c -> return (c, nids))
-            | Set.size s >= 2   -> case List.lookup ts (number
+            | Set.size s <= 0 -> fatal_error ("unknown op: " ++ show i) r
+            | Set.size s == 1 -> transAssumpId i >>= (\ c -> return (c, nids))
+            | Set.size s >= 2 -> case List.lookup ts (number
                                         (map HCLe.opType (Set.toList s))) of
-                    Nothing  -> fatal_error ("unknown op: " ++ show i) r
+                    Nothing -> fatal_error ("unknown op: " ++ show i) r
                     Just num ->
                         transAssumpsId i num >>= (\ c -> return (c, nids))
-        _                       -> transAssumpId i >>= (\ c -> return (c, nids))
+        _ -> transAssumpId i >>= (\ c -> return (c, nids))
 
 transApplTerm :: Env -> IdConstantMap -> IdSet -> HCAs.Term -> HCAs.Term
                     -> Range -> Result (THFLogicFormula, IdSet)
@@ -400,7 +387,7 @@ transApplTerm e icm ids t1 t2 r = do
   where
     fTrmToUf :: ([THFUnitaryFormula], IdSet) -> HCAs.Term
                     -> Result ([THFUnitaryFormula], IdSet)
-    fTrmToUf (ufl, oids)  t = do
+    fTrmToUf (ufl, oids) t = do
         (uf, nids) <- myFmap lfToUf (transTerm e icm oids t)
         return (uf : ufl, nids)
 
@@ -431,20 +418,20 @@ transLamdaTerm e icm ids tl _ t _ = do
         trVar t1 = case t1 of
             TypedTerm t2 tq ty r -> redTypedTerm t2 tq ty r >>= trVar
             QualVar vd -> transVarDecl icm vd
-            _   -> fatal_error ("Unexpected term: " ++ show t1
+            _ -> fatal_error ("Unexpected term: " ++ show t1
                             ++ " Expected variable.") (getRange t1)
 
 transQuantifiedTerm :: Env -> IdConstantMap -> IdSet -> HCAs.Quantifier
                         -> [HCAs.GenVarDecl] -> HCAs.Term -> Range
                         -> Result (THFAs.THFQuantifiedFormula, IdSet)
 transQuantifiedTerm e icm ids q gcdl t r = case q of
-        Universal   -> tqHelper T0Q_ForAll
+        Universal -> tqHelper T0Q_ForAll
         Existential -> tqHelper T0Q_Exists
-        Unique      ->
+        Unique ->
             fatal_error "Unique quantifications are not supported yet." r
-            -- two possible translatione for uniqueness:
-            -- 1. Ex: x . P(x) /\ Not (Ex : x,y . (P(x) /\ P(y) /\ not (x = y)))
-            -- 2. Ex: x . (All : y . (P(y) <=> x = y))
+            {- two possible translatione for uniqueness:
+            1. Ex: x . P(x) /\ Not (Ex : x,y . (P(x) /\ P(y) /\ not (x = y)))
+            2. Ex: x . (All : y . (P(y) <=> x = y)) -}
     where
         tqHelper :: THFAs.Quantifier
                         -> Result (THFAs.THFQuantifiedFormula, IdSet)
@@ -468,60 +455,58 @@ transVarDecl icm (VarDecl i t _ _) = do
 
 genTHFTopLevelType :: THFCons.Type -> Result THFAs.THFTopLevelType
 genTHFTopLevelType t = case t of
-    TType           -> return $ T0TLT_Defined_Type DT_tType
-    OType           -> return $ T0TLT_Defined_Type DT_o
-    IType           -> return $ T0TLT_Defined_Type DT_i
-    CType c         -> return $ T0TLT_Constant c
-    SType st        -> return $ T0TLT_System_Type st
-    VType v         -> return $ T0TLT_Variable v
-    MapType _ _     -> fmap T0TLT_THF_Binary_Type (genTHFBinaryType t)
-    ParType t1      -> genTHFTopLevelType t1
-    ProdType ts     -> fmap T0TLT_THF_Binary_Type $ genTuple ts
+    TType -> return $ T0TLT_Defined_Type DT_tType
+    OType -> return $ T0TLT_Defined_Type DT_o
+    IType -> return $ T0TLT_Defined_Type DT_i
+    CType c -> return $ T0TLT_Constant c
+    SType st -> return $ T0TLT_System_Type st
+    VType v -> return $ T0TLT_Variable v
+    MapType _ _ -> fmap T0TLT_THF_Binary_Type (genTHFBinaryType t)
+    ParType t1 -> genTHFTopLevelType t1
+    ProdType ts -> fmap T0TLT_THF_Binary_Type $ genTuple ts
 
 genTHFBinaryType :: THFCons.Type -> Result THFAs.THFBinaryType
 genTHFBinaryType t = case t of
-        MapType t1 t2   -> do
+        MapType t1 t2 -> do
             uf <- genTHFUnitaryType t1
             ufr <- mtbt t2
             return $ TBT_THF_Mapping_Type (uf : ufr)
-        ParType t1      -> fmap T0BT_THF_Binary_Type_Par (genTHFBinaryType t1)
-        _               -> fatal_error ("Unexpected Type: " ++ show t) nullRange
+        ParType t1 -> fmap T0BT_THF_Binary_Type_Par (genTHFBinaryType t1)
+        _ -> fatal_error ("Unexpected Type: " ++ show t) nullRange
     where
         mtbt :: THFCons.Type -> Result [THFAs.THFUnitaryType]
         mtbt ty = case ty of
-            MapType ty1 ty2   -> do
+            MapType ty1 ty2 -> do
                 uf <- genTHFUnitaryType ty1
                 ufr <- mtbt ty2
                 return (uf : ufr)
-            _               -> genTHFUnitaryType ty >>= (\ uf -> return [uf])
+            _ -> genTHFUnitaryType ty >>= (\ uf -> return [uf])
 
 genTHFUnitaryType :: THFCons.Type -> Result THFAs.THFUnitaryType
 genTHFUnitaryType t = case t of
-    TType           -> return $ T0UT_Defined_Type DT_tType
-    OType           -> return $ T0UT_Defined_Type DT_o
-    IType           -> return $ T0UT_Defined_Type DT_i
-    CType c         -> return $ T0UT_Constant c
-    SType st        -> return $ T0UT_System_Type st
-    VType v         -> return $ T0UT_Variable v
-    MapType _ _     -> fmap T0UT_THF_Binary_Type_Par (genTHFBinaryType t)
-    ParType t1      -> fmap T0UT_THF_Binary_Type_Par (genTHFBinaryType t1)
-    ProdType ts     -> fmap T0UT_THF_Binary_Type_Par (genTuple ts)
+    TType -> return $ T0UT_Defined_Type DT_tType
+    OType -> return $ T0UT_Defined_Type DT_o
+    IType -> return $ T0UT_Defined_Type DT_i
+    CType c -> return $ T0UT_Constant c
+    SType st -> return $ T0UT_System_Type st
+    VType v -> return $ T0UT_Variable v
+    MapType _ _ -> fmap T0UT_THF_Binary_Type_Par (genTHFBinaryType t)
+    ParType t1 -> fmap T0UT_THF_Binary_Type_Par (genTHFBinaryType t1)
+    ProdType ts -> fmap T0UT_THF_Binary_Type_Par (genTuple ts)
 
 genTuple :: [THFCons.Type] -> Result THFAs.THFBinaryType
 genTuple ts = case ts of
   [] -> fatal_error "Empty product type" nullRange
-  tp:[] -> genTHFBinaryType tp
+  tp : [] -> genTHFBinaryType tp
   _ -> fmap TBT_THF_Xprod_Type $ mapR genTHFUnitaryType ts
 
 -- THFLogicFormula to THFUnitaryFormula
 lfToUf :: THFLogicFormula -> THFUnitaryFormula
 lfToUf lf = case lf of
-    TLF_THF_Unitary_Formula uf  -> uf
-    _                           -> TUF_THF_Logic_Formula_Par lf
+    TLF_THF_Unitary_Formula uf -> uf
+    _ -> TUF_THF_Logic_Formula_Par lf
 
---------------------------------------------------------------------------------
 -- Helper
---------------------------------------------------------------------------------
 
 type IdSet = Set.Set Id
 
