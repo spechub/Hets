@@ -11,9 +11,11 @@ Portability :  non-portable (imports Prover)
 Isabelle theorem prover for THF
 -}
 
-module THF.SZSProver (createSZSProver,ProverType,
-                      ProverFuncs(ProverFuncs),cfgTimeout,
-                      proverCommand,getMessage,getTimeUsed) where
+module THF.SZSProver
+  ( createSZSProver
+  , ProverType
+  , ProverFuncs (..)
+  ) where
 
 import Logic.Prover
 
@@ -48,7 +50,7 @@ import Data.Time.Clock (secondsToDiffTime)
 data ProverFuncs = ProverFuncs {
  cfgTimeout :: GenericConfig ProofTree -> Int, -- in seconds
  proverCommand :: Int -> String -> GenericConfig ProofTree ->
-                  IO (String,[String]),
+                  IO (String, [String]),
  -- timeout -> problem file
  getMessage :: String -> String -> String -> String,
  -- result -> std out -> std err
@@ -75,7 +77,7 @@ atpFun d name _ hlp = ATPFunctions
   , goalOutput = showProblemTHF
   , proverHelpText = hlp
   , batchTimeEnv = "HETS_TPTP_BATCH_TIME_LIMIT"
-  , fileExtensions = FileExtensions { 
+  , fileExtensions = FileExtensions {
       problemOutput = ".p"
     , proverOutput = ""
     , theoryConfiguration = "" }
@@ -111,7 +113,8 @@ proverCMDLautomaticBatch
      snd: MVar to wait for the end of the thread -}
 proverCMDLautomaticBatch hlp name d inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
-    genericCMDLautomaticBatch (atpFun d name thName hlp) inclProvedThs saveProblem_batch
+    genericCMDLautomaticBatch (atpFun d name thName hlp) inclProvedThs
+        saveProblem_batch
         resultMVar name thName
         (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
@@ -125,7 +128,7 @@ runProverT :: ProverFuncs
     -> IO (ATPRetval, GenericConfig ProofTree)
     -- ^ (retval, configuration with proof status and complete output)
 runProverT d name pst cfg saveTHF thName nGoal = do
-    let tout = cfgTimeout d $ cfg
+    let tout = cfgTimeout d cfg
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showProblemTHF pst nGoal []
     runRes <- runProverProcess d cfg tout saveTHF tmpFileName prob
@@ -141,18 +144,18 @@ runProverT d name pst cfg saveTHF thName nGoal = do
                                     $ show ATPTacticScript
                                         { tsTimeLimit = configTimeLimit cfg,
                                           tsExtraOpts = [] } }
-                        , timeUsed = 
+                        , timeUsed =
                            timeToTimeOfDay $ secondsToDiffTime $
                            toInteger tout })
         Just (exitCode, out, tUsed) ->
          let (err, retval) = case () of
-                _ | szsProved exitCode      -> (ATPSuccess, provedStatus)
-                _ | szsDisproved exitCode   -> (ATPSuccess, disProvedStatus)
-                _ | szsTimeout exitCode     ->
+                _ | szsProved exitCode -> (ATPSuccess, provedStatus)
+                _ | szsDisproved exitCode -> (ATPSuccess, disProvedStatus)
+                _ | szsTimeout exitCode ->
                                     (ATPTLimitExceeded, defaultProofStatus)
-                _ | szsStopped exitCode   ->
+                _ | szsStopped exitCode ->
                                     (ATPBatchStopped, defaultProofStatus)
-                _                         ->
+                _ ->
                                     (ATPError exitCode, defaultProofStatus)
              defaultProofStatus =
               (openProofStatus (AS_Anno.senAttr nGoal) name emptyProofTree)
@@ -167,7 +170,7 @@ runProverT d name pst cfg saveTHF thName nGoal = do
                                               , usedAxioms = getAxioms pst }
          in return (err, cfg { proofStatus = retval
                          , resultOutput = out
-                         , timeUsed = 
+                         , timeUsed =
                              timeToTimeOfDay $ secondsToDiffTime $
                              toInteger tUsed })
 
@@ -182,12 +185,12 @@ runProverProcess
 runProverProcess d cfg tout saveTHF tmpFileName prob = do
     let tmpFile = basename tmpFileName ++ ".p"
     writeFile tmpFile prob
-    (cmd,args) <- (proverCommand d) tout tmpFile cfg
+    (cmd, args) <- proverCommand d tout tmpFile cfg
     mres <- timeoutCommand tout cmd args
     maybe (return Nothing) (\ (_, pout, perr) -> do
         let l = lines pout
             (res', _, tUsed) = parseOutput d l
-            res = (getMessage d) res' pout perr
+            res = getMessage d res' pout perr
         unless saveTHF $ removeFile tmpFile
         return $ Just (res, l, tUsed)) mres
 
@@ -197,7 +200,7 @@ parseOutput :: ProverFuncs -> [String] -> (String, Bool, Int)
 parseOutput d = foldl checkLine ("", False, -1) where
    checkLine (exCode, stateFound, to) line = case getSZSStatusWord line of
         Just szsState | not stateFound -> (szsState, True, to)
-        _ -> case getTimeUsed d $ line of
+        _ -> case getTimeUsed d line of
               Just secs -> (exCode, stateFound, secs)
               Nothing -> (exCode, stateFound, to)
 

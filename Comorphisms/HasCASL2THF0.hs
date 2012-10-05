@@ -290,7 +290,7 @@ transNamedSentence micm ids sig ns' = do
     icm <- maybe (genIdConstantMap sig) return micm
     let ns = reName (\ n -> case n of
                             [] -> n
-                            (x : xs) -> (toLower x) : xs) ns'
+                            x : xs -> toLower x : xs) ns'
     case sentence ns of
         Formula term -> do
             (lf, nids) <- transTerm sig icm ids term
