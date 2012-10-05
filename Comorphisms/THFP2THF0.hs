@@ -142,10 +142,32 @@ rewriteBinaryFormula :: TransMap -> TransMap -> THFBinaryFormula
 rewriteBinaryFormula tp_trans cs_trans bf = case bf of
  TBF_THF_Binary_Type _ ->
   error "THFP2THF0.rewriteBinaryFormula: TBF_THF_Binary_Type is not in THF0!"
- TBF_THF_Binary_Pair uf1 cn uf2 -> Left $ TBF_THF_Binary_Pair
-  (rewriteUnitaryFormula tp_trans cs_trans uf1) cn
-  (rewriteUnitaryFormula tp_trans cs_trans uf2)
+ TBF_THF_Binary_Pair uf1 cn uf2 ->
+  let uf1' = rewriteUnitaryFormula tp_trans cs_trans uf1
+      uf2' = rewriteUnitaryFormula tp_trans cs_trans uf2
+  in case (toTuple uf1',cn,toTuple uf2') of
+      (Just (TUF_THF_Tuple t1), Infix_Equality, 
+       Just (TUF_THF_Tuple t2)) -> if length t1 == length t2
+        then Left $ TBF_THF_Binary_Tuple $ TBT_THF_And_Formula $
+              map (\(t1',t2') ->
+               TUF_THF_Logic_Formula_Par $ TLF_THF_Binary_Formula $
+                TBF_THF_Binary_Pair (logicFormula2UnitaryFormula t1')
+                 cn (logicFormula2UnitaryFormula t2')) (zip t1 t2)
+        else error $ "THFP2THF0.rewriteBinaryFormula: Equality on tuples of " ++
+                   "different size!"
+      _ -> Left $ TBF_THF_Binary_Pair uf1' cn uf2'
  TBF_THF_Binary_Tuple bt -> rewriteBinaryTuple tp_trans cs_trans bt
+
+toTuple :: THFUnitaryFormula -> Maybe THFUnitaryFormula
+toTuple u@(TUF_THF_Tuple _) = Just u
+toTuple (TUF_THF_Logic_Formula_Par
+  (TLF_THF_Unitary_Formula u)) = Just u
+toTuple _ = Nothing
+
+logicFormula2UnitaryFormula :: THFLogicFormula -> THFUnitaryFormula
+logicFormula2UnitaryFormula l = case l of
+ TLF_THF_Unitary_Formula uf -> uf
+ _ -> TUF_THF_Logic_Formula_Par l
 
 rewriteBinaryTuple :: TransMap -> TransMap -> THFBinaryTuple
                       -> Either THFBinaryFormula THFUnitaryFormula
