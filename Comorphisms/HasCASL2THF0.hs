@@ -415,6 +415,7 @@ myGetAppl = thrdM reverse . getRevAppl where
         TypedTerm trm q _ _ -> case q of
             InType -> Nothing
             _ -> getRevAppl trm
+        QualVar (VarDecl i _ _ _) -> Just (t, i, [])
         QualOp _ (PolyId i _ _) _ _ _ _ -> Just (t, i, [])
         ApplTerm t1 t2 _ -> thrdM (t2 :) $ getRevAppl t1
         _ -> Nothing
