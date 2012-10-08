@@ -244,12 +244,12 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
       where
          -- | parsers and printers
          parsersAndPrinters :: lid -> Map.Map String
-            (AParser st basic_spec, basic_spec -> Doc)
+            (PrefixMap -> AParser st basic_spec, basic_spec -> Doc)
          parsersAndPrinters li = case parse_basic_spec li of
             Nothing -> Map.empty
             Just p -> makeDefault (p, pretty)
          -- | parser for basic specifications
-         parse_basic_spec :: lid -> Maybe (AParser st basic_spec)
+         parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
          -- | parser for symbol lists
          parse_symb_items :: lid -> Maybe (AParser st symb_items)
          -- | parser for symbol maps
@@ -262,7 +262,7 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
 basicSpecParser :: Syntax lid basic_spec symb_items symb_map_items
-  => Maybe IRI -> lid -> Maybe (AParser st basic_spec)
+  => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec)
 basicSpecParser sm = fmap fst . parserAndPrinter sm
 
 basicSpecPrinter :: Syntax lid basic_spec symb_items symb_map_items
@@ -274,7 +274,8 @@ basicSpecSyntaxes :: Syntax lid basic_spec symb_items symb_map_items
 basicSpecSyntaxes = Map.keys . serializations . show
 
 parserAndPrinter :: Syntax lid basic_spec symb_items symb_map_items
-  => Maybe IRI -> lid -> Maybe (AParser st basic_spec, basic_spec -> Doc)
+  => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec,
+                                basic_spec -> Doc)
 parserAndPrinter sm l = lookupDefault l sm (parsersAndPrinters l)
 
 -- | function to lookup parser or printer

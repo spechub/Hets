@@ -83,7 +83,7 @@ instance Monoid MaudeText where
 
 -- | Instance of Syntax for Maude
 instance Syntax Maude MaudeText () () where
-    parse_basic_spec Maude = Just $ fmap MaudeText mStuff
+    parse_basic_spec Maude = Just (\_ -> fmap MaudeText mStuff)
     -- parse_symb_items
     -- parse_symb_map_items
 

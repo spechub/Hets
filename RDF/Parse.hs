@@ -16,6 +16,7 @@ import Common.Parsec
 import Common.Lexer
 import Common.AnnoParser (newlineOrEof)
 import Common.Token (criticalKeywords)
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import OWL2.AS
 import OWL2.Parse hiding (stringLiteral, literal, skips, uriP)
@@ -163,8 +164,8 @@ parseStatement :: CharParser st Statement
 parseStatement = fmap BaseStatement parseBase
     <|> fmap PrefixStatement parsePrefix <|> fmap Statement parseTriples
 
-basicSpec :: CharParser st TurtleDocument
-basicSpec = do
+basicSpec :: GA.PrefixMap -> CharParser st TurtleDocument
+basicSpec _ = do
     many parseComment
     ls <- many parseStatement
     return $ TurtleDocument dummyQName Map.empty ls

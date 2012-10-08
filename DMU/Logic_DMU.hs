@@ -54,7 +54,7 @@ instance Monoid Text where
       . unlines $ lines l1 ++ lines l2
 
 instance Syntax DMU Text () () where
-  parse_basic_spec DMU = Just $ fmap Text $ many1 anyChar
+  parse_basic_spec DMU = Just (\_ -> fmap Text $ many1 anyChar)
 
 instance Sentences DMU () Text (DefaultMorphism Text) () where
   map_sen DMU _ = return

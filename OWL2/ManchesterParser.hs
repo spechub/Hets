@@ -22,6 +22,7 @@ import OWL2.ColonKeywords
 
 import Common.Keywords
 import Common.Parsec
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import Text.ParserCombinators.Parsec
 import qualified Data.Map as Map
@@ -252,8 +253,8 @@ frames = many $ datatypeBit <|> classFrame
     <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
     <|> annotationPropertyFrame <|> misc
 
-basicSpec :: CharParser st OntologyDocument
-basicSpec = do
+basicSpec :: GA.PrefixMap -> CharParser st OntologyDocument
+basicSpec _ = do
     nss <- many nsEntry
     ou <- option nullQName $ pkeyword ontologyC >> option nullQName uriP
     ie <- many importEntry

@@ -26,6 +26,7 @@ import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
 import Common.Parsec
+import Common.GlobalAnnotations (PrefixMap)
 
 import Propositional.AS_BASIC_Propositional as AS_BASIC
 import Text.ParserCombinators.Parsec
@@ -38,8 +39,8 @@ propKeywords =
   , Keywords.falseS ]
 
 -- | Toplevel parser for basic specs
-basicSpec :: AnnoState.AParser st AS_BASIC.BASIC_SPEC
-basicSpec =
+basicSpec :: PrefixMap -> AnnoState.AParser st AS_BASIC.BASIC_SPEC
+basicSpec _ =
   fmap AS_BASIC.Basic_spec (AnnoState.annosParser parseBasicItems)
   <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (AS_BASIC.Basic_spec []))
 

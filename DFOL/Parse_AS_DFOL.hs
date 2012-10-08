@@ -22,6 +22,7 @@ import Common.Parsec
 import Common.Token (criticalKeywords)
 import qualified Common.Keywords as Keywords
 import qualified Common.AnnoState as AnnoState
+import Common.GlobalAnnotations (PrefixMap)
 import DFOL.AS_DFOL
 import Text.ParserCombinators.Parsec
 
@@ -38,8 +39,8 @@ dfolKeys = [Keywords.trueS,
             "Pi"] ++ criticalKeywords
 
 -- parser for basic spec
-basicSpec :: AnnoState.AParser st BASIC_SPEC
-basicSpec = fmap Basic_spec (AnnoState.trailingAnnosParser basicItemP)
+basicSpec :: PrefixMap -> AnnoState.AParser st BASIC_SPEC
+basicSpec _ = fmap Basic_spec (AnnoState.trailingAnnosParser basicItemP)
             <|>
             (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 

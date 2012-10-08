@@ -24,6 +24,7 @@ import Common.AnnoState
 import Common.Id
 import Common.Lexer
 import Common.Parsec
+import Common.GlobalAnnotations (PrefixMap)
 
 import Control.Monad
 
@@ -35,6 +36,7 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- ^ parse a simple word not in 'rskeywords'
 rsVarId :: [String] -> AParser st Token
@@ -44,8 +46,8 @@ rsVarId ks =
         addAnnos
         return tk
 
-parseRSScheme :: AParser st RSScheme
-parseRSScheme =
+parseRSScheme :: PrefixMap -> AParser st RSScheme
+parseRSScheme _ =
     do
         spaces
         pos1 <- getPos
@@ -182,7 +184,7 @@ testParse par = runParser par (emptyAnnos ()) ""
 longTest :: IO (Either ParseError RSScheme)
 longTest = do
   x <- readFile "RelationalScheme/test/rel.het"
-  return $ testParse parseRSScheme x
+  return $ testParse (parseRSScheme Map.empty) x
 
 -- boring parser for rel types
 parseRSRelTypes :: AParser st RSRelType

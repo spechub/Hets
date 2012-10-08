@@ -26,6 +26,7 @@ import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
+import Common.GlobalAnnotations (PrefixMap)
 
 import CASL.AS_Basic_CASL
 import CASL.Formula
@@ -127,5 +128,5 @@ aFormula = allAnnoParser . formula
 -- * basic spec
 
 basicSpec :: (TermParser f, AParsable s, AParsable b) =>
-             [String] -> AParser st (BASIC_SPEC b s f)
-basicSpec = fmap Basic_spec . annosParser . basicItems
+             [String] -> PrefixMap -> AParser st (BASIC_SPEC b s f)
+basicSpec bi _ = (fmap Basic_spec . annosParser . basicItems) bi

@@ -248,7 +248,7 @@ writeTheory ins nam opts filePrefix ga
                   (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
             showDiags opts ds
             when (null sy)
-                $ case parse (OWL2.basicSpec >> eof) f owltext of
+                $ case parse (OWL2.basicSpec Map.empty >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
@@ -265,7 +265,7 @@ writeTheory ins nam opts filePrefix ga
       | lang == language_name CommonLogic -> do
             (_, th2) <- coerceBasicTheory lid CommonLogic "" th
             let cltext = shows (CL_AS.exportCLIF th2) "\n"
-            case parse (many CL_Parse.cltext >> eof) f cltext of
+            case parse (many (CL_Parse.cltext Map.empty) >> eof) f cltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f cltext

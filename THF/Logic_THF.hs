@@ -54,7 +54,7 @@ instance Monoid BasicSpecTHF where
         BasicSpecTHF $ l1 ++ l2
 
 instance Logic.Logic.Syntax THF BasicSpecTHF () () where
-    parse_basic_spec THF = Just $ fmap BasicSpecTHF parseTHF
+    parse_basic_spec THF = Just (\_ -> fmap BasicSpecTHF parseTHF)
     -- remaining default implementations are fine!
 
 instance Sentences THF SentenceTHF SignTHF MorphismTHF SymbolTHF where

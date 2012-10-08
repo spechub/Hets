@@ -20,6 +20,7 @@ import Common.Keywords as Keywords
 import Common.Lexer as Lexer
 import Common.Parsec
 import Common.AS_Annotation as AS_Anno
+import Common.GlobalAnnotations (PrefixMap)
 
 import CSL.AS_BASIC_CSL
 import CSL.ASUtils
@@ -44,8 +45,8 @@ import Control.Monad
 
 -- ---------------------------------------------------------------------------
 
-parseBasicSpec :: Maybe (AnnoState.AParser st BASIC_SPEC)
-parseBasicSpec = Just basicSpec
+parseBasicSpec :: Maybe (PrefixMap -> AnnoState.AParser st BASIC_SPEC)
+parseBasicSpec = Just (\_ -> basicSpec)
 
 parseSymbItems :: Maybe (GenParser Char st SYMB_ITEMS)
 parseSymbItems = Just symbItems

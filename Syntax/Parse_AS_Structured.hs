@@ -274,7 +274,7 @@ specC lG = do
           Nothing -> rest
           Just lD@(Logic dl) -> do
               p1 <- asKey dataS -- not a keyword
-              sp1 <- annoParser $ basicSpec (lD, Nothing)
+              sp1 <- annoParser $ basicSpec lG (lD, Nothing)
                   <|> groupSpec (setCurLogic (language_name dl) lG)
               sp2 <- spD
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
@@ -354,18 +354,19 @@ specE :: LogicGraph -> AParser st SPEC
 specE l = logicSpec l
       <|> combineSpec l
       <|> (lookAhead (groupSpecLookhead l) >> groupSpec l)
-      <|> (lookupCurrentSyntax "basic spec" l >>= basicSpec)
+      <|> (lookupCurrentSyntax "basic spec" l >>= basicSpec l)
 
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
 callParser p name itemType =
   fromMaybe (unexpected $ "no " ++ itemType ++ " parser for " ++ name) p
 
-basicSpec :: (AnyLogic, Maybe IRI) -> AParser st SPEC
-basicSpec (Logic lid, sm) = do
+basicSpec :: LogicGraph -> (AnyLogic, Maybe IRI) -> AParser st SPEC
+basicSpec lG (Logic lid, sm) = do
     p <- getPos
-    bspec <- callParser (basicSpecParser sm lid) (showSyntax lid sm)
-      "basic specification"
+    bspec <- callParser
+             (liftM (\ps -> ps (prefixes lG)) (basicSpecParser sm lid))
+             (showSyntax lid sm) "basic specification"
     q <- getPos
     return $ Basic_spec (G_basic_spec lid bspec) $ Range [p, q]
 

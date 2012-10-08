@@ -14,7 +14,7 @@ import Text.ParserCombinators.Parsec
 processFile :: String -> IO ()
 processFile file = do
   str <- readFile file
-  case runParser (basicSpec << eof) () file str of
+  case runParser (basicSpec Map.empty << eof) () file str of
     Right o -> putStrLn $ showDoc o "\n"
     Left err -> print err
 

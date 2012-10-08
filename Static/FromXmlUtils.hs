@@ -28,6 +28,7 @@ import Common.Utils
 import Text.ParserCombinators.Parsec
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 data BasicExtResponse = Failure Bool  -- True means fatal (give up)
   | Success G_theory Int (Set.Set G_symbol) Bool
@@ -42,7 +43,7 @@ extendByBasicSpec ga str
     Nothing -> (Failure True, "missing basic spec parser")
     Just p -> case basic_analysis lid of
       Nothing -> (Failure True, "missing basic analysis")
-      Just f -> case runParser (p << eof) (emptyAnnos ()) "" tstr of
+      Just f -> case runParser (p Map.empty << eof) (emptyAnnos ()) "" tstr of
         Left err -> (Failure False, show err)
         Right bs -> let
           Result ds res = f (bs, sign, ga)

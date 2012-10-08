@@ -24,9 +24,11 @@ import Common.Id as Id
 import Common.IRI
 import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken)
 import Common.Keywords (colonS, mapsTo)
+import Common.GlobalAnnotations (PrefixMap)
 
 import Data.Either (lefts, rights)
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified CommonLogic.Tools as Tools
 
 import CommonLogic.Lexer_CLIF
@@ -35,8 +37,8 @@ import Text.ParserCombinators.Parsec as Parsec
 import Control.Monad (liftM)
 
 -- | parser for getText
-cltext :: CharParser st TEXT_META
-cltext = many white >> (do
+cltext :: PrefixMap -> CharParser st TEXT_META
+cltext pm = many white >> (do
     try $ oParenT >> clTextKey
     (nt, prfxs) <- namedtext
     cParenT
@@ -47,7 +49,7 @@ cltext = many white >> (do
   )
   where tm :: TEXT -> [PrefixMapping] -> TEXT_META
         tm t prfxs = emptyTextMeta { AS.getText = t
-                                   , prefix_map = prfxs
+                                   , prefix_map = prfxs ++ Map.toList pm
                                    }
 
 namedtext :: CharParser st (TEXT, [PrefixMapping])
@@ -384,50 +386,50 @@ symbMapN = do
 
 
 -- | Toplevel parser for basic specs
-basicSpec :: AnnoState.AParser st BASIC_SPEC
-basicSpec = parseAxItems
+basicSpec :: PrefixMap -> AnnoState.AParser st BASIC_SPEC
+basicSpec pm = parseAxItems pm
   <|> do
-    bi <- AnnoState.allAnnoParser parseBasicItems
+    bi <- AnnoState.allAnnoParser $ parseBasicItems pm
     return $ Basic_spec [bi]
 
 -- function to parse different syntaxes
 -- parsing: axiom items with dots, clif sentences, clif text
 -- first getting only the sentences
-parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
-parseBasicItems = try parseSentences
-              <|> parseClText
+parseBasicItems :: PrefixMap -> AnnoState.AParser st BASIC_ITEMS
+parseBasicItems pm = try (parseSentences pm)
+              <|> parseClText pm
               -- parseClText
 
-parseSentences :: AnnoState.AParser st BASIC_ITEMS
-parseSentences = do
-    xs <- many1 aFormula
+parseSentences :: PrefixMap -> AnnoState.AParser st BASIC_ITEMS
+parseSentences pm = do
+    xs <- many1 $ aFormula pm
     return $ Axiom_items xs
 
 -- FIX
-parseClText :: AnnoState.AParser st BASIC_ITEMS
-parseClText = do
-  tx <- cltext
+parseClText :: PrefixMap -> AnnoState.AParser st BASIC_ITEMS
+parseClText pm = do
+  tx <- cltext pm
   return $ Axiom_items (textToAn [tx])
 
 textToAn :: [TEXT_META] -> [Annotation.Annoted TEXT_META]
 textToAn = map (\x -> Annotation.Annoted x nullRange [] [])
 
 -- | parser for Axiom_items
-parseAxItems :: AnnoState.AParser st BASIC_SPEC
-parseAxItems = do
+parseAxItems :: PrefixMap -> AnnoState.AParser st BASIC_SPEC
+parseAxItems pm = do
        d <- AnnoState.dotT
-       (fs, ds) <- AnnoState.allAnnoParser parseAx `Lexer.separatedBy` AnnoState.dotT
+       (fs, ds) <- AnnoState.allAnnoParser (parseAx pm) `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
        let _ = Id.catRange (d : ds)
            ns = init fs ++ [Annotation.appendAnno (last fs) an]
        return $ Basic_spec ns
 
 -- | Toplevel parser for formulae
-parseAx :: AnnoState.AParser st BASIC_ITEMS
-parseAx = do
-  t <- many aFormula
+parseAx :: PrefixMap -> AnnoState.AParser st BASIC_ITEMS
+parseAx pm = do
+  t <- many $ aFormula pm
   return $ Axiom_items t
 
 -- | Toplevel parser for formulae
-aFormula :: AnnoState.AParser st (Annotation.Annoted TEXT_META)
-aFormula = AnnoState.allAnnoParser cltext
+aFormula :: PrefixMap -> AnnoState.AParser st (Annotation.Annoted TEXT_META)
+aFormula pm = AnnoState.allAnnoParser (cltext pm)

@@ -19,6 +19,7 @@ import Common.Keywords
 import Common.Lexer (notFollowedWith)
 import Common.Parsec (reserved)
 import Common.Token
+import Common.GlobalAnnotations (PrefixMap)
 
 import CommonLogic.Lexer_KIF
 
@@ -132,8 +133,8 @@ topLevelSentence = notFollowedWith (return ())
                    (choice (map key terminatingKeywords))
                    >> sentence
 
-basicSpec :: AnnoState.AParser st BASIC_SPEC
-basicSpec = do
+basicSpec :: PrefixMap -> AnnoState.AParser st BASIC_SPEC
+basicSpec _ = do
   many white
   sentences <- many topLevelSentence
   let phrases = map Sentence sentences

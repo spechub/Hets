@@ -121,7 +121,7 @@ instance Syntax CASL CASLBasicSpec
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parsersAndPrinters CASL = addSyntax "KIF"
-           (fmap kif2CASL kifBasic, pretty)
+           (\_ -> fmap kif2CASL kifBasic, pretty)
            $ makeDefault (basicSpec [], pretty)
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []

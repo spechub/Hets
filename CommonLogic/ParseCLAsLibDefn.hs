@@ -64,7 +64,8 @@ parseCL_CLIF filename opts = do
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
-parseCL_CLIF_contents = runParser (many CLIF.basicSpec) (emptyAnnos ())
+parseCL_CLIF_contents = runParser (many $ CLIF.basicSpec Map.empty)
+                        (emptyAnnos ())
 
 {- maps imports in basic spec to global definition links (extensions) in
 development graph -}

@@ -26,6 +26,8 @@ import Common.Result
 import Common.Utils
 import Common.Lib.State
 
+import qualified Data.Map as Map
+
 import DMU.Logic_DMU
 
 import OWL2.AS
@@ -79,7 +81,7 @@ runOntoDMU str = if null str then return "" else do
   return out
 
 readOWL :: Monad m => String -> m (Sign, [Named Axiom])
-readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
+readOWL str = case runParser (liftM2 const (basicSpec Map.empty) eof) () "" str of
   Left er -> fail $ show er
   Right ontoFile -> let
     newont = function Expand (StringMap $ prefixDeclaration ontoFile) ontoFile

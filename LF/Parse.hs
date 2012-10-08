@@ -22,13 +22,14 @@ import Common.AnnoState
 import Common.Lexer
 import Common.Token
 import Common.Keywords
+import Common.GlobalAnnotations (PrefixMap)
 
 import Data.Char
 
 import LF.AS
 
-basicSpec :: AParser st BASIC_SPEC
-basicSpec =
+basicSpec :: PrefixMap -> AParser st BASIC_SPEC
+basicSpec _ =
   fmap Basic_spec (trailingAnnosParser basicItem)
   <|>
   (oBraceT >> cBraceT >> return (Basic_spec []))
