@@ -49,7 +49,7 @@ cltext pm = many white >> (do
   )
   where tm :: TEXT -> [PrefixMapping] -> TEXT_META
         tm t prfxs = emptyTextMeta { AS.getText = t
-                                   , prefix_map = prfxs ++ Map.toList pm
+                                   , prefix_map = Map.toList pm ++ prfxs
                                    }
 
 namedtext :: CharParser st (TEXT, [PrefixMapping])

@@ -271,7 +271,7 @@ basicSpecPrinter sm = fmap snd . parserAndPrinter sm
 
 basicSpecSyntaxes :: Syntax lid basic_spec symb_items symb_map_items
   => lid -> [String]
-basicSpecSyntaxes = Map.keys . serializations . show
+basicSpecSyntaxes = Map.keys . serializations . language_name
 
 parserAndPrinter :: Syntax lid basic_spec symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec,
@@ -284,7 +284,7 @@ lookupDefault :: Syntax lid basic_spec symb_items symb_map_items
 lookupDefault l im m = case im of
      Just i -> do let s = iriToStringUnsecure i
                   ser <- if isSimple i then return s
-                         else lookupSerialization (show l) s
+                         else lookupSerialization (language_name l) s
                   Map.lookup ser m
      Nothing -> if Map.size m == 1 then Just $ head $ Map.elems m else
                     Map.lookup "" m
