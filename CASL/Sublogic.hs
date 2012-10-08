@@ -42,8 +42,10 @@ module CASL.Sublogic
     , need_fol
     -- * functions for Logic instance sublogic to string conversion
     , sublogics_name
+    , parseSL
     -- ** list of all sublogics
     , sublogics_all
+    , sDims
     -- * computes the sublogic of a given element
     , sl_sig_items
     , sl_basic_spec
@@ -65,6 +67,7 @@ module CASL.Sublogic
     , pr_symbol
     ) where
 
+import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -160,9 +163,12 @@ cFol = caslTop
   , has_part = False -- no partiality
   }
 
+mkBot :: a -> CASL_SL a
+mkBot = CASL_SL NoSub False NoSortGen False False Atomic False
+
 -- bottom element
 bottom :: Lattice a => CASL_SL a
-bottom = CASL_SL NoSub False NoSortGen False False Atomic False bot
+bottom = mkBot bot
 
 need_empty_sorts :: Lattice a => CASL_SL a
 need_empty_sorts = bottom { has_empty_sorts = True }
@@ -229,43 +235,49 @@ Functions to generate a list of all sublogics for CASL
 {- all elements
 create a list of all CASL sublogics by generating all possible
 feature combinations and then filtering illegal ones out -}
-sublogics_all :: [a] -> [CASL_SL a]
-sublogics_all l = let bools = [True, False] in
-    [ CASL_SL
-    { sub_features = s_f
-    , ext_features = a
-    , has_part = pa_b
-    , cons_features = c_f
-    , has_eq = e_b
-    , has_pred = pr_b
-    , has_empty_sorts = es_b
-    , which_logic = fo
-    }
-    | s_f <- [NoSub, LocFilSub, Sub]
-    , pa_b <- bools
-    , pr_b <- bools
-    , e_b <- bools
-    , fo <- [SOL, FOL, GHorn, Horn, Atomic]
-    , es_b <- bools
-    , a <- l
-    , c_f <- NoSortGen : [ SortGen m s | m <- bools, s <- bools]
-    ]
+sublogics_all :: Lattice a => [a] -> [CASL_SL a]
+sublogics_all l = bottom : map mkBot l ++ concat (sDims [])
+ ++ let subPAtom = (sublogics_max need_part need_pred) { sub_features = Sub } in
+    [ sublogics_max need_fol need_eq
+    , comp_list [subPAtom, need_horn, need_eq]
+    , subPAtom
+    , sublogics_max subPAtom need_cons
+    , cFol, caslTop, top]
+
+sDims :: Lattice a => [[a]] -> [[CASL_SL a]]
+sDims l = let
+  t = True
+  b = bottom
+  bools = [True, False]
+  in
+  map (map mkBot) l ++
+  [ [ b { sub_features = s_f } | s_f <- [LocFilSub, Sub]]
+  , [b { has_part = t } ]
+  , [b { cons_features = c_f } | c_f <- [ SortGen m s | m <- bools, s <- bools]]
+  , [b { has_eq = t } ]
+  , [b { has_pred = t } ]
+  , [b { has_empty_sorts = t } ]
+  , [b { which_logic = fo } | fo <- reverse [SOL, FOL, GHorn, Horn]]]
+
 {- ----------------------------------------------------------------------------
 Conversion functions (to String)
 ---------------------------------------------------------------------------- -}
 
 formulas_name :: Bool -> CASL_Formulas -> String
-formulas_name b f = case (b, f) of
-  (True, SOL) -> "SOL"
-  (False, SOL) -> "SOAlg"
-  (True, FOL) -> "FOL"
-  (False, FOL) -> "FOAlg"
-  (True, GHorn) -> "GHorn"
-  (False, GHorn) -> "GCond"
-  (True, Horn) -> "Horn"
-  (False, Horn) -> "Cond"
-  (True, Atomic) -> "Atom"
-  (False, Atomic) -> "Eq"
+formulas_name b f = let Just s = lookup (b, f) nameList in s
+
+nameList :: [((Bool, CASL_Formulas), String)]
+nameList =
+  [ ((True, SOL), "SOL")
+  , ((False, SOL), "SOAlg")
+  , ((True, FOL), "FOL")
+  , ((False, FOL), "FOAlg")
+  , ((True, GHorn), "GHorn")
+  , ((False, GHorn), "GCond")
+  , ((True, Horn), "Horn")
+  , ((False, Horn), "Cond")
+  , ((True, Atomic), "Atom")
+  , ((False, Atomic), "Eq")]
 
 sublogics_name :: (a -> String) -> CASL_SL a -> String
 sublogics_name f x = f (ext_features x)
@@ -283,6 +295,55 @@ sublogics_name f x = f (ext_features x)
                     ++ formulas_name (has_pred x) (which_logic x)
                     ++ (if has_eq x then "=" else "")
                     ++ if has_empty_sorts x then "E" else ""
+
+parseSL :: (String -> Maybe (a, String)) -> String -> Maybe (CASL_SL a)
+parseSL f s0 = do
+  (a, s1) <- f s0
+  (sub, s2) <- case stripPrefix "Su" s1 of
+    Just r -> case r of
+      c : t -> case c of
+        'l' -> Just (LocFilSub, t)
+        'b' -> Just (Sub, t)
+        _ -> Nothing
+      "" -> Nothing
+    Nothing -> Just (NoSub, s1)
+  let (pa, s3) = case stripPrefix "P" s2 of
+        Just r -> (True, r)
+        Nothing -> (False, s2)
+      (c, s4) = parseCons s3
+  ((pr, l), s5) <- parseForm s4
+  let (eq, s6) = case stripPrefix "=" s5 of
+        Just r -> (True, r)
+        Nothing -> (False, s5)
+  es <- if s6 == "E" then Just True else
+            if null s6 then Just False else Nothing
+  return (mkBot a)
+    { sub_features = sub
+    , has_part = pa
+    , cons_features = c
+    , has_pred = pr
+    , which_logic = l
+    , has_eq = eq
+    , has_empty_sorts = es }
+
+parseForm :: String -> Maybe ((Bool, CASL_Formulas), String)
+parseForm s = foldr (\ (q, p) m -> case m of
+  Just _ -> m
+  Nothing -> case stripPrefix p s of
+    Just r -> Just (q, r)
+    Nothing -> m) Nothing nameList
+
+parseCons :: String -> (SortGenerationFeatures, String)
+parseCons s = case stripPrefix "seC" s of
+  Just r -> (SortGen True True, r)
+  Nothing -> case stripPrefix "sC" s of
+    Just r -> (SortGen False True, r)
+    Nothing -> case stripPrefix "eC" s of
+      Just r -> (SortGen True False, r)
+      Nothing -> case stripPrefix "C" s of
+        Just r | not $ isPrefixOf "ond" r -> (SortGen False False, r)
+        _ -> (NoSortGen, s)
+
 
 {- ----------------------------------------------------------------------------
 join or max functions

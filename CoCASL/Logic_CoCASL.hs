@@ -19,6 +19,7 @@ import CoCASL.CoCASLSign
 import CoCASL.Parse_AS
 import CoCASL.StatAna
 import CoCASL.Sublogic
+
 import CASL.AS_Basic_CASL
 import CASL.Logic_CASL
 import CASL.MapSentence
@@ -28,6 +29,9 @@ import CASL.Sign
 import CASL.Sublogic
 import CASL.SymbolMapAnalysis
 import CASL.SymbolParser
+
+import Data.List
+
 import Logic.Logic
 
 data CoCASL = CoCASL deriving Show
@@ -118,5 +122,12 @@ instance Logic CoCASL CoCASL_Sublogics
                Symbol RawSymbol () where
          stability CoCASL = Unstable
          proj_sublogic_epsilon CoCASL = pr_epsilon emptyMorExt
-         all_sublogics CoCASL = sublogics_all [False, True]
+         all_sublogics CoCASL = sublogics_all [True]
+         sublogicDimensions CoCASL = sDims [[True]]
+         parseSublogic CoCASL = parseSL parseCo
          empty_proof_tree CoCASL = ()
+
+parseCo :: String -> Maybe (Bool, String)
+parseCo s = case stripPrefix "Co" s of
+  Just r | not $ isPrefixOf "nd" r -> Just (True, r)
+  _ -> Just (False, s)

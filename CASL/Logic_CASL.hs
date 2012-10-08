@@ -121,7 +121,7 @@ instance Syntax CASL CASLBasicSpec
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parsersAndPrinters CASL = addSyntax "KIF"
-           (\_ -> fmap kif2CASL kifBasic, pretty)
+           (const $ fmap kif2CASL kifBasic, pretty)
            $ makeDefault (basicSpec [], pretty)
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
@@ -265,9 +265,11 @@ instance Logic CASL CASL_Sublogics
                CASLSign
                CASLMor
                Symbol RawSymbol ProofTree where
-         stability _ = Stable
+         stability CASL = Stable
          proj_sublogic_epsilon CASL = pr_epsilon ()
-         all_sublogics _ = sublogics_all [()]
+         all_sublogics CASL = sublogics_all []
+         sublogicDimensions CASL = sDims []
+         parseSublogic CASL = parseSL (\ s -> Just ((), s))
          conservativityCheck CASL = [ConservativityChecker "CCC" checkFreeType]
          empty_proof_tree CASL = emptyProofTree
          omdoc_metatheory CASL = Just caslMetaTheory
