@@ -16,7 +16,9 @@ import Common.Parsec
 import Common.Lexer
 import Common.AnnoParser (newlineOrEof)
 import Common.Token (criticalKeywords)
+import Common.Id
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
+import qualified Common.IRI as IRI
 
 import OWL2.AS
 import OWL2.Parse hiding (stringLiteral, literal, skips, uriP)
@@ -165,10 +167,11 @@ parseStatement = fmap BaseStatement parseBase
     <|> fmap PrefixStatement parsePrefix <|> fmap Statement parseTriples
 
 basicSpec :: GA.PrefixMap -> CharParser st TurtleDocument
-basicSpec _ = do
+basicSpec pm = do
     many parseComment
     ls <- many parseStatement
-    return $ TurtleDocument dummyQName Map.empty ls
+    return $ TurtleDocument dummyQName (Map.map transIri pm) ls
+  where transIri i = QN "" (IRI.iriToStringUnsecure i) Full "" nullRange
     
 predefinedPrefixes :: RDFPrefixMap
 predefinedPrefixes = Map.fromList $ zip
