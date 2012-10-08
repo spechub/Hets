@@ -68,7 +68,7 @@ instance Monoid HsDecls where
 instance Syntax Haskell HsDecls
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
-         parse_basic_spec Haskell = Just hatParser
+         parse_basic_spec Haskell = Just $ const hatParser
          parse_symb_items Haskell = Nothing
          parse_symb_map_items Haskell = Nothing
 
