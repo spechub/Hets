@@ -22,6 +22,7 @@ import OWL2.ColonKeywords
 
 import Common.Keywords
 import Common.Parsec
+import Common.IRI
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import Text.ParserCombinators.Parsec
@@ -87,11 +88,11 @@ datatypeBit = do
 classFrame :: CharParser st Frame
 classFrame = do
     pkeyword classC
-    iri <- description
+    i <- description
     plain <- many classFrameBit
     -- ignore Individuals: ... !
     optional $ pkeyword individualsC >> sepByComma individual
-    return $ makeFrame (ClassEntity iri) plain
+    return $ makeFrame (ClassEntity i) plain
 
 classFrameBit :: CharParser st FrameBit
 classFrameBit = do
@@ -254,14 +255,15 @@ frames = many $ datatypeBit <|> classFrame
     <|> annotationPropertyFrame <|> misc
 
 basicSpec :: GA.PrefixMap -> CharParser st OntologyDocument
-basicSpec _ = do
+basicSpec pm = do
     nss <- many nsEntry
     ou <- option nullQName $ pkeyword ontologyC >> option nullQName uriP
     ie <- many importEntry
     ans <- many annotations
     as <- frames
     return $ OntologyDocument
-        (Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss)
+        (Map.union (Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss)
+         (Map.map iriToStringUnsecure pm))
         (emptyOntology as)
             { imports = ie
             , ann = ans
