@@ -36,6 +36,7 @@ import ExtModal.Sublogic
 import CASL.Sign
 import CASL.Morphism
 import CASL.AS_Basic_CASL
+import CASL.Sublogic
 
 data ExtModal2OWL = ExtModal2OWL deriving Show
 
@@ -43,7 +44,7 @@ instance Language ExtModal2OWL
 
 instance Comorphism
     ExtModal2OWL        -- comorphism
-    ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+    ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
     SYMB_MAP_ITEMS ExtModalSign ExtModalMorph Symbol RawSymbol ()
     OWL2            -- lid codomain
     ProfSub         -- sublogics codomain
@@ -58,7 +59,7 @@ instance Comorphism
     ProofTree       -- proof tree codomain
     where
       sourceLogic ExtModal2OWL = ExtModal
-      sourceSublogic ExtModal2OWL = maxSublogic
+      sourceSublogic ExtModal2OWL = mkTop maxSublogic
       targetLogic ExtModal2OWL = OWL2
       mapSublogic ExtModal2OWL _ = Just topS
       map_theory ExtModal2OWL = mapTheory

@@ -31,6 +31,7 @@ import CASL.Fold
 import CASL.Morphism
 import CASL.Sign
 import CASL.Simplify
+import CASL.Sublogic
 import CASL.Utils
 
 import ExtModal.Logic_ExtModal
@@ -47,16 +48,21 @@ data ExtModal2ExtModalTotal = ExtModal2ExtModalTotal deriving Show
 instance Language ExtModal2ExtModalTotal -- default definition is okay
 
 instance Comorphism ExtModal2ExtModalTotal
-               ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+               ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
                SYMB_MAP_ITEMS ExtModalSign ExtModalMorph
                Symbol RawSymbol ()
-               ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+               ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
                SYMB_MAP_ITEMS ExtModalSign ExtModalMorph
                Symbol RawSymbol () where
     sourceLogic ExtModal2ExtModalTotal = ExtModal
-    sourceSublogic ExtModal2ExtModalTotal = maxSublogic
+    sourceSublogic ExtModal2ExtModalTotal = mkTop maxSublogic
     targetLogic ExtModal2ExtModalTotal = ExtModal
-    mapSublogic ExtModal2ExtModalTotal = Just
+    mapSublogic ExtModal2ExtModalTotal sl = Just
+      $ if has_part sl then sl
+        { has_part = False -- partiality is coded out
+        , has_pred = True
+        , which_logic = max Horn $ which_logic sl
+        , has_eq = True} else sl
     map_theory ExtModal2ExtModalTotal (sig, sens) = let
       bsrts = emsortsWithBottom sig
       sens1 = generateAxioms True bsrts sig

@@ -4,7 +4,7 @@ Module      :  $Header$
 Description :  Instance of class Logic for ExtModal
 Copyright   :  DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
-Maintainer  :  codruta.liliana@gmail.com
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic)
 
@@ -21,17 +21,18 @@ import ExtModal.StatAna
 import ExtModal.MorphismExtension
 import ExtModal.Sublogic
 
-import CASL.Sign
-import CASL.Morphism
-import CASL.SymbolMapAnalysis
 import CASL.AS_Basic_CASL
+import CASL.Logic_CASL
 import CASL.MapSentence
+import CASL.Morphism
 import CASL.Parse_AS_Basic
-import CASL.SymbolParser
+import CASL.Sign
 import CASL.SimplifySen
+import CASL.Sublogic
+import CASL.SymbolMapAnalysis
+import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.ToDoc
-import CASL.Logic_CASL ()
 
 import Logic.Logic
 
@@ -117,54 +118,34 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
           (\ _ _ -> return emptyMorphExtension) isSubEModalSign diffEModalSign
         theory_to_taxonomy ExtModal = convTaxo
 
-instance Logic ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+instance Logic ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
     SYMB_MAP_ITEMS ExtModalSign ExtModalMorph Symbol RawSymbol () where
-        stability _ = Experimental
-        all_sublogics _ = sublogics_all
-        empty_proof_tree _ = ()
+        stability ExtModal = Experimental
+        all_sublogics ExtModal = sublogics_all $ foleml : concat sublogicsDim
+        sublogicDimensions ExtModal = sDims sublogicsDim
+        parseSublogic ExtModal = parseSL $ Just . parseSublog
+        empty_proof_tree ExtModal = ()
 
-instance SemiLatticeWithTop Sublogic where
-    join = joinSublogic
-    top = maxSublogic
+instance MinSL Sublogic EM_FORMULA where
+    minSL = minSublogicOfEM
 
-instance MinSublogic Sublogic (FORMULA EM_FORMULA) where
-    minSublogic = minSublogicOfForm
+instance ProjForm Sublogic EM_FORMULA where
+    projForm _ = Just . ExtFORMULA
 
-instance ProjectSublogic Sublogic EM_BASIC_SPEC where
-    projectSublogic _ = id
+instance ProjSigItem Sublogic EM_SIG_ITEM EM_FORMULA where
+    projSigItems _ s = (Just $ Ext_SIG_ITEMS s, [])
 
-instance MinSublogic Sublogic EM_BASIC_SPEC where
-    minSublogic = minSublogicEMBasicSpec
+instance ProjBasic Sublogic EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA where
+    projBasicItems _ b = (Just $ Ext_BASIC_ITEMS b, [])
 
-instance ProjectSublogicM Sublogic SYMB_ITEMS where
-    projectSublogicM _ = Just
+instance MinSL Sublogic EM_SIG_ITEM where
+    minSL = comp_list . minSLExtSigItem
 
-instance MinSublogic Sublogic SYMB_ITEMS where
-    minSublogic _ = botSublogic
+instance MinSL Sublogic EM_BASIC_ITEM where
+    minSL = minSublogicEMBasic
 
-instance ProjectSublogicM Sublogic SYMB_MAP_ITEMS where
-    projectSublogicM _ = Just
+instance MinSL Sublogic EModalSign where
+    minSL = minSublogicEMSign
 
-instance MinSublogic Sublogic SYMB_MAP_ITEMS where
-    minSublogic _ = botSublogic
-
-instance ProjectSublogic Sublogic ExtModalSign where
-    projectSublogic _ = id
-
-instance MinSublogic Sublogic ExtModalSign where
-    minSublogic = minSublogicExtModalSign
-
-instance ProjectSublogic Sublogic ExtModalMorph where
-    projectSublogic _ = id
-
-instance MinSublogic Sublogic ExtModalMorph where
-    minSublogic = minSublogicExtModalMorphism
-
-instance ProjectSublogicM Sublogic Symbol where
-    projectSublogicM _ = Just
-
-instance MinSublogic Sublogic Symbol where
-    minSublogic _ = botSublogic
-
-instance SublogicName Sublogic where
-    sublogicName = sublogic_name
+instance NameSL Sublogic where
+    nameSL = sublogName

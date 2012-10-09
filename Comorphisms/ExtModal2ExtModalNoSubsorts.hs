@@ -29,6 +29,7 @@ import CASL.Morphism
 import CASL.Inject
 import CASL.Project
 import CASL.Monoton
+import CASL.Sublogic
 
 import ExtModal.Logic_ExtModal
 import ExtModal.AS_ExtModal
@@ -43,16 +44,22 @@ data ExtModal2ExtModalNoSubsorts = ExtModal2ExtModalNoSubsorts deriving Show
 instance Language ExtModal2ExtModalNoSubsorts -- default definition is okay
 
 instance Comorphism ExtModal2ExtModalNoSubsorts
-               ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+               ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
                SYMB_MAP_ITEMS ExtModalSign ExtModalMorph
                Symbol RawSymbol ()
-               ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+               ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
                SYMB_MAP_ITEMS ExtModalSign ExtModalMorph
                Symbol RawSymbol () where
     sourceLogic ExtModal2ExtModalNoSubsorts = ExtModal
-    sourceSublogic ExtModal2ExtModalNoSubsorts = maxSublogic
+    sourceSublogic ExtModal2ExtModalNoSubsorts = mkTop maxSublogic
     targetLogic ExtModal2ExtModalNoSubsorts = ExtModal
-    mapSublogic ExtModal2ExtModalNoSubsorts = Just
+    mapSublogic ExtModal2ExtModalNoSubsorts sl = Just
+      $ if has_sub sl then -- subsorting is coded out
+            sl { sub_features = NoSub
+               , has_part = True
+               , which_logic = max Horn $ which_logic sl
+               , has_eq = True}
+        else sl
     map_theory ExtModal2ExtModalNoSubsorts = mkTheoryMapping (\ sig ->
       let e = encodeSig sig in
       return (e, map (mapNamed injEMFormula) (monotonicities sig)

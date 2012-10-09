@@ -106,6 +106,9 @@ instance MinSL Bool C_SIG_ITEM where
 instance MinSL Bool C_BASIC_ITEM where
     minSL = minCBaseItem
 
+instance MinSL Bool CoCASLSign where
+    minSL = const bottom
+
 instance ProjForm Bool C_FORMULA where
     projForm _ = Just . ExtFORMULA
 

@@ -180,11 +180,11 @@ instance Lattice a => MinSublogic (CASL_SL a) SYMB_ITEMS where
 instance Lattice a => MinSublogic (CASL_SL a) SYMB_MAP_ITEMS where
     minSublogic = sl_symb_map_items
 
-instance Lattice a => MinSublogic (CASL_SL a) (Sign f e) where
-    minSublogic = sl_sign
+instance MinSL a e => MinSublogic (CASL_SL a) (Sign f e) where
+    minSublogic = sl_sign minSL
 
-instance Lattice a => MinSublogic (CASL_SL a) (Morphism f e m) where
-    minSublogic = sl_morphism
+instance MinSL a e => MinSublogic (CASL_SL a) (Morphism f e m) where
+    minSublogic = sl_morphism minSL
 
 instance Lattice a => MinSublogic (CASL_SL a) Symbol where
     minSublogic = sl_symbol
@@ -200,10 +200,10 @@ instance Lattice a => ProjectSublogicM (CASL_SL a) SYMB_ITEMS where
 instance Lattice a => ProjectSublogicM (CASL_SL a) SYMB_MAP_ITEMS where
     projectSublogicM = pr_symb_map_items
 
-instance Lattice a => ProjectSublogic (CASL_SL a) (Sign f e) where
+instance MinSL a e => ProjectSublogic (CASL_SL a) (Sign f e) where
     projectSublogic = pr_sign
 
-instance Lattice a => ProjectSublogic (CASL_SL a) (Morphism f e m) where
+instance MinSL a e => ProjectSublogic (CASL_SL a) (Morphism f e m) where
     projectSublogic = pr_morphism
 
 instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where

@@ -29,20 +29,25 @@ module CASL.Sublogic
     , has_sub
     , has_cons
     -- * functions for SemiLatticeWithTop instance
+    , mkTop
     , top
     , caslTop
     , cFol
     , sublogics_max
+    , comp_list
     -- * functions for the creation of minimal sublogics
     , bottom
+    , mkBot
     , emptyMapConsFeature
     , need_sub
     , need_pred
     , need_horn
     , need_fol
+    , updExtFeature
     -- * functions for Logic instance sublogic to string conversion
     , sublogics_name
     , parseSL
+    , parseBool
     -- ** list of all sublogics
     , sublogics_all
     , sDims
@@ -51,7 +56,10 @@ module CASL.Sublogic
     , sl_basic_spec
     , sl_opkind
     , sl_op_type
+    , sl_op_item
+    , sl_pred_item
     , sl_sentence
+    , sl_term
     , sl_symb_items
     , sl_symb_map_items
     , sl_sign
@@ -77,6 +85,8 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.AS_Annotation
 import Common.Lattice
+
+import Control.Monad
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -128,6 +138,9 @@ data CASL_SL a = CASL_SL
       ext_features :: a  -- ^ features of extension
     } deriving (Show, Eq, Ord)
 
+updExtFeature :: (a -> a) -> CASL_SL a -> CASL_SL a
+updExtFeature f s = s { ext_features = f $ ext_features s }
+
 type CASL_Sublogics = CASL_SL ()
 
 {- -----------------------
@@ -148,8 +161,11 @@ Special sublogics elements
 --------------------------------------------------------------------------- -}
 
 -- top element
+mkTop :: a -> CASL_SL a
+mkTop = CASL_SL Sub True (SortGen False False) True True SOL True
+
 top :: Lattice a => CASL_SL a
-top = CASL_SL Sub True (SortGen False False) True True SOL True ctop
+top = mkTop ctop
 
 caslTop :: Lattice a => CASL_SL a
 caslTop = top
@@ -296,6 +312,11 @@ sublogics_name f x = f (ext_features x)
                     ++ (if has_eq x then "=" else "")
                     ++ if has_empty_sorts x then "E" else ""
 
+parseBool :: String -> String -> (Bool, String)
+parseBool p s = case stripPrefix p s of
+        Just r -> (True, r)
+        Nothing -> (False, s)
+
 parseSL :: (String -> Maybe (a, String)) -> String -> Maybe (CASL_SL a)
 parseSL f s0 = do
   (a, s1) <- f s0
@@ -307,16 +328,12 @@ parseSL f s0 = do
         _ -> Nothing
       "" -> Nothing
     Nothing -> Just (NoSub, s1)
-  let (pa, s3) = case stripPrefix "P" s2 of
-        Just r -> (True, r)
-        Nothing -> (False, s2)
+  let (pa, s3) = parseBool "P" s2
       (c, s4) = parseCons s3
   ((pr, l), s5) <- parseForm s4
-  let (eq, s6) = case stripPrefix "=" s5 of
-        Just r -> (True, r)
-        Nothing -> (False, s5)
-  es <- if s6 == "E" then Just True else
-            if null s6 then Just False else Nothing
+  let (eq, s6) = parseBool "=" s5
+      (es, s7) = parseBool "E" s6
+  unless (null s7) Nothing
   return (mkBot a)
     { sub_features = sub
     , has_part = pa
@@ -634,8 +651,8 @@ sl_symb_or_map syms = case syms of
 must also appear in the signatures, so any features needed by
 them will be included by just checking the signatures -}
 
-sl_sign :: Lattice a => Sign f e -> CASL_SL a
-sl_sign s =
+sl_sign :: Lattice a => (e -> CASL_SL a) -> Sign f e -> CASL_SL a
+sl_sign f s =
     let rel = sortRel s
         subs | Rel.noPairs rel = bottom
              | Rel.locallyFiltered rel = need_sul
@@ -645,13 +662,13 @@ sl_sign s =
         preds = if MapSet.null $ predMap s then bottom else need_pred
         partial = if any isPartial $ Set.toList
                   $ MapSet.elems $ opMap s then need_part else bottom
-        in comp_list [subs, esorts, preds, partial]
+        in comp_list [subs, esorts, preds, partial, f $ extendedInfo s]
 
 sl_sentence :: Lattice a => (f -> CASL_SL a) -> FORMULA f -> CASL_SL a
 sl_sentence = sl_formula
 
-sl_morphism :: Lattice a => Morphism f e m -> CASL_SL a
-sl_morphism m = sublogics_max (sl_sign $ msource m) (sl_sign $ mtarget m)
+sl_morphism :: Lattice a => (e -> CASL_SL a) -> Morphism f e m -> CASL_SL a
+sl_morphism f m = sublogics_max (sl_sign f $ msource m) (sl_sign f $ mtarget m)
 
 sl_symbol :: Lattice a => Symbol -> CASL_SL a
 sl_symbol (Symbol _ t) = sl_symbtype t

@@ -532,12 +532,10 @@ lookupCompComorphism nameList logicGraph = do
                      else Just $ tail subLogicD
          Logic lid <- maybe (fail ("Cannot find Logic " ++ mainLogic)) return
                  $ Map.lookup mainLogic (logics logicGraph)
-         case maybe id (\ subl -> filter (\ s -> subl == sublogicName s))
-              msublogic
-              $ all_sublogics lid of
-           [] -> fail $ maybe "missing sublogic"
+         case maybe Nothing (parseSublogic lid) msublogic of
+           Nothing -> fail $ maybe "missing sublogic"
                     ("unknown sublogic name " ++) msublogic
-           s : _ -> return $ Comorphism $ mkIdComorphism lid s
+           Just s -> return $ Comorphism $ mkIdComorphism lid s
       _ -> maybe (fail ("Cannot find logic comorphism " ++ name)) return
              $ Map.lookup name (comorphisms logicGraph)
 

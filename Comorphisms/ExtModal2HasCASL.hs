@@ -27,6 +27,7 @@ import CASL.Fold
 import CASL.Morphism as CASL
 import CASL.Overload
 import CASL.Sign as CASL
+import CASL.Sublogic as CASL
 import CASL.World
 
 import Data.List
@@ -53,21 +54,21 @@ data ExtModal2HasCASL = ExtModal2HasCASL deriving (Show)
 instance Language ExtModal2HasCASL
 
 instance Comorphism ExtModal2HasCASL
-               ExtModal EM.Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+               ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
                SYMB_MAP_ITEMS ExtModalSign ExtModalMorph
                CASL.Symbol CASL.RawSymbol ()
                HasCASL HC.Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env HC.Morphism HC.Symbol HC.RawSymbol () where
     sourceLogic ExtModal2HasCASL = ExtModal
-    sourceSublogic ExtModal2HasCASL = maxSublogic
-      { hasTransClos = False
-      , hasFixPoints = False }
+    sourceSublogic ExtModal2HasCASL = mkTop maxSublogic
+        { hasTransClos = False
+        , hasFixPoints = False }
     targetLogic ExtModal2HasCASL = HasCASL
-    mapSublogic ExtModal2HasCASL _ = Just HC.caslLogic
-      { which_logic = HOL
-      , has_sub = False
-      , has_part = False }
+    mapSublogic ExtModal2HasCASL sl = Just HC.caslLogic
+      { HC.which_logic = HOL
+      , HC.has_sub = CASL.has_sub sl
+      , HC.has_part = CASL.has_part sl }
     map_theory ExtModal2HasCASL (sig, allSens) = let
       (frames, sens) = partition (isFrameAx . sentence) allSens
       in case transSig sig sens of

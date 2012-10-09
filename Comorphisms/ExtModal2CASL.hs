@@ -46,7 +46,7 @@ data ExtModal2CASL = ExtModal2CASL deriving (Show)
 instance Language ExtModal2CASL
 
 instance Comorphism ExtModal2CASL
-               ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+               ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
                SYMB_MAP_ITEMS ExtModalSign ExtModalMorph
                Symbol RawSymbol ()
                CASL CASL_Sublogics
@@ -55,9 +55,9 @@ instance Comorphism ExtModal2CASL
                CASLMor
                Symbol RawSymbol ProofTree where
     sourceLogic ExtModal2CASL = ExtModal
-    sourceSublogic ExtModal2CASL = foleml
+    sourceSublogic ExtModal2CASL = mkTop foleml
     targetLogic ExtModal2CASL = CASL
-    mapSublogic ExtModal2CASL _ = Just SL.caslTop
+    mapSublogic ExtModal2CASL s = Just s { ext_features = () }
     map_theory ExtModal2CASL (sig, sens) = case transSig sig of
       mme -> return (mme, map (mapNamed $ transTop sig mme) sens)
     {-

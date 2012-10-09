@@ -44,13 +44,13 @@ instance Comorphism CASL2ExtModal
                CASLSign
                CASLMor
                Symbol RawSymbol ProofTree
-               ExtModal Sublogic EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+               ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
                SYMB_MAP_ITEMS ExtModalSign ExtModalMorph
                Symbol RawSymbol () where
     sourceLogic CASL2ExtModal = CASL
     sourceSublogic CASL2ExtModal = SL.top
     targetLogic CASL2ExtModal = ExtModal
-    mapSublogic CASL2ExtModal _ = Just botSublogic
+    mapSublogic CASL2ExtModal s = Just s { ext_features = botSublogic }
     map_theory CASL2ExtModal = return . embedCASLTheory emptyEModalSign
     map_morphism CASL2ExtModal =
       return . mapCASLMor emptyEModalSign emptyMorphExtension
