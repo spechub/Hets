@@ -22,7 +22,6 @@ import Common.Keywords
 import Common.Lexer
 import Common.Parsec
 import Common.Token
-import Common.GlobalAnnotations (PrefixMap)
 
 import HasCASL.As
 import HasCASL.AsUtils
@@ -427,5 +426,5 @@ basicItems = fmap SigItems sigItems
     <|> axiomItems
     <|> internalItems
 
-basicSpec :: PrefixMap -> AParser st BasicSpec
-basicSpec _ = fmap BasicSpec (annosParser basicItems)
+basicSpec :: AParser st BasicSpec
+basicSpec = fmap BasicSpec (annosParser basicItems)

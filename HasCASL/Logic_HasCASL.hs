@@ -72,7 +72,7 @@ instance Monoid BasicSpec where
 instance Syntax HasCASL BasicSpec
                 SymbItems SymbMapItems
       where
-         parse_basic_spec HasCASL = Just basicSpec
+         parse_basic_spec HasCASL = Just $ const basicSpec
          parse_symb_items HasCASL = Just symbItems
          parse_symb_map_items HasCASL = Just symbMapItems
          toItem HasCASL = bsToItem
