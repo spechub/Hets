@@ -355,7 +355,7 @@ lookupKnownProver st pk =
 getProvers :: ProverKind -> G_sublogics -> [AnyComorphism]
   -> [(G_prover, AnyComorphism)]
 getProvers pk (G_sublogics lid sl) =
-  foldl addProvers [] . filter hasModelExpansion where
+  foldl addProvers [] where
   addProvers acc cm = case cm of
     Comorphism cid -> let
       slid = sourceLogic cid
@@ -434,6 +434,6 @@ autoProofAtNode useTh timeout goals g_th p_cm = do
                 takeMVar answ
               case maybeResult d of
                 Nothing -> fail "autoProofAtNode: proving failed"
-                Just d' -> return $
+                Just d' -> return
                   ( currentTheory $ markProved (snd p_cm) lid1 d' st
                   , map (\ ps -> (goalName ps, show $ goalStatus ps)) d')
