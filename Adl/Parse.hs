@@ -18,7 +18,7 @@ import Common.Id
 import Common.Lexer (parseToken)
 import Common.Parsec
 import Common.Token (criticalKeywords)
-import Common.GlobalAnnotations (PrefixMap)
+
 import Control.Monad
 import Text.ParserCombinators.Parsec
 
@@ -101,8 +101,8 @@ pADLid :: CharParser st Token
 pADLid = parseToken $ pConid <|> pVarid False <|> pString
 
 -- | parse contexts but do not require CONTEXT blocks
-pArchitecture :: PrefixMap -> CharParser st Context
-pArchitecture _ = pContext
+pArchitecture :: CharParser st Context
+pArchitecture = pContext
   <|> fmap (mkContext Nothing) (flat $ many1 $ pContextElement True)
 
 pContext :: CharParser st Context

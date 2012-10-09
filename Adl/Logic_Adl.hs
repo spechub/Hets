@@ -59,7 +59,7 @@ instance Syntax Adl
     ()
     ()
     where
-      parse_basic_spec Adl = Just pArchitecture
+      parse_basic_spec Adl = Just $ const pArchitecture
       parse_symb_items Adl = Nothing
       parse_symb_map_items Adl = Nothing
 
