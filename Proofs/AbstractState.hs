@@ -236,26 +236,36 @@ data G_theory_with_prover =
        (Theory sign sentence proof_tree)
        (Prover sign sentence morphism sublogics proof_tree)
 
+data GPlainTheory =
+  forall lid sublogics basic_spec sentence symb_items symb_map_items
+    sign morphism symbol raw_symbol proof_tree
+  . Logic lid sublogics basic_spec sentence symb_items symb_map_items
+      sign morphism symbol raw_symbol proof_tree
+  => GPlainTheory lid (Theory sign sentence proof_tree)
+
 prepareForConsChecking :: ProofState
     -> (G_cons_checker, AnyComorphism)
     -> Result G_theory_with_cons_checker
-prepareForConsChecking st (G_cons_checker lid4 p, Comorphism cid) =
-    case selectedTheory st of
-     G_theory lid _ (ExtSign sign _) _ sens _ ->
-       do
-        let lidT = targetLogic cid
+prepareForConsChecking st (G_cons_checker lid4 p, co) = do
+  GPlainTheory lidT th@(Theory sign'' _) <- prepareTheory st co
+  incl <- subsig_inclusion lidT (empty_signature lidT) sign''
+  let mor = TheoryMorphism
+                    { tSource = emptyTheory lidT
+                    , tTarget = th
+                    , tMorphism = incl }
+  p' <- coerceConsChecker lid4 lidT "" p
+  return $ G_theory_with_cons_checker lidT mor p'
+
+
+prepareTheory :: ProofState -> AnyComorphism -> Result GPlainTheory
+prepareTheory st (Comorphism cid) = case selectedTheory st of
+    G_theory lid _ (ExtSign sign _) _ sens _ -> do
         bTh' <- coerceBasicTheory lid (sourceLogic cid)
-                   "Proofs.InferBasic.callProver: basic theory"
+                   "Proofs.AbstractState.prepareTheory: basic theory"
                    (sign, toNamedList sens)
         (sign'', sens'') <- wrapMapTheory cid bTh'
-        incl <- subsig_inclusion lidT (empty_signature lidT) sign''
-        let mor = TheoryMorphism
-                    { tSource = emptyTheory lidT
-                    , tTarget = Theory sign'' (toThSens sens'')
-                    , tMorphism = incl }
-        p' <- coerceConsChecker lid4 lidT "" p
-        return $ G_theory_with_cons_checker lidT mor p'
-
+        return . GPlainTheory (targetLogic cid) . Theory sign''
+          $ toThSens sens''
 
 {- | prepare the selected theory of the state for proving with the
 given prover:
@@ -269,18 +279,10 @@ given prover:
 prepareForProving :: ProofState
     -> (G_prover, AnyComorphism)
     -> Result G_theory_with_prover
-prepareForProving st (G_prover lid4 p, Comorphism cid) =
-    case selectedTheory st of
-    G_theory lid _ (ExtSign sign _) _ sens _ ->
-      do
-        let lidT = targetLogic cid
-        bTh' <- coerceBasicTheory lid (sourceLogic cid)
-                   "Proofs.InferBasic.callProver: basic theory"
-                   (sign, toNamedList sens)
-        (sign'', sens'') <- wrapMapTheory cid bTh'
-        p' <- coerceProver lid4 lidT "" p
-        return $
-           G_theory_with_prover lidT (Theory sign'' (toThSens sens'')) p'
+prepareForProving st (G_prover lid4 p, co) = do
+  GPlainTheory lidT th <- prepareTheory st co
+  p' <- coerceProver lid4 lidT "" p
+  return $ G_theory_with_prover lidT th p'
 
 -- | creates the currently selected theory
 makeSelectedTheory :: ProofState -> G_theory
