@@ -694,7 +694,9 @@ toSen msig f = case f of
 transFrames :: ExtModalSign -> [Named (FORMULA EM_FORMULA)] -> [Named Sentence]
 transFrames sig = foldr (\ nf -> case sentence nf of
   ExtFORMULA (ModForm (ModDefn _ _ _ fs _)) ->
-     (map (\ af -> makeNamed (getRLabel af) $ Formula $ transTop sig (item af))
+     (map (\ af -> let l = getRLabel af in
+           nf { sentence = Formula $ transTop sig (item af)
+              , senAttr = if null l then senAttr nf else l })
      (concatMap (frameForms . item) fs) ++)
   _ -> id) []
 
