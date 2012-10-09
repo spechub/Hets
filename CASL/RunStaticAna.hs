@@ -20,6 +20,7 @@ import Common.GlobalAnnotations
 import Common.Result
 import Common.DocUtils
 import Common.ExtSign
+
 import CASL.Parse_AS_Basic
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -27,6 +28,11 @@ import CASL.StaticAna
 import CASL.SimplifySen
 import CASL.Quantification
 import CASL.AlphaConvert
+
+import qualified Data.Map as Map
+
+plainBasicSpec :: AParser st (BASIC_SPEC () () ())
+plainBasicSpec = basicSpec [] Map.empty
 
 localAnalysis :: GlobalAnnos -> BASIC_SPEC () () ()
               -> Result (BASIC_SPEC () () ())
@@ -38,7 +44,7 @@ localAnalysis ga bs =
 
 runAna :: GlobalAnnos -> AParser () (Result (BASIC_SPEC () () ()))
 runAna ga =
-    do b <- basicSpec []
+    do b <- plainBasicSpec
        return $ localAnalysis ga b
 
 localAna :: GlobalAnnos -> BASIC_SPEC () () () -> Result (Sign () ())
@@ -52,7 +58,7 @@ localAna ga bs =
 
 getSign :: GlobalAnnos -> AParser () (Result (Sign () ()))
 getSign ga =
-    do b <- basicSpec []
+    do b <- plainBasicSpec
        return $ localAna ga b
 
 props :: GlobalAnnos -> BASIC_SPEC () () ()
@@ -71,6 +77,6 @@ props ga bs =
 getProps :: GlobalAnnos
          -> AParser () (Result (Sign () (), [Annoted (FORMULA ())]))
 getProps ga =
-    do b <- basicSpec []
+    do b <- plainBasicSpec
        return $ fmap ( \ (sign, sens) -> (sign, map fromLabelledSen sens))
               $ props ga b
