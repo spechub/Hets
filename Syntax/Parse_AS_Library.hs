@@ -41,8 +41,8 @@ import Framework.AS
 lGAnnos :: LogicGraph -> AParser st (LogicGraph, [Annotation])
 lGAnnos lG = do
   as <- annos
-  let (pfx, an) = partPrefixes as
-  return (lG { prefixes = Map.union (prefixes lG) pfx }, an)
+  let (pfx, _) = partPrefixes as
+  return (lG { prefixes = Map.union pfx (prefixes lG) }, as)
 
 -- * Parsing functions
 

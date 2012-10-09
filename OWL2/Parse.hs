@@ -27,10 +27,13 @@ import Common.Parsec
 import Common.AnnoParser (commentLine)
 import Common.Token (criticalKeywords)
 import Common.Utils (nubOrd)
+import qualified Common.IRI as IRI
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import Text.ParserCombinators.Parsec
 import Control.Monad (liftM2)
 import Data.Char
+import qualified Data.Map as Map
 
 characters :: [Character]
 characters = [minBound .. maxBound]
@@ -588,3 +591,10 @@ nsEntry = do
 
 importEntry :: CharParser st QName
 importEntry = pkeyword importC >> uriP
+
+convertPrefixMap :: GA.PrefixMap -> Map.Map String String
+convertPrefixMap pm = Map.fromList $ map convertPrefixMapping (Map.toList pm)
+
+convertPrefixMapping :: (String,IRI.IRI) -> (String,String)
+convertPrefixMapping (pfx,i) = (if not (null pfx) then init pfx else pfx,
+                                IRI.iriToStringUnsecure i)

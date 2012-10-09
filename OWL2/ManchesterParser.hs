@@ -22,7 +22,6 @@ import OWL2.ColonKeywords
 
 import Common.Keywords
 import Common.Parsec
-import Common.IRI
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import Text.ParserCombinators.Parsec
@@ -263,7 +262,7 @@ basicSpec pm = do
     as <- frames
     return $ OntologyDocument
         (Map.union (Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss)
-         (Map.map iriToStringUnsecure pm))
+         (convertPrefixMap pm))
         (emptyOntology as)
             { imports = ie
             , ann = ans
