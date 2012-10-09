@@ -182,10 +182,11 @@ modItemStatAna mix (ModDefn is_time isTerm anno_list forms pos) = do
           $ map (fmap snd) new_forms
     unless (null ana_forms)
       $ addSentences $ map (\ af ->
-           makeNamed (getRLabel af) $ ExtFORMULA $ ModForm
+           (makeNamed (getRLabel af) $ ExtFORMULA $ ModForm
              $ ModDefn is_time isTerm anno_list [emptyAnno $ item af] pos)
+           { isAxiom = notImplied af })
            ana_forms
-    when is_time $ mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list
+    when is_time $ mapM_ (updateExtInfo . addTimeMod . item ) anno_list
     when isTerm $ do
       sig <- get
       mapM_ ( (updateExtInfo . addTermMod sig) . item ) anno_list
