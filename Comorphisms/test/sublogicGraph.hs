@@ -17,7 +17,7 @@ import Comorphisms.LogicGraph
 import Logic.Comorphism
 import Logic.Logic
 
-import Data.Maybe (mapMaybe)
+import Data.Maybe
 import qualified Data.Map as Map
 
 main :: IO ()
@@ -36,7 +36,7 @@ testInj_mapSublogic :: (Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
                    => cid -> Bool
 testInj_mapSublogic cid =
-        all (`elem` all_sublogics (targetLogic cid))
+        all (isJust . parseSublogic (targetLogic cid) . sublogicName)
         $ mapMaybe (mapSublogic cid) $ all_sublogics $ sourceLogic cid
 
 testInj_mapSublogicAll :: IO ()
