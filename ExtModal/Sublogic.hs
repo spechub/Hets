@@ -14,8 +14,6 @@ Sublogics for ExtModal Logic
 module ExtModal.Sublogic where
 
 import CASL.AS_Basic_CASL
-import CASL.Morphism
-import CASL.Sign
 import CASL.Sublogic
 
 import Common.AS_Annotation
@@ -26,7 +24,6 @@ import qualified Data.Set as Set
 
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
-import ExtModal.MorphismExtension
 
 data Frequency = None | One | Many deriving (Show, Eq, Ord, Enum)
 
