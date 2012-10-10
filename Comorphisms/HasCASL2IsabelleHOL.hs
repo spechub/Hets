@@ -131,7 +131,7 @@ transOpType (TypeScheme _ op _) = transType op
 -- types
 transType :: Type -> Typ
 transType t = case getTypeAppl t of
-   (TypeName tid _ n, tyArgs) -> let num = length tyArgs in
+   (TypeName tid _ n, tyArgs) ->
       if n == 0 then case tyArgs of
           [] | tid == unitTypeId -> boolType
           [t1] | tid == lazyTypeId -> transType t1
