@@ -64,11 +64,11 @@ genRules flags files =
              "{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}" ++
              "\n{- |\nModule      :  " ++ outf ++
              "\nDescription :  generated " ++ rule ++ " instances" ++
-             "\nCopyright   :  (c) DFKI Bremen 2008" ++
+             "\nCopyright   :  (c) DFKI GmbH 2012" ++
              "\nLicense     :  GPLv2 or higher, see LICENSE.txt" ++
              "\n\nMaintainer  :  Christian.Maeder@dfki.de" ++
              "\nStability   :  provisional" ++
-             "\nPortability :  non-portable(overlapping Typeable instances)\n"
+             "\nPortability :  non-portable(derive Typeable instances)\n"
              ++
              "\nAutomatic derivation of instances via DrIFT-rule " ++
                    rule ++
