@@ -16,6 +16,7 @@ import RuleUtils -- gives some examples
 import DataP
 import Text.PrettyPrint.HughesPJ
 import Data.List
+import Data.Maybe
 
 hetcatsrules :: [RuleDef]
 hetcatsrules =
@@ -157,7 +158,7 @@ simplest typ cs fv =
       List t -> let (d, pat) = findT v t
         in perhaps (inc d) (text "List" <+> parens pat)
     perhaps jn doc = (jn, maybe (text "_") (const doc) jn)
-    combine ds = let js = [ n | Just n <- ds ] in
+    combine ds = let js = catMaybes ds in
         if null js then Nothing else inc (Just (minimum js))
     inc = fmap (+ 1)
     closest :: (Maybe Int, a) -> (Maybe Int, a) -> (Maybe Int, a)
@@ -274,8 +275,9 @@ makePutBinary :: Bool -> Bool -> Body -> Int -> Doc
 makePutBinary forLG moreCs b i =
     let vs = varNames $ types b
         putComp v = text ("put" ++ if forLG then "LG" else "") <+> v
-        hl = if moreCs then text ("putWord8 " ++ show i) else
-                 if null vs then text "return ()" else empty
+        hl | moreCs = text $ "putWord8 " ++ show i
+           | null vs = text "return ()"
+           | otherwise = empty
     in ppCons' b vs <+> rArrow <+> (if null vs then hl else text "do")
           $$ if null vs then empty else nest 2 . vcat $ hl : map putComp vs
 
@@ -356,10 +358,4 @@ typeablefn dat =
     let vs = vars dat
         dn = strippedName dat
         ntext str = str ++ if null vs then "" else show $ length vs
-        tcname = text $ "_tc" ++ dn ++ "Tc"
-    in tcname <+> text ":: TyCon"
-       $$ tcname <+> equals <+> text "mkTyCon"
-           <+> doubleQuotes (text $ name dat)
-       $$ text ("instance " ++ ntext "Typeable" ++ " " ++ dn ++ " where")
-       $$ block [ text (ntext "typeOf" ++ " _ = mkTyConApp")
-                  <+> tcname <+> brackets empty]
+    in text ("deriving instance " ++ ntext "Typeable" ++ " " ++ dn)

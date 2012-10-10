@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, StandaloneDeriving, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  special ShATermConvertible instances
@@ -25,10 +25,7 @@ import Data.Fixed (Pico)
 import Data.Ratio (Ratio)
 import System.Time
 
-_tc_SizedListTc :: TyCon
-_tc_SizedListTc = mkTyCon "Common.Lib.SizedList.SizedList"
-instance Typeable1 SizedList where
-    typeOf1 _ = mkTyConApp _tc_SizedListTc []
+deriving instance Typeable1 SizedList
 
 instance ShATermConvertible a => ShATermConvertible (SizedList.SizedList a)
     where
@@ -36,10 +33,7 @@ instance ShATermConvertible a => ShATermConvertible (SizedList.SizedList a)
   fromShATermAux ix att0 = case fromShATermAux ix att0 of
     (att, l) -> (att, SizedList.fromList l)
 
-_tc_InjMapTc :: TyCon
-_tc_InjMapTc = mkTyCon "Common.InjMap.InjMap"
-instance Typeable2 InjMap.InjMap where
-    typeOf2 _ = mkTyConApp _tc_InjMapTc []
+deriving instance Typeable2 InjMap.InjMap
 
 instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
      => ShATermConvertible (InjMap.InjMap a b) where
@@ -54,10 +48,7 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         (att2, InjMap.unsafeConstructInjMap a' b') }}
     u -> fromShATermError "InjMap" u
 
-_tc_MapSetTc :: TyCon
-_tc_MapSetTc = mkTyCon "Common.Lib.MapSet.MapSet"
-instance Typeable2 MapSet.MapSet where
-    typeOf2 _ = mkTyConApp _tc_MapSetTc []
+deriving instance Typeable2 MapSet.MapSet
 
 instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
   => ShATermConvertible (MapSet.MapSet a b) where
@@ -70,10 +61,7 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         (att1, MapSet.fromDistinctMap a') }
     u -> fromShATermError "MapSet" u
 
-_tc_RelTc :: TyCon
-_tc_RelTc = mkTyCon "Common.Lib.Rel.Rel"
-instance Typeable1 Rel.Rel where
-    typeOf1 _ = mkTyConApp _tc_RelTc []
+deriving instance Typeable1 Rel.Rel
 
 instance (Ord a, ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
   toShATermAux att0 r = do
@@ -85,11 +73,7 @@ instance (Ord a, ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
         (att1, Rel.fromMap a') }
     u -> fromShATermError "Rel" u
 
-ctTc :: TyCon
-ctTc = mkTyCon "System.Time.ClockTime"
-
-instance Typeable ClockTime where
-  typeOf _ = mkTyConApp ctTc []
+deriving instance Typeable ClockTime
 
 instance ShATermConvertible ClockTime where
     toShATermAux att0 (TOD a b) = do
@@ -104,11 +88,7 @@ instance ShATermConvertible ClockTime where
             u -> fromShATermError "ClockTime" u
 
 #ifdef TIME_WITHOUT_TYPEABLE
-timeOfDayTc :: TyCon
-timeOfDayTc = mkTyCon "Data.Time.TimeOfDay"
-
-instance Typeable TimeOfDay where
-    typeOf _ = mkTyConApp timeOfDayTc []
+deriving instance Typeable TimeOfDay
 #endif
 
 instance ShATermConvertible Double where

@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  basic ShATermConvertible instances
@@ -17,10 +18,7 @@ import ATerm.Lib
 import Data.Typeable
 import SrcLoc
 
-_tcSrcLocTc :: TyCon
-_tcSrcLocTc = mkTyCon "SrcLoc.SrcLoc"
-instance Typeable SrcLoc where
-    typeOf _ = mkTyConApp _tcSrcLocTc []
+deriving instance Typeable SrcLoc
 
 instance ShATermConvertible SrcLoc where
   toShATermAux att0 xv = case xv of
@@ -29,9 +27,9 @@ instance ShATermConvertible SrcLoc where
       (att2, b') <- toShATerm' att1 b
       (att3, c') <- toShATerm' att2 c
       (att4, d') <- toShATerm' att3 d
-      return $ addATerm (ShAAppl "SrcLoc" [a',b',c',d'] []) att4
+      return $ addATerm (ShAAppl "SrcLoc" [a', b', c', d'] []) att4
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "SrcLoc" [a,b,c,d] _ ->
+    ShAAppl "SrcLoc" [a, b, c, d] _ ->
       case fromShATerm' a att0 of { (att1, a') ->
       case fromShATerm' b att1 of { (att2, b') ->
       case fromShATerm' c att2 of { (att3, c') ->

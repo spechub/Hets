@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  ShATermConvertible instances
@@ -12,16 +13,16 @@ some 'ShATermConvertible' instances based on
 the generated instances in "Haskell.ATC_Haskell".
 -}
 
-module Haskell.TiATC() where
+module Haskell.TiATC () where
 
 import ATerm.Lib
 import TiTypes
 import TiKinds
 import TiInstanceDB
 import PropSyntaxRec
-import Haskell.HatParser(HsDecls(..))
-import Haskell.HatAna(Sign(..))
-import Haskell.ATC_Haskell()
+import Haskell.HatParser (HsDecls (..))
+import Haskell.HatAna (Sign (..))
+import Haskell.ATC_Haskell ()
 import Data.Typeable
 
 {-! for Qual derive : Typeable !-}
@@ -55,4 +56,3 @@ import Data.Typeable
 {-! for HsExpI derive : ShATermConvertible !-}
 {-! for HsDecls derive : ShATermConvertible !-}
 {-! for Sign derive : ShATermConvertible !-}
-

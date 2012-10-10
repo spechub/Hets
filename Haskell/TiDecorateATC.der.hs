@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  ShATermConvertible instances
@@ -11,12 +12,12 @@ Portability :  non-portable (imports programatica modules)
 'ShATermConvertible' instances for TiDecorate data types
 -}
 
-module Haskell.TiDecorateATC() where
+module Haskell.TiDecorateATC () where
 
 import ATerm.Lib
 import TiDecorate
-import Haskell.ATC_Haskell()
-import Haskell.TiATC()
+import Haskell.ATC_Haskell ()
+import Haskell.TiATC ()
 import Data.Typeable
 
 {-! for TiDecls derive : Typeable !-}
