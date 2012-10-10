@@ -131,8 +131,8 @@ clLetters ch = let c = ord ch in
 
 clLetters2 :: Char -> Bool
 clLetters2 ch = let c = ord ch in
-   c >= 32 && c <= 126 && (c <= 38 && c /= 34
-      || c >= 42 && c /= 64 && c /= 92)
+   (c >= 32 && c <= 126 && (c <= 38 && c /= 34
+      || c >= 42 && c /= 64 && c /= 92)) || c >= 128
 
 -- a..z, A..z, 0..9, ~!#$%^&*_+{}|:<>?`-=[];,.
 
