@@ -56,9 +56,9 @@ type SpecInfo = (BASIC_SPEC, Set String, Set String)
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
 parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
 parseCL_CLIF filename opts = do
-  let dirFile@(dir, _) = splitFileName filename
+  let dirFile = splitFileName filename
   specMap <- downloadSpec opts Map.empty Set.empty Set.empty False dirFile
-  specs <- anaImports opts dir specMap
+  specs <- anaImports opts specMap
   return $ convertToLibDefN (convertFileToLibStr filename) specs
 
 
@@ -93,9 +93,8 @@ specName def i = def ++ "_" ++ show i
 cnvImportName :: NAME -> NAME
 cnvImportName = mkSimpleId . convertFileToLibStr . tokStr
 
-collectDownloads :: HetcatsOpts -> String -> SpecMap -> (String, SpecInfo)
-                    -> IO SpecMap
-collectDownloads opts dir specMap (n, (b, topTexts, importedBy)) =
+collectDownloads :: HetcatsOpts -> SpecMap -> (String, SpecInfo) -> IO SpecMap
+collectDownloads opts specMap (n, (b, topTexts, importedBy)) =
   let directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
@@ -106,7 +105,7 @@ collectDownloads opts dir specMap (n, (b, topTexts, importedBy)) =
 
 downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> Set String
                 -> Bool -> (String, String) -> IO SpecMap
-downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir, _) =
+downloadSpec opts specMap topTexts importedBy isImport dirFile =
   let filename = uncurry combine dirFile in
   let fn = convertFileToLibStr filename in
   case Map.lookup fn specMap of
@@ -125,7 +124,7 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir, _) =
           let newTopTexts = t `Set.union` topTexts
           let newImportedBy = i `Set.union` importedBy
           let newSpecMap = Map.insert fn (b, newTopTexts, newImportedBy) specMap
-          collectDownloads opts dir newSpecMap
+          collectDownloads opts newSpecMap
                        (fn, (b, newTopTexts, newImportedBy))
       Nothing -> do
           contents <- getCLIFContents opts dirFile
@@ -138,7 +137,7 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile@(dir, _) =
                         Map.insertWith unify n bti sm
                       ) specMap nbtis
                 in foldM (\ sm nbt -> do
-                          newDls <- collectDownloads opts dir sm nbt
+                          newDls <- collectDownloads opts sm nbt
                           return (Map.unionWith unify newDls sm)
                       ) newSpecMap nbtis
 
@@ -232,11 +231,11 @@ impName :: PHRASE -> NAME
 impName (Importation (Imp_name n)) = n
 impName _ = undefined -- not necessary because filtered out
 
-anaImports :: HetcatsOpts -> String -> SpecMap -> IO [(BASIC_SPEC, NAME)]
-anaImports opts dir specMap = do
+anaImports :: HetcatsOpts -> SpecMap -> IO [(BASIC_SPEC, NAME)]
+anaImports opts specMap = do
   downloads <- foldM
     (\ sm nbt -> do
-      newSpecs <- collectDownloads opts dir sm nbt
+      newSpecs <- collectDownloads opts sm nbt
       return (Map.unionWith unify newSpecs sm)
     ) specMap $ Map.assocs specMap
   let specAssocs = Map.assocs downloads
