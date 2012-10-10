@@ -132,19 +132,16 @@ transOpType (TypeScheme _ op _) = transType op
 transType :: Type -> Typ
 transType t = case getTypeAppl t of
    (TypeName tid _ n, tyArgs) -> let num = length tyArgs in
-      if n == 0 then
-          if tid == unitTypeId && null tyArgs then boolType
-          else if tid == lazyTypeId && num == 1 then
-             transType $ head tyArgs
-          else if isArrow tid && num == 2 then
-             let [t1, t2] = tyArgs
-                 tr = transType t2
-             in mkFunType (transType t1) $
+      if n == 0 then case tyArgs of
+          [] | tid == unitTypeId -> boolType
+          [t1] | tid == lazyTypeId -> transType t1
+          t1 : t2 : r
+            | isArrow tid && null r -> let tr = transType t2 in
+                mkFunType (transType t1) $
                     if isPartialArrow tid && not (isPredType t)
                         then mkOptionType tr else tr
-          else if isProductId tid && num > 1 then
-             foldl1 prodType $ map transType tyArgs
-          else Type (showIsaTypeT tid baseSign) [] $ map transType tyArgs
+            | isProductId tid -> foldl1 prodType $ map transType tyArgs
+          _ -> Type (showIsaTypeT tid baseSign) [] $ map transType tyArgs
        else TFree (showIsaTypeT tid baseSign) []
             -- type arguments are not allowed here!
    _ -> error $ "transType " ++ showDoc t "\n" ++ show t
@@ -385,9 +382,9 @@ arangeCaseAlts sign peqs
 -}
 sortCaseAlts :: Env -> [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
 sortCaseAlts sign peqs =
-  let consList
-        | null peqs = error "No case alternatives."
-        | otherwise = getCons sign (getName (head peqs))
+  let consList = case peqs of
+        [] -> error "No case alternatives."
+        hd : _ -> getCons sign (getName hd)
       groupedByCons = nubOrd (map (groupCons peqs) consList)
   in map (flattenPattern sign) groupedByCons
 
@@ -416,12 +413,11 @@ getTypeName p =
      TupleTerm (t : _) _ -> getTypeName t
      _ -> error "HasCASL2IsabelleHOL.getTypeName"
    where name tp = case getTypeAppl tp of
-             (TypeName tyId _ 0, tyArgs) -> let num = length tyArgs in
-                 if isArrow tyId && num == 2 then
-                    name $ head $ tail tyArgs
-                 else if isProductId tyId && num > 1 then
-                    name $ head tyArgs
-                 else tyId
+             (TypeName tyId _ 0, tyArgs) -> case tyArgs of
+                 t1 : t2 : r
+                   | isArrow tyId && null r -> name t2
+                   | isProductId tyId -> name t1
+                 _ -> tyId
              _ -> error "HasCASL2IsabelleHOL.name (of type)"
 
 {- Input: Case alternatives and name of one constructor
@@ -545,9 +541,9 @@ redArgs :: Env -> [CaseMatrix] -> CaseMatrix
 redArgs sign cmxs
   | all (testPatBrand Appl) cmxs = redAppl cmxs sign
   | all (testPatBrand Tuple) cmxs = redAppl cmxs sign
-  | isSingle cmxs = head cmxs
-  | otherwise = head cmxs
+  | otherwise = hd
   where testPatBrand pb cmx = pb == patBrand cmx
+        hd = head cmxs
 
 {- Input: List of CMs thats leading constructor and arguments except
        the last one are equal
@@ -556,15 +552,17 @@ redArgs sign cmxs
 -}
 redAppl :: [CaseMatrix] -> Env -> CaseMatrix
 redAppl cmxs sign
-  | all (null . args) cmxs = head cmxs
-  | isSingle cmxs =
-      (head cmxs) { args = init $ args $ head cmxs,
-                    newArgs = last (args $ head cmxs) : newArgs (head cmxs) }
-  | all termIsVar lastArgs = substVar (head cmxs)
-  | otherwise = substTerm (head cmxs)
-   where terms = map term cmxs
+  | all (null . args) cmxs = hd
+  | isSingle cmxs = hd
+      { args = init hdArgs
+      , newArgs = last hdArgs : newArgs hd }
+  | all termIsVar lastArgs = substVar hd
+  | otherwise = substTerm hd
+   where hd = head cmxs
+         hdArgs = args hd
+         terms = map term cmxs
          lastArgs = map (last . args) cmxs
-         varName = "caseVar" ++ show (length (args (head cmxs)))
+         varName = "caseVar" ++ show (length hdArgs)
          varId = mkId [mkSimpleId varName]
          newVar = QualVar (VarDecl varId (TypeName varId rStar 1)
                            As.Other nullRange)
@@ -591,9 +589,9 @@ recArgs sign peqs
   | isSingle groupedByCons
       || null groupedByCons = []
   | otherwise = doPEQ groupedByCons []
-  where consList
-          | null peqs = error "No case alternatives."
-          | otherwise = getCons sign (getName (head peqs))
+  where consList = case peqs of
+          [] -> error "No case alternatives."
+          hd : _ -> getCons sign (getName hd)
         groupedByCons = map (groupCons peqs) consList
         doPEQ [] res = res
         doPEQ (g : gByCs) res
@@ -609,12 +607,17 @@ shrinkPat :: CaseMatrix -> As.Term
 shrinkPat cmx =
   case patBrand cmx of
     Appl -> case cons cmx of
-               Just c -> foldl mkApplT c $ args cmx ++ newArgs cmx
+               Just c -> foldl mkApplT c as
                Nothing -> error "HasCASL2IsabelleHOL.shrinkPat"
-    Tuple -> TupleTerm (args cmx ++ newArgs cmx) nullRange
-    QuOp -> head (args cmx)
-    _ -> head (newArgs cmx)
+    Tuple -> TupleTerm as nullRange
+    QuOp -> ha
+    _ -> nha
   where mkApplT t1 t2 = ApplTerm t1 t2 nullRange
+        ac = args cmx
+        nac = newArgs cmx
+        as = ac ++ nac
+        ha : _ = ac
+        nha : _ = nac
 
 patIsVar :: ProgEq -> Bool
 patIsVar (ProgEq pat _ _) = termIsVar pat
