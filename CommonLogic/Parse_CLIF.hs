@@ -277,7 +277,7 @@ term_fun_cmt = parens (do
     return $ Funct_term t [] $ Range $ rangeSpan t
   <|> do
     t <- term
-    ts <- many1 termseq -- many1? yes, because it's a functional term
+    ts <- many termseq
     return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t, rangeSpan ts]
  )
 
