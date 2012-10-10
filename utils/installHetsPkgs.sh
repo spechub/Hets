@@ -21,14 +21,14 @@ else
 pre=`ghc --print-libdir | sed -e 's+/lib/.*++g'`
 fi
 
-opts="--enable-documentation --global --prefix=$pre"
+opts="--enable-documentation -p --global --prefix=$pre"
 
 #    echo Installing binaries...
 #    cabal install cabal-install-0.14.0 gtk2hs-buildtools $opts
 
 echo Installing libraries...
 cabal install aterm random utf8-string xml fgl HTTP haskeline HaXml \
-              hexpat uni-uDrawGraph parsec1 $opts
+              hexpat uni-uDrawGraph parsec1 wai-extra warp tar $opts
 
 cabal install \
   http://www.dfki.de/sks/hets/src-distribution/programatica-1.0.0.4.tar.gz \
