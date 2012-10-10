@@ -543,7 +543,7 @@ redArgs sign cmxs
   | all (testPatBrand Tuple) cmxs = redAppl cmxs sign
   | otherwise = hd
   where testPatBrand pb cmx = pb == patBrand cmx
-        hd = head cmxs
+        hd : _ = cmxs
 
 {- Input: List of CMs thats leading constructor and arguments except
        the last one are equal
@@ -558,7 +558,7 @@ redAppl cmxs sign
       , newArgs = last hdArgs : newArgs hd }
   | all termIsVar lastArgs = substVar hd
   | otherwise = substTerm hd
-   where hd = head cmxs
+   where hd : _ = cmxs
          hdArgs = args hd
          terms = map term cmxs
          lastArgs = map (last . args) cmxs
