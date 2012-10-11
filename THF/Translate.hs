@@ -51,8 +51,8 @@ mkDefName c = case c of
 transTypeId :: Id -> Result THFAs.Constant
 transTypeId id1 = case maybeElem id1 preDefHCTypeIds of
     Just res -> return $ stringToConstant res
-    Nothing  -> case transToTHFString $ "x_" ++ show id1 of
-        Just s  -> return $ stringToConstant s
+    Nothing  -> case transToTHFString $ show id1 of
+        Just s  -> return . A_Lower_Word . mkSimpleId $ "x_" ++ s
         Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Constant.") nullRange
 
