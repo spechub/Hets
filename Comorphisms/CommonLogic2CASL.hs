@@ -15,7 +15,7 @@ Translating comorphism from Common Logic to CASL
 
 module Comorphisms.CommonLogic2CASL
    (
-     CommonLogic2CASL (..)
+     CommonLogic2CASLFol (..)
    )
    where
 
@@ -50,12 +50,12 @@ import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 
-data CommonLogic2CASL = CommonLogic2CASL deriving Show
+data CommonLogic2CASLFol = CommonLogic2CASLFol deriving Show
 
-instance Language CommonLogic2CASL
+instance Language CommonLogic2CASLFol
 
 instance Comorphism
-    CommonLogic2CASL       -- comorphism
+    CommonLogic2CASLFol       -- comorphism
     ClLogic.CommonLogic    -- lid domain
     ClSl.CommonLogicSL     -- sublogics codomain
     ClBasic.BASIC_SPEC     -- Basic spec domain
@@ -79,14 +79,14 @@ instance Comorphism
     CMor.RawSymbol         -- rawsymbol codomain
     ProofTree              -- proof tree domain
     where
-      sourceLogic CommonLogic2CASL = ClLogic.CommonLogic
-      sourceSublogic CommonLogic2CASL = ClSl.funcNoPredsl
-      targetLogic CommonLogic2CASL = CLogic.CASL
-      mapSublogic CommonLogic2CASL = Just . mapSub
-      map_theory CommonLogic2CASL = mapTheory
-      map_morphism CommonLogic2CASL = mapMor  -- TODO prop
-      map_sentence CommonLogic2CASL = mapSentence
-      has_model_expansion CommonLogic2CASL = True
+      sourceLogic CommonLogic2CASLFol = ClLogic.CommonLogic
+      sourceSublogic CommonLogic2CASLFol = ClSl.funcNoPredsl
+      targetLogic CommonLogic2CASLFol = CLogic.CASL
+      mapSublogic CommonLogic2CASLFol = Just . mapSub
+      map_theory CommonLogic2CASLFol = mapTheory
+      map_morphism CommonLogic2CASLFol = mapMor  -- TODO prop
+      map_sentence CommonLogic2CASLFol = mapSentence
+      has_model_expansion CommonLogic2CASLFol = True
 
 mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
 mapSub _ = CSL.cFol

@@ -174,7 +174,7 @@ comorphismList =
     , Comorphism CASL2VSEImport
     , Comorphism CASL2VSERefine
     , Comorphism Maude2CASL
-    , Comorphism CommonLogic2CASL
+    , Comorphism CommonLogic2CASLFol
     , Comorphism CommonLogic2CASLCompact
     , Comorphism CommonLogicModuleElimination
     , Comorphism Prop2CommonLogic
