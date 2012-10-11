@@ -495,7 +495,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             See CASL RefMan p. 192, function IDAsSym -}
          id_to_raw :: lid -> Id -> raw_symbol
          id_to_raw l _ = statError l "id_to_raw"
-         {- | Check wether a symbol matches a raw symbol, for
+         {- | Check whether a symbol matches a raw symbol, for
             example, f:s->t matches f. See CASL RefMan p. 192 -}
          matches :: lid -> symbol -> raw_symbol -> Bool
          matches _ _ _ = True
