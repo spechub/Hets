@@ -736,13 +736,14 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
 -- | show window of the autoproof function
 showAutoProofWindow :: DGraph -> Int -> ProverMode -> ResultT IO String
 showAutoProofWindow dg sessId prOrCons = let
+  dgnodes = labNodesDG dg
   -- some parameters need to be different for consistency and autoproof mode
   (prMethod, prChoice, prCond, title, nodeSel) = case prOrCons of
     GlProofs -> ("proof", "SPASS", "hasOpenGoals = 'True'", "automatic proofs"
       , map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
       , mkAttr "hasOpenGoals" $ show $ not $ allProved fn
       , mkAttr "name" $ escStr $ name fn ]
-      $ unode "input" $ showHtml fn) $ initFNodes $ labNodesDG dg)
+      $ unode "input" $ showHtml fn) $ initFNodes dgnodes)
     -- TODO sort out nodes with no sentences!
     GlConsistency -> ("cons", "darwin", "cstatus = 'Unchecked'"
       , "consistency checker", map (\ (_, dgn) ->  
@@ -750,7 +751,7 @@ showAutoProofWindow dg sessId prOrCons = let
           nm = showName $ dgn_name dgn in add_attrs [ mkAttr "type" "checkbox"
       , mkAttr "cstatus" (show cstat) -- TODO messages are very long and ugly!
       , mkAttr "name" nm]
-      $ unode "input" (cStatusToPrefix cstat ++ nm)) $ labNodesDG dg)
+      $ unode "input" (cStatusToPrefix cstat ++ nm)) dgnodes)
   -- generate param field for the query string, invisible to the user
   hidStr = add_attrs [ mkAttr "name" "autoproof"
          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
@@ -762,16 +763,19 @@ showAutoProofWindow dg sessId prOrCons = let
           , mkAttr "name" "includetheorems"] $ unode "input" "include Theorems"
   goBack = aRef ('/' : show sessId) "return to DGraph"
   in do
-    (prSel, cmSel, jvScr2) <- fmap (showProverSelection prOrCons)
-      $ mapM (\ (_, nd) -> case maybeResult $ getGlobalTheory nd of
-        Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
-        Just gTh -> return $ sublogicOfTh gTh) $ labNodesDG dg
-    -- combine elements within a form
-    let nodeMenu = let br = unode "br " () in add_attrs
+    (jvScr2, nodeMenu) <- case dgnodes of
+      [] -> return ("", plain "nothing to prove (graph has no nodes)")
+      (_, nd) : _ -> do
+        (prSel, cmSel, jvSc) <- fmap (showProverSelection prOrCons)
+          $ case maybeResult $ getGlobalTheory nd of
+              Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
+              Just gTh -> return [sublogicOfTh gTh]
+        let br = unode "br " ()
+        return (jvSc, add_attrs
           [ mkAttr "name" "nodeSel", mkAttr "method" "get" ]
           $ unode "form" $
-          [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include
-          ] ++ intersperse br (prBt : nodeSel)
+          [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include ]
+          ++ intersperse br (prBt : nodeSel)                                  )
     return $ mkHtmlElemScript title (jvScr1 ++ jvScr2) $ [ goBack
           , plain " ", nodeMenu ]
 
@@ -998,7 +1002,7 @@ proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
         ((cc, c) : _) -> lift $ do
           cstat <- consistencyCheck useTh cc c ln le' dg nl $ fromMaybe 1 tl
           -- Consistency Results are stored in LibEnv via DGChange object
-          let le'' = Map.insert ln (changeDGH (lookupDGraph ln le)
+          let le'' = Map.insert ln (changeDGH (lookupDGraph ln le')
                 $ SetNodeLab lb (i, if sType cstat == CSInconsistent then
                 markNodeInconsistent "" lb else markNodeConsistent "" lb)) le'
           return (le'', [(" ", show cstat)])
