@@ -451,7 +451,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
             ++ show ln' ++ " available: " ++ show (Map.keys libenv')
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
-                fn = show $ getLibId ln
+                fn = show $ getLibId ln'
                 currFn = show $ getLibId currLn
                 (realItems, errs, origItems) = case items of
                   ItemMaps rawIms ->
@@ -476,7 +476,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                     _ ->
                      ( []
                      , [ mkError "non-unique name within imported library"
-                         ln], [])
+                         ln'], [])
                 additionalEo = Map.fromList $ map (\ o -> (o, fn)) origItems
                 eo' = Map.unionWith (\ _ p2 -> p2) eo additionalEo
             mapM_ liftR errs
