@@ -764,14 +764,16 @@ showAutoProofWindow dg sessId prOrCons = let
   goBack = aRef ('/' : show sessId) "return to DGraph"
   in do
     (jvScr2, nodeMenu) <- case dgnodes of
+      -- return simple feedback if no nodes are present
       [] -> return ("", plain "nothing to prove (graph has no nodes)")
-      (_, nd) : _ -> do
-        (prSel, cmSel, jvSc) <- fmap (showProverSelection prOrCons)
-          $ case maybeResult $ getGlobalTheory nd of
-              Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
-              Just gTh -> return [sublogicOfTh gTh]
-        let br = unode "br " ()
-        return (jvSc, add_attrs
+      -- otherwise 
+      (_, nd) : _ -> case maybeResult $ getGlobalTheory nd of
+        Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
+        Just gTh -> let
+            br = unode "br " ()
+            (prSel, cmSel, jvSc) = showProverSelection prOrCons
+              [sublogicOfTh gTh]
+          in return (jvSc, add_attrs
           [ mkAttr "name" "nodeSel", mkAttr "method" "get" ]
           $ unode "form" $
           [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include ]
@@ -992,7 +994,9 @@ proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String]
   -> ResultT IO (LibEnv, [Element])
 proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
-  runProof le' gTh nl@(i, lb) = let subL = sublogicOfTh gTh in case prOrCons of
+  runProof le' gTh nl@(i, lb) = let
+    subL = sublogicOfTh gTh
+    dg' = lookupDGraph ln le' in case prOrCons of
     GlConsistency -> let
       consList = getConsCheckers $ findComorphismPaths logicGraph subL
       findCC x = filter ((== x ) . getCcName . fst) consList
@@ -1000,14 +1004,20 @@ proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
       in case mcc of
         [] -> fail "no cons checker found"
         ((cc, c) : _) -> lift $ do
-          cstat <- consistencyCheck useTh cc c ln le' dg nl $ fromMaybe 1 tl
+          cstat <- consistencyCheck useTh cc c ln le' dg' nl $ fromMaybe 1 tl
           -- Consistency Results are stored in LibEnv via DGChange object
-          let le'' = Map.insert ln (changeDGH (lookupDGraph ln le')
-                $ SetNodeLab lb (i, if sType cstat == CSInconsistent then
-                markNodeInconsistent "" lb else markNodeConsistent "" lb)) le'
+          let le'' = Map.insert ln (changeDGH dg' $ SetNodeLab lb
+                       (i, if sType cstat == CSInconsistent then
+                         markNodeInconsistent "" lb
+                         else markNodeConsistent "" lb)) le'
           return (le'', [(" ", show cstat)])
-    GlProofs -> proveNode le' ln dg nl gTh subL useTh mp mt tl
+    GlProofs -> proveNode le' ln dg' nl gTh subL useTh mp mt tl
              $ map fst $ getThGoals gTh
+  nodes2check = filter (case nodeSel of
+    [] -> case prOrCons of
+            GlConsistency -> const True
+            GlProofs -> hasOpenGoals . snd
+    _ -> (`elem` nodeSel) . showName . dgn_name . snd) $ labNodesDG dg
   in foldM
   (\ (le', res) nl@(_, dgn) -> case maybeResult $ getGlobalTheory dgn of
       Nothing -> fail $
@@ -1015,9 +1025,7 @@ proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
       Just gTh -> do
         (le'', sens) <- runProof le' gTh nl
         return (le'', formatResultsAux (showName $ dgn_name dgn) sens : res))
-          (le, []) $ filter (case nodeSel of
-            [] -> hasOpenGoals . snd
-            _ -> (`elem` nodeSel) . showName . dgn_name . snd) $ labNodesDG dg
+          (le, []) nodes2check
 {-
 consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
