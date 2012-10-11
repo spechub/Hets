@@ -82,12 +82,13 @@ prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> Element
 prettySymbol = prettyRangeElem "Symbol"
 
 lnode :: GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
-lnode ga lenv (_, lbl) =
+lnode ga lenv (n, lbl) =
   let nm = dgn_name lbl
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm)
+    : mkAttr "gnid" (show n)
     : if not (isDGRef lbl) then case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkAttr "logic" (show slid)
           : if dgn_origin lbl < DGProof then
@@ -145,7 +146,9 @@ ledge ga dg (f, t, lbl) = let
                 $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls)
   in add_attrs
   ([ mkAttr "source" $ getNameOfNode f dg
+  , mkAttr "snid" $ show f
   , mkAttr "target" $ getNameOfNode t dg
+  , mkAttr "tnid" $ show t
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl
   ] ++ case dgl_origin lbl of
          DGLinkView i _ -> [mkNameAttr $ iriToStringShortUnsecure i]
