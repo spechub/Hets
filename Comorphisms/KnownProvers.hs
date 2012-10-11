@@ -56,7 +56,7 @@ import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.Maude2CASL
-import Comorphisms.CommonLogic2CASL
+import Comorphisms.CommonLogic2CASLCompact
 import Comorphisms.Adl2CASL
 import CspCASL.Comorphisms
 #endif
@@ -137,7 +137,7 @@ isaComorphisms = do
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
        maude2IHOL <- compComorphism (Comorphism Maude2CASL) subpc2IHOL
        commonlogic2IHOL <-
-           compComorphism (Comorphism CommonLogic2CASL) subpc2IHOL
+           compComorphism (Comorphism CommonLogic2CASLCompact) subpc2IHOL
 #endif
 #ifndef NOOWLLOGIC
        owl2HOL <- compComorphism (Comorphism OWL22CASL) subpc2IHOL
@@ -187,7 +187,8 @@ spassComorphisms =
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
        maude2SPASS <- compComorphism (Comorphism Maude2CASL) partOut
-       commonlogic2SPASS <- compComorphism (Comorphism CommonLogic2CASL) partOut
+       commonlogic2SPASS <- compComorphism (Comorphism CommonLogic2CASLCompact)
+         partOut
        adl2SPASS <- compSPASS (Comorphism Adl2CASL)
 #endif
 #ifndef NOOWLLOGIC

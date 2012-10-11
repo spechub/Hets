@@ -52,8 +52,7 @@ import qualified CASL.Morphism as CMor
 
 data CommonLogic2CASL = CommonLogic2CASL deriving Show
 
-instance Language CommonLogic2CASL where
-  language_name CommonLogic2CASL = "CommonLogic2CASL"
+instance Language CommonLogic2CASL
 
 instance Comorphism
     CommonLogic2CASL       -- comorphism
