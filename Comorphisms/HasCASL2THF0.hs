@@ -46,6 +46,7 @@ import qualified Data.Set as Set
 import qualified Data.List as List
 
 import Data.Char (toLower)
+import Data.Maybe
 
 -- Question: are the remaining symbol variants translatable?
 
@@ -297,7 +298,9 @@ transNamedSentence micm ids sig ns' = do
             return ( ns {sentence =
                 THFCons.Sentence { senRole = getFormulaRole ns
                                  , senFormula = TF_THF_Logic_Formula lf
-                                 , senAnno = Null } }
+                                 , senAnno = Null }
+                        , senAttr = fromMaybe (error "THF.transNamedSentence")
+                          $ transToTHFString (senAttr ns) }
                    , nids)
         ProgEqSen {} ->
             fatal_error "Programm equations are not supported."
