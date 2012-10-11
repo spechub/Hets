@@ -17,7 +17,6 @@ import Common.Id
 import Common.Result
 
 import qualified Common.ProofUtils as CM (charMap)
-import Common.Utils (mapHead)
 
 import HasCASL.Builtin
 import HasCASL.AsUtils
@@ -52,7 +51,7 @@ mkDefName c = case c of
 transTypeId :: Id -> Result THFAs.Constant
 transTypeId id1 = case maybeElem id1 preDefHCTypeIds of
     Just res -> return $ stringToConstant res
-    Nothing  -> case transToTHFString $ show id1 of
+    Nothing  -> case transToTHFString $ "x_" ++ show id1 of
         Just s  -> return $ stringToConstant s
         Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Constant.") nullRange
@@ -76,10 +75,14 @@ stringToConstant :: String -> THFAs.Constant
 stringToConstant = A_Lower_Word . stringToLowerWord
 
 stringToLowerWord :: String -> Token
-stringToLowerWord = mkSimpleId . mapHead toLower
+stringToLowerWord = mkSimpleId . \ s -> case s of
+   c : r -> if isLower c then s else 'x' : c : r
+   "" -> ""
 
 stringToVariable :: String -> String
-stringToVariable = mapHead toUpper
+stringToVariable s = case s of
+   c : r -> if isUpper c then s else toUpper c : 'x' : r
+   "" -> ""
 
 transVarId :: Id -> Result Token
 transVarId id1 = case transToTHFString $ show id1 of
@@ -88,13 +91,20 @@ transVarId id1 = case transToTHFString $ show id1 of
             " into a THF valide Variable.") nullRange
 
 transToTHFString :: String -> Maybe String
-transToTHFString s = case s of
-    "" -> Just []
-    c : rc ->
+transToTHFString = transToTHFStringAux True
+
+transToTHFStringAux :: Bool -> String -> Maybe String
+transToTHFStringAux first s = case s of
+    "" -> Just ""
+    c : rc -> let
+      x = 'x' -- escape character
+      rest = transToTHFStringAux False rc
+      in
         if isTHFChar c
-        then fmap (c :) (transToTHFString rc)
+        then if first && isDigit c || c == x then fmap ([x, c] ++) rest else
+             fmap (c :) rest
         else case Map.lookup c charMap of
-            Just res -> fmap (res ++) (transToTHFString rc)
+            Just res -> fmap (res ++) rest
             Nothing  -> Nothing
 
 isTHFChar :: Char -> Bool
