@@ -73,9 +73,10 @@ instance Comorphism ExtModal2HasCASL
       (frames, sens) = partition (isFrameAx . sentence) allSens
       in case transSig sig sens of
       (mme, s) -> return
-        (mme, s ++ transFrames sig frames
-              ++ map (mapNamed $ toSen sig)
-                     (filter (not . isSortGen . sentence) sens))
+        (mme, map (\ (n, d) -> makeNamed n $ DatatypeSen [d])
+           [("natural numbers", natType), ("numbered worlds", worldType)]
+           ++ s ++ transFrames sig frames
+              ++ map (mapNamed $ toSen sig) sens)
     has_model_expansion ExtModal2HasCASL = True
     is_weakly_amalgamable ExtModal2HasCASL = True
 

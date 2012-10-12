@@ -99,9 +99,13 @@ transTheory (env, hcnsl) = do
   where
     fNSen :: IdConstantMap -> ([Named SentenceTHF], IdSet)
                 -> Named Sentence -> Result ([Named SentenceTHF], IdSet)
-    fNSen icm (nsl, ids) hcns = do
+    fNSen icm p@(nsl, ids) hcns = case sentence hcns of
+      Formula _ -> do
         (ns, nids) <- transNamedSentence (Just icm) ids env hcns
         return (ns : nsl, nids)
+      s -> do
+        warning () ("ignoring: " ++ showDoc hcns "") (getRange s)
+        return p
 
 -- Translation methods for the components a signature
 
@@ -302,12 +306,7 @@ transNamedSentence micm ids sig ns' = do
                         , senAttr = fromMaybe (error "THF.transNamedSentence")
                           $ transToTHFString (senAttr ns) }
                    , nids)
-        ProgEqSen {} ->
-            fatal_error "Programm equations are not supported."
-                            (getRange ns)
-        DatatypeSen _ ->
-            fatal_error "Data constructors are not allowed in THF0."
-                            (getRange ns)
+        _ -> error "Data types or program equations are not allowed in THF0."
 
 getFormulaRole :: Named HCLe.Sentence -> FormulaRole
 getFormulaRole ns =
