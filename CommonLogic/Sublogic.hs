@@ -78,7 +78,7 @@ sublogics_all :: [CommonLogicSL]
 sublogics_all =
    [ CommonLogicSL t c
    | t <- [minBound .. maxBound]
-   , c <- [False, True]
+   , c <- [True, False]
    ]
 
 {- ----------------------------------------------------------------------------
