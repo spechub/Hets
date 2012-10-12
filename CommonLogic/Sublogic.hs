@@ -44,6 +44,8 @@ module CommonLogic.Sublogic
     where
 
 import CommonLogic.Tools
+
+import Data.Function
 import qualified Data.Set as Set
 import qualified CommonLogic.AS_CommonLogic as AS
 import qualified Common.AS_Annotation as AS_Anno
@@ -59,9 +61,8 @@ datatypes                                                                 --
 data CLTextType =
     Propositional      -- ^ Text without quantifiers
   | FirstOrder         -- ^ Text in First Order Logic
-  | Compact            -- ^ Text beyond FOL, but without SeqMarks
   | FuncNoPred         -- ^ beyond Compact, but no function returns a predicate
-  | FullCommonLogic    -- ^ Text without any constraints
+  | Impredicative
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 -- for comparison of sublogics use the Ord instance
@@ -69,11 +70,16 @@ data CLTextType =
 -- | sublogics for CommonLogic
 data CommonLogicSL = CommonLogicSL
     { format :: CLTextType     -- Structural restrictions
-    } deriving (Show, Eq, Ord, Bounded)
+    , compact :: Bool
+    } deriving (Show, Eq, Ord)
 
 -- | all sublogics
 sublogics_all :: [CommonLogicSL]
-sublogics_all = map CommonLogicSL [minBound .. maxBound]
+sublogics_all =
+   [ CommonLogicSL t c
+   | t <- [minBound .. maxBound]
+   , c <- [False, True]
+   ]
 
 {- ----------------------------------------------------------------------------
 Special elements in the Lattice of logics                                --
@@ -81,30 +87,30 @@ Special elements in the Lattice of logics                                --
 
 -- | Greates sublogc: FullCommonLogic
 top :: CommonLogicSL
-top = maxBound
+top = CommonLogicSL maxBound False
 
 -- | Smallest sublogic: Propositional
 bottom :: CommonLogicSL
-bottom = minBound
+bottom = CommonLogicSL minBound True
 
 fullclsl :: CommonLogicSL
-fullclsl = CommonLogicSL {format = FullCommonLogic}
+fullclsl = top
 
 -- | FuncNoPred as Sublogic
 funcNoPredsl :: CommonLogicSL
-funcNoPredsl = CommonLogicSL {format = FuncNoPred}
+funcNoPredsl = top {format = FuncNoPred}
 
 -- | Compact as Sublogic
 compactsl :: CommonLogicSL
-compactsl = CommonLogicSL {format = Compact}
+compactsl = funcNoPredsl { compact = True }
 
 -- | FirstOrder as Sublogic
 folsl :: CommonLogicSL
-folsl = CommonLogicSL {format = FirstOrder}
+folsl = bottom {format = FirstOrder}
 
 -- | Propositional as Sublogic
 propsl :: CommonLogicSL
-propsl = CommonLogicSL {format = Propositional}
+propsl = bottom {format = Propositional}
 
 {- -----------------------------------------------------------------------------
 join and max                                                              --
@@ -112,7 +118,7 @@ join and max                                                              --
 
 -- | Yields the greater sublogic
 sublogics_max :: CommonLogicSL -> CommonLogicSL -> CommonLogicSL
-sublogics_max = max
+sublogics_max s1 s2 = CommonLogicSL (on max format s1 s2) (on min compact s1 s2)
 
 {- -----------------------------------------------------------------------------
 Helpers                                                                   --
@@ -232,7 +238,7 @@ sl_nameOrSeqmark :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME_OR_SEQMARK
 sl_nameOrSeqmark prds cs nos =
     case nos of
         AS.Name n -> sl_quantName prds cs n
-        AS.SeqMark _ -> funcNoPredsl
+        AS.SeqMark _ -> bottom { compact = False }
 
 {- | determines the sublogic for names which are next to a quantifier,
 given predicates of the super-text -}
@@ -266,7 +272,7 @@ sl_termSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM_SEQ -> CommonLogicSL
 sl_termSeq prds cs tseq =
     case tseq of
         AS.Term_seq t -> sl_termInSeq prds cs t
-        AS.Seq_marks _ -> funcNoPredsl
+        AS.Seq_marks _ -> bottom { compact = False }
 
 {- | determines the sublogic for names,
 given predicates of the super-text -}
@@ -310,11 +316,9 @@ Conversion functions to String                                            --
 -- | String representation of a Sublogic
 sublogics_name :: CommonLogicSL -> String
 sublogics_name f = case format f of
-                     Propositional -> "Propositional"
-                     FirstOrder -> "FOL"
-                     Compact -> "Compact"
                      FuncNoPred -> "FunctionsNotReturningPredicate"
-                     FullCommonLogic -> "FullCommonLogic"
+                     s -> show s
+                 ++ if compact f then "" else "Seq"
 
 {- -----------------------------------------------------------------------------
 Projections to sublogics                                                  --
@@ -326,7 +330,7 @@ prSymbolM _ = Just
 
 prSymItemsM :: CommonLogicSL -> AS.SYMB_ITEMS -> Maybe AS.SYMB_ITEMS
 prSymItemsM cs si@(AS.Symb_items noss r) = case format cs of
-  FullCommonLogic -> Just si
+  Impredicative -> Just si
   _ -> Just $ AS.Symb_items (filter isName noss) r
   where isName nos = case nos of
           AS.Name _ -> True
