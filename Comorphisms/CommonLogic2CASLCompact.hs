@@ -15,10 +15,9 @@ Translating comorphism from Common Logic
 -}
 
 module Comorphisms.CommonLogic2CASLCompact
-   (
-     CommonLogic2CASLCompact (..)
-   )
-   where
+  ( CommonLogic2CASLCompact (..)
+  , CLSub (..)
+  ) where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -55,9 +54,12 @@ import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 
-data CommonLogic2CASLCompact = CommonLogic2CASLCompact deriving Show
+data CLSub = Fol | Imp deriving Show
 
-instance Language CommonLogic2CASLCompact
+data CommonLogic2CASLCompact = CLCompact2CASL { fol :: CLSub } deriving Show
+
+instance Language CommonLogic2CASLCompact where
+  language_name (CLCompact2CASL b) = "CommonLogic" ++ show b ++ "2CASLCompact"
 
 instance Comorphism
     CommonLogic2CASLCompact -- comorphism
@@ -84,14 +86,16 @@ instance Comorphism
     CMor.RawSymbol          -- rawsymbol codomain
     ProofTree               -- proof tree domain
     where
-      sourceLogic CommonLogic2CASLCompact = ClLogic.CommonLogic
-      sourceSublogic CommonLogic2CASLCompact = ClSl.folsl
-      targetLogic CommonLogic2CASLCompact = CLogic.CASL
-      mapSublogic CommonLogic2CASLCompact = Just . mapSub
-      map_theory CommonLogic2CASLCompact = mapTheory
-      map_morphism CommonLogic2CASLCompact = mapMor
-      map_sentence CommonLogic2CASLCompact = mapSentence
-      has_model_expansion CommonLogic2CASLCompact = True
+      sourceLogic (CLCompact2CASL b) = ClLogic.CommonLogic
+      sourceSublogic (CLCompact2CASL b) = case b of
+        Fol -> ClSl.folsl
+        Imp -> ClSl.top { ClSl.compact = True }
+      targetLogic (CLCompact2CASL _) = CLogic.CASL
+      mapSublogic (CLCompact2CASL _) = Just . mapSub
+      map_theory (CLCompact2CASL b) = mapTheory b
+      map_morphism (CLCompact2CASL _) = mapMor
+      map_sentence (CLCompact2CASL b) = mapSentence b
+      has_model_expansion (CLCompact2CASL _) = True
 
 data Q_TYPE = Universal | Existential deriving (Eq, Ord, Show)
 data PredOrFunc = Pred | Func deriving (Eq, Ord, Show)
@@ -153,11 +157,11 @@ trMor mp =
       mp
 
 -- |
-mapTheory :: (ClSign.Sign, [AS_Anno.Named Cl.TEXT_META])
+mapTheory :: CLSub -> (ClSign.Sign, [AS_Anno.Named Cl.TEXT_META])
               -> Result (CSign.CASLSign, [AS_Anno.Named CBasic.CASLFORMULA])
-mapTheory (sig, form) = do
+mapTheory b (sig, form) = do
   ti <- fmap unionsTI $ mapM (collectTextInfo . AS_Anno.sentence) form
-  frm <- mapM trNamedForm form
+  frm <- mapM (trNamedForm b) form
   return (mapSig ti sig, frm)
 
 mapSig :: TextInfo -> ClSign.Sign -> CSign.CASLSign
@@ -196,16 +200,16 @@ caslSig = (CSign.emptySign ())
 individual :: Id.Id
 individual = Id.stringToId "individual"
 
-trNamedForm :: AS_Anno.Named Cl.TEXT_META
+trNamedForm :: CLSub -> AS_Anno.Named Cl.TEXT_META
             -> Result (AS_Anno.Named CBasic.CASLFORMULA)
-trNamedForm = AS_Anno.mapNamedM $ trFormMeta . eliminateModules
+trNamedForm b = AS_Anno.mapNamedM $ trFormMeta b . eliminateModules
 
-mapSentence :: ClSign.Sign -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
-mapSentence _ = trFormMeta . eliminateModules
+mapSentence :: CLSub -> ClSign.Sign -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
+mapSentence b _ = trFormMeta b . eliminateModules
 
 -- ignores importations
-trFormMeta :: Cl.TEXT_META -> Result CBasic.CASLFORMULA
-trFormMeta tm = trForm $ Cl.getText tm
+trFormMeta :: CLSub -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
+trFormMeta _ tm = trForm $ Cl.getText tm
 
 trForm :: Cl.TEXT -> Result CBasic.CASLFORMULA
 trForm form =
