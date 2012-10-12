@@ -24,6 +24,7 @@ import Logic.Logic as Logic
 import Logic.Comorphism
 
 import Common.ProofTree
+import Common.Token
 import Common.Result
 import Common.AS_Annotation as AS_Anno
 import Common.Lib.MapSet (MapSet)
@@ -317,7 +318,8 @@ termForm :: Set.Set Cl.NAME -> Cl.TERM -> Result (CBasic.TERM a)
 termForm bndVars trm = case trm of
   Cl.Name_term n ->
       if Set.member n bndVars
-      then return $ CBasic.Qual_var n individual Id.nullRange
+      then return $ CBasic.Qual_var (Id.mkSimpleId $ tok2Str n)
+        individual Id.nullRange
       else do
         trmFA <- termFormApp trm 0
         return $ CBasic.Application trmFA [] Id.nullRange
@@ -331,14 +333,14 @@ termForm bndVars trm = case trm of
 termFormApp :: Cl.TERM -> Int -> Result CBasic.OP_SYMB
 termFormApp trm ar = case trm of
   Cl.Name_term n ->
-      return $ CBasic.Qual_op_name (Id.mkId [n]) (opType ar) Id.nullRange
+      return $ CBasic.Qual_op_name (tok2Id n) (opType ar) Id.nullRange
   Cl.Comment_term t _ _ -> termFormApp t ar
   _ -> fail errCurriedFunctionS
 
 termFormPrd :: Cl.TERM -> Int -> Result CBasic.PRED_SYMB
 termFormPrd trm ar = case trm of
   Cl.Name_term n ->
-      return $ CBasic.Qual_pred_name (Id.mkId [n]) (predType ar) Id.nullRange
+      return $ CBasic.Qual_pred_name (tok2Id n) (predType ar) Id.nullRange
   Cl.Comment_term t _ _ -> termFormPrd t ar
   Cl.Funct_term {} -> fail $ errFunctionReturnedPredicateS trm
   Cl.That_term {} -> fail "CommonLogic2CASLCompact.termFormPrd"
@@ -350,11 +352,18 @@ termSeqForm bndVars tseq = case tseq of
 
 bindingSeq :: Cl.NAME_OR_SEQMARK -> Result CBasic.VAR
 bindingSeq bs = case bs of
-  Cl.Name n -> return n
+  Cl.Name n -> return . Id.mkSimpleId $ tok2Str n
   Cl.SeqMark s -> fail $ errSeqMark s
 
 collectTextInfo :: Cl.TEXT_META -> Result TextInfo
 collectTextInfo tm = colTiTxt $ Cl.getText tm
+
+tok2Id :: Id.Token -> Id.Id
+tok2Id = Id.stringToId . tok2Str
+
+tok2Str :: Id.Token -> String
+tok2Str t = let s = Id.tokStr t in
+  if elem s casl_reserved_fwords then "x_" ++ s else s
 
 colTiTxt :: Cl.TEXT -> Result TextInfo
 colTiTxt txt = case txt of
@@ -396,18 +405,18 @@ colTiSen sen = case sen of
 
 nosStrnig :: Cl.NAME_OR_SEQMARK -> Result String
 nosStrnig nos = case nos of
-  Cl.Name n -> return $ Id.tokStr n
+  Cl.Name n -> return $ tok2Str n
   Cl.SeqMark s -> fail $ errSeqMark s
 
 colTiTrmVar :: Cl.TERM -> Result TextInfo
 colTiTrmVar trm = case trm of
-  Cl.Name_term n -> return $ emptyTI {vars = Set.singleton (Id.tokStr n)}
+  Cl.Name_term n -> return $ emptyTI {vars = Set.singleton (tok2Str n)}
   Cl.Comment_term t _ _ -> colTiTrmVar t
   _ -> colTiTrm $ uncurryTerm trm
 
 colTiTrmProp :: Cl.TERM -> Result TextInfo
 colTiTrmProp trm = case trm of
-  Cl.Name_term n -> return $ emptyTI {props = Set.singleton (Id.tokStr n)}
+  Cl.Name_term n -> return $ emptyTI {props = Set.singleton (tok2Str n)}
   Cl.Comment_term t _ _ -> colTiTrmProp t
   _ -> colTiTrm $ uncurryTerm trm
 
@@ -430,9 +439,9 @@ colTiAddArity ty trm tseqs = case trm of
       return $ unionsTI
              $ ( if ty == Pred
                   then emptyTI { arityPred = MapSet.insert
-                                  (Id.tokStr n) (length tseqs) MapSet.empty}
+                                  (tok2Str n) (length tseqs) MapSet.empty}
                   else emptyTI { arityFunc = MapSet.insert
-                                  (Id.tokStr n) (length tseqs) MapSet.empty}
+                                  (tok2Str n) (length tseqs) MapSet.empty}
                   ) : cti
   Cl.Funct_term {} -> colTiTrm $ uncurryTerm trm -- FIX predicate "(f x) y"
   Cl.Comment_term t _ _ -> colTiAddArity ty t tseqs
