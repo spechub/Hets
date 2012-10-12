@@ -174,12 +174,12 @@ mapSig b ti =
         ) MapSet.empty (props ti)
       isFol = b == Fol
       aF = arityFunc ti
-      collM n f = MapSet.union (MapSet.mapSet (const $ Set.singleton 1) f)
-        . MapSet.fromMap . Map.singleton n . Set.map (+ 1)
-        $ MapSet.elems f
+      collM n = MapSet.fromMap . Map.singleton n . Set.map (+ 1) . MapSet.elems
       opMap = MapSet.foldWithKey (\ n ar ops ->
           MapSet.insert (Id.stringToId n) (opTypeSign ar) ops
-        ) MapSet.empty $ if isFol then aF else collM "fun" aF
+        ) MapSet.empty $ if isFol then aF else
+              MapSet.union (MapSet.mapSet (const $ Set.singleton 0) aF)
+              $ collM "fun" aF
       aP = arityPred ti
       predMap = MapSet.foldWithKey (\ n ar preds ->
           MapSet.insert (Id.stringToId n) (predTypeSign ar) preds
