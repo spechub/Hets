@@ -143,10 +143,11 @@ trMor :: Map.Map Id.Id Id.Id -> Map.Map (Id.Id, CSign.PredType) Id.Id
 trMor mp =
     let
         pt = CSign.PredType {CSign.predArgs = []}
+        id2Id = tok2Id . Id.mkSimpleId . show
     in
       Map.foldWithKey
              (\ k a ->
-              Map.insert (k, pt) a
+              Map.insert (id2Id k, pt) $ id2Id a
              )
       Map.empty
       mp
