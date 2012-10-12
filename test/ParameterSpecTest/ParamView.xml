@@ -1,5 +1,5 @@
 <?xml version='1.0' ?>
-<DGraph filename="ParamView" libname="ParamView" nextlinkid="18">
+<DGraph filename="ParamView" libname="ParamView" dgnodes="12" dgedges="18" nextlinkid="18">
   <DGNode name="s__IU1" logic="CASL" refname="s" relxpath="/Imports/Union/Spec[1]">
     <Declarations>
       <Symbol kind="sort" name="i" range="ParamView:3.29">sort i</Symbol>
