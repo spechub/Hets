@@ -178,7 +178,8 @@ mapSig b ti =
       opMap = MapSet.foldWithKey (\ n ar ops ->
           MapSet.insert (Id.stringToId n) (opTypeSign ar) ops
         ) MapSet.empty $ if isFol then aF else
-              MapSet.union (MapSet.mapSet (const $ Set.singleton 0) aF)
+              MapSet.union (MapSet.mapSet (const $ Set.singleton 0)
+                            $ MapSet.union aF aP)
               $ collM "fun" aF
       aP = arityPred ti
       predMap = MapSet.foldWithKey (\ n ar preds ->
