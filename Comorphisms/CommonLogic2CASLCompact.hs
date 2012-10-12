@@ -56,8 +56,7 @@ import qualified CASL.Morphism as CMor
 
 data CommonLogic2CASLCompact = CommonLogic2CASLCompact deriving Show
 
-instance Language CommonLogic2CASLCompact where
-  language_name CommonLogic2CASLCompact = "CommonLogic2CASLCompact"
+instance Language CommonLogic2CASLCompact
 
 instance Comorphism
     CommonLogic2CASLCompact -- comorphism
@@ -85,7 +84,7 @@ instance Comorphism
     ProofTree               -- proof tree domain
     where
       sourceLogic CommonLogic2CASLCompact = ClLogic.CommonLogic
-      sourceSublogic CommonLogic2CASLCompact = ClSl.compactsl
+      sourceSublogic CommonLogic2CASLCompact = ClSl.folsl
       targetLogic CommonLogic2CASLCompact = CLogic.CASL
       mapSublogic CommonLogic2CASLCompact = Just . mapSub
       map_theory CommonLogic2CASLCompact = mapTheory
@@ -155,9 +154,7 @@ trMor mp =
 mapTheory :: (ClSign.Sign, [AS_Anno.Named Cl.TEXT_META])
               -> Result (CSign.CASLSign, [AS_Anno.Named CBasic.CASLFORMULA])
 mapTheory (sig, form) = do
-  ti <- do
-    cti <- mapM (collectTextInfo . AS_Anno.sentence) form
-    return $ unionsTI cti
+  ti <- fmap unionsTI $ mapM (collectTextInfo . AS_Anno.sentence) form
   frm <- mapM trNamedForm form
   return (mapSig ti sig, frm)
 
@@ -192,7 +189,7 @@ predTypeSign ar = CSign.PredType {CSign.predArgs = replicate ar individual}
 -- | setting casl sign: sorts, cons, fun, nil, pred
 caslSig :: CSign.CASLSign
 caslSig = (CSign.emptySign ())
-               { CSign.sortRel = Rel.fromKeysSet $ Set.fromList [individual] }
+               { CSign.sortRel = Rel.insertKey individual Rel.empty }
 
 individual :: Id.Id
 individual = Id.stringToId "individual"
