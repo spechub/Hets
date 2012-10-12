@@ -54,7 +54,7 @@ import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 
-data CLSub = Fol | Imp deriving Show
+data CLSub = Fol | Imp deriving (Show, Eq)
 
 data CommonLogic2CASLCompact = CLCompact2CASL { fol :: CLSub } deriving Show
 
@@ -86,14 +86,14 @@ instance Comorphism
     CMor.RawSymbol          -- rawsymbol codomain
     ProofTree               -- proof tree domain
     where
-      sourceLogic (CLCompact2CASL b) = ClLogic.CommonLogic
+      sourceLogic (CLCompact2CASL _) = ClLogic.CommonLogic
       sourceSublogic (CLCompact2CASL b) = case b of
         Fol -> ClSl.folsl
         Imp -> ClSl.top { ClSl.compact = True }
       targetLogic (CLCompact2CASL _) = CLogic.CASL
       mapSublogic (CLCompact2CASL _) = Just . mapSub
       map_theory (CLCompact2CASL b) = mapTheory b
-      map_morphism (CLCompact2CASL _) = mapMor
+      map_morphism (CLCompact2CASL b) = mapMor b
       map_sentence (CLCompact2CASL b) = mapSentence b
       has_model_expansion (CLCompact2CASL _) = True
 
@@ -137,9 +137,9 @@ mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
 mapSub _ = CSL.cFol
         { CSL.cons_features = CSL.emptyMapConsFeature }
 
-mapMor :: ClMor.Morphism -> Result CMor.CASLMor
-mapMor mor = Result [] $ Just (CMor.embedMorphism ()
-  (mapSig emptyTI $ ClMor.source mor) $ mapSig emptyTI $ ClMor.target mor)
+mapMor :: CLSub -> ClMor.Morphism -> Result CMor.CASLMor
+mapMor b mor = return (CMor.embedMorphism ()
+  (mapSig b emptyTI) $ mapSig b emptyTI)
   { CMor.pred_map = trMor $ ClMor.propMap mor }
 
 -- | Helper for map mor
@@ -159,25 +159,31 @@ trMor mp =
 -- |
 mapTheory :: CLSub -> (ClSign.Sign, [AS_Anno.Named Cl.TEXT_META])
               -> Result (CSign.CASLSign, [AS_Anno.Named CBasic.CASLFORMULA])
-mapTheory b (sig, form) = do
+mapTheory b (_, form) = do
   ti <- fmap unionsTI $ mapM (collectTextInfo . AS_Anno.sentence) form
   frm <- mapM (trNamedForm b) form
-  return (mapSig ti sig, frm)
+  return (mapSig b ti, frm)
 
-mapSig :: TextInfo -> ClSign.Sign -> CSign.CASLSign
-mapSig ti _ =
+mapSig :: CLSub -> TextInfo -> CSign.CASLSign
+mapSig b ti =
   let constOpMap = Set.fold (\ n res ->
           MapSet.insert (Id.stringToId n) (opTypeSign 0) res
         ) MapSet.empty (vars ti)
       constPredMap = Set.fold (\ n res ->
           MapSet.insert (Id.stringToId n) (predTypeSign 0) res
         ) MapSet.empty (props ti)
+      isFol = b == Fol
+      aF = arityFunc ti
+      collM n f = MapSet.union (MapSet.mapSet (const $ Set.singleton 1) f)
+        . MapSet.fromMap . Map.singleton n . Set.map (+ 1)
+        $ MapSet.elems f
       opMap = MapSet.foldWithKey (\ n ar ops ->
           MapSet.insert (Id.stringToId n) (opTypeSign ar) ops
-        ) MapSet.empty (arityFunc ti)
+        ) MapSet.empty $ if isFol then aF else collM "fun" aF
+      aP = arityPred ti
       predMap = MapSet.foldWithKey (\ n ar preds ->
           MapSet.insert (Id.stringToId n) (predTypeSign ar) preds
-        ) MapSet.empty (arityPred ti)
+        ) MapSet.empty $ if isFol then aP else collM "rel" aP
   in CSign.uniteCASLSign (
           (CSign.emptySign ()) {
               CSign.opMap = MapSet.union constOpMap opMap
