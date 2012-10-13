@@ -99,39 +99,28 @@ instance Comorphism
 
 data Q_TYPE = Universal | Existential deriving (Eq, Ord, Show)
 data PredOrFunc = Pred | Func deriving (Eq, Ord, Show)
-data TextInfo = TextInfo {
-    vars :: Set.Set String
-  , props :: Set.Set String
-  , arityPred :: MapSet String Int
+data TextInfo = TextInfo
+  { arityPred :: MapSet String Int
   , arityFunc :: MapSet String Int
   } deriving Show
 
 emptyTI :: TextInfo
-emptyTI = TextInfo { vars = Set.empty
-                   , props = Set.empty
-                   , arityPred = MapSet.empty
-                   , arityFunc = MapSet.empty
-                   }
+emptyTI = TextInfo
+  { arityPred = MapSet.empty
+  , arityFunc = MapSet.empty
+  }
 
 unionTI :: TextInfo -> TextInfo -> TextInfo
-unionTI s t = TextInfo { vars = on Set.union vars s t
-                       , props = on Set.union props s t
-                       , arityPred = on MapSet.union arityPred s t
-                       , arityFunc = on MapSet.union arityFunc s t
-                       }
+unionTI s t = TextInfo
+  { arityPred = on MapSet.union arityPred s t
+  , arityFunc = on MapSet.union arityFunc s t
+  }
 
 unionsTI :: [TextInfo] -> TextInfo
 unionsTI = foldr unionTI emptyTI
 
 removeFromTI :: String -> TextInfo -> TextInfo
-removeFromTI n ti = ti { vars = Set.delete n $ vars ti
-                       , props = Set.delete n $ props ti
-                       , arityPred = MapSet.fromMap $
-                                      Map.delete n $ MapSet.toMap $ arityPred ti
-                       , arityFunc = MapSet.fromMap $
-                                      Map.delete n $ MapSet.toMap $ arityFunc ti
-                       }
-
+removeFromTI n ti = ti { arityFunc = MapSet.delete n 0 $ arityFunc ti }
 
 mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
 mapSub _ = CSL.cFol
@@ -173,13 +162,7 @@ relS = "rel"
 
 mapSig :: CLSub -> TextInfo -> CSign.CASLSign
 mapSig b ti =
-  let constOpMap = Set.fold (\ n res ->
-          MapSet.insert (Id.stringToId n) (opTypeSign 0) res
-        ) MapSet.empty (vars ti)
-      constPredMap = Set.fold (\ n res ->
-          MapSet.insert (Id.stringToId n) (predTypeSign 0) res
-        ) MapSet.empty (props ti)
-      isFol = b == Fol
+  let isFol = b == Fol
       aF = arityFunc ti
       collM n = MapSet.fromMap . Map.singleton n . Set.map (+ 1) . MapSet.elems
       opMap = MapSet.foldWithKey (\ n ar ops ->
@@ -194,8 +177,8 @@ mapSig b ti =
         ) MapSet.empty $ if isFol then aP else collM relS aP
   in CSign.uniteCASLSign (
           (CSign.emptySign ()) {
-              CSign.opMap = MapSet.union constOpMap opMap
-            , CSign.predMap = MapSet.union constPredMap predMap
+              CSign.opMap = opMap
+            , CSign.predMap = predMap
             }
         ) caslSig
 
@@ -298,17 +281,20 @@ quantSentForm :: CLSub -> Q_TYPE -> Id.Range -> Set.Set Cl.NAME
 quantSentForm b qt rn bndVars bs sen = do
   ti <- colTiSen sen
   bSs <- mapM nosStrnig bs
-  let (predSs, opsVars) = partition
-          (\ n -> Map.member n $ MapSet.toMap $ arityPred ti) bSs
+  let aF = arityFunc ti
+      aP = arityPred ti
+      (predSs, opsVars) = partition
+          (\ n -> Map.member n $ MapSet.toMap aP) bSs
       (opSs, predsVars) = partition
-          (\ n -> Map.member n $ MapSet.toMap $ arityFunc ti) bSs
+          (\ n -> Map.member n $ MapSet.toMap
+          $ MapSet.filter (/= 0) aF) bSs
       isImp = b == Imp
       vs = map (Cl.Name . Id.mkSimpleId)
         $ if isImp then bSs else intersect opsVars predsVars
       preds = if isImp then MapSet.empty else
-        MapSet.filterWithKey (\ s _ -> elem s predSs) $ arityPred ti
+        MapSet.filterWithKey (\ s _ -> elem s predSs) aP
       ops = if isImp then MapSet.empty else
-        MapSet.filterWithKey (\ s _ -> elem s opSs) $ arityFunc ti
+        MapSet.filterWithKey (\ s _ -> elem s opSs) aF
       quantifier = case qt of
           Universal -> CBasic.Universal
           Existential -> CBasic.Existential
@@ -449,13 +435,15 @@ nosStrnig nos = case nos of
 
 colTiTrmVar :: Cl.TERM -> Result TextInfo
 colTiTrmVar trm = case trm of
-  Cl.Name_term n -> return $ emptyTI {vars = Set.singleton (tok2Str n)}
+  Cl.Name_term n -> return $ emptyTI
+    { arityFunc = MapSet.insert (tok2Str n) 0 MapSet.empty }
   Cl.Comment_term t _ _ -> colTiTrmVar t
   _ -> colTiTrm $ uncurryTerm trm
 
 colTiTrmProp :: Cl.TERM -> Result TextInfo
 colTiTrmProp trm = case trm of
-  Cl.Name_term n -> return $ emptyTI {props = Set.singleton (tok2Str n)}
+  Cl.Name_term n -> return $ emptyTI
+    { arityPred = MapSet.insert (tok2Str n) 0 MapSet.empty }
   Cl.Comment_term t _ _ -> colTiTrmProp t
   _ -> colTiTrm $ uncurryTerm trm
 
