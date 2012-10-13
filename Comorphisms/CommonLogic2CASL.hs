@@ -122,9 +122,13 @@ mapTheory (sig, form) = return
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
-               CSign.opMap = Set.fold (\ x -> MapSet.insert x
+               CSign.opMap = MapSet.union 
+                               (Set.fold (\ x -> MapSet.insert x
                                 $ CSign.mkTotOpType [] individual)
-                                MapSet.empty $ ClSign.allItems sign
+                                MapSet.empty $ ClSign.discourseNames sign)
+                               (Set.fold (\ x -> MapSet.insert x
+                                $ CSign.mkTotOpType [] Predefined.list)
+                                MapSet.empty $ ClSign.sequenceMarkers sign)
                }) Predefined.caslSig
 
 trNamedForm :: ClSign.Sign -> AS_Anno.Named ClBasic.TEXT_META
