@@ -374,8 +374,10 @@ tok2Id :: Id.Token -> Id.Id
 tok2Id = Id.stringToId . tok2Str
 
 tok2Str :: Id.Token -> String
-tok2Str t = let s = Id.tokStr t in
-  if elem s casl_reserved_fwords then "x_" ++ s else s
+tok2Str t = let
+  s = concatMap (\ c -> if c == 'x' then [c, c] else [c])
+    $ Id.tokStr t
+  in if elem s casl_reserved_fwords then "x_" ++ s else s
 
 colTiTxt :: Cl.TEXT -> Result TextInfo
 colTiTxt txt = case txt of
