@@ -716,7 +716,7 @@ variable :: CharParser st Token
 variable = parseToken
   (do
     u <- upper
-    an <- many alphaNum
+    an <- many (alphaNum <|> char '_')
     skipAll
     return (u : an)
    <?> "Variable")
