@@ -85,9 +85,9 @@ prodToMapType :: TransMap -> Type -> Type -> Type
 prodToMapType m t1 t2 = case t1 of
  MapType _ _ -> MapType (curryConstType m t1) t2
  ProdType ts -> let ts' = map (curryConstType m) ts
-                in foldl (\t1' t2' -> MapType t2' t1') t2 ts'
+                in foldl (\t1' t2' -> MapType t2' t1') t2 (reverse ts')
  CType c     -> let cs = map CType $ curryConst m c
-                in foldl (\t1' t2' -> MapType t2' t1') t2 cs
+                in foldl (\t1' t2' -> MapType t2' t1') t2 (reverse cs)
  ParType t   -> prodToMapType m t t2
  _           -> MapType t1 t2
  
