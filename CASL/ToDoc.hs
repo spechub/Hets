@@ -410,11 +410,11 @@ printRecord = Record
         in if b then text "%% free" $+$ genAx else genAx
     , foldQuantOp = \ _ o n r -> fsep
         [ forallDoc
-        , printOpSymb $ Qual_op_name o n nullRange
+        , parens . printOpSymb $ mkQualOp o n
         , addBullet r ]
     , foldQuantPred = \ _ p n r -> fsep
         [ forallDoc
-        , printPredSymb $ Qual_pred_name p n nullRange
+        , printPredSymb $ mkQualPred p n
         , addBullet r ]
     , foldExtFORMULA = const pretty
     , foldQual_var = \ _ v s _ ->
