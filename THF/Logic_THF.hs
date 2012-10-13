@@ -94,50 +94,50 @@ instance Logic THF SL.THFSl BasicSpecTHF SentenceTHF () ()
 
 instance SemiLatticeWithTop SL.THFSl where
  join = SL.join
- top = SL.THF
+ top = SL.tHF
 
 instance MinSublogic SL.THFSl BasicSpecTHF where
- minSublogic (BasicSpecTHF xs) = foldr SL.join SL.THF0 $
+ minSublogic (BasicSpecTHF xs) = foldr SL.join SL.tHF0 $
     map (\x -> case x of
      TPTP_THF_Annotated_Formula _ _ f _ -> minSublogic f
-     _ -> SL.THF0
+     _ -> SL.tHF0
     ) xs
 
 instance SublogicName SL.THFSl where
  sublogicName = show
 
 instance MinSublogic SL.THFSl SymbolTHF where
- minSublogic = \ _ -> SL.THF0 --actually implement this!
+ minSublogic = \ _ -> SL.tHF0 --actually implement this!
 
 instance MinSublogic SL.THFSl () where
- minSublogic _ = SL.THF0
+ minSublogic _ = SL.tHF0
 
 instance MinSublogic SL.THFSl SignTHF where
  minSublogic (Sign tp c _) = join (Data.Map.fold
    (\t sl -> join sl $ minSublogic $ typeKind t)
-   SL.THF0 tp)
+   SL.tHF0 tp)
   (Data.Map.fold
    (\cs sl -> join sl $ minSublogic $ constType cs)
-   SL.THF0 c)
+   SL.tHF0 c)
 
 instance MinSublogic SL.THFSl Type where
- minSublogic (ProdType tps) = foldr SL.join SL.THFP $ map minSublogic tps
- minSublogic TType = SL.THF0
- minSublogic OType = SL.THF0
- minSublogic IType = SL.THF0
+ minSublogic (ProdType tps) = foldr SL.join SL.tHFP $ map minSublogic tps
+ minSublogic TType = SL.tHF0
+ minSublogic OType = SL.tHF0
+ minSublogic IType = SL.tHF0
  minSublogic (MapType t1 t2) = SL.join (minSublogic t1) (minSublogic t2)
- minSublogic (CType _) = SL.THF0
- minSublogic (SType _) = SL.THF0
- minSublogic (VType _) = SL.THF0
+ minSublogic (CType _) = SL.tHF0
+ minSublogic (SType _) = SL.tHF0
+ minSublogic (VType _) = SL.tHF0
  minSublogic (ParType t) = minSublogic t
 
 instance MinSublogic SL.THFSl Kind where
- minSublogic Kind = SL.THF0
- minSublogic (MapKind k1 k2) = join SL.THF0 $
+ minSublogic Kind = SL.tHF0
+ minSublogic (MapKind k1 k2) = join SL.tHF0 $
                                join (minSublogic k1) (minSublogic k2)
- minSublogic (ProdKind us) = foldr SL.join SL.THFP $ map minSublogic us
- minSublogic (SysType _) = SL.THF0
- minSublogic (VKind _) = SL.THF0
+ minSublogic (ProdKind us) = foldr SL.join SL.tHFP $ map minSublogic us
+ minSublogic (SysType _) = SL.tHF0
+ minSublogic (VKind _) = SL.tHF0
  minSublogic (ParKind k) = minSublogic k
 
 instance MinSublogic SL.THFSl MorphismTHF where

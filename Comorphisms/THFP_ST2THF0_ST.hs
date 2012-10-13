@@ -12,7 +12,7 @@ Portability :  non-portable (imports Logic.Logic)
 The comorphism from THFP to THF0.
 -}
 
-module Comorphisms.THFP2THF0 where
+module Comorphisms.THFP_ST2THF0_ST where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -31,23 +31,23 @@ import THF.StaticAnalysisTHF (thfTopLevelTypeToType)
 
 import qualified Data.Map as Map
 
-data THFP2THF0 = THFP2THF0 deriving Show
+data THFP_ST2THF0_ST = THFP_ST2THF0_ST deriving Show
 
-instance Language THFP2THF0
+instance Language THFP_ST2THF0_ST
 
-instance Comorphism THFP2THF0
+instance Comorphism THFP_ST2THF0_ST
                 THF SL.THFSl
                 BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree
                 THF SL.THFSl
                 BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
-    sourceLogic THFP2THF0 = THF
-    sourceSublogic THFP2THF0 = SL.THFP
-    targetLogic THFP2THF0 = THF
-    mapSublogic THFP2THF0 _ = Just SL.THF0
-    map_theory THFP2THF0 = trans_theory
-    has_model_expansion THFP2THF0 = True
+    sourceLogic THFP_ST2THF0_ST = THF
+    sourceSublogic THFP_ST2THF0_ST = SL.tHFP_ST
+    targetLogic THFP_ST2THF0_ST = THF
+    mapSublogic THFP_ST2THF0_ST _ = Just SL.tHF0_ST
+    map_theory THFP_ST2THF0_ST = trans_theory
+    has_model_expansion THFP_ST2THF0_ST = True
 
 trans_theory :: (SignTHF,[Named SentenceTHF])
                 -> Result (SignTHF,[Named SentenceTHF])

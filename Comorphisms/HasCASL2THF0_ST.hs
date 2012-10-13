@@ -9,10 +9,10 @@ Maintainer  :  Alexis.Tsogias@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-The embedding comorphism from HasCASL to THF0.
+The embedding comorphism from HasCASL to THF0_ST.
 -}
 
-module Comorphisms.HasCASL2THF0 where
+module Comorphisms.HasCASL2THF0_ST where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -51,25 +51,25 @@ import Data.Maybe
 -- Question: are the remaining symbol variants translatable?
 
 -- | The identity of the comorphism
-data HasCASL2THF0 = HasCASL2THF0 deriving Show
+data HasCASL2THF0_ST = HasCASL2THF0_ST deriving Show
 
-instance Language HasCASL2THF0
+instance Language HasCASL2THF0_ST
 
-instance Comorphism HasCASL2THF0
+instance Comorphism HasCASL2THF0_ST
                 HasCASL Sublogic
                 BasicSpec Sentence SymbItems SymbMapItems
                 Env Morphism Symbol RawSymbol ()
                 THF SL.THFSl
                 BasicSpecTHF SentenceTHF () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
-    sourceLogic HasCASL2THF0 = HasCASL
-    sourceSublogic HasCASL2THF0 = reqSubLogicForTHF0 -- topLogic
-    targetLogic HasCASL2THF0 = THF
-    mapSublogic HasCASL2THF0 _ = Just SL.THF0
-    map_theory HasCASL2THF0 = transTheory
-    map_symbol HasCASL2THF0 = transSymbol
-    -- isInclusionComorphism HasCASL2THF0 = True
-    has_model_expansion HasCASL2THF0 = True
+    sourceLogic HasCASL2THF0_ST = HasCASL
+    sourceSublogic HasCASL2THF0_ST = reqSubLogicForTHF0 -- topLogic
+    targetLogic HasCASL2THF0_ST = THF
+    mapSublogic HasCASL2THF0_ST _ = Just SL.tHF0_ST
+    map_theory HasCASL2THF0_ST = transTheory
+    map_symbol HasCASL2THF0_ST = transSymbol
+    -- isInclusionComorphism HasCASL2THF0_ST = True
+    has_model_expansion HasCASL2THF0_ST = True
 
 reqSubLogicForTHF0 :: Sublogic
 reqSubLogicForTHF0 = Sublogic
