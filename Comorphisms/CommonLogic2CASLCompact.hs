@@ -102,25 +102,35 @@ data PredOrFunc = Pred | Func deriving (Eq, Ord, Show)
 data TextInfo = TextInfo
   { arityPred :: MapSet String Int
   , arityFunc :: MapSet String Int
+  , boundPred :: MapSet String Int
+  , boundFunc :: MapSet String Int
   } deriving Show
 
 emptyTI :: TextInfo
 emptyTI = TextInfo
   { arityPred = MapSet.empty
   , arityFunc = MapSet.empty
+  , boundPred = MapSet.empty
+  , boundFunc = MapSet.empty
   }
 
 unionTI :: TextInfo -> TextInfo -> TextInfo
 unionTI s t = TextInfo
   { arityPred = on MapSet.union arityPred s t
   , arityFunc = on MapSet.union arityFunc s t
+  , boundPred = on MapSet.union boundPred s t
+  , boundFunc = on MapSet.union boundFunc s t
   }
 
 unionsTI :: [TextInfo] -> TextInfo
 unionsTI = foldr unionTI emptyTI
 
 removeFromTI :: String -> TextInfo -> TextInfo
-removeFromTI n ti = ti { arityFunc = MapSet.delete n 0 $ arityFunc ti }
+removeFromTI n ti = let deln = MapSet.fromMap . Map.delete n . MapSet.toMap in
+  ti
+  { arityPred = deln $ arityPred ti
+  , arityFunc = deln $ arityFunc ti
+  }
 
 mapSub :: ClSl.CommonLogicSL -> CSL.CASL_Sublogics
 mapSub _ = CSL.cFol
@@ -170,11 +180,11 @@ mapSig b ti =
         ) MapSet.empty $ if isFol then aF else
               MapSet.union (MapSet.mapSet (const $ Set.singleton 0)
                             $ MapSet.union aF aP)
-              $ collM funS aF
+              $ collM funS $ boundFunc ti
       aP = arityPred ti
       predMap = MapSet.foldWithKey (\ n ar preds ->
           MapSet.insert (Id.stringToId n) (predTypeSign ar) preds
-        ) MapSet.empty $ if isFol then aP else collM relS aP
+        ) MapSet.empty $ if isFol then aP else collM relS $ boundPred ti
   in CSign.uniteCASLSign (
           (CSign.emptySign ()) {
               CSign.opMap = opMap
@@ -435,15 +445,19 @@ nosStrnig nos = case nos of
 
 colTiTrmVar :: Cl.TERM -> Result TextInfo
 colTiTrmVar trm = case trm of
-  Cl.Name_term n -> return $ emptyTI
-    { arityFunc = MapSet.insert (tok2Str n) 0 MapSet.empty }
+  Cl.Name_term n -> let m = MapSet.insert (tok2Str n) 0 MapSet.empty in
+    return $ emptyTI
+      { arityFunc = m
+      , boundFunc = m }
   Cl.Comment_term t _ _ -> colTiTrmVar t
   _ -> colTiTrm $ uncurryTerm trm
 
 colTiTrmProp :: Cl.TERM -> Result TextInfo
 colTiTrmProp trm = case trm of
-  Cl.Name_term n -> return $ emptyTI
-    { arityPred = MapSet.insert (tok2Str n) 0 MapSet.empty }
+  Cl.Name_term n -> let m = MapSet.insert (tok2Str n) 0 MapSet.empty in
+    return $ emptyTI
+    { arityPred = m
+    , boundPred = m }
   Cl.Comment_term t _ _ -> colTiTrmProp t
   _ -> colTiTrm $ uncurryTerm trm
 
@@ -463,12 +477,13 @@ colTiAddArity :: PredOrFunc -> Cl.TERM -> [Cl.TERM_SEQ] -> Result TextInfo
 colTiAddArity ty trm tseqs = case trm of
   Cl.Name_term n -> do
       cti <- mapM colTiTrmSeq tseqs
+      let m = MapSet.insert (tok2Str n) (length tseqs) MapSet.empty
       return $ unionsTI
              $ ( if ty == Pred
-                  then emptyTI { arityPred = MapSet.insert
-                                  (tok2Str n) (length tseqs) MapSet.empty}
-                  else emptyTI { arityFunc = MapSet.insert
-                                  (tok2Str n) (length tseqs) MapSet.empty}
+                  then emptyTI { arityPred = m
+                               , boundPred = m }
+                  else emptyTI { arityFunc = m
+                               , boundFunc = m }
                   ) : cti
   Cl.Funct_term {} -> colTiTrm $ uncurryTerm trm -- FIX predicate "(f x) y"
   Cl.Comment_term t _ _ -> colTiAddArity ty t tseqs
