@@ -2,14 +2,18 @@ logic THF.THFP
 
 spec test =
 
-thf(type_a,type,( a : ($tType * ($tType > ($tType * $tType))) )).
+thf(type_a_1,type,( a_1 : $tType )).
+
+thf(type_a_2_1,type,( a_2_1 : $tType )).
+
+thf(type_a,type,( a_2_2 : ($tType * $tType) )).
 
 thf(type_c,type,( c : ($tType * ($tType * $tType)) )).
 
-thf(test_const,type,( test_const : c > a )).
+thf(test_const,type,( test_const : c > (a_1 > (a_2_1 * a_2_2)) )).
 
-thf(test_tuple,type,( test_tuple: c )).
+thf(test_tuple,type,( test_tuple : c )).
 
-thf(ax_in,axiom,( ((pr_2 @ (test_const @ test_tuple)) @ b) = [b,b] )).
+thf(const_b,type,( b : a_1 )).
 
-thf(th_in,conjecture,( ((pr_2 @ (test_const @ test_tuple)) @ b) = [b,b] )).
+thf(th,conjecture,( ((pr_2 @ (test_const @ test_tuple)) @ b) = ((pr_2 @ (test_const @ test_tuple)) @ b) )).
