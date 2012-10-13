@@ -81,7 +81,7 @@ stringToLowerWord = mkSimpleId . \ s -> case s of
 
 stringToVariable :: String -> String
 stringToVariable s = case s of
-   c : r -> if isUpper c then s else toUpper c : 'x' : r
+   c : r -> if isUpper c then s else let d = toUpper c in d : 'x' : d : r
    "" -> ""
 
 transVarId :: Id -> Result Token
