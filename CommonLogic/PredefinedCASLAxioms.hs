@@ -77,6 +77,17 @@ caslSig = (CSign.emptySign ())
                , CSign.predMap = MapSet.fromList
                 [(rel, [CSign.PredType [individual, list]])]
                }
+
+
+-- | setting casl sign: sorts, cons, nil
+listSig :: CSign.CASLSign
+listSig = (CSign.emptySign ())
+               { CSign.sortRel = Rel.fromKeysSet
+                   $ Set.fromList [list, individual]
+               , CSign.opMap = MapSet.fromList
+                         [ (cons, [CSign.toOpType consType])
+                         , (nil, [CSign.toOpType nilType])]
+               }
 vy1 :: CBasic.VAR_DECL
 vy1 = CBasic.mkVarDecl y1 individual
 
