@@ -56,7 +56,7 @@ import Logic.Morphism
 import Modifications.ModalEmbedding
 
 import Comorphisms.THFP_ST2THF0_ST
-import Comorphisms.THF0_ST2THF0
+--import Comorphisms.THF0_ST2THF0
 import Comorphisms.HasCASL2THF0_ST
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SubCFOL
@@ -100,6 +100,7 @@ import Comorphisms.CASL2VSEImport
 import Comorphisms.Maude2CASL
 import Comorphisms.CommonLogic2CASL
 import Comorphisms.CommonLogic2CASLCompact
+import Comorphisms.CommonLogic2CASLSeq
 import Comorphisms.CommonLogicModuleElimination
 import Comorphisms.Prop2CommonLogic
 import Comorphisms.SoftFOL2CommonLogic
@@ -153,7 +154,7 @@ comorphismList =
     , Comorphism DFOL2CASL
     , Comorphism HasCASL2THF0_ST
     , Comorphism THFP_ST2THF0_ST
-    , Comorphism THF0_ST2THF0
+--    , Comorphism THF0_ST2THF0
 #ifdef CASLEXTENSIONS
     , Comorphism CASL2Modal
     , Comorphism CASL2ExtModal
@@ -177,6 +178,7 @@ comorphismList =
     , Comorphism CASL2VSERefine
     , Comorphism Maude2CASL
     , Comorphism CommonLogic2CASLFol
+    , Comorphism CommonLogic2CASLSeq
     , Comorphism (CLCompact2CASL Fol)
     , Comorphism (CLCompact2CASL Imp)
     , Comorphism CommonLogicModuleElimination
