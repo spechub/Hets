@@ -62,17 +62,6 @@ trans_theory (sig, sentences1) = do
  sentences <- mapR (rewriteSen tp_trans) sentences1
  return (recreateSymbols sig1, sentences)
 
-recreateSymbols :: SignTHF -> SignTHF
-recreateSymbols (Sign tps cs _) =
- let name = N_Atomic_Word
-     symbs1 = foldl (\m (c,t) -> Map.insert c
-                      (Symbol c (name c) (ST_Type $ typeKind t)) m)
-              Map.empty $ Map.toList tps
-     symbs  = foldl (\m (c,k) -> Map.insert c
-                      (Symbol c (name c) (ST_Const $ constType k)) m)
-              symbs1 $ Map.toList cs
- in Sign tps cs symbs
-
 type TransMap = Map.Map Constant Type
 
 rewriteTypes :: SignTHF -> (TransMap, SignTHF)
@@ -234,34 +223,3 @@ rewriteVariableList tp_trans vs =
                Nothing -> mkError ("THFP2THF0.rewriteVariableList: Couldn't " ++
                                    "analyze type " ++ show tp) tp
              TV_Variable t -> return $ TV_Variable t) vs
-
-typeToTopLevelType :: Type -> THFTopLevelType
-typeToTopLevelType t = case t of
- TType -> T0TLT_Defined_Type (DT_tType)
- OType -> T0TLT_Defined_Type (DT_oType)
- IType -> T0TLT_Defined_Type (DT_iType)
- MapType t1 t2 -> T0TLT_THF_Binary_Type (TBT_THF_Mapping_Type
-                   [typeToUnitaryType t1,typeToUnitaryType t2])
- ProdType ts   -> T0TLT_THF_Binary_Type (TBT_THF_Xprod_Type $
-                   map typeToUnitaryType ts)
- CType c       -> T0TLT_Constant c
- SType t'      -> T0TLT_System_Type t'
- VType t'      -> T0TLT_Variable t'
- ParType t'    -> T0TLT_THF_Binary_Type $ T0BT_THF_Binary_Type_Par $
-                   typeToBinaryType t'
-
-typeToUnitaryType :: Type -> THFUnitaryType
-typeToUnitaryType t = case typeToTopLevelType t of
-                       T0TLT_Constant c        -> T0UT_Constant c
-                       T0TLT_Variable t'       -> T0UT_Variable t'
-                       T0TLT_Defined_Type d    -> T0UT_Defined_Type d
-                       T0TLT_System_Type t'    -> T0UT_System_Type t'
-                       T0TLT_THF_Binary_Type b -> T0UT_THF_Binary_Type_Par b
-                       TTLT_THF_Logic_Formula _ ->
-                        error "This shouldn't happen!"
-
-typeToBinaryType :: Type -> THFBinaryType
-typeToBinaryType t = case typeToTopLevelType t of
-                      T0TLT_THF_Binary_Type b -> b
-                      _ -> error $ "Cannot represent type " ++ show t ++
-                                   "as THFBinaryType!"
