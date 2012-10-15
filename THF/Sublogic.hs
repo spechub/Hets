@@ -45,7 +45,7 @@ is still not a legal type-definition:
 
 Without this extension $tType may only be used to declare
 atomic types i.e.
- 
+
  thf(a_type,type, a : $tType)
 
 -}
@@ -78,9 +78,9 @@ tHFP_ST = tHFP { ext_ShortTypes = True }
 tHF_ST  = tHF  { ext_ShortTypes = True }
 
 sublogics_all :: [THFSl]
-sublogics_all = [tHF ,tHF0_ST,
-                 tHFP,tHFP_ST,
-                 tHF,tHF_ST]
+sublogics_all = [tHF0, tHF0_ST,
+                 tHFP, tHFP_ST,
+                 tHF, tHF_ST]
 
 instance MinSublogic THFSl SentenceTHF where
  minSublogic s = minSublogic $ senFormula s
@@ -148,10 +148,10 @@ instance MinSublogic THFSl THFBinaryTuple where
 instance MinSublogic THFSl THFBinaryType where
  minSublogic bt = case bt of
    TBT_THF_Mapping_Type uts ->
-    join (if hasTType uts then tHF0_ST else tHF0) $ 
+    join (if hasTType uts then tHF0_ST else tHF0) $
      foldr join tHF0
       (map minSublogic uts)
-   TBT_THF_Xprod_Type uts -> 
+   TBT_THF_Xprod_Type uts ->
     foldr join (if hasTType uts then tHFP_ST else tHFP)
                (map minSublogic uts)
    TBT_THF_Union_Type uts ->
@@ -182,7 +182,7 @@ instance MinSublogic THFSl THFQuantifiedFormula where
                                          join (minSublogic qf')
                                           (foldr join tHF0
                                             (map minSublogic vs))
- --note: T0QF_THF_Quantified_Var in THF0 is pretty much the same as 
+ --note: T0QF_THF_Quantified_Var in THF0 is pretty much the same as
  --      TQF_THF_Quantified_Formula in THF (cf. As.hs 190 ff.)
  --      Maybe we should merge the two constructors?
    T0QF_THF_Quantified_Novar qf' u -> join (minSublogic qf')
