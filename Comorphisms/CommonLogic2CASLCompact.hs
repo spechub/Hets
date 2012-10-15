@@ -16,7 +16,6 @@ Translating comorphism from Common Logic
 
 module Comorphisms.CommonLogic2CASLCompact
   ( CommonLogic2CASLCompact (..)
-  , CLSub (..)
   ) where
 
 import Logic.Logic as Logic
@@ -43,7 +42,7 @@ import qualified CommonLogic.AS_CommonLogic as Cl
 import qualified CommonLogic.Sign as ClSign
 import qualified CommonLogic.Symbol as ClSymbol
 import qualified CommonLogic.Morphism as ClMor
-import qualified CommonLogic.Sublogic as ClSl
+import CommonLogic.Sublogic as ClSl
 
 import CommonLogic.ModuleElimination
 
@@ -54,12 +53,21 @@ import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 
-data CLSub = Fol | Imp deriving (Show, Eq)
+type CLSub = ClSl.CommonLogicSL
 
-data CommonLogic2CASLCompact = CLCompact2CASL { fol :: CLSub } deriving Show
+data CommonLogic2CASLCompact = CLCompact2CASL
+  { fol :: CLSub } deriving Show
+
+showCLTextType :: CLTextType -> String
+showCLTextType s = case s of
+  FirstOrder -> "Fol"
+  Impredicative -> "Imp"
+  _ -> show s
 
 instance Language CommonLogic2CASLCompact where
-  language_name (CLCompact2CASL b) = "CommonLogic" ++ show b ++ "2CASLCompact"
+  language_name (CLCompact2CASL b) = "CommonLogic"
+    ++ showCLTextType (format b) ++ "2CASL"
+     ++ if compact b then "Compact" else ""
 
 instance Comorphism
     CommonLogic2CASLCompact -- comorphism
@@ -87,9 +95,7 @@ instance Comorphism
     ProofTree               -- proof tree domain
     where
       sourceLogic (CLCompact2CASL _) = ClLogic.CommonLogic
-      sourceSublogic (CLCompact2CASL b) = case b of
-        Fol -> ClSl.folsl
-        Imp -> ClSl.top { ClSl.compact = True }
+      sourceSublogic (CLCompact2CASL b) = b
       targetLogic (CLCompact2CASL _) = CLogic.CASL
       mapSublogic (CLCompact2CASL _) = Just . mapSub
       map_theory (CLCompact2CASL b) = mapTheory b
@@ -172,7 +178,7 @@ relS = "rel"
 
 mapSig :: CLSub -> TextInfo -> CSign.CASLSign
 mapSig b ti =
-  let isFol = b == Fol
+  let isFol = format b <= FirstOrder
       aF = arityFunc ti
       collM n = MapSet.fromMap . Map.singleton n . Set.map (+ 1) . MapSet.elems
       opMap = MapSet.foldWithKey (\ n ar ops ->
@@ -274,7 +280,7 @@ senForm b bndVars form = case form of
       Cl.Atom trm tseqs -> do
           trmSeqs <- mapM (termSeqForm b bndVars) tseqs
           let ar = length tseqs
-          if b == Fol then do
+          if format b <= FirstOrder then do
               trmFP <- termFormPrd (uncurryTerm trm) ar
               return $ CBasic.Predication trmFP trmSeqs rn
             else do
@@ -298,7 +304,7 @@ quantSentForm b qt rn bndVars bs sen = do
       (opSs, predsVars) = partition
           (\ n -> Map.member n $ MapSet.toMap
           $ MapSet.filter (/= 0) aF) bSs
-      isImp = b == Imp
+      isImp = format b > FirstOrder
       vs = map (Cl.Name . Id.mkSimpleId)
         $ if isImp then bSs else intersect opsVars predsVars
       preds = if isImp then MapSet.empty else
@@ -352,7 +358,7 @@ termForm b bndVars trm = case trm of
   Cl.Funct_term term tseqs rn -> do
       let ar = length tseqs
       trmSF <- mapM (termSeqForm b bndVars) tseqs
-      if b == Fol then do
+      if format b <= FirstOrder then do
          trmFA <- termFormApp term ar
          return $ CBasic.Application trmFA trmSF rn
         else do
