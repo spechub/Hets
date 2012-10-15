@@ -19,8 +19,8 @@ import Logic.Comorphism
 
 import Common.ProofTree
 import Common.Result
-import Common.Id (Token(..),nullRange)
-import Common.AS_Annotation (Named,SenAttr(..))
+import Common.Id (Token(..))
+import Common.AS_Annotation (Named)
 
 import THF.Logic_THF
 import THF.Cons
@@ -28,7 +28,7 @@ import THF.Sign
 import qualified THF.Sublogic as SL
 import THF.As
 import THF.StaticAnalysisTHF (thfTopLevelTypeToType)
-import THF.Utils (recreateSymbols,typeToTopLevelType)
+import THF.Utils
 
 import qualified Data.Map as Map
 
@@ -60,7 +60,7 @@ trans_theory (sig, sentences1) = do
      sig2 = sig1 {consts =
       Map.map (\c -> c {constType = curryConstType tp_trans
                                  (constType c)}) $ consts sig1}
-     sentences = rewriteSen tp_trans cs_trans sentences1
+ sentences <- rewriteSen tp_trans cs_trans sentences1
  return (recreateSymbols sig2,sentences)
 
 type TransMap = Map.Map Constant [Constant]
@@ -86,67 +86,56 @@ curryConst m c = case Map.lookup c m of
  Just cs -> concat $ map (curryConst m) cs
  Nothing -> [c]
 
-rewriteSen :: TransMap -> TransMap -> [Named SentenceTHF] -> [Named SentenceTHF]
-rewriteSen tp_trans cs_trans = concat . map (rewriteSen' tp_trans cs_trans)
+rewriteSen :: TransMap -> TransMap -> [Named SentenceTHF]
+               -> Result [Named SentenceTHF]
+rewriteSen tp_trans cs_trans = mapR (rewriteSen' tp_trans cs_trans)
 
-rewriteSen' :: TransMap -> TransMap -> Named SentenceTHF -> [Named SentenceTHF]
-rewriteSen' tp_trans cs_trans sen =
- let sen_ = sentence sen
-     sen' = case senFormula . sentence $ sen of
-             TF_THF_Logic_Formula lf -> TF_THF_Logic_Formula $
-               rewriteLogicFormula tp_trans cs_trans lf
-             T0F_THF_Typed_Const  tc -> T0F_THF_Typed_Const $
-               rewriteTypedConst tp_trans cs_trans tc
-             TF_THF_Sequent _ ->
-              error "THFP2THF0.rewriteSen: Sequents are not in THF0!"
- in [sen { sentence = sen_ { senFormula = sen' } }]
+rewriteFns :: RewriteFuns (TransMap,TransMap)
+rewriteFns = rewriteTHF0 {
+ rewriteLogicFormula = rewriteLogicFormula',
+ rewriteBinaryFormula =
+  \ _ bf -> mkError "This function shouldn't be called!" bf,
+ rewriteBinaryTuple =
+  \ _ bt -> mkError "This function shouldn't be called!" bt,
+ rewriteVariableList = rewriteVariableList',
+ rewriteConst = rewriteConst'
+}
 
-rewriteLogicFormula :: TransMap -> TransMap
-                       -> THFLogicFormula -> THFLogicFormula
-rewriteLogicFormula tp_trans cs_trans lf = case lf of
- TLF_THF_Binary_Formula bf ->
-  case rewriteBinaryFormula tp_trans cs_trans bf of
-   Left bf' -> TLF_THF_Binary_Formula bf'
-   Right uf -> TLF_THF_Unitary_Formula uf
- TLF_THF_Unitary_Formula uf -> TLF_THF_Unitary_Formula $
-   rewriteUnitaryFormula tp_trans cs_trans uf
- TLF_THF_Type_Formula _ ->
-  error "THFP2THF0.rewriteLogicFormula: TLF_THF_Type_Formula is not in THF0!"
- TLF_THF_Sub_Type _ ->
-  error "THFP2THF0.rewriteLogicFormula: TLF_THF_Sub_Type is not in THF0!"
+rewriteSen' :: TransMap -> TransMap -> Named SentenceTHF
+               -> Result (Named SentenceTHF)
+rewriteSen' tp_trans cs_trans = rewriteSenFun (rewriteFns,(tp_trans,cs_trans))
 
-rewriteTypedConst :: TransMap -> TransMap
-                     -> THFTypedConst -> THFTypedConst
-rewriteTypedConst tp_trans cs_trans tc = case tc of
- T0TC_Typed_Const c tlf ->
-  case thfTopLevelTypeToType tlf of
-    Just _ -> error "THFP2THF0.rewriteTypedConst: Not yet implemented!"
-    Nothing ->
-     error $ "THFP2THF0.rewriteTypedConst: Couldn't interpret type for " ++
-           "Constant " ++ show c
- T0TC_THF_TypedConst_Par tc' ->
-   T0TC_THF_TypedConst_Par $ rewriteTypedConst tp_trans cs_trans tc'
+rewriteLogicFormula' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
+                       -> THFLogicFormula -> Result THFLogicFormula
+rewriteLogicFormula' d lf = case lf of
+ TLF_THF_Binary_Formula bf -> do
+  bf' <- rewriteBinaryFormula' d bf
+  case bf' of
+   Left bf'' -> return $ TLF_THF_Binary_Formula bf''
+   Right uf -> return $ TLF_THF_Unitary_Formula uf
+ _ -> (rewriteLogicFormula rewriteTHF0) d lf
 
-rewriteBinaryFormula :: TransMap -> TransMap -> THFBinaryFormula
-                        -> Either THFBinaryFormula THFUnitaryFormula
-rewriteBinaryFormula tp_trans cs_trans bf = case bf of
- TBF_THF_Binary_Type _ ->
-  error "THFP2THF0.rewriteBinaryFormula: TBF_THF_Binary_Type is not in THF0!"
- TBF_THF_Binary_Pair uf1 cn uf2 ->
-  let uf1' = rewriteUnitaryFormula tp_trans cs_trans uf1
-      uf2' = rewriteUnitaryFormula tp_trans cs_trans uf2
-  in case (toTuple uf1',cn,toTuple uf2') of
+rewriteBinaryFormula' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
+                        -> THFBinaryFormula
+                        -> Result (Either THFBinaryFormula THFUnitaryFormula)
+rewriteBinaryFormula' d@(fns,_) bf = case bf of
+ TBF_THF_Binary_Pair uf1 cn uf2 -> do
+  uf1' <- (rewriteUnitaryFormula fns) d uf1
+  uf2' <- (rewriteUnitaryFormula fns) d uf2
+  case (toTuple uf1',cn,toTuple uf2') of
       (Just (TUF_THF_Tuple t1), Infix_Equality, 
        Just (TUF_THF_Tuple t2)) -> if length t1 == length t2
-        then Left $ TBF_THF_Binary_Tuple $ TBT_THF_And_Formula $
+        then return $ Left $ TBF_THF_Binary_Tuple $ TBT_THF_And_Formula $
               map (\(t1',t2') ->
                TUF_THF_Logic_Formula_Par $ TLF_THF_Binary_Formula $
                 TBF_THF_Binary_Pair (logicFormula2UnitaryFormula t1')
                  cn (logicFormula2UnitaryFormula t2')) (zip t1 t2)
-        else error $ "THFP2THF0.rewriteBinaryFormula: Equality on tuples of " ++
-                   "different size!"
-      _ -> Left $ TBF_THF_Binary_Pair uf1' cn uf2'
- TBF_THF_Binary_Tuple bt -> rewriteBinaryTuple tp_trans cs_trans bt
+        else mkError ("THFP2THF0.rewriteBinaryFormula: Equality on tuples " ++
+                      "of different size!") bf
+      _ -> return $ Left $ TBF_THF_Binary_Pair uf1' cn uf2'
+ TBF_THF_Binary_Tuple bt -> rewriteBinaryTuple' d bt
+ _ -> (rewriteBinaryFormula rewriteTHF0) d bf
+  >>= return . Left
 
 toTuple :: THFUnitaryFormula -> Maybe THFUnitaryFormula
 toTuple u@(TUF_THF_Tuple _) = Just u
@@ -159,18 +148,15 @@ logicFormula2UnitaryFormula l = case l of
  TLF_THF_Unitary_Formula uf -> uf
  _ -> TUF_THF_Logic_Formula_Par l
 
-rewriteBinaryTuple :: TransMap -> TransMap -> THFBinaryTuple
-                      -> Either THFBinaryFormula THFUnitaryFormula
-rewriteBinaryTuple tp_trans cs_trans bt = case bt of
- TBT_THF_Or_Formula ufs -> Left $ TBF_THF_Binary_Tuple $ TBT_THF_Or_Formula $
-  map (rewriteUnitaryFormula tp_trans cs_trans) ufs
- TBT_THF_And_Formula ufs -> Left $ TBF_THF_Binary_Tuple $ TBT_THF_And_Formula $
-  map (rewriteUnitaryFormula tp_trans cs_trans) ufs
- TBT_THF_Apply_Formula ufs ->
-  let ufs' = map (rewriteUnitaryFormula tp_trans cs_trans) ufs
-  in case ufs' of
-      []   -> error "THFP2THF0.rewriteBinaryTuple: Illegal Application!"
-      _:[] -> error "THFP2THF0.rewriteBinaryTuple: Illegal Application!"
+rewriteBinaryTuple' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
+                        -> THFBinaryTuple
+                        -> Result (Either THFBinaryFormula THFUnitaryFormula)
+rewriteBinaryTuple' d@(fns,_) bt = case bt of
+ TBT_THF_Apply_Formula ufs -> do
+  ufs' <- mapR ((rewriteUnitaryFormula fns) d) ufs
+  case ufs' of
+      []   -> mkError "THFP2THF0.rewriteBinaryTuple: Illegal Application!" bt
+      _:[] -> mkError "THFP2THF0.rewriteBinaryTuple: Illegal Application!" bt
       fn:args -> case removeParensUnitaryFormula fn of
        (TUF_THF_Atom (T0A_Constant c)) ->
          case show . toToken $ c of
@@ -179,19 +165,23 @@ rewriteBinaryTuple tp_trans cs_trans bt = case bt of
                tuple:[] ->
                 let i' = read i :: Int
                 in unpack_tuple tuple i'
-               _ -> error $ "THFP2THF0.rewriteBinaryTuple: Invalid argument " ++
-                            "for projection: " ++ show args
-           _ -> Left $ TBF_THF_Binary_Tuple $ TBT_THF_Apply_Formula $
+               _ -> mkError ("THFP2THF0.rewriteBinaryTuple: Invalid " ++
+                            "argument for projection: " ++ show args) ufs
+           _ -> return $ Left $ TBF_THF_Binary_Tuple $ TBT_THF_Apply_Formula $
                  fn:(flattenTuples args)
-       TUF_THF_Tuple lfs -> Right . rewriteUnitaryFormula tp_trans cs_trans .
-        TUF_THF_Tuple $
-         map (\l -> case rewriteBinaryTuple tp_trans cs_trans .
-              TBT_THF_Apply_Formula $
-              (TUF_THF_Logic_Formula_Par l):args of
-               Left bf  -> TLF_THF_Binary_Formula bf
-               Right uf -> TLF_THF_Unitary_Formula uf) lfs
-       _ -> Left $ TBF_THF_Binary_Tuple $ TBT_THF_Apply_Formula $
+       TUF_THF_Tuple lfs ->
+         mapR (\l -> do app' <- rewriteBinaryTuple' d .
+                                 TBT_THF_Apply_Formula $
+                                  (TUF_THF_Logic_Formula_Par l):args
+                        return $ case app' of
+                          Left bf  -> TLF_THF_Binary_Formula bf
+                          Right uf -> TLF_THF_Unitary_Formula uf) lfs
+          >>= ((rewriteUnitaryFormula fns) d) . TUF_THF_Tuple
+          >>= return . Right
+       _ -> return $ Left $ TBF_THF_Binary_Tuple $ TBT_THF_Apply_Formula $
              fn:(flattenTuples args)
+ _ -> (rewriteBinaryTuple rewriteTHF0) d bt
+  >>= return . Left . TBF_THF_Binary_Tuple
 
 flattenTuples :: [THFUnitaryFormula] -> [THFUnitaryFormula]
 flattenTuples ufs = concat . map flattenTuple $ ufs
@@ -203,90 +193,41 @@ flattenTuple u = case removeParensUnitaryFormula u of
  _ -> [u]
 
 unpack_tuple :: THFUnitaryFormula -> Int
-                -> Either THFBinaryFormula THFUnitaryFormula
+                -> Result (Either THFBinaryFormula THFUnitaryFormula)
 unpack_tuple uf i = case removeParensUnitaryFormula uf of
  TUF_THF_Tuple lfs -> if i > length lfs
-  then error "THFP2THF0.unpack_tuple: Tuple has too few elements!"
+  then mkError "THFP2THF0.unpack_tuple: Tuple has too few elements!" uf
   else case lfs!!(i-1) of
-        TLF_THF_Binary_Formula bf -> Left bf
-        TLF_THF_Unitary_Formula uf' -> Right uf'
-        lf -> error $ "THFP2THF0.unpack_tuple: " ++ show lf ++ " is not in THF0!"
- _ -> error $ "THFP2THF0.unpack_tuple: " ++ show uf ++ " is not a tuple!"
+        TLF_THF_Binary_Formula bf -> return $ Left bf
+        TLF_THF_Unitary_Formula uf' -> return $ Right uf'
+        lf -> mkError ("THFP2THF0.unpack_tuple: " ++ show lf
+                       ++ " is not in THF0!") uf
+ _ -> mkError ("THFP2THF0.unpack_tuple: " ++ show uf ++ " is not a tuple!") uf
 
 removeParensUnitaryFormula :: THFUnitaryFormula -> THFUnitaryFormula
 removeParensUnitaryFormula (TUF_THF_Logic_Formula_Par
  (TLF_THF_Unitary_Formula uf)) = uf
 removeParensUnitaryFormula uf = uf
 
-rewriteUnitaryFormula :: TransMap -> TransMap
-                         -> THFUnitaryFormula -> THFUnitaryFormula
-rewriteUnitaryFormula tp_trans cs_trans uf = case uf of
- TUF_THF_Conditional _ _ _ ->
-  error "THFP2THF0.rewriteUnitaryFormula: TUF_THF_Conditional is not in THF0!"
- TUF_THF_Quantified_Formula qf -> case qf of
-  TQF_THF_Quantified_Formula q vs uf' -> TUF_THF_Quantified_Formula $
-   TQF_THF_Quantified_Formula q
-    (rewriteVariableList tp_trans cs_trans vs)
-    (rewriteUnitaryFormula tp_trans cs_trans uf')
-  T0QF_THF_Quantified_Var q vs uf' -> TUF_THF_Quantified_Formula $
-   T0QF_THF_Quantified_Var q
-    (rewriteVariableList tp_trans cs_trans vs)
-    (rewriteUnitaryFormula tp_trans cs_trans uf')
-  T0QF_THF_Quantified_Novar _ _ -> 
-   error $ "THFP2THF0.rewriteUnitaryFormula: T0QF_THF_Quantified_Novar not " ++
-           "yet implemented!"
- TUF_THF_Unary_Formula c lf -> TUF_THF_Unary_Formula c $
-  rewriteLogicFormula tp_trans cs_trans lf
- TUF_THF_Atom a -> rewriteAtom tp_trans cs_trans a
- TUF_THF_Tuple t -> TUF_THF_Tuple $
-                     map (rewriteLogicFormula tp_trans cs_trans) t
- TUF_THF_Logic_Formula_Par lf -> TUF_THF_Logic_Formula_Par $
-  rewriteLogicFormula tp_trans cs_trans lf
- T0UF_THF_Abstraction vs uf' -> T0UF_THF_Abstraction
-  (rewriteVariableList tp_trans cs_trans vs)
-  (rewriteUnitaryFormula tp_trans cs_trans uf')
-
-rewriteVariableList :: TransMap -> TransMap
-                       -> [THFVariable] -> [THFVariable]
-rewriteVariableList tp_trans cs_trans vs = concat $
- map (\v -> case v of
+rewriteVariableList' :: (RewriteFuns (TransMap,TransMap),(TransMap,TransMap))
+                       -> [THFVariable] -> Result [THFVariable]
+rewriteVariableList' (_,(tp_trans,cs_trans)) vs = do
+ vs' <- mapR (\v -> case v of
              TV_THF_Typed_Variable t tp ->
               case thfTopLevelTypeToType tp of
                Just tp' -> let cs = constMakeExplicitProduct tp_trans
                                      (A_Lower_Word t) tp'
-                           in map (\(c,tp'') ->
+                           in return $ map (\(c,tp'') ->
                                TV_THF_Typed_Variable (toToken c)
                                  (typeToTopLevelType
                                   (curryConstType tp_trans tp''))) cs
-               Nothing -> error $ "THFP2THF0.rewriteVariableList: Couldn't " ++
-                                  "type " ++ show tp
+               Nothing ->
+                mkError ("THFP2THF0.rewriteVariableList: Couldn't " ++
+                         "type " ++ show tp) tp
              TV_Variable t -> case transToken cs_trans t of
-                               [_] -> [v]
-                               t' -> map TV_Variable t') vs
-
-rewriteAtom :: TransMap -> TransMap
-               -> THFAtom -> THFUnitaryFormula
-rewriteAtom _ cs_trans a = case a of
- TA_Term _ -> error "THFP2THF0.rewriteAtom: TA_Term is not in THF0!"
- TA_THF_Conn_Term c -> case c of
-  TCT_THF_Pair_Connective _ -> error $ "THFP2THF0.rewriteAtom: " ++
-                                      "TC_THF_Pair_Connective is not in THF0!"
-  TCT_Assoc_Connective _ -> TUF_THF_Atom a
-  TCT_THF_Unary_Connective _ -> TUF_THF_Atom a
-  T0CT_THF_Quantifier _ -> TUF_THF_Atom a
- TA_Defined_Type _ -> error $ "THFP2THF0.rewriteAtom: TA_Defined_Type " ++
-                              "is not in THF0!"
- TA_Defined_Plain_Formula _ -> error $ "THFP2THF0.rewriteAtom: " ++
-                                      "TA_Defined_Plain_Formula is not in THF0!"
- TA_System_Type _ -> error $ "THFP2THF0.rewriteAtom: TA_System_Type " ++
-                             "is not in THF0!"
- TA_System_Atomic_Formula _ -> error $ "THFP2THF0.rewriteAtom: " ++
-                                       "TA_System_Atomic_Formula " ++
-                                       "is not in THF0!"
- T0A_Constant c -> transConst cs_trans c
- T0A_Defined_Constant _ -> TUF_THF_Atom a
- T0A_System_Constant _ -> TUF_THF_Atom a
- T0A_Variable _ -> TUF_THF_Atom a
+                               [_] -> return [v]
+                               t' -> return $ map TV_Variable t') vs
+ return $ concat vs'
 
 toToken :: Constant -> Token
 toToken (A_Lower_Word t)    = t
@@ -298,10 +239,11 @@ transToken m t = case Map.toList $
                    (_,cs):_ -> concat $ map (transToken m . toToken) cs
                    [] -> [t]
 
-transConst :: TransMap -> Constant -> THFUnitaryFormula
-transConst m c = case transConst' m c of
- [] -> TUF_THF_Atom (T0A_Constant c)
- lfs -> TUF_THF_Tuple lfs
+rewriteConst' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
+                  -> Constant -> Result THFUnitaryFormula
+rewriteConst' (_,(_,m)) c = case transConst' m c of
+ [] -> return $ TUF_THF_Atom (T0A_Constant c)
+ lfs -> return $ TUF_THF_Tuple lfs
 
 transConst' :: TransMap -> Constant -> [THFLogicFormula]
 transConst' m c = case Map.toList $
@@ -410,23 +352,6 @@ prodKToTuple trans tps c n k = case k of
             tps'' (zip names tuple))
  _ -> error "Invalid call to prodKToTuple"
                           
-
-mkNames :: Constant -> Name -> Int -> [(Constant,Name)]
-mkNames c n i =
- let (mkC,t1) = case c of
-       A_Lower_Word t    -> (A_Lower_Word,t)
-       A_Single_Quoted t -> (A_Single_Quoted,t)
-     (mkN,t2) = case n of
-                 N_Atomic_Word a -> case a of
-                  A_Lower_Word t    -> (N_Atomic_Word . A_Lower_Word,t)
-                  A_Single_Quoted t -> (N_Atomic_Word . A_Single_Quoted,t)
-                 N_Integer t -> (N_Atomic_Word . A_Lower_Word,
-                                 Token ("i"++show t) nullRange)
-                 T0N_Unsigned_Integer t ->
-                  (N_Atomic_Word . A_Lower_Word,Token ("i"++show t) nullRange)
- in zip (map (\i' -> mkC $ Token (show t1 ++ "_" ++ show i') nullRange) [1..i])
-        (map (\i' -> mkN $ Token (show t2 ++ "_" ++ show i') nullRange) [1..i])
-
 hasProdK :: TypeInfo -> Bool
 hasProdK = isProdK . typeKind
 
