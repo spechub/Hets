@@ -198,7 +198,7 @@ encoded formulas are the result of codingOutConditionalF
 
 expansion of conditionals according to CASL-Ref-Manual:
 \'@A[T1 when F else T2]@\' expands to
-\'@(A[T1] if F) \/\\ (A[T2] if not F)@\'
+\'@(A[T1] if F) /\\ (A[T2] if not F)@\'
 -}
 codeOutConditionalF :: (Eq f) =>
                        (f -> f)
