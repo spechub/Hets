@@ -98,10 +98,8 @@ import Comorphisms.CASL2VSE
 import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
 import Comorphisms.Maude2CASL
-import Comorphisms.CommonLogic2CASL
 import Comorphisms.CommonLogic2CASLCompact
 import CommonLogic.Sublogic
-import Comorphisms.CommonLogic2CASLSeq
 import Comorphisms.CommonLogicModuleElimination
 import Comorphisms.Prop2CommonLogic
 import Comorphisms.SoftFOL2CommonLogic
@@ -178,8 +176,8 @@ comorphismList =
     , Comorphism CASL2VSEImport
     , Comorphism CASL2VSERefine
     , Comorphism Maude2CASL
-    , Comorphism CommonLogic2CASLFol
-    , Comorphism CommonLogic2CASLSeq
+    , Comorphism (CLCompact2CASL folsl {compact = False})
+    , Comorphism (CLCompact2CASL fullclsl)
     , Comorphism (CLCompact2CASL folsl)
     , Comorphism (CLCompact2CASL fullclsl {compact = True})
     , Comorphism CommonLogicModuleElimination

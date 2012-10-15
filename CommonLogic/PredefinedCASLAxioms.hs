@@ -13,137 +13,156 @@ Fixed CASL axioms needed for translation of CommonLogic to CASL
 module CommonLogic.PredefinedCASLAxioms where
 
 
-import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Id as Id
+import Common.AS_Annotation
+import Common.Id
 
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
-import qualified CASL.AS_Basic_CASL as CBasic
-import qualified CASL.Sign as CSign
+import CASL.AS_Basic_CASL
+import CASL.Sign
 
 import qualified Data.Set as Set
 
-list :: Id.Id
-list = Id.stringToId "list"
+list :: Id
+list = stringToId "list"
 
-rel :: Id.Id
-rel = Id.stringToId "rel"
+append :: Id
+append = stringToId "append"
 
-fun :: Id.Id
-fun = Id.stringToId "fun"
+cons :: Id
+cons = stringToId "cons"
 
-cons :: Id.Id
-cons = Id.stringToId "cons"
+nil :: Id
+nil = stringToId "nil"
 
-nil :: Id.Id
-nil = Id.stringToId "nil"
+individual :: Id
+individual = stringToId "individual"
 
-individual :: Id.Id
-individual = Id.stringToId "individual"
+x1 :: Token
+x1 = mkSimpleId "X1"
 
-x1 :: Id.Token
-x1 = Id.mkSimpleId "X1"
+x2 :: Token
+x2 = mkSimpleId "X2"
 
-x2 :: Id.Token
-x2 = Id.mkSimpleId "X2"
+y1 :: Token
+y1 = mkSimpleId "Y1"
 
-y1 :: Id.Token
-y1 = Id.mkSimpleId "Y1"
+y2 :: Token
+y2 = mkSimpleId "Y2"
 
-y2 :: Id.Token
-y2 = Id.mkSimpleId "Y2"
+nilTypeS :: OpType
+nilTypeS = mkTotOpType [] list
 
-nilType :: CBasic.OP_TYPE
-nilType = CBasic.Op_type CBasic.Total [] list Id.nullRange
+consTypeS :: OpType
+consTypeS = mkTotOpType [individual, list] list
 
-consType :: CBasic.OP_TYPE
-consType = CBasic.Op_type CBasic.Total [individual, list] list Id.nullRange
+appendTypeS :: OpType
+appendTypeS = mkTotOpType [list, list] list
 
-baseCASLAxioms :: [AS_Anno.Named CBasic.CASLFORMULA]
-baseCASLAxioms = [ga_injective_cons, ga_disjoint_nil_cons, ga_generated_list]
+nilType :: OP_TYPE
+nilType = toOP_TYPE nilTypeS
 
--- | setting casl sign: sorts, cons, fun, nil, pred
-caslSig :: CSign.CASLSign
-caslSig = (CSign.emptySign ())
-               { CSign.sortRel = Rel.fromKeysSet
+consType :: OP_TYPE
+consType = toOP_TYPE consTypeS
+
+appendType :: OP_TYPE
+appendType = toOP_TYPE appendTypeS
+
+baseListAxioms :: [Named CASLFORMULA]
+baseListAxioms =
+  [ ga_injective_cons
+  , ga_disjoint_nil_cons
+  , ga_generated_list
+  , ga_nil_append
+  , ga_cons_append ]
+
+-- | setting casl sign: sorts, cons, nil, append
+listSig :: CASLSign
+listSig = (emptySign ())
+               { sortRel = Rel.fromKeysSet
                    $ Set.fromList [list, individual]
-               , CSign.opMap = MapSet.fromList
-                         [ (cons, [CSign.toOpType consType])
-                         , (fun, [CSign.mkTotOpType
-                                  [individual, list]
-                                  individual])
-                         , (nil, [CSign.toOpType nilType])]
-               , CSign.predMap = MapSet.fromList
-                [(rel, [CSign.PredType [individual, list]])]
+               , opMap = MapSet.fromList
+                         [ (cons, [consTypeS])
+                         , (nil, [nilTypeS])
+                         , (append, [appendTypeS])
+                         ]
                }
 
+vx2 :: VAR_DECL
+vx2 = mkVarDecl x2 list
 
--- | setting casl sign: sorts, cons, nil
-listSig :: CSign.CASLSign
-listSig = (CSign.emptySign ())
-               { CSign.sortRel = Rel.fromKeysSet
-                   $ Set.fromList [list, individual]
-               , CSign.opMap = MapSet.fromList
-                         [ (cons, [CSign.toOpType consType])
-                         , (nil, [CSign.toOpType nilType])]
-               }
-vy1 :: CBasic.VAR_DECL
-vy1 = CBasic.mkVarDecl y1 individual
+vy1 :: VAR_DECL
+vy1 = mkVarDecl y1 individual
 
-vy2 :: CBasic.VAR_DECL
-vy2 = CBasic.mkVarDecl y2 list
+vy2 :: VAR_DECL
+vy2 = mkVarDecl y2 list
 
-tx1, tx2, ty1, ty2 :: CBasic.TERM f
+tx1, tx2, ty1, ty2 :: TERM f
 
-tx1 = CBasic.mkVarTerm x1 individual
-tx2 = CBasic.mkVarTerm x2 list
+tx1 = mkVarTerm x1 individual
+tx2 = mkVarTerm x2 list
 
-ty1 = CBasic.mkVarTerm y1 individual
-ty2 = CBasic.mkVarTerm y2 list
+ty1 = mkVarTerm y1 individual
+ty2 = mkVarTerm y2 list
 
-ga_injective_cons :: AS_Anno.Named CBasic.CASLFORMULA
-ga_injective_cons = AS_Anno.makeNamed "ga_injective_cons" $
-  CBasic.mkForall
-    [ CBasic.mkVarDecl x1 individual
-    , CBasic.mkVarDecl x2 list
+consOp :: OP_SYMB
+consOp = mkQualOp cons consType
+
+nilOp :: OP_SYMB
+nilOp = mkQualOp nil nilType
+
+mkCons :: TERM f -> TERM f -> TERM f
+mkCons t1 t2 = mkAppl consOp [t1, t2]
+
+mkNil :: TERM f
+mkNil = mkAppl nilOp []
+
+mkAppend :: TERM f -> TERM f -> TERM f
+mkAppend l1 l2 = mkAppl (mkQualOp append appendType) [l1, l2]
+
+ga_injective_cons :: Named CASLFORMULA
+ga_injective_cons = makeNamed "ga_injective_cons" $
+  mkForall
+    [ mkVarDecl x1 individual
     , vy1
+    , vx2
     , vy2
     ]
-    $ CBasic.mkEqv
-        (CBasic.mkStEq
-          (CBasic.mkAppl
-            (CBasic.mkQualOp cons consType)
-            [tx1, tx2]
-          )
-          $ CBasic.mkAppl
-            (CBasic.mkQualOp cons consType)
-            [ty1, ty2]
-          )
-        $ CBasic.conjunct
-          [ CBasic.mkStEq tx1 ty1
-          , CBasic.mkStEq tx2 ty2
+    $ mkEqv
+        (mkStEq
+          (mkCons tx1 tx2)
+          $ mkCons ty1 ty2
+        )
+        $ conjunct
+          [ mkStEq tx1 ty1
+          , mkStEq tx2 ty2
           ]
 
-ga_disjoint_nil_cons :: AS_Anno.Named CBasic.CASLFORMULA
-ga_disjoint_nil_cons = AS_Anno.makeNamed "ga_disjoint_nil_cons" $
-  CBasic.mkForall [vy1, vy2]
-    $ CBasic.mkNeg
-      $ CBasic.mkStEq
-        (CBasic.mkAppl (CBasic.mkQualOp nil nilType) [])
-        $ CBasic.mkAppl
-          (CBasic.mkQualOp cons consType)
-          [ty1, ty2]
+ga_disjoint_nil_cons :: Named CASLFORMULA
+ga_disjoint_nil_cons = makeNamed "ga_disjoint_nil_cons" $
+  mkForall [vy1, vy2] $ mkNeg $ mkStEq mkNil $ mkCons ty1 ty2
 
-ga_generated_list :: AS_Anno.Named CBasic.CASLFORMULA
-ga_generated_list = AS_Anno.makeNamed "ga_generated_list" $
-  CBasic.Sort_gen_ax
-    [ CBasic.Constraint
-      { CBasic.newSort = list
-      , CBasic.opSymbs =
-          [ (CBasic.mkQualOp cons consType, [-1, 0] )
-          , (CBasic.mkQualOp nil nilType, [])
+ga_nil_append :: Named CASLFORMULA
+ga_nil_append = makeNamed "ga_nil_append"
+  $ mkForall [vx2]
+  $ mkStEq (mkAppend mkNil tx2) tx2
+
+ga_cons_append :: Named CASLFORMULA
+ga_cons_append = makeNamed "ga_cons_append"
+  $ mkForall [vy1, vy2, vx2]
+  $ mkStEq (mkAppend (mkCons ty1 ty2) tx2)
+      $ mkCons ty1 $ mkAppend ty2 tx2
+
+ga_generated_list :: Named CASLFORMULA
+ga_generated_list = makeNamed "ga_generated_list" $
+  Sort_gen_ax
+    [ Constraint
+      { newSort = list
+      , opSymbs =
+          [ (consOp, [-1, 0] )
+          , (nilOp, [])
           ]
-      , CBasic.origSort = list
+      , origSort = list
       }
     ] True
