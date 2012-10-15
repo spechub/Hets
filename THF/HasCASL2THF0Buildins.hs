@@ -126,8 +126,6 @@ preDefAxioms ids =
               , (eqvId,       eqvFS)
               , (implId,      implFS)
               , (infixIf,     ifFS)
-              , (eqId,        eqFS)
-              , (exEq,        eqFS)
               , (resId,       resFS)
               , (botId,       botFS)
               , (defId,       defFS)
@@ -211,12 +209,6 @@ ifFS c =
     let ns = (show . pretty . mkDefName) c
         cs = (show . pretty) c
     in encTHF (ns ++ defnS ++ cs ++ " = (^ [X : $o, Y : $o] : (Y => X))")
-
-eqFS :: Constant -> String
-eqFS c =
-    let ns = (show . pretty . mkDefName) c
-        cs = (show . pretty) c
-    in encTHF (ns ++ defnS ++ cs ++ " = (^ [X : A, Y : A] : (X = Y))")
 
 resFS :: Constant -> String
 resFS c =

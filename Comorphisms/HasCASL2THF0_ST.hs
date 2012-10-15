@@ -372,7 +372,7 @@ transApplTerm e icm ids t1 t2 r = do
         Nothing -> fatal_error
           ("unexpected Term Application: " ++ showDoc at "") r
         Just (t3, i, tl1)
-            | elem i [eqId, exEq, andId, orId, eqvId, implId, infixIf, resId] ->
+            | elem i [exEq, andId, orId, eqvId, implId, infixIf, resId] ->
                 case tl1 of
                     TupleTerm tl2 _ : [] ->
                         myFmap (TLF_THF_Binary_Formula . TBF_THF_Binary_Tuple
@@ -380,6 +380,17 @@ transApplTerm e icm ids t1 t2 r = do
                            (foldM fTrmToUf ([], ids) (t3 : tl2))
                     _ -> fatal_error ("unexpected arguments " ++ show tl1 ++
                             " for the function " ++ show i) r
+            | i == eqId -> case tl1 of
+                TupleTerm tl2 _ : [] -> do
+                  (ufs,ids') <- foldM fTrmToUf ([], ids) tl2
+                  (uf1,uf2) <- case ufs of
+                                   [uf1,uf2] -> return (uf1,uf2)
+                                   _ -> fatal_error ("equality needs " ++
+                                         "exactly 2 arguments") r
+                  return (TLF_THF_Binary_Formula $ TBF_THF_Binary_Pair
+                           uf1 Infix_Equality uf2,ids')
+                _ -> fatal_error ("unexpected arguments " ++ show tl1 ++
+                       " for equality") r
             | i == whenElse ->
                 fatal_error ("__when__else__ is not supported yet. " ++
                     "Please code it out, see: Casl Reference Manula p. 25.") r
