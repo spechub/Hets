@@ -175,7 +175,7 @@ mapTheory b (_, form) = do
   frm <- mapM (trNamedForm b) form
   let s = mapSig b ti
   return $ if compact b then (s, frm) else
-    (uniteCASLSign listSig s, baseListAxioms)
+    (uniteCASLSign listSig s, baseListAxioms ++ frm)
 
 funS :: String
 funS = "fun"
@@ -204,9 +204,13 @@ mapSig b ti =
              $ map (\ s -> (s, [mkTotOpType [] list]))
              $ Set.toList $ seqMarkers ti
       aP = arityPred ti
-      pm = MapSet.foldWithKey (\ n ar preds ->
+      pm = if isC then
+        MapSet.foldWithKey (\ n ar preds ->
           MapSet.insert (stringToId n) (predTypeSign ar) preds
         ) MapSet.empty $ if isFol then aP else collM relS $ boundPred ti
+        else MapSet.foldWithKey (MapSet.insert . stringToId) MapSet.empty
+             $ MapSet.mapSet (const $ Set.singleton
+               $ PredType [list]) aP
   in uniteCASLSign (
           (emptySign ()) {
               opMap = om
