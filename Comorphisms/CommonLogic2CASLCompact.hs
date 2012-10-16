@@ -196,7 +196,7 @@ mapSig b ti =
           $ if isFol then aF else
               MapSet.union (MapSet.mapSet (const $ Set.singleton 0)
                             $ MapSet.union aF aP)
-              $ collM funS $ boundFunc ti
+              $ collM funS $ MapSet.mapSet (Set.delete 0) $ boundFunc ti
         else MapSet.foldWithKey (MapSet.insert . stringToId) MapSet.empty
              $ MapSet.union (MapSet.mapSet (const $ Set.singleton
                $ mkTotOpType [list] individual) aF)
@@ -211,24 +211,17 @@ mapSig b ti =
         else MapSet.foldWithKey (MapSet.insert . stringToId) MapSet.empty
              $ MapSet.mapSet (const $ Set.singleton
                $ PredType [list]) aP
-  in uniteCASLSign (
-          (emptySign ()) {
-              opMap = om
+  in (emptySign ())
+            { sortRel = Rel.insertKey individual Rel.empty
+            , opMap = om
             , predMap = pm
             }
-        ) caslSig
 
 opTypeSign :: Int -> OpType
 opTypeSign ar = mkTotOpType (replicate ar individual) individual
 
 predTypeSign :: Int -> PredType
 predTypeSign ar = PredType {predArgs = replicate ar individual}
-
-
--- | setting casl sign: sorts, cons, fun, nil, pred
-caslSig :: CASLSign
-caslSig = (emptySign ())
-               { sortRel = Rel.insertKey individual Rel.empty }
 
 trNamedForm :: CLSub -> AS_Anno.Named Cl.TEXT_META
             -> Result (AS_Anno.Named CBasic.CASLFORMULA)
