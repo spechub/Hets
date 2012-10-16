@@ -181,37 +181,51 @@ funS = "fun"
 relS :: String
 relS = "rel"
 
+seqType :: OpType
+seqType = mkTotOpType [list] individual
+
+seqFunType :: OpType
+seqFunType = mkTotOpType [individual, list] individual
+
+seqRelType :: PredType
+seqRelType = PredType [individual, list]
+
+mapNs :: Ord a => MapSet String a -> MapSet Id a
+mapNs = MapSet.foldWithKey (MapSet.insert . stringToId) MapSet.empty
+
 mapSig :: CLSub -> TextInfo -> CASLSign
 mapSig b ti =
   let isFol = format b <= FirstOrder
       isC = compact b
       aF = arityFunc ti
       (aC, aRF) = MapSet.partition (== 0) aF
+      aA = MapSet.union aF aP
       collM n = MapSet.fromMap . Map.singleton n . Set.map (+ 1) . MapSet.elems
       om = if isC then
         MapSet.foldWithKey (\ n ar ops ->
           MapSet.insert (stringToId n) (opTypeSign ar) ops
         ) MapSet.empty
           $ if isFol then aF else
-              MapSet.union (MapSet.mapSet (const $ Set.singleton 0)
-                            $ MapSet.union aF aP)
+              MapSet.union (MapSet.mapSet (const $ Set.singleton 0) aA)
               $ collM funS $ MapSet.mapSet (Set.delete 0) $ boundFunc ti
-        else MapSet.foldWithKey (MapSet.insert . stringToId) MapSet.empty
+        else mapNs
+             $ MapSet.union
+               (if isFol then
+                 MapSet.mapSet (const $ Set.singleton seqType) aRF
+               else MapSet.insert funS seqFunType MapSet.empty)
              $ MapSet.union (MapSet.mapSet (const $ Set.singleton
-               $ mkTotOpType [list] individual) aRF)
-             $ MapSet.union (MapSet.mapSet (const $ Set.singleton
-               $ mkTotOpType [] individual) aC)
+               $ mkTotOpType [] individual) $ if isFol then aC else aA)
              $ MapSet.fromList
              $ map (\ s -> (s, [mkTotOpType [] list]))
              $ Set.toList $ seqMarkers ti
       aP = arityPred ti
-      pm = if isC then
-        MapSet.foldWithKey (\ n ar preds ->
-          MapSet.insert (stringToId n) (predTypeSign ar) preds
-        ) MapSet.empty $ if isFol then aP else collM relS $ boundPred ti
-        else MapSet.foldWithKey (MapSet.insert . stringToId) MapSet.empty
-             $ MapSet.mapSet (const $ Set.singleton
-               $ PredType [list]) aP
+      pm | isC =
+            MapSet.foldWithKey (\ n ar preds ->
+            MapSet.insert (stringToId n) (predTypeSign ar) preds
+            ) MapSet.empty $ if isFol then aP else collM relS $ boundPred ti
+         | isFol = mapNs $ MapSet.mapSet (const $ Set.singleton
+            $ PredType [list]) aP
+         | otherwise = MapSet.insert (stringToId relS) seqRelType MapSet.empty
   in (emptySign ())
             { sortRel = Rel.insertKey individual Rel.empty
             , opMap = om
@@ -288,21 +302,20 @@ senForm b bndVars form = case form of
           t1 <- termForm b bndVars $ uncurryTerm trm1
           t2 <- termForm b bndVars $ uncurryTerm trm2
           return $ CBasic.Equation t1 CBasic.Strong t2 rn
-      Cl.Atom trm tseqs -> if compact b then do
-          trmSeqs <- mapM (termSeqForm b bndVars) tseqs
+      Cl.Atom trm tseqs -> do
+          trmSeqs <- termSeq b bndVars tseqs
           let ar = length tseqs
+              isC = compact b
           if format b <= FirstOrder then do
-              trmFP <- termFormPrd (uncurryTerm trm) ar
+              trmFP <- termFormPrd (uncurryTerm trm)
+                $ if isC then Just ar else Nothing
               return $ CBasic.Predication trmFP trmSeqs rn
             else do
               trm1 <- termForm b bndVars trm
               return $ CBasic.Predication
-                (CBasic.mkQualPred (stringToId relS) $ predType $ ar + 1)
+                (CBasic.mkQualPred (stringToId relS)
+                $ if isC then predType $ ar + 1 else toPRED_TYPE seqRelType)
                 (trm1 : trmSeqs) rn
-        else do
-          trmFP <- termFormPrdSeq (uncurryTerm trm)
-          arg <- foldr (fTermSeq b bndVars) (return mkNil) tseqs
-          return $ CBasic.Predication trmFP [arg] rn
   Cl.Comment_sent _ s _ -> senForm b bndVars s
   Cl.Irregular_sent s _ -> senForm b bndVars s
 
@@ -364,49 +377,35 @@ termForm b bndVars trm = case trm of
       then return $ CBasic.Qual_var (mkSimpleId $ tok2Str n)
         individual nullRange
       else do
-        trmFA <- termFormApp trm 0
+        trmFA <- termFormApp trm (Just 0)
         return $ CBasic.Application trmFA [] nullRange
-  Cl.Funct_term term tseqs rn -> if compact b then do
+  Cl.Funct_term term tseqs rn -> do
       let ar = length tseqs
-      trmSF <- mapM (termSeqForm b bndVars) tseqs
+          isC = compact b
+      trmSF <- termSeq b bndVars tseqs
       if format b <= FirstOrder then do
-         trmFA <- termFormApp term ar
+         trmFA <- termFormApp term $ if isC then Just ar else Nothing
          return $ CBasic.Application trmFA trmSF rn
         else do
          trm1 <- termForm b bndVars term
          return $ CBasic.Application
-            (CBasic.mkQualOp (stringToId funS) $ opType $ ar + 1)
+            (CBasic.mkQualOp (stringToId funS) $ if isC then opType $ ar + 1
+              else toOP_TYPE seqFunType)
             (trm1 : trmSF) rn
-    else do
-      trmFA <- termFormAppSeq term
-      arg <- foldr (fTermSeq b bndVars) (return mkNil) tseqs
-      return $ CBasic.Application trmFA [arg] rn
   Cl.Comment_term term _ _ -> termForm b bndVars (uncurryTerm term)
   Cl.That_term {} -> fail "CommonLogic2CASLCompact.termForm"
 
-termFormAppSeq :: Cl.TERM -> Result CBasic.OP_SYMB
-termFormAppSeq trm = case trm of
-  Cl.Name_term n -> return $ mkQualOp (tok2Id n)
-    $ toOP_TYPE $ mkTotOpType [list] individual
-  Cl.Comment_term t _ _ -> termFormAppSeq t
-  _ -> fail errCurriedFunctionS
-
-termFormApp :: Cl.TERM -> Int -> Result CBasic.OP_SYMB
+termFormApp :: Cl.TERM -> Maybe Int -> Result CBasic.OP_SYMB
 termFormApp trm ar = case trm of
-  Cl.Name_term n -> return $ mkQualOp (tok2Id n) $ opType ar
+  Cl.Name_term n -> return $ mkQualOp (tok2Id n) $ maybe (toOP_TYPE seqType)
+     opType ar
   Cl.Comment_term t _ _ -> termFormApp t ar
   _ -> fail errCurriedFunctionS
 
-termFormPrdSeq :: Cl.TERM -> Result CBasic.PRED_SYMB
-termFormPrdSeq trm = case trm of
-  Cl.Name_term n -> return $ mkQualPred (tok2Id n) $ Pred_type [list] nullRange
-  Cl.Comment_term t _ _ -> termFormPrdSeq t
-  Cl.Funct_term {} -> fail $ errFunctionReturnedPredicateS trm
-  Cl.That_term {} -> fail "CommonLogic2CASLCompact.termFormPrd"
-
-termFormPrd :: Cl.TERM -> Int -> Result CBasic.PRED_SYMB
+termFormPrd :: Cl.TERM -> Maybe Int -> Result CBasic.PRED_SYMB
 termFormPrd trm ar = case trm of
-  Cl.Name_term n -> return $ mkQualPred (tok2Id n) $ predType ar
+  Cl.Name_term n -> return $ mkQualPred (tok2Id n) $ maybe
+    (Pred_type [list] nullRange) predType ar
   Cl.Comment_term t _ _ -> termFormPrd t ar
   Cl.Funct_term {} -> fail $ errFunctionReturnedPredicateS trm
   Cl.That_term {} -> fail "CommonLogic2CASLCompact.termFormPrd"
@@ -416,6 +415,17 @@ termSeqForm :: CLSub -> Set.Set Cl.NAME -> Cl.TERM_SEQ
 termSeqForm b bndVars tseq = case tseq of
   Cl.Term_seq trm -> termForm b bndVars $ uncurryTerm trm
   Cl.Seq_marks s -> return $ mkVarTerm (mkSimpleId $ tok2Str s) list
+
+termSeq :: CLSub -> Set.Set Cl.NAME -> [Cl.TERM_SEQ] -> Result [CBasic.TERM ()]
+termSeq b = if compact b then mapTermSeq b else foldTermSeq b
+
+mapTermSeq :: CLSub -> Set.Set Cl.NAME -> [Cl.TERM_SEQ]
+  -> Result [CBasic.TERM ()]
+mapTermSeq b bndVars = mapM (termSeqForm b bndVars)
+
+foldTermSeq :: CLSub -> Set.Set Cl.NAME -> [Cl.TERM_SEQ]
+  -> Result [CBasic.TERM ()]
+foldTermSeq b bndVars = fmap (: []) . foldr (fTermSeq b bndVars) (return mkNil)
 
 fTermSeq :: CLSub -> Set.Set Cl.NAME -> Cl.TERM_SEQ -> Result (CBasic.TERM ())
   -> Result (CBasic.TERM ())
