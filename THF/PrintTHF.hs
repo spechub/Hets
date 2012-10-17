@@ -257,6 +257,7 @@ instance Pretty AssocConnective where
     pretty OR     = text "|"
 
 instance Pretty DefinedType where
+    pretty DT_oType = text "$o"
     pretty dt = text $ '$' : drop 3 (show dt)
 
 instance Pretty DefinedPlainFormula where
