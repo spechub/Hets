@@ -21,8 +21,6 @@ module CommonLogic.Sublogic
     , bottom              -- Propositional
     , propsl              -- Propositional
     , folsl               -- FirstOrderLogic
-    , compactsl           -- Beyond FOL, but without seqMarks
-    , funcNoPredsl        -- Beyond Compact, but no function returns a predicate
     , fullclsl            -- FullCommonLogic
     , sublogics_all       -- all sublogics
     , sublogics_name      -- name of sublogics
@@ -61,7 +59,6 @@ datatypes                                                                 --
 data CLTextType =
     Propositional      -- ^ Text without quantifiers
   | FirstOrder         -- ^ Text in First Order Logic
-  | FuncNoPred         -- ^ beyond Compact, but no function returns a predicate
   | Impredicative
   deriving (Show, Eq, Ord, Enum, Bounded)
 
@@ -96,13 +93,9 @@ bottom = CommonLogicSL minBound True
 fullclsl :: CommonLogicSL
 fullclsl = top
 
--- | FuncNoPred as Sublogic
-funcNoPredsl :: CommonLogicSL
-funcNoPredsl = top {format = FuncNoPred}
-
 -- | Compact as Sublogic
-compactsl :: CommonLogicSL
-compactsl = funcNoPredsl { compact = True }
+impsl :: CommonLogicSL
+impsl = top { compact = True }
 
 -- | FirstOrder as Sublogic
 folsl :: CommonLogicSL
@@ -243,7 +236,7 @@ sl_nameOrSeqmark prds cs nos =
 {- | determines the sublogic for names which are next to a quantifier,
 given predicates of the super-text -}
 sl_quantName :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
-sl_quantName prds _ n = if Set.member n prds then compactsl else folsl
+sl_quantName prds _ n = if Set.member n prds then impsl else folsl
 
 {- | determines the sublogic for names,
 given predicates of the super-text -}
@@ -277,7 +270,7 @@ sl_termSeq prds cs tseq =
 {- | determines the sublogic for names,
 given predicates of the super-text -}
 sl_nameInTermSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
-sl_nameInTermSeq prds _ n = if Set.member n prds then compactsl else propsl
+sl_nameInTermSeq prds _ n = if Set.member n prds then impsl else propsl
 
 {- | determines the sublogic for terms inside of a term-sequence,
 given predicates of the super-text -}
@@ -315,10 +308,7 @@ Conversion functions to String                                            --
 
 -- | String representation of a Sublogic
 sublogics_name :: CommonLogicSL -> String
-sublogics_name f = case format f of
-                     FuncNoPred -> "FunctionsNotReturningPredicate"
-                     s -> show s
-                 ++ if compact f then "" else "Seq"
+sublogics_name f = show (format f) ++ if compact f then "" else "Seq"
 
 {- -----------------------------------------------------------------------------
 Projections to sublogics                                                  --
