@@ -20,7 +20,7 @@ cd ../..
 
 makeLibCheck
 installHetsBinary pc-solaris
-\cp -fp hets /home/pub-bkb/pc-solaris/bin/
+\cp -fp hets /home/pub-bkb/pc-solaris/hets/bin/
 
 copyStyForCgi
 latexBasicLibraries
