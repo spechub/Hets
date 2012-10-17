@@ -26,7 +26,6 @@ import Common.Token
 import Common.Result
 import Common.AS_Annotation as AS_Anno
 import Common.Lib.MapSet (MapSet)
-import Common.DocUtils (pretty)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import Common.Id
@@ -296,19 +295,20 @@ senForm b bndVars form = case form of
           Cl.Existential -> CBasic.Existential) rn bndVars bs s
   Cl.Atom_sent at rn -> case at of
       Cl.Equation trm1 trm2 -> do
-          t1 <- termForm b bndVars $ uncurryTerm trm1
-          t2 <- termForm b bndVars $ uncurryTerm trm2
+          t1 <- termForm b bndVars trm1
+          t2 <- termForm b bndVars trm2
           return $ CBasic.Equation t1 CBasic.Strong t2 rn
       Cl.Atom trm tseqs -> do
-          trmSeqs <- termSeq b bndVars tseqs
-          let ar = length tseqs
+          let (rt, rseq) = uncurryTermWithArgs trm tseqs
+          trmSeqs <- termSeq b bndVars rseq
+          let ar = length rseq
               isC = compact b
           if format b <= FirstOrder then do
-              trmFP <- termFormPrd (uncurryTerm trm)
+              trmFP <- termFormPrd rt
                 $ if isC then Just ar else Nothing
               return $ CBasic.Predication trmFP trmSeqs rn
             else do
-              trm1 <- termForm b bndVars trm
+              trm1 <- termForm b bndVars rt
               return $ CBasic.Predication
                 (CBasic.mkQualPred (stringToId relS)
                 $ if isC then predType $ ar + 1 else toPRED_TYPE seqRelType)
@@ -377,7 +377,8 @@ termForm b bndVars trm = case trm of
       else do
         trmFA <- termFormApp trm (Just 0)
         return $ CBasic.Application trmFA [] nullRange
-  Cl.Funct_term term tseqs rn -> do
+  Cl.Funct_term oterm oseq rn -> do
+      let (term, tseqs) = uncurryTermWithArgs oterm oseq
       let ar = length tseqs
           isC = compact b
       trmSF <- termSeq b bndVars tseqs
@@ -390,8 +391,8 @@ termForm b bndVars trm = case trm of
             (CBasic.mkQualOp (stringToId funS) $ if isC then opType $ ar + 1
               else toOP_TYPE seqFunType)
             (trm1 : trmSF) rn
-  Cl.Comment_term term _ _ -> termForm b bndVars (uncurryTerm term)
-  Cl.That_term {} -> fail "CL2CFOL.termForm"
+  Cl.Comment_term term _ _ -> termForm b bndVars term
+  Cl.That_term {} -> fail "CL2CFOL: that-terms not supported"
 
 termFormApp :: Cl.TERM -> Maybe Int -> Result CBasic.OP_SYMB
 termFormApp trm ar = case trm of
@@ -405,13 +406,12 @@ termFormPrd trm ar = case trm of
   Cl.Name_term n -> return $ mkQualPred (tok2Id n) $ maybe
     (Pred_type [list] nullRange) predType ar
   Cl.Comment_term t _ _ -> termFormPrd t ar
-  Cl.Funct_term {} -> fail $ errFunctionReturnedPredicateS trm
-  Cl.That_term {} -> fail "CL2CFOL.termFormPrd"
+  _ -> fail "CL2CFOL.termFormPrd"
 
 termSeqForm :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.TERM_SEQ
   -> Result (CBasic.TERM ())
 termSeqForm b bndVars tseq = case tseq of
-  Cl.Term_seq trm -> termForm b bndVars $ uncurryTerm trm
+  Cl.Term_seq trm -> termForm b bndVars trm
   Cl.Seq_marks s -> return $ mkVarTerm (mkSimpleId $ tok2Str s) list
 
 termSeq, mapTermSeq, foldTermSeq :: CommonLogicSL -> Set.Set Cl.NAME
@@ -428,7 +428,7 @@ fTermSeq b bndVars tseq r = do
   l <- r
   case tseq of
    Cl.Term_seq trm -> do
-     i <- termForm b bndVars $ uncurryTerm trm
+     i <- termForm b bndVars trm
      return $ mkCons i l
    Cl.Seq_marks s ->
      let e = mkVarTerm (mkSimpleId $ tok2Str s) list
@@ -484,10 +484,12 @@ colTiSen sen = case sen of
           return $ unionsTI cti
   Cl.Atom_sent a _ -> case a of
       Cl.Equation t1 t2 -> do
-          cti <- mapM (colTiTrmVar . uncurryTerm) [t1, t2]
+          cti <- mapM colTiTrm [t1, t2]
           return $ unionsTI cti
-      Cl.Atom t [] -> colTiTrmProp $ uncurryTerm t
-      Cl.Atom t tseqs -> colTiAddArity Pred (uncurryTerm t) tseqs
+      Cl.Atom t tseqs -> let (rt, rseq) = uncurryTermWithArgs t tseqs in
+        case rseq of
+          [] -> colTiTrmProp rt
+          _ -> colTiAddArity Pred rt rseq
   Cl.Comment_sent _ s _ -> colTiSen s
   Cl.Irregular_sent s _ -> colTiSen s
 
@@ -496,15 +498,6 @@ nosString nos = return . tok2Str $ case nos of
   Cl.Name n -> n
   Cl.SeqMark s -> s
 
-colTiTrmVar :: Cl.TERM -> Result TextInfo
-colTiTrmVar trm = case trm of
-  Cl.Name_term n -> let m = MapSet.insert (tok2Str n) 0 MapSet.empty in
-    return $ emptyTI
-      { arityFunc = m
-      , boundFunc = m }
-  Cl.Comment_term t _ _ -> colTiTrmVar t
-  _ -> colTiTrm $ uncurryTerm trm
-
 colTiTrmProp :: Cl.TERM -> Result TextInfo
 colTiTrmProp trm = case trm of
   Cl.Name_term n -> let m = MapSet.insert (tok2Str n) 0 MapSet.empty in
@@ -512,25 +505,32 @@ colTiTrmProp trm = case trm of
     { arityPred = m
     , boundPred = m }
   Cl.Comment_term t _ _ -> colTiTrmProp t
-  _ -> colTiTrm $ uncurryTerm trm
+  _ -> colTiTrm trm
 
 colTiTrm :: Cl.TERM -> Result TextInfo
 colTiTrm trm = case trm of
-  Cl.Name_term _ -> return emptyTI
-  Cl.Funct_term t tseqs _ -> colTiAddArity Func t tseqs
-  Cl.Comment_term t _ _ -> colTiTrm $ uncurryTerm t
-  Cl.That_term {} -> fail "CL2CFOL.colTiTrm"
+  Cl.Name_term n -> let m = MapSet.insert (tok2Str n) 0 MapSet.empty in
+    return $ emptyTI
+      { arityFunc = m
+      , boundFunc = m }
+  Cl.Funct_term t tseqs _ -> let (rt, rseq) = uncurryTermWithArgs t tseqs in
+        case rseq of
+          [] -> colTiTrmProp rt
+          _ -> colTiAddArity Func rt rseq
+  Cl.Comment_term t _ _ -> colTiTrm t
+  Cl.That_term s _ -> colTiSen s
 
 colTiTrmSeq :: Cl.TERM_SEQ -> Result TextInfo
 colTiTrmSeq tseq = case tseq of
-  Cl.Term_seq trm -> colTiTrmVar trm
+  Cl.Term_seq trm -> colTiTrm trm
   Cl.Seq_marks s -> return $ emptyTI
     { seqMarkers = Set.singleton (tok2Str s) }
 
 colTiAddArity :: PredOrFunc -> Cl.TERM -> [Cl.TERM_SEQ] -> Result TextInfo
-colTiAddArity ty trm tseqs = case trm of
-  Cl.Name_term n -> do
-      cti <- mapM colTiTrmSeq tseqs
+colTiAddArity ty trm tseqs = do
+  cti <- mapM colTiTrmSeq tseqs
+  case trm of
+    Cl.Name_term n -> do
       let m = MapSet.insert (tok2Str n) (length tseqs) MapSet.empty
       return $ unionsTI
              $ ( if ty == Pred
@@ -539,19 +539,12 @@ colTiAddArity ty trm tseqs = case trm of
                   else emptyTI { arityFunc = m
                                , boundFunc = m }
                   ) : cti
-  Cl.Funct_term {} -> colTiTrm $ uncurryTerm trm -- FIX predicate "(f x) y"
-  Cl.Comment_term t _ _ -> colTiAddArity ty t tseqs
-  Cl.That_term {} -> fail "CL2CFOL.colTiAddArity"
+    _ -> do
+      ti <- colTiTrm trm
+      return . unionsTI $ ti : cti
 
 {- If curried, uncurries term. Otherwise original term returned
 removes comments -}
-uncurryTerm :: Cl.TERM -> Cl.TERM
-uncurryTerm trm = case trm of
-  Cl.Funct_term t tseqs rn ->
-      let (nt, args) = uncurryTermWithArgs t tseqs in
-      Cl.Funct_term nt args rn
-  Cl.Comment_term t _ _ -> uncurryTerm t
-  _ -> trm
 
 uncurryTermWithArgs :: Cl.TERM -> [Cl.TERM_SEQ] -> (Cl.TERM, [Cl.TERM_SEQ])
 uncurryTermWithArgs trm tseqs = case trm of
@@ -562,7 +555,3 @@ uncurryTermWithArgs trm tseqs = case trm of
 errCurriedFunctionS :: String
 errCurriedFunctionS = "Comorphism CL2CFOL error: "
   ++ "Found curried function"
-
-errFunctionReturnedPredicateS :: Cl.TERM -> String
-errFunctionReturnedPredicateS t = "Comorphism CL2CFOL error: "
-  ++ "Function returned predicate " ++ show (pretty t)

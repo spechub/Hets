@@ -223,11 +223,13 @@ slAppl prds cs t tseq = comp_list
   $ (if isNameTerm t then folsl else impsl)
   : sl_term prds cs t : map (sl_termSeq prds cs) tseq
 
+-- check for a curried name application
 isNameTerm :: TERM -> Bool
 isNameTerm term = case term of
   Name_term _ -> True
   Comment_term t _ _ -> isNameTerm t
-  _ -> False
+  Funct_term t _ _ -> isNameTerm t
+  That_term {} -> False
 
 {- | determines the sublogic for NAME_OR_SEQMARK,
 given predicates of the super-text -}
