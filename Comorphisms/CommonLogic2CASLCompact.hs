@@ -15,7 +15,7 @@ Translating comorphism from Common Logic
 -}
 
 module Comorphisms.CommonLogic2CASLCompact
-  ( CommonLogic2CASLCompact (..)
+  ( CL2CFOL (..)
   ) where
 
 import Logic.Logic as Logic
@@ -53,24 +53,20 @@ import qualified CASL.Sublogic as CSL
 import CASL.Sign as CSign
 import CASL.Morphism as CMor
 
-type CLSub = ClSl.CommonLogicSL
+newtype CL2CFOL = CL2CFOL { fol :: CommonLogicSL } deriving Show
 
-data CommonLogic2CASLCompact = CLCompact2CASL
-  { fol :: CLSub } deriving Show
+showCLTextType :: Bool -> CLTextType -> String
+showCLTextType b s = case s of
+  FirstOrder -> if b then "Fol" else "Seq"
+  Impredicative -> if b then "Imp" else "Full"
+  _ -> show s ++ if b then "Compact" else ""
 
-showCLTextType :: CLTextType -> String
-showCLTextType s = case s of
-  FirstOrder -> "Fol"
-  Impredicative -> "Imp"
-  _ -> show s
-
-instance Language CommonLogic2CASLCompact where
-  language_name (CLCompact2CASL b) = "CommonLogic"
-    ++ showCLTextType (format b) ++ "2CASL"
-     ++ if compact b then "Compact" else ""
+instance Language CL2CFOL where
+  language_name (CL2CFOL b) = "CL"
+    ++ showCLTextType (compact b) (format b) ++ "2CFOL"
 
 instance Comorphism
-    CommonLogic2CASLCompact -- comorphism
+    CL2CFOL -- comorphism
     ClLogic.CommonLogic     -- lid domain
     ClSl.CommonLogicSL      -- sublogics codomain
     Cl.BASIC_SPEC           -- Basic spec domain
@@ -94,14 +90,14 @@ instance Comorphism
     CMor.RawSymbol          -- rawsymbol codomain
     ProofTree               -- proof tree domain
     where
-      sourceLogic (CLCompact2CASL _) = ClLogic.CommonLogic
-      sourceSublogic (CLCompact2CASL b) = b
-      targetLogic (CLCompact2CASL _) = CLogic.CASL
-      mapSublogic (CLCompact2CASL _) = Just . mapSub
-      map_theory (CLCompact2CASL b) = mapTheory b
-      map_morphism (CLCompact2CASL b) = mapMor b
-      map_sentence (CLCompact2CASL b) = mapSentence b
-      has_model_expansion (CLCompact2CASL _) = True
+      sourceLogic (CL2CFOL _) = ClLogic.CommonLogic
+      sourceSublogic (CL2CFOL b) = b
+      targetLogic (CL2CFOL _) = CLogic.CASL
+      mapSublogic (CL2CFOL _) = Just . mapSub
+      map_theory (CL2CFOL b) = mapTheory b
+      map_morphism (CL2CFOL b) = mapMor b
+      map_sentence (CL2CFOL b) _ = mapSentence b
+      has_model_expansion (CL2CFOL _) = True
 
 data PredOrFunc = Pred | Func deriving (Eq, Ord, Show)
 
@@ -147,7 +143,7 @@ mapSub _ = CSL.cFol
         { CSL.cons_features = CSL.emptyMapConsFeature }
 
 -- unsuitable, mere signatures cannot be mapped properly!
-mapMor :: CLSub -> ClMor.Morphism -> Result CMor.CASLMor
+mapMor :: CommonLogicSL -> ClMor.Morphism -> Result CMor.CASLMor
 mapMor b mor = return (CMor.embedMorphism ()
   (mapSig b emptyTI) $ mapSig b emptyTI)
   { CMor.pred_map = trMor $ ClMor.propMap mor }
@@ -166,7 +162,7 @@ trMor mp =
       Map.empty
       mp
 
-mapTheory :: CLSub -> (ClSign.Sign, [AS_Anno.Named Cl.TEXT_META])
+mapTheory :: CommonLogicSL -> (ClSign.Sign, [AS_Anno.Named Cl.TEXT_META])
               -> Result (CASLSign, [AS_Anno.Named CBasic.CASLFORMULA])
 mapTheory b (_, form) = do
   ti <- fmap unionsTI $ mapM (collectTextInfo . AS_Anno.sentence) form
@@ -193,7 +189,7 @@ seqRelType = PredType [individual, list]
 mapNs :: Ord a => MapSet String a -> MapSet Id a
 mapNs = MapSet.foldWithKey (MapSet.insert . stringToId) MapSet.empty
 
-mapSig :: CLSub -> TextInfo -> CASLSign
+mapSig :: CommonLogicSL -> TextInfo -> CASLSign
 mapSig b ti =
   let isFol = format b <= FirstOrder
       isC = compact b
@@ -238,18 +234,18 @@ opTypeSign ar = mkTotOpType (replicate ar individual) individual
 predTypeSign :: Int -> PredType
 predTypeSign ar = PredType {predArgs = replicate ar individual}
 
-trNamedForm :: CLSub -> AS_Anno.Named Cl.TEXT_META
+trNamedForm :: CommonLogicSL -> AS_Anno.Named Cl.TEXT_META
             -> Result (AS_Anno.Named CBasic.CASLFORMULA)
 trNamedForm b = AS_Anno.mapNamedM $ trFormMeta b . eliminateModules
 
-mapSentence :: CLSub -> ClSign.Sign -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
-mapSentence b _ = trFormMeta b . eliminateModules
+mapSentence :: CommonLogicSL -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
+mapSentence b = trFormMeta b . eliminateModules
 
 -- ignores importations
-trFormMeta :: CLSub -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
+trFormMeta :: CommonLogicSL -> Cl.TEXT_META -> Result CBasic.CASLFORMULA
 trFormMeta b tm = trForm b $ Cl.getText tm
 
-trForm :: CLSub -> Cl.TEXT -> Result CBasic.CASLFORMULA
+trForm :: CommonLogicSL -> Cl.TEXT -> Result CBasic.CASLFORMULA
 trForm b form =
    case form of
      Cl.Text phrs rn -> do
@@ -267,16 +263,17 @@ trForm b form =
             Cl.Text [] _ -> True
             _ -> False
 
-phraseForm :: CLSub -> Cl.PHRASE -> Result CBasic.CASLFORMULA
+phraseForm :: CommonLogicSL -> Cl.PHRASE -> Result CBasic.CASLFORMULA
 phraseForm b phr = case phr of
-  Cl.Module _ -> error "CL2CASLCompact.phraseForm.Module"
+  Cl.Module _ -> error "CL2CFOL.phraseForm.Module"
   -- cannot occur because module elimination applied
   Cl.Sentence s -> senForm b Set.empty s
-  Cl.Importation _ -> error "CL2CASLCompact.phraseForm.Importation"
+  Cl.Importation _ -> error "CL2CFOL.phraseForm.Importation"
   -- cannot occur, because filtered
   Cl.Comment_text _ t _ -> trForm b t
 
-senForm :: CLSub -> Set.Set Cl.NAME -> Cl.SENTENCE -> Result CBasic.CASLFORMULA
+senForm :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.SENTENCE
+  -> Result CBasic.CASLFORMULA
 senForm b bndVars form = case form of
   Cl.Bool_sent bs rn -> case bs of
       Cl.Negation s -> do
@@ -320,7 +317,7 @@ senForm b bndVars form = case form of
   Cl.Irregular_sent s _ -> senForm b bndVars s
 
 -- checks for second order quantification
-quantSentForm :: CLSub -> QUANTIFIER -> Range -> Set.Set Cl.NAME
+quantSentForm :: CommonLogicSL -> QUANTIFIER -> Range -> Set.Set Cl.NAME
   -> [Cl.NAME_OR_SEQMARK] -> Cl.SENTENCE -> Result CBasic.CASLFORMULA
 quantSentForm b quantifier rn bndVars bs sen = do
   ti <- colTiSen sen
@@ -370,7 +367,8 @@ bndVarsToSet bndVars bs = do
         bs
   return $ foldr Set.insert bndVars res
 
-termForm :: CLSub -> Set.Set Cl.NAME -> Cl.TERM -> Result (CBasic.TERM ())
+termForm :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.TERM
+  -> Result (CBasic.TERM ())
 termForm b bndVars trm = case trm of
   Cl.Name_term n ->
       if Set.member n bndVars
@@ -393,7 +391,7 @@ termForm b bndVars trm = case trm of
               else toOP_TYPE seqFunType)
             (trm1 : trmSF) rn
   Cl.Comment_term term _ _ -> termForm b bndVars (uncurryTerm term)
-  Cl.That_term {} -> fail "CommonLogic2CASLCompact.termForm"
+  Cl.That_term {} -> fail "CL2CFOL.termForm"
 
 termFormApp :: Cl.TERM -> Maybe Int -> Result CBasic.OP_SYMB
 termFormApp trm ar = case trm of
@@ -408,27 +406,24 @@ termFormPrd trm ar = case trm of
     (Pred_type [list] nullRange) predType ar
   Cl.Comment_term t _ _ -> termFormPrd t ar
   Cl.Funct_term {} -> fail $ errFunctionReturnedPredicateS trm
-  Cl.That_term {} -> fail "CommonLogic2CASLCompact.termFormPrd"
+  Cl.That_term {} -> fail "CL2CFOL.termFormPrd"
 
-termSeqForm :: CLSub -> Set.Set Cl.NAME -> Cl.TERM_SEQ
+termSeqForm :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.TERM_SEQ
   -> Result (CBasic.TERM ())
 termSeqForm b bndVars tseq = case tseq of
   Cl.Term_seq trm -> termForm b bndVars $ uncurryTerm trm
   Cl.Seq_marks s -> return $ mkVarTerm (mkSimpleId $ tok2Str s) list
 
-termSeq :: CLSub -> Set.Set Cl.NAME -> [Cl.TERM_SEQ] -> Result [CBasic.TERM ()]
+termSeq, mapTermSeq, foldTermSeq :: CommonLogicSL -> Set.Set Cl.NAME
+  -> [Cl.TERM_SEQ] -> Result [CBasic.TERM ()]
 termSeq b = if compact b then mapTermSeq b else foldTermSeq b
 
-mapTermSeq :: CLSub -> Set.Set Cl.NAME -> [Cl.TERM_SEQ]
-  -> Result [CBasic.TERM ()]
 mapTermSeq b bndVars = mapM (termSeqForm b bndVars)
 
-foldTermSeq :: CLSub -> Set.Set Cl.NAME -> [Cl.TERM_SEQ]
-  -> Result [CBasic.TERM ()]
 foldTermSeq b bndVars = fmap (: []) . foldr (fTermSeq b bndVars) (return mkNil)
 
-fTermSeq :: CLSub -> Set.Set Cl.NAME -> Cl.TERM_SEQ -> Result (CBasic.TERM ())
-  -> Result (CBasic.TERM ())
+fTermSeq :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.TERM_SEQ
+  -> Result (CBasic.TERM ()) -> Result (CBasic.TERM ())
 fTermSeq b bndVars tseq r = do
   l <- r
   case tseq of
@@ -524,7 +519,7 @@ colTiTrm trm = case trm of
   Cl.Name_term _ -> return emptyTI
   Cl.Funct_term t tseqs _ -> colTiAddArity Func t tseqs
   Cl.Comment_term t _ _ -> colTiTrm $ uncurryTerm t
-  Cl.That_term {} -> fail "CommonLogic2CASLCompact.colTiTrm"
+  Cl.That_term {} -> fail "CL2CFOL.colTiTrm"
 
 colTiTrmSeq :: Cl.TERM_SEQ -> Result TextInfo
 colTiTrmSeq tseq = case tseq of
@@ -546,7 +541,7 @@ colTiAddArity ty trm tseqs = case trm of
                   ) : cti
   Cl.Funct_term {} -> colTiTrm $ uncurryTerm trm -- FIX predicate "(f x) y"
   Cl.Comment_term t _ _ -> colTiAddArity ty t tseqs
-  Cl.That_term {} -> fail "CommonLogic2CASLCompact.colTiAddArity"
+  Cl.That_term {} -> fail "CL2CFOL.colTiAddArity"
 
 {- If curried, uncurries term. Otherwise original term returned
 removes comments -}
@@ -565,9 +560,9 @@ uncurryTermWithArgs trm tseqs = case trm of
   _ -> (trm, tseqs)
 
 errCurriedFunctionS :: String
-errCurriedFunctionS = "Comorphism CommonLogic2CASLCompact error: "
+errCurriedFunctionS = "Comorphism CL2CFOL error: "
   ++ "Found curried function"
 
 errFunctionReturnedPredicateS :: Cl.TERM -> String
-errFunctionReturnedPredicateS t = "Comorphism CommonLogic2CASLCompact error: "
+errFunctionReturnedPredicateS t = "Comorphism CL2CFOL error: "
   ++ "Function returned predicate " ++ show (pretty t)

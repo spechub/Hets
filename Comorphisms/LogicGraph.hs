@@ -176,10 +176,10 @@ comorphismList =
     , Comorphism CASL2VSEImport
     , Comorphism CASL2VSERefine
     , Comorphism Maude2CASL
-    , Comorphism (CLCompact2CASL folsl {compact = False})
-    , Comorphism (CLCompact2CASL fullclsl)
-    , Comorphism (CLCompact2CASL folsl)
-    , Comorphism (CLCompact2CASL fullclsl {compact = True})
+    , Comorphism (CL2CFOL folsl {compact = False})
+    , Comorphism (CL2CFOL fullclsl)
+    , Comorphism (CL2CFOL folsl)
+    , Comorphism (CL2CFOL fullclsl {compact = True})
     , Comorphism CommonLogicModuleElimination
     , Comorphism Prop2CommonLogic
     , Comorphism SoftFOL2CommonLogic
