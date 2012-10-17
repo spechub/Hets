@@ -14,6 +14,7 @@ module CommonLogic.PredefinedCASLAxioms where
 
 
 import Common.AS_Annotation
+import Common.GlobalAnnotations
 import Common.Id
 
 import qualified Common.Lib.MapSet as MapSet
@@ -23,6 +24,7 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 list :: Id
 list = stringToId "list"
@@ -77,6 +79,10 @@ baseListAxioms =
   , ga_nil_append
   , ga_cons_append ]
 
+-- currently a list annotation is needed in the .het file %list [__], nil, cons
+brId :: Id
+brId = mkId [mkSimpleId "[", placeTok, mkSimpleId "]"]
+
 -- | setting casl sign: sorts, cons, nil, append
 listSig :: CASLSign
 listSig = (emptySign ())
@@ -87,6 +93,12 @@ listSig = (emptySign ())
                          , (nil, [nilTypeS])
                          , (append, [appendTypeS])
                          ]
+               , globAnnos = emptyGlobalAnnos
+                     { literal_annos = emptyLiteralAnnos
+                       { list_lit = Map.singleton brId (nil, cons) }
+                     , literal_map = Map.fromList
+                          [ (cons, ListCons brId nil)
+                          , (nil, ListNull brId)]}
                }
 
 vx2 :: VAR_DECL
