@@ -399,7 +399,7 @@ termFormApp trm ar = case trm of
   Cl.Name_term n -> return $ mkQualOp (tok2Id n) $ maybe (toOP_TYPE seqType)
      opType ar
   Cl.Comment_term t _ _ -> termFormApp t ar
-  _ -> fail errCurriedFunctionS
+  _ -> fail "CL2CFOL.termFormApp"
 
 termFormPrd :: Cl.TERM -> Maybe Int -> Result CBasic.PRED_SYMB
 termFormPrd trm ar = case trm of
@@ -487,9 +487,7 @@ colTiSen sen = case sen of
           cti <- mapM colTiTrm [t1, t2]
           return $ unionsTI cti
       Cl.Atom t tseqs -> let (rt, rseq) = uncurryTermWithArgs t tseqs in
-        case rseq of
-          [] -> colTiTrmProp rt
-          _ -> colTiAddArity Pred rt rseq
+          colTiAddArity Pred rt rseq
   Cl.Comment_sent _ s _ -> colTiSen s
   Cl.Irregular_sent s _ -> colTiSen s
 
@@ -498,15 +496,6 @@ nosString nos = return . tok2Str $ case nos of
   Cl.Name n -> n
   Cl.SeqMark s -> s
 
-colTiTrmProp :: Cl.TERM -> Result TextInfo
-colTiTrmProp trm = case trm of
-  Cl.Name_term n -> let m = MapSet.insert (tok2Str n) 0 MapSet.empty in
-    return $ emptyTI
-    { arityPred = m
-    , boundPred = m }
-  Cl.Comment_term t _ _ -> colTiTrmProp t
-  _ -> colTiTrm trm
-
 colTiTrm :: Cl.TERM -> Result TextInfo
 colTiTrm trm = case trm of
   Cl.Name_term n -> let m = MapSet.insert (tok2Str n) 0 MapSet.empty in
@@ -514,9 +503,7 @@ colTiTrm trm = case trm of
       { arityFunc = m
       , boundFunc = m }
   Cl.Funct_term t tseqs _ -> let (rt, rseq) = uncurryTermWithArgs t tseqs in
-        case rseq of
-          [] -> colTiTrmProp rt
-          _ -> colTiAddArity Func rt rseq
+      colTiAddArity Func rt rseq
   Cl.Comment_term t _ _ -> colTiTrm t
   Cl.That_term s _ -> colTiSen s
 
@@ -527,21 +514,21 @@ colTiTrmSeq tseq = case tseq of
     { seqMarkers = Set.singleton (tok2Str s) }
 
 colTiAddArity :: PredOrFunc -> Cl.TERM -> [Cl.TERM_SEQ] -> Result TextInfo
-colTiAddArity ty trm tseqs = do
-  cti <- mapM colTiTrmSeq tseqs
-  case trm of
-    Cl.Name_term n -> do
-      let m = MapSet.insert (tok2Str n) (length tseqs) MapSet.empty
-      return $ unionsTI
+colTiAddArity ty trm tseqs = case trm of
+  Cl.Name_term n -> do
+    cti <- mapM colTiTrmSeq tseqs
+    let m = MapSet.insert (tok2Str n) (length tseqs) MapSet.empty
+    return $ unionsTI
              $ ( if ty == Pred
                   then emptyTI { arityPred = m
                                , boundPred = m }
                   else emptyTI { arityFunc = m
                                , boundFunc = m }
                   ) : cti
-    _ -> do
-      ti <- colTiTrm trm
-      return . unionsTI $ ti : cti
+  _ -> do
+    cti <- mapM colTiTrmSeq tseqs
+    ti <- colTiTrm trm
+    return . unionsTI $ ti : cti
 
 {- If curried, uncurries term. Otherwise original term returned
 removes comments -}
@@ -551,7 +538,3 @@ uncurryTermWithArgs trm tseqs = case trm of
   Cl.Funct_term t ts _ -> uncurryTermWithArgs t (ts ++ tseqs)
   Cl.Comment_term t _ _ -> uncurryTermWithArgs t tseqs
   _ -> (trm, tseqs)
-
-errCurriedFunctionS :: String
-errCurriedFunctionS = "Comorphism CL2CFOL error: "
-  ++ "Found curried function"
