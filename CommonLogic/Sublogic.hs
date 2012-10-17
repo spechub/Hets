@@ -12,8 +12,7 @@ Sublogics for CommonLogic
 -}
 
 module CommonLogic.Sublogic
-    (
-      sl_basic_spec       -- determine sublogic for basic spec
+    ( sl_basic_spec       -- determine sublogic for basic spec
     , CLTextType (..)     -- types of CommonLogic texts
     , CommonLogicSL (..)  -- sublogics for CommonLogic
     , sublogics_max       -- join of sublogics
@@ -45,11 +44,11 @@ import CommonLogic.Tools
 
 import Data.Function
 import qualified Data.Set as Set
-import qualified CommonLogic.AS_CommonLogic as AS
-import qualified Common.AS_Annotation as AS_Anno
-import qualified CommonLogic.Sign as Sign
-import qualified CommonLogic.Symbol as Symbol
-import qualified CommonLogic.Morphism as Morphism
+import CommonLogic.AS_CommonLogic
+import Common.AS_Annotation (Annoted (..))
+import CommonLogic.Sign
+import CommonLogic.Symbol
+import CommonLogic.Morphism
 
 {- -----------------------------------------------------------------------------
 datatypes                                                                 --
@@ -127,73 +126,73 @@ by recursing into all subelements                                        --
 ---------------------------------------------------------------------------- -}
 
 -- | determines the sublogic for a complete text
-sublogic_text :: CommonLogicSL -> AS.TEXT -> CommonLogicSL
+sublogic_text :: CommonLogicSL -> TEXT -> CommonLogicSL
 sublogic_text cs t = sl_text (prd_text t) cs t
 
 
 -- | determines the sublogic for symbol map items
-sl_symmap :: CommonLogicSL -> AS.SYMB_MAP_ITEMS
+sl_symmap :: CommonLogicSL -> SYMB_MAP_ITEMS
     -> CommonLogicSL
 sl_symmap cs _ = cs
 
 -- | determines the sublogic for a morphism
-sl_mor :: CommonLogicSL -> Morphism.Morphism -> CommonLogicSL
+sl_mor :: CommonLogicSL -> Morphism -> CommonLogicSL
 sl_mor cs _ = cs
 
 -- | determines the sublogic for a Signature
-sl_sig :: CommonLogicSL -> Sign.Sign -> CommonLogicSL
+sl_sig :: CommonLogicSL -> Sign -> CommonLogicSL
 sl_sig cs _ = cs
 
 -- | determines the sublogic for symbols
-sl_sym :: CommonLogicSL -> Symbol.Symbol -> CommonLogicSL
+sl_sym :: CommonLogicSL -> Symbol -> CommonLogicSL
 sl_sym cs _ = cs
 
 -- | determines sublogic for texts, given predicates of the super-text
-sl_text :: Set.Set AS.NAME -> CommonLogicSL -> AS.TEXT -> CommonLogicSL
+sl_text :: Set.Set NAME -> CommonLogicSL -> TEXT -> CommonLogicSL
 sl_text prds cs t =
     case t of
-        AS.Text ps _ -> sl_phrases prds cs ps
-        AS.Named_text _ nt _ -> sl_text prds cs nt
+        Text ps _ -> sl_phrases prds cs ps
+        Named_text _ nt _ -> sl_text prds cs nt
 
 -- | determines sublogic for phrases, given predicates of the super-text
-sl_phrases :: Set.Set AS.NAME -> CommonLogicSL -> [AS.PHRASE] -> CommonLogicSL
+sl_phrases :: Set.Set NAME -> CommonLogicSL -> [PHRASE] -> CommonLogicSL
 sl_phrases prds cs ps = foldl sublogics_max cs $ map (sl_phrase prds cs) ps
 
 -- | determines sublogic for a single phrase, given predicates of the super-text
-sl_phrase :: Set.Set AS.NAME -> CommonLogicSL -> AS.PHRASE -> CommonLogicSL
+sl_phrase :: Set.Set NAME -> CommonLogicSL -> PHRASE -> CommonLogicSL
 sl_phrase prds cs p =
     case p of
-        AS.Module m -> sl_module prds cs m
-        AS.Sentence s -> sl_sentence prds cs s
-        AS.Importation i -> sl_importation prds cs i
-        AS.Comment_text _ t _ -> sl_text prds cs t
+        Module m -> sl_module prds cs m
+        Sentence s -> sl_sentence prds cs s
+        Importation i -> sl_importation prds cs i
+        Comment_text _ t _ -> sl_text prds cs t
 
 -- | determines sublogic for a module, given predicates of the super-text
-sl_module :: Set.Set AS.NAME -> CommonLogicSL -> AS.MODULE -> CommonLogicSL
+sl_module :: Set.Set NAME -> CommonLogicSL -> MODULE -> CommonLogicSL
 sl_module prds cs m =
     case m of
-        AS.Mod _ t _ -> sl_text prds cs t
-        AS.Mod_ex _ _ t _ -> sl_text prds cs t
+        Mod _ t _ -> sl_text prds cs t
+        Mod_ex _ _ t _ -> sl_text prds cs t
 
 -- | determines sublogic for a sentence, given predicates of the super-text
-sl_sentence :: Set.Set AS.NAME -> CommonLogicSL -> AS.SENTENCE -> CommonLogicSL
+sl_sentence :: Set.Set NAME -> CommonLogicSL -> SENTENCE -> CommonLogicSL
 sl_sentence prds cs sen =
     case sen of
-        AS.Quant_sent q vs is _ -> sl_quantSent prds cs q vs is
-        AS.Bool_sent b _ -> sl_boolSent prds cs b
-        AS.Atom_sent a _ -> sl_atomSent prds cs a
-        AS.Comment_sent _ s _ -> sl_sentence prds cs s
-        AS.Irregular_sent s _ -> sl_sentence prds cs s
+        Quant_sent q vs is _ -> sl_quantSent prds cs q vs is
+        Bool_sent b _ -> sl_boolSent prds cs b
+        Atom_sent a _ -> sl_atomSent prds cs a
+        Comment_sent _ s _ -> sl_sentence prds cs s
+        Irregular_sent s _ -> sl_sentence prds cs s
 
 -- | determines the sublogic for importations (importations are ignored)
-sl_importation :: Set.Set AS.NAME -> CommonLogicSL -> AS.IMPORTATION
+sl_importation :: Set.Set NAME -> CommonLogicSL -> IMPORTATION
     -> CommonLogicSL
 sl_importation _ cs _ = cs
 
 {- | determines the sublogic for quantified sentences,
 given predicates of the super-text -}
-sl_quantSent :: Set.Set AS.NAME -> CommonLogicSL
-                -> AS.QUANT -> [AS.NAME_OR_SEQMARK] -> AS.SENTENCE
+sl_quantSent :: Set.Set NAME -> CommonLogicSL
+                -> QUANT -> [NAME_OR_SEQMARK] -> SENTENCE
                 -> CommonLogicSL
 sl_quantSent prds cs _ noss s =
   comp_list $ folsl : sl_sentence prds cs s
@@ -201,105 +200,110 @@ sl_quantSent prds cs _ noss s =
 
 {- | determines the sublogic for boolean sentences,
 given predicates of the super-text -}
-sl_boolSent :: Set.Set AS.NAME -> CommonLogicSL -> AS.BOOL_SENT -> CommonLogicSL
+sl_boolSent :: Set.Set NAME -> CommonLogicSL -> BOOL_SENT -> CommonLogicSL
 sl_boolSent prds cs b =
     case b of
-      AS.Junction _ ss -> comp_list $ map (sl_sentence prds cs) ss
-      AS.Negation s -> sl_sentence prds cs s
-      AS.BinOp _ s1 s2 ->
+      Junction _ ss -> comp_list $ map (sl_sentence prds cs) ss
+      Negation s -> sl_sentence prds cs s
+      BinOp _ s1 s2 ->
         sublogics_max (sl_sentence prds cs s1) (sl_sentence prds cs s2)
 
 {- | determines the sublogic for atoms,
 given predicates of the super-text -}
-sl_atomSent :: Set.Set AS.NAME -> CommonLogicSL -> AS.ATOM -> CommonLogicSL
+sl_atomSent :: Set.Set NAME -> CommonLogicSL -> ATOM -> CommonLogicSL
 sl_atomSent prds cs a =
     case a of
-        AS.Equation t1 t2 ->
+        Equation t1 t2 ->
             comp_list $ folsl : map (sl_term prds cs) [t1, t2]
-        AS.Atom t [] -> sl_term prds cs t
-        AS.Atom t tseq ->
-            let base = case t of
-                  AS.Funct_term {} -> fullclsl
-                  _ -> folsl
-            in comp_list $ base
-                            : sl_term prds cs t : map (sl_termSeq prds cs) tseq
+        Atom t [] -> sl_term prds cs t
+        Atom t tseq -> slAppl prds cs t tseq
+
+slAppl :: Set.Set NAME -> CommonLogicSL -> TERM -> [TERM_SEQ] -> CommonLogicSL
+slAppl prds cs t tseq = comp_list
+  $ (if isNameTerm t then folsl else impsl)
+  : sl_term prds cs t : map (sl_termSeq prds cs) tseq
+
+isNameTerm :: TERM -> Bool
+isNameTerm term = case term of
+  Name_term _ -> True
+  Comment_term t _ _ -> isNameTerm t
+  _ -> False
 
 {- | determines the sublogic for NAME_OR_SEQMARK,
 given predicates of the super-text -}
-sl_nameOrSeqmark :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME_OR_SEQMARK
+sl_nameOrSeqmark :: Set.Set NAME -> CommonLogicSL -> NAME_OR_SEQMARK
     -> CommonLogicSL
 sl_nameOrSeqmark prds cs nos =
     case nos of
-        AS.Name n -> sl_quantName prds cs n
-        AS.SeqMark _ -> bottom { compact = False }
+        Name n -> sl_quantName prds cs n
+        SeqMark _ -> cs { compact = False }
 
 {- | determines the sublogic for names which are next to a quantifier,
 given predicates of the super-text -}
-sl_quantName :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
+sl_quantName :: Set.Set NAME -> CommonLogicSL -> NAME -> CommonLogicSL
 sl_quantName prds _ n = if Set.member n prds then impsl else folsl
 
 {- | determines the sublogic for names,
 given predicates of the super-text -}
-sl_name :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
+sl_name :: Set.Set NAME -> CommonLogicSL -> NAME -> CommonLogicSL
 sl_name _ = sublogic_name
 
 {- | determines the sublogic for names,
 ignoring predicates -}
-sublogic_name :: CommonLogicSL -> AS.NAME -> CommonLogicSL
+sublogic_name :: CommonLogicSL -> NAME -> CommonLogicSL
 sublogic_name _ _ = propsl
 
 {- | determines the sublogic for terms,
 given predicates of the super-text -}
-sl_term :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM -> CommonLogicSL
+sl_term :: Set.Set NAME -> CommonLogicSL -> TERM -> CommonLogicSL
 sl_term prds cs term =
     case term of
-      AS.Name_term n -> sl_name prds cs n
-      AS.Funct_term t tseq _ ->
-          comp_list $ folsl : sl_term prds cs t : map (sl_termSeq prds cs) tseq
-      AS.Comment_term t _ _ -> sl_term prds cs t
-      AS.That_term {} -> fullclsl
+      Name_term n -> sl_name prds cs n
+      Funct_term t tseq _ -> slAppl prds cs t tseq
+      Comment_term t _ _ -> sl_term prds cs t
+      That_term {} -> impsl
 
 {- | determines the sublogic for term sequences,
 given predicates of the super-text -}
-sl_termSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM_SEQ -> CommonLogicSL
+sl_termSeq :: Set.Set NAME -> CommonLogicSL -> TERM_SEQ -> CommonLogicSL
 sl_termSeq prds cs tseq =
     case tseq of
-        AS.Term_seq t -> sl_termInSeq prds cs t
-        AS.Seq_marks _ -> bottom { compact = False }
+        Term_seq t -> sl_termInSeq prds cs t
+        Seq_marks _ -> cs { compact = False }
 
 {- | determines the sublogic for names,
 given predicates of the super-text -}
-sl_nameInTermSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
+sl_nameInTermSeq :: Set.Set NAME -> CommonLogicSL -> NAME -> CommonLogicSL
 sl_nameInTermSeq prds _ n = if Set.member n prds then impsl else propsl
 
 {- | determines the sublogic for terms inside of a term-sequence,
 given predicates of the super-text -}
-sl_termInSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM -> CommonLogicSL
+sl_termInSeq :: Set.Set NAME -> CommonLogicSL -> TERM -> CommonLogicSL
 sl_termInSeq prds cs term =
     case term of
-      AS.Name_term n -> sl_nameInTermSeq prds cs n
-      AS.Funct_term t tseq _ ->
+      Name_term n -> sl_nameInTermSeq prds cs n
+      Funct_term t tseq _ ->
           comp_list $ folsl : sl_term prds cs t : map (sl_termSeq prds cs) tseq
-      AS.Comment_term t _ _ -> sl_term prds cs t
-      AS.That_term {} -> fullclsl
+      Comment_term t _ _ -> sl_term prds cs t
+      That_term {} -> impsl
 
 -- | determines sublogic for basic items
-sl_basic_items :: CommonLogicSL -> AS.BASIC_ITEMS -> CommonLogicSL
-sl_basic_items cs (AS.Axiom_items axs) = comp_list $ map
-  (\ AS_Anno.Annoted {AS_Anno.item = tm} ->
-    uncurry (`sl_text` cs) $ getPreds $ AS.getText tm
+sl_basic_items :: CommonLogicSL -> BASIC_ITEMS -> CommonLogicSL
+sl_basic_items cs (Axiom_items axs) = comp_list $ map
+  (\ Annoted {item = tm} ->
+    uncurry (`sl_text` cs) $ getPreds $ getText tm
   ) axs
-  where getPreds :: AS.TEXT -> (Set.Set AS.NAME, AS.TEXT)
+  where getPreds :: TEXT -> (Set.Set NAME, TEXT)
         getPreds txt = (prd_text txt, txt)
 
 -- | determines sublogic for basic spec
-sl_basic_spec :: CommonLogicSL -> AS.BASIC_SPEC -> CommonLogicSL
-sl_basic_spec cs (AS.Basic_spec spec) =
-  comp_list $ map (sl_basic_items cs . AS_Anno.item) spec
+sl_basic_spec :: CommonLogicSL -> BASIC_SPEC -> CommonLogicSL
+sl_basic_spec cs (Basic_spec spec) =
+  comp_list $ map (sl_basic_items cs . item) spec
 
 -- | determines sublogc for symb items
-sl_symitems :: CommonLogicSL -> AS.SYMB_ITEMS -> CommonLogicSL
-sl_symitems _ (AS.Symb_items noss _) =
+sl_symitems :: CommonLogicSL -> SYMB_ITEMS -> CommonLogicSL
+sl_symitems _ (Symb_items noss _) =
   comp_list $ map (sl_nameOrSeqmark Set.empty bottom) noss
 
 {- -----------------------------------------------------------------------------
@@ -315,45 +319,42 @@ Projections to sublogics                                                  --
 ----------------------------------------------------------------------------- -}
 
 -- | projection of a symbol to a sublogic
-prSymbolM :: CommonLogicSL -> Symbol.Symbol -> Maybe Symbol.Symbol
+prSymbolM :: CommonLogicSL -> Symbol -> Maybe Symbol
 prSymbolM _ = Just
 
-prSymItemsM :: CommonLogicSL -> AS.SYMB_ITEMS -> Maybe AS.SYMB_ITEMS
-prSymItemsM cs si@(AS.Symb_items noss r) = case format cs of
+prSymItemsM :: CommonLogicSL -> SYMB_ITEMS -> Maybe SYMB_ITEMS
+prSymItemsM cs si@(Symb_items noss r) = case format cs of
   Impredicative -> Just si
-  _ -> Just $ AS.Symb_items (filter isName noss) r
+  _ -> Just $ Symb_items (filter isName noss) r
   where isName nos = case nos of
-          AS.Name _ -> True
+          Name _ -> True
           _ -> False
 
 -- | projection of a signature to a sublogic
-prSig :: CommonLogicSL -> Sign.Sign -> Sign.Sign
+prSig :: CommonLogicSL -> Sign -> Sign
 prSig _ = id
 
 -- | projection of a morphism to a sublogic
-prMor :: CommonLogicSL -> Morphism.Morphism -> Morphism.Morphism
+prMor :: CommonLogicSL -> Morphism -> Morphism
 prMor _ mor = mor
 
 -- | projection of symb map items to a sublogic
 prSymMapM :: CommonLogicSL
-          -> AS.SYMB_MAP_ITEMS
-          -> Maybe AS.SYMB_MAP_ITEMS
+          -> SYMB_MAP_ITEMS
+          -> Maybe SYMB_MAP_ITEMS
 prSymMapM _ = Just
 
 -- | projection of a name to a sublogic
-prName :: CommonLogicSL -> AS.NAME -> Maybe AS.NAME
+prName :: CommonLogicSL -> NAME -> Maybe NAME
 prName _ = Just
 
 {- | filters all TEXTs inside the BASIC_SPEC of which the sublogic is less than
 or equal to @cs@ -}
-prBasicSpec :: CommonLogicSL -> AS.BASIC_SPEC -> AS.BASIC_SPEC
-prBasicSpec cs (AS.Basic_spec items) = AS.Basic_spec $ map (maybeLE cs) items
+prBasicSpec :: CommonLogicSL -> BASIC_SPEC -> BASIC_SPEC
+prBasicSpec cs (Basic_spec items) = Basic_spec $ map (maybeLE cs) items
 
-maybeLE :: CommonLogicSL ->
-            AS_Anno.Annoted AS.BASIC_ITEMS -> AS_Anno.Annoted AS.BASIC_ITEMS
-maybeLE cs = fmap
-  $ \ (AS.Axiom_items i) -> AS.Axiom_items $ filter (isSL_LE cs) i
+maybeLE :: CommonLogicSL -> Annoted BASIC_ITEMS -> Annoted BASIC_ITEMS
+maybeLE cs = fmap $ \ (Axiom_items i) -> Axiom_items $ filter (isSL_LE cs) i
 
-isSL_LE :: CommonLogicSL -> AS_Anno.Annoted AS.TEXT_META -> Bool
-isSL_LE cs at =
-  sublogic_text bottom (AS.getText $ AS_Anno.item at) <= cs
+isSL_LE :: CommonLogicSL -> Annoted TEXT_META -> Bool
+isSL_LE cs at = sublogic_text bottom (getText $ item at) <= cs
