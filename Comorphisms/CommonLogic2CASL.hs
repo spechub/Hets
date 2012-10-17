@@ -31,7 +31,6 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 
 import Data.Function (on)
-import Data.List (partition, intersect)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -51,6 +50,8 @@ import CASL.AS_Basic_CASL as CBasic
 import qualified CASL.Sublogic as CSL
 import CASL.Sign as CSign
 import CASL.Morphism as CMor
+
+import Control.Monad
 
 newtype CL2CFOL = CL2CFOL { fol :: CommonLogicSL } deriving Show
 
@@ -324,18 +325,12 @@ quantSentForm b quantifier rn bndVars bs sen = do
   bSs <- mapM nosString bs
   let aF = arityFunc ti
       aP = arityPred ti
-      (predSs, opsVars) = partition
+      predSs = filter
           (\ n -> Map.member n $ MapSet.toMap aP) bSs
-      (opSs, predsVars) = partition
+      opSs = filter
           (\ n -> Map.member n $ MapSet.toMap
           $ MapSet.filter (/= 0) aF) bSs
-      isImp = format b > FirstOrder
-      vs = map (Cl.Name . mkSimpleId)
-        $ if isImp then bSs else intersect opsVars predsVars
-      preds = if isImp then MapSet.empty else
-        MapSet.filterWithKey (\ s _ -> elem s predSs) aP
-      ops = if isImp then MapSet.empty else
-        MapSet.filterWithKey (\ s _ -> elem s opSs) aF
+      vs = map (Cl.Name . mkSimpleId) bSs
   folSen <- if null vs
             then senForm b bndVars sen
             else do
@@ -343,13 +338,9 @@ quantSentForm b quantifier rn bndVars bs sen = do
               sf <- senForm b bndVarsSet sen
               bindSeq <- mapM bindingSeq bs
               return $ CBasic.Quantification quantifier bindSeq sf rn
-  let predSen = MapSet.foldWithKey (\ prd ar s ->
-          CBasic.QuantPred (stringToId prd) (predType ar) s
-        ) folSen preds
-  let opSen = MapSet.foldWithKey (\ op ar s ->
-          CBasic.QuantOp (stringToId op) (opType ar) s
-        ) predSen ops
-  return opSen
+  unless (null predSs) $ fail $ "higher order predicates: " ++ show predSs
+  unless (null opSs) $ fail $ "higher order functions: " ++ show opSs
+  return folSen
 
 opType :: Int -> CBasic.OP_TYPE
 opType ar =
