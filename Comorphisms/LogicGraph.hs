@@ -98,7 +98,7 @@ import Comorphisms.CASL2VSE
 import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
 import Comorphisms.Maude2CASL
-import Comorphisms.CommonLogic2CASLCompact
+import Comorphisms.CommonLogic2CASL
 import CommonLogic.Sublogic
 import Comorphisms.CommonLogicModuleElimination
 import Comorphisms.Prop2CommonLogic

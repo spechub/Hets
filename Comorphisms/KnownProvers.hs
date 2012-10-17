@@ -56,7 +56,7 @@ import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.Maude2CASL
-import Comorphisms.CommonLogic2CASLCompact
+import Comorphisms.CommonLogic2CASL
 import CommonLogic.Sublogic (folsl)
 import Comorphisms.Adl2CASL
 import CspCASL.Comorphisms
