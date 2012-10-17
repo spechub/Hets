@@ -338,8 +338,8 @@ quantSentForm b quantifier rn bndVars bs sen = do
               sf <- senForm b bndVarsSet sen
               bindSeq <- mapM bindingSeq bs
               return $ CBasic.Quantification quantifier bindSeq sf rn
-  unless (null predSs) $ fail $ "higher order predicates: " ++ show predSs
-  unless (null opSs) $ fail $ "higher order functions: " ++ show opSs
+  unless (null predSs) $ fail $ "unsupported bound predicates: " ++ show predSs
+  unless (null opSs) $ fail $ "unsupported bound functions: " ++ show opSs
   return folSen
 
 opType :: Int -> CBasic.OP_TYPE
