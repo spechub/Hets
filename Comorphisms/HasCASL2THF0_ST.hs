@@ -104,7 +104,7 @@ transTheory (env, hcnsl) = do
         (ns, nids) <- transNamedSentence (Just icm) ids env hcns
         return (ns : nsl, nids)
       s -> do
-        warning () ("ignoring: " ++ showDoc hcns "") (getRange s)
+        hint () ("ignoring: " ++ showDoc hcns "") (getRange s)
         return p
 
 -- Translation methods for the components a signature
