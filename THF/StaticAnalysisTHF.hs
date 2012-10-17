@@ -43,7 +43,7 @@ import qualified Data.Set as Set
 
 -- The main method for the static analysis
 basicAnalysis :: (BasicSpecTHF, SignTHF, GlobalAnnos) ->
-        Result (BasicSpecTHF, ExtSign SignTHF SymbolTHF, [Named SentenceTHF])
+        Result (BasicSpecTHF, ExtSign SignTHF SymbolTHF, [Named THFFormula])
 basicAnalysis (bs@(BasicSpecTHF bs1), sig1, _) =
     let (diag1, bs2) = filterBS [] bs1
         (diag2, sig2, syms) = execState (fillSig bs2) (diag1, sig1, Set.empty)
@@ -180,8 +180,8 @@ isTypeConsistent t sig = case t of
 
 -- Get all sentences from the content of the BasicSpecTH
 -- The diag list has a reverted order.
-getSentences :: [TPTP_THF] -> ([Diagnosis], [Named SentenceTHF])
-                           -> ([Diagnosis], [Named SentenceTHF])
+getSentences :: [TPTP_THF] -> ([Diagnosis], [Named THFFormula])
+                           -> ([Diagnosis], [Named THFFormula])
 getSentences [] dn = dn
 getSentences (t : rt) dn@(d, ns) = case t of
     TPTP_THF_Annotated_Formula _ fr _ _ -> case fr of
@@ -218,41 +218,34 @@ getSentences (t : rt) dn@(d, ns) = case t of
 -- Precondition: The formulaRole must not be Type, Unknown, Plain, Fi_Domain
 -- Fi_Functors, Fi_Predicates or Assumption
 -- (They are filtered out in getSentences)
-tptpthfToNS :: TPTP_THF -> Named SentenceTHF
+tptpthfToNS :: TPTP_THF -> Named THFFormula
 tptpthfToNS t = case formulaRoleAF t of
     Definition          ->
-        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
-        in SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
+           SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
                    , isDef = True, wasTheorem = False, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = sen }
+                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
     Conjecture          ->
-        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
-        in SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
+           SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
                    , isDef = False, wasTheorem = False, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = sen }
+                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
     Negated_Conjecture  ->
-        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
-        in SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
+           SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
                    , isDef = False, wasTheorem = False, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = sen }
+                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
     Theorem             ->
-        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
-        in SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
+           SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
                    , isDef = False, wasTheorem = True, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = sen }
+                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
     Lemma               ->
-        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
-        in SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
+           SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
                    , isDef = False, wasTheorem = True, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = sen }
+                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
     Hypothesis          -> --isAxiom = false
-        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
-        in SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = False
+           SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = False
                    , isDef = False, wasTheorem = False, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = sen }
+                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
     _                   -> -- Axiom
-        let sen = Sentence (formulaRoleAF t) (thfFormulaAF t) (annotationsAF t)
-        in makeNamed (show $ pretty $ nameAF t) sen
+           makeNamed (show $ pretty $ nameAF t) (thfFormulaAF t)
 
 
 --------------------------------------------------------------------------------

@@ -115,7 +115,7 @@ defci c = ConstInfo
 -- Axioms
 --------------------------------------------------------------------------------
 
-preDefAxioms :: Set.Set Id -> [Named SentenceTHF]
+preDefAxioms :: Set.Set Id -> [Named THFFormula]
 preDefAxioms ids =
     let axl = [ (notId,       notFS)
               , (negId,       notFS)
@@ -134,20 +134,15 @@ preDefAxioms ids =
                 (fromJust $ maybeResult $ transAssumpId i) fs)
            (filter (\ (i, _) -> Set.member i ids) axl)
 
-mkNSD :: Constant -> (Constant -> String) -> Named SentenceTHF
-mkNSD c f =
-    let s = Sentence
-            { senRole       = Definition
-            , senFormula    = genTHFFormula c f
-            , senAnno       = Null }
-    in SenAttr
+mkNSD :: Constant -> (Constant -> String) -> Named THFFormula
+mkNSD c f = SenAttr
         { senAttr = (show . pretty . mkDefName) c
         , isAxiom = True
         , isDef = True
         , wasTheorem = False
         , simpAnno = Nothing
         , attrOrigin = Nothing
-        , sentence = s }
+        , sentence = genTHFFormula c f }
 
 genTHFFormula :: Constant -> (Constant -> String) -> THFFormula
 genTHFFormula c f = case parse parseTHF "" (f c) of

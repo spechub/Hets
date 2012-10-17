@@ -19,7 +19,7 @@ module THF.SZSProver
 
 import Logic.Prover
 
-import THF.Cons
+import THF.As (THFFormula)
 import THF.Sign
 import THF.ProverState
 import THF.Sublogic
@@ -57,7 +57,7 @@ data ProverFuncs = ProverFuncs {
  getTimeUsed :: String -> Maybe Int -- in seconds
 }
 
-type ProverType = Prover SignTHF SentenceTHF MorphismTHF THFSl ProofTree
+type ProverType = Prover SignTHF THFFormula MorphismTHF THFSl ProofTree
 
 createSZSProver :: String -> String -> ProverFuncs ->
                    ProverType
@@ -69,7 +69,7 @@ atpFun :: ProverFuncs
   -> String -- name
   -> String -- ^ theory name
   -> String -- help text
-  -> ATPFunctions SignTHF SentenceTHF MorphismTHF ProofTree ProverStateTHF
+  -> ATPFunctions SignTHF THFFormula MorphismTHF ProofTree ProverStateTHF
 atpFun d name _ hlp = ATPFunctions
   { initialProverState = initialProverStateTHF
   , atpTransSenName = id
@@ -88,8 +88,8 @@ proverGUI :: String -- help text
     -> String -- name
     -> ProverFuncs
     -> String -- ^ theory name
-    -> Theory SignTHF SentenceTHF ProofTree
-    -> [FreeDefMorphism SentenceTHF MorphismTHF] -- ^ freeness constraints
+    -> Theory SignTHF THFFormula ProofTree
+    -> [FreeDefMorphism THFFormula MorphismTHF] -- ^ freeness constraints
     -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 proverGUI hlp name d thName th freedefs =
     genericATPgui (atpFun d name thName hlp) True name thName th
@@ -105,9 +105,9 @@ proverCMDLautomaticBatch
   -- ^ used to store the result of the batch run
   -> String -- ^ theory name
   -> TacticScript -- ^ default tactic script
-  -> Theory SignTHF SentenceTHF ProofTree
+  -> Theory SignTHF THFFormula ProofTree
   -- ^ theory consisting of a signature and sentences
-  -> [FreeDefMorphism SentenceTHF MorphismTHF] -- ^ freeness constraints
+  -> [FreeDefMorphism THFFormula MorphismTHF] -- ^ freeness constraints
   -> IO (Concurrent.ThreadId, Concurrent.MVar ())
      {- ^ fst: identifier of the batch thread for killing it
      snd: MVar to wait for the end of the thread -}
@@ -124,7 +124,7 @@ runProverT :: ProverFuncs
     -> GenericConfig ProofTree -- ^ configuration to use
     -> Bool -- ^ True means save THF file
     -> String -- ^ name of the theory in the DevGraph
-    -> Named SentenceTHF -- ^ goal to prove
+    -> Named THFFormula -- ^ goal to prove
     -> IO (ATPRetval, GenericConfig ProofTree)
     -- ^ (retval, configuration with proof status and complete output)
 runProverT d name pst cfg saveTHF thName nGoal = do

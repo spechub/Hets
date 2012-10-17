@@ -60,7 +60,7 @@ instance Comorphism HasCASL2THF0_ST
                 BasicSpec Sentence SymbItems SymbMapItems
                 Env Morphism Symbol RawSymbol ()
                 THF SL.THFSl
-                BasicSpecTHF SentenceTHF () ()
+                BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic HasCASL2THF0_ST = HasCASL
     sourceSublogic HasCASL2THF0_ST = reqSubLogicForTHF0 -- topLogic
@@ -84,7 +84,7 @@ reqSubLogicForTHF0 = Sublogic
 
 -- Translation of a Theory
 
-transTheory :: (Env, [Named Sentence]) -> Result (SignTHF, [Named SentenceTHF])
+transTheory :: (Env, [Named Sentence]) -> Result (SignTHF, [Named THFFormula])
 transTheory (env, hcnsl) = do
     (typs, icm) <- transTypeMap $ HCLe.typeMap env
     cons <- transAssumps (HCLe.assumps env) icm
@@ -97,8 +97,8 @@ transTheory (env, hcnsl) = do
                                 , symbols = syms }
     return (sig , ax)
   where
-    fNSen :: IdConstantMap -> ([Named SentenceTHF], IdSet)
-                -> Named Sentence -> Result ([Named SentenceTHF], IdSet)
+    fNSen :: IdConstantMap -> ([Named THFFormula], IdSet)
+                -> Named Sentence -> Result ([Named THFFormula], IdSet)
     fNSen icm p@(nsl, ids) hcns = case sentence hcns of
       Formula _ -> do
         (ns, nids) <- transNamedSentence (Just icm) ids env hcns
@@ -290,7 +290,7 @@ transSymbol sig1 sym1 = case HCLe.symType sym1 of
 -- Translating methods for Sentences
 
 transNamedSentence :: Maybe IdConstantMap -> IdSet -> Env -> Named Sentence
-                            -> Result (Named SentenceTHF, IdSet)
+                            -> Result (Named THFFormula, IdSet)
 transNamedSentence micm ids sig ns' = do
     icm <- maybe (genIdConstantMap sig) return micm
     let ns = reName (\ n -> case n of
@@ -299,10 +299,7 @@ transNamedSentence micm ids sig ns' = do
     case sentence ns of
         Formula term -> do
             (lf, nids) <- transTerm sig icm ids term
-            return ( ns {sentence =
-                THFCons.Sentence { senRole = getFormulaRole ns
-                                 , senFormula = TF_THF_Logic_Formula lf
-                                 , senAnno = Null }
+            return ( ns {sentence = TF_THF_Logic_Formula lf
                         , senAttr = fromMaybe (error "THF.transNamedSentence")
                           $ transToTHFString (senAttr ns) }
                    , nids)

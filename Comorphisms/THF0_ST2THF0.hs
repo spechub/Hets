@@ -39,10 +39,10 @@ instance Language THF0_ST2THF0
 
 instance Comorphism THF0_ST2THF0
                 THF SL.THFSl
-                BasicSpecTHF SentenceTHF () ()
+                BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree
                 THF SL.THFSl
-                BasicSpecTHF SentenceTHF () ()
+                BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic THF0_ST2THF0 = THF
     sourceSublogic THF0_ST2THF0 = SL.tHF0_ST
@@ -51,8 +51,8 @@ instance Comorphism THF0_ST2THF0
     map_theory THF0_ST2THF0 = trans_theory
     has_model_expansion THF0_ST2THF0 = True
 
-trans_theory :: (SignTHF,[Named SentenceTHF])
-                -> Result (SignTHF,[Named SentenceTHF])
+trans_theory :: (SignTHF,[Named THFFormula])
+                -> Result (SignTHF,[Named THFFormula])
 trans_theory (sig, sentences1) = do
  let (tp_trans,sig2) = rewriteTypes sig
      sig1 = case sig2 of
@@ -121,7 +121,7 @@ rewriteFns = rewriteTHF0 {
  rewriteVariableList = rewriteVariableList'
 }
 
-rewriteSen :: TransMap -> Named SentenceTHF -> Result (Named SentenceTHF)
+rewriteSen :: TransMap -> Named THFFormula -> Result (Named THFFormula)
 rewriteSen tp_trans = rewriteSenFun (rewriteFns,tp_trans)
 
 rewriteVariableList' :: (RewriteFuns TransMap,TransMap) -> [THFVariable]

@@ -20,6 +20,7 @@ import Common.AS_Annotation
 import THF.Cons
 import THF.Sign
 import THF.PrintTHF
+import THF.As (THFFormula,FormulaRole(..))
 
 import qualified Data.Map as Map
 
@@ -79,20 +80,19 @@ instance Pretty ConstInfo where
                 <> pretty (constAnno ci))
             <> text "."
 
--- for now only the THFFormulas of sentences are printed
-instance Pretty SentenceTHF where
-    pretty (Sentence _ f _) = pretty f
-
 -- print the signature, with axioms and the proof goal
-printProblemTHF :: SignTHF -> [Named SentenceTHF] -> Named SentenceTHF -> Doc
+printProblemTHF :: SignTHF -> [Named THFFormula] -> Named THFFormula -> Doc
 printProblemTHF sig ax gl = pretty sig $++$ text "%Axioms:" $+$
-    foldl (\ d e -> d $+$ printNamedSentenceTHF e) empty ax $++$
-    text "%Goal:" $+$ printNamedSentenceTHF gl
+    foldl (\ d e -> d $+$ printNamedSentenceTHF (Just Axiom) e) empty ax $++$
+    text "%Goal:" $+$ printNamedSentenceTHF (Just Conjecture) gl
 
 -- print a Named Sentence
-printNamedSentenceTHF :: Named SentenceTHF -> Doc
-printNamedSentenceTHF ns =
-    let (Sentence r f a) = sentence ns
-    in text "thf" <> parens (text (senAttr ns) <> comma
-            <+> pretty r <> comma <+> pretty f <> pretty a)
-        <> text "."
+printNamedSentenceTHF :: Maybe FormulaRole -> Named THFFormula -> Doc
+printNamedSentenceTHF r' f =
+ let r = case r' of
+          Just r'' -> r''
+          Nothing -> if isAxiom f then Axiom
+                     else Conjecture
+ in text "thf" <> parens (text (senAttr f) <> comma
+     <+> pretty r <> comma <+> pretty (sentence f))
+     <> text "."

@@ -28,6 +28,7 @@ import Logic.Logic
 
 import THF.ATC_THF ()
 import THF.Cons
+import THF.As (THFFormula)
 import THF.StaticAnalysisTHF
 import THF.ProveLeoII
 import THF.ProveIsabelle
@@ -57,14 +58,14 @@ instance Logic.Logic.Syntax THF BasicSpecTHF () () where
     parse_basic_spec THF = Just (\_ -> fmap BasicSpecTHF parseTHF)
     -- remaining default implementations are fine!
 
-instance Sentences THF SentenceTHF SignTHF MorphismTHF SymbolTHF where
+instance Sentences THF THFFormula SignTHF MorphismTHF SymbolTHF where
     map_sen THF _ = return
-    print_named THF = printNamedSentenceTHF
+    print_named THF = printNamedSentenceTHF Nothing
     {- sym_name THF =
     negation THF _ =
     other default implementations are fine -}
 
-instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
+instance StaticAnalysis THF BasicSpecTHF THFFormula () ()
                SignTHF MorphismTHF SymbolTHF () where
     basic_analysis THF = Just basicAnalysis
     empty_signature THF = emptySign
@@ -79,7 +80,7 @@ instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
 PATH environment variable leading to the leo executable
 (The executable leo.opt is not supported. In this case there should be a link
 called leo, or something like that.) -}
-instance Logic THF SL.THFSl BasicSpecTHF SentenceTHF () ()
+instance Logic THF SL.THFSl BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     all_sublogics THF = SL.sublogics_all
     stability THF = Testing

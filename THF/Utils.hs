@@ -158,11 +158,10 @@ rewriteTHF0 = RewriteFuns {
  rewriteConst = rewriteConst',
  rewriteConnTerm = rewriteConnTerm' }
 
-rewriteSenFun :: (RewriteFuns a, a) -> Named SentenceTHF
-               -> Result (Named SentenceTHF)
+rewriteSenFun :: (RewriteFuns a, a) -> Named THFFormula
+               -> Result (Named THFFormula)
 rewriteSenFun (fns,d) sen = do
- let sen_ = sentence sen
- sen' <- case senFormula . sentence $ sen of
+ sen' <- case sentence $ sen of
              TF_THF_Logic_Formula lf ->
               rewriteLogicFormula fns (fns,d) lf
                >>= return . TF_THF_Logic_Formula
@@ -171,7 +170,7 @@ rewriteSenFun (fns,d) sen = do
                tc
              TF_THF_Sequent s ->
               mkError "THF.Utils.rewriteSen: Sequents are not in THF0!" s
- return $ sen { sentence = sen_ { senFormula = sen' }}
+ return $ sen { sentence = sen' }
 
 rewriteLogicFormula' :: (RewriteFuns a, a) -> THFLogicFormula
                         -> Result THFLogicFormula

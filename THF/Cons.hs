@@ -25,23 +25,10 @@ import Common.Id
 --------------------------------------------------------------------------------
 
 data BasicSpecTHF =
-    BasicSpecTHF [TPTP_THF] --replace THFBS using Sublogic.hs
+    BasicSpecTHF [TPTP_THF]
     deriving (Show, Eq, Ord)
 
 instance GetRange BasicSpecTHF
-
---------------------------------------------------------------------------------
--- SentenceTHF
---------------------------------------------------------------------------------
-
--- A Sentence is a THFFormula.
-data SentenceTHF = Sentence
-    { senRole       :: FormulaRole
-    , senFormula    :: THFFormula
-    , senAnno       :: Annotations }
-    deriving (Show, Eq, Ord)
-
-instance GetRange SentenceTHF
 
 --------------------------------------------------------------------------------
 -- SymbolTHF

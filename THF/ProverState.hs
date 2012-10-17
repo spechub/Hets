@@ -17,7 +17,6 @@ module THF.ProverState where
 import Logic.Prover
 
 import THF.As
-import THF.Cons
 import THF.Sign
 import THF.Print
 
@@ -29,44 +28,32 @@ import Common.AS_Annotation
 --------------------------------------------------------------------------------
 
 data ProverStateTHF = ProverStateTHF
-    { axioms    :: [Named SentenceTHF]
+    { axioms    :: [Named THFFormula]
     , signature :: SignTHF
-    , freeDefs  :: [FreeDefMorphism SentenceTHF MorphismTHF] }
+    , freeDefs  :: [FreeDefMorphism THFFormula MorphismTHF] }
 
 -- Creates an initial THF prover state.
-initialProverStateTHF :: SignTHF -> [Named SentenceTHF]
-    -> [FreeDefMorphism SentenceTHF MorphismTHF]
+initialProverStateTHF :: SignTHF -> [Named THFFormula]
+    -> [FreeDefMorphism THFFormula MorphismTHF]
     -> ProverStateTHF
 initialProverStateTHF sign oSens freedefs = ProverStateTHF
     { axioms = filter isAxiom oSens
     , signature = sign
     , freeDefs = freedefs }
 
--- Insert a Named SentenceTHF into the ProverStateTHF
-insertSentenceTHF :: ProverStateTHF -> Named SentenceTHF -> ProverStateTHF
-insertSentenceTHF ps ns = ps {axioms = checkAxiom ns : axioms ps}
+-- todo: investigate comment about negated axioms
 
-showProblemTHF :: ProverStateTHF -> Named SentenceTHF -> [String] -> IO String
+-- Insert a Named SentenceTHF into the ProverStateTHF
+insertSentenceTHF :: ProverStateTHF -> Named THFFormula -> ProverStateTHF
+insertSentenceTHF ps ns = ps {axioms = ns : axioms ps}
+
+showProblemTHF :: ProverStateTHF -> Named THFFormula -> [String] -> IO String
 showProblemTHF ps goal _ = return $ show $ printProblemTHF (signature ps)
-            (filter isAxiom (map checkAxiom (axioms ps))) goal
+            (filter isAxiom (axioms ps)) goal
 
 -- Get all axioms possibly used in a proof.
 getAxioms :: ProverStateTHF -> [String]
-getAxioms = map senAttr . filter isAxiom . map checkAxiom . axioms
-
--- be carefull with negated_conjectures
--- eventually negated conjectures should be negated before the are transformed
--- into Axioms or Theorems
-checkAxiom :: Named SentenceTHF -> Named SentenceTHF
-checkAxiom ns =
-    let sen = sentence ns
-    in if isAxiom ns
-       then if elem (senRole sen) thfAxioms then ns
-            else if wasTheorem ns
-                 then ns { sentence = sen { senRole = Theorem } }
-                 else ns { sentence = sen { senRole = Axiom } }
-       else if elem (senRole sen) [Conjecture, Negated_Conjecture] then ns
-            else ns { sentence = sen { senRole = Conjecture } }
+getAxioms = map senAttr . filter isAxiom . axioms
 
 -- FormulaRoles that are treated like axioms
 thfAxioms :: [FormulaRole]

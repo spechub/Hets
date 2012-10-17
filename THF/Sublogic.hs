@@ -15,7 +15,6 @@ Sublogics for THF
 module THF.Sublogic where
 
 import THF.As
-import THF.Cons
 import Logic.Logic hiding (join)
 
 data THFCoreSl = THF | THFP | THF0 deriving (Ord,Show,Eq)
@@ -81,9 +80,6 @@ sublogics_all :: [THFSl]
 sublogics_all = [tHF0, tHF0_ST,
                  tHFP, tHFP_ST,
                  tHF, tHF_ST]
-
-instance MinSublogic THFSl SentenceTHF where
- minSublogic s = minSublogic $ senFormula s
 
 instance MinSublogic THFSl THFFormula where
  minSublogic f = case f of

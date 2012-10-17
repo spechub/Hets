@@ -38,10 +38,10 @@ instance Language THFP_ST2THF0_ST
 
 instance Comorphism THFP_ST2THF0_ST
                 THF SL.THFSl
-                BasicSpecTHF SentenceTHF () ()
+                BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree
                 THF SL.THFSl
-                BasicSpecTHF SentenceTHF () ()
+                BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic THFP_ST2THF0_ST = THF
     sourceSublogic THFP_ST2THF0_ST = SL.tHFP_ST
@@ -50,8 +50,8 @@ instance Comorphism THFP_ST2THF0_ST
     map_theory THFP_ST2THF0_ST = trans_theory
     has_model_expansion THFP_ST2THF0_ST = True
 
-trans_theory :: (SignTHF,[Named SentenceTHF])
-                -> Result (SignTHF,[Named SentenceTHF])
+trans_theory :: (SignTHF,[Named THFFormula])
+                -> Result (SignTHF,[Named THFFormula])
 trans_theory (sig, sentences1) = do
  let (tp_trans,cs_trans,sig1)  = head . filter (\(tp_t,_,Sign tps cs _) -> 
                                      not (any hasProdK $ Map.elems tps)
@@ -86,8 +86,8 @@ curryConst m c = case Map.lookup c m of
  Just cs -> concat $ map (curryConst m) cs
  Nothing -> [c]
 
-rewriteSen :: TransMap -> TransMap -> [Named SentenceTHF]
-               -> Result [Named SentenceTHF]
+rewriteSen :: TransMap -> TransMap -> [Named THFFormula]
+               -> Result [Named THFFormula]
 rewriteSen tp_trans cs_trans = mapR (rewriteSen' tp_trans cs_trans)
 
 rewriteFns :: RewriteFuns (TransMap,TransMap)
@@ -101,8 +101,8 @@ rewriteFns = rewriteTHF0 {
  rewriteConst = rewriteConst'
 }
 
-rewriteSen' :: TransMap -> TransMap -> Named SentenceTHF
-               -> Result (Named SentenceTHF)
+rewriteSen' :: TransMap -> TransMap -> Named THFFormula
+               -> Result (Named THFFormula)
 rewriteSen' tp_trans cs_trans = rewriteSenFun (rewriteFns,(tp_trans,cs_trans))
 
 rewriteLogicFormula' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
