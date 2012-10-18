@@ -304,7 +304,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
               Nothing -> fmap (Query (DGQuery sId Nothing)) $ case cmd of
                 [] -> return $ DisplayQuery format
                 ["provers"] -> return $ GlProvers mt
-                ["translations"] -> return $ GlTranslations
+                ["translations"] -> return GlTranslations
                 _ -> fail $ "unknown global command for a GET-request: "
                   ++ intercalate "/" cmd) >>= getResponse
       -- get node or edge view
@@ -746,7 +746,7 @@ showAutoProofWindow dg sessId prOrCons = let
       $ unode "input" $ showHtml fn) $ initFNodes dgnodes)
     -- TODO sort out nodes with no sentences!
     GlConsistency -> ("cons", "darwin", "cstatus = 'Unchecked'"
-      , "consistency checker", map (\ (_, dgn) ->  
+      , "consistency checker", map (\ (_, dgn) ->
       let cstat = getConsistencyOf dgn
           nm = showName $ dgn_name dgn in add_attrs [ mkAttr "type" "checkbox"
       , mkAttr "cstatus" (show cstat) -- TODO messages are very long and ugly!
@@ -766,7 +766,7 @@ showAutoProofWindow dg sessId prOrCons = let
     (jvScr2, nodeMenu) <- case dgnodes of
       -- return simple feedback if no nodes are present
       [] -> return ("", plain "nothing to prove (graph has no nodes)")
-      -- otherwise 
+      -- otherwise
       (_, nd) : _ -> case maybeResult $ getGlobalTheory nd of
         Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
         Just gTh -> let
@@ -777,9 +777,9 @@ showAutoProofWindow dg sessId prOrCons = let
           [ mkAttr "name" "nodeSel", mkAttr "method" "get" ]
           $ unode "form" $
           [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include ]
-          ++ intersperse br (prBt : nodeSel)                                  )
-    return $ mkHtmlElemScript title (jvScr1 ++ jvScr2) $ [ goBack
-          , plain " ", nodeMenu ]
+          ++ intersperse br (prBt : nodeSel))
+    return $ mkHtmlElemScript title (jvScr1 ++ jvScr2)
+               [ goBack, plain " ", nodeMenu ]
 
 showProveButton :: (Element, Element)
 showProveButton = (prBt, timeout) where
@@ -888,7 +888,7 @@ showProverSelection prOrCons subLs = let
   in (prs, cmrs, jvScr)
 
 showHtml :: FNode -> String
-showHtml fn = name fn ++ " " ++ (goalsToPrefix $ toGtkGoals fn)
+showHtml fn = name fn ++ " " ++ goalsToPrefix (toGtkGoals fn)
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
@@ -924,7 +924,7 @@ showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
   $ language_name cid
 
 removeFunnyChars :: String -> String
-removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.-")
+removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-")
 
 getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
@@ -934,8 +934,8 @@ getProvers mt subL = formatProvers $ getProversAux mt subL
 
 getFullProverList :: Maybe String -> DGraph -> String
 getFullProverList mt = formatProvers . foldr
-  (\ nd ls -> maybe ls ((++ ls) . getProversAux mt . sublogicOfTh)
-    $ maybeResult $ getGlobalTheory nd) [] . map snd . labNodesDG
+  (\ (_, nd) ls -> maybe ls ((++ ls) . getProversAux mt . sublogicOfTh)
+    $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
 
 showProversOnly :: [(AnyComorphism, [String])] -> [String]
 showProversOnly = nubOrd . concatMap snd
@@ -966,8 +966,8 @@ getComorphs mp subL = formatComorphs . filterByProver mp
 
 getFullComorphList :: DGraph -> String
 getFullComorphList = formatComorphs . foldr
-  (\ nd ls -> maybe ls ((++ ls) . getAllAutomaticProvers . sublogicOfTh)
-    $ maybeResult $ getGlobalTheory nd) [] . map snd . labNodesDG
+  (\ (_, nd) ls -> maybe ls ((++ ls) . getAllAutomaticProvers . sublogicOfTh)
+    $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
 
 formatComorphs :: [(G_prover, AnyComorphism)] -> String
 formatComorphs = ppTopElement . unode "translations"
@@ -989,7 +989,6 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
         (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
 -- run over multiple dgnodes and prove available goals for each
--- TODO: as far as I know, consistency check results are NOT stored in dgraph!
 proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String]
   -> ResultT IO (LibEnv, [Element])
@@ -1026,10 +1025,6 @@ proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
         (le'', sens) <- runProof le' gTh nl
         return (le'', formatResultsAux (showName $ dgn_name dgn) sens : res))
           (le, []) nodes2check
-{-
-consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
-                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
--}
 
 formatResultsAux :: String -> [(String, String)] -> Element
 formatResultsAux nm sens = unode nm $ unode "results" $
@@ -1064,7 +1059,7 @@ sessAns libName svg (sess, k) =
             ++ menuElement : loadXUpdate (libPath ++ "update")
             : plain "tools:" : mkUnorderedList [autoProofBt, consBt]
             : plain "commands:"
-            : (mkUnorderedList $ map ref globalCommands)
+            : mkUnorderedList (map ref globalCommands)
             : plain "imported libraries:"
             : [mkUnorderedList $ map libref $ Map.keys libEnv]
            ) ++ svg
