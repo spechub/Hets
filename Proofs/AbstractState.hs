@@ -18,6 +18,7 @@ module Proofs.AbstractState
     ( G_prover (..)
     , getProverName
     , getCcName
+    , getCcBatch
     , coerceProver
     , G_cons_checker (..)
     , coerceConsChecker
@@ -105,6 +106,9 @@ data G_cons_checker =
 
 getCcName :: G_cons_checker -> String
 getCcName (G_cons_checker _ p) = ccName p
+
+getCcBatch :: G_cons_checker -> Bool
+getCcBatch (G_cons_checker _ p) = ccBatch p
 
 coerceConsChecker ::
   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

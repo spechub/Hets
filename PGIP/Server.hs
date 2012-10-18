@@ -84,6 +84,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Char
 import Data.IORef
+import Data.Function
 import Data.List
 import Data.Maybe
 import Data.Ord
@@ -940,25 +941,25 @@ getFullProverList mt = formatProvers . foldr
 showProversOnly :: [(AnyComorphism, [String])] -> [String]
 showProversOnly = nubOrd . concatMap snd
 
-{- | gather provers and comoprhisms and resort them to
+groupOnSnd :: Eq b => (a -> c) -> [(a, b)] -> [(b, [c])]
+groupOnSnd f =
+  map (\ l@((_, b) : _) -> (b, map (f . fst) l)) . groupBy (on (==) snd)
+
+{- | gather provers and comorphisms and resort them to
 (comorhism, supported provers) while not changing orig comorphism order -}
 getProversAux :: Maybe String -> G_sublogics -> [(AnyComorphism, [String])]
-getProversAux mt subL = foldl insertCmL [] $ filterByComorph mt
-                      $ getAllAutomaticProvers subL where
-  insertCmL [] (p, c) = [(c, [getWebProverName p])]
-  insertCmL ((c', pL) : r) (p, c) | c' == c = (c, getWebProverName p : pL) : r
-                                  | otherwise = (c', pL) : insertCmL r (p, c)
+getProversAux mt = groupOnSnd getWebProverName
+  . filterByComorph mt . getAllAutomaticProvers
 
 formatProvers :: [(AnyComorphism, [String])] -> String
 formatProvers = ppTopElement . unode "provers" . map (unode "prover")
   . showProversOnly
 
--- | retrieve a list of consitency checkers
+-- | retrieve a list of consistency checkers
 getConsCheckersAux :: G_sublogics -> [(AnyComorphism, [String])]
-getConsCheckersAux subL = let cmrs = findComorphismPaths logicGraph subL in
-  Map.toList $ foldr (\ (g_cons, comorph) -> Map.insertWith (++) comorph
-    [getCcName g_cons]) Map.empty $ filter
-    (\ (G_cons_checker _ cc, _) -> ccBatch cc) $ getConsCheckers cmrs
+getConsCheckersAux = groupOnSnd getCcName
+  . filter (getCcBatch . fst) . getConsCheckers
+  . findComorphismPaths logicGraph
 
 getComorphs :: Maybe String -> G_sublogics -> String
 getComorphs mp subL = formatComorphs . filterByProver mp

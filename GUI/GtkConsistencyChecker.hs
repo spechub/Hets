@@ -30,7 +30,6 @@ import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism (..))
-import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -46,7 +45,7 @@ import Proofs.ConsistencyCheck
 
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
-import Data.List (findIndex, partition, sort)
+import Data.List
 import Data.Maybe
 
 data Finder = Finder { fName :: String
@@ -159,10 +158,9 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
         Just (G_theory _ _ _ _ sens _) -> Map.null sens
         Nothing -> True)
       sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
-
-      n2CS n = getConsistencyOf n
       (emptyNodes, others) = selNodes
-        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s $ n2CS l)
+        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s
+               $ getConsistencyOf l)
         $ zip nodes sls
 
   -- setup data
@@ -294,7 +292,7 @@ updateFinder view list useNonBatch sl = do
               let n = getCcName cc
                   f = Map.findWithDefault (Finder n cc [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
-              $ filter (\ (G_cons_checker _ cc, _) -> useNonBatch || ccBatch cc)
+              $ (if useNonBatch then id else filter (getCcBatch . fst))
               $ getConsCheckers $ findComorphismPaths logicGraph sl
   when (old /= new) $ do
     -- update list and try to select previous finder
@@ -314,7 +312,7 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
       case Map.lookup n m of
         Nothing -> m
         Just f@(Finder { comorphism = cc' }) -> let c = cc !! i in
-          Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
+          Map.insert n (f { selected = fromMaybe 0 $ elemIndex c cc' }) m
     ) m' old
 
 check :: Bool -> Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int
