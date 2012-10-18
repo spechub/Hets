@@ -12,5 +12,3 @@ cd ..
 }
 
 run HOL runisabelle
-\cp -f HOL/*.hs HOLCF/
-run HOLCF runHsIsabelle
