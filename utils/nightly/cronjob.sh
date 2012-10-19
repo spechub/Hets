@@ -112,7 +112,7 @@ checkCalculi ()
 date
 for i in Calculi/*/*.casl Calculi/*/*.het; do ./hets -v2 $i; done
 ./hets -v4 -n RelationAlgebraSimple -m ConstraintCASL/RCC8.lisp \
-  Calculi/Algebra/RelationAlgebraSimple.casl 
+  Calculi/Algebra/RelationAlgebraSimple.casl
 }
 
 reCheckBasicCASLThs ()
@@ -304,12 +304,7 @@ cp -p HolLight/OcamlTools/exportTools/*.ml $HETS_HOLLIGHT_TOOLS/
 
 runIsaHS ()
 {
-cd Haskell/test/HOLCF
-cp ../HOL/*.hs .
-../../../Haskell/h2hf hc *.hs
-../../../utils/nightly/runHsIsabelle.sh *.thy > ../../../../isaHs.log 2>&1
-grep "^\*\*\*" ../../../../isaHs.log
-cd ../../..
+rm -f ../../../../isaHs.log
 }
 
 makeCofiLib ()
