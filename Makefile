@@ -420,7 +420,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
 ### targets
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
-    real_clean bin_clean distclean annos \
+    real_clean bin_clean distclean annos checkversion \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc fromKif derivedSources release cgi ghci build callghc
 
@@ -597,15 +597,13 @@ check: $(TESTTARGETS)
 	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
 
 ## Preparing the version of Hets
-Driver/Version.hs: Driver/Version.in version_nr
+Driver/Version.hs: Driver/Version.in version_nr checkversion
 	$(RM) $@
 	cp Driver/Version.in $@
 	echo "  ++ \"$(shell cat version_nr), $(shell date +"%d %b %Y")\"" >> $@
 	chmod 444 $@
 
-## two hardcoded dependencies for a correct generation of Version.hs
-Driver/Options.hs Driver/WriteFn.hs Driver/ReadFn.hs: Driver/Version.hs
-hets.hs: Driver/Version.hs
+checkversion:
 
 ATC/DevGraph.hs: Static/DevGraph.hs
 
