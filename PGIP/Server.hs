@@ -740,17 +740,17 @@ showAutoProofWindow dg sessId prOrCons = let
   dgnodes = labNodesDG dg
   -- some parameters need to be different for consistency and autoproof mode
   (prMethod, prChoice, prCond, title, nodeSel) = case prOrCons of
-    GlProofs -> ("proof", "SPASS", "hasOpenGoals = 'True'", "automatic proofs"
+    GlProofs -> ("proof", "SPASS", "value == 'true'", "automatic proofs"
       , map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
-      , mkAttr "hasOpenGoals" $ show $ not $ allProved fn
+      , mkAttr "value" $ map toLower $ show $ not $ allProved fn
       , mkAttr "name" $ escStr $ name fn ]
       $ unode "input" $ showHtml fn) $ initFNodes dgnodes)
     -- TODO sort out nodes with no sentences!
-    GlConsistency -> ("cons", "darwin", "cstatus = 'Unchecked'"
+    GlConsistency -> ("cons", "darwin", "value == 'true'"
       , "consistency checker", map (\ (_, dgn) ->
       let cstat = getConsistencyOf dgn
           nm = showName $ dgn_name dgn in add_attrs [ mkAttr "type" "checkbox"
-      , mkAttr "cstatus" (show cstat) -- TODO messages are very long and ugly!
+      , mkAttr "value" $ map toLower $ show $ sType cstat == CSUnchecked
       , mkAttr "name" nm]
       $ unode "input" (cStatusToPrefix cstat ++ nm)) dgnodes)
   -- generate param field for the query string, invisible to the user
