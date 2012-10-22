@@ -54,7 +54,7 @@ import Driver.ReadFn
 import Driver.WriteLibDefn
 
 #ifndef NOHTTP
-import Network.HTTP (simpleHTTP, getRequest, getResponseBody)
+import Network.HTTP (simpleHTTP, getRequest, getResponseBody, rspCode, rspReason)
 #endif
 
 import qualified Data.Map as Map
@@ -96,8 +96,15 @@ anaSource mln lg opts topLns libenv initDG fname =
        putIfVerbose opts 2 $ "Downloading file " ++ fname
        resp <- simpleHTTP (getRequest fname)
        input <- getResponseBody resp
-       runResultT $
-         anaString mln lgraph opts topLns libenv initDG input fname
+       case resp of
+         Right r -> case rspCode r of
+           (2,0,0) -> runResultT $
+                      anaString mln lgraph opts topLns libenv initDG input fname
+           (x,y,z) -> fail $ "Download of file " ++ fname
+                      ++ " yields HTTP error " ++ show x ++ show y ++ show z
+                      ++ ": " ++ rspReason r
+         Left err -> fail $ "Download of file " ++ fname ++ " failed: "
+                     ++ show err
   else
 #endif
   do
