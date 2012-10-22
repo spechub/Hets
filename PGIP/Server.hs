@@ -690,7 +690,7 @@ resultStyles = unlines
   , "result { display:inline; padding:30px; }" ]
 
 showBool :: Bool -> String
-showBool b = if b then "on" else "off"
+showBool = map toLower . show
 
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
@@ -715,7 +715,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
         thmSl = map (\ (nm, bp) -> let gSt = maybe GOpen basicProofToGStatus bp
           in add_attrs
                  [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
-                 , mkAttr "value" $ showBool $ elem gSt [GOpen, GTimeout]]
+                 , mkAttr "unproven" $ showBool $ elem gSt [GOpen, GTimeout]]
              $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")" ) gs
         -- select unproven, all or none theorems by button
         (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons True
@@ -745,7 +745,7 @@ showAutoProofWindow dg sessId prOrCons = let
   (prMethod, isProver, title, nodeSel) = case prOrCons of
     GlProofs -> ("proof", True, "automatic proofs"
       , map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
-      , mkAttr "value" $ showBool $ not $ allProved fn
+      , mkAttr "unproven" $ showBool $ not $ allProved fn
       , mkAttr "name" $ escStr $ name fn ]
       $ unode "input" $ showHtml fn) $ initFNodes dgnodes)
     -- TODO sort out nodes with no sentences!
@@ -753,7 +753,7 @@ showAutoProofWindow dg sessId prOrCons = let
       , map (\ (_, dgn) ->
       let cstat = getConsistencyOf dgn
           nm = showName $ dgn_name dgn in add_attrs [ mkAttr "type" "checkbox"
-      , mkAttr "value" $ showBool $ sType cstat == CSUnchecked
+      , mkAttr "unproven" $ showBool $ sType cstat == CSUnchecked
       , mkAttr "name" nm]
       $ unode "input" (cStatusToPrefix cstat ++ nm)) dgnodes)
   -- generate param field for the query string, invisible to the user
@@ -813,7 +813,7 @@ showSelectionButtons isProver = (selUnPr, selAll, selNone, jvScr)
           , "  for (i = 0; i < e.length; i++) {"
           , "    if( e[i].type == 'checkbox'"
           , "      && e[i].name != 'includetheorems' )"
-          , "      e[i].checked = e[i].value == 'on';"
+          , "      e[i].checked = e[i].getAttribute('unproven') == 'true';"
           , "  }"
           -- select or deselect all theorems by button
           , "}\nfunction chkAll(b) {"
