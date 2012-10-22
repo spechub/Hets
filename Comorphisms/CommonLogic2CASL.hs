@@ -330,11 +330,10 @@ quantSentForm b quantifier rn bndVars bs sen = do
       opSs = filter
           (\ n -> Map.member n $ MapSet.toMap
           $ MapSet.filter (/= 0) aF) bSs
-      vs = map (Cl.Name . mkSimpleId) bSs
-  folSen <- if null vs
+  folSen <- if null bs
             then senForm b bndVars sen
             else do
-              bndVarsSet <- bndVarsToSet bndVars vs
+              bndVarsSet <- bndVarsToSet bndVars bs
               sf <- senForm b bndVarsSet sen
               bindSeq <- mapM bindingSeq bs
               return $ CBasic.Quantification quantifier bindSeq sf rn
