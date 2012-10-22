@@ -690,7 +690,7 @@ resultStyles = unlines
   , "result { display:inline; padding:30px; }" ]
 
 showBool :: Bool -> String
-showBool = map toLower . show
+showBool b = if b then "on" else "off"
 
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
@@ -813,7 +813,7 @@ showSelectionButtons isProver = (selUnPr, selAll, selNone, jvScr)
           , "  for (i = 0; i < e.length; i++) {"
           , "    if( e[i].type == 'checkbox'"
           , "      && e[i].name != 'includetheorems' )"
-          , "      e[i].checked = e[i].value == 'true';"
+          , "      e[i].checked = e[i].value == 'on';"
           , "  }"
           -- select or deselect all theorems by button
           , "}\nfunction chkAll(b) {"
