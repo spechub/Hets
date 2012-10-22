@@ -689,6 +689,9 @@ resultStyles = unlines
   , "name { display:inline; margin:5px; padding:10px; font-weight:bold; }"
   , "result { display:inline; padding:30px; }" ]
 
+showBool :: Bool -> String
+showBool = map toLower . show
+
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
 showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> String
@@ -710,12 +713,12 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
       gs -> let
         -- create list of theorems, selectable for proving
         thmSl = map (\ (nm, bp) -> let gSt = maybe GOpen basicProofToGStatus bp
-          in add_attrs [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
-          , mkAttr "goalstatus" $ showSimple gSt ] $ unode "input" $ nm
-          ++ "   (" ++ showSimple gSt ++ ")" ) gs
+          in add_attrs
+                 [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
+                 , mkAttr "value" $ showBool $ elem gSt [GOpen, GTimeout]]
+             $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")" ) gs
         -- select unproven, all or none theorems by button
-        (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons
-          "getAttribute('goalstatus') != 'Proved'" "SPASS"
+        (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons True
         -- create prove button and prover/comorphism selection
         (prSl, cmrSl, jvScr2) = showProverSelection GlProofs [sublogicOfTh gTh]
         (prBt, timeout) = showProveButton
@@ -739,18 +742,18 @@ showAutoProofWindow :: DGraph -> Int -> ProverMode -> ResultT IO String
 showAutoProofWindow dg sessId prOrCons = let
   dgnodes = labNodesDG dg
   -- some parameters need to be different for consistency and autoproof mode
-  (prMethod, prChoice, prCond, title, nodeSel) = case prOrCons of
-    GlProofs -> ("proof", "SPASS", "value == 'true'", "automatic proofs"
+  (prMethod, isProver, title, nodeSel) = case prOrCons of
+    GlProofs -> ("proof", True, "automatic proofs"
       , map (\ fn -> add_attrs [ mkAttr "type" "checkbox"
-      , mkAttr "value" $ map toLower $ show $ not $ allProved fn
+      , mkAttr "value" $ showBool $ not $ allProved fn
       , mkAttr "name" $ escStr $ name fn ]
       $ unode "input" $ showHtml fn) $ initFNodes dgnodes)
     -- TODO sort out nodes with no sentences!
-    GlConsistency -> ("cons", "darwin", "value == 'true'"
-      , "consistency checker", map (\ (_, dgn) ->
+    GlConsistency -> ("cons", False, "consistency checker"
+      , map (\ (_, dgn) ->
       let cstat = getConsistencyOf dgn
           nm = showName $ dgn_name dgn in add_attrs [ mkAttr "type" "checkbox"
-      , mkAttr "value" $ map toLower $ show $ sType cstat == CSUnchecked
+      , mkAttr "value" $ showBool $ sType cstat == CSUnchecked
       , mkAttr "name" nm]
       $ unode "input" (cStatusToPrefix cstat ++ nm)) dgnodes)
   -- generate param field for the query string, invisible to the user
@@ -758,7 +761,7 @@ showAutoProofWindow dg sessId prOrCons = let
          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
          , mkAttr "value" prMethod ] inputNode
   -- select unproven, all or no nodes by button
-  (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons prCond prChoice
+  (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons isProver
   (prBt, timeout) = showProveButton
   include = add_attrs [ mkAttr "type" "checkbox", mkAttr "checked" "true"
           , mkAttr "name" "includetheorems"] $ unode "input" "include Theorems"
@@ -792,9 +795,11 @@ showProveButton = (prBt, timeout) where
                $ unode "input" "Sec/Goal "
 
 -- | select unproven, all or none theorems by button
-showSelectionButtons :: String -> String -> (Element, Element, Element, String)
-showSelectionButtons testUnproven prChoice = (selUnPr, selAll, selNone, jvScr)
-  where selUnPr = add_attrs [mkAttr "type" "button", mkAttr "value" "Unproven"
+showSelectionButtons :: Bool -> (Element, Element, Element, String)
+showSelectionButtons isProver = (selUnPr, selAll, selNone, jvScr)
+  where prChoice = if isProver then "SPASS" else "darwin"
+        selUnPr = add_attrs [mkAttr "type" "button"
+          , mkAttr "value" $ if isProver then "Unproven" else "Unchecked"
           , mkAttr "onClick" "chkUnproven()"] inputNode
         selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
           , mkAttr "onClick" "chkAll(true)"] inputNode
@@ -808,7 +813,7 @@ showSelectionButtons testUnproven prChoice = (selUnPr, selAll, selNone, jvScr)
           , "  for (i = 0; i < e.length; i++) {"
           , "    if( e[i].type == 'checkbox'"
           , "      && e[i].name != 'includetheorems' )"
-          , "      e[i].checked = e[i]." ++ testUnproven ++ ";"
+          , "      e[i].checked = e[i].value == 'true';"
           , "  }"
           -- select or deselect all theorems by button
           , "}\nfunction chkAll(b) {"
