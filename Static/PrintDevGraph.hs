@@ -355,14 +355,24 @@ instance Pretty ExtViewSig where
 
 instance Pretty UnitSig where
   pretty (UnitSig params usig _) =
-    (if null params then Doc.empty else pretty $ map getNode params)
-    <+> pretty (getNode usig)
+    (if null params then Doc.empty else pretty $ map getSig params)
+    <+> pretty (getSig usig)
 
 instance Pretty ImpUnitSigOrSig where
   pretty iu = case iu of
     ImpUnitSig imp usig -> fsep
       [ pretty usig, prettyImport imp ]
     Sig n -> keyword specS <+> pretty (getNode n)
+
+instance Pretty RTNodeType where 
+ pretty (RTPlain usig) = pretty usig
+ pretty (RTRef n) = pretty n
+
+instance Pretty RTNodeLab where
+ pretty rlab = fsep [text $ show $ rtn_name rlab,
+                     text $ show $ rtn_diag rlab,
+                     pretty $ rtn_type rlab
+                     ]
 
 instance Pretty RefSig where
   pretty = text . show -- missing

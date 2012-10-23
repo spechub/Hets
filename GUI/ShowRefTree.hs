@@ -211,7 +211,7 @@ checkConsAux gInfo (n : ns) = do
 
 showSpec :: DGraph -> Int -> IO ()
 showSpec dg n =
-    createTextDisplay "" (show $ labRT dg n)
+    createTextDisplay "" (showDoc (labRT dg n) "")
 
 showDiagram :: GInfo -> DGraph -> Int -> IO ()
 showDiagram gInfo dg n = do
