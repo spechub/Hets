@@ -74,6 +74,7 @@ import LF.Twelf2DG
 
 import Framework.Analysis
 
+
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
@@ -384,10 +385,12 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
       then liftR $ plain_error (asd', dg', libenv, lg, eo)
                (alreadyDefined asstr) pos
       else do
-            let dg'' = updateNodeNameRT dg'
-                       (refSource $ getPointerFromRef archSig) $ show asn
+            let aName = show asn
+                dg'' = updateNodeNameRT dg'
+                       (refSource $ getPointerFromRef archSig) 
+                       True aName
                 dg3 = dg'' { archSpecDiags =
-                           Map.insert (show asn) diag
+                           Map.insert aName diag
                            $ archSpecDiags dg''}
             return (asd', dg3
               { globalEnv = Map.insert asn

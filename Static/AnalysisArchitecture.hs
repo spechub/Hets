@@ -48,7 +48,7 @@ import Common.Doc
 import qualified Data.Map as Map
 
 import Data.Maybe
-import Data.Graph.Inductive.Graph as Graph (Node, edges)
+import Data.Graph.Inductive.Graph as Graph (Node, lab)
 import qualified Data.Set as Set
 import Control.Monad (foldM)
 
@@ -60,9 +60,6 @@ second (_, b, _) = b
 
 third :: (a, b, c) -> c
 third (_, _, c) = c
-
-trace :: String -> a -> a
-trace _ = id
 
 {- | Analyse an architectural specification
 @
@@ -210,23 +207,23 @@ anaUnitDeclDefn lgraph ln dg opts eo uctx@(buc, _) udd = case udd of
        let (n, dg1, rsig0) =
               case getPointerFromRef rsig' of
                RTNone -> let
-                             (n', d') = addNodeRT dg0 usig ustr
+                             (n', d') = addNodeRT dg0 usig ustr 
                              r' = setPointerInRef rsig' (NPUnit n')
                          in (n', d', r')
                _ -> (refSource $ getPointerFromRef rsig', dg0, rsig')
 {- is this above needed? when can rsig' have no pointer?
-TO DO -}
+ANSWER: when it's just a unit sig -}
        (dg'', rsig) <- case impSig of
          EmptyNode _ -> do
           (resultSig', dg2) <- case unionSig of
               Just x -> nodeSigUnion lgraph dg1
                           [JustNode x, JustNode resultSig] DGImports
               _ -> return (resultSig, dg1)
-          return (updateNodeNameRT dg2 n ustr,
+          return (updateNodeNameRT dg2 n False ustr,
                   setUnitSigInRef rsig0 $ UnitSig argSigs resultSig' unionSig)
               -- S -> T becomes S -> S \cup T
          JustNode ns -> do
-           let dg2 = updateNodeNameRT dg1 n ustr
+           let dg2 = updateNodeNameRT dg1 n False ustr 
                 -- this changes the name of the node in the RT
            (argUnion, dg3) <- nodeSigUnion lgraph dg2
                               (map JustNode argSigs ++ [impSig])
@@ -364,7 +361,7 @@ anaUnitImported lgraph ln dg opts eo uctx@(_, diag) poss terms =
                       (map (JustNode . getSigFromDiag) dnsigs) DGImports
        let pos = getPosUnitImported poss
        sink <- inclusionSink lgraph dnsigs sig
-       () <- assertAmalgamability opts pos diag' sink
+       () <- assertAmalgamability opts pos diag' sink ("imports:" ++ (foldl (\x y -> x ++ " " ++ (show $ prettyLG lgraph y)) "" terms))
        (dnsig, diag'') <- extendDiagramIncl lgraph diag' dnsigs sig
          . show . sepByCommas $ map (prettyLG lgraph) terms
        return (JustDiagNode dnsig, diag'', dg'', terms')
@@ -436,7 +433,7 @@ anaUnitExpression lgraph ln dg opts eo uctx@(buc, diag)
             do
                sink <- inclusionSink lgraph (p : pardnsigs) pnsig
                () <-
-                     assertAmalgamability opts pos diag''' sink
+                     assertAmalgamability opts pos diag''' sink ("subsignature test for: " ++ (show $ prettyLG lgraph uexp))
                -- add new node to the diagram
                let (_, diag4) = matchDiagram nU diag'''
                return (p : pardnsigs,
@@ -517,7 +514,7 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
        (incl, msigma) <- anaRestriction lgraph (emptyG_sign curl)
                          (getSig (getSigFromDiag p)) opts restr
        (q@(Diag_node_sig qn _), diag', dg') <-
-           extendDiagramWithMorphismRev pos lgraph diag1 dg1 p incl utStr
+           extendDiagramWithMorphismRevHide pos lgraph diag1 dg1 p incl utStr
             orig
        case msigma of
                   Nothing ->
@@ -530,7 +527,7 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                       do
                          -- check amalgamability conditions
                          let sink = [(qn, sigma)]
-                         () <- assertAmalgamability opts pos diag' sink
+                         () <- assertAmalgamability opts pos diag' sink utStr
                          (q', diag'', dg'') <- extendDiagramWithMorphism pos
                             lgraph diag' dg' q sigma utStr orig
                          return (q', diag'', dg'',
@@ -545,7 +542,7 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                     (getSig (getSigFromDiag dnsig)) opts ren
        let sink = [(p, gMorph)]
        -- check amalamability conditions
-       () <- assertAmalgamability opts pos diag1 sink
+       () <- assertAmalgamability opts pos diag1 sink utStr
        (dnsig', diag', dg') <- extendDiagramWithMorphism pos lgraph
            diag1 dg1 dnsig gMorph utStr
                 (DGTranslation $ Renamed ren)
@@ -559,7 +556,7 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                       (map (JustNode . getSigFromDiag) dnsigs) DGUnion
        -- check amalgamability conditions
        sink <- inclusionSink lgraph dnsigs sig
-       () <- assertAmalgamability opts poss diag1 sink
+       () <- assertAmalgamability opts poss diag1 sink utStr
        (q, diag') <- extendDiagramIncl lgraph diag1 dnsigs
                      sig utStr
        return (q, diag', dg'', Amalgamation uts' poss)
@@ -597,7 +594,7 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                    morphA <- homogeneousMorManyUnion
                              $ idI : map first morphSigs
                    -- compute sigMorExt (\sigma^A(\Delta))
-                   (_, gSigMorExt) <- extendMorphism (getSig sigF)
+                   (_, gSigMorExt) <- extendMorphism True (getSig sigF)
                                      (getSig resultSig) (getSig sigA) morphA
                    -- check amalgamability conditions
                    let sigMorExt = gEmbed gSigMorExt
@@ -606,58 +603,92 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                            _ -> []
                    sink <- inclusionSink lgraph (pIL ++
                                                  map third morphSigs) sigA
-                   () <- assertAmalgamability opts pos diagA sink
+                   () <- assertAmalgamability opts pos diagA sink utStr
                    (qB@(Diag_node_sig nqB _), diag') <-
                        extendDiagramIncl lgraph diagA pIL resultSig ""
                    -- insert nodes p^F_i and appropriate edges to the diagram
                    let ins diag0 dg0 [] = return (diag0, dg0)
-                       ins diag0 dg0 ((morph, _, targetNode) : morphNodes) =
-                           do (dnsig, diag1, dg1) <-
-                                extendDiagramWithMorphismRev pos lgraph diag0
-                                dg0 targetNode (gEmbed morph) argStr
-                                DGFormalParams
-                              diag'' <- insInclusionEdges lgraph diag1 [dnsig]
-                                        qB
-                              ins diag'' dg1 morphNodes
-                   (diag'', dg4) <- ins diag' dg''' morphSigs
+                       ins diag0 dg0 ((fpi, (morph, _, targetNode)) : morphNodes) =
+                           do --(dnsig, diag1, dg1) <-
+                              --  extendDiagramWithMorphismRevHide pos lgraph diag0
+                              --  dg0 targetNode (gEmbed morph) argStr
+                              --  DGTest
+                              --let tsig  = getSigFromDiag dnsig
+                              --incl <- ginclusion lgraph (getSig fpi) (getSig tsig)
+                              -- -- insert verification condition: dnsig |= SP_i
+                              --let linkLabel = defDGLink incl globalThm DGLinkVerif
+                              --    (_, dg2) = insLEdgeDG (getNode fpi, getNode tsig, linkLabel) dg1
+                              --diag'' <- insInclusionEdges lgraph diag1 [dnsig]
+                              --          qB
+                              (diag'', dg2) <- 
+                                insertFormalParamAndVerifCond 
+                                 pos lgraph 
+                                 diag0 dg0 
+                                 targetNode fpi qB
+                                 (gEmbed morph) 
+                                 argStr DGTest
+                              ins diag'' dg2 morphNodes
+                   (diag'', dg4) <- ins diag' dg''' $ zip argSigs morphSigs
                    -- check amalgamability conditions
                    (sigR, dg5) <- extendDGraph dg4 resultSig
                                   sigMorExt DGExtension
+                   -- make the union of sigR with all specs of arguments
+                   let nsigs' = reverse $ map getSigFromDiag $ map third morphSigs
+                   gbigSigma <- gsigManyUnion lgraph $ map getSig $ sigR:nsigs'
+                   let (ns@(NodeSig node _), dg6) = insGSig dg5 emptyNodeName DGUnion gbigSigma
+                       insE dgl (NodeSig n gsigma) = do
+                         incl <- ginclusion lgraph gsigma gbigSigma
+                         return $ insLink dgl incl globalDef SeeTarget n node
+                   dg7 <- foldM insE dg6 $ sigR:nsigs'
+                   --
                    incSink <- inclusionSink lgraph (map third morphSigs) sigR
                    let sink' = (nqB, sigMorExt) : incSink
-                   assertAmalgamability opts pos diag'' sink'
+                   assertAmalgamability opts pos diag'' sink' utStr
                    {- for lambda applications below
                    the node qB is not added, but only the edge from r -}
+                   -- here we use ns instead of sigR
                    (q, diag''') <- extendDiagram diag'' qB
-                                   sigMorExt sigR utStr
+                                   sigMorExt ns utStr
                    diag4 <- insInclusionEdges lgraph diag'''
                             (map third morphSigs) q
-                   return (q, diag4, dg5, utrm)
+                   return (q, diag4, dg7, utrm)
             Just (Based_lambda_unit_sig nodes
               (BranchRefSig _ (UnitSig argSigs resultSig _, _))) ->
               case nodes of
                [] -> error "error in lambda expression"
-               r : fs ->
-                do (sigF, dg') <- nodeSigUnion lgraph dg
+               _r@(Diag_node_sig rn _) : fs ->
+                do let fnodes = map (\(Diag_node_sig x _) -> x) fs
+                   (diagC, copyFun) <- copyDiagram lgraph fnodes $ snd uctx
+                   let getCopy x =
+                        let
+                         x' = Map.findWithDefault (error "getCopy") x copyFun
+                         y = lab (diagGraph diagC) x'
+                        in
+                            case y of
+                             Nothing -> error "node not found"
+                             Just (DiagNode ns _) -> Diag_node_sig x' ns
+                       r' = getCopy rn
+                       fs' = map getCopy fnodes
+                   (sigF, dg') <- nodeSigUnion lgraph dg
                        (map JustNode argSigs) DGFormalParams
                    (morphSigs, dg'', diagA) <-
                        anaFitArgUnits lgraph ln dg' opts eo
-                            uctx utrm pos argSigs fargus
-                   (sigA, dg''') <- trace (show $ edges $ diagGraph diagA)
-                                    $ nodeSigUnion lgraph dg''
+                            (fst uctx, diagC) utrm pos argSigs fargus
+                   (sigA, dg''') <- nodeSigUnion lgraph dg''
                        (map (JustNode . second) morphSigs)
                               DGFitSpec
                    -- compute morphA (\sigma^A)
                    morphA <- homogeneousMorManyUnion
                              $ map first morphSigs
                    -- compute sigMorExt (\sigma^A(\Delta))
-                   (_, gSigMorExt) <- extendMorphism (getSig sigF)
+                   -- but allow sharing between body and parameter
+                   (_, gSigMorExt) <- extendMorphism False (getSig sigF)
                                      (getSig resultSig) (getSig sigA) morphA
                    -- check amalgamability conditions
                    let sigMorExt = gEmbed gSigMorExt
                    sink <- inclusionSink lgraph (map third morphSigs) sigA
-                   () <- assertAmalgamability opts pos diagA sink
-                   let eI = zip fs $ map (\ (x, _, z) -> (x, z)) morphSigs
+                   () <- assertAmalgamability opts pos diagA sink utStr
+                   let eI = zip fs' $ map (\ (x, _, z) -> (x, z)) morphSigs
                    {- insert an edge from f_i to targetNode_i
                    extendDiagramWithEdge does it
                    and then call it for pairs (f_i, targetNode_i) -}
@@ -672,10 +703,10 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                    (sigR, dg5) <- extendDGraph dg4 resultSig
                                    sigMorExt DGExtension
                    incSink <- inclusionSink lgraph (map third morphSigs) sigR
-                   assertAmalgamability opts pos diag' incSink
+                   assertAmalgamability opts pos diag' incSink utStr
                    {- -- for lambda applications
                    -- the node qB is not added, but only the edge from r -}
-                   (q, diag'') <- extendDiagram diag' r
+                   (q, diag'') <- extendDiagram diag' r'
                                     sigMorExt sigR utStr
                    diag3 <- insInclusionEdges lgraph diag''
                              (map third morphSigs) q
@@ -685,6 +716,8 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
        (dnsig, diag1, dg1, ut') <-
            anaUnitTerm lgraph ln dg opts eo uctx (item ut)
        return (dnsig, diag1, dg1, Group_unit_term (replaceAnnoted ut' ut) poss)
+
+
 
 -- | Analyse unit arguments
 anaFitArgUnits :: LogicGraph -> LibName -> DGraph
@@ -848,7 +881,7 @@ anaRefSpec lgraph ln dg opts eo nsig rn sharedCtx nP rsp =
               (rsig', dg3) = case rP of
                            RTNone ->
                              let
-                             (n, dg'') = addNodeRT dg' usig $ name asp
+                             (n, dg'') = addNodeRT dg' usig  (name asp) 
                              r' = setPointerInRef rsig (NPUnit n)
                             in (r', dg'')
                            _ -> (rsig, dg')
@@ -873,7 +906,7 @@ lambda expressions, like you do in the following -}
   Compose_ref rslist range ->
     do
        (dg', anaSpecs, _) <- foldM (\ (dgr, rList, rN') rsp0 ->
-                                        trace (show rN') $ do
+                                        do
           (_, _, _, rsig', dgr', rsp') <-
                                anaRefSpec lgraph ln dgr opts eo nsig
                                (simpleIdToIRI $ mkSimpleId $
@@ -915,7 +948,7 @@ lambda expressions, like you do in the following -}
        (UnitSig _ls ns _, UnitSig _ls' ns' _) -> do
                dg'' <- anaSymbMapRef lgraph dgr' ns ns' gMapList rn
                let (s, dg3) = case nP of
-                               Nothing -> addNodeRT dg'' usig $ name uspec
+                               Nothing -> addNodeRT dg'' usig (name uspec)
                                Just p ->
                                  case refTarget p of
                                   RTLeaf x -> (x, dg'')
@@ -983,13 +1016,14 @@ assertAmalgamability :: HetcatsOpts          -- ^ the program options
                      -> Range               -- ^ the position (for diagnostics)
                      -> Diag                -- ^ the diagram to be checked
                      -> [(Node, GMorphism)] -- ^ the sink
+                     -> String              -- ^ the unit expr as a string
                      -> Result ()
-assertAmalgamability opts pos diag sink =
+assertAmalgamability opts pos diag sink uexp =
     do ensAmalg <- homogeneousEnsuresAmalgamability opts pos diag sink
        case ensAmalg of
                      Amalgamates -> return ()
                      NoAmalgamation msg -> plain_error ()
-                             ("Amalgamability is not ensured: " ++ msg) pos
+                             ("Amalgamability is not ensured: " ++ msg ++ "\n for " ++ uexp ) pos
                      DontKnow msg -> warning () msg pos
 
 -- | Check the amalgamability assuming common logic for whole diagram
@@ -1001,8 +1035,8 @@ homogeneousEnsuresAmalgamability :: HetcatsOpts  -- ^ the program options
 homogeneousEnsuresAmalgamability opts pos diag sink = case sink of
                  [] -> plain_error defaultDontKnow
                        "homogeneousEnsuresAmalgamability: Empty sink" pos
-                 lab : _ -> do
-                             let (_, mor) = lab
+                 lab' : _ -> do
+                             let (_, mor) = lab'
                                  sig = cod mor
                              G_sign lid _ _ <- return sig
                              hDiag <- homogeniseDiagram lid diag

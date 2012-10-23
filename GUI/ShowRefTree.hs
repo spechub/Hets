@@ -69,18 +69,35 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
     dg = lookup' le $ i_ln ist
     rTree = refTree dg
     vertexes = map fst $ Tree.labNodes rTree
+    isRoot n = not $ null $ 
+                filter (\(_,_, llab)-> rtl_type llab == RTComp) $ 
+                out rTree n 
+        -- look for outgoing component links
     arcs = Tree.labEdges rTree
-    subNodeMenu = LocalMenu (UDG.Menu Nothing [
+    subNodeMenuRoots = LocalMenu (UDG.Menu Nothing [
                    Button "Show dependency diagram" $ showDiagram gInfo dg,
                    Button "Show spec" $ showSpec dg,
                    Button "Check consistency" $ checkCons gInfo])
+    subNodeMenu = LocalMenu (UDG.Menu Nothing [
+                   Button "Show spec" $ showSpec dg,
+                   Button "Check consistency" $ checkCons gInfo])
+    subNodeTypeParmsR = subNodeMenuRoots $$$
+                        Ellipse $$$
+                        ValueTitle (return . rtn_name . labRT dg) $$$
+                        Color (getColor opts Green True True) $$$
+                        emptyNodeTypeParms
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
                        ValueTitle (return . rtn_name . labRT dg) $$$
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
    subNodeType <- newNodeType graph subNodeTypeParms
-   subNodeList <- mapM (newNode graph subNodeType) vertexes
+   --subNodeListI <- mapM (newNode graph subNodeType) internal
+   subNodeTypeR <- newNodeType graph subNodeTypeParmsR
+   subNodeList <- mapM (\x -> if isRoot x then 
+                                newNode graph subNodeTypeR x
+                              else newNode graph subNodeType x) vertexes
+   --let subNodeList = subNodeListI ++ subNodeListR
    let
     nodes' = Map.fromList $ zip (Tree.nodes rTree) subNodeList
     subArcMenu = LocalMenu (UDG.Menu Nothing [])
@@ -200,7 +217,7 @@ showDiagram :: GInfo -> DGraph -> Int -> IO ()
 showDiagram gInfo dg n = do
  let asDiags = archSpecDiags dg
      rtlab = labRT dg n
-     name = rtn_name rtlab
+     name = rtn_diag rtlab
  when (name `elem` Map.keys asDiags) $ do
       graph <- newIORef daVinciSort
       nodesEdges <- newIORef (([], []) :: NodeEdgeListDep)

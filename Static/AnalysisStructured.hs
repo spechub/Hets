@@ -911,12 +911,13 @@ extID1 idmap i@(Id toks comps pos1) m = do
 extID :: Set.Set Id -> Map.Map Id (Set.Set Id) -> Result (EndoMap Id)
 extID ids idmap = Set.fold (extID1 idmap) (return Map.empty) ids
 
-extendMorphism :: G_sign      -- ^ formal parameter
+extendMorphism :: Bool -- ^ check sharing (False for lambda expressions)
+               -> G_sign      -- ^ formal parameter
                -> G_sign      -- ^ body
                -> G_sign      -- ^ actual parameter
                -> G_morphism  -- ^ fitting morphism
                -> Result (G_sign, G_morphism)
-extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
+extendMorphism sharing (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
     (G_sign lidA sigmaA1 _) (G_morphism lidM fittingMor1 _) = do
   -- for now, only homogeneous instantiations....
   sigmaB@(ExtSign _ sysB) <-
@@ -944,7 +945,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
   let illShared = (ext_sym_of lid sigmaA `Set.intersection`
                               ext_sym_of lid sigmaAD )
                    Set.\\ imageSet h symsP
-  unless (Set.null illShared)
+  unless ((Set.null illShared) || (not sharing))
     $ plain_error () ("Symbols shared between actual parameter and body"
                      ++ "\nmust be in formal parameter:\n"
                      ++ showDoc illShared "") nullRange
@@ -985,7 +986,7 @@ applyGS lg (ExtGenSig (GenSig nsigI _ gsigmaP) nsigB) args = do
   (gsigmaA', Comorphism aid) <- gSigCoerce lg gsigmaA cl
   mor1 <- coerceMorphism lidG (sourceLogic aid) "applyGS" mor0
   mor2 <- map_morphism aid mor1
-  (gsig, G_morphism gid mor3 mId) <- extendMorphism gsigmaP' gsigmaB' gsigmaA' $
+  (gsig, G_morphism gid mor3 mId) <- extendMorphism True gsigmaP' gsigmaB' gsigmaA' $
     G_morphism (targetLogic aid) mor2 startMorId
   case gsigmaB of
     G_sign lidB sigB indB -> do

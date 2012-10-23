@@ -30,11 +30,17 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.Result
 import Common.Id
+
+import Control.Monad (foldM)
+import Data.List(nub)
 import Common.IRI
+
+
 
 import Static.GTheory
 import Static.DevGraph
 import Static.DgUtils
+import Static.History
 
 -- * Types
 -- (as defined for extended static semantics in Chap. III:5.6.1)
@@ -214,6 +220,58 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom morph of
       dg' = insNodeDG (node, nodeContents) dg
       dg'' = snd $ insLEdgeDG (node, n, linkContents) dg'
       in return (NodeSig node sourceSig, dg'')
+
+-- | Extend the development graph with given morphism pointing to
+-- given NodeSig
+extendDGraphRevHide :: DGraph    -- ^ the development graph to be extended
+             -> NodeSig   -- ^ the NodeSig to which the morphism points
+             -> GMorphism -- ^ the morphism to be inserted
+             -> DGOrigin
+             -> Result (NodeSig, DGraph)
+-- ^ returns the source signature of the morphism and the resulting DGraph
+extendDGraphRevHide dg (NodeSig n _) morph orig = case dom morph of
+    sourceSig@(G_sign lid src ind) -> let
+      nodeContents = newNodeLab emptyNodeName orig
+        $ noSensGTheory lid src ind
+      linkContents = defDGLink morph HidingDefLink
+                                      DGLinkProof
+      node = getNewNodeDG dg
+      dg' = insNodeDG (node, nodeContents) dg
+      dg'' = snd $ insLEdgeDG (n, node, linkContents) dg'
+      in return (NodeSig node sourceSig, dg'')
+
+extendDiagramWithMorphismRevHide :: Range       -- ^ the position (for diagnostics)
+                             -> LogicGraph
+                             -> Diag          -- ^ the diagram to be extended
+                             -> DGraph        -- ^ the development graph
+                             -> DiagNodeSig
+                             -- ^ the node to which the edge should point
+                             -> GMorphism
+                             -- ^ the morphism as label for the new edge
+                             -> String -- ^ a diagnostic node description
+                             -> DGOrigin      -- ^ the origin of the new node
+                             -> Result (DiagNodeSig, Diag, DGraph)
+-- ^ returns the new node, the extended diagram and extended development graph
+extendDiagramWithMorphismRevHide pos _ diag dg (Diag_node_sig n nsig)
+                             mor desc orig =
+  if getSig nsig == cod mor then
+     do (sourceSig, dg') <- extendDGraphRevHide dg nsig mor orig
+        let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
+            diagGr = diagGraph diag
+            node = Tree.getNewNode diagGr
+            diagGr' = insNode (node, nodeContents) diagGr
+            diag' = Diagram{ diagGraph = insEdge (node, n, DiagLink {
+                                dl_morphism = mor ,
+                                dl_number = numberOfEdges diag + 1}) diagGr',
+                              numberOfEdges = numberOfEdges diag + 1 }
+        printDiag (Diag_node_sig node sourceSig, diag', dg')
+               "extendDiagramWithMorphismRev" diag'
+     else fatal_error
+     ("Internal error: Static.ArchDiagram.extendDiagramWithMorphismRev:\n" ++
+      " the morphism codomain differs from the signature in given target node")
+     pos
+
+
 
 {- | Build a diagram that extends the given diagram with a node and an
 edge to that node. The edge is labelled with a given signature morphism
@@ -423,3 +481,114 @@ extendDiagramWithEdge pos _ diag dg
 matchDiagram :: Node -> Diag -> (Graph.MContext DiagNodeLab DiagLinkLab, Diag)
 matchDiagram n diag =
  let (mc, b) = match n $ diagGraph diag in (mc, diag{diagGraph = b})
+
+copyDiagram :: LogicGraph -> [Node] -> Diag ->
+               Result (Diag, Map.Map Node Node)
+copyDiagram lg ns diag = do
+ (diag1, c) <- copyDiagramAux Map.empty lg ns diag
+ let (_, diag2) = copyEdges ns diag1 c Map.empty
+ return (diag2, c)
+
+copyEdges :: [Node] -> Diag -> Map.Map Node Node -> Map.Map Edge Bool ->
+             (Map.Map Edge Bool, Diag)
+copyEdges ns diag c visit =
+ case ns of
+   [] -> (visit, diag)
+   _ -> let sucs = nub $ concatMap (suc (diagGraph diag)) ns
+            sEdges  = concatMap (inn (diagGraph diag)) sucs
+            (visit', diag') = foldl (\(v,d) e -> copyEdge d c e v) (visit, diag) sEdges
+          in copyEdges sucs diag' c visit'
+
+copyEdge :: Diag -> Map.Map Node Node -> LEdge DiagLinkLab -> Map.Map Edge Bool ->
+            (Map.Map Edge Bool, Diag)
+copyEdge diag c (s,t, llab) visit =
+ if (s,t) `elem` (Map.keys visit) then (visit, diag)
+  else
+    -- visit edge
+    let visit' = Map.insert (s,t) True visit
+        s' = Map.findWithDefault s s c
+        t' = Map.findWithDefault (error "t") t c
+        diag' = Diagram{diagGraph = insEdge (s', t', llab {
+                               dl_number = numberOfEdges diag + 1 }) $ diagGraph diag,
+                            numberOfEdges = numberOfEdges diag + 1 }
+    in (visit', diag')
+
+copyDiagramAux :: Map.Map Node Node -> LogicGraph -> [Node] -> Diag ->
+                  Result (Diag, Map.Map Node Node)
+copyDiagramAux c lgraph ns diag =
+ case ns of
+  [] -> return (diag, c)
+  _ -> do
+    (diag', c')<- foldM (\(d, c0) x->  do
+                            let DiagNode nsig desc =
+                                 case lab (diagGraph d) x of
+                                  Nothing -> error $  "copy:"++show x
+                                  Just y ->  y
+                            (Diag_node_sig y _, d') <- extendDiagramIncl
+                                lgraph d [] nsig $ desc ++ "copy"
+                            return (d', Map.insert x y c0)) (diag, c) ns
+    let sucs = filter (\x -> not (x `elem` (Map.keys c'))) $ nub $ concatMap
+               (\n -> suc (diagGraph diag) n) ns
+    copyDiagramAux c' lgraph sucs diag'
+
+
+
+insertFormalParamAndVerifCond :: Range       -- ^ the position (for diagnostics)
+                             -> LogicGraph
+                             -> Diag          -- ^ the diagram to be extended
+                             -> DGraph        -- ^ the development graph
+                             -> DiagNodeSig
+                             -- ^ the node to which the edge should point
+                             -> NodeSig -- ^ the dg node where the param is based
+                             -> DiagNodeSig -- ^ the union of the params
+                             -> GMorphism
+                             -- ^ the morphism as label for the new edge
+                             -> String -- ^ a diagnostic node description
+                             -> DGOrigin      -- ^ the origin of the new node
+                             -> Result (Diag, DGraph)
+-- ^ returns the new node, the extended diagram and extended development graph
+insertFormalParamAndVerifCond 
+                                 pos lgraph 
+                                 diag0 dg0 
+                                 _targetNode@(Diag_node_sig tNode tSig) fpi qB
+                                 mor
+                                 argStr origin = do
+  let nodeContents = DiagNode {dn_sig = fpi, dn_desc = argStr}
+      diagGr = diagGraph diag0
+      node = Tree.getNewNode diagGr
+      diagGr' = insNode (node, nodeContents) diagGr
+       -- this inserts p^F_i
+      diag' = Diagram{ diagGraph = insEdge (node, tNode, DiagLink {
+                                dl_morphism = mor ,
+                                dl_number = numberOfEdges diag0 + 1}) diagGr',
+                              numberOfEdges = numberOfEdges diag0 + 1 }
+       -- this inserts mor : p^F_i -> p^A_i
+  (dnsig, diag'', dg'') <- printDiag (Diag_node_sig node fpi, diag', dg0)
+               "extendDiagramWithMorphismRev" diag'
+  diag''' <- insInclusionEdges lgraph diag'' [dnsig] qB
+        -- this inserts incl : p^F_i -> q^B
+  -- now we add the verification condition
+  -- as a theorem link from
+  -- fpi with mor
+  -- to
+  -- tNode
+  case cod mor of
+    cmor@(G_sign lid tar ind) -> do
+      let f = getNode fpi
+          fpiLab = labDG dg'' f
+          k = getNewNodeDG dg''
+          labelK = newInfoNodeLab
+                    (extName "Verification" $ dgn_name fpiLab)
+                    (newNodeInfo origin) $ noSensGTheory lid tar ind
+          insK = InsertNode (k, labelK)
+          insE = InsertEdge (f,k, globDefLink mor DGLinkProof)
+          dg''' = changesDGH dg'' [insK, insE]
+          -- inserts the node for fpi with sigma and
+          -- a definition link from fpi to it
+      incl <- ginclusion lgraph cmor (getSig tSig)
+      let linkLabel = defDGLink incl globalThm DGLinkVerif
+          (_, dg2) = insLEdgeDG (k, getNode tSig, linkLabel) dg'''
+           -- inserts the theorem link from fpi with sigma to p^A_i
+      return (diag''', dg2)
+
+

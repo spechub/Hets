@@ -69,6 +69,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Common.Result
+
 -- * types for structured specification analysis
 
 -- ** basic types
@@ -127,6 +128,7 @@ data DGOrigin =
   | DGNormalForm Node
   | DGintegratedSCC
   | DGFlattening
+  | DGTest
     deriving (Show, Eq, Ord)
 
 -- | node content or reference to another library's node
@@ -234,6 +236,7 @@ data DGLinkOrigin =
     SeeTarget
   | SeeSource
   | TEST
+  | DGLinkVerif
   | DGImpliesLink
   | DGLinkExtension
   | DGLinkTranslation
@@ -523,7 +526,7 @@ equalSigs (UnitSig ls1 ns1 _) (UnitSig ls2 ns2 _) =
 
 namesMatchCtx :: [IRI] -> BStContext -> RefSigMap -> Bool
 namesMatchCtx [] _ _ = True
-namesMatchCtx (un : unitNames) bstc rsmap =
+namesMatchCtx (un : unitNames) bstc rsmap = --trace ("nMC:" ++ show un)$
  case Map.findWithDefault (error "namesMatchCtx")
             un bstc of
   BranchRefSig _ (_usig, mbsig) -> case mbsig of
@@ -656,6 +659,7 @@ instance Show RTNodeType where
 data RTNodeLab = RTNodeLab
   { rtn_type :: RTNodeType
   , rtn_name :: String
+  , rtn_diag :: String
   } deriving Eq
 
 instance Show RTNodeLab where
@@ -663,10 +667,11 @@ instance Show RTNodeLab where
   let
    name = rtn_name r
    t = rtn_type r
+   d = rtn_diag r 
    t1 = case t of
           RTPlain u -> "plain: " ++ show u
           RTRef n -> show n
-  in name ++ " " ++ t1
+  in "Name: " ++ name ++ "\n diag :" ++ d ++ "\n type: " ++ t1
 
 data RTLinkType =
     RTRefine
@@ -679,14 +684,15 @@ data RTLinkLab = RTLink
 
 -- utility functions for handling refinement tree
 
-addNodeRT :: DGraph -> UnitSig -> String -> (Node, DGraph)
-addNodeRT dg usig s =
+addNodeRT :: DGraph -> UnitSig -> String  -> (Node, DGraph)
+addNodeRT dg usig s = 
  let
   g = refTree dg
   n = Tree.getNewNode g
   l = RTNodeLab {
         rtn_type = RTPlain usig
         , rtn_name = s
+        , rtn_diag = s
        }
  in (n, dg {refTree = insNode (n, l) g})
 
@@ -697,17 +703,21 @@ addSpecNodeRT dg usig s =
   f = Map.insert s n $ specRoots dg'
  in (n, dg' {specRoots = f})
 
-updateNodeNameRT :: DGraph -> Node -> String -> DGraph
-updateNodeNameRT dg n s =
+updateNodeNameRT :: DGraph -> Node -> Bool -> String -> DGraph
+-- the Bool flag tells if the diag name should change too
+updateNodeNameRT dg n flag s = 
  let
   g = refTree dg
   l = Graph.lab g n
  in case l of
      Nothing -> dg
-     Just oldL -> let
-       newL = oldL {rtn_name = s}
+     Just oldL -> 
+      let
+       newL = case flag of 
+                False -> oldL {rtn_name = s}
+                True -> oldL {rtn_name = s, rtn_diag = s}
        (g', _) = Tree.labelNode (n, newL) g
-                  in dg {refTree = g'}
+      in dg {refTree = g'}
 
 updateSigRT :: DGraph -> Node -> UnitSig -> DGraph
 updateSigRT dg n usig =
@@ -722,8 +732,8 @@ updateSigRT dg n usig =
                   in dg {refTree = g'}
 
 updateNodeNameSpecRT :: DGraph -> Node -> String -> DGraph
-updateNodeNameSpecRT dg n s =
- let dg' = updateNodeNameRT dg n s
+updateNodeNameSpecRT dg n s = 
+ let dg' = updateNodeNameRT dg n False s
  in dg' {specRoots = Map.insert s n $ specRoots dg}
 
 addSubTree :: DGraph -> Maybe RTLeaves -> RTPointer -> (DGraph, RTPointer)

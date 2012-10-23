@@ -130,6 +130,7 @@ dgOriginHeader o = case o of
     DGNormalForm n -> "normal-form(" ++ shows n ")"
     DGintegratedSCC -> "OWL spec with integrated strongly connected components"
     DGFlattening -> "flattening"
+    DGTest -> "testing"
 
 instance Pretty DGOrigin where
   pretty o = let prettySyms headr syms = if Set.null syms then Doc.empty
@@ -197,7 +198,7 @@ dgLinkMapping o = case o of
 dgLinkOriginHeader :: DGLinkOrigin -> String
 dgLinkOriginHeader o = case o of
     SeeTarget -> "see target"
-    TEST -> "test"
+    DGLinkVerif -> "architectural verification condition"
     SeeSource -> "see source"
     DGImpliesLink -> "reversed implies link of extension"
     DGLinkExtension -> "extension"
@@ -214,6 +215,7 @@ dgLinkOriginHeader o = case o of
     DGLinkFlatteningUnion -> "flattening non-disjoint union"
     DGLinkFlatteningRename -> "flattening renaming"
     DGLinkRefinement _ -> "refinement"
+    TEST -> "test"
 
 instance Pretty DGLinkOrigin where
   pretty o = text (dgLinkOriginHeader o) <+> pretty (dgLinkOriginSpec o)
