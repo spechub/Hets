@@ -48,22 +48,24 @@ readEncFile _ = readFile
 writeEncFile _ = writeFile
 setStdEnc _ = return ()
 #else
-readEncFile c f = case c of
-  Utf8 -> readFile f
-  Latin1 -> do
-        hdl <- openFile f ReadMode
-        hSetEncoding hdl latin1
-        hGetContents hdl
+readEncFile c f = do
+  hdl <- openFile f ReadMode
+  hSetEncoding hdl $ case c of
+    Utf8 -> utf8
+    Latin1 -> latin1
+  hGetContents hdl
 
-writeEncFile c f txt = case c of
-  Utf8 -> writeFile f txt
-  Latin1 -> withFile f WriteMode $ \ hdl -> do
-      hSetEncoding hdl latin1
-      hPutStr hdl txt
+writeEncFile c f txt = withFile f WriteMode $ \ hdl -> do
+    hSetEncoding hdl $ case c of
+      Utf8 -> utf8
+      Latin1 -> latin1
+    hPutStr hdl txt
 
-setStdEnc c = case c of
-  Utf8 -> return ()
-  Latin1 -> do
-    hSetEncoding stdin latin1
-    hSetEncoding stdout latin1
+setStdEnc c = do
+  hSetEncoding stdin $ case c of
+    Utf8 -> utf8
+    Latin1 -> latin1
+  hSetEncoding stdout $ case c of
+    Utf8 -> utf8
+    Latin1 -> latin1
 #endif
