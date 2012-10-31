@@ -137,8 +137,8 @@ parseConverse = cKey converseOperationS
 parseContabentry :: Parser Contabentry
 parseContabentry = inParens $ do
   id1 <- parseRelationId
-  id2 <- parseRelationId
-  return (Contabentry id1 id2)
+  fmap (Contabentry id1) $
+    single parseRelationId <|> parseBracedRelationIds
 
 parseContabentryList :: String -> Parser [Contabentry_Ternary]
 parseContabentryList s = cKey s

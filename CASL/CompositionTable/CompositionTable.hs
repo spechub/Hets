@@ -15,7 +15,7 @@ module CASL.CompositionTable.CompositionTable where
 
 data Table = Table Table_Attrs Compositiontable Conversetable
              Reflectiontable Models
-             deriving (Eq,Show)
+             deriving (Eq, Show)
 
 data Table_Attrs = Table_Attrs
     { tableName :: String
@@ -47,7 +47,7 @@ data Cmptabentry_Attrs = Cmptabentry_Attrs
 
 data Contabentry = Contabentry
     { contabentryArgBaseRel :: Baserel
-    , contabentryConverseBaseRel :: Baserel
+    , contabentryConverseBaseRel :: [Baserel]
     } deriving (Eq, Show)
 
 data Contabentry_Ternary = Contabentry_Ternary
@@ -58,7 +58,7 @@ data Contabentry_Ternary = Contabentry_Ternary
 data Reftabentry = Reftabentry
      { reftabentryArgBaseRel :: Baserel
      , reftabentryReflectiveBaseRel :: Baserel
-     } deriving (Eq,Show)
+     } deriving (Eq, Show)
 
 data Model = Model
     { modelString1 :: String

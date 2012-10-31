@@ -27,16 +27,14 @@ add equations for id
 import CASL.CompositionTable.CompositionTable
 import Text.XML.Light
 
-{-
-Using xml it is not very easy to just add a DOCTYPE node
--}
+-- Using xml it is not very easy to just add a DOCTYPE node
 
 -- Public identifier (suggestion)
-publicId::String
+publicId :: String
 publicId = "-//CoFI//DTD CompositionTable 1.1//EN"
 
 -- System URI
-systemURI::String
+systemURI :: String
 systemURI =
   "http://www.informatik.uni-bremen.de/cofi/hets/CompositionTable.dtd"
 
@@ -53,7 +51,7 @@ tableXmlStr t = unlines $ tableProlog ++ lines (ppElement $ table2Elem t)
 table2Elem :: Table -> Element
 table2Elem (Table as a b (Reflectiontable _) c) =
   add_attrs (tabAttr2Attrs as)
-  $ unode "table" $ compTable2Elem a : conTable2Elems b  ++ [models2Elem c]
+  $ unode "table" $ compTable2Elem a : conTable2Elems b ++ [models2Elem c]
 
 toAttrFrStr :: String -> String -> Attr
 toAttrFrStr = Attr . unqual
@@ -86,16 +84,22 @@ baserel2Attr = toAttrFrStr "baserel" . baserelBaserel
 conTable2Elems :: Conversetable -> [Element]
 conTable2Elems ct = case ct of
   Conversetable a ->
-    [unode  "conversetable" $ map conEntry2Elem a]
+    [unode "conversetable" $ concatMap (\ (Contabentry b cs)
+       -> map (\ c -> conEntry2Elem $ Contabentry b [c]) cs) a]
   _ -> []
 
 conEntry2Elem :: Contabentry -> Element
-conEntry2Elem = unode "contabentry" . conEntry2Attrs
+conEntry2Elem c@(Contabentry _ cs) =
+  add_attrs (conEntry2Attrs c) . unode "contabentry" $ case cs of
+    [_] -> []
+    _ -> map (unode "converseBaseRel" . baserelBaserel) cs
 
 conEntry2Attrs :: Contabentry -> [Attr]
-conEntry2Attrs (Contabentry a c) =
-  [ toAttrFrStr "argBaseRel" $ baserelBaserel a
-  , toAttrFrStr "converseBaseRel" $ baserelBaserel c ]
+conEntry2Attrs (Contabentry a cs) =
+  toAttrFrStr "argBaseRel" (baserelBaserel a)
+  : case cs of
+      [c] -> [ toAttrFrStr "converseBaseRel" $ baserelBaserel c ]
+      _ -> []
 
 models2Elem :: Models -> Element
 models2Elem (Models a) = unode "models" $ map model2Elem a

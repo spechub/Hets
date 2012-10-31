@@ -217,10 +217,9 @@ applyOperation "RA_complement" (sign, ft : _) (Table (Table_Attrs name id_
 applyOperation "RA_identity" _ (Table (Table_Attrs _ id_ _)
                _ _ _ _) _ _ = [id_]
 applyOperation "RA_converse" (sign, ft : _)
-    (Table attrs cmptable cnvtable refltbl models) ass symbs =
+    tabl@(Table _ _ cnvtable _ _) ass symbs =
   calculateConverse cnvtable
-    (calculateTerm (sign, ft) ass
-     (Table attrs cmptable cnvtable refltbl models) symbs)
+    $ calculateTerm (sign, ft) ass tabl symbs
 
 applyOperation "RA_shortcut" (sign, ft : _) (Table attrs comptbl
                 (Conversetable_Ternary inv shortc hom) refltbl
@@ -262,7 +261,7 @@ calculateConverse (Conversetable centries) rels =
 
 calculateConverseAtomar :: [Baserel] -> Contabentry -> [Baserel]
 calculateConverseAtomar rels (Contabentry rel1 rel2) =
-   [rel2 | elem rel1 rels]
+   concat [rel2 | elem rel1 rels]
 
 calculateConverseTernary :: [Contabentry_Ternary] -> [Baserel]
                          -> [Baserel]

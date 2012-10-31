@@ -107,7 +107,7 @@ computeCompTable spName (sig, nsens) = do
            then
             Just Contabentry {
                    contabentryArgBaseRel = Baserel (showDoc arg ""),
-                   contabentryConverseBaseRel = Baserel (showDoc res "") }
+                   contabentryConverseBaseRel = [Baserel (showDoc res "")] }
            else Nothing
        _ -> Nothing
   let attrs = Table_Attrs

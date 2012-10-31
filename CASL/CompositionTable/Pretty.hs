@@ -67,7 +67,9 @@ contabentry3 (Contabentry_Ternary a l) =
            _ -> parens $ hsep $ map baserel l
 
 contabentry :: Contabentry -> Doc
-contabentry (Contabentry a b) = parens $ baserel a <+> baserel b
+contabentry (Contabentry a bs) = parens $ baserel a <+> case bs of
+  [b] -> baserel b
+  _ -> parens $ hsep $ map baserel bs
 
 reftabentry :: Reftabentry -> Doc
 reftabentry (Reftabentry a b) = parens $ baserel a <+> baserel b
