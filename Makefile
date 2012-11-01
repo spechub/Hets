@@ -120,9 +120,10 @@ Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
 	$(GENRULECALL) -i Haskell.BaseATC -o $@ $(Haskell_files)
 
 hs_der_files += $(hs_clean_files)
-
+ifneq ($(strip $(PFE_FLAGS)),)
 TESTDIRS += ToHaskell
 TESTTARGETFILES += Haskell/hana.hs Haskell/h2h.hs Haskell/h2hf.hs
+endif
 else
 # unset this variable from var.mk because the programatica sources
 # are needed to created our sources!
