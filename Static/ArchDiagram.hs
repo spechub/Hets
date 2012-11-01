@@ -40,7 +40,6 @@ import Common.IRI
 import Static.GTheory
 import Static.DevGraph
 import Static.DgUtils
-import Static.History
 
 -- * Types
 -- (as defined for extended static semantics in Chap. III:5.6.1)
@@ -547,9 +546,9 @@ insertFormalParamAndVerifCond :: Range       -- ^ the position (for diagnostics)
                              -> DGOrigin      -- ^ the origin of the new node
                              -> Result (Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
-insertFormalParamAndVerifCond 
-                                 pos lgraph 
-                                 diag0 dg0 
+insertFormalParamAndVerifCond
+                                 _pos lgraph
+                                 diag0 dg0
                                  _targetNode@(Diag_node_sig tNode tSig) fpi qB
                                  mor
                                  argStr origin = do
@@ -580,9 +579,8 @@ insertFormalParamAndVerifCond
           labelK = newInfoNodeLab
                     (extName "Verification" $ dgn_name fpiLab)
                     (newNodeInfo origin) $ noSensGTheory lid tar ind
-          insK = InsertNode (k, labelK)
-          insE = InsertEdge (f,k, globDefLink mor DGLinkProof)
-          dg''' = changesDGH dg'' [insK, insE]
+          dgK = insNodeDG (k, labelK) dg''
+          (_, dg''') = insLEdgeDG (f,k, globDefLink mor DGLinkProof) dgK
           -- inserts the node for fpi with sigma and
           -- a definition link from fpi to it
       incl <- ginclusion lgraph cmor (getSig tSig)
