@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, ScopedTypeVariables #-}
 {- |
 Module      :  $Header$
 Description :  static analysis of CASL specification libraries
@@ -64,6 +64,7 @@ import Data.Either (lefts, rights)
 
 import Control.Monad
 import Control.Monad.Trans
+import Control.Exception as Ex (catch)
 
 import Data.Maybe
 
@@ -84,6 +85,35 @@ anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSourceFile = anaSource Nothing
 
+downloadSource :: HetcatsOpts -> FilePath -> IO (FilePath, String)
+downloadSource opts fname = do
+  putIfVerbose opts 3 $ "Downloading file " ++ fname
+  resp <- simpleHTTP (getRequest fname)
+  input <- getResponseBody resp
+  case resp of
+    Right r -> case rspCode r of
+      (2,0,0) -> do
+        putIfVerbose opts 3 "Successful"
+        return (fname, input)
+      (x,y,z) -> do
+        let errmsg = "Download of file " ++ fname
+                     ++ " yields HTTP error " ++ show x ++ show y ++ show z
+                     ++ ": " ++ rspReason r
+        putIfVerbose opts 3 errmsg
+        fail errmsg
+    Left err -> do
+      let errmsg = "Download of file " ++ fname ++ " failed: " ++ show err
+      putIfVerbose opts 3 errmsg
+      fail errmsg
+
+tryDownloadSources :: HetcatsOpts -> [FilePath] -> FilePath
+                      -> IO (FilePath, String)
+tryDownloadSources opts fnames origname = case fnames of
+  [] -> fail $ "Unable to download file " ++ origname ++ "[.*]"
+  fname:fnames' -> Ex.catch (downloadSource opts fname)
+                   (\(_::IOError) ->
+                     tryDownloadSources opts fnames' origname)
+
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
@@ -94,18 +124,9 @@ anaSource mln lg opts topLns libenv initDG fname =
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg in ResultT $
 #ifndef NOHTTP
   if checkUri fname then do
-       putIfVerbose opts 2 $ "Downloading file " ++ fname
-       resp <- simpleHTTP (getRequest fname)
-       input <- getResponseBody resp
-       case resp of
-         Right r -> case rspCode r of
-           (2,0,0) -> runResultT $
-                      anaString mln lgraph opts topLns libenv initDG input fname
-           (x,y,z) -> fail $ "Download of file " ++ fname
-                      ++ " yields HTTP error " ++ show x ++ show y ++ show z
-                      ++ ": " ++ rspReason r
-         Left err -> fail $ "Download of file " ++ fname ++ " failed: "
-                     ++ show err
+    (fname', input) <-
+      tryDownloadSources opts (getOntoFileNames opts fname) fname
+    runResultT $ anaString mln lgraph opts topLns libenv initDG input fname'
   else
 #endif
   do

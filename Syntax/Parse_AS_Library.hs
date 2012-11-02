@@ -181,6 +181,16 @@ libItem l =
        q <- optEnd
        return (Download_items iln il
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
+  <|> -- use (to be removed eventually)
+    do asKey "use"
+       i <- hetIRI l
+       let libPath = iriToStringUnsecure i
+       let specName = convertFileToLibStr libPath
+       libNameIri <- case parseIRIManchester specName of
+         Just i' -> return i'
+         Nothing -> fail $ "could not read " ++ show specName ++ " into IRI"
+       return (Download_items (LibName (IndirectLink specName nullRange libPath) Nothing)
+               (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange)
   <|> -- logic
     do s <- asKey logicS
        logD <- logicDescr l

@@ -33,6 +33,7 @@ module Driver.Options
   , removePrfOut
   , hasEnvOut
   , hasPrfOut
+  , getOntoFileNames
   , existsAnSource
   , checkRecentEnv
   , downloadExtensions
@@ -672,23 +673,27 @@ isDefLogic s = (s ==) . defLogic
 defLogicIsDMU :: HetcatsOpts -> Bool
 defLogicIsDMU = isDefLogic "DMU"
 
+getOntoFileNames :: HetcatsOpts -> FilePath -> [FilePath]
+getOntoFileNames opts file = 
+  let base = rmSuffix file
+      exts = case intype opts of
+        GuessIn
+          | defLogicIsDMU opts -> [".xml"]
+          | isDefLogic "Framework" opts
+            -> [".elf", ".thy", ".maude", ".het"]
+        GuessIn -> downloadExtensions
+        e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
+        e -> ['.' : show e] in
+  file : map (base ++) (exts ++ [envSuffix])
+
 {- |
 checks if a source file for the given file name exists -}
 existsAnSource :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 existsAnSource opts file = do
-       let base = rmSuffix file
-           exts = case intype opts of
-                  GuessIn
-                    | defLogicIsDMU opts -> [".xml"]
-                    | isDefLogic "Framework" opts
-                        -> [".elf", ".thy", ".maude", ".het"]
-                  GuessIn -> downloadExtensions
-                  e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
-                  e -> ['.' : show e]
-           names = file : map (base ++) (exts ++ [envSuffix])
-       -- look for the first existing file
-       validFlags <- mapM doesFileExist names
-       return . fmap snd . find fst $ zip validFlags names
+  let names = getOntoFileNames opts file
+  -- look for the first existing file
+  validFlags <- mapM doesFileExist names
+  return . fmap snd . find fst $ zip validFlags names
 
 -- | should env be written
 hasEnvOut :: HetcatsOpts -> Bool
