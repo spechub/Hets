@@ -184,12 +184,16 @@ libItem l =
   <|> -- use (to be removed eventually)
     do asKey "use"
        i <- hetIRI l
-       let libPath = iriToStringUnsecure i
-       let specName = convertFileToLibStr libPath
+       let libPath = iriToStringUnsecure (deleteFragment i)
+       let shortLibName = convertFileToLibStr libPath
+       let fragment = getFragment i
+       let specName = if null fragment || null (tail fragment)
+                      then shortLibName
+                      else tail fragment
        libNameIri <- case parseIRIManchester specName of
          Just i' -> return i'
          Nothing -> fail $ "could not read " ++ show specName ++ " into IRI"
-       return (Download_items (LibName (IndirectLink specName nullRange libPath) Nothing)
+       return (Download_items (LibName (IndirectLink shortLibName nullRange libPath) Nothing)
                (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange)
   <|> -- logic
     do s <- asKey logicS

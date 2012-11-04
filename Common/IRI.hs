@@ -65,8 +65,10 @@ module Common.IRI
 
     -- * Conversion
     , simpleIdToIRI
+    , deleteFragment
 
     -- * Extraction
+    , getFragment
     , localname
 
     -- * Parsing
@@ -1274,6 +1276,12 @@ representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
   parseIRIReference $ iriToStringFull id i "" ++ iriToStringAbbrevMerge c ""
+
+deleteFragment :: IRI -> IRI
+deleteFragment i = i { iriFragment = "" }
+
+getFragment :: IRI -> String
+getFragment = iriFragment
 
 localname :: IRI -> String
 localname i@(IRI { iriPath = path
