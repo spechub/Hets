@@ -110,6 +110,7 @@ instance Logic VSE ()
                VSEMor
                Symbol RawSymbol () where
          stability VSE = Unstable
+         empty_proof_tree VSE = ()
 #ifdef UNI_PACKAGE
          provers VSE = [vse]
 #endif
