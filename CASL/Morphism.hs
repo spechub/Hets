@@ -496,13 +496,14 @@ composeM comp mor1 mor2 = do
      , pred_map = pMap }
 
 legalSign :: Sign f e -> Bool
-legalSign sigma = MapSet.setAll legalSort (Rel.nodes $ sortRel sigma)
+legalSign sigma =
+  MapSet.setAll legalSort (MapSet.setElems . Rel.toMap $ sortRel sigma)
   && MapSet.all legalOpType (opMap sigma)
   && MapSet.all legalPredType (predMap sigma)
   where sorts = sortSet sigma
         legalSort s = Set.member s sorts
-        legalOpType t = legalSort (opRes t)
-                        && all legalSort (opArgs t)
+        legalOpType t = -- omitted for VSE Boolean: legalSort (opRes t)
+                        all legalSort (opArgs t)
         legalPredType = all legalSort . predArgs
 
 -- | the image of a signature morphism
