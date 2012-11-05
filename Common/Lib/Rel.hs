@@ -244,10 +244,7 @@ fromAscList = Rel . Map.fromDistinctAscList
 
 -- | all nodes of the edges
 nodes :: Ord a => Rel a -> Set.Set a
-nodes (Rel m) = Set.union (Map.keysSet m) $ elemsSet m
-
-elemsSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
-elemsSet = Set.unions . Map.elems
+nodes (Rel m) = Set.union (Map.keysSet m) $ MapSet.setElems m
 
 {- | Construct a precedence map from a closed relation. Indices range
    between 1 and the second value that is output. -}
@@ -258,7 +255,7 @@ toPrecMap = foldl ( \ (m1, c) s -> let n = c + 1 in
 
 topSortDAG :: Ord a => Rel a -> [Set.Set a]
 topSortDAG r@(Rel m) = if Map.null m then [] else
-    let es = elemsSet m
+    let es = MapSet.setElems m
         ml = Map.keysSet m Set.\\ es -- most left
         Rel m2 = delSet ml r
         rs = es Set.\\ Map.keysSet m2 -- re-insert loose ends
@@ -281,7 +278,7 @@ expandCycle cs s = case cs of
 mostRightOfCollapsed :: Ord a => Rel a -> Set.Set a
 mostRightOfCollapsed r@(Rel m) = if Map.null m then Set.empty
     else let Rel im = irreflex r
-             mr = elemsSet im Set.\\ Map.keysSet im
+             mr = MapSet.setElems im Set.\\ Map.keysSet im
          in if Set.null mr then Map.keysSet $ Map.filterWithKey
                 ((==) . Set.singleton) m
             else mr

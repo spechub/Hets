@@ -207,7 +207,7 @@ basicAna (bs, sig, ga) = do
   appendDiags . map (mkDiag Error "illegal overloading of")
     . Set.toList . Set.intersection (MapSet.keysSet $ opMap sig3)
     $ MapSet.keysSet uOpMap
-  return (bs2, ExtSign (addProcs $ diffSig const sig2 boolSig) syms, rSens)
+  return (bs2, ExtSign (addProcs sig3) syms, rSens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
