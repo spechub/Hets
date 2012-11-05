@@ -117,7 +117,7 @@ readMyMsgAux n cp h expect = if n < 1 then do
       let rr = reverse r
       if isPrefixOf (prx expect) $ dropWhile (/= '(') rr
         then return rr else do
-        appendFile vseErrFile $ "waiting for '" ++ expect  ++ "' got:\n" ++ rr
+        appendFile vseErrFile $ "waiting for '" ++ expect ++ "' got:\n" ++ rr
           ++ "\ntrying again\n"
         readMyMsgAux (n - 1) cp h expect -- try again
 
@@ -238,7 +238,7 @@ prove ostr (Theory sig thsens) _freedefs = do
       rMap = Map.fromList $ map (\ SenAttr { senAttr = n } ->
                 (map toUpper $ transString n, n)) disGoals
 #ifdef TAR_PACKAGE
-  moveVSEFiles ostr
+  moveVSEFiles str
 #endif
   (inp, out, cp) <- prepareAndCallVSE
   sendMyMsg inp $ "(" ++ str ++ ")"
@@ -250,7 +250,7 @@ prove ostr (Theory sig thsens) _freedefs = do
   sendMyMsg inp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
   ms <- readFinalVSEOutput cp out
 #ifdef TAR_PACKAGE
-  createVSETarFile ostr
+  createVSETarFile str
 #endif
   case ms of
     Nothing -> return []
