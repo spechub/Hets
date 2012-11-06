@@ -85,6 +85,7 @@ anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSourceFile = anaSource Nothing
 
+#ifndef NOHTTP
 downloadSource :: HetcatsOpts -> FilePath -> IO (FilePath, String)
 downloadSource opts fname = do
   putIfVerbose opts 3 $ "Downloading file " ++ fname
@@ -113,6 +114,7 @@ tryDownloadSources opts fnames origname = case fnames of
   fname:fnames' -> Ex.catch (downloadSource opts fname)
                    (\(_::IOError) ->
                      tryDownloadSources opts fnames' origname)
+#endif
 
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
