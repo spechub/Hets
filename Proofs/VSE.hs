@@ -108,7 +108,7 @@ prove (ln, node) libEnv =
 #ifdef TAR_PACKAGE
        moveVSEFiles ostr
 #endif
-       (inp, out, _, cp) <- prepareAndCallVSE
+       (inp, out, cp) <- prepareAndCallVSE
        sendMyMsg inp $ "(" ++ unlines (map (thName ln) nls) ++ ")"
        mapM_ (\ nl -> do
            readMyMsg cp out linksP

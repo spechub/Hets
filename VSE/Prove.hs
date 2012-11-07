@@ -198,13 +198,13 @@ moveVSEFiles str = do
     renameFile allSpecInDir allSpecFile
 #endif
 
-prepareAndCallVSE :: IO (Handle, Handle, Handle, ProcessHandle)
+prepareAndCallVSE :: IO (Handle, Handle, ProcessHandle)
 prepareAndCallVSE = do
   vseBin <- getEnvDef "HETS_VSE" "hetsvse"
-  (inp, out, err, cp) <-
+  (inp, out, _, cp) <-
       runInteractiveProcess vseBin ["-std"] Nothing Nothing
   readMyMsg cp out nameP
-  return (inp, out, err, cp)
+  return (inp, out, cp)
 
 readFinalVSEOutput :: ProcessHandle -> Handle
                    -> IO (Maybe (Map.Map String [String]))
@@ -240,7 +240,7 @@ prove ostr (Theory sig thsens) _freedefs = do
 #ifdef TAR_PACKAGE
   moveVSEFiles str
 #endif
-  (inp, out, err, cp) <- prepareAndCallVSE
+  (inp, out, cp) <- prepareAndCallVSE
   sendMyMsg inp $ "(" ++ str ++ ")"
   readMyMsg cp out linksP
   sendMyMsg inp "nil"
@@ -248,11 +248,7 @@ prove ostr (Theory sig thsens) _freedefs = do
   sendMyMsg inp $ show $ prettySExpr $ vseSignToSExpr fsig
   readMyMsg cp out lemsP
   sendMyMsg inp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
-  e1 <- catchIOException "" (hGetContents err)
-  unless (null e1) $ putStrLn e1
   ms <- readFinalVSEOutput cp out
-  e2 <- catchIOException "" (hGetContents err)
-  unless (null e2) $ putStrLn e2
 #ifdef TAR_PACKAGE
   createVSETarFile str
 #endif
