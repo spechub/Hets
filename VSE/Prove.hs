@@ -217,6 +217,7 @@ readFinalVSEOutput cp out = do
     Nothing -> do
       revres <- readRest cp out ""
       let res = reverse revres
+      writeFile "hetsvse-debug.txt" res
       case parse parseSExprs vseErrFile res of
         Right l -> return $ Just $ readLemmas l
         Left e -> do
