@@ -186,7 +186,7 @@ createVSETarFile tar = do
   if (hasSpecDir && hasAllSpecFile) then do
     renameFile allSpecFile allSpecInDir
     Tar.create (tar ++ ".tar") "" [specDir]
-    else putStrLn $ "hetsvse did create: "
+    else putStrLn $ "hetsvse did not create: "
       ++ if hasSpecDir then allSpecFile else specDir
 
 moveVSEFiles :: FilePath -> IO ()
