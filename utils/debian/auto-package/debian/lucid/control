@@ -28,7 +28,7 @@ Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoF
 
 Package: hets-core
 Architecture: i386 amd64
-Depends: tk, darwin, minisat2, openjdk-6-jdk, spass, udrawgraph, gtk2-engines, python, subversion, curl, bzip2, ${shlibs:Depends}, ${misc:Depends}
+Depends: tk8.5, darwin, minisat2, openjdk-6-jdk, spass, udrawgraph, gtk2-engines, python, subversion, curl, bzip2, ${shlibs:Depends}, ${misc:Depends}
 Recommends: man, zchaff
 Suggests: ekrhyper
 Description: Package containing the core of Hets - the Heterogeneous Tool Set.
