@@ -181,8 +181,13 @@ allSpecInDir = specDir ++ "/" ++ allSpecFile
 #ifdef TAR_PACKAGE
 createVSETarFile :: FilePath -> IO ()
 createVSETarFile tar = do
-  renameFile allSpecFile allSpecInDir
-  Tar.create (tar ++ ".tar") "" [specDir]
+  hasSpecDir <- doesDirectoryExist specDir
+  hasAllSpecFile <- doesFileExist allSpecFile
+  if (hasSpecDir && hasAllSpecFile) then do
+    renameFile allSpecFile allSpecInDir
+    Tar.create (tar ++ ".tar") "" [specDir]
+    else putStrLn $ "hetsvse did create: "
+      ++ if hasSpecDir then allSpecFile else specDir
 
 moveVSEFiles :: FilePath -> IO ()
 moveVSEFiles str = do
