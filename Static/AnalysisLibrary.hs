@@ -22,12 +22,15 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
+import Debug.Trace
+
 import Logic.Logic
 import Logic.Grothendieck
 
 import Syntax.AS_Structured
 import Syntax.Print_AS_Structured
 import Syntax.AS_Library
+import Syntax.Parse_AS_Library (useItems)
 
 import Static.GTheory
 import Static.DevGraph
@@ -393,8 +396,10 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   View_defn vn' gen vt gsis pos -> case expCurie (globalAnnos dg) eo vn' of
    Nothing -> liftR $ prefixErrorIRI vn'
    Just vn -> do
+    (_, dg', libenv', lg', eo') <- downloadMissingSpecs
+                                   vt lg opts topLns currLn libenv dg eo itm 
     analyzing opts $ "view " ++ iriToStringUnsecure vn
-    liftR $ anaViewDefn lg currLn libenv dg opts eo vn gen vt gsis pos
+    liftR $ anaViewDefn lg' currLn libenv' dg' opts eo' vn gen vt gsis pos
   Arch_spec_defn asn' asp pos -> case expCurie (globalAnnos dg) eo asn' of
    Nothing -> liftR $ prefixErrorIRI asn'
    Just asn -> do
@@ -522,6 +527,50 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
   _ -> return (itm, dg, libenv, lg, eo)
+
+downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS -> LibName
+                        -> LibEnv -> DGraph -> ExpOverrides -> LIB_ITEM
+                        -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph,
+                                       ExpOverrides)
+downloadMissingSpecs (View_type sp1 sp2 _)
+  lg opts topLns currLn libenv dg eo itm = do
+  let iris = filter (\i -> case expCurie (globalAnnos dg) eo i
+                                >>= (\i' -> lookupGlobalEnvDG i' dg) of
+                        Nothing -> trace (show $ Map.keys $ globalEnv dg) True
+                        _ -> False) $
+             concatMap extractSpecnames (map item [sp1, sp2])
+  itms <- useItems iris
+  chainAnaLibItems lg opts topLns currLn libenv dg eo itms itm
+
+extractSpecnames :: SPEC -> [SPEC_NAME]
+extractSpecnames spec =
+  case spec of
+    Translation asp _ -> (extractSpecnames . item) asp
+    Reduction asp _ -> (extractSpecnames . item) asp
+    Union asps _ -> concatMap (extractSpecnames . item) asps
+    Extension asps _ -> concatMap (extractSpecnames . item) asps
+    Free_spec asp _ -> (extractSpecnames . item) asp
+    Cofree_spec asp _ -> (extractSpecnames . item) asp
+    Local_spec asp1 asp2 _ -> concatMap (extractSpecnames . item) [asp1, asp2]
+    Closed_spec asp _ -> (extractSpecnames . item) asp
+    Group asp _ -> (extractSpecnames . item) asp
+    Spec_inst specname _ _ -> [specname]
+    Qualified_spec _ asp _ -> (extractSpecnames . item) asp
+    Data _ _ asp1 asp2 _ -> concatMap (extractSpecnames . item) [asp1, asp2]
+    _ -> []
+
+chainAnaLibItems :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv
+                    -> DGraph -> ExpOverrides -> [LIB_ITEM] -> LIB_ITEM
+                    -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph,
+                                   ExpOverrides)
+chainAnaLibItems lg opts topLns currLn libenv dg eo itms defItm =
+  case itms of
+    [] -> return (defItm, dg, libenv, lg, eo)
+    [itm] -> anaLibItem lg opts topLns currLn libenv dg eo itm
+    itm:itms' -> do
+      (_, dg', libenv', lg', eo') <-
+        chainAnaLibItems lg opts topLns currLn libenv dg eo itms' defItm
+      anaLibItem lg' opts topLns currLn libenv' dg' eo' itm
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph

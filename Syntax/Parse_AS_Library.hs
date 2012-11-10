@@ -11,7 +11,7 @@ Parser for CASL specification librariess
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
 -}
 
-module Syntax.Parse_AS_Library (library) where
+module Syntax.Parse_AS_Library (library, useItem, useItems) where
 
 import Logic.Grothendieck (LogicGraph, prefixes)
 import Syntax.AS_Structured
@@ -184,17 +184,7 @@ libItem l =
   <|> -- use (to be removed eventually)
     do asKey "use"
        i <- hetIRI l
-       let libPath = iriToStringUnsecure (deleteFragment i)
-       let shortLibName = convertFileToLibStr libPath
-       let fragment = getFragment i
-       let specName = if null fragment || null (tail fragment)
-                      then shortLibName
-                      else tail fragment
-       libNameIri <- case parseIRIManchester specName of
-         Just i' -> return i'
-         Nothing -> fail $ "could not read " ++ show specName ++ " into IRI"
-       return (Download_items (LibName (IndirectLink shortLibName nullRange libPath) Nothing)
-               (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange)
+       useItem i
   <|> -- logic
     do s <- asKey logicS
        logD <- logicDescr l
@@ -230,6 +220,23 @@ libItem l =
         if p1 == p2 then fail "cannot parse spec" else
           return (Syntax.AS_Library.Spec_defn nullIRI
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
+
+useItem :: Monad m => IRI -> m LIB_ITEM
+useItem i = do
+  let libPath = iriToStringUnsecure (deleteFragment i)
+  let shortLibName = convertFileToLibStr libPath
+  let fragment = getFragment i
+  let specName = if null fragment || null (tail fragment)
+                 then shortLibName
+                 else tail fragment
+  libNameIri <- case parseIRIManchester specName of
+    Just i' -> return i'
+    Nothing -> fail $ "could not read " ++ show specName ++ " into IRI"
+  return (Download_items (LibName (IndirectLink shortLibName nullRange libPath) Nothing)
+          (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange)
+
+useItems :: Monad m => [IRI] -> m [LIB_ITEM]
+useItems = mapM useItem
 
 downloadItems :: AParser st (DownloadItems, [Token])
 downloadItems = do
