@@ -22,8 +22,6 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
-import Debug.Trace
-
 import Logic.Logic
 import Logic.Grothendieck
 
@@ -536,7 +534,7 @@ downloadMissingSpecs (View_type sp1 sp2 _)
   lg opts topLns currLn libenv dg eo itm = do
   let iris = filter (\i -> case expCurie (globalAnnos dg) eo i
                                 >>= (\i' -> lookupGlobalEnvDG i' dg) of
-                        Nothing -> trace (show $ Map.keys $ globalEnv dg) True
+                        Nothing -> {- trace (show $ Map.keys $ globalEnv dg) -} True
                         _ -> False) $
              concatMap extractSpecnames (map item [sp1, sp2])
   itms <- useItems iris
