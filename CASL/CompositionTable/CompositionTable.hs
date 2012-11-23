@@ -65,7 +65,7 @@ data Model = Model
     , modelString2 :: String
     } deriving (Eq, Show)
 
-data Baserel = Baserel
+newtype Baserel = Baserel
     { baserelBaserel :: String
     } deriving (Eq, Ord)
 

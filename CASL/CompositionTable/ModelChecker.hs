@@ -31,10 +31,9 @@ import Data.Maybe
 import Data.List
 
 modelCheck :: Int -> (Sign () (), [Named (FORMULA ())])
-           -> Table -> Result Bool
-modelCheck _ (_, []) _ = justWarn True "not implemented"
+           -> Table -> Result ()
 modelCheck c (sign, sent) t =
-    modelCheckTest c (extractAnnotations (annoMap sign)) (sign, sent) t
+  mapM_ (modelCheckTest c (extractAnnotations (annoMap sign)) sign t) sent
 
 extractAnnotations :: MapSet.MapSet Symbol Annotation -> [(OP_SYMB, String)]
 extractAnnotations m =
@@ -63,24 +62,17 @@ getAnnoAux a = case a of
 showDiagStrings :: [Diagnosis] -> String
 showDiagStrings = intercalate "\n" . map diagString
 
-modelCheckTest :: Int -> [(OP_SYMB, String)]
-  -> (Sign () (), [Named (FORMULA ())]) -> Table -> Result Bool
-modelCheckTest _ _ (_, []) _ =
- error "CASL.CompositionTable.ModelChecker.modelCheckTest"
-modelCheckTest c symbs (sign, xs) t = case xs of
-  [] -> error "CASL.CompositionTable.ModelChecker.modelCheckTest"
-  [x] -> let
+modelCheckTest :: Int -> [(OP_SYMB, String)] -> Sign () () -> Table
+  -> Named (FORMULA ()) -> Result ()
+modelCheckTest c symbs sign t x = let
     Result d _ = modelCheckTest1 (sign, x) t symbs
     n = length d
     fstr = shows (printTheoryFormula (mapNamed (simplify_sen CASL sign) x)) "\n"
       in if null d
-      then hint True ("Formula succeeded:\n" ++ fstr) nullRange
-      else warning False ("Formula failed:\n" ++ fstr ++ show n
+      then hint () ("Formula succeeded:\n" ++ fstr) nullRange
+      else warning () ("Formula failed:\n" ++ fstr ++ show n
                ++ " counter example" ++ (if n > 1 then "s" else "")
                ++ ":\n" ++ showDiagStrings (take c d)) nullRange
-  x : r -> do
-    modelCheckTest c symbs (sign, r) t
-    modelCheckTest c symbs (sign, [x]) t
 
 modelCheckTest1 :: (Sign () (), Named (FORMULA ())) -> Table
                 -> [(OP_SYMB, String)] -> Result Bool
@@ -117,8 +109,7 @@ modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
                   let varass = Variable_Assignment []
                       res1 = calculateTerm (sign, t1) varass t symbs
                       res2 = calculateTerm (sign, t2) varass t symbs
-                      equal = equalElements res1 res2
-                  in if equal then return True
+                  in if res1 == res2 then return True
                      else warning False
                        ("Strong Equation does not hold term1: "
                         ++ showDoc t1 "term2: " ++ showDoc t2 "") range
@@ -169,8 +160,10 @@ concatAssignment :: VARIABLE_ASSIGNMENT -> VARIABLE_ASSIGNMENT
 concatAssignment (Variable_Assignment l1) (Variable_Assignment l2) =
   Variable_Assignment $ l1 ++ l2
 
+type BSet = Set.Set Baserel
+
 calculateTerm :: (Sign () (), TERM ()) -> VARIABLE_ASSIGNMENT -> Table
-              -> [(OP_SYMB, String)] -> [Baserel]
+              -> [(OP_SYMB, String)] -> BSet
 calculateTerm (sign, trm) ass t symbs = case trm of
     Qual_var var _ _ -> getBaseRelForVariable var ass
     Application opSymb terms _ ->
@@ -182,7 +175,7 @@ calculateTerm (sign, trm) ass t symbs = case trm of
               let res = calculateFormula (sign, fo) ass t symbs
               in if res then calculateTerm (sign, t1) ass t symbs
                  else calculateTerm (sign, t2) ass t symbs
-    _ -> []
+    _ -> Set.empty
 
 getIdentifierForSymb :: OP_SYMB -> [(OP_SYMB, String)] -> String
 getIdentifierForSymb symb = concatMap (getIdentifierForSymbAtomar symb)
@@ -191,11 +184,12 @@ getIdentifierForSymbAtomar :: OP_SYMB -> (OP_SYMB, String) -> String
 getIdentifierForSymbAtomar symb (symb2, s) = if symb == symb2 then s else ""
 
 applyOperation :: String -> (Sign () (), [TERM ()]) -> Table
-               -> VARIABLE_ASSIGNMENT -> [(OP_SYMB, String)] -> [Baserel]
-applyOperation "RA_zero" (_, []) _ _ _ = []
+               -> VARIABLE_ASSIGNMENT -> [(OP_SYMB, String)] -> BSet
+applyOperation "RA_zero" (_, []) _ _ _ = Set.empty
 applyOperation "RA_one" _ (Table (Table_Attrs _ _ baserels)
-              _ _ _ _) _ _ = baserels
-applyOperation "RA_intersection" (sign, ft : sd : _) table ass symbs = intersect
+              _ _ _ _) _ _ = Set.fromList baserels
+applyOperation "RA_intersection" (sign, ft : sd : _) table ass symbs =
+              Set.intersection
               (calculateTerm (sign, ft) ass table symbs)
               (calculateTerm (sign, sd) ass table symbs)
 applyOperation "RA_composition" (sign, ft : sd : _) (Table attrs
@@ -205,17 +199,17 @@ applyOperation "RA_composition" (sign, ft : sd : _) (Table attrs
               (Compositiontable cmpentries) convtbl refltbl models) symbs)
               (calculateTerm (sign, sd) ass (Table attrs
               (Compositiontable cmpentries) convtbl refltbl models) symbs)
-applyOperation "RA_union" (sign, ft : sd : _) table ass symbs = union
+applyOperation "RA_union" (sign, ft : sd : _) table ass symbs = Set.union
               (calculateTerm (sign, ft) ass table symbs)
               (calculateTerm (sign, sd) ass table symbs)
 applyOperation "RA_complement" (sign, ft : _) (Table (Table_Attrs name id_
                baserels) comptbl convtbl refltbl models) ass symbs =
-               complement
+               Set.difference (Set.fromList baserels)
                (calculateTerm (sign, ft) ass (Table (Table_Attrs
                name id_ baserels) comptbl convtbl refltbl models)
-               symbs) baserels
+               symbs)
 applyOperation "RA_identity" _ (Table (Table_Attrs _ id_ _)
-               _ _ _ _) _ _ = [id_]
+               _ _ _ _) _ _ = Set.singleton id_
 applyOperation "RA_converse" (sign, ft : _)
     tabl@(Table _ _ cnvtable _ _) ass symbs =
   calculateConverse cnvtable
@@ -240,44 +234,43 @@ applyOperation "RA_homing" (sign, ft : _) (Table attrs comptbl
                 (calculateTerm (sign, ft) ass (Table attrs comptbl
                 (Conversetable_Ternary inv shortc hom) refltbl
                 models) symbs)
-applyOperation _ _ _ _ _ = []
+applyOperation _ _ _ _ _ = Set.empty
 
-complement :: [Baserel] -> [Baserel] -> [Baserel]
-complement rels baserles = baserles \\ rels
-
-calculateComposition :: [Cmptabentry] -> [Baserel] -> [Baserel] -> [Baserel]
+calculateComposition :: [Cmptabentry] -> BSet -> BSet -> BSet
 calculateComposition entries rels1 rels2 =
-    concatMap (calculateCompositionAux rels1 rels2) entries
+    Set.unions $ map (calculateCompositionAux rels1 rels2) entries
 
-calculateCompositionAux :: [Baserel] -> [Baserel] -> Cmptabentry -> [Baserel]
+calculateCompositionAux :: BSet -> BSet -> Cmptabentry -> BSet
 calculateCompositionAux rels1 rels2
     (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
-  if elem rel1 rels1 && elem rel2 rels2 then baserels else []
+  if Set.member rel1 rels1 && Set.member rel2 rels2
+  then Set.fromList baserels
+  else Set.empty
 
-calculateConverse :: Conversetable -> [Baserel] -> [Baserel]
-calculateConverse (Conversetable_Ternary {}) _ = []
+calculateConverse :: Conversetable -> BSet -> BSet
+calculateConverse (Conversetable_Ternary {}) _ = Set.empty
 calculateConverse (Conversetable centries) rels =
-    concatMap (calculateConverseAtomar rels) centries
+    Set.unions $ map (calculateConverseAtomar rels) centries
 
-calculateConverseAtomar :: [Baserel] -> Contabentry -> [Baserel]
+calculateConverseAtomar :: BSet -> Contabentry -> BSet
 calculateConverseAtomar rels (Contabentry rel1 rel2) =
-   concat [rel2 | elem rel1 rels]
+   Set.unions [Set.fromList rel2 | Set.member rel1 rels]
 
-calculateConverseTernary :: [Contabentry_Ternary] -> [Baserel]
-                         -> [Baserel]
+calculateConverseTernary :: [Contabentry_Ternary] -> BSet -> BSet
 calculateConverseTernary entries rels =
-    concatMap (calculateConverseTernaryAtomar rels) entries
+    Set.unions $ map (calculateConverseTernaryAtomar rels) entries
 
-calculateConverseTernaryAtomar :: [Baserel] -> Contabentry_Ternary -> [Baserel]
+calculateConverseTernaryAtomar :: BSet -> Contabentry_Ternary -> BSet
 calculateConverseTernaryAtomar rels2 (Contabentry_Ternary rel1 rels1) =
-  if elem rel1 rels2 then rels1 else []
+  if Set.member rel1 rels2 then Set.fromList rels1 else Set.empty
 
-getBaseRelForVariable :: VAR -> VARIABLE_ASSIGNMENT -> [Baserel]
+getBaseRelForVariable :: VAR -> VARIABLE_ASSIGNMENT -> BSet
 getBaseRelForVariable var (Variable_Assignment tuples) =
-    concatMap (getBaseRelForVariableAtomar var) tuples
+    Set.unions $ map (getBaseRelForVariableAtomar var) tuples
 
-getBaseRelForVariableAtomar :: VAR -> (VAR, Baserel) -> [Baserel]
-getBaseRelForVariableAtomar v (var, baserel) = [baserel | v == var]
+getBaseRelForVariableAtomar :: VAR -> (VAR, Baserel) -> BSet
+getBaseRelForVariableAtomar v (var, baserel) =
+    Set.fromList [baserel | v == var]
 
 calculateFormula :: (Sign () (), FORMULA ()) -> VARIABLE_ASSIGNMENT -> Table
                  -> [(OP_SYMB, String)] -> Bool
@@ -299,12 +292,9 @@ calculateFormula (sign, qf) varass t symbs = case qf of
     Equation term1 Strong term2 _ ->
                  let t1 = calculateTerm (sign, term1) varass t symbs
                      t2 = calculateTerm (sign, term2) varass t symbs
-                 in equalElements t1 t2
+                 in t1 == t2
     _ -> error $ "CASL.CompositionTable.ModelChecker.calculateFormula "
          ++ showDoc qf ""
-
-equalElements :: [Baserel] -> [Baserel] -> Bool
-equalElements a b = Set.toList (Set.fromList a) == Set.toList (Set.fromList b)
 
 generateVariableAssignments :: [VAR_DECL] -> Table -> [VARIABLE_ASSIGNMENT]
 generateVariableAssignments vardecls t =

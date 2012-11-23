@@ -296,8 +296,7 @@ modelSparQCheck opts gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) =
             if null d then
                 putIfVerbose opts 0 "Modelcheck succeeded, no errors found"
              else showDiags
-               (if verbose opts >= 2 then opts else opts {verbose = 2})
-               $ reverse d
+               (if verbose opts >= 2 then opts else opts {verbose = 2}) d
     _ ->
       putIfVerbose opts 0 $ "could not translate Theory to CASL:\n "
          ++ showDoc gTh ""
