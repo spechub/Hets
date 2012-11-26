@@ -220,13 +220,9 @@ defOp ra (Table2 id_ baserels _ _) = case ra of
 
 calculateComposition :: [CmpEntry] -> BSet -> BSet -> BSet
 calculateComposition entries rels1 rels2 =
-    Set.unions $ map (calculateCompositionAux rels1 rels2) entries
-
-calculateCompositionAux :: BSet -> BSet -> CmpEntry -> BSet
-calculateCompositionAux rels1 rels2 (CmpEntry rel1 rel2 baserels) =
-  if Set.member rel1 rels1 && Set.member rel2 rels2
-  then baserels
-  else Set.empty
+    foldl' (\ rs (CmpEntry rel1 rel2 bs) ->
+                    if Set.member rel1 rels1 && Set.member rel2 rels2
+                    then Set.union bs rs else rs) Set.empty entries
 
 calculateConverse :: Conversetable -> BSet -> BSet
 calculateConverse (Conversetable_Ternary {}) _ = Set.empty
