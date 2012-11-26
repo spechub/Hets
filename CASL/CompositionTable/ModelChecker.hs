@@ -25,8 +25,10 @@ import Common.Result
 import Common.Id
 import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
+import Common.Utils
 
 import qualified Data.Set as Set
+import qualified Data.IntSet as IntSet
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
@@ -37,18 +39,48 @@ modelCheck c (sign, sent) t1 = do
   let t = toTable2 t1
   mapM_ (modelCheckTest c (extractAnnotations (annoMap sign)) sign t) sent
 
-data Table2 = Table2 Baserel BSet [CmpEntry] Conversetable
+data Table2 = Table2 Int Int [Baserel] BSet [CmpEntry] ConTables
 
-data CmpEntry = CmpEntry Baserel Baserel BSet
+data CmpEntry = CmpEntry Int Int IntSet.IntSet
+
+type ConTable = Map.Map Int IntSet.IntSet
+
+type ConTables = (ConTable, ConTable, ConTable, ConTable)
+
+lkup :: Ord a => a -> Map.Map a Int -> Int
+lkup = Map.findWithDefault 0
 
 toTable2 :: Table -> Table2
 toTable2 (Table (Table_Attrs _ id_ baserels)
   (Compositiontable comptbl) convtbl _ _) =
-  Table2 id_ (Set.fromList baserels) (map toCmpEntry comptbl) convtbl
+  let m = Map.fromList $ number baserels
+      s = Map.size m
+  in Table2 (lkup id_ m) s baserels (IntSet.fromAscList [1 .. s])
+    (map (toCmpEntry m) comptbl)
+    $ toConTables m convtbl
 
-toCmpEntry :: Cmptabentry -> CmpEntry
-toCmpEntry (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
-  CmpEntry rel1 rel2 $ Set.fromList baserels
+toCmpEntry :: Map.Map Baserel Int -> Cmptabentry -> CmpEntry
+toCmpEntry m (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
+  CmpEntry (lkup rel1 m) (lkup rel2 m) $ IntSet.fromList
+    $ map (`lkup` m) baserels
+
+toConTab :: Map.Map Baserel Int -> (a -> Baserel) -> (a -> [Baserel]) -> [a]
+  -> ConTable
+toConTab m s1 s2 = foldl' (\ t a ->
+    Map.insertWith IntSet.union (lkup (s1 a) m)
+           (IntSet.fromList $ map (`lkup` m) $ s2 a) t) Map.empty
+
+toConTab2 :: Map.Map Baserel Int -> [Contabentry_Ternary] -> ConTable
+toConTab2 m =
+  toConTab m contabentry_TernaryArgBaseRel contabentry_TernaryConverseBaseRels
+
+toConTables :: Map.Map Baserel Int -> Conversetable -> ConTables
+toConTables m c = case c of
+  Conversetable l ->
+    (toConTab m contabentryArgBaseRel contabentryConverseBaseRel l
+    , Map.empty, Map.empty, Map.empty)
+  Conversetable_Ternary l1 l2 l3 ->
+    (Map.empty, toConTab2 m l1, toConTab2 m l2, toConTab2 m l3)
 
 extractAnnotations :: MapSet.MapSet Symbol Annotation -> [(OP_SYMB, String)]
 extractAnnotations m =
@@ -134,11 +166,13 @@ modelCheckTest1 (sign, nSen) t symbs =
 
 calculateQuantification :: (Sign () (), FORMULA ()) -> [Assignment]
                         -> Table2 -> [(OP_SYMB, String)] -> Result Bool
-calculateQuantification (sign, qf) vardecls t symbs = case qf of
+calculateQuantification (sign, qf) vardecls t@(Table2 _ _ l _ _ _) symbs =
+  case qf of
     Quantification quant _ f range ->
         let tuples = map ( \ ass -> let
                 res = calculateFormula (sign, f) ass t symbs
-                in if res then (res, "") else (res, ' ' : showAssignments ass))
+                in if res then (res, "")
+                   else (res, ' ' : showAssignments l ass))
               vardecls
         in case quant of
         Universal -> let failedtuples = filter (not . fst) tuples
@@ -155,16 +189,17 @@ calculateQuantification (sign, qf) vardecls t symbs = case qf of
             _ -> warning False "Unique Existential not fulifilled" range
     _ -> error "CASL.CompositionTable.ModelChecker.calculateQuantification"
 
-type Assignment = Map.Map VAR Baserel
+type Assignment = Map.Map VAR Int
 
-showAssignments :: Map.Map VAR Baserel -> String
-showAssignments xs =
-    '[' : intercalate ", " (map showSingleAssignment $ Map.toList xs) ++ "]"
+showAssignments :: [Baserel] -> Map.Map VAR Int -> String
+showAssignments l xs =
+    '[' : intercalate ", " (map (showSingleAssignment l) $ Map.toList xs) ++ "]"
 
-showSingleAssignment :: (VAR, Baserel) -> String
-showSingleAssignment (v, Baserel b) = show v ++ "->" ++ b
+showSingleAssignment :: [Baserel] -> (VAR, Int) -> String
+showSingleAssignment l (v, i) = show v ++ "->" ++ case l !! i of
+  Baserel b -> b
 
-type BSet = Set.Set Baserel
+type BSet = IntSet.IntSet
 
 calculateTerm :: (Sign () (), TERM ()) -> Assignment -> Table2
               -> [(OP_SYMB, String)] -> BSet
@@ -179,7 +214,7 @@ calculateTerm (sign, trm) ass t symbs = case trm of
               let res = calculateFormula (sign, fo) ass t symbs
               in if res then calculateTerm (sign, t1) ass t symbs
                  else calculateTerm (sign, t2) ass t symbs
-    _ -> Set.empty
+    _ -> IntSet.empty
 
 getIdentifierForSymb :: OP_SYMB -> [(OP_SYMB, String)] -> String
 getIdentifierForSymb symb = concatMap (getIdentifierForSymbAtomar symb)
@@ -189,7 +224,7 @@ getIdentifierForSymbAtomar symb (symb2, s) = if symb == symb2 then s else ""
 
 applyOperation :: String -> (Sign () (), [TERM ()]) -> Table2
                -> Assignment -> [(OP_SYMB, String)] -> BSet
-applyOperation ra (sign, ts) table@(Table2 _ baserels cmpentries convtbl)
+applyOperation ra (sign, ts) table@(Table2 _ _ _ baserels cmpentries convtbl)
   ass symbs = case ts of
     ft : rt -> let r1 = calculateTerm (sign, ft) ass table symbs
       in case rt of
@@ -197,52 +232,36 @@ applyOperation ra (sign, ts) table@(Table2 _ baserels cmpentries convtbl)
            -> let r2 = calculateTerm (sign, sd) ass table symbs
             in case ra of
                "RA_composition" -> calculateComposition cmpentries r1 r2
-               "RA_intersection" -> Set.intersection r1 r2
-               _ -> Set.union r1 r2
-         _ -> case ra of
-           "RA_complement" -> Set.difference baserels r1
-           "RA_converse" -> calculateConverse convtbl r1
-           _ -> case convtbl of
-             Conversetable_Ternary inv shortc hom
-               | elem ra ["RA_shortcut", "RA_inverse", "RA_homing"] ->
-                  calculateConverseTernary (case ra of
-               "RA_shortcut" -> shortc
-               "RA_inverse" -> inv
-               _ -> hom) r1
-             _ -> defOp ra table
+               "RA_intersection" -> IntSet.intersection r1 r2
+               _ -> IntSet.union r1 r2
+         _ -> let (conv, inv, shortc, hom) = convtbl in case ra of
+           "RA_complement" -> IntSet.difference baserels r1
+           "RA_converse" -> calculateConverse conv r1
+           "RA_shortcut" -> calculateConverse shortc r1
+           "RA_inverse" -> calculateConverse inv r1
+           "RA_homing" -> calculateConverse hom r1
+           _ -> defOp ra table
     _ -> defOp ra table
 
 defOp :: String -> Table2 -> BSet
-defOp ra (Table2 id_ baserels _ _) = case ra of
+defOp ra (Table2 id_ _ _ baserels _ _) = case ra of
   "RA_one" -> baserels
-  "RA_identity" -> Set.singleton id_
-  _ -> Set.empty
+  "RA_identity" -> IntSet.singleton id_
+  _ -> IntSet.empty
 
 calculateComposition :: [CmpEntry] -> BSet -> BSet -> BSet
 calculateComposition entries rels1 rels2 =
     foldl' (\ rs (CmpEntry rel1 rel2 bs) ->
-                    if Set.member rel1 rels1 && Set.member rel2 rels2
-                    then Set.union bs rs else rs) Set.empty entries
+                    if IntSet.member rel1 rels1 && IntSet.member rel2 rels2
+                    then IntSet.union bs rs else rs) IntSet.empty entries
 
-calculateConverse :: Conversetable -> BSet -> BSet
-calculateConverse (Conversetable_Ternary {}) _ = Set.empty
-calculateConverse (Conversetable centries) rels =
-    Set.unions $ map (calculateConverseAtomar rels) centries
-
-calculateConverseAtomar :: BSet -> Contabentry -> BSet
-calculateConverseAtomar rels (Contabentry rel1 rel2) =
-   Set.unions [Set.fromList rel2 | Set.member rel1 rels]
-
-calculateConverseTernary :: [Contabentry_Ternary] -> BSet -> BSet
-calculateConverseTernary entries rels =
-    Set.unions $ map (calculateConverseTernaryAtomar rels) entries
-
-calculateConverseTernaryAtomar :: BSet -> Contabentry_Ternary -> BSet
-calculateConverseTernaryAtomar rels2 (Contabentry_Ternary rel1 rels1) =
-  if Set.member rel1 rels2 then Set.fromList rels1 else Set.empty
+calculateConverse :: ConTable -> BSet -> BSet
+calculateConverse t =
+    IntSet.unions . map (\ i -> Map.findWithDefault IntSet.empty i t)
+    . IntSet.toList
 
 getBaseRelForVariable :: VAR -> Assignment -> BSet
-getBaseRelForVariable var = maybe Set.empty Set.singleton . Map.lookup var
+getBaseRelForVariable var = maybe IntSet.empty IntSet.singleton . Map.lookup var
 
 calculateFormula :: (Sign () (), FORMULA ()) -> Assignment -> Table2
                  -> [(OP_SYMB, String)] -> Bool
@@ -271,9 +290,9 @@ calculateFormula (sign, qf) varass t symbs = case qf of
 generateVariableAssignments :: [VAR_DECL] -> Table2 -> [Assignment]
 generateVariableAssignments vardecls =
   let vs = Set.fromList $ getVars vardecls in
-  gVAs vs . Set.toList . getBaseRelations
+  gVAs vs . IntSet.toList . getBaseRelations
 
-gVAs :: Set.Set VAR -> [Baserel] -> [Map.Map VAR Baserel]
+gVAs :: Set.Set VAR -> [Int] -> [Assignment]
 gVAs vs brs = Set.fold (\ v rs -> [Map.insert v b r | b <- brs, r <- rs])
   [Map.empty] vs
 
@@ -284,7 +303,7 @@ getVarsAtomic :: VAR_DECL -> [VAR]
 getVarsAtomic (Var_decl vars _ _) = vars
 
 getBaseRelations :: Table2 -> BSet
-getBaseRelations (Table2 _ br _ _) = br
+getBaseRelations (Table2 _ _ _ br _ _) = br
 
 appendVariableAssignments :: Assignment -> [VAR_DECL] -> Table2 -> [Assignment]
 appendVariableAssignments vars decls t =
