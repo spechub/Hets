@@ -32,8 +32,22 @@ import Data.List
 
 modelCheck :: Int -> (Sign () (), [Named (FORMULA ())])
            -> Table -> Result ()
-modelCheck c (sign, sent) t =
+modelCheck c (sign, sent) t1 = do
+  let t = toTable2 t1
   mapM_ (modelCheckTest c (extractAnnotations (annoMap sign)) sign t) sent
+
+data Table2 = Table2 Baserel BSet [CmpEntry] Conversetable
+
+data CmpEntry = CmpEntry Baserel Baserel BSet
+
+toTable2 :: Table -> Table2
+toTable2 (Table (Table_Attrs _ id_ baserels)
+  (Compositiontable comptbl) convtbl _ _) =
+  Table2 id_ (Set.fromList baserels) (map toCmpEntry comptbl) convtbl
+
+toCmpEntry :: Cmptabentry -> CmpEntry
+toCmpEntry (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
+  CmpEntry rel1 rel2 $ Set.fromList baserels
 
 extractAnnotations :: MapSet.MapSet Symbol Annotation -> [(OP_SYMB, String)]
 extractAnnotations m =
@@ -62,7 +76,7 @@ getAnnoAux a = case a of
 showDiagStrings :: [Diagnosis] -> String
 showDiagStrings = intercalate "\n" . map diagString
 
-modelCheckTest :: Int -> [(OP_SYMB, String)] -> Sign () () -> Table
+modelCheckTest :: Int -> [(OP_SYMB, String)] -> Sign () () -> Table2
   -> Named (FORMULA ()) -> Result ()
 modelCheckTest c symbs sign t x = let
     Result d _ = modelCheckTest1 (sign, x) t symbs
@@ -74,7 +88,7 @@ modelCheckTest c symbs sign t x = let
                ++ " counter example" ++ (if n > 1 then "s" else "")
                ++ ":\n" ++ showDiagStrings (take c d)) nullRange
 
-modelCheckTest1 :: (Sign () (), Named (FORMULA ())) -> Table
+modelCheckTest1 :: (Sign () (), Named (FORMULA ())) -> Table2
                 -> [(OP_SYMB, String)] -> Result Bool
 modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
     Junction j formulas range -> let
@@ -121,7 +135,7 @@ modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
          ++ showDoc e ""
 
 calculateQuantification :: (Sign () (), FORMULA ()) -> [VARIABLE_ASSIGNMENT]
-                        -> Table -> [(OP_SYMB, String)] -> Result Bool
+                        -> Table2 -> [(OP_SYMB, String)] -> Result Bool
 calculateQuantification (sign, qf) vardecls t symbs = case qf of
     Quantification quant _ f range ->
         let tuples = map ( \ ass -> let
@@ -162,7 +176,7 @@ concatAssignment (Variable_Assignment l1) (Variable_Assignment l2) =
 
 type BSet = Set.Set Baserel
 
-calculateTerm :: (Sign () (), TERM ()) -> VARIABLE_ASSIGNMENT -> Table
+calculateTerm :: (Sign () (), TERM ()) -> VARIABLE_ASSIGNMENT -> Table2
               -> [(OP_SYMB, String)] -> BSet
 calculateTerm (sign, trm) ass t symbs = case trm of
     Qual_var var _ _ -> getBaseRelForVariable var ass
@@ -183,64 +197,36 @@ getIdentifierForSymb symb = concatMap (getIdentifierForSymbAtomar symb)
 getIdentifierForSymbAtomar :: OP_SYMB -> (OP_SYMB, String) -> String
 getIdentifierForSymbAtomar symb (symb2, s) = if symb == symb2 then s else ""
 
-applyOperation :: String -> (Sign () (), [TERM ()]) -> Table
+applyOperation :: String -> (Sign () (), [TERM ()]) -> Table2
                -> VARIABLE_ASSIGNMENT -> [(OP_SYMB, String)] -> BSet
-applyOperation "RA_zero" (_, []) _ _ _ = Set.empty
-applyOperation "RA_one" _ (Table (Table_Attrs _ _ baserels)
-              _ _ _ _) _ _ = Set.fromList baserels
-applyOperation "RA_intersection" (sign, ft : sd : _) table ass symbs =
-              Set.intersection
-              (calculateTerm (sign, ft) ass table symbs)
-              (calculateTerm (sign, sd) ass table symbs)
-applyOperation "RA_composition" (sign, ft : sd : _) (Table attrs
-              (Compositiontable cmpentries) convtbl refltbl models)
-              ass symbs = calculateComposition (map toCmpEntry cmpentries)
-              (calculateTerm (sign, ft) ass (Table attrs
-              (Compositiontable cmpentries) convtbl refltbl models) symbs)
-              (calculateTerm (sign, sd) ass (Table attrs
-              (Compositiontable cmpentries) convtbl refltbl models) symbs)
-applyOperation "RA_union" (sign, ft : sd : _) table ass symbs = Set.union
-              (calculateTerm (sign, ft) ass table symbs)
-              (calculateTerm (sign, sd) ass table symbs)
-applyOperation "RA_complement" (sign, ft : _) (Table (Table_Attrs name id_
-               baserels) comptbl convtbl refltbl models) ass symbs =
-               Set.difference (Set.fromList baserels)
-               (calculateTerm (sign, ft) ass (Table (Table_Attrs
-               name id_ baserels) comptbl convtbl refltbl models)
-               symbs)
-applyOperation "RA_identity" _ (Table (Table_Attrs _ id_ _)
-               _ _ _ _) _ _ = Set.singleton id_
-applyOperation "RA_converse" (sign, ft : _)
-    tabl@(Table _ _ cnvtable _ _) ass symbs =
-  calculateConverse cnvtable
-    $ calculateTerm (sign, ft) ass tabl symbs
+applyOperation ra (sign, ts) table@(Table2 _ baserels cmpentries convtbl)
+  ass symbs = case ts of
+    ft : rt -> let r1 = calculateTerm (sign, ft) ass table symbs
+      in case rt of
+         sd : _ | elem ra ["RA_composition", "RA_intersection", "RA_union"]
+           -> let r2 = calculateTerm (sign, sd) ass table symbs
+            in case ra of
+               "RA_composition" -> calculateComposition cmpentries r1 r2
+               "RA_intersection" -> Set.intersection r1 r2
+               _ -> Set.union r1 r2
+         _ -> case ra of
+           "RA_complement" -> Set.difference baserels r1
+           "RA_converse" -> calculateConverse convtbl r1
+           _ -> case convtbl of
+             Conversetable_Ternary inv shortc hom
+               | elem ra ["RA_shortcut", "RA_inverse", "RA_homing"] ->
+                  calculateConverseTernary (case ra of
+               "RA_shortcut" -> shortc
+               "RA_inverse" -> inv
+               _ -> hom) r1
+             _ -> defOp ra table
+    _ -> defOp ra table
 
-applyOperation "RA_shortcut" (sign, ft : _) (Table attrs comptbl
-                (Conversetable_Ternary inv shortc hom) refltbl
-                models) ass symbs = calculateConverseTernary shortc
-                (calculateTerm (sign, ft) ass (Table attrs comptbl
-                (Conversetable_Ternary inv shortc hom) refltbl
-                models) symbs)
-applyOperation "RA_inverse" (sign, ft : _) (Table attrs comptbl
-                (Conversetable_Ternary inv shortc hom) refltbl
-                models) ass symbs = calculateConverseTernary inv
-                (calculateTerm (sign, ft) ass (Table attrs comptbl
-                (Conversetable_Ternary inv shortc hom) refltbl
-                models) symbs)
-
-applyOperation "RA_homing" (sign, ft : _) (Table attrs comptbl
-                (Conversetable_Ternary inv shortc hom) refltbl
-                models) ass symbs = calculateConverseTernary hom
-                (calculateTerm (sign, ft) ass (Table attrs comptbl
-                (Conversetable_Ternary inv shortc hom) refltbl
-                models) symbs)
-applyOperation _ _ _ _ _ = Set.empty
-
-data CmpEntry = CmpEntry Baserel Baserel BSet
-
-toCmpEntry :: Cmptabentry -> CmpEntry
-toCmpEntry (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
-  CmpEntry rel1 rel2 $ Set.fromList baserels
+defOp :: String -> Table2 -> BSet
+defOp ra (Table2 id_ baserels _ _) = case ra of
+  "RA_one" -> baserels
+  "RA_identity" -> Set.singleton id_
+  _ -> Set.empty
 
 calculateComposition :: [CmpEntry] -> BSet -> BSet -> BSet
 calculateComposition entries rels1 rels2 =
@@ -277,7 +263,7 @@ getBaseRelForVariableAtomar :: VAR -> (VAR, Baserel) -> BSet
 getBaseRelForVariableAtomar v (var, baserel) =
     Set.fromList [baserel | v == var]
 
-calculateFormula :: (Sign () (), FORMULA ()) -> VARIABLE_ASSIGNMENT -> Table
+calculateFormula :: (Sign () (), FORMULA ()) -> VARIABLE_ASSIGNMENT -> Table2
                  -> [(OP_SYMB, String)] -> Bool
 calculateFormula (sign, qf) varass t symbs = case qf of
     Quantification _ vardecls _ _ ->
@@ -301,9 +287,10 @@ calculateFormula (sign, qf) varass t symbs = case qf of
     _ -> error $ "CASL.CompositionTable.ModelChecker.calculateFormula "
          ++ showDoc qf ""
 
-generateVariableAssignments :: [VAR_DECL] -> Table -> [VARIABLE_ASSIGNMENT]
-generateVariableAssignments vardecls t =
-    map Variable_Assignment (gVAs (getVars vardecls) (getBaseRelations t))
+generateVariableAssignments :: [VAR_DECL] -> Table2 -> [VARIABLE_ASSIGNMENT]
+generateVariableAssignments vardecls =
+  map Variable_Assignment . gVAs (getVars vardecls) . Set.toList
+  . getBaseRelations
 
 gVAs :: [VAR] -> [Baserel] -> [[(VAR, Baserel)]]
 gVAs [] _ = [[]]
@@ -342,10 +329,10 @@ getVars = concatMap getVarsAtomic
 getVarsAtomic :: VAR_DECL -> [VAR]
 getVarsAtomic (Var_decl vars _ _) = vars
 
-getBaseRelations :: Table -> [Baserel]
-getBaseRelations (Table (Table_Attrs _ _ br) _ _ _ _) = br
+getBaseRelations :: Table2 -> BSet
+getBaseRelations (Table2 _ br _ _) = br
 
-appendVariableAssignments :: VARIABLE_ASSIGNMENT -> [VAR_DECL] -> Table
+appendVariableAssignments :: VARIABLE_ASSIGNMENT -> [VAR_DECL] -> Table2
                           -> [VARIABLE_ASSIGNMENT]
 appendVariableAssignments vars decls t =
      map (concatAssignment vars) (generateVariableAssignments decls t)
