@@ -11,7 +11,7 @@ Portability :  non-portable
 checks validity of models regarding a composition table
 -}
 
-module CASL.CompositionTable.ModelChecker where
+module CASL.CompositionTable.ModelChecker (modelCheck) where
 
 import CASL.CompositionTable.CompositionTable
 import CASL.AS_Basic_CASL
@@ -27,6 +27,7 @@ import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
 
@@ -90,9 +91,9 @@ modelCheckTest c symbs sign t x = let
 
 modelCheckTest1 :: (Sign () (), Named (FORMULA ())) -> Table2
                 -> [(OP_SYMB, String)] -> Result Bool
-modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
+modelCheckTest1 (sign, nSen) t symbs =
+  let varass = Map.empty in case sentence nSen of
     Junction j formulas range -> let
-        varass = Variable_Assignment []
         bs = map (\ f -> calculateFormula (sign, f) varass t symbs)
              formulas
         res = if j == Con then and else or
@@ -101,8 +102,7 @@ modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
                                  ++ showDoc (map (simplify_sen CASL sign)
                                  formulas) "") range
     f@(Relation f1 c f2 range) ->
-                  let varass = Variable_Assignment []
-                      test1 = calculateFormula (sign, f1) varass t symbs
+                  let test1 = calculateFormula (sign, f1) varass t symbs
                       test2 = calculateFormula (sign, f2) varass t symbs
                       res = not (test1 && not test2)
                   in if if c == Equivalence then test1 == test2 else res
@@ -110,8 +110,7 @@ modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
                      else warning False ("Relation does not hold: " ++
                           showDoc (simplify_sen CASL sign f) "") range
     Negation f range ->
-                  let varass = Variable_Assignment []
-                      res = calculateFormula (sign, f) varass t symbs
+                  let res = calculateFormula (sign, f) varass t symbs
                   in if not res then return True
                     else warning False
                                         ("Negation does not hold:"
@@ -120,8 +119,7 @@ modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
     Atom b range -> if b then return True else
       warning False "False-atom can't be fulfilled!" range
     Equation t1 Strong t2 range ->
-                  let varass = Variable_Assignment []
-                      res1 = calculateTerm (sign, t1) varass t symbs
+                  let res1 = calculateTerm (sign, t1) varass t symbs
                       res2 = calculateTerm (sign, t2) varass t symbs
                   in if res1 == res2 then return True
                      else warning False
@@ -134,13 +132,13 @@ modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
     e -> error $ "CASL.CompositionTable.ModelChecker.modelCheckTest1 "
          ++ showDoc e ""
 
-calculateQuantification :: (Sign () (), FORMULA ()) -> [VARIABLE_ASSIGNMENT]
+calculateQuantification :: (Sign () (), FORMULA ()) -> [Assignment]
                         -> Table2 -> [(OP_SYMB, String)] -> Result Bool
 calculateQuantification (sign, qf) vardecls t symbs = case qf of
     Quantification quant _ f range ->
         let tuples = map ( \ ass -> let
                 res = calculateFormula (sign, f) ass t symbs
-                in if res then (res, "") else (res, ' ' : show ass))
+                in if res then (res, "") else (res, ' ' : showAssignments ass))
               vardecls
         in case quant of
         Universal -> let failedtuples = filter (not . fst) tuples
@@ -157,26 +155,18 @@ calculateQuantification (sign, qf) vardecls t symbs = case qf of
             _ -> warning False "Unique Existential not fulifilled" range
     _ -> error "CASL.CompositionTable.ModelChecker.calculateQuantification"
 
-data VARIABLE_ASSIGNMENT = Variable_Assignment [(VAR, Baserel)]
+type Assignment = Map.Map VAR Baserel
 
-instance Show VARIABLE_ASSIGNMENT where
-    show (Variable_Assignment assignList) = showAssignments assignList
-
-showAssignments :: [(VAR, Baserel)] -> String
+showAssignments :: Map.Map VAR Baserel -> String
 showAssignments xs =
-    '[' : intercalate ", " (map showSingleAssignment xs) ++ "]"
+    '[' : intercalate ", " (map showSingleAssignment $ Map.toList xs) ++ "]"
 
 showSingleAssignment :: (VAR, Baserel) -> String
 showSingleAssignment (v, Baserel b) = show v ++ "->" ++ b
 
-concatAssignment :: VARIABLE_ASSIGNMENT -> VARIABLE_ASSIGNMENT
-                 -> VARIABLE_ASSIGNMENT
-concatAssignment (Variable_Assignment l1) (Variable_Assignment l2) =
-  Variable_Assignment $ l1 ++ l2
-
 type BSet = Set.Set Baserel
 
-calculateTerm :: (Sign () (), TERM ()) -> VARIABLE_ASSIGNMENT -> Table2
+calculateTerm :: (Sign () (), TERM ()) -> Assignment -> Table2
               -> [(OP_SYMB, String)] -> BSet
 calculateTerm (sign, trm) ass t symbs = case trm of
     Qual_var var _ _ -> getBaseRelForVariable var ass
@@ -198,7 +188,7 @@ getIdentifierForSymbAtomar :: OP_SYMB -> (OP_SYMB, String) -> String
 getIdentifierForSymbAtomar symb (symb2, s) = if symb == symb2 then s else ""
 
 applyOperation :: String -> (Sign () (), [TERM ()]) -> Table2
-               -> VARIABLE_ASSIGNMENT -> [(OP_SYMB, String)] -> BSet
+               -> Assignment -> [(OP_SYMB, String)] -> BSet
 applyOperation ra (sign, ts) table@(Table2 _ baserels cmpentries convtbl)
   ass symbs = case ts of
     ft : rt -> let r1 = calculateTerm (sign, ft) ass table symbs
@@ -255,21 +245,16 @@ calculateConverseTernaryAtomar :: BSet -> Contabentry_Ternary -> BSet
 calculateConverseTernaryAtomar rels2 (Contabentry_Ternary rel1 rels1) =
   if Set.member rel1 rels2 then Set.fromList rels1 else Set.empty
 
-getBaseRelForVariable :: VAR -> VARIABLE_ASSIGNMENT -> BSet
-getBaseRelForVariable var (Variable_Assignment tuples) =
-    Set.unions $ map (getBaseRelForVariableAtomar var) tuples
+getBaseRelForVariable :: VAR -> Assignment -> BSet
+getBaseRelForVariable var = maybe Set.empty Set.singleton . Map.lookup var
 
-getBaseRelForVariableAtomar :: VAR -> (VAR, Baserel) -> BSet
-getBaseRelForVariableAtomar v (var, baserel) =
-    Set.fromList [baserel | v == var]
-
-calculateFormula :: (Sign () (), FORMULA ()) -> VARIABLE_ASSIGNMENT -> Table2
+calculateFormula :: (Sign () (), FORMULA ()) -> Assignment -> Table2
                  -> [(OP_SYMB, String)] -> Bool
 calculateFormula (sign, qf) varass t symbs = case qf of
     Quantification _ vardecls _ _ ->
-                 let (Result _ res) = (calculateQuantification (sign, qf)
+                 let Result _ res = calculateQuantification (sign, qf)
                                        (appendVariableAssignments
-                                       varass vardecls t) t symbs)
+                                       varass vardecls t) t symbs
                  in res == Just True
     Junction j formulas _ -> (if j == Con then and else or)
         [calculateFormula (sign, x) varass t symbs | x <- formulas]
@@ -287,41 +272,14 @@ calculateFormula (sign, qf) varass t symbs = case qf of
     _ -> error $ "CASL.CompositionTable.ModelChecker.calculateFormula "
          ++ showDoc qf ""
 
-generateVariableAssignments :: [VAR_DECL] -> Table2 -> [VARIABLE_ASSIGNMENT]
+generateVariableAssignments :: [VAR_DECL] -> Table2 -> [Assignment]
 generateVariableAssignments vardecls =
-  map Variable_Assignment . gVAs (getVars vardecls) . Set.toList
-  . getBaseRelations
+  let vs = Set.fromList $ getVars vardecls in
+  gVAs vs . Set.toList . getBaseRelations
 
-gVAs :: [VAR] -> [Baserel] -> [[(VAR, Baserel)]]
-gVAs [] _ = [[]]
-gVAs (v : vs) baserels = let
-    rs = gVAs vs baserels
-    fs = map (\ b -> [(v, b)]) baserels
-    in [f ++ r | f <- fs, r <- rs]
-
-appendAssignments :: [[(VAR, Baserel)]] -> [VAR] -> [Baserel]
-                  -> [[(VAR, Baserel)]]
-appendAssignments _ _ [] = []
-appendAssignments tuples [] _ = tuples
-appendAssignments tuples (x : xs) baserels = appendAssignments
-                                           (appendAssignmentsAux tuples x
-                                           baserels) xs
-                                           baserels
-
-appendAssignmentsAux :: [[(VAR, Baserel)]] -> VAR -> [Baserel]
-                     -> [[(VAR, Baserel)]]
-appendAssignmentsAux [] var baserels = appendAssignmentSingle var baserels []
-appendAssignmentsAux list var baserels =
-    concatMap (appendAssignmentSingle var baserels) list
-
-appendAssignmentSingle :: VAR -> [Baserel] -> [(VAR, Baserel)]
-                       -> [[(VAR, Baserel)]]
-appendAssignmentSingle var rels assignment = map (appendAssignmentSingle1
-                                                  assignment var) rels
-
-appendAssignmentSingle1 :: [(VAR, Baserel)] -> VAR -> Baserel
-                        -> [(VAR, Baserel)]
-appendAssignmentSingle1 acc var rel = (var, rel) : acc
+gVAs :: Set.Set VAR -> [Baserel] -> [Map.Map VAR Baserel]
+gVAs vs brs = Set.fold (\ v rs -> [Map.insert v b r | b <- brs, r <- rs])
+  [Map.empty] vs
 
 getVars :: [VAR_DECL] -> [VAR]
 getVars = concatMap getVarsAtomic
@@ -332,7 +290,6 @@ getVarsAtomic (Var_decl vars _ _) = vars
 getBaseRelations :: Table2 -> BSet
 getBaseRelations (Table2 _ br _ _) = br
 
-appendVariableAssignments :: VARIABLE_ASSIGNMENT -> [VAR_DECL] -> Table2
-                          -> [VARIABLE_ASSIGNMENT]
+appendVariableAssignments :: Assignment -> [VAR_DECL] -> Table2 -> [Assignment]
 appendVariableAssignments vars decls t =
-     map (concatAssignment vars) (generateVariableAssignments decls t)
+     map (Map.union vars) (generateVariableAssignments decls t)
