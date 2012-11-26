@@ -29,6 +29,7 @@ import Common.Utils
 
 import qualified Data.Set as Set
 import qualified Data.IntSet as IntSet
+import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
@@ -39,11 +40,11 @@ modelCheck c (sign, sent) t1 = do
   let t = toTable2 t1
   mapM_ (modelCheckTest c (extractAnnotations (annoMap sign)) sign t) sent
 
-data Table2 = Table2 Int Int [Baserel] BSet [CmpEntry] ConTables
+data Table2 = Table2 Int Int (IntMap.IntMap Baserel) BSet [CmpEntry] ConTables
 
 data CmpEntry = CmpEntry Int Int IntSet.IntSet
 
-type ConTable = Map.Map Int IntSet.IntSet
+type ConTable = IntMap.IntMap IntSet.IntSet
 
 type ConTables = (ConTable, ConTable, ConTable, ConTable)
 
@@ -53,9 +54,12 @@ lkup = Map.findWithDefault 0
 toTable2 :: Table -> Table2
 toTable2 (Table (Table_Attrs _ id_ baserels)
   (Compositiontable comptbl) convtbl _ _) =
-  let m = Map.fromList $ number baserels
+  let ns = number baserels
+      m = Map.fromList $ number baserels
       s = Map.size m
-  in Table2 (lkup id_ m) s baserels (IntSet.fromAscList [1 .. s])
+  in Table2 (lkup id_ m) s
+    (IntMap.fromList $ map (\ (a, b) -> (b, a)) ns)
+    (IntSet.fromAscList [1 .. s])
     (map (toCmpEntry m) comptbl)
     $ toConTables m convtbl
 
@@ -67,8 +71,8 @@ toCmpEntry m (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
 toConTab :: Map.Map Baserel Int -> (a -> Baserel) -> (a -> [Baserel]) -> [a]
   -> ConTable
 toConTab m s1 s2 = foldl' (\ t a ->
-    Map.insertWith IntSet.union (lkup (s1 a) m)
-           (IntSet.fromList $ map (`lkup` m) $ s2 a) t) Map.empty
+    IntMap.insertWith IntSet.union (lkup (s1 a) m)
+           (IntSet.fromList $ map (`lkup` m) $ s2 a) t) IntMap.empty
 
 toConTab2 :: Map.Map Baserel Int -> [Contabentry_Ternary] -> ConTable
 toConTab2 m =
@@ -78,9 +82,9 @@ toConTables :: Map.Map Baserel Int -> Conversetable -> ConTables
 toConTables m c = case c of
   Conversetable l ->
     (toConTab m contabentryArgBaseRel contabentryConverseBaseRel l
-    , Map.empty, Map.empty, Map.empty)
+    , IntMap.empty, IntMap.empty, IntMap.empty)
   Conversetable_Ternary l1 l2 l3 ->
-    (Map.empty, toConTab2 m l1, toConTab2 m l2, toConTab2 m l3)
+    (IntMap.empty, toConTab2 m l1, toConTab2 m l2, toConTab2 m l3)
 
 extractAnnotations :: MapSet.MapSet Symbol Annotation -> [(OP_SYMB, String)]
 extractAnnotations m =
@@ -191,13 +195,14 @@ calculateQuantification (sign, qf) vardecls t@(Table2 _ _ l _ _ _) symbs =
 
 type Assignment = Map.Map VAR Int
 
-showAssignments :: [Baserel] -> Map.Map VAR Int -> String
+showAssignments :: IntMap.IntMap Baserel -> Map.Map VAR Int -> String
 showAssignments l xs =
     '[' : intercalate ", " (map (showSingleAssignment l) $ Map.toList xs) ++ "]"
 
-showSingleAssignment :: [Baserel] -> (VAR, Int) -> String
-showSingleAssignment l (v, i) = show v ++ "->" ++ case l !! (i - 1) of
-  Baserel b -> b
+showSingleAssignment :: IntMap.IntMap Baserel -> (VAR, Int) -> String
+showSingleAssignment m (v, i) = show v ++ "->" ++ case IntMap.lookup i m of
+  Just (Baserel b) -> b
+  Nothing -> "*** ERROR ****"
 
 type BSet = IntSet.IntSet
 
@@ -257,7 +262,7 @@ calculateComposition entries rels1 rels2 =
 
 calculateConverse :: ConTable -> BSet -> BSet
 calculateConverse t =
-    IntSet.unions . map (\ i -> Map.findWithDefault IntSet.empty i t)
+    IntSet.unions . map (\ i -> IntMap.findWithDefault IntSet.empty i t)
     . IntSet.toList
 
 getBaseRelForVariable :: VAR -> Assignment -> BSet
