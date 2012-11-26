@@ -196,7 +196,7 @@ showAssignments l xs =
     '[' : intercalate ", " (map (showSingleAssignment l) $ Map.toList xs) ++ "]"
 
 showSingleAssignment :: [Baserel] -> (VAR, Int) -> String
-showSingleAssignment l (v, i) = show v ++ "->" ++ case l !! i of
+showSingleAssignment l (v, i) = show v ++ "->" ++ case l !! (i - 1) of
   Baserel b -> b
 
 type BSet = IntSet.IntSet
