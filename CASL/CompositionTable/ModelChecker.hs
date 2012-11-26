@@ -194,7 +194,7 @@ applyOperation "RA_intersection" (sign, ft : sd : _) table ass symbs =
               (calculateTerm (sign, sd) ass table symbs)
 applyOperation "RA_composition" (sign, ft : sd : _) (Table attrs
               (Compositiontable cmpentries) convtbl refltbl models)
-              ass symbs = calculateComposition cmpentries
+              ass symbs = calculateComposition (map toCmpEntry cmpentries)
               (calculateTerm (sign, ft) ass (Table attrs
               (Compositiontable cmpentries) convtbl refltbl models) symbs)
               (calculateTerm (sign, sd) ass (Table attrs
@@ -236,15 +236,20 @@ applyOperation "RA_homing" (sign, ft : _) (Table attrs comptbl
                 models) symbs)
 applyOperation _ _ _ _ _ = Set.empty
 
-calculateComposition :: [Cmptabentry] -> BSet -> BSet -> BSet
+data CmpEntry = CmpEntry Baserel Baserel BSet
+
+toCmpEntry :: Cmptabentry -> CmpEntry
+toCmpEntry (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
+  CmpEntry rel1 rel2 $ Set.fromList baserels
+
+calculateComposition :: [CmpEntry] -> BSet -> BSet -> BSet
 calculateComposition entries rels1 rels2 =
     Set.unions $ map (calculateCompositionAux rels1 rels2) entries
 
-calculateCompositionAux :: BSet -> BSet -> Cmptabentry -> BSet
-calculateCompositionAux rels1 rels2
-    (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
+calculateCompositionAux :: BSet -> BSet -> CmpEntry -> BSet
+calculateCompositionAux rels1 rels2 (CmpEntry rel1 rel2 baserels) =
   if Set.member rel1 rels1 && Set.member rel2 rels2
-  then Set.fromList baserels
+  then baserels
   else Set.empty
 
 calculateConverse :: Conversetable -> BSet -> BSet
