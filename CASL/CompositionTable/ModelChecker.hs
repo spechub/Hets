@@ -40,7 +40,7 @@ modelCheck c (sign, sent) t1 = do
   let t = toTable2 t1
   mapM_ (modelCheckTest c (extractAnnotations (annoMap sign)) sign t) sent
 
-data Table2 = Table2 Int Int (IntMap.IntMap Baserel) BSet [CmpEntry] ConTables
+data Table2 = Table2 Int (IntMap.IntMap Baserel) BSet [CmpEntry] ConTables
 
 data CmpEntry = CmpEntry Int Int IntSet.IntSet
 
@@ -56,10 +56,9 @@ toTable2 (Table (Table_Attrs _ id_ baserels)
   (Compositiontable comptbl) convtbl _ _) =
   let ns = number baserels
       m = Map.fromList $ number baserels
-      s = Map.size m
-  in Table2 (lkup id_ m) s
+  in Table2 (lkup id_ m)
     (IntMap.fromList $ map (\ (a, b) -> (b, a)) ns)
-    (IntSet.fromAscList [1 .. s])
+    (IntSet.fromAscList [1 .. Map.size m])
     (map (toCmpEntry m) comptbl)
     $ toConTables m convtbl
 
@@ -170,7 +169,7 @@ modelCheckTest1 (sign, nSen) t symbs =
 
 calculateQuantification :: (Sign () (), FORMULA ()) -> [Assignment]
                         -> Table2 -> [(OP_SYMB, String)] -> Result Bool
-calculateQuantification (sign, qf) vardecls t@(Table2 _ _ l _ _ _) symbs =
+calculateQuantification (sign, qf) vardecls t@(Table2 _ l _ _ _) symbs =
   case qf of
     Quantification quant _ f range ->
         let tuples = map ( \ ass -> let
@@ -229,7 +228,7 @@ getIdentifierForSymbAtomar symb (symb2, s) = if symb == symb2 then s else ""
 
 applyOperation :: String -> (Sign () (), [TERM ()]) -> Table2
                -> Assignment -> [(OP_SYMB, String)] -> BSet
-applyOperation ra (sign, ts) table@(Table2 _ _ _ baserels cmpentries convtbl)
+applyOperation ra (sign, ts) table@(Table2 _ _ baserels cmpentries convtbl)
   ass symbs = case ts of
     ft : rt -> let r1 = calculateTerm (sign, ft) ass table symbs
       in case rt of
@@ -249,7 +248,7 @@ applyOperation ra (sign, ts) table@(Table2 _ _ _ baserels cmpentries convtbl)
     _ -> defOp ra table
 
 defOp :: String -> Table2 -> BSet
-defOp ra (Table2 id_ _ _ baserels _ _) = case ra of
+defOp ra (Table2 id_ _ baserels _ _) = case ra of
   "RA_one" -> baserels
   "RA_identity" -> IntSet.singleton id_
   _ -> IntSet.empty
@@ -308,7 +307,7 @@ getVarsAtomic :: VAR_DECL -> [VAR]
 getVarsAtomic (Var_decl vars _ _) = vars
 
 getBaseRelations :: Table2 -> BSet
-getBaseRelations (Table2 _ _ _ br _ _) = br
+getBaseRelations (Table2 _ _ br _ _) = br
 
 appendVariableAssignments :: Assignment -> [VAR_DECL] -> Table2 -> [Assignment]
 appendVariableAssignments vars decls t =
