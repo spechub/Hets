@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  checks validity of models regarding a composition table
@@ -256,12 +257,20 @@ defOp ra (Table2 id_ _ baserels _ _) = case ra of
   "RA_identity" -> IntSet.singleton id_
   _ -> IntSet.empty
 
+intSetFold :: (Int -> b -> b) -> b -> IntSet.IntSet -> b
+intSetFold =
+#if __GLASGOW_HASKELL__ < 704
+  IntSet.fold
+#else
+  IntSet.foldr'
+#endif
+
 calculateComposition :: CmpTbl -> BSet -> BSet -> BSet
-calculateComposition entries rels1 rels2 =
-  IntSet.fold (\ s1 t ->
-    let m1 = IntMap.findWithDefault IntMap.empty s1 entries in
-    IntSet.fold (\ s2 -> IntSet.union
-                 $ IntMap.findWithDefault IntSet.empty s2 m1) t rels2)
+calculateComposition entries rels1 rels2 = intSetFold
+  (\ s1 t ->
+     let m1 = IntMap.findWithDefault IntMap.empty s1 entries in intSetFold
+         (\ s2 -> IntSet.union $ IntMap.findWithDefault IntSet.empty s2 m1)
+     t rels2)
   IntSet.empty rels1
 
 calculateConverse :: ConTable -> BSet -> BSet
