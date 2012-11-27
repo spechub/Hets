@@ -40,9 +40,9 @@ modelCheck c (sign, sent) t1 = do
   let t = toTable2 t1
   mapM_ (modelCheckTest c (extractAnnotations (annoMap sign)) sign t) sent
 
-data Table2 = Table2 Int (IntMap.IntMap Baserel) BSet [CmpEntry] ConTables
+data Table2 = Table2 Int (IntMap.IntMap Baserel) BSet CmpTbl ConTables
 
-data CmpEntry = CmpEntry Int Int IntSet.IntSet
+type CmpTbl = IntMap.IntMap (IntMap.IntMap IntSet.IntSet)
 
 type ConTable = IntMap.IntMap IntSet.IntSet
 
@@ -59,13 +59,16 @@ toTable2 (Table (Table_Attrs _ id_ baserels)
   in Table2 (lkup id_ m)
     (IntMap.fromList $ map (\ (a, b) -> (b, a)) ns)
     (IntSet.fromAscList [1 .. Map.size m])
-    (map (toCmpEntry m) comptbl)
+    (toCmpTbl m comptbl)
     $ toConTables m convtbl
 
-toCmpEntry :: Map.Map Baserel Int -> Cmptabentry -> CmpEntry
-toCmpEntry m (Cmptabentry (Cmptabentry_Attrs rel1 rel2) baserels) =
-  CmpEntry (lkup rel1 m) (lkup rel2 m) $ IntSet.fromList
-    $ map (`lkup` m) baserels
+toCmpTbl :: Map.Map Baserel Int -> [Cmptabentry] -> CmpTbl
+toCmpTbl m =
+  foldl' (\ t (Cmptabentry (Cmptabentry_Attrs rel1 rel2) bs)
+              -> IntMap.insertWith IntMap.union (lkup rel1 m)
+                 (IntMap.insertWith IntSet.union (lkup rel2 m)
+                 (IntSet.fromList $ map (`lkup` m) bs) IntMap.empty) t)
+  IntMap.empty
 
 toConTab :: Map.Map Baserel Int -> (a -> Baserel) -> (a -> [Baserel]) -> [a]
   -> ConTable
@@ -253,11 +256,13 @@ defOp ra (Table2 id_ _ baserels _ _) = case ra of
   "RA_identity" -> IntSet.singleton id_
   _ -> IntSet.empty
 
-calculateComposition :: [CmpEntry] -> BSet -> BSet -> BSet
+calculateComposition :: CmpTbl -> BSet -> BSet -> BSet
 calculateComposition entries rels1 rels2 =
-    foldl' (\ rs (CmpEntry rel1 rel2 bs) ->
-                    if IntSet.member rel1 rels1 && IntSet.member rel2 rels2
-                    then IntSet.union bs rs else rs) IntSet.empty entries
+  IntSet.fold (\ s1 t ->
+    let m1 = IntMap.findWithDefault IntMap.empty s1 entries in
+    IntSet.fold (\ s2 -> IntSet.union
+                 $ IntMap.findWithDefault IntSet.empty s2 m1) t rels2)
+  IntSet.empty rels1
 
 calculateConverse :: ConTable -> BSet -> BSet
 calculateConverse t =
