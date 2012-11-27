@@ -24,11 +24,11 @@ fi
 opts="--enable-documentation -p --global --prefix=$pre"
 
 #    echo Installing binaries...
-#    cabal install cabal-install-0.14.0 gtk2hs-buildtools $opts
+cabal install gtk2hs-buildtools $opts
 
 echo Installing libraries...
 cabal install aterm random utf8-string xml fgl HTTP haskeline HaXml \
-              hexpat uni-uDrawGraph parsec1 wai-extra warp tar $opts
+              hexpat uni-uDrawGraph parsec1 wai-extra warp tar glade $opts
 
 cabal install \
   http://www.dfki.de/sks/hets/src-distribution/programatica-1.0.0.4.tar.gz \
