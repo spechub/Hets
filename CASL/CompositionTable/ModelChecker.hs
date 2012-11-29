@@ -95,27 +95,30 @@ modelCheckTest1 c sen t symbs = let
 
 calculateQuantification :: Int -> (Int -> String) -> QUANTIFIER -> Form
   -> Table2 -> [Assignment] -> (Int, [String])
-calculateQuantification c si quant f t@(Table2 _ l _ _ _) vardecls =
-      case foldl' (\ (b0, b1, c0, ds) ass -> case
-        calculateFormula f t ass of
-          res -> let
-              nB0 = if res then False else b0
-              nB1 = if res then if b1 then False else b0 else b1
-              nD = showAssignments si l ass
-              (nC0, nDs) = case quant of
-                Universal -> (if res then c0 else c0 + 1,
-                  if res || c0 >= c then ds else nD : ds)
-                Unique_existential -> (c0,
-                  if res && (b0 || b1) then nD : ds else ds)
-                Existential -> (c0, ds)
-            in seq (seq nB0 $ seq nB1 $ seq nC0 nDs)
-              (nB0, nB1, nC0, nDs))
-              (True, False, 0, []) vardecls of
-        (b0, b1, cE, ds) -> case quant of
-           Universal -> (cE, ds)
-           Unique_existential -> if b1 then (0, []) else (1, ds)
-           Existential ->
-             if b0 then (1, ["Existential not fulfilled"]) else (0, [])
+calculateQuantification c si quant f t@(Table2 _ l _ _ _) vs =
+      let calc = calculateFormula f t
+          nD = showAssignments si l
+          fall (c0, ds) ass = let
+            res = calc ass
+            nC0 = if res then c0 else c0 + 1
+            nDs = if res || nC0 > c then ds else nD ass : ds
+            in seq nDs (nC0, nDs)
+          fex p@(_, ds) ass = let
+            res = calc ass
+            (nC0, nDs) = if null ds || res then (0, []) else p
+            in seq nDs (nC0, nDs)
+          funi p@(c0, ds) ass = let
+            res = calc ass
+            (nC0, nDs) = if c0 >= 2 then p else
+              if res then (c0 + 1, nD ass : ds) else p
+            in seq nDs (nC0, nDs)
+      in case quant of
+           Universal -> foldl' fall (0, []) vs
+           Existential -> foldl' fex (1, ["Existential not fulfilled"]) vs
+           Unique_existential -> case snd $ foldl' funi (0 :: Int, []) vs of
+             [] -> (1, ["Unique Existential not fulfilled"])
+             [_] -> (0, [])
+             ds -> (1, ds)
 
 type Assignment = IntMap.IntMap Int
 
@@ -193,8 +196,8 @@ getBaseRelForVariable var =
 calculateFormula :: Form -> Table2 -> Assignment -> Bool
 calculateFormula qf t varass = case qf of
     Quant q vardecls f ->
-       calculateQuantification 1 show q f t
-         (appendVariableAssignments varass vardecls t) == (0, [])
+       null . snd . calculateQuantification 1 show q f t
+         $ appendVariableAssignments varass vardecls t
     Junct j formulas -> (if j then and else or)
         [calculateFormula x t varass | x <- formulas]
     Impl isImpl f1 f2 ->
