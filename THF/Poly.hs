@@ -163,7 +163,14 @@ getTypeCBF cm bf = case bf of
          t <- applyResult (length ufs'') t1
          return (t, cs1 ++ concat cs2
           ++ [(t1, genFn $ tps ++ [t])])
-      _ -> lift Nothing
+      _ -> do
+       ufs' <- mapM (getTypeCUF cm) ufs
+       case ufs' of
+        [] -> lift Nothing
+        (t,cs) : [] -> return (t,cs++[(t,OType)])
+        _ -> do
+         let (ts,cs) = unzip ufs'
+         return (OType,concat cs ++ map (\t -> (t,OType)) ts)
  _ -> lift Nothing
 
 applyResult :: Int -> Type -> UniqueT Maybe Type
