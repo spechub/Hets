@@ -279,12 +279,13 @@ genFn (tp : tps) = MapType tp (genFn tps)
 genFn _ = error "This shouldn't happen!"
 
 insertAndIdx :: (Ord a, Eq b) => Data.Map.Map a [b] -> a -> b
-                 -> (Data.Map.Map a [b], Int)
+                 -> (Data.Map.Map a [b], Maybe Int)
 insertAndIdx m k v = case Data.Map.lookup k m of
  Just l -> case Data.List.elemIndex v l of
-  Just i -> (m, i)
-  Nothing -> (Data.Map.insert k (l ++ [v]) m, length l)
- Nothing -> (Data.Map.insert k [v] m, 0)
+  Just i -> (m, Just i)
+  Nothing -> (Data.Map.insert k (l ++ [v]) m,
+   Just $ length l)
+ Nothing -> (Data.Map.insert k [v] m, Just 0)
 
 intToStr :: Int -> String
 intToStr 0 = ""
@@ -300,7 +301,7 @@ flattenMap = Data.Map.foldrWithKey
   in foldl (\ new_m' (k', v') -> Data.Map.insert k' v' new_m')
       new_m (zip ks v)) Data.Map.empty
 
-type RewriteArg = Data.Map.Map Constant Int
+type RewriteArg = Data.Map.Map Constant (Maybe Int)
 
 rewriteVariableList' :: (RewriteFuns RewriteArg, RewriteArg) ->
                         [THFVariable] -> Result [THFVariable]
@@ -309,16 +310,30 @@ rewriteVariableList' (_, cm) vs = return $
                      TV_THF_Typed_Variable t' _ -> t'
                      TV_Variable t' -> t'
             in case Data.Map.lookup (A_Single_Quoted t) cm of
-                Just i -> TV_Variable $
+                Just (Just i) -> TV_Variable $
                  t { tokStr = tokStr t ++ intToStr i }
-                Nothing -> v) vs
+                _ -> v) vs
 
 rewriteConst' :: (RewriteFuns RewriteArg, RewriteArg) ->
                  Constant -> Result THFUnitaryFormula
 rewriteConst' (_, cm) c = return . TUF_THF_Atom . T0A_Constant $
  case Data.Map.lookup c cm of
-  Just i -> addSuffix (intToStr i) c
-  Nothing -> c
+  Just (Just i) -> addSuffix (intToStr i) c
+  _ -> c
+
+rewriteConst4needsConst :: (RewriteFuns Constant, Constant) ->
+                           Constant -> Result THFUnitaryFormula
+rewriteConst4needsConst (_,c1) c2 =
+ if c1 == c2 then mkError "" nullRange
+ else return . TUF_THF_Atom . T0A_Constant $ c2
+
+needsConst :: Constant -> Named THFFormula -> Bool
+needsConst c f =
+ let r = rewriteTHF0 {rewriteConst = rewriteConst4needsConst}
+     res = rewriteSenFun (r, c) f
+ in case resultToMaybe res of
+     Nothing -> True
+     _       -> False
 
 {- Note: Only Works if all Types are simple,
    i.e. there are no ShortTypes -}
@@ -334,12 +349,14 @@ infer cm fs =
  in case unifications of
      Just unis' -> sequence unis' >>= \ unis ->
       let (cm', instances) = Data.List.mapAccumL
-           (\ cm'_ u ->
+           (\ cm'_ (f,u) ->
              let (cm'', m1) = Data.Map.mapAccumWithKey
-                  (\ cm''' c ci -> insertAndIdx cm''' c
-                     (apply u (constType ci))) cm'_ cm
+                  (\ cm''' c ci -> if needsConst c f
+                     then insertAndIdx cm''' c
+                           (apply u (constType ci))
+                     else (cm''',Nothing)) cm'_ cm
              in (cm'', m1))
-           Data.Map.empty unis
+           Data.Map.empty (zip fs unis)
           new_cm = Data.Map.mapWithKey (\ k v ->
            ConstInfo { constId = k,
                        constName = N_Atomic_Word k,

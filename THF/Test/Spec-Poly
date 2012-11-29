@@ -1,0 +1,14 @@
+logic THF.THFP
+
+spec test =
+
+thf(type_c,type,( c : A * $tType)).
+thf(type_d,type,( dType : $tType > B)).
+
+thf(const_b,type,( b : c)).
+thf(const_a,type,( a : $oType)).
+thf(const_d,type,( d : dType)).
+thf(const_f,type,( f : $i)).
+
+thf(th1,conjecture,( (pr_1 @ b) = a )).
+thf(th2,conjecture,( (d @ e) = f)).
