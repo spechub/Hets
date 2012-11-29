@@ -229,10 +229,6 @@ rewriteVariableList' (_,(tp_trans,cs_trans)) vs = do
                                t' -> return $ map TV_Variable t') vs
  return $ concat vs'
 
-toToken :: Constant -> Token
-toToken (A_Lower_Word t)    = t
-toToken (A_Single_Quoted t) = t
-
 transToken :: TransMap -> Token -> [Token]
 transToken m t = case Map.toList $
   Map.filterWithKey (\c _ -> (toToken c) == t) m of

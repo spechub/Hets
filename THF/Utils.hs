@@ -17,6 +17,7 @@ module THF.Utils (
  mkNames,
  recreateSymbols,
  typeToTopLevelType,
+ toToken,
  RewriteFuns(..),
  rewriteSenFun,
  rewriteTHF0
@@ -93,6 +94,10 @@ recreateSymbols (Sign tps cs _) =
                       (Symbol c (name c) (ST_Const $ constType k)) m)
               symbs1 $ Map.toList cs
  in Sign tps cs symbs
+
+toToken :: Constant -> Token
+toToken (A_Lower_Word t)    = t
+toToken (A_Single_Quoted t) = t
 
 typeToTopLevelType :: Type -> THFTopLevelType
 typeToTopLevelType t = case t of
