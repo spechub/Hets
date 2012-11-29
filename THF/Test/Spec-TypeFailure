@@ -1,0 +1,5 @@
+logic THF
+
+thf(const_a,type,( a : $iType )).
+
+thf(th, conjecture, a & b).

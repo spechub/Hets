@@ -94,6 +94,15 @@ unifyType tp1 tp2_ =
      (_, ProdType _) ->
       mkError ("Different type constructor!" ++
        show (tp1, tp2)) nullRange
+     (TType,TType) -> return []
+     (OType,OType) -> return []
+     (IType,IType) -> return []
+     (TType,_) -> mkError ("Cannot unify $tType with " ++ show tp2) nullRange
+     (_,TType) -> mkError ("Cannot unify $tType with " ++ show tp1) nullRange
+     (OType,_) -> mkError ("Cannot unify $oType with " ++ show tp2) nullRange
+     (_,OType) -> mkError ("Cannot unify $oType with " ++ show tp1) nullRange
+     (IType,_) -> mkError ("Cannot unify $iType with " ++ show tp2) nullRange
+     (_,IType) -> mkError ("Cannot unify $iType with " ++ show tp1) nullRange
      _ -> return []
 
 applyType :: [(Token, Type)] -> Token -> Maybe Type
@@ -372,7 +381,8 @@ infer cm fs =
            return (new_cm, fs')
      Nothing -> mkError "Failed to generate constraints!" nullRange
 
-type_check :: TypeMap -> ConstMap -> [Named THFFormula] -> Result ()
+type_check :: TypeMap -> ConstMap -> [Named THFFormula]
+               -> Result [[(Token,Type)]]
 type_check tm cm fs = do
  (sig,sens) <- trans_theory
   ((emptySign { types = tm, consts = cm}), fs)
@@ -381,7 +391,7 @@ type_check tm cm fs = do
  let constraints =
       liftM (map (\ (t, cs) -> (OType, NormalC t) : cs)) constraints'
  let unifications =
-      liftM (map unify') constraints 
+      liftM (map unify') constraints
  case unifications of
      Nothing -> mkError "Failed to generate constraints!" nullRange
-     _ -> return ()
+     Just r -> sequence $ r
