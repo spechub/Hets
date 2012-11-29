@@ -107,15 +107,14 @@ calculateQuantification c si quant f t@(Table2 _ l _ _ _) vs =
             res = calc ass
             (nC0, nDs) = if null ds || res then (0, []) else p
             in seq nDs (nC0, nDs)
-          funi p@(c0, ds) ass = let
-            res = calc ass
-            (nC0, nDs) = if c0 >= 2 then p else
-              if res then (c0 + 1, nD ass : ds) else p
-            in seq nDs (nC0, nDs)
+          funi ds ass = case ds of
+            _ : _ : _ -> ds
+            _ | calc ass -> nD ass : ds
+            _ -> ds
       in case quant of
            Universal -> foldl' fall (0, []) vs
            Existential -> foldl' fex (1, ["Existential not fulfilled"]) vs
-           Unique_existential -> case snd $ foldl' funi (0 :: Int, []) vs of
+           Unique_existential -> case foldl' funi [] vs of
              [] -> (1, ["Unique Existential not fulfilled"])
              [_] -> (0, [])
              ds -> (1, ds)
