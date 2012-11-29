@@ -21,6 +21,7 @@ module THF.Utils (
  mkNames,
  addSuffix,
  recreateSymbols,
+ thfTopLevelTypeToType,
  typeToTopLevelType,
  typeToUnitaryType,
  typeToBinaryType,
@@ -44,6 +45,7 @@ import Control.Monad.Identity
 import Control.Monad (mapM)
 
 import qualified Data.Map as Map
+import Data.Maybe (fromJust,isJust)
 
 {- taken from http://www.haskell.org/haskellwiki/New_monads/MonadUnique -}
 newtype UniqueT m a = UniqueT (StateT Integer m a)
@@ -110,6 +112,57 @@ recreateSymbols (Sign tps cs _) =
 toToken :: Constant -> Token
 toToken (A_Lower_Word t)    = t
 toToken (A_Single_Quoted t) = t
+
+thfTopLevelTypeToType :: THFTopLevelType -> Maybe Type
+thfTopLevelTypeToType tlt = case tlt of
+    T0TLT_Defined_Type dt       -> thfDefinedTypeToType dt
+    T0TLT_THF_Binary_Type bt    -> thfBinaryTypeToType bt
+    T0TLT_Constant c            -> Just $ CType c
+    T0TLT_System_Type st        -> Just $ SType st
+    T0TLT_Variable v            -> Just $ VType v
+    _                           -> Nothing
+
+thfDefinedTypeToType :: DefinedType -> Maybe Type
+thfDefinedTypeToType dt = case dt of
+    DT_oType    -> Just OType
+    DT_o        -> Just OType
+    DT_iType    -> Just TType
+    DT_i        -> Just IType
+    DT_tType    -> Just TType
+    _           -> Nothing
+
+thfBinaryTypeToType :: THFBinaryType -> Maybe Type
+thfBinaryTypeToType bt = case bt of
+    TBT_THF_Mapping_Type []         -> Nothing
+    TBT_THF_Mapping_Type (_ : [])   -> Nothing
+    TBT_THF_Mapping_Type mt         -> thfMappingTypeToType mt
+    T0BT_THF_Binary_Type_Par btp    -> fmap ParType (thfBinaryTypeToType btp)
+    TBT_THF_Xprod_Type []           -> Nothing
+    TBT_THF_Xprod_Type (u : [])     -> thfUnitaryTypeToType u
+    TBT_THF_Xprod_Type us           -> let us' = map thfUnitaryTypeToType us
+                                       in if all isJust us' then
+                                           (Just . ProdType) $ map fromJust us'
+                                          else Nothing
+    _                               -> Nothing
+
+thfMappingTypeToType :: [THFUnitaryType] -> Maybe Type
+thfMappingTypeToType [] = Nothing
+thfMappingTypeToType (u : []) = thfUnitaryTypeToType u
+thfMappingTypeToType (u : ru) =
+    let k1 = thfUnitaryTypeToType u
+        k2 = thfMappingTypeToType ru
+    in if isJust k1 && isJust k2
+       then Just $ MapType (fromJust k1) (fromJust k2)
+       else Nothing
+
+thfUnitaryTypeToType :: THFUnitaryType -> Maybe Type
+thfUnitaryTypeToType ut = case ut of
+    T0UT_THF_Binary_Type_Par bt -> fmap ParType (thfBinaryTypeToType bt)
+    T0UT_Defined_Type dt        -> thfDefinedTypeToType dt
+    T0UT_Constant c             -> Just $ CType c
+    T0UT_System_Type st         -> Just $ SType st
+    T0UT_Variable v             -> Just $ VType v
+    _                           -> Nothing
 
 typeToTopLevelType :: Type -> Result THFTopLevelType
 typeToTopLevelType t = case t of

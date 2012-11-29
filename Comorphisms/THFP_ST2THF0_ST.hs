@@ -27,7 +27,6 @@ import THF.Cons
 import THF.Sign
 import qualified THF.Sublogic as SL
 import THF.As
-import THF.StaticAnalysisTHF (thfTopLevelTypeToType)
 import THF.Utils
 
 import qualified Data.Map as Map

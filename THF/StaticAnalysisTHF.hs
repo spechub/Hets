@@ -13,12 +13,14 @@ Static analysis for THF.
 NOTE: This implementation covers only THF0!
 -}
 
-module THF.StaticAnalysisTHF (basicAnalysis,thfTopLevelTypeToType) where
+module THF.StaticAnalysisTHF (basicAnalysis) where
 
 import THF.As as As
 import THF.Cons
 import THF.Print ()
 import THF.Sign
+import THF.Poly (type_check)
+import THF.Utils (thfTopLevelTypeToType)
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -48,7 +50,9 @@ basicAnalysis (bs@(BasicSpecTHF bs1), sig1, _) =
     let (diag1, bs2) = filterBS [] bs1
         (diag2, sig2, syms) = execState (fillSig bs2) (diag1, sig1, Set.empty)
         (diag3, ns) = getSentences bs2 (diag2, [])
-    in Result (reverse diag3) $ Just (bs, ExtSign sig2 syms, ns)
+    in do
+     type_check (types sig2) (consts sig2) ns
+     Result (reverse diag3) $ Just (bs, ExtSign sig2 syms, ns)
 
 -- This functions delets all Comments and Includes because they are not needed
 -- for the static analysis
@@ -324,58 +328,6 @@ thfTypedConstToType (T0TC_THF_TypedConst_Par tcp) =  thfTypedConstToType tcp
 thfTypedConstToType (T0TC_Typed_Const c tlt) =
             maybe Nothing (\ t -> Just (t, c))
                 (thfTopLevelTypeToType tlt)
-
-thfTopLevelTypeToType :: THFTopLevelType -> Maybe Type
-thfTopLevelTypeToType tlt = case tlt of
-    T0TLT_Defined_Type dt       -> thfDefinedTypeToType dt
-    T0TLT_THF_Binary_Type bt    -> thfBinaryTypeToType bt
-    T0TLT_Constant c            -> Just $ CType c
-    T0TLT_System_Type st        -> Just $ SType st
-    T0TLT_Variable v            -> Just $ VType v
-    _                           -> Nothing
-
-thfDefinedTypeToType :: DefinedType -> Maybe Type
-thfDefinedTypeToType dt = case dt of
-    DT_oType    -> Just OType
-    DT_o        -> Just OType
-    DT_iType    -> Just TType
-    DT_i        -> Just IType
-    DT_tType    -> Just TType
-    _           -> Nothing
-
-thfBinaryTypeToType :: THFBinaryType -> Maybe Type
-thfBinaryTypeToType bt = case bt of
-    TBT_THF_Mapping_Type []         -> Nothing
-    TBT_THF_Mapping_Type (_ : [])   -> Nothing
-    TBT_THF_Mapping_Type mt         -> thfMappingTypeToType mt
-    T0BT_THF_Binary_Type_Par btp    -> fmap ParType (thfBinaryTypeToType btp)
-    TBT_THF_Xprod_Type []           -> Nothing
-    TBT_THF_Xprod_Type (u : [])     -> thfUnitaryTypeToType u
-    TBT_THF_Xprod_Type us           -> let us' = map thfUnitaryTypeToType us
-                                       in if all isJust us' then
-                                           (Just . ProdType) $ map fromJust us'
-                                          else Nothing
-    _                               -> Nothing
-
-thfMappingTypeToType :: [THFUnitaryType] -> Maybe Type
-thfMappingTypeToType [] = Nothing
-thfMappingTypeToType (u : []) = thfUnitaryTypeToType u
-thfMappingTypeToType (u : ru) =
-    let k1 = thfUnitaryTypeToType u
-        k2 = thfMappingTypeToType ru
-    in if isJust k1 && isJust k2
-       then Just $ MapType (fromJust k1) (fromJust k2)
-       else Nothing
-
-thfUnitaryTypeToType :: THFUnitaryType -> Maybe Type
-thfUnitaryTypeToType ut = case ut of
-    T0UT_THF_Binary_Type_Par bt -> fmap ParType (thfBinaryTypeToType bt)
-    T0UT_Defined_Type dt        -> thfDefinedTypeToType dt
-    T0UT_Constant c             -> Just $ CType c
-    T0UT_System_Type st         -> Just $ SType st
-    T0UT_Variable v             -> Just $ VType v
-    _                           -> Nothing
-
 
 --------------------------------------------------------------------------------
 -- Check if a THFFormula is a Type definition

@@ -16,7 +16,7 @@ import THF.Cons
 import THF.Sign
 import THF.Utils
 import THF.As
-import THF.StaticAnalysisTHF (thfTopLevelTypeToType)
+import THF.ShortTypes
 
 import Common.Result
 import Common.Id
@@ -371,3 +371,17 @@ infer cm fs =
             (zip fs instances)
            return (new_cm, fs')
      Nothing -> mkError "Failed to generate constraints!" nullRange
+
+type_check :: TypeMap -> ConstMap -> [Named THFFormula] -> Result ()
+type_check tm cm fs = do
+ (sig,sens) <- trans_theory
+  ((emptySign { types = tm, consts = cm}), fs)
+ let constraints' = mapM (evalUniqueT .
+      getTypeC (consts sig) . sentence) sens
+ let constraints =
+      liftM (map (\ (t, cs) -> (OType, NormalC t) : cs)) constraints'
+ let unifications =
+      liftM (map unify') constraints 
+ case unifications of
+     Nothing -> mkError "Failed to generate constraints!" nullRange
+     _ -> return ()
