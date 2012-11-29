@@ -37,6 +37,8 @@ import THF.Cons as THFCons
 import THF.Sign as THFSign
 import THF.Translate
 import THF.HasCASL2THF0Buildins
+import THF.Utils (typeToUnitaryType,typeToBinaryType,
+                  typeToTopLevelType)
 import qualified THF.Sublogic as SL
 
 import Control.Monad
@@ -460,55 +462,14 @@ transGenVatDecl icm gvd = case gvd of
 transVarDecl :: IdConstantMap -> VarDecl -> Result THFVariable
 transVarDecl icm (VarDecl i t _ _) = do
     v <- transVarId i
-    tlt <- transType icm t >>= genTHFTopLevelType
+    tlt <- transType icm t >>= typeToTopLevelType
     return $ TV_THF_Typed_Variable v tlt
-
-genTHFTopLevelType :: THFCons.Type -> Result THFAs.THFTopLevelType
-genTHFTopLevelType t = case t of
-    TType -> return $ T0TLT_Defined_Type DT_tType
-    OType -> return $ T0TLT_Defined_Type DT_o
-    IType -> return $ T0TLT_Defined_Type DT_i
-    CType c -> return $ T0TLT_Constant c
-    SType st -> return $ T0TLT_System_Type st
-    VType v -> return $ T0TLT_Variable v
-    MapType _ _ -> fmap T0TLT_THF_Binary_Type (genTHFBinaryType t)
-    ParType t1 -> genTHFTopLevelType t1
-    ProdType ts -> fmap T0TLT_THF_Binary_Type $ genTuple ts
-
-genTHFBinaryType :: THFCons.Type -> Result THFAs.THFBinaryType
-genTHFBinaryType t = case t of
-        MapType t1 t2 -> do
-            uf <- genTHFUnitaryType t1
-            ufr <- mtbt t2
-            return $ TBT_THF_Mapping_Type (uf : ufr)
-        ParType t1 -> fmap T0BT_THF_Binary_Type_Par (genTHFBinaryType t1)
-        _ -> fatal_error ("Unexpected Type: " ++ show t) nullRange
-    where
-        mtbt :: THFCons.Type -> Result [THFAs.THFUnitaryType]
-        mtbt ty = case ty of
-            MapType ty1 ty2 -> do
-                uf <- genTHFUnitaryType ty1
-                ufr <- mtbt ty2
-                return (uf : ufr)
-            _ -> genTHFUnitaryType ty >>= (\ uf -> return [uf])
-
-genTHFUnitaryType :: THFCons.Type -> Result THFAs.THFUnitaryType
-genTHFUnitaryType t = case t of
-    TType -> return $ T0UT_Defined_Type DT_tType
-    OType -> return $ T0UT_Defined_Type DT_o
-    IType -> return $ T0UT_Defined_Type DT_i
-    CType c -> return $ T0UT_Constant c
-    SType st -> return $ T0UT_System_Type st
-    VType v -> return $ T0UT_Variable v
-    MapType _ _ -> fmap T0UT_THF_Binary_Type_Par (genTHFBinaryType t)
-    ParType t1 -> fmap T0UT_THF_Binary_Type_Par (genTHFBinaryType t1)
-    ProdType ts -> fmap T0UT_THF_Binary_Type_Par (genTuple ts)
 
 genTuple :: [THFCons.Type] -> Result THFAs.THFBinaryType
 genTuple ts = case ts of
   [] -> fatal_error "Empty product type" nullRange
-  tp : [] -> genTHFBinaryType tp
-  _ -> fmap TBT_THF_Xprod_Type $ mapR genTHFUnitaryType ts
+  tp : [] -> typeToBinaryType tp
+  _ -> fmap TBT_THF_Xprod_Type $ mapR typeToUnitaryType ts
 
 -- THFLogicFormula to THFUnitaryFormula
 lfToUf :: THFLogicFormula -> THFUnitaryFormula

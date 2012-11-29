@@ -17,6 +17,8 @@ module THF.Utils (
  mkNames,
  recreateSymbols,
  typeToTopLevelType,
+ typeToUnitaryType,
+ typeToBinaryType,
  toToken,
  RewriteFuns(..),
  rewriteSenFun,
