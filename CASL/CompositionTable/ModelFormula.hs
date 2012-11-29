@@ -51,7 +51,8 @@ lkup :: Map.Map VAR Int -> VAR -> Int
 lkup = flip $ Map.findWithDefault 0
 
 getOp :: String -> Op
-getOp s = case stripPrefix "RA_" s of
+getOp s = let err = error "CompositionTable.getOp" in
+  case stripPrefix "RA_" s of
   Just r -> case r of
     "composition" -> Comp
     "intersection" -> Inter
@@ -63,8 +64,9 @@ getOp s = case stripPrefix "RA_" s of
     "homing" -> Home
     "one" -> One
     "identity" -> Iden
-    _ -> Zero
-  Nothing -> Zero
+    "zero" -> Zero
+    _ -> err
+  Nothing -> err
 
 fromCASL :: Map.Map OP_SYMB String -> Map.Map VAR Int -> Record f Form Term
 fromCASL oM m = let err = error "CompositionTable.CASLFormula" in Record
