@@ -126,7 +126,7 @@ thfDefinedTypeToType :: DefinedType -> Maybe Type
 thfDefinedTypeToType dt = case dt of
     DT_oType    -> Just OType
     DT_o        -> Just OType
-    DT_iType    -> Just TType
+    DT_iType    -> Just IType
     DT_i        -> Just IType
     DT_tType    -> Just TType
     _           -> Nothing
