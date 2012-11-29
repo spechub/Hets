@@ -45,9 +45,9 @@ instance Comorphism THFP_P_ST2THFP_P
                 BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     sourceLogic THFP_P_ST2THFP_P = THF
-    sourceSublogic THFP_P_ST2THFP_P = SL.tHF0_P_ST
+    sourceSublogic THFP_P_ST2THFP_P = SL.tHFP_P_ST
     targetLogic THFP_P_ST2THFP_P = THF
-    mapSublogic THFP_P_ST2THFP_P _ = Just SL.tHF0_P
+    mapSublogic THFP_P_ST2THFP_P _ = Just SL.tHFP_P
     map_theory THFP_P_ST2THFP_P = trans_theory
     has_model_expansion THFP_P_ST2THFP_P = True
 
