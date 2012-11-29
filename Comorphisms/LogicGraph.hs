@@ -56,7 +56,7 @@ import Logic.Morphism
 import Modifications.ModalEmbedding
 
 import Comorphisms.THFP_ST2THF0_ST
-import Comorphisms.THF0_ST2THF0
+import Comorphisms.THFP_P_ST2THFP_P
 import Comorphisms.THFP_P2THFP
 import Comorphisms.HasCASL2THF0_ST
 import Comorphisms.CASL2PCFOL
@@ -155,7 +155,7 @@ comorphismList =
     , Comorphism HasCASL2THF0_ST
     , Comorphism THFP_ST2THF0_ST
     , Comorphism THFP_P2THFP
-    , Comorphism THF0_ST2THF0
+    , Comorphism THFP_P_ST2THFP_P
 #ifdef CASLEXTENSIONS
     , Comorphism CASL2Modal
     , Comorphism CASL2ExtModal
