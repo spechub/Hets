@@ -28,12 +28,13 @@ import THF.Sign
 import THF.Cons
 import THF.Print()
 
-import Common.Id (Token(..))
+import Common.Id (Token(..),nullRange)
 import Common.AS_Annotation (Named,SenAttr(..))
 import Common.Result
 
 import Control.Monad.State
 import Control.Monad.Identity
+import Control.Monad (mapM)
 
 import qualified Data.Map as Map
 
@@ -99,36 +100,39 @@ toToken :: Constant -> Token
 toToken (A_Lower_Word t)    = t
 toToken (A_Single_Quoted t) = t
 
-typeToTopLevelType :: Type -> THFTopLevelType
+typeToTopLevelType :: Type -> Result THFTopLevelType
 typeToTopLevelType t = case t of
- TType -> T0TLT_Defined_Type (DT_tType)
- OType -> T0TLT_Defined_Type (DT_oType)
- IType -> T0TLT_Defined_Type (DT_iType)
- MapType t1 t2 -> T0TLT_THF_Binary_Type (TBT_THF_Mapping_Type
-                   [typeToUnitaryType t1,typeToUnitaryType t2])
- ProdType ts   -> T0TLT_THF_Binary_Type (TBT_THF_Xprod_Type $
-                   map typeToUnitaryType ts)
- CType c       -> T0TLT_Constant c
- SType t'      -> T0TLT_System_Type t'
- VType t'      -> T0TLT_Variable t'
- ParType t'    -> T0TLT_THF_Binary_Type $ T0BT_THF_Binary_Type_Par $
-                   typeToBinaryType t'
+ TType -> return $ T0TLT_Defined_Type (DT_tType)
+ OType -> return $ T0TLT_Defined_Type (DT_oType)
+ IType -> return $ T0TLT_Defined_Type (DT_iType)
+ MapType t1 t2 -> mapM typeToUnitaryType [t1,t2] >>=
+  return . T0TLT_THF_Binary_Type . TBT_THF_Mapping_Type
+ ProdType ts   -> mapM typeToUnitaryType ts >>=
+  return . T0TLT_THF_Binary_Type . TBT_THF_Xprod_Type
+ CType c       -> return $ T0TLT_Constant c
+ SType t'      -> return $ T0TLT_System_Type t'
+ VType t'      -> return $ T0TLT_Variable t'
+ ParType t'    -> typeToBinaryType t' >>=
+  return . T0TLT_THF_Binary_Type . T0BT_THF_Binary_Type_Par
 
-typeToUnitaryType :: Type -> THFUnitaryType
-typeToUnitaryType t = case typeToTopLevelType t of
-                       T0TLT_Constant c        -> T0UT_Constant c
-                       T0TLT_Variable t'       -> T0UT_Variable t'
-                       T0TLT_Defined_Type d    -> T0UT_Defined_Type d
-                       T0TLT_System_Type t'    -> T0UT_System_Type t'
-                       T0TLT_THF_Binary_Type b -> T0UT_THF_Binary_Type_Par b
-                       TTLT_THF_Logic_Formula _ ->
-                        error "Not yet implemented!"
+typeToUnitaryType :: Type -> Result THFUnitaryType
+typeToUnitaryType t = do
+ tl <- typeToTopLevelType t
+ case tl of
+  T0TLT_Constant c        -> return $ T0UT_Constant c
+  T0TLT_Variable t'       -> return $ T0UT_Variable t'
+  T0TLT_Defined_Type d    -> return $ T0UT_Defined_Type d
+  T0TLT_System_Type t'    -> return $ T0UT_System_Type t'
+  T0TLT_THF_Binary_Type b -> return $ T0UT_THF_Binary_Type_Par b
+  TTLT_THF_Logic_Formula _ -> mkError "Not yet implemented!" nullRange
 
-typeToBinaryType :: Type -> THFBinaryType
-typeToBinaryType t = case typeToTopLevelType t of
-                      T0TLT_THF_Binary_Type b -> b
-                      _ -> error $ "Cannot represent type " ++ show t ++
-                                   "as THFBinaryType!"
+typeToBinaryType :: Type -> Result THFBinaryType
+typeToBinaryType t = do
+ tl <- typeToTopLevelType t
+ case tl of
+  T0TLT_THF_Binary_Type b -> return b
+  _ -> mkError ("Cannot represent type " ++ show t ++
+                "as THFBinaryType!") nullRange
 
 data RewriteFuns a = RewriteFuns {
  rewriteLogicFormula :: (RewriteFuns a,a) -> THFLogicFormula

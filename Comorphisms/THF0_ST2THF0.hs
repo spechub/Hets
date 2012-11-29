@@ -130,9 +130,8 @@ rewriteVariableList' (_,tp_trans) vs =
  mapR (\v -> case v of
              TV_THF_Typed_Variable t tp ->
               case thfTopLevelTypeToType tp of
-               Just tp' -> return $
-                TV_THF_Typed_Variable t
-                 (typeToTopLevelType (simplifyType tp_trans tp'))
+               Just tp' -> (typeToTopLevelType (simplifyType tp_trans tp'))
+                >>= return . TV_THF_Typed_Variable t
                Nothing -> mkError ("THFP2THF0.rewriteVariableList: Couldn't " ++
                                    "analyze type " ++ show tp) tp
              TV_Variable t -> return $ TV_Variable t) vs

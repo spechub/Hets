@@ -217,10 +217,11 @@ rewriteVariableList' (_,(tp_trans,cs_trans)) vs = do
               case thfTopLevelTypeToType tp of
                Just tp' -> let cs = constMakeExplicitProduct tp_trans
                                      (A_Lower_Word t) tp'
-                           in return $ map (\(c,tp'') ->
-                               TV_THF_Typed_Variable (toToken c)
+                           in mapM (\(c,tp'') ->
                                  (typeToTopLevelType
-                                  (curryConstType tp_trans tp''))) cs
+                                  (curryConstType tp_trans tp''))
+                                  >>= return . TV_THF_Typed_Variable
+                                       (toToken c)) cs
                Nothing ->
                 mkError ("THFP2THF0.rewriteVariableList: Couldn't " ++
                          "type " ++ show tp) tp
