@@ -16,4 +16,4 @@ thf(test_tuple,type,( test_tuple : c )).
 
 thf(const_b,type,( b : a_1 )).
 
-thf(th,conjecture,( ((pr_2 @ (test_const @ test_tuple)) @ b) = ((pr_2 @ (test_const @ test_tuple)) @ b) )).
+thf(th,conjecture,( (pr_2 @ ((test_const @ test_tuple) @ b)) = (pr_2 @ ((test_const @ test_tuple) @ b)) )).
