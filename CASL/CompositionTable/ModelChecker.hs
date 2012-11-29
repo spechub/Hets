@@ -16,7 +16,9 @@ module CASL.CompositionTable.ModelChecker (modelCheck) where
 
 import CASL.CompositionTable.CompositionTable
 import CASL.CompositionTable.ModelTable
+import CASL.CompositionTable.ModelFormula
 import CASL.AS_Basic_CASL
+import CASL.Fold
 import CASL.Sign
 import CASL.ToDoc
 import CASL.Logic_CASL
@@ -25,8 +27,8 @@ import Logic.Logic
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
-import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
+import Common.Utils
 
 import qualified Data.Set as Set
 import qualified Data.IntSet as IntSet
@@ -39,7 +41,8 @@ modelCheck :: Int -> (Sign () (), [Named (FORMULA ())])
            -> Table -> Result ()
 modelCheck c (sign, sent) t1 = do
   let t = toTable2 t1
-  mapM_ (modelCheckTest c (extractAnnotations (annoMap sign)) sign t) sent
+      sm = Map.fromList $ extractAnnotations (annoMap sign)
+  mapM_ (modelCheckTest c sm sign t) sent
 
 extractAnnotations :: MapSet.MapSet Symbol Annotation -> [(OP_SYMB, String)]
 extractAnnotations m =
@@ -65,10 +68,10 @@ getAnnoAux a = case a of
     Unparsed_anno (Annote_word word) _ _ -> word
     _ -> ""
 
-modelCheckTest :: Int -> [(OP_SYMB, String)] -> Sign () () -> Table2
+modelCheckTest :: Int -> Map.Map OP_SYMB String -> Sign () () -> Table2
   -> Named (FORMULA ()) -> Result ()
 modelCheckTest c symbs sign t x = let
-    (n, d) = modelCheckTest1 c (sign, x) t symbs
+    (n, d) = modelCheckTest1 c (sentence x) t symbs
     fstr = shows (printTheoryFormula (mapNamed (simplify_sen CASL sign) x)) "\n"
       in if null d
       then hint () ("Formula succeeded:\n" ++ fstr) nullRange
@@ -76,23 +79,29 @@ modelCheckTest c symbs sign t x = let
                ++ " counter example" ++ (if n > 1 then "s" else "")
                ++ ":\n" ++ intercalate "\n" d) nullRange
 
-modelCheckTest1 :: Int -> (Sign () (), Named (FORMULA ())) -> Table2
-                -> [(OP_SYMB, String)] -> (Int, [String])
-modelCheckTest1 c (sign, nSen) t symbs = case sentence nSen of
-    Quantification quant decl f _ -> calculateQuantification c sign quant f
-                  t symbs $ generateVariableAssignments decl t
-    f -> if calculateFormula (sign, f) t symbs Map.empty then
+modelCheckTest1 :: Int -> FORMULA () -> Table2 -> Map.Map OP_SYMB String
+  -> (Int, [String])
+modelCheckTest1 c sen t symbs = let
+  vs = number $ Set.toList $ vars sen
+  vm = Map.fromList vs
+  rm = IntMap.fromList $ map (\ (a, b) -> (b, show a)) vs
+  nf = foldFormula (fromCASL symbs vm) sen
+  in case nf of
+    Quant quant decl f -> calculateQuantification c
+        (\ i -> IntMap.findWithDefault "Unknown" i rm)
+        quant f t $ generateVariableAssignments decl t
+    _ -> if calculateFormula nf t IntMap.empty then
        (0, []) else (1, ["formula as given above."])
 
-calculateQuantification :: Int -> Sign () () -> QUANTIFIER -> FORMULA ()
-   -> Table2 -> [(OP_SYMB, String)] -> [Assignment] -> (Int, [String])
-calculateQuantification c sign quant f t@(Table2 _ l _ _ _) symbs vardecls =
+calculateQuantification :: Int -> (Int -> String) -> QUANTIFIER -> Form
+  -> Table2 -> [Assignment] -> (Int, [String])
+calculateQuantification c si quant f t@(Table2 _ l _ _ _) vardecls =
       case foldl' (\ (b0, b1, c0, ds) ass -> case
-        calculateFormula (sign, f) t symbs ass of
+        calculateFormula f t ass of
           res -> let
               nB0 = if res then False else b0
               nB1 = if res then if b1 then False else b0 else b1
-              nD = showAssignments l ass
+              nD = showAssignments si l ass
               (nC0, nDs) = case quant of
                 Universal -> (if res then c0 else c0 + 1,
                   if res || c0 >= c then ds else nD : ds)
@@ -108,61 +117,51 @@ calculateQuantification c sign quant f t@(Table2 _ l _ _ _) symbs vardecls =
            Existential ->
              if b0 then (1, ["Existential not fulfilled"]) else (0, [])
 
-type Assignment = Map.Map VAR Int
+type Assignment = IntMap.IntMap Int
 
-showAssignments :: IntMap.IntMap Baserel -> Map.Map VAR Int -> String
-showAssignments l xs =
-    '[' : intercalate ", " (map (showSingleAssignment l) $ Map.toList xs) ++ "]"
+showAssignments :: (Int -> String) -> IntMap.IntMap Baserel -> Assignment
+  -> String
+showAssignments si l xs =
+    '[' : intercalate ", " (map (showSingleAssignment si l) $ IntMap.toList xs)
+     ++ "]"
 
-showSingleAssignment :: IntMap.IntMap Baserel -> (VAR, Int) -> String
-showSingleAssignment m (v, i) = show v ++ "->" ++ case IntMap.lookup i m of
+showSingleAssignment :: (Int -> String) -> IntMap.IntMap Baserel -> (Int, Int)
+  -> String
+showSingleAssignment si m (v, i) = si v ++ "->" ++ case IntMap.lookup i m of
   Just (Baserel b) -> b
   Nothing -> "*** ERROR ****"
 
-calculateTerm :: (Sign () (), TERM ()) -> Assignment -> Table2
-              -> [(OP_SYMB, String)] -> BSet
-calculateTerm (sign, trm) ass t symbs = case trm of
-    Qual_var var _ _ -> getBaseRelForVariable var ass
-    Application opSymb terms _ ->
-      applyOperation (getIdentifierForSymb opSymb symbs) (sign, terms)
-              t ass symbs
-    Sorted_term term _ _ -> calculateTerm (sign, term) ass t symbs
-    Cast {} -> error "CASL.CompositionTable.ModelChecker.calculateTerm"
-    Conditional t1 fo t2 _ ->
-              let res = calculateFormula (sign, fo) t symbs ass
-              in if res then calculateTerm (sign, t1) ass t symbs
-                 else calculateTerm (sign, t2) ass t symbs
-    _ -> IntSet.empty
+calculateTerm :: Term -> Assignment -> Table2 -> BSet
+calculateTerm trm ass t = case trm of
+    Var var -> getBaseRelForVariable var ass
+    Appl opSymb terms -> applyOperation opSymb terms t ass
+    Cond t1 fo t2 ->
+              let res = calculateFormula fo t ass
+              in if res then calculateTerm t1 ass t
+                 else calculateTerm t2 ass t
 
-getIdentifierForSymb :: OP_SYMB -> [(OP_SYMB, String)] -> String
-getIdentifierForSymb symb = concatMap (getIdentifierForSymbAtomar symb)
-
-getIdentifierForSymbAtomar :: OP_SYMB -> (OP_SYMB, String) -> String
-getIdentifierForSymbAtomar symb (symb2, s) = if symb == symb2 then s else ""
-
-applyOperation :: String -> (Sign () (), [TERM ()]) -> Table2
-               -> Assignment -> [(OP_SYMB, String)] -> BSet
-applyOperation ra (sign, ts) table@(Table2 id_ _ baserels cmpentries convtbl)
-  ass symbs = case ts of
-    ft : rt -> let r1 = calculateTerm (sign, ft) ass table symbs
+applyOperation :: Op -> [Term] -> Table2 -> Assignment -> BSet
+applyOperation ra ts table@(Table2 id_ _ baserels cmpentries convtbl) ass =
+  case ts of
+    ft : rt -> let r1 = calculateTerm ft ass table
       in case rt of
          sd : _
-           -> let r2 = calculateTerm (sign, sd) ass table symbs
+           -> let r2 = calculateTerm sd ass table
             in case ra of
-               "RA_composition" -> calculateComposition cmpentries r1 r2
-               "RA_intersection" -> IntSet.intersection r1 r2
-               "RA_union" -> IntSet.union r1 r2
+               Comp -> calculateComposition cmpentries r1 r2
+               Inter -> IntSet.intersection r1 r2
+               Union -> IntSet.union r1 r2
                _ -> IntSet.empty
          _ -> let (conv, inv, shortc, hom) = convtbl in case ra of
-           "RA_complement" -> IntSet.difference baserels r1
-           "RA_converse" -> calculateConverse conv r1
-           "RA_shortcut" -> calculateConverse shortc r1
-           "RA_inverse" -> calculateConverse inv r1
-           "RA_homing" -> calculateConverse hom r1
+           Compl -> IntSet.difference baserels r1
+           Conv -> calculateConverse conv r1
+           Shortcut -> calculateConverse shortc r1
+           Inv -> calculateConverse inv r1
+           Home -> calculateConverse hom r1
            _ -> IntSet.empty
     _ -> case ra of
-      "RA_one" -> baserels
-      "RA_identity" -> IntSet.singleton id_
+      One -> baserels
+      Iden -> IntSet.singleton id_
       _ -> IntSet.empty
 
 intSetFold :: (Int -> b -> b) -> b -> IntSet.IntSet -> b
@@ -187,48 +186,39 @@ calculateConverse t =
     IntSet.unions . map (\ i -> IntMap.findWithDefault IntSet.empty i t)
     . IntSet.toList
 
-getBaseRelForVariable :: VAR -> Assignment -> BSet
-getBaseRelForVariable var = maybe IntSet.empty IntSet.singleton . Map.lookup var
+getBaseRelForVariable :: Int -> Assignment -> BSet
+getBaseRelForVariable var =
+  maybe IntSet.empty IntSet.singleton . IntMap.lookup var
 
-calculateFormula :: (Sign () (), FORMULA ()) -> Table2
-                 -> [(OP_SYMB, String)] -> Assignment -> Bool
-calculateFormula (sign, qf) t symbs varass = case qf of
-    Quantification q vardecls f _ ->
-       calculateQuantification 1 sign q f t symbs
+calculateFormula :: Form -> Table2 -> Assignment -> Bool
+calculateFormula qf t varass = case qf of
+    Quant q vardecls f ->
+       calculateQuantification 1 show q f t
          (appendVariableAssignments varass vardecls t) == (0, [])
-    Junction j formulas _ -> (if j == Con then and else or)
-        [calculateFormula (sign, x) t symbs varass | x <- formulas]
-    Relation f1 rel f2 _ ->
-                 let test1 = calculateFormula (sign, f1) t symbs varass
-                     test2 = calculateFormula (sign, f2) t symbs varass
-                 in rel == Equivalence && test1 == test2
+    Junct j formulas -> (if j then and else or)
+        [calculateFormula x t varass | x <- formulas]
+    Impl isImpl f1 f2 ->
+                 let test1 = calculateFormula f1 t varass
+                     test2 = calculateFormula f2 t varass
+                 in not isImpl && test1 == test2
                     || not (test1 && not test2)
-    Negation f _ -> not (calculateFormula (sign, f) t symbs varass)
-    Atom b _ -> b
-    Equation term1 Strong term2 _ ->
-      calculateTerm (sign, term1) varass t symbs
-      == calculateTerm (sign, term2) varass t symbs
-    _ -> error $ "CASL.CompositionTable.ModelChecker.calculateFormula "
-         ++ showDoc qf ""
+    Neg f -> not $ calculateFormula f t varass
+    Const b -> b
+    Eq term1 term2 ->
+      calculateTerm term1 varass t
+      == calculateTerm term2 varass t
 
-generateVariableAssignments :: [VAR_DECL] -> Table2 -> [Assignment]
-generateVariableAssignments vardecls =
-  let vs = Set.fromList $ getVars vardecls in
+generateVariableAssignments :: [Int] -> Table2 -> [Assignment]
+generateVariableAssignments vs =
   gVAs vs . IntSet.toList . getBaseRelations
 
-gVAs :: Set.Set VAR -> [Int] -> [Assignment]
-gVAs vs brs = Set.fold (\ v rs -> [Map.insert v b r | b <- brs, r <- rs])
-  [Map.empty] vs
-
-getVars :: [VAR_DECL] -> [VAR]
-getVars = concatMap getVarsAtomic
-
-getVarsAtomic :: VAR_DECL -> [VAR]
-getVarsAtomic (Var_decl vars _ _) = vars
+gVAs :: [Int] -> [Int] -> [Assignment]
+gVAs vs brs = foldr (\ v rs -> [IntMap.insert v b r | b <- brs, r <- rs])
+  [IntMap.empty] vs
 
 getBaseRelations :: Table2 -> BSet
 getBaseRelations (Table2 _ _ br _ _) = br
 
-appendVariableAssignments :: Assignment -> [VAR_DECL] -> Table2 -> [Assignment]
-appendVariableAssignments vars decls t =
-     map (Map.union vars) (generateVariableAssignments decls t)
+appendVariableAssignments :: Assignment -> [Int] -> Table2 -> [Assignment]
+appendVariableAssignments vm decls t =
+     map (IntMap.union vm) (generateVariableAssignments decls t)
