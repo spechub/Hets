@@ -28,6 +28,8 @@ import qualified Data.Map (Map, lookup, insert, empty,
                            mapWithKey)
 import qualified Data.List (mapAccumL, elemIndex)
 
+data Constraint = NormalC Type | WeakC Type deriving Show
+
 occursType :: Token -> Type -> Bool
 occursType t tp = case tp of
  MapType tp1 tp2 ->
@@ -38,48 +40,61 @@ occursType t tp = case tp of
  ParType tp2 -> occursType t tp2
  _ -> False
 
-unifyType :: Type -> Type -> Result [(Token, Type)]
-unifyType tp1 tp2 = case (tp1, tp2) of
-    (ParType tp1', _) ->
-     unifyType tp1' tp2
-    (_, ParType tp2') ->
-     unifyType tp1 tp2'
-    (VType t1, VType t2) -> return $
-     if t1 == t2 then [] else [(t1, tp2)]
-    (VType t1, _) -> if occursType t1 tp2
-     then mkError "Occurs check failed!" t1
-     else return [(t1, tp2)]
-    (_, VType t2) -> if occursType t2 tp1
-     then mkError "Occurs check failed!" t2
-     else return [(t2, tp1)]
-    (MapType tp1_1 tp1_2,
-     MapType tp2_1 tp2_2) -> do
-     u1 <- unifyType tp1_1 tp2_1
-     u2 <- unifyType tp1_2 tp2_2
-     return $ u1 ++ u2
-    (MapType _ _, _) ->
-     mkError ("Different type constructor!" ++
-      show (tp1, tp2)) nullRange
-    (_, MapType _ _) ->
-     mkError ("Different type constructor!" ++
-      show (tp1, tp2)) nullRange
-    (ProdType tps1, ProdType tps2) ->
-     if length tps1 == length tps2 then
-      liftM concat $
-       mapR (uncurry unifyType) (zip tps1 tps2)
-     else mkError "Products of different size!" nullRange
-    (ProdType _, _) ->
-     mkError ("Different type constructor!" ++
-      show (tp1, tp2)) nullRange
-    (CType c1,CType c2) -> if c1 == c2
-     then return [] else mkError ("Cannot unify different kinds "
-      ++ show c1 ++ show c2) nullRange
-    (CType _,_) -> mkError "Unification not possible!" nullRange
-    (_,CType _) -> mkError "Unification not possible!" nullRange
-    (_, ProdType _) ->
-     mkError ("Different type constructor!" ++
-      show (tp1, tp2)) nullRange
-    _ -> return []
+constraintToType :: Constraint -> (Bool,Type)
+constraintToType (WeakC t) = (True,t)
+constraintToType (NormalC t) = (False,t)
+
+toConstraint :: Bool -> Type -> Constraint
+toConstraint weak = if weak then WeakC
+                    else NormalC
+
+unifyType :: Type -> Constraint -> Result [(Token, Type)]
+unifyType tp1 tp2_ = 
+ let (weak,tp2) = constraintToType tp2_
+     c = toConstraint weak
+ in case (tp1, tp2) of
+     (ParType tp1', _) ->
+      unifyType tp1' (c tp2)
+     (_, ParType tp2') ->
+      unifyType tp1 (c tp2')
+     (VType t1, VType t2) -> return $
+      if t1 == t2 then [] else [(t1, tp2)]
+     (VType t1, _) -> if occursType t1 tp2
+      then mkError "Occurs check failed!" t1
+      else return [(t1, tp2)]
+     (_, VType t2) -> if occursType t2 tp1
+      then mkError "Occurs check failed!" t2
+      else return [(t2, tp1)]
+     (MapType tp1_1 tp1_2,
+      MapType tp2_1 tp2_2) -> do
+      u1 <- unifyType tp1_1 (c tp2_1)
+      u2 <- unifyType tp1_2 (c tp2_2)
+      return $ u1 ++ u2
+     (MapType _ _, _) ->
+      mkError ("Different type constructor!" ++
+       show (tp1, tp2)) nullRange
+     (_, MapType _ _) ->
+      mkError ("Different type constructor!" ++
+       show (tp1, tp2)) nullRange
+     (ProdType tps1, ProdType tps2) ->
+      if length tps1 == length tps2 ||
+         weak  then
+       liftM concat $
+        mapR (\(tp1',tp2') -> unifyType tp1' (c tp2'))
+         (zip tps1 tps2)
+      else mkError "Products of different size!" nullRange
+     (ProdType _, _) ->
+      mkError ("Different type constructor!" ++
+       show (tp1, tp2)) nullRange
+     (CType c1,CType c2) -> if c1 == c2
+      then return [] else mkError ("Cannot unify different kinds "
+       ++ show c1 ++ show c2) nullRange
+     (CType _,_) -> mkError "Unification not possible!" nullRange
+     (_,CType _) -> mkError "Unification not possible!" nullRange
+     (_, ProdType _) ->
+      mkError ("Different type constructor!" ++
+       show (tp1, tp2)) nullRange
+     _ -> return []
 
 applyType :: [(Token, Type)] -> Token -> Maybe Type
 applyType us t = case us of
@@ -98,20 +113,21 @@ apply us t = case t of
   Nothing -> t
  _ -> t
 
-unify' :: [(Type, Type)] -> Result [(Token, Type)]
+unify' :: [(Type, Constraint)] -> Result [(Token, Type)]
 unify' ts = case ts of
  [] -> return []
  (t1, t2) : ts' -> do
   r1 <- unify' ts'
   let t1' = apply r1 t1
-  let t2' = apply r1 t2
-  r2 <- unifyType t1' t2'
+  let (weak,t2'') = constraintToType t2
+  let t2' = apply r1 t2''
+  r2 <- unifyType t1' (toConstraint weak t2')
   return (r1 ++ r2)
 
 tmpV :: Token
 tmpV = mkSimpleId "tmpV"
 
-type Constraints = UniqueT Maybe (Type, [(Type, Type)])
+type Constraints = UniqueT Maybe (Type, [(Type, Constraint)])
 
 getTypeC :: ConstMap -> THFFormula -> Constraints
 getTypeC cm f = case f of
@@ -133,12 +149,12 @@ getTypeCBF cm bf = case bf of
    (t1, cs1) <- getTypeCUF cm uf1
    (t2, cs2) <- getTypeCUF cm uf2
    return (OType,
-    cs1 ++ cs2 ++ [(t1, t2)])
+    cs1 ++ cs2 ++ [(t1, NormalC t2)])
   else do
    (t1, cs1) <- getTypeCUF cm uf1
    (t2, cs2) <- getTypeCUF cm uf2
    return (OType,
-    cs1 ++ cs2 ++ [(t1, OType), (t2, OType)])
+    cs1 ++ cs2 ++ [(t1, NormalC OType), (t2, NormalC OType)])
  TBF_THF_Binary_Tuple bt ->
   let ufs = case bt of
        TBT_THF_Or_Formula ufs' -> ufs'
@@ -162,15 +178,15 @@ getTypeCBF cm bf = case bf of
                will determine the type variable -}
          t <- applyResult (length ufs'') t1
          return (t, cs1 ++ concat cs2
-          ++ [(t1, genFn $ tps ++ [t])])
+          ++ [(t1, WeakC $ genFn $ tps ++ [t])])
       _ -> do
        ufs' <- mapM (getTypeCUF cm) ufs
        case ufs' of
         [] -> lift Nothing
-        (t,cs) : [] -> return (t,cs++[(t,OType)])
+        (t,cs) : [] -> return (t,cs++[(t,NormalC OType)])
         _ -> do
          let (ts,cs) = unzip ufs'
-         return (OType,concat cs ++ map (\t -> (t,OType)) ts)
+         return (OType,concat cs ++ map (\t -> (t,NormalC OType)) ts)
  _ -> lift Nothing
 
 applyResult :: Int -> Type -> UniqueT Maybe Type
@@ -197,7 +213,7 @@ getTypeCUF cm uf = case uf of
             v' <- numberedTok tmpV
             return $ ins t (VType v') cm') cm vs
          (t, cs) <- getTypeCUF cm' uf'
-         return (t, cs ++ [(t, OType)])
+         return (t, cs ++ [(t, NormalC OType)])
         c = A_Single_Quoted
         ins t tp = Data.Map.insert (c t)
           ConstInfo {
@@ -207,14 +223,19 @@ getTypeCUF cm uf = case uf of
             constAnno = Null}
  TUF_THF_Unary_Formula _ lf -> do
   (lf', cs) <- getTypeCLF cm lf
-  return (lf', cs ++ [(lf', OType)])
+  return (lf', cs ++ [(lf', NormalC OType)])
  TUF_THF_Atom a -> case a of
   TA_THF_Conn_Term _ -> lift Nothing
   T0A_Constant c -> case Data.Map.lookup c cm of
    Just ti -> return (constType ti, [])
-   Nothing -> do
-    v <- numberedTok tmpV
-    return (VType v, [])
+   Nothing -> case (show $ toToken c) of
+     'p':'r':'_':i' -> do
+      let i = (read i')  :: Int
+      vs <- replicateM i $ liftM VType $ numberedTok tmpV
+      return (MapType (ProdType vs) $ last vs,[])
+     _ -> do 
+      v <- numberedTok tmpV
+      return (VType v, [])
   -- fixme - add types for internal constants
   T0A_Defined_Constant _ -> lift Nothing
   T0A_System_Constant _ -> lift Nothing
@@ -307,7 +328,7 @@ infer cm fs =
  let constraints' = mapM (evalUniqueT . getTypeC cm
       . sentence) fs
      constraints =
-      liftM (map (\ (t, cs) -> (OType, t) : cs)) constraints'
+      liftM (map (\ (t, cs) -> (OType, NormalC t) : cs)) constraints'
      unifications =
       liftM (map unify') constraints
  in case unifications of
