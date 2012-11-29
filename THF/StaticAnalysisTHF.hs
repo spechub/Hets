@@ -383,45 +383,54 @@ thfUnitaryTypeToType ut = case ut of
 
 isType :: THFFormula -> Bool
 isType tf = case tf of
-    T0F_THF_Typed_Const tc  -> thfTypedConstIsType tc
+    T0F_THF_Typed_Const tc  ->
+     let (has_ttype,isTp) = thfTypedConstIsType tc
+     in has_ttype && isTp
     _                       -> False
 
-thfTypedConstIsType :: THFTypedConst -> Bool
+thfTypedConstIsType :: THFTypedConst -> (Bool,Bool)
 thfTypedConstIsType tc = case tc of
     T0TC_THF_TypedConst_Par tcp -> thfTypedConstIsType tcp
     T0TC_Typed_Const _ tlt      -> thfTopLevelTypeIsType tlt
 
-thfTopLevelTypeIsType :: THFTopLevelType -> Bool
+thfTopLevelTypeIsType :: THFTopLevelType -> (Bool,Bool)
 thfTopLevelTypeIsType tlt = case tlt of
     T0TLT_Defined_Type dt       -> thfDefinedTypeIsType dt
     T0TLT_THF_Binary_Type bt    -> thfBinaryTypeIsType bt
-    T0TLT_System_Type _         -> True
-    _                           -> False
+    T0TLT_System_Type _         -> (False,True)
+    T0TLT_Variable _            -> (False,True)
+    _                           -> (False,False)
 
-thfDefinedTypeIsType :: DefinedType -> Bool
+thfDefinedTypeIsType :: DefinedType -> (Bool,Bool)
 thfDefinedTypeIsType dt = case dt of
-    DT_tType    -> True
-    _           -> False
+    DT_tType    -> (True,True)
+    _           -> (False,False)
 
-thfBinaryTypeIsType :: THFBinaryType -> Bool
+thfBinaryTypeIsType :: THFBinaryType -> (Bool,Bool)
 thfBinaryTypeIsType bt = case bt of
-    TBT_THF_Mapping_Type []         -> False
-    TBT_THF_Mapping_Type (_ : [])   -> False
+    TBT_THF_Mapping_Type []         -> (False,False)
+    TBT_THF_Mapping_Type (_ : [])   -> (False,False)
     TBT_THF_Mapping_Type mt         -> thfMappingTypeIsType mt
-    TBT_THF_Xprod_Type []           -> False
-    TBT_THF_Xprod_Type us           -> and $ map thfUnitaryTypeIsType us
+    TBT_THF_Xprod_Type []           -> (False,False)
+    TBT_THF_Xprod_Type us           -> 
+     let (has_ttype,isTp) = unzip $ map thfUnitaryTypeIsType us
+     in (or has_ttype,and isTp)
     T0BT_THF_Binary_Type_Par btp    -> thfBinaryTypeIsType btp
-    _                               -> False
+    _                               -> (False,False)
 
-thfMappingTypeIsType :: [THFUnitaryType] -> Bool
+thfMappingTypeIsType :: [THFUnitaryType] -> (Bool,Bool)
 thfMappingTypeIsType mt = case mt of
-    []          -> False
+    []          -> (False,False)
     (u : [])    -> thfUnitaryTypeIsType u
-    (u : ru)    -> thfUnitaryTypeIsType u && thfMappingTypeIsType ru
+    (u : ru)    -> 
+     let (has_ttype1,isTp1) = thfUnitaryTypeIsType u 
+         (has_ttype2,isTp2) = thfMappingTypeIsType ru
+     in (has_ttype1 || has_ttype2, isTp1 && isTp2)
 
-thfUnitaryTypeIsType :: THFUnitaryType -> Bool
+thfUnitaryTypeIsType :: THFUnitaryType -> (Bool,Bool)
 thfUnitaryTypeIsType ut = case ut of
     T0UT_Defined_Type dt        -> thfDefinedTypeIsType dt
     T0UT_THF_Binary_Type_Par bt -> thfBinaryTypeIsType bt
-    T0UT_System_Type _          -> True
-    _                           -> False
+    T0UT_System_Type _          -> (False,True)
+    T0UT_Variable _             -> (False,True)
+    _                           -> (False,False)
