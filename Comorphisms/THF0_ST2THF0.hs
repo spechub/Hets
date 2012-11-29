@@ -86,7 +86,7 @@ insertType c k =
 rewriteKind :: Constant -> TypeMap -> Kind -> Unique (Type,TypeMap)
 rewriteKind c tp_map k = case k of
  Kind -> do
-  c' <- numbered c
+  c' <- Unique $ numbered c
   return (CType c',insertType c' Kind tp_map)
  MapKind k1 k2 -> do
   (t1,tp_map')   <- rewriteKind c tp_map k1

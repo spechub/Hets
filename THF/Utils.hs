@@ -11,10 +11,15 @@ Portability :  non-portable
 
 -}
 module THF.Utils (
- Unique,
+ Unique(..),
+ UniqueT,
+ fresh,
+ evalUniqueT,
  evalUnique,
  numbered,
+ numberedTok,
  mkNames,
+ addSuffix,
  recreateSymbols,
  typeToTopLevelType,
  typeToUnitaryType,
@@ -76,10 +81,14 @@ addSuffixN s n = case n of
  where rename = \sf t -> N_Atomic_Word $ addSuffix sf
                          (A_Lower_Word $ t { tokStr = "i"++show t })
 
-numbered :: AtomicWord -> Unique AtomicWord
+numbered :: Monad m => AtomicWord -> UniqueT m AtomicWord
 numbered a = do
  f <- fresh
  return (addSuffix ("_"++show f) a)
+
+numberedTok :: Monad m => Token -> UniqueT m Token
+numberedTok t = (numbered . A_Single_Quoted) t
+ >>= return . toToken
 
 mkNames :: Constant -> Name -> Int -> [(Constant,Name)]
 mkNames c n i = evalUnique $ replicateM i $ do
@@ -289,7 +298,11 @@ rewriteAtom' (fns,d) a = case a of
  T0A_Constant c -> (rewriteConst fns) (fns,d) c
  T0A_Defined_Constant _ -> return $ TUF_THF_Atom a
  T0A_System_Constant _ -> return $ TUF_THF_Atom a
- T0A_Variable _ -> return $ TUF_THF_Atom a
+ T0A_Variable v -> do
+  v' <- (rewriteVariableList fns) (fns,d) [TV_Variable v]
+  case v' of
+   (TV_Variable t):_ -> return $ TUF_THF_Atom $ T0A_Variable t
+   _ -> mkError "THF.Utils.rewriteAtom: Invalid rewrite!" v
 
 rewriteConst' :: (RewriteFuns a, a) -> Constant -> Result THFUnitaryFormula
 rewriteConst' _ = return . TUF_THF_Atom . T0A_Constant

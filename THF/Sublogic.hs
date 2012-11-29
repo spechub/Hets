@@ -21,7 +21,8 @@ data THFCoreSl = THF | THFP | THF0 deriving (Ord,Show,Eq)
 
 data THFSl = THFSl {
  core :: THFCoreSl,
- ext_ShortTypes :: Bool } deriving (Ord,Eq)
+ ext_ShortTypes :: Bool,
+ ext_Poly :: Bool } deriving (Ord,Eq)
 
 {-
 The ShortTypes extension allows for unnamed unique types:
@@ -52,7 +53,10 @@ atomic types i.e.
 instance Show THFSl where
  show sl = (show $ core sl) ++
            (if ext_ShortTypes sl
-            then "_ST" else "")
+            then "_ST" else "") ++
+           (if ext_Poly sl then
+            "_P" else "")
+
 
 joinCoreSl :: THFCoreSl -> THFCoreSl -> THFCoreSl
 joinCoreSl THF _ = THF
@@ -65,21 +69,36 @@ join :: THFSl -> THFSl -> THFSl
 join sl1 sl2 = THFSl {
  core = joinCoreSl (core sl1) (core sl2),
  ext_ShortTypes = (ext_ShortTypes sl1) ||
-                  (ext_ShortTypes sl2) }
+                  (ext_ShortTypes sl2),
+ ext_Poly = (ext_Poly sl1) || (ext_Poly sl2) }
+
 tHF0,tHFP,tHF :: THFSl
-tHF0 = THFSl { core = THF0, ext_ShortTypes = False }
-tHFP = THFSl { core = THFP, ext_ShortTypes = False }
-tHF  = THFSl { core = THF , ext_ShortTypes = False }
+tHF0 = THFSl { core = THF0, ext_ShortTypes = False,
+               ext_Poly = False }
+tHFP = THFSl { core = THFP, ext_ShortTypes = False,
+               ext_Poly = False }
+tHF  = THFSl { core = THF , ext_ShortTypes = False,
+               ext_Poly = False }
 
 tHF0_ST,tHFP_ST,tHF_ST :: THFSl
 tHF0_ST = tHF0 { ext_ShortTypes = True }
 tHFP_ST = tHFP { ext_ShortTypes = True }
 tHF_ST  = tHF  { ext_ShortTypes = True }
 
+tHF0_P,tHFP_P,tHF_P :: THFSl
+tHF0_P = tHF0 { ext_Poly = True }
+tHFP_P = tHFP { ext_Poly = True }
+tHF_P  = tHF  { ext_Poly = True }
+
+tHF0_P_ST,tHFP_P_ST,tHF_P_ST :: THFSl
+tHF0_P_ST = tHF0_P { ext_ShortTypes = True }
+tHFP_P_ST = tHFP_P { ext_ShortTypes = True }
+tHF_P_ST  = tHF_P  { ext_ShortTypes = True }
+
 sublogics_all :: [THFSl]
-sublogics_all = [tHF0, tHF0_ST,
-                 tHFP, tHFP_ST,
-                 tHF, tHF_ST]
+sublogics_all = [tHF0, tHF0_ST, tHF0_P, tHF0_P_ST,
+                 tHFP, tHFP_ST, tHFP_P, tHFP_P_ST,
+                 tHF, tHF_ST, tHF_P, tHF_P_ST]
 
 instance MinSublogic THFSl THFFormula where
  minSublogic f = case f of
@@ -207,7 +226,7 @@ instance MinSublogic THFSl THFAtom where
    T0A_Constant _ -> tHF0
    T0A_Defined_Constant _ -> tHF0
    T0A_System_Constant _ -> tHF0
-   T0A_Variable _ -> tHF0
+   T0A_Variable _ -> tHF0_P
  -- fixme: how do these in THF0 differ from THF?
 
 instance MinSublogic THFSl THFVariable where
@@ -229,7 +248,7 @@ instance MinSublogic THFSl THFTopLevelType where
    TTLT_THF_Logic_Formula f -> join tHF $ minSublogic f
    --fixme: maybe we need to check for ShortTypes extension?
    T0TLT_Constant _ -> tHF0
-   T0TLT_Variable _ -> tHF0
+   T0TLT_Variable _ -> tHF0_P
    T0TLT_Defined_Type df -> join tHF0 $ minSublogic df
    T0TLT_System_Type _ -> tHF0
    T0TLT_THF_Binary_Type bt -> join tHF0 $ minSublogic bt
