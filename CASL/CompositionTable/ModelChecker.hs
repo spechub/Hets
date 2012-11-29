@@ -144,27 +144,29 @@ calculateTerm trm ass t = case trm of
 
 applyOperation :: Op -> [Term] -> Table2 -> Assignment -> BSet
 applyOperation ra ts table@(Table2 id_ _ baserels cmpentries convtbl) ass =
-  case ts of
+  let err = error "CompositionTable.applyOperator"
+  in case ts of
     ft : rt -> let r1 = calculateTerm ft ass table
       in case rt of
-         sd : _
-           -> let r2 = calculateTerm sd ass table
+         [sd] -> let r2 = calculateTerm sd ass table
             in case ra of
                Comp -> calculateComposition cmpentries r1 r2
                Inter -> IntSet.intersection r1 r2
                Union -> IntSet.union r1 r2
-               _ -> IntSet.empty
-         _ -> let (conv, inv, shortc, hom) = convtbl in case ra of
+               _ -> err
+         [] -> let (conv, inv, shortc, hom) = convtbl in case ra of
            Compl -> IntSet.difference baserels r1
            Conv -> calculateConverse conv r1
            Shortcut -> calculateConverse shortc r1
            Inv -> calculateConverse inv r1
            Home -> calculateConverse hom r1
-           _ -> IntSet.empty
-    _ -> case ra of
+           _ -> err
+         _ -> err
+    [] -> case ra of
       One -> baserels
       Iden -> IntSet.singleton id_
-      _ -> IntSet.empty
+      Zero -> IntSet.empty
+      _ -> err
 
 intSetFold :: (Int -> b -> b) -> b -> IntSet.IntSet -> b
 intSetFold =
