@@ -221,4 +221,4 @@ getBaseRelations (Table2 _ _ br _ _) = br
 
 appendVariableAssignments :: Assignment -> [Int] -> Table2 -> [Assignment]
 appendVariableAssignments vm decls t =
-     map (IntMap.union vm) (generateVariableAssignments decls t)
+     map (`IntMap.union` vm) (generateVariableAssignments decls t)
