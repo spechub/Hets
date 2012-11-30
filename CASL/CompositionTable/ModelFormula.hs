@@ -48,7 +48,7 @@ vars = foldFormula (constRecord (const Set.empty) Set.unions Set.empty)
     }
 
 lkup :: Map.Map VAR Int -> VAR -> Int
-lkup = flip $ Map.findWithDefault 0
+lkup = flip $ Map.findWithDefault (error "CompositionTable.lkup")
 
 getOp :: String -> Op
 getOp s = let err = error "CompositionTable.getOp" in

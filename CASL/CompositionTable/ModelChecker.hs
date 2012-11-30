@@ -79,6 +79,9 @@ modelCheckTest c symbs sign t x = let
                ++ " counter example" ++ (if n > 1 then "s" else "")
                ++ ":\n" ++ intercalate "\n" d) nullRange
 
+ifind :: Int -> IntMap.IntMap a -> a
+ifind = IntMap.findWithDefault (error "CompositionTable.ifind")
+
 modelCheckTest1 :: Int -> FORMULA () -> Table2 -> Map.Map OP_SYMB String
   -> (Int, [String])
 modelCheckTest1 c sen t symbs = let
@@ -87,34 +90,36 @@ modelCheckTest1 c sen t symbs = let
   rm = IntMap.fromList $ map (\ (a, b) -> (b, show a)) vs
   nf = foldFormula (fromCASL symbs vm) sen
   in case nf of
-    Quant quant decl f -> calculateQuantification c
-        (\ i -> IntMap.findWithDefault "Unknown" i rm)
+    Quant quant decl f -> calculateQuantification (Just c) (`ifind` rm)
         quant f t $ generateVariableAssignments decl t
     _ -> if calculateFormula nf t IntMap.empty then
        (0, []) else (1, ["formula as given above."])
 
-calculateQuantification :: Int -> (Int -> String) -> QUANTIFIER -> Form
+calculateQuantification :: Maybe Int -> (Int -> String) -> QUANTIFIER -> Form
   -> Table2 -> [Assignment] -> (Int, [String])
-calculateQuantification c si quant f t@(Table2 _ l _ _ _) vs =
+calculateQuantification mc si quant f t@(Table2 _ l _ _ _) vs =
       let calc = calculateFormula f t
           nD = showAssignments si l
-          fall (c0, ds) ass = let
-            res = calc ass
-            nC0 = if res then c0 else c0 + 1
-            nDs = if res || nC0 > c then ds else nD ass : ds
-            in seq nDs (nC0, nDs)
-          fex p@(_, ds) ass = let
-            res = calc ass
-            (nC0, nDs) = if null ds || res then (0, []) else p
-            in seq nDs (nC0, nDs)
-          funi ds ass = case ds of
-            _ : _ : _ -> ds
-            _ | calc ass -> nD ass : ds
-            _ -> ds
       in case quant of
-           Universal -> foldl' fall (0, []) vs
-           Existential -> foldl' fex (1, ["Existential not fulfilled"]) vs
-           Unique_existential -> case foldl' funi [] vs of
+           Universal -> case mc of
+             Just c -> let
+               fall (c0, ds) ass = let
+                 res = calc ass
+                 nC0 = if res then c0 else c0 + 1
+                 nDs = if res || nC0 > c then ds else nD ass : ds
+                 in seq nDs (nC0, nDs)
+               in foldl' fall (0, []) vs
+             Nothing -> foldr (\ ass p@(_, ds) ->
+               if null ds then if calc ass then p else (1, [nD ass]) else p)
+               (0, []) vs
+           Existential -> if any calc vs then (0, []) else
+               (1, ["Existential not fulfilled"])
+           Unique_existential -> let
+               funi ass ds = case ds of
+                 _ : _ : _ -> ds
+                 _ | calc ass -> nD ass : ds
+                 _ -> ds
+             in case foldr funi [] vs of
              [] -> (1, ["Unique Existential not fulfilled"])
              [_] -> (0, [])
              ds -> (1, ds)
@@ -129,9 +134,8 @@ showAssignments si l xs =
 
 showSingleAssignment :: (Int -> String) -> IntMap.IntMap Baserel -> (Int, Int)
   -> String
-showSingleAssignment si m (v, i) = si v ++ "->" ++ case IntMap.lookup i m of
-  Just (Baserel b) -> b
-  Nothing -> "*** ERROR ****"
+showSingleAssignment si m (v, i) = si v ++ "->" ++ case ifind i m of
+  Baserel b -> b
 
 calculateTerm :: Term -> Assignment -> Table2 -> BSet
 calculateTerm trm ass t = case trm of
@@ -148,19 +152,20 @@ applyOperation ra ts table@(Table2 id_ _ baserels cmpentries convtbl) ass =
   in case ts of
     ft : rt -> let r1 = calculateTerm ft ass table
       in case rt of
-         [sd] -> let r2 = calculateTerm sd ass table
-            in case ra of
-               Comp -> calculateComposition cmpentries r1 r2
-               Inter -> IntSet.intersection r1 r2
-               Union -> IntSet.union r1 r2
+         [sd] -> case ra of
+               Comp -> calculateComposition cmpentries r1
+               Inter -> IntSet.intersection r1
+               Union -> IntSet.union r1
                _ -> err
+             $ calculateTerm sd ass table
          [] -> let (conv, inv, shortc, hom) = convtbl in case ra of
-           Compl -> IntSet.difference baserels r1
-           Conv -> calculateConverse conv r1
-           Shortcut -> calculateConverse shortc r1
-           Inv -> calculateConverse inv r1
-           Home -> calculateConverse hom r1
-           _ -> err
+             Compl -> IntSet.difference baserels
+             Conv -> calculateConverse conv
+             Shortcut -> calculateConverse shortc
+             Inv -> calculateConverse inv
+             Home -> calculateConverse hom
+             _ -> err
+           $ r1
          _ -> err
     [] -> case ra of
       One -> baserels
@@ -178,26 +183,25 @@ intSetFold =
 
 calculateComposition :: CmpTbl -> BSet -> BSet -> BSet
 calculateComposition entries rels1 rels2 = intSetFold
-  (\ s1 t -> case IntMap.findWithDefault IntMap.empty s1 entries of
+  (\ s1 t -> case ifind s1 entries of
       m1 -> intSetFold
-         (\ s2 -> case IntMap.findWithDefault IntSet.empty s2 m1 of
+         (\ s2 -> case ifind s2 m1 of
             m2 -> IntSet.union m2)
          t rels2)
   IntSet.empty rels1
 
 calculateConverse :: ConTable -> BSet -> BSet
 calculateConverse t =
-    IntSet.unions . map (\ i -> IntMap.findWithDefault IntSet.empty i t)
+    IntSet.unions . map (`ifind` t)
     . IntSet.toList
 
 getBaseRelForVariable :: Int -> Assignment -> BSet
-getBaseRelForVariable var =
-  maybe IntSet.empty IntSet.singleton . IntMap.lookup var
+getBaseRelForVariable var = IntSet.singleton . ifind var
 
 calculateFormula :: Form -> Table2 -> Assignment -> Bool
 calculateFormula qf t varass = case qf of
     Quant q vardecls f ->
-       null . snd . calculateQuantification 1 show q f t
+       null . snd . calculateQuantification Nothing show q f t
          $ appendVariableAssignments varass vardecls t
     Junct j formulas -> (if j then and else or)
         [calculateFormula x t varass | x <- formulas]
