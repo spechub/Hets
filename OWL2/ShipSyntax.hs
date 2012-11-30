@@ -28,8 +28,7 @@ data Concept
   = CName String
   | NominalC String
   | NotC Concept
-  | JoinedC JunctionType [Concept]
-  | DisjointC Concept Concept
+  | JoinedC (Maybe JunctionType) [Concept] -- Nothing denotes disjoint union
   | Quant (Either QuantifierType (CardinalityType, Int)) Role Concept
   deriving (Show, Eq, Ord)
 
@@ -42,7 +41,7 @@ data Role
   = RName String
   | NominalR String String
   | UnOp NotOrInverse Role
-  | JoinedR JunctionType [Role]
+  | JoinedR (Maybe JunctionType) [Role] -- Nothing denotes composition!
   deriving (Show, Eq, Ord)
 
 topR :: Role
@@ -51,23 +50,25 @@ topR = RName "TxT"
 botR :: Role
 botR = UnOp NotR topR
 
-ppJunction :: JunctionType -> Doc
-ppJunction t = text $ case t of
-  UnionOf -> "+ "
-  IntersectionOf -> "& "
+ppJunction :: Maybe JunctionType -> Doc
+ppJunction mt = text $ case mt of
+  Just t -> case t of
+    UnionOf -> "+ "
+    IntersectionOf -> "& "
+  Nothing -> "<+> "
 
 pppNegConcept :: Concept -> Doc
 pppNegConcept c = case c of
-    DisjointC {} -> parens
     JoinedC {} -> parens
     _ -> id
   $ ppConcept c
 
-pppConcept :: Bool -> JunctionType -> Concept -> Doc
-pppConcept notLast t c = case c of
+pppConcept :: Bool -> Maybe JunctionType -> Concept -> Doc
+pppConcept notLast mt c = case c of
     Quant {} | notLast -> parens
-    DisjointC {} -> parens
-    JoinedC UnionOf _ | UnionOf /= t -> parens
+    JoinedC mti _
+      | mti /= mt && maybe True (const $ maybe False (== UnionOf) mt) mti
+        -> parens
     _ -> id
   $ ppConcept c
 
@@ -77,11 +78,9 @@ ppConcept co = case co of
   NominalC s -> braces $ text s
   NotC c -> text "~" <> pppNegConcept c
   JoinedC t l -> case reverse l of
-    [] -> ppConcept $ if t == IntersectionOf then topC else NotC topC
+    [] -> ppConcept $ if t == Just IntersectionOf then topC else NotC topC
     f : r -> fsep . prepPunctuate (ppJunction t)
       . reverse $ pppConcept False t f : map (pppConcept True t) r
-  DisjointC c1 c2 -> fsep
-    [pppConcept True UnionOf c1, text "<+>", ppConcept c2]
   Quant q r c -> fsep [(case q of
     Left v -> keyword (showQuant v)
     Right (n, i) -> text (showCard n) <+> text (show i)
@@ -98,9 +97,16 @@ showCard n = case n of
       MaxCardinality -> "<="
       ExactCardinality -> "="
 
-pppRole :: JunctionType -> Role -> Doc
-pppRole t r = case r of
-    JoinedR UnionOf _ | UnionOf /= t -> parens
+showSame :: SameOrDifferent -> String
+showSame s = case s of
+  Same -> "=="
+  Different -> "!="
+
+pppRole :: Maybe JunctionType -> Role -> Doc
+pppRole mt r = case r of
+    JoinedR (Just ti) _
+      | maybe True (\ to -> ti /= to && ti == UnionOf) mt
+        -> parens
     _ -> id
   $ ppRole r
 
@@ -115,7 +121,7 @@ ppRole ro = case ro of
       _ | o == InvR -> parens
       _ -> id) (ppRole r)
   JoinedR t l -> case l of
-    [] -> ppRole $ if t == IntersectionOf then topR else botR
+    [] -> ppRole $ if t /= Just UnionOf then topR else botR
     _ -> fsep . prepPunctuate (ppJunction t) $ map (pppRole t) l
 
 skip :: CharParser st ()
@@ -156,7 +162,7 @@ primConcept = do
     skipChar '.'
     fmap (Quant q r) concept
   <|> ((key "not" <|> skipChar '~') >> skip >> fmap NotC primConcept)
-  <|> braced (fmap NominalC nominal)
+  <|> braced (fmap NominalC nominal) -- allow more nominals
   <|> parent concept
   <|> fmap CName nominal
 
@@ -166,25 +172,20 @@ braced p = skipChar '{' >> p << skipChar '}'
 parent :: CharParser st a -> CharParser st a
 parent p = skipChar '(' >> p << skipChar ')'
 
-binP :: ([a] -> a) -> Char -> CharParser st a -> CharParser st a
+binP :: ([a] -> a) -> String -> CharParser st a -> CharParser st a
 binP f c p = do
   a <- p
-  l <- many $ skipChar c >> p
+  l <- many $ tryString c >> skip >> p
   return $ if null l then a else f $ a : l
 
 andConcept :: CharParser st Concept
-andConcept = binP (JoinedC IntersectionOf) '&' primConcept
+andConcept = binP (JoinedC $ Just IntersectionOf) "&" primConcept
 
 orConcept :: CharParser st Concept
-orConcept = binP (JoinedC UnionOf) '+' andConcept
+orConcept = binP (JoinedC $ Just UnionOf) "+" andConcept
 
 concept :: CharParser st Concept
-concept = do
-  c1 <- orConcept
-  option c1 $ do
-     tryString "<+>" >> skip
-     c2 <- concept
-     return $ DisjointC c1 c2
+concept = binP (JoinedC Nothing) "<+>" orConcept
 
 notOrInv :: CharParser st NotOrInverse
 notOrInv = (char '~' >> return NotR)
@@ -201,23 +202,48 @@ primRole = do
   <|> parent role
   <|> fmap RName nominal
 
+
+compRole :: CharParser st Role
+compRole = binP (JoinedR Nothing) "." primRole
+
 andRole :: CharParser st Role
-andRole = binP (JoinedR IntersectionOf) '&' primRole
+andRole = binP (JoinedR $ Just IntersectionOf) "&" compRole
 
 role :: CharParser st Role
-role = binP (JoinedR UnionOf) '+' andRole
+role = binP (JoinedR $ Just UnionOf) "+" andRole
 
 data EqOrLess = Eq | Less deriving (Show, Eq, Ord)
 
-data RoleType = RoleType Role Concept Concept deriving (Show, Eq, Ord)
+data RoleType = RoleType Concept Concept deriving (Show, Eq, Ord)
 
-data Box
-  = ConceptDecl Concept (Maybe (EqOrLess, Concept))
-  | NominalCDecl String Concept
+-- a missing rhs may be modelled as "< T" or by no constructors
+data ConceptRhs
+  = ADTCons [TBoxCons]
+  | ConceptRel EqOrLess Concept
+  deriving (Show, Eq, Ord)
+
+data TBoxCons = TBoxCons Concept [(Role, Concept)]
+  deriving (Show, Eq, Ord)
+
+data TBox
+  = ConceptDecl Concept ConceptRhs
   | DisjointCs [Concept]
-  | RoleDecl RoleType (Maybe (EqOrLess, RoleType))
-  | NominalRDecl String String Role
-  | RoleKind Character Role
+  deriving (Show, Eq, Ord)
+
+data RBox
+  = RoleDecl Role RoleType
+  | RoleRel Role EqOrLess Role
+  | RoleProp Character Role
+  deriving (Show, Eq, Ord)
+
+-- | assertions
+data ABox
+  = AConcept String Concept
+  | ARole String String Role
+  | AIndividual String SameOrDifferent String
+  deriving (Show, Eq, Ord)
+
+data Box = Box [TBox] [RBox] [ABox]
   deriving (Show, Eq, Ord)
 
 ppEqOrLess :: EqOrLess -> Doc
@@ -226,28 +252,47 @@ ppEqOrLess s = case s of
   Less -> less
 
 ppRoleType :: RoleType -> Doc
-ppRoleType (RoleType r s t) =
-  ppRole r <+> fsep [colon <+> ppConcept s, cross <+> ppConcept t]
+ppRoleType (RoleType s t) =
+  fsep [colon <+> ppConcept s, cross <+> ppConcept t]
+
+ppConceptRhs :: ConceptRhs -> Doc
+ppConceptRhs rhs = case rhs of
+  ADTCons cs -> vcat $ prepPunctuate (text "| ") $ map ppTBoxCons cs
+  ConceptRel o c -> ppEqOrLess o <+> ppConcept c
+
+ppTBoxCons :: TBoxCons -> Doc
+ppTBoxCons (TBoxCons c sels) =
+  ppConcept c <> if null sels then empty else
+    parens . sepByCommas $ map
+      (\ (r, a) -> ppRole r <+> colon <+> ppConcept a) sels
+
+ppTBox :: TBox -> Doc
+ppTBox b = case b of
+  ConceptDecl d m -> ppConcept d <+> ppConceptRhs m
+  DisjointCs cs -> keyword "Disjoint" <> parens (sepByCommas $ map ppConcept cs)
+
+ppRBox :: RBox -> Doc
+ppRBox b = case b of
+  RoleDecl r t -> fsep [ppRole r, ppRoleType t]
+  RoleRel r o t -> fsep [ppRole r, ppEqOrLess o <+> ppRole t]
+  RoleProp c s -> text (showCharacter c) <> parens (ppRole s)
+
+ppABox :: ABox -> Doc
+ppABox b = case b of
+  AConcept n c -> text n <+> colon <+> ppConcept c
+  ARole s t r -> parens (text s <> comma <+> text t)
+    <+> colon <+> ppRole r
+  AIndividual s c t -> text s <+> text (showSame c) <+> text t
 
 ppBox :: Box -> Doc
-ppBox b = case b of
-  ConceptDecl d m -> ppConcept d <+> case m of
-    Nothing -> empty
-    Just (o, c) -> ppEqOrLess o <+> ppConcept c
-  NominalCDecl n c -> text n <+> colon <+> ppConcept c
-  DisjointCs cs -> keyword "Disjoint" <> parens (sepByCommas $ map ppConcept cs)
-  RoleDecl r m -> fsep [ppRoleType r, case m of
-    Nothing -> empty
-    Just (o, t) -> ppEqOrLess o <+> ppRoleType t]
-  NominalRDecl s t r -> parens (text s <> comma <+> text t)
-    <+> colon <+> ppRole r
-  RoleKind c s -> text (showCharacter c) <> parens (ppRole s)
+ppBox (Box ts rs as) =
+  vcat $ map ppTBox ts ++ text "%RBOX" : map ppRBox rs ++ map ppABox as
 
 showCharacter :: Character -> String
 showCharacter c = case c of
     Functional -> "Func"
-    InverseFunctional -> "Invfun"
-    Reflexive -> "Refl"
+    InverseFunctional -> "FuncInv"
+    Reflexive -> "Ref"
     Irreflexive -> "Irref"
     Symmetric -> "Sym"
     Asymmetric -> "Asym"
@@ -261,6 +306,47 @@ character = choice $ map (\ a -> key (showCharacter a) >> return a)
 eqOrLess :: CharParser st EqOrLess
 eqOrLess = (skipChar '=' >> return Eq) <|> (skipChar '<' >> return Less)
 
+tbox :: CharParser st TBox
+tbox = (key "Disjoint" >> fmap DisjointCs
+        (parent $ concept <:> many (skipChar ',' >> concept)))
+  <|> liftM2 ConceptDecl concept
+    (liftM2 ConceptRel eqOrLess concept
+     <|> fmap ADTCons (sepBy tboxCons $ skipChar '|'))
+
+tboxCons :: CharParser st TBoxCons
+tboxCons = liftM2 TBoxCons concept
+  . optionL . parent . flip sepBy (skipChar ',')
+  . pair role $ skipChar ':' >> concept
+
+rbox :: CharParser st RBox
+rbox = liftM2 RoleProp character (parent role)
+  <|> try (do
+    r <- role
+    liftM2 (RoleRel r) eqOrLess role
+      <|> fmap (RoleDecl r) (liftM2 RoleType
+        (skipChar ':' >> concept)
+        $ skipChar '*' >> concept)) -- added try to recognize abox
+
+abox :: CharParser st ABox
+abox = liftM2 ($) (nomPair ARole) (skipChar ':' >> role)
+  <|> do
+    n <- nominal
+    fmap (AConcept n) (skipChar ':' >> concept)
+      <|> liftM2 (AIndividual n) (pSame << skip) nominal
+
+pSame :: CharParser st SameOrDifferent
+pSame = choice $ map (\ a -> tryString (showSame a) >> return a)
+        [Same, Different]
+
+box :: CharParser st Box
+box = do
+  ts <- many tbox
+  key "%RBOX"
+  rs <- many rbox
+  as <- many abox
+  return $ Box ts rs as
+
+{-
 box :: CharParser st Box
 box = do
     f <- nomPair NominalRDecl
@@ -298,6 +384,7 @@ box = do
             return $ RoleDecl t1 m
           <|> return (NominalCDecl n c1)
       <|> return (ConceptDecl c0 Nothing)
+-}
 
 ppp :: (a -> Doc) -> CharParser () a -> String -> String
 ppp pr pa s = case parse (skip >> pa << eof) "" s of

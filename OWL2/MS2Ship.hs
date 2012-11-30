@@ -25,39 +25,43 @@ import Data.Maybe
 import qualified Data.Set as Set
 
 ppShipOnt :: OntologyDocument -> Doc
-ppShipOnt = vcat . map ppBox . concatMap frame2Boxes . ontFrames . ontology
+ppShipOnt = ppBox . catBoxes . map frame2Boxes . ontFrames . ontology
 
-frame2Boxes :: Frame -> [Box]
+emptyBox = Box [] [] []
+appBoxes (Box t1 r1 a1) (Box t2 r2 a2) = Box (t1 ++ t2) (r1 ++ r2) (a1 ++ a2)
+catBoxes = foldr appBoxes emptyBox
+
+frame2Boxes :: Frame -> Box
 frame2Boxes (Frame e bs) = case e of
-  ClassEntity ce -> concatMap (classFrame2Boxes $ ce2Concept ce) bs
+  ClassEntity ce -> Box (concatMap (classFrame2Boxes $ ce2Concept ce) bs) [] []
   ObjectEntity ope -> let
     r = ope2Role ope
     es = concatMap (opFrame2Boxes r) bs
     (ds, rs) = getRoleType r es
     rt = on (RoleType r) intersectConcepts ds rs
-    in nubOrd $ map (setRoleType rt) es
+    in Box [] (nubOrd $ map (setRoleType rt) es) []
   SimpleEntity (Entity et i) -> case et of
-    NamedIndividual -> concatMap (indFrame2Boxes $ localPart i) bs
-    _ -> []
+    NamedIndividual -> Box [] [] $ concatMap (indFrame2Boxes $ localPart i) bs
+    _ -> Box [] [] []
   Misc _ -> concatMap miscFrame2Boxes bs
 
-classFrame2Boxes :: Concept -> FrameBit -> [Box]
+classFrame2Boxes :: Concept -> FrameBit -> [TBox]
 classFrame2Boxes c b = case b of
   ListFrameBit mr lfb -> classListFrame2Boxes c mr lfb
   AnnFrameBit _ fb -> classAnnFrame2Boxes c fb
 
-classAnnFrame2Boxes :: Concept -> AnnFrameBit -> [Box]
+classAnnFrame2Boxes :: Concept -> AnnFrameBit -> [TBox]
 classAnnFrame2Boxes c fb = case fb of
   ClassDisjointUnion cs@(_ : _) -> [ConceptDecl c
-    $ Just (Eq, foldr1 DisjointC $ map ce2Concept cs)]
-  AnnotationFrameBit Declaration -> [ConceptDecl c Nothing]
+    . ConceptRel Eq . JoinedC Nothing $ map ce2Concept cs]
+  AnnotationFrameBit Declaration -> [ConceptDecl c $ ADTCons []]
   _ -> []
 
-classListFrame2Boxes :: Concept -> Maybe Relation -> ListFrameBit -> [Box]
+classListFrame2Boxes :: Concept -> Maybe Relation -> ListFrameBit -> [TBox]
 classListFrame2Boxes c mr lfb = case lfb of
   ExpressionBit l -> let cs = map (ce2Concept . snd) l in case mr of
     Just r -> case r of
-      SubClass -> map (\ d -> ConceptDecl c $ Just (Less, d)) cs
+      SubClass -> map (ConceptDecl c . ConceptRel Less) cs
       EDRelation ed -> map ((case ed of
         Disjoint -> disC
         Equivalent -> eqC) c) cs
@@ -65,14 +69,14 @@ classListFrame2Boxes c mr lfb = case lfb of
     _ -> []
   _ -> []
 
-opFrame2Boxes :: Role -> FrameBit -> [Box]
+opFrame2Boxes :: Role -> FrameBit -> [RBox]
 opFrame2Boxes r b = case b of
   ListFrameBit mr lfb -> opListFrame2Boxes r mr lfb
   AnnFrameBit _ fb -> case fb of
     AnnotationFrameBit Declaration -> [RoleDecl (r2RT r) Nothing]
     _ -> []
 
-opListFrame2Boxes :: Role -> Maybe Relation -> ListFrameBit -> [Box]
+opListFrame2Boxes :: Role -> Maybe Relation -> ListFrameBit -> [RBox]
 opListFrame2Boxes r mr lfb = case mr of
     Just rel -> case rel of
       DRRelation dr -> case lfb of
@@ -93,7 +97,7 @@ opListFrame2Boxes r mr lfb = case mr of
           _ -> []
         _ -> []
     Nothing -> case lfb of
-        ObjectCharacteristics l -> map ((`RoleKind` r) . snd) l
+        ObjectCharacteristics l -> map ((`RoleProp` r) . snd) l
         _ -> []
 
 getRoleType :: Role -> [Box] -> ([Concept], [Concept])
@@ -123,14 +127,14 @@ indFrame2Boxes i b = case b of
   ListFrameBit mr lfb -> indListFrame2Boxes i mr lfb
   AnnFrameBit {} -> []
 
-indListFrame2Boxes :: String -> Maybe Relation -> ListFrameBit -> [Box]
+indListFrame2Boxes :: String -> Maybe Relation -> ListFrameBit -> [ABox]
 indListFrame2Boxes i mr lfb = case lfb of
     ExpressionBit l | mr == Just Types ->
-      map (NominalCDecl i . ce2Concept . snd) l
+      map (AConcept i . ce2Concept . snd) l
     IndividualFacts l | isNothing mr ->
       concatMap (\ f -> case snd f of
         ObjectPropertyFact pn ope j ->
-          [NominalRDecl i (localPart j)
+          [ARole i (localPart j)
           $ (if pn == Positive then id else UnOp NotR) $ ope2Role ope]
         DataPropertyFact {} -> []) l
     IndividualSameOrDifferent l -> case mr of
