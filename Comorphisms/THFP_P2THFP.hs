@@ -43,7 +43,7 @@ instance Comorphism THFP_P2THFP
     sourceLogic THFP_P2THFP = THF
     sourceSublogic THFP_P2THFP = SL.tHFP_P
     targetLogic THFP_P2THFP = THF
-    mapSublogic THFP_P2THFP _ = Just SL.tHFP
+    mapSublogic THFP_P2THFP sl = Just $ sl { SL.ext_Poly = False }
     map_theory THFP_P2THFP = trans_theory
     has_model_expansion THFP_P2THFP = True
 
