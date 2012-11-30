@@ -1,0 +1,10 @@
+from Framework/specs/logics/first-order/syntax/fol get Base2FOL
+from Framework/specs/logics/first-order/model_theory/fol get FOLMODView
+from Framework/specs/logics/first-order/proof_theory/fol get FOL2FOLPF
+
+newlogic FOL =
+  meta LF
+  syntax Base2FOL
+  models FOLMODView
+  proofs FOL2FOLPF
+end

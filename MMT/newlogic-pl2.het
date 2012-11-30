@@ -1,0 +1,11 @@
+from Framework/specs/logics/propositional/syntax/base get Base
+from Framework/specs/logics/propositional/syntax/prop get PL
+from Framework/specs/logics/propositional/model_theory/prop get PLMOD, PLMODView
+from Framework/specs/logics/propositional/proof_theory/prop get CPLPF
+
+newlogic PL =
+  meta LF
+  syntax PL
+  models PLMODView
+  proofs CPLPF
+end

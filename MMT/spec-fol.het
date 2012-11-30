@@ -1,0 +1,57 @@
+logic FOL
+spec S1 =
+  c : i.
+  p : i -> o.
+  
+  . p c
+end
+
+spec S2 = 
+  p : i -> o.
+  d : i.
+
+  . p d
+end 
+
+spec S3 = S1 and S2
+
+spec S4 = S3 then
+  q : i -> o.
+  
+  . q d
+end
+
+spec S5 =
+s : o.
+t : type.
+a : t.
+end
+
+spec S6 =
+s : o.
+l : o.
+p : type.
+b : p.
+end
+
+view V1 : S5 to S6
+
+spec S7 =
+nat : type.
+a : nat.
+end
+
+spec S8 =
+Nat : type.
+p : Nat.
+plus : Nat -> Nat -> Nat.
+b : i.
+end
+
+spec S9 = S3 hide p
+
+spec S10 = S8 reveal plus
+
+view V2 : S7 to S8 = a |-> plus p p
+
+spec S11 = S8 with Nat |-> nat, plus |-> times
