@@ -12,7 +12,7 @@ Portability :  non-portable (imports Logic.Logic)
 The embedding comorphism from HasCASL to THF0_ST.
 -}
 
-module Comorphisms.HasCASL2THF0_ST where
+module Comorphisms.HasCASL2THFP_ST where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -53,35 +53,35 @@ import Data.Maybe
 -- Question: are the remaining symbol variants translatable?
 
 -- | The identity of the comorphism
-data HasCASL2THF0_ST = HasCASL2THF0_ST deriving Show
+data HasCASL2THFP_ST = HasCASL2THFP_ST deriving Show
 
-instance Language HasCASL2THF0_ST
+instance Language HasCASL2THFP_ST
 
-instance Comorphism HasCASL2THF0_ST
+instance Comorphism HasCASL2THFP_ST
                 HasCASL Sublogic
                 BasicSpec Sentence SymbItems SymbMapItems
                 Env Morphism Symbol RawSymbol ()
                 THF SL.THFSl
                 BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
-    sourceLogic HasCASL2THF0_ST = HasCASL
-    sourceSublogic HasCASL2THF0_ST = reqSubLogicForTHF0 -- topLogic
-    targetLogic HasCASL2THF0_ST = THF
-    mapSublogic HasCASL2THF0_ST _ = Just SL.tHF0_ST
-    map_theory HasCASL2THF0_ST = transTheory
-    map_symbol HasCASL2THF0_ST = transSymbol
+    sourceLogic HasCASL2THFP_ST = HasCASL
+    sourceSublogic HasCASL2THFP_ST = reqSubLogicForTHFP -- topLogic
+    targetLogic HasCASL2THFP_ST = THF
+    mapSublogic HasCASL2THFP_ST _ = Just SL.tHFP_ST
+    map_theory HasCASL2THFP_ST = transTheory
+    map_symbol HasCASL2THFP_ST = transSymbol
     -- isInclusionComorphism HasCASL2THF0_ST = True
-    has_model_expansion HasCASL2THF0_ST = True
+    has_model_expansion HasCASL2THFP_ST = True
 
-reqSubLogicForTHF0 :: Sublogic
-reqSubLogicForTHF0 = Sublogic
+reqSubLogicForTHFP :: Sublogic
+reqSubLogicForTHFP = Sublogic
     { has_sub = False
     , has_part = False
     , has_eq = True
     , has_pred = True
     , type_classes = NoClasses
     , has_polymorphism = False
-    , has_type_constructors = False
+    , has_type_constructors = True
     , which_logic = HOL }
 
 -- Translation of a Theory
@@ -177,6 +177,8 @@ transType :: IdConstantMap -> HCAs.Type -> Result THFCons.Type
 transType icm hct = case getTypeAppl hct of
     (TypeName tid _ n, tys)
         | null tys && tid == unitTypeId -> return OType
+        | isProductId tid -> liftM ProdType $
+            mapM (transType icm) tys
         | List.length tys == 1 && tid == lazyTypeId ->
             if isUnitType $ head tys
             then return OType
@@ -326,8 +328,11 @@ transTerm e icm ids t = case t of
             . T0A_Variable) (transVarId i) >>= (\ lf -> return (lf, ids))
     QualOp ob pid ts tl ik r -> myFmap (TLF_THF_Unitary_Formula
             . TUF_THF_Atom . T0A_Constant) (transQualOp e ids ob pid ts tl ik r)
-    TupleTerm _ _ ->
-            fatal_error "Tuples are not allowed in THF0." (getRange t)
+    TupleTerm ts' _ -> do
+     (ts,nids) <- foldM (\(ts,ids') t' -> do
+      (t'',ids'') <- transTerm e icm ids' t'
+      return (ts++[t''],ids'')) ([],ids) ts'
+     return (TLF_THF_Unitary_Formula . TUF_THF_Tuple $ ts, nids)
     TermToken _ ->
             fatal_error "Missing translation for term tokens." (getRange t)
     AsPattern {} ->

@@ -1,0 +1,11 @@
+logic HasCASL
+
+spec test =
+type Real
+
+op 0 : Real
+
+free types
+     SWPoint ::= SWPoint(x:Real;y:Real;z:Real);
+
+op p1:SWPoint=SWPoint(0,0,0)
