@@ -1,5 +1,6 @@
 module <LogicName>.Sign where
 
-import Common.Id
+import <LogicName>.AS_BASIC_<LogicName>
+--import Common.Id
 
 <insert> 

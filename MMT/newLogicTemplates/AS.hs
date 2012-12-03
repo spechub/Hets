@@ -1,6 +1,6 @@
 module <LogicName>.AS_BASIC_<LogicName> where
 
-import Common.Id as Id
+--import Common.Id as Id
 
 
 <insert>
