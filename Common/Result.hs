@@ -286,16 +286,16 @@ instance Show Diagnosis where
 
 instance Pretty Diagnosis where
     pretty (Diag k s (Range sp)) = sep
-        [(if isMessageW
+        [(case sp of
+             [] | isMessageW -> empty
+                | otherwise -> comma
+             _ -> prettyRange sp <> colon),
+         (if isMessageW
             then empty
             else text (case k of
                   Error -> "***"
-                  _ -> "###") <+> text (show k))
-        <> (case sp of
-             [] | isMessageW -> empty
-                | otherwise -> comma
-             _ -> space <> prettyRange sp <> comma)
-        , text s]
+                  _ -> "###") <+> text (show k) <> colon <> space)
+          <> text s]
         where isMessageW = case k of
                            MessageW -> True
                            _ -> False
