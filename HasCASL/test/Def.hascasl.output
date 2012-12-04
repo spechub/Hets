@@ -12,5 +12,5 @@ x : s;
 y : t
 forall x : s . def \ f : s -> s . def f x
 forall y : t . def (y as s)
-### Hint 2.7, not a class 's'
-### Hint 2.14, not a class 't'
+2.7: ### Hint: not a class 's'
+2.14: ### Hint: not a class 't'

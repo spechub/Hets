@@ -43,61 +43,61 @@ forall S : Type
 . forall r : Set (S * S)
   . (r in PER S) <=> symmetric r /\ transitive r
 forall S : Type; r : PER S; x : S . x isIn dom r <=> (x, x) isIn r
-### Hint 1.7, is type variable 'S'
-### Hint 3.20,
-no kind found for 'S'
-  expected: {Cpo}
-     found: {Type}
-### Hint 3.20,
-no kind found for 'S'
-  expected: {Cppo}
-     found: {Type}
-### Hint 4.51,
-no kind found for 'S'
-  expected: {Cpo}
-     found: {Type}
-### Hint 4.51,
-no kind found for 'S'
-  expected: {Cppo}
-     found: {Type}
-### Hint 4.51,
-no kind found for 'S'
-  expected: {Cpo}
-     found: {Type}
-### Hint 4.51,
-no kind found for 'S'
-  expected: {Cppo}
-     found: {Type}
-### Hint 4.51,
-no kind found for 'S'
-  expected: {Cpo}
-     found: {Type}
-### Hint 4.51,
-no kind found for 'S'
-  expected: {Cppo}
-     found: {Type}
-### Hint 5.11, not a kind 'Set (S * S)'
-### Hint 5.16,
-no kind found for 'S'
-  expected: {Cpo}
-     found: {Type}
-### Hint 5.16,
-no kind found for 'S'
-  expected: {Cppo}
-     found: {Type}
-### Hint 6.29, not a class 'S'
-### Hint 7.29, not a class 'S'
-### Hint 7.31, not a class 'S'
-### Hint 8.30, not a class 'S'
-### Hint 8.32, not a class 'S'
-### Hint 8.34, not a class 'S'
-### Hint 9.26,
-no kind found for 'S'
-  expected: {Cpo}
-     found: {Type}
-### Hint 9.26,
-no kind found for 'S'
-  expected: {Cppo}
-     found: {Type}
-### Hint 11.8, not a class 'S'
-### Hint 11.13, not a kind 'PER S'
+1.7: ### Hint: is type variable 'S'
+3.20:
+### Hint: no kind found for 'S'
+            expected: {Cpo}
+               found: {Type}
+3.20:
+### Hint: no kind found for 'S'
+            expected: {Cppo}
+               found: {Type}
+4.51:
+### Hint: no kind found for 'S'
+            expected: {Cpo}
+               found: {Type}
+4.51:
+### Hint: no kind found for 'S'
+            expected: {Cppo}
+               found: {Type}
+4.51:
+### Hint: no kind found for 'S'
+            expected: {Cpo}
+               found: {Type}
+4.51:
+### Hint: no kind found for 'S'
+            expected: {Cppo}
+               found: {Type}
+4.51:
+### Hint: no kind found for 'S'
+            expected: {Cpo}
+               found: {Type}
+4.51:
+### Hint: no kind found for 'S'
+            expected: {Cppo}
+               found: {Type}
+5.11: ### Hint: not a kind 'Set (S * S)'
+5.16:
+### Hint: no kind found for 'S'
+            expected: {Cpo}
+               found: {Type}
+5.16:
+### Hint: no kind found for 'S'
+            expected: {Cppo}
+               found: {Type}
+6.29: ### Hint: not a class 'S'
+7.29: ### Hint: not a class 'S'
+7.31: ### Hint: not a class 'S'
+8.30: ### Hint: not a class 'S'
+8.32: ### Hint: not a class 'S'
+8.34: ### Hint: not a class 'S'
+9.26:
+### Hint: no kind found for 'S'
+            expected: {Cpo}
+               found: {Type}
+9.26:
+### Hint: no kind found for 'S'
+            expected: {Cppo}
+               found: {Type}
+11.8: ### Hint: not a class 'S'
+11.13: ### Hint: not a kind 'PER S'

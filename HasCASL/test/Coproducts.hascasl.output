@@ -65,34 +65,34 @@ forall a : Type; b : Type
 . False = inr ()
 forall a : Type; p : Bool; w : a; x : a
 . if p then x else w = ((sumcase \ . x) \ . w) p
-### Hint 1.6, is type variable 'a'
-### Hint 1.9, is type variable 'b'
-### Hint 1.12, is type variable 'c'
-### Hint 7.7, not a kind 'a ->? c'
-### Hint 7.19, not a kind 'b ->? c'
-### Hint 7.31, not a kind 'Sum a b ->? c'
-### Hint 9.11, not a class 'a'
-### Hint 9.17, not a class 'b'
-*** Error 10.3,
-in term 'not def (op bot : forall a : Type . ? a)'
- are uninstantiated type variables
-'[_v21_a]'
-### Hint 13.7, not a class 'a'
-### Hint 13.13, not a class 'b'
-### Hint 13.19, not a kind 'Sum a b'
-### Hint 16.21, rebound variable 'x'
-### Hint 16.34, rebound variable 'y'
-### Hint 17.21, rebound variable 'x'
-### Hint 17.36, rebound variable 'y'
-### Hint 20.7, not a class 'Bool'
-### Hint 20.16, not a class 'a'
-### Hint 20.15, rebound variable 'x'
-### Hint 20.18, not a class 'a'
-### Hint 22.25,
-no kind found for 'Bool'
-  expected: {Cpo}
-     found: {Type}
-### Hint 22.25,
-no kind found for 'Bool'
-  expected: {Cppo}
-     found: {Type}
+1.6: ### Hint: is type variable 'a'
+1.9: ### Hint: is type variable 'b'
+1.12: ### Hint: is type variable 'c'
+7.7: ### Hint: not a kind 'a ->? c'
+7.19: ### Hint: not a kind 'b ->? c'
+7.31: ### Hint: not a kind 'Sum a b ->? c'
+9.11: ### Hint: not a class 'a'
+9.17: ### Hint: not a class 'b'
+10.3:
+*** Error: in term 'not def (op bot : forall a : Type . ? a)'
+            are uninstantiated type variables
+           '[_v21_a]'
+13.7: ### Hint: not a class 'a'
+13.13: ### Hint: not a class 'b'
+13.19: ### Hint: not a kind 'Sum a b'
+16.21: ### Hint: rebound variable 'x'
+16.34: ### Hint: rebound variable 'y'
+17.21: ### Hint: rebound variable 'x'
+17.36: ### Hint: rebound variable 'y'
+20.7: ### Hint: not a class 'Bool'
+20.16: ### Hint: not a class 'a'
+20.15: ### Hint: rebound variable 'x'
+20.18: ### Hint: not a class 'a'
+22.25:
+### Hint: no kind found for 'Bool'
+            expected: {Cpo}
+               found: {Type}
+22.25:
+### Hint: no kind found for 'Bool'
+            expected: {Cppo}
+               found: {Type}

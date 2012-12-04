@@ -123,87 +123,87 @@ type Data4 ::=
      Cons41 (sel1 :? Data1; sel2 :? Data2)? |
      Cons42 (sel2 :? Data2; sel1 :? Data1)?           %(ga_Data4)%
 . true
-### Warning 1.7-1.10, void universe class declaration 'Type'
-### Hint 3.5, is type variable 't'
-*** Error 7.11, illegal type pattern argument '__'
-*** Error 11.16, not a class 'd'
-### Warning 11.7, unchanged class 'a'
-### Warning 11.10, unchanged class 'b'
-### Warning 11.13, unchanged class 'c'
-### Warning 11.19, refined class 'a'
-### Hint 16.7, not a class 's'
-### Hint 18.15, rebound variable 'x'
-### Hint 15.9-15.11,
-repeated declaration of 'tt' with type 's ->? Unit'
-### Hint 20.19, rebound variable 'x'
-### Hint 20.19, rebound variable 'x'
-### Warning 20.10-20.15,
-ignoring declaration for builtin identifier '__res__'
-### Warning 20.12-20.31,
-illegal lhs pattern '((var x : s) res (var y : t)) : s'
-### Hint 21.6, rebound variable 'x'
-### Hint 21.6, rebound variable 'x'
-### Warning 21.1-21.18,
-illegal lhs pattern
-'(var fst : s * t ->? s) ((var x : s), (var y : t)) : s'
-### Hint 22.6, rebound variable 'x'
-### Hint 22.6, rebound variable 'x'
-### Warning 22.1-22.18,
-illegal lhs pattern
-'(var snd : s * t ->? t) ((var x : s), (var y : t)) : t'
-### Hint 24.11,
-no kind found for 's'
-  expected: {Cpo}
-     found: {c}
-### Hint 24.11,
-no kind found for 's'
-  expected: {Cppo}
-     found: {c}
-### Hint 26.6, redeclared type 's'
-### Hint 28.41,
-in type of '(pred tt : s)'
-  typename 's' (24.15)
-  is not unifiable with type 's ->? Unit' (15.11)
-### Hint 28.38-28.41, untypeable term (with type: s * s) '(p, tt)'
-*** Error 28.33,
-no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
-### Hint 30.14, rebound variable 'x'
-### Hint 30.40-30.41, no type found for 't1'
-### Hint 30.40, untypeable term 't1'
-### Hint 30.40-30.49,
-untypeable term (with type: ? _v35_a * ? _v36_b) '(t1 (), t2 ())'
-*** Error 30.38,
-no typing for
-'program And (x, y : ? Unit) : ? Unit = t1 () res t2 ()'
-*** Error 32.12, unexpected mixfix token: impl
-*** Error 34.12, unexpected mixfix token: or
-### Hint 37.27-37.29, no type found for 'all'
-### Hint 37.27, untypeable term 'all'
-*** Error 37.25,
-no typing for
-'program ex (p : ? s) : ? Unit
-         = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
-### Hint 40.20-40.22, no type found for 'all'
-### Hint 40.20, untypeable term 'all'
-*** Error 40.18,
-no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
-### Hint 45.9, not a class 't'
-### Hint 45.8, rebound variable 'x'
-### Hint 45.16, not a class 't'
-### Hint 57.11, redeclared type 's'
-### Hint 62.11-62.70,
-repeated declaration of 'sel2' with type 'Data3 ->? Data2'
-### Hint 62.11-63.1,
-repeated declaration of 'sel1' with type 'Data3 ->? Data1'
-### Hint 64.11-64.71,
-repeated declaration of 'sel2' with type 'Data4 ->? Data2'
-### Hint 64.11-64.84,
-repeated declaration of 'sel1' with type 'Data4 ->? Data1'
-### Hint 66.22, not a class 's'
-### Hint 66.21, rebound variable 'x'
-### Hint 66.25, no type found for 'e'
-*** Error 66.25, no typing for 'e'
-### Hint 67.9, not a class 's'
-### Hint 67.8, rebound variable 'x'
-### Hint 67.12, no type found for 'e'
-*** Error 67.12, no typing for 'e'
+1.7-1.10: ### Warning: void universe class declaration 'Type'
+3.5: ### Hint: is type variable 't'
+7.11: *** Error: illegal type pattern argument '__'
+11.16: *** Error: not a class 'd'
+11.7: ### Warning: unchanged class 'a'
+11.10: ### Warning: unchanged class 'b'
+11.13: ### Warning: unchanged class 'c'
+11.19: ### Warning: refined class 'a'
+16.7: ### Hint: not a class 's'
+18.15: ### Hint: rebound variable 'x'
+15.9-15.11:
+### Hint: repeated declaration of 'tt' with type 's ->? Unit'
+20.19: ### Hint: rebound variable 'x'
+20.19: ### Hint: rebound variable 'x'
+20.10-20.15:
+### Warning: ignoring declaration for builtin identifier '__res__'
+20.12-20.31:
+### Warning: illegal lhs pattern '((var x : s) res (var y : t)) : s'
+21.6: ### Hint: rebound variable 'x'
+21.6: ### Hint: rebound variable 'x'
+21.1-21.18:
+### Warning: illegal lhs pattern
+             '(var fst : s * t ->? s) ((var x : s), (var y : t)) : s'
+22.6: ### Hint: rebound variable 'x'
+22.6: ### Hint: rebound variable 'x'
+22.1-22.18:
+### Warning: illegal lhs pattern
+             '(var snd : s * t ->? t) ((var x : s), (var y : t)) : t'
+24.11:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {c}
+24.11:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {c}
+26.6: ### Hint: redeclared type 's'
+28.41:
+### Hint: in type of '(pred tt : s)'
+            typename 's' (24.15)
+            is not unifiable with type 's ->? Unit' (15.11)
+28.38-28.41: ### Hint: untypeable term (with type: s * s) '(p, tt)'
+28.33:
+*** Error: no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
+30.14: ### Hint: rebound variable 'x'
+30.40-30.41: ### Hint: no type found for 't1'
+30.40: ### Hint: untypeable term 't1'
+30.40-30.49:
+### Hint: untypeable term (with type: ? _v35_a * ? _v36_b) '(t1 (), t2 ())'
+30.38:
+*** Error: no typing for
+           'program And (x, y : ? Unit) : ? Unit = t1 () res t2 ()'
+32.12: *** Error: unexpected mixfix token: impl
+34.12: *** Error: unexpected mixfix token: or
+37.27-37.29: ### Hint: no type found for 'all'
+37.27: ### Hint: untypeable term 'all'
+37.25:
+*** Error: no typing for
+           'program ex (p : ? s) : ? Unit
+                    = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
+40.20-40.22: ### Hint: no type found for 'all'
+40.20: ### Hint: untypeable term 'all'
+40.18:
+*** Error: no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
+45.9: ### Hint: not a class 't'
+45.8: ### Hint: rebound variable 'x'
+45.16: ### Hint: not a class 't'
+57.11: ### Hint: redeclared type 's'
+62.11-62.70:
+### Hint: repeated declaration of 'sel2' with type 'Data3 ->? Data2'
+62.11-63.1:
+### Hint: repeated declaration of 'sel1' with type 'Data3 ->? Data1'
+64.11-64.71:
+### Hint: repeated declaration of 'sel2' with type 'Data4 ->? Data2'
+64.11-64.84:
+### Hint: repeated declaration of 'sel1' with type 'Data4 ->? Data1'
+66.22: ### Hint: not a class 's'
+66.21: ### Hint: rebound variable 'x'
+66.25: ### Hint: no type found for 'e'
+66.25: *** Error: no typing for 'e'
+67.9: ### Hint: not a class 's'
+67.8: ### Hint: rebound variable 'x'
+67.12: ### Hint: no type found for 'e'
+67.12: *** Error: no typing for 'e'

@@ -11,11 +11,11 @@ m (b : -Type) := b;
 p (a : +Type) := Pred (Pred a)
 var
 a : +Type %(var_1)%
-### Hint 1.5, is type variable 'a'
-### Hint 3.18, wrong covariance of 'a'
-### Hint 3.18, no kind found for 'a'
-*** Error 3.13-3.18, no kind found for 'Pred a'
-*** Error 5.6,
-wrong type of 'm'
-  expected: \ b : -Type . b
-     found: \ b : +Type . b
+1.5: ### Hint: is type variable 'a'
+3.18: ### Hint: wrong covariance of 'a'
+3.18: ### Hint: no kind found for 'a'
+3.13-3.18: *** Error: no kind found for 'Pred a'
+5.6:
+*** Error: wrong type of 'm'
+             expected: \ b : -Type . b
+                found: \ b : +Type . b

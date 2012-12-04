@@ -75,68 +75,68 @@ F : Functor; a : Type; b : Type; c : Type; f : a -> b; g : b -> c
 forall
 F : DTFunctor; a : Type; alpha : Alg F a; g : InitialCarrier F -> a
 . g :: initialAlg -> alpha <=> g = fold alpha
-### Hint 1.6, is type variable 'a'
-### Hint 1.8, is type variable 'b'
-### Hint 1.10, is type variable 'c'
-### Hint 1.20, not a class 'a'
-### Hint 1.26, not a class 'a'
-### Hint 1.26, not a class 'b'
-### Hint 1.37, not a class 'b'
-### Hint 1.37, not a class 'c'
-### Hint 2.18-2.23,
-no kind found for 'b -> c'
-  expected: {Cpo}
-     found: {Type}
-### Hint 2.18-2.23,
-no kind found for 'b -> c'
-  expected: {Cppo}
-     found: {Type}
-### Hint 8.7, is type variable 'a'
-### Hint 8.7, rebound type variable 'a'
-### Hint 8.9, is type variable 'b'
-### Hint 8.9, rebound type variable 'b'
-### Hint 8.11, is type variable 'c'
-### Hint 8.11, rebound type variable 'c'
-### Hint 8.20, is type variable 'F'
-### Hint 8.33, not a class 'a'
-### Hint 8.33, not a class 'b'
-### Hint 8.32, rebound variable 'f'
-### Hint 8.44, not a class 'b'
-### Hint 8.44, not a class 'c'
-### Hint 8.43, rebound variable 'g'
-### Hint 16.5, is type variable 'F'
-### Hint 16.5, rebound type variable 'F'
-### Hint 16.17, is type variable 'a'
-### Hint 16.17, rebound type variable 'a'
-### Hint 16.19, is type variable 'b'
-### Hint 16.19, rebound type variable 'b'
-### Hint 18.23-18.28,
-no kind found for 'a -> b'
-  expected: {Cpo}
-     found: {Type}
-### Hint 18.23-18.28,
-no kind found for 'a -> b'
-  expected: {Cppo}
-     found: {Type}
-### Hint 21.5, is type variable 'F'
-### Hint 21.5, rebound type variable 'F'
-### Hint 21.19, is type variable 'a'
-### Hint 21.19, rebound type variable 'a'
-### Hint 25.10, not a kind 'Alg F a'
-### Hint 25.22, not a kind 'InitialCarrier F -> a'
-### Hint 25.21, rebound variable 'g'
-### Warning 28.7-28.17, refined class 'PolyFunctor'
-### Hint 29.5, is type variable 'G'
-### Hint 33.7, not a kind 'ParamDT G a'
-### Hint 33.23, not a class 'a'
-### Hint 33.23, not a class 'a'
-### Hint 33.22, rebound variable 'f'
-### Hint 34.9,
-in type of '(var l : ParamDT G a)'
-  type 'InitialCarrier' (30.21)
-  is not unifiable with differently kinded type '_v82_F' (9.21)
-### Hint 34.9, untypeable term (with type: _v82_F _v80_a) 'l'
-### Hint 34.3-34.29,
-untypeable term (with type: ? _v79_a * ? _v79_a)
-'(map f l, fold initialAlg l)'
-*** Error 34.11, no typing for 'map f l = fold initialAlg l'
+1.6: ### Hint: is type variable 'a'
+1.8: ### Hint: is type variable 'b'
+1.10: ### Hint: is type variable 'c'
+1.20: ### Hint: not a class 'a'
+1.26: ### Hint: not a class 'a'
+1.26: ### Hint: not a class 'b'
+1.37: ### Hint: not a class 'b'
+1.37: ### Hint: not a class 'c'
+2.18-2.23:
+### Hint: no kind found for 'b -> c'
+            expected: {Cpo}
+               found: {Type}
+2.18-2.23:
+### Hint: no kind found for 'b -> c'
+            expected: {Cppo}
+               found: {Type}
+8.7: ### Hint: is type variable 'a'
+8.7: ### Hint: rebound type variable 'a'
+8.9: ### Hint: is type variable 'b'
+8.9: ### Hint: rebound type variable 'b'
+8.11: ### Hint: is type variable 'c'
+8.11: ### Hint: rebound type variable 'c'
+8.20: ### Hint: is type variable 'F'
+8.33: ### Hint: not a class 'a'
+8.33: ### Hint: not a class 'b'
+8.32: ### Hint: rebound variable 'f'
+8.44: ### Hint: not a class 'b'
+8.44: ### Hint: not a class 'c'
+8.43: ### Hint: rebound variable 'g'
+16.5: ### Hint: is type variable 'F'
+16.5: ### Hint: rebound type variable 'F'
+16.17: ### Hint: is type variable 'a'
+16.17: ### Hint: rebound type variable 'a'
+16.19: ### Hint: is type variable 'b'
+16.19: ### Hint: rebound type variable 'b'
+18.23-18.28:
+### Hint: no kind found for 'a -> b'
+            expected: {Cpo}
+               found: {Type}
+18.23-18.28:
+### Hint: no kind found for 'a -> b'
+            expected: {Cppo}
+               found: {Type}
+21.5: ### Hint: is type variable 'F'
+21.5: ### Hint: rebound type variable 'F'
+21.19: ### Hint: is type variable 'a'
+21.19: ### Hint: rebound type variable 'a'
+25.10: ### Hint: not a kind 'Alg F a'
+25.22: ### Hint: not a kind 'InitialCarrier F -> a'
+25.21: ### Hint: rebound variable 'g'
+28.7-28.17: ### Warning: refined class 'PolyFunctor'
+29.5: ### Hint: is type variable 'G'
+33.7: ### Hint: not a kind 'ParamDT G a'
+33.23: ### Hint: not a class 'a'
+33.23: ### Hint: not a class 'a'
+33.22: ### Hint: rebound variable 'f'
+34.9:
+### Hint: in type of '(var l : ParamDT G a)'
+            type 'InitialCarrier' (30.21)
+            is not unifiable with differently kinded type '_v82_F' (9.21)
+34.9: ### Hint: untypeable term (with type: _v82_F _v80_a) 'l'
+34.3-34.29:
+### Hint: untypeable term (with type: ? _v79_a * ? _v79_a)
+          '(map f l, fold initialAlg l)'
+34.11: *** Error: no typing for 'map f l = fold initialAlg l'

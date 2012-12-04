@@ -178,328 +178,328 @@ forall p : Pcpo; f : p --> p; x : p . f x = x => Y f <<= x
 forall c : Cpo; p : Pcpo
 . undefined = Y ((\ x' : c --> p . x') as (c --> p) --> c --> p)
 free type bool ::= false | true %(ga_bool)%
-### Warning 4.7-4.10, void universe class declaration 'Type'
-### Hint 6.5, is type variable 's'
-### Hint 6.7, is type variable 't'
-### Hint 11.6-11.9, redeclared type 'Unit'
-*** Error 14.11, illegal type pattern argument '__'
-*** Error 15.8, illegal type pattern argument '__'
-### Warning 17.6-17.9,
-ignoring declaration for builtin identifier 'true'
-### Warning 17.12-17.16,
-ignoring declaration for builtin identifier 'false'
-### Warning 19.7-19.12,
-ignoring declaration for builtin identifier '__/\__'
-### Warning 19.15-19.20,
-ignoring declaration for builtin identifier '__\/__'
-### Warning 19.23-19.28,
-ignoring declaration for builtin identifier '__=>__'
-### Warning 19.31-19.36,
-ignoring declaration for builtin identifier '__if__'
-### Warning 19.38-19.44,
-ignoring declaration for builtin identifier '__<=>__'
-### Hint 22.14,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 22.14,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Warning 22.6-22.10,
-ignoring declaration for builtin identifier '__=__'
-### Hint 27.6-27.12, redeclared type '__->?__'
-### Hint 30.6-30.10, redeclared type '__*__'
-*** Error 31.6-31.12, illegal type pattern '__ * __ * __'
-### Hint 40.7, not a class 's'
-### Hint 42.16, rebound variable 'x'
-### Hint 39.14-39.19,
-repeated declaration of 'def' with type 'Pred s'
-### Hint 44.15, rebound variable 'x'
-### Hint 39.14-39.19,
-repeated declaration of 'tt' with type 'Pred s'
-*** Error 46.11, unexpected mixfix token: und
-### Hint 50.6-50.11, redeclared type '__->__'
-### Hint 52.6-52.11, redeclared type '__->__'
-### Hint 52.18-52.20, repeated supertype '__->?__'
-*** Error 54.42-54.49,
-ambiguous mixfix term
-  def (f x)
-  (def f) x
-*** Error 54.6, unexpected mixfix token: :
-### Hint 58.13, rebound variable 'x'
-### Warning 58.4-58.10,
-ignoring declaration for builtin identifier '__res__'
-### Hint 59.9, rebound variable 'x'
-### Hint 60.14, rebound variable 'x'
-### Hint 60.14, rebound variable 'x'
-### Warning 60.9-60.26,
-illegal lhs pattern
-'(var snd : s * t ->? t) ((var x : s), (var y : t)) : t'
-*** Error 65.18-65.30,
-ambiguous mixfix term
-  def (x res y)
-  def (x res y)
-*** Error 65.51-65.69,
-ambiguous mixfix term
-  (def y) und
-  (def y) und
-### Hint 65.7, rebound variable 'x'
-*** Error 65.18-65.30, unexpected term 'def (x res y)'
-### Hint 65.40, rebound variable 'x'
-*** Error 65.51-65.69, unexpected term '(def y) und (def x)'
-### Hint 65.7, rebound variable 'x'
-*** Error 65.18-65.30, unexpected term 'def (x res y)'
-### Hint 65.40, rebound variable 'x'
-*** Error 65.51-65.69, unexpected term '(def y) und (def x)'
-*** Error 65.33,
-ambiguous typings
- 1. (\ ((var x : s), (var y : t)) . def (x res y))
-= \ ((var x : s), (var y : t)) . (def y) und (def x)
- 2. (\ ((var x : s), (var y : t)) . def (x res y))
-= \ ((var x : s), (var y : t)) . (def y) und (def x)
-*** Error 66.7,
-in term '(op fst : forall s : Type; t : Type . s * t -> s) = __res__'
- are uninstantiated type variables
-'[_v46_v38_t, _v47_v37_s]'
-### Hint 72.11,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 72.11,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 74.5, rebound variable 'x'
-### Hint 74.5, rebound variable 'x'
-### Hint 75.6, rebound variable 'x'
-### Hint 75.35, rebound variable 'x'
-### Hint 75.35, rebound variable 'x'
-### Hint 75.6, rebound variable 'x'
-### Hint 75.35, rebound variable 'x'
-### Hint 75.35, rebound variable 'x'
-### Warning 85.6, new type shadows type variable 's'
-*** Error 85.11, illegal type variable as supertype 's'
-### Hint 87.40-87.46,
-in type of '(pred eq : forall s : Type . s * s)
-((var p : Pred s), (op tt : forall s : Type . Pred s))'
-  typename 'Unit' (72.9)
-  is not unifiable with type 'Unit ->? Unit' (87.33)
-*** Error 87.38,
-no typing for 'program all (p : Pred s) : Pred Unit = eq (p, tt)'
-### Hint 90.14, rebound variable 'x'
-### Hint 90.45-90.46, no type found for 't1'
-### Hint 90.45, untypeable term 't1'
-### Hint 90.45, untypeable term 't1 ()'
-### Hint 90.45-90.50, untypeable term 't1 () und'
-### Hint 90.45-90.54, untypeable term 't1 () und t2'
-*** Error 90.43,
-no typing for
-'program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()'
-*** Error 93.11, unexpected mixfix token: impl
-*** Error 95.11, unexpected mixfix token: or
-### Hint 98.39-98.41, no type found for 'all'
-### Hint 98.39, untypeable term 'all'
-*** Error 98.37,
-no typing for
-'program ex (p : Pred s) : Pred Unit
-         = all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
-### Hint 101.29-101.31, no type found for 'all'
-### Hint 101.29, untypeable term 'all'
-*** Error 101.27,
-no typing for
-'program ff () : Pred Unit = all \ r : Pred Unit . r ()'
-### Hint 103.44-103.47, no type found for 'impl'
-### Hint 103.44, untypeable term (with type: Unit) 'impl'
-### Hint 103.42-103.44, untypeable term 'r impl'
-*** Error 103.40,
-no typing for 'program neg (r : Pred Unit) : Pred Unit = r impl ff'
-### Hint 108.3-108.5, no type found for 'all'
-### Hint 108.3, untypeable term 'all'
-*** Error 108.3-108.62,
-no typing for
-'all
- \ (f, g) : s ->? t
- . all \ x : s . eq (\ . f x, g x) impl eq (f, g)'
-### Warning 115.7-115.9, unchanged class 'Cpo'
-### Hint 117.5, is type variable 'c'
-### Hint 119.16,
-no kind found for 'c'
-  expected: {Cppo}
-     found: {Cpo}
-### Hint 121.3-121.5, no type found for 'all'
-### Hint 121.3, untypeable term 'all'
-*** Error 121.3-121.16, no typing for 'all \ x : c . x <<= x'
-### Hint 122.3-122.5, no type found for 'all'
-### Hint 122.3, untypeable term 'all'
-*** Error 122.3-122.53,
-no typing for
-'all \ (x, y, z : c) . (x <<= y) und (y <<= z) impl x <<= z'
-### Hint 123.3-123.5, no type found for 'all'
-### Hint 123.3, untypeable term 'all'
-*** Error 123.3-123.56,
-no typing for
-'all \ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y)'
-### Hint 125.32-125.34, no type found for 'all'
-### Hint 125.32, untypeable term 'all'
-*** Error 125.14-125.49,
-no typing for '(all \ n : nat . s n <<= s (Suc n)) as Unit'
-### Hint 126.15, rebound variable 'x'
-### Hint 126.38-126.40, no type found for 'all'
-### Hint 126.38, untypeable term 'all'
-*** Error 126.14-126.55,
-no typing for '(all \ n : nat . s n <<= x) as Unit'
-*** Error 130.21-131.74,
-ambiguous mixfix term
-  def (((sup s) impl)
-     ((((isBound (sup s, s)) und) all)
-      (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x)))
-  ((def (sup s)) impl)
-((((isBound (sup s, s)) und) all)
- (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x))
-### Hint 130.3-130.5, no type found for 'all'
-### Hint 130.3, untypeable term 'all'
-*** Error 130.3-131.74,
-no typing for
-'all
- \ s : nat -> c
- . def (sup s) impl
-   (isBound (sup s, s) und all
-    (\ x : c . isBound (x, s) impl sup (s) <<= x))'
-### Hint 134.3-134.5, no type found for 'all'
-### Hint 134.3, untypeable term 'all'
-*** Error 134.3-134.44,
-no typing for 'all \ s : nat -> c . isChain s impl def (sup s)'
-### Hint 139.5, is type variable 'p'
-### Warning 141.4-141.9,
-ignoring declaration for builtin identifier 'bottom'
-### Hint 143.3-143.5, no type found for 'all'
-### Hint 143.3, untypeable term 'all'
-*** Error 143.3-143.22, no typing for 'all \ x : p . bottom <<= x'
-### Hint 148.6, is type variable 'f'
-### Hint 150.15-150.17, is type list '[f]'
-### Hint 119.14-119.18,
-repeated declaration of '__<<=__' with type 'c * c ->? Unit'
-### Hint 153.5, is type variable 'c'
-### Hint 153.5, rebound type variable 'c'
-### Hint 153.8, is type variable 'd'
-### Hint 155.15-155.19, redeclared type '__*__'
-### Hint 157.7, not a class 'c'
-### Hint 157.11, not a class 'c'
-### Hint 157.18, not a class 'd'
-### Hint 157.23, not a class 'd'
-### Hint 159.10-159.11, rebound variable 'x1'
-### Hint 159.14-159.15, rebound variable 'y1'
-### Hint 159.23-159.24, rebound variable 'x2'
-### Hint 159.27-159.28, rebound variable 'y2'
-### Hint 159.37-159.45, untypeable term '(x1 <<= x2) und'
-*** Error 159.31,
-no typing for
-'program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)'
-### Hint 169.7-169.14, redeclared type '__-->?__'
-### Hint 169.20-169.22, repeated supertype '__->?__'
-*** Error 171.24-171.61,
-ambiguous mixfix term
-  (def (((f x) und) x)) <<= y
-  (((def (f x)) und) x) <<= y
-*** Error 174.45, unexpected mixfix token: +
-*** Error 173.28-174.61,
-ambiguous mixfix term
-  def ((((f (s m)) und) eq)
-     (sup (\ n : nat .! f (s (n + m))), f (sup s)))
-  ((((def f) (s m)) und) eq)
-(sup (\ n : nat .! f (s (n + m))), f (sup s))
-*** Error 170.7, unexpected mixfix token: :
-### Hint 176.16-176.25, is type list '[c -->? d]'
-*** Error 176.41-176.68,
-ambiguous mixfix term
-  (def ((((f x) impl) f) x)) <<= (g x)
-  ((((def (f x)) impl) f) x) <<= (g x)
-### Warning 176.11, variable also known as type variable 'f'
-### Hint 176.31-176.33, no type found for 'all'
-### Hint 176.31, untypeable term 'all'
-*** Error 176.29,
-no typing for
-'program f <<=[c -->? d] g
-         = all \ x : c . def (f x) impl f (x) <<= g (x)'
-### Hint 179.15-179.21, redeclared type '__-->__'
-### Warning 181.17-181.23, non-unique kind for '__ -->? __'
-### Hint 181.7-181.13, redeclared type '__-->__'
-### Hint 181.19-181.22, repeated supertype '__-->?__'
-### Hint 182.16,
-no kind found for 'd'
-  expected: {Cppo}
-     found: {Cpo}
-*** Error 182.46-182.53,
-ambiguous mixfix term
-  def (f x)
-  (def f) x
-*** Error 182.7, unexpected mixfix token: :
-### Hint 184.7, not a kind 'c --> d'
-### Hint 184.19,
-no kind found for 'd'
-  expected: {Cppo}
-     found: {Cpo}
-### Warning 184.6, variable also known as type variable 'f'
-### Hint 184.11, not a kind 'c --> d'
-### Hint 184.19,
-no kind found for 'd'
-  expected: {Cppo}
-     found: {Cpo}
-### Hint 186.25-186.34, is type list '[c -->? d]'
-### Hint 186.10, rebound variable 'f'
-### Warning 186.10, variable also known as type variable 'f'
-### Hint 186.16, rebound variable 'g'
-### Hint 186.10, rebound variable 'f'
-### Warning 186.10, variable also known as type variable 'f'
-### Hint 186.16, rebound variable 'g'
-### Hint 119.14-119.18,
-repeated declaration of '__<<=__' with type 'c * c ->? Unit'
-### Hint 190.16,
-no kind found for 'p'
-  expected: {Cppo}
-     found: {Pcpo}
-### Hint 190.23,
-no kind found for 'p'
-  expected: {Cppo}
-     found: {Pcpo}
-### Hint 192.3-192.5, no type found for 'all'
-### Hint 192.3, untypeable term 'all'
-*** Error 192.3-193.42,
-no typing for
-'all
- \ f : p -->? p
- . eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'
-### Hint 195.7, not a kind 'p --> p'
-### Hint 195.15,
-no kind found for 'p'
-  expected: {Cppo}
-     found: {Pcpo}
-### Hint 195.5, rebound variable 'f'
-### Warning 195.5, variable also known as type variable 'f'
-### Hint 195.20, not a class 'p'
-### Hint 195.18, rebound variable 'x'
-### Hint 199.22,
-no kind found for 'p'
-  expected: {Cppo}
-     found: {Pcpo}
-### Hint 199.40,
-no kind found for 'p'
-  expected: {Cppo}
-     found: {Pcpo}
-### Hint 199.58,
-no kind found for 'p'
-  expected: {Cppo}
-     found: {Pcpo}
-### Hint 199.71,
-no kind found for 'p'
-  expected: {Cppo}
-     found: {Pcpo}
-### Hint 199.65-199.71,
-no kind found for 'c --> p'
-  expected: {Cppo}
-     found: {Pcpo}
-### Warning 204.20-204.23,
-ignoring declaration for builtin identifier 'true'
-### Warning 204.27-204.31,
-ignoring declaration for builtin identifier 'false'
+4.7-4.10: ### Warning: void universe class declaration 'Type'
+6.5: ### Hint: is type variable 's'
+6.7: ### Hint: is type variable 't'
+11.6-11.9: ### Hint: redeclared type 'Unit'
+14.11: *** Error: illegal type pattern argument '__'
+15.8: *** Error: illegal type pattern argument '__'
+17.6-17.9:
+### Warning: ignoring declaration for builtin identifier 'true'
+17.12-17.16:
+### Warning: ignoring declaration for builtin identifier 'false'
+19.7-19.12:
+### Warning: ignoring declaration for builtin identifier '__/\__'
+19.15-19.20:
+### Warning: ignoring declaration for builtin identifier '__\/__'
+19.23-19.28:
+### Warning: ignoring declaration for builtin identifier '__=>__'
+19.31-19.36:
+### Warning: ignoring declaration for builtin identifier '__if__'
+19.38-19.44:
+### Warning: ignoring declaration for builtin identifier '__<=>__'
+22.14:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+22.14:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+22.6-22.10:
+### Warning: ignoring declaration for builtin identifier '__=__'
+27.6-27.12: ### Hint: redeclared type '__->?__'
+30.6-30.10: ### Hint: redeclared type '__*__'
+31.6-31.12: *** Error: illegal type pattern '__ * __ * __'
+40.7: ### Hint: not a class 's'
+42.16: ### Hint: rebound variable 'x'
+39.14-39.19:
+### Hint: repeated declaration of 'def' with type 'Pred s'
+44.15: ### Hint: rebound variable 'x'
+39.14-39.19:
+### Hint: repeated declaration of 'tt' with type 'Pred s'
+46.11: *** Error: unexpected mixfix token: und
+50.6-50.11: ### Hint: redeclared type '__->__'
+52.6-52.11: ### Hint: redeclared type '__->__'
+52.18-52.20: ### Hint: repeated supertype '__->?__'
+54.42-54.49:
+*** Error: ambiguous mixfix term
+             def (f x)
+             (def f) x
+54.6: *** Error: unexpected mixfix token: :
+58.13: ### Hint: rebound variable 'x'
+58.4-58.10:
+### Warning: ignoring declaration for builtin identifier '__res__'
+59.9: ### Hint: rebound variable 'x'
+60.14: ### Hint: rebound variable 'x'
+60.14: ### Hint: rebound variable 'x'
+60.9-60.26:
+### Warning: illegal lhs pattern
+             '(var snd : s * t ->? t) ((var x : s), (var y : t)) : t'
+65.18-65.30:
+*** Error: ambiguous mixfix term
+             def (x res y)
+             def (x res y)
+65.51-65.69:
+*** Error: ambiguous mixfix term
+             (def y) und
+             (def y) und
+65.7: ### Hint: rebound variable 'x'
+65.18-65.30: *** Error: unexpected term 'def (x res y)'
+65.40: ### Hint: rebound variable 'x'
+65.51-65.69: *** Error: unexpected term '(def y) und (def x)'
+65.7: ### Hint: rebound variable 'x'
+65.18-65.30: *** Error: unexpected term 'def (x res y)'
+65.40: ### Hint: rebound variable 'x'
+65.51-65.69: *** Error: unexpected term '(def y) und (def x)'
+65.33:
+*** Error: ambiguous typings
+            1. (\ ((var x : s), (var y : t)) . def (x res y))
+           = \ ((var x : s), (var y : t)) . (def y) und (def x)
+            2. (\ ((var x : s), (var y : t)) . def (x res y))
+           = \ ((var x : s), (var y : t)) . (def y) und (def x)
+66.7:
+*** Error: in term '(op fst : forall s : Type; t : Type . s * t -> s) = __res__'
+            are uninstantiated type variables
+           '[_v46_v38_t, _v47_v37_s]'
+72.11:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+72.11:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+74.5: ### Hint: rebound variable 'x'
+74.5: ### Hint: rebound variable 'x'
+75.6: ### Hint: rebound variable 'x'
+75.35: ### Hint: rebound variable 'x'
+75.35: ### Hint: rebound variable 'x'
+75.6: ### Hint: rebound variable 'x'
+75.35: ### Hint: rebound variable 'x'
+75.35: ### Hint: rebound variable 'x'
+85.6: ### Warning: new type shadows type variable 's'
+85.11: *** Error: illegal type variable as supertype 's'
+87.40-87.46:
+### Hint: in type of '(pred eq : forall s : Type . s * s)
+          ((var p : Pred s), (op tt : forall s : Type . Pred s))'
+            typename 'Unit' (72.9)
+            is not unifiable with type 'Unit ->? Unit' (87.33)
+87.38:
+*** Error: no typing for 'program all (p : Pred s) : Pred Unit = eq (p, tt)'
+90.14: ### Hint: rebound variable 'x'
+90.45-90.46: ### Hint: no type found for 't1'
+90.45: ### Hint: untypeable term 't1'
+90.45: ### Hint: untypeable term 't1 ()'
+90.45-90.50: ### Hint: untypeable term 't1 () und'
+90.45-90.54: ### Hint: untypeable term 't1 () und t2'
+90.43:
+*** Error: no typing for
+           'program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()'
+93.11: *** Error: unexpected mixfix token: impl
+95.11: *** Error: unexpected mixfix token: or
+98.39-98.41: ### Hint: no type found for 'all'
+98.39: ### Hint: untypeable term 'all'
+98.37:
+*** Error: no typing for
+           'program ex (p : Pred s) : Pred Unit
+                    = all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
+101.29-101.31: ### Hint: no type found for 'all'
+101.29: ### Hint: untypeable term 'all'
+101.27:
+*** Error: no typing for
+           'program ff () : Pred Unit = all \ r : Pred Unit . r ()'
+103.44-103.47: ### Hint: no type found for 'impl'
+103.44: ### Hint: untypeable term (with type: Unit) 'impl'
+103.42-103.44: ### Hint: untypeable term 'r impl'
+103.40:
+*** Error: no typing for 'program neg (r : Pred Unit) : Pred Unit = r impl ff'
+108.3-108.5: ### Hint: no type found for 'all'
+108.3: ### Hint: untypeable term 'all'
+108.3-108.62:
+*** Error: no typing for
+           'all
+            \ (f, g) : s ->? t
+            . all \ x : s . eq (\ . f x, g x) impl eq (f, g)'
+115.7-115.9: ### Warning: unchanged class 'Cpo'
+117.5: ### Hint: is type variable 'c'
+119.16:
+### Hint: no kind found for 'c'
+            expected: {Cppo}
+               found: {Cpo}
+121.3-121.5: ### Hint: no type found for 'all'
+121.3: ### Hint: untypeable term 'all'
+121.3-121.16: *** Error: no typing for 'all \ x : c . x <<= x'
+122.3-122.5: ### Hint: no type found for 'all'
+122.3: ### Hint: untypeable term 'all'
+122.3-122.53:
+*** Error: no typing for
+           'all \ (x, y, z : c) . (x <<= y) und (y <<= z) impl x <<= z'
+123.3-123.5: ### Hint: no type found for 'all'
+123.3: ### Hint: untypeable term 'all'
+123.3-123.56:
+*** Error: no typing for
+           'all \ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y)'
+125.32-125.34: ### Hint: no type found for 'all'
+125.32: ### Hint: untypeable term 'all'
+125.14-125.49:
+*** Error: no typing for '(all \ n : nat . s n <<= s (Suc n)) as Unit'
+126.15: ### Hint: rebound variable 'x'
+126.38-126.40: ### Hint: no type found for 'all'
+126.38: ### Hint: untypeable term 'all'
+126.14-126.55:
+*** Error: no typing for '(all \ n : nat . s n <<= x) as Unit'
+130.21-131.74:
+*** Error: ambiguous mixfix term
+             def (((sup s) impl)
+                ((((isBound (sup s, s)) und) all)
+                 (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x)))
+             ((def (sup s)) impl)
+           ((((isBound (sup s, s)) und) all)
+            (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x))
+130.3-130.5: ### Hint: no type found for 'all'
+130.3: ### Hint: untypeable term 'all'
+130.3-131.74:
+*** Error: no typing for
+           'all
+            \ s : nat -> c
+            . def (sup s) impl
+              (isBound (sup s, s) und all
+               (\ x : c . isBound (x, s) impl sup (s) <<= x))'
+134.3-134.5: ### Hint: no type found for 'all'
+134.3: ### Hint: untypeable term 'all'
+134.3-134.44:
+*** Error: no typing for 'all \ s : nat -> c . isChain s impl def (sup s)'
+139.5: ### Hint: is type variable 'p'
+141.4-141.9:
+### Warning: ignoring declaration for builtin identifier 'bottom'
+143.3-143.5: ### Hint: no type found for 'all'
+143.3: ### Hint: untypeable term 'all'
+143.3-143.22: *** Error: no typing for 'all \ x : p . bottom <<= x'
+148.6: ### Hint: is type variable 'f'
+150.15-150.17: ### Hint: is type list '[f]'
+119.14-119.18:
+### Hint: repeated declaration of '__<<=__' with type 'c * c ->? Unit'
+153.5: ### Hint: is type variable 'c'
+153.5: ### Hint: rebound type variable 'c'
+153.8: ### Hint: is type variable 'd'
+155.15-155.19: ### Hint: redeclared type '__*__'
+157.7: ### Hint: not a class 'c'
+157.11: ### Hint: not a class 'c'
+157.18: ### Hint: not a class 'd'
+157.23: ### Hint: not a class 'd'
+159.10-159.11: ### Hint: rebound variable 'x1'
+159.14-159.15: ### Hint: rebound variable 'y1'
+159.23-159.24: ### Hint: rebound variable 'x2'
+159.27-159.28: ### Hint: rebound variable 'y2'
+159.37-159.45: ### Hint: untypeable term '(x1 <<= x2) und'
+159.31:
+*** Error: no typing for
+           'program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)'
+169.7-169.14: ### Hint: redeclared type '__-->?__'
+169.20-169.22: ### Hint: repeated supertype '__->?__'
+171.24-171.61:
+*** Error: ambiguous mixfix term
+             (def (((f x) und) x)) <<= y
+             (((def (f x)) und) x) <<= y
+174.45: *** Error: unexpected mixfix token: +
+173.28-174.61:
+*** Error: ambiguous mixfix term
+             def ((((f (s m)) und) eq)
+                (sup (\ n : nat .! f (s (n + m))), f (sup s)))
+             ((((def f) (s m)) und) eq)
+           (sup (\ n : nat .! f (s (n + m))), f (sup s))
+170.7: *** Error: unexpected mixfix token: :
+176.16-176.25: ### Hint: is type list '[c -->? d]'
+176.41-176.68:
+*** Error: ambiguous mixfix term
+             (def ((((f x) impl) f) x)) <<= (g x)
+             ((((def (f x)) impl) f) x) <<= (g x)
+176.11: ### Warning: variable also known as type variable 'f'
+176.31-176.33: ### Hint: no type found for 'all'
+176.31: ### Hint: untypeable term 'all'
+176.29:
+*** Error: no typing for
+           'program f <<=[c -->? d] g
+                    = all \ x : c . def (f x) impl f (x) <<= g (x)'
+179.15-179.21: ### Hint: redeclared type '__-->__'
+181.17-181.23: ### Warning: non-unique kind for '__ -->? __'
+181.7-181.13: ### Hint: redeclared type '__-->__'
+181.19-181.22: ### Hint: repeated supertype '__-->?__'
+182.16:
+### Hint: no kind found for 'd'
+            expected: {Cppo}
+               found: {Cpo}
+182.46-182.53:
+*** Error: ambiguous mixfix term
+             def (f x)
+             (def f) x
+182.7: *** Error: unexpected mixfix token: :
+184.7: ### Hint: not a kind 'c --> d'
+184.19:
+### Hint: no kind found for 'd'
+            expected: {Cppo}
+               found: {Cpo}
+184.6: ### Warning: variable also known as type variable 'f'
+184.11: ### Hint: not a kind 'c --> d'
+184.19:
+### Hint: no kind found for 'd'
+            expected: {Cppo}
+               found: {Cpo}
+186.25-186.34: ### Hint: is type list '[c -->? d]'
+186.10: ### Hint: rebound variable 'f'
+186.10: ### Warning: variable also known as type variable 'f'
+186.16: ### Hint: rebound variable 'g'
+186.10: ### Hint: rebound variable 'f'
+186.10: ### Warning: variable also known as type variable 'f'
+186.16: ### Hint: rebound variable 'g'
+119.14-119.18:
+### Hint: repeated declaration of '__<<=__' with type 'c * c ->? Unit'
+190.16:
+### Hint: no kind found for 'p'
+            expected: {Cppo}
+               found: {Pcpo}
+190.23:
+### Hint: no kind found for 'p'
+            expected: {Cppo}
+               found: {Pcpo}
+192.3-192.5: ### Hint: no type found for 'all'
+192.3: ### Hint: untypeable term 'all'
+192.3-193.42:
+*** Error: no typing for
+           'all
+            \ f : p -->? p
+            . eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'
+195.7: ### Hint: not a kind 'p --> p'
+195.15:
+### Hint: no kind found for 'p'
+            expected: {Cppo}
+               found: {Pcpo}
+195.5: ### Hint: rebound variable 'f'
+195.5: ### Warning: variable also known as type variable 'f'
+195.20: ### Hint: not a class 'p'
+195.18: ### Hint: rebound variable 'x'
+199.22:
+### Hint: no kind found for 'p'
+            expected: {Cppo}
+               found: {Pcpo}
+199.40:
+### Hint: no kind found for 'p'
+            expected: {Cppo}
+               found: {Pcpo}
+199.58:
+### Hint: no kind found for 'p'
+            expected: {Cppo}
+               found: {Pcpo}
+199.71:
+### Hint: no kind found for 'p'
+            expected: {Cppo}
+               found: {Pcpo}
+199.65-199.71:
+### Hint: no kind found for 'c --> p'
+            expected: {Cppo}
+               found: {Pcpo}
+204.20-204.23:
+### Warning: ignoring declaration for builtin identifier 'true'
+204.27-204.31:
+### Warning: ignoring declaration for builtin identifier 'false'

@@ -8,69 +8,69 @@
 12 + 34 * "afa"
 "" + ""
 (op x : a) (a, b)
-*** Error 10.8, unknown type 'a'
+10.8: *** Error: unknown type 'a'
 a
 a + b
 a (: s + b : s)
-*** Error 13.9, not a class 's'
+13.9: *** Error: not a class 's'
 a (as s : s) (as s)
-*** Error 14.15, unknown type 's'
-*** Error 14.10, not a class 's'
+14.15: *** Error: unknown type 's'
+14.10: *** Error: not a class 's'
 a (: s : s) (as s) (as s)
-*** Error 15.15, unknown type 's'
-*** Error 15.10, unknown type 's'
-*** Error 15.5, not a class 's'
+15.15: *** Error: unknown type 's'
+15.10: *** Error: unknown type 's'
+15.5: *** Error: not a class 's'
 [ ]
 + a
 a + b
 a when a < b else b
 a when (pred a : b) else b
-*** Error 20.16, unknown type 'b'
+20.16: *** Error: unknown type 'b'
 { a b }
-*** Error 22.1-22.5,
-ambiguous mixfix term
-  (a b) p
-  a b p
-  (a b) p
-*** Error 23.1-23.5,
-ambiguous mixfix term
-  (q a) b
-  q a b
-*** Error 24.1-24.4,
-ambiguous mixfix term
-  B ([ b ])
-  B [ b ]
-*** Error 25.1-25.11,
-ambiguous mixfix term
-  B ((a (c :: ([ d ]))) :: ([ b ]))
-  B[a[c,d],b]
+22.1-22.5:
+*** Error: ambiguous mixfix term
+             (a b) p
+             a b p
+             (a b) p
+23.1-23.5:
+*** Error: ambiguous mixfix term
+             (q a) b
+             q a b
+24.1-24.4:
+*** Error: ambiguous mixfix term
+             B ([ b ])
+             B [ b ]
+25.1-25.11:
+*** Error: ambiguous mixfix term
+             B ((a (c :: ([ d ]))) :: ([ b ]))
+             B[a[c,d],b]
 [ a, [ c, d ], b ]
-*** Error 27.1-27.10,
-ambiguous mixfix term
-  (a (c :: ([ d ]))) :: ([ b ])
-  a[c,d] :: ([ b ])
+27.1-27.10:
+*** Error: ambiguous mixfix term
+             (a (c :: ([ d ]))) :: ([ b ])
+             a[c,d] :: ([ b ])
 a B[a[c,d],b] b
 while while a do b od do c od
 while while a do b od do while c do d od od
 { a { b c } }
-*** Error 32.1-32.10,
-ambiguous mixfix term
-  a :: ([ (A (0 B)) ])
-  a :: ([ ((A 0) B) ])
-*** Error 33.1-33.9,
-ambiguous mixfix term
-  A (A (0 B) B)
-  A (A ((0 B) B))
-  (A (A 0 B)) B
-  A (A (0 B)) B
-*** Error 34.1-34.13,
-ambiguous mixfix term
-  (b + (A (0 B))) + b
-  (b + ((A 0) B)) + b
-*** Error 35.1-35.7,
-ambiguous mixfix term
-  - (A (0 B))
-  - ((A 0) B)
+32.1-32.10:
+*** Error: ambiguous mixfix term
+             a :: ([ (A (0 B)) ])
+             a :: ([ ((A 0) B) ])
+33.1-33.9:
+*** Error: ambiguous mixfix term
+             A (A (0 B) B)
+             A (A ((0 B) B))
+             (A (A 0 B)) B
+             A (A (0 B)) B
+34.1-34.13:
+*** Error: ambiguous mixfix term
+             (b + (A (0 B))) + b
+             (b + ((A 0) B)) + b
+35.1-35.7:
+*** Error: ambiguous mixfix term
+             - (A (0 B))
+             - ((A 0) B)
 a ! ! !
 Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3
 --> RS3

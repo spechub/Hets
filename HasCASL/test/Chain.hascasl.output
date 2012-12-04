@@ -32,24 +32,24 @@ forall a : -Cpo
   . (s in Chain a) <=> forall n : Nat . def s n => s n <= s (n + 1)
 forall a : Cpo; c : Chain a; x : ? a
 . sup c <= x <=> forall n : Nat . c n <= x
-### Warning 1.7-1.9, unchanged class 'Cpo'
-### Hint 2.8, is type variable 'a'
-### Hint 3.25,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Cpo}
-### Hint 5.27,
-no kind found for 'Nat'
-  expected: {Cpo}
-     found: {Type}
-### Hint 5.27,
-no kind found for 'Nat'
-  expected: {Cppo}
-     found: {Type}
-### Hint 6.15, rebound type variable 'a'
-### Hint 7.35, not a class 'Nat'
-### Hint 8.8, is type variable 'a'
-### Hint 8.8, rebound type variable 'a'
-### Hint 10.9, not a kind '? a'
-### Hint 10.16, not a kind 'Chain a'
-### Hint 11.26, not a class 'Nat'
+1.7-1.9: ### Warning: unchanged class 'Cpo'
+2.8: ### Hint: is type variable 'a'
+3.25:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Cpo}
+5.27:
+### Hint: no kind found for 'Nat'
+            expected: {Cpo}
+               found: {Type}
+5.27:
+### Hint: no kind found for 'Nat'
+            expected: {Cppo}
+               found: {Type}
+6.15: ### Hint: rebound type variable 'a'
+7.35: ### Hint: not a class 'Nat'
+8.8: ### Hint: is type variable 'a'
+8.8: ### Hint: rebound type variable 'a'
+10.9: ### Hint: not a kind '? a'
+10.16: ### Hint: not a kind 'Chain a'
+11.26: ### Hint: not a class 'Nat'

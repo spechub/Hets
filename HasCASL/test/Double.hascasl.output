@@ -31,14 +31,14 @@ forall a : Type; b < a : Type
 . twice = \ (f : a ->? b)(x : a) . f (f x)
 forall a : Type; b < a : Type; f : a ->? b; x : a
 . twice f x = f (f x)
-### Hint 1.6, is type variable 'a'
-### Hint 5.14-5.20,
-no kind found for 'a ->? b'
-  expected: {Cpo}
-     found: {Type}
-### Hint 5.14-5.20,
-no kind found for 'a ->? b'
-  expected: {Cppo}
-     found: {Type}
-### Hint 9.7, not a kind 'a ->? b'
-### Hint 9.20, not a class 'a'
+1.6: ### Hint: is type variable 'a'
+5.14-5.20:
+### Hint: no kind found for 'a ->? b'
+            expected: {Cpo}
+               found: {Type}
+5.14-5.20:
+### Hint: no kind found for 'a ->? b'
+            expected: {Cppo}
+               found: {Type}
+9.7: ### Hint: not a kind 'a ->? b'
+9.20: ### Hint: not a class 'a'

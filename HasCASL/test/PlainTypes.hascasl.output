@@ -61,40 +61,40 @@ w : m List;
 x : tuple3 r s t;
 z : m [__]
 forall x : t . (x in s3) <=> x = x
-### Hint 7.6, not a kind '[r]'
-### Hint 7.8-7.10, a non-compound list: [r]
-### Hint 7.14, not a kind '{s}'
-### Hint 11.7, not a kind 'tuple3 r s t'
-### Hint 12.7, not a kind 'tuple3 r s'
-*** Error 12.9-12.18,
-no kind found for 'tuple3 r s'
-  expected: {Type}
-     found: {c -> d}
-### Hint 18.7, not a kind 'm [__]'
-### Hint 18.11-18.14, a non-compound list: [__]
-### Hint 22.7, not a kind 'm List'
-### Hint 24.8, not a class 'm'
-*** Error 24.10,
-no kind found for 'm'
-  expected: {Type}
-     found: {(a -> b) -> c}
-### Hint 26.8, not a kind 'm tuple1'
-### Hint 26.12,
-no kind found for 'tuple1'
-  expected: {a -> b}
-     found: {b -> a}
-*** Error 26.10-26.12, no kind found for 'm tuple1'
-### Hint 28.8, not a kind 'm tuple3'
-### Hint 28.12,
-no kind found for 'tuple3'
-  expected: {a -> b}
-     found: {a -> b -> c -> d}
-*** Error 28.10-28.12, no kind found for 'm tuple3'
-### Hint 30.5-30.6, is type variable 'nt'
-### Hint 32.8, not a kind 'nt r List s'
-### Hint 32.15,
-no kind found for 'List'
-  expected: {b -> c}
-     found: {a -> b}
-*** Error 32.10-32.20, no kind found for 'nt r List s'
-### Hint 38.12, rebound variable 'x'
+7.6: ### Hint: not a kind '[r]'
+7.8-7.10: ### Hint: a non-compound list: [r]
+7.14: ### Hint: not a kind '{s}'
+11.7: ### Hint: not a kind 'tuple3 r s t'
+12.7: ### Hint: not a kind 'tuple3 r s'
+12.9-12.18:
+*** Error: no kind found for 'tuple3 r s'
+             expected: {Type}
+                found: {c -> d}
+18.7: ### Hint: not a kind 'm [__]'
+18.11-18.14: ### Hint: a non-compound list: [__]
+22.7: ### Hint: not a kind 'm List'
+24.8: ### Hint: not a class 'm'
+24.10:
+*** Error: no kind found for 'm'
+             expected: {Type}
+                found: {(a -> b) -> c}
+26.8: ### Hint: not a kind 'm tuple1'
+26.12:
+### Hint: no kind found for 'tuple1'
+            expected: {a -> b}
+               found: {b -> a}
+26.10-26.12: *** Error: no kind found for 'm tuple1'
+28.8: ### Hint: not a kind 'm tuple3'
+28.12:
+### Hint: no kind found for 'tuple3'
+            expected: {a -> b}
+               found: {a -> b -> c -> d}
+28.10-28.12: *** Error: no kind found for 'm tuple3'
+30.5-30.6: ### Hint: is type variable 'nt'
+32.8: ### Hint: not a kind 'nt r List s'
+32.15:
+### Hint: no kind found for 'List'
+            expected: {b -> c}
+               found: {a -> b}
+32.10-32.20: *** Error: no kind found for 'nt r List s'
+38.12: ### Hint: rebound variable 'x'

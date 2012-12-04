@@ -9,6 +9,6 @@ op f : forall a < e : Type . a -> a
 var
 x : a
 forall e : Type . f = \ x : e . f x
-### Hint 1.5, is type variable 'e'
-### Hint 4.7, not a class 'a'
-### Hint 6.9, rebound variable 'x'
+1.5: ### Hint: is type variable 'e'
+4.7: ### Hint: not a class 'a'
+6.9: ### Hint: rebound variable 'x'

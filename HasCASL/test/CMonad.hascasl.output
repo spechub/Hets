@@ -46,28 +46,28 @@ x : m a
 forall a : Type; b : Type; g : a -> b . fmap g = map g
 forall a : Type; b : Type; m : Monad; g : a -> b; x : m a
 . fmap g x = x bind \ y : a .! return (g y)
-### Hint 7.5, is type variable 'a'
-### Hint 7.8, is type variable 'b'
-### Hint 9.5, is type variable 'm'
-### Hint 15.5, is type variable 'f'
-### Hint 25.3-25.10,
-constrain 'Set : Monad' is unprovable of '(op fail : forall a : Type; m : Monad . m a)
-= (op emptySet : forall a : Type . Set a)'
-  known kinds are: {Functor}
-*** Error 25.8, no typing for 'fail = emptySet'
-*** Error 27.8,
-in term '(op fail : forall a : Type; m : Monad . m a)
-= (op empty : forall a : Type . List a)'
- are uninstantiated type variables
-'[_v13_a]'
-### Hint 31.15-31.17,
-no kind found for 'm a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 31.15-31.17,
-no kind found for 'm a'
-  expected: {Cppo}
-     found: {Type}
-### Hint 33.7, not a class 'a'
-### Hint 33.7, not a class 'b'
-### Hint 33.23, not a kind 'm a'
+7.5: ### Hint: is type variable 'a'
+7.8: ### Hint: is type variable 'b'
+9.5: ### Hint: is type variable 'm'
+15.5: ### Hint: is type variable 'f'
+25.3-25.10:
+### Hint: constrain 'Set : Monad' is unprovable of '(op fail : forall a : Type; m : Monad . m a)
+          = (op emptySet : forall a : Type . Set a)'
+            known kinds are: {Functor}
+25.8: *** Error: no typing for 'fail = emptySet'
+27.8:
+*** Error: in term '(op fail : forall a : Type; m : Monad . m a)
+           = (op empty : forall a : Type . List a)'
+            are uninstantiated type variables
+           '[_v13_a]'
+31.15-31.17:
+### Hint: no kind found for 'm a'
+            expected: {Cpo}
+               found: {Type}
+31.15-31.17:
+### Hint: no kind found for 'm a'
+            expected: {Cppo}
+               found: {Type}
+33.7: ### Hint: not a class 'a'
+33.7: ### Hint: not a class 'b'
+33.23: ### Hint: not a kind 'm a'

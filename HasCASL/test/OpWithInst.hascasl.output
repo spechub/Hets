@@ -57,188 +57,188 @@ op l[F,a] : forall a : Type; F : Funct . F a
 . (__=[s]__ : s * s -> Unit) (a, a)
 . (__ =[s][s : Type] __ : s * s -> Unit) (a, a)
 . a =[s] a
-### Hint 4.5, is type variable 'a'
-### Hint 4.8, is type variable 'b'
-### Hint 6.26,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 6.26,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
-### Hint 6.4-6.11, is polymorphic compound identifier '__=[s]__'
-### Hint 8.29,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 8.29,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
-### Hint 8.7-8.14, is polymorphic compound identifier '__=[s]__'
-### Hint 10.6-10.8, is compound list '[s]'
-### Hint 11.8-11.15, is type list '[s : Type]'
-### Hint 13.4-13.7, is polymorphic compound identifier 'f[a]'
-### Hint 15.13,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 15.13,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
-### Warning 15.6, unexpected identifier in compound list 'b'
-### Hint 15.4-15.9, is polymorphic compound identifier 'g[b,a]'
-### Warning 17.6, unexpected identifier in compound list 'b'
-### Hint 17.4-17.9, is polymorphic compound identifier 'h[b,a]'
-### Warning 19.8, unexpected identifier in compound list 'b'
-### Hint 19.4-19.9, is polymorphic compound identifier 'j[a,b]'
-### Hint 23.5, is type variable 'f'
-### Hint 23.8, is type variable 'F'
-### Warning 25.9, unexpected identifier in compound list 'f'
-### Hint 25.4-25.10, is polymorphic compound identifier 'k[a,f]'
-### Warning 26.6, unexpected identifier in compound list 'b'
-### Warning 26.12, unexpected identifier in compound list 'f'
-### Hint 26.4-26.13, is polymorphic compound identifier 'k[b,a,f]'
-### Warning 27.9, unexpected identifier in compound list 'b'
-### Warning 27.12, unexpected identifier in compound list 'f'
-### Hint 27.4-27.13, is polymorphic compound identifier 'k[a,b,f]'
-### Warning 29.6, unexpected identifier in compound list 'F'
-### Hint 29.4-29.10, is polymorphic compound identifier 'l[F,a]'
-### Hint 32.34, rebound type variable 'b'
-### Hint 32.37, rebound type variable 'a'
-### Warning 32.6, unexpected identifier in compound list 'G'
-### Warning 32.9, unexpected identifier in compound list 'b'
-### Hint 32.4-32.13, is polymorphic compound identifier 'k[G,b,a]'
-### Hint 34.44, is type list '[s]'
-### Hint 34.29,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 34.29,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
-### Hint 34.7-34.14, is polymorphic compound identifier '__=[s]__'
-### Hint 35.44-35.46, is type list '[s, s]'
-### Hint 35.29,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 35.29,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
-### Hint 35.7-35.14, is polymorphic compound identifier '__=[s]__'
-### Hint 35.44-35.46,
-for type scheme 'a * a -> Unit' wrong length of instantiation list
-'[s, s]'
-### Hint 35.4-35.16,
-untypeable term
-'(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
-*** Error 35.4-35.52,
-no typing for
-'(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s] (a, a)'
-### Hint 36.7-36.9, is compound list '[s]'
-### Hint 36.10-36.22, is type list '[s, s : Type]'
-### Hint 36.28,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 36.28,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 36.11-36.16,
-for type scheme 'a * a -> Unit' wrong length of instantiation list
-'[s, s : Type]'
-### Hint 36.4-36.23, no type found for '__=[s]__'
-### Hint 36.6-36.26,
-untypeable term '__ =[s][s, s : Type] __ : s * s -> Unit'
-*** Error 36.6-36.46,
-no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
-### Hint 37.7-37.9, is compound list '[s]'
-### Hint 37.15,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 37.15,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 37.29-37.31, is compound list '[s]'
-*** Error 37.30, unexpected mixfix token: s
-### Hint 38.7-38.9, is compound list '[s]'
-### Hint 38.10-38.12, is compound list '[s]'
-### Hint 38.18,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 38.18,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 38.32-38.34, is compound list '[s]'
-*** Error 38.10, unexpected mixfix token: [
-### Hint 39.7-39.9, is compound list '[s]'
-### Hint 39.15,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 39.15,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 40.7-40.9, is compound list '[s]'
-### Hint 40.10-40.19, is type list '[s : Type]'
-### Hint 40.25,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 40.25,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 41.43, is type list '[s]'
-### Hint 41.14, rebound type variable 'a'
-### Hint 41.28,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 41.28,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
-### Hint 41.7-41.24, is polymorphic compound identifier '__=[s]__'
-### Hint 43.22, rebound type variable 'a'
-### Hint 43.35,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 43.35,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
-### Hint 43.4-43.31,
-is polymorphic compound identifier 'if__then__else[a]__'
-### Hint 44.22, rebound type variable 'a'
-### Hint 44.35,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 44.35,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
-### Hint 44.4-44.31,
-is polymorphic compound identifier 'if__then__else[s]__'
-### Hint 45.19, rebound type variable 'a'
-### Hint 45.32,
-no kind found for 'a'
-  expected: {Cpo}
-     found: {Type}
-### Hint 45.32,
-no kind found for 'a'
-  expected: {Cppo}
-     found: {Type}
+4.5: ### Hint: is type variable 'a'
+4.8: ### Hint: is type variable 'b'
+6.26:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+6.26:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}
+6.4-6.11: ### Hint: is polymorphic compound identifier '__=[s]__'
+8.29:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+8.29:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}
+8.7-8.14: ### Hint: is polymorphic compound identifier '__=[s]__'
+10.6-10.8: ### Hint: is compound list '[s]'
+11.8-11.15: ### Hint: is type list '[s : Type]'
+13.4-13.7: ### Hint: is polymorphic compound identifier 'f[a]'
+15.13:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+15.13:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}
+15.6: ### Warning: unexpected identifier in compound list 'b'
+15.4-15.9: ### Hint: is polymorphic compound identifier 'g[b,a]'
+17.6: ### Warning: unexpected identifier in compound list 'b'
+17.4-17.9: ### Hint: is polymorphic compound identifier 'h[b,a]'
+19.8: ### Warning: unexpected identifier in compound list 'b'
+19.4-19.9: ### Hint: is polymorphic compound identifier 'j[a,b]'
+23.5: ### Hint: is type variable 'f'
+23.8: ### Hint: is type variable 'F'
+25.9: ### Warning: unexpected identifier in compound list 'f'
+25.4-25.10: ### Hint: is polymorphic compound identifier 'k[a,f]'
+26.6: ### Warning: unexpected identifier in compound list 'b'
+26.12: ### Warning: unexpected identifier in compound list 'f'
+26.4-26.13: ### Hint: is polymorphic compound identifier 'k[b,a,f]'
+27.9: ### Warning: unexpected identifier in compound list 'b'
+27.12: ### Warning: unexpected identifier in compound list 'f'
+27.4-27.13: ### Hint: is polymorphic compound identifier 'k[a,b,f]'
+29.6: ### Warning: unexpected identifier in compound list 'F'
+29.4-29.10: ### Hint: is polymorphic compound identifier 'l[F,a]'
+32.34: ### Hint: rebound type variable 'b'
+32.37: ### Hint: rebound type variable 'a'
+32.6: ### Warning: unexpected identifier in compound list 'G'
+32.9: ### Warning: unexpected identifier in compound list 'b'
+32.4-32.13: ### Hint: is polymorphic compound identifier 'k[G,b,a]'
+34.44: ### Hint: is type list '[s]'
+34.29:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+34.29:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}
+34.7-34.14: ### Hint: is polymorphic compound identifier '__=[s]__'
+35.44-35.46: ### Hint: is type list '[s, s]'
+35.29:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+35.29:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}
+35.7-35.14: ### Hint: is polymorphic compound identifier '__=[s]__'
+35.44-35.46:
+### Hint: for type scheme 'a * a -> Unit' wrong length of instantiation list
+          '[s, s]'
+35.4-35.16:
+### Hint: untypeable term
+          '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
+35.4-35.52:
+*** Error: no typing for
+           '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s] (a, a)'
+36.7-36.9: ### Hint: is compound list '[s]'
+36.10-36.22: ### Hint: is type list '[s, s : Type]'
+36.28:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+36.28:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+36.11-36.16:
+### Hint: for type scheme 'a * a -> Unit' wrong length of instantiation list
+          '[s, s : Type]'
+36.4-36.23: ### Hint: no type found for '__=[s]__'
+36.6-36.26:
+### Hint: untypeable term '__ =[s][s, s : Type] __ : s * s -> Unit'
+36.6-36.46:
+*** Error: no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
+37.7-37.9: ### Hint: is compound list '[s]'
+37.15:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+37.15:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+37.29-37.31: ### Hint: is compound list '[s]'
+37.30: *** Error: unexpected mixfix token: s
+38.7-38.9: ### Hint: is compound list '[s]'
+38.10-38.12: ### Hint: is compound list '[s]'
+38.18:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+38.18:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+38.32-38.34: ### Hint: is compound list '[s]'
+38.10: *** Error: unexpected mixfix token: [
+39.7-39.9: ### Hint: is compound list '[s]'
+39.15:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+39.15:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+40.7-40.9: ### Hint: is compound list '[s]'
+40.10-40.19: ### Hint: is type list '[s : Type]'
+40.25:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+40.25:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+41.43: ### Hint: is type list '[s]'
+41.14: ### Hint: rebound type variable 'a'
+41.28:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+41.28:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}
+41.7-41.24: ### Hint: is polymorphic compound identifier '__=[s]__'
+43.22: ### Hint: rebound type variable 'a'
+43.35:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+43.35:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}
+43.4-43.31:
+### Hint: is polymorphic compound identifier 'if__then__else[a]__'
+44.22: ### Hint: rebound type variable 'a'
+44.35:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+44.35:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}
+44.4-44.31:
+### Hint: is polymorphic compound identifier 'if__then__else[s]__'
+45.19: ### Hint: rebound type variable 'a'
+45.32:
+### Hint: no kind found for 'a'
+            expected: {Cpo}
+               found: {Type}
+45.32:
+### Hint: no kind found for 'a'
+            expected: {Cppo}
+               found: {Type}

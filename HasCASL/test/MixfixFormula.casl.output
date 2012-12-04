@@ -1,7 +1,7 @@
 forall . aa <= ab => p
-*** Error 1.21, unexpected mixfix token: <=
-*** Error 1.14, unknown type 's'
-*** Error 1.14, unknown type 's'
+1.21: *** Error: unexpected mixfix token: <=
+1.14: *** Error: unknown type 's'
+1.14: *** Error: unknown type 's'
 not s n <= 0
 not s n <= 0
 s n <= 0
@@ -9,16 +9,16 @@ s n <= 0
 (i * q) <= (j * p)
 c * (a + b) = c * a + c * b
 (a + b) * c = a * c + b * c
-*** Error 9.1-9.11,
-ambiguous mixfix term
-  a <= (b <= c)
-  (a <= b) <= c
-  a <= b <= c
-*** Error 10.1-10.9,
-ambiguous mixfix term
-  A x
-  A x
-*** Error 11.1-11.8,
-ambiguous mixfix term
-  even (A x)
-  even (A x)
+9.1-9.11:
+*** Error: ambiguous mixfix term
+             a <= (b <= c)
+             (a <= b) <= c
+             a <= b <= c
+10.1-10.9:
+*** Error: ambiguous mixfix term
+             A x
+             A x
+11.1-11.8:
+*** Error: ambiguous mixfix term
+             even (A x)
+             even (A x)

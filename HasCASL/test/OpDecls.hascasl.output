@@ -93,105 +93,105 @@ forall x : s . y = a <= (var x : s) <= a
 . z = (op __+__ : s * s -> s) (x, x as s)
 . true %(bla_label)%
 . true
-### Hint 7.14,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 7.14,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 8.14,
-no kind found for 't'
-  expected: {Cpo}
-     found: {Type}
-### Hint 8.14,
-no kind found for 't'
-  expected: {Cppo}
-     found: {Type}
-### Warning 9.4-9.10, expected tuple argument for '__+__'
-### Hint 13.12-13.16,
-in type of '((op a : s), (op b : s))'
-  typename 't' (9.14)
-  is not unifiable with type 's * s' (3.12)
-### Hint 13.12-13.16, untypeable term (with type: t) '(a, b)'
-### Hint 15.14-15.20,
-in type of '((op a : s), (op a : s))'
-  typename 't' (9.14)
-  is not unifiable with type 's * s' (3.12)
-### Hint 15.14-15.20, untypeable term (with type: t) '(a, a)'
-### Hint 15.14-15.20,
-rejected 't < s' of '(op __+__ : t * t -> t) ((op a : s), (op a : s))'
-### Hint 17.8,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 17.8,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 17.6-17.24,
-in type of '(op __+__ : t -> t -> t) as s * s -> s'
-  typename 't' (9.14)
-  is not unifiable with type 's * s' (17.12)
-### Hint 19.8,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 19.8,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 19.6-19.25,
-in type of '(op __+__ : t -> t -> t) as s * s -> s'
-  typename 't' (9.14)
-  is not unifiable with type 's * s' (19.12)
-### Hint 21.8,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 21.8,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 23.23-23.26,
-in type of '((op a : s), (op b : s))'
-  typename 't' (9.14)
-  is not unifiable with type 's * s' (3.12)
-### Hint 23.23-23.26, untypeable term (with type: t) '(a, b)'
-### Hint 25.23-25.30,
-in type of '((op a : s), (op b : s))'
-  typename 't' (9.14)
-  is not unifiable with type 's * s' (25.34)
-### Hint 25.23-25.32,
-untypeable term (with type: t) '(a : s, b : s)'
-### Hint 34.21,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 34.21,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 37.9,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 37.9,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 40.9,
-no kind found for 's'
-  expected: {Cpo}
-     found: {Type}
-### Hint 40.9,
-no kind found for 's'
-  expected: {Cppo}
-     found: {Type}
-### Hint 46.14-46.34,
-in type of '((op x : s) as s, (op x : s) as t as s)'
-  typename 't' (9.14)
-  is not unifiable with type 's * s' (46.37)
-### Hint 46.14-46.34,
-untypeable term (with type: t) '(x as s, x as t as s)'
+7.14:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+7.14:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+8.14:
+### Hint: no kind found for 't'
+            expected: {Cpo}
+               found: {Type}
+8.14:
+### Hint: no kind found for 't'
+            expected: {Cppo}
+               found: {Type}
+9.4-9.10: ### Warning: expected tuple argument for '__+__'
+13.12-13.16:
+### Hint: in type of '((op a : s), (op b : s))'
+            typename 't' (9.14)
+            is not unifiable with type 's * s' (3.12)
+13.12-13.16: ### Hint: untypeable term (with type: t) '(a, b)'
+15.14-15.20:
+### Hint: in type of '((op a : s), (op a : s))'
+            typename 't' (9.14)
+            is not unifiable with type 's * s' (3.12)
+15.14-15.20: ### Hint: untypeable term (with type: t) '(a, a)'
+15.14-15.20:
+### Hint: rejected 't < s' of '(op __+__ : t * t -> t) ((op a : s), (op a : s))'
+17.8:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+17.8:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+17.6-17.24:
+### Hint: in type of '(op __+__ : t -> t -> t) as s * s -> s'
+            typename 't' (9.14)
+            is not unifiable with type 's * s' (17.12)
+19.8:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+19.8:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+19.6-19.25:
+### Hint: in type of '(op __+__ : t -> t -> t) as s * s -> s'
+            typename 't' (9.14)
+            is not unifiable with type 's * s' (19.12)
+21.8:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+21.8:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+23.23-23.26:
+### Hint: in type of '((op a : s), (op b : s))'
+            typename 't' (9.14)
+            is not unifiable with type 's * s' (3.12)
+23.23-23.26: ### Hint: untypeable term (with type: t) '(a, b)'
+25.23-25.30:
+### Hint: in type of '((op a : s), (op b : s))'
+            typename 't' (9.14)
+            is not unifiable with type 's * s' (25.34)
+25.23-25.32:
+### Hint: untypeable term (with type: t) '(a : s, b : s)'
+34.21:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+34.21:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+37.9:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+37.9:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+40.9:
+### Hint: no kind found for 's'
+            expected: {Cpo}
+               found: {Type}
+40.9:
+### Hint: no kind found for 's'
+            expected: {Cppo}
+               found: {Type}
+46.14-46.34:
+### Hint: in type of '((op x : s) as s, (op x : s) as t as s)'
+            typename 't' (9.14)
+            is not unifiable with type 's * s' (46.37)
+46.14-46.34:
+### Hint: untypeable term (with type: t) '(x as s, x as t as s)'

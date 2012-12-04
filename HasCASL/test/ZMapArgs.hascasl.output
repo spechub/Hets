@@ -29,19 +29,19 @@ forall t : Tree Nat
     Node EmptyLeaf n -> EmptyLeaf |
     Node (Node h n) n -> h |
     Node (Leaf n) n -> Leaf n
-*** Error 1.18, unknown type variable 'a'
-*** Error 4.23, unknown type variable 'a'
-### Warning 4.27-4.44,
-ignoring unused variable(s)
-  a in
-'Tree Nat -> Tree Nat'
-### Hint 6.9, not a kind 'Tree Nat'
-### Hint 7.9, not a class 'Nat'
-### Hint 7.16, not a kind 'Tree Nat'
-### Hint 10.27, rebound variable 'n'
-### Hint 11.37, rebound variable 'n'
-### Hint 12.33, rebound variable 'h'
-### Hint 12.35, rebound variable 'n'
-### Hint 12.37, rebound variable 'n'
-### Hint 13.33, rebound variable 'n'
-### Hint 13.36, rebound variable 'n'
+1.18: *** Error: unknown type variable 'a'
+4.23: *** Error: unknown type variable 'a'
+4.27-4.44:
+### Warning: ignoring unused variable(s)
+               a in
+             'Tree Nat -> Tree Nat'
+6.9: ### Hint: not a kind 'Tree Nat'
+7.9: ### Hint: not a class 'Nat'
+7.16: ### Hint: not a kind 'Tree Nat'
+10.27: ### Hint: rebound variable 'n'
+11.37: ### Hint: rebound variable 'n'
+12.33: ### Hint: rebound variable 'h'
+12.35: ### Hint: rebound variable 'n'
+12.37: ### Hint: rebound variable 'n'
+13.33: ### Hint: rebound variable 'n'
+13.36: ### Hint: rebound variable 'n'

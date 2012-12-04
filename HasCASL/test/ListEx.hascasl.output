@@ -129,20 +129,20 @@ type Tree2(a : +Type) ::=
 free type even(a : +Type) ::= rek (odd a)
 free type odd(a : +Type) ::= rek (even a)          %(ga_even_odd)%
 free type odd2(a : +Type) ::= rek (even2 a) %(ga_even2_odd2)%
-### Hint 1.5, is type variable 'b'
-### Hint 2.5, is type variable 'a'
-### Hint 4.11-4.14, redeclared type 'List'
-*** Error 5.50-5.55,
-unbound type variable(s)
-  b in
-'List b'
-*** Error 6.57, unexpected type argument 'b'
-*** Error 7.50-7.61,
-illegal polymorphic recursion
-  expected: List a
-     found: List (List a)
-*** Error 14.27-14.38,
-illegal polymorphic recursion
-  expected: odd2 a
-     found: odd2 (odd2 a)
-### Hint 19.5, is type variable 'o'
+1.5: ### Hint: is type variable 'b'
+2.5: ### Hint: is type variable 'a'
+4.11-4.14: ### Hint: redeclared type 'List'
+5.50-5.55:
+*** Error: unbound type variable(s)
+             b in
+           'List b'
+6.57: *** Error: unexpected type argument 'b'
+7.50-7.61:
+*** Error: illegal polymorphic recursion
+             expected: List a
+                found: List (List a)
+14.27-14.38:
+*** Error: illegal polymorphic recursion
+             expected: odd2 a
+                found: odd2 (odd2 a)
+19.5: ### Hint: is type variable 'o'

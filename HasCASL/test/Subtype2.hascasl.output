@@ -34,8 +34,8 @@ vars
 x : a;
 y : b
 forall a < b : Type; b : Type; x : a; y : b . down y = x
-### Hint 3.6, is type variable 'a'
-### Hint 3.9, is type variable 'b'
-### Hint 3.18, rebound type variable 'a'
-### Hint 5.7, not a class 'b'
-### Hint 5.13, not a class 'a'
+3.6: ### Hint: is type variable 'a'
+3.9: ### Hint: is type variable 'b'
+3.18: ### Hint: rebound type variable 'a'
+5.7: ### Hint: not a class 'b'
+5.13: ### Hint: not a class 'a'

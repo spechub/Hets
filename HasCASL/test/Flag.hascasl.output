@@ -30,9 +30,9 @@ forall a : Type; x : Flag a . mkf (getl x) = x
 forall a : Type; b : Logical . getl (mkf b : Flag a) = b
 forall a : Type . sg = mkf forall x, y : a . x = y
 forall a : Type . c = (getl (sg : Flag a) as Unit)
-### Hint 1.6, is type variable 'a'
-### Hint 5.8, not a kind 'Flag a'
-### Hint 5.20, not a class 'Logical'
-### Hint 8.32, not a class 'a'
-### Hint 8.36, not a class 'a'
-### Hint 8.31, rebound variable 'x'
+1.6: ### Hint: is type variable 'a'
+5.8: ### Hint: not a kind 'Flag a'
+5.20: ### Hint: not a class 'Logical'
+8.32: ### Hint: not a class 'a'
+8.36: ### Hint: not a class 'a'
+8.31: ### Hint: rebound variable 'x'
