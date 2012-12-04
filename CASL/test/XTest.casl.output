@@ -9,6 +9,6 @@
  pred q : b,
  [forall v1, v2, v3 : a . o = o %(ga_assoc_o)%,
   forall v1 : a . o(v1) = o2(v1)])
-### Hint 11.6, redeclared sort 'a'
-*** Error 13.8, expecting two arguments of equal sort
-*** Error 19.22, no operation with 0 arguments found for 'c'
+11.6: ### Hint: redeclared sort 'a'
+13.8: *** Error: expecting two arguments of equal sort
+19.22: *** Error: no operation with 0 arguments found for 'c'

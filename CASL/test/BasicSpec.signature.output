@@ -1198,72 +1198,73 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
-*** Error 90.19, no typing for: suc(0) : Pos
-*** Error 147.8-147.16,
-ambiguous mixfix term
-  -__(__-__(a, b))
-  -(__-__(a, b))
-*** Error 246.8-246.14,
-ambiguous mixfix term
-  -__(__/__(i, p))
-  -(__/__(i, p))
-*** Error 261.9-261.21,
-ambiguous mixfix term
-  __*__(i, __-__(q, __*__(j, p)))
-  __-__(__*__(i, q), __*__(j, p))
-  __*__(__*__(i, __-__(q, j)), p)
-*** Error 266.16, unknown sort 'a'
-*** Error 266.20, unknown sort 'a'
-*** Error 268.9, unknown sort 'b'
-*** Error 268.4-268.6, wrong number of places '__a'
-*** Error 268.15, unknown sort 'b'
-*** Error 270.3, no operation with 0 arguments found for 'a'
-*** Error 285.17-285.18, unknown sort 's2'
-*** Error 285.20-285.21, unknown sort 's1'
-*** Error 285.31, unknown sort 'a'
-*** Error 285.34, duplicates at '(285,41)' for 'a : s -> t'
-*** Error 285.52, unknown sort 'a'
-*** Error 286.36, unknown sort 'a'
-*** Error 286.55, unknown sort 'a'
-*** Error 286.53, illegal free partial constructor 'c'
-*** Error 287.41, unknown sort 'a'
-*** Error 287.60, unknown sort 'a'
-*** Error 290.16, unknown sort 'a'
-*** Error 290.20, unknown sort 'a'
-*** Error 292.7, unknown sort 'b'
-*** Error 292.13, unknown sort 'b'
-*** Error 294.31, unknown sort 'a'
-*** Error 294.38, unknown sort 'a'
-*** Error 294.57, unknown sort 'a'
-*** Error 294.29, duplicates at '(294,55)' for 'c : a -> s'
-*** Error 304.6, unknown sort 'b'
-*** Error 305.6, unknown sort 'd'
-*** Error 316.3,
-ambiguous term
-  (op a : b) = (op a : b)
-  (var a : s) = (var a : s)
-*** Error 317.3,
-ambiguous term
-  (op a : b) = (op a : b)
-  (var a : s) = (var a : s)
-*** Error 320.5,
-ambiguous term
-  (op a : b) = (op a : b)
-  (var a : s) = (var a : s)
-*** Error 321.5,
-ambiguous term
-  (op a : b) = (op a : b)
-  (var a : s) = (var a : s)
-*** Error,
-ambiguous term
-  (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
-  (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
-*** Error 342.20, no operation with 2 arguments found for '__E__'
-*** Error 342.32, no operation with 2 arguments found for '__E__'
-*** Error 342.45, no operation with 2 arguments found for '__:::__'
-*** Error 343.14, no operation with 2 arguments found for '__E__'
-*** Error 343.29, no operation with 2 arguments found for '__E__'
-*** Error 343.45, no operation with 2 arguments found for '__E__'
-*** Error 351.9-351.16, wrong number of places '__and'__'
-*** Error 426.26, not a formula 'e'
-*** Error 427.12, not a formula 'e'
+90.19: *** Error: no typing for: suc(0) : Pos
+147.8-147.16:
+*** Error: ambiguous mixfix term
+             -__(__-__(a, b))
+             -(__-__(a, b))
+246.8-246.14:
+*** Error: ambiguous mixfix term
+             -__(__/__(i, p))
+             -(__/__(i, p))
+261.9-261.21:
+*** Error: ambiguous mixfix term
+             __*__(i, __-__(q, __*__(j, p)))
+             __-__(__*__(i, q), __*__(j, p))
+             __*__(__*__(i, __-__(q, j)), p)
+266.16: *** Error: unknown sort 'a'
+266.20: *** Error: unknown sort 'a'
+268.9: *** Error: unknown sort 'b'
+268.4-268.6: *** Error: wrong number of places '__a'
+268.15: *** Error: unknown sort 'b'
+270.3: *** Error: no operation with 0 arguments found for 'a'
+285.17-285.18: *** Error: unknown sort 's2'
+285.20-285.21: *** Error: unknown sort 's1'
+285.31: *** Error: unknown sort 'a'
+285.34: *** Error: duplicates at '(285,41)' for 'a : s -> t'
+285.52: *** Error: unknown sort 'a'
+286.36: *** Error: unknown sort 'a'
+286.55: *** Error: unknown sort 'a'
+286.53: *** Error: illegal free partial constructor 'c'
+287.41: *** Error: unknown sort 'a'
+287.60: *** Error: unknown sort 'a'
+290.16: *** Error: unknown sort 'a'
+290.20: *** Error: unknown sort 'a'
+292.7: *** Error: unknown sort 'b'
+292.13: *** Error: unknown sort 'b'
+294.31: *** Error: unknown sort 'a'
+294.38: *** Error: unknown sort 'a'
+294.57: *** Error: unknown sort 'a'
+294.29: *** Error: duplicates at '(294,55)' for 'c : a -> s'
+304.6: *** Error: unknown sort 'b'
+305.6: *** Error: unknown sort 'd'
+316.3:
+*** Error: ambiguous term
+             (op a : b) = (op a : b)
+             (var a : s) = (var a : s)
+317.3:
+*** Error: ambiguous term
+             (op a : b) = (op a : b)
+             (var a : s) = (var a : s)
+320.5:
+*** Error: ambiguous term
+             (op a : b) = (op a : b)
+             (var a : s) = (var a : s)
+321.5:
+*** Error: ambiguous term
+             (op a : b) = (op a : b)
+             (var a : s) = (var a : s)
+,
+*** Error: ambiguous term
+             (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
+             (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
+342.20: *** Error: no operation with 2 arguments found for '__E__'
+342.32: *** Error: no operation with 2 arguments found for '__E__'
+342.45:
+*** Error: no operation with 2 arguments found for '__:::__'
+343.14: *** Error: no operation with 2 arguments found for '__E__'
+343.29: *** Error: no operation with 2 arguments found for '__E__'
+343.45: *** Error: no operation with 2 arguments found for '__E__'
+351.9-351.16: *** Error: wrong number of places '__and'__'
+426.26: *** Error: not a formula 'e'
+427.12: *** Error: not a formula 'e'

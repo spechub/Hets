@@ -48,35 +48,35 @@
                                                    %(ga_selector_d)%,
   generated type s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2
                                                   %(ga_generated_s)%])
-### Warning 3.30,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : s'
-### Warning 3.53,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : a ->? s'
-*** Error 3.53, illegal free partial constructor 'c'
-### Hint 4.16, redeclared sort 's'
-### Hint 4.27, redeclared subsort 's2 < s'
-### Hint 4.30, redeclared subsort 's1 < s'
-### Hint 4.35, redeclared op 'c'
-### Hint 4.39, redeclared as total 'c'
-### Hint 4.46, redeclared op 'c'
-### Hint 4.51, redeclared op 'a'
-### Hint 4.53, redeclared op 'b'
-### Hint 4.58, redeclared op 'd'
-### Warning 4.65, partially redeclared 'c'
-*** Error 4.39, duplicates at '(4,65)' for 'c : a -> s'
-### Warning 4.35,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : s'
-### Warning 4.39,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : a -> s'
-### Warning 4.65,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : a ->? s'
+3.30:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : s'
+3.53:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : a ->? s'
+3.53: *** Error: illegal free partial constructor 'c'
+4.16: ### Hint: redeclared sort 's'
+4.27: ### Hint: redeclared subsort 's2 < s'
+4.30: ### Hint: redeclared subsort 's1 < s'
+4.35: ### Hint: redeclared op 'c'
+4.39: ### Hint: redeclared as total 'c'
+4.46: ### Hint: redeclared op 'c'
+4.51: ### Hint: redeclared op 'a'
+4.53: ### Hint: redeclared op 'b'
+4.58: ### Hint: redeclared op 'd'
+4.65: ### Warning: partially redeclared 'c'
+4.39: *** Error: duplicates at '(4,65)' for 'c : a -> s'
+4.35:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : s'
+4.39:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : a -> s'
+4.65:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : a ->? s'

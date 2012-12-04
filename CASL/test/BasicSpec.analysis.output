@@ -1386,274 +1386,276 @@ sort  a
 op    __||__ : a * a -> a, assoc
 op    b : a
 . (b || b) || b = b
-### Hint 17.9-17.11, redeclared as total 'min'
-### Hint 17.14-17.16, redeclared as total 'max'
-### Hint 70.16, known variable shadowed 's'
-### Hint 72.16, known variable shadowed 'r'
-*** Error 90.19, no typing for: suc(0) : Pos
-### Hint 98.10-98.12, redeclared op 'min'
-### Hint 98.15-98.17, redeclared op 'max'
-### Hint 121.18-121.20, redeclared sort 'Int'
-### Hint 121.12-121.14, redeclared sort 'Nat'
-*** Error 147.8-147.16,
-ambiguous mixfix term
-  -__(__-__(a, b))
-  -(__-__(a, b))
-### Hint 209.17-209.19, redeclared sort 'Rat'
-### Hint 209.11-209.13, redeclared sort 'Int'
-*** Error 246.8-246.14,
-ambiguous mixfix term
-  -__(__/__(i, p))
-  -(__/__(i, p))
-*** Error 261.9-261.21,
-ambiguous mixfix term
-  __*__(i, __-__(q, __*__(j, p)))
-  __-__(__*__(i, q), __*__(j, p))
-  __*__(__*__(i, __-__(q, j)), p)
-*** Error 266.16, unknown sort 'a'
-*** Error 266.20, unknown sort 'a'
-*** Error 268.9, unknown sort 'b'
-*** Error 268.4-268.6, wrong number of places '__a'
-*** Error 268.15, unknown sort 'b'
-### Hint 269.6, redeclared sort 's'
-### Warning 269.6, void reflexive subsort 's'
-*** Error 270.3, no operation with 0 arguments found for 'a'
-### Hint 271.11, known variable shadowed 'a'
-### Hint 272.6, known variable shadowed 'a'
-### Hint 272.11, known variable shadowed 'a'
-### Hint 272.13, known variable shadowed 'b'
-### Hint 275.8, known variable shadowed 'a'
-### Hint 275.13, known variable shadowed 'a'
-### Hint 275.15, known variable shadowed 'b'
-### Hint 285.6, redeclared sort 's'
-*** Error 285.17-285.18, unknown sort 's2'
-*** Error 285.20-285.21, unknown sort 's1'
-*** Error 285.31, unknown sort 'a'
-### Warning 285.34, new 'op a' is also known as 'var a'
-### Warning 285.36, new 'op b' is also known as 'var b'
-### Hint 285.41, redeclared op 'a'
-### Warning 285.41, new 'op a' is also known as 'var a'
-*** Error 285.34, duplicates at '(285,41)' for 'a : s -> t'
-*** Error 285.52, unknown sort 'a'
-### Warning 285.25,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : s'
-### Warning 285.50,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : a ->? s'
-### Hint 286.11, redeclared sort 's'
-### Hint 286.22, redeclared subsort 's2 < s'
-### Hint 286.25, redeclared subsort 's1 < s'
-### Hint 286.30, redeclared op 'c'
-*** Error 286.36, unknown sort 'a'
-### Hint 286.39, redeclared op 'a'
-### Warning 286.39, new 'op a' is also known as 'var a'
-### Hint 286.41, redeclared op 'b'
-### Warning 286.41, new 'op b' is also known as 'var b'
-### Hint 286.46, redeclared op 'd'
-*** Error 286.55, unknown sort 'a'
-### Hint 286.53, redeclared op 'c'
-### Warning 286.30,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : s'
-### Warning 286.53,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : a ->? s'
-*** Error 286.53, illegal free partial constructor 'c'
-### Hint 287.16, redeclared sort 's'
-### Hint 287.27, redeclared subsort 's2 < s'
-### Hint 287.30, redeclared subsort 's1 < s'
-### Hint 287.35, redeclared op 'c'
-*** Error 287.41, unknown sort 'a'
-### Hint 287.39, redeclared op 'c'
-### Hint 287.44, redeclared op 'a'
-### Warning 287.44, new 'op a' is also known as 'var a'
-### Hint 287.46, redeclared op 'b'
-### Warning 287.46, new 'op b' is also known as 'var b'
-### Hint 287.51, redeclared op 'd'
-*** Error 287.60, unknown sort 'a'
-### Hint 287.58, redeclared op 'c'
-### Warning 287.35,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : s'
-### Warning 287.58,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : a ->? s'
-*** Error 290.16, unknown sort 'a'
-*** Error 290.20, unknown sort 'a'
-### Hint 290.6-290.12, redeclared pred '__<__'
-*** Error 292.7, unknown sort 'b'
-### Warning 292.4, new 'op a' is also known as 'var a'
-*** Error 292.13, unknown sort 'b'
-### Hint 292.10, redeclared op 'c'
-### Hint 293.13, redeclared sort 's'
-### Hint 293.6, redeclared sort 's'
-### Hint 293.9, redeclared sort 't'
-### Warning 293.6, void reflexive subsort 's'
-### Hint 293.9, redeclared subsort 't < s'
-### Hint 294.6, redeclared sort 's'
-### Hint 294.17, redeclared subsort 's2 < s'
-### Hint 294.20, redeclared subsort 's1 < s'
-### Hint 294.25, redeclared op 'c'
-*** Error 294.31, unknown sort 'a'
-### Hint 294.29, redeclared as total 'c'
-*** Error 294.38, unknown sort 'a'
-### Hint 294.36, redeclared op 'c'
-### Hint 294.41, redeclared op 'a'
-### Warning 294.41, new 'op a' is also known as 'var a'
-### Hint 294.43, redeclared op 'b'
-### Warning 294.43, new 'op b' is also known as 'var b'
-### Hint 294.48, redeclared op 'd'
-*** Error 294.57, unknown sort 'a'
-### Warning 294.55, partially redeclared 'c'
-*** Error 294.29, duplicates at '(294,55)' for 'c : a -> s'
-### Warning 294.25,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : s'
-### Warning 294.29,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : a -> s'
-### Warning 294.55,
-total selectors 'a : s -> t, b : s -> t, d : s -> t'
-  should be in alternative
-'c : a ->? s'
-### Warning 293.9, generated sorts without constructor '{t}'
-### Warning 292.13, non-generated sorts as constructor result '{b}'
-### Hint 300.6, redeclared sort 's'
-### Hint 301.6, redeclared sort 't'
-*** Error 304.6, unknown sort 'b'
-### Hint 304.4, redeclared op 'a'
-### Warning 304.4, new 'op a' is also known as 'var a'
-*** Error 305.6, unknown sort 'd'
-### Hint 308.6, known variable shadowed 'a'
-### Warning 308.6, new 'var a' is also known as 'op a'
-### Hint 309.9, known variable shadowed 'a'
-### Warning 309.9, new 'var a' is also known as 'op a'
-### Hint 309.11, known variable shadowed 'b'
-### Warning 309.11, new 'var b' is also known as 'op b'
-### Hint 312.6, redeclared sort 't'
-*** Error 316.3,
-ambiguous term
-  (op a : b) = (op a : b)
-  (var a : s) = (var a : s)
-*** Error 317.3,
-ambiguous term
-  (op a : b) = (op a : b)
-  (var a : s) = (var a : s)
-*** Error 320.5,
-ambiguous term
-  (op a : b) = (op a : b)
-  (var a : s) = (var a : s)
-*** Error 321.5,
-ambiguous term
-  (op a : b) = (op a : b)
-  (var a : s) = (var a : s)
-### Hint 323.6, redeclared sort 's'
-### Hint 325.9, redeclared sort 's'
-### Hint 336.47-336.50, redeclared op ''\\''
-*** Error,
-ambiguous term
-  (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
-  (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
-*** Error 342.20, no operation with 2 arguments found for '__E__'
-*** Error 342.32, no operation with 2 arguments found for '__E__'
-*** Error 342.45, no operation with 2 arguments found for '__:::__'
-*** Error 343.14, no operation with 2 arguments found for '__E__'
-*** Error 343.29, no operation with 2 arguments found for '__E__'
-*** Error 343.45, no operation with 2 arguments found for '__E__'
-### Hint 350.11, redeclared sort 's'
-*** Error 351.9-351.16, wrong number of places '__and'__'
-### Hint 353.12, redeclared sort 'a'
-### Hint 354.13, redeclared sort 'b'
-### Hint 354.11, redeclared sort 'a'
-### Hint 355.12, redeclared sort 'a'
-### Hint 355.14, redeclared sort 'b'
-### Hint 355.16, redeclared sort 'c'
-### Hint 356.12, redeclared sort 'a'
-### Hint 356.14, redeclared sort 'b'
-### Hint 356.16, redeclared sort 'c'
-### Hint 356.18, redeclared sort 'd'
-### Hint 356.20, redeclared sort 'e'
-### Warning 356.12, subsort  'a' made isomorphic by 'a = b'
-### Warning 356.18, subsort  'd' made isomorphic by 'd = e'
-### Hint 357.11, redeclared sort 'a'
-### Warning 357.11, sorts are isomorphic 'a < b'
-### Hint 358.12, redeclared sort 's'
-### Hint 358.14, redeclared sort 't'
-### Warning 359.9, new 'op a' is also known as 'var a'
-### Warning 360.9, new 'op b' is also known as 'var b'
-### Warning 363.9, partially redeclared 'a'
-### Warning 363.9, new 'op a' is also known as 'var a'
-### Warning 364.9, partially redeclared 'b'
-### Warning 364.9, new 'op b' is also known as 'var b'
-### Warning 365.9, partially redeclared 'c'
-### Warning 366.9, partially redeclared 'c'
-### Hint 367.9, redeclared op 'a'
-### Warning 367.9, new 'op a' is also known as 'var a'
-### Warning 368.11, unused local variable 'x'
-### Warning 368.13, unused local variable 'y'
-### Warning 368.17, unused local variable 'z'
-### Warning 369.9, partially redeclared 'a'
-### Warning 369.9, new 'op a' is also known as 'var a'
-### Warning 370.9, partially redeclared 'c'
-### Warning 370.11, unused local variable 'x'
-### Warning 370.13, unused local variable 'y'
-### Warning 370.17, unused local variable 'z'
-### Hint 373.12, redeclared sort 's'
-### Hint 373.14, redeclared sort 't'
-### Warning 374.11, new 'pred a' is also known as 'op a'
-### Warning 374.11, new 'pred a' is also known as 'var a'
-### Warning 375.11, new 'pred b' is also known as 'op b'
-### Warning 375.11, new 'pred b' is also known as 'var b'
-### Warning 376.12, new 'pred c' is also known as 'op c'
-### Warning 377.12, new 'pred c' is also known as 'op c'
-### Warning 381.11, new 'pred c' is also known as 'op c'
-### Warning 382.21, new 'op a' is also known as 'pred a'
-### Warning 382.21, new 'op a' is also known as 'var a'
-### Warning 382.25, new 'op b' is also known as 'pred b'
-### Warning 382.25, new 'op b' is also known as 'var b'
-### Warning 382.29, new 'op c' is also known as 'pred c'
-### Hint 384.64-384.67, redeclared op 'sel2'
-### Hint 384.77-384.80, redeclared op 'sel1'
-### Hint 386.65-386.68, redeclared op 'sel2'
-### Hint 386.78-386.81, redeclared op 'sel1'
-### Hint 388.27-388.31, redeclared sort 'Data1'
-### Hint 388.34-388.38, redeclared sort 'Data2'
-### Hint 388.41-388.45, redeclared sort 'Data3'
-### Hint 393.22-393.24, redeclared sort 'Set'
-### Hint 393.30-393.31, redeclared op 'Mt'
-### Hint 393.35-393.37, redeclared op 'Add'
-### Hint 395.11, redeclared sort 't'
-### Hint 395.9, redeclared sort 's'
-### Warning 395.9, added subsort cycle by 's < t'
-### Hint 404.7, known variable shadowed 'x'
-### Hint 410.10, known variable shadowed 'x'
-### Hint 411.16, known variable shadowed 'x'
-### Hint 411.60, known variable shadowed 'x'
-### Hint 426.22, known variable shadowed 'x'
-### Hint 426.26,
-no matching predicate with 0 arguments found for 'e'
-*** Error 426.26, not a formula 'e'
-### Hint 427.8, known variable shadowed 'x'
-### Hint 427.12,
-no matching predicate with 0 arguments found for 'e'
-*** Error 427.12, not a formula 'e'
-### Hint 436.13, known variable shadowed 'x'
-### Hint 436.15, known variable shadowed 'y'
-### Hint 436.17, known variable shadowed 'z'
-### Warning 451.20, new 'var c' is also known as 'op c'
-### Warning 451.20, new 'var c' is also known as 'pred c'
-### Hint 811.11-811.13, redeclared op '' ''
-### Hint 1486.6, redeclared sort 'a'
-### Warning 1489.4, new 'op b' is also known as 'pred b'
-### Warning 1489.4, new 'op b' is also known as 'var b'
-### Warning 309.11, unused variable 'b'
-### Warning 402.20-402.21, unused variable 'r2'
+17.9-17.11: ### Hint: redeclared as total 'min'
+17.14-17.16: ### Hint: redeclared as total 'max'
+70.16: ### Hint: known variable shadowed 's'
+72.16: ### Hint: known variable shadowed 'r'
+90.19: *** Error: no typing for: suc(0) : Pos
+98.10-98.12: ### Hint: redeclared op 'min'
+98.15-98.17: ### Hint: redeclared op 'max'
+121.18-121.20: ### Hint: redeclared sort 'Int'
+121.12-121.14: ### Hint: redeclared sort 'Nat'
+147.8-147.16:
+*** Error: ambiguous mixfix term
+             -__(__-__(a, b))
+             -(__-__(a, b))
+209.17-209.19: ### Hint: redeclared sort 'Rat'
+209.11-209.13: ### Hint: redeclared sort 'Int'
+246.8-246.14:
+*** Error: ambiguous mixfix term
+             -__(__/__(i, p))
+             -(__/__(i, p))
+261.9-261.21:
+*** Error: ambiguous mixfix term
+             __*__(i, __-__(q, __*__(j, p)))
+             __-__(__*__(i, q), __*__(j, p))
+             __*__(__*__(i, __-__(q, j)), p)
+266.16: *** Error: unknown sort 'a'
+266.20: *** Error: unknown sort 'a'
+268.9: *** Error: unknown sort 'b'
+268.4-268.6: *** Error: wrong number of places '__a'
+268.15: *** Error: unknown sort 'b'
+269.6: ### Hint: redeclared sort 's'
+269.6: ### Warning: void reflexive subsort 's'
+270.3: *** Error: no operation with 0 arguments found for 'a'
+271.11: ### Hint: known variable shadowed 'a'
+272.6: ### Hint: known variable shadowed 'a'
+272.11: ### Hint: known variable shadowed 'a'
+272.13: ### Hint: known variable shadowed 'b'
+275.8: ### Hint: known variable shadowed 'a'
+275.13: ### Hint: known variable shadowed 'a'
+275.15: ### Hint: known variable shadowed 'b'
+285.6: ### Hint: redeclared sort 's'
+285.17-285.18: *** Error: unknown sort 's2'
+285.20-285.21: *** Error: unknown sort 's1'
+285.31: *** Error: unknown sort 'a'
+285.34: ### Warning: new 'op a' is also known as 'var a'
+285.36: ### Warning: new 'op b' is also known as 'var b'
+285.41: ### Hint: redeclared op 'a'
+285.41: ### Warning: new 'op a' is also known as 'var a'
+285.34: *** Error: duplicates at '(285,41)' for 'a : s -> t'
+285.52: *** Error: unknown sort 'a'
+285.25:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : s'
+285.50:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : a ->? s'
+286.11: ### Hint: redeclared sort 's'
+286.22: ### Hint: redeclared subsort 's2 < s'
+286.25: ### Hint: redeclared subsort 's1 < s'
+286.30: ### Hint: redeclared op 'c'
+286.36: *** Error: unknown sort 'a'
+286.39: ### Hint: redeclared op 'a'
+286.39: ### Warning: new 'op a' is also known as 'var a'
+286.41: ### Hint: redeclared op 'b'
+286.41: ### Warning: new 'op b' is also known as 'var b'
+286.46: ### Hint: redeclared op 'd'
+286.55: *** Error: unknown sort 'a'
+286.53: ### Hint: redeclared op 'c'
+286.30:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : s'
+286.53:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : a ->? s'
+286.53: *** Error: illegal free partial constructor 'c'
+287.16: ### Hint: redeclared sort 's'
+287.27: ### Hint: redeclared subsort 's2 < s'
+287.30: ### Hint: redeclared subsort 's1 < s'
+287.35: ### Hint: redeclared op 'c'
+287.41: *** Error: unknown sort 'a'
+287.39: ### Hint: redeclared op 'c'
+287.44: ### Hint: redeclared op 'a'
+287.44: ### Warning: new 'op a' is also known as 'var a'
+287.46: ### Hint: redeclared op 'b'
+287.46: ### Warning: new 'op b' is also known as 'var b'
+287.51: ### Hint: redeclared op 'd'
+287.60: *** Error: unknown sort 'a'
+287.58: ### Hint: redeclared op 'c'
+287.35:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : s'
+287.58:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : a ->? s'
+290.16: *** Error: unknown sort 'a'
+290.20: *** Error: unknown sort 'a'
+290.6-290.12: ### Hint: redeclared pred '__<__'
+292.7: *** Error: unknown sort 'b'
+292.4: ### Warning: new 'op a' is also known as 'var a'
+292.13: *** Error: unknown sort 'b'
+292.10: ### Hint: redeclared op 'c'
+293.13: ### Hint: redeclared sort 's'
+293.6: ### Hint: redeclared sort 's'
+293.9: ### Hint: redeclared sort 't'
+293.6: ### Warning: void reflexive subsort 's'
+293.9: ### Hint: redeclared subsort 't < s'
+294.6: ### Hint: redeclared sort 's'
+294.17: ### Hint: redeclared subsort 's2 < s'
+294.20: ### Hint: redeclared subsort 's1 < s'
+294.25: ### Hint: redeclared op 'c'
+294.31: *** Error: unknown sort 'a'
+294.29: ### Hint: redeclared as total 'c'
+294.38: *** Error: unknown sort 'a'
+294.36: ### Hint: redeclared op 'c'
+294.41: ### Hint: redeclared op 'a'
+294.41: ### Warning: new 'op a' is also known as 'var a'
+294.43: ### Hint: redeclared op 'b'
+294.43: ### Warning: new 'op b' is also known as 'var b'
+294.48: ### Hint: redeclared op 'd'
+294.57: *** Error: unknown sort 'a'
+294.55: ### Warning: partially redeclared 'c'
+294.29: *** Error: duplicates at '(294,55)' for 'c : a -> s'
+294.25:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : s'
+294.29:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : a -> s'
+294.55:
+### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
+               should be in alternative
+             'c : a ->? s'
+293.9: ### Warning: generated sorts without constructor '{t}'
+292.13:
+### Warning: non-generated sorts as constructor result '{b}'
+300.6: ### Hint: redeclared sort 's'
+301.6: ### Hint: redeclared sort 't'
+304.6: *** Error: unknown sort 'b'
+304.4: ### Hint: redeclared op 'a'
+304.4: ### Warning: new 'op a' is also known as 'var a'
+305.6: *** Error: unknown sort 'd'
+308.6: ### Hint: known variable shadowed 'a'
+308.6: ### Warning: new 'var a' is also known as 'op a'
+309.9: ### Hint: known variable shadowed 'a'
+309.9: ### Warning: new 'var a' is also known as 'op a'
+309.11: ### Hint: known variable shadowed 'b'
+309.11: ### Warning: new 'var b' is also known as 'op b'
+312.6: ### Hint: redeclared sort 't'
+316.3:
+*** Error: ambiguous term
+             (op a : b) = (op a : b)
+             (var a : s) = (var a : s)
+317.3:
+*** Error: ambiguous term
+             (op a : b) = (op a : b)
+             (var a : s) = (var a : s)
+320.5:
+*** Error: ambiguous term
+             (op a : b) = (op a : b)
+             (var a : s) = (var a : s)
+321.5:
+*** Error: ambiguous term
+             (op a : b) = (op a : b)
+             (var a : s) = (var a : s)
+323.6: ### Hint: redeclared sort 's'
+325.9: ### Hint: redeclared sort 's'
+336.47-336.50: ### Hint: redeclared op ''\\''
+,
+*** Error: ambiguous term
+             (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
+             (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
+342.20: *** Error: no operation with 2 arguments found for '__E__'
+342.32: *** Error: no operation with 2 arguments found for '__E__'
+342.45:
+*** Error: no operation with 2 arguments found for '__:::__'
+343.14: *** Error: no operation with 2 arguments found for '__E__'
+343.29: *** Error: no operation with 2 arguments found for '__E__'
+343.45: *** Error: no operation with 2 arguments found for '__E__'
+350.11: ### Hint: redeclared sort 's'
+351.9-351.16: *** Error: wrong number of places '__and'__'
+353.12: ### Hint: redeclared sort 'a'
+354.13: ### Hint: redeclared sort 'b'
+354.11: ### Hint: redeclared sort 'a'
+355.12: ### Hint: redeclared sort 'a'
+355.14: ### Hint: redeclared sort 'b'
+355.16: ### Hint: redeclared sort 'c'
+356.12: ### Hint: redeclared sort 'a'
+356.14: ### Hint: redeclared sort 'b'
+356.16: ### Hint: redeclared sort 'c'
+356.18: ### Hint: redeclared sort 'd'
+356.20: ### Hint: redeclared sort 'e'
+356.12: ### Warning: subsort  'a' made isomorphic by 'a = b'
+356.18: ### Warning: subsort  'd' made isomorphic by 'd = e'
+357.11: ### Hint: redeclared sort 'a'
+357.11: ### Warning: sorts are isomorphic 'a < b'
+358.12: ### Hint: redeclared sort 's'
+358.14: ### Hint: redeclared sort 't'
+359.9: ### Warning: new 'op a' is also known as 'var a'
+360.9: ### Warning: new 'op b' is also known as 'var b'
+363.9: ### Warning: partially redeclared 'a'
+363.9: ### Warning: new 'op a' is also known as 'var a'
+364.9: ### Warning: partially redeclared 'b'
+364.9: ### Warning: new 'op b' is also known as 'var b'
+365.9: ### Warning: partially redeclared 'c'
+366.9: ### Warning: partially redeclared 'c'
+367.9: ### Hint: redeclared op 'a'
+367.9: ### Warning: new 'op a' is also known as 'var a'
+368.11: ### Warning: unused local variable 'x'
+368.13: ### Warning: unused local variable 'y'
+368.17: ### Warning: unused local variable 'z'
+369.9: ### Warning: partially redeclared 'a'
+369.9: ### Warning: new 'op a' is also known as 'var a'
+370.9: ### Warning: partially redeclared 'c'
+370.11: ### Warning: unused local variable 'x'
+370.13: ### Warning: unused local variable 'y'
+370.17: ### Warning: unused local variable 'z'
+373.12: ### Hint: redeclared sort 's'
+373.14: ### Hint: redeclared sort 't'
+374.11: ### Warning: new 'pred a' is also known as 'op a'
+374.11: ### Warning: new 'pred a' is also known as 'var a'
+375.11: ### Warning: new 'pred b' is also known as 'op b'
+375.11: ### Warning: new 'pred b' is also known as 'var b'
+376.12: ### Warning: new 'pred c' is also known as 'op c'
+377.12: ### Warning: new 'pred c' is also known as 'op c'
+381.11: ### Warning: new 'pred c' is also known as 'op c'
+382.21: ### Warning: new 'op a' is also known as 'pred a'
+382.21: ### Warning: new 'op a' is also known as 'var a'
+382.25: ### Warning: new 'op b' is also known as 'pred b'
+382.25: ### Warning: new 'op b' is also known as 'var b'
+382.29: ### Warning: new 'op c' is also known as 'pred c'
+384.64-384.67: ### Hint: redeclared op 'sel2'
+384.77-384.80: ### Hint: redeclared op 'sel1'
+386.65-386.68: ### Hint: redeclared op 'sel2'
+386.78-386.81: ### Hint: redeclared op 'sel1'
+388.27-388.31: ### Hint: redeclared sort 'Data1'
+388.34-388.38: ### Hint: redeclared sort 'Data2'
+388.41-388.45: ### Hint: redeclared sort 'Data3'
+393.22-393.24: ### Hint: redeclared sort 'Set'
+393.30-393.31: ### Hint: redeclared op 'Mt'
+393.35-393.37: ### Hint: redeclared op 'Add'
+395.11: ### Hint: redeclared sort 't'
+395.9: ### Hint: redeclared sort 's'
+395.9: ### Warning: added subsort cycle by 's < t'
+404.7: ### Hint: known variable shadowed 'x'
+410.10: ### Hint: known variable shadowed 'x'
+411.16: ### Hint: known variable shadowed 'x'
+411.60: ### Hint: known variable shadowed 'x'
+426.22: ### Hint: known variable shadowed 'x'
+426.26:
+### Hint: no matching predicate with 0 arguments found for 'e'
+426.26: *** Error: not a formula 'e'
+427.8: ### Hint: known variable shadowed 'x'
+427.12:
+### Hint: no matching predicate with 0 arguments found for 'e'
+427.12: *** Error: not a formula 'e'
+436.13: ### Hint: known variable shadowed 'x'
+436.15: ### Hint: known variable shadowed 'y'
+436.17: ### Hint: known variable shadowed 'z'
+451.20: ### Warning: new 'var c' is also known as 'op c'
+451.20: ### Warning: new 'var c' is also known as 'pred c'
+811.11-811.13: ### Hint: redeclared op '' ''
+1486.6: ### Hint: redeclared sort 'a'
+1489.4: ### Warning: new 'op b' is also known as 'pred b'
+1489.4: ### Warning: new 'op b' is also known as 'var b'
+309.11: ### Warning: unused variable 'b'
+402.20-402.21: ### Warning: unused variable 'r2'
