@@ -273,15 +273,11 @@ expandCycle cs s = case cs of
   c : r ->
     if Set.null $ Set.intersection c s then expandCycle r s else Set.union c s
 
-{- | gets the most right elements of the irreflexive relation,
-     unless no hierarchy is left then isolated nodes are output -}
+-- | gets the most right elements of a relation,
 mostRightOfCollapsed :: Ord a => Rel a -> Set.Set a
-mostRightOfCollapsed r@(Rel m) = if Map.null m then Set.empty
-    else let Rel im = irreflex r
-             mr = MapSet.setElems im Set.\\ Map.keysSet im
-         in if Set.null mr then Map.keysSet $ Map.filterWithKey
-                ((==) . Set.singleton) m
-            else mr
+mostRightOfCollapsed r@(Rel m) =
+  Set.difference (nodes r) . Map.keysSet $ Map.filterWithKey
+  (\ i s -> not (Set.null s) && s /= Set.singleton i) m
 
 {- |
 find s such that x in s => forall y . yRx or not yRx and not xRy
