@@ -204,25 +204,20 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
                                            (elemsSPIdSet idMap))
                     uType t = fst t ++ [snd t]
 
-transPredMap :: IdTypeSPIdMap ->
-                CSign.Sign e f ->
-                (SPSign.PredMap, IdTypeSPIdMap, [Named SPTerm])
+transPredMap :: IdTypeSPIdMap -> CSign.Sign e f
+  -> (SPSign.PredMap, IdTypeSPIdMap)
 transPredMap idMap sign =
-    Map.foldWithKey toSPPredType (Map.empty, idMap, []) . MapSet.toMap
+    Map.foldWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
       $ CSign.predMap sign
-    where toSPPredType iden typeSet (fm, im, sen) =
+    where toSPPredType iden typeSet (fm, im) =
               if isSingleton typeSet then
                 let pType = Set.findMin typeSet
                     sid' = sid fm pType
                 in (Map.insert sid' (Set.singleton (transPredType pType)) fm
-                   , insertSPId iden (CPred pType) sid' im
-                   , sen)
+                   , insertSPId iden (CPred pType) sid' im)
               else case -- genPredImplicationDisjunctions sign $
                         Rel.partSet (leqP sign) typeSet of
-                     splitTySet ->
-                         let (fm', im') =
-                                 foldr insOIdSet (fm, im) splitTySet
-                         in (fm', im', sen)
+                     splitTySet -> foldr insOIdSet (fm, im) splitTySet
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transPredType tset) fm',
@@ -490,8 +485,7 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
   Translate a CASL signature into SoftFOL signature 'SoftFOL.Sign.Sign'.
   Before translating, eqPredicate symbols where removed from signature.
 -}
-transSign :: CSign.Sign f e ->
-             (SPSign.Sign, IdTypeSPIdMap, [Named SPTerm])
+transSign :: CSign.Sign f e -> (SPSign.Sign, IdTypeSPIdMap)
 transSign sign = (SPSign.emptySign { SPSign.sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
                            , sortMap = spSortMap
@@ -499,8 +493,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
                            , SPSign.predMap = pMap
                            , singleSorted = isSingleSorted sign
                            }
-                 , idMap''
-                 , predImplications)
+                 , idMap'')
     where (spSortMap, idMap) =
             Set.fold (\ i (sm, im) ->
                           let sid = disSPOId CKSort (transIdSort i)
@@ -511,7 +504,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
                                         (Map.empty, Map.empty)
                                         (CSign.sortSet sign)
           (fMap, idMap') = transFuncMap idMap sign
-          (pMap, idMap'', predImplications) = transPredMap idMap' sign
+          (pMap, idMap'') = transPredMap idMap' sign
 
 nonEmptySortSens :: CSign.Sign f e -> IdTypeSPIdMap -> SortMap -> [Named SPTerm]
 nonEmptySortSens sig idMap sm =
@@ -554,13 +547,12 @@ transTheory :: (FormExtension f, Eq f) =>
 transTheory trSig trForm (sign, sens) =
   fmap (trSig sign (CSign.extendedInfo sign))
     (case transSign (filterPreds $ foldl insInjOps sign genAxs) of
-     (tSign, idMap, sign_sens) ->
+     (tSign, idMap) ->
         do (idMap', tSign', sentencesAndGoals) <-
                integrateGenerated idMap genSens tSign
            let tSignElim = if SPSign.singleSortNotGen tSign'
                              then tSign' {sortMap = Map.empty} else tSign'
            return (tSignElim,
-                    sign_sens ++
                     disjointTopSorts sign idMap' ++
                     sentencesAndGoals ++
                     nonEmptySortSens sign idMap' (sortMap tSignElim) ++
@@ -573,7 +565,7 @@ transTheory trSig trForm (sign, sens) =
                               Sort_gen_ax _ _ -> True
                               _ -> False) sens
         (eqPreds, realSens') = foldl findEqPredicates (Set.empty, []) realSens
-        (genAxs, _) = partition isAxiom genSens
+        genAxs = filter isAxiom genSens
         insInjOps sig s =
               case sentence s of
               (Sort_gen_ax constrs _) ->
@@ -702,7 +694,7 @@ mapSen :: (Eq f, FormExtension f) => Bool
        -> FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
 mapSen siSo trForm sign = transFORM siSo Set.empty sign
-                                        ((\ (_, x, _) -> x) (transSign sign))
+                                        (snd $ transSign sign)
                                         trForm
 
 transFORM :: (Eq f, FormExtension f) => Bool -- ^ single sorted flag
@@ -784,7 +776,7 @@ extractCASLModel :: CASLSign -> ProofTree
 extractCASLModel sign (ProofTree output) =
   case parse tptpModel "" output of
     Right rfs -> do
-      let (_, idMap, _) = transSign sign
+      let idMap = snd $ transSign sign
           rMap = getSignMap idMap
           (rs, fs1) = partition ((== "interpretation_atoms") . fst) rfs
           (ds, fs2) = partition ((== "interpretation_domain") . fst) fs1
