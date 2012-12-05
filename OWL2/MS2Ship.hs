@@ -27,8 +27,13 @@ import qualified Data.Set as Set
 ppShipOnt :: OntologyDocument -> Doc
 ppShipOnt = ppBox . catBoxes . map frame2Boxes . ontFrames . ontology
 
+emptyBox :: Box
 emptyBox = Box [] [] []
+
+appBoxes :: Box -> Box -> Box
 appBoxes (Box t1 r1 a1) (Box t2 r2 a2) = Box (t1 ++ t2) (r1 ++ r2) (a1 ++ a2)
+
+catBoxes :: [Box] -> Box
 catBoxes = foldr appBoxes emptyBox
 
 frame2Boxes :: Frame -> Box
@@ -38,12 +43,12 @@ frame2Boxes (Frame e bs) = case e of
     r = ope2Role ope
     es = concatMap (opFrame2Boxes r) bs
     (ds, rs) = getRoleType r es
-    rt = on (RoleType r) intersectConcepts ds rs
-    in Box [] (nubOrd $ map (setRoleType rt) es) []
+    rt = on RoleType intersectConcepts ds rs
+    in Box [] (nubOrd $ map (setRoleType r rt) es) []
   SimpleEntity (Entity et i) -> case et of
     NamedIndividual -> Box [] [] $ concatMap (indFrame2Boxes $ localPart i) bs
     _ -> Box [] [] []
-  Misc _ -> concatMap miscFrame2Boxes bs
+  Misc _ -> catBoxes $ map miscFrame2Boxes bs
 
 classFrame2Boxes :: Concept -> FrameBit -> [TBox]
 classFrame2Boxes c b = case b of
@@ -73,7 +78,7 @@ opFrame2Boxes :: Role -> FrameBit -> [RBox]
 opFrame2Boxes r b = case b of
   ListFrameBit mr lfb -> opListFrame2Boxes r mr lfb
   AnnFrameBit _ fb -> case fb of
-    AnnotationFrameBit Declaration -> [RoleDecl (r2RT r) Nothing]
+    AnnotationFrameBit Declaration -> [RoleDecl r topRT]
     _ -> []
 
 opListFrame2Boxes :: Role -> Maybe Relation -> ListFrameBit -> [RBox]
@@ -81,16 +86,13 @@ opListFrame2Boxes r mr lfb = case mr of
     Just rel -> case rel of
       DRRelation dr -> case lfb of
         ExpressionBit l -> let cs = map (ce2Concept . snd) l in case dr of
-          ADomain -> map (\ c -> RoleDecl (RoleType r c topC) Nothing) cs
-          ARange -> map (\ c -> RoleDecl (RoleType r topC c) Nothing) cs
+          ADomain -> map (\ c -> RoleDecl r (RoleType c topC)) cs
+          ARange -> map (RoleDecl r . RoleType topC) cs
         _ -> []
       _ -> case lfb of
-        ObjectBit l -> let
-          opes = map (ope2Role . snd) l
-          rtd o t = RoleDecl (r2RT r) $ Just (o, t)
-          in case rel of
-          SubPropertyOf -> map (rtd Less . r2RT) opes
-          InverseOf -> map (rtd Eq . r2RT . UnOp InvR) opes
+        ObjectBit l -> let opes = map (ope2Role . snd) l in case rel of
+          SubPropertyOf -> map (RoleRel r Less) opes
+          InverseOf -> map (RoleRel r Eq . UnOp InvR) opes
           EDRelation er -> map ((case er of
             Equivalent -> eqR
             Disjoint -> disR) r) opes
@@ -100,29 +102,29 @@ opListFrame2Boxes r mr lfb = case mr of
         ObjectCharacteristics l -> map ((`RoleProp` r) . snd) l
         _ -> []
 
-getRoleType :: Role -> [Box] -> ([Concept], [Concept])
+getRoleType :: Role -> [RBox] -> ([Concept], [Concept])
 getRoleType r = foldr (\ b p@(ds, rs) -> case b of
-  RoleDecl (RoleType r2 d e) _ | r == r2 -> (d : ds, e : rs)
+  RoleDecl r2 (RoleType d e) | r == r2 -> (d : ds, e : rs)
   _ -> p) ([], [])
 
-setRoleType :: RoleType -> Box -> Box
-setRoleType r@(RoleType r1 _ _) b = case b of
-  RoleDecl (RoleType r2 _ _) m | r1 == r2 -> RoleDecl r m
+setRoleType :: Role -> RoleType -> RBox -> RBox
+setRoleType r1 r b = case b of
+  RoleDecl r2 _ | r1 == r2 -> RoleDecl r1 r
   _ -> b
 
 flatIntersection :: Concept -> [Concept]
 flatIntersection c = case c of
-  JoinedC IntersectionOf cs -> concatMap flatIntersection cs
+  JoinedC (Just IntersectionOf) cs -> concatMap flatIntersection cs
   _ -> [c]
 
 intersectConcepts :: [Concept] -> Concept
 intersectConcepts = (\ l -> case l of
   [] -> topC
   [c] -> c
-  _ -> JoinedC IntersectionOf l)
+  _ -> JoinedC (Just IntersectionOf) l)
   . Set.toList . Set.delete topC . Set.fromList . concatMap flatIntersection
 
-indFrame2Boxes :: String -> FrameBit -> [Box]
+indFrame2Boxes :: String -> FrameBit -> [ABox]
 indFrame2Boxes i b = case b of
   ListFrameBit mr lfb -> indListFrame2Boxes i mr lfb
   AnnFrameBit {} -> []
@@ -138,40 +140,40 @@ indListFrame2Boxes i mr lfb = case lfb of
           $ (if pn == Positive then id else UnOp NotR) $ ope2Role ope]
         DataPropertyFact {} -> []) l
     IndividualSameOrDifferent l -> case mr of
-      Just (SDRelation sd) -> map
-        ((if sd == Same then eqC else disC) (NominalC i) . i2c . snd) l
+      Just (SDRelation sd) -> map (AIndividual i sd . localPart . snd) l
       _ -> []
     _ -> []
 
-miscFrame2Boxes :: FrameBit -> [Box]
+miscFrame2Boxes :: FrameBit -> Box
 miscFrame2Boxes b = case b of
     ListFrameBit mr lfb -> miscListFrame2Boxes mr lfb
-    AnnFrameBit {} -> []
+    AnnFrameBit {} -> emptyBox
 
-miscListFrame2Boxes :: Maybe Relation -> ListFrameBit -> [Box]
+miscListFrame2Boxes :: Maybe Relation -> ListFrameBit -> Box
 miscListFrame2Boxes mr lfb = case mr of
   Just jr -> case jr of
     EDRelation ed -> case lfb of
       ExpressionBit l -> let cs = map (ce2Concept . snd) l in
-        if ed == Disjoint then [DisjointCs cs] else mkCycle eqC cs
+        Box (if ed == Disjoint then [DisjointCs cs] else mkCycle eqC cs) [] []
       ObjectBit l -> let opes = map (ope2Role . snd) l in
-        if ed == Disjoint then disRs opes else mkCycle eqR opes
-      _ -> []
+        Box [] (if ed == Disjoint then disRs opes else mkCycle eqR opes) []
+      _ -> emptyBox
     SDRelation sd -> case lfb of
-      IndividualSameOrDifferent l -> let ics = map (i2c . snd) l in
-        if sd == Same then mkCycle eqC ics else [DisjointCs ics]
-      _ -> []
-    _ -> []
-  Nothing -> []
+      IndividualSameOrDifferent l -> let is = map (localPart . snd) l in
+        Box [] [] $ (if sd == Same then mkCycle else pairwise)
+         (`AIndividual` sd) is
+      _ -> emptyBox
+    _ -> emptyBox
+  Nothing -> emptyBox
 
-eqC :: Concept -> Concept -> Box
-eqC c d = ConceptDecl c $ Just (Eq, d)
+eqC :: Concept -> Concept -> TBox
+eqC c d = ConceptDecl c $ ConceptRel Eq d
 
-disC :: Concept -> Concept -> Box
+disC :: Concept -> Concept -> TBox
 disC c d = DisjointCs [c, d]
 
-eqR :: Role -> Role -> Box
-eqR r t = RoleDecl (r2RT r) $ Just (Eq, r2RT t)
+eqR :: Role -> Role -> RBox
+eqR = (`RoleRel` Eq)
 
 mkCycle :: (a -> a -> b) -> [a] -> [b]
 mkCycle f l = case l of
@@ -179,17 +181,19 @@ mkCycle f l = case l of
                ++ zipWith f l r
   _ -> []
 
-disR :: Role -> Role -> Box
-disR r t = RoleDecl (r2RT botR)
-  $ Just (Eq, r2RT $ JoinedR IntersectionOf [r, t])
-
-disRs :: [Role] -> [Box]
-disRs rs = case rs of
-  hd : tl -> map (disR hd) tl ++ disRs tl
+pairwise :: (a -> a -> b) -> [a] -> [b]
+pairwise f l = case l of
   [] -> []
+  h : t -> map (f h) t ++ pairwise f t
 
-r2RT :: Role -> RoleType
-r2RT r = RoleType r topC topC
+disR :: Role -> Role -> RBox
+disR r t = RoleRel botR Eq $ JoinedR (Just IntersectionOf) [r, t]
+
+disRs :: [Role] -> [RBox]
+disRs = pairwise disR
+
+topRT :: RoleType
+topRT = RoleType topC topC
 
 i2c :: IRI -> Concept
 i2c = NominalC . localPart
@@ -199,9 +203,9 @@ ce2Concept ce = case ce of
     Expression c -> let s = localPart c in
       if isThing c then if s == thingS then topC else NotC topC
       else CName s
-    ObjectJunction t cs -> JoinedC t $ map ce2Concept cs
+    ObjectJunction t cs -> JoinedC (Just t) $ map ce2Concept cs
     ObjectComplementOf c -> NotC $ ce2Concept c
-    ObjectOneOf is -> JoinedC UnionOf $ map i2c is
+    ObjectOneOf is -> JoinedC (Just UnionOf) $ map i2c is
     ObjectValuesFrom q ope c -> Quant (Left q) (ope2Role ope) $ ce2Concept c
     ObjectHasValue ope i -> Quant (Left SomeValuesFrom) (ope2Role ope) $ i2c i
     -- the following translations are partly workarounds

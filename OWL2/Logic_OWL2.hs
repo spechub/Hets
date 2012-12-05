@@ -37,7 +37,7 @@ import OWL2.ATC_OWL2 ()
 import OWL2.ColimSign
 import OWL2.Conservativity
 import OWL2.MS
--- import OWL2.MS2Ship
+import OWL2.MS2Ship
 import OWL2.ManchesterParser
 import OWL2.ManchesterPrint
 import OWL2.Morphism
@@ -79,7 +79,8 @@ instance Monoid OntologyDocument where
       OntologyDocument (Map.union p1 p2) $ mappend o1 o2
 
 instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
-    parsersAndPrinters OWL2 = addSyntax "Manchester" (basicSpec, pretty)
+    parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, ppShipOnt)
+      $ addSyntax "Manchester" (basicSpec, pretty)
       $ makeDefault (basicSpec, pretty)
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
