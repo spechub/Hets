@@ -126,7 +126,7 @@ ppRole ro = case ro of
 
 skip :: CharParser st ()
 skip = forget $ many $ single (satisfy isSpace) <|> nestedComment "/*" "*/"
-       <|> (string "%" <|> tryString "//") <++> many (noneOf "\n")
+       <|> tryString "//" <++> many (noneOf "\n")
 
 myLetter :: CharParser st Char
 myLetter = satisfy $ \ c -> isAlphaNum c || elem c "_"
@@ -136,6 +136,9 @@ nominal = reserved ["all", "ex", "inv", "not"] (many1 myLetter) << skip
 
 key :: String -> CharParser st ()
 key s = forget $ try $ string s >> notFollowedBy myLetter
+
+skipKey :: String -> CharParser st ()
+skipKey s = key s << skip
 
 quant :: CharParser st QuantifierType
 quant = choice $ map (\ a -> key (showQuant a) >> return a)
@@ -286,7 +289,8 @@ ppABox b = case b of
 
 ppBox :: Box -> Doc
 ppBox (Box ts rs as) =
-  vcat $ map ppTBox ts ++ text "%RBOX" : map ppRBox rs ++ map ppABox as
+  vcat $ text "%TBOX" : map ppTBox ts ++ text "%RBOX" : map ppRBox rs
+           ++ text "%ABOX" : map ppABox as
 
 showCharacter :: Character -> String
 showCharacter c = case c of
@@ -340,51 +344,13 @@ pSame = choice $ map (\ a -> tryString (showSame a) >> return a)
 
 box :: CharParser st Box
 box = do
+  optional $ skipKey "%TBOX"
   ts <- many tbox
-  key "%RBOX"
+  skipKey "%RBOX"
   rs <- many rbox
+  optional $ skipKey "%ABOX"
   as <- many abox
   return $ Box ts rs as
-
-{-
-box :: CharParser st Box
-box = do
-    f <- nomPair NominalRDecl
-    skipChar ':'
-    fmap f role
-  <|> do
-    c <- character
-    fmap (RoleKind c) $ parent role
-  <|> do
-    key "Disjoint"
-    fmap DisjointCs $ parent
-      $ concept <:> many (skipChar ',' >> concept)
-  <|> do
-    n <- nominal
-    let c0 = CName n
-    do
-        el <- eqOrLess
-        c <- concept
-        return $ ConceptDecl c0 $ Just (el, c)
-      <|> do
-        skipChar ':'
-        c1 <- concept
-        do
-            skipChar '*'
-            c2 <- concept
-            let t1 = RoleType (RName n) c1 c2
-            m <- optionMaybe $ do
-              el <- eqOrLess
-              r <- role
-              skipChar ':'
-              c3 <- concept
-              skipChar '*'
-              c4 <- concept
-              return (el, RoleType r c3 c4)
-            return $ RoleDecl t1 m
-          <|> return (NominalCDecl n c1)
-      <|> return (ConceptDecl c0 Nothing)
--}
 
 ppp :: (a -> Doc) -> CharParser () a -> String -> String
 ppp pr pa s = case parse (skip >> pa << eof) "" s of
