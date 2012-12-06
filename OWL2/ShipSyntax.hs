@@ -50,12 +50,12 @@ topR = RName "TxT"
 botR :: Role
 botR = UnOp NotR topR
 
-ppJunction :: Maybe JunctionType -> Doc
-ppJunction mt = text $ case mt of
+ppJunction :: Bool -> Maybe JunctionType -> Doc
+ppJunction c mt = text $ case mt of
   Just t -> case t of
     UnionOf -> "+ "
     IntersectionOf -> "& "
-  Nothing -> "<+> "
+  Nothing -> if c then "<+> " else ". "
 
 pppNegConcept :: Concept -> Doc
 pppNegConcept c = case c of
@@ -67,7 +67,7 @@ pppConcept :: Bool -> Maybe JunctionType -> Concept -> Doc
 pppConcept notLast mt c = case c of
     Quant {} | notLast -> parens
     JoinedC mti _
-      | mti /= mt && maybe True (const $ maybe False (== UnionOf) mt) mti
+      | mti /= mt && maybe True (const $ maybe False (/= UnionOf) mt) mti
         -> parens
     _ -> id
   $ ppConcept c
@@ -79,7 +79,7 @@ ppConcept co = case co of
   NotC c -> text "~" <> pppNegConcept c
   JoinedC t l -> case reverse l of
     [] -> ppConcept $ if t == Just IntersectionOf then topC else NotC topC
-    f : r -> fsep . prepPunctuate (ppJunction t)
+    f : r -> fsep . prepPunctuate (ppJunction True t)
       . reverse $ pppConcept False t f : map (pppConcept True t) r
   Quant q r c -> fsep [(case q of
     Left v -> keyword (showQuant v)
@@ -122,7 +122,7 @@ ppRole ro = case ro of
       _ -> id) (ppRole r)
   JoinedR t l -> case l of
     [] -> ppRole $ if t /= Just UnionOf then topR else botR
-    _ -> fsep . prepPunctuate (ppJunction t) $ map (pppRole t) l
+    _ -> fsep . prepPunctuate (ppJunction False t) $ map (pppRole t) l
 
 skip :: CharParser st ()
 skip = forget $ many $ single (satisfy isSpace) <|> nestedComment "/*" "*/"
@@ -161,7 +161,7 @@ skipChar c = char c >> skip
 primConcept :: CharParser st Concept
 primConcept = do
     q <- quantOrCard << skip
-    r <- role
+    r <- primRole
     skipChar '.'
     fmap (Quant q r) concept
   <|> ((key "not" <|> skipChar '~') >> skip >> fmap NotC primConcept)
@@ -260,7 +260,8 @@ ppRoleType (RoleType s t) =
 
 ppConceptRhs :: ConceptRhs -> Doc
 ppConceptRhs rhs = case rhs of
-  ADTCons cs -> vcat $ prepPunctuate (text "| ") $ map ppTBoxCons cs
+  ADTCons cs -> if null cs then empty else
+     text "::=" <+> vcat (prepPunctuate (text "| ") $ map ppTBoxCons cs)
   ConceptRel o c -> ppEqOrLess o <+> ppConcept c
 
 ppTBoxCons :: TBoxCons -> Doc
@@ -313,9 +314,14 @@ eqOrLess = (skipChar '=' >> return Eq) <|> (skipChar '<' >> return Less)
 tbox :: CharParser st TBox
 tbox = (key "Disjoint" >> fmap DisjointCs
         (parent $ concept <:> many (skipChar ',' >> concept)))
-  <|> liftM2 ConceptDecl concept
+  <|> try (liftM2 ConceptDecl concept
     (liftM2 ConceptRel eqOrLess concept
-     <|> fmap ADTCons (sepBy tboxCons $ skipChar '|'))
+     <|> fmap ADTCons
+     ((tryString "::=" >> skip >> sepBy tboxCons (skipChar '|'))
+      <|> (char ':' >> pzero)
+      <|> (string "==" >> pzero)
+      <|> (string "!=" >> pzero)
+      <|> return [])))
 
 tboxCons :: CharParser st TBoxCons
 tboxCons = liftM2 TBoxCons concept
@@ -344,13 +350,28 @@ pSame = choice $ map (\ a -> tryString (showSame a) >> return a)
 
 box :: CharParser st Box
 box = do
+  many imprts
   optional $ skipKey "%TBOX"
   ts <- many tbox
-  skipKey "%RBOX"
+  optional $ skipKey "%RBOX"
   rs <- many rbox
   optional $ skipKey "%ABOX"
   as <- many abox
   return $ Box ts rs as
+
+imprts :: CharParser st ()
+imprts = skipKey "import" << nominal << optional rename
+
+rename :: CharParser st ()
+rename = do
+  skipKey "with"
+  optional $ skipKey "concepts" << nmap
+  optional $ skipKey "roles" << nmap
+  optional $ skipKey "individuals" << nmap
+  return ()
+
+nmap :: GenParser Char st [()]
+nmap = sepBy1 (nominal >> skipKey "as" << nominal) (skipChar ',')
 
 ppp :: (a -> Doc) -> CharParser () a -> String -> String
 ppp pr pa s = case parse (skip >> pa << eof) "" s of
