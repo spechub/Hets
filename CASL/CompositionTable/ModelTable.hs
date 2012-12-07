@@ -20,7 +20,7 @@ import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import Data.List
 
-data Table2 = Table2 Int (IntMap.IntMap Baserel) BSet CmpTbl ConTables
+data Table2 = Table2 String Int (IntMap.IntMap Baserel) BSet CmpTbl ConTables
 
 type BSet = IntSet.IntSet
 
@@ -30,15 +30,16 @@ type ConTable = IntMap.IntMap IntSet.IntSet
 
 type ConTables = (ConTable, ConTable, ConTable, ConTable)
 
-lkup :: Ord a => a -> Map.Map a Int -> Int
-lkup = Map.findWithDefault 0
+lkup :: (Show a, Ord a) => a -> Map.Map a Int -> Int
+lkup i = Map.findWithDefault
+  (error $ "CASL.CompositionTable.ModelTable.lkup" ++ show i) i
 
 toTable2 :: Table -> Table2
-toTable2 (Table (Table_Attrs _ id_ baserels)
+toTable2 (Table (Table_Attrs name id_ baserels)
   (Compositiontable comptbl) convtbl _ _) =
   let ns = number baserels
       m = Map.fromList ns
-  in Table2 (lkup id_ m)
+  in Table2 name (lkup id_ m)
     (IntMap.fromList $ map (\ (a, b) -> (b, a)) ns)
     (IntSet.fromAscList [1 .. Map.size m])
     (toCmpTbl m comptbl)

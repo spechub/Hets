@@ -12,11 +12,7 @@ Parses CompositionTables in SparQ(Lisp)-Format using Parsec
  <http://www.cs.uu.nl/~daan/parsec.html>
 -}
 
-module CASL.CompositionTable.ParseSparQ
-  ( parseSparQTableFromFile
-  , parseSparQTable
-  , skip
-  ) where
+module CASL.CompositionTable.ParseSparQ where
 
 import Text.ParserCombinators.Parsec
 import CASL.CompositionTable.CompositionTable
@@ -25,11 +21,8 @@ import Common.Parsec
 
 import Data.Char
 
-parseSparQTableFromFile :: String -> IO (Either ParseError Table)
-parseSparQTableFromFile = parseFromFile (skip >> parseSparQTable << eof)
-
-parseSparQTable :: Parser Table
-parseSparQTable = inParens $ do
+parseSparQTableOld :: Parser Table
+parseSparQTableOld = inParens $ do
   calculusName <- parseCalculusName
   (i1, rs1) <- parseIdBaOths
   ct <- parseConversetable

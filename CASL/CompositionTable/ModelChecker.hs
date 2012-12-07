@@ -38,10 +38,9 @@ import Data.Maybe
 import Data.List
 
 modelCheck :: Int -> (Sign () (), [Named (FORMULA ())])
-           -> Table -> Result ()
-modelCheck c (sign, sent) t1 = do
-  let t = toTable2 t1
-      sm = Map.fromList $ extractAnnotations (annoMap sign)
+           -> Table2 -> Result ()
+modelCheck c (sign, sent) t = do
+  let sm = Map.fromList $ extractAnnotations (annoMap sign)
   mapM_ (modelCheckTest c sm sign t) sent
 
 extractAnnotations :: MapSet.MapSet Symbol Annotation -> [(OP_SYMB, String)]
@@ -97,7 +96,7 @@ modelCheckTest1 c sen t symbs = let
 
 calculateQuantification :: Maybe Int -> (Int -> String) -> QUANTIFIER -> Form
   -> Table2 -> [Assignment] -> (Int, [String])
-calculateQuantification mc si quant f t@(Table2 _ l _ _ _) vs =
+calculateQuantification mc si quant f t@(Table2 _ _ l _ _ _) vs =
       let calc = calculateFormula f t
           nD = showAssignments si l
       in case quant of
@@ -147,7 +146,7 @@ calculateTerm trm ass t = case trm of
                  else calculateTerm t2 ass t
 
 applyOperation :: Op -> [Term] -> Table2 -> Assignment -> BSet
-applyOperation ra ts table@(Table2 id_ _ baserels cmpentries convtbl) ass =
+applyOperation ra ts table@(Table2 _ id_ _ baserels cmpentries convtbl) ass =
   let err = error "CompositionTable.applyOperator"
   in case ts of
     ft : rt -> let r1 = calculateTerm ft ass table
@@ -225,7 +224,7 @@ gVAs vs brs = foldr (\ v rs -> [IntMap.insert v b r | b <- brs, r <- rs])
   [IntMap.empty] vs
 
 getBaseRelations :: Table2 -> BSet
-getBaseRelations (Table2 _ _ br _ _) = br
+getBaseRelations (Table2 _ _ _ br _ _) = br
 
 appendVariableAssignments :: Assignment -> [Int] -> Table2 -> [Assignment]
 appendVariableAssignments vm decls t =

@@ -54,11 +54,11 @@ import Static.ComputeTheory
 import qualified Static.ToXml as ToXml
 
 import CASL.Logic_CASL
-import CASL.CompositionTable.Pretty
+import CASL.CompositionTable.Pretty2
 import CASL.CompositionTable.ToXml
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.ModelChecker
-import CASL.CompositionTable.ParseSparQ
+import CASL.CompositionTable.ParseTable2
 
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
