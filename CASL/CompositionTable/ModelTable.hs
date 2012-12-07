@@ -37,7 +37,7 @@ toTable2 :: Table -> Table2
 toTable2 (Table (Table_Attrs _ id_ baserels)
   (Compositiontable comptbl) convtbl _ _) =
   let ns = number baserels
-      m = Map.fromList $ number baserels
+      m = Map.fromList ns
   in Table2 (lkup id_ m)
     (IntMap.fromList $ map (\ (a, b) -> (b, a)) ns)
     (IntSet.fromAscList [1 .. Map.size m])
