@@ -107,7 +107,7 @@ calculateQuantification mc si quant f t@(Table2 _ l _ _ _) vs =
                  res = calc ass
                  nC0 = if res then c0 else c0 + 1
                  nDs = if res || nC0 > c then ds else nD ass : ds
-                 in seq nDs (nC0, nDs)
+                 in seq (seq nC0 nDs) (nC0, nDs)
                in foldl' fall (0, []) vs
              Nothing -> foldr (\ ass p@(_, ds) ->
                if null ds then if calc ass then p else (1, [nD ass]) else p)
