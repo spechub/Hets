@@ -16,6 +16,7 @@ import qualified Generic.Tools as Generic
 
 -- Logic ID     lid
 data PLpatt = PLpatt deriving Show
+
 {-
 -- language
 instance Language PLpatt where 
@@ -43,7 +44,8 @@ instance Logic PLpatt
     () -- raw symbol
     Generic.Tree -- proof tree
     where
-{- logic_name = show 
+    {-    
+ logic_name = show 
  id lid = Morphism.id
  comp lid = Morphism.comp
  parse_basic_spec lid = Generic.parseSpec
