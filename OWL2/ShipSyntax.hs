@@ -158,11 +158,17 @@ quantOrCard = fmap Left quant
 skipChar :: Char -> CharParser st ()
 skipChar c = char c >> skip
 
+commaP, colonP, equalP, bulletP :: CharParser st ()
+commaP = skipChar ','
+colonP = skipChar ':'
+equalP = skipChar '='
+bulletP = skipChar '.'
+
 primConcept :: CharParser st Concept
 primConcept = do
     q <- quantOrCard << skip
     r <- primRole
-    skipChar '.'
+    bulletP
     fmap (Quant q r) concept
   <|> ((key "not" <|> skipChar '~') >> skip >> fmap NotC primConcept)
   <|> braced (fmap NominalC nominal) -- allow more nominals
@@ -195,7 +201,7 @@ notOrInv = (char '~' >> return NotR)
   <|> (key "inv" >> return InvR)
 
 nomPair :: (String -> String -> a) -> CharParser st a
-nomPair f = parent $ liftM2 f nominal $ skipChar ',' >> nominal
+nomPair f = parent $ liftM2 f nominal $ commaP >> nominal
 
 primRole :: CharParser st Role
 primRole = do
@@ -309,11 +315,11 @@ character = choice $ map (\ a -> key (showCharacter a) >> return a)
   [minBound .. maxBound]
 
 eqOrLess :: CharParser st EqOrLess
-eqOrLess = (skipChar '=' >> return Eq) <|> (skipChar '<' >> return Less)
+eqOrLess = (equalP >> return Eq) <|> (skipChar '<' >> return Less)
 
 tbox :: CharParser st TBox
 tbox = (key "Disjoint" >> fmap DisjointCs
-        (parent $ concept <:> many (skipChar ',' >> concept)))
+        (parent $ concept <:> many (commaP >> concept)))
   <|> try (liftM2 ConceptDecl concept
     (liftM2 ConceptRel eqOrLess concept
      <|> fmap ADTCons
@@ -325,8 +331,8 @@ tbox = (key "Disjoint" >> fmap DisjointCs
 
 tboxCons :: CharParser st TBoxCons
 tboxCons = liftM2 TBoxCons concept
-  . optionL . parent . flip sepBy (skipChar ',')
-  . pair role $ skipChar ':' >> concept
+  . optionL . parent . flip sepBy commaP
+  . pair role $ colonP >> concept
 
 rbox :: CharParser st RBox
 rbox = liftM2 RoleProp character (parent role)
@@ -334,14 +340,14 @@ rbox = liftM2 RoleProp character (parent role)
     r <- role
     liftM2 (RoleRel r) eqOrLess role
       <|> fmap (RoleDecl r) (liftM2 RoleType
-        (skipChar ':' >> concept)
+        (colonP >> concept)
         $ skipChar '*' >> concept)) -- added try to recognize abox
 
 abox :: CharParser st ABox
-abox = liftM2 ($) (nomPair ARole) (skipChar ':' >> role)
+abox = liftM2 ($) (nomPair ARole) (colonP >> role)
   <|> do
     n <- nominal
-    fmap (AConcept n) (skipChar ':' >> concept)
+    fmap (AConcept n) (colonP >> concept)
       <|> liftM2 (AIndividual n) (pSame << skip) nominal
 
 pSame :: CharParser st SameOrDifferent
@@ -350,7 +356,7 @@ pSame = choice $ map (\ a -> tryString (showSame a) >> return a)
 
 box :: CharParser st Box
 box = do
-  many imprts
+  forget $ many imprts
   optional $ skipKey "%TBOX"
   ts <- many tbox
   optional $ skipKey "%RBOX"
@@ -371,7 +377,7 @@ rename = do
   return ()
 
 nmap :: GenParser Char st [()]
-nmap = sepBy1 (nominal >> skipKey "as" << nominal) (skipChar ',')
+nmap = sepBy1 (nominal >> skipKey "as" << nominal) commaP
 
 ppp :: (a -> Doc) -> CharParser () a -> String -> String
 ppp pr pa s = case parse (skip >> pa << eof) "" s of
