@@ -285,19 +285,19 @@ ppRBox :: RBox -> Doc
 ppRBox b = case b of
   RoleDecl r t -> fsep [ppRole r, ppRoleType t]
   RoleRel r o t -> fsep [ppRole r, ppEqOrLess o <+> ppRole t]
-  RoleProp c s -> text (showCharacter c) <> parens (ppRole s)
+  RoleProp c s -> keyword (showCharacter c) <> parens (ppRole s)
 
 ppABox :: ABox -> Doc
 ppABox b = case b of
-  AConcept n c -> text n <+> colon <+> ppConcept c
+  AConcept n c -> text n <> colon <> ppConcept c
   ARole s t r -> parens (text s <> comma <+> text t)
-    <+> colon <+> ppRole r
-  AIndividual s c t -> text s <+> text (showSame c) <+> text t
+    <> colon <> ppRole r
+  AIndividual s c t -> text s <> text (showSame c) <> text t
 
 ppBox :: Box -> Doc
-ppBox (Box ts rs as) =
-  vcat $ text "%TBOX" : map ppTBox ts ++ text "%RBOX" : map ppRBox rs
-           ++ text "%ABOX" : map ppABox as
+ppBox (Box ts rs as) = let ppM c = keyword $ '%' : c : "BOX" in
+  vcat $ ppM 'T' : map ppTBox ts ++ ppM 'R' : map ppRBox rs
+           ++ ppM 'A' : map ppABox as
 
 showCharacter :: Character -> String
 showCharacter c = case c of
