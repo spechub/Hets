@@ -52,10 +52,10 @@ data CondEffect = CondEffect ABox ABoxDeletes
 data Action = Action Header ABoxs ABoxDeletes [CondEffect]
   deriving (Show, Eq, Ord)
 
-data Process = Process Header Proc
+data IndEffect = IndEffect String ABoxs ABoxDeletes ABoxs
   deriving (Show, Eq, Ord)
 
-data IndEffect = IndEffect String ABoxs ABoxDeletes ABoxs
+data Process = Process Header Proc
   deriving (Show, Eq, Ord)
 
 data Proc
@@ -154,10 +154,6 @@ ppAction (Action h pre eff cs) = fsep
       , eqKey "effect" <+> ppABoxDeletes eff]
     ++ map ppCondEffect cs]
 
-ppProcess :: Process -> Doc
-ppProcess (Process h p) = fsep
-  [ keyword "process" <+> ppHeader h, braces $ ppProc p]
-
 ppIndEffect :: IndEffect -> Doc
 ppIndEffect (IndEffect n is cs ds) = fsep
   [ keyword "indirect" <+> keyword "effect" <+> ppHeader (Header n [])
@@ -166,8 +162,58 @@ ppIndEffect (IndEffect n is cs ds) = fsep
     , eqKey "causes" <+> ppABoxDeletes cs
     , eqKey "cond" <+> ppABoxs ds]]
 
+ppProcess :: Process -> Doc
+ppProcess (Process h p) = fsep
+  [ keyword "process" <+> ppHeader h, braces $ ppProc p]
+
 ppProc :: Proc -> Doc
-ppProc _ = empty
+ppProc pr = case pr of
+  While as p -> fsep
+    [keyword "while" <+> parens (ppABoxs as), ppProc p]
+  Star p -> (if isPrim p then id else braces) (ppProc p) <> text "*"
+  IfThenElse as p1 p2 -> fsep
+    [ keyword "if" <+> parens (ppABoxs as), ppProc p1
+    , keyword "else" <+> ppProc p2]
+  Switch cs mp -> let
+    pc d p = fsep
+      [keyword "case" <+> d, implies <+> ppProc p]
+    in sep
+    $ keyword "switch"
+    : map (\ (as, p) -> pc (ppABoxs as) p) cs
+    ++ maybe [] (\ p -> [pc (text "_") p]) mp
+  Forall as p -> fsep
+    [keyword "forall" <+> ppABoxs as, implies <+> ppProc p]
+  Init f -> keyword "init" <+> ppFoltl f
+  CallP n ps -> text n <> parens (sepByCommas $ map text ps)
+  BinP p1 o p2 -> sep [ppBinProc True o p1, ppBinP o <+> ppBinProc False o p2]
+
+isPrim :: Proc -> Bool
+isPrim p = case p of
+  Star _ -> True
+  CallP {} -> True
+  Init {} -> True
+  _ -> False
+
+lastIsPrim :: Proc -> Bool
+lastIsPrim pr = case pr of
+  While _ p -> lastIsPrim p
+  IfThenElse _ _ p -> lastIsPrim p
+  Forall _ p -> lastIsPrim p
+  Switch l mp -> maybe (null l || lastIsPrim (snd $ last l)) lastIsPrim mp
+  _ -> isPrim pr
+
+ppBinProc :: Bool -> BinP -> Proc -> Doc
+ppBinProc first b p = case p of
+      _ | lastIsPrim p -> id
+      BinP _ o _ | o <= b -> id
+      _ -> if first then braces else id
+  $ ppProc p
+
+ppBinP :: BinP -> Doc
+ppBinP b = text $ case b of
+  Semi -> ";"
+  Pipe -> "|"
+  SeqPlus -> "+>"
 
 foltl, primFoltl, preFoltl, quantFoltl, andFoltl, orFoltl :: CharParser st Foltl
 
@@ -221,3 +267,38 @@ mon = many1 monitor
 
 ppMon :: [Monitor] -> Doc
 ppMon = vsep . map ppMonitor
+
+aBoxDelete :: CharParser st (Either ABox [String])
+aBoxDelete = fmap Left abox <|> fmap Right
+  (skipKey "delete" >> parent (sepBy nominal commaP))
+
+aBoxDeletes :: CharParser st ABoxDeletes
+aBoxDeletes = sepBy aBoxDelete commaP
+
+aBoxs :: CharParser st ABoxs
+aBoxs = sepBy abox commaP
+
+condEffect :: CharParser st CondEffect
+condEffect = skipKey "fi" >> liftM2 CondEffect (parent abox) aBoxDeletes
+
+skipEqKey :: String -> CharParser st ()
+skipEqKey s = skipKey s >> equalP
+
+action :: CharParser st Action
+action = do
+  h <- skipKey "action" >> header
+  braced $ do
+    as <- skipEqKey "pre" >> aBoxs
+    ds <- skipEqKey "effect" >> aBoxDeletes
+    cs <- many condEffect
+    return $ Action h as ds cs
+
+indEffect :: CharParser st IndEffect
+indEffect = do
+  s <- skipKey "indirect" >> skipKey "effect" >> nominal
+  equalP
+  braced $ do
+    as <- skipEqKey "init" >> aBoxs
+    cs <- skipEqKey "causes" >> aBoxDeletes
+    ds <- skipEqKey "cond" >> aBoxs
+    return $ IndEffect s as cs ds
