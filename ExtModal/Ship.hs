@@ -42,9 +42,13 @@ data Header = Header String [String]
 data Monitor = Monitor Header (Maybe String) Foltl
   deriving (Show, Eq, Ord)
 
-type ABoxDeletes = [Either ABox [String]]
+type ABoxLit = (Bool, ABox)
+
+type ABoxDeletes = [Either ABoxLit [String]]
 
 type ABoxs = [ABox]
+
+type ABoxAnds = [ABoxLit]
 
 data CondEffect = CondEffect ABox ABoxDeletes
   deriving (Show, Eq, Ord)
@@ -59,10 +63,11 @@ data Process = Process Header Proc
   deriving (Show, Eq, Ord)
 
 data Proc
-  = While ABoxs Proc
+  = While ABoxAnds Proc
   | Star Proc
-  | IfThenElse ABoxs Proc Proc
-  | Switch [(ABoxs, Proc)] (Maybe Proc)
+  | Quest ABox
+  | IfElse ABoxAnds Proc Proc
+  | Switch [(Maybe ABoxAnds, Proc)]
   | Forall ABoxs Proc
   | Init Foltl
   | CallP String [String]
@@ -70,6 +75,12 @@ data Proc
   deriving (Show, Eq, Ord)
 
 data BinP = Semi | Pipe | SeqPlus deriving (Show, Eq, Ord)
+
+data Ship
+  = ShipP Process
+  | ShipA Action
+  | ShipI IndEffect
+  deriving (Show, Eq, Ord)
 
 ppJFoltl :: Bool -> JunctionType -> Foltl -> Doc
 ppJFoltl notLast j f = case f of
@@ -128,9 +139,15 @@ ppMonitor (Monitor h mc ft) = fsep
       Just c -> [doubleQuotes . text $ filter (/= '"') c]
   ++ [ppFoltl ft]
 
-ppABoxDelete :: Either ABox [String] -> Doc
+ppMon :: [Monitor] -> Doc
+ppMon = vsep . map ppMonitor
+
+ppABoxLit :: ABoxLit -> Doc
+ppABoxLit (b, a) = (if b then empty else keyword "not") <+> ppABox a
+
+ppABoxDelete :: Either ABoxLit [String] -> Doc
 ppABoxDelete e = case e of
-  Left a -> ppABox a
+  Left a -> ppABoxLit a
   Right l -> keyword "delete" <+> parens (sepByCommas $ map text l)
 
 ppABoxDeletes :: ABoxDeletes -> Doc
@@ -138,6 +155,9 @@ ppABoxDeletes = sepByCommas . map ppABoxDelete
 
 ppABoxs :: ABoxs -> Doc
 ppABoxs = sepByCommas . map ppABox
+
+ppABoxAnds :: ABoxAnds -> Doc
+ppABoxAnds = fsep . prepPunctuate (text "and ") . map ppABoxLit
 
 ppCondEffect :: CondEffect -> Doc
 ppCondEffect (CondEffect a as) =
@@ -164,23 +184,21 @@ ppIndEffect (IndEffect n is cs ds) = fsep
 
 ppProcess :: Process -> Doc
 ppProcess (Process h p) = fsep
-  [ keyword "process" <+> ppHeader h, braces $ ppProc p]
+  [ keyword "function" <+> ppHeader h, braces $ ppProc p]
 
 ppProc :: Proc -> Doc
 ppProc pr = case pr of
   While as p -> fsep
-    [keyword "while" <+> parens (ppABoxs as), ppProc p]
-  Star p -> (if isPrim p then id else braces) (ppProc p) <> text "*"
-  IfThenElse as p1 p2 -> fsep
-    [ keyword "if" <+> parens (ppABoxs as), ppProc p1
+    [keyword "while" <+> parens (ppABoxAnds as), ppProc p]
+  Star p -> (if isPrim p then id else parens) (ppProc p) <> text "*"
+  Quest a -> ppABox a <> text "?"
+  IfElse as p1 p2 -> fsep
+    [ keyword "if" <+> parens (ppABoxAnds as), ppProc p1
     , keyword "else" <+> ppProc p2]
-  Switch cs mp -> let
-    pc d p = fsep
-      [keyword "case" <+> d, implies <+> ppProc p]
-    in sep
-    $ keyword "switch"
-    : map (\ (as, p) -> pc (ppABoxs as) p) cs
-    ++ maybe [] (\ p -> [pc (text "_") p]) mp
+  Switch cs -> keyword "switch" <+>
+    vcat (map (\ (m, p) -> fsep
+      [keyword "case" <+> maybe (text "_") ppABoxAnds m, implies <+> ppProc p])
+          cs)
   Forall as p -> fsep
     [keyword "forall" <+> ppABoxs as, implies <+> ppProc p]
   Init f -> keyword "init" <+> ppFoltl f
@@ -190,6 +208,7 @@ ppProc pr = case pr of
 isPrim :: Proc -> Bool
 isPrim p = case p of
   Star _ -> True
+  Quest _ -> True
   CallP {} -> True
   Init {} -> True
   _ -> False
@@ -197,23 +216,33 @@ isPrim p = case p of
 lastIsPrim :: Proc -> Bool
 lastIsPrim pr = case pr of
   While _ p -> lastIsPrim p
-  IfThenElse _ _ p -> lastIsPrim p
+  IfElse _ _ p -> lastIsPrim p
   Forall _ p -> lastIsPrim p
-  Switch l mp -> maybe (null l || lastIsPrim (snd $ last l)) lastIsPrim mp
+  Switch l -> null l || lastIsPrim (snd $ last l)
   _ -> isPrim pr
 
 ppBinProc :: Bool -> BinP -> Proc -> Doc
 ppBinProc first b p = case p of
+      BinP _ o p2 | o <= b -> if first && not (isPrim p2) then parens else id
+      _ | first -> if isPrim p then id else parens
       _ | lastIsPrim p -> id
-      BinP _ o _ | o <= b -> id
-      _ -> if first then braces else id
+      _ -> parens
   $ ppProc p
 
 ppBinP :: BinP -> Doc
 ppBinP b = text $ case b of
   Semi -> ";"
   Pipe -> "|"
-  SeqPlus -> "+>"
+  SeqPlus -> "+"
+
+ppShip :: Ship -> Doc
+ppShip s = case s of
+  ShipP p -> ppProcess p
+  ShipA a -> ppAction a
+  ShipI i -> ppIndEffect i
+
+ppShips :: [Ship] -> Doc
+ppShips = vsep . map ppShip
 
 foltl, primFoltl, preFoltl, quantFoltl, andFoltl, orFoltl :: CharParser st Foltl
 
@@ -238,21 +267,26 @@ quantFoltl = do
 andFoltl = binP (JoinedF IntersectionOf) "and" quantFoltl
 orFoltl = binP (JoinedF UnionOf) "or" andFoltl
 
+impliesP :: GenParser Char st ()
+impliesP = tryString "=>" >> skip
+
 foltl = do
   f <- orFoltl
   option f $ liftM2 (BinOp f)
-    ((skipKey "U" >> return Until) <|> (tryString "=>" >> skip >> return Impl))
+    ((skipKey "U" >> return Until) <|> (impliesP >> return Impl))
     foltl
+
+optNoms :: GenParser Char st [String]
+optNoms = optionL . parent $ sepBy nominal commaP
 
 callFoltl :: Bool -> GenParser Char st Foltl
 callFoltl b = liftM2 (Call b)
     (reserved (map show [X, F, G]
                    ++ ["run", "monitor", "and", "or", "U"]) nominal)
-    . optionL . parent $ sepBy nominal commaP
+    optNoms
 
 header :: CharParser st Header
-header =
-  liftM2 Header nominal (optionL $ parent $ sepBy nominal commaP) << equalP
+header = liftM2 Header nominal optNoms << equalP
 
 monitor :: CharParser st Monitor
 monitor = do
@@ -265,18 +299,21 @@ monitor = do
 mon :: CharParser st [Monitor]
 mon = many1 monitor
 
-ppMon :: [Monitor] -> Doc
-ppMon = vsep . map ppMonitor
+aBoxLit :: CharParser st ABoxLit
+aBoxLit = pair (option True $ skipKey "not" >> return False) abox
 
-aBoxDelete :: CharParser st (Either ABox [String])
-aBoxDelete = fmap Left abox <|> fmap Right
-  (skipKey "delete" >> parent (sepBy nominal commaP))
+aBoxDelete :: CharParser st (Either ABoxLit [String])
+aBoxDelete = fmap Right (skipKey "delete" >> parent (sepBy nominal commaP))
+  <|> fmap Left aBoxLit
 
 aBoxDeletes :: CharParser st ABoxDeletes
 aBoxDeletes = sepBy aBoxDelete commaP
 
 aBoxs :: CharParser st ABoxs
 aBoxs = sepBy abox commaP
+
+aBoxAnds :: CharParser st ABoxAnds
+aBoxAnds = sepBy1 aBoxLit (skipKey "and")
 
 condEffect :: CharParser st CondEffect
 condEffect = skipKey "fi" >> liftM2 CondEffect (parent abox) aBoxDeletes
@@ -302,3 +339,44 @@ indEffect = do
     cs <- skipEqKey "causes" >> aBoxDeletes
     ds <- skipEqKey "cond" >> aBoxs
     return $ IndEffect s as cs ds
+
+process :: CharParser st Process
+process = skipKey "function" >> liftM2 Process header proc
+
+primProc, starProc, preProc, semiProc, pipeProc, proc :: CharParser st Proc
+
+primProc = braced proc
+  <|> parent proc
+  <|> fmap Quest (try $ abox << skipChar '?')
+  <|> liftM2 CallP
+      (reserved ["while", "forall", "if", "switch", "init"] nominal)
+      optNoms
+  <|> fmap Init (skipKey "init" >> foltl)
+
+starProc = do
+  p <- primProc
+  ls <- many $ skipChar '*'
+  return $ if null ls then p else Star p
+
+preProc = liftM2 While (skipKey "while" >> parent aBoxAnds) proc
+  <|> liftM3 IfElse (skipKey "if" >> parent aBoxAnds) proc
+          (skipKey "else" >> proc)
+  <|> liftM2 Forall (skipKey "forall" >> aBoxs) (impliesP >> proc)
+  <|> fmap Switch (skipKey "switch" >>
+         many (skipKey "case" >> pair
+               (fmap Just aBoxAnds <|> (skipChar '_' >> return Nothing))
+               (impliesP >> proc)))
+  <|> starProc
+
+joinBinP :: BinP -> [Proc] -> Proc
+joinBinP o = foldr1 (`BinP` o)
+
+semiProc = binP (joinBinP Semi) ";" preProc
+pipeProc = binP (joinBinP Pipe) "|" semiProc
+proc = binP (joinBinP Pipe) "+" pipeProc
+
+ship :: CharParser st Ship
+ship = fmap ShipP process <|> fmap ShipA action <|> fmap ShipI indEffect
+
+ships :: CharParser st [Ship]
+ships = many ship

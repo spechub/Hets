@@ -132,7 +132,9 @@ myLetter :: CharParser st Char
 myLetter = satisfy $ \ c -> isAlphaNum c || elem c "_"
 
 nominal :: CharParser st String
-nominal = reserved ["all", "ex", "inv", "not"] (many1 myLetter) << skip
+nominal = reserved
+  ["_", "all", "ex", "inv", "not", "if", "effect", "causes", "cond"]
+  (many1 myLetter) << skip
 
 key :: String -> CharParser st ()
 key s = forget $ try $ string s >> notFollowedBy myLetter
