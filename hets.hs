@@ -74,7 +74,7 @@ processFile opts file = do
     putIfVerbose opts 3 ("Processing input: " ++ file)
     res <- case guess file (intype opts) of
 #ifdef PROGRAMATICA
-      HaskellIn -> anaHaskellFile opts file
+      HaskellIn -> putStr "this is HaskellIn" >> anaHaskellFile opts file
 #endif
 #ifdef HEXPAT
       HolLightIn -> anaHolLightFile opts file
