@@ -10,5 +10,5 @@ data Prop = Prop Id
 data Axiom = Axiom Id Form
 data Decl = Prop_decl Prop | Axiom_decl Axiom
 type Basic_spec = [Decl]
-data Symb = Symb{sname :: Id}
+data Symbol = Symb{sname :: Id}
 
