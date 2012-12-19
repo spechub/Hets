@@ -133,7 +133,7 @@ myLetter = satisfy $ \ c -> isAlphaNum c || elem c "_"
 
 nominal :: CharParser st String
 nominal = reserved
-  ["_", "all", "ex", "inv", "not", "if", "effect", "causes", "cond"]
+  ["_", "all", "ex", "inv", "not", "if", "effect", "causes", "cond", "exec"]
   (many1 myLetter) << skip
 
 key :: String -> CharParser st ()

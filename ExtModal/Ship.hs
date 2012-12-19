@@ -53,7 +53,10 @@ type ABoxAnds = [ABoxLit]
 data CondEffect = CondEffect ABox ABoxDeletes
   deriving (Show, Eq, Ord)
 
-data Action = Action Header ABoxs ABoxDeletes [CondEffect]
+data Exec = Exec String String [String]
+  deriving (Show, Eq, Ord)
+
+data Action = Action Header ABoxs ABoxDeletes [CondEffect] (Maybe Exec)
   deriving (Show, Eq, Ord)
 
 data IndEffect = IndEffect String ABoxs ABoxDeletes ABoxs
@@ -100,8 +103,7 @@ ppFoltl :: Foltl -> Doc
 ppFoltl ft = case ft of
   ABoxass b a -> (if b then id else (notDoc <+>)) $ ppABox a
   Call b s ps -> (if b then keyword "run" else empty)
-    <+> text s <> if null ps then empty else
-                        parens (sepByCommas $ map text ps)
+    <+> text s <> if null ps then empty else ppParams ps
   JoinedF t l -> case reverse l of
     [] -> empty
     f : r -> fsep . prepPunctuate (text $ case t of
@@ -128,7 +130,7 @@ ppPreOp o = case o of
 
 ppHeader :: Header -> Doc
 ppHeader (Header name ps) = text name <>
-       (if null ps then empty else parens $ sepByCommas $ map text ps)
+       (if null ps then empty else ppParams ps)
     <+> equals
 
 ppMonitor :: Monitor -> Doc
@@ -148,7 +150,7 @@ ppABoxLit (b, a) = (if b then empty else keyword "not") <+> ppABox a
 ppABoxDelete :: Either ABoxLit [String] -> Doc
 ppABoxDelete e = case e of
   Left a -> ppABoxLit a
-  Right l -> keyword "delete" <+> parens (sepByCommas $ map text l)
+  Right l -> keyword "delete" <> ppParams l
 
 ppABoxDeletes :: ABoxDeletes -> Doc
 ppABoxDeletes = sepByCommas . map ppABoxDelete
@@ -166,13 +168,21 @@ ppCondEffect (CondEffect a as) =
 eqKey :: String -> Doc
 eqKey s = keyword s <+> equals
 
+ppParams :: [String] -> Doc
+ppParams = parens . sepByCommas . map text
+
+ppExec :: Exec -> [Doc]
+ppExec (Exec s1 s2 ps) =
+  [eqKey "exec" <+> text s1 <> dot <> text s2 <> ppParams ps]
+
 ppAction :: Action -> Doc
-ppAction (Action h pre eff cs) = fsep
+ppAction (Action h pre eff cs me) = fsep
   [ keyword "action" <+> ppHeader h
   , braces $ vcat
-    $ [ eqKey "pre" <+> ppABoxs pre
-      , eqKey "effect" <+> ppABoxDeletes eff]
-    ++ map ppCondEffect cs]
+    $ [ if null pre then empty else eqKey "pre" <+> ppABoxs pre
+      , if null eff then empty else eqKey "effect" <+> ppABoxDeletes eff]
+    ++ map ppCondEffect cs
+    ++ maybe [] ppExec me]
 
 ppIndEffect :: IndEffect -> Doc
 ppIndEffect (IndEffect n is cs ds) = fsep
@@ -202,7 +212,7 @@ ppProc pr = case pr of
   Forall as p -> fsep
     [keyword "forall" <+> ppABoxs as, implies <+> ppProc p]
   Init f -> keyword "init" <+> ppFoltl f
-  CallP n ps -> text n <> parens (sepByCommas $ map text ps)
+  CallP n ps -> text n <> ppParams ps
   BinP o ps -> case reverse ps of
     [] -> empty
     f : r -> fsep . prepPunctuate (ppBinP o)
@@ -325,14 +335,25 @@ condEffect = skipKey "fi" >> liftM2 CondEffect (parent abox) aBoxDeletes
 skipEqKey :: String -> CharParser st ()
 skipEqKey s = skipKey s >> equalP
 
+exec :: CharParser st Exec
+exec = do
+  skipEqKey "exec"
+  s1 <- many1 myLetter
+  char '.'
+  s2 <- many1 myLetter
+  skip
+  ps <- optNoms
+  return $ Exec s1 s2 ps
+
 action :: CharParser st Action
 action = do
   h <- skipKey "action" >> header
   braced $ do
-    as <- skipEqKey "pre" >> aBoxs
-    ds <- skipEqKey "effect" >> aBoxDeletes
+    as <- optionL $ skipEqKey "pre" >> aBoxs
+    ds <- optionL $ skipEqKey "effect" >> aBoxDeletes
     cs <- many condEffect
-    return $ Action h as ds cs
+    me <- optionMaybe exec
+    return $ Action h as ds cs me
 
 indEffect :: CharParser st IndEffect
 indEffect = do
@@ -351,10 +372,10 @@ primProc, starProc, preProc, semiProc, pipeProc, proc :: CharParser st Proc
 
 primProc = braced proc
   <|> parent proc
-  <|> fmap Init (skipKey "init" >> foltl)
+  <|> fmap Init (try $ skipKey "init" >> foltl)
   <|> fmap Quest (try $ abox << skipChar '?')
   <|> liftM2 CallP
-      (reserved ["while", "forall", "if", "switch", "init"] nominal)
+      (reserved ["while", "forall", "if", "switch"] nominal)
       optNoms
 
 starProc = do
