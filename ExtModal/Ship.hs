@@ -36,6 +36,30 @@ data Foltl
   | BinOp Foltl BinOp Foltl
   deriving (Show, Eq, Ord)
 
+negFoltl :: Foltl -> Foltl
+negFoltl ftl = case ftl of
+  ABoxass b a -> ABoxass (not b) a
+  Call {} -> ftl  -- error?
+  JoinedF t fs -> JoinedF (case t of
+    UnionOf -> IntersectionOf
+    IntersectionOf -> UnionOf) $ map negFoltl fs
+  PreOp p f -> (case p of
+    QuantF q as -> PreOp (QuantF (case q of
+      AllValuesFrom -> SomeValuesFrom
+      SomeValuesFrom -> AllValuesFrom) as)
+    X -> PreOp X
+    F -> PreOp G
+    G -> PreOp F) $ negFoltl f
+  BinOp f1 p f2 -> case p of
+    Until -> release (negFoltl f1) $ negFoltl f2
+    Impl -> JoinedF IntersectionOf [negFoltl f1, negFoltl f2]
+
+weakUntil :: Foltl -> Foltl -> Foltl
+weakUntil f1 f2 = JoinedF UnionOf [BinOp f1 Until f2, PreOp G f1]
+
+release :: Foltl -> Foltl -> Foltl
+release f1 f2 = weakUntil f2 $ JoinedF IntersectionOf [f1, f2]
+
 data Header = Header String [String]
   deriving (Show, Eq, Ord)
 
