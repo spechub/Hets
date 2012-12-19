@@ -337,11 +337,10 @@ skipEqKey s = skipKey s >> equalP
 
 exec :: CharParser st Exec
 exec = do
+  let name = many1 myLetter
   skipEqKey "exec"
-  s1 <- many1 myLetter
-  char '.'
-  s2 <- many1 myLetter
-  skip
+  s1 <- name << char '.'
+  s2 <- name << skip
   ps <- optNoms
   return $ Exec s1 s2 ps
 
