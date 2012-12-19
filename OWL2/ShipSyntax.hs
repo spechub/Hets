@@ -183,17 +183,26 @@ braced p = skipChar '{' >> p << skipChar '}'
 parent :: CharParser st a -> CharParser st a
 parent p = skipChar '(' >> p << skipChar ')'
 
-binP :: ([a] -> a) -> String -> CharParser st a -> CharParser st a
-binP f c p = do
+binPP :: ([a] -> a) -> CharParser st sep -> CharParser st a -> CharParser st a
+binPP f sp p = do
   a <- p
-  l <- many $ tryString c >> skip >> p
+  l <- many $ sp >> p
   return $ if null l then a else f $ a : l
 
+binP :: ([a] -> a) -> String -> CharParser st a -> CharParser st a
+binP f s = binPP f $ tryString s >> skip
+
+binC :: ([a] -> a) -> Char -> CharParser st a -> CharParser st a
+binC f c = binPP f $ skipChar c
+
 andConcept :: CharParser st Concept
-andConcept = binP (JoinedC $ Just IntersectionOf) "&" primConcept
+andConcept = binC (JoinedC $ Just IntersectionOf) '&' primConcept
+
+plus :: CharParser st ()
+plus = try $ char '+' >> notFollowedBy (char '>') >> skip
 
 orConcept :: CharParser st Concept
-orConcept = binP (JoinedC $ Just UnionOf) "+" andConcept
+orConcept = binPP (JoinedC $ Just UnionOf) plus andConcept
 
 concept :: CharParser st Concept
 concept = binP (JoinedC Nothing) "<+>" orConcept
@@ -213,15 +222,14 @@ primRole = do
   <|> parent role
   <|> fmap RName nominal
 
-
 compRole :: CharParser st Role
-compRole = binP (JoinedR Nothing) "." primRole
+compRole = binC (JoinedR Nothing) '.' primRole
 
 andRole :: CharParser st Role
-andRole = binP (JoinedR $ Just IntersectionOf) "&" compRole
+andRole = binC (JoinedR $ Just IntersectionOf) '&' compRole
 
 role :: CharParser st Role
-role = binP (JoinedR $ Just UnionOf) "+" andRole
+role = binPP (JoinedR $ Just UnionOf) plus andRole
 
 data EqOrLess = Eq | Less deriving (Show, Eq, Ord)
 

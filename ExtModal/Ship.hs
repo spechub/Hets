@@ -64,14 +64,13 @@ data Process = Process Header Proc
 
 data Proc
   = While ABoxAnds Proc
-  | Star Proc
   | Quest ABox
   | IfElse ABoxAnds Proc Proc
   | Switch [(Maybe ABoxAnds, Proc)]
   | Forall ABoxs Proc
   | Init Foltl
   | CallP String [String]
-  | BinP Proc BinP Proc
+  | BinP BinP [Proc]
   deriving (Show, Eq, Ord)
 
 data BinP = Semi | Pipe | SeqPlus deriving (Show, Eq, Ord)
@@ -190,7 +189,6 @@ ppProc :: Proc -> Doc
 ppProc pr = case pr of
   While as p -> fsep
     [keyword "while" <+> parens (ppABoxAnds as), ppProc p]
-  Star p -> (if isPrim p then id else parens) (ppProc p) <> text "*"
   Quest a -> ppABox a <> text "?"
   IfElse as p1 p2 -> fsep
     [ keyword "if" <+> parens (ppABoxAnds as), ppProc p1
@@ -203,11 +201,13 @@ ppProc pr = case pr of
     [keyword "forall" <+> ppABoxs as, implies <+> ppProc p]
   Init f -> keyword "init" <+> ppFoltl f
   CallP n ps -> text n <> parens (sepByCommas $ map text ps)
-  BinP p1 o p2 -> sep [ppBinProc True o p1, ppBinP o <+> ppBinProc False o p2]
+  BinP o ps -> case reverse ps of
+    [] -> empty
+    f : r -> fsep . prepPunctuate (ppBinP o)
+      . reverse $ ppBinProc False o f : map (ppBinProc True o) r
 
 isPrim :: Proc -> Bool
 isPrim p = case p of
-  Star _ -> True
   Quest _ -> True
   CallP {} -> True
   Init {} -> True
@@ -223,7 +223,8 @@ lastIsPrim pr = case pr of
 
 ppBinProc :: Bool -> BinP -> Proc -> Doc
 ppBinProc first b p = case p of
-      BinP _ o p2 | o <= b -> if first && not (isPrim p2) then parens else id
+      BinP o ps | o <= b -> if first && not (null ps || isPrim (last ps))
+                            then parens else id
       _ | first -> if isPrim p then id else parens
       _ | lastIsPrim p -> id
       _ -> parens
@@ -231,9 +232,9 @@ ppBinProc first b p = case p of
 
 ppBinP :: BinP -> Doc
 ppBinP b = text $ case b of
-  Semi -> ";"
-  Pipe -> "|"
-  SeqPlus -> "+"
+  Semi -> "; "
+  Pipe -> "| "
+  SeqPlus -> "+> "
 
 ppShip :: Ship -> Doc
 ppShip s = case s of
@@ -343,20 +344,15 @@ indEffect = do
 process :: CharParser st Process
 process = skipKey "function" >> liftM2 Process header proc
 
-primProc, starProc, preProc, semiProc, pipeProc, proc :: CharParser st Proc
+primProc, preProc, semiProc, pipeProc, proc :: CharParser st Proc
 
 primProc = braced proc
   <|> parent proc
+  <|> fmap Init (skipKey "init" >> foltl)
   <|> fmap Quest (try $ abox << skipChar '?')
   <|> liftM2 CallP
       (reserved ["while", "forall", "if", "switch", "init"] nominal)
       optNoms
-  <|> fmap Init (skipKey "init" >> foltl)
-
-starProc = do
-  p <- primProc
-  ls <- many $ skipChar '*'
-  return $ if null ls then p else Star p
 
 preProc = liftM2 While (skipKey "while" >> parent aBoxAnds) proc
   <|> liftM3 IfElse (skipKey "if" >> parent aBoxAnds) proc
@@ -366,14 +362,11 @@ preProc = liftM2 While (skipKey "while" >> parent aBoxAnds) proc
          many (skipKey "case" >> pair
                (fmap Just aBoxAnds <|> (skipChar '_' >> return Nothing))
                (impliesP >> proc)))
-  <|> starProc
+  <|> primProc
 
-joinBinP :: BinP -> [Proc] -> Proc
-joinBinP o = foldr1 (`BinP` o)
-
-semiProc = binP (joinBinP Semi) ";" preProc
-pipeProc = binP (joinBinP Pipe) "|" semiProc
-proc = binP (joinBinP Pipe) "+" pipeProc
+semiProc = binC (BinP Semi) ';' preProc
+pipeProc = binC (BinP Pipe) '|' semiProc
+proc = binPP (BinP SeqPlus) ((tryString "+>" >> skip) <|> skipChar '+') pipeProc
 
 ship :: CharParser st Ship
 ship = fmap ShipP process <|> fmap ShipA action <|> fmap ShipI indEffect
