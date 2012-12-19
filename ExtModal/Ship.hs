@@ -64,6 +64,7 @@ data Process = Process Header Proc
 
 data Proc
   = While ABoxAnds Proc
+  | Star Proc
   | Quest ABox
   | IfElse ABoxAnds Proc Proc
   | Switch [(Maybe ABoxAnds, Proc)]
@@ -189,6 +190,7 @@ ppProc :: Proc -> Doc
 ppProc pr = case pr of
   While as p -> fsep
     [keyword "while" <+> parens (ppABoxAnds as), ppProc p]
+  Star p -> (if isPrim p then id else parens) (ppProc p) <> text "*"
   Quest a -> ppABox a <> text "?"
   IfElse as p1 p2 -> fsep
     [ keyword "if" <+> parens (ppABoxAnds as), ppProc p1
@@ -208,6 +210,7 @@ ppProc pr = case pr of
 
 isPrim :: Proc -> Bool
 isPrim p = case p of
+  Star _ -> True
   Quest _ -> True
   CallP {} -> True
   Init {} -> True
@@ -344,7 +347,7 @@ indEffect = do
 process :: CharParser st Process
 process = skipKey "function" >> liftM2 Process header proc
 
-primProc, preProc, semiProc, pipeProc, proc :: CharParser st Proc
+primProc, starProc, preProc, semiProc, pipeProc, proc :: CharParser st Proc
 
 primProc = braced proc
   <|> parent proc
@@ -354,6 +357,11 @@ primProc = braced proc
       (reserved ["while", "forall", "if", "switch", "init"] nominal)
       optNoms
 
+starProc = do
+  p <- primProc
+  ls <- many $ skipChar '*'
+  return $ if null ls then p else Star p
+
 preProc = liftM2 While (skipKey "while" >> parent aBoxAnds) proc
   <|> liftM3 IfElse (skipKey "if" >> parent aBoxAnds) proc
           (skipKey "else" >> proc)
@@ -362,7 +370,7 @@ preProc = liftM2 While (skipKey "while" >> parent aBoxAnds) proc
          many (skipKey "case" >> pair
                (fmap Just aBoxAnds <|> (skipChar '_' >> return Nothing))
                (impliesP >> proc)))
-  <|> primProc
+  <|> starProc
 
 semiProc = binC (BinP Semi) ';' preProc
 pipeProc = binC (BinP Pipe) '|' semiProc
