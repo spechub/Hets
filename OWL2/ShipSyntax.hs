@@ -376,7 +376,8 @@ box = do
   return $ Box ts rs as
 
 imprts :: CharParser st ()
-imprts = skipKey "import" << nominal << optional rename
+imprts = skipKey "import" << many1 (myLetter <|> char '.') << skip
+  << optional rename
 
 rename :: CharParser st ()
 rename = do
