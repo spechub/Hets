@@ -300,6 +300,14 @@ ppShip s = case s of
 ppShips :: [Ship] -> Doc
 ppShips = vsep . map ppShip
 
+aboxVar :: CharParser st [ABox]
+aboxVar = liftM2 (\ ns c -> map (`AConcept` c) ns)
+  (sepBy nominal commaP)
+  (colonP >> concept)
+
+aboxVars :: CharParser st [ABox]
+aboxVars = flat $ sepBy aboxVar commaP
+
 foltl, primFoltl, preFoltl, quantFoltl, andFoltl, orFoltl :: CharParser st Foltl
 
 primFoltl = fmap ABoxass (try abox)
@@ -313,7 +321,7 @@ preFoltl = liftM2 PreOp
 
 quantFoltl = do
     q <- quant << skip
-    as <- sepBy abox commaP
+    as <- aboxVars
     bulletP
     f <- foltl
     return $ PreOp (QuantF q as) f
