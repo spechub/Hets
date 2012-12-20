@@ -97,7 +97,7 @@ data Proc
   | Quest ABox
   | IfElse ABoxAnds Proc Proc
   | Switch [(Maybe ABoxAnds, Proc)]
-  | Forall ABoxs Proc
+  | Forall ABoxAnds Proc
   | Init Foltl
   | CallP String [String]
   | BinP BinP [Proc]
@@ -252,7 +252,7 @@ ppProc pr = case pr of
       [keyword "case" <+> maybe (text "_") ppABoxAnds m, implies <+> ppProc p])
           cs)
   Forall as p -> fsep
-    [keyword "forall" <+> ppABoxs as, implies <+> ppProc p]
+    [keyword "forall" <+> ppABoxAnds as, implies <+> ppProc p]
   Init f -> keyword "init" <+> ppFoltl f
   CallP n ps -> text n <> ppParams ps
   BinP o ps -> case reverse ps of
@@ -435,7 +435,7 @@ starProc = do
 preProc = liftM2 While (skipKey "while" >> parent aBoxAnds) proc
   <|> liftM3 IfElse (skipKey "if" >> parent aBoxAnds) proc
           (skipKey "else" >> proc)
-  <|> liftM2 Forall (skipKey "forall" >> aBoxs) (impliesP >> proc)
+  <|> liftM2 Forall (skipKey "forall" >> aBoxAnds) (impliesP >> proc)
   <|> fmap Switch (skipKey "switch" >>
          many (skipKey "case" >> pair
                (fmap Just aBoxAnds <|> (skipChar '_' >> return Nothing))
