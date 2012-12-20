@@ -23,13 +23,13 @@ import Control.Monad
 
 import Text.ParserCombinators.Parsec
 
-data PreOp = X | F | G | QuantF QuantifierType [ABox]
+data PreOp = NotF | X | F | G | QuantF QuantifierType [ABox]
   deriving (Show, Eq, Ord)
 
 data BinOp = Until | Impl deriving (Show, Eq, Ord)
 
 data Foltl
-  = ABoxass Bool ABox
+  = ABoxass ABox
   | Call Bool String [String]
   | JoinedF JunctionType [Foltl]
   | PreOp PreOp Foltl
@@ -38,7 +38,7 @@ data Foltl
 
 negFoltl :: Foltl -> Foltl
 negFoltl ftl = case ftl of
-  ABoxass b a -> ABoxass (not b) a
+  ABoxass a -> PreOp NotF $ ABoxass a
   Call {} -> ftl  -- error?
   JoinedF t fs -> JoinedF (case t of
     UnionOf -> IntersectionOf
@@ -49,11 +49,13 @@ negFoltl ftl = case ftl of
       SomeValuesFrom -> AllValuesFrom) as)
     X -> PreOp X
     F -> PreOp G
-    G -> PreOp F) $ negFoltl f
+    G -> PreOp F
+    NotF -> id) $ negFoltl f
   BinOp f1 p f2 -> case p of
     Until -> release (negFoltl f1) $ negFoltl f2
     Impl -> JoinedF IntersectionOf [negFoltl f1, negFoltl f2]
 
+-- <http://en.wikipedia.org/wiki/Linear_temporal_logic>
 weakUntil :: Foltl -> Foltl -> Foltl
 weakUntil f1 f2 = JoinedF UnionOf [BinOp f1 Until f2, PreOp G f1]
 
@@ -109,23 +111,34 @@ data Ship
   | ShipI IndEffect
   deriving (Show, Eq, Ord)
 
-ppJFoltl :: Bool -> JunctionType -> Foltl -> Doc
-ppJFoltl notLast j f = case f of
-    BinOp {} -> parens
-    PreOp (QuantF {}) _ | notLast -> parens
-    JoinedF t _ | t /= j && t == UnionOf -> parens
-    _ -> id
-  $ ppFoltl f
+isPrimFoltl :: Foltl -> Bool
+isPrimFoltl ftl = case ftl of
+  ABoxass _ -> True
+  Call {} -> True
+  PreOp _ f -> isPrimFoltl f
+  _ -> False
 
-ppBFoltl :: Foltl -> Doc
-ppBFoltl f = case f of
+lastNotPrim :: [Foltl] -> Bool
+lastNotPrim l = not (null l) && not (isPrimFoltl $ last l)
+
+ppJFoltl :: Bool -> JunctionType -> Foltl -> Doc
+ppJFoltl first j f = case f of
+    JoinedF t l -> (if t /= j && t == UnionOf
+      || first && lastNotPrim l then parens else id) $ ppFoltl f
+    _ -> ppBFoltl first f
+
+ppBFoltl :: Bool -> Foltl -> Doc
+ppBFoltl first f = case f of
     BinOp {} -> parens
+    JoinedF _ l | first && lastNotPrim l
+      -> parens
+    PreOp {} | first -> parens
     _ -> id
   $ ppFoltl f
 
 ppFoltl :: Foltl -> Doc
 ppFoltl ft = case ft of
-  ABoxass b a -> (if b then id else (notDoc <+>)) $ ppABox a
+  ABoxass a -> ppABox a
   Call b s ps -> (if b then keyword "run" else empty)
     <+> text s <> if null ps then empty else ppParams ps
   JoinedF t l -> case reverse l of
@@ -137,19 +150,24 @@ ppFoltl ft = case ft of
   PreOp p f -> let
     d1 = ppPreOp p
     d2 = ppFoltl f
+    d3 = d1 <+> d2
     in case p of
     QuantF {} -> fsep [d1, bullet <+> d2]
-    _ -> d1 <+> d2
+    NotF -> case f of
+      PreOp {} -> d3
+      _ -> if isPrimFoltl f then d3 else d1 <> parens d2
+    _ -> d3
   BinOp f1 o f2 -> fsep
-    [ ppBFoltl f1
+    [ ppBFoltl True f1
     , case o of
               Until -> keyword "U"
               Impl -> implies
-    , ppBFoltl f2 ]
+    , ppBFoltl False f2 ]
 
 ppPreOp :: PreOp -> Doc
 ppPreOp o = case o of
   QuantF q as -> keyword (showQuant q) <+> sepByCommas (map ppABox as)
+  NotF -> keyword "not"
   _ -> keyword (show o)
 
 ppHeader :: Header -> Doc
@@ -284,8 +302,8 @@ ppShips = vsep . map ppShip
 
 foltl, primFoltl, preFoltl, quantFoltl, andFoltl, orFoltl :: CharParser st Foltl
 
-primFoltl = fmap (ABoxass True) (try abox)
-  <|> fmap (ABoxass False) (skipKey "not" >> (try abox <|> parent abox))
+primFoltl = fmap ABoxass (try abox)
+  <|> fmap (PreOp NotF) (skipKey "not" >> quantFoltl)
   <|> parent foltl
 
 preFoltl = liftM2 PreOp
