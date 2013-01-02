@@ -30,16 +30,25 @@ data BinOp = Until | Impl deriving (Show, Eq, Ord)
 
 data Foltl
   = ABoxass ABox
-  | Call Bool String [String]
+  | Call Bool String [String] -- True: run a process, but deprecated
   | JoinedF JunctionType [Foltl]
   | PreOp PreOp Foltl
   | BinOp Foltl BinOp Foltl
   deriving (Show, Eq, Ord)
 
+constFoltl :: String -> Foltl
+constFoltl s = Call False s []
+
+trueFoltl, falseFoltl :: Foltl
+trueFoltl = constFoltl "true"
+falseFoltl = constFoltl "false"
+
 negFoltl :: Foltl -> Foltl
-negFoltl ftl = case ftl of
-  ABoxass a -> PreOp NotF $ ABoxass a
-  Call {} -> ftl  -- error?
+negFoltl ftl = let nftl = PreOp NotF ftl in case ftl of
+  ABoxass _ -> nftl
+  Call {} | trueFoltl == ftl -> falseFoltl
+          | falseFoltl == ftl -> trueFoltl
+          | otherwise -> nftl
   JoinedF t fs -> JoinedF (case t of
     UnionOf -> IntersectionOf
     IntersectionOf -> UnionOf) $ map negFoltl fs
