@@ -12,60 +12,85 @@ Portability :  portable
 module ExtModal.ExtModal2Ship where
 
 import CASL.AS_Basic_CASL
-import CASL.Sign
+import CASL.Fold
 
 import ExtModal.AS_ExtModal
-import ExtModal.ExtModalSign
 import ExtModal.Ship
 
+import OWL2.AS
 import OWL2.ShipSyntax
 import OWL2.Translate
 
+import Common.Id
 import Common.Result
 
-data ABoxForm
-  = ABoxForm Junctor [ABoxForm]
-  | ABoxLit Bool ABox   -- False indicates negation
-  deriving (Show, Eq, Ord)
+transSid :: Token -> String
+transSid = transString . show
 
-data ABoxQuant = ABoxQuant (Maybe (Bool, [String])) ABoxForm
-                 -- True indicates forall, the strings are individuals
-  deriving (Show, Eq, Ord)
+transId :: Id -> String
+transId = transString . show
 
-data ShipResult
-  = ABoxAss ABoxQuant
-  | ShipM Monitor
-  | ShipResult Ship
-  | Unprocessed (Result (FORMULA EM_FORMULA))
+toFoltl :: FORMULA EM_FORMULA -> Result Foltl
+toFoltl = foldFormula foltlRec
 
-transSen :: Sign EM_FORMULA EModalSign -> FORMULA EM_FORMULA -> ShipResult
-transSen _sig = Unprocessed . return
-
-toABoxQuant :: FORMULA EM_FORMULA -> Result ABoxQuant
-toABoxQuant frm = case frm of
-  Quantification q vs f _ | q /= Unique_existential ->
-    fmap (ABoxQuant
-      $ Just (q == Universal
-            , concatMap (\ (Var_decl l _ _) -> map (transString . show) l) vs))
-    $ toABoxForm f
-  _ -> fmap (ABoxQuant Nothing) $ toABoxForm frm
-
-predSymToString :: PRED_SYMB -> String
-predSymToString = transString . show . predSymbName
-
-toABoxForm :: FORMULA EM_FORMULA -> Result ABoxForm
-toABoxForm frm = case frm of
-  Junction j fs _ -> fmap (ABoxForm j) $ mapM toABoxForm fs
-  Predication ps as _ -> case as of
+foltlRec :: Record EM_FORMULA (Result Foltl) (Result Foltl)
+foltlRec = (constRecord extModalToFoltlt (const $ fail "foltlRec1")
+  (fail "foltlRec2"))
+  { foldQuantification = \ _ q vs f _ -> if
+      q == Unique_existential then fail "Unique_existential not supported"
+      else fmap (PreOp $ QuantF
+        (if q == Universal then AllValuesFrom else SomeValuesFrom)
+        $ concatMap (\ (Var_decl l s _) -> map
+                     (\ v -> AConcept (transSid v) . CName $ transId s) l) vs)
+        f
+  , foldJunction = \ _ j fs _ -> fmap (JoinedF
+      $ if j == Con then IntersectionOf else UnionOf) $ sequence fs
+  , foldRelation = \ _ mf1 r mf2 _ -> do
+       f1 <- mf1
+       f2 <- mf2
+       let i = BinOp f1 Impl f2
+       return $ if r == Equivalence then
+           JoinedF IntersectionOf [i, BinOp f2 Impl f1]
+           else i
+  , foldNegation = \ _ f _ -> fmap (PreOp NotF) f
+  , foldAtom = \ _ b _ -> return $ if b then trueFoltl else falseFoltl
+  , foldPredication = \ (Predication ps as _) _ _ _ -> case as of
     [a] -> do
       n <- toNominal a
-      return . ABoxLit True . AConcept n . CName $ predSymToString ps
+      return . ABoxass . AConcept n . CName $ predSymToString ps
     [a1, a2] -> do
       n1 <- toNominal a1
       n2 <- toNominal a2
-      return . ABoxLit True . ARole n1 n2 . RName $ predSymToString ps
+      return . ABoxass . ARole n1 n2 . RName $ predSymToString ps
     _ -> fail "no concept or role"
-  _ -> fail "no abox formula"
+  , foldDefinedness = \ _ _ _ -> fail "foltlRec.Definedness"
+  , foldEquation = \ (Equation t1 _ t2 _) _ _ _ _ -> do
+      s1 <- toNominal t1
+      s2 <- toNominal t2
+      return . ABoxass $ AIndividual s1 Same s2
+  , foldMembership = \ (Membership t s _) _ _ _ -> do
+      n <- toNominal t
+      return . ABoxass . AConcept n . CName $ transId s
+  , foldQuantOp = \ _ _ _ _ -> fail "foltlRec.QuantOp"
+  , foldQuantPred = \ _ _ _ _ -> fail "foltlRec.QuantPred"
+  }
+
+extModalToFoltlt :: EM_FORMULA -> Result Foltl
+extModalToFoltlt emf = case emf of
+  PrefixForm p pf _ -> do
+    f <- toFoltl pf
+    case p of
+      NextY True -> return $ PreOp X f
+      StateQuantification True b -> return $ PreOp (if b then G else F) f
+      _ -> fail "extModalToFoltl.PrefixForm"
+  UntilSince True f1 f2 _ -> do
+    u1 <- toFoltl f1
+    u2 <- toFoltl f2
+    return $ BinOp u1 Until u2
+  _ -> fail "extModalToFoltl"
+
+predSymToString :: PRED_SYMB -> String
+predSymToString = transId . predSymbName
 
 toNominal :: TERM EM_FORMULA -> Result String
 toNominal trm = case trm of
