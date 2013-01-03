@@ -55,7 +55,7 @@ import Driver.ReadFn
 import Driver.WriteLibDefn
 
 #ifndef NOHTTP
-import Network.HTTP (simpleHTTP, getRequest, getResponseBody, rspCode, rspReason)
+import Network.HTTP
 #endif
 
 import qualified Data.Map as Map
@@ -94,10 +94,10 @@ downloadSource opts fname = do
   input <- getResponseBody resp
   case resp of
     Right r -> case rspCode r of
-      (2,0,0) -> do
+      (2, 0, 0) -> do
         putIfVerbose opts 3 "Successful"
         return (fname, input)
-      (x,y,z) -> do
+      (x, y, z) -> do
         let errmsg = "Download of file " ++ fname
                      ++ " yields HTTP error " ++ show x ++ show y ++ show z
                      ++ ": " ++ rspReason r
@@ -112,8 +112,8 @@ tryDownloadSources :: HetcatsOpts -> [FilePath] -> FilePath
                       -> IO (FilePath, String)
 tryDownloadSources opts fnames origname = case fnames of
   [] -> fail $ "Unable to download file " ++ origname ++ "[.*]"
-  fname:fnames' -> Ex.catch (downloadSource opts fname)
-                   (\(_::IOError) ->
+  fname : fnames' -> Ex.catch (downloadSource opts fname)
+                   (\ (_ :: IOError) ->
                      tryDownloadSources opts fnames' origname)
 #endif
 
@@ -526,17 +526,14 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
   _ -> return (itm, dg, libenv, lg, eo)
 
-downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS -> LibName
-                        -> LibEnv -> DGraph -> ExpOverrides -> LIB_ITEM
-                        -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph,
-                                       ExpOverrides)
+downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS
+  -> LibName -> LibEnv -> DGraph -> ExpOverrides -> LIB_ITEM
+  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
 downloadMissingSpecs (View_type sp1 sp2 _)
   lg opts topLns currLn libenv dg eo itm = do
-  let iris = filter (\i -> case expCurie (globalAnnos dg) eo i
-                                >>= (\i' -> lookupGlobalEnvDG i' dg) of
-                        Nothing -> {- trace (show $ Map.keys $ globalEnv dg) -} True
-                        _ -> False) $
-             concatMap extractSpecnames (map item [sp1, sp2])
+  let iris = filter (\ i -> isNothing $ expCurie (globalAnnos dg) eo i
+                                >>= (`lookupGlobalEnvDG` dg))
+             $ concatMap extractSpecnames (map item [sp1, sp2])
   itms <- useItems iris
   chainAnaLibItems lg opts topLns currLn libenv dg eo itms itm
 
@@ -558,14 +555,13 @@ extractSpecnames spec =
     _ -> []
 
 chainAnaLibItems :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv
-                    -> DGraph -> ExpOverrides -> [LIB_ITEM] -> LIB_ITEM
-                    -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph,
-                                   ExpOverrides)
+  -> DGraph -> ExpOverrides -> [LIB_ITEM] -> LIB_ITEM
+  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
 chainAnaLibItems lg opts topLns currLn libenv dg eo itms defItm =
   case itms of
     [] -> return (defItm, dg, libenv, lg, eo)
     [itm] -> anaLibItem lg opts topLns currLn libenv dg eo itm
-    itm:itms' -> do
+    itm : itms' -> do
       (_, dg', libenv', lg', eo') <-
         chainAnaLibItems lg opts topLns currLn libenv dg eo itms' defItm
       anaLibItem lg' opts topLns currLn libenv' dg' eo' itm
