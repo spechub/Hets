@@ -27,10 +27,11 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 -- | the sorted term is always ignored
-term :: TERM f -> TERM f
-term t = case t of
-           Sorted_term t' _ _ -> term t'
-           _ -> t
+unsortedTerm :: TERM f -> TERM f
+unsortedTerm t = case t of
+  Sorted_term t' _ _ -> unsortedTerm t'
+  Cast t' _ _ -> unsortedTerm t'
+  _ -> t
 
 
 -- | the quantifier of term is always ignored
@@ -143,47 +144,39 @@ domainList = concatMap dm
 
 -- | check whether it is a application term
 isApp :: TERM t -> Bool
-isApp t = case t of
+isApp t = case unsortedTerm t of
             Application {} -> True
-            Sorted_term t' _ _ -> isApp t'
-            Cast t' _ _ -> isApp t'
             _ -> False
 
 
 -- | check whether it is a Variable
 isVar :: TERM t -> Bool
-isVar t = case t of
+isVar t = case unsortedTerm t of
             Qual_var {} -> True
-            Sorted_term t' _ _ -> isVar t'
-            Cast t' _ _ -> isVar t'
             _ -> False
 
 
 -- | extract the operation symbol from a term
 opSymbOfTerm :: TERM f -> OP_SYMB
-opSymbOfTerm t = case term t of
+opSymbOfTerm t = case unsortedTerm t of
                    Application os _ _ -> os
-                   Sorted_term t' _ _ -> opSymbOfTerm t'
                    Conditional t' _ _ _ -> opSymbOfTerm t'
                    _ -> error "CASL.CCC.TermFormula.<opSymbOfTerm>"
 
 
 -- | extract all variables of a term
 varOfTerm :: Ord f => TERM f -> [TERM f]
-varOfTerm t = case t of
+varOfTerm t = case unsortedTerm t of
                 Qual_var {} -> [t]
-                Sorted_term t' _ _ -> varOfTerm t'
-                Application _ ts _ -> if null ts then []
-                                      else nubOrd $ concatMap varOfTerm ts
+                Application _ ts _ -> nubOrd $ concatMap varOfTerm ts
                 _ -> []
 
 
 -- | extract all arguments of a term
 arguOfTerm :: TERM f -> [TERM f]
-arguOfTerm t = case t of
+arguOfTerm t = case unsortedTerm t of
                  Qual_var {} -> [t]
                  Application _ ts _ -> ts
-                 Sorted_term t' _ _ -> arguOfTerm t'
                  _ -> []
 
 
@@ -252,13 +245,13 @@ leadingSymPos f = leading (f, False, False, False)
                            (Relation f' Equivalence _ _, _, False, False) ->
                                leading (f', b1, True, False)
                            (Definedness t _, _, _, _) ->
-                               case term t of
+                               case unsortedTerm t of
                                  Application opS _ p -> (Just (Left opS), p)
                                  _ -> (Nothing, getRange f1)
                            (Predication predS _ _, _, _, _) ->
                                (Just (Right predS), getRange f1)
                            (Equation t _ _ _, _, False, False) ->
-                               case term t of
+                               case unsortedTerm t of
                                  Application opS _ p -> (Just (Left opS), p)
                                  _ -> (Nothing, getRange f1)
                            _ -> (Nothing, getRange f1)
@@ -279,14 +272,14 @@ leadingTermPredication f = leading (f, False, False, False)
                            (Relation f' Equivalence _ _, _, False, False) ->
                                leading (f', b1, True, False)
                            (Definedness t _, _, _, _) ->
-                               case term t of
-                                 Application {} -> return (Left (term t))
+                               case unsortedTerm t of
+                                 a@(Application {}) -> return (Left a)
                                  _ -> Nothing
                            (Predication p ts ps, _, _, _) ->
                                return (Right (Predication p ts ps))
                            (Equation t _ _ _, _, False, False) ->
-                               case term t of
-                                 Application {} -> return (Left (term t))
+                               case unsortedTerm t of
+                                 a@(Application {}) -> return (Left a)
                                  _ -> Nothing
                            _ -> Nothing
 
@@ -402,9 +395,9 @@ substiF subs f = case f of
 
 -- | check whether two terms are the terms of same application symbol
 sameOpsApp :: TERM f -> TERM f -> Bool
-sameOpsApp app1 app2 = case term app1 of
+sameOpsApp app1 app2 = case unsortedTerm app1 of
                           Application ops1 _ _ ->
-                              case term app2 of
+                              case unsortedTerm app2 of
                                 Application ops2 _ _ -> ops1 == ops2
                                 _ -> False
                           _ -> False

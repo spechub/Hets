@@ -19,7 +19,7 @@ module CASL.CCC.TerminationProof
 
 import CASL.AS_Basic_CASL
 import CASL.CCC.TermFormula
-  ( term
+  ( unsortedTerm
   , quanti
   , isApp
   , arguOfTerm
@@ -100,11 +100,9 @@ applyEq t1 t2 = apply "eq" $ term2TRS t1 ++ "," ++ term2TRS t2
 
 -- | translate a casl term to a term of TRS(Terme Rewrite Systems)
 term2TRS :: TERM f -> String
-term2TRS t = case term t of
+term2TRS t = case unsortedTerm t of
     Qual_var var _ _ -> tokStr var
     Application o ts _ -> opSymName o ++ termsPA ts
-    Sorted_term t' _ _ -> term2TRS t'
-    Cast t' _ _ -> term2TRS t'
     Conditional t1 f t2 _ ->
         apply "when_else" $ term2TRS t1 ++ "," ++ t_f_str f ++ "," ++
               term2TRS t2
@@ -127,7 +125,6 @@ For example : "A -> B | C -> D, E -> F, ..." -}
 axiom2TRS :: Eq f => FORMULA f -> [(TERM f, FORMULA f)] -> String
 axiom2TRS f doms =
   case quanti f of
-    Quantification _ _ f' _ -> axiom2TRS f' doms
     Relation f1 c f2 _ | c /= Equivalence ->
         case f2 of
           Relation f3 Equivalence f4 _ ->
@@ -176,8 +173,8 @@ the handling of an implication in a subrule is yet to be correctly defined. -}
 axiomSub :: Eq f => FORMULA f -> [(TERM f, FORMULA f)] -> String
 axiomSub f doms =
   case quanti f of
-    Quantification _ _ f' _ -> axiomSub f' doms
-    Junction j fs _ -> joinSub (if j == Con then "and" else "or") fs doms
+    Junction j fs@(_ : _) _ ->
+      joinSub (if j == Con then "and" else "or") fs doms
     Negation f' _ -> apply "not" $ axiomSub f' doms
     Atom b _ -> if b then "true" else "false"
     Predication p_s ts _ -> predAppl p_s ts
