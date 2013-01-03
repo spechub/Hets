@@ -14,16 +14,14 @@ Auxiliary functions on terms and formulas
 module CASL.CCC.TermFormula where
 
 import CASL.AS_Basic_CASL
-import CASL.Overload (leqF)
-import CASL.Sign (OpMap, Sign (sortRel), toOP_TYPE, toOpType)
+import CASL.Overload (leqF, leqSort)
+import CASL.Sign (OpMap, Sign, toOP_TYPE, toOpType)
 
 import Common.Id (Token (tokStr), Id (Id), Range, GetRange (..), nullRange)
 import Common.Utils (nubOrd)
 import qualified Common.Lib.MapSet as MapSet
-import qualified Common.Lib.Rel as Rel
 
 import Control.Monad (liftM)
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 -- | the sorted term is always ignored
@@ -317,35 +315,16 @@ constructorOverload s opm = concatMap cons_Overload
 
 -- | check whether the operation symbol is a constructor
 isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
-isCons s cons os =
-    if null cons
-      then False
-      else is_Cons (head cons) os || isCons s (tail cons) os
+isCons s cons os = any (is_Cons os) cons
     where is_Cons (Op_name _) _ = False
           is_Cons _ (Op_name _) = False
-          is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _)
-            | on1 /= on2 = False
-            | not $ isSupersort s (res_OP_TYPE ot2) (res_OP_TYPE ot1) = False
-            | otherwise = isSupersortS s (args_OP_TYPE ot2) (args_OP_TYPE ot1)
-
-
--- | check whether a sort is the others super sort
-isSupersort :: Sign f e -> SORT -> SORT -> Bool
-isSupersort sig s1 s2 = elem s1 slist
-    where sM = Rel.toMap $ sortRel sig
-          slist = case Map.lookup s2 sM of
-                    Nothing -> [s2]
-                    Just sts -> Set.toList $ Set.insert s2 sts
-
-
--- | check whether all sorts of a set are another sets super sort
-isSupersortS :: Sign f e -> [SORT] -> [SORT] -> Bool
-isSupersortS sig s1 s2
-    | length s1 /= length s2 = False
-    | otherwise = supS s1 s2
-    where supS [] [] = True
-          supS sts1 sts2 = isSupersort sig (head sts1) (head sts2) &&
-                           supS (tail sts1) (tail sts2)
+          is_Cons (Qual_op_name on1 (Op_type _ s1 r1 _) _)
+                      (Qual_op_name on2 (Op_type _ s2 r2 _) _) =
+            -- we expect the symbol to allow more values than the constructor
+            on1 == on2 && leqSort s r2 r1
+            && length s1 == length s2
+            && and (zipWith (leqSort s) s2 s1)
+            -- maybe leqF or just equality would be fine, too
 
 -- | translate id to string
 idStr :: Id -> String
