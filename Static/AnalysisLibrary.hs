@@ -157,7 +157,7 @@ anaSource mln lg opts topLns libenv initDG fname =
            else do
              res <- anaTwelfFile opts file
              case res of
-                  Nothing -> fail ""
+                  Nothing -> fail $ "failed to analyse file " ++ file
                   Just (lname, lenv) -> return $ Result [] $
                       Just (lname, Map.union lenv libenv)
 
@@ -395,7 +395,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
    Nothing -> liftR $ prefixErrorIRI vn'
    Just vn -> do
     (_, dg', libenv', lg', eo') <- downloadMissingSpecs
-                                   vt lg opts topLns currLn libenv dg eo itm 
+                                   vt lg opts topLns currLn libenv dg eo itm
     analyzing opts $ "view " ++ iriToStringUnsecure vn
     liftR $ anaViewDefn lg' currLn libenv' dg' opts eo' vn gen vt gsis pos
   Arch_spec_defn asn' asp pos -> case expCurie (globalAnnos dg) eo asn' of
@@ -413,7 +413,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
       else do
             let aName = show asn
                 dg'' = updateNodeNameRT dg'
-                       (refSource $ getPointerFromRef archSig) 
+                       (refSource $ getPointerFromRef archSig)
                        True aName
                 dg3 = dg'' { archSpecDiags =
                            Map.insert aName diag
