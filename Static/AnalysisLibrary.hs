@@ -76,7 +76,6 @@ import LF.Twelf2DG
 
 import Framework.Analysis
 
-import MMT.Hets2mmt
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -152,18 +151,13 @@ anaSource mln lg opts topLns libenv initDG fname =
                 Just $ emptyLibName libStr
               _ -> mln
         putIfVerbose opts 2 $ "Reading file " ++ file
-	-- possibly insert hets-mmt call here
         if takeExtension file /= ('.' : show TwelfIn)
            then runResultT $
                    anaString nLn lgraph opts topLns libenv initDG input file
            else do
-	   -- anaTwelfFile also called directly given file.elf input, so might need to change in either hets.hs or LF/Twelf2DG.hs
-             res <- anaTwelfFile opts file -- typical hets .elf file reading	   
-	   --  res <- main file
-	   --  return $ Result [] Nothing
-	     
+             res <- anaTwelfFile opts file
              case res of
-                  Nothing -> fail $ "failed to analyse file " ++ file
+                  Nothing -> fail ""
                   Just (lname, lenv) -> return $ Result [] $
                       Just (lname, Map.union lenv libenv)
 
@@ -210,7 +204,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
               ++ (if noLibName then "file " ++ file ++ " as " else "")
               ++ "library " ++ show ln
           (lnFinal, ld, ga, lenv) <-
-              anaLibDefn lgraph opts topLns libenv initDG ast file -- <---------- this is where analysis of .het file happens
+              anaLibDefn lgraph opts topLns libenv initDG ast file
           case Map.lookup lnFinal lenv of
               Nothing -> error $ "anaString: missing library: " ++ show lnFinal
               Just dg -> lift $ do
