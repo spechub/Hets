@@ -147,7 +147,8 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
              | Junction Junctor [FORMULA f] Range
                -- pos: "/\"s or "\/"s
              | Relation (FORMULA f) Relation (FORMULA f) Range
-               -- pos: "<=>", "=>" or "if"
+               {- pos: "<=>", "=>" or "if"
+               note: the first formula is the premise also for "if"! -}
              | Negation (FORMULA f) Range
                -- pos: not
              | Atom Bool Range
