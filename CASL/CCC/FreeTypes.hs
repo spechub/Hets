@@ -24,7 +24,7 @@ import Common.AS_Annotation
 import Common.Consistency (Conservativity (..))
 import Common.DocUtils (showDoc)
 import Common.Id
-import Common.Result (Result, warning)
+import Common.Result
 import Common.Utils (nubOrd)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
@@ -167,26 +167,24 @@ getNSorts :: Sign e f -> Morphism e f m -> Set.Set SORT
 getNSorts osig m = on Set.difference sortSet (mtarget m) osig
 
 -- | all only generated sorts
-getNotFreeSorts :: Sign () () -> Morphism () () ()
-    -> [Named (FORMULA ())] -> Set.Set SORT
-getNotFreeSorts osig m fsn = Set.intersection nSorts
-    $ Set.difference genSorts freeSorts
+getNotFreeSorts :: Set.Set SORT -> [Named (FORMULA ())] -> Set.Set SORT
+getNotFreeSorts nSorts fsn = Set.intersection nSorts
+    $ Set.difference (getGenSorts fsn) freeSorts
     where
-        nSorts = getNSorts osig m
-        genSorts = fst $ recoverSortsAndConstructors [] fsn
         freeSorts = foldr (\ f -> case sentence f of
           Sort_gen_ax csts True -> Set.union . Set.fromList $ map newSort csts
           _ -> id) Set.empty fsn
 
+getGenSorts :: [Named (FORMULA ())] -> Set.Set SORT
+getGenSorts = fst . recoverSortsAndConstructors []
+
 -- | non-inhabited non-empty sorts
 getNefsorts :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
-    -> [Named (FORMULA ())] -> Set.Set SORT
-getNefsorts (osig, osens) m fsn = nefsorts
+    -> Set.Set SORT -> [Named (FORMULA ())] -> Set.Set SORT
+getNefsorts (osig, osens) m nSorts fsn = nefsorts
     where
-        tsig = mtarget m
         oldSorts = sortSet osig
-        esorts = emptySortSet tsig
-        nSorts = getNSorts osig m
+        esorts = emptySortSet $ mtarget m
         (srts, cons) = recoverSortsAndConstructors osens fsn
         f_Inhabited = inhabited oldSorts cons
         fsorts = Set.difference (Set.intersection nSorts srts) esorts
@@ -314,20 +312,19 @@ checkSort :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkSort oTh@(osig, _) m fsn
     | null fsn && Set.null nSorts = Just $ return (Just (Cons, []))
-    | not $ Set.null notFreeSorts =
-        let Id ts _ pos = Set.findMin notFreeSorts
-            sname = concatMap tokStr ts
-        in Just $ warning Nothing (sname ++ " is not freely generated") pos
-    | not $ Set.null nefsorts =
-        let Id ts _ pos = Set.findMin nefsorts
-            sname = concatMap tokStr ts
-        in Just $ warning (Just (Inconsistent, []))
-                      (sname ++ " is not inhabited") pos
+    | not $ Set.null notFreeSorts = mkWarn "some types are not freely generated"
+        notFreeSorts Nothing
+    | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
+        nefsorts $ Just (Inconsistent, [])
+    | not $ Set.null genNotNew = mkWarn "some generated types are not new"
+        genNotNew Nothing
     | otherwise = Nothing
     where
         nSorts = getNSorts osig m
-        notFreeSorts = getNotFreeSorts osig m fsn
-        nefsorts = getNefsorts oTh m fsn
+        notFreeSorts = getNotFreeSorts nSorts fsn
+        nefsorts = getNefsorts oTh m nSorts fsn
+        genNotNew = Set.difference (getGenSorts fsn) nSorts
+        mkWarn s i r = Just $ Result [mkDiag Warning s i] $ Just r
 
 checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
