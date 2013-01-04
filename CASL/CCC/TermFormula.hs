@@ -14,7 +14,7 @@ Auxiliary functions on terms and formulas
 module CASL.CCC.TermFormula where
 
 import CASL.AS_Basic_CASL
-import CASL.Overload (leqF, leqSort)
+import CASL.Overload (leqF)
 import CASL.Sign (OpMap, Sign, toOP_TYPE, toOpType)
 
 import Common.Id (Range, GetRange (..), nullRange)
@@ -235,19 +235,6 @@ constructorOverload s opm = concatMap cons_Overload
                     concatMap (cons on1 ot) $ Set.toList $ MapSet.lookup on1 opm
           cons on opt1 opt2 = [Qual_op_name on (toOP_TYPE opt2) nullRange |
                                leqF s (toOpType opt1) opt2]
-
--- | check whether the operation symbol is a constructor
-isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
-isCons s cons os = any (is_Cons os) cons
-    where is_Cons (Op_name _) _ = False
-          is_Cons _ (Op_name _) = False
-          is_Cons (Qual_op_name on1 (Op_type _ s1 r1 _) _)
-                      (Qual_op_name on2 (Op_type _ s2 r2 _) _) =
-            -- we expect the symbol to allow more values than the constructor
-            on1 == on2 && leqSort s r2 r1
-            && length s1 == length s2
-            && and (zipWith (leqSort s) s2 s1)
-            -- maybe leqF or just equality would be fine, too
 
 -- | replaces variables by terms in a term
 substitute :: Eq f => [(TERM f, TERM f)] -> TERM f -> TERM f

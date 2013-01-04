@@ -15,10 +15,11 @@ module CASL.CCC.FreeTypes (checkFreeType) where
 
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import CASL.Morphism
-import CASL.Sign (OpType (..), PredType (..), Sign (..), sortSet, sortOfTerm)
+import CASL.Sign
 import CASL.SimplifySen (simplifyCASLSen)
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof (terminationProof, opSymName, predSymName)
+import CASL.Overload (leqF)
 
 import Common.AS_Annotation
 import Common.Consistency (Conservativity (..))
@@ -99,9 +100,9 @@ recoverSortsAndConstructors osens fsn = let
     . constraintOfAxiom . getFs $ osens ++ fsn
   in (Set.unions $ map Set.fromList srts, nubOrd $ concat cons)
 
-getConstructors :: [Named (FORMULA ())] -> Morphism () () ()
+getOverloadedConstructors :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())] -> [OP_SYMB]
-getConstructors osens m fsn = let tsig = mtarget m in
+getOverloadedConstructors osens m fsn = let tsig = mtarget m in
     constructorOverload tsig (opMap tsig)
           . snd $ recoverSortsAndConstructors osens fsn
 
@@ -209,7 +210,7 @@ getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())] -> [[FORMULA ()]]
 getNotComplete osens m fsn = not_complete
     where
-        constructors = getConstructors osens m fsn
+        constructors = getOverloadedConstructors osens m fsn
         axGroup = getAxGroup fsn
         axGroups = case axGroup of
                        Just sym_fs -> map snd sym_fs
@@ -360,7 +361,7 @@ checkLeadingTerms osens m fsn
     | otherwise = Nothing
     where
         tsig = mtarget m
-        constructors = getConstructors osens m fsn
+        constructors = snd $ recoverSortsAndConstructors osens fsn
         axioms = getAxioms fsn
         axioms' = map quanti axioms
         ltp = map leadingTermPredication axioms'       -- leadingTermPred
@@ -538,6 +539,14 @@ checkTerms sig cons = all checkT
             isCons sig cons subop && all checkT subts
           _ -> False
 
+{- | check whether the operation symbol is a constructor
+(or a related overloaded variant). -}
+isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
+isCons s cons os = any (is_Cons os) cons
+    where is_Cons (Op_name _) _ = False
+          is_Cons _ (Op_name _) = False
+          is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _) =
+            on1 == on2 && on (leqF s) toOpType ot1 ot2
 
 -- |  no variable occurs twice in a leading term
 checkVarApp :: Ord f => TERM f -> Bool
@@ -656,7 +665,7 @@ completePatterns cons pas
     | all null pas = True
     | all isVar $ map head pas = completePatterns cons (map tail pas)
     | otherwise = elem (con_ts $ map head pas) s_cons &&
-                  all id (map (completePatterns cons) $ pa_group pas)
+                  all (completePatterns cons) (pa_group pas)
     where s_op_os c = case c of
                         Op_name _ -> []
                         Qual_op_name o ot _ -> [(res_OP_TYPE ot, o)]
