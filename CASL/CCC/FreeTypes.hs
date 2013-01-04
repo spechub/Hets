@@ -49,10 +49,12 @@ inhabited sorts constrs = iterateInhabited sorts
                                                   then rs : l'
                                                   else l') l argsRes
 
+-- | just filter out the axioms generated for free types
 isUserOrSortGen :: Named (FORMULA f) -> Bool
-isUserOrSortGen ax = "ga_generated" `isPrefixOf` name ||
-                     not ("ga_" `isPrefixOf` name) || isSortGen (sentence ax)
-    where name = senAttr ax
+isUserOrSortGen ax = case stripPrefix "ga_" $ senAttr ax of
+  Nothing -> True
+  Just rname -> all (not . (`isPrefixOf` rname))
+                ["disjoint_", "injective_", "selector_"]
 
 getFs :: [Named (FORMULA f)] -> [FORMULA f]
 getFs = map sentence . filter isUserOrSortGen
