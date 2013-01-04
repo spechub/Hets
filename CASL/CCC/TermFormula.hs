@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  auxiliary functions on terms and formulas
-Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
+Copyright   :  (c) Mingyi Liu, Till Mossakowski, Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  xinga@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
@@ -21,7 +21,6 @@ import Common.Id (Range, GetRange (..), nullRange)
 import Common.Utils (nubOrd)
 import qualified Common.Lib.MapSet as MapSet
 
-import Control.Monad (liftM)
 import qualified Data.Set as Set
 
 -- | the sorted term is always ignored
@@ -174,7 +173,7 @@ predSymbsOfAxiom f = case f of
       _ -> []
 
 -- | check whether it is a partial axiom
-partialAxiom :: FORMULA f -> Bool
+partialAxiom :: GetRange f => FORMULA f -> Bool
 partialAxiom f = case opTypAxiom f of
       Just False -> True
       _ -> False
@@ -189,15 +188,15 @@ infoSubsort sts f =
       _ -> []
 
 -- | extract the leading symbol from a formula
-leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
-leadingSym = liftM extractLeadingSymb . leadingTermPredication
+leadingSym :: GetRange f => FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
+leadingSym = fmap extractLeadingSymb . leadingTermPredication
 
 -- | extract the leading symbol with the range from a formula
 leadingSymPos :: GetRange f => FORMULA f
-              -> (Maybe (Either OP_SYMB PRED_SYMB), Range)
-leadingSymPos f = leading (f, False, False, False)
-  where
-  leading (f1, b1, b2, b3) = case (f1, b1, b2, b3) of
+  -> (Maybe (Either (TERM f) (FORMULA f)), Range)
+leadingSymPos f = leading (f, False, False, False) where
+  -- three booleans to indicate inside implication, equivalence or negation
+  leading (f1, b1, b2, b3) = case (quanti f1, b1, b2, b3) of
                            (Quantification _ _ f' _, _, _, _) ->
                                leading (f', b1, b2, b3)
                            (Negation f' _, _, _, False) ->
@@ -209,41 +208,20 @@ leadingSymPos f = leading (f, False, False, False)
                                leading (f', b1, True, False)
                            (Definedness t _, _, _, _) ->
                                case unsortedTerm t of
-                                 Application opS _ p -> (Just (Left opS), p)
+                                 a@(Application _ _ p) -> (Just (Left a), p)
                                  _ -> (Nothing, getRange f1)
-                           (Predication predS _ _, _, _, _) ->
-                               (Just (Right predS), getRange f1)
+                           (pr@(Predication _ _ p), _, _, _) ->
+                               (Just (Right pr), p)
                            (Equation t _ _ _, _, False, False) ->
                                case unsortedTerm t of
-                                 Application opS _ p -> (Just (Left opS), p)
+                                 a@(Application _ _ p) -> (Just (Left a), p)
                                  _ -> (Nothing, getRange f1)
                            _ -> (Nothing, getRange f1)
 
 -- | extract the leading term or predication from a formula
-leadingTermPredication :: FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
-leadingTermPredication f = leading (f, False, False, False)
-  where
-  leading (f1, b1, b2, b3) = case (f1, b1, b2, b3) of
-                           (Quantification _ _ f' _, _, _, _) ->
-                               leading (f', b1, b2, b3)
-                           (Negation f' _, _, _, False) ->
-                               leading (f', b1, b2, True)
-                           (Relation _ c f' _, False, False, False)
-                               | c /= Equivalence ->
-                               leading (f', True, False, False)
-                           (Relation f' Equivalence _ _, _, False, False) ->
-                               leading (f', b1, True, False)
-                           (Definedness t _, _, _, _) ->
-                               case unsortedTerm t of
-                                 a@(Application {}) -> return (Left a)
-                                 _ -> Nothing
-                           (Predication p ts ps, _, _, _) ->
-                               return (Right (Predication p ts ps))
-                           (Equation t _ _ _, _, False, False) ->
-                               case unsortedTerm t of
-                                 a@(Application {}) -> return (Left a)
-                                 _ -> Nothing
-                           _ -> Nothing
+leadingTermPredication :: GetRange f => FORMULA f
+  -> Maybe (Either (TERM f) (FORMULA f))
+leadingTermPredication = fst . leadingSymPos
 
 -- | extract the leading symbol from a term or a formula
 extractLeadingSymb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
@@ -256,7 +234,7 @@ extractLeadingSymb lead =
 {- | leadingTerm is total operation : Just True,
 leadingTerm is partial operation : Just False,
 others : Nothing. -}
-opTypAxiom :: FORMULA f -> Maybe Bool
+opTypAxiom :: GetRange f => FORMULA f -> Maybe Bool
 opTypAxiom f = case leadingSym f of
     Just (Left t) -> case t of
       Qual_op_name _ (Op_type k _ _ _) _ -> Just $ k == Total

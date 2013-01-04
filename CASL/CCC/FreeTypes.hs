@@ -376,7 +376,7 @@ checkIncomplete osens m fsn
     | not $ null notcomplete =
         let symb_p = leadingSymPos $ head $ head notcomplete
             pos = snd symb_p
-            sname = case fst symb_p of
+            sname = case fmap extractLeadingSymb $ fst symb_p of
                       Just (Left opS) -> opSymName opS
                       Just (Right pS) -> predSymName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
@@ -497,7 +497,8 @@ prettyType fm = case fm of
 
 {- | group the axioms according to their leading symbol,
 output Nothing if there is some axiom in incorrect form -}
-groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB, [FORMULA f])]
+groupAxioms :: GetRange f => [FORMULA f]
+  -> Maybe [(Either OP_SYMB PRED_SYMB, [FORMULA f])]
 groupAxioms phis = do
   symbs <- mapM leadingSym phis
   return (filterA (zip symbs phis) [])
@@ -608,8 +609,9 @@ resultTerm f = case quanti f of
                  _ -> [varOrConst (mkSimpleId "unknown")]
 
 -- | create the proof obligation for a pair of overlapped formulas
-overlapQuery :: Eq f => ((FORMULA f, [(TERM f, TERM f)]),
-                         (FORMULA f, [(TERM f, TERM f)])) -> FORMULA f
+overlapQuery :: (GetRange f, Eq f)
+  => ((FORMULA f, [(TERM f, TERM f)]), (FORMULA f, [(TERM f, TERM f)]))
+    -> FORMULA f
 overlapQuery ((a1, s1), (a2, s2)) =
         case leadingSym a1 of
           Just (Left _)
