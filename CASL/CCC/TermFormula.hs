@@ -14,6 +14,7 @@ Auxiliary functions on terms and formulas
 module CASL.CCC.TermFormula where
 
 import CASL.AS_Basic_CASL
+import CASL.Fold
 import CASL.Overload (leqF)
 import CASL.Sign (OpMap, Sign, toOP_TYPE, toOpType)
 
@@ -236,44 +237,19 @@ constructorOverload s opm = concatMap cons_Overload
           cons on opt1 opt2 = [Qual_op_name on (toOP_TYPE opt2) nullRange |
                                leqF s (toOpType opt1) opt2]
 
--- | replaces variables by terms in a term
-substitute :: Eq f => [(TERM f, TERM f)] -> TERM f -> TERM f
-substitute subs t = case t of
-    t'@(Qual_var {}) ->
-      subst subs t'
-    Application os ts r ->
-      Application os (map (substitute subs) ts) r
-    Sorted_term te s r ->
-      Sorted_term (substitute subs te) s r
-    Cast te s r ->
-      Cast (substitute subs te) s r
-    Conditional t1 f t2 r ->
-      Conditional (substitute subs t1) (substiF subs f) (substitute subs t2) r
-    Mixfix_term ts ->
-      Mixfix_term (map (substitute subs) ts)
-    Mixfix_parenthesized ts r ->
-      Mixfix_parenthesized (map (substitute subs) ts) r
-    Mixfix_bracketed ts r ->
-      Mixfix_bracketed (map (substitute subs) ts) r
-    Mixfix_braced ts r ->
-      Mixfix_braced (map (substitute subs) ts) r
-    _ -> t
+-- | replaces variables by terms in a term or formula
+substRec :: Eq f => [(TERM f, TERM f)] -> Record f (FORMULA f) (TERM f)
+substRec subs = (mapRecord id)
+   { foldQual_var = \ t _ _ _ -> subst subs t }
   where subst [] tt = tt
         subst (x : xs) tt = if tt == snd x then fst x
                           else subst xs tt
 
--- | replaces variables by terms in a formula
+substitute :: Eq f => [(TERM f, TERM f)] -> TERM f -> TERM f
+substitute = foldTerm . substRec
+
 substiF :: Eq f => [(TERM f, TERM f)] -> FORMULA f -> FORMULA f
-substiF subs f = case f of
-    Quantification q v f' r -> Quantification q v (substiF subs f') r
-    Junction j fs r -> Junction j (map (substiF subs) fs) r
-    Relation f1 c f2 r -> Relation (substiF subs f1) c (substiF subs f2) r
-    Negation f' r -> Negation (substiF subs f') r
-    Predication ps ts r -> Predication ps (map (substitute subs) ts) r
-    Equation t1 e t2 r -> Equation (substitute subs t1) e (substitute subs t2) r
-    Membership t s r -> Membership (substitute subs t) s r
-    Mixfix_formula t -> Mixfix_formula (substitute subs t)
-    _ -> f
+substiF = foldFormula . substRec
 
 -- | check whether two terms are the terms of same application symbol
 sameOpsApp :: TERM f -> TERM f -> Bool
