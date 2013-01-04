@@ -35,7 +35,7 @@ import Data.Maybe
 
 import qualified Data.Set as Set
 
--- | check values of total constructors
+-- | check values of constructors (free types have only total ones)
 inhabited :: Set.Set SORT -> [OP_SYMB] -> Set.Set SORT
 inhabited sorts cons = iterateInhabited sorts
     where argsRes = foldr (\ os -> case os of
@@ -316,7 +316,7 @@ checkSort oTh@(osig, _) m fsn
         notFreeSorts Nothing
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
         nefsorts $ Just (Inconsistent, [])
-    | not $ Set.null genNotNew = mkWarn "some generated types are not new"
+    | not $ Set.null genNotNew = mkWarn "some free types are not new"
         genNotNew Nothing
     | otherwise = Nothing
     where
