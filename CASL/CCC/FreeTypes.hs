@@ -220,9 +220,9 @@ getOpsPredsAndExAxioms m fsn =
 
 getConStatus :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> Conservativity
-getConStatus (osig, osens) m fsn = min dataStatus defStatus
+getConStatus oTh m fsn = min dataStatus defStatus
     where
-        dataStatus = getDataStatus (osig, osens) m fsn
+        dataStatus = getDataStatus oTh m fsn
         defStatus = if null $ getOpsPredsAndExAxioms m fsn
                        ++ getOverlapQuery fsn
                     then Def
@@ -306,7 +306,7 @@ checkDefinitional osig fsn
 checkSort :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
-checkSort (osig, osens) m fsn
+checkSort oTh@(osig, _) m fsn
     | null fsn && null nSorts = Just $ return (Just (Cons, []))
     | not $ null notFreeSorts =
         let Id ts _ pos = head notFreeSorts
@@ -321,7 +321,7 @@ checkSort (osig, osens) m fsn
     where
         nSorts = getNSorts osig m
         notFreeSorts = getNotFreeSorts osig m fsn
-        nefsorts = getNefsorts (osig, osens) m fsn
+        nefsorts = getNefsorts oTh m fsn
 
 checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
@@ -391,14 +391,14 @@ checkIncomplete osens m fsn
 checkTerminal :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
     -> IO (Maybe (Result (Maybe (Conservativity, [FORMULA ()]))))
-checkTerminal (osig, osens) m fsn = do
+checkTerminal oTh m fsn = do
     let fs = getFs fsn
         fs_terminalProof = filter (\ f ->
           not $ isSortGen f || isMembership f || isExQuanti f || isDomain f
           ) fs
         domains = domainList fs
         obligations = getObligations m fsn
-        conStatus = getConStatus (osig, osens) m fsn
+        conStatus = getConStatus oTh m fsn
         res = if null obligations then Nothing else
                   Just $ return (Just (conStatus, obligations))
     if null fs_terminalProof then return res else do
@@ -463,16 +463,16 @@ free datatypes and recursive equations are consistent -}
 checkFreeType :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> IO (Result (Maybe (Conservativity, [FORMULA ()])))
-checkFreeType (osig, osens) m axs = do
+checkFreeType oTh@(osig, osens) m axs = do
   ms <- mapM ($ axs)
     [ return . checkDefinitional osig
-    , return . checkSort (osig, osens) m
+    , return . checkSort oTh m
     , return . checkLeadingTerms osens m
     , return . checkIncomplete osens m
-    , checkTerminal (osig, osens) m
+    , checkTerminal oTh m
     , return . checkPositive]
   return $ case catMaybes ms of
-    [] -> return $ Just (getConStatus (osig, osens) m axs, [])
+    [] -> return $ Just (getConStatus oTh m axs, [])
     a : _ -> a
 
 prettyType :: FORMULA () -> String
@@ -528,8 +528,7 @@ filterPred symb = case symb of
 variables and constructors only -}
 checkTerms :: Sign f e -> [OP_SYMB] -> [TERM f] -> Bool
 checkTerms sig cons = all checkT
-  where checkT t = case t of
-          Sorted_term tt _ _ -> checkT tt
+  where checkT t = case unsortedTerm t of
           Qual_var {} -> True
           Application subop subts _ ->
             isCons sig cons subop && all checkT subts
@@ -558,17 +557,14 @@ pairs ps = case ps of
 
 -- | get the patterns of a term
 patternsOfTerm :: TERM f -> [TERM f]
-patternsOfTerm t = case t of
+patternsOfTerm t = case unsortedTerm t of
     Qual_var {} -> [t]
     Application (Qual_op_name {}) ts _ -> ts
-    Sorted_term t' _ _ -> patternsOfTerm t'
-    Cast t' _ _ -> patternsOfTerm t'
     _ -> []
 
 -- | get the patterns of a axiom
 patternsOfAxiom :: FORMULA f -> [TERM f]
-patternsOfAxiom f = case f of
-    Quantification _ _ f' _ -> patternsOfAxiom f'
+patternsOfAxiom f = case quanti f of
     Negation f' _ -> patternsOfAxiom f'
     Relation _ c f' _ | c /= Equivalence -> patternsOfAxiom f'
     Relation f' Equivalence _ _ -> patternsOfAxiom f'
@@ -589,16 +585,14 @@ checkPatterns (ps1, ps2) = case (ps1, ps2) of
 {- | get the axiom from left hand side of a implication,
 if there is no implication, then return atomic formula true -}
 conditionAxiom :: FORMULA f -> [FORMULA f]
-conditionAxiom f = case f of
-                     Quantification _ _ f' _ -> conditionAxiom f'
+conditionAxiom f = case quanti f of
                      Relation f' c _ _ | c /= Equivalence -> [f']
                      _ -> [trueForm]
 
 {- | get the axiom from right hand side of a equivalence,
 if there is no equivalence, then return atomic formula true -}
 resultAxiom :: FORMULA f -> [FORMULA f]
-resultAxiom f = case f of
-                  Quantification _ _ f' _ -> resultAxiom f'
+resultAxiom f = case quanti f of
                   Relation _ c f' _ | c /= Equivalence -> resultAxiom f'
                   Relation _ Equivalence f' _ -> [f']
                   _ -> [trueForm]
@@ -606,8 +600,7 @@ resultAxiom f = case f of
 {- | get the term from left hand side of a equation in a formula,
 if there is no equation, then return a simple id -}
 resultTerm :: FORMULA f -> [TERM f]
-resultTerm f = case f of
-                 Quantification _ _ f' _ -> resultTerm f'
+resultTerm f = case quanti f of
                  Relation _ c f' _ | c /= Equivalence -> resultTerm f'
                  Negation (Definedness _ _) _ ->
                    [varOrConst (mkSimpleId "undefined")]
