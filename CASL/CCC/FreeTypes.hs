@@ -597,28 +597,28 @@ checkPatterns (ps1, ps2) = case (ps1, ps2) of
 
 {- | get the axiom from left hand side of a implication,
 if there is no implication, then return atomic formula true -}
-conditionAxiom :: FORMULA f -> [FORMULA f]
+conditionAxiom :: FORMULA f -> FORMULA f
 conditionAxiom f = case quanti f of
-                     Relation f' c _ _ | c /= Equivalence -> [f']
-                     _ -> [trueForm]
+                     Relation f' c _ _ | c /= Equivalence -> f'
+                     _ -> trueForm
 
 {- | get the axiom from right hand side of a equivalence,
 if there is no equivalence, then return atomic formula true -}
-resultAxiom :: FORMULA f -> [FORMULA f]
+resultAxiom :: FORMULA f -> FORMULA f
 resultAxiom f = case quanti f of
                   Relation _ c f' _ | c /= Equivalence -> resultAxiom f'
-                  Relation _ Equivalence f' _ -> [f']
-                  _ -> [trueForm]
+                  Relation _ Equivalence f' _ -> f'
+                  _ -> trueForm
 
-{- | get the term from left hand side of a equation in a formula,
+{- | get the term from right hand side of a equation in a formula,
 if there is no equation, then return a simple id -}
-resultTerm :: FORMULA f -> [TERM f]
+resultTerm :: FORMULA f -> TERM f
 resultTerm f = case quanti f of
                  Relation _ c f' _ | c /= Equivalence -> resultTerm f'
                  Negation (Definedness _ _) _ ->
-                   [varOrConst (mkSimpleId "undefined")]
-                 Equation _ _ t _ -> [t]
-                 _ -> [varOrConst (mkSimpleId "unknown")]
+                   varOrConst (mkSimpleId "undefined")
+                 Equation _ _ t _ -> t
+                 _ -> varOrConst (mkSimpleId "unknown")
 
 -- | create the proof obligation for a pair of overlapped formulas
 overlapQuery :: (GetRange f, Eq f)
@@ -649,15 +649,15 @@ overlapQuery ((a1, s1), (a2, s2)) =
                 mkImpl (conjunct [con1, con2])
                             (conjunct [resA1, resA2])
           _ -> error "CASL.CCC.FreeTypes.<overlapQuery>"
-      where cond = concatMap conditionAxiom [a1, a2]
-            resT = concatMap resultTerm [a1, a2]
-            resA = concatMap resultAxiom [a1, a2]
-            con1 = substiF s1 $ head cond
-            con2 = substiF s2 $ last cond
-            resT1 = substitute s1 $ head resT
-            resT2 = substitute s2 $ last resT
-            resA1 = substiF s1 $ head resA
-            resA2 = substiF s2 $ last resA
+      where [c1, c2] = map conditionAxiom [a1, a2]
+            [t1, t2] = map resultTerm [a1, a2]
+            [r1, r2] = map resultAxiom [a1, a2]
+            con1 = substiF s1 c1
+            con2 = substiF s2 c2
+            resT1 = substitute s1 t1
+            resT2 = substitute s2 t2
+            resA1 = substiF s1 r1
+            resA2 = substiF s2 r2
 
 -- | check whether the patterns of a function or predicate are complete
 completePatterns :: [OP_SYMB] -> [[TERM ()]] -> Bool
