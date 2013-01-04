@@ -29,24 +29,26 @@ import Common.Utils (nubOrd)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
+import Data.Function
 import Data.List
 import Data.Maybe
 
 import qualified Data.Set as Set
 
-inhabited :: [SORT] -> [OP_SYMB] -> [SORT]
+-- | check values of total constructors
+inhabited :: Set.Set SORT -> [OP_SYMB] -> Set.Set SORT
 inhabited sorts cons = iterateInhabited sorts
     where argsRes = foldr (\ os -> case os of
-                                 Op_name _ -> id
-                                 Qual_op_name _ (Op_type _ args res _) _ ->
-                                   ((args, res) :)) [] cons
+                                 Qual_op_name _ (Op_type Total args res _) _ ->
+                                   ((args, res) :)
+                                 _ -> id) [] cons
           iterateInhabited l =
-                    if l == newL then newL else iterateInhabited newL
-                            where newL = foldr (\ (ags, rs) l' ->
-                                                  if all (`elem` l') ags
-                                                      && notElem rs l'
-                                                  then rs : l'
-                                                  else l') l argsRes
+                if changed then newL else iterateInhabited newL
+                where (newL, changed) = foldr (\ (ags, rs) p@(l', _) ->
+                                        if all (`Set.member` l') ags
+                                           && not (Set.member rs l')
+                                        then (Set.insert rs l', True)
+                                        else p) (l, False) argsRes
 
 -- | just filter out the axioms generated for free types
 isUserOrSortGen :: Named (FORMULA f) -> Bool
@@ -91,11 +93,11 @@ constraintOfAxiom = foldr (\ f -> case f of
       _ -> id) []
 
 recoverSortsAndConstructors :: [Named (FORMULA f)] -> [Named (FORMULA f)]
-  -> ([SORT], [OP_SYMB])
+  -> (Set.Set SORT, [OP_SYMB])
 recoverSortsAndConstructors osens fsn = let
   (srts, cons, _) = unzip3 . map recover_Sort_gen_ax
     . constraintOfAxiom . getFs $ osens ++ fsn
-  in (nubOrd $ concat srts, nubOrd $ concat cons)
+  in (Set.unions $ map Set.fromList srts, nubOrd $ concat cons)
 
 getConstructors :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())] -> [OP_SYMB]
@@ -161,46 +163,48 @@ getOPreds m fsn =
 
 {- | newly introduced sorts
 (the input signature is the domain of the inclusion morphism) -}
-getNSorts :: Sign () () -> Morphism () () () -> [Id]
-getNSorts osig m = Set.toList
-  . Set.difference (sortSet $ mtarget m) $ sortSet osig
+getNSorts :: Sign e f -> Morphism e f m -> Set.Set SORT
+getNSorts osig m = on Set.difference sortSet (mtarget m) osig
 
+-- | all only generated sorts
 getNotFreeSorts :: Sign () () -> Morphism () () ()
-    -> [Named (FORMULA ())] -> [SORT]
-getNotFreeSorts osig m fsn = notFreeSorts
+    -> [Named (FORMULA ())] -> Set.Set SORT
+getNotFreeSorts osig m fsn = Set.intersection nSorts
+    $ Set.difference genSorts freeSorts
     where
-        fs = getFs fsn
-        axOfS = filter (\ f -> isSortGen f || isMembership f) fs
         nSorts = getNSorts osig m
-        notFreeSorts = filter (\ s -> isFreeGenSort s axOfS == Just False)
-                       nSorts
+        genSorts = fst $ recoverSortsAndConstructors [] fsn
+        freeSorts = foldr (\ f -> case sentence f of
+          Sort_gen_ax csts True -> Set.union . Set.fromList $ map newSort csts
+          _ -> id) Set.empty fsn
 
+-- | non-inhabited non-empty sorts
 getNefsorts :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
-    -> [Named (FORMULA ())] -> [SORT]
+    -> [Named (FORMULA ())] -> Set.Set SORT
 getNefsorts (osig, osens) m fsn = nefsorts
     where
         tsig = mtarget m
         oldSorts = sortSet osig
-        oSorts = Set.toList oldSorts
-        esorts = Set.toList $ emptySortSet tsig
+        esorts = emptySortSet tsig
         nSorts = getNSorts osig m
         (srts, cons) = recoverSortsAndConstructors osens fsn
-        f_Inhabited = inhabited oSorts cons
-        fsorts = filter (`notElem` esorts) $ intersect nSorts srts
-        nefsorts = filter (`notElem` f_Inhabited) fsorts
+        f_Inhabited = inhabited oldSorts cons
+        fsorts = Set.difference (Set.intersection nSorts srts) esorts
+        nefsorts = Set.difference fsorts f_Inhabited
 
 getDataStatus :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> Conservativity
 getDataStatus (osig, osens) m fsn = dataStatus
     where
         tsig = mtarget m
-        sR = Rel.toList $ sortRel tsig
-        subs = map fst sR
+        subs = Rel.keysSet . Rel.rmNullSets $ sortRel tsig
         nSorts = getNSorts osig m
-        gens = intersect nSorts . fst $ recoverSortsAndConstructors osens fsn
+        gens = Set.intersection nSorts . fst
+          $ recoverSortsAndConstructors osens fsn
         dataStatus
-          | null nSorts = Def
-          | any (\ s -> notElem s subs && notElem s gens) nSorts = Cons
+          | Set.null nSorts = Def
+          | not $ Set.null $ Set.difference (Set.difference nSorts gens) subs
+              = Cons
           | otherwise = Mono
 
 getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
@@ -309,13 +313,13 @@ checkSort :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkSort oTh@(osig, _) m fsn
-    | null fsn && null nSorts = Just $ return (Just (Cons, []))
-    | not $ null notFreeSorts =
-        let Id ts _ pos = head notFreeSorts
+    | null fsn && Set.null nSorts = Just $ return (Just (Cons, []))
+    | not $ Set.null notFreeSorts =
+        let Id ts _ pos = Set.findMin notFreeSorts
             sname = concatMap tokStr ts
         in Just $ warning Nothing (sname ++ " is not freely generated") pos
-    | not $ null nefsorts =
-        let Id ts _ pos = head nefsorts
+    | not $ Set.null nefsorts =
+        let Id ts _ pos = Set.findMin nefsorts
             sname = concatMap tokStr ts
         in Just $ warning (Just (Inconsistent, []))
                       (sname ++ " is not inhabited") pos
@@ -658,7 +662,7 @@ completePatterns cons pas
                   all id (map (completePatterns cons) $ pa_group pas)
     where s_op_os c = case c of
                         Op_name _ -> []
-                        Qual_op_name on ot _ -> [(res_OP_TYPE ot, on)]
+                        Qual_op_name o ot _ -> [(res_OP_TYPE ot, o)]
           s_sum sns = map (\ s -> (s, map snd $
                       filter (\ c -> fst c == s) sns)) $ nubOrd $ map fst sns
           s_cons = s_sum $ concatMap s_op_os cons

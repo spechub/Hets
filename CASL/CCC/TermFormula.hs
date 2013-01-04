@@ -57,14 +57,6 @@ isMembership f =
     Membership {} -> True
     _ -> False
 
--- | check whether a sort is free generated
-isFreeGenSort :: SORT -> [FORMULA f] -> Maybe Bool
-isFreeGenSort _ [] = Nothing
-isFreeGenSort s (f : fs) =
-  case f of
-    Sort_gen_ax csts isFree | any ((== s) . newSort) csts -> Just isFree
-    _ -> isFreeGenSort s fs
-
 -- | check whether it is the domain of a partial function
 isDomain :: FORMULA f -> Bool
 isDomain f = case quanti f of
