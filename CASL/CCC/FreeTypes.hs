@@ -43,7 +43,7 @@ inhabited sorts cons = iterateInhabited sorts
                                    ((args, res) :)
                                  _ -> id) [] cons
           iterateInhabited l =
-                if changed then newL else iterateInhabited newL
+                if changed then iterateInhabited newL else newL
                 where (newL, changed) = foldr (\ (ags, rs) p@(l', _) ->
                                         if all (`Set.member` l') ags
                                            && not (Set.member rs l')
