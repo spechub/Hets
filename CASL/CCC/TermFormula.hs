@@ -46,13 +46,6 @@ isExQuanti f =
       Negation f' _ -> isExQuanti f'
       _ -> False
 
--- | get the constraint from a sort generated axiom
-constraintOfAxiom :: FORMULA f -> [Constraint]
-constraintOfAxiom f =
-    case f of
-      Sort_gen_ax constrs _ -> constrs
-      _ -> []
-
 -- | check whether it contains a membership formula
 isMembership :: FORMULA f -> Bool
 isMembership f =

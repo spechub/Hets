@@ -34,13 +34,12 @@ import Data.Maybe
 
 import qualified Data.Set as Set
 
-inhabited :: [SORT] -> [Constraint] -> [SORT]
-inhabited sorts constrs = iterateInhabited sorts
-    where (_, ops, _) = recover_Sort_gen_ax constrs
-          argsRes = concatMap (\ os -> case os of
-                                 Op_name _ -> []
+inhabited :: [SORT] -> [OP_SYMB] -> [SORT]
+inhabited sorts cons = iterateInhabited sorts
+    where argsRes = foldr (\ os -> case os of
+                                 Op_name _ -> id
                                  Qual_op_name _ (Op_type _ args res _) _ ->
-                                   [(args, res)]) ops
+                                   ((args, res) :)) [] cons
           iterateInhabited l =
                     if l == newL then newL else iterateInhabited newL
                             where newL = foldr (\ (ags, rs) l' ->
@@ -85,12 +84,18 @@ getAxGroup fsn = axGroup
         ax_without_dom = filter (not . isDomain) axioms'
         axGroup = groupAxioms ax_without_dom
 
+-- | get the constraints from sort generation axioms
+constraintOfAxiom :: [FORMULA f] -> [[Constraint]]
+constraintOfAxiom = foldr (\ f -> case f of
+      Sort_gen_ax constrs _ -> (constrs :)
+      _ -> id) []
+
 recoverSortsAndConstructors :: [Named (FORMULA f)] -> [Named (FORMULA f)]
   -> ([SORT], [OP_SYMB])
 recoverSortsAndConstructors osens fsn = let
-  (srts, cons, _) = recover_Sort_gen_ax
-    . concatMap constraintOfAxiom . getFs $ osens ++ fsn
-  in (srts, cons)
+  (srts, cons, _) = unzip3 . map recover_Sort_gen_ax
+    . constraintOfAxiom . getFs $ osens ++ fsn
+  in (nubOrd $ concat srts, nubOrd $ concat cons)
 
 getConstructors :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())] -> [OP_SYMB]
@@ -174,16 +179,13 @@ getNefsorts :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> [SORT]
 getNefsorts (osig, osens) m fsn = nefsorts
     where
-        fs = getFs fsn
-        ofs = getFs osens
         tsig = mtarget m
         oldSorts = sortSet osig
         oSorts = Set.toList oldSorts
         esorts = Set.toList $ emptySortSet tsig
         nSorts = getNSorts osig m
-        fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
-        (srts, _, _) = recover_Sort_gen_ax fconstrs
-        f_Inhabited = inhabited oSorts fconstrs
+        (srts, cons) = recoverSortsAndConstructors osens fsn
+        f_Inhabited = inhabited oSorts cons
         fsorts = filter (`notElem` esorts) $ intersect nSorts srts
         nefsorts = filter (`notElem` f_Inhabited) fsorts
 
