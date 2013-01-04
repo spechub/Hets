@@ -17,7 +17,7 @@ import CASL.AS_Basic_CASL
 import CASL.Overload (leqF, leqSort)
 import CASL.Sign (OpMap, Sign, toOP_TYPE, toOpType)
 
-import Common.Id (Token (tokStr), Id (Id), Range, GetRange (..), nullRange)
+import Common.Id (Range, GetRange (..), nullRange)
 import Common.Utils (nubOrd)
 import qualified Common.Lib.MapSet as MapSet
 
@@ -31,13 +31,11 @@ unsortedTerm t = case t of
   Cast t' _ _ -> unsortedTerm t'
   _ -> t
 
-
 -- | the quantifier of term is always ignored
 quanti :: FORMULA f -> FORMULA f
 quanti f = case f of
              Quantification _ _ f' _ -> quanti f'
              _ -> f
-
 
 -- | check whether it exist a (unique)existent quantification
 isExQuanti :: FORMULA f -> Bool
@@ -48,7 +46,6 @@ isExQuanti f =
       Relation f1 _ f2 _ -> isExQuanti f1 || isExQuanti f2
       Negation f' _ -> isExQuanti f'
       _ -> False
-
 
 -- | get the constraint from a sort generated axiom
 constraintOfAxiom :: FORMULA f -> [Constraint]
@@ -68,7 +65,6 @@ isMembership f =
     Membership {} -> True
     _ -> False
 
-
 -- | check whether a sort is free generated
 isFreeGenSort :: SORT -> [FORMULA f] -> Maybe Bool
 isFreeGenSort _ [] = Nothing
@@ -77,14 +73,12 @@ isFreeGenSort s (f : fs) =
     Sort_gen_ax csts isFree | any ((== s) . newSort) csts -> Just isFree
     _ -> isFreeGenSort s fs
 
-
 -- | check whether it is the domain of a partial function
 isDomain :: FORMULA f -> Bool
 isDomain f = case quanti f of
     Relation (Definedness _ _) Equivalence f' _ -> not (containDef f')
     Definedness _ _ -> True
     _ -> False
-
 
 -- | check whether it contains a definedness formula
 containDef :: FORMULA f -> Bool
@@ -96,7 +90,6 @@ containDef f = case f of
              Definedness _ _ -> True
              _ -> False
 
-
 -- | check whether it contains a negation
 containNeg :: FORMULA f -> Bool
 containNeg f = case f of
@@ -105,7 +98,6 @@ containNeg f = case f of
                  Relation f' Equivalence _ _ -> containNeg f'
                  Negation _ _ -> True
                  _ -> False
-
 
 -- | check whether it contains a definedness formula in correct form
 correctDef :: FORMULA f -> Bool
@@ -117,7 +109,6 @@ correctDef f = case quanti f of
              Definedness _ _ -> True
              _ -> False
 
-
 -- | extract all partial function symbols, their domains are defined
 domainOpSymbs :: [FORMULA f] -> [OP_SYMB]
 domainOpSymbs = concatMap domOpS
@@ -125,13 +116,11 @@ domainOpSymbs = concatMap domOpS
           Relation (Definedness t _) Equivalence _ _ -> [opSymbOfTerm t]
           _ -> []
 
-
 -- | check whether a formula gives the domain of a partial function
 domainOs :: FORMULA f -> OP_SYMB -> Bool
 domainOs f os = case quanti f of
     Relation (Definedness t _) Equivalence _ _ -> opSymbOfTerm t == os
     _ -> False
-
 
 -- | extract the domain-list of partial functions
 domainList :: [FORMULA f] -> [(TERM f, FORMULA f)]
@@ -140,19 +129,11 @@ domainList = concatMap dm
                  Relation (Definedness t _) Equivalence f' _ -> [(t, f')]
                  _ -> []
 
--- | check whether it is a application term
-isApp :: TERM t -> Bool
-isApp t = case unsortedTerm t of
-            Application {} -> True
-            _ -> False
-
-
 -- | check whether it is a Variable
 isVar :: TERM t -> Bool
 isVar t = case unsortedTerm t of
             Qual_var {} -> True
             _ -> False
-
 
 -- | extract the operation symbol from a term
 opSymbOfTerm :: TERM f -> OP_SYMB
@@ -161,14 +142,12 @@ opSymbOfTerm t = case unsortedTerm t of
                    Conditional t' _ _ _ -> opSymbOfTerm t'
                    _ -> error "CASL.CCC.TermFormula.<opSymbOfTerm>"
 
-
 -- | extract all variables of a term
 varOfTerm :: Ord f => TERM f -> [TERM f]
 varOfTerm t = case unsortedTerm t of
                 Qual_var {} -> [t]
                 Application _ ts _ -> nubOrd $ concatMap varOfTerm ts
                 _ -> []
-
 
 -- | extract all arguments of a term
 arguOfTerm :: TERM f -> [TERM f]
@@ -177,22 +156,12 @@ arguOfTerm t = case unsortedTerm t of
                  Application _ ts _ -> ts
                  _ -> []
 
-
 -- | extract all arguments of a predication
 arguOfPred :: FORMULA f -> [TERM f]
 arguOfPred f = case quanti f of
                  Negation f1 _ -> arguOfPred f1
                  Predication _ ts _ -> ts
                  _ -> []
-
-
--- | extract all variables of a axiom
-varOfAxiom :: FORMULA f -> [VAR]
-varOfAxiom f = case f of
-    Quantification _ vd _ _ ->
-        concatMap (\ (Var_decl vs _ _) -> vs) vd
-    _ -> []
-
 
 -- | extract the predication symbols from a axiom
 predSymbsOfAxiom :: FORMULA f -> [PRED_SYMB]
@@ -204,13 +173,11 @@ predSymbsOfAxiom f = case f of
       Predication p_s _ _ -> [p_s]
       _ -> []
 
-
 -- | check whether it is a partial axiom
 partialAxiom :: FORMULA f -> Bool
 partialAxiom f = case opTypAxiom f of
       Just False -> True
       _ -> False
-
 
 -- | create the obligation of subsort
 infoSubsort :: [SORT] -> FORMULA f -> [FORMULA f]
@@ -221,11 +188,9 @@ infoSubsort sts f =
            [Quantification Existential v f1 nullRange | notElem s sts]
       _ -> []
 
-
 -- | extract the leading symbol from a formula
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym = liftM extractLeadingSymb . leadingTermPredication
-
 
 -- | extract the leading symbol with the range from a formula
 leadingSymPos :: GetRange f => FORMULA f
@@ -254,7 +219,6 @@ leadingSymPos f = leading (f, False, False, False)
                                  _ -> (Nothing, getRange f1)
                            _ -> (Nothing, getRange f1)
 
-
 -- | extract the leading term or predication from a formula
 leadingTermPredication :: FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leadingTermPredication f = leading (f, False, False, False)
@@ -281,7 +245,6 @@ leadingTermPredication f = leading (f, False, False, False)
                                  _ -> Nothing
                            _ -> Nothing
 
-
 -- | extract the leading symbol from a term or a formula
 extractLeadingSymb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
 extractLeadingSymb lead =
@@ -289,7 +252,6 @@ extractLeadingSymb lead =
       Left (Application os _ _) -> Left os
       Right (Predication p _ _) -> Right p
       _ -> error "CASL.CCC.TermFormula<extractLeadingSymb>"
-
 
 {- | leadingTerm is total operation : Just True,
 leadingTerm is partial operation : Just False,
@@ -301,7 +263,6 @@ opTypAxiom f = case leadingSym f of
       _ -> Nothing
     _ -> Nothing
 
-
 -- | extract the overloaded constructors
 constructorOverload :: Sign f e -> OpMap -> [OP_SYMB] -> [OP_SYMB]
 constructorOverload s opm = concatMap cons_Overload
@@ -311,7 +272,6 @@ constructorOverload s opm = concatMap cons_Overload
                     concatMap (cons on1 ot) $ Set.toList $ MapSet.lookup on1 opm
           cons on opt1 opt2 = [Qual_op_name on (toOP_TYPE opt2) nullRange |
                                leqF s (toOpType opt1) opt2]
-
 
 -- | check whether the operation symbol is a constructor
 isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
@@ -325,11 +285,6 @@ isCons s cons os = any (is_Cons os) cons
             && length s1 == length s2
             && and (zipWith (leqSort s) s2 s1)
             -- maybe leqF or just equality would be fine, too
-
--- | translate id to string
-idStr :: Id -> String
-idStr (Id ts _ _) = concatMap tokStr ts
-
 
 -- | replaces variables by terms in a term
 substitute :: Eq f => [(TERM f, TERM f)] -> TERM f -> TERM f
@@ -357,7 +312,6 @@ substitute subs t = case t of
         subst (x : xs) tt = if tt == snd x then fst x
                           else subst xs tt
 
-
 -- | replaces variables by terms in a formula
 substiF :: Eq f => [(TERM f, TERM f)] -> FORMULA f -> FORMULA f
 substiF subs f = case f of
@@ -371,7 +325,6 @@ substiF subs f = case f of
     Mixfix_formula t -> Mixfix_formula (substitute subs t)
     _ -> f
 
-
 -- | check whether two terms are the terms of same application symbol
 sameOpsApp :: TERM f -> TERM f -> Bool
 sameOpsApp app1 app2 = case unsortedTerm app1 of
@@ -380,7 +333,6 @@ sameOpsApp app1 app2 = case unsortedTerm app1 of
                                 Application ops2 _ _ -> ops1 == ops2
                                 _ -> False
                           _ -> False
-
 
 -- | get the axiom range of a term
 axiomRangeforTerm :: (GetRange f, Eq f) => [FORMULA f] -> TERM f -> Range
@@ -392,11 +344,9 @@ axiomRangeforTerm fs t =
                           else axiomRangeforTerm (tail fs) t
       _ -> axiomRangeforTerm (tail fs) t
 
-
 -- | get the sort of a variable declaration
 sortOfVarD :: VAR_DECL -> SORT
 sortOfVarD (Var_decl _ s _) = s
-
 
 -- | get or create a variable declaration for a formula
 varDeclOfF :: Ord f => FORMULA f -> [VAR_DECL]

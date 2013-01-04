@@ -21,14 +21,11 @@ import CASL.AS_Basic_CASL
 import CASL.CCC.TermFormula
   ( unsortedTerm
   , quanti
-  , isApp
   , arguOfTerm
-  , varOfAxiom
-  , idStr
   , substiF
   , sameOpsApp)
 
-import Common.Id (Token (tokStr))
+import Common.Id (Token (tokStr), Id (Id))
 import Common.Utils
 
 import System.Process
@@ -76,6 +73,17 @@ terminationProof fs dms = if null fs then return $ Just True else do
     "YES" : _ -> Just True
     "NO" : _ -> Just False
     _ -> Nothing
+
+-- | extract all variables of a axiom
+varOfAxiom :: FORMULA f -> [VAR]
+varOfAxiom f = case f of
+    Quantification _ vd _ _ ->
+        concatMap (\ (Var_decl vs _ _) -> vs) vd
+    _ -> []
+
+-- | translate id to string
+idStr :: Id -> String
+idStr (Id ts _ _) = concatMap tokStr ts
 
 -- | get the name of a operation symbol
 opSymName :: OP_SYMB -> String
@@ -167,6 +175,11 @@ axiom2TRS f doms =
     Atom False _ -> "false -> false"
     _ -> axiomSub f doms ++ " -> true"
 
+-- | check whether it is a application term
+isApp :: TERM t -> Bool
+isApp t = case unsortedTerm t of
+            Application {} -> True
+            _ -> False
 
 {- | translate a casl axiom(without conditions) to a subrule of TRS,
 the handling of an implication in a subrule is yet to be correctly defined. -}
@@ -182,7 +195,6 @@ axiomSub f doms =
     Equation t1 Strong t2 _ -> applyEq t1 t2
     i@(Relation _ c _ _) | c /= Equivalence -> axiom2TRS i doms
     _ -> error "CASL.CCC.TerminationProof.axiomSub.<axiomSub>"
-
 
 -- | translate a list of junctive casl formulas to a subrule of TRS
 joinSub :: Eq f => String -> [FORMULA f] -> [(TERM f, FORMULA f)] -> String
