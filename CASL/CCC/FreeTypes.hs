@@ -136,31 +136,18 @@ getOverlapQuery fsn = overlap_query
   check if leading symbols are new (not in the image of morphism),
         if not, return it as proof obligation
 -}
-getOOps :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
-getOOps m fsn = let
+getDefsForOld :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
+getDefsForOld m fsn = let
         sig = imageOfMorphism m
         oldOpMap = opMap sig
-        axioms = getAxioms fsn
-        op_fs = filter (\ f -> case leadingSym f of
-                               Just (Left _) -> True
-                               _ -> False) axioms
-        find_ot (ident, ot) = MapSet.member ident ot oldOpMap
-    in filter (find_ot . head . filterOp . leadingSym) op_fs
-
-{-
-  check if leading symbols are new (not in the image of morphism),
-        if not, return it as proof obligation
--}
-getOPreds :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
-getOPreds m fsn =
-    let sig = imageOfMorphism m
         oldPredMap = predMap sig
         axioms = getAxioms fsn
-        pred_fs = filter (\ f -> case leadingSym f of
-                                 Just (Right _) -> True
-                                 _ -> False) axioms
-        find_pt (ident, pt) = MapSet.member ident pt oldPredMap
-    in filter (find_pt . head . filterPred . leadingSym) pred_fs
+    in foldr (\ f -> case leadingSym f of
+         Just (Left (Qual_op_name ident ot _))
+           | MapSet.member ident (toOpType ot) oldOpMap -> (f :)
+         Just (Right (Qual_pred_name ident pt _))
+           | MapSet.member ident (toPredType pt) oldPredMap -> (f :)
+         _ -> id) [] axioms
 
 {- | newly introduced sorts
 (the input signature is the domain of the inclusion morphism) -}
@@ -221,7 +208,7 @@ getNotComplete osens m fsn = not_complete
 getOpsPredsAndExAxioms :: Morphism () () () -> [Named (FORMULA ())]
   -> [FORMULA ()]
 getOpsPredsAndExAxioms m fsn =
-  getOOps m fsn ++ getOPreds m fsn ++ getExAxioms fsn
+  getDefsForOld m fsn ++ getExAxioms fsn
 
 getConStatus :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> Conservativity
@@ -513,21 +500,6 @@ groupAxioms phis = do
                     else [(fp, snd $ unzip $ filter ((== fp) . fst) (p : ps))]
                 symb' = if notElem fp symb then fp : symb else symb
             in p' ++ filterA ps symb'
-
-
-filterOp :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME, OpType)]
-filterOp symb = case symb of
-                  Just (Left (Qual_op_name ident (Op_type k ags rs _) _)) ->
-                      [(ident, OpType {opKind = k, opArgs = ags, opRes = rs})]
-                  _ -> []
-
-
-filterPred :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME, PredType)]
-filterPred symb = case symb of
-                    Just (Right (Qual_pred_name ident (Pred_type s _) _)) ->
-                        [(ident, PredType {predArgs = s})]
-                    _ -> []
-
 
 {- | a leading term and a predication consist of
 variables and constructors only -}
