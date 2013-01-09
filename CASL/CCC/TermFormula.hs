@@ -94,19 +94,6 @@ correctDef f = case quanti f of
              Definedness _ _ -> True
              _ -> False
 
--- | extract all partial function symbols, their domains are defined
-domainOpSymbs :: [FORMULA f] -> [OP_SYMB]
-domainOpSymbs = concatMap domOpS
-  where domOpS f = case quanti f of
-          Relation (Definedness t _) Equivalence _ _ -> [opSymbOfTerm t]
-          _ -> []
-
--- | check whether a formula gives the domain of a partial function
-domainOs :: FORMULA f -> OP_SYMB -> Bool
-domainOs f os = case quanti f of
-    Relation (Definedness t _) Equivalence _ _ -> opSymbOfTerm t == os
-    _ -> False
-
 -- | extract the domain-list of partial functions
 domainList :: [FORMULA f] -> [(TERM f, FORMULA f)]
 domainList = concatMap dm
@@ -263,12 +250,13 @@ sameOpsApp app1 app2 = case unsortedTerm app1 of
 -- | get the axiom range of a term
 axiomRangeforTerm :: (GetRange f, Eq f) => [FORMULA f] -> TERM f -> Range
 axiomRangeforTerm [] _ = nullRange
-axiomRangeforTerm fs t =
-    case leadingTermPredication (head fs) of
+axiomRangeforTerm fs t = case fs of
+  [] -> nullRange
+  hd : tl -> case leadingTermPredication hd of
       Just (Left tt) -> if tt == t
-                          then getRange $ quanti $ head fs
-                          else axiomRangeforTerm (tail fs) t
-      _ -> axiomRangeforTerm (tail fs) t
+                          then getRange $ quanti hd
+                          else axiomRangeforTerm tl t
+      _ -> axiomRangeforTerm tl t
 
 -- | get the sort of a variable declaration
 sortOfVarD :: VAR_DECL -> SORT

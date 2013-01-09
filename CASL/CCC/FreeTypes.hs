@@ -224,55 +224,56 @@ getObligations :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
 getObligations m fsn = getOpsPredsAndExAxioms m fsn
   ++ getInfoSubsort m fsn ++ getOverlapQuery fsn
 
+isDomainDef :: FORMULA f -> Bool
+isDomainDef f = case quanti f of
+    Relation (Definedness {}) Equivalence _ _ -> True
+    _ -> False
+
+myhead :: String -> [a] -> a
+myhead msg l = case l of
+  [] -> error $ "myhead: " ++ msg
+  a : _ -> a
+
 -- check the definitional form of the partial axioms
 checkDefinitional :: Sign () () -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
-checkDefinitional osig fsn
-    | elem Nothing l_Syms =
-        let ax = head [ a | a <- axioms, isNothing $ leadingSym a ]
-            ax' = quanti ax
-            pos = snd $ leadingSymPos ax'
-        in Just $ warning Nothing ("The following " ++ prettyType ax' ++
-               " is not definitional:\n" ++ formatAxiom ax) pos
-    | not $ null un_p_axioms =
-        let ax = head $ filter (not . correctDef) $ filter containDef $
-                 filter partialAxiom axioms
-            ax' = head un_p_axioms
-            pos = getRange $ take 1 un_p_axioms
-        in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
-               " is not definitional:\n" ++ formatAxiom ax) pos
-    | length dom_l /= length (nubOrd dom_l) =
-        let ax = head $ filter (`domainOs` dualOS) $
-                 filter partialAxiom axioms
-            ax' = head dualDom
-            pos = getRange $ take 1 dualDom
-            dualOS = head $ filter (\ o -> elem o $ delete o dom_l) dom_l
-            dualDom = filter (`domainOs` dualOS) p_axioms
-        in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
-               " is not definitional:\n" ++ formatAxiom ax) pos
-    | not $ null pcheck =
-        let ax = head $ filter pcheckFunc $ filter (not . containDef) $
-                 filter partialAxiom axioms
-            ax' = head pcheck
-            pos = getRange $ take 1 pcheck
-        in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
-               " is not definitional:\n" ++ formatAxiom ax) pos
-    | otherwise = Nothing
-    where
-        formatAxiom :: FORMULA () -> String
-        formatAxiom = flip showDoc "\n" . simplifyCASLSen osig
-        axioms = getAxioms fsn
-        l_Syms = map leadingSym axioms        -- leading_Symbol
-        axioms' = map quanti axioms
-        p_axioms = filter partialAxiom axioms'           -- all partial axioms
-        pax_with_def = filter containDef p_axioms
-        pax_without_def = filter (not . containDef) p_axioms
-        un_p_axioms = filter (not . correctDef) pax_with_def
-        dom_l = domainOpSymbs p_axioms
-        pcheck = filter pcheckFunc pax_without_def
-        pcheckFunc f = case leadingSym f of
-                         Just (Left opS) -> elem opS dom_l
-                         _ -> False
+checkDefinitional osig fsn = let
+  formatAxiom :: FORMULA () -> String
+  formatAxiom = flip showDoc "" . simplifyCASLSen osig
+  (noLSyms, withLSyms) = partition (isNothing . fst . snd)
+     $ map (\ a -> (a, leadingSymPos a)) $ getAxioms fsn
+  in case noLSyms of
+     _ : _ -> Just $ Result (map (\ (a, (_, pos)) -> Diag
+       Warning ("No leading symbol:\n" ++ formatAxiom a) pos) noLSyms)
+       Nothing
+     _ -> let
+       partialLSyms = foldr (\ (a, (ma, _)) -> case ma of
+         Just (Left (Application t@(Qual_op_name _ (Op_type k _ _ _) _) _ _))
+           | k == Partial -> ((a, t) :)
+         _ -> id) [] withLSyms
+       (domainDefs, otherPartials) = partition (isDomainDef . fst) partialLSyms
+       (withDefs, withOutDefs) = partition (containDef . fst) otherPartials
+       grDomainDefs = groupBy (on (==) snd) $ sortBy (on compare snd) domainDefs
+       multDomainDefs = filter (\ l -> case l of
+          [_] -> False
+          _ -> True) grDomainDefs
+       defOpSymbs = Set.fromList $ map (snd . head) grDomainDefs
+       in case filter (not . correctDef . fst) withDefs of
+       wrongDefs@(_ : _) -> Just $ Result (map (\ (a, t) -> Diag
+         Warning ("definedness is not definitional:\n" ++ formatAxiom a)
+         $ getRange t) wrongDefs) Nothing
+       _ -> case multDomainDefs of
+         _ : _ -> Just $ Result (map (\ l@((_, t) : _) ->
+           Diag Warning (unlines $
+             ("multiple definedness definitions for: " ++ showDoc t "")
+             : map (formatAxiom . fst) l)
+           $ getRange t) multDomainDefs) Nothing
+         _ -> case filter ((`Set.member` defOpSymbs) . snd) withOutDefs of
+           l@(_ : _) -> Just $ Result (map (\ (a, t) -> Diag
+             Warning ("missing definedness condition for '"
+                      ++ showDoc t "' in\n" ++ formatAxiom a)
+             $ getRange t) l) Nothing
+           _ -> Nothing
 
 {-
   call the symbols in the image of the signature morphism "new"
@@ -320,28 +321,28 @@ checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
 checkLeadingTerms osens m fsn
     | not $ all (checkTerms tsig constructors) (map arguOfTerm leadingTerms) =
         let (Application os _ _) = tt
-            tt = head $ filter (not . checkTerms tsig constructors .
+            tt = myhead "1" $ filter (not . checkTerms tsig constructors .
                                     arguOfTerm) leadingTerms
             pos = axiomRangeforTerm axioms' tt
         in Just $ warning Nothing ("a leading term of " ++ opSymName os ++
            " consists of not only variables and constructors") pos
     | not $ all (checkTerms tsig constructors) (map arguOfPred leadingPreds) =
         let (Predication ps _ pos) = quanti pf
-            pf = head $ filter (not . checkTerms tsig constructors .
+            pf = myhead "2" $ filter (not . checkTerms tsig constructors .
                                     arguOfPred) leadingPreds
         in Just $
            warning Nothing ("a leading predicate of " ++ predSymName ps ++
            " consists of not only variables and constructors") pos
     | not $ all checkVarApp leadingTerms =
         let (Application os _ _) = tt
-            tt = head $ filter (not . checkVarApp) leadingTerms
+            tt = myhead "3" $ filter (not . checkVarApp) leadingTerms
             pos = axiomRangeforTerm axioms' tt
         in Just $
            warning Nothing ("a variable occurs twice in a leading term of " ++
            opSymName os) pos
     | not $ all checkVarPred leadingPreds =
         let (Predication ps _ pos) = quanti pf
-            pf = head $ filter (not . checkVarPred) leadingPreds
+            pf = myhead "4" $ filter (not . checkVarPred) leadingPreds
         in Just $
            warning Nothing ("a variable occurs twice in a leading " ++
            "predicate of " ++ predSymName ps) pos
@@ -365,7 +366,7 @@ checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkIncomplete osens m fsn
     | not $ null notcomplete =
-        let symb_p = leadingSymPos $ head $ head notcomplete
+        let symb_p = leadingSymPos $ myhead "6" $ myhead "5" notcomplete
             pos = snd symb_p
             sname = case fmap extractLeadingSymb $ fst symb_p of
                       Just (Left opS) -> opSymName opS
@@ -465,26 +466,6 @@ checkFreeType oTh@(osig, osens) m axs = do
   return $ case catMaybes ms of
     [] -> return $ Just (getConStatus oTh m axs, [])
     a : _ -> a
-
-prettyType :: FORMULA () -> String
-prettyType fm = case fm of
-    Quantification {} -> "quantification"
-    Junction j _ _ -> (if j == Con then "con" else "dis") ++ "junction"
-    Relation _ c _ _ -> if c == Equivalence then "equivalence"
-                                       else "implication"
-    Negation _ _ -> "negation"
-    Atom b _ -> (if b then "true" else "false") ++ " atom"
-    Predication {} -> "predication"
-    Definedness _ _ -> "definedness"
-    Equation _ e _ _ -> (if e == Strong then "strong" else "existantial")
-                         ++ " equation"
-    Membership {} -> "membership"
-    Mixfix_formula _ -> "mixfix formula"
-    Unparsed_formula _ _ -> "unparsed formula"
-    Sort_gen_ax _ _ -> "sort_gen_ax"
-    QuantOp {} -> "forall op"
-    QuantPred {} -> "forall pred"
-    ExtFORMULA _ -> "extended formula"
 
 {- | group the axioms according to their leading symbol,
 output Nothing if there is some axiom in incorrect form -}
@@ -635,7 +616,7 @@ overlapQuery ((a1, s1), (a2, s2)) =
 completePatterns :: [OP_SYMB] -> [[TERM ()]] -> Bool
 completePatterns cons pas
     | all null pas = True
-    | all isVar $ map head pas = completePatterns cons (map tail pas)
+    | all isVar $ map (myhead "FF") pas = completePatterns cons (map tail pas)
     | otherwise = elem (con_ts $ map head pas) s_cons &&
                   all (completePatterns cons) (pa_group pas)
     where s_op_os c = case c of
@@ -647,16 +628,16 @@ completePatterns cons pas
           s_op_t t = case t of
                        Application os _ _ -> s_op_os os
                        _ -> []
-          con_ts = head . s_sum . concatMap s_op_t
+          con_ts = myhead "10". s_sum . concatMap s_op_t
           opN t = case t of
                     Application os _ _ -> opSymbName os
                     _ -> genName "unknown"
           pa_group p = map (p_g . (\ o ->
-             filter (\ a -> isVar (head a) || opN (head a) == o) p))
-               $ snd $ head $ filter (\ sc ->
-                   fst sc == sortOfTerm (head $ head p)) s_cons
+             filter (\ a -> isVar (myhead "11" a) || opN (head a) == o) p))
+               $ snd $ myhead "12" $ filter (\ sc ->
+                   fst sc == sortOfTerm (myhead "14" $ myhead "13" p)) s_cons
           p_g p = map (\ p' ->
-            if isVar $ head p'
+            if isVar $ myhead "15" p'
             then replicate (maximum $ map
                    (length . arguOfTerm . head) p) (head p') ++ tail p'
             else arguOfTerm (head p') ++ tail p') p
