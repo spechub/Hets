@@ -238,42 +238,36 @@ myhead msg l = case l of
 checkDefinitional :: Sign () () -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkDefinitional osig fsn = let
-  formatAxiom :: FORMULA () -> String
-  formatAxiom = flip showDoc "" . simplifyCASLSen osig
-  (noLSyms, withLSyms) = partition (isNothing . fst . snd)
-     $ map (\ a -> (a, leadingSymPos a)) $ getAxioms fsn
-  in case noLSyms of
-     _ : _ -> Just $ Result (map (\ (a, (_, pos)) -> Diag
-       Warning ("No leading symbol:\n" ++ formatAxiom a) pos) noLSyms)
-       Nothing
-     _ -> let
+       formatAxiom :: FORMULA () -> String
+       formatAxiom = flip showDoc "" . simplifyCASLSen osig
+       (noLSyms, withLSyms) = partition (isNothing . fst . snd)
+         $ map (\ a -> (a, leadingSymPos a)) $ getAxioms fsn
        partialLSyms = foldr (\ (a, (ma, _)) -> case ma of
          Just (Left (Application t@(Qual_op_name _ (Op_type k _ _ _) _) _ _))
            | k == Partial -> ((a, t) :)
          _ -> id) [] withLSyms
        (domainDefs, otherPartials) = partition (isDomainDef . fst) partialLSyms
        (withDefs, withOutDefs) = partition (containDef . fst) otherPartials
+       wrongDefs = filter (not . correctDef . fst) withDefs
        grDomainDefs = groupBy (on (==) snd) $ sortBy (on compare snd) domainDefs
        multDomainDefs = filter (\ l -> case l of
           [_] -> False
           _ -> True) grDomainDefs
        defOpSymbs = Set.fromList $ map (snd . head) grDomainDefs
-       in case filter (not . correctDef . fst) withDefs of
-       wrongDefs@(_ : _) -> Just $ Result (map (\ (a, t) -> Diag
+       wrongWithoutDefs = filter ((`Set.member` defOpSymbs) . snd) withOutDefs
+       ds = map (\ (a, (_, pos)) -> Diag
+         Warning ("No leading symbol:\n" ++ formatAxiom a) pos) noLSyms
+         ++ map (\ (a, t) -> Diag
          Warning ("definedness is not definitional:\n" ++ formatAxiom a)
-         $ getRange t) wrongDefs) Nothing
-       _ -> case multDomainDefs of
-         _ : _ -> Just $ Result (map (\ l@((_, t) : _) ->
-           Diag Warning (unlines $
+                $ getRange t) wrongDefs
+         ++ map (\ l@((_, t) : _) -> Diag Warning (unlines $
              ("multiple definedness definitions for: " ++ showDoc t "")
-             : map (formatAxiom . fst) l)
-           $ getRange t) multDomainDefs) Nothing
-         _ -> case filter ((`Set.member` defOpSymbs) . snd) withOutDefs of
-           l@(_ : _) -> Just $ Result (map (\ (a, t) -> Diag
-             Warning ("missing definedness condition for '"
+             : map (formatAxiom . fst) l) $ getRange t) multDomainDefs
+         ++ map (\ (a, t) -> Diag
+         Warning ("missing definedness condition for '"
                       ++ showDoc t "' in\n" ++ formatAxiom a)
-             $ getRange t) l) Nothing
-           _ -> Nothing
+             $ getRange t) wrongWithoutDefs
+       in if null ds then Nothing else Just $ Result ds Nothing
 
 {-
   call the symbols in the image of the signature morphism "new"
@@ -628,7 +622,7 @@ completePatterns cons pas
           s_op_t t = case t of
                        Application os _ _ -> s_op_os os
                        _ -> []
-          con_ts = myhead "10". s_sum . concatMap s_op_t
+          con_ts = myhead "10" . s_sum . concatMap s_op_t
           opN t = case t of
                     Application os _ _ -> opSymbName os
                     _ -> genName "unknown"
