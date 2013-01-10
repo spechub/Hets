@@ -16,9 +16,9 @@ module CASL.CCC.FreeTypes (checkFreeType) where
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import CASL.Morphism
 import CASL.Sign
-import CASL.SimplifySen (simplifyCASLSen)
+import CASL.SimplifySen
 import CASL.CCC.TermFormula
-import CASL.CCC.TerminationProof (terminationProof, opSymName, predSymName)
+import CASL.CCC.TerminationProof (terminationProof)
 import CASL.Overload (leqF)
 
 import Common.AS_Annotation
@@ -256,7 +256,7 @@ checkDefinitional osig fsn = let
        defOpSymbs = Set.fromList $ map (snd . head) grDomainDefs
        wrongWithoutDefs = filter ((`Set.member` defOpSymbs) . snd) withOutDefs
        ds = map (\ (a, (_, pos)) -> Diag
-         Warning ("No leading symbol:\n" ++ formatAxiom a) pos) noLSyms
+         Warning ("missing leading symbol in:\n" ++ formatAxiom a) pos) noLSyms
          ++ map (\ (a, t) -> Diag
          Warning ("definedness is not definitional:\n" ++ formatAxiom a)
                 $ getRange t) wrongDefs
@@ -312,47 +312,29 @@ checkSort oTh@(osig, _) m fsn
 checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
-checkLeadingTerms osens m fsn
-    | not $ all (checkTerms tsig constructors) (map arguOfTerm leadingTerms) =
-        let (Application os _ _) = tt
-            tt = myhead "1" $ filter (not . checkTerms tsig constructors .
-                                    arguOfTerm) leadingTerms
-            pos = axiomRangeforTerm axioms' tt
-        in Just $ warning Nothing ("a leading term of " ++ opSymName os ++
-           " consists of not only variables and constructors") pos
-    | not $ all (checkTerms tsig constructors) (map arguOfPred leadingPreds) =
-        let (Predication ps _ pos) = quanti pf
-            pf = myhead "2" $ filter (not . checkTerms tsig constructors .
-                                    arguOfPred) leadingPreds
-        in Just $
-           warning Nothing ("a leading predicate of " ++ predSymName ps ++
-           " consists of not only variables and constructors") pos
-    | not $ all checkVarApp leadingTerms =
-        let (Application os _ _) = tt
-            tt = myhead "3" $ filter (not . checkVarApp) leadingTerms
-            pos = axiomRangeforTerm axioms' tt
-        in Just $
-           warning Nothing ("a variable occurs twice in a leading term of " ++
-           opSymName os) pos
-    | not $ all checkVarPred leadingPreds =
-        let (Predication ps _ pos) = quanti pf
-            pf = myhead "4" $ filter (not . checkVarPred) leadingPreds
-        in Just $
-           warning Nothing ("a variable occurs twice in a leading " ++
-           "predicate of " ++ predSymName ps) pos
-    | otherwise = Nothing
-    where
-        tsig = mtarget m
-        constructors = snd $ recoverSortsAndConstructors osens fsn
-        axioms = getAxioms fsn
-        axioms' = map quanti axioms
-        ltp = map leadingTermPredication axioms'       -- leadingTermPred
-        leadingTerms = concatMap (\ tp -> case tp of
-                                             Just (Left t) -> [t]
-                                             _ -> []) ltp      -- leading Term
-        leadingPreds = concatMap (\ tp -> case tp of
-                                             Just (Right f) -> [f]
-                                             _ -> []) ltp
+checkLeadingTerms osens m fsn = let
+    tsig = mtarget m
+    constructors = snd $ recoverSortsAndConstructors osens fsn
+    ltp = mapMaybe leadingTermPredication $ getAxioms fsn
+    formatTerm = flip showDoc "" . simplifyCASLTerm tsig
+    args = foldr (\ ei -> case ei of
+      Left (Application os ts qs) ->
+         ((qs, "term for " ++ show (opSymbName os), ts) :)
+      Right (Predication ps ts qs) ->
+         ((qs, "predicate " ++ show (predSymbName ps), ts) :)
+      _ -> id) [] ltp
+    ds = foldr (\ (qs, d, ts) l ->
+           let vs = concatMap varOfTerm ts
+               dupVs = vs \\ Set.toList (Set.fromList vs)
+               nonCs = checkTerms tsig constructors ts
+               td = " in leading " ++ d ++ ": "
+           in map (\ v -> Diag Warning
+                    ("duplicate variable" ++ td ++ formatTerm v) qs) dupVs
+              ++ map (\ t -> Diag Warning
+                     ("non-constructor" ++ td ++ formatTerm t)
+                     qs) nonCs
+              ++ l) [] args
+    in if null ds then Nothing else Just $ Result ds Nothing
 
 -- check the sufficient completeness
 checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
@@ -363,12 +345,12 @@ checkIncomplete osens m fsn
         let symb_p = leadingSymPos $ myhead "6" $ myhead "5" notcomplete
             pos = snd symb_p
             sname = case fmap extractLeadingSymb $ fst symb_p of
-                      Just (Left opS) -> opSymName opS
-                      Just (Right pS) -> predSymName pS
+                      Just (Left opS) -> opSymbName opS
+                      Just (Right pS) -> predSymbName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
         in Just $
            warning (Just (Cons, obligations)) ("the definition of " ++
-           sname ++ " is not complete") pos
+           show sname ++ " is not complete") pos
    | otherwise = Nothing
    where
        notcomplete = getNotComplete osens m fsn
@@ -449,9 +431,9 @@ free datatypes and recursive equations are consistent -}
 checkFreeType :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> IO (Result (Maybe (Conservativity, [FORMULA ()])))
-checkFreeType oTh@(osig, osens) m axs = do
+checkFreeType oTh@(_, osens) m axs = do
   ms <- mapM ($ axs)
-    [ return . checkDefinitional osig
+    [ return . checkDefinitional (mtarget m)
     , return . checkSort oTh m
     , return . checkLeadingTerms osens m
     , return . checkIncomplete osens m
@@ -478,36 +460,21 @@ groupAxioms phis = do
 
 {- | a leading term and a predication consist of
 variables and constructors only -}
-checkTerms :: Sign f e -> [OP_SYMB] -> [TERM f] -> Bool
-checkTerms sig cons = all checkT
+checkTerms :: Sign f e -> [OP_SYMB] -> [TERM f] -> [TERM f]
+checkTerms sig cons = concatMap checkT
   where checkT t = case unsortedTerm t of
-          Qual_var {} -> True
+          Qual_var {} -> []
           Application subop subts _ ->
-            isCons sig cons subop && all checkT subts
-          _ -> False
+            if isCons sig cons subop then concatMap checkT subts else [t]
+          _ -> [t]
 
 {- | check whether the operation symbol is a constructor
 (or a related overloaded variant). -}
 isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
 isCons s cons os = any (is_Cons os) cons
-    where is_Cons (Op_name _) _ = False
-          is_Cons _ (Op_name _) = False
-          is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _) =
+    where is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _) =
             on1 == on2 && on (leqF s) toOpType ot1 ot2
-
--- |  no variable occurs twice in a leading term
-checkVarApp :: Ord f => TERM f -> Bool
-checkVarApp (Application _ ts _) = noDuplation $ concatMap varOfTerm ts
-checkVarApp _ = error "CASL.CCC.FreeTypes<checkVarApp>"
-
--- |  no variable occurs twice in a leading predication
-checkVarPred :: Ord f => FORMULA f -> Bool
-checkVarPred (Predication _ ts _) = noDuplation $ concatMap varOfTerm ts
-checkVarPred _ = error "CASL.CCC.FreeTypes<checkVarPred>"
-
--- | there are no duplicate items in a list
-noDuplation :: Ord a => [a] -> Bool
-noDuplation l = length (nubOrd l) == length l
+          is_Cons _ _ = False
 
 -- | create all possible pairs from a list
 pairs :: [a] -> [(a, a)]

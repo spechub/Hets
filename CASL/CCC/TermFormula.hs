@@ -118,7 +118,7 @@ opSymbOfTerm t = case unsortedTerm t of
 varOfTerm :: Ord f => TERM f -> [TERM f]
 varOfTerm t = case unsortedTerm t of
                 Qual_var {} -> [t]
-                Application _ ts _ -> nubOrd $ concatMap varOfTerm ts
+                Application _ ts _ -> concatMap varOfTerm ts
                 _ -> []
 
 -- | extract all arguments of a term
@@ -272,7 +272,7 @@ varDeclOfF f =
                                   varDeclOfF f2
       Negation f' _ -> varDeclOfF f'
       Predication _ ts _ -> varD $ nubOrd $ concatMap varOfTerm ts
-      Definedness t _ -> varD $ varOfTerm t
+      Definedness t _ -> varD $ nubOrd $ varOfTerm t
       Equation t1 _ t2 _ -> varD $ nubOrd $ varOfTerm t1 ++ varOfTerm t2
       _ -> []
   where varD [] = []

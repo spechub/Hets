@@ -11,11 +11,7 @@ Portability :  portable
 Termination proofs for equation systems, using AProVE
 -}
 
-module CASL.CCC.TerminationProof
-  ( terminationProof
-  , opSymName
-  , predSymName
-  ) where
+module CASL.CCC.TerminationProof (terminationProof) where
 
 import CASL.AS_Basic_CASL
 import CASL.CCC.TermFormula
