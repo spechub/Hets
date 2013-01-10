@@ -322,28 +322,10 @@ For details, see \cite{Mossakowski04,Habil,CASL/RefManual}.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=.67\textwidth]{LogicGraph-CL}
+    \includegraphics[width=.9\textwidth]{CLgraph}
   \end{center}
-\caption{Graph of logics related to Common Logic that are currently supported by \Hets. The more an
-ellipse is filled with green, the more stable is the implementation of the
-logic. Blue indicates a prover-supported logic.}
+\caption{Graph of logics related to Common Logic that are currently supported by \Hets.}
 \label{fig:LogicGraph}
-\end{figure}
-
-\begin{figure}
-\begin{center}
-\begin{tabular}{|l|c|c|c|}\hline
-Language & Parser & Static Analysis & Prover \\\hline
-\CASL & x & x & -- \\\hline
-Common Logic & x (CLIF) & x & -- \\\hline
-OWL2 & x & x & x \\\hline
-Propositional & x & x & x \\\hline
-SoftFOL & x & -- & x \\\hline
-\end{tabular}
-\end{center}
-\caption{Current degree of \Hets support for some of the languages.
-Languages without prover can still ``borrow'' provers
-via logic translations.\label{fig:Languages}}
 \end{figure}
 
 \begin{description}
@@ -373,6 +355,7 @@ the zChaff SAT solver \cite{Herbstritt03} connected to it.
 \item[SoftFOL] \cite{LuettichEA06a} offers several automated theorem
   proving (ATP) systems for first-order logic with equality: \begin{inparaenum}[(1)]\item \SPASS
   \cite{WeidenbachEtAl02}, see \url{http://www.spass-prover.org}; 
+\item Darwin \cite{Baumgartner:etal:Darwin:IJAIT:2005}, see \url{http://combination.cs.uiowa.edu/Darwin};
 \item Vampire \cite{RiazanovV02} see \url{http://www.vprover.org};
 \item Eprover \cite{Schulz:AICOM-2002}, see \url{http://www.eprover.org};
 \item E-KRHyper \cite{DBLP:conf/cade/PelzerW07}, see \url{http://www.uni-koblenz.de/~bpelzer/ekrhyper}, and 
@@ -1399,6 +1382,57 @@ after brokering.
 \end{table}
 
 For details on the ATPs supported, see the \Hets user guide \cite{HetsUserGuide}.
+
+\subsection{Interactive Theorem Proving Systems}
+
+The main interative theorem proving system integrated into \Hets is
+\Isabelle \cite{NipPauWen02}, an interactive theorem prover. It is
+more powerful than ATP systems, but also requires more user interaction.
+In particular, Isabelle can be used to perform induction proofs about
+Common Logic theories involving sequence markers.
+
+\Isabelle
+has a very small core guaranteeing correctness, and its provers,
+like the simplifier or the tableaux prover, are built on top of this
+core. Furthermore, there is over fifteen years of experience with it,
+and several mathematical textbooks have been partially
+                \index{formal!verification}%
+verified with
+\Isabelle.
+
+\Isabelle is a tactic based theorem prover implemented in standard ML.
+The main \Isabelle logic (called Pure) is some weak intuitionistic type
+theory with polymorphism. The logic Pure is used to represent a
+variety of logics within \Isabelle; one of them being \HOL (higher-order
+logic).  For example, logical implication in Pure (written
+\texttt{==>}, also called meta-implication), is different from logical
+implication in \HOL (written \texttt{-->}, also called object
+implication).
+
+It is essential to be aware of the fact that the \Isabelle/\HOL logic
+is different from the logics that are encoded into it via comorphisms.
+Therefore, the formulas appearing in subgoals of proofs with \Isabelle
+will not conform to the syntax of the original input logic.  They may
+even use features of \Isabelle/\HOL such as higher-order functions
+that are not present in an input logic like \CASL.
+
+\Isabelle is started with ProofGeneral
+\cite{DBLP:conf/tacas/Aspinall00,url:ProofGeneral} in a separate Emacs
+\cite{url:Emacs,url:XEmacs}.
+The \Isabelle theory file conforms to the Isabelle/Isar syntax
+\cite{NipPauWen02}. It starts with the theory (encoded along the selected
+ comorphism), followed by a list of theorems. Initially, all the
+ theorems have trivial proofs, using the `oops` command. However, if
+ you have saved earlier proof attempts, \Hets will patch these into
+ the generated \Isabelle theory file, ensuring that your previous work
+ is not lost. (But note that this patching can only be successful
+ if you do not rename specifications, or change their structure.)  You
+ now can replace the 'oops' commands with real \Isabelle proofs, and
+ use Proof General to step through the proofs. You finish your session
+ by saving your file (using the Emacs file menu, or the Ctrl-x Ctrl-s
+ key sequence), and by exiting Emacs (Ctrl-x Ctrl-c).
+
+
 
 \section{Reading, Writing and Formatting}
 
