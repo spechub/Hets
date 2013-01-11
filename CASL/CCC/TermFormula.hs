@@ -61,6 +61,7 @@ isDomain :: FORMULA f -> Bool
 isDomain f = case quanti f of
   Relation (Definedness _ _) Equivalence f' _ -> not (containDef f')
   Definedness _ _ -> True
+  Negation (Definedness _ _) _ -> True
   _ -> False
 
 -- | check whether it contains a definedness formula
