@@ -237,9 +237,9 @@ myhead msg l = case l of
 -- check the definitional form of the partial axioms
 checkDefinitional :: Sign () () -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
-checkDefinitional osig fsn = let
+checkDefinitional tsig fsn = let
        formatAxiom :: FORMULA () -> String
-       formatAxiom = flip showDoc "" . simplifyCASLSen osig
+       formatAxiom = flip showDoc "" . simplifyCASLSen tsig
        (noLSyms, withLSyms) = partition (isNothing . fst . snd)
          $ map (\ a -> (a, leadingSymPos a)) $ getAxioms fsn
        partialLSyms = foldr (\ (a, (ma, _)) -> case ma of

@@ -107,13 +107,6 @@ isVar t = case unsortedTerm t of
             Qual_var {} -> True
             _ -> False
 
--- | extract the operation symbol from a term
-opSymbOfTerm :: TERM f -> OP_SYMB
-opSymbOfTerm t = case unsortedTerm t of
-                   Application os _ _ -> os
-                   Conditional t' _ _ _ -> opSymbOfTerm t'
-                   _ -> error "CASL.CCC.TermFormula.<opSymbOfTerm>"
-
 -- | extract all variables of a term
 varOfTerm :: Ord f => TERM f -> [TERM f]
 varOfTerm t = case unsortedTerm t of
@@ -127,29 +120,6 @@ arguOfTerm t = case unsortedTerm t of
                  Qual_var {} -> [t]
                  Application _ ts _ -> ts
                  _ -> []
-
--- | extract all arguments of a predication
-arguOfPred :: FORMULA f -> [TERM f]
-arguOfPred f = case quanti f of
-                 Negation f1 _ -> arguOfPred f1
-                 Predication _ ts _ -> ts
-                 _ -> []
-
--- | extract the predication symbols from a axiom
-predSymbsOfAxiom :: FORMULA f -> [PRED_SYMB]
-predSymbsOfAxiom f = case f of
-      Quantification _ _ f' _ -> predSymbsOfAxiom f'
-      Junction _ fs _ -> concatMap predSymbsOfAxiom fs
-      Relation f1 _ f2 _ -> predSymbsOfAxiom f1 ++ predSymbsOfAxiom f2
-      Negation f' _ -> predSymbsOfAxiom f'
-      Predication p_s _ _ -> [p_s]
-      _ -> []
-
--- | check whether it is a partial axiom
-partialAxiom :: GetRange f => FORMULA f -> Bool
-partialAxiom f = case opTypAxiom f of
-      Just False -> True
-      _ -> False
 
 -- | create the obligation of subsort
 infoSubsort :: [SORT] -> FORMULA f -> [FORMULA f]
@@ -204,16 +174,6 @@ extractLeadingSymb lead =
       Right (Predication p _ _) -> Right p
       _ -> error "CASL.CCC.TermFormula<extractLeadingSymb>"
 
-{- | leadingTerm is total operation : Just True,
-leadingTerm is partial operation : Just False,
-others : Nothing. -}
-opTypAxiom :: GetRange f => FORMULA f -> Maybe Bool
-opTypAxiom f = case leadingSym f of
-    Just (Left t) -> case t of
-      Qual_op_name _ (Op_type k _ _ _) _ -> Just $ k == Total
-      _ -> Nothing
-    _ -> Nothing
-
 -- | extract the overloaded constructors
 constructorOverload :: Sign f e -> OpMap -> [OP_SYMB] -> [OP_SYMB]
 constructorOverload s opm = concatMap cons_Overload
@@ -246,17 +206,6 @@ sameOpsApp app1 app2 = case unsortedTerm app1 of
                                 Application ops2 _ _ -> ops1 == ops2
                                 _ -> False
                           _ -> False
-
--- | get the axiom range of a term
-axiomRangeforTerm :: (GetRange f, Eq f) => [FORMULA f] -> TERM f -> Range
-axiomRangeforTerm [] _ = nullRange
-axiomRangeforTerm fs t = case fs of
-  [] -> nullRange
-  hd : tl -> case leadingTermPredication hd of
-      Just (Left tt) -> if tt == t
-                          then getRange $ quanti hd
-                          else axiomRangeforTerm tl t
-      _ -> axiomRangeforTerm tl t
 
 -- | get the sort of a variable declaration
 sortOfVarD :: VAR_DECL -> SORT
