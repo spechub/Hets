@@ -447,8 +447,8 @@ patternsOfAxiom f = case quanti f of
     Relation f' Equivalence _ _ -> patternsOfAxiom f'
     Predication _ ts _ -> ts
     Equation t _ _ _ -> patternsOfTerm t
+    Definedness t _ -> patternsOfTerm t
     _ -> []
-
 
 -- | check whether two patterns are overlapped
 checkPatterns :: (Eq f) => ([TERM f], [TERM f]) -> Bool
@@ -532,8 +532,8 @@ completePatterns cons pas
           s_op_os c = case c of
                         Op_name _ -> []
                         Qual_op_name o ot _ -> [(res_OP_TYPE ot, o)]
-          s_sum sns = map (\ s -> (s, map snd $
-                      filter (\ c -> fst c == s) sns)) $ nubOrd $ map fst sns
+          s_sum = map (\ l@((s, _) : _) -> (s, Set.fromList $ map snd l))
+            . groupBy (on (==) fst) . sortBy (on compare fst)
           s_cons = s_sum $ concatMap s_op_os cons
           s_op_t t = case unsortedTerm t of
                        Application os _ _ -> s_op_os os
@@ -547,7 +547,7 @@ completePatterns cons pas
               (_ , consForRes) : _ = filter ((== sortOfTerm hdt) . fst) s_cons
                in map (p_g
                      . \ o -> filter (\ (h : _) -> isVar h || opN h == o) p)
-                 consForRes
+                 $ Set.toList consForRes
             _ -> error "pa_group"
           p_g p = map (\ (h : t) ->
             if isVar h
