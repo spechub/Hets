@@ -28,6 +28,7 @@ import System.Process
 import System.Directory
 
 import Data.List (intercalate)
+import Data.Function (on)
 
 {-
    Automatic termination proof
@@ -91,8 +92,8 @@ predSymName = idStr . predSymbName
 
 -- | create a predicate application
 predAppl :: PRED_SYMB -> [TERM f] -> String
-predAppl p ts = predSymName p
-  ++ if null ts then "" else apply "" $ termsPA ts
+predAppl p ts =
+  predSymName p ++ if null ts then "" else apply "" $ termsPA ts
 
 -- | apply function string to argument string with brackets
 apply :: String -> String -> String
@@ -105,21 +106,20 @@ applyEq t1 t2 = apply "eq" $ term2TRS t1 ++ "," ++ term2TRS t2
 -- | translate a casl term to a term of TRS(Terme Rewrite Systems)
 term2TRS :: TERM f -> String
 term2TRS t = case unsortedTerm t of
-    Qual_var var _ _ -> tokStr var
-    Application o ts _ -> opSymName o ++ termsPA ts
-    Conditional t1 f t2 _ ->
-        apply "when_else" $ term2TRS t1 ++ "," ++ t_f_str f ++ "," ++
-              term2TRS t2
-    _ -> error "CASL.CCC.TerminationProof.<term2TRS>"
+  Qual_var var _ _ -> tokStr var
+  Application o ts _ -> opSymName o ++ termsPA ts
+  Conditional t1 f t2 _ ->
+    apply "when_else" $ term2TRS t1 ++ "," ++ t_f_str f ++ "," ++ term2TRS t2
+  _ -> error "CASL.CCC.TerminationProof.<term2TRS>"
   where t_f_str f = case f of                     -- condition of a term
-                    Equation t1 Strong t2 _ -> applyEq t1 t2
-                    Predication ps ts _ -> predAppl ps ts
-                    _ -> error "CASL.CCC.TerminationProof.<term2TRS_cond>"
+          Equation t1 Strong t2 _ -> applyEq t1 t2
+          Predication ps ts _ -> predAppl ps ts
+          _ -> error "CASL.CCC.TerminationProof.<term2TRS_cond>"
 
 -- | translate a list of casl terms to the patterns of a term in TRS
 termsPA :: [TERM f] -> String
-termsPA ts = if null ts then "" else
-   apply "" . intercalate "," $ map term2TRS ts
+termsPA ts =
+  if null ts then "" else apply "" . intercalate "," $ map term2TRS ts
 
 {- | translate a casl axiom to TRS-rule:
 a rule without condition is represented by "A -> B" in
@@ -127,70 +127,54 @@ Term Rewrite Systems; if there are some conditions, then
 follow the conditions after the symbol "|".
 For example : "A -> B | C -> D, E -> F, ..." -}
 axiom2TRS :: Eq f => FORMULA f -> [(TERM f, FORMULA f)] -> String
-axiom2TRS f doms =
-  case quanti f of
-    Relation f1 c f2 _ | c /= Equivalence ->
-        case f2 of
-          Relation f3 Equivalence f4 _ ->
-              axiom2TRS f3 doms ++ " | " ++ axiom2TRS f1 doms ++ ", " ++
-              axiom2TRS f4 doms
-          _ ->
-              case f1 of
-                Definedness t _ ->
-                    let dm = filter (sameOpsApp t . fst) doms
-                        phi = snd $ head dm
-                        te = fst $ head dm
-                        p1 = arguOfTerm te
-                        p2 = arguOfTerm t
-                        st = zip p2 p1
-                    in if not $ null dm
-                       then axiom2TRS f2 doms ++ " | " ++
-                            axiom2TRS (substiF st phi) doms
-                       else axiom2TRS f2 doms ++
-                            " | " ++ apply "def" (term2TRS t) ++ " -> open"
-                _ -> axiom2TRS f2 doms ++ " | " ++ axiom2TRS f1 doms
-    Relation f1 Equivalence f2 _ ->
-       axiom2TRS f1 doms ++ " | " ++ axiom2TRS f2 doms
-    Negation f' _ ->
-        case f' of
-          Quantification {} ->
-              error "CASL.CCC.TerminationProof.<axiom2TRS_Negation>"
-          Definedness t _ -> term2TRS t ++ " -> undefined"
-          _ -> axiomSub f' doms ++ " -> false"
-    Definedness t _ -> apply "def" (term2TRS t) ++ " -> open"
-    Equation t1 Strong t2 _ ->
-        case t2 of
-          Conditional tt1 ff tt2 _ ->
-              term2TRS t1 ++ " -> " ++ term2TRS tt1 ++ " | " ++
-              axiomSub ff doms ++ " -> true\n" ++
-              term2TRS t1 ++ " -> " ++ term2TRS tt2 ++ " | " ++
-              axiomSub ff doms ++ " -> false"
-          _ -> if isApp t1
-               then term2TRS t1 ++ " -> " ++ term2TRS t2
-               else applyEq t1 t2 ++ " -> true"
-    Atom False _ -> "false -> false"
-    _ -> axiomSub f doms ++ " -> true"
+axiom2TRS f doms = case quanti f of
+  Relation f1 c f2 _ | c /= Equivalence -> case f2 of
+    Relation f3 Equivalence f4 _ -> axiom2TRS f3 doms ++ " | "
+      ++ axiom2TRS f1 doms ++ ", " ++ axiom2TRS f4 doms
+    _ -> let t2 = axiom2TRS f2 doms ++ " | " in case f1 of
+      Definedness t _ -> case filter (sameOpsApp t . fst) doms of
+        [] -> t2 ++ apply "def" (term2TRS t) ++ " -> open"
+        (te, phi) : _ -> let st = on zip arguOfTerm t te in
+                    t2 ++ axiom2TRS (substiF st phi) doms
+      _ -> t2 ++ axiom2TRS f1 doms
+  Relation f1 Equivalence f2 _ ->
+    axiom2TRS f1 doms ++ " | " ++ axiom2TRS f2 doms
+  Negation f' _ -> case f' of
+    Quantification {} ->
+      error "CASL.CCC.TerminationProof.<axiom2TRS_Negation>"
+    Definedness t _ -> term2TRS t ++ " -> undefined"
+    _ -> axiomSub f' doms ++ " -> false"
+  Definedness t _ -> apply "def" (term2TRS t) ++ " -> open"
+  Equation t1 Strong t2 _ -> case t2 of
+    Conditional tt1 ff tt2 _ ->
+      term2TRS t1 ++ " -> " ++ term2TRS tt1 ++ " | "
+      ++ axiomSub ff doms ++ " -> true\n"
+      ++ term2TRS t1 ++ " -> " ++ term2TRS tt2 ++ " | "
+      ++ axiomSub ff doms ++ " -> false"
+    _ -> if isApp t1 then term2TRS t1 ++ " -> " ++ term2TRS t2 else
+      applyEq t1 t2 ++ " -> true"
+  Atom False _ -> "false -> false"
+  _ -> axiomSub f doms ++ " -> true"
 
 -- | check whether it is a application term
 isApp :: TERM t -> Bool
 isApp t = case unsortedTerm t of
-            Application {} -> True
-            _ -> False
+  Application {} -> True
+  _ -> False
 
 {- | translate a casl axiom(without conditions) to a subrule of TRS,
 the handling of an implication in a subrule is yet to be correctly defined. -}
 axiomSub :: Eq f => FORMULA f -> [(TERM f, FORMULA f)] -> String
-axiomSub f doms =
-  case quanti f of
-    Junction j fs@(_ : _) _ ->
-      joinSub (if j == Con then "and" else "or") fs doms
-    Negation f' _ -> apply "not" $ axiomSub f' doms
-    Atom b _ -> if b then "true" else "false"
-    Predication p_s ts _ -> predAppl p_s ts
-    Definedness t _ -> apply "def" $ term2TRS t
-    Equation t1 Strong t2 _ -> applyEq t1 t2
-    i@(Relation _ c _ _) | c /= Equivalence -> axiom2TRS i doms
-    _ -> error "CASL.CCC.TerminationProof.axiomSub.<axiomSub>"
+axiomSub f doms = case quanti f of
+  Junction j fs@(_ : _) _ ->
+    joinSub (if j == Con then "and" else "or") fs doms
+  Negation f' _ -> apply "not" $ axiomSub f' doms
+  Atom b _ -> if b then "true" else "false"
+  Predication p_s ts _ -> predAppl p_s ts
+  Definedness t _ -> apply "def" $ term2TRS t
+  Equation t1 Strong t2 _ -> applyEq t1 t2
+  i@(Relation _ c _ _) | c /= Equivalence -> axiom2TRS i doms
+  _ -> error "CASL.CCC.TerminationProof.axiomSub.<axiomSub>"
 
 -- | translate a list of junctive casl formulas to a subrule of TRS
 joinSub :: Eq f => String -> [FORMULA f] -> [(TERM f, FORMULA f)] -> String
