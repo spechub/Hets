@@ -1,0 +1,13 @@
+{-
+this file is a template for MMT:
+Signatures and Theories remain static,
+only inserting Logic name here
+-}
+module <LogicName>.Sign where
+
+import <LogicName>.AS_BASIC_<LogicName>
+-- import Common.Id
+
+-- Decl and Form are fixed
+data Sigs = Sigs [Decl]
+data Theo = Theo{sign :: Sigs,axioms :: [Form]} 

@@ -1,3 +1,7 @@
+{-
+this file is a template for MMT:
+basic Morphisms should remain static
+-}
 module <LogicName>.Morphism where
 
 import <LogicName>.Sign as Sign
@@ -12,5 +16,14 @@ import <LogicName>.Sign as Sign
 --comp Morphism Morphism
 --     Morphism
 --comp mor1 mor2 = ... 
+
+idMor :: Sign -> Morphism
+idMor a = inclusionMap a a
+
+inclusionMap :: Sign.Sign -> Sign.Sign -> Morphism
+inclusionMap s1 s2 = Morphism
+  { source = s1
+  , target = s2
+  , propMap = Map.empty }
 
 <insert>
