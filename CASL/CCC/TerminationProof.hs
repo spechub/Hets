@@ -51,16 +51,15 @@ terminationProof fs dms = if null fs then return $ Just True else do
       [] -> str
       h : t -> varsStr t $
         (if null str then "" else str ++ " ") ++ tokStr h
-    axiomTrs axs str = case axs of
-      [] -> str
-      h : t -> axiomTrs t $ str ++ axiom2TRS h dms ++ "\n"
-    axhead = "(RULES\neq(t,t) -> true\n" ++
-             "eq(_,_) -> false\n" ++
-             "when_else(t1,true,t2) -> t1\n" ++
-             "when_else(t1,false,t2) -> t2\n"
-    c_vars = "(VAR t t1 t2 " ++ varsStr (allVar $ map varOfAxiom fs) "" ++ ")\n"
-    c_axms = axhead ++ axiomTrs fs "" ++ ")\n"
-  tmpFile <- getTempFile (c_vars ++ c_axms) "Input.trs"
+    axhead =
+      [ "(RULES"
+      , "eq(t,t) -> true"
+      , "eq(_,_) -> false"
+      , "when_else(t1,true,t2) -> t1"
+      , "when_else(t1,false,t2) -> t2" ]
+    c_vars = "(VAR t t1 t2 " ++ varsStr (allVar $ map varOfAxiom fs) "" ++ ")"
+    c_axms = axhead ++ map (`axiom2TRS` dms) fs ++ [")"]
+  tmpFile <- getTempFile (unlines $ c_vars : c_axms) "Input.trs"
   aprovePath <- getEnvDef "HETS_APROVE"
                   "CASL/Termination/AProVE.jar"
   (_, proof, _) <- readProcessWithExitCode "java"
