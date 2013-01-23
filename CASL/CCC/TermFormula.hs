@@ -56,13 +56,6 @@ isMembership f = case f of
   Membership {} -> True
   _ -> False
 
--- | check whether it is the domain of a partial function
-isDomain :: FORMULA f -> Bool
-isDomain f = case quanti f of
-  Relation (Definedness _ _) Equivalence f' _ -> not (containDef f')
-  Definedness _ _ -> True
-  _ -> False
-
 -- | check whether it contains a definedness formula
 containDef :: FORMULA f -> Bool
 containDef f = case f of
@@ -81,22 +74,6 @@ containNeg f = case f of
   Relation f' Equivalence _ _ -> containNeg f'
   Negation _ _ -> True
   _ -> False
-
--- | check whether it contains a definedness formula in correct form
-correctDef :: FORMULA f -> Bool
-correctDef f = case quanti f of
-  Relation _ c (Definedness _ _) _ | c /= Equivalence -> False
-  Relation (Definedness _ _) c _ _ | c /= Equivalence -> True
-  Relation (Definedness _ _) Equivalence f' _ -> not (containDef f')
-  Negation (Definedness _ _) _ -> True
-  Definedness _ _ -> True
-  _ -> False
-
--- | extract the domain-list of partial functions
-domainList :: [FORMULA f] -> [(TERM f, FORMULA f)]
-domainList = concatMap $ \ f -> case quanti f of
-  Relation (Definedness t _) Equivalence f' _ -> [(t, f')]
-  _ -> []
 
 -- | check whether it is a Variable
 isVar :: TERM t -> Bool

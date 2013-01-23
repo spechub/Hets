@@ -192,9 +192,32 @@ getObligations :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
 getObligations m fsn = getOpsPredsAndExAxioms m fsn
   ++ getInfoSubsort m fsn ++ getOverlapQuery fsn
 
+-- | check whether it is the domain of a partial function
+isDomain :: FORMULA f -> Bool
+isDomain f = case quanti f of
+  Relation (Definedness _ _) Equivalence f' _ -> not (containDef f')
+  Definedness _ _ -> True
+  _ -> False
+
 isDomainDef :: FORMULA f -> Bool
 isDomainDef f = case quanti f of
   Relation (Definedness {}) Equivalence _ _ -> True
+  _ -> False
+
+-- | extract the domain-list of partial functions
+domainList :: [FORMULA f] -> [(TERM f, FORMULA f)]
+domainList = concatMap $ \ f -> case quanti f of
+  Relation (Definedness t _) Equivalence f' _ -> [(t, f')]
+  _ -> []
+
+-- | check whether it contains a definedness formula in correct form
+correctDef :: FORMULA f -> Bool
+correctDef f = case quanti f of
+  Relation _ c (Definedness _ _) _ | c /= Equivalence -> False
+  Relation (Definedness _ _) c _ _ | c /= Equivalence -> True
+  Relation (Definedness _ _) Equivalence f' _ -> not (containDef f')
+  Negation (Definedness _ _) _ -> True
+  Definedness _ _ -> True
   _ -> False
 
 -- check the definitional form of the partial axioms
