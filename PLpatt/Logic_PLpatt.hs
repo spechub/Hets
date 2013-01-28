@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP, MultiParamTypeClasses #-}
 -- the following code is automatically generated
 
 module PLpatt.Logic_PLpatt where
