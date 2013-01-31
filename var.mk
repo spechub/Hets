@@ -55,6 +55,9 @@ HASKELINEVERSION = $(shell $(HCPKG) latest haskeline)
 ifneq ($(findstring 0.6, $(HASKELINEVERSION)),)
 HASKELINE_PACKAGE = -DHASKELINE
 endif
+ifneq ($(findstring 0.7, $(HASKELINEVERSION)),)
+HASKELINE_PACKAGE = -DHASKELINE
+endif
 
 HEXPATVERSION = $(shell $(HCPKG) latest hexpat)
 ifneq ($(findstring 0., $(HEXPATVERSION)),)
