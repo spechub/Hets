@@ -1,80 +1,79 @@
-parse error at 1.1:
-unexpected "1"
-expecting "%", "(", "{", "[" or digit
+parse error at 1.3:
+unexpected end of input
+expecting digit
 
 parse error at 2.3:
-unexpected "."
-expecting casl sign, "%", "when" or end of input
+unexpected end of input
+expecting digit or casl sign
 
-parse error at 3.1:
+parse error at 3.2:
 unexpected keyword "="
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 4.1:
+parse error at 4.2:
 unexpected keyword "="
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 5.5:
+parse error at 5.6:
 unexpected keyword "="
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 6.1:
+parse error at 6.3:
 unexpected keyword "as"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 7.1:
+parse error at 7.2:
 unexpected keyword ":"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 8.1:
+parse error at 8.5:
 unexpected keyword "true"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 9.1:
+parse error at 9.6:
 unexpected keyword "false"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
 parse error at 10.14:
 unexpected end of input
 expecting casl char, "_", "%", "(", "{", "[" or id/literal
 
-parse error at 11.1:
+parse error at 11.4:
 unexpected keyword "var"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 12.8:
-unexpected "?"
-expecting "%"
+parse error at 12.10:
+unexpected '?'
 
-parse error at 13.1:
+parse error at 13.4:
 unexpected keyword "not"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 14.1:
+parse error at 14.4:
 unexpected keyword "def"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 15.1:
+parse error at 15.2:
 unexpected keyword "="
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 16.1:
+parse error at 16.3:
 unexpected keyword "=>"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 17.1:
+parse error at 17.3:
 unexpected keyword "if"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 18.1:
+parse error at 18.4:
 unexpected keyword "<=>"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 19.1:
+parse error at 19.3:
 unexpected keyword "/\\"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 20.1:
+parse error at 20.3:
 unexpected keyword "\\/"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 

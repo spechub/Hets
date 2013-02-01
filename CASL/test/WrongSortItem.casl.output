@@ -1,12 +1,10 @@
-parse error at 1.8:
-unexpected ">"
-expecting "[", "%", "<", ",", "=", ";", casl sign or words
+parse error at 1.9:
+unexpected " "
+expecting casl sign
 
 parse error at 2.40:
-unexpected "o"
-expecting end of input
+unexpected end of input
 
-parse error at 3.8:
+parse error at 3.11:
 unexpected keyword "=e="
-expecting casl char, "_", "[", "%", "<", ",", ";", casl sign or words
 

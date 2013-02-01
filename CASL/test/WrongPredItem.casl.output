@@ -10,11 +10,9 @@ parse error at 3.8:
 unexpected ")"
 expecting "%" or words
 
-parse error at 4.8:
-unexpected "#"
-expecting "{", "[", "__", "%", ",", "(" or ":"
+parse error at 4.12:
+unexpected '#'
 
-parse error at 5.7:
-unexpected "?"
-expecting casl char, "_", "{", "[", "__", "%", ",", "<=>" or "("
+parse error at 5.9:
+unexpected '?'
 

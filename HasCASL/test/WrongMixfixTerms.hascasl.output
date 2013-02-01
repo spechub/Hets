@@ -25,23 +25,23 @@
              (D A) b
 7.1-7.20: *** Error: expected further mixfix token: ["p","x"]
 8.1-8.8: *** Error: expected further mixfix token: ["else"]
-parse error at 9.3:
-unexpected keyword "then" or "t"
-expecting "%", ":", "as", "in", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
+parse error at 9.7:
+unexpected keyword "then"
+expecting id/literal
 
-parse error at 10.3:
-unexpected keyword "else" or "e"
-expecting "%", ":", "as", "in", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
+parse error at 10.7:
+unexpected keyword "else"
+expecting id/literal
 
 parse error at 11.7:
 unexpected end of input
 expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at 12.3:
-unexpected keyword "then" or "t"
-expecting "%", ":", "as", "in", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
+parse error at 12.7:
+unexpected keyword "then"
+expecting id/literal
 
-parse error at 13.3:
-unexpected keyword "else" or "e"
-expecting "%", ":", "as", "in", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
+parse error at 13.7:
+unexpected keyword "else"
+expecting id/literal
 

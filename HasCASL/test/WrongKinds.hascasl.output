@@ -11,7 +11,7 @@ unexpected "+"
 expecting "%", words or "("
 
 parse error at 4.2:
-unexpected "*"
+unexpected '*'
 expecting casl char, "_", "[", "%", "->" or end of input
 
 parse error at 5.7:
@@ -23,7 +23,7 @@ unexpected variance of kind
 expecting "%" or "->"
 
 parse error at 7.7:
-unexpected "*"
+unexpected '*'
 expecting "[", "%", "->" or end of input
 
 parse error at 8.5:
@@ -35,7 +35,7 @@ unexpected "+"
 expecting casl char, "_", "[", "%", "->" or ")"
 
 parse error at 10.10:
-unexpected "+"
+unexpected '+'
 expecting "%", "->" or end of input
 
 parse error at 11.8:
@@ -51,7 +51,7 @@ unexpected variance of kind
 expecting casl char, "_", "[", "%" or "->"
 
 parse error at 14.2:
-unexpected "*"
+unexpected '*'
 expecting casl char, "_", "[", "%", "->" or end of input
 
 parse error at 15.4:
@@ -59,7 +59,7 @@ unexpected variance of kind
 expecting "[", "%" or "->"
 
 parse error at 16.2:
-unexpected "*"
+unexpected '*'
 expecting casl char, "_", "[", "%", "->" or end of input
 
 parse error at 17.3:

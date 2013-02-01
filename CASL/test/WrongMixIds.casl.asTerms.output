@@ -1,72 +1,72 @@
-parse error at 1.1:
-unexpected "'"
-expecting "%", "(", "{", "[", "\\" or "\""
+parse error at 1.2:
+unexpected end of input
+expecting "\\" or "\""
 
 11
 1.0
-parse error at 4.1:
+parse error at 4.2:
 unexpected "'"
-expecting "%", "(", "{", "[", "\\" or "\""
+expecting "\\" or "\""
 
-parse error at 5.1:
+parse error at 5.6:
 unexpected "37"
-expecting "%", "(", "{", "[" or octal digit
+expecting octal digit
 
 '\o477'
-parse error at 7.1:
-unexpected "'"
-expecting "%", "(", "{", "[", digit, "x" or "o"
+parse error at 7.3:
+unexpected "d"
+expecting digit, "x" or "o"
 
 '\256'
-parse error at 9.1:
+parse error at 9.4:
 unexpected "'"
-expecting "%", "(", "{", "[" or hexadecimal digit
+expecting hexadecimal digit
 
-parse error at 10.1:
-unexpected "'"
-expecting "%", "(", "{", "[" or "'"
+parse error at 10.4:
+unexpected end of input
+expecting "'"
 
-parse error at 11.1:
-unexpected "'"
-expecting "%", "(", "{", "[" or "'"
+parse error at 11.4:
+unexpected "a"
+expecting "'"
 
-parse error at 12.1:
-unexpected "'"
-expecting "%", "(", "{", "[" or "'"
+parse error at 12.3:
+unexpected "\\"
+expecting "'"
 
 parse error at 13.1:
 unexpected end of input
 expecting "%", "(", "{", "[" or id/literal
 
 1 b1
-parse error at 15.1:
+parse error at 15.3:
 unexpected keyword "as"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 16.1:
-unexpected "'"
-expecting "%", "(", "{", "[" or "'"
+parse error at 16.3:
+unexpected "c"
+expecting "'"
 
 parse error at 17.1:
 unexpected "_"
 expecting "%", "(", "{", "[" or id/literal
 
-parse error at 18.4-18.5:
-unexpected "_"
-expecting casl char, "%", "(", "{", "[", id/literal, ":", "as", "when" or end of input
+parse error at 18.5:
+unexpected end of input
+expecting casl char
 
 __
-parse error at 20.1-20.2:
+parse error at 20.2:
 unexpected keyword "."
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 21.1:
+parse error at 21.4:
 unexpected keyword "::="
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 22.1:
+parse error at 22.4:
 unexpected keyword "|->"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
 parse error at 23.2:
 unexpected end of input
@@ -88,22 +88,22 @@ parse error at 27.1:
 unexpected "`"
 expecting "%", "(", "{", "[" or id/literal
 
-parse error at 28.1:
-unexpected "%"
-expecting "%", "(", "{", "[" or id/literal
+parse error at 28.2:
+unexpected end of input
+expecting "%"
 wrong comment or annotation starting with a single %
 
-parse error at 29.1-29.2:
+parse error at 29.2:
 unexpected keyword "."
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 30.1-30.2:
+parse error at 30.2:
 unexpected keyword "."
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 31.3:
+parse error at 31.4:
 unexpected keyword "="
-expecting "%", "(", "{", "[", id/literal or "]"
+expecting id/literal
 
 a [__]
 a [__]
@@ -115,49 +115,49 @@ parse error at 35.3:
 unexpected ","
 expecting "%", "(", "{", "[", id/literal or "]"
 
-parse error at 36.4:
+parse error at 36.5:
 unexpected keyword "="
-expecting "%", "(", "{", "[", id/literal or "]"
+expecting id/literal
 
 __ < [bla] __ < __
 aa ==
 parse error at 39.19:
-unexpected "%"
-expecting "%", "when" or end of input
+unexpected end of input
+expecting "%" or "when"
 
 ""
 < [[__]] >
 < [__] >
 | [__] |
-parse error at 44.3:
+parse error at 44.4:
 unexpected keyword "="
-expecting "%", "(", "{", "[", id/literal or "]"
+expecting id/literal
 
-parse error at 45.1:
+parse error at 45.5:
 unexpected keyword "when"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 46.1:
+parse error at 46.5:
 unexpected keyword "else"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 47.1:
+parse error at 47.3:
 unexpected keyword "if"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 48.1:
+parse error at 48.3:
 unexpected keyword "=>"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 49.1:
+parse error at 49.4:
 unexpected keyword "<=>"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 50.1:
+parse error at 50.5:
 unexpected keyword "type"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 
-parse error at 51.1:
+parse error at 51.7:
 unexpected keyword "cotype"
-expecting "%", "(", "{", "[" or id/literal
+expecting id/literal
 

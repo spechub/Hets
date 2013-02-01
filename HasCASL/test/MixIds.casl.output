@@ -124,15 +124,15 @@ a{>}
 <{b}
 a[b[c]]
 :=
-parse error at 127.1:
+parse error at 127.2:
 unexpected keyword "@"
 expecting id
 
-parse error at 128.1:
+parse error at 128.2:
 unexpected keyword "\\"
 expecting id
 
-parse error at 129.1-129.2:
+parse error at 129.3:
 unexpected keyword ".!"
 expecting id
 

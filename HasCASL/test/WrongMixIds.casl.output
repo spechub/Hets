@@ -3,11 +3,11 @@ unexpected end of input
 expecting "\\" or "\""
 
 parse error at 2.2:
-unexpected "1"
+unexpected '1'
 expecting "{", "[", "__" or end of input
 
 parse error at 3.2:
-unexpected "."
+unexpected '.'
 expecting "{", "[", "__" or end of input
 
 parse error at 4.2:
@@ -45,10 +45,10 @@ unexpected end of input
 expecting id
 
 parse error at 14.2:
-unexpected "b"
+unexpected 'b'
 expecting "{", "[", "__" or end of input
 
-parse error at 15.1:
+parse error at 15.3:
 unexpected keyword "as"
 expecting id
 
@@ -60,23 +60,23 @@ parse error at 17.1:
 unexpected "_"
 expecting id
 
-parse error at 18.4-18.5:
-unexpected "_"
-expecting casl char, "{", "[", "__" or end of input
+parse error at 18.5:
+unexpected end of input
+expecting casl char
 
 parse error at 19.3:
 unexpected end of input
 expecting simple-id, "{", "[" or "__"
 
-parse error at 20.1-20.2:
+parse error at 20.2:
 unexpected keyword "."
 expecting id
 
-parse error at 21.1:
+parse error at 21.4:
 unexpected keyword "::="
 expecting id
 
-parse error at 22.1:
+parse error at 22.4:
 unexpected keyword "|->"
 expecting id
 
@@ -104,11 +104,11 @@ parse error at 28.1:
 unexpected "%"
 expecting id
 
-parse error at 29.1-29.2:
+parse error at 29.2:
 unexpected keyword "."
 expecting id
 
-parse error at 30.1-30.2:
+parse error at 30.2:
 unexpected keyword "."
 expecting id
 
@@ -131,15 +131,15 @@ expecting id
 
 .a[=,=]
 parse error at 37.15:
-unexpected "<"
+unexpected '<'
 expecting "__" or end of input
 
 parse error at 38.4:
-unexpected "="
+unexpected '='
 expecting "{", "[", "__" or end of input
 
 parse error at 39.6:
-unexpected "%"
+unexpected '%'
 expecting "__" or end of input
 
 parse error at 40.1:
@@ -147,7 +147,7 @@ unexpected "\""
 expecting id
 
 parse error at 41.8:
-unexpected ">"
+unexpected '>'
 expecting "__" or end of input
 
 parse error at 42.5:
@@ -164,11 +164,11 @@ else
 if
 =>
 <=>
-parse error at 50.1:
+parse error at 50.5:
 unexpected keyword "type"
 expecting id
 
-parse error at 51.1:
+parse error at 51.7:
 unexpected keyword "cotype"
 expecting id
 

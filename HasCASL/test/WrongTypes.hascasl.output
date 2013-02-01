@@ -1,73 +1,73 @@
-parse error at 1.3:
+parse error at 1.5:
 unexpected keyword "->"
-expecting words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 2.1:
+parse error at 2.2:
 unexpected keyword "*"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 3.6:
+parse error at 3.7:
 unexpected keyword "*"
-expecting "%", "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 4.1:
+parse error at 4.2:
 unexpected keyword "*"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 5.1:
+parse error at 5.2:
 unexpected keyword "\215"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 6.1:
+parse error at 6.2:
 unexpected keyword "*"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 7.1:
+parse error at 7.2:
 unexpected keyword "\215"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 8.1:
+parse error at 8.2:
 unexpected keyword "*"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
 parse error at 9.3:
 unexpected end of input
 expecting casl char, "_", "?", words, "__", signs, "[", "{", "(", "%", ":", "*", "->", "," or ")"
 
 parse error at 10.2:
-unexpected ")"
+unexpected ')'
 expecting casl char, "_", "?", words, "__", signs, "[", "{", "(", "%", ":", "*", "->" or end of input
 
-parse error at 11.5:
+parse error at 11.7:
 unexpected keyword "->"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 12.1:
+parse error at 12.2:
 unexpected keyword "*"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 13.1:
+parse error at 13.4:
 unexpected keyword "->?"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
 parse error at 14.6:
 unexpected end of input
 expecting "?", words, "__", signs, "[", "{" or "("
 
-parse error at 15.1:
+parse error at 15.2:
 unexpected keyword "*"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
-parse error at 16.1:
+parse error at 16.2:
 unexpected keyword "\215"
-expecting "?", words, "__", casl sign, "[", "{" or "("
+expecting casl sign
 
 parse error at 17.8:
 unexpected end of input
 expecting "?", words, "__", signs, "[", "{" or "("
 
 parse error at 18.7:
-unexpected ")"
+unexpected ')'
 expecting "?", words, "__", signs, "[", "{", "(", "%", ":", "*", "->" or end of input
 
 parse error at 19.9:

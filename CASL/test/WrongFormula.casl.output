@@ -2,32 +2,32 @@ parse error at 1.12:
 unexpected "-"
 expecting casl char, "_", "[", "%" or ")"
 
-parse error at 2.1:
+parse error at 2.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
 parse error at 3.6:
 unexpected sign following =e=
 
-parse error at 4.1:
+parse error at 4.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
-parse error at 5.1:
+parse error at 5.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
-parse error at 6.1:
+parse error at 6.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
-parse error at 7.1:
+parse error at 7.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
-parse error at 8.1:
+parse error at 8.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
 parse error at 9.5:
 unexpected end of input
@@ -37,47 +37,47 @@ parse error at 10.6:
 unexpected end of input
 expecting "%", "(", "{", "[" or id/literal
 
-parse error at 11.1:
+parse error at 11.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
-parse error at 12.1:
+parse error at 12.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
-parse error at 13.1:
+parse error at 13.2:
 unexpected keyword "="
-expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
+expecting id/literal
 
-parse error at 14.6:
-unexpected keyword "=" or "="
-expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
+parse error at 14.7:
+unexpected keyword "="
+expecting casl sign or id/literal
 
-parse error at 15.6:
-unexpected keyword "=" or "="
-expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
+parse error at 15.7:
+unexpected keyword "="
+expecting casl sign or id/literal
 
-parse error at 16.6:
-unexpected keyword "=" or "="
-expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
+parse error at 16.7:
+unexpected keyword "="
+expecting casl sign or id/literal
 
-parse error at 17.5:
-unexpected keyword "<=>" or "<"
-expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "=>" or end of input
+parse error at 17.8:
+unexpected keyword "<=>"
+expecting casl sign or id/literal
 
-parse error at 18.8:
-unexpected keyword "<=>" or "<"
-expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "if" or end of input
+parse error at 18.11:
+unexpected keyword "<=>"
+expecting casl sign or id/literal
 
-parse error at 19.8:
-unexpected keyword "\\/" or "\\"
-expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "=>", "if", "<=>" or end of input
+parse error at 19.10:
+unexpected keyword "\\/"
+expecting casl sign or id/literal
 
-parse error at 20.8:
-unexpected keyword "=>", ">" or "="
-expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "if" or end of input
+parse error at 20.10:
+unexpected keyword "=>" or '>'
+expecting casl sign, id/literal or "="
 
-parse error at 21.8:
-unexpected keyword "if" or "i"
-expecting "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "=>" or end of input
+parse error at 21.10:
+unexpected keyword "if"
+expecting id/literal
 

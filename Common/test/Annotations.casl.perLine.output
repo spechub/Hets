@@ -21,7 +21,7 @@ parse error at 8.1:
 unexpected end of input
 expecting "%"
 
-parse error at 9.1:
+parse error at 9.2:
 unexpected "["
 expecting "%"
 wrong comment or annotation starting with a single %
@@ -86,7 +86,7 @@ expecting "%"
 
 %% one word annotes
 parse error at 27.9:
-unexpected " "
+unexpected ' '
 expecting casl char, "_" or end of input
 
 %def
