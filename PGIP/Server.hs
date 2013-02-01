@@ -125,7 +125,7 @@ hetsServer opts1 = do
   run 8000 $ \ re -> do
    let (query, splitQuery) = queryToString $ queryString re
        rhost = shows (remoteHost re) "\n"
-       bots = ["crawl", "66.249."]
+       bots = ["180.76.", "77.75.77.", "66.249.", "141.8.147."]
 #ifdef OLDSERVER
        queryToString s = let r = B8.unpack s in
          (r, map ((\ l -> case l of
