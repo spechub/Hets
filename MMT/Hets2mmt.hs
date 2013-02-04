@@ -1,28 +1,17 @@
 {- |
    a.jakubauskas@jacobs-university.de
-	
 	A wrapper/interface for MMT
 -}
 
-
-
 module MMT.Hets2mmt
-	where
+    where
 
---import System.Posix
---import System.Cmd
 import System.Process
 import System.IO
 
+jar = "/hets-mmt-standalone.jar"
+callMMT fileName = rawSystem "java" ["-jar", jar, fileName]
 
-exampleFile = "/home/aivaras/Desktop/Hets/syntax.elf"
-jar = "/home/aivaras/Hets-src/MMT/hets-mmt-standalone.jar"
-dostuff fileName = rawSystem "java" ["-jar", jar, fileName]
-
---t = readProcessWithExitCode "java" ["-jar","MMT/hets-mmt-standalone.jar","/home/aivaras/Desktop/base.elf"] []
-
---r = createProcess (proc "ls" [])
-
-main fileName = do 
-	x <- dostuff fileName
-	return Nothing
+main fileName = do
+    x <- callMMT fileName
+    return Nothing
