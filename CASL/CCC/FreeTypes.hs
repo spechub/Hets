@@ -26,9 +26,11 @@ import Common.Consistency (Conservativity (..))
 import Common.DocUtils (showDoc)
 import Common.Id
 import Common.Result
-import Common.Utils (nubOrd)
+import Common.Utils (nubOrd, number)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
+
+import Control.Monad
 
 import Data.Function
 import Data.List
@@ -171,11 +173,12 @@ getDataStatus (osig, osens) m fsn = dataStatus where
           | otherwise = Mono
 
 getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
-  -> [Named (FORMULA ())] -> [[FORMULA ()]]
+  -> [Named (FORMULA ())] -> [([Diagnosis], [FORMULA ()])]
 getNotComplete osens m fsn =
   let constructors = getOverloadedConstructors osens m fsn in
-  filter (not . completePatterns constructors . map patternsOfAxiom)
-  $ getAxGroup fsn
+  filter (not . null . fst)
+  $ map (\ g -> (diags . completePatterns constructors $ map patternsOfAxiom g
+                , g)) $ getAxGroup fsn
 
 getOpsPredsAndExAxioms :: Morphism () () () -> [Named (FORMULA ())]
   -> [FORMULA ()]
@@ -329,14 +332,17 @@ checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
 checkIncomplete osens m fsn = case getNotComplete osens m fsn of
   [] -> Nothing
   incomplete -> let obligations = getObligations m fsn in Just $ Result
-      (map (\ (hd : _) -> let
+      (map (\ (ds, fs@(hd : _)) -> let
         (lSym, pos) = leadingSymPos hd
         sname = case fmap extractLeadingSymb lSym of
                       Just (Left opS) -> opSymbName opS
                       Just (Right pS) -> predSymbName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
-        in Diag Warning
-            ("the definition of " ++ show sname ++ " is not complete") pos)
+        in Diag Warning (intercalate "\n" $
+             ("the definition of " ++ show sname ++ " is not complete")
+             : "the defining formula group is:"
+             : map (\ (f, n) -> shows n ". " ++ showDoc f "") (number fs)
+             ++ map diagString ds) pos)
        incomplete) $ Just $ Just (Cons, obligations)
 
 checkTerminal :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
@@ -547,10 +553,10 @@ overlapQuery ((a1, s1), (a2, s2)) =
             resA2 = substiF s2 r2
 
 -- | check whether the patterns of a function or predicate are complete
-completePatterns :: [OP_SYMB] -> [[TERM ()]] -> Bool
+completePatterns :: [OP_SYMB] -> [[TERM ()]] -> Result ()
 completePatterns cons pas
-    | all null pas = True
-    | any null pas = False -- argument lists must be of the same length
+    | all null pas = return ()
+    | any null pas = fail "wrongly grouped leading terms"
     | otherwise = let
           s_op_os c = case c of
                         Op_name _ -> []
@@ -578,7 +584,13 @@ completePatterns cons pas
                    (length . arguOfTerm . head) p) h ++ t
             else arguOfTerm h ++ t) p
           (hds, tls) = unzip $ map (\ (hd : tl) -> (hd, tl)) pas
-         in if all isVar hds then completePatterns cons tls else
-                let apps : _ = con_ts hds in
-                elem apps s_cons &&
-                all (completePatterns cons) (pa_group pas)
+         in if all isVar hds then completePatterns cons tls else do
+                let (res, conpats) : _ = con_ts hds
+                case find ((== res) . fst) s_cons of
+                  Nothing -> fail $
+                    "unexpected constructor result type: " ++ show res
+                  Just (_, allcons) -> do
+                    let missCons = Set.difference allcons conpats
+                    unless (Set.null missCons) . justWarn ()
+                      $ "missing pattern(s) for: " ++ showDoc missCons ""
+                mapM_ (completePatterns cons) (pa_group pas)
