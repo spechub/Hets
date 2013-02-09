@@ -40,7 +40,7 @@ The following keycodes are available for checking CASL files from
 within GNU emacs:
 
   C-c C-r runs hets with static analysis
-  C-c C-g runs hets with static analysis and graphical user interface (GUI)
+  C-c C-c runs hets with static analysis and graphical user interface (GUI)
 
   C-c C-n steps through the errors if any
 
