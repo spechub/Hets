@@ -1033,41 +1033,41 @@ sepBySemis = fsep . punctuate semi
 
 data Weight = Weight Int Id Id Id -- top, left, right
 
-parenAppl :: GlobalAnnos -> PrecMap -> Id -> Bool -> [Doc]
-  -> (Doc, Doc) -> [Doc]
-parenAppl ga precs i isPred l (arg, dc) = let
-  pa = prec_annos ga
-  assocs = assoc_annos ga
-  mx = maxWeight precs
-  pm = precMap precs
-  e = Map.findWithDefault mx eqId pm
-  p = Map.findWithDefault (if isInfix i then e else mx) i pm
-  in case getWeight ga precs arg of
-                Nothing -> dc : l
+parenAppl :: GlobalAnnos -> PrecMap -> Doc -> [Bool] -> Doc -> [Bool]
+parenAppl ga precs origDoc l arg = case origDoc of
+  IdApplDoc isPred i _ -> let
+    pa = prec_annos ga
+    assocs = assoc_annos ga
+    mx = maxWeight precs
+    pm = precMap precs
+    e = Map.findWithDefault mx eqId pm
+    p = Map.findWithDefault (if isInfix i then e else mx) i pm
+    in case getWeight ga precs arg of
+                Nothing -> False : l
                 Just (Weight q ta la ra) ->
-                    let pArg = parens dc
-                        d = if isBoth pa i ta then pArg else dc
-                        oArg = if (q < e || p >= e &&
+                    let d = isBoth pa i ta
+                        oArg = (q < e || p >= e &&
                                          (notElem i [eqId, exEq]
                                          || elem ta [eqId, exEq]))
                                   && isDiffAssoc assocs pa i ta
-                               then pArg else d
+                                || d
                     in (if isLeftArg i l then
                      if checkArg ARight ga (i, p) (ta, q) ra
                        then oArg
-                       else if isPred || isSafeLhs i ta then d else pArg
+                       else if isPred || isSafeLhs i ta then d else True
                     else if isRightArg i l then
                        if checkArg ALeft ga (i, p) (ta, q) la
                        then oArg
-                       else if (applId == i || isInfix ta)
-                                && not isPred then pArg else d
-                    else d) : l
+                       else (applId == i || isInfix ta)
+                                && not isPred || d
+                     else d) : l
+  _ -> False : l
 
 -- print literal terms and mixfix applications
 codeOutAppl :: GlobalAnnos -> PrecMap -> Maybe Display_format
             -> Map.Map Id [Token] -> Doc -> [Doc] -> Doc
 codeOutAppl ga precs md m origDoc args = case origDoc of
-  IdApplDoc isPred i@(Id ts cs _) aas ->
+  IdApplDoc _ i@(Id ts cs _) aas ->
     let mk = codeToken . tokStr
         doSplit = fromMaybe (error "doSplit") . splitDoc
         mkList op largs cl = fsep $ codeOutId IdAppl m op : punctuate comma
@@ -1087,8 +1087,8 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
              codeOutId IdAppl m i <> if null args then empty else
                                   parens (sepByCommas args)
          else let
-             parArgs = reverse $ foldl (parenAppl ga precs i isPred) []
-               $ zip aas args
+             pars = reverse $ foldl (parenAppl ga precs origDoc) [] aas
+             parArgs = zipWith (\ b -> if b then parens else id) pars args
              (fts, ncs, cFun) = case Map.lookup i m of
                             Nothing ->
                                 (fst $ splitMixToken ts, cs, IdSymb)
