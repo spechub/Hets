@@ -1063,6 +1063,11 @@ parenAppl ga precs origDoc l arg = case origDoc of
                      else d) : l
   _ -> False : l
 
+parenApplArgs :: GlobalAnnos -> PrecMap -> Doc -> [Bool]
+parenApplArgs ga precs origDoc = case origDoc of
+  IdApplDoc _ _ aas -> reverse $ foldl (parenAppl ga precs origDoc) [] aas
+  _ -> []
+
 -- print literal terms and mixfix applications
 codeOutAppl :: GlobalAnnos -> PrecMap -> Maybe Display_format
             -> Map.Map Id [Token] -> Doc -> [Doc] -> Doc
@@ -1087,7 +1092,7 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
              codeOutId IdAppl m i <> if null args then empty else
                                   parens (sepByCommas args)
          else let
-             pars = reverse $ foldl (parenAppl ga precs origDoc) [] aas
+             pars = parenApplArgs ga precs origDoc
              parArgs = zipWith (\ b -> if b then parens else id) pars args
              (fts, ncs, cFun) = case Map.lookup i m of
                             Nothing ->
@@ -1128,13 +1133,15 @@ getWeight ga precs d = let
                else maxWeight precs)
               i m in
         if isGenLiteral splitDoc ga i aas then Nothing else
-        let lw = case getWeight ga precs hd of
+        let pars@(par : _) = parenApplArgs ga precs d
+            lw = case getWeight ga precs hd of
                    Just (Weight _ _ l _) -> nextWeight ALeft ga i l
                    Nothing -> i
             rw = case getWeight ga precs $ last aas of
                    Just (Weight _ _ _ r) -> nextWeight ARight ga i r
                    Nothing -> i
-            in Just $ Weight p i lw rw
+            in Just $ Weight p i (if par then i else lw)
+               $ if last pars then i else rw
     _ -> Nothing
 
 {- checkArg allows any nested infixes that are not listed in the
