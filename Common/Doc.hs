@@ -1033,18 +1033,42 @@ sepBySemis = fsep . punctuate semi
 
 data Weight = Weight Int Id Id Id -- top, left, right
 
+parenAppl :: GlobalAnnos -> PrecMap -> Id -> Bool -> [Doc]
+  -> (Doc, Doc) -> [Doc]
+parenAppl ga precs i isPred l (arg, dc) = let
+  pa = prec_annos ga
+  assocs = assoc_annos ga
+  mx = maxWeight precs
+  pm = precMap precs
+  e = Map.findWithDefault mx eqId pm
+  p = Map.findWithDefault (if isInfix i then e else mx) i pm
+  in case getWeight ga precs arg of
+                Nothing -> dc : l
+                Just (Weight q ta la ra) ->
+                    let pArg = parens dc
+                        d = if isBoth pa i ta then pArg else dc
+                        oArg = if (q < e || p >= e &&
+                                         (notElem i [eqId, exEq]
+                                         || elem ta [eqId, exEq]))
+                                  && isDiffAssoc assocs pa i ta
+                               then pArg else d
+                    in (if isLeftArg i l then
+                     if checkArg ARight ga (i, p) (ta, q) ra
+                       then oArg
+                       else if isPred || isSafeLhs i ta then d else pArg
+                    else if isRightArg i l then
+                       if checkArg ALeft ga (i, p) (ta, q) la
+                       then oArg
+                       else if (applId == i || isInfix ta)
+                                && not isPred then pArg else d
+                    else d) : l
+
 -- print literal terms and mixfix applications
 codeOutAppl :: GlobalAnnos -> PrecMap -> Maybe Display_format
             -> Map.Map Id [Token] -> Doc -> [Doc] -> Doc
 codeOutAppl ga precs md m origDoc args = case origDoc of
   IdApplDoc isPred i@(Id ts cs _) aas ->
     let mk = codeToken . tokStr
-        pa = prec_annos ga
-        assocs = assoc_annos ga
-        mx = maxWeight precs
-        pm = precMap precs
-        e = Map.findWithDefault mx eqId pm
-        p = Map.findWithDefault (if isInfix i then e else mx) i pm
         doSplit = fromMaybe (error "doSplit") . splitDoc
         mkList op largs cl = fsep $ codeOutId IdAppl m op : punctuate comma
                              (map (codeOut ga precs md m) largs)
@@ -1063,27 +1087,8 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
              codeOutId IdAppl m i <> if null args then empty else
                                   parens (sepByCommas args)
          else let
-             parArgs = reverse $ foldl ( \ l (arg, dc) ->
-                case getWeight ga precs arg of
-                Nothing -> dc : l
-                Just (Weight q ta la ra) ->
-                    let pArg = parens dc
-                        d = if isBoth pa i ta then pArg else dc
-                        oArg = if (q < e || p >= e &&
-                                         (notElem i [eqId, exEq]
-                                         || elem ta [eqId, exEq]))
-                                  && isDiffAssoc assocs pa i ta
-                               then pArg else d
-                    in (if isLeftArg i l then
-                       if checkArg ARight ga (i, p) (ta, q) ra
-                       then oArg
-                       else if isPred || isSafeLhs i ta then d else pArg
-                    else if isRightArg i l then
-                       if checkArg ALeft ga (i, p) (ta, q) la
-                       then oArg
-                       else if (applId == i || isInfix ta)
-                                && not isPred then pArg else d
-                    else d) : l) [] $ zip aas args
+             parArgs = reverse $ foldl (parenAppl ga precs i isPred) []
+               $ zip aas args
              (fts, ncs, cFun) = case Map.lookup i m of
                             Nothing ->
                                 (fst $ splitMixToken ts, cs, IdSymb)
