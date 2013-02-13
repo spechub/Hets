@@ -50,7 +50,7 @@ signColimit :: (Category (Sign f e) (Morphism f e m)) =>
                )
                ->
                (Sign f e, Map.Map Int (Morphism f e m))
-signColimit graph extColimit =
+signColimit graph extColimit =  
  case labNodes graph of
   [] -> error "empty graph"
   (n,sig):[] -> (sig, Map.fromAscList[(n, ide sig)])
@@ -66,7 +66,7 @@ signColimit graph extColimit =
            {sort_map = Map.findWithDefault (error "sort_map") node funSort}))
     $ labNodes graph
    relS = computeSubsorts graph funSort
-   sigmaRel = sigmaSort{sortRel = relS}
+   sigmaRel = sigmaSort{sortRel = Rel.union relS $ sortRel sigmaSort }
    phiRel = Map.map (\ phi -> phi{mtarget = sigmaRel}) phiSort
    (sigmaOp, phiOp) = computeColimitOp graph sigmaRel phiRel
    (sigmaPred, phiPred) = computeColimitPred graph sigmaOp phiOp
@@ -109,13 +109,15 @@ subsorts listNode graph rels colimF rel =
     Nothing -> subsorts xs graph rels colimF rel
     Just set -> let
                   f = Map.findWithDefault (error "subsorts") x colimF
-                in subsorts xs graph rels colimF (Rel.transClosure $
-             Rel.union rel (Rel.fromList [ (
+                  genRel = Rel.fromList [ (
                              Map.findWithDefault (error "f(m)") m f,
                              Map.findWithDefault (error "f(n)") n f
                                            )
-              | m <- Set.elems set, n <- Set.elems set,
-                Rel.member m n (Map.findWithDefault (error "rels(x)") x rels)]))
+                            | m <- Set.elems set, n <- Set.elems set,
+                              (Rel.member m n (Map.findWithDefault (error "rels(x)") x rels))
+                              ]
+                in subsorts xs graph rels colimF (Rel.transClosure $
+                   Rel.union rel genRel)
 
 -- CASL signatures colimit on operation symbols
 
