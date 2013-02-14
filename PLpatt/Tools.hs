@@ -6,7 +6,7 @@ import Generic.Tools as Generic
 
 bool_from_pt :: Generic.Tree -> Form
 bool_from_pt x = case x
-  of parse.app(n,args) -> (if (parse.qualIDSplitSecond(n) == "bool") then (if (length(args) == 0) then prop_bool(parse.qualIDSplitFirst(n)) else error ("error: " + "bad number of arguments, expected 0")) else (if (n == "not") then (if (length(args) == 1) then not(bool_from_pt((args !! 0))) else error ("error: " + "bad number of arguments, expected 1")) else (if (n == "and") then (if (length(args) == 2) then and(bool_from_pt((args !! 0)),bool_from_pt((args !! 1))) else error ("error: " + "bad number of arguments, expected 2")) else (if (n == "or") then (if (length(args) == 2) then or(bool_from_pt((args !! 0)),bool_from_pt((args !! 1))) else error ("error: " + "bad number of arguments, expected 2")) else error ("error: " + ("illegal identifier: " + n))))))
+  of parse.app(n,args) -> (if (parse.qualIDSplitSecond(n) == "bool") then (if (length(args) == 0) then prop_bool(parse.qualIDSplitFirst(n)) else error ("error: " + "bad number of arguments, expected 0")) else error ("error: " + ("illegal identifier: " + n)))
    parse.bind(n,v,s) -> error ("error: " + ("illegal identifier: " + n))
    parse.tbind(n,a,v,s) -> error ("error: " + ("illegal identifier: " + n))
    parse.var(n) -> error ("error: " + "variables not allowed here")

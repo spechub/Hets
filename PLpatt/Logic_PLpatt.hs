@@ -9,7 +9,7 @@ import qualified PLpatt.Sign as Sign
 import qualified PLpatt.Morphism as Morphism
 import qualified PLpatt.AS_BASIC_PLpatt as AS
 -- import qualified PLpatt.Tools as Tools
-import qualified Generic.Tools as Generic
+import qualified MMT.Tools as Generic
 -- import qualified PLpatt.Sublogic as SL
 import Common.Id
 import Common.DocUtils
@@ -52,8 +52,6 @@ instance (Pretty Sign.Sigs) where
 instance (ShATermConvertible Sign.Sigs) where
 
 instance (ShATermConvertible Generic.Tree) where
-
-instance (Show Generic.Tree) where
 
 instance (Ord Generic.Tree) where
 
