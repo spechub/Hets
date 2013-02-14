@@ -292,7 +292,7 @@ updateProver trvProvers listProvers s = do
   let prvs = map (\ p -> case find ((pName p ==) . pName) old of
           Nothing -> p
           Just p' -> let oldC = comorphism p' !! selected p' in
-            p { selected = fromMaybe 0 $ findIndex (== oldC) $ comorphism p }
+            p { selected = fromMaybe 0 $ elemIndex oldC $ comorphism p }
         ) new
   updateListData listProvers prvs
   case selectedProver s of
