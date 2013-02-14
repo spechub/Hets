@@ -164,7 +164,7 @@ showProverGUI prGuiAcs thName warn th knownProvers comorphList = do
           activate noProver
             (isJust (selectedProver s) && not (null $ selectedGoals s))
           return s
-    let hasGoals = not . null $ selectedGoals initState
+        hasGoals = not . null $ selectedGoals initState
     activate noGoal hasGoals
     activate noAxiom (not . null $ includedAxioms initState)
     activate noTheory hasGoals
@@ -198,6 +198,7 @@ showProverGUI prGuiAcs thName warn th knownProvers comorphList = do
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
 
     onClicked btnProve $ do
+      modifyMVar_ state update
       s' <- takeMVar state
       activate prove False
       forkIOWithPostProcessing (proveF prGuiAcs s')
