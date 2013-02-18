@@ -21,7 +21,7 @@ do
 done
 
 (cd $INSTALLDIR/src-distribution; \
- cp -p daily/Hets-src*.t* versions/Hets-src-$VERSION.tgz; \
+ cp daily/Hets-src*.t* versions/Hets-src-$VERSION.tgz; \
  cd versions; rm -rf Hets; \
  $TAR zxf Hets-src-$VERSION.tgz)
 
