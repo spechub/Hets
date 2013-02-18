@@ -1,14 +1,18 @@
-module Generic.Tools where
+module MMT.Tools where
 
-data Id   = String
+--data Id   = String
 
-data Tree = Variable Id | Application Id [Tree] | Bind Id Id Tree | Tbind Id Id Tree Tree
+data Tree = Variable String | 
+    Application String [Tree] | 
+    Bind String String Tree | 
+    Tbind String String Tree Tree deriving (Show)
 
-data Decl = Decl Id Id [Tree]
+data Decl = Decl String String [Tree] deriving (Show)
 
-data Sign = Sign [Decl]
+data Sign = Sign [Decl] deriving (Show)
 
-data Theo = Theo Sign [Tree]
+-- shouldn't it be Theo Sign [Decl] ?
+data Theo = Theo Sign [Tree] deriving (Show)
 
 {-
 parseSpec String 
