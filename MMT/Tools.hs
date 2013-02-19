@@ -1,28 +1,38 @@
 module MMT.Tools where
 
---data Id   = String
+-- identifier
+type Id = String
 
-data Tree = Variable String | 
-    Application String [Tree] | 
-    Bind String String Tree | 
-    Tbind String String Tree Tree deriving (Show)
+{- tree:
+variables
 
-data Decl = Decl String String [Tree] deriving (Show)
+func. application
+   Maybe( patternName, instanceName)
+   name
+   arguments
+OR
+symbol (0 args)
 
+binding
+
+typed binding
+-}
+data Tree = Variable Id |
+    Application (Maybe (Id, Id)) Id [Tree] |
+    Bind Id Id Tree |
+    Tbind Id Id Tree Tree deriving (Show)
+
+-- declaration - represents instance of pattern
+data Decl = Decl Id Id [Tree] deriving (Show)
+
+-- signature
 data Sign = Sign [Decl] deriving (Show)
 
--- shouldn't it be Theo Sign [Decl] ?
+-- theory
 data Theo = Theo Sign [Tree] deriving (Show)
 
-{-
-parseSpec String 
-          ParseTree
-parseSpec text = 
-  1. call mmt on the text
-  2. transform mmt output into ParseTree
+qualIDSplitFirst :: String -> String
+qualIDSplitFirst str = ""
 
-  -}
-{-
-parseSpec :: String
-parseSpec specFN = ()
--}
+qualIDSplitSecond :: String -> String
+qualIDSplitSecond str = ""
