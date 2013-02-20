@@ -203,15 +203,16 @@ isDomain f = case quanti f of
   _ -> False
 
 isDomainDef :: FORMULA f -> Bool
-isDomainDef f = case quanti f of
-  Relation (Definedness {}) Equivalence _ _ -> True
-  _ -> False
+isDomainDef = isJust . domainDef
+
+domainDef :: FORMULA f -> Maybe (TERM f, FORMULA f)
+domainDef f = case quanti f of
+  Relation (Definedness t _) Equivalence f' _ -> Just (t, f')
+  _ -> Nothing
 
 -- | extract the domain-list of partial functions
 domainList :: [FORMULA f] -> [(TERM f, FORMULA f)]
-domainList = concatMap $ \ f -> case quanti f of
-  Relation (Definedness t _) Equivalence f' _ -> [(t, f')]
-  _ -> []
+domainList = mapMaybe domainDef
 
 -- | check whether it contains a definedness formula in correct form
 correctDef :: FORMULA f -> Bool
