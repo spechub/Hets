@@ -92,7 +92,7 @@ predSymName = idStr . predSymbName
 -- | create a predicate application
 predAppl :: PRED_SYMB -> [TERM f] -> String
 predAppl p ts =
-  predSymName p ++ if null ts then "" else apply "" $ termsPA ts
+  predSymName p ++ termsPA ts
 
 -- | apply function string to argument string with brackets
 apply :: String -> String -> String
