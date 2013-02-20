@@ -21,7 +21,8 @@ import CASL.CCC.TermFormula
   , substiF
   , sameOpsApp)
 
-import Common.Id (Token (tokStr), Id (Id))
+import Common.Id
+import Common.ProofUtils
 import Common.Utils
 
 import System.Process
@@ -29,6 +30,8 @@ import System.Directory
 
 import Data.List (intercalate)
 import Data.Function (on)
+
+import qualified Data.Map as Map
 
 {-
    Automatic termination proof
@@ -46,18 +49,24 @@ terminationProof :: Ord f => [FORMULA f] -> [(TERM f, FORMULA f)]
   -> IO (Maybe Bool)
 terminationProof fs dms = if null fs then return $ Just True else do
   let
-    allVar = nubOrd . concat
-    varsStr vars str = case vars of
-      [] -> str
-      h : t -> varsStr t $
-        (if null str then "" else str ++ " ") ++ tokStr h
     axhead =
       [ "(RULES"
       , "eq(t,t) -> true"
       , "eq(_,_) -> false"
+      , "and(true,t) -> t"
+      , "and(false,t) -> false"
+      , "or(true,t) -> true"
+      , "or(false,t) -> t"
+      , "implies(false,t) -> true"
+      , "implies(true,t) -> t"
+      , "equiv(t,t) -> true"
+      , "equiv(_,_) -> false"
+      , "not(true) -> false"
+      , "not(false) -> true"
       , "when_else(t1,true,t2) -> t1"
       , "when_else(t1,false,t2) -> t2" ]
-    c_vars = "(VAR t t1 t2 " ++ varsStr (allVar $ map varOfAxiom fs) "" ++ ")"
+    c_vars = "(VAR t t1 t2 "
+      ++ unwords (map transToken . nubOrd $ concatMap varOfAxiom fs) ++ ")"
     c_axms = axhead ++ map (`axiom2TRS` dms) fs ++ [")"]
   tmpFile <- getTempFile (unlines $ c_vars : c_axms) "Input.trs"
   aprovePath <- getEnvDef "HETS_APROVE"
@@ -77,9 +86,32 @@ varOfAxiom f = case f of
         concatMap (\ (Var_decl vs _ _) -> vs) vd
     _ -> []
 
+keywords :: [String]
+keywords = ["eq", "or", "implies", "equiv", "when_else"]
+  -- others are CASL keywords
+  ++ ["CONTEXTSENSITIVE", "EQUATIONS", "INNERMOST", "RULES", "STRATEGY"
+     , "THEORY", "VAR"]
+
+transStringAux :: String -> String
+transStringAux = concatMap (\ c -> Map.findWithDefault [c] c charMap)
+
+transString :: String -> String
+transString s = let t = transStringAux s in
+  if elem t keywords then '_' : t else t
+
+transToken :: Token -> String
+transToken = transString . tokStr
+
+transId :: Id -> ShowS
+transId (Id ts cs _) =
+    showSepList id (showString . transToken) ts .
+    if null cs then id else
+    showString "{" . showSepList (showString "-") transId cs
+    . showString "}"
+
 -- | translate id to string
 idStr :: Id -> String
-idStr (Id ts _ _) = concatMap tokStr ts
+idStr i = transId i ""
 
 -- | get the name of a operation symbol
 opSymName :: OP_SYMB -> String
@@ -128,16 +160,23 @@ For example : "A -> B | C -> D, E -> F, ..." -}
 axiom2TRS :: Eq f => FORMULA f -> [(TERM f, FORMULA f)] -> String
 axiom2TRS f doms = case quanti f of
   Relation f1 c f2 _ | c /= Equivalence -> case f2 of
-    Relation f3 Equivalence f4 _ -> axiom2TRS f3 doms ++ " | "
-      ++ axiom2TRS f1 doms ++ ", " ++ axiom2TRS f4 doms
-    _ -> let t2 = axiom2TRS f2 doms ++ " | " in case f1 of
+    Relation f3 Equivalence f4 _ -> axiom2Rule f3 ++ " | "
+      ++ axiom2Cond f1 ++ ", " ++ axiom2Cond f4
+    _ -> let t2 = axiom2Rule f2 ++ " | " in case f1 of
       Definedness t _ -> case filter (sameOpsApp t . fst) doms of
-        [] -> t2 ++ apply "def" (term2TRS t) ++ " -> open"
+        [] -> t2 ++ axiom2Cond f1
         (te, phi) : _ -> let st = on zip arguOfTerm t te in
-                    t2 ++ axiom2TRS (substiF st phi) doms
-      _ -> t2 ++ axiom2TRS f1 doms
+                    t2 ++ axiom2Cond (substiF st phi)
+      _ -> t2 ++ axiom2Cond f1
   Relation f1 Equivalence f2 _ ->
-    axiom2TRS f1 doms ++ " | " ++ axiom2TRS f2 doms
+    axiom2Rule f1 ++ " | " ++ axiom2Cond f2
+  _ -> axiom2Rule f
+
+axiom2Cond :: FORMULA f -> String
+axiom2Cond = axiom2Rule
+
+axiom2Rule :: FORMULA f -> String
+axiom2Rule f = case quanti f of
   Negation f' _ -> case f' of
     Quantification {} ->
       error "CASL.CCC.TerminationProof.<axiom2TRS_Negation>"
@@ -161,7 +200,7 @@ isApp t = case unsortedTerm t of
   Application {} -> True
   _ -> False
 
--- | translate a casl axiom (without conditions) to a subrule of TRS,
+-- | translate a casl axiom (without conditions) to a term of TRS,
 axiomSub :: FORMULA f -> String
 axiomSub f = case quanti f of
   Junction j fs@(_ : _) _ ->
