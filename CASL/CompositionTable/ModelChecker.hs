@@ -207,8 +207,8 @@ calculateFormula qf t varass = case qf of
     Impl isImpl f1 f2 ->
                  let test1 = calculateFormula f1 t varass
                      test2 = calculateFormula f2 t varass
-                 in not isImpl && test1 == test2
-                    || not (test1 && not test2)
+                 in if isImpl then not (test1 && not test2) else
+                        test1 == test2
     Neg f -> not $ calculateFormula f t varass
     Const b -> b
     Eq term1 term2 ->
