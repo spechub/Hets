@@ -34,6 +34,8 @@ import qualified Data.Set as Set
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
+
+import Data.Function
 import Data.Maybe
 import Data.List
 
@@ -91,13 +93,13 @@ modelCheckTest1 c sen t symbs = let
   in case nf of
     Quant quant decl f -> calculateQuantification (Just c) (`ifind` rm)
         quant f t $ generateVariableAssignments decl t
-    _ -> if calculateFormula nf t IntMap.empty then
+    _ -> if calculateFormula t IntMap.empty nf then
        (0, []) else (1, ["formula as given above."])
 
 calculateQuantification :: Maybe Int -> (Int -> String) -> QUANTIFIER -> Form
   -> Table2 -> [Assignment] -> (Int, [String])
 calculateQuantification mc si quant f t@(Table2 _ _ l _ _ _) vs =
-      let calc = calculateFormula f t
+      let calc ass = calculateFormula t ass f
           nD = showAssignments si l
       in case quant of
            Universal -> case mc of
@@ -136,27 +138,25 @@ showSingleAssignment :: (Int -> String) -> IntMap.IntMap Baserel -> (Int, Int)
 showSingleAssignment si m (v, i) = si v ++ "->" ++ case ifind i m of
   Baserel b -> b
 
-calculateTerm :: Term -> Assignment -> Table2 -> BSet
-calculateTerm trm ass t = case trm of
+calculateTerm :: Assignment -> Table2 -> Term -> BSet
+calculateTerm ass t trm = case trm of
     Var var -> getBaseRelForVariable var ass
     Appl opSymb terms -> applyOperation opSymb terms t ass
-    Cond t1 fo t2 ->
-              let res = calculateFormula fo t ass
-              in if res then calculateTerm t1 ass t
-                 else calculateTerm t2 ass t
+    Cond t1 fo t2 -> on (\ a b -> if calculateFormula t ass fo then a else b)
+      (calculateTerm ass t) t1 t2
 
 applyOperation :: Op -> [Term] -> Table2 -> Assignment -> BSet
 applyOperation ra ts table@(Table2 _ id_ _ baserels cmpentries convtbl) ass =
   let err = error "CompositionTable.applyOperator"
   in case ts of
-    ft : rt -> let r1 = calculateTerm ft ass table
+    ft : rt -> let r1 = calculateTerm ass table ft
       in case rt of
          [sd] -> case ra of
                Comp -> calculateComposition cmpentries r1
                Inter -> IntSet.intersection r1
                Union -> IntSet.union r1
                _ -> err
-             $ calculateTerm sd ass table
+             $ calculateTerm ass table sd
          [] -> let (conv, inv, shortc, hom) = convtbl in case ra of
              Compl -> IntSet.difference baserels
              Conv -> calculateConverse conv
@@ -197,23 +197,18 @@ calculateConverse t =
 getBaseRelForVariable :: Int -> Assignment -> BSet
 getBaseRelForVariable var = IntSet.singleton . ifind var
 
-calculateFormula :: Form -> Table2 -> Assignment -> Bool
-calculateFormula qf t varass = case qf of
+calculateFormula :: Table2 -> Assignment -> Form -> Bool
+calculateFormula t varass qf = case qf of
     Quant q vardecls f ->
        null . snd . calculateQuantification Nothing show q f t
          $ appendVariableAssignments varass vardecls t
     Junct j formulas -> (if j then and else or)
-        [calculateFormula x t varass | x <- formulas]
-    Impl isImpl f1 f2 ->
-                 let test1 = calculateFormula f1 t varass
-                     test2 = calculateFormula f2 t varass
-                 in if isImpl then not (test1 && not test2) else
-                        test1 == test2
-    Neg f -> not $ calculateFormula f t varass
+        $ map (calculateFormula t varass) formulas
+    Impl isImpl f1 f2 -> on (if isImpl then (<=) else (==))
+                 (calculateFormula t varass) f1 f2
+    Neg f -> not $ calculateFormula t varass f
     Const b -> b
-    Eq term1 term2 ->
-      calculateTerm term1 varass t
-      == calculateTerm term2 varass t
+    Eq term1 term2 -> on (==) (calculateTerm varass t) term1 term2
 
 generateVariableAssignments :: [Int] -> Table2 -> [Assignment]
 generateVariableAssignments vs =
