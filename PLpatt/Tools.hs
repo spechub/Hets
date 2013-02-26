@@ -2,19 +2,19 @@ module PLpatt.Tools where
 
 import PLpatt.Sign
 import PLpatt.AS_BASIC_PLpatt as AS_BASIC
-import Generic.Tools as Generic
+import MMT.Tools as Generic
 
 bool_from_pt :: Generic.Tree -> Form
 bool_from_pt x = case x
-  of parse.app(n,args) -> (if (parse.qualIDSplitSecond(n) == "bool") then (if (length(args) == 0) then prop_bool(parse.qualIDSplitFirst(n)) else error ("error: " + "bad number of arguments, expected 0")) else error ("error: " + ("illegal identifier: " + n)))
-   parse.bind(n,v,s) -> error ("error: " + ("illegal identifier: " + n))
-   parse.tbind(n,a,v,s) -> error ("error: " + ("illegal identifier: " + n))
-   parse.var(n) -> error ("error: " + "variables not allowed here")
+  of Generic.Application(n,args) -> (if (Generic.qualIDSplitSecond(n) == "bool") then (if (length(args) == 0) then prop_bool(Generic.qualIDSplitFirst(n)) else Nothing) else (if (n == "false") then (if (length(args) == 0) then false() else Nothing) else (if (n == "true") then (if (length(args) == 0) then true() else Nothing) else (if (n == "not") then (if (length(args) == 1) then not(bool_from_pt((args !! 0))) else Nothing) else (if (n == "and") then (if (length(args) == 2) then and(bool_from_pt((args !! 0)),bool_from_pt((args !! 1))) else Nothing) else (if (n == "or") then (if (length(args) == 2) then or(bool_from_pt((args !! 0)),bool_from_pt((args !! 1))) else Nothing) else Nothing))))))
+   Generic.Bind(n,v,s) -> Nothing
+   Generic.Tbind(n,a,v,s) -> Nothing
+   Generic.Variable(n) -> Nothing
 
 
 decl_from_pt :: Generic.Decl -> Decl
 decl_from_pt d = case d
-  of Decl(i,p,args) -> (if (p == "axiom") then (if (length(args) == 1) then axiom_decl(i,[bool_from_pt((args !! 0))]) else error ("error: " + "bad number of arguments, expected 1")) else (if (p == "prop") then (if (length(args) == 0) then prop_decl(i,[]) else error ("error: " + "bad number of arguments, expected 0")) else error ("error: " + "illegal pattern")))
+  of Decl(i,p,args) -> (if (p == "axiom") then (if (length(args) == 1) then axiom_decl(i,[bool_from_pt((args !! 0))]) else Nothing) else (if (p == "prop") then (if (length(args) == 0) then prop_decl(i,[]) else Nothing) else Nothing))
 
 
 sign_from_pt :: Generic.Sign -> Sigs
