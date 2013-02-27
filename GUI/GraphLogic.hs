@@ -72,7 +72,7 @@ import Graphs.GraphConfigure
 import Reactor.InfoBus (encapsulateWaitTermAct)
 
 import Common.DocUtils (showDoc, showGlobalDoc)
-import Common.AS_Annotation (isAxiom)
+import Common.AS_Annotation
 import Common.ExtSign
 import Common.LibName
 import Common.Result
@@ -494,18 +494,18 @@ showProofStatusOfNode _ descr dgraph =
   in createTextDisplay title stat
 
 showStatusAux :: DGNodeLab -> String
-showStatusAux dgnode = case dgn_theory dgnode of
+showStatusAux dgnode = case simplifyTh $ dgn_theory dgnode of
   G_theory _ _ _ _ sens _ ->
      let goals = OMap.filter (not . isAxiom) sens
          (proven, open) = OMap.partition isProvenSenStatus goals
          consGoal = "\nconservativity of this node"
       in "Proven proof goals:\n"
-         ++ showDoc proven ""
+         ++ showDoc (OMap.map sentence proven) ""
          ++ if not $ hasOpenNodeConsStatus True dgnode
              then consGoal
              else ""
          ++ "\nOpen proof goals:\n"
-         ++ showDoc open ""
+         ++ showDoc (OMap.map sentence open) ""
          ++ if hasOpenNodeConsStatus False dgnode
              then consGoal
              else ""
