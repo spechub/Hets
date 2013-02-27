@@ -88,12 +88,6 @@ recoverSortsAndConstructors osens fsn = let
     . constraintOfAxiom . getFs $ osens ++ fsn
   in (Set.unions $ map Set.fromList srts, nubOrd $ concat cons)
 
-getOverloadedConstructors :: [Named (FORMULA ())] -> Morphism () () ()
-    -> [Named (FORMULA ())] -> [OP_SYMB]
-getOverloadedConstructors osens m fsn = let tsig = mtarget m in
-    constructorOverload tsig (opMap tsig)
-          . snd $ recoverSortsAndConstructors osens fsn
-
 -- check that patterns do not overlap, if not, return proof obligation.
 getOverlapQuery :: [Named (FORMULA ())] -> [FORMULA ()]
 getOverlapQuery fsn = overlap_query where
@@ -171,14 +165,6 @@ getDataStatus (osig, osens) m fsn = dataStatus where
           | not $ Set.null $ Set.difference (Set.difference nSorts gens) subs
               = Cons
           | otherwise = Mono
-
-getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
-  -> [Named (FORMULA ())] -> [([Diagnosis], [FORMULA ()])]
-getNotComplete osens m fsn =
-  let constructors = getOverloadedConstructors osens m fsn in
-  filter (not . null . fst)
-  $ map (\ g -> (diags . completePatterns constructors $ map patternsOfAxiom g
-                , g)) $ getAxGroup fsn
 
 getOpsPredsAndExAxioms :: Morphism () () () -> [Named (FORMULA ())]
   -> [FORMULA ()]
@@ -553,45 +539,64 @@ overlapQuery ((a1, s1), (a2, s2)) =
             resA1 = substiF s1 r1
             resA2 = substiF s2 r2
 
+
+getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
+  -> [Named (FORMULA ())] -> [([Diagnosis], [FORMULA ()])]
+getNotComplete osens m fsn =
+  let constructors = snd $ recoverSortsAndConstructors osens fsn
+      consMap = foldr (\ (Qual_op_name o ot _) ->
+        MapSet.insert (res_OP_TYPE ot) (o, ot)) MapSet.empty constructors
+      consMap2 = foldr (\ (Qual_op_name o ot _) ->
+        MapSet.insert o ot) MapSet.empty constructors
+  in
+  filter (not . null . fst)
+  $ map (\ g -> (diags . completePatterns (mtarget m) consMap consMap2
+                $ map patternsOfAxiom g, g)) $ getAxGroup fsn
+
 -- | check whether the patterns of a function or predicate are complete
-completePatterns :: [OP_SYMB] -> [[TERM ()]] -> Result ()
-completePatterns cons pas
+completePatterns :: TermExtension f => Sign f e
+  -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
+  -> MapSet.MapSet OP_NAME OP_TYPE -> [[TERM f]] -> Result ()
+completePatterns tsig consMap consMap2 pas
     | all null pas = return ()
     | any null pas = fail "wrongly grouped leading terms"
     | otherwise = let
-          s_op_os c = case c of
-                        Op_name _ -> []
-                        Qual_op_name o ot _ -> [(res_OP_TYPE ot, o)]
-          s_sum = map (\ l@((s, _) : _) -> (s, Set.fromList $ map snd l))
-            . groupBy (on (==) fst) . sortBy (on compare fst)
-          s_cons = s_sum $ concatMap s_op_os cons
-          s_op_t t = case unsortedTerm t of
-                       Application os _ _ -> s_op_os os
-                       _ -> []
-          con_ts = s_sum . concatMap s_op_t
-          opN t = case unsortedTerm t of
-                    Application os _ _ -> opSymbName os
-                    _ -> genName "unknown"
-          pa_group p = case p of
-            (hdt : _) : _ -> let
-              (_ , consForRes) : _ = filter ((== sortOfTerm hdt) . fst) s_cons
-               in map (p_g
-                     . \ o -> filter (\ (h : _) -> isVar h || opN h == o) p)
-                 $ Set.toList consForRes
-            _ -> error "pa_group"
-          p_g p = map (\ (h : t) ->
-            if isVar h
-            then replicate (maximum $ map
+          pa_group allCons ps = let
+              p_g p = map (\ (h : t) ->
+                if isVar h
+                then replicate (maximum $ map
                    (length . arguOfTerm . head) p) h ++ t
-            else arguOfTerm h ++ t) p
+                else arguOfTerm h ++ t) p
+              in map (p_g
+                     . \ (c, ct) -> filter (\ (h : _) -> case unsortedTerm h of
+                           Application (Qual_op_name o ot _) _ _ ->
+                             c == o && on (leqF tsig) toOpType ct ot
+                           _ -> True) ps)
+                 $ Set.toList allCons
           (hds, tls) = unzip $ map (\ (hd : tl) -> (hd, tl)) pas
-         in if all isVar hds then completePatterns cons tls else do
-                let (res, conpats) : _ = con_ts hds
-                case find ((== res) . fst) s_cons of
-                  Nothing -> fail $
-                    "unexpected constructor result type: " ++ show res
-                  Just (_, allcons) -> do
-                    let missCons = Set.difference allcons conpats
+          consAppls@(_ : _) = mapMaybe (\ t -> case unsortedTerm t of
+            Application (Qual_op_name o ot _) _ _ ->
+                Just (o, Set.filter (on (leqF tsig) toOpType ot)
+                   $ MapSet.lookup o consMap2)
+            _ -> Nothing) hds
+          consSrt = foldr1 Set.intersection $ map (Set.map res_OP_TYPE . snd)
+            consAppls
+         in if all isVar hds then completePatterns tsig consMap consMap2 tls
+            else
+                case Set.toList consSrt of
+                  [] -> fail $
+                    "no common result type for constructors found: "
+                       ++ showDoc consAppls ""
+                  cSrt : _ -> do
+                    let allCons = MapSet.lookup cSrt consMap
+                        conpats = Set.fromList
+                          $ concatMap (\ (o, cs)
+                                       -> map (\ s -> (o, s)) $ Set.toList cs)
+                          consAppls
+                        missCons = Set.difference allCons conpats
+                    when (Set.null allCons) . fail
+                      $ "no constructors for result type found: " ++ show cSrt
                     unless (Set.null missCons) . justWarn ()
                       $ "missing pattern(s) for: " ++ showDoc missCons ""
-                mapM_ (completePatterns cons) (pa_group pas)
+                    mapM_ (completePatterns tsig consMap consMap2)
+                              (pa_group allCons pas)

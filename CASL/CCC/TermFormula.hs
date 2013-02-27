@@ -15,13 +15,10 @@ module CASL.CCC.TermFormula where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import CASL.Overload (leqF)
-import CASL.Sign (OpMap, Sign, toOP_TYPE, toOpType)
 
 import Common.Id (Range, GetRange (..))
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Set as Set
 import Data.Function
 
 -- | the sorted term is always ignored
@@ -143,16 +140,6 @@ extractLeadingSymb lead = case lead of
   Left (Application os _ _) -> Left os
   Right (Predication p _ _) -> Right p
   _ -> error "CASL.CCC.TermFormula<extractLeadingSymb>"
-
--- | extract the overloaded constructors
-constructorOverload :: Sign f e -> OpMap -> [OP_SYMB] -> [OP_SYMB]
-constructorOverload s opm = concatMap cons_Overload where
-  cons_Overload o = case o of
-    Op_name _ -> [o]
-    Qual_op_name on1 ot r ->
-      concatMap (cons on1 ot r) $ Set.toList $ MapSet.lookup on1 opm
-  cons o opt1 r opt2 =
-    [Qual_op_name o (toOP_TYPE opt2) r | leqF s (toOpType opt1) opt2]
 
 -- | replaces variables by terms in a term or formula
 substRec :: Eq f => [(TERM f, TERM f)] -> Record f (FORMULA f) (TERM f)
