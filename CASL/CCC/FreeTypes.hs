@@ -353,10 +353,11 @@ checkTerminal oTh m fsn = do
              (if isJust proof then "not terminating"
               else "cannot prove termination") nullRange
 
-checkPositive :: [Named (FORMULA ())]
+checkPositive :: [Named (FORMULA ())] -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
-checkPositive fsn =
-  if all checkPos $ getFs fsn then Just $ return (Just (Cons, []))
+checkPositive osens fsn =
+  if all checkPos $ map sentence $ osens ++ fsn
+  then Just $ return (Just (Cons, []))
   else Nothing where
     checkPos f = case quanti f of
       Junction _ cs _ -> all checkPos cs
@@ -369,6 +370,7 @@ checkPositive fsn =
       Predication {} -> True
       Definedness {} -> True
       Equation {} -> True
+      Sort_gen_ax {} -> True -- ignore
       _ -> False
 
 {- -----------------------------------------------------------------------
@@ -410,7 +412,7 @@ checkFreeType oTh@(_, osens) m axs = do
     , return . checkLeadingTerms osens m
     , return . checkIncomplete osens m
     , checkTerminal oTh m
-    , return . checkPositive]
+    , return . checkPositive osens]
   return $ case catMaybes ms of
     [] -> return $ Just (getConStatus oTh m axs, [])
     a : _ -> a
