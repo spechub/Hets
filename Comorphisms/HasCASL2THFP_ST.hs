@@ -37,7 +37,7 @@ import THF.Cons as THFCons
 import THF.Sign as THFSign
 import THF.Translate
 import THF.HasCASL2THF0Buildins
-import THF.Utils (typeToUnitaryType,typeToBinaryType,
+import THF.Utils (typeToUnitaryType, typeToBinaryType,
                   typeToTopLevelType)
 import qualified THF.Sublogic as SL
 
@@ -106,7 +106,7 @@ transTheory (env, hcnsl) = do
         (ns, nids) <- transNamedSentence (Just icm) ids env hcns
         return (ns : nsl, nids)
       s -> do
-        hint () ("ignoring: " ++ showDoc hcns "") (getRange s)
+        appendDiags [mkDiag Hint "ignoring" s]
         return p
 
 -- Translation methods for the components a signature
@@ -329,9 +329,9 @@ transTerm e icm ids t = case t of
     QualOp ob pid ts tl ik r -> myFmap (TLF_THF_Unitary_Formula
             . TUF_THF_Atom . T0A_Constant) (transQualOp e ids ob pid ts tl ik r)
     TupleTerm ts' _ -> do
-     (ts,nids) <- foldM (\(ts,ids') t' -> do
-      (t'',ids'') <- transTerm e icm ids' t'
-      return (ts++[t''],ids'')) ([],ids) ts'
+     (ts, nids) <- foldM (\ (ts, ids') t' -> do
+      (t'', ids'') <- transTerm e icm ids' t'
+      return (ts ++ [t''], ids'')) ([], ids) ts'
      return (TLF_THF_Unitary_Formula . TUF_THF_Tuple $ ts, nids)
     TermToken _ ->
             fatal_error "Missing translation for term tokens." (getRange t)
@@ -378,21 +378,21 @@ transApplTerm e icm ids t1 t2 r = do
         Just (t3, i, tl1)
             | elem i [exEq, andId, orId, eqvId, implId, infixIf, resId] ->
                 case tl1 of
-                    TupleTerm tl2 _ : [] ->
+                    [TupleTerm tl2 _] ->
                         myFmap (TLF_THF_Binary_Formula . TBF_THF_Binary_Tuple
                                 . TBT_THF_Apply_Formula . reverse)
                            (foldM fTrmToUf ([], ids) (t3 : tl2))
                     _ -> fatal_error ("unexpected arguments " ++ show tl1 ++
                             " for the function " ++ show i) r
             | i == eqId -> case tl1 of
-                TupleTerm tl2 _ : [] -> do
-                  (ufs,ids') <- foldM fTrmToUf ([], ids) tl2
-                  (uf1,uf2) <- case ufs of
-                                   [uf1,uf2] -> return (uf1,uf2)
+                [TupleTerm tl2 _] -> do
+                  (ufs, ids') <- foldM fTrmToUf ([], ids) tl2
+                  (uf1, uf2) <- case ufs of
+                                   [uf1, uf2] -> return (uf1, uf2)
                                    _ -> fatal_error ("equality needs " ++
                                          "exactly 2 arguments") r
                   return (TLF_THF_Binary_Formula $ TBF_THF_Binary_Pair
-                           uf1 Infix_Equality uf2,ids')
+                           uf1 Infix_Equality uf2, ids')
                 _ -> fatal_error ("unexpected arguments " ++ show tl1 ++
                        " for equality") r
             | i == whenElse ->
@@ -473,7 +473,7 @@ transVarDecl icm (VarDecl i t _ _) = do
 genTuple :: [THFCons.Type] -> Result THFAs.THFBinaryType
 genTuple ts = case ts of
   [] -> fatal_error "Empty product type" nullRange
-  tp : [] -> typeToBinaryType tp
+  [tp] -> typeToBinaryType tp
   _ -> fmap TBT_THF_Xprod_Type $ mapR typeToUnitaryType ts
 
 -- THFLogicFormula to THFUnitaryFormula
