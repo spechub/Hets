@@ -43,12 +43,6 @@ thmStatus = getThmStatus . senAttr
 -- | the wrapped list of proof scripts or (AnyComorphism, BasicProof) pairs
 data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving (Show, Eq, Ord)
 
-instance (Show b, Pretty a) => Pretty (SenAttr a b) where
-    pretty = printSenStatus pretty
-
-printSenStatus :: (a -> Doc) -> SenAttr a b -> Doc
-printSenStatus = (. sentence)
-
 emptySenStatus :: SenStatus a b
 emptySenStatus = makeNamed (ThmStatus []) $ error "emptySenStatus"
 
@@ -242,8 +236,8 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
                  -> TacticScript  -- 5.
                  -> theory  -- 6.
                  -> [FreeDefMorphism sentence morphism]
-                 -> IO (Concurrent.ThreadId, Concurrent.MVar ())) -- output
-      {- input:
+                 -> IO (Concurrent.ThreadId, Concurrent.MVar ())) {- output
+      input:
          1. True means include proven theorems in subsequent proof attempts;
          2. True means save problem file for each goal;
          3. MVar reference to a Result [] or empty MVar,
@@ -307,12 +301,12 @@ data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
                  -> TheoryMorphism sign sentence morphism proof_tree  -- 3.
                  -> [FreeDefMorphism sentence morphism]  -- 4.
                  -> IO (CCStatus proof_tree) -- output
-      -- input: 1. theory name
-      -- 2. default TacticScript
-      -- 3. theory morphism
-      -- 5. ingoing free definition morphisms
-      -- output: consistency result status
   } deriving Typeable
+{- input: 1. theory name
+      2. default TacticScript
+      3. theory morphism
+      5. ingoing free definition morphisms
+      output: consistency result status -}
 
 mkConsChecker :: String -> sublogics
   -> (String -> TacticScript -> TheoryMorphism sign sentence morphism proof_tree
