@@ -202,8 +202,8 @@ calculateFormula t varass qf = case qf of
     Quant q vardecls f ->
        null . snd . calculateQuantification Nothing show q f t
          $ appendVariableAssignments varass vardecls t
-    Junct j formulas -> (if j then and else or)
-        $ map (calculateFormula t varass) formulas
+    Junct j formulas -> (if j then all else any)
+        (calculateFormula t varass) formulas
     Impl isImpl f1 f2 -> on (if isImpl then (<=) else (==))
                  (calculateFormula t varass) f1 f2
     Neg f -> not $ calculateFormula t varass f
