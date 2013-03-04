@@ -447,9 +447,9 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
       in case mt of
       Just pty -> case pty of
         PrettyXml -> return $ ppTopElement $ xmlLibDefn logicGraph ga ld
-        PrettyAscii -> return $ renderText ga d ++ "\n"
+        PrettyAscii _ -> return $ renderText ga d ++ "\n"
         PrettyHtml -> return $ htmlHead ++ renderHtml ga d
-        PrettyLatex -> return latex
+        PrettyLatex _ -> return latex
       Nothing -> lift $ do
          tmpDir <- getTemporaryDirectory
          tmpFile <- writeTempFile (latexHeader ++ latex ++ latexFooter)

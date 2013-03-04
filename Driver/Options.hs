@@ -470,7 +470,7 @@ plainOutTypeList =
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
     plainOutTypeList
-    ++ [ PrettyOut p | p <- prettyList ]
+    ++ [ PrettyOut p | p <- prettyList ++ prettyList2]
     ++ [ SigFile d | d <- dl ]
     ++ [ TheoryFile d | d <- dl ]
     ++ [ DfgFile x | x <- spfTypes]
@@ -489,17 +489,20 @@ instance Show Delta where
 
 {- | 'PrettyType' describes the type of output we want the pretty-printer
 to generate -}
-data PrettyType = PrettyAscii | PrettyLatex | PrettyXml | PrettyHtml
+data PrettyType = PrettyAscii Bool | PrettyLatex Bool | PrettyXml | PrettyHtml
 
 instance Show PrettyType where
   show p = case p of
-    PrettyAscii -> "het"
-    PrettyLatex -> "tex"
+    PrettyAscii b -> (if b then "stripped." else "") ++ "het"
+    PrettyLatex b -> (if b then "labelled." else "") ++ "tex"
     PrettyXml -> xmlS
     PrettyHtml -> "html"
 
 prettyList :: [PrettyType]
-prettyList = [PrettyAscii, PrettyLatex, PrettyXml, PrettyHtml]
+prettyList = [PrettyAscii False, PrettyLatex False, PrettyXml, PrettyHtml]
+
+prettyList2 :: [PrettyType]
+prettyList2 = [PrettyAscii True, PrettyLatex True]
 
 -- | 'GraphType' describes the type of Graph that we want generated
 data GraphType =
@@ -584,6 +587,7 @@ options = let
                                    TheoryFile Fully])
               ++ bracket deltaS ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
+       ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
@@ -674,7 +678,7 @@ defLogicIsDMU :: HetcatsOpts -> Bool
 defLogicIsDMU = isDefLogic "DMU"
 
 getOntoFileNames :: HetcatsOpts -> FilePath -> [FilePath]
-getOntoFileNames opts file = 
+getOntoFileNames opts file =
   let base = rmSuffix file
       exts = case intype opts of
         GuessIn

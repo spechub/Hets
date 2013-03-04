@@ -75,8 +75,8 @@ writeLibDefn :: LogicGraph -> GlobalAnnos -> FilePath -> HetcatsOpts
 writeLibDefn lg ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn lg ga ld)
-        printAscii fn = writeEncFile (ioEncoding opts) fn
-          $ renderText ga (prettyLG lg ld) ++ "\n"
+        printAscii b fn = writeEncFile (ioEncoding opts) fn
+          $ renderExtText (StripComment b) ga (prettyLG lg ld) ++ "\n"
         printHtml fn = writeEncFile (ioEncoding opts) fn
           $ renderHtml ga $ prettyLG lg ld
         write_type :: OutType -> IO ()
@@ -86,16 +86,17 @@ writeLibDefn lg ga file opts ld = do
               putIfVerbose opts 2 $ "Writing file: " ++ fn
               case pty of
                 PrettyXml -> printXml fn
-                PrettyAscii -> printAscii fn
+                PrettyAscii b -> printAscii b fn
                 PrettyHtml -> printHtml fn
-                PrettyLatex -> writeLibDefnLatex lg ga fn ld
+                PrettyLatex b -> writeLibDefnLatex lg b ga fn ld
             _ -> return () -- implemented elsewhere
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opts
 
-writeLibDefnLatex :: LogicGraph -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-writeLibDefnLatex lg ga oup =
-  writeFile oup . renderLatex Nothing . toLatex ga . prettyLG lg
+writeLibDefnLatex :: LogicGraph -> Bool -> GlobalAnnos -> FilePath -> LIB_DEFN
+  -> IO ()
+writeLibDefnLatex lg lbl ga oup = writeFile oup . renderLatex Nothing
+  . toLatexAux (StripComment False) (MkLabel lbl) ga . prettyLG lg
 
 toShATermString :: ShATermLG a => a -> IO String
 toShATermString = fmap AT.writeSharedATerm . versionedATermTable

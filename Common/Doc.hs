@@ -72,8 +72,12 @@ Examples can be produced using: hets -v2 -o pp.het,pp.tex
 module Common.Doc
     ( -- * the document type
       Doc
+    , Label (..)
+    , StripComment (..)
     , renderHtml
+    , renderExtHtml
     , renderText
+    , renderExtText
       -- * primitive documents
     , empty
     , space
@@ -170,6 +174,7 @@ module Common.Doc
     , idApplDoc
       -- * transforming to existing formats
     , toLatex
+    , toLatexAux
       -- * manipulating documents
     , flushRight
     , changeGlobalAnnos
@@ -250,8 +255,11 @@ textStyle = Pretty.style
   , Pretty.lineLength = 80 }
 
 renderText :: GlobalAnnos -> Doc -> String
-renderText ga =
-  removeTrailingSpaces 0 . Pretty.renderStyle textStyle . toText ga
+renderText = renderExtText $ StripComment False
+
+renderExtText :: StripComment -> GlobalAnnos -> Doc -> String
+renderExtText stripCs ga =
+  removeTrailingSpaces 0 . Pretty.renderStyle textStyle . toText stripCs ga
 
 instance Show Doc where
     show = renderText emptyGlobalAnnos
@@ -265,8 +273,11 @@ removeTrailingSpaces n s = case s of
          ++ c : removeTrailingSpaces 0 r
 
 renderHtml :: GlobalAnnos -> Doc -> String
-renderHtml ga = replSpacesForHtml 0
-  . Pretty.renderStyle textStyle . toHtml ga
+renderHtml = renderExtHtml (StripComment False) $ MkLabel False
+
+renderExtHtml :: StripComment -> Label -> GlobalAnnos -> Doc -> String
+renderExtHtml stripCs lbl ga = replSpacesForHtml 0
+  . Pretty.renderStyle textStyle . toHtml stripCs lbl ga
 
 replSpacesForHtml :: Int -> String -> String
 replSpacesForHtml n s = case s of
@@ -555,12 +566,16 @@ anyRecord = DocRecord
     , foldChangeGlobalAnnos = error "anyRecord.ChangeGlobalAnnos"
     }
 
+newtype Label = MkLabel Bool
+
+newtype StripComment = StripComment Bool
+
 -- * conversion to plain text
 
 -- | simple conversion to a standard text document
-toText :: GlobalAnnos -> Doc -> Pretty.Doc
-toText ga = toTextAux . codeOut ga (mkPrecIntMap $ prec_annos ga)
-            Nothing Map.empty
+toText :: StripComment -> GlobalAnnos -> Doc -> Pretty.Doc
+toText stripCs ga = toTextAux . codeOut stripCs ga
+  (mkPrecIntMap $ prec_annos ga) Nothing Map.empty
 
 toTextAux :: Doc -> Pretty.Doc
 toTextAux = foldDoc anyRecord
@@ -591,25 +606,26 @@ toTextAux = foldDoc anyRecord
 -- * conversion to html
 
 -- | conversion to html
-toHtml :: GlobalAnnos -> Doc -> Pretty.Doc
-toHtml ga d = let
+toHtml :: StripComment -> Label -> GlobalAnnos -> Doc -> Pretty.Doc
+toHtml stripCs lbl ga d = let
   dm = Map.map (Map.! DF_HTML)
        . Map.filter (Map.member DF_HTML) $ display_annos ga
   dis = getDeclIds d
-  in foldDoc (toHtmlRecord dis) $ codeOut ga
+  in foldDoc (toHtmlRecord lbl dis) $ codeOut stripCs ga
                  (mkPrecIntMap $ prec_annos ga) (Just DF_HTML) dm d
 
-toHtmlRecord :: Set.Set Id -> DocRecord Pretty.Doc
-toHtmlRecord dis = anyRecord
+toHtmlRecord :: Label -> Set.Set Id -> DocRecord Pretty.Doc
+toHtmlRecord lbl dis = anyRecord
     { foldEmpty = const Pretty.empty
-    , foldText = const $ textToHtml dis
+    , foldText = const $ textToHtml lbl dis
     , foldCat = \ d c l -> case d of
         Cat _ ds@(_ : _) -> if all hasSpace $ init ds then
           (case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hsep
           HorizOrVert -> Pretty.sep
-          Fill -> Pretty.fsep) $ map (foldDoc (toHtmlRecord dis) . rmSpace) ds
+          Fill -> Pretty.fsep)
+            $ map (foldDoc (toHtmlRecord lbl dis) . rmSpace) ds
           else (case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hcat
@@ -625,8 +641,8 @@ toHtmlRecord dis = anyRecord
     , foldChangeGlobalAnnos = \ _ _ d -> d
     }
 
-textToHtml :: Set.Set Id -> TextKind -> String -> Pretty.Doc
-textToHtml dis k s = let
+textToHtml :: Label -> Set.Set Id -> TextKind -> String -> Pretty.Doc
+textToHtml lbl@(MkLabel mkLbl) dis k s = let
   e = escapeHtml s ""
   h = Pretty.text e
   zeroText = Pretty.sizedText 0
@@ -645,11 +661,12 @@ textToHtml dis k s = let
     StructId -> hi
     HetsLabel -> tag "small" hi
     IdLabel appl tk i -> let
-        d = textToHtml dis tk s
+        d = textToHtml lbl dis tk s
         si = escapeHtml (showId i "") ""
-        in if True {- not (Set.member i dis) -} then d else Pretty.hcat
+        in if mkLbl && Set.member i dis then Pretty.hcat
         [zeroText $ "<a " ++ (if appl == IdAppl then "href=\"#" else "name=\"")
         ++ si ++ "\">", d, zeroText "</a>"]
+        else d
     _ -> h
 
 escChar :: Char -> ShowS
@@ -667,23 +684,27 @@ escapeHtml cs rs = foldr escChar rs cs
 -- * conversion to latex
 
 toLatex :: GlobalAnnos -> Doc -> Pretty.Doc
-toLatex ga d = let dm = Map.map (Map.! DF_LATEX) .
+toLatex = toLatexAux (StripComment False) $ MkLabel False
+
+toLatexAux :: StripComment -> Label -> GlobalAnnos -> Doc -> Pretty.Doc
+toLatexAux stripCs lbl ga d = let
+  dm = Map.map (Map.! DF_LATEX) .
                       Map.filter (Map.member DF_LATEX) $ display_annos ga
-                   dis = getDeclIds d
-    in foldDoc (toLatexRecord dis False)
-           . makeSmallMath False False $ codeOut ga
+  dis = getDeclIds d
+    in foldDoc (toLatexRecord lbl dis False)
+           . makeSmallMath False False $ codeOut stripCs ga
                  (mkPrecIntMap $ prec_annos ga) (Just DF_LATEX) dm d
 
 -- avoid too many tabs
-toLatexRecord :: Set.Set Id -> Bool -> DocRecord Pretty.Doc
-toLatexRecord dis tab = anyRecord
+toLatexRecord :: Label -> Set.Set Id -> Bool -> DocRecord Pretty.Doc
+toLatexRecord lbl dis tab = anyRecord
     { foldEmpty = const Pretty.empty
-    , foldText = const $ textToLatex dis False
+    , foldText = const $ textToLatex lbl dis False
     , foldCat = \ o _ _ -> case o of
         Cat c os@(d : r)
           | any isNative os -> Pretty.hcat $
              latex_macro "{\\Ax{"
-             : map (foldDoc (toLatexRecord dis False)
+             : map (foldDoc (toLatexRecord lbl dis False)
                        { foldText = \ _ k s ->
                           case k of
                             Native -> Pretty.sizedText (axiom_width s) s
@@ -691,10 +712,10 @@ toLatexRecord dis tab = anyRecord
                                 Pretty.sizedText (axiom_width s) s
                             IdKind | s == " " ->
                                 Pretty.sizedText (axiom_width s) "\\,"
-                            _ -> textToLatex dis False k s
+                            _ -> textToLatex lbl dis False k s
                         }) os
               ++ [latex_macro "}}"]
-          | null r -> foldDoc (toLatexRecord dis tab) d
+          | null r -> foldDoc (toLatexRecord lbl dis tab) d
           | otherwise -> (if tab && c /= Horiz then
                              (latex_macro setTab Pretty.<>)
                          . (latex_macro startTab Pretty.<>)
@@ -706,14 +727,15 @@ toLatexRecord dis tab = anyRecord
                              HorizOrVert -> Pretty.cat
                              Fill -> Pretty.fcat)
                         $ case c of
-                            Vert -> map (foldDoc $ toLatexRecord dis False) os
-                            _ -> foldDoc (toLatexRecord dis False) d :
-                                     map (foldDoc $ toLatexRecord dis True) r
+                            Vert ->
+                              map (foldDoc $ toLatexRecord lbl dis False) os
+                            _ -> foldDoc (toLatexRecord lbl dis False) d :
+                              map (foldDoc $ toLatexRecord lbl dis True) r
         _ -> Pretty.empty
     , foldAttr = \ o k d -> case k of
           FlushRight -> flushright d
           Small -> case o of
-              Attr Small (Text j s) -> textToLatex dis True j s
+              Attr Small (Text j s) -> textToLatex lbl dis True j s
               _ -> makeSmallLatex True d
     , foldChangeGlobalAnnos = \ _ _ d -> d
     }
@@ -805,8 +827,8 @@ getDeclIds = foldDoc anyRecord
     , foldAnnoDoc = \ _ _ -> Set.empty
     }
 
-textToLatex :: Set.Set Id -> Bool -> TextKind -> String -> Pretty.Doc
-textToLatex dis b k s = case s of
+textToLatex :: Label -> Set.Set Id -> Bool -> TextKind -> String -> Pretty.Doc
+textToLatex lbl@(MkLabel mkLbl) dis b k s = case s of
   "" -> Pretty.text ""
   h : _ -> let e = escapeLatex s in case k of
     IdKind -> makeSmallLatex b $ if elem s $ map (: []) ",;[]() "
@@ -824,13 +846,15 @@ textToLatex dis b k s = case s of
     Indexed -> hc_sty_structid_indexed s
     StructId -> hc_sty_structid s
     Native -> hc_sty_axiom s
-    HetsLabel -> Pretty.hcat [ latex_macro "\\HetsLabel{"
-                             , textToLatex dis b Comment s
-                             , latex_macro $ "}{" ++ escapeLabel s ++ "}" ]
+    HetsLabel -> let d = textToLatex lbl dis b Comment s in
+       if mkLbl then Pretty.hcat [ latex_macro "\\HetsLabel{", d
+                                 , latex_macro $ "}{" ++ escapeLabel s ++ "}" ]
+       else d
     -- HetsLabel may be avoided by the Label case
-    IdLabel appl tk i -> let d = textToLatex dis b tk s
-                             si = showId i ""
-        in if b || appl == IdAppl && not (Set.member i dis)
+    IdLabel appl tk i -> let
+        d = textToLatex lbl dis b tk s
+        si = showId i ""
+        in if b || not mkLbl || appl == IdAppl && not (Set.member i dis)
                || not (isLegalLabel si)
            -- make this case True to avoid labels
            then d else Pretty.hcat
@@ -886,16 +910,16 @@ latexSymbols = Map.union (Map.fromList
 {- | transform document according to a specific display map and other
 global annotations like precedences, associativities, and literal
 annotations. -}
-codeOut :: GlobalAnnos -> PrecMap -> Maybe Display_format
+codeOut :: StripComment -> GlobalAnnos -> PrecMap -> Maybe Display_format
         -> Map.Map Id [Token] -> Doc -> Doc
-codeOut ga precs d m = foldDoc idRecord
-    { foldAnnoDoc = \ _ -> small . codeOutAnno m
+codeOut stripCs ga precs d m = foldDoc idRecord
+    { foldAnnoDoc = \ _ -> small . codeOutAnno stripCs m
     , foldIdDoc = \ _ lk -> codeOutId lk m
-    , foldIdApplDoc = \ o _ _ -> codeOutAppl ga precs d m o
+    , foldIdApplDoc = \ o _ _ -> codeOutAppl stripCs ga precs d m o
     , foldChangeGlobalAnnos = \ o _ _ ->
           let ChangeGlobalAnnos fg e = o
               ng = fg ga
-          in codeOut ng (mkPrecIntMap $ prec_annos ng) d
+          in codeOut stripCs ng (mkPrecIntMap $ prec_annos ng) d
              (maybe m (\ f -> Map.map (Map.! f) .
                       Map.filter (Map.member f) $ display_annos ng) d) e
     }
@@ -973,9 +997,9 @@ hCommaT m = hsep . cCommaT m
 fCommaT :: Map.Map Id [Token] -> [Id] -> Doc
 fCommaT m = fsep . cCommaT m
 
-codeOutAnno :: Map.Map Id [Token] -> Annotation -> Doc
-codeOutAnno m a = case a of
-    Unparsed_anno aw at _ -> case at of
+codeOutAnno :: StripComment -> Map.Map Id [Token] -> Annotation -> Doc
+codeOutAnno (StripComment stripCs) m a = case a of
+    Unparsed_anno aw at _ -> if stripCs then empty else case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
             Comment_start -> symbol percents) <> commentText s
@@ -1006,10 +1030,7 @@ codeOutAnno m a = case a of
                           ARight -> right_assocS)
                         <> fCommaT m l <> annoRparen
     Label l _ -> wrapLines (case l of
-                  [x] -> if isLegalLabel x
-                         -- change this to False to avoid HetsLabel at all
-                            then HetsLabel
-                            else Comment
+                  [x] -> if isLegalLabel x then HetsLabel else Comment
                   _ -> Comment) (percent <> lparen) l annoRparen
     Prefix_anno pm _ -> annoLparen prefixS <> vcat
         ( map ( \ (s, i) -> text (if null s then ":" else s)
@@ -1069,15 +1090,15 @@ parenApplArgs ga precs origDoc = case origDoc of
   _ -> []
 
 -- print literal terms and mixfix applications
-codeOutAppl :: GlobalAnnos -> PrecMap -> Maybe Display_format
+codeOutAppl :: StripComment -> GlobalAnnos -> PrecMap -> Maybe Display_format
             -> Map.Map Id [Token] -> Doc -> [Doc] -> Doc
-codeOutAppl ga precs md m origDoc args = case origDoc of
+codeOutAppl stripCs ga precs md m origDoc args = case origDoc of
   IdApplDoc _ i@(Id ts cs _) aas ->
     let mk = codeToken . tokStr
         doSplit = fromMaybe (error "doSplit") . splitDoc
         mkList op largs cl = fsep $ codeOutId IdAppl m op : punctuate comma
-                             (map (codeOut ga precs md m) largs)
-                             ++ [codeOutId IdAppl m cl]
+          (map (codeOut stripCs ga precs md m) largs)
+          ++ [codeOutId IdAppl m cl]
     in if isGenNumber splitDoc ga i aas then
              mk $ toNumber doSplit i aas
          else if isGenFrac splitDoc ga i aas then
