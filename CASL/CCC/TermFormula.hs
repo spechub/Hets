@@ -109,9 +109,10 @@ leadingSymPos :: GetRange f => FORMULA f
   -> (Maybe (Either (TERM f) (FORMULA f)), Range)
 leadingSymPos f = leading (f, False, False, False) where
   -- three booleans to indicate inside implication, equivalence or negation
+  leadTerm t q = case unsortedTerm t of
+    a@(Application _ _ p) -> (Just (Left a), p)
+    _ -> (Nothing, q)
   leading (f1, b1, b2, b3) = case (quanti f1, b1, b2, b3) of
-    (Quantification _ _ f' _, _, _, _) ->
-        leading (f', b1, b2, b3)
     (Negation f' _, _, _, False) ->
         leading (f', b1, b2, True)
     (Relation _ c f' _, False, False, False)
@@ -119,14 +120,10 @@ leadingSymPos f = leading (f, False, False, False) where
         leading (f', True, False, False)
     (Relation f' Equivalence _ _, _, False, False) ->
         leading (f', b1, True, False)
-    (Definedness t _, _, _, _) -> case unsortedTerm t of
-          a@(Application _ _ p) -> (Just (Left a), p)
-          _ -> (Nothing, getRange f1)
+    (Definedness t q, _, _, _) -> leadTerm t q
     (pr@(Predication _ _ p), _, _, _) ->
         (Just (Right pr), p)
-    (Equation t _ _ _, _, False, False) -> case unsortedTerm t of
-          a@(Application _ _ p) -> (Just (Left a), p)
-          _ -> (Nothing, getRange f1)
+    (Equation t _ _ q, _, False, False) -> leadTerm t q
     _ -> (Nothing, getRange f1)
 
 -- | extract the leading term or predication from a formula
