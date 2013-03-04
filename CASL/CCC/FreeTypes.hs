@@ -73,7 +73,7 @@ getInfoSubsort m = concatMap (infoSubsort esorts) . filter isMembership . getFs
   where esorts = Set.toList . emptySortSet $ mtarget m
 
 getAxGroup :: [Named (FORMULA ())] -> [[FORMULA ()]]
-getAxGroup = groupAxioms . filter (not . isDomain) . map quanti . getAxioms
+getAxGroup = groupAxioms . filter (not . isDomain) . getAxioms
 
 -- | get the constraints from sort generation axioms
 constraintOfAxiom :: [FORMULA f] -> [[Constraint]]
@@ -328,7 +328,8 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
         in Diag Warning (intercalate "\n" $
              ("the definition of " ++ show sname ++ " is not complete")
              : "the defining formula group is:"
-             : map (\ (f, n) -> shows n ". " ++ showDoc f "") (number fs)
+             : map (\ (f, n) -> "  " ++ shows n ". "
+                    ++ showDoc (simplifyCASLSen (mtarget m) f) "") (number fs)
              ++ map diagString ds) pos)
        incomplete) $ Just $ Just (Cons, obligations)
 
@@ -595,7 +596,9 @@ completePatterns tsig consMap consMap2 pas
                           $ concatMap (\ (o, cs)
                                        -> map (\ s -> (o, s)) $ Set.toList cs)
                           consAppls
-                        missCons = Set.difference allCons conpats
+                        missCons = Set.map
+                          (\ (o, ot) -> idToOpSymbol o $ toOpType ot)
+                          $ Set.difference allCons conpats
                     when (Set.null allCons) . fail
                       $ "no constructors for result type found: " ++ show cSrt
                     unless (Set.null missCons) . justWarn ()
