@@ -24,6 +24,7 @@ import qualified ATerm.Conversion as AT
 -- import ATC.AS_Annotation
 import qualified Data.Typeable.Internal as Tp
 import Common.Result
+-- import Data.Monoid
     
 -- Logic ID     lid
 data PLpatt = PLpatt deriving Show
@@ -110,7 +111,16 @@ instance (Tp.Typeable AS.Form) where
 
 instance (Tp.Typeable AS.Symb) where
     typeOf = Tp.typeOf
+{-
+instance (DU.Pretty AS.Basic_spec) where
+    pretty = DU.pretty
 
+instance  (GetRange AS.Basic_spec) where
+    -- mempty = []
+    -- mappend bs1 bs2 = bs1 ++ bs2
+
+instance (Data.Monoid.Monoid AS.Basic_spec) where
+-}
 -- static analysis should in fact be performed by MMT
 instance StaticAnalysis PLpatt
             () -- datatype for syntax trees - Generic.Tree ?
@@ -138,9 +148,11 @@ instance Category Sign.Sigs Morphism.Morphism where
     cod = Morphism.target
 
 instance Sentences PLpatt
-    AS.Form Sign.Sigs Morphism.Morphism
+    AS.Form
+    Sign.Sigs
+    Morphism.Morphism
     AS.Symb
-    where
+        where
 --TODO
 
 -- Logic instance, see Logic/Logic.hs:867
