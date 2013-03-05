@@ -238,7 +238,7 @@ anaInput contents selectedBoxes outputfiles = do
                         latexFile = outputfile ++ ".tex"
                         pdfFile = outputfile ++ ".pdf"
                         tmpFile = outputfile ++ ".tmp"
-                    writeLibDefnLatex logicGraph gannos pptexFile libDefn
+                    writeLibDefnLatex logicGraph False gannos pptexFile libDefn
                     writeFile latexFile (latexHeader ++
                                          "\\input{" ++ pptexFile ++
                                          "}\n \\end{document}\n")
