@@ -30,9 +30,3 @@ data Sign = Sign [Decl] deriving (Show)
 
 -- theory
 data Theo = Theo Sign [Tree] deriving (Show)
-
-qualIDSplitFirst :: String -> String
-qualIDSplitFirst str = ""
-
-qualIDSplitSecond :: String -> String
-qualIDSplitSecond str = ""
