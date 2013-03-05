@@ -1,4 +1,9 @@
-module PLpatt.AS_BASIC_PLpatt where
+module PLpatt.AS_BASIC_PLpatt 
+        ( Basic_spec (..)
+        , Form (..)
+        , Decl (..)
+        , Symb (..)
+        ) where
 
 --import Common.Id as Id
 
@@ -9,6 +14,6 @@ data Form = Or Form Form | And Form Form | Not Form | True  | False  | Prop_bool
 data Prop = Prop Id
 data Axiom = Axiom Id Form
 data Decl = Prop_decl Prop | Axiom_decl Axiom
-type Basic_spec = [Decl]
+newtype Basic_spec = Basic_spec [Decl]
 data Symb = Symb{sname :: Id}
 

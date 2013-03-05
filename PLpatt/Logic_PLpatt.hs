@@ -24,7 +24,7 @@ import Common.Consistency
 import ATC.AS_Annotation -}
 import qualified Data.Typeable.Internal as Tp
 import Common.Result
--- import Data.Monoid
+import Data.Monoid
 
 -- Logic ID     lid
 data PLpatt = PLpatt deriving Show
@@ -111,20 +111,29 @@ instance (Tp.Typeable AS.Form) where
 
 instance (Tp.Typeable AS.Symb) where
     typeOf = Tp.typeOf
-{-
+
+-- instances required for newtype Basic_spec
 instance (DU.Pretty AS.Basic_spec) where
     pretty = DU.pretty
 
-instance  (GetRange AS.Basic_spec) where
-    -- mempty = []
-    -- mappend bs1 bs2 = bs1 ++ bs2
+instance (GetRange AS.Basic_spec) where
 
 instance (Data.Monoid.Monoid AS.Basic_spec) where
--}
+    mempty = AS.Basic_spec []
+    mappend (AS.Basic_spec bs1) (AS.Basic_spec bs2) = AS.Basic_spec $ bs1 ++ bs2
+
+instance (Show AS.Basic_spec) where
+
+instance (AT.ShATermConvertible AS.Basic_spec) where
+    toShATermAux = AT.toShATermAux
+    fromShATermAux = AT.fromShATermAux
+
+instance (Tp.Typeable AS.Basic_spec) where
+    typeOf = Tp.typeOf
 
 -- static analysis should in fact be performed by MMT
 instance StaticAnalysis PLpatt
-            () -- datatype for syntax trees - Generic.Tree ?
+            AS.Basic_spec -- datatype for syntax trees - Generic.Tree ?
             AS.Form
             ()
             ()
@@ -136,7 +145,7 @@ instance StaticAnalysis PLpatt
             empty_signature PLpatt = Sign.Sigs []
 
 instance Syntax PLpatt
-            () -- parse_basic_spec produces a syntax tree
+            AS.Basic_spec -- parse_basic_spec produces a syntax tree
             ()
             () where
 {- parse_basic_spec lid = Just (\pm -> parser) -- Text.CombinatorParses.Parsec
@@ -160,7 +169,7 @@ instance Sentences PLpatt
 -- Logic instance, see Logic/Logic.hs:867
 instance Logic PLpatt
     () -- SL.Sublogic -- sublogic
-    () -- basic_spec
+    AS.Basic_spec -- basic_spec
     AS.Form
     ()  -- symb_items
     () -- symb_map_items
