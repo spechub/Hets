@@ -229,22 +229,22 @@ minExpFORMULApred mef sign ide mty args pos = do
     boolAna preds $ do
       noOpOrPred preds "predicate" mty ide pos nargs
       expansions <- mapM (minExpTerm mef sign) args
-      let getProfiles cs = map (getProfile cs) preds
-          getProfile cs ps = [ (pred', ts) |
-                             pred' <- ps,
-                             ts <- cs,
-                             and $ zipWith (leqSort sign)
-                             (map sortOfTerm ts)
-                             (predArgs pred') ]
-          qualForms = qualifyPreds ide pos
-                       $ concatMap (getProfiles . combine)
+      let qualForms = qualifyFs qualifyPred ide pos
+                       $ concatMap (getProfiles sign predArgs preds . combine)
                        $ combine expansions
       boolAna qualForms
         $ isUnambiguous (globAnnos sign)
               (Predication (Pred_name ide) args pos) qualForms pos
 
-qualifyPreds :: Id -> Range -> [[(PredType, [TERM f])]] -> [[FORMULA f]]
-qualifyPreds ide = map . map . qualifyPred ide
+getProfiles :: TermExtension f => Sign f e -> (a -> [SORT]) -> [[a]]
+  -> [[TERM f]] -> [[(a, [TERM f])]]
+getProfiles sign getArgs = flip $ map . \ cs fs ->
+  [ (f, ts) | f <- fs, ts <- cs
+  , and $ zipWith (leqSort sign) (map sortOfTerm ts) (getArgs f) ]
+
+qualifyFs :: (Id -> Range -> (a, [TERM f]) -> b) -> Id -> Range
+  -> [[(a, [TERM f])]] -> [[b]]
+qualifyFs f ide = map . map . f ide
 
 -- | qualify a single pred, given by its signature and its arguments
 qualifyPred :: Id -> Range -> (PredType, [TERM f]) -> FORMULA f
@@ -336,22 +336,12 @@ minExpTermAppl mef sign ide mty args pos = do
     noOpOrPred ops "operation" mty ide pos nargs
     expansions <- mapM (minExpTerm mef sign) args
     let  -- generate profiles as descr. on p. 339 (Step 3)
-        getProfiles cs = map (getProfile cs) ops
-        getProfile cs os = [ (op', ts) |
-                             op' <- os,
-                             ts <- cs,
-                             and $ zipWith (leqSort sign)
-                             (map sortOfTerm ts)
-                             (opArgs op') ]
-        qualTerms = qualifyOps ide pos
+        qualTerms = qualifyFs qualifyOp ide pos
                        $ map (minimizeOp sign)
-                       $ concatMap (getProfiles . combine)
+                       $ concatMap (getProfiles sign opArgs ops . combine)
                        $ combine expansions
     hasSolutions (globAnnos sign)
         (Application (Op_name ide) args pos) qualTerms pos
-
-qualifyOps :: Id -> Range -> [[(OpType, [TERM f])]] -> [[TERM f]]
-qualifyOps ide = map . map . qualifyOp ide
 
     -- qualify a single op, given by its signature and its arguments
 qualifyOp :: Id -> Range -> (OpType, [TERM f]) -> TERM f
