@@ -231,20 +231,10 @@ minExpFORMULApred mef sign ide mty args pos = do
     boolAna preds $ do
       noOpOrPred preds "predicate" mty ide pos nargs
       expansions <- mapM (minExpTerm mef sign) args
-      let formCombs = concatMap (getCombs sign predArgs preds . combine)
-            $ combine expansions
-          partCombs = map (partition $ \ (_, _, m) -> isNothing m) formCombs
-          (goodCombs, badCombs) = unzip partCombs
-          badCs@(_ : _) = concat badCombs
-          maxArg = maximum $ map (\ (_, _, Just c) -> c) badCs
-          badCs2 = filter (\ (_, _, Just c) -> maxArg == c) badCs
-          expectedTs = keepMinimals1 False sign id
-            $ map (\ (a, _, _) -> predArgs a !! maxArg) badCs2
-          foundTs = keepMinimals sign id
-            $ map (\ (_, ts, _) -> sortOfTerm $ ts !! maxArg) badCs2
+      let (goodCombs, msg) = getAllCombs sign ide predArgs preds expansions
           qualForms = qualifyGFs qualifyPred ide pos goodCombs
       boolAna qualForms
-        $ isUnambiguous (missMsg maxArg ide foundTs expectedTs) (globAnnos sign)
+        $ isUnambiguous msg (globAnnos sign)
               (Predication (Pred_name ide) args pos) qualForms pos
 
 missMsg :: Int -> Id -> [SORT] -> [SORT] -> String
@@ -257,25 +247,32 @@ missMsg maxArg ide foundTs expectedTs =
   ++ showSort foundTs ++ "found but\n"
   ++ showSort expectedTs ++ "expected."
 
+getAllCombs :: TermExtension f => Sign f e -> Id -> (a -> [SORT]) -> [[a]]
+  -> [[[TERM f]]] -> ([[(a, [TERM f], Maybe Int)]], String)
+getAllCombs sign ide getArgs fs expansions =
+      let formCombs = concatMap (getCombs sign getArgs fs . combine)
+            $ combine expansions
+          partCombs = map (partition $ \ (_, _, m) -> isNothing m) formCombs
+          (goodCombs, badCombs) = unzip partCombs
+          badCs = concat badCombs
+      in if null badCs then (goodCombs, "") else let
+          maxArg = maximum $ map (\ (_, _, Just c) -> c) badCs
+          badCs2 = filter (\ (_, _, Just c) -> maxArg == c) badCs
+          foundTs = keepMinimals sign id
+            $ map (\ (_, ts, _) -> sortOfTerm $ ts !! maxArg) badCs2
+          expectedTs = keepMinimals1 False sign id
+            $ map (\ (a, _, _) -> getArgs a !! maxArg) badCs2
+          in (goodCombs, missMsg maxArg ide foundTs expectedTs)
+
 getCombs :: TermExtension f => Sign f e -> (a -> [SORT]) -> [[a]] -> [[TERM f]]
   -> [[(a, [TERM f], Maybe Int)]]
 getCombs sign getArgs = flip $ map . \ cs fs ->
   [ (f, ts, elemIndex False $ zipWith (leqSort sign) (map sortOfTerm ts)
             $ getArgs f) | f <- fs, ts <- cs ]
 
-getProfiles :: TermExtension f => Sign f e -> (a -> [SORT]) -> [[a]]
-  -> [[TERM f]] -> [[(a, [TERM f])]]
-getProfiles sign getArgs = flip $ map . \ cs fs ->
-  [ (f, ts) | f <- fs, ts <- cs
-  , and $ zipWith (leqSort sign) (map sortOfTerm ts) (getArgs f) ]
-
 qualifyGFs :: (Id -> Range -> (a, [TERM f]) -> b) -> Id -> Range
   -> [[(a, [TERM f], Maybe Int)]] -> [[b]]
 qualifyGFs f ide pos = map $ map (f ide pos . \ (a, b, _) -> (a, b))
-
-qualifyFs :: (Id -> Range -> (a, [TERM f]) -> b) -> Id -> Range
-  -> [[(a, [TERM f])]] -> [[b]]
-qualifyFs f ide = map . map . f ide
 
 -- | qualify a single pred, given by its signature and its arguments
 qualifyPred :: Id -> Range -> (PredType, [TERM f]) -> FORMULA f
@@ -367,11 +364,10 @@ minExpTermAppl mef sign ide mty args pos = do
     noOpOrPred ops "operation" mty ide pos nargs
     expansions <- mapM (minExpTerm mef sign) args
     let  -- generate profiles as descr. on p. 339 (Step 3)
-        qualTerms = qualifyFs qualifyOp ide pos
-                       $ map (minimizeOp sign)
-                       $ concatMap (getProfiles sign opArgs ops . combine)
-                       $ combine expansions
-    hasSolutions "" (globAnnos sign)
+        (goodCombs, msg) = getAllCombs sign ide opArgs ops expansions
+        qualTerms = qualifyGFs qualifyOp ide pos
+                    $ map (minimizeOp sign) goodCombs
+    hasSolutions msg (globAnnos sign)
         (Application (Op_name ide) args pos) qualTerms pos
 
     -- qualify a single op, given by its signature and its arguments
@@ -444,8 +440,8 @@ minExpTermCond mef sign f term1 term2 pos = do
     That is, discard all terms whose sort is a supersort of
     any other term in the same equivalence class.
 ---------------------------------------------------------- -}
-minimizeOp :: Sign f e -> [(OpType, [TERM f])] -> [(OpType, [TERM f])]
-minimizeOp sign = keepMinimals sign (opRes . fst)
+minimizeOp :: Sign f e -> [(OpType, [TERM f], a)] -> [(OpType, [TERM f], a)]
+minimizeOp sign = keepMinimals sign (opRes . \ (a, _, _) -> a)
 
 -- | the (possibly incomplete) list of supersorts common to both sorts
 commonSupersorts :: Bool -> Sign f e -> SORT -> SORT -> [SORT]
