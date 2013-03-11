@@ -315,7 +315,7 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
       -- choose expansions that fit the given signature, then qualify
       let validExps =
               map (filter (maybe True (flip (leqSort sign) srt)
-                                   . optSortOfTerm (const Nothing)))
+                                   . optTermSort))
                       expandedTerm
       hasSolutions "" ga top (map (map (\ t ->
                  Sorted_term t srt pos)) validExps) pos
