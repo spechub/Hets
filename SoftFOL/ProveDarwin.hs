@@ -167,7 +167,7 @@ darwinCMDLautomaticBatchAux b inclProvedThs saveProblem_batch resultMVar
 -- * Main prover functions
 
 eproverOpts :: String
-eproverOpts = "-xAuto -tAuto --tptp3-format -s --soft-cpu-limit="
+eproverOpts = "-xAuto -tAuto --tptp3-format -s --memory-limit=2048 --soft-cpu-limit="
 
 fdOpt :: String
 fdOpt = "-fd true"
