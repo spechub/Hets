@@ -135,8 +135,8 @@ resolveFunDef ga ids (FunDef o h@(Op_head _ vs _ _) at r) = do
 
 -- | get constructors for input sort
 getConstrs :: FplSign -> SORT -> OpMap
-getConstrs sign resSort = MapSet.mapSet (Set.filter $ leqSort sign resSort . opRes)
-         $ constr $ extendedInfo sign
+getConstrs sign resSort = MapSet.mapSet
+  (Set.filter $ leqSort sign resSort . opRes) $ constr $ extendedInfo sign
 
 {- | This functions tries to recognize variables in case-patterns (application
 terms) after overload resolution.  A current limitation is that a unique sort
@@ -206,7 +206,7 @@ minFplTerm sig te = case te of
           [] -> True
           hd : rt -> all (haveCommonSupersorts True sig
              (sortOfTerm hd) . sortOfTerm) rt && cSupers rt
-    nts <- isUnambiguous (globAnnos sig) (map snd l)
+    nts <- isUnambiguous "" (globAnnos sig) (map snd l)
       (map (filter cSupers . combine) $ combine tts) r
     let nl = zip ps nts
         minSort sl = if Set.null sl then Set.empty else
@@ -235,11 +235,11 @@ minFplTerm sig te = case te of
   IfThenElse i t e r -> do
     ri <- oneExpTerm minFplTerm sig $ Sorted_term i boolSort r
     Equation rt Strong re _ <-
-        minExpFORMULAeq minFplTerm sig (\ trm -> Equation trm Strong) t e r
+        minExpFORMULAeq minFplTerm sig (`Equation` Strong) t e r
     return $ IfThenElse ri rt re r
   EqTerm t e r -> do
     Equation rt Strong re _ <-
-        minExpFORMULAeq minFplTerm sig (\ trm -> Equation trm Strong) t e r
+        minExpFORMULAeq minFplTerm sig (`Equation` Strong) t e r
     return $ EqTerm rt re r
   BoolTerm t -> fmap BoolTerm $ oneExpTerm minFplTerm sig t
 
@@ -335,7 +335,7 @@ instance TermExtension TermExt where
       Case _ ((_, t) : _) _ -> optTermSort t
       Let _ t _ -> optTermSort t
       IfThenElse _ t _ _ -> optTermSort t
-      EqTerm _ _ _ -> Just boolSort
+      EqTerm {} -> Just boolSort
       BoolTerm t -> optTermSort t
       _ -> Nothing -- all others are formulas
   termToFormula t = let s = sortOfTerm t in

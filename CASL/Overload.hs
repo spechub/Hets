@@ -115,7 +115,7 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
                         Membership (mkSorted sign t c pos) srt pos)
                     $ maybe [srt] (minimalSupers sign srt)
                     $ optTermSort t)) ts
-        isUnambiguous (globAnnos sign) formula fs pos
+        isUnambiguous "" (globAnnos sign) formula fs pos
     ExtFORMULA f -> fmap ExtFORMULA $ mef sign f
     QuantOp o ty f -> do
         let sign' = sign0 { opMap = addOpTo o (toOpType ty) $ opMap sign0 }
@@ -143,7 +143,7 @@ oneExpTerm :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> TERM f -> Result (TERM f)
 oneExpTerm minF sign term = do
     ts <- minExpTerm minF sign term
-    isUnambiguous (globAnnos sign) term ts nullRange
+    isUnambiguous "" (globAnnos sign) term ts nullRange
 
 {- ----------------------------------------------------------
     - Minimal expansion of an equation formula -
@@ -155,22 +155,22 @@ minExpFORMULAeq :: (FormExtension f, TermExtension f)
 minExpFORMULAeq mef sign eq term1 term2 pos = do
     ps <- minExpTermCond mef sign ( \ t1 t2 -> eq t1 t2 pos)
           term1 term2 pos
-    isUnambiguous (globAnnos sign) (eq term1 term2 pos) ps pos
+    isUnambiguous "" (globAnnos sign) (eq term1 term2 pos) ps pos
 
 -- | check if there is at least one solution
-hasSolutions :: Pretty f => GlobalAnnos -> f -> [[f]] -> Range
+hasSolutions :: Pretty f => String -> GlobalAnnos -> f -> [[f]] -> Range
              -> Result [[f]]
-hasSolutions ga topterm ts pos = let terms = filter (not . null) ts in
+hasSolutions msg ga topterm ts pos = let terms = filter (not . null) ts in
    if null terms then Result
-    [Diag Error ("no typing for: " ++ showGlobalDoc ga topterm "")
+    [Diag Error ("no typing for: " ++ showGlobalDoc ga topterm "" ++ msg)
           pos] Nothing
     else return terms
 
 -- | check if there is a unique equivalence class
-isUnambiguous :: Pretty f => GlobalAnnos -> f -> [[f]] -> Range
-               -> Result f
-isUnambiguous ga topterm ts pos = do
-    terms <- hasSolutions ga topterm ts pos
+isUnambiguous :: Pretty f => String -> GlobalAnnos -> f -> [[f]] -> Range
+  -> Result f
+isUnambiguous msg ga topterm ts pos = do
+    terms <- hasSolutions msg ga topterm ts pos
     case terms of
         [ term : _ ] -> return term
         _ -> Result [Diag Error ("ambiguous term\n  " ++
@@ -234,11 +234,28 @@ minExpFORMULApred mef sign ide mty args pos = do
       let formCombs = concatMap (getCombs sign predArgs preds . combine)
             $ combine expansions
           partCombs = map (partition $ \ (_, _, m) -> isNothing m) formCombs
-          (goodCombs, _badCombs) = unzip partCombs
+          (goodCombs, badCombs) = unzip partCombs
+          badCs@(_ : _) = concat badCombs
+          maxArg = maximum $ map (\ (_, _, Just c) -> c) badCs
+          badCs2 = filter (\ (_, _, Just c) -> maxArg == c) badCs
+          expectedTs = keepMinimals1 False sign id
+            $ map (\ (a, _, _) -> predArgs a !! maxArg) badCs2
+          foundTs = keepMinimals sign id
+            $ map (\ (_, ts, _) -> sortOfTerm $ ts !! maxArg) badCs2
           qualForms = qualifyGFs qualifyPred ide pos goodCombs
       boolAna qualForms
-        $ isUnambiguous (globAnnos sign)
+        $ isUnambiguous (missMsg maxArg ide foundTs expectedTs) (globAnnos sign)
               (Predication (Pred_name ide) args pos) qualForms pos
+
+missMsg :: Int -> Id -> [SORT] -> [SORT] -> String
+missMsg maxArg ide foundTs expectedTs =
+  let showSort s = case s of
+         [ft] -> "a term of sort '" ++ shows ft "' was "
+         _ -> "terms of sorts " ++ showDoc s " were "
+  in
+  "\nin the " ++ show (maxArg + 1) ++ ". argument of '" ++ shows ide "'\n"
+  ++ showSort foundTs ++ "found but\n"
+  ++ showSort expectedTs ++ "expected."
 
 getCombs :: TermExtension f => Sign f e -> (a -> [SORT]) -> [[a]] -> [[TERM f]]
   -> [[(a, [TERM f], Maybe Int)]]
@@ -302,7 +319,7 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
               map (filter (maybe True (flip (leqSort sign) srt)
                                    . optSortOfTerm (const Nothing)))
                       expandedTerm
-      hasSolutions ga top (map (map (\ t ->
+      hasSolutions "" ga top (map (map (\ t ->
                  Sorted_term t srt pos)) validExps) pos
     Cast term srt pos -> do
       expandedTerm <- minExpTerm mef sign term
@@ -312,12 +329,12 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
                         Cast (mkSorted sign t c pos) srt pos)
                     $ maybe [srt] (minimalSupers sign srt)
                     $ optTermSort t)) expandedTerm
-      hasSolutions ga top ts pos
+      hasSolutions "" ga top ts pos
     Conditional term1 formula term2 pos -> do
       f <- minExpFORMULA mef sign formula
       ts <- minExpTermCond mef sign ( \ t1 t2 -> Conditional t1 f t2 pos)
             term1 term2 pos
-      hasSolutions ga (Conditional term1 formula term2 pos) ts pos
+      hasSolutions "" ga (Conditional term1 formula term2 pos) ts pos
     ExtTERM t -> do
       nt <- mef sign t
       return [[ExtTERM nt]]
@@ -354,7 +371,7 @@ minExpTermAppl mef sign ide mty args pos = do
                        $ map (minimizeOp sign)
                        $ concatMap (getProfiles sign opArgs ops . combine)
                        $ combine expansions
-    hasSolutions (globAnnos sign)
+    hasSolutions "" (globAnnos sign)
         (Application (Op_name ide) args pos) qualTerms pos
 
     -- qualify a single op, given by its signature and its arguments
