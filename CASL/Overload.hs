@@ -50,6 +50,8 @@ import Common.Result
 import Common.Partial
 import Common.Utils
 
+import Data.List
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -61,7 +63,7 @@ type Min f e = Sign f e -> f -> Result f
 mkSorted :: TermExtension f => Sign f e -> TERM f -> SORT -> Range -> TERM f
 mkSorted sign t s r = let nt = Sorted_term t s r in case optTermSort t of
   Nothing -> nt
-  Just sort -> if leqSort sign s sort then t else nt
+  Just srt -> if leqSort sign s srt then t else nt
 
 {- ----------------------------------------------------------
     - Minimal expansion of a formula -
@@ -106,12 +108,12 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
     Definedness term pos -> do
         t <- oneExpTerm mef sign term
         return (Definedness t pos)
-    Membership term sort pos -> do
+    Membership term srt pos -> do
         ts <- minExpTerm mef sign term
         let fs = map (concatMap ( \ t ->
                     map ( \ c ->
-                        Membership (mkSorted sign t c pos) sort pos)
-                    $ maybe [sort] (minimalSupers sign sort)
+                        Membership (mkSorted sign t c pos) srt pos)
+                    $ maybe [srt] (minimalSupers sign srt)
                     $ optTermSort t)) ts
         isUnambiguous (globAnnos sign) formula fs pos
     ExtFORMULA f -> fmap ExtFORMULA $ mef sign f
@@ -229,18 +231,30 @@ minExpFORMULApred mef sign ide mty args pos = do
     boolAna preds $ do
       noOpOrPred preds "predicate" mty ide pos nargs
       expansions <- mapM (minExpTerm mef sign) args
-      let qualForms = qualifyFs qualifyPred ide pos
-                       $ concatMap (getProfiles sign predArgs preds . combine)
-                       $ combine expansions
+      let formCombs = concatMap (getCombs sign predArgs preds . combine)
+            $ combine expansions
+          partCombs = map (partition $ \ (_, _, m) -> isNothing m) formCombs
+          (goodCombs, _badCombs) = unzip partCombs
+          qualForms = qualifyGFs qualifyPred ide pos goodCombs
       boolAna qualForms
         $ isUnambiguous (globAnnos sign)
               (Predication (Pred_name ide) args pos) qualForms pos
+
+getCombs :: TermExtension f => Sign f e -> (a -> [SORT]) -> [[a]] -> [[TERM f]]
+  -> [[(a, [TERM f], Maybe Int)]]
+getCombs sign getArgs = flip $ map . \ cs fs ->
+  [ (f, ts, elemIndex False $ zipWith (leqSort sign) (map sortOfTerm ts)
+            $ getArgs f) | f <- fs, ts <- cs ]
 
 getProfiles :: TermExtension f => Sign f e -> (a -> [SORT]) -> [[a]]
   -> [[TERM f]] -> [[(a, [TERM f])]]
 getProfiles sign getArgs = flip $ map . \ cs fs ->
   [ (f, ts) | f <- fs, ts <- cs
   , and $ zipWith (leqSort sign) (map sortOfTerm ts) (getArgs f) ]
+
+qualifyGFs :: (Id -> Range -> (a, [TERM f]) -> b) -> Id -> Range
+  -> [[(a, [TERM f], Maybe Int)]] -> [[b]]
+qualifyGFs f ide pos = map $ map (f ide pos . \ (a, b, _) -> (a, b))
 
 qualifyFs :: (Id -> Range -> (a, [TERM f]) -> b) -> Id -> Range
   -> [[(a, [TERM f])]] -> [[b]]
@@ -277,26 +291,26 @@ minimizeEq s = keepMinimals s (sortOfTerm . snd)
 minExpTerm :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> TERM f -> Result [[TERM f]]
 minExpTerm mef sign top = let ga = globAnnos sign in case top of
-    Qual_var var sort _ -> let ts = minExpTermVar sign var (Just sort) in
+    Qual_var var srt _ -> let ts = minExpTermVar sign var (Just srt) in
         if null ts then mkError "no matching qualified variable found" var
         else return ts
     Application op terms pos -> minExpTermOp mef sign op terms pos
-    Sorted_term term sort pos -> do
+    Sorted_term term srt pos -> do
       expandedTerm <- minExpTerm mef sign term
       -- choose expansions that fit the given signature, then qualify
       let validExps =
-              map (filter (maybe True (flip (leqSort sign) sort)
+              map (filter (maybe True (flip (leqSort sign) srt)
                                    . optSortOfTerm (const Nothing)))
                       expandedTerm
       hasSolutions ga top (map (map (\ t ->
-                 Sorted_term t sort pos)) validExps) pos
-    Cast term sort pos -> do
+                 Sorted_term t srt pos)) validExps) pos
+    Cast term srt pos -> do
       expandedTerm <- minExpTerm mef sign term
       -- find a unique minimal common supersort
       let ts = map (concatMap (\ t ->
                     map ( \ c ->
-                        Cast (mkSorted sign t c pos) sort pos)
-                    $ maybe [sort] (minimalSupers sign sort)
+                        Cast (mkSorted sign t c pos) srt pos)
+                    $ maybe [srt] (minimalSupers sign srt)
                     $ optTermSort t)) expandedTerm
       hasSolutions ga top ts pos
     Conditional term1 formula term2 pos -> do
