@@ -153,9 +153,9 @@ minExpFORMULAeq :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> (TERM f -> TERM f -> Range -> FORMULA f)
     -> TERM f -> TERM f -> Range -> Result (FORMULA f)
 minExpFORMULAeq mef sign eq term1 term2 pos = do
-    ps <- minExpTermCond mef sign ( \ t1 t2 -> eq t1 t2 pos)
+    (ps, msg) <- minExpTermCond mef sign ( \ t1 t2 -> eq t1 t2 pos)
           term1 term2 pos
-    isUnambiguous "" (globAnnos sign) (eq term1 term2 pos) ps pos
+    isUnambiguous msg (globAnnos sign) (eq term1 term2 pos) ps pos
 
 -- | check if there is at least one solution
 hasSolutions :: Pretty f => String -> GlobalAnnos -> f -> [[f]] -> Range
@@ -237,12 +237,13 @@ minExpFORMULApred mef sign ide mty args pos = do
         $ isUnambiguous msg (globAnnos sign)
               (Predication (Pred_name ide) args pos) qualForms pos
 
-missMsg :: Int -> Id -> [SORT] -> [SORT] -> String
-missMsg maxArg ide foundTs expectedTs =
-  let showSort s = case s of
+showSort :: [SORT] -> String
+showSort s = case s of
          [ft] -> "a term of sort '" ++ shows ft "' was "
          _ -> "terms of sorts " ++ showDoc s " were "
-  in
+
+missMsg :: Int -> Id -> [SORT] -> [SORT] -> String
+missMsg maxArg ide foundTs expectedTs =
   "\nin the " ++ show (maxArg + 1) ++ ". argument of '" ++ shows ide "'\n"
   ++ showSort foundTs ++ "found but\n"
   ++ showSort expectedTs ++ "expected."
@@ -329,9 +330,9 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
       hasSolutions "" ga top ts pos
     Conditional term1 formula term2 pos -> do
       f <- minExpFORMULA mef sign formula
-      ts <- minExpTermCond mef sign ( \ t1 t2 -> Conditional t1 f t2 pos)
+      (ts, msg) <- minExpTermCond mef sign ( \ t1 t2 -> Conditional t1 f t2 pos)
             term1 term2 pos
-      hasSolutions "" ga (Conditional term1 formula term2 pos) ts pos
+      hasSolutions msg ga (Conditional term1 formula term2 pos) ts pos
     ExtTERM t -> do
       nt <- mef sign t
       return [[ExtTERM nt]]
@@ -423,15 +424,19 @@ minExpTermOp mef sign osym args pos = case osym of
 ---------------------------------------------------------- -}
 minExpTermCond :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> (TERM f -> TERM f -> a) -> TERM f -> TERM f
-    -> Range -> Result [[a]]
+    -> Range -> Result ([[a]], String)
 minExpTermCond mef sign f term1 term2 pos = do
     pairs <- minExpTermEq mef sign term1 term2
-    return $ map (concatMap ( \ (t1, t2) ->
+    let (lhs, rhs) = unzip $ concat pairs
+        mins = keepMinimals sign id . map sortOfTerm
+        ds = "\n" ++ showSort (mins lhs) ++ "on the lhs but\n"
+          ++ showSort (mins rhs) ++ "on the rhs."
+    return (map (concatMap ( \ (t1, t2) ->
               let s1 = sortOfTerm t1
                   s2 = sortOfTerm t2
               in map ( \ s -> f (mkSorted sign t1 s pos)
                                 (mkSorted sign t2 s pos))
-                   $ minimalSupers sign s1 s2)) pairs
+                   $ minimalSupers sign s1 s2)) pairs, ds)
 
 {- ----------------------------------------------------------
     Let P be a set of equivalence classes of qualified terms.
