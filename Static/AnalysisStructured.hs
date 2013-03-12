@@ -945,7 +945,7 @@ extendMorphism sharing (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
   let illShared = (ext_sym_of lid sigmaA `Set.intersection`
                               ext_sym_of lid sigmaAD )
                    Set.\\ imageSet h symsP
-  unless ((Set.null illShared) || (not sharing))
+  unless (Set.null illShared || not sharing)
     $ plain_error () ("Symbols shared between actual parameter and body"
                      ++ "\nmust be in formal parameter:\n"
                      ++ showDoc illShared "") nullRange
@@ -986,8 +986,8 @@ applyGS lg (ExtGenSig (GenSig nsigI _ gsigmaP) nsigB) args = do
   (gsigmaA', Comorphism aid) <- gSigCoerce lg gsigmaA cl
   mor1 <- coerceMorphism lidG (sourceLogic aid) "applyGS" mor0
   mor2 <- map_morphism aid mor1
-  (gsig, G_morphism gid mor3 mId) <- extendMorphism True gsigmaP' gsigmaB' gsigmaA' $
-    G_morphism (targetLogic aid) mor2 startMorId
+  (gsig, G_morphism gid mor3 mId) <- extendMorphism True gsigmaP' gsigmaB'
+    gsigmaA' $ G_morphism (targetLogic aid) mor2 startMorId
   case gsigmaB of
     G_sign lidB sigB indB -> do
       sigB' <- coerceSign lidB (sourceLogic bid) "applyGS2" sigB
