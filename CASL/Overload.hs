@@ -230,8 +230,8 @@ minExpFORMULApred mef sign ide mty args pos = do
           _ -> cmd
     boolAna preds $ do
       noOpOrPred preds "predicate" mty ide pos nargs
-      expansions <- mapM (minExpTerm mef sign) args
-      let (goodCombs, msg) = getAllCombs sign ide predArgs preds expansions
+      tts <- mapM (minExpTerm mef sign) args
+      let (goodCombs, msg) = getAllCombs sign nargs ide predArgs preds tts
           qualForms = qualifyGFs qualifyPred ide pos goodCombs
       boolAna qualForms
         $ isUnambiguous msg (globAnnos sign)
@@ -242,15 +242,17 @@ showSort s = case s of
          [ft] -> "a term of sort '" ++ shows ft "' was "
          _ -> "terms of sorts " ++ showDoc s " were "
 
-missMsg :: Int -> Id -> [SORT] -> [SORT] -> String
-missMsg maxArg ide foundTs expectedTs =
-  "\nin the " ++ show (maxArg + 1) ++ ". argument of '" ++ shows ide "'\n"
+missMsg :: Bool -> Int -> Id -> [SORT] -> [SORT] -> String
+missMsg singleArg maxArg ide foundTs expectedTs =
+  "\nin the "
+  ++ (if singleArg then "" else show (maxArg + 1) ++ ". ")
+  ++ "argument of '" ++ shows ide "'\n"
   ++ showSort foundTs ++ "found but\n"
   ++ showSort expectedTs ++ "expected."
 
-getAllCombs :: TermExtension f => Sign f e -> Id -> (a -> [SORT]) -> [[a]]
-  -> [[[TERM f]]] -> ([[(a, [TERM f], Maybe Int)]], String)
-getAllCombs sign ide getArgs fs expansions =
+getAllCombs :: TermExtension f => Sign f e -> Int -> Id -> (a -> [SORT])
+  -> [[a]] -> [[[TERM f]]] -> ([[(a, [TERM f], Maybe Int)]], String)
+getAllCombs sign nargs ide getArgs fs expansions =
       let formCombs = concatMap (getCombs sign getArgs fs . combine)
             $ combine expansions
           partCombs = map (partition $ \ (_, _, m) -> isNothing m) formCombs
@@ -263,7 +265,7 @@ getAllCombs sign ide getArgs fs expansions =
             $ map (\ (_, ts, _) -> sortOfTerm $ ts !! maxArg) badCs2
           expectedTs = keepMinimals1 False sign id
             $ map (\ (a, _, _) -> getArgs a !! maxArg) badCs2
-          in (goodCombs, missMsg maxArg ide foundTs expectedTs)
+          in (goodCombs, missMsg (nargs == 1) maxArg ide foundTs expectedTs)
 
 getCombs :: TermExtension f => Sign f e -> (a -> [SORT]) -> [[a]] -> [[TERM f]]
   -> [[(a, [TERM f], Maybe Int)]]
@@ -365,7 +367,7 @@ minExpTermAppl mef sign ide mty args pos = do
     noOpOrPred ops "operation" mty ide pos nargs
     expansions <- mapM (minExpTerm mef sign) args
     let  -- generate profiles as descr. on p. 339 (Step 3)
-        (goodCombs, msg) = getAllCombs sign ide opArgs ops expansions
+        (goodCombs, msg) = getAllCombs sign nargs ide opArgs ops expansions
         qualTerms = qualifyGFs qualifyOp ide pos
                     $ map (minimizeOp sign) goodCombs
     hasSolutions msg (globAnnos sign)
