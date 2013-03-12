@@ -80,7 +80,7 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
       return $ maybe (ATPTLimitExceeded, fail "time limit exceeded")
                      (\ x -> (ATPSuccess, x)) mRes
   let fstr = show (printTheoryFormula $ AS_Anno.mapNamed
-                       (simplifySen dummyMin dummy (sign qm)) nGoal)
+                       (simplifyCASLSen $ sign qm) nGoal)
       showDiagStrings = intercalate "\n" . map diagString -- no final newline
       diagstr = case (res, d) of
         (Just True, _) -> showDiagStrings (take 10 d)
@@ -166,7 +166,7 @@ showAssignments qm xs =
 
 showSingleAssignment :: QModel -> (VAR, CASLTERM) -> String
 showSingleAssignment qm (v, t) =
-  show v ++ "->" ++ showDoc (rmTypesT dummyMin dummy (sign qm) t) ""
+  show v ++ "->" ++ showDoc (rmTypesT (const return) (const id) (sign qm) t) ""
 
 emptyAssignment :: QModel -> VariableAssignment
 emptyAssignment qm = VariableAssignment qm []

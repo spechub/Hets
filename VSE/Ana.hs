@@ -520,8 +520,8 @@ mapDlformula m (Ranged f r) = case f of
 -- | simplify fully qualified terms and formulas for pretty printing sentences
 simpProg :: Sign () e -> Program -> Program
 simpProg sig =
-  foldProg (mapProg (simplifyTerm dummyMin (const id) sig)
-  $ simplifySen dummyMin (const id) sig)
+  foldProg (mapProg (simplifyCASLTerm sig)
+  $ simplifyCASLSen sig)
     { foldBlock = \ (Ranged b r) _ _ -> case b of
                   Block vs p -> Ranged (Block vs $ simpProg
                            (execState (mapM_ addVars vs) sig) p) r

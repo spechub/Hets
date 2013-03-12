@@ -95,12 +95,6 @@ idToOpSymbol idt = Symbol idt . OpAsItemType
 idToPredSymbol :: Id -> PredType -> Symbol
 idToPredSymbol idt = Symbol idt . PredAsItemType
 
-dummy :: Sign f s -> a -> ()
-dummy _ _ = ()
-
-dummyMin :: b -> c -> Result ()
-dummyMin _ _ = return ()
-
 type CASLSign = Sign () ()
 
 {- | the data type for the basic static analysis to accumulate variables,
