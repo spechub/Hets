@@ -115,7 +115,10 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
                         Membership (mkSorted sign t c pos) srt pos)
                     $ maybe [srt] (minimalSupers sign srt)
                     $ optTermSort t)) ts
-        isUnambiguous "" (globAnnos sign) formula fs pos
+            ds = keepMinimals sign id . map sortOfTerm $ concat ts
+            msg = "\n" ++ showSort ds ++ "found but\na supersort of '"
+              ++ shows srt "' was expected."
+        isUnambiguous msg (globAnnos sign) formula fs pos
     ExtFORMULA f -> fmap ExtFORMULA $ mef sign f
     QuantOp o ty f -> do
         let sign' = sign0 { opMap = addOpTo o (toOpType ty) $ opMap sign0 }
