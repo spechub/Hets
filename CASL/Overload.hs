@@ -242,11 +242,14 @@ showSort s = case s of
          [ft] -> "a term of sort '" ++ shows ft "' was "
          _ -> "terms of sorts " ++ showDoc s " were "
 
-missMsg :: Bool -> Int -> Id -> [SORT] -> [SORT] -> String
-missMsg singleArg maxArg ide foundTs expectedTs =
+missMsg :: Bool -> Int -> Id -> [[SORT]] -> [SORT] -> [SORT] -> String
+missMsg singleArg maxArg ide args foundTs expectedTs =
   "\nin the "
   ++ (if singleArg then "" else show (maxArg + 1) ++ ". ")
-  ++ "argument of '" ++ shows ide "'\n"
+  ++ "argument of '" ++ show ide
+  ++ (if singleArg then "'\n" else case args of
+       [arg] -> " : " ++ showDoc (PredType arg) "'\n"
+       _ -> "'\n  with argument sorts " ++ showDoc (map PredType args) "\n")
   ++ showSort foundTs ++ "found but\n"
   ++ showSort expectedTs ++ "expected."
 
@@ -261,11 +264,12 @@ getAllCombs sign nargs ide getArgs fs expansions =
       in if null badCs then (goodCombs, "") else let
           maxArg = maximum $ map (\ (_, _, Just c) -> c) badCs
           badCs2 = filter (\ (_, _, Just c) -> maxArg == c) badCs
+          args = Set.toList . Set.fromList
+            $ map (\ (a, _, _) -> getArgs a) badCs2
           foundTs = keepMinimals sign id
             $ map (\ (_, ts, _) -> sortOfTerm $ ts !! maxArg) badCs2
-          expectedTs = keepMinimals1 False sign id
-            $ map (\ (a, _, _) -> getArgs a !! maxArg) badCs2
-          in (goodCombs, missMsg (nargs == 1) maxArg ide foundTs expectedTs)
+          expectedTs = keepMinimals1 False sign id $ map (!! maxArg) args
+      in (goodCombs, missMsg (nargs == 1) maxArg ide args foundTs expectedTs)
 
 getCombs :: TermExtension f => Sign f e -> (a -> [SORT]) -> [[a]] -> [[TERM f]]
   -> [[(a, [TERM f], Maybe Int)]]
