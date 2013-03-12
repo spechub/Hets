@@ -33,11 +33,13 @@ import CASL.ToDoc
 
 {- | simplifies formula\/term informations for 'show theory' of
    HETS-graph representation. -}
-simplifyCASLSen :: Sign () e -> FORMULA () -> FORMULA ()
-simplifyCASLSen = simplifySen dummyMin dummy . setRevSortRel
+simplifyCASLSen :: (FormExtension f, TermExtension f)
+  => Sign f e -> FORMULA f -> FORMULA f
+simplifyCASLSen = simplifySen (const return) (const id) . setRevSortRel
 
-simplifyCASLTerm :: Sign () e -> TERM () -> TERM ()
-simplifyCASLTerm = simplifyTerm dummyMin dummy
+simplifyCASLTerm :: (FormExtension f, TermExtension f)
+  => Sign f e -> TERM f -> TERM f
+simplifyCASLTerm = simplifyTerm (const return) (const id)
 
 simplifySen :: (FormExtension f, TermExtension f)
   => Min f e -- ^ extension type analysis

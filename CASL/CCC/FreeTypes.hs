@@ -20,6 +20,7 @@ import CASL.SimplifySen
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof (terminationProof)
 import CASL.Overload (leqF)
+import CASL.ToDoc
 
 import Common.AS_Annotation
 import Common.Consistency (Conservativity (..))
@@ -60,19 +61,18 @@ isUserOrSortGen ax = case stripPrefix "ga_" $ senAttr ax of
 getFs :: [Named (FORMULA f)] -> [FORMULA f]
 getFs = map sentence . filter isUserOrSortGen
 
-getExAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
+getExAxioms :: [Named (FORMULA f)] -> [FORMULA f]
 getExAxioms = filter isExQuanti . getFs
 
-getAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
+getAxioms :: [Named (FORMULA f)] -> [FORMULA f]
 getAxioms =
   filter (\ f -> not $ isSortGen f || isMembership f || isExQuanti f) . getFs
 
-getInfoSubsort :: Morphism () () ()
-    -> [Named (FORMULA ())] -> [FORMULA ()]
+getInfoSubsort :: Morphism f e m -> [Named (FORMULA f)] -> [FORMULA f]
 getInfoSubsort m = concatMap (infoSubsort esorts) . filter isMembership . getFs
   where esorts = Set.toList . emptySortSet $ mtarget m
 
-getAxGroup :: [Named (FORMULA ())] -> [[FORMULA ()]]
+getAxGroup :: GetRange f => [Named (FORMULA f)] -> [[FORMULA f]]
 getAxGroup = groupAxioms . filter (not . isDomain) . getAxioms
 
 -- | get the constraints from sort generation axioms
@@ -89,7 +89,7 @@ recoverSortsAndConstructors osens fsn = let
   in (Set.unions $ map Set.fromList srts, nubOrd $ concat cons)
 
 -- check that patterns do not overlap, if not, return proof obligation.
-getOverlapQuery :: [Named (FORMULA ())] -> [FORMULA ()]
+getOverlapQuery :: (Ord f, GetRange f) => [Named (FORMULA f)] -> [FORMULA f]
 getOverlapQuery fsn = overlap_query where
         axPairs = concatMap pairs $ getAxGroup fsn
         olPairs = filter (\ (a, b) -> checkPatterns
@@ -113,7 +113,8 @@ getOverlapQuery fsn = overlap_query where
   check if leading symbols are new (not in the image of morphism),
         if not, return it as proof obligation
 -}
-getDefsForOld :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
+getDefsForOld :: GetRange f => Morphism f e m -> [Named (FORMULA f)]
+  -> [FORMULA f]
 getDefsForOld m fsn = let
         sig = imageOfMorphism m
         oldOpMap = opMap sig
@@ -128,23 +129,23 @@ getDefsForOld m fsn = let
 
 {- | newly introduced sorts
 (the input signature is the domain of the inclusion morphism) -}
-getNSorts :: Sign e f -> Morphism e f m -> Set.Set SORT
+getNSorts :: Sign f e -> Morphism f e m -> Set.Set SORT
 getNSorts osig m = on Set.difference sortSet (mtarget m) osig
 
 -- | all only generated sorts
-getNotFreeSorts :: Set.Set SORT -> [Named (FORMULA ())] -> Set.Set SORT
+getNotFreeSorts :: Set.Set SORT -> [Named (FORMULA f)] -> Set.Set SORT
 getNotFreeSorts nSorts fsn = Set.intersection nSorts
     $ Set.difference (getGenSorts fsn) freeSorts where
         freeSorts = foldr (\ f -> case sentence f of
           Sort_gen_ax csts True -> Set.union . Set.fromList $ map newSort csts
           _ -> id) Set.empty fsn
 
-getGenSorts :: [Named (FORMULA ())] -> Set.Set SORT
+getGenSorts :: [Named (FORMULA f)] -> Set.Set SORT
 getGenSorts = fst . recoverSortsAndConstructors []
 
 -- | non-inhabited non-empty sorts
-getNefsorts :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
-    -> Set.Set SORT -> [Named (FORMULA ())] -> Set.Set SORT
+getNefsorts :: (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
+    -> Set.Set SORT -> [Named (FORMULA f)] -> Set.Set SORT
 getNefsorts (osig, osens) m nSorts fsn =
   Set.difference fsorts $ inhabited oldSorts cons where
     oldSorts = sortSet osig
@@ -152,8 +153,9 @@ getNefsorts (osig, osens) m nSorts fsn =
     (srts, cons) = recoverSortsAndConstructors osens fsn
     fsorts = Set.difference (Set.intersection nSorts srts) esorts
 
-getDataStatus :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
-  -> [Named (FORMULA ())] -> Conservativity
+getDataStatus :: GetRange f
+  => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
+  -> [Named (FORMULA f)] -> Conservativity
 getDataStatus (osig, osens) m fsn = dataStatus where
         tsig = mtarget m
         subs = Rel.keysSet . Rel.rmNullSets $ sortRel tsig
@@ -166,18 +168,20 @@ getDataStatus (osig, osens) m fsn = dataStatus where
               = Cons
           | otherwise = Mono
 
-getOpsPredsAndExAxioms :: Morphism () () () -> [Named (FORMULA ())]
-  -> [FORMULA ()]
+getOpsPredsAndExAxioms :: GetRange f
+  => Morphism f e m -> [Named (FORMULA f)] -> [FORMULA f]
 getOpsPredsAndExAxioms m fsn = getDefsForOld m fsn ++ getExAxioms fsn
 
-getConStatus :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
-  -> [Named (FORMULA ())] -> Conservativity
+getConStatus :: (GetRange f, Ord f)
+  => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
+  -> [Named (FORMULA f)] -> Conservativity
 getConStatus oTh m fsn = min dataStatus defStatus where
   dataStatus = getDataStatus oTh m fsn
   defStatus = if null $ getOpsPredsAndExAxioms m fsn ++ getOverlapQuery fsn
     then Def else Cons
 
-getObligations :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
+getObligations :: (GetRange f, Ord f)
+  => Morphism f e m -> [Named (FORMULA f)] -> [FORMULA f]
 getObligations m fsn = getOpsPredsAndExAxioms m fsn
   ++ getInfoSubsort m fsn ++ getOverlapQuery fsn
 
@@ -211,10 +215,10 @@ correctDef f = case quanti f of
   _ -> False
 
 -- check the definitional form of the partial axioms
-checkDefinitional :: Sign () () -> [Named (FORMULA ())]
-  -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
+checkDefinitional :: (FormExtension f, TermExtension f)
+  => Sign f e -> [Named (FORMULA f)]
+  -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
 checkDefinitional tsig fsn = let
-       formatAxiom :: FORMULA () -> String
        formatAxiom = flip showDoc "" . simplifyCASLSen tsig
        (noLSyms, withLSyms) = partition (isNothing . fst . snd)
          $ map (\ a -> (a, leadingSymPos a)) $ getAxioms fsn
@@ -266,9 +270,9 @@ checkDefinitional tsig fsn = let
                                  Implication   Predication    Equivalence
   if there are axioms not being of this form, output "don't know"
 -}
-checkSort :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
-    -> [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
+checkSort :: (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
+    -> [Named (FORMULA f)]
+    -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
 checkSort oTh@(osig, _) m fsn
     | null fsn && Set.null nSorts = Just $ return (Just (Cons, []))
     | not $ Set.null notFreeSorts = mkWarn "some types are not freely generated"
@@ -285,9 +289,9 @@ checkSort oTh@(osig, _) m fsn
         genNotNew = Set.difference (getGenSorts fsn) nSorts
         mkWarn s i r = Just $ Result [mkDiag Warning s i] $ Just r
 
-checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
-  -> [Named (FORMULA ())]
-  -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
+checkLeadingTerms :: (FormExtension f, TermExtension f, Ord f)
+  => [Named (FORMULA f)] -> Morphism f e m -> [Named (FORMULA f)]
+  -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
 checkLeadingTerms osens m fsn = let
     tsig = mtarget m
     constructors = snd $ recoverSortsAndConstructors osens fsn
@@ -313,9 +317,10 @@ checkLeadingTerms osens m fsn = let
     in if null ds then Nothing else Just $ Result ds Nothing
 
 -- check the sufficient completeness
-checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
-    -> [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
+checkIncomplete :: (FormExtension f, TermExtension f, Ord f)
+  => [Named (FORMULA f)] -> Morphism f e m
+  -> [Named (FORMULA f)]
+  -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
 checkIncomplete osens m fsn = case getNotComplete osens m fsn of
   [] -> Nothing
   incomplete -> let obligations = getObligations m fsn in Just $ Result
@@ -333,9 +338,9 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
              ++ map diagString ds) pos)
        incomplete) $ Just $ Just (Cons, obligations)
 
-checkTerminal :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
-    -> [Named (FORMULA ())]
-    -> IO (Maybe (Result (Maybe (Conservativity, [FORMULA ()]))))
+checkTerminal :: (GetRange f, Ord f)
+  => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)]
+  -> IO (Maybe (Result (Maybe (Conservativity, [FORMULA f]))))
 checkTerminal oTh m fsn = do
     let fs = getFs fsn
         fs_terminalProof = filter (\ f ->
@@ -354,8 +359,8 @@ checkTerminal oTh m fsn = do
              (if isJust proof then "not terminating"
               else "cannot prove termination") nullRange
 
-checkPositive :: [Named (FORMULA ())] -> [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
+checkPositive :: [Named (FORMULA f)] -> [Named (FORMULA f)]
+    -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
 checkPositive osens fsn =
   if all checkPos $ map sentence $ osens ++ fsn
   then Just $ return (Just (Cons, []))
@@ -403,9 +408,9 @@ checkPositive osens fsn =
   - termination proof
 ------------------------------------------------------------------------
 free datatypes and recursive equations are consistent -}
-checkFreeType :: (Sign () (), [Named (FORMULA ())]) -> Morphism () () ()
-                 -> [Named (FORMULA ())]
-                 -> IO (Result (Maybe (Conservativity, [FORMULA ()])))
+checkFreeType :: (FormExtension f, TermExtension f, Ord f)
+  => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
+  -> [Named (FORMULA f)] -> IO (Result (Maybe (Conservativity, [FORMULA f])))
 checkFreeType oTh@(_, osens) m axs = do
   ms <- mapM ($ axs)
     [ return . checkDefinitional (mtarget m)
@@ -543,8 +548,8 @@ overlapQuery ((a1, s1), (a2, s2)) =
             resA2 = substiF s2 r2
 
 
-getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
-  -> [Named (FORMULA ())] -> [([Diagnosis], [FORMULA ()])]
+getNotComplete :: (GetRange f, TermExtension f) => [Named (FORMULA f)]
+  -> Morphism f e m -> [Named (FORMULA f)] -> [([Diagnosis], [FORMULA f])]
 getNotComplete osens m fsn =
   let constructors = snd $ recoverSortsAndConstructors osens fsn
       consMap = foldr (\ (Qual_op_name o ot _) ->
