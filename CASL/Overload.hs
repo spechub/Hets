@@ -323,7 +323,10 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
               map (filter (maybe True (flip (leqSort sign) srt)
                                    . optTermSort))
                       expandedTerm
-      hasSolutions "" ga top (map (map (\ t ->
+          ds = keepMinimals sign id . map sortOfTerm $ concat expandedTerm
+          msg = "\n" ++ showSort ds ++ "found but\na subsort of '"
+            ++ shows srt "' was expected."
+      hasSolutions msg ga top (map (map (\ t ->
                  Sorted_term t srt pos)) validExps) pos
     Cast term srt pos -> do
       expandedTerm <- minExpTerm mef sign term
@@ -333,7 +336,10 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
                         Cast (mkSorted sign t c pos) srt pos)
                     $ maybe [srt] (minimalSupers sign srt)
                     $ optTermSort t)) expandedTerm
-      hasSolutions "" ga top ts pos
+          ds = keepMinimals sign id . map sortOfTerm $ concat expandedTerm
+          msg = "\n" ++ showSort ds ++ "found but \na supersort of '"
+            ++ shows srt "' was expected."
+      hasSolutions msg ga top ts pos
     Conditional term1 formula term2 pos -> do
       f <- minExpFORMULA mef sign formula
       (ts, msg) <- minExpTermCond mef sign ( \ t1 t2 -> Conditional t1 f t2 pos)
