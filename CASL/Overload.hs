@@ -115,9 +115,7 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
                         Membership (mkSorted sign t c pos) srt pos)
                     $ maybe [srt] (minimalSupers sign srt)
                     $ optTermSort t)) ts
-            ds = keepMinimals sign id . map sortOfTerm $ concat ts
-            msg = "\n" ++ showSort ds ++ "found but\na supersort of '"
-              ++ shows srt "' was expected."
+            msg = superSortError True sign srt ts
         isUnambiguous msg (globAnnos sign) formula fs pos
     ExtFORMULA f -> fmap ExtFORMULA $ mef sign f
     QuantOp o ty f -> do
@@ -140,6 +138,14 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
          Nothing -> mkError "not a formula" term
          Just f -> return f
     _ -> return formula -- do not fail even for unresolved cases
+
+superSortError :: TermExtension f
+  => Bool -> Sign f e -> SORT -> [[TERM f]] -> String
+superSortError super sign srt ts = let
+  ds = keepMinimals sign id . map sortOfTerm $ concat ts
+  in "\n" ++ showSort ds ++ "found but\na "
+     ++ (if super then "super" else "sub") ++ "sort of '"
+              ++ shows srt "' was expected."
 
 -- | test if a term can be uniquely resolved
 oneExpTerm :: (FormExtension f, TermExtension f)
@@ -326,9 +332,7 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
               map (filter (maybe True (flip (leqSort sign) srt)
                                    . optTermSort))
                       expandedTerm
-          ds = keepMinimals sign id . map sortOfTerm $ concat expandedTerm
-          msg = "\n" ++ showSort ds ++ "found but\na subsort of '"
-            ++ shows srt "' was expected."
+          msg = superSortError False sign srt expandedTerm
       hasSolutions msg ga top (map (map (\ t ->
                  Sorted_term t srt pos)) validExps) pos
     Cast term srt pos -> do
@@ -339,9 +343,7 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
                         Cast (mkSorted sign t c pos) srt pos)
                     $ maybe [srt] (minimalSupers sign srt)
                     $ optTermSort t)) expandedTerm
-          ds = keepMinimals sign id . map sortOfTerm $ concat expandedTerm
-          msg = "\n" ++ showSort ds ++ "found but \na supersort of '"
-            ++ shows srt "' was expected."
+          msg = superSortError True sign srt expandedTerm
       hasSolutions msg ga top ts pos
     Conditional term1 formula term2 pos -> do
       f <- minExpFORMULA mef sign formula
