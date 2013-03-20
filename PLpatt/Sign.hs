@@ -10,4 +10,4 @@ import PLpatt.AS_BASIC_PLpatt
 
 -- Decl and Form are fixed
 data Sigs = Sigs [Decl]
-data Theo = Theo{sign :: Sigs,axioms :: [Form]} 
+data Theo = Theo{sign :: Sigs,axioms :: [Bool']} 

@@ -12,20 +12,16 @@ import Logic.Logic -- Logic and accompanying classes
 import qualified PLpatt.Sign as Sign
 import qualified PLpatt.Morphism as Morphism
 import qualified PLpatt.AS_BASIC_PLpatt as AS
--- import qualified PLpatt.Tools as Tools
+-- import qualified PLpatt.Tools as Tools -- TODO
 import qualified MMT.Tools as Generic
--- import qualified PLpatt.Sublogic as SL
+-- import qualified PLpatt.Sublogic as SL -- TODO
 import Common.Id
 import qualified Common.DocUtils as DU
--- import Common.Lib.Pretty
 import qualified ATerm.Conversion as AT
-{- import Common.Lib.Pretty
-import Common.Consistency
-import ATC.AS_Annotation -}
 import qualified Data.Typeable.Internal as Tp
 import Common.Result
 import Data.Monoid
-
+    
 -- Logic ID     lid
 data PLpatt = PLpatt deriving Show
 
@@ -133,7 +129,7 @@ instance (Tp.Typeable AS.Basic_spec) where
 
 -- static analysis should in fact be performed by MMT
 instance StaticAnalysis PLpatt
-            AS.Basic_spec -- datatype for syntax trees - Generic.Tree ?
+            AS.Basic_spec -- datatype for syntax trees - Generic.Tree?
             AS.Form
             ()
             ()
@@ -144,12 +140,13 @@ instance StaticAnalysis PLpatt
                 where
             empty_signature PLpatt = Sign.Sigs []
 
-instance Syntax PLpatt
-            AS.Basic_spec -- parse_basic_spec produces a syntax tree
-            ()
-            () where
-{- parse_basic_spec lid = Just (\pm -> parser) -- Text.CombinatorParses.Parsec
-basic_analysis lid = Just (\ ..  ) -}
+instance Syntax PLpatt 
+                AS.Basic_spec -- parse_basic_spec produces a syntax tree
+                ()
+                ()
+                    where
+-- parse_basic_spec lid = Just (\pm -> parser) -- Text.CombinatorParses.Parsec
+-- basic_analysis lid = Just (\ ..  )
 
 -- instance of category
 instance Category Sign.Sigs Morphism.Morphism where
@@ -163,14 +160,14 @@ instance Sentences PLpatt
     Sign.Sigs
     Morphism.Morphism
     AS.Symb
-        where
+    where
 -- TODO
 
 -- Logic instance, see Logic/Logic.hs:867
 instance Logic PLpatt
-    () -- SL.Sublogic -- sublogic
+    ()	--  SL.Sublogic -- sublogic
     AS.Basic_spec -- basic_spec
-    AS.Form
+    AS.Form 
     ()  -- symb_items
     () -- symb_map_items
     Sign.Sigs -- sign
@@ -179,8 +176,8 @@ instance Logic PLpatt
     AS.Symb -- raw Symb
     () -- proof tree
     where
-{-
- logic_name = show
+ {-    
+ logic_name = show 
  id lid = Morphism.id
  comp lid = Morphism.comp
  parse_basic_spec lid = Generic.parseSpec
