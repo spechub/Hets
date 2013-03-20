@@ -53,6 +53,9 @@ getAttByNameR x e = let
             Just str -> Result [] (Just str)
             Nothing -> Result [] Nothing
 
+-- TODO: a shorthand func that deals specifically with application case
+-- getSymbName :: Element -> (String,Maybe(String,String))
+
 {-
 getElName :: Element -> String
 getElName e = (qName.elName) e

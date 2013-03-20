@@ -18,7 +18,7 @@ binding
 typed binding
 -}
 data Tree = Variable Id |
-    Application (Maybe (Id, Id)) Id [Tree] |
+    Application Id (Maybe(Id, Id)) [Tree] |
     Bind Id Id Tree |
     Tbind Id Id Tree Tree deriving (Show)
 
@@ -29,4 +29,4 @@ data Decl = Decl Id Id [Tree] deriving (Show)
 data Sign = Sign [Decl] deriving (Show)
 
 -- theory
-data Theo = Theo Sign [Tree] deriving (Show)
+data Theo = Theo{sign::Sign, axioms::[Tree]} deriving (Show)
