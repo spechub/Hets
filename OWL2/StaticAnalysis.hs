@@ -292,7 +292,7 @@ checkExtended s e = case e of
 
 -- | corrects the axiom according to the signature
 checkAxiom :: Sign -> Axiom -> Result [Axiom]
-checkAxiom s ax@(PlainAxiom ext fb) = case fb of
+checkAxiom s (PlainAxiom ext fb) = case fb of
     ListFrameBit mr lfb -> do
       next <- checkExtended s ext
       nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb
@@ -312,7 +312,7 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
                   next <- checkExtended s ext
                   -- could rarely happen, and only in our extended syntax
                   return [PlainAxiom next ab]
-            Declaration -> return [ax]
+            Declaration -> return []
         _ -> do
             next <- checkExtended s ext
             nfb <- fmap (AnnFrameBit ans) $ checkAnnBit s afb
