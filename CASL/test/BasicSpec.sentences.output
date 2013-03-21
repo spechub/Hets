@@ -2066,7 +2066,10 @@
 17.14-17.16: ### Hint: redeclared as total 'max'
 70.16: ### Hint: known variable shadowed 's'
 72.16: ### Hint: known variable shadowed 'r'
-90.19: *** Error: no typing for: suc(0) : Pos
+90.19:
+*** Error: no typing for: suc(0) : Pos
+           a term of sort 'Nat' was found but
+           a subsort of 'Pos' was expected.
 98.10-98.12: ### Hint: redeclared op 'min'
 98.15-98.17: ### Hint: redeclared op 'max'
 121.18-121.20: ### Hint: redeclared sort 'Int'
