@@ -42,6 +42,7 @@ import Logic.Comorphism (targetLogic)
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Prover
+import Logic.LGToXml
 
 import Proofs.StatusUtils
 
@@ -389,6 +390,7 @@ writeSpecFiles opts file lenv ln dg = do
     doDump opts "DuplicateDefEdges" $ let es = duplicateDefEdges dg in
       unless (null es) $ print es
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-    doDump opts "LibEnv" $
-               writeVerbFile opts (filePrefix ++ ".lenv") $
-                    shows (DG.prettyLibEnv lenv) "\n"
+    doDump opts "XmlLogicGraph" $ writeVerbFile opts "LogicGraph.xml"
+      $ ppTopElement $ lGToXml logicGraph
+    doDump opts "LibEnv" $ writeVerbFile opts (filePrefix ++ ".lenv")
+      $ shows (DG.prettyLibEnv lenv) "\n"
