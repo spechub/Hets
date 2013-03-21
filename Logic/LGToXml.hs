@@ -19,6 +19,7 @@ import Logic.Logic
 import Logic.Prover
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe
 
 import Common.Consistency
@@ -27,10 +28,21 @@ import Common.ToXml
 import Text.XML.Light
 
 lGToXml :: LogicGraph -> Element
-lGToXml lg =
-  unode "LogicGraph"
+lGToXml lg = let
+  cs = Map.elems $ comorphisms lg
+  ssubs = Set.toList . Set.fromList
+    $ map (\ (Comorphism cid) -> G_sublogics (sourceLogic cid)
+           $ sourceSublogic cid) cs
+  tsubs = Set.toList . Set.fromList
+    $ map (\ (Comorphism cid) -> G_sublogics (targetLogic cid)
+           $ targetSublogic cid) cs
+  in unode "LogicGraph"
   $ map logicToXml (Map.elems $ logics lg)
-  ++ map comorphismToXml (Map.elems $ comorphisms lg)
+  ++ map (\ a -> add_attr (mkNameAttr $ show a) $ unode "sourceSublogic" ())
+    ssubs
+  ++ map (\ a -> add_attr (mkNameAttr $ show a) $ unode "targetSublogic" ())
+    tsubs
+  ++ map comorphismToXml cs
 
 logicToXml :: AnyLogic -> Element
 logicToXml (Logic lid) = add_attrs
@@ -44,7 +56,7 @@ logicToXml (Logic lid) = add_attrs
   ] . unode "logic"
   $ unode "Description" (mkText $ description lid)
   : map (\ a -> add_attr (mkNameAttr a) $ unode "Serialization" ())
-    (Map.keys $ parsersAndPrinters lid)
+    (filter (not . null) . Map.keys $ parsersAndPrinters lid)
   ++ map (\ a -> add_attr (mkNameAttr $ proverName a) $ unode "Prover" ())
             (provers lid)
   ++ map (\ a -> add_attr (mkNameAttr $ ccName a)
