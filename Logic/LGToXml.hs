@@ -19,7 +19,6 @@ import Logic.Logic
 import Logic.Prover
 
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Data.Maybe
 
 import Common.Consistency
@@ -30,18 +29,20 @@ import Text.XML.Light
 lGToXml :: LogicGraph -> Element
 lGToXml lg = let
   cs = Map.elems $ comorphisms lg
-  ssubs = Set.toList . Set.fromList
-    $ map (\ (Comorphism cid) -> G_sublogics (sourceLogic cid)
-           $ sourceSublogic cid) cs
-  tsubs = Set.toList . Set.fromList
-    $ map (\ (Comorphism cid) -> G_sublogics (targetLogic cid)
-           $ targetSublogic cid) cs
+  groupC = Map.toList . Map.fromListWith (++)
+  ssubs = groupC
+    $ map (\ (Comorphism cid) -> (G_sublogics (sourceLogic cid)
+           $ sourceSublogic cid, [language_name cid])) cs
+  tsubs = groupC
+    $ map (\ (Comorphism cid) -> (G_sublogics (targetLogic cid)
+           $ targetSublogic cid, [language_name cid])) cs
+  nameC = map (\ n -> add_attr (mkNameAttr n) $ unode "comorphism" ())
   in unode "LogicGraph"
   $ map logicToXml (Map.elems $ logics lg)
-  ++ map (\ a -> add_attr (mkNameAttr $ show a) $ unode "sourceSublogic" ())
-    ssubs
-  ++ map (\ a -> add_attr (mkNameAttr $ show a) $ unode "targetSublogic" ())
-    tsubs
+  ++ map (\ (a, ns) -> add_attr (mkNameAttr $ show a)
+          $ unode "sourceSublogic" $ nameC ns) ssubs
+  ++ map (\ (a, ns) -> add_attr (mkNameAttr $ show a)
+          $ unode "targetSublogic" $ nameC ns) tsubs
   ++ map comorphismToXml cs
 
 logicToXml :: AnyLogic -> Element
