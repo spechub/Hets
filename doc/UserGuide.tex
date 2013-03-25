@@ -374,12 +374,12 @@ DepQBF \url{http://fmv.jku.at/depqbf/} connected to it.
 
 \item[SoftFOL] \cite{LuettichEA06a} offers several automated theorem
   proving (ATP) systems for first-order logic with equality: \begin{inparaenum}[(1)]\item \SPASS
-  \cite{WeidenbachEtAl02}, see \url{http://www.spass-prover.org}; 
+  \cite{WeidenbachEtAl02}, see \url{http://www.spass-prover.org};
 \item Vampire \cite{RiazanovV02} see \url{http://www.vprover.org};
 \item Darwin \cite{Baumgartner:etal:Darwin:IJAIT:2005}, see \url{http://combination.cs.uiowa.edu/Darwin};
 \item Eprover \cite{Schulz:AICOM-2002}, see {http://www.eprover.org};
-\item E-KRHyper \cite{DBLP:conf/cade/PelzerW07}, see {http://www.uni-koblenz.de/~bpelzer/ekrhyper}, and 
-\item 
+\item E-KRHyper \cite{DBLP:conf/cade/PelzerW07}, see {http://www.uni-koblenz.de/~bpelzer/ekrhyper}, and
+\item
   MathServe Broker\footnote{which chooses an appropriate ATP upon a
     classification of the FOL problem} \cite{ZimmerAutexier06}.
 \end{inparaenum}
@@ -553,13 +553,13 @@ RelScheme2CASL & inclusion \\\hline
 The latest \Hets version can be obtained from the
 \Hets tools home page
 \begin{quote}
-\url{http://www.dfki.de/sks/hets}
+\url{http://www.dfki.de/cps/hets}
 \end{quote}
  Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
 
 \Hets is currently available (on Intel architectures only) for Linux
-and Mac OS-X.
+and with limited functionality for Mac OSX.
 
 There are several possibilities to install \Hets.
 \begin{enumerate}
@@ -567,55 +567,41 @@ There are several possibilities to install \Hets.
 The best support is currently given via Ubuntu packages.
 \begin{verbatim}
 sudo apt-add-repository ppa:hets/hets
-sudo apt-add-repository \
-  "deb http://archive.canonical.com/ubuntu lucid partner"
 sudo apt-get update
 sudo apt-get install hets
 \end{verbatim}
 This will also install quite a couple of tools for proving requiring about
 800 MB of disk space. For a minimal installation \texttt{apt-get install
   hets-core} instead of \texttt{hets}.
-\item For Mac OSX 10.6 (Snow Leopard) we provide a meta package
-  \texttt{Hets.mpkg} based on MacPorts that will be extended by further tools
-  for proving in the future.
-\item
-Then we have Java based \Hets installer that we may drop in the future.
-Download a \texttt{.jar} file and start it with
-\begin{quote}
-java -jar \texttt{file.jar}
-\end{quote}
-Note that you need Sun Java 1.4.2 or later. On a Mac, you can just
-double-click on the \texttt{.jar} file, but you have to install the MacPorts
-\texttt{libglade2} package (and all its dependencies) yourself. In order to
-speed this up we provide a meta package \texttt{libglade2.mpkg}, too.
 
-The installer will lead you through the installation with
-a graphical interface. It will download and install further
-software (if not already installed on your computer):
+The following software will be installed, too:
 
 \medskip
 {\small
 \begin{tabular}{|l|l|p{5cm}|}\hline
 Hets-lib & specification library & \url{http://www.cofi.info/Libraries}\\\hline
 uDraw(Graph) & graph drawing & \url{http://www.informatik.uni-bremen.de/uDrawGraph/en/}\\\hline
-Tcl/Tk & graphics widget system & (version 8.4 or 8.5 must be installed before)\\\hline
+Tcl/Tk & graphics widget system & (version 8.4 or 8.5)\\\hline
 \SPASS & theorem prover & \url{http://spass.mpi-sb.mpg.de/}\\\hline
-Darwin & theorem prover & should be installed manually from \url{http://combination.cs.uiowa.edu/Darwin/}\\\hline
-\Isabelle & theorem prover & \url{http://www.cl.cam.ac.uk/Research/HVG/Isabelle/}\\\hline
-(X)Emacs & editor (for Isabelle) & (must be installed manually)\\\hline
+Darwin & theorem prover & \url{http://combination.cs.uiowa.edu/Darwin/}\\\hline
 \end{tabular}
 }
 \medskip
 
-\item
-If you do not have Sun Java, you can just download the hets binary.
-You have to unpack it with \texttt{bunzip2} and then put it at
-some place coverd by your \texttt{PATH}. You also have to
-install the above mentioned software and set
-several environment variables, as explained on the installation page.
+A daily snapshot of \texttt{hets} can be installed by:
+\begin{verbatim}
+sudo hets -update
+\end{verbatim}
+
+In case the binary (under \texttt{/usr/lib/hets/hets}) is broken it can be replaced manually or by reverting an update:
+\begin{verbatim}
+sudo hets -revert
+\end{verbatim}
+
+\item For Mac OSX we provide disk images \texttt{Hets-<date>.dmg} without GTK support.
 
 \item
-You may compile \Hets from the sources (they are licensed under GPL), 
+You may compile \Hets from the sources (they are licensed under GPL),
 please follow the
 link ``Hets: source code and information for developers''
 on the \Hets web page, download the sources (as tarball or from
@@ -629,9 +615,11 @@ installed in addition:
 \medskip
 {\small
 \begin{tabular}{|l|l|p{5cm}|}\hline
+\Isabelle & theorem prover & \url{http://www.cl.cam.ac.uk/Research/HVG/Isabelle/}\\\hline
+(X)Emacs & editor (for Isabelle) & \\\hline
 zChaff & SAT solver & \url{http://www.princeton.edu/~chaff/zchaff.html} \\\hline
 minisat & SAT solver & \url{http://minisat.se/} \\\hline
-Pellet & OWL reasoner & \url{http://clarkparsia.com/pellet/} \\\hline
+Pellet & OWL-2 reasoner & \url{http://clarkparsia.com/pellet/} \\\hline
 E-KRHyper & theorem prover
   & \url{http://userpages.uni-koblenz.de/~bpelzer/ekrhyper/} \\\hline
 Reduce & computer algebra system
