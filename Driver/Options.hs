@@ -791,12 +791,8 @@ hetcatsOpts argv =
         (opts, non_opts, []) ->
             do flags <- checkFlags opts
                infs <- checkInFiles non_opts
-               let hcOpts = (foldr (flip makeOpts) defaultHetcatsOpts flags)
+               return (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = infs }
-               if null infs && not (interactive hcOpts) && not (serve hcOpts)
-                 && connectP hcOpts < 0 && listen hcOpts < 0
-                   then hetsError "missing input files"
-                   else return hcOpts
         (_, _, errs) -> hetsError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
@@ -916,7 +912,7 @@ hetsError = error . (++ '\n' : hetsUsage)
 
 -- | 'hetsUsage' generates usage information for the commandline
 hetsUsage :: String
-hetsUsage = let header = "Usage: hets [OPTION...] file ... file [+RTS -?]"
+hetsUsage = let header = "Usage: hets [OPTION ...] [FILE ...] [+RTS -?]"
   in usageInfo header options
 
 {- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts'

@@ -14,7 +14,8 @@ Interface for graph viewing and abstraction.
 
 module GUI.GraphAbstraction
   ( -- * Types
-    NodeId
+    OurGraph
+  , NodeId
   , NodeValue
   , EdgeValue
   , GraphInfo

@@ -28,6 +28,7 @@ import Static.FromXml
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
+import GUI.ShowLogicGraph
 #else
 import Control.Monad ( when )
 #endif
@@ -54,7 +55,7 @@ import HolLight.HolLight2DG (anaHolLightFile)
 #endif
 
 #ifdef HAXML
-import Isabelle.Isa2DG (anaIsaFile,anaThyFile)
+import Isabelle.Isa2DG (anaIsaFile, anaThyFile)
 #endif
 
 main :: IO ()
@@ -66,8 +67,25 @@ main =
      if isRemote opts || interactive opts
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
        else do
-              putIfVerbose opts 3 $ "Options: " ++ show opts
-              mapM_ (processFile opts) (infiles opts)
+         putIfVerbose opts 3 $ "Options: " ++ show opts
+         case infiles opts of
+           [] -> displayLogicGraphInfo opts
+           fs -> mapM_ (processFile opts) fs
+
+noUniPkg :: IO ()
+noUniPkg = fail $ "No graph display interface; \n"
+            ++ "UNI_PACKAGE option has been "
+            ++ "disabled during compilation of Hets"
+
+displayLogicGraphInfo :: HetcatsOpts -> IO ()
+displayLogicGraphInfo opts = case guiType opts of
+    NoGui -> writeLG opts
+    UseGui ->
+#ifdef UNI_PACKAGE
+      showPlainLG
+#else
+      noUniPkg
+#endif
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file = do
@@ -99,13 +117,11 @@ processFile opts file = do
     displayGraph file opts res
 
 displayGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
-#ifdef UNI_PACKAGE
 displayGraph file opts res = case guiType opts of
     NoGui -> return ()
-    UseGui -> showGraph file opts res
+    UseGui ->
+#ifdef UNI_PACKAGE
+      showGraph file opts res
 #else
-displayGraph _ opts _ = when (guiType opts == UseGui)
-  $ fail $ "No graph display interface; \n"
-            ++ "UNI_PACKAGE option has been "
-            ++ "disabled during compilation of Hets"
+      noUniPkg
 #endif

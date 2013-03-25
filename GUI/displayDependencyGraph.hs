@@ -52,7 +52,7 @@ main = do
         fn = filter (isSuffixOf suf) fs
         ffn = map ( \ s -> take (length s - length suf) s) fn
         ffnn = filter exclude $ filter (elem '.') ffn
-        fln = map (fst . break (== '.'))  ffnn
+        fln = map (fst . break (== '.')) ffnn
         fln' = nub fln
     lfs <- mapM (readFile . (++ suf)) ffnn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
@@ -68,10 +68,10 @@ main = do
     depG <- newGraph daVinciSort graphParms
     let flln = nub $ fln' ++ concat sss'
         subNodeMenu = LocalMenu (Menu (Just "Info") [
-                      Button "Contents" (\lg -> createTextDisplay
+                      Button "Contents" (\ lg -> createTextDisplay
                       ("Contents of " ++ lg)
-                       (showCon lg) [size(80,25)])])
-        showCon lg = unlines (filter (isPrefixOf (lg++".")) ffnn)
+                       (showCon lg) [size (80, 25)])])
+        showCon lg = unlines (filter (isPrefixOf (lg ++ ".")) ffnn)
         subNodeTypeParms =
                          subNodeMenu $$$
                          Ellipse $$$
@@ -84,7 +84,7 @@ main = do
         lookup' g_sl = Map.findWithDefault
                               (error "lookup': node not found")
                               g_sl slAndNodes
-        subArcMenu = LocalMenu( Menu Nothing [])
+        subArcMenu = LocalMenu ( Menu Nothing [])
         subArcTypeParms = subArcMenu $$$
                           ValueTitle id $$$
                             Color "green" $$$
@@ -99,9 +99,8 @@ main = do
                         Rel.fromList
                      $ isIn3 $ concat $ zipWith getContent2 fln sss'
     redraw depG
-    sync(destroyed depG)
+    sync (destroyed depG)
     destroy wishInst
-    HTk.finishHTk
 
 exclude :: String -> Bool
 exclude s = not
@@ -134,15 +133,15 @@ exclude s = not
     ])
 
 getContent2 :: String -> [String] -> [(String, String)]
-getContent2 x  = map (\ m -> (x, m))
+getContent2 x = map (\ m -> (x, m))
 
 getContent4 :: [String] -> [String]
-getContent4 = map ((!! 1) .  words)
+getContent4 = map ((!! 1) . words)
 
 getContent5 :: [String] -> [String]
-getContent5  = map $ fst . break (== '(')
+getContent5 = map $ fst . break (== '(')
 
-getContent6 :: [[String]] ->[[String]]
+getContent6 :: [[String]] -> [[String]]
 getContent6 = map $ filter (elem '.') . getContent5 . getContent4
 
 isIn3 :: (Eq a) => [(a, a)] -> [(a, a)]

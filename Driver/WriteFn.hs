@@ -12,7 +12,7 @@ Portability :  non-portable(DevGraph)
 Writing various formats, according to Hets options
 -}
 
-module Driver.WriteFn (writeSpecFiles, writeVerbFile) where
+module Driver.WriteFn (writeSpecFiles, writeVerbFile, writeLG) where
 
 import Text.ParserCombinators.Parsec
 import Text.XML.Light
@@ -39,10 +39,10 @@ import Comorphisms.LogicGraph
 
 import Logic.Coerce
 import Logic.Comorphism (targetLogic)
-import Logic.Logic
 import Logic.Grothendieck
-import Logic.Prover
 import Logic.LGToXml
+import Logic.Logic
+import Logic.Prover
 
 import Proofs.StatusUtils
 
@@ -389,8 +389,11 @@ writeSpecFiles opts file lenv ln dg = do
     doDump opts "DGraph" $ putStrLn $ showDoc dg ""
     doDump opts "DuplicateDefEdges" $ let es = duplicateDefEdges dg in
       unless (null es) $ print es
-    doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-    doDump opts "XmlLogicGraph" $ writeVerbFile opts "LogicGraph.xml"
-      $ ppTopElement $ lGToXml logicGraph
     doDump opts "LibEnv" $ writeVerbFile opts (filePrefix ++ ".lenv")
       $ shows (DG.prettyLibEnv lenv) "\n"
+
+writeLG :: HetcatsOpts -> IO ()
+writeLG opts = do
+    doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
+    writeVerbFile opts { verbose = 2 } "LogicGraph.xml" $ ppTopElement
+      $ lGToXml logicGraph

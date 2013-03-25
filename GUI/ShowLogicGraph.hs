@@ -10,10 +10,13 @@ Portability :  non-portable (Logic)
 display the logic graph
 -}
 
-module GUI.ShowLogicGraph (showLogicGraph, showLG) where
+module GUI.ShowLogicGraph (showPlainLG, showLG) where
 
 import GUI.UDGUtils as UDG
-import GUI.HTkUtils
+import GUI.HTkUtils as HTk
+import qualified GUI.GraphAbstraction as GA
+
+import HTk.Toolkit.DialogWin (useHTk)
 
 import Comorphisms.LogicGraph
 import Comorphisms.LogicList
@@ -81,7 +84,7 @@ isInclComorphism (Comorphism cid) =
     isProperSublogic (G_sublogics (sourceLogic cid) (sourceSublogic cid))
                       (G_sublogics (targetLogic cid) (targetSublogic cid))
 
-showLogicGraph :: Bool -> IO ()
+showLogicGraph :: Bool -> IO GA.OurGraph
 showLogicGraph plain = do
            -- disp s tD = debug (s ++ (show tD))
        logicG <- newGraph daVinciSort
@@ -181,6 +184,7 @@ showLogicGraph plain = do
          mapM_ (insertArcType adhocInclArcType) adhocCom
          mapM_ (insertArcType normalArcType) normalCom
        redraw logicG
+       return logicG
 
 showSubLogicGraph :: AnyLogic -> IO ()
 showSubLogicGraph subl =
@@ -282,7 +286,15 @@ showTools (Logic li) =
 
 
 showHSG :: IO ()
-showHSG = showLogicGraph False
+showHSG = showLogicGraph False >> return ()
 
 showLG :: IO ()
-showLG = showLogicGraph True
+showLG = showLogicGraph True >> return ()
+
+showPlainLG :: IO ()
+showPlainLG = do
+  wishInst <- HTk.initHTk [HTk.withdrawMainWin]
+  useHTk
+  lg <- showLogicGraph True
+  sync (destroyed lg)
+  destroy wishInst
