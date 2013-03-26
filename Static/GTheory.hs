@@ -36,6 +36,7 @@ import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
 
+import Data.List
 import qualified Data.Map as Map
 
 import Data.Typeable
@@ -253,17 +254,18 @@ invalidateProofs
   :: G_theory -- ^ old global theory
   -> G_theory -- ^ new global theory
   -> G_theory -- ^ local theory with proven goals
-  -> G_theory -- ^ new local theory with deleted proofs
+  -> (Bool, G_theory) -- ^ no changes and new local theory with deleted proofs
 invalidateProofs oTh nTh (G_theory lid syn sig si sens _) =
   let vAxs = getValidAxioms oTh nTh
       validProofs (_, bp) = case bp of
         BasicProof _ pst -> all (`elem` vAxs) $ usedAxioms pst
         _ -> True
       newSens = OMap.map
-        (\ s -> if isAxiom s then s else
-             s { senAttr = ThmStatus $ filter validProofs
-                   $ thmStatus s }) sens
-  in G_theory lid syn sig si newSens startThId
+        (\ s -> if isAxiom s then (True, s) else
+             let (ps, ups) = partition validProofs $ thmStatus s
+             in (null ups, s { senAttr = ThmStatus ps })) sens
+  in ( all fst $ OMap.elems newSens
+     , G_theory lid syn sig si (OMap.map snd newSens) startThId)
 
 {- | mark sentences as proven if an identical axiom or other proven sentence
      is part of the same theory. -}

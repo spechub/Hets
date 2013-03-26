@@ -112,8 +112,9 @@ recomputeNodeLabel le dg l@(n, lbl) =
     gTh@(Just th) ->
       let (chg, lbl1) = case globalTheory lbl of
             Nothing -> (False, lbl)
-            Just oTh -> (True, lbl
-              { dgn_theory = invalidateProofs oTh th $ dgn_theory lbl })
+            Just oTh -> let
+              (same, nLocTh) = invalidateProofs oTh th $ dgn_theory lbl
+              in (not same, lbl { dgn_theory = nLocTh })
           ngTh = if chg then computeLabelTheory le dg (n, lbl1) else gTh
       in case ngTh of
         Just nth@(G_theory _ _ _ _ sens _) ->
