@@ -4,7 +4,7 @@ Description :  consistency checking of free types
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  mgross@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
@@ -13,13 +13,13 @@ Consistency checking of free types
 
 module CASL.CCC.FreeTypes (checkFreeType) where
 
-import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
+import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Sign
 import CASL.SimplifySen
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof (terminationProof)
-import CASL.Overload (leqF)
+import CASL.Overload (leqF, leqP)
 import CASL.ToDoc
 
 import Common.AS_Annotation
@@ -72,8 +72,8 @@ getInfoSubsort :: Morphism f e m -> [Named (FORMULA f)] -> [FORMULA f]
 getInfoSubsort m = concatMap (infoSubsort esorts) . filter isMembership . getFs
   where esorts = Set.toList . emptySortSet $ mtarget m
 
-getAxGroup :: GetRange f => [Named (FORMULA f)] -> [[FORMULA f]]
-getAxGroup = groupAxioms . filter (not . isDomain) . getAxioms
+getAxGroup :: GetRange f => Sign f e -> [Named (FORMULA f)] -> [[FORMULA f]]
+getAxGroup sig = groupAxioms sig . filter (not . isDomain) . getAxioms
 
 -- | get the constraints from sort generation axioms
 constraintOfAxiom :: [FORMULA f] -> [[Constraint]]
@@ -89,9 +89,10 @@ recoverSortsAndConstructors osens fsn = let
   in (Set.unions $ map Set.fromList srts, nubOrd $ concat cons)
 
 -- check that patterns do not overlap, if not, return proof obligation.
-getOverlapQuery :: (Ord f, GetRange f) => [Named (FORMULA f)] -> [FORMULA f]
-getOverlapQuery fsn = overlap_query where
-        axPairs = concatMap pairs $ getAxGroup fsn
+getOverlapQuery :: (Ord f, GetRange f) => Sign f e -> [Named (FORMULA f)]
+  -> [FORMULA f]
+getOverlapQuery sig fsn = overlap_query where
+        axPairs = concatMap pairs $ getAxGroup sig fsn
         olPairs = filter (\ (a, b) -> checkPatterns
                            (patternsOfAxiom a, patternsOfAxiom b)) axPairs
         subst (f1, f2) = ((f1, reverse sb1), (f2, reverse sb2))
@@ -177,13 +178,14 @@ getConStatus :: (GetRange f, Ord f)
   -> [Named (FORMULA f)] -> Conservativity
 getConStatus oTh m fsn = min dataStatus defStatus where
   dataStatus = getDataStatus oTh m fsn
-  defStatus = if null $ getOpsPredsAndExAxioms m fsn ++ getOverlapQuery fsn
+  defStatus = if null $ getOpsPredsAndExAxioms m fsn
+              ++ getOverlapQuery (mtarget m) fsn
     then Def else Cons
 
 getObligations :: (GetRange f, Ord f)
   => Morphism f e m -> [Named (FORMULA f)] -> [FORMULA f]
 getObligations m fsn = getOpsPredsAndExAxioms m fsn
-  ++ getInfoSubsort m fsn ++ getOverlapQuery fsn
+  ++ getInfoSubsort m fsn ++ getOverlapQuery (mtarget m) fsn
 
 -- | check whether it is the domain of a partial function
 isDomain :: FORMULA f -> Bool
@@ -425,10 +427,14 @@ checkFreeType oTh@(_, osens) m axs = do
 
 {- | group the axioms according to their leading symbol,
 output Nothing if there is some axiom in incorrect form -}
-groupAxioms :: GetRange f => [FORMULA f] -> [[FORMULA f]]
-groupAxioms phis = map (map snd)
-   $ groupBy (on (==) fst)  -- maybe consider overload relation here?
-   $ sortBy (on compare fst)
+groupAxioms :: GetRange f => Sign f e -> [FORMULA f] -> [[FORMULA f]]
+groupAxioms sig phis = map (map snd)
+   $ Rel.partList (\ (e1, _) (e2, _) -> case (e1, e2) of
+       (Left (Qual_op_name o1 t1 _), Left (Qual_op_name o2 t2 _)) ->
+           o1 == o2 && on (leqF sig) toOpType t1 t2
+       (Right (Qual_pred_name p1 t1 _), Right (Qual_pred_name p2 t2 _)) ->
+           p1 == p2 && on (leqP sig) toPredType t1 t2
+       _ -> False)
    $ foldr (\ f -> case leadingSym f of
     Just ei -> ((ei, f) :)
     Nothing -> id) [] phis
@@ -556,10 +562,11 @@ getNotComplete osens m fsn =
         MapSet.insert (res_OP_TYPE ot) (o, ot)) MapSet.empty constructors
       consMap2 = foldr (\ (Qual_op_name o ot _) ->
         MapSet.insert o ot) MapSet.empty constructors
+      sig = mtarget m
   in
   filter (not . null . fst)
-  $ map (\ g -> (diags . completePatterns (mtarget m) consMap consMap2
-                $ map patternsOfAxiom g, g)) $ getAxGroup fsn
+  $ map (\ g -> (diags . completePatterns sig consMap consMap2
+                $ map patternsOfAxiom g, g)) $ getAxGroup sig fsn
 
 -- | check whether the patterns of a function or predicate are complete
 completePatterns :: TermExtension f => Sign f e
