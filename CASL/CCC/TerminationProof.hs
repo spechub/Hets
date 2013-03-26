@@ -68,7 +68,7 @@ terminationProof sig fs dms = if null fs then return $ Just True else do
       , "when_else(t1,false,t2) -> t2" ]
     c_vars = "(VAR t t1 t2 "
       ++ unwords (map transToken . nubOrd $ concatMap varOfAxiom fs) ++ ")"
-    c_axms = axhead ++ map (\ f -> axiom2TRS sig f dms) fs ++ [")"]
+    c_axms = axhead ++ map (axiom2TRS sig dms) fs ++ [")"]
   tmpFile <- getTempFile (unlines $ c_vars : c_axms) "Input.trs"
   aprovePath <- getEnvDef "HETS_APROVE"
                   "CASL/Termination/AProVE.jar"
@@ -158,8 +158,8 @@ a rule without condition is represented by "A -> B" in
 Term Rewrite Systems; if there are some conditions, then
 follow the conditions after the symbol "|".
 For example : "A -> B | C -> D, E -> F, ..." -}
-axiom2TRS :: Eq f => Sign f e -> FORMULA f -> [(TERM f, FORMULA f)] -> String
-axiom2TRS sig f doms = case quanti f of
+axiom2TRS :: Eq f => Sign f e -> [(TERM f, FORMULA f)] -> FORMULA f -> String
+axiom2TRS sig doms f = case quanti f of
   Relation f1 c f2 _ | c /= Equivalence -> case f2 of
     Relation f3 Equivalence f4 _ -> axiom2Rule f3 ++ " | "
       ++ axiom2Cond f1 ++ ", " ++ axiom2Cond f4
