@@ -93,7 +93,7 @@ getOverlapQuery :: (Ord f, GetRange f) => Sign f e -> [Named (FORMULA f)]
   -> [FORMULA f]
 getOverlapQuery sig fsn = overlap_query where
         axPairs = concatMap pairs $ getAxGroup sig fsn
-        olPairs = filter (\ (a, b) -> checkPatterns
+        olPairs = filter (\ (a, b) -> checkPatterns sig
                            (patternsOfAxiom a, patternsOfAxiom b)) axPairs
         subst (f1, f2) = ((f1, reverse sb1), (f2, reverse sb2))
           where (sb1, sb2) = st ((patternsOfAxiom f1, []),
@@ -354,7 +354,7 @@ checkTerminal oTh m fsn = do
         res = if null obligations then Nothing else
                   Just $ return (Just (conStatus, obligations))
     if null fs_terminalProof then return res else do
-      proof <- terminationProof fs_terminalProof domains
+      proof <- terminationProof (mtarget m) fs_terminalProof domains
       return $ case proof of
         Just True -> res
         _ -> Just $ warning (Just (Cons, obligations))
@@ -481,12 +481,12 @@ patternsOfAxiom f = case quanti f of
     _ -> []
 
 -- | check whether two patterns are overlapped
-checkPatterns :: (Eq f) => ([TERM f], [TERM f]) -> Bool
-checkPatterns (ps1, ps2) = case (ps1, ps2) of
+checkPatterns :: Eq f => Sign f e -> ([TERM f], [TERM f]) -> Bool
+checkPatterns sig (ps1, ps2) = case (ps1, ps2) of
   (hd1 : tl1, hd2 : tl2) ->
-      if isVar hd1 || isVar hd2 then checkPatterns (tl1, tl2)
-      else sameOpsApp hd1 hd2 && checkPatterns (patternsOfTerm hd1 ++ tl1,
-                                                patternsOfTerm hd2 ++ tl2)
+      if isVar hd1 || isVar hd2 then checkPatterns sig (tl1, tl2)
+      else sameOpsApp sig hd1 hd2 && checkPatterns sig
+               (patternsOfTerm hd1 ++ tl1, patternsOfTerm hd2 ++ tl2)
   _ -> True
 
 {- | get the axiom from left hand side of a implication,

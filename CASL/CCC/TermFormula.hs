@@ -15,6 +15,8 @@ module CASL.CCC.TermFormula where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
+import CASL.Overload (leqF)
+import CASL.Sign
 
 import Common.Id (Range, GetRange (..))
 import qualified Common.Lib.MapSet as MapSet
@@ -153,9 +155,11 @@ substiF :: Eq f => [(TERM f, TERM f)] -> FORMULA f -> FORMULA f
 substiF = foldFormula . substRec
 
 -- | check whether two terms are the terms of same application symbol
-sameOpsApp :: TERM f -> TERM f -> Bool
-sameOpsApp app1 app2 = case (unsortedTerm app1, unsortedTerm app2) of
-  (Application ops1 _ _, Application ops2 _ _) -> ops1 == ops2
+sameOpsApp :: Sign f e -> TERM f -> TERM f -> Bool
+sameOpsApp sig app1 app2 = case (unsortedTerm app1, unsortedTerm app2) of
+  (Application (Qual_op_name ops1 t1 _) _ _
+    , Application (Qual_op_name ops2 t2 _) _ _)
+    -> ops1 == ops2 && on (leqF sig) toOpType t1 t2
   _ -> False
 
 -- | get or create a variable declaration for a formula
