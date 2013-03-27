@@ -16,10 +16,13 @@ import THF.Cons
 import THF.Sign
 import THF.Utils
 import THF.As
+import THF.PrintTHF ()
+import THF.Print ()
 
 import Common.Result
 import Common.Id
 import Common.AS_Annotation
+import Common.DocUtils
 
 import Control.Monad.State
 import qualified Data.Map (Map, lookup, insert, empty,
@@ -27,7 +30,18 @@ import qualified Data.Map (Map, lookup, insert, empty,
                            mapWithKey)
 import qualified Data.List (mapAccumL, elemIndex)
 
-data Constraint = NormalC Type | WeakC Type deriving Show
+sh :: Pretty a => a -> String
+sh = show . pretty
+
+data Constraint = NormalC (String,Range,Type)
+                | WeakC (String,Range,Type) deriving Show
+
+instance GetRange Constraint where
+    getRange (NormalC (_,r,_)) = r
+    getRange (WeakC   (_,r,_)) = r
+
+instance GetRange Type where
+    getRange _ = nullRange
 
 occursType :: Token -> Type -> Bool
 occursType t tp = case tp of
@@ -39,18 +53,18 @@ occursType t tp = case tp of
  ParType tp2 -> occursType t tp2
  _ -> False
 
-constraintToType :: Constraint -> (Bool,Type)
-constraintToType (WeakC t) = (True,t)
-constraintToType (NormalC t) = (False,t)
+constraintToType :: Constraint -> (Bool,(String,Range,Type))
+constraintToType (WeakC d) = (True,d)
+constraintToType (NormalC d) = (False,d)
 
-toConstraint :: Bool -> Type -> Constraint
+toConstraint :: Bool -> (String,Range,Type) -> Constraint
 toConstraint weak = if weak then WeakC
                     else NormalC
 
 unifyType :: Type -> Constraint -> Result [(Token, Type)]
 unifyType tp1 tp2_ = 
- let (weak,tp2) = constraintToType tp2_
-     c = toConstraint weak
+ let (weak,(s,r,tp2)) = constraintToType tp2_
+     c = \t -> toConstraint weak (s,r,t)
  in case (tp1, tp2) of
      (ParType tp1', _) ->
       unifyType tp1' (c tp2)
@@ -59,10 +73,12 @@ unifyType tp1 tp2_ =
      (VType t1, VType t2) -> return $
       if t1 == t2 then [] else [(t1, tp2)]
      (VType t1, _) -> if occursType t1 tp2
-      then mkError "Occurs check failed!" t1
+      then fatal_error ("Occurs check failed! - "
+       ++s) r
       else return [(t1, tp2)]
      (_, VType t2) -> if occursType t2 tp1
-      then mkError "Occurs check failed!" t2
+      then fatal_error ("Occurs check failed! - "
+       ++s) r
       else return [(t2, tp1)]
      (MapType tp1_1 tp1_2,
       MapType tp2_1 tp2_2) -> do
@@ -70,38 +86,41 @@ unifyType tp1 tp2_ =
       u2 <- unifyType tp1_2 (c tp2_2)
       return $ u1 ++ u2
      (MapType _ _, _) ->
-      mkError ("Different type constructor!" ++
-       show (tp1, tp2)) nullRange
+      fatal_error ("Different type constructors! " ++
+       " - " ++ s) r
      (_, MapType _ _) ->
-      mkError ("Different type constructor!" ++
-       show (tp1, tp2)) nullRange
+      fatal_error ("Different type constructor! " ++
+       " - " ++ s) r
      (ProdType tps1, ProdType tps2) ->
       if length tps1 == length tps2 ||
          weak  then
        liftM concat $
         mapR (\(tp1',tp2') -> unifyType tp1' (c tp2'))
          (zip tps1 tps2)
-      else mkError "Products of different size!" nullRange
+      else fatal_error ("Products of different size! - " ++ s) r
      (ProdType _, _) ->
-      mkError ("Different type constructor!" ++
-       show (tp1, tp2)) nullRange
+      fatal_error ("Different type constructors! - " ++ s) r
      (CType c1,CType c2) -> if c1 == c2
-      then return [] else mkError ("Cannot unify different kinds "
-       ++ show c1 ++ show c2) nullRange
-     (CType _,_) -> mkError "Unification not possible!" nullRange
-     (_,CType _) -> mkError "Unification not possible!" nullRange
+      then return [] else fatal_error ("Cannot unify different kinds!" ++ s) r
+     (CType _,_) -> fatal_error ("Unification not possible! - " ++ s) r
+     (_,CType _) -> fatal_error ("Unification not possible! - " ++ s) r
      (_, ProdType _) ->
-      mkError ("Different type constructor!" ++
-       show (tp1, tp2)) nullRange
+      fatal_error ("Different type constructors! - " ++ s) r
      (TType,TType) -> return []
      (OType,OType) -> return []
      (IType,IType) -> return []
-     (TType,_) -> mkError ("Cannot unify $tType with " ++ show tp2) nullRange
-     (_,TType) -> mkError ("Cannot unify $tType with " ++ show tp1) nullRange
-     (OType,_) -> mkError ("Cannot unify $oType with " ++ show tp2) nullRange
-     (_,OType) -> mkError ("Cannot unify $oType with " ++ show tp1) nullRange
-     (IType,_) -> mkError ("Cannot unify $iType with " ++ show tp2) nullRange
-     (_,IType) -> mkError ("Cannot unify $iType with " ++ show tp1) nullRange
+     (TType,_) -> fatal_error ("Cannot unify TType with "
+      ++ show tp2 ++ "! - " ++ s) r
+     (_,TType) -> fatal_error ("Cannot unify TType with "
+      ++ show tp1 ++ "! - " ++ s) r
+     (OType,_) -> fatal_error ("Cannot unify OType with "
+      ++ show tp2 ++ "! - " ++ s) r
+     (_,OType) -> fatal_error ("Cannot unify OType with "
+      ++ show tp1 ++ "! - " ++ s) r
+     (IType,_) -> fatal_error ("Cannot unify IType with "
+      ++ show tp2 ++ "! - " ++ s) r
+     (_,IType) -> fatal_error ("Cannot unify IType with "
+      ++ show tp1 ++ "! - " ++ s) r
      _ -> return []
 
 applyType :: [(Token, Type)] -> Token -> Maybe Type
@@ -127,9 +146,9 @@ unify' ts = case ts of
  (t1, t2) : ts' -> do
   r1 <- unify' ts'
   let t1' = apply r1 t1
-  let (weak,t2'') = constraintToType t2
+  let (weak,(msg,rg,t2'')) = constraintToType t2
   let t2' = apply r1 t2''
-  r2 <- unifyType t1' (toConstraint weak t2')
+  r2 <- unifyType t1' (toConstraint weak (msg,rg,t2'))
   return (r1 ++ r2)
 
 tmpV :: Token
@@ -156,13 +175,24 @@ getTypeCBF cm bf = case bf of
   _ -> False) then do
    (t1, cs1) <- getTypeCUF cm uf1
    (t2, cs2) <- getTypeCUF cm uf2
+   let errMsg = "(In-)Equality requires (" ++
+        (sh uf1) ++ ") : (" ++ (sh t1)
+        ++ ") and (" ++ (sh uf2) ++ ") : ("
+        ++ (sh t2) ++ " to have the same type"
    return (OType,
-    cs1 ++ cs2 ++ [(t1, NormalC t2)])
+    cs1 ++ cs2 ++ [(t1, NormalC (errMsg,getRange bf,t2))])
   else do
    (t1, cs1) <- getTypeCUF cm uf1
    (t2, cs2) <- getTypeCUF cm uf2
+   let errMsg1 = "Infix operator " ++ (sh c)
+        ++ " requires (" ++ (sh uf1) ++ ") : ("
+        ++ (sh t1) ++ ")  to have type OType"
+   let errMsg2 = "Infix operator " ++ (sh c)
+        ++ " requires (" ++ (sh uf2) ++ ") : ("
+        ++ (sh t2) ++ ")  to have type OType"
    return (OType,
-    cs1 ++ cs2 ++ [(t1, NormalC OType), (t2, NormalC OType)])
+    cs1 ++ cs2 ++ [(t1, NormalC (errMsg1,getRange uf1,OType)),
+                   (t2, NormalC (errMsg2,getRange uf2,OType))])
  TBF_THF_Binary_Tuple bt ->
   let ufs = case bt of
        TBT_THF_Or_Formula ufs' -> ufs'
@@ -185,16 +215,21 @@ getTypeCBF cm bf = case bf of
                and hope that further constraints
                will determine the type variable -}
          t <- applyResult (length ufs'') t1
+         let errMsg = "Application is not well typed"
          return (t, cs1 ++ concat cs2
-          ++ [(t1, WeakC $ genFn $ tps ++ [t])])
+          ++ [(t1, WeakC (errMsg,getRange bt, genFn $ tps ++ [t]))])
       _ -> do
        ufs' <- mapM (getTypeCUF cm) ufs
        case ufs' of
         [] -> lift Nothing
-        (t,cs) : [] -> return (t,cs++[(t,NormalC OType)])
+        (t,cs) : [] -> return (t,cs++[(t,NormalC (
+         "Boolean connective requires all " ++
+         "arguments to be of type OType", getRange ufs, OType))])
         _ -> do
          let (ts,cs) = unzip ufs'
-         return (OType,concat cs ++ map (\t -> (t,NormalC OType)) ts)
+         let errMsg = "Boolean connective requires all " ++
+                      "arguments to be of type OType"
+         return (OType,concat cs ++ map (\t -> (t,NormalC (errMsg,getRange bt,OType))) ts)
  _ -> lift Nothing
 
 applyResult :: Int -> Type -> UniqueT Maybe Type
@@ -221,7 +256,9 @@ getTypeCUF cm uf = case uf of
             v' <- numberedTok tmpV
             return $ ins t (VType v') cm') cm vs
          (t, cs) <- getTypeCUF cm' uf'
-         return (t, cs ++ [(t, NormalC OType)])
+         let errMsg = "Quantified Formula (" ++ sh uf' ++ ") : ("
+                      ++ sh t ++ ") is expected to be of type OType"
+         return (t, cs ++ [(t, NormalC (errMsg,getRange uf', OType))])
         c = A_Single_Quoted
         ins t tp = Data.Map.insert (c t)
           ConstInfo {
@@ -231,7 +268,9 @@ getTypeCUF cm uf = case uf of
             constAnno = Null}
  TUF_THF_Unary_Formula _ lf -> do
   (lf', cs) <- getTypeCLF cm lf
-  return (lf', cs ++ [(lf', NormalC OType)])
+  let errMsg = "Unary Formula (" ++ sh lf ++ ") : ("
+               ++ sh lf' ++ ") is expected to be of type OType"
+  return (lf', cs ++ [(lf', NormalC (errMsg,getRange lf,OType))])
  TUF_THF_Atom a -> case a of
   TA_THF_Conn_Term _ -> lift Nothing
   T0A_Constant c -> case Data.Map.lookup c cm of
@@ -343,15 +382,15 @@ needsConst c f =
      Nothing -> True
      _       -> False
 
-{- Note: Only Works if all Types are simple,
-   i.e. there are no ShortTypes -}
 infer :: ConstMap -> [Named THFFormula]
           -> Result (ConstMap, [Named THFFormula])
 infer cm fs =
  let constraints' = mapM (evalUniqueT . getTypeC cm
       . sentence) fs
+     errMsg = "Sentences have to be of type OType"
      constraints =
-      liftM (map (\ (t, cs) -> (OType, NormalC t) : cs)) constraints'
+      liftM (map (\ (t, cs) -> (OType, NormalC
+       (errMsg,getRangeSpan cs,t)) : cs)) constraints'
      unifications =
       liftM (map unify') constraints
  in case unifications of
@@ -385,8 +424,9 @@ type_check :: TypeMap -> ConstMap -> [Named THFFormula]
 type_check _ cm sens = do
  let constraints' = mapM (evalUniqueT .
       getTypeC cm . sentence) sens
+ let errMsg = "Every formula is expected to be of type OType"
  let constraints =
-      liftM (map (\ (t, cs) -> (OType, NormalC t) : cs)) constraints'
+      liftM (map (\ (t, cs) -> (OType, NormalC (errMsg,nullRange,t)) : cs)) constraints'
  let unifications =
       liftM (map unify') constraints
  case unifications of
