@@ -407,12 +407,15 @@ getAllProvers pk start lg =
        dbg $ yen 5 (trace (show end) start, Nothing) (\(l,_) -> l == end) g)
        (Map.keys kp)
  where
-  mkComorphism kp (path,(end,_)) = case last path of
-   (_,c) ->
-    let fullComorphism = foldr unsafeCompComorphism c (snd $ unzip $ init path)
-    in  case Map.lookup end kp of
-         Just ps -> map (\p -> (p,fullComorphism)) ps
-         _ -> error "error1"
+  mkComorphism kp (path,(end@(G_sublogics lid sl),_)) =
+   let fullComorphism = case path of
+                         [] -> idComorphism (Logic lid)
+                         _  -> case last path of
+                                (_,c) -> foldr unsafeCompComorphism c
+                                 (snd $ unzip $ init path)
+   in case Map.lookup end kp of
+        Just ps -> map (\p -> (p,fullComorphism)) ps
+        _ -> error "error1"
 
 {- | the list of proof statuses is integrated into the goalMap of the state
 after validation of the Disproved Statuses -}
