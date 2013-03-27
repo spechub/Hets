@@ -168,7 +168,7 @@ instance MinSublogic THFSl THFAtom where
    T0A_Constant _ -> tHF0
    T0A_Defined_Constant _ -> tHF0
    T0A_System_Constant _ -> tHF0
-   T0A_Variable _ -> tHF0_P
+   T0A_Variable _ -> tHF0
  -- fixme: how do these in THF0 differ from THF?
 
 instance MinSublogic THFSl THFVariable where
