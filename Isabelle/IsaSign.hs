@@ -196,42 +196,47 @@ isRefute s = case s of
     ars represents the arity t::(Ss)c;
 -}
 
-type ClassDecl = ([IsaClass],[(String,Term)],[(String,Typ)])
-type Classrel = Map.Map IsaClass ClassDecl
+type ClassDecl  = ([IsaClass],[(String,Term)],[(String,Typ)])
+type Classrel   = Map.Map IsaClass ClassDecl
 type LocaleDecl = ([String],[(String,Term)],[(String,Term)],
       [(String,Typ,Maybe AltSyntax)])
       -- parents * internal axioms * external axiosm * params
-type Locales = Map.Map String LocaleDecl
-type Arities = Map.Map TName [(IsaClass, [(Typ, Sort)])]
-type Abbrs = Map.Map TName ([TName], Typ)
+type Def        = (Typ,[(String,Typ)],Term)
+type Locales    = Map.Map String LocaleDecl
+type Defs       = Map.Map String Def
+type Arities    = Map.Map TName [(IsaClass, [(Typ, Sort)])]
+type Abbrs      = Map.Map TName ([TName], Typ)
 
 data TypeSig =
   TySg {
-    classrel:: Classrel,  -- domain of the map yields the classes
-    locales:: Locales,
-    defaultSort:: Sort,
-    log_types:: [TName],
+    classrel    :: Classrel,  -- domain of the map yields the classes
+    locales     :: Locales,
+    defs        :: Defs,
+    defaultSort :: Sort,
+    log_types   :: [TName],
     univ_witness:: Maybe (Typ, Sort),
-    abbrs:: Abbrs, -- constructor name, variable names, type.
-    arities:: Arities }
+    abbrs       :: Abbrs, -- constructor name, variable names, type.
+    arities     :: Arities }
     -- actually isa-instances. the former field tycons can be computed.
     deriving (Eq, Ord, Show)
 
 emptyTypeSig :: TypeSig
 emptyTypeSig = TySg {
-    classrel = Map.empty,
-    locales = Map.empty,
-    defaultSort = [],
-    log_types = [],
+    classrel     = Map.empty,
+    locales      = Map.empty,
+    defs         = Map.empty,
+    defaultSort  = [],
+    log_types    = [],
     univ_witness = Nothing,
-    abbrs = Map.empty,
-    arities = Map.empty }
+    abbrs        = Map.empty,
+    arities      = Map.empty }
 
 isSubTypeSig :: TypeSig -> TypeSig -> Bool
 isSubTypeSig t1 t2 =
   null (defaultSort t1 \\ defaultSort t2) &&
   Map.isSubmapOf (classrel t1) (classrel t2) &&
   Map.isSubmapOf (locales t1) (locales t2) &&
+  Map.isSubmapOf (defs t1) (defs t2) &&
   null (log_types t1 \\ log_types t2) &&
   (case univ_witness t1 of
      Nothing -> True

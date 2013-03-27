@@ -105,8 +105,8 @@ printNamedSentences sens = case sens of
                        _ -> False) axs)
       $++$ printNamedSentences rest
     | isConstDef s ->
-      let (defs, rest) = span isConstDef sens in
-      text defsS $+$ vsep (map printNamedSen defs)
+      let (defs_, rest) = span isConstDef sens in
+      text defsS $+$ vsep (map printNamedSen defs_)
       $++$ printNamedSentences rest
     | otherwise ->
       printNamedSen s $++$ (case senAttr s of
@@ -270,12 +270,12 @@ printSentence s = case s of
                Nothing -> text primrecS
     in kw' <+> text (new cName) <+> tp <+> printAlt cName <+> text whereS $+$
        vcat preparedEqWithBars
-  Instance { tName = t, arityArgs = args, arityRes = res, definitions = defs,
+  Instance { tName = t, arityArgs = args, arityRes = res, definitions = defs_,
              instProof = prf } ->
       text instantiationS <+> text t <> doubleColon <> (case args of
         [] -> empty
         _ -> parens $ hsep $ punctuate comma $ map (printSortAux True) args)
-        <+> printSortAux True res $+$ text beginS $++$ printDefs defs $++$
+        <+> printSortAux True res $+$ text beginS $++$ printDefs defs_ $++$
             text instanceS <+> pretty prf $+$ text endS
       where printDefs :: [(String, Term)] -> Doc
             printDefs defs' = vcat (map printDef defs')
@@ -452,6 +452,9 @@ consDocBarSep d r = case r of
 printLocales :: Locales -> Doc
 printLocales = vsep . map printLocale . orderLDecs . Map.toList
 
+printDefinitions :: Defs -> Doc
+printDefinitions = vsep . map printDefinition . Map.toList
+
 printFixesAssumes :: Doc -> [Doc] -> [Doc] -> [Doc] -> Doc
 printFixesAssumes h p' a f = vcat
   [ h <+> (if null $ p' ++ a ++ f then empty else text "=") <+> hsep p'
@@ -459,6 +462,12 @@ printFixesAssumes h p' a f = vcat
   , if null f then empty else text "fixes" <+> andDocs f
   , if null a then empty else text "assumes" <+> andDocs a
   ]
+
+printDefinition :: (String, Def) -> Doc
+printDefinition (n,(tp,vs,tm)) = text "definition" <+> text n <+> text "::"
+ $+$ (doubleQuotes . printTyp Null) tp <+> text "where"
+ $+$ doubleQuotes (text n <+> (hsep $ map (text . fst) vs)
+ <+> text "\\<equiv>" <+> printTerm tm)
 
 printLocale :: (String, LocaleDecl) -> Doc
 printLocale (n, (parents, in_ax, ex_ax, params)) =
@@ -646,6 +655,7 @@ printSign sig = let dt = ordDoms $ domainTab sig
                 in
     printAbbrs (abbrs $ tsig sig) $++$
     printTypeDecls (baseSig sig) dt ars $++$
+    printDefinitions (defs $ tsig sig) $++$
     printLocales (locales $ tsig sig) $++$
     printClassrel (classrel $ tsig sig) $++$
     printDomainDefs dt $++$

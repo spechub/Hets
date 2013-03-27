@@ -3,6 +3,10 @@ sig
 	type const_info    = (string * (typ * term option)) list
         type term_info     = (string * term) list
         type datatype_info = (string * Datatype.info) list
+        type def_info      = ((string * typ) * (indexname * typ) list *
+         term) list
+                             (* (name * type) * args@(argname * argtype) * 
+                                def_term *)
 	type class_info	   = (string * (string list) * term_info *
          ((string * typ) list)) list
                              (* name * parents * assumes * fixes *)
@@ -19,6 +23,7 @@ sig
          * term_info     (* axioms      *)
          * term_info     (* theorems    *)
          * datatype_info (* data types  *)
+         * def_info      (* definitions *)
          * class_info    (* class info  *)
          * locale_info   (* locale info *)
         exception ExportError of string
@@ -32,6 +37,10 @@ struct
 	type const_info    = (string * (typ * term option)) list
         type term_info     = (string * term) list
         type datatype_info = (string * Datatype.info) list
+        type def_info      = ((string * typ) * (indexname * typ) list *
+         term) list
+                             (* (name * type) * args@(argname * argtype) * 
+                                def_term *)
 	type class_info    = (string * (string list) * term_info *
          ((string * typ) list)) list
                              (* name * parents * assumes * fixes *)
@@ -48,6 +57,7 @@ struct
          * term_info     (* axioms      *)
          * term_info     (* theorems    *)
          * datatype_info (* data types  *)
+         * def_info      (* definitions *)
          * class_info    (* class info  *)
          * locale_info   (* locale info *)
         exception ExportError of string
@@ -90,8 +100,10 @@ struct
          let val d  = df T
 	     val pd = (List.foldl op@ [] (map df (Context.parents_of T)))
          in remove cmp_data (mergesort cmp_data pd,mergesort cmp_data d) end
+        fun filterWith m (rem : string list) d =
+         remove' id m ((mergesort id rem),(mergesort m d))
 	fun filter rem (d : (string * 'a) list) =
-         remove' id #1 ((mergesort id rem),(mergesort #1 d))
+         filterWith #1 rem d
 (* Theory-specific helpers *)
         (* remove unnecessary information from (recursive) datatypes *)
 	fun is_mutually_rec_type (_,i) = length (#descr i) > 1
@@ -148,6 +160,23 @@ struct
              val ts' = map (fn s => (String.extract (s,tl+1,NONE),Datatype.get_info T s))
                   (List.filter (String.isPrefix tname) ts)
          in restructure_rec_types ts' end
+        fun get_def t =
+         let val rec type_of_def = fn sig_def => case sig_def of
+                      (Const (name,tp) $ _) => (name,tp)
+                    | v $ _ => type_of_def v
+                    | _ => internal_error "ExportHelper.get_def - Failed to parse variables!";
+             val rec vars_of_def = fn sig_def => case sig_def of
+                      vs $ (Var (name,tp)) => (name,tp) :: (vars_of_def vs)
+                    | _ => []
+         in case t of
+            (Const ("==",_) $ sig_def $ def) =>
+             (type_of_def sig_def,List.rev (vars_of_def sig_def),def)
+          | _ => internal_error "ExportHelper.get_def - Failed to parse definition!" end
+        fun get_defs thms =
+         let val def_suffix = "_def"
+             val defs       = List.map (fn (_,tm) => get_def tm) (List.filter
+              (fn (n,_) => String.isSuffix def_suffix n) thms)
+         in defs end
 	fun get_classes T thms = 
          let val cls_suffix = "_class_def"
              val cls_names = List.map (fn n => String.substring
@@ -344,7 +373,8 @@ struct
          @(List.filter (String.isPrefix "Class.") ths)
          @(List.filter (fn s => (List.exists 
            (fn l => List.exists
-           (fn f => String.isPrefix (l^f) s) locale_filter) locale_names)) ths) end
+           (fn f => String.isPrefix (l^f) s) locale_filter) locale_names)) ths)
+end
 (* Represent collected data as XML *)
 	(* Enrich the (isabelle-builtin) XML representation of terms with infix information *)
         fun mixfix_to_args m = case m of
@@ -422,18 +452,23 @@ struct
              val thms       = get_theorems T
              val axioms     = get_axioms T
 	     val classes    = get_classes T thms
-             val gen_consts = get_gen_consts T name types (List.map #1 consts)
-             val gen_thms   = get_gen_theorems T name types (List.map #1 thms)
+             val gen_consts'= get_gen_consts T name types (List.map #1 consts)
+             val gen_thms'  = get_gen_theorems T name types (List.map #1 thms)
+             val defs       = get_defs (filter gen_thms' thms)
+             val def_names  = List.map (#1 o #1) defs
+             val gen_consts = def_names@gen_consts'
+             val gen_thms   = (postfix "_" "def" def_names)@gen_thms'
              val gen_axioms = (get_gen_axioms name types)@(List.map #1 thms)
+                              @(postfix "_" "def_raw" def_names)
              val locales    = get_locales T thms
          in (name, imports,
              (filter gen_consts consts),
              (filter gen_axioms axioms),
              (filter gen_thms thms),
-             types,classes,locales) end
+             types,defs,classes,locales) end
 	(* export theory info as xml *)
 	fun tinfo2xml T fname (name,imports,consts,axioms,thms,
-                                types,classes,locales) =
+                                types,defs,classes,locales) =
          let val b = Long_Name.base_name
              val xml_imports  = XML.Elem
               (("Imports",[]), List.map (fn s => XML.Elem (("Import",[("name",s)]),[])) imports)
@@ -441,6 +476,13 @@ struct
              val xml_axioms   = termListToXML T "Axioms" axioms
              val xml_theorems = termListToXML T "Theorems" thms
              val xml_types    = typeListToXML "Types" types
+             val xml_defs     = XML.Elem (("Defs",[]), List.map
+              (fn ((name,tp),args,tm) => XML.Elem (("Def",
+               [("name",Long_Name.base_name name)]),
+                [XML_Syntax.xml_of_type tp]
+                @(List.map (fn ((n,_),t) => XML.Elem (("Arg",[("name",n)]), 
+                  [XML_Syntax.xml_of_type t])) args)
+                @[xml_of_term T tm])) defs)
              val xml_classes  = XML.Elem (("Classes",[]),List.map
               (fn (name,parents,axioms,params) =>
                 XML.Elem (("ClassDecl",[("name",name)]),
@@ -474,5 +516,5 @@ struct
                       (("Parent",[("name",b n)]),[])) parents)
                     )end) locales)
          in fixTypeNames name (XML.Elem (("IsaExport",[("file",fname)]),
-             [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types,xml_classes,xml_locales])) end
+             [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types,xml_defs,xml_classes,xml_locales])) end
 end;

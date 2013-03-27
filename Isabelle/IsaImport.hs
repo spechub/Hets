@@ -12,7 +12,8 @@ import Data.List (intercalate)
 importIsaDataIO :: String ->
  IO (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
      [(String,IsaSign.Term)], [(String,IsaSign.Term)],
-     IsaSign.DomainTab, [(IsaSign.IsaClass,IsaSign.ClassDecl)],
+     IsaSign.DomainTab, [(String,IsaSign.Def)],
+     [(IsaSign.IsaClass,IsaSign.ClassDecl)],
      [(String,IsaSign.LocaleDecl)])
 importIsaDataIO p = do
  d' <- fReadXml p
@@ -21,7 +22,8 @@ importIsaDataIO p = do
 importIsaData :: IsaExport ->
  (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
   [(String,IsaSign.Term)], [(String,IsaSign.Term)],
-  IsaSign.DomainTab, [(IsaSign.IsaClass,IsaSign.ClassDecl)],
+  IsaSign.DomainTab, [(String,IsaSign.Def)],
+  [(IsaSign.IsaClass,IsaSign.ClassDecl)],
   [(String,IsaSign.LocaleDecl)])
 importIsaData (IsaExport attrs
                (Imports imports)
@@ -29,6 +31,7 @@ importIsaData (IsaExport attrs
                (Axioms axioms) 
                (Theorems theorems)
                (Types types)
+               (Defs defs)
                (Classes classes)
                (Locales locales)) =
  let imports'  = map importName                 imports
@@ -36,10 +39,11 @@ importIsaData (IsaExport attrs
      axioms'   = map (hXmlTerm2IsaTerm [])      axioms
      theorems' = map (hXmlTerm2IsaTerm [])      theorems
      types'    = map hXmlTypeDecl2IsaTypeDecl   types
+     defs'     = map hXmlDef2IsaDef             defs
      classes'  = map hXmlClassDecl2IsaClassDecl classes
-     locales'  = map hXmlLocaleDecl2IsaLocale locales
+     locales'  = map hXmlLocaleDecl2IsaLocale   locales
  in (isaExportFile attrs,imports',consts',
-     axioms',theorems',types',classes',locales')
+     axioms',theorems',types',defs',classes',locales')
 
 mapConst :: ConstDecl -> (String,IsaSign.Typ, Maybe IsaSign.Term)
 mapConst (ConstDecl attrs tp tm) =
@@ -224,6 +228,17 @@ hXmlLocaleDecl2IsaLocale (LocaleDecl a l) =
                    hXmlOneOf3_2IsaTyp (ThreeOf3 t), altSyn at)
              _ -> Nothing) l
  in (localeDeclName a,(parents,i_ax,e_ax,params))
+
+hXmlDef2IsaDef :: Def -> (String,IsaSign.Def)
+hXmlDef2IsaDef (Def a t args tm) = (defName a,(hXmlOneOf3_2IsaTyp t,
+ map (\arg -> case arg of
+               ArgTVar a1 t'  -> (argName a1,
+                hXmlOneOf3_2IsaTyp $ OneOf3 t')
+               ArgTFree a1 t' -> (argName a1,
+                hXmlOneOf3_2IsaTyp $ TwoOf3 t')
+               ArgType a1 t'  -> (argName a1,
+                hXmlOneOf3_2IsaTyp $ ThreeOf3 t')) args,
+ hXmlOneOf6_2IsaTerm [] tm))
 
 hXmlClassDecl2IsaClassDecl :: ClassDecl -> (IsaSign.IsaClass,IsaSign.ClassDecl)
 hXmlClassDecl2IsaClassDecl (ClassDecl a cls) =

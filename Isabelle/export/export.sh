@@ -93,7 +93,7 @@ val out' = fn (f,i,s') =>
  end;
 val out = fn (i,s) => out' (\"$COMM_FILE\",i,s);
 val v = fn s => out (1,s);
-val e = fn s => (out (0,s); exit 1);
+val e = fn s => out (0,s);
 
 v \"Isabelle: Loading theory $TRANS\n\";
 use_thy \"$TRANS\";
@@ -107,7 +107,7 @@ v \"Isabelle: Exporting theory information\n\";
 (File.write (Path.explode \"$OUT_FILE\")
  (XML.string_of (ExportHelper.tinfo2xml T \"$TRANS_T\"
   (ExportHelper.theory_info T))))
-handle ExportHelper.ExportError msg => e msg;
+handle ExportHelper.ExportError msg => e (msg^\"\n\");
 *}
 end"
 ) | ($ISABELLE tty) | tee $TEMP_FILE

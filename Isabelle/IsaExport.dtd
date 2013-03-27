@@ -1,4 +1,4 @@
-<!ELEMENT IsaExport (Imports, Consts, Axioms, Theorems, Types, Classes, Locales)>
+<!ELEMENT IsaExport (Imports, Consts, Axioms, Theorems, Types, Defs, Classes, Locales)>
   <!ATTLIST IsaExport file CDATA #REQUIRED>
 <!ELEMENT Imports (Import*)>
 <!ELEMENT Import EMPTY>
@@ -9,6 +9,7 @@
 <!ELEMENT Axioms (Term*)>
 <!ELEMENT Theorems (Term*)>
 <!ELEMENT Types (TypeDecl*)>
+<!ELEMENT Defs (Def*)>
 <!ELEMENT Classes (ClassDecl*)>
 <!ELEMENT Locales (LocaleDecl*)>
 <!ELEMENT NoTerm EMPTY>
@@ -29,6 +30,10 @@
 <!ELEMENT Constructors (Constructor*)>
 <!ELEMENT Constructor (DtTFree|DtType|DtRec)*>
   <!ATTLIST Constructor val CDATA #REQUIRED>
+<!ELEMENT Def ((TVar|TFree|Type),Arg*,(Bound|Free|Var|Const|App|Abs))>
+  <!ATTLIST Def name CDATA #REQUIRED>
+<!ELEMENT Arg  (TVar|TFree|Type)>
+  <!ATTLIST Arg name CDATA #REQUIRED>
 <!ELEMENT ClassDecl (Axiom|Param|Parent)*>
   <!ATTLIST ClassDecl name CDATA #REQUIRED>
 <!ELEMENT Axiom (Bound|Free|Var|Const|App|Abs)>
