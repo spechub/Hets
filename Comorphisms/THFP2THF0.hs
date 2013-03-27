@@ -12,7 +12,7 @@ Portability :  non-portable (imports Logic.Logic)
 The comorphism from THFP to THF0.
 -}
 
-module Comorphisms.THFP_ST2THF0_ST where
+module Comorphisms.THFP2THF0 where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -31,65 +31,57 @@ import THF.Utils
 
 import qualified Data.Map as Map
 
-data THFP_ST2THF0_ST = THFP_ST2THF0_ST deriving Show
+data THFP2THF0 = THFP2THF0 deriving Show
 
-instance Language THFP_ST2THF0_ST
+instance Language THFP2THF0
 
-instance Comorphism THFP_ST2THF0_ST
+instance Comorphism THFP2THF0
                 THF SL.THFSl
                 BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree
                 THF SL.THFSl
                 BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
-    sourceLogic THFP_ST2THF0_ST = THF
-    sourceSublogic THFP_ST2THF0_ST = SL.tHFP_ST
-    targetLogic THFP_ST2THF0_ST = THF
-    mapSublogic THFP_ST2THF0_ST _ = Just SL.tHF0_ST
-    map_theory THFP_ST2THF0_ST = trans_theory
-    has_model_expansion THFP_ST2THF0_ST = True
+    sourceLogic THFP2THF0 = THF
+    sourceSublogic THFP2THF0 = SL.tHFP
+    targetLogic THFP2THF0 = THF
+    mapSublogic THFP2THF0 _ = Just SL.tHF0
+    map_theory THFP2THF0 = trans_theory
+    has_model_expansion THFP2THF0 = True
 
 trans_theory :: (SignTHF,[Named THFFormula])
                 -> Result (SignTHF,[Named THFFormula])
 trans_theory (sig, sentences1) = do
- let (tp_trans,cs_trans,sig1)  = head . filter (\(tp_t,_,Sign tps cs _) -> 
-                                     not (any hasProdK $ Map.elems tps)
-                                  && not (any (hasProdT tp_t) $ Map.elems cs)) $
-                 iterate makeExplicitProducts (Map.empty, Map.empty, sig)
+ let (cs_trans,sig1)  = head . filter (\(tp_t,Sign _ cs _) ->
+                                  not (any (hasProdT tp_t) $ Map.elems cs)) $
+                 iterate makeExplicitProducts (Map.empty, sig)
      sig2 = sig1 {consts =
-      Map.map (\c -> c {constType = curryConstType tp_trans
-                                 (constType c)}) $ consts sig1}
- sentences <- rewriteSen tp_trans cs_trans sentences1
+      Map.map (\c -> c {constType = curryConstType (constType c)}) $
+                         consts sig1}
+ sentences <- rewriteSen cs_trans sentences1
  return (recreateSymbols sig2,sentences)
 
 type TransMap = Map.Map Constant [Constant]
 
 -- note: does not do anything on non-map-types
-curryConstType :: TransMap -> Type -> Type
-curryConstType m (MapType t1 t2) = prodToMapType m t1 t2
-curryConstType m (ParType t)     = ParType (curryConstType m t)
-curryConstType _ t               = t
+curryConstType :: Type -> Type
+curryConstType (MapType t1 t2) = prodToMapType t1 t2
+curryConstType (ParType t)     = ParType (curryConstType t)
+curryConstType t               = t
 
-prodToMapType :: TransMap -> Type -> Type -> Type
-prodToMapType m t1 t2 = case t1 of
- MapType _ _ -> MapType (curryConstType m t1) t2
- ProdType ts -> let ts' = map (curryConstType m) ts
+prodToMapType :: Type -> Type -> Type
+prodToMapType t1 t2 = case t1 of
+ MapType _ _ -> MapType (curryConstType t1) t2
+ ProdType ts -> let ts' = map curryConstType ts
                 in foldl (\t1' t2' -> MapType t2' t1') t2 (reverse ts')
- CType c     -> let cs = map CType $ curryConst m c
-                in foldl (\t1' t2' -> MapType t2' t1') t2 (reverse cs)
- ParType t   -> prodToMapType m t t2
+ ParType t   -> prodToMapType t t2
  _           -> MapType t1 t2
  
-curryConst :: TransMap -> Constant -> [Constant]
-curryConst m c = case Map.lookup c m of
- Just cs -> concat $ map (curryConst m) cs
- Nothing -> [c]
-
-rewriteSen :: TransMap -> TransMap -> [Named THFFormula]
+rewriteSen :: TransMap -> [Named THFFormula]
                -> Result [Named THFFormula]
-rewriteSen tp_trans cs_trans = mapR (rewriteSen' tp_trans cs_trans)
+rewriteSen cs_trans = mapR (rewriteSen' cs_trans)
 
-rewriteFns :: RewriteFuns (TransMap,TransMap)
+rewriteFns :: RewriteFuns TransMap
 rewriteFns = rewriteTHF0 {
  rewriteLogicFormula = rewriteLogicFormula',
  rewriteBinaryFormula =
@@ -100,11 +92,11 @@ rewriteFns = rewriteTHF0 {
  rewriteConst = rewriteConst'
 }
 
-rewriteSen' :: TransMap -> TransMap -> Named THFFormula
+rewriteSen' :: TransMap -> Named THFFormula
                -> Result (Named THFFormula)
-rewriteSen' tp_trans cs_trans = rewriteSenFun (rewriteFns,(tp_trans,cs_trans))
+rewriteSen' cs_trans = rewriteSenFun (rewriteFns,cs_trans)
 
-rewriteLogicFormula' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
+rewriteLogicFormula' :: (RewriteFuns TransMap,TransMap)
                        -> THFLogicFormula -> Result THFLogicFormula
 rewriteLogicFormula' d lf = case lf of
  TLF_THF_Binary_Formula bf -> do
@@ -114,7 +106,7 @@ rewriteLogicFormula' d lf = case lf of
    Right uf -> return $ TLF_THF_Unitary_Formula uf
  _ -> (rewriteLogicFormula rewriteTHF0) d lf
 
-rewriteBinaryFormula' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
+rewriteBinaryFormula' :: (RewriteFuns TransMap, TransMap)
                         -> THFBinaryFormula
                         -> Result (Either THFBinaryFormula THFUnitaryFormula)
 rewriteBinaryFormula' d@(fns,_) bf = case bf of
@@ -147,7 +139,7 @@ logicFormula2UnitaryFormula l = case l of
  TLF_THF_Unitary_Formula uf -> uf
  _ -> TUF_THF_Logic_Formula_Par l
 
-rewriteBinaryTuple' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
+rewriteBinaryTuple' :: (RewriteFuns TransMap, TransMap)
                         -> THFBinaryTuple
                         -> Result (Either THFBinaryFormula THFUnitaryFormula)
 rewriteBinaryTuple' d@(fns,_) bt = case bt of
@@ -208,17 +200,16 @@ removeParensUnitaryFormula (TUF_THF_Logic_Formula_Par
  (TLF_THF_Unitary_Formula uf)) = uf
 removeParensUnitaryFormula uf = uf
 
-rewriteVariableList' :: (RewriteFuns (TransMap,TransMap),(TransMap,TransMap))
+rewriteVariableList' :: (RewriteFuns TransMap, TransMap)
                        -> [THFVariable] -> Result [THFVariable]
-rewriteVariableList' (_,(tp_trans,cs_trans)) vs = do
+rewriteVariableList' (_,cs_trans) vs = do
  vs' <- mapR (\v -> case v of
              TV_THF_Typed_Variable t tp ->
               case thfTopLevelTypeToType tp of
-               Just tp' -> let cs = constMakeExplicitProduct tp_trans
+               Just tp' -> let cs = constMakeExplicitProduct
                                      (A_Lower_Word t) tp'
                            in mapM (\(c,tp'') ->
-                                 (typeToTopLevelType
-                                  (curryConstType tp_trans tp''))
+                                 (typeToTopLevelType (curryConstType tp''))
                                   >>= return . TV_THF_Typed_Variable
                                        (toToken c)) cs
                Nothing ->
@@ -235,9 +226,9 @@ transToken m t = case Map.toList $
                    (_,cs):_ -> concat $ map (transToken m . toToken) cs
                    [] -> [t]
 
-rewriteConst' :: (RewriteFuns (TransMap,TransMap),(TransMap, TransMap))
+rewriteConst' :: (RewriteFuns TransMap, TransMap)
                   -> Constant -> Result THFUnitaryFormula
-rewriteConst' (_,(_,m)) c = case transConst' m c of
+rewriteConst' (_,m) c = case transConst' m c of
  [] -> return $ TUF_THF_Atom (T0A_Constant c)
  lfs -> return $ TUF_THF_Tuple lfs
 
@@ -251,35 +242,34 @@ transConst' m c = case Map.toList $
                                   TUF_THF_Tuple $ lfs) cs
    [] -> []
 
-constMakeExplicitProduct :: TransMap -> Constant -> Type -> [(Constant,Type)]
-constMakeExplicitProduct tp_trans c t =
- let (_,_,Sign _ cs _) = head . filter (\(tp_t,_,Sign _ cs' _) -> 
+constMakeExplicitProduct :: Constant -> Type -> [(Constant,Type)]
+constMakeExplicitProduct c t =
+ let (_,Sign _ cs _) = head . filter (\(tp_t,Sign _ cs' _) -> 
                           not (any (hasProdT tp_t) $ Map.elems cs')) $
       iterate makeExplicitProducts
-      (tp_trans,Map.empty, Sign Map.empty (Map.fromList [(c,
+      (Map.empty,Sign Map.empty (Map.fromList [(c,
         ConstInfo {constId = c, constName = N_Atomic_Word c,
                    constType = t, constAnno = Null})]) Map.empty)
  in map (\i -> (constId i,constType i)) $ Map.elems cs
 
 {- Note: Type definitions are non-recursive -}
-makeExplicitProducts :: (TransMap, TransMap, SignTHF) ->
- (TransMap, TransMap, SignTHF)
-makeExplicitProducts (tp_trans1, cs_trans1, sig) =
- let (tp_trans,tps) = mkExplicitProductsK tp_trans1 (types sig)
-     (cs_trans,cs)  = mkExplicitProductsT cs_trans1 tp_trans (consts sig)
- in (tp_trans, cs_trans, sig {types = tps, consts = cs})
+makeExplicitProducts :: (TransMap, SignTHF) ->
+ (TransMap, SignTHF)
+makeExplicitProducts (cs_trans1, sig) =
+ let (cs_trans,cs)  = mkExplicitProductsT cs_trans1 (consts sig)
+ in (cs_trans, sig {consts = cs})
 
-mkExplicitProductsT :: TransMap -> TransMap -> Map.Map Constant ConstInfo
+mkExplicitProductsT :: TransMap -> Map.Map Constant ConstInfo
                        -> (TransMap,Map.Map Constant ConstInfo)
-mkExplicitProductsT cs_trans1 tp_trans cs1 = Map.fold
- (\c (trans,cs) -> prodTToTuple trans tp_trans cs (constId c) (constName c)
+mkExplicitProductsT cs_trans1 cs1 = Map.fold
+ (\c (trans,cs) -> prodTToTuple trans cs (constId c) (constName c)
                      (constType c)) (cs_trans1,cs1) cs1
 
-prodTToTuple :: TransMap -> TransMap -> Map.Map Constant ConstInfo -> Constant
+prodTToTuple :: TransMap -> Map.Map Constant ConstInfo -> Constant
                 -> Name -> Type -> (TransMap, Map.Map Constant ConstInfo)
-prodTToTuple trans tp_trans cs c n t = case t of
+prodTToTuple trans cs c n t = case t of
  MapType t1 t2 -> 
-  let (_,cs') = prodTToTuple Map.empty tp_trans Map.empty c n t2
+  let (_,cs') = prodTToTuple Map.empty Map.empty c n t2
       cs'' = Map.delete c cs
       tuple = Map.elems cs'
       names = mkNames c n $ length tuple
@@ -299,65 +289,8 @@ prodTToTuple trans tp_trans cs c n t = case t of
                                         constId = n1,
                                         constAnno = Null} cs'')
                           cs' (zip names ts))
- CType c' -> case Map.lookup c' tp_trans of
-              Just cs_ -> let names = mkNames c n $ length cs_
-                              cs' = Map.delete c cs
-                          in (Map.insert c (map fst names) trans,
-                              foldr (\((n1,n2),c'') cs'' -> Map.insert n1
-                                        ConstInfo {constType = CType c'',
-                                                  constName = n2,
-                                                  constId = n1,
-                                                  constAnno = Null} cs'')
-                                    cs' (zip names cs_))
-              Nothing  -> (trans,cs)
- ParType tp -> prodTToTuple trans tp_trans cs c n tp
+ ParType tp -> prodTToTuple trans cs c n tp
  _ -> (trans,cs)
-
-mkExplicitProductsK :: TransMap -> Map.Map Constant TypeInfo
-                       -> (TransMap,Map.Map Constant TypeInfo)
-mkExplicitProductsK tp_trans1 tps1 = Map.fold
- (\tp (trans,tps) -> if hasProdK tp
-                     then prodKToTuple trans tps (typeId tp) (typeName tp)
-                           (typeKind tp)
-                     else (trans,tps))
- (tp_trans1,tps1) tps1
-
-prodKToTuple :: TransMap -> Map.Map Constant TypeInfo -> Constant -> Name
-                -> Kind -> (TransMap, Map.Map Constant TypeInfo)
-prodKToTuple trans tps c n k = case k of
- ParKind k1 -> prodKToTuple trans tps c n k1
- ProdKind ks -> let tps' = Map.delete c tps
-                    names = mkNames c n $ length ks
-                in (Map.insert c (map fst names) trans,
-                    foldr (\((n1,n2),kd) tps'' -> Map.insert n1 
-                              TypeInfo {typeKind = kd,
-                                        typeName = n2,
-                                        typeId   = n1,
-                                        typeAnno = Null} tps'')
-                          tps' (zip names ks))
- MapKind k1 k2 ->
-  let (_, tps') = prodKToTuple Map.empty Map.empty c n k2
-      tps'' = Map.delete c tps
-      tuple = Map.elems tps'
-      names = mkNames c n $ length tuple
-  in (Map.insert c (map fst names) trans,
-      foldr (\((n1,n2),tpi) tps''' -> Map.insert n1
-                tpi {typeName = n2,
-                     typeId = n1,
-                     typeKind = MapKind k1 (typeKind tpi)} tps''')
-            tps'' (zip names tuple))
- _ -> error "Invalid call to prodKToTuple"
-                          
-hasProdK :: TypeInfo -> Bool
-hasProdK = isProdK . typeKind
-
-isProdK :: Kind -> Bool
-isProdK Kind            = False
-isProdK (MapKind _ k2)  = isProdK k2
-isProdK (ProdKind _)    = True
-isProdK (SysType _)     = False
-isProdK (VKind _)       = False
-isProdK (ParKind k)     = isProdK k
 
 hasProdT :: TransMap -> ConstInfo -> Bool
 hasProdT t = isProdT t . constType

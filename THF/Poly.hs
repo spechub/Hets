@@ -16,7 +16,6 @@ import THF.Cons
 import THF.Sign
 import THF.Utils
 import THF.As
-import THF.ShortTypes
 
 import Common.Result
 import Common.Id
@@ -383,11 +382,9 @@ infer cm fs =
 
 type_check :: TypeMap -> ConstMap -> [Named THFFormula]
                -> Result [[(Token,Type)]]
-type_check tm cm fs = do
- (sig,sens) <- trans_theory
-  ((emptySign { types = tm, consts = cm}), fs)
+type_check _ cm sens = do
  let constraints' = mapM (evalUniqueT .
-      getTypeC (consts sig) . sentence) sens
+      getTypeC cm . sentence) sens
  let constraints =
       liftM (map (\ (t, cs) -> (OType, NormalC t) : cs)) constraints'
  let unifications =

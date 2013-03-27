@@ -21,39 +21,10 @@ data THFCoreSl = THF | THFP | THF0 deriving (Ord,Show,Eq)
 
 data THFSl = THFSl {
  core :: THFCoreSl,
- ext_ShortTypes :: Bool,
  ext_Poly :: Bool } deriving (Ord,Eq)
-
-{-
-The ShortTypes extension allows for unnamed unique types:
-
- %With ShortTypes
- thf(a_type,type,a : ($tType,$tType))
- thf(b_type,type,b : $tType > a)
- thf(test_const_type,type, test : b)
- %Without ShortTypes
- thf(a1_type,type,a1 : $tType)
- thf(a2_type,type,a2 : $tType)
- thf(b1_type,type,b1 : $tType)
- thf(test_const_type,type, test : b1 > (a1,a2))
-
-Note: Types made of other, non-atomic types are not allowed i.e. the following
-is still not a legal type-definition:
-
- thf(a_type,type, a: $tType > $tType)
- thf(b_type,type, b: a > $tType)
-
-Without this extension $tType may only be used to declare
-atomic types i.e.
-
- thf(a_type,type, a : $tType)
-
--}
 
 instance Show THFSl where
  show sl = (show $ core sl) ++
-           (if ext_ShortTypes sl
-            then "_ST" else "") ++
            (if ext_Poly sl then
             "_P" else "")
 
@@ -68,37 +39,22 @@ joinCoreSl _ _ = THF0
 join :: THFSl -> THFSl -> THFSl
 join sl1 sl2 = THFSl {
  core = joinCoreSl (core sl1) (core sl2),
- ext_ShortTypes = (ext_ShortTypes sl1) ||
-                  (ext_ShortTypes sl2),
  ext_Poly = (ext_Poly sl1) || (ext_Poly sl2) }
 
 tHF0,tHFP,tHF :: THFSl
-tHF0 = THFSl { core = THF0, ext_ShortTypes = False,
-               ext_Poly = False }
-tHFP = THFSl { core = THFP, ext_ShortTypes = False,
-               ext_Poly = False }
-tHF  = THFSl { core = THF , ext_ShortTypes = False,
-               ext_Poly = False }
-
-tHF0_ST,tHFP_ST,tHF_ST :: THFSl
-tHF0_ST = tHF0 { ext_ShortTypes = True }
-tHFP_ST = tHFP { ext_ShortTypes = True }
-tHF_ST  = tHF  { ext_ShortTypes = True }
+tHF0 = THFSl { core = THF0, ext_Poly = False }
+tHFP = THFSl { core = THFP, ext_Poly = False }
+tHF  = THFSl { core = THF , ext_Poly = False }
 
 tHF0_P,tHFP_P,tHF_P :: THFSl
 tHF0_P = tHF0 { ext_Poly = True }
 tHFP_P = tHFP { ext_Poly = True }
 tHF_P  = tHF  { ext_Poly = True }
 
-tHF0_P_ST,tHFP_P_ST,tHF_P_ST :: THFSl
-tHF0_P_ST = tHF0_P { ext_ShortTypes = True }
-tHFP_P_ST = tHFP_P { ext_ShortTypes = True }
-tHF_P_ST  = tHF_P  { ext_ShortTypes = True }
-
 sublogics_all :: [THFSl]
-sublogics_all = [tHF0, tHF0_ST, tHF0_P, tHF0_P_ST,
-                 tHFP, tHFP_ST, tHFP_P, tHFP_P_ST,
-                 tHF, tHF_ST, tHF_P, tHF_P_ST]
+sublogics_all = [tHF0, tHF0_P,
+                 tHFP, tHFP_P,
+                 tHF,  tHF_P]
 
 instance MinSublogic THFSl THFFormula where
  minSublogic f = case f of
@@ -163,27 +119,13 @@ instance MinSublogic THFSl THFBinaryTuple where
 instance MinSublogic THFSl THFBinaryType where
  minSublogic bt = case bt of
    TBT_THF_Mapping_Type uts ->
-    join (if hasTType uts then tHF0_ST else tHF0) $
-     foldr join tHF0
+    join tHF0 $ foldr join tHF0
       (map minSublogic uts)
    TBT_THF_Xprod_Type uts ->
-    foldr join (if hasTType uts then tHFP_ST else tHFP)
-               (map minSublogic uts)
+    foldr join tHFP (map minSublogic uts)
    TBT_THF_Union_Type uts ->
-    foldr join (if hasTType uts then tHF_ST else tHF)
-     (map minSublogic uts)
+    foldr join tHF (map minSublogic uts)
    T0BT_THF_Binary_Type_Par bt' -> minSublogic bt'
-  where hasTType uts = foldr (&&) False $
-         map (\ut -> case ut of
-                T0UT_THF_Binary_Type_Par bt' -> hasTTypeB bt'
-                T0UT_Defined_Type DT_tType -> True
-                _ -> False) uts
-        hasTTypeB bt' =
-          case bt' of
-           TBT_THF_Mapping_Type uts' -> hasTType uts'
-           TBT_THF_Xprod_Type uts' -> hasTType uts'
-           TBT_THF_Union_Type uts' -> hasTType uts'
-           T0BT_THF_Binary_Type_Par bt'' -> hasTTypeB bt''
   --fixme: maybe we need to check TUT_THF_Unitary_Formula for ShortTypes
   --fixme: how does this differ from THF?
 

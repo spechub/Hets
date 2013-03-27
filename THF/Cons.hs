@@ -59,11 +59,5 @@ data Type =
   | ParType Type
     deriving (Show, Ord, Eq)
 
-data Kind =
-    Kind
-  | MapKind Kind Kind
-  | ProdKind [Kind]
-  | SysType Token
-  | VKind Token
-  | ParKind Kind
-    deriving (Show, Ord, Eq)
+data Kind = Kind
+ deriving (Show, Ord, Eq)

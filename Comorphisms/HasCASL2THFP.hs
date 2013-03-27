@@ -12,7 +12,7 @@ Portability :  non-portable (imports Logic.Logic)
 The embedding comorphism from HasCASL to THF0_ST.
 -}
 
-module Comorphisms.HasCASL2THFP_ST where
+module Comorphisms.HasCASL2THFP where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -53,25 +53,26 @@ import Data.Maybe
 -- Question: are the remaining symbol variants translatable?
 
 -- | The identity of the comorphism
-data HasCASL2THFP_ST = HasCASL2THFP_ST deriving Show
+data HasCASL2THFP = HasCASL2THFP deriving Show
 
-instance Language HasCASL2THFP_ST
+instance Language HasCASL2THFP
 
-instance Comorphism HasCASL2THFP_ST
+instance Comorphism HasCASL2THFP
                 HasCASL Sublogic
                 BasicSpec Sentence SymbItems SymbMapItems
                 Env Morphism Symbol RawSymbol ()
                 THF SL.THFSl
                 BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
-    sourceLogic HasCASL2THFP_ST = HasCASL
-    sourceSublogic HasCASL2THFP_ST = reqSubLogicForTHFP -- topLogic
-    targetLogic HasCASL2THFP_ST = THF
-    mapSublogic HasCASL2THFP_ST _ = Just SL.tHFP_ST
-    map_theory HasCASL2THFP_ST = transTheory
-    map_symbol HasCASL2THFP_ST = transSymbol
+    sourceLogic HasCASL2THFP = HasCASL
+    sourceSublogic HasCASL2THFP = reqSubLogicForTHFP -- topLogic
+    targetLogic HasCASL2THFP = THF
+    mapSublogic HasCASL2THFP _ = Just SL.tHFP
+    map_theory HasCASL2THFP = transTheory
+    map_symbol HasCASL2THFP = \env s -> propagateErrors "" $
+     transSymbol env s
     -- isInclusionComorphism HasCASL2THF0_ST = True
-    has_model_expansion HasCASL2THFP_ST = True
+    has_model_expansion HasCASL2THFP = True
 
 reqSubLogicForTHFP :: Sublogic
 reqSubLogicForTHFP = Sublogic
@@ -116,25 +117,23 @@ transTypeMap tm = foldM trans (Map.empty, Map.empty) (Map.toList tm)
     where
         trans :: (THFSign.TypeMap, Map.Map Id Constant) -> (Id, HCLe.TypeInfo)
                     -> Result (THFSign.TypeMap, Map.Map Id Constant)
-        trans (ttm, icm) (i, ti) = fmap
-            (\ c -> (Map.insert c (transTypeInfo ti c) ttm, Map.insert i c icm))
-            (transTypeId i)
+        trans (ttm, icm) (i, ti) = do
+         c <- transTypeId i
+         ti' <- transTypeInfo ti c
+         return (Map.insert c ti' ttm, Map.insert i c icm)
 
-transTypeInfo :: HCLe.TypeInfo -> THFAs.Constant -> THFSign.TypeInfo
-transTypeInfo ti c = THFSign.TypeInfo
+transTypeInfo :: HCLe.TypeInfo -> THFAs.Constant -> Result THFSign.TypeInfo
+transTypeInfo ti c = transRawKind (HCLe.typeKind ti)
+ >>= \tk -> return $ THFSign.TypeInfo 
     { THFSign.typeId = c
     , THFSign.typeName = mkTypesName c
-    , THFSign.typeKind = transRawKind $ HCLe.typeKind ti
+    , THFSign.typeKind = tk
     , THFSign.typeAnno = THFAs.Null }
 
-transRawKind :: HCAs.RawKind -> THFCons.Kind
+transRawKind :: HCAs.RawKind -> Result THFCons.Kind
 transRawKind rk = case rk of
-    ClassKind () -> Kind
-    FunKind _ k1 k2 _ -> case k1 of
-        FunKind {} -> MapKind (ParKind $ transRawKind k1)
-                                        (transRawKind k2)
-        _ -> MapKind (transRawKind k1)
-                                        (transRawKind k2)
+    ClassKind () -> return Kind
+    _ -> mkError "Type constructors are not supported!" nullRange
 
 transAssumps :: HCLe.Assumps -> Map.Map Id Constant -> Result THFSign.ConstMap
 transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
@@ -246,18 +245,20 @@ constInfoToSymbol ci = THFCons.Symbol
  TypeAliasSymbol Type
 -}
 
-transSymbol :: Env -> Symbol -> Set.Set SymbolTHF
+transSymbol :: Env -> Symbol -> Result (Set.Set SymbolTHF)
 transSymbol sig1 sym1 = case HCLe.symType sym1 of
         TypeAsItemType rk ->
             case maybeResult (transTypeId $ HCLe.symName sym1) of
-                Nothing -> Set.empty
-                Just c -> Set.singleton THFCons.Symbol
+                Nothing -> return Set.empty
+                Just c -> do
+                 rk' <- transRawKind rk
+                 return $ Set.singleton $ THFCons.Symbol
                         { THFCons.symId = c
                         , THFCons.symName = mkTypesName c
-                        , THFCons.symType = ST_Type $ transRawKind rk }
-        OpAsItemType ts -> tsHelper ts tsOpType
-        PredAsItemType ts -> tsHelper ts tsPredType
-        _ -> Set.empty
+                        , THFCons.symType = ST_Type rk' }
+        OpAsItemType ts -> return $ tsHelper ts tsOpType
+        PredAsItemType ts -> return $ tsHelper ts tsPredType
+        _ -> return $ Set.empty
     where
         tsOpType :: IdConstantMap -> TypeScheme -> Result THFCons.Type
         tsOpType icm (TypeScheme _ t _) = transType icm t
