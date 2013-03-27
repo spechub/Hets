@@ -56,8 +56,11 @@ import Interfaces.Utils
 import Data.IORef
 import Data.Graph.Inductive.Graph
 import Data.Maybe
+import qualified Data.Map as Map
 
 import Control.Monad.Trans
+
+import Debug.Trace (trace)
 
 selectProver :: [(G_prover, AnyComorphism)]
              -> ResultT IO (G_prover, AnyComorphism)
@@ -96,13 +99,17 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
     thForProof <- liftR $ getGlobalTheory lbl
     let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
         freedefs = getCFreeDefMorphs libEnv ln dGraph node
+    let ps = getAllProvers ProveGUI (sublogicOfTh thForProof) lg
     kpMap <- liftR knownProversGUI
-    ResultT $ proverGUI ProofActions
+    {-let kpMap = foldl (\m (G_prover _ p,c) ->
+         case Map.lookup (proverName p) m of
+          Just cs -> Map.insert (proverName p) (c:cs) m
+          Nothing -> Map.insert (proverName p) [c] m) Map.empty ps-}
+    ResultT $ ($!) (proverGUI ProofActions
       { proveF = proveKnownPMap lg intSt freedefs
       , fineGrainedSelectionF = proveFineGrainedSelect lg intSt freedefs
       , recalculateSublogicF = return . recalculateSublogicAndSelectedTheory
-      } thName (hidingLabelWarning lbl) thForProof kpMap
-      (getAllProvers ProveGUI (sublogicOfTh thForProof) lg)
+      } thName (hidingLabelWarning lbl) thForProof kpMap) (trace (show $ length ps) ps)
 
 proveKnownPMap :: LogicGraph
     -> IORef IntState

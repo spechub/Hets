@@ -56,6 +56,7 @@ import Common.ResultT
 import Common.AS_Annotation
 import Common.ExtSign
 import Common.Utils
+import Common.GraphAlgo (yen)
 
 import Logic.Logic
 import Logic.Prover
@@ -66,6 +67,10 @@ import Logic.Coerce
 import Comorphisms.KnownProvers
 
 import Static.GTheory
+
+import Debug.Trace (trace)
+
+dbg d = trace (show d) d
 
 -- * Provers
 
@@ -375,9 +380,39 @@ getProvers pk (G_sublogics lid sl) =
                   then (G_prover tlid p, cm) : l else l)
              [] (provers tlid)
 
+knownProvers :: LogicGraph -> ProverKind -> Map.Map G_sublogics [G_prover]
+knownProvers lg pk=
+ let l = Map.elems $ logics lg
+ in foldl (\m (Logic lid) -> foldl (\m' p ->
+     let lgx = G_sublogics lid (proverSublogic p)
+         p'  = G_prover lid p
+     in case Map.lookup lgx m' of
+         Just ps -> Map.insert lgx (p':ps) m'
+         Nothing -> Map.insert lgx [p']    m') m $
+     filter (hasProverKind pk)
+            (provers lid)) Map.empty l
+
+unsafeCompComorphism :: AnyComorphism -> AnyComorphism -> AnyComorphism
+unsafeCompComorphism c1 c2 = case compComorphism c1 c2 of
+ Result _ (Just c_new) -> c_new
+ _ -> error "error3"
+
 getAllProvers :: ProverKind -> G_sublogics -> LogicGraph
-  -> [(G_prover, AnyComorphism)]
-getAllProvers pk sl lg = getProvers pk sl $ findComorphismPaths lg sl
+ -> [(G_prover, AnyComorphism)]
+getAllProvers pk start lg =
+  let kp = knownProvers lg pk
+      g  = logicGraph2Graph lg
+  in concat $ map (mkComorphism kp) $
+      concat $ map (\end ->
+       dbg $ yen 5 (trace (show end) start, Nothing) (\(l,_) -> l == end) g)
+       (Map.keys kp)
+ where
+  mkComorphism kp (path,(end,_)) = case last path of
+   (_,c) ->
+    let fullComorphism = foldr unsafeCompComorphism c (snd $ unzip $ init path)
+    in  case Map.lookup end kp of
+         Just ps -> map (\p -> (p,fullComorphism)) ps
+         _ -> error "error1"
 
 {- | the list of proof statuses is integrated into the goalMap of the state
 after validation of the Disproved Statuses -}
