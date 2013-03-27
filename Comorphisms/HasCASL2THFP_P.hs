@@ -9,10 +9,10 @@ Maintainer  :  Alexis.Tsogias@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-The embedding comorphism from HasCASL to THF0_ST.
+The embedding comorphism from HasCASL to THFP_P.
 -}
 
-module Comorphisms.HasCASL2THFP where
+module Comorphisms.HasCASL2THFP_P where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -53,26 +53,26 @@ import Data.Maybe
 -- Question: are the remaining symbol variants translatable?
 
 -- | The identity of the comorphism
-data HasCASL2THFP = HasCASL2THFP deriving Show
+data HasCASL2THFP_P = HasCASL2THFP_P deriving Show
 
-instance Language HasCASL2THFP
+instance Language HasCASL2THFP_P
 
-instance Comorphism HasCASL2THFP
+instance Comorphism HasCASL2THFP_P
                 HasCASL Sublogic
                 BasicSpec Sentence SymbItems SymbMapItems
                 Env Morphism Symbol RawSymbol ()
                 THF SL.THFSl
                 BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
-    sourceLogic HasCASL2THFP = HasCASL
-    sourceSublogic HasCASL2THFP = reqSubLogicForTHFP -- topLogic
-    targetLogic HasCASL2THFP = THF
-    mapSublogic HasCASL2THFP _ = Just SL.tHFP
-    map_theory HasCASL2THFP = transTheory
-    map_symbol HasCASL2THFP = \env s -> propagateErrors "" $
+    sourceLogic HasCASL2THFP_P = HasCASL
+    sourceSublogic HasCASL2THFP_P = reqSubLogicForTHFP -- topLogic
+    targetLogic HasCASL2THFP_P = THF
+    mapSublogic HasCASL2THFP_P _ = Just SL.tHFP_P
+    map_theory HasCASL2THFP_P = transTheory
+    map_symbol HasCASL2THFP_P = \env s -> propagateErrors "" $
      transSymbol env s
     -- isInclusionComorphism HasCASL2THF0_ST = True
-    has_model_expansion HasCASL2THFP = True
+    has_model_expansion HasCASL2THFP_P = True
 
 reqSubLogicForTHFP :: Sublogic
 reqSubLogicForTHFP = Sublogic
