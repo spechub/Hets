@@ -88,6 +88,7 @@ data Sublogic = Sublogic
     , type_classes :: Classes
     , has_polymorphism :: Bool
     , has_type_constructors :: Bool
+    , has_products :: Bool
     , which_logic :: Formulas
     } deriving (Show, Eq, Ord)
 
@@ -103,6 +104,7 @@ topLogic = Sublogic
     , type_classes = ConstructorClasses
     , has_polymorphism = True
     , has_type_constructors = True
+    , has_products = True
     , which_logic = HOL
     }
 
@@ -122,6 +124,7 @@ caslLogic :: Sublogic
 caslLogic = noClasses
     { has_polymorphism = False
     , has_type_constructors = False
+    , has_products = False
     , which_logic = FOL
     }
 
@@ -135,6 +138,7 @@ bottom = Sublogic
     , type_classes = NoClasses
     , has_polymorphism = False
     , has_type_constructors = False
+    , has_products = False
     , which_logic = Atomic
     }
 
@@ -173,7 +177,10 @@ constructorClasses = need_polymorphism { type_classes = ConstructorClasses }
 
 -- | minimal sublogic with type constructors
 need_type_constructors :: Sublogic
-need_type_constructors = bottom { has_type_constructors = True }
+need_type_constructors = bottom { has_type_constructors = True,
+                                  has_products = True }
+
+need_product_type_constructor = bottom { has_products = True }
 
 need_horn :: Sublogic
 need_horn = bottom { which_logic = Horn }
@@ -189,8 +196,10 @@ need_hol = need_pred { which_logic = HOL }
 
 -- | make sublogic consistent w.r.t. illegal combinations
 sublogicUp :: Sublogic -> Sublogic
-sublogicUp s =
-    if which_logic s == HOL || has_sub s then s { has_pred = True } else s
+sublogicUp s' = let s = if has_type_constructors s'
+                        then s' { has_products = True } else s'
+                in if which_logic s == HOL || has_sub s then
+                    s { has_pred = True } else s
 
 -- | generate a list of all sublogics for HasCASL
 sublogics_all :: [Sublogic]
@@ -203,11 +212,13 @@ sublogics_all = let bools = [False, True] in
     , type_classes = tyCl
     , has_polymorphism = poly
     , has_type_constructors = tyCon
+    , has_products = prods || tyCon
     , which_logic = logic
     }
     | (tyCl, poly) <- [(NoClasses, False), (NoClasses, True),
                        (SimpleTypeClasses, True), (ConstructorClasses, True)]
     , tyCon <- bools
+    , prods <- bools
     , sub <- bools
     , part <- bools
     , eq <- bools
@@ -237,6 +248,7 @@ sublogic_name x =
          SimpleTypeClasses -> "TyCl"
          ConstructorClasses -> "CoCl")
   ++ (if has_type_constructors x then "TyCons" else "")
+  ++ (if has_products x then "Prods" else "")
   ++ formulas_name (has_pred x) (which_logic x)
   ++ (if has_eq x then "=" else "")
 
@@ -254,6 +266,9 @@ sublogic_join joinB joinC joinF a b = Sublogic
     , has_polymorphism = joinB (has_polymorphism a) $ has_polymorphism b
     , has_type_constructors =
         joinB (has_type_constructors a) $ has_type_constructors b
+    , has_products = has_products a || has_products b
+                     || has_type_constructors a
+                     || has_type_constructors b
     , which_logic = joinF (which_logic a) $ which_logic b
     }
 
@@ -528,7 +543,9 @@ sl_type :: Type -> Sublogic
 sl_type = sl_BasicFun
 
 sl_Basictype :: Type -> Sublogic
-sl_Basictype ty = case ty of
+sl_Basictype ty = case getTypeAppl ty of
+ (TypeName tid _ _,_) | isProductId tid -> need_product_type_constructor
+ _ -> case ty of
     TypeName _ k v -> sublogic_max
         (if v /= 0 then need_polymorphism else bottom) $ sl_Rawkind k
     KindedType t k _ -> comp_list $ sl_Basictype t : map sl_kind (Set.toList k)

@@ -82,7 +82,8 @@ reqSubLogicForTHFP = Sublogic
     , has_pred = True
     , type_classes = NoClasses
     , has_polymorphism = False
-    , has_type_constructors = True
+    , has_type_constructors = False
+    , has_products = True
     , which_logic = HOL }
 
 -- Translation of a Theory
