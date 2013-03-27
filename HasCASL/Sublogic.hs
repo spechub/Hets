@@ -180,6 +180,7 @@ need_type_constructors :: Sublogic
 need_type_constructors = bottom { has_type_constructors = True,
                                   has_products = True }
 
+need_product_type_constructor :: Sublogic
 need_product_type_constructor = bottom { has_products = True }
 
 need_horn :: Sublogic
