@@ -455,6 +455,9 @@ printLocales = vsep . map printLocale . orderLDecs . Map.toList
 printDefinitions :: Defs -> Doc
 printDefinitions = vsep . map printDefinition . Map.toList
 
+printFunctions :: Funs -> Doc
+printFunctions = vsep . map printFunction . Map.toList
+
 printFixesAssumes :: Doc -> [Doc] -> [Doc] -> [Doc] -> Doc
 printFixesAssumes h p' a f = vcat
   [ h <+> (if null $ p' ++ a ++ f then empty else text "=") <+> hsep p'
@@ -468,6 +471,14 @@ printDefinition (n,(tp,vs,tm)) = text "definition" <+> text n <+> text "::"
  $+$ (doubleQuotes . printTyp Null) tp <+> text "where"
  $+$ doubleQuotes (text n <+> (hsep $ map (text . fst) vs)
  <+> text "\\<equiv>" <+> printTerm tm)
+
+printFunction :: (String, FunDef) -> Doc
+printFunction (n,(tp,def_eqs)) = text "fun" <+> text n <+> text "::"
+ $+$ (doubleQuotes . printTyp Null) tp <+> text "where"
+ $+$ (vcat . punctuate (text "|"))
+      (map (\(pats,tm) -> doubleQuotes $ text n
+       <+> hsep (map printTerm pats) <+> text "="
+       <+> printTerm tm) def_eqs)
 
 printLocale :: (String, LocaleDecl) -> Doc
 printLocale (n, (parents, in_ax, ex_ax, params)) =
@@ -656,6 +667,7 @@ printSign sig = let dt = ordDoms $ domainTab sig
     printAbbrs (abbrs $ tsig sig) $++$
     printTypeDecls (baseSig sig) dt ars $++$
     printDefinitions (defs $ tsig sig) $++$
+    printFunctions (funs $ tsig sig) $++$
     printLocales (locales $ tsig sig) $++$
     printClassrel (classrel $ tsig sig) $++$
     printDomainDefs dt $++$

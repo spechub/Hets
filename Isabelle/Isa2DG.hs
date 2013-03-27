@@ -104,7 +104,7 @@ anaThyFile opts path = do
 
 anaIsaFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaIsaFile _ path = do
- (name,imps,consts,axioms,theorems,types,defs',classes,locales')
+ (name,imps,consts,axioms,theorems,types,defs',funs',classes,locales')
    <- importIsaDataIO path
  let sens = map makeNamedSentence (axioms ++ theorems
              ++ (foldl (\ l c -> case c of
@@ -113,7 +113,8 @@ anaIsaFile _ path = do
  let sgn = emptySign { constTab = foldl (\ m (n,t,_) -> Map.insert (mkVName n) t m) Map.empty consts, domainTab = types, imports = imps, baseSig = Custom_thy,
    tsig = emptyTypeSig { classrel = Map.fromList classes,
    locales = Map.fromList locales',
-   defs    = Map.fromList defs' }}
+   defs    = Map.fromList defs',
+   funs    = Map.fromList funs' }}
  let dg = _insNodeDG sgn sens name emptyDG
      le = Map.insert (emptyLibName name)
            dg Map.empty

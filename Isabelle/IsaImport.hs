@@ -13,6 +13,7 @@ importIsaDataIO :: String ->
  IO (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
      [(String,IsaSign.Term)], [(String,IsaSign.Term)],
      IsaSign.DomainTab, [(String,IsaSign.Def)],
+     [(String,IsaSign.FunDef)],
      [(IsaSign.IsaClass,IsaSign.ClassDecl)],
      [(String,IsaSign.LocaleDecl)])
 importIsaDataIO p = do
@@ -23,6 +24,7 @@ importIsaData :: IsaExport ->
  (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
   [(String,IsaSign.Term)], [(String,IsaSign.Term)],
   IsaSign.DomainTab, [(String,IsaSign.Def)],
+  [(String,IsaSign.FunDef)],
   [(IsaSign.IsaClass,IsaSign.ClassDecl)],
   [(String,IsaSign.LocaleDecl)])
 importIsaData (IsaExport attrs
@@ -32,6 +34,7 @@ importIsaData (IsaExport attrs
                (Theorems theorems)
                (Types types)
                (Defs defs)
+               (Funs funs)
                (Classes classes)
                (Locales locales)) =
  let imports'  = map importName                 imports
@@ -40,10 +43,11 @@ importIsaData (IsaExport attrs
      theorems' = map (hXmlTerm2IsaTerm [])      theorems
      types'    = map hXmlTypeDecl2IsaTypeDecl   types
      defs'     = map hXmlDef2IsaDef             defs
+     funs'     = map hXmlFunDef2IsaFunDef       funs
      classes'  = map hXmlClassDecl2IsaClassDecl classes
      locales'  = map hXmlLocaleDecl2IsaLocale   locales
  in (isaExportFile attrs,imports',consts',
-     axioms',theorems',types',defs',classes',locales')
+     axioms',theorems',types',defs',funs',classes',locales')
 
 mapConst :: ConstDecl -> (String,IsaSign.Typ, Maybe IsaSign.Term)
 mapConst (ConstDecl attrs tp tm) =
@@ -239,6 +243,15 @@ hXmlDef2IsaDef (Def a t args tm) = (defName a,(hXmlOneOf3_2IsaTyp t,
                ArgType a1 t'  -> (argName a1,
                 hXmlOneOf3_2IsaTyp $ ThreeOf3 t')) args,
  hXmlOneOf6_2IsaTerm [] tm))
+
+hXmlFunDef2IsaFunDef :: FunDef -> (String,IsaSign.FunDef)
+hXmlFunDef2IsaFunDef (FunDef a t def_eqs) = (funDefName a,
+ ((hXmlOneOf3_2IsaTyp t),map hXmlFunDefEq2IsaFunDefEq def_eqs))
+
+hXmlFunDefEq2IsaFunDefEq :: FunDefEq -> ([IsaSign.Term],IsaSign.Term)
+hXmlFunDefEq2IsaFunDefEq (FunDefEq tm) = case tm of
+ def:pats -> (map (hXmlOneOf6_2IsaTerm []) pats,hXmlOneOf6_2IsaTerm [] def)
+ _        -> error "Illegal function definition!"
 
 hXmlClassDecl2IsaClassDecl :: ClassDecl -> (IsaSign.IsaClass,IsaSign.ClassDecl)
 hXmlClassDecl2IsaClassDecl (ClassDecl a cls) =

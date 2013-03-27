@@ -202,8 +202,10 @@ type LocaleDecl = ([String],[(String,Term)],[(String,Term)],
       [(String,Typ,Maybe AltSyntax)])
       -- parents * internal axioms * external axiosm * params
 type Def        = (Typ,[(String,Typ)],Term)
+type FunDef     = (Typ,[([Term],Term)])
 type Locales    = Map.Map String LocaleDecl
 type Defs       = Map.Map String Def
+type Funs       = Map.Map String FunDef
 type Arities    = Map.Map TName [(IsaClass, [(Typ, Sort)])]
 type Abbrs      = Map.Map TName ([TName], Typ)
 
@@ -212,6 +214,7 @@ data TypeSig =
     classrel    :: Classrel,  -- domain of the map yields the classes
     locales     :: Locales,
     defs        :: Defs,
+    funs        :: Funs,
     defaultSort :: Sort,
     log_types   :: [TName],
     univ_witness:: Maybe (Typ, Sort),
@@ -225,6 +228,7 @@ emptyTypeSig = TySg {
     classrel     = Map.empty,
     locales      = Map.empty,
     defs         = Map.empty,
+    funs         = Map.empty,
     defaultSort  = [],
     log_types    = [],
     univ_witness = Nothing,
@@ -237,6 +241,7 @@ isSubTypeSig t1 t2 =
   Map.isSubmapOf (classrel t1) (classrel t2) &&
   Map.isSubmapOf (locales t1) (locales t2) &&
   Map.isSubmapOf (defs t1) (defs t2) &&
+  Map.isSubmapOf (funs t1) (funs t2) &&
   null (log_types t1 \\ log_types t2) &&
   (case univ_witness t1 of
      Nothing -> True

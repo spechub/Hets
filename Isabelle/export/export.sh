@@ -81,7 +81,7 @@ echo "v1:Starting Isabelle" > $COMM_FILE
 
 (
  echo "theory IsaExport
-imports Datatype
+imports Datatype FunDef
 begin
 ML {*
 

@@ -7,6 +7,8 @@ sig
          term) list
                              (* (name * type) * args@(argname * argtype) * 
                                 def_term *)
+        type fun_info      = (string * typ * (term list * term) list) list
+                             (* name * type * def_eqs@(pats * def_term) *)
 	type class_info	   = (string * (string list) * term_info *
          ((string * typ) list)) list
                              (* name * parents * assumes * fixes *)
@@ -24,11 +26,13 @@ sig
          * term_info     (* theorems    *)
          * datatype_info (* data types  *)
          * def_info      (* definitions *)
+         * fun_info      (* functions   *)
          * class_info    (* class info  *)
          * locale_info   (* locale info *)
         exception ExportError of string
         val theory_info : theory -> theory_info
         val tinfo2xml : theory -> string -> theory_info -> XML.tree
+        val remove_parent_data : (theory -> 'a list) -> ('a -> string) -> theory -> 'a list
 end;
 
 structure ExportHelper : ExportHelper =
@@ -41,6 +45,8 @@ struct
          term) list
                              (* (name * type) * args@(argname * argtype) * 
                                 def_term *)
+        type fun_info      = (string * typ * (term list * term) list) list
+                             (* name * type * def_eqs@(pats * def_term) *)
 	type class_info    = (string * (string list) * term_info *
          ((string * typ) list)) list
                              (* name * parents * assumes * fixes *)
@@ -58,6 +64,7 @@ struct
          * term_info     (* theorems    *)
          * datatype_info (* data types  *)
          * def_info      (* definitions *)
+         * fun_info      (* functions   *)
          * class_info    (* class info  *)
          * locale_info   (* locale info *)
         exception ExportError of string
@@ -177,6 +184,22 @@ struct
              val defs       = List.map (fn (_,tm) => get_def tm) (List.filter
               (fn (n,_) => String.isSuffix def_suffix n) thms)
          in defs end
+        fun fun_def c =
+         let val rec pats_of = fn pats => case pats of
+                      ps $ p => p :: (pats_of ps)
+                    | _ => []
+         in case prop_of c of Const ("==>",_) $ _ $ (Const ("HOL.Trueprop",_)
+             $ (Const ("HOL.eq",_) $ pats $ def)) =>
+              (List.rev (pats_of pats),def)
+            | _ => internal_error "ExportHelper.fun_def - Failed to parse equation" end
+        fun get_funs T =
+          let val funs_of = fn T => 
+            let val d = Item_Net.content (Function_Common.get_function
+                     (Proof_Context.init_global T))
+            in List.map (fn (c,i) => case c of Const (n,t)
+                          => (n,t,((List.map fun_def) o #psimps) i)
+                         | _ => internal_error "ExportHelper.get_funs - failed to parse function name") d end
+          in remove_parent_data funs_of #1 T end
 	fun get_classes T thms = 
          let val cls_suffix = "_class_def"
              val cls_names = List.map (fn n => String.substring
@@ -289,7 +312,7 @@ struct
 	     val constructors = List.map #1 (List.concat (List.map (#3 o #2) 
                                  (List.concat (List.map (#descr o #2) ts))))
             in (grouped_rec_names,all_rec_names,constructors,def_names) end
-	fun get_gen_consts T name ts consts =
+	fun get_gen_consts T name ts consts funs =
          let val (grouped_rec_names,all_rec_names,constructors,_) = get_type_names ts
 	     val rec_names = List.concat grouped_rec_names
 	     val mutually_rec_names =
@@ -319,7 +342,12 @@ struct
                              (l_to_intl x))) end) mutually_rec_names)]))
             @(List.filter (String.isPrefix "Class.") consts)
             @(List.filter (fn s => List.exists
-              (fn l => String.isPrefix l s) locale_names) consts) end
+              (fn l => String.isPrefix l s) locale_names) consts)
+            @(postfix "_" "graph" funs)
+            @(postfix "_" "rel" funs)
+            @(postfix "_" "dom" funs)
+            @(postfix "_" "sumC" funs)
+            @funs end
 	fun get_gen_axioms name ts =
          let val (grouped_rec_names,_,constructors,def_names) =
                   get_type_names ts
@@ -348,7 +376,7 @@ struct
                 List.concat (List.map (fn x => [x^"."^x^"_rec",
                                                 x^"."^x^"_rec_set",
                                                 x^"."^x^"_rep_set"]) simple_names)]))])) end
-	fun get_gen_theorems T name ts ths =
+	fun get_gen_theorems T name ts ths funs =
          let val (grouped_rec_names,_,_,def_names) =
                   get_type_names ts
              val rec_names = List.concat grouped_rec_names
@@ -365,12 +393,19 @@ struct
 	   prefix "equal" "_" (postfix "_" "def" def_names),
            prefix "equal" "_" (postfix "_" "def_raw" def_names),
 	   List.map (fn x => "equal_"^x^"_inst.equal_"^x) def_names])
+         @postfix "_" "def" (List.concat
+          [postfix "_" "rel" funs,
+           postfix "_" "sumC" funs,
+           postfix "_" "graph" funs,
+           funs])
          @(List.concat (List.map (fn x =>
             List.filter (String.isPrefix (name^"."^x^".")) ths) (unique (rec_names@def_names))))
          @(List.concat (List.map (fn x =>
             List.filter (String.isPrefix (name^"."^(space_implode "_" x)^".")) ths)
            mutually_rec_names))
          @(List.filter (String.isPrefix "Class.") ths)
+         @(List.concat (List.map (fn f => List.filter
+          (String.isPrefix f) ths) funs))
          @(List.filter (fn s => (List.exists 
            (fn l => List.exists
            (fn f => String.isPrefix (l^f) s) locale_filter) locale_names)) ths)
@@ -452,10 +487,14 @@ end
              val thms       = get_theorems T
              val axioms     = get_axioms T
 	     val classes    = get_classes T thms
+             val funs       = get_funs T
              val gen_consts'= get_gen_consts T name types (List.map #1 consts)
+                               (List.map #1 funs)
              val gen_thms'  = get_gen_theorems T name types (List.map #1 thms)
+                               (List.map #1 funs)
              val defs       = get_defs (filter gen_thms' thms)
              val def_names  = List.map (#1 o #1) defs
+             val funs       = get_funs T
              val gen_consts = def_names@gen_consts'
              val gen_thms   = (postfix "_" "def" def_names)@gen_thms'
              val gen_axioms = (get_gen_axioms name types)@(List.map #1 thms)
@@ -465,10 +504,10 @@ end
              (filter gen_consts consts),
              (filter gen_axioms axioms),
              (filter gen_thms thms),
-             types,defs,classes,locales) end
+             types,defs,funs,classes,locales) end
 	(* export theory info as xml *)
 	fun tinfo2xml T fname (name,imports,consts,axioms,thms,
-                                types,defs,classes,locales) =
+                                types,defs,funs,classes,locales) =
          let val b = Long_Name.base_name
              val xml_imports  = XML.Elem
               (("Imports",[]), List.map (fn s => XML.Elem (("Import",[("name",s)]),[])) imports)
@@ -483,6 +522,13 @@ end
                 @(List.map (fn ((n,_),t) => XML.Elem (("Arg",[("name",n)]), 
                   [XML_Syntax.xml_of_type t])) args)
                 @[xml_of_term T tm])) defs)
+             val xml_funs     = XML.Elem (("Funs",[]),List.map
+              (fn (name,tp,def_eqs) => XML.Elem (("FunDef",
+               [("name",Long_Name.base_name name)]),
+                [XML_Syntax.xml_of_type tp]@List.map
+               (fn (pats,def) => XML.Elem (("FunDefEq",[]),
+                [xml_of_term T def]
+               @(List.map (xml_of_term T) pats))) def_eqs)) funs)
              val xml_classes  = XML.Elem (("Classes",[]),List.map
               (fn (name,parents,axioms,params) =>
                 XML.Elem (("ClassDecl",[("name",name)]),
@@ -516,5 +562,5 @@ end
                       (("Parent",[("name",b n)]),[])) parents)
                     )end) locales)
          in fixTypeNames name (XML.Elem (("IsaExport",[("file",fname)]),
-             [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types,xml_defs,xml_classes,xml_locales])) end
+             [xml_imports,xml_consts,xml_axioms,xml_theorems,xml_types,xml_defs,xml_funs,xml_classes,xml_locales])) end
 end;
