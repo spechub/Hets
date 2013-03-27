@@ -3,6 +3,7 @@
 *.der.hs
 ATC_*.hs
 AS_*.hs
+As.hs
 hets
 
 Isabelle/IsaExport.hs
