@@ -41,7 +41,7 @@ instance GetRange Constraint where
     getRange (WeakC   (_,r,_)) = r
 
 instance GetRange Type where
-    getRange _ = nullRange
+    getRange _  = nullRange
 
 occursType :: Token -> Type -> Bool
 occursType t tp = case tp of
@@ -180,7 +180,7 @@ getTypeCBF cm bf = case bf of
         ++ ") and (" ++ (sh uf2) ++ ") : ("
         ++ (sh t2) ++ " to have the same type"
    return (OType,
-    cs1 ++ cs2 ++ [(t1, NormalC (errMsg,getRange bf,t2))])
+    cs1 ++ cs2 ++ [(t1, NormalC (errMsg,getRangeSpan bf,t2))])
   else do
    (t1, cs1) <- getTypeCUF cm uf1
    (t2, cs2) <- getTypeCUF cm uf2
@@ -191,8 +191,8 @@ getTypeCBF cm bf = case bf of
         ++ " requires (" ++ (sh uf2) ++ ") : ("
         ++ (sh t2) ++ ")  to have type OType"
    return (OType,
-    cs1 ++ cs2 ++ [(t1, NormalC (errMsg1,getRange uf1,OType)),
-                   (t2, NormalC (errMsg2,getRange uf2,OType))])
+    cs1 ++ cs2 ++ [(t1, NormalC (errMsg1,getRangeSpan uf1,OType)),
+                   (t2, NormalC (errMsg2,getRangeSpan uf2,OType))])
  TBF_THF_Binary_Tuple bt ->
   let ufs = case bt of
        TBT_THF_Or_Formula ufs' -> ufs'
@@ -217,19 +217,20 @@ getTypeCBF cm bf = case bf of
          t <- applyResult (length ufs'') t1
          let errMsg = "Application is not well typed"
          return (t, cs1 ++ concat cs2
-          ++ [(t1, WeakC (errMsg,getRange bt, genFn $ tps ++ [t]))])
+          ++ [(t1, WeakC (errMsg,getRangeSpan bt, genFn $ tps ++ [t]))])
       _ -> do
        ufs' <- mapM (getTypeCUF cm) ufs
        case ufs' of
         [] -> lift Nothing
         (t,cs) : [] -> return (t,cs++[(t,NormalC (
          "Boolean connective requires all " ++
-         "arguments to be of type OType", getRange ufs, OType))])
+         "arguments to be of type OType", getRangeSpan ufs, OType))])
         _ -> do
          let (ts,cs) = unzip ufs'
          let errMsg = "Boolean connective requires all " ++
                       "arguments to be of type OType"
-         return (OType,concat cs ++ map (\t -> (t,NormalC (errMsg,getRange bt,OType))) ts)
+         return (OType,concat cs ++ map (\t ->
+          (t,NormalC (errMsg,getRangeSpan bt,OType))) ts)
  _ -> lift Nothing
 
 applyResult :: Int -> Type -> UniqueT Maybe Type
@@ -258,7 +259,7 @@ getTypeCUF cm uf = case uf of
          (t, cs) <- getTypeCUF cm' uf'
          let errMsg = "Quantified Formula (" ++ sh uf' ++ ") : ("
                       ++ sh t ++ ") is expected to be of type OType"
-         return (t, cs ++ [(t, NormalC (errMsg,getRange uf', OType))])
+         return (t, cs ++ [(t, NormalC (errMsg,getRangeSpan uf', OType))])
         c = A_Single_Quoted
         ins t tp = Data.Map.insert (c t)
           ConstInfo {
@@ -270,7 +271,7 @@ getTypeCUF cm uf = case uf of
   (lf', cs) <- getTypeCLF cm lf
   let errMsg = "Unary Formula (" ++ sh lf ++ ") : ("
                ++ sh lf' ++ ") is expected to be of type OType"
-  return (lf', cs ++ [(lf', NormalC (errMsg,getRange lf,OType))])
+  return (lf', cs ++ [(lf', NormalC (errMsg,getRangeSpan lf,OType))])
  TUF_THF_Atom a -> case a of
   TA_THF_Conn_Term _ -> lift Nothing
   T0A_Constant c -> case Data.Map.lookup c cm of
