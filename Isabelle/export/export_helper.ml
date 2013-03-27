@@ -52,6 +52,10 @@ struct
          * locale_info   (* locale info *)
         exception ExportError of string
 
+	structure XML_Syntax = Legacy_XML_Syntax
+
+	fun all_locales T = Locale.pretty_locale_deps T
+
 (* General helper functions *)
 	fun internal_error s = raise (ExportError s)
 	fun id x = x
@@ -193,30 +197,18 @@ struct
               (List.filter (fn n =>
                if String.isSuffix cls_suffix n
                then true else false) (List.map #1 thms))
-             val names' = List.filter (String.isPrefix (Context.theory_name T))
-                      (Locale.all_locales T)
-             val names = List.filter
-              (fn s => not (List.exists (fn s' => s = s') cls_names)) names'
-             val (_,tb) = Locale.locale_deps T
-             val tb_list = List.map (fn (k,t) => 
-                  (k,Symtab.dest t)) (Symtab.dest tb)
-             val parents = List.foldl (fn ((s,l),t') =>
-                  List.foldl (fn ((s1,l1),t) => Symtab.map_default (s1,([],[]))
-                   (fn (parents,pfixes) => (s::parents,(
-                   ((List.map (fn Free (s,_) => s | _ =>
- internal_error "ExportHelper.get_locales - Failed to parse fixes"))
-                     o List.concat) l1)@pfixes)) t
-                  ) t' l) Symtab.empty tb_list;
+             val names' = List.filter ((String.isPrefix
+                           (Context.theory_name T)) o #1)
+                           (List.map (fn l => (#name l,#parents l))
+                            (all_locales T))
+             val names = List.filter ((fn s =>
+               not (List.exists (fn s' => s = s') cls_names)) o #1) names'
              val filter = ["_axioms.intro","_axioms_def",
               "_def",".intro",".axioms_"]
-         in List.map (fn name => 
+         in List.map (fn (name,ps) => 
            let val params'   = Locale.params_of T name
-               val parent_params =
-                    case Symtab.lookup parents name of
-                      SOME (_,v) => v
-                     | _ => []
                val params    = List.filter (fn ((s,_),_) =>
-                   not (List.exists (fn p => p = s) parent_params)) params'
+                   not (List.exists (fn p => p = s) ps)) params'
                val axs       = List.filter (fn t => String.isPrefix name (#1 t))
                                 (Global_Theory.all_thms_of T)
                val axioms'  = List.filter
@@ -247,9 +239,6 @@ struct
                     List.exists (fn t' => t = t') in_locale_axioms) axioms
                val ex_loc = List.filter (fn (_,t) => 
                     not (List.exists (fn t' => t = t') in_locale_axioms)) axioms
-               val ps = case Symtab.lookup parents name of
-                  SOME(v,_) => v
-                | _ => []
            in (name,params,fix_consts params' in_loc,fix_consts params' ex_loc,ps) end
           ) names end
 (* Guess the names of generated axioms, consts and theorem *)
@@ -280,7 +269,7 @@ struct
                   (List.filter (fn x => List.length x = 1) grouped_rec_names)
              val locale_names = List.filter
                   (String.isPrefix (Context.theory_name T))
-                  (Locale.all_locales T)
+                  (List.map #name (all_locales T))
          in constructors@(prefix name "." (List.concat
              [prefix "Abs" "_" rec_names,
               prefix "Rep" "_" rec_names,
@@ -338,7 +327,7 @@ struct
                   grouped_rec_names
              val locale_names = List.filter
                   (String.isPrefix (Context.theory_name T))
-                  (Locale.all_locales T)
+                  (List.map #name (all_locales T))
 	     val locale_filter = ["_axioms.intro","_axioms_def","_def","."]
          in prefix name "." (List.concat
           [prefix "arity_equal" "_" def_names,
