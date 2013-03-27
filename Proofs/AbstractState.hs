@@ -68,10 +68,6 @@ import Comorphisms.KnownProvers
 
 import Static.GTheory
 
-import Debug.Trace (trace)
-
-dbg d = trace (show d) d
-
 -- * Provers
 
 -- | provers and consistency checkers for specific logics
@@ -404,10 +400,10 @@ getAllProvers pk start lg =
       g  = logicGraph2Graph lg
   in concat $ map (mkComorphism kp) $
       concat $ map (\end ->
-       dbg $ yen 5 (trace (show end) start, Nothing) (\(l,_) -> l == end) g)
+       yen 5 (start, Nothing) (\(l,_) -> l == end) g)
        (Map.keys kp)
  where
-  mkComorphism kp (path,(end@(G_sublogics lid sl),_)) =
+  mkComorphism kp (path,(end@(G_sublogics lid _),_)) =
    let fullComorphism = case path of
                          [] -> idComorphism (Logic lid)
                          _  -> case last path of

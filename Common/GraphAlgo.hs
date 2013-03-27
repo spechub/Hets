@@ -84,7 +84,7 @@ yen k' start end g = case dijkstra start end g of
   Nothing -> []
  where
   yen_ k a = if k <= 0 then a
-   else let b = catMaybes $ map (yen' k a) [1..((length $ a !! (k'-k-1))-1)]
+   else let b = catMaybes $ map (yen' k a) [0..((length $ a !! (k'-k-1))-1)]
         in case minPath b of
             Just m  -> yen_ (k-1) $ a++[m]
             Nothing -> a

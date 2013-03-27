@@ -9,3 +9,5 @@ free types
      SWPoint ::= SWPoint(x:Real;y:Real;z:Real);
 
 op p1:SWPoint=SWPoint(0,0,0)
+
+.0=0 %implied
