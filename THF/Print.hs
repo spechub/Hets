@@ -59,7 +59,7 @@ instance Pretty Type where
         SType st        -> prettyAtomicSystemWord st
         VType v         -> prettyUpperWord v
         ParType t1      -> parens $ pretty t1
-        ProdType ts     -> brackets $ sepByCommas $ map pretty ts
+        ProdType ts     -> parens $ sepBy (map pretty ts) starSign
 
 instance Pretty TypeInfo where
     pretty ti = text "thf" <> parens (pretty (typeName ti) <> comma
