@@ -208,7 +208,7 @@ markNodeConsistency newc str dgnode = dgnode
       ninfo@DGNode { node_cons_status = ConsStatus c pc thm } ->
           if pc == newc && isProvenThmLinkStatus thm then ninfo else
           ninfo { node_cons_status = ConsStatus c newc
-                  $ Proven (DGRule $ showConsistency newc ++ str)
+                  $ Proven (DGRule $ showConsistencyStatus newc ++ str)
                     emptyProofBasis }
       ninfo -> ninfo }
 

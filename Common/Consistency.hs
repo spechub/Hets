@@ -32,16 +32,15 @@ data Conservativity =
   | Def
     deriving (Show, Read, Eq, Ord)
 
-showConsistency :: Conservativity -> String
-showConsistency c = case c of
-  Cons -> "Consistent"
-  Unknown str -> "Unkown if being consistent. Cause is : " ++ str
-  _ -> show c
-
 showConsistencyStatus :: Conservativity -> String
 showConsistencyStatus cs = case cs of
   Inconsistent -> "not conservative"
-  _ -> map toLower $ showConsistency cs
+  Unknown str -> "unknown if being conservative. Cause is : " ++ str
+  None -> "unknown if being conservative"
+  Cons -> "conservative"
+  PCons -> "proof-theoretically conservative"
+  Mono -> "monomorphic"
+  Def -> "definitional"
 
 instance Pretty Conservativity where
   pretty = text . showConsistencyStatus
