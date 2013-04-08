@@ -142,5 +142,6 @@ runVampire sps cfg saveTPTP thName nGoal =
                       proverTimeLimit = configTimeLimit cfg,
                       extraOptions = Just $ unwords $ extraOpts cfg}
     msResponse <- parseMathServOut mathServOut
-    return (mapMathServResponse msResponse cfg nGoal $ proverName vampire))
+    return (mapMathServResponse (getAxioms sps) msResponse cfg nGoal
+           $ proverName vampire))
    $ excepToATPResult (proverName vampire) $ AS_Anno.senAttr nGoal

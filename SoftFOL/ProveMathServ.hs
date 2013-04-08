@@ -153,6 +153,6 @@ runMSBroker sps cfg saveTPTP thName nGoal =
                      proverTimeLimit = configTimeLimit cfg,
                      extraOptions = Nothing}
     msResponse <- parseMathServOut mathServOut
-    return (mapMathServResponse msResponse cfg nGoal $
+    return (mapMathServResponse (getAxioms sps) msResponse cfg nGoal $
             proverName mathServBroker))
    $ excepToATPResult (proverName mathServBroker) $ AS_Anno.senAttr nGoal

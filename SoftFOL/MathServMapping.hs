@@ -25,6 +25,8 @@ import SoftFOL.Sign
 
 import Interfaces.GenericATPState
 
+import Debug.Trace
+
 {- |
   Name of the prover if MathServ was called via Broker.
 -}
@@ -36,7 +38,8 @@ brokerName = "MathServe Broker"
   If an error occured, an ATPError with error message instead of result output
   will be returned.
 -}
-mapMathServResponse :: Either String MathServResponse
+mapMathServResponse :: [String] -- ^ all axiom names
+                    -> Either String MathServResponse
                     -- ^ SOAP faultstring or Parsed MathServ data
                     -> GenericConfig ProofTree -- ^ configuration to use
                     -> AS_Anno.Named SPTerm -- ^ goal to prove
@@ -44,7 +47,7 @@ mapMathServResponse :: Either String MathServResponse
                     -> (ATPRetval, GenericConfig ProofTree)
                     {- ^ (retval, configuration with proof status and
                     complete output) -}
-mapMathServResponse eMsr cfg nGoal prName =
+mapMathServResponse axs eMsr cfg nGoal prName =
     either (\ errStr -> (ATPError errStr, cfg))
            (\ msr ->
             either
@@ -57,7 +60,8 @@ mapMathServResponse eMsr cfg nGoal prName =
                          (extraOpts cfg) "",
                        resultOutput = lines failure,
                        timeUsed = cpuTime $ timeResource msr }))
-              (\ res -> mapProverResult res (timeResource msr) cfg nGoal prName)
+              (\ res -> mapProverResult axs res (timeResource msr)
+                        cfg nGoal prName)
               (foAtpResult msr))
            eMsr
 
@@ -66,14 +70,15 @@ mapMathServResponse eMsr cfg nGoal prName =
   Result output contains all important informations in a list of Strings.
   The function should only be called if there is a FoAtpResult available.
 -}
-mapProverResult :: MWFoAtpResult -- ^ parsed FoATPResult data
+mapProverResult :: [String] -- ^ all axiom names
+                -> MWFoAtpResult -- ^ parsed FoATPResult data
                 -> MWTimeResource -- ^ global time spent
                 -> GenericConfig ProofTree -- ^ configuration to use
                 -> AS_Anno.Named SPTerm -- ^ goal to prove
                 -> String -- ^ prover name
                 -> (ATPRetval, GenericConfig ProofTree)
                 -- ^ (retval, configuration with proof status, complete output)
-mapProverResult atpResult timeRes cfg nGoal prName =
+mapProverResult axs atpResult timeRes cfg nGoal prName =
     let sStat = systemStatus atpResult
         res = mapToGoalStatus sStat
         prf = proof atpResult
@@ -101,8 +106,8 @@ mapProverResult atpResult timeRes cfg nGoal prName =
                      else prName ++ " [via MathServe]"
         usedAxs = case axioms prf of
           [] -> [AS_Anno.senAttr nGoal]
-          as -> words as
-        (atpErr, retval) = proofStat nGoal res usedAxs timeout $
+          as -> trace as $ words as
+        (atpErr, retval) = proofStat axs nGoal res usedAxs timeout $
             defaultProofStatus nGoal prName'
                            (configTimeLimit cfg)
                            (extraOpts cfg)
@@ -154,7 +159,8 @@ defaultProofStatus nGoal prName tl opts pt =
   TLimitExceeded), and the proofStatus containing all prove
   information available.
 -}
-proofStat :: AS_Anno.Named SPTerm -- ^ goal to prove
+proofStat :: [String] -- ^ all axiom names
+           -> AS_Anno.Named SPTerm -- ^ goal to prove
            -> GoalStatus -- ^ Nothing stands for prove error
            -> [String] -- ^ Used axioms in the proof
            -> Bool -- ^ Timeout status
@@ -162,10 +168,12 @@ proofStat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> (ATPRetval, ProofStatus ProofTree)
            {- ^ General return value of a prover run, used in GUI.
            Detailed proof status if information is available. -}
-proofStat nGoal res usedAxs timeOut defaultPrStat = case res of
+proofStat axs nGoal res usedAxs timeOut defaultPrStat = case res of
   Proved _ -> let nName = AS_Anno.senAttr nGoal in
       (ATPSuccess, defaultPrStat
        { goalStatus = Proved $ elem nName usedAxs
-       , usedAxioms = filter (/= nName) usedAxs })
+       , usedAxioms = case filter (/= nName) usedAxs of
+          [] -> axs
+          rs -> rs })
   _ -> (if timeOut then ATPTLimitExceeded else ATPSuccess
        , defaultPrStat { goalStatus = res })
