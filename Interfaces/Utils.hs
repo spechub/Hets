@@ -295,10 +295,10 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                        checkConservativity theChecker
                           (plainSign signS', toNamedList sensS')
                           compMor inputThSens
-               let consShow = case res of
-                              Just (Just (cst, _)) -> cst
+               let cs' = case res of
+                              Just (Just (cst, obs)) -> if null obs then cst
+                                else Unknown "unchecked obligations"
                               _ -> Unknown "Unknown"
-                   cs' = consShow
                    consNew csv = if cs' >= csv
                               then Proven conservativityRule emptyProofBasis
                               else LeftOpen
