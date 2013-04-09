@@ -25,8 +25,6 @@ import SoftFOL.Sign
 
 import Interfaces.GenericATPState
 
-import Debug.Trace
-
 {- |
   Name of the prover if MathServ was called via Broker.
 -}
@@ -106,7 +104,7 @@ mapProverResult axs atpResult timeRes cfg nGoal prName =
                      else prName ++ " [via MathServe]"
         usedAxs = case axioms prf of
           [] -> [AS_Anno.senAttr nGoal]
-          as -> trace as $ words as
+          as -> words as
         (atpErr, retval) = proofStat axs nGoal res usedAxs timeout $
             defaultProofStatus nGoal prName'
                            (configTimeLimit cfg)
