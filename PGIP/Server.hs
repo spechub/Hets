@@ -150,10 +150,13 @@ hetsServer opts1 = do
      time <- getCurrentTime
      createDirectoryIfMissing False tempHetsLib
      m <- readIORef sessRef
-     appendFile permFile $ shows time " sessions: "
+     if isPrefixOf "134.102.204.54" rhost -- nagios-plugins 1.4.15
+       then appendFile permFile "."
+       else do
+       appendFile permFile $ shows time " sessions: "
                     ++ shows (IntMap.size m) "\n"
-     appendFile permFile rhost
-     appendFile permFile $ shows (requestHeaders re) "\n"
+       appendFile permFile rhost
+       appendFile permFile $ shows (requestHeaders re) "\n"
    -- better try to read hosts to exclude from a file
    if any (`isInfixOf` rhost) bots then return $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
