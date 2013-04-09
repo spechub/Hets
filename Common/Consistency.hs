@@ -13,7 +13,6 @@ Data types for conservativity
 
 module Common.Consistency where
 
-import Data.Char (toLower)
 import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation
