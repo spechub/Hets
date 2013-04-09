@@ -73,6 +73,15 @@ struct
 
 	fun all_locales T = Locale.pretty_locale_deps T
 
+        fun format_term t = 
+         let val ctxt = case Context.the_thread_data () of
+                          Context.Theory t => Proof_Context.init_global t
+                        | Context.Proof p  => p
+         in Pretty.str_of (Thy_Output.pretty_term ctxt t) end
+
+        fun dbg f s = let val _ = Output.writeln (f s)
+                       in s end
+
 (* General helper functions *)
 	fun internal_error s = raise (ExportError s)
 	fun id x = x
@@ -305,15 +314,19 @@ struct
             let
 	     val rec_types = List.filter check_rec ts
 	     val grouped_rec_names = List.map (fn x => 
-                   List.map (Long_Name.base_name o #1 o #2) ((#descr o #2) x)) rec_types
+                   List.map (#1 o #2) ((#descr o #2) x)) rec_types
+             val unqualified_grouped_rec_names = List.map
+                   (List.map Long_Name.base_name) grouped_rec_names
   	     val def_names = (List.map (Long_Name.base_name o #1 o #2) 
                               (List.concat (List.map (#descr o #2) rec_types)))
 	     val all_rec_names = (List.concat grouped_rec_names)@def_names
 	     val constructors = List.map #1 (List.concat (List.map (#3 o #2) 
                                  (List.concat (List.map (#descr o #2) ts))))
-            in (grouped_rec_names,all_rec_names,constructors,def_names) end
+            in (unqualified_grouped_rec_names,grouped_rec_names,
+                all_rec_names,constructors,def_names) end
 	fun get_gen_consts T name ts consts funs =
-         let val (grouped_rec_names,all_rec_names,constructors,_) = get_type_names ts
+         let val (grouped_rec_names,q_grouped,all_rec_names,constructors,def_names) =
+                  get_type_names ts
 	     val rec_names = List.concat grouped_rec_names
 	     val mutually_rec_names =
                   List.filter (fn x => List.length x > 1) grouped_rec_names
@@ -325,21 +338,47 @@ struct
          in constructors@(prefix name "." (List.concat
              [prefix "Abs" "_" rec_names,
               prefix "Rep" "_" rec_names,
+              List.concat (List.map (fn s =>
+               ["full_exhaustive_"^s^"_inst.full_exhaustive_"^s,
+                "narrowing_"^s^"_inst.narrowing_"^s,
+                "partial_term_of_"^s^"_inst.partial_term_of_"^s,
+                "random_"^s^"_inst.random_"^s,
+                "term_of_"^s^"_inst.term_of_"^s,
+                "typerep_"^s^"_inst.typerep_"^s]) def_names),
+              prefix "mutual_random_aux" "" (def_names
+              @(List.map (space_implode "_") grouped_rec_names)),
+              prefix "random_aux" "_" (def_names
+              @(List.map (space_implode "_") grouped_rec_names)),
+              prefix "narrowing" "_" (def_names
+              @(List.map (space_implode "_") grouped_rec_names)),
+              prefix "full_exhaustive" "_" (def_names
+              @(List.map (space_implode "_") grouped_rec_names)),
+              List.concat (List.concat (List.map (fn rs' => 
+               let val rs = List.map Long_Name.base_name
+                    (List.filter (fn g => Long_Name.qualifier g = name) rs')
+               in List.map (fn s =>
+               [(space_implode "_" rs)^".size_"^s^"_inst.size_"^s,
+                (space_implode "_" rs)^"."^s^"_size"]) rs end) q_grouped)),
+              prefix "random_aux" "_" def_names,
               List.map (fn x => "equal_"^x^"_inst.equal_"^x) all_rec_names,
-              List.concat (List.map (fn x => let val comb = space_implode "_" x
-               in (List.map (fn y => comb^"."^y^"_case") x) end) grouped_rec_names),
+              List.concat (List.map (fn x => let val comb = space_implode "_"
+                                 (List.map Long_Name.base_name (List.filter
+                                 (fn g => Long_Name.qualifier g = name) x))
+               in (List.map (fn y => comb^"."^Long_Name.base_name y^"_case") x) end) q_grouped),
               List.concat (List.map (fn x => [x^"."^x^"_rec",
 				 x^"."^x^"_rec_set",
 				 x^"."^x^"_rep_set"]) simple_names),
               List.concat (List.map
-               (fn x => let val comb = space_implode "_" x
+               (fn x => let val comb = space_implode "_" (List.map Long_Name.base_name (List.filter
+                                 (fn g => Long_Name.qualifier g = name) x))
                         in (comb^"."^comb^"_rec_set")::
                            (comb^"."^comb^"_rep_set")::(List.concat
                             (List.map 
                              (fn y => [comb^"."^comb^"_rec_"^y,
                                        comb^"."^comb^"_rec_set_"^y,
-                                       comb^"."^comb^"_rep_set_"^y])
-                             (l_to_intl x))) end) mutually_rec_names)]))
+                                       comb^"."^comb^"_rep_set_"^y,
+                                       comb^"."^comb^"_Rep_"^y])
+                             (l_to_intl x))) end) q_grouped)]))
             @(List.filter (String.isPrefix "Class.") consts)
             @(List.filter (fn s => List.exists
               (fn l => String.isPrefix l s) locale_names) consts)
@@ -349,7 +388,7 @@ struct
             @(postfix "_" "sumC" funs)
             @funs end
 	fun get_gen_axioms name ts =
-         let val (grouped_rec_names,_,constructors,def_names) =
+         let val (grouped_rec_names,_,_,constructors,def_names) =
                   get_type_names ts
              val rec_names = List.concat grouped_rec_names
              val mutually_rec_names = List.filter (fn x => List.length x > 1)
@@ -358,6 +397,24 @@ struct
                   (List.filter (fn x => List.length x = 1) grouped_rec_names)
          in (postfix "_" "def" constructors)@(prefix name "." (List.concat 
              [prefix "arity_type" "_" def_names,
+              List.concat (List.map (fn s =>
+               ["full_exhaustive_"^s^"_def",
+                "full_exhaustive_"^s^"_inst.full_exhaustive_"^s^"_def",
+                "narrowing_"^s^"_def",
+                "narrowing_"^s^"_inst.narrowing_"^s^"_def",
+                "partial_term_of_"^s^"_inst.partial_term_of_"^s^"_def",
+                "partial_term_of_"^s^"_triv_raw",
+                "random_aux_"^s^"_def",
+                "random_"^s^"_def_raw",
+                "random_"^s^"_inst.random_"^s^"_def",
+                "term_of_"^s^"_inst.term_of_"^s^"_def",
+                "term_of_"^s^"_triv_raw",
+                "typerep_"^s^"_def_raw",
+                "typerep_"^s^"_inst.typerep_"^s^"_def"]) def_names
+              ),
+              List.concat (List.map (fn rs => List.map (fn s =>
+               (space_implode "_" rs)^".size_"^s^"_inst.size_"^s^"_def"
+               ) rs) grouped_rec_names),
               prefix "equal" "_" (postfix "_" "def_raw" def_names),
 	      prefix "type_definition" "_" rec_names,
 	      List.map (fn x => "equal_"^x^"_inst.equal_"^x^"_def") def_names,
@@ -377,7 +434,7 @@ struct
                                                 x^"."^x^"_rec_set",
                                                 x^"."^x^"_rep_set"]) simple_names)]))])) end
 	fun get_gen_theorems T name ts ths funs =
-         let val (grouped_rec_names,_,_,def_names) =
+         let val (grouped_rec_names,_,_,_,def_names) =
                   get_type_names ts
              val rec_names = List.concat grouped_rec_names
              val mutually_rec_names = List.filter (fn x => List.length x > 1)
@@ -390,6 +447,24 @@ struct
           [prefix "arity_equal" "_" def_names,
            prefix "arity_type" "_" def_names,
 	   prefix "type_definition" "_" rec_names,
+           postfix "_" "def" (prefix "mutual_random_aux" "" (def_names@
+           (List.map (space_implode "_") grouped_rec_names))),
+           List.concat (List.map (fn s => prefix s "_" def_names) 
+            ["arity_partial_term_of","arity_full_exhaustive",
+             "arity_narrowing","arity_random","arity_term_of",
+             "arity_typerep"]),
+           List.concat (List.map (fn s =>
+            ["full_exhaustive_"^s^"_inst.full_exhaustive_"^s,
+             "narrowing_"^s^"_inst.narrowing_"^s,
+             "partial_term_of_"^s^"_inst.partial_term_of_"^s,
+             "partial_term_of_"^s^"_triv",
+             "random_"^s^"_def",
+             "random_aux_"^s^"_def",
+             "random_"^s^"_inst.random_"^s,
+             "term_of_"^s^"_inst.term_of_"^s,
+             "term_of_"^s^"_triv",
+             "typerep_"^s^"_def",
+             "typerep_"^s^"_inst.typerep_"^s]) def_names),
 	   prefix "equal" "_" (postfix "_" "def" def_names),
            prefix "equal" "_" (postfix "_" "def_raw" def_names),
 	   List.map (fn x => "equal_"^x^"_inst.equal_"^x) def_names])

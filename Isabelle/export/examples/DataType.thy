@@ -1,6 +1,6 @@
 theory DataType
  
-imports Datatype 
+imports Main
 
 begin
 
