@@ -332,15 +332,17 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                      (G_theory glid gsyn gsign gsigid
                       (OMap.fromList mergedSens) gid,
                       length oldSens /= length mergedSens)
-                   newTargetNode = (target
-                                   , nodelab { dgn_theory = newTheory })
+                   newTargetNode = (target, nodelab { dgn_theory = newTheory })
                    nodeChanges = [SetNodeLab nodelab newTargetNode | nodeChange]
                    edgeChanges = if edgeChange then
                             [ DeleteEdge (source, target, linklab)
                             , InsertEdge provenEdge ] else []
-                   nextGr = changesDGH dg $ nodeChanges ++ edgeChanges
-                   newLibEnv = insert ln
+                   nextGr = computeDGraphTheories libEnv . changesDGH dg
+                     $ nodeChanges ++ edgeChanges
+                   newLibEnv = if nodeChange || edgeChange then
+                     insert ln
                      (groupHistory dg conservativityRule nextGr) libEnv
+                     else libEnv
                    history = snd $ splitHistory dg nextGr
                    sig1 = case gsign of
                                ExtSign s1 _ -> s1
