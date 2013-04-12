@@ -16,6 +16,7 @@ module CASL.CCC.FreeTypes (checkFreeType) where
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Sign
+import CASL.Simplify
 import CASL.SimplifySen
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof (terminationProof)
@@ -106,10 +107,9 @@ getOverlapQuery sig fsn = overlap_query where
                     | otherwise -> st ((patternsOfTerm hd1 ++ tl1, s1),
                                        (patternsOfTerm hd2 ++ tl2, s2))
                   _ -> (s1, s2)
-        olPairsWithS = map subst olPairs
-        overlap_qu = map overlapQuery olPairsWithS
-        overlap_query = map (\ f -> Quantification Universal (varDeclOfF f) f
-                                nullRange) overlap_qu
+        quant f = mkForall (varDeclOfF f) f
+        overlap_query = map (quant . simplifyFormula id . overlapQuery . subst)
+          olPairs
 {-
   check if leading symbols are new (not in the image of morphism),
         if not, return it as proof obligation
