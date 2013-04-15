@@ -83,6 +83,7 @@ Executable hets
     , process >= 1.0.1.1
     , time >= 1.1.3 && < 1.5
     , utf8-string
+    , bytestring >= 0.9
     , xml >= 1.3.7 && < 1.4
   cpp-options: -DCASLEXTENSIONS
   ghc-options: -threaded -fcontext-stack=31
@@ -118,7 +119,6 @@ Executable hets
   if flag(hexpat)
     build-depends:
         hexpat >= 0.11
-      , bytestring >= 0.9
     cpp-options: -DHEXPAT
 
   if flag(gtkglade)
