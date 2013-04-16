@@ -403,6 +403,9 @@ getAllProvers pk start lg =
        yen 5 (start, Nothing) (\(l,_) -> l == end) g)
        (Map.keys kp)
  where
+  mkComorphism :: Map.Map G_sublogics [t2]
+   -> ([((G_sublogics, t1), AnyComorphism)], (G_sublogics, t))
+   -> [(t2, AnyComorphism)]
   mkComorphism kp (path,(end@(G_sublogics lid sub),_)) =
    let fullComorphism = case path of
                          [] -> Comorphism $ mkIdComorphism lid sub
