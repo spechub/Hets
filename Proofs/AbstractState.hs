@@ -391,7 +391,7 @@ knownProvers lg pk=
 unsafeCompComorphism :: AnyComorphism -> AnyComorphism -> AnyComorphism
 unsafeCompComorphism c1 c2 = case compComorphism c1 c2 of
  Result _ (Just c_new) -> c_new
- _ -> error "error3"
+ r -> propagateErrors "Proofs.AbstractState.unsafeCompComorphism" r
 
 getAllProvers :: ProverKind -> G_sublogics -> LogicGraph
  -> [(G_prover, AnyComorphism)]

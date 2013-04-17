@@ -80,7 +80,8 @@ cProver input state =
                    Nothing -> pl
                    Just x -> filter ((== x) . snd) pl ++ pl of
              [] -> return $ genErrorMsg
-                 "No applicable prover with this name found" state
+                 ("No applicable prover with name \"" ++ inp  ++ "\" found")
+                 state
              (p, nCm@(Comorphism cid)) : _ ->
                return $ add2hist [ ProverChange $ prover pS
                                  , CComorphismChange $ cComorphism pS ]
