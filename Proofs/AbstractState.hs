@@ -409,11 +409,10 @@ getAllProvers pk start lg =
   mkComorphism kp (path,(end@(G_sublogics lid sub),_)) =
    let fullComorphism = case path of
                          [] -> Comorphism $ mkIdComorphism lid sub
-                         _  -> case last path of
-                                ((G_sublogics lid1 sub1,_),c) ->
-                                 foldr unsafeCompComorphism c
-                                 ((Comorphism $ mkIdComorphism lid1 sub1)
-                                  :(snd $ unzip $ init path))
+                         ((G_sublogics lid1 sub1,_),c):cs ->
+                                 foldl unsafeCompComorphism
+                                  (Comorphism $ mkIdComorphism lid1 sub1)
+                                  (c:(snd $ unzip $ cs))
    in case Map.lookup end kp of
         Just ps -> map (\p -> (p,fullComorphism)) ps
         _ -> error "error1"
