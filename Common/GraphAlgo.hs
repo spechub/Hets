@@ -60,9 +60,10 @@ dijkstra start isEnd (Graph neighbours_ weight_) =
         else adjust $ 
          foldl (\(known',visited') (e,next_n) ->
           case Map.lookup next_n visited' of
-           Just _  -> (known',Map.adjust (\_ -> (Just (n,e),n_weight+weight_ e))
-                                           next_n visited')
-           Nothing -> ((case Map.lookup next_n known of
+           Just (_,w)  -> (known', if n_weight + weight_ e < w then
+                           Map.insert next_n (Just (n,e),n_weight+weight_ e)
+                            visited' else visited')
+           Nothing -> ((case Map.lookup next_n known' of
                        Just (_,w) -> if n_weight + weight_ e < w then
                         Map.insert next_n (Just (n,e),n_weight+weight_ e) known'
                         else known'
