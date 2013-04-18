@@ -354,13 +354,12 @@ checkTerminal oTh m fsn = do
         conStatus = getConStatus oTh m fsn
         res = if null obligations then Nothing else
                   Just $ return (Just (conStatus, obligations))
-    if null fs_terminalProof then return res else do
-      proof <- terminationProof (mtarget m) fs_terminalProof domains
-      return $ case proof of
+    (proof, str) <- terminationProof (mtarget m) fs_terminalProof domains
+    return $ case proof of
         Just True -> res
         _ -> Just $ warning (Just (Cons, obligations))
              (if isJust proof then "not terminating"
-              else "cannot prove termination") nullRange
+              else "cannot prove termination: " ++ str) nullRange
 
 checkPositive :: [Named (FORMULA f)] -> [Named (FORMULA f)]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
