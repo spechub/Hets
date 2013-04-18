@@ -26,6 +26,7 @@ import CASL.CCC.TermFormula
 import Common.DocUtils
 import Common.Id
 import Common.ProofUtils
+import Common.Result
 import Common.Utils
 
 import Control.Monad
@@ -33,8 +34,8 @@ import Control.Monad
 import System.Process
 import System.Directory
 
-import Data.List (intercalate)
-import Data.Either
+import Data.List (intercalate, partition)
+import Data.Maybe
 import Data.Function (on)
 
 import qualified Data.Map as Map
@@ -74,8 +75,8 @@ terminationProof sig fs dms =
       , "when_else(t1,false,t2) -> t2" ]
     c_vars = "(VAR t t1 t2 "
       ++ unwords (map transToken . nubOrd $ concatMap varOfAxiom fs) ++ ")"
-    (ls, rs) = partitionEithers $ map (axiom2TRS sig dms) fs
-    c_axms = axhead ++ rs ++ [")"]
+    (rs, ls) = partition (isJust . maybeResult) $ map (axiom2TRS sig dms) fs
+    c_axms = axhead ++ map (fromJust . maybeResult) rs ++ [")"]
   if null ls then do
       tmpFile <- getTempFile (unlines $ c_vars : c_axms) "Input.trs"
       aprovePath <- getEnvDef "HETS_APROVE" "CASL/Termination/AProVE.jar"
@@ -86,7 +87,7 @@ terminationProof sig fs dms =
         "YES" : _ -> Just True
         "NO" : _ -> Just False
         _ -> Nothing, proof)
-    else return (Nothing, unlines $ map show (ls :: [String]))
+    else return (Nothing, unlines . map show $ concatMap diags ls)
 
 -- | extract all variables of a axiom
 varOfAxiom :: FORMULA f -> [VAR]
