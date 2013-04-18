@@ -236,7 +236,8 @@ checkDefinitional tsig fsn = let
           [_] -> False
           _ -> True) grDomainDefs
        defOpSymbs = Set.fromList $ map (snd . head) grDomainDefs
-       wrongWithoutDefs = filter ((`Set.member` defOpSymbs) . snd) withOutDefs
+       wrongWithoutDefs = filter ((`Set.notMember` defOpSymbs) . snd)
+         withOutDefs
        ds = map (\ (a, (_, pos)) -> Diag
          Warning ("missing leading symbol in:\n" ++ formatAxiom a) pos) noLSyms
          ++ map (\ (a, t) -> Diag
