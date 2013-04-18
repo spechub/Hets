@@ -341,7 +341,7 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
              ++ map diagString ds) pos)
        incomplete) $ Just $ Just (Cons, obligations)
 
-checkTerminal :: (GetRange f, Ord f)
+checkTerminal :: (FormExtension f, GetRange f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)]
   -> IO (Maybe (Result (Maybe (Conservativity, [FORMULA f]))))
 checkTerminal oTh m fsn = do

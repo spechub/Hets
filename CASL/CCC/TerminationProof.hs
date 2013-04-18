@@ -15,6 +15,7 @@ module CASL.CCC.TerminationProof (terminationProof) where
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
+import CASL.ToDoc
 import CASL.CCC.TermFormula
   ( unsortedTerm
   , quanti
@@ -22,6 +23,7 @@ import CASL.CCC.TermFormula
   , substiF
   , sameOpsApp)
 
+import Common.DocUtils
 import Common.Id
 import Common.ProofUtils
 import Common.Utils
@@ -46,8 +48,8 @@ import qualified Data.Map as Map
    if a equation system is terminal, then it is computable.
 -}
 
-terminationProof :: Ord f => Sign f e -> [FORMULA f] -> [(TERM f, FORMULA f)]
-  -> IO (Maybe Bool)
+terminationProof :: (FormExtension f, Ord f) => Sign f e -> [FORMULA f]
+  -> [(TERM f, FORMULA f)] -> IO (Maybe Bool)
 terminationProof sig fs dms = if null fs then return $ Just True else do
   let
     axhead =
@@ -123,7 +125,7 @@ predSymName :: PRED_SYMB -> String
 predSymName = idStr . predSymbName
 
 -- | create a predicate application
-predAppl :: PRED_SYMB -> [TERM f] -> String
+predAppl :: FormExtension f => PRED_SYMB -> [TERM f] -> String
 predAppl p ts =
   predSymName p ++ termsPA ts
 
@@ -136,11 +138,11 @@ applyBin :: String -> String -> String -> String
 applyBin o t1 t2 = apply o $ t1 ++ "," ++ t2
 
 -- | create an eq application
-applyEq :: TERM f -> TERM f -> String
+applyEq :: FormExtension f => TERM f -> TERM f -> String
 applyEq = on (applyBin "eq") term2TRS
 
 -- | translate a casl term to a term of TRS(Terme Rewrite Systems)
-term2TRS :: TERM f -> String
+term2TRS :: FormExtension f => TERM f -> String
 term2TRS t = case unsortedTerm t of
   Qual_var var _ _ -> tokStr var
   Application o ts _ -> opSymName o ++ termsPA ts
@@ -149,7 +151,7 @@ term2TRS t = case unsortedTerm t of
   _ -> error "CASL.CCC.TerminationProof.<term2TRS>"
 
 -- | translate a list of casl terms to the patterns of a term in TRS
-termsPA :: [TERM f] -> String
+termsPA :: FormExtension f => [TERM f] -> String
 termsPA ts =
   if null ts then "" else apply "" . intercalate "," $ map term2TRS ts
 
@@ -158,7 +160,8 @@ a rule without condition is represented by "A -> B" in
 Term Rewrite Systems; if there are some conditions, then
 follow the conditions after the symbol "|".
 For example : "A -> B | C -> D, E -> F, ..." -}
-axiom2TRS :: Eq f => Sign f e -> [(TERM f, FORMULA f)] -> FORMULA f -> String
+axiom2TRS :: (FormExtension f, Eq f) => Sign f e -> [(TERM f, FORMULA f)]
+  -> FORMULA f -> String
 axiom2TRS sig doms f = case quanti f of
   Relation f1 c f2 _ | c /= Equivalence -> case f2 of
     Relation f3 Equivalence f4 _ -> axiom2Rule f3 ++ " | "
@@ -173,10 +176,10 @@ axiom2TRS sig doms f = case quanti f of
     axiom2Rule f1 ++ " | " ++ axiom2Cond f2
   _ -> axiom2Rule f
 
-axiom2Cond :: FORMULA f -> String
+axiom2Cond :: FormExtension f => FORMULA f -> String
 axiom2Cond = axiom2Rule
 
-axiom2Rule :: FORMULA f -> String
+axiom2Rule :: FormExtension f => FORMULA f -> String
 axiom2Rule f = case quanti f of
   Negation f' _ -> case f' of
     Quantification {} ->
@@ -202,7 +205,7 @@ isApp t = case unsortedTerm t of
   _ -> False
 
 -- | translate a casl axiom (without conditions) to a term of TRS,
-axiomSub :: FORMULA f -> String
+axiomSub :: FormExtension f => FORMULA f -> String
 axiomSub f = case quanti f of
   Junction j fs@(_ : _) _ ->
     joinSub (if j == Con then "and" else "or") fs
@@ -214,8 +217,8 @@ axiomSub f = case quanti f of
   Relation f1 c f2 _ -> on
     (applyBin $ if c == Equivalence then "equiv" else "implies")
     axiomSub f1 f2
-  _ -> error "CASL.CCC.TerminationProof.axiomSub.<axiomSub>"
+  _ -> error $ "CASL.CCC.TerminationProof.axiomSub.<axiomSub> " ++ showDoc f ""
 
 -- | translate a list of junctive casl formulas to a subrule of TRS
-joinSub :: String -> [FORMULA f] -> String
+joinSub :: FormExtension f => String -> [FORMULA f] -> String
 joinSub op = foldr1 (applyBin op) . map axiomSub
