@@ -74,9 +74,9 @@ terminationProof sig fs dms =
       , "when_else(t1,false,t2) -> t2" ]
     c_vars = "(VAR t t1 t2 "
       ++ unwords (map transToken . nubOrd $ concatMap varOfAxiom fs) ++ ")"
-    (rs, es) = partitionEithers $ map (axiom2TRS sig dms) fs
+    (ls, rs) = partitionEithers $ map (axiom2TRS sig dms) fs
     c_axms = axhead ++ rs ++ [")"]
-  if null es then do
+  if null ls then do
       tmpFile <- getTempFile (unlines $ c_vars : c_axms) "Input.trs"
       aprovePath <- getEnvDef "HETS_APROVE" "CASL/Termination/AProVE.jar"
       (_, proof, _) <- readProcessWithExitCode "java"
@@ -86,7 +86,7 @@ terminationProof sig fs dms =
         "YES" : _ -> Just True
         "NO" : _ -> Just False
         _ -> Nothing, proof)
-    else return (Nothing, unlines $ map show es)
+    else return (Nothing, unlines $ map show (ls :: [String]))
 
 -- | extract all variables of a axiom
 varOfAxiom :: FORMULA f -> [VAR]
