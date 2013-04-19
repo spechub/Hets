@@ -92,9 +92,9 @@ yen k' start end g = case dijkstra start end g of
   yen' k a i = 
      let spurNode = fst $ (a !! (k'-k-1)) !! i
          rootPath = take i (a !! (k'-k-1))
-         hide = map snd $ concat $ 
-          map (\p -> if take i p == rootPath then drop i p else []) a
-         g' = g { neighbours = \n -> filter (\(e,_) -> not $ elem e hide) $
+         hide = concat $
+          map (\p -> if take i p == rootPath then [p!!i] else []) a
+         g' = g { neighbours = \n -> filter (\(e,_) -> not $ elem (n,e) hide) $
                    (neighbours g) n }
      in case dijkstra spurNode end g' of
          Just (spurPath,_) -> Just $ rootPath ++ spurPath
