@@ -64,7 +64,7 @@ toConstraint weak = if weak then WeakC
 unifyType :: Type -> Constraint -> Result [(Token, Type)]
 unifyType tp1 tp2_ =
  let (weak, (s, r, tp2)) = constraintToType tp2_
-     c = \ t -> toConstraint weak (s, r, t)
+     c t = toConstraint weak (s, r, t)
  in case (tp1, tp2) of
      (ParType tp1', _) ->
       unifyType tp1' (c tp2)
