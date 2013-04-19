@@ -1198,23 +1198,23 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
-90.19:
-*** Error: no typing for: suc(0) : Pos
-           a term of sort 'Nat' was found but
-           a subsort of 'Pos' was expected.
-147.8-147.16:
-*** Error: ambiguous mixfix term
-             -__(__-__(a, b))
-             -(__-__(a, b))
-246.8-246.14:
-*** Error: ambiguous mixfix term
-             -__(__/__(i, p))
-             -(__/__(i, p))
-261.9-261.21:
-*** Error: ambiguous mixfix term
-             __*__(i, __-__(q, __*__(j, p)))
-             __-__(__*__(i, q), __*__(j, p))
-             __*__(__*__(i, __-__(q, j)), p)
+90.19: *** Error:
+no typing for: suc(0) : Pos
+a term of sort 'Nat' was found but
+a subsort of 'Pos' was expected.
+147.8-147.16: *** Error:
+ambiguous mixfix term
+  -__(__-__(a, b))
+  -(__-__(a, b))
+246.8-246.14: *** Error:
+ambiguous mixfix term
+  -__(__/__(i, p))
+  -(__/__(i, p))
+261.9-261.21: *** Error:
+ambiguous mixfix term
+  __*__(i, __-__(q, __*__(j, p)))
+  __-__(__*__(i, q), __*__(j, p))
+  __*__(__*__(i, __-__(q, j)), p)
 266.16: *** Error: unknown sort 'a'
 266.20: *** Error: unknown sort 'a'
 268.9: *** Error: unknown sort 'b'
@@ -1241,30 +1241,30 @@ pred q : s
 294.29: *** Error: duplicates at '(294,55)' for 'c : a -> s'
 304.6: *** Error: unknown sort 'b'
 305.6: *** Error: unknown sort 'd'
-316.3:
-*** Error: ambiguous term
-             (op a : b) = (op a : b)
-             (var a : s) = (var a : s)
-317.3:
-*** Error: ambiguous term
-             (op a : b) = (op a : b)
-             (var a : s) = (var a : s)
-320.5:
-*** Error: ambiguous term
-             (op a : b) = (op a : b)
-             (var a : s) = (var a : s)
-321.5:
-*** Error: ambiguous term
-             (op a : b) = (op a : b)
-             (var a : s) = (var a : s)
-,
-*** Error: ambiguous term
-             (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
-             (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
+316.3: *** Error:
+ambiguous term
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
+317.3: *** Error:
+ambiguous term
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
+320.5: *** Error:
+ambiguous term
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
+321.5: *** Error:
+ambiguous term
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
+*** Error:
+ambiguous term
+  (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
+  (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
 342.20: *** Error: no operation with 2 arguments found for '__E__'
 342.32: *** Error: no operation with 2 arguments found for '__E__'
-342.45:
-*** Error: no operation with 2 arguments found for '__:::__'
+342.45: *** Error:
+no operation with 2 arguments found for '__:::__'
 343.14: *** Error: no operation with 2 arguments found for '__E__'
 343.29: *** Error: no operation with 2 arguments found for '__E__'
 343.45: *** Error: no operation with 2 arguments found for '__E__'

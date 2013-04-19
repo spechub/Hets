@@ -32,13 +32,13 @@ forall a : Type; b < a : Type
 forall a : Type; b < a : Type; f : a ->? b; x : a
 . twice f x = f (f x)
 1.6: ### Hint: is type variable 'a'
-5.14-5.20:
-### Hint: no kind found for 'a ->? b'
-            expected: {Cpo}
-               found: {Type}
-5.14-5.20:
-### Hint: no kind found for 'a ->? b'
-            expected: {Cppo}
-               found: {Type}
+5.14-5.20: ### Hint:
+no kind found for 'a ->? b'
+  expected: {Cpo}
+     found: {Type}
+5.14-5.20: ### Hint:
+no kind found for 'a ->? b'
+  expected: {Cppo}
+     found: {Type}
 9.7: ### Hint: not a kind 'a ->? b'
 9.20: ### Hint: not a class 'a'

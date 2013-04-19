@@ -7,25 +7,25 @@
 %list [__], nil, cons
 %number __@@__
 %floating __frac__, __exp__
-1.1-1.46:
-### Hint: no analysis of '%% many legal annotations for testing purposes'
-2.1-6.2:
-### Hint: no analysis of
-          '%{group comment
-             %{
-             over many lines
-             %% } %
-           }%'
-7.1-7.75:
-### Hint: no analysis of
-          '%%line comment starting immidiately after %%containing %{ }% , ending in %%'
+1.1-1.46: ### Hint:
+no analysis of '%% many legal annotations for testing purposes'
+2.1-6.2: ### Hint:
+no analysis of
+'%{group comment
+   %{
+   over many lines
+   %% } %
+ }%'
+7.1-7.75: ### Hint:
+no analysis of
+'%%line comment starting immidiately after %%containing %{ }% , ending in %%'
 11.1-11.18: ### Hint: no analysis of '%(one_line_label)%'
-13.1-16.2:
-### Hint: no analysis of
-          '%(multi
-             line
-             label
-           )%'
+13.1-16.2: ### Hint:
+no analysis of
+'%(multi
+   line
+   label
+ )%'
 26.1-26.20: ### Hint: no analysis of '%% one word annotes'
 27.1-27.8: ### Hint: no analysis of '%implies'
 28.1-28.4: ### Hint: no analysis of '%def'

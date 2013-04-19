@@ -9,16 +9,16 @@ s n <= 0
 (i * q) <= (j * p)
 c * (a + b) = c * a + c * b
 (a + b) * c = a * c + b * c
-9.1-9.11:
-*** Error: ambiguous mixfix term
-             a <= (b <= c)
-             (a <= b) <= c
-             a <= b <= c
-10.1-10.9:
-*** Error: ambiguous mixfix term
-             A x
-             A x
-11.1-11.8:
-*** Error: ambiguous mixfix term
-             even (A x)
-             even (A x)
+9.1-9.11: *** Error:
+ambiguous mixfix term
+  a <= (b <= c)
+  (a <= b) <= c
+  a <= b <= c
+10.1-10.9: *** Error:
+ambiguous mixfix term
+  A x
+  A x
+11.1-11.8: *** Error:
+ambiguous mixfix term
+  even (A x)
+  even (A x)

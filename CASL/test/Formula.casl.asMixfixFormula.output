@@ -1,8 +1,8 @@
 (pred y : bb)
 (pred y : bb * bb)
 (pred y : bb * bb)(a, b)
-4.18-4.20:
-*** Error: expected further mixfix token: ["!","!=","*","+","-"]
+4.18-4.20: *** Error:
+expected further mixfix token: ["!","!=","*","+","-"]
 5.7: *** Error: unexpected mixfix token: <
 6.3: *** Error: unexpected mixfix token: #=
 exists1(predy :: bb)

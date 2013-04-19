@@ -31,10 +31,10 @@ forall t : Tree Nat
     Node (Leaf n) n -> Leaf n
 1.18: *** Error: unknown type variable 'a'
 4.23: *** Error: unknown type variable 'a'
-4.27-4.44:
-### Warning: ignoring unused variable(s)
-               a in
-             'Tree Nat -> Tree Nat'
+4.27-4.44: ### Warning:
+ignoring unused variable(s)
+  a in
+'Tree Nat -> Tree Nat'
 6.9: ### Hint: not a kind 'Tree Nat'
 7.9: ### Hint: not a class 'Nat'
 7.16: ### Hint: not a kind 'Tree Nat'

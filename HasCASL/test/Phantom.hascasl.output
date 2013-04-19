@@ -16,7 +16,7 @@ forall a : Type . c <=> b[a]
 . c <=> b
 1.5: ### Hint: is type variable 'a'
 5.10-5.12: ### Hint: is type list '[a]'
-6.5:
-*** Error: in term '(op c : Logical) <=> (op b : forall a : Type . dummy a)'
-            are uninstantiated type variables
-           '[_v3_a]'
+6.5: *** Error:
+in term '(op c : Logical) <=> (op b : forall a : Type . dummy a)'
+ are uninstantiated type variables
+'[_v3_a]'

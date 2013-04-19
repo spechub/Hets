@@ -12,12 +12,12 @@ a : Type %(var_1)%
 op coerce : forall a : Type . Ref a -> Loc
 1.5: ### Hint: is type variable 'a'
 2.11: ### Hint: rebound type variable 'a'
-2.7:
-*** Error: incompatible kind of: Ref
-             expected: Type -> Type
-                found: Type
-3.13-3.17:
-*** Error: unbound type variable(s)
-             a in
-           'Ref a'
+2.7: *** Error:
+incompatible kind of: Ref
+  expected: Type -> Type
+     found: Type
+3.13-3.17: *** Error:
+unbound type variable(s)
+  a in
+'Ref a'
 3.6-3.8: ### Hint: redeclared type 'Loc'

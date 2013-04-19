@@ -27,51 +27,51 @@ forall E : Type; N : Type; g : Graph N E; g' : Graph N E
 1.7: ### Hint: is type variable 'S'
 1.9: ### Hint: is type variable 'N'
 1.11: ### Hint: is type variable 'E'
-3.21-3.25:
-### Hint: no kind found for 'Set N'
-            expected: {Cpo}
-               found: {Type}
-3.21-3.25:
-### Hint: no kind found for 'Set N'
-            expected: {Cppo}
-               found: {Type}
-5.20-5.28:
-### Hint: no kind found for 'Graph N E'
-            expected: {Cpo}
-               found: {Type}
-5.20-5.28:
-### Hint: no kind found for 'Graph N E'
-            expected: {Cppo}
-               found: {Type}
-6.47-6.51:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-6.47-6.51:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-6.47-6.51:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-6.47-6.51:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-6.47-6.51:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-6.47-6.51:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
+3.21-3.25: ### Hint:
+no kind found for 'Set N'
+  expected: {Cpo}
+     found: {Type}
+3.21-3.25: ### Hint:
+no kind found for 'Set N'
+  expected: {Cppo}
+     found: {Type}
+5.20-5.28: ### Hint:
+no kind found for 'Graph N E'
+  expected: {Cpo}
+     found: {Type}
+5.20-5.28: ### Hint:
+no kind found for 'Graph N E'
+  expected: {Cppo}
+     found: {Type}
+6.47-6.51: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+6.47-6.51: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+6.47-6.51: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+6.47-6.51: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+6.47-6.51: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+6.47-6.51: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
 8.11: ### Hint: not a kind 'Graph N E'
 8.15: ### Hint: not a kind 'Graph N E'
-9.6-9.14:
-### Hint: in type of '((var g : Graph N E), (var g' : Graph N E))'
-            typename '__->?__' (2.19)
-            is not unifiable with type '__*__*__ (Set N)' (8.23)
-9.6-9.14:
-### Hint: untypeable term (with type: Set _v8_S * Set _v8_S) '(g, g')'
+9.6-9.14: ### Hint:
+in type of '((var g : Graph N E), (var g' : Graph N E))'
+  typename '__->?__' (2.19)
+  is not unifiable with type '__*__*__ (Set N)' (8.23)
+9.6-9.14: ### Hint:
+untypeable term (with type: Set _v8_S * Set _v8_S) '(g, g')'

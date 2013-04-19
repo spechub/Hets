@@ -1390,29 +1390,29 @@ op    b : a
 17.14-17.16: ### Hint: redeclared as total 'max'
 70.16: ### Hint: known variable shadowed 's'
 72.16: ### Hint: known variable shadowed 'r'
-90.19:
-*** Error: no typing for: suc(0) : Pos
-           a term of sort 'Nat' was found but
-           a subsort of 'Pos' was expected.
+90.19: *** Error:
+no typing for: suc(0) : Pos
+a term of sort 'Nat' was found but
+a subsort of 'Pos' was expected.
 98.10-98.12: ### Hint: redeclared op 'min'
 98.15-98.17: ### Hint: redeclared op 'max'
 121.18-121.20: ### Hint: redeclared sort 'Int'
 121.12-121.14: ### Hint: redeclared sort 'Nat'
-147.8-147.16:
-*** Error: ambiguous mixfix term
-             -__(__-__(a, b))
-             -(__-__(a, b))
+147.8-147.16: *** Error:
+ambiguous mixfix term
+  -__(__-__(a, b))
+  -(__-__(a, b))
 209.17-209.19: ### Hint: redeclared sort 'Rat'
 209.11-209.13: ### Hint: redeclared sort 'Int'
-246.8-246.14:
-*** Error: ambiguous mixfix term
-             -__(__/__(i, p))
-             -(__/__(i, p))
-261.9-261.21:
-*** Error: ambiguous mixfix term
-             __*__(i, __-__(q, __*__(j, p)))
-             __-__(__*__(i, q), __*__(j, p))
-             __*__(__*__(i, __-__(q, j)), p)
+246.8-246.14: *** Error:
+ambiguous mixfix term
+  -__(__/__(i, p))
+  -(__/__(i, p))
+261.9-261.21: *** Error:
+ambiguous mixfix term
+  __*__(i, __-__(q, __*__(j, p)))
+  __-__(__*__(i, q), __*__(j, p))
+  __*__(__*__(i, __-__(q, j)), p)
 266.16: *** Error: unknown sort 'a'
 266.20: *** Error: unknown sort 'a'
 268.9: *** Error: unknown sort 'b'
@@ -1438,14 +1438,14 @@ op    b : a
 285.41: ### Warning: new 'op a' is also known as 'var a'
 285.34: *** Error: duplicates at '(285,41)' for 'a : s -> t'
 285.52: *** Error: unknown sort 'a'
-285.25:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : s'
-285.50:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : a ->? s'
+285.25: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : s'
+285.50: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : a ->? s'
 286.11: ### Hint: redeclared sort 's'
 286.22: ### Hint: redeclared subsort 's2 < s'
 286.25: ### Hint: redeclared subsort 's1 < s'
@@ -1458,14 +1458,14 @@ op    b : a
 286.46: ### Hint: redeclared op 'd'
 286.55: *** Error: unknown sort 'a'
 286.53: ### Hint: redeclared op 'c'
-286.30:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : s'
-286.53:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : a ->? s'
+286.30: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : s'
+286.53: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : a ->? s'
 286.53: *** Error: illegal free partial constructor 'c'
 287.16: ### Hint: redeclared sort 's'
 287.27: ### Hint: redeclared subsort 's2 < s'
@@ -1480,14 +1480,14 @@ op    b : a
 287.51: ### Hint: redeclared op 'd'
 287.60: *** Error: unknown sort 'a'
 287.58: ### Hint: redeclared op 'c'
-287.35:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : s'
-287.58:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : a ->? s'
+287.35: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : s'
+287.58: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : a ->? s'
 290.16: *** Error: unknown sort 'a'
 290.20: *** Error: unknown sort 'a'
 290.6-290.12: ### Hint: redeclared pred '__<__'
@@ -1516,21 +1516,21 @@ op    b : a
 294.57: *** Error: unknown sort 'a'
 294.55: ### Warning: partially redeclared 'c'
 294.29: *** Error: duplicates at '(294,55)' for 'c : a -> s'
-294.25:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : s'
-294.29:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : a -> s'
-294.55:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : a ->? s'
+294.25: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : s'
+294.29: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : a -> s'
+294.55: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : a ->? s'
 293.9: ### Warning: generated sorts without constructor '{t}'
-292.13:
-### Warning: non-generated sorts as constructor result '{b}'
+292.13: ### Warning:
+non-generated sorts as constructor result '{b}'
 300.6: ### Hint: redeclared sort 's'
 301.6: ### Hint: redeclared sort 't'
 304.6: *** Error: unknown sort 'b'
@@ -1544,33 +1544,33 @@ op    b : a
 309.11: ### Hint: known variable shadowed 'b'
 309.11: ### Warning: new 'var b' is also known as 'op b'
 312.6: ### Hint: redeclared sort 't'
-316.3:
-*** Error: ambiguous term
-             (op a : b) = (op a : b)
-             (var a : s) = (var a : s)
-317.3:
-*** Error: ambiguous term
-             (op a : b) = (op a : b)
-             (var a : s) = (var a : s)
-320.5:
-*** Error: ambiguous term
-             (op a : b) = (op a : b)
-             (var a : s) = (var a : s)
-321.5:
-*** Error: ambiguous term
-             (op a : b) = (op a : b)
-             (var a : s) = (var a : s)
+316.3: *** Error:
+ambiguous term
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
+317.3: *** Error:
+ambiguous term
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
+320.5: *** Error:
+ambiguous term
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
+321.5: *** Error:
+ambiguous term
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 323.6: ### Hint: redeclared sort 's'
 325.9: ### Hint: redeclared sort 's'
 336.47-336.50: ### Hint: redeclared op ''\\''
-,
-*** Error: ambiguous term
-             (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
-             (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
+*** Error:
+ambiguous term
+  (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
+  (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
 342.20: *** Error: no operation with 2 arguments found for '__E__'
 342.32: *** Error: no operation with 2 arguments found for '__E__'
-342.45:
-*** Error: no operation with 2 arguments found for '__:::__'
+342.45: *** Error:
+no operation with 2 arguments found for '__:::__'
 343.14: *** Error: no operation with 2 arguments found for '__E__'
 343.29: *** Error: no operation with 2 arguments found for '__E__'
 343.45: *** Error: no operation with 2 arguments found for '__E__'
@@ -1644,12 +1644,12 @@ op    b : a
 411.16: ### Hint: known variable shadowed 'x'
 411.60: ### Hint: known variable shadowed 'x'
 426.22: ### Hint: known variable shadowed 'x'
-426.26:
-### Hint: no matching predicate with 0 arguments found for 'e'
+426.26: ### Hint:
+no matching predicate with 0 arguments found for 'e'
 426.26: *** Error: not a formula 'e'
 427.8: ### Hint: known variable shadowed 'x'
-427.12:
-### Hint: no matching predicate with 0 arguments found for 'e'
+427.12: ### Hint:
+no matching predicate with 0 arguments found for 'e'
 427.12: *** Error: not a formula 'e'
 436.13: ### Hint: known variable shadowed 'x'
 436.15: ### Hint: known variable shadowed 'y'

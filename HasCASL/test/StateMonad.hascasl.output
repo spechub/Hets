@@ -24,52 +24,52 @@ x : a
 1.7: ### Hint: is type variable 'm'
 1.24: ### Hint: is type variable 'a'
 3.7-3.11: ### Hint: is type variable 'state'
-4.30:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-4.30:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
+4.30: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+4.30: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
 5.7: ### Hint: not a class 'a'
-6.8-6.12:
-### Hint: in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)'
-            typename 'a' (5.9)
-            is not unifiable with type 'a * state' (6.25)
-6.8-6.14:
-### Hint: untypeable term (with type: ? _v6_a) 'ret x : ST state a'
+6.8-6.12: ### Hint:
+in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)'
+  typename 'a' (5.9)
+  is not unifiable with type 'a * state' (6.25)
+6.8-6.14: ### Hint:
+untypeable term (with type: ? _v6_a) 'ret x : ST state a'
 6.3: *** Error: no typing for 'def (ret x : ST state a)'
-8.3-8.7:
-### Hint: in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)'
-            typename 'a' (5.9)
-            is not unifiable with type 'a * state' (8.20)
-8.3-8.42:
-### Hint: untypeable term (with type: ? _v9_a * ? _v9_a)
-          '(ret x : ST state a, \ s : state . (x, s))'
-8.22:
-*** Error: no typing for '(ret x : ST state a) = \ s : state . (x, s)'
+8.3-8.7: ### Hint:
+in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)'
+  typename 'a' (5.9)
+  is not unifiable with type 'a * state' (8.20)
+8.3-8.42: ### Hint:
+untypeable term (with type: ? _v9_a * ? _v9_a)
+'(ret x : ST state a, \ s : state . (x, s))'
+8.22: *** Error:
+no typing for '(ret x : ST state a) = \ s : state . (x, s)'
 10.7: ### Hint: not a kind 'ST state a'
 10.21: ### Hint: is type variable 'b'
 10.33: ### Hint: not a kind 'a ->? ST state b'
-11.14-11.16:
-### Hint: no kind found for 'm a'
-            expected: {Cpo}
-               found: {Type}
-11.14-11.16:
-### Hint: no kind found for 'm a'
-            expected: {Cppo}
-               found: {Type}
-13.3-13.9:
-### Hint: in type of '((var p : ST state a), (var q : a ->? ST state b))'
-            typename 'a' (10.35)
-            is not unifiable with type 'a * state' (10.18)
-13.3-13.9:
-### Hint: untypeable term (with type: _v14_m _v15_a * (_v15_a -> _v14_m _v16_b))
-          '(p, q)'
-13.5-13.54:
-### Hint: untypeable term (with type: ? _v13_a * ? _v13_a)
-          '(p >>= q, \ s2 : state . let (z, s2) = p s1 in q z s2)'
-13.11:
-*** Error: no typing for
-           'p >>= q = \ s2 : state . let (z, s2) = p s1 in q z s2'
+11.14-11.16: ### Hint:
+no kind found for 'm a'
+  expected: {Cpo}
+     found: {Type}
+11.14-11.16: ### Hint:
+no kind found for 'm a'
+  expected: {Cppo}
+     found: {Type}
+13.3-13.9: ### Hint:
+in type of '((var p : ST state a), (var q : a ->? ST state b))'
+  typename 'a' (10.35)
+  is not unifiable with type 'a * state' (10.18)
+13.3-13.9: ### Hint:
+untypeable term (with type: _v14_m _v15_a * (_v15_a -> _v14_m _v16_b))
+'(p, q)'
+13.5-13.54: ### Hint:
+untypeable term (with type: ? _v13_a * ? _v13_a)
+'(p >>= q, \ s2 : state . let (z, s2) = p s1 in q z s2)'
+13.11: *** Error:
+no typing for
+'p >>= q = \ s2 : state . let (z, s2) = p s1 in q z s2'

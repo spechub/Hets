@@ -2,11 +2,11 @@
 %prec({b} < {c})%
 %left_assoc(a, b, c)%
 %right_assoc(d)%
-3.14:
-*** Error: prec_anno conflict: c < a
-           a,b
-           b,c
-           'a'
+3.14: *** Error:
+prec_anno conflict: c < a
+a,b
+b,c
+'a'
 5.14: *** Error: identifier has already other associativity 'b'
 5.16: *** Error: identifier has already other associativity 'a'
 5.20: ### Hint: repeated associative identifier 'd'

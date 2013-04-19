@@ -35,14 +35,14 @@ a4 (a : Type) (a : Type) := a -> Unit;
 a7 (a : Type) := a6 a -> Unit
 var
 s : Type %(var_1)%
-2.16:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-2.16:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
+2.16: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+2.16: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 3.5: ### Hint: is type variable 's'
 5.14: *** Error: unknown type variable 't'
 7.9: *** Error: unknown type variable 'a'
@@ -58,14 +58,14 @@ s : Type %(var_1)%
 14.9: *** Error: duplicates at '(14,11)' for 'a'
 16.9: *** Error: unknown type variable 'a'
 18.9: *** Error: unknown type variable 'a'
-18.14-18.22:
-*** Error: illegal recursive type synonym 'a5 a -> Unit'
+18.14-18.22: *** Error:
+illegal recursive type synonym 'a5 a -> Unit'
 20.9: *** Error: unknown type variable 'a'
 22.9: *** Error: unknown type variable 'a'
 24.9: *** Error: unknown type variable 'a'
-22.9-24.22:
-*** Error: illegal recursive type synonym 'a7 a -> Unit'
-26.6:
-*** Error: incompatible kind of: a2
-             expected: Type -> Type -> Type
-                found: Type -> Type
+22.9-24.22: *** Error:
+illegal recursive type synonym 'a7 a -> Unit'
+26.6: *** Error:
+incompatible kind of: a2
+  expected: Type -> Type -> Type
+     found: Type -> Type

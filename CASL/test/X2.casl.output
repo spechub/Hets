@@ -48,14 +48,14 @@
                                                    %(ga_selector_d)%,
   generated type s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2
                                                   %(ga_generated_s)%])
-3.30:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : s'
-3.53:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : a ->? s'
+3.30: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : s'
+3.53: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : a ->? s'
 3.53: *** Error: illegal free partial constructor 'c'
 4.16: ### Hint: redeclared sort 's'
 4.27: ### Hint: redeclared subsort 's2 < s'
@@ -68,15 +68,15 @@
 4.58: ### Hint: redeclared op 'd'
 4.65: ### Warning: partially redeclared 'c'
 4.39: *** Error: duplicates at '(4,65)' for 'c : a -> s'
-4.35:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : s'
-4.39:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : a -> s'
-4.65:
-### Warning: total selectors 'a : s -> t, b : s -> t, d : s -> t'
-               should be in alternative
-             'c : a ->? s'
+4.35: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : s'
+4.39: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : a -> s'
+4.65: ### Warning:
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
+'c : a ->? s'

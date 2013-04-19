@@ -102,8 +102,8 @@ forall c < e : Type; d < f : Type; e : Type; f : Type
 28.9: ### Hint: is type variable 'd'
 28.12: ### Hint: is type variable 'e'
 28.15: ### Hint: is type variable 'f'
-28.15:
-### Warning: type variable does not shadow normal variable 'f'
+28.15: ### Warning:
+type variable does not shadow normal variable 'f'
 28.24: ### Hint: rebound type variable 'c'
 28.31: ### Hint: rebound type variable 'd'
 29.9: ### Hint: not a class 'e'
@@ -119,14 +119,14 @@ forall c < e : Type; d < f : Type; e : Type; f : Type
 31.8: ### Hint: rebound variable 'x'
 31.15: ### Hint: not a class 'd'
 31.14: ### Hint: rebound variable 'y'
-31.33:
-### Hint: no kind found for 'e'
-            expected: {Cpo}
-               found: {Type}
-31.33:
-### Hint: no kind found for 'e'
-            expected: {Cppo}
-               found: {Type}
+31.33: ### Hint:
+no kind found for 'e'
+  expected: {Cpo}
+     found: {Type}
+31.33: ### Hint:
+no kind found for 'e'
+  expected: {Cppo}
+     found: {Type}
 33.11: ### Hint: not a class 'e'
 33.11: ### Hint: not a class 'd'
 33.10: ### Hint: rebound variable 'f'

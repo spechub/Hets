@@ -1,8 +1,8 @@
 1.1: *** Error: unexpected mixfix token: *
 2.1: *** Error: unexpected mixfix token: **
 a_a
-4.1:
-*** Error: expected further mixfix token: ["!","!=","*","+","-"]
+4.1: *** Error:
+expected further mixfix token: ["!","!=","*","+","-"]
 123
 1.2
 1

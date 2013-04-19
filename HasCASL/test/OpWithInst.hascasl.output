@@ -59,35 +59,35 @@ op l[F,a] : forall a : Type; F : Funct . F a
 . a =[s] a
 4.5: ### Hint: is type variable 'a'
 4.8: ### Hint: is type variable 'b'
-6.26:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-6.26:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
+6.26: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+6.26: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
 6.4-6.11: ### Hint: is polymorphic compound identifier '__=[s]__'
-8.29:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-8.29:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
+8.29: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+8.29: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
 8.7-8.14: ### Hint: is polymorphic compound identifier '__=[s]__'
 10.6-10.8: ### Hint: is compound list '[s]'
 11.8-11.15: ### Hint: is type list '[s : Type]'
 13.4-13.7: ### Hint: is polymorphic compound identifier 'f[a]'
-15.13:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-15.13:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
+15.13: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+15.13: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
 15.6: ### Warning: unexpected identifier in compound list 'b'
 15.4-15.9: ### Hint: is polymorphic compound identifier 'g[b,a]'
 17.6: ### Warning: unexpected identifier in compound list 'b'
@@ -112,133 +112,133 @@ op l[F,a] : forall a : Type; F : Funct . F a
 32.9: ### Warning: unexpected identifier in compound list 'b'
 32.4-32.13: ### Hint: is polymorphic compound identifier 'k[G,b,a]'
 34.44: ### Hint: is type list '[s]'
-34.29:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-34.29:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
+34.29: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+34.29: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
 34.7-34.14: ### Hint: is polymorphic compound identifier '__=[s]__'
 35.44-35.46: ### Hint: is type list '[s, s]'
-35.29:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-35.29:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
+35.29: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+35.29: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
 35.7-35.14: ### Hint: is polymorphic compound identifier '__=[s]__'
-35.44-35.46:
-### Hint: for type scheme 'a * a -> Unit' wrong length of instantiation list
-          '[s, s]'
-35.4-35.16:
-### Hint: untypeable term
-          '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
-35.4-35.52:
-*** Error: no typing for
-           '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s] (a, a)'
+35.44-35.46: ### Hint:
+for type scheme 'a * a -> Unit' wrong length of instantiation list
+'[s, s]'
+35.4-35.16: ### Hint:
+untypeable term
+'(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
+35.4-35.52: *** Error:
+no typing for
+'(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s] (a, a)'
 36.7-36.9: ### Hint: is compound list '[s]'
 36.10-36.22: ### Hint: is type list '[s, s : Type]'
-36.28:
-### Hint: no kind found for 's'
-            expected: {Cpo}
-               found: {Type}
-36.28:
-### Hint: no kind found for 's'
-            expected: {Cppo}
-               found: {Type}
-36.11-36.16:
-### Hint: for type scheme 'a * a -> Unit' wrong length of instantiation list
-          '[s, s : Type]'
+36.28: ### Hint:
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+36.28: ### Hint:
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
+36.11-36.16: ### Hint:
+for type scheme 'a * a -> Unit' wrong length of instantiation list
+'[s, s : Type]'
 36.4-36.23: ### Hint: no type found for '__=[s]__'
-36.6-36.26:
-### Hint: untypeable term '__ =[s][s, s : Type] __ : s * s -> Unit'
-36.6-36.46:
-*** Error: no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
+36.6-36.26: ### Hint:
+untypeable term '__ =[s][s, s : Type] __ : s * s -> Unit'
+36.6-36.46: *** Error:
+no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
 37.7-37.9: ### Hint: is compound list '[s]'
-37.15:
-### Hint: no kind found for 's'
-            expected: {Cpo}
-               found: {Type}
-37.15:
-### Hint: no kind found for 's'
-            expected: {Cppo}
-               found: {Type}
+37.15: ### Hint:
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+37.15: ### Hint:
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 37.29-37.31: ### Hint: is compound list '[s]'
 37.30: *** Error: unexpected mixfix token: s
 38.7-38.9: ### Hint: is compound list '[s]'
 38.10-38.12: ### Hint: is compound list '[s]'
-38.18:
-### Hint: no kind found for 's'
-            expected: {Cpo}
-               found: {Type}
-38.18:
-### Hint: no kind found for 's'
-            expected: {Cppo}
-               found: {Type}
+38.18: ### Hint:
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+38.18: ### Hint:
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 38.32-38.34: ### Hint: is compound list '[s]'
 38.10: *** Error: unexpected mixfix token: [
 39.7-39.9: ### Hint: is compound list '[s]'
-39.15:
-### Hint: no kind found for 's'
-            expected: {Cpo}
-               found: {Type}
-39.15:
-### Hint: no kind found for 's'
-            expected: {Cppo}
-               found: {Type}
+39.15: ### Hint:
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+39.15: ### Hint:
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 40.7-40.9: ### Hint: is compound list '[s]'
 40.10-40.19: ### Hint: is type list '[s : Type]'
-40.25:
-### Hint: no kind found for 's'
-            expected: {Cpo}
-               found: {Type}
-40.25:
-### Hint: no kind found for 's'
-            expected: {Cppo}
-               found: {Type}
+40.25: ### Hint:
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+40.25: ### Hint:
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 41.43: ### Hint: is type list '[s]'
 41.14: ### Hint: rebound type variable 'a'
-41.28:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-41.28:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
+41.28: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+41.28: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
 41.7-41.24: ### Hint: is polymorphic compound identifier '__=[s]__'
 43.22: ### Hint: rebound type variable 'a'
-43.35:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-43.35:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
-43.4-43.31:
-### Hint: is polymorphic compound identifier 'if__then__else[a]__'
+43.35: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+43.35: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
+43.4-43.31: ### Hint:
+is polymorphic compound identifier 'if__then__else[a]__'
 44.22: ### Hint: rebound type variable 'a'
-44.35:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-44.35:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
-44.4-44.31:
-### Hint: is polymorphic compound identifier 'if__then__else[s]__'
+44.35: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+44.35: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
+44.4-44.31: ### Hint:
+is polymorphic compound identifier 'if__then__else[s]__'
 45.19: ### Hint: rebound type variable 'a'
-45.32:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Type}
-45.32:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Type}
+45.32: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+45.32: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}

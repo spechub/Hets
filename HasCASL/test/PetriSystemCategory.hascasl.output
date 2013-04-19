@@ -328,201 +328,201 @@ forall h1 : HomSys; h2 : HomSys
           (op transitionsMap : HomSys -> T ->? T) h1),
          (op cod : HomSys -> System) h2)
         as HomSys)
-3.28:
-### Hint: no kind found for 'Nat'
-            expected: {Cpo}
-               found: {Type}
-3.28:
-### Hint: no kind found for 'Nat'
-            expected: {Cppo}
-               found: {Type}
-3.28:
-### Hint: no kind found for 'Nat'
-            expected: {Cpo}
-               found: {Type}
-3.28:
-### Hint: no kind found for 'Nat'
-            expected: {Cppo}
-               found: {Type}
-3.28:
-### Hint: no kind found for 'Nat'
-            expected: {Cpo}
-               found: {Type}
-3.28:
-### Hint: no kind found for 'Nat'
-            expected: {Cppo}
-               found: {Type}
-4.34:
-### Hint: no kind found for 'Nat'
-            expected: {Cpo}
-               found: {Type}
-4.34:
-### Hint: no kind found for 'Nat'
-            expected: {Cppo}
-               found: {Type}
-4.34:
-### Hint: no kind found for 'Nat'
-            expected: {Cpo}
-               found: {Type}
-4.34:
-### Hint: no kind found for 'Nat'
-            expected: {Cppo}
-               found: {Type}
-4.34:
-### Hint: no kind found for 'Nat'
-            expected: {Cpo}
-               found: {Type}
-4.34:
-### Hint: no kind found for 'Nat'
-            expected: {Cppo}
-               found: {Type}
+3.28: ### Hint:
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+3.28: ### Hint:
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+3.28: ### Hint:
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+3.28: ### Hint:
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+3.28: ### Hint:
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+3.28: ### Hint:
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+4.34: ### Hint:
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+4.34: ### Hint:
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+4.34: ### Hint:
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+4.34: ### Hint:
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+4.34: ### Hint:
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+4.34: ### Hint:
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
 7.7: ### Hint: is type variable 'S'
 7.9: ### Hint: is type variable 'V'
-11.18:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-11.18:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
-12.25-12.29:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-12.25-12.29:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-13.46-13.50:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-13.46-13.50:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-13.46-13.50:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-13.46-13.50:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-13.46-13.50:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-13.46-13.50:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-14.28-14.32:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-14.28-14.32:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-15.15-15.19:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-15.15-15.19:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-15.37:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-15.37:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
-16.28-16.32:
-### Hint: no kind found for 'Set S'
-            expected: {Cpo}
-               found: {Type}
-16.28-16.32:
-### Hint: no kind found for 'Set S'
-            expected: {Cppo}
-               found: {Type}
-16.50:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-16.50:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
-17.24:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-17.24:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
-17.24:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-17.24:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
+11.18: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+11.18: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+12.25-12.29: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+12.25-12.29: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+13.46-13.50: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+13.46-13.50: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+13.46-13.50: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+13.46-13.50: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+13.46-13.50: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+13.46-13.50: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+14.28-14.32: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+14.28-14.32: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+15.15-15.19: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+15.15-15.19: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+15.37: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+15.37: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+16.28-16.32: ### Hint:
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+16.28-16.32: ### Hint:
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+16.50: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+16.50: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+17.24: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+17.24: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+17.24: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+17.24: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 19.7-19.10: ### Hint: is type variable 'Elem'
-22.25:
-### Hint: no kind found for 'Elem'
-            expected: {Cpo}
-               found: {Type}
-22.25:
-### Hint: no kind found for 'Elem'
-            expected: {Cppo}
-               found: {Type}
-23.24-23.33:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cpo}
-               found: {Type}
-23.24-23.33:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cppo}
-               found: {Type}
-27.21-27.30:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cpo}
-               found: {Type}
-27.21-27.30:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cppo}
-               found: {Type}
-27.21-27.30:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cpo}
-               found: {Type}
-27.21-27.30:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cppo}
-               found: {Type}
-27.21-27.30:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cpo}
-               found: {Type}
-27.21-27.30:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cppo}
-               found: {Type}
-28.14:
-### Hint: no kind found for 'Elem'
-            expected: {Cpo}
-               found: {Type}
-28.14:
-### Hint: no kind found for 'Elem'
-            expected: {Cppo}
-               found: {Type}
+22.25: ### Hint:
+no kind found for 'Elem'
+  expected: {Cpo}
+     found: {Type}
+22.25: ### Hint:
+no kind found for 'Elem'
+  expected: {Cppo}
+     found: {Type}
+23.24-23.33: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+23.24-23.33: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+27.21-27.30: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+27.21-27.30: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+27.21-27.30: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+27.21-27.30: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+27.21-27.30: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+27.21-27.30: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+28.14: ### Hint:
+no kind found for 'Elem'
+  expected: {Cpo}
+     found: {Type}
+28.14: ### Hint:
+no kind found for 'Elem'
+  expected: {Cppo}
+     found: {Type}
 31.6-31.9: ### Hint: is type variable 'Elem'
 31.6-31.9: ### Hint: rebound type variable 'Elem'
 33.10: ### Hint: not a kind 'MultiSet Elem'
@@ -533,10 +533,10 @@ forall h1 : HomSys; h2 : HomSys
 34.12: ### Warning: variable also known as type variable 'S'
 34.12: ### Hint: rebound variable 'S'
 34.12: ### Warning: variable also known as type variable 'S'
-35.25-35.32:
-### Hint: rejected 'Unit < Nat' of '((var x : Elem), (var S : Set Elem))'
-35.25-35.32:
-### Hint: untypeable term (with type: _v9_Elem * MultiSet _v9_Elem) '(x, S)'
+35.25-35.32: ### Hint:
+rejected 'Unit < Nat' of '((var x : Elem), (var S : Set Elem))'
+35.25-35.32: ### Hint:
+untypeable term (with type: _v9_Elem * MultiSet _v9_Elem) '(x, S)'
 37.7: ### Hint: is type variable 'S'
 37.7: ### Hint: rebound type variable 'S'
 40.7: ### Hint: is type variable 'a'
@@ -545,336 +545,336 @@ forall h1 : HomSys; h2 : HomSys
 45.9: ### Hint: is type variable 'V'
 45.9: ### Hint: rebound type variable 'V'
 45.11: ### Hint: is type variable 'U'
-51.33-51.37:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cpo}
-               found: {Type}
-51.33-51.37:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cppo}
-               found: {Type}
-52.21-52.25:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cpo}
-               found: {Type}
-52.21-52.25:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cppo}
-               found: {Type}
-53.18-53.22:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cpo}
-               found: {Type}
-53.18-53.22:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cppo}
-               found: {Type}
-54.16-54.20:
-### Hint: no kind found for 'V ->? U'
-            expected: {Cpo}
-               found: {Type}
-54.16-54.20:
-### Hint: no kind found for 'V ->? U'
-            expected: {Cppo}
-               found: {Type}
-55.17-55.21:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cpo}
-               found: {Type}
-55.17-55.21:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cppo}
-               found: {Type}
-57.30:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-57.30:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
-59.44-59.48:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cpo}
-               found: {Type}
-59.44-59.48:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cppo}
-               found: {Type}
-59.44-59.48:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cpo}
-               found: {Type}
-59.44-59.48:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cppo}
-               found: {Type}
-60.23-60.27:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cpo}
-               found: {Type}
-60.23-60.27:
-### Hint: no kind found for 'S ->? V'
-            expected: {Cppo}
-               found: {Type}
+51.33-51.37: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+51.33-51.37: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+52.21-52.25: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+52.21-52.25: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+53.18-53.22: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+53.18-53.22: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+54.16-54.20: ### Hint:
+no kind found for 'V ->? U'
+  expected: {Cpo}
+     found: {Type}
+54.16-54.20: ### Hint:
+no kind found for 'V ->? U'
+  expected: {Cppo}
+     found: {Type}
+55.17-55.21: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+55.17-55.21: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+57.30: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+57.30: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+59.44-59.48: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+59.44-59.48: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+59.44-59.48: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+59.44-59.48: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+60.23-60.27: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+60.23-60.27: ### Hint:
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
 62.7: ### Hint: is type variable 'S'
 62.7: ### Hint: rebound type variable 'S'
 62.10: ### Hint: is type variable 'V'
 62.10: ### Hint: rebound type variable 'V'
-63.33-63.47:
-### Hint: no kind found for 'S ->? MultiSet V'
-            expected: {Cpo}
-               found: {Type}
-63.33-63.47:
-### Hint: no kind found for 'S ->? MultiSet V'
-            expected: {Cppo}
-               found: {Type}
-67.27-67.36:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cpo}
-               found: {Type}
-67.27-67.36:
-### Hint: no kind found for 'MultiSet Elem'
-            expected: {Cppo}
-               found: {Type}
-20.18-67.60:
-### Hint: repeated declaration of '__intersection__' with type
-          'MultiSet Elem * MultiSet Elem -> MultiSet Elem'
-71.30-71.34:
-### Hint: no kind found for 'Set P'
-            expected: {Cpo}
-               found: {Type}
-71.30-71.34:
-### Hint: no kind found for 'Set P'
-            expected: {Cppo}
-               found: {Type}
+63.33-63.47: ### Hint:
+no kind found for 'S ->? MultiSet V'
+  expected: {Cpo}
+     found: {Type}
+63.33-63.47: ### Hint:
+no kind found for 'S ->? MultiSet V'
+  expected: {Cppo}
+     found: {Type}
+67.27-67.36: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+67.27-67.36: ### Hint:
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+20.18-67.60: ### Hint:
+repeated declaration of '__intersection__' with type
+'MultiSet Elem * MultiSet Elem -> MultiSet Elem'
+71.30-71.34: ### Hint:
+no kind found for 'Set P'
+  expected: {Cpo}
+     found: {Type}
+71.30-71.34: ### Hint:
+no kind found for 'Set P'
+  expected: {Cppo}
+     found: {Type}
 72.23: ### Hint: not a kind 'MultiSet P'
 73.26: ### Hint: not a kind 'MultiSet P'
-72.37-72.51:
-### Hint: rejected 'Unit < Nat' of '((var p1 : MultiSet P),
-           (op range : forall S : Type; V : Type . (S ->? V) -> Set V)
-           (var pre : T ->? MultiSet P))'
-72.37-72.51:
-### Hint: untypeable term (with type: _v35_Elem * MultiSet _v35_Elem)
-          '(p1, range pre)'
-73.40-73.54:
-### Hint: rejected 'Unit < Nat' of '((var p1 : MultiSet P),
-           (op range : forall S : Type; V : Type . (S ->? V) -> Set V)
-           (var pre : T ->? MultiSet P))'
-73.40-73.54:
-### Hint: untypeable term (with type: _v55_Elem * MultiSet _v55_Elem)
-          '(p1, range pre)'
-79.23:
-### Hint: no kind found for 'Net'
-            expected: {Cpo}
-               found: {Type}
-79.23:
-### Hint: no kind found for 'Net'
-            expected: {Cppo}
-               found: {Type}
+72.37-72.51: ### Hint:
+rejected 'Unit < Nat' of '((var p1 : MultiSet P),
+ (op range : forall S : Type; V : Type . (S ->? V) -> Set V)
+ (var pre : T ->? MultiSet P))'
+72.37-72.51: ### Hint:
+untypeable term (with type: _v35_Elem * MultiSet _v35_Elem)
+'(p1, range pre)'
+73.40-73.54: ### Hint:
+rejected 'Unit < Nat' of '((var p1 : MultiSet P),
+ (op range : forall S : Type; V : Type . (S ->? V) -> Set V)
+ (var pre : T ->? MultiSet P))'
+73.40-73.54: ### Hint:
+untypeable term (with type: _v55_Elem * MultiSet _v55_Elem)
+'(p1, range pre)'
+79.23: ### Hint:
+no kind found for 'Net'
+  expected: {Cpo}
+     found: {Type}
+79.23: ### Hint:
+no kind found for 'Net'
+  expected: {Cppo}
+     found: {Type}
 81.19: ### Hint: not a class 'T'
-80.8-80.35:
-### Hint: in type of '((var hp : P ->? P), (op places : Net -> Set P) (var n1 : Net),
-           (op places : Net -> Set P) (var n2 : Net))'
-            typename 'P' (79.35)
-            is not unifiable with type '_v80_V ->? Nat' (63.47)
-80.8-80.35:
-### Hint: untypeable term (with type: (_v79_S ->? MultiSet _v80_V) * Set _v79_S * Set _v80_V)
-          '(hp, places n1, places n2)'
-80.41-80.78:
-### Hint: in type of '((var ht : T ->? T),
-           (op transitions : Net -> Set T) (var n1 : Net),
-           (op transitions : Net -> Set T) (var n2 : Net))'
-            typename 'T' (79.45)
-            is not unifiable with type '_v84_V ->? Nat' (63.47)
-80.41-80.78:
-### Hint: untypeable term (with type: (_v83_S ->? MultiSet _v84_V) * Set _v83_S * Set _v84_V)
-          '(ht, transitions n1, transitions n2)'
-81.24-81.43:
-### Hint: rejected 'Unit < Nat' of '((var t : T), (op transitions : Net -> Set T) (var n1 : Net))'
-81.24-81.43:
-### Hint: untypeable term (with type: _v86_Elem * MultiSet _v86_Elem)
-          '(t, transitions n1)'
-89.15:
-### Hint: no kind found for 'HomNet'
-            expected: {Cpo}
-               found: {Type}
-89.15:
-### Hint: no kind found for 'HomNet'
-            expected: {Cppo}
-               found: {Type}
-93.26:
-### Hint: no kind found for 'Net'
-            expected: {Cpo}
-               found: {Type}
-93.26:
-### Hint: no kind found for 'Net'
-            expected: {Cppo}
-               found: {Type}
+80.8-80.35: ### Hint:
+in type of '((var hp : P ->? P), (op places : Net -> Set P) (var n1 : Net),
+ (op places : Net -> Set P) (var n2 : Net))'
+  typename 'P' (79.35)
+  is not unifiable with type '_v80_V ->? Nat' (63.47)
+80.8-80.35: ### Hint:
+untypeable term (with type: (_v79_S ->? MultiSet _v80_V) * Set _v79_S * Set _v80_V)
+'(hp, places n1, places n2)'
+80.41-80.78: ### Hint:
+in type of '((var ht : T ->? T),
+ (op transitions : Net -> Set T) (var n1 : Net),
+ (op transitions : Net -> Set T) (var n2 : Net))'
+  typename 'T' (79.45)
+  is not unifiable with type '_v84_V ->? Nat' (63.47)
+80.41-80.78: ### Hint:
+untypeable term (with type: (_v83_S ->? MultiSet _v84_V) * Set _v83_S * Set _v84_V)
+'(ht, transitions n1, transitions n2)'
+81.24-81.43: ### Hint:
+rejected 'Unit < Nat' of '((var t : T), (op transitions : Net -> Set T) (var n1 : Net))'
+81.24-81.43: ### Hint:
+untypeable term (with type: _v86_Elem * MultiSet _v86_Elem)
+'(t, transitions n1)'
+89.15: ### Hint:
+no kind found for 'HomNet'
+  expected: {Cpo}
+     found: {Type}
+89.15: ### Hint:
+no kind found for 'HomNet'
+  expected: {Cppo}
+     found: {Type}
+93.26: ### Hint:
+no kind found for 'Net'
+  expected: {Cpo}
+     found: {Type}
+93.26: ### Hint:
+no kind found for 'Net'
+  expected: {Cppo}
+     found: {Type}
 95.38: ### Hint: not a class 'P'
-95.43-95.50:
-### Hint: rejected 'Nat < Unit' of '((var x : P), (var m : Marking))'
-95.43-95.50:
-### Hint: untypeable term (with type: _v117_S * Set _v117_S) '(x, m)'
-95.55-95.62:
-### Hint: rejected 'Unit < Nat' of '((var x : P), (var p : P ->? Unit))'
-95.55-95.62:
-### Hint: untypeable term (with type: _v120_Elem * MultiSet _v120_Elem)
-          '(x, p)'
-99.20:
-### Hint: no kind found for 'System'
-            expected: {Cpo}
-               found: {Type}
-99.20:
-### Hint: no kind found for 'System'
-            expected: {Cppo}
-               found: {Type}
-100.20:
-### Hint: no kind found for 'System'
-            expected: {Cpo}
-               found: {Type}
-100.20:
-### Hint: no kind found for 'System'
-            expected: {Cppo}
-               found: {Type}
-102.39:
-### Hint: no kind found for 'System'
-            expected: {Cpo}
-               found: {Type}
-102.39:
-### Hint: no kind found for 'System'
-            expected: {Cppo}
-               found: {Type}
+95.43-95.50: ### Hint:
+rejected 'Nat < Unit' of '((var x : P), (var m : Marking))'
+95.43-95.50: ### Hint:
+untypeable term (with type: _v117_S * Set _v117_S) '(x, m)'
+95.55-95.62: ### Hint:
+rejected 'Unit < Nat' of '((var x : P), (var p : P ->? Unit))'
+95.55-95.62: ### Hint:
+untypeable term (with type: _v120_Elem * MultiSet _v120_Elem)
+'(x, p)'
+99.20: ### Hint:
+no kind found for 'System'
+  expected: {Cpo}
+     found: {Type}
+99.20: ### Hint:
+no kind found for 'System'
+  expected: {Cppo}
+     found: {Type}
+100.20: ### Hint:
+no kind found for 'System'
+  expected: {Cpo}
+     found: {Type}
+100.20: ### Hint:
+no kind found for 'System'
+  expected: {Cppo}
+     found: {Type}
+102.39: ### Hint:
+no kind found for 'System'
+  expected: {Cpo}
+     found: {Type}
+102.39: ### Hint:
+no kind found for 'System'
+  expected: {Cppo}
+     found: {Type}
 104.19: ### Hint: not a class 'P'
-104.24-104.69:
-### Hint: in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
-           ((var p : P),
-            (op marking : System -> Marking) (var sys1 : System)),
-           (op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
-           ((var hp : P ->? P) (var p : P),
-            (op marking : System -> Marking) (var sys2 : System)))'
-            typename 'Nat' (28.38)
-            is not unifiable with type '_v159_Elem ->? Nat' (23.33)
-104.24-104.69:
-### Hint: untypeable term (with type: MultiSet _v159_Elem * MultiSet _v159_Elem)
-          '(freq (p, marking sys1), freq (hp p, marking sys2))'
-110.16:
-### Hint: no kind found for 'HomSys'
-            expected: {Cpo}
-               found: {Type}
-110.16:
-### Hint: no kind found for 'HomSys'
-            expected: {Cppo}
-               found: {Type}
+104.24-104.69: ### Hint:
+in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
+ ((var p : P),
+  (op marking : System -> Marking) (var sys1 : System)),
+ (op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
+ ((var hp : P ->? P) (var p : P),
+  (op marking : System -> Marking) (var sys2 : System)))'
+  typename 'Nat' (28.38)
+  is not unifiable with type '_v159_Elem ->? Nat' (23.33)
+104.24-104.69: ### Hint:
+untypeable term (with type: MultiSet _v159_Elem * MultiSet _v159_Elem)
+'(freq (p, marking sys1), freq (hp p, marking sys2))'
+110.16: ### Hint:
+no kind found for 'HomSys'
+  expected: {Cpo}
+     found: {Type}
+110.16: ### Hint:
+no kind found for 'HomSys'
+  expected: {Cppo}
+     found: {Type}
 112.12: ### Hint: not a class 'HomSys'
 112.16: ### Hint: not a class 'HomSys'
-113.10:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
-113.10-113.15:
-### Hint: untypeable term (with type: HomNet * HomNet) '(h2, h1)'
-113.10-113.15:
-### Hint: in type of '((var h2 : HomSys), (var h1 : HomSys))'
-            typename '__->?__' (54.17)
-            is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
-113.10-113.15:
-### Hint: untypeable term (with type: (_v169_V ->? _v170_U) * (_v171_S ->? _v169_V))
-          '(h2, h1)'
-113.22:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
-113.22-113.27:
-### Hint: untypeable term (with type: HomNet * HomNet) '(h2, h1)'
-113.22-113.27:
-### Hint: in type of '((var h2 : HomSys), (var h1 : HomSys))'
-            typename '__->?__' (54.17)
-            is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
-113.22-113.27:
-### Hint: untypeable term (with type: (_v216_V ->? _v217_U) * (_v218_S ->? _v216_V))
-          '(h2, h1)'
-114.11:
-### Hint: in type of '(var h1 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+113.10: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+113.10-113.15: ### Hint:
+untypeable term (with type: HomNet * HomNet) '(h2, h1)'
+113.10-113.15: ### Hint:
+in type of '((var h2 : HomSys), (var h1 : HomSys))'
+  typename '__->?__' (54.17)
+  is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
+113.10-113.15: ### Hint:
+untypeable term (with type: (_v169_V ->? _v170_U) * (_v171_S ->? _v169_V))
+'(h2, h1)'
+113.22: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+113.22-113.27: ### Hint:
+untypeable term (with type: HomNet * HomNet) '(h2, h1)'
+113.22-113.27: ### Hint:
+in type of '((var h2 : HomSys), (var h1 : HomSys))'
+  typename '__->?__' (54.17)
+  is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
+113.22-113.27: ### Hint:
+untypeable term (with type: (_v216_V ->? _v217_U) * (_v218_S ->? _v216_V))
+'(h2, h1)'
+114.11: ### Hint:
+in type of '(var h1 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.11: ### Hint: untypeable term (with type: HomNet) 'h1'
-114.11:
-### Hint: in type of '(var h1 : HomSys)'
-            typename '__->?__' (47.15)
-            is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
-114.11:
-### Hint: untypeable term (with type: _v220_S ->? _v221_V) 'h1'
-114.25:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.11: ### Hint:
+in type of '(var h1 : HomSys)'
+  typename '__->?__' (47.15)
+  is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
+114.11: ### Hint:
+untypeable term (with type: _v220_S ->? _v221_V) 'h1'
+114.25: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.25: ### Hint: untypeable term (with type: HomNet) 'h2'
-114.15-114.25:
-### Hint: in type of '(op placesMap : HomSys -> P ->? P) (var h2 : HomSys)'
-            typename '__->?__' (107.33)
-            is not unifiable with type 'gn_t99[gn_t98[gn_t97[HomNet]]] (P ->? P)' (79.35)
-114.15-114.40:
-### Hint: untypeable term (with type: HomNet * HomNet)
-          '(placesMap h2, placesMap h1)'
-114.25:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.15-114.25: ### Hint:
+in type of '(op placesMap : HomSys -> P ->? P) (var h2 : HomSys)'
+  typename '__->?__' (107.33)
+  is not unifiable with type 'gn_t99[gn_t98[gn_t97[HomNet]]] (P ->? P)' (79.35)
+114.15-114.40: ### Hint:
+untypeable term (with type: HomNet * HomNet)
+'(placesMap h2, placesMap h1)'
+114.25: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.25: ### Hint: untypeable term (with type: HomNet) 'h2'
-114.15-114.25:
-### Hint: in type of '(op placesMap : HomSys -> P ->? P) (var h2 : HomSys)'
-            typename '__->?__' (107.33)
-            is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
-114.15-114.40:
-### Hint: untypeable term (with type: HomSys * HomSys)
-          '(placesMap h2, placesMap h1)'
-114.25:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.15-114.25: ### Hint:
+in type of '(op placesMap : HomSys -> P ->? P) (var h2 : HomSys)'
+  typename '__->?__' (107.33)
+  is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
+114.15-114.40: ### Hint:
+untypeable term (with type: HomSys * HomSys)
+'(placesMap h2, placesMap h1)'
+114.25: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.25: ### Hint: untypeable term (with type: HomNet) 'h2'
-114.40:
-### Hint: in type of '(var h1 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.40: ### Hint:
+in type of '(var h1 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.40: ### Hint: untypeable term (with type: HomNet) 'h1'
-114.59:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.59: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.59: ### Hint: untypeable term (with type: HomNet) 'h2'
-114.44-114.59:
-### Hint: in type of '(op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys)'
-            typename '__->?__' (108.38)
-            is not unifiable with type 'gn_t99[gn_t98[gn_t97[HomNet]]] (P ->? P)' (79.35)
-114.44-114.79:
-### Hint: untypeable term (with type: HomNet * HomNet)
-          '(transitionsMap h2, transitionsMap h1)'
-114.59:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.44-114.59: ### Hint:
+in type of '(op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys)'
+  typename '__->?__' (108.38)
+  is not unifiable with type 'gn_t99[gn_t98[gn_t97[HomNet]]] (P ->? P)' (79.35)
+114.44-114.79: ### Hint:
+untypeable term (with type: HomNet * HomNet)
+'(transitionsMap h2, transitionsMap h1)'
+114.59: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.59: ### Hint: untypeable term (with type: HomNet) 'h2'
-114.44-114.59:
-### Hint: in type of '(op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys)'
-            typename '__->?__' (108.38)
-            is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
-114.44-114.79:
-### Hint: untypeable term (with type: HomSys * HomSys)
-          '(transitionsMap h2, transitionsMap h1)'
-114.59:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.44-114.59: ### Hint:
+in type of '(op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys)'
+  typename '__->?__' (108.38)
+  is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
+114.44-114.79: ### Hint:
+untypeable term (with type: HomSys * HomSys)
+'(transitionsMap h2, transitionsMap h1)'
+114.59: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.59: ### Hint: untypeable term (with type: HomNet) 'h2'
-114.79:
-### Hint: in type of '(var h1 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.79: ### Hint:
+in type of '(var h1 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.79: ### Hint: untypeable term (with type: HomNet) 'h1'
-114.86:
-### Hint: in type of '(var h2 : HomSys)'
-            typename 'gn_t122[gn_t121[System]]' (93.8)
-            is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
+114.86: ### Hint:
+in type of '(var h2 : HomSys)'
+  typename 'gn_t122[gn_t121[System]]' (93.8)
+  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 114.86: ### Hint: untypeable term (with type: HomNet) 'h2'

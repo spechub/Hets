@@ -15,7 +15,7 @@ a : +Type %(var_1)%
 3.18: ### Hint: wrong covariance of 'a'
 3.18: ### Hint: no kind found for 'a'
 3.13-3.18: *** Error: no kind found for 'Pred a'
-5.6:
-*** Error: wrong type of 'm'
-             expected: \ b : -Type . b
-                found: \ b : +Type . b
+5.6: *** Error:
+wrong type of 'm'
+  expected: \ b : -Type . b
+     found: \ b : +Type . b

@@ -23,13 +23,13 @@ forall a : Type; p : M a; q : a -> M a
 . def (p >>= \ x : a . q x >>= \ y : a . q y >>= \ z : a . q z)
 1.5: ### Hint: is type variable 'a'
 1.8: ### Hint: is type variable 'b'
-4.16-4.18:
-### Hint: no kind found for 'M a'
-            expected: {Cpo}
-               found: {Type}
-4.16-4.18:
-### Hint: no kind found for 'M a'
-            expected: {Cppo}
-               found: {Type}
+4.16-4.18: ### Hint:
+no kind found for 'M a'
+  expected: {Cpo}
+     found: {Type}
+4.16-4.18: ### Hint:
+no kind found for 'M a'
+  expected: {Cppo}
+     found: {Type}
 7.7: ### Hint: not a kind 'M a'
 7.16: ### Hint: not a kind 'a -> M a'

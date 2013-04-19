@@ -60,9 +60,9 @@ x : y
 30.9: *** Error: unknown type 's'
 32.5: ### Hint: is type variable 'x'
 32.5: ### Hint: rebound type variable 'x'
-32.5:
-### Warning: type variable does not shadow normal variable 'x'
+32.5: ### Warning:
+type variable does not shadow normal variable 'x'
 34.5: ### Hint: rebound type variable 'x'
-34.5:
-### Warning: type variable does not shadow normal variable 'x'
+34.5: ### Warning:
+type variable does not shadow normal variable 'x'
 36.8: *** Error: illegal type pattern argument '__'

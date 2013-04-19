@@ -44,60 +44,60 @@ forall S : Type
   . (r in PER S) <=> symmetric r /\ transitive r
 forall S : Type; r : PER S; x : S . x isIn dom r <=> (x, x) isIn r
 1.7: ### Hint: is type variable 'S'
-3.20:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-3.20:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
-4.51:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-4.51:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
-4.51:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-4.51:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
-4.51:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-4.51:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
+3.20: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+3.20: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+4.51: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+4.51: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+4.51: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+4.51: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+4.51: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+4.51: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 5.11: ### Hint: not a kind 'Set (S * S)'
-5.16:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-5.16:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
+5.16: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+5.16: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 6.29: ### Hint: not a class 'S'
 7.29: ### Hint: not a class 'S'
 7.31: ### Hint: not a class 'S'
 8.30: ### Hint: not a class 'S'
 8.32: ### Hint: not a class 'S'
 8.34: ### Hint: not a class 'S'
-9.26:
-### Hint: no kind found for 'S'
-            expected: {Cpo}
-               found: {Type}
-9.26:
-### Hint: no kind found for 'S'
-            expected: {Cppo}
-               found: {Type}
+9.26: ### Hint:
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+9.26: ### Hint:
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 11.8: ### Hint: not a class 'S'
 11.13: ### Hint: not a kind 'PER S'

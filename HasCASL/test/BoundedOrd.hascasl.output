@@ -99,27 +99,27 @@ forall a : Cpo; x : ? a
 . (op __<=__ : forall a : Ord . Pred (a * a))[? a] (x, x)
 2.7: ### Hint: is type variable 'a'
 2.16: ### Hint: not a class 'a'
-3.22:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Ord}
-3.22:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Ord}
+3.22: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Ord}
+3.22: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Ord}
 8.7: ### Hint: is type variable 'a'
 8.7: ### Hint: rebound type variable 'a'
 8.15: ### Hint: is type variable 'b'
-9.22:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Ord}
-9.22:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Ord}
-9.16-9.24:
-### Hint: repeated declaration of '__<=__' with type 'Pred (a * a)'
+9.22: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Ord}
+9.22: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Ord}
+9.16-9.24: ### Hint:
+repeated declaration of '__<=__' with type 'Pred (a * a)'
 11.8: ### Hint: not a class 'a'
 11.7: ### Hint: rebound variable 'x'
 11.11: ### Hint: not a class 'a'
@@ -146,81 +146,81 @@ forall a : Cpo; x : ? a
 28.7: ### Hint: rebound type variable 'a'
 28.15: ### Hint: is type variable 'b'
 28.15: ### Hint: rebound type variable 'b'
-29.12:
-### Hint: no kind found for 'a'
-            expected: {Cpo}
-               found: {Ord}
-29.12:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Ord}
-30.12:
-### Hint: no kind found for 'b'
-            expected: {Cpo}
-               found: {Num}
-30.12:
-### Hint: no kind found for 'b'
-            expected: {Cppo}
-               found: {Num}
-30.12:
-### Hint: no kind found for 'b'
-            expected: {Ord}
-               found: {Num}
+29.12: ### Hint:
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Ord}
+29.12: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Ord}
+30.12: ### Hint:
+no kind found for 'b'
+  expected: {Cpo}
+     found: {Num}
+30.12: ### Hint:
+no kind found for 'b'
+  expected: {Cppo}
+     found: {Num}
+30.12: ### Hint:
+no kind found for 'b'
+  expected: {Ord}
+     found: {Num}
 32.7: ### Hint: is type variable 'a'
 32.7: ### Hint: rebound type variable 'a'
 32.15: ### Hint: is type variable 'b'
 32.15: ### Hint: rebound type variable 'b'
-33.23-33.29:
-### Hint: no kind found for 'a ->? b'
-            expected: {Cpo}
-               found: {Type}
-33.23-33.29:
-### Hint: no kind found for 'a ->? b'
-            expected: {Cppo}
-               found: {Type}
-33.23-33.29:
-### Hint: no kind found for 'a ->? b'
-            expected: {Ord}
-               found: {Type}
-,
-### Hint: in type of '((), ())'
-            typename 'Unit'
-            is not unifiable with type '_v36_a ->? _v37_b' (33.29)
-,
-### Hint: untypeable term (with type: (_v36_a ->? _v37_b) * (_v36_a ->? _v37_b))
-          '((), ())'
+33.23-33.29: ### Hint:
+no kind found for 'a ->? b'
+  expected: {Cpo}
+     found: {Type}
+33.23-33.29: ### Hint:
+no kind found for 'a ->? b'
+  expected: {Cppo}
+     found: {Type}
+33.23-33.29: ### Hint:
+no kind found for 'a ->? b'
+  expected: {Ord}
+     found: {Type}
+### Hint:
+in type of '((), ())'
+  typename 'Unit'
+  is not unifiable with type '_v36_a ->? _v37_b' (33.29)
+### Hint:
+untypeable term (with type: (_v36_a ->? _v37_b) * (_v36_a ->? _v37_b))
+'((), ())'
 40.8: ### Hint: not a kind '? a'
 40.7: ### Hint: rebound variable 'x'
 40.11: ### Hint: not a kind '? a'
 40.10: ### Hint: rebound variable 'y'
-41.3-41.8:
-### Hint: in type of '((var x : ? a), (var y : ? a))'
-            typename 'a' (40.14)
-            is not unifiable with type '_v40_a ->? _v41_b' (33.29)
-41.3-41.8:
-### Hint: untypeable term (with type: (_v40_a ->? _v41_b) * (_v40_a ->? _v41_b))
-          '(x, y)'
-41.25-41.32:
-### Hint: in type of '((var x : ? a) (), (var y : ? a) ())'
-            typename 'a' (40.14)
-            is not unifiable with type '_v44_a ->? _v45_b' (33.29)
-41.25-41.32:
-### Hint: untypeable term (with type: (_v44_a ->? _v45_b) * (_v44_a ->? _v45_b))
-          '(x (), y ())'
+41.3-41.8: ### Hint:
+in type of '((var x : ? a), (var y : ? a))'
+  typename 'a' (40.14)
+  is not unifiable with type '_v40_a ->? _v41_b' (33.29)
+41.3-41.8: ### Hint:
+untypeable term (with type: (_v40_a ->? _v41_b) * (_v40_a ->? _v41_b))
+'(x, y)'
+41.25-41.32: ### Hint:
+in type of '((var x : ? a) (), (var y : ? a) ())'
+  typename 'a' (40.14)
+  is not unifiable with type '_v44_a ->? _v45_b' (33.29)
+41.25-41.32: ### Hint:
+untypeable term (with type: (_v44_a ->? _v45_b) * (_v44_a ->? _v45_b))
+'(x (), y ())'
 43.7-43.9: ### Warning: refined class 'Cpo'
 44.5: ### Hint: is type variable 'a'
 44.5: ### Hint: rebound type variable 'a'
-45.22:
-### Hint: no kind found for 'a'
-            expected: {Cppo}
-               found: {Cpo}
+45.22: ### Hint:
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Cpo}
 47.6: ### Hint: not a kind '? a'
 47.5: ### Hint: rebound variable 'x'
 48.7-48.10: ### Hint: is type list '[? a]'
-48.10:
-### Hint: for type scheme 'Pred ((a ->? b) * (a ->? b))' wrong length of instantiation list
-          '[? a]'
-48.3-48.12:
-### Hint: constrain '(? a) : Cpo' is unprovable of '(op __<=__ : forall a : Cpo . Pred (a * a))[? a]
-          ((var x : ? a), (var x : ? a))'
-            known kinds are: {Ord}
+48.10: ### Hint:
+for type scheme 'Pred ((a ->? b) * (a ->? b))' wrong length of instantiation list
+'[? a]'
+48.3-48.12: ### Hint:
+constrain '(? a) : Cpo' is unprovable of '(op __<=__ : forall a : Cpo . Pred (a * a))[? a]
+((var x : ? a), (var x : ? a))'
+  known kinds are: {Ord}
