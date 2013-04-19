@@ -37,7 +37,7 @@ import Control.Monad (unless)
 
 import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
-import Data.List (isPrefixOf, stripPrefix, nubBy)
+import Data.List (isPrefixOf, stripPrefix)
 import Data.IORef
 import Data.Map (insert)
 
@@ -62,8 +62,9 @@ import Comorphisms.LogicGraph (logicGraph)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.OrderedMap as OMap
-import Common.Utils (splitOn)
+import Common.Utils
 import Common.Result
+import Common.ProofUtils
 import Common.LibName
 import qualified Common.Lib.SizedList as SizedList
 import Common.Consistency
@@ -317,16 +318,18 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                    obligations = case res of
                         Just (Just (_, os)) -> os
                         _ -> []
-                   namedNewSens = toThSens [(makeNamed "" o) {isAxiom = False} |
-                                             o <- obligations]
-               G_theory glid gsyn gsign gsigid gsens gid <- return $ dgn_theory
-                                                                  nodelab
-               namedNewSens' <- coerceThSens lidT glid "" namedNewSens
+               G_theory glid gsyn gsign gsigid gsens gid <-
+                 return $ dgn_theory nodelab
                let oldSens = OMap.toList gsens
+                   namedNewSens = toThSens
+                     $ disambiguateSens (Set.fromList $ map fst oldSens)
+                     [ (makeNamed ("cons_obl_" ++ show i) o) {isAxiom = False}
+                     | (o, i) <- number obligations ]
+               namedNewSens' <- coerceThSens lidT glid "" namedNewSens
+               let
                    {- Sort out the named sentences which have a different name,
                    but same sentence -}
-                   mergedSens = nubBy
-                     (\ (_, a) (_, b) -> sentence a == sentence b)
+                   mergedSens = nubOrdOn (sentence . snd)
                      $ oldSens ++ OMap.toList namedNewSens'
                    (newTheory, nodeChange) =
                      (G_theory glid gsyn gsign gsigid
