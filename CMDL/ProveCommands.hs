@@ -44,7 +44,8 @@ import Comorphisms.LogicGraph (lookupComorphism_in_LG)
 
 import Proofs.AbstractState
 
-import Logic.Comorphism (compComorphism)
+import Logic.Comorphism (compComorphism,AnyComorphism(..))
+import Logic.Logic (language_name)
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (newEmptyMVar, newMVar, takeMVar)
@@ -94,7 +95,8 @@ cTranslate input state =
             Result _ Nothing ->
              return $ genErrorMsg "Can not add comorphism" state
             Result _ (Just smth) ->
-              return $ genMessage [] "Adding comorphism"
+              return $ genMessage [] ("Adding comorphism " ++ 
+                        ((\(Comorphism c) -> language_name c) cm))
                      $ add2hist [CComorphismChange $ cComorphism pS] $
                       state {
                         intState = (intState state) {
