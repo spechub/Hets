@@ -276,7 +276,7 @@ checkSort :: (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
     -> [Named (FORMULA f)]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
 checkSort oTh@(osig, _) m fsn
-    | null fsn && Set.null nSorts = Just $ return (Just (Cons, []))
+    | null fsn && Set.null nSorts = Just $ return (Just (Def, []))
     | not $ Set.null notFreeSorts = mkWarn "some types are not freely generated"
         notFreeSorts Nothing
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
