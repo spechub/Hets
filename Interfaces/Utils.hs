@@ -37,9 +37,8 @@ import Control.Monad (unless)
 
 import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
-import Data.List (isPrefixOf, stripPrefix)
+import Data.List
 import Data.IORef
-import Data.Map (insert)
 
 import Static.DevGraph
 import Static.DgUtils
@@ -237,7 +236,7 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
         SeeSource)
       (tmpDG, _) = updateDGOnly dg $ InsertNode (newN, newL)
       (tempDG, InsertEdge lnk') = updateDGOnly tmpDG $ InsertEdge lnk
-      tempLibEnv = insert ln tempDG libEnv
+      tempLibEnv = Map.insert ln tempDG libEnv
   (str, _, (_, _, lnkLab), _) <-
     checkConservativityEdge useGUI lnk' tempLibEnv ln
   if isPrefixOf "No conservativity" str
@@ -249,7 +248,8 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
              changes = [ SetNodeLab nodeLab (nodeId, nodeLab') ]
              dg' = changesDGH dg changes
              history = snd $ splitHistory dg dg'
-             libEnv' = insert ln (groupHistory dg conservativityRule dg') libEnv
+             libEnv' = Map.insert ln (groupHistory dg conservativityRule dg')
+               libEnv
          return (str, libEnv', history)
 
 checkConservativityEdge :: Bool -> LEdge DGLinkLab -> LibEnv -> LibName
@@ -284,20 +284,42 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
         Nothing -> return (concatMap diagString $ diags checkerR,
                            libEnv, link, SizedList.empty)
         Just theChecker -> do
-               let inputThSens1 = filter isAxiom $ toNamedList sensT
+               let (inputThSens1, thms) = partition isAxiom $ toNamedList sensT
                    transSrcSens = Set.fromList
                       $ map sentence $ toNamedList transSensSrc
+                   oblCands = Set.union transSrcSens $ Set.fromList
+                      $ map sentence thms
                    inputThSens = filter
                      ((`Set.notMember` transSrcSens) . sentence)
                      inputThSens1
+                   showObls = show . Pretty.vsep
+                     . map (\ o -> print_named lidT .
+                                     mapNamed (simplify_sen lidT
+                                        $ plainSign sigT)
+                           $ (makeNamed "" o) {isAxiom = False})
                Result ds res <-
                        checkConservativity theChecker
                           (plainSign signS', toNamedList sensS')
                           compMor inputThSens
-               let cs' = case res of
-                     Just (Just (cst, obs)) -> if null obs then cst
-                                else Unknown "unchecked obligations"
-                     _ -> Unknown "Unknown"
+               let (cs', showRes) = case res of
+                     Just (Just (cst, obs)) ->
+                       let (exSens, resObls) = partition
+                              (`Set.member` oblCands) obs
+                       in (if null resObls then cst
+                           else Unknown "unchecked obligations"
+                       , "The link is " ++ showConsistencyStatus cst
+                         ++ case resObls of
+                              [] -> case exSens of
+                                [] -> case inputThSens of
+                                  [] -> " because no sentences have been added"
+                                  _ -> ""
+                                _ -> " because of the following theorems:\n"
+                                  ++ showObls exSens
+                              _ -> " provided that the following obligations\n"
+                                ++ "are added as theorems and discharged:\n"
+                                ++ showObls resObls)
+                     _ -> (Unknown "Unknown"
+                       , "Could not determine whether link is conservative")
                    consNew csv = if cs' >= csv
                               then Proven conservativityRule emptyProofBasis
                               else LeftOpen
@@ -312,32 +334,14 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                                 , linklab { dgl_type = newDglType }
                                 )
                    dg = lookupDGraph ln libEnv
-                   obligations = case res of
-                        Just (Just (_, os)) -> os
-                        _ -> []
-                   namedNewSens = toThSens [(makeNamed "" o) {isAxiom = False} |
-                                             o <- obligations]
                let edgeChanges = if edgeChange then
                             [ DeleteEdge (source, target, linklab)
                             , InsertEdge provenEdge ] else []
                    nextGr = changesDGH dg edgeChanges
-                   newLibEnv = if edgeChange then
-                     insert ln
+                   newLibEnv = if edgeChange then Map.insert ln
                      (groupHistory dg conservativityRule nextGr) libEnv
                      else libEnv
                    history = snd $ splitHistory dg nextGr
-                   showObls [] = ""
-                   showObls lst = ", provided that the following proof "
-                                 ++ "obligations can be discharged:\n"
-                                 ++ show (Pretty.vsep $ map (print_named lidT .
-                                     mapNamed (simplify_sen lidT
-                                        $ plainSign sigT)) lst)
-                   showRes = case res of
-                             Just (Just (cst, _)) -> "The link is "
-                              ++ showConsistencyStatus cst
-                              ++ showObls (toNamedList namedNewSens)
-                             _ -> "Could not determine whether link is "
-                                   ++ "conservative"
                    myDiags = showRelDiags 2 ds
                return ( showRes ++ "\n" ++ myDiags
                       , newLibEnv, provenEdge, history)
