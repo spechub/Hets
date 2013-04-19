@@ -400,7 +400,7 @@ getAllProvers pk start lg =
       g  = logicGraph2Graph lg
   in concat $ map (mkComorphism kp) $
       concat $ map (\end ->
-       yen 5 (start, Nothing) (\(l,_) -> l == end) g)
+       yen 10 (start, Nothing) (\(l,_) -> l == end) g)
        (Map.keys kp)
  where
   mkComorphism :: Map.Map G_sublogics [t2]
