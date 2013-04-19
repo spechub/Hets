@@ -246,9 +246,9 @@ rewriteLogicFormula' :: (RewriteFuns a, a) -> THFLogicFormula
                         -> Result THFLogicFormula
 rewriteLogicFormula' (fns, d) lf = case lf of
  TLF_THF_Binary_Formula bf -> liftM TLF_THF_Binary_Formula $
-  (rewriteBinaryFormula fns) (fns, d) bf
+  rewriteBinaryFormula fns (fns, d) bf
  TLF_THF_Unitary_Formula uf -> liftM TLF_THF_Unitary_Formula $
-  (rewriteUnitaryFormula fns) (fns, d) uf
+  rewriteUnitaryFormula fns (fns, d) uf
  TLF_THF_Type_Formula _ ->
   mkError "THF.Utils.rewriteLogicFormula: Type Formula not in THF0!" lf
  TLF_THF_Sub_Type _ ->
