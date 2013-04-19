@@ -21,20 +21,20 @@ import Data.Maybe (fromMaybe)
 
 pfun :: String -> ProverFuncs
 pfun tool = ProverFuncs {
- cfgTimeout = \ cfg -> maybe 20 (+10) (timeLimit cfg),
+ cfgTimeout = maybe 20 (+ 10) . timeLimit,
  proverCommand = \ tout tmpFile _ ->
-  return ("time",["isabelle", tool, show (tout-10), tmpFile]),
+  return ("time", ["isabelle", tool, show (tout - 10), tmpFile]),
  getMessage = \ res' pout _ ->
   if null res' then concat $ filter (isPrefixOf "*** ") (lines pout)
   else res',
- getTimeUsed = \ line -> case (fromMaybe "" $ stripPrefix "real\t" line) of
+ getTimeUsed = \ line -> case fromMaybe "" $ stripPrefix "real\t" line of
    [] -> Nothing
    s -> let sp p str = case dropWhile p str of
                   "" -> []
                   s' -> w : sp p s''
-                   where (w,s'') = break p s' 
-            (m:secs:_) = sp (=='m') s
-        in Just ((read m)*60 + (read secs)) }
+                   where (w, s'') = break p s'
+            (m : secs : _) = sp (== 'm') s
+        in Just $ read m * 60 + read secs }
 
 isaProver :: ProverType
 isaProver = createSZSProver "Isabelle (automated)"

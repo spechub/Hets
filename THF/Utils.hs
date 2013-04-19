@@ -70,31 +70,30 @@ evalUnique (Unique s) = runIdentity (evalUniqueT s)
 
 addSuffix :: String -> AtomicWord -> AtomicWord
 addSuffix s a = case a of
-  A_Lower_Word t    -> A_Lower_Word $ rename t
+  A_Lower_Word t -> A_Lower_Word $ rename t
   A_Single_Quoted t -> A_Single_Quoted $ rename t
- where rename = (\ t -> t { tokStr = (tokStr t) ++ s})
+ where rename t = t { tokStr = tokStr t ++ s }
 
 addSuffixN :: String -> Name -> Name
 addSuffixN s n = case n of
   N_Atomic_Word a -> N_Atomic_Word $ addSuffix s a
   N_Integer t -> rename s t
   T0N_Unsigned_Integer t -> rename s t
- where rename = \ sf t -> N_Atomic_Word $ addSuffix sf
-                         (A_Lower_Word $ t { tokStr = "i" ++ show t })
+ where rename sf t = N_Atomic_Word $ addSuffix sf
+                      (A_Lower_Word $ t { tokStr = 'i' : show t })
 
 numbered :: Monad m => AtomicWord -> UniqueT m AtomicWord
 numbered a = do
  f <- fresh
- return (addSuffix ("_" ++ show f) a)
+ return (addSuffix ('_' : show f) a)
 
 numberedTok :: Monad m => Token -> UniqueT m Token
-numberedTok t = (numbered . A_Single_Quoted) t
- >>= return . toToken
+numberedTok = liftM toToken . numbered . A_Single_Quoted
 
 mkNames :: Constant -> Name -> Int -> [(Constant, Name)]
 mkNames c n i = evalUnique $ replicateM i $ do
  f <- fresh
- let s = "_" ++ show f
+ let s = '_' : show f
  return (addSuffix s c, addSuffixN s n)
 
 recreateSymbols :: SignTHF -> SignTHF
@@ -103,46 +102,46 @@ recreateSymbols (Sign tps cs _) =
      symbs1 = foldl (\ m (c, t) -> Map.insert c
                       (Symbol c (name c) (ST_Type $ typeKind t)) m)
               Map.empty $ Map.toList tps
-     symbs  = foldl (\ m (c, k) -> Map.insert c
+     symbs = foldl (\ m (c, k) -> Map.insert c
                       (Symbol c (name c) (ST_Const $ constType k)) m)
               symbs1 $ Map.toList cs
  in Sign tps cs symbs
 
 toToken :: Constant -> Token
-toToken (A_Lower_Word t)    = t
+toToken (A_Lower_Word t) = t
 toToken (A_Single_Quoted t) = t
 
 thfTopLevelTypeToType :: THFTopLevelType -> Maybe Type
 thfTopLevelTypeToType tlt = case tlt of
-    T0TLT_Defined_Type dt       -> thfDefinedTypeToType dt
-    T0TLT_THF_Binary_Type bt    -> thfBinaryTypeToType bt
-    T0TLT_Constant c            -> Just $ CType c
-    T0TLT_System_Type st        -> Just $ SType st
-    T0TLT_Variable v            -> Just $ VType v
-    _                           -> Nothing
+    T0TLT_Defined_Type dt -> thfDefinedTypeToType dt
+    T0TLT_THF_Binary_Type bt -> thfBinaryTypeToType bt
+    T0TLT_Constant c -> Just $ CType c
+    T0TLT_System_Type st -> Just $ SType st
+    T0TLT_Variable v -> Just $ VType v
+    _ -> Nothing
 
 thfDefinedTypeToType :: DefinedType -> Maybe Type
 thfDefinedTypeToType dt = case dt of
-    DT_oType    -> Just OType
-    DT_o        -> Just OType
-    DT_iType    -> Just IType
-    DT_i        -> Just IType
-    DT_tType    -> Just TType
-    _           -> Nothing
+    DT_oType -> Just OType
+    DT_o -> Just OType
+    DT_iType -> Just IType
+    DT_i -> Just IType
+    DT_tType -> Just TType
+    _ -> Nothing
 
 thfBinaryTypeToType :: THFBinaryType -> Maybe Type
 thfBinaryTypeToType bt = case bt of
-    TBT_THF_Mapping_Type []         -> Nothing
-    TBT_THF_Mapping_Type (_ : [])   -> Nothing
-    TBT_THF_Mapping_Type mt         -> thfMappingTypeToType mt
-    T0BT_THF_Binary_Type_Par btp    -> fmap ParType (thfBinaryTypeToType btp)
-    TBT_THF_Xprod_Type []           -> Nothing
-    TBT_THF_Xprod_Type (u : [])     -> thfUnitaryTypeToType u
-    TBT_THF_Xprod_Type us           -> let us' = map thfUnitaryTypeToType us
+    TBT_THF_Mapping_Type [] -> Nothing
+    TBT_THF_Mapping_Type (_ : []) -> Nothing
+    TBT_THF_Mapping_Type mt -> thfMappingTypeToType mt
+    T0BT_THF_Binary_Type_Par btp -> fmap ParType (thfBinaryTypeToType btp)
+    TBT_THF_Xprod_Type [] -> Nothing
+    TBT_THF_Xprod_Type (u : []) -> thfUnitaryTypeToType u
+    TBT_THF_Xprod_Type us -> let us' = map thfUnitaryTypeToType us
                                        in if all isJust us' then
                                            (Just . ProdType) $ map fromJust us'
                                           else Nothing
-    _                               -> Nothing
+    _ -> Nothing
 
 thfMappingTypeToType :: [THFUnitaryType] -> Maybe Type
 thfMappingTypeToType [] = Nothing
@@ -157,35 +156,35 @@ thfMappingTypeToType (u : ru) =
 thfUnitaryTypeToType :: THFUnitaryType -> Maybe Type
 thfUnitaryTypeToType ut = case ut of
     T0UT_THF_Binary_Type_Par bt -> fmap ParType (thfBinaryTypeToType bt)
-    T0UT_Defined_Type dt        -> thfDefinedTypeToType dt
-    T0UT_Constant c             -> Just $ CType c
-    T0UT_System_Type st         -> Just $ SType st
-    T0UT_Variable v             -> Just $ VType v
-    _                           -> Nothing
+    T0UT_Defined_Type dt -> thfDefinedTypeToType dt
+    T0UT_Constant c -> Just $ CType c
+    T0UT_System_Type st -> Just $ SType st
+    T0UT_Variable v -> Just $ VType v
+    _ -> Nothing
 
 typeToTopLevelType :: Type -> Result THFTopLevelType
 typeToTopLevelType t = case t of
- TType -> return $ T0TLT_Defined_Type (DT_tType)
- OType -> return $ T0TLT_Defined_Type (DT_oType)
- IType -> return $ T0TLT_Defined_Type (DT_iType)
- MapType t1 t2 -> mapM typeToUnitaryType [t1, t2] >>=
-  return . T0TLT_THF_Binary_Type . TBT_THF_Mapping_Type
- ProdType ts   -> mapM typeToUnitaryType ts >>=
-  return . T0TLT_THF_Binary_Type . TBT_THF_Xprod_Type
- CType c       -> return $ T0TLT_Constant c
- SType t'      -> return $ T0TLT_System_Type t'
- VType t'      -> return $ T0TLT_Variable t'
- ParType t'    -> typeToBinaryType t' >>=
-  return . T0TLT_THF_Binary_Type . T0BT_THF_Binary_Type_Par
+ TType -> return $ T0TLT_Defined_Type DT_tType
+ OType -> return $ T0TLT_Defined_Type DT_oType
+ IType -> return $ T0TLT_Defined_Type DT_iType
+ MapType t1 t2 -> liftM (T0TLT_THF_Binary_Type . TBT_THF_Mapping_Type)
+                        (mapM typeToUnitaryType [t1, t2])
+ ProdType ts -> liftM (T0TLT_THF_Binary_Type . TBT_THF_Xprod_Type)
+                      (mapM typeToUnitaryType ts)
+ CType c -> return $ T0TLT_Constant c
+ SType t' -> return $ T0TLT_System_Type t'
+ VType t' -> return $ T0TLT_Variable t'
+ ParType t' -> liftM (T0TLT_THF_Binary_Type . T0BT_THF_Binary_Type_Par)
+                     (typeToBinaryType t')
 
 typeToUnitaryType :: Type -> Result THFUnitaryType
 typeToUnitaryType t = do
  tl <- typeToTopLevelType t
  case tl of
-  T0TLT_Constant c        -> return $ T0UT_Constant c
-  T0TLT_Variable t'       -> return $ T0UT_Variable t'
-  T0TLT_Defined_Type d    -> return $ T0UT_Defined_Type d
-  T0TLT_System_Type t'    -> return $ T0UT_System_Type t'
+  T0TLT_Constant c -> return $ T0UT_Constant c
+  T0TLT_Variable t' -> return $ T0UT_Variable t'
+  T0TLT_Defined_Type d -> return $ T0UT_Defined_Type d
+  T0TLT_System_Type t' -> return $ T0UT_System_Type t'
   T0TLT_THF_Binary_Type b -> return $ T0UT_THF_Binary_Type_Par b
   TTLT_THF_Logic_Formula _ -> mkError "Not yet implemented!" nullRange
 
@@ -233,10 +232,9 @@ rewriteTHF0 = RewriteFuns {
 rewriteSenFun :: (RewriteFuns a, a) -> Named THFFormula
                -> Result (Named THFFormula)
 rewriteSenFun (fns, d) sen = do
- sen' <- case sentence $ sen of
+ sen' <- case sentence sen of
              TF_THF_Logic_Formula lf ->
-              rewriteLogicFormula fns (fns, d) lf
-               >>= return . TF_THF_Logic_Formula
+              liftM TF_THF_Logic_Formula (rewriteLogicFormula fns (fns, d) lf)
              T0F_THF_Typed_Const tc ->
               mkError "THF.Utils.rewriteSen: Typed constants are not in THF0! "
                tc
@@ -247,12 +245,10 @@ rewriteSenFun (fns, d) sen = do
 rewriteLogicFormula' :: (RewriteFuns a, a) -> THFLogicFormula
                         -> Result THFLogicFormula
 rewriteLogicFormula' (fns, d) lf = case lf of
- TLF_THF_Binary_Formula bf ->
+ TLF_THF_Binary_Formula bf -> liftM TLF_THF_Binary_Formula $
   (rewriteBinaryFormula fns) (fns, d) bf
-   >>= return . TLF_THF_Binary_Formula
- TLF_THF_Unitary_Formula uf ->
+ TLF_THF_Unitary_Formula uf -> liftM TLF_THF_Unitary_Formula $
   (rewriteUnitaryFormula fns) (fns, d) uf
-   >>= return . TLF_THF_Unitary_Formula
  TLF_THF_Type_Formula _ ->
   mkError "THF.Utils.rewriteLogicFormula: Type Formula not in THF0!" lf
  TLF_THF_Sub_Type _ ->
@@ -264,67 +260,58 @@ rewriteBinaryFormula' (fns, d) bf = case bf of
  TBF_THF_Binary_Type _ -> mkError
   "THF.Utils.rewriteBinaryFormula: Binary Type not in THF0!" bf
  TBF_THF_Binary_Pair uf1 cn uf2 ->
-  (rewriteBinaryPair fns) (fns, d) (uf1, cn, uf2)
- TBF_THF_Binary_Tuple bt ->
-  (rewriteBinaryTuple fns) (fns, d) bt
-   >>= return . TBF_THF_Binary_Tuple
+  rewriteBinaryPair fns (fns, d) (uf1, cn, uf2)
+ TBF_THF_Binary_Tuple bt -> liftM TBF_THF_Binary_Tuple $
+  rewriteBinaryTuple fns (fns, d) bt
 
 rewriteBinaryPair' :: (RewriteFuns a, a) -> (THFUnitaryFormula,
                        THFPairConnective, THFUnitaryFormula)
                        -> Result THFBinaryFormula
 rewriteBinaryPair' (fns, d) (uf1, cn, uf2) = do
- uf1' <- (rewriteUnitaryFormula fns) (fns, d) uf1
- uf2' <- (rewriteUnitaryFormula fns) (fns, d) uf2
+ uf1' <- rewriteUnitaryFormula fns (fns, d) uf1
+ uf2' <- rewriteUnitaryFormula fns (fns, d) uf2
  return $ TBF_THF_Binary_Pair uf1' cn uf2'
 
 rewriteBinaryTuple' :: (RewriteFuns a, a) -> THFBinaryTuple
                         -> Result THFBinaryTuple
 rewriteBinaryTuple' (fns, d) bt = case bt of
- TBT_THF_Or_Formula ufs ->
-  mapR ((rewriteUnitaryFormula fns) (fns, d)) ufs
-   >>= return . TBT_THF_Or_Formula
- TBT_THF_And_Formula ufs ->
-  mapR ((rewriteUnitaryFormula fns) (fns, d)) ufs
-   >>= return . TBT_THF_And_Formula
- TBT_THF_Apply_Formula ufs ->
-  mapR ((rewriteUnitaryFormula fns) (fns, d)) ufs
-   >>= return . TBT_THF_Apply_Formula
+ TBT_THF_Or_Formula ufs -> liftM TBT_THF_Or_Formula $
+  mapR (rewriteUnitaryFormula fns (fns, d)) ufs
+ TBT_THF_And_Formula ufs -> liftM TBT_THF_And_Formula $
+  mapR (rewriteUnitaryFormula fns (fns, d)) ufs
+ TBT_THF_Apply_Formula ufs -> liftM TBT_THF_Apply_Formula $
+  mapR (rewriteUnitaryFormula fns (fns, d)) ufs
 
 rewriteUnitaryFormula' :: (RewriteFuns a, a) -> THFUnitaryFormula
                            -> Result THFUnitaryFormula
 rewriteUnitaryFormula' (fns, d) uf = case uf of
- TUF_THF_Conditional _ _ _ ->
+ TUF_THF_Conditional {} ->
   mkError ("THF.Utils.rewriteUnitaryFOrmula: " ++
            "Conditional not in THF0!") uf
- TUF_THF_Quantified_Formula qf ->
-  (rewriteQuantifiedFormula fns) (fns, d) qf
-   >>= return . TUF_THF_Quantified_Formula
- TUF_THF_Unary_Formula c lf ->
-  (rewriteLogicFormula fns) (fns, d) lf
-   >>= return . (TUF_THF_Unary_Formula c)
- TUF_THF_Atom a ->
-  (rewriteAtom fns) (fns, d) a
- TUF_THF_Tuple t ->
-  mapR ((rewriteLogicFormula fns) (fns, d)) t
-   >>= return . TUF_THF_Tuple
- TUF_THF_Logic_Formula_Par lf ->
-  (rewriteLogicFormula fns) (fns, d) lf
-   >>= return . TUF_THF_Logic_Formula_Par
+ TUF_THF_Quantified_Formula qf -> liftM TUF_THF_Quantified_Formula $
+  rewriteQuantifiedFormula fns (fns, d) qf
+ TUF_THF_Unary_Formula c lf -> liftM (TUF_THF_Unary_Formula c) $
+  rewriteLogicFormula fns (fns, d) lf
+ TUF_THF_Atom a -> rewriteAtom fns (fns, d) a
+ TUF_THF_Tuple t -> liftM TUF_THF_Tuple $
+  mapR (rewriteLogicFormula fns (fns, d)) t
+ TUF_THF_Logic_Formula_Par lf -> liftM TUF_THF_Logic_Formula_Par $
+  rewriteLogicFormula fns (fns, d) lf
  T0UF_THF_Abstraction vs uf' -> do
-  vs' <- (rewriteVariableList fns) (fns, d) vs
-  uf'' <- (rewriteUnitaryFormula fns) (fns, d) uf'
+  vs' <- rewriteVariableList fns (fns, d) vs
+  uf'' <- rewriteUnitaryFormula fns (fns, d) uf'
   return $ T0UF_THF_Abstraction vs' uf''
 
 rewriteQuantifiedFormula' :: (RewriteFuns a, a) -> THFQuantifiedFormula
                              -> Result THFQuantifiedFormula
 rewriteQuantifiedFormula' (fns, d) qf = case qf of
  TQF_THF_Quantified_Formula q vs uf -> do
-  vs' <- (rewriteVariableList fns) (fns, d) vs
-  uf' <- (rewriteUnitaryFormula fns) (fns, d) uf
+  vs' <- rewriteVariableList fns (fns, d) vs
+  uf' <- rewriteUnitaryFormula fns (fns, d) uf
   return $ TQF_THF_Quantified_Formula q vs' uf'
  T0QF_THF_Quantified_Var q vs uf -> do
-  vs' <- (rewriteVariableList fns) (fns, d) vs
-  uf' <- (rewriteUnitaryFormula fns) (fns, d) uf
+  vs' <- rewriteVariableList fns (fns, d) vs
+  uf' <- rewriteUnitaryFormula fns (fns, d) uf
   return $ T0QF_THF_Quantified_Var q vs' uf'
  T0QF_THF_Quantified_Novar _ _ ->
   mkError "THF.Utils.rewriteQuantifiedFormula: Quantified Novar not in THF0!" qf
@@ -336,9 +323,8 @@ rewriteVariableList' _ = return
 rewriteAtom' :: (RewriteFuns a, a) -> THFAtom -> Result THFUnitaryFormula
 rewriteAtom' (fns, d) a = case a of
  TA_Term _ -> mkError "THF.Utils.rewriteAtom: Term not in THF0!" a
- TA_THF_Conn_Term c ->
-  (rewriteConnTerm fns) (fns, d) c
-   >>= return . TUF_THF_Atom . TA_THF_Conn_Term
+ TA_THF_Conn_Term c -> liftM (TUF_THF_Atom . TA_THF_Conn_Term) $
+  rewriteConnTerm fns (fns, d) c
  TA_Defined_Type _ ->
   mkError "THF.Utils.rewriteAtom: Defined Type not in THF0!" a
  TA_Defined_Plain_Formula _ ->
@@ -347,13 +333,13 @@ rewriteAtom' (fns, d) a = case a of
   mkError "THF.Utils.rewriteAtom: System Type not in THF0!" a
  TA_System_Atomic_Formula _ ->
   mkError "THF.Utils.rewriteAtom: System Atomic Formula not in THF0!" a
- T0A_Constant c -> (rewriteConst fns) (fns, d) c
+ T0A_Constant c -> rewriteConst fns (fns, d) c
  T0A_Defined_Constant _ -> return $ TUF_THF_Atom a
  T0A_System_Constant _ -> return $ TUF_THF_Atom a
  T0A_Variable v -> do
-  v' <- (rewriteVariableList fns) (fns, d) [TV_Variable v]
+  v' <- rewriteVariableList fns (fns, d) [TV_Variable v]
   case v' of
-   (TV_Variable t) : _ -> return $ TUF_THF_Atom $ T0A_Variable t
+   TV_Variable t : _ -> return $ TUF_THF_Atom $ T0A_Variable t
    _ -> mkError "THF.Utils.rewriteAtom: Invalid rewrite!" v
 
 rewriteConst' :: (RewriteFuns a, a) -> Constant -> Result THFUnitaryFormula

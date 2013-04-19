@@ -33,56 +33,56 @@ import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
---------------------------------------------------------------------------------
--- Assumps
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Assumps
+----------------------------------------------------------------------------- -}
 
 preDefHCAssumps :: Set.Set Id -> ConstMap
 preDefHCAssumps ids =
-    let asl = [ (botId,       botci)
-              , (defId,       defci)
-              , (notId,       o2ci)
-              , (negId,       o2ci)
-{-            , (whenElse,    "hcc" ++ show whenElse) -}
-              , (trueId,      o1ci)
-              , (falseId,     o1ci)
-              , (eqId,        a2o1ci)
-              , (exEq,        a2o1ci)
-              , (resId,       resci)
-              , (andId,       o3ci)
-              , (orId,        o3ci)
-              , (eqvId,       o3ci)
-              , (implId,      o3ci)
-              , (infixIf,     o3ci) ]
+    let asl = [ (botId, botci)
+              , (defId, defci)
+              , (notId, o2ci)
+              , (negId, o2ci)
+-- , (whenElse,    "hcc" ++ show whenElse)
+              , (trueId, o1ci)
+              , (falseId, o1ci)
+              , (eqId, a2o1ci)
+              , (exEq, a2o1ci)
+              , (resId, resci)
+              , (andId, o3ci)
+              , (orId, o3ci)
+              , (eqvId, o3ci)
+              , (implId, o3ci)
+              , (infixIf, o3ci) ]
     in Map.fromList $ map
-            (\ (i, tf) ->  let c = (fromJust . maybeResult . transAssumpId) i
+            (\ (i, tf) -> let c = (fromJust . maybeResult . transAssumpId) i
                            in (c , tf c))
             (filter (\ (i, _) -> Set.member i ids) asl)
 
 o1ci :: Constant -> ConstInfo
 o1ci c = ConstInfo
-    { constId   = c
+    { constId = c
     , constName = mkConstsName c
     , constType = OType
     , constAnno = Null }
 
 o2ci :: Constant -> ConstInfo
 o2ci c = ConstInfo
-    { constId   = c
+    { constId = c
     , constName = mkConstsName c
     , constType = MapType OType OType
     , constAnno = Null }
 
 o3ci :: Constant -> ConstInfo
 o3ci c = ConstInfo
-    { constId   = c
+    { constId = c
     , constName = mkConstsName c
     , constType = MapType OType (MapType OType OType)
     , constAnno = Null }
 
 a2o1ci :: Constant -> ConstInfo
 a2o1ci c = ConstInfo
-    { constId   = c
+    { constId = c
     , constName = mkConstsName c
     , constType = MapType (VType $ mkSimpleId "A")
                           (MapType (VType $ mkSimpleId "A") OType)
@@ -90,7 +90,7 @@ a2o1ci c = ConstInfo
 
 resci :: Constant -> ConstInfo
 resci c = ConstInfo
-    { constId   = c
+    { constId = c
     , constName = mkConstsName c
     , constType = MapType (VType $ mkSimpleId "A")
                           (MapType (VType $ mkSimpleId "B")
@@ -99,37 +99,37 @@ resci c = ConstInfo
 
 botci :: Constant -> ConstInfo
 botci c = ConstInfo
-    { constId   = c
+    { constId = c
     , constName = mkConstsName c
     , constType = OType
     , constAnno = Null }
 
 defci :: Constant -> ConstInfo
 defci c = ConstInfo
-    { constId   = c
+    { constId = c
     , constName = mkConstsName c
     , constType = MapType (VType $ mkSimpleId "A") OType
     , constAnno = Null }
 
---------------------------------------------------------------------------------
--- Axioms
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Axioms
+----------------------------------------------------------------------------- -}
 
 preDefAxioms :: Set.Set Id -> [Named THFFormula]
 preDefAxioms ids =
-    let axl = [ (notId,       notFS)
-              , (negId,       notFS)
-              , (trueId,      trueFS)
-              , (falseId,     falseFS)
-              , (andId,       andFS)
-              , (orId,        orFS)
-              , (eqvId,       eqvFS)
-              , (implId,      implFS)
-              , (infixIf,     ifFS)
-              , (resId,       resFS)
-              , (botId,       botFS)
-              , (defId,       defFS)
-{-            , (whenElse,    "hcc" ++ show whenElse) -} ]
+    let axl = [ (notId, notFS)
+              , (negId, notFS)
+              , (trueId, trueFS)
+              , (falseId, falseFS)
+              , (andId, andFS)
+              , (orId, orFS)
+              , (eqvId, eqvFS)
+              , (implId, implFS)
+              , (infixIf, ifFS)
+              , (resId, resFS)
+              , (botId, botFS)
+              , (defId, defFS)
+{- , (whenElse,    "hcc" ++ show whenElse) -} ]
     in map (\ (i, fs) -> mkNSD
                 (fromJust $ maybeResult $ transAssumpId i) fs)
            (filter (\ (i, _) -> Set.member i ids) axl)
@@ -153,9 +153,9 @@ genTHFFormula c f = case parse parseTHF "" (f c) of
                     show msg])
         Right x -> thfFormulaAF $ head x
 
---------------------------------------------------------------------------------
--- formulas as Strings
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+formulas as Strings
+----------------------------------------------------------------------------- -}
 
 notFS :: Constant -> String
 notFS c =

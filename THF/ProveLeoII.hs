@@ -20,10 +20,10 @@ import Data.Maybe (fromMaybe)
 
 pfun :: ProverFuncs
 pfun = ProverFuncs {
- cfgTimeout = \ cfg -> maybe 601 (+20) (timeLimit cfg),
+ cfgTimeout = maybe 601 (+ 20) . timeLimit,
  proverCommand = \ tout tmpFile _ ->
   let extraOptions = ("-po 0 -t " ++) . show $ tout
-  in return ("leo",words extraOptions ++ [tmpFile]),
+  in return ("leo", words extraOptions ++ [tmpFile]),
  getMessage = \ res' _ perr -> let msg = res' ++ perr
                                in if not $ null msg then msg
                                   else unlines

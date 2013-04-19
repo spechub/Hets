@@ -33,15 +33,15 @@ import qualified Data.List (mapAccumL, elemIndex)
 sh :: Pretty a => a -> String
 sh = show . pretty
 
-data Constraint = NormalC (String,Range,Type)
-                | WeakC (String,Range,Type) deriving Show
+data Constraint = NormalC (String, Range, Type)
+                | WeakC (String, Range, Type) deriving Show
 
 instance GetRange Constraint where
-    getRange (NormalC (_,r,_)) = r
-    getRange (WeakC   (_,r,_)) = r
+    getRange (NormalC (_, r, _)) = r
+    getRange (WeakC (_, r, _)) = r
 
 instance GetRange Type where
-    getRange _  = nullRange
+    getRange _ = nullRange
 
 occursType :: Token -> Type -> Bool
 occursType t tp = case tp of
@@ -53,18 +53,18 @@ occursType t tp = case tp of
  ParType tp2 -> occursType t tp2
  _ -> False
 
-constraintToType :: Constraint -> (Bool,(String,Range,Type))
-constraintToType (WeakC d) = (True,d)
-constraintToType (NormalC d) = (False,d)
+constraintToType :: Constraint -> (Bool, (String, Range, Type))
+constraintToType (WeakC d) = (True, d)
+constraintToType (NormalC d) = (False, d)
 
-toConstraint :: Bool -> (String,Range,Type) -> Constraint
+toConstraint :: Bool -> (String, Range, Type) -> Constraint
 toConstraint weak = if weak then WeakC
                     else NormalC
 
 unifyType :: Type -> Constraint -> Result [(Token, Type)]
-unifyType tp1 tp2_ = 
- let (weak,(s,r,tp2)) = constraintToType tp2_
-     c = \t -> toConstraint weak (s,r,t)
+unifyType tp1 tp2_ =
+ let (weak, (s, r, tp2)) = constraintToType tp2_
+     c = \ t -> toConstraint weak (s, r, t)
  in case (tp1, tp2) of
      (ParType tp1', _) ->
       unifyType tp1' (c tp2)
@@ -74,11 +74,11 @@ unifyType tp1 tp2_ =
       if t1 == t2 then [] else [(t1, tp2)]
      (VType t1, _) -> if occursType t1 tp2
       then fatal_error ("Occurs check failed! - "
-       ++s) r
+       ++ s) r
       else return [(t1, tp2)]
      (_, VType t2) -> if occursType t2 tp1
       then fatal_error ("Occurs check failed! - "
-       ++s) r
+       ++ s) r
       else return [(t2, tp1)]
      (MapType tp1_1 tp1_2,
       MapType tp2_1 tp2_2) -> do
@@ -93,33 +93,33 @@ unifyType tp1 tp2_ =
        " - " ++ s) r
      (ProdType tps1, ProdType tps2) ->
       if length tps1 == length tps2 ||
-         weak  then
+         weak then
        liftM concat $
-        mapR (\(tp1',tp2') -> unifyType tp1' (c tp2'))
+        mapR (\ (tp1', tp2') -> unifyType tp1' (c tp2'))
          (zip tps1 tps2)
       else fatal_error ("Products of different size! - " ++ s) r
      (ProdType _, _) ->
       fatal_error ("Different type constructors! - " ++ s) r
-     (CType c1,CType c2) -> if c1 == c2
+     (CType c1, CType c2) -> if c1 == c2
       then return [] else fatal_error ("Cannot unify different kinds!" ++ s) r
-     (CType _,_) -> fatal_error ("Unification not possible! - " ++ s) r
-     (_,CType _) -> fatal_error ("Unification not possible! - " ++ s) r
+     (CType _, _) -> fatal_error ("Unification not possible! - " ++ s) r
+     (_, CType _) -> fatal_error ("Unification not possible! - " ++ s) r
      (_, ProdType _) ->
       fatal_error ("Different type constructors! - " ++ s) r
-     (TType,TType) -> return []
-     (OType,OType) -> return []
-     (IType,IType) -> return []
-     (TType,_) -> fatal_error ("Cannot unify TType with "
+     (TType, TType) -> return []
+     (OType, OType) -> return []
+     (IType, IType) -> return []
+     (TType, _) -> fatal_error ("Cannot unify TType with "
       ++ show tp2 ++ "! - " ++ s) r
-     (_,TType) -> fatal_error ("Cannot unify TType with "
+     (_, TType) -> fatal_error ("Cannot unify TType with "
       ++ show tp1 ++ "! - " ++ s) r
-     (OType,_) -> fatal_error ("Cannot unify OType with "
+     (OType, _) -> fatal_error ("Cannot unify OType with "
       ++ show tp2 ++ "! - " ++ s) r
-     (_,OType) -> fatal_error ("Cannot unify OType with "
+     (_, OType) -> fatal_error ("Cannot unify OType with "
       ++ show tp1 ++ "! - " ++ s) r
-     (IType,_) -> fatal_error ("Cannot unify IType with "
+     (IType, _) -> fatal_error ("Cannot unify IType with "
       ++ show tp2 ++ "! - " ++ s) r
-     (_,IType) -> fatal_error ("Cannot unify IType with "
+     (_, IType) -> fatal_error ("Cannot unify IType with "
       ++ show tp1 ++ "! - " ++ s) r
      _ -> return []
 
@@ -146,9 +146,9 @@ unify' ts = case ts of
  (t1, t2) : ts' -> do
   r1 <- unify' ts'
   let t1' = apply r1 t1
-  let (weak,(msg,rg,t2'')) = constraintToType t2
+  let (weak, (msg, rg, t2'')) = constraintToType t2
   let t2' = apply r1 t2''
-  r2 <- unifyType t1' (toConstraint weak (msg,rg,t2'))
+  r2 <- unifyType t1' (toConstraint weak (msg, rg, t2'))
   return (r1 ++ r2)
 
 tmpV :: Token
@@ -176,23 +176,23 @@ getTypeCBF cm bf = case bf of
    (t1, cs1) <- getTypeCUF cm uf1
    (t2, cs2) <- getTypeCUF cm uf2
    let errMsg = "(In-)Equality requires (" ++
-        (sh uf1) ++ ") : (" ++ (sh t1)
-        ++ ") and (" ++ (sh uf2) ++ ") : ("
-        ++ (sh t2) ++ " to have the same type"
+        sh uf1 ++ ") : (" ++ sh t1
+        ++ ") and (" ++ sh uf2 ++ ") : ("
+        ++ sh t2 ++ " to have the same type"
    return (OType,
-    cs1 ++ cs2 ++ [(t1, NormalC (errMsg,getRangeSpan bf,t2))])
+    cs1 ++ cs2 ++ [(t1, NormalC (errMsg, getRangeSpan bf, t2))])
   else do
    (t1, cs1) <- getTypeCUF cm uf1
    (t2, cs2) <- getTypeCUF cm uf2
-   let errMsg1 = "Infix operator " ++ (sh c)
-        ++ " requires (" ++ (sh uf1) ++ ") : ("
-        ++ (sh t1) ++ ")  to have type OType"
-   let errMsg2 = "Infix operator " ++ (sh c)
-        ++ " requires (" ++ (sh uf2) ++ ") : ("
-        ++ (sh t2) ++ ")  to have type OType"
+   let errMsg1 = "Infix operator " ++ sh c
+        ++ " requires (" ++ sh uf1 ++ ") : ("
+        ++ sh t1 ++ ")  to have type OType"
+   let errMsg2 = "Infix operator " ++ sh c
+        ++ " requires (" ++ sh uf2 ++ ") : ("
+        ++ sh t2 ++ ")  to have type OType"
    return (OType,
-    cs1 ++ cs2 ++ [(t1, NormalC (errMsg1,getRangeSpan uf1,OType)),
-                   (t2, NormalC (errMsg2,getRangeSpan uf2,OType))])
+    cs1 ++ cs2 ++ [(t1, NormalC (errMsg1, getRangeSpan uf1, OType)),
+                   (t2, NormalC (errMsg2, getRangeSpan uf2, OType))])
  TBF_THF_Binary_Tuple bt ->
   let ufs = case bt of
        TBT_THF_Or_Formula ufs' -> ufs'
@@ -217,20 +217,20 @@ getTypeCBF cm bf = case bf of
          t <- applyResult (length ufs'') t1
          let errMsg = "Application is not well typed"
          return (t, cs1 ++ concat cs2
-          ++ [(t1, WeakC (errMsg,getRangeSpan bt, genFn $ tps ++ [t]))])
+          ++ [(t1, WeakC (errMsg, getRangeSpan bt, genFn $ tps ++ [t]))])
       _ -> do
        ufs' <- mapM (getTypeCUF cm) ufs
        case ufs' of
         [] -> lift Nothing
-        (t,cs) : [] -> return (t,cs++[(t,NormalC (
+        (t, cs) : [] -> return (t, cs ++ [(t, NormalC (
          "Boolean connective requires all " ++
          "arguments to be of type OType", getRangeSpan ufs, OType))])
         _ -> do
-         let (ts,cs) = unzip ufs'
+         let (ts, cs) = unzip ufs'
          let errMsg = "Boolean connective requires all " ++
                       "arguments to be of type OType"
-         return (OType,concat cs ++ map (\t ->
-          (t,NormalC (errMsg,getRangeSpan bt,OType))) ts)
+         return (OType, concat cs ++ map (\ t ->
+          (t, NormalC (errMsg, getRangeSpan bt, OType))) ts)
  _ -> lift Nothing
 
 applyResult :: Int -> Type -> UniqueT Maybe Type
@@ -259,7 +259,7 @@ getTypeCUF cm uf = case uf of
          (t, cs) <- getTypeCUF cm' uf'
          let errMsg = "Quantified Formula (" ++ sh uf' ++ ") : ("
                       ++ sh t ++ ") is expected to be of type OType"
-         return (t, cs ++ [(t, NormalC (errMsg,getRangeSpan uf', OType))])
+         return (t, cs ++ [(t, NormalC (errMsg, getRangeSpan uf', OType))])
         c = A_Single_Quoted
         ins t tp = Data.Map.insert (c t)
           ConstInfo {
@@ -271,17 +271,17 @@ getTypeCUF cm uf = case uf of
   (lf', cs) <- getTypeCLF cm lf
   let errMsg = "Unary Formula (" ++ sh lf ++ ") : ("
                ++ sh lf' ++ ") is expected to be of type OType"
-  return (lf', cs ++ [(lf', NormalC (errMsg,getRangeSpan lf,OType))])
+  return (lf', cs ++ [(lf', NormalC (errMsg, getRangeSpan lf, OType))])
  TUF_THF_Atom a -> case a of
   TA_THF_Conn_Term _ -> lift Nothing
   T0A_Constant c -> case Data.Map.lookup c cm of
    Just ti -> return (constType ti, [])
-   Nothing -> case (show $ toToken c) of
-     'p':'r':'_':i' -> do
-      let i = (read i')  :: Int
+   Nothing -> case show $ toToken c of
+     'p' : 'r' : '_' : i' -> do
+      let i = read i' :: Int
       vs <- replicateM i $ liftM VType $ numberedTok tmpV
-      return (MapType (ProdType vs) $ last vs,[])
-     _ -> do 
+      return (MapType (ProdType vs) $ last vs, [])
+     _ -> do
       v <- numberedTok tmpV
       return (VType v, [])
   -- fixme - add types for internal constants
@@ -371,7 +371,7 @@ rewriteConst' (_, cm) c = return . TUF_THF_Atom . T0A_Constant $
 
 rewriteConst4needsConst :: (RewriteFuns Constant, Constant) ->
                            Constant -> Result THFUnitaryFormula
-rewriteConst4needsConst (_,c1) c2 =
+rewriteConst4needsConst (_, c1) c2 =
  if c1 == c2 then mkError "" nullRange
  else return . TUF_THF_Atom . T0A_Constant $ c2
 
@@ -381,7 +381,7 @@ needsConst c f =
      res = rewriteSenFun (r, c) f
  in case resultToMaybe res of
      Nothing -> True
-     _       -> False
+     _ -> False
 
 infer :: ConstMap -> [Named THFFormula]
           -> Result (ConstMap, [Named THFFormula])
@@ -391,18 +391,18 @@ infer cm fs =
      errMsg = "Sentences have to be of type OType"
      constraints =
       liftM (map (\ (t, cs) -> (OType, NormalC
-       (errMsg,getRangeSpan cs,t)) : cs)) constraints'
+       (errMsg, getRangeSpan cs, t)) : cs)) constraints'
      unifications =
       liftM (map unify') constraints
  in case unifications of
      Just unis' -> sequence unis' >>= \ unis ->
       let (cm', instances) = Data.List.mapAccumL
-           (\ cm'_ (f,u) ->
+           (\ cm'_ (f, u) ->
              let (cm'', m1) = Data.Map.mapAccumWithKey
                   (\ cm''' c ci -> if needsConst c f
                      then insertAndIdx cm''' c
                            (apply u (constType ci))
-                     else (cm''',Nothing)) cm'_ cm
+                     else (cm''', Nothing)) cm'_ cm
              in (cm'', m1))
            Data.Map.empty (zip fs unis)
           new_cm = Data.Map.mapWithKey (\ k v ->
@@ -421,15 +421,16 @@ infer cm fs =
      Nothing -> mkError "Failed to generate constraints!" nullRange
 
 type_check :: TypeMap -> ConstMap -> [Named THFFormula]
-               -> Result [[(Token,Type)]]
+               -> Result [[(Token, Type)]]
 type_check _ cm sens = do
  let constraints' = mapM (evalUniqueT .
       getTypeC cm . sentence) sens
  let errMsg = "Every formula is expected to be of type OType"
  let constraints =
-      liftM (map (\ (t, cs) -> (OType, NormalC (errMsg,nullRange,t)) : cs)) constraints'
+      liftM (map (\ (t, cs) -> (OType, NormalC (errMsg, nullRange, t)) : cs))
+            constraints'
  let unifications =
       liftM (map unify') constraints
  case unifications of
      Nothing -> mkError "Failed to generate constraints!" nullRange
-     Just r -> sequence $ r
+     Just r -> sequence r

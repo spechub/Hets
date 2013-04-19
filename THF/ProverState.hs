@@ -22,15 +22,15 @@ import THF.Print
 
 import Common.AS_Annotation
 
---------------------------------------------------------------------------------
--- Todos:
---      * maybe use FreeDefMorphism in the ProverStateTHF
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Todos:
+maybe use FreeDefMorphism in the ProverStateTHF
+----------------------------------------------------------------------------- -}
 
 data ProverStateTHF = ProverStateTHF
-    { axioms    :: [Named THFFormula]
+    { axioms :: [Named THFFormula]
     , signature :: SignTHF
-    , freeDefs  :: [FreeDefMorphism THFFormula MorphismTHF] }
+    , freeDefs :: [FreeDefMorphism THFFormula MorphismTHF] }
 
 -- Creates an initial THF prover state.
 initialProverStateTHF :: SignTHF -> [Named THFFormula]

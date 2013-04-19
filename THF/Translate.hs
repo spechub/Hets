@@ -51,23 +51,23 @@ mkDefName c = case c of
 transTypeId :: Id -> Result THFAs.Constant
 transTypeId id1 = case maybeElem id1 preDefHCTypeIds of
     Just res -> return $ stringToConstant res
-    Nothing  -> case transToTHFString $ show id1 of
-        Just s  -> return . A_Lower_Word . mkSimpleId $ "x_" ++ s
+    Nothing -> case transToTHFString $ show id1 of
+        Just s -> return . A_Lower_Word . mkSimpleId $ "x_" ++ s
         Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Constant.") nullRange
 
 transAssumpId :: Id -> Result THFAs.Constant
 transAssumpId id1 = case maybeElem id1 preDefHCAssumpIds of
     Just res -> return $ stringToConstant res
-    Nothing  -> case transToTHFString $ show id1 of
-        Just s  -> return $ stringToConstant s
+    Nothing -> case transToTHFString $ show id1 of
+        Just s -> return $ stringToConstant s
         Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Constant.") nullRange
 
 transAssumpsId :: Id -> Int -> Result THFAs.Constant
 transAssumpsId id1 int = if int == 1 then transAssumpId id1 else
     case transToTHFString $ show id1 of
-        Just s  -> return $ stringToConstant (s ++ show int)
+        Just s -> return $ stringToConstant (s ++ show int)
         Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Constant.") nullRange
 
@@ -86,7 +86,7 @@ stringToVariable s = case s of
 
 transVarId :: Id -> Result Token
 transVarId id1 = case transToTHFString $ show id1 of
-        Just s  -> return $ mkSimpleId $ stringToVariable s
+        Just s -> return $ mkSimpleId $ stringToVariable s
         Nothing -> fatal_error ("Unable to translate " ++ show id1 ++
             " into a THF valide Variable.") nullRange
 
@@ -105,7 +105,7 @@ transToTHFStringAux first s = case s of
              fmap (c :) rest
         else case Map.lookup c charMap of
             Just res -> fmap (res ++) rest
-            Nothing  -> Nothing
+            Nothing -> Nothing
 
 isTHFChar :: Char -> Bool
 isTHFChar c = isAlphaNum c && isAscii c || c == '_'
@@ -115,36 +115,36 @@ isLowerTHFChar c = isLower c && isAscii c
 
 preDefHCTypeIds :: Map.Map Id String
 preDefHCTypeIds = Map.fromList
-    [ (logId,                   "hct" ++ show logId)
-    , (predTypeId,              "hct" ++ show predTypeId)
-    , (unitTypeId,              "hct" ++ show unitTypeId)
-    , (lazyTypeId,              "hctLazy")
-    , (arrowId FunArr,          "hct__FunArr__")
-    , (arrowId PFunArr,         "hct__PFunArr__")
-    , (arrowId ContFunArr,      "hct__ContFunArr__")
-    , (arrowId PContFunArr,     "hct__PContFunArr__")
-    , (productId 2 nullRange,   "hct__X__")
-    , (productId 3 nullRange,   "hct__X__X__")
-    , (productId 4 nullRange,   "hct__X__X__X__")
-    , (productId 5 nullRange,   "hct__X__X__X__X__") ]
+    [ (logId, "hct" ++ show logId)
+    , (predTypeId, "hct" ++ show predTypeId)
+    , (unitTypeId, "hct" ++ show unitTypeId)
+    , (lazyTypeId, "hctLazy")
+    , (arrowId FunArr, "hct__FunArr__")
+    , (arrowId PFunArr, "hct__PFunArr__")
+    , (arrowId ContFunArr, "hct__ContFunArr__")
+    , (arrowId PContFunArr, "hct__PContFunArr__")
+    , (productId 2 nullRange, "hct__X__")
+    , (productId 3 nullRange, "hct__X__X__")
+    , (productId 4 nullRange, "hct__X__X__X__")
+    , (productId 5 nullRange, "hct__X__X__X__X__") ]
 
 preDefHCAssumpIds :: Map.Map Id String
 preDefHCAssumpIds = Map.fromList
-    [ (botId,       "hcc" ++ show botId)
-    , (defId,       "hcc" ++ show defId)
-    , (notId,       "hcc" ++ show notId)
-    , (negId,       "hccNeg__")
-    , (whenElse,    "hcc" ++ show whenElse)
-    , (trueId,      "hcc" ++ show trueId)
-    , (falseId,     "hcc" ++ show falseId)
-    , (eqId,        "hcc__Eq__")
-    , (exEq,        "hcc__ExEq__")
-    , (resId,       "hcc" ++ show resId)
-    , (andId,       "hcc__And__")
-    , (orId,        "hcc__Or__")
-    , (eqvId,       "hcc__Eqv__")
-    , (implId,      "hcc__Impl__")
-    , (infixIf,     "hcc" ++ show infixIf) ]
+    [ (botId, "hcc" ++ show botId)
+    , (defId, "hcc" ++ show defId)
+    , (notId, "hcc" ++ show notId)
+    , (negId, "hccNeg__")
+    , (whenElse, "hcc" ++ show whenElse)
+    , (trueId, "hcc" ++ show trueId)
+    , (falseId, "hcc" ++ show falseId)
+    , (eqId, "hcc__Eq__")
+    , (exEq, "hcc__ExEq__")
+    , (resId, "hcc" ++ show resId)
+    , (andId, "hcc__And__")
+    , (orId, "hcc__Or__")
+    , (eqvId, "hcc__Eqv__")
+    , (implId, "hcc__Impl__")
+    , (infixIf, "hcc" ++ show infixIf) ]
 
 maybeElem :: Id -> Map.Map Id a -> Maybe a
 maybeElem id1 m = helper id1 (Map.toList m)

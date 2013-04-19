@@ -22,13 +22,13 @@ import Common.ProofTree
 import Common.ProverTools
 
 import Data.Monoid
-import Data.Map (isSubmapOf,fold)
+import Data.Map (isSubmapOf, fold)
 
 import Logic.Logic
 
 import THF.ATC_THF ()
 import THF.Cons
-import THF.As (THFFormula)
+import THF.As (THFFormula, TPTP_THF (..))
 import THF.StaticAnalysisTHF
 import THF.ProveLeoII
 import THF.ProveIsabelle
@@ -37,7 +37,6 @@ import THF.Sign
 import THF.Print
 import THF.ParseTHF
 import qualified THF.Sublogic as SL
-import THF.As (TPTP_THF (..))
 
 -- TODO implement more instance methods
 
@@ -55,7 +54,7 @@ instance Monoid BasicSpecTHF where
         BasicSpecTHF $ l1 ++ l2
 
 instance Logic.Logic.Syntax THF BasicSpecTHF () () where
-    parse_basic_spec THF = Just (\_ -> fmap BasicSpecTHF parseTHF)
+    parse_basic_spec THF = Just (\ _ -> fmap BasicSpecTHF parseTHF)
     -- remaining default implementations are fine!
 
 instance Sentences THF THFFormula SignTHF MorphismTHF SymbolTHF where
@@ -98,31 +97,31 @@ instance SemiLatticeWithTop SL.THFSl where
  top = SL.tHF
 
 instance MinSublogic SL.THFSl BasicSpecTHF where
- minSublogic (BasicSpecTHF xs) = foldr SL.join SL.tHF0 $
-    map (\x -> case x of
+ minSublogic (BasicSpecTHF xs) = foldr (SL.join .
+    (\ x -> case x of
      TPTP_THF_Annotated_Formula _ _ f _ -> minSublogic f
      _ -> SL.tHF0
-    ) xs
+    )) SL.tHF0 xs
 
 instance SublogicName SL.THFSl where
  sublogicName = show
 
 instance MinSublogic SL.THFSl SymbolTHF where
- minSublogic = \ _ -> SL.tHF0 --actually implement this!
+ minSublogic _ = SL.tHF0 -- actually implement this!
 
 instance MinSublogic SL.THFSl () where
  minSublogic _ = SL.tHF0
 
 instance MinSublogic SL.THFSl SignTHF where
  minSublogic (Sign tp c _) = join (Data.Map.fold
-   (\t sl -> join sl $ minSublogic $ typeKind t)
+   (\ t sl -> join sl $ minSublogic $ typeKind t)
    SL.tHF0 tp)
   (Data.Map.fold
-   (\cs sl -> join sl $ minSublogic $ constType cs)
+   (\ cs sl -> join sl $ minSublogic $ constType cs)
    SL.tHF0 c)
 
 instance MinSublogic SL.THFSl Type where
- minSublogic (ProdType tps) = foldr SL.join SL.tHFP $ map minSublogic tps
+ minSublogic (ProdType tps) = foldr (SL.join . minSublogic) SL.tHFP tps
  minSublogic TType = SL.tHF0
  minSublogic OType = SL.tHF0
  minSublogic IType = SL.tHF0

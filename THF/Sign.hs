@@ -24,19 +24,19 @@ import Common.Result
 
 import qualified Data.Map as Map
 
---------------------------------------------------------------------------------
--- Definitions and instances of data structures
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Definitions and instances of data structures
+----------------------------------------------------------------------------- -}
 
 -- We use the DefaultMorphism for THF.
 type MorphismTHF = DefaultMorphism SignTHF
 
--- A signature is a container for types and constants. In addition they are
--- stored in an SymbolMap.
+{- A signature is a container for types and constants. In addition they are
+stored in an SymbolMap. -}
 data SignTHF = Sign
-    { types     :: TypeMap
-    , consts    :: ConstMap
-    , symbols   :: SymbolMap
+    { types :: TypeMap
+    , consts :: ConstMap
+    , symbols :: SymbolMap
     } deriving (Show, Eq)
 
 -- Ord instance that does not use symbols
@@ -54,14 +54,14 @@ type ConstMap = Map.Map Constant ConstInfo
 -- Map for Symbols. These are symbols and types.
 type SymbolMap = Map.Map Constant SymbolTHF
 
--- TypeInfo are containers for types, their name and Kind.
--- In addition the original Annotaions can be stored as
--- Annotations.
+{- TypeInfo are containers for types, their name and Kind.
+In addition the original Annotaions can be stored as
+Annotations. -}
 data TypeInfo = TypeInfo
-    { typeId  :: Constant
+    { typeId :: Constant
     , typeName :: Name
-    , typeKind  :: Kind
-    , typeAnno  :: Annotations }
+    , typeKind :: Kind
+    , typeAnno :: Annotations }
     deriving (Show)
 
 -- Ord instance that neither uses typeDef nor typeAnno
@@ -75,11 +75,11 @@ instance Eq TypeInfo where
     (==) ti1 ti2 = (typeId ti1, typeName ti1, typeKind ti1) ==
                    (typeId ti2, typeName ti2, typeKind ti2)
 
--- ConstInfo are containers for constants, their naem and type.
--- In addition the original Annotaions can be stored as
--- Annotations.
+{- ConstInfo are containers for constants, their naem and type.
+In addition the original Annotaions can be stored as
+Annotations. -}
 data ConstInfo = ConstInfo
-    { constId   :: Constant
+    { constId :: Constant
     , constName :: Name
     , constType :: Type
     , constAnno :: Annotations }
@@ -99,15 +99,15 @@ instance Eq ConstInfo where
 -- Creates an empty Signature.
 emptySign :: SignTHF
 emptySign = Sign
-    { types     = Map.empty
-    , consts    = Map.empty
-    , symbols   = Map.empty }
+    { types = Map.empty
+    , consts = Map.empty
+    , symbols = Map.empty }
 
 
---------------------------------------------------------------------------------
--- Some helper data structures and functions for the
--- union, difference and insersection methods
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Some helper data structures and functions for the
+union, difference and insersection methods
+----------------------------------------------------------------------------- -}
 
 type EitherMap c x = Map.Map c (Either x Diagnosis)
 
@@ -118,7 +118,7 @@ toEitherLeftMap = Map.map Left
 eitherMapHasDiagnosis :: EitherMap c x -> Bool
 eitherMapHasDiagnosis = Map.fold (\ a b -> case a of
     Right _ -> True
-    _       -> b            ) False
+    _ -> b ) False
 
 -- only use after eitherMapHasDiagnosis returned true
 eitherMapGetDiagnosis :: EitherMap c x -> [Diagnosis]
@@ -129,32 +129,32 @@ eitherMapGetDiagnosis =
 eitherMapGetMap :: EitherMap c x -> Map.Map c x
 eitherMapGetMap = Map.map (\ (Left a) -> a)
 
--- If the EitherMap contains diagnosis they will be returned in a list.
--- Otherwise the map will be converted back.
+{- If the EitherMap contains diagnosis they will be returned in a list.
+Otherwise the map will be converted back. -}
 genRes :: EitherMap c x -> Either (Map.Map c x) [Diagnosis]
 genRes em = if eitherMapHasDiagnosis em
             then Right (eitherMapGetDiagnosis em)
             else Left (eitherMapGetMap em)
 
 
---------------------------------------------------------------------------------
--- Signature union
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Signature union
+----------------------------------------------------------------------------- -}
 
 -- Union of two signatures
 sigUnion :: SignTHF -> SignTHF -> Result SignTHF
 sigUnion s1 s2 =
     let smu = symbolMapUnion (symbols s1) (symbols s2)
     in case smu of
-        Right d     -> Result d Nothing
-        Left nsm    ->
+        Right d -> Result d Nothing
+        Left nsm ->
             let tmu = typeMapUnion (types s1) (types s2)
                 cmu = constMapUnion (consts s1) (consts s2)
             in case tmu of
-                Right d1    -> Result d1 Nothing
-                Left ntm     -> case cmu of
-                    Right d2    -> Result d2 Nothing
-                    Left ncm     -> Result [] (Just $
+                Right d1 -> Result d1 Nothing
+                Left ntm -> case cmu of
+                    Right d2 -> Result d2 Nothing
+                    Left ncm -> Result [] (Just $
                         s1 { types = ntm, consts = ncm, symbols = nsm })
 
 typeMapUnion :: TypeMap -> TypeMap -> Either TypeMap [Diagnosis]
@@ -183,38 +183,38 @@ unite s = Map.unionWith (\ (Left e1) (Left e2) -> if e1 == e2 then Left e1
                     " have the same name but heve different definitions.") ()))
 
 
---------------------------------------------------------------------------------
--- Signature difference
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Signature difference
+----------------------------------------------------------------------------- -}
 
 -- Difference of two signatures
 sigDiff :: SignTHF -> SignTHF -> Result SignTHF
 sigDiff s1 s2 = Result [] (Just $
-    s1 { types      = diff (types s1) (types s2)
-       , consts     = diff (consts s1) (consts s2)
-       , symbols    = diff (symbols s1) (symbols s2) })
+    s1 { types = diff (types s1) (types s2)
+       , consts = diff (consts s1) (consts s2)
+       , symbols = diff (symbols s1) (symbols s2) })
 
 diff :: (Ord c, Eq x) => Map.Map c x -> Map.Map c x -> Map.Map c x
 diff = Map.differenceWith (\ e1 e2 -> if e1 == e2 then Nothing else Just e1)
 
---------------------------------------------------------------------------------
--- Signature intersection
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Signature intersection
+----------------------------------------------------------------------------- -}
 
 -- Intersection of two signatures
 sigIntersect :: SignTHF -> SignTHF -> Result SignTHF
 sigIntersect s1 s2 =
     let smi = symbolMapIntersect (symbols s1) (symbols s2)
     in case smi of
-        Right d     -> Result d Nothing
-        Left nsm    ->
+        Right d -> Result d Nothing
+        Left nsm ->
             let tmi = typeMapIntersect (types s1) (types s2)
                 cmi = constMapIntersect (consts s1) (consts s2)
             in case tmi of
-                Right d1    -> Result d1 Nothing
-                Left ntm    -> case cmi of
-                    Right d2    -> Result d2 Nothing
-                    Left ncm    -> Result [] (Just $
+                Right d1 -> Result d1 Nothing
+                Left ntm -> case cmi of
+                    Right d2 -> Result d2 Nothing
+                    Left ncm -> Result [] (Just $
                         s1 { types = ntm, consts = ncm, symbols = nsm })
 
 typeMapIntersect :: TypeMap -> TypeMap -> Either TypeMap [Diagnosis]

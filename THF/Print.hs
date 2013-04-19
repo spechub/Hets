@@ -20,23 +20,24 @@ import Common.AS_Annotation
 import THF.Cons
 import THF.Sign
 import THF.PrintTHF
-import THF.As (THFFormula,FormulaRole(..))
+import THF.As (THFFormula, FormulaRole (..))
 
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 
---------------------------------------------------------------------------------
--- Some pretty instances for datastructures defined in Cons and Sign and
--- other print methods
---------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Some pretty instances for datastructures defined in Cons and Sign and
+other print methods
+----------------------------------------------------------------------------- -}
 
 instance Pretty BasicSpecTHF where
     pretty (BasicSpecTHF a) = printTPTPTHF a
 
 instance Pretty SymbolTHF where
     pretty s = case symType s of
-        ST_Const t  -> text "Constant" <+> pretty (symId s) <+> text ":"
+        ST_Const t -> text "Constant" <+> pretty (symId s) <+> text ":"
                         <+> pretty t
-        ST_Type k   -> text "Type" <+> pretty (symId s) <+> text ":"
+        ST_Type k -> text "Type" <+> pretty (symId s) <+> text ":"
                         <+> pretty k
 
 instance Pretty SignTHF where
@@ -47,19 +48,19 @@ instance Pretty SignTHF where
 
 instance Pretty Kind where
     pretty k = case k of
-        Kind            -> text "$tType"
+        Kind -> text "$tType"
 
 instance Pretty Type where
     pretty t = case t of
-        TType           -> text "$tType"
-        OType           -> text "$o"
-        IType           -> text "$i"
-        MapType t1 t2   -> pretty t1 <+> text ">" <+> pretty t2
-        CType c         -> prettyConstant c
-        SType st        -> prettyAtomicSystemWord st
-        VType v         -> prettyUpperWord v
-        ParType t1      -> parens $ pretty t1
-        ProdType ts     -> parens $ sepBy (map pretty ts) starSign
+        TType -> text "$tType"
+        OType -> text "$o"
+        IType -> text "$i"
+        MapType t1 t2 -> pretty t1 <+> text ">" <+> pretty t2
+        CType c -> prettyConstant c
+        SType st -> prettyAtomicSystemWord st
+        VType v -> prettyUpperWord v
+        ParType t1 -> parens $ pretty t1
+        ProdType ts -> parens $ sepBy (map pretty ts) starSign
 
 instance Pretty TypeInfo where
     pretty ti = text "thf" <> parens (pretty (typeName ti) <> comma
@@ -84,10 +85,8 @@ printProblemTHF sig ax gl = pretty sig $++$ text "%Axioms:" $+$
 -- print a Named Sentence
 printNamedSentenceTHF :: Maybe FormulaRole -> Named THFFormula -> Doc
 printNamedSentenceTHF r' f =
- let r = case r' of
-          Just r'' -> r''
-          Nothing -> if isAxiom f then Axiom
-                     else Conjecture
+ let r = fromMaybe (if isAxiom f then Axiom
+                    else Conjecture) r'
  in text "thf" <> parens (text (senAttr f) <> comma
      <+> pretty r <> comma <+> pretty (sentence f))
      <> text "."
