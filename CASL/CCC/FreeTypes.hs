@@ -360,13 +360,11 @@ checkTerminal oTh m fsn = do
              (if isJust proof then "not terminating"
               else "cannot prove termination: " ++ str) nullRange
 
-checkPositive :: [Named (FORMULA f)] -> [Named (FORMULA f)]
-    -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
-checkPositive osens fsn =
-  if all checkPos $ map sentence $ osens ++ fsn
-  then Just $ return (Just (Cons, []))
-  else Nothing where
-    checkPos f = case quanti f of
+checkPositive :: [Named (FORMULA f)] -> [Named (FORMULA f)] -> Bool
+checkPositive osens fsn = all checkPos $ map sentence $ osens ++ fsn
+
+checkPos :: FORMULA f -> Bool
+checkPos f = case quanti f of
       Junction _ cs _ -> all checkPos cs
       Relation i1 c i2 _ -> let
         c1 = checkPos i1
@@ -418,11 +416,15 @@ checkFreeType oTh@(_, osens) m axs = do
     , return . checkSort oTh m
     , return . checkLeadingTerms osens m
     , return . checkIncomplete osens m
-    , checkTerminal oTh m
-    , return . checkPositive osens]
+    , checkTerminal oTh m ]
   return $ case catMaybes ms of
     [] -> return $ Just (getConStatus oTh m axs, [])
-    a : _ -> a
+    a : _ -> case a of
+      Result ds Nothing -> if checkPositive osens axs then
+        Result (Diag Warning "theory is positive!" nullRange : ds)
+          $ Just $ Just (Cons, [])
+        else a
+      _ -> a
 
 {- | group the axioms according to their leading symbol,
 output Nothing if there is some axiom in incorrect form -}
