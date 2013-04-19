@@ -240,16 +240,19 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
       (tmpDG, _) = updateDGOnly dg $ InsertNode (newN, newL)
       (tempDG, InsertEdge lnk') = updateDGOnly tmpDG $ InsertEdge lnk
       tempLibEnv = insert ln tempDG libEnv
-  (str, _, (_, _, lnkLab), _) <-
+  (str, tempLivEnv', (_, _, lnkLab), _) <-
     checkConservativityEdge useGUI lnk' tempLibEnv ln
   if isPrefixOf "No conservativity" str
     then return (str, libEnv, SizedList.empty)
     else do
          let nInfo = nodeInfo nodeLab
-             nodeLab' = nodeLab { nodeInfo = nInfo { node_cons_status =
-                          getEdgeConsStatus lnkLab } }
+             nodeLab' = nodeLab
+               { nodeInfo = nInfo
+                 { node_cons_status = getEdgeConsStatus lnkLab }
+               , dgn_theory = dgn_theory $ labDG
+                 (lookupDGraph ln tempLivEnv') nodeId}
              changes = [ SetNodeLab nodeLab (nodeId, nodeLab') ]
-             dg' = changesDGH dg changes
+             dg' = computeDGraphTheories libEnv $ changesDGH dg changes
              history = snd $ splitHistory dg dg'
              libEnv' = insert ln (groupHistory dg conservativityRule dg') libEnv
          return (str, libEnv', history)
@@ -297,8 +300,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                           (plainSign signS', toNamedList sensS')
                           compMor inputThSens
                let cs' = case res of
-                              Just (Just (cst, obs)) -> if null obs then cst
-                                else Unknown "unchecked obligations"
+                              Just (Just (cst, _)) -> cst
                               _ -> Unknown "Unknown"
                    consNew csv = if cs' >= csv
                               then Proven conservativityRule emptyProofBasis
