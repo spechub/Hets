@@ -209,9 +209,7 @@ domainList = mapMaybe domainDef
 -- | check whether it contains a definedness formula in correct form
 correctDef :: FORMULA f -> Bool
 correctDef f = case quanti f of
-  Relation _ c (Definedness _ _) _ | c /= Equivalence -> False
   Relation (Definedness _ _) c _ _ | c /= Equivalence -> True
-  Relation (Definedness _ _) Equivalence f' _ -> not (containDef f')
   Negation (Definedness _ _) _ -> True
   Definedness _ _ -> True
   _ -> False
@@ -230,12 +228,13 @@ checkDefinitional tsig fsn = let
          _ -> id) [] withLSyms
        (domainDefs, otherPartials) = partition (isDomainDef . fst) partialLSyms
        (withDefs, withOutDefs) = partition (containDef . fst) otherPartials
-       wrongDefs = filter (not . correctDef . fst) withDefs
+       (correctDefs, wrongDefs) = partition (correctDef . fst) withDefs
        grDomainDefs = groupBy (on (==) snd) $ sortBy (on compare snd) domainDefs
        multDomainDefs = filter (\ l -> case l of
           [_] -> False
           _ -> True) grDomainDefs
        defOpSymbs = Set.fromList $ map (snd . head) grDomainDefs
+         ++ map snd correctDefs
        wrongWithoutDefs = filter ((`Set.notMember` defOpSymbs) . snd)
          withOutDefs
        ds = map (\ (a, (_, pos)) -> Diag
