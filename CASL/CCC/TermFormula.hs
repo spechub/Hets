@@ -90,7 +90,6 @@ varOfTerm t = case unsortedTerm t of
 -- | extract all arguments of a term
 arguOfTerm :: TERM f -> [TERM f]
 arguOfTerm t = case unsortedTerm t of
-  Qual_var {} -> [t]
   Application _ ts _ -> ts
   _ -> []
 
