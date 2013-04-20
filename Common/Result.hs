@@ -33,6 +33,7 @@ module Common.Result
   , warning
   , justWarn
   , hint
+  , justHint
   , message
   , maybeToResult
   , resultToMonad
@@ -144,7 +145,6 @@ instance MonadPlus Result where
                                  Nothing -> r2
                                  Just _ -> r1
 
-
 appendDiags :: [Diagnosis] -> Result ()
 appendDiags ds = Result ds (Just ())
 
@@ -192,6 +192,10 @@ justWarn x s = warning x s nullRange
 -- | add a hint
 hint :: a -> String -> Range -> Result a
 hint x s p = Result [Diag Hint s p] $ Just x
+
+-- | just add a hint without position information
+justHint :: a -> String -> Result a
+justHint x s = hint x s nullRange
 
 -- | add a (web interface) message
 message :: a -> String -> Result a
@@ -286,18 +290,16 @@ instance Show Diagnosis where
 
 instance Pretty Diagnosis where
     pretty (Diag k s (Range sp)) = sep
-        [sep [(case sp of
-             [] -> empty
-             _ -> prettyRange sp <> colon),
-         (if isMessageW
-            then empty
-            else text (case k of
+        [ sep [case sp of
+            [] -> empty
+            _ -> prettyRange sp <> colon
+        , case k of
+            MessageW -> empty
+            _ -> text (case k of
                   Error -> "***"
-                  _ -> "###") <+> text (show k) <> colon)
-        ] , text s]
-        where isMessageW = case k of
-                           MessageW -> True
-                           _ -> False
+                  _ -> "###") <+> text (show k) <> colon
+        ]
+      , text s]
 
 instance GetRange Diagnosis where
     getRange = diagPos

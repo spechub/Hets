@@ -276,7 +276,8 @@ checkSort :: (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
     -> [Named (FORMULA f)]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
 checkSort oTh@(osig, _) m fsn
-    | null fsn && Set.null nSorts = Just $ return (Just (Def, []))
+    | null fsn && Set.null nSorts = Just $ justHint (Just (Def, []))
+        "nothing added!"
     | not $ Set.null notFreeSorts = mkWarn "some types are not freely generated"
         notFreeSorts Nothing
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
@@ -420,9 +421,8 @@ checkFreeType oTh@(_, osens) m axs = do
   return $ case catMaybes ms of
     [] -> return $ Just (getConStatus oTh m axs, [])
     a : _ -> case a of
-      Result ds Nothing -> if checkPositive osens axs then
-        Result (Diag Warning "theory is positive!" nullRange : ds)
-          $ Just $ Just (Cons, [])
+      Result _ Nothing -> if checkPositive osens axs then
+        justHint (Just (Cons, [])) "theory is positive!"
         else a
       _ -> a
 

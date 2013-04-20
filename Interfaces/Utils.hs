@@ -261,7 +261,6 @@ checkConservativityEdge :: Bool -> LEdge DGLinkLab -> LibEnv -> LibName
   -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
 checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
  = do
-
     Just (G_theory lidT _ _ _ sensT _) <-
       return $ computeTheory libEnv ln target
     GMorphism cid _ _ morphism _ <- return $ dgl_morphism linklab
@@ -362,7 +361,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                               ++ showObls (toNamedList namedNewSens')
                              _ -> "Could not determine whether link is "
                                    ++ "conservative"
-                   myDiags = showRelDiags 2 ds
+                   myDiags = showRelDiags 4 ds
                return ( showRes ++ "\n" ++ myDiags
                       , newLibEnv, provenEdge, history)
 
