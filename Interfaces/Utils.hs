@@ -284,11 +284,9 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
         Nothing -> return (concatMap diagString $ diags checkerR,
                            libEnv, link, SizedList.empty)
         Just theChecker -> do
-               let (inputThSens1, thms) = partition isAxiom $ toNamedList sensT
+               let inputThSens1 = filter isAxiom $ toNamedList sensT
                    transSrcSens = Set.fromList
                       $ map sentence $ toNamedList transSensSrc
-                   oblCands = Set.union transSrcSens $ Set.fromList
-                      $ map sentence thms
                    inputThSens = filter
                      ((`Set.notMember` transSrcSens) . sentence)
                      inputThSens1
@@ -304,7 +302,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                let (cs', showRes) = case res of
                      Just (Just (cst, obs)) ->
                        let (exSens, resObls) = partition
-                              (`Set.member` oblCands) obs
+                              (`Set.member` transSrcSens) obs
                        in (if null resObls then cst
                            else Unknown "unchecked obligations"
                        , "The link is " ++ showConsistencyStatus cst
@@ -313,10 +311,10 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                                 [] -> case inputThSens of
                                   [] -> " because no sentences have been added"
                                   _ -> ""
-                                _ -> " because of the following theorems:\n"
+                                _ -> " because of the following axioms:\n"
                                   ++ showObls exSens
                               _ -> " provided that the following obligations\n"
-                                ++ "are added as theorems and discharged:\n"
+                                ++ "hold in an imported theory:\n"
                                 ++ showObls resObls)
                      _ -> (Unknown "Unknown"
                        , "Could not determine whether link is conservative")
@@ -342,7 +340,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                      (groupHistory dg conservativityRule nextGr) libEnv
                      else libEnv
                    history = snd $ splitHistory dg nextGr
-                   myDiags = showRelDiags 2 ds
+                   myDiags = showRelDiags 4 ds
                return ( showRes ++ "\n" ++ myDiags
                       , newLibEnv, provenEdge, history)
 
