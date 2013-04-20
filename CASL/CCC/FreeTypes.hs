@@ -92,7 +92,7 @@ recoverSortsAndConstructors osens fsn = let
 -- check that patterns do not overlap, if not, return proof obligation.
 getOverlapQuery :: (Ord f, GetRange f) => Sign f e -> [Named (FORMULA f)]
   -> [FORMULA f]
-getOverlapQuery sig fsn = overlap_query where
+getOverlapQuery sig fsn = filter (not . is_True_atom) overlap_query where
         axPairs = concatMap pairs $ getAxGroup sig fsn
         olPairs = filter (\ (a, b) -> checkPatterns sig
                            (patternsOfAxiom a, patternsOfAxiom b)) axPairs
@@ -555,8 +555,9 @@ overlapQuery ((a1, s1), (a2, s2)) =
             resA2 = substiF s2 r2
 
 
-getNotComplete :: (GetRange f, TermExtension f) => [Named (FORMULA f)]
-  -> Morphism f e m -> [Named (FORMULA f)] -> [([Diagnosis], [FORMULA f])]
+getNotComplete :: (GetRange f, FormExtension f, TermExtension f)
+  => [Named (FORMULA f)] -> Morphism f e m -> [Named (FORMULA f)]
+  -> [([Diagnosis], [FORMULA f])]
 getNotComplete osens m fsn =
   let constructors = snd $ recoverSortsAndConstructors osens fsn
       consMap = foldr (\ (Qual_op_name o ot _) ->
@@ -570,7 +571,7 @@ getNotComplete osens m fsn =
                 $ map patternsOfAxiom g, g)) $ getAxGroup sig fsn
 
 -- | check whether the patterns of a function or predicate are complete
-completePatterns :: TermExtension f => Sign f e
+completePatterns :: (FormExtension f, TermExtension f) => Sign f e
   -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
   -> MapSet.MapSet OP_NAME OP_TYPE -> [[TERM f]] -> Result ()
 completePatterns tsig consMap consMap2 pas
@@ -614,7 +615,7 @@ completePatterns tsig consMap consMap2 pas
                           $ Set.difference allCons conpats
                     when (Set.null allCons) . fail
                       $ "no constructors for result type found: " ++ show cSrt
-                    unless (Set.null missCons) . justWarn ()
+                    unless (Set.null missCons || any isVar hds) . justWarn ()
                       $ "missing pattern(s) for: " ++ showDoc missCons ""
                     mapM_ (completePatterns tsig consMap consMap2)
                               (pa_group allCons pas)
