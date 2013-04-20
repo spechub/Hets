@@ -25,7 +25,7 @@ import CASL.ToDoc
 
 import Common.AS_Annotation
 import Common.Consistency (Conservativity (..))
-import Common.DocUtils (showDoc)
+import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Utils (nubOrd, number)
@@ -104,8 +104,8 @@ getOverlapQuery sig fsn = filter (not . is_True_atom) overlap_query where
                     | hd1 == hd2 -> st ((tl1, s1), (tl2, s2))
                     | isVar hd1 -> st ((tl1, (hd2, hd1) : s1), (tl2, s2))
                     | isVar hd2 -> st ((tl1, s1), (tl2, (hd1, hd2) : s2))
-                    | otherwise -> st ((patternsOfTerm hd1 ++ tl1, s1),
-                                       (patternsOfTerm hd2 ++ tl2, s2))
+                    | otherwise -> st ((arguOfTerm hd1 ++ tl1, s1),
+                                       (arguOfTerm hd2 ++ tl2, s2))
                   _ -> (s1, s2)
         quant f = mkForall (varDeclOfF f) f
         overlap_query = map (quant . simplifyFormula id . overlapQuery . subst)
@@ -463,13 +463,6 @@ pairs ps = case ps of
   hd : tl@(_ : _) -> map (\ x -> (hd, x)) tl ++ pairs tl
   _ -> []
 
--- | get the patterns of a term
-patternsOfTerm :: TERM f -> [TERM f]
-patternsOfTerm t = case unsortedTerm t of
-    Qual_var {} -> [t]
-    Application (Qual_op_name {}) ts _ -> ts
-    _ -> []
-
 -- | get the patterns of a axiom
 patternsOfAxiom :: FORMULA f -> [TERM f]
 patternsOfAxiom f = case quanti f of
@@ -477,8 +470,8 @@ patternsOfAxiom f = case quanti f of
     Relation _ c f' _ | c /= Equivalence -> patternsOfAxiom f'
     Relation f' Equivalence _ _ -> patternsOfAxiom f'
     Predication _ ts _ -> ts
-    Equation t _ _ _ -> patternsOfTerm t
-    Definedness t _ -> patternsOfTerm t
+    Equation t _ _ _ -> arguOfTerm t
+    Definedness t _ -> arguOfTerm t
     _ -> []
 
 -- | check whether two patterns are overlapped
@@ -487,7 +480,7 @@ checkPatterns sig (ps1, ps2) = case (ps1, ps2) of
   (hd1 : tl1, hd2 : tl2) ->
       if isVar hd1 || isVar hd2 then checkPatterns sig (tl1, tl2)
       else sameOpsApp sig hd1 hd2 && checkPatterns sig
-               (patternsOfTerm hd1 ++ tl1, patternsOfTerm hd2 ++ tl2)
+               (arguOfTerm hd1 ++ tl1, arguOfTerm hd2 ++ tl2)
   _ -> True
 
 {- | get the axiom from left hand side of a implication,
@@ -570,6 +563,13 @@ getNotComplete osens m fsn =
   $ map (\ g -> (diags . completePatterns sig consMap consMap2
                 $ map patternsOfAxiom g, g)) $ getAxGroup sig fsn
 
+varToPat :: TERM f -> TERM f
+varToPat t = case t of
+  Sorted_term t' _ _ -> varToPat t'
+  Cast t' _ _ -> varToPat t'
+  Qual_var _ s r -> Qual_var (mkSimpleId "_") s r
+  _ -> t
+
 -- | check whether the patterns of a function or predicate are complete
 completePatterns :: (FormExtension f, TermExtension f) => Sign f e
   -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
@@ -582,7 +582,7 @@ completePatterns tsig consMap consMap2 pas
               p_g p = map (\ (h : t) ->
                 if isVar h
                 then replicate (maximum $ map
-                   (length . arguOfTerm . head) p) h ++ t
+                   (length . arguOfTerm . head) p) (varToPat h) ++ t
                 else arguOfTerm h ++ t) p
               in map (p_g
                      . \ (c, ct) -> filter (\ (h : _) -> case unsortedTerm h of
