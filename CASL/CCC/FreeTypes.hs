@@ -179,7 +179,6 @@ getConStatus :: (GetRange f, Ord f)
 getConStatus oTh m fsn = min dataStatus defStatus where
   dataStatus = getDataStatus oTh m fsn
   defStatus = if null $ getOpsPredsAndExAxioms m fsn
-              ++ getOverlapQuery (mtarget m) fsn
     then Def else Cons
 
 getObligations :: (GetRange f, Ord f)
