@@ -257,8 +257,10 @@ invalidateProofs
   -> (Bool, G_theory) -- ^ no changes and new local theory with deleted proofs
 invalidateProofs oTh nTh (G_theory lid syn sig si sens _) =
   let vAxs = getValidAxioms oTh nTh
+      oAxs = map fst $ getThAxioms oTh
+      iValAxs = vAxs \\ oAxs
       validProofs (_, bp) = case bp of
-        BasicProof _ pst -> all (`elem` vAxs) $ usedAxioms pst
+        BasicProof _ pst -> not . any (`elem` iValAxs) $ usedAxioms pst
         _ -> True
       newSens = OMap.map
         (\ s -> if isAxiom s then (True, s) else
