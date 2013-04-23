@@ -488,7 +488,7 @@ utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 	$(HC) --make -o $@ $<
 
 # release management
-REV = trunk
+REV = tags/release-0.99
 release:
 	$(RM) -r Hets
 	svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/$(REV) Hets
