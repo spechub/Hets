@@ -132,7 +132,7 @@ pdftitle={Hets User Guide}]
 \begin{document}
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\
--- Version 0.98 --}
+-- Version 0.99 --}
 \author{Till Mossakowski, Christian Maeder,
   Mihai Codescu\\[1em]
 DFKI GmbH, Bremen, Germany.\\[1em]
@@ -167,7 +167,7 @@ hand.
 \end{figure}
 
 \Hets supports a number of input languages directly, such as \CASL,
-Common Logic, OWL-DL, Haskell, and Maude. For heterogeneous
+Common Logic, OWL 2, LF, THF, HOL, Haskell, and Maude. For heterogeneous
 specification, \Hets offers the language heterogeneous \CASL.
 Heterogeneous \CASL (\HetCASL) generalises the structuring
 constructs of
@@ -267,15 +267,16 @@ LF & x & (x) & - \\\hline
 %Architectural specifications & x & x & -\\\hline
 \CASLDL & x & - & - \\\hline
 DMU & x & - & - \\\hline
-FreeCAD & - & - & - \\\hline
-OWL DL & x & x & x \\\hline
+FreeCAD & - & x & - \\\hline
+OWL 2 & x & x & x \\\hline
 Propositional & x & x & x \\\hline
 QBF & x & x & x \\\hline
 SoftFOL & x & - & x \\\hline
 Maude & x & x & - \\\hline
 VSE & x & x & x \\\hline
+THF & x & x & x \\\hline
 \Isabelle & (x) & - & x \\\hline
-HolLight & (x) & - & - \\\hline
+HolLight & x & x & - \\\hline
 Adl & x & x & - \\\hline
 Fpl & x & x & - \\\hline
 EnCL & x & x & x \\\hline
@@ -340,11 +341,11 @@ see also \url{www.haskell.org}.
 \item[ConstraintCASL] is an experimental logic for the specification
 of qualitative constraint calculi.
 
-\item[OWL DL] is the Web Ontology Language (OWL) recommended by the
+\item[OWL 2] is the Web Ontology Language (OWL 2) recommended by the
   World Wide Web Consortium (W3C, \url{http://www.w3c.org}). It is
   used for knowledge representation and the Semantic Web
   \cite{berners:2001:SWeb}.
-Hets calls an external OWL DL parser
+Hets calls an external OWL 2 parser
   written in JAVA to obtain the abstract syntax for an OWL file and its
   imports. The JAVA parser is also doing a first analysis classifying
   the OWL ontology into the sublanguages OWL Full, OWL DL and OWL
@@ -355,13 +356,13 @@ The
 
 \item[CASL-DL] \cite{OWL-CASL-WADT2004}
 is an extension of a restriction of \CASL, realizing
-a strongly typed variant of OWL DL in \CASL syntax.
+a strongly typed variant of OWL in \CASL syntax.
 It extends
   \CASL with cardinality restrictions for the description of sorts and
   unary predicates. The restrictions are based on the equivalence
-  between \CASLDL, OWL~DL and \SHOIN. Compared to \CASL only unary
+  between \CASLDL, OWL and \SHOIN. Compared to \CASL only unary
   and binary predicates, predefined datatypes and concepts (subsorts
-  of the topsort Thing) are allowed. It is used to bring OWL DL and
+  of the topsort Thing) are allowed. It is used to bring OWL and
   \CASL closer together.
 
 \item[Propositional] is classical propositional logic, with
@@ -373,20 +374,25 @@ DepQBF \url{http://fmv.jku.at/depqbf/} connected to it.
 \item[RelScheme] is a logic for relational databases \cite{DBLP:journals/ao/SchorlemmerK08}.
 
 \item[SoftFOL] \cite{LuettichEA06a} offers several automated theorem
-  proving (ATP) systems for first-order logic with equality: \begin{inparaenum}[(1)]\item \SPASS
+  proving (ATP) systems for first-order logic with equality:
+\begin{itemize}
+\item \SPASS
   \cite{WeidenbachEtAl02}, see \url{http://www.spass-prover.org};
 \item Vampire \cite{RiazanovV02} see \url{http://www.vprover.org};
 \item Darwin \cite{Baumgartner:etal:Darwin:IJAIT:2005}, see \url{http://combination.cs.uiowa.edu/Darwin};
-\item Eprover \cite{Schulz:AICOM-2002}, see {http://www.eprover.org};
-\item E-KRHyper \cite{DBLP:conf/cade/PelzerW07}, see {http://www.uni-koblenz.de/~bpelzer/ekrhyper}, and
+\item Eprover \cite{Schulz:AICOM-2002}, see \url{http://www.eprover.org};
+\item E-KRHyper \cite{DBLP:conf/cade/PelzerW07}, see \url{http://www.uni-koblenz.de/~bpelzer/ekrhyper}, and
 \item
   MathServe Broker\footnote{which chooses an appropriate ATP upon a
     classification of the FOL problem} \cite{ZimmerAutexier06}.
-\end{inparaenum}
+\end{itemize}
   These together comprise some of the most advanced theorem provers
   for first-order logic. SoftFOL is essentially the first-order
   interchange language TPTP \cite{DBLP:conf/lpar/Sutcliffe10},
 see \url{http://www.tptp.org}.
+
+\item[THF] a typed higher-order form of TPTP, namely simply typed lambda
+  calculus
 
 \item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover
   for higher-order logic.
@@ -426,8 +432,7 @@ see \url{http://www.tptp.org}.
   \url{https://lab.cs.ru.nl/BusinessRules/Requirements_engineering}.
 
 \item[Fpl] is a ``logic for functional programs'' as an extension of a
-  restriction of \CASL. (\CASL predicates are disabled.)
-  A detailed description of FPL will appear elsewhere.
+  restriction of \CASL (predicates are disabled) \cite{Sannella12}.
 
 \item[EnCL] is an ``engineering calculation language'' based on first
   order theory of real numbers with some predefined binders
@@ -619,7 +624,7 @@ installed in addition:
 (X)Emacs & editor (for Isabelle) & \\\hline
 zChaff & SAT solver & \url{http://www.princeton.edu/~chaff/zchaff.html} \\\hline
 minisat & SAT solver & \url{http://minisat.se/} \\\hline
-Pellet & OWL-2 reasoner & \url{http://clarkparsia.com/pellet/} \\\hline
+Pellet & OWL 2 reasoner & \url{http://clarkparsia.com/pellet/} \\\hline
 E-KRHyper & theorem prover
   & \url{http://userpages.uni-koblenz.de/~bpelzer/ekrhyper/} \\\hline
 Reduce & computer algebra system
@@ -726,7 +731,7 @@ Ending & default logic & structuring language\\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
 \texttt{.hol} & HolLight & HolLight \\\hline
 \texttt{.hs} & Haskell & Haskell \\\hline
-\texttt{.owl} & OWL DL, OWL Lite & OWL \\\hline
+\texttt{.owl} & OWL 2 & OWL \\\hline
 \texttt{.elf} & LF & Twelf \\\hline
 \texttt{.clf} or \texttt{.clif} & CommonLogic & \CASL \\\hline
 \texttt{.maude} & Maude & Maude \\\hline
@@ -1836,14 +1841,14 @@ from the \texttt{HETS\_REDUCE} environment variable.
 
 \subsection{Pellet}
 Pellet is a popular open-source \DL-reasoner for \SROIQ, which is the logic
-underlying OWL 2.0, written in Java. A Java Runtime Environment (in version $> 1.5$)
+underlying OWL 2, written in Java. A Java Runtime Environment (in version $> 1.5$)
 is needed to run Pellet. For the integration into \Hets the environment variable
 \verb+PELLET_PATH+ has to be set to the root-directory of the Pellet installation.
 
 Pellet uses the same ATP GUI as the provers for SoftFOL (ref. to section
 \ref{sec:ATP}).
 \subsection{Fact++}
-Fact++ is a \DL-reasoner for \SROIQ, which is the logic underlying OWL 2.0, written in
+Fact++ is a \DL-reasoner for \SROIQ, which is the logic underlying OWL 2, written in
 C++. Fact++ is integrated into \Hets via the OWL-API, which is written in Java.
 A Java Runtime Environment (in version $>= 1.5$) has to be installed. To use Fact++,
 the environment variable \verb+HETS_OWL_TOOLS+ has to be set to the directory
@@ -1851,7 +1856,7 @@ containing the files
 \begin{verbatim}
 OWLFact.jar
 OWLFactProver.jar
-lib/FaCTpp-OWLAPI-3.2-v1.5.2.jar
+lib/FaCTpp-OWLAPI-3.4-v1.6.1.jar
 lib/owl2api-bin.jar
 \end{verbatim}
 as well as
