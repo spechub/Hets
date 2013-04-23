@@ -391,8 +391,11 @@ DepQBF \url{http://fmv.jku.at/depqbf/} connected to it.
   interchange language TPTP \cite{DBLP:conf/lpar/Sutcliffe10},
 see \url{http://www.tptp.org}.
 
-\item[THF] a typed higher-order form of TPTP, namely simply typed lambda
-  calculus
+\item[THF] simply typed lambda calculus, is an interchange language for
+  (typed) higher-order logic \cite{DBLP:conf/cade/BenzmullerRS08}, similar to
+  what TPTP is for (untyped) first-order logic. \Hets connects THF to the
+  automated higher-order provers Leo-II, Satallax and Isabelle's nitpick,
+  refute and sledgehammer.
 
 \item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover
   for higher-order logic.
@@ -440,11 +443,6 @@ see \url{http://www.tptp.org}.
   specifications of engineering calculation methods. For the execution
   of these specifications Hets provides connections to the computer
   algebra systems Mathematica, Maple and Reduce.
-
-\item[THF] is an interchange language for higher-order logic
-  \cite{DBLP:conf/cade/BenzmullerRS08}, similar to what TPTP
-  is for first-order logic. \Hets connects THF to the automated
-  higher-order prover Leo-II.
 \end{description}
 
 Various logics are supported with proof tools. Proof support for the
