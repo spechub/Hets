@@ -316,7 +316,10 @@ term modalities. It allows the specification of modal systems with
 Kripke's possible worlds semantics. It is also possible to express
 certain forms of dynamic logic.
 
-\item[ExtModal] is an extended modal logic, currently in an experimental state.
+\item[ExtModal] is an extended modal logic, subsuming and replacing ModalCASL.
+  It features -- apart from multiple modalities and dynamic logic -- also time
+  (and term) modalities, grading, hybrid modal logic, and the $\mu$-calculus
+  \cite{Codruta10}. Comorphisms to CASL and THF have been implemented.
 
 \item[HasCASL] is a higher order extension of \CASL allowing
   polymorphic datatypes and functions. It is closely related to the
@@ -326,12 +329,12 @@ certain forms of dynamic logic.
 the language is summarized in \cite{HasCASL/Summary}, the semantics
 in \cite{Schroder05b,Schroder-habil}.
 
-\item[Haskell] is a modern, pure and strongly typed functional
-  programming language. It simultaneously is the implementation
-  language of \Hets, such that in the future, \Hets might be applied
-  to itself.
-The definitive reference for Haskell is \cite{PeytonJones03},
-see also \url{www.haskell.org}.
+\item[Haskell] is a modern, pure and strongly typed functional programming
+  language. With various language extensions it simultaneously is the
+  implementation language of \Hets. As a logic we only supports the older
+  Haskell 98 standard.  Yet, in principle, \Hets might be applied to itself --
+  in some more distant future.  The definitive reference for Haskell is
+  \cite{PeytonJones03}, see also \url{www.haskell.org}.
 
 \item[CspCASL] \cite{Roggenbach06} is a combination of \CASL
   with the process algebra \Csp.
