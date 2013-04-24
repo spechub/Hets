@@ -53,4 +53,4 @@ data ConservativityChecker sign sentence morphism = ConservativityChecker
         :: (sign, [Named sentence])
         -> morphism
         -> [Named sentence]
-        -> IO (Result (Maybe (Conservativity, [sentence]))) }
+        -> IO (Result (Conservativity, [sentence])) }

@@ -216,7 +216,7 @@ correctDef f = case quanti f of
 -- check the definitional form of the partial axioms
 checkDefinitional :: (FormExtension f, TermExtension f)
   => Sign f e -> [Named (FORMULA f)]
-  -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
+  -> Maybe (Result (Conservativity, [FORMULA f]))
 checkDefinitional tsig fsn = let
        formatAxiom = flip showDoc "" . simplifyCASLSen tsig
        (noLSyms, withLSyms) = partition (isNothing . fst . snd)
@@ -273,16 +273,16 @@ checkDefinitional tsig fsn = let
 -}
 checkSort :: (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
     -> [Named (FORMULA f)]
-    -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
+    -> Maybe (Result (Conservativity, [FORMULA f]))
 checkSort oTh@(osig, _) m fsn
-    | null fsn && Set.null nSorts = Just $ justHint (Just (Def, []))
+    | null fsn && Set.null nSorts = Just $ justHint (Def, [])
         "nothing added!"
-    | not $ Set.null notFreeSorts = mkWarn "some types are not freely generated"
-        notFreeSorts Nothing
+    | not $ Set.null notFreeSorts =
+        mkUnknown "some types are not freely generated" notFreeSorts
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
-        nefsorts $ Just (Inconsistent, [])
-    | not $ Set.null genNotNew = mkWarn "some free types are not new"
-        genNotNew Nothing
+        nefsorts (Inconsistent, [])
+    | not $ Set.null genNotNew = mkUnknown "some free types are not new"
+        genNotNew
     | otherwise = Nothing
     where
         nSorts = getNSorts osig m
@@ -290,10 +290,11 @@ checkSort oTh@(osig, _) m fsn
         nefsorts = getNefsorts oTh m nSorts fsn
         genNotNew = Set.difference (getGenSorts fsn) nSorts
         mkWarn s i r = Just $ Result [mkDiag Warning s i] $ Just r
+        mkUnknown s i = mkWarn s i (Unknown s, [])
 
 checkLeadingTerms :: (FormExtension f, TermExtension f, Ord f)
   => [Named (FORMULA f)] -> Morphism f e m -> [Named (FORMULA f)]
-  -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
+  -> Maybe (Result (Conservativity, [FORMULA f]))
 checkLeadingTerms osens m fsn = let
     tsig = mtarget m
     constructors = snd $ recoverSortsAndConstructors osens fsn
@@ -322,7 +323,7 @@ checkLeadingTerms osens m fsn = let
 checkIncomplete :: (FormExtension f, TermExtension f, Ord f)
   => [Named (FORMULA f)] -> Morphism f e m
   -> [Named (FORMULA f)]
-  -> Maybe (Result (Maybe (Conservativity, [FORMULA f])))
+  -> Maybe (Result (Conservativity, [FORMULA f]))
 checkIncomplete osens m fsn = case getNotComplete osens m fsn of
   [] -> Nothing
   incomplete -> let obligations = getObligations m fsn in Just $ Result
@@ -338,11 +339,11 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
              : map (\ (f, n) -> "  " ++ shows n ". "
                     ++ showDoc (simplifyCASLSen (mtarget m) f) "") (number fs)
              ++ map diagString ds) pos)
-       incomplete) $ Just $ Just (Cons, obligations)
+       incomplete) $ Just (Cons, obligations)
 
 checkTerminal :: (FormExtension f, GetRange f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)]
-  -> IO (Maybe (Result (Maybe (Conservativity, [FORMULA f]))))
+  -> IO (Maybe (Result (Conservativity, [FORMULA f])))
 checkTerminal oTh m fsn = do
     let fs = getFs fsn
         fs_terminalProof = filter (\ f ->
@@ -352,11 +353,11 @@ checkTerminal oTh m fsn = do
         obligations = getObligations m fsn
         conStatus = getConStatus oTh m fsn
         res = if null obligations then Nothing else
-                  Just $ return (Just (conStatus, obligations))
+                  Just $ return (conStatus, obligations)
     (proof, str) <- terminationProof (mtarget m) fs_terminalProof domains
     return $ case proof of
         Just True -> res
-        _ -> Just $ warning (Just (Cons, obligations))
+        _ -> Just $ warning (Cons, obligations)
              (if isJust proof then "not terminating"
               else "cannot prove termination: " ++ str) nullRange
 
@@ -409,7 +410,7 @@ checkPos f = case quanti f of
 free datatypes and recursive equations are consistent -}
 checkFreeType :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
-  -> [Named (FORMULA f)] -> IO (Result (Maybe (Conservativity, [FORMULA f])))
+  -> [Named (FORMULA f)] -> IO (Result (Conservativity, [FORMULA f]))
 checkFreeType oTh@(_, osens) m axs = do
   ms <- mapM ($ axs)
     [ return . checkDefinitional (mtarget m)
@@ -418,10 +419,10 @@ checkFreeType oTh@(_, osens) m axs = do
     , return . checkIncomplete osens m
     , checkTerminal oTh m ]
   return $ case catMaybes ms of
-    [] -> return $ Just (getConStatus oTh m axs, [])
+    [] -> return (getConStatus oTh m axs, [])
     a : _ -> case a of
       Result _ Nothing -> if checkPositive osens axs then
-        justHint (Just (Cons, [])) "theory is positive!"
+        justHint (Cons, []) "theory is positive!"
         else a
       _ -> a
 

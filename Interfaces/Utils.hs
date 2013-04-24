@@ -300,7 +300,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                           (plainSign signS', toNamedList sensS')
                           compMor inputThSens
                let (cs', showRes) = case res of
-                     Just (Just (cst, obs)) ->
+                     Just (cst, obs) ->
                        let (exSens, resObls) = partition
                               (`Set.member` transSrcSens) obs
                        in (if null resObls then cst
@@ -316,7 +316,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                               _ -> " provided that the following obligations\n"
                                 ++ "hold in an imported theory:\n"
                                 ++ showObls resObls)
-                     _ -> (Unknown "Unknown"
+                     Nothing -> (Unknown "Unknown"
                        , "Could not determine whether link is conservative")
                    consNew csv = if cs' >= csv
                               then Proven conservativityRule emptyProofBasis

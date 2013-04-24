@@ -197,7 +197,7 @@ renderTT tt = Table rowHeaders header table
     map showBool (rextprops e) ++ map showBool (rextaxioms e)
   makeRow r =
     let common = map showBool (rprops r) ++ map showBool (raxioms r) ++
-                 case (rgoal r) of
+                 case rgoal r of
                    Nothing -> []
                    Just g -> [showBool g]
         emptyPrefix = map (const "") [1..length common]
@@ -269,7 +269,7 @@ ttProveGUI :: String -- ^ theory name
           -> LP.Theory Sig.Sign FORMULA ProofTree
           -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism]
           -- ^ free definitions
-          -> IO([LP.ProofStatus ProofTree]) -- ^ proof status for each goal
+          -> IO [LP.ProofStatus ProofTree] -- ^ proof status for each goal
 ttProveGUI thName th freedefs =
   genericATPgui (atpFun thName) True (LP.proverName ttProver) thName th
                 freedefs emptyProofTree
@@ -399,7 +399,7 @@ ttConservativityChecker ::
               (Sign, [AS_Anno.Named FORMULA]) -- ^ Initial sign and formulas
            -> PMorphism.Morphism              -- ^ morhpism between specs
            -> [AS_Anno.Named FORMULA]         -- ^ Formulas of extended spec
-           -> IO (Result.Result (Maybe (Conservativity, [FORMULA])))
+           -> IO (Result.Result (Conservativity, [FORMULA]))
 ttConservativityChecker (_, srcSens) mor tarAxs =
   let srcAxs        = filter AS_Anno.isAxiom srcSens
       srcSig        = items $ PMorphism.source mor
@@ -408,7 +408,8 @@ ttConservativityChecker (_, srcSens) mor tarAxs =
       tarSig        = items $ PMorphism.target mor
       newSig        = Set.difference tarSig imageSig
       sigSize       = Set.size tarSig
-  in if sigSize >= maxSigSize then return $ return Nothing
+  in if sigSize >= maxSigSize
+    then return $ return (Unknown "signature too big", [])
     else do
       let imageAxs = map (AS_Anno.mapNamed (PMorphism.mapSentenceH mor)) srcAxs
           models = allModels (Sign imageSig)
@@ -454,4 +455,4 @@ ttConservativityChecker (_, srcSens) mor tarAxs =
           body = legend++"\n"++render id id id (renderTT table)
           res = if isOK then Cons else Inconsistent
       createTextSaveDisplay title "unnamed" body
-      return $ return $ Just (res, [])
+      return $ return (res, [])

@@ -43,7 +43,7 @@ defOptions = "-timeout 60"
 conserCheck :: (Sign, [Named FORMULA])      -- ^ Initial sign and formulas
            -> Morphism                      -- ^ morhpism between specs
            -> [Named FORMULA]               -- ^ Formulas of extended spec
-           -> IO (Result (Maybe (Conservativity, [FORMULA])))
+           -> IO (Result (Conservativity, [FORMULA]))
 conserCheck (_, inSens) mor cForms = do
       let inSig = source mor
           cSig = target mor
@@ -63,7 +63,7 @@ getFormulas = map sentence . filter isAxiom
 doConservCheck :: Sign       -- ^ Initial  Sign
                -> Sign       -- ^ Extended Sign
                -> FORMULA    -- ^ QBF Formula to Prove
-               -> IO (Result (Maybe (Conservativity, [FORMULA])))
+               -> IO (Result (Conservativity, [FORMULA]))
 doConservCheck inSig oSig form = do
              let iMap = createSignMap oSig 1 Map.empty
                  iSym = items inSig
@@ -71,9 +71,9 @@ doConservCheck inSig oSig form = do
                  fs = getConj $ cnf form
                  qdim = showQDimacs iSym eSym iMap fs
              -- exclude the trivial case that makes sKizzo fail
-             if null fs then return $ return $ Just (Cons, []) else do
+             if null fs then return $ return (Cons, []) else do
                res <- runSKizzo qdim
-               return $ return $ Just (res, [])
+               return $ return (res, [])
 
 -- | Printer for QDimacs Format
 showQDimacs :: Set.Set Id               -- ^ Symbols of initial  Sign
