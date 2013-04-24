@@ -120,7 +120,7 @@ leq :: Model -> Model -> Bool
 leq = Set.isSubsetOf
 
 isMin :: Bool -> Model -> [Model] -> Bool
-isMin isCo m = all (\m' -> if isCo then leq m' m else leq m m')
+isMin isCo m = all (\ m' -> if isCo then leq m' m else leq m m')
 
 evalFree :: Model
          -> LP.FreeDefMorphism FORMULA PMorphism.Morphism
@@ -142,7 +142,7 @@ evalFree m freedef =
 allModels :: Sign -> [Model]
 allModels sig = allModels1 $ Set.toList $ items sig
   where allModels1 [] = [Set.empty]
-        allModels1 (p:rest) =
+        allModels1 (p : rest) =
           let models = allModels1 rest
            in models ++ map (Set.insert p) models
 
@@ -186,10 +186,10 @@ renderTT tt = Table rowHeaders header table
                  Nothing -> []
                  Just g -> [Group DoubleLine [Header g]])
   rowtype r = (if rIsModel r then "M" else " ")
-              ++(if rIsOK r then (if rIsModel r then "+" else "o")
+              ++ (if rIsOK r then (if rIsModel r then "+" else "o")
                             else "-")
   rowHeader r = Group NoLine
-    $ Header (rowtype r) : map (const (Header "")) [2..length (rextrows r)]
+    $ Header (rowtype r) : map (const (Header "")) [2 .. length (rextrows r)]
   rowHeaders = if all (null . rextrows) rowsTT
     then Group NoLine (map (Header . rowtype) rowsTT)
     else Group SingleLine (map rowHeader rowsTT)
@@ -200,7 +200,7 @@ renderTT tt = Table rowHeaders header table
                  case rgoal r of
                    Nothing -> []
                    Just g -> [showBool g]
-        emptyPrefix = map (const "") [1..length common]
+        emptyPrefix = map (const "") [1 .. length common]
     in case map makeExtRow (rextrows r) of
        [] -> [common]
        e : extrows -> (common ++ e) : map (emptyPrefix ++) extrows
@@ -283,13 +283,13 @@ atpFun :: String -- ^ Theory name
      PState.PropProverState
 atpFun thName = ATPState.ATPFunctions
                 { ATPState.initialProverState = PState.propProverState
-                , ATPState.goalOutput         = goalProblem thName
-                , ATPState.atpTransSenName    = PState.transSenName
-                , ATPState.atpInsertSentence  = PState.insertSentence
-                , ATPState.proverHelpText     = ttHelpText
-                , ATPState.runProver          = runTt
-                , ATPState.batchTimeEnv       = ""
-                , ATPState.fileExtensions     = ATPState.FileExtensions
+                , ATPState.goalOutput = goalProblem thName
+                , ATPState.atpTransSenName = PState.transSenName
+                , ATPState.atpInsertSentence = PState.insertSentence
+                , ATPState.proverHelpText = ttHelpText
+                , ATPState.runProver = runTt
+                , ATPState.batchTimeEnv = ""
+                , ATPState.fileExtensions = ATPState.FileExtensions
                     { ATPState.problemOutput = ".tt"
                     , ATPState.proverOutput = ".tt"
                     , ATPState.theoryConfiguration = ".tt"}
@@ -306,9 +306,9 @@ defaultProofStatus nGoal =
 -}
 
 runTt :: PState.PropProverState
-      -- ^ logical part containing the input Sign and
-      -- axioms and possibly goals that have been proved
-      -- earlier as additional axioms
+      {- ^ logical part containing the input Sign and
+      axioms and possibly goals that have been proved
+      earlier as additional axioms -}
       -> ATPState.GenericConfig ProofTree
       -- ^ configuration to use
       -> Bool
@@ -358,16 +358,16 @@ runTt pState cfg _ _thName nGoal =
            table = TruthTable { thead = heading
                               , trows = rows
                               }
-           legend = "Legend:\nM = model of the premises\n"++
-             "+ = OK, model fulfills conclusion\n"++
-             "- = not OK, counterexample for logical consequence\n"++
+           legend = "Legend:\nM = model of the premises\n" ++
+             "+ = OK, model fulfills conclusion\n" ++
+             "- = not OK, counterexample for logical consequence\n" ++
              "o = OK, premises are not fulfilled, hence conclusion is "
              ++ "irrelevant\n"
-           body = legend++"\n"++render id id id (renderTT table)
+           body = legend ++ "\n" ++ render id id id (renderTT table)
        let status = (defaultProofStatus nGoal)
                      { LP.goalStatus = if isOK then LP.Proved consistent
                                                else LP.Disproved
-                     ,LP.usedAxioms = map AS_Anno.senAttr sens
+                     , LP.usedAxioms = map AS_Anno.senAttr sens
                      }
        return (ATPState.ATPSuccess,
                cfg { ATPState.proofStatus = status
@@ -401,13 +401,13 @@ ttConservativityChecker ::
            -> [AS_Anno.Named FORMULA]         -- ^ Formulas of extended spec
            -> IO (Result.Result (Conservativity, [FORMULA]))
 ttConservativityChecker (_, srcSens) mor tarAxs =
-  let srcAxs        = filter AS_Anno.isAxiom srcSens
-      srcSig        = items $ PMorphism.source mor
-      imageSig      = Set.map (PMorphism.applyMorphism mor) srcSig
-      imageSigList  = Set.toList imageSig
-      tarSig        = items $ PMorphism.target mor
-      newSig        = Set.difference tarSig imageSig
-      sigSize       = Set.size tarSig
+  let srcAxs = filter AS_Anno.isAxiom srcSens
+      srcSig = items $ PMorphism.source mor
+      imageSig = Set.map (PMorphism.applyMorphism mor) srcSig
+      imageSigList = Set.toList imageSig
+      tarSig = items $ PMorphism.target mor
+      newSig = Set.difference tarSig imageSig
+      sigSize = Set.size tarSig
   in if sigSize >= maxSigSize
     then return $ return (Unknown "signature too big", [])
     else do
@@ -417,7 +417,7 @@ ttConservativityChecker (_, srcSens) mor tarAxs =
           heading =
             TTHead { hprops = map show imageSigList,
                      haxioms = map AS_Anno.senAttr srcAxs,
-                     hextprops =  map show newSigList,
+                     hextprops = map show newSigList,
                      hextaxioms = map AS_Anno.senAttr tarAxs,
                      hgoal = Nothing
                    }
@@ -445,14 +445,14 @@ ttConservativityChecker (_, srcSens) mor tarAxs =
           table = TruthTable { thead = heading,
                                trows = rows
                              }
-          title = "The extension is "++ (if isOK then "" else "not ")
+          title = "The extension is " ++ (if isOK then "" else "not ")
                   ++ "conservative"
           legend = "Legend:\n"
             ++ "M = model of the axioms\n"
             ++ "+ = OK, has expansion\n"
             ++ "- = not OK, has no expansion, hence conservativity fails\n"
             ++ "o = OK, not a model of the axioms, hence no expansion needed\n"
-          body = legend++"\n"++render id id id (renderTT table)
+          body = legend ++ "\n" ++ render id id id (renderTT table)
           res = if isOK then Cons else Inconsistent
       createTextSaveDisplay title "unnamed" body
       return $ return (res, [])
