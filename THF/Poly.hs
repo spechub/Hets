@@ -324,8 +324,6 @@ getTypeCUF cm uf = case uf of
   case vst of
    [] -> lift $ fatal_error ("Invalid Abstraction: "
                              ++ show uf) (getRange uf)
-   _ : [] -> lift $ fatal_error ("Invalid Abstraction: "
-                                 ++ show uf) (getRange uf)
    _ -> return (genFn (vst ++ [uf'']), cs)
   where c = A_Single_Quoted
         ins t tp = Data.Map.insert (c t)
