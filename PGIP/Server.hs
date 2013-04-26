@@ -16,6 +16,7 @@ import PGIP.Query as Query
 
 import Driver.Options
 import Driver.ReadFn
+import Driver.Version
 
 #ifdef OLDSERVER
 import Network.Wai.Handler.SimpleServer
@@ -399,7 +400,13 @@ menuTriple q d c = unode "triple"
 mkHtmlString :: FilePath -> [Element] -> String
 mkHtmlString path dirs = htmlHead ++ mkHtmlElem
   ("Listing of" ++ if null path then " repository" else ": " ++ path)
-  (headElems path ++ [unode "ul" dirs])
+  (unode "h1" ("Hets " ++ hetcats_version) : unode "p"
+     [ bold "Hompage:"
+     , aRef "http://www.dfki.de/cps/hets" "dfki.de/cps/hets"
+     , bold "Contact:"
+     , aRef "mailto:hets-devel@informatik.uni-bremen.de"
+       "hets-devel@informatik.uni-bremen.de" ]
+   : headElems path ++ [unode "ul" dirs])
 
 mkHtmlElem :: String -> [Element] -> String
 mkHtmlElem title body = ppElement $ unode "html"
@@ -1111,9 +1118,16 @@ plain :: String -> Element
 plain = unode "p"
 
 headElems :: String -> [Element]
-headElems path = let d = "default" in unode "strong" "Choose query type:" :
+headElems path = let d = "default" in unode "strong" "Choose a display type:" :
   map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
-      (d : displayTypes) ++ [menuElement, uploadHtml]
+      (d : displayTypes)
+  ++ [ unode "p"
+       [ unode "small" "internal command overview as XML:"
+       , menuElement ]
+     , plain $ "Select a local file as library or "
+       ++ "enter a HetCASL specification in the text area and press \"submit\""
+       ++ ", or browse through our Hets-lib library below."
+     , uploadHtml ]
 
 menuElement :: Element
 menuElement = aRef "?menus" "menus"
