@@ -82,7 +82,8 @@ instance Comorphism CASL2TopSort
                with the result terms of functions instead of formulas like:
                forall x : T . bot = x => a(x)
                better: . a(bot) -}
-             , has_pred = True }
+             , has_pred = True
+             , has_part = True }
              {- subsorting is coded out and
              special Sort_gen_ax are coded out -}
         else Nothing
