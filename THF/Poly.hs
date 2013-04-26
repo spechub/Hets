@@ -154,18 +154,23 @@ unify' ts = case ts of
 tmpV :: Token
 tmpV = mkSimpleId "tmpV"
 
-type Constraints = UniqueT Maybe (Type, [(Type, Constraint)])
+type Constraints = UniqueT Result (Type, [(Type, Constraint)])
+
+not_supported :: (Show a, GetRange a) => a -> Constraints
+not_supported f = lift $ fatal_error
+                   ("Formula " ++ show f ++ " not supported!")
+                   (getRange f)
 
 getTypeC :: ConstMap -> THFFormula -> Constraints
 getTypeC cm f = case f of
  TF_THF_Logic_Formula lf -> getTypeCLF cm lf
- _ -> lift Nothing
+ _ -> not_supported f
 
 getTypeCLF :: ConstMap -> THFLogicFormula -> Constraints
 getTypeCLF cm lf = case lf of
  TLF_THF_Binary_Formula bf -> getTypeCBF cm bf
  TLF_THF_Unitary_Formula uf -> getTypeCUF cm uf
- _ -> lift Nothing
+ _ -> not_supported lf
 
 getTypeCBF :: ConstMap -> THFBinaryFormula -> Constraints
 getTypeCBF cm bf = case bf of
@@ -202,8 +207,10 @@ getTypeCBF cm bf = case bf of
       TBT_THF_Apply_Formula _ -> do
        ufs' <- mapM (getTypeCUF cm) ufs
        case ufs' of
-        [] -> lift Nothing
-        _ : [] -> lift Nothing
+        [] -> lift $ fatal_error ("Invalid Application: "
+                                  ++ show bt) (getRange bt)
+        _ : [] -> lift $ fatal_error ("Invalid Application: "
+                                      ++ show bt) (getRange bt)
         u : ufs'' -> do
          let (t1, cs1) = u
              tps = map fst ufs''
@@ -221,7 +228,8 @@ getTypeCBF cm bf = case bf of
       _ -> do
        ufs' <- mapM (getTypeCUF cm) ufs
        case ufs' of
-        [] -> lift Nothing
+        [] -> lift $ fatal_error ("Empty boolean connective: "
+                           ++ show bt) (getRange bt)
         (t, cs) : [] -> return (t, cs ++ [(t, NormalC (
          "Boolean connective requires all " ++
          "arguments to be of type OType", getRangeSpan ufs, OType))])
@@ -231,9 +239,9 @@ getTypeCBF cm bf = case bf of
                       "arguments to be of type OType"
          return (OType, concat cs ++ map (\ t ->
           (t, NormalC (errMsg, getRangeSpan bt, OType))) ts)
- _ -> lift Nothing
+ _ -> not_supported bf
 
-applyResult :: Int -> Type -> UniqueT Maybe Type
+applyResult :: Int -> Type -> UniqueT Result Type
 applyResult 0 t = return t
 applyResult i t = case t of
  MapType _ t' -> applyResult (i - 1) t'
@@ -246,13 +254,15 @@ getTypeCUF cm uf = case uf of
  TUF_THF_Quantified_Formula qf -> case qf of
   TQF_THF_Quantified_Formula _ vs uf' -> getTypeCQF vs uf'
   T0QF_THF_Quantified_Var _ vs uf' -> getTypeCQF vs uf'
-  _ -> lift Nothing
+  _ -> not_supported uf
   where getTypeCQF vs uf' = do
          cm' <- foldM (\ cm' v ->
           case v of
-           TV_THF_Typed_Variable t tp ->
-            lift (thfTopLevelTypeToType tp)
-             >>= \ tp' -> return $ ins t tp' cm'
+           TV_THF_Typed_Variable t tp -> case thfTopLevelTypeToType tp of
+             Just tp' -> return $ ins t tp' cm'
+             Nothing ->
+              lift $ fatal_error ("Failed to analyze type " ++ show tp)
+                                 (getRange tp)
            TV_Variable t -> do
             v' <- numberedTok tmpV
             return $ ins t (VType v') cm') cm vs
@@ -273,7 +283,7 @@ getTypeCUF cm uf = case uf of
                ++ sh lf' ++ ") is expected to be of type OType"
   return (lf', cs ++ [(lf', NormalC (errMsg, getRangeSpan lf, OType))])
  TUF_THF_Atom a -> case a of
-  TA_THF_Conn_Term _ -> lift Nothing
+  TA_THF_Conn_Term _ -> not_supported a
   T0A_Constant c -> case Data.Map.lookup c cm of
    Just ti -> return (constType ti, [])
    Nothing -> case show $ toToken c of
@@ -285,14 +295,14 @@ getTypeCUF cm uf = case uf of
       v <- numberedTok tmpV
       return (VType v, [])
   -- fixme - add types for internal constants
-  T0A_Defined_Constant _ -> lift Nothing
-  T0A_System_Constant _ -> lift Nothing
+  T0A_Defined_Constant _ -> not_supported a
+  T0A_System_Constant _ -> not_supported a
   T0A_Variable v -> case Data.Map.lookup (A_Single_Quoted v) cm of
    Just ti -> return (constType ti, [])
    Nothing -> do
     v' <- numberedTok tmpV
     return (VType v', [])
-  _ -> lift Nothing
+  _ -> not_supported a
  TUF_THF_Tuple lfs -> do
   lfs' <- mapM (getTypeCLF cm) lfs
   let (tps, cs) = unzip lfs'
@@ -302,15 +312,20 @@ getTypeCUF cm uf = case uf of
   (vst, cm') <- foldM (\ (l, cm') v ->
           case v of
            TV_THF_Typed_Variable t tp ->
-            lift (thfTopLevelTypeToType tp)
-             >>= \ tp' -> return (tp' : l, ins t tp' cm')
+            case thfTopLevelTypeToType tp of
+             Just tp' -> return (tp' : l, ins t tp' cm')
+             Nothing ->
+              lift $ fatal_error ("Failed to analyze type " ++ show tp)
+                                 (getRange tp)
            TV_Variable t -> do
             v' <- numberedTok tmpV
             return (VType v' : l, ins t (VType v') cm')) ([], cm) vs
   (uf'', cs) <- getTypeCUF cm' uf'
   case vst of
-   [] -> lift Nothing
-   _ : [] -> lift Nothing
+   [] -> lift $ fatal_error ("Invalid Abstraction: "
+                             ++ show uf) (getRange uf)
+   _ : [] -> lift $ fatal_error ("Invalid Abstraction: "
+                                 ++ show uf) (getRange uf)
    _ -> return (genFn (vst ++ [uf'']), cs)
   where c = A_Single_Quoted
         ins t tp = Data.Map.insert (c t)
@@ -319,7 +334,7 @@ getTypeCUF cm uf = case uf of
                    constName = N_Atomic_Word $ c t,
                    constType = tp,
                    constAnno = Null }
- _ -> lift Nothing
+ _ -> not_supported uf
 
 genFn :: [Type] -> Type
 genFn (tp : []) = tp
@@ -392,10 +407,9 @@ infer cm fs =
      constraints =
       liftM (map (\ (t, cs) -> (OType, NormalC
        (errMsg, getRangeSpan cs, t)) : cs)) constraints'
-     unifications =
-      liftM (map unify') constraints
- in case unifications of
-     Just unis' -> sequence unis' >>= \ unis ->
+ in do
+  unis' <- liftM (map unify') constraints
+  sequence unis' >>= \ unis ->
       let (cm', instances) = Data.List.mapAccumL
            (\ cm'_ (f, u) ->
              let (cm'', m1) = Data.Map.mapAccumWithKey
@@ -418,7 +432,6 @@ infer cm fs =
            fs' <- mapM (\ (f, i) -> rewriteSenFun (r, i) f)
             (zip fs instances)
            return (new_cm, fs')
-     Nothing -> mkError "Failed to generate constraints!" nullRange
 
 type_check :: TypeMap -> ConstMap -> [Named THFFormula]
                -> Result [[(Token, Type)]]
@@ -429,8 +442,5 @@ type_check _ cm sens = do
  let constraints =
       liftM (map (\ (t, cs) -> (OType, NormalC (errMsg, nullRange, t)) : cs))
             constraints'
- let unifications =
-      liftM (map unify') constraints
- case unifications of
-     Nothing -> mkError "Failed to generate constraints!" nullRange
-     Just r -> sequence r
+ unifications <- liftM (map unify') constraints
+ sequence unifications
