@@ -124,7 +124,7 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
     ++ case goalStatus n of
          Open _ -> "still open."
          Disproved -> "disproved."
-         Proved _ -> "proved.\nand used: " ++ unwords (usedAxioms n)
+         Proved _ -> "proved."
   return $ case retval of
     ATPError _ -> False
     ATPBatchStopped -> False
