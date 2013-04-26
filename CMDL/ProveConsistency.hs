@@ -80,7 +80,7 @@ cProver input state =
                    Nothing -> pl
                    Just x -> filter ((== x) . snd) pl ++ pl of
              [] -> return $ genErrorMsg
-                 ("No applicable prover with name \"" ++ inp  ++ "\" found")
+                 ("No applicable prover with name \"" ++ inp ++ "\" found")
                  state
              (p, nCm@(Comorphism cid)) : _ ->
                return $ add2hist [ ProverChange $ prover pS
@@ -351,8 +351,11 @@ getResults lid acm mStop mData mState =
     d <- takeMVar mData
     case d of
       Result _ Nothing -> return ()
-      Result _ (Just d') -> modifyMVar_ mState
-        (\ s -> case s of
+      Result _ (Just d') -> do
+        mapM_ (\ gs -> putStrLn $ "Goal " ++ P.goalName gs
+               ++ " used " ++ unwords (P.usedAxioms gs))
+          $ filter P.isProvedStat d'
+        modifyMVar_ mState (\ s -> case s of
                   Nothing -> return s
                   Just (Element st node) -> return $ Just $ Element
                                             (markProved acm lid d' st) node)
