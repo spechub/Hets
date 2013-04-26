@@ -6,20 +6,21 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  ?
+Portability :  non-portable (imports Logic.Prover)
 
 Functions for batch processing. Used by SoftFOL provers.
 -}
 
-module Proofs.BatchProcessing ( batchTimeLimit
-                              , isTimeLimitExceeded
-                              , adjustOrSetConfig
-                              , filterOpenGoals
-                              , checkGoal
-                              , goalProcessed
-                              , genericProveBatch
-                              , genericCMDLautomaticBatch
-                              ) where
+module Proofs.BatchProcessing
+  ( batchTimeLimit
+  , isTimeLimitExceeded
+  , adjustOrSetConfig
+  , filterOpenGoals
+  , checkGoal
+  , goalProcessed
+  , genericProveBatch
+  , genericCMDLautomaticBatch
+  ) where
 
 import Logic.Prover
 
@@ -68,18 +69,17 @@ isTimeLimitExceeded _ = False
 -}
 adjustOrSetConfig :: (Ord proof_tree) =>
                      (GenericConfig proof_tree -> GenericConfig proof_tree)
-                     -- ^ function to be applied against the current
-                     -- configuration or a new emptyConfig
+                     {- ^ function to be applied against the current
+                     configuration or a new emptyConfig -}
                   -> String -- ^ name of the prover
                   -> ATPIdentifier -- ^ name of the goal
                   -> proof_tree -- ^ initial empty proof_tree
                   -> GenericConfigsMap proof_tree -- ^ current GenericConfigsMap
                   -> GenericConfigsMap proof_tree
                   -- ^ resulting GenericConfigsMap with the changes applied
-adjustOrSetConfig f prName k pt m = if Map.member k m
-                                    then Map.adjust f k m
-                                    else Map.insert k
-                                               (f $ emptyConfig prName k pt) m
+adjustOrSetConfig f prName k pt m =
+  if Map.member k m then Map.adjust f k m else
+      Map.insert k (f $ emptyConfig prName k pt) m
 
 filterOpenGoals :: GenericConfigsMap proof_tree -> GenericConfigsMap proof_tree
 filterOpenGoals = Map.filter $ isOpenGoal . goalStatus . proofStatus
@@ -98,7 +98,7 @@ checkGoal cfgMap goal =
 -}
 goalProcessed :: (Ord proof_tree) =>
                  Conc.MVar (GenericState sign sentence proof_tree pst)
-               -- ^ IORef pointing to the backing State data structure
+                 -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
               -> [String] -- ^ extra options
               -> Int -- ^ total number of goals
@@ -110,29 +110,25 @@ goalProcessed :: (Ord proof_tree) =>
               -> IO Bool
 goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
               nGoal verbose (retval, res_cfg) = do
-  Conc.modifyMVar_ stateMVar (\s -> return (s{
-      configsMap = adjustOrSetConfig
-                      (\ c -> c{timeLimitExceeded =
-                                isTimeLimitExceeded retval,
-                                timeLimit = Just tLimit,
-                                extraOpts = extOpts,
-                                proofStatus = ((proofStatus res_cfg)
-                                                {usedTime = timeUsed res_cfg}),
-                                resultOutput = resultOutput res_cfg,
-                                timeUsed     = timeUsed res_cfg})
-                      prName (AS_Anno.senAttr nGoal)
-                      (currentProofTree s)
-                      (configsMap s)}))
-  when verbose (let toPrint n = let txt = "Goal " ++ goalName n ++ " is "
-                                 in case goalStatus n of
-                                      Open _    -> txt ++ "still open."
-                                      Disproved -> txt ++ "disproved."
-                                      Proved _  -> txt ++ "proved."
-                 in putStrLn $ toPrint $ proofStatus res_cfg)
-  return (case retval of
-                 ATPError _ -> False
-                 ATPBatchStopped -> False
-                 _ -> numGoals - processedGoalsSoFar > 0)
+  let n = proofStatus res_cfg
+  Conc.modifyMVar_ stateMVar $ \ s -> return $ s
+    { configsMap = adjustOrSetConfig (\ c -> c
+        { timeLimitExceeded = isTimeLimitExceeded retval
+        , timeLimit = Just tLimit
+        , extraOpts = extOpts
+        , proofStatus = n { usedTime = timeUsed res_cfg}
+        , resultOutput = resultOutput res_cfg
+        , timeUsed = timeUsed res_cfg
+        }) prName (AS_Anno.senAttr nGoal) (currentProofTree s) (configsMap s)}
+  when verbose $ putStrLn $ "Goal " ++ goalName n ++ " is "
+    ++ case goalStatus n of
+         Open _ -> "still open."
+         Disproved -> "disproved."
+         Proved _ -> "proved."
+  return $ case retval of
+    ATPError _ -> False
+    ATPBatchStopped -> False
+    _ -> numGoals - processedGoalsSoFar > 0
 
 -- ** Implementation
 
@@ -151,8 +147,8 @@ genericProveBatch :: (Ord sentence, Ord proof_tree) =>
                       -> Maybe (AS_Anno.Named sentence)
                       -> (ATPRetval, GenericConfig proof_tree)
                       -> IO Bool)
-                      -- ^ called after every prover run.
-                      -- return True if you want the prover to continue.
+                      {- ^ called after every prover run.
+                      return True if you want the prover to continue. -}
                   -> (pst -> AS_Anno.Named sentence -> pst)
                       -- ^ inserts a Namend sentence into a logicalPart
                   -> RunProver sentence proof_tree pst -- prover to run batch
@@ -161,7 +157,7 @@ genericProveBatch :: (Ord sentence, Ord proof_tree) =>
                   -> GenericState sign sentence proof_tree pst
                   -> Maybe (Conc.MVar (Result [ProofStatus proof_tree]))
                      -- ^ empty MVar to be filled after each proof attempt
-                  -> IO ([ProofStatus proof_tree])
+                  -> IO [ProofStatus proof_tree]
                   -- ^ proof status for each goal
 genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                   afterEachProofAttempt
@@ -171,17 +167,17 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
     openGoals = filterOpenGoals (configsMap st)
     addToLP g res pst =
         if isProvedStat res && inclProvedThs
-        then inSen pst (g{AS_Anno.isAxiom = True})
+        then inSen pst (g {AS_Anno.isAxiom = True})
         else pst
     batchProve _ _ resDone [] = return (reverse resDone)
-    batchProve pst goalsProcessedSoFar resDone (g:gs) =
+    batchProve pst goalsProcessedSoFar resDone (g : gs) =
      let gName = AS_Anno.senAttr g
-         pt    = currentProofTree st
+         pt = currentProofTree st
      in
       if Map.member gName openGoals
       then do
---        putStrLn $ "Trying to prove goal: " ++ gName
-        let initEmptyCfg = (emptyConfig prName gName pt)
+        -- putStrLn $ "Trying to prove goal: " ++ gName
+        let initEmptyCfg = emptyConfig prName gName pt
             curCfg = Map.findWithDefault initEmptyCfg gName openGoals
             runConfig = initEmptyCfg
                 { timeLimit = Just $
@@ -193,12 +189,12 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                                  else extraOptions }
         (err, res_cfg) <-
               runGivenProver pst runConfig saveProblem_batch thName g
-        -- putStrLn $ prName ++ " returned: " ++ (show err)
-        -- if the batch prover runs in a separate thread
-        -- that's killed via killThread
-        -- runGivenProver will return ATPBatchStopped. We have to stop the
-        -- recursion in that case
-        -- add proved goals as axioms
+        {- putStrLn $ prName ++ " returned: " ++ (show err)
+        if the batch prover runs in a separate thread
+        that's killed via killThread
+        runGivenProver will return ATPBatchStopped. We have to stop the
+        recursion in that case
+        add proved goals as axioms -}
         let res0 = proofStatus res_cfg
             res = res0 { goalStatus =
               case goalStatus res0 of
@@ -206,46 +202,41 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                   Open (Reason $ "Timeout" : l)
                 r -> r }
             pst' = addToLP g res pst
-            goalsProcessedSoFar' = goalsProcessedSoFar+1
-            ioProofStatus = reverse (res:resDone)
+            goalsProcessedSoFar' = goalsProcessedSoFar + 1
+            ioProofStatus = reverse (res : resDone)
         maybe (return ())
-              (\rr -> do
+              (\ rr -> do
                  mOldVal <- Conc.tryTakeMVar rr
-                 let newRes = (do appendDiags $ atpRetvalToDiags gName err
-                                  revertRenamingOfLabels st [res])
+                 let newRes = appendDiags (atpRetvalToDiags gName err)
+                              >> revertRenamingOfLabels st [res]
                      -- transform new result in Monad Result
                      newVal = maybe id (joinResultWith (++)) mOldVal newRes
                      -- concat the oldValue with the new Result
                  Conc.putMVar rr newVal)
               resultMVar
         cont <- afterEachProofAttempt goalsProcessedSoFar' g
-                         (find ((flip Map.member) openGoals .
+                         (find ((`Map.member` openGoals) .
                                 AS_Anno.senAttr) gs)
                          (err, res_cfg)
         if cont
-           then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
+           then batchProve pst' goalsProcessedSoFar' (res : resDone) gs
            else return ioProofStatus
       else batchProve (addToLP g (proofStatus $
                                   Map.findWithDefault
                                          (emptyConfig prName gName pt)
-                                         gName $ configsMap st)
-                               pst)
+                                         gName $ configsMap st) pst)
                       goalsProcessedSoFar resDone gs
 
 atpRetvalToDiags :: String -- ^ name of goal
                  -> ATPRetval -> [Diagnosis]
-atpRetvalToDiags gName err =
-    case err of
-      ATPError msg ->
-          [Diag {diagKind = Error, diagString = msg,
-                            diagPos = Id.nullRange }]
-      ATPTLimitExceeded ->
-              [Diag {diagKind = Warning,
-                     diagString = "Time limit exceeded (goal \""++gName++
-                                  "\").",
-                     diagPos = Id.nullRange }]
-      _ -> []
-
+atpRetvalToDiags gName err = case err of
+  ATPError msg ->
+    [Diag { diagKind = Error, diagString = msg, diagPos = Id.nullRange }]
+  ATPTLimitExceeded ->
+    [Diag { diagKind = Warning
+          , diagString = "Time limit exceeded (goal \"" ++ gName ++ "\")."
+          , diagPos = Id.nullRange }]
+  _ -> []
 
 -- * Generic command line prover function
 
@@ -254,8 +245,8 @@ atpRetvalToDiags gName err =
 -}
 genericCMDLautomaticBatch ::
         (Ord proof_tree, Ord sentence)
-        => ATPFunctions sign sentence mor proof_tree pst -- ^ prover specific
-                                                     --   functions
+        => ATPFunctions sign sentence mor proof_tree pst {- ^ prover specific
+                                                     functions -}
         -> Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
         -> Conc.MVar (Result [ProofStatus proof_tree])
@@ -267,9 +258,9 @@ genericCMDLautomaticBatch ::
            -- ^ theory consisting of a signature and a list of Named sentence
         -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
         -> proof_tree -- ^ initial empty proof_tree
-        -> IO (Conc.ThreadId,Conc.MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           --   snd: MVar to wait for the end of the thread
+        -> IO (Conc.ThreadId, Conc.MVar ())
+           {- ^ fst: identifier of the batch thread for killing it
+           snd: MVar to wait for the end of the thread -}
 genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
                           prName thName defaultTacticScript th freedefs pt = do
     -- putStrLn $ show defaultTacticScript
@@ -277,19 +268,19 @@ genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
                                   (initialProverState atpFun)
                                   (atpTransSenName atpFun) th freedefs pt
     stateMVar <- Conc.newMVar iGS
-    let tLimit  = tsTimeLimit defaultTacticScript
+    let tLimit = tsTimeLimit defaultTacticScript
         extOpts = tsExtraOpts defaultTacticScript
         numGoals = Map.size $ filterOpenGoals $ configsMap iGS
     mvar <- Conc.newEmptyMVar
     threadID <- Conc.forkIO
                  (when (numGoals > 0)
-                  (do genericProveBatch True tLimit extOpts inclProvedThs
+                  (genericProveBatch True tLimit extOpts inclProvedThs
                                       saveProblem_batch
                         (\ gPSF nSen _ conf ->
                              goalProcessed stateMVar tLimit extOpts numGoals
                                            prName gPSF nSen True conf)
                         (atpInsertSentence atpFun) (runProver atpFun)
                         prName thName iGS (Just resultMVar)
-                      return ())
+                      >> return ())
                    `Exception.finally` Conc.putMVar mvar ())
     return (threadID, mvar)
