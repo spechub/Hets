@@ -64,7 +64,7 @@ signToSPLogicalPart s =
                 else subsortDecl ++ termDecl ++ predDecl ++ genDecl
 
     subsortDecl = map (\ (a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b})
-                      (Rel.toList (Rel.transReduce (sortRel s)))
+                      (Rel.toList  (sortRel s))
 
     termDecl = concatMap termDecls (Map.toList (funcMap s))
 
