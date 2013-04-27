@@ -5,86 +5,214 @@ import Text.XML.HaXml.XmlContent (fReadXml)
 import Isabelle.IsaExport
 import qualified Isabelle.IsaSign as IsaSign
 import qualified Isabelle.IsaConsts as IsaConsts
-import qualified Data.Map as Map
-import Data.Maybe (fromMaybe,catMaybes)
-import Data.List (intercalate)
+import Data.Maybe (fromMaybe)
 
 importIsaDataIO :: String ->
- IO (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
+ IO [(String,[String],[(String,IsaSign.Typ)],
      [(String,IsaSign.Term)], [(String,IsaSign.Term)],
-     IsaSign.DomainTab, [(String,IsaSign.Def)],
-     [(String,IsaSign.FunDef)],
+     IsaSign.DomainTab, [(String,IsaSign.FunDef)],
      [(IsaSign.IsaClass,IsaSign.ClassDecl)],
-     [(String,IsaSign.LocaleDecl)])
+     [(String,IsaSign.LocaleDecl)])]
 importIsaDataIO p = do
- d' <- fReadXml p
+ IsaExport d' <- fReadXml p
  return $ importIsaData d'
 
-importIsaData :: IsaExport ->
- (String,[String],[(String,IsaSign.Typ,Maybe IsaSign.Term)],
+importIsaData :: [IsaTheory] ->
+ [(String,[String],[(String,IsaSign.Typ)],
   [(String,IsaSign.Term)], [(String,IsaSign.Term)],
-  IsaSign.DomainTab, [(String,IsaSign.Def)],
-  [(String,IsaSign.FunDef)],
+  IsaSign.DomainTab, [(String,IsaSign.FunDef)],
   [(IsaSign.IsaClass,IsaSign.ClassDecl)],
-  [(String,IsaSign.LocaleDecl)])
-importIsaData (IsaExport attrs
-               (Imports imports)
-               (Consts consts)
-               (Axioms axioms) 
-               (Theorems theorems)
-               (Types types)
-               (Defs defs)
-               (Funs funs)
-               (Classes classes)
-               (Locales locales)) =
- let imports'  = map importName                 imports
-     consts'   = map mapConst                   consts
-     axioms'   = map (hXmlTerm2IsaTerm [])      axioms
-     theorems' = map (hXmlTerm2IsaTerm [])      theorems
-     types'    = map hXmlTypeDecl2IsaTypeDecl   types
-     defs'     = map hXmlDef2IsaDef             defs
-     funs'     = map hXmlFunDef2IsaFunDef       funs
-     classes'  = map hXmlClassDecl2IsaClassDecl classes
-     locales'  = map hXmlLocaleDecl2IsaLocale   locales
- in (isaExportFile attrs,imports',consts',
-     axioms',theorems',types',defs',funs',classes',locales')
+  [(String,IsaSign.LocaleDecl)])]
+importIsaData = map (\(IsaTheory attrs imports axioms theorems consts
+                               datatypes funs classes locales) ->
+ let imports'   = map importName imports
+     consts'    = map hXmlConst2IsaConst consts
+     axioms'    = map hXmlAxiom2IsaAxiom axioms
+     theorems'  = map hXmlTheorem2IsaTheorem theorems
+     datatypes' = map hXmlRecDataType2IsaRecDataType datatypes
+     funs'      = map hXmlFunction2IsaFunDef funs
+     classes'   = map hXmlClass2IsaClassDecl classes
+     locales'   = map hXmlLocale2IsaLocaleDecl locales
+ in (isaTheoryName attrs,imports',consts',
+     axioms',theorems',datatypes',funs',classes',locales'))
 
-mapConst :: ConstDecl -> (String,IsaSign.Typ, Maybe IsaSign.Term)
-mapConst (ConstDecl attrs tp tm) =
- let tm' = case tm of
-      OneOf2 t -> Just $ snd . (hXmlTerm2IsaTerm []) $ t
-      TwoOf2 _ -> Nothing
- in (constDeclName attrs, hXmlOneOf3_2IsaTyp tp, tm')
+hXmlConst2IsaConst :: Const -> (String,IsaSign.Typ)
+hXmlConst2IsaConst (ConstTVar  a v) =
+ (constName a, hXmlOneOf3_2IsaTyp $ OneOf3 v)
+hXmlConst2IsaConst (ConstTFree a f) =
+ (constName a, hXmlOneOf3_2IsaTyp $ TwoOf3 f)
+hXmlConst2IsaConst (ConstType  a t) =
+ (constName a, hXmlOneOf3_2IsaTyp $ ThreeOf3 t)
 
-hXmlTerm2IsaTerm :: [String] -> Term -> (String,IsaSign.Term)
-hXmlTerm2IsaTerm l (TermBound attrs (Bound bindex)) =
-  (termName attrs, 
+hXmlAxiom2IsaAxiom :: Axiom -> (String,IsaSign.Term)
+hXmlAxiom2IsaAxiom (AxiomBound a b) =
+ (axiomName a, hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
+hXmlAxiom2IsaAxiom (AxiomFree a f)  =
+ (axiomName a, hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
+hXmlAxiom2IsaAxiom (AxiomVar a v)   =
+ (axiomName a, hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
+hXmlAxiom2IsaAxiom (AxiomConst a c) =
+ (axiomName a, hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
+hXmlAxiom2IsaAxiom (AxiomApp a ap)  =
+ (axiomName a, hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
+hXmlAxiom2IsaAxiom (AxiomAbs a ab)  =
+ (axiomName a, hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
+
+hXmlTheorem2IsaTheorem :: Theorem -> (String,IsaSign.Term)
+hXmlTheorem2IsaTheorem (TheoremBound a b) =
+ (theoremName a, hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
+hXmlTheorem2IsaTheorem (TheoremFree a f)  =
+ (theoremName a, hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
+hXmlTheorem2IsaTheorem (TheoremVar a v)   =
+ (theoremName a, hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
+hXmlTheorem2IsaTheorem (TheoremConst a c) =
+ (theoremName a, hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
+hXmlTheorem2IsaTheorem (TheoremApp a ap)  =
+ (theoremName a, hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
+hXmlTheorem2IsaTheorem (TheoremAbs a ab)  =
+ (theoremName a, hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
+
+hXmlRecDataType2IsaRecDataType :: RecDatatypes -> [IsaSign.DomainEntry]
+hXmlRecDataType2IsaRecDataType (RecDatatypes dts) =
+ map hXmlDataType2IsaDataType dts
+
+hXmlDataType2IsaDataType :: Datatype -> IsaSign.DomainEntry
+hXmlDataType2IsaDataType (Datatype a tps cs) =
+ (IsaSign.Type (datatypeName a) IsaConsts.holType $ map hXmlOneOf3_2IsaTyp tps,
+  map (\(Constructor ca cs') ->
+   (IsaConsts.mkVName $ constructorName ca,
+    map trans cs')) cs)
+ where
+  trans (Constructor_TVar  v) = hXmlOneOf3_2IsaTyp $ OneOf3 v 
+  trans (Constructor_TFree f) = hXmlOneOf3_2IsaTyp $ TwoOf3 f
+  trans (Constructor_Type  t) = hXmlOneOf3_2IsaTyp $ ThreeOf3 t
+
+hXmlFunction2IsaFunDef :: Function -> (String,IsaSign.FunDef)
+hXmlFunction2IsaFunDef (Function a t eqs) =
+ (functionName a, (hXmlOneOf3_2IsaTyp t, map hXmlEquation2IsaFunEqs eqs))
+
+hXmlEquation2IsaFunEqs :: Equations -> ([IsaSign.Term],IsaSign.Term)
+hXmlEquation2IsaFunEqs (Equations eqs) =
+ let eqs' = map hXmlEquation_2IsaTerm eqs
+ in (init eqs',last eqs')
+
+hXmlEquation_2IsaTerm :: Equations_ -> IsaSign.Term
+hXmlEquation_2IsaTerm (Equations_Bound b) =
+ hXmlOneOf6_2IsaTerm [] $ OneOf6 b
+hXmlEquation_2IsaTerm (Equations_Free f)  =
+ hXmlOneOf6_2IsaTerm [] $ TwoOf6 f
+hXmlEquation_2IsaTerm (Equations_Var v)   =
+ hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v
+hXmlEquation_2IsaTerm (Equations_Const c) =
+ hXmlOneOf6_2IsaTerm [] $ FourOf6 c
+hXmlEquation_2IsaTerm (Equations_App ap)  =
+ hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap
+hXmlEquation_2IsaTerm (Equations_Abs ab)  =
+ hXmlOneOf6_2IsaTerm [] $ SixOf6 ab
+
+hXmlClass2IsaClassDecl :: ClassDef -> (IsaSign.IsaClass,IsaSign.ClassDecl)
+hXmlClass2IsaClassDecl (ClassDef a ps ass parms) =
+ (IsaSign.IsaClass $ classDefName a,
+  (map (IsaSign.IsaClass . parentName) ps,
+   map hXmlAssumption2NamedIsaTerm ass,
+   map hXmlClassParam2NamedIsaTyp parms))
+
+hXmlAssumption2NamedIsaTerm :: Assumption -> (String,IsaSign.Term)
+hXmlAssumption2NamedIsaTerm (AssumptionBound a b) =
+ (assumptionName a, hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
+hXmlAssumption2NamedIsaTerm (AssumptionFree a f)  =
+ (assumptionName a, hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
+hXmlAssumption2NamedIsaTerm (AssumptionVar a v)   =
+ (assumptionName a, hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
+hXmlAssumption2NamedIsaTerm (AssumptionConst a c) =
+ (assumptionName a, hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
+hXmlAssumption2NamedIsaTerm (AssumptionApp a ap)  =
+ (assumptionName a, hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
+hXmlAssumption2NamedIsaTerm (AssumptionAbs a ab)  =
+ (assumptionName a, hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
+
+hXmlClassParam2NamedIsaTyp :: ClassParam -> (String,IsaSign.Typ)
+hXmlClassParam2NamedIsaTyp (ClassParamTVar  a v) =
+ (classParamName a, hXmlOneOf3_2IsaTyp $ OneOf3 v)
+hXmlClassParam2NamedIsaTyp (ClassParamTFree a f) =
+ (classParamName a, hXmlOneOf3_2IsaTyp $ TwoOf3 f)
+hXmlClassParam2NamedIsaTyp (ClassParamType  a t) =
+ (classParamName a, hXmlOneOf3_2IsaTyp $ ThreeOf3 t)
+
+hXmlLocale2IsaLocaleDecl :: Locale -> (String,IsaSign.LocaleDecl)
+hXmlLocale2IsaLocaleDecl (Locale a parms ass thms ps) =
+ let altSyn = \at -> case localeParamMixfix_i at of
+                      Just i' ->
+                       let i = (read i') :: Int
+                       in case (localeParamInfix at,localeParamInfixl at,
+                               localeParamInfixr at) of
+                          (Just s,_,_) -> Just $ IsaSign.AltSyntax s [i,i] i
+                          (_,Just s,_) -> Just $ IsaSign.AltSyntax s [i+1,i] i
+                          (_,_,Just s) -> Just $ IsaSign.AltSyntax s [i,i+1] i
+                          _ -> Nothing
+                      _ -> Nothing
+     params =
+      map (\lc -> case lc of
+                  LocaleParamTVar at tv ->(localeParamName at,
+                   hXmlOneOf3_2IsaTyp (OneOf3 tv), altSyn at)
+                  LocaleParamTFree at tf -> (localeParamName at,
+                   hXmlOneOf3_2IsaTyp (TwoOf3 tf), altSyn at)
+                  LocaleParamType at t -> (localeParamName at,
+                   hXmlOneOf3_2IsaTyp (ThreeOf3 t), altSyn at)) parms
+ in (localeName a,((map parentName ps), map hXmlAssumption2NamedIsaTerm ass,
+                map hXmlTheorem2IsaTheorem thms,params))
+
+hXmlType_2IsaTyp :: Type_ -> IsaSign.Typ
+hXmlType_2IsaTyp (Type_TVar v) = hXmlOneOf3_2IsaTyp (OneOf3 v)
+hXmlType_2IsaTyp (Type_TFree f) = hXmlOneOf3_2IsaTyp (TwoOf3 f)
+hXmlType_2IsaTyp (Type_Type t) = hXmlOneOf3_2IsaTyp (ThreeOf3 t)
+
+hXmlType2IsaTyp :: Type -> IsaSign.Typ
+hXmlType2IsaTyp (Type attrs tps) =
+ IsaSign.Type (typeName attrs) IsaConsts.holType (map hXmlType_2IsaTyp tps)
+
+hXmlTFree2IsaTyp :: TFree -> IsaSign.Typ
+hXmlTFree2IsaTyp (TFree attrs cls) =
+ IsaSign.TFree (tFreeName attrs)
+  (map hXmlClass2IsaClass cls)
+
+hXmlOneOf3_2IsaTyp :: (OneOf3 TVar TFree Type) -> IsaSign.Typ
+hXmlOneOf3_2IsaTyp (OneOf3 (TVar a cls)) =
+ IsaSign.TVar (IsaSign.Indexname (tVarName a)
+    (read (fromMaybe "0" (tVarIndex a)) :: Int))
+  (map hXmlClass2IsaClass cls)
+hXmlOneOf3_2IsaTyp (TwoOf3 f) = hXmlTFree2IsaTyp f
+hXmlOneOf3_2IsaTyp (ThreeOf3 t) = hXmlType2IsaTyp t
+
+hXmlClass2IsaClass :: Class -> IsaSign.IsaClass
+hXmlClass2IsaClass = IsaSign.IsaClass . className
+
+hXmlOneOf6_2IsaTerm :: [String] -> OneOf6 Bound Free Var Const App Abs -> IsaSign.Term
+hXmlOneOf6_2IsaTerm l o = case o of
+  (OneOf6 (Bound bindex)) ->
     let idx = (read bindex) :: Int
-    in IsaSign.Free . IsaConsts.mkVName $ (l!!idx))
-hXmlTerm2IsaTerm _ (TermFree attrs f) = case f of
-  FreeTVar a _ -> (n, free a)
-  FreeTFree a _ -> (n, free a)
-  FreeType a _ -> (n, free a)
- where n = termName attrs
-       free = IsaSign.Free . IsaConsts.mkVName . freeName
-hXmlTerm2IsaTerm _ (TermVar attrs v) =
- let vattrs = case v of
-               VarTVar d _ -> d
-               VarTFree d _ -> d
-               VarType d _ -> d
-
- in (termName attrs,
-     IsaSign.Free . IsaConsts.mkVName . varName $ vattrs)
-hXmlTerm2IsaTerm _ (TermConst attrs c) = (termName attrs, hXmlConst2IsaTerm c)
-hXmlTerm2IsaTerm l (TermApp attrs a) = (termName attrs, hXmlApp2IsaTerm l a)
-hXmlTerm2IsaTerm l (TermAbs attrs a) = (termName attrs, hXmlAbs2IsaTerm l a)
+    in IsaSign.Free . IsaConsts.mkVName $ (l!!idx)
+  (TwoOf6 f) -> case f of
+                 FreeTVar  a _ -> free a
+                 FreeTFree a _ -> free a
+                 FreeType  a _ -> free a
+   where free = IsaSign.Free . IsaConsts.mkVName . freeName
+  (ThreeOf6 v) ->
+   let vattrs = case v of
+                 VarTVar d _ -> d
+                 VarTFree d _ -> d
+                 VarType d _ -> d
+   in IsaSign.Free . IsaConsts.mkVName . varName $ vattrs
+  (FourOf6 c) -> hXmlConst2IsaTerm c
+  (FiveOf6 a) -> hXmlApp2IsaTerm l a
+  (SixOf6 a)  -> hXmlAbs2IsaTerm l a
 
 hXmlConst2IsaTerm :: Const -> IsaSign.Term
 hXmlConst2IsaTerm c = case c of
   ConstTVar attrs c1 -> const' attrs (OneOf3 c1)
   ConstTFree attrs c1 -> const' attrs (TwoOf3 c1)
   ConstType attrs c1 -> const' attrs (ThreeOf3 c1)
- where const' a d = 
+ where const' a d =
         let vname = IsaSign.VName {
           IsaSign.new = constName a,
           IsaSign.altSyn = case constMixfix_i a of
@@ -123,196 +251,3 @@ hXmlAbs2IsaTerm l (Abs attrs t f) = IsaSign.Abs
  (hXmlOneOf6_2IsaTerm (absVname attrs:l) f)
  IsaSign.NotCont
 
-hXmlOneOf6_2IsaTerm :: [String] -> OneOf6 Bound Free Var Const App Abs -> IsaSign.Term
-hXmlOneOf6_2IsaTerm l o = case o of
-  (OneOf6 b) -> tm $ TermBound n b
-  (TwoOf6 f) -> tm $ TermFree n f
-  (ThreeOf6 v) -> tm $ TermVar n v
-  (FourOf6 c) -> tm $ TermConst n c
-  (FiveOf6 a) -> tm $ TermApp n a
-  (SixOf6 a) -> tm $ TermAbs n a
- where tm = snd . (hXmlTerm2IsaTerm l)
-       n = Term_Attrs ""
-
-hXmlType_2IsaTyp :: Type_ -> IsaSign.Typ
-hXmlType_2IsaTyp (Type_TVar v) = hXmlOneOf3_2IsaTyp (OneOf3 v)
-hXmlType_2IsaTyp (Type_TFree f) = hXmlOneOf3_2IsaTyp (TwoOf3 f)
-hXmlType_2IsaTyp (Type_Type t) = hXmlOneOf3_2IsaTyp (ThreeOf3 t)
-
-hXmlType2IsaTyp :: Type -> IsaSign.Typ
-hXmlType2IsaTyp (Type attrs tps) =
- IsaSign.Type (typeName attrs) IsaConsts.holType (map hXmlType_2IsaTyp tps)
-
-hXmlTFree2IsaTyp :: TFree -> IsaSign.Typ
-hXmlTFree2IsaTyp (TFree attrs cls) =
- IsaSign.TFree (tFreeName attrs)
-  (map hXmlClass2IsaClass cls)
-
-hXmlOneOf3_2IsaTyp :: (OneOf3 TVar TFree Type) -> IsaSign.Typ
-hXmlOneOf3_2IsaTyp (OneOf3 (TVar a cls)) =
- IsaSign.TVar (IsaSign.Indexname (tVarName a)
-    (read (fromMaybe "0" (tVarIndex a)) :: Int))
-  (map hXmlClass2IsaClass cls)
-hXmlOneOf3_2IsaTyp (TwoOf3 f) = hXmlTFree2IsaTyp f
-hXmlOneOf3_2IsaTyp (ThreeOf3 t) = hXmlType2IsaTyp t
-
-hXmlClass2IsaClass :: Class -> IsaSign.IsaClass
-hXmlClass2IsaClass = IsaSign.IsaClass . className
-
-hXmlTypeDecl2IsaTypeDecl :: TypeDecl -> [IsaSign.DomainEntry]
-hXmlTypeDecl2IsaTypeDecl (TypeDecl _ rs) = 
- let recmap = foldl (\m (RecType ra vs _) ->
-                      Map.insert ((read (recTypeI ra))::Int) 
-                                 ((if length (recTypeVsToString vs) > 0
-                                    then (recTypeVsToString vs) ++ " "
-                                    else "") ++ (recTypeName ra))
-                                 m) Map.empty rs
-      where recTypeVsToString (Vars vs) = intercalate " "
-             (map (\v -> case v of
-                          Vars_DtTFree f -> dtTFreeS f
-                          _ -> "") vs)
- in map (hXmlRecType2IsaTypeDecl recmap) rs
-
-hXmlLocaleDecl2IsaLocale :: LocaleDecl -> (String,IsaSign.LocaleDecl)
-hXmlLocaleDecl2IsaLocale (LocaleDecl a l) =
- let parents = catMaybes $
-      map (\ lc -> case lc of
-                    LocaleDecl_Parent p -> Just (parentName p)
-                    _ -> Nothing) l
-     i_ax = catMaybes $
-      map (\ lc -> case lc of
-                    LocaleDecl_IAxiom ax -> case ax of
-                     IAxiomBound at b -> Just (iAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
-                     IAxiomFree at f -> Just (iAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
-                     IAxiomVar at v -> Just (iAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
-                     IAxiomConst at c -> Just (iAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
-                     IAxiomApp at ap -> Just (iAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
-                     IAxiomAbs at ab -> Just (iAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
-                    _ -> Nothing) l
-     e_ax = catMaybes $
-      map (\ lc -> case lc of
-                    LocaleDecl_EAxiom ax -> case ax of
-                     EAxiomBound at b -> Just (eAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
-                     EAxiomFree at f -> Just (eAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
-                     EAxiomVar at v -> Just (eAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
-                     EAxiomConst at c -> Just (eAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
-                     EAxiomApp at ap -> Just (eAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
-                     EAxiomAbs at ab -> Just (eAxiomName at,
-                      hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
-                    _ -> Nothing) l
-     altSyn = \at -> case localeParamMixfix_i at of
-                      Just i' ->
-                       let i = (read i') :: Int
-                       in case (localeParamInfix at,localeParamInfixl at,
-                               localeParamInfixr at) of
-                          (Just s,_,_) -> Just $ IsaSign.AltSyntax s [i,i] i
-                          (_,Just s,_) -> Just $ IsaSign.AltSyntax s [i+1,i] i
-                          (_,_,Just s) -> Just $ IsaSign.AltSyntax s [i,i+1] i
-                          _ -> Nothing
-                      _ -> Nothing
-     params = catMaybes $
-      map (\lc -> case lc of
-             LocaleDecl_LocaleParam p -> case p of
-                  LocaleParamTVar at tv -> Just (localeParamName at,
-                   hXmlOneOf3_2IsaTyp (OneOf3 tv), altSyn at)
-                  LocaleParamTFree at tf -> Just (localeParamName at,
-                   hXmlOneOf3_2IsaTyp (TwoOf3 tf), altSyn at)
-                  LocaleParamType at t -> Just (localeParamName at,
-                   hXmlOneOf3_2IsaTyp (ThreeOf3 t), altSyn at)
-             _ -> Nothing) l
- in (localeDeclName a,(parents,i_ax,e_ax,params))
-
-hXmlDef2IsaDef :: Def -> (String,IsaSign.Def)
-hXmlDef2IsaDef (Def a t args tm) = (defName a,(hXmlOneOf3_2IsaTyp t,
- map (\arg -> case arg of
-               ArgTVar a1 t'  -> (argName a1,
-                hXmlOneOf3_2IsaTyp $ OneOf3 t')
-               ArgTFree a1 t' -> (argName a1,
-                hXmlOneOf3_2IsaTyp $ TwoOf3 t')
-               ArgType a1 t'  -> (argName a1,
-                hXmlOneOf3_2IsaTyp $ ThreeOf3 t')) args,
- hXmlOneOf6_2IsaTerm [] tm))
-
-hXmlFunDef2IsaFunDef :: FunDef -> (String,IsaSign.FunDef)
-hXmlFunDef2IsaFunDef (FunDef a t def_eqs) = (funDefName a,
- ((hXmlOneOf3_2IsaTyp t),map hXmlFunDefEq2IsaFunDefEq def_eqs))
-
-hXmlFunDefEq2IsaFunDefEq :: FunDefEq -> ([IsaSign.Term],IsaSign.Term)
-hXmlFunDefEq2IsaFunDefEq (FunDefEq tm) = case tm of
- def:pats -> (map (hXmlOneOf6_2IsaTerm []) pats,hXmlOneOf6_2IsaTerm [] def)
- _        -> error "Illegal function definition!"
-
-hXmlClassDecl2IsaClassDecl :: ClassDecl -> (IsaSign.IsaClass,IsaSign.ClassDecl)
-hXmlClassDecl2IsaClassDecl (ClassDecl a cls) =
- let axioms = catMaybes $
-      map (\ c -> case c of
-                   ClassDecl_Axiom ax -> Just ax
-                   _ -> Nothing) cls
-     params = catMaybes $
-      map (\ c -> case c of
-                   ClassDecl_Param p -> Just p
-                   _ -> Nothing) cls
-     parents = catMaybes $
-      map (\ c -> case c of
-                   ClassDecl_Parent pa -> Just pa
-                   _ -> Nothing) cls
- in
- (IsaSign.IsaClass . classDeclName $ a,
-  (map (IsaSign.IsaClass . parentName) parents,
-  map (\ ax ->
-            let (n,t) = case ax of
-                  AxiomBound attr b -> (axiomName attr,
-                   hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
-                  AxiomFree attr f -> (axiomName attr,
-                   hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
-                  AxiomVar attr v -> (axiomName attr,
-                   hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
-                  AxiomConst attr c -> (axiomName attr,
-                   hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
-                  AxiomApp attr app -> (axiomName attr,
-                   hXmlOneOf6_2IsaTerm [] $ FiveOf6 app)
-                  AxiomAbs attr ab -> (axiomName attr,
-                   hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
-            in (n,t)
-        ) axioms,
-  map (\ p -> case p of
-               ParamTVar a' t -> (paramName a',hXmlOneOf3_2IsaTyp (OneOf3 t))
-               ParamTFree a' t -> (paramName a',hXmlOneOf3_2IsaTyp (TwoOf3 t))
-               ParamType a' t -> (paramName a',hXmlOneOf3_2IsaTyp (ThreeOf3 t)))
-   params))
-
-hXmlRecType2IsaTypeDecl :: Map.Map Int String ->
- RecType -> IsaSign.DomainEntry
-hXmlRecType2IsaTypeDecl recmap (RecType a (Vars vs) (Constructors cs)) = 
- let trans c = case c of
-                Constructor_DtTFree (DtTFree f) ->
-                 hXmlOneOf3_2IsaTyp
-                  (TwoOf3 (TFree (TFree_Attrs f) []))
-                Constructor_DtType (DtType ta dts) ->
-                 IsaSign.Type (dtTypeS ta) IsaConsts.holType
-                  (map (\dt -> case dt of
-                     DtType_DtTFree f -> trans (Constructor_DtTFree f)
-                     DtType_DtType t -> trans (Constructor_DtType t)
-                     DtType_DtRec r -> trans (Constructor_DtRec r)) dts)
-                Constructor_DtRec (DtRec r) ->
-                 hXmlOneOf3_2IsaTyp
-                  (ThreeOf3 (Type (Type_Attrs (Map.findWithDefault ""
-                    ((read r)::Int) recmap)) []))
- in ((IsaSign.Type (recTypeName a) IsaConsts.holType
-      (map (\v -> case v of
-             Vars_DtTFree f -> trans (Constructor_DtTFree f)
-             Vars_DtType t -> trans (Constructor_DtType t)
-             Vars_DtRec r -> trans (Constructor_DtRec r)) vs)),
-      map (\(Constructor ca cs') ->
-       (IsaConsts.mkVName (constructorVal ca),map trans cs')) cs)

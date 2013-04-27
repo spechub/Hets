@@ -307,6 +307,24 @@ isSubSign s1 s2 =
     Map.isSubmapOf (constTab s1) (constTab s2) &&
     null (domainTab s1 \\ domainTab s2)
 
+union_tsig :: TypeSig -> TypeSig -> TypeSig
+union_tsig t1 t2 = t1 {
+ classrel  = Map.union (classrel t1) (classrel t2),
+ locales   = Map.union (locales t1) (locales t2),
+ defs      = Map.union (defs t1) (defs t2),
+ funs      = Map.union (funs t1) (funs t2),
+ log_types = Data.List.union (log_types t1) (log_types t2),
+ abbrs     = Map.union (abbrs t1) (abbrs t2),
+ arities   = Map.union (arities t1) (arities t2)
+}
+
+union_sig :: Sign -> Sign -> Sign
+union_sig s1 s2 = s1 {
+ tsig = union_tsig (tsig s1) (tsig s2),
+ constTab = Map.union (constTab s1) (constTab s2),
+ domainTab = Data.List.union (domainTab s1) (domainTab s2)
+}
+
 ------------------------ Sentence -------------------------------------
 
 {- Instances in Haskell have form:

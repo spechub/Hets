@@ -18,10 +18,12 @@ import Static.DevGraph
 import Static.DgUtils
 import Static.History
 import Static.ComputeTheory
+import Static.AnalysisStructured (insLink)
 
 import Logic.Prover
 import Logic.ExtSign
 import Logic.Grothendieck
+import Logic.Logic (ide)
 
 import Common.LibName
 import Common.Id
@@ -36,6 +38,7 @@ import Isabelle.IsaImport (importIsaDataIO)
 import Driver.Options
 
 import qualified Data.Map as Map
+import Data.Graph.Inductive.Graph (Node)
 
 import Control.Monad (unless)
 import Control.Concurrent (forkIO,killThread)
@@ -49,7 +52,7 @@ makeNamedSentence :: (String, Term) -> Named Sentence
 makeNamedSentence (n, t) = makeNamed n $ mkSen t
 
 _insNodeDG :: Sign -> [Named Sentence] -> String
-              -> DGraph -> DGraph
+              -> DGraph -> (DGraph,Node)
 _insNodeDG sig sens n dg =
  let gt = G_theory Isabelle Nothing (makeExtSign Isabelle sig) startSigId
            (toThSens sens) startThId
@@ -63,7 +66,7 @@ _insNodeDG sig sens n dg =
      labCh = [SetNodeLab labelK (k, labelK
       { globalTheory = computeLabelTheory Map.empty newDG
         (k, labelK) })]
-     newDG1 = changesDGH newDG labCh in newDG1
+     newDG1 = changesDGH newDG labCh in (newDG1,k)
 
 analyzeMessages :: Int -> [String] -> IO ()
 analyzeMessages _ []     = return ()
@@ -102,21 +105,41 @@ anaThyFile opts path = do
    removeFile tempFile
    return ret
 
+mkNode :: (String,[String],[(String,Typ)],
+     [(String,Term)], [(String,Term)],
+     DomainTab, [(String,FunDef)],
+     [(IsaClass,ClassDecl)],
+     [(String,LocaleDecl)]) -> (DGraph,Map.Map String (Node,Sign)) ->
+     (DGraph,Map.Map String (Node,Sign))
+mkNode (name,imps,consts,axioms,theorems,types,funs',classes,locales') (dg,m) =
+ let sens = map makeNamedSentence $ axioms ++ theorems
+     sgn' = emptySign { constTab = foldl (\ m_ (n',t) -> Map.insert (mkVName n')
+                                          t m_) Map.empty consts,
+                       domainTab = types, imports = imps, baseSig = Custom_thy,
+                       tsig = emptyTypeSig { classrel = Map.fromList classes,
+                                             locales  = Map.fromList locales',
+                                             funs     = Map.fromList funs' }}
+     sgns = Map.foldWithKey (\k a l ->
+             if elem k imps then (snd a):l else l) [] m
+     sgn  = foldl union_sig sgn' sgns
+     (dg',n) = _insNodeDG sgn sens name dg
+     m'      = Map.insert name (n,sgn) m
+     dgRet   = foldr (\imp dg'' ->
+                         case Map.lookup imp m of
+                          Just (n',s') -> 
+                           let gsig = G_sign Isabelle (makeExtSign Isabelle s')
+                                       startSigId
+                               incl = gEmbed2 gsig $ mkG_morphism Isabelle
+                                       (ide sgn)
+                           in insLink dg'' incl globalDef DGLinkImports n' n
+                          Nothing -> dg'') dg' imps
+ in (dgRet,m')
+
 anaIsaFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaIsaFile _ path = do
- (name,imps,consts,axioms,theorems,types,defs',funs',classes,locales')
-   <- importIsaDataIO path
- let sens = map makeNamedSentence (axioms ++ theorems
-             ++ (foldl (\ l c -> case c of
-                          (_,_,Nothing) -> l
-                          (n,_,Just tm) -> (n,tm):l) [] consts))
- let sgn = emptySign { constTab = foldl (\ m (n,t,_) -> Map.insert (mkVName n) t m) Map.empty consts, domainTab = types, imports = imps, baseSig = Custom_thy,
-   tsig = emptyTypeSig { classrel = Map.fromList classes,
-   locales = Map.fromList locales',
-   defs    = Map.fromList defs',
-   funs    = Map.fromList funs' }}
- let dg = _insNodeDG sgn sens name emptyDG
-     le = Map.insert (emptyLibName name)
-           dg Map.empty
+ theories <- importIsaDataIO path
+ let name   = "Imported Theory"
+     (dg,_) = foldr mkNode (emptyDG,Map.empty) theories
+     le     = Map.insert (emptyLibName name) dg Map.empty
  return $ Just (emptyLibName name,
   computeLibEnvTheories le)

@@ -105,9 +105,9 @@ val T = Thy_Info.get_theory \"$TRANS_T\";
 
 v \"Isabelle: Exporting theory information\n\";
 (File.write (Path.explode \"$OUT_FILE\")
- (XML.string_of (ExportHelper.tinfo2xml T \"$TRANS_T\"
-  (ExportHelper.theory_info T))))
-handle ExportHelper.ExportError msg => e (msg^\"\n\");
+ (XML.string_of (ExportHelper.xml_of_theories
+  (ExportHelper.get_theories T))))
+handle ex => e ((General.exnMessage ex)^\"\n\");
 *}
 end"
 ) | ($ISABELLE tty) | tee $TEMP_FILE
