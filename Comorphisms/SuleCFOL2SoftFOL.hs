@@ -44,8 +44,10 @@ import Data.Function
 
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
+import CASL.Cycle
 import CASL.Sublogic as SL
 import CASL.Sign as CSign
+import CASL.MapSentence
 import CASL.Morphism
 import CASL.Quantification
 import CASL.Overload
@@ -173,8 +175,6 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
       str | str == show SoftFOLInduction -> generateInductionLemmas True
           | str == show SoftFOLInduction2 -> generateInductionLemmas False
           | otherwise -> id
-    map_sentence (GenSuleCFOL2SoftFOL _) sign =
-      return . mapSen (isSingleSorted sign) formTrCASL sign
     extractModel (GenSuleCFOL2SoftFOL _) = extractCASLModel
     has_model_expansion (GenSuleCFOL2SoftFOL _) = True
 
@@ -545,6 +545,17 @@ transTheory :: (FormExtension f, Eq f) =>
             -> (CSign.Sign f e, [Named (FORMULA f)])
             -> Result SoftFOLTheory
 transTheory trSig trForm (sign, sens) =
+  let (nsig, sm) = removeSortCycles sign
+  in transTheoryAux trSig trForm (nsig
+     , map (mapNamed $ mapMorphForm (return id)
+                 ((embedMorphism () sign nsig) { sort_map = sm })) sens)
+
+transTheoryAux :: (FormExtension f, Eq f) =>
+               SignTranslator f e
+            -> FormulaTranslator f e
+            -> (CSign.Sign f e, [Named (FORMULA f)])
+            -> Result SoftFOLTheory
+transTheoryAux trSig trForm (sign, sens) =
   fmap (trSig sign (CSign.extendedInfo sign))
     (case transSign (filterPreds $ foldl insInjOps sign genAxs) of
      (tSign, idMap) ->
@@ -689,13 +700,6 @@ transVarTup (usedIds, idMap) (v, s) =
           sid = disSPOId CKVar (transId CKVar vi)
                     [mkSimpleId $ "_Va_" ++ showDoc s "_Va"]
                     usedIds
-
-mapSen :: (Eq f, FormExtension f) => Bool
-       -> FormulaTranslator f e
-       -> CSign.Sign f e -> FORMULA f -> SPTerm
-mapSen siSo trForm sign = transFORM siSo Set.empty sign
-                                        (snd $ transSign sign)
-                                        trForm
 
 transFORM :: (Eq f, FormExtension f) => Bool -- ^ single sorted flag
           -> Set.Set PRED_SYMB -- ^ list of predicates to substitute
