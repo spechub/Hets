@@ -166,8 +166,9 @@ darwinCMDLautomaticBatchAux b inclProvedThs saveProblem_batch resultMVar
 
 -- * Main prover functions
 
-eproverOpts :: String
-eproverOpts = "-xAuto -tAuto --tptp3-format -s --memory-limit=2048 --soft-cpu-limit="
+eproverOpts :: String -> String
+eproverOpts verb = "-xAuto -tAuto --tptp3-format " ++ verb
+  ++ " --memory-limit=2048 --soft-cpu-limit="
 
 fdOpt :: String
 fdOpt = "-fd true"
@@ -196,7 +197,7 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
             fdConsOpt = " -pmtptp true " ++ fdOpt
             tOut = toOpt ++ tl
             extraOptions = case b of
-              EProver -> eproverOpts ++ tl
+              EProver -> eproverOpts "-s" ++ tl
               Leo -> "-t " ++ tl
               Darwin -> darOpt ++ tOut
               DarwinFD -> darOpt ++ fdConsOpt ++ tOut
@@ -254,7 +255,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         tl = maybe "10" show $ timeLimit cfg
         tOut = toOpt ++ tl
         extraOptions = unwords $ case b of
-            EProver -> eproverOpts ++ tl
+            EProver -> eproverOpts "-s" ++ tl
             Leo -> "-t " ++ tl
             Darwin -> darOpt ++ tOut
             DarwinFD -> darOpt ++ " " ++ fdOpt ++ tOut
