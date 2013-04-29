@@ -14,6 +14,7 @@ A parser for the TPTP Input Syntax v3.4.0.1 taken from
 
 module SoftFOL.ParseTPTP
   ( tptp
+  , formAnno
   , prTPTPs
   , tptpModel
   ) where
