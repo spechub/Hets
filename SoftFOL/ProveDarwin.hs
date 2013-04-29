@@ -27,11 +27,9 @@ import Logic.Prover
 import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
-import SoftFOL.ParseTPTP
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
-import Common.Parsec
 import Common.ProofTree
 import Common.ProverTools
 import Common.SZSOntology
@@ -43,7 +41,7 @@ import Data.Maybe
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 
-import Control.Monad
+import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 
 import System.Directory
@@ -51,8 +49,6 @@ import System.Directory
 import GUI.GenericATP
 import Interfaces.GenericATPState
 import Proofs.BatchProcessing
-
-import Text.ParserCombinators.Parsec
 
 -- * Prover implementation
 
@@ -259,7 +255,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         tl = maybe "10" show $ timeLimit cfg
         tOut = toOpt ++ tl
         extraOptions = unwords $ case b of
-            EProver -> eproverOpts "-l 4" ++ tl
+            EProver -> eproverOpts "-s" ++ tl
             Leo -> "-t " ++ tl
             Darwin -> darOpt ++ tOut
             DarwinFD -> darOpt ++ " " ++ fdOpt ++ tOut
@@ -295,12 +291,6 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
           , usedProver = bin
           , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
           }
-    cs <- foldM (\ l s -> if isPrefixOf "cnf(" s || isPrefixOf "fof(" s then
-                  case runParser (formAnno << eof) () "" s of
-                    Left e -> putStrLn (show e) >> return l
-                    Right c -> return $ c : l
-                else return l) [] out
-    print $ prTPTPs cs
     return (err, cfg {proofStatus = retval,
                       resultOutput = out,
                       timeUsed = ctime })
