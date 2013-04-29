@@ -167,7 +167,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , useLibPos :: Bool
   , unlit :: Bool
   , serve :: Bool
-  , listen :: Int }
+  , listen :: Int
+  , runMMT :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 basic values when the user specifies nothing else -}
@@ -204,7 +205,8 @@ defaultHetcatsOpts = HcOpt
   , useLibPos = False
   , unlit = False
   , serve = False
-  , listen = -1 }
+  , listen = -1
+  , runMMT = False }
 
 instance Show HetcatsOpts where
   show opts = showEqOpt verboseS (show $ verbose opts)
@@ -281,6 +283,7 @@ data Flag =
   | RelPos
   | Serve
   | Listen Int
+  | UseMMT
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
@@ -315,6 +318,7 @@ makeOpts opts flg = case flg of
     Serve -> opts { serve = True }
     Unlit -> opts { unlit = True }
     RelPos -> opts { useLibPos = True }
+    UseMMT -> opts {runMMT = True}
     Help -> opts -- skipped
     Version -> opts -- skipped
 
@@ -609,7 +613,9 @@ options = let
           crS ++ "of one or more from: SIMPLE-ID")
     , Option "a" [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ cslst ++
-       crS ++ joinBar (map show caslAmalgOpts)) ]
+       crS ++ joinBar (map show caslAmalgOpts)),
+      Option "M" ["MMT"] (NoArg UseMMT)
+      "use MMT" ]
 
 -- parser functions returning Flags --
 
