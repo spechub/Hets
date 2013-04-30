@@ -14,7 +14,8 @@ A parser for the TPTP Input Syntax v3.4.0.1 taken from
 
 module SoftFOL.ParseTPTP
   ( tptp
-  , formAnno
+  , singleQuoted
+  , form
   , prTPTPs
   , tptpModel
   ) where
@@ -137,7 +138,7 @@ printable :: Char -> Bool
 printable c = let i = ord c in i >= 32 && i <= 126
 
 commentLine :: Parser String
-commentLine = char '%' >> manyTill (satisfy printable) newline
+commentLine = (char '%' <|> char '#') >> manyTill (satisfy printable) newline
 
 headerLine :: Parser TPTP
 headerLine = fmap CommentLine $ commentLine << skip

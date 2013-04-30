@@ -27,6 +27,7 @@ import Logic.Prover
 import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
+import SoftFOL.EProver(proof, axiomsOf)
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -255,7 +256,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         tl = maybe "10" show $ timeLimit cfg
         tOut = toOpt ++ tl
         extraOptions = unwords $ case b of
-            EProver -> eproverOpts "-s" ++ tl
+            EProver -> eproverOpts "-l 3" ++ tl
             Leo -> "-t " ++ tl
             Darwin -> darOpt ++ tOut
             DarwinFD -> darOpt ++ " " ++ fdOpt ++ tOut
@@ -287,7 +288,9 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         provedStatus = defaultProofStatus
           { goalName = AS_Anno.senAttr nGoal
           , goalStatus = Proved True
-          , usedAxioms = getAxioms sps
+          , usedAxioms = case b of
+                          EProver -> axiomsOf $ proof out
+                          _       -> getAxioms sps
           , usedProver = bin
           , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
           }
