@@ -16,6 +16,10 @@ module SoftFOL.ParseTPTP
   ( tptp
   , singleQuoted
   , form
+  , genList
+  , GenTerm(..)
+  , GenData(..)
+  , AWord(..)
   , prTPTPs
   , tptpModel
   ) where
