@@ -98,7 +98,7 @@ pinference = skipMany whiteSpace >> (
    s <- manyTill anyChar (char ')')
    skipMany whiteSpace >> string "]"
    skipMany whiteSpace >> string ","
-   ps' <- genList
+   ps' <- skipMany whiteSpace >> genList
    let ps = genList2Parents ps'
    skipMany whiteSpace
    string ")"
