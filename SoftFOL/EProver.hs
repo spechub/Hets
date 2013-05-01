@@ -22,7 +22,7 @@ import SoftFOL.PrintTPTP (printTPTP)
 import qualified Data.Set as Set
 import Data.List (foldl')
 
-data Role      = Axiom | Other deriving (Show,Eq)
+data Role      = Axiom | Conjecture | Other deriving (Show,Eq)
 
 data Inference = ProofOf String
    | File { fileName :: String, formulaName :: String }
@@ -68,7 +68,9 @@ line = ((do
  char ','
  i <- pinference
  string ")."
- return $ ProofStep n (if r == "axiom" then Axiom else Other)
+ return $ ProofStep n (if r == "axiom" then Axiom
+                       else if r == "conjecture" then Conjecture
+                       else Other)
   f i) <|> commentOrEmptyLine) << eof
 
 commentOrEmptyLine :: Parser ProofStep
@@ -119,20 +121,28 @@ genTerm2Parents :: GenTerm -> String
 genTerm2Parents (GenTerm (GenData (AWord n) []) Nothing) = n
 genTerm2Parents _ = []
 
-proof :: [String] -> [ProofStep]
-proof s =
-  snd $ foldr (\s' (s,ps') -> case runParser line () "" s' of
-       Right p' | p' /= Empty ->
-        if Set.member (name p') s || ps' == []
-        then (insertParents (inference p') s, p':ps')
-        else (s,ps')
-       _ -> (s,ps')) (Set.empty, []) s
+proof :: [String] -> Either String [ProofStep]
+proof s = checkProof $ snd $
+  foldr (\s' (s,ps'') -> case runParser line () "" s' of
+       Right p' | p' /= Empty -> case ps'' of
+        Right ps' -> 
+         if Set.member (name p') s || ps' == []
+         then (insertParents (inference p') s, Right $ p':ps')
+         else (s,ps'')
+        _ -> (s,ps'')
+       Left e -> (s,Left . unlines $ "Warning - Failed to parse eprover proof"
+                     :(map (\s -> '\t':s) $ ("Input: " ++ s'):(lines $ show e)))
+       _ -> (s,ps'')) (Set.empty, Right []) s
  where
   insertParents :: Inference -> Set.Set String -> Set.Set String
   insertParents (ProofOf n) s            = Set.insert n s
   insertParents (File _ n) s             = Set.insert n s
   insertParents (Rule _ p) s             = Set.insert p s
   insertParents (Inference _ szs ps'') s = Set.union ps'' s
+  checkProof (Right ps) = if any ((==Conjecture) . role) ps then Right ps
+                          else Left $ "Warning - Obtained incorrect prooftree "
+                                      ++ "from eprover output"
+  checkProof (Left e)   = Left (e)
 
 axiomsOf :: [ProofStep] -> [String]
 axiomsOf ps = map (formulaName . inference) $ filter (\p -> role p == Axiom) ps

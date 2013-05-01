@@ -267,6 +267,13 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
       $ options ++ ["Requested prover: " ++ bin]
     (exitCode, out, tUsed) <-
       runDarwinProcess bin saveTPTP extraOptions tmpFileName prob
+    axs <- case b of
+            EProver -> case proof out of
+             Right p -> return $ axiomsOf p
+             Left e  -> do
+                         putStrLn e
+                         return $ getAxioms sps
+            _       -> return $ getAxioms sps
     let ctime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
         (err, retval) = case () of
           _ | szsProved exitCode -> (ATPSuccess, provedStatus)
@@ -288,9 +295,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         provedStatus = defaultProofStatus
           { goalName = AS_Anno.senAttr nGoal
           , goalStatus = Proved True
-          , usedAxioms = case b of
-                          EProver -> axiomsOf $ proof out
-                          _       -> getAxioms sps
+          , usedAxioms = axs
           , usedProver = bin
           , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
           }
