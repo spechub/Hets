@@ -59,15 +59,25 @@ instance Show ProofStep where
 whiteSpace :: Parser ()
 whiteSpace = oneOf "\r\t\v\f " >> return ()
 
+lexeme :: GenParser Char () b -> GenParser Char () b
+lexeme p = skipMany whiteSpace >> p
+
+lString :: String -> GenParser Char () String
+lString s = lexeme $ string s
+
+lChar :: Char -> GenParser Char () Char
+lChar c = lexeme $ char c
+
 line :: Parser ProofStep
 line = ((do
- string "cnf(" <|> string "fof("
+ lString "cnf" <|> lString "fof"
+ lChar '('
  n <- tok
  r <- tok
- f <- many whiteSpace >> form
- char ','
- i <- pinference
- string ")."
+ f <- lexeme form
+ lChar ','
+ i <- lexeme pinference
+ lString ")."
  return $ ProofStep n (if r == "axiom" then Axiom
                        else if r == "conjecture" then Conjecture
                        else Other)
@@ -79,40 +89,36 @@ commentOrEmptyLine = ((skipMany (char '#') >>
  <|> (skipMany whiteSpace >> return "")) >> return Empty
 
 tok :: Parser String
-tok = skipMany whiteSpace >> many (noneOf ",")
-       << char ',' << skipMany whiteSpace
+tok = lexeme $ many (noneOf ",") << char ','
 
 pinference :: Parser Inference
-pinference = skipMany whiteSpace >> (
+pinference =
  (do
-   string "file("
-   f <- singleQuoted
-   char ','
-   skipMany whiteSpace
+   lString "file" >> lChar '('
+   f <- lexeme singleQuoted
+   lChar ',' >> skipMany whiteSpace
    n <- manyTill anyChar (char ')')
    return $ File f n) <|>
  (do
-   string "inference("
+   lString "inference" >> lChar '('
    r <- tok
-   string "[status("
+   lChar '[' >> lString "status" >> lChar '('
    s <- manyTill anyChar (char ')')
-   skipMany whiteSpace >> string "]"
-   skipMany whiteSpace >> string ","
-   ps' <- skipMany whiteSpace >> genList
+   lChar ']' >> lChar ','
+   ps' <- lexeme genList
    let ps = genList2Parents ps'
-   skipMany whiteSpace
-   string ")"
+   lChar ')'
    return $ Inference r s (Set.fromList ps)
  ) <|>
  (do
    n <- tok
-   string "['"
+   lString "['"
    r <- manyTill anyChar (lookAhead $ oneOf "'")
-   string "']"
+   lString "']"
    return $ case r of
              "proof" -> ProofOf n
              _ -> Rule r n
-  ))
+  )
 
 genList2Parents :: [GenTerm] -> [String]
 genList2Parents = map genTerm2Parents
