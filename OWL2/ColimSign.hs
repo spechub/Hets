@@ -38,7 +38,10 @@ signColimit graph = let
                nmap annotationRoles graph
    _prefixGraph = emap getPrefixMap
                     $ nmap (Map.keysSet . toQName . prefixMap) graph
-   (con, funC) = addIntToSymbols $ computeColimitSet conGraph
+   cset = computeColimitSet conGraph
+   (con, funC) = --trace (show  $ fst cset)$
+                 --trace (concatMap (\x-> "\n" ++ show x ++ "\n") $ Map.toList $ snd cset) $ 
+                 addIntToSymbols cset
    (dat, funD) = addIntToSymbols $ computeColimitSet dataGraph
    (ind, funI) = addIntToSymbols $ computeColimitSet indGraph
    (obj, funO) = addIntToSymbols $ computeColimitSet objGraph
@@ -87,7 +90,9 @@ signColimit graph = let
   in (colimSign, colimMor)
 
 instance SymbolName QName where
- addIntAsSuffix (q, i) = q { localPart = localPart q ++ show i }
+ addIntAsSuffix (q, i) = q { namePrefix = show i, 
+                             expandedIRI = expandedIRI q ++ show i 
+                           }
 
 getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
                     -> (Int, Map.Map QName QName)
