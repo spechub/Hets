@@ -32,7 +32,7 @@ import Common.LibName
 import Common.Result
 import Common.SFKT
 import Common.Id
-import Common.IRI (simpleIdToIRI)
+import Common.IRI
 import Common.Utils (nubOrd)
 
 import qualified Data.Map as Map
@@ -41,20 +41,23 @@ import Data.Graph.Inductive.Graph
 computeColimit :: LibName -> LibEnv -> Result LibEnv
 computeColimit ln le = do
   let dgraph = lookupDGraph ln le
-  nextDGraph <- insertColimitInGraph le dgraph
+  nextDGraph <- insertColimitInGraph le dgraph (nodesDG dgraph) 
+                                     (labEdgesDG dgraph) $ 
+                                     simpleIdToIRI $ genToken "Colimit"
   return $ Map.insert ln nextDGraph le
 
-insertColimitInGraph :: LibEnv -> DGraph -> Result DGraph
-insertColimitInGraph le dgraph = do
-  let diag = makeDiagram dgraph (nodesDG dgraph) $ labEdgesDG dgraph
+insertColimitInGraph :: LibEnv -> DGraph -> [Node] -> [LEdge DGLinkLab] -> IRI 
+                     -> Result DGraph
+insertColimitInGraph le dgraph cNodes cEdges colimName = do
+  let diag = makeDiagram dgraph cNodes cEdges
   (gth, morFun) <- gWeaklyAmalgamableCocone diag
-  let -- a better node name, gn_Signature_Colimit?
-      newNode = newInfoNodeLab (makeName $ simpleIdToIRI $ genToken "Colimit")
+  let
+      newNode = newInfoNodeLab (makeName colimName)
                                (newNodeInfo DGProof) gth
       newNodeNr = getNewNodeDG dgraph
       edgeList = map (\n -> (n, newNodeNr, globDefLink
                       (morFun Map.! n) SeeTarget))
-                   $ nodes $ dgBody dgraph
+                 cNodes
       changes  = InsertNode (newNodeNr, newNode) : map InsertEdge edgeList
       newDg = changesDGH dgraph changes
       newGraph = changeDGH newDg $ SetNodeLab newNode

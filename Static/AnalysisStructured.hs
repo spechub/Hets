@@ -66,10 +66,11 @@ import Common.Lib.MapSet (imageSet, setInsert)
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.List (find)
+import Data.List
 import Data.Function
 
 import Control.Monad
+import Proofs.ComputeColimit(insertColimitInGraph)
 
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
@@ -547,7 +548,35 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
-  Combination {} -> return (sp, error "AnalysisStructured.Combination", dg)
+  Combination cItems eItems pos -> adjustPos pos $ do
+    let  getNodes (cN, cE) cItem = let 
+            cEntry = case lookupGlobalEnvDG cItem dg of 
+                       Nothing -> error $ "No entry for " ++ show cItem
+                       Just gE -> gE
+           in case cEntry of 
+               SpecEntry extGenSig -> ((getNode $ extGenBody extGenSig):cN, cE)
+               ViewOrStructEntry True (ExtViewSig ns _gm eGS) -> let 
+                   s = getNode ns
+                   t = getNode $ extGenBody eGS
+                   lEdge = case filter (\(_,y,_) -> y == t) $ out (dgBody dg) s of
+                             [] -> error "No edge found"
+                             lE:_ -> lE   
+                 in (cN, lEdge:cE)
+               -- TO DO: add alignments!!!
+               _ -> error $ show cItem ++ "is not an ontology, a view or an alignment"
+         addGDefLinks (cN, cE) n = let 
+           oEdges = filter (\(_,y,l) -> (y `elem` cN) && (isGlobalDef $ dgl_type l))
+                     $ out (dgBody dg) n
+           in (cN, nub $ oEdges ++ cE) 
+         addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
+         (cNodes, cEdges) = addLinks $ foldl getNodes ([], []) cItems
+         (eNodes, eEdges) = foldl getNodes ([], []) eItems
+--         difList l1 l2 = Set.toList $ Set.difference (Set.fromList l1) (Set.fromList l2)
+         (cNodes', cEdges') = (cNodes \\ eNodes, cEdges \\ eEdges)
+         colimName = simpleIdToIRI $ genToken "Test"
+         le = Map.insert ln dg Map.empty -- cheating!!!
+    dg' <- insertColimitInGraph le dg cNodes' cEdges' colimName
+    return (sp, error "AnalysisStructured.Combination", dg')
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname

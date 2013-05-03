@@ -293,7 +293,7 @@ data DGLinkLab = DGLink
   , dglPending :: Bool        -- open proofs of edges in proof basis
   , dgl_id :: EdgeId          -- id of the edge
   , dglName :: String         -- name of the edge
-  }
+  } deriving (Eq)
 
 instance Show DGLinkLab where
   show _ = "<a DG link label>"
@@ -1061,7 +1061,9 @@ lookupGlobalEnvDG sid dg = let
     gEnv = globalEnv dg
     shortIRI = iriToStringShortUnsecure sid
     in case Map.lookup sid gEnv of
-    Nothing -> Map.lookup (nullIRI { abbrevPath = shortIRI }) gEnv
+    Nothing -> Map.lookup (nullIRI { abbrevPath = shortIRI }) $ 
+               Map.mapKeys (\x -> nullIRI{abbrevPath = abbrevPath x})
+               gEnv
     m -> m
 
 -- | lookup a reference node for a given libname and node
