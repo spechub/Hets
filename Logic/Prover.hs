@@ -52,7 +52,7 @@ instance Pretty a => Pretty (OMap.ElemWOrd a) where
 printOMapElemWOrd :: (a -> Doc) -> OMap.ElemWOrd a -> Doc
 printOMapElemWOrd = (. OMap.ele)
 
--- | the map from lables to the theorem plus status (and position)
+-- | the map from labels to the theorem plus status (and position)
 type ThSens a b = OMap.OMap String (SenStatus a b)
 
 noSens :: ThSens a b
