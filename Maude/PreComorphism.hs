@@ -38,7 +38,7 @@ import Common.ProofUtils (charMap)
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import Comorphisms.GetPreludeLib (readLib)
+--import Comorphisms.GetPreludeLib (readLib)
 
 import System.IO.Unsafe
 
@@ -289,13 +289,13 @@ loadLibraries ss om = if natImported ss om then loadNaturalNatSens else []
 
 -- | loads the sentences associated to the natural numbers
 loadNaturalNatSens :: [Named CAS.CASLFORMULA]
-loadNaturalNatSens =
-    case unsafePerformIO $ readLib "Maude/MaudeNumbers.casl" of
-      G_theory lid _ _ _ thSens _ : _ -> do
-        let sens = toNamedList thSens
-        sens' <- coerceSens lid CASL "" sens
-        filter (not . ctorCons) sens'
-      _ -> error "Maude.loadNaturalNatSens"
+loadNaturalNatSens = []
+    --case unsafePerformIO $ readLib "Maude/MaudeNumbers.casl" of
+    --  G_theory lid _ _ _ thSens _ : _ -> do
+    --   let sens = toNamedList thSens
+    --    sens' <- coerceSens lid CASL "" sens
+    --    filter (not . ctorCons) sens'
+    --  _ -> error "Maude.loadNaturalNatSens"
 
 -- | checks if a sentence is an constructor sentence
 ctorCons :: Named CAS.CASLFORMULA -> Bool
