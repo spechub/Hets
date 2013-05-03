@@ -84,6 +84,13 @@ spec lg ga s = case s of
     unode "Translation" $ annoted spec lg ga as : concatMap (gmapping ga) m
   Reduction as m ->
     unode "Restriction" $ annoted spec lg ga as : restriction ga m
+{-  Approximation as (Named_Approx n rg) ->
+    unode "Approximation" $ annoted spec lg ga as : mkAttr "approx" (iriToStringUnsecure n) : rgAttrs rg
+  Approximation as (Qual_Approx n1 n2 rg) ->
+    unode "Approximation" $ annoted spec lg ga as 
+      : add_attrs (mkNameAttr (iriToStringUnsecure n1) : rgAttrs rg)
+      ++ add_attrs (mkNameAttr (iriToStringUnsecure n2) : rgAttrs rg)
+-}
   Union asl rg -> withRg rg $ unode "Union"
     $ map (unode "Spec" . annoted spec lg ga) asl
   Extension asl rg -> withRg rg $ unode "Extension"

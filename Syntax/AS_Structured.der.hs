@@ -35,6 +35,7 @@ data SPEC = Basic_spec G_basic_spec Range
           | EmptySpec Range
           | Translation (Annoted SPEC) RENAMING
           | Reduction (Annoted SPEC) RESTRICTION
+          | Approximation (Annoted SPEC) APPROXIMATION
           | Union [Annoted SPEC] Range
             -- pos: "and"s
           | Extension [Annoted SPEC] Range
@@ -74,6 +75,10 @@ data RESTRICTION = Hidden [G_hiding] Range
                    -- pos: "reveal", list of comma pos
                    deriving (Show, Eq)
 
+data APPROXIMATION = Named_Approx APPROX_METHOD_REF Range
+                   | Qual_Approx APPROX_METHOD_REF LOGIC_REF Range
+                     deriving (Show, Eq)
+
 data G_mapping = G_symb_map G_symb_map_items_list
                | G_logic_translation Logic_code
                  deriving (Show, Eq)
@@ -92,6 +97,7 @@ type SPEC_NAME = IRI
 type VIEW_NAME = IRI
 type ALIGN_NAME = IRI
 type MODULE_NAME = IRI
+type APPROX_METHOD_REF = IRI
 type ENTITY = IRI
 type RESTRICTION_SIGNATURE = [ENTITY]
 

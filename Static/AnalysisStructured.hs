@@ -378,6 +378,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
         _ -> hint p2 ("nothing renamed by:\n" ++ showDoc restr "")
             $ getRange restr
       return (Reduction (replaceAnnoted sp1' asp) restr, fs, dgf)
+  Approximation _ _ -> fail "AnalysisStructured.Approximation"
   Union asps pos -> do
     (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg ln dg nsig
       name opts eo asps

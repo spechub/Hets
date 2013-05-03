@@ -264,7 +264,7 @@ specB l = do
 specC :: LogicGraph -> AParser st (Annoted SPEC)
 specC lG = do
     let spD = annoParser $ specD lG
-        rest = spD >>= translationList lG Translation Reduction
+        rest = spD >>= translationList lG Translation Reduction Approximation
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     {- if the current logic has an associated data_logic,
     parse "data SPEC1 SPEC2", where SPEC1 is in the data_logic
@@ -281,10 +281,11 @@ specC lG = do
             <|> rest
 
 translationList :: LogicGraph -> (Annoted b -> RENAMING -> b)
-  -> (Annoted b -> RESTRICTION -> b) -> Annoted b -> AParser st (Annoted b)
-translationList l ftrans frestr sp =
-     do sp' <- translation l sp ftrans frestr
-        translationList l ftrans frestr (emptyAnno sp')
+  -> (Annoted b -> RESTRICTION -> b) -> (Annoted b -> APPROXIMATION -> b) 
+  -> Annoted b -> AParser st (Annoted b)
+translationList l ftrans frestr fapprox sp =
+     do sp' <- translation l sp ftrans frestr fapprox
+        translationList l ftrans frestr fapprox (emptyAnno sp')
   <|> return sp
 
 {- | Parse renaming
@@ -317,14 +318,30 @@ restriction lg =
        (mappings, commas) <- parseItemsMap nl
        return (Revealed mappings (catRange (kReveal : commas)))
 
+{- | Parse approximation -}
+approximation :: LogicGraph -> AParser st APPROXIMATION
+approximation lg =
+ do p1 <- asKey approximateS
+        -- with
+    do p2 <- asKey withS
+       n <- hetIRI lg
+       return $ (Named_Approx n) $ tokPos p1 `appRange` tokPos p2
+{-    <|> -- in with 
+    do ...
+-}
+
 translation :: LogicGraph -> a -> (a -> RENAMING -> b)
-            -> (a -> RESTRICTION -> b) -> AParser st b
-translation l sp ftrans frestr =
+            -> (a -> RESTRICTION -> b) -> (a -> APPROXIMATION -> b)
+            -> AParser st b
+translation l sp ftrans frestr fapprox =
     do r <- renaming l
        return (ftrans sp r)
     <|>
     do r <- restriction l
        return (frestr sp r)
+    <|>
+    do r <- approximation l
+       return (fapprox sp r)
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =

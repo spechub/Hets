@@ -264,7 +264,7 @@ GROUP-UNIT-TERM
 
 unitTermTransRed :: LogicGraph -> AParser st (Annoted UNIT_TERM)
 unitTermTransRed l = groupUnitTerm l >>=
-    translationList l Unit_translation Unit_reduction
+    translationList l Unit_translation Unit_reduction (error "approximate not allowed in architectural specifications")
 
 {- | Parse unit expression
 @

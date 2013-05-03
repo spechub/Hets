@@ -63,7 +63,7 @@ dumpConsIncl opts dg (s, t, l) = do
              $ show $ useGlobalAnnos ga $ vcat
              [ text $ "spec source_" ++ nm ++ " ="
              , pretty g1
-             , text "end"
+             , text "end\n"
              , text $ "spec target_" ++ nm ++ " = source_" ++ nm
              , text "then %cons"
              , pretty
