@@ -74,3 +74,62 @@ doi = {http://doi.acm.org/10.1145/197320.197336},
 publisher = {ACM},
 address = {New York, NY, USA},
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Isabelle
+========
+- theory morphisms (cxl)
+- Latin2: Mizar->Isabelle, PVS->Isabelle 
+   Joe Hurd (binary format for HOL) PLMMS 09
+   Cezary Kaliszyk (HOL import)
+   Klaus Grue LogiWeb
+- Isabelle parser
+    terms of basic logic, annotated with datatypes etc.
+    4 levels:  
+     - source+markup (locales, non-logical stuff, ...) 
+     - code_gen (Haftmann) intermediate language, Haskell-like
+         datatype, function, etc., useful for translation to Haskell etc.
+     - in parallel: find_theorems (leave alone concealed theorems)
+        -> additional theorems
+     - Typedef.get_info, Cpodef
+     - spec_rules: src/Pure/Isar/spec_rules.ML
+       how is HOL.plus specified?
+          unknown (axiomatic)
+          equiontional (fun, primrec)
+          inductive (relational)
+          coinductive
+     - logical foundation: types, consts (typeclasses, sorts), thms
+- LF coding? Isabelle as a LF for Hets
+    Cube, CTT
+- nice view on tool-generated Isabelle theories
+  - either fancy syntax rules
+  - or (better) annotated source
+- using PIDE for Hets (asynchronous editing - checking - proving)
+- Ubuntu package
+- isomorphism theorems
+- HOL-light to Isabelle. Descision procedures?
+- model finders (e.g. nitpick, quickcheck) Lukas Bulwahn, Jasmin Blanchette (Vortrag CADE)
+- IsaPlanner
+- default simpset and claset setup
+
+
