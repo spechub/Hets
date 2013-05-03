@@ -65,7 +65,7 @@ instance Monoid HsDecls where
     mempty = HsDecls []
     mappend (HsDecls l1) (HsDecls l2) = HsDecls $ l1 ++ l2
 
-instance Syntax Haskell HsDecls
+instance Syntax Haskell HsDecls Symbol
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec Haskell = Just $ const hatParser
