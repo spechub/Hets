@@ -23,6 +23,7 @@ import Common.AS_Annotation
 import Logic.Logic (AnyLogic)
 import Logic.Grothendieck
     ( G_basic_spec
+    , G_symbol
     , G_symb_items_list
     , G_symb_map_items_list
     , LogicGraph
@@ -160,8 +161,8 @@ data CORRESPONDENCE = Correspondence_block
                         [CORRESPONDENCE]
                     | Single_correspondence
                         (Maybe CORRESPONDENCE_ID)
-                        ENTITY_REF
-                        TERM_OR_ENTITY_REF
+                        G_symbol -- was ENTITY_REF
+                        G_symbol -- was TERM_OR_ENTITY_REF
                         (Maybe RELATION_REF)
                         (Maybe CONFIDENCE)
                     | Default_correspondence

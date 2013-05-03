@@ -39,7 +39,7 @@ instance Language Isabelle where
   "are made available\n" ++
   "See http://www.cl.cam.ac.uk/Research/HVG/Isabelle/"
 
-instance Logic.Logic.Syntax Isabelle () () ()
+instance Logic.Logic.Syntax Isabelle () () () ()
     -- default implementation is fine!
 
 instance GetRange Sentence

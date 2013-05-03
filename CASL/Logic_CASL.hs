@@ -118,7 +118,7 @@ instance Monoid (BASIC_SPEC b s f) where
 -- abstract syntax, parsing (and printing)
 
 instance Syntax CASL CASLBasicSpec
-                SYMB_ITEMS SYMB_MAP_ITEMS
+                Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parsersAndPrinters CASL = addSyntax "KIF"
            (const $ fmap kif2CASL kifBasic, pretty)

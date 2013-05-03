@@ -47,7 +47,7 @@ instance SignExtension COLSign where
   isSubSignExtension = isSubCOLSign
 
 instance Syntax COL C_BASIC_SPEC
-                SYMB_ITEMS SYMB_MAP_ITEMS
+                Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec COL = Just $ basicSpec col_reserved_words
          parse_symb_items COL = Just $ symbItems col_reserved_words

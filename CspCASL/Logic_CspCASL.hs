@@ -91,6 +91,7 @@ instance Show a => Sentences (GenCspCASL a)
 -- | Syntax of CspCASL
 instance Show a => Syntax (GenCspCASL a)
     CspBasicSpec -- basic_spec
+    CspSymbol
     CspSymbItems
     CspSymbMapItems
     where

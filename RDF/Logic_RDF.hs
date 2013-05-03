@@ -61,7 +61,7 @@ instance Monoid TurtleDocument where
     mappend (TurtleDocument i p1 l1) (TurtleDocument _ p2 l2) =
       TurtleDocument i (Map.union p1 p2) $ l1 ++ l2
 
-instance Syntax RDF TurtleDocument SymbItems SymbMapItems where
+instance Syntax RDF TurtleDocument RDFEntity SymbItems SymbMapItems where
     parse_basic_spec RDF = Just basicSpec
     parse_symb_items RDF = Just rdfSymbItems
     parse_symb_map_items RDF = Just rdfSymbMapItems

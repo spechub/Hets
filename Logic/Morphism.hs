@@ -176,7 +176,7 @@ instance Morphism cid
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
-         => Syntax (SpanDomain cid) () () ()
+         => Syntax (SpanDomain cid) () sign_symbol1 () ()
 -- default is ok
 
 newtype S2 s = S2 { sentence2 :: s }

@@ -170,13 +170,10 @@ printCorrespondence (Correspondence_block mrref mconf cs) =
 
 printCorrespondence (Single_correspondence mcid eRef toer mrRef mconf) =
   sep $ concat
-  [[indexed $ iriToStringShortUnsecure eRef],
+  [[indexed $ show eRef],
    map printRelationRef $ maybeToList mrRef,
    map printConfidence $ maybeToList mconf,
-   [case toer of
-       -- TODO: implement (parser doesn't exist, either)
-       Term _ _ -> undefined
-       Entity_ref i -> indexed $ iriToStringShortUnsecure i],
+   [pretty toer],
    map pretty $ maybeToList mcid]
 
 printConfidence :: CONFIDENCE -> Doc

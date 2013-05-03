@@ -66,7 +66,7 @@ instance Monoid RSScheme where
       (mappend l1 l2) (mappend s1 s2) $ appRange r1 r2
 
 -- | Syntax of Rel
-instance Syntax RelScheme RSScheme () () where
+instance Syntax RelScheme RSScheme RSSymbol () () where
          parse_basic_spec RelScheme = Just parseRSScheme
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing

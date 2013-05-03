@@ -60,7 +60,7 @@ instance SignExtension CASL_DLSign where
   isSubSignExtension = isSubCASL_DLSign
 
 instance Syntax CASL_DL DL_BASIC_SPEC
-                SYMB_ITEMS SYMB_MAP_ITEMS
+                Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec CASL_DL = Just $ basicSpec casl_DL_reserved_words
          parse_symb_items CASL_DL = Just $ symbItems casl_DL_reserved_words

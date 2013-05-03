@@ -52,7 +52,7 @@ type ModalFORMULA = FORMULA M_FORMULA
 instance SignExtension ModalSign where
   isSubSignExtension = isSubModalSign
 
-instance Syntax Modal M_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
+instance Syntax Modal M_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Modal = Just $ basicSpec modal_reserved_words
     parse_symb_items Modal = Just $ symbItems modal_reserved_words
     parse_symb_map_items Modal = Just $ symbMapItems modal_reserved_words

@@ -53,7 +53,7 @@ instance Monoid Text where
     mappend (Text l1) (Text l2) = Text
       . unlines $ lines l1 ++ lines l2
 
-instance Syntax DMU Text () () where
+instance Syntax DMU Text () () () where
   parse_basic_spec DMU = Just (\_ -> fmap Text $ many1 anyChar)
 
 instance Sentences DMU () Text (DefaultMorphism Text) () where

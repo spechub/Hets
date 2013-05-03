@@ -56,6 +56,7 @@ instance Monoid Context where
 
 instance Syntax Adl
     Context
+    Symbol
     ()
     ()
     where

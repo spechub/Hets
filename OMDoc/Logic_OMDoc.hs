@@ -34,7 +34,7 @@ instance Show OMDoc_PUN where
 instance Language OMDoc_PUN where
   description _ = "OMDoc-PUN (possible utter nonsense). Logic to deal with OMDoc."
 
-instance Syntax OMDoc_PUN () () ()
+instance Syntax OMDoc_PUN () OMDoc.Symbol () ()
 
 instance Category OMDoc_Sign OMDoc_Morphism where
   ide s =

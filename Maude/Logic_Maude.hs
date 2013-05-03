@@ -82,7 +82,7 @@ instance Monoid MaudeText where
       . unlines $ lines l1 ++ lines l2
 
 -- | Instance of Syntax for Maude
-instance Syntax Maude MaudeText () () where
+instance Syntax Maude MaudeText Symbol () () where
     parse_basic_spec Maude = Just (\_ -> fmap MaudeText mStuff)
     -- parse_symb_items
     -- parse_symb_map_items

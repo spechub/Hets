@@ -70,7 +70,7 @@ instance Monoid BasicSpec where
     mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 instance Syntax HasCASL BasicSpec
-                SymbItems SymbMapItems
+                Symbol SymbItems SymbMapItems
       where
          parse_basic_spec HasCASL = Just $ const basicSpec
          parse_symb_items HasCASL = Just symbItems

@@ -43,7 +43,7 @@ instance Monoid LogicDef where
    mappend _ _ = mempty
 
 -- syntax for Framework
-instance Syntax Framework LogicDef () ()
+instance Syntax Framework LogicDef () () ()
 
 -- sentences for Framework
 instance Sentences Framework () LogicDef Morphism ()
@@ -73,7 +73,7 @@ instance Monoid ComorphismDef where
    mappend _ _ = mempty
 
 -- syntax for Framework
-instance Syntax FrameworkCom ComorphismDef () ()
+instance Syntax FrameworkCom ComorphismDef () () ()
 
 -- sentences for Framework
 instance Sentences FrameworkCom () ComorphismDef MorphismCom ()

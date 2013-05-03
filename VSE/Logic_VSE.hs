@@ -50,7 +50,7 @@ instance Language VSE where
 instance SignExtension Procs where
   isSubSignExtension = isSubProcsMap
 
-instance Syntax VSE VSEBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
+instance Syntax VSE VSEBasicSpec Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec VSE = Just $ basicSpec reservedWords
     parse_symb_items VSE = Just $ symbItems reservedWords
     parse_symb_map_items VSE = Just $ symbMapItems reservedWords

@@ -237,10 +237,11 @@ instance Ord sign => Category sign (DefaultMorphism sign) where
 -}
 class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
        Monoid basic_spec, -- for joining converted signatures and sentences
+       Pretty symbol,
        EqPrintTypeConv symb_items,
        EqPrintTypeConv symb_map_items)
-    => Syntax lid basic_spec symb_items symb_map_items
-        | lid -> basic_spec symb_items symb_map_items
+    => Syntax lid basic_spec symbol symb_items symb_map_items
+        | lid -> basic_spec symbol symb_items symb_map_items
       where
          -- | parsers and printers
          parsersAndPrinters :: lid -> Map.Map String
@@ -250,6 +251,8 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
             Just p -> makeDefault (p, pretty)
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
+         -- | parser for symbols
+         parse_symbol :: lid -> Maybe (AParser st symbol)
          -- | parser for symbol lists
          parse_symb_items :: lid -> Maybe (AParser st symb_items)
          -- | parser for symbol maps
@@ -257,29 +260,30 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          toItem :: lid -> basic_spec -> Item
          -- default implementations
          parse_basic_spec _ = Nothing
+         parse_symbol _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
-basicSpecParser :: Syntax lid basic_spec symb_items symb_map_items
+basicSpecParser :: Syntax lid basic_spec symbol symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec)
 basicSpecParser sm = fmap fst . parserAndPrinter sm
 
-basicSpecPrinter :: Syntax lid basic_spec symb_items symb_map_items
+basicSpecPrinter :: Syntax lid basic_spec symbol symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (basic_spec -> Doc)
 basicSpecPrinter sm = fmap snd . parserAndPrinter sm
 
-basicSpecSyntaxes :: Syntax lid basic_spec symb_items symb_map_items
+basicSpecSyntaxes :: Syntax lid basic_spec symbol symb_items symb_map_items
   => lid -> [String]
 basicSpecSyntaxes = Map.keys . serializations . language_name
 
-parserAndPrinter :: Syntax lid basic_spec symb_items symb_map_items
+parserAndPrinter :: Syntax lid basic_spec symbol symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec,
                                 basic_spec -> Doc)
 parserAndPrinter sm l = lookupDefault l sm (parsersAndPrinters l)
 
 -- | function to lookup parser or printer
-lookupDefault :: Syntax lid basic_spec symb_items symb_map_items
+lookupDefault :: Syntax lid basic_spec symbol symb_items symb_map_items
   => lid -> Maybe IRI -> Map.Map String b -> Maybe b
 lookupDefault l im m = case im of
      Just i -> do let s = iriToStringUnsecure i
@@ -409,7 +413,7 @@ statErrMsg lid str =
    In the CASL reference manual, our symbols are called "signature symbols",
    and our raw symbols are called "symbols". (Terminology should be adapted.)
 -}
-class ( Syntax lid basic_spec symb_items symb_map_items
+class ( Syntax lid basic_spec symbol symb_items symb_map_items
       , Sentences lid sentence sign morphism symbol
       , GetRange raw_symbol, Ord raw_symbol, Pretty raw_symbol
       , Typeable raw_symbol)

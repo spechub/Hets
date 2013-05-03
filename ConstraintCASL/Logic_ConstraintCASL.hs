@@ -43,7 +43,7 @@ instance Language ConstraintCASL where
   ++ "formulas over predicates"
 
 instance Syntax ConstraintCASL ConstraintCASLBasicSpec
-                SYMB_ITEMS SYMB_MAP_ITEMS
+                Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec ConstraintCASL = Just $ basicSpec constraintKeywords
          parse_symb_items ConstraintCASL = Just $ symbItems []

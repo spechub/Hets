@@ -40,7 +40,7 @@ instance Language Fpl where
 instance SignExtension SignExt where
   isSubSignExtension = isSubFplSign
 
-instance Syntax Fpl FplBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
+instance Syntax Fpl FplBasicSpec Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Fpl = Just $ basicSpec fplReservedWords
     parse_symb_items Fpl = Just $ symbItems fplReservedWords
     parse_symb_map_items Fpl = Just $ symbMapItems fplReservedWords

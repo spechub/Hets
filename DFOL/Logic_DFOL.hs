@@ -55,7 +55,7 @@ instance Monoid BASIC_SPEC where
     mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- syntax for DFOL
-instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
+instance Syntax DFOL BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_basic_spec DFOL = Just basicSpec
    parse_symb_items DFOL = Just symbItems
    parse_symb_map_items DFOL = Just symbMapItems

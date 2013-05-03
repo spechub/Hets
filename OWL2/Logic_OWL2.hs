@@ -78,7 +78,7 @@ instance Monoid OntologyDocument where
     mappend (OntologyDocument p1 o1) (OntologyDocument p2 o2) =
       OntologyDocument (Map.union p1 p2) $ mappend o1 o2
 
-instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
+instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, ppShipOnt)
       $ addSyntax "Manchester" (basicSpec, pretty)
       $ makeDefault (basicSpec, pretty)

@@ -71,6 +71,7 @@ instance Monoid BASIC_SPEC where
 
 instance Syntax CommonLogic
     BASIC_SPEC
+    Symbol
     SYMB_ITEMS
     SYMB_MAP_ITEMS
     where

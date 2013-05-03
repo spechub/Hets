@@ -79,7 +79,7 @@ instance Monoid BASIC_SPEC where
     mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- | Syntax of CSL logic
-instance Syntax CSL BASIC_SPEC
+instance Syntax CSL BASIC_SPEC Symbol
     SYMB_ITEMS SYMB_MAP_ITEMS where
          parse_basic_spec CSL = parseBasicSpec
          parse_symb_items CSL = parseSymbItems

@@ -58,7 +58,7 @@ type ExtModalFORMULA = FORMULA EM_FORMULA
 instance SignExtension EModalSign where
         isSubSignExtension = isSubEModalSign
 
-instance Syntax ExtModal EM_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
+instance Syntax ExtModal EM_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
         parse_basic_spec ExtModal = Just $ basicSpec ext_modal_reserved_words
         parse_symb_items ExtModal = Just $ symbItems ext_modal_reserved_words
         parse_symb_map_items ExtModal =

@@ -179,6 +179,19 @@ parseOptLogTarget lG e s l =
 plainComma :: AParser st Token
 plainComma = anComma `notFollowedWith` asKey logicS
 
+-- * parse G_symbol
+
+parseSymbolAux :: AnyLogic -> AParser st G_symbol
+parseSymbolAux (Logic lid) = 
+   case parse_symbol lid of
+    Nothing ->
+        fail $ "no symbol parser for language " ++ (language_name lid)
+    Just pa -> do s <- pa 
+                  return (G_symbol lid s)
+
+parseSymbol :: LogicGraph -> AParser st G_symbol
+parseSymbol l = lookupCurrentLogic "symbol" l >>= parseSymbolAux
+
 -- * parse G_mapping
 
 callSymParser :: Maybe (AParser st a) -> String -> String ->
@@ -479,10 +492,10 @@ correspondence l = do
     return $ Single_correspondence mcid eRef toer mrRef mconf
 
 corr1 :: LogicGraph
-      -> AParser st ( Maybe CORRESPONDENCE_ID, ENTITY_REF
-                    , Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
+      -> AParser st ( Maybe CORRESPONDENCE_ID, G_symbol
+                    , Maybe RELATION_REF, Maybe CONFIDENCE, G_symbol)
 corr1 l = do
-    eRef <- hetIRI l
+    eRef <- parseSymbol l
     (mrRef, mconf, toer) <- corr2 l
     cids <- annotations
     if not (null cids || null (tail cids))
@@ -490,7 +503,7 @@ corr1 l = do
       else return (listToMaybe cids, eRef, mrRef, mconf, toer)
 
 corr2 :: LogicGraph
-      -> AParser st (Maybe RELATION_REF, Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
+      -> AParser st (Maybe RELATION_REF, Maybe CONFIDENCE, G_symbol)
 corr2 l = do
     rRef <- try $ relationRefWithLookAhead l
     (mconf, toer) <- corr3 l
@@ -499,14 +512,14 @@ corr2 l = do
     (mconf, toer) <- corr3 l
     return (Nothing, mconf, toer)
 
-corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE, TERM_OR_ENTITY_REF)
+corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE,G_symbol)
 corr3 l = do
     conf <- try confidence
-    toer <- termOrEntityRef l
-    return (Just conf, toer)
+    sym <- parseSymbol l
+    return (Just conf, sym)
   <|> do
-    toer <- termOrEntityRef l
-    return (Nothing, toer)
+    sym <- parseSymbol l
+    return (Nothing, sym)
 
 relationRefWithLookAhead :: LogicGraph -> AParser st RELATION_REF
 relationRefWithLookAhead lG = do
@@ -544,19 +557,6 @@ relationRef lG = ((do
 
 confidenceBegin :: AParser st Char
 confidenceBegin = char '('
-
-termOrEntityRef :: LogicGraph -> AParser st TERM_OR_ENTITY_REF
-termOrEntityRef l = do
-    i <- hetIRI l
-    return $ Entity_ref i
-  <|> (lookupCurrentLogic "term" l >>= term)
-
--- TODO: implement
-term :: AnyLogic -> AParser st TERM_OR_ENTITY_REF
-term (Logic lid) = do
-    _symbs <- callParser (parse_symb_items lid) (language_name lid) "term"
-    -- return $ Term (G_symb_items_list lid [symbs]) $ Range [p, q]
-    fail "term not implemented yet"
 
 confidence :: AParser st Double
 confidence = char '(' >> confidenceNumber << char ')' << skipSmart

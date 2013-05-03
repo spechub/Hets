@@ -53,7 +53,7 @@ instance Monoid BasicSpecTHF where
     mappend (BasicSpecTHF l1) (BasicSpecTHF l2) =
         BasicSpecTHF $ l1 ++ l2
 
-instance Logic.Logic.Syntax THF BasicSpecTHF () () where
+instance Logic.Logic.Syntax THF BasicSpecTHF SymbolTHF () () where
     parse_basic_spec THF = Just (\ _ -> fmap BasicSpecTHF parseTHF)
     -- remaining default implementations are fine!
 

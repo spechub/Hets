@@ -72,7 +72,8 @@ instance Monoid AS_BASIC.BASIC_SPEC where
 
 -- | Syntax of Temporal logic
 instance Syntax Temporal
-    AS_BASIC.BASIC_SPEC
+    AS_BASIC.BASIC_SPEC 
+    Symbol.Symbol 
     ()
     ()
 

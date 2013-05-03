@@ -44,7 +44,7 @@ instance Language HolLight where
 
 instance GetRange Sentence
 
-instance Syntax HolLight () () () where
+instance Syntax HolLight () () () () where
     parse_basic_spec HolLight = Nothing {- Just basicSpec
     default implementation should be sufficient -}
 

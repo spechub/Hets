@@ -94,7 +94,7 @@ instance Monoid BASICSPEC where
     mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 -- | Syntax of Propositional logic
-instance Syntax QBF BASICSPEC
+instance Syntax QBF BASICSPEC Symbol
     SYMBITEMS SYMBMAPITEMS where
          parse_basic_spec QBF = Just basicSpec
          parse_symb_items QBF = Just symbItems

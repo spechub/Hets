@@ -58,7 +58,7 @@ type FCMorphism = DefaultMorphism Sign
 
 -- use generic Category instance from Logic.Logic
 
-instance Syntax FreeCAD Document () () where
+instance Syntax FreeCAD Document () () () where
   parse_basic_spec FreeCAD = Nothing
 
 instance Sentences FreeCAD () Sign FCMorphism () where

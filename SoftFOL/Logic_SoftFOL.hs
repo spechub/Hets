@@ -59,7 +59,7 @@ instance Language SoftFOL where
   "See http://spass.mpi-sb.mpg.de/\n" ++
   "and http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
-instance Logic.Logic.Syntax SoftFOL () () ()
+instance Logic.Logic.Syntax SoftFOL () SFSymbol () ()
     -- default implementation is fine!
 
 instance Sentences SoftFOL Sentence Sign
