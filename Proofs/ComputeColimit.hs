@@ -43,16 +43,17 @@ computeColimit ln le = do
   let dgraph = lookupDGraph ln le
   nextDGraph <- insertColimitInGraph le dgraph (nodesDG dgraph) 
                                      (labEdgesDG dgraph) $ 
+                                     makeName $ 
                                      simpleIdToIRI $ genToken "Colimit"
   return $ Map.insert ln nextDGraph le
 
-insertColimitInGraph :: LibEnv -> DGraph -> [Node] -> [LEdge DGLinkLab] -> IRI 
+insertColimitInGraph :: LibEnv -> DGraph -> [Node] -> [LEdge DGLinkLab] -> NodeName 
                      -> Result DGraph
 insertColimitInGraph le dgraph cNodes cEdges colimName = do
   let diag = makeDiagram dgraph cNodes cEdges
   (gth, morFun) <- gWeaklyAmalgamableCocone diag
   let
-      newNode = newInfoNodeLab (makeName colimName)
+      newNode = newInfoNodeLab colimName
                                (newNodeInfo DGProof) gth
       newNodeNr = getNewNodeDG dgraph
       edgeList = map (\n -> (n, newNodeNr, globDefLink
