@@ -1,5 +1,6 @@
 (and (P a) (P b))
-(P a) %implied
+(not (P a)) %implied
+(and (P a) (not (P a))) %(contra)% %implied
 
 (Cube a) %(one)%
 (Dodec b) %(two)%

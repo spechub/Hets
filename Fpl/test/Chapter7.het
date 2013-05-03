@@ -7,7 +7,7 @@ spec NAT =
 
 spec NATORD = 
  NAT then 
- ops le : Nat * Nat -> ?Bool
+ ops le : Nat * Nat ->? Bool
  forall m,n,p : Nat 
    . def(le(m,n))
    . le(m,m) = true
@@ -99,5 +99,3 @@ SORTBYINSERTDONE hide insert
 refinement REF_SORT' = 
  SORT refined to SORTPERM refined to SORTINS refined to SORTDONE
 
-             
-   
