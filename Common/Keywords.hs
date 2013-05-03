@@ -447,6 +447,9 @@ givenS = "given"
 hideS :: String
 hideS = "hide"
 
+approximateS :: String
+approximateS = "approximate"
+
 idemS :: String
 idemS = "idem"
 
