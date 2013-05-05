@@ -571,11 +571,9 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
          addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
          (cNodes, cEdges) = addLinks $ foldl getNodes ([], []) cItems
          (eNodes, eEdges) = foldl getNodes ([], []) eItems
---         difList l1 l2 = Set.toList $ Set.difference (Set.fromList l1) (Set.fromList l2)
          (cNodes', cEdges') = (cNodes \\ eNodes, cEdges \\ eEdges)
-         colimName = makeName $ simpleIdToIRI $ genToken "Test"
          le = Map.insert ln dg Map.empty -- cheating!!!
-    dg' <- insertColimitInGraph le dg cNodes' cEdges' colimName
+    dg' <- insertColimitInGraph le dg cNodes' cEdges' name
     return (sp, error "AnalysisStructured.Combination", dg')
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
