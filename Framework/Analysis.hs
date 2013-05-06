@@ -12,6 +12,7 @@ Portability :  portable
 module Framework.Analysis
      ( anaLogicDef
      , anaComorphismDef
+     , addLogic2LogicList
      ) where
 
 import Framework.AS
@@ -179,10 +180,12 @@ addLogic2LogicList l = do
   contentsOld <- readFile file
   let res = runParser (parser l) (emptyAnnos ()) "" contentsOld
   case res of
-      Right contentsNew -> writeFile file contentsNew
-      Left er -> error $ show er
-
-
+    Right contentsNew -> if isInfixOf ("import " ++ l ++ ".Logic_" ++ l) contentsOld
+      then
+      error $ show $ l ++ " already in DynLogicList"
+      else
+      writeFile file contentsNew
+    Left er -> error $ show er
 -- ----------------------------------------------------------------------------
 --                    Comorphism analysis
 
