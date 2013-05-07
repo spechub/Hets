@@ -367,6 +367,10 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | the symbols occuring in a sentence (any order)
       symsOfSen :: lid -> sentence -> [symbol]
       symsOfSen _ _ = []
+      -- | combine two symbols into another one
+      pair_symbols :: lid -> symbol -> symbol -> Result symbol
+      pair_symbols _ s1 _ = do
+       return s1
 
 -- | makes a singleton list from the given value
 singletonList :: a -> [a]
@@ -814,7 +818,7 @@ class (StaticAnalysis lid
 class Logic lid sublogics basic_spec sentence
             symb_items symb_map_items sign
             morphism symbol raw_symbol proof_tree
-      => LogicFram lid sublogics basic_spec sentence
+      => LogicalFramework lid sublogics basic_spec sentence
             symb_items symb_map_items sign
             morphism symbol raw_symbol proof_tree
             | lid -> sublogics basic_spec sentence symb_items symb_map_items

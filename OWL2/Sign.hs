@@ -15,6 +15,7 @@ module OWL2.Sign where
 import OWL2.AS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Common.Result
 
 data Sign = Sign
             { concepts :: Set.Set Class
@@ -70,6 +71,14 @@ diffSig a b =
       , annotationRoles = annotationRoles a `Set.difference` annotationRoles b
       , individuals = individuals a `Set.difference` individuals b
       }
+
+addSymbToSign :: Sign -> Entity -> Result Sign
+addSymbToSign sig ent = 
+ case ent of 
+   Entity Class eIri -> do
+    return sig{concepts = Set.insert eIri $ concepts sig}
+   _ -> do
+    return sig
 
 addSign :: Sign -> Sign -> Sign
 addSign toIns totalSign =

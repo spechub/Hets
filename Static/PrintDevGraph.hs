@@ -130,7 +130,8 @@ dgOriginHeader o = case o of
     DGNormalForm n -> "normal-form(" ++ shows n ")"
     DGintegratedSCC -> "OWL spec with integrated strongly connected components"
     DGFlattening -> "flattening"
-    DGTest -> "testing"
+    DGTest -> "testing" 
+    DGAlignment -> "alignment"
 
 instance Pretty DGOrigin where
   pretty o = let prettySyms headr syms = if Set.null syms then Doc.empty
@@ -209,6 +210,7 @@ dgLinkOriginHeader o = case o of
     DGLinkInst _ _ -> "instantiation of"
     DGLinkInstArg _ -> "actual parameter of"
     DGLinkView _ _ -> "view"
+    DGLinkAlign _ -> "alignment"
     DGLinkFitView _ -> "fit source of"
     DGLinkFitViewImp _ -> "add import to source of"
     DGLinkProof -> "proof-link"
@@ -377,12 +379,16 @@ instance Pretty RTNodeLab where
 instance Pretty RefSig where
   pretty = text . show -- missing
 
+instance Pretty AlignSig where
+  pretty = text . show -- missing
+
 instance Pretty GlobalEntry where
   pretty ge = case ge of
     SpecEntry se -> topKey specS <+> pretty se
     ViewOrStructEntry b ve -> topKey (if b then viewS else structS)
       <+> pretty ve
     UnitEntry ue -> topKey unitS <+> pretty ue
+    AlignEntry ae -> pretty ae
     ArchOrRefEntry b ae -> (if b then topKey archS else keyword refinementS)
       <+> pretty ae
 

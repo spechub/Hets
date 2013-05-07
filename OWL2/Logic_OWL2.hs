@@ -94,6 +94,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     sym_name OWL2 = entityToId
     symKind OWL2 = takeWhile isAlpha . showEntityType . entityKind
     symsOfSen OWL2 = Set.toList . symsOfAxiom
+    
 
 instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems
@@ -112,6 +113,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       subsig_inclusion OWL2 s = return . inclOWLMorphism s
       matches OWL2 = matchesSym
       symbol_to_raw OWL2 = ASymbol
+      add_symb_to_sign OWL2 = addSymbToSign
       induced_from_morphism OWL2 = inducedFromMor
       cogenerated_sign OWL2 = cogeneratedSign
       generated_sign OWL2 = generatedSign

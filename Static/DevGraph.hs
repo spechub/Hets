@@ -128,6 +128,7 @@ data DGOrigin =
   | DGNormalForm Node
   | DGintegratedSCC
   | DGFlattening
+  | DGAlignment
   | DGTest
     deriving (Show, Eq, Ord)
 
@@ -246,6 +247,7 @@ data DGLinkOrigin =
   | DGLinkInst IRI Fitted
   | DGLinkInstArg IRI
   | DGLinkView IRI Fitted
+  | DGLinkAlign IRI
   | DGLinkFitView IRI
   | DGLinkFitViewImp IRI
   | DGLinkProof
@@ -625,8 +627,13 @@ data GlobalEntry =
     SpecEntry ExtGenSig
   | ViewOrStructEntry Bool ExtViewSig
   | ArchOrRefEntry Bool RefSig
+  | AlignEntry AlignSig
   | UnitEntry UnitSig
     deriving Show
+
+data AlignSig = AlignMor NodeSig GMorphism NodeSig 
+              | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
+  deriving (Show, Eq)
 
 type GlobalEnv = Map.Map IRI GlobalEntry
 
