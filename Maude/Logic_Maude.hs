@@ -138,5 +138,5 @@ instance Logic Maude
     -- conservativityCheck
     empty_proof_tree Maude = ()
 
-instance LogicFram Maude
+instance LogicalFramework Maude
          () MaudeText Sentence () () Sign Morphism Symbol Symbol ()

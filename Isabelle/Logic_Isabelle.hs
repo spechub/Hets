@@ -66,4 +66,4 @@ instance Logic Isabelle () () Sentence () ()
          provers Isabelle = [isabelleProver]
          cons_checkers Isabelle = [isabelleConsChecker]
 
-instance LogicFram Isabelle () () Sentence () () Sign IsabelleMorphism () () ()
+instance LogicalFramework Isabelle () () Sentence () () Sign IsabelleMorphism () () ()

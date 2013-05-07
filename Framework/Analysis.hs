@@ -81,7 +81,7 @@ anaLogicDef ld dg =
     Isabelle -> anaLogicDefH Logic_Isabelle.Isabelle ld dg
     Maude -> anaLogicDefH Logic_Maude.Maude ld dg
 
-anaLogicDefH :: LogicFram lid sublogics basic_spec sentence symb_items
+anaLogicDefH :: LogicalFramework lid sublogics basic_spec sentence symb_items
                        symb_map_items sign morphism symbol raw_symbol
                        proof_tree
                 => lid -> LogicDef -> DGraph -> IO DGraph
@@ -96,7 +96,7 @@ anaLogicDefH ml ld dg = do
 
 {- constructs the diagram in the signature category of the meta logic
    which represents the object logic -}
-retrieveDiagram :: LogicFram lid sublogics basic_spec sentence symb_items
+retrieveDiagram :: LogicalFramework lid sublogics basic_spec sentence symb_items
                           symb_map_items sign morphism symbol raw_symbol
                           proof_tree
                    => lid -> LogicDef -> DGraph ->
@@ -148,7 +148,7 @@ addLogicDef2DG ld dg =
    in dg2
 
 -- constructs the logic instance for the object logic
-buildLogic :: LogicFram lid sublogics basic_spec sentence symb_items
+buildLogic :: LogicalFramework lid sublogics basic_spec sentence symb_items
                     symb_map_items sign morphism symbol raw_symbol proof_tree
               => lid -> String -> morphism -> Maybe morphism ->
                  Maybe sign -> Maybe morphism -> IO ()
@@ -196,7 +196,7 @@ anaComorphismDef cd dg =
     Isabelle -> anaComorphismDefH Logic_Isabelle.Isabelle cd dg
     Maude -> anaComorphismDefH Logic_Maude.Maude cd dg
 
-anaComorphismDefH :: LogicFram lid sublogics basic_spec sentence symb_items
+anaComorphismDefH :: LogicalFramework lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> ComorphismDef -> DGraph -> IO DGraph
@@ -211,7 +211,7 @@ anaComorphismDefH ml (ComorphismDef nc m sL tL sM pM mM) dg =
              return $ addComorphismDef2DG (ComorphismDef nc m sL tL sM pM mM) dg
         _ -> error ""
 
-anaComH :: LogicFram lid sublogics basic_spec sentence symb_items
+anaComH :: LogicalFramework lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> ComorphismDef -> DGraph -> Result (morphism,
@@ -240,7 +240,7 @@ anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
                                                                                       (Result _ comM3, Result _ comM4) -> if (comM3 /= comM4) then error "the syntax - model diagram does not commute.\n"
                                                                                                                            else return (synM, pfM, modM)
 
-getMorphL ::  LogicFram lid sublogics basic_spec sentence symb_items
+getMorphL ::  LogicalFramework lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> String -> String -> morphism
@@ -267,7 +267,7 @@ addComorphismDef2DG cd dg =
   in dg2
 
 
-buildComorphism :: LogicFram lid sublogics basic_spec sentence symb_items
+buildComorphism :: LogicalFramework lid sublogics basic_spec sentence symb_items
                     symb_map_items sign morphism symbol raw_symbol proof_tree
               => lid -> String -> String -> String
                    -> morphism -> morphism -> morphism -> IO ()

@@ -106,7 +106,7 @@ instance StaticAnalysis LF
    induced_from_morphism LF m sig =
      inducedFromMorphism (renamMapAnalysis m sig) sig
 
-instance LogicFram LF
+instance LogicalFramework LF
    ()
    BASIC_SPEC
    Sentence
