@@ -125,11 +125,12 @@ genList2Parents = map genTerm2Parents
 
 genTerm2Parents :: GenTerm -> String
 genTerm2Parents (GenTerm (GenData (AWord n) []) Nothing) = n
+genTerm2Parents (GenTerm (OtherGenData n) Nothing) = n
 genTerm2Parents _ = []
 
 proof :: [String] -> Either String [ProofStep]
 proof s = checkProof $ snd $
-  foldr (\s' (s,ps'') -> case runParser line () "" s' of
+  foldl' (\(s,ps'') s' -> case runParser line () "" s' of
        Right p' | p' /= Empty -> case ps'' of
         Right ps' -> 
          if Set.member (name p') s || ps' == []

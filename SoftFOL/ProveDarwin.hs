@@ -46,6 +46,9 @@ import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 
 import System.Directory
+import System.Process (waitForProcess, runInteractiveCommand,
+                       runProcess)
+import System.IO (hGetContents, openFile, hClose, IOMode (WriteMode))
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -239,6 +242,37 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
     removeFile timeTmpFile
     return (res, l, tUsed)
 
+runEProverBuffered
+  :: Bool -- ^ save problem
+  -> String -- ^ options
+  -> String -- ^ filename without extension
+  -> String -- ^ problem
+  -> IO (String, [String], Int)
+runEProverBuffered saveTPTP options tmpFileName prob = do
+  let tmpFile = basename tmpFileName ++ ".tptp"
+      bin = "eproof"
+  when saveTPTP (writeFile tmpFile prob)
+  noProg <- missingExecutableInPath bin
+  if noProg then
+    return (bin ++ " not found. Check your $PATH", [], -1)
+    else do
+    timeTmpFile <- getTempFile prob tmpFile
+    bufferFile <- getTempFile "" "eprover-proof-buffer"
+    buff <- openFile bufferFile WriteMode
+    h <- runProcess bin (words options ++ [timeTmpFile])
+          Nothing Nothing Nothing (Just buff) (Just buff)
+    waitForProcess h
+    hClose buff
+    (_,out,err,_) <- runInteractiveCommand $ unwords ["tac",bufferFile,
+                                               "&&","rm","-f",bufferFile]
+    perr <- hGetContents err
+    pout <- hGetContents out
+    buff' <- readFile bufferFile
+    let l = lines $ perr ++ pout
+        (res, _, tUsed) = parseOutput $ lines buff'
+    removeFile timeTmpFile
+    return (res, l, tUsed)
+
 runDarwin
   :: ProverBinary
   -> SoftFOLProverState
@@ -256,7 +290,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         tl = maybe "10" show $ timeLimit cfg
         tOut = toOpt ++ tl
         extraOptions = unwords $ case b of
-            EProver -> eproverOpts "-l 3" ++ tl
+            EProver -> eproverOpts "" ++ tl
             Leo -> "-t " ++ tl
             Darwin -> darOpt ++ tOut
             DarwinFD -> darOpt ++ " " ++ fdOpt ++ tOut
@@ -265,8 +299,9 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showTPTPProblem thName sps nGoal
       $ options ++ ["Requested prover: " ++ bin]
-    (exitCode, out, tUsed) <-
-      runDarwinProcess bin saveTPTP extraOptions tmpFileName prob
+    (exitCode, out, tUsed) <- case b of
+      EProver -> runEProverBuffered saveTPTP extraOptions tmpFileName prob
+      _ -> runDarwinProcess bin saveTPTP extraOptions tmpFileName prob
     axs <- case b of
             EProver -> case proof out of
              Right p -> return $ axiomsOf p
@@ -292,7 +327,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
                          tsExtraOpts = options} }
 
         disProvedStatus = defaultProofStatus {goalStatus = Disproved}
-        provedStatus = defaultProofStatus
+        provedStatus = id $! defaultProofStatus
           { goalName = AS_Anno.senAttr nGoal
           , goalStatus = Proved True
           , usedAxioms = axs
@@ -300,7 +335,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
           , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
           }
     return (err, cfg {proofStatus = retval,
-                      resultOutput = out,
+                      resultOutput = reverse $ take 10000 $ out,
                       timeUsed = ctime })
 
 getSZSStatusWord :: String -> Maybe String
