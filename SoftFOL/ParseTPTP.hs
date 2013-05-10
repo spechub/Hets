@@ -17,9 +17,9 @@ module SoftFOL.ParseTPTP
   , singleQuoted
   , form
   , genList
-  , GenTerm(..)
-  , GenData(..)
-  , AWord(..)
+  , GenTerm (..)
+  , GenData (..)
+  , AWord (..)
   , prTPTPs
   , tptpModel
   ) where
@@ -133,7 +133,7 @@ tptpModel = do
   skipAll
   ts <- many1 (formAnno << skipAll)
   (szsOutput >> blank (string "end"))
-    <|> (string "END OF MODEL" >> return ())
+    <|> void (string "END OF MODEL")
   return $ foldr (\ t l -> case t of
     FormAnno _ (Name n) _ e _ -> (n, e) : l
     _ -> l) [] ts
@@ -151,14 +151,14 @@ commentBlock :: Parser ()
 commentBlock = forget $ plainBlock "/*" "*/"
 
 whiteSpace :: Parser ()
-whiteSpace = oneOf "\r\t\v\f " >> return ()
+whiteSpace = void $ oneOf "\r\t\v\f "
 
 skip :: Parser ()
 skip = skipMany $ whiteSpace <|> commentBlock
 
 skipAll :: Parser ()
-skipAll = skipMany $ whiteSpace <|> commentBlock <|> (commentLine >> return ())
-  <|> (newline >> return ())
+skipAll = skipMany $ whiteSpace <|> commentBlock <|> void commentLine
+  <|> void newline
 
 lexeme :: Parser a -> Parser a
 lexeme = (<< skipAll)

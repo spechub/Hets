@@ -55,10 +55,10 @@ arityT :: Parser Int
 arityT = fmap read $ many1 digit <|> try (string "-1" << notFollowedBy digit)
 
 commentLine :: Parser ()
-commentLine = char '%' >> manyTill anyChar newline >> return ()
+commentLine = void $ char '%' >> manyTill anyChar newline
 
 whiteSpace :: Parser ()
-whiteSpace = skipMany $ (satisfy isSpace >> return ()) <|> commentLine
+whiteSpace = skipMany $ void (satisfy isSpace) <|> commentLine
 
 symbolT :: String -> Parser String
 symbolT = (<< whiteSpace) . tryString
@@ -102,11 +102,10 @@ endOfList = symbolT "end_of_list."
 
 mapTokensToData :: [(String, a)] -> Parser a
 mapTokensToData ls = choice (map tokenToData ls)
-    where tokenToData (s,t) = keywordT s >> return t
+    where tokenToData (s, t) = keywordT s >> return t
 
--- * SPASS Problem
-{- |
-   This is the main function of the module
+{- * SPASS Problem
+This is the main function of the module
 -}
 
 parseSPASS :: Parser SPProblem
@@ -115,10 +114,10 @@ parseSPASS = whiteSpace >> problem
 problem :: Parser SPProblem
 problem = do
     symbolT "begin_problem"
-    i  <- parensDot identifierS
+    i <- parensDot identifierS
     dl <- descriptionList
     lp <- logicalPartP
-    s  <- settingList
+    s <- settingList
     symbolT "end_problem."
     many anyChar
     eof
@@ -248,23 +247,23 @@ clauseList = do
     endOfList
     return SPClauseList
       { coriginType = ot
-      , clauseType  = ct
+      , clauseType = ct
       , clauses = fs }
 
 clause :: SPClauseType -> Bool -> Parser SPClause
 clause ct bool = keywordT "clause" >> parensDot (do
-    sen  <- clauseFork ct
+    sen <- clauseFork ct
     cname <- optionL (comma >> identifierS)
     return (makeNamed cname sen) { isAxiom = bool })
 
 clauseFork :: SPClauseType -> Parser NSPClause
 clauseFork ct = do
   termWsList1@(TWL ls b) <- termWsList
-  do  symbolT "||"
-      termWsList2 <- termWsList
-      symbolT "->"
-      termWsList3 <- termWsList
-      return (BriefClause termWsList1 termWsList2 termWsList3)
+  do symbolT "||"
+     termWsList2 <- termWsList
+     symbolT "->"
+     termWsList3 <- termWsList
+     return (BriefClause termWsList1 termWsList2 termWsList3)
     <|> case ls of
           [t] | not b -> toNSPClause ct t
           _ -> unexpected "clause term"
@@ -324,7 +323,7 @@ declaration = do
         comma
         sl <- commaSep identifierT
         return (pn, sl)
-    return SPPredDecl { predSym  = pn, sortSyms = sl }
+    return SPPredDecl { predSym = pn, sortSyms = sl }
   <|> do
     t <- term
     dot
@@ -415,7 +414,7 @@ proofStep = do
 
 -- SPASS Settings.
 settingList :: Parser [SPSetting]
-settingList  = many setting
+settingList = many setting
 
 setting :: Parser SPSetting
 setting = do
@@ -480,21 +479,17 @@ term = do
             return (ts, as)
           if null ts then if elem iStr [ "forall", "exists", "true", "false"]
               then unexpected $ show iStr else return $ compTerm
-               (case lookup iStr $ map ( \ z -> (showSPSymbol z, z))
+               (fromMaybe s (lookup iStr $ map ( \ z -> (showSPSymbol z, z))
                          [ SPEqual
                          , SPOr
                          , SPAnd
                          , SPNot
                          , SPImplies
                          , SPImplied
-                         , SPEquiv] of
-                   Just ks -> ks
-                   Nothing -> s) as
+                         , SPEquiv])) as
             else return SPQuantTerm
-              { quantSym = case lookup iStr
-                           [("forall", SPForall), ("exists", SPExists)] of
-                   Just q -> q
-                   Nothing -> SPCustomQuantSym i
+              { quantSym = fromMaybe (SPCustomQuantSym i) $ lookup iStr
+                            [("forall", SPForall), ("exists", SPExists)]
               , variableList = ts, qFormula = a }
 
 toClauseBody :: Monad m => SPClauseType -> SPTerm -> m NSPClauseBody

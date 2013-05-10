@@ -9,20 +9,21 @@ Stability   :  provisional
 Portability :  portable
 -}
 
-module SoftFOL.EProver(proof,axiomsOf) where
+module SoftFOL.EProver (proof, axiomsOf) where
 
 import Text.ParserCombinators.Parsec
 import Common.Parsec
 import Common.Doc (renderText)
 import Common.GlobalAnnotations (emptyGlobalAnnos)
-import SoftFOL.ParseTPTP (singleQuoted,form,genList,GenTerm(..),
-                          GenTerm(..),GenData(..),AWord(..))
-import SoftFOL.Sign (SPTerm(..))
+import SoftFOL.ParseTPTP (singleQuoted, form, genList, GenTerm (..),
+                          GenTerm (..), GenData (..), AWord (..))
+import SoftFOL.Sign (SPTerm (..))
 import SoftFOL.PrintTPTP (printTPTP)
 import qualified Data.Set as Set
 import Data.List (foldl')
+import Control.Monad (void)
 
-data Role      = Axiom | Conjecture | Other deriving (Show,Eq)
+data Role = Axiom | Conjecture | Other deriving (Show, Eq)
 
 data Inference = ProofOf String
    | File { fileName :: String, formulaName :: String }
@@ -33,13 +34,13 @@ data Inference = ProofOf String
 
 instance Show Inference where
  show (ProofOf s) = "Proof for " ++ s ++ ""
- show (File f s)  = "Term named " ++ s ++
+ show (File f s) = "Term named " ++ s ++
                     " in file " ++ f
  show (Rule r p) = "Used inference rule \"" ++ r ++
-                          "\" on term " ++ (show p)
+                          "\" on term " ++ show p
  show (Inference r s p) = "Used inference rule \"" ++ r ++
-                          "\" on terms " ++ (show $ Set.toList p) ++
-                          ", SZS: " ++ s ++""
+                          "\" on terms " ++ show (Set.toList p) ++
+                          ", SZS: " ++ s ++ ""
 
 data ProofStep = ProofStep {
  name :: String,
@@ -50,14 +51,15 @@ data ProofStep = ProofStep {
 instance Show ProofStep where
  show (ProofStep n r f i) = case r of
   Axiom -> "Axiom " ++ show n ++ "\nFormula: (" ++
-   renderText emptyGlobalAnnos (printTPTP f)  ++ ")\n"
+   renderText emptyGlobalAnnos (printTPTP f) ++ ")\n"
    ++ "Source: " ++ show i
   _ -> "Inferred " ++ show n ++ "\nFormula: (" ++
    renderText emptyGlobalAnnos (printTPTP f) ++ ")\n"
    ++ "Inference: " ++ show i
+ show Empty = ""
 
 whiteSpace :: Parser ()
-whiteSpace = oneOf "\r\t\v\f " >> return ()
+whiteSpace = void $ oneOf "\r\t\v\f "
 
 lexeme :: GenParser Char () b -> GenParser Char () b
 lexeme p = skipMany whiteSpace >> p
@@ -129,28 +131,29 @@ genTerm2Parents (GenTerm (OtherGenData n) Nothing) = n
 genTerm2Parents _ = []
 
 proof :: Bool -> [String] -> Either String [ProofStep]
-proof fullProof s = checkProof $ snd $
-  foldl' (\(s,ps'') s' -> case runParser line () "" s' of
+proof fullProof = checkProof . snd .
+  foldl' (\ (s, ps'') s' -> case runParser line () "" s' of
        Right p' | p' /= Empty -> case ps'' of
-        Right ps' -> 
+        Right ps' ->
          if Set.member (name p') s || ps' == [] || not fullProof
-         then (insertParents (inference p') s, Right $ p':ps')
-         else (s,ps'')
-        _ -> (s,ps'')
-       Left e -> (s,Left . unlines $ "Warning - Failed to parse eprover proof"
-                     :(map (\s -> '\t':s) $ ("Input: " ++ s'):(lines $ show e)))
-       _ -> (s,ps'')) (Set.empty, Right []) s
+         then (insertParents (inference p') s, Right $ p' : ps')
+         else (s, ps'')
+        _ -> (s, ps'')
+       Left e -> (s, Left . unlines $ "Warning - Failed to parse eprover proof"
+                     : map (\ s'' -> '\t' : s'')
+                       (("Input: " ++ s') : lines (show e)))
+       _ -> (s, ps'')) (Set.empty, Right [])
  where
   insertParents :: Inference -> Set.Set String -> Set.Set String
-  insertParents (ProofOf n) s            = Set.insert n s
-  insertParents (File _ n) s             = Set.insert n s
-  insertParents (Rule _ p) s             = Set.insert p s
-  insertParents (Inference _ szs ps'') s = Set.union ps'' s
-  checkProof (Right ps) = if any ((==Conjecture) . role) ps
+  insertParents (ProofOf n) s' = Set.insert n s'
+  insertParents f@(File _ _) s' = Set.insert (fileName f) s'
+  insertParents r@(Rule _ _) s' = Set.insert (parent r) s'
+  insertParents i@(Inference _ _ _) s' = Set.union (parents i) s'
+  checkProof (Right ps) = if any ((== Conjecture) . role) ps
                              || not fullProof then Right ps
                           else Left $ "Warning - Obtained incorrect prooftree "
                                       ++ "from eprover output"
-  checkProof (Left e)   = Left (e)
+  checkProof (Left e) = Left e
 
 axiomsOf :: [ProofStep] -> [String]
-axiomsOf ps = map (formulaName . inference) $ filter (\p -> role p == Axiom) ps
+axiomsOf ps = map (formulaName . inference) $ filter (\ p -> role p == Axiom) ps

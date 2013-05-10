@@ -27,7 +27,7 @@ import Logic.Prover
 import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
-import SoftFOL.EProver(proof, axiomsOf)
+import SoftFOL.EProver (proof, axiomsOf)
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -265,21 +265,21 @@ runEProverBuffered saveTPTP options tmpFileName prob = do
     waitForProcess h
     buffSize <- fileSize `fmap` getFileStatus bufferFile
     hClose buff
-    (err,out,fullProof) <- (if buffSize < 1048576 --1 MB
+    (err, out, fullProof) <- if buffSize < 1048576 -- 1 MB
           then do
-           (_,out,err,_) <-
-            runInteractiveCommand $ unwords ["tac",bufferFile,"&&",
-                                      "rm","-f",bufferFile]
-           return (err,out,True)
+           (_, out, err, _) <-
+            runInteractiveCommand $ unwords ["tac", bufferFile, "&&",
+                                      "rm", "-f", bufferFile]
+           return (err, out, True)
           else do
-           (_,out,err,_) <- runInteractiveCommand $
-                              unwords ["grep","-e","axiom","-e","SZS",
-                                bufferFile,"&&","rm","-f", bufferFile]
-           return (err,out,False))
+           (_, out, err, _) <- runInteractiveCommand $
+                              unwords ["grep", "-e", "axiom", "-e", "SZS",
+                                bufferFile, "&&", "rm", "-f", bufferFile]
+           return (err, out, False)
     perr <- hGetContents err
     pout <- hGetContents out
     let l = lines $ perr ++ pout
-        (res, _, tUsed) = parseOutput $ l
+        (res, _, tUsed) = parseOutput l
     removeFile timeTmpFile
     return (res, l, tUsed, fullProof)
 
@@ -315,10 +315,10 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
     axs <- case b of
             EProver -> case proof fullProof out of
              Right p -> return $ axiomsOf p
-             Left e  -> do
+             Left e -> do
                          putStrLn e
                          return $ getAxioms sps
-            _       -> return $ getAxioms sps
+            _ -> return $ getAxioms sps
     let ctime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
         (err, retval) = case () of
           _ | szsProved exitCode -> (ATPSuccess, provedStatus)
@@ -337,7 +337,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
                          tsExtraOpts = options} }
 
         disProvedStatus = defaultProofStatus {goalStatus = Disproved}
-        provedStatus = id $! defaultProofStatus
+        provedStatus = defaultProofStatus
           { goalName = AS_Anno.senAttr nGoal
           , goalStatus = Proved True
           , usedAxioms = axs

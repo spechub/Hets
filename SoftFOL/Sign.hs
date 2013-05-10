@@ -18,6 +18,7 @@ module SoftFOL.Sign where
 import Data.Char
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Maybe (isNothing)
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.Id
@@ -89,7 +90,7 @@ type SPIdentifier = Token
 -}
 singleSortNotGen :: Sign -> Bool
 singleSortNotGen spSig = singleSorted spSig &&
-                  (head . Map.elems $ sortMap spSig) == Nothing
+                  isNothing (head . Map.elems $ sortMap spSig)
 
 -- ** Symbol related datatypes
 
@@ -120,10 +121,10 @@ data SFSymbType = SFOpType [SPIdentifier] SPIdentifier
   settings part hasn't been implemented yet.
 -}
 data SPProblem =
-        SPProblem { identifier  :: String,
+        SPProblem { identifier :: String,
                     description :: SPDescription,
                     logicalPart :: SPLogicalPart,
-                    settings    :: [SPSetting]
+                    settings :: [SPSetting]
                     }
       deriving (Eq, Ord, Show)
 
@@ -135,19 +136,19 @@ data SPProblem =
   been implemented yet.
 -}
 data SPLogicalPart =
-        SPLogicalPart { symbolList      :: Maybe SPSymbolList,
+        SPLogicalPart { symbolList :: Maybe SPSymbolList,
                         declarationList :: Maybe [SPDeclaration],
-                        formulaLists    :: [SPFormulaList],
-                        clauseLists     :: [SPClauseList],
+                        formulaLists :: [SPFormulaList],
+                        clauseLists :: [SPClauseList],
                         proofLists :: [SPProofList]
                         }
       deriving (Eq, Ord, Show)
 
 emptySPLogicalPart :: SPLogicalPart
-emptySPLogicalPart = SPLogicalPart { symbolList      = Nothing,
+emptySPLogicalPart = SPLogicalPart { symbolList = Nothing,
                                      declarationList = Nothing,
-                                     formulaLists    = [],
-                                     clauseLists     = [],
+                                     formulaLists = [],
+                                     clauseLists = [],
                                      proofLists = []
                                    }
 
@@ -158,9 +159,9 @@ emptySPLogicalPart = SPLogicalPart { symbolList      = Nothing,
   symbol list.
 -}
 data SPSymbolList =
-        SPSymbolList { functions   :: [SPSignSym],
-                       predicates  :: [SPSignSym],
-                       sorts       :: [SPSignSym]}
+        SPSymbolList { functions :: [SPSignSym],
+                       predicates :: [SPSignSym],
+                       sorts :: [SPSignSym]}
       deriving (Eq, Ord, Show)
 
 {- |
@@ -168,17 +169,17 @@ data SPSymbolList =
 -}
 emptySymbolList :: SPSymbolList
 emptySymbolList =
-        SPSymbolList { functions   = [],
-                       predicates  = [],
-                       sorts       = []}
+        SPSymbolList { functions = [],
+                       predicates = [],
+                       sorts = []}
 
 
 {- |
   A common data type used for all signature symbols.
 -}
 data SPSignSym =
-        SPSignSym { sym    :: SPIdentifier,
-                    arity  :: Int }
+        SPSignSym { sym :: SPIdentifier,
+                    arity :: Int }
       | SPSimpleSignSym SPIdentifier
       deriving (Eq, Ord, Show)
 
@@ -194,13 +195,13 @@ data SPDeclaration =
         SPSubsortDecl { sortSymA :: SPIdentifier,
                         sortSymB :: SPIdentifier }
       | SPTermDecl { termDeclTermList :: [SPTerm],
-                     termDeclTerm     :: SPTerm }
+                     termDeclTerm :: SPTerm }
       | SPSimpleTermDecl SPTerm
-      | SPPredDecl { predSym  :: SPIdentifier,
+      | SPPredDecl { predSym :: SPIdentifier,
                      sortSyms :: [SPIdentifier] }
-      | SPGenDecl { sortSym         :: SPIdentifier,
+      | SPGenDecl { sortSym :: SPIdentifier,
                     freelyGenerated :: Bool,
-                    funcList        :: [SPIdentifier]}
+                    funcList :: [SPIdentifier]}
       deriving (Eq, Ord, Show)
 
 -- *** Formula List
@@ -210,7 +211,7 @@ data SPDeclaration =
 -}
 data SPFormulaList =
         SPFormulaList { originType :: SPOriginType,
-                        formulae   :: [SPFormula] }
+                        formulae :: [SPFormula] }
       deriving (Eq, Ord, Show)
 
 -- | test the origin type of the formula list
@@ -224,9 +225,9 @@ isAxiomFormula fl =
 
 -- | SPASS Clause List
 data SPClauseList =
-        SPClauseList  { coriginType :: SPOriginType,
-                        clauseType  :: SPClauseType,
-                        clauses     :: [SPClause] }
+        SPClauseList { coriginType :: SPOriginType,
+                        clauseType :: SPClauseType,
+                        clauses :: [SPClause] }
       deriving (Eq, Ord, Show)
 
 
@@ -263,10 +264,10 @@ data TermWsList = TWL [SPTerm] Bool    -- maybe plus.
   A SPASS Term.
 -}
 data SPTerm =
-        SPQuantTerm { quantSym     :: SPQuantSym,
+        SPQuantTerm { quantSym :: SPQuantSym,
                       variableList :: [SPTerm],
-                      qFormula     :: SPTerm }
-      | SPComplexTerm { symbol    :: SPSymbol,
+                      qFormula :: SPTerm }
+      | SPComplexTerm { symbol :: SPSymbol,
                         arguments :: [SPTerm]}
       deriving (Eq, Ord, Show)
 
@@ -402,13 +403,13 @@ mkEq t1 t2 = compTerm SPEqual [t1, t2]
   at least a 'name', the name of the 'author', the 'status' (see also
   'SPLogState' below), and a (verbose) description. -}
 data SPDescription =
-        SPDescription { name    :: String,
-                        author  :: String,
+        SPDescription { name :: String,
+                        author :: String,
                         version :: Maybe String,
-                        logic   :: Maybe String,
-                        status  :: SPLogState,
-                        desc    :: String,
-                        date    :: Maybe String}
+                        logic :: Maybe String,
+                        status :: SPLogState,
+                        desc :: String,
+                        date :: Maybe String}
       deriving (Eq, Ord, Show)
 
 {- |

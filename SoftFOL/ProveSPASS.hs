@@ -103,8 +103,8 @@ parseSpassTacticScript =
   data type ATPFunctions.
 -}
 spassProveGUI :: String -- ^ theory name
-          -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-             -- 'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+          -> Theory Sign Sentence ProofTree {- ^ theory consisting of a
+             'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence' -}
           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
           -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 spassProveGUI thName th freedefs =
@@ -125,12 +125,12 @@ spassProveCMDLautomaticBatch ::
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-           -- 'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+        -> Theory Sign Sentence ProofTree {- ^ theory consisting of a
+           'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence' -}
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId, Concurrent.MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           -- snd: MVar to wait for the end of the thread
+           {- ^ fst: identifier of the batch thread for killing it
+           snd: MVar to wait for the end of the thread -}
 spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -175,9 +175,9 @@ parseTimeOfDay str =
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
 -}
-runSpass :: SoftFOLProverState -- ^ logical part containing the input Sign and
-                     -- axioms and possibly goals that have been proved
-                     -- earlier as additional axioms
+runSpass :: SoftFOLProverState {- ^ logical part containing the input Sign and
+                     axioms and possibly goals that have been proved
+                     earlier as additional axioms -}
          -> GenericConfig ProofTree -- ^ configuration to use
          -> Bool -- ^ True means save DFG file
          -> String -- ^ name of the theory in the DevGraph

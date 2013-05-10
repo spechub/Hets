@@ -41,8 +41,8 @@ reservedWords = Set.fromList $ map showSPSymbol
   , SPImplies
   , SPImplied
   , SPEquiv]
- -- this list of reserved words has been generated with:
- -- perl HetCATS/utils/transformLexerFile.pl spass-3.0c/dfgscanner.l
+ {- this list of reserved words has been generated with:
+ perl HetCATS/utils/transformLexerFile.pl spass-3.0c/dfgscanner.l -}
   ++ concatMap words
   [ "and author axioms begin_problem by box all clause cnf comp"
   , "conjectures conv date description dia some div dnf domain"
@@ -77,9 +77,8 @@ checkIdentifier t str = case str of
 
 {- |
 Allowed SPASS characters are letters, digits, and underscores.
--}
--- Warning:
--- Data.Char.isAlphaNum includes all kinds of isolatin1 characters!!
+Warning:
+Data.Char.isAlphaNum includes all kinds of isolatin1 characters!! -}
 checkSPChar :: Char -> Bool
 checkSPChar c = isAlphaNum c && isAscii c || '_' == c
 
@@ -98,8 +97,10 @@ transIdString t str = case str of
         if Set.member lstr reservedWords then "x_" ++ str else lstr
 
 transToSPChar :: Char -> String
-transToSPChar c = if checkSPChar c then [c] else
-  if elem c " \n" then "_" else lookupCharMap c
+transToSPChar c
+ | checkSPChar c = [c]
+ | elem c " \n" = "_"
+ | otherwise = lookupCharMap c
 
 substDigit :: Char -> String
 substDigit c = case c of
