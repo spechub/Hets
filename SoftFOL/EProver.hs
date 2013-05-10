@@ -128,12 +128,12 @@ genTerm2Parents (GenTerm (GenData (AWord n) []) Nothing) = n
 genTerm2Parents (GenTerm (OtherGenData n) Nothing) = n
 genTerm2Parents _ = []
 
-proof :: [String] -> Either String [ProofStep]
-proof s = checkProof $ snd $
+proof :: Bool -> [String] -> Either String [ProofStep]
+proof fullProof s = checkProof $ snd $
   foldl' (\(s,ps'') s' -> case runParser line () "" s' of
        Right p' | p' /= Empty -> case ps'' of
         Right ps' -> 
-         if Set.member (name p') s || ps' == []
+         if Set.member (name p') s || ps' == [] || not fullProof
          then (insertParents (inference p') s, Right $ p':ps')
          else (s,ps'')
         _ -> (s,ps'')
@@ -146,7 +146,8 @@ proof s = checkProof $ snd $
   insertParents (File _ n) s             = Set.insert n s
   insertParents (Rule _ p) s             = Set.insert p s
   insertParents (Inference _ szs ps'') s = Set.union ps'' s
-  checkProof (Right ps) = if any ((==Conjecture) . role) ps then Right ps
+  checkProof (Right ps) = if any ((==Conjecture) . role) ps
+                             || not fullProof then Right ps
                           else Left $ "Warning - Obtained incorrect prooftree "
                                       ++ "from eprover output"
   checkProof (Left e)   = Left (e)

@@ -49,6 +49,7 @@ import System.Directory
 import System.Process (waitForProcess, runInteractiveCommand,
                        runProcess)
 import System.IO (hGetContents, openFile, hClose, IOMode (WriteMode))
+import System.Posix (getFileStatus, fileSize)
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -208,7 +209,7 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
               EDarwin -> darOpt ++ fdConsOpt ++ eqOpt ++ tOut
             bin = darwinExe b
         prob <- showTPTPProblemM thName proverStateI []
-        (exitCode, out, tUsed) <-
+        (exitCode, out, tUsed, _) <-
           runDarwinProcess bin False extraOptions thName prob
         let outState = CCStatus
                { ccResult = Just True
@@ -226,13 +227,13 @@ runDarwinProcess
   -> String -- ^ options
   -> String -- ^ filename without extension
   -> String -- ^ problem
-  -> IO (String, [String], Int)
+  -> IO (String, [String], Int, Bool)
 runDarwinProcess bin saveTPTP options tmpFileName prob = do
   let tmpFile = basename tmpFileName ++ ".tptp"
   when saveTPTP (writeFile tmpFile prob)
   noProg <- missingExecutableInPath bin
   if noProg then
-    return (bin ++ " not found. Check your $PATH", [], -1)
+    return (bin ++ " not found. Check your $PATH", [], -1, True)
     else do
     timeTmpFile <- getTempFile prob tmpFile
     (_, pout, perr) <-
@@ -240,21 +241,21 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
     let l = lines $ pout ++ perr
         (res, _, tUsed) = parseOutput l
     removeFile timeTmpFile
-    return (res, l, tUsed)
+    return (res, l, tUsed, True)
 
 runEProverBuffered
   :: Bool -- ^ save problem
   -> String -- ^ options
   -> String -- ^ filename without extension
   -> String -- ^ problem
-  -> IO (String, [String], Int)
+  -> IO (String, [String], Int, Bool)
 runEProverBuffered saveTPTP options tmpFileName prob = do
   let tmpFile = basename tmpFileName ++ ".tptp"
       bin = "eproof"
   when saveTPTP (writeFile tmpFile prob)
   noProg <- missingExecutableInPath bin
   if noProg then
-    return (bin ++ " not found. Check your $PATH", [], -1)
+    return (bin ++ " not found. Check your $PATH", [], -1, True)
     else do
     timeTmpFile <- getTempFile prob tmpFile
     bufferFile <- getTempFile "" "eprover-proof-buffer"
@@ -262,16 +263,25 @@ runEProverBuffered saveTPTP options tmpFileName prob = do
     h <- runProcess bin (words options ++ [timeTmpFile])
           Nothing Nothing Nothing (Just buff) (Just buff)
     waitForProcess h
+    buffSize <- fileSize `fmap` getFileStatus bufferFile
     hClose buff
-    (_,out,err,_) <- runInteractiveCommand $ unwords ["tac",bufferFile,
-                                               "&&","rm","-f",bufferFile]
+    (err,out,fullProof) <- (if buffSize < 1048576 --1 MB
+          then do
+           (_,out,err,_) <-
+            runInteractiveCommand $ unwords ["tac",bufferFile,"&&",
+                                      "rm","-f",bufferFile]
+           return (err,out,True)
+          else do
+           (_,out,err,_) <- runInteractiveCommand $
+                              unwords ["grep","-e","axiom","-e","SZS",
+                                bufferFile,"&&","rm","-f", bufferFile]
+           return (err,out,False))
     perr <- hGetContents err
     pout <- hGetContents out
-    buff' <- readFile bufferFile
     let l = lines $ perr ++ pout
-        (res, _, tUsed) = parseOutput $ lines buff'
+        (res, _, tUsed) = parseOutput $ l
     removeFile timeTmpFile
-    return (res, l, tUsed)
+    return (res, l, tUsed, fullProof)
 
 runDarwin
   :: ProverBinary
@@ -299,11 +309,11 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showTPTPProblem thName sps nGoal
       $ options ++ ["Requested prover: " ++ bin]
-    (exitCode, out, tUsed) <- case b of
+    (exitCode, out, tUsed, fullProof) <- case b of
       EProver -> runEProverBuffered saveTPTP extraOptions tmpFileName prob
       _ -> runDarwinProcess bin saveTPTP extraOptions tmpFileName prob
     axs <- case b of
-            EProver -> case proof out of
+            EProver -> case proof fullProof out of
              Right p -> return $ axiomsOf p
              Left e  -> do
                          putStrLn e
@@ -335,7 +345,9 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
           , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
           }
     return (err, cfg {proofStatus = retval,
-                      resultOutput = reverse $ take 10000 $ out,
+                      resultOutput = case b of
+                                      EProver -> reverse out
+                                      _ -> out,
                       timeUsed = ctime })
 
 getSZSStatusWord :: String -> Maybe String
@@ -346,7 +358,7 @@ getSZSStatusWord line = case words $ fromMaybe ""
 
 parseOutput :: [String] -> (String, Bool, Int)
   -- ^ (exit code, status found, used time)
-parseOutput = foldl checkLine ("could not determine SZS status", False, -1)
+parseOutput = foldl' checkLine ("could not determine SZS status", False, -1)
   where checkLine (exCode, stateFound, to) line =
           if isPrefixOf "Couldn't find eprover" line
              || isInfixOf "darwin -h for further information" line
