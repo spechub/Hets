@@ -553,21 +553,33 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
             cEntry = case lookupGlobalEnvDG cItem dg of 
                        Nothing -> error $ "No entry for " ++ show cItem
                        Just gE -> gE
+            bgraph = dgBody dg
+            lEdge x y = case filter (\(_,z,_) -> z == y) $ out bgraph x of
+                             [] -> error "No edge found"
+                             lE:_ -> lE
            in case cEntry of 
                SpecEntry extGenSig -> ((getNode $ extGenBody extGenSig):cN, cE)
                ViewOrStructEntry True (ExtViewSig ns _gm eGS) -> let 
                    s = getNode ns
-                   t = getNode $ extGenBody eGS
-                   lEdge = case filter (\(_,y,_) -> y == t) $ out (dgBody dg) s of
-                             [] -> error "No edge found"
-                             lE:_ -> lE   
-                 in (cN, lEdge:cE)
-               -- TO DO: add alignments!!!
+                   t = getNode $ extGenBody eGS  
+                 in (cN, (lEdge s t):cE)
+               AlignEntry asig -> 
+                  case asig of
+                   AlignMor src _gmor tar -> let
+                     s = getNode src
+                     t = getNode tar
+                    in ([s,t] ++ cN, (lEdge s t):cE)
+                   AlignSpan src _phi1 tar1 _phi2 tar2 -> let
+                     s = getNode src
+                     t1 = getNode tar1
+                     t2 = getNode tar2                     
+                    in ([s,t1,t2]++cN, [lEdge s t1, lEdge s t2]++cE)
                _ -> error $ show cItem ++ "is not an ontology, a view or an alignment"
          addGDefLinks (cN, cE) n = let 
-           oEdges = filter (\(_,y,l) -> (y `elem` cN) && (isGlobalDef $ dgl_type l))
+           oEdges = filter (\(_,y,l) -> (y `elem` cN) && 
+                                        (isGlobalDef $ dgl_type l))
                      $ out (dgBody dg) n
-           in (cN, nub $ oEdges ++ cE) 
+           in (nub cN, nub $ oEdges ++ cE) 
          addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
          (cNodes, cEdges) = addLinks $ foldl getNodes ([], []) cItems
          (eNodes, eEdges) = foldl getNodes ([], []) eItems
