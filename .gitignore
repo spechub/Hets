@@ -1,140 +1,140 @@
 *.hi
 *.o
 
- ATC/AS_Annotation.der.hs
- ATC/AS_Annotation.hs
- ATC/AS_Architecture.der.hs
- ATC/AS_Architecture.hs
- ATC/AS_Library.der.hs
- ATC/AS_Library.hs
- ATC/AS_Structured.der.hs
- ATC/AS_Structured.hs
- ATC/Consistency.der.hs
- ATC/Consistency.hs
- ATC/DefaultMorphism.der.hs
- ATC/DefaultMorphism.hs
- ATC/DevGraph.der.hs
- ATC/DevGraph.hs
- ATC/DgUtils.der.hs
- ATC/DgUtils.hs
- ATC/ExtSign.der.hs
- ATC/ExtSign.hs
- ATC/GlobalAnnotations.der.hs
- ATC/GlobalAnnotations.hs
- ATC/Graph.der.hs
- ATC/Graph.hs
- ATC/Grothendieck.hs
- ATC/IRI.der.hs
- ATC/IRI.hs
- ATC/Id.der.hs
- ATC/Id.hs
- ATC/LibName.der.hs
- ATC/LibName.hs
- ATC/OrderedMap.der.hs
- ATC/OrderedMap.hs
- ATC/ProofTree.der.hs
- ATC/ProofTree.hs
- ATC/Prover.der.hs
- ATC/Prover.hs
- ATC/Result.der.hs
- ATC/Result.hs
- ATC/XGraph.der.hs
- ATC/XGraph.hs
- Adl/ATC_Adl.der.hs
- Adl/ATC_Adl.hs
- CASL/AS_Basic_CASL.hs
- CASL/ATC_CASL.der.hs
- CASL/ATC_CASL.hs
- CASL_DL/AS_CASL_DL.hs
- CASL_DL/ATC_CASL_DL.der.hs
- CASL_DL/ATC_CASL_DL.hs
- COL/AS_COL.hs
- COL/ATC_COL.der.hs
- COL/ATC_COL.hs
- CSL/ATC_CSL.der.hs
- CSL/ATC_CSL.hs
- CoCASL/AS_CoCASL.hs
- CoCASL/ATC_CoCASL.der.hs
- CoCASL/ATC_CoCASL.hs
- Common/AS_Annotation.hs
- CommonLogic/AS_CommonLogic.hs
- CommonLogic/ATC_CommonLogic.der.hs
- CommonLogic/ATC_CommonLogic.hs
- ConstraintCASL/ATC_ConstraintCASL.der.hs
- ConstraintCASL/ATC_ConstraintCASL.hs
- CspCASL/AS_CspCASL.hs
- CspCASL/AS_CspCASL_Process.hs
- CspCASL/ATC_CspCASL.der.hs
- CspCASL/ATC_CspCASL.hs
- DFOL/ATC_DFOL.der.hs
- DFOL/ATC_DFOL.hs
- Driver/Version.hs
- ExtModal/AS_ExtModal.hs
- ExtModal/ATC_ExtModal.der.hs
- ExtModal/ATC_ExtModal.hs
- Fpl/ATC_Fpl.der.hs
- Fpl/ATC_Fpl.hs
- Fpl/As.hs
- Framework/ATC_Framework.der.hs
- Framework/ATC_Framework.hs
- FreeCAD/ATC_FreeCAD.der.hs
- FreeCAD/ATC_FreeCAD.hs
- GUI/Glade/GenericATP.hs
- GUI/Glade/LinkTypeChoice.hs
- GUI/Glade/NodeChecker.hs
- GUI/Glade/ProverGUI.hs
- GUI/Glade/TextField.hs
- GUI/Glade/Utils.hs
- HasCASL/ATC_HasCASL.der.hs
- HasCASL/ATC_HasCASL.hs
- Haskell/ATC_Haskell.der.hs
- Haskell/ATC_Haskell.hs
- Haskell/PreludeString.hs
- Haskell/TiATC.hs
- Haskell/TiDecorateATC.hs
- Haskell/TiPropATC.hs
- HolLight/ATC_HolLight.der.hs
- HolLight/ATC_HolLight.hs
- Isabelle/ATC_Isabelle.der.hs
- Isabelle/ATC_Isabelle.hs
- Isabelle/IsaExport.hs
- LF/ATC_LF.der.hs
- LF/ATC_LF.hs
- Maude/ATC_Maude.der.hs
- Maude/ATC_Maude.hs
- Modal/AS_Modal.hs
- Modal/ATC_Modal.der.hs
- Modal/ATC_Modal.hs
- OMDoc/ATC_OMDoc.der.hs
- OMDoc/ATC_OMDoc.hs
- OWL2/ATC_OWL2.der.hs
- OWL2/ATC_OWL2.hs
- Propositional/AS_BASIC_Propositional.hs
- Propositional/ATC_Propositional.der.hs
- Propositional/ATC_Propositional.hs
- QBF/AS_BASIC_QBF.hs
- QBF/ATC_QBF.der.hs
- QBF/ATC_QBF.hs
- RDF/ATC_RDF.der.hs
- RDF/ATC_RDF.hs
- RelationalScheme/AS.hs
- RelationalScheme/ATC_RelationalScheme.der.hs
- RelationalScheme/ATC_RelationalScheme.hs
- SoftFOL/ATC_SoftFOL.der.hs
- SoftFOL/ATC_SoftFOL.hs
- Syntax/AS_Architecture.hs
- Syntax/AS_Library.hs
- Syntax/AS_Structured.hs
- THF/ATC_THF.der.hs
- THF/ATC_THF.hs
- THF/As.hs
- Temporal/ATC_Temporal.der.hs
- Temporal/ATC_Temporal.hs
- VSE/ATC_VSE.der.hs
- VSE/ATC_VSE.hs
- hets
- utils/DrIFT
- utils/DtdToHaskell
- utils/DtdToHaskell-src/DtdToHaskell/
- utils/appendHaskellPreludeString
- utils/genRules
+ATC/AS_Annotation.der.hs
+ATC/AS_Annotation.hs
+ATC/AS_Architecture.der.hs
+ATC/AS_Architecture.hs
+ATC/AS_Library.der.hs
+ATC/AS_Library.hs
+ATC/AS_Structured.der.hs
+ATC/AS_Structured.hs
+ATC/Consistency.der.hs
+ATC/Consistency.hs
+ATC/DefaultMorphism.der.hs
+ATC/DefaultMorphism.hs
+ATC/DevGraph.der.hs
+ATC/DevGraph.hs
+ATC/DgUtils.der.hs
+ATC/DgUtils.hs
+ATC/ExtSign.der.hs
+ATC/ExtSign.hs
+ATC/GlobalAnnotations.der.hs
+ATC/GlobalAnnotations.hs
+ATC/Graph.der.hs
+ATC/Graph.hs
+ATC/Grothendieck.hs
+ATC/IRI.der.hs
+ATC/IRI.hs
+ATC/Id.der.hs
+ATC/Id.hs
+ATC/LibName.der.hs
+ATC/LibName.hs
+ATC/OrderedMap.der.hs
+ATC/OrderedMap.hs
+ATC/ProofTree.der.hs
+ATC/ProofTree.hs
+ATC/Prover.der.hs
+ATC/Prover.hs
+ATC/Result.der.hs
+ATC/Result.hs
+ATC/XGraph.der.hs
+ATC/XGraph.hs
+Adl/ATC_Adl.der.hs
+Adl/ATC_Adl.hs
+CASL/AS_Basic_CASL.hs
+CASL/ATC_CASL.der.hs
+CASL/ATC_CASL.hs
+CASL_DL/AS_CASL_DL.hs
+CASL_DL/ATC_CASL_DL.der.hs
+CASL_DL/ATC_CASL_DL.hs
+COL/AS_COL.hs
+COL/ATC_COL.der.hs
+COL/ATC_COL.hs
+CSL/ATC_CSL.der.hs
+CSL/ATC_CSL.hs
+CoCASL/AS_CoCASL.hs
+CoCASL/ATC_CoCASL.der.hs
+CoCASL/ATC_CoCASL.hs
+Common/AS_Annotation.hs
+CommonLogic/AS_CommonLogic.hs
+CommonLogic/ATC_CommonLogic.der.hs
+CommonLogic/ATC_CommonLogic.hs
+ConstraintCASL/ATC_ConstraintCASL.der.hs
+ConstraintCASL/ATC_ConstraintCASL.hs
+CspCASL/AS_CspCASL.hs
+CspCASL/AS_CspCASL_Process.hs
+CspCASL/ATC_CspCASL.der.hs
+CspCASL/ATC_CspCASL.hs
+DFOL/ATC_DFOL.der.hs
+DFOL/ATC_DFOL.hs
+Driver/Version.hs
+ExtModal/AS_ExtModal.hs
+ExtModal/ATC_ExtModal.der.hs
+ExtModal/ATC_ExtModal.hs
+Fpl/ATC_Fpl.der.hs
+Fpl/ATC_Fpl.hs
+Fpl/As.hs
+Framework/ATC_Framework.der.hs
+Framework/ATC_Framework.hs
+FreeCAD/ATC_FreeCAD.der.hs
+FreeCAD/ATC_FreeCAD.hs
+GUI/Glade/GenericATP.hs
+GUI/Glade/LinkTypeChoice.hs
+GUI/Glade/NodeChecker.hs
+GUI/Glade/ProverGUI.hs
+GUI/Glade/TextField.hs
+GUI/Glade/Utils.hs
+HasCASL/ATC_HasCASL.der.hs
+HasCASL/ATC_HasCASL.hs
+Haskell/ATC_Haskell.der.hs
+Haskell/ATC_Haskell.hs
+Haskell/PreludeString.hs
+Haskell/TiATC.hs
+Haskell/TiDecorateATC.hs
+Haskell/TiPropATC.hs
+HolLight/ATC_HolLight.der.hs
+HolLight/ATC_HolLight.hs
+Isabelle/ATC_Isabelle.der.hs
+Isabelle/ATC_Isabelle.hs
+Isabelle/IsaExport.hs
+LF/ATC_LF.der.hs
+LF/ATC_LF.hs
+Maude/ATC_Maude.der.hs
+Maude/ATC_Maude.hs
+Modal/AS_Modal.hs
+Modal/ATC_Modal.der.hs
+Modal/ATC_Modal.hs
+OMDoc/ATC_OMDoc.der.hs
+OMDoc/ATC_OMDoc.hs
+OWL2/ATC_OWL2.der.hs
+OWL2/ATC_OWL2.hs
+Propositional/AS_BASIC_Propositional.hs
+Propositional/ATC_Propositional.der.hs
+Propositional/ATC_Propositional.hs
+QBF/AS_BASIC_QBF.hs
+QBF/ATC_QBF.der.hs
+QBF/ATC_QBF.hs
+RDF/ATC_RDF.der.hs
+RDF/ATC_RDF.hs
+RelationalScheme/AS.hs
+RelationalScheme/ATC_RelationalScheme.der.hs
+RelationalScheme/ATC_RelationalScheme.hs
+SoftFOL/ATC_SoftFOL.der.hs
+SoftFOL/ATC_SoftFOL.hs
+Syntax/AS_Architecture.hs
+Syntax/AS_Library.hs
+Syntax/AS_Structured.hs
+THF/ATC_THF.der.hs
+THF/ATC_THF.hs
+THF/As.hs
+Temporal/ATC_Temporal.der.hs
+Temporal/ATC_Temporal.hs
+VSE/ATC_VSE.der.hs
+VSE/ATC_VSE.hs
+hets
+utils/DrIFT
+utils/DtdToHaskell
+utils/DtdToHaskell-src/DtdToHaskell/
+utils/appendHaskellPreludeString
+utils/genRules
