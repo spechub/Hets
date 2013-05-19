@@ -38,7 +38,7 @@ thSpec (Logic l) =
         do
         asKey "Basic_Spec"
         asKey "{"
-        s <- (callParser $ parse_basic_spec l) Map.empty
+        s <- (callParser l parse_basic_spec) Map.empty
         asKey "}"
         i <- many itemParser
         fs <- sepBy (annoFormParser l s) anSemiOrComma
@@ -46,8 +46,9 @@ thSpec (Logic l) =
 
 -- Calls the underlying logic parser, only if exists. Otherwise
 -- will throw out an error
-callParser :: Maybe x -> x
-callParser = fromMaybe (error "Failed! No parser for this logic")
+callParser :: (Show a) => a -> (a -> Maybe x) -> x
+callParser l f =
+ fromMaybe (error $ "Failed! No parser for logic " ++ show l) $ f l
 
 -- Parses the declaration of nominals and modalities
 itemParser :: AParser st TH_BASIC_ITEM
@@ -168,6 +169,6 @@ fParser l bs =
         <|>
         do
         asKey "{"
-        f <- callParser (parse_basic_sen l) bs
+        f <- (callParser l parse_basic_sen) bs
         asKey "}"
         return $ UnderLogic f 
