@@ -138,3 +138,5 @@ utils/DtdToHaskell
 utils/DtdToHaskell-src/DtdToHaskell/
 utils/appendHaskellPreludeString
 utils/genRules
+Hybrid/ATC_Hybrid.hs
+TopHybrid/ATC_TopHybrid.hs
