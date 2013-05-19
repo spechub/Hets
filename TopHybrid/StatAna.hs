@@ -26,12 +26,14 @@ import Common.ExtSign
 import Common.AS_Annotation
 import Common.Id
 import Common.DocUtils
-import Control.Categorical.Bifunctor
 import Control.Monad
 import Data.List
 import Data.Set 
 import Unsafe.Coerce
 import ATerm.Lib
+
+bimap :: (t1 -> t2) -> (s1 -> s2) -> (t1,s1) -> (t2,s2)
+bimap f g (a,b) = (f a, g b)
 
 -- | Collects the newly declared nomies and modies 
 colnomsMods :: [TH_BASIC_ITEM] -> ([MODALITY],[NOMINAL])
