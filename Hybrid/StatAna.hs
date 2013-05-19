@@ -298,11 +298,8 @@ ana_FORMULA mix f = do
 getFormPredToks :: FORMULA H_FORMULA -> Set.Set Token
 getFormPredToks frm = case frm of
     Quantification _ _ f _ -> getFormPredToks f
-    Conjunction fs _ -> Set.unions $ map getFormPredToks fs
-    Disjunction fs _ -> Set.unions $ map getFormPredToks fs
-    Implication f1 f2 _ _ ->
-        Set.union (getFormPredToks f1) $ getFormPredToks f2
-    Equivalence f1 f2 _ ->
+    Junction _ fs _ -> Set.unions $ map getFormPredToks fs
+    Relation f1  _ f2 _ ->
         Set.union (getFormPredToks f1) $ getFormPredToks f2
     Negation f _ -> getFormPredToks f
     Mixfix_formula (Mixfix_token t) -> Set.singleton t
@@ -313,10 +310,6 @@ getFormPredToks frm = case frm of
     ExtFORMULA (Exist _ f _ ) -> getFormPredToks f
     Predication _ ts _ -> Set.unions $ map getTermPredToks ts
     Definedness t _ -> getTermPredToks t
-    Existl_equation t1 t2 _ ->
-        Set.union (getTermPredToks t1) $ getTermPredToks t2
-    Strong_equation t1 t2 _ ->
-        Set.union (getTermPredToks t1) $ getTermPredToks t2
     Membership t _ _ -> getTermPredToks t
     _ -> Set.empty
 
