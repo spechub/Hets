@@ -21,6 +21,7 @@ import Data.Typeable
 import ATerm.Lib
 import Logic.Logic
 import Unsafe.Coerce
+import Data.Monoid
 -- DrIFT command
 {-! global: GetRange !-}
 
@@ -72,6 +73,10 @@ data Frm_Wrap = forall l sub bs f s sm si mo sy rw pf.
 data Spc_Wrap = forall l sub bs sen si smi sign mor symb raw pf.
                         (Logic l sub bs sen si smi sign mor symb raw pf) => 
                         Spc_Wrap l (TH_BSPEC bs) [Annoted Frm_Wrap]
+
+instance Monoid Spc_Wrap where
+ mempty = error "Not implemented!"
+ mappend _ _ = error "Not implemented!"
 
 ----- instances 
 data Mor = Mor 
