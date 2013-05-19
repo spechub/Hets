@@ -16,6 +16,7 @@ module TopHybrid.Parse_AS where
 
 import Common.AnnoState
 import Common.AS_Annotation
+import Common.GlobalAnnotations (PrefixMap)
 import Common.Token
 import Data.Maybe
 import qualified Data.Map as Map
@@ -31,6 +32,10 @@ thBasic getLogic =
         logicName <- simpleId
         thSpec $ getLogic $ show logicName
 
+basicSpec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
+basicSpec l = maybe (parse_basic_spec l) (Just . fst)
+ (parserAndPrinter Nothing l)
+
 -- Parses the specification after knowing 
 --the underlying logic
 thSpec :: AnyLogic -> AParser st Spc_Wrap
@@ -38,7 +43,7 @@ thSpec (Logic l) =
         do
         asKey "Basic_Spec"
         asKey "{"
-        s <- (callParser l parse_basic_spec) Map.empty
+        s <- (callParser l basicSpec) Map.empty
         asKey "}"
         i <- many itemParser
         fs <- sepBy (annoFormParser l s) anSemiOrComma
