@@ -32,7 +32,8 @@ thBasic getLogic =
         logicName <- simpleId
         thSpec $ getLogic $ show logicName
 
-basicSpec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
+basicSpec :: (Syntax lid basic_spec s si sim) =>
+ lid -> Maybe (PrefixMap -> AParser st basic_spec)
 basicSpec l = maybe (parse_basic_spec l) (Just . fst)
  (parserAndPrinter Nothing l)
 
