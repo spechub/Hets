@@ -1,0 +1,19 @@
+logic Hybrid
+
+%% Hard formulas 
+
+spec aux =
+	modality M 
+	nominal N
+
+spec f1 = 
+	aux then 
+	pred p,q,r,s,t : ()
+	. ( not (( p /\ (not q)) /\ (((((q => p) /\ (r => q)) /\ ((p => (( t => ([M](p => t))) /\ ((not t) =>
+	([M](p => (not t)))))) /\ (q => ((s => ([M](q => s))) /\ ((not s) => ([M](q => (not s)))))))) /\ ((p /\
+	(not q)) => (( <M> ((q /\ (not r)) /\ s)) /\ ( <M> ((q /\ (not r)) /\ (not s)))))) /\ ([M] (((( q => p) /\
+	(r => q)) /\ ((p => ((t => ([M](p => t))) /\ ((not t) => ([M](p => (not t)))))) /\ (q => ((s => 
+	([M](p => t))) /\ ((not t) => ([M](p => (not t)))))))) /\ ((p /\ (not q)) => (( <M> ((q /\ (not r)) /\ p))
+	/\ ( <M> ((q /\ (not r)) /\ (not s)))))))))) \/ (not ( [M] s)) %implied
+
+

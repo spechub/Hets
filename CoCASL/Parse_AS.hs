@@ -27,6 +27,9 @@ import CASL.AS_Basic_CASL
 cocasl_reserved_words :: [String]
 cocasl_reserved_words = [diamondS]
 
+parseSen :: AParser st (FORMULA C_FORMULA)
+parseSen = formula cocasl_reserved_words
+
 cocaslFormula :: AParser st C_FORMULA
 cocaslFormula = do
     o <- oBracketT

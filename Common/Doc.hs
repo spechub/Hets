@@ -166,6 +166,12 @@ module Common.Doc
     , vdash
     , dashv
     , breve
+      -- * for Hybrid casl
+    , prettyAt
+    , prettyHere
+    , prettyBind
+    , prettyUniv
+    , prettyExist
       -- * docifying annotations and ids
     , annoDoc
     , idDoc
@@ -296,6 +302,7 @@ isEmpty d = case d of
               Empty -> True
               Cat _ [] -> True
               _ -> False
+
 
 -- * the visible interface
 
@@ -445,7 +452,8 @@ quMarkD, dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun,
    inDoc, andDoc, orDoc, implies, equiv, prefix_proc, sequential,
    interleave, synchronous, genpar_open, genpar_close, alpar_open,
    alpar_sep, alpar_close, external_choice, internal_choice, hiding_proc,
-   ren_proc_open, ren_proc_close, dagger, vdash, dashv, breve :: Doc
+   ren_proc_open, ren_proc_close, dagger, vdash, dashv, breve, prettyAt, prettyHere,
+   prettyBind, prettyUniv, prettyExist :: Doc
 
 quMarkD = text quMark
 dot = text dotS
@@ -490,7 +498,12 @@ dagger = symbol daggerS
 vdash = symbol vdashS
 dashv = symbol dashvS
 breve = symbol breveS
-
+-- * for hybrid casl
+prettyAt = symbol asP
+prettyHere = symbol "Here"
+prettyBind = symbol "Bind"
+prettyUniv = symbol "Univ"
+prettyExist = symbol "Exist"
 -- | we know how to print annotations
 annoDoc :: Annotation -> Doc
 annoDoc = AnnoDoc

@@ -25,6 +25,7 @@ module Common.ConvertLiteral
     , toFloat
     , toString
     , toMixfixList
+    , toChar
     ) where
 
 import Common.Id

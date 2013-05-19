@@ -318,6 +318,7 @@ class (Language lid, Category sign morphism, Ord sentence,
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where
+      
       -- | sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
       map_sen l _ _ = statFail l "map_sen"
@@ -436,6 +437,9 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
            -> Maybe ((basic_spec, sign, GlobalAnnos)
              -> Result (basic_spec, ExtSign sign symbol, [Named sentence]))
          basic_analysis _ = Nothing
+         -- | Analysis of just sentences
+         sen_analysis :: lid -> Maybe ((basic_spec,sign,sentence) -> Result sentence )
+         sen_analysis _ = Nothing
          -- | a basic analysis with additional arguments
          extBasicAnalysis :: lid -> IRI -> LibId
              -> basic_spec -> sign -> GlobalAnnos
@@ -681,6 +685,9 @@ class (StaticAnalysis lid
                  basic_spec sentence symb_items symb_map_items
                  sign morphism symbol raw_symbol proof_tree
           where
+         -- Parser of sentence (Added for Hybridized logics)
+         parse_basic_sen :: lid -> Maybe (basic_spec -> AParser st sentence)
+         parse_basic_sen _ = Nothing
 
          -- | stability of the implementation
          stability :: lid -> Stability

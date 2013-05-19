@@ -18,6 +18,7 @@ module Propositional.Parse_AS_Basic
   ( basicSpec                      -- Parser for basic specs
   , symbItems
   , symbMapItems
+  , impFormula 
   ) where
 
 import qualified Common.AnnoState as AnnoState

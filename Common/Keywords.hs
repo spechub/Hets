@@ -147,6 +147,15 @@ lamS = "\\"
 asP :: String
 asP = "@"
 
+-- | Here sign
+hereP :: String
+hereP = "Here"
+
+-- | Bind sign
+bindP :: String
+bindP = "Bind"
+
+
 -- | assign sign in monad notation
 rightArrow :: String
 rightArrow = "<-"
@@ -491,6 +500,7 @@ modalitiesS = "modalities"
 
 modalityS :: String
 modalityS = "modality"
+
 
 notS :: String
 notS = "not"

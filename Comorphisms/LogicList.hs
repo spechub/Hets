@@ -56,6 +56,8 @@ import THF.Logic_THF
 import Fpl.Logic_Fpl
 import Adl.Logic_Adl
 import Modal.Logic_Modal
+import Hybrid.Logic_Hybrid
+import TopHybrid.Logic_TopHybrid
 import ExtModal.Logic_ExtModal
 import CoCASL.Logic_CoCASL
 import CspCASL.Logic_CspCASL
@@ -105,6 +107,8 @@ logicList =
   , Logic CoCASL
   , Logic ExtModal
   , Logic Modal
+  , Logic Hybrid
+  , Logic Hybridize 
   , Logic cspCASL
   , Logic traceCspCASL
   , Logic failureCspCASL

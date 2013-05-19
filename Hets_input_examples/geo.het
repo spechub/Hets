@@ -1,0 +1,18 @@
+logic Hybridize
+
+spec Geography = 
+        baselogic Hybridize
+
+        Basic_Spec {
+                baselogic Propositional
+                Basic_Spec { props p}
+                nominals Portugal, England, Canada
+                modalities Car
+                @Portugal <Car> England
+        }
+        nominals Europe, America
+        modalities Plane
+        America => { not (Portugal \/ England)};
+        Europe => {not Canada};
+        @Europe <Plane> ( America /\ {Canada}) 
+end 

@@ -78,6 +78,10 @@ import Comorphisms.CASL2TopSort
 import Comorphisms.DFOL2CASL
 import Comorphisms.QBF2Prop
 import Comorphisms.Prop2QBF
+
+import Comorphisms.CASL2Hybrid
+import Comorphisms.Hybrid2CASL
+
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.CoCASL2CoPCFOL
@@ -156,6 +160,8 @@ comorphismList =
     , Comorphism THFP2THF0
     , Comorphism THFP_P2HasCASL
     , Comorphism THFP_P2THFP
+    , Comorphism CASL2Hybrid
+    , Comorphism Hybrid2CASL
 #ifdef CASLEXTENSIONS
     , Comorphism CASL2Modal
     , Comorphism CASL2ExtModal

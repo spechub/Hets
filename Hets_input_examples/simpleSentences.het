@@ -1,0 +1,45 @@
+logic Hybrid
+
+%% Page 66, Brauner's book on proof theory 
+%% some axioms
+
+spec Dist1 =
+	preds p,q : ()
+	modality M  
+	. [M] (p /\ q) => ([M]p /\ [M]q) %implied
+end
+
+spec Test =
+        preds p,q : ()
+        nominal N
+        . (p /\ q)
+        . @N p %implied
+
+spec Dist2 = 
+	preds p,q : ()
+	nominal N 
+	. @N (p /\ q) => (@N p /\ @N q) %implied
+end
+
+spec Ref1 =
+	nominal N  
+	. @N (Here N) %implied
+end
+
+spec Ref2 =
+	. !X (Here X)	%implied
+end
+
+spec Scope =
+	preds p : ()
+	nominals A,B 
+	. (@A @B p) <=> (@B p) %implied
+end
+
+spec Intro =
+	preds p : ()
+	nominal A 
+	.  (Here A /\ p) => @A p %implied
+end
+
+

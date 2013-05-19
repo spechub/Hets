@@ -46,6 +46,9 @@ import qualified CASL.OMDocImport as OMI
 import CASL.OMDocExport
 import CASL.Freeness
 
+-- test
+import CASL.Formula (formula)
+--
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
 #endif
@@ -231,6 +234,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
                CASLMor
                Symbol RawSymbol where
          basic_analysis CASL = Just basicCASLAnalysis
+         sen_analysis CASL = Just cASLsen_analysis
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          signature_colimit CASL diag = return $ signColimit diag extCASLColimit
@@ -267,6 +271,10 @@ instance Logic CASL CASL_Sublogics
                CASLMor
                Symbol RawSymbol ProofTree where
          stability CASL = Stable
+         -- for Hybridization 
+         parse_basic_sen CASL = Just $ \_ -> formula []
+        ---
+
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics CASL = sublogics_all []
          sublogicDimensions CASL = sDims []

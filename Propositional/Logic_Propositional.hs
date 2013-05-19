@@ -118,6 +118,8 @@ instance Logic Propositional
     Symbol                      -- raw_symbol
     ProofTree                      -- proof_tree
     where
+        -- hybridization
+      parse_basic_sen Propositional = Just $ \_ -> impFormula
       stability Propositional = Experimental
       top_sublogic Propositional = Sublogic.top
       all_sublogics Propositional = sublogics_all
@@ -154,6 +156,7 @@ instance StaticAnalysis Propositional
         where
           basic_analysis Propositional =
               Just basicPropositionalAnalysis
+          sen_analysis Propositional = Just pROPsen_analysis 
           empty_signature Propositional = emptySig
           is_subsig Propositional = isSubSigOf
           subsig_inclusion Propositional s = return . inclusionMap s

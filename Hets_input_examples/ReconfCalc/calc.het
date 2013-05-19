@@ -1,0 +1,142 @@
+logic Hybrid
+
+spec HNat =
+
+         sort Nat
+
+         rigid ops 
+                  0 : Nat
+                  suc : Nat -> Nat
+         
+         forall n,m : Nat
+                  . n = 0 \/ exists n' : Nat . n = suc(n') /\ not n = n'
+                  . not suc(n) = 0
+                  . suc(n) = suc(m) => n = m
+ 
+         forall n : Nat . not suc(n) = n  %(notreflexive)% %%passed
+         
+         . exists n : Nat . true  %(atLeastOne)% %%passed
+        
+         . exists n,n' : Nat . not n = n'  %(atLeastTwo)% 
+
+         rigid ops    __+__ : Nat*Nat -> Nat
+ 
+         forall n,n',n'' : Nat
+         . n + 0 = n
+         . n + suc(n') = suc(n + n')
+         . n + n' = n' + n
+         . n + ( n' + n'') = ( n + n') + n''
+        
+        
+         . forall n : Nat . 0 + n = n  %(neutralCommu)%
+
+
+        rigid pred __ < __ : Nat*Nat
+
+        forall a,b,c : Nat
+        . not a < a
+        . a < b => not b < a
+        . a < b /\ b < c => a < b
+        . a < b <=> exists d : Nat . not d = 0 /\ a + d = b 
+        
+        . a < suc(a)  %(sucBigger)% 
+        . a < b => (a + c) < (b + c) %%(sumAlwaysAdds)%
+        . a < b => a < b + c %(sumAlwaysAdds2nd)% 
+        . a + c < b => a < b %(sumAlwaysAdds3rd)%
+        . not a = 0 => 0 < a  %(0isthelowestNat)%
+
+
+        rigid pred __ > __ : Nat*Nat
+        
+        forall a,b : Nat
+        . a < b <=> b > a
+
+        rigid pred __ <= __ : Nat*Nat
+
+        forall a,b : Nat
+        . a <= b <=> a < b \/ a = b
+
+        rigid pred __ >= __ : Nat*Nat
+        
+        forall a,b : Nat
+        . a >= b <=> a > b \/ a = b
+
+        forall a,b,c : Nat
+        . a >= b <=> b <= a  %(BigEqAsTheSymOfLesEq)%
+        . a >= b => not a < b  %(RelBigEqWithLes)%
+        . a >= b => a+c >= b  %(sumAlwaysAdds4th)% 
+        . a >= b /\ c > 0 => a+c > b  %(sumAlwaysAdds5th)%  
+
+
+        rigid op __ - __ : Nat*Nat -> Nat
+
+        forall a,b : Nat
+        . a <= b <=> a - b = 0
+        . a > b <=> (exists c : Nat . (a - b = c <=> a + c = b) /\ c > 0)
+        
+        forall a : Nat
+        . suc(a) = a + suc(0)  %(defSuc)% 
+        . suc(a) - a = suc(0)  %(The2ndleastdifference)%
+        . (a + a) - a = a  %(1stSubNeutral)%
+        . a - 0 = a  %(2ndSubNeutral)%
+
+        forall a,b,c : Nat
+        . a + b <= c => a <= c  %(Inclusion)%
+
+end
+
+
+spec ReconfCalc = 
+ HNat then 
+
+ modalities Shift
+ nominals Sum, Mult
+ ops __#__ : Nat*Nat -> Nat
+
+ %% global axioms
+ forall n,m,p : Nat 
+        . n # m = m # n
+        . (n # m) # p = n # (m # p)
+
+ %% axioms specific to Sum and Mult
+  forall n,m : Nat 
+   . @Sum n # 0 = n
+   . @Sum n # suc(m) = suc(n # m)
+   . @Mult n # 0 = 0
+   . exists p,q : Nat .
+      @Mult n # suc(m) = p /\ @Sum n # q = p /\ @Mult n # m = q
+
+
+ %% axioms specific to the Kripke frame 
+ . Here Sum \/ Here Mult
+ . @Sum (<Shift> Here Mult /\ [Shift] Here Mult)
+ . @Mult (<Shift> Here Sum /\ [Shift] Here Sum)
+
+
+ %% lt relation definition, using # op 
+  forall n,m,r : Nat . n <= m => n # r <= m # r
+
+ %% lemmas
+ forall n,m,r : Nat
+          . @Sum (n < m => n < m # r) %implied %(lemma1)%
+          . @Sum (n # m >= n) %implied %(lemma2)%
+          . @Sum n # suc(0) = suc(n) %implied %(lemma3)%
+          . @Mult n # suc(0) = n %implied %(lemma4)%
+          . @Mult n # 0 <= n %implied %(lemma5)%
+          . @Mult (m = 0 \/ m = suc(0) => n # m <= n) %implied %(lemma6)%
+          . exists p : Nat . @Sum n # 0 = p /\ @Mult n # suc(0) = p %implied %(lemma7)%
+
+ %% verified properties
+ . @Sum [Shift] [Shift] Here Sum %implied %(Cyclicity1)%
+ forall n,m,r : Nat 
+        . n # 0 = 0 => <Shift> n # 0 = n %implied %(StateExclusion)%
+        . exists p : Nat .
+                @Sum n # m = p /\ @Sum <Shift> <Shift> n # m = p %implied %(Cyclicity2)%
+        . exists p : Nat .
+                @Sum n # n = p => @Mult n # suc(suc(0)) = p %implied %(DoubleDef)%
+        . exists p,q : Nat .
+                m <= suc(0) => ((@Sum n # m = p /\ @Mult n # m = q) => p >= q) %implied %(CasesSumBiggerMult)%
+
+end
+
+
