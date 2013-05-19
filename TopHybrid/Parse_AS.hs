@@ -18,6 +18,7 @@ import Common.AnnoState
 import Common.AS_Annotation
 import Common.Token
 import Data.Maybe
+import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 import Logic.Logic
 import TopHybrid.AS_TopHybrid
@@ -37,7 +38,7 @@ thSpec (Logic l) =
         do
         asKey "Basic_Spec"
         asKey "{"
-        s <- callParser $ parse_basic_spec l
+        s <- (callParser $ parse_basic_spec l) Map.empty
         asKey "}"
         i <- many itemParser
         fs <- sepBy (annoFormParser l s) anSemiOrComma

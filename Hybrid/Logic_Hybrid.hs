@@ -42,7 +42,7 @@ type HybridFORMULA = FORMULA H_FORMULA
 instance SignExtension HybridSign where
   isSubSignExtension = isSubHybridSign
 
-instance Syntax Hybrid H_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
+instance Syntax Hybrid H_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Hybrid = Just $ basicSpec hybrid_reserved_words
     parse_symb_items Hybrid = Just $ symbItems hybrid_reserved_words
     parse_symb_map_items Hybrid = Just $ symbMapItems hybrid_reserved_words
