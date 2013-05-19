@@ -184,25 +184,20 @@ trans = let w = mkSimpleId "world"
 trForm :: Mode -> [String] -> HForm -> CForm
 trForm a s b = case (a,b) of
                      (w,ExtFORMULA f) -> alpha w s f
-                     (w,Conjunction fs _) -> mkConj (fmap (trForm w s) fs)
-                     (w,Disjunction fs _) -> mkDisj (fmap (trForm w s) fs) 
-                     (w,Implication f f' _ _) -> mkImpl (trForm w s f) (trForm w s f')
+                     (w,Junction j fs _) -> mkJunct j (fmap (trForm w s) fs)
+                     (w,Relation f r f' _) -> mkRel r (trForm w s f)
+                                                      (trForm w s f')
                      (w,Negation f _) -> mkNeg $ trForm w s f
                      (w,Predication p l _) -> mkPredication (mkPName p) $ trTerms w s l
                      (w, Quantification q l f _) -> mkQua q l $ trForm w s f
-                     (w, Equivalence f f' _) -> mkEq (trForm w s f) $ trForm w s f'
-                     (w, Strong_equation t t' _) -> mkStEq (trTerm w s t) (trTerm w s t')
-                     (w, Existl_equation t t' _) -> mkExEq (trTerm w s t) (trTerm w s t')
-                     (_, True_atom _) -> mkTrue
-                     (_, False_atom _) -> mkFalse
+                     (_, Atom True _) -> mkTrue
+                     (_, Atom False _) -> mkFalse
                      (w, Definedness t _) -> Definedness (trTerm w s t) nullRange
-                where mkConj l = Conjunction l nullRange
-                      mkDisj l = Disjunction l nullRange
+                where mkJunct j l = Junction j l nullRange
+                      mkRel r f1 f2 = Relation f1 r f2 nullRange
                       mkQua q l f = Quantification q l f nullRange
-                      mkEq f f' = Equivalence f f' nullRange
-                      mkTrue = True_atom nullRange
-                      mkFalse = False_atom nullRange
-                      mkExEq t t' = Existl_equation t t' nullRange
+                      mkTrue = Atom True nullRange
+                      mkFalse = Atom False nullRange
 
 -- | Alpha function, translates pure Hybrid Formulas
 alpha :: Mode -> [String] -> H_FORMULA -> CForm
@@ -230,7 +225,7 @@ trBox m (Simple_mod m') s f = quant $ mkImpl prd $ trForm (QtM v) ss f
                                predA w = [mkArg (Left w) s, mkArg (Left (QtM v)) s]
                                qp x = mkQualPred (stringToId . ("Acc_" ++) $ show x)
                                t = Pred_type [worldSort,worldSort] nullRange
-trBox _ _ _ _ = True_atom nullRange   
+trBox _ _ _ _ = Atom True nullRange   
 
 -- Function that takes care of the formulas with the local binder (deprecated)
 trBinder :: Mode -> NOMINAL -> [String] -> HForm -> CForm 
@@ -242,7 +237,7 @@ trBinder w n s f = quant $ mkConj [f1,f2]
                         f2 = trForm w (((show.extId) n):s) f 
                         quant = mkExist [var]
                         var = mkVarDecl (extId n) worldSort
-                        mkConj l = Conjunction l nullRange 
+                        mkConj l = Junction Con l nullRange 
                         extId (Simple_nom x) = x 
 
 -- translation function for the quantification of nominals case
