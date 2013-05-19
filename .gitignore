@@ -140,3 +140,7 @@ utils/appendHaskellPreludeString
 utils/genRules
 Hybrid/ATC_Hybrid.hs
 TopHybrid/ATC_TopHybrid.hs
+Hybrid/AS_Hybrid.hs
+Hybrid/ATC_Hybrid.der.hs
+TopHybrid/AS_TopHybrid.hs
+TopHybrid/ATC_TopHybrid.der.hs
