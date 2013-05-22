@@ -313,7 +313,8 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
       EProver -> runEProverBuffered saveTPTP extraOptions tmpFileName prob
       _ -> runDarwinProcess bin saveTPTP extraOptions tmpFileName prob
     axs <- case b of
-            EProver -> case proof fullProof out of
+            EProver | (szsProved exitCode ||
+                       szsDisproved exitCode)-> case proof fullProof out of
              Right p -> return $ axiomsOf p
              Left e -> do
                          putStrLn e
