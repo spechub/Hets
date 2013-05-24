@@ -585,8 +585,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
          (eNodes, eEdges) = foldl getNodes ([], []) eItems
          (cNodes', cEdges') = (cNodes \\ eNodes, cEdges \\ eEdges)
          le = Map.insert ln dg Map.empty -- cheating!!!
-    dg' <- insertColimitInGraph le dg cNodes' cEdges' name
-    return (sp, error "AnalysisStructured.Combination", dg')
+    (ns,dg') <- insertColimitInGraph le dg cNodes' cEdges' name
+    return (sp, ns, dg')
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname
