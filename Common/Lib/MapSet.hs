@@ -56,7 +56,6 @@ module Common.Lib.MapSet
   , isSubmapOf
   , preImage
   , transpose
-  , keysSet
   ) where
 
 import Prelude hiding (all, filter, map, null, lookup)
