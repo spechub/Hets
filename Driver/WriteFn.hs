@@ -125,6 +125,8 @@ writeLibEnv opts filePrefix lenv ln ot =
              >>= writeVerbFile opts f
       XmlOut -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dGraph lenv ln dg
+      SymsXml -> writeVerbFile opts f $ ppTopElement
+          $ ToXml.dgSymbols dg
       OmdocOut -> do
           let Result ds mOmd = exportLibEnv (recurse opts) (outdir opts) ln lenv
           showDiags opts ds
