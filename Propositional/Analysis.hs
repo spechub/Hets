@@ -401,11 +401,11 @@ signatureColimit graph = do
                                   }))$ labNodes graph)
 
 
-pROPsen_analysis :: (AS_BASIC.BASIC_SPEC,Sign.Sign, AS_BASIC.FORMULA) -> 
-                                Result.Result (AS_BASIC.FORMULA)
-pROPsen_analysis (_,s,f) = 
-        let x = addFormula [] (NumForm annoF 0) s in
-                Result.Result (h x)  (g x) 
-        where   h = return . diagnosis . head
-                g = Just . AS_Anno.sentence .formula . head
-                annoF = AS_Anno.Annoted f Id.nullRange [] []
+pROPsen_analysis :: (AS_BASIC.BASIC_SPEC, Sign.Sign, AS_BASIC.FORMULA)
+  -> Result.Result AS_BASIC.FORMULA
+pROPsen_analysis (_, s, f) =
+        let x = addFormula [] (NumForm annoF 0) s
+            h = return . diagnosis . head
+            g = Just . AS_Anno.sentence .formula . head
+            annoF = AS_Anno.Annoted f Id.nullRange [] []
+        in Result.Result (h x)  (g x)
