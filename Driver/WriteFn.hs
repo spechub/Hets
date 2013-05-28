@@ -124,7 +124,7 @@ writeLibEnv opts filePrefix lenv ln ot =
       Prf -> toShATermString (ln, lookupHistory ln lenv)
              >>= writeVerbFile opts f
       XmlOut -> writeVerbFile opts f $ ppTopElement
-          $ ToXml.dGraph lenv ln dg
+          $ ToXml.dGraphAux (fullSign opts) lenv ln dg
       SymsXml -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dgSymbols dg
       OmdocOut -> do

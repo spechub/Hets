@@ -105,6 +105,9 @@ unlitS = "unlit"
 relposS :: String
 relposS = "relative-positions"
 
+fullSignS :: String
+fullSignS = "full-signatures"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
@@ -168,7 +171,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , unlit :: Bool
   , serve :: Bool
   , listen :: Int
-  , runMMT :: Bool }
+  , runMMT :: Bool
+  , fullSign :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 basic values when the user specifies nothing else -}
@@ -206,7 +210,8 @@ defaultHetcatsOpts = HcOpt
   , unlit = False
   , serve = False
   , listen = -1
-  , runMMT = False }
+  , runMMT = False
+  , fullSign = False }
 
 instance Show HetcatsOpts where
   show opts = showEqOpt verboseS (show $ verbose opts)
@@ -234,6 +239,7 @@ instance Show HetcatsOpts where
     ++ showEqOpt "encoding" (map toLower $ show $ ioEncoding opts)
     ++ (if unlit opts then showOpt unlitS else "")
     ++ (if useLibPos opts then showOpt relposS else "")
+    ++ (if fullSign opts then showOpt fullSignS else "")
     ++ showEqOpt intypeS (show $ intype opts)
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (intercalate "," $ map show $ outtypes opts)
@@ -284,6 +290,7 @@ data Flag =
   | Serve
   | Listen Int
   | UseMMT
+  | FullSign
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
@@ -319,6 +326,7 @@ makeOpts opts flg = case flg of
     Unlit -> opts { unlit = True }
     RelPos -> opts { useLibPos = True }
     UseMMT -> opts {runMMT = True}
+    FullSign -> opts {fullSign = True}
     Help -> opts -- skipped
     Version -> opts -- skipped
 
@@ -583,6 +591,7 @@ options = let
       "latin1 or utf8 (default) encoding"
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
+    , Option "" [fullSignS] (NoArg FullSign) "xml output full signatures"
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")

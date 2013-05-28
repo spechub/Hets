@@ -10,8 +10,14 @@ Portability :  non-portable(Grothendieck)
 Xml of Hets DGs
 -}
 
-module Static.ToXml (dGraph, lnode, dgSymbols, showSymbols, showSymbolsTh)
-where
+module Static.ToXml
+  ( dGraph
+  , dGraphAux
+  , lnode
+  , dgSymbols
+  , showSymbols
+  , showSymbolsTh
+  ) where
 
 import Static.DgUtils
 import Static.DevGraph
@@ -45,7 +51,15 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
 
 dGraph :: LibEnv -> LibName -> DGraph -> Element
-dGraph lenv ln dg =
+dGraph = dGraphAux False
+
+{- |
+Export the development graph as xml. If the flag full is True then
+symbols for all nodes are shown as declarations, otherwise (the
+default) only declaration for basic spec nodes are shown that are
+sufficient to reconstruct the development from the xml output. -}
+dGraphAux :: Bool -> LibEnv -> LibName -> DGraph -> Element
+dGraphAux full lenv ln dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
@@ -58,7 +72,7 @@ dGraph lenv ln dg =
      . unode "DGraph" $
          subnodes "Global" (annotations ga . convertGlobalAnnos
                             $ removeHetCASLprefixes ga)
-         ++ map (lnode ga lenv) lnodes
+         ++ map (lnode full ga lenv) lnodes
          ++ map (ledge ga dg) ledges
 
 gmorph :: GlobalAnnos -> GMorphism -> Element
@@ -84,8 +98,8 @@ prettyRangeElem s ga a =
 prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> Element
 prettySymbol = prettyRangeElem "Symbol"
 
-lnode :: GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
-lnode ga lenv (_, lbl) =
+lnode :: Bool -> GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
+lnode full ga lenv (_, lbl) =
   let nm = dgn_name lbl
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
@@ -115,7 +129,9 @@ lnode ga lenv (_, lbl) =
       ++ case dgn_theory lbl of
         G_theory lid _ (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom thsens
-                 in subnodes "Axioms"
+                 in (if full then subnodes "Symbols"
+                     (map (showSym lid) $ symlist_of lid sig)
+                    else []) ++ subnodes "Axioms"
                     (map (showSen lid ga Nothing sig) $ toNamedList axs)
                     ++ subnodes "Theorems"
                     (map (\ (s, t) -> showSen lid ga
