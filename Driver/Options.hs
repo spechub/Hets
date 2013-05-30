@@ -923,11 +923,11 @@ collectSpecOpts fs =
 
 -- auxiliary functions: error messages --
 
-{- | 'hetsError' is a generic Error messaging function that prints the Error
-and usage information, if the user caused the Error -}
+-- | only print the error (and no usage info)
 hetsError :: String -> a
-hetsError = error . (++ '\n' : hetsUsage)
+hetsError = error . ("command line usage error (see 'hets -h')\n" ++)
 
+-- | print error and usage and exit with code 2
 hetsIOError :: String -> IO a
 hetsIOError s = do
   hPutStrLn stderr s
