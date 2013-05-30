@@ -823,7 +823,7 @@ checkFlags fs = do
                         -- collect some more here?
         h = null [ () | Help <- fs]
         v = null [ () | Version <- fs]
-    unless h $ putStrLn hetsUsage
+    unless h $ putStr hetsUsage
     unless v $ putStrLn ("version of hets: " ++ hetcats_version)
     unless (v && h) $ exitWith ExitSuccess
     collectFlags fs
