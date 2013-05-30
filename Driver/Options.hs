@@ -60,6 +60,7 @@ import Common.Keywords
 import System.Directory
 import System.Console.GetOpt
 import System.Exit
+import System.IO
 
 import Control.Monad
 import Control.Monad.Trans
@@ -810,7 +811,7 @@ hetcatsOpts argv =
                infs <- checkInFiles non_opts
                return (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = infs }
-        (_, _, errs) -> hetsError (concat errs)
+        (_, _, errs) -> hetsIOError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
 checkFlags :: [Flag] -> IO [Flag]
@@ -836,7 +837,7 @@ checkInFiles fs = do
     bs <- mapM doesFileExist efs
     if and bs
       then return fs
-      else hetsError $ "invalid input files: " ++
+      else hetsIOError $ "invalid input files: " ++
              unwords (map snd . filter (not . fst) $ zip bs efs)
 
 -- auxiliary functions: FileSystem interaction --
@@ -854,7 +855,7 @@ checkOutDirs fs = do
     case fs of
         [] -> return ()
         [f] -> checkOutDir f
-        _ -> hetsError
+        _ -> hetsIOError
             "Only one output directory may be specified on the command line"
     return fs
 
@@ -869,20 +870,20 @@ checkLibDirs fs =
                 checkLibDirs [d]
                 return [d]
         [LibDirs f] -> mapM_ checkLibDir (splitPaths f) >> return fs
-        _ -> hetsError
+        _ -> hetsIOError
             "Only one library path may be specified on the command line"
 
 -- | 'checkLibDir' checks a single LibDir for sanity
 checkLibDir :: FilePath -> IO ()
 checkLibDir file = do
     exists <- doesDirectoryExist file
-    unless exists . hetsError $ "Not a valid library directory: " ++ file
+    unless exists . hetsIOError $ "Not a valid library directory: " ++ file
 
 -- | 'checkOutDir' checks a single OutDir for sanity
 checkOutDir :: Flag -> IO ()
 checkOutDir (OutDir file) = do
     exists <- doesDirectoryExist file
-    unless exists . hetsError $ "Not a valid output directory: " ++ file
+    unless exists . hetsIOError $ "Not a valid output directory: " ++ file
 checkOutDir _ = return ()
 
 -- auxiliary functions: collect flags --
@@ -926,6 +927,12 @@ collectSpecOpts fs =
 and usage information, if the user caused the Error -}
 hetsError :: String -> a
 hetsError = error . (++ '\n' : hetsUsage)
+
+hetsIOError :: String -> IO a
+hetsIOError s = do
+  hPutStrLn stderr s
+  putStr hetsUsage
+  exitWith $ ExitFailure 2
 
 -- | 'hetsUsage' generates usage information for the commandline
 hetsUsage :: String
