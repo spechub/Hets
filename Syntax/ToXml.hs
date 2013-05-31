@@ -97,6 +97,7 @@ spec lg ga s = case s of
    $ map (unode "Spec" . annoted spec lg ga) asl
   Free_spec as rg -> withRg rg $ unode "Free" $ annoted spec lg ga as
   Cofree_spec as rg -> withRg rg $ unode "Cofree" $ annoted spec lg ga as
+  Minimize_spec as rg -> withRg rg $ unode "Minimize" $ annoted spec lg ga as
   Local_spec as ins rg -> withRg rg $ unode "Local"
     [ unode "Spec" $ annoted spec lg ga as
     , unode "Within" $ annoted spec lg ga ins]

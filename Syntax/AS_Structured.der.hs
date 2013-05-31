@@ -45,6 +45,8 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "free"
           | Cofree_spec (Annoted SPEC) Range
             -- pos: "cofree"
+          | Minimize_spec (Annoted SPEC) Range
+            -- pos: "minimize", "closed-world"
           | Local_spec (Annoted SPEC) (Annoted SPEC) Range
             -- pos: "local", "within"
           | Closed_spec (Annoted SPEC) Range

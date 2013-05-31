@@ -92,6 +92,7 @@ printSPEC lg spec = case spec of
     Extension aa _ -> sep $ printExtension lg aa
     Free_spec aa _ -> sep [keyword freeS, printGroupSpec lg aa]
     Cofree_spec aa _ -> sep [keyword cofreeS, printGroupSpec lg aa]
+    Minimize_spec aa _ -> sep [keyword minimizeS, printGroupSpec lg aa]
     Local_spec aa ab _ -> fsep
       [keyword localS, prettyLG lg aa, keyword withinS, condBracesWithin lg ab]
     Closed_spec aa _ -> sep [keyword closedS, printGroupSpec lg aa]

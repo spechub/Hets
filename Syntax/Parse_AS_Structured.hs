@@ -375,6 +375,14 @@ specD l = do
     sp <- annoParser $ groupSpec l
     return (Cofree_spec sp $ tokPos p)
   <|> do
+    p <- asKey minimizeS `followedWith` (groupSpecLookhead l)
+    sp <- annoParser $ groupSpec l
+    return (Minimize_spec sp $ tokPos p)
+  <|> do
+    p <- asKey closedworldS `followedWith` (groupSpecLookhead l)
+    sp <- annoParser $ groupSpec l
+    return (Minimize_spec sp $ tokPos p)
+  <|> do
     p <- asKey closedS `followedWith` (groupSpecLookhead l)
     sp <- annoParser $ groupSpec l
     return (Closed_spec sp $ tokPos p)
