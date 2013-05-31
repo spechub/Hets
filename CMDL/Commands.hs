@@ -52,7 +52,7 @@ reqOfSelectCmd sc = case sc of
   Goal -> ReqGoal
   ConsistencyChecker -> ReqConsCheck
   Link -> ReqEdges
-  ConservativityCheckerOpen -> ReqEdges
+  ConservativityCheckerOpen -> ReqOpenConsEdges
   ConservativityChecker -> ReqEdges
 
 genSelectCmd :: SelectCmd -> (String -> CmdlState -> IO CmdlState)

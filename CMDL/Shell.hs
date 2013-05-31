@@ -248,6 +248,22 @@ cmdlCompletionFn allcmds allState input =
           {- filter out words that do not start with the word
              that needs to be completed -}
        return $ map (app bC) $ filter (isPrefixOf tC) allNames
+   ReqOpenConsEdges ->
+    case i_state $ intState allState of
+     Nothing -> return []
+     Just state ->
+      do
+      {- the last unfinished edge name that needs to be
+         completed -}
+       let tC = unfinishedEdgeName $ subtractCommandName allcmds input
+           bC = reverse $ trimLeft $ drop (length tC)
+                     $ trimLeft $ reverse input
+           ls = getAllNodes state
+           lsGE = getOpenConsEdges allState
+           allNames = createEdgeNames ls lsGE
+          {- filter out words that do not start with the word
+             that needs to be completed -}
+       return $ map (app bC) $ filter (isPrefixOf tC) allNames
    ReqConsCheck -> do
        let tC = if isSpace $ lastChar input
                  then []

@@ -133,6 +133,7 @@ data CmdlCmdRequirements =
   | ReqFile
   | ReqGNodes
   | ReqGEdges
+  | ReqOpenConsEdges
   | ReqAxm
   | ReqGoal
   | ReqNumber
@@ -150,6 +151,7 @@ showRequirement cr = case cr of
     ReqProvers -> "Prover"
     ReqGNodes -> "GoalNodes"
     ReqGEdges -> "GoalEdges"
+    ReqOpenConsEdges -> "OpenConsEdges"
     ReqAxm -> "Axiom"
     ReqNothing -> ""
     ReqUnknown -> ""

@@ -17,6 +17,7 @@ module CMDL.DataTypesUtils
   ( obtainGoalNodeList
   , getAllGoalNodes
   , getAllGoalEdges
+  , getOpenConsEdges
   , getSelectedDGNodes
   , getInputDGNodes
   , getInputNodes
@@ -115,6 +116,13 @@ getAllGoalNodes st
 up to date status -}
 getAllGoalEdges :: CmdlState -> [LEdge DGLinkLab]
 getAllGoalEdges st
+ = case i_state $ intState st of
+    Nothing -> []
+    Just ist ->
+      filter edgeContainsGoals $ getAllEdges ist
+
+getOpenConsEdges :: CmdlState -> [LEdge DGLinkLab]
+getOpenConsEdges st
  = case i_state $ intState st of
     Nothing -> []
     Just ist ->
