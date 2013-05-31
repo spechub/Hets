@@ -192,7 +192,7 @@ data Scope = Local | Global deriving (Show, Eq, Ord)
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
 
-data FreeOrCofree = Free | Cofree | NPFree
+data FreeOrCofree = Free | Cofree | NPFree | Minimize
   deriving (Show, Eq, Ord, Enum, Bounded, Read)
 
 fcList :: [FreeOrCofree]

@@ -404,6 +404,10 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
         name Cofree eo asp poss
       return (Cofree_spec nasp poss, nsig', dg')
+  Minimize_spec asp poss -> do
+      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
+          name Minimize eo asp poss
+      return (Minimize_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss -> adjustPos poss $ do
       let sp1 = item asp
           sp1' = item asp'

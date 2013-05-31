@@ -77,7 +77,6 @@ import System.FilePath
 
 import LF.Twelf2DG
 import Framework.Analysis
-import Debug.Trace
 
 
 -- a set of library names to check for cyclic imports
@@ -676,6 +675,7 @@ extractSpecnames spec =
     Extension asps _ -> concatMap (extractSpecnames . item) asps
     Free_spec asp _ -> (extractSpecnames . item) asp
     Cofree_spec asp _ -> (extractSpecnames . item) asp
+    Minimize_spec asp _ -> (extractSpecnames . item) asp
     Local_spec asp1 asp2 _ -> concatMap (extractSpecnames . item) [asp1, asp2]
     Closed_spec asp _ -> (extractSpecnames . item) asp
     Group asp _ -> (extractSpecnames . item) asp
