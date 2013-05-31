@@ -47,6 +47,7 @@ data GlobCmd =
   | Heterogeneity
   | ProveCurrent  -- CMDL prover activation
   | CheckConsistencyCurrent
+  | CheckConservativityAll
   | DropTranslation -- stop composing comorphisms to previous ones
     deriving (Eq, Ord, Enum, Bounded)
 
@@ -81,6 +82,7 @@ menuTextGlobCmd cmd = case cmd of
   Heterogeneity -> "Heterogeneity"
   ProveCurrent -> "Prove"
   CheckConsistencyCurrent -> "Check consistency"
+  CheckConservativityAll -> "Globally check conservativity"
   DropTranslation -> "Drop-Translations"
 
 -- | even some short names for the command line interface
@@ -142,6 +144,7 @@ data SelectCmd =
   | Goal  -- a single goal for an automatic prover
   | ConsistencyChecker
   | Link
+  | ConservativityCheckerOpen
   | ConservativityChecker
     deriving (Eq, Ord, Enum, Bounded)
 
@@ -158,6 +161,7 @@ selectCmdNameStr cmd = case cmd of
   Goal -> "set goals"
   ConsistencyChecker -> "cons-checker"
   Link -> "link"
+  ConservativityCheckerOpen -> "conservativity-check-open"
   ConservativityChecker -> "conservativity-check"
 
 describeSelectCmd :: SelectCmd -> String
@@ -170,7 +174,8 @@ describeSelectCmd cmd = case cmd of
   Goal -> "Set goal"
   ConsistencyChecker -> "Choose consistency checker"
   Link -> "Select link"
-  ConservativityChecker -> "Choose conservativity checker"
+  ConservativityChecker -> "Choose edges for a conservativity checker"
+  ConservativityCheckerOpen -> "Choose open edges for a conservativity checker"
 
 data InspectCmd =
     Libs  -- all imported libraries
