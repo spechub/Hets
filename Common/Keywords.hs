@@ -378,6 +378,9 @@ classS = "class"
 closedS :: String
 closedS = "closed"
 
+closedworldS :: String
+closedworldS = "closed-world"
+
 cofreeS :: String
 cofreeS = "cofree"
 
@@ -494,6 +497,9 @@ localS = "local"
 
 logicS :: String
 logicS = "logic"
+
+minimizeS :: String
+minimizeS = "minimize"
 
 modalitiesS :: String
 modalitiesS = "modalities"
