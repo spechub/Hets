@@ -17,7 +17,6 @@ module CMDL.DataTypesUtils
   ( obtainGoalNodeList
   , getAllGoalNodes
   , getAllGoalEdges
-  , getOpenConsEdges
   , getSelectedDGNodes
   , getInputDGNodes
   , getInputNodes
@@ -120,13 +119,6 @@ getAllGoalEdges st
     Nothing -> []
     Just ist ->
       filter edgeContainsGoals $ getAllEdges ist
-
-getOpenConsEdges :: CmdlState -> [LEdge DGLinkLab]
-getOpenConsEdges st
- = case i_state $ intState st of
-    Nothing -> []
-    Just ist ->
-      filter isOpenConsEdge $ getAllEdges ist
 
 -- Returns the selected DGNodes along with a possible error message
 getSelectedDGNodes :: IntIState -> (String, [LNode DGNodeLab])
