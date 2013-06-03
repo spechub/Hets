@@ -313,7 +313,7 @@ stripComments input =
 finishedNames :: [String] -> String -> ([String], String)
 finishedNames allNames input = let i = trimLeft input in
   case filter (isJust . snd) $ zip allNames
-    $ map (`stripPrefix` i) allNames of
+    $ map ((`stripPrefix` i) . (++ " ")) allNames of
     (n, Just r) : _ -> let (ns, s) = finishedNames allNames r in (n : ns, s)
     _ -> ([], i)
 
