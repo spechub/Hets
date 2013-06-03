@@ -152,7 +152,8 @@ showRequirement cr = case cr of
     ReqGNodes -> "GoalNodes"
     ReqGEdges -> "GoalEdges"
     ReqOpenConsEdges -> "OpenConsEdges"
-    ReqAxm -> "Axiom"
+    ReqAxm -> "Axioms"
+    ReqGoal -> "Goals"
     ReqNothing -> ""
     ReqUnknown -> ""
     _ -> drop 3 $ show cr
