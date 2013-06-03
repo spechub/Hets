@@ -207,10 +207,9 @@ edgeContainsGoals (_, _, l) = case thmLinkStatus $ dgl_type l of
      Just LeftOpen -> True
      _ -> False
 
--- | Given an edge decides if it contains goals or not
+-- | Given an edge: does it contain an open conservativity goal or not
 isOpenConsEdge :: LEdge DGLinkLab -> Bool
-isOpenConsEdge (_, _, l) = not . isProvenConsStatusLink
-  . getLinkConsStatus $ dgl_type l
+isOpenConsEdge (_, _, l) = hasOpenConsStatus False $ getEdgeConsStatus l
 
 {- | Given a list of edges and the complete list of all
    edges computes not only the names of edges but also the

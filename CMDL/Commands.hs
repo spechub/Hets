@@ -111,8 +111,8 @@ getCommands =
   , genGlobCmd CheckConservativityAll cConservCheckAll
   , genGlobCmd DropTranslation cDropTranslations
   , genSelectCmd ConsistencyChecker cConsChecker
-  , genSelectCmd ConservativityChecker cConservCheck
   , genSelectCmd ConservativityCheckerOpen cConservCheck
+  , genSelectCmd ConservativityChecker cConservCheck
   , genCmd (TimeLimit 0) CmdNoPriority ReqNumber $ CmdWithInput cTimeLimit
   , genCmd (SetAxioms []) CmdNoPriority ReqAxm $ CmdWithInput
     $ cGoalsAxmGeneral ActionSet ChangeAxioms ]

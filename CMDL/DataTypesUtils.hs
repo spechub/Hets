@@ -126,7 +126,7 @@ getOpenConsEdges st
  = case i_state $ intState st of
     Nothing -> []
     Just ist ->
-      filter edgeContainsGoals $ getAllEdges ist
+      filter isOpenConsEdge $ getAllEdges ist
 
 -- Returns the selected DGNodes along with a possible error message
 getSelectedDGNodes :: IntIState -> (String, [LNode DGNodeLab])
