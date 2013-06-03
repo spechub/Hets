@@ -135,7 +135,7 @@ decomposeIntoGoals input = let
     {- the new input where words and arrows are separated
        by exactly one space -}
     nwInput = words $ spacesAroundArrows input
-    {- funtion to parse the input and decompose it into
+    {- function to parse the input and decompose it into
        the three goal list -}
     parse info nbOfArrows word sw listNode listEdge listNbEdge listError =
        case info of
@@ -164,7 +164,8 @@ decomposeIntoGoals input = let
                            listNode listEdge (word : listNbEdge) listError
                      _ -> parse l 0 x False
                            listNode listEdge listNbEdge (word : listError)
-   in parse nwInput 0 [] True [] [] [] []
+    (ns, es, les, errs) = parse nwInput 0 [] True [] [] [] []
+    in (reverse ns, reverse es, reverse les, reverse errs)
 
 {- | mapAndSplit maps a function to a list. If the function can not
    be applied to an element it is stored in a different list for
