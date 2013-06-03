@@ -24,7 +24,7 @@ import CMDL.DataTypes
 import CMDL.Utils
 import CMDL.DataTypesUtils
 
-import Common.Utils (trimLeft, trimRight)
+import Common.Utils (trimLeft, trimRight, nubOrd)
 
 import Comorphisms.LogicGraph (comorphismList, logicGraph)
 
@@ -171,98 +171,34 @@ cmdlCompletionFn allcmds allState input =
    let s0_9 = map show [0 .. (9 :: Int)]
        app h = (h ++) . (' ' :)
    in case getTypeOf allcmds input of
-   ReqNodes ->
+   ReqNodesOrEdges mn mf ->
     case i_state $ intState allState of
      Nothing -> return []
      Just state -> do
        {- a pair, where the first element is what needs
           to be completed while the second is what is
-          before the word that needs to be completed -}
-       let (tC, bC) = if isSpace $ lastChar input
-                        {- if last character is a white space
-                           then there is no word to complete -}
-                         then ([], trimRight input)
-                        {- otherwise is just the last word
-                           from the input -}
-                         else (lastString $ words input,
-                               unwords $ init $ words input)
-          -- get all node names
-           allNames = nodeNames (getAllNodes state)
-      {- filter out words that do not start with the word
-         that needs to be completed and add the word that
-         was before the word that needs to be completed -}
-       let res = map (app bC) $ filter (isPrefixOf tC) allNames
-       return res
-   ReqGNodes ->
-    case i_state $ intState allState of
-     Nothing -> return []
-     Just _ -> do
-        {- the last unfinished word that needs to be
-           completed and what is before it -}
-       let (tC, bC) = if isSpace $ lastChar input
-                        {- if last character is a white space
-                           then there is no word to complete -}
-                         then ([], trimRight input)
-                        {- otherwise is just the last word
-                           from the input -}
-                         else (lastString $ words input,
-                               unwords $ init $ words input)
-          -- get all goal node names
-           allNames = nodeNames (getAllGoalNodes allState)
-      {- filter out words that do not start with the word
-         that needs to be completed -}
-       return $ map (app bC) $ filter (isPrefixOf tC) allNames
-   ReqEdges ->
-    case i_state $ intState allState of
-     Nothing -> return []
-     Just state -> do
-      {- the last unfinished edge name that needs to be
-         completed -}
+          before the word that needs to be completed
+       -}
        let tC = unfinishedEdgeName $ subtractCommandName allcmds input
           -- what is before this list
            bC = reverse $ trimLeft $ drop (length tC)
                      $ trimLeft $ reverse input
-          -- get all nodes
-           ls = getAllNodes state
-          -- get all edges
-           lsE = getAllEdges state
-          -- get all edge names
-           allNames = createEdgeNames ls lsE
+           -- get all nodes
+           ns = getAllNodes state
+           fns = nodeNames $ maybe id (\ _ -> filter (\ (nb, nd) ->
+                     let nwth = getTh Dont_translate nb allState
+                     in case nwth of
+                       Nothing -> False
+                       Just th -> nodeContainsGoals (nb, nd) th)) mf ns
+           es = createEdgeNames ns $ maybe id (\ f -> filter $ case f of
+                  OpenCons -> isOpenConsEdge
+                  OpenGoals -> edgeContainsGoals) mf $ getAllEdges state
+           allNames = case mn of
+             Nothing -> fns ++ es
+             Just b -> if b then fns else es
       {- filter out words that do not start with the word
-         that needs to be completed -}
-       let res = map (app bC) $ filter (isPrefixOf tC) allNames
-       return res
-   ReqGEdges ->
-    case i_state $ intState allState of
-     Nothing -> return []
-     Just state ->
-      do
-      {- the last unfinished edge name that needs to be
-         completed -}
-       let tC = unfinishedEdgeName $ subtractCommandName allcmds input
-           bC = reverse $ trimLeft $ drop (length tC)
-                     $ trimLeft $ reverse input
-           ls = getAllNodes state
-           lsGE = getAllGoalEdges allState
-           allNames = createEdgeNames ls lsGE
-          {- filter out words that do not start with the word
-             that needs to be completed -}
-       return $ map (app bC) $ filter (isPrefixOf tC) allNames
-   ReqOpenConsEdges ->
-    case i_state $ intState allState of
-     Nothing -> return []
-     Just state ->
-      do
-      {- the last unfinished edge name that needs to be
-         completed -}
-       let tC = unfinishedEdgeName $ subtractCommandName allcmds input
-           bC = reverse $ trimLeft $ drop (length tC)
-                     $ trimLeft $ reverse input
-           ls = getAllNodes state
-           lsGE = getOpenConsEdges allState
-           allNames = createEdgeNames ls lsGE
-          {- filter out words that do not start with the word
-             that needs to be completed -}
+         that needs to be completed and add the word that
+         was before the word that needs to be completed -}
        return $ map (app bC) $ filter (isPrefixOf tC) allNames
    ReqConsCheck -> do
        let tC = if isSpace $ lastChar input
@@ -374,7 +310,7 @@ cmdlCompletionFn allcmds allState input =
                    [] -> fileExtend lastPath names' []
                    _ -> return names'
         return $ map (bC ++) names''
-   ReqAxm ->
+   ReqAxm b ->
       case i_state $ intState allState of
        Nothing -> return []
        Just pS ->
@@ -385,23 +321,10 @@ cmdlCompletionFn allcmds allState input =
              bC = if isSpace $ lastChar input
                     then trimRight input
                     else unwords $ init $ words input
-         return $ map (app bC) $ filter (isPrefixOf tC) $ nub
-           $ concatMap (\ (Element st _) -> map fst $ getAxioms st)
-                $ elements pS
-   ReqGoal ->
-      case i_state $ intState allState of
-       Nothing -> return []
-       Just pS ->
-        do
-         let tC = if isSpace $ lastChar input
-                   then []
-                   else lastString $ words input
-             bC = if isSpace $ lastChar input
-                   then trimRight input
-                   else unwords $ init $ words input
-         return $ map (app bC) $ filter (isPrefixOf tC) $ nub
-           $ concatMap (\ (Element _ nb) ->
-                       case getTh Do_translate nb allState of
+         return $ map (app bC) $ filter (isPrefixOf tC) $ nubOrd
+           $ concatMap (\ (Element st nb) ->
+               if b then map fst $ getAxioms st else
+                        case getTh Do_translate nb allState of
                         Nothing -> []
                         Just th -> map fst $ filter
                             (maybe False (not . isProvedBasically) . snd)

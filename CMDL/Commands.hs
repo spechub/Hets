@@ -46,14 +46,14 @@ reqOfSelectCmd :: SelectCmd -> CmdlCmdRequirements
 reqOfSelectCmd sc = case sc of
   LibFile -> ReqFile
   Lib -> ReqFile
-  Node -> ReqNodes
+  Node -> reqNodes
   ComorphismTranslation -> ReqComorphism
   Prover -> ReqProvers
-  Goal -> ReqGoal
+  Goal -> ReqAxm False
   ConsistencyChecker -> ReqConsCheck
-  Link -> ReqEdges
-  ConservativityCheckerOpen -> ReqOpenConsEdges
-  ConservativityChecker -> ReqEdges
+  Link -> reqEdges
+  ConservativityCheckerOpen -> ReqNodesOrEdges (Just False) $ Just OpenCons
+  ConservativityChecker -> reqEdges
 
 genSelectCmd :: SelectCmd -> (String -> CmdlState -> IO CmdlState)
              -> CmdlCmdDescription
@@ -62,8 +62,8 @@ genSelectCmd sc =
 
 reqOfInspectCmd :: InspectCmd -> CmdlCmdRequirements
 reqOfInspectCmd ic = case ic of
-  EdgeInfo -> ReqEdges
-  _ -> if requiresNode ic then ReqNodes else ReqNothing
+  EdgeInfo -> reqEdges
+  _ -> if requiresNode ic then reqNodes else ReqNothing
 
 genGlobInspectCmd :: InspectCmd -> (CmdlState -> IO CmdlState)
                   -> CmdlCmdDescription
@@ -88,6 +88,12 @@ cmdlIgnoreFunc r =
 -- for the synonym "prove-all"
 proveAll :: CmdlCmdDescription
 proveAll = genGlobCmd ProveCurrent cProve
+
+reqEdges :: CmdlCmdRequirements
+reqEdges = ReqNodesOrEdges (Just False) Nothing
+
+reqNodes :: CmdlCmdRequirements
+reqNodes = ReqNodesOrEdges (Just True) Nothing
 
 -- | Generates the list of all possible commands as command description
 getCommands :: [CmdlCmdDescription]
@@ -114,7 +120,7 @@ getCommands =
   , genSelectCmd ConservativityCheckerOpen cConservCheck
   , genSelectCmd ConservativityChecker cConservCheck
   , genCmd (TimeLimit 0) CmdNoPriority ReqNumber $ CmdWithInput cTimeLimit
-  , genCmd (SetAxioms []) CmdNoPriority ReqAxm $ CmdWithInput
+  , genCmd (SetAxioms []) CmdNoPriority (ReqAxm True) $ CmdWithInput
     $ cGoalsAxmGeneral ActionSet ChangeAxioms ]
   ++ map (\ b -> genCmd (IncludeProvenTheorems b) CmdNoPriority ReqNothing
          $ CmdNoInput $ cSetUseThms b) [True, False]

@@ -20,6 +20,7 @@ module CMDL.DataTypes
   , cmdName
   , CmdlCmdPriority (..)
   , CmdlCmdFnClasses (..)
+  , NodeOrEdgeFilter (..)
   , CmdlCmdRequirements (..)
   , formatRequirement
   , CmdlChannel (..)
@@ -122,24 +123,21 @@ data CmdlCmdFnClasses =
     CmdNoInput (CmdlState -> IO CmdlState)
   | CmdWithInput (String -> CmdlState -> IO CmdlState)
 
+data NodeOrEdgeFilter = OpenCons | OpenGoals
+
 {- | Datatype describing the types of commands according
    to what they expect as input -}
 data CmdlCmdRequirements =
-    ReqNodes
-  | ReqEdges
+    ReqNodesOrEdges (Maybe Bool) (Maybe NodeOrEdgeFilter)
+        -- ^ Nothing: Both, True: Nodes, False: Edges
   | ReqProvers
   | ReqConsCheck
   | ReqComorphism
   | ReqFile
-  | ReqGNodes
-  | ReqGEdges
-  | ReqOpenConsEdges
-  | ReqAxm
-  | ReqGoal
+  | ReqAxm Bool   -- ^ True: Axioms, False: Goals
   | ReqNumber
   | ReqNothing
   | ReqUnknown
-  deriving Show
 
 formatRequirement :: CmdlCmdRequirements -> String
 formatRequirement r = let s = showRequirement r in
@@ -149,14 +147,17 @@ showRequirement :: CmdlCmdRequirements -> String
 showRequirement cr = case cr of
     ReqConsCheck -> "ConsChecker"
     ReqProvers -> "Prover"
-    ReqGNodes -> "GoalNodes"
-    ReqGEdges -> "GoalEdges"
-    ReqOpenConsEdges -> "OpenConsEdges"
-    ReqAxm -> "Axioms"
-    ReqGoal -> "Goals"
+    ReqComorphism -> "Comorphism"
+    ReqNodesOrEdges n m -> maybe "" (\ f -> case f of
+        OpenCons -> "OpenCons"
+        OpenGoals -> "Goal") m
+      ++ maybe "NodesOrEdges"
+         (\ b -> if b then "Nodes" else "Edges") n
+    ReqFile -> "File"
+    ReqAxm b -> if b then "Axioms" else "Goals"
+    ReqNumber -> "Number"
     ReqNothing -> ""
     ReqUnknown -> ""
-    _ -> drop 3 $ show cr
 
 -- Communication channel datatypes -----------------------------------------
 

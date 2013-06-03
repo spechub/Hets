@@ -341,9 +341,7 @@ unfinishedEdgeName input = let
                 Just _ -> []
                 {- if just the first word of an edge was
                    inserted then return that -}
-                _ -> case lastString wrds of
-                      [] -> []
-                      _ -> lastString wrds ++ " "
+                _ -> []
     else
      {- then we could be in the middle of the first node
         name, arrow or the second node name -}
@@ -354,13 +352,7 @@ unfinishedEdgeName input = let
                            arr2 ++ prevPrevLast wrds ++
                            arr1 ++ lastString wrds
              _ -> prevPrevLast wrds ++ arr1 ++ lastString wrds
-          _ -> case checkArrowLink $ prevPrevLast wrds of
-                 -- in the middle of the first word
-                Just _ -> lastString wrds
-                -- in the middle of the arrow
-                _ -> case prevLast wrds of
-                      [] -> lastString wrds
-                      _ -> prevLast wrds ++ " " ++ lastString wrds
+          _ -> lastString wrds
 
 {- | Given a list of files and folders the function filters
    only directory names and files ending in extenstion
