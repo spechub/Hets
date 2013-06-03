@@ -34,7 +34,6 @@ module CMDL.Utils
   , delExtension
   , checkPresenceProvers
   , arrowLink
-  , checkArrowLink
   ) where
 
 import Data.List
@@ -310,11 +309,23 @@ stripComments input =
                 l : ll -> l : fn ll
    in trim $ fn input
 
+-- | check if edges are to be completed in the presence of nodes
 finishedNames :: [String] -> String -> ([String], String)
-finishedNames allNames input = let i = trimLeft input in
-  case filter (isJust . snd) $ zip allNames
-    $ map ((`stripPrefix` i) . (++ " ")) allNames of
-    (n, Just r) : _ -> let (ns, s) = finishedNames allNames r in (n : ns, s)
+finishedNames ns i =
+  let e@(fs, r) = fNames ns i in
+  if not (null r) && any (isPrefixOf r) [localArr, globalArr] then
+    case reverse fs of
+    lt : ei : ar : sr : fr | elem ar [localArr, globalArr]
+      -> (reverse fr, unwords [sr, ar, ei, lt, r])
+    lt : fr -> (reverse fr, unwords [lt, r])
+    _ -> e
+  else e
+
+fNames :: [String] -> String -> ([String], String)
+fNames ns input = let i = trimLeft input in
+  case filter (isJust . snd) $ zip ns
+    $ map ((`stripPrefix` i) . (++ " ")) ns of
+    (n, Just r) : _ -> let (fs, s) = fNames ns r in (n : fs, s)
     _ -> ([], i)
 
 {- | Given a list of files and folders the function filters
