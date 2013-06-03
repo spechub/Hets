@@ -19,7 +19,7 @@ module CMDL.Utils
   , createEdgeNames
   , obtainEdgeList
   , obtainGoalEdgeList
-  , unfinishedEdgeName
+  , finishedNames
   , stripComments
   , lastChar
   , lastString
@@ -39,7 +39,7 @@ module CMDL.Utils
 
 import Data.List
 import Data.Maybe
-import Data.Char (isDigit, isSpace)
+import Data.Char (isDigit)
 import Data.Graph.Inductive.Graph (LNode, LEdge)
 
 import System.Directory
@@ -310,49 +310,12 @@ stripComments input =
                 l : ll -> l : fn ll
    in trim $ fn input
 
-{- | The function obtain the unfinished edge name from the
-   last position of the input or list of possible unfinished
-   edge names -}
-unfinishedEdgeName :: String -> String
-unfinishedEdgeName input = let
-      lastButN nb = lastString . reverse . drop nb . reverse
-  -- we need a penultimum (the one before the last) function
-      prevLast = lastButN 1
-  -- and the one before the penultimum
-      prevPrevLast = lastButN 2
-      prev2PrevLast = lastButN 3
-      prev3PrevLast = lastButN 4
-      wrds = words input
-    in if isSpace $ lastChar input
-    then
-     {- if so, then either the last word is an arrow, and
-        then we have the consider last two words, or it
-        is not an arrow and then we need to consider just
-        the last word -}
-        case checkArrowLink $ lastString wrds of
-          Just (arr1, _) ->
-            case checkArrowLink $ prevPrevLast wrds of
-             Just (arr2, _) -> prev2PrevLast wrds
-               ++ arr2 ++ prevLast wrds ++ arr1
-             _ -> prevLast wrds ++ arr1
-          _ -> case checkArrowLink $ prevLast wrds of
-                {- an entire edge name was just inserted
-                   before and now we need a fresh new start -}
-                Just _ -> []
-                {- if just the first word of an edge was
-                   inserted then return that -}
-                _ -> []
-    else
-     {- then we could be in the middle of the first node
-        name, arrow or the second node name -}
-      case checkArrowLink $ prevLast wrds of
-           -- in the middle of the last word
-          Just (arr1, _) -> case checkArrowLink $ prev2PrevLast wrds of
-             Just (arr2, _) -> prev3PrevLast wrds ++
-                           arr2 ++ prevPrevLast wrds ++
-                           arr1 ++ lastString wrds
-             _ -> prevPrevLast wrds ++ arr1 ++ lastString wrds
-          _ -> lastString wrds
+finishedNames :: [String] -> String -> ([String], String)
+finishedNames allNames input = let i = trimLeft input in
+  case filter (isJust . snd) $ zip allNames
+    $ map (`stripPrefix` i) allNames of
+    (n, Just r) : _ -> let (ns, s) = finishedNames allNames r in (n : ns, s)
+    _ -> ([], i)
 
 {- | Given a list of files and folders the function filters
    only directory names and files ending in extenstion

@@ -179,11 +179,7 @@ cmdlCompletionFn allcmds allState input =
           to be completed while the second is what is
           before the word that needs to be completed
        -}
-       let tC = unfinishedEdgeName $ subtractCommandName allcmds input
-          -- what is before this list
-           bC = reverse $ trimLeft $ drop (length tC)
-                     $ trimLeft $ reverse input
-           -- get all nodes
+       let -- get all nodes
            ns = getAllNodes state
            fns = nodeNames $ maybe id (\ _ -> filter (\ (nb, nd) ->
                      let nwth = getTh Dont_translate nb allState
@@ -194,12 +190,16 @@ cmdlCompletionFn allcmds allState input =
                   OpenCons -> isOpenConsEdge
                   OpenGoals -> edgeContainsGoals) mf $ getAllEdges state
            allNames = case mn of
-             Nothing -> fns ++ es
+             Nothing -> es ++ fns
              Just b -> if b then fns else es
+           (fins, tC) = finishedNames allNames
+              $ subtractCommandName allcmds input
+           -- what is before tC
+           bC = reverse $ trimLeft $ drop (length tC) $ reverse input
       {- filter out words that do not start with the word
          that needs to be completed and add the word that
          was before the word that needs to be completed -}
-       return $ map (app bC) $ filter (isPrefixOf tC) allNames
+       return $ map (app bC) $ filter (isPrefixOf tC) $ allNames \\ fins
    ReqConsCheck -> do
        let tC = if isSpace $ lastChar input
                  then []
