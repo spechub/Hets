@@ -81,7 +81,8 @@ terminationProof sig fs dms =
       tmpFile <- getTempFile (unlines $ c_vars : c_axms) "Input.trs"
       aprovePath <- getEnvDef "HETS_APROVE" "CASL/Termination/AProVE.jar"
       (_, proof, _) <- readProcessWithExitCode "java"
-        ("-jar" : aprovePath : words "-u cli -m wst -p plain" ++ [tmpFile]) ""
+        ("-jar" : aprovePath : words "-ea -u cli -m wst -p plain" ++ [tmpFile])
+        ""
       removeFile tmpFile
       return (case words proof of
         "YES" : _ -> Just True
