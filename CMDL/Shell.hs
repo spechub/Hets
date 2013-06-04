@@ -181,11 +181,11 @@ cmdlCompletionFn allcmds allState input =
        -}
        let -- get all nodes
            ns = getAllNodes state
-           fns = nodeNames $ maybe id (\ _ -> filter (\ (nb, nd) ->
-                     let nwth = getTh Dont_translate nb allState
-                     in case nwth of
-                       Nothing -> False
-                       Just th -> nodeContainsGoals (nb, nd) th)) mf ns
+           fns = nodeNames $ maybe id (\ f -> filter (\ (_, nd) ->
+                     case f of
+                       OpenCons -> hasOpenNodeConsStatus False nd
+                       OpenGoals -> hasOpenGoals nd))
+                     mf ns
            es = createEdgeNames ns $ maybe id (\ f -> filter $ case f of
                   OpenCons -> isOpenConsEdge
                   OpenGoals -> edgeContainsGoals) mf $ getAllEdges state
