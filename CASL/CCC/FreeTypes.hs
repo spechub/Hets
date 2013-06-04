@@ -275,8 +275,13 @@ checkSort :: (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
     -> [Named (FORMULA f)]
     -> Maybe (Result (Conservativity, [FORMULA f]))
 checkSort oTh@(osig, _) m fsn
-    | null fsn && Set.null nSorts = Just $ justHint (Def, [])
-        "nothing added!"
+    | null fsn && Set.null nSorts =
+        let sSig = imageOfMorphism m
+            tSig = mtarget m
+            cond = MapSet.null (diffOpMapSet (opMap tSig) $ opMap sSig)
+              && MapSet.null (diffMapSet (predMap tSig) $ predMap sSig)
+        in Just $ justHint (if cond then Def else Cons, [])
+        $ if cond then "nothing added" else "no sort added"
     | not $ Set.null notFreeSorts =
         mkUnknown "some types are not freely generated" notFreeSorts
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
