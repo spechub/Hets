@@ -171,7 +171,7 @@ describeSelectCmd cmd = case cmd of
   Node -> "Select node"
   ComorphismTranslation -> "Choose translation"
   Prover -> "Choose prover"
-  Goal -> "Set goal"
+  Goal -> "Set one or more space separated goal names"
   ConsistencyChecker -> "Choose consistency checker"
   Link -> "Select link"
   ConservativityChecker -> "Choose edges for a conservativity checker"
