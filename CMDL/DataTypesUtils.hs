@@ -14,10 +14,7 @@ Prelude
 -}
 
 module CMDL.DataTypesUtils
-  ( obtainGoalNodeList
-  , getAllGoalNodes
-  , getAllGoalEdges
-  , getSelectedDGNodes
+  ( getSelectedDGNodes
   , getInputDGNodes
   , getInputNodes
   , getTh
@@ -32,19 +29,19 @@ module CMDL.DataTypesUtils
 import Interfaces.Command (Command (CommentCmd))
 import Interfaces.DataTypes
 import Interfaces.History (add2history)
-import Interfaces.Utils (getAllEdges, getAllNodes)
+import Interfaces.Utils (getAllNodes)
 import CMDL.Utils
 import CMDL.DataTypes
 
 import Static.GTheory (G_theory, mapG_theory)
-import Static.DevGraph (DGNodeLab, DGLinkLab, lookupDGraph, labDG)
+import Static.DevGraph (DGNodeLab, lookupDGraph, labDG)
 
 import System.IO (stdout, stdin)
 
 import Proofs.AbstractState (sublogicOfTheory, theoryName)
 import Static.ComputeTheory (computeTheory)
 
-import Data.Graph.Inductive.Graph (LNode, LEdge, Node)
+import Data.Graph.Inductive.Graph (LNode, Node)
 import Data.List (find)
 
 import Common.Result (Result (Result))
@@ -81,44 +78,6 @@ generatePrompter st = let pst = prompter st in
                        then "*"
                        else ""
      in els ++ cm) ++ prompterHead pst
-
-{- | Given a list of node names and the list of all nodes
-the function returns all the nodes that have their name
-in the name list but are also goals -}
-obtainGoalNodeList :: CmdlState -> [String] -> [LNode DGNodeLab]
-                                 -> ([String], [LNode DGNodeLab])
-obtainGoalNodeList state input ls
- = let (l1, l2) = obtainNodeList input ls
-       l2' = filter (\ (nb, nd) ->
-                       let nwth = getTh Dont_translate nb state
-                       in case nwth of
-                           Nothing -> False
-                           Just th -> nodeContainsGoals (nb, nd) th) l2
-   in (l1, l2')
-
-
-{- | Returns the list of all nodes that are goals,
-taking care of the up to date status -}
-getAllGoalNodes :: CmdlState -> [LNode DGNodeLab]
-getAllGoalNodes st
- = case i_state $ intState st of
-    Nothing -> []
-    Just ist ->
-      filter (\ (nb, nd) ->
-             let nwth = getTh Dont_translate nb st
-             in case nwth of
-                 Nothing -> False
-                 Just th -> nodeContainsGoals (nb, nd) th) $
-                                 getAllNodes ist
-
-{- | Returns the list of all goal edges taking care of the
-up to date status -}
-getAllGoalEdges :: CmdlState -> [LEdge DGLinkLab]
-getAllGoalEdges st
- = case i_state $ intState st of
-    Nothing -> []
-    Just ist ->
-      filter edgeContainsGoals $ getAllEdges ist
 
 -- Returns the selected DGNodes along with a possible error message
 getSelectedDGNodes :: IntIState -> (String, [LNode DGNodeLab])

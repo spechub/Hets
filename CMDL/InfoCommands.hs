@@ -70,15 +70,14 @@ cShowDgGoals state
  = case i_state $ intState state of
     -- nothing to print
     Nothing -> return state
-    Just dgState ->
-     -- compute list of node goals
-     let nodeGoals = nodeNames $ getAllGoalNodes state
-
+    Just dgState -> let
          -- list of all nodes
          ls = getAllNodes dgState
-         lsGE = getAllGoalEdges state
+         -- compute list of node goals
+         nodeGoals = nodeNames $ filter (hasOpenGoals . snd) ls
          -- list of all goal edge names
-         edgeGoals = createEdgeNames ls lsGE
+         edgeGoals = map fst $ filter (edgeContainsGoals . snd)
+           $ createEdgeNames ls $ getAllEdges dgState
      -- print sorted version of the list
       in return $ genMessage [] (unlines $ sort (nodeGoals ++ edgeGoals)) state
 
@@ -257,7 +256,7 @@ cEdges state
       let lsNodes = getAllNodes dgState
           -- compute all edges names
           lsEdg = getAllEdges dgState
-          lsEdges = createEdgeNames lsNodes lsEdg
+          lsEdges = map fst $ createEdgeNames lsNodes lsEdg
       -- print edge list in a sorted fashion
       return $ genMessage [] (intercalate "\n" $ sort lsEdges) state
 

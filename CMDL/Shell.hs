@@ -186,9 +186,12 @@ cmdlCompletionFn allcmds allState input =
                        OpenCons -> hasOpenNodeConsStatus False nd
                        OpenGoals -> hasOpenGoals nd))
                      mf ns
-           es = createEdgeNames ns $ maybe id (\ f -> filter $ case f of
-                  OpenCons -> isOpenConsEdge
-                  OpenGoals -> edgeContainsGoals) mf $ getAllEdges state
+           es = map fst
+                $ maybe id (\ f -> filter $ case f of
+                    OpenCons -> isOpenConsEdge
+                    OpenGoals -> edgeContainsGoals
+                  . snd) mf
+                $ createEdgeNames ns (getAllEdges state)
            allNames = case mn of
              Nothing -> es ++ fns
              Just b -> if b then fns else es

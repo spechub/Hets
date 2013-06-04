@@ -27,7 +27,6 @@ module CMDL.Utils
   , fileFilter
   , fileExtend
   , prettyPrintErrList
-  , nodeContainsGoals
   , edgeContainsGoals
   , isOpenConsEdge
   , checkIntString
@@ -44,15 +43,10 @@ import Data.Graph.Inductive.Graph (LNode, LEdge)
 import System.Directory
 import System.FilePath
 
-import Static.GTheory
 import Static.DevGraph
 import Static.DgUtils
 
-import Common.AS_Annotation (SenAttr (isAxiom))
 import Common.Utils
-import qualified Common.OrderedMap as OMap
-
-import qualified Data.Map as Map
 
 -- a any version of function that supports IO
 anyIO :: (a -> IO Bool) -> [a] -> IO Bool
@@ -192,15 +186,6 @@ obtainNodeList :: [String] -> [LNode DGNodeLab] -> ([String], [LNode DGNodeLab])
 obtainNodeList lN allNodes = mapAndSplit
     (\ x -> find (\ (_, label) -> getDGNodeName label == x) allNodes) lN
 
--- | Given a node decides if it contains goals or not
-nodeContainsGoals :: LNode DGNodeLab -> G_theory -> Bool
-nodeContainsGoals (_, l) th =
-   (case th of
-       G_theory _ _ _ _ sens _ ->
-         not $ Map.null $ OMap.filter
-           (\ s -> not (isAxiom s) && not (isProvenSenStatus s)) sens) ||
-           hasOpenNodeConsStatus False l
-
 -- | Given an edge decides if it contains goals or not
 edgeContainsGoals :: LEdge DGLinkLab -> Bool
 edgeContainsGoals (_, _, l) = case thmLinkStatus $ dgl_type l of
@@ -214,7 +199,8 @@ isOpenConsEdge (_, _, l) = hasOpenConsStatus False $ getEdgeConsStatus l
 {- | Given a list of edges and the complete list of all
    edges computes not only the names of edges but also the
    numbered name of edges -}
-createEdgeNames :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> [String]
+createEdgeNames :: [LNode DGNodeLab] -> [LEdge DGLinkLab]
+  -> [(String, LEdge DGLinkLab)]
 createEdgeNames lsN lsE = let
   -- function that returns the name of a node given its number
    nameOf x ls = case lookup x ls of
@@ -223,18 +209,16 @@ createEdgeNames lsN lsE = let
    ordFn (x1, x2, _) (y1, y2, _) = compare (x1, x2) (y1, y2)
    -- sorted and grouped list of edges
    edgs = groupBy ( \ x y -> ordFn x y == EQ) $ sortBy ordFn lsE
-   allEds = concatMap (\ l -> case l of
-                             [(x, y, edgLab)] -> [nameOf x lsN ++
+   in concatMap (\ l -> case l of
+                             [el@(x, y, edgLab)] -> [(nameOf x lsN ++
                                           arrowLink edgLab ++
-                                          nameOf y lsN]
-                             _ -> map (\ (x, y, edgLab) ->
-                                   nameOf x lsN ++
+                                          nameOf y lsN, el)]
+                             _ -> map (\ el@(x, y, edgLab) ->
+                                   (nameOf x lsN ++
                                    arrowLink edgLab ++
                                      showEdgeId (dgl_id edgLab)
                                      ++ arrowLink edgLab
-                                     ++ nameOf y lsN) l) edgs
-  in allEds
-
+                                     ++ nameOf y lsN, el)) l) edgs
 
 {- | Given a list of edge names and numbered edge names
    and the list of all nodes and edges the function
