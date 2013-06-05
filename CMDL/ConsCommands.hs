@@ -24,7 +24,7 @@ import Interfaces.Utils
 
 import CMDL.DataTypes (CmdlState (intState))
 import CMDL.DataTypesUtils
-import CMDL.Utils (arrowLink, decomposeIntoGoals, prettyPrintErrList)
+import CMDL.Utils
 import CMDL.ProveCommands (cDoLoop)
 
 import Proofs.AbstractState (resetSelection)
@@ -36,7 +36,10 @@ import Common.Consistency
 import Common.LibName (LibName)
 
 import Data.Graph.Inductive.Graph (LNode, LEdge)
-import Data.List (groupBy, find, sortBy)
+import Data.List
+
+flatConsRes :: [(String, String)] -> String
+flatConsRes = intercalate "\n" . map (\ (s1, s2) -> s1 ++ " : " ++ s2)
 
 {- Command that processes the input and applies a
 conservativity check -}
@@ -46,50 +49,38 @@ cConservCheck input state =
    Nothing ->
      return $ genErrorMsg "No library loaded" state
    Just dgState -> do
-     let (_, edg, nbEdg, errs) = decomposeIntoGoals input
+     let (nds, edg, nbEdg, errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
-     case (edg, nbEdg) of
-      ([], []) ->
-        return $ genErrorMsg ( tmpErrs ++ "No edges in input string\n") state
-      (_, _) ->
+     case (nds, edg, nbEdg) of
+      ([], [], []) ->
+        return $ genErrorMsg (tmpErrs ++ "nothing to check\n") state
+      _ ->
         do
          let lsNodes = getAllNodes dgState
              lsEdges = getAllEdges dgState
-         (allList, nle) <- conservativityList lsNodes lsEdges
+             (errs', listNodes) = obtainNodeList nds lsNodes
+             (errs'', listEdges) = obtainEdgeList edg nbEdg lsNodes lsEdges
+             tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
+             tmpErrs'' = tmpErrs' ++ prettyPrintErrList errs''
+         (allList, nle) <- conservativityList lsNodes listNodes listEdges
                                   (i_libEnv dgState) (i_ln dgState)
-         let edgLs = concatMap (\ x -> case find (
-                                        \ (s1, _) -> s1 == x) allList of
-                                       Nothing -> []
-                                       Just (s1, s2) -> [(s1, s2)]) edg
-             nbEdgLs = concatMap (\ x -> case find (
-                                        \ (s1, _) -> s1 == x) allList of
-                                       Nothing -> []
-                                       Just (s1, s2) -> [(s1, s2)]) nbEdg
-             nwst = state {
-                     intState = (intState state) {
-                      i_state = Just dgState {
-                                       i_libEnv = nle} } }
-         case edgLs ++ nbEdgLs of
-          [] -> return $ genErrorMsg (tmpErrs ++ "No edge in input string\n")
-                                                             nwst
-          _ -> return $ genMessage tmpErrs
-                         (concatMap (\ (s1, s2) -> s1 ++ " : " ++ s2 ++ "\n")
-                                       (edgLs ++ nbEdgLs) ) nwst
-
+         return $ genMessage tmpErrs'' (flatConsRes allList)
+           state { intState = (intState state)
+                   { i_state = Just dgState {i_libEnv = nle} } }
 
 -- checks conservativity for every possible node
 cConservCheckAll :: CmdlState -> IO CmdlState
 cConservCheckAll state = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "No library loaded" state
     Just dgState -> do
-      (resTxt, nle) <- conservativityList (getAllNodes dgState)
+      let lsNodes = getAllNodes dgState
+      (resTxt, nle) <- conservativityList lsNodes lsNodes
                                    (getAllEdges dgState)
                                    (i_libEnv dgState)
                                    (i_ln dgState)
       let nwst = state { intState = (intState state) {
                             i_state = Just dgState { i_libEnv = nle } } }
-      return $ genMessage []
-        (concatMap (\ (s1, s2) -> s1 ++ " : " ++ s2 ++ "\n") resTxt) nwst
+      return $ genMessage [] (flatConsRes resTxt) nwst
 
 -- applies consistency check to the input
 cConsistCheck :: CmdlState -> IO CmdlState
@@ -112,24 +103,10 @@ cConsistCheckAll state = case i_state $ intState state of
              in cConsistCheck nwSt
 
 -- applies conservativity check to a given list
-conservativityList :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> LibEnv
-   -> LibName -> IO ([(String, String)], LibEnv)
-conservativityList lsN lsE le libname = do
-   let
-    ordFn x y = let (x1, x2, _) = x
-                    (y1, y2, _) = y
-                in if (x1, x2) > (y1, y2) then GT
-                   else if (x1, x2) < (y1, y2) then LT
-                        else EQ
-  -- sorted and grouped list of edges
-    edgs = groupBy ( \ (x1, x2, _) (y1, y2, _) -> (x1, x2) == (y1, y2)) $
-           sortBy ordFn lsE
-    edgtm = concatMap (\ l -> case l of
-                              [(x, y, edgLab)] -> [((x, y, edgLab), True)]
-                              _ -> map (\ (x, y, edgLab) -> ((x, y, edgLab),
-                                                                False)) l)
-                                                  edgs
-   (acc, libEnv') <- applyEdgeConservativity le libname edgtm [] lsN
+conservativityList :: [LNode DGNodeLab] -> [LNode DGNodeLab]
+   -> [LEdge DGLinkLab] -> LibEnv -> LibName -> IO ([(String, String)], LibEnv)
+conservativityList allNodes lsN lsE le libname = do
+   (acc, libEnv') <- applyEdgeConservativity le libname lsE [] allNodes
    applyNodeConservativity libEnv' libname
        [ n | n <- lsN, getNodeConservativity n > None ] acc
 
@@ -142,7 +119,7 @@ applyNodeConservativity libEnv ln nds acc = case nds of
       applyNodeConservativity nwLe ln ns
                          ((showName $ dgn_name nlab, str) : acc)
 
-applyEdgeConservativity :: LibEnv -> LibName -> [(LEdge DGLinkLab, Bool)]
+applyEdgeConservativity :: LibEnv -> LibName -> [LEdge DGLinkLab]
   -> [(String, String)] -> [LNode DGNodeLab] -> IO ([(String, String)], LibEnv)
 applyEdgeConservativity le ln ls acc lsN = do
    let nameOf x lls = case find (\ (nb, _) -> nb == x) lls of
@@ -150,10 +127,9 @@ applyEdgeConservativity le ln ls acc lsN = do
                       Just (_, nlab) -> showName $ dgn_name nlab
    case ls of
     [] -> return (acc, le)
-    ((x, y, edgLab), vl) : l -> do
+    (x, y, edgLab) : l -> do
       (str, nwLe, _, _) <- checkConservativityEdge False (x, y, edgLab) le ln
       let nm = nameOf x lsN ++ arrowLink edgLab ++
-               (if vl then "" else showEdgeId (dgl_id edgLab)
-                      ++ arrowLink edgLab)
+               showEdgeId (dgl_id edgLab) ++ arrowLink edgLab
                ++ nameOf y lsN
       applyEdgeConservativity nwLe ln l ((nm, str) : acc) lsN
