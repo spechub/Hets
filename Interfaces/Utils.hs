@@ -308,9 +308,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                        , "The link is " ++ showConsistencyStatus cst
                          ++ case resObls of
                               [] -> case exSens of
-                                [] -> case inputThSens of
-                                  [] -> " (no sentences have been added)"
-                                  _ -> ""
+                                [] -> ""
                                 _ -> " because of the following axioms:\n"
                                   ++ showObls exSens
                               _ -> " provided that the following obligations\n"

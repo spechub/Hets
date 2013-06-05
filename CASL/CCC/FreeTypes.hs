@@ -281,8 +281,8 @@ checkSort oTh@(osig, _) m fsn
             cond = MapSet.null (diffOpMapSet (opMap tSig) $ opMap sSig)
               && MapSet.null (diffMapSet (predMap tSig) $ predMap sSig)
         in Just $ justHint (if cond then Def else Cons, [])
-        $ if cond then "no symbols have been added"
-          else "no sort has been added"
+        $ (if cond then "neither symbols"
+          else "neither sorts") ++ " nor sentences have been added"
     | not $ Set.null notFreeSorts =
         mkUnknown "some types are not freely generated" notFreeSorts
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
