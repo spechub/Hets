@@ -40,6 +40,7 @@ import Data.List
 
 flatConsRes :: [(String, String)] -> String
 flatConsRes = intercalate "\n" . map (\ (s1, s2) -> s1 ++ " : " ++ s2)
+  . reverse
 
 {- Command that processes the input and applies a
 conservativity check -}
@@ -74,7 +75,8 @@ cConservCheckAll state = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "No library loaded" state
     Just dgState -> do
       let lsNodes = getAllNodes dgState
-      (resTxt, nle) <- conservativityList lsNodes lsNodes
+      (resTxt, nle) <- conservativityList lsNodes
+         (filter ((> None) . getNodeConservativity) lsNodes)
                                    (getAllEdges dgState)
                                    (i_libEnv dgState)
                                    (i_ln dgState)
@@ -107,8 +109,7 @@ conservativityList :: [LNode DGNodeLab] -> [LNode DGNodeLab]
    -> [LEdge DGLinkLab] -> LibEnv -> LibName -> IO ([(String, String)], LibEnv)
 conservativityList allNodes lsN lsE le libname = do
    (acc, libEnv') <- applyEdgeConservativity le libname lsE [] allNodes
-   applyNodeConservativity libEnv' libname
-       [ n | n <- lsN, getNodeConservativity n > None ] acc
+   applyNodeConservativity libEnv' libname lsN acc
 
 applyNodeConservativity :: LibEnv -> LibName -> [LNode DGNodeLab]
   -> [(String, String)] -> IO ([(String, String)], LibEnv)

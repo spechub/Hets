@@ -52,8 +52,8 @@ reqOfSelectCmd sc = case sc of
   Goal -> ReqAxm False
   ConsistencyChecker -> ReqConsCheck
   Link -> reqEdges
-  ConservativityCheckerOpen -> ReqNodesOrEdges (Just False) $ Just OpenCons
-  ConservativityChecker -> reqEdges
+  ConservativityCheckerOpen -> ReqNodesOrEdges Nothing $ Just OpenCons
+  ConservativityChecker -> ReqNodesOrEdges Nothing Nothing
 
 genSelectCmd :: SelectCmd -> (String -> CmdlState -> IO CmdlState)
              -> CmdlCmdDescription
