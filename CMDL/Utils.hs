@@ -205,7 +205,7 @@ createEdgeNames lsN lsE = let
   -- function that returns the name of a node given its number
    nameOf x ls = case lookup x ls of
                   Nothing -> "Unknown node"
-                  Just nlab -> showName $ dgn_name nlab
+                  Just nlab -> getDGNodeName nlab
    ordFn (x1, x2, _) (y1, y2, _) = compare (x1, x2) (y1, y2)
    -- sorted and grouped list of edges
    edgs = groupBy ( \ x y -> ordFn x y == EQ) $ sortBy ordFn lsE

@@ -490,7 +490,7 @@ showProofStatusOfNode :: GInfo -> Int -> DGraph -> IO ()
 showProofStatusOfNode _ descr dgraph =
   let dgnode = labDG dgraph descr
       stat = showStatusAux dgnode
-      title = "Proof status of node " ++ showName (dgn_name dgnode)
+      title = "Proof status of node " ++ getDGNodeName dgnode
   in createTextDisplay title stat
 
 showStatusAux :: DGNodeLab -> String

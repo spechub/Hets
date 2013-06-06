@@ -761,7 +761,7 @@ showAutoProofWindow dg sessId prOrCons = let
     GlConsistency -> ("cons", False, "consistency checker"
       , map (\ (_, dgn) ->
       let cstat = getConsistencyOf dgn
-          nm = showName $ dgn_name dgn in add_attrs [ mkAttr "type" "checkbox"
+          nm = getDGNodeName dgn in add_attrs [ mkAttr "type" "checkbox"
       , mkAttr "unproven" $ showBool $ sType cstat == CSUnchecked
       , mkAttr "name" nm]
       $ unode "input" (cStatusToPrefix cstat ++ nm)) dgnodes)
@@ -1031,14 +1031,14 @@ proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
     [] -> case prOrCons of
             GlConsistency -> const True
             GlProofs -> hasOpenGoals . snd
-    _ -> (`elem` nodeSel) . showName . dgn_name . snd) $ labNodesDG dg
+    _ -> (`elem` nodeSel) . getDGNodeName . snd) $ labNodesDG dg
   in foldM
   (\ (le', res) nl@(_, dgn) -> case maybeResult $ getGlobalTheory dgn of
       Nothing -> fail $
                     "cannot compute global theory of:\n" ++ show dgn
       Just gTh -> do
         (le'', sens) <- runProof le' gTh nl
-        return (le'', formatResultsAux (showName $ dgn_name dgn) sens : res))
+        return (le'', formatResultsAux (getDGNodeName dgn) sens : res))
           (le, []) nodes2check
 
 formatResultsAux :: String -> [(String, String)] -> Element

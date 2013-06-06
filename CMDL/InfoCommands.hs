@@ -45,7 +45,6 @@ import CMDL.Utils
 
 import Static.GTheory
 import Static.DevGraph
-import Static.DgUtils
 import Static.PrintDevGraph (showLEdge)
 
 import Common.AS_Annotation (SenAttr (isAxiom))
@@ -209,7 +208,7 @@ taxoShowGeneric kind state ls =
          do
           -- display graph
           displayGraph kind
-                    (showName $ dgn_name nlab) th
+                    (getDGNodeName nlab) th
           taxoShowGeneric kind state ll
         -- theory couldn't be computed so just go next
         _ -> taxoShowGeneric kind state ll
@@ -241,7 +240,7 @@ cNodeNumber input state =
     Nothing -> return state
     Just dgState ->
       let (errors, nodes) = getInputDGNodes input dgState
-          ls = map (\ (i, n) -> showName (dgn_name n) ++ " is node number " ++
+          ls = map (\ (i, n) -> getDGNodeName n ++ " is node number " ++
                     show i) nodes
        in return $ genMessage errors (intercalate "\n" ls) state
 

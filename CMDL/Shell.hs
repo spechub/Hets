@@ -41,7 +41,6 @@ import Logic.Logic
 import Proofs.AbstractState
 
 import Static.DevGraph
-import Static.DgUtils
 import Static.GTheory
 
 import Data.Char (isSpace)
@@ -162,7 +161,7 @@ getTypeOf allcmds input
        _ -> ReqUnknown
 
 nodeNames :: [(a, DGNodeLab)] -> [String]
-nodeNames = map (showName . dgn_name . snd)
+nodeNames = map (getDGNodeName . snd)
 
 {- | The function provides a list of possible completion
    to a given input if any -}

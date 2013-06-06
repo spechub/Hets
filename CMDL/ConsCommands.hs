@@ -118,14 +118,14 @@ applyNodeConservativity libEnv ln nds acc = case nds of
     n@(_, nlab) : ns -> do
       (str, nwLe, _) <- checkConservativityNode False n libEnv ln
       applyNodeConservativity nwLe ln ns
-                         ((showName $ dgn_name nlab, str) : acc)
+                         ((getDGNodeName nlab, str) : acc)
 
 applyEdgeConservativity :: LibEnv -> LibName -> [LEdge DGLinkLab]
   -> [(String, String)] -> [LNode DGNodeLab] -> IO ([(String, String)], LibEnv)
 applyEdgeConservativity le ln ls acc lsN = do
    let nameOf x lls = case find (\ (nb, _) -> nb == x) lls of
                       Nothing -> "Unknown node"
-                      Just (_, nlab) -> showName $ dgn_name nlab
+                      Just (_, nlab) -> getDGNodeName nlab
    case ls of
     [] -> return (acc, le)
     (x, y, edgLab) : l -> do
