@@ -65,6 +65,11 @@ cmdlComplete st (left, _) = do
   return ("", map simpleCompletion $ comps ++ cmdcomps')
 #endif
 
+getLongLine :: IO String
+getLongLine = do
+  l <- getLine
+  if isSuffixOf "\\" l then fmap (init l ++) getLongLine else return l
+
 shellLoop :: IORef CmdlState
           -> Bool
 #ifdef HASKELINE
@@ -82,7 +87,7 @@ shellLoop st isTerminal =
     putStr prompt
     hFlush stdout
     eof <- isEOF
-    minput <- if eof then return Nothing else liftM Just getLine
+    minput <- if eof then return Nothing else liftM Just getLongLine
 #endif
     case minput of
       Nothing -> return state
@@ -93,7 +98,7 @@ shellLoop st isTerminal =
                (liftIO $ putStrLn $ generatePrompter state ++ echo)
           (state', mc) <- liftIO $ cmdlProcessString "" 0 input state
           case mc of
-            Nothing -> if any (input ==) ["exit", ":q"] -- additional exit cmds
+            Nothing -> if elem input ["exit", ":q"] -- additional exit cmds
                          then return state'
                          else do
                                 liftIO $ putStrLn $ "Unknown command: " ++ input
