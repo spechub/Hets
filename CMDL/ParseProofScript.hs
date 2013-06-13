@@ -8,7 +8,6 @@ Stability   :  provisional
 Portability :  portable
 -}
 
-{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module CMDL.ParseProofScript where
 
