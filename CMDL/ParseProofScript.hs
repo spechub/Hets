@@ -8,6 +8,8 @@ Stability   :  provisional
 Portability :  portable
 -}
 
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 module CMDL.ParseProofScript where
 
 import Interfaces.Command

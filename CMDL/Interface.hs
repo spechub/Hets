@@ -65,6 +65,33 @@ cmdlComplete st (left, _) = do
   return ("", map simpleCompletion $ comps ++ cmdcomps')
 #endif
 
+getMultiLineT :: String -> String -> InputT IO (Maybe String)
+getMultiLineT prompt past = do
+  minput <- getInputLine prompt
+  case minput of
+          Nothing -> return Nothing
+          Just input -> do let
+                              str = reverse input                           
+                              has = hasSlash str
+                           if has then getMultiLineT prompt (past ++ (reverse (takeOutSlash str))) else return $ Just $ past ++ input
+
+
+
+hasSlash :: String -> Bool
+hasSlash x = case x of
+        '\\' : _ -> True
+        ' ' : ls -> hasSlash ls
+        '\n' : ls -> hasSlash ls
+        _      -> False
+
+takeOutSlash :: String -> String
+takeOutSlash str = case str of 
+          '\\' : ls -> ls
+          '\n' : ls -> takeOutSlash ls
+          ' ' : ls -> takeOutSlash ls
+          l -> l
+
+
 getLongLine :: IO String
 getLongLine = do
   l <- getLine
@@ -82,12 +109,13 @@ shellLoop st isTerminal =
     state <- liftIO $ readIORef st
     let prompt = if isTerminal then generatePrompter state else ""
 #ifdef HASKELINE
-    minput <- getInputLine prompt
+    minput <- getMultiLineT prompt ""
 #else
     putStr prompt
     hFlush stdout
     eof <- isEOF
     minput <- if eof then return Nothing else liftM Just getLongLine
+
 #endif
     case minput of
       Nothing -> return state
