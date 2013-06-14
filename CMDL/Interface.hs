@@ -65,27 +65,31 @@ cmdlComplete st (left, _) = do
   return ("", map simpleCompletion $ comps ++ cmdcomps')
 #endif
 
+#ifdef HASKELINE
 getMultiLineT :: String -> String -> InputT IO (Maybe String)
 getMultiLineT prompt past = do
   minput <- getInputLine prompt
   case minput of
           Nothing -> return Nothing
-          Just input -> do let
-                              str = reverse input                           
-                              has = hasSlash str
-                           if has then getMultiLineT prompt (past ++ (reverse (takeOutSlash str))) else return $ Just $ past ++ input
-
-
+          Just input -> do
+                let
+                  str = reverse input
+                  has = hasSlash str
+                if has then
+                  getMultiLineT prompt ( past ++ (reverse (takeOutSlash str)))
+                else
+                  return $ Just $ past ++ input
+#endif
 
 hasSlash :: String -> Bool
 hasSlash x = case x of
         '\\' : _ -> True
         ' ' : ls -> hasSlash ls
         '\n' : ls -> hasSlash ls
-        _      -> False
+        _ -> False
 
 takeOutSlash :: String -> String
-takeOutSlash str = case str of 
+takeOutSlash str = case str of
           '\\' : ls -> ls
           '\n' : ls -> takeOutSlash ls
           ' ' : ls -> takeOutSlash ls
