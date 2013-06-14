@@ -29,7 +29,6 @@ import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMorphism
 import qualified CASL.AS_Basic_CASL as CAS
 import CASL.StaticAna
-import CASL.Logic_CASL
 
 import Common.Id
 import Common.Result
@@ -37,15 +36,6 @@ import Common.AS_Annotation
 import Common.ProofUtils (charMap)
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
-
---import Comorphisms.GetPreludeLib (readLib)
-
-import System.IO.Unsafe
-
-import Static.GTheory
-
-import Logic.Prover
-import Logic.Coerce
 
 type IdMap = Map.Map Id Id
 type OpTransTuple = (CSign.OpMap, CSign.OpMap, Set.Set Component)
@@ -289,13 +279,7 @@ loadLibraries ss om = if natImported ss om then loadNaturalNatSens else []
 
 -- | loads the sentences associated to the natural numbers
 loadNaturalNatSens :: [Named CAS.CASLFORMULA]
-loadNaturalNatSens = []
-    --case unsafePerformIO $ readLib "Maude/MaudeNumbers.casl" of
-    --  G_theory lid _ _ _ thSens _ : _ -> do
-    --   let sens = toNamedList thSens
-    --    sens' <- coerceSens lid CASL "" sens
-    --    filter (not . ctorCons) sens'
-    --  _ -> error "Maude.loadNaturalNatSens"
+loadNaturalNatSens = [] -- retrieve code from Rev 17944 if needed again!
 
 -- | checks if a sentence is an constructor sentence
 ctorCons :: Named CAS.CASLFORMULA -> Bool
