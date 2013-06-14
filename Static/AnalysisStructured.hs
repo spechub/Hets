@@ -1058,17 +1058,15 @@ isStructured a = case analysis a of
 getSpecAnnos :: Range -> Annoted a -> Result (Conservativity, Bool)
 getSpecAnnos pos a = do
   let sannos = filter isSemanticAnno $ l_annos a
-      (sanno1, conflict, impliedA, impliesA) = case sannos of
+      (sanno1, conflict, impliesA) = case sannos of
         f@(Semantic_anno anno1 _) : r -> (case anno1 of
                 SA_cons -> Cons
                 SA_def -> Def
                 SA_mono -> Mono
                 _ -> None, any (/= f) r,
-                     anno1 == SA_implied, anno1 == SA_implies)
-        _ -> (None, False, False, False)
+                     anno1 == SA_implies || anno1 == SA_implied)
+        _ -> (None, False, False)
   when conflict $ plain_error () "Conflicting semantic annotations" pos
-  when impliedA $ plain_error ()
-    "Annotation %implied should come after a BASIC-ITEM" pos
   return (sanno1, impliesA)
 
 -- only consider addSyms for the first spec
