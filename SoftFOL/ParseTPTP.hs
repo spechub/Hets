@@ -17,11 +17,13 @@ module SoftFOL.ParseTPTP
   , singleQuoted
   , form
   , genList
+  , genTerm
   , GenTerm (..)
   , GenData (..)
   , AWord (..)
   , prTPTPs
   , tptpModel
+  , ppGenTerm
   ) where
 
 import Text.ParserCombinators.Parsec

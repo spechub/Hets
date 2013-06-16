@@ -27,7 +27,7 @@ import Logic.Prover
 import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
-import SoftFOL.EProver (proof, axiomsOf)
+import SoftFOL.EProver
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -47,13 +47,18 @@ import qualified Control.Concurrent as Concurrent
 
 import System.Directory
 import System.Process (waitForProcess, runInteractiveCommand,
-                       runProcess)
+                       runProcess, terminateProcess)
 import System.IO (hGetContents, openFile, hClose, IOMode (WriteMode))
-import System.Posix (getFileStatus, fileSize)
+
+import Control.Exception (catch)
+import Control.Exception.Base (AsyncException(ThreadKilled))
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
 import Proofs.BatchProcessing
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- * Prover implementation
 
@@ -209,7 +214,7 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
               EDarwin -> darOpt ++ fdConsOpt ++ eqOpt ++ tOut
             bin = darwinExe b
         prob <- showTPTPProblemM thName proverStateI []
-        (exitCode, out, tUsed, _) <-
+        (exitCode, out, tUsed) <-
           runDarwinProcess bin False extraOptions thName prob
         let outState = CCStatus
                { ccResult = Just True
@@ -227,13 +232,13 @@ runDarwinProcess
   -> String -- ^ options
   -> String -- ^ filename without extension
   -> String -- ^ problem
-  -> IO (String, [String], Int, Bool)
+  -> IO (String, [String], Int)
 runDarwinProcess bin saveTPTP options tmpFileName prob = do
   let tmpFile = basename tmpFileName ++ ".tptp"
   when saveTPTP (writeFile tmpFile prob)
   noProg <- missingExecutableInPath bin
   if noProg then
-    return (bin ++ " not found. Check your $PATH", [], -1, True)
+    return (bin ++ " not found. Check your $PATH", [], -1)
     else do
     timeTmpFile <- getTempFile prob tmpFile
     (_, pout, perr) <-
@@ -241,47 +246,90 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
     let l = lines $ pout ++ perr
         (res, _, tUsed) = parseOutput l
     removeFile timeTmpFile
-    return (res, l, tUsed, True)
+    return (res, l, tUsed)
+
+mkGraph :: String -> IO ()
+mkGraph f = do
+ (_,cat,_) <- executeProcess "cat" [f] ""
+ (_,tac,_) <- executeProcess "tac" [f] ""
+ let ((p_set,(cs,axs)),res) =
+      processProof (zipF proofInfo $ zipF conjectures axioms)
+       (Set.empty,([],[])) $ lines tac
+     (aliases,_) = processProof alias Map.empty $ lines cat
+     same_rank = intercalate "; " $ map (\(_,n) -> "v"++n) $
+                 filter (\(_,n) -> Set.member n p_set
+                                && Map.lookup n aliases == Nothing) $ cs ++ axs
+ case res of
+  Just s -> putStrLn s
+  _ -> return ()
+ writeFile "/tmp/graph.dot" $ unlines ["digraph {",
+  "subgraph { rank = same; "++same_rank++" }",
+  (\(_,_,d,_) -> d) . fst $ processProof (digraph p_set aliases)
+   (Set.empty,Set.empty,"",Map.empty) $ lines cat, "}"]
 
 runEProverBuffered
   :: Bool -- ^ save problem
+  -> Bool
+  -> Bool
   -> String -- ^ options
   -> String -- ^ filename without extension
   -> String -- ^ problem
-  -> IO (String, [String], Int, Bool)
-runEProverBuffered saveTPTP options tmpFileName prob = do
+  -> IO (String, [String], Int)
+runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
   let tmpFile = basename tmpFileName ++ ".tptp"
-      bin = "eproof"
+  s <- supportsProofObject
   when saveTPTP (writeFile tmpFile prob)
-  noProg <- missingExecutableInPath bin
-  if noProg then
-    return (bin ++ " not found. Check your $PATH", [], -1, True)
+  if s && not fullgraph then do
+   let bin = "eprover"
+   noProg <- missingExecutableInPath bin
+   if noProg then
+    return (bin ++ " not found. Check your $PATH", [], -1)
     else do
-    timeTmpFile <- getTempFile prob tmpFile
-    bufferFile <- getTempFile "" "eprover-proof-buffer"
-    buff <- openFile bufferFile WriteMode
-    h <- runProcess bin (words options ++ [timeTmpFile])
-          Nothing Nothing Nothing (Just buff) (Just buff)
-    waitForProcess h
-    buffSize <- fileSize `fmap` getFileStatus bufferFile
-    hClose buff
-    (err, out, fullProof) <- if buffSize < 1048576 -- 1 MB
-          then do
-           (_, out, err, _) <-
-            runInteractiveCommand $ unwords ["tac", bufferFile, "&&",
-                                      "rm", "-f", bufferFile]
-           return (err, out, True)
-          else do
-           (_, out, err, _) <- runInteractiveCommand $
-                              unwords ["grep", "-e", "axiom", "-e", "SZS",
-                                bufferFile, "&&", "rm", "-f", bufferFile]
-           return (err, out, False)
-    perr <- hGetContents err
-    pout <- hGetContents out
-    let l = lines $ perr ++ pout
-        (res, _, tUsed) = parseOutput l
-    removeFile timeTmpFile
-    return (res, l, tUsed, fullProof)
+     timeTmpFile <- getTempFile prob tmpFile
+     (_, out, err, _) <- if graph then do
+           bufferFile <- getTempFile "" "eprover-proof-buffer"
+           buff <- openFile bufferFile WriteMode
+           h <- runProcess bin (words options ++ ["--proof-object",timeTmpFile])
+                 Nothing Nothing Nothing (Just buff) (Just buff)
+           (waitForProcess h >> removeFile timeTmpFile)
+            `catch` (\ThreadKilled -> terminateProcess h)
+           hClose buff
+           mkGraph bufferFile
+           runInteractiveCommand $ unwords ["grep", "-e", "axiom", "-e", "SZS",
+            bufferFile, "&&", "rm", "-f", bufferFile]
+      else runInteractiveCommand $ unwords
+           [bin, "--proof-object", options, timeTmpFile,
+            "|", "grep", "-e", "axiom", "-e", "SZS",
+             "&&", "rm", timeTmpFile]
+     perr <- hGetContents err
+     pout <- hGetContents out
+     let l = lines $ perr ++ pout
+         (res, _, tUsed) = parseOutput l
+     return (res, l, tUsed)
+  else do
+   let bin = "eproof"
+   noProg <- missingExecutableInPath bin
+   if noProg then
+    return (bin ++ " not found. Check your $PATH", [], -1)
+    else do
+     timeTmpFile <- getTempFile prob tmpFile
+     bufferFile <- getTempFile "" "eprover-proof-buffer"
+     buff <- openFile bufferFile WriteMode
+     h <- runProcess bin (words options ++ [timeTmpFile])
+           Nothing Nothing Nothing (Just buff) (Just buff)
+     (waitForProcess h >> return ())
+      `catch` (\ThreadKilled -> terminateProcess h)
+     hClose buff
+     when (fullgraph || graph) (mkGraph bufferFile)
+     (_, out, err, _) <- runInteractiveCommand $
+                           unwords ["grep", "-e", "axiom", "-e", "SZS",
+                            bufferFile, "&&", "rm", "-f", bufferFile]
+     perr <- hGetContents err
+     pout <- hGetContents out
+     let l = lines $ perr ++ pout
+         (res, _, tUsed) = parseOutput l
+     removeFile timeTmpFile
+     return (res, l, tUsed)
 
 runDarwin
   :: ProverBinary
@@ -296,7 +344,11 @@ runDarwin
      -- ^ (retval, configuration with proof status and complete output)
 runDarwin b sps cfg saveTPTP thName nGoal = do
     let bin = darwinExe b
-        options = extraOpts cfg
+        (options,graph,fullgraph) = case b of
+          EProver -> let w = extraOpts cfg
+                     in ((filter (not . (\e -> elem e ["--graph","--full-graph"])) w),
+                         any ((==)"--graph") w, any ((==)"--full-graph") w)
+          _       -> (extraOpts cfg, False, False)
         tl = maybe "10" show $ timeLimit cfg
         tOut = toOpt ++ tl
         extraOptions = unwords $ case b of
@@ -309,16 +361,17 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showTPTPProblem thName sps nGoal
       $ options ++ ["Requested prover: " ++ bin]
-    (exitCode, out, tUsed, fullProof) <- case b of
-      EProver -> runEProverBuffered saveTPTP extraOptions tmpFileName prob
+    (exitCode, out, tUsed) <- case b of
+      EProver -> runEProverBuffered saveTPTP graph fullgraph extraOptions tmpFileName prob
       _ -> runDarwinProcess bin saveTPTP extraOptions tmpFileName prob
     axs <- case b of
             EProver | (szsProved exitCode ||
-                       szsDisproved exitCode)-> case proof fullProof out of
-             Right p -> return $ axiomsOf p
-             Left e -> do
-                         putStrLn e
-                         return $ getAxioms sps
+                       szsDisproved exitCode)->
+                         case processProof axioms [] out of
+                          (l,Nothing)  -> return $ map fst l
+                          (_,Just err) -> do
+                                            putStrLn err
+                                            return $ getAxioms sps
             _ -> return $ getAxioms sps
     let ctime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
         (err, retval) = case () of
