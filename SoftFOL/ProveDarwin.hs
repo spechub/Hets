@@ -50,7 +50,7 @@ import System.Process (waitForProcess, runInteractiveCommand,
                        runProcess, terminateProcess)
 import System.IO (hGetContents, openFile, hClose, IOMode (WriteMode))
 
-import Control.Exception (catch)
+import Control.Exception as Exception
 import Control.Exception.Base (AsyncException(ThreadKilled))
 
 import GUI.GenericATP
@@ -292,7 +292,7 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
            h <- runProcess bin (words options ++ ["--proof-object",timeTmpFile])
                  Nothing Nothing Nothing (Just buff) (Just buff)
            (waitForProcess h >> removeFile timeTmpFile)
-            `catch` (\ThreadKilled -> terminateProcess h)
+            `Exception.catch` (\ThreadKilled -> terminateProcess h)
            hClose buff
            mkGraph bufferFile
            runInteractiveCommand $ unwords ["grep", "-e", "axiom", "-e", "SZS",
@@ -318,7 +318,7 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
      h <- runProcess bin (words options ++ [timeTmpFile])
            Nothing Nothing Nothing (Just buff) (Just buff)
      (waitForProcess h >> return ())
-      `catch` (\ThreadKilled -> terminateProcess h)
+      `Exception.catch` (\ThreadKilled -> terminateProcess h)
      hClose buff
      when (fullgraph || graph) (mkGraph bufferFile)
      (_, out, err, _) <- runInteractiveCommand $
