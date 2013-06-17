@@ -78,6 +78,7 @@ import System.FilePath
 import LF.Twelf2DG
 import Framework.Analysis
 
+import MMT.Hets2mmt
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -154,14 +155,14 @@ anaSource mln lg opts topLns libenv initDG fname =
               _ -> mln
         putIfVerbose opts 2 $ "Reading file " ++ file
         if takeExtension file /= ('.' : show TwelfIn)
-           then runResultT $
-                   anaString nLn lgraph opts topLns libenv initDG input file
-           else do
-             res <- anaTwelfFile opts file
-             case res of
-                  Nothing -> fail $ "failed to analyse file " ++ file
-                  Just (lname, lenv) -> return $ Result [] $
-                      Just (lname, Map.union lenv libenv)
+                 then runResultT $
+                      anaString nLn lgraph opts topLns libenv initDG input file
+                  else do
+                      res <- anaTwelfFile opts file
+                      case res of
+                        Nothing -> fail $ "failed to analyse file " ++ file
+                        Just (lname, lenv) -> return $ Result [] $
+                          Just (lname, Map.union lenv libenv)
 
 {- | parsing and static analysis for string (=contents of file)
 Parameters: logic graph, default logic, contents of file, filename -}
@@ -223,7 +224,11 @@ anaLibFile lgraph opts topLns libenv initDG ln =
     Just _ -> do
         analyzing opts $ "from " ++ lnstr
         return (ln, libenv)
-    Nothing -> do
+    Nothing -> if runMMT opts
+          then
+            ResultT $ mmtRes lnstr
+          else
+            do
             putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
             res <- anaLibFileOrGetEnv lgraph
               (if recurse opts then opts else opts
