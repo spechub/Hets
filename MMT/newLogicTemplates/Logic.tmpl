@@ -37,15 +37,15 @@ instance (Ord Morphism.Morphism) where
 
 instance (Eq Morphism.Morphism) where
 
-instance (Ord AS.Form) where
+instance (Ord AS.<Form>) where
 
-instance (Eq AS.Form) where
+instance (Eq AS.<Form>) where
 
 instance (Ord AS.Symb) where
 
 instance (Eq AS.Symb) where
 
-instance (Common.Id.GetRange AS.Form) where
+instance (Common.Id.GetRange AS.<Form>) where
 
 instance (Common.Id.GetRange AS.Symb) where
 
@@ -76,11 +76,11 @@ instance (AT.ShATermConvertible Morphism.Morphism) where
 instance (DU.Pretty Morphism.Morphism) where
     pretty = DU.pretty
 
-instance (AT.ShATermConvertible AS.Form) where
+instance (AT.ShATermConvertible AS.<Form>) where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
 
-instance (DU.Pretty AS.Form) where
+instance (DU.Pretty AS.<Form>) where
     pretty = DU.pretty
 
 instance (AT.ShATermConvertible AS.Symb) where
@@ -92,7 +92,7 @@ instance (DU.Pretty AS.Symb) where
 
 instance (Show Morphism.Morphism) where
 
-instance (Show AS.Form) where
+instance (Show AS.<Form>) where
 
 instance (Show AS.Symb) where
 
@@ -102,7 +102,7 @@ instance (Tp.Typeable Sign.Sigs) where
 instance (Tp.Typeable Morphism.Morphism) where
     typeOf = Tp.typeOf
 
-instance (Tp.Typeable AS.Form) where
+instance (Tp.Typeable AS.<Form>) where
     typeOf = Tp.typeOf
 
 instance (Tp.Typeable AS.Symb) where
@@ -130,7 +130,7 @@ instance (Tp.Typeable AS.Basic_spec) where
 -- static analysis should in fact be performed by MMT
 instance StaticAnalysis <LogicName>
             AS.Basic_spec -- datatype for syntax trees - Generic.Tree?
-            AS.Form
+            AS.<Form>
             ()
             ()
             Sign.Sigs
@@ -142,6 +142,7 @@ instance StaticAnalysis <LogicName>
 
 instance Syntax <LogicName> 
                 AS.Basic_spec -- parse_basic_spec produces a syntax tree
+                AS.Symb
                 ()
                 ()
                     where
@@ -156,7 +157,7 @@ instance Category Sign.Sigs Morphism.Morphism where
     cod = Morphism.target
 
 instance Sentences <LogicName>
-    AS.Form
+    AS.<Form>
     Sign.Sigs
     Morphism.Morphism
     AS.Symb
@@ -165,10 +166,10 @@ instance Sentences <LogicName>
 
 -- Logic instance, see Logic/Logic.hs:867
 instance Logic <LogicName>
-    ()	--  SL.Sublogic -- sublogic
+    () --  SL.Sublogic -- sublogic
     AS.Basic_spec -- basic_spec
-    AS.Form 
-    ()  -- symb_items
+    AS.<Form> 
+    () -- symb_items
     () -- symb_map_items
     Sign.Sigs -- sign
     Morphism.Morphism  -- sentence

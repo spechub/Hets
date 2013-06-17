@@ -3,7 +3,8 @@
     A wrapper/interface for MMT
 -}
 module MMT.Hets2mmt (
-    mmtRes
+    mmtRes,
+    callSpec
     )
     where
 
@@ -13,9 +14,13 @@ import Common.Result
 import Common.Id
 import Static.DevGraph
 import Common.LibName
-import Framework.Analysis(addLogic2LogicList)
+import Framework.Analysis (addLogic2LogicList)
 import System.FilePath
 import Common.Utils
+import MMT.XMLtoPT
+
+import System.IO.Unsafe
+import Text.ParserCombinators.Parsec
 
 jar :: String
 jar = "hets-mmt-standalone.jar"
@@ -33,6 +38,25 @@ calljar fileName = do
                            fileName])
               { std_out = CreatePipe }
   cont <- hGetContents hout
+  case maybeErr of
+    (Just hErr) -> do
+            err <- hGetContents hErr
+            putStr err
+            return (cont, Just err)
+    Nothing -> return (cont, Nothing)
+
+callSpec :: FilePath -> IO (String, Maybe String)
+callSpec fileName = do
+  putStr "creating process\n"
+  (_, Just hout, maybeErr, _) <- createProcess (
+              proc "java" ["-cp",
+                           jar,
+                           staloneclass,
+                           "-readSpec",
+                           fileName])
+              { std_out = CreatePipe }
+  cont <- hGetContents hout
+  putStr cont
   case maybeErr of
     (Just hErr) -> do
             err <- hGetContents hErr

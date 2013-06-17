@@ -16,32 +16,25 @@ import Data.Maybe
 import Text.XML.Light
 import Common.Id
 import Common.Result
-{-
-file :: String
-file = Test1.file
-
-contents :: String -> IO String
-contents fname = readFile fname
--}
 
 readPT :: String -> IO [Content]
 readPT fname = liftM parseXML (readFile fname)
-{-
--- just for testing
-testPrint :: IO ()
-testPrint = do
-    tree <- readPT file
-    print (map parseDeclR (onlyElems tree))
--}
+
 parse :: String -> IO [Result Decl]
 parse fname = do
+    putStr $ "reading file " ++ fname ++ "\n"
     tree <- readPT fname
+ -- putStr $ "reading XML tree: \n" ++ (show tree) ++ "\n\n"
     return (map parseDeclR (onlyElems tree))
 
 -- get attribute value by key (string)
 getAttByName :: String -> Element -> String
 getAttByName x e = fromJust
         (findAttr QName {qName = x, qURI = Nothing, qPrefix = Nothing} e)
+
+getAttByNameMaybe :: String -> Element -> Maybe String
+getAttByNameMaybe x e =
+        findAttr QName {qName = x, qURI = Nothing, qPrefix = Nothing} e
 
 getAttByNameR :: String -> Element -> Result String
 getAttByNameR x e = let
@@ -53,8 +46,9 @@ getAttByNameR x e = let
             Just str -> Result [] (Just str)
             Nothing -> Result [] Nothing
 
--- TODO: a shorthand func that deals specifically with application case
--- getSymbName :: Element -> (String,Maybe(String,String))
+{- TODO: a shorthand func that deals specifically with application case
+   getSymbName :: Element -> (String,Maybe(String,String))
+-}
 
 {-
 getElName :: Element -> String
@@ -87,20 +81,21 @@ parseNTreeR "var" e = Result [] (Just (Variable (getAttByName "name" e)))
 parseNTreeR "app" e = let
                     args = elChildren e
                     body = mapM parseTreeR args
+                    pname = getAttByNameMaybe "pattern" e
+                    iname = getAttByNameMaybe "instance" e
+                    ref = case (pname, iname) of
+                                (Just pn, Just inn) -> Just (pn, inn)
+                                _ -> Nothing
                     in
                     case maybeResult body of
                     (Just r) ->
                         Result [] (Just
                             (Application
-                                Nothing
                                 (getAttByName "name" e)
+                                 ref
                                  r ))
                     Nothing -> Result (diags body) Nothing
-{-
- do let args = elChildren e
- a <- mapM parseTree args
- return (Application (getAttByName "name" e) a)
--}
+
 parseNTreeR "bind" e = let
                      binder = (getAttByName "binder" e)
                      var = (getAttByName "var" e)
@@ -129,3 +124,8 @@ parseNTreeR str _ = let
                    diag = Diag Error msg nullRange
                    in
                     Result [diag] Nothing
+{-
+TODO
+parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
+parse_basic_spec st = Nothing
+-}
