@@ -4,6 +4,7 @@ import PLpatt.Sign
 import PLpatt.AS_BASIC_PLpatt
 import qualified MMT.Tools as Generic
 import Data.Maybe
+import Debug.Trace
 
 bool_from_pt :: (Generic.Tree) -> Maybe(Bool')
 bool_from_pt x = case x of
@@ -40,15 +41,15 @@ bool_from_pt x = case x of
 
 decl_from_pt :: (Generic.Decl) -> Maybe(Decl)
 decl_from_pt d = case d of
-    (Generic.Decl i p args ) -> if (p == "axiom")
+    (Generic.Decl i p args ) -> if (i == "axiom")
     then if (length(args) == 1)
-      then (Just((Axiom_decl (Axiom i (fromJust (bool_from_pt (args !! 0) ) ) ) )))
-      else Nothing
-    else if (p == "prop")
+      then trace (show args) (Just((Axiom_decl (Axiom p (fromJust (bool_from_pt (args !! 0) ) ) ) )))
+      else trace "branch axiom" Nothing
+    else if (i == "prop")
       then if (length(args) == 0)
-        then (Just((Prop_decl (Prop i ) )))
-        else Nothing
-      else Nothing
+        then (Just((Prop_decl (Prop p ) )))
+        else trace "branch args != 0" Nothing
+      else trace ("branc prop" ++ show d) Nothing
   
 
 sign_from_pt :: (Generic.Sign) -> Sigs

@@ -21,6 +21,11 @@ import qualified ATerm.Conversion as AT
 import qualified Data.Typeable.Internal as Tp
 import Common.Result
 import Data.Monoid
+
+import qualified PLpatt.Parse_PLpatt as PLparse
+import PLpatt.StaticAnaPLpatt
+
+import Debug.Trace
     
 -- Logic ID     lid
 data PLpatt = PLpatt deriving Show
@@ -37,15 +42,15 @@ instance (Ord Morphism.Morphism) where
 
 instance (Eq Morphism.Morphism) where
 
-instance (Ord AS.Form) where
+instance (Ord AS.Bool') where
 
-instance (Eq AS.Form) where
+instance (Eq AS.Bool') where
 
 instance (Ord AS.Symb) where
 
 instance (Eq AS.Symb) where
 
-instance (Common.Id.GetRange AS.Form) where
+instance (Common.Id.GetRange AS.Bool') where
 
 instance (Common.Id.GetRange AS.Symb) where
 
@@ -76,11 +81,11 @@ instance (AT.ShATermConvertible Morphism.Morphism) where
 instance (DU.Pretty Morphism.Morphism) where
     pretty = DU.pretty
 
-instance (AT.ShATermConvertible AS.Form) where
+instance (AT.ShATermConvertible AS.Bool') where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
 
-instance (DU.Pretty AS.Form) where
+instance (DU.Pretty AS.Bool') where
     pretty = DU.pretty
 
 instance (AT.ShATermConvertible AS.Symb) where
@@ -92,7 +97,7 @@ instance (DU.Pretty AS.Symb) where
 
 instance (Show Morphism.Morphism) where
 
-instance (Show AS.Form) where
+--instance (Show AS.Bool') where
 
 instance (Show AS.Symb) where
 
@@ -102,7 +107,7 @@ instance (Tp.Typeable Sign.Sigs) where
 instance (Tp.Typeable Morphism.Morphism) where
     typeOf = Tp.typeOf
 
-instance (Tp.Typeable AS.Form) where
+instance (Tp.Typeable AS.Bool') where
     typeOf = Tp.typeOf
 
 instance (Tp.Typeable AS.Symb) where
@@ -118,7 +123,7 @@ instance (Data.Monoid.Monoid AS.Basic_spec) where
     mempty = AS.Basic_spec []
     mappend (AS.Basic_spec bs1) (AS.Basic_spec bs2) = AS.Basic_spec $ bs1 ++ bs2
 
-instance (Show AS.Basic_spec) where
+--instance (Show AS.Basic_spec) where
 
 instance (AT.ShATermConvertible AS.Basic_spec) where
     toShATermAux = AT.toShATermAux
@@ -130,7 +135,7 @@ instance (Tp.Typeable AS.Basic_spec) where
 -- static analysis should in fact be performed by MMT
 instance StaticAnalysis PLpatt
             AS.Basic_spec -- datatype for syntax trees - Generic.Tree?
-            AS.Form
+            AS.Bool'
             ()
             ()
             Sign.Sigs
@@ -139,14 +144,15 @@ instance StaticAnalysis PLpatt
             AS.Symb
                 where
             empty_signature PLpatt = Sign.Sigs []
+            basic_analysis PLpatt = Just basicAna
 
 instance Syntax PLpatt 
                 AS.Basic_spec -- parse_basic_spec produces a syntax tree
+                AS.Symb
                 ()
                 ()
                     where
--- parse_basic_spec lid = Just (\pm -> parser) -- Text.CombinatorParses.Parsec
--- basic_analysis lid = Just (\ ..  )
+  parse_basic_spec _ = Just (\ _ -> PLparse.parse1)
 
 -- instance of category
 instance Category Sign.Sigs Morphism.Morphism where
@@ -156,19 +162,17 @@ instance Category Sign.Sigs Morphism.Morphism where
     cod = Morphism.target
 
 instance Sentences PLpatt
-    AS.Form
+    AS.Bool'
     Sign.Sigs
     Morphism.Morphism
     AS.Symb
     where
--- TODO
 
--- Logic instance, see Logic/Logic.hs:867
 instance Logic PLpatt
-    ()	--  SL.Sublogic -- sublogic
+    () --  SL.Sublogic -- sublogic
     AS.Basic_spec -- basic_spec
-    AS.Form 
-    ()  -- symb_items
+    AS.Bool' 
+    () -- symb_items
     () -- symb_map_items
     Sign.Sigs -- sign
     Morphism.Morphism  -- sentence
