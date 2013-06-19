@@ -58,6 +58,8 @@ import Common.ExtSign
 import Common.Utils
 import Common.GraphAlgo (yen)
 
+import Unsafe.Coerce (unsafeCoerce)
+
 import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
@@ -393,6 +395,11 @@ unsafeCompComorphism c1 c2 = case compComorphism c1 c2 of
  Result _ (Just c_new) -> c_new
  r -> propagateErrors "Proofs.AbstractState.unsafeCompComorphism" r
 
+isSubElemG :: G_sublogics -> G_sublogics -> Bool
+isSubElemG (G_sublogics lid sl) (G_sublogics lid1 sl1) =
+ Logic lid == Logic lid1 &&
+ isSubElem sl (Unsafe.Coerce.unsafeCoerce sl1)
+
 getAllProvers :: ProverKind -> G_sublogics -> LogicGraph
  -> [(G_prover, AnyComorphism)]
 getAllProvers pk start lg =
@@ -400,7 +407,7 @@ getAllProvers pk start lg =
       g  = logicGraph2Graph lg
   in concat $ map (mkComorphism kp) $
       concat $ map (\end ->
-       yen 10 (start, Nothing) (\(l,_) -> l == end) g)
+       yen 10 (start, Nothing) (\(l,_) -> isSubElemG l end) g)
        (Map.keys kp)
  where
   mkComorphism :: Map.Map G_sublogics [t2]
@@ -413,8 +420,8 @@ getAllProvers pk start lg =
                                  foldl unsafeCompComorphism
                                   (Comorphism $ mkIdComorphism lid1 sub1)
                                   (c:(snd $ unzip $ cs))
-   in case Map.lookup end kp of
-        Just ps -> map (\p -> (p,fullComorphism)) ps
+   in case Map.toList $ Map.filterWithKey (\l _ -> isSubElemG end l) kp of
+        [(_,ps)] -> map (\p -> (p,fullComorphism)) ps
         _ -> error "error1"
 
 {- | the list of proof statuses is integrated into the goalMap of the state
