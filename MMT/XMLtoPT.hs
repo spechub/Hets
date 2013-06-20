@@ -1,8 +1,11 @@
 {- |
 Module      :  $Header$
 Description :  parsing functions from XML to parse tree
-
+Copyright   :  
+License     :  
 Maintainer  :  a.jakubauskas@jacobs-university.de
+Stability   :  experimental
+Portability :  
 
 Parsing functions from XML to parse tree
 -}

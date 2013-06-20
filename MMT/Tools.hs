@@ -1,32 +1,44 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+{- |
+Module      :  $Header$
+Description :  parse tree produced by MMT
+Copyright   :  
+License     :  
+Maintainer  :  a.jakubauskas@jacobs-university.de
+Stability   :  experimental
+Portability :  
+-}
 module MMT.Tools where
+import Data.Typeable
 
--- identifier
+-- | identifier is just a string
 type Id = String
 
-{- tree:
-variables
+{- | 
+tree:
+  variables
 
-func. application
-   Maybe( patternName, instanceName)
-   name
-   arguments
-OR
-symbol (0 args)
+  func. application
+    Maybe( patternName, instanceName)
+    name
+    arguments
+  OR
+  symbol (0 args)
 
-binding
+  binding
 
-typed binding
+  typed binding
 -}
 data Tree = Variable Id |
     Application Id (Maybe(Id, Id)) [Tree] |
     Bind Id Id Tree |
-    Tbind Id Id Tree Tree deriving (Show)
+    Tbind Id Id Tree Tree deriving (Show, Typeable)
 
 -- declaration - represents instance of pattern
-data Decl = Decl Id Id [Tree] deriving (Show)
+data Decl = Decl Id Id [Tree] deriving (Show, Typeable)
 
 -- signature
-data Sign = Sign [Decl] deriving (Show)
+data Sign = Sign [Decl] deriving (Show, Typeable)
 
 -- theory
-data Theo = Theo{sign::Sign, axioms::[Tree]} deriving (Show)
+data Theo = Theo{sign::Sign, axioms::[Tree]} deriving (Show, Typeable)
