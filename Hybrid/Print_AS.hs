@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Renato Neves 
+Copyright   :  (c) Renato Neves
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  nevrenato@gmail.com
@@ -26,7 +26,6 @@ import Hybrid.AS_Hybrid
 import Hybrid.HybridSign
 import Hybrid.Keywords
 import qualified Data.Map as Map
-
 
 
 printFormulaOfHybridSign :: FormExtension f => (FORMULA f -> FORMULA f)
@@ -68,19 +67,20 @@ instance Pretty H_FORMULA where
     pretty (At n f _) =
         let sp = (<>)
             td = pretty n
-        in sep $ (prettyAt `sp` td) : [condParensInnerF printFormula parens f]   
+        in sep $ (prettyAt `sp` td) : [condParensInnerF printFormula parens f]
     pretty (Univ n f _) =
         let sp = (<+>)
             td = pretty n
-        in sep $ (prettyUniv `sp` td) : [condParensInnerF printFormula parens f]  
+        in sep $ (prettyUniv `sp` td) : [condParensInnerF printFormula parens f]
     pretty (Exist n f _) =
         let sp = (<+>)
             td = pretty n
-        in sep $ (prettyExist `sp` td) : [condParensInnerF printFormula parens f]  
-    pretty (Here n _) = 
+        in sep $ (prettyExist `sp` td) :
+                  [condParensInnerF printFormula parens f]
+    pretty (Here n _) =
         let sp = (<+>)
             td = pretty n
-        in sep $ (prettyHere `sp` td) : []
+        in sep [prettyHere `sp` td]
 
 instance FormExtension H_FORMULA where
   isQuantifierLike _ = False
@@ -92,7 +92,7 @@ instance Pretty MODALITY where
     pretty (Term_mod t) = pretty t
 
 instance Pretty NOMINAL where
-    pretty (Simple_nom i) = 
+    pretty (Simple_nom i) =
         if tokStr i == emptyS then empty
            else pretty i
 
@@ -102,9 +102,10 @@ instance Pretty HybridSign where
 printHybridSign :: (FORMULA H_FORMULA -> FORMULA H_FORMULA) -> HybridSign -> Doc
 printHybridSign sim s =
     let ms = modies s
-        tms = termModies s 
+        tms = termModies s
         ns = nomies s in
-    printSetMap (keyword rigidS <+> keyword opS) empty (MapSet.toMap $ rigidOps s)
+    printSetMap (keyword rigidS <+> keyword opS) empty
+                (MapSet.toMap $ rigidOps s)
     $+$ printSetMap (keyword rigidS <+> keyword predS) space
         (MapSet.toMap $ rigidPreds s)
     $+$ (if Map.null ms then empty else
@@ -124,11 +125,11 @@ condParensInnerF :: Pretty f => (FORMULA f -> Doc)
                     -> FORMULA f -> Doc
 condParensInnerF pf parens_fun f =
     case f of
-    Quantification _ _ _ _ -> f'
-    Atom _ _ -> f'
-    Predication _ _ _ -> f'
-    Definedness _ _ -> f'
-    Membership _ _ _ -> f'
+    Quantification {} -> f'
+    Atom {} -> f'
+    Predication {} -> f'
+    Definedness {} -> f'
+    Membership {} -> f'
     ExtFORMULA _ -> f'
     _ -> parens_fun f'
     where f' = pf f

@@ -42,7 +42,7 @@ instance TermExtension H_FORMULA where
         freeVarsOfExt sign (At _ f _ ) = freeVars sign f
         freeVarsOfExt sign (Univ _ f _) = freeVars sign f
         freeVarsOfExt sign (Exist _ f _) = freeVars sign f
-        freeVarsOfExt _ (Here _ _ ) = Set.empty 
+        freeVarsOfExt _ (Here _ _ ) = Set.empty
 
 basicHybridAnalysis
   :: (BASIC_SPEC H_BASIC_ITEM H_SIG_ITEM H_FORMULA,
@@ -50,7 +50,7 @@ basicHybridAnalysis
   -> Result (BASIC_SPEC H_BASIC_ITEM H_SIG_ITEM H_FORMULA,
              ExtSign (Sign H_FORMULA HybridSign) Symbol,
              [Named (FORMULA H_FORMULA)])
-basicHybridAnalysis = 
+basicHybridAnalysis =
        basicAnalysis minExpForm ana_H_BASIC_ITEM ana_H_SIG_ITEM ana_Mix
 
 ana_Mix :: Mix H_BASIC_ITEM H_SIG_ITEM H_FORMULA HybridSign
@@ -79,7 +79,7 @@ mapH_FORMULA (BoxOrDiamond b m f ps) =
 mapH_FORMULA (At n f ps) = At n (mapFormula mapH_FORMULA f) ps
 mapH_FORMULA (Univ n f ps) = Univ n (mapFormula mapH_FORMULA f) ps
 mapH_FORMULA (Exist n f ps) = Exist n (mapFormula mapH_FORMULA f) ps
-mapH_FORMULA (Here n ps) = (Here n ps)
+mapH_FORMULA (Here n ps) = Here n ps
 
 resolveMODALITY :: MixResolve MODALITY
 resolveMODALITY ga ids m = case m of
@@ -104,13 +104,13 @@ resolveH_FORMULA ga ids cf = case cf of
        return (Exist n nf ps)
    Here n ps -> return (Here n ps)
 
-minExpForm :: Min H_FORMULA HybridSign 
+minExpForm :: Min H_FORMULA HybridSign
 minExpForm s form =
     let minMod md ps = case md of
                   Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
                   Term_mod t -> let
                     r = do
-                      t2 <- oneExpTerm minExpForm s t 
+                      t2 <- oneExpTerm minExpForm s t
                       let srt = sortOfTerm t2
                           trm = Term_mod t2
                           supers = supersortsOf srt s
@@ -139,40 +139,40 @@ minExpForm s form =
                                 then return (Simple_nom n)
                                 else Result [mkDiag Error "unknown nominal" n]
                                             $ Just (Simple_nom n)
-        colNom (Simple_nom n) = if Map.member n (nomies $ extendedInfo s)
-                                then Result [mkDiag Error "collision on nominals" n]
-                                            $ Just (Simple_nom n)
-                                else if wPrefix n then  
-                                Result [mkDiag Error "\"world\" prefixes are reserved" n] Nothing                                                              
-                                else return (Simple_nom n)
+        colNom (Simple_nom n)
+         | Map.member n (nomies $ extendedInfo s) = Result
+            [mkDiag Error "collision on nominals" n] $ Just (Simple_nom n)
+         | wPrefix n = Result
+            [mkDiag Error "\"world\" prefixes are reserved" n] Nothing
+         | otherwise = return (Simple_nom n)
         addUniv (Simple_nom n) = addNomId [] n
         addExist (Simple_nom n ) = addNomId [] n
     in case form of
         BoxOrDiamond b m f ps ->
             do nm <- minMod m ps
-               nf <- minExpFORMULA minExpForm s f 
+               nf <- minExpFORMULA minExpForm s f
                return (BoxOrDiamond b nm nf ps)
         At n f ps ->
             do nn <- minNom n
-               nf <- minExpFORMULA minExpForm s f 
+               nf <- minExpFORMULA minExpForm s f
                return (At nn nf ps)
         Univ n f ps ->
             do nn <- colNom n
-               -- add the binder in the sign (for this formula only)
-               -- so it can be used a normal nominal
-               bs <- addUniv nn (extendedInfo s) 
-               nf <- minExpFORMULA minExpForm (s {extendedInfo = bs}) f 
-               return (Univ nn nf ps) 
+               {- add the binder in the sign (for this formula only)
+               so it can be used a normal nominal -}
+               bs <- addUniv nn (extendedInfo s)
+               nf <- minExpFORMULA minExpForm (s {extendedInfo = bs}) f
+               return (Univ nn nf ps)
         Exist n f ps ->
             do nn <- colNom n
-               -- add the binder in the sign (for this formula only)
-               -- so it can be used a normal nominal
-               bs <- addExist nn (extendedInfo s) 
-               nf <- minExpFORMULA minExpForm (s {extendedInfo = bs}) f 
+               {- add the binder in the sign (for this formula only)
+               so it can be used a normal nominal -}
+               bs <- addExist nn (extendedInfo s)
+               nf <- minExpFORMULA minExpForm (s {extendedInfo = bs}) f
                return (Exist nn nf ps)
 
         Here n ps ->
-            do nn <- minNom n 
+            do nn <- minNom n
                return (Here nn ps)
 
 ana_H_SIG_ITEM :: Ana H_SIG_ITEM H_BASIC_ITEM H_SIG_ITEM H_FORMULA HybridSign
@@ -211,40 +211,39 @@ addRigidPred ty i m = return
 
 ana_H_BASIC_ITEM
     :: Ana H_BASIC_ITEM H_BASIC_ITEM H_SIG_ITEM H_FORMULA HybridSign
-ana_H_BASIC_ITEM mix bi = case bi of
+ana_H_BASIC_ITEM mix bi =
+ let anaHlp fs = do
+      newFs <- mapAnM (ana_FORMULA mix) fs
+      resFs <- mapAnM (return . fst) newFs
+      anaFs <- mapAnM (return . snd) newFs
+      return (resFs, anaFs)
+ in case bi of
         Simple_mod_decl al fs ps -> do
             mapM_ ((updateExtInfo . preAddModId) . item) al
-            newFs <- mapAnM (ana_FORMULA mix) fs
-            resFs <- mapAnM (return . fst) newFs
-            anaFs <- mapAnM (return . snd) newFs
+            (resFs, anaFs) <- anaHlp fs
             mapM_ ((updateExtInfo . addModId anaFs) . item) al
             return $ Simple_mod_decl al resFs ps
         Term_mod_decl al fs ps -> do
             e <- get
             mapM_ ((updateExtInfo . preAddModSort e) . item) al
-            newFs <- mapAnM (ana_FORMULA mix) fs
-            resFs <- mapAnM (return . fst) newFs
-            anaFs <- mapAnM (return . snd) newFs
+            (resFs, anaFs) <- anaHlp fs
             mapM_ ((updateExtInfo . addModSort anaFs) . item) al
             return $ Term_mod_decl al resFs ps
         Simple_nom_decl ids fs ps -> do
            mapM_ ((updateExtInfo . preAddNomId) . item) ids
-           newFs <- mapAnM (ana_FORMULA mix) fs
-           resFs <- mapAnM (return . fst) newFs
-           anaFs <- mapAnM (return . snd) newFs
+           (resFs, anaFs) <- anaHlp fs
            mapM_ ((updateExtInfo . addNomId anaFs) . item) ids
            return $ Simple_nom_decl ids resFs ps
 
 preAddNomId :: SIMPLE_ID -> HybridSign -> Result HybridSign
-preAddNomId i hs = 
+preAddNomId i hs =
     let ns = nomies hs in
     if Map.member i ns then
         Result [mkDiag Hint "repeated nominal" i] $ Just hs
-        else if wPrefix i 
-                then 
-                Result [mkDiag Error "\"world\" prefixes are reserved" i] Nothing
-                else 
-                return hs { nomies = Map.insert i [] ns }
+        else if wPrefix i
+                then Result [mkDiag Error "\"world\" prefixes are reserved" i]
+                      Nothing
+                else return hs { nomies = Map.insert i [] ns }
 
 preAddModId :: SIMPLE_ID -> HybridSign -> Result HybridSign
 preAddModId i m =
@@ -254,7 +253,7 @@ preAddModId i m =
        else return m { modies = Map.insert i [] ms }
 
 addNomId :: [AnHybFORM] -> SIMPLE_ID -> HybridSign -> Result HybridSign
-addNomId frms i s = 
+addNomId frms i s =
         return s { nomies = Map.insertWith List.union i frms $ nomies s}
 
 addModId :: [AnHybFORM] -> SIMPLE_ID -> HybridSign -> Result HybridSign
@@ -299,7 +298,7 @@ getFormPredToks :: FORMULA H_FORMULA -> Set.Set Token
 getFormPredToks frm = case frm of
     Quantification _ _ f _ -> getFormPredToks f
     Junction _ fs _ -> Set.unions $ map getFormPredToks fs
-    Relation f1  _ f2 _ ->
+    Relation f1 _ f2 _ ->
         Set.union (getFormPredToks f1) $ getFormPredToks f2
     Negation f _ -> getFormPredToks f
     Mixfix_formula (Mixfix_token t) -> Set.singleton t
@@ -327,6 +326,5 @@ getTermPredToks trm = case trm of
     _ -> Set.empty
 
 
-
 wPrefix :: Token -> Bool
-wPrefix = (isPrefixOf "world").tokStr
+wPrefix = isPrefixOf "world" . tokStr

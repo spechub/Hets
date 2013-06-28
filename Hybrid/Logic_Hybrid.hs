@@ -27,11 +27,11 @@ import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.ToDoc
 import CASL.Logic_CASL ()
-import CASL.Formula (formula)
+
 data Hybrid = Hybrid deriving Show
 
 instance Language Hybrid where
- description _ = "Hybrid CASL\n" ++ 
+ description _ = "Hybrid CASL\n" ++
                  "Extends an abitrary logic with at/modal operators."
 
 
@@ -75,9 +75,10 @@ instance Sentences Hybrid HybridFORMULA HSign HybridMor Symbol where
 simHybrid :: Sign H_FORMULA HybridSign -> H_FORMULA -> H_FORMULA
 simHybrid sign (BoxOrDiamond b md form pos) =
         let mod' = case md of
-                Term_mod term -> Term_mod $ rmTypesT minExpForm simHybrid sign term
+                Term_mod term -> Term_mod $ rmTypesT minExpForm
+                                             simHybrid sign term
                 t -> t
-        in BoxOrDiamond b mod'  (simplifySen minExpForm simHybrid sign form) pos
+        in BoxOrDiamond b mod' (simplifySen minExpForm simHybrid sign form) pos
 simHybrid sign (At n f ps) =
         At n (simplifySen minExpForm simHybrid sign f) ps
 simHybrid sign (Univ n f ps) =
@@ -111,13 +112,14 @@ instance StaticAnalysis Hybrid H_BASIC_SPEC HybridFORMULA
                 cogenerated_sign Hybrid = cogeneratedSign emptyMorExt
                 generated_sign Hybrid = generatedSign emptyMorExt
                 induced_from_morphism Hybrid = inducedFromMorphism emptyMorExt
-                induced_from_to_morphism Hybrid = inducedFromToMorphism emptyMorExt isSubHybridSign diffHybridSign
+                induced_from_to_morphism Hybrid = inducedFromToMorphism
+                 emptyMorExt isSubHybridSign diffHybridSign
                 theory_to_taxonomy Hybrid = convTaxo
 
-instance Logic Hybrid ()        
+instance Logic Hybrid ()
         H_BASIC_SPEC HybridFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         HSign
         HybridMor
         Symbol RawSymbol () where
-                stability _ = Experimental         
-                empty_proof_tree _ = () 
+                stability _ = Experimental
+                empty_proof_tree _ = ()

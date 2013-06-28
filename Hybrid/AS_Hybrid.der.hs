@@ -41,12 +41,12 @@ data H_SIG_ITEM =
 data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM H_FORMULA)
              deriving (Eq, Ord, Show)
 
-data NOMINAL = Simple_nom SIMPLE_ID 
+data NOMINAL = Simple_nom SIMPLE_ID
         deriving (Eq, Ord, Show)
 
-data H_FORMULA =  At NOMINAL (FORMULA H_FORMULA) Range 
-                | BoxOrDiamond Bool MODALITY (FORMULA H_FORMULA) Range 
-                | Here NOMINAL Range 
+data H_FORMULA = At NOMINAL (FORMULA H_FORMULA) Range
+                | BoxOrDiamond Bool MODALITY (FORMULA H_FORMULA) Range
+                | Here NOMINAL Range
                 | Univ NOMINAL (FORMULA H_FORMULA) Range
-                | Exist NOMINAL (FORMULA H_FORMULA) Range 
+                | Exist NOMINAL (FORMULA H_FORMULA) Range
              deriving (Eq, Ord, Show)

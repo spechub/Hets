@@ -242,22 +242,22 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
 
 mkGraph :: String -> IO ()
 mkGraph f = do
- (_,cat,_) <- executeProcess "cat" [f] ""
- (_,tac,_) <- executeProcess "tac" [f] ""
- let ((p_set,(cs,axs)),res) =
+ (_, cat, _) <- executeProcess "cat" [f] ""
+ (_, tac, _) <- executeProcess "tac" [f] ""
+ let ((p_set, (cs, axs)), res) =
       processProof (zipF proofInfo $ zipF conjectures axioms)
-       (Set.empty,([],[])) $ lines tac
-     (aliases,_) = processProof alias Map.empty $ lines cat
-     same_rank = intercalate "; " $ map (\(_,n) -> "v"++n) $
-                 filter (\(_,n) -> Set.member n p_set
-                                && Map.lookup n aliases == Nothing) $ cs ++ axs
+       (Set.empty, ([], [])) $ lines tac
+     (aliases, _) = processProof alias Map.empty $ lines cat
+     same_rank = intercalate "; " $ map (\ (_, n) -> 'v' : n) $
+                 filter (\ (_, n) -> Set.member n p_set
+                                && isNothing (Map.lookup n aliases)) $ cs ++ axs
  case res of
   Just s -> putStrLn s
   _ -> return ()
  writeFile "/tmp/graph.dot" $ unlines ["digraph {",
-  "subgraph { rank = same; "++same_rank++" }",
-  (\(_,_,d,_) -> d) . fst $ processProof (digraph p_set aliases)
-   (Set.empty,Set.empty,"",Map.empty) $ lines cat, "}"]
+  "subgraph { rank = same; " ++ same_rank ++ " }",
+  (\ (_, _, d, _) -> d) . fst $ processProof (digraph p_set aliases)
+   (Set.empty, Set.empty, "", Map.empty) $ lines cat, "}"]
 
 runEProverBuffered
   :: Bool -- ^ save problem
@@ -277,7 +277,7 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
   when saveTPTP (writeFile tmpFile prob)
   if noProg then return (bin ++ " not found. Check your $PATH", [], -1)
   else do
-   (err,out) <- 
+   (err, out) <-
       do
        timeTmpFile <- getTempFile prob tmpFile
        (_, out, err, _) <-
@@ -285,20 +285,19 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
               bufferFile <- getTempFile "" "eprover-proof-buffer"
               buff <- openFile bufferFile WriteMode
               h <- runProcess bin (words options ++
-                    (if useProofObject then ["--proof-object"]
-                     else [])++[timeTmpFile])
+                    ["--proof-object" | useProofObject] ++ [timeTmpFile])
                     Nothing Nothing Nothing (Just buff) (Just buff)
               (waitForProcess h >> removeFile timeTmpFile)
-               `Exception.catch` (\ThreadKilled -> terminateProcess h)
+               `Exception.catch` (\ ThreadKilled -> terminateProcess h)
               hClose buff
               mkGraph bufferFile
-              runInteractiveCommand $ unwords ["grep", "-e", "axiom", "-e", "SZS",
-               bufferFile, "&&", "rm", "-f", bufferFile]
+              runInteractiveCommand $ unwords ["grep", "-e", "axiom",
+               "-e", "SZS", bufferFile, "&&", "rm", "-f", bufferFile]
         else runInteractiveCommand $ unwords
              [bin, "--proof-object", options, timeTmpFile,
               "|", "grep", "-e", "axiom", "-e", "SZS",
                "&&", "rm", timeTmpFile]
-       return (out,err)
+       return (out, err)
    perr <- hGetContents err
    pout <- hGetContents out
    let l = lines $ perr ++ pout
@@ -318,25 +317,27 @@ runDarwin
      -- ^ (retval, configuration with proof status and complete output)
 runDarwin b sps cfg saveTPTP thName nGoal = do
     let bin = darwinExe b
-        (options,graph,fullgraph) = case b of
-          EProver -> let w = extraOpts cfg
-                     in ((filter (not . (\e -> elem e ["--graph","--full-graph"])) w),
-                         any ((==)"--graph") w, any ((==)"--full-graph") w)
-          _       -> (extraOpts cfg, False, False)
+        (options, graph, fullgraph) = case b of
+          EProver ->
+           let w = extraOpts cfg
+           in (filter (not . (\ e -> elem e ["--graph", "--full-graph"])) w,
+               elem "--graph" w, elem "--full-graph" w)
+          _ -> (extraOpts cfg, False, False)
         tl = maybe "10" show $ timeLimit cfg
         extraOptions = extras b False tl
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showTPTPProblem thName sps nGoal
       $ options ++ ["Requested prover: " ++ bin]
     (exitCode, out, tUsed) <- case b of
-      EProver -> runEProverBuffered saveTPTP graph fullgraph extraOptions tmpFileName prob
+      EProver -> runEProverBuffered saveTPTP graph fullgraph
+                  extraOptions tmpFileName prob
       _ -> runDarwinProcess bin saveTPTP extraOptions tmpFileName prob
     axs <- case b of
-            EProver | (szsProved exitCode ||
-                       szsDisproved exitCode)->
+            EProver | szsProved exitCode ||
+                      szsDisproved exitCode ->
                          case processProof axioms [] out of
-                          (l,Nothing)  -> return $ map fst l
-                          (_,Just err) -> do
+                          (l, Nothing) -> return $ map fst l
+                          (_, Just err) -> do
                                             putStrLn err
                                             return $ getAxioms sps
             _ -> return $ getAxioms sps

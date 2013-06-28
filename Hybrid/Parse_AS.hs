@@ -25,11 +25,8 @@ import Hybrid.AS_Hybrid
 import Hybrid.Keywords
 import Text.ParserCombinators.Parsec
 
-import Data.List
-
-
 hybrid_reserved_words :: [String]
-hybrid_reserved_words = [ 
+hybrid_reserved_words = [
         diamondS,
         termS,
         rigidS,
@@ -43,12 +40,12 @@ hybridFormula :: AParser st H_FORMULA
 hybridFormula =
         do
         a <- asKey hereP
-        n <- nominal  
-        return (Here n $ toRange a [] a) 
+        n <- nominal
+        return (Here n $ toRange a [] a)
         <|>
-        do 
+        do
         a <- asKey asP
-        n <- nominal 
+        n <- nominal
         f <- primFormula hybrid_reserved_words
         return (At n f $ toRange a [] a)
         <|>
@@ -66,21 +63,21 @@ hybridFormula =
         <|>
         do
         o <- oBracketT
-        m <- modality [] 
+        m <- modality []
         c <- cBracketT
         f <- primFormula hybrid_reserved_words
         return (BoxOrDiamond True m f $ toRange o [] c)
         <|>
         do
-        o <- asKey lessS 
+        o <- asKey lessS
         m <- modality [greaterS] -- do not consume matching ">"!
         c <- asKey greaterS
         f <- primFormula hybrid_reserved_words
         return (BoxOrDiamond False m f $ toRange o [] c)
 
 nominal :: AParser st NOMINAL
-nominal =      
-        do 
+nominal =
+        do
         n <- simpleId
         return (Simple_nom n)
 
@@ -107,32 +104,26 @@ instance AParsable H_SIG_ITEM where
   aparser = rigidSigItems
 
 hKey :: AParser st Token
-hKey =  asKey modalityS <|> asKey modalitiesS  
+hKey = asKey modalityS <|> asKey modalitiesS
 
 hKey' :: AParser st Token
-hKey' = asKey nominalS <|> asKey nominalsS 
+hKey' = asKey nominalS <|> asKey nominalsS
 
 hBasic :: AParser st H_BASIC_ITEM
 hBasic =
-    do (as, fs, ps) <- hItem'' simpleId
+    do (as, fs, ps) <- hItem'' hKey simpleId
        return (Simple_mod_decl as fs ps)
     <|>
-    do (as, fs, ps) <- hItem''' simpleId
+    do (as, fs, ps) <- hItem'' hKey' simpleId
        return (Simple_nom_decl as fs ps)
 
-hItem'' :: AParser st a -> AParser st ([Annoted a], [AnHybFORM], Range)
-hItem'' pr = do
-        c <- hKey
-        (as,cs) <- separatedBy (annoParser pr) anSemiOrComma
+hItem'' :: AParser st Token -> AParser st a ->
+           AParser st ([Annoted a], [AnHybFORM], Range)
+hItem'' k pr = do
+        c <- k
+        (as, cs) <- separatedBy (annoParser pr) anSemiOrComma
         let ps = catRange $ c : cs
-        return (as,[],ps)
-
-hItem''' :: AParser st a -> AParser st ([Annoted a], [AnHybFORM], Range)
-hItem''' pr = do
-         c <- hKey'
-         (as,cs) <- separatedBy (annoParser pr) anSemiOrComma
-         let ps = catRange $ c : cs
-         return (as,[],ps)
+        return (as, [], ps)
 
 instance AParsable H_BASIC_ITEM where
   aparser = hBasic

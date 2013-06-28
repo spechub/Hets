@@ -2,11 +2,11 @@
 Module      :  $Header$
 Description :  String constants for HybridCASL keywords to be used for parsing
   and printing
-Copyright   :  (c) Renato Neves and Mondrian Project 2012 
+Copyright   :  (c) Renato Neves and Mondrian Project 2012
 
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  nevrenato@gmail.com 
+Maintainer  :  nevrenato@gmail.com
 Stability   :  experimental
 Portability :  portable
 
@@ -22,4 +22,3 @@ nominalS = "nominal"
 
 nominalsS :: String
 nominalsS = "nominals"
-

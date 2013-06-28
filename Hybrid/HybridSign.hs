@@ -25,18 +25,19 @@ data HybridSign = HybridSign
   , rigidPreds :: PredMap
   , modies :: Map.Map SIMPLE_ID [AnHybFORM]
   , nomies :: Map.Map SIMPLE_ID [AnHybFORM]
-  , termModies :: Map.Map Id [AnHybFORM] --SORT
+  , termModies :: Map.Map Id [AnHybFORM] -- SORT
   } deriving (Show, Eq, Ord)
 
 emptyHybridSign :: HybridSign
-emptyHybridSign = HybridSign MapSet.empty MapSet.empty Map.empty Map.empty Map.empty
+emptyHybridSign = HybridSign MapSet.empty MapSet.empty
+                             Map.empty Map.empty Map.empty
 
 addHybridSign :: HybridSign -> HybridSign -> HybridSign
 addHybridSign a b = a
   { rigidOps = addOpMapSet (rigidOps a) $ rigidOps b
   , rigidPreds = addMapSet (rigidPreds a) $ rigidPreds b
-  , modies = Map.unionWith  List.union (modies a) $ modies b
-  , nomies = Map.unionWith  List.union (nomies a) (nomies b)
+  , modies = Map.unionWith List.union (modies a) $ modies b
+  , nomies = Map.unionWith List.union (nomies a) (nomies b)
   , termModies = Map.unionWith List.union (termModies a) $ termModies b }
 
 interMap :: Ord a => ([b] -> [b] -> [b]) -> Map.Map a [b] -> Map.Map a [b]
@@ -58,8 +59,9 @@ diffHybridSign a b = a
   , modies = Map.differenceWith diffList (modies a) $ modies b
   , nomies = Map.differenceWith diffList (nomies a) (nomies b)
   , termModies = Map.differenceWith diffList (termModies a) $ termModies b
-  } where diffList c d = let e = c List.\\ d in
-            if null e then Nothing else Just e
+  } where
+     diffList c d = let e = c List.\\ d in
+                    if null e then Nothing else Just e
 
 isSubHybridSign :: HybridSign -> HybridSign -> Bool
 isSubHybridSign a b =
