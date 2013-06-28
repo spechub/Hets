@@ -268,60 +268,42 @@ runEProverBuffered
   -> String -- ^ problem
   -> IO (String, [String], Int)
 runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
-  let tmpFile = basename tmpFileName ++ ".tptp"
   s <- supportsProofObject
+  let tmpFile = basename tmpFileName ++ ".tptp"
+      useProofObject = s && not fullgraph
+      bin = if useProofObject then "eprover"
+            else "eproof"
+  noProg <- missingExecutableInPath bin
   when saveTPTP (writeFile tmpFile prob)
-  if s && not fullgraph then do
-   let bin = "eprover"
-   noProg <- missingExecutableInPath bin
-   if noProg then
-    return (bin ++ " not found. Check your $PATH", [], -1)
-    else do
-     timeTmpFile <- getTempFile prob tmpFile
-     (_, out, err, _) <- if graph then do
-           bufferFile <- getTempFile "" "eprover-proof-buffer"
-           buff <- openFile bufferFile WriteMode
-           h <- runProcess bin (words options ++ ["--proof-object",timeTmpFile])
-                 Nothing Nothing Nothing (Just buff) (Just buff)
-           (waitForProcess h >> removeFile timeTmpFile)
-            `Exception.catch` (\ThreadKilled -> terminateProcess h)
-           hClose buff
-           mkGraph bufferFile
-           runInteractiveCommand $ unwords ["grep", "-e", "axiom", "-e", "SZS",
-            bufferFile, "&&", "rm", "-f", bufferFile]
-      else runInteractiveCommand $ unwords
-           [bin, "--proof-object", options, timeTmpFile,
-            "|", "grep", "-e", "axiom", "-e", "SZS",
-             "&&", "rm", timeTmpFile]
-     perr <- hGetContents err
-     pout <- hGetContents out
-     let l = lines $ perr ++ pout
-         (res, _, tUsed) = parseOutput l
-     return (res, l, tUsed)
-   else do
-   let bin = "eproof"
-   noProg <- missingExecutableInPath bin
-   if noProg then
-    return (bin ++ " not found. Check your $PATH", [], -1)
-    else do
-     timeTmpFile <- getTempFile prob tmpFile
-     bufferFile <- getTempFile "" "eprover-proof-buffer"
-     buff <- openFile bufferFile WriteMode
-     h <- runProcess bin (words options ++ [timeTmpFile])
-           Nothing Nothing Nothing (Just buff) (Just buff)
-     (waitForProcess h >> return ())
-      `Exception.catch` (\ThreadKilled -> terminateProcess h)
-     hClose buff
-     when (fullgraph || graph) (mkGraph bufferFile)
-     (_, out, err, _) <- runInteractiveCommand $
-                           unwords ["grep", "-e", "axiom", "-e", "SZS",
-                            bufferFile, "&&", "rm", "-f", bufferFile]
-     perr <- hGetContents err
-     pout <- hGetContents out
-     let l = lines $ perr ++ pout
-         (res, _, tUsed) = parseOutput l
-     removeFile timeTmpFile
-     return (res, l, tUsed)
+  if noProg then return (bin ++ " not found. Check your $PATH", [], -1)
+  else do
+   (err,out) <- 
+      do
+       timeTmpFile <- getTempFile prob tmpFile
+       (_, out, err, _) <-
+        if graph || fullgraph || not s then do
+              bufferFile <- getTempFile "" "eprover-proof-buffer"
+              buff <- openFile bufferFile WriteMode
+              h <- runProcess bin (words options ++
+                    (if useProofObject then ["--proof-object"]
+                     else [])++[timeTmpFile])
+                    Nothing Nothing Nothing (Just buff) (Just buff)
+              (waitForProcess h >> removeFile timeTmpFile)
+               `Exception.catch` (\ThreadKilled -> terminateProcess h)
+              hClose buff
+              mkGraph bufferFile
+              runInteractiveCommand $ unwords ["grep", "-e", "axiom", "-e", "SZS",
+               bufferFile, "&&", "rm", "-f", bufferFile]
+        else runInteractiveCommand $ unwords
+             [bin, "--proof-object", options, timeTmpFile,
+              "|", "grep", "-e", "axiom", "-e", "SZS",
+               "&&", "rm", timeTmpFile]
+       return (out,err)
+   perr <- hGetContents err
+   pout <- hGetContents out
+   let l = lines $ perr ++ pout
+       (res, _, tUsed) = parseOutput l
+   return (res, l, tUsed)
 
 runDarwin
   :: ProverBinary
