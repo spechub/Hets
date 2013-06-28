@@ -62,7 +62,7 @@ import qualified Data.Set as Set
 
 -- * Prover implementation
 
-data ProverBinary = Darwin | DarwinFD | EDarwin | EProver | Leo
+data ProverBinary = Darwin | DarwinFD | EDarwin | EProver | Leo | IProver
   deriving (Enum, Bounded)
 
 tptpProvers :: [ProverBinary]
@@ -81,6 +81,7 @@ darwinExe b = case b of
   EDarwin -> "e-darwin"
   EProver -> "eprover"
   Leo -> "leo"
+  IProver -> "iproveropt"
 
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover. -}
@@ -180,17 +181,18 @@ eproverOpts :: String -> String
 eproverOpts verb = "-xAuto -tAuto --tptp3-format " ++ verb
   ++ " --memory-limit=2048 --soft-cpu-limit="
 
-fdOpt :: String
-fdOpt = "-fd true"
-
-toOpt :: String
-toOpt = " -to "
-
-darOpt :: String
-darOpt = "-pc false"
-
-eqOpt :: String
-eqOpt = " -eq Axioms"
+extras :: ProverBinary -> Bool -> String -> String
+extras b cons tl = let
+  tOut = " -to " ++ tl
+  darOpt = "-pc false"
+  fdOpt = darOpt ++ (if cons then " -pmtptp true" else "") ++ " -fd true"
+  in case b of
+    EProver -> eproverOpts (if cons then "-s" else "") ++ tl
+    Leo -> "-t " ++ tl
+    Darwin -> darOpt ++ tOut
+    DarwinFD -> fdOpt ++ tOut
+    EDarwin -> fdOpt ++ " -eq Axioms" ++ tOut
+    IProver -> "--time_out_real " ++ tl ++ " --sat_mode true"
 
 {- | Runs the Darwin service. The tactic script only contains a string for the
   time limit. -}
@@ -204,18 +206,9 @@ consCheck
 consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> do
         let proverStateI = spassProverState sig (toNamedList nSens) freedefs
-            fdConsOpt = " -pmtptp true " ++ fdOpt
-            tOut = toOpt ++ tl
-            extraOptions = case b of
-              EProver -> eproverOpts "-s" ++ tl
-              Leo -> "-t " ++ tl
-              Darwin -> darOpt ++ tOut
-              DarwinFD -> darOpt ++ fdConsOpt ++ tOut
-              EDarwin -> darOpt ++ fdConsOpt ++ eqOpt ++ tOut
-            bin = darwinExe b
         prob <- showTPTPProblemM thName proverStateI []
         (exitCode, out, tUsed) <-
-          runDarwinProcess bin False extraOptions thName prob
+          runDarwinProcess (darwinExe b) False (extras b True tl) thName prob
         let outState = CCStatus
                { ccResult = Just True
                , ccProofTree = ProofTree $ unlines $ exitCode : out
@@ -350,14 +343,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
                          any ((==)"--graph") w, any ((==)"--full-graph") w)
           _       -> (extraOpts cfg, False, False)
         tl = maybe "10" show $ timeLimit cfg
-        tOut = toOpt ++ tl
-        extraOptions = unwords $ case b of
-            EProver -> eproverOpts "" ++ tl
-            Leo -> "-t " ++ tl
-            Darwin -> darOpt ++ tOut
-            DarwinFD -> darOpt ++ " " ++ fdOpt ++ tOut
-            EDarwin -> darOpt ++ " " ++ fdOpt ++ eqOpt ++ tOut
-          : options
+        extraOptions = extras b False tl
         tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     prob <- showTPTPProblem thName sps nGoal
       $ options ++ ["Requested prover: " ++ bin]
