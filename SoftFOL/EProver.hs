@@ -27,9 +27,6 @@ import Data.Char (toLower)
 import Data.Maybe (fromJust)
 import Data.List (foldl',intercalate)
 
-void :: Functor f => f a -> f ()
-void = fmap (const ())
-
 data Role = Axiom | Conjecture | Other deriving (Show, Eq)
 
 data InferenceParent = PTerm String |
@@ -37,12 +34,12 @@ data InferenceParent = PTerm String |
                        PBuiltinTheory String deriving (Show, Eq, Ord)
 
 data InferenceRule = ProofOf String
-   | File { fileName :: String, formulaName :: String }
+   | File { _fileName :: String, formulaName :: String }
    | Rule { rule :: String, parent :: String }
    | NoRule { parent :: String }
    | InferenceRule { rule :: String, status :: String,
                      parents :: Set.Set InferenceParent,
-                     fact :: Bool }
+                     _fact :: Bool }
      deriving (Show, Eq, Ord)
 
 parentsOf :: InferenceRule -> Set.Set InferenceParent
@@ -66,7 +63,7 @@ data ProofStep = ProofStep {
  inference :: InferenceRule } | Empty deriving (Show, Eq)
 
 whiteSpace :: Parser ()
-whiteSpace = void $ oneOf "\r\t\v\f "
+whiteSpace = forget $ oneOf "\r\t\v\f "
 
 lexeme :: GenParser Char () b -> GenParser Char () b
 lexeme p = skipMany whiteSpace >> p
