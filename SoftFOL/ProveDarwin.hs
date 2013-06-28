@@ -51,7 +51,6 @@ import System.Process (waitForProcess, runInteractiveCommand,
 import System.IO (hGetContents, openFile, hClose, IOMode (WriteMode))
 
 import Control.Exception as Exception
-import Control.Exception.Base (AsyncException(ThreadKilled))
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
