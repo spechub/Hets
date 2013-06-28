@@ -71,11 +71,10 @@ getMultiLineT prompt past = do
   minput <- getInputLine prompt
   case minput of
           Nothing -> return Nothing
-          Just input -> do
-                let
+          Just input -> let
                   str = reverse input
                   has = hasSlash str
-                if has then
+                in if has then
                   getMultiLineT prompt ( past ++ (reverse (takeOutSlash str)))
                 else
                   return $ Just $ past ++ input

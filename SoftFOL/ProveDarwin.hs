@@ -299,7 +299,7 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
      let l = lines $ perr ++ pout
          (res, _, tUsed) = parseOutput l
      return (res, l, tUsed)
-  else do
+   else do
    let bin = "eproof"
    noProg <- missingExecutableInPath bin
    if noProg then

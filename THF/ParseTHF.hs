@@ -30,8 +30,6 @@ import Common.Lexer (parseToken)
 import Data.Char
 import Data.Maybe
 
-import Control.Monad (void)
-
 {- -----------------------------------------------------------------------------
 Parser for the THF  and THF0 Syntax
 ----------------------------------------------------------------------------- -}
@@ -1201,7 +1199,7 @@ Some helper functions
 
 skipAll :: CharParser st ()
 skipAll = skipMany (skipMany1 space <|>
-                    void (comment <|> definedComment <|> systemComment))
+                    forget (comment <|> definedComment <|> systemComment))
 
 skipSpaces :: CharParser st ()
 skipSpaces = skipMany space

@@ -55,10 +55,10 @@ arityT :: Parser Int
 arityT = fmap read $ many1 digit <|> try (string "-1" << notFollowedBy digit)
 
 commentLine :: Parser ()
-commentLine = void $ char '%' >> manyTill anyChar newline
+commentLine = forget $ char '%' >> manyTill anyChar newline
 
 whiteSpace :: Parser ()
-whiteSpace = skipMany $ void (satisfy isSpace) <|> commentLine
+whiteSpace = skipMany $ forget (satisfy isSpace) <|> commentLine
 
 symbolT :: String -> Parser String
 symbolT = (<< whiteSpace) . tryString
