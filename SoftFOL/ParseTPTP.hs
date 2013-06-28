@@ -126,16 +126,27 @@ blank = (>> skipMany1 whiteSpace)
 szsOutput :: Parser ()
 szsOutput = blank (string "SZS") >> blank (string "output")
 
+iproverSzsEnd :: Parser ()
+iproverSzsEnd = try $ char '%' >> skipMany whiteSpace >> szsOutput
+
+otherCommentLine :: Parser ()
+otherCommentLine = (lookAhead iproverSzsEnd >> forget (char '%'))
+  <|> forget commentLine
+
+skipAllButEnd :: Parser ()
+skipAllButEnd = skipMany $ whiteSpace <|> commentBlock <|> otherCommentLine
+  <|> forget newline
+
 tptpModel :: Parser [(String, SPTerm)]
 tptpModel = do
   _ <- manyTill anyChar
     (try (szsOutput >> blank (string "start"))
      <|> try (blank $ string "START OF MODEL"))
   _ <- manyTill anyChar newline
-  skipAll
-  ts <- many1 (formAnno << skipAll)
+  skipAllButEnd
+  ts <- many1 (formAnno << skipAllButEnd)
   (szsOutput >> blank (string "end"))
-    <|> void (string "END OF MODEL")
+    <|> forget (string "END OF MODEL")
   return $ foldr (\ t l -> case t of
     FormAnno _ (Name n) _ e _ -> (n, e) : l
     _ -> l) [] ts
@@ -153,14 +164,14 @@ commentBlock :: Parser ()
 commentBlock = forget $ plainBlock "/*" "*/"
 
 whiteSpace :: Parser ()
-whiteSpace = void $ oneOf "\r\t\v\f "
+whiteSpace = forget $ oneOf "\r\t\v\f "
 
 skip :: Parser ()
 skip = skipMany $ whiteSpace <|> commentBlock
 
 skipAll :: Parser ()
-skipAll = skipMany $ whiteSpace <|> commentBlock <|> void commentLine
-  <|> void newline
+skipAll = skipMany $ whiteSpace <|> commentBlock <|> forget commentLine
+  <|> forget newline
 
 lexeme :: Parser a -> Parser a
 lexeme = (<< skipAll)
@@ -202,7 +213,7 @@ atomicWord :: Parser String
 atomicWord = lexeme $ lowerWord <|> singleQuoted
 
 isUAlphaNum :: Char -> Bool
-isUAlphaNum c = isAlphaNum c || c == '_'
+isUAlphaNum c = isAlphaNum c || elem c "_$"
 
 luWord :: Parser Char -> Parser String
 luWord p = do
@@ -220,7 +231,7 @@ singleQuoted :: Parser String
 singleQuoted =
   let quote = '\'' in fmap concat $
   char quote
-  >> many1 (tryString "\\'" <|> single
+  >> many (tryString "\\'" <|> single
        (satisfy $ \ c -> printable c && c /= quote))
   << char quote
 
