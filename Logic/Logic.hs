@@ -286,12 +286,13 @@ parserAndPrinter sm l = lookupDefault l sm (parsersAndPrinters l)
 lookupDefault :: Syntax lid basic_spec symbol symb_items symb_map_items
   => lid -> Maybe IRI -> Map.Map String b -> Maybe b
 lookupDefault l im m = case im of
-     Just i -> do let s = iriToStringUnsecure i
-                  ser <- if isSimple i then return s
-                         else lookupSerialization (language_name l) s
-                  Map.lookup ser m
-     Nothing -> if Map.size m == 1 then Just $ head $ Map.elems m else
-                    Map.lookup "" m
+     Just i -> do
+       let s = iriToStringUnsecure i
+       ser <- if isSimple i then return s
+              else lookupSerialization (language_name l) s
+       Map.lookup ser m
+     Nothing -> if Map.size m == 1 then Just $ head $ Map.elems m
+                else Map.lookup "" m
 
 showSyntax :: Language lid => lid -> Maybe IRI -> String
 showSyntax lid = (("logic " ++ language_name lid) ++)
@@ -318,7 +319,7 @@ class (Language lid, Category sign morphism, Ord sentence,
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where
-      
+
       -- | sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
       map_sen l _ _ = statFail l "map_sen"
@@ -370,8 +371,7 @@ class (Language lid, Category sign morphism, Ord sentence,
       symsOfSen _ _ = []
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
-      pair_symbols _ s1 _ = do
-       return s1
+      pair_symbols _ s1 _ = return s1
 
 -- | makes a singleton list from the given value
 singletonList :: a -> [a]
@@ -438,7 +438,8 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
              -> Result (basic_spec, ExtSign sign symbol, [Named sentence]))
          basic_analysis _ = Nothing
          -- | Analysis of just sentences
-         sen_analysis :: lid -> Maybe ((basic_spec,sign,sentence) -> Result sentence )
+         sen_analysis :: lid
+           -> Maybe ((basic_spec, sign, sentence) -> Result sentence)
          sen_analysis _ = Nothing
          -- | a basic analysis with additional arguments
          extBasicAnalysis :: lid -> IRI -> LibId
