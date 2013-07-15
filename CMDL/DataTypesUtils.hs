@@ -24,6 +24,10 @@ module CMDL.DataTypesUtils
   , generatePrompter
   , add2hist
   , getIdComorphism
+  , resetErrorCode
+  , genMsgAndCode
+  , getExitCode
+  , getExitCodeInt
   ) where
 
 import Interfaces.Command (Command (CommentCmd))
@@ -33,10 +37,12 @@ import Interfaces.Utils (getAllNodes)
 import CMDL.Utils
 import CMDL.DataTypes
 
+
 import Static.GTheory (G_theory, mapG_theory)
 import Static.DevGraph (DGNodeLab, lookupDGraph, labDG)
 
 import System.IO (stdout, stdin)
+import System.Exit
 
 import Proofs.AbstractState (sublogicOfTheory, theoryName)
 import Static.ComputeTheory (computeTheory)
@@ -166,6 +172,10 @@ baseChannels
                   }
    in [ch_in, ch_out]
 
+--first changes the error code then generates a message
+genMsgAndCode :: String -> Int -> CmdlState -> CmdlState
+genMsgAndCode msg code st = genErrorMsg msg (st{errorCode = code})
+
 
 genErrorMsg :: String -> CmdlState -> CmdlState
 genErrorMsg msg st
@@ -180,9 +190,19 @@ genErrorMsg msg st
 genMessage :: String -> String -> CmdlState -> CmdlState
 genMessage warnings msg st
  = st {
-      output = CmdlMessage {
+        output = CmdlMessage {
         outputMsg = msg,
         warningMsg = warnings,
         errorMsg = []
         }
      }
+
+resetErrorCode :: CmdlState -> CmdlState
+resetErrorCode st = st {errorCode = 0}
+
+getExitCode :: CmdlState -> ExitCode
+getExitCode st = if (errorCode st) == 0 then ExitSuccess
+                                        else ExitFailure $ errorCode st
+  
+getExitCodeInt :: CmdlState -> Int
+getExitCodeInt st = errorCode st

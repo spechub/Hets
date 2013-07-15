@@ -68,6 +68,7 @@ data CmdlState = CmdlState
   , connections :: [CmdlChannel] -- ^ opened connections
   , output :: CmdlMessage -- ^ output of interface
   , hetsOpts :: HetcatsOpts  -- ^ hets command options
+  , errorCode :: Int
   }
 
 -- | Creates an empty CmdlState
@@ -85,7 +86,9 @@ emptyCmdlState opts = CmdlState
   , output = emptyCmdlMessage
   , openComment = False
   , connections = []
-  , hetsOpts = opts }
+  , hetsOpts = opts
+  , errorCode = 0 
+}
 
 data CmdlPrompterState = CmdlPrompterState
   { fileLoaded :: String
@@ -209,3 +212,4 @@ emptyCmdlMessage = CmdlMessage
   { errorMsg = []
   , outputMsg = []
   , warningMsg = [] }
+

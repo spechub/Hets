@@ -78,7 +78,7 @@ wrapResultDg fn lib_name ls = return . fn lib_name ls
 commandDgAll :: (LibName -> LibEnv -> Result LibEnv)
              -> CmdlState -> IO CmdlState
 commandDgAll fn state = case i_state $ intState state of
-  Nothing -> return $ genErrorMsg "No library loaded" state
+  Nothing -> return $ genMsgAndCode "No library loaded" 1 state
   Just ist -> case fn (i_ln ist) (i_libEnv ist) of
     Result _ (Just nwLibEnv) ->
          {- Name of function is not known here, so an empty text is
@@ -88,7 +88,7 @@ commandDgAll fn state = case i_state $ intState state of
              { intState = (intState state)
                  { i_state = Just $ emptyIntIState nwLibEnv $ i_ln ist } }
     Result diag Nothing ->
-        return $ genErrorMsg (concatMap diagString diag) state
+        return $ genMsgAndCode (concatMap diagString diag) 1 state
 
 {- | Generic function for a dg command, all other dg
 commands are derived from this command by simply
@@ -96,14 +96,14 @@ specifing the function -}
 commandDg :: (LibName -> [LEdge DGLinkLab] -> LibEnv -> Result LibEnv)
           -> String -> CmdlState -> IO CmdlState
 commandDg fn input state = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "No library loaded" state
+    Nothing -> return $ genMsgAndCode "No library loaded" 1 state
     Just ist -> do
      let (_, edg, nbEdg, errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
      case (edg, nbEdg) of
        ([], []) ->
          -- leave the internal state intact so that the interface can recover
-         return $ genErrorMsg (tmpErrs ++ "No edges in input string\n") state
+         return $ genMsgAndCode (tmpErrs ++ "No edges in input string\n") 1 state
        (_, _) -> do
         let lsNodes = getAllNodes ist
             lsEdges = getAllEdges ist
@@ -111,7 +111,7 @@ commandDg fn input state = case i_state $ intState state of
             (errs', listEdges) = obtainEdgeList edg nbEdg lsNodes lsEdges
             tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
         case listEdges of
-         [] -> return $ genErrorMsg (tmpErrs' ++ "No edge in input string\n")
+         [] -> return $ genMsgAndCode (tmpErrs' ++ "No edge in input string\n") 1
                               state
          _ -> case fn (i_ln ist) listEdges (i_libEnv ist) of
              Result _ (Just nwLibEnv) ->
@@ -122,7 +122,7 @@ commandDg fn input state = case i_state $ intState state of
                          { i_state = Just $ emptyIntIState nwLibEnv
                              $ i_ln ist } }
              Result diag Nothing ->
-               return $ genErrorMsg (concatMap diagString diag) state
+               return $ genMsgAndCode (concatMap diagString diag) 1 state
 
 {- | The function 'cUse' implements the Use commands, i.e.
 given a path it tries to load the library  at that path -}
@@ -141,7 +141,7 @@ cUse input state = do
    case tmp of
     Nothing ->
       -- leave the internal state intact so that the interface can recover
-      return $ genErrorMsg ("Unable to load library " ++ input) state
+      return $ genMsgAndCode ("Unable to load library " ++ input) 1 state
     Just (nwLn, nwLibEnv) -> return state
       { intState = IntState
           { i_hist = IntHistory
@@ -156,16 +156,16 @@ cUse input state = do
 of edges. -}
 cDgThmHideShift :: String -> CmdlState -> IO CmdlState
 cDgThmHideShift input state = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "No library loaded" state
+    Nothing -> return $ genMsgAndCode "No library loaded" 1 state
     Just dgState ->
       let (errors, nodes) = getInputDGNodes input dgState
        in if null nodes
-            then return $ genErrorMsg errors state
+            then return $ genMsgAndCode errors 1 state
             else let Result diag nwLibEnv = theoremHideShiftFromList
                         (i_ln dgState) nodes (i_libEnv dgState)
                      -- diag not used, how should it?
                   in return (case nwLibEnv of
-                       Nothing -> genErrorMsg (concatMap diagString diag) state
+                       Nothing -> genMsgAndCode (concatMap diagString diag) 1 state
                        -- ADD TO HISTORY ??
                        Just newEnv -> add2hist [IStateChange $ Just dgState] $
                                         genMessage errors [] state
@@ -211,11 +211,11 @@ selects a list of nodes to be used inside this mode -}
 cDgSelect :: String -> CmdlState -> IO CmdlState
 cDgSelect input state = let iState = intState state in
   return $ case i_state iState of
-    Nothing -> genErrorMsg "No library loaded" state
+    Nothing -> genMsgAndCode "No library loaded" 1 state
     Just dgState -> let (errors, nodes) = getInputDGNodes input dgState
-      in if null nodes then genErrorMsg errors state else
+      in if null nodes then genMsgAndCode errors 1 state else
       case maybeResult $ knownProversWithKind ProveCMDLautomatic of
-        Nothing -> genErrorMsg (errors ++ "\nNo prover found") state
+        Nothing -> genMsgAndCode (errors ++ "\nNo prover found") 1 state
         Just _ -> let {- elems is the list of all results (i.e.
                       concat of all one element lists) -}
             elems = concatMap (flip selectANode dgState . fst) nodes
@@ -231,7 +231,7 @@ cDgSelect input state = let iState = intState state in
 
 cExpand :: String -> CmdlState -> IO CmdlState
 cExpand input state = let iState = intState state in case i_state iState of
-  Nothing -> return $ genErrorMsg "No library loaded to expand" state
+  Nothing -> return $ genMsgAndCode "No library loaded to expand" 1 state
   Just ist -> do
     let opts = hetsOpts state
         fname = trim input
@@ -242,8 +242,8 @@ cExpand input state = let iState = intState state in case i_state iState of
     Result ds mres <- runResultT
       $ anaSourceFile lg opts Set.empty libenv dg fname
     return $ case mres of
-      Nothing -> genErrorMsg
-        ("Analysis failed:\n" ++ showRelDiags (verbose opts) ds) state
+      Nothing -> genMsgAndCode
+        ("Analysis failed:\n" ++ showRelDiags (verbose opts) ds) 1 state
       Just (lN', libEnv') ->
        -- assume lN' is empty, ignored or identical to ln
         let dg' = lookupDGraph lN' libEnv'
@@ -254,7 +254,7 @@ cExpand input state = let iState = intState state in case i_state iState of
 
 cAddView :: String -> CmdlState -> IO CmdlState
 cAddView input state = let iState = intState state in case i_state iState of
-  Nothing -> return $ genErrorMsg "No library loaded to add view to" state
+  Nothing -> return $ genMsgAndCode "No library loaded to add view to" 1 state
   Just ist -> do
     let libenv = i_libEnv ist
         ln = i_ln ist
@@ -269,8 +269,8 @@ cAddView input state = let iState = intState state in case i_state iState of
       (View_type (emptyAnno $ mkSpecInst spec1)
        (emptyAnno $ mkSpecInst spec2) nullRange) [] nullRange
     return $ case tmp of
-      Nothing -> genErrorMsg
-          ("View analysis failed:\n" ++ showRelDiags (verbose opts) ds) state
+      Nothing -> genMsgAndCode
+          ("View analysis failed:\n" ++ showRelDiags (verbose opts) ds) 1 state
       Just (_, nwDg, nwLibEnv, _, _) ->
         let newLibEnv' = Map.insert ln nwDg nwLibEnv
         in state
@@ -282,10 +282,10 @@ selecting all nodes -}
 cDgSelectAll :: CmdlState -> IO CmdlState
 cDgSelectAll state = let iState = intState state in
   return $ case i_state iState of
-  Nothing -> genErrorMsg "No library loaded" state
+  Nothing -> genMsgAndCode "No library loaded" 1 state
   Just dgState ->
     case maybeResult $ knownProversWithKind ProveCMDLautomatic of
-      Nothing -> genErrorMsg "No prover found" state
+      Nothing -> genMsgAndCode "No prover found" 1 state
       Just _ -> let
           -- list of all nodes
           lsNodes = getAllNodes dgState
@@ -301,3 +301,6 @@ cDgSelectAll state = let iState = intState state in
                   { i_state = Just nwist
                       { elements = elems
                       , cComorphism = getIdComorphism elems } } }
+
+
+

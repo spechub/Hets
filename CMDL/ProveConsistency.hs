@@ -54,6 +54,14 @@ import Control.Concurrent.MVar (MVar, newMVar, putMVar, takeMVar, readMVar,
                                swapMVar, modifyMVar_)
 
 import Control.Monad
+import Debug.Trace
+
+listProvers :: [String] -> CmdlState -> IO CmdlState
+listProvers ls st = case ls of 
+              [] -> return st
+              l : ll -> do
+                      putStrLn l
+                      listProvers ll st
 
 getProversAutomatic :: G_sublogics -> [(G_prover, AnyComorphism)]
 getProversAutomatic sl = getAllProvers P.ProveCMDLautomatic sl logicGraph
@@ -68,20 +76,22 @@ cProver input state =
                 [] -> "Unknown"
                 pnme : _ -> pnme
    case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
      -- check that some theories are selected
      case elements pS of
-      [] -> return $ genErrorMsg "Nothing selected" state
+      [] -> return $ genMsgAndCode "Nothing selected" 1 state
       Element z _ : _ -> let
         pl = filter ((== inp) . getProverName . fst)
                   $ getProversAutomatic (sublogicOfTheory z)
+        the_provers = map (getProverName . fst) (getProversAutomatic (sublogicOfTheory z))
         in case case cComorphism pS of
                    Nothing -> pl
                    Just x -> filter ((== x) . snd) pl ++ pl of
-             [] -> return $ genErrorMsg
-                 ("No applicable prover with name \"" ++ inp ++ "\" found")
-                 state
+             [] -> (if inp=="" then listProvers ("Applicable provers:" : (map show (nub the_provers))) state
+                               else return (genMsgAndCode
+                 ("No applicable prover with name \"" ++ inp ++ "\" found") 1
+                 state))
              (p, nCm@(Comorphism cid)) : _ ->
                return $ add2hist [ ProverChange $ prover pS
                                  , CComorphismChange $ cComorphism pS ]
@@ -100,11 +110,11 @@ cConsChecker input state =
    -- trimed input
    let inp = trim input
    case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
      -- check that some theories are selected
      case elements pS of
-      [] -> return $ genErrorMsg "Nothing selected" state
+      [] -> return $ genMsgAndCode "Nothing selected" 1 state
       Element z _ : _ ->
         -- see if any comorphism was used
         case cComorphism pS of
@@ -114,8 +124,8 @@ cConsChecker input state =
                                   getCcName y == inp) $
                              getConsCheckers $ findComorphismPaths
                                 logicGraph $ sublogicOfTheory z of
-                    Nothing -> return $ genErrorMsg ("No applicable " ++
-                                 "consistency checker with this name found")
+                    Nothing -> return $ genMsgAndCode ("No applicable " ++
+                                 "consistency checker with this name found") 1
                                  state
                     Just (p, _) -> return $ add2hist
                                     [ConsCheckerChange $ consChecker pS]
@@ -131,8 +141,8 @@ cConsChecker input state =
            Nothing ->
             case find (\ (y, _) -> getCcName y == inp) $ getConsCheckers $
                           findComorphismPaths logicGraph $ sublogicOfTheory z of
-             Nothing -> return $ genErrorMsg ("No applicable consistency " ++
-                                 "checker with this name found") state
+             Nothing -> return $ genMsgAndCode ("No applicable consistency " ++
+                                 "checker with this name found") 1 state
              Just (p, nCm@(Comorphism cid)) ->
                return $ add2hist [ ConsCheckerChange $ consChecker pS
                                  , CComorphismChange $ cComorphism pS ]

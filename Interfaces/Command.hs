@@ -49,7 +49,7 @@ data GlobCmd =
   | CheckConsistencyCurrent
   | CheckConservativityAll
   | DropTranslation -- stop composing comorphisms to previous ones
-    deriving (Eq, Ord, Enum, Bounded)
+    deriving (Eq, Ord, Enum, Bounded, Show)
 
 globCmdList :: [GlobCmd]
 globCmdList = [minBound .. maxBound]
@@ -146,7 +146,7 @@ data SelectCmd =
   | Link
   | ConservativityCheckerOpen
   | ConservativityChecker
-    deriving (Eq, Ord, Enum, Bounded)
+    deriving (Eq, Ord, Enum, Bounded, Show)
 
 selectCmdList :: [SelectCmd]
 selectCmdList = [minBound .. maxBound]
@@ -193,7 +193,7 @@ data InspectCmd =
   | Axioms
   | Taxonomy
   | Concept
-    deriving (Eq, Ord, Enum, Bounded)
+    deriving (Eq, Ord, Enum, Bounded, Show)
 
 inspectCmdList :: [InspectCmd]
 inspectCmdList = [minBound .. maxBound]
@@ -222,7 +222,7 @@ requiresNode ic = ic >= LocalAxioms
 data ChangeCmd =
     Expand
   | AddView
-    deriving (Eq, Ord, Enum, Bounded)
+    deriving (Eq, Ord, Enum, Bounded, Show)
 
 describeChangeCmd :: ChangeCmd -> String
 describeChangeCmd cmd = case cmd of
@@ -250,6 +250,7 @@ data Command =
   | ChangeCmd ChangeCmd String
   | HelpCmd
   | ExitCmd
+  deriving (Show)
 
 -- the same command modulo input argument
 eqCmd :: Command -> Command -> Bool

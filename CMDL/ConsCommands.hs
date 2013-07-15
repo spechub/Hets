@@ -48,13 +48,13 @@ cConservCheck :: String -> CmdlState -> IO CmdlState
 cConservCheck input state =
   case i_state $ intState state of
    Nothing ->
-     return $ genErrorMsg "No library loaded" state
+     return $ genMsgAndCode "No library loaded" 1 state
    Just dgState -> do
      let (nds, edg, nbEdg, errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
      case (nds, edg, nbEdg) of
       ([], [], []) ->
-        return $ genErrorMsg (tmpErrs ++ "nothing to check\n") state
+        return $ genMsgAndCode (tmpErrs ++ "nothing to check\n") 1 state
       _ ->
         do
          let lsNodes = getAllNodes dgState
@@ -72,7 +72,7 @@ cConservCheck input state =
 -- checks conservativity for every possible node
 cConservCheckAll :: CmdlState -> IO CmdlState
 cConservCheckAll state = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "No library loaded" state
+    Nothing -> return $ genMsgAndCode "No library loaded" 1 state
     Just dgState -> do
       let lsNodes = getAllNodes dgState
       (resTxt, nle) <- conservativityList lsNodes
@@ -91,9 +91,9 @@ cConsistCheck = cDoLoop True
 -- applies consistency check to all possible input
 cConsistCheckAll :: CmdlState -> IO CmdlState
 cConsistCheckAll state = case i_state $ intState state of
-      Nothing -> return $ genErrorMsg "Nothing selected" state
+      Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
       Just pS -> case elements pS of
-          [] -> return $ genErrorMsg "Nothing selected" state
+          [] -> return $ genMsgAndCode "Nothing selected" 1 state
           ls ->
              let ls' = map (\ (Element st nb) ->
                                Element (resetSelection st) nb) ls

@@ -111,7 +111,7 @@ getInfoFromNodes input f state =
     Nothing -> return state
     Just dgState -> let (errors, nodes) = getInputNodes input dgState
                      in return (if null nodes
-                                  then genErrorMsg errors state
+                                  then genMsgAndCode errors 1 state
                                   else genMessage errors
                                          (intercalate "\n" $ f nodes) state)
 
@@ -167,7 +167,7 @@ cInfoCurrent state =
     Nothing -> return state
     Just ps -> let (errors, nodes) = getSelectedDGNodes ps
                 in if null nodes
-                     then return $ genErrorMsg errors state
+                     then return $ genMsgAndCode errors 1 state
                      else cInfo (unwords $ nodeNames nodes) state
 
 -- show all information of input
@@ -175,13 +175,13 @@ cInfo :: String -> CmdlState -> IO CmdlState
 cInfo input state =
   case i_state $ intState state of
     -- error message
-    Nothing -> return $ genErrorMsg "No library loaded" state
+    Nothing -> return $ genMsgAndCode "No library loaded" 1 state
     Just dgS ->
      let (nds, edg, nbEdg, errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
      in case (nds, edg, nbEdg) of
-          ([], [], []) -> return $ genErrorMsg ("Nothing from the input "
-                                       ++ "could be processed") state
+          ([], [], []) -> return $ genMsgAndCode ("Nothing from the input "
+                                       ++ "could be processed") 1 state
           (_, _, _) ->
             let lsNodes = getAllNodes dgS
                 lsEdges = getAllEdges dgS

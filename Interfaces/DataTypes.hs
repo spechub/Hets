@@ -30,6 +30,7 @@ import Proofs.AbstractState
 import Logic.Comorphism
 import Interfaces.Command
 import Interfaces.GenericATPState
+import Language.Haskell.Exts
 
 {- | Internal state of the interface, it contains the development graph
    and a full history. While this in most cases describes the state of
@@ -38,10 +39,10 @@ import Interfaces.GenericATPState
    interface to the other passing this informations should be sufficient
    with minimal loss of information ( like selected nodes, unfinished
    script .. and so on) -}
-data IntState = IntState
+data IntState = IntState 
   { i_hist :: IntHistory -- ^ global history management
   , i_state :: Maybe IntIState -- ^ internal state
-  , filename :: String }
+  , filename :: String } deriving (Show)
 
 getMaybeLib :: IntState -> Maybe (LibName, LibEnv)
 getMaybeLib = fmap (\ s -> (i_ln s, i_libEnv s)) . i_state
@@ -50,13 +51,13 @@ getMaybeLib = fmap (\ s -> (i_ln s, i_libEnv s)) . i_state
    for undo, and a list of action for redo commands -}
 data IntHistory = IntHistory
   { undoList :: [CmdHistory]
-  , redoList :: [CmdHistory] }
+  , redoList :: [CmdHistory] } deriving (Show)
 
 {- | Contains command description needed for undo\/redo actions and
    for displaying commands in the history -}
 data CmdHistory = CmdHistory
   { command :: Command
-  , cmdHistory :: [UndoRedoElem] }
+  , cmdHistory :: [UndoRedoElem] } deriving (Show)
 
 {- | History elements for the proof state, only LibName would be used
    by GUI because it keeps track only to changes to the development graph,
@@ -73,11 +74,13 @@ data UndoRedoElem =
   | ListChange [ListChange]
   | IStateChange (Maybe IntIState)
   | DgCommandChange LibName
+  deriving (Show)
 
 data ListChange =
     AxiomsChange [String] Int
   | GoalsChange [String] Int
   | NodesChange [Int_NodeInfo]
+  deriving (Show)
 
 -- | full description of the internal state required by all interfaces
 data IntIState = IntIState
@@ -92,6 +95,6 @@ data IntIState = IntIState
   , save2file :: Bool
   , useTheorems :: Bool
   , script :: ATPTacticScript
-  , loadScript :: Bool }
+  , loadScript :: Bool } deriving (Show)
 
-data Int_NodeInfo = Element ProofState Int
+data Int_NodeInfo = Element ProofState Int deriving Show

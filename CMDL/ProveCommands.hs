@@ -29,7 +29,8 @@ module CMDL.ProveCommands
 
 import CMDL.DataTypes (CmdlState (intState), CmdlGoalAxiom (..),
                       CmdlListAction (..))
-import CMDL.DataTypesUtils (add2hist, genErrorMsg, genMessage, getIdComorphism)
+import CMDL.DataTypesUtils (add2hist, genMsgAndCode, genMessage, getIdComorphism)
+
 import CMDL.DgCommands (selectANode)
 import CMDL.ProveConsistency (doLoop, sigIntHandler)
 import CMDL.Utils (checkIntString)
@@ -62,7 +63,7 @@ import Interfaces.DataTypes (ListChange (..), IntIState (..), Int_NodeInfo (..),
 cDropTranslations :: CmdlState -> IO CmdlState
 cDropTranslations state =
  case i_state $ intState state of
-   Nothing -> return $ genErrorMsg "Nothing selected" state
+   Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
    Just pS ->
     case cComorphism pS of
      Nothing -> return state
@@ -80,20 +81,20 @@ cTranslate :: String -> CmdlState -> IO CmdlState
 cTranslate input state =
  case i_state $ intState state of
   -- nothing selected !
-  Nothing -> return $ genErrorMsg "Nothing selected" state
+  Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
   Just pS ->
    -- parse the comorphism name
    case lookupComorphism_in_LG $ trim input of
-    Result _ Nothing -> return $ genErrorMsg "Wrong comorphism name" state
+    Result _ Nothing -> return $ genMsgAndCode "Wrong comorphism name" 1 state
     Result _ (Just cm) ->
       case cComorphism pS of
        {- when selecting some theory the Id comorphism is automatically
           generated -}
-       Nothing -> return $ genErrorMsg "No theory selected" state
+       Nothing -> return $ genMsgAndCode "No theory selected" 1 state
        Just ocm ->
         case compComorphism ocm cm of
             Result _ Nothing ->
-             return $ genErrorMsg "Can not add comorphism" state
+             return $ genMsgAndCode "Can not add comorphism" 1 state
             Result _ (Just smth) ->
               return $ genMessage [] ("Adding comorphism " ++ 
                         ((\(Comorphism c) -> language_name c) cm))
@@ -150,10 +151,10 @@ cGoalsAxmGeneral :: CmdlListAction -> CmdlGoalAxiom ->
                  -> IO CmdlState
 cGoalsAxmGeneral action gls_axm input state
  = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
      case elements pS of
-      [] -> return $ genErrorMsg "Nothing selected" state
+      [] -> return $ genMsgAndCode "Nothing selected" 1 state
       ls ->
        do
         let gls = words input
@@ -174,10 +175,10 @@ cDoLoop :: Bool
         -> IO CmdlState
 cDoLoop checkCons state
  = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
         case elements pS of
-         [] -> return $ genErrorMsg "Nothing selected" state
+         [] -> return $ genMsgAndCode "Nothing selected" 1 state
          ls ->
            do
             -- create initial mVars to comunicate
@@ -217,10 +218,10 @@ cProve = cDoLoop False
 cProveAll :: CmdlState -> IO CmdlState
 cProveAll state
  = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
         case elements pS of
-         [] -> return $ genErrorMsg "Nothing selected" state
+         [] -> return $ genMsgAndCode "Nothing selected" 1 state
          ls ->
             let ls' = map (\ (Element st nb) ->
                                Element (resetSelection st) nb) ls
@@ -234,7 +235,7 @@ cProveAll state
 cSetUseThms :: Bool -> CmdlState -> IO CmdlState
 cSetUseThms val state
  = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Norhing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
       return $ add2hist [UseThmChange $ useTheorems pS] $
           state {
@@ -246,7 +247,7 @@ cSetUseThms val state
 cSetSave2File :: Bool -> CmdlState -> IO CmdlState
 cSetSave2File val state
  = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just ps ->
       return $ add2hist [Save2FileChange $ save2file ps] $
           state {
@@ -264,7 +265,7 @@ cNotACommand input state
      -- anything else see if it is in a blocl of command
      s ->
       case i_state $ intState state of
-        Nothing -> return $ genErrorMsg ("Error on input line :" ++ s) state
+        Nothing -> return $ genMsgAndCode ("Error on input line :" ++ s) 1 state
         Just pS ->
           if loadScript pS
             then
@@ -277,13 +278,13 @@ cNotACommand input state
                              script = olds { tsExtraOpts = s : oldextOpts }
                              } } }
               return $ add2hist [ScriptChange $ script pS] nwSt
-            else return $ genErrorMsg ("Error on input line :" ++ s) state
+            else return $ genMsgAndCode ("Error on input line :" ++ s) 1 state
 
 -- | Function to signal the interface that the script has ended
 cEndScript :: CmdlState -> IO CmdlState
 cEndScript state
  = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just ps ->
      if loadScript ps
        then
@@ -293,14 +294,14 @@ cEndScript state
                        i_state = Just ps {
                          loadScript = False } } }
           return $ add2hist [LoadScriptChange $ loadScript ps] nwSt
-       else return $ genErrorMsg "No previous call of begin-script" state
+       else return $ genMsgAndCode "No previous call of begin-script" 1 state
 
 {- | Function to signal the interface that a scrips starts so it should
    not try to parse the input -}
 cStartScript :: CmdlState -> IO CmdlState
 cStartScript state
  = case i_state $ intState state of
-     Nothing -> return $ genErrorMsg "Nothing selected" state
+     Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
      Just ps ->
       return $ add2hist [LoadScriptChange $ loadScript ps] $
               state {
@@ -312,7 +313,7 @@ cStartScript state
 cTimeLimit :: String -> CmdlState -> IO CmdlState
 cTimeLimit input state
  = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just ps ->
      if checkIntString $ trim input
        then
@@ -324,4 +325,4 @@ cTimeLimit input state
                  intState = (intState state) {
                   i_state = Just ps {
                               script = oldS { tsTimeLimit = inpVal } } } }
-       else return $ genErrorMsg "Please insert a number of seconds" state
+       else return $ genMsgAndCode "Please insert a number of seconds" 1 state

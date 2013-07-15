@@ -96,12 +96,13 @@ checkGoal cfgMap goal =
 {- |
   Called every time a goal has been processed in the batch mode.
 -}
-goalProcessed :: (Ord proof_tree) =>
+
+goalProcessed ::  (Ord proof_tree) =>
                  Conc.MVar (GenericState sign sentence proof_tree pst)
                  -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
               -> [String] -- ^ extra options
-              -> Int -- ^ total number of goals
+              -> Int -- class Unpair f where  Source^ total number of goals
               -> String -- ^ name of the prover
               -> Int -- ^ number of goals processed so far
               -> AS_Anno.Named sentence -- ^ goal that has just been processed
@@ -109,6 +110,26 @@ goalProcessed :: (Ord proof_tree) =>
               -> (ATPRetval, GenericConfig proof_tree)
               -> IO Bool
 goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
+              nGoal verbose (retval, res_cfg) 
+              = do
+                goalPair <- goalProcRetVal stateMVar tLimit extOpts 
+                            numGoals prName processedGoalsSoFar nGoal verbose (retval, res_cfg)
+                return $ fst goalPair
+
+--same function as goalProcessed but it also returnes the goalStatus 
+goalProcRetVal :: (Ord proof_tree) =>
+                 Conc.MVar (GenericState sign sentence proof_tree pst)
+                 -- ^ IORef pointing to the backing State data structure
+              -> Int -- ^ batch time limit
+              -> [String] -- ^ extra options
+              -> Int -- class Unpair f where  Source^ total number of goals
+              -> String -- ^ name of the prover
+              -> Int -- ^ number of goals processed so far
+              -> AS_Anno.Named sentence -- ^ goal that has just been processed
+              -> Bool -- ^ wether to be verbose: print goal status (CMDL mode)
+              -> (ATPRetval, GenericConfig proof_tree)
+              -> IO (Bool, GoalStatus)
+goalProcRetVal stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
               nGoal verbose (retval, res_cfg) = do
   let n = proofStatus res_cfg
   Conc.modifyMVar_ stateMVar $ \ s -> return $ s
@@ -120,15 +141,17 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
         , resultOutput = resultOutput res_cfg
         , timeUsed = timeUsed res_cfg
         }) prName (AS_Anno.senAttr nGoal) (currentProofTree s) (configsMap s)}
+  let 
+    theGoalStatus = goalStatus n
   when verbose $ putStrLn $ "Goal " ++ goalName n ++ " is "
-    ++ case goalStatus n of
+    ++ case theGoalStatus of
          Open _ -> "still open."
          Disproved -> "disproved."
          Proved _ -> "proved."
   return $ case retval of
-    ATPError _ -> False
-    ATPBatchStopped -> False
-    _ -> numGoals - processedGoalsSoFar > 0
+    ATPError _ -> (False, theGoalStatus)
+    ATPBatchStopped -> (False, theGoalStatus)
+    _ -> (numGoals - processedGoalsSoFar > 0, theGoalStatus)
 
 -- ** Implementation
 
