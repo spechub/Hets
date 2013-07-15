@@ -54,14 +54,7 @@ import Control.Concurrent.MVar (MVar, newMVar, putMVar, takeMVar, readMVar,
                                swapMVar, modifyMVar_)
 
 import Control.Monad
-import Debug.Trace
 
-listProvers :: [String] -> CmdlState -> IO CmdlState
-listProvers ls st = case ls of 
-              [] -> return st
-              l : ll -> do
-                      putStrLn l
-                      listProvers ll st
 
 getProversAutomatic :: G_sublogics -> [(G_prover, AnyComorphism)]
 getProversAutomatic sl = getAllProvers P.ProveCMDLautomatic sl logicGraph
@@ -82,13 +75,15 @@ cProver input state =
      case elements pS of
       [] -> return $ genMsgAndCode "Nothing selected" 1 state
       Element z _ : _ -> let
-        pl = filter ((== inp) . getProverName . fst)
-                  $ getProversAutomatic (sublogicOfTheory z)
-        the_provers = map (getProverName . fst) (getProversAutomatic (sublogicOfTheory z))
+        prov = getProversAutomatic (sublogicOfTheory z)
+        pl = filter ((== inp) . getProverName . fst) prov
+        prover_names = map (getProverName . fst) prov
         in case case cComorphism pS of
                    Nothing -> pl
                    Just x -> filter ((== x) . snd) pl ++ pl of
-             [] -> (if inp=="" then listProvers ("Applicable provers:" : (map show (nub the_provers))) state
+             [] -> (if inp=="" then do
+                            mapM_ putStrLn (map show (nub prover_names))
+                            return state          --listProvers ("Applicable provers:" : (map show (nub the_provers))) state
                                else return (genMsgAndCode
                  ("No applicable prover with name \"" ++ inp ++ "\" found") 1
                  state))
