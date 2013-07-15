@@ -249,10 +249,8 @@ cmdlCompletionFn allcmds allState input =
              c : _ -> case c of
                 Element z _ -> do
                   let proverList =
+                        nub $
                         map (getProverName . fst)
-                        $ case cComorphism proofState of
-                          Nothing -> id
-                          Just com -> filter ((== com) . snd)
                         $ getAllProvers ProveCMDLautomatic
                           (sublogicOfTheory z) logicGraph
                   lst <- checkPresenceProvers proverList
