@@ -28,12 +28,6 @@ import Control.Monad
 import System.IO
 import System.Exit
 
-finalExitCode :: String -> ExitCode -> ExitCode
-finalExitCode l currCode = case l of 
-     [] -> currCode
-     _ : ls -> if isPrefixOf "goalStatus" l then let auxStr = take 30 l in if isInfixOf "Disproved" auxStr then ExitFailure 4 else currCode 
-                                            else finalExitCode ls currCode
-
 cmdlProcessString :: FilePath -> Int -> String -> CmdlState
   -> IO (CmdlState, Maybe Command)
 cmdlProcessString fp l ps st = case parseSingleLine fp l ps of
@@ -75,12 +69,8 @@ cmdlProcessScriptFile fp st = do
   str <- readFile fp
   s <- foldM (\ nst (s, n) -> do
       (cst, _) <- resetErrorAndProcString fp n s nst
-      printCmdResult cst) st . number $ lines str
-  putStrLn ""
-  let 
-    aux = finalExitCode ( show ( i_state ( intState s))) (getExitCode s)
-  putStrLn $ show $ aux 
-  exitWith $ getExitCode s 
+      printCmdResult cst) st . number $ lines str 
+  exitWith $ getExitCode s
   return s
 
 
