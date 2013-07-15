@@ -70,8 +70,6 @@ import Comorphisms.KnownProvers
 
 import Static.GTheory
 
-import Debug.Trace
-
 -- * Provers
 
 -- | provers and consistency checkers for specific logics
@@ -109,7 +107,7 @@ data G_cons_checker =
        (ConsChecker sign sentence sublogics morphism proof_tree)
   deriving (Typeable)
 
-instance Show G_cons_checker where show x = "G_cons_checker "
+instance Show G_cons_checker where show _ = "G_cons_checker "
 
 getCcName :: G_cons_checker -> String
 getCcName (G_cons_checker _ p) = ccName p

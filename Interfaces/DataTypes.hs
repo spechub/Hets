@@ -30,7 +30,6 @@ import Proofs.AbstractState
 import Logic.Comorphism
 import Interfaces.Command
 import Interfaces.GenericATPState
-import Language.Haskell.Exts
 
 {- | Internal state of the interface, it contains the development graph
    and a full history. While this in most cases describes the state of
@@ -39,7 +38,7 @@ import Language.Haskell.Exts
    interface to the other passing this informations should be sufficient
    with minimal loss of information ( like selected nodes, unfinished
    script .. and so on) -}
-data IntState = IntState 
+data IntState = IntState
   { i_hist :: IntHistory -- ^ global history management
   , i_state :: Maybe IntIState -- ^ internal state
   , filename :: String } deriving (Show)

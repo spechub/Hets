@@ -11,7 +11,6 @@ Portability :  portable
 module CMDL.ProcessScript where
 
 import Interfaces.Command
-import Interfaces.DataTypes
 
 import Driver.Options
 
@@ -38,7 +37,7 @@ cmdlProcessString fp l ps st = case parseSingleLine fp l ps of
 --sets the errorCode to 0 and then processes the string
 resetErrorAndProcString :: FilePath -> Int -> String -> CmdlState
   -> IO (CmdlState, Maybe Command)
-resetErrorAndProcString fp l ps st = cmdlProcessString fp l ps $ resetErrorCode st   
+resetErrorAndProcString fp l ps st = cmdlProcessString fp l ps $ resetErrorCode st
 
 execCmdlCmd :: CmdlCmdDescription -> CmdlState -> IO CmdlState
 execCmdlCmd cm =
@@ -69,14 +68,14 @@ cmdlProcessScriptFile fp st = do
   str <- readFile fp
   s <- foldM (\ nst (s, n) -> do
       (cst, _) <- resetErrorAndProcString fp n s nst
-      printCmdResult cst) st . number $ lines str 
+      printCmdResult cst) st . number $ lines str
   exitWith $ getExitCode s
   return s
 
 
 -- | The function processes the file of instructions
 cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
-cmdlProcessFile opts file = do 
+cmdlProcessFile opts file = do
   putIfVerbose opts 2 $ "Processing hets proof file: " ++ file
   s <- cmdlProcessScriptFile file $ emptyCmdlState opts
   exitWith $ getExitCode s
