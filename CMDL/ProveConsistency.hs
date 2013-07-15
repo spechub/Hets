@@ -83,7 +83,7 @@ cProver input state =
                    Just x -> filter ((== x) . snd) pl ++ pl of
              [] -> (if inp=="" then do
                             mapM_ putStrLn (nub prover_names)
-                            return state          --listProvers ("Applicable provers:" : (map show (nub the_provers))) state
+                            return state        
                                else return (genMsgAndCode
                  ("No applicable prover with name \"" ++ inp ++ "\" found") 1
                  state))
