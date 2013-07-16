@@ -346,7 +346,7 @@ approximation lg =
 
 minimization :: LogicGraph -> AParser st MINIMIZATION
 minimization lg =
-   do p <- asKey minimizeS
+   do p <- asKey minimizeS <|> asKey closedworldS
       (cm,_) <- separatedBy (hetIRI lg) spaceT
       do _ <- asKey varsS
          (cv,_) <- separatedBy (hetIRI lg) spaceT
