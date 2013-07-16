@@ -345,15 +345,14 @@ approximation lg =
 -}
 
 minimization :: LogicGraph -> AParser st MINIMIZATION
-minimization lg =
-   do p <- asKey minimizeS <|> asKey closedworldS
-      (cm,_) <- separatedBy (hetIRI lg) spaceT
-      do _ <- asKey varsS
-         (cv,_) <- separatedBy (hetIRI lg) spaceT
-         return $ Mini cm cv $ tokPos p
-       <|> (return $ Mini cm [] $ tokPos p)
-      
-
+minimization lg = do
+   p <- asKey minimizeS <|> asKey closedworldS
+   (cm,p1) <- separatedBy (hetIRI lg) spaceT
+   (cv,p2) <- option ([],[]) $ do
+       p3 <- asKey varsS
+       (ct,pos) <- separatedBy (hetIRI lg) spaceT
+       return (ct, p3 : pos)
+   return $ Mini cm cv $ catRange $ p : p1 ++ p2       
 
 
 translation :: LogicGraph -> a -> (a -> RENAMING -> b)
