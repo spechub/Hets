@@ -11,6 +11,7 @@ Portability :  portable
 module CMDL.ProcessScript where
 
 import Interfaces.Command
+import Interfaces.DataTypes
 
 import Driver.Options
 
@@ -33,6 +34,8 @@ import Common.AS_Annotation
 import Proofs.AbstractState
 import Common.OrderedMap
 import Logic.Prover
+
+
 
 
 isNotDisproved :: G_theory -> Bool
