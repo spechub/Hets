@@ -380,6 +380,10 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
             $ getRange restr
       return (Reduction (replaceAnnoted sp1' asp) restr, fs, dgf)
   Approximation _ _ -> fail "AnalysisStructured.Approximation"
+  Minimization asp (Mini cm cv poss) -> do
+      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
+        name Minimize eo asp poss
+      return (Minimization nasp (Mini cm cv poss), nsig', dg')
   Union asps pos -> do
     (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg ln dg nsig
       name opts eo asps

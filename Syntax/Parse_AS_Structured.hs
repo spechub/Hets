@@ -277,7 +277,8 @@ specB l = do
 specC :: LogicGraph -> AParser st (Annoted SPEC)
 specC lG = do
     let spD = annoParser $ specD lG
-        rest = spD >>= translationList lG Translation Reduction Approximation
+        rest = spD >>= translationList lG Translation Reduction
+          Approximation Minimization
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     {- if the current logic has an associated data_logic,
     parse "data SPEC1 SPEC2", where SPEC1 is in the data_logic
@@ -295,11 +296,11 @@ specC lG = do
 
 translationList :: LogicGraph -> (Annoted b -> RENAMING -> b)
   -> (Annoted b -> RESTRICTION -> b) -> (Annoted b -> APPROXIMATION -> b) 
-  -> Annoted b -> AParser st (Annoted b)
-translationList l ftrans frestr fapprox sp =
-     do sp' <- translation l sp ftrans frestr fapprox
-        translationList l ftrans frestr fapprox (emptyAnno sp')
-  <|> return sp
+  -> (Annoted b -> MINIMIZATION -> b) -> Annoted b -> AParser st (Annoted b)
+translationList l ftrans frestr fapprox fminimize sp =
+     do sp' <- translation l sp ftrans frestr fapprox fminimize
+        translationList l ftrans frestr fapprox fminimize (emptyAnno sp')
+     <|> return sp
 
 {- | Parse renaming
 @
@@ -343,10 +344,22 @@ approximation lg =
     do ...
 -}
 
+minimization :: LogicGraph -> AParser st MINIMIZATION
+minimization lg =
+   do p <- asKey minimizeS
+      (cm,_) <- separatedBy (hetIRI lg) spaceT
+      do _ <- asKey varsS
+         (cv,_) <- separatedBy (hetIRI lg) spaceT
+         return $ Mini cm cv $ tokPos p
+       <|> (return $ Mini cm [] $ tokPos p)
+      
+
+
+
 translation :: LogicGraph -> a -> (a -> RENAMING -> b)
             -> (a -> RESTRICTION -> b) -> (a -> APPROXIMATION -> b)
-            -> AParser st b
-translation l sp ftrans frestr fapprox =
+            -> (a -> MINIMIZATION -> b) -> AParser st b
+translation l sp ftrans frestr fapprox fminimization =
     do r <- renaming l
        return (ftrans sp r)
     <|>
@@ -355,6 +368,9 @@ translation l sp ftrans frestr fapprox =
     <|>
     do r <- approximation l
        return (fapprox sp r)
+    <|>
+    do r <- minimization l
+       return (fminimization sp r)
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =

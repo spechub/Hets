@@ -37,6 +37,7 @@ data SPEC = Basic_spec G_basic_spec Range
           | Translation (Annoted SPEC) RENAMING
           | Reduction (Annoted SPEC) RESTRICTION
           | Approximation (Annoted SPEC) APPROXIMATION
+          | Minimization (Annoted SPEC) MINIMIZATION
           | Union [Annoted SPEC] Range
             -- pos: "and"s
           | Extension [Annoted SPEC] Range
@@ -82,6 +83,10 @@ data APPROXIMATION = Named_Approx APPROX_METHOD_REF Range
                    | Qual_Approx APPROX_METHOD_REF LOGIC_REF Range
                      deriving (Show, Eq)
 
+data MINIMIZATION = Mini CircMin CircVars Range
+                    deriving (Show, Eq)
+
+
 data G_mapping = G_symb_map G_symb_map_items_list
                | G_logic_translation Logic_code
                  deriving (Show, Eq)
@@ -103,6 +108,9 @@ type MODULE_NAME = IRI
 type APPROX_METHOD_REF = IRI
 type ENTITY = IRI
 type RESTRICTION_SIGNATURE = [ENTITY]
+type CircMin = [Symb]
+type CircVars = [Symb]
+type Symb = IRI
 
 -- | a logic with serialization
 data LogicDescr = LogicDescr Logic_name (Maybe IRI) Range
