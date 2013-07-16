@@ -162,7 +162,8 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
   btnCheck <- xmlGetWidget xml castToButton "btnCheck"
   btnStop <- xmlGetWidget xml castToButton "btnStop"
   trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
-
+  toolLabel <- xmlGetWidget xml castToLabel "label1"
+  labelSetLabel toolLabel "Pick disprover"
   windowSetTitle window "Disprove"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
 

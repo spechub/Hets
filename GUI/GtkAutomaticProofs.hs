@@ -307,7 +307,7 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
       case Map.lookup n m of
         Nothing -> m
         Just f@(Finder { comorphism = cc' }) -> let c = cc !! i in
-          Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
+          Map.insert n (f { selected = fromMaybe 0 $ elemIndex c cc' }) m
     ) m' old
 
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
