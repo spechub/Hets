@@ -93,7 +93,8 @@ showProverWindow res ln le = postGUIAsync $ do
   btnStop           <- xmlGetWidget xml castToButton "btnStop"
   -- btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
   trvFinder         <- xmlGetWidget xml castToTreeView "trvFinder"
-
+  toolLabel         <- xmlGetWidget xml castToLabel "label1"
+  labelSetLabel toolLabel "Pick prover"
   windowSetTitle window "AutomaticProofs"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
 
