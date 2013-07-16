@@ -27,6 +27,31 @@ import Control.Monad
 import System.IO
 import System.Exit
 
+import Static.GTheory
+import qualified Data.Map as Map
+import Common.AS_Annotation
+import Proofs.AbstractState
+import Common.OrderedMap
+import Logic.Prover
+
+
+isNotDisproved :: G_theory -> Bool
+isNotDisproved G_theory {gTheorySens = el} = checkListDisproved $ Data.List.map ((Data.List.map snd) .getThmStatus . 
+                             senAttr . ele . snd) $ Map.toList el 
+
+checkList :: [BasicProof] -> Bool
+checkList [] = False
+checkList (l : ls) = case l of 
+            BasicProof _ (ProofStatus _ b _ _ _ _ _) -> case b of 
+              Disproved -> True
+              _ -> checkList ls
+            _ -> checkList ls
+
+checkListDisproved :: [[BasicProof]] -> Bool
+checkListDisproved [] = True
+checkListDisproved (l : ls) = if checkList l then False
+                                             else checkListDisproved ls
+
 cmdlProcessString :: FilePath -> Int -> String -> CmdlState
   -> IO (CmdlState, Maybe Command)
 cmdlProcessString fp l ps st = case parseSingleLine fp l ps of
@@ -69,7 +94,11 @@ cmdlProcessScriptFile fp st = do
   s <- foldM (\ nst (s, n) -> do
       (cst, _) <- resetErrorAndProcString fp n s nst
       printCmdResult cst) st . number $ lines str
-  exitWith $ getExitCode s
+  case i_state $ intState s of 
+    Just x -> case head $ elements x of 
+      Element list _ -> if isNotDisproved (currentTheory list) then exitWith $ getExitCode s
+                                                               else exitWith $ ExitFailure 4
+    Nothing -> exitWith $ getExitCode s  
   return s
 
 
