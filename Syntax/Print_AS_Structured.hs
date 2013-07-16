@@ -88,6 +88,8 @@ printSPEC lg spec = case spec of
     EmptySpec _ -> specBraces empty
     Translation aa ab -> sep [condBracesTransReduct lg aa, printRENAMING ab]
     Reduction aa ab -> sep [condBracesTransReduct lg aa, printRESTRICTION ab]
+    Approximation _ _ -> fail "Syntax/Print_AS_Structured"
+    Minimization aa _ -> sep [keyword minimizeS, printGroupSpec lg aa]
     Union aa _ -> sep $ printUnion lg aa
     Extension aa _ -> sep $ printExtension lg aa
     Free_spec aa _ -> sep [keyword freeS, printGroupSpec lg aa]

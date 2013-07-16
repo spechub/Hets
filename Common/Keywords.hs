@@ -589,6 +589,9 @@ unitS = "unit"
 varS :: String
 varS = "var"
 
+varsS :: String
+varsS = "vars"
+
 versionS :: String
 versionS = "version"
 
