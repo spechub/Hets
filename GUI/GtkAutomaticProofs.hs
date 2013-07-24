@@ -250,9 +250,7 @@ performAutoProof gi inclThms timeout update (Finder _ pr cs i) listNodes nodes =
       c = cs !! i
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
-           putStrLn ("from ProofAuto : " ++ ( show (name fn)))
            res <- maybe (return Nothing) (\ g_th -> do
-                    
                     Result ds ms <- runResultT
                       $ (do 
                           (a,b) <- autoProofAtNode inclThms timeout [] g_th (pr,c)

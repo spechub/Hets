@@ -69,7 +69,6 @@ import Logic.Coerce
 import Comorphisms.KnownProvers
 
 import Static.GTheory
-import Debug.Trace
 import Common.ProofTree
 
 --import Interfaces.DataTypes (IntState)
@@ -505,5 +504,5 @@ autoProofAtNode useTh timeout goals g_th p_cm = do
                 takeMVar answ
               case maybeResult d of
                 Nothing -> fail "autoProofAtNode: proving failed"
-                Just d' -> trace (show d') $ return(( currentTheory $ markProved (snd p_cm) lid1 d' st
+                Just d' -> return(( currentTheory $ markProved (snd p_cm) lid1 d' st
                            , map (\ ps -> (goalName ps, show $ goalStatus ps)) d'), (st,map encapsulate_pt d'))
