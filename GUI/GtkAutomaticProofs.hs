@@ -40,17 +40,20 @@ import Comorphisms.LogicGraph (logicGraph)
 import Common.LibName (LibName)
 import Common.AutoProofUtils
 import Common.Result
-import Common.ResultT (runResultT)
+import Common.ResultT
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
 import Control.Monad (foldM_, join, when)
+import Control.Monad.Trans
 
 import Proofs.AbstractState
 
 import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
+
+import Interfaces.Utils
 
 -- | Data structure for saving the user-selected prover and comorphism
 data Finder = Finder { fName      :: String
@@ -63,15 +66,15 @@ instance Eq Finder where
 
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
-showAutomaticProofs (GInfo { libName = ln }) le = do
+showAutomaticProofs ginf@(GInfo { libName = ln }) le = do
   wait <- newEmptyMVar
-  showProverWindow wait ln le
+  showProverWindow ginf wait ln le
   le' <- takeMVar wait
   return $ Result [] $ Just le'
 
 -- | Displays the consistency checker window
-showProverWindow :: MVar LibEnv -> LibName -> LibEnv -> IO ()
-showProverWindow res ln le = postGUIAsync $ do
+showProverWindow :: GInfo -> MVar LibEnv -> LibName -> LibEnv -> IO ()
+showProverWindow ginf res ln le = postGUIAsync $ do
   xml               <- getGladeXML ConsistencyChecker.get
   -- get objects
   window            <- xmlGetWidget xml castToWindow "NodeChecker"
@@ -190,7 +193,7 @@ showProverWindow res ln le = postGUIAsync $ do
       Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
-      performAutoProof inclThms timeout prgBar f listNodes nodes'
+      performAutoProof ginf inclThms timeout prgBar f listNodes nodes'
       putMVar wait ()
     putMVar threadId tid
     forkIO_ $ do
@@ -226,8 +229,9 @@ showProverWindow res ln le = postGUIAsync $ do
   widgetShow window
 
 
-performAutoProof :: -- include proven Theorems in subsequent proofs
-                     Bool
+performAutoProof :: GInfo
+                    -- include proven Theorems in subsequent proofs
+                  ->  Bool
                     -- Timeout (sec)
                   -> Int
                     -- Progress bar
@@ -241,14 +245,19 @@ performAutoProof :: -- include proven Theorems in subsequent proofs
                     {- no return value, since results are stored by changing
                     FNode data -}
                   -> IO ()
-performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
+performAutoProof gi inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   let count' = fromIntegral $ length nodes
       c = cs !! i
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
+           putStrLn ("from ProofAuto : " ++ ( show (name fn)))
            res <- maybe (return Nothing) (\ g_th -> do
+                    
                     Result ds ms <- runResultT
-                      $ autoProofAtNode inclThms timeout [] g_th (pr, c)
+                      $ (do 
+                          (a,b) <- autoProofAtNode inclThms timeout [] g_th (pr,c)
+                          liftIO $ addCommandHistoryToState (intState gi) (fst b) (Just (pr,c)) (snd b)  
+                          return a)
                     maybe (fail $ showRelDiags 1 ds) (return . Just . fst) ms)
                   $ globalTheory $ snd $ node fn
            case res of

@@ -69,6 +69,10 @@ import Logic.Coerce
 import Comorphisms.KnownProvers
 
 import Static.GTheory
+import Debug.Trace
+import Common.ProofTree
+
+--import Interfaces.DataTypes (IntState)
 
 -- * Provers
 
@@ -80,6 +84,8 @@ data G_prover =
       sign morphism symbol raw_symbol proof_tree
   => G_prover lid (Prover sign sentence morphism sublogics proof_tree)
   deriving Typeable
+
+
 
 instance Show G_prover where
   show = getProverName
@@ -125,6 +131,16 @@ coerceConsChecker ::
   -> ConsChecker sign1 sentence1 sublogics1 morphism1 proof_tree1
   -> m (ConsChecker sign2 sentence2 sublogics2 morphism2 proof_tree2)
 coerceConsChecker = primCoerce
+
+
+-- | provers and consistency checkers for specific logics
+data G_proof_tree =
+  forall lid sublogics basic_spec sentence symb_items symb_map_items
+    sign morphism symbol raw_symbol proof_tree
+  . Logic lid sublogics basic_spec sentence symb_items symb_map_items
+      sign morphism symbol raw_symbol proof_tree
+  => G_proof_tree lid proof_tree
+  deriving Typeable
 
 -- | Possible actions for GUI which are manipulating ProofState
 data ProofActions = ProofActions {
@@ -451,8 +467,9 @@ markProvedGoalMap c lid status th = case th of
       in G_theory lid1 syn sig si (foldl (flip upd) thSens status)
         startThId
 
-autoProofAtNode :: -- use theorems is subsequent proofs
-                    Bool
+autoProofAtNode ::
+                   -- use theorems is subsequent proofs
+                  Bool
                    -- Timeout Limit
                   -> Int
                    -- selected goals
@@ -462,7 +479,7 @@ autoProofAtNode :: -- use theorems is subsequent proofs
                    -- selected Prover and Comorphism
                   -> ( G_prover, AnyComorphism )
                    -- returns new GoalStatus for the Node
-                  -> ResultT IO (G_theory, [(String, String)])
+                  -> ResultT IO ((G_theory, [(String, String)]), (ProofState, [ProofStatus G_proof_tree])) 
 autoProofAtNode useTh timeout goals g_th p_cm = do
       let knpr = propagateErrors "autoProofAtNode"
             $ knownProversWithKind ProveCMDLautomatic
@@ -478,6 +495,7 @@ autoProofAtNode useTh timeout goals g_th p_cm = do
             Nothing ->
               fail "autoProofAtNode: failed to init CMDLautomaticBatch"
             Just fn -> do
+              let encapsulate_pt ps = ps {proofTree = G_proof_tree lid1 $ proofTree ps} 
               d <- lift $ do
                 -- mVar to poll the prover for results
                 answ <- newMVar (return [])
@@ -487,6 +505,5 @@ autoProofAtNode useTh timeout goals g_th p_cm = do
                 takeMVar answ
               case maybeResult d of
                 Nothing -> fail "autoProofAtNode: proving failed"
-                Just d' -> return
-                  ( currentTheory $ markProved (snd p_cm) lid1 d' st
-                  , map (\ ps -> (goalName ps, show $ goalStatus ps)) d')
+                Just d' -> trace (show d') $ return(( currentTheory $ markProved (snd p_cm) lid1 d' st
+                           , map (\ ps -> (goalName ps, show $ goalStatus ps)) d'), (st,map encapsulate_pt d'))

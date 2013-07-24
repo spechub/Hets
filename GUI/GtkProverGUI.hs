@@ -44,6 +44,8 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Maybe (fromMaybe, isJust )
 
+import Debug.Trace
+
 data GProver = GProver
   { pName :: String
   , comorphism :: [AnyComorphism]

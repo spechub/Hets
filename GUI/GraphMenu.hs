@@ -227,7 +227,7 @@ createGlobalMenu gi showLib _ = do
          (performProofMenuAction (GlobCmd CheckConsistencyCurrent)
            $ showConsistencyChecker Nothing gi)
      , Button "Automatic proofs"
-         (performProofMenuAction (GlobCmd ProveCurrent)
+         (performProofMenuAction (CommentCmd "")
            $ showAutomaticProofs gi)
 #endif
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->

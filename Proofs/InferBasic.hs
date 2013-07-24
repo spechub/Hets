@@ -59,6 +59,8 @@ import Data.Maybe
 
 import Control.Monad.Trans
 
+import Debug.Trace
+
 selectProver :: [(G_prover, AnyComorphism)]
              -> ResultT IO (G_prover, AnyComorphism)
 selectProver ps = case ps of
@@ -110,7 +112,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
 
 proveKnownPMap :: LogicGraph
     -> IORef IntState
-    -> [GFreeDefMorphism]
+    ->  [GFreeDefMorphism]
     -> ProofState -> IO (Result ProofState)
 proveKnownPMap lg intSt freedefs st =
     maybe (proveFineGrainedSelect lg intSt freedefs st)

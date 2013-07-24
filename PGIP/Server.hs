@@ -999,7 +999,7 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
         diffs = Set.difference (Set.fromList thms)
                 $ Set.fromList ks
     unless (Set.null diffs) $ fail $ "unknown theorems: " ++ show diffs
-    (nTh, sens) <- autoProofAtNode useTh (maybe 1 (max 1) tl) thms gTh cp
+    ((nTh, sens),_) <- autoProofAtNode useTh (maybe 1 (max 1) tl) thms gTh cp
     if null sens then return (le, sens) else return
         (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
