@@ -84,8 +84,6 @@ data G_prover =
   => G_prover lid (Prover sign sentence morphism sublogics proof_tree)
   deriving Typeable
 
-
-
 instance Show G_prover where
   show = getProverName
 
@@ -140,7 +138,9 @@ data G_proof_tree =
       sign morphism symbol raw_symbol proof_tree
   => G_proof_tree lid proof_tree
   deriving Typeable
-
+instance Show G_proof_tree where
+  show (G_proof_tree _ pt) = show pt
+  
 -- | Possible actions for GUI which are manipulating ProofState
 data ProofActions = ProofActions {
     -- | called whenever the "Prove" button is clicked
