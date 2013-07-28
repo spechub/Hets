@@ -36,6 +36,12 @@ elementTypeK = QName {qName = "type", qURI = Just "http://www.w3.org/2001/XMLSch
 elementIsAbstractK :: QName
 elementIsAbstractK = QName {qName = "isAbstract", qURI = Nothing, qPrefix = Nothing}
 
+elementSuperClassK :: QName
+elementSuperClassK = QName {qName = "superClass", qURI = Nothing, qPrefix = Nothing}
+
+ownedAttributeK :: QName
+ownedAttributeK = QName {qName = "ownedAttribute", qURI = Nothing, qPrefix = Nothing}
+
 objectK :: QName
 objectK = QName {qName = "object", qURI = Nothing, qPrefix = Nothing}
 

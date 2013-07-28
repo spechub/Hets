@@ -19,14 +19,6 @@ import Text.XML.Light
 import System.IO 
 
 
-import CSMOF.XMLKeywords
-
-prueba :: Element -> String
-prueba el = foldr ((++) . printChildrenModel) "" (findChildren modelK el)
-printChildrenModel :: Element -> String
-printChildrenModel el = foldr ((++) . show) "" (findChildren objectK el)
-
-
 main :: IO ()
 main = do  
     handle <- openFile "./tests/classExampleCSMOF.xmi" ReadMode  
@@ -38,7 +30,4 @@ main = do
 			--hPutStr handle2 (show el)
 			--hClose handle2
 			putStrLn (show (parseCSMOF el))
-			--putStrLn (prueba el)
-			
-    
     hClose handle
