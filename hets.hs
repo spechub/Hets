@@ -117,7 +117,9 @@ processFile opts file = do
       Just (ln, nEnv) ->
         writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
       _ -> return ()
-    displayGraph file opts res
+    if guess file (intype opts) /= ProofCommand && interactive opts
+    then cmdlRun opts >> return ()
+    else displayGraph file opts res
 
 displayGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
 displayGraph file opts res = case guiType opts of
