@@ -5,7 +5,7 @@ Description :  Sublogics for THF
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  Jonathan von Schroeder <j.von_schroeder@dfki.de>
+Maintainer  :  Jonathan von Schroeder <jonathan.von_schroeder@dfki.de>
 Stability   :  experimental
 Portability :  non-portable (via Logic.Logic)
 

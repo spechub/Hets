@@ -5,7 +5,7 @@ Description :  Comorphism from THFP to THF0
 Copyright   :  (c) J. von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  J. von Schroeder <j.von_schroeder@dfki.de>
+Maintainer  :  J. von Schroeder <jonathan.von_schroeder@dfki.de>
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 

@@ -5,7 +5,7 @@ Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
                (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  Jonathan von Schroeder <j.von_schroeder@dfki.de>
+Maintainer  :  Jonathan von Schroeder <jonathan.von_schroeder@dfki.de>
 Stability   :  provisional
 Portability :  portable
 
