@@ -24,7 +24,7 @@ import CMDL.DataTypes
 import CMDL.Utils
 import CMDL.DataTypesUtils
 
-import Common.Utils (trimLeft, trimRight, nubOrd)
+import Common.Utils (trimLeft, trimRight, nubOrd, splitOn)
 import Common.Result (Result (Result))
 
 import Comorphisms.LogicGraph (comorphismList, logicGraph,
@@ -261,19 +261,25 @@ cmdlCompletionFn allcmds allState input =
                   lst <- checkPresenceProvers proverList
                   return $ map (app bC) $ filter (isPrefixOf tC) lst
    ReqComorphism ->
-        case i_state $ intState allState of
+    let input'' = case words input of
+                   cmd:s' -> unwords $ cmd:(concatMap (splitOn ':') $
+                                            concatMap (splitOn ';') $ s')
+                   _ -> input
+        input'  = if elem (lastChar input) ";: " then
+                   input'' ++ " " else input''
+    in case i_state $ intState allState of
          Nothing -> return []
          Just pS ->
           case elements pS of
            [] -> return []
            Element st _ : _ ->
-              let tC = if isSpace $ lastChar input
+              let tC = if isSpace $ lastChar input'
                         then []
-                        else lastString $ words input
+                        else lastString $ words input'
                   appendC' =
                    map (\ coname -> case lookupComorphism_in_LG coname of
                                     Result _ cmor -> cmor) $
-                    tail $ words input
+                    tail $ words input'
                   appendC = sequence $ (if length appendC' > 0 &&
                                             isNothing (last appendC')
                                          then init else id) appendC'
@@ -283,9 +289,9 @@ cmdlCompletionFn allcmds allState input =
                             foldl (\ c1 c2 -> maybe Nothing
                              (`compComorphism` c2) c1)
                              (cComorphism pS) cs
-                  bC = if isSpace $ lastChar input
-                        then trimRight input
-                        else unwords $ init $ words input
+                  bC = if isSpace $ lastChar input'
+                        then trimRight input'
+                        else unwords $ init $ words input'
                   sl = case comor of
                         Just (Comorphism cid) ->
                          case sublogicOfTheory st of

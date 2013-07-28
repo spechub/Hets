@@ -104,7 +104,9 @@ cTranslate input state' =
                          i_state = Just pS {
                                     cComorphism = Just smth } }
                           }) (genMessage "" "" state')
-                             (splitOn ' ' $ trim input)
+                             (concatMap (splitOn ';') $
+                              concatMap (splitOn ':') $
+                              words $ trim input)
 
 
 parseElements :: CmdlListAction -> [String] -> CmdlGoalAxiom
