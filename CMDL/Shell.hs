@@ -320,7 +320,8 @@ cmdlCompletionFn allcmds allState input =
                      (\ (n, Logic lid) ->
                         case map sublogicName $ all_sublogics lid of
                          [_] -> [i ++ n]
-                         sls -> map (\ sl -> i ++ n ++ "." ++ sl) sls) $
+                         sls -> (i++n) : map 
+                          (\ sl -> i ++ n ++ "." ++ sl) sls) $
                      filter (Data.List.isPrefixOf l' . fst) $
                      Data.Map.toList $ logics logicGraph
    ReqFile -> do
