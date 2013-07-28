@@ -37,6 +37,8 @@ module Proofs.AbstractState
     , G_theory_with_cons_checker (..)
     , prepareForProving
     , prepareForConsChecking
+    , isSubElemG
+    , pathToComorphism
     , getAllProvers
     , getConsCheckers
     , lookupKnownProver
@@ -69,9 +71,8 @@ import Logic.Coerce
 import Comorphisms.KnownProvers
 
 import Static.GTheory
-import Common.ProofTree
 
---import Interfaces.DataTypes (IntState)
+-- import Interfaces.DataTypes (IntState)
 
 -- * Provers
 
@@ -102,15 +103,16 @@ coerceProver ::
 coerceProver = primCoerce
 
 data G_cons_checker =
-  forall lid sublogics basic_spec sentence symb_items symb_map_items
-    sign morphism symbol raw_symbol proof_tree
-  . Logic lid sublogics basic_spec sentence symb_items symb_map_items
-      sign morphism symbol raw_symbol proof_tree
+  forall lid sublogics basic_spec sentence symb_items
+    symb_map_items sign morphism symbol raw_symbol proof_tree
+  . Logic lid sublogics basic_spec sentence symb_items
+      symb_map_items sign morphism symbol raw_symbol proof_tree
   => G_cons_checker lid
        (ConsChecker sign sentence sublogics morphism proof_tree)
   deriving (Typeable)
 
-instance Show G_cons_checker where show _ = "G_cons_checker "
+instance Show G_cons_checker where
+ show _ = "G_cons_checker "
 
 getCcName :: G_cons_checker -> String
 getCcName (G_cons_checker _ p) = ccName p
@@ -140,7 +142,7 @@ data G_proof_tree =
   deriving Typeable
 instance Show G_proof_tree where
   show (G_proof_tree _ pt) = show pt
-  
+
 -- | Possible actions for GUI which are manipulating ProofState
 data ProofActions = ProofActions {
     -- | called whenever the "Prove" button is clicked
@@ -396,14 +398,14 @@ getProvers pk (G_sublogics lid sl) =
              [] (provers tlid)
 
 knownProvers :: LogicGraph -> ProverKind -> Map.Map G_sublogics [G_prover]
-knownProvers lg pk=
+knownProvers lg pk =
  let l = Map.elems $ logics lg
- in foldl (\m (Logic lid) -> foldl (\m' p ->
+ in foldl (\ m (Logic lid) -> foldl (\ m' p ->
      let lgx = G_sublogics lid (proverSublogic p)
-         p'  = G_prover lid p
+         p' = G_prover lid p
      in case Map.lookup lgx m' of
-         Just ps -> Map.insert lgx (p':ps) m'
-         Nothing -> Map.insert lgx [p']    m') m $
+         Just ps -> Map.insert lgx (p' : ps) m'
+         Nothing -> Map.insert lgx [p'] m') m $
      filter (hasProverKind pk)
             (provers lid)) Map.empty l
 
@@ -417,28 +419,33 @@ isSubElemG (G_sublogics lid sl) (G_sublogics lid1 sl1) =
  Logic lid == Logic lid1 &&
  isSubElem sl (Unsafe.Coerce.unsafeCoerce sl1)
 
+pathToComorphism :: ([((G_sublogics, t1), AnyComorphism)], (G_sublogics, t))
+                    -> AnyComorphism
+pathToComorphism (path, (G_sublogics lid sub, _)) =
+ case path of
+  [] -> Comorphism $ mkIdComorphism lid sub
+  ((G_sublogics lid1 sub1, _), c) : cs ->
+   foldl unsafeCompComorphism
+    (Comorphism $ mkIdComorphism lid1 sub1)
+    (c : snd (unzip cs))
+
 getAllProvers :: ProverKind -> G_sublogics -> LogicGraph
  -> [(G_prover, AnyComorphism)]
 getAllProvers pk start lg =
   let kp = knownProvers lg pk
-      g  = logicGraph2Graph lg
-  in concat $ map (mkComorphism kp) $
-      concat $ map (\end ->
-       yen 10 (start, Nothing) (\(l,_) -> isSubElemG l end) g)
+      g = logicGraph2Graph lg
+  in concatMap (mkComorphism kp) $
+      concatMap (\ end ->
+       yen 10 (start, Nothing) (\ (l, _) -> isSubElemG l end) g)
        (Map.keys kp)
  where
   mkComorphism :: Map.Map G_sublogics [t2]
    -> ([((G_sublogics, t1), AnyComorphism)], (G_sublogics, t))
    -> [(t2, AnyComorphism)]
-  mkComorphism kp (path,(end@(G_sublogics lid sub),_)) =
-   let fullComorphism = case path of
-                         [] -> Comorphism $ mkIdComorphism lid sub
-                         ((G_sublogics lid1 sub1,_),c):cs ->
-                                 foldl unsafeCompComorphism
-                                  (Comorphism $ mkIdComorphism lid1 sub1)
-                                  (c:(snd $ unzip $ cs))
-   in case Map.toList $ Map.filterWithKey (\l _ -> isSubElemG end l) kp of
-        [(_,ps)] -> map (\p -> (p,fullComorphism)) ps
+  mkComorphism kp path@(_, (end, _)) =
+   let fullComorphism = pathToComorphism path
+   in case Map.toList $ Map.filterWithKey (\ l _ -> isSubElemG end l) kp of
+        [(_, ps)] -> map (\ p -> (p, fullComorphism)) ps
         _ -> error "error1"
 
 {- | the list of proof statuses is integrated into the goalMap of the state
@@ -478,7 +485,8 @@ autoProofAtNode ::
                    -- selected Prover and Comorphism
                   -> ( G_prover, AnyComorphism )
                    -- returns new GoalStatus for the Node
-                  -> ResultT IO ((G_theory, [(String, String)]), (ProofState, [ProofStatus G_proof_tree])) 
+                  -> ResultT IO ((G_theory, [(String, String)]),
+                                 (ProofState, [ProofStatus G_proof_tree]))
 autoProofAtNode useTh timeout goals g_th p_cm = do
       let knpr = propagateErrors "autoProofAtNode"
             $ knownProversWithKind ProveCMDLautomatic
@@ -494,7 +502,8 @@ autoProofAtNode useTh timeout goals g_th p_cm = do
             Nothing ->
               fail "autoProofAtNode: failed to init CMDLautomaticBatch"
             Just fn -> do
-              let encapsulate_pt ps = ps {proofTree = G_proof_tree lid1 $ proofTree ps} 
+              let encapsulate_pt ps =
+                   ps {proofTree = G_proof_tree lid1 $ proofTree ps}
               d <- lift $ do
                 -- mVar to poll the prover for results
                 answ <- newMVar (return [])
@@ -504,5 +513,7 @@ autoProofAtNode useTh timeout goals g_th p_cm = do
                 takeMVar answ
               case maybeResult d of
                 Nothing -> fail "autoProofAtNode: proving failed"
-                Just d' -> return(( currentTheory $ markProved (snd p_cm) lid1 d' st
-                           , map (\ ps -> (goalName ps, show $ goalStatus ps)) d'), (st,map encapsulate_pt d'))
+                Just d' ->
+                 return (( currentTheory $ markProved (snd p_cm) lid1 d' st
+                         , map (\ ps -> (goalName ps, show $ goalStatus ps)) d')
+                         , (st, map encapsulate_pt d'))

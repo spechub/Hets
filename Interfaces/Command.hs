@@ -186,6 +186,7 @@ data InspectCmd =
   | EdgeInfo -- of a selected link
   | LocalAxioms
   | NodeInfo
+  | ComorphismsTo
   | Theory
   | AllGoals
   | ProvenGoals
@@ -203,6 +204,7 @@ showInspectCmd cmd = case cmd of
   Libs -> "Library Names"
   Nodes -> "Nodes"
   Edges -> "Edges"
+  ComorphismsTo -> "Comorphisms to"
   UndoHist -> "Undo-History"
   RedoHist -> "Redo-History"
   EdgeInfo -> "Edge-Info"
@@ -304,7 +306,8 @@ cmdNameStr cmd = case cmd of
   InspectCmd i s ->
     (if i > Edges then "show-" else "")
     ++ map (\ c -> if c == ' ' then '-' else toLower c) (showInspectCmd i)
-    ++ (if i > LocalAxioms && isNothing s then "-current" else "")
+    ++ (if i > LocalAxioms && isNothing s && i /= ComorphismsTo
+        then "-current" else "")
   CommentCmd _ -> "#"
   HelpCmd -> "help"
   ExitCmd -> "quit"
@@ -331,7 +334,9 @@ describeCmd cmd = case cmd of
   SetAxioms _ -> "Set the axioms used for the next proof"
   IncludeProvenTheorems b -> (if b then "I" else "Do not i")
     ++ "nclude proven theorems"
-  InspectCmd i t -> "Show " ++ showInspectCmd i
+  InspectCmd i t -> if i == ComorphismsTo
+   then "Show comorphisms from currently selected node(s) to target logic"
+   else "Show " ++ showInspectCmd i
     ++ (if i > LocalAxioms && isNothing t then " of selected node" else "")
   CommentCmd _ -> "Line comment"
   HelpCmd -> "Show all available commands"

@@ -87,7 +87,7 @@ emptyCmdlState opts = CmdlState
   , openComment = False
   , connections = []
   , hetsOpts = opts
-  , errorCode = 0 
+  , errorCode = 0
 }
 
 data CmdlPrompterState = CmdlPrompterState
@@ -136,6 +136,7 @@ data CmdlCmdRequirements =
   | ReqProvers
   | ReqConsCheck
   | ReqComorphism
+  | ReqLogic
   | ReqFile
   | ReqAxm Bool   -- ^ True: Axioms, False: Goals
   | ReqNumber
@@ -151,6 +152,7 @@ showRequirement cr = case cr of
     ReqConsCheck -> "ConsChecker"
     ReqProvers -> "Prover"
     ReqComorphism -> "Comorphism"
+    ReqLogic -> "Logic"
     ReqNodesOrEdges n m -> maybe "" (\ f -> case f of
         OpenCons -> "OpenCons"
         OpenGoals -> "Goal") m
@@ -212,4 +214,3 @@ emptyCmdlMessage = CmdlMessage
   { errorMsg = []
   , outputMsg = []
   , warningMsg = [] }
-

@@ -44,8 +44,6 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Maybe (fromMaybe, isJust )
 
-import Debug.Trace
-
 data GProver = GProver
   { pName :: String
   , comorphism :: [AnyComorphism]
@@ -69,38 +67,38 @@ showProverGUI prGuiAcs thName warn th knownProvers comorphList = do
   state <- newMVar initState
   wait <- newEmptyMVar
   postGUIAsync $ do
-    xml                   <- getGladeXML ProverGUI.get
+    xml <- getGladeXML ProverGUI.get
     -- get objects
-    window                <- xmlGetWidget xml castToWindow "ProverGUI"
+    window <- xmlGetWidget xml castToWindow "ProverGUI"
     -- buttons at buttom
-    btnShowTheory         <- xmlGetWidget xml castToButton "btnShowTheory"
+    btnShowTheory <- xmlGetWidget xml castToButton "btnShowTheory"
     btnShowSelectedTheory <- xmlGetWidget xml castToButton "btnShowSelected"
-    btnClose              <- xmlGetWidget xml castToButton "btnClose"
+    btnClose <- xmlGetWidget xml castToButton "btnClose"
     -- goals view
-    trvGoals              <- xmlGetWidget xml castToTreeView "trvGoals"
-    btnGoalsAll           <- xmlGetWidget xml castToButton "btnGoalsAll"
-    btnGoalsNone          <- xmlGetWidget xml castToButton "btnGoalsNone"
-    btnGoalsInvert        <- xmlGetWidget xml castToButton "btnGoalsInvert"
-    btnGoalsSelectOpen    <- xmlGetWidget xml castToButton "btnGoalsSelectOpen"
+    trvGoals <- xmlGetWidget xml castToTreeView "trvGoals"
+    btnGoalsAll <- xmlGetWidget xml castToButton "btnGoalsAll"
+    btnGoalsNone <- xmlGetWidget xml castToButton "btnGoalsNone"
+    btnGoalsInvert <- xmlGetWidget xml castToButton "btnGoalsInvert"
+    btnGoalsSelectOpen <- xmlGetWidget xml castToButton "btnGoalsSelectOpen"
     -- axioms view
-    trvAxioms             <- xmlGetWidget xml castToTreeView "trvAxioms"
-    btnAxiomsAll          <- xmlGetWidget xml castToButton "btnAxiomsAll"
-    btnAxiomsNone         <- xmlGetWidget xml castToButton "btnAxiomsNone"
-    btnAxiomsInvert       <- xmlGetWidget xml castToButton "btnAxiomsInvert"
-    btnAxiomsFormer       <- xmlGetWidget xml castToButton "btnAxiomsFormer"
+    trvAxioms <- xmlGetWidget xml castToTreeView "trvAxioms"
+    btnAxiomsAll <- xmlGetWidget xml castToButton "btnAxiomsAll"
+    btnAxiomsNone <- xmlGetWidget xml castToButton "btnAxiomsNone"
+    btnAxiomsInvert <- xmlGetWidget xml castToButton "btnAxiomsInvert"
+    btnAxiomsFormer <- xmlGetWidget xml castToButton "btnAxiomsFormer"
     -- theorems view
-    trvTheorems           <- xmlGetWidget xml castToTreeView "trvTheorems"
-    btnTheoremsAll        <- xmlGetWidget xml castToButton "btnTheoremsAll"
-    btnTheoremsNone       <- xmlGetWidget xml castToButton "btnTheoremsNone"
-    btnTheoremsInvert     <- xmlGetWidget xml castToButton "btnTheoremsInvert"
+    trvTheorems <- xmlGetWidget xml castToTreeView "trvTheorems"
+    btnTheoremsAll <- xmlGetWidget xml castToButton "btnTheoremsAll"
+    btnTheoremsNone <- xmlGetWidget xml castToButton "btnTheoremsNone"
+    btnTheoremsInvert <- xmlGetWidget xml castToButton "btnTheoremsInvert"
     -- status
-    btnDisplay            <- xmlGetWidget xml castToButton "btnDisplay"
-    btnProofDetails       <- xmlGetWidget xml castToButton "btnProofDetails"
-    btnProve              <- xmlGetWidget xml castToButton "btnProve"
-    cbComorphism          <- xmlGetWidget xml castToComboBox "cbComorphism"
-    lblSublogic           <- xmlGetWidget xml castToLabel "lblSublogic"
+    btnDisplay <- xmlGetWidget xml castToButton "btnDisplay"
+    btnProofDetails <- xmlGetWidget xml castToButton "btnProofDetails"
+    btnProve <- xmlGetWidget xml castToButton "btnProve"
+    cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
+    lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
     -- prover
-    trvProvers            <- xmlGetWidget xml castToTreeView "trvProvers"
+    trvProvers <- xmlGetWidget xml castToTreeView "trvProvers"
 
     windowSetTitle window $ "Prove: " ++ thName
 

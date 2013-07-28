@@ -137,6 +137,8 @@ getCommands =
   , genGlobInspectCmd Taxonomy $ cShowTaxonomy ""
   , genGlobInspectCmd Concept $ cShowConcept ""
   , genGlobInspectCmd NodeInfo cInfoCurrent
+  , genCmd (InspectCmd ComorphismsTo Nothing) CmdNoPriority ReqLogic
+  . CmdWithInput $ cComorphismsTo
   , genInspectCmd NodeInfo cInfo
   , genInspectCmd Theory $ cShowTheory Dont_translate
   , genInspectCmd AllGoals cShowTheoryGoals

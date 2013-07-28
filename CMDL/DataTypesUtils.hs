@@ -15,6 +15,8 @@ Prelude
 
 module CMDL.DataTypesUtils
   ( getSelectedDGNodes
+  , getCurrentSublogic
+  , parseSublogics
   , getInputDGNodes
   , getInputNodes
   , getTh
@@ -37,9 +39,8 @@ import Interfaces.Utils (getAllNodes)
 import CMDL.Utils
 import CMDL.DataTypes
 
-
-import Static.GTheory (G_theory, mapG_theory)
-import Static.DevGraph (DGNodeLab, lookupDGraph, labDG)
+import Static.GTheory (G_theory, mapG_theory, sublogicOfTh)
+import Static.DevGraph (DGNodeLab (..), lookupDGraph, labDG)
 
 import System.IO (stdout, stdin)
 import System.Exit
@@ -48,12 +49,16 @@ import Proofs.AbstractState (sublogicOfTheory, theoryName)
 import Static.ComputeTheory (computeTheory)
 
 import Data.Graph.Inductive.Graph (LNode, Node)
-import Data.List (find)
+import Data.List (find, break)
+import Data.Map (lookup)
 
 import Common.Result (Result (Result))
 
+import Logic.Logic
 import Logic.Comorphism (AnyComorphism (..), mkIdComorphism)
-import Logic.Grothendieck (G_sublogics (..))
+import Logic.Grothendieck (G_sublogics (..), joinSublogics, LogicGraph (logics))
+
+import Comorphisms.LogicGraph (logicGraph)
 
 add2hist :: [UndoRedoElem] -> CmdlState -> CmdlState
 add2hist descr st
@@ -92,6 +97,28 @@ getSelectedDGNodes dgState =
       dg = lookupDGraph (i_ln dgState) (i_libEnv dgState)
       nds' = zip nds $ map (labDG dg) nds
    in (if null nds' then "No node(s) selected!" else "", nds')
+
+getCurrentSublogic :: IntIState -> Maybe G_sublogics
+getCurrentSublogic dgState =
+ case getSelectedDGNodes dgState of
+  (_, []) -> Nothing
+  (_, ns) -> case map (sublogicOfTh . dgn_theory . snd) ns of
+             [] -> Nothing
+             sl1 : sl' -> foldl (maybe (const Nothing) joinSublogics)
+                              (Just sl1) sl'
+
+parseSublogics :: String -> Maybe G_sublogics
+parseSublogics input =
+ if elem '.' input then let (l, _ : sl) = Data.List.break (== '.') input
+                        in case Data.Map.lookup l $ logics logicGraph of
+                            Just (Logic lid) ->
+                             case parseSublogic lid sl of
+                              Just subl -> Just $ G_sublogics lid subl
+                              Nothing -> Nothing
+                            Nothing -> Nothing
+ else case Data.Map.lookup input $ logics logicGraph of
+       Just (Logic lid) -> Just $ G_sublogics lid (top_sublogic lid)
+       Nothing -> Nothing
 
 {- Returns the selected DGNodes
 or if the selection is empty the DGNodes specified by the input string -}
@@ -172,9 +199,9 @@ baseChannels
                   }
    in [ch_in, ch_out]
 
---first changes the error code then generates a message
+-- first changes the error code then generates a message
 genMsgAndCode :: String -> Int -> CmdlState -> CmdlState
-genMsgAndCode msg code st = genErrorMsg msg (st{errorCode = code})
+genMsgAndCode msg code st = genErrorMsg msg (st {errorCode = code})
 
 
 genErrorMsg :: String -> CmdlState -> CmdlState
@@ -201,8 +228,8 @@ resetErrorCode :: CmdlState -> CmdlState
 resetErrorCode st = st {errorCode = 0}
 
 getExitCode :: CmdlState -> ExitCode
-getExitCode st = if (errorCode st) == 0 then ExitSuccess
-                                        else ExitFailure $ errorCode st
-  
+getExitCode st = if errorCode st == 0 then ExitSuccess
+                                      else ExitFailure $ errorCode st
+
 getExitCodeInt :: CmdlState -> Int
-getExitCodeInt st = errorCode st
+getExitCodeInt = errorCode

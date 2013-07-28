@@ -59,8 +59,6 @@ import Data.Maybe
 
 import Control.Monad.Trans
 
-import Debug.Trace
-
 selectProver :: [(G_prover, AnyComorphism)]
              -> ResultT IO (G_prover, AnyComorphism)
 selectProver ps = case ps of
@@ -100,10 +98,10 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
         freedefs = getCFreeDefMorphs libEnv ln dGraph node
     let ps = getAllProvers ProveGUI (sublogicOfTh thForProof) lg
     kpMap <- liftR knownProversGUI
-    {-let kpMap = foldl (\m (G_prover _ p,c) ->
+    {- let kpMap = foldl (\m (G_prover _ p,c) ->
          case Map.lookup (proverName p) m of
           Just cs -> Map.insert (proverName p) (c:cs) m
-          Nothing -> Map.insert (proverName p) [c] m) Map.empty ps-}
+          Nothing -> Map.insert (proverName p) [c] m) Map.empty ps -}
     ResultT $ proverGUI ProofActions
       { proveF = proveKnownPMap lg intSt freedefs
       , fineGrainedSelectionF = proveFineGrainedSelect lg intSt freedefs
@@ -112,7 +110,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
 
 proveKnownPMap :: LogicGraph
     -> IORef IntState
-    ->  [GFreeDefMorphism]
+    -> [GFreeDefMorphism]
     -> ProofState -> IO (Result ProofState)
 proveKnownPMap lg intSt freedefs st =
     maybe (proveFineGrainedSelect lg intSt freedefs st)

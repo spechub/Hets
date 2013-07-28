@@ -34,7 +34,7 @@ import Interfaces.Utils
 import Interfaces.GenericATPState
 
 import Logic.Comorphism
-import Logic.Grothendieck (findComorphismPaths)
+import Logic.Grothendieck (logics, findComorphismPaths)
 import Logic.Prover
 import Logic.Logic
 
@@ -45,6 +45,7 @@ import Static.GTheory
 
 import Data.Char (isSpace)
 import Data.List
+import qualified Data.Map
 import Data.Maybe (mapMaybe)
 import System.Directory (doesDirectoryExist, getDirectoryContents)
 
@@ -275,6 +276,23 @@ cmdlCompletionFn allcmds allState input =
                                  ) comorphismList
               in return $ map (app bC)
                         $ filter (isPrefixOf tC) cL
+   ReqLogic ->
+    let l' = lastString $ words input
+        i = unwords (init $ words input) ++ " "
+    in if elem '.' l'
+       then let (l, _ : sl) = Data.List.break (== '.') l'
+            in case Data.Map.lookup l $ logics logicGraph of
+                Just (Logic lid) -> return $ map ((i ++ l ++ ".") ++) $
+                                     filter (Data.List.isPrefixOf sl)
+                                     (map sublogicName $ all_sublogics lid)
+                Nothing -> return []
+       else return $ concatMap
+                     (\ (n, Logic lid) ->
+                        case map sublogicName $ all_sublogics lid of
+                         [_] -> [i ++ n]
+                         sls -> map (\ sl -> i ++ n ++ "." ++ sl) sls) $
+                     filter (Data.List.isPrefixOf l' . fst) $
+                     Data.Map.toList $ logics logicGraph
    ReqFile -> do
         -- the incomplete path introduced until now
         let initwd = if isSpace $ lastChar input

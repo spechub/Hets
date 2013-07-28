@@ -27,6 +27,7 @@ module CMDL.InfoCommands
        , cEdges
        , cShowNodeAxioms
        , cInfo
+       , cComorphismsTo
        , cInfoCurrent
        , cShowConcept
        , cNodeNumber
@@ -52,12 +53,18 @@ import Common.DocUtils (showDoc)
 import Common.Taxonomy (TaxoGraphKind (..))
 import Common.Utils (trim)
 import qualified Common.OrderedMap as OMap
+import Common.GraphAlgo (yen)
+
+import Proofs.AbstractState (isSubElemG, pathToComorphism)
 
 import Data.Graph.Inductive.Graph (LNode, LEdge, Node)
 import Data.List
 
 import Logic.Prover (SenStatus)
 import Logic.Comorphism (AnyComorphism)
+import Logic.Grothendieck (logicGraph2Graph)
+
+import Comorphisms.LogicGraph (logicGraph)
 
 import Interfaces.Command (cmdNameStr, describeCmd, showCmd)
 import Interfaces.DataTypes
@@ -169,6 +176,25 @@ cInfoCurrent state =
                 in if null nodes
                      then return $ genMsgAndCode errors 1 state
                      else cInfo (unwords $ nodeNames nodes) state
+
+cComorphismsTo :: String -> CmdlState -> IO CmdlState
+cComorphismsTo input state =
+  case i_state $ intState state of
+    -- nothing selected
+    Nothing -> return state
+    Just ps -> case getCurrentSublogic ps of
+                Just start -> case parseSublogics input of
+                                Just end ->
+                                 let cmors = yen 10 (start, Nothing)
+                                          (\ (l, _) -> isSubElemG l end)
+                                          (logicGraph2Graph logicGraph)
+                                     cmor = map (show . pathToComorphism) cmors
+                                 in return $ genMessage ""
+                                              (unlines cmor) state
+                                Nothing -> return $ genMsgAndCode
+                                            ("Invalid logic " ++ input) 1 state
+                Nothing -> return $ genMsgAndCode
+                                     "No node(s) selected!" 1 state
 
 -- show all information of input
 cInfo :: String -> CmdlState -> IO CmdlState
