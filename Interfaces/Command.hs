@@ -187,6 +187,7 @@ data InspectCmd =
   | LocalAxioms
   | NodeInfo
   | ComorphismsTo
+  | TranslatedTheory
   | Theory
   | AllGoals
   | ProvenGoals
@@ -205,6 +206,7 @@ showInspectCmd cmd = case cmd of
   Nodes -> "Nodes"
   Edges -> "Edges"
   ComorphismsTo -> "Comorphisms to"
+  TranslatedTheory -> "Translated Theory"
   UndoHist -> "Undo-History"
   RedoHist -> "Redo-History"
   EdgeInfo -> "Edge-Info"

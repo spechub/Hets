@@ -134,6 +134,7 @@ getCommands =
   , genGlobInspectCmd Axioms $ cShowNodeAxioms ""
   , genGlobInspectCmd AllGoals $ cShowTheoryGoals ""
   , genGlobInspectCmd Theory $ cShowTheory Dont_translate ""
+  , genGlobInspectCmd TranslatedTheory $ cShowTheory Do_translate ""
   , genGlobInspectCmd Taxonomy $ cShowTaxonomy ""
   , genGlobInspectCmd Concept $ cShowConcept ""
   , genGlobInspectCmd NodeInfo cInfoCurrent
@@ -141,6 +142,7 @@ getCommands =
   . CmdWithInput $ cComorphismsTo
   , genInspectCmd NodeInfo cInfo
   , genInspectCmd Theory $ cShowTheory Dont_translate
+  , genInspectCmd TranslatedTheory $ cShowTheory Do_translate
   , genInspectCmd AllGoals cShowTheoryGoals
   , genInspectCmd ProvenGoals cShowNodeProvenGoals
   , genInspectCmd UnprovenGoals cShowNodeUnprovenGoals
