@@ -1,0 +1,11 @@
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,8 @@
++all:
++	cd src/ && ./configure
++	make -C src/ opt
++clean:
++	cd src/ && ./configure
++	-make -C src/ clean_minisat
++	-make -C src/ cleaner
++	rm src/Makefile

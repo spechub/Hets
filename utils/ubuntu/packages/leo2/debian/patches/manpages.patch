@@ -1,0 +1,14 @@
+--- a/Makefile
++++ b/Makefile
+@@ -1,8 +1,11 @@
+ all:
+ 	cd src/ && ./configure
+ 	make -C src/ opt
++	-mkdir docs
++	help2man -N -n "Higher-order theorem prover" bin/leo > docs/leo.1
+ clean:
+ 	cd src/ && ./configure
+ 	-make -C src/ clean_minisat
+ 	-make -C src/ cleaner
+ 	rm src/Makefile
++	-rm docs/leo.1

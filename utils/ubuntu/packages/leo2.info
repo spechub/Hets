@@ -1,0 +1,5 @@
+PKG_DISTRO="precise"
+PKG_URL="http://page.mi.fu-berlin.de/cbenzmueller/leo/leo2_v1.6.0.tgz"
+PKG_NAME="leo2"
+PKG_VERSION="1.6.0"
+PKG_SOURCE_EXT=".tar.gz"

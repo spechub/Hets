@@ -1,0 +1,16 @@
+Index: leo2/lib/minisat/mtl/template.mk
+===================================================================
+--- leo2.orig/lib/minisat/mtl/template.mk	2013-07-15 05:55:27.303093075 -0700
++++ leo2/lib/minisat/mtl/template.mk	2013-07-15 05:56:01.831094316 -0700
+@@ -27,6 +27,11 @@
+ CFLAGS    += -I$(MROOT) -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
+ LFLAGS    += -lz
+ 
++ifneq (,$(findstring -fPIC,$(CFLAGS)))
++else
++CFLAGS += -fPIC
++endif
++
+ .PHONY : s p d r rs clean 
+ 
+ s:	$(EXEC)

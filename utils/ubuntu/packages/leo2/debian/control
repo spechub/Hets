@@ -1,0 +1,17 @@
+Source: leo2
+Section: misc
+Priority: extra
+Maintainer: Jonathan von Schroeder <jonathan.von_schroeder@dfki.de>
+Build-Depends: debhelper (>= 7.4.15), zlib1g-dev, help2man, ocaml, ocaml-findlib, camlp4
+Standards-Version: 3.9.2
+Homepage: http://page.mi.fu-berlin.de/cbenzmueller/leo/index.html
+
+Package: leo2
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, eprover
+Description: Higher-order theorem prover
+ LEO-II is a standalone, resolution-based higher-order theorem prover designed for fruitful cooperation with specialist provers for natural fragments of higher-order logic. At present LEO-II can cooperate with TPTP compliant first-order automated theorem provers such as E, SPASS, Gandalf and Vampire.
+ . 
+ LEO-II was the winner of the THF division (automation of higher-order logic) at CASC-J5. At CASC-23 in 2011, LEO-II finished second in the THF category. LEO-II does also participate in the first-order divisions FOF and CNF. At present LEO-II is the only theorem prover available that supports THF, FOF and CNF syntax.
+ . 
+ LEO-II is implemented in Objective CAML and its problem representation language is TPTP THF.
