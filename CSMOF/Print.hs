@@ -69,7 +69,7 @@ instance Show Property where
     "\t\t" 
     ++ "property " ++ namedElementName (typedElementSuper sup) 
     ++ show mul
-    ++ " : " ++ namedElementName (typeSuper (classSuperType pro))
+    ++ " : " ++ namedElementName (typeSuper (typedElementType sup))
     ++ (case opp of
            Just n -> " oppositeOf " ++ namedElementName (typedElementSuper (propertySuper n))
            Nothing -> "")

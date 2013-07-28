@@ -42,6 +42,21 @@ elementSuperClassK = QName {qName = "superClass", qURI = Nothing, qPrefix = Noth
 ownedAttributeK :: QName
 ownedAttributeK = QName {qName = "ownedAttribute", qURI = Nothing, qPrefix = Nothing}
 
+ownedAttributeLowerK :: QName
+ownedAttributeLowerK = QName {qName = "lower", qURI = Nothing, qPrefix = Nothing}
+
+ownedAttributeUpperK :: QName
+ownedAttributeUpperK = QName {qName = "upper", qURI = Nothing, qPrefix = Nothing}
+
+ownedAttributeNameK :: QName
+ownedAttributeNameK = QName {qName = "name", qURI = Nothing, qPrefix = Nothing}
+
+ownedAttributeTypeK :: QName
+ownedAttributeTypeK = QName {qName = "type", qURI = Nothing, qPrefix = Nothing}
+
+ownedAttributeOppositeK :: QName
+ownedAttributeOppositeK = QName {qName = "opposite", qURI = Nothing, qPrefix = Nothing}
+
 objectK :: QName
 objectK = QName {qName = "object", qURI = Nothing, qPrefix = Nothing}
 
@@ -52,4 +67,13 @@ objectTypeK :: QName
 objectTypeK = QName {qName = "type", qURI = Nothing, qPrefix = Nothing}
 
 linkK :: QName
-linkK = QName {qName = "object", qURI = Nothing, qPrefix = Nothing}
+linkK = QName {qName = "link", qURI = Nothing, qPrefix = Nothing}
+
+linkTypeK :: QName
+linkTypeK = QName {qName = "type", qURI = Nothing, qPrefix = Nothing}
+
+linkSourceK :: QName
+linkSourceK = QName {qName = "source", qURI = Nothing, qPrefix = Nothing}
+
+linkTargetK :: QName
+linkTargetK = QName {qName = "target", qURI = Nothing, qPrefix = Nothing}

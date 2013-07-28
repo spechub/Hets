@@ -23,13 +23,12 @@ parseCSMOF el =
   let keyMap = generateKeyMap el
   in
    case checkXMLStructure el of
-     True -> let m = Metamodel { metamodelName = parseMetamodelName el
+     True -> let m = Metamodel { metamodelName = parseStringAttribute el metamodelNameK
                                , element = parseElements el m keyMap
                                , model = parseModels el m keyMap
                                }
              in m
      False -> err "Not a CSMOF XMI document"	 
-
 
 checkXMLStructure :: Element -> Bool
 checkXMLStructure el = 
@@ -37,48 +36,21 @@ checkXMLStructure el =
     Nothing -> False
     Just n -> True
 
-parseMetamodelName :: Element -> String
-parseMetamodelName el = 
-  case lookupAttr metamodelNameK (elAttribs el) of
-    Nothing -> err "Metamodel name does not exists"
-    Just name -> name
-
 
 parseElements :: Element -> Metamodel -> Map.Map String String -> [NamedElement]
-parseElements el metamodel keyMap = foldr ((:) . (createElement metamodel keyMap)) [] (findChildren elementK el)
+parseElements el metamodel keyMap = foldr ((++) . (createElement metamodel keyMap)) [] (findChildren elementK el)
 
-
-createElement :: Metamodel -> Map.Map String String -> Element -> NamedElement
+-- Returns a list of elements, in the case of a class, the class and its properties
+createElement :: Metamodel -> Map.Map String String -> Element -> [NamedElement]
 createElement metamodel keyMap elem = 
-  let name = parseElementName elem
-      typeAtt = parseElementType elem
-      isAbs = parseElementIsAbstract elem 
+  let name = parseStringAttribute elem elementNameK
+      typeAtt = parseStringAttribute elem elementTypeK
+      isAbs = parseBoolAttribute elem elementIsAbstractK
       super = parseElementSuperClass elem
   in
    case typeAtt of
      "CSMOF:DataType" -> createDataType metamodel keyMap name
      "CSMOF:Class" -> createClass metamodel keyMap name isAbs super elem
-
-
-parseElementName :: Element -> String
-parseElementName el = 
-  case lookupAttr elementNameK (elAttribs el) of
-    Nothing -> err "Element name does not exists"
-    Just name -> name
-
-
-parseElementType :: Element -> String
-parseElementType el = 
-  case lookupAttr elementTypeK (elAttribs el) of
-    Nothing -> err "Element type does not exists"
-    Just typ -> typ
-
-
-parseElementIsAbstract :: Element -> String
-parseElementIsAbstract el = 
-  case lookupAttr elementIsAbstractK (elAttribs el) of
-    Nothing -> "false"
-    Just abs -> abs
 
 
 parseElementSuperClass :: Element -> [String]
@@ -88,7 +60,7 @@ parseElementSuperClass el =
     Just subs -> words subs
 
 
-createDataType :: Metamodel -> Map.Map String String -> String -> NamedElement
+createDataType :: Metamodel -> Map.Map String String -> String -> [NamedElement]
 createDataType metamodel keyMap name = 
   let namedElement_X = NamedElement { namedElementName = name
                                     , namedElementOwner = metamodel
@@ -97,10 +69,11 @@ createDataType metamodel keyMap name =
       type_X = Type { typeSuper = namedElement_X
                     , typeSubClasses = DDataType { getDataType = DataType { classSuper = type_X } }
                     }
-  in namedElement_X
+  -- there is only one element
+  in (namedElement_X : [])
 
 
-createClass :: Metamodel -> Map.Map String String -> String -> String -> [String] -> Element -> NamedElement
+createClass :: Metamodel -> Map.Map String String -> String -> Bool -> [String] -> Element -> [NamedElement]
 createClass metamodel keyMap name abs subs el = 
   let namedElement_X = NamedElement { namedElementName = name
                                     , namedElementOwner = metamodel
@@ -110,40 +83,53 @@ createClass metamodel keyMap name abs subs el =
                     , typeSubClasses = DClass { getClass = class_X }
                     }
       class_X = Class { classSuperType = type_X
-                      , isAbstract = 
-                        case abs of
-                          "true" -> True
-                          "false" -> False
+                      , isAbstract = abs
                       , superClass = foldr ((:) . (linkClass keyMap metamodel)) [] subs
-                      , ownedAttribute = foldr ((:) . (createProperty metamodel keyMap)) [] (findChildren ownedAttributeK el)
-                      }
-  in namedElement_X
+                      , ownedAttribute = ownedAttributes
+                      }	
+      ownedAttributes = foldr ((:) . (createProperty metamodel keyMap class_X)) [] (findChildren ownedAttributeK el)
+  -- there is the class and every property inside it
+  in (namedElement_X : (map (typedElementSuper . propertySuper) ownedAttributes))
 
 
-createProperty :: Metamodel -> Map.Map String String -> Element -> Property
-createProperty metamodel keyMap el = err "TODO"
+createProperty :: Metamodel -> Map.Map String String -> Class -> Element -> Property
+createProperty metamodel keyMap cla el = 
+  let lower = parseIntegerAttribute el ownedAttributeLowerK
+      upper = parseIntegerAttribute el ownedAttributeUpperK
+      name = parseStringAttribute el ownedAttributeNameK
+      typeEl = parsePropertyType keyMap metamodel el
+      opp = parsePropertyOpposite keyMap metamodel el
+      namedElement = NamedElement { namedElementName = name
+                                  , namedElementOwner = metamodel
+                                  , namedElementSubClasses = TTypedElement { getTypeElement = typedElement }
+                                  }
+      typedElement = TypedElement { typedElementSuper = namedElement
+                                  , typedElementType = typeEl
+                                  , typedElementSubClasses = property
+                                  }
+      property = Property { propertySuper = typedElement
+                          , multiplicityElement = MultiplicityElement { lower = lower
+                                                                      , upper = upper
+                                                                      , multiplicityElementSubClasses = property
+                                                                      }
+                          , opposite = opp
+                          , propertyClass = cla
+                          }
+  in  property
+      
 
---ne = NamedElement 
-  --                  { namedElementName :: String
-    --                , namedElementOwner :: Metamodel
-      --              , namedElementSubClasses :: TypeOrTypedElement
-        --            }
+parsePropertyType :: Map.Map String String -> Metamodel -> Element -> Type
+parsePropertyType keyMap metamodel el = 
+  case lookupAttr ownedAttributeTypeK (elAttribs el) of
+    Nothing -> err "Property type does not exists"
+    Just typ -> linkTypeElem keyMap metamodel typ
 
---TypeOrTypedElement = TType { getType :: Type }
---                        | TTypedElement { getTypeElement :: TypedElement }
 
---TypedElement 
---                    { typedElementSuper :: NamedElement 
---                    , typedElementType :: Type 
---                    , typedElementSubClasses :: Property
---                    }
-
-	--Property { propertySuper :: TypedElement
---                , multiplicityElement :: MultiplicityElement
---                , opposite :: Maybe Property
---                , propertyClass :: Class
---                }
-
+parsePropertyOpposite :: Map.Map String String -> Metamodel -> Element -> Maybe Property
+parsePropertyOpposite keyMap metamodel el = 
+  case lookupAttr ownedAttributeOppositeK (elAttribs el) of
+    Nothing -> Nothing
+    Just opp -> Just (linkProperty keyMap metamodel opp)
 
 
 
@@ -155,19 +141,12 @@ parseModels el metamodel keyMap = foldr ((:) . (createModel metamodel keyMap)) [
 
 createModel :: Metamodel -> Map.Map String String -> Element -> Model
 createModel metamodel keyMap el = 
-  let model = Model { modelName = parseModelName el
+  let model = Model { modelName = parseStringAttribute el modelNameK
                     , object = parseObjects metamodel model keyMap el
-                    , link = [] --TODO
+                    , link = parseLinks metamodel model keyMap el
                     , modelType = metamodel
                     }
   in model
-
-
-parseModelName :: Element -> String
-parseModelName el = 
-  case lookupAttr modelNameK (elAttribs el) of
-    Nothing -> err "Model name does not exists"
-    Just name -> name
 
 
 parseObjects :: Metamodel -> Model -> Map.Map String String -> Element -> [Object]
@@ -175,25 +154,50 @@ parseObjects metamodel model keyMap el = foldr ((:) . (createObject metamodel mo
 
 createObject :: Metamodel -> Model -> Map.Map String String -> Element -> Object
 createObject metamodel model keyMap elem = 
-  let name = parseObjectName elem
-      typeAtt = parseObjectType elem
+  let name = parseStringAttribute elem objectNameK
+      typeAtt = parseStringAttribute elem objectTypeK
   in
 	Object { objectName = name
         	, objectType = linkTypeElem keyMap metamodel typeAtt
                 , objectOwner = model
                 }
 
-parseObjectName :: Element -> String
-parseObjectName el = 
-  case lookupAttr objectNameK (elAttribs el) of
-    Nothing -> err "Object name does not exists"
-    Just name -> name
 
-parseObjectType :: Element -> String
-parseObjectType el = 
-  case lookupAttr objectTypeK (elAttribs el) of
-    Nothing -> err "Object type does not exists"
+parseLinks :: Metamodel -> Model -> Map.Map String String -> Element -> [Link]
+parseLinks metamodel model keyMap el = foldr ((:) . (createLink metamodel model keyMap)) [] (findChildren linkK el)
+
+createLink :: Metamodel -> Model -> Map.Map String String -> Element -> Link
+createLink metamodel model keyMap elem = 
+  let typ = parseStringAttribute elem linkTypeK
+      source = parseStringAttribute elem linkSourceK
+      target = parseStringAttribute elem linkTargetK
+  in
+	Link { linkType = linkProperty keyMap metamodel typ
+		, source = linkObject keyMap metamodel source
+                , target = linkObject keyMap metamodel target
+                , linkOwner = model
+	}
+
+
+parseStringAttribute :: Element -> QName -> String
+parseStringAttribute el key = 
+  case lookupAttr key (elAttribs el) of
+    Nothing -> err ("Attribute does not exists: " ++ (show key))
     Just typ -> typ
+
+parseIntegerAttribute :: Element -> QName -> Integer
+parseIntegerAttribute el key = 
+  case lookupAttr key (elAttribs el) of
+    Nothing -> 1
+    Just low -> read low::Integer
+
+parseBoolAttribute :: Element -> QName -> Bool
+parseBoolAttribute el key = 
+  case lookupAttr key (elAttribs el) of
+    Nothing -> False
+    Just abs -> case abs of
+                  "true" -> True
+                  "false" -> False
 
 
 
@@ -225,7 +229,7 @@ linkTypeElem keyMap metamodel key =
       list = map toType (filter (equalTypeName name) (element metamodel))
   in 
    case list of
-     [] -> err ("Class not found: " ++ name)
+     [] -> err ("Type not found: " ++ name)
      h : rest -> h
 
 
@@ -235,7 +239,7 @@ linkProperty keyMap metamodel key =
       list = map toProperty (filter (equalPropertyName name) (element metamodel))
   in 
    case list of
-     [] -> err ("Class not found: " ++ name)
+     [] -> err ("Property not found: " ++ name)
      h : rest -> h
 
 
@@ -292,7 +296,7 @@ isModel keyMap key model = (modelName model) == (findElementInMap (getModelKey k
 
 getModelKey :: String -> String
 getModelKey key = Text.unpack (Text.dropWhileEnd (/='/') (Text.pack key))
--- head (splitRegex (mkRegex "/@object") key)
+
 
 
 findElementInMap :: String -> Map.Map String String -> String
@@ -316,21 +320,21 @@ generateKeyMap el =
 createElementKey :: Element -> (Integer, Map.Map String String) -> (Integer, Map.Map String String)
 createElementKey elem (pos,map) = 
   let key = "//@element." ++ (show pos)
-      mapElements = Map.insert key (parseElementName elem) map
+      mapElements = Map.insert key (parseStringAttribute elem elementNameK) map
   in (pos + 1, third (foldr (createChildrenKeys) (key ++ "/@ownedAttribute.", 0, mapElements) (reverse (findChildren ownedAttributeK elem))))
 
 
 createModelKey :: Element -> (Integer, Map.Map String String) -> (Integer, Map.Map String String)
 createModelKey elem (pos,map) = 
   let key = "//@model." ++ (show pos)
-      mapModel = Map.insert key (parseModelName elem) map
+      mapModel = Map.insert (key ++ "/") (parseStringAttribute elem modelNameK) map
   in (pos + 1, third (foldr (createChildrenKeys) (key ++ "/@object.", 0, mapModel) (reverse (findChildren objectK elem))))
 
 
 createChildrenKeys :: Element -> (String, Integer, Map.Map String String) -> (String, Integer, Map.Map String String)
 createChildrenKeys elem (keySup, pos, map) = 
   let key = keySup ++ (show pos)
-  in (keySup, pos + 1, Map.insert key (parseObjectName elem) map)
+  in (keySup, pos + 1, Map.insert key (parseStringAttribute elem objectNameK) map)
 
 
 third :: (String, Integer, Map.Map String String) -> Map.Map String String
