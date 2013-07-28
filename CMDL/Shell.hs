@@ -34,9 +34,11 @@ import Interfaces.Utils
 import Interfaces.GenericATPState
 
 import Logic.Comorphism
-import Logic.Grothendieck (logics, findComorphismPaths)
+import Logic.Grothendieck (logics, findComorphismPaths,
+                           G_sublogics (..))
 import Logic.Prover
 import Logic.Logic
+import Logic.Coerce (coerceSublogic)
 
 import Proofs.AbstractState
 
@@ -269,10 +271,23 @@ cmdlCompletionFn allcmds allState input =
                   bC = if isSpace $ lastChar input
                         then trimRight input
                         else unwords $ init $ words input
+                  sl = case cComorphism pS of
+                        Just (Comorphism cid) ->
+                         case sublogicOfTheory st of
+                          G_sublogics lid sl2 ->
+                           case coerceSublogic lid (sourceLogic cid) "" sl2 of
+                            Just sl2' -> case mapSublogic cid sl2' of
+                             Just sl1 -> G_sublogics (targetLogic cid) sl1
+                             Nothing -> G_sublogics (targetLogic cid)
+                                          (top_sublogic $ targetLogic cid)
+                            Nothing -> G_sublogics (targetLogic cid)
+                                        (top_sublogic $ targetLogic cid)
+                        Nothing -> sublogicOfTheory st
                   cL = concatMap (\ (Comorphism cid) ->
                                   [ language_name cid
-                                    | language_name (sourceLogic cid) ==
-                                      logicId st ]
+                                    | isSubElemG sl (G_sublogics
+                                         (sourceLogic cid)
+                                         (sourceSublogic cid)) ]
                                  ) comorphismList
               in return $ map (app bC)
                         $ filter (isPrefixOf tC) cL
