@@ -23,6 +23,7 @@ module CMDL.DataTypesUtils
   , baseChannels
   , genErrorMsg
   , genMessage
+  , genAddMessage
   , generatePrompter
   , add2hist
   , getIdComorphism
@@ -223,6 +224,12 @@ genMessage warnings msg st
         errorMsg = []
         }
      }
+
+genAddMessage :: String -> String -> CmdlState -> CmdlState
+genAddMessage warnings msg st = genMessage warnings
+ (case outputMsg $ output st of
+   "" -> msg
+   msg1 -> msg1 ++ "\n" ++ msg) st
 
 resetErrorCode :: CmdlState -> CmdlState
 resetErrorCode st = st {errorCode = 0}

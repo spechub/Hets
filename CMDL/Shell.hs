@@ -25,8 +25,10 @@ import CMDL.Utils
 import CMDL.DataTypesUtils
 
 import Common.Utils (trimLeft, trimRight, nubOrd)
+import Common.Result (Result (Result))
 
-import Comorphisms.LogicGraph (comorphismList, logicGraph)
+import Comorphisms.LogicGraph (comorphismList, logicGraph,
+                               lookupComorphism_in_LG)
 
 import Interfaces.Command (Command (CommentCmd))
 import Interfaces.DataTypes
@@ -48,7 +50,7 @@ import Static.GTheory
 import Data.Char (isSpace)
 import Data.List
 import qualified Data.Map
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe,isNothing)
 import System.Directory (doesDirectoryExist, getDirectoryContents)
 
 register2history :: CmdlCmdDescription -> CmdlState -> IO CmdlState
@@ -268,10 +270,23 @@ cmdlCompletionFn allcmds allState input =
               let tC = if isSpace $ lastChar input
                         then []
                         else lastString $ words input
+                  appendC' =
+                   map (\ coname -> case lookupComorphism_in_LG coname of
+                                    Result _ cmor -> cmor) $
+                    tail $ words input
+                  appendC = sequence $ (if length appendC' > 0 &&
+                                            isNothing (last appendC')
+                                         then init else id) appendC'
+                  comor = case appendC of
+                           Nothing -> cComorphism pS
+                           Just cs ->
+                            foldl (\ c1 c2 -> maybe Nothing
+                             (`compComorphism` c2) c1)
+                             (cComorphism pS) cs
                   bC = if isSpace $ lastChar input
                         then trimRight input
                         else unwords $ init $ words input
-                  sl = case cComorphism pS of
+                  sl = case comor of
                         Just (Comorphism cid) ->
                          case sublogicOfTheory st of
                           G_sublogics lid sl2 ->

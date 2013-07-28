@@ -29,14 +29,15 @@ module CMDL.ProveCommands
 
 import CMDL.DataTypes (CmdlState (intState), CmdlGoalAxiom (..),
                       CmdlListAction (..))
-import CMDL.DataTypesUtils (add2hist, genMsgAndCode, genMessage, getIdComorphism)
+import CMDL.DataTypesUtils (add2hist, genMsgAndCode, genMessage,
+                            genAddMessage, getIdComorphism)
 
 import CMDL.DgCommands (selectANode)
 import CMDL.ProveConsistency (doLoop, sigIntHandler)
 import CMDL.Utils (checkIntString)
 
 import Common.Result (Result (Result))
-import Common.Utils (trim)
+import Common.Utils (trim, splitOn)
 
 import Data.List (find, nub)
 import Data.Maybe (fromMaybe)
@@ -45,11 +46,12 @@ import Comorphisms.LogicGraph (lookupComorphism_in_LG)
 
 import Proofs.AbstractState
 
-import Logic.Comorphism (compComorphism,AnyComorphism(..))
+import Logic.Comorphism (compComorphism, AnyComorphism (..))
 import Logic.Logic (language_name)
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (newEmptyMVar, newMVar, takeMVar)
+import Control.Monad (foldM)
 
 #ifdef UNIX
 import System.Posix.Signals (Handler (Catch), installHandler, sigINT)
@@ -78,14 +80,12 @@ cDropTranslations state =
 
 -- | select comorphisms
 cTranslate :: String -> CmdlState -> IO CmdlState
-cTranslate input state =
- case i_state $ intState state of
-  -- nothing selected !
-  Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
-  Just pS ->
-   -- parse the comorphism name
-   case lookupComorphism_in_LG $ trim input of
-    Result _ Nothing -> return $ genMsgAndCode "Wrong comorphism name" 1 state
+cTranslate input state' =
+ foldM (\ state c -> case i_state $ intState state of
+   -- nothing selected !
+   Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
+   Just pS -> case lookupComorphism_in_LG c of
+    Result m Nothing -> return $ genMsgAndCode (show m) 1 state
     Result _ (Just cm) ->
       case cComorphism pS of
        {- when selecting some theory the Id comorphism is automatically
@@ -96,14 +96,15 @@ cTranslate input state =
             Result _ Nothing ->
              return $ genMsgAndCode "Can not add comorphism" 1 state
             Result _ (Just smth) ->
-              return $ genMessage [] ("Adding comorphism " ++ 
-                        ((\(Comorphism c) -> language_name c) cm))
+              return $ genAddMessage [] ("Adding comorphism " ++
+                        (\ (Comorphism c') -> language_name c') cm)
                      $ add2hist [CComorphismChange $ cComorphism pS] $
                       state {
                         intState = (intState state) {
                          i_state = Just pS {
                                     cComorphism = Just smth } }
-                          }
+                          }) (genMessage "" "" state')
+                             (splitOn ' ' $ trim input)
 
 
 parseElements :: CmdlListAction -> [String] -> CmdlGoalAxiom
