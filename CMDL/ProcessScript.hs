@@ -91,24 +91,25 @@ printCmdResult state = do
   return state { output = emptyCmdlMessage }
 
 
-cmdlProcessScriptFile :: FilePath -> CmdlState -> IO CmdlState
-cmdlProcessScriptFile fp st = do
+cmdlProcessScriptFile :: Bool -> FilePath -> CmdlState -> IO CmdlState
+cmdlProcessScriptFile doExit fp st = do
   str <- readFile fp
   s <- foldM (\ nst (s, n) -> do
       (cst, _) <- resetErrorAndProcString fp n s nst
       printCmdResult cst) st . number $ lines str
   case i_state $ intState s of 
     Just x -> case head $ elements x of 
-      Element list _ -> if isNotDisproved (currentTheory list) then exitWith $ getExitCode s
-                                                               else exitWith $ ExitFailure 4
-    Nothing -> exitWith $ getExitCode s  
+      Element list _ -> when doExit $ if isNotDisproved (currentTheory list)
+                                      then exitWith $ getExitCode s
+                                      else exitWith $ ExitFailure 4
+    Nothing -> when doExit $ exitWith $ getExitCode s  
   return s
 
 
 -- | The function processes the file of instructions
-cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
-cmdlProcessFile opts file = do
+cmdlProcessFile :: Bool -> HetcatsOpts -> FilePath -> IO CmdlState
+cmdlProcessFile doExit opts file = do
   putIfVerbose opts 2 $ "Processing hets proof file: " ++ file
-  s <- cmdlProcessScriptFile file $ emptyCmdlState opts
-  exitWith $ getExitCode s
+  s <- cmdlProcessScriptFile doExit file $ emptyCmdlState opts
+  when doExit $ exitWith $ getExitCode s
   return s

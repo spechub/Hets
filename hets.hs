@@ -40,6 +40,7 @@ import Haskell.Haskell2DG
 import Common.LibName
 import Interfaces.DataTypes
 import CMDL.ProcessScript
+import CMDL.Interface (cmdlRunShell)
 import CMDL.DataTypes
 import PGIP.XMLparsing
 import PGIP.XMLstate (isRemote)
@@ -64,7 +65,7 @@ main =
 #ifdef SERVER
      if serve opts then hetsServer opts else
 #endif
-     if isRemote opts || interactive opts
+     if isRemote opts || (interactive opts && xmlFlag opts)
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
        else do
          putIfVerbose opts 3 $ "Options: " ++ show opts
@@ -90,6 +91,7 @@ displayLogicGraphInfo opts = case guiType opts of
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file = do
     putIfVerbose opts 3 ("Processing input: " ++ file)
+    let doExit = not $ (guiType opts) /= NoGui || interactive opts
     res <- case guess file (intype opts) of
 #ifdef PROGRAMATICA
       HaskellIn -> putStr "this is HaskellIn" >> anaHaskellFile opts file
@@ -103,8 +105,9 @@ processFile opts file = do
 #endif
       PrfIn -> anaLibReadPrfs opts file
       ProofCommand -> do
-        st <- cmdlProcessFile opts file
-        return . getMaybeLib $ intState st
+        st <- cmdlProcessFile doExit opts file
+        (if (interactive opts) then cmdlRunShell st else return st)
+         >>= return . getMaybeLib . intState
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
       OmdocIn -> anaOMDocFile opts file

@@ -188,7 +188,7 @@ processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
 processInput opts ls state = case ls of
     [] -> return state
     l : ll -> (case guess l GuessIn of
-               ProofCommand -> cmdlProcessScriptFile
+               ProofCommand -> cmdlProcessScriptFile True
                _ -> cUse) l state >>= processInput opts ll
 
 cmdlRun :: HetcatsOpts -> IO CmdlState
