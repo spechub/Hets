@@ -69,7 +69,7 @@ instance Comorphism HasCASL2THFP_P
     targetLogic HasCASL2THFP_P = THF
     mapSublogic HasCASL2THFP_P _ = Just SL.tHFP_P
     map_theory HasCASL2THFP_P = transTheory
-    map_symbol HasCASL2THFP_P = \env s -> propagateErrors "" $
+    map_symbol HasCASL2THFP_P env s = propagateErrors "" $
      transSymbol env s
     -- isInclusionComorphism HasCASL2THF0_ST = True
     has_model_expansion HasCASL2THFP_P = True
@@ -125,7 +125,7 @@ transTypeMap tm = foldM trans (Map.empty, Map.empty) (Map.toList tm)
 
 transTypeInfo :: HCLe.TypeInfo -> THFAs.Constant -> Result THFSign.TypeInfo
 transTypeInfo ti c = transRawKind (HCLe.typeKind ti)
- >>= \tk -> return $ THFSign.TypeInfo 
+ >>= \ tk -> return THFSign.TypeInfo
     { THFSign.typeId = c
     , THFSign.typeName = mkTypesName c
     , THFSign.typeKind = tk
@@ -253,13 +253,13 @@ transSymbol sig1 sym1 = case HCLe.symType sym1 of
                 Nothing -> return Set.empty
                 Just c -> do
                  rk' <- transRawKind rk
-                 return $ Set.singleton $ THFCons.Symbol
+                 return $ Set.singleton THFCons.Symbol
                         { THFCons.symId = c
                         , THFCons.symName = mkTypesName c
                         , THFCons.symType = ST_Type rk' }
         OpAsItemType ts -> return $ tsHelper ts tsOpType
         PredAsItemType ts -> return $ tsHelper ts tsPredType
-        _ -> return $ Set.empty
+        _ -> return Set.empty
     where
         tsOpType :: IdConstantMap -> TypeScheme -> Result THFCons.Type
         tsOpType icm (TypeScheme _ t _) = transType icm t
@@ -398,8 +398,17 @@ transApplTerm e icm ids t1 t2 r = do
                 _ -> fatal_error ("unexpected arguments " ++ show tl1 ++
                        " for equality") r
             | i == whenElse ->
-                fatal_error ("__when__else__ is not supported yet. " ++
-                    "Please code it out, see: Casl Reference Manula p. 25.") r
+               case tl1 of
+                [TupleTerm [then_, cond, else_] _] ->
+                 let then_' = mkLogTerm andId
+                      (Range $ joinRanges [rangeSpan then_, rangeSpan cond])
+                      cond then_
+                     else_' = mkLogTerm andId
+                      (Range $ joinRanges [rangeSpan else_, rangeSpan cond])
+                      (ApplTerm (mkOpTerm negId notType)
+                                cond (getRange cond)) else_
+                 in transTerm e icm ids (mkLogTerm orId r then_' else_')
+                _ -> fatal_error "invalid whenElse" r
             | otherwise -> myFmap (TLF_THF_Binary_Formula . TBF_THF_Binary_Tuple
                                     . TBT_THF_Apply_Formula . reverse)
                                 (foldM fTrmToUf ([], ids) (t3 : tl1))
