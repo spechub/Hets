@@ -1,0 +1,193 @@
+Description: Adapted makefile & avoid gcc issue
+ * Adapted makefile
+ * Avoid a problem with the redefinition of __STD_LIMIT_MACROS
+   (caused by make recursion)
+ .
+ satallax (2.7-1ubuntu0) quantal; urgency=low
+ .
+   * Initial release
+Author: Jonathan von Schroeder <j.von_schroeder@dfki.de>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- satallax-2.7.orig/configure
++++ satallax-2.7/configure
+@@ -1,18 +1,18 @@
+ #!/bin/sh
+ 
+ # Optionally set picomus to your picomus executable
+-picomus=${PWD}/picosat-936/picomus
++picomus="/usr/bin/picomus"
+ # Optionally set eprover to your E theorem prover executable
+ eprover=`which eprover`
+ 
+ # Make sure we find picomus (though Satallax will compile without)
+-if [ -x "$picomus" ]
+-then
++#if [ -x "$picomus" ]
++#then
+ echo "Found picomus executable at $picomus"
+-else
+-echo "Cannot find picomus executable at $picomus; computation of proof terms will be disabled. (See INSTALL)"
+-picomus=''
+-fi
++#else
++#echo "Cannot find picomus executable at $picomus; computation of proof terms will be disabled. (See INSTALL)"
++#picomus=''
++#fi
+ 
+ # Make sure we find eprover (though Satallax will compile without)
+ if [ -x "$eprover" ]
+@@ -27,9 +27,9 @@ fi
+ # Build the config.ml file
+ echo "(*** config.ml " > src/config.ml
+ hostname | cat >> src/config.ml
+-date | cat >> src/config.ml
++#date | cat >> src/config.ml
+ echo "***)" >> src/config.ml
+-echo "let satallaxdir = \"${PWD}\"" >> src/config.ml
++echo "let satallaxdir = \"/usr/share/satallax/\"" >> src/config.ml
+ echo "let picomus = ref \"$picomus\"" >> src/config.ml
+ echo "let eprover = ref \"$eprover\"" >> src/config.ml
+ 
+--- satallax-2.7.orig/Makefile
++++ satallax-2.7/Makefile
+@@ -3,20 +3,20 @@ CXX       ?= g++
+ 
+ COQC = coqc
+ 
+-all : opt bytecode
++all : opt bytecode picosat
+ 
+ bytecode : bin/satallax
+ 
+ opt : bin/satallax.opt
+ 
+ bin/satallax : bin/tptp_lexer.cmo bin/formula.cmo bin/tptp_config.cmo bin/tptp_parser.cmo bin/proofterm.cmo bin/search.cmo bin/syntax.cmo bin/state.cmo bin/coqlexer.cmo bin/coqparser.cmo bin/flags.cmo bin/match.cmo bin/version.cmo bin/config.cmo bin/satallaxmain.cmo bin/satallax.cmo bin/minisatinterface.cmo bin/dllminisatinterface.so
+-	ocamlc $(OCAMLARGS) -I bin -o bin/satallax unix.cma $(PWD)/bin/dllminisatinterface.so bin/minisatinterface.cmo bin/syntax.cmo bin/config.cmo bin/flags.cmo bin/match.cmo bin/priorityqueue.cmo bin/state.cmo bin/search.cmo bin/refutation.cmo bin/flag.cmo bin/litcount.cmo bin/branch.cmo bin/step.cmo bin/suche.cmo bin/norm.cmo bin/translation.cmo bin/coq.cmo bin/latex.cmo bin/proofterm.cmo bin/coqlexer.cmo bin/coqparser.cmo bin/tptp_lexer.cmo bin/formula.cmo bin/tptp_config.cmo bin/tptp_parser.cmo bin/version.cmo bin/satallaxmain.cmo bin/satallax.cmo
++	ocamlc $(OCAMLARGS) -dllpath /usr/lib/satallax -I bin -o bin/satallax unix.cma dllminisatinterface.so bin/minisatinterface.cmo bin/syntax.cmo bin/config.cmo bin/flags.cmo bin/match.cmo bin/priorityqueue.cmo bin/state.cmo bin/search.cmo bin/refutation.cmo bin/flag.cmo bin/litcount.cmo bin/branch.cmo bin/step.cmo bin/suche.cmo bin/norm.cmo bin/translation.cmo bin/coq.cmo bin/latex.cmo bin/proofterm.cmo bin/coqlexer.cmo bin/coqparser.cmo bin/tptp_lexer.cmo bin/formula.cmo bin/tptp_config.cmo bin/tptp_parser.cmo bin/version.cmo bin/satallaxmain.cmo bin/satallax.cmo
+ 
+ bin/satallax.opt : bin/tptp_lexer.cmx bin/formula.cmx bin/tptp_config.cmx bin/tptp_parser.cmx bin/proofterm.cmx bin/search.cmx bin/syntax.cmx bin/state.cmx bin/coqlexer.cmx bin/coqparser.cmx bin/flags.cmx bin/match.cmx bin/version.cmx bin/config.cmx bin/satallaxmain.cmx bin/satallax.cmx bin/minisatinterface.cmx bin/libminisatinterface.a bin/priorityqueue.cmx
+-	ocamlopt -I bin -o bin/satallax.opt $(PWD)/bin/libminisatinterface.a unix.cmxa bin/minisatinterface.cmx bin/syntax.cmx bin/config.cmx bin/flags.cmx bin/match.cmx bin/priorityqueue.cmx bin/state.cmx bin/search.cmx bin/refutation.cmx bin/flag.cmx bin/litcount.cmx bin/branch.cmx bin/step.cmx bin/suche.cmx bin/norm.cmx bin/translation.cmx bin/coq.cmx bin/latex.cmx bin/proofterm.cmx bin/coqlexer.cmx bin/coqparser.cmx bin/tptp_lexer.cmx bin/formula.cmx bin/tptp_config.cmx bin/tptp_parser.cmx bin/version.cmx bin/satallaxmain.cmx bin/satallax.cmx -cclib -lstdc++
++	ocamlopt -I bin -o bin/satallax.opt bin/libminisatinterface.a unix.cmxa bin/minisatinterface.cmx bin/syntax.cmx bin/config.cmx bin/flags.cmx bin/match.cmx bin/priorityqueue.cmx bin/state.cmx bin/search.cmx bin/refutation.cmx bin/flag.cmx bin/litcount.cmx bin/branch.cmx bin/step.cmx bin/suche.cmx bin/norm.cmx bin/translation.cmx bin/coq.cmx bin/latex.cmx bin/proofterm.cmx bin/coqlexer.cmx bin/coqparser.cmx bin/tptp_lexer.cmx bin/formula.cmx bin/tptp_config.cmx bin/tptp_parser.cmx bin/version.cmx bin/satallaxmain.cmx bin/satallax.cmx -cclib -lstdc++
+ 
+ bin/satallaxcoqtac : bin/satallaxcoqtac.cmx bin/satallaxmain.cmx
+-	ocamlopt -I bin -o bin/satallaxcoqtac $(PWD)/bin/libminisatinterface.a unix.cmxa bin/minisatinterface.cmx bin/syntax.cmx bin/config.cmx bin/flags.cmx bin/match.cmx bin/priorityqueue.cmx bin/state.cmx bin/search.cmx bin/refutation.cmx bin/flag.cmx bin/litcount.cmx bin/branch.cmx bin/step.cmx bin/suche.cmx bin/norm.cmx bin/translation.cmx bin/coq.cmx bin/latex.cmx bin/proofterm.cmx bin/tptp_lexer.cmx bin/formula.cmx bin/tptp_config.cmx bin/tptp_parser.cmx bin/version.cmx bin/satallaxmain.cmx bin/satallaxcoqtac.cmx -cclib -lstdc++
++	ocamlopt -I bin -o bin/satallaxcoqtac bin/libminisatinterface.a unix.cmxa bin/minisatinterface.cmx bin/syntax.cmx bin/config.cmx bin/flags.cmx bin/match.cmx bin/priorityqueue.cmx bin/state.cmx bin/search.cmx bin/refutation.cmx bin/flag.cmx bin/litcount.cmx bin/branch.cmx bin/step.cmx bin/suche.cmx bin/norm.cmx bin/translation.cmx bin/coq.cmx bin/latex.cmx bin/proofterm.cmx bin/tptp_lexer.cmx bin/formula.cmx bin/tptp_config.cmx bin/tptp_parser.cmx bin/version.cmx bin/satallaxmain.cmx bin/satallaxcoqtac.cmx -cclib -lstdc++
+ 
+ bin/satallax.cmo : src/satallax.ml bin/satallaxmain.cmi  bin/satallaxmain.cmo bin/coqparser.cmo bin/search.cmo bin/syntax.cmo bin/state.cmo bin/flags.cmo bin/coqparser.cmo
+ 	ocamlc $(OCAMLARGS) -I bin -o bin/satallax.cmo -c src/satallax.ml
+@@ -42,10 +42,10 @@ bin/minisatinterface.cmo : src/minisatin
+ bin/minisatinterface.cmx : src/minisatinterface.ml
+ 	ocamlopt -I bin -o bin/minisatinterface.cmx -c src/minisatinterface.ml
+ 
+-bin/dllminisatinterface.so : bin/minisatinterface.cmo bin/Ointerface.o
++bin/dllminisatinterface.so : bin/minisatinterface.cmo bin/Ointerface.o minisat/simp/SimpSolver.o minisat/core/Solver.o
+ 	ocamlmklib -o bin/minisatinterface minisat/core/Solver.o minisat/simp/SimpSolver.o bin/Ointerface.o -lstdc++
+ 
+-bin/libminisatinterface.a : bin/minisatinterface.cmo bin/Ointerface.o
++bin/libminisatinterface.a : bin/minisatinterface.cmo bin/Ointerface.o minisat/simp/SimpSolver.o minisat/core/Solver.o
+ 	ocamlmklib -o bin/minisatinterface minisat/core/Solver.o minisat/simp/SimpSolver.o bin/Ointerface.o -lstdc++
+ 
+ bin/Ointerface.o : src/minisat-interface/Ointerface.cc
+@@ -318,6 +318,18 @@ coq2/stt4.vo : coq2/stt4.v coq2/stt3.vo
+ coq2/set0a.vo : coq2/set0a.v coq2/stt4.vo
+ 	cd coq2; $(COQC) -nois set0a
+ 
+-clean :
+-	rm bin/*.cma bin/*.o bin/*.opt bin/*.so bin/*.a bin/*.cmo bin/*.cmi bin/*.cmx src/parser/tptp_parser.ml src/parser/tptp_parser.mli src/parser/tptp_lexer.ml src/coqparser/coqparser.ml src/coqparser/coqparser.mli src/coqparser/coqlexer.ml bin/satallax bin/satallax.opt
++minisat/core/Solver.o :
++	make -C minisat/core/ Solver.o
++
++minisat/simp/SimpSolver.o :
++	make -C minisat/simp/ SimpSolver.o
+ 
++picosat :
++	./picosat-936/configure
++	make -C picosat-936
++
++clean :
++	-rm bin/*.cma bin/*.o bin/*.opt bin/*.so bin/*.a bin/*.cmo bin/*.cmi bin/*.cmx src/parser/tptp_parser.ml src/parser/tptp_parser.mli src/parser/tptp_lexer.ml src/coqparser/coqparser.ml src/coqparser/coqparser.mli src/coqparser/coqlexer.ml bin/satallax bin/satallax.opt
++	-make -C picosat-936 clean
++	-rm minisat/core/Solver.o minisat/core/depend.mk \
++           minisat/simp/SimpSolver.o minisat/simp/depend.mk
+--- /dev/null
++++ satallax-2.7/src/config.ml
+@@ -0,0 +1,6 @@
++(*** config.ml 
++ubuntu
++***)
++let satallaxdir = "/usr/share/satallax/"
++let picomus = ref "/usr/bin/picomus"
++let eprover = ref "/usr/bin/eprover"
+--- satallax-2.7.orig/minisat/core/Makefile
++++ satallax-2.7/minisat/core/Makefile
+@@ -1,4 +1,4 @@
+ EXEC      = minisat
+ DEPDIR    = mtl utils
+ 
+-include $(MROOT)/mtl/template.mk
++include ../mtl/template.mk
+--- satallax-2.7.orig/minisat/mtl/template.mk
++++ satallax-2.7/minisat/mtl/template.mk
+@@ -24,7 +24,11 @@ LFLAGS    ?= -Wall -fPIC
+ 
+ COPTIMIZE ?= -O3
+ 
+-CFLAGS    += -I$(MROOT) -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
++CFLAGS    += -I.. 
++ifneq (,$(findstring __STDC_LIMIT_MACROS,$(CFLAGS)))
++else
++CFLAGS    += -fPIC -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
++endif
+ LFLAGS    += -lz
+ 
+ .PHONY : s p d r rs clean 
+@@ -69,7 +73,7 @@ lib$(LIB)_release.a:	$(filter-out */Main
+ ## Build rule
+ %.o %.op %.od %.or:	%.cc
+ 	@echo Compiling: $(subst $(MROOT)/,,$@)
+-	@$(CXX) $(CFLAGS) -c -o $@ $<
++	$(CXX) $(CFLAGS) -c -o $@ $<
+ 
+ ## Linking rules (standard/profile/debug/release)
+ $(EXEC) $(EXEC)_profile $(EXEC)_debug $(EXEC)_release $(EXEC)_static:
+--- satallax-2.7.orig/minisat/simp/Makefile
++++ satallax-2.7/minisat/simp/Makefile
+@@ -1,4 +1,4 @@
+ EXEC      = minisat
+ DEPDIR    = mtl utils core
+ 
+-include $(MROOT)/mtl/template.mk
++include ../mtl/template.mk
+--- satallax-2.7.orig/picosat-936/makefile.in
++++ satallax-2.7/picosat-936/makefile.in
+@@ -4,7 +4,7 @@ CFLAGS=@CFLAGS@
+ all: @TARGETS@
+ 
+ clean:
+-	rm -f picosat *.exe *.s *.o *.a *.so
++	rm -f picosat picomus *.exe *.s *.o *.a *.so
+ 	rm -f makefile config.h
+ 	rm -f gmon.out *~ 
+ 
+--- satallax-2.7.orig/picosat-936/configure
++++ satallax-2.7/picosat-936/configure
+@@ -147,5 +147,5 @@ sed \
+   -e "s,@CC@,$CC," \
+   -e "s,@CFLAGS@,$CFLAGS," \
+   -e "s,@TARGETS@,$TARGETS," \
+-makefile.in > makefile
++picosat-936/makefile.in > picosat-936/makefile
+ echo " done"

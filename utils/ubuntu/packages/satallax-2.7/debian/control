@@ -1,0 +1,19 @@
+Source: satallax
+Priority: extra
+Section: misc
+Maintainer: Jonathan von Schroeder <jonathan.von_schroeder@dfki.de>
+Build-Depends: debhelper (>= 8.0.0), autotools-dev, help2man, zlib1g-dev, ocaml
+Standards-Version: 3.9.3
+Homepage: http://www.ps.uni-saarland.de/~cebrown/satallax/
+
+Package: satallax
+Architecture: amd64 i386
+Depends: ${shlibs:Depends}, ${misc:Depends}, zlib1g-dev, ocaml, eprover
+Description: Automated theorem prover for higher-order logic
+ Satallax is an automated theorem prover for higher-order logic.
+ The particular form of higher-order logic supported by Satallax is
+ Church's simple type theory with extensionality and choice operators.
+ The SAT solver MiniSat is responsible for much of the search for a proof.
+ Satallax generates propositional clauses corresponding to rules of a complete
+ tableau calculus and calls MiniSat periodically to test satisfiability of
+ these clauses. Satallax is implemented in Objective Caml.

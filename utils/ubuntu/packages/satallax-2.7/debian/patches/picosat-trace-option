@@ -1,0 +1,62 @@
+Description: Configure picosat with trace option
+ .
+ satallax (2.7-1ubuntu0) quantal; urgency=low
+ .
+   * Initial release
+Author: Jonathan von Schroeder <j.von_schroeder@dfki.de>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- satallax-2.7.orig/Makefile
++++ satallax-2.7/Makefile
+@@ -338,7 +338,7 @@ minisat/simp/SimpSolver.o :
+ 	make -C minisat/simp/ SimpSolver.o
+ 
+ picosat :
+-	./picosat-936/configure
++	./picosat-936/configure --trace
+ 	make -C picosat-936
+ 
+ clean :
+--- satallax-2.7.orig/picosat-936/configure
++++ satallax-2.7/picosat-936/configure
+@@ -46,7 +46,7 @@ exit 1
+ shift
+ done
+ 
+-echo "version ... `cat VERSION`"
++echo "version ... `cat picosat-936/VERSION`"
+ 
+ if [ $satcompetition = yes ]
+ then
+@@ -91,8 +91,8 @@ echo "shared ... $shared"
+ 
+ [ "X$CC" = X ] && CC=gcc
+ 
+-if [ X"$CFLAGS" = X ]
+-then
++#if [ X"$CFLAGS" = X ]
++#then
+   case X"$CC" in
+     *wine*|*mingw*) CFLAGS="-DNGETRUSAGE -DNALLSIGNALS";;
+     *);;
+@@ -127,7 +127,7 @@ then
+       fi
+       ;;
+   esac
+-fi
++#fi
+ 
+ TARGETS="picosat picomus libpicosat.a"
+ if [ $shared = yes ]

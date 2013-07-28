@@ -1,0 +1,5 @@
+PKG_DISTRO="precise"
+PKG_URL="http://www.ps.uni-saarland.de/~cebrown/satallax/downloads/satallax-2.7.tar.gz"
+PKG_NAME="satallax"
+PKG_VERSION="2.7"
+PKG_SOURCE_EXT=".tar.gz"

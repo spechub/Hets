@@ -1,0 +1,9 @@
+bin/satallax usr/bin/
+bin/dllminisatinterface.so usr/lib/satallax
+coq/* usr/share/satallax/coq/
+coq2/* usr/share/satallax/coq2/
+modes/* usr/share/satallax/modes/
+problems/* usr/share/satallax/problems/
+
+picosat-936/picomus usr/bin
+picosat-936/picosat usr/bin

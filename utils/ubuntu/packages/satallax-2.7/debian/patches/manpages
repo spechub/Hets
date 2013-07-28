@@ -1,0 +1,53 @@
+Description: Generate manpages using help2man
+ .
+ satallax (2.7-1ubuntu0) quantal; urgency=low
+ .
+   * Initial release
+Author: Jonathan von Schroeder <j.von_schroeder@dfki.de>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- satallax-2.7.orig/Makefile
++++ satallax-2.7/Makefile
+@@ -3,7 +3,20 @@ CXX       ?= g++
+ 
+ COQC = coqc
+ 
+-all : opt bytecode picosat
++all : bin manpages
++
++bin : opt bytecode picosat
++
++manpages : bin
++	-mkdir docs
++	help2man -N -n "SAT solver" \
++	 -h "-h" picosat-936/picosat > docs/picosat.1
++	help2man -N \
++	 -n "SAT solver that generates a 'minimal unsatisfiable core'" \
++	 -h "-h" picosat-936/picomus \
++	 --version-string=`picosat-936/picosat --version` > docs/picomus.1
++	help2man -N -n "Automated theorem prover for higher-order logic" \
++	 -v "-V" -h "" bin/satallax.opt > docs/satallax.1
+ 
+ bytecode : bin/satallax
+ 
+@@ -329,7 +342,7 @@ picosat :
+ 	make -C picosat-936
+ 
+ clean :
+-	-rm bin/*.cma bin/*.o bin/*.opt bin/*.so bin/*.a bin/*.cmo bin/*.cmi bin/*.cmx src/parser/tptp_parser.ml src/parser/tptp_parser.mli src/parser/tptp_lexer.ml src/coqparser/coqparser.ml src/coqparser/coqparser.mli src/coqparser/coqlexer.ml bin/satallax bin/satallax.opt
++	-rm docs/* bin/*.cma bin/*.o bin/*.opt bin/*.so bin/*.a bin/*.cmo bin/*.cmi bin/*.cmx src/parser/tptp_parser.ml src/parser/tptp_parser.mli src/parser/tptp_lexer.ml src/coqparser/coqparser.ml src/coqparser/coqparser.mli src/coqparser/coqlexer.ml bin/satallax bin/satallax.opt
+ 	-make -C picosat-936 clean
+ 	-rm minisat/core/Solver.o minisat/core/depend.mk \
+            minisat/simp/SimpSolver.o minisat/simp/depend.mk
