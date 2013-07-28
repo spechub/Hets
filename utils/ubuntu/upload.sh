@@ -9,7 +9,7 @@ function codename {
 
 #taken from https://wiki.ubuntu.com/DevelopmentCodeNames
 function codenames {
-	echo "lucid precise"
+	echo "lucid precise quantal raring"
 }
 
 function modify_changelog {
