@@ -445,5 +445,12 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
       if isSubElem (forceCoerceSublogic l1 l2 $ targetSublogic cid1)
             $ sourceSublogic cid2
        then return $ Comorphism (CompComorphism cid1 cid2)
-       else fail $ "Subl" ++ msg
-    else fail $ 'L' : msg
+       else fail $ "Subl" ++ msg ++ " (Expected sublogic "
+                          ++ (sublogicName $ sourceSublogic cid2)
+                          ++ " but found sublogic "
+                          ++ (sublogicName $ targetSublogic cid1) ++ ")"
+    else fail $ 'L' : msg ++ " (Expected logic "
+                          ++ language_name l2
+                          ++ " but found logic "
+                          ++ language_name l1 ++ ")"
+
