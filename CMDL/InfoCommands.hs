@@ -20,6 +20,7 @@ module CMDL.InfoCommands
        , cShowNodeProvenGoals
        , cShowNodeUnprovenGoals
        , cRedoHistory
+       , cCurrentComorphism
        , cShowTaxonomy
        , cShowTheory
        , cShowTheoryGoals
@@ -290,6 +291,14 @@ cUndoHistory = return . cHistory True
 
 cRedoHistory :: CmdlState -> IO CmdlState
 cRedoHistory = return . cHistory False
+
+cCurrentComorphism :: CmdlState -> IO CmdlState
+cCurrentComorphism st =
+ case i_state $ intState st of
+  Nothing -> return $ genMessage "" "No comorphism!" st
+  Just ist -> case cComorphism ist of
+               Just cmor -> return $ genMessage "" (show cmor) st
+               Nothing -> return $ genMessage "" "No comorphism!" st
 
 cHistory :: Bool -> CmdlState -> CmdlState
 cHistory isUndo state = genMessage []

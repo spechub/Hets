@@ -129,6 +129,7 @@ getCommands =
   , genGlobInspectCmd Edges cEdges
   , genGlobInspectCmd UndoHist cUndoHistory
   , genGlobInspectCmd RedoHist cRedoHistory
+  , genGlobInspectCmd CurrentComorphism cCurrentComorphism
   , genGlobInspectCmd ProvenGoals $ cShowNodeProvenGoals ""
   , genGlobInspectCmd UnprovenGoals $ cShowNodeUnprovenGoals ""
   , genGlobInspectCmd Axioms $ cShowNodeAxioms ""

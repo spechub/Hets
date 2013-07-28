@@ -184,6 +184,7 @@ data InspectCmd =
   | UndoHist
   | RedoHist
   | EdgeInfo -- of a selected link
+  | CurrentComorphism
   | LocalAxioms
   | NodeInfo
   | ComorphismsTo
@@ -206,6 +207,7 @@ showInspectCmd cmd = case cmd of
   Nodes -> "Nodes"
   Edges -> "Edges"
   ComorphismsTo -> "Comorphisms to"
+  CurrentComorphism -> "Current Comorphism"
   TranslatedTheory -> "Translated Theory"
   UndoHist -> "Undo-History"
   RedoHist -> "Redo-History"
