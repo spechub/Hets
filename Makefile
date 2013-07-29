@@ -52,10 +52,11 @@ GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
 derived_sources += $(GTK_GLADE_HSFILES)
 
 # the list of logics that need ShATermConvertible instances
-logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal CoCASL COL CspCASL CASL_DL \
+logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
+    CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF
+    FreeCAD OWL2 RDF CSMOF
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -314,6 +315,8 @@ OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
 RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
   RDF/Sublogic.hs
 
+CSMOF_files = CSMOF/As.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -411,6 +414,9 @@ OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
 
 RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)
+
+CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
+	$(GENRULECALL) -o $@ $(CSMOF_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
