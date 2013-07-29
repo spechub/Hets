@@ -1,0 +1,65 @@
+Result {diags = [], maybeResult = Just (metamodel Class { 
+	abstract class UMLModelElement { 
+		property kind [1,1] : String
+		property name [1,1] : String
+	 } 
+
+	class Package extends UMLModelElement { 
+		property elements [0,*] : Classifier oppositeOf namespace
+	 } 
+
+	class Classifier extends UMLModelElement { 
+		property namespace [1,1] : Package oppositeOf elements
+	 } 
+
+	class Attribute extends UMLModelElement { 
+		property owner [1,1] : Class oppositeOf attribute
+		property type [1,1] : PrimitiveDataType
+	 } 
+
+	class Class extends Classifier { 
+		property attribute [0,*] : Attribute oppositeOf owner
+	 } 
+
+	class PrimitiveDataType extends Classifier { 
+	 } 
+
+	datatype String
+
+}
+
+model ClassModel conformsTo Class { 
+	 object p : Package
+	 object a : Attribute
+	 object c : Class
+	 object pdt : PrimitiveDataType
+	 object Package : String
+	 object ID : String
+	 object Persistent : String
+	 object value : String
+	 object String : String
+	 object _ : String
+	 link namespace(c,p) 
+	 link namespace(pdt,p) 
+	 link type(a,pdt) 
+	 link attribute(c,a) 
+	 link name(p,Package) 
+	 link name(c,ID) 
+	 link name(a,value) 
+	 link name(pdt,String) 
+	 link kind(c,Persistent) 
+	 link kind(p,_) 
+	 link kind(a,_) 
+	 link kind(pdt,_) 
+} 
+,ExtSign {plainSign = Sign {types = fromList [TypeClass {name = "Attribute", kind = ClassKind},TypeClass {name = "Class", kind = ClassKind},TypeClass {name = "Classifier", kind = ClassKind},TypeClass {name = "Package", kind = ClassKind},TypeClass {name = "PrimitiveDataType", kind = ClassKind},TypeClass {name = "String", kind = DataTypeKind},TypeClass {name = "UMLModelElement", kind = ClassKind}], typeRel = fromList [(TypeClass {name = "Attribute", kind = ClassKind},fromList [TypeClass {name = "UMLModelElement", kind = ClassKind}]),(TypeClass {name = "Class", kind = ClassKind},fromList [TypeClass {name = "Classifier", kind = ClassKind}]),(TypeClass {name = "Classifier", kind = ClassKind},fromList [TypeClass {name = "UMLModelElement", kind = ClassKind}]),(TypeClass {name = "Package", kind = ClassKind},fromList [TypeClass {name = "UMLModelElement", kind = ClassKind}]),(TypeClass {name = "PrimitiveDataType", kind = ClassKind},fromList [TypeClass {name = "Classifier", kind = ClassKind}])], abstractClasses = fromList [TypeClass {name = "UMLModelElement", kind = ClassKind}], roles = fromList ["_","attribute","elements","kind","name","namespace","owner","type"], properties = fromList [PropertyT {sourceRole = "_", sourceType = TypeClass {name = "Attribute", kind = ClassKind}, targetRole = "type", targetType = TypeClass {name = "PrimitiveDataType", kind = ClassKind}},PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "kind", targetType = TypeClass {name = "String", kind = DataTypeKind}},PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "name", targetType = TypeClass {name = "String", kind = DataTypeKind}},PropertyT {sourceRole = "attribute", sourceType = TypeClass {name = "Attribute", kind = ClassKind}, targetRole = "owner", targetType = TypeClass {name = "Class", kind = ClassKind}},PropertyT {sourceRole = "elements", sourceType = TypeClass {name = "Classifier", kind = ClassKind}, targetRole = "namespace", targetType = TypeClass {name = "Package", kind = ClassKind}},PropertyT {sourceRole = "namespace", sourceType = TypeClass {name = "Package", kind = ClassKind}, targetRole = "elements", targetType = TypeClass {name = "Classifier", kind = ClassKind}},PropertyT {sourceRole = "owner", sourceType = TypeClass {name = "Class", kind = ClassKind}, targetRole = "attribute", targetType = TypeClass {name = "Attribute", kind = ClassKind}}], instances = fromList [("ID",TypeClass {name = "String", kind = DataTypeKind}),("Package",TypeClass {name = "String", kind = DataTypeKind}),("Persistent",TypeClass {name = "String", kind = DataTypeKind}),("String",TypeClass {name = "String", kind = DataTypeKind}),("_",TypeClass {name = "String", kind = DataTypeKind}),("a",TypeClass {name = "Attribute", kind = ClassKind}),("c",TypeClass {name = "Class", kind = ClassKind}),("p",TypeClass {name = "Package", kind = ClassKind}),("pdt",TypeClass {name = "PrimitiveDataType", kind = ClassKind}),("value",TypeClass {name = "String", kind = DataTypeKind})], links = fromList [LinkT {sourceVar = "a", targetVar = "_", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "kind", targetType = TypeClass {name = "String", kind = DataTypeKind}}},LinkT {sourceVar = "a", targetVar = "pdt", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "Attribute", kind = ClassKind}, targetRole = "type", targetType = TypeClass {name = "PrimitiveDataType", kind = ClassKind}}},LinkT {sourceVar = "a", targetVar = "value", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "name", targetType = TypeClass {name = "String", kind = DataTypeKind}}},LinkT {sourceVar = "c", targetVar = "ID", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "name", targetType = TypeClass {name = "String", kind = DataTypeKind}}},LinkT {sourceVar = "c", targetVar = "Persistent", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "kind", targetType = TypeClass {name = "String", kind = DataTypeKind}}},LinkT {sourceVar = "c", targetVar = "a", property = PropertyT {sourceRole = "owner", sourceType = TypeClass {name = "Class", kind = ClassKind}, targetRole = "attribute", targetType = TypeClass {name = "Attribute", kind = ClassKind}}},LinkT {sourceVar = "c", targetVar = "p", property = PropertyT {sourceRole = "elements", sourceType = TypeClass {name = "Classifier", kind = ClassKind}, targetRole = "namespace", targetType = TypeClass {name = "Package", kind = ClassKind}}},LinkT {sourceVar = "p", targetVar = "Package", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "name", targetType = TypeClass {name = "String", kind = DataTypeKind}}},LinkT {sourceVar = "p", targetVar = "_", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "kind", targetType = TypeClass {name = "String", kind = DataTypeKind}}},LinkT {sourceVar = "pdt", targetVar = "String", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "name", targetType = TypeClass {name = "String", kind = DataTypeKind}}},LinkT {sourceVar = "pdt", targetVar = "_", property = PropertyT {sourceRole = "_", sourceType = TypeClass {name = "UMLModelElement", kind = ClassKind}, targetRole = "kind", targetType = TypeClass {name = "String", kind = DataTypeKind}}},LinkT {sourceVar = "pdt", targetVar = "p", property = PropertyT {sourceRole = "elements", sourceType = TypeClass {name = "Classifier", kind = ClassKind}, targetRole = "namespace", targetType = TypeClass {name = "Package", kind = ClassKind}}}]}, nonImportedSymbols = fromList []},[SenAttr {senAttr = "", isAxiom = True, isDef = False, wasTheorem = False, simpAnno = Nothing, attrOrigin = Nothing, 
+
+sentence = Sen {constraint = MultConstr {getType = TypeClass {name = "UMLModelElement", kind = ClassKind}, getRole = "kind"}, cardinality = 1, constraintType = EQUAL}},SenAttr {senAttr = "", isAxiom = True, isDef = False, wasTheorem = False, simpAnno = Nothing, attrOrigin = Nothing, 
+
+sentence = Sen {constraint = MultConstr {getType = TypeClass {name = "UMLModelElement", kind = ClassKind}, getRole = "name"}, cardinality = 1, constraintType = EQUAL}},SenAttr {senAttr = "", isAxiom = True, isDef = False, wasTheorem = False, simpAnno = Nothing, attrOrigin = Nothing, 
+
+sentence = Sen {constraint = MultConstr {getType = TypeClass {name = "Classifier", kind = ClassKind}, getRole = "namespace"}, cardinality = 1, constraintType = EQUAL}},SenAttr {senAttr = "", isAxiom = True, isDef = False, wasTheorem = False, simpAnno = Nothing, attrOrigin = Nothing, 
+
+sentence = Sen {constraint = MultConstr {getType = TypeClass {name = "Attribute", kind = ClassKind}, getRole = "owner"}, cardinality = 1, constraintType = EQUAL}},SenAttr {senAttr = "", isAxiom = True, isDef = False, wasTheorem = False, simpAnno = Nothing, attrOrigin = Nothing, 
+
+sentence = Sen {constraint = MultConstr {getType = TypeClass {name = "Attribute", kind = ClassKind}, getRole = "type"}, cardinality = 1, constraintType = EQUAL}}])}
