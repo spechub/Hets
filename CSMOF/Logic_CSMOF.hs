@@ -13,18 +13,18 @@ module CSMOF.Logic_CSMOF where
 import CSMOF.As
 import CSMOF.Sign
 import CSMOF.StaticAna
-import CSMOF.Morphism
 
 import Logic.Logic
 
 import Common.DefaultMorphism
 import Common.ProofTree
-import Common.DefaultMorphism
 
 data CSMOF = CSMOF deriving Show
 
 instance Language CSMOF where
     description _ = "CSMOF conformance relation"
+
+type Morphism = DefaultMorphism Sign
 
 
 -- CSMOF logic
@@ -34,8 +34,8 @@ instance Sentences CSMOF
     Sign
     Morphism
     ()
-    where
-      map_sen CSMOF mor sen = return (mor sen)
+--    where
+--      map_sen CSMOF mor sen = return (mor sen)
 
 
 instance Logic CSMOF
