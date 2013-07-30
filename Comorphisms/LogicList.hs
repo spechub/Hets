@@ -83,6 +83,7 @@ import OWL2.Logic_OWL2
 import RDF.Logic_RDF
 #endif
 import Comorphisms.DynLogicList
+import CSMOF.Logic_CSMOF
 
 logicList :: [AnyLogic]
 logicList =
@@ -108,7 +109,7 @@ logicList =
   , Logic ExtModal
   , Logic Modal
   , Logic Hybrid
-  , Logic Hybridize 
+  , Logic Hybridize
   , Logic cspCASL
   , Logic traceCspCASL
   , Logic failureCspCASL
@@ -130,6 +131,7 @@ logicList =
 #ifdef RDFLOGIC
   , Logic RDF
 #endif
+  , Logic CSMOF
   ] ++ dynLogicList
 
 addLogicName :: AnyLogic -> (String, AnyLogic)
