@@ -13,7 +13,6 @@ module CSMOF.StatAna where
 import CSMOF.As
 import CSMOF.Sign
 
-import Common.GlobalAnnotations
 import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
@@ -22,7 +21,6 @@ import Common.AS_Annotation
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.Maybe
 
 
 basicAna :: (Metamodel, Sign, GlobalAnnos) -> Result (Metamodel, ExtSign Sign (), [Named Sen])
@@ -57,21 +55,19 @@ buildSignatureInfo :: Metamodel -> (TypeInfo, PropInfo)
 buildSignatureInfo m = foldr (buildInfo) emptyPropType (element m)
 
 buildInfo :: NamedElement -> (TypeInfo, PropInfo) -> (TypeInfo, PropInfo)
-buildInfo (NamedElement el ow (TType (Type sup (DDataType d)))) (ti,pi) = 
-  (TypeInfo (Set.insert (TypeClass el DataTypeKind) (typesI ti)) (typRelI ti) (absTypes ti), pi)
-buildInfo (NamedElement el ow (TType (Type sup (DClass (Class su abs supC attr))))) (ti,pi) = 
+buildInfo (NamedElement el _ (TType (Type _ (DDataType _)))) (ti,pin) = 
+  (TypeInfo (Set.insert (TypeClass el DataTypeKind) (typesI ti)) (typRelI ti) (absTypes ti), pin)
+buildInfo (NamedElement el _ (TType (Type _ (DClass (Class _ abst supC _))))) (ti,pin) = 
   let classT = TypeClass el ClassKind
       rels = addSuperClasses classT supC (typRelI ti)
-  in case abs of
-      True -> (TypeInfo (Set.insert classT (typesI ti)) rels (Set.insert classT (absTypes ti)), pi)
-      False -> (TypeInfo (Set.insert classT (typesI ti)) rels (absTypes ti), pi)
-buildInfo (NamedElement el ow (TTypedElement (TypedElement ne ty (Property te me opp cla)))) (ti,pi) = 
-  let sourceClassName = namedElementName (typeSuper (classSuperType cla))
-      targetClassName = namedElementName (typeSuper ty)
-      roles = Set.insert (targetRole prop) (Set.insert (sourceRole prop) (rolInfo pi))
+  in case abst of
+      True -> (TypeInfo (Set.insert classT (typesI ti)) rels (Set.insert classT (absTypes ti)), pin)
+      False -> (TypeInfo (Set.insert classT (typesI ti)) rels (absTypes ti), pin)
+buildInfo (NamedElement el _ (TTypedElement (TypedElement _ ty (Property _ _ opp cla)))) (ti,pin) = 
+  let role = Set.insert (targetRole prop) (Set.insert (sourceRole prop) (rolInfo pin))
       prop = createProperty el ty cla opp
   in
-   (ti, PropInfo roles (Set.insert prop (propInfo pi)))
+   (ti, PropInfo role (Set.insert prop (propInfo pin)))
 
 
 addSuperClasses :: TypeClass -> [Class] -> Rel.Rel TypeClass -> Rel.Rel TypeClass
@@ -85,25 +81,25 @@ buildInstances :: Metamodel -> Map.Map String TypeClass
 buildInstances m = foldr (createInstanceFromObject) Map.empty (object (head (model m)))
 
 createInstanceFromObject :: Object -> Map.Map String TypeClass -> Map.Map String TypeClass
-createInstanceFromObject ob map = 
-	let targetClassType = 
-              case typeSubClasses (objectType ob) of
-                DDataType d -> DataTypeKind
-                DClass c -> ClassKind
-	in Map.insert (objectName ob) (TypeClass (namedElementName (typeSuper (objectType ob))) targetClassType) map
+createInstanceFromObject ob mapp = 
+  let targetClassType = 
+        case typeSubClasses (objectType ob) of
+          DDataType _ -> DataTypeKind
+          DClass _ -> ClassKind
+  in Map.insert (objectName ob) (TypeClass (namedElementName (typeSuper (objectType ob))) targetClassType) mapp
 
 
 buildLinks :: Metamodel -> Set.Set LinkT
 buildLinks m =  foldr (createLinksFromLinks) Set.empty (link (head (model m)))
 
 createLinksFromLinks :: Link -> Set.Set LinkT -> Set.Set LinkT
-createLinksFromLinks li links = 
-  let name = namedElementName (typedElementSuper (propertySuper (linkType li)))
+createLinksFromLinks li linkk = 
+  let nam = namedElementName (typedElementSuper (propertySuper (linkType li)))
       ty = typedElementType (propertySuper (linkType li))
       cla = propertyClass (linkType li)
       opp = opposite (linkType li)
   in 
-   Set.insert (LinkT (objectName (source li)) (objectName (target li)) (createProperty name ty cla opp)) links
+   Set.insert (LinkT (objectName (source li)) (objectName (target li)) (createProperty nam ty cla opp)) linkk
 
 
 createProperty :: String -> Type -> Class -> Maybe Property -> PropertyT
@@ -112,8 +108,8 @@ createProperty el ty cla opp =
       targetClassName = namedElementName (typeSuper ty)
       targetClassType = 
         case typeSubClasses ty of
-          DDataType d -> DataTypeKind
-          DClass c -> ClassKind
+          DDataType _ -> DataTypeKind
+          DClass _ -> ClassKind
   in 
    case opp of
      Nothing -> PropertyT "_" 
@@ -130,9 +126,9 @@ buildSentences :: Metamodel -> [Named Sen]
 buildSentences meta = foldr (buildSen) [] (element meta)
 
 buildSen :: NamedElement -> [Named Sen] -> [Named Sen]
-buildSen (NamedElement el ow (TType x)) lis = lis
-buildSen (NamedElement el ow (TTypedElement (TypedElement ne ty 
-                                                      (Property te (MultiplicityElement low upp mes) opp cla)))) lis = 
+buildSen (NamedElement _ _ (TType _)) lis = lis
+buildSen (NamedElement el _ (TTypedElement (TypedElement _ _ 
+                                                      (Property _ (MultiplicityElement low upp _) _ cla)))) lis = 
   let clas = TypeClass (namedElementName (typeSuper (classSuperType cla))) ClassKind
   in 
    if low == upp 

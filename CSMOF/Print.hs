@@ -13,100 +13,137 @@ module CSMOF.Print where
 
 import CSMOF.As
 
+import Common.Doc
+import Common.DocUtils
+
                             
+instance Pretty Metamodel where
+  pretty (Metamodel nam ele mode) = 
+    text "metamodel" <+> text nam <+> lbrace  
+    $+$ foldr (($+$). pretty) empty ele
+    $+$ rbrace 
+    $++$ foldr (($+$) . pretty) empty mode
+
 instance Show Metamodel where
-  show (Metamodel nam ele mod) = 
-    "metamodel " ++ nam ++ " { \n" 
-    ++ foldr ((++). show) "" ele
-    ++ "}\n\n"
-    ++ foldr ((++). show) "" mod
-    
+  show m = show $ pretty m
+
                                    
+instance Pretty NamedElement where
+  pretty (NamedElement _ _ nes) = pretty nes
+
 instance Show NamedElement where
-  show (NamedElement nam met nes) = show nes
-                                    
-                                 
+  show m = show $ pretty m
+
+
+instance Pretty TypeOrTypedElement where
+  pretty (TType typ) = pretty typ
+  pretty (TTypedElement _) = empty   -- Do not show properties at top level but inside classes
+
 instance Show TypeOrTypedElement where
-  show (TType typ) = show typ
-  show (TTypedElement typ) = ""   -- Do not show properties at top level but inside classes
+  show m = show $ pretty m
   
   
+instance Pretty Type where
+  pretty (Type _ sub) = pretty sub
+
 instance Show Type where
-  show (Type sup sub) = show sub
+  show m = show $ pretty m
   
                    
+instance Pretty DataTypeOrClass where
+  pretty (DDataType dat) = pretty dat
+  pretty (DClass cla) = pretty cla
+
 instance Show DataTypeOrClass where
-  show (DDataType dat) = show dat
-  show (DClass cla) = show cla
+  show m = show $ pretty m
 
                         
+instance Pretty DataType where
+  pretty (DataType sup) = text "datatype" <+> text (namedElementName (typeSuper sup))
+
 instance Show DataType where
-  show (DataType sup) = "\t" ++ "datatype " ++ namedElementName (typeSuper sup) ++ "\n\n"
+  show m = show $ pretty m
 
                         
-instance Show Class where
-  show (Class sup isa supC own) =
-    "\t" 
-    ++ (case isa of 
-           True -> "abstract class "
-           False -> "class ")
-    ++ namedElementName (typeSuper sup) ++ " "
-    ++ (case supC of
-           [] -> "{ \n"
-           a:l -> "extends"
-                    ++ foldr ( (++) . (" " ++). namedElementName . typeSuper . classSuperType) "" supC
-                          ++ " { \n")
-    ++ foldr ((++). show) "" own
-    ++ "\t } \n\n"
+instance Pretty Class where
+  pretty (Class sup isa supC own) =
+    (case isa of 
+        True -> text "abstract class"
+        False -> text "class")
+    <+> text (namedElementName (typeSuper sup))
+    <> (case supC of
+           [] -> lbrace
+           _ : _ -> text "extends"
+                    <> foldr ( (<+>) . text . namedElementName . typeSuper . classSuperType) empty supC
+                    <+> lbrace)
+    $+$ foldr (($+$). pretty) empty own
+    $+$ rbrace
 
+instance Show Class where
+  show m = show $ pretty m
+
+
+instance Pretty TypedElement where
+  pretty (TypedElement _ _ sub) = pretty sub
 
 instance Show TypedElement where
-  show (TypedElement sup typ sub) = show sub
+  show m = show $ pretty m
         
         
-instance Show Property where                           
-  show (Property sup mul opp pro) =
-    "\t\t" 
-    ++ "property " ++ namedElementName (typedElementSuper sup) 
-    ++ show mul
-    ++ " : " ++ namedElementName (typeSuper (typedElementType sup))
-    ++ (case opp of
-           Just n -> " oppositeOf " ++ namedElementName (typedElementSuper (propertySuper n))
-           Nothing -> "")
-    ++ "\n"
+instance Pretty Property where                           
+  pretty (Property sup mul opp _) =
+    text "property" <+> text (namedElementName (typedElementSuper sup))
+    <> pretty mul
+    <+> colon <+> text (namedElementName (typeSuper (typedElementType sup)))
+    <+> (case opp of
+           Just n -> text "oppositeOf" <+> text (namedElementName (typedElementSuper (propertySuper n)))
+           Nothing -> empty)
+
+instance Show Property where
+  show m = show $ pretty m
     
                                       
+instance Pretty MultiplicityElement where
+  pretty (MultiplicityElement low upp _) =
+    lbrack <> pretty low <> comma 
+    <> (if upp == -1 
+        then text "*"
+        else pretty upp)
+    <> rbrack
+
 instance Show MultiplicityElement where
-  show (MultiplicityElement low upp mes) =
-    " [" ++ show low ++ "," 
-    ++ (case upp of
-           -1 -> "*"
-           otherwise -> show upp)
-    ++ "]"
+  show m = show $ pretty m
                                       
   
 -- Model part of CSMOF
 
                         
+instance Pretty Model where
+  pretty (Model mon obj lin mode) =
+    text "model" <+> text mon 
+    <+> text "conformsTo" <+> text (metamodelName mode) <+> lbrace
+    $+$ foldr (($+$) . pretty) empty obj
+    $+$ foldr (($+$) . pretty) empty lin
+    $+$ rbrace
+
 instance Show Model where
-  show (Model mon obj lin mod) =
-    "model " ++ mon 
-    ++ " conformsTo " ++ metamodelName mod ++ " { \n"
-    ++ foldr ((++) . show) "" obj
-    ++ foldr ((++) . show) "" lin
-    ++ "} \n"
+  show m = show $ pretty m
                         
     
+instance Pretty Object where
+  pretty (Object on ot _) = 
+    text "object " <> text on
+    <+> colon <+> text (namedElementName (typeSuper ot))
+
 instance Show Object where
-  show (Object on ot oo) = 
-    "\t object " ++ on
-    ++ " : " ++ namedElementName (typeSuper ot)
-    ++ "\n"
+  show m = show $ pretty m
     
     
+instance Pretty Link where
+  pretty (Link lt sou tar _) =
+    text "link" <+> text (namedElementName (typedElementSuper (propertySuper lt))) 
+    <> lparen <> text (objectName sou) <> comma <> text (objectName tar) <> rparen $+$ empty
+
 instance Show Link where
-  show (Link lt sou tar ow) =
-    "\t link " ++ namedElementName (typedElementSuper (propertySuper lt)) 
-    ++ "(" ++ objectName sou ++ "," ++ objectName tar ++ ") \n"
-    
+  show m = show $ pretty m
     

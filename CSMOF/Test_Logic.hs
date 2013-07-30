@@ -11,9 +11,18 @@ Portability :  portable
 -- From the CSMOF folder run: ghc -i.. -o main Test_Parser.hs
 
 
-import CSMOF.As
-import CSMOF.Parser
+import CSMOF.ParseXmiAsLibDefn
 import CSMOF.Print
+import CSMOF.Parser
+
+import Logic.Grothendieck
+
+import Syntax.AS_Library
+import Syntax.AS_Structured
+import Common.AS_Annotation
+import Common.IRI
+import Common.Id
+import Common.LibName
 
 import Text.XML.Light 
 import System.IO 
@@ -23,14 +32,14 @@ import Common.DocUtils
 
 
 main :: IO ()
-main = do  
-    handle <- openFile "./tests/classExampleCSMOF.xmi" ReadMode  
+main = 
+  let fp = "./tests/classExampleCSMOF.xmi"
+  in
+  do
+    handle <- openFile fp ReadMode  
     contents <- hGetContents handle 
     case parseXMLDoc contents of
-	Nothing -> putStr "VACIO"
-	Just el -> do
-		    	--handle2 <- openFile "./tests/classExampleCSMOF_EXIT.xmi" WriteMode  
-			--hPutStr handle2 (show el)
-			--hClose handle2
-			putStrLn $ show $ pretty $ parseCSMOF el
+      Nothing -> putStrLn $ show $ Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange []
+      Just el -> putStrLn $ show $ parseCSMOFXmi fp el
     hClose handle
+

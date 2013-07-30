@@ -13,57 +13,72 @@ module CSMOF.Logic_CSMOF where
 
 import CSMOF.As
 import CSMOF.Sign
+import CSMOF.Print ()
 import CSMOF.StatAna
+import CSMOF.ATC_CSMOF ()
 
 import Logic.Logic
 
 import Common.DefaultMorphism
-import Common.ProofTree
+
+import Data.Monoid
 
 data CSMOF = CSMOF deriving Show
 
 instance Language CSMOF where
-    description _ = "CSMOF conformance relation"
+  description _ = "CSMOF conformance relation"
 
 type Morphism = DefaultMorphism Sign
 
 
 -- CSMOF logic
 
+instance Monoid Metamodel where
+  mempty = error "Not implemented!"
+  mappend _ _ = error "Not implemented!"
+
 instance Sentences CSMOF
-    Sen
-    Sign
-    Morphism
-    ()
+  Sen
+  Sign
+  Morphism
+  ()
 --    where
 --      map_sen CSMOF mor sen = return (mor sen)
 
 
+instance Syntax CSMOF
+  Metamodel
+  ()
+  ()
+  ()
+
+
 instance Logic CSMOF
-    ()                -- Sublogics
-    Metamodel         -- basic_spec
-    Sen               -- sentence
-    ()                -- symb_items
-    ()                -- symb_map_items
-    Sign              -- sign
-    Morphism	      -- morphism
-    ()		      -- symbol
-    ()		      -- raw_symbol
-    ()		      -- proof_tree
-    where
-      stability CSMOF = Experimental
-      empty_proof_tree _ = ()
+  ()                -- Sublogics
+  Metamodel         -- basic_spec
+  Sen               -- sentence
+  ()                -- symb_items
+  ()                -- symb_map_items
+  Sign              -- sign
+  Morphism          -- morphism
+  ()                -- symbol
+  ()                -- raw_symbol
+  ()                -- proof_tree
+  where
+    stability CSMOF = Experimental
+    empty_proof_tree _ = ()
 
 
 instance StaticAnalysis CSMOF
-    Metamodel		-- basic_spec
-    Sen                 -- sentence
-    ()                  -- symb_items
-    ()                  -- symb_map_items
-    Sign                -- sign
-    Morphism         	-- morphism
-    ()                  -- symbol
-    ()                  -- raw_symbol
-    where
-      basic_analysis CSMOF = Just basicAna
-      empty_signature CSMOF = emptySign
+  Metamodel         -- basic_spec
+  Sen               -- sentence
+  ()                -- symb_items
+  ()                -- symb_map_items
+  Sign              -- sign
+  Morphism          -- morphism
+  ()                -- symbol
+  ()                -- raw_symbol
+  where
+    basic_analysis CSMOF = Just basicAna
+    empty_signature CSMOF = emptySign
+    
