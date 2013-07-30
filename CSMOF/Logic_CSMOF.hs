@@ -12,7 +12,7 @@ module CSMOF.Logic_CSMOF where
 
 import CSMOF.As
 import CSMOF.Sign
-import CSMOF.StaticAna
+import CSMOF.StatAna
 
 import Logic.Logic
 
@@ -66,4 +66,3 @@ instance StaticAnalysis CSMOF
     where
       basic_analysis CSMOF = Just basicAna
       empty_signature CSMOF = emptySign
-
