@@ -315,7 +315,7 @@ OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
 RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
   RDF/Sublogic.hs
 
-CSMOF_files = CSMOF/As.hs
+CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
