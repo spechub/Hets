@@ -18,20 +18,35 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 data TypeKind = DataTypeKind | ClassKind  deriving (Show, Eq, Ord)
-data TypeClass = TypeClass { name :: String, kind :: TypeKind }  deriving (Show, Eq, Ord)
+data TypeClass = TypeClass { name :: String, kind :: TypeKind }  deriving (Eq, Ord)
+
+instance Show TypeClass where
+	show (TypeClass nam DataTypeKind) = " DataType(" ++ nam ++ ")"
+	show (TypeClass nam ClassKind) = " Class(" ++ nam ++ ")"
+
+
 type Role = String
+
 
 data PropertyT = PropertyT { sourceRole :: Role
 		, sourceType :: TypeClass
 		, targetRole :: Role
 		, targetType :: TypeClass
-		} deriving (Show, Eq, Ord)
+		} deriving (Eq, Ord)
+
+instance Show PropertyT where
+	show (PropertyT souR souT tarR tarT) = "Property(" ++ souR ++ " :" ++ (show souT) 
+					++ "," ++ tarR ++ " :" ++ (show tarT) ++ ") \n"
+
 
 data LinkT = LinkT { sourceVar :: Role
 		, targetVar :: Role
 		, property :: PropertyT
-		} deriving (Show, Eq, Ord)
+		} deriving (Eq, Ord)
 
+instance Show LinkT where
+	show (LinkT souV tarV pro) = "Link(" ++ souV ++ " : " ++ (sourceRole pro) ++ " :" ++ (show (sourceType pro)) ++ "," 
+				++ tarV ++ " : " ++ (targetRole pro) ++ " :" ++ (show (targetType pro)) ++ ") \n"
 
 
 data Sign = Sign
@@ -42,7 +57,17 @@ data Sign = Sign
 	, properties :: Set.Set PropertyT
 	, instances :: Map.Map String TypeClass
 	, links :: Set.Set LinkT
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord)
+
+instance Show Sign where
+	show (Sign typ tyR abs rol pro ins lin) = 
+		"Types = (" ++ (Set.fold ((++) . show) "" typ) ++ ") \n" ++
+		"SubRels = (" ++ (foldr ((++) . show) "" (Rel.toList tyR)) ++ ") \n" ++
+		"Abs = (" ++ (Set.fold ((++) . show) "" abs) ++ ") \n" ++
+		"Roles = (" ++ (Set.fold ((++) . (++ " ")) "" rol) ++ ") \n" ++
+		"Properties = (" ++ (Set.fold ((++) . show) "" pro) ++ ") \n" ++
+		"Instances = (" ++ (foldr ((++) . show) "" (Map.toList ins)) ++ ") \n" ++
+		"Links = (" ++ (Set.fold ((++) . show) "" lin) ++ ") \n"
 
 
 emptySign :: Sign
@@ -64,12 +89,24 @@ emptySign = Sign
 
 data MultConstr = MultConstr { getType :: TypeClass
 				, getRole :: Role
-				} deriving (Eq, Ord, Show)
+				} deriving (Eq, Ord)
 
-data ConstraintType = EQUAL | LEQ | GEQ deriving (Eq, Ord, Show)
+instance Show MultConstr where
+	show (MultConstr tc ro) = (show tc) ++ "." ++ ro
+
+
+data ConstraintType = EQUAL | LEQ | GEQ deriving (Eq, Ord)
+
+instance Show ConstraintType where
+	show (EQUAL) = " = "
+	show (LEQ) = " <= "
+	show (GEQ) = " >= "
+
 
 data Sen = Sen { constraint :: MultConstr
 		, cardinality :: Integer
 		, constraintType :: ConstraintType 
-		} deriving (Eq, Ord, Show)
+		} deriving (Eq, Ord)
 
+instance Show Sen where
+	show (Sen con car cty) = (show con) ++ (show cty) ++ (show car) ++ "\n"

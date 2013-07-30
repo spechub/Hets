@@ -13,18 +13,18 @@ module CSMOF.Logic_CSMOF where
 import CSMOF.As
 import CSMOF.Sign
 import CSMOF.StaticAna
+import CSMOF.Morphism
 
 import Logic.Logic
 
 import Common.DefaultMorphism
 import Common.ProofTree
+import Common.DefaultMorphism
 
 data CSMOF = CSMOF deriving Show
 
 instance Language CSMOF where
     description _ = "CSMOF conformance relation"
-
-type Morphism = DefaultMorphism Sign
 
 
 -- CSMOF logic
@@ -32,8 +32,10 @@ type Morphism = DefaultMorphism Sign
 instance Sentences CSMOF
     Sen
     Sign
+    Morphism
     ()
-    ()
+    where
+      map_sen CSMOF mor sen = return (mor sen)
 
 
 instance Logic CSMOF
@@ -43,20 +45,24 @@ instance Logic CSMOF
     ()                -- symb_items
     ()                -- symb_map_items
     Sign              -- sign
-    ()		          -- morphism
-    ()		            -- symbol
-    ()		         -- raw_symbol
-    ()		         -- proof_tree
+    Morphism	      -- morphism
+    ()		      -- symbol
+    ()		      -- raw_symbol
+    ()		      -- proof_tree
+    where
+      stability CSMOF = Experimental
+      empty_proof_tree _ = ()
 
-instance StaticAnalysis Adl
-    Metamodel
-    Sen
-    ()
-    ()
-    Sign
-    ()
-    ()
-    ()
+
+instance StaticAnalysis CSMOF
+    Metamodel		-- basic_spec
+    Sen                 -- sentence
+    ()                  -- symb_items
+    ()                  -- symb_map_items
+    Sign                -- sign
+    Morphism         	-- morphism
+    ()                  -- symbol
+    ()                  -- raw_symbol
     where
       basic_analysis CSMOF = Just basicAna
       empty_signature CSMOF = emptySign
