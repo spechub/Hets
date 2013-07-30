@@ -370,6 +370,7 @@ data InType =
   | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
   | RDFIn
+  | Xmi
   deriving Eq
 
 instance Show InType where
@@ -393,6 +394,7 @@ instance Show InType where
     CommonLogicIn isLong -> if isLong then "clif" else "clf"
     DgXml -> xmlS
     RDFIn -> "rdf"
+    Xmi -> "xmi"
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
