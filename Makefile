@@ -416,7 +416,7 @@ RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)
 
 CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CSMOF_files)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(CSMOF_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
