@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for the CSMOF logic
