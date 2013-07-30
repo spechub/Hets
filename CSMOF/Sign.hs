@@ -24,14 +24,13 @@ import qualified Data.Set as Set
 data TypeKind = DataTypeKind | ClassKind  deriving (Show, Eq, Ord)
 
 instance Pretty TypeKind where
-  pretty DataTypeKind = text "DataType"
-  pretty ClassKind = text "Class"
+  pretty DataTypeKind = text "datatype"
+  pretty ClassKind = text "class"
 
 data TypeClass = TypeClass { name :: String, kind :: TypeKind }  deriving (Show, Eq, Ord)
 
 instance Pretty TypeClass where
-  pretty (TypeClass nam DataTypeKind) = space <> text "DataType" <> lparen <> text nam <> rparen
-  pretty (TypeClass nam ClassKind) = space <> text "Class" <> lparen <> text nam <> rparen
+  pretty (TypeClass nam _) = text nam
 
 
 type Role = String
@@ -44,8 +43,8 @@ data PropertyT = PropertyT { sourceRole :: Role
                            } deriving (Show, Eq, Ord)
 
 instance Pretty PropertyT where
-  pretty (PropertyT souR souT tarR tarT) = text "Property" <> lparen <> text souR <+> colon <> (pretty souT) 
-                                           <> comma <> text tarR <+> colon <> (pretty tarT) <> rparen
+  pretty (PropertyT souR souT tarR tarT) = text "property" <> lparen <> text souR <+> colon <+> (pretty souT) 
+                                           <+> comma <+> text tarR <+> colon <+> (pretty tarT) <> rparen
 
 
 data LinkT = LinkT { sourceVar :: Role
@@ -54,9 +53,9 @@ data LinkT = LinkT { sourceVar :: Role
                    } deriving (Show, Eq, Ord)
 
 instance Pretty LinkT where
-  pretty (LinkT souV tarV pro) = text "Link" <> lparen <> text souV <+> colon <+> 
-                                 text (sourceRole pro) <+> colon <> pretty (sourceType pro) <> comma 
-                                 <> text tarV <+> colon <> text (targetRole pro) <+> colon <> (pretty (targetType pro)) <> rparen
+  pretty (LinkT souV tarV pro) = text "link" <> lparen <> text souV <+> colon <+> 
+                                 text (sourceRole pro) <+> colon <+> pretty (sourceType pro) <+> comma 
+                                 <+> text tarV <+> colon <+> text (targetRole pro) <+> colon <+> (pretty (targetType pro)) <+> rparen
 
 
 data Sign = Sign { types :: Set.Set TypeClass
@@ -74,14 +73,29 @@ instance GetRange Sign where
 
 instance Pretty Sign where
   pretty (Sign typ tyR abst rol pro ins lin) = 
-    text "Types" <+> equals <+> lparen <> (Set.fold ((<>) . pretty) empty typ) <> rparen $++$
-    text "SubRels" <+> equals <+> lparen <> (foldr ((<>) . pretty) empty (Rel.toList tyR)) <> rparen $++$
-    text "Abs" <+> equals <+> lparen <> (Set.fold ((<>) . pretty) empty abst) <> rparen $++$
-    text "Roles" <+> equals <+> lparen <> (Set.fold ((<+>) . text) empty rol) <> rparen $++$
-    text "Properties" <+> equals <+> lparen <> (Set.fold ((<>) . pretty) empty pro) <> rparen $++$
-    text "Instances" <+> equals <+> lparen <> (foldr ((<>) . pretty) empty (Map.toList ins)) <> rparen $++$
-    text "Links" <+> equals <+> lparen <> (Set.fold ((<>) . pretty) empty lin) <> rparen
+    Set.fold (($+$) . (toType abst)) empty typ
+    $++$ 
+    foldr (($+$) . toSubRel) empty (Rel.toList tyR)
+    $++$
+    Set.fold (($+$) . text . ("role "++)) empty rol
+    $++$
+    Set.fold (($+$) . pretty) empty pro
+    $++$
+    foldr (($+$) . toInstance) empty (Map.toList ins)
+    $++$
+    Set.fold (($+$) . pretty) empty lin
 
+toType :: Set.Set TypeClass -> TypeClass -> Doc
+toType setTC (TypeClass nam ki) = 
+  if Set.member (TypeClass nam ki) setTC then
+    text "abstract" <+> pretty ki <+> text nam
+  else pretty ki <+> text nam
+
+toSubRel :: (TypeClass, TypeClass) -> Doc
+toSubRel (a,b) = pretty a <+> text "<" <+> pretty b
+
+toInstance :: (String, TypeClass) -> Doc
+toInstance (a,b) = text "object" <+> text a <+> colon <+> pretty b
 
 emptySign :: Sign
 emptySign = Sign { types = Set.empty
