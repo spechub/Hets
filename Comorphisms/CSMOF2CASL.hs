@@ -94,7 +94,7 @@ instance Comorphism CSMOF2CASL
 
 mapTheory :: (CSMOF.Sign, [Named CSMOF.Sen]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (s, ns) = let cs = mapSign s in
-  return (cs, map (mapNamed $ mapSen cs) ns)
+  return (cs, map (mapNamed $ mapSen cs) ns ++ sentences cs)
 
 
 mapSign :: CSMOF.Sign -> CASLSign
@@ -103,7 +103,8 @@ mapSign s =
     sorts = getSorts (types s) (typeRel s)
     ops = getOperations (instances s)
     preds = getPredicates (properties s)
-    sent = getSentences (typeRel s) (links s) (abstractClasses s)
+    sent = getSentencesRels (links s) 
+    sentDisEmb = getSortGen (typeRel s) (abstractClasses s) (instances s)
   in
     C.Sign
     { sortRel = sorts
@@ -113,7 +114,7 @@ mapSign s =
     , assocOps = MapSet.empty
     , predMap = fst preds
     , varMap = Map.empty
-    , sentences = snd preds ++ sent
+    , sentences = snd preds ++ sent ++ sentDisEmb
     , declaredSymbols = Set.empty
     , envDiags = []
     , annoMap = MapSet.empty
@@ -149,11 +150,11 @@ insertPredicate prop (predM,form) =
     ptype2 = PredType $ sort2 : [sort1]
     nam = "equiv_" ++ targetRole prop ++ "_" ++ sourceRole prop
     sent = C.Relation 
-             (C.Predication (C.Pred_name pname1) 
+             (C.Predication (C.Pred_name pname2) 
                           (C.Qual_var (mkSimpleId "x") sort2 nullRange : [C.Qual_var (mkSimpleId "y") sort1 nullRange]) 
                           nullRange) 
              C.Equivalence 
-             (C.Predication (C.Pred_name pname2) 
+             (C.Predication (C.Pred_name pname1) 
                           (C.Qual_var (mkSimpleId "y") sort1 nullRange : [C.Qual_var (mkSimpleId "x") sort2 nullRange]) 
                           nullRange) 
              nullRange
@@ -179,14 +180,113 @@ insertOperations (na,tc) opM =
     MapSet.insert opName opType opM
 
 
-getSentences :: Rel.Rel TypeClass -> Set.Set LinkT -> Set.Set TypeClass -> [Named (FORMULA f)]
-getSentences _ _ _ = [] -- relC setL setT = ???
---  if an abstract class then is the disjoint embedding of subsorts (free type)
---      Sort_gen_ax [Constraint] True
---           Constraint newSort [(OP_SYMB, [Int])] origSort
--- for each link, the corresponding predicate holds
--- sorts are generated as a free type of object functions
--- predicate iff each case of link (completeness of relations)
+getSentencesRels :: Set.Set LinkT -> [Named (CASLFORMULA)]
+getSentencesRels linkk = completenessOfRelations linkk
+
+
+completenessOfRelations :: Set.Set LinkT -> [Named (CASLFORMULA)]
+completenessOfRelations linkk =
+  let ordLinks = getLinksByProperty linkk
+  in foldr ((++) . createComplFormula) [] (Map.toList ordLinks)
+
+createComplFormula ::  (String,[LinkT]) -> [Named (CASLFORMULA)]
+createComplFormula (nam,linksL) = 
+  let
+    varA = mkSimpleId "x"
+    varB = mkSimpleId "y"
+  in
+    case linksL of
+      [] -> []
+      (LinkT _ _ pr) : _ -> let
+                                   sorA = mkInfix $ name $ sourceType pr
+                                   sorB = mkInfix $ name $ targetType pr
+                                   sent = C.Relation 
+                                             (C.Predication (C.Pred_name (mkInfix $ targetRole pr)) 
+                                                (C.Qual_var varA sorA nullRange 
+                                                   : [C.Qual_var varB sorB nullRange]) 
+                                                 nullRange) 
+                                             C.Equivalence 
+                                             (Junction Dis (foldr ((:) . (getPropHold varA sorA varB sorB)) [] linksL) nullRange) 
+                                             nullRange
+                                 in
+                                   [makeNamed ("compRel_" ++ nam) sent]
+
+getPropHold :: VAR -> SORT -> VAR -> SORT -> LinkT -> CASLFORMULA
+getPropHold varA sorA varB sorB lin = 
+  let
+    eqA = Equation (Qual_var varA sorA nullRange) 
+                   Strong 
+                   (Qual_var (mkSimpleId (sourceVar lin)) (mkInfix $ name $ sourceType (property lin)) nullRange) 
+                   nullRange
+    eqB = Equation (Qual_var varB sorB nullRange) 
+                   Strong 
+                   (Qual_var (mkSimpleId (targetVar lin)) (mkInfix $ name $ targetType (property lin)) nullRange) 
+                   nullRange
+  in
+    Junction Con (eqA : [eqB]) nullRange
+
+
+getLinksByProperty :: Set.Set LinkT -> Map.Map String [LinkT]
+getLinksByProperty linkk = 
+  let elems = Set.elems linkk
+  in foldr (getByProperty) Map.empty elems
+
+getByProperty :: LinkT -> Map.Map String [LinkT] -> Map.Map String [LinkT]
+getByProperty lin mapL = 
+  let 
+    prope = CSMOF.property lin
+    nameLook = sourceRole prope ++ name (sourceType prope) ++ targetRole prope ++ name (targetType prope)
+    setProp = Map.lookup nameLook mapL
+  in 
+    case setProp of
+      Nothing -> Map.insert nameLook [lin] (Map.delete nameLook mapL)
+      Just s -> Map.insert nameLook (lin : s) (Map.delete nameLook mapL)
+
+
+getSortGen :: Rel.Rel TypeClass -> Set.Set TypeClass -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
+getSortGen typpR absCl inst = 
+  disjointEmbedding absCl typpR ++ sortGeneration inst
+
+-- Sorts are generated as a free type of object functions
+sortGeneration :: Map.Map String TypeClass -> [Named (CASLFORMULA)]
+sortGeneration inst = 
+  let ordObj = foldr (orderByClass) Map.empty (Map.toList inst)
+  in foldr ((:) . toSortConstraint) [] (Map.toList ordObj)
+
+orderByClass :: (String,TypeClass) -> Map.Map TypeClass [String] -> Map.Map TypeClass [String]
+orderByClass (ob,tc) mapTC = 
+  case Map.lookup tc mapTC of
+    Nothing -> Map.insert tc [ob] mapTC
+    Just listObj -> Map.insert tc (ob : listObj) (Map.delete tc mapTC)
+
+toSortConstraint :: (TypeClass, [String]) -> Named (CASLFORMULA)
+toSortConstraint (tc,lisObj) = 
+  let constr = Sort_gen_ax (foldr ((:) . toConstraint tc) [] lisObj) True
+  in makeNamed ("sortGenCon_" ++ name tc) constr
+
+toConstraint :: TypeClass -> String -> Constraint
+toConstraint s obName =
+  let sor = mkInfix $ name s
+      obj = mkInfix obName
+  in
+    Constraint sor [(Op_name obj, [])] sor
+
+-- Each abstract class is the disjoint embedding of it subsorts
+disjointEmbedding :: Set.Set TypeClass -> Rel.Rel TypeClass -> [Named (CASLFORMULA)]
+disjointEmbedding absCl rel =
+  let injSyms = map (\ (s, t) -> (Qual_op_name (mkUniqueInjName (mkInfix $ name s) (mkInfix $ name t))
+                                   (Op_type Total [(mkInfix $ name s)] (mkInfix $ name t) nullRange) nullRange,[]))
+                     $ Rel.toList
+                     $ Rel.irreflex rel
+      resType _ ((Op_name _),_) = False
+      resType s ((Qual_op_name _ t _),_) = res_OP_TYPE t == s
+      collectOps s = Constraint (mkInfix $ name s) (filter (resType (mkInfix $ name s)) injSyms) (mkInfix $ name s)
+      sortList = Set.toList absCl
+      constrs = map collectOps sortList
+  in
+      [makeNamed "disjEmbedd" (Sort_gen_ax constrs True)]
+
+
 
 
 mapSen :: CASLSign -> CSMOF.Sen -> CASLFORMULA
