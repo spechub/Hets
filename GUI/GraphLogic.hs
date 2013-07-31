@@ -391,11 +391,12 @@ proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
           unlockGlobal gInfo
           printDiags 2 ds
         Just newProofStatus -> do
+          ostate <- readIORef $ intState gInfo
           let newGr = lookupDGraph ln newProofStatus
               history = snd $ splitHistory (lookupDGraph ln proofStatus) newGr
               lln = map DgCommandChange $ calcGlobalHistory
                                                    proofStatus newProofStatus
-              nst = add2history cmd ost lln
+              nst = add2history cmd ostate lln
               nwst = nst { i_state = Just ist { i_libEnv = newProofStatus}}
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"

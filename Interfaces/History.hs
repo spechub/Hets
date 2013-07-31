@@ -31,6 +31,8 @@ import Static.History
 
 import qualified Data.Map as Map
 
+import Debug.Trace
+
 -- | Datatype used to differentiate between the two actions (so that code does
 -- not get duplicated
 data UndoOrRedo =

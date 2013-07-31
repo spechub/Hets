@@ -127,9 +127,10 @@ proofTreeToProve :: FilePath
      -> ProofState                   -- current proofstate
      -> Maybe (G_prover, AnyComorphism)     -- possible used translation
      -> [ProofStatus proof_tree]           -- goals included in prove
+     -> String
      -> [IC.Command]
-proofTreeToProve fn st pcm pt =
-    [ IC.SelectCmd IC.Node nodeName, IC.GlobCmd IC.DropTranslation ]
+proofTreeToProve fn st pcm pt nodeName =
+    [ IC.SelectCmd IC.Node nodeName', IC.GlobCmd IC.DropTranslation ]
     ++ maybe [] (\ (Comorphism cid) -> map (IC.SelectCmd
                 IC.ComorphismTranslation) $
                 drop 1 $ splitOn ';' $ language_name cid) trans
@@ -149,10 +150,11 @@ proofTreeToProve fn st pcm pt =
                   $ filter wasProved pt
       -- axioms to include in prove
       allax = map fst $ getAxioms st
-      nodeName = dropName fn $ theoryName st
+      nodeName' = if (nodeName == "") then dropName fn $ theoryName st
+                                     else nodeName 
       -- A goal is a pair of a name as String and time limit as Int
       goalToCommands :: (String, Int) -> [IC.Command]
-      goalToCommands (n, t) =
+      goalToCommands (n, t) = 
           [ IC.SelectCmd IC.Goal n, IC.SetAxioms allax, IC.TimeLimit t,
             IC.GlobCmd IC.ProveCurrent ]
 
@@ -186,13 +188,14 @@ addCommandHistoryToState :: IORef IntState
     -> ProofState                    -- current proofstate
     -> Maybe (G_prover, AnyComorphism) -- possible used translation
     -> [ProofStatus proof_tree]       -- goals included in prove
+    -> String
     -> IO ()
-addCommandHistoryToState intSt st pcm pt =
+addCommandHistoryToState intSt st pcm pt str =
   unless (not $ any wasProved pt) $ do
         ost <- readIORef intSt
         fn <- tryRemoveAbsolutePathComponent $ filename ost
         writeIORef intSt $ add2history
-           (IC.GroupCmd $ proofTreeToProve (rmSuffix fn) st pcm pt)
+           (IC.GroupCmd $ proofTreeToProve (rmSuffix fn) st pcm pt str)
            ost [ IStateChange $ i_state ost ]
 
 conservativityRule :: DGRule

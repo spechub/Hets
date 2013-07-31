@@ -254,7 +254,7 @@ performAutoProof gi inclThms timeout update (Finder _ pr cs i) listNodes nodes =
                     Result ds ms <- runResultT
                       $ (do 
                           (a,b) <- autoProofAtNode inclThms timeout [] g_th (pr,c)
-                          liftIO $ addCommandHistoryToState (intState gi) (fst b) (Just (pr,c)) (snd b)  
+                          liftIO $ addCommandHistoryToState (intState gi) (fst b) (Just (pr,c)) (snd b) (name fn)
                           return a)
                     maybe (fail $ showRelDiags 1 ds) (return . Just . fst) ms)
                   $ globalTheory $ snd $ node fn
