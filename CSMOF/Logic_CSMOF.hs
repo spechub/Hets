@@ -83,4 +83,3 @@ instance StaticAnalysis CSMOF
     empty_signature CSMOF = emptySign
     is_subsig CSMOF _ _ = True
     subsig_inclusion CSMOF = defaultInclusion
-    signature_union CSMOF _ s2 = return s2
