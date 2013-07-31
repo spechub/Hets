@@ -81,4 +81,5 @@ instance StaticAnalysis CSMOF
   where
     basic_analysis CSMOF = Just basicAna
     empty_signature CSMOF = emptySign
-    
+    is_subsig CSMOF _ _ = True
+    subsig_inclusion CSMOF = defaultInclusion
