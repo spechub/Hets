@@ -109,7 +109,8 @@ verbMsgIO = verbMsg stdout
 verbMsgIOLn :: Int -> Int -> String -> IO ()
 verbMsgIOLn = verbMsgLn stdout
 
--- | replace first (non-empty) sublist with second one in third argument list
+{- | replace all occurrences of the first (non-empty sublist) argument
+     with the second argument in the third (list) argument. -}
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
 replace sl r = case sl of
   [] -> error "Common.Utils.replace: empty list"
