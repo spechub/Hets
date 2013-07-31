@@ -24,7 +24,7 @@ import Common.DocUtils
 
 main :: IO ()
 main = do  
-    handle <- openFile "./tests/classExampleCSMOF.xmi" ReadMode  
+    handle <- openFile "MetamodelWMult.xmi" ReadMode  
     contents <- hGetContents handle 
     case parseXMLDoc contents of
 	Nothing -> putStr "VACIO"

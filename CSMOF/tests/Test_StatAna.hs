@@ -25,12 +25,12 @@ import Text.XML.Light
 
 main :: IO ()
 main = do  
-    handle <- openFile "./tests/classExampleCSMOF.xmi" ReadMode  
+    handle <- openFile "MetamodelWModel.xmi" ReadMode  
     contents <- hGetContents handle 
     case parseXMLDoc contents of
 	Nothing -> putStr "VACIO"
 	Just el -> do
-			handle2 <- openFile "./tests/parsingStaticAn_EXIT.txt" WriteMode  
+			handle2 <- openFile "parsingStaticAn_EXIT.txt" WriteMode  
 			hPutStr handle2 (show (basicAna ((parseCSMOF el),emptySign,emptyGlobalAnnos)))
 			hClose handle2
     hClose handle

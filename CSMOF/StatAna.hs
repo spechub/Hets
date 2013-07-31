@@ -78,7 +78,12 @@ toTypeClass c = TypeClass (namedElementName (typeSuper (classSuperType c))) Clas
 
 
 buildInstances :: Metamodel -> Map.Map String TypeClass
-buildInstances m = foldr (createInstanceFromObject) Map.empty (object (head (model m)))
+buildInstances m = 
+  let models = model m
+  in case models of
+       [] -> Map.empty
+       -- There is assumed that there is only one model to process, the thers are discarded
+       mo : _ -> foldr (createInstanceFromObject) Map.empty (object mo)
 
 createInstanceFromObject :: Object -> Map.Map String TypeClass -> Map.Map String TypeClass
 createInstanceFromObject ob mapp = 
@@ -90,7 +95,12 @@ createInstanceFromObject ob mapp =
 
 
 buildLinks :: Metamodel -> Set.Set LinkT
-buildLinks m =  foldr (createLinksFromLinks) Set.empty (link (head (model m)))
+buildLinks m =  
+  let models = model m
+  in case models of
+       [] -> Set.empty
+       -- There is assumed that there is only one model to process, the thers are discarded
+       mo : _ -> foldr (createLinksFromLinks) Set.empty (link mo)
 
 createLinksFromLinks :: Link -> Set.Set LinkT -> Set.Set LinkT
 createLinksFromLinks li linkk = 
@@ -125,6 +135,7 @@ createProperty el ty cla opp =
 buildSentences :: Metamodel -> [Named Sen]
 buildSentences meta = foldr (buildSen) [] (element meta)
 
+
 buildSen :: NamedElement -> [Named Sen] -> [Named Sen]
 buildSen (NamedElement _ _ (TType _)) lis = lis
 buildSen (NamedElement el _ (TTypedElement (TypedElement _ _ 
@@ -137,5 +148,7 @@ buildSen (NamedElement el _ (TTypedElement (TypedElement _ _
           if low > 0 then
             (makeNamed "" (Sen (MultConstr clas el) upp LEQ)) : ((makeNamed "" (Sen (MultConstr clas el) low GEQ)) : lis)
           else (makeNamed "" (Sen (MultConstr clas el) upp LEQ)) : lis
-        else lis
+        else if low > 0 then
+               (makeNamed "" (Sen (MultConstr clas el) low GEQ)) : lis
+             else lis
 

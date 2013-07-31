@@ -83,4 +83,5 @@ instance StaticAnalysis CSMOF
     empty_signature CSMOF = emptySign
     is_subsig CSMOF _ _ = True
     subsig_inclusion CSMOF = defaultInclusion
-    induced_from_morphism _ _ sig = return $ MkMorphism sig sig -- just a hack!
+    induced_from_morphism _ _ sig = return $ MkMorphism sig sig
+    signature_union CSMOF sign1 sign2 = return sign1 --TODO

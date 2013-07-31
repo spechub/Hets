@@ -33,7 +33,7 @@ import Common.DocUtils
 
 main :: IO ()
 main = 
-  let fp = "./tests/classExampleCSMOF.xmi"
+  let fp = "MetamodelWMult.xmi"
   in
   do
     handle <- openFile fp ReadMode  
