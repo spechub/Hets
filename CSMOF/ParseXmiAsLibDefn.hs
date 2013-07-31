@@ -42,14 +42,18 @@ parseCSMOFXmi filename contentOfFile = convertToLibDefN filename (parseCSMOF con
 
 
 convertToLibDefN :: FilePath -> Metamodel -> LIB_DEFN
-convertToLibDefN filename el = Lib_defn 
+convertToLibDefN filename el = Lib_defn
+                               --(LibName (IndirectLink (convertFileToLibStr filename) nullRange filename) Nothing)
                                (emptyLibName $ convertFileToLibStr filename)
                                (makeLogicItem CSMOF : [convertoItem el])
                                nullRange []
 
 
 convertoItem :: Metamodel -> Annoted LIB_ITEM
-convertoItem el = makeSpecItem nullIRI $ createSpec el
+convertoItem el =
+  case parseIRI $ ("metamodel://" ++ metamodelName el) of
+    Nothing -> makeSpecItem nullIRI $ createSpec el
+    Just ir -> makeSpecItem ir $ createSpec el
 
 
 createSpec :: Metamodel -> Annoted SPEC
