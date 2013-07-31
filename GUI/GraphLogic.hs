@@ -377,10 +377,13 @@ proofMenu :: GInfo
 proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
                        , libName = ln
                        }) cmd proofFun = do
-  ost <- readIORef $ intState gInfo
+  ost <- readIORef $ intState gInfo  
   case i_state ost of
     Nothing -> return ()
     Just ist -> do
+      let ost2 = add2history cmd ost []
+          ost3 = add2history (CommentCmd "") ost2 []
+      writeIORef (intState gInfo) ost3
       lockGlobal gInfo
       let proofStatus = i_libEnv ist
       putIfVerbose hOpts 4 "Proof started via menu"
@@ -396,7 +399,7 @@ proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
               history = snd $ splitHistory (lookupDGraph ln proofStatus) newGr
               lln = map DgCommandChange $ calcGlobalHistory
                                                    proofStatus newProofStatus
-              nst = add2history cmd ostate lln
+              nst = add2history (CommentCmd "") ostate lln
               nwst = nst { i_state = Just ist { i_libEnv = newProofStatus}}
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"

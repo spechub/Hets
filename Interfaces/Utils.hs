@@ -128,8 +128,9 @@ proofTreeToProve :: FilePath
      -> Maybe (G_prover, AnyComorphism)     -- possible used translation
      -> [ProofStatus proof_tree]           -- goals included in prove
      -> String
+     -> (Bool, Int)
      -> [IC.Command]
-proofTreeToProve fn st pcm pt nodeName =
+proofTreeToProve fn st pcm pt nodeName (useTm, tm)=
     [ IC.SelectCmd IC.Node nodeName', IC.GlobCmd IC.DropTranslation ]
     ++ maybe [] (\ (Comorphism cid) -> map (IC.SelectCmd
                 IC.ComorphismTranslation) $
@@ -151,11 +152,11 @@ proofTreeToProve fn st pcm pt nodeName =
       -- axioms to include in prove
       allax = map fst $ getAxioms st
       nodeName' = if (nodeName == "") then dropName fn $ theoryName st
-                                     else nodeName 
+                                      else nodeName 
       -- A goal is a pair of a name as String and time limit as Int
       goalToCommands :: (String, Int) -> [IC.Command]
       goalToCommands (n, t) = 
-          [ IC.SelectCmd IC.Goal n, IC.SetAxioms allax, IC.TimeLimit t,
+          [ IC.SelectCmd IC.Goal n, IC.SetAxioms allax,IC.TimeLimit (if useTm then tm else t),
             IC.GlobCmd IC.ProveCurrent ]
 
 -- Merge goals with the same time-limit
@@ -189,13 +190,14 @@ addCommandHistoryToState :: IORef IntState
     -> Maybe (G_prover, AnyComorphism) -- possible used translation
     -> [ProofStatus proof_tree]       -- goals included in prove
     -> String
+    -> (Bool, Int)
     -> IO ()
-addCommandHistoryToState intSt st pcm pt str =
+addCommandHistoryToState intSt st pcm pt str (useTm,timeout) =
   unless (not $ any wasProved pt) $ do
         ost <- readIORef intSt
         fn <- tryRemoveAbsolutePathComponent $ filename ost
         writeIORef intSt $ add2history
-           (IC.GroupCmd $ proofTreeToProve (rmSuffix fn) st pcm pt str)
+           (IC.GroupCmd $ proofTreeToProve (rmSuffix fn) st pcm pt str (useTm, timeout))
            ost [ IStateChange $ i_state ost ]
 
 conservativityRule :: DGRule
