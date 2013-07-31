@@ -1,0 +1,5 @@
+library Test
+
+from classExampleCSMOF get |-> s
+
+spec s2 = s
