@@ -111,15 +111,19 @@ cConsChecker input state =
      case elements pS of
       [] -> return $ genMsgAndCode "Nothing selected" 1 state
       Element z _ : _ ->
+       do 
+        let consCheckList = getConsCheckers $ findComorphismPaths
+                                logicGraph $ sublogicOfTheory z
         -- see if any comorphism was used
         case cComorphism pS of
         {- if none use the theory of the first selected node
         to find possible comorphisms -}
-        Nothing -> case find (\ (y, _) ->
-                                  getCcName y == inp) $
-                             getConsCheckers $ findComorphismPaths
-                                logicGraph $ sublogicOfTheory z of
-                    Nothing -> return $ genMsgAndCode ("No applicable " ++
+         Nothing -> case find (\ (y, _) -> getCcName y == inp) consCheckList of
+                    Nothing ->if inp =="" then do
+                                            let shortConsCList =nub $  map (\ (y, _) -> getCcName y) consCheckList
+                                            mapM_ putStrLn shortConsCList
+                                            return state
+                                          else return $ genMsgAndCode ("No applicable " ++
                                  "consistency checker with this name found") 1
                                  state
                     Just (p, _) -> return $ add2hist
@@ -130,14 +134,18 @@ cConsChecker input state =
                                              consChecker = Just p }
                                           }
                                       }
-        Just x ->
+         Just x ->
           case find (\ (y, _) -> getCcName y == inp)
                      $ getConsCheckers [x] of
            Nothing ->
-            case find (\ (y, _) -> getCcName y == inp) $ getConsCheckers $
-                          findComorphismPaths logicGraph $ sublogicOfTheory z of
-             Nothing -> return $ genMsgAndCode ("No applicable consistency " ++
-                                 "checker with this name found") 1 state
+            case find (\ (y, _) -> getCcName y == inp) $ consCheckList of
+             Nothing -> if inp =="" then do
+                                            let shortConsCList =nub $ map (\ (y, _) -> getCcName y) consCheckList
+                                            mapM_ putStrLn shortConsCList
+                                            return state
+                                    else return $ genMsgAndCode ("No applicable " ++
+                                 "consistency checker with this name found") 1
+                                 state
              Just (p, nCm@(Comorphism cid)) ->
                return $ add2hist [ ConsCheckerChange $ consChecker pS
                                  , CComorphismChange $ cComorphism pS ]
