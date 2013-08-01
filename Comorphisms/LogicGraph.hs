@@ -119,6 +119,7 @@ import OWL2.Propositional2OWL2
 #ifdef CASLEXTENSIONS
 import Comorphisms.ExtModal2OWL
 #endif
+import Comorphisms.CSMOF2CASL
 #endif
 
 #ifdef PROGRAMATICA
@@ -223,7 +224,8 @@ comorphismList =
     , Comorphism $ CASL2SubCFOL False NoMembershipOrCast -- keep free types
     , Comorphism CASL2TopSort
     , Comorphism QBF2Prop
-    , Comorphism Prop2QBF ]
+    , Comorphism Prop2QBF
+    , Comorphism CSMOF2CASL ]
 
 inclusionList :: [AnyComorphism]
 inclusionList =

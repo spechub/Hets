@@ -81,7 +81,7 @@ instance Comorphism CSMOF2CASL
       mapSublogic CSMOF2CASL _ = Just $ caslTop
         { has_part = False
         , sub_features = LocFilSub
-        , cons_features = NoSortGen }
+        , cons_features = SortGen False True }
       map_theory CSMOF2CASL = mapTheory
       map_sentence CSMOF2CASL s = return . mapSen (mapSign s)
       map_morphism CSMOF2CASL = mapMor
@@ -128,10 +128,10 @@ getSorts setC relC =
   in foldr (insertPair) relS (Rel.toList relC)
 
 insertSort :: String -> Rel.Rel SORT -> Rel.Rel SORT
-insertSort s relS = Rel.insertPair (mkInfix s) (mkInfix s) relS
+insertSort s relS = Rel.insertPair (stringToId s) (stringToId s) relS
 
 insertPair :: (TypeClass,TypeClass) -> Rel.Rel SORT -> Rel.Rel SORT
-insertPair (t1,t2) relS = Rel.insertPair (mkInfix $ name t1) (mkInfix $ name t2) relS
+insertPair (t1,t2) relS = Rel.insertPair (stringToId $ name t1) (stringToId $ name t2) relS
 
 revertOrder :: (SORT,SORT) -> (SORT,SORT)
 revertOrder (a,b) = (b,a)
@@ -142,11 +142,11 @@ getPredicates props = Set.fold (insertPredicate) (MapSet.empty,[]) props
 insertPredicate :: PropertyT -> (PredMap,[Named (FORMULA f)]) -> (PredMap,[Named (FORMULA f)])
 insertPredicate prop (predM,form) = 
   let 
-    sort1 = mkInfix $ name $ sourceType prop
-    sort2 = mkInfix $ name $ targetType prop
-    pname1 = mkInfix $ targetRole prop
+    sort1 = stringToId $ name $ sourceType prop
+    sort2 = stringToId $ name $ targetType prop
+    pname1 = stringToId $ targetRole prop
     ptype1 = PredType $ sort1 : [sort2]
-    pname2 = mkInfix $ sourceRole prop
+    pname2 = stringToId $ sourceRole prop
     ptype2 = PredType $ sort2 : [sort1]
     nam = "equiv_" ++ targetRole prop ++ "_" ++ sourceRole prop
     sent = C.Relation 
@@ -174,8 +174,8 @@ getOperations ops = foldr (insertOperations) MapSet.empty (Map.toList ops)
 insertOperations :: (String,TypeClass) -> OpMap -> OpMap
 insertOperations (na,tc) opM = 
   let
-    opName = mkInfix na
-    opType = OpType Total [] (mkInfix $ name tc)
+    opName = stringToId na
+    opType = OpType Total [] (stringToId $ name tc)
   in 
     MapSet.insert opName opType opM
 
@@ -198,10 +198,10 @@ createComplFormula (nam,linksL) =
     case linksL of
       [] -> []
       (LinkT _ _ pr) : _ -> let
-                                   sorA = mkInfix $ name $ sourceType pr
-                                   sorB = mkInfix $ name $ targetType pr
+                                   sorA = stringToId $ name $ sourceType pr
+                                   sorB = stringToId $ name $ targetType pr
                                    sent = C.Relation 
-                                             (C.Predication (C.Pred_name (mkInfix $ targetRole pr)) 
+                                             (C.Predication (C.Pred_name (stringToId $ targetRole pr)) 
                                                 (C.Qual_var varA sorA nullRange 
                                                    : [C.Qual_var varB sorB nullRange]) 
                                                  nullRange) 
@@ -216,11 +216,11 @@ getPropHold varA sorA varB sorB lin =
   let
     eqA = Equation (Qual_var varA sorA nullRange) 
                    Strong 
-                   (Qual_var (mkSimpleId (sourceVar lin)) (mkInfix $ name $ sourceType (property lin)) nullRange) 
+                   (Qual_var (mkSimpleId (sourceVar lin)) (stringToId $ name $ sourceType (property lin)) nullRange) 
                    nullRange
     eqB = Equation (Qual_var varB sorB nullRange) 
                    Strong 
-                   (Qual_var (mkSimpleId (targetVar lin)) (mkInfix $ name $ targetType (property lin)) nullRange) 
+                   (Qual_var (mkSimpleId (targetVar lin)) (stringToId $ name $ targetType (property lin)) nullRange) 
                    nullRange
   in
     Junction Con (eqA : [eqB]) nullRange
@@ -261,26 +261,33 @@ orderByClass (ob,tc) mapTC =
 
 toSortConstraint :: (TypeClass, [String]) -> Named (CASLFORMULA)
 toSortConstraint (tc,lisObj) = 
-  let constr = Sort_gen_ax (foldr ((:) . toConstraint tc) [] lisObj) True
-  in makeNamed ("sortGenCon_" ++ name tc) constr
+  let 
+    sor = stringToId $ name tc
+    simplCon = Constraint sor (foldr ((:) . toConstraint sor) [] lisObj) sor
+    constr = Sort_gen_ax [simplCon] True
+  in 
+    makeNamed ("sortGenCon_" ++ name tc) constr
 
-toConstraint :: TypeClass -> String -> Constraint
-toConstraint s obName =
-  let sor = mkInfix $ name s
-      obj = mkInfix obName
+--  let constr = Sort_gen_ax (foldr ((:) . toConstraint tc) [] lisObj) True
+--  in makeNamed ("sortGenCon_" ++ name tc) constr
+
+toConstraint :: Id -> String -> (OP_SYMB, [Int])
+toConstraint sor obName =
+  let obj = stringToId obName
   in
-    Constraint sor [(Op_name obj, [])] sor
+    (Qual_op_name obj (Op_type Total [] sor nullRange) nullRange,[])
+
 
 -- Each abstract class is the disjoint embedding of it subsorts
 disjointEmbedding :: Set.Set TypeClass -> Rel.Rel TypeClass -> [Named (CASLFORMULA)]
 disjointEmbedding absCl rel =
-  let injSyms = map (\ (s, t) -> (Qual_op_name (mkUniqueInjName (mkInfix $ name s) (mkInfix $ name t))
-                                   (Op_type Total [(mkInfix $ name s)] (mkInfix $ name t) nullRange) nullRange,[]))
+  let injSyms = map (\ (s, t) -> (Qual_op_name (mkUniqueInjName (stringToId $ name s) (stringToId $ name t))
+                                   (Op_type Total [(stringToId $ name s)] (stringToId $ name t) nullRange) nullRange,[]))
                      $ Rel.toList
                      $ Rel.irreflex rel
       resType _ ((Op_name _),_) = False
       resType s ((Qual_op_name _ t _),_) = res_OP_TYPE t == s
-      collectOps s = Constraint (mkInfix $ name s) (filter (resType (mkInfix $ name s)) injSyms) (mkInfix $ name s)
+      collectOps s = Constraint (stringToId $ name s) (filter (resType (stringToId $ name s)) injSyms) (stringToId $ name s)
       sortList = Set.toList absCl
       constrs = map collectOps sortList
   in
@@ -304,7 +311,7 @@ mapSen sig (Sen con car cot) = -- trueForm
 minConstraint :: MultConstr -> Integer -> PredMap -> CASLFORMULA
 minConstraint con int predM = 
   let 
-    predTypes = Set.elems $ MapSet.lookup (mkInfix $ getRole con) predM -- [PredType]
+    predTypes = Set.elems $ MapSet.lookup (stringToId $ getRole con) predM -- [PredType]
     souVars = generateVars "x" 1
     tarVars = generateVars "y" int
     souVarDec = Var_decl souVars (head (predArgs (head predTypes))) nullRange
@@ -315,13 +322,13 @@ minConstraint con int predM =
                                       Existential 
                                       [tarVarDec] 
                                       (Junction Con ((generateVarDiff tarVarDec) : 
-                                         [(generateProp souVarDec tarVarDec (mkInfix $ getRole con))]) nullRange)
+                                         [(generateProp souVarDec tarVarDec (stringToId $ getRole con))]) nullRange)
                                        nullRange) 
                                   nullRange
     else Quantification Universal [souVarDec] (Quantification 
                                       Existential 
                                       [tarVarDec] 
-                                      (generateProp souVarDec tarVarDec (mkInfix $ getRole con))
+                                      (generateProp souVarDec tarVarDec (stringToId $ getRole con))
                                       nullRange
                                      ) nullRange
 
@@ -362,7 +369,7 @@ createPropRel souVar sor rol sor2 tarVar =
 maxConstraint :: MultConstr -> Integer -> PredMap -> CASLFORMULA
 maxConstraint con int predM = 
   let 
-    predTypes = Set.elems $ MapSet.lookup (mkInfix $ getRole con) predM -- [PredType]
+    predTypes = Set.elems $ MapSet.lookup (stringToId $ getRole con) predM -- [PredType]
     souVars = generateVars "x" 1
     tarVars = generateVars "y" (int + 1)
     souVarDec = Var_decl souVars (head (predArgs (head predTypes))) nullRange
@@ -370,7 +377,7 @@ maxConstraint con int predM =
   in 
     Quantification Universal (souVarDec : [tarVarDec]) 
                    (Relation 
-                      (Junction Con [generateProp souVarDec tarVarDec (mkInfix $ getRole con)] nullRange)
+                      (Junction Con [generateProp souVarDec tarVarDec (stringToId $ getRole con)] nullRange)
                       Implication 
                       (Junction Dis (generateExEqual tarVarDec) nullRange)
                       nullRange)
