@@ -16,6 +16,7 @@ module Comorphisms.CSMOF2CASL
 
 import Logic.Logic
 import Logic.Comorphism
+import Common.DefaultMorphism
 
 -- CSMOF
 import CSMOF.Logic_CSMOF as CSMOF
@@ -81,7 +82,7 @@ instance Comorphism CSMOF2CASL
       mapSublogic CSMOF2CASL _ = Just $ caslTop
         { has_part = False
         , sub_features = LocFilSub
-        , cons_features = SortGen False True }
+        , cons_features = SortGen True True }
       map_theory CSMOF2CASL = mapTheory
       map_sentence CSMOF2CASL s = return . mapSen (mapSign s)
       map_morphism CSMOF2CASL = mapMor
@@ -149,15 +150,17 @@ insertPredicate prop (predM,form) =
     pname2 = stringToId $ sourceRole prop
     ptype2 = PredType $ sort2 : [sort1]
     nam = "equiv_" ++ targetRole prop ++ "_" ++ sourceRole prop
-    sent = C.Relation 
-             (C.Predication (C.Pred_name pname2) 
+    varsD = [Var_decl [(mkSimpleId "x")] sort2 nullRange, Var_decl [(mkSimpleId "y")] sort1 nullRange]
+    sentRel = C.Relation 
+                (C.Predication (C.Qual_pred_name pname2 (Pred_type [sort2,sort1] nullRange) nullRange) 
                           (C.Qual_var (mkSimpleId "x") sort2 nullRange : [C.Qual_var (mkSimpleId "y") sort1 nullRange]) 
                           nullRange) 
-             C.Equivalence 
-             (C.Predication (C.Pred_name pname1) 
+                C.Equivalence 
+                (C.Predication (C.Qual_pred_name pname1 (Pred_type [sort1,sort2] nullRange) nullRange) 
                           (C.Qual_var (mkSimpleId "y") sort1 nullRange : [C.Qual_var (mkSimpleId "x") sort2 nullRange]) 
                           nullRange) 
-             nullRange
+              nullRange
+    sent = Quantification Universal varsD sentRel nullRange
   in 
     -- MapSet does not allows repeated elements, but predicate names can be repeated 
     -- (this must be corrected by creating a more complex ID)
@@ -200,16 +203,18 @@ createComplFormula (nam,linksL) =
       (LinkT _ _ pr) : _ -> let
                                    sorA = stringToId $ name $ sourceType pr
                                    sorB = stringToId $ name $ targetType pr
+                                   varsD = [Var_decl [varA] sorA nullRange, Var_decl [varB] sorB nullRange]
                                    sent = C.Relation 
-                                             (C.Predication (C.Pred_name (stringToId $ targetRole pr)) 
+                                             (C.Predication (C.Qual_pred_name (stringToId $ targetRole pr) (Pred_type [sorA,sorB] nullRange) nullRange) 
                                                 (C.Qual_var varA sorA nullRange 
                                                    : [C.Qual_var varB sorB nullRange]) 
                                                  nullRange) 
                                              C.Equivalence 
                                              (Junction Dis (foldr ((:) . (getPropHold varA sorA varB sorB)) [] linksL) nullRange) 
                                              nullRange
+                                   sentQuan = Quantification Universal varsD sent nullRange
                                  in
-                                   [makeNamed ("compRel_" ++ nam) sent]
+                                   [makeNamed ("compRel_" ++ nam) sentQuan]
 
 getPropHold :: VAR -> SORT -> VAR -> SORT -> LinkT -> CASLFORMULA
 getPropHold varA sorA varB sorB lin = 
@@ -362,8 +367,11 @@ generateProp (Var_decl varD sort _) (Var_decl varD2 sort2 _) rol =
 
 createPropRel :: VAR -> SORT -> Id -> SORT -> VAR -> CASLFORMULA
 createPropRel souVar sor rol sor2 tarVar = 
-  Predication (C.Pred_name rol) 
+  Predication (C.Qual_pred_name rol (Pred_type [sor,sor2] nullRange) nullRange) 
     ((Qual_var souVar sor nullRange):[Qual_var tarVar sor2 nullRange]) nullRange
+
+--    ((Qual_var souVar sor nullRange):
+--      [Application (Qual_op_name (mkId [tarVar]) (Op_type Total [] sor2 nullRange) nullRange) [] nullRange]) nullRange
 
 
 maxConstraint :: MultConstr -> Integer -> PredMap -> CASLFORMULA
@@ -403,9 +411,9 @@ generateExEqualVar vars sor var =
 
 -- | Translation of morphisms
 mapMor :: CSMOF.Morphism -> Result CASLMor
-mapMor _ = return C.Morphism
-  { msource = C.emptySign ()
-  , mtarget = C.emptySign ()
+mapMor m = return C.Morphism
+  { msource = mapSign $ domOfDefaultMorphism m
+  , mtarget = mapSign $ codOfDefaultMorphism m
   , sort_map = Map.empty
   , op_map = Map.empty
   , pred_map = Map.empty
