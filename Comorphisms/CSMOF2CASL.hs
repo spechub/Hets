@@ -104,7 +104,7 @@ mapSign s =
     sorts = getSorts (types s) (typeRel s)
     ops = getOperations (instances s)
     preds = getPredicates (properties s)
-    sent = getSentencesRels (links s) 
+    sent = getSentencesRels (links s) (instances s)
     sentDisEmb = getSortGen (typeRel s) (abstractClasses s) (instances s)
   in
     C.Sign
@@ -183,17 +183,17 @@ insertOperations (na,tc) opM =
     MapSet.insert opName opType opM
 
 
-getSentencesRels :: Set.Set LinkT -> [Named (CASLFORMULA)]
-getSentencesRels linkk = completenessOfRelations linkk
+getSentencesRels :: Set.Set LinkT -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
+getSentencesRels linkk ops = completenessOfRelations linkk ops
 
 
-completenessOfRelations :: Set.Set LinkT -> [Named (CASLFORMULA)]
-completenessOfRelations linkk =
+completenessOfRelations :: Set.Set LinkT -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
+completenessOfRelations linkk ops =
   let ordLinks = getLinksByProperty linkk
-  in foldr ((++) . createComplFormula) [] (Map.toList ordLinks)
+  in foldr ((++) . (createComplFormula ops)) [] (Map.toList ordLinks)
 
-createComplFormula ::  (String,[LinkT]) -> [Named (CASLFORMULA)]
-createComplFormula (nam,linksL) = 
+createComplFormula ::  Map.Map String TypeClass -> (String,[LinkT]) -> [Named (CASLFORMULA)]
+createComplFormula ops (nam,linksL) = 
   let
     varA = mkSimpleId "x"
     varB = mkSimpleId "y"
@@ -210,22 +210,38 @@ createComplFormula (nam,linksL) =
                                                    : [C.Qual_var varB sorB nullRange]) 
                                                  nullRange) 
                                              C.Equivalence 
-                                             (Junction Dis (foldr ((:) . (getPropHold varA sorA varB sorB)) [] linksL) nullRange) 
+                                             (Junction Dis (foldr ((:) . (getPropHold ops varA sorA varB sorB)) [] linksL) nullRange) 
                                              nullRange
                                    sentQuan = Quantification Universal varsD sent nullRange
                                  in
                                    [makeNamed ("compRel_" ++ nam) sentQuan]
 
-getPropHold :: VAR -> SORT -> VAR -> SORT -> LinkT -> CASLFORMULA
-getPropHold varA sorA varB sorB lin = 
+getPropHold :: Map.Map String TypeClass -> VAR -> SORT -> VAR -> SORT -> LinkT -> CASLFORMULA
+getPropHold ops varA sorA varB sorB lin = 
   let
+    souObj = Map.lookup (sourceVar lin) ops
+    tarObj = Map.lookup (targetVar lin) ops
+    typSou = case souObj of 
+               Nothing -> sourceVar lin -- if happens then is an error
+               Just tSou -> name tSou
+    typTar = case tarObj of 
+               Nothing -> targetVar lin -- if happens then is an error
+               Just tTar -> name tTar
     eqA = Equation (Qual_var varA sorA nullRange) 
                    Strong 
-                   (Qual_var (mkSimpleId (sourceVar lin)) (stringToId $ name $ sourceType (property lin)) nullRange) 
+--                   (Qual_var (mkSimpleId (sourceVar lin)) (stringToId $ name $ sourceType (property lin)) nullRange) 
+                     (Application (Qual_op_name (stringToId (sourceVar lin)) 
+                        (Op_type Total [] (stringToId typSou) nullRange) 
+-- (stringToId $ name $ sourceType (property lin))
+                        nullRange) [] nullRange)
                    nullRange
     eqB = Equation (Qual_var varB sorB nullRange) 
                    Strong 
-                   (Qual_var (mkSimpleId (targetVar lin)) (stringToId $ name $ targetType (property lin)) nullRange) 
+--                   (Qual_var (mkSimpleId (targetVar lin)) (stringToId $ name $ targetType (property lin)) nullRange) 
+                   (Application (Qual_op_name (stringToId (targetVar lin)) 
+                        (Op_type Total [] (stringToId typTar) nullRange) 
+-- (stringToId $ name $ targetType (property lin))
+                        nullRange) [] nullRange)
                    nullRange
   in
     Junction Con (eqA : [eqB]) nullRange
@@ -252,6 +268,7 @@ getSortGen :: Rel.Rel TypeClass -> Set.Set TypeClass -> Map.Map String TypeClass
 getSortGen typpR absCl inst = 
   disjointEmbedding absCl typpR ++ sortGeneration inst
 
+
 -- Sorts are generated as a free type of object functions
 sortGeneration :: Map.Map String TypeClass -> [Named (CASLFORMULA)]
 sortGeneration inst = 
@@ -273,8 +290,6 @@ toSortConstraint (tc,lisObj) =
   in 
     makeNamed ("sortGenCon_" ++ name tc) constr
 
---  let constr = Sort_gen_ax (foldr ((:) . toConstraint tc) [] lisObj) True
---  in makeNamed ("sortGenCon_" ++ name tc) constr
 
 toConstraint :: Id -> String -> (OP_SYMB, [Int])
 toConstraint sor obName =
@@ -369,9 +384,6 @@ createPropRel :: VAR -> SORT -> Id -> SORT -> VAR -> CASLFORMULA
 createPropRel souVar sor rol sor2 tarVar = 
   Predication (C.Qual_pred_name rol (Pred_type [sor,sor2] nullRange) nullRange) 
     ((Qual_var souVar sor nullRange):[Qual_var tarVar sor2 nullRange]) nullRange
-
---    ((Qual_var souVar sor nullRange):
---      [Application (Qual_op_name (mkId [tarVar]) (Op_type Total [] sor2 nullRange) nullRange) [] nullRange]) nullRange
 
 
 maxConstraint :: MultConstr -> Integer -> PredMap -> CASLFORMULA
