@@ -49,10 +49,7 @@ convertToLibDefN filename el = Lib_defn
 
 
 convertoItem :: Metamodel -> Annoted LIB_ITEM
-convertoItem el =
-  case parseIRI $ ("metamodel://" ++ metamodelName el) of
-    Nothing -> makeSpecItem nullIRI $ createSpec el
-    Just ir -> makeSpecItem nullIRI $ createSpec el -- makeSpecItem ir $ createSpec el
+convertoItem el = makeSpecItem (simpleIdToIRI $ mkSimpleId $ metamodelName el) $ createSpec el
 
 
 createSpec :: Metamodel -> Annoted SPEC
