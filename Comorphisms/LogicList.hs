@@ -51,6 +51,7 @@ import Haskell.Logic_Haskell
 #endif
 import Isabelle.Logic_Isabelle
 import SoftFOL.Logic_SoftFOL
+import CSMOF.Logic_CSMOF
 #ifdef CASLEXTENSIONS
 import THF.Logic_THF
 import Fpl.Logic_Fpl
@@ -83,7 +84,6 @@ import OWL2.Logic_OWL2
 import RDF.Logic_RDF
 #endif
 import Comorphisms.DynLogicList
-import CSMOF.Logic_CSMOF
 
 logicList :: [AnyLogic]
 logicList =
