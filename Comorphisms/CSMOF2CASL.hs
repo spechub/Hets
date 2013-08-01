@@ -229,18 +229,14 @@ getPropHold ops varA sorA varB sorB lin =
                Just tTar -> name tTar
     eqA = Equation (Qual_var varA sorA nullRange) 
                    Strong 
---                   (Qual_var (mkSimpleId (sourceVar lin)) (stringToId $ name $ sourceType (property lin)) nullRange) 
                      (Application (Qual_op_name (stringToId (sourceVar lin)) 
                         (Op_type Total [] (stringToId typSou) nullRange) 
--- (stringToId $ name $ sourceType (property lin))
                         nullRange) [] nullRange)
                    nullRange
     eqB = Equation (Qual_var varB sorB nullRange) 
                    Strong 
---                   (Qual_var (mkSimpleId (targetVar lin)) (stringToId $ name $ targetType (property lin)) nullRange) 
                    (Application (Qual_op_name (stringToId (targetVar lin)) 
                         (Op_type Total [] (stringToId typTar) nullRange) 
--- (stringToId $ name $ targetType (property lin))
                         nullRange) [] nullRange)
                    nullRange
   in
@@ -265,21 +261,60 @@ getByProperty lin mapL =
 
 
 getSortGen :: Rel.Rel TypeClass -> Set.Set TypeClass -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
-getSortGen typpR absCl inst = 
-  disjointEmbedding absCl typpR ++ sortGeneration inst
+getSortGen typpR absCl inst = disjointEmbedding absCl typpR inst ++ sortGeneration inst
 
 
 -- Sorts are generated as a free type of object functions
 sortGeneration :: Map.Map String TypeClass -> [Named (CASLFORMULA)]
 sortGeneration inst = 
-  let ordObj = foldr (orderByClass) Map.empty (Map.toList inst)
-  in foldr ((:) . toSortConstraint) [] (Map.toList ordObj)
+  let 
+    ordObj = foldr (orderByClass) Map.empty (Map.toList inst)
+    noConfusion = mapFilterJust $ foldr ((:) . getNoConfusionAxiom) [] (Map.toList ordObj)
+    noJunk = foldr ((:) . toSortConstraint) [] (Map.toList ordObj)
+  in 
+    noConfusion ++ noJunk
+
+mapFilterJust :: [Maybe a] -> [a]
+mapFilterJust list = 
+  case list of
+    [] -> []
+    a : rest -> case a of
+                  Nothing -> mapFilterJust rest
+                  Just el -> el : mapFilterJust rest
 
 orderByClass :: (String,TypeClass) -> Map.Map TypeClass [String] -> Map.Map TypeClass [String]
 orderByClass (ob,tc) mapTC = 
   case Map.lookup tc mapTC of
     Nothing -> Map.insert tc [ob] mapTC
     Just listObj -> Map.insert tc (ob : listObj) (Map.delete tc mapTC)
+
+getNoConfusionAxiom :: (TypeClass, [String]) -> Maybe (Named (CASLFORMULA))
+getNoConfusionAxiom (tc,lisObj) = 
+  case lisObj of
+    [] -> Nothing
+    _ : _ -> let constr = Junction Con (foldr ((++) . diffOfRestOps tc lisObj) [] lisObj) nullRange
+             in Just $ makeNamed ("noConfusion_" ++ name tc) constr
+
+diffOfRestOps :: TypeClass -> [String] -> String -> [CASLFORMULA]
+diffOfRestOps tc lisObj objName = concat $ map (diffOps tc objName) lisObj
+
+diffOps :: TypeClass -> String -> String -> [CASLFORMULA]
+diffOps tc objName1 objName2 = 
+  if not (objName1 == objName2) 
+  then [Negation (Equation 
+                 --(Qual_var var1 sor nullRange)
+                 (Application (Qual_op_name (stringToId objName1) 
+                        (Op_type Total [] (stringToId $ name tc) nullRange) 
+                        nullRange) [] nullRange) 
+                 Strong 
+                 --(Qual_var var2 sor nullRange) 
+                 (Application (Qual_op_name (stringToId objName2) 
+                        (Op_type Total [] (stringToId $ name tc) nullRange) 
+                        nullRange) [] nullRange)
+                 nullRange) 
+       nullRange]
+  else [trueForm]
+
 
 toSortConstraint :: (TypeClass, [String]) -> Named (CASLFORMULA)
 toSortConstraint (tc,lisObj) = 
@@ -299,9 +334,15 @@ toConstraint sor obName =
 
 
 -- Each abstract class is the disjoint embedding of it subsorts
-disjointEmbedding :: Set.Set TypeClass -> Rel.Rel TypeClass -> [Named (CASLFORMULA)]
-disjointEmbedding absCl rel =
-  let injSyms = map (\ (s, t) -> (Qual_op_name (mkUniqueInjName (stringToId $ name s) (stringToId $ name t))
+disjointEmbedding :: Set.Set TypeClass -> Rel.Rel TypeClass -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
+disjointEmbedding absCl rel inst =
+  let 
+
+-- para cada par de tipos que esten en ramas distintas de la misma generalizacion hay que generar la restricc de que son diferentes
+--      ordObj = foldr (orderByClass) Map.empty (Map.toList inst)
+--      noConfusion = mapFilterJust $ foldr ((:) . getNoConfusionAxiom) [] (Map.toList ordObj)
+
+      injSyms = map (\ (s, t) -> (Qual_op_name (mkUniqueInjName (stringToId $ name s) (stringToId $ name t))
                                    (Op_type Total [(stringToId $ name s)] (stringToId $ name t) nullRange) nullRange,[]))
                      $ Rel.toList
                      $ Rel.irreflex rel
