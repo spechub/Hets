@@ -186,7 +186,7 @@ spassComorphisms =
                                      (Comorphism defaultCASL2SubCFOL)
                       >>= compComorphism idCASL_nosub
                       >>= compSPASS
---       csmof2casl <- compSPASS (Comorphism CSMOF2CASL)
+       csmof2casl <- compSPASS (Comorphism CSMOF2CASL)
 #ifdef CASLEXTENSIONS
 -- hybrid
        hybr2SPASS <- compComorphism (Comorphism Hybrid2CASL) partOut 
@@ -212,7 +212,7 @@ spassComorphisms =
          , casl_dl2SPASS
          , maude2SPASS
          , commonlogic2SPASS
---         , csmof2casl 
+         , csmof2casl 
          , adl2SPASS
 -- hybrid
          , hybr2SPASS
