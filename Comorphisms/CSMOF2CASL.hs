@@ -292,28 +292,37 @@ getNoConfusionAxiom :: (TypeClass, [String]) -> Maybe (Named (CASLFORMULA))
 getNoConfusionAxiom (tc,lisObj) = 
   case lisObj of
     [] -> Nothing
+    _ : [] -> Nothing
     _ : _ -> let constr = Junction Con (foldr ((++) . diffOfRestOps tc lisObj) [] lisObj) nullRange
              in Just $ makeNamed ("noConfusion_" ++ name tc) constr
 
 diffOfRestOps :: TypeClass -> [String] -> String -> [CASLFORMULA]
-diffOfRestOps tc lisObj objName = concat $ map (diffOps tc objName) lisObj
+diffOfRestOps tc lisObj objName = 
+  let lis = removeUntil lisObj objName
+  in concat $ map (diffOps tc objName) lis
+
+removeUntil :: [String] -> String -> [String]
+removeUntil lis str = 
+  case lis of
+    [] -> []
+    a : rest -> if a == str 
+                then rest
+                else removeUntil rest str
 
 diffOps :: TypeClass -> String -> String -> [CASLFORMULA]
 diffOps tc objName1 objName2 = 
   if not (objName1 == objName2) 
   then [Negation (Equation 
-                 --(Qual_var var1 sor nullRange)
                  (Application (Qual_op_name (stringToId objName1) 
                         (Op_type Total [] (stringToId $ name tc) nullRange) 
                         nullRange) [] nullRange) 
                  Strong 
-                 --(Qual_var var2 sor nullRange) 
                  (Application (Qual_op_name (stringToId objName2) 
                         (Op_type Total [] (stringToId $ name tc) nullRange) 
                         nullRange) [] nullRange)
                  nullRange) 
        nullRange]
-  else [trueForm]
+  else []
 
 
 toSortConstraint :: (TypeClass, [String]) -> Named (CASLFORMULA)
