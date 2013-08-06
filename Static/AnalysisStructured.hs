@@ -557,7 +557,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
   Combination cItems eItems pos -> adjustPos pos $ do
-    let  getNodes (cN, cE) cItem = let 
+    let  getNodes (cN, cE) cItem = let
             cEntry = case lookupGlobalEnvDG cItem dg of 
                        Nothing -> error $ "No entry for " ++ show cItem
                        Just gE -> gE
@@ -589,12 +589,16 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                      $ out (dgBody dg) n
            in (nub cN, nub $ oEdges ++ cE) 
          addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
-         (cNodes, cEdges) = addLinks $ foldl getNodes ([], []) cItems
+         (cNodes, cEdges) = addLinks $ foldl getNodes ([], []) (getItems cItems)
          (eNodes, eEdges) = foldl getNodes ([], []) eItems
          (cNodes', cEdges') = (cNodes \\ eNodes, cEdges \\ eEdges)
          le = Map.insert ln dg Map.empty -- cheating!!!
     (ns,dg') <- insertColimitInGraph le dg cNodes' cEdges' name
     return (sp, ns, dg')
+
+getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
+getItems [] = []
+getItems ((Labeled _ i):r) = i:(getItems r) 
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname

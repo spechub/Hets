@@ -60,7 +60,7 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "logic", Logic_name,":"
           | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) Range
             -- pos: "data"
-          | Combination [ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
+          | Combination [LABELED_ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
             {- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
             excluding EXTENSION_REF, ..., EXTENSION_REF -}
             deriving Show
@@ -136,6 +136,9 @@ data Logic_code = Logic_code (Maybe String)
 data Logic_name = Logic_name String (Maybe Token) (Maybe SPEC_NAME)
   deriving (Show, Eq)
 
+data LABELED_ONTO_OR_INTPR_REF = Labeled (Maybe CombineID) ONTO_OR_INTPR_REF
+  deriving (Show, Eq)
+
 type ONTO_NAME = IRI
 type EXTENSION_NAME = IRI
 type IMPORT_NAME = IRI
@@ -144,6 +147,7 @@ type ONTO_OR_INTPR_REF = IRI
 type ONTO_REF = IRI
 type EXTENSION_REF = IRI
 type LOGIC_REF = IRI
+type CombineID = Token
 
 nameToLogicDescr :: Logic_name -> LogicDescr
 nameToLogicDescr n = LogicDescr n Nothing nullRange

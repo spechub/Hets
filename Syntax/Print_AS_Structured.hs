@@ -178,6 +178,14 @@ printLogic_name (Logic_name mlog slog ms) = let d = structId mlog in
       Just sub -> d <> dot <> sublogicId sub
     <> maybe empty (parens . pretty) ms
 
+instance Pretty LABELED_ONTO_OR_INTPR_REF where
+    pretty = printLIRI
+
+printLIRI :: LABELED_ONTO_OR_INTPR_REF -> Doc
+printLIRI (Labeled n i) = case n of
+    Just x -> pretty x <> colon <> pretty i
+    Nothing -> pretty i
+
 {- |
   specialized printing of 'FIT_ARG's
 -}

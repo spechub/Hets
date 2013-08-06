@@ -434,12 +434,21 @@ logicSpec lG = do
 combineSpec :: LogicGraph -> AParser st SPEC
 combineSpec lG = do
     s1 <- asKey combineS
-    (oir, ps1) <- separatedBy (hetIRI lG) commaT
+    (oir, ps1) <- separatedBy (parseLabeled lG) commaT
     (exl, ps) <- option ([], []) $ do
           s2 <- asKey excludingS
           (e, ps2) <- separatedBy (hetIRI lG) commaT
           return (e, s2 : ps2)
     return $ Combination oir exl $ catRange $ s1 : ps1 ++ ps
+
+parseLabeled :: LogicGraph -> AParser st LABELED_ONTO_OR_INTPR_REF
+parseLabeled lG = do
+    x <- option Nothing $ do
+        str <- try (simpleId `followedWith` colonT)
+        colonT
+        return $ Just str
+    y <- hetIRI lG
+    return $ Labeled x y
 
 lookupAndSetComorphismName :: String -> LogicGraph -> AParser st LogicGraph
 lookupAndSetComorphismName c lg = do
