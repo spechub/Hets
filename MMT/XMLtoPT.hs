@@ -20,6 +20,8 @@ import Text.XML.Light
 import Common.Id
 import Common.Result
 
+import Debug.Trace
+
 readPT :: String -> IO [Content]
 readPT fname = liftM parseXML (readFile fname)
 
@@ -27,12 +29,13 @@ parse :: String -> IO [Result Decl]
 parse fname = do
     putStr $ "reading file " ++ fname ++ "\n"
     tree <- readPT fname
- -- putStr $ "reading XML tree: \n" ++ (show tree) ++ "\n\n"
+--    putStr $ "reading XML tree: \n" ++ (show (onlyElems tree)) ++ "\n\n"
     return (map parseDeclR (onlyElems tree))
 
 -- get attribute value by key (string)
 getAttByName :: String -> Element -> String
-getAttByName x e = fromJust
+getAttByName x e = -- trace ("looking at:\n" ++ show x ++ "\nin\n" ++ show e) $ 
+                   fromJust
         (findAttr QName {qName = x, qURI = Nothing, qPrefix = Nothing} e)
 
 getAttByNameMaybe :: String -> Element -> Maybe String
@@ -127,8 +130,3 @@ parseNTreeR str _ = let
                    diag = Diag Error msg nullRange
                    in
                     Result [diag] Nothing
-{-
-TODO
-parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
-parse_basic_spec st = Nothing
--}

@@ -17,11 +17,12 @@ import qualified MMT.Tools as Generic
 -- import qualified <LogicName>.Sublogic as SL -- TODO
 import Common.Id
 import qualified Common.DocUtils as DU
+import qualified Common.Doc as DU
 import qualified ATerm.Conversion as AT
 import qualified Data.Typeable.Internal as Tp
 import Common.Result
 import Data.Monoid
-import qualified PLpatt.Parse_PLpatt as PLparse
+import qualified <LogicName>.Parse_<LogicName> as LogicParse 
 import <LogicName>.StaticAna<LogicName>
     
 -- Logic ID     lid
@@ -38,21 +39,20 @@ instance (Eq Sign.Sigs) where
 instance (Ord Morphism.Morphism) where
 
 instance (Eq Morphism.Morphism) where
-
-instance (Ord AS.<Form>) where
-
-instance (Eq AS.<Form>) where
+  _ == _ = True
 
 instance (Ord AS.Symb) where
+  _ <= _ = True
 
 instance (Eq AS.Symb) where
+  _ == _ = True
 
 instance (Common.Id.GetRange AS.<Form>) where
 
 instance (Common.Id.GetRange AS.Symb) where
 
 instance (DU.Pretty Sign.Sigs) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a--DU.empty--DU.pretty
 
 instance (AT.ShATermConvertible Sign.Sigs) where
     toShATermAux = AT.toShATermAux
@@ -63,56 +63,39 @@ instance (AT.ShATermConvertible Generic.Tree) where
     fromShATermAux = AT.fromShATermAux
 
 instance (Ord Generic.Tree) where
+  _ <= _ = True
 
 instance (Eq Generic.Tree) where
-
-instance (Tp.Typeable Generic.Tree) where
-    typeOf = Tp.typeOf
-
-instance (Show Sign.Sigs) where
+  _ == _ = True
 
 instance (AT.ShATermConvertible Morphism.Morphism) where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
 
 instance (DU.Pretty Morphism.Morphism) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a --DU.empty--DU.pretty
 
 instance (AT.ShATermConvertible AS.<Form>) where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
 
 instance (DU.Pretty AS.<Form>) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a
 
 instance (AT.ShATermConvertible AS.Symb) where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
 
 instance (DU.Pretty AS.Symb) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a--DU.empty--DU.pretty
 
 instance (Show Morphism.Morphism) where
-
-instance (Show AS.<Form>) where
-
-instance (Show AS.Symb) where
-
-instance (Tp.Typeable Sign.Sigs) where
-    typeOf = Tp.typeOf
 
 instance (Tp.Typeable Morphism.Morphism) where
     typeOf = Tp.typeOf
 
-instance (Tp.Typeable AS.<Form>) where
-    typeOf = Tp.typeOf
-
-instance (Tp.Typeable AS.Symb) where
-    typeOf = Tp.typeOf
-
--- instances required for newtype Basic_spec
 instance (DU.Pretty AS.Basic_spec) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a --DU.empty--DU.pretty
 
 instance (GetRange AS.Basic_spec) where
 
@@ -120,14 +103,9 @@ instance (Data.Monoid.Monoid AS.Basic_spec) where
     mempty = AS.Basic_spec []
     mappend (AS.Basic_spec bs1) (AS.Basic_spec bs2) = AS.Basic_spec $ bs1 ++ bs2
 
-instance (Show AS.Basic_spec) where
-
 instance (AT.ShATermConvertible AS.Basic_spec) where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
-
-instance (Tp.Typeable AS.Basic_spec) where
-    typeOf = Tp.typeOf
 
 -- static analysis should in fact be performed by MMT
 instance StaticAnalysis <LogicName>
@@ -141,6 +119,8 @@ instance StaticAnalysis <LogicName>
             AS.Symb
                 where
             empty_signature <LogicName> = Sign.Sigs []
+            signatureDiff <LogicName> = Sign.sigDiff
+            basic_analysis <LogicName> = Just basicAna
 
 instance Syntax <LogicName> 
                 AS.Basic_spec -- parse_basic_spec produces a syntax tree
@@ -148,7 +128,7 @@ instance Syntax <LogicName>
                 ()
                 ()
                     where
--- parse_basic_spec lid = Just (\pm -> parser) -- Text.CombinatorParses.Parsec
+  parse_basic_spec _ = Just (\ _ -> LogicParse.parse1)
 -- basic_analysis lid = Just (\ ..  )
 
 -- instance of category
@@ -164,7 +144,6 @@ instance Sentences <LogicName>
     Morphism.Morphism
     AS.Symb
     where
--- TODO
 
 -- Logic instance, see Logic/Logic.hs:867
 instance Logic <LogicName>

@@ -27,11 +27,11 @@ procLines s = let
                 dcls = Result [] (Just decls)
                 bs = liftM (\x -> Basic_spec x) dcls
                 in
-                trace (show bs) bs
+                bs
             
 
 parse1 :: GenParser Char st Basic_spec
 parse1 = do
     s <- hStuff
     let x = procLines s
-    trace "returning Res Basic_spec" $ resultToMonad "MMT parser" x
+    resultToMonad "MMT parser" x

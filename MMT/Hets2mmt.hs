@@ -61,7 +61,7 @@ callSpec fileName = do
                            fileName])
               { std_out = CreatePipe }
   cont <- hGetContents hout
-  putStr cont
+  -- putStr cont
   case maybeErr of
     (Just hErr) -> do
             err <- hGetContents hErr
