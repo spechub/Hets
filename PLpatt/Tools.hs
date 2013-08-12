@@ -4,36 +4,39 @@ import PLpatt.Sign
 import PLpatt.AS_BASIC_PLpatt
 import qualified MMT.Tools as Generic
 import Data.Maybe
-import Debug.Trace
 
 bool_from_pt :: (Generic.Tree) -> Maybe(Bool')
 bool_from_pt x = case x of
-    (Generic.Application n Nothing args ) -> if (n == "false")
-    then if (length(args) == 0)
-      then (Just((False')))
+    (Generic.Application n Nothing args ) -> if (n == "equiv")
+    then if (length(args) == 2)
+      then (Just((Equiv (fromJust (bool_from_pt (args !! 0) ) ) (fromJust (bool_from_pt (args !! 1) ) ) )))
       else Nothing
-    else if (n == "true")
-      then if (length(args) == 0)
-        then (Just((True')))
+    else if (n == "impl")
+      then if (length(args) == 2)
+        then (Just((Impl (fromJust (bool_from_pt (args !! 0) ) ) (fromJust (bool_from_pt (args !! 1) ) ) )))
         else Nothing
       else if (n == "not")
         then if (length(args) == 1)
           then (Just((Not (fromJust (bool_from_pt (args !! 0) ) ) )))
           else Nothing
-        else if (n == "and")
+        else if (n == "or")
           then if (length(args) == 2)
-            then (Just((And (fromJust (bool_from_pt (args !! 0) ) ) (fromJust (bool_from_pt (args !! 1) ) ) )))
+            then (Just((Or (fromJust (bool_from_pt (args !! 0) ) ) (fromJust (bool_from_pt (args !! 1) ) ) )))
             else Nothing
-          else if (n == "or")
+          else if (n == "and")
             then if (length(args) == 2)
-              then (Just((Or (fromJust (bool_from_pt (args !! 0) ) ) (fromJust (bool_from_pt (args !! 1) ) ) )))
+              then (Just((And (fromJust (bool_from_pt (args !! 0) ) ) (fromJust (bool_from_pt (args !! 1) ) ) )))
               else Nothing
-            else Nothing
-    (Generic.Application n (Just((pat,inst))) args ) -> if ((n == "bool") && (pat == "prop"))
-    then if (length(args) == 0)
-      then (Just((Prop_bool inst )))
-      else Nothing
-    else Nothing
+            else if (n == "false")
+              then if (length(args) == 0)
+                then (Just((False')))
+                else Nothing
+              else if (n == "true")
+                then if (length(args) == 0)
+                  then (Just((True')))
+                  else Nothing
+                else Nothing
+    (Generic.Application n (Just((pat,inst))) args ) -> Nothing
     (Generic.Bind _n _v _s ) -> Nothing
     (Generic.Tbind _n _a _v _s ) -> Nothing
     (Generic.Variable _n ) -> Nothing
@@ -41,15 +44,15 @@ bool_from_pt x = case x of
 
 decl_from_pt :: (Generic.Decl) -> Maybe(Decl)
 decl_from_pt d = case d of
-    (Generic.Decl i p args ) -> if (i == "axiom")
-    then if (length(args) == 1)
-      then trace (show args) (Just((Axiom_decl (Axiom p (fromJust (bool_from_pt (args !! 0) ) ) ) )))
-      else trace "branch axiom" Nothing
-    else if (i == "prop")
-      then if (length(args) == 0)
-        then (Just((Prop_decl (Prop p ) )))
-        else trace "branch args != 0" Nothing
-      else trace ("branc prop" ++ show d) Nothing
+    (Generic.Decl pname iname args ) -> if (pname == "prop")
+    then if (length(args) == 0)
+      then (Just((Prop_decl (Prop iname ) )))
+      else Nothing
+    else if (pname == ".")
+      then if (length(args) == 1)
+        then (Just((Dot_decl (Dot iname (fromJust (bool_from_pt (args !! 0) ) ) ) )))
+        else Nothing
+      else Nothing
   
 
 sign_from_pt :: (Generic.Sign) -> Sigs
@@ -60,5 +63,3 @@ axiom_from_pt ax = (fromJust (bool_from_pt ax ) )
 
 theo_from_pt :: (Generic.Theo) -> Theo
 theo_from_pt th = Theo{sign = (sign_from_pt (Generic.sign th) ),axioms = (map axiom_from_pt (Generic.axioms th))}
-
-

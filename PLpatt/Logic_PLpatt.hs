@@ -17,15 +17,13 @@ import qualified MMT.Tools as Generic
 -- import qualified PLpatt.Sublogic as SL -- TODO
 import Common.Id
 import qualified Common.DocUtils as DU
+import qualified Common.Doc as DU
 import qualified ATerm.Conversion as AT
 import qualified Data.Typeable.Internal as Tp
 import Common.Result
 import Data.Monoid
-
-import qualified PLpatt.Parse_PLpatt as PLparse
+import qualified PLpatt.Parse_PLpatt as LogicParse 
 import PLpatt.StaticAnaPLpatt
-
-import Debug.Trace
     
 -- Logic ID     lid
 data PLpatt = PLpatt deriving Show
@@ -41,21 +39,20 @@ instance (Eq Sign.Sigs) where
 instance (Ord Morphism.Morphism) where
 
 instance (Eq Morphism.Morphism) where
-
-instance (Ord AS.Bool') where
-
-instance (Eq AS.Bool') where
+  _ == _ = True
 
 instance (Ord AS.Symb) where
+  _ <= _ = True
 
 instance (Eq AS.Symb) where
+  _ == _ = True
 
 instance (Common.Id.GetRange AS.Bool') where
 
 instance (Common.Id.GetRange AS.Symb) where
 
 instance (DU.Pretty Sign.Sigs) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a--DU.empty--DU.pretty
 
 instance (AT.ShATermConvertible Sign.Sigs) where
     toShATermAux = AT.toShATermAux
@@ -66,56 +63,39 @@ instance (AT.ShATermConvertible Generic.Tree) where
     fromShATermAux = AT.fromShATermAux
 
 instance (Ord Generic.Tree) where
+  _ <= _ = True
 
 instance (Eq Generic.Tree) where
-
-instance (Tp.Typeable Generic.Tree) where
-    typeOf = Tp.typeOf
-
-instance (Show Sign.Sigs) where
+  _ == _ = True
 
 instance (AT.ShATermConvertible Morphism.Morphism) where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
 
 instance (DU.Pretty Morphism.Morphism) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a --DU.empty--DU.pretty
 
 instance (AT.ShATermConvertible AS.Bool') where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
 
 instance (DU.Pretty AS.Bool') where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a
 
 instance (AT.ShATermConvertible AS.Symb) where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
 
 instance (DU.Pretty AS.Symb) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a--DU.empty--DU.pretty
 
 instance (Show Morphism.Morphism) where
-
---instance (Show AS.Bool') where
-
-instance (Show AS.Symb) where
-
-instance (Tp.Typeable Sign.Sigs) where
-    typeOf = Tp.typeOf
 
 instance (Tp.Typeable Morphism.Morphism) where
     typeOf = Tp.typeOf
 
-instance (Tp.Typeable AS.Bool') where
-    typeOf = Tp.typeOf
-
-instance (Tp.Typeable AS.Symb) where
-    typeOf = Tp.typeOf
-
--- instances required for newtype Basic_spec
 instance (DU.Pretty AS.Basic_spec) where
-    pretty = DU.pretty
+    pretty a = DU.text $ show a --DU.empty--DU.pretty
 
 instance (GetRange AS.Basic_spec) where
 
@@ -123,14 +103,9 @@ instance (Data.Monoid.Monoid AS.Basic_spec) where
     mempty = AS.Basic_spec []
     mappend (AS.Basic_spec bs1) (AS.Basic_spec bs2) = AS.Basic_spec $ bs1 ++ bs2
 
---instance (Show AS.Basic_spec) where
-
 instance (AT.ShATermConvertible AS.Basic_spec) where
     toShATermAux = AT.toShATermAux
     fromShATermAux = AT.fromShATermAux
-
-instance (Tp.Typeable AS.Basic_spec) where
-    typeOf = Tp.typeOf
 
 -- static analysis should in fact be performed by MMT
 instance StaticAnalysis PLpatt
@@ -144,6 +119,7 @@ instance StaticAnalysis PLpatt
             AS.Symb
                 where
             empty_signature PLpatt = Sign.Sigs []
+            signatureDiff PLpatt = Sign.sigDiff
             basic_analysis PLpatt = Just basicAna
 
 instance Syntax PLpatt 
@@ -152,7 +128,8 @@ instance Syntax PLpatt
                 ()
                 ()
                     where
-  parse_basic_spec _ = Just (\ _ -> PLparse.parse1)
+  parse_basic_spec _ = Just (\ _ -> LogicParse.parse1)
+-- basic_analysis lid = Just (\ ..  )
 
 -- instance of category
 instance Category Sign.Sigs Morphism.Morphism where
@@ -168,6 +145,7 @@ instance Sentences PLpatt
     AS.Symb
     where
 
+-- Logic instance, see Logic/Logic.hs:867
 instance Logic PLpatt
     () --  SL.Sublogic -- sublogic
     AS.Basic_spec -- basic_spec
