@@ -85,7 +85,7 @@ showDisproveGUI gi le dg (i, lbl) = case globalTheory lbl of
         res <- takeMVar wait
         runDisproveAtNode gi (i, lbl) res
 
-{- | negates a single sentence within a G_theory and returns a theorie
+{- | negates a single sentence within a G_theory and returns a theory
 containing all axioms in addition to the one negated sentence. -}
 negate_th :: G_theory -> String -> Maybe G_theory
 negate_th g_th goal = case g_th of
