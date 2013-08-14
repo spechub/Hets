@@ -714,7 +714,7 @@ transFORM siSo eqPreds sign i tr phi = transFORMULA siSo sign i tr phi'
 
 transFORMULA :: FormExtension f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
              -> FormulaTranslator f e -> FORMULA f -> SPTerm
-transFORMULA siSo sign idMap tr form = case form of
+transFORMULA siSo sign idMap tr frm = case frm of
   Quantification qu vdecl phi _ ->
     SPQuantTerm (quantify qu)
                     vList
@@ -748,7 +748,7 @@ transFORMULA siSo sign idMap tr form = case form of
           (\ si -> compTerm (spSym si) [transTERM siSo sign idMap tr t])
           (lookupSPId s CSort idMap)
   _ -> error
-    $ "SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '" ++ showDoc form "'"
+    $ "SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '" ++ showDoc frm "'"
 
 transTERM :: FormExtension f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
           -> FormulaTranslator f e -> TERM f -> SPTerm

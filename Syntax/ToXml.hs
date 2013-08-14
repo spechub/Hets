@@ -84,10 +84,11 @@ spec lg ga s = case s of
     unode "Translation" $ annoted spec lg ga as : concatMap (gmapping ga) m
   Reduction as m ->
     unode "Restriction" $ annoted spec lg ga as : restriction ga m
-{-  Approximation as (Named_Approx n rg) ->
-    unode "Approximation" $ annoted spec lg ga as : mkAttr "approx" (iriToStringUnsecure n) : rgAttrs rg
-  Approximation as (Qual_Approx n1 n2 rg) ->
-    unode "Approximation" $ annoted spec lg ga as 
+{- Approximation as (Named_Approx n rg) ->
+    unode "Approximation" $ annoted spec lg ga as
+      : mkAttr "approx" (iriToStringUnsecure n) : rgAttrs rg
+   Approximation as (Qual_Approx n1 n2 rg) ->
+    unode "Approximation" $ annoted spec lg ga as
       : add_attrs (mkNameAttr (iriToStringUnsecure n1) : rgAttrs rg)
       ++ add_attrs (mkNameAttr (iriToStringUnsecure n2) : rgAttrs rg)
 -}
@@ -112,7 +113,7 @@ spec lg ga s = case s of
     add_attrs (mkAttr "data-logic" (show l1) : rgAttrs rg)
       $ unode "Data" [ annoted spec (setCurLogic (show l1) lg) ga s1
                      , annoted spec lg ga s2]
-  Combination {} -> unsupported lg ga s
+  _ -> unsupported lg ga s
 
 fitArg :: LogicGraph -> GlobalAnnos -> FIT_ARG -> Element
 fitArg lg ga fa = case fa of
