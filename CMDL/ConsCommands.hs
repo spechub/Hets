@@ -86,7 +86,7 @@ cConservCheckAll state = case i_state $ intState state of
 
 -- applies consistency check to the input
 cConsistCheck :: CmdlState -> IO CmdlState
-cConsistCheck = cDoLoop True
+cConsistCheck = cDoLoop 1
 
 -- applies consistency check to all possible input
 cConsistCheckAll :: CmdlState -> IO CmdlState

@@ -18,6 +18,7 @@ module CMDL.ProveCommands
        , cGoalsAxmGeneral
        , cDoLoop
        , cProve
+       , cDisprove
        , cProveAll
        , cSetUseThms
        , cSetSave2File
@@ -173,7 +174,9 @@ cGoalsAxmGeneral action gls_axm input state
                              }
                      }
 
-cDoLoop :: Bool
+cDoLoop ::
+        -- I replaced the original bool with an int in order to have three cases: consCheck, prove and disprove 
+        Int
         -> CmdlState
         -> IO CmdlState
 cDoLoop checkCons state
@@ -214,7 +217,10 @@ cDoLoop checkCons state
 {- | Proves only selected goals from all nodes using selected
    axioms -}
 cProve :: CmdlState -> IO CmdlState
-cProve = cDoLoop False
+cProve = cDoLoop 0
+
+cDisprove :: CmdlState -> IO CmdlState
+cDisprove = cDoLoop 2
 
 {- | Proves all goals in the nodes selected using all axioms and
    theorems -}

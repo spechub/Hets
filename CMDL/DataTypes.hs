@@ -102,6 +102,9 @@ data CmdlCmdDescription = CmdlCmdDescription
   , cmdFn :: CmdlCmdFnClasses
   , cmdReq :: CmdlCmdRequirements }
 
+instance Show CmdlCmdDescription where
+  show cmd =  show $ cmdDescription cmd
+
 cmdInput :: CmdlCmdDescription -> String
 cmdInput = cmdInputStr . cmdDescription
 

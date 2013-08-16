@@ -133,7 +133,7 @@ toThSens = OMap.fromList . map
 
 -- | theories with a signature and sentences with proof states
 data Theory sign sen proof_tree =
-    Theory sign (ThSens sen (ProofStatus proof_tree))
+     Theory sign (ThSens sen (ProofStatus proof_tree))
 
 -- e.g. the file name, or the script itself, or a configuration string
 data TacticScript = TacticScript String deriving (Eq, Ord, Show)

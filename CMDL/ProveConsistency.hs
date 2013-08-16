@@ -39,12 +39,16 @@ import Static.History
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Logic
-import qualified Logic.Prover as P
+import Logic.Prover as P
+import Logic.Coerce
 
 import Common.Consistency
 import Common.LibName (LibName)
 import Common.Result (Result (Result))
 import Common.Utils (trim)
+
+import qualified Common.OrderedMap as OMap
+import Common.AS_Annotation
 
 import Data.List
 import qualified Data.Map as Map
@@ -55,7 +59,20 @@ import Control.Concurrent.MVar (MVar, newMVar, putMVar, takeMVar, readMVar,
 
 import Control.Monad
 
-
+negate_th_with_cons_checker :: G_theory_with_cons_checker -> String -> Maybe G_theory_with_cons_checker 
+negate_th_with_cons_checker g_th goal = case g_th of
+  G_theory_with_cons_checker lid1 th cons_check ->
+    case (P.tTarget th) of
+      P.Theory lid2 sens -> case OMap.lookup goal sens of
+        Nothing -> Nothing
+        Just sen -> case negation lid1 $ sentence sen of
+                                Nothing -> Nothing
+                                Just sen' -> let
+                                  negSen = sen { sentence = sen', isAxiom = True }
+                                  sens' = OMap.insert goal negSen $ OMap.filter isAxiom sens
+                                  target' = P.Theory lid2 sens'
+                                 in Just $ G_theory_with_cons_checker lid1 th{P.tTarget = target'} cons_check
+        
 getProversAutomatic :: G_sublogics -> [(G_prover, AnyComorphism)]
 getProversAutomatic sl = getAllProvers P.ProveCMDLautomatic sl logicGraph
 
@@ -164,7 +181,9 @@ cConsChecker input state =
 
 {- | Given a proofstatus the function does the actual call of the
 prover for consistency checking -}
-checkNode :: -- Tactic script
+
+checkNode :: 
+              -- Tactic script
               ATPTacticScript ->
               {- proofState of the node that needs proving
               all theorems, goals and axioms should have
@@ -280,7 +299,7 @@ proveNode ::
               MVar IntState ->
               LibName ->
               -- returns an error message if anything happens
-               IO String
+              IO String
 proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
   case ndpf of
     Element pf_st nd ->
@@ -330,6 +349,8 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
            [] -> return "No goals selected. Nothing to prove"
            _ ->
             do
+             putStrLn "selectedGoals:"
+             putStrLn $ unlines (selectedGoals st') 
              tmp <- fn useTh
                       save2File
                       answ
@@ -348,6 +369,111 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
                 swapMVar mSt Nothing
                 swapMVar miSt $ addResults ist libname state'
                 return ""
+
+disproveNode ::
+               -- Tactic script
+              ATPTacticScript ->
+              {- proofState of the node that needs proving
+              all theorems, goals and axioms should have
+              been selected before, but the theory should have
+              not been recomputed -}
+              Int_NodeInfo ->
+              -- node name
+              String ->
+              {- selected prover, if non one will be automatically
+              selected -}
+              Maybe G_cons_checker ->
+              {- selected comorphism, if non one will be automatically
+              selected -}
+              Maybe AnyComorphism ->
+              MVar (Maybe Int_NodeInfo) ->
+              MVar IntState ->
+              LibName ->
+              -- returns an error message if anything happens
+              IO String
+disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
+  case ndpf of
+    Element pf_st nd ->
+     do
+     {- recompute the theory (to make effective the selected axioms,
+     goals) !? needed? -}
+     let st = recalculateSublogicAndSelectedTheory pf_st
+     {- compute a prover,comorphism pair to be used in preparing
+     the theory -}
+     p_cm@(_, acm) <- case mcm of
+           Nothing -> lookupKnownConsChecker st
+           Just cm' -> case mp of
+             Nothing -> lookupKnownConsChecker st
+             Just p' -> return (p', cm')
+
+     -- try to prepare the theory
+     prep <- case prepareForConsChecking st p_cm of
+             Result _ Nothing ->
+               do
+                p_cm'@(prv', acm'@(Comorphism cid)) <-
+                          lookupKnownConsChecker st
+                putStrLn ("Analyzing node for consistency " ++ ndnm)
+                putStrLn ("Using the comorphism " ++ language_name cid)
+                putStrLn ("Using consistency checker " ++ getCcName prv')
+                return $ case prepareForConsChecking st p_cm' of
+                          Result _ Nothing -> Nothing
+                          Result _ (Just sm) -> Just (sm, acm')
+             Result _ (Just sm) -> return $ Just (sm, acm)
+     case prep of
+     -- theory could not be computed
+      Nothing -> return "No suitable prover and comorphism found"
+      Just (theory@(G_theory_with_cons_checker l _ p), _) ->
+        case P.ccAutomatic p of
+         fn ->
+          do
+          let goals = selectedGoals st
+          let st' = st{ proverRunning = True }
+              negate_theory = negate_th_with_cons_checker theory
+              theories = map negate_theory goals
+              th_and_goals = zip theories goals 
+              disprove_goal (theory',goal) = 
+                case theory' of 
+                  Nothing -> return  $ "Negating goal " ++ goal ++" failed"
+                  Just (G_theory_with_cons_checker l2 th' _) ->
+                    do   
+                    -- store initial input of the prover
+                    let tLimit = show $ tsTimeLimit sTxt
+                    th2 <- coerceTheoryMorphism l2 l "coerce error CMDL.ProveConsistency " th'
+                    swapMVar mSt $ Just $ Element st' nd
+                    cstat <- fn (theoryName st)
+                          (P.TacticScript tLimit)
+                          th2 []
+                    swapMVar mSt $ Just $ Element st nd
+                    putStrLn $ case P.ccResult cstat of
+                      Nothing -> "Timeout after " ++ tLimit ++ "seconds."
+                      Just b -> "node " ++ ndnm ++ " is "
+                        ++ (if b then "not " else "") ++ "disproved."
+                    ist <- readMVar miSt
+                    case i_state ist of
+                      Nothing -> return $ "goal " ++ goal ++ ": no library"
+                      Just iist -> case P.ccResult cstat of
+                       Nothing -> return ""
+                       Just b -> do
+                        let le = i_libEnv iist
+                            dg = lookupDGraph ln le
+                            nl = labDG dg nd
+                            nn = getDGNodeName nl
+                            newDg0 = changeDGH dg $ SetNodeLab nl (nd,
+                              markNodeConsistency
+                              (if b then Cons else Inconsistent) "" nl)
+                            newDg = groupHistory dg (DGRule "Consistency check") newDg0
+                            nst = add2history
+                              (CommentCmd $ "disprove at goal " ++ goal ++ ", node " ++ nn ++ "\n")
+                              ist [DgCommandChange ln]
+                            nwst = nst { i_state =
+                                     Just iist { i_libEnv = Map.insert ln newDg le } }
+                        swapMVar miSt nwst
+                        return ""
+          mapM_ (\x -> do y <- x 
+                          putStrLn y
+                          return () ) $ map disprove_goal th_and_goals
+          return ""
+                
 
 getResults :: (Logic lid sublogics basic_spec sentence
                      symb_items symb_map_items
@@ -409,6 +535,7 @@ sigIntHandler mthr miSt mSt thr mOut libname =
    killThread thr
    -- update LibEnv with intermidiar results !?
    ist <- readMVar miSt
+
    st <- readMVar mSt
    -- add to the output mvar results until now
    putMVar mOut $ case st of
@@ -421,7 +548,7 @@ doLoop :: MVar IntState
        -> MVar (Maybe Int_NodeInfo)
        -> MVar IntState
        -> [Int_NodeInfo]
-       -> Bool
+       -> Int
        -> IO ()
 doLoop miSt mThr mSt mOut ls checkCons = do
   ist <- readMVar miSt
@@ -441,7 +568,7 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                          Nothing -> "Unkown node"
                          Just ll -> getDGNodeName ll
                  putStrLn ("Analyzing node " ++ nodeName x)
-                 err <- if checkCons
+                 err <- if (checkCons == 1)
                            then checkNode (script pS)
                                           x
                                           (nodeName x)
@@ -450,7 +577,7 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                                           mSt
                                           miSt
                                           (i_ln pS)
-                           else proveNode (useTheorems pS)
+                           else if (checkCons == 0) then proveNode (useTheorems pS)
                                           (save2file pS)
                                           (script pS)
                                           x
@@ -461,5 +588,13 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                                           mSt
                                           miSt
                                           (i_ln pS)
+                           else disproveNode (script pS)
+                                             x
+                                             (nodeName x)
+                                             (consChecker pS)
+                                             (cComorphism pS)
+                                             mSt
+                                             miSt
+                                             (i_ln pS)
                  unless (null err) (putStrLn err)
                  doLoop miSt mThr mSt mOut l checkCons

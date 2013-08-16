@@ -58,7 +58,8 @@ checkListDisproved (l : ls) = if checkList l then False
 cmdlProcessString :: FilePath -> Int -> String -> CmdlState
   -> IO (CmdlState, Maybe Command)
 cmdlProcessString fp l ps st = case parseSingleLine fp l ps of
-  Left err -> return (genMsgAndCode err 3 st, Nothing)
+  Left err -> do
+    return (genMsgAndCode err 3 st, Nothing)
   Right c -> let cm = Parser.command c in
        fmap (\ nst -> (nst, Just $ cmdDescription cm)) $ execCmdlCmd cm st
 

@@ -62,6 +62,8 @@ import qualified Data.Set as Set
 
 import Logic.Logic
 
+import Debug.Trace
+
 data CASL = CASL deriving Show
 
 instance Language CASL where
@@ -217,7 +219,7 @@ instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
 
 instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       map_sen CASL m = return . mapSen (const id) m
-      negation CASL = negateFormula
+      negation CASL = negateFormula 
       sym_of CASL = symOf
       mostSymsOf CASL = sigSymsOf
       symmap_of CASL = morphismToSymbMap

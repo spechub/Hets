@@ -46,6 +46,7 @@ data GlobCmd =
   | Hiding
   | Heterogeneity
   | ProveCurrent  -- CMDL prover activation
+  | DisproveCurrent
   | CheckConsistencyCurrent
   | CheckConservativityAll
   | DropTranslation -- stop composing comorphisms to previous ones
@@ -81,6 +82,7 @@ menuTextGlobCmd cmd = case cmd of
   Freeness -> "Freeness"
   Heterogeneity -> "Heterogeneity"
   ProveCurrent -> "Prove"
+  DisproveCurrent -> "Disprove"
   CheckConsistencyCurrent -> "Check consistency"
   CheckConservativityAll -> "Globally check conservativity"
   DropTranslation -> "Drop-Translations"

@@ -77,8 +77,7 @@ showDisproveGUI gi le dg (i, lbl) = case globalTheory lbl of
         $ getThGoals gt
     in if null fgoals
       then
-        errorDialogExt "Error (disprove)"
-          "found no goals suitable for disprove function"
+          errorDialogExt "Error (disprove)" "found no goals suitable for disprove function"
       else do
         wait <- newEmptyMVar
         showDisproveWindow wait (libName gi) le dg gt fgoals
@@ -134,7 +133,6 @@ runDisproveAtNode gInfo (v, dgnode) (Result ds mres) = case mres of
           runAndLock gInfo $ updateGraph gInfo hist
       unlockGlobal gInfo
   _ -> return ()
-
 
 {- | Displays a GUI to set TimeoutLimit and select the ConsistencyChecker
 and holds the functionality to call the ConsistencyChecker for the

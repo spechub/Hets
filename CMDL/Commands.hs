@@ -89,6 +89,9 @@ cmdlIgnoreFunc r =
 proveAll :: CmdlCmdDescription
 proveAll = genGlobCmd ProveCurrent cProve
 
+disproveAll :: CmdlCmdDescription
+disproveAll = genGlobCmd DisproveCurrent cDisprove
+
 reqEdges :: CmdlCmdRequirements
 reqEdges = ReqNodesOrEdges (Just False) Nothing
 
@@ -113,6 +116,7 @@ getCommands =
   , genSelectCmd Prover cProver
   , genSelectCmd Goal $ cGoalsAxmGeneral ActionSet ChangeGoals
   , proveAll
+  , disproveAll
   , genGlobCmd CheckConsistencyCurrent cConsistCheck
   , genGlobCmd CheckConservativityAll cConservCheckAll
   , genGlobCmd DropTranslation cDropTranslations
