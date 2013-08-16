@@ -68,6 +68,7 @@ instance Sentences SoftFOL Sentence Sign
       sym_of SoftFOL = singletonList . symOf
       sym_name SoftFOL = symbolToId
       print_named SoftFOL = printFormula
+      negation _ = negateSentence
     -- other default implementations are fine
 
 instance StaticAnalysis SoftFOL () Sentence

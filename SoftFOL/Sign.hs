@@ -452,3 +452,9 @@ showSettingLabel l = case l of
 -}
 data SPCRBIND = SPCRBIND {clauseSPR :: String, formulaSPR :: String}
                 deriving (Eq, Ord, Show)
+
+
+-- | negate a sentence
+negateSentence :: SPTerm -> Maybe SPTerm
+negateSentence x =
+  Just $ SPComplexTerm SPNot [x]
