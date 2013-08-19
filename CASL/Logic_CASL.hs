@@ -48,7 +48,7 @@ import CASL.Freeness
 
 -- test
 import CASL.Formula (formula)
---
+
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
 #endif
@@ -61,8 +61,6 @@ import Data.Monoid
 import qualified Data.Set as Set
 
 import Logic.Logic
-
-import Debug.Trace
 
 data CASL = CASL deriving Show
 
@@ -128,7 +126,8 @@ instance Syntax CASL CASLBasicSpec
          parsersAndPrinters CASL = addSyntax "KIF"
            (const $ fmap kif2CASL kifBasic, pretty)
            $ makeDefault (basicSpec [], pretty)
---         parse_symbol CASL = Just $ parseSymb []  -- need static analysis for symbol
+         {- parse_symbol CASL = Just $ parseSymb []
+         need static analysis for symbol -}
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
          toItem CASL = bsToItem
@@ -219,7 +218,7 @@ instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
 
 instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       map_sen CASL m = return . mapSen (const id) m
-      negation CASL = negateFormula 
+      negation CASL = negateFormula
       sym_of CASL = symOf
       mostSymsOf CASL = sigSymsOf
       symmap_of CASL = morphismToSymbMap
@@ -273,9 +272,8 @@ instance Logic CASL CASL_Sublogics
                CASLMor
                Symbol RawSymbol ProofTree where
          stability CASL = Stable
-         -- for Hybridization 
-         parse_basic_sen CASL = Just $ \_ -> formula []
-        ---
+         -- for Hybridization
+         parse_basic_sen CASL = Just $ \ _ -> formula []
 
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics CASL = sublogics_all []
