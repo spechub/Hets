@@ -29,7 +29,7 @@ module CMDL.ProveCommands
        ) where
 
 import CMDL.DataTypes (CmdlState (intState), CmdlGoalAxiom (..),
-                      CmdlListAction (..))
+                      CmdlListAction (..), ProveCmdType(..))
 import CMDL.DataTypesUtils (add2hist, genMsgAndCode, genMessage,
                             genAddMessage, getIdComorphism)
 
@@ -175,11 +175,10 @@ cGoalsAxmGeneral action gls_axm input state
                      }
 
 cDoLoop ::
-        -- I replaced the original bool with an int in order to have three cases: consCheck, prove and disprove 
-        Int
+        ProveCmdType
         -> CmdlState
         -> IO CmdlState
-cDoLoop checkCons state
+cDoLoop proveCmdType state
  = case i_state $ intState state of
     Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
@@ -193,7 +192,7 @@ cDoLoop checkCons state
             mThr <- newMVar Nothing
             mW <- newEmptyMVar
             -- fork
-            thrID <- forkIO (doLoop miSt mThr mSt mW ls checkCons)
+            thrID <- forkIO (doLoop miSt mThr mSt mW ls proveCmdType)
             -- install the handler that waits for SIG_INT
 #ifdef UNIX
             oldHandler <- installHandler sigINT (Catch $
@@ -217,10 +216,10 @@ cDoLoop checkCons state
 {- | Proves only selected goals from all nodes using selected
    axioms -}
 cProve :: CmdlState -> IO CmdlState
-cProve = cDoLoop 0
+cProve = cDoLoop Prove
 
 cDisprove :: CmdlState -> IO CmdlState
-cDisprove = cDoLoop 2
+cDisprove = cDoLoop Disprove
 
 {- | Proves all goals in the nodes selected using all axioms and
    theorems -}

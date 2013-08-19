@@ -24,7 +24,7 @@ import Interfaces.GenericATPState (ATPTacticScript (..))
 import Interfaces.History
 import Interfaces.Utils
 
-import CMDL.DataTypes (CmdlState (intState))
+import CMDL.DataTypes (CmdlState (intState), ProveCmdType(..)) 
 import CMDL.DataTypesUtils
 import CMDL.Utils (checkPresenceProvers)
 
@@ -446,7 +446,7 @@ disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
                     swapMVar mSt $ Just $ Element st nd
                     putStrLn $ case P.ccResult cstat of
                       Nothing -> "Timeout after " ++ tLimit ++ "seconds."
-                      Just b -> "node " ++ ndnm ++ " is "
+                      Just b -> "goal " ++ goal ++ " is "
                         ++ (if b then "not " else "") ++ "disproved."
                     ist <- readMVar miSt
                     case i_state ist of
@@ -548,9 +548,9 @@ doLoop :: MVar IntState
        -> MVar (Maybe Int_NodeInfo)
        -> MVar IntState
        -> [Int_NodeInfo]
-       -> Int
+       -> ProveCmdType
        -> IO ()
-doLoop miSt mThr mSt mOut ls checkCons = do
+doLoop miSt mThr mSt mOut ls proveCmdType = do
   ist <- readMVar miSt
   case i_state ist of
     Nothing -> do
@@ -568,8 +568,8 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                          Nothing -> "Unkown node"
                          Just ll -> getDGNodeName ll
                  putStrLn ("Analyzing node " ++ nodeName x)
-                 err <- if (checkCons == 1)
-                           then checkNode (script pS)
+                 err <- case proveCmdType of
+                           ConsCheck -> checkNode (script pS)
                                           x
                                           (nodeName x)
                                           (consChecker pS)
@@ -577,7 +577,7 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                                           mSt
                                           miSt
                                           (i_ln pS)
-                           else if (checkCons == 0) then proveNode (useTheorems pS)
+                           Prove -> proveNode (useTheorems pS)
                                           (save2file pS)
                                           (script pS)
                                           x
@@ -588,7 +588,7 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                                           mSt
                                           miSt
                                           (i_ln pS)
-                           else disproveNode (script pS)
+                           Disprove -> disproveNode (script pS)
                                              x
                                              (nodeName x)
                                              (consChecker pS)
@@ -597,4 +597,4 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                                              miSt
                                              (i_ln pS)
                  unless (null err) (putStrLn err)
-                 doLoop miSt mThr mSt mOut l checkCons
+                 doLoop miSt mThr mSt mOut l proveCmdType

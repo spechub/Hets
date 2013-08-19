@@ -34,6 +34,7 @@ module CMDL.DataTypes
   , emptyCmdlMessage
   , CmdlListAction (..)
   , CmdlGoalAxiom (..)
+  , ProveCmdType (..)
   ) where
 
 import Interfaces.DataTypes
@@ -70,6 +71,8 @@ data CmdlState = CmdlState
   , hetsOpts :: HetcatsOpts  -- ^ hets command options
   , errorCode :: Int
   }
+
+data ProveCmdType = Prove | Disprove | ConsCheck
 
 -- | Creates an empty CmdlState
 emptyCmdlState :: HetcatsOpts -> CmdlState

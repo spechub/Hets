@@ -22,7 +22,7 @@ module CMDL.ConsCommands
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-import CMDL.DataTypes (CmdlState (intState))
+import CMDL.DataTypes (CmdlState (intState), ProveCmdType(..))
 import CMDL.DataTypesUtils
 import CMDL.Utils
 import CMDL.ProveCommands (cDoLoop)
@@ -86,7 +86,7 @@ cConservCheckAll state = case i_state $ intState state of
 
 -- applies consistency check to the input
 cConsistCheck :: CmdlState -> IO CmdlState
-cConsistCheck = cDoLoop 1
+cConsistCheck = cDoLoop ConsCheck
 
 -- applies consistency check to all possible input
 cConsistCheckAll :: CmdlState -> IO CmdlState
