@@ -82,6 +82,8 @@ instance PrettyLG LIB_ITEM where
                                     $ printGroupSpec lg to]]
                        ++ [ppWithCommas ad])
                           $+$ keyword endS
+      {-  Equiv_defn si (Equiv_type as1 as2 _) sp _ ->
+        -}
         Align_defn si ar (Align_type frm to _) corresps _ ->
             let spid = indexed (iriToStringShortUnsecure si)
                 sphead = case ar of

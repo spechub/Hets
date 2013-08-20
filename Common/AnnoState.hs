@@ -217,6 +217,9 @@ equalT = wrapAnnos $ pToken $ reserved [exEqual]
 colonT :: AParser st Token
 colonT = asKey colonS
 
+equiT :: AParser st Token
+equiT = asKey equiS
+
 lessT :: AParser st Token
 lessT = asKey lessS
 

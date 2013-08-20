@@ -103,6 +103,7 @@ data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
 
 type SPEC_NAME = IRI
 type VIEW_NAME = IRI
+type EQUIV_NAME = IRI
 type ALIGN_NAME = IRI
 type MODULE_NAME = IRI
 type APPROX_METHOD_REF = IRI

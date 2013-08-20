@@ -124,6 +124,18 @@ libItem l =
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
+
+  <|> -- equiv defn
+    do s1 <- asKey equivalenceS
+       en <- hetIRI l
+       s2 <- colonT
+       et <- equivType l
+       s3 <- equalT
+       sp <- aSpec l
+       ep <- optEnd
+       return (Syntax.AS_Library.Equiv_defn en et sp 
+           (catRange (s1:s2:s3:(maybeToList ep))))
+       
   <|> -- align defn
     do s1 <- asKey alignmentS
        an <- hetIRI l
@@ -253,6 +265,13 @@ viewType :: LogicGraph -> AParser st VIEW_TYPE
 viewType l = do
     (sp1, sp2, r) <- viewOrAlignType l
     return (View_type sp1 sp2 r)
+
+equivType :: LogicGraph -> AParser st EQUIV_TYPE
+equivType l = do
+    sp1 <- groupSpec l
+    r <- equiT
+    sp2 <- groupSpec l
+    return $ Equiv_type sp1 sp2 $ tokPos r
 
 -- | Parse align type
 alignType :: LogicGraph -> AParser st ALIGN_TYPE

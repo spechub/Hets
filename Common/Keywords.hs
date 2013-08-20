@@ -57,6 +57,9 @@ timesS = "\215"
 colonS :: String
 colonS = ":"
 
+equiS :: String
+equiS = "<->"
+
 -- | the dot sign (ascii)
 dotS :: String
 dotS = "."
@@ -416,6 +419,9 @@ emptyS = "empty"
 
 endS :: String
 endS = "end"
+
+equivalenceS :: String
+equivalenceS = "equivalence"
 
 esortS :: String
 esortS = "esort"

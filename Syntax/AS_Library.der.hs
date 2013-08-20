@@ -44,6 +44,8 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "spec", "=", opt "end"
               | View_defn VIEW_NAME GENERICITY VIEW_TYPE [G_mapping] Range
               -- pos: "view", ":", opt "=", opt "end"
+              | Equiv_defn EQUIV_NAME EQUIV_TYPE (Annoted SPEC) Range
+              -- pos: "equivalence", ":", "=", opt "end"
               | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) ALIGN_TYPE
                 [CORRESPONDENCE] Range
               | Module_defn MODULE_NAME MODULE_TYPE RESTRICTION_SIGNATURE Range
@@ -85,6 +87,7 @@ data IMPORTED = Imported [Annoted SPEC] deriving Show
 
 data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
                  -- pos: "to"
+data EQUIV_TYPE = Equiv_type SPEC SPEC Range deriving Show
 
 data ALIGN_TYPE = Align_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
 
