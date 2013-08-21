@@ -105,7 +105,6 @@ instance Logic Hybridize () Spc_Wrap Frm_Wrap SYMB_ITEMS SYMB_MAP_ITEMS
                 proj_sublogic_epsilon Hybridize =
                  error "proj_sublogic_epsilon !"
                 all_sublogics Hybridize = error "all_sublogics !"
-                conservativityCheck Hybridize = error "conservativityCheck !"
                 empty_proof_tree Hybridize = error "empty_proof_tree !"
                 addOMadtToTheory Hybridize = error "addOMadtToTheory !"
                 addOmdocToTheory Hybridize = error "addOmdocToTheory !"
