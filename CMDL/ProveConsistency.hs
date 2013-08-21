@@ -425,9 +425,9 @@ disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
       Just (theory@(G_theory_with_cons_checker l _ p), _) ->
         case P.ccAutomatic p of
          fn ->
-          do
+          do         
           let goals = selectedGoals st
-          let st' = st{ proverRunning = True }
+              st' = st{ proverRunning = True }
               negate_theory = negate_th_with_cons_checker theory
               theories = map negate_theory goals
               th_and_goals = zip theories goals 
@@ -447,7 +447,7 @@ disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
                     putStrLn $ case P.ccResult cstat of
                       Nothing -> "Timeout after " ++ tLimit ++ "seconds."
                       Just b -> "goal " ++ goal ++ " is "
-                        ++ (if b then "not " else "") ++ "disproved."
+                        ++ (if b then "" else "not ") ++ "disproved."
                     ist <- readMVar miSt
                     case i_state ist of
                       Nothing -> return $ "goal " ++ goal ++ ": no library"
@@ -472,8 +472,7 @@ disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
           mapM_ (\x -> do y <- x 
                           putStrLn y
                           return () ) $ map disprove_goal th_and_goals
-          return ""
-                
+          return "" 
 
 getResults :: (Logic lid sublogics basic_spec sentence
                      symb_items symb_map_items

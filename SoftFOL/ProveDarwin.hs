@@ -238,6 +238,9 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
     let l = lines $ pout ++ perr
         (res, _, tUsed) = parseOutput l
     removeFile timeTmpFile
+    putStrLn "______________________"
+    putStrLn pout
+    putStrLn "______________________"
     return (res, l, tUsed)
 
 mkGraph :: String -> IO ()
