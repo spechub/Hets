@@ -39,6 +39,12 @@ import Data.IORef
 import Control.Monad
 import Control.Monad.Trans (MonadIO (..))
 
+import Comorphisms.LogicGraph (logicGraph)
+
+import Proofs.AbstractState (getConsCheckers, sublogicOfTheory, getCcName )
+
+import Logic.Grothendieck
+
 #ifdef HASKELINE
 shellSettings :: IORef CmdlState -> Settings IO
 shellSettings st =
@@ -50,19 +56,41 @@ shellSettings st =
 
 {- We need an MVar here because our CmdlState is no Monad
    (and we use IO as Monad). -}
-cmdlComplete :: IORef CmdlState -> CompletionFunc IO
-cmdlComplete st (left, _) = do
-  state <- liftIO $ readIORef st
-  comps <- liftIO $ cmdlCompletionFn getCommands state $ reverse left
+
+showCmdComplete :: CmdlState -> [String] -> [String] -> String -> IO (String,[Completion])
+showCmdComplete state shortConsCList comps left = do
   let (_, nodes) = case i_state $ intState state of
                      Nothing -> ("", [])
                      Just dgState -> getSelectedDGNodes dgState
-      cmds = "prove-all" : map (cmdNameStr . cmdDescription) getCommands
+      cmdss = "prove-all" : map (cmdNameStr . cmdDescription) getCommands
+      cmds = cmdss ++ (map ("cons-checker " ++) shortConsCList)
       cmdcomps = filter (isPrefixOf (reverse left)) cmds
       cmdcomps' = if null nodes
-                    then filter (not . isSuffixOf "-current") cmdcomps
-                    else cmdcomps
+                          then filter (not . isSuffixOf "-current") cmdcomps
+                          else cmdcomps
   return ("", map simpleCompletion $ comps ++ cmdcomps')
+
+cmdlComplete :: IORef CmdlState -> CompletionFunc IO
+cmdlComplete st (left, _) = do
+
+  state <- liftIO $ readIORef st
+  comps <- liftIO $ cmdlCompletionFn getCommands state $ reverse left
+
+  if isPrefixOf (reverse left) "cons-checker " 
+   then
+    case i_state $ intState state of
+     Just pS ->
+       case elements pS of
+        Element z _ : _ ->
+          do 
+           let consCheckList = getConsCheckers $ findComorphismPaths
+                                  logicGraph $ sublogicOfTheory z
+               shortConsCList =nub $  map (\ (y, _) -> getCcName y) consCheckList
+           showCmdComplete state shortConsCList comps left 
+        [] -> showCmdComplete state [] comps left
+     Nothing -> showCmdComplete state [] comps left
+   else showCmdComplete state [] comps left
+
 #endif
 
 #ifdef HASKELINE
