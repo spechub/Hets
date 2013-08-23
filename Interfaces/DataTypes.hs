@@ -63,7 +63,8 @@ data CmdHistory = CmdHistory
    the other are for PGIP but in order to integrate both they should use
    same structure -}
 data UndoRedoElem =
-    UseThmChange Bool
+   ShowOutputChange Bool
+  | UseThmChange Bool
   | Save2FileChange Bool
   | ProverChange (Maybe G_prover)
   | ConsCheckerChange (Maybe G_cons_checker)
@@ -93,6 +94,7 @@ data IntIState = IntIState
   , consChecker :: Maybe G_cons_checker
   , save2file :: Bool
   , useTheorems :: Bool
+  , showOutput :: Bool
   , script :: ATPTacticScript
   , loadScript :: Bool } deriving (Show)
 

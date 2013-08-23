@@ -46,7 +46,6 @@ import Common.Consistency
 import Common.LibName (LibName)
 import Common.Result (Result (Result))
 import Common.Utils (trim)
-import Common.ProofTree 
 
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
@@ -252,15 +251,18 @@ checkNode sTxt ndpf ndnm mp mcm mSt miSt ln =
             Nothing -> "Timeout after " ++ tLimit ++ "seconds."
             Just b -> "node " ++ ndnm ++ " is "
               ++ (if b then "" else "in") ++ "consistent."
-          putStrLn "____________________________"
-          putStrLn $ show $ P.ccProofTree cstat 
-          putStrLn "____________________________"
           ist <- readMVar miSt
           case i_state ist of
             Nothing -> return "no library"
             Just iist -> case P.ccResult cstat of
              Nothing -> return ""
              Just b -> do
+              if (showOutput iist) then 
+                do
+                  putStrLn "____________________________"
+                  putStrLn $ show $ P.ccProofTree cstat 
+                  putStrLn "____________________________"
+                                   else putStr ""         
               let le = i_libEnv iist
                   dg = lookupDGraph ln le
                   nl = labDG dg nd

@@ -251,6 +251,7 @@ data Command =
   | SelectCmd SelectCmd String
   | TimeLimit Int -- set a time limit for an automatic  prover
   | SetAxioms [String] -- set the axiom list for an automatic  prover
+  | ShowOutput Bool -- show model  
   | IncludeProvenTheorems Bool -- should proven theorems be added as axioms
   | InspectCmd InspectCmd (Maybe String)
   | CommentCmd String
@@ -308,6 +309,7 @@ cmdNameStr cmd = case cmd of
   SelectCmd s _ -> selectCmdNameStr s
   TimeLimit _ -> "set time-limit"
   SetAxioms _ -> "set axioms"
+  ShowOutput b -> "show-output " ++ (map toLower (show b))
   IncludeProvenTheorems b -> "set include-theorems " ++ map toLower (show b)
   InspectCmd i s ->
     (if i > Edges then "show-" else "")
@@ -338,6 +340,8 @@ describeCmd cmd = case cmd of
   SelectCmd s _ -> describeSelectCmd s
   TimeLimit _ -> "Set the time-limit for the next proof"
   SetAxioms _ -> "Set the axioms used for the next proof"
+  ShowOutput b -> (if b then "S" else "Do not s")
+    ++ "how model"
   IncludeProvenTheorems b -> (if b then "I" else "Do not i")
     ++ "nclude proven theorems"
   InspectCmd i t -> if i == ComorphismsTo

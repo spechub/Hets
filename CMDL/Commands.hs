@@ -110,6 +110,9 @@ getCommands =
   [ genGlobCmd UndoCmd cUndo
   , genGlobCmd RedoCmd cRedo ]
   ++
+  [ genCmd (ShowOutput False) CmdNoPriority ReqNothing $ CmdNoInput (cShowOutput False)
+  , genCmd (ShowOutput True) CmdNoPriority ReqNothing $ CmdNoInput (cShowOutput True)]  
+  ++
   [ genSelectCmd LibFile cUse
   , genSelectCmd Node cDgSelect
   , genSelectCmd ComorphismTranslation cTranslate

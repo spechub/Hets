@@ -99,6 +99,7 @@ emptyIntIState le ln =
     consChecker = Nothing,
     save2file = False,
     useTheorems = False,
+    showOutput = False,
     script = ATPTacticScript {
                  tsTimeLimit = 20,
                  tsExtraOpts = [] },
