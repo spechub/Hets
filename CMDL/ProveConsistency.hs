@@ -46,6 +46,7 @@ import Common.Consistency
 import Common.LibName (LibName)
 import Common.Result (Result (Result))
 import Common.Utils (trim)
+import Common.ProofTree 
 
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
@@ -58,6 +59,7 @@ import Control.Concurrent.MVar (MVar, newMVar, putMVar, takeMVar, readMVar,
                                swapMVar, modifyMVar_)
 
 import Control.Monad
+
 
 negate_th_with_cons_checker :: G_theory_with_cons_checker -> String -> Maybe G_theory_with_cons_checker 
 negate_th_with_cons_checker g_th goal = case g_th of
@@ -250,6 +252,9 @@ checkNode sTxt ndpf ndnm mp mcm mSt miSt ln =
             Nothing -> "Timeout after " ++ tLimit ++ "seconds."
             Just b -> "node " ++ ndnm ++ " is "
               ++ (if b then "" else "in") ++ "consistent."
+          putStrLn "____________________________"
+          putStrLn $ show $ P.ccProofTree cstat 
+          putStrLn "____________________________"
           ist <- readMVar miSt
           case i_state ist of
             Nothing -> return "no library"
