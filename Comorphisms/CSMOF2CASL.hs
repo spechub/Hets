@@ -290,7 +290,10 @@ getNonAbstractClasess :: Set.Set TypeClass -> Set.Set TypeClass -> Set.Set TypeC
 getNonAbstractClasess absCl classes = Set.difference classes absCl
 
 getSubClasses ::  Rel.Rel TypeClass -> TypeClass -> (TypeClass,[TypeClass])
-getSubClasses typpR tc =  (tc, map (fst) (filter (isParent tc) (Rel.toList typpR)))
+getSubClasses typpR tc =  
+  let subCla = map (fst) (filter (isParent tc) (Rel.toList typpR))
+      rec = foldr ((++) . snd . (getSubClasses typpR)) [] subCla
+  in (tc, subCla ++ rec)
 
 isParent :: TypeClass -> (TypeClass,TypeClass) -> Bool
 isParent tc (_,tc2) = tc == tc2
