@@ -100,7 +100,7 @@ mapSign s =
     ops = getOperations (instances s)
     predd = getPredicates (properties s)
     sent = getSentencesRels (links s) (instances s)
-    sentDisEmb = getSortGen (typeRel s) (abstractClasses s) (instances s)
+    sentDisEmb = getSortGen (typeRel s) (abstractClasses s) (types s) (instances s)
     noConfBetOps = getNoConfusionBetweenSets (instances s) (typeRel s)
   in
     C.Sign
@@ -256,8 +256,68 @@ getByProperty lin mapL =
       Just s -> Map.insert nameLook (lin : s) (Map.delete nameLook mapL)
 
 
-getSortGen :: Rel.Rel TypeClass -> Set.Set TypeClass -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
-getSortGen typpR absCl inst = disjointEmbedding absCl typpR ++ sortGeneration inst
+getSortGen :: Rel.Rel TypeClass -> Set.Set TypeClass -> Set.Set TypeClass -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
+getSortGen typpR absCl typCl inst = disjointEmbedding absCl typpR ++ sortGeneration inst ++ 
+                              sortGenerationNonAbstractSuperClasses typpR typCl absCl inst
+
+
+-- free type de superclases que no son abstract
+sortGenerationNonAbstractSuperClasses :: Rel.Rel TypeClass -> Set.Set TypeClass -> Set.Set TypeClass -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
+sortGenerationNonAbstractSuperClasses typpR typCl absCl inst = 
+  let 
+    ordObj = foldr (orderByClass) Map.empty (Map.toList inst)
+    nonAbsClasses = getNonAbstractClasess absCl typCl
+    nonAbsClassesWChilds = filter (\x -> not (null (snd x))) (Set.fold ((:) . (getSubClasses typpR)) [] nonAbsClasses)
+    childObjects = foldr ((:) . (getClassSubObjects ordObj)) [] nonAbsClassesWChilds -- [(TypeClass,[String])]
+  in
+    foldr ((:) . (toSortConstraintNonAbsClass inst)) [] childObjects
+
+
+-- Takes the objects, and a class with its child classes and returns the descendent objects of such class
+getClassSubObjects :: Map.Map TypeClass [String] -> (TypeClass,[TypeClass]) -> (TypeClass,[String])
+getClassSubObjects objs (tc, subCl) = 
+  let objTC = findObjectInMap objs tc
+  in
+    (tc, objTC ++ (foldr ((++) . (findObjectInMap objs)) [] subCl))
+
+findObjectInMap :: Map.Map TypeClass [String] -> TypeClass -> [String]
+findObjectInMap objs tc = 
+  case Map.lookup tc objs of
+    Nothing -> []
+    Just objsTC -> objsTC
+
+getNonAbstractClasess :: Set.Set TypeClass -> Set.Set TypeClass -> Set.Set TypeClass 
+getNonAbstractClasess absCl classes = Set.difference classes absCl
+
+getSubClasses ::  Rel.Rel TypeClass -> TypeClass -> (TypeClass,[TypeClass])
+getSubClasses typpR tc =  (tc, map (fst) (filter (isParent tc) (Rel.toList typpR)))
+
+isParent :: TypeClass -> (TypeClass,TypeClass) -> Bool
+isParent tc (_,tc2) = tc == tc2
+
+toSortConstraintNonAbsClass :: Map.Map String TypeClass -> (TypeClass, [String]) -> Named (CASLFORMULA)
+toSortConstraintNonAbsClass inst (tc,lisObj) = 
+  let 
+    sor = stringToId $ name tc
+    varA = Var_decl [(mkSimpleId "x")] sor nullRange
+    sent = Junction Dis (foldr ((:) . (getEqualityVarObject sor inst)) [] lisObj) nullRange
+    constr = Quantification Universal [varA] sent nullRange
+  in 
+    makeNamed ("sortGenCon_" ++ name tc) constr
+
+getEqualityVarObject :: SORT -> Map.Map String TypeClass -> String -> CASLFORMULA
+getEqualityVarObject sor inst obj =
+  let oTyp = case Map.lookup obj inst of
+                Nothing -> stringToId obj -- If happens, there is an error
+                Just ob -> stringToId $ name ob
+  in
+    Equation (Qual_var (mkSimpleId "x") sor nullRange) 
+      Strong 
+      (Application (Qual_op_name (stringToId obj) 
+        (Op_type Total [] oTyp nullRange) 
+        nullRange) [] nullRange)
+      nullRange
+
 
 
 -- Sorts are generated as a free type of object functions
@@ -429,11 +489,12 @@ mapSen sig (Sen con car cot) = -- trueForm
 minConstraint :: MultConstr -> Integer -> PredMap -> CASLFORMULA
 minConstraint con int predM = 
   let 
-    predTypes = Set.elems $ MapSet.lookup (stringToId $ getRole con) predM -- [PredType]
+    predTypes = MapSet.lookup (stringToId $ getRole con) predM -- Set PredType
     souVars = generateVars "x" 1
     tarVars = generateVars "y" int
-    souVarDec = Var_decl souVars (head (predArgs (head predTypes))) nullRange
-    tarVarDec = Var_decl tarVars (last (predArgs (head predTypes))) nullRange
+    correctPredType = Set.fold (getCorrectPredType con) [] predTypes
+    souVarDec = Var_decl souVars (head (predArgs (head correctPredType))) nullRange
+    tarVarDec = Var_decl tarVars (last (predArgs (head correctPredType))) nullRange
   in 
     if int > 1
     then Quantification Universal [souVarDec] (Quantification 
@@ -450,6 +511,11 @@ minConstraint con int predM =
                                       nullRange
                                      ) nullRange
 
+getCorrectPredType :: MultConstr -> PredType -> [PredType] -> [PredType]
+getCorrectPredType con pt ptLis =
+  case (stringToId $ name (CSMOF.getType con)) == head (predArgs pt) of
+    True -> pt : ptLis
+    False -> ptLis
 
 generateVars :: String -> Integer -> [VAR]
 generateVars varRoot int =
@@ -487,11 +553,12 @@ createPropRel souVar sor rol sor2 tarVar =
 maxConstraint :: MultConstr -> Integer -> PredMap -> CASLFORMULA
 maxConstraint con int predM = 
   let 
-    predTypes = Set.elems $ MapSet.lookup (stringToId $ getRole con) predM -- [PredType]
+    predTypes = MapSet.lookup (stringToId $ getRole con) predM -- Set PredType
     souVars = generateVars "x" 1
     tarVars = generateVars "y" (int + 1)
-    souVarDec = Var_decl souVars (head (predArgs (head predTypes))) nullRange
-    tarVarDec = Var_decl tarVars (last (predArgs (head predTypes))) nullRange
+    correctPredType = Set.fold (getCorrectPredType con) [] predTypes
+    souVarDec = Var_decl souVars (head (predArgs (head correctPredType))) nullRange
+    tarVarDec = Var_decl tarVars (last (predArgs (head correctPredType))) nullRange
   in 
     Quantification Universal (souVarDec : [tarVarDec]) 
                    (Relation 
