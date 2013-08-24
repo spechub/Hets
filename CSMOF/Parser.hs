@@ -98,7 +98,9 @@ createProperty metamodel keyMap cla el =
       uppe = parseIntegerAttribute el ownedAttributeUpperK
       name = parseStringAttribute el ownedAttributeNameK
       typeEl = parsePropertyType keyMap metamodel el
-      opp = parsePropertyOpposite keyMap metamodel el
+      souName = typeEl
+      tarName = classSuperType cla
+      opp = parsePropertyOpposite keyMap metamodel el tarName souName
       namedElement = NamedElement { namedElementName = name
                                   , namedElementOwner = metamodel
                                   , namedElementSubClasses = TTypedElement { getTypeElement = typedElement }
@@ -125,11 +127,11 @@ parsePropertyType keyMap metamodel el =
     Just typ -> linkTypeElem keyMap metamodel typ
 
 
-parsePropertyOpposite :: Map.Map String String -> Metamodel -> Element -> Maybe Property
-parsePropertyOpposite keyMap metamodel el = 
+parsePropertyOpposite :: Map.Map String String -> Metamodel -> Element -> Type -> Type -> Maybe Property
+parsePropertyOpposite keyMap metamodel el souTyp tarTyp = 
   case lookupAttr ownedAttributeOppositeK (elAttribs el) of
     Nothing -> Nothing
-    Just opp -> Just (linkProperty keyMap metamodel opp)
+    Just opp -> Just (linkProperty keyMap metamodel opp tarTyp souTyp)
 
 
 
@@ -170,9 +172,13 @@ createLink metamodel mode keyMap eleme =
   let typ = parseStringAttribute eleme linkTypeK
       sour = parseStringAttribute eleme linkSourceK
       targ = parseStringAttribute eleme linkTargetK
-  in Link { linkType = linkProperty keyMap metamodel typ
-          , source = linkObject keyMap metamodel sour
-          , target = linkObject keyMap metamodel targ
+      sourObj = linkObject keyMap metamodel sour
+      tarObj = linkObject keyMap metamodel targ
+      souObjTyp = objectType sourObj
+      tarObjTyp = objectType tarObj
+  in Link { linkType = linkProperty keyMap metamodel typ souObjTyp tarObjTyp
+          , source = sourObj
+          , target = tarObj
           , linkOwner = mode
           }
 
@@ -232,13 +238,14 @@ linkTypeElem keyMap metamodel key =
      h : _ -> h
 
 
-linkProperty :: Map.Map String String -> Metamodel -> String -> Property
-linkProperty keyMap metamodel key = 
-  let name = findElementInMap key keyMap
-      list = map toProperty (filter (equalPropertyName name) (element metamodel))
+linkProperty :: Map.Map String String -> Metamodel -> String -> Type -> Type -> Property
+linkProperty keyMap metamodel key souTyp tarTyp = 
+  let prop = findElementInMap key keyMap
+      list = map toProperty (filter (sameProperty prop souTyp tarTyp) (element metamodel))
   in 
    case list of
-     [] -> err ("Property not found: " ++ name)
+     [] -> err ("Property not found: " ++ prop ++ " - " ++ key ++ " - " ++ 
+             (namedElementName (typeSuper souTyp)) ++ " - " ++ (namedElementName (typeSuper tarTyp)))
      h : _ -> h
 
 
@@ -272,6 +279,30 @@ toType ne =
     _ -> err ("Wrong cast: " ++ (namedElementName ne))
 
 
+sameProperty :: String -> Type -> Type -> NamedElement -> Bool
+sameProperty name souTyp2 tarTyp2 ne =
+  case ne of
+    (NamedElement _ _ (TTypedElement (TypedElement _ tarCl prop))) -> 
+      let tarTyp = namedElementName (typeSuper tarCl)
+          souTyp = namedElementName (typeSuper (classSuperType (propertyClass prop)))
+          lisSouTyp2 = getSuperTypesNames souTyp2
+          lisTarTyp2 = getSuperTypesNames tarTyp2
+      in ((namedElementName ne) == name) && 
+         (elem souTyp lisSouTyp2) &&
+         ((tarTyp == []) || (elem tarTyp lisTarTyp2))
+    _ -> False
+
+
+getSuperTypesNames :: Type -> [String]
+getSuperTypesNames typ = 
+  case typ of
+    (Type _ (DClass (Class _ _ superClasses _ ))) -> 
+      let super = foldr ((++) . getSuperTypesNames) [] (map classSuperType superClasses)
+      in
+        (namedElementName (typeSuper typ)) : super
+    (Type _ (DDataType (DataType dt))) -> [namedElementName (typeSuper dt)]
+
+
 equalPropertyName :: String -> NamedElement -> Bool
 equalPropertyName name ne =
   case ne of
@@ -291,7 +322,9 @@ rightModel :: Map.Map String String -> Metamodel -> String -> Model
 rightModel keyMap metamodel key = head (filter (isModel keyMap key) (model metamodel))
 
 isModel :: Map.Map String String -> String -> Model -> Bool
-isModel keyMap key mode = (modelName mode) == (findElementInMap (getModelKey key) keyMap)
+isModel keyMap key mode = 
+  let elem = findElementInMap (getModelKey key) keyMap
+  in (modelName mode) == elem
 
 getModelKey :: String -> String
 getModelKey key = Text.unpack (Text.dropWhileEnd (/='/') (Text.pack key))
@@ -304,7 +337,7 @@ findElementInMap key keyMap =
   in 
    case elNam of
      Nothing -> err ("Key not found: " ++ key)
-     Just name -> name
+     Just n -> n
 
 
 

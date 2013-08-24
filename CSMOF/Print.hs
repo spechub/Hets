@@ -71,10 +71,10 @@ instance Pretty Class where
         True -> text "abstract class"
         False -> text "class")
     <+> text (namedElementName (typeSuper sup))
-    <> (case supC of
+    <+> (case supC of
            [] -> lbrace
            _ : _ -> text "extends"
-                    <> foldr ( (<+>) . text . namedElementName . typeSuper . classSuperType) empty supC
+                    <+> foldr ( (<+>) . text . namedElementName . typeSuper . classSuperType) empty supC
                     <+> lbrace)
     $+$ foldr (($+$). pretty) empty own
     $+$ rbrace
@@ -141,7 +141,7 @@ instance Show Object where
     
 instance Pretty Link where
   pretty (Link lt sou tar _) =
-    text "link" <+> text (namedElementName (typedElementSuper (propertySuper lt))) 
+    text "link" <+> text (namedElementName (typedElementSuper (propertySuper lt)))
     <> lparen <> text (objectName sou) <> comma <> text (objectName tar) <> rparen $+$ empty
 
 instance Show Link where

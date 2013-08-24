@@ -99,7 +99,7 @@ instance GetRange TypedElement where
              
         
 data Property = Property 
-                { propertySuper ::TypedElement
+                { propertySuper :: TypedElement
                 , multiplicityElement :: MultiplicityElement
                 , opposite :: Maybe Property
                 , propertyClass :: Class

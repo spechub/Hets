@@ -24,12 +24,12 @@ import Common.DocUtils
 
 main :: IO ()
 main = do  
-    handle <- openFile "MetamodelWMult.xmi" ReadMode  
+    handle <- openFile "RDBMSWMult_TechRep.xmi" ReadMode  
     contents <- hGetContents handle 
     case parseXMLDoc contents of
 	Nothing -> putStr "VACIO"
 	Just el -> do
-		    	--handle2 <- openFile "./tests/classExampleCSMOF_EXIT.xmi" WriteMode  
+		    	--handle2 <- openFile "./tests/RDBMSWMult_TechRep_EXIT.xmi" WriteMode  
 			--hPutStr handle2 (show el)
 			--hClose handle2
 			putStrLn $ show $ pretty $ parseCSMOF el
