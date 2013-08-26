@@ -13,7 +13,7 @@ data Prop = Prop Id
  deriving ( Show, Typeable, Eq)
 data Decl = Dot_decl Dot | Prop_decl Prop
  deriving ( Show, Typeable, Eq)
-data Symb = Symb{sname :: Id} deriving ( Show, Typeable)
+data Symb = Symb{sname :: Id} deriving ( Show, Typeable, Eq, Ord)
 
 
 newtype Basic_spec = Basic_spec [String] deriving (Show, Typeable)

@@ -48,7 +48,7 @@ decl_from_pt d = case d of
     then if (length(args) == 0)
       then (Just((Prop_decl (Prop iname ) )))
       else Nothing
-    else if (pname == ".")
+    else if (pname == "dot")
       then if (length(args) == 1)
         then (Just((Dot_decl (Dot iname (fromJust (bool_from_pt (args !! 0) ) ) ) )))
         else Nothing

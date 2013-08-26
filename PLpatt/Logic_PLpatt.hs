@@ -41,18 +41,12 @@ instance (Ord Morphism.Morphism) where
 instance (Eq Morphism.Morphism) where
   _ == _ = True
 
-instance (Ord AS.Symb) where
-  _ <= _ = True
-
-instance (Eq AS.Symb) where
-  _ == _ = True
-
 instance (Common.Id.GetRange AS.Bool') where
 
 instance (Common.Id.GetRange AS.Symb) where
 
 instance (DU.Pretty Sign.Sigs) where
-    pretty a = DU.text $ show a--DU.empty--DU.pretty
+    pretty a = DU.text $ show a
 
 instance (AT.ShATermConvertible Sign.Sigs) where
     toShATermAux = AT.toShATermAux
@@ -73,7 +67,7 @@ instance (AT.ShATermConvertible Morphism.Morphism) where
     fromShATermAux = AT.fromShATermAux
 
 instance (DU.Pretty Morphism.Morphism) where
-    pretty a = DU.text $ show a --DU.empty--DU.pretty
+    pretty a = DU.text $ show a
 
 instance (AT.ShATermConvertible AS.Bool') where
     toShATermAux = AT.toShATermAux
@@ -87,7 +81,7 @@ instance (AT.ShATermConvertible AS.Symb) where
     fromShATermAux = AT.fromShATermAux
 
 instance (DU.Pretty AS.Symb) where
-    pretty a = DU.text $ show a--DU.empty--DU.pretty
+    pretty a = DU.text $ show $ AS.sname a
 
 instance (Show Morphism.Morphism) where
 
@@ -95,7 +89,7 @@ instance (Tp.Typeable Morphism.Morphism) where
     typeOf = Tp.typeOf
 
 instance (DU.Pretty AS.Basic_spec) where
-    pretty a = DU.text $ show a --DU.empty--DU.pretty
+    pretty a = DU.text $ case a of (AS.Basic_spec ls) -> unlines ls
 
 instance (GetRange AS.Basic_spec) where
 
