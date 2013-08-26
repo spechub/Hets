@@ -78,7 +78,7 @@ import System.FilePath
 import LF.Twelf2DG
 import Framework.Analysis
 
-import MMT.Hets2mmt
+import MMT.Hets2mmt (mmtRes)
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -154,7 +154,10 @@ anaSource mln lg opts topLns libenv initDG fname =
                 Just $ emptyLibName libStr
               _ -> mln
         putIfVerbose opts 2 $ "Reading file " ++ file
-        if takeExtension file /= ('.' : show TwelfIn)
+        if runMMT opts
+            then
+            mmtRes fname
+        else if takeExtension file /= ('.' : show TwelfIn)
                  then runResultT $
                       anaString nLn lgraph opts topLns libenv initDG input file
                   else do
@@ -224,10 +227,7 @@ anaLibFile lgraph opts topLns libenv initDG ln =
     Just _ -> do
         analyzing opts $ "from " ++ lnstr
         return (ln, libenv)
-    Nothing -> if runMMT opts
-          then
-            ResultT $ mmtRes lnstr
-          else
+    Nothing ->
             do
             putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
             res <- anaLibFileOrGetEnv lgraph
