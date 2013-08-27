@@ -69,6 +69,7 @@ import Common.ExtSign
 import Common.AS_Annotation (SenAttr (..), makeNamed, mapNamed)
 import qualified Common.Doc as Pretty
 
+
 #ifdef UNI_PACKAGE
 import GUI.Utils
 #endif
@@ -131,18 +132,22 @@ proofTreeToProve :: FilePath
      -> String
      -> (Bool, Int)
      -> [IC.Command]
-proofTreeToProve fn st pcm pt nodeName (useTm, tm)=
+proofTreeToProve fn st pcm pt nodeName (useTm, tm)= 
     [ IC.SelectCmd IC.Node nodeName', IC.GlobCmd IC.DropTranslation ]
-    ++ maybe [] (\ (Comorphism cid) -> map (IC.SelectCmd
-                IC.ComorphismTranslation) $
-                drop 1 $ splitOn ';' $ language_name cid) trans
+    ++ maybe [] (\(Comorphism cid) -> map (IC.SelectCmd IC.ComorphismTranslation) $ 
+            (drop 1 $ splitOn ';' $ language_name cid) ) commorf 
     ++ maybe [] ((: []) . IC.SelectCmd IC.Prover) prvr
     ++ concatMap goalToCommands goals
     where
       -- selected prover
       prvr = maybe (selectedProver st) (Just . getProverName . fst) pcm
       -- selected translation
-      trans = fmap snd pcm
+      commorf = (case selectedProver st of
+          Nothing -> Nothing
+          Just theProver -> 
+            case Map.lookup theProver $ proversMap st of
+              Nothing -> Nothing
+              Just com -> Just $ head com)
       {- 1. filter out the not proven goals
       2. reverse the list, because the last proven goals are on top
       3. convert all proof-trees to goals
