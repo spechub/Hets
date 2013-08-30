@@ -42,8 +42,6 @@ Relations Textual Syntax Grammar
 <assignmentExp> ::= <identifier> '=' <OclExpressionCS> ';'
 <when> ::= 'when' '{' (<OclExpressionCS> ';')* '}'
 <where> ::= 'where' '{' (<OclExpressionCS> ';')* '}'
-<paramDeclaration> ::= <identifier> ':' <TypeCS>
-
 -}
 
 module QVTR.Parser where
