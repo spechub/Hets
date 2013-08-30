@@ -332,6 +332,7 @@ showCmd c = let cn = cmdNameStr c in case c of
   GroupCmd l -> intercalate "\n" $ map showCmd l
   InspectCmd _ t -> cn ++ " " ++ fromMaybe "" t
   ChangeCmd _ t -> cmdNameStr c ++ " " ++ t
+  ShowOutput b -> cn ++ (show b)
   _ -> cn
 
 describeCmd :: Command -> String

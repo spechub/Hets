@@ -63,8 +63,7 @@ data CmdHistory = CmdHistory
    the other are for PGIP but in order to integrate both they should use
    same structure -}
 data UndoRedoElem =
-   ShowOutputChange Bool
-  | UseThmChange Bool
+   UseThmChange Bool
   | Save2FileChange Bool
   | ProverChange (Maybe G_prover)
   | ConsCheckerChange (Maybe G_cons_checker)
@@ -74,6 +73,7 @@ data UndoRedoElem =
   | ListChange [ListChange]
   | IStateChange (Maybe IntIState)
   | DgCommandChange LibName
+  | ChShowOutput Bool
   deriving (Show)
 
 data ListChange =

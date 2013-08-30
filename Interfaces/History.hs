@@ -149,6 +149,10 @@ processUndoRedoElems actype ls state acc update
     Just ist ->
      case ls of
       [] -> return (state,acc)
+      (ChShowOutput s):l -> do
+         let nwst =  state {i_state = Just $ ist { showOutput = s}}
+             ch = ChShowOutput $ showOutput ist
+         processUndoRedoElems actype l nwst (ch:acc) update 
       (UseThmChange sw):l -> do
          let nwst = state { i_state = Just $ ist { useTheorems = sw } }
              ch   = UseThmChange $ useTheorems ist

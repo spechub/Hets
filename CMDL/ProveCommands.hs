@@ -257,7 +257,7 @@ cShowOutput b state = do
   case i_state $ intState state of
     Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS -> do
-      return $ add2hist [] $ 
+      return $ add2hist [ChShowOutput $ showOutput pS] $ 
        state { 
                 intState = (intState state) {
                   i_state = Just pS {
