@@ -19,7 +19,8 @@ Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
 'QVTR.As.RelVar'
 'QVTR.As.PrimitiveDomain'
 'QVTR.As.Domain'
-'QVTR.As.Pattern'
+'QVTR.As.ObjectTemplate'
+'QVTR.As.PropertyTemplate'
 'QVTR.As.WhenWhere'
 'QVTR.As.RelInvok'
 'QVTR.Sign.RuleDef'
@@ -57,7 +58,8 @@ import qualified Data.Map as Map
 {-! for QVTR.As.RelVar derive : Typeable !-}
 {-! for QVTR.As.PrimitiveDomain derive : Typeable !-}
 {-! for QVTR.As.Domain derive : Typeable !-}
-{-! for QVTR.As.Pattern derive : Typeable !-}
+{-! for QVTR.As.ObjectTemplate derive : Typeable !-}
+{-! for QVTR.As.PropertyTemplate derive : Typeable !-}
 {-! for QVTR.As.WhenWhere derive : Typeable !-}
 {-! for QVTR.As.RelInvok derive : Typeable !-}
 {-! for QVTR.Sign.RuleDef derive : Typeable !-}
@@ -71,7 +73,8 @@ import qualified Data.Map as Map
 {-! for QVTR.As.RelVar derive : ShATermConvertible !-}
 {-! for QVTR.As.PrimitiveDomain derive : ShATermConvertible !-}
 {-! for QVTR.As.Domain derive : ShATermConvertible !-}
-{-! for QVTR.As.Pattern derive : ShATermConvertible !-}
+{-! for QVTR.As.ObjectTemplate derive : ShATermConvertible !-}
+{-! for QVTR.As.PropertyTemplate derive : ShATermConvertible !-}
 {-! for QVTR.As.WhenWhere derive : ShATermConvertible !-}
 {-! for QVTR.As.RelInvok derive : ShATermConvertible !-}
 {-! for QVTR.Sign.RuleDef derive : ShATermConvertible !-}

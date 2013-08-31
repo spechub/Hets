@@ -33,7 +33,7 @@ pTransformation = do
   skip
   keys <- many (try pKeyDecl)
   skip
-  relations <- many pRelation
+  relations <- many (try pRelation)
   skip
   char '}'
   skip
@@ -43,7 +43,7 @@ pTransformation = do
             souMeta
             tarMeta
             keys
-            [] -- relations
+            relations
          )
 
 
@@ -138,9 +138,9 @@ pRelation = do
   skip
   char '{'
   skip
-  varSet <- many pVarDeclaration
+  varSet <- many (try pVarDeclaration)
   skip
-  primDom <- many pPrimitiveTypeDomain
+  primDom <- many (try pPrimitiveTypeDomain)
   skip
   sourceDom <- pDomain
   skip
@@ -151,8 +151,8 @@ pRelation = do
   whereCon <- option Nothing pWhere
   skip
   char '}'
-  return ( QVTR.Relation top iden (concat varSet) primDom 
-                     sourceDom targetDom whenCon whereCon )
+  return ( QVTR.Relation top iden (concat varSet) 
+                     primDom sourceDom targetDom whenCon whereCon )
 
 -- Parse if a relation is top or not
 pIsTop :: CharParser st Bool
@@ -188,15 +188,19 @@ pVarDeclaration = do
 --            | <identifier>
 
 pTypeCS :: CharParser st String
-pTypeCS = do
-  met <- pIdentifier
-  try (do char ':'
-          char ':'
-          typ <- pIdentifier
+pTypeCS =
+  try (do typ <- pIdentifier
+          skip
+          notFollowedBy (char ':')
           return (typ)
-      )
-  return (met)
-
+         )
+  <|>
+  do
+    met <- pIdentifier
+    char ':'
+    char ':'
+    typ <- pIdentifier
+    return (typ)
 
 
 -- Parse primitive domain
@@ -230,17 +234,17 @@ pDomain = do
   skip
   modelId <- pIdentifier
   skip
-  (var,typ,pat) <- pTemplate
+  tem <- pTemplate
   skip
   char ';'
-  return ( QVTR.Domain modelId var typ pat )
+  return ( QVTR.Domain modelId tem )
 
 
 -- <template> ::= <objectTemplate>
 -- <objectTemplate> ::= <identifier> ':' <pathNameCS>
 --                     '{' [<propertyTemplateList>] '}'
 
-pTemplate :: CharParser st (String,String,QVTR.Pattern)
+pTemplate :: CharParser st QVTR.ObjectTemplate
 pTemplate = do
   skip
   id <- pIdentifier
@@ -251,46 +255,49 @@ pTemplate = do
   skip
   char '{'
   skip
-  tempList <- option (QVTR.Pattern [] [] "") pPropertyTemplateList
+  tempList <- option [] pPropertyTemplateList
   skip
   char '}'
-  return ( (id,(snd typ),tempList) )
+  return ( QVTR.ObjectTemplate id (fst typ) (snd typ) tempList )
 
 
 -- <propertyTemplateList> ::= <propertyTemplate> (',' <propertyTemplate>)*
 
-pPropertyTemplateList :: CharParser st QVTR.Pattern
+pPropertyTemplateList :: CharParser st [QVTR.PropertyTemplate]
 pPropertyTemplateList = do
-  tempList <- pCommaSep pPropertyTemplate
-  return (QVTR.Pattern [] [] "") --ToDo: procesar la salida para armar el Pattern
+  tempList <- many (try pPropertyTemplate)
+  return ( tempList )
 
--- <propertyTemplate> ::= <identifier> '=' <OclExpressionCS>
+
+-- <propertyTemplate> ::= <identifier> '=' <OclExpressionCS> ';'
 --                     | <identifier> '=' <objectTemplate>
 
-pPropertyTemplate :: CharParser st String
+pPropertyTemplate :: CharParser st QVTR.PropertyTemplate
 pPropertyTemplate = do
   skip
   ident <- pIdentifier
   skip
-  char '='  
+  pEqual
   skip
-  (do try pTemplate 
-      return ("") --ToDo
+  (do t <- try pTemplate 
+      oneOf ",;"
+      return ( QVTR.PropertyTemplate ident Nothing (Just t) ) 
    <|> 
-   do pOCLExpressionNoEnd
-      return ("")) --ToDo
-  
+   do e <- pOCLExpression
+      return ( QVTR.PropertyTemplate ident (Just e) Nothing ))
 
--- <when> ::= 'when' '{' (<OclExpressionCS> ';')* '}'
+
+-- <when> ::= 'when' '{' (<RelInvocation> ';')* (<OclExpressionCS> ';')* '}'
 pWhen :: CharParser st (Maybe QVTR.WhenWhere)
 pWhen = do
   skip
-  pKey "where" 
+  pKey "when" 
   skip
   char '{'
   skip
   relInvok <- many (try pRelInvocation)
-  oclExpre <- many pOCLExpression
+  skip
+  oclExpre <- many (try pOCLExpression)
   skip
   char '}'
   return ( Just (QVTR.When relInvok oclExpre) )
@@ -305,7 +312,8 @@ pWhere = do
   char '{'
   skip
   relInvok <- many (try pRelInvocation)
-  oclExpre <- many pOCLExpression
+  skip
+  oclExpre <- many (try pOCLExpression)
   skip
   char '}'
   return ( Just (QVTR.Where relInvok oclExpre) )
@@ -329,13 +337,8 @@ pRelInvocation = do
 
 pOCLExpression :: CharParser st String
 pOCLExpression = do
-  res <- many (noneOf ",;")
-  return (res)
-
-
-pOCLExpressionNoEnd :: CharParser st String
-pOCLExpressionNoEnd = do
-  res <- many anyChar
+  skip
+  res <- (many (noneOf ",;{}")) << (oneOf ",;")
   return (res)
 
 
@@ -386,6 +389,7 @@ pColonSep p  = p `sepBy` (char ':')
 
 pIdentifier :: CharParser st String
 pIdentifier = do
+  skip
   c <- letter
   rest <- many (alphaNum <|> oneOf "_")
   return (c : rest)

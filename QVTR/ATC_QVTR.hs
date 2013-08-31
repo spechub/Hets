@@ -19,7 +19,8 @@ Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
 'QVTR.As.RelVar'
 'QVTR.As.PrimitiveDomain'
 'QVTR.As.Domain'
-'QVTR.As.Pattern'
+'QVTR.As.ObjectTemplate'
+'QVTR.As.PropertyTemplate'
 'QVTR.As.WhenWhere'
 'QVTR.As.RelInvok'
 'QVTR.Sign.RuleDef'
@@ -59,7 +60,8 @@ import qualified Data.Map as Map
 {-! for QVTR.As.RelVar derive : Typeable !-}
 {-! for QVTR.As.PrimitiveDomain derive : Typeable !-}
 {-! for QVTR.As.Domain derive : Typeable !-}
-{-! for QVTR.As.Pattern derive : Typeable !-}
+{-! for QVTR.As.ObjectTemplate derive : Typeable !-}
+{-! for QVTR.As.PropertyTemplate derive : Typeable !-}
 {-! for QVTR.As.WhenWhere derive : Typeable !-}
 {-! for QVTR.As.RelInvok derive : Typeable !-}
 {-! for QVTR.Sign.RuleDef derive : Typeable !-}
@@ -73,7 +75,8 @@ import qualified Data.Map as Map
 {-! for QVTR.As.RelVar derive : ShATermConvertible !-}
 {-! for QVTR.As.PrimitiveDomain derive : ShATermConvertible !-}
 {-! for QVTR.As.Domain derive : ShATermConvertible !-}
-{-! for QVTR.As.Pattern derive : ShATermConvertible !-}
+{-! for QVTR.As.ObjectTemplate derive : ShATermConvertible !-}
+{-! for QVTR.As.PropertyTemplate derive : ShATermConvertible !-}
 {-! for QVTR.As.WhenWhere derive : ShATermConvertible !-}
 {-! for QVTR.As.RelInvok derive : ShATermConvertible !-}
 {-! for QVTR.Sign.RuleDef derive : ShATermConvertible !-}
@@ -122,34 +125,35 @@ instance ShATermConvertible WhenWhere where
       (att2, Where a' b') }}
     u -> fromShATermError "WhenWhere" u
 
-instance ShATermConvertible Pattern where
+instance ShATermConvertible PropertyTemplate where
   toShATermAux att0 xv = case xv of
-    Pattern a b c -> do
+    PropertyTemplate a b c -> do
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
       (att3, c') <- toShATerm' att2 c
-      return $ addATerm (ShAAppl "Pattern" [a', b', c'] []) att3
+      return $ addATerm (ShAAppl "PropertyTemplate" [a', b', c'] []) att3
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "Pattern" [a, b, c] _ ->
+    ShAAppl "PropertyTemplate" [a, b, c] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->
       case fromShATerm' b att1 of
       { (att2, b') ->
       case fromShATerm' c att2 of
       { (att3, c') ->
-      (att3, Pattern a' b' c') }}}
-    u -> fromShATermError "Pattern" u
+      (att3, PropertyTemplate a' b' c') }}}
+    u -> fromShATermError "PropertyTemplate" u
 
-instance ShATermConvertible Domain where
+instance ShATermConvertible ObjectTemplate where
   toShATermAux att0 xv = case xv of
-    Domain a b c d -> do
+    ObjectTemplate a b c d -> do
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
       (att3, c') <- toShATerm' att2 c
       (att4, d') <- toShATerm' att3 d
-      return $ addATerm (ShAAppl "Domain" [a', b', c', d'] []) att4
+      return $ addATerm (ShAAppl "ObjectTemplate" [a', b', c',
+                                                   d'] []) att4
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "Domain" [a, b, c, d] _ ->
+    ShAAppl "ObjectTemplate" [a, b, c, d] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->
       case fromShATerm' b att1 of
@@ -158,7 +162,22 @@ instance ShATermConvertible Domain where
       { (att3, c') ->
       case fromShATerm' d att3 of
       { (att4, d') ->
-      (att4, Domain a' b' c' d') }}}}
+      (att4, ObjectTemplate a' b' c' d') }}}}
+    u -> fromShATermError "ObjectTemplate" u
+
+instance ShATermConvertible Domain where
+  toShATermAux att0 xv = case xv of
+    Domain a b -> do
+      (att1, a') <- toShATerm' att0 a
+      (att2, b') <- toShATerm' att1 b
+      return $ addATerm (ShAAppl "Domain" [a', b'] []) att2
+  fromShATermAux ix att0 = case getShATerm ix att0 of
+    ShAAppl "Domain" [a, b] _ ->
+      case fromShATerm' a att0 of
+      { (att1, a') ->
+      case fromShATerm' b att1 of
+      { (att2, b') ->
+      (att2, Domain a' b') }}
     u -> fromShATermError "Domain" u
 
 instance ShATermConvertible PrimitiveDomain where
@@ -294,7 +313,9 @@ deriving instance Typeable RelInvok
 
 deriving instance Typeable WhenWhere
 
-deriving instance Typeable Pattern
+deriving instance Typeable PropertyTemplate
+
+deriving instance Typeable ObjectTemplate
 
 deriving instance Typeable Domain
 

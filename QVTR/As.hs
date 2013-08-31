@@ -87,10 +87,8 @@ instance GetRange PrimitiveDomain where
 
 
 data Domain = Domain
-            { domMeta :: String
-            , domVar :: String
-            , domType :: String
-            , pattern :: Pattern
+            { domModelId :: String
+            , template :: ObjectTemplate
             } deriving (Eq, Ord)
 
 instance GetRange Domain where
@@ -98,13 +96,25 @@ instance GetRange Domain where
   rangeSpan _ = []
 
 
-data Pattern = Pattern 
-             { patElems :: [RelVar]
-             , patRels :: [(String,RelInvok)]
-             , patPredicate :: String
-             } deriving (Eq, Ord)
+data ObjectTemplate = ObjectTemplate
+                    { domVar :: String
+                    , domMeta :: String
+                    , domType :: String
+                    , templateList :: [PropertyTemplate]
+                    } deriving (Eq, Ord)
 
-instance GetRange Pattern where
+instance GetRange ObjectTemplate where
+  getRange _ = nullRange
+  rangeSpan _ = []
+
+
+data PropertyTemplate = PropertyTemplate
+                      { pName :: String
+                      , oclExpre :: Maybe String
+                      , objTemp :: Maybe ObjectTemplate
+                      } deriving (Eq, Ord)
+
+instance GetRange PropertyTemplate where
   getRange _ = nullRange
   rangeSpan _ = []
 

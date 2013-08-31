@@ -28,20 +28,18 @@ Relations Textual Syntax Grammar
                [<when>] [<where>]
                '}'
 <varDeclaration> ::= <identifier> (, <identifier>)* ':' <TypeCS> ';'
+
+
 <domain> ::= 'domain' <modelId> <template> ';'
-
-<primitiveTypeDomain> ::= 'primitive' 'domain' <identifier> ':' <TypeCS> ';'
-<template> ::= <objectTemplate> ['{' <OclExpressionCS> '}']
-
-<objectTemplate> ::= [<identifier>] ':' <pathNameCS>
+<template> ::= <objectTemplate>
+<objectTemplate> ::= <identifier> ':' <pathNameCS>
                      '{' [<propertyTemplateList>] '}'
 <propertyTemplateList> ::= <propertyTemplate> (',' <propertyTemplate>)*
 <propertyTemplate> ::= <identifier> '=' <OclExpressionCS>
-                     | 'opposite' '(' <classId> '.' <identifier> ')' '='
-                       <OclExpressionCS>
-<assignmentExp> ::= <identifier> '=' <OclExpressionCS> ';'
-<when> ::= 'when' '{' (<OclExpressionCS> ';')* '}'
-<where> ::= 'where' '{' (<OclExpressionCS> ';')* '}'
+                     | <identifier> '=' <objectTemplate>
+<when> ::= 'when' '{' (<RelInvocation> ';')* (<OclExpressionCS> ';')* '}'
+<where> ::= 'where' '{' (<RelInvocation> ';')* (<OclExpressionCS> ';')* '}'
+<RelInvocation> ::= <identifier> '(' (<identifier> ',')* ')' ';'
 -}
 
 module QVTR.Parser where
