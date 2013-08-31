@@ -9,6 +9,11 @@ import Text.ParserCombinators.Parsec
 
 import Common.Parsec
 
+import CSMOF.Parser
+
+import Text.XML.Light
+
+
 -- From the QVTR folder run: ghc -i.. -o main pruParser.hs
 
 main :: IO ()
@@ -17,7 +22,14 @@ main = do
     input <- hGetContents handle 
     case runParser pTransformation () "uml2rdbms.qvt" input of  -- Either ParseError String
       Left err -> print err
-      Right result -> print result
+      Right trans -> let (_,sMet,_) = QVTR.sourceMetamodel trans
+                         (_,tMet,_) = QVTR.targetMetamodel trans
+                     in
+                       do
+                         sourceMetam <- parseXmiMetamodel (replaceName "uml2rdbms.qvt" sMet)
+                         targetMetam <- parseXmiMetamodel (replaceName "uml2rdbms.qvt" tMet)
+                         print (createTransfWithMeta trans sourceMetam targetMetam)
+
 
 
 -- Parse a QVTR model transformation
@@ -393,3 +405,32 @@ pIdentifier = do
   c <- letter
   rest <- many (alphaNum <|> oneOf "_")
   return (c : rest)
+
+
+
+---------------------------------------------------
+
+replaceName :: FilePath -> String -> String
+replaceName fp na = replaceBaseName (replaceExtension fp "xmi") na
+
+
+parseXmiMetamodel :: FilePath -> IO CSMOF.Metamodel
+parseXmiMetamodel fp = 
+  do
+    handle <- openFile fp ReadMode  
+    contents <- hGetContents handle 
+    case parseXMLDoc contents of
+      Nothing -> return (CSMOF.Metamodel { CSMOF.metamodelName = takeBaseName fp
+                           , CSMOF.element = []
+                           , CSMOF.model = []
+                           })
+      Just el -> return (parseCSMOF el)
+
+
+createTransfWithMeta :: QVTR.Transformation -> CSMOF.Metamodel -> CSMOF.Metamodel -> QVTR.Transformation
+createTransfWithMeta trans souMeta tarMeta =
+  let (sVar,sMet,_) = QVTR.sourceMetamodel trans
+      (tVar,tMet,_) = QVTR.targetMetamodel trans
+  in
+    QVTR.Transformation (QVTR.transfName trans) (sVar,sMet,souMeta) (tVar,tMet,tarMeta) (QVTR.keys trans) (QVTR.relations trans)
+

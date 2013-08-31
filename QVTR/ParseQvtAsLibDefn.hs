@@ -31,19 +31,28 @@ import Text.XML.Light
 import System.IO
 import System.FilePath (replaceBaseName, replaceExtension, takeBaseName)
 
+import Text.ParserCombinators.Parsec
 
 parseQvt :: FilePath -> IO LIB_DEFN
 parseQvt fp = 
   do
     handle <- openFile fp ReadMode  
     input <- hGetContents handle 
-    sourceMetam <- parseXmiMetamodel (replaceName fp input Source)
-    targetMetam <- parseXmiMetamodel (replaceName fp input Target)
-    return (convertToLibDefN fp (parseQVTR input sourceMetam targetMetam))
+    case runParser pTransformation () fp input of  -- Either ParseError String
+      Left erro -> do
+                  print erro
+                  return (Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange [])
+      Right trans -> let (_,sMet,_) = sourceMetamodel trans
+                         (_,tMet,_) = targetMetamodel trans
+                     in
+                       do
+                         sourceMetam <- parseXmiMetamodel (replaceName fp sMet)
+                         targetMetam <- parseXmiMetamodel (replaceName fp tMet)
+                         return (convertToLibDefN fp (createTransfWithMeta trans sourceMetam targetMetam))
 
 
-replaceName :: FilePath -> String -> Side -> String
-replaceName fp input side = replaceBaseName (replaceExtension fp "xmi") (getMetamodelName input fp side) 
+replaceName :: FilePath -> String -> String
+replaceName fp na = replaceBaseName (replaceExtension fp "xmi") na
 
 
 parseXmiMetamodel :: FilePath -> IO Metamodel
@@ -71,4 +80,11 @@ convertoItem el = makeSpecItem (simpleIdToIRI $ mkSimpleId $ transfName el) $ cr
 createSpec :: Transformation -> Annoted SPEC
 createSpec el = makeSpec $ G_basic_spec QVTR el
 
+
+createTransfWithMeta :: Transformation -> Metamodel -> Metamodel -> Transformation
+createTransfWithMeta trans souMeta tarMeta =
+  let (sVar,sMet,_) = sourceMetamodel trans
+      (tVar,tMet,_) = targetMetamodel trans
+  in
+    Transformation (transfName trans) (sVar,sMet,souMeta) (tVar,tMet,tarMeta) (keys trans) (relations trans)
 
