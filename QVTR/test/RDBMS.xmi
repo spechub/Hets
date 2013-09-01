@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="ASCII"?>
+<CSMOF:Metamodel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:CSMOF="urn:CSMOF.ecore" xsi:schemaLocation="urn:CSMOF.ecore ../metamodel/CSMOF.ecore" name="RDBMS">
+  <element xsi:type="CSMOF:Class" name="RDBMSModelElement" isAbstract="true" subClass="//@element.1 //@element.2 //@element.3 //@element.4">
+    <ownedAttribute lower="0" upper="-1" name="name" type="//@element.5"/>
+  </element>
+  <element xsi:type="CSMOF:Class" name="Schema" superClass="//@element.0">
+    <ownedAttribute lower="0" upper="-1" name="tables" type="//@element.2" opposite="//@element.2/@ownedAttribute.0"/>
+  </element>
+  <element xsi:type="CSMOF:Class" name="Table" superClass="//@element.0">
+    <ownedAttribute lower="0" upper="-1" name="schema" type="//@element.1" opposite="//@element.1/@ownedAttribute.0"/>
+    <ownedAttribute lower="0" upper="-1" name="column" type="//@element.3"/>
+    <ownedAttribute lower="0" upper="-1" name="keyK" type="//@element.4" opposite="//@element.4/@ownedAttribute.1"/>
+  </element>
+  <element xsi:type="CSMOF:Class" name="Column" superClass="//@element.0">
+    <ownedAttribute lower="0" upper="-1" name="typeT" type="//@element.5"/>
+    <ownedAttribute lower="0" upper="-1" name="owner" type="//@element.2" opposite="//@element.2/@ownedAttribute.1"/>
+    <ownedAttribute lower="0" upper="-1" name="keyK" type="//@element.4" opposite="//@element.4/@ownedAttribute.0"/>
+  </element>
+  <element xsi:type="CSMOF:Class" name="Key" superClass="//@element.0">
+    <ownedAttribute lower="0" upper="-1" name="column" type="//@element.3" opposite="//@element.3/@ownedAttribute.2"/>
+    <ownedAttribute lower="0" upper="-1" name="owner" type="//@element.2" opposite="//@element.2/@ownedAttribute.2"/>
+  </element>
+  <element xsi:type="CSMOF:DataType" name="String"/>
+  <model name="RDBMSModel">
+    <object type="//@element.1" name="s"/>
+    <object type="//@element.2" name="t"/>
+    <object type="//@element.4" name="k"/>
+    <object type="//@element.3" name="c1"/>
+    <object type="//@element.3" name="c2"/>
+    <object type="//@element.5" name="s_Package"/>
+    <object type="//@element.5" name="s_ID"/>
+    <object type="//@element.5" name="s_ID_pk"/>
+    <object type="//@element.5" name="s_ID_tid"/>
+    <object type="//@element.5" name="s_value"/>
+    <object type="//@element.5" name="s_VARCHAR"/>
+    <object type="//@element.5" name="s_NUMBER"/>
+    <link type="//@element.1/@ownedAttribute.0" source="//@model.0/@object.0" target="//@model.0/@object.1"/>
+    <link type="//@element.2/@ownedAttribute.2" source="//@model.0/@object.1" target="//@model.0/@object.2"/>
+    <link type="//@element.2/@ownedAttribute.1" source="//@model.0/@object.1" target="//@model.0/@object.3"/>
+    <link type="//@element.2/@ownedAttribute.1" source="//@model.0/@object.1" target="//@model.0/@object.4"/>
+    <link type="//@element.3/@ownedAttribute.2" source="//@model.0/@object.3" target="//@model.0/@object.2"/>
+    <link type="//@element.0/@ownedAttribute.0" source="//@model.0/@object.0" target="//@model.0/@object.5"/>
+    <link type="//@element.0/@ownedAttribute.0" source="//@model.0/@object.1" target="//@model.0/@object.6"/>
+    <link type="//@element.0/@ownedAttribute.0" source="//@model.0/@object.2" target="//@model.0/@object.7"/>
+    <link type="//@element.0/@ownedAttribute.0" source="//@model.0/@object.3" target="//@model.0/@object.8"/>
+    <link type="//@element.0/@ownedAttribute.0" source="//@model.0/@object.4" target="//@model.0/@object.9"/>
+    <link type="//@element.3/@ownedAttribute.0" source="//@model.0/@object.3" target="//@model.0/@object.11"/>
+    <link type="//@element.3/@ownedAttribute.0" source="//@model.0/@object.4" target="//@model.0/@object.10"/>
+  </model>
+</CSMOF:Metamodel>

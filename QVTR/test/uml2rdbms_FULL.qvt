@@ -1,0 +1,209 @@
+
+/*
+ * This transformation is uni-directional in direction "rdbms" and maps classes in packages to tables in schemas.
+ * It is based upon the example in the official QVT specification at http://www.omg.org/cgi-bin/apps/doc?ptc/05-11-01.pdf.
+ */
+
+transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
+
+	key RDBMS::Table {name, schema};
+	key RDBMS::Column {name, owner};
+	key RDBMS::Key {name, owner};
+
+	-- map each package to a schema
+        top relation PackageToSchema {
+	  
+	  pn : String;
+	  
+	  checkonly domain uml p : UML::Package {
+	    name = pn;
+	  };
+	  
+	  enforce domain rdbms s : RDBMS::Schema {
+	    name = pn;
+	  };
+	  
+	}
+	
+	
+	-- map each persistent class to a table
+	top relation ClassToTable {
+	  
+	  cn : String;
+	  prefix : String;
+	  
+	  checkonly domain uml c : UML::Class {
+	    namespace = p : UML::Package {
+	    },
+	    kind = 'Persistent',
+	    name = cn;
+	  };
+	  
+	  enforce domain rdbms t : RDBMS::Table {
+	    schema = s : RDBMS::Schema {
+	    },
+	    name = cn,
+	    column = cl : RDBMS::Column {
+	      name = cn + '_tid',
+	      typeT = 'NUMBER';
+	    },
+	    keyK = k : RDBMS::Key {
+	    	name = cn + '_pk',
+	      	column = cl;
+	    };
+	  };
+	  
+	  when {
+	    PackageToSchema(p, s);
+	  }
+	  
+	  where {
+	    AttributeToColumn(c, t, prefix);
+	    prefix = '';
+	  }
+	  
+	}
+	
+		
+	relation AttributeToColumn {
+
+	  primitive domain prefix : String;
+	  
+	  checkonly domain uml c : UML::Class {
+	  };
+	  
+	  enforce domain rdbms t : RDBMS::Table {
+	  };
+	  
+	  where {
+	  	PrimitiveAttributeToColumn(c, t, prefix);
+	    ComplexAttributeToColumn(c, t, prefix);
+	    SuperAttributeToColumn(c, t, prefix);
+	  }
+	  
+	}
+	
+	
+	relation PrimitiveAttributeToColumn {
+	  
+	  an : String;
+	  pn : String;
+	  cn : String;
+	  sqltype : String;
+
+	  primitive domain prefix : String;
+	  
+	  checkonly domain uml c : UML::Class {
+	    attribute = a : UML::Attribute {
+	      name = an,
+	      typeT = p : UML::PrimitiveDataType {
+	        name = pn;
+	      };
+	    };
+	  };
+	  
+	  enforce domain rdbms t : RDBMS::Table {
+	    column = cl : RDBMS::Column {
+	      name = cn,
+	      typeT = sqltype;
+	    };
+	  };
+	  
+	  where {
+	    cn = if prefix = '' then an else prefix + '_' + an endif;
+	    sqltype = if pn = 'INTEGER' then 'NUMBER' else if pn = 'BOOLEAN' then 'BOOLEAN' else 'VARCHAR' endif endif;
+	  }
+	  
+	}
+	
+	relation ComplexAttributeToColumn {
+	  
+	  an : String;
+	  newPrefix : String;
+
+	  primitive domain prefix : String;
+	  
+	  checkonly domain uml c : UML::Class {
+	    attribute = a : UML::Attribute {
+	      name = an,
+	      typeT = tc : UML::Class {
+	      };
+	    };
+	  };
+	  
+	  enforce domain rdbms t : RDBMS::Table {
+	  };
+	  
+	  where {
+	    newPrefix = prefix + '_' + an;
+	    AttributeToColumn(tc, t, newPrefix);
+	  }
+	  
+	}
+	
+	relation SuperAttributeToColumn {
+
+	  primitive domain prefix : String;
+
+	  checkonly domain uml c : UML::Class {
+	    general = sc : UML::Class {
+	    };
+	  };
+	  
+	  enforce domain rdbms t : RDBMS::Table {
+	  };
+	  
+	  where {
+	    AttributeToColumn(sc, t, prefix);
+	  }
+	  
+	}
+	
+	-- map each association between persistent classes to a foreign key
+	top relation AssocToFKey {
+	  
+	  srcTbl, destTbl: RDBMS::Table;
+	  pKey : RDBMS::Key;
+	  an : String;
+	  scn : String;
+	  dcn : String;
+	  fkn : String;
+	  fcn : String;
+	  
+	  checkonly domain uml a : UML::Association {
+	    name = an,
+	    source = sc : UML::Class {
+	      kind = 'Persistent',
+	      name = scn;
+	    },
+	    destination = dc : UML::Class {
+	      kind = 'Persistent',
+	      name = dcn;
+	    };
+	  };
+	  
+	  enforce domain rdbms fk : RDBMS::ForeignKey {
+	    name = fkn,
+	    owner = srcTbl,
+	    column = fc : RDBMS::Column {
+	      name = fcn,
+	      typeT = 'NUMBER',
+	      owner = srcTbl;
+	    },
+	    refersTo = pKey;
+	  };
+	  
+	  when {
+	    ClassToTable(sc, srcTbl);
+	    ClassToTable(dc, destTbl);
+	    pKey = destTbl.keyK;
+	  }
+	  
+	  where {
+	    fkn = scn + '_' + an + '_' + dcn;
+	    fcn = fkn + '_tid';
+	  }
+	  
+	}
+	
+}

@@ -17,6 +17,10 @@ import CSMOF.Print ()
 import Common.Doc
 import Common.DocUtils
 
+
+printCol :: Pretty a => [a] -> Doc
+printCol a = space <+> space <+> foldr (($+$) . pretty) empty a
+
                             
 instance Pretty Transformation where
   pretty (Transformation nam (souNam,souMet,souAS) (tarNam,tarMet,tarAS) keS rels) = 
@@ -25,11 +29,15 @@ instance Pretty Transformation where
     $++$ text "transformation" <+> text nam <> lparen 
       <> text souNam <> colon <> text souMet <> comma 
       <+> text tarNam <> colon <> text tarMet <> rparen
-    $+$ lbrace
-    $++$ foldr (($+$) . pretty) empty keS
-    $++$ foldr (($++$) . pretty) empty rels
-    $+$ rbrace
-
+    $+$ lbrace $++$
+    (if not (null keS) && not (null rels) then
+       printCol keS $++$ printCol rels $++$ rbrace
+     else if not (null keS) then
+            printCol keS $++$ rbrace
+          else if not (null rels) then 
+                 printCol rels $++$ rbrace
+               else rbrace)
+    
 instance Show Transformation where
   show m = show $ pretty m
 
@@ -53,14 +61,26 @@ instance Show PropKey where
 
 instance Pretty Relation where
   pretty (Relation to reln vars primD souD tarD whenC whereC) = 
-    space <+>
-    (if to then text "top relation" else text "relation") <+> text reln <+> lbrace
-    $++$ space <+> space <+> foldr (($+$) . pretty) empty vars
-    $++$ space <+> space <+> foldr (($+$) . pretty) empty primD
+    (if to then text "top relation" else text "relation") <+> text reln <+> lbrace $++$
+    (if not (null vars) && not (null primD) then
+       printCol vars $++$ printCol primD
+     else if not (null vars) then
+            printCol vars
+          else if not (null primD) then 
+                 printCol primD
+               else space)
     $++$ space <+> space <+> pretty souD
     $++$ space <+> space <+> pretty tarD
-    $++$ space <+> space <+> pretty whenC
-    $++$ space <+> space <+> pretty whereC
+    $++$
+    (case whenC of 
+       Nothing -> case whereC of
+                    Nothing -> rbrace
+                    Just whereCon -> space <+> space <+> pretty whereCon $++$ rbrace
+       Just whenCon -> case whereC of
+                         Nothing -> space <+> space <+> pretty whenCon $++$ rbrace
+                         Just whereCon -> space <+> space <+> pretty whenC
+                                          $++$ space <+> space <+> pretty whereC
+                                          $++$ rbrace)
     
 instance Show Relation where
   show m = show $ pretty m

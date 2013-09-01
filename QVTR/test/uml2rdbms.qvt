@@ -1,0 +1,99 @@
+
+/*
+ * This transformation is uni-directional in direction "rdbms" and maps classes in packages to tables in schemas.
+ * It is based upon the example in the official QVT specification at http://www.omg.org/cgi-bin/apps/doc?ptc/05-11-01.pdf.
+ */
+
+transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
+
+	key RDBMS::Table {name, schema};
+	key RDBMS::Column {name, owner};
+	key RDBMS::Key {name, owner};
+
+	-- map each package to a schema
+        top relation PackageToSchema {
+	  
+	  pn : String;
+	  
+	  checkonly domain uml p : UML::Package {
+	    name = pn;
+	  };
+	  
+	  enforce domain rdbms s : RDBMS::Schema {
+	    name = pn;
+	  };
+	  
+	}
+	
+	
+	-- map each persistent class to a table
+	top relation ClassToTable {
+	  
+	  cn, prefix : String;
+	  
+	  checkonly domain uml c : UML::Class {
+	    namespace = p : UML::Package {
+	    },
+	    kind = 'Persistent',
+	    name = cn;
+	  };
+	  
+	  enforce domain rdbms t : RDBMS::Table {
+	    schema = s : RDBMS::Schema {
+	    },
+	    name = cn,
+	    column = cl : RDBMS::Column {
+	      name = cn + '_tid',
+	      typeT = 'NUMBER';
+	    },
+	    keyK = k : RDBMS::Key {
+	    	name = cn + '_pk',
+	      	column = cl;
+	    };
+	  };
+	  
+	  when {
+	    PackageToSchema(p, s);
+	  }
+	  
+	  where {
+	    AttributeToColumn(c, t, prefix);
+	    prefix = '';
+	  }
+	  
+	}
+	
+		
+	relation AttributeToColumn {
+
+	  an, pn, cn, sqltype : String;
+
+	  primitive domain prefix : String;
+	  
+	  checkonly domain uml c : UML::Class {
+	    attribute = a : UML::Attribute {
+	      name = an,
+	      typeT = p : UML::PrimitiveDataType {
+	        name = pn;
+	      };
+	    };
+	  };
+	  
+	  enforce domain rdbms t : RDBMS::Table {
+	    column = cl : RDBMS::Column {
+	      name = cn,
+	      typeT = sqltype;
+	    };
+	  };
+	  
+	  where {
+	    cn = if prefix = '' then an else prefix + '_' + an endif;
+	    sqltype = if pn = 'INTEGER' then 'NUMBER' else if pn = 'BOOLEAN' then 'BOOLEAN' else 'VARCHAR' endif endif;
+	  }
+	  
+	}
+		
+}
+
+
+
