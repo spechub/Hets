@@ -20,7 +20,7 @@ import Common.DocUtils
 instance Pretty Metamodel where
   pretty (Metamodel nam ele mode) = 
     text "metamodel" <+> text nam <+> lbrace  
-    $+$ foldr (($+$). pretty) empty ele
+    $++$ space <+> space <+> foldr (($++$). pretty) empty ele
     $+$ rbrace 
     $++$ foldr (($+$) . pretty) empty mode
 
@@ -76,7 +76,7 @@ instance Pretty Class where
            _ : _ -> text "extends"
                     <+> foldr ( (<+>) . text . namedElementName . typeSuper . classSuperType) empty supC
                     <+> lbrace)
-    $+$ foldr (($+$). pretty) empty own
+    $+$ space <+> space <+> foldr (($+$). pretty) empty own
     $+$ rbrace
 
 instance Show Class where
@@ -122,8 +122,8 @@ instance Pretty Model where
   pretty (Model mon obj lin mode) =
     text "model" <+> text mon 
     <+> text "conformsTo" <+> text (metamodelName mode) <+> lbrace
-    $+$ foldr (($+$) . pretty) empty obj
-    $+$ foldr (($+$) . pretty) empty lin
+    $++$ space <+> space <+> foldr (($+$) . pretty) empty obj
+    $++$ space <+> space <+> foldr (($+$) . pretty) empty lin
     $+$ rbrace
 
 instance Show Model where
