@@ -24,7 +24,11 @@ printCol a = space <+> space <+> foldr (($+$) . pretty) empty a
                             
 instance Pretty Transformation where
   pretty (Transformation nam (souNam,souMet,souAS) (tarNam,tarMet,tarAS) keS rels) = 
+    text "-- Source Metamodel" <> colon <+> text souMet
+    $++$ 
     pretty souAS
+    $++$ 
+    text "-- Target Metamodel" <> colon <+> text tarMet
     $++$ pretty tarAS
     $++$ text "transformation" <+> text nam <> lparen 
       <> text souNam <> colon <> text souMet <> comma 
@@ -78,8 +82,8 @@ instance Pretty Relation where
                     Just whereCon -> space <+> space <+> pretty whereCon $++$ rbrace
        Just whenCon -> case whereC of
                          Nothing -> space <+> space <+> pretty whenCon $++$ rbrace
-                         Just whereCon -> space <+> space <+> pretty whenC
-                                          $++$ space <+> space <+> pretty whereC
+                         Just whereCon -> space <+> space <+> pretty whenCon
+                                          $++$ space <+> space <+> pretty whereCon
                                           $++$ rbrace)
     
 instance Show Relation where

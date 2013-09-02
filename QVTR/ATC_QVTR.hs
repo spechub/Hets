@@ -352,14 +352,15 @@ instance ShATermConvertible Sen where
 
 instance ShATermConvertible Sign where
   toShATermAux att0 xv = case xv of
-    Sign a b c d -> do
+    Sign a b c d e -> do
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
       (att3, c') <- toShATerm' att2 c
       (att4, d') <- toShATerm' att3 d
-      return $ addATerm (ShAAppl "Sign" [a', b', c', d'] []) att4
+      (att5, e') <- toShATerm' att4 e
+      return $ addATerm (ShAAppl "Sign" [a', b', c', d', e'] []) att5
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "Sign" [a, b, c, d] _ ->
+    ShAAppl "Sign" [a, b, c, d, e] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->
       case fromShATerm' b att1 of
@@ -368,7 +369,9 @@ instance ShATermConvertible Sign where
       { (att3, c') ->
       case fromShATerm' d att3 of
       { (att4, d') ->
-      (att4, Sign a' b' c' d') }}}}
+      case fromShATerm' e att4 of
+      { (att5, e') ->
+      (att5, Sign a' b' c' d' e') }}}}}
     u -> fromShATermError "Sign" u
 
 instance ShATermConvertible RuleDef where

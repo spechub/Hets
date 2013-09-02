@@ -36,18 +36,20 @@ basicAna (trans, _, _) =
 
 
 buildSignature :: Transformation -> (Sign,[Diagnosis])
-buildSignature (Transformation _ souMet tarMet _ rels) = 
+buildSignature (Transformation _ souMet tarMet kS rels) = 
   let 
     souMetSign = CSMOFStatAna.buildSignature (third souMet)
     tarMetSign = CSMOFStatAna.buildSignature (third tarMet)
     (relat,diagn) = buildRelations souMetSign tarMetSign rels
+    (keyD,diagn2) = buildKeyDefs souMetSign tarMetSign kS
   in
     (Sign { sourceSign = souMetSign
          , targetSign = tarMetSign
          , nonTopRelations = fst relat
          , topRelations = snd relat
+         , keyDefs = keyD
          }
-     , diagn)
+     , diagn ++ diagn2)
 
 
 buildRelations :: CSMOFSign.Sign -> CSMOFSign.Sign -> [Relation] -> ((Map.Map String RuleDef,Map.Map String RuleDef),[Diagnosis])
@@ -73,17 +75,17 @@ separateTopFromNonTop rels =
 
 
 isTop :: Relation -> Bool
-isTop (Relation top _ _ _ _ _ _ _) = top
+isTop (Relation tp _ _ _ _ _ _ _) = tp
 
 
 createRuleDef :: CSMOFSign.Sign -> CSMOFSign.Sign -> Relation -> 
                    (Map.Map String RuleDef,[Diagnosis]) -> (Map.Map String RuleDef,[Diagnosis])
-createRuleDef souMetSign tarMetSign (Relation top relN _ primD souD tarD _ _) (mapRD,diag) = 
-  let (varTyp,diag2) = getTypesFromVars souMetSign tarMetSign primD souD tarD
-      relName = if top then "Top_" ++ relN else relN
+createRuleDef souMetSign tarMetSign (Relation tp relN _ prD souD tarD _ _) (mapRD,diag) = 
+  let (varTyp,diag2) = getTypesFromVars souMetSign tarMetSign prD souD tarD
+      rName = if tp then "Top_" ++ relN else relN
   in
-    case Map.lookup relName mapRD of
-      Nothing -> (Map.insert relName (RuleDef relName top varTyp) mapRD, diag ++ diag2)
+    case Map.lookup rName mapRD of
+      Nothing -> (Map.insert rName (RuleDef rName tp varTyp) mapRD, diag ++ diag2)
       Just r -> (mapRD, (mkDiag Error "rule names must be unique" (QVTR.Sign.name r)) : (diag ++ diag2))
 
 
@@ -99,10 +101,10 @@ getTypesFromVars souMetSign tarMetSign primD souD tarD =
     case souDomObj of
       Nothing -> case tarDomObj of
                    Nothing -> (primTypes, d1 ++ d2 ++ (concat d3))
-                   Just tDO -> (tDO : primTypes, d1 ++ d2 ++ (concat d3))
+                   Just tDO -> (tDO : primTypes, concat d3)
       Just sDO -> case tarDomObj of
                    Nothing -> (sDO : primTypes, d1 ++ d2 ++ (concat d3))
-                   Just tDO -> (sDO : (tDO : primTypes), d1 ++ d2 ++ (concat d3))
+                   Just tDO -> (sDO : (tDO : primTypes), concat d3)
 
 
 getDomainType :: CSMOFSign.Sign -> Domain -> (Maybe CSMOFSign.TypeClass,[Diagnosis])
@@ -110,13 +112,16 @@ getDomainType metSign (Domain _ (ObjectTemplate _ _ dType _)) = getType (Set.toL
 
 
 getPrimitiveDomainType :: CSMOFSign.Sign -> CSMOFSign.Sign -> PrimitiveDomain -> (Maybe CSMOFSign.TypeClass,[Diagnosis])
-getPrimitiveDomainType souMetSign tarMetSign (PrimitiveDomain _ primType) = 
-  let (typ,diag) = getType (Set.toList (CSMOFSign.types souMetSign)) primType
+getPrimitiveDomainType souMetSign tarMetSign (PrimitiveDomain _ prType) = 
+  let (typ,diag) = getType (Set.toList (CSMOFSign.types souMetSign)) prType
   in
     case typ of
-      Nothing -> let (typ2,diag2) = getType (Set.toList (CSMOFSign.types tarMetSign)) primType
-                 in (typ2, diag ++ diag2)
-      Just el -> (Just el, diag)
+      Nothing -> let (typ2,diag2) = getType (Set.toList (CSMOFSign.types tarMetSign)) prType
+                 in 
+                   case typ2 of 
+                     Nothing -> (typ2, diag ++ diag2)
+                     Just _ -> (typ2, [])
+      Just _ -> (typ, [])
 
 
 getType :: [CSMOFSign.TypeClass] -> String -> (Maybe CSMOFSign.TypeClass,[Diagnosis])
@@ -138,9 +143,38 @@ getSomething list =
   
 -- Creates a non-top version of a top rule in order to generate a parametrized version of itself
 createCalledTopRule :: Relation -> Relation
-createCalledTopRule (Relation top a b c d e f g) = (Relation (not top) a b c d e f g)
+createCalledTopRule (Relation tp a b c d e f g) = (Relation (not tp) a b c d e f g)
 
 
+buildKeyDefs :: CSMOFSign.Sign -> CSMOFSign.Sign -> [Key] -> ([(String,String)],[Diagnosis])
+buildKeyDefs _ _ [] = ([],[])
+buildKeyDefs souMet tarMet (k : rest) = 
+  let (restK,diag) = buildKeyDefs souMet tarMet rest
+      (ke,diag2) = buildKeyDef souMet tarMet k
+  in 
+    case ke of
+      Nothing -> (restK, diag ++ diag2)
+      Just el -> (el :  restK, diag ++ diag2)
+
+
+buildKeyDef :: CSMOFSign.Sign -> CSMOFSign.Sign -> Key -> (Maybe (String,String),[Diagnosis])
+buildKeyDef souMet tarMet k = 
+  let (typ,diag) = getType (Set.toList (CSMOFSign.types souMet)) (typeName k)
+  in
+    case typ of
+      Nothing -> let (typ2,diag2) = getType (Set.toList (CSMOFSign.types tarMet)) (typeName k)
+                 in
+                   case typ2 of
+                     Nothing -> (Nothing, (mkDiag Error "type not found" (typeName k)) : (diag ++ diag2))
+                     Just _ -> if propKeysCheckOK tarMet (typeName k) (properties k) then 
+                                 (Just (metamodel k, typeName k), [])
+                               else (Nothing, (mkDiag Error "property not found" (properties k)) : (diag ++ diag2))
+      Just _ -> if propKeysCheckOK souMet (typeName k) (properties k) then 
+                  (Just (metamodel k, typeName k), [])
+                else (Nothing, (mkDiag Error "property not found" (properties k)) : diag)
+
+
+-- Sentences
 
 buildSentences :: Sign -> Transformation -> ([Named Sen],[Diagnosis])
 buildSentences sign (Transformation _ souMet tarMet kes rels) =
@@ -148,7 +182,7 @@ buildSentences sign (Transformation _ souMet tarMet kes rels) =
     (_, sMetN, _) = souMet
     (_, tMetN, _) = tarMet
     (keyConstr,diag) = buildKeyConstr sign sMetN tMetN kes
-    (qvtRules,diag2) = ([],[]) -- buildRules rels
+    (qvtRules,diag2) = buildRules sign souMet tarMet rels
   in
     (keyConstr ++ qvtRules, diag ++ diag2)
 
@@ -175,38 +209,38 @@ buildKeyC sign sMetN tMetN k =
                    in
                      case typ2 of
                        Nothing -> (Nothing, (mkDiag Error "type not found" (typeName k)) : (diag ++ diag2))
-                       Just el -> if propKeysCheckOK (targetSign sign) (typeName k) (properties k) then 
-                                    (Just (makeNamed "" (KeyConstr { keyConst = k })), diag ++ diag2)
-                                  else (Nothing, (mkDiag Error "property not found" (properties k)) : (diag ++ diag2))
-        Just el -> if propKeysCheckOK (sourceSign sign) (typeName k) (properties k) then 
-                     (Just (makeNamed "" (KeyConstr { keyConst = k })), diag)
-                   else (Nothing, (mkDiag Error "property not found" (properties k)) : diag)
+                       Just _ -> if propKeysCheckOK (targetSign sign) (typeName k) (properties k) then 
+                                   (Just (makeNamed "" (KeyConstr { keyConst = k })), [])
+                                 else (Nothing, (mkDiag Error "property not found" (properties k)) : (diag ++ diag2))
+        Just _ -> if propKeysCheckOK (sourceSign sign) (typeName k) (properties k) then 
+                    (Just (makeNamed "" (KeyConstr { keyConst = k })), [])
+                  else (Nothing, (mkDiag Error "property not found" (properties k)) : diag)
   else (Nothing, [(mkDiag Error "metamodel does not exist" (sMetN ++ "-" ++ tMetN))])
 
 
 propKeysCheckOK :: CSMOFSign.Sign -> String -> [PropKey] -> Bool
-propKeysCheckOK metSign kType [] = True
+propKeysCheckOK _ _ [] = True
 propKeysCheckOK metSign kType (ke : rest) = (propKeyCheckOK metSign kType ke) && (propKeysCheckOK metSign kType rest)
 
 
 propKeyCheckOK :: CSMOFSign.Sign -> String -> PropKey -> Bool
-propKeyCheckOK (CSMOFSign.Sign _ typRel _ _ props _ _) kType (SimpleProp pName) = findProperty typRel props kType pName
+propKeyCheckOK (CSMOFSign.Sign _ typRel _ _ props _ _) kType (SimpleProp pN) = findProperty typRel props kType pN
 propKeyCheckOK (CSMOFSign.Sign _ typRel _ _ props _ _) kType (OppositeProp oppPType oppPName) = findOppProperty typRel props kType oppPType oppPName
 
 
 findProperty :: Rel.Rel CSMOFSign.TypeClass -> Set.Set CSMOFSign.PropertyT -> String -> String -> Bool
-findProperty typRel props kType pName =
+findProperty typRel props kType pN =
   let classes = kType : Set.toList (superClasses (Rel.map (CSMOFSign.name) typRel) kType)
-  in findPropertyByTypeAndRole (Set.toList props) classes pName
+  in findPropertyByTypeAndRole (Set.toList props) classes pN
 
 
 findPropertyByTypeAndRole :: [CSMOFSign.PropertyT] -> [String] -> String -> Bool
-findPropertyByTypeAndRole [] classes pName = False
-findPropertyByTypeAndRole (p : rest) classes pName =
-  if (elem (CSMOFSign.name (CSMOFSign.sourceType p)) classes && (CSMOFSign.targetRole p) == pName) || 
-     (elem (CSMOFSign.name (CSMOFSign.targetType p)) classes && (CSMOFSign.sourceRole p) == pName)
+findPropertyByTypeAndRole [] _ _ = False
+findPropertyByTypeAndRole (p : rest) classes pN =
+  if (elem (CSMOFSign.name (CSMOFSign.sourceType p)) classes && (CSMOFSign.targetRole p) == pN) || 
+     (elem (CSMOFSign.name (CSMOFSign.targetType p)) classes && (CSMOFSign.sourceRole p) == pN)
   then True
-  else findPropertyByTypeAndRole rest classes pName
+  else findPropertyByTypeAndRole rest classes pN
 
 
 superClasses :: Rel.Rel String -> String -> Set.Set String
@@ -222,17 +256,91 @@ findOppProperty typRel props kType oppPType oppPName =
 
 
 findOppPropertyByTypeAndRole :: [CSMOFSign.PropertyT] -> [String] -> String -> String -> Bool
-findOppPropertyByTypeAndRole [] classes pName kType = False
-findOppPropertyByTypeAndRole (p : rest) classes pName kType=
+findOppPropertyByTypeAndRole [] _ _ _ = False
+findOppPropertyByTypeAndRole (p : rest) classes pN kType=
   if (elem (CSMOFSign.name (CSMOFSign.sourceType p)) classes && 
-       (CSMOFSign.targetRole p) == pName && 
+       (CSMOFSign.targetRole p) == pN && 
        (CSMOFSign.name (CSMOFSign.targetType p)) == kType) || 
      (elem (CSMOFSign.name (CSMOFSign.targetType p)) classes && 
-       (CSMOFSign.sourceRole p) == pName && 
+       (CSMOFSign.sourceRole p) == pN && 
        (CSMOFSign.name (CSMOFSign.sourceType p)) == kType)
   then True
-  else findOppPropertyByTypeAndRole rest classes pName kType
+  else findOppPropertyByTypeAndRole rest classes pN kType
 
 
 third :: (String,String,CSMOFAs.Metamodel) -> CSMOFAs.Metamodel
 third (_, _, c) = c
+
+
+
+buildRules :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> [Relation] -> ([Named Sen],[Diagnosis])
+buildRules sign souMet tarMet rul = 
+  let 
+    diag = checkRules sign souMet tarMet rul
+  in 
+    ([makeNamed "" (QVTSen { rules = rul })], diag)
+
+
+checkRules :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> [Relation] -> [Diagnosis]
+checkRules _ _ _ [] = []
+checkRules sign souMet tarMet (r : rest) = (checkRule sign souMet tarMet r) ++ (checkRules sign souMet tarMet rest)
+
+
+checkRule :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> Relation -> [Diagnosis]
+checkRule sign souMet tarMet (Relation tp relN varS prD souDom tarDom whenC whereC) = []
+--  let 
+--    (sMetID, sMetN, _) = souMet
+--    (tMetID, tMetN, _) = tarMet
+
+--              , relName :: String
+--              , varSet :: [RelVar]
+--              , primDomains :: [PrimitiveDomain]
+--              , sourceDomain :: Domain
+--              , targetDomain :: Domain
+--              , whenCond :: Maybe WhenWhere
+--              , whereCond :: Maybe WhenWhere
+--              }
+
+-- los tipos en RelVar existen
+-- los tipos en PrimitiveDomain existen
+-- los nombres de variables en RelVar, PrimitiveDomain, Domain no se repiten
+-- el domModelId del source y target Domain son los de la transformacion
+-- los domMeta del source (de todos los obj templ) es el del source de la trans. Idem para el target
+-- los domType del source y target existen en el source y target meta, respectivamente
+-- los pName son propiedades que existen en cada domType
+-- no hago nada con las oclExpre
+-- para cada RelInVok de un WhenWhere, el nombre de la regla existe
+-- para cada RelInvok los parametros son variables definidas y tienen los tipos de la relacion
+
+
+--ObjectTemplate
+--domVar :: String
+--domMeta :: String
+--domType :: String
+--templateList :: [PropertyTemplate]
+
+--pName :: String
+--oclExpre :: Maybe String
+--objTemp :: Maybe ObjectTemplate
+
+
+
+-- Get every ObjectTemplate from a Domain (recursive)
+getObjectTemplates :: Domain -> [ObjectTemplate]
+getObjectTemplates dom = (template dom) : (getObjectTemplatesFromOT (template dom))
+
+getObjectTemplatesFromOT :: ObjectTemplate -> [ObjectTemplate]
+getObjectTemplatesFromOT ot = 
+  let otList = getOT $ templateList ot
+  in foldr ((++) . getObjectTemplatesFromOT) [] otList
+
+getOT :: [PropertyTemplate] -> [ObjectTemplate] 
+getOT list = 
+  case list of
+    [] -> []
+    el : rest -> case objTemp el of
+                   Nothing -> getOT rest
+                   Just typ -> typ : getOT rest
+
+
+

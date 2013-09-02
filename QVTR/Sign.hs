@@ -42,6 +42,7 @@ data Sign = Sign { sourceSign :: CSMOF.Sign
                  , targetSign :: CSMOF.Sign
                  , nonTopRelations :: Map.Map String RuleDef
                  , topRelations :: Map.Map String RuleDef
+                 , keyDefs :: [(String,String)]
                  } deriving (Show, Eq, Ord)
 
 instance GetRange Sign where
@@ -49,20 +50,33 @@ instance GetRange Sign where
   rangeSpan _ = []      
 
 instance Pretty Sign where
-  pretty (Sign souS tarS nonRel topRel) = 
+  pretty (Sign souS tarS nonRel topRel keyD) = 
+    text "-- Source Metamodel"
+    $++$ 
     pretty souS
+    $++$ 
+    text "-- Target Metamodel"
     $++$ 
     pretty tarS
     $++$
+    text "-- Model Transformation"
+    $++$ 
+    text "Definition of Relations"
+    $+$
     Map.fold (($+$) . pretty) empty topRel
-    $++$
+    $+$
     Map.fold (($+$) . pretty) empty nonRel
+    $++$
+    text "Definition of Keys"
+    $+$
+    foldr (($+$) . pretty) empty keyD
 
 emptySign :: Sign
 emptySign = Sign { sourceSign = CSMOF.emptySign
                  , targetSign = CSMOF.emptySign
                  , nonTopRelations = Map.empty
                  , topRelations = Map.empty
+                 , keyDefs = []
                  }
 
 
