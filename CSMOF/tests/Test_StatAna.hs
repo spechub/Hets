@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  portable
 -}
 
--- From the CSMOF folder run: ghc -i.. -o main Test_StatAna.hs
+-- From the CSMOF folder run: ghc -i../.. -o main Test_StatAna.hs
 
 
 import CSMOF.As

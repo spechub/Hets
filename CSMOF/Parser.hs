@@ -323,8 +323,8 @@ rightModel keyMap metamodel key = head (filter (isModel keyMap key) (model metam
 
 isModel :: Map.Map String String -> String -> Model -> Bool
 isModel keyMap key mode = 
-  let elem = findElementInMap (getModelKey key) keyMap
-  in (modelName mode) == elem
+  let el = findElementInMap (getModelKey key) keyMap
+  in (modelName mode) == el
 
 getModelKey :: String -> String
 getModelKey key = Text.unpack (Text.dropWhileEnd (/='/') (Text.pack key))
