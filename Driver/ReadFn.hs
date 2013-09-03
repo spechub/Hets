@@ -32,6 +32,7 @@ import OWL2.ParseOWLAsLibDefn
 -- import RDF.ParseRDFAsLibDefn
 #endif
 import CSMOF.ParseXmiAsLibDefn
+import QVTR.ParseQvtAsLibDefn
 
 import Driver.Options
 
@@ -111,6 +112,7 @@ readLibDefnAux lgraph opts file fileForPos input =
 --      RDFIn -> liftIO $ parseRDF file
 #endif
       Xmi -> liftIO $ parseXmi file
+      Qvt -> liftIO $ parseQvt file
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
          Right ast -> return ast

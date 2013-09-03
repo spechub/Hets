@@ -11,7 +11,7 @@ Portability :  portable
 
 
 module Comorphisms.CSMOF2CASL
-    ( CSMOF2CASL (..)
+    ( CSMOF2CASL (..), mapSign, generateVars
     ) where
 
 import Logic.Logic
@@ -261,7 +261,7 @@ getSortGen typpR absCl typCl inst = disjointEmbedding absCl typpR ++ sortGenerat
                               sortGenerationNonAbstractSuperClasses typpR typCl absCl inst
 
 
--- free type de superclases que no son abstract
+-- Free type of non-abstract superclasses
 sortGenerationNonAbstractSuperClasses :: Rel.Rel TypeClass -> Set.Set TypeClass -> Set.Set TypeClass -> Map.Map String TypeClass -> [Named (CASLFORMULA)]
 sortGenerationNonAbstractSuperClasses typpR typCl absCl inst = 
   let 

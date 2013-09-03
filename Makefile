@@ -56,7 +56,7 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF
+    FreeCAD OWL2 RDF CSMOF # QVTR
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -317,6 +317,8 @@ RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
 
 CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
+#QVTR_files = QVTR/As.hs QVTR/Sign.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -417,6 +419,9 @@ RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 
 CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(CSMOF_files)
+
+#QVTR/ATC_QVTR.der.hs: $(QVTR_files) $(GENRULES)
+#	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(QVTR_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
@@ -769,3 +774,10 @@ rdf_java:
 # download rdf4h, unpack and install
 rdf4h:
 	cabal install http://protempore.net/rdf4h/rdf4h-0.6.1.tar.gz
+# DO NOT DELETE: Beginning of Haskell dependencies
+CSMOF/CSMOF/As.o : CSMOF/As.hs
+CSMOF/CSMOF/Test_As.o : CSMOF/Test_As.hs
+CSMOF/CSMOF/Test_As.o : CSMOF/As.hi
+
+#QVTR/QVTR/As.o : QVTR/As.hs
+# DO NOT DELETE: End of Haskell dependencies

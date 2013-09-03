@@ -371,6 +371,7 @@ data InType =
   | DgXml
   | RDFIn
   | Xmi
+  | Qvt
   deriving Eq
 
 instance Show InType where
@@ -395,6 +396,7 @@ instance Show InType where
     DgXml -> xmlS
     RDFIn -> "rdf"
     Xmi -> "xmi"
+    Qvt -> "qvt"
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
@@ -416,7 +418,7 @@ plainInTypes =
   [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True
-  , DgXml, FreeCADIn, RDFIn, Xmi ]
+  , DgXml, FreeCADIn, RDFIn, Xmi, Qvt ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]

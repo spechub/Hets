@@ -79,6 +79,7 @@ import Comorphisms.DFOL2CASL
 import Comorphisms.QBF2Prop
 import Comorphisms.Prop2QBF
 import Comorphisms.CSMOF2CASL
+import Comorphisms.QVTR2CASL
 
 import Comorphisms.CASL2Hybrid
 import Comorphisms.Hybrid2CASL
@@ -226,7 +227,8 @@ comorphismList =
     , Comorphism CASL2TopSort
     , Comorphism QBF2Prop
     , Comorphism Prop2QBF
-    , Comorphism CSMOF2CASL ]
+    , Comorphism CSMOF2CASL
+    , Comorphism QVTR2CASL ]
 
 inclusionList :: [AnyComorphism]
 inclusionList =

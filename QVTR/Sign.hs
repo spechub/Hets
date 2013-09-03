@@ -81,7 +81,7 @@ emptySign = Sign { sourceSign = CSMOF.emptySign
 
 
 data Sen = KeyConstr { keyConst :: Key }
-         | QVTSen { rules :: [Relation] } 
+         | QVTSen { rule :: Relation } 
          deriving (Show, Eq, Ord)
 
 instance GetRange Sen where
@@ -90,6 +90,6 @@ instance GetRange Sen where
 
 instance Pretty Sen where
   pretty (KeyConstr con) = pretty con
-  pretty (QVTSen tran) = pretty tran
+  pretty (QVTSen rel) = pretty rel
 
 

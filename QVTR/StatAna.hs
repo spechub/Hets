@@ -278,7 +278,7 @@ buildRules sign souMet tarMet rul =
   let 
     diag = checkRules sign souMet tarMet rul
   in 
-    ([makeNamed "" (QVTSen { rules = rul })], diag)
+    (map (\r -> makeNamed "" (QVTSen { rule = r })) rul, diag)
 
 
 checkRules :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> [Relation] -> [Diagnosis]
@@ -287,7 +287,9 @@ checkRules sign souMet tarMet (r : rest) = (checkRule sign souMet tarMet r) ++ (
 
 
 checkRule :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> Relation -> [Diagnosis]
-checkRule sign souMet tarMet (Relation tp relN varS prD souDom tarDom whenC whereC) = []
+checkRule _ _ _ _ = []
+ -- sign souMet tarMet (Relation tp relN varS prD souDom tarDom whenC whereC) = []
+
 --  let 
 --    (sMetID, sMetN, _) = souMet
 --    (tMetID, tMetN, _) = tarMet
@@ -300,6 +302,8 @@ checkRule sign souMet tarMet (Relation tp relN varS prD souDom tarDom whenC wher
 --              , whenCond :: Maybe WhenWhere
 --              , whereCond :: Maybe WhenWhere
 --              }
+
+-- las Keys no son vacias
 
 -- los tipos en RelVar existen
 -- los tipos en PrimitiveDomain existen

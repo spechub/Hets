@@ -52,6 +52,7 @@ import Haskell.Logic_Haskell
 import Isabelle.Logic_Isabelle
 import SoftFOL.Logic_SoftFOL
 import CSMOF.Logic_CSMOF
+import QVTR.Logic_QVTR
 #ifdef CASLEXTENSIONS
 import THF.Logic_THF
 import Fpl.Logic_Fpl
@@ -132,6 +133,7 @@ logicList =
   , Logic RDF
 #endif
   , Logic CSMOF
+  , Logic QVTR
   ] ++ dynLogicList
 
 addLogicName :: AnyLogic -> (String, AnyLogic)
