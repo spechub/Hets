@@ -161,6 +161,13 @@ sameOpsApp sig app1 app2 = case (unsortedTerm app1, unsortedTerm app2) of
     -> ops1 == ops2 && on (leqF sig) toOpType t1 t2
   _ -> False
 
+eqPattern :: Sign f e -> TERM f -> TERM f -> Bool
+eqPattern sig t1 t2 = case (unsortedTerm t1, unsortedTerm t2) of
+  (Qual_var v1 _ _, Qual_var v2 _ _) -> v1 == v2
+  _ | sameOpsApp sig t1 t2 ->
+    and $ on (zipWith $ eqPattern sig) arguOfTerm t1 t2
+  _ -> False
+
 -- | get or create a variable declaration for a formula
 varDeclOfF :: Ord f => FORMULA f -> [VAR_DECL]
 varDeclOfF = let

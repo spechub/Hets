@@ -229,9 +229,19 @@ checkDefinitional tsig fsn = let
        (withDefs, withOutDefs) = partition (containDef . fst) otherPartials
        (correctDefs, wrongDefs) = partition (correctDef . fst) withDefs
        grDomainDefs = groupBy (on (==) snd) $ sortBy (on compare snd) domainDefs
-       multDomainDefs = filter (\ l -> case l of
+       (multDomainDefs, oneDomainDefs) = partition (\ l -> case l of
           [_] -> False
           _ -> True) grDomainDefs
+       domainObls = concatMap (\ [(da, dt)] -> map (\ (de, _) -> (da, de))
+           $ filter ((== dt) . snd) correctDefs) oneDomainDefs
+       nonEqDoms = filter (\ (da, de) ->
+         case (domainDef da, quanti de) of
+           (Just (ta, _), Relation (Definedness te _) c _ _)
+             | c /= Equivalence && sameOpsApp tsig ta te ->
+             case leadingTermPredication de of
+               Just (Left t) | eqPattern tsig te t -> False
+               _ -> True
+           _ -> True) domainObls
        defOpSymbs = Set.fromList $ map (snd . head) grDomainDefs
          ++ map snd correctDefs
        wrongWithoutDefs = filter ((`Set.notMember` defOpSymbs) . snd)
@@ -248,6 +258,10 @@ checkDefinitional tsig fsn = let
          Warning ("missing definedness condition for partial '"
                       ++ showDoc t "' in\n" ++ formatAxiom a)
              $ getRange t) wrongWithoutDefs
+         ++ map (\ (_, de) -> Diag
+         Warning ("unexpected domain condition for partial definition: "
+                  ++ formatAxiom de)
+             $ getRange de) nonEqDoms
        in if null ds then Nothing else Just $ Result ds Nothing
 
 {-
