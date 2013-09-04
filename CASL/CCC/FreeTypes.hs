@@ -232,8 +232,12 @@ checkDefinitional tsig fsn = let
        (multDomainDefs, oneDomainDefs) = partition (\ l -> case l of
           [_] -> False
           _ -> True) grDomainDefs
-       domainObls = concatMap (\ [(da, dt)] -> map (\ (de, _) -> (da, de))
-           $ filter ((== dt) . snd) correctDefs) oneDomainDefs
+       singleDomainDefs = map head oneDomainDefs
+       nonCompleteDomainDefs = filter (\ (da, _) -> case domainDef da of
+         Just (ta, _) | all isVar $ arguOfTerm ta -> False
+         _ -> True) singleDomainDefs
+       domainObls = concatMap (\ (da, dt) -> map (\ (de, _) -> (da, de))
+           $ filter ((== dt) . snd) correctDefs) singleDomainDefs
        nonEqDoms = filter (\ (da, de) ->
          case (domainDef da, quanti de) of
            (Just (ta, _), Relation (Definedness te _) c _ _)
@@ -258,6 +262,9 @@ checkDefinitional tsig fsn = let
          Warning ("missing definedness condition for partial '"
                       ++ showDoc t "' in\n" ++ formatAxiom a)
              $ getRange t) wrongWithoutDefs
+         ++ map (\ (da, _) -> Diag
+         Warning ("non-complete domain axiom: " ++ formatAxiom da)
+             $ getRange da) nonCompleteDomainDefs
          ++ map (\ (_, de) -> Diag
          Warning ("unexpected domain condition for partial definition: "
                   ++ formatAxiom de)
