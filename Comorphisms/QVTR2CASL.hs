@@ -292,19 +292,49 @@ buildEmptyWhenFormula parS varS varSet_2 souPat tarPat whereC =
     listPars = Set.fromList parS
     diffVarSet_1 = Set.toList $ Set.difference (Set.difference (Set.fromList varS) varSet_2) listPars
     diffVarSet_2 = Set.toList $ Set.difference varSet_2 listPars
-    souPatF = buildPatternFormula souPat varS
-    tarPatF = buildPatternFormula tarPat varS
+    souPatF = buildPatternFormula souPat
+    tarPatF = buildPatternFormula tarPat
     whereF = buildWhenWhereFormula whereC varS
-  in C.Quantification Universal 
-                      (varDeclFromRelVar diffVarSet_1)
-                      (C.Relation souPatF
-                                  Implication 
-                                  (C.Quantification Existential
-                                                    (varDeclFromRelVar diffVarSet_2)
-                                                    (C.Junction Con [tarPatF,whereF] nullRange)
-                                                    nullRange)
-                                  nullRange)
-                      nullRange
+
+    fst_sen = if whereF == trueForm
+              then if tarPatF == trueForm
+                   then if null diffVarSet_2
+                        then trueForm
+                        else C.Quantification Existential
+                                              (varDeclFromRelVar diffVarSet_2)
+                                              trueForm
+                                              nullRange
+                   else if null diffVarSet_2
+                        then tarPatF
+                        else C.Quantification Existential
+                                              (varDeclFromRelVar diffVarSet_2)
+                                              tarPatF
+                                              nullRange
+              else if tarPatF == trueForm
+                   then if null diffVarSet_2
+                        then whereF
+                        else C.Quantification Existential
+                                              (varDeclFromRelVar diffVarSet_2)
+                                              whereF
+                                              nullRange
+                   else if null diffVarSet_2
+                        then C.Junction Con [tarPatF,whereF] nullRange
+                        else C.Quantification Existential
+                                              (varDeclFromRelVar diffVarSet_2)
+                                              (C.Junction Con [tarPatF,whereF] nullRange)
+                                              nullRange
+
+
+  in 
+    if null diffVarSet_1
+    then C.Relation souPatF Implication fst_sen nullRange
+    else C.Quantification Universal 
+                          (varDeclFromRelVar diffVarSet_1)
+                          (C.Relation souPatF
+                                      Implication 
+                                      fst_sen
+                                      nullRange)
+                          nullRange
 
 
 varDeclFromRelVar :: [RelVar] -> [VAR_DECL]
@@ -326,33 +356,96 @@ buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC where
     diffVarSet_1 = Set.toList $ Set.difference listWhenVars listPars
     diffVarSet_2 = Set.toList $ Set.difference (Set.difference (Set.fromList varS) (Set.union listWhenVars varSet_2)) listPars
     diffVarSet_3 = Set.toList $ Set.difference varSet_2 listPars
-    souPatF = buildPatternFormula souPat varS
-    tarPatF = buildPatternFormula tarPat varS
+    souPatF = buildPatternFormula souPat
+    tarPatF = buildPatternFormula tarPat
     whenF = buildWhenWhereFormula whenC varS
     whereF = buildWhenWhereFormula whereC varS
-  in C.Quantification Universal 
-                      (varDeclFromRelVar diffVarSet_1)
-                      (C.Relation whenF
-                                  Implication 
-                                  (C.Quantification Universal 
-                                                    (varDeclFromRelVar diffVarSet_2)
-                                                    (C.Relation souPatF
-                                                                Implication 
-                                                                (C.Quantification Existential
-                                                                                  (varDeclFromRelVar diffVarSet_3)
-                                                                                  (C.Junction Con [tarPatF,whereF] nullRange)
-                                                                                  nullRange)
-                                                                nullRange)
-                                                    nullRange)
-                                  nullRange)
-                      nullRange
+
+    snd_sen = if whereF == trueForm
+              then if tarPatF == trueForm
+                   then if null diffVarSet_3
+                        then trueForm
+                        else C.Quantification Existential
+                                              (varDeclFromRelVar diffVarSet_3)
+                                              trueForm
+                                              nullRange
+                   else if null diffVarSet_3
+                        then tarPatF
+                        else C.Quantification Existential
+                                              (varDeclFromRelVar diffVarSet_3)
+                                              tarPatF
+                                              nullRange
+              else if tarPatF == trueForm
+                   then if null diffVarSet_3
+                        then whereF
+                        else C.Quantification Existential
+                                              (varDeclFromRelVar diffVarSet_3)
+                                              whereF
+                                              nullRange
+                   else if null diffVarSet_3
+                        then C.Junction Con [tarPatF,whereF] nullRange
+                        else C.Quantification Existential
+                                              (varDeclFromRelVar diffVarSet_3)
+                                              (C.Junction Con [tarPatF,whereF] nullRange)
+                                              nullRange
+
+    fst_sen = if souPatF == trueForm
+              then if null diffVarSet_2
+                   then snd_sen
+                   else C.Quantification Universal 
+                                         (varDeclFromRelVar diffVarSet_2)
+                                         snd_sen
+                                         nullRange
+              else if null diffVarSet_2
+                   then C.Relation souPatF Implication snd_sen nullRange
+                   else C.Quantification Universal 
+                                         (varDeclFromRelVar diffVarSet_2)
+                                         (C.Relation souPatF
+                                                     Implication 
+                                                     snd_sen
+                                                     nullRange)
+                                         nullRange
+
+  in 
+    if null diffVarSet_1
+    then C.Relation whenF Implication fst_sen nullRange
+    else C.Quantification Universal 
+                          (varDeclFromRelVar diffVarSet_1)
+                          (C.Relation whenF
+                                      Implication 
+                                      fst_sen
+                                      nullRange)
+                          nullRange
 
 
 -- The translation of Pattern = ⟨E, A, Pr⟩ is the formula r2 (x, y) ∧ Pr such
 -- that r2 (x, y) is the translation of predicate p = ⟨r1 : C, r2 : D⟩ for every rel(p, x, y) ∈ A with x : C, y : D.
 
-buildPatternFormula :: Pattern -> [RelVar] -> CASLFORMULA
-buildPatternFormula pat varS = trueForm
+buildPatternFormula :: Pattern -> CASLFORMULA
+buildPatternFormula (Pattern patVar parRel patPred) = 
+  let 
+    relInvF = map (buildPatRelFormula) parRel
+    oclExpF = [] --ToDo  patPred :: [String]
+  in 
+    if null oclExpF
+    then if null relInvF 
+         then trueForm 
+         else C.Junction Con relInvF nullRange
+    else if null relInvF 
+         then C.Junction Con oclExpF nullRange
+         else C.Junction Con (relInvF ++ oclExpF) nullRange
+
+
+buildPatRelFormula :: (CSMOF.PropertyT,RelVar,RelVar) -> CASLFORMULA
+buildPatRelFormula (p,souV,tarV) =
+  let 
+    rName = CSMOF.targetRole p
+    predTyp = [stringToId $ QVTRAs.varType souV, stringToId $ QVTRAs.varType tarV]
+    varsInv = createVarRule [souV,tarV]
+  in 
+    Predication (C.Qual_pred_name (stringToId $ rName) (Pred_type predTyp nullRange) nullRange) 
+                varsInv 
+                nullRange
 
 
 -- The translation of when = ⟨whenc , whenr⟩ is the formula Rule(v) ∧ whenc such that
@@ -363,26 +456,39 @@ buildWhenWhereFormula Nothing _ = trueForm -- ERROR, this cannot happens
 buildWhenWhereFormula (Just (When relInv oclExp)) varS =
   let
     relInvF = map (buildRelInvocFormula varS) relInv
-    oclExpF = [trueForm] --ToDo
-  in C.Junction Con (relInvF ++ oclExpF) nullRange
+    oclExpF = [] --ToDo
+  in 
+    if null oclExpF
+    then if null relInvF 
+         then trueForm 
+         else C.Junction Con relInvF nullRange
+    else if null relInvF 
+         then C.Junction Con oclExpF nullRange
+         else C.Junction Con (relInvF ++ oclExpF) nullRange
 buildWhenWhereFormula (Just (Where relInv oclExp)) varS =
   let
     relInvF = map (buildRelInvocFormula varS) relInv
-    oclExpF = [trueForm] --ToDo
-  in C.Junction Con (relInvF ++ oclExpF) nullRange
+    oclExpF = [] --ToDo
+  in 
+    if null oclExpF
+    then if null relInvF 
+         then trueForm 
+         else C.Junction Con relInvF nullRange
+    else if null relInvF 
+         then C.Junction Con oclExpF nullRange
+         else C.Junction Con (relInvF ++ oclExpF) nullRange
 
 
 buildRelInvocFormula :: [RelVar] -> RelInvok -> CASLFORMULA
 buildRelInvocFormula varS rel = 
   let 
     vars = QVTRAn.getSomething $ map (findRelVarFromName varS) (QVTRAs.params rel)
-    varsInv = map (\v -> (Qual_var (mkSimpleId $ varName v) (stringToId $ varType v) nullRange)) vars
+    varsInv = createVarRule vars
     predTyp = map (stringToId . varType) vars
   in 
     Predication (C.Qual_pred_name (stringToId $ QVTRAs.name rel) (Pred_type predTyp nullRange) nullRange) 
                 varsInv 
                 nullRange
-
 
 
 -- | Translation of morphisms
