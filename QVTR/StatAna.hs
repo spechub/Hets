@@ -44,11 +44,11 @@ buildSignature (Transformation _ souMet tarMet kS rels) =
     (keyD,diagn2) = buildKeyDefs souMetSign tarMetSign kS
   in
     (Sign { sourceSign = souMetSign
-         , targetSign = tarMetSign
-         , nonTopRelations = fst relat
-         , topRelations = snd relat
-         , keyDefs = keyD
-         }
+          , targetSign = tarMetSign
+          , nonTopRelations = fst relat
+          , topRelations = snd relat
+          , keyDefs = keyD
+          }
      , diagn ++ diagn2)
 
 
@@ -80,13 +80,16 @@ isTop (Relation tp _ _ _ _ _ _ _) = tp
 
 createRuleDef :: CSMOFSign.Sign -> CSMOFSign.Sign -> Relation -> 
                    (Map.Map String RuleDef,[Diagnosis]) -> (Map.Map String RuleDef,[Diagnosis])
-createRuleDef souMetSign tarMetSign (Relation tp relN _ prD souD tarD _ _) (mapRD,diag) = 
+createRuleDef souMetSign tarMetSign (Relation tp rName _ prD souD tarD _ _) (mapRD,diag) = 
   let (varTyp,diag2) = getTypesFromVars souMetSign tarMetSign prD souD tarD
-      rName = if tp then "Top_" ++ relN else relN
   in
-    case Map.lookup rName mapRD of
-      Nothing -> (Map.insert rName (RuleDef rName tp varTyp) mapRD, diag ++ diag2)
-      Just r -> (mapRD, (mkDiag Error "rule names must be unique" (QVTR.Sign.name r)) : (diag ++ diag2))
+    if tp 
+    then case Map.lookup ("Top_" ++ rName) mapRD of
+           Nothing -> (Map.insert ("Top_" ++ rName) (RuleDef ("Top_" ++ rName) tp []) mapRD, diag ++ diag2)
+           Just r -> (mapRD, (mkDiag Error "rule names must be unique" (QVTR.Sign.name r)) : (diag ++ diag2))
+    else case Map.lookup rName mapRD of
+           Nothing -> (Map.insert rName (RuleDef rName tp varTyp) mapRD, diag ++ diag2)
+           Just r -> (mapRD, (mkDiag Error "rule names must be unique" (QVTR.Sign.name r)) : (diag ++ diag2))
 
 
 -- Generate rule parameters from primitive domains, source and target object domains
@@ -132,7 +135,7 @@ getType types dType =
                   else getType rest dType
 
 
-getSomething :: [Maybe CSMOFSign.TypeClass] -> [CSMOFSign.TypeClass] 
+getSomething :: [Maybe a] -> [a] 
 getSomething list = 
   case list of
     [] -> []
@@ -174,7 +177,7 @@ buildKeyDef souMet tarMet k =
                 else (Nothing, (mkDiag Error "property not found" (properties k)) : diag)
 
 
--- Sentences
+-------- Sentences --------
 
 buildSentences :: Sign -> Transformation -> ([Named Sen],[Diagnosis])
 buildSentences sign (Transformation _ souMet tarMet kes rels) =
@@ -249,6 +252,21 @@ superClasses relT tc = Set.fold reach Set.empty $ Rel.succs relT tc where
                      else Set.fold reach (Set.insert e s) $ Rel.succs relT e
 
 
+findPropertyInHierarchy :: Rel.Rel CSMOFSign.TypeClass -> Set.Set CSMOFSign.PropertyT -> String -> String -> Maybe CSMOFSign.PropertyT
+findPropertyInHierarchy typRel props kType pN =
+  let classes = kType : Set.toList (superClasses (Rel.map (CSMOFSign.name) typRel) kType)
+  in findPropertyElemByTypeAndRole (Set.toList props) classes pN
+
+
+findPropertyElemByTypeAndRole :: [CSMOFSign.PropertyT] -> [String] -> String -> Maybe CSMOFSign.PropertyT
+findPropertyElemByTypeAndRole [] _ _ = Nothing
+findPropertyElemByTypeAndRole (p : rest) classes pN =
+  if (elem (CSMOFSign.name (CSMOFSign.sourceType p)) classes && (CSMOFSign.targetRole p) == pN) || 
+     (elem (CSMOFSign.name (CSMOFSign.targetType p)) classes && (CSMOFSign.sourceRole p) == pN)
+  then Just p
+  else findPropertyElemByTypeAndRole rest classes pN
+
+
 findOppProperty :: Rel.Rel CSMOFSign.TypeClass -> Set.Set CSMOFSign.PropertyT -> String -> String -> String -> Bool
 findOppProperty typRel props kType oppPType oppPName = 
   let classes = oppPType : Set.toList (superClasses (Rel.map (CSMOFSign.name) typRel) oppPType)
@@ -268,6 +286,20 @@ findOppPropertyByTypeAndRole (p : rest) classes pN kType=
   else findOppPropertyByTypeAndRole rest classes pN kType
 
 
+getTargetType :: String -> CSMOFSign.PropertyT -> String
+getTargetType pN p = 
+  if (CSMOFSign.targetRole p) == pN
+  then CSMOFSign.name (CSMOFSign.targetType p)
+  else CSMOFSign.name (CSMOFSign.sourceType p)
+
+
+getOppositeType :: String -> CSMOFSign.PropertyT -> String
+getOppositeType pN p = 
+  if (CSMOFSign.sourceRole p) == pN
+  then CSMOFSign.name (CSMOFSign.targetType p)
+  else CSMOFSign.name (CSMOFSign.sourceType p)
+
+
 third :: (String,String,CSMOFAs.Metamodel) -> CSMOFAs.Metamodel
 third (_, _, c) = c
 
@@ -276,57 +308,190 @@ third (_, _, c) = c
 buildRules :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> [Relation] -> ([Named Sen],[Diagnosis])
 buildRules sign souMet tarMet rul = 
   let 
-    diag = checkRules sign souMet tarMet rul
+    (rel,diag) = checkRules sign souMet tarMet rul
   in 
-    (map (\r -> makeNamed "" (QVTSen { rule = r })) rul, diag)
+    (map (\r -> makeNamed "" (QVTSen { rule = r })) rel, diag)
 
 
-checkRules :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> [Relation] -> [Diagnosis]
-checkRules _ _ _ [] = []
-checkRules sign souMet tarMet (r : rest) = (checkRule sign souMet tarMet r) ++ (checkRules sign souMet tarMet rest)
+checkRules :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> 
+                [Relation] -> ([RelationSen],[Diagnosis])
+checkRules _ _ _ [] = ([],[])
+checkRules sign souMet tarMet (r : rest) = 
+  let 
+    (rul,diag) = checkRule sign souMet tarMet r
+    (restRul,restDiag) = checkRules sign souMet tarMet rest
+  in 
+    (rul ++ restRul, diag ++ restDiag)
 
 
-checkRule :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> Relation -> [Diagnosis]
-checkRule _ _ _ _ = []
- -- sign souMet tarMet (Relation tp relN varS prD souDom tarDom whenC whereC) = []
+checkRule :: Sign -> (String,String,CSMOFAs.Metamodel) -> (String,String,CSMOFAs.Metamodel) -> Relation -> ([RelationSen],[Diagnosis])
+checkRule sign _ _ (Relation tp rN vS prD souDom tarDom whenC whereC) = 
+  let 
+    rName = if tp then "Top_" ++ rN else rN
+    
+    (rDefNonTop,rDiagNonTop) = case Map.lookup rN (nonTopRelations sign) of
+                                 Nothing -> (RuleDef "" False [],[mkDiag Error "non top relation not found" rName])
+                                 Just r -> (r,[])
 
---  let 
---    (sMetID, sMetN, _) = souMet
---    (tMetID, tMetN, _) = tarMet
+    (rDef,rDiag) = if tp 
+                   then case Map.lookup rName (topRelations sign) of
+                          Nothing -> (RuleDef "" False [],[mkDiag Error "top relation not found" rName])
+                          Just r -> (r,[])
+                   else (RuleDef "" False [],[])
 
---              , relName :: String
---              , varSet :: [RelVar]
---              , primDomains :: [PrimitiveDomain]
---              , sourceDomain :: Domain
---              , targetDomain :: Domain
---              , whenCond :: Maybe WhenWhere
---              , whereCond :: Maybe WhenWhere
---              }
+    pSet = collectParSet prD souDom tarDom
+    vSet = collectVarSet vS prD souDom tarDom
 
--- las Keys no son vacias
+    (souPat, diagSPat) = buildPattern souDom (sourceSign sign) vSet
+    (tarPat, diagTPat) = buildPattern tarDom (targetSign sign) vSet
+    (whenCl, diagW1Pat) = case whenC of
+                            Nothing -> (Nothing, [])
+                            Just w -> buildWhen w
+    (whereCl, diagW2Pat) = case whereC of
+                             Nothing -> (Nothing, [])
+                             Just w -> buildWhere w
 
--- los tipos en RelVar existen
--- los tipos en PrimitiveDomain existen
--- los nombres de variables en RelVar, PrimitiveDomain, Domain no se repiten
--- el domModelId del source y target Domain son los de la transformacion
--- los domMeta del source (de todos los obj templ) es el del source de la trans. Idem para el target
--- los domType del source y target existen en el source y target meta, respectivamente
--- los pName son propiedades que existen en cada domType
--- no hago nada con las oclExpre
--- para cada RelInVok de un WhenWhere, el nombre de la regla existe
--- para cada RelInvok los parametros son variables definidas y tienen los tipos de la relacion
+  in 
+    if tp 
+    then ((RelationSen rDef vSet [] souPat tarPat whenCl whereCl) : --Top Rule
+            [RelationSen rDefNonTop vSet pSet souPat tarPat whenCl whereCl], --Non Top Rule
+               rDiag ++ rDiagNonTop ++ diagSPat ++ diagTPat ++ diagW1Pat ++ diagW2Pat)
+    else ([RelationSen rDefNonTop vSet pSet souPat tarPat whenCl whereCl], 
+            rDiag ++ rDiagNonTop ++ diagSPat ++ diagTPat ++ diagW1Pat ++ diagW2Pat)
+                               
+
+collectParSet :: [PrimitiveDomain] -> Domain -> Domain -> [RelVar]
+collectParSet prD souDom tarDom =
+  let 
+    prDVS = collectPrimDomVarSet prD
+    souVar = RelVar (domType $ template souDom) (domVar $ template souDom)
+    tarVar = RelVar (domType $ template tarDom) (domVar $ template tarDom)
+  in 
+    [souVar,tarVar] ++ prDVS
 
 
---ObjectTemplate
---domVar :: String
---domMeta :: String
---domType :: String
---templateList :: [PropertyTemplate]
+collectVarSet :: [RelVar] -> [PrimitiveDomain] -> Domain -> Domain -> [RelVar]
+collectVarSet varS prD souDom tarDom =
+  let 
+    souDomVS = collectDomainVarSet souDom
+    tarDomVS = collectDomainVarSet tarDom
+    prDVS = collectPrimDomVarSet prD
+  in
+    varS ++ prDVS ++ souDomVS ++ tarDomVS
 
---pName :: String
---oclExpre :: Maybe String
---objTemp :: Maybe ObjectTemplate
 
+collectPrimDomVarSet :: [PrimitiveDomain] -> [RelVar]
+collectPrimDomVarSet prD = map (\n -> RelVar (primType n) (primName n)) prD
+
+
+collectDomainVarSet :: Domain -> [RelVar]
+collectDomainVarSet dom = collectRecursiveVars (Just $ template dom)
+
+
+collectRecursiveVars :: Maybe ObjectTemplate -> [RelVar]
+collectRecursiveVars Nothing = []
+collectRecursiveVars (Just ot) =
+  let otVar = RelVar (domType ot) (domVar ot)
+  in 
+    otVar : (foldr ((++) . collectRecursiveVars . objTemp) [] (templateList ot))
+
+
+buildPattern :: Domain -> CSMOFSign.Sign -> [RelVar] -> (Pattern,[Diagnosis])
+buildPattern dom sign vSet =
+  let
+    (patR,diag) = collectRecursiveRelInvoc (domVar (template dom)) (domType (template dom)) (templateList (template dom)) sign vSet
+    patPr = collectRecursivePreds vSet (Just $ template dom) 
+  in 
+    (Pattern (collectDomainVarSet dom) patR patPr,diag)
+
+
+collectRecursiveRelInvoc :: String -> String -> [PropertyTemplate] -> CSMOFSign.Sign 
+                                   -> [RelVar] -> ([(CSMOFSign.PropertyT,RelVar,RelVar)],[Diagnosis])
+collectRecursiveRelInvoc _ _ [] _ _ = ([],[])
+collectRecursiveRelInvoc nam typ (pt : restPT) sign vSet =
+  let 
+    prop = findPropertyInHierarchy (CSMOFSign.typeRel sign) (CSMOFSign.properties sign) typ (pName pt)
+    (restProps,diagn) = collectRecursiveRelInvoc nam typ restPT sign vSet
+    (recPr, recDiag) = case (objTemp pt) of
+                         Nothing -> ([],[])
+                         Just ot -> collectRecursiveRelInvoc (domVar ot) (domType ot) (templateList ot) sign vSet
+  in 
+    case prop of
+      Nothing -> ([],(mkDiag Error "property not found" pt) : (diagn ++ recDiag))
+      Just p -> let 
+                  souV = RelVar typ nam
+                  tarV = getVarFromTemplate pt vSet
+                in
+                  case tarV of
+                    Nothing -> (restProps ++ recPr, diagn ++ recDiag) -- it is a OCL expression, not a variable
+                    Just relVar -> ((p,souV,relVar) : (restProps ++ recPr), diagn ++ recDiag)
+
+
+getVarFromTemplate :: PropertyTemplate -> [RelVar] -> Maybe RelVar
+getVarFromTemplate (PropertyTemplate _ ocl _) relV = 
+  case ocl of
+    Nothing -> Nothing
+    Just s -> let w = words s
+              in if length w == 1 -- could be a variable
+                 then findVarFromName (head w) relV
+                 else Nothing
+
+
+findVarFromName :: String -> [RelVar] -> Maybe RelVar
+findVarFromName _ [] = Nothing
+findVarFromName nam (v : restV) = if (varName v) == nam 
+                                  then Just v
+                                  else findVarFromName nam restV
+
+
+collectRecursivePreds :: [RelVar] -> Maybe ObjectTemplate -> [String]
+collectRecursivePreds _ Nothing = []
+collectRecursivePreds vSet (Just ot) =
+  let 
+    tList = templateList ot
+    oclExps = foldr ((++) . (getOclExpre (domVar ot) vSet)) [] tList
+  in 
+    oclExps ++ (foldr ((++) . (collectRecursivePreds vSet) . objTemp) [] tList)
+
+
+getOclExpre :: String -> [RelVar] -> PropertyTemplate -> [String]
+getOclExpre otN vSet (PropertyTemplate pN ocl _) = 
+  case ocl of
+    Nothing -> []
+    Just s -> let w = words s
+              in if length w == 1 -- could be a variable, not an OCL expression
+                 then case findVarFromName (head w) vSet of
+                        Nothing -> [pN ++ " " ++ otN ++ " (" ++ s ++ ")"]
+                        Just _ -> [] -- it is a variable, not an OCL expression
+                 else [pN ++ " " ++ otN ++ " (" ++ s ++ ")"]
+
+
+buildWhen :: WhenWhere -> (Maybe WhenWhere,[Diagnosis])
+buildWhen whenC =
+  case whenC of 
+    When _ _ -> (Just whenC, []) -- ToDo Diagnosis
+    _ -> (Nothing,[mkDiag Error "not a valid when clause" whenC])
+
+
+buildWhere :: WhenWhere -> (Maybe WhenWhere,[Diagnosis])
+buildWhere whereC =
+  case whereC of 
+    Where _ _ -> (Just whereC, []) -- ToDo Diagnosis
+    _ -> (Nothing,[mkDiag Error "not a valid where clause" whereC])
+
+
+-- ToDo :: Diagnosis
+  -- las Keys no son vacias
+  -- los tipos en RelVar existen
+  -- los tipos en PrimitiveDomain existen
+  -- los nombres de variables en RelVar, PrimitiveDomain, Domain no se repiten
+  -- el domModelId del source y target Domain son los de la transformacion
+  -- los domMeta del source (de todos los obj templ) es el del source de la trans. Idem para el target
+  -- los domType del source y target existen en el source y target meta, respectivamente
+  -- los pName son propiedades que existen en cada domType
+  -- no hago nada con las oclExpre
+  -- para cada RelInVok de un WhenWhere, el nombre de la regla existe
+  -- para cada RelInvok los parametros son variables definidas y tienen los tipos de la relacion
 
 
 -- Get every ObjectTemplate from a Domain (recursive)
