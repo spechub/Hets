@@ -194,7 +194,7 @@ isDomain f = case quanti f of
   _ -> False
 
 isDomainDef :: FORMULA f -> Bool
-isDomainDef = isJust . domainDef
+isDomainDef f = isJust (domainDef f) && isDomain f
 
 domainDef :: FORMULA f -> Maybe (TERM f, FORMULA f)
 domainDef f = case quanti f of
