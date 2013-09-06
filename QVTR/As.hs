@@ -149,7 +149,6 @@ instance GetRange OCL where
 
 data EXPRE = Paren { exp :: EXPRE }
            | StringExp { strExp :: STRING }
-           | VarExp { varExp :: String } 
            | Equal { lExp :: EXPRE, rExp :: EXPRE}
            | BoolExp { boolExp :: BOOL }
            deriving (Eq, Ord)
@@ -161,6 +160,7 @@ instance GetRange EXPRE where
 
 data STRING = Str { simpleStr :: String }
             | ConcatExp { lStr :: STRING, rStr :: STRING }
+            | VarExp { varExp :: String }
             deriving (Eq, Ord)
 
 instance GetRange STRING where

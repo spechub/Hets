@@ -287,9 +287,9 @@ findRelVarFromName (v : restV) nam = if QVTRAs.varName v == nam
 
 
 getVarIdsFromOCLExpre :: [RelVar] -> QVTRAs.OCL -> [RelVar]
-getVarIdsFromOCLExpre varS (OCLExpre (VarExp v)) = case findRelVarFromName varS v of
-                                                     Nothing -> []
-                                                     Just r -> [r]
+getVarIdsFromOCLExpre varS (OCLExpre (StringExp (VarExp v))) = case findRelVarFromName varS v of
+                                                                 Nothing -> []
+                                                                 Just r -> [r]
 getVarIdsFromOCLExpre _ _ = []
 
 

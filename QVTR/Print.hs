@@ -79,11 +79,21 @@ instance Pretty Relation where
     (case whenC of 
        Nothing -> case whereC of
                     Nothing -> rbrace
-                    Just whereCon -> space <+> space <+> text "Where" <+> lbrace $+$ pretty whereCon $+$ rbrace $++$ rbrace
+                    Just whereCon -> space <+> space <+> text "Where" <+> lbrace 
+                                                     $+$ space <+> space <+> pretty whereCon 
+                                                     $+$ space <+> space <+> rbrace 
+                                                     $++$ rbrace
        Just whenCon -> case whereC of
-                         Nothing -> space <+> space <+> text "When" <+> lbrace $+$ pretty whenCon $+$ rbrace $++$ rbrace
-                         Just whereCon -> space <+> space <+> text "When" <+> lbrace $+$ pretty whenCon $+$ rbrace
-                                          $++$ space <+> space <+> text "Where" <+> lbrace $+$ pretty whereCon $+$ rbrace
+                         Nothing -> space <+> space <+> text "When" <+> lbrace 
+                                                    $+$ space <+> space <+> pretty whenCon 
+                                                    $+$ space <+> space <+> rbrace 
+                                                    $++$ rbrace
+                         Just whereCon -> space <+> space <+> text "When" <+> lbrace 
+                                                          $+$ space <+> space <+> pretty whenCon 
+                                                          $+$ space <+> space <+> rbrace
+                                          $++$ space <+> space <+> text "Where" <+> lbrace 
+                                                               $+$ space <+> space <+> pretty whereCon 
+                                                               $+$ space <+> space <+> rbrace
                                           $++$ rbrace)
     
 instance Show Relation where
@@ -139,8 +149,14 @@ instance Show PropertyTemplate where
 
 instance Pretty WhenWhere where
   pretty (WhenWhere inv ocl) =
-    space <+> space <+> foldr (($+$) . pretty) empty inv
-    $+$ space <+> space <+> foldr (($+$) . pretty) empty ocl
+    if null inv 
+    then if null ocl
+         then space
+         else space <+> space <+> foldr (($+$) . pretty) empty ocl
+    else if null ocl
+         then space <+> space <+> foldr (($+$) . pretty) empty inv
+         else space <+> space <+> foldr (($+$) . pretty) empty inv
+              $+$ space <+> space <+> foldr (($+$) . pretty) empty ocl
 
 instance Show WhenWhere where
   show m = show $ pretty m
@@ -166,7 +182,6 @@ instance Show OCL where
 instance Pretty EXPRE where
   pretty (Paren ex) = lparen <+> pretty ex <+> rparen
   pretty (StringExp strE) = pretty strE
-  pretty (VarExp varE) = pretty varE
   pretty (Equal lE rE) = pretty lE <+> text "=" <+> pretty rE
   pretty (BoolExp boolE) = pretty boolE
 
@@ -177,6 +192,7 @@ instance Show EXPRE where
 instance Pretty STRING where
   pretty (Str e) = text "'" <> text e <> text "'"
   pretty (ConcatExp lE rE) = pretty lE <+> text "+" <+> pretty rE
+  pretty (VarExp varE) = pretty varE
 
 instance Show STRING where
   show m = show $ pretty m

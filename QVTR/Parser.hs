@@ -80,7 +80,7 @@ pKeyDecl = do
   skip
   classId <- pClassId
   skip
-  list <- pBetBraces $ pCommaSep $ pKeyProperty
+  list <- pBetBraces $ pCommaSep $ (skip >> pKeyProperty << skip)
   skip
   char ';'
   return (QVTR.Key (fst classId) (snd classId) list) -- ToDo
@@ -174,7 +174,7 @@ pIsTop = do
 pVarDeclaration :: CharParser st [QVTR.RelVar]
 pVarDeclaration = do
   skip
-  vars <- pCommaSep pIdentifier
+  vars <- pCommaSep (skip >> pIdentifier << skip)
   skip
   char ':'
   skip
@@ -253,11 +253,7 @@ pTemplate = do
   skip
   typ <- pClassId
   skip
-  char '{'
-  skip
-  tempList <- option [] pPropertyTemplateList
-  skip
-  char '}'
+  tempList <- pBetBraces $ option [] pPropertyTemplateList
   return ( QVTR.ObjectTemplate ide (fst typ) (snd typ) tempList )
 
 
@@ -265,6 +261,7 @@ pTemplate = do
 
 pPropertyTemplateList :: CharParser st [QVTR.PropertyTemplate]
 pPropertyTemplateList = do
+  skip
   tempList <- try $ pCommaSep pPropertyTemplate
   return ( tempList )
 
@@ -279,7 +276,7 @@ pPropertyTemplate = do
   skip
   pEqual
   skip
-  (do t <- try pTemplate 
+  (do t <- try pTemplate
       return ( QVTR.PropertyTemplate ident Nothing (Just t) ) 
    <|> 
    do e <- try pOCLExpression
@@ -296,7 +293,7 @@ pWhen = do
   skip
   relInvok <- many (try pRelInvocation)
   skip
-  oclExpre <- try $ pSemiSep pOCLExpression
+  oclExpre <- many (try pOCLWSemi)
   skip
   char '}'
   return ( Just (QVTR.WhenWhere relInvok oclExpre) )
@@ -312,10 +309,18 @@ pWhere = do
   skip
   relInvok <- many (try pRelInvocation)
   skip
-  oclExpre <- try $ pSemiSep pOCLExpression
+  oclExpre <- many (try pOCLWSemi)
   skip
   char '}'
   return ( Just (QVTR.WhenWhere relInvok oclExpre) )
+
+
+pOCLWSemi :: CharParser st QVTR.OCL
+pOCLWSemi = do
+  e <- pOCLExpression
+  skip
+  char ';'
+  return ( e )
 
 
 -- <RelInvocation> ::= <identifier> '(' (<identifier> ',')* ')' ';'
@@ -326,7 +331,7 @@ pRelInvocation = do
   skip
   char '('
   skip
-  params <- pCommaSep pIdentifier
+  params <- pCommaSep (skip >> pIdentifier << skip)
   skip
   char ')'
   skip
@@ -398,7 +403,6 @@ pIdentifier = do
 --
 -- <Expre> ::= '(' <Expre> ')'
 --           | <String> 
---           | <identifier> 
 --           | <Const>
 --           | <Expre> <Duop> <Expre>
 --           | <Unop> <Expre>
@@ -408,6 +412,7 @@ pIdentifier = do
 -- <Duop>  ::= 'and' | 'or' | '='
 --
 -- <String> ::= ''' <text> ''' 
+--            | <identifier>
 --            | <String> '+' <String>
 
 pOCLExpression :: CharParser st QVTR.OCL
@@ -415,98 +420,94 @@ pOCLExpression = do
   skip
   (    do (b,le,re) <- try pOCLIf
           return ( QVTR.IFExpre b le re )
-   <|> do r <- pOCLExpre
+   <|> do r <- try pOCLExpre
           return (QVTR.OCLExpre r))
 
 
 pOCLExpre :: CharParser st QVTR.EXPRE
 pOCLExpre = do
   skip
-  (    do ex <- try $ pBetParent pOCLExpre
+  (    do try pOCLConst
+   <|> do ex <- try $ pBetParent pOCLExpre
           return ( QVTR.Paren ex )
+   <|> do try pUnop
    <|> do s <- try pOCLSTRING
-          return ( QVTR.StringExp s )
-   <|> do v <- pIdentifier
-          return ( QVTR.VarExp v )
-   <|> do pOCLConst
-   <|> do le <- pOCLExpre
-          skip
-          op <- pDuop
-          skip
-          re <- pOCLExpre
-          (if op == "="
-           then return ( QVTR.Equal le re )
-           else if op == "and"
-                then return ( QVTR.BoolExp (QVTR.AndB le re) )
-                else return ( QVTR.BoolExp (QVTR.OrB le re)))
-   <|> do pKey "not" 
-          skip
-          e <- try pOCLExpre
-          return ( QVTR.BoolExp (QVTR.NotB e)) )
+          return ( QVTR.StringExp s ))
+--   <|> try (do le <- pOCLExpre
+--               skip
+--               op <- pDuop
+--               skip
+--               re <- pOCLExpre
+--               (if op == "="
+--                then return ( QVTR.Equal le re )
+--                else if op == "and"
+--                     then return ( QVTR.BoolExp (QVTR.AndB le re) )
+--                     else return ( QVTR.BoolExp (QVTR.OrB le re)) )))
+
+    
+pUnop :: CharParser st QVTR.EXPRE
+pUnop = do 
+  pKey "not" 
+  skip
+  e <- try pOCLExpre
+  return ( QVTR.BoolExp (QVTR.NotB e)) 
 
 
 pDuop :: CharParser st String
-pDuop = do
-  skip
-  (    do pKey "and" 
-          return ( "and" )
-   <|> do pKey "or" 
-          return ( "or" )
-   <|> do pKey "=" 
-          return ( "=" ) )
+pDuop = do pKey "and" 
+           return ( "and" )
+    <|> do pKey "or" 
+           return ( "or" )
+    <|> do pKey "=" 
+           return ( "=" )
 
 
 pOCLConst :: CharParser st QVTR.EXPRE
-pOCLConst = do
-  skip
-  (    do pKey "true" 
-          return ( QVTR.BoolExp (QVTR.BExp True) )
-   <|> do pKey "false" 
-          return ( QVTR.BoolExp (QVTR.BExp False) ) )
+pOCLConst = do pKey "true" 
+               return ( QVTR.BoolExp (QVTR.BExp True) )
+        <|> do pKey "false" 
+               return ( QVTR.BoolExp (QVTR.BExp False) )
 
 
 pOCLIf :: CharParser st (QVTR.EXPRE,QVTR.OCL,QVTR.OCL)
 pOCLIf = do
-  skip
   pKey "if" 
   skip
-  b <- pOCLExpre
+  b <- try pOCLExpre
   skip
   pKey "then" 
   skip
-  e1 <- pOCLExpression
+  e1 <- try pOCLExpression
   skip
   pKey "else" 
   skip
-  e2 <- pOCLExpression
+  e2 <- try pOCLExpression
   skip
   pKey "endif" 
   return ( (b,e1,e2) )
 
 
 pOCLSTRING :: CharParser st QVTR.STRING
-pOCLSTRING = do
-  skip
-  (     do (ls,rs) <- try pStringConcat
-           return ( QVTR.ConcatExp ls rs )
-    <|> do res <- pOCLSingleSTRING 
-           return ( QVTR.Str res ))
+pOCLSTRING = do (ls,rs) <- try pStringConcat
+                return ( QVTR.ConcatExp ls rs )
+         <|> do res <- try pOCLSingleSTRING 
+                return ( QVTR.Str res )
+         <|> do v <- try pIdentifier
+                return ( QVTR.VarExp v )
 
 
 pStringConcat :: CharParser st (QVTR.STRING,QVTR.STRING)
 pStringConcat = do
-  skip
-  ls <- pOCLSingleSTRING
+  ls <- try pOCLSTRING
   skip
   char '+'
   skip
-  rs <- pOCLSingleSTRING
-  return ( (QVTR.Str ls, QVTR.Str rs) )
+  rs <- try pOCLSTRING
+  return ( (ls, rs) )
 
 
 pOCLSingleSTRING :: CharParser st String
 pOCLSingleSTRING = do
-  skip
   char '\''
   skip
   res <- (many (noneOf "\'")) << (oneOf "\'")

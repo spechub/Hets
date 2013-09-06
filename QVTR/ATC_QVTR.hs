@@ -151,6 +151,9 @@ instance ShATermConvertible STRING where
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
       return $ addATerm (ShAAppl "ConcatExp" [a', b'] []) att2
+    VarExp a -> do
+      (att1, a') <- toShATerm' att0 a
+      return $ addATerm (ShAAppl "VarExp" [a'] []) att1
   fromShATermAux ix att0 = case getShATerm ix att0 of
     ShAAppl "Str" [a] _ ->
       case fromShATerm' a att0 of
@@ -162,6 +165,10 @@ instance ShATermConvertible STRING where
       case fromShATerm' b att1 of
       { (att2, b') ->
       (att2, ConcatExp a' b') }}
+    ShAAppl "VarExp" [a] _ ->
+      case fromShATerm' a att0 of
+      { (att1, a') ->
+      (att1, VarExp a') }
     u -> fromShATermError "STRING" u
 
 instance ShATermConvertible EXPRE where
@@ -172,9 +179,6 @@ instance ShATermConvertible EXPRE where
     StringExp a -> do
       (att1, a') <- toShATerm' att0 a
       return $ addATerm (ShAAppl "StringExp" [a'] []) att1
-    VarExp a -> do
-      (att1, a') <- toShATerm' att0 a
-      return $ addATerm (ShAAppl "VarExp" [a'] []) att1
     Equal a b -> do
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
@@ -191,10 +195,6 @@ instance ShATermConvertible EXPRE where
       case fromShATerm' a att0 of
       { (att1, a') ->
       (att1, StringExp a') }
-    ShAAppl "VarExp" [a] _ ->
-      case fromShATerm' a att0 of
-      { (att1, a') ->
-      (att1, VarExp a') }
     ShAAppl "Equal" [a, b] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->
