@@ -432,17 +432,18 @@ pOCLExpre = do
           return ( QVTR.Paren ex )
    <|> do try pUnop
    <|> do s <- try pOCLSTRING
-          return ( QVTR.StringExp s ))
---   <|> try (do le <- pOCLExpre
---               skip
---               op <- pDuop
---               skip
---               re <- pOCLExpre
---               (if op == "="
---                then return ( QVTR.Equal le re )
---                else if op == "and"
---                     then return ( QVTR.BoolExp (QVTR.AndB le re) )
---                     else return ( QVTR.BoolExp (QVTR.OrB le re)) )))
+          return ( QVTR.StringExp s )
+   <|> try (do 
+               op <- pDuop
+               skip
+               le <- pOCLExpre
+               skip
+               re <- pOCLExpre
+               (if op == "="
+                then return ( QVTR.Equal le re )
+                else if op == "and"
+                     then return ( QVTR.BoolExp (QVTR.AndB le re) )
+                     else return ( QVTR.BoolExp (QVTR.OrB le re)) )))
 
     
 pUnop :: CharParser st QVTR.EXPRE
@@ -488,22 +489,24 @@ pOCLIf = do
 
 
 pOCLSTRING :: CharParser st QVTR.STRING
-pOCLSTRING = do (ls,rs) <- try pStringConcat
-                return ( QVTR.ConcatExp ls rs )
-         <|> do res <- try pOCLSingleSTRING 
-                return ( QVTR.Str res )
-         <|> do v <- try pIdentifier
-                return ( QVTR.VarExp v )
+pOCLSTRING = do ls <- try pOCLSingleSTRING 
+                skip
+                (do rs <- try pStringConcat
+                    return ( QVTR.ConcatExp (QVTR.Str ls) rs ) 
+                 <|> return ( QVTR.Str ls ))
+         <|> do ls <- try pIdentifier
+                skip
+                (do rs <- try pStringConcat
+                    return ( QVTR.ConcatExp (QVTR.Str ls) rs ) 
+                 <|> return ( QVTR.VarExp ls ))
 
 
-pStringConcat :: CharParser st (QVTR.STRING,QVTR.STRING)
+pStringConcat :: CharParser st QVTR.STRING
 pStringConcat = do
-  ls <- try pOCLSTRING
-  skip
   char '+'
   skip
   rs <- try pOCLSTRING
-  return ( (ls, rs) )
+  return ( rs )
 
 
 pOCLSingleSTRING :: CharParser st String
