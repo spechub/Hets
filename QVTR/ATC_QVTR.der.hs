@@ -26,7 +26,6 @@ Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
 'QVTR.As.OCL'
 'QVTR.As.EXPRE'
 'QVTR.As.STRING'
-'QVTR.As.BOOL'
 'QVTR.Sign.RuleDef'
 'QVTR.Sign.Sign'
 'QVTR.Sign.Sen'
@@ -71,7 +70,6 @@ import qualified Data.Map as Map
 {-! for QVTR.As.OCL derive : Typeable !-}
 {-! for QVTR.As.EXPRE derive : Typeable !-}
 {-! for QVTR.As.STRING derive : Typeable !-}
-{-! for QVTR.As.BOOL derive : Typeable !-}
 {-! for QVTR.Sign.RuleDef derive : Typeable !-}
 {-! for QVTR.Sign.Sign derive : Typeable !-}
 {-! for QVTR.Sign.Sen derive : Typeable !-}
@@ -92,7 +90,6 @@ import qualified Data.Map as Map
 {-! for QVTR.As.OCL derive : ShATermConvertible !-}
 {-! for QVTR.As.EXPRE derive : ShATermConvertible !-}
 {-! for QVTR.As.STRING derive : ShATermConvertible !-}
-{-! for QVTR.As.BOOL derive : ShATermConvertible !-}
 {-! for QVTR.Sign.RuleDef derive : ShATermConvertible !-}
 {-! for QVTR.Sign.Sign derive : ShATermConvertible !-}
 {-! for QVTR.Sign.Sen derive : ShATermConvertible !-}

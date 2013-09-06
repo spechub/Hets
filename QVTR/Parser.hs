@@ -254,6 +254,7 @@ pTemplate = do
   typ <- pClassId
   skip
   tempList <- pBetBraces $ option [] pPropertyTemplateList
+  skip
   return ( QVTR.ObjectTemplate ide (fst typ) (snd typ) tempList )
 
 
@@ -400,7 +401,7 @@ pIdentifier = do
 -- FAKE OCL PARSER
 -- <OclExpressionCS> ::= <Expre>
 --                     | 'if' <Expre> 'then' <OclExpressionCS> 'else' <OclExpressionCS> 'endif'
---
+--                     | <OclExpressionCS> = <OclExpressionCS>
 -- <Expre> ::= '(' <Expre> ')'
 --           | <String> 
 --           | <Const>
@@ -409,7 +410,7 @@ pIdentifier = do
 --
 -- <Const> ::= 'true' | 'false'
 -- <Unop>  ::= 'not'
--- <Duop>  ::= 'and' | 'or' | '='
+-- <Duop>  ::= 'and' | 'or'
 --
 -- <String> ::= ''' <text> ''' 
 --            | <identifier>
@@ -420,6 +421,7 @@ pOCLExpression = do
   skip
   (    do (b,le,re) <- try pOCLIf
           return ( QVTR.IFExpre b le re )
+   <|> try pEqualExpreOCL
    <|> do r <- try pOCLExpre
           return (QVTR.OCLExpre r))
 
@@ -427,47 +429,97 @@ pOCLExpression = do
 pOCLExpre :: CharParser st QVTR.EXPRE
 pOCLExpre = do
   skip
-  (    do try pOCLConst
+  (    try pOCLConst
    <|> do ex <- try $ pBetParent pOCLExpre
           return ( QVTR.Paren ex )
-   <|> do try pUnop
+   <|> try pUnop
+   <|> try pDuopAnd
+   <|> try pDuopOr
+   <|> try pEqualExpre
    <|> do s <- try pOCLSTRING
-          return ( QVTR.StringExp s )
-   <|> try (do 
-               op <- pDuop
-               skip
-               le <- pOCLExpre
-               skip
-               re <- pOCLExpre
-               (if op == "="
-                then return ( QVTR.Equal le re )
-                else if op == "and"
-                     then return ( QVTR.BoolExp (QVTR.AndB le re) )
-                     else return ( QVTR.BoolExp (QVTR.OrB le re)) )))
+          return ( QVTR.StringExp s ) )
+--   <|> chainl1 pOCLExpre pEqualExpre
+--   <|> chainl1 pOCLExpre pBoolExpre )
 
-    
+
+--pEqualExpre :: CharParser st (QVTR.EXPRE -> QVTR.EXPRE -> QVTR.EXPRE)
+--pEqualExpre = do
+--  skip
+--  pKey "="
+--  skip
+--  return ( QVTR.Equal )
+
+
+--pBoolExpre :: CharParser st (QVTR.EXPRE -> QVTR.EXPRE -> QVTR.EXPRE)
+--pBoolExpre = do
+--  skip
+--  (     do op <- pKey "and" 
+--           return ( QVTR.AndB )
+--    <|> do op <- pKey "or" 
+--           return ( QVTR.OrB ) )
+
 pUnop :: CharParser st QVTR.EXPRE
 pUnop = do 
+  skip
   pKey "not" 
   skip
   e <- try pOCLExpre
-  return ( QVTR.BoolExp (QVTR.NotB e)) 
+  return ( QVTR.NotB e )
+
+    
+-- Prefix form. This MUST be changed
+pEqualExpreOCL :: CharParser st QVTR.OCL
+pEqualExpreOCL = do 
+  skip
+  pKey "=" 
+  skip
+  ex1 <- try $ pBetParent pOCLExpression
+  skip
+  ex2 <- try $ pBetParent pOCLExpression
+  return ( QVTR.Equal ex1 ex2 ) 
 
 
-pDuop :: CharParser st String
-pDuop = do pKey "and" 
-           return ( "and" )
-    <|> do pKey "or" 
-           return ( "or" )
-    <|> do pKey "=" 
-           return ( "=" )
+-- Prefix form. This MUST be changed
+pEqualExpre :: CharParser st QVTR.EXPRE
+pEqualExpre = do 
+  skip
+  pKey "=" 
+  skip
+  ex1 <- try $ pBetParent pOCLExpre
+  skip
+  ex2 <- try $ pBetParent pOCLExpre
+  return ( QVTR.EqualExp ex1 ex2 ) 
+
+
+-- Prefix form. This MUST be changed
+pDuopAnd :: CharParser st QVTR.EXPRE
+pDuopAnd = do 
+  skip
+  pKey "and" 
+  skip
+  ex1 <- try $ pBetParent pOCLExpre
+  skip
+  ex2 <- try $ pBetParent pOCLExpre
+  return ( QVTR.AndB ex1 ex2 )
+
+
+-- Prefix form. This MUST be changed
+pDuopOr :: CharParser st QVTR.EXPRE
+pDuopOr = do 
+  skip
+  pKey "or" 
+  skip
+  ex1 <- try $ pBetParent pOCLExpre
+  skip
+  ex2 <- try $ pBetParent pOCLExpre
+  return ( QVTR.OrB ex1 ex2 )  
 
 
 pOCLConst :: CharParser st QVTR.EXPRE
 pOCLConst = do pKey "true" 
-               return ( QVTR.BoolExp (QVTR.BExp True) )
+               return ( QVTR.BExp True )
         <|> do pKey "false" 
-               return ( QVTR.BoolExp (QVTR.BExp False) )
+               return ( QVTR.BExp False )
 
 
 pOCLIf :: CharParser st (QVTR.EXPRE,QVTR.OCL,QVTR.OCL)
@@ -517,7 +569,9 @@ pOCLSingleSTRING = do
   return ( res )
 
 
---  skip
---  res <- (many (noneOf ",;{}")) << (oneOf ",;")
---  return ( QVTR.StringExp (QVTR.Str res) )
+pEverything :: CharParser st String
+pEverything = do
+  skip
+  res <- (many (noneOf ",;{}")) << (oneOf ",;")
+  return ( res )
 

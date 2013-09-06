@@ -58,7 +58,9 @@ transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
 	  
 	  where {
 	    AttributeToColumn(c, t, prefix);
-	    prefix = '';
+
+            = (prefix) ('');
+	    --prefix = '';
 	  }
 	  
 	}
@@ -87,8 +89,11 @@ transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
 	  };
 	  
 	  where {
-	    cn = if prefix = '' then an else prefix + '_' + an endif;
-	    sqltype = if pn = 'INTEGER' then 'NUMBER' else if pn = 'BOOLEAN' then 'BOOLEAN' else 'VARCHAR' endif endif;
+            = (cn) (if = (prefix) ('') then an else prefix + '_' + an endif);
+	    --cn = if prefix = '' then an else prefix + '_' + an endif;
+
+	    = (sqltype) (if = (pn) ('INTEGER') then 'NUMBER' else if = (pn) ('BOOLEAN') then 'BOOLEAN' else 'VARCHAR' endif endif);
+            -- sqltype = if pn = 'INTEGER' then 'NUMBER' else if pn = 'BOOLEAN' then 'BOOLEAN' else 'VARCHAR' endif endif;
 	  }
 	  
 	}

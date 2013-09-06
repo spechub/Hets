@@ -140,6 +140,7 @@ instance GetRange RelInvok where
 
 data OCL = IFExpre { cond :: EXPRE, thenExpre :: OCL, elseExpre :: OCL }
          | OCLExpre { expre :: EXPRE }
+         | Equal { lExp :: OCL, rExp :: OCL}
          deriving (Eq, Ord)
 
 instance GetRange OCL where
@@ -149,8 +150,11 @@ instance GetRange OCL where
 
 data EXPRE = Paren { exp :: EXPRE }
            | StringExp { strExp :: STRING }
-           | Equal { lExp :: EXPRE, rExp :: EXPRE}
-           | BoolExp { boolExp :: BOOL }
+           | BExp { bExp :: Bool }
+           | NotB { notExp :: EXPRE }
+           | AndB { lExpA :: EXPRE, rExpA :: EXPRE }
+           | OrB { lExpO :: EXPRE, rExpO :: EXPRE }
+           | EqualExp { lExpre :: EXPRE, rExpre :: EXPRE}
            deriving (Eq, Ord)
 
 instance GetRange EXPRE where
@@ -166,15 +170,3 @@ data STRING = Str { simpleStr :: String }
 instance GetRange STRING where
   getRange _ = nullRange
   rangeSpan _ = []      
-
-
-data BOOL = BExp { bExp :: Bool }
-          | NotB { notExp :: EXPRE }
-          | AndB { lExpA :: EXPRE, rExpA :: EXPRE }
-          | OrB { lExpO :: EXPRE, rExpO :: EXPRE }
-          deriving (Eq, Ord)
-
-instance GetRange BOOL where
-  getRange _ = nullRange
-  rangeSpan _ = []      
-
