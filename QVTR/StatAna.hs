@@ -344,12 +344,8 @@ checkRule sign _ _ (Relation tp rN vS prD souDom tarDom whenC whereC) =
 
     (souPat, diagSPat) = buildPattern souDom (sourceSign sign) vSet
     (tarPat, diagTPat) = buildPattern tarDom (targetSign sign) vSet
-    (whenCl, diagW1Pat) = case whenC of
-                            Nothing -> (Nothing, [])
-                            Just w -> buildWhen w
-    (whereCl, diagW2Pat) = case whereC of
-                             Nothing -> (Nothing, [])
-                             Just w -> buildWhere w
+    (whenCl, diagW1Pat) = checkWhenWhere whenC
+    (whereCl, diagW2Pat) = checkWhenWhere whereC
 
   in 
     if tp 
@@ -431,10 +427,8 @@ getVarFromTemplate :: PropertyTemplate -> [RelVar] -> Maybe RelVar
 getVarFromTemplate (PropertyTemplate _ ocl _) relV = 
   case ocl of
     Nothing -> Nothing
-    Just s -> let w = words s
-              in if length w == 1 -- could be a variable
-                 then findVarFromName (head w) relV
-                 else Nothing
+    Just (OCLExpre (VarExp v)) -> findVarFromName v relV
+    _ -> Nothing
 
 
 findVarFromName :: String -> [RelVar] -> Maybe RelVar
@@ -444,7 +438,7 @@ findVarFromName nam (v : restV) = if (varName v) == nam
                                   else findVarFromName nam restV
 
 
-collectRecursivePreds :: [RelVar] -> Maybe ObjectTemplate -> [String]
+collectRecursivePreds :: [RelVar] -> Maybe ObjectTemplate -> [(String,String,OCL)]
 collectRecursivePreds _ Nothing = []
 collectRecursivePreds vSet (Just ot) =
   let 
@@ -454,30 +448,15 @@ collectRecursivePreds vSet (Just ot) =
     oclExps ++ (foldr ((++) . (collectRecursivePreds vSet) . objTemp) [] tList)
 
 
-getOclExpre :: String -> [RelVar] -> PropertyTemplate -> [String]
-getOclExpre otN vSet (PropertyTemplate pN ocl _) = 
+getOclExpre :: String -> [RelVar] -> PropertyTemplate -> [(String,String,OCL)]
+getOclExpre otN _ (PropertyTemplate pN ocl _) = 
   case ocl of
     Nothing -> []
-    Just s -> let w = words s
-              in if length w == 1 -- could be a variable, not an OCL expression
-                 then case findVarFromName (head w) vSet of
-                        Nothing -> [pN ++ " " ++ otN ++ " (" ++ s ++ ")"]
-                        Just _ -> [] -- it is a variable, not an OCL expression
-                 else [pN ++ " " ++ otN ++ " (" ++ s ++ ")"]
+    Just s -> [(pN,otN,s)] -- ToDo Diagnosis
 
 
-buildWhen :: WhenWhere -> (Maybe WhenWhere,[Diagnosis])
-buildWhen whenC =
-  case whenC of 
-    When _ _ -> (Just whenC, []) -- ToDo Diagnosis
-    _ -> (Nothing,[mkDiag Error "not a valid when clause" whenC])
-
-
-buildWhere :: WhenWhere -> (Maybe WhenWhere,[Diagnosis])
-buildWhere whereC =
-  case whereC of 
-    Where _ _ -> (Just whereC, []) -- ToDo Diagnosis
-    _ -> (Nothing,[mkDiag Error "not a valid where clause" whereC])
+checkWhenWhere :: Maybe WhenWhere -> (Maybe WhenWhere,[Diagnosis])
+checkWhenWhere ww = (ww, []) -- ToDo Diagnosis
 
 
 -- ToDo :: Diagnosis
@@ -510,6 +489,4 @@ getOT list =
     el : rest -> case objTemp el of
                    Nothing -> getOT rest
                    Just typ -> typ : getOT rest
-
-
 

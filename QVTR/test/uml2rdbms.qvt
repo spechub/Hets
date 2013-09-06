@@ -16,11 +16,11 @@ transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
 	  pn : String;
 	  
 	  checkonly domain uml p : UML::Package {
-	    name = pn;
+	    name = pn
 	  };
 	  
 	  enforce domain rdbms s : RDBMS::Schema {
-	    name = pn;
+	    name = pn
 	  };
 	  
 	}
@@ -35,7 +35,7 @@ transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
 	    namespace = p : UML::Package {
 	    },
 	    kind = 'Persistent',
-	    name = cn;
+	    name = cn
 	  };
 	  
 	  enforce domain rdbms t : RDBMS::Table {
@@ -44,12 +44,12 @@ transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
 	    name = cn,
 	    column = cl : RDBMS::Column {
 	      name = cn + '_tid',
-	      typeT = 'NUMBER';
+	      typeT = 'NUMBER'
 	    },
 	    keyK = k : RDBMS::Key {
 	    	name = cn + '_pk',
-	      	column = cl;
-	    };
+	      	column = cl
+	    }
 	  };
 	  
 	  when {
@@ -74,16 +74,16 @@ transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
 	    attribute = a : UML::Attribute {
 	      name = an,
 	      typeT = p : UML::PrimitiveDataType {
-	        name = pn;
-	      };
-	    };
+	        name = pn
+	      }
+	    }
 	  };
 	  
 	  enforce domain rdbms t : RDBMS::Table {
 	    column = cl : RDBMS::Column {
 	      name = cn,
-	      typeT = sqltype;
-	    };
+	      typeT = sqltype
+	    }
 	  };
 	  
 	  where {

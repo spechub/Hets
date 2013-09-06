@@ -265,11 +265,11 @@ pTemplate = do
 
 pPropertyTemplateList :: CharParser st [QVTR.PropertyTemplate]
 pPropertyTemplateList = do
-  tempList <- many (try pPropertyTemplate)
+  tempList <- try $ pCommaSep pPropertyTemplate
   return ( tempList )
 
 
--- <propertyTemplate> ::= <identifier> '=' <OclExpressionCS> ';'
+-- <propertyTemplate> ::= <identifier> '=' <OclExpressionCS>
 --                     | <identifier> '=' <objectTemplate>
 
 pPropertyTemplate :: CharParser st QVTR.PropertyTemplate
@@ -280,10 +280,9 @@ pPropertyTemplate = do
   pEqual
   skip
   (do t <- try pTemplate 
-      oneOf ",;"
       return ( QVTR.PropertyTemplate ident Nothing (Just t) ) 
    <|> 
-   do e <- pOCLExpression
+   do e <- try pOCLExpression
       return ( QVTR.PropertyTemplate ident (Just e) Nothing ))
 
 
@@ -297,10 +296,10 @@ pWhen = do
   skip
   relInvok <- many (try pRelInvocation)
   skip
-  oclExpre <- many (try pOCLExpression)
+  oclExpre <- try $ pSemiSep pOCLExpression
   skip
   char '}'
-  return ( Just (QVTR.When relInvok oclExpre) )
+  return ( Just (QVTR.WhenWhere relInvok oclExpre) )
 
 
 -- <where> ::= 'where' '{' (<RelInvocation> ';')* (<OclExpressionCS> ';')* '}'
@@ -313,10 +312,10 @@ pWhere = do
   skip
   relInvok <- many (try pRelInvocation)
   skip
-  oclExpre <- many (try pOCLExpression)
+  oclExpre <- try $ pSemiSep pOCLExpression
   skip
   char '}'
-  return ( Just (QVTR.Where relInvok oclExpre) )
+  return ( Just (QVTR.WhenWhere relInvok oclExpre) )
 
 
 -- <RelInvocation> ::= <identifier> '(' (<identifier> ',')* ')' ';'
@@ -333,13 +332,6 @@ pRelInvocation = do
   skip
   char ';'
   return ( QVTR.RelInvok nam params )
-
-
-pOCLExpression :: CharParser st String
-pOCLExpression = do
-  skip
-  res <- (many (noneOf ",;{}")) << (oneOf ",;")
-  return (res)
 
 
 -- Auxiliary definitions
@@ -384,6 +376,9 @@ pBetBraces = between (char '{') (char '}')
 pCommaSep :: CharParser st a -> CharParser st [a]
 pCommaSep p  = p `sepBy` (char ',')
 
+pSemiSep :: CharParser st a -> CharParser st [a]
+pSemiSep p  = p `sepBy` (char ';')
+
 pColonSep :: CharParser st a -> CharParser st [a]
 pColonSep p  = p `sepBy` (char ':')
 
@@ -393,3 +388,132 @@ pIdentifier = do
   c <- letter
   rest <- many (alphaNum <|> oneOf "_")
   return (c : rest)
+
+
+
+
+-- FAKE OCL PARSER
+-- <OclExpressionCS> ::= <Expre>
+--                     | 'if' <Expre> 'then' <OclExpressionCS> 'else' <OclExpressionCS> 'endif'
+--
+-- <Expre> ::= '(' <Expre> ')'
+--           | <String> 
+--           | <identifier> 
+--           | <Const>
+--           | <Expre> <Duop> <Expre>
+--           | <Unop> <Expre>
+--
+-- <Const> ::= 'true' | 'false'
+-- <Unop>  ::= 'not'
+-- <Duop>  ::= 'and' | 'or' | '='
+--
+-- <String> ::= ''' <text> ''' 
+--            | <String> '+' <String>
+
+pOCLExpression :: CharParser st QVTR.OCL
+pOCLExpression = do
+  skip
+  (    do (b,le,re) <- try pOCLIf
+          return ( QVTR.IFExpre b le re )
+   <|> do r <- pOCLExpre
+          return (QVTR.OCLExpre r))
+
+
+pOCLExpre :: CharParser st QVTR.EXPRE
+pOCLExpre = do
+  skip
+  (    do ex <- try $ pBetParent pOCLExpre
+          return ( QVTR.Paren ex )
+   <|> do s <- try pOCLSTRING
+          return ( QVTR.StringExp s )
+   <|> do v <- pIdentifier
+          return ( QVTR.VarExp v )
+   <|> do pOCLConst
+   <|> do le <- pOCLExpre
+          skip
+          op <- pDuop
+          skip
+          re <- pOCLExpre
+          (if op == "="
+           then return ( QVTR.Equal le re )
+           else if op == "and"
+                then return ( QVTR.BoolExp (QVTR.AndB le re) )
+                else return ( QVTR.BoolExp (QVTR.OrB le re)))
+   <|> do pKey "not" 
+          skip
+          e <- try pOCLExpre
+          return ( QVTR.BoolExp (QVTR.NotB e)) )
+
+
+pDuop :: CharParser st String
+pDuop = do
+  skip
+  (    do pKey "and" 
+          return ( "and" )
+   <|> do pKey "or" 
+          return ( "or" )
+   <|> do pKey "=" 
+          return ( "=" ) )
+
+
+pOCLConst :: CharParser st QVTR.EXPRE
+pOCLConst = do
+  skip
+  (    do pKey "true" 
+          return ( QVTR.BoolExp (QVTR.BExp True) )
+   <|> do pKey "false" 
+          return ( QVTR.BoolExp (QVTR.BExp False) ) )
+
+
+pOCLIf :: CharParser st (QVTR.EXPRE,QVTR.OCL,QVTR.OCL)
+pOCLIf = do
+  skip
+  pKey "if" 
+  skip
+  b <- pOCLExpre
+  skip
+  pKey "then" 
+  skip
+  e1 <- pOCLExpression
+  skip
+  pKey "else" 
+  skip
+  e2 <- pOCLExpression
+  skip
+  pKey "endif" 
+  return ( (b,e1,e2) )
+
+
+pOCLSTRING :: CharParser st QVTR.STRING
+pOCLSTRING = do
+  skip
+  (     do (ls,rs) <- try pStringConcat
+           return ( QVTR.ConcatExp ls rs )
+    <|> do res <- pOCLSingleSTRING 
+           return ( QVTR.Str res ))
+
+
+pStringConcat :: CharParser st (QVTR.STRING,QVTR.STRING)
+pStringConcat = do
+  skip
+  ls <- pOCLSingleSTRING
+  skip
+  char '+'
+  skip
+  rs <- pOCLSingleSTRING
+  return ( (QVTR.Str ls, QVTR.Str rs) )
+
+
+pOCLSingleSTRING :: CharParser st String
+pOCLSingleSTRING = do
+  skip
+  char '\''
+  skip
+  res <- (many (noneOf "\'")) << (oneOf "\'")
+  return ( res )
+
+
+--  skip
+--  res <- (many (noneOf ",;{}")) << (oneOf ",;")
+--  return ( QVTR.StringExp (QVTR.Str res) )
+

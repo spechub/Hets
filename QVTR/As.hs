@@ -110,7 +110,7 @@ instance GetRange ObjectTemplate where
 
 data PropertyTemplate = PropertyTemplate
                       { pName :: String
-                      , oclExpre :: Maybe String
+                      , oclExpre :: Maybe OCL
                       , objTemp :: Maybe ObjectTemplate
                       } deriving (Eq, Ord)
 
@@ -119,8 +119,7 @@ instance GetRange PropertyTemplate where
   rangeSpan _ = []
 
 
-data WhenWhere = When { relInvokWhen :: [RelInvok], oclExpreWhen :: [String] } 
-               | Where { relInvokWhere :: [RelInvok], oclExpreWhere :: [String] } deriving (Eq, Ord)   
+data WhenWhere = WhenWhere { relInvokWhen :: [RelInvok], oclExpreWhen :: [OCL] } deriving (Eq, Ord)   
 
 instance GetRange WhenWhere where
   getRange _ = nullRange
@@ -135,4 +134,47 @@ data RelInvok = RelInvok
 instance GetRange RelInvok where
   getRange _ = nullRange
   rangeSpan _ = []
+
+
+-- Fake OCL expressions
+
+data OCL = IFExpre { cond :: EXPRE, thenExpre :: OCL, elseExpre :: OCL }
+         | OCLExpre { expre :: EXPRE }
+         deriving (Eq, Ord)
+
+instance GetRange OCL where
+  getRange _ = nullRange
+  rangeSpan _ = []      
+
+
+data EXPRE = Paren { exp :: EXPRE }
+           | StringExp { strExp :: STRING }
+           | VarExp { varExp :: String } 
+           | Equal { lExp :: EXPRE, rExp :: EXPRE}
+           | BoolExp { boolExp :: BOOL }
+           deriving (Eq, Ord)
+
+instance GetRange EXPRE where
+  getRange _ = nullRange
+  rangeSpan _ = []      
+
+
+data STRING = Str { simpleStr :: String }
+            | ConcatExp { lStr :: STRING, rStr :: STRING }
+            deriving (Eq, Ord)
+
+instance GetRange STRING where
+  getRange _ = nullRange
+  rangeSpan _ = []      
+
+
+data BOOL = BExp { bExp :: Bool }
+          | NotB { notExp :: EXPRE }
+          | AndB { lExpA :: EXPRE, rExpA :: EXPRE }
+          | OrB { lExpO :: EXPRE, rExpO :: EXPRE }
+          deriving (Eq, Ord)
+
+instance GetRange BOOL where
+  getRange _ = nullRange
+  rangeSpan _ = []      
 

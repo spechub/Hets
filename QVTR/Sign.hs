@@ -118,14 +118,18 @@ instance Pretty RelationSen where
     $++$
     pretty tarP
     $++$
-    pretty whenC
+    (case whenC of
+      Nothing -> text "When" <+> lbrace $+$ rbrace
+      Just w -> text "When" <+> lbrace $+$ pretty w $+$ rbrace)
     $++$
-    pretty whereC
+    (case whereC of
+      Nothing -> text "Where" <+> lbrace $+$ rbrace
+      Just w -> text "Where" <+> lbrace $+$ pretty w $+$ rbrace)
 
 
 data Pattern = Pattern { patVarSet :: [RelVar]
                        , patRels :: [(CSMOF.PropertyT,RelVar,RelVar)]
-                       , patPreds :: [String]
+                       , patPreds :: [(String,String,OCL)]
                        } deriving (Show, Eq, Ord)
 
 instance GetRange Pattern where
@@ -143,3 +147,4 @@ instance Pretty Pattern where
     space <+> space <+> text "Predicates" <> colon <+> foldr (($+$) . pretty) empty patPre
     $+$
     rbrace
+

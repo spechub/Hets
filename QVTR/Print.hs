@@ -79,11 +79,11 @@ instance Pretty Relation where
     (case whenC of 
        Nothing -> case whereC of
                     Nothing -> rbrace
-                    Just whereCon -> space <+> space <+> pretty whereCon $++$ rbrace
+                    Just whereCon -> space <+> space <+> text "Where" <+> lbrace $+$ pretty whereCon $+$ rbrace $++$ rbrace
        Just whenCon -> case whereC of
-                         Nothing -> space <+> space <+> pretty whenCon $++$ rbrace
-                         Just whereCon -> space <+> space <+> pretty whenCon
-                                          $++$ space <+> space <+> pretty whereCon
+                         Nothing -> space <+> space <+> text "When" <+> lbrace $+$ pretty whenCon $+$ rbrace $++$ rbrace
+                         Just whereCon -> space <+> space <+> text "When" <+> lbrace $+$ pretty whenCon $+$ rbrace
+                                          $++$ space <+> space <+> text "Where" <+> lbrace $+$ pretty whereCon $+$ rbrace
                                           $++$ rbrace)
     
 instance Show Relation where
@@ -130,7 +130,7 @@ instance Pretty PropertyTemplate where
            Nothing -> case tem of
                         Nothing -> empty
                         Just t -> pretty t
-           Just e -> text e
+           Just e -> pretty e
         )
 
 instance Show PropertyTemplate where
@@ -138,16 +138,9 @@ instance Show PropertyTemplate where
 
 
 instance Pretty WhenWhere where
-  pretty (When inv ocl) =
-    text "when" <+> lbrace
-    $+$ space <+> space <+> foldr (($+$) . pretty) empty inv
-    $+$ space <+> space <+> foldr (($+$) . text) empty ocl
-    $+$ rbrace
-  pretty (Where inv ocl) =
-    text "where" <+> lbrace
-    $+$ space <+> space <+> foldr (($+$) . pretty) empty inv
-    $+$ space <+> space <+> foldr (($+$) . text) empty ocl
-    $+$ rbrace
+  pretty (WhenWhere inv ocl) =
+    space <+> space <+> foldr (($+$) . pretty) empty inv
+    $+$ space <+> space <+> foldr (($+$) . pretty) empty ocl
 
 instance Show WhenWhere where
   show m = show $ pretty m
@@ -159,3 +152,41 @@ instance Pretty RelInvok where
 instance Show RelInvok where
   show m = show $ pretty m
 
+
+-- Print Fake OCL expressions
+
+instance Pretty OCL where
+  pretty (IFExpre con thenE elseE) = text "IF" <+> pretty con <+> text "THEN" <+> pretty thenE <+> text "ELSE" <+> pretty elseE
+  pretty (OCLExpre ex) = pretty ex
+
+instance Show OCL where
+  show m = show $ pretty m
+
+
+instance Pretty EXPRE where
+  pretty (Paren ex) = lparen <+> pretty ex <+> rparen
+  pretty (StringExp strE) = pretty strE
+  pretty (VarExp varE) = pretty varE
+  pretty (Equal lE rE) = pretty lE <+> text "=" <+> pretty rE
+  pretty (BoolExp boolE) = pretty boolE
+
+instance Show EXPRE where
+  show m = show $ pretty m
+
+
+instance Pretty STRING where
+  pretty (Str e) = text "'" <> text e <> text "'"
+  pretty (ConcatExp lE rE) = pretty lE <+> text "+" <+> pretty rE
+
+instance Show STRING where
+  show m = show $ pretty m
+
+
+instance Pretty BOOL where
+  pretty (BExp e) = if e then text "TRUE" else text "FALSE"
+  pretty (NotB e) = text "NOT" <+> pretty e
+  pretty (AndB lE rE) = pretty lE <+> text "AND" <+> pretty rE
+  pretty (OrB lE rE) = pretty lE <+> text "OR" <+> pretty rE
+
+instance Show BOOL where
+  show m = show $ pretty m

@@ -97,6 +97,12 @@ mapTheory (s, ns) = let cs = mapSign s in
   return (cs, map (mapNamed $ mapSen s cs) ns ++ sentences cs)
 
 
+--TODO: 
+--      generar free type de strings con ::, strings de source, target y transformacion
+--      evitar sort String repetido en la signatura unificada
+--      generar tambien signatura para BOOL
+--      generar operacion ++ para concatenar strings
+
 mapSign :: QVTR.Sign -> CASLSign
 mapSign s = 
   let 
@@ -135,6 +141,10 @@ predKeyName met typ = stringToId $ "key_" ++ met ++ "_" ++ typ
 replacePredMap :: CASLSign -> PredMap -> CASLSign
 replacePredMap (C.Sign sR rSR eSR oM aO _ vM s dS eD aM gA eI) predM = (C.Sign sR rSR eSR oM aO predM vM s dS eD aM gA eI)
 
+
+-- TODO:
+--       generar sort constraint con free type de operaciones String
+--       incluir restriccion de que es ++ en relacion a ::
 
 mapSen :: QVTR.Sign -> CASLSign -> QVTR.Sen -> CASLFORMULA
 mapSen qvtrSign _ (KeyConstr k) = createKeyFormula qvtrSign k
@@ -261,8 +271,7 @@ createVarRule (v : restV) = (Qual_var (mkSimpleId $ varName v) (stringToId $ var
 
 collectWhenVarSet :: [RelVar] -> Maybe QVTRAs.WhenWhere -> [RelVar]
 collectWhenVarSet _ Nothing = []
-collectWhenVarSet _ (Just (Where _ _)) = []
-collectWhenVarSet varS (Just (When relInv oclExp)) = 
+collectWhenVarSet varS (Just (WhenWhere relInv oclExp)) = 
   let 
     relVars = QVTRAn.getSomething $ map ((findRelVarFromName varS) . QVTRAs.name) relInv
     oclExpVars = foldr ((++) . (getVarIdsFromOCLExpre varS)) [] oclExp
@@ -277,9 +286,11 @@ findRelVarFromName (v : restV) nam = if QVTRAs.varName v == nam
                                      else findRelVarFromName restV nam
 
 
--- Search every substring in the varset, since it possibly is a var name
-getVarIdsFromOCLExpre :: [RelVar] -> String -> [RelVar]
-getVarIdsFromOCLExpre varS oclExp = QVTRAn.getSomething $ map (findRelVarFromName varS) (words oclExp)
+getVarIdsFromOCLExpre :: [RelVar] -> QVTRAs.OCL -> [RelVar]
+getVarIdsFromOCLExpre varS (OCLExpre (VarExp v)) = case findRelVarFromName varS v of
+                                                     Nothing -> []
+                                                     Just r -> [r]
+getVarIdsFromOCLExpre _ _ = []
 
 
 -- 1. WhenVarSet = ∅
@@ -422,10 +433,10 @@ buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC where
 -- that r2 (x, y) is the translation of predicate p = ⟨r1 : C, r2 : D⟩ for every rel(p, x, y) ∈ A with x : C, y : D.
 
 buildPatternFormula :: Pattern -> CASLFORMULA
-buildPatternFormula (Pattern patVar parRel patPred) = 
+buildPatternFormula (Pattern _ parRel patPred) = 
   let 
     relInvF = map (buildPatRelFormula) parRel
-    oclExpF = [] --ToDo  patPred :: [String]
+    oclExpF = [trueForm] --ToDo
   in 
     if null oclExpF
     then if null relInvF 
@@ -453,22 +464,10 @@ buildPatRelFormula (p,souV,tarV) =
 
 buildWhenWhereFormula :: Maybe WhenWhere -> [RelVar] -> CASLFORMULA
 buildWhenWhereFormula Nothing _ = trueForm -- ERROR, this cannot happens
-buildWhenWhereFormula (Just (When relInv oclExp)) varS =
+buildWhenWhereFormula (Just (WhenWhere relInv oclExp)) varS =
   let
     relInvF = map (buildRelInvocFormula varS) relInv
-    oclExpF = [] --ToDo
-  in 
-    if null oclExpF
-    then if null relInvF 
-         then trueForm 
-         else C.Junction Con relInvF nullRange
-    else if null relInvF 
-         then C.Junction Con oclExpF nullRange
-         else C.Junction Con (relInvF ++ oclExpF) nullRange
-buildWhenWhereFormula (Just (Where relInv oclExp)) varS =
-  let
-    relInvF = map (buildRelInvocFormula varS) relInv
-    oclExpF = [] --ToDo
+    oclExpF = [trueForm] --ToDo
   in 
     if null oclExpF
     then if null relInvF 
