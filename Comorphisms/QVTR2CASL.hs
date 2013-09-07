@@ -41,6 +41,7 @@ import Common.Result
 import Common.Id
 
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -93,15 +94,9 @@ instance Comorphism QVTR2CASL
 
 
 mapTheory :: (QVTR.Sign, [Named QVTR.Sen]) -> Result (CASLSign, [Named CASLFORMULA])
-mapTheory (s, ns) = let cs = mapSign s in
-  return (cs, map (mapNamed $ mapSen s cs) ns ++ sentences cs)
+mapTheory (s, ns) = let cs = addStringSignature (mapSign s) ns in
+  return (cs, map (mapNamed $ mapSen s cs) ns ++ sentences cs )
 
-
---TODO: 
---      generar free type de strings con ::, strings de source, target y transformacion
---      evitar sort String repetido en la signatura unificada
---      generar tambien signatura para BOOL
---      generar operacion ++ para concatenar strings
 
 mapSign :: QVTR.Sign -> CASLSign
 mapSign s = 
@@ -142,14 +137,12 @@ replacePredMap :: CASLSign -> PredMap -> CASLSign
 replacePredMap (C.Sign sR rSR eSR oM aO _ vM s dS eD aM gA eI) predM = (C.Sign sR rSR eSR oM aO predM vM s dS eD aM gA eI)
 
 
--- TODO:
---       generar sort constraint con free type de operaciones String
---       incluir restriccion de que es ++ en relacion a ::
+
+-------- Sentences
 
 mapSen :: QVTR.Sign -> CASLSign -> QVTR.Sen -> CASLFORMULA
 mapSen qvtrSign _ (KeyConstr k) = createKeyFormula qvtrSign k
 mapSen qvtrSign sig (QVTSen r) = createRuleFormula qvtrSign sig r
-
 
 createKeyFormula :: QVTR.Sign -> Key-> CASLFORMULA
 createKeyFormula qvtrSign k = 
@@ -436,7 +429,7 @@ buildPatternFormula :: Pattern -> CASLFORMULA
 buildPatternFormula (Pattern _ parRel patPred) = 
   let 
     relInvF = map (buildPatRelFormula) parRel
-    oclExpF = [trueForm] --ToDo
+    oclExpF = map (buildOCLFormulaWRel) patPred
   in 
     if null oclExpF
     then if null relInvF 
@@ -467,7 +460,7 @@ buildWhenWhereFormula Nothing _ = trueForm -- ERROR, this cannot happens
 buildWhenWhereFormula (Just (WhenWhere relInv oclExp)) varS =
   let
     relInvF = map (buildRelInvocFormula varS) relInv
-    oclExpF = [trueForm] --ToDo
+    oclExpF = map (buildOCLFormula) oclExp
   in 
     if null oclExpF
     then if null relInvF 
@@ -485,9 +478,62 @@ buildRelInvocFormula varS rel =
     varsInv = createVarRule vars
     predTyp = map (stringToId . varType) vars
   in 
-    Predication (C.Qual_pred_name (stringToId $ QVTRAs.name rel) (Pred_type predTyp nullRange) nullRange) 
-                varsInv 
-                nullRange
+    C.Predication (C.Qual_pred_name (stringToId $ QVTRAs.name rel) (Pred_type predTyp nullRange) nullRange) 
+                  varsInv 
+                  nullRange
+
+
+buildOCLFormulaWRel :: (String,String,OCL) -> CASLFORMULA
+buildOCLFormulaWRel (prN,varN,ocl) = trueForm -- TODO
+--  let oclF = buildOCLFormula ocl
+--  in 
+--    C.Predication (C.Qual_pred_name (stringToId prN) (Pred_type [sor,sor2] nullRange) nullRange) 
+--                  ((Qual_var souVar sor nullRange):[Qual_var tarVar sor2 nullRange])
+--                  nullRange
+-- VER SI PUEDO INGRESAR UNA EXPRESION SIN INDICAR LOS TIPOS
+
+
+buildOCLFormula :: OCL -> CASLFORMULA
+-- "if COND then F1 else F2" is translated into (COND /\ F1) \/ (not COND /\ F2)
+buildOCLFormula (IFExpre c th el) =
+  let 
+    cForm = buildEXPREFormula c
+    lEFor = buildOCLFormula th
+    rEFor = buildOCLFormula el
+  in
+    C.Junction Dis [C.Junction Con [cForm, lEFor] nullRange, 
+                    C.Junction Con [C.Negation cForm nullRange, rEFor] nullRange] 
+             nullRange
+buildOCLFormula (OCLExpre e) = buildEXPREFormula e
+--buildOCLFormula (Equal lE rE) = C.Equation (buildOCLTERM lE) String (buildOCLTERM rE) nullRange
+
+
+--buildOCLTERM :: OCL -> CASLTERM
+--buildOCLTERM te = trueForm --TODO
+
+
+buildEXPREFormula :: EXPRE -> CASLFORMULA
+buildEXPREFormula (Paren e) = buildEXPREFormula e
+buildEXPREFormula (StringExp str) = buildSTRINGFormula str
+buildEXPREFormula (BExp b) = if b then trueForm else C.Negation trueForm nullRange
+buildEXPREFormula (NotB e) = C.Negation (buildEXPREFormula e) nullRange
+buildEXPREFormula (AndB lE rE) = C.Junction Con ([buildEXPREFormula lE, buildEXPREFormula rE]) nullRange
+buildEXPREFormula (OrB lE rE) = C.Junction Dis ([buildEXPREFormula lE, buildEXPREFormula rE]) nullRange
+--buildEXPREFormula (EqualExp lE rE) = C.Relation (buildEXPREFormula lE) Equivalence (buildEXPREFormula rE) nullRange
+
+
+buildSTRINGFormula :: STRING -> CASLFORMULA
+buildSTRINGFormula (Str str) = trueForm --TODO-- string operation invocation
+buildSTRINGFormula (ConcatExp lS rS) =
+  let 
+    lSFor = buildSTRINGFormula lS
+    rSFor = buildSTRINGFormula rS
+  in
+    trueForm --TODO
+    -- concat operation invocation with formulas
+
+buildSTRINGFormula (VarExp vE) = trueForm --TODO
+
 
 
 -- | Translation of morphisms
@@ -505,4 +551,138 @@ mapMor m = return C.Morphism
 -- mapSym :: QVTR.Symbol -> C.Symbol
 
 
+
+-- 1) Adds the String primitive type within a CASL Signature
+-- 2) Generates the strings concatenation operation ++
+
+addStringSignature :: CASLSign -> [Named QVTR.Sen] -> CASLSign
+addStringSignature s ns = 
+  let
+    stringSort = stringToId "String"
+    (strObj,othObj) = separateStringConstraintFromOthers $ sentences s
+    strObjTr = getStringObjFromTransformation ns
+  in 
+    C.Sign { sortRel = Rel.insertPair stringSort stringSort (C.sortRel s)
+           , revSortRel = (C.revSortRel s)
+           , emptySortSet = (C.emptySortSet s)
+           , opMap = MapSet.insert (stringToId "++") (OpType Total [stringSort,stringSort] stringSort) (C.opMap s)
+           , assocOps = (C.assocOps s)
+           , predMap = (C.predMap s)
+           , varMap = (C.varMap s)
+           , sentences = [toStringConstraint (stringSort, Set.toList (Set.union strObjTr (getStringObjects strObj)))] ++ othObj
+           , declaredSymbols = (C.declaredSymbols s)
+           , envDiags = (C.envDiags s)
+           , annoMap = (C.annoMap s)
+           , globAnnos = (C.globAnnos s)
+           , extendedInfo = (C.extendedInfo s)
+           }
+
+
+-- Get String instances within transformation rules
+getStringObjFromTransformation :: [Named QVTR.Sen] -> Set.Set Id
+getStringObjFromTransformation [] = Set.empty
+getStringObjFromTransformation (ns : restNS) = 
+  let 
+    restId = getStringObjFromTransformation restNS
+    idSen = case sentence ns of
+              QVTSen rel -> getStringIdsFromRelation rel
+              _ -> Set.empty
+  in 
+    Set.union idSen restId
+
+
+getStringIdsFromRelation :: RelationSen -> Set.Set Id
+getStringIdsFromRelation (RelationSen _ _ _ souP tarP whenCl whereCl) =
+  let
+    souPId = getStringIdsFromPattern souP
+    tarPId = getStringIdsFromPattern tarP
+    whenId = getStringIdsFromWhenWhere whenCl
+    whereId = getStringIdsFromWhenWhere whereCl
+  in
+    Set.unions [souPId,tarPId,whenId,whereId]
+
+
+getStringIdsFromPattern :: Pattern -> Set.Set Id
+getStringIdsFromPattern (Pattern _ _ p) = getStringIdsFromOclPred p
+
+
+getStringIdsFromOclPred :: [(String,String,OCL)] -> Set.Set Id
+getStringIdsFromOclPred [] = Set.empty
+getStringIdsFromOclPred ((_,_,ocl) : restPr) = Set.union (getStringIdsFromOCL ocl) (getStringIdsFromOclPred restPr)
+
+
+getStringIdsFromWhenWhere :: Maybe WhenWhere -> Set.Set Id
+getStringIdsFromWhenWhere Nothing = Set.empty
+getStringIdsFromWhenWhere (Just (WhenWhere _ ocl)) = Set.unions (map (getStringIdsFromOCL) ocl)
+
+
+getStringIdsFromOCL :: OCL -> Set.Set Id
+getStringIdsFromOCL (IFExpre c the els) = Set.unions [getStringIdsFromExpre c,getStringIdsFromOCL the, getStringIdsFromOCL els]
+getStringIdsFromOCL (OCLExpre e) = getStringIdsFromExpre e
+getStringIdsFromOCL (Equal lE rE) = Set.union (getStringIdsFromOCL lE) (getStringIdsFromOCL rE)
+
+
+getStringIdsFromExpre :: EXPRE -> Set.Set Id
+getStringIdsFromExpre (Paren e) = getStringIdsFromExpre e
+getStringIdsFromExpre (StringExp str) = getStringIdsFromString str
+getStringIdsFromExpre (BExp _) = Set.empty
+getStringIdsFromExpre (NotB no) = getStringIdsFromExpre no
+getStringIdsFromExpre (AndB lE rE) = Set.union (getStringIdsFromExpre lE) (getStringIdsFromExpre rE)
+getStringIdsFromExpre (OrB lE rE) = Set.union (getStringIdsFromExpre lE) (getStringIdsFromExpre rE)
+getStringIdsFromExpre (EqualExp lE rE) = Set.union (getStringIdsFromExpre lE) (getStringIdsFromExpre rE)
+
+
+getStringIdsFromString :: STRING -> Set.Set Id
+getStringIdsFromString (Str s) = Set.insert (stringToId s) Set.empty
+getStringIdsFromString (ConcatExp lS rS) = Set.union (getStringIdsFromString lS) (getStringIdsFromString rS)
+getStringIdsFromString (VarExp _) = Set.empty
+
+
+-- Separate string free type contraints (derived from each metamodel) from the others
+separateStringConstraintFromOthers :: [Named CASLFORMULA] -> ([Named CASLFORMULA],[Named CASLFORMULA])
+separateStringConstraintFromOthers [] = ([],[])
+separateStringConstraintFromOthers (f : restF) =
+  let (restString,restOther) = separateStringConstraintFromOthers restF
+  in case sentence f of
+       Sort_gen_ax [Constraint sor _ _] _ -> if sor == (stringToId "String")
+                                             then (f : restString, restOther)
+                                             else (restString, f : restOther)
+       _ -> separateStringConstraintFromOthers restF
+
+
+-- Get String names from Qual_op_name
+getStringObjects :: [Named CASLFORMULA] -> Set.Set Id
+getStringObjects [] = Set.empty
+getStringObjects (f : restF) = 
+  case sentence f of
+    Sort_gen_ax [Constraint _ listObj _] _ -> Set.union (getObjNamesFromOp listObj) (getStringObjects restF)
+    _ -> getStringObjects restF
+
+
+getObjNamesFromOp :: [(OP_SYMB, [Int])] -> Set.Set Id
+getObjNamesFromOp [] = Set.empty
+getObjNamesFromOp ((op,_) : restOp) = 
+  case op of 
+    Qual_op_name obj _ _ -> Set.insert obj (getObjNamesFromOp restOp)
+    _ -> getObjNamesFromOp restOp
+
+
+-- Generate free type
+--   String ::= EMPTY | ... (string instances) ... 
+--            | __ :: __ (first:? String; rest:? String)
+
+toStringConstraint :: (Id, [Id]) -> Named (CASLFORMULA)
+toStringConstraint (sor,lisObj) = 
+  let 
+    emptyString = stringToId "EMPTY" 
+    stringSort = stringToId "String" 
+    concatOp = (Qual_op_name (stringToId "++") (Op_type Total [stringSort,stringSort] stringSort nullRange) nullRange,[])
+    simplCon = Constraint sor (concatOp : (foldr ((:) . toConstraintFromId sor) [] (emptyString : lisObj))) sor
+    constr = Sort_gen_ax [simplCon] True
+  in 
+    makeNamed ("sortGenCon_String") constr
+
+
+toConstraintFromId :: Id -> Id -> (OP_SYMB, [Int])
+toConstraintFromId sor obj = (Qual_op_name obj (Op_type Total [] sor nullRange) nullRange,[])
 
