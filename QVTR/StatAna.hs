@@ -405,22 +405,23 @@ collectRecursiveRelInvoc :: String -> String -> [PropertyTemplate] -> CSMOFSign.
                                    -> [RelVar] -> ([(CSMOFSign.PropertyT,RelVar,RelVar)],[Diagnosis])
 collectRecursiveRelInvoc _ _ [] _ _ = ([],[])
 collectRecursiveRelInvoc nam typ (pt : restPT) sign vSet =
-  let 
-    prop = findPropertyInHierarchy (CSMOFSign.typeRel sign) (CSMOFSign.properties sign) typ (pName pt)
-    (restProps,diagn) = collectRecursiveRelInvoc nam typ restPT sign vSet
-    (recPr, recDiag) = case (objTemp pt) of
-                         Nothing -> ([],[])
-                         Just ot -> collectRecursiveRelInvoc (domVar ot) (domType ot) (templateList ot) sign vSet
-  in 
-    case prop of
-      Nothing -> ([],(mkDiag Error "property not found" pt) : (diagn ++ recDiag))
-      Just p -> let 
-                  souV = RelVar typ nam
-                  tarV = getVarFromTemplate pt vSet
-                in
-                  case tarV of
-                    Nothing -> (restProps ++ recPr, diagn ++ recDiag) -- it is a OCL expression, not a variable
-                    Just relVar -> ((p,souV,relVar) : (restProps ++ recPr), diagn ++ recDiag)
+  case objTemp pt of
+    Nothing -> ([],[])
+    Just ot ->
+      let 
+        prop = findPropertyInHierarchy (CSMOFSign.typeRel sign) (CSMOFSign.properties sign) typ (pName pt)
+        (restProps,diagn) = collectRecursiveRelInvoc nam typ restPT sign vSet
+        (recPr, recDiag) = collectRecursiveRelInvoc (domVar ot) (domType ot) (templateList ot) sign vSet
+      in 
+        case prop of
+          Nothing -> ([],(mkDiag Error "property not found" pt) : (diagn ++ recDiag))
+          Just p -> let 
+                      souV = RelVar typ nam
+                      tarV = getVarFromTemplate pt vSet
+                    in
+                      case tarV of
+                        Nothing -> (restProps ++ recPr, diagn ++ recDiag) -- it is a OCL expression, not a variable
+                        Just relVar -> ((p,souV,relVar) : (restProps ++ recPr), diagn ++ recDiag)
 
 
 getVarFromTemplate :: PropertyTemplate -> [RelVar] -> Maybe RelVar
@@ -449,9 +450,11 @@ collectRecursivePreds vSet (Just ot) =
 
 
 getOclExpre :: String -> [RelVar] -> PropertyTemplate -> [(String,String,OCL)]
-getOclExpre otN _ (PropertyTemplate pN ocl _) = 
-  case ocl of
-    Nothing -> []
+getOclExpre otN _ (PropertyTemplate pN ocl objT) = 
+  case ocl of     
+    Nothing -> case objT of
+                 Nothing -> []
+                 Just o -> [(pN, otN, StringExp (VarExp (domVar o)))] -- ToDo Diagnosis
     Just s -> [(pN,otN,s)] -- ToDo Diagnosis
 
 

@@ -94,8 +94,8 @@ instance Comorphism QVTR2CASL
 
 
 mapTheory :: (QVTR.Sign, [Named QVTR.Sen]) -> Result (CASLSign, [Named CASLFORMULA])
-mapTheory (s, ns) = let cs = addStringSignature (mapSign s) ns in
-  return (cs, map (mapNamed $ mapSen s cs) ns ++ sentences cs )
+mapTheory (s, ns) = let cs = mapSign s in
+  return (cs, map (mapNamed $ mapSen s cs) ns )
 
 
 mapSign :: QVTR.Sign -> CASLSign
@@ -109,7 +109,7 @@ mapSign s =
     everyProp = C.addMapSet (C.predMap sUnion) (C.addMapSet relsProp keysProp)
     sentRels = (C.sentences sSign) ++ (C.sentences tSign)
   in
-    replacePredMap (replaceSentences sUnion sentRels) everyProp
+    addStringSignature (replacePredMap (replaceSentences sUnion sentRels) everyProp)
 
 
 getPropertiesFromRelations :: Map.Map String RuleDef ->  Map.Map String RuleDef -> PredMap
@@ -251,15 +251,27 @@ createRuleFormula _ _ (QVTR.RelationSen rDef varS parS souPat tarPat whenC where
     souDomVarSet = Set.fromList (QVTR.patVarSet souPat)
     varSet_2 = Set.difference (Set.difference (Set.fromList (QVTR.patVarSet tarPat)) (Set.fromList whenVarSet)) souDomVarSet
 
-  in C.Relation 
-      (C.Predication (C.Qual_pred_name (stringToId rName) (Pred_type parTyp nullRange) nullRange) 
-                     (createVarRule parS)
-                     nullRange) 
-      C.Equivalence 
-      (if null whenVarSet
-       then buildEmptyWhenFormula parS varS varSet_2 souPat tarPat whereC
-       else buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC whereC)
-      nullRange
+  in 
+    if null parS
+    then C.Relation 
+           (C.Predication (C.Qual_pred_name (stringToId rName) (Pred_type parTyp nullRange) nullRange) 
+                          []
+                          nullRange) 
+           C.Equivalence 
+           (if null whenVarSet
+            then buildEmptyWhenFormula parS varS varSet_2 souPat tarPat whereC
+            else buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC whereC)
+           nullRange
+    else Quantification Universal (varDeclFromRelVar parS)
+                        (C.Relation (C.Predication (C.Qual_pred_name (stringToId rName) (Pred_type parTyp nullRange) nullRange) 
+                                                   (createVarRule parS)
+                                                   nullRange)
+                                    C.Equivalence 
+                                    (if null whenVarSet
+                                     then buildEmptyWhenFormula parS varS varSet_2 souPat tarPat whereC
+                                     else buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC whereC)
+                                    nullRange)
+                        nullRange
 
 
 createVarRule :: [RelVar] -> [C.CASLTERM]
@@ -271,7 +283,7 @@ collectWhenVarSet :: [RelVar] -> Maybe QVTRAs.WhenWhere -> [RelVar]
 collectWhenVarSet _ Nothing = []
 collectWhenVarSet varS (Just (WhenWhere relInv oclExp)) = 
   let 
-    relVars = QVTRAn.getSomething $ map ((findRelVarFromName varS) . QVTRAs.name) relInv
+    relVars = QVTRAn.getSomething $ map (findRelVarFromName varS) (concat $ map (QVTRAs.params) relInv)
     oclExpVars = foldr ((++) . (getVarIdsFromOCLExpre varS)) [] oclExp
   in
     relVars ++ oclExpVars
@@ -566,19 +578,20 @@ mapMor m = return C.Morphism
 -- 1) Adds the String primitive type within a CASL Signature
 -- 2) Generates the strings concatenation operation ++
 
-addStringSignature :: CASLSign -> [Named QVTR.Sen] -> CASLSign
-addStringSignature s ns = 
+addStringSignature :: CASLSign -> CASLSign
+addStringSignature s = 
   let
     stringSort = stringToId "String"
     (strObj,othObj) = separateStringConstraintFromOthers $ sentences s
-    strObjTr = getStringObjFromTransformation ns
-    strObjOps = foldr (\(idd,opT) se -> MapSet.insert idd opT se) MapSet.empty (getStringOperations strObjTr)
-    everyString = Set.toList (Set.union strObjTr (getStringObjects strObj))
+--    strObjTr = getStringObjFromTransformation ns
+--    strObjOps = foldr (\(idd,opT) se -> MapSet.insert idd opT se) MapSet.empty (getStringOperations strObjTr)
+    everyString = Set.toList (getStringObjects strObj) --Set.toList (Set.union strObjTr (getStringObjects strObj))
+    concatOp = (mkTotOpType [stringSort,stringSort] stringSort)
   in 
     C.Sign { sortRel = Rel.insertPair stringSort stringSort (C.sortRel s)
            , revSortRel = (C.revSortRel s)
            , emptySortSet = (C.emptySortSet s)
-           , opMap = MapSet.union strObjOps (C.opMap s)
+           , opMap = MapSet.insert (stringToId "++") (concatOp) (C.opMap s) --MapSet.union strObjOps (C.opMap s)
            , assocOps = (C.assocOps s)
            , predMap = (C.predMap s)
            , varMap = (C.varMap s)
@@ -593,25 +606,25 @@ addStringSignature s ns =
            }
 
 
-splitStringByUnderscore :: String -> [String]
-splitStringByUnderscore [] = []
-splitStringByUnderscore str = 
-  let 
-    strAux = getUntilUnderscore str
-    rest = splitStringByUnderscore (drop (length strAux + 1) str)
-  in 
-    strAux : rest
+--splitStringByUnderscore :: String -> [String]
+--splitStringByUnderscore [] = []
+--splitStringByUnderscore str = 
+--  let 
+--    strAux = getUntilUnderscore str
+--    rest = splitStringByUnderscore (drop (length strAux + 1) str)
+--  in 
+--    strAux : rest
 
 
-getUntilUnderscore :: String -> String
-getUntilUnderscore [] = []
-getUntilUnderscore (s : restS) = if s == '_'
-                                 then []
-                                 else s : getUntilUnderscore restS
+--getUntilUnderscore :: String -> String
+--getUntilUnderscore [] = []
+--getUntilUnderscore (s : restS) = if s == '_'
+--                                 then []
+--                                 else s : getUntilUnderscore restS
 
 
-getStringOperations :: Set.Set Id -> [(Id,OpType)]
-getStringOperations ids = Set.fold (\idd lis -> (idd, (mkTotOpType [] (stringToId "String"))) : lis ) [] ids
+--getStringOperations :: Set.Set Id -> [(Id,OpType)]
+--getStringOperations ids = Set.fold (\idd lis -> (idd, (mkTotOpType [] (stringToId "String"))) : lis ) [] ids
 
 
 deleteNoConfusionString :: [Named CASLFORMULA] -> [Named CASLFORMULA]
@@ -667,59 +680,59 @@ diffOpsStr objName1 objName2 =
 
 
 -- Get String instances within transformation rules
-getStringObjFromTransformation :: [Named QVTR.Sen] -> Set.Set Id
-getStringObjFromTransformation [] = Set.empty
-getStringObjFromTransformation (ns : restNS) = 
-  let 
-    restId = getStringObjFromTransformation restNS
-    idSen = case sentence ns of
-              QVTSen rel -> getStringIdsFromRelation rel
-              _ -> Set.empty
-  in 
-    Set.union idSen restId
+--getStringObjFromTransformation :: [Named QVTR.Sen] -> Set.Set Id
+--getStringObjFromTransformation [] = Set.empty
+--getStringObjFromTransformation (ns : restNS) = 
+--  let 
+--    restId = getStringObjFromTransformation restNS
+--    idSen = case sentence ns of
+--              QVTSen rel -> getStringIdsFromRelation rel
+--              _ -> Set.empty
+--  in 
+--    Set.union idSen restId
 
 
-getStringIdsFromRelation :: RelationSen -> Set.Set Id
-getStringIdsFromRelation (RelationSen _ _ _ souP tarP whenCl whereCl) =
-  let
-    souPId = getStringIdsFromPattern souP
-    tarPId = getStringIdsFromPattern tarP
-    whenId = getStringIdsFromWhenWhere whenCl
-    whereId = getStringIdsFromWhenWhere whereCl
-  in
-    Set.unions [souPId,tarPId,whenId,whereId]
+--getStringIdsFromRelation :: RelationSen -> Set.Set Id
+--getStringIdsFromRelation (RelationSen _ _ _ souP tarP whenCl whereCl) =
+--  let
+--    souPId = getStringIdsFromPattern souP
+--    tarPId = getStringIdsFromPattern tarP
+--    whenId = getStringIdsFromWhenWhere whenCl
+--    whereId = getStringIdsFromWhenWhere whereCl
+--  in
+--    Set.unions [souPId,tarPId,whenId,whereId]
 
 
-getStringIdsFromPattern :: Pattern -> Set.Set Id
-getStringIdsFromPattern (Pattern _ _ p) = getStringIdsFromOclPred p
+--getStringIdsFromPattern :: Pattern -> Set.Set Id
+--getStringIdsFromPattern (Pattern _ _ p) = getStringIdsFromOclPred p
 
 
-getStringIdsFromOclPred :: [(String,String,OCL)] -> Set.Set Id
-getStringIdsFromOclPred [] = Set.empty
-getStringIdsFromOclPred ((_,_,ocl) : restPr) = Set.union (getStringIdsFromOCL ocl) (getStringIdsFromOclPred restPr)
+--getStringIdsFromOclPred :: [(String,String,OCL)] -> Set.Set Id
+--getStringIdsFromOclPred [] = Set.empty
+--getStringIdsFromOclPred ((_,_,ocl) : restPr) = Set.union (getStringIdsFromOCL ocl) (getStringIdsFromOclPred restPr)
 
 
-getStringIdsFromWhenWhere :: Maybe WhenWhere -> Set.Set Id
-getStringIdsFromWhenWhere Nothing = Set.empty
-getStringIdsFromWhenWhere (Just (WhenWhere _ ocl)) = Set.unions (map (getStringIdsFromOCL) ocl)
+--getStringIdsFromWhenWhere :: Maybe WhenWhere -> Set.Set Id
+--getStringIdsFromWhenWhere Nothing = Set.empty
+--getStringIdsFromWhenWhere (Just (WhenWhere _ ocl)) = Set.unions (map (getStringIdsFromOCL) ocl)
 
 
-getStringIdsFromOCL :: OCL -> Set.Set Id
-getStringIdsFromOCL (Paren e) = getStringIdsFromOCL e
-getStringIdsFromOCL (StringExp str) = getStringIdsFromString str
-getStringIdsFromOCL (BExp _) = Set.empty
-getStringIdsFromOCL (NotB no) = getStringIdsFromOCL no
-getStringIdsFromOCL (AndB lE rE) = Set.union (getStringIdsFromOCL lE) (getStringIdsFromOCL rE)
-getStringIdsFromOCL (OrB lE rE) = Set.union (getStringIdsFromOCL lE) (getStringIdsFromOCL rE)
-getStringIdsFromOCL (Equal lE rE) = Set.union (getStringIdsFromString lE) (getStringIdsFromString rE)
+--getStringIdsFromOCL :: OCL -> Set.Set Id
+--getStringIdsFromOCL (Paren e) = getStringIdsFromOCL e
+--getStringIdsFromOCL (StringExp str) = getStringIdsFromString str
+--getStringIdsFromOCL (BExp _) = Set.empty
+--getStringIdsFromOCL (NotB no) = getStringIdsFromOCL no
+--getStringIdsFromOCL (AndB lE rE) = Set.union (getStringIdsFromOCL lE) (getStringIdsFromOCL rE)
+--getStringIdsFromOCL (OrB lE rE) = Set.union (getStringIdsFromOCL lE) (getStringIdsFromOCL rE)
+--getStringIdsFromOCL (Equal lE rE) = Set.union (getStringIdsFromString lE) (getStringIdsFromString rE)
 
 
-getStringIdsFromString :: STRING -> Set.Set Id
-getStringIdsFromString (Str s) = if s == ""
-                                 then Set.insert (stringToId "EMPTY") Set.empty
-                                 else Set.insert (stringToId s) Set.empty
-getStringIdsFromString (ConcatExp lS rS) = Set.union (getStringIdsFromString lS) (getStringIdsFromString rS)
-getStringIdsFromString (VarExp _) = Set.empty
+--getStringIdsFromString :: STRING -> Set.Set Id
+--getStringIdsFromString (Str s) = if s == ""
+--                                 then Set.insert (stringToId "EMPTY") Set.empty
+--                                 else Set.insert (stringToId s) Set.empty
+--getStringIdsFromString (ConcatExp lS rS) = Set.union (getStringIdsFromString lS) (getStringIdsFromString rS)
+--getStringIdsFromString (VarExp _) = Set.empty
 
 
 -- Separate string free type contraints (derived from each metamodel) from the others

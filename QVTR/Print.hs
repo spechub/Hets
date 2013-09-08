@@ -140,7 +140,9 @@ instance Pretty PropertyTemplate where
            Nothing -> case tem of
                         Nothing -> empty
                         Just t -> pretty t
-           Just e -> pretty e
+           Just e -> case tem of
+                        Nothing -> pretty e
+                        Just t -> pretty e <+> pretty t
         )
 
 instance Show PropertyTemplate where
