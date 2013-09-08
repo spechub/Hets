@@ -136,28 +136,20 @@ instance GetRange RelInvok where
   rangeSpan _ = []
 
 
+
+
 -- Fake OCL expressions
 
-data OCL = IFExpre { cond :: EXPRE, thenExpre :: OCL, elseExpre :: OCL }
-         | OCLExpre { expre :: EXPRE }
-         | Equal { lExp :: OCL, rExp :: OCL}
+data OCL = Paren { exp :: OCL }
+         | StringExp { strExp :: STRING }
+         | BExp { bExp :: Bool }
+         | NotB { notExp :: OCL }
+         | AndB { lExpA :: OCL, rExpA :: OCL }
+         | OrB { lExpO :: OCL, rExpO :: OCL }
+         | Equal { lExpre :: STRING, rExpre :: STRING }
          deriving (Eq, Ord)
 
 instance GetRange OCL where
-  getRange _ = nullRange
-  rangeSpan _ = []      
-
-
-data EXPRE = Paren { exp :: EXPRE }
-           | StringExp { strExp :: STRING }
-           | BExp { bExp :: Bool }
-           | NotB { notExp :: EXPRE }
-           | AndB { lExpA :: EXPRE, rExpA :: EXPRE }
-           | OrB { lExpO :: EXPRE, rExpO :: EXPRE }
-           | EqualExp { lExpre :: EXPRE, rExpre :: EXPRE}
-           deriving (Eq, Ord)
-
-instance GetRange EXPRE where
   getRange _ = nullRange
   rangeSpan _ = []      
 

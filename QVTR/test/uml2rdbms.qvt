@@ -89,11 +89,17 @@ transformation uml2rdbms  ( uml : UML , rdbms : RDBMS ) {
 	  };
 	  
 	  where {
-            = (cn) (if = (prefix) ('') then an else prefix + '_' + an endif);
-	    --cn = if prefix = '' then an else prefix + '_' + an endif;
+	    --cn = if prefix = '' then an else prefix + an endif;
+  
+            or ( and (= (prefix) ('EMPTY')) (= (cn) (an)) )
+               ( and (not (= (prefix) ('EMPTY'))) (= (cn) (prefix + an)) );
 
-	    = (sqltype) (if = (pn) ('INTEGER') then 'NUMBER' else if = (pn) ('BOOLEAN') then 'BOOLEAN' else 'VARCHAR' endif endif);
             -- sqltype = if pn = 'INTEGER' then 'NUMBER' else if pn = 'BOOLEAN' then 'BOOLEAN' else 'VARCHAR' endif endif;
+            
+            or (or ( and (= (pn) ('INTEGER')) (= (sqltype) ('NUMBER') ) )
+                   ( and (= (pn) ('BOOLEAN')) (= (sqltype) ('BOOLEAN')) ))
+               ( and (and (not (= (pn) ('INTEGER'))) (not (= (pn) ('BOOLEAN')))) (= (sqltype) ('VARCHAR')) );
+
 	  }
 	  
 	}

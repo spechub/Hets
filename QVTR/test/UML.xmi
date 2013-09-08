@@ -24,12 +24,12 @@
     <object type="//@element.2" name="pdt"/>
     <object type="//@element.5" name="a"/>
     <object type="//@element.4" name="c"/>
-    <object type="//@element.6" name="s_Package"/>
-    <object type="//@element.6" name="s_EMPTY"/>
-    <object type="//@element.6" name="s_ID"/>
-    <object type="//@element.6" name="s_Persistent"/>
-    <object type="//@element.6" name="s_value"/>
-    <object type="//@element.6" name="s_String"/>
+    <object type="//@element.6" name="Package"/>
+    <object type="//@element.6" name="EMPTY"/>
+    <object type="//@element.6" name="ID"/>
+    <object type="//@element.6" name="Persistent"/>
+    <object type="//@element.6" name="value"/>
+    <object type="//@element.6" name="String"/>
     <link type="//@element.1/@ownedAttribute.0" source="//@model.0/@object.0" target="//@model.0/@object.3"/>
     <link type="//@element.1/@ownedAttribute.0" source="//@model.0/@object.0" target="//@model.0/@object.1"/>
     <link type="//@element.4/@ownedAttribute.0" source="//@model.0/@object.3" target="//@model.0/@object.2"/>

@@ -24,7 +24,6 @@ Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
 'QVTR.As.WhenWhere'
 'QVTR.As.RelInvok'
 'QVTR.As.OCL'
-'QVTR.As.EXPRE'
 'QVTR.As.STRING'
 'QVTR.Sign.RuleDef'
 'QVTR.Sign.Sign'
@@ -70,7 +69,6 @@ import qualified Data.Map as Map
 {-! for QVTR.As.WhenWhere derive : Typeable !-}
 {-! for QVTR.As.RelInvok derive : Typeable !-}
 {-! for QVTR.As.OCL derive : Typeable !-}
-{-! for QVTR.As.EXPRE derive : Typeable !-}
 {-! for QVTR.As.STRING derive : Typeable !-}
 {-! for QVTR.Sign.RuleDef derive : Typeable !-}
 {-! for QVTR.Sign.Sign derive : Typeable !-}
@@ -90,7 +88,6 @@ import qualified Data.Map as Map
 {-! for QVTR.As.WhenWhere derive : ShATermConvertible !-}
 {-! for QVTR.As.RelInvok derive : ShATermConvertible !-}
 {-! for QVTR.As.OCL derive : ShATermConvertible !-}
-{-! for QVTR.As.EXPRE derive : ShATermConvertible !-}
 {-! for QVTR.As.STRING derive : ShATermConvertible !-}
 {-! for QVTR.Sign.RuleDef derive : ShATermConvertible !-}
 {-! for QVTR.Sign.Sign derive : ShATermConvertible !-}
@@ -129,7 +126,7 @@ instance ShATermConvertible STRING where
       (att1, VarExp a') }
     u -> fromShATermError "STRING" u
 
-instance ShATermConvertible EXPRE where
+instance ShATermConvertible OCL where
   toShATermAux att0 xv = case xv of
     Paren a -> do
       (att1, a') <- toShATerm' att0 a
@@ -151,10 +148,10 @@ instance ShATermConvertible EXPRE where
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
       return $ addATerm (ShAAppl "OrB" [a', b'] []) att2
-    EqualExp a b -> do
+    Equal a b -> do
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
-      return $ addATerm (ShAAppl "EqualExp" [a', b'] []) att2
+      return $ addATerm (ShAAppl "Equal" [a', b'] []) att2
   fromShATermAux ix att0 = case getShATerm ix att0 of
     ShAAppl "Paren" [a] _ ->
       case fromShATerm' a att0 of
@@ -184,41 +181,6 @@ instance ShATermConvertible EXPRE where
       case fromShATerm' b att1 of
       { (att2, b') ->
       (att2, OrB a' b') }}
-    ShAAppl "EqualExp" [a, b] _ ->
-      case fromShATerm' a att0 of
-      { (att1, a') ->
-      case fromShATerm' b att1 of
-      { (att2, b') ->
-      (att2, EqualExp a' b') }}
-    u -> fromShATermError "EXPRE" u
-
-instance ShATermConvertible OCL where
-  toShATermAux att0 xv = case xv of
-    IFExpre a b c -> do
-      (att1, a') <- toShATerm' att0 a
-      (att2, b') <- toShATerm' att1 b
-      (att3, c') <- toShATerm' att2 c
-      return $ addATerm (ShAAppl "IFExpre" [a', b', c'] []) att3
-    OCLExpre a -> do
-      (att1, a') <- toShATerm' att0 a
-      return $ addATerm (ShAAppl "OCLExpre" [a'] []) att1
-    Equal a b -> do
-      (att1, a') <- toShATerm' att0 a
-      (att2, b') <- toShATerm' att1 b
-      return $ addATerm (ShAAppl "Equal" [a', b'] []) att2
-  fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "IFExpre" [a, b, c] _ ->
-      case fromShATerm' a att0 of
-      { (att1, a') ->
-      case fromShATerm' b att1 of
-      { (att2, b') ->
-      case fromShATerm' c att2 of
-      { (att3, c') ->
-      (att3, IFExpre a' b' c') }}}
-    ShAAppl "OCLExpre" [a] _ ->
-      case fromShATerm' a att0 of
-      { (att1, a') ->
-      (att1, OCLExpre a') }
     ShAAppl "Equal" [a, b] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->
@@ -442,8 +404,6 @@ instance ShATermConvertible Transformation where
     u -> fromShATermError "Transformation" u
 
 deriving instance Typeable STRING
-
-deriving instance Typeable EXPRE
 
 deriving instance Typeable OCL
 

@@ -172,24 +172,15 @@ instance Show RelInvok where
 -- Print Fake OCL expressions
 
 instance Pretty OCL where
-  pretty (IFExpre con thenE elseE) = text "IF" <+> pretty con <+> text "THEN" <+> pretty thenE <+> text "ELSE" <+> pretty elseE
-  pretty (OCLExpre ex) = pretty ex
-  pretty (Equal lE rE) = pretty lE <+> text "=" <+> pretty rE
-
-instance Show OCL where
-  show m = show $ pretty m
-
-
-instance Pretty EXPRE where
   pretty (Paren ex) = lparen <+> pretty ex <+> rparen
   pretty (StringExp strE) = pretty strE
   pretty (BExp e) = if e then text "TRUE" else text "FALSE"
-  pretty (NotB e) = text "NOT" <+> pretty e
-  pretty (AndB lE rE) = pretty lE <+> text "AND" <+> pretty rE
-  pretty (OrB lE rE) = pretty lE <+> text "OR" <+> pretty rE
-  pretty (EqualExp lE rE) = pretty lE <+> text "=" <+> pretty rE
+  pretty (NotB e) = text "NOT" <+> lparen <+> pretty e <+> rparen
+  pretty (AndB lE rE) = lparen <+> pretty lE <+> rparen <+> text "AND" <+> lparen <+> pretty rE <+> rparen
+  pretty (OrB lE rE) = lparen <+> pretty lE <+> rparen <+> text "OR" <+> lparen <+> pretty rE <+> rparen
+  pretty (Equal lE rE) = lparen <+> pretty lE <+> rparen <+> text "=" <+> lparen <+> pretty rE <+> rparen
 
-instance Show EXPRE where
+instance Show OCL where
   show m = show $ pretty m
 
 

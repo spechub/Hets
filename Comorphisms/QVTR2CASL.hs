@@ -103,12 +103,13 @@ mapSign s =
   let 
     sSign = CSMOF2CASL.mapSign (sourceSign s)
     tSign = CSMOF2CASL.mapSign (targetSign s)
-    sUnion = C.uniteCASLSign sSign tSign
     relsProp = getPropertiesFromRelations (nonTopRelations s) (topRelations s)
     keysProp = getPropertiesFromKeys (keyDefs s)
-    everyProp = (C.addMapSet (C.predMap sUnion) (C.addMapSet relsProp keysProp))
+    sUnion = C.uniteCASLSign sSign tSign
+    everyProp = C.addMapSet (C.predMap sUnion) (C.addMapSet relsProp keysProp)
+    sentRels = (C.sentences sSign) ++ (C.sentences tSign)
   in
-    replacePredMap sUnion everyProp
+    replacePredMap (replaceSentences sUnion sentRels) everyProp
 
 
 getPropertiesFromRelations :: Map.Map String RuleDef ->  Map.Map String RuleDef -> PredMap
@@ -137,12 +138,16 @@ replacePredMap :: CASLSign -> PredMap -> CASLSign
 replacePredMap (C.Sign sR rSR eSR oM aO _ vM s dS eD aM gA eI) predM = (C.Sign sR rSR eSR oM aO predM vM s dS eD aM gA eI)
 
 
+replaceSentences :: CASLSign -> [Named (CASLFORMULA)] -> CASLSign
+replaceSentences (C.Sign sR rSR eSR oM aO pM vM _ dS eD aM gA eI) sent = (C.Sign sR rSR eSR oM aO pM vM sent dS eD aM gA eI)
+
 
 -------- Sentences
 
 mapSen :: QVTR.Sign -> CASLSign -> QVTR.Sen -> CASLFORMULA
 mapSen qvtrSign _ (KeyConstr k) = createKeyFormula qvtrSign k
 mapSen qvtrSign sig (QVTSen r) = createRuleFormula qvtrSign sig r
+
 
 createKeyFormula :: QVTR.Sign -> Key-> CASLFORMULA
 createKeyFormula qvtrSign k = 
@@ -280,9 +285,9 @@ findRelVarFromName (v : restV) nam = if QVTRAs.varName v == nam
 
 
 getVarIdsFromOCLExpre :: [RelVar] -> QVTRAs.OCL -> [RelVar]
-getVarIdsFromOCLExpre varS (OCLExpre (StringExp (VarExp v))) = case findRelVarFromName varS v of
-                                                                 Nothing -> []
-                                                                 Just r -> [r]
+getVarIdsFromOCLExpre varS (StringExp (VarExp v)) = case findRelVarFromName varS v of
+                                                      Nothing -> []
+                                                      Just r -> [r]
 getVarIdsFromOCLExpre _ _ = []
 
 
@@ -296,8 +301,8 @@ buildEmptyWhenFormula parS varS varSet_2 souPat tarPat whereC =
     listPars = Set.fromList parS
     diffVarSet_1 = Set.toList $ Set.difference (Set.difference (Set.fromList varS) varSet_2) listPars
     diffVarSet_2 = Set.toList $ Set.difference varSet_2 listPars
-    souPatF = buildPatternFormula souPat
-    tarPatF = buildPatternFormula tarPat
+    souPatF = buildPatternFormula varS souPat
+    tarPatF = buildPatternFormula varS tarPat
     whereF = buildWhenWhereFormula whereC varS
 
     fst_sen = if whereF == trueForm
@@ -360,8 +365,8 @@ buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC where
     diffVarSet_1 = Set.toList $ Set.difference listWhenVars listPars
     diffVarSet_2 = Set.toList $ Set.difference (Set.difference (Set.fromList varS) (Set.union listWhenVars varSet_2)) listPars
     diffVarSet_3 = Set.toList $ Set.difference varSet_2 listPars
-    souPatF = buildPatternFormula souPat
-    tarPatF = buildPatternFormula tarPat
+    souPatF = buildPatternFormula varS souPat
+    tarPatF = buildPatternFormula varS tarPat
     whenF = buildWhenWhereFormula whenC varS
     whereF = buildWhenWhereFormula whereC varS
 
@@ -425,11 +430,11 @@ buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC where
 -- The translation of Pattern = ⟨E, A, Pr⟩ is the formula r2 (x, y) ∧ Pr such
 -- that r2 (x, y) is the translation of predicate p = ⟨r1 : C, r2 : D⟩ for every rel(p, x, y) ∈ A with x : C, y : D.
 
-buildPatternFormula :: Pattern -> CASLFORMULA
-buildPatternFormula (Pattern _ parRel patPred) = 
+buildPatternFormula :: [RelVar] -> Pattern -> CASLFORMULA
+buildPatternFormula varS (Pattern _ parRel patPred) = 
   let 
     relInvF = map (buildPatRelFormula) parRel
-    oclExpF = map (buildOCLFormulaWRel) patPred
+    oclExpF = map (buildOCLFormulaWRel varS) patPred
   in 
     if null oclExpF
     then if null relInvF 
@@ -460,7 +465,7 @@ buildWhenWhereFormula Nothing _ = trueForm -- ERROR, this cannot happens
 buildWhenWhereFormula (Just (WhenWhere relInv oclExp)) varS =
   let
     relInvF = map (buildRelInvocFormula varS) relInv
-    oclExpF = map (buildOCLFormula) oclExp
+    oclExpF = map (buildOCLFormula varS) oclExp
   in 
     if null oclExpF
     then if null relInvF 
@@ -483,56 +488,62 @@ buildRelInvocFormula varS rel =
                   nullRange
 
 
-buildOCLFormulaWRel :: (String,String,OCL) -> CASLFORMULA
-buildOCLFormulaWRel (prN,varN,ocl) = trueForm -- TODO
---  let oclF = buildOCLFormula ocl
---  in 
---    C.Predication (C.Qual_pred_name (stringToId prN) (Pred_type [sor,sor2] nullRange) nullRange) 
---                  ((Qual_var souVar sor nullRange):[Qual_var tarVar sor2 nullRange])
---                  nullRange
--- VER SI PUEDO INGRESAR UNA EXPRESION SIN INDICAR LOS TIPOS
+buildOCLFormulaWRel :: [RelVar] -> (String,String,OCL) -> CASLFORMULA
+buildOCLFormulaWRel varS (prN, varN, (StringExp str)) = 
+  let oclT = buildSTRINGTerm str varS
+      sor = case findRelVarFromName varS varN of
+              Nothing -> stringToId ""
+              Just v -> stringToId $ varType v
+      sor2 = getSTRINGType str varS
+  in 
+    C.Predication (C.Qual_pred_name (stringToId prN) (Pred_type [sor,sor2] nullRange) nullRange) 
+                  ((Qual_var (mkSimpleId varN) sor nullRange):[oclT])
+                  nullRange
+buildOCLFormulaWRel _ _ = trueForm
 
 
-buildOCLFormula :: OCL -> CASLFORMULA
--- "if COND then F1 else F2" is translated into (COND /\ F1) \/ (not COND /\ F2)
-buildOCLFormula (IFExpre c th el) =
+buildOCLFormula :: [RelVar] -> OCL -> CASLFORMULA
+buildOCLFormula varS (Paren e) = buildOCLFormula varS e
+buildOCLFormula _ (BExp b) = if b then trueForm else C.Negation trueForm nullRange
+buildOCLFormula varS (NotB e) = C.Negation (buildOCLFormula varS e) nullRange
+buildOCLFormula varS (AndB lE rE) = C.Junction Con ([buildOCLFormula varS lE, buildOCLFormula varS rE]) nullRange
+buildOCLFormula varS (OrB lE rE) = C.Junction Dis ([buildOCLFormula varS lE, buildOCLFormula varS rE]) nullRange
+buildOCLFormula varS (Equal lE rE) = C.Equation (buildSTRINGTerm lE varS) Strong (buildSTRINGTerm rE varS) nullRange
+buildOCLFormula _ (StringExp _) = trueForm -- This is not a formula, but a term used within an equality
+
+
+buildSTRINGTerm :: STRING -> [RelVar] -> CASLTERM
+buildSTRINGTerm (Str str) _ = C.Application (Qual_op_name (stringToId str) 
+                                                          (Op_type Total [] (stringToId "String") nullRange) 
+                                                          nullRange) 
+                                            [] nullRange
+buildSTRINGTerm (ConcatExp lS rS) varS =
   let 
-    cForm = buildEXPREFormula c
-    lEFor = buildOCLFormula th
-    rEFor = buildOCLFormula el
+    lSTerm = buildSTRINGTerm lS varS 
+    rSTerm = buildSTRINGTerm rS varS
+    stringSort = stringToId "String"
   in
-    C.Junction Dis [C.Junction Con [cForm, lEFor] nullRange, 
-                    C.Junction Con [C.Negation cForm nullRange, rEFor] nullRange] 
-             nullRange
-buildOCLFormula (OCLExpre e) = buildEXPREFormula e
---buildOCLFormula (Equal lE rE) = C.Equation (buildOCLTERM lE) String (buildOCLTERM rE) nullRange
-
-
---buildOCLTERM :: OCL -> CASLTERM
---buildOCLTERM te = trueForm --TODO
-
-
-buildEXPREFormula :: EXPRE -> CASLFORMULA
-buildEXPREFormula (Paren e) = buildEXPREFormula e
-buildEXPREFormula (StringExp str) = buildSTRINGFormula str
-buildEXPREFormula (BExp b) = if b then trueForm else C.Negation trueForm nullRange
-buildEXPREFormula (NotB e) = C.Negation (buildEXPREFormula e) nullRange
-buildEXPREFormula (AndB lE rE) = C.Junction Con ([buildEXPREFormula lE, buildEXPREFormula rE]) nullRange
-buildEXPREFormula (OrB lE rE) = C.Junction Dis ([buildEXPREFormula lE, buildEXPREFormula rE]) nullRange
---buildEXPREFormula (EqualExp lE rE) = C.Relation (buildEXPREFormula lE) Equivalence (buildEXPREFormula rE) nullRange
-
-
-buildSTRINGFormula :: STRING -> CASLFORMULA
-buildSTRINGFormula (Str str) = trueForm --TODO-- string operation invocation
-buildSTRINGFormula (ConcatExp lS rS) =
+    C.Application (Qual_op_name (stringToId "++") 
+                                (Op_type Total [stringSort,stringSort] stringSort nullRange) 
+                                nullRange) 
+                  [lSTerm,rSTerm] 
+                  nullRange
+buildSTRINGTerm (VarExp vE) varS = 
   let 
-    lSFor = buildSTRINGFormula lS
-    rSFor = buildSTRINGFormula rS
+    var = case findRelVarFromName varS vE of
+            Nothing -> stringToId ""
+            Just v -> stringToId $ varType v
   in
-    trueForm --TODO
-    -- concat operation invocation with formulas
+    Qual_var (mkSimpleId vE) var nullRange
 
-buildSTRINGFormula (VarExp vE) = trueForm --TODO
+
+getSTRINGType :: STRING -> [RelVar] -> SORT
+getSTRINGType (VarExp vE) varS = 
+  case findRelVarFromName varS vE of
+    Nothing -> stringToId ""
+    Just v -> stringToId $ varType v
+getSTRINGType _ _ = stringToId ""
+
 
 
 
@@ -561,21 +572,98 @@ addStringSignature s ns =
     stringSort = stringToId "String"
     (strObj,othObj) = separateStringConstraintFromOthers $ sentences s
     strObjTr = getStringObjFromTransformation ns
+    strObjOps = foldr (\(idd,opT) se -> MapSet.insert idd opT se) MapSet.empty (getStringOperations strObjTr)
+    everyString = Set.toList (Set.union strObjTr (getStringObjects strObj))
   in 
     C.Sign { sortRel = Rel.insertPair stringSort stringSort (C.sortRel s)
            , revSortRel = (C.revSortRel s)
            , emptySortSet = (C.emptySortSet s)
-           , opMap = MapSet.insert (stringToId "++") (OpType Total [stringSort,stringSort] stringSort) (C.opMap s)
+           , opMap = MapSet.union strObjOps (C.opMap s)
            , assocOps = (C.assocOps s)
            , predMap = (C.predMap s)
            , varMap = (C.varMap s)
-           , sentences = [toStringConstraint (stringSort, Set.toList (Set.union strObjTr (getStringObjects strObj)))] ++ othObj
+           , sentences = getNoConfusionStrings everyString :
+                           (toStringConstraint (stringSort, everyString) : 
+                             deleteNoConfusionString othObj)
            , declaredSymbols = (C.declaredSymbols s)
            , envDiags = (C.envDiags s)
            , annoMap = (C.annoMap s)
            , globAnnos = (C.globAnnos s)
            , extendedInfo = (C.extendedInfo s)
            }
+
+
+splitStringByUnderscore :: String -> [String]
+splitStringByUnderscore [] = []
+splitStringByUnderscore str = 
+  let 
+    strAux = getUntilUnderscore str
+    rest = splitStringByUnderscore (drop (length strAux + 1) str)
+  in 
+    strAux : rest
+
+
+getUntilUnderscore :: String -> String
+getUntilUnderscore [] = []
+getUntilUnderscore (s : restS) = if s == '_'
+                                 then []
+                                 else s : getUntilUnderscore restS
+
+
+getStringOperations :: Set.Set Id -> [(Id,OpType)]
+getStringOperations ids = Set.fold (\idd lis -> (idd, (mkTotOpType [] (stringToId "String"))) : lis ) [] ids
+
+
+deleteNoConfusionString :: [Named CASLFORMULA] -> [Named CASLFORMULA]
+deleteNoConfusionString [] = []
+deleteNoConfusionString (nf : restNF) = 
+  let rest = deleteNoConfusionString restNF
+  in if startswith (senAttr nf) "noConfusion_String"
+     then rest
+     else nf : rest
+
+
+startswith :: String -> String -> Bool
+startswith [] [] = True
+startswith (a : restA) (b : restB) = if a == b then startswith restA restB else False
+startswith _ _ = False
+
+
+getNoConfusionStrings :: [Id] -> Named (CASLFORMULA)
+getNoConfusionStrings ordObj = 
+  let diffForm = foldr ((++) . (diffOfRestStringOps ordObj)) [] ordObj
+  in makeNamed ("noConfusion_String") (Junction Con diffForm nullRange)
+
+
+diffOfRestStringOps :: [Id] -> Id -> [CASLFORMULA]
+diffOfRestStringOps lisObj objName = 
+  let lis = removeUntilId lisObj objName
+  in concat $ map (diffOpsStr objName) lis
+
+
+removeUntilId :: [Id] -> Id -> [Id]
+removeUntilId lis str = 
+  case lis of
+    [] -> []
+    a : rest -> if a == str 
+                then rest
+                else removeUntilId rest str
+
+
+diffOpsStr :: Id -> Id -> [CASLFORMULA]
+diffOpsStr objName1 objName2 = 
+  if not (objName1 == objName2) 
+  then [Negation (Equation 
+                 (Application (Qual_op_name objName1
+                        (Op_type Total [] (stringToId "String") nullRange) 
+                        nullRange) [] nullRange) 
+                 Strong 
+                 (Application (Qual_op_name objName2
+                        (Op_type Total [] (stringToId "String") nullRange) 
+                        nullRange) [] nullRange)
+                 nullRange) 
+       nullRange]
+  else []
 
 
 -- Get String instances within transformation rules
@@ -617,23 +705,19 @@ getStringIdsFromWhenWhere (Just (WhenWhere _ ocl)) = Set.unions (map (getStringI
 
 
 getStringIdsFromOCL :: OCL -> Set.Set Id
-getStringIdsFromOCL (IFExpre c the els) = Set.unions [getStringIdsFromExpre c,getStringIdsFromOCL the, getStringIdsFromOCL els]
-getStringIdsFromOCL (OCLExpre e) = getStringIdsFromExpre e
-getStringIdsFromOCL (Equal lE rE) = Set.union (getStringIdsFromOCL lE) (getStringIdsFromOCL rE)
-
-
-getStringIdsFromExpre :: EXPRE -> Set.Set Id
-getStringIdsFromExpre (Paren e) = getStringIdsFromExpre e
-getStringIdsFromExpre (StringExp str) = getStringIdsFromString str
-getStringIdsFromExpre (BExp _) = Set.empty
-getStringIdsFromExpre (NotB no) = getStringIdsFromExpre no
-getStringIdsFromExpre (AndB lE rE) = Set.union (getStringIdsFromExpre lE) (getStringIdsFromExpre rE)
-getStringIdsFromExpre (OrB lE rE) = Set.union (getStringIdsFromExpre lE) (getStringIdsFromExpre rE)
-getStringIdsFromExpre (EqualExp lE rE) = Set.union (getStringIdsFromExpre lE) (getStringIdsFromExpre rE)
+getStringIdsFromOCL (Paren e) = getStringIdsFromOCL e
+getStringIdsFromOCL (StringExp str) = getStringIdsFromString str
+getStringIdsFromOCL (BExp _) = Set.empty
+getStringIdsFromOCL (NotB no) = getStringIdsFromOCL no
+getStringIdsFromOCL (AndB lE rE) = Set.union (getStringIdsFromOCL lE) (getStringIdsFromOCL rE)
+getStringIdsFromOCL (OrB lE rE) = Set.union (getStringIdsFromOCL lE) (getStringIdsFromOCL rE)
+getStringIdsFromOCL (Equal lE rE) = Set.union (getStringIdsFromString lE) (getStringIdsFromString rE)
 
 
 getStringIdsFromString :: STRING -> Set.Set Id
-getStringIdsFromString (Str s) = Set.insert (stringToId s) Set.empty
+getStringIdsFromString (Str s) = if s == ""
+                                 then Set.insert (stringToId "EMPTY") Set.empty
+                                 else Set.insert (stringToId s) Set.empty
 getStringIdsFromString (ConcatExp lS rS) = Set.union (getStringIdsFromString lS) (getStringIdsFromString rS)
 getStringIdsFromString (VarExp _) = Set.empty
 
@@ -647,7 +731,7 @@ separateStringConstraintFromOthers (f : restF) =
        Sort_gen_ax [Constraint sor _ _] _ -> if sor == (stringToId "String")
                                              then (f : restString, restOther)
                                              else (restString, f : restOther)
-       _ -> separateStringConstraintFromOthers restF
+       _ -> (restString, f : restOther)
 
 
 -- Get String names from Qual_op_name
@@ -669,15 +753,14 @@ getObjNamesFromOp ((op,_) : restOp) =
 
 -- Generate free type
 --   String ::= EMPTY | ... (string instances) ... 
---            | __ :: __ (first:? String; rest:? String)
+--            | __ ++ __ (first: String; rest: String)
 
 toStringConstraint :: (Id, [Id]) -> Named (CASLFORMULA)
 toStringConstraint (sor,lisObj) = 
   let 
-    emptyString = stringToId "EMPTY" 
     stringSort = stringToId "String" 
     concatOp = (Qual_op_name (stringToId "++") (Op_type Total [stringSort,stringSort] stringSort nullRange) nullRange,[])
-    simplCon = Constraint sor (concatOp : (foldr ((:) . toConstraintFromId sor) [] (emptyString : lisObj))) sor
+    simplCon = Constraint sor (concatOp : (foldr ((:) . toConstraintFromId sor) [] lisObj)) sor
     constr = Sort_gen_ax [simplCon] True
   in 
     makeNamed ("sortGenCon_String") constr

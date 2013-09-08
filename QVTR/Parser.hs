@@ -399,14 +399,12 @@ pIdentifier = do
 
 
 -- FAKE OCL PARSER
--- <OclExpressionCS> ::= <Expre>
---                     | 'if' <Expre> 'then' <OclExpressionCS> 'else' <OclExpressionCS> 'endif'
---                     | <OclExpressionCS> = <OclExpressionCS>
--- <Expre> ::= '(' <Expre> ')'
---           | <String> 
---           | <Const>
---           | <Expre> <Duop> <Expre>
---           | <Unop> <Expre>
+-- <OclExpressionCS> ::= '(' <OclExpressionCS> ')'
+--                     | <String> 
+--                     | <Const>
+--                     | <OclExpressionCS> <Duop> <OclExpressionCS>
+--                     | <Unop> <OclExpressionCS>
+--                     | <String> '=' <String> 
 --
 -- <Const> ::= 'true' | 'false'
 -- <Unop>  ::= 'not'
@@ -419,125 +417,95 @@ pIdentifier = do
 pOCLExpression :: CharParser st QVTR.OCL
 pOCLExpression = do
   skip
-  (    do (b,le,re) <- try pOCLIf
-          return ( QVTR.IFExpre b le re )
-   <|> try pEqualExpreOCL
-   <|> do r <- try pOCLExpre
-          return (QVTR.OCLExpre r))
-
-
-pOCLExpre :: CharParser st QVTR.EXPRE
-pOCLExpre = do
-  skip
   (    try pOCLConst
-   <|> do ex <- try $ pBetParent pOCLExpre
-          return ( QVTR.Paren ex )
    <|> try pUnop
    <|> try pDuopAnd
    <|> try pDuopOr
    <|> try pEqualExpre
+   <|> do ex <- try $ pBetParent pOCLExpression
+          return ( QVTR.Paren ex )
    <|> do s <- try pOCLSTRING
           return ( QVTR.StringExp s ) )
---   <|> chainl1 pOCLExpre pEqualExpre
---   <|> chainl1 pOCLExpre pBoolExpre )
 
 
---pEqualExpre :: CharParser st (QVTR.EXPRE -> QVTR.EXPRE -> QVTR.EXPRE)
---pEqualExpre = do
---  skip
---  pKey "="
---  skip
---  return ( QVTR.Equal )
-
-
---pBoolExpre :: CharParser st (QVTR.EXPRE -> QVTR.EXPRE -> QVTR.EXPRE)
---pBoolExpre = do
---  skip
---  (     do op <- pKey "and" 
---           return ( QVTR.AndB )
---    <|> do op <- pKey "or" 
---           return ( QVTR.OrB ) )
-
-pUnop :: CharParser st QVTR.EXPRE
+pUnop :: CharParser st QVTR.OCL
 pUnop = do 
   skip
   pKey "not" 
   skip
-  e <- try pOCLExpre
+  char '('
+  skip
+  e <- try pOCLExpression
+  skip
+  char ')'
   return ( QVTR.NotB e )
 
     
 -- Prefix form. This MUST be changed
-pEqualExpreOCL :: CharParser st QVTR.OCL
-pEqualExpreOCL = do 
-  skip
-  pKey "=" 
-  skip
-  ex1 <- try $ pBetParent pOCLExpression
-  skip
-  ex2 <- try $ pBetParent pOCLExpression
-  return ( QVTR.Equal ex1 ex2 ) 
-
-
--- Prefix form. This MUST be changed
-pEqualExpre :: CharParser st QVTR.EXPRE
+pEqualExpre :: CharParser st QVTR.OCL
 pEqualExpre = do 
   skip
   pKey "=" 
   skip
-  ex1 <- try $ pBetParent pOCLExpre
+  char '('
   skip
-  ex2 <- try $ pBetParent pOCLExpre
-  return ( QVTR.EqualExp ex1 ex2 ) 
+  ex1 <- try $ pOCLSTRING
+  skip
+  char ')'
+  skip
+  char '('
+  skip
+  ex2 <- try $ pOCLSTRING
+  skip
+  char ')'
+  return ( QVTR.Equal ex1 ex2 ) 
 
 
 -- Prefix form. This MUST be changed
-pDuopAnd :: CharParser st QVTR.EXPRE
+pDuopAnd :: CharParser st QVTR.OCL
 pDuopAnd = do 
   skip
   pKey "and" 
   skip
-  ex1 <- try $ pBetParent pOCLExpre
+  char '('
   skip
-  ex2 <- try $ pBetParent pOCLExpre
+  ex1 <- try $ pOCLExpression
+  skip
+  char ')'
+  skip
+  char '('
+  skip
+  ex2 <- try $ pOCLExpression
+  skip
+  char ')'
   return ( QVTR.AndB ex1 ex2 )
 
 
 -- Prefix form. This MUST be changed
-pDuopOr :: CharParser st QVTR.EXPRE
+pDuopOr :: CharParser st QVTR.OCL
 pDuopOr = do 
   skip
   pKey "or" 
   skip
-  ex1 <- try $ pBetParent pOCLExpre
+  char '('
   skip
-  ex2 <- try $ pBetParent pOCLExpre
+  ex1 <- try $ pOCLExpression
+  skip
+  char ')'
+  skip
+  char '('
+  skip
+  ex2 <- try $ pOCLExpression
+  skip
+  char ')'
   return ( QVTR.OrB ex1 ex2 )  
 
 
-pOCLConst :: CharParser st QVTR.EXPRE
+pOCLConst :: CharParser st QVTR.OCL
 pOCLConst = do pKey "true" 
                return ( QVTR.BExp True )
         <|> do pKey "false" 
                return ( QVTR.BExp False )
-
-
-pOCLIf :: CharParser st (QVTR.EXPRE,QVTR.OCL,QVTR.OCL)
-pOCLIf = do
-  pKey "if" 
-  skip
-  b <- try pOCLExpre
-  skip
-  pKey "then" 
-  skip
-  e1 <- try pOCLExpression
-  skip
-  pKey "else" 
-  skip
-  e2 <- try pOCLExpression
-  skip
-  pKey "endif" 
-  return ( (b,e1,e2) )
 
 
 pOCLSTRING :: CharParser st QVTR.STRING
@@ -549,7 +517,7 @@ pOCLSTRING = do ls <- try pOCLSingleSTRING
          <|> do ls <- try pIdentifier
                 skip
                 (do rs <- try pStringConcat
-                    return ( QVTR.ConcatExp (QVTR.Str ls) rs ) 
+                    return ( QVTR.ConcatExp (QVTR.VarExp ls) rs ) 
                  <|> return ( QVTR.VarExp ls ))
 
 

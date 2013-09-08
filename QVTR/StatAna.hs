@@ -427,7 +427,7 @@ getVarFromTemplate :: PropertyTemplate -> [RelVar] -> Maybe RelVar
 getVarFromTemplate (PropertyTemplate _ ocl _) relV = 
   case ocl of
     Nothing -> Nothing
-    Just (OCLExpre (StringExp (VarExp v))) -> findVarFromName v relV
+    Just (StringExp (VarExp v)) -> findVarFromName v relV
     _ -> Nothing
 
 
