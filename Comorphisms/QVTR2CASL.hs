@@ -95,7 +95,7 @@ instance Comorphism QVTR2CASL
 
 mapTheory :: (QVTR.Sign, [Named QVTR.Sen]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (s, ns) = let cs = mapSign s in
-  return (cs, map (mapNamed $ mapSen s cs) ns )
+  return (cs, map (mapNamed $ mapSen s cs) ns ++ sentences cs )
 
 
 mapSign :: QVTR.Sign -> CASLSign
@@ -242,7 +242,7 @@ getSortOfProperty qvtrSign typN pN =
 
 
 createRuleFormula :: QVTR.Sign -> CASLSign -> QVTR.RelationSen -> CASLFORMULA
-createRuleFormula _ _ (QVTR.RelationSen rDef varS parS souPat tarPat whenC whereC) = 
+createRuleFormula qvtSign _ (QVTR.RelationSen rDef varS parS souPat tarPat whenC whereC) = 
   let
     rName = QVTR.name rDef
     parTyp = map (stringToId . varType) (parS)
@@ -259,8 +259,8 @@ createRuleFormula _ _ (QVTR.RelationSen rDef varS parS souPat tarPat whenC where
                           nullRange) 
            C.Equivalence 
            (if null whenVarSet
-            then buildEmptyWhenFormula parS varS varSet_2 souPat tarPat whereC
-            else buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC whereC)
+            then buildEmptyWhenFormula qvtSign parS varS varSet_2 souPat tarPat whereC
+            else buildNonEmptyWhenFormula qvtSign whenVarSet parS varS varSet_2 souPat tarPat whenC whereC)
            nullRange
     else Quantification Universal (varDeclFromRelVar parS)
                         (C.Relation (C.Predication (C.Qual_pred_name (stringToId rName) (Pred_type parTyp nullRange) nullRange) 
@@ -268,8 +268,8 @@ createRuleFormula _ _ (QVTR.RelationSen rDef varS parS souPat tarPat whenC where
                                                    nullRange)
                                     C.Equivalence 
                                     (if null whenVarSet
-                                     then buildEmptyWhenFormula parS varS varSet_2 souPat tarPat whereC
-                                     else buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC whereC)
+                                     then buildEmptyWhenFormula qvtSign parS varS varSet_2 souPat tarPat whereC
+                                     else buildNonEmptyWhenFormula qvtSign whenVarSet parS varS varSet_2 souPat tarPat whenC whereC)
                                     nullRange)
                         nullRange
 
@@ -307,14 +307,14 @@ getVarIdsFromOCLExpre _ _ = []
 -- ∀ x1 , ..., xn ∈ (VarSet\2_VarSet)\ParSet, 
 --      (Pattern1 → ∃ y1 , ..., ym ∈ 2_VarSet\ParSet, (Pattern2 ∧ where))
 
-buildEmptyWhenFormula :: [RelVar] -> [RelVar] -> Set.Set RelVar -> Pattern -> Pattern -> Maybe WhenWhere -> CASLFORMULA
-buildEmptyWhenFormula parS varS varSet_2 souPat tarPat whereC =
+buildEmptyWhenFormula :: QVTR.Sign -> [RelVar] -> [RelVar] -> Set.Set RelVar -> Pattern -> Pattern -> Maybe WhenWhere -> CASLFORMULA
+buildEmptyWhenFormula qvtSign parS varS varSet_2 souPat tarPat whereC =
   let
     listPars = Set.fromList parS
     diffVarSet_1 = Set.toList $ Set.difference (Set.difference (Set.fromList varS) varSet_2) listPars
     diffVarSet_2 = Set.toList $ Set.difference varSet_2 listPars
-    souPatF = buildPatternFormula varS souPat
-    tarPatF = buildPatternFormula varS tarPat
+    souPatF = buildPatternFormula qvtSign varS souPat
+    tarPatF = buildPatternFormula qvtSign varS tarPat
     whereF = buildWhenWhereFormula whereC varS
 
     fst_sen = if whereF == trueForm
@@ -368,17 +368,17 @@ varDeclFromRelVar (v : restV) = (Var_decl [mkSimpleId $ varName v] (stringToId $
 --      ∀ x1 , ..., xn ∈ (VarSet\(WhenVarSet ∪ 2_VarSet))\ParSet, (Pattern1 →
 --            ∃ y1 , ..., ym ∈ 2_VarSet\ParSet, (Pattern2 ∧ where)))
 
-buildNonEmptyWhenFormula :: [RelVar] -> [RelVar] -> [RelVar] -> Set.Set RelVar 
-                                     -> Pattern -> Pattern -> Maybe WhenWhere -> Maybe WhenWhere -> CASLFORMULA
-buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC whereC =
+buildNonEmptyWhenFormula :: QVTR.Sign -> [RelVar] -> [RelVar] -> [RelVar] -> Set.Set RelVar 
+                                      -> Pattern -> Pattern -> Maybe WhenWhere -> Maybe WhenWhere -> CASLFORMULA
+buildNonEmptyWhenFormula qvtSign whenVarSet parS varS varSet_2 souPat tarPat whenC whereC =
   let
     listWhenVars = Set.fromList whenVarSet
     listPars = Set.fromList parS
     diffVarSet_1 = Set.toList $ Set.difference listWhenVars listPars
     diffVarSet_2 = Set.toList $ Set.difference (Set.difference (Set.fromList varS) (Set.union listWhenVars varSet_2)) listPars
     diffVarSet_3 = Set.toList $ Set.difference varSet_2 listPars
-    souPatF = buildPatternFormula varS souPat
-    tarPatF = buildPatternFormula varS tarPat
+    souPatF = buildPatternFormula qvtSign varS souPat
+    tarPatF = buildPatternFormula qvtSign varS tarPat
     whenF = buildWhenWhereFormula whenC varS
     whereF = buildWhenWhereFormula whereC varS
 
@@ -442,11 +442,11 @@ buildNonEmptyWhenFormula whenVarSet parS varS varSet_2 souPat tarPat whenC where
 -- The translation of Pattern = ⟨E, A, Pr⟩ is the formula r2 (x, y) ∧ Pr such
 -- that r2 (x, y) is the translation of predicate p = ⟨r1 : C, r2 : D⟩ for every rel(p, x, y) ∈ A with x : C, y : D.
 
-buildPatternFormula :: [RelVar] -> Pattern -> CASLFORMULA
-buildPatternFormula varS (Pattern _ parRel patPred) = 
+buildPatternFormula :: QVTR.Sign -> [RelVar] -> Pattern -> CASLFORMULA
+buildPatternFormula qvtSign varS (Pattern _ parRel patPred) = 
   let 
     relInvF = map (buildPatRelFormula) parRel
-    oclExpF = map (buildOCLFormulaWRel varS) patPred
+    oclExpF = map (buildOCLFormulaWRel qvtSign varS) patPred
   in 
     if null oclExpF
     then if null relInvF 
@@ -461,7 +461,7 @@ buildPatRelFormula :: (CSMOF.PropertyT,RelVar,RelVar) -> CASLFORMULA
 buildPatRelFormula (p,souV,tarV) =
   let 
     rName = CSMOF.targetRole p
-    predTyp = [stringToId $ QVTRAs.varType souV, stringToId $ QVTRAs.varType tarV]
+    predTyp = [stringToId $ CSMOF.name $ CSMOF.sourceType p, stringToId $ CSMOF.name $ CSMOF.targetType p]
     varsInv = createVarRule [souV,tarV]
   in 
     Predication (C.Qual_pred_name (stringToId $ rName) (Pred_type predTyp nullRange) nullRange) 
@@ -500,18 +500,24 @@ buildRelInvocFormula varS rel =
                   nullRange
 
 
-buildOCLFormulaWRel :: [RelVar] -> (String,String,OCL) -> CASLFORMULA
-buildOCLFormulaWRel varS (prN, varN, (StringExp str)) = 
+buildOCLFormulaWRel :: QVTR.Sign -> [RelVar] -> (String,String,OCL) -> CASLFORMULA
+buildOCLFormulaWRel qvtSign varS (prN, varN, (StringExp str)) = 
   let oclT = buildSTRINGTerm str varS
-      sor = case findRelVarFromName varS varN of
-              Nothing -> stringToId ""
-              Just v -> stringToId $ varType v
-      sor2 = getSTRINGType str varS
+      typ = case findRelVarFromName varS varN of
+              Nothing -> ""
+              Just v -> varType v
+
+      (_,p) = getSortOfProperty qvtSign typ prN
+      (sor,sor2) = case p of
+                     Nothing -> (stringToId "", stringToId "")
+                     Just pp -> if (CSMOF.targetRole pp) == prN
+                                then (stringToId $ CSMOF.name $ CSMOF.sourceType pp, stringToId $ CSMOF.name $ CSMOF.targetType pp)
+                                else (stringToId $ CSMOF.name $ CSMOF.targetType pp, stringToId $ CSMOF.name $ CSMOF.sourceType pp)
   in 
     C.Predication (C.Qual_pred_name (stringToId prN) (Pred_type [sor,sor2] nullRange) nullRange) 
-                  ((Qual_var (mkSimpleId varN) sor nullRange):[oclT])
+                  ((Qual_var (mkSimpleId varN) (stringToId typ) nullRange):[oclT])
                   nullRange
-buildOCLFormulaWRel _ _ = trueForm
+buildOCLFormulaWRel _ _ _ = trueForm
 
 
 buildOCLFormula :: [RelVar] -> OCL -> CASLFORMULA
@@ -549,12 +555,12 @@ buildSTRINGTerm (VarExp vE) varS =
     Qual_var (mkSimpleId vE) var nullRange
 
 
-getSTRINGType :: STRING -> [RelVar] -> SORT
-getSTRINGType (VarExp vE) varS = 
-  case findRelVarFromName varS vE of
-    Nothing -> stringToId ""
-    Just v -> stringToId $ varType v
-getSTRINGType _ _ = stringToId ""
+--getSTRINGType :: STRING -> [RelVar] -> SORT
+--getSTRINGType (VarExp vE) varS = 
+--  case findRelVarFromName varS vE of
+--    Nothing -> stringToId ""
+--    Just v -> stringToId $ varType v
+--getSTRINGType _ _ = stringToId ""
 
 
 
@@ -596,7 +602,7 @@ addStringSignature s =
            , predMap = (C.predMap s)
            , varMap = (C.varMap s)
            , sentences = getNoConfusionStrings everyString :
-                           (toStringConstraint (stringSort, everyString) : 
+                           (toStringConstraint (stringSort, everyString) :
                              deleteNoConfusionString othObj)
            , declaredSymbols = (C.declaredSymbols s)
            , envDiags = (C.envDiags s)
