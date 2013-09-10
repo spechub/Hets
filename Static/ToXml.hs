@@ -221,8 +221,8 @@ showSen lid ga mt sig ns = let s = sentence ns in add_attrs
        Just b -> [mkProvenAttr b]
      ++ mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s))
     . unode (if isJust mt then "Theorem" else "Axiom") $ unode "Text"
-          (show $ useGlobalAnnos ga (print_named lid
-                            $ mapNamed (simplify_sen lid sig) ns))
+          (show . useGlobalAnnos ga . print_named lid
+                            . makeNamed "" $ simplify_sen lid sig s)
           : map (showSym lid) (symsOfSen lid s)
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
