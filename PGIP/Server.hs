@@ -163,7 +163,7 @@ hetsServer opts1 = do
     -- if path could be a RESTfull request, try to parse it
     else if isRESTfull pathBits then liftRun $
       parseRESTfull opts sessRef pathBits query splitQuery re
-    -- only ohterwise stick to the old response methods
+    -- only otherwise stick to the old response methods
     else case B8.unpack (requestMethod re) of
       "GET" -> liftRun $ if isInfixOf "menus" query then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
@@ -233,15 +233,23 @@ anaAutoProofQuery splitQuery = let
     err -> error $ "illegal autoproof method: " ++ show err
   in GlAutoProve prOrCons include prover trans timeout nodeSel
 
-
 -- quick approach to whether or not the query can be a RESTfull request
 isRESTfull :: [String] -> Bool
 isRESTfull pathBits = pathBits /= [] &&
   elem (head pathBits) listRESTfullIdentifiers
 
 listRESTfullIdentifiers :: [String]
-listRESTfullIdentifiers = [ "libraries", "sessions", "menus", "hets-lib", "dir"
-                          , "nodes", "edges" ]
+listRESTfullIdentifiers =
+  [ "libraries", "sessions", "menus", "hets-lib", "dir"]
+  ++ nodeEdgeIdes ++ newRESTIdes
+
+nodeEdgeIdes :: [String]
+nodeEdgeIdes = ["nodes", "edges"]
+
+newRESTIdes :: [String]
+newRESTIdes =
+  [ "dg", "translate", "provers", "consistency-checkers", "prove"
+  , "consistency-check" ]
 
 -- query is analysed and processed in accordance with RESTfull interface
 parseRESTfull :: HetcatsOpts -> IORef (IntMap.IntMap Session)
@@ -312,20 +320,25 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
                 _ -> fail $ "unknown global command for a GET-request: "
                   ++ intercalate "/" cmd) >>= getResponse
       -- get node or edge view
-      nodeOrEdge : codedIri : c | nodeOrEdge `elem` ["node", "egde"] -> let
+      nodeOrEdge : codedIri : c | elem nodeOrEdge nodeEdgeIdes -> let
         dgQ ir = maybe (NewDGQuery $ fromMaybe (iriPath ir) library)
                  (`DGQuery` library) session
-        in case (nodeOrEdge, parseIRI codedIri) of
-          ("node", Just n) -> let
+        in case (elemIndex nodeOrEdge nodeEdgeIdes, parseIRI codedIri) of
+          (Just 0, Just n) -> let
             s = iriFragment n
             i = maybe (Right s) Left $ readMaybe s in
             getResponse $ Query (dgQ n) $ NodeQuery i $ case c of
                 ["theory"] -> NcCmd Query.Theory
                 _ -> NcCmd Query.Info
-          ("edge", Just l) -> case readMaybe $ iriFragment l of
+          (Just 1, Just l) -> case readMaybe $ iriFragment l of
             Just i -> getResponse $ Query (dgQ l) $ EdgeQuery (EdgeId i) "edge"
             Nothing -> fail $ "failed to read edgeId from " ++ iriFragment l
           _ -> fail $ "failed to parse IRI from " ++ codedIri
+      newIde : libIri : _ | elem newIde newRESTIdes ->
+        case parseIRI libIri of
+          Just lib -> getResponse $ Query (NewDGQuery $ iriPath lib)
+            $ DisplayQuery (Just "xml")
+          Nothing -> fail $ "failed to parse libIRI from " ++ libIri
       -- fail if query doesn't seem to comply
       _ -> queryFailure
     "PUT" -> case pathBits of
@@ -999,7 +1012,7 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
         diffs = Set.difference (Set.fromList thms)
                 $ Set.fromList ks
     unless (Set.null diffs) $ fail $ "unknown theorems: " ++ show diffs
-    ((nTh, sens),_) <- autoProofAtNode useTh (maybe 1 (max 1) tl) thms gTh cp
+    ((nTh, sens), _) <- autoProofAtNode useTh (maybe 1 (max 1) tl) thms gTh cp
     if null sens then return (le, sens) else return
         (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
