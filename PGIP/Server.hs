@@ -121,17 +121,15 @@ hetsServer opts1 = do
   writeFile permFile ""
   sessRef <- newIORef (IntMap.empty, Map.empty)
   run 8000 $ \ re -> do
-   let (query, splitQuery) = queryToString $ queryString re
-       rhost = shows (remoteHost re) "\n"
+   let rhost = shows (remoteHost re) "\n"
        bots = ["180.76.", "77.75.77.", "66.249.", "141.8.147."]
-       queryToString s = let
-         r = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms)) s
-         in (intercalate "&" $ map
-                (\ (x, ms) -> x ++ maybe "" ('=' :) ms) r, r)
+       splitQuery = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms))
+         $ queryString re
+       query = intercalate "&"
+         $ map (\ (x, ms) -> x ++ maybe "" ('=' :) ms) splitQuery
        pathBits = map T.unpack $ pathInfo re
        path = intercalate "/" pathBits
-       liftRun = liftIO
-   liftRun $ do
+   liftIO $ do
      time <- getCurrentTime
      createDirectoryIfMissing False tempHetsLib
      (m, _) <- readIORef sessRef
@@ -145,11 +143,11 @@ hetsServer opts1 = do
    -- better try to read hosts to exclude from a file
    if any (`isInfixOf` rhost) bots then return $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
-    else if isRESTfull pathBits then liftRun $
+    else if isRESTfull pathBits then liftIO $
       parseRESTfull opts sessRef pathBits query splitQuery re
     -- only otherwise stick to the old response methods
     else case B8.unpack (requestMethod re) of
-      "GET" -> liftRun $ if isInfixOf "menus" query then mkMenuResponse else do
+      "GET" -> liftIO $ if isInfixOf "menus" query then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if not $ null cs then mkHtmlPage path dirs
            -- AUTOMATIC PROOFS (parsing)
@@ -166,7 +164,7 @@ hetsServer opts1 = do
            else getHetsResponse opts [] sessRef pathBits splitQuery
       "POST" -> do
         (params, files) <- parseRequestBody tempFileBackEnd re
-        mTmpFile <- liftRun $ case lookup "content"
+        mTmpFile <- liftIO $ case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
               Just areatext -> let content = B8.unpack areatext in
@@ -178,7 +176,7 @@ hetsServer opts1 = do
               getHetsResponse opts [] sessRef [tmpFile] splitQuery
             mRes = maybe (return $ mkResponse status400 "nothing submitted")
               res mTmpFile
-        liftRun $ case files of
+        liftIO $ case files of
           [] -> if isPrefixOf "prove=" query then
                getHetsResponse opts [] sessRef pathBits
                  $ splitQuery ++ map (\ (a, b)
@@ -1085,7 +1083,8 @@ aRef :: String -> String -> Element
 aRef lnk txt = add_attr (mkAttr "href" lnk) $ unode "a" txt
 
 mkHtmlRef :: String -> String -> Element
-mkHtmlRef query entry = unode "dir" $ aRef (entry ++ query) entry
+mkHtmlRef query entry = unode "dir" $ aRef
+  (entry ++ if null query then "" else '?' : query) entry
 
 mkUnorderedList :: Node t => [t] -> Element
 mkUnorderedList = unode "ul" . map (unode "li")
