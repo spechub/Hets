@@ -277,14 +277,22 @@ encodeForQuery = concatMap (\ c -> let n = ord c in case c of
 decodePlus :: Char -> Char
 decodePlus c = if c == '+' then ' ' else c
 
-decodeQueryCode :: String -> String
-decodeQueryCode s = case s of
+decodeQuery :: String -> String
+decodeQuery s = case s of
   "" -> ""
   '%' : h1 : h2 : r -> case readHex [h1, h2] of
       (i, "") : _ -> [decodePlus $ chr i]
       _ -> ['%', h1, h2]
-    ++ decodeQueryCode r
-  c : r -> decodePlus c : decodeQueryCode r
+    ++ decodeQuery r
+  c : r -> decodePlus c : decodeQuery r
+
+getFragOfCode :: String -> String
+getFragOfCode = getFragment . decodeQuery
+
+getFragment :: String -> String
+getFragment s = case dropWhile (/= '#') s of
+  _ : t -> t
+  "" -> s
 
 anaNodeQuery :: [String] -> NodeIdOrName -> [String] -> [String]
   -> [QueryPair] -> Either String QueryKind
@@ -293,12 +301,12 @@ anaNodeQuery ans i moreTheorems incls pss =
                 (x, Just y) -> ((x, y) :)
                 _ -> id) [] pss
       incl = lookup "include" pps
-      trans = fmap decodeQueryCode $ lookup "translation" pps
+      trans = fmap decodeQuery $ lookup "translation" pps
       prover = lookup "prover" pps
       theorems = map unEsc moreTheorems
           ++ case lookup "theorems" pps of
         Nothing -> []
-        Just str -> map unEsc $ splitOn ' ' $ decodeQueryCode str
+        Just str -> map unEsc $ splitOn ' ' $ decodeQuery str
       timeLimit = maybe Nothing readMaybe $ lookup "timeout" pps
       pp = ProveNode (not (null incls) || case incl of
         Nothing -> True

@@ -64,7 +64,6 @@ import Common.Doc
 import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
-import Common.IRI
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
@@ -238,18 +237,17 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookup2 str = fromMaybe Nothing $ lookup str splitQuery
   session = lookup2 "session" >>= readMaybe
-  library = lookup2 "library" >>= fmap iriPath . parseIRI
+  library = fmap decodeQuery $ lookup2 "library"
   format = lookup2 "format"
   queryFailure = fail $ "this query does not comply with RESTfull interface: "
     ++ intercalate "/" pathBits
   -- since used more often, generate full query out of nodeIRI and nodeCmd
   parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query
-  parseNodeQuery ndIri sId ncmd = ncmd >>= case parseIRI ndIri of
-    Nothing -> fail $ "failed to parse nodeIRI from " ++ ndIri
-    Just nd -> let
-      s = iriFragment nd
+  parseNodeQuery ndIri sId ncmd = ncmd >>= let
+      p = decodeQuery ndIri
+      s = getFragment p
       i = maybe (Right s) Left $ readMaybe s
-      in return . Query (DGQuery sId (Just $ iriPath nd)) . NodeQuery i
+      in return . Query (DGQuery sId (Just p)) . NodeQuery i
   -- call getHetsResult with the properly generated query (Final Result)
   getResponse qr = do
     Result ds ms <- runResultT $ getHetsResult opts [] sessRef qr
@@ -258,16 +256,8 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
       Just s -> mkOkResponse s
   -- respond depending on request Method
   in case B8.unpack (requestMethod re) of
-    "POST" -> case pathBits of
-      -- open new session for dg. NOTE:does not differ from GET/library for now
-      "libraries" : libIri : "sessions" : [] -> case parseIRI libIri of
-          Just lib -> getResponse $ Query (NewDGQuery $ iriPath lib)
-            $ DisplayQuery format
-          Nothing -> fail $ "failed to parse libIRI from " ++ libIri
-      -- fail if query doesn't comply with RESTFullInterface
-      _ -> queryFailure
-    "GET" -> case pathBits of
-      -- show all menue options
+    rm | elem rm ["GET", "POST"] -> case pathBits of
+      -- show all menu options
       "menus" : [] -> mkMenuResponse
       -- list files from directory
       "dir" : r -> let path' = (intercalate "/" r) in
@@ -277,10 +267,8 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
         getResponse $ Query (NewDGQuery file) $ DisplayQuery format
       -- get library (complies with get/hets-lib for now)
       "libraries" : libIri : "development_graph" : [] ->
-        case parseIRI libIri of
-          Just lib -> getResponse $ Query (NewDGQuery $ iriPath lib)
-            $ DisplayQuery format
-          Nothing -> fail $ "failed to parse libIRI from " ++ libIri
+        getResponse $ Query (NewDGQuery $ decodeQuery libIri)
+          $ DisplayQuery format
       -- get previously created session
       "sessions" : sessId : cmd -> case readMaybe sessId of
           Nothing -> fail $ "failed to read session number from " ++ sessId
@@ -299,24 +287,24 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
                   ++ intercalate "/" cmd) >>= getResponse
       -- get node or edge view
       nodeOrEdge : codedIri : c | elem nodeOrEdge nodeEdgeIdes -> let
-        dgQ ir = maybe (NewDGQuery $ fromMaybe (iriPath ir) library)
+        p = decodeQuery codedIri
+        iriPath = takeWhile (/= '#') p
+        dgQ = maybe (NewDGQuery $ fromMaybe iriPath library)
                  (`DGQuery` library) session
-        in case (elemIndex nodeOrEdge nodeEdgeIdes, parseIRI codedIri) of
-          (Just 0, Just n) -> let
-            s = iriFragment n
-            i = maybe (Right s) Left $ readMaybe s in
-            getResponse $ Query (dgQ n) $ NodeQuery i $ case c of
+        f = getFragment p
+        in case elemIndex nodeOrEdge nodeEdgeIdes of
+          Just 0 -> let
+            i = maybe (Right f) Left $ readMaybe f in
+            getResponse $ Query dgQ $ NodeQuery i $ case c of
                 ["theory"] -> NcCmd Query.Theory
                 _ -> NcCmd Query.Info
-          (Just 1, Just l) -> case readMaybe $ iriFragment l of
-            Just i -> getResponse $ Query (dgQ l) $ EdgeQuery (EdgeId i) "edge"
-            Nothing -> fail $ "failed to read edgeId from " ++ iriFragment l
-          _ -> fail $ "failed to parse IRI from " ++ codedIri
+          Just 1 -> case readMaybe f of
+            Just i -> getResponse $ Query dgQ $ EdgeQuery (EdgeId i) "edge"
+            Nothing -> fail $ "failed to read edgeId from " ++ f
+          _ -> error $ "PGIP.Server.elemIndex " ++ nodeOrEdge
       newIde : libIri : _ | elem newIde newRESTIdes ->
-        case parseIRI libIri of
-          Just lib -> getResponse $ Query (NewDGQuery $ iriPath lib)
+          getResponse $ Query (NewDGQuery $ decodeQuery libIri)
             $ DisplayQuery (Just "xml")
-          Nothing -> fail $ "failed to parse libIRI from " ++ libIri
       -- fail if query doesn't seem to comply
       _ -> queryFailure
     "PUT" -> case pathBits of
@@ -326,7 +314,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
          case readMaybe prId of
            Nothing -> fail $ "failed to read sessionId from " ++ prId
            Just sessId -> let
-             dgQ = DGQuery sessId $ fmap iriPath $ parseIRI libIri in
+             dgQ = DGQuery sessId . Just $ decodeQuery libIri in
              getResponse $ Query dgQ $ GlobCmdQuery cmd
       -- execute a proof or calculus request
       "sessions" : sessId : cmd : [] -> case readMaybe sessId of
@@ -336,34 +324,35 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
             incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) $ lookup2 "include"
             prover = lookup2 "prover"
-            translation = lookup2 "translation" >>= fmap iriFragment . parseIRI
+            translation = fmap getFragOfCode $ lookup2 "translation"
             timeout = lookup2 "timeout" >>= readMaybe
-            in (case lookup2 "node" of
-              -- prove all nodes if no singleton is selected
-              Nothing -> return $ Query (DGQuery sId Nothing)
-                $ GlAutoProve GlProofs incl prover translation timeout []
-              -- otherwise run prover for single node only
-              Just ndIri -> parseNodeQuery ndIri sId $ return
-                $ ProveNode incl prover translation timeout []) >>= getResponse
-          -- OTHER CMD | look for (optional) specification of node OR edge
-          _ -> (case (lookup2 "node", lookup2 "edge") of
-            -- fail if both are specified
-            (Just _, Just _) -> fail "please specify only either node or edge"
-            -- call command upon a single node
-            (Just ndIri, Nothing) -> parseNodeQuery ndIri sId
-              $ case lookup cmd $ map (\ a -> (showNodeCmd a, a)) nodeCmds of
+            in case lookup2 "node" of
+                -- prove all nodes if no singleton is selected
+                Nothing -> return $ Query (DGQuery sId Nothing)
+                  $ GlAutoProve GlProofs incl prover translation timeout []
+                -- otherwise run prover for single node only
+                Just ndIri -> parseNodeQuery ndIri sId $ return
+                  $ ProveNode incl prover translation timeout []
+              >>= getResponse
+          -- on other cmd look for (optional) specification of node or edge
+          _ -> case (lookup2 "node", lookup2 "edge") of
+              -- fail if both are specified
+              (Just _, Just _) ->
+                fail "please specify only either node or edge"
+              -- call command upon a single node
+              (Just ndIri, Nothing) -> parseNodeQuery ndIri sId
+                $ case lookup cmd $ map (\ a -> (showNodeCmd a, a)) nodeCmds of
                   Just nc -> return $ NcCmd nc
                   _ -> fail $ "unknown node command '" ++ cmd ++ "' "
-            -- call command upon a single edge
-            (Nothing, Just edIri) -> case parseIRI edIri
-                          >>= readMaybe . iriFragment of
-              -- TODO no command passed on. why?
-              Just i -> return $ Query (DGQuery sId Nothing)
-                $ EdgeQuery (EdgeId i) "edge"
-              Nothing -> fail $ "failed to read edgeId from edgeIRI: " ++ edIri
-            -- call a global command -- TODO should i check if cmd exists?
-            _ -> return $ Query (DGQuery sId Nothing) $ GlobCmdQuery cmd)
-              >>= getResponse
+              -- call (the only) command upon a single edge
+              (Nothing, Just edIri) -> case readMaybe $ getFragOfCode edIri of
+                Just i -> return $ Query (DGQuery sId Nothing)
+                  $ EdgeQuery (EdgeId i) "edge"
+                Nothing ->
+                  fail $ "failed to read edgeId from edgeIRI: " ++ edIri
+              -- call of global command
+              _ -> return $ Query (DGQuery sId Nothing) $ GlobCmdQuery cmd
+           >>= getResponse
       -- fail if request doesn't comply
       _ -> queryFailure
     {- create failure response if request method is not known
