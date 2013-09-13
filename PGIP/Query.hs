@@ -281,10 +281,10 @@ decodeQueryCode :: String -> String
 decodeQueryCode s = case s of
   "" -> ""
   '%' : h1 : h2 : r -> case readHex [h1, h2] of
-     (i, "") : _ -> decodePlus (chr i) : decodeQueryCode r
-     _ -> error $ "decodeQueryCode hex: " ++ take 3 s
-  c : r
-      -> decodePlus c : decodeQueryCode r
+      (i, "") : _ -> [decodePlus $ chr i]
+      _ -> ['%', h1, h2]
+    ++ decodeQueryCode r
+  c : r -> decodePlus c : decodeQueryCode r
 
 anaNodeQuery :: [String] -> NodeIdOrName -> [String] -> [String]
   -> [QueryPair] -> Either String QueryKind
