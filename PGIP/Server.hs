@@ -111,6 +111,9 @@ sessGraph dgQ (Session le ln _ _) = case dgQ of
         $ Map.toList le
   _ -> fmap (\ dg -> (ln, dg)) $ Map.lookup ln le
 
+getVal :: [QueryPair] -> String -> Maybe String
+getVal qs = fromMaybe Nothing . (`lookup` qs)
+
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
@@ -125,10 +128,9 @@ hetsServer opts1 = do
        bots = ["180.76.", "77.75.77.", "66.249.", "141.8.147."]
        splitQuery = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms))
          $ queryString re
-       query = intercalate "&"
-         $ map (\ (x, ms) -> x ++ maybe "" ('=' :) ms) splitQuery
        pathBits = map T.unpack $ pathInfo re
        path = intercalate "/" pathBits
+       meth = B8.unpack (requestMethod re)
    liftIO $ do
      time <- getCurrentTime
      createDirectoryIfMissing False tempHetsLib
@@ -144,14 +146,15 @@ hetsServer opts1 = do
    if any (`isInfixOf` rhost) bots then return $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
     else if isRESTfull pathBits then liftIO $
-      parseRESTfull opts sessRef pathBits query splitQuery re
+      parseRESTfull opts sessRef pathBits splitQuery meth
     -- only otherwise stick to the old response methods
-    else case B8.unpack (requestMethod re) of
-      "GET" -> liftIO $ if isInfixOf "menus" query then mkMenuResponse else do
-         dirs@(_ : cs) <- getHetsLibContent opts path query
+    else case meth of
+      "GET" -> liftIO $ if isJust $ lookup "menus" splitQuery
+         then mkMenuResponse else do
+         dirs@(_ : cs) <- getHetsLibContent opts path splitQuery
          if not $ null cs then mkHtmlPage path dirs
            -- AUTOMATIC PROOFS (parsing)
-           else if isPrefixOf "autoproof=" query then
+           else if isJust $ getVal splitQuery "autoproof" then
              let qr k = Query (DGQuery k Nothing) $
                    anaAutoProofQuery splitQuery in do
                Result ds ms <- runResultT $ case readMaybe $ head pathBits of
@@ -177,12 +180,12 @@ hetsServer opts1 = do
             mRes = maybe (return $ mkResponse status400 "nothing submitted")
               res mTmpFile
         liftIO $ case files of
-          [] -> if isPrefixOf "prove=" query then
+          [] -> if isJust $ getVal splitQuery "prove" then
                getHetsResponse opts [] sessRef pathBits
                  $ splitQuery ++ map (\ (a, b)
                  -> (B8.unpack a, Just $ B8.unpack b)) params
             else mRes
-          [(_, f)] | query /= updateS -> do
+          [(_, f)] | isNothing $ lookup updateS splitQuery -> do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
              let tmpFile = tempHetsLib </> fn
@@ -196,9 +199,9 @@ hetsServer opts1 = do
       _ -> return $ mkResponse status405 ""
 
 -- extract what we need to know from an autoproof request
-anaAutoProofQuery :: [(String, Maybe String)] -> QueryKind
+anaAutoProofQuery :: [QueryPair] -> QueryKind
 anaAutoProofQuery splitQuery = let
-  lookup2 str = fromMaybe Nothing $ lookup str splitQuery
+  lookup2 = getVal splitQuery
   prover = lookup2 "prover"
   trans = lookup2 "translation"
   timeout = lookup2 "timeout" >>= readMaybe
@@ -230,12 +233,12 @@ newRESTIdes =
   , "consistency-check" ]
 
 -- query is analysed and processed in accordance with RESTfull interface
-parseRESTfull :: HetcatsOpts -> Cache -> [String] -> String
-  -> [(String, Maybe String)] -> Request -> IO Response
-parseRESTfull opts sessRef pathBits query splitQuery re = let
+parseRESTfull :: HetcatsOpts -> Cache -> [String] -> [QueryPair]
+  -> String -> IO Response
+parseRESTfull opts sessRef pathBits splitQuery meth = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
-  lookup2 str = fromMaybe Nothing $ lookup str splitQuery
+  lookup2 = getVal splitQuery
   session = lookup2 "session" >>= readMaybe
   library = fmap decodeQuery $ lookup2 "library"
   format = lookup2 "format"
@@ -255,13 +258,13 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
       Nothing -> mkResponse status400 $ showRelDiags 1 ds
       Just s -> mkOkResponse s
   -- respond depending on request Method
-  in case B8.unpack (requestMethod re) of
+  in case meth of
     rm | elem rm ["GET", "POST"] -> case pathBits of
       -- show all menu options
       "menus" : [] -> mkMenuResponse
       -- list files from directory
       "dir" : r -> let path' = (intercalate "/" r) in
-        getHetsLibContent opts path' query >>= mkHtmlPage path'
+        getHetsLibContent opts path' splitQuery >>= mkHtmlPage path'
       -- get dgraph from file
       "hets-lib" : r -> let file = intercalate "/" r in
         getResponse $ Query (NewDGQuery file) $ DisplayQuery format
@@ -1059,7 +1062,7 @@ sessAns libName svg (sess, k) =
             : [mkUnorderedList $ map libref $ Map.keys libEnv]
            ) ++ svg
 
-getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
+getHetsLibContent :: HetcatsOpts -> String -> [QueryPair] -> IO [Element]
 getHetsLibContent opts dir query = do
   let hlibs = libdirs opts
   ds <- if null dir then return hlibs else
@@ -1082,9 +1085,10 @@ getDirContents d = do
 aRef :: String -> String -> Element
 aRef lnk txt = add_attr (mkAttr "href" lnk) $ unode "a" txt
 
-mkHtmlRef :: String -> String -> Element
+mkHtmlRef :: [QueryPair] -> String -> Element
 mkHtmlRef query entry = unode "dir" $ aRef
-  (entry ++ if null query then "" else '?' : query) entry
+  (entry ++ if null query then "" else '?' : intercalate "&"
+         (map (\ (x, ms) -> x ++ maybe "" ('=' :) ms) query)) entry
 
 mkUnorderedList :: Node t => [t] -> Element
 mkUnorderedList = unode "ul" . map (unode "li")
