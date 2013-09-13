@@ -90,34 +90,36 @@ anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
 anaSourceFile = anaSource Nothing
 
 #ifndef NOHTTP
-downloadSource :: HetcatsOpts -> FilePath -> IO (FilePath, String)
-downloadSource opts fname = do
+downloadSource :: HetcatsOpts -> FilePath -> ResultT IO (FilePath, String)
+downloadSource opts fname = ResultT $ do
   putIfVerbose opts 3 $ "Downloading file " ++ fname
   resp <- simpleHTTP (getRequest fname)
-  input <- getResponseBody resp
   case resp of
     Right r -> case rspCode r of
       (2, 0, 0) -> do
         putIfVerbose opts 3 "Successful"
-        return (fname, input)
+        input <- getResponseBody resp
+        return $ return (fname, input)
       (x, y, z) -> do
         let errmsg = "Download of file " ++ fname
                      ++ " yields HTTP error " ++ show x ++ show y ++ show z
                      ++ ": " ++ rspReason r
         putIfVerbose opts 3 errmsg
-        fail errmsg
+        return $ fail errmsg
     Left err -> do
       let errmsg = "Download of file " ++ fname ++ " failed: " ++ show err
       putIfVerbose opts 3 errmsg
-      fail errmsg
+      return $ fail errmsg
 
 tryDownloadSources :: HetcatsOpts -> [FilePath] -> FilePath
-                      -> IO (FilePath, String)
+                      -> ResultT IO (FilePath, String)
 tryDownloadSources opts fnames origname = case fnames of
-  [] -> fail $ "Unable to download file " ++ origname ++ "[.*]"
-  fname : fnames' -> Ex.catch (downloadSource opts fname)
-                   (\ (_ :: IOError) ->
-                     tryDownloadSources opts fnames' origname)
+  [] -> fail $ "Unable to download file " ++ origname
+  fname : fnames' -> ResultT $ Ex.catch
+    (runResultT $ downloadSource opts fname)
+    $ \ (err :: IOError) -> do
+      putIfVerbose opts 3 $ show err
+      runResultT $ tryDownloadSources opts fnames' origname
 #endif
 
 anaSource :: Maybe LibName -- ^ suggested library name
@@ -129,10 +131,10 @@ anaSource mln lg opts topLns libenv initDG fname =
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg in ResultT $
 #ifndef NOHTTP
-  if checkUri fname then do
+  if checkUri fname then runResultT $ do
     (fname', input) <-
       tryDownloadSources opts (getOntoFileNames opts fname) fname
-    runResultT $ anaString mln lgraph opts topLns libenv initDG input fname'
+    anaString mln lgraph opts topLns libenv initDG input fname'
   else
 #endif
   do
