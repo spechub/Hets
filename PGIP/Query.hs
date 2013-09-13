@@ -57,8 +57,6 @@ import Common.Utils
 import Interfaces.Command
 import Interfaces.CmdAction
 
-import Static.DgUtils
-
 import Driver.Options
 
 import Data.Char
@@ -129,7 +127,7 @@ data QueryKind =
   , apTimeout :: Maybe Int
   , apNodeSel :: [String] }
   | NodeQuery NodeIdOrName NodeCommand
-  | EdgeQuery EdgeId String
+  | EdgeQuery Int String
 
 data ProverMode = GlProofs | GlConsistency
 
@@ -225,7 +223,7 @@ anaQuery q' =
              incls pps
          (_, [], [], e : r, i : s) | noPP ->
            if null r && null s && null nns && null ns2
-           then Right (mi, EdgeQuery (EdgeId $ read i) e)
+           then Right (mi, EdgeQuery (read i) e)
            else Left $ "non-unique edge " ++ show (aes ++ aids)
          _ -> Left $ "non-unique query " ++ show q
        else Left $ if null qqr then "non-unique dg " ++ show q else

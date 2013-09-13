@@ -301,7 +301,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
                 ["theory"] -> NcCmd Query.Theory
                 _ -> NcCmd Query.Info
           Just 1 -> case readMaybe f of
-            Just i -> getResponse $ Query dgQ $ EdgeQuery (EdgeId i) "edge"
+            Just i -> getResponse $ Query dgQ $ EdgeQuery i "edge"
             Nothing -> fail $ "failed to read edgeId from " ++ f
           _ -> error $ "PGIP.Server.elemIndex " ++ nodeOrEdge
       newIde : libIri : _ | elem newIde newRESTIdes ->
@@ -349,7 +349,7 @@ parseRESTfull opts sessRef pathBits query splitQuery re = let
               -- call (the only) command upon a single edge
               (Nothing, Just edIri) -> case readMaybe $ getFragOfCode edIri of
                 Just i -> return $ Query (DGQuery sId Nothing)
-                  $ EdgeQuery (EdgeId i) "edge"
+                  $ EdgeQuery i "edge"
                 Nothing ->
                   fail $ "failed to read edgeId from edgeIRI: " ++ edIri
               -- call of global command
@@ -642,10 +642,10 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                       NcTranslations mp -> getComorphs mp subL
                       _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
-              case getDGLinksById i dg of
+              case getDGLinksById (EdgeId i) dg of
               [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
-              [] -> fail $ "no edge found with id: " ++ showEdgeId i
-              _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
+              [] -> fail $ "no edge found with id: " ++ show i
+              _ -> fail $ "multiple edges found with id: " ++ show i
 
 formatResultsMultiple :: Int -> [Element] -> ProverMode -> String
 formatResultsMultiple sessId rs prOrCons = let
