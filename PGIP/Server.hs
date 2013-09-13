@@ -126,7 +126,7 @@ hetsServer opts1 = do
        bots = ["180.76.", "77.75.77.", "66.249.", "141.8.147."]
        queryToString s = let
          r = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms)) s
-         in (('?' :) . intercalate "&" $ map
+         in (intercalate "&" $ map
                 (\ (x, ms) -> x ++ maybe "" ('=' :) ms) r, r)
        pathBits = map T.unpack $ pathInfo re
        path = intercalate "/" pathBits
@@ -153,7 +153,7 @@ hetsServer opts1 = do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if not $ null cs then mkHtmlPage path dirs
            -- AUTOMATIC PROOFS (parsing)
-           else if isPrefixOf "?autoproof=" query then
+           else if isPrefixOf "autoproof=" query then
              let qr k = Query (DGQuery k Nothing) $
                    anaAutoProofQuery splitQuery in do
                Result ds ms <- runResultT $ case readMaybe $ head pathBits of
@@ -179,12 +179,12 @@ hetsServer opts1 = do
             mRes = maybe (return $ mkResponse status400 "nothing submitted")
               res mTmpFile
         liftRun $ case files of
-          [] -> if isPrefixOf "?prove=" query then
+          [] -> if isPrefixOf "prove=" query then
                getHetsResponse opts [] sessRef pathBits
                  $ splitQuery ++ map (\ (a, b)
                  -> (B8.unpack a, Just $ B8.unpack b)) params
             else mRes
-          [(_, f)] | query /= "?update" -> do
+          [(_, f)] | query /= updateS -> do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
              let tmpFile = tempHetsLib </> fn
@@ -367,7 +367,7 @@ mkMenuResponse = return $ mkOkResponse $ ppTopElement $ unode "menus" mkMenus
 
 mkMenus :: [Element]
 mkMenus = menuTriple "" "Get menu triples" "menus"
-  : menuTriple "/DGraph" "update" "update"
+  : menuTriple "/DGraph" updateS updateS
   : map (\ (c, _) -> menuTriple "/" (menuTextGlobCmd c) $ cmdlGlobCmd c)
     allGlobLibAct
   ++ map (\ nc -> menuTriple "/DGraph/DGNode" ("Show " ++ nc) nc) nodeCommands
@@ -549,7 +549,7 @@ getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
   -> Cache -> [String] -> [QueryPair] -> IO Response
 getHetsResponse opts updates sessRef pathBits query = do
   Result ds ms <- runResultT $ case anaUri pathBits query
-    $ "update" : globalCommands of
+    $ updateS : globalCommands of
     Left err -> fail err
     Right q -> getHetsResult opts updates sessRef q
   return $ case ms of
@@ -589,7 +589,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                   return $ formatResultsMultiple k sens prOrCons
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
-              Nothing -> if s == "update" then
+              Nothing -> if s == updateS then
                 case filter ((== ".xupdate") . takeExtension . B8.unpack
                             . fileName) updates of
                 ch : _ -> do
@@ -714,14 +714,16 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , mkAttr "value" $ show i ]
           inputNode
         -- combine elements within a form
-        thmMenu = let br = unode "br " () in add_attrs [mkAttr "name" "thmSel",
-           mkAttr "method" "get"] $ unode "form" $ [hidStr, prSl, cmrSl, br,
-           btUnpr, btAll, btNone, timeout] ++ intersperse br (prBt : thmSl)
+        thmMenu = let br = unode "br " () in add_attrs
+          [ mkAttr "name" "thmSel", mkAttr "method" "get"]
+          . unode "form"
+          $ [hidStr, prSl, cmrSl, br, btUnpr, btAll, btNone, timeout]
+          ++ intersperse br (prBt : thmSl)
         -- save dg and return to svg-view
         goBack = aRef ('/' : show sessId) "return to DGraph"
-        in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2) [ headr, transBt, prvsBt,
-          plain " ", goBack, unode "h4" "Theorems", thmMenu,
-          unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
+        in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2)
+          [ headr, transBt, prvsBt, plain " ", goBack, unode "h4" "Theorems"
+          , thmMenu, unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | show window of the autoproof function
 showAutoProofWindow :: DGraph -> Int -> ProverMode -> ResultT IO String
@@ -765,7 +767,7 @@ showAutoProofWindow dg sessId prOrCons = let
               [sublogicOfTh gTh]
           in return (jvSc, add_attrs
           [ mkAttr "name" "nodeSel", mkAttr "method" "get" ]
-          $ unode "form" $
+          . unode "form" $
           [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include ]
           ++ intersperse br (prBt : nodeSel))
     return $ mkHtmlElemScript title (jvScr1 ++ jvScr2)
@@ -1051,7 +1053,7 @@ sessAns libName svg (sess, k) =
            ('(' : shows k ")" ++ ln)
            (bold ("library " ++ ln)
             : map ref displayTypes
-            ++ menuElement : loadXUpdate (libPath ++ "update")
+            ++ menuElement : loadXUpdate (libPath ++ updateS)
             : plain "tools:" : mkUnorderedList [autoProofBt, consBt]
             : plain "commands:"
             : mkUnorderedList (map ref globalCommands)
@@ -1152,8 +1154,8 @@ uploadHtml = mkForm "/"
 
 loadXUpdate :: String -> Element
 loadXUpdate a = mkForm a
-  [ italic "xupdate"
-  , loadNode "xupdate"
+  [ italic xupdateS
+  , loadNode xupdateS
   , italic "impacts"
   , loadNode "impacts"
   , submitNode ]
