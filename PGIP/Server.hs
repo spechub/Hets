@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  run hets as server
@@ -18,15 +17,11 @@ import Driver.Options
 import Driver.ReadFn
 import Driver.Version
 
-#ifdef OLDSERVER
-import Network.Wai.Handler.SimpleServer
-import Control.Monad.Trans (lift)
-#else
 import Network.Wai.Handler.Warp
 import Network.HTTP.Types (Status, status200, status400, status403, status405)
 import Control.Monad.Trans (lift, liftIO)
 import qualified Data.Text as T
-#endif
+
 import Network.Wai
 import Network.Wai.Parse
 
@@ -127,18 +122,6 @@ hetsServer opts1 = do
    let (query, splitQuery) = queryToString $ queryString re
        rhost = shows (remoteHost re) "\n"
        bots = ["180.76.", "77.75.77.", "66.249.", "141.8.147."]
-#ifdef OLDSERVER
-       queryToString s = let r = B8.unpack s in
-         (r, map ((\ l -> case l of
-              [] -> error "queryToString"
-              [x] -> (x, Nothing)
-              x : t -> (x, Just $ intercalate "=" t))
-              . splitOn '=') . concatMap (splitOn ';') . splitOn '&'
-              . dropWhile (== '?') $ filter (not . isSpace) r)
-       path = dropWhile (== '/') . B8.unpack $ pathInfo re
-       pathBits = splitOn '/' path
-       liftRun = id
-#else
        queryToString s = let
          r = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms)) s
          in (('?' :) . intercalate "&" $ map
@@ -146,7 +129,6 @@ hetsServer opts1 = do
        pathBits = map T.unpack $ pathInfo re
        path = intercalate "/" pathBits
        liftRun = liftIO
-#endif
    liftRun $ do
      time <- getCurrentTime
      createDirectoryIfMissing False tempHetsLib
@@ -181,11 +163,7 @@ hetsServer opts1 = do
            -- AUTOMATIC PROOFS E.N.D.
            else getHetsResponse opts [] sessRef pathBits splitQuery
       "POST" -> do
-#ifdef OLDSERVER
-        (params, files) <- parseRequestBody tempFileSink re
-#else
         (params, files) <- parseRequestBody tempFileBackEnd re
-#endif
         mTmpFile <- liftRun $ case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
@@ -436,13 +414,7 @@ mkHtmlPage :: FilePath -> [Element] -> IO Response
 mkHtmlPage path = return . mkOkResponse . mkHtmlString path
 
 mkResponse :: Status -> String -> Response
-mkResponse st =
-#ifdef OLDSERVER
-  Response st [] . ResponseLBS
-#else
-  responseLBS st []
-#endif
-  . BS.pack
+mkResponse st = responseLBS st [] . BS.pack
 
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
