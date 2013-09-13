@@ -251,7 +251,7 @@ data Command =
   | SelectCmd SelectCmd String
   | TimeLimit Int -- set a time limit for an automatic  prover
   | SetAxioms [String] -- set the axiom list for an automatic  prover
-  | ShowOutput Bool -- show model  
+  | ShowOutput Bool -- show model
   | IncludeProvenTheorems Bool -- should proven theorems be added as axioms
   | InspectCmd InspectCmd (Maybe String)
   | CommentCmd String
@@ -309,7 +309,7 @@ cmdNameStr cmd = case cmd of
   SelectCmd s _ -> selectCmdNameStr s
   TimeLimit _ -> "set time-limit"
   SetAxioms _ -> "set axioms"
-  ShowOutput b -> "show-output " ++ (map toLower (show b))
+  ShowOutput b -> "show-output " ++ map toLower (show b)
   IncludeProvenTheorems b -> "set include-theorems " ++ map toLower (show b)
   InspectCmd i s ->
     (if i > Edges then "show-" else "")
@@ -332,7 +332,7 @@ showCmd c = let cn = cmdNameStr c in case c of
   GroupCmd l -> intercalate "\n" $ map showCmd l
   InspectCmd _ t -> cn ++ " " ++ fromMaybe "" t
   ChangeCmd _ t -> cmdNameStr c ++ " " ++ t
-  ShowOutput b -> cn ++ (show b)
+  ShowOutput b -> cn ++ show b
   _ -> cn
 
 describeCmd :: Command -> String
