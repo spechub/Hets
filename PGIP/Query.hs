@@ -54,15 +54,12 @@ The default display for a LibEnv should be:
 import Common.LibName
 import Common.Utils
 
-import Interfaces.Command
-import Interfaces.CmdAction
-
-import Driver.Options
-
 import Data.Char
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
+
+import Driver.Options
 
 import Numeric
 
@@ -93,9 +90,6 @@ proveParams = ["timeout", "include", "prover", "translation", "theorems"]
 
 edgeCommands :: [String]
 edgeCommands = ["edge"]
-
-globalCommands :: [String]
-globalCommands = map (cmdlGlobCmd . fst) allGlobLibAct
 
 -- Lib- and node name can be IRIs now (the query id is the session number)
 data DGQuery = DGQuery
@@ -144,8 +138,8 @@ data NodeCommand =
   deriving Show
 
 -- | the path is not empty and leading slashes are removed
-anaUri :: [String] -> [QueryPair] -> Either String Query
-anaUri pathBits query = case anaQuery query of
+anaUri :: [String] -> [QueryPair] -> [String] -> Either String Query
+anaUri pathBits query globals = case anaQuery query globals of
     Left err -> Left err
     Right (mi, qk) -> let path = intercalate "/" pathBits in
      case (mi, readMaybe path) of
@@ -160,10 +154,9 @@ isNat :: String -> Bool
 isNat s = all isDigit s && not (null s) && length s < 11
 
 -- | a leading question mark is removed, possibly a session id is returned
-anaQuery :: [QueryPair] -> Either String (Maybe Int, QueryKind)
-anaQuery q' =
-       let globals = "update" : globalCommands
-           (atP, q'') = partition ((== "autoproof") . fst) q'
+anaQuery :: [QueryPair] -> [String] -> Either String (Maybe Int, QueryKind)
+anaQuery q' globals =
+       let (atP, q'') = partition ((== "autoproof") . fst) q'
            (atC, q) = partition ((== "consistency") . fst) q''
            (q1, qm) = partition (\ l -> case l of
                         (x, Nothing) -> isNat x || elem x

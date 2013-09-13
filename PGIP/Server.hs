@@ -548,7 +548,8 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
 getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
   -> Cache -> [String] -> [QueryPair] -> IO Response
 getHetsResponse opts updates sessRef pathBits query = do
-  Result ds ms <- runResultT $ case anaUri pathBits query of
+  Result ds ms <- runResultT $ case anaUri pathBits query
+    $ "update" : globalCommands of
     Left err -> fail err
     Right q -> getHetsResult opts updates sessRef q
   return $ case ms of
@@ -1030,6 +1031,9 @@ mkPath sess l k =
 extPath :: Session -> LibName -> Int -> String
 extPath sess l k = mkPath sess l k ++
         if l /= sessLibName sess then "&" else "?"
+
+globalCommands :: [String]
+globalCommands = map (cmdlGlobCmd . fst) allGlobLibAct
 
 sessAns :: LibName -> String -> (Session, Int) -> String
 sessAns libName svg (sess, k) =
