@@ -96,7 +96,10 @@ data DGQuery = DGQuery
   { queryId :: Int
   , optQueryLibPath :: Maybe PATH
   }
-  | NewDGQuery { queryLib :: FilePath }
+  | NewDGQuery
+  { queryLib :: FilePath
+  , commands :: [String]
+  }
 
 data Query = Query
   { dgQuery :: DGQuery
@@ -146,7 +149,7 @@ anaUri pathBits query globals = case anaQuery query globals of
       (Just i, Just j) | i /= j -> Left "different dg ids"
       (_, mj) -> Right $ Query
         (case catMaybes [mi, mj] of
-          [] -> NewDGQuery path
+          [] -> NewDGQuery path []
           i : _ -> DGQuery i $ if isJust mj then Nothing else Just path)
         qk
 

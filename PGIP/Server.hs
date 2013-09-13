@@ -267,10 +267,10 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
         getHetsLibContent opts path' splitQuery >>= mkHtmlPage path'
       -- get dgraph from file
       "hets-lib" : r -> let file = intercalate "/" r in
-        getResponse $ Query (NewDGQuery file) $ DisplayQuery format
+        getResponse $ Query (NewDGQuery file []) $ DisplayQuery format
       -- get library (complies with get/hets-lib for now)
       "libraries" : libIri : "development_graph" : [] ->
-        getResponse $ Query (NewDGQuery $ decodeQuery libIri)
+        getResponse $ Query (NewDGQuery (decodeQuery libIri) [])
           $ DisplayQuery format
       -- get previously created session
       "sessions" : sessId : cmd -> case readMaybe sessId of
@@ -292,7 +292,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
       nodeOrEdge : codedIri : c | elem nodeOrEdge nodeEdgeIdes -> let
         p = decodeQuery codedIri
         iriPath = takeWhile (/= '#') p
-        dgQ = maybe (NewDGQuery $ fromMaybe iriPath library)
+        dgQ = maybe (NewDGQuery (fromMaybe iriPath library) [])
                  (`DGQuery` library) session
         f = getFragment p
         in case elemIndex nodeOrEdge nodeEdgeIdes of
@@ -305,8 +305,8 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
             Just i -> getResponse $ Query dgQ $ EdgeQuery i "edge"
             Nothing -> fail $ "failed to read edgeId from " ++ f
           _ -> error $ "PGIP.Server.elemIndex " ++ nodeOrEdge
-      newIde : libIri : _ | elem newIde newRESTIdes ->
-          getResponse $ Query (NewDGQuery $ decodeQuery libIri)
+      newIde : libIri : cmdList | elem newIde newRESTIdes ->
+          getResponse $ Query (NewDGQuery (decodeQuery libIri) cmdList)
             $ DisplayQuery (Just "xml")
       -- fail if query doesn't seem to comply
       _ -> queryFailure
@@ -466,7 +466,7 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
 getDGraph :: HetcatsOpts -> Cache -> DGQuery
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef dgQ = case dgQ of
-  NewDGQuery file -> do
+  NewDGQuery file _cmdList -> do
     (ln, le) <- case guess file GuessIn of
       DgXml -> do
         mf <- lift $ findFileOfLibName opts file
