@@ -240,14 +240,14 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookup2 = getVal splitQuery
   session = lookup2 "session" >>= readMaybe
-  library = fmap decodeQuery $ lookup2 "library"
+  library = lookup2 "library"
   format = lookup2 "format"
-  queryFailure = fail $ "this query does not comply with RESTfull interface: "
-    ++ intercalate "/" pathBits
+  queryFailure = return . mkResponse status400
+    $ "this query does not comply with RESTfull interface: "
+    ++ intercalate "/" (map encodeForQuery pathBits)
   -- since used more often, generate full query out of nodeIRI and nodeCmd
   parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query
-  parseNodeQuery ndIri sId ncmd = ncmd >>= let
-      p = decodeQuery ndIri
+  parseNodeQuery p sId ncmd = ncmd >>= let
       s = getFragment p
       i = maybe (Right s) Left $ readMaybe s
       in return . Query (DGQuery sId (Just p)) . NodeQuery i
@@ -270,8 +270,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
         getResponse $ Query (NewDGQuery file []) $ DisplayQuery format
       -- get library (complies with get/hets-lib for now)
       "libraries" : libIri : "development_graph" : [] ->
-        getResponse $ Query (NewDGQuery (decodeQuery libIri) [])
-          $ DisplayQuery format
+        getResponse $ Query (NewDGQuery libIri []) $ DisplayQuery format
       -- get previously created session
       "sessions" : sessId : cmd -> case readMaybe sessId of
           Nothing -> fail $ "failed to read session number from " ++ sessId
@@ -289,8 +288,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
                 _ -> fail $ "unknown global command for a GET-request: "
                   ++ intercalate "/" cmd) >>= getResponse
       -- get node or edge view
-      nodeOrEdge : codedIri : c | elem nodeOrEdge nodeEdgeIdes -> let
-        p = decodeQuery codedIri
+      nodeOrEdge : p : c | elem nodeOrEdge nodeEdgeIdes -> let
         iriPath = takeWhile (/= '#') p
         dgQ = maybe (NewDGQuery (fromMaybe iriPath library) [])
                  (`DGQuery` library) session
@@ -305,8 +303,9 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
             Just i -> getResponse $ Query dgQ $ EdgeQuery i "edge"
             Nothing -> fail $ "failed to read edgeId from " ++ f
           _ -> error $ "PGIP.Server.elemIndex " ++ nodeOrEdge
-      newIde : libIri : cmdList | elem newIde newRESTIdes ->
-          getResponse $ Query (NewDGQuery (decodeQuery libIri) cmdList)
+      newIde : libIri : cmdList
+        | elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
+        -> getResponse $ Query (NewDGQuery libIri cmdList)
             $ DisplayQuery (Just "xml")
       -- fail if query doesn't seem to comply
       _ -> queryFailure
@@ -317,7 +316,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
          case readMaybe prId of
            Nothing -> fail $ "failed to read sessionId from " ++ prId
            Just sessId -> let
-             dgQ = DGQuery sessId . Just $ decodeQuery libIri in
+             dgQ = DGQuery sessId $ Just libIri in
              getResponse $ Query dgQ $ GlobCmdQuery cmd
       -- execute a proof or calculus request
       "sessions" : sessId : cmd : [] -> case readMaybe sessId of
@@ -472,7 +471,7 @@ getDGraph opts sessRef dgQ = case dgQ of
         mf <- lift $ findFileOfLibName opts file
         case mf of
           Just f -> readDGXmlR opts f Map.empty
-          Nothing -> liftR $ fail "xml file not found"
+          Nothing -> fail "xml file not found"
       _ -> anaSourceFile logicGraph opts
         { outputToStdout = False, useLibPos = True }
         Set.empty emptyLibEnv emptyDG file
@@ -483,7 +482,7 @@ getDGraph opts sessRef dgQ = case dgQ of
   DGQuery k _ -> do
     (m, _) <- lift $ readIORef sessRef
     case IntMap.lookup k m of
-      Nothing -> liftR $ fail "unknown development graph"
+      Nothing -> fail "unknown development graph"
       Just sess -> return (sess, k)
 
 getSVG :: String -> String -> DGraph -> ResultT IO String
