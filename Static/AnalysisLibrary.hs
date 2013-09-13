@@ -533,24 +533,25 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
-  Align_defn an' arities atype acorresps pos -> case expCurie (globalAnnos dg) eo an' of
+  Align_defn an' arities atype acorresps pos ->
+   case expCurie (globalAnnos dg) eo an' of
    Nothing -> liftR $ prefixErrorIRI an'
    Just an -> do
-    --l <- lookupCurrentLogic "Align_defn" lg
-    let anstr = iriToStringUnsecure an
-    -- type
-    (_atype', (src, tar), dg') <- liftR $ anaAlignType lg currLn dg opts eo (makeName an) atype
-    let gsig1 = getSig src
-        gsig2 = getSig tar
-    case gsig1 of
-     G_sign lid1 gsign1 ind1 -> case gsig2 of
-      G_sign lid2 gsign2 _ ->  case compare (Logic lid1) (Logic lid2) of
+     -- l <- lookupCurrentLogic "Align_defn" lg
+     let anstr = iriToStringUnsecure an
+     (_atype', (src, tar), dg') <- liftR
+       $ anaAlignType lg currLn dg opts eo (makeName an) atype
+     let gsig1 = getSig src
+         gsig2 = getSig tar
+     case (gsig1, gsig2) of
+      (G_sign lid1 gsign1 ind1, G_sign lid2 gsign2 _) ->
+       case compare (Logic lid1) (Logic lid2) of
        EQ -> do
         -- arities TO DO
         let pairsSet = symbolsOf gsig1 gsig2 Set.empty acorresps
             leftList = map fst $ Set.toList pairsSet
             rightList = map snd $ Set.toList pairsSet
-            isTotal gsig sList = (Set.fromList sList) == (symsOfGsign gsig)
+            isTotal gsig sList = Set.fromList sList == symsOfGsign gsig
             isInjective sList = length sList == length (nub sList)
             checkArity sList1 sList2 gsig arity = case arity of
               AA_InjectiveAndTotal -> isTotal gsig sList1 &&
@@ -564,13 +565,14 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                        checkArity leftList rightList gsig1 aleft &&
                        checkArity rightList leftList gsig2 aright
         if not aCheck then
-          error "Arities do not check" --TO DO: improve
+          error "Arities do not check" -- TO DO: improve
          else do
          -- correspondence
          let isMorphism = isTotal gsig1 leftList &&
                           isInjective leftList
-         newDg <- if isMorphism then do
-           let eMap = foldl (\f (gs1, gs2) ->
+         newDg <-
+          if isMorphism then do
+           let eMap = foldl (\ f (gs1, gs2) ->
                      case gs1 of
                        G_symbol l1 s1 ->
                          case gs2 of
@@ -588,14 +590,14 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                        (mkIdComorphism lid1 (top_sublogic lid1))
                        gsign1 ind1 phi startMorId
              asign = AlignMor src gmor tar
-             dg'' = dg{globalEnv = Map.insert an (AlignEntry asign) $
-                                     globalEnv dg' }
+             dg'' = dg' { globalEnv = Map.insert an (AlignEntry asign)
+                         $ globalEnv dg' }
              dg3 = insLink dg'' gmor globalThm
                      (DGLinkAlign an) (getNode src) (getNode tar)
            return dg3
-                     else do
-           (pairedSymSet, eMap1, eMap2) <- liftR $
-                                           foldM (\(s, f1, f2) (gs1, gs2) ->
+          else do
+           (pairedSymSet, eMap1, eMap2) <-
+             liftR $ foldM (\ (s, f1, f2) (gs1, gs2) ->
                      case gs1 of
                        G_symbol l1 s1 ->
                          case gs2 of
@@ -615,11 +617,11 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                              return (s', f1', f2')
                             ) (Set.empty, Map.empty, Map.empty)
                             $ Set.toList pairsSet
-           sigma0 <- liftR $ foldM (\sig sym -> add_symb_to_sign lid1 sig sym
-                     ) (empty_signature lid1) $ Set.toList pairedSymSet
-           --case maybeResult $ legal_mor $ ide sigma0 of
-           -- Nothing -> error "Could not construct a legal signature"
-           -- _ ->  do
+           sigma0 <- liftR $ foldM (add_symb_to_sign lid1)
+             (empty_signature lid1) $ Set.toList pairedSymSet
+           {- case maybeResult $ legal_mor $ ide sigma0 of
+           Nothing -> error "Could not construct a legal signature"
+           _ -> do -}
            let eSigma0 = makeExtSign lid1 sigma0
            pi1 <- liftR $ induced_from_to_morphism lid1 eMap1 eSigma0 gsign1
            gsign2' <- liftR $ coerceSign lid2 lid1 "coerce sign" gsign2
@@ -637,8 +639,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                dg4 = insLink dg3 gmor2 globalDef
                      (DGLinkAlign an) (getNode sspan) (getNode tar)
                asign = AlignSpan sspan gmor1 src gmor2 tar
-               dg5 = dg4{globalEnv = Map.insert an (AlignEntry asign) $
-                                     globalEnv dg4 }
+               dg5 = dg4 { globalEnv = Map.insert an (AlignEntry asign)
+                           $ globalEnv dg4 }
            return dg5
          if Map.member an $ globalEnv dg
           then liftR $ plain_error (itm, dg, libenv, lg, eo)
@@ -648,19 +650,18 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
        _ -> error "Alignments only work between ontologies in the same logic"
   _ -> return (itm, dg, libenv, lg, eo)
 
-symbolsOf ::  G_sign -> G_sign ->
-             Set.Set (G_symbol, G_symbol) -> [CORRESPONDENCE] ->
-             Set.Set (G_symbol, G_symbol)
+symbolsOf :: G_sign -> G_sign -> Set.Set (G_symbol, G_symbol)
+  -> [CORRESPONDENCE] -> Set.Set (G_symbol, G_symbol)
 symbolsOf gs1 gs2 sPairs corresps =
  case corresps of
   [] -> sPairs
-  c:corresps' -> case c of
-    Default_correspondence -> symbolsOf gs1 gs2 sPairs corresps' --TO DO
+  c : corresps' -> case c of
+    Default_correspondence -> symbolsOf gs1 gs2 sPairs corresps' -- TO DO
     Correspondence_block _ _ cs -> let
       sPairs' = symbolsOf gs1 gs2 sPairs cs
      in symbolsOf gs1 gs2 sPairs' corresps'
     Single_correspondence _ a b _ _ ->
-      symbolsOf gs1 gs2 (Set.union (Set.singleton (a,b)) sPairs) corresps'
+      symbolsOf gs1 gs2 (Set.union (Set.singleton (a, b)) sPairs) corresps'
 
 downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS
   -> LibName -> LibEnv -> DGraph -> ExpOverrides -> LIB_ITEM
@@ -788,7 +789,8 @@ anaAlignType lg ln dg opts eo name (Align_type aspSrc aspTar pos) = do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
   (spSrc', srcNsig, dg') <- adjustPos pos $ anaSpec False lg ln dg (EmptyNode l)
     (extName "Source" name) opts eo (item aspSrc)
-  (spTar', tarNsig, dg'') <- adjustPos pos $ anaSpec False lg ln dg' (EmptyNode l)
+  (spTar', tarNsig, dg'') <- adjustPos pos
+    $ anaSpec False lg ln dg' (EmptyNode l)
     (extName "Target" name) opts eo (item aspTar)
   return (Align_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
