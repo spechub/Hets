@@ -96,14 +96,8 @@ proveParams = ["timeout", "include", "prover", "translation", "theorems"]
 edgeCommands :: [String]
 edgeCommands = ["edge"]
 
-getGlobCmds :: [(GlobCmd, a)] -> [String]
-getGlobCmds = map (cmdlGlobCmd . fst)
-
 globalCommands :: [String]
-globalCommands = concat
-  [ getGlobCmds globLibAct
-  , getGlobCmds globLibResultAct
-  , getGlobCmds globResultAct ]
+globalCommands = map (cmdlGlobCmd . fst) allGlobLibAct
 
 -- Lib- and node name can be IRIs now (the query id is the session number)
 data DGQuery = DGQuery
