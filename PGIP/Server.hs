@@ -98,6 +98,9 @@ data Session = Session
   , _previousKeys :: [Int]
   , _sessStart :: UTCTime }
 
+type SessMap = Map.Map (String, [GlobCmd]) Session
+type Cache = IORef (IntMap.IntMap Session, SessMap)
+
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
 
@@ -116,7 +119,7 @@ hetsServer opts1 = do
       opts = opts1 { libdirs = tempHetsLib : libdirs opts1 }
   createDirectoryIfMissing False tempHetsLib
   writeFile permFile ""
-  sessRef <- newIORef IntMap.empty
+  sessRef <- newIORef (IntMap.empty, Map.empty)
   run 8000 $ \ re -> do
    let (query, splitQuery) = queryToString $ queryString re
        rhost = shows (remoteHost re) "\n"
@@ -131,7 +134,7 @@ hetsServer opts1 = do
    liftRun $ do
      time <- getCurrentTime
      createDirectoryIfMissing False tempHetsLib
-     m <- readIORef sessRef
+     (m, _) <- readIORef sessRef
      if isPrefixOf "134.102.204.54" rhost -- nagios-plugins 1.4.15
        then appendFile permFile "."
        else do
@@ -229,9 +232,8 @@ newRESTIdes =
   , "consistency-check" ]
 
 -- query is analysed and processed in accordance with RESTfull interface
-parseRESTfull :: HetcatsOpts -> IORef (IntMap.IntMap Session)
-              -> [String] -> String -> [(String, Maybe String)]
-              -> Request -> IO Response
+parseRESTfull :: HetcatsOpts -> Cache -> [String] -> String
+  -> [(String, Maybe String)] -> Request -> IO Response
 parseRESTfull opts sessRef pathBits query splitQuery re = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
@@ -408,19 +410,19 @@ mkResponse st = responseLBS st [] . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-addNewSess :: IORef (IntMap.IntMap Session) -> Session -> IO Int
+addNewSess :: Cache -> Session -> IO Int
 addNewSess sessRef sess = do
   k <- randomKey
   atomicModifyIORef sessRef
-      (\ m -> (IntMap.insert k sess m, k))
+      (\ (m, lm) -> ((IntMap.insert k sess m, lm), k))
 
-nextSess :: IORef (IntMap.IntMap Session) -> LibEnv -> Int -> IO Session
+nextSess :: Cache -> LibEnv -> Int -> IO Session
 nextSess sessRef newLib k =
     atomicModifyIORef sessRef
-      (\ m -> case IntMap.lookup k m of
+      (\ (m, lm) -> case IntMap.lookup k m of
       Nothing -> error "nextSess"
       Just s -> let newSess = s { sessLibEnv = newLib }
-        in (IntMap.insert k newSess m, newSess))
+        in ((IntMap.insert k newSess m, lm), newSess))
 
 ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO String
 ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
@@ -460,7 +462,7 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
              else return $ "could not create pdf:\n"
                   ++ unlines [out1, err1, out2, err2]
 
-getDGraph :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> DGQuery
+getDGraph :: HetcatsOpts -> Cache -> DGQuery
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef dgQ = case dgQ of
   NewDGQuery file -> do
@@ -478,7 +480,7 @@ getDGraph opts sessRef dgQ = case dgQ of
     k <- lift $ addNewSess sessRef sess
     return (sess, k)
   DGQuery k _ -> do
-    m <- lift $ readIORef sessRef
+    (m, _) <- lift $ readIORef sessRef
     case IntMap.lookup k m of
       Nothing -> liftR $ fail "unknown development graph"
       Just sess -> return (sess, k)
@@ -544,7 +546,7 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
 
 -- | with the 'old' call of getHetsResponse, anaUri is called upon the path
 getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
-  -> IORef (IntMap.IntMap Session) -> [String] -> [QueryPair] -> IO Response
+  -> Cache -> [String] -> [QueryPair] -> IO Response
 getHetsResponse opts updates sessRef pathBits query = do
   Result ds ms <- runResultT $ case anaUri pathBits query of
     Left err -> fail err
@@ -554,7 +556,7 @@ getHetsResponse opts updates sessRef pathBits query = do
     Just s -> mkOkResponse s
 
 getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
-  -> IORef (IntMap.IntMap Session) -> Query -> ResultT IO String
+  -> Cache -> Query -> ResultT IO String
 getHetsResult opts updates sessRef (Query dgQ qk) = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
