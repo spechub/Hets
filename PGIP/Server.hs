@@ -216,8 +216,9 @@ anaAutoProofQuery splitQuery = let
 
 -- quick approach to whether or not the query can be a RESTfull request
 isRESTfull :: [String] -> Bool
-isRESTfull pathBits = pathBits /= [] &&
-  elem (head pathBits) listRESTfullIdentifiers
+isRESTfull pathBits = case pathBits of
+  [] -> False
+  h : _ -> elem h listRESTfullIdentifiers
 
 listRESTfullIdentifiers :: [String]
 listRESTfullIdentifiers =
