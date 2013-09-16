@@ -411,11 +411,11 @@ mkResponse st = responseLBS st [] . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-addNewSess :: Cache -> Session -> IO Int
-addNewSess sessRef sess = do
+addNewSess :: String -> [GlobCmd] -> Cache -> Session -> IO Int
+addNewSess file cl sessRef sess = do
   k <- randomKey
-  atomicModifyIORef sessRef
-      (\ (m, lm) -> ((IntMap.insert k sess m, lm), k))
+  atomicModifyIORef sessRef $ \ (m, lm) ->
+       ((IntMap.insert k sess m, Map.insert (file, cl) sess lm), k)
 
 nextSess :: Cache -> LibEnv -> Int -> IO Session
 nextSess sessRef newLib k =
@@ -465,9 +465,16 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
 
 getDGraph :: HetcatsOpts -> Cache -> DGQuery
   -> ResultT IO (Session, Int)
-getDGraph opts sessRef dgQ = case dgQ of
-  NewDGQuery file _cmdList -> do
-    (ln, le) <- case guess file GuessIn of
+getDGraph opts sessRef dgQ = do
+ (m, lm) <- lift $ readIORef sessRef
+ case dgQ of
+  NewDGQuery file cmdList ->
+   let cl = map (\ s -> fromJust . find ((== s) . cmdlGlobCmd)
+                  $ map fst allGlobLibAct) cmdList
+   in case Map.lookup (file, cl) lm of
+   Just sess -> return (sess, 0)
+   Nothing -> do
+    (ln, le1) <- case guess file GuessIn of
       DgXml -> do
         mf <- lift $ findFileOfLibName opts file
         case mf of
@@ -476,13 +483,13 @@ getDGraph opts sessRef dgQ = case dgQ of
       _ -> anaSourceFile logicGraph opts
         { outputToStdout = False, useLibPos = True }
         Set.empty emptyLibEnv emptyDG file
+    le2 <- foldM (\ e c -> liftR
+                  $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
     time <- lift getCurrentTime
-    let sess = Session le ln [] time
-    k <- lift $ addNewSess sessRef sess
+    let sess = Session le2 ln [] time
+    k <- lift $ addNewSess file cl sessRef sess
     return (sess, k)
-  DGQuery k _ -> do
-    (m, _) <- lift $ readIORef sessRef
-    case IntMap.lookup k m of
+  DGQuery k _ -> case IntMap.lookup k m of
       Nothing -> fail "unknown development graph"
       Just sess -> return (sess, k)
 
