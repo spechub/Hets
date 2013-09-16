@@ -307,7 +307,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
       newIde : libIri : cmdList
         | elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
         -> getResponse $ Query (NewDGQuery libIri cmdList)
-            $ DisplayQuery (Just "xml")
+            $ DisplayQuery (Just $ fromMaybe "xml" format)
       -- fail if query doesn't seem to comply
       _ -> queryFailure
     "PUT" -> case pathBits of
