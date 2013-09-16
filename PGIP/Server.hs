@@ -243,15 +243,20 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
   session = lookup2 "session" >>= readMaybe
   library = lookup2 "library"
   format = lookup2 "format"
+  nodeM = lookup2 "node"
+  transM = lookup2 "translation"
+  proverM = lookup2 "prover"
+  incl = maybe False (\ s ->
+              notElem (map toLower s) ["f", "false"]) $ lookup2 "include"
+  timeout = lookup2 "timeout" >>= readMaybe
   queryFailure = return . mkResponse status400
     $ "this query does not comply with RESTfull interface: "
     ++ intercalate "/" (map encodeForQuery pathBits)
   -- since used more often, generate full query out of nodeIRI and nodeCmd
+  nodeQuery s = NodeQuery $ maybe (Right s) Left (readMaybe s :: Maybe Int)
   parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query
   parseNodeQuery p sId ncmd = ncmd >>= let
-      s = getFragment p
-      i = maybe (Right s) Left $ readMaybe s
-      in return . Query (DGQuery sId (Just p)) . NodeQuery i
+      in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponse qr = do
     Result ds ms <- runResultT $ getHetsResult opts [] sessRef qr
@@ -275,16 +280,16 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
       -- get previously created session
       "sessions" : sessId : cmd -> case readMaybe sessId of
           Nothing -> fail $ "failed to read session number from " ++ sessId
-          Just sId -> let mt = lookup2 "translations" in
-            (case lookup2 "node" of
+          Just sId ->
+            (case nodeM of
               Just ndIri -> parseNodeQuery ndIri sId $ case cmd of
-                ["provers"] -> return $ NcProvers mt
+                ["provers"] -> return $ NcProvers transM
                 ["translations"] -> return $ NcTranslations Nothing
                 _ -> fail $ "unknown node command for a GET-request: "
                       ++ intercalate "/" cmd
               Nothing -> fmap (Query (DGQuery sId Nothing)) $ case cmd of
                 [] -> return $ DisplayQuery format
-                ["provers"] -> return $ GlProvers mt
+                ["provers"] -> return $ GlProvers transM
                 ["translations"] -> return GlTranslations
                 _ -> fail $ "unknown global command for a GET-request: "
                   ++ intercalate "/" cmd) >>= getResponse
@@ -306,8 +311,14 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
           _ -> error $ "PGIP.Server.elemIndex " ++ nodeOrEdge
       newIde : libIri : cmdList
         | elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
-        -> getResponse $ Query (NewDGQuery libIri cmdList)
-            $ DisplayQuery (Just $ fromMaybe "xml" format)
+        -> getResponse . Query (NewDGQuery libIri cmdList) $ case newIde of
+           "translate" -> case nodeM of
+             Nothing -> GlTranslations
+             Just n -> nodeQuery n $ NcTranslations Nothing
+           "provers" -> case nodeM of
+             Nothing -> GlProvers transM
+             Just n -> nodeQuery n $ NcProvers transM
+           _ -> DisplayQuery (Just $ fromMaybe "xml" format)
       -- fail if query doesn't seem to comply
       _ -> queryFailure
     "PUT" -> case pathBits of
@@ -324,21 +335,16 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
         Nothing -> fail $ "failed to read sessionId from " ++ sessId
         Just sId -> case cmd of
           "prove" -> let
-            incl = maybe False (\ s ->
-              notElem (map toLower s) ["f", "false"]) $ lookup2 "include"
-            prover = lookup2 "prover"
-            translation = fmap getFragOfCode $ lookup2 "translation"
-            timeout = lookup2 "timeout" >>= readMaybe
-            in case lookup2 "node" of
+            in case nodeM of
                 -- prove all nodes if no singleton is selected
                 Nothing -> return $ Query (DGQuery sId Nothing)
-                  $ GlAutoProve GlProofs incl prover translation timeout []
+                  $ GlAutoProve GlProofs incl proverM transM timeout []
                 -- otherwise run prover for single node only
                 Just ndIri -> parseNodeQuery ndIri sId $ return
-                  $ ProveNode incl prover translation timeout []
+                  $ ProveNode incl proverM transM timeout []
               >>= getResponse
           -- on other cmd look for (optional) specification of node or edge
-          _ -> case (lookup2 "node", lookup2 "edge") of
+          _ -> case (nodeM, lookup2 "edge") of
               -- fail if both are specified
               (Just _, Just _) ->
                 fail "please specify only either node or edge"
