@@ -318,6 +318,9 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
            "provers" -> case nodeM of
              Nothing -> GlProvers transM
              Just n -> nodeQuery n $ NcProvers transM
+           "prove" -> case nodeM of
+             Nothing -> GlAutoProve GlProofs incl proverM transM timeout []
+             Just n -> nodeQuery n $ ProveNode incl proverM transM timeout []
            _ -> DisplayQuery (Just $ fromMaybe "xml" format)
       -- fail if query doesn't seem to comply
       _ -> queryFailure
@@ -423,8 +426,8 @@ addNewSess file cl sessRef sess = do
   atomicModifyIORef sessRef $ \ (m, lm) ->
        ((IntMap.insert k sess m, Map.insert (file, cl) sess lm), k)
 
-nextSess :: Cache -> LibEnv -> Int -> IO Session
-nextSess sessRef newLib k =
+nextSess :: Session -> Cache -> LibEnv -> Int -> IO Session
+nextSess sess sessRef newLib k = if k <= 0 then return sess else
     atomicModifyIORef sessRef
       (\ (m, lm) -> case IntMap.lookup k m of
       Nothing -> error "nextSess"
@@ -599,7 +602,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                (newLib, sens) <-
                  proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds
                if null sens then return "nothing to prove" else do
-                  lift $ nextSess sessRef newLib k
+                  lift $ nextSess sess sessRef newLib k
                   return $ formatResultsMultiple k sens prOrCons
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
@@ -609,13 +612,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                 ch : _ -> do
                   str <- lift $ readFile $ fileContent ch
                   (newLn, newLib) <- dgXUpdate opts str libEnv ln dg
-                  newSess <- lift $ nextSess sessRef newLib k
+                  newSess <- lift $ nextSess sess sessRef newLib k
                   liftR $ return $ sessAns newLn svg (newSess, k)
                 [] -> liftR $ return $ sessAns ln svg sk
                 else fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
-                newSess <- lift $ nextSess sessRef newLib k
+                newSess <- lift $ nextSess sess sessRef newLib k
                 -- calculate updated SVG-view from modified development graph
                 newSvg <- getSVG title ('/' : show k) $ lookupDGraph ln newLib
                 liftR $ return $ sessAns ln newSvg (newSess, k)
@@ -646,7 +649,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                       (newLib, sens) <- proveNode libEnv ln dg nl
                                   gTh subL incl mp mt tl thms
                       if null sens then return "nothing to prove" else do
-                        lift $ nextSess sessRef newLib k
+                        lift $ nextSess sess sessRef newLib k
                         return $ formatResults k i $ unode "results" $
                            map (\ (n, e) -> unode "goal"
                              [unode "name" n, unode "result" e]) sens
@@ -922,9 +925,7 @@ getProverAndComorph mp mc subL =
           fps -> fps
    in case mp of
         Nothing -> spps
-        _ -> case filterByProver mp ps of
-               [] -> spps
-               mps -> mps
+        _ -> filterByProver mp ps
 
 showComorph :: AnyComorphism -> String
 showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
@@ -986,13 +987,15 @@ proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> [String] -> ResultT IO (LibEnv, [(String, String)])
 proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
     getProverAndComorph mp mt subL of
-  [] -> fail "no prover found"
+  [] -> fail "no matching translation or prover found"
   cp : _ -> do
     let ks = map fst $ getThGoals gTh
         diffs = Set.difference (Set.fromList thms)
                 $ Set.fromList ks
-    unless (Set.null diffs) $ fail $ "unknown theorems: " ++ show diffs
-    ((nTh, sens), _) <- autoProofAtNode useTh (maybe 1 (max 1) tl) thms gTh cp
+    unless (Set.null diffs) . fail $ "unknown theorems: " ++ show diffs
+    when (null thms && null ks) $ fail "no theorems to prove"
+    ((nTh, sens), _) <- autoProofAtNode useTh (maybe 1 (max 1) tl)
+      (if null thms then ks else thms) gTh cp
     if null sens then return (le, sens) else return
         (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
