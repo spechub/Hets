@@ -726,7 +726,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
         (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons True
         -- create prove button and prover/comorphism selection
         (prSl, cmrSl, jvScr2) = showProverSelection GlProofs [sublogicOfTh gTh]
-        (prBt, timeout) = showProveButton
+        (prBt, timeout) = showProveButton True
         -- hidden param field
         hidStr = add_attrs [ mkAttr "name" "prove"
           , mkAttr "type" "hidden", mkAttr "style" "display:none;"
@@ -769,7 +769,7 @@ showAutoProofWindow dg sessId prOrCons = let
          , mkAttr "value" prMethod ] inputNode
   -- select unproven, all or no nodes by button
   (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons isProver
-  (prBt, timeout) = showProveButton
+  (prBt, timeout) = showProveButton isProver
   include = add_attrs [ mkAttr "type" "checkbox", mkAttr "checked" "true"
           , mkAttr "name" "includetheorems"] $ unode "input" "include Theorems"
   goBack = aRef ('/' : show sessId) "return to DGraph"
@@ -792,9 +792,10 @@ showAutoProofWindow dg sessId prOrCons = let
     return $ mkHtmlElemScript title (jvScr1 ++ jvScr2)
                [ goBack, plain " ", nodeMenu ]
 
-showProveButton :: (Element, Element)
-showProveButton = (prBt, timeout) where
-        prBt = [ mkAttr "type" "submit", mkAttr "value" "Prove" ]
+showProveButton :: Bool -> (Element, Element)
+showProveButton isProver = (prBt, timeout) where
+        prBt = [ mkAttr "type" "submit", mkAttr "value"
+               $ if isProver then "Prove" else "Check"]
                `add_attrs` inputNode
         -- create timeout field
         timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
