@@ -212,7 +212,7 @@ anaAutoProofQuery splitQuery = let
     Just "proof" -> GlProofs
     Just "cons" -> GlConsistency
     err -> error $ "illegal autoproof method: " ++ show err
-  in GlAutoProve prOrCons include prover trans timeout nodeSel
+  in GlAutoProve $ ProveCmd prOrCons include prover trans timeout nodeSel False
 
 -- quick approach to whether or not the query can be a RESTfull request
 isRESTfull :: [String] -> Bool
@@ -318,10 +318,11 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
            "provers" -> case nodeM of
              Nothing -> GlProvers transM
              Just n -> nodeQuery n $ NcProvers transM
-           "prove" -> case nodeM of
-             Nothing -> GlAutoProve GlProofs incl proverM transM timeout []
-             Just n -> nodeQuery n
-               $ ProveNode incl proverM transM timeout [] True
+           "prove" ->
+             let pc = ProveCmd GlProofs incl proverM transM timeout [] True
+             in case nodeM of
+             Nothing -> GlAutoProve pc
+             Just n -> nodeQuery n $ ProveNode pc
            _ -> DisplayQuery (Just $ fromMaybe "xml" format)
       -- fail if query doesn't seem to comply
       _ -> queryFailure
@@ -338,14 +339,15 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
       "sessions" : sessId : cmd : [] -> case readMaybe sessId of
         Nothing -> fail $ "failed to read sessionId from " ++ sessId
         Just sId -> case cmd of
-          "prove" -> let
+          "prove" ->
+            let pc = ProveCmd GlProofs incl proverM transM timeout [] False
             in case nodeM of
                 -- prove all nodes if no singleton is selected
                 Nothing -> return $ Query (DGQuery sId Nothing)
-                  $ GlAutoProve GlProofs incl proverM transM timeout []
+                  $ GlAutoProve pc
                 -- otherwise run prover for single node only
                 Just ndIri -> parseNodeQuery ndIri sId $ return
-                  $ ProveNode incl proverM transM timeout [] False
+                  $ ProveNode pc
               >>= getResponse
           -- on other cmd look for (optional) specification of node or edge
           _ -> case (nodeM, lookup2 "edge") of
@@ -599,7 +601,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
             GlProvers mt -> return $ getFullProverList mt dg
             GlTranslations -> return $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
-            GlAutoProve prOrCons incl mp mt tl nds -> do
+            GlAutoProve (ProveCmd prOrCons incl mp mt tl nds _) -> do
                (newLib, sens) <-
                  proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds
                if null sens then return "nothing to prove" else do
@@ -646,7 +648,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
                   Just gTh -> let subL = sublogicOfTh gTh in case nc of
-                    ProveNode incl mp mt tl thms xForm -> do
+                    ProveNode (ProveCmd _ incl mp mt tl thms xForm) -> do
                       (newLib, sens) <- proveNode libEnv ln dg nl
                                   gTh subL incl mp mt tl thms
                       if null sens then return "nothing to prove" else do

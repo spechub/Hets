@@ -116,30 +116,26 @@ data QueryKind =
   | GlProvers (Maybe String)
   | GlTranslations
   | GlShowProverWindow ProverMode
-  | GlAutoProve
-  { apProverMode :: ProverMode
-  , apInclTheorems :: Bool
-  , apProver :: Maybe String
-  , apTranslation :: Maybe String
-  , apTimeout :: Maybe Int
-  , apNodeSel :: [String] }
+  | GlAutoProve ProveCmd
   | NodeQuery NodeIdOrName NodeCommand
   | EdgeQuery Int String
 
 data ProverMode = GlProofs | GlConsistency
 
+data ProveCmd = ProveCmd
+  { pcProverMode :: ProverMode
+  , pcInclTheorems :: Bool
+  , pcProver :: Maybe String
+  , pcTranslation :: Maybe String
+  , pcTimeout :: Maybe Int
+  , pcTheoremsOrNodes :: [String]
+  , pcXmlResult :: Bool }
+
 data NodeCommand =
     NcCmd NodeCmd
   | NcProvers (Maybe String)
   | NcTranslations (Maybe String)
-  | ProveNode
-  { ncInclTheorems :: Bool
-  , ncProver :: Maybe String
-  , ncTranslation :: Maybe String
-  , ncTimeout :: Maybe Int
-  , ncTheorems :: [String]
-  , ncXmlResult :: Bool }
-  deriving Show
+  | ProveNode ProveCmd
 
 -- | the path is not empty and leading slashes are removed
 anaUri :: [String] -> [QueryPair] -> [String] -> Either String Query
@@ -297,7 +293,7 @@ anaNodeQuery ans i moreTheorems incls pss =
         Nothing -> []
         Just str -> map unEsc $ splitOn ' ' $ decodeQuery str
       timeLimit = maybe Nothing readMaybe $ lookup "timeout" pps
-      pp = ProveNode (not (null incls) || case incl of
+      pp = ProveNode $ ProveCmd GlProofs (not (null incls) || case incl of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
         prover trans timeLimit theorems False
