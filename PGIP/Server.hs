@@ -651,14 +651,21 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
                   Just gTh -> let subL = sublogicOfTh gTh in case nc of
-                    ProveNode (ProveCmd _ incl mp mt tl thms xForm) -> do
-                      (newLib, sens) <- proveNode libEnv ln dg nl
-                                  gTh subL incl mp mt tl thms
-                      if null sens then return "nothing to prove" else do
+                    ProveNode (ProveCmd pm incl mp mt tl thms xForm) ->
+                      case pm of
+                      GlProofs -> do
+                        (newLib, sens) <- proveNode libEnv ln dg nl
+                          gTh subL incl mp mt tl thms
+                        if null sens then return "nothing to prove" else do
+                          lift $ nextSess sess sessRef newLib k
+                          return . formatResults xForm k i . unode "results"
+                            $ map (\ (n, e) -> unode "goal"
+                              [unode "name" n, unode "result" e]) sens
+                      GlConsistency -> do
+                        (newLib, [(_, res)]) <- consNode libEnv ln dg nl
+                          subL incl mp mt tl
                         lift $ nextSess sess sessRef newLib k
-                        return $ formatResults xForm k i $ unode "results" $
-                           map (\ (n, e) -> unode "goal"
-                             [unode "name" n, unode "result" e]) sens
+                        return . ppTopElement $ unode "result" res
                     _ -> return $ case nc of
                       NcCmd Query.Theory ->
                           showGlobalTh dg i gTh k fstLine
