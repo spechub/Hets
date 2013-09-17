@@ -1018,10 +1018,13 @@ proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
         ((cc, c) : _) -> lift $ do
           cstat <- consistencyCheck useTh cc c ln le' dg' nl $ fromMaybe 1 tl
           -- Consistency Results are stored in LibEnv via DGChange object
-          let le'' = Map.insert ln (changeDGH dg' $ SetNodeLab lb
-                       (i, if sType cstat == CSInconsistent then
-                         markNodeInconsistent "" lb
-                         else markNodeConsistent "" lb)) le'
+          let cSt = sType cstat
+              le'' = if cSt == CSUnchecked then le' else
+                     Map.insert ln (changeDGH dg' $ SetNodeLab lb
+                       (i, case cSt of
+                             CSInconsistent -> markNodeInconsistent "" lb
+                             CSConsistent -> markNodeConsistent "" lb
+                             _ -> lb)) le'
           return (le'', [(" ", show cstat)])
     GlProofs -> proveNode le' ln dg' nl gTh subL useTh mp mt tl
              $ map fst $ getThGoals gTh
