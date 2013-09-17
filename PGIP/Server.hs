@@ -601,7 +601,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> liftR $ return $ sessAns ln svg sk
-            GlProvers _ mt -> return $ getFullProverList mt dg
+            GlProvers mp mt -> return $ getFullProverList mp mt dg
             GlTranslations -> return $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds _) -> do
@@ -948,9 +948,12 @@ removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-")
 getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
 
-getFullProverList :: Maybe String -> DGraph -> String
-getFullProverList mt = formatProvers GlProofs . foldr
-  (\ (_, nd) ls -> maybe ls ((++ ls) . getProversAux mt . sublogicOfTh)
+getFullProverList :: ProverMode -> Maybe String -> DGraph -> String
+getFullProverList mp mt = formatProvers mp . foldr
+  (\ (_, nd) ls -> maybe ls ((++ ls) . case mp of
+      GlProofs -> getProversAux mt
+      GlConsistency -> getConsCheckersAux mt
+    . sublogicOfTh)
     $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
 
 showProversOnly :: [(AnyComorphism, [String])] -> [String]
