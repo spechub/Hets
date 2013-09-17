@@ -320,7 +320,8 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
              Just n -> nodeQuery n $ NcProvers transM
            "prove" -> case nodeM of
              Nothing -> GlAutoProve GlProofs incl proverM transM timeout []
-             Just n -> nodeQuery n $ ProveNode incl proverM transM timeout []
+             Just n -> nodeQuery n
+               $ ProveNode incl proverM transM timeout [] True
            _ -> DisplayQuery (Just $ fromMaybe "xml" format)
       -- fail if query doesn't seem to comply
       _ -> queryFailure
@@ -344,7 +345,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
                   $ GlAutoProve GlProofs incl proverM transM timeout []
                 -- otherwise run prover for single node only
                 Just ndIri -> parseNodeQuery ndIri sId $ return
-                  $ ProveNode incl proverM transM timeout []
+                  $ ProveNode incl proverM transM timeout [] False
               >>= getResponse
           -- on other cmd look for (optional) specification of node or edge
           _ -> case (nodeM, lookup2 "edge") of
@@ -645,12 +646,12 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
                   Just gTh -> let subL = sublogicOfTh gTh in case nc of
-                    ProveNode incl mp mt tl thms -> do
+                    ProveNode incl mp mt tl thms xForm -> do
                       (newLib, sens) <- proveNode libEnv ln dg nl
                                   gTh subL incl mp mt tl thms
                       if null sens then return "nothing to prove" else do
                         lift $ nextSess sess sessRef newLib k
-                        return $ formatResults k i $ unode "results" $
+                        return $ formatResults xForm k i $ unode "results" $
                            map (\ (n, e) -> unode "goal"
                              [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
@@ -677,8 +678,9 @@ formatResultsMultiple sessId rs prOrCons = let
     : foldr (\ el r -> unode "h4" (qName $ elName el) : el : r) [] rs )
 
 -- | display results of proving session (single node)
-formatResults :: Int -> Int -> Element -> String
-formatResults sessId i rs = let
+formatResults :: Bool -> Int -> Int -> Element -> String
+formatResults xForm sessId i rs =
+  if xForm || sessId <= 0 then ppTopElement rs else let
   goBack1 = aRef ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
   goBack2 = aRef ('/' : show sessId) "return to DGraph"
   in ppElement $ unode "html" [ unode "head"

@@ -137,7 +137,8 @@ data NodeCommand =
   , ncProver :: Maybe String
   , ncTranslation :: Maybe String
   , ncTimeout :: Maybe Int
-  , ncTheorems :: [String] }
+  , ncTheorems :: [String]
+  , ncXmlResult :: Bool }
   deriving Show
 
 -- | the path is not empty and leading slashes are removed
@@ -299,7 +300,7 @@ anaNodeQuery ans i moreTheorems incls pss =
       pp = ProveNode (not (null incls) || case incl of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
-        prover trans timeLimit theorems
+        prover trans timeLimit theorems False
       noPP = null incls && null pps
       noIncl = null incls && isNothing incl && isNothing timeLimit
       cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds
