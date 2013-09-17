@@ -246,6 +246,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
   nodeM = lookup2 "node"
   transM = lookup2 "translation"
   proverM = lookup2 "prover"
+  consM = lookup2 "consistency-checker"
   inclM = lookup2 "include"
   incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) inclM
@@ -326,7 +327,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
                  pm = if isProve then GlProofs else GlConsistency
                  pc = ProveCmd pm
                    (if isProve && isJust inclM then incl else True)
-                   proverM transM timeout [] True
+                   (if isProve then proverM else consM) transM timeout [] True
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
