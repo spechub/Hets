@@ -929,7 +929,7 @@ filterByComorph mt = case mt of
 getProverAndComorph :: Maybe String -> Maybe String -> G_sublogics
    -> [(G_prover, AnyComorphism)]
 getProverAndComorph mp mc subL =
-   let ps = filterByComorph mc $ getAllAutomaticProvers subL
+   let ps = getFilteredProvers mc subL
        spps = case filterByProver (Just "SPASS") ps of
           [] -> ps
           fps -> fps
@@ -966,8 +966,11 @@ groupOnSnd f =
 {- | gather provers and comorphisms and resort them to
 (comorhism, supported provers) while not changing orig comorphism order -}
 getProversAux :: Maybe String -> G_sublogics -> [(AnyComorphism, [String])]
-getProversAux mt = groupOnSnd getWebProverName
-  . filterByComorph mt . getAllAutomaticProvers
+getProversAux mt = groupOnSnd getWebProverName . getFilteredProvers mt
+
+getFilteredProvers :: Maybe String -> G_sublogics
+  -> [(G_prover, AnyComorphism)]
+getFilteredProvers mt = filterByComorph mt . getAllAutomaticProvers
 
 formatProvers :: ProverMode -> [(AnyComorphism, [String])] -> String
 formatProvers pm = let
@@ -980,9 +983,12 @@ formatProvers pm = let
 -- | retrieve a list of consistency checkers
 getConsCheckersAux :: Maybe String -> G_sublogics
   -> [(AnyComorphism, [String])]
-getConsCheckersAux mt = groupOnSnd getCcName
-  . filterByComorph mt . filter (getCcBatch . fst) . getConsCheckers
-  . findComorphismPaths logicGraph
+getConsCheckersAux mt = groupOnSnd getCcName . getFilteredConsCheckers mt
+
+getFilteredConsCheckers :: Maybe String -> G_sublogics
+  -> [(G_cons_checker, AnyComorphism)]
+getFilteredConsCheckers mt = filterByComorph mt . filter (getCcBatch . fst)
+  . getConsCheckers . findComorphismPaths logicGraph
 
 getComorphs :: Maybe String -> G_sublogics -> String
 getComorphs mp subL = formatComorphs . filterByProver mp
@@ -996,6 +1002,27 @@ getFullComorphList = formatComorphs . foldr
 formatComorphs :: [(G_prover, AnyComorphism)] -> String
 formatComorphs = ppTopElement . unode "translations"
     . map (unode "comorphism") . nubOrd . map (showComorph . snd)
+
+consNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
+  -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
+  -> ResultT IO (LibEnv, [(String, String)])
+consNode le ln dg nl@(i, lb) subL useTh mp mt tl = let
+      consList = getFilteredConsCheckers mt subL
+      findCC x = filter ((== x ) . getCcName . fst) consList
+      mcc = maybe (findCC "darwin") findCC mp
+      in case mcc of
+        [] -> fail "no cons checker found"
+        ((cc, c) : _) -> lift $ do
+          cstat <- consistencyCheck useTh cc c ln le dg nl $ fromMaybe 1 tl
+          -- Consistency Results are stored in LibEnv via DGChange object
+          let cSt = sType cstat
+              le'' = if cSt == CSUnchecked then le else
+                     Map.insert ln (changeDGH dg $ SetNodeLab lb
+                       (i, case cSt of
+                             CSInconsistent -> markNodeInconsistent "" lb
+                             CSConsistent -> markNodeConsistent "" lb
+                             _ -> lb)) le
+          return (le'', [(" ", show cstat)])
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
@@ -1019,26 +1046,10 @@ proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String]
   -> ResultT IO (LibEnv, [Element])
 proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
-  runProof le' gTh nl@(i, lb) = let
+  runProof le' gTh nl = let
     subL = sublogicOfTh gTh
     dg' = lookupDGraph ln le' in case prOrCons of
-    GlConsistency -> let
-      consList = getConsCheckers $ findComorphismPaths logicGraph subL
-      findCC x = filter ((== x ) . getCcName . fst) consList
-      mcc = maybe (findCC "darwin") findCC mp
-      in case mcc of
-        [] -> fail "no cons checker found"
-        ((cc, c) : _) -> lift $ do
-          cstat <- consistencyCheck useTh cc c ln le' dg' nl $ fromMaybe 1 tl
-          -- Consistency Results are stored in LibEnv via DGChange object
-          let cSt = sType cstat
-              le'' = if cSt == CSUnchecked then le' else
-                     Map.insert ln (changeDGH dg' $ SetNodeLab lb
-                       (i, case cSt of
-                             CSInconsistent -> markNodeInconsistent "" lb
-                             CSConsistent -> markNodeConsistent "" lb
-                             _ -> lb)) le'
-          return (le'', [(" ", show cstat)])
+    GlConsistency -> consNode le' ln dg' nl subL useTh mp mt tl
     GlProofs -> proveNode le' ln dg' nl gTh subL useTh mp mt tl
              $ map fst $ getThGoals gTh
   nodes2check = filter (case nodeSel of
