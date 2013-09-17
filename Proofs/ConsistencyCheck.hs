@@ -54,7 +54,7 @@ data SType = CSUnchecked
            | CSError
            | CSInconsistent
            | CSConsistent
-           deriving (Eq, Ord)
+           deriving (Eq, Ord, Show)
 
 data ConsistencyStatus = ConsistencyStatus { sType :: SType
                                            , sMessage :: String }
