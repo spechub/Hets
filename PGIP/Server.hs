@@ -283,13 +283,13 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
           Just sId ->
             (case nodeM of
               Just ndIri -> parseNodeQuery ndIri sId $ case cmd of
-                ["provers"] -> return $ NcProvers transM
+                ["provers"] -> return $ NcProvers GlProofs transM
                 ["translations"] -> return $ NcTranslations Nothing
                 _ -> fail $ "unknown node command for a GET-request: "
                       ++ intercalate "/" cmd
               Nothing -> fmap (Query (DGQuery sId Nothing)) $ case cmd of
                 [] -> return $ DisplayQuery format
-                ["provers"] -> return $ GlProvers transM
+                ["provers"] -> return $ GlProvers GlProofs transM
                 ["translations"] -> return GlTranslations
                 _ -> fail $ "unknown global command for a GET-request: "
                   ++ intercalate "/" cmd) >>= getResponse
@@ -315,11 +315,14 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
            "translate" -> case nodeM of
              Nothing -> GlTranslations
              Just n -> nodeQuery n $ NcTranslations Nothing
-           "provers" -> case nodeM of
-             Nothing -> GlProvers transM
-             Just n -> nodeQuery n $ NcProvers transM
-           "prove" ->
-             let pc = ProveCmd GlProofs incl proverM transM timeout [] True
+           _ | elem newIde ["provers", "consistency-checkers"] ->
+             let pm = if newIde == "provers" then GlProofs else GlConsistency
+             in case nodeM of
+             Nothing -> GlProvers pm transM
+             Just n -> nodeQuery n $ NcProvers pm transM
+           _ | elem newIde ["prove", "consistency-check"] ->
+             let pm = if newIde == "prove" then GlProofs else GlConsistency
+                 pc = ProveCmd pm incl proverM transM timeout [] True
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
@@ -598,7 +601,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> liftR $ return $ sessAns ln svg sk
-            GlProvers mt -> return $ getFullProverList mt dg
+            GlProvers _ mt -> return $ getFullProverList mt dg
             GlTranslations -> return $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds _) -> do
@@ -659,7 +662,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                     _ -> return $ case nc of
                       NcCmd Query.Theory ->
                           showGlobalTh dg i gTh k fstLine
-                      NcProvers mt -> getProvers mt subL
+                      NcProvers mp mt -> formatProvers mp $ case mp of
+                        GlProofs -> getProversAux mt subL
+                        GlConsistency -> getConsCheckersAux mt subL
                       NcTranslations mp -> getComorphs mp subL
                       _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
@@ -889,9 +894,9 @@ showProverSelection prOrCons subLs = let
         , "    }"
         , "  }"
         , "}" ]
-  allPrCm = nub $ concatMap (case prOrCons of
-    GlProofs -> getProversAux Nothing
-    GlConsistency -> getConsCheckersAux) subLs
+  allPrCm = nub $ concatMap ((case prOrCons of
+    GlProofs -> getProversAux
+    GlConsistency -> getConsCheckersAux) Nothing) subLs
   -- create prover selection (drop-down)
   prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
     add_attrs [mkAttr "value" p, mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"]
@@ -915,8 +920,8 @@ filterByProver mp = case mp of
       Nothing -> id
       Just p -> filter ((== p) . getWebProverName . fst)
 
-filterByComorph :: Maybe String -> [(G_prover, AnyComorphism)]
-  -> [(G_prover, AnyComorphism)]
+filterByComorph :: Maybe String -> [(a, AnyComorphism)]
+  -> [(a, AnyComorphism)]
 filterByComorph mt = case mt of
       Nothing -> id
       Just c -> filter ((== c) . showComorph . snd)
@@ -943,11 +948,8 @@ removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-")
 getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
 
-getProvers :: Maybe String -> G_sublogics -> String
-getProvers mt subL = formatProvers $ getProversAux mt subL
-
 getFullProverList :: Maybe String -> DGraph -> String
-getFullProverList mt = formatProvers . foldr
+getFullProverList mt = formatProvers GlProofs . foldr
   (\ (_, nd) ls -> maybe ls ((++ ls) . getProversAux mt . sublogicOfTh)
     $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
 
@@ -964,14 +966,19 @@ getProversAux :: Maybe String -> G_sublogics -> [(AnyComorphism, [String])]
 getProversAux mt = groupOnSnd getWebProverName
   . filterByComorph mt . getAllAutomaticProvers
 
-formatProvers :: [(AnyComorphism, [String])] -> String
-formatProvers = ppTopElement . unode "provers" . map (unode "prover")
+formatProvers :: ProverMode -> [(AnyComorphism, [String])] -> String
+formatProvers pm = let
+  tag = case pm of
+          GlProofs -> "prover"
+          GlConsistency -> "consistency-checker"
+  in ppTopElement . unode (tag ++ "s") . map (unode tag)
   . showProversOnly
 
 -- | retrieve a list of consistency checkers
-getConsCheckersAux :: G_sublogics -> [(AnyComorphism, [String])]
-getConsCheckersAux = groupOnSnd getCcName
-  . filter (getCcBatch . fst) . getConsCheckers
+getConsCheckersAux :: Maybe String -> G_sublogics
+  -> [(AnyComorphism, [String])]
+getConsCheckersAux mt = groupOnSnd getCcName
+  . filterByComorph mt . filter (getCcBatch . fst) . getConsCheckers
   . findComorphismPaths logicGraph
 
 getComorphs :: Maybe String -> G_sublogics -> String

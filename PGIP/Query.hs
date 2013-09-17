@@ -113,7 +113,7 @@ type QueryPair = (String, Maybe String)
 data QueryKind =
     DisplayQuery (Maybe String)
   | GlobCmdQuery String
-  | GlProvers (Maybe String)
+  | GlProvers ProverMode (Maybe String)
   | GlTranslations
   | GlShowProverWindow ProverMode
   | GlAutoProve ProveCmd
@@ -133,8 +133,8 @@ data ProveCmd = ProveCmd
 
 data NodeCommand =
     NcCmd NodeCmd
-  | NcProvers (Maybe String)
-  | NcTranslations (Maybe String)
+  | NcProvers ProverMode (Maybe String) -- optional comorphism
+  | NcTranslations (Maybe String) -- optional prover name
   | ProveNode ProveCmd
 
 -- | the path is not empty and leading slashes are removed
@@ -306,7 +306,7 @@ anaNodeQuery ans i moreTheorems incls pss =
        [cmd] -> case cmd of
          "prove" -> Right $ NodeQuery i pp
          "provers" | noIncl && isNothing prover ->
-            Right $ NodeQuery i $ NcProvers trans
+            Right $ NodeQuery i $ NcProvers GlProofs trans
          "translations" | noIncl && isNothing trans ->
             Right $ NodeQuery i $ NcTranslations prover
          _ -> case lookup cmd cmds of
