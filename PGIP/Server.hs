@@ -309,9 +309,9 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
             Just i -> getResponse $ Query dgQ $ EdgeQuery i "edge"
             Nothing -> fail $ "failed to read edgeId from " ++ f
           _ -> error $ "PGIP.Server.elemIndex " ++ nodeOrEdge
-      newIde : libIri : cmdList
-        | elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
-        -> getResponse . Query (NewDGQuery libIri cmdList) $ case newIde of
+      newIde : libIri : rest -> let cmdList = filter (/= "") rest in
+        if elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
+        then getResponse . Query (NewDGQuery libIri cmdList) $ case newIde of
            "translate" -> case nodeM of
              Nothing -> GlTranslations
              Just n -> nodeQuery n $ NcTranslations Nothing
@@ -327,7 +327,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
            _ -> DisplayQuery (Just $ fromMaybe "xml" format)
-      -- fail if query doesn't seem to comply
+        else queryFailure
       _ -> queryFailure
     "PUT" -> case pathBits of
       {- execute global commands
