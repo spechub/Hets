@@ -95,7 +95,7 @@ import System.IO
 data Session = Session
   { sessLibEnv :: LibEnv
   , sessLibName :: LibName
-  , _previousKeys :: [Int]
+  , sessKey :: Int
   , _sessStart :: UTCTime }
 
 type SessMap = Map.Map (String, [GlobCmd]) Session
@@ -433,8 +433,9 @@ mkOkResponse = mkResponse status200
 addNewSess :: String -> [GlobCmd] -> Cache -> Session -> IO Int
 addNewSess file cl sessRef sess = do
   k <- randomKey
+  let s = sess { sessKey = k }
   atomicModifyIORef sessRef $ \ (m, lm) ->
-       ((IntMap.insert k sess m, Map.insert (file, cl) sess lm), k)
+       ((IntMap.insert k s m, Map.insert (file, cl) s lm), k)
 
 nextSess :: Session -> Cache -> LibEnv -> Int -> IO Session
 nextSess sess sessRef newLib k = if k <= 0 then return sess else
@@ -491,7 +492,7 @@ getDGraph opts sessRef dgQ = do
    let cl = map (\ s -> fromJust . find ((== s) . cmdlGlobCmd)
                   $ map fst allGlobLibAct) cmdList
    in case Map.lookup (file, cl) lm of
-   Just sess -> return (sess, 0)
+   Just sess -> return (sess, sessKey sess)
    Nothing -> do
     (ln, le1) <- case guess file GuessIn of
       DgXml -> do
@@ -505,7 +506,7 @@ getDGraph opts sessRef dgQ = do
     le2 <- foldM (\ e c -> liftR
                   $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
     time <- lift getCurrentTime
-    let sess = Session le2 ln [] time
+    let sess = Session le2 ln 0 time
     k <- lift $ addNewSess file cl sessRef sess
     return (sess, k)
   DGQuery k _ -> case IntMap.lookup k m of
