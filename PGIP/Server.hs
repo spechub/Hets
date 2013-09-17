@@ -608,12 +608,12 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
             GlProvers mp mt -> return $ getFullProverList mp mt dg
             GlTranslations -> return $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
-            GlAutoProve (ProveCmd prOrCons incl mp mt tl nds _) -> do
+            GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm) -> do
                (newLib, sens) <-
-                 proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds
+                 proveMultiNodes xForm prOrCons libEnv ln dg incl mp mt tl nds
                if null sens then return "nothing to prove" else do
                   lift $ nextSess sess sessRef newLib k
-                  return $ formatResultsMultiple k sens prOrCons
+                  return $ formatResultsMultiple xForm k sens prOrCons
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -663,13 +663,15 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                         if null sens then return "nothing to prove" else do
                           lift $ nextSess sess sessRef newLib k
                           return . formatResults xForm k i . unode "results"
-                            $ map (\ (n, e) -> unode "goal"
-                              [unode "name" n, unode "result" e]) sens
+                            $ map (\ (n, e, d) -> unode "goal"
+                              [ unode "name" n
+                              , unode "result" e
+                              , unode "details" d]) sens
                       GlConsistency -> do
-                        (newLib, [(_, res)]) <- consNode libEnv ln dg nl
+                        (newLib, [(_, res, txt)]) <- consNode libEnv ln dg nl
                           subL incl mp mt tl
                         lift $ nextSess sess sessRef newLib k
-                        return . ppTopElement $ unode "result" res
+                        return . ppTopElement $ formatConsNode res txt
                     _ -> return $ case nc of
                       NcCmd Query.Theory ->
                           showGlobalTh dg i gTh k fstLine
@@ -684,8 +686,12 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               [] -> fail $ "no edge found with id: " ++ show i
               _ -> fail $ "multiple edges found with id: " ++ show i
 
-formatResultsMultiple :: Int -> [Element] -> ProverMode -> String
-formatResultsMultiple sessId rs prOrCons = let
+formatConsNode :: String -> String -> Element
+formatConsNode res txt = add_attr (mkAttr "state" res) $ unode "result" txt
+
+formatResultsMultiple :: Bool -> Int -> [Element] -> ProverMode -> String
+formatResultsMultiple xForm sessId rs prOrCons =
+  if xForm then ppTopElement $ unode "Results" rs else let
   goBack1 = case prOrCons of
     GlConsistency -> aRef ('/' : show sessId ++ "?consistency") "return"
     GlProofs -> aRef ('/' : show sessId ++ "?autoproof") "return"
@@ -1016,7 +1022,7 @@ formatComorphs = ppTopElement . unode "translations"
 
 consNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> ResultT IO (LibEnv, [(String, String)])
+  -> ResultT IO (LibEnv, [(String, String, String)])
 consNode le ln dg nl@(i, lb) subL useTh mp mt tl = let
       consList = getFilteredConsCheckers mt subL
       findCC x = filter ((== x ) . getCcName . fst) consList
@@ -1033,11 +1039,11 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = let
                              CSInconsistent -> markNodeInconsistent "" lb
                              CSConsistent -> markNodeConsistent "" lb
                              _ -> lb)) le
-          return (le'', [(" ", show cstat)])
+          return (le'', [(" ", drop 2 $ show cSt, show cstat)])
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> [String] -> ResultT IO (LibEnv, [(String, String)])
+  -> [String] -> ResultT IO (LibEnv, [(String, String, String)])
 proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
     getProverAndComorph mp mt subL of
   [] -> fail "no matching translation or prover found"
@@ -1053,18 +1059,18 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
         (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
 -- run over multiple dgnodes and prove available goals for each
-proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
+proveMultiNodes :: Bool -> ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String]
   -> ResultT IO (LibEnv, [Element])
-proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
+proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel = let
   runProof le' gTh nl = let
     subL = sublogicOfTh gTh
-    dg' = lookupDGraph ln le' in case prOrCons of
+    dg' = lookupDGraph ln le' in case pm of
     GlConsistency -> consNode le' ln dg' nl subL useTh mp mt tl
     GlProofs -> proveNode le' ln dg' nl gTh subL useTh mp mt tl
              $ map fst $ getThGoals gTh
   nodes2check = filter (case nodeSel of
-    [] -> case prOrCons of
+    [] -> case pm of
             GlConsistency -> const True
             GlProofs -> hasOpenGoals . snd
     _ -> (`elem` nodeSel) . getDGNodeName . snd) $ labNodesDG dg
@@ -1074,12 +1080,16 @@ proveMultiNodes prOrCons le ln dg useTh mp mt tl nodeSel = let
                     "cannot compute global theory of:\n" ++ show dgn
       Just gTh -> do
         (le'', sens) <- runProof le' gTh nl
-        return (le'', formatResultsAux (getDGNodeName dgn) sens : res))
+        return (le'', formatResultsAux xF pm (getDGNodeName dgn) sens : res))
           (le, []) nodes2check
 
-formatResultsAux :: String -> [(String, String)] -> Element
-formatResultsAux nm sens = unode nm $ unode "results" $
-  map (\ (n, e) -> unode "goal" [unode "name" n, unode "result" e]) sens
+formatResultsAux :: Bool -> ProverMode -> String -> [(String, String, String)]
+  -> Element
+formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
+    ([(_, e, d)], GlConsistency) | xF -> formatConsNode e d
+    _ -> unode "results" $ map (\ (n, e, d) -> unode "goal"
+       $ [unode "name" n, unode "result" e]
+       ++ [unode "details" d | xF]) sens
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =

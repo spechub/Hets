@@ -485,7 +485,7 @@ autoProofAtNode ::
                    -- selected Prover and Comorphism
                   -> ( G_prover, AnyComorphism )
                    -- returns new GoalStatus for the Node
-                  -> ResultT IO ((G_theory, [(String, String)]),
+                  -> ResultT IO ((G_theory, [(String, String, String)]),
                                  (ProofState, [ProofStatus G_proof_tree]))
 autoProofAtNode useTh timeout goals g_th p_cm = do
       let knpr = propagateErrors "autoProofAtNode"
@@ -515,5 +515,7 @@ autoProofAtNode useTh timeout goals g_th p_cm = do
                 Nothing -> fail "autoProofAtNode: proving failed"
                 Just d' ->
                  return (( currentTheory $ markProved (snd p_cm) lid1 d' st
-                         , map (\ ps -> (goalName ps, show $ goalStatus ps)) d')
+                         , map (\ ps -> ( goalName ps
+                                        , show $ goalStatus ps
+                                        , show $ proofTree ps)) d')
                          , (st, map encapsulate_pt d'))
