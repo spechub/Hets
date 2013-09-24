@@ -92,21 +92,20 @@ val out' = fn (f,i,s') =>
    | _ => File.write (Path.explode f) s
  end;
 val out = fn (i,s) => out' (\"$COMM_FILE\",i,s);
-val v = fn s => out (1,s);
+val v = fn s => out (1,\"Isabelle: \"^s);
 val e = fn s => (out (0,s); OS.Process.exit OS.Process.failure)
 
-v \"Isabelle: Loading helper library\n\";
+v \"Loading helper library\n\";
 use \"$SCRIPTPATH/parser.ml\";
 
-Parser.pretty_tokens ();
+v \"Analyzing theory $TRANS_T\n\";
 
-v \"Isabelle: Analyzing theory\n\";
+val thys = Export.xml_of_theory v \"$TRANS.thy\";
 
-val thy = Parser.scan \"$TRANS.thy\" |> Parser.thy;
+val xml = XML.Elem ((\"Export\",[]),thys);
 
-v \"Isabelle: Exporting theory information\n\";
-(File.write (Path.explode \"$OUT_FILE\")
- (XML.string_of (Export.xml_of_theory thy)))
+v \"Writing theory information\n\";
+(File.write (Path.explode \"$OUT_FILE\") (XML.string_of xml))
 handle ex => e ((General.exnMessage ex)^\"\n\");
 *}
 end"

@@ -147,7 +147,7 @@ sig
 	val cmd_theory : (Token.T list * Thy_Header.header) parser
 	val cmd_header : string parser
 	val thy_body : (Token.T list * TheoryData.thy_body) parser
-	val init_thy : (Token.T list * Thy_Header.header) ->
+	val init_thy : Path.T -> (Token.T list * Thy_Header.header) ->
                        Toplevel.state * (Toplevel.state ->
                         Token.T list -> Toplevel.state)
 end;
@@ -621,12 +621,12 @@ struct
                 val (results, (end_state, end_pos)) = fold_map element_result
                      elements (state, Position.none)
              in end_state end;
-	fun init_thy (toks,header) =
+	fun init_thy dir (toks,header) =
             let val t = read (K
                 (let val {name = (name, _), imports, uses, ...} = header
 	 	     val _ = Thy_Header.define_keywords header
     	    	     val _ = Present.init_theory name
-                     val master_dir = Thy_Load.get_master_path ()
+                     val master_dir = dir
 		     val parents = List.map (Thy_Info.get_theory o #1) imports
 	         in Thy_Load.begin_theory master_dir header parents
                  |> Present.begin_theory 0 master_dir uses end))
@@ -635,7 +635,7 @@ end;
 
 signature Parser =
 sig
-        val scan      : string -> Token.T list;
+        val scan      : Path.T -> Token.T list;
 	val dbg       : Token.T list -> (Token.kind * string) list
 	datatype thy = Thy of {header:string option,
                                args:(Token.T list * Thy_Header.header),
@@ -675,7 +675,7 @@ struct
                                args:(Token.T list * Thy_Header.header),
                                body:(Token.T list * TheoryData.thy_body) list};
         (* scan isabelle source transforming it into a sequence of commands *)
-        fun scan s =   File.read (Path.explode s)
+        fun scan p =   File.read p
                     |> Source.of_string |> Symbol.source
                     |> Token.source {do_recover = SOME false}
                         Keyword.get_lexicons Position.start
@@ -796,11 +796,17 @@ end;
 
 signature Export =
 sig
-	val xml_of_theory    : Parser.thy -> XML.tree
+	val xml_of_theory    : (string -> unit) -> string -> XML.tree list
+	val get_non_image_parents : theory -> theory list
 end;
 
 structure Export : Export =
 struct
+	fun get_non_image_parents T = List.concat (List.map
+	     (fn T' => if length (Thy_Info.loaded_files
+                           (Context.theory_name T')) > 0
+	               then T'::(get_non_image_parents T') else [])
+	     (Context.parents_of T))
 	structure XML_Syntax = Legacy_XML_Syntax
 	open TheoryData
 	open XML_Helper
@@ -1260,16 +1266,36 @@ struct
                    in (xml "Domains" [] dts',s1) end] e
              in ((state',trans),elem::l) end end;
 	fun xml_of_body state body =
-              List.foldl xml_of_body_elem (state,[]) body
-           |> #2 |> List.rev |> xml "Body" [];
-	fun xml_of_theory (Thy {header,args=(th,h),body}) =
-	    let val imports      = List.map xml_of_import (#imports h)
+              List.foldl xml_of_body_elem (state,[]) body;
+	fun xml_of_theory v file' =
+	    let val _            = v ("Reading "^file'^"\n")
+                val file         = file' |> Path.explode |> Path.expand |>
+                 File.full_path Path.current |> File.check_file
+		val dir          = Path.dir file
+                val tname        = Path.explode file' |> Path.base |>
+                                   Path.implode
+                val (Thy {header,args=(th,h),body}) =
+                 file |> Parser.scan |> Parser.thy
+		val _            = v ("Loading parents of theory "^tname^"\n")
+                val thys         = map (fn (i,_) => (Thy_Info.get_theory i; [])
+                                    handle ex =>
+                                     let val full = Path.explode i |>
+                                          Path.ext "thy" |> File.full_path dir
+                                          |> File.check_file |> Path.implode
+                                     in xml_of_theory v full end) (#imports h)
+                                   |> flat
+                val imports      = List.map xml_of_import (#imports h)
 		val keywords     = List.map xml_of_keyword (#keywords h)
 		val uses         = List.map xml_of_use (#uses h)
                 val name         = attr "name" #1 (#name h)
 		val header'      = attr_of_option "header" "header" I header 
-		val (s,t)        = ParserHelper.init_thy (th,h)
-		val body'        = [xml_of_body (s,t) body]
-            in xml "Export" []
-               [xml "Thy" (name@header') (imports@keywords@body')] end;
+		val (s,t)        = ParserHelper.init_thy dir (th,h)
+                val _            = v ("Exporting theory "^tname^"\n")
+		val (s',body'')  = xml_of_body (s,t) body
+                val _            = Toplevel.command (Toplevel.exit
+                                    Toplevel.empty) (#1 s') |>
+                                   Toplevel.end_theory Position.none |>
+                                   Thy_Info.register_thy
+                val body'        = [body'' |> List.rev |> xml "Body" []]
+            in thys@[xml "Thy" (name@header') (imports@keywords@body')] end;
 end;
