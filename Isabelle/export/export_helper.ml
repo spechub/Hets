@@ -164,7 +164,7 @@ struct
                            |> partition Token.is_command;
 	
 	datatype local_data = LocalData of
-                              {assumes: {name:string, term:string} list,
+                              {assumes: {name:string option, term:string} list,
                                fixes:   {names:string list, tp:string} list};
 	fun mkLocalData a f = LocalData {
                            assumes = List.map (fn (n,t) => {name=n,term=t}) a,
@@ -194,7 +194,8 @@ struct
                                    |PrimRec of {names: (string*string) list,
                                                 def_eqs: string list}
                                    |Definition of string * (string*string)
-                                   |Text of string;
+                                   |Text of string
+                                   |Section of string;
 	datatype parsed_theory = ParsedTheory of {
                                  name: string,
                                  imports: string list,
@@ -225,8 +226,8 @@ struct
 	fun parse_local_data a =
                  let val assumes = fn k => e k #>
                                      sepBy (e (keyword "and"))
-                                           (p ident #> e (keyword ":")
-                                            #> p str_ #> pack)
+                                        (optional (p ident #> e (keyword ":"))
+                                        #> p str_ #> pack)
                      val fixes = e (keyword "fixes") #>
                                     sepBy (e (keyword "and"))
                                           (many (p ident) #> e (keyword "::")
@@ -360,7 +361,15 @@ struct
                                                     |> Result
                                             else Fail "Unexpected command!"
                                    |_    => Fail "Expected non-empty command!")
-                                    >>> (fn (v,v1) => (v,Text v1))])
+                                    >>> (fn (v,v1) => (v,Text v1)),
+                                   p (fn cmd => case cmd of
+                                    t::ts => if Token.content_of t = "section"
+                                            then ts |> List.map Token.unparse
+                                                    |> space_implode " "
+                                                    |> Result
+                                            else Fail "Unexpected command!"
+                                   |_    => Fail "Expected non-empty command!")
+                                    >>> (fn (v,v1) => (v,Section v1))])
                    #> e (parse_theory_end |> p2r)
                    #> expect_end >>> (fn ((n,i),b) =>
                        ParsedTheory {name = n,
