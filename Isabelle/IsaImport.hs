@@ -124,17 +124,16 @@ hXmlBody_2IsaSentence (Body_Subclass (Subclass a (Proof proof))) =
   IsaSign.subclassProof = proof }
 
 hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
-hXmlCtxt2IsaCtxt (Ctxt fixes' assumes') = IsaSign.Ctxt {
-  IsaSign.fixes   = case fixes' of
-                          Just (Fixes fixes) ->
-                           map (\(Fix a t) -> (fixName a, maybe Nothing
-                                  (Just . hXmlOneOf3_2IsaTyp) t)) fixes
-                          _ -> [],
-  IsaSign.assumes = case assumes' of
-                          Just (Assumes assumes) ->
-                           map (\(Assumption a tm) -> (assumptionName a,
-                                  hXmlOneOf6_2IsaTerm [] tm)) assumes
-                          _ -> [] }
+hXmlCtxt2IsaCtxt (Ctxt ctxt) =
+ let (fixes,assumes) = foldl (\(fixes',assumes') c ->
+      case c of
+       OneOf2 (Fixes f) -> (fixes'++map (\(Fix a t) -> (fixName a, maybe Nothing
+        (Just . hXmlOneOf3_2IsaTyp) t)) f, assumes')
+       TwoOf2 (Assumes a) -> (fixes',assumes'++map (\(Assumption a tm) ->
+        (assumptionName a, hXmlOneOf6_2IsaTerm [] tm)) a)) ([],[]) ctxt
+ in IsaSign.Ctxt {
+  IsaSign.fixes   = fixes,
+  IsaSign.assumes = assumes }
 
 hXmlSigData2IsaSigData :: SigData -> IsaSign.SigData
 hXmlSigData2IsaSigData (SigData a) = IsaSign.SigData $

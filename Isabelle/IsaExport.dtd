@@ -92,7 +92,7 @@
   <!ATTLIST Assumption name CDATA #REQUIRED>
   <!ATTLIST Assumption args CDATA #REQUIRED>
 
-<!ELEMENT Ctxt (Fixes?,Assumes?)>
+<!ELEMENT Ctxt ((Fixes|Assumes)*)>
 
 <!ELEMENT SigData (AddType|AddConst|AddTypeSynonym)*>
 <!ELEMENT AddConst ((TVar|TFree|Type)?,(Arg|String|Break|Block)*)>
