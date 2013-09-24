@@ -175,11 +175,13 @@ struct
                                    |Consts of (string * string) list
                                    |Axioms of (string * string) list
                                    |Lemma of {name: string,
+					      attrs: string list option,
 					      target: string option,
                                               statement: string,
 					      local_data:local_data,
                                               proof: string}
                                    |Theorem of {name: string,
+                                                attrs: string list option,
                                                 target: string option,
                                                 statement: string,
                                                 local_data:local_data,
@@ -196,7 +198,8 @@ struct
                                                  def_eqs: string list}
                                    |PrimRec of {names: (string*string) list,
                                                 def_eqs: string list}
-                                   |Definition of string * (string*string)
+                                   |Definition of (string*string) option *
+                                                  string
                                    |Text of string
                                    |MiscCmd of string * string;
 	datatype parsed_theory = ParsedTheory of {
@@ -249,12 +252,12 @@ struct
                                           (many (p ident) #> e (keyword "::")
                                            #> oneOf [p str_,p ident,
                                                      p type_ident] #> pack)
-                 in optional (assumes a) #> optional fixes
-                    #> optional (assumes a) (* a = keyword "assumes" *)
+                 in optional (many (assumes a)) #> optional (many fixes)
+                    #> optional (many (assumes a)) (* a = keyword "assumes" *)
                     >>> (fn (((v,a),f),a1) =>
-                         (v,mkLocalData (the_default [] a @
-                                         the_default [] a1)
-                                        (the_default [] f))) end
+                         (v,mkLocalData (List.concat (the_default [] a @
+                                                      the_default [] a1))
+                                        (List.concat (the_default [] f)))) end
         val parse_body_elem =
             let val dt_type = e (content "datatype")
                                #> sepBy (e (keyword "and"))
@@ -314,9 +317,9 @@ struct
                                  >>> (fn ((_,ns),def) =>
                                        PrimRec { names = ns, def_eqs = def })
                 val def        = e (content "definition")
-                                 #> p ident #> e (keyword "::") #> p str_
-                                 #> e (keyword "where") #> p str_
-                                 #> pack #> pack >>> Definition o #2
+                                 #> optional (p ident #> e (keyword "::")
+                                    #> p str_ #> pack #> e (keyword "where"))
+                                 #> p str_ #> pack >>> Definition o #2
             in oneOf [dt_type,consts,axioms,cls,
                       tp_synonym,fun_,primrec,locale,def]  end;
         fun parse_thm s = e (content s)
@@ -324,10 +327,12 @@ struct
                              e (keyword "(") #> e (keyword "in")
                              #> p ident #> e (keyword ")"))
                           #> p ident
+                          #> optional (e (keyword "[") #> many (p ident)
+                                                      #> e (keyword "]"))
                           #> e (keyword ":")
                           #> optional (parse_local_data (keyword "assumes")
                                         #> e (keyword "shows")) 
-                          #> (p str_) #> pack #> pack #> pack >>> #2;
+                          #> (p str_) #> pack #> pack #> pack #> pack >>> #2;
         fun proof_qed i l cmd = case cmd of
                                t::_  => let val l' = cmd::l
                                             val i' = case Token.content_of t of
@@ -368,8 +373,9 @@ struct
                    #> many (oneOf [p (parse_body_elem |> p2r),
                                    p (parse_thm "lemma" |> p2r) #> proof
                                     #> pack >>>
-                                    (fn (v,((t,(n,(l,stmt))),prf)) =>
+                                    (fn (v,((t,(n,(a,(l,stmt)))),prf)) =>
                                       (v,Lemma {name=n,
+                                                attrs=a,
 						target=t,
                                                 statement=stmt,
 						local_data=the_default
@@ -377,13 +383,14 @@ struct
                                                 proof=prf})),
                                    p (parse_thm "theorem" |> p2r) #> proof
                                     #> pack >>>
-                                    (fn (v,((t,(n,(l,stmt))),prf)) =>
+                                    (fn (v,((t,(n,(a,(l,stmt)))),prf)) =>
                                       (v,Theorem {name=n,
-                                                target=t,
-                                                statement=stmt,
-					        local_data=the_default 
-                                                 emptyLocalData l,
-                                                proof=prf})),
+                                                  attrs=a,
+                                                  target=t,
+                                                  statement=stmt,
+					          local_data=the_default 
+                                                   emptyLocalData l,
+                                                  proof=prf})),
                                    p (unparse_cmd "text") >>>
                                    (fn (v,v1) => (v,Text v1)),
                                    p (unparse_cmd "section") >>>
@@ -394,7 +401,13 @@ struct
                                    (fn (v,v1) => (v,MiscCmd ("value",v1))),
                                    p (unparse_cmd "unused_thms") >>>
                                    (fn (v,v1) =>
-                                     (v,MiscCmd ("unused_thms",v1)))])
+                                     (v,MiscCmd ("unused_thms",v1))),
+                                   p (unparse_cmd "ML_file") >>>
+                                   (fn (v,v1) =>
+                                     (v,MiscCmd ("ML_file",v1))),
+                                   p (unparse_cmd "setup") >>>
+                                   (fn (v,v1) =>
+                                     (v,MiscCmd ("setup",v1)))])
                    #> e (parse_theory_end |> p2r)
                    #> expect_end >>> (fn ((h,(n,(i,k))),b) =>
                        ParsedTheory {header = h,
