@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {- |
 Module      :  $Header$
 Description :  abstract Isabelle HOL and HOLCF syntax
@@ -17,6 +18,7 @@ module Isabelle.IsaSign where
 
 import qualified Data.Map as Map
 import Data.List
+import Common.Utils (splitOn)
 
 --------------- not quite from src/Pure/term.ML ------------------------
 ------------------------ Names -----------------------------------------
@@ -41,6 +43,20 @@ instance Eq VName where
 
 instance Ord VName where
     v1 <= v2 = new v1 <= new v2
+
+data QName = QName
+    { qname      :: String
+    , qualifiers :: [String] }
+
+instance Show QName where
+    show q = intercalate "." $ qualifiers q ++ [qname q]
+
+deriving instance Eq QName
+deriving instance Ord QName
+
+mkQName :: String -> QName
+mkQName s = let (n:q) = splitOn '.' s
+            in QName {qname=n,qualifiers=q}
 
 {- | Indexnames can be quickly renamed by adding an offset to
    the integer part, for resolution. -}
@@ -133,7 +149,64 @@ data Sentence =
   -- |Isabelle syntax for grouping multiple lemmas in to a single lemma.
   | Lemmas { lemmaName :: String
            , lemmasList :: [String]}
+
+  | Locale { localeName    :: QName,
+             localeFixes   :: [(String,Typ)],
+             localeAssumes :: [(String,Term)],
+             localeParents :: [QName],
+             localeBody    :: [Sentence] }
+  | Class { className    :: QName,
+            classFixes   :: [(String,Typ)],
+            classAssumes :: [(String,Term)],
+            classParents :: [QName],
+            classBody    :: [Sentence] }
+  | Datatypes [Datatype]
+  | Consts [(String,Typ)]
+  | TypeSynonym QName [String] Typ
+  | Axioms [Axiom]
+  | Lemma {
+     lemmaTarget  :: Maybe QName,
+     lemmaFixes   :: [(String,Typ)],
+     lemmaAssumes :: [(String,Term)],
+     lemmaProof   :: Maybe String,
+     lemmaShows   :: [LemmaShows] }
+  | Definition {
+     definitionName :: Maybe QName,
+     definitionTarget :: Maybe String,
+     definitionType :: Maybe Typ,
+     definitionTerm :: Term }
+  | Fun {
+     funTarget     :: Maybe QName,
+     funSequential :: Bool,
+     funDefault    :: Maybe String,
+     funDomintros  :: Bool,
+     funPartials   :: Bool,
+     funSigs       :: [FunSig],
+     funEquations  :: [Term] }
     deriving (Eq, Ord, Show)
+
+data Datatype = Datatype {
+      datatypeName         :: QName,
+      datatypeTVars        :: [String],
+      datatypeConstructors :: [DatatypeConstructor] } deriving (Eq, Ord, Show)
+
+data DatatypeConstructor = DatatypeConstructor {
+      constructorName :: QName,
+      constructorArgs :: [Typ] } deriving (Eq, Ord, Show)
+
+data Axiom = Axiom {
+      axiomName :: QName,
+      axiomArgs :: String,
+      axiomTerm :: Term } deriving (Eq, Ord, Show)
+
+data LemmaShows = LemmaShows {
+      showsName :: QName,
+      showsArgs  :: String,
+      showsTerms :: [[Term]] } deriving (Eq, Ord, Show)
+
+data FunSig = FunSig {
+       funSigName :: QName,
+       funSigType :: Maybe Typ } deriving (Eq, Ord, Show)
 
 -- Other SetDecl variants to be added later
 data SetDecl
@@ -268,6 +341,9 @@ data BaseSig =
 
 data Sign = Sign
   { theoryName :: String
+  , header :: Maybe String
+  , keywords :: [String]
+  , uses :: [String]
   , baseSig :: BaseSig -- like Main etc.
   , imports :: [String] -- additional imports
   , tsig :: TypeSig
@@ -294,6 +370,9 @@ type DomainEntry = (Typ, [(VName, [Typ])])
 emptySign :: Sign
 emptySign = Sign
   { theoryName = "thy"
+  , header = Nothing
+  , keywords = []
+  , uses = []
   , baseSig = Main_thy
   , imports = []
   , tsig = emptyTypeSig

@@ -235,6 +235,15 @@ printNamedSen ns =
   RecDef {} -> d
   Lemmas {} -> d
   Instance {} -> d
+  Locale {} -> d
+  Class {} -> d
+  Datatypes _ -> d
+  Consts _ -> d
+  TypeSynonym _ _ _ -> d
+  Axioms _ -> d
+  Lemma {} -> d
+  Definition {} -> d
+  Fun {} -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
               <+> dd $+$ text refuteS
@@ -291,6 +300,93 @@ printSentence s = case s of
                                    the list -}
                         else text lemmasS <+> text name <+>
                              equals <+> sep (map text lemmas)
+  l@(Locale _ _ _ _ _) ->
+   let h       = text "locale" <+> text (show $ localeName l) 
+       parents = Data.List.intersperse (text "+") $
+                  map (text . show) (localeParents l)
+       (fixes,assumes) = printContext (localeFixes l) (localeAssumes l)
+   in printFixesAssumes h parents assumes fixes
+  c@(Class _ _ _ _ _) ->
+   let h       = text "class" <+> text (show $ className c)
+       parents = Data.List.intersperse (text "+") $
+                  map (text . show) (classParents c)
+       (fixes,assumes) = printContext (classFixes c) (classAssumes c)
+   in printFixesAssumes h parents assumes fixes
+  (Datatypes dts) -> if null dts then empty
+                     else text "datatype" <+>
+                        andDocs (map (\d ->
+                        let vars = map text $ datatypeTVars d
+                            name = text $ show $ datatypeName d
+                            pretty_cs = \c ->
+                             let cname = show $ constructorName c
+                                 cname' = if any isSpace cname
+                                          then doubleQuotes (text cname)
+                                          else text cname
+                                 tps   = map (doubleQuotes . printType) $
+                                         constructorArgs c
+                             in hsep (cname':tps)
+                            cs   = map pretty_cs $ datatypeConstructors d
+                        in hsep vars <+> name <+> text "=" <+>
+                           fsep (bar $ cs)) dts)
+  Consts cs -> if null cs then empty
+               else vsep $ [text "consts"] ++
+                     map (\(n,t) -> text n <+> text "::" <+>
+                                    doubleQuotes (printType t)) cs
+  TypeSynonym n vs tp -> hsep $ [text "type_synonym",
+                                 text $ show n,text "="] ++ map text vs
+                                ++ [doubleQuotes . printType $ tp]
+  Axioms axs -> if null axs then empty
+                else vsep $ [text "axioms"] ++
+                      map (\a -> text (show $ axiomName a) <+>
+                                 (if axiomArgs a /= ""
+                                  then brackets (text $ axiomArgs a)
+                                  else empty) <+> text ":" <+>
+                                 doubleQuotes (printTerm $ axiomTerm a)) axs
+  l@(Lemma _ _ _ _ _) -> 
+   let (fixes,assumes) = printContext (lemmaFixes l) (lemmaAssumes l)
+   in text "lemma" <+> (case lemmaTarget l of
+                           Just t  -> braces (text "in" <+> (text $ show t))
+                           Nothing -> empty) <+>
+                           (case (null fixes,null assumes,lemmaShows l) of
+                            (True,True,[sh]) -> printNamedTerm (showsName sh)
+                             (showsArgs sh) (showsTerms sh)
+                            _ -> vsep $ fixes ++ assumes
+                                        ++ map (\sh -> 
+                                  text "shows" <+> printNamedTerm (showsName sh)
+                                   (showsArgs sh) (showsTerms sh))
+                                    (lemmaShows l)) $+$ (case lemmaProof l of
+                                       Just p -> text p
+                                       Nothing -> empty)
+  d@(Definition _ _ _ _) -> fsep [text "definition" <+>
+   (case definitionTarget d of
+     Just t  -> braces (text "in" <+> (text $ show t))
+     Nothing -> empty) <+>
+   (case (definitionName d,definitionType d) of
+     (Just n,Just t)  -> text (show n) <+> text "::" <+>
+                         doubleQuotes (printType t)
+     (Just n,Nothing) -> text (show n)
+     _ -> empty), text "where" <+>
+   doubleQuotes (printTerm (definitionTerm d))]
+
+printContext :: [(String,Typ)] -> [(String,Term)] -> ([Doc],[Doc])
+printContext fixes assumes =
+ let fixes'   = map (\(n,tp) -> if n == "" then empty else text n <+> text "::"
+                       <+> (doubleQuotes . printTyp Null) tp)
+                     fixes
+     assumes' = map (\(n,tm) -> if n == "" then empty else text n <+> text ":"
+                       <+> (doubleQuotes . printTerm) tm)
+                     assumes
+ in (fixes',assumes')
+
+printNamedTerm :: QName -> String -> [[Term]] -> Doc
+printNamedTerm name args tms =
+ let name' = show name
+ in (if name' == "" then empty
+     else text name' <+> (if args /= ""
+      then brackets (text args)
+      else empty) <+> text ":") <+>
+    andDocs (map (hcat . map (doubleQuotes . printTerm)) tms)
+
 
 printSetDecl :: SetDecl -> Doc
 printSetDecl setdecl =

@@ -712,7 +712,7 @@ struct
 		fun xml_of_statement state target (Element.Shows s) =
                     List.map (fn (b,tms) =>
                      xml "Shows" (attrs_of_binding b)
-                      (List.map (fn (t,ts) => xml "show" [] (List.map
+                      (List.map (fn (t,ts) => xml "Show" [] (List.map
                         (Parser.read_term Proof_Context.mode_default
                          state target #> XML_Syntax.xml_of_term)
                       (t::ts))) tms)) s
@@ -782,11 +782,11 @@ struct
                               @attr_of_mixfix mx) (List.map
                                (Parser.read_typ s1 NONE #>
                                 XML_Syntax.xml_of_type) tms)) cs
-                           @[xml "Vars" [] (List.map (fn (v,s) =>
+                           @(List.map (fn (v,s) =>
                             XML_Syntax.xml_of_type (TFree (v,
                              case s of
                               SOME(s') => [s']
-                             |NONE     => []))) vars)])) dts
+                             |NONE     => []))) vars))) dts
                    in (xml "Datatypes" [] dts', s1) end
 		 |Consts cs => (xml "Consts" [] (List.map
                    (fn (name,tp,mx) => xml "Const"
@@ -795,7 +795,7 @@ struct
                     [Parser.read_typ state NONE tp
                      |> XML_Syntax.xml_of_type]) cs), trans state toks)
 		 |Axioms axs => (xml "Axioms" [] (List.map
-                   (fn (b,tm) => xml "Axioms"
+                   (fn (b,tm) => xml "Axiom"
                     (attrs_of_binding b)
                     [Parser.read_term Proof_Context.mode_default state NONE tm
                      |> XML_Syntax.xml_of_term]) axs), trans state toks)
@@ -819,7 +819,8 @@ struct
                                    |NONE => ([],[])
                        val tm' = [Parser.read_term Proof_Context.mode_default
                             state target tm |> XML_Syntax.xml_of_term]
-                   in (xml "Definition" attrs (tp'@tm'),s1) end
+                   in (xml "Definition" (attrs@attr_of_target target)
+                        (tp'@tm'),s1) end
 		 |Fun (target,((cfg,f),a)) =>
                    let val s1 = trans state toks
                        val fixes = List.map (fn (b,typ,mixfix) =>
@@ -882,5 +883,6 @@ struct
                                    |NONE   => []
 		val (s,t)        = ParserHelper.init_thy (th,h)
 		val body'        = [xml_of_body (s,t) body]
-            in xml "Thy" (name::header') (imports@keywords@body') end;
+            in xml "Export" []
+               [xml "Thy" (name::header') (imports@keywords@body')] end;
 end;

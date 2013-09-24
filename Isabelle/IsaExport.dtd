@@ -1,39 +1,92 @@
-<!ELEMENT IsaExport (IsaTheory*)>
-<!ELEMENT IsaTheory (Import*,Axiom*,Theorem*,Const*,RecDatatypes*,Function*,ClassDef*,Locale*)>
-  <!ATTLIST IsaTheory name CDATA #REQUIRED>
+<!ELEMENT Export (Thy+)>
+<!ELEMENT Thy (Import+,Keyword*,UseFile*,Body)>
+  <!ATTLIST Thy name CDATA #REQUIRED>
+  <!ATTLIST Thy header CDATA #IMPLIED>
+<!-- Header -->
+<!ELEMENT Keyword EMPTY>
+  <!ATTLIST Keyword name CDATA #REQUIRED>
 <!ELEMENT Import EMPTY>
   <!ATTLIST Import name CDATA #REQUIRED>
-<!ELEMENT Axiom (Bound|Free|Var|Const|App|Abs)>
-  <!ATTLIST Axiom name CDATA #REQUIRED>
-<!ELEMENT Theorem (Bound|Free|Var|Const|App|Abs)>
-  <!ATTLIST Theorem name CDATA #REQUIRED>
+<!ELEMENT UseFile EMPTY>
+  <!ATTLIST UseFile name CDATA #REQUIRED>
+
+<!-- Body -->
+<!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Fun)*>
+
+<!ELEMENT Locale (Fixes?,Assumes?,Parent*,Body)>
+  <!ATTLIST Locale name CDATA #REQUIRED>
+
+<!ELEMENT Cls (Fixes?,Assumes?,Parent*,Body)>
+  <!ATTLIST Cls name CDATA #REQUIRED>
+
+<!ELEMENT TypeSynonym (Vars,(TVar|TFree|Type))>
+  <!ATTLIST TypeSynonym name CDATA #REQUIRED>
+  <!ATTLIST TypeSynonym mixfix CDATA #IMPLIED>
+  <!ATTLIST TypeSynonym target CDATA #IMPLIED>
+
+<!ELEMENT Datatypes (Datatype+)>
+<!ELEMENT Datatype (Constructor+,TFree*)>
+  <!ATTLIST Datatype name CDATA #REQUIRED>
+  <!ATTLIST Datatype mixfix CDATA #REQUIRED>
+<!ELEMENT Constructor ((TVar|TFree|Type)*)>
+  <!ATTLIST Constructor name CDATA #REQUIRED>
+  <!ATTLIST Constructor mixfix CDATA #IMPLIED>
+
+<!ELEMENT Consts (Const+)>
 <!ELEMENT Const (TVar|TFree|Type)>
   <!ATTLIST Const name CDATA #REQUIRED>
-<!ELEMENT RecDatatypes (Datatype*)>
-<!ELEMENT Datatype ((TVar|TFree|Type)*,Constructor*)>
-  <!ATTLIST Datatype name CDATA #REQUIRED>
-<!ELEMENT Constructor (TVar|TFree|Type)*>
-  <!ATTLIST Constructor name CDATA #REQUIRED>
-<!ELEMENT Function ((TVar|TFree|Type),Equations*)>
-  <!ATTLIST Function name CDATA #REQUIRED>
-<!ELEMENT Equations (Bound|Free|Var|Const|App|Abs)*>
-<!ELEMENT ClassDef (Parent*,Assumption*,ClassParam*)>
-  <!ATTLIST ClassDef name CDATA #REQUIRED>
+  <!ATTLIST Const mixfix CDATA #IMPLIED>
+
+<!ELEMENT Axioms (Axiom)+>
+<!ELEMENT Axiom (Bound|Free|Var|Const|App|Abs)>
+  <!ATTLIST Axiom name CDATA #REQUIRED>
+  <!ATTLIST Axiom args CDATA #REQUIRED>
+
+<!ELEMENT Lemma (Assumes?,Fixes?,Proof,(Shows)+)>
+  <!ATTLIST Lemma target CDATA #IMPLIED>
+
+<!ELEMENT Definition ((TVar|TFree|Type)?,(Bound|Free|Var|Const|App|Abs))>
+  <!ATTLIST Definition name CDATA #IMPLIED>
+  <!ATTLIST Definition target CDATA #IMPLIED>
+  <!ATTLIST Definition mixfix CDATA #IMPLIED>
+
+<!ELEMENT Fun (FunSig+,(Bound|Free|Var|Const|App|Abs)+)>
+  <!ATTLIST Fun target CDATA #IMPLIED>
+  <!ATTLIST Fun sequential CDATA #IMPLIED>
+  <!ATTLIST Fun default CDATA #IMPLIED>
+  <!ATTLIST Fun domintros CDATA #IMPLIED>
+  <!ATTLIST Fun partials CDATA #IMPLIED>
+<!ELEMENT FunSig (TVar|TFree|Type)?>
+  <!ATTLIST FunSig name CDATA #REQUIRED>
+  <!ATTLIST FunSig mixfix CDATA #IMPLIED>
+
+<!ELEMENT Primrec (FunSig+,(Bound|Free|Var|Const|App|Abs)+)>
+  <!ATTLIST Primrec target CDATA #IMPLIED>
+
+<!ELEMENT Vars (TFree*)>
+
 <!ELEMENT Parent EMPTY>
   <!ATTLIST Parent name CDATA #REQUIRED>
+
+<!ELEMENT Fixes (Fix*)>
+<!ELEMENT Fix (TVar|TFree|Type)>
+  <!ATTLIST Fix name CDATA #REQUIRED>
+  <!ATTLIST Fix mixfix CDATA #IMPLIED>
+
+<!ELEMENT Assumes (Assumption*)>
 <!ELEMENT Assumption (Bound|Free|Var|Const|App|Abs)>
   <!ATTLIST Assumption name CDATA #REQUIRED>
-<!ELEMENT ClassParam (TVar|TFree|Type)>
-  <!ATTLIST ClassParam name CDATA #REQUIRED>
-<!ELEMENT Locale (LocaleParam*,Assumption*,Theorem*,Parent*)>
-  <!ATTLIST Locale name CDATA #REQUIRED>
-<!ELEMENT LocaleParam (TVar|TFree|Type)>
-  <!ATTLIST LocaleParam name CDATA #REQUIRED>
-  <!ATTLIST LocaleParam infix CDATA #IMPLIED>
-  <!ATTLIST LocaleParam infixl CDATA #IMPLIED>
-  <!ATTLIST LocaleParam infixr CDATA #IMPLIED>
-  <!ATTLIST LocaleParam mixfix_i CDATA #IMPLIED>
+  <!ATTLIST Assumption args CDATA #REQUIRED>
 
+<!ELEMENT Proof (#PCDATA)>
+
+<!ELEMENT Shows (Show+)>
+  <!ATTLIST Shows name CDATA #REQUIRED>
+  <!ATTLIST Shows args CDATA #REQUIRED>
+
+<!ELEMENT Show (Bound|Free|Var|Const|App|Abs)+>
+
+<!-- Term -->
 <!ELEMENT Bound EMPTY>
   <!ATTLIST Bound index CDATA #REQUIRED>
 <!ELEMENT Free (TVar|TFree|Type)>
@@ -43,13 +96,11 @@
   <!ATTLIST Var index CDATA #IMPLIED>
 <!ELEMENT Const (TVar|TFree|Type)>
   <!ATTLIST Const name CDATA #REQUIRED>
-  <!ATTLIST Const infix CDATA #IMPLIED>
-  <!ATTLIST Const infixl CDATA #IMPLIED>
-  <!ATTLIST Const infixr CDATA #IMPLIED>
-  <!ATTLIST Const mixfix_i CDATA #IMPLIED>
 <!ELEMENT App ((Bound|Free|Var|Const|App|Abs), (Bound|Free|Var|Const|App|Abs))>
 <!ELEMENT Abs ((TVar|TFree|Type), (Bound|Free|Var|Const|App|Abs))>
   <!ATTLIST Abs vname CDATA #REQUIRED>
+
+<!-- Type -->
 <!ELEMENT TVar (Class*)>
   <!ATTLIST TVar name CDATA #REQUIRED>
   <!ATTLIST TVar index CDATA #IMPLIED>

@@ -32,13 +32,13 @@ import Common.IRI (simpleIdToIRI)
 
 import Isabelle.Logic_Isabelle
 import Isabelle.IsaSign
-import Isabelle.IsaConsts (mkVName)
-import Isabelle.IsaImport (importIsaDataIO)
+import Isabelle.IsaImport (importIsaDataIO,IsaData)
 
 import Driver.Options
 
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph (Node)
+import Data.List (intercalate)
 
 import Control.Monad (unless)
 import Control.Concurrent (forkIO,killThread)
@@ -47,9 +47,6 @@ import Common.Utils
 import System.Exit
 import System.Directory
 import System.FilePath
-
-makeNamedSentence :: (String, Term) -> Named Sentence
-makeNamedSentence (n, t) = makeNamed n $ mkSen t
 
 _insNodeDG :: Sign -> [Named Sentence] -> String
               -> DGraph -> (DGraph,Node)
@@ -105,23 +102,33 @@ anaThyFile opts path = do
    removeFile tempFile
    return ret
 
-mkNode :: (String,[String],[(String,Typ)],
-     [(String,Term)], [(String,Term)],
-     DomainTab, [(String,FunDef)],
-     [(IsaClass,ClassDecl)],
-     [(String,LocaleDecl)]) -> (DGraph,Map.Map String (Node,Sign)) ->
+mkNode :: IsaData -> (DGraph,Map.Map String (Node,Sign)) ->
      (DGraph,Map.Map String (Node,Sign))
-mkNode (name,imps,consts,axioms,theorems,types,funs',classes,locales') (dg,m) =
- let sens = map makeNamedSentence $ axioms ++ theorems
-     sgn' = emptySign { constTab = foldl (\ m_ (n',t) -> Map.insert (mkVName n')
-                                          t m_) Map.empty consts,
-                       domainTab = types, imports = imps, baseSig = Custom_thy,
-                       tsig = emptyTypeSig { classrel = Map.fromList classes,
-                                             locales  = Map.fromList locales',
-                                             funs     = Map.fromList funs' }}
+mkNode (name,header',imps,keywords',uses',body) (dg,m) =
+ let sens = map (\sen ->
+             let name' = case sen of
+                  Locale n' _ _ _ _ -> "locale " ++ qname n'
+                  Class  n' _ _ _ _ -> "class " ++ qname n'
+                  Datatypes dts -> "datatype " ++ (intercalate "_" $
+                                     map (qname . datatypeName) dts)
+                  Consts cs -> "consts " ++ (intercalate "_" $
+                                             map fst cs)
+                  TypeSynonym n' _ _ -> "type_synonym " ++ qname n'
+                  Axioms axs -> "axioms " ++ (intercalate "_" $ 
+                                 map (qname . axiomName) axs)
+                  Lemma _ _ _ _ s -> "lemma " ++ (intercalate "_" $
+                                      map (qname . showsName) s)
+                  Definition n' _ _ _ -> "definition " ++ (show n')
+                  Fun _ _ _ _ _ fsigs _ -> "fun " ++ (intercalate "_" $
+                                            map (qname . funSigName) fsigs)
+                  _ -> ""
+             in makeNamed name' sen) body
      sgns = Map.foldWithKey (\k a l ->
              if elem k imps then (snd a):l else l) [] m
-     sgn  = foldl union_sig sgn' sgns
+     sgn  = foldl union_sig (emptySign { imports  = imps,
+                                         header   = header',
+                                         keywords = keywords',
+                                         uses = uses' }) sgns
      (dg',n) = _insNodeDG sgn sens name dg
      m'      = Map.insert name (n,sgn) m
      dgRet   = foldr (\imp dg'' ->
