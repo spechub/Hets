@@ -22,7 +22,7 @@ structure TheoryData = struct
                                                 * Element.context list);
 	datatype instance_type = InstanceArity of string list * string list *
                                                   string
-                                |InstanceSubset of string * string;
+                                |InstanceSubset of string * string * string;
 	datatype thy_body =
          Classes of (binding * string list) list
         |Classrel of (string * string) list
@@ -98,7 +98,7 @@ structure TheoryData = struct
 	|Subclass of string * proof
 	|Instantiation of (string list * string list * string) *
                           (orig * thy_body) list
-	|Instance of ((string * instance_type) option) * proof
+	|Instance of (instance_type option) * proof
 	|Overloading of (bstring * string * bool) list * (orig * thy_body) list
 	|Theorem of (((opt_target * Attrib.binding) *
                       (xstring * Position.T) list) *
@@ -425,9 +425,10 @@ struct
           >> Interpret),
 	("subclass",                                       (* line 471 *)
 	 Parse.class -- proof >> Subclass),
-	("instance",Scan.option (Parse.class --            (* line 481 *)
-         (((@{keyword "\<subseteq>"} || @{keyword "<"})
-          -- Parse.!!! Parse.class) >> InstanceSubset
+	("instance",Scan.option (                          (* line 481 *)
+         ((Parse.class -- (@{keyword "\<subseteq>"}
+                        || @{keyword "<"})
+          -- Parse.!!! Parse.class) >> Parse.triple1 >> InstanceSubset
          || Parse.multi_arity >> InstanceArity))
          -- proof >> Instance),
         ("theorem", parse_theorem -- proof >> Theorem),    (* line 525 *)
@@ -920,15 +921,18 @@ struct
 		  fn Instance (head,proof) =>
                   let val s1 = trans state toks
                       val (attrs,elems) = case head of
-                           SOME (cls,InstanceArity arity) =>
+                           SOME (InstanceArity arity) =>
                             let val (names,args',sort)  =
                                  Class.read_multi_arity
                                   (Toplevel.theory_of state) arity
                                 val args = List.map #2 args'
-                            in (a "class" cls,
-                                ([xml_of_sort names,xml_of_arity (args,sort)]))
+				val vars = xml "Vars" [] (List.map (fn s =>
+                                     TFree (s,[]) |> XML_Syntax.xml_of_type)
+                                    names)
+                            in ([],
+                                ([vars,xml_of_arity (args,sort)]))
                             end
-                          |SOME (cls,InstanceSubset (rel,cls1)) =>
+                          |SOME (InstanceSubset (cls,rel,cls1)) =>
                            (a "class" cls@a "rel" rel@a "class1" cls1,[])
                           |NONE => ([],[])
                   in (xml "Instance" attrs
