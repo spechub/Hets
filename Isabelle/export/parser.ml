@@ -899,8 +899,45 @@ struct
                                      (string_of_binding name) mixfix
                                      (List.length vars))))
                      |> (curry AddType) (string_of_binding name);
+		fun xml_of_sort s = xml "Sort" []
+                 (List.map (fn n => xml "class" (a "name" n) []) s)
+                fun xml_of_arity (s,s') = xml "Arity" []
+                     (List.map xml_of_sort (s'::s))
         in fun xml_of_body_elem ((toks,e),((state,trans),l)) =
-            let val (elem,state')   = variant "xml_of_body" [
+            let val (elem,state')   = variant "xml_of_body" PolyML.makestring [
+		  fn Instantiation (arity,body) =>
+                  let val ([name],args',sort)  = Class.read_multi_arity
+                       (Toplevel.theory_of state) arity
+                      val args = List.map #2 args'
+                      val (begin_,end_) = extract_context toks body
+                      val s1 = trans state begin_
+                      val ((s2,_),b_elems) =
+                           List.foldl xml_of_body_elem ((s1,trans),[]) body
+                      val s3 = trans s2 end_
+                  in (xml "Instantiation" (a "type" name)
+                       ([xml_of_arity (args,sort)]@
+                        [xml "Body" [] (List.rev b_elems)]),s3) end,
+		  fn Instance (head,proof) =>
+                  let val s1 = trans state toks
+                      val (attrs,elems) = case head of
+                           SOME (cls,InstanceArity arity) =>
+                            let val (names,args',sort)  =
+                                 Class.read_multi_arity
+                                  (Toplevel.theory_of state) arity
+                                val args = List.map #2 args'
+                            in (a "class" cls,
+                                ([xml_of_sort names,xml_of_arity (args,sort)]))
+                            end
+                          |SOME (cls,InstanceSubset (rel,cls1)) =>
+                           (a "class" cls@a "rel" rel@a "class1" cls1,[])
+                          |NONE => ([],[])
+                  in (xml "Instance" attrs
+                       ([xml "Proof" [] [XML.Text proof]]@elems), s1) end,
+		  fn Subclass (cls,proof) =>
+                  let val s1 = trans state toks
+                  in (xml "Subclass" (a "class" cls)
+                      [xml "Proof" [] [XML.Text proof]],
+                      s1) end,
                   fn Locale ((name,(parents,ctxt)),body) =>
                   let val (begin_,end_) = extract_context toks body
                        val s1 = trans state begin_
