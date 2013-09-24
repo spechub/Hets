@@ -1,1 +1,3 @@
 text/x-isabelle; hets -v -g %s
+text/x-hets; hets -v -g %s
+text/x-casl; hets -v -g %s

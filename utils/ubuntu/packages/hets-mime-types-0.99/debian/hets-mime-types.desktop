@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=HETS
+Name=HETS GUI
 Exec=hets -v -g %f
 Terminal=true
 Type=Application
-MimeType=text/x-isabelle
+MimeType=text/x-isabelle;text/x-hets;text/x-casl

@@ -4,4 +4,12 @@
 		<comment>Isabelle theory file</comment>
 		<glob pattern="*.thy" />
 	</mime-type>
+	<mime-type type="text/x-hets">
+                <comment>HETS file</comment>
+                <glob pattern="*.het" />
+        </mime-type>
+	<mime-type type="text/x-casl">
+		<comment>CASL file</comment>
+		<glob pattern="*.casl" />
+	</mime-type>
 </mime-info>
