@@ -65,7 +65,7 @@ hXmlBody_2IsaSentence (Body_Lemma (Lemma a ctxt (Proof proof)
     IsaSign.propsArgs  = if null $ showsArgs a then Nothing
                          else Just $ showsArgs a,
     IsaSign.props      = map (\(AShow (NonEmpty l)) ->
-                          case map hXmlAShow_2IsaTerm l of
+                          case map (hXmlOneOf6_2IsaTerm []) l of
                            t:tms -> IsaSign.Prop {IsaSign.prop = t,
                                                   IsaSign.propPats = tms}
                            _ -> error "This should not happen!") tms}) shows }
@@ -101,11 +101,14 @@ hXmlBody_2IsaSentence (Body_Fun (Fun a sig (NonEmpty fsigs) (NonEmpty tms))) =
 hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
 hXmlCtxt2IsaCtxt (Ctxt fixes' assumes') = IsaSign.Ctxt {
   IsaSign.fixes   = case fixes' of
-                          Just (Fixes fixes) -> map hXmlFix2IsaNamedTyp fixes
+                          Just (Fixes fixes) ->
+                           map (\(Fix a t) -> (fixName a, maybe Nothing
+                                  (Just . hXmlOneOf3_2IsaTyp) t)) fixes
                           _ -> [],
   IsaSign.assumes = case assumes' of
                           Just (Assumes assumes) ->
-                           map hXmlAssumption2IsaNamedTerm assumes
+                           map (\(Assumption a tm) -> (assumptionName a,
+                                  hXmlOneOf6_2IsaTerm [] tm)) assumes
                           _ -> [] }
 
 hXmlSigData2IsaSigData :: SigData -> IsaSign.SigData
@@ -155,102 +158,19 @@ hXmlDatatype2IsaDatatype (Datatype a sig (NonEmpty cs) vars) =
     IsaSign.constructorName = IsaSign.mkQName $ constructorName a,
     IsaSign.constructorArgs = map hXmlOneOf3_2IsaTyp tps }) cs }
 
-hXmlFix2IsaNamedTyp :: Fix -> (String,Maybe IsaSign.Typ)
-hXmlFix2IsaNamedTyp (Fix a (Just (Fix_TVar v))) =
- (fixName a,Just $ hXmlOneOf3_2IsaTyp (OneOf3 v))
-hXmlFix2IsaNamedTyp (Fix a (Just (Fix_TFree v))) =
- (fixName a,Just $ hXmlOneOf3_2IsaTyp (TwoOf3 v))
-hXmlFix2IsaNamedTyp (Fix a (Just (Fix_Type v))) =
- (fixName a,Just $ hXmlOneOf3_2IsaTyp (ThreeOf3 v))
-hXmlFix2IsaNamedTyp (Fix a Nothing) = (fixName a,Nothing)
-
-hXmlAssumption2IsaNamedTerm :: Assumption -> (String,IsaSign.Term)
-hXmlAssumption2IsaNamedTerm (AssumptionBound a b) =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
-hXmlAssumption2IsaNamedTerm (AssumptionFree a f)  =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
-hXmlAssumption2IsaNamedTerm (AssumptionVar a v)   =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
-hXmlAssumption2IsaNamedTerm (AssumptionConst a c) =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
-hXmlAssumption2IsaNamedTerm (AssumptionApp a ap)  =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
-hXmlAssumption2IsaNamedTerm (AssumptionAbs a ab)  =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
-
-hXmlAShow_2IsaTerm :: AShow_ -> IsaSign.Term
-hXmlAShow_2IsaTerm (AShow_Bound b) = hXmlOneOf6_2IsaTerm [] $ OneOf6 b
-hXmlAShow_2IsaTerm (AShow_Free f)  = hXmlOneOf6_2IsaTerm [] $ TwoOf6 f
-hXmlAShow_2IsaTerm (AShow_Var v)   = hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v
-hXmlAShow_2IsaTerm (AShow_Const c) = hXmlOneOf6_2IsaTerm [] $ FourOf6 c
-hXmlAShow_2IsaTerm (AShow_App ap)  = hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap
-hXmlAShow_2IsaTerm (AShow_Abs ab)  = hXmlOneOf6_2IsaTerm [] $ SixOf6 ab
-
 hXmlAxiom2IsaAxiom :: Axiom -> IsaSign.Axiom
-hXmlAxiom2IsaAxiom (AxiomBound a b) =
+hXmlAxiom2IsaAxiom (Axiom a tm) =
  IsaSign.Axiom {
   IsaSign.axiomName = IsaSign.mkQName $ axiomName a,
   IsaSign.axiomArgs = axiomArgs a,
-  IsaSign.axiomTerm = hXmlOneOf6_2IsaTerm [] $ OneOf6 b }
-hXmlAxiom2IsaAxiom (AxiomFree a f)  =
- IsaSign.Axiom {
-  IsaSign.axiomName = IsaSign.mkQName $ axiomName a,
-  IsaSign.axiomArgs = axiomArgs a,
-  IsaSign.axiomTerm = hXmlOneOf6_2IsaTerm [] $ TwoOf6 f }
-hXmlAxiom2IsaAxiom (AxiomVar a v)   =
- IsaSign.Axiom {
-  IsaSign.axiomName = IsaSign.mkQName $ axiomName a,
-  IsaSign.axiomArgs = axiomArgs a,
-  IsaSign.axiomTerm = hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v }
-hXmlAxiom2IsaAxiom (AxiomConst a c) =
- IsaSign.Axiom {
-  IsaSign.axiomName = IsaSign.mkQName $ axiomName a,
-  IsaSign.axiomArgs = axiomArgs a,
-  IsaSign.axiomTerm = hXmlOneOf6_2IsaTerm [] $ FourOf6 c }
-hXmlAxiom2IsaAxiom (AxiomApp a ap)  =
- IsaSign.Axiom {
-  IsaSign.axiomName = IsaSign.mkQName $ axiomName a,
-  IsaSign.axiomArgs = axiomArgs a,
-  IsaSign.axiomTerm = hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap }
-hXmlAxiom2IsaAxiom (AxiomAbs a ab)  =
- IsaSign.Axiom {
-  IsaSign.axiomName = IsaSign.mkQName $ axiomName a,
-  IsaSign.axiomArgs = axiomArgs a,
-  IsaSign.axiomTerm = hXmlOneOf6_2IsaTerm [] $ SixOf6 ab }
-
-hXmlConst2IsaConst :: Const -> (String,IsaSign.Typ)
-hXmlConst2IsaConst (ConstTVar  a v) =
- (constName a, hXmlOneOf3_2IsaTyp $ OneOf3 v)
-hXmlConst2IsaConst (ConstTFree a f) =
- (constName a, hXmlOneOf3_2IsaTyp $ TwoOf3 f)
-hXmlConst2IsaConst (ConstType  a t) =
- (constName a, hXmlOneOf3_2IsaTyp $ ThreeOf3 t)
-
-hXmlAssumption2NamedIsaTerm :: Assumption -> (String,IsaSign.Term)
-hXmlAssumption2NamedIsaTerm (AssumptionBound a b) =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ OneOf6 b)
-hXmlAssumption2NamedIsaTerm (AssumptionFree a f)  =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ TwoOf6 f)
-hXmlAssumption2NamedIsaTerm (AssumptionVar a v)   =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ ThreeOf6 v)
-hXmlAssumption2NamedIsaTerm (AssumptionConst a c) =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ FourOf6 c)
-hXmlAssumption2NamedIsaTerm (AssumptionApp a ap)  =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ FiveOf6 ap)
-hXmlAssumption2NamedIsaTerm (AssumptionAbs a ab)  =
- (assumptionName a, hXmlOneOf6_2IsaTerm [] $ SixOf6 ab)
-
-hXmlType_2IsaTyp :: Type_ -> IsaSign.Typ
-hXmlType_2IsaTyp (Type_TVar v) = hXmlOneOf3_2IsaTyp (OneOf3 v)
-hXmlType_2IsaTyp (Type_TFree f) = hXmlOneOf3_2IsaTyp (TwoOf3 f)
-hXmlType_2IsaTyp (Type_Type t) = hXmlOneOf3_2IsaTyp (ThreeOf3 t)
+  IsaSign.axiomTerm = hXmlOneOf6_2IsaTerm [] tm }
 
 hXmlClass2IsaClass :: Class -> IsaSign.IsaClass
 hXmlClass2IsaClass = IsaSign.IsaClass . className
 
 hXmlType2IsaTyp :: Type -> IsaSign.Typ
 hXmlType2IsaTyp (Type attrs tps) =
- IsaSign.Type (typeName attrs) IsaConsts.holType (map hXmlType_2IsaTyp tps)
+ IsaSign.Type (typeName attrs) IsaConsts.holType (map hXmlOneOf3_2IsaTyp tps)
 
 hXmlTFree2IsaTyp :: TFree -> IsaSign.Typ
 hXmlTFree2IsaTyp (TFree attrs cls) =
@@ -286,38 +206,23 @@ hXmlOneOf6_2IsaTerm l o = case o of
   (SixOf6 a)  -> hXmlAbs2IsaTerm l a
 
 hXmlConst2IsaTerm :: Const -> IsaSign.Term
-hXmlConst2IsaTerm c = case c of
-  ConstTVar attrs c1 -> const' attrs (OneOf3 c1)
-  ConstTFree attrs c1 -> const' attrs (TwoOf3 c1)
-  ConstType attrs c1 -> const' attrs (ThreeOf3 c1)
- where const' a d =
-        let vname = IsaSign.VName {
-          IsaSign.new = constName a,
-          IsaSign.altSyn = Nothing
-              {- We need to do this so that pretty printing actually works
-                 (see IsaConsts.hs 550+ and
-                 IsaPrint.hs 319 (replaceUnderlines 399)
-                 Maybe the use of alternative Syntax needs to be
-                 completely overhauled?
-              -}
-         }
-        in IsaSign.Const vname
-              $ IsaSign.Hide
-                 (hXmlOneOf3_2IsaTyp d)
-                 IsaSign.NA
-                 Nothing
+hXmlConst2IsaTerm (Const a t) =
+ let vname = IsaSign.VName {
+      IsaSign.new = constName a,
+      IsaSign.altSyn = Nothing }
+ in IsaSign.Const vname $ IsaSign.Hide
+     (hXmlOneOf3_2IsaTyp t) IsaSign.NA Nothing
 
 hXmlApp2IsaTerm :: [String] -> App -> IsaSign.Term
 hXmlApp2IsaTerm l (App f1 f2) = IsaSign.App (hXmlOneOf6_2IsaTerm l f1)
                                           (hXmlOneOf6_2IsaTerm l f2)
                                           IsaSign.NotCont
+
 hXmlAbs2IsaTerm :: [String] -> Abs -> IsaSign.Term
 hXmlAbs2IsaTerm l (Abs attrs t f) = IsaSign.Abs
  (IsaSign.Const (IsaConsts.mkVName . absVname $ attrs)
               $ IsaSign.Disp (hXmlOneOf3_2IsaTyp t)
                              IsaSign.NA
                              Nothing)
- {-(IsaSign.Free (IsaSign.mkVName . absVname $ attrs))-}
  (hXmlOneOf6_2IsaTerm (absVname attrs:l) f)
  IsaSign.NotCont
-

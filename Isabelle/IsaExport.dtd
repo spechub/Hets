@@ -38,7 +38,7 @@
   <!ATTLIST ConstDef mixfix CDATA #IMPLIED>
 
 <!ELEMENT Axioms (Axiom)+>
-<!ELEMENT Axiom (Bound|Free|Var|Const|App|Abs)>
+<!ELEMENT Axiom ((Bound|Free|Var|Const|App|Abs))>
   <!ATTLIST Axiom name CDATA #REQUIRED>
   <!ATTLIST Axiom args CDATA #REQUIRED>
 
@@ -69,12 +69,12 @@
   <!ATTLIST Parent name CDATA #REQUIRED>
 
 <!ELEMENT Fixes (Fix*)>
-<!ELEMENT Fix (TVar|TFree|Type)?>
+<!ELEMENT Fix ((TVar|TFree|Type)?)>
   <!ATTLIST Fix name CDATA #REQUIRED>
   <!ATTLIST Fix mixfix CDATA #IMPLIED>
 
 <!ELEMENT Assumes (Assumption*)>
-<!ELEMENT Assumption (Bound|Free|Var|Const|App|Abs)>
+<!ELEMENT Assumption ((Bound|Free|Var|Const|App|Abs))>
   <!ATTLIST Assumption name CDATA #REQUIRED>
   <!ATTLIST Assumption args CDATA #REQUIRED>
 
@@ -107,7 +107,7 @@
   <!ATTLIST Shows name CDATA #REQUIRED>
   <!ATTLIST Shows args CDATA #REQUIRED>
 
-<!ELEMENT Show (Bound|Free|Var|Const|App|Abs)+>
+<!ELEMENT Show ((Bound|Free|Var|Const|App|Abs)+)>
 
 <!-- Term -->
 <!ELEMENT Bound EMPTY>
@@ -117,7 +117,7 @@
 <!ELEMENT Var (TVar|TFree|Type)>
   <!ATTLIST Var name CDATA #REQUIRED>
   <!ATTLIST Var index CDATA #IMPLIED>
-<!ELEMENT Const (TVar|TFree|Type)>
+<!ELEMENT Const ((TVar|TFree|Type))>
   <!ATTLIST Const name CDATA #REQUIRED>
 <!ELEMENT App ((Bound|Free|Var|Const|App|Abs), (Bound|Free|Var|Const|App|Abs))>
 <!ELEMENT Abs ((TVar|TFree|Type), (Bound|Free|Var|Const|App|Abs))>
@@ -129,7 +129,7 @@
   <!ATTLIST TVar index CDATA #IMPLIED>
 <!ELEMENT TFree (Class*)>
   <!ATTLIST TFree name CDATA #REQUIRED>
-<!ELEMENT Type (TVar|TFree|Type)*>
+<!ELEMENT Type ((TVar|TFree|Type)*)>
   <!ATTLIST Type name CDATA #REQUIRED>
 <!ELEMENT class EMPTY>
  <!ATTLIST class name CDATA #REQUIRED>
