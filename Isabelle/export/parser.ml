@@ -708,19 +708,20 @@ struct
 end;
 
 structure XML_Helper = struct
-	fun variant (vname : string) (fs : ('a -> 'b) list) (v : 'a)
+	fun variant (vname : string) (mk : 'a -> string)
+                    (fs : ('a -> 'b) list) (v : 'a)
              = case get_first (fn f => SOME (f v)
                                 handle General.Match => NONE) fs of
                 SOME result => result
                |NONE        => raise Fail
                  (vname^" not implemented for "^
-                  (PolyML.makestring v |> space_explode " " |> List.hd));
+                  (mk v |> space_explode " " |> List.hd));
 	fun attr (name : string) (f : 'a -> string) (v : 'a) =
              [(name,f v)];
 	fun a (name : string) (v : string) = attr name I v;
 	fun attr_of_option (vname : string) (name : string) (f : 'a -> string)
-             = variant vname [fn SOME v' => attr name f v',
-                              fn NONE    => []];
+             = variant vname (K "") [fn SOME v' => attr name f v',
+                                     fn NONE    => []];
 	fun xml name attrs body = XML.Elem ((name,attrs),body);
         fun xml' name body attrs = xml name attrs body;
 end;
@@ -745,12 +746,12 @@ struct
 	datatype thy = datatype Parser.thy;
 	
 	val xml_of_import  = attr "name" #1 #> xml' "Import" [];
-	val xml_of_keyword = variant "xml_of_keyword"
+	val xml_of_keyword = variant "xml_of_keyword" PolyML.makestring
              [fn (s,SOME ((s1,[]),[])) => a "name" ("\""^s^"\" :: "^s1),
               fn (s,NONE)              => a "name" s] #> xml' "Keyword" [];
 	fun xml_of_use (p,b) = xml "UseFile" (attr "name"
              (Path.print #> b ? (fn s => "("^s^")")) p) [];
-	val xml_of_expr = variant "xml_of_expr"
+	val xml_of_expr = variant "xml_of_expr" PolyML.makestring
              [fn ((name,_),(("",false),Expression.Named [])) =>
                a "name" name] #> xml' "Parent" [];
 	local
@@ -789,22 +790,25 @@ struct
                       Toplevel.context_of state) #> Pretty.string_of)
                       #> space_implode ", ") args;
 		fun xml_of_context state target = variant "xml_of_context"
+                     PolyML.makestring
                      [fn Element.Fixes fixes => List.map (fn (b,tp,mx) =>
                           xml "Fix" (attr_of_binding b@attr_of_mixfix mx)
                                     (xml_of_typ state target tp)) fixes
                        |> xml "Fixes" [],
                       fn Element.Assumes ass => List.map (fn (b,tms) =>
-                             variant "xml_context (Assumes)" [fn [(tm,[])] =>
-                              [Parser.read_term Proof_Context.mode_default
-                               state target tm |> XML_Syntax.xml_of_term]] tms
+                             variant "xml_context (Assumes)"
+                              PolyML.makestring [fn [(tm,[])] =>
+                               [Parser.read_term Proof_Context.mode_default
+                                state target tm |> XML_Syntax.xml_of_term]] tms
                           |> xml "Assumption" (attrs_of_binding state b)) ass
                        |> xml "Assumes" []];
 		fun format_mixfix state name tp = variant "format_mixfix"
+                     PolyML.makestring
                      [fn Mixfix.NoSyn => NONE,
                       fn mx => Parser.format_const_mixfix state name mx tp
                                |> SOME];
 		fun sigdata_of_context state target =
-                     variant "sigdata_of_context" [
+                     variant "sigdata_of_context" PolyML.makestring [
                       fn Element.Fixes fixes => List.map
                        (fn (b,tp,mx) =>
                          let val name = string_of_binding b
@@ -822,7 +826,7 @@ struct
                                      (prod_ord fast_string_ord (K EQUAL))
                    in List.map (fn (name,tp) =>
                        AddConst (name,SOME tp,NONE)) tps end;
-		fun xml_of_symb v = variant "xml_of_symb" [
+		fun xml_of_symb v = variant "xml_of_symb" PolyML.makestring [
                      fn Parser.Arg i =>
                       xml "Arg" (attr "prio" string_of_int i) [],
                      fn Parser.TypArg i =>
@@ -835,11 +839,13 @@ struct
                       xml "Block" (attr "prio" string_of_int i)
                                   (List.map xml_of_symb symbs)] v;
 		val attrs_of_mixfix = variant "attrs_of_mixfix"
-                     [fn SOME (symbs, nargs, prio) =>
+                      PolyML.makestring
+                      [fn SOME (symbs, nargs, prio) =>
                        attr "nargs" string_of_int nargs@
                        attr "prio" string_of_int prio,
                       fn NONE => []];
-		val xml_of_sigdata = List.map (variant "xml_of_sigdata" [
+		val xml_of_sigdata = List.map (variant "xml_of_sigdata"
+                     PolyML.makestring [
                      fn AddConst (n, tp, mx) =>
                       let val attrs = a "name" n@attrs_of_mixfix mx
                           val elems = (Option.map (XML_Syntax.xml_of_type #>
@@ -858,6 +864,7 @@ struct
                         [XML_Syntax.xml_of_type tp]])
                     #> xml "SigData" [];
 		fun xml_of_statement state target = variant "xml_of_statement"
+                     PolyML.makestring
                      [fn Element.Shows s => List.map (fn (b,tms) =>
                        xml "Shows" (attrs_of_binding state b)
                         (List.map (fn (t,ts) => xml "Show" [] (
@@ -893,6 +900,7 @@ struct
                             List.foldl xml_of_body_elem ((s1,trans),[]) body
                        val s3 = trans s2 end_
 		       val parents' = variant "xml_of_body_elem (Locale)"
+                            PolyML.makestring
                             [fn (ps,[]) => List.map xml_of_expr ps] parents
 		       val name'  = attr_of_binding name
 		       val target = SOME (string_of_binding name,Position.none)
