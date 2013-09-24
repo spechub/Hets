@@ -1,8 +1,6 @@
 theory Function
- imports Real
+ imports Definitions
 begin
-
-type_synonym real_vector = "nat \<Rightarrow> real"
 
 fun maximum ::
   "nat \<Rightarrow> real_vector \<Rightarrow> real" where
