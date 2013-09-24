@@ -324,7 +324,7 @@ printSentence s = case s of
   (Datatypes dts) -> if null dts then empty
                      else text "datatype" <+>
                         andDocs (map (\d ->
-                        let vars = map text $ datatypeTVars d
+                        let vars = map printType $ datatypeTVars d
                             name = text $ show $ datatypeName d
                             pretty_cs = \c ->
                              let cname = case c of

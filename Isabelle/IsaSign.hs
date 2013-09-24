@@ -175,6 +175,7 @@ data Sentence =
 	    classParents :: [QName],
             classBody    :: [Sentence] }
   | Datatypes [Datatype]
+  | Domains [Domain]
   | Consts [(String,Maybe Mixfix,Typ)]
   | TypeSynonym QName (Maybe Mixfix) [String] Typ
   | Axioms [Axiom]
@@ -197,6 +198,10 @@ data Sentence =
      funDomintros  :: Bool,
      funPartials   :: Bool,
      funEquations  :: [(String,Maybe Mixfix,Typ,[([Term],Term)])] }
+  | Primrec {
+      primrecTarget    :: Maybe QName,
+      primrecEquations :: [(String,Maybe Mixfix,Typ,[([Term],Term)])] }
+  | Fixrec [(String,Maybe Mixfix,Typ,[FixrecEquation])]
   | Instantiation {
      instantiationType  :: TName,
      instantiationArity :: (Sort,[Sort]),
@@ -237,6 +242,12 @@ data DefEquation = DefEquation {
  defEquationTerm      :: Term,
  defEquationArgs      :: String } deriving (Eq, Ord, Show)
 
+data FixrecEquation = FixrecEquation {
+ fixrecEquationUnchecked :: Bool,
+ fixrecEquationPremises  :: [Term],
+ fixrecEquationPatterns  :: [Term],
+ fixrecEquationTerm      :: Term } deriving (Eq, Ord, Show)
+
 data Ctxt = Ctxt {
 	fixes   :: [(String,Maybe Mixfix,Typ)],
 	assumes :: [(String,Term)] } deriving (Eq, Ord, Show)
@@ -252,7 +263,7 @@ data MixfixTemplate = Arg Int | Str String | Break Int |
 
 data Datatype = Datatype {
       datatypeName         :: QName,
-      datatypeTVars        :: [String],
+      datatypeTVars        :: [Typ],
       datatypeMixfix       :: Maybe Mixfix,
       datatypeConstructors :: [DatatypeConstructor] } deriving (Eq, Ord, Show)
 
@@ -263,6 +274,22 @@ data DatatypeConstructor = DatatypeConstructor {
       constructorArgs   :: [Typ] } |
      DatatypeNoConstructor {
       constructorArgs   :: [Typ] } deriving (Eq, Ord, Show)
+
+data Domain = Domain {
+      domainName         :: QName,
+      domainTVars        :: [Typ],
+      domainMixfix       :: Maybe Mixfix,
+      domainConstructors :: [DomainConstructor] } deriving (Eq, Ord, Show)
+
+data DomainConstructor = DomainConstructor {
+      domainConstructorName :: QName,
+      domainConstructorType :: Typ,
+      domainConstructorArgs :: [DomainConstructorArg] } deriving (Eq, Ord, Show)
+
+data DomainConstructorArg = DomainConstructorArg {
+      domainConstructorArgSel  :: Maybe QName,
+      domainConstructorArgType :: Typ,
+      domainConstructorArgLazy :: Bool } deriving (Eq, Ord, Show)
 
 data Axiom = Axiom {
       axiomName :: QName,

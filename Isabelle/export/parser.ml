@@ -135,6 +135,10 @@ structure TheoryData = struct
         |Termination of string option * proof
         |Typedef of (((((string * string option) list * binding) * mixfix) *
           string) * (binding * binding) option) * proof
+        |Fixrec of opt_target * ((binding * string option * mixfix) list *
+                   (bool * (Attrib.binding * string)) list)
+	|Domain of bool * ((((string * string option) list * binding) * mixfix)             * ((binding * (bool * binding option * string) list) * mixfix) list)
+            list
         |Misc of misc_body;
 end;
 
@@ -473,7 +477,47 @@ struct
         (@{keyword "="} |-- Parse.term) --
          Scan.option (@{keyword "morphisms"} |--
          Parse.!!! (Parse.binding -- Parse.binding)) --
-         proof >> Typedef)]);
+         proof >> Typedef),
+        (* line 404 HOL/HOLCF/Tools/fixrec.ML *)
+        ("fixrec",
+          let val opt_thm_name' : (bool * Attrib.binding) parser =
+                   @{keyword "("} -- @{keyword "unchecked"} --
+                   @{keyword ")"} >> K (true, Attrib.empty_binding)
+                || Parse_Spec.opt_thm_name ":" >> pair false
+              val spec' : (bool * (Attrib.binding * string)) parser =
+                   opt_thm_name' -- Parse.prop >>
+                   (fn ((a, b), c) => (a, (b, c)))
+              val alt_specs' : (bool * (Attrib.binding * string)) list parser =
+                  let val unexpected = Scan.ahead
+                       (Parse.name || @{keyword "["} || @{keyword "("})
+                  in Parse.enum1 "|" (spec' --| Scan.option
+                      (unexpected -- Parse.!!! @{keyword "|"})) end
+          in Parse.opt_target -- (Parse.fixes -- (Parse.where_
+             |-- Parse.!!! alt_specs')) >> Fixrec end),
+	(* line 265 HOL/HOLCF/Tools/Domain/domain.ML *)
+        ("domain",
+          let val dest_decl : (bool * binding option * string) parser =
+                 @{keyword "("} |-- Scan.optional
+                (@{keyword "lazy"} >> K true) false --
+                (Parse.binding >> SOME) -- (@{keyword "::"}
+                 |-- Parse.typ)  --| @{keyword ")"} >> Parse.triple1
+                || @{keyword "("} |-- @{keyword "lazy"}
+                |-- Parse.typ --| @{keyword ")"}
+                 >> (fn t => (true, NONE, t))
+                || Parse.typ >> (fn t => (false, NONE, t))
+
+	      val cons_decl = Parse.binding --
+                   Scan.repeat dest_decl -- Parse.opt_mixfix
+
+              val domain_decl = (Parse.type_args_constrained --
+                   Parse.binding -- Parse.opt_mixfix) --
+                   (@{keyword "="} |-- Parse.enum1 "|" cons_decl)
+
+              val domains_decl =
+                   Scan.optional (@{keyword "("} |--
+                   (@{keyword "unsafe"} >> K true) --|
+                    @{keyword ")"}) false --Parse.and_list1 domain_decl
+          in domains_decl >> Domain end)]);
 	fun unparse_cmd s = Parse.group (fn () => s)
          (fn toks =>
            case toks of
@@ -859,12 +903,62 @@ struct
                                 state target tm |> XML_Syntax.xml_of_term]] tms
                           |> xml "Assumption" (attrs_of_binding state b)) ass
                        |> xml "Assumes" []];
+		local
+		fun strip_cfun (Const(@{const_name Rep_cfun},_)$f$f1) =
+                    strip_cfun f@[f1]
+		  | strip_cfun u = [u]
+		fun dest_eqs t = HOLogic.dest_eq (HOLogic.dest_Trueprop t)
+		fun strip_alls t =
+		  (case try Logic.dest_all t of
+		    SOME (_, u) => strip_alls u
+		  | NONE => t)
+		in
+		fun split_fixrec_equations state target f eqs =
+                    let val (skips, raw_spec) = ListPair.unzip eqs
+                        val (fixes, spec) = fst (Specification.read_spec f
+                             raw_spec (Toplevel.context_of state))
+			val get_tms = (fn (lhs,rhs) => (strip_cfun lhs,rhs)) o
+                                       dest_eqs o Logic.strip_imp_concl
+			val get_imps = map HOLogic.dest_Trueprop o
+                                       Logic.strip_imp_prems
+                        val tms = map ((fn x => (get_imps x,get_tms x)) o
+                                       strip_alls o snd) spec
+			val tms' = ListPair.zip (skips,tms)
+			val fn_eqs = List.foldl (fn (eq,t) =>
+                             let val (b,(imps,((c::vs),def_tm))) = eq
+                                 val (name,tp)     = dest_Free c
+                                 val old = Symtab.lookup t name
+                             in case old of
+                                 SOME (_,def_tms) =>
+                                  Symtab.update (name,(tp,def_tms@
+                                                 [(b,imps,vs,def_tm)])) t
+                                |NONE => Symtab.update (name,(tp,
+                                          [(b,imps,vs,def_tm)])) t
+                             end) Symtab.empty tms'
+			val fns = List.foldl (fn (((b,_),mx),t) =>
+                             Symtab.update (Binding.name_of b,mx) t)
+                             Symtab.empty fixes
+                    in Symtab.fold_rev (fn (k,(tp,equations)) =>
+                        let val b = unqualified k
+                            val SOME(mx) = Symtab.lookup fns b
+                            val equations' = List.map (fn (b,imps,vs,tm) =>
+                                 let val imps' = xml "Premises" [] (List.map
+                                          (XML_Syntax.xml_of_term) imps)
+                                 in xml "FixrecEquation" (if not b then [] else
+                                  a "unchecked" "") (imps'::List.map
+                                  XML_Syntax.xml_of_term (vs@[tm])) end)
+                                 equations
+                            val elem = xml "FixrecFun" (a "name" b)
+                                 (xml_of_mixfix state b (SOME tp) mx@
+                                  [XML_Syntax.xml_of_type tp]@
+                                  equations')
+                        in fn l => elem::l end) fn_eqs [] end end;
 		fun split_equations state target f eqs =
                     let val eqs' = List.map (fn ((b,l),tm) =>
-                             let val _ = case (string_of_binding b,l) of
-                                          ("",[]) => ()
-                                         |_ =>raise Fail ("Not yet implemented"^
-                                          " for split_equations!")
+                             let val _ = if Attrib.is_empty_binding (b,l)
+                                         then () else raise Fail
+                                                ("Not yet implemented "^
+                                                 "for split_equations!")
                              in Parser.read_term
                                  Proof_Context.mode_pattern state target tm |>
                                  HOLogic.dest_eq |> (fn (head,body) =>
@@ -886,7 +980,7 @@ struct
                     in Symtab.fold_rev (fn (k,(tp,equations)) =>
                         let val b = unqualified k
                             val SOME(mx) = Symtab.lookup fns b
-			    val equations' = List.map (fn (vs,tm) =>
+                            val equations' = List.map (fn (vs,tm) =>
                                  xml "Equation" [] (List.map
                                   XML_Syntax.xml_of_term (vs@[tm]))) equations
 			    val elem = xml "Fun" (a "name" b)
@@ -1058,7 +1152,8 @@ struct
                                       (string_of_binding name,
                                              List.map (fn (v,s) =>
                                               TFree (v,case s of
-                                                SOME(s') => [s']
+                                                SOME(s') => Parser.read_sort
+                                                 state NONE s'
                                                |NONE     => [])) vars))
 				 val is_c = not (String.isSubstring " " cname)
                                  val attrs = if is_c then attr_of_binding c
@@ -1129,7 +1224,40 @@ struct
 		 fn Primrec ((target,f),a) =>
                    let val s1 = trans state toks
                        val elems = split_equations s1 target f a
-                   in (xml "Primrec" (attr_of_target target) elems,s1) end] e
+                   in (xml "Primrec" (attr_of_target target) elems,s1) end,
+                 fn Fixrec (target,(f,a)) =>
+                   let val s1 = trans state toks
+                       val elems = split_fixrec_equations s1 target f a
+                   in (xml "Fixrec" (attr_of_target target) elems,s1) end,
+                 fn Domain (unsafe,dts) =>
+                   let val s1   = trans state toks
+                       val dts' = List.map (fn (((vs,name),mx), cs) =>
+                           let val vars = List.map (fn (a,s) =>
+                                    TFree (a, case s of
+                                     SOME s' => Parser.read_sort state NONE s'
+                                    |NONE    => [])) vs
+                               val mx' = xml_of_type_mixfix (string_of_binding
+                                          name) mx (List.length vs)
+                               val cs' = List.map (fn ((c,args),mx1) =>
+                                    let val t = string_of_binding c |>
+                                         Parser.read_term
+                                          Proof_Context.mode_default s1 NONE
+                                         |> Term.type_of in
+                                    xml "DomainConstructor" (attr_of_binding c)
+                                     ([XML_Syntax.xml_of_type t]@
+                                      (List.map (fn (l,sel,tp) =>
+                                      xml "DomainConstructorArg"
+                                          ((if l then a "lazy" "" else [])
+                                           @(case sel of
+                                              SOME sel' => attr_of_binding sel'
+                                             |NONE => []))
+                                          [XML_Syntax.xml_of_type
+                                            (Parser.read_typ s1 NONE tp)]))
+                                      args) end) cs
+                           in xml "Domain" (attr_of_binding name)
+                               (mx'@List.map XML_Syntax.xml_of_type vars@cs')
+                           end) dts
+                   in (xml "Domains" [] dts',s1) end] e
              in ((state',trans),elem::l) end end;
 	fun xml_of_body state body =
               List.foldl xml_of_body_elem (state,[]) body

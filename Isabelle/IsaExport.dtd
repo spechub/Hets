@@ -11,7 +11,7 @@
   <!ATTLIST UseFile name CDATA #REQUIRED>
 
 <!-- Body -->
-<!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Funs|Instantiation|Instance|Subclass|Typedef|Defs)*>
+<!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Domains|Consts|Axioms|Lemma|Definition|Funs|Primrec|Fixrec|Instantiation|Instance|Subclass|Typedef|Defs)*>
 
 <!ELEMENT Locale (Ctxt,Parent*,Body)>
   <!ATTLIST Locale name CDATA #REQUIRED>
@@ -28,6 +28,15 @@
   <!ATTLIST Datatype name CDATA #REQUIRED>
 <!ELEMENT Constructor (Mixfix?,(TVar|TFree|Type),(TVar|TFree|Type)*)>
   <!ATTLIST Constructor name CDATA #IMPLIED>
+
+<!ELEMENT Domains (Domain+)>
+<!ELEMENT Domain (Mixfix?,TFree*,DomainConstructor+)>
+  <!ATTLIST Domain name CDATA #REQUIRED>
+<!ELEMENT DomainConstructor ((TVar|TFree|Type),DomainConstructorArg*)>
+  <!ATTLIST DomainConstructor name CDATA #REQUIRED>
+<!ELEMENT DomainConstructorArg ((TVar|TFree|Type))>
+  <!ATTLIST DomainConstructorArg lazy CDATA #IMPLIED>
+  <!ATTLIST DomainConstructorArg name CDATA #IMPLIED>
 
 <!ELEMENT Consts (ConstDef+)>
 <!ELEMENT ConstDef (Mixfix?,(TVar|TFree|Type))>
@@ -57,6 +66,13 @@
 
 <!ELEMENT Primrec (Fun+)>
   <!ATTLIST Primrec target CDATA #IMPLIED>
+
+<!ELEMENT Fixrec (FixrecFun+)>
+<!ELEMENT FixrecFun (Mixfix?,(TVar|TFree|Type),FixrecEquation+)>
+  <!ATTLIST FixrecFun name CDATA #REQUIRED>
+<!ELEMENT FixrecEquation (Premises,(Bound|Free|Var|Const|App|Abs)+)>
+  <!ATTLIST FixrecEquation unchecked CDATA #IMPLIED>
+<!ELEMENT Premises ((Bound|Free|Var|Const|App|Abs)*)>
 
 <!ELEMENT Instantiation (Arity,Body)>
   <!ATTLIST Instantiation type CDATA #REQUIRED>

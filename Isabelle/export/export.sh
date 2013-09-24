@@ -81,7 +81,7 @@ echo "v1:Starting Isabelle" > $COMM_FILE
 
 (
  echo "theory IsaExport
-imports Datatype FunDef
+imports Datatype FunDef Fixrec Domain
 begin
 ML {*
 
@@ -110,7 +110,7 @@ v \"Isabelle: Exporting theory information\n\";
 handle ex => e ((General.exnMessage ex)^\"\n\");
 *}
 end"
-) | ($ISABELLE tty) | tee $TEMP_FILE
+) | ($ISABELLE tty -l HOLCF) | tee $TEMP_FILE
 
 if grep "*** Error" $TEMP_FILE &> /dev/null ; then
  echo "v0:Loading Theory failed" > $COMM_FILE

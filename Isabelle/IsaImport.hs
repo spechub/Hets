@@ -44,6 +44,8 @@ hXmlBody_2IsaSentence (Body_TypeSynonym (TypeSynonym a mx (Vars vars) tp)) =
                      (hXmlOneOf3_2IsaTyp tp)
 hXmlBody_2IsaSentence (Body_Datatypes (Datatypes (NonEmpty dts))) =
  IsaSign.Datatypes (map hXmlDatatype2IsaDatatype dts)
+hXmlBody_2IsaSentence (Body_Domains (Domains (NonEmpty dts))) =
+ IsaSign.Domains (map hXmlDomain2IsaDomain dts)
 hXmlBody_2IsaSentence (Body_Consts (Consts (NonEmpty consts))) =
  IsaSign.Consts (map (\(ConstDef a m t) ->
   (constDefName a, maybe Nothing (Just . hXmlMixfix2IsaMixfix) m,
@@ -88,6 +90,19 @@ hXmlBody_2IsaSentence (Body_Funs (Funs a (NonEmpty funs))) =
     hXmlOneOf3_2IsaTyp tp,map (\(Equation (NonEmpty tms)) ->
          let tms' = map (hXmlOneOf6_2IsaTerm []) tms
          in (init tms',last tms')) eqs)) funs }
+hXmlBody_2IsaSentence (Body_Primrec (Primrec a (NonEmpty funs))) =
+ IsaSign.Primrec {
+  IsaSign.primrecTarget = maybe Nothing (Just . IsaSign.mkQName) $
+                       primrecTarget a,
+  IsaSign.primrecEquations = map (\(Fun a mx tp (NonEmpty eqs)) ->
+   (funName a,maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
+    hXmlOneOf3_2IsaTyp tp,map (\(Equation (NonEmpty tms)) ->
+         let tms' = map (hXmlOneOf6_2IsaTerm []) tms
+         in (init tms',last tms')) eqs)) funs }
+hXmlBody_2IsaSentence (Body_Fixrec (Fixrec (NonEmpty fs))) =
+ IsaSign.Fixrec $ map (\(FixrecFun a mx tp (NonEmpty eqs)) ->
+  (fixrecFunName a,maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
+   hXmlOneOf3_2IsaTyp tp,map hXmlFixrecEquation2IsaFixrecEquation eqs)) fs
 hXmlBody_2IsaSentence (Body_Instantiation
  (Instantiation a arity body)) =
  IsaSign.Instantiation {
@@ -173,7 +188,7 @@ hXmlDatatype2IsaDatatype :: Datatype -> IsaSign.Datatype
 hXmlDatatype2IsaDatatype (Datatype a mx (NonEmpty cs) vars) =
  IsaSign.Datatype {
   IsaSign.datatypeName         = IsaSign.mkQName $ datatypeName a,
-  IsaSign.datatypeTVars        = map (\(TFree a _ ) -> tFreeName a) vars,
+  IsaSign.datatypeTVars        = map hXmlTFree2IsaTyp vars,
   IsaSign.datatypeMixfix       = maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
   IsaSign.datatypeConstructors = map (\(Constructor a mx tp tps) ->
    case constructorName a of
@@ -187,6 +202,33 @@ hXmlDatatype2IsaDatatype (Datatype a mx (NonEmpty cs) vars) =
     Nothing ->
      IsaSign.DatatypeNoConstructor {
       IsaSign.constructorArgs = map hXmlOneOf3_2IsaTyp (tp:tps) }) cs }
+
+hXmlDomain2IsaDomain :: Domain -> IsaSign.Domain
+hXmlDomain2IsaDomain (Domain a mx vars (NonEmpty cs)) =
+ IsaSign.Domain {
+  IsaSign.domainName         = IsaSign.mkQName $ domainName a,
+  IsaSign.domainTVars        = map hXmlTFree2IsaTyp vars,
+  IsaSign.domainMixfix       = maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
+  IsaSign.domainConstructors = map (\(DomainConstructor a tp args) ->
+   IsaSign.DomainConstructor {
+    IsaSign.domainConstructorName = IsaSign.mkQName $ domainConstructorName a,
+    IsaSign.domainConstructorType = hXmlOneOf3_2IsaTyp tp,
+    IsaSign.domainConstructorArgs = map (\(DomainConstructorArg a tp) ->
+     IsaSign.DomainConstructorArg {
+      IsaSign.domainConstructorArgSel = maybe Nothing (Just . IsaSign.mkQName) $
+                                         domainConstructorArgName a,
+      IsaSign.domainConstructorArgType = hXmlOneOf3_2IsaTyp tp,
+      IsaSign.domainConstructorArgLazy = maybe False (\_ -> True) $
+                                          domainConstructorArgLazy a}) args } ) cs}
+
+hXmlFixrecEquation2IsaFixrecEquation :: FixrecEquation -> IsaSign.FixrecEquation
+hXmlFixrecEquation2IsaFixrecEquation (FixrecEquation a (Premises ps)
+ (NonEmpty tms)) = IsaSign.FixrecEquation {
+  IsaSign.fixrecEquationUnchecked = maybe False (\_ -> True) $
+   fixrecEquationUnchecked a,
+  IsaSign.fixrecEquationPremises  = map (hXmlOneOf6_2IsaTerm []) ps,
+  IsaSign.fixrecEquationPatterns  = map (hXmlOneOf6_2IsaTerm []) $ init tms,
+  IsaSign.fixrecEquationTerm      = hXmlOneOf6_2IsaTerm [] $ last tms }
 
 hXmlAxiom2IsaAxiom :: Axiom -> IsaSign.Axiom
 hXmlAxiom2IsaAxiom (Axiom a tm) =

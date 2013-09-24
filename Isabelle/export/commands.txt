@@ -7,9 +7,9 @@ Boogie/Tools/boogie_commands.ML:@{command_spec "boogie_open"}
 Boogie/Tools/boogie_commands.ML:@{command_spec "boogie_vc"}
 Boogie/Tools/boogie_commands.ML:@{command_spec "boogie_status"}
 Boogie/Tools/boogie_commands.ML:@{command_spec "boogie_end"}
-HOLCF/Tools/Domain/domain.ML:@{command_spec "domain"}
+* HOLCF/Tools/Domain/domain.ML:@{command_spec "domain"}
 HOLCF/Tools/Domain/domain_isomorphism.ML:@{command_spec "domain_isomorphism"}
-HOLCF/Tools/fixrec.ML:@{command_spec "fixrec"}
+* HOLCF/Tools/fixrec.ML:@{command_spec "fixrec"}
 HOLCF/Tools/domaindef.ML:@{command_spec "domaindef"}
 HOLCF/Tools/cpodef.ML:@{command_spec "pcpodef"}
 HOLCF/Tools/cpodef.ML:@{command_spec "cpodef"}
