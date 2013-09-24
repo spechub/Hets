@@ -182,6 +182,15 @@ struct
                            assumes = List.map (fn (n,t) => {name=n,term=t}) a,
                            fixes = List.map (fn (ns,t) => {names=ns,tp=t}) f };
 	val emptyLocalData = LocalData { assumes = [], fixes = [] };
+	datatype mixfix_data = Infix of string * int
+                              |InfixL of string * int
+                              |InfixR of string * int
+                              |Binder of {template:string,
+                                          prios:int list option,
+                                          def_prio:int}
+                              |Template of {template:string,
+                                            prios:int list option,
+                                            def_prio:int option};
 	datatype qualifier = Optional | Mandatory;
 	datatype hide_what = HideConsts | HideConstsAll; 
 (* http://stackoverflow.com/questions/16254465/how-to-hide-defined-constants *)
@@ -216,6 +225,8 @@ struct
                                                 def_eqs: string list}
                                    |Definition of (string*string) option *
                                                   string
+				   |Notation of {modes:string list option,
+                                     notations:(string*mixfix_data) list}
                                    |Interpretation of {name:string,
                                                        qualifier:qualifier,
                                                        eqs:(string*string list),
@@ -281,6 +292,26 @@ struct
                          (v,mkLocalData (List.concat (the_default [] a @
                                                       the_default [] a1))
                                         (List.concat (the_default [] f)))) end
+	(* isa-ref.pdf p. 147 *)
+	val parse_mixfix = fn p_ =>
+                      let val s2i = raw_explode #> read_int #> #1
+                          val prio = fn s2i => p str_ >>> (fn (v,v1) => 
+                                       (v,s2i v1))
+                          val prios = optional (many (prio s2i))
+                      in   oneOf [p_,p str_ #> prios #> optional (prio s2i) #>
+                                   expect_end #> pack #> pack >>>
+                                   (fn (v,(t,(ps,p))) => (v,Template
+                                     {template=t,prios=ps,def_prio=p})),
+                                  e (content "infix") #> p str_ #> prio s2i
+                                   #> pack >>> (fn (v,v1) => (v,Infix v1)),
+                                  e (content "infixl") #> p str_ #> prio s2i
+                                   #> pack >>> (fn (v,v1) => (v,InfixL v1)),
+                                  e (content "infixr") #> p str_ #> prio s2i
+                                   #> pack >>> (fn (v,v1) => (v,InfixR v1)),
+                                  e (content "binder") #> p str_ #> prios
+                                   #> prio s2i #> pack #> pack >>>
+                                   (fn (v,(t,(ps,p))) => (v,Binder
+                                   {template=t,prios=ps,def_prio=p}))] end;
         fun parse_body_elem p_ =
             let val dt_type = e (content "datatype")
                                #> sepBy (e (keyword "and"))
@@ -345,8 +376,18 @@ struct
                                     #> p str_ #> pack #> e (keyword "where"))
                                  #> p str_ #> pack >>>
                                   (fn (v,v1) => (v,Definition v1))
-            in oneOf [p_,dt_type,consts,axioms,cls,
-                      tp_synonym,fun_,primrec,locale,def]  end;
+		val notation   = e (content "notation")
+                                 #> optional (e (keyword "(")
+                                              #> many (p ident)
+                                              #> e (keyword ")"))
+                                 #> sepBy (e (keyword "and"))
+                                          (p ident #>
+                                           parse_mixfix fail #> pack)
+                                 #> pack >>> (fn (v,(m,ns)) => (v,Notation {
+                                              modes=m,
+                                              notations=ns}))
+            in oneOf [dt_type,consts,axioms,cls,
+                      tp_synonym,fun_,primrec,locale,def,notation]  end;
         fun parse_thm s = e (content s)
                           #> optional (
                              e (keyword "(") #> e (keyword "in")

@@ -79,7 +79,7 @@ val s = File.read (Path.explode \"$TRANS.thy\");
 
 val (th,err) = Parser.scan s |> Parser.test;
 
-if is_none th then TextIO.output (TextIO.stdOut,err) else ();
+File.write (Path.explode \"./test.out\") (Parser.scan s |> PolyML.makestring);
 
 *}
 end"
