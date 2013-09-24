@@ -11,6 +11,7 @@ sig
 	val >> : ('a, 'b) p * ('b -> 'c) -> ('a, 'c) p;
 	val >>> : ('a -> ('b, 'c) p) * ('c -> 'd) -> 'a -> ('b, 'd) p;
 	val >>= : ('a, 'b) p * ('b -> 'c) -> 'c option;
+	val getError : ('a, 'b) p -> string;
 	val return : 'a -> ('b, 'c) p -> ('b, 'c * 'a) p;
 	val initialState : 'a list -> ('a,string) p;
 	val pack : ('a, ('b * 'c) * 'd) p -> ('a, 'b * ('c * 'd)) p;
@@ -74,6 +75,8 @@ struct
 	(* extract result and apply f *)
 	fun (State (_,v)) >>= f = SOME (f v)
            |(Failed _)    >>= _ = NONE
+	fun getError (Failed s) = s
+           |getError _          ="";
 	(* add result v1 to the state *)
 	fun return v1 (State (d,v)) = State (d,(v,v1))
            |return _ (Failed s)     = Failed s;
@@ -134,7 +137,7 @@ sig
 	type cmd = Token.T list;
         val scan      : string -> cmd list;
 	type parsed_theory;
-	val test : cmd list -> parsed_theory option;
+	val test : cmd list -> (parsed_theory option * string);
 end;
 
 structure Parser : Parser =
@@ -159,29 +162,39 @@ struct
                                            Position.start
                            |> Token.source_proper |> Source.exhaust
                            |> partition Token.is_command;
-
+	
+	datatype local_data = LocalData of
+                              {assumes: {name:string, term:string} list,
+                               fixes:   {names:string list, tp:string} list};
+	fun mkLocalData a f = LocalData {
+                           assumes = List.map (fn (n,t) => {name=n,term=t}) a,
+                           fixes = List.map (fn (ns,t) => {names=ns,tp=t}) f };
         datatype theory_body_elem = DataType of (string list * (string *
                                     (string * string list) list)) list
                                    |Consts of (string * string) list
                                    |Axioms of (string * string) list
                                    |Lemma of {name: string,
+					      target: string option,
                                               statement: string,
                                               proof: string}
+                                   |Theorem of {name: string,
+                                                target: string option,
+                                                statement: string,
+                                                proof: string}
                                    |Class of {name:string,
                                               parents:string list,
-                                              assumes:(string*string) list,
-                                              fixes:(string list*string) list}
+                                              local_data:local_data}
                                    |Locale of {name:string,
                                                parents:string list,
-                                               assumes:(string*string) list,
-                                               fixes:(string list*string) list}
+                                               local_data:local_data}
                                    |TypeSynonym of string * string
                                    |Function of {name: string,
                                                  tp: string,
                                                  def_eqs: string list}
                                    |PrimRec of {names: (string*string) list,
                                                 def_eqs: string list}
-                                   |Definition of string * (string*string);
+                                   |Definition of string * (string*string)
+                                   |Text of string;
 	datatype parsed_theory = ParsedTheory of {
                                  name: string,
                                  imports: string list,
@@ -209,6 +222,21 @@ struct
                                 #> e (keyword "imports") #> many (p ident)
                                 #> e (keyword "begin") #> expect_end;
 	val parse_theory_end = e (content "end") #> expect_end;
+	fun parse_local_data a =
+                 let val assumes = fn k => e k #>
+                                     sepBy (e (keyword "and"))
+                                           (p ident #> e (keyword ":")
+                                            #> p str_ #> pack)
+                     val fixes = e (keyword "fixes") #>
+                                    sepBy (e (keyword "and"))
+                                          (many (p ident) #> e (keyword "::")
+                                           #> oneOf [p str_,p ident] #> pack)
+                 in optional (assumes a) #> optional fixes
+                    #> optional (assumes a) (* a = keyword "assumes" *)
+                    >>> (fn (((v,a),f),a1) =>
+                         (v,mkLocalData (the_default [] a @
+                                         the_default [] a1)
+                                        (the_default [] f))) end
         val parse_body_elem =
             let val dt_type = e (content "datatype")
                                #> sepBy (e (keyword "and"))
@@ -230,52 +258,24 @@ struct
                 val axioms  = e (content "axioms") #> many ((p ident)
                                #> e (keyword ":") #> (p str_) #> pack)
                                #> expect_end >>> Axioms o #2
-                val cls_assumes = e (keyword "assumes") #>
-                                    sepBy (e (keyword "and"))
-                                          (p ident #> e (keyword ":")
-                                           #> p str_ #> pack)
-		val cls_assumes1 = e (keyword "assumes") #>
-                                     sepBy (e (keyword "and"))
-                                           (p ident #> e (keyword ":")
-                                            #> p str_ #> pack)
-                val cls_fixes = e (keyword "fixes") #>
-                                   sepBy (e (keyword "and"))
-                                         (many (p ident) #> e (keyword "::")
-                                          #> p str_ #> pack)
                 val cls     = e (content "class") #> p ident
                                #> succeed (keyword "=")
                                #> sepBy (e (keyword "+"))
                                         (p ident)
                                #> succeed (keyword "+")
-                               #> optional cls_assumes #> optional cls_fixes
-                               #> optional cls_assumes1
-                               >>> (fn (((((_,n),ps),a),f),a1) =>
+                               #> parse_local_data (keyword "assumes")
+                               >>> (fn (((_,n),ps),l) =>
                                     Class { name = n,parents = ps,
-                                            assumes = case (a,a1) of
-                                               (SOME v,SOME v1) => v@v1
-                                              |(SOME v,NONE)    => v
-                                              |(NONE,SOME v)    => v
-                                              |(NONE,NONE)      => [],
-                                            fixes = case f of
-                                                     SOME v => v
-                                                    |NONE => []})
+                                            local_data = l})
                 val locale     = e (content "locale") #> p ident
                                #> succeed (keyword "=")
                                #> sepBy (e (keyword "+"))
                                         (p ident)
                                #> succeed (keyword "+")
-                               #> optional cls_assumes #> optional cls_fixes
-                               #> optional cls_assumes1
-                               >>> (fn (((((_,n),ps),a),f),a1) =>
+                               #> parse_local_data (keyword "assumes")
+                               >>> (fn (((_,n),ps),l) =>
                                     Locale { name = n,parents = ps,
-                                            assumes = case (a,a1) of
-                                               (SOME v,SOME v1) => v@v1
-                                              |(SOME v,NONE)    => v
-                                              |(NONE,SOME v)    => v
-                                              |(NONE,NONE)      => [],
-                                            fixes = case f of
-                                                     SOME v => v
-                                                    |NONE => []})
+                                             local_data = l})
                 val tp_synonym = e (content "type_synonym")
                                   #> p ident #> e (keyword "=")
                                   #> p str_ #> pack >>> TypeSynonym o #2
@@ -301,9 +301,15 @@ struct
                                  #> pack #> pack >>> Definition o #2
             in oneOf [dt_type,consts,axioms,cls,
                       tp_synonym,fun_,primrec,locale,def]  end;
-        val parse_lemma = e (content "lemma")
-                          #> p ident #> e (keyword ":")
-                          #> (p str_) #> pack >>> #2;
+        fun parse_thm s = e (content s)
+                          #> optional (
+                             e (keyword "(") #> e (keyword "in")
+                             #> p ident #> e (keyword ")"))
+                          #> p ident
+                          #> e (keyword ":")
+                          #> optional (parse_local_data (keyword "assumes")
+                                        #> e (keyword "shows")) 
+                          #> (p str_) #> pack #> pack #> pack >>> #2;
         fun proof_qed l cmd = case cmd of
                                t::_  => if Token.content_of t = "qed"
                                         then Result (List.rev (cmd::l))
@@ -318,20 +324,44 @@ struct
                                       then More (proof_qed [cmd])
                                       else Fail "Unexpected command!"
                             |_ => Fail "Expected non-empty command!")
-                           >>> (fn (v,cmds) => (v,cmdList2string cmds))];
+                           >>> (fn (v,cmds) => (v,cmdList2string cmds)),
+                          p (fn cmd =>
+                              case cmd of
+                               t::_ => if Token.content_of t = "by"
+                                       then Result [cmd]
+                                       else Fail "Unexpected command!"
+                              |_ => Fail "Expected non-empty command!")
+                          >>> (fn (v,cmds) => (v,cmdList2string cmds))];
         val test = initialState #> p (parse_theory_head |> p2r) >>> #2
                    #> many (oneOf [p (parse_body_elem |> p2r),
-                                   p (parse_lemma |> p2r) #> proof #> pack >>>
-                                    (fn (v,((n,stmt),prf)) =>
+                                   p (parse_thm "lemma" |> p2r) #> proof
+                                    #> pack >>>
+                                    (fn (v,((t,(n,(l,stmt))),prf)) =>
                                       (v,Lemma {name=n,
+						target=t,
                                                 statement=stmt,
-                                                proof=prf}))])
+                                                proof=prf})),
+                                   p (parse_thm "theorem" |> p2r) #> proof
+                                    #> pack >>>
+                                    (fn (v,((t,(n,(l,stmt))),prf)) =>
+                                      (v,Theorem {name=n,
+                                                target=t,
+                                                statement=stmt,
+                                                proof=prf})),
+                                   p (fn cmd => case cmd of
+                                    t::ts => if Token.content_of t = "text"
+                                            then ts |> List.map Token.unparse
+                                                    |> space_implode " "
+                                                    |> Result
+                                            else Fail "Unexpected command!"
+                                   |_    => Fail "Expected non-empty command!")
+                                    >>> (fn (v,v1) => (v,Text v1))])
                    #> e (parse_theory_end |> p2r)
                    #> expect_end >>> (fn ((n,i),b) =>
                        ParsedTheory {name = n,
                                      imports = i,
                                      body = b})
-                   #> (fn v => v >>= I);
+                   #> (fn v => (v >>= I,getError v));
 end;
 
 signature ExportHelper =
