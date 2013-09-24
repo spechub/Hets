@@ -752,13 +752,6 @@ end;
 
 structure Export : Export =
 struct
-	datatype sigdata = AddConst of string * typ option *
-                                       Parser.mixfix option
-                          |RemConst of string
-                          |AddType of string * (int * Parser.mixfix option)
-                          |RemType of string
-                          |AddTypeSynonym of string * typ;
-	
 	structure XML_Syntax = Legacy_XML_Syntax
 	open TheoryData
 	open XML_Helper
@@ -791,10 +784,6 @@ struct
                                [List.last t]) end;
 		val attr_of_target =
                      attr_of_option "attr_of_target" "target" #1;
-                fun attr_of_mixfix mx = case mx of
-                      Mixfix.NoSyn => []
-                     |_ => attr "mixfix" (Mixfix.pretty_mixfix
-                            #> Pretty.str_of) mx;
 		fun xml_of_typ state target (SOME typ) = [
                        Parser.read_typ state target typ
                     |> XML_Syntax.xml_of_type]
@@ -825,6 +814,11 @@ struct
                      [fn Mixfix.NoSyn => NONE,
                       fn mx => Parser.format_const_mixfix state name mx tp
                                |> SOME];
+		fun format_type_mixfix name num_args = variant
+                     "format_type_mixfix" PolyML.makestring
+                     [fn Mixfix.NoSyn => NONE,
+                      fn mx => Parser.format_type_mixfix name mx num_args
+                               |> SOME];
 		fun xml_of_mixfix state name tp mx = 
                     case format_mixfix state name tp mx of
                      SOME (symbs,nargs,prio) =>
@@ -834,10 +828,19 @@ struct
                                        #> Pretty.str_of) mx)
                          (List.map xml_of_symb symbs)]
                     |NONE => [];
+		fun xml_of_type_mixfix name mx num_args =
+                    case format_type_mixfix name num_args mx of
+                     SOME (symbs,nargs,prio) =>
+                      [xml "Mixfix" (attr "nargs" string_of_int nargs@
+                                      attr "prio"  string_of_int prio@
+                                      attr "pretty" (Mixfix.pretty_mixfix
+                                       #> Pretty.str_of) mx)
+                         (List.map xml_of_symb symbs)]
+                    |NONE => []
 		fun xml_of_context state target = variant "xml_of_context"
                      PolyML.makestring
                      [fn Element.Fixes fixes => List.map (fn (b,tp,mx) =>
-                          xml "Fix" (attr_of_binding b@attr_of_mixfix mx)
+                          xml "Fix" (attr_of_binding b)
                                     (xml_of_typ state target tp@
                            let val tp'  = Option.map
                                            (Parser.read_typ state target) tp
@@ -888,31 +891,6 @@ struct
                                   equations')
                         in fn l => elem::l end) fn_eqs []
                     end;
-		val attrs_of_mixfix = variant "attrs_of_mixfix"
-                      PolyML.makestring
-                      [fn SOME (symbs, nargs, prio) =>
-                       attr "nargs" string_of_int nargs@
-                       attr "prio" string_of_int prio,
-                      fn NONE => []];
-		val xml_of_sigdata = List.map (variant "xml_of_sigdata"
-                     PolyML.makestring [
-                     fn AddConst (n, tp, mx) =>
-                      let val attrs = a "name" n@attrs_of_mixfix mx
-                          val elems = (Option.map (XML_Syntax.xml_of_type #>
-                               single) tp |> these)@(Option.map (#1 #>
-                               List.map xml_of_symb) mx |> these)
-                      in xml "AddConst" attrs elems end,
-                     fn AddType (n,(arity,mx)) =>
-                      let val attrs = a "name" n@
-                                      attr "arity" string_of_int arity@
-                                      attrs_of_mixfix mx
-                          val elems = Option.map (#1 #> List.map xml_of_symb)
-                                       mx |> these
-                      in xml "AddType" attrs elems end,
-                     fn AddTypeSynonym (n,tp) =>
-                       xml "AddTypeSynonym" (a "name" n)
-                        [XML_Syntax.xml_of_type tp]])
-                    #> xml "SigData" [];
 		fun xml_of_statement state target name =
                     variant "xml_of_statement" PolyML.makestring
                      [fn Element.Shows s => List.map (fn (b,tms) =>
@@ -936,14 +914,6 @@ struct
                      @(Option.map (a "default") default |> the_default [])
                      @(if domintros  then a "domintros"  "" else [])
                      @(if partials   then a "partials"   "" else []);
-		fun add_type name vars mixfix =
-                     (case mixfix of
-                        Mixfix.NoSyn => (List.length vars,NONE)
-                       |_ => (List.length vars,
-                              SOME (Parser.format_type_mixfix
-                                     (string_of_binding name) mixfix
-                                     (List.length vars))))
-                     |> (curry AddType) (string_of_binding name);
 		fun xml_of_sort s = xml "Sort" []
                  (List.map (fn n => xml "class" (a "name" n) []) s)
                 fun xml_of_arity (s,s') = xml "Arity" []
@@ -972,9 +942,11 @@ struct
                                SOME (m1,m2) => attr "m1" string_of_binding m1@
                                                attr "m2" string_of_binding m2
                               |NONE => []
+                      val mx' = xml_of_type_mixfix (string_of_binding tp)
+                                 mx (List.length vars)
                   in (xml "Typedef" (attr "type" string_of_binding tp
-                                    @morphisms'@attr_of_mixfix mx)
-                      ([xml "Proof" [] [XML.Text proof]]@
+                                    @morphisms')
+                      (mx'@[xml "Proof" [] [XML.Text proof]]@
                        [XML_Syntax.xml_of_term tm']@
                        List.map XML_Syntax.xml_of_type vars'),
                       trans state toks) end,
@@ -1048,69 +1020,60 @@ struct
                                     (List.map (xml_of_context s1 target) ctxt)
                    in (xml "Cls" name' (ctxt'::parents'@
                         [xml "Body" [] (List.rev b_elems)]),s3) end,
-                 fn TypeSynonym (((target,vars),name),(typ,mixfix))
+                 fn TypeSynonym (((target,vars),name),(typ,mx))
                               =>
                    let val s1      = trans state toks
                        val typ'    = Parser.read_typ state target typ
                                      |> XML_Syntax.xml_of_type
 		       val name'   = attr_of_binding name
 		       val target' = attr_of_target target
-		       val mixfix' = attr_of_mixfix mixfix
+		       val mx'     = xml_of_type_mixfix (string_of_binding name)
+                                      mx (List.length vars)
 		       val vars'   = xml "Vars" [] (List.map
                          (fn s => TFree (s,[]) |> XML_Syntax.xml_of_type)
                           vars)
-                       val sigdata =  [add_type name vars mixfix,
-                                       AddTypeSynonym (string_of_binding name,
-                                        Parser.read_typ state target typ)]
-                   in (xml "TypeSynonym" (name'@target'@mixfix')
-                       ([xml_of_sigdata sigdata]@[vars']@[typ']),s1) end,
+                   in (xml "TypeSynonym" (name'@target')
+                       (mx'@[vars']@[typ']),s1) end,
 		 fn Datatype dts =>
                    let val s1 = trans state toks
-		       fun sigdata_of_dt ((name,vars,mx),cs) =
-                            (add_type name vars mx)::
-                            (List.map (fn (c,tms,mx) =>
-                              if String.isSubstring " " (string_of_binding c)
-                                 andalso List.null tms
-                              then AddTypeSynonym (string_of_binding name,
-                                    Parser.read_typ s1 NONE
-                                     (string_of_binding c))
-                              else
-                               let val cname = string_of_binding c
-                                   val tps = List.map (Parser.read_typ s1 NONE)
-                                              tms
-				   val tp = (tps ---> Type (string_of_binding name,
-                                             List.map (fn (v,s) =>
-                                              TFree (v,
-                                               case s of
-                                                SOME(s') => [s']
-                                               |NONE     => [])) vars)) |> SOME
-                                   val mx' = format_mixfix s1 cname tp mx
-                               in AddConst (cname,tp,mx') end) cs)
 		       val dts' = List.map
                         (fn ((name,vars,mx),cs) => xml "Datatype"
-                          (attr_of_binding name@attr_of_mixfix mx)
-                          ((xml_of_sigdata (sigdata_of_dt
-                             ((name,vars,mx),cs)))::
-                           (List.map (fn (c,tms,mx) =>
-                             xml "Constructor" (attr_of_binding c
-                              @attr_of_mixfix mx) (List.map
-                               (Parser.read_typ s1 NONE #>
-                                XML_Syntax.xml_of_type) tms)) cs
+                          (attr_of_binding name)
+                          (xml_of_type_mixfix (string_of_binding name)
+                           mx (List.length vars)@
+                           List.map (fn (c,tms,mx) =>
+                             let val cname = string_of_binding c
+                                 val tps = List.map
+                                      (Parser.read_typ s1 NONE) tms
+			 	 val tp = (tps ---> Type
+                                      (string_of_binding name,
+                                             List.map (fn (v,s) =>
+                                              TFree (v,case s of
+                                                SOME(s') => [s']
+                                               |NONE     => [])) vars))
+				 val is_c = not (String.isSubstring " " cname)
+                                 val attrs = if is_c then attr_of_binding c
+                                             else []
+                                 val elems' = List.map XML_Syntax.xml_of_type
+                                     (if is_c then (tp::tps)
+                                      else (Parser.read_typ s1 NONE cname::tps))
+			         val elems  = if is_c then (xml_of_mixfix s1
+                                      cname (SOME tp) mx@elems') else elems'
+                             in xml "Constructor" attrs elems end) cs
                            @(List.map (fn (v,s) =>
                             XML_Syntax.xml_of_type (TFree (v,
                              case s of
                               SOME(s') => [s']
-                             |NONE     => []))) vars)))) dts
+                             |NONE     => []))) vars))) dts
                    in (xml "Datatypes" [] dts', s1) end,
 		 fn Consts cs => (xml "Consts" [] (List.map
                    (fn (name,tp,mx) =>
                     let val tp' = Parser.read_typ state NONE tp
                         val name' = string_of_binding name
-                        val mx' = format_mixfix state name' (SOME tp') mx
-                    in xml "ConstDef"
-                     ([("name",name')]@attr_of_mixfix mx)
-                    [xml_of_sigdata [AddConst (name',SOME tp',mx')],
-                     tp' |> XML_Syntax.xml_of_type] end) cs), trans state toks),
+                        val mx' = xml_of_mixfix state name' (SOME tp') mx
+                    in xml "ConstDef" [("name",name')]
+                     (mx'@[tp' |> XML_Syntax.xml_of_type]) end) cs),
+                    trans state toks),
 		 fn Axioms axs => (xml "Axioms" [] (List.map
                    (fn (b,tm) => xml "Axiom"
                     (attrs_of_binding state b)
@@ -1134,21 +1097,21 @@ struct
                                 (b,[]) => if string_of_binding b <> "" then
                                  raise Fail "Case not implemented" else ()
                                |_ => raise Fail "Case not implemented"
-                       val (attrs,tp') = case name of
-                                    SOME (name',tp,mx) =>
-                                     (attr_of_binding name'@
-                                      attr_of_mixfix mx,
-                                      xml_of_typ state target tp)
-                                   |NONE => ([],[])
                        val ((_,[(_,tm')]),_) =
                             Specification.read_free_spec (the_list name)
                              [(binding,tm)] (Toplevel.context_of state)
-                       val (name',tp) = HOLogic.dest_Trueprop tm' |>
-                            HOLogic.dest_eq |> #1 |> head_of |> dest_Free;
-                   in (xml "Definition" (attrs@attr_of_target target)
-                        ((xml_of_sigdata [AddConst (name',
-                                           SOME tp,NONE)])::
-                         tp'@[tm' |> XML_Syntax.xml_of_term]),s1) end,
+                       val (((name',tp),vs),def_tm) =
+                            Logic.dest_equals tm' |> (fn (head,body) =>
+                             case strip_comb head of
+                              (f,vs) => ((dest_Free f,vs),body))
+                       val mx' = case name of
+                            SOME (_,_,mx) => xml_of_mixfix state name' (SOME tp)
+                                              mx
+                           |NONE => []
+                   in (xml "Definition" (a "name" name'@
+                                         attr_of_target target)
+                        (mx'@[XML_Syntax.xml_of_type tp]@
+                         List.map XML_Syntax.xml_of_term (vs@[def_tm])),s1) end,
 		 fn Fun (target,((cfg,f),a)) =>
                    let val s1 = trans state toks
 		       val elems = split_equations s1 target f a
