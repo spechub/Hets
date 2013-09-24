@@ -1,41 +1,182 @@
 signature ParserHelper =
 sig
-	type cmd = Token.T list
-	val scan      : string -> cmd list
-	type theory_body_elem
-	type parsed_theory
-	val test : cmd list -> string (*parsed_theory*)
+	type ('a,'b) p;
+	datatype ('a,'b) r = Result of 'b
+                           | More of 'a -> ('a,'b) r
+                           | End of 'b
+                           | Fail of string;
+	val result : 'a list -> ('a -> ('a,'b) r) -> 'a list * ('a,'b) r;
+	val p : ('a -> ('a, 'b) r) -> ('a, 'c) p -> ('a, 'c * 'b) p;
+	val p2r : (('a, string) p -> ('b, 'c) p) -> 'a list -> ('d, 'c) r;
+	val >> : ('a, 'b) p * ('b -> 'c) -> ('a, 'c) p;
+	val >>> : ('a -> ('b, 'c) p) * ('c -> 'd) -> 'a -> ('b, 'd) p;
+	val >>= : ('a, 'b) p * ('b -> 'c) -> 'c option;
+	val return : 'a -> ('b, 'c) p -> ('b, 'c * 'a) p;
+	val initialState : 'a list -> ('a,string) p;
+	val pack : ('a, ('b * 'c) * 'd) p -> ('a, 'b * ('c * 'd)) p;
+	val expect_end : ('a, 'b) p -> ('c, 'b) p;
+	val e : ('a -> ('a, 'b) r) -> ('a, 'c) p -> ('a, 'c) p;
+	val succeed : ('a -> ('a, 'b) r) -> ('a, 'c) p -> ('a, 'c) p;
+	val many : (('a, 'b) p -> ('a, 'b * 'c) p) ->
+                   ('a, 'b) p -> ('a, 'b * 'c list) p;
+	val sepBy : (('a, 'b * 'c) p -> ('a, 'd * 'c) p) ->
+                    (('a, 'd) p -> ('a, 'b * 'c) p) -> 
+                    ('a, 'd) p -> ('a, 'd * 'c list) p;
+	val optional : (('a, 'b) p -> ('a, 'b * 'c) p) ->
+                       ('a, 'b) p -> ('a, 'b * 'c option) p;
+	val oneOf : ('a -> ('b, 'c) p) list -> 'a -> ('b, 'c) p;
 end;
+
+infix 1 >> >>> >>=;
 
 structure ParserHelper : ParserHelper =
 struct
-	type cmd = Token.T list
-	fun partition f l = #2 (List.foldr
-		(fn (x,(l1,l2)) => 	if (f x) then ([],(x::l1)::l2)
-					else (x::l1,l2)) ([],[]) l);
+	(* Parser state consisting either of
+            * a valid state containing a list of tokens and a parser result
+            * or an error message *)
+	datatype ('a,'b) p = State  of ('a list) * 'b
+                           | Failed of string;
+	(* Parse result:
+	    * Result (parsing finished)
+            * More (needs to consume more token using returned function)
+            * End (parsing ended before the current token - do not consume it)
+            * Fail (parsing failed with error message) *)
+        datatype ('a,'b) r = Result of 'b
+                           | More of 'a -> ('a,'b) r
+                           | End of 'b
+                           | Fail of string;
+	(* Obtain a parser result sensibly handling More and End *)
+        fun result [] _      = ([],Fail "No more data!")
+          | result (d::ds) f = case f d of
+                                More f => result ds f
+                               |End v  => (d::ds,Result v)
+                               |r      => (ds,r);
+        (* Interpret a parsing result as an action on a parser state.
+	   Old and new result value are combined as a tuple. 
+
+           "parsers" can be combined using #> and applied in
+           sequence using |>  *)
+        fun p _ (Failed s)     = Failed s
+          | p f (State (ds,v)) = case result ds f of
+                                        (ds',Result v1) => State (ds',(v,v1))
+                                       |(_,Fail s)      => Failed s
+                                       |_               => Failed "Unexpected!";
+	(* Interpret a parser state as a parser result *)
+	fun p2r' (State (_,v)) = Result v
+           |p2r' (Failed s)    = Fail s;
+	fun p2r f v = State (v,"") |> f |> p2r';
+	
+	(* apply f to presult value *)
+	fun  (State (d,v)) >> f = State (d,f v)
+            |(Failed s)    >> _ = Failed s;
+        (* apply g to the result produced by f *)
+	fun  (f >>> g) x = x |> f >> g;
+	(* extract result and apply f *)
+	fun (State (_,v)) >>= f = SOME (f v)
+           |(Failed _)    >>= _ = NONE
+	(* add result v1 to the state *)
+	fun return v1 (State (d,v)) = State (d,(v,v1))
+           |return _ (Failed s)     = Failed s;
+	fun initialState d = State (d,"");
+	(* reorder result tuple *)
+	fun pack (State (d,((v,v1),v2))) = State (d,(v,(v1,v2)))
+           |pack (Failed s) = Failed s;
+	(* expect the end of the token stream
+           (useful to check if all tokens were consumed) *)
+	fun expect_end (Failed s)     = Failed s
+          | expect_end (State ([],v)) = State ([],v)
+          | expect_end (State (_,_)) = Failed "Expected end!";
+	(* create a parser discarding the result of f *)
+	fun e f s = p f s >> #1;
+	(* always succeeds, but only consumes input if the
+	   parsing is successful *)
+	fun succeed f s = case p f s of
+                           Failed _          => s
+                          |State (ds,(v,_)) => State (ds,v);
+	(* apply parser p as many times as possible *) 
+	fun many p s =
+             case (p s,s) of
+              (State (ds,(v,v1)),_)   =>
+               let val (ds',vs) = case many p (State (ds,v)) of
+                                   State (ds',(_,vs)) => (ds',vs)
+			          |Failed _ => (ds,[])
+               in State (ds',(v,v1::vs)) end
+             |(Failed _,State (ds,v)) => State (ds,(v,[]))
+             |(_,Failed s)            => Failed s;
+	(* apply parser p multiple times separated by sep *)
+	fun sepBy sep p s = case many (p #> sep) s of
+                             State (ds,(v,vs)) =>
+                              let val (ds',vs') =
+                                   case p (State (ds,v)) of
+                                    State (ds',(_,v')) => (ds',(v'::vs))
+                                   |Failed _ => (ds,vs)
+                              in State (ds',(v,vs')) end
+                            |Failed s => Failed s;
+	(* if p is a parser then optional p either has the result
+           SOME("result of p") or NONE (if p fails)
+
+	   if p and p1 are parsers then `optional (p #> p1)`
+           is the optional version of `p |> p1` *)
+	fun optional _ (Failed s)     = Failed s
+           |optional p (State (ds,v)) = case p (State (ds,v)) of
+                             Failed _ => State (ds,(v,NONE))
+                            |State (ds',(v',v1)) => State (ds',(v',SOME(v1)));
+	(* try each of the parsers ps from left to right
+           until one succeeds or fail if all parsers fail *)
+	fun oneOf ps s = List.foldl (fn (p,s') => case s' of
+                                                   Failed _ => p s
+                                                   |_ => s')
+                          (Failed "No parser supplied") ps;
+end;
+
+signature Parser =
+sig
+	type cmd = Token.T list;
+        val scan      : string -> cmd list;
+	type parsed_theory;
+	val test : cmd list -> parsed_theory option;
+end;
+
+structure Parser : Parser =
+struct
+	open ParserHelper
+	(* partition (l : a' list) into sublist according predicate
+           (p : 'a -> bool) which signals the start of a new sublist,
+	   i.e. the start of each sublist will satisfy p and all
+           other elements of each sublist will not. Only the first
+           sublist may start with an element that does not satisfy p.
+           
+           example:  partition (curry op= "a") "abababab"
+                   = ["ab","ab","ab","ab"] *)
+        fun partition p l = #2 (List.foldr
+                (fn (x,(l1,l2)) =>      if (p x) then ([],(x::l1)::l2)
+                                        else (x::l1,l2)) ([],[]) l);
+	type cmd = Token.T list;
+        (* scan isabelle source transforming it into a sequence of commands *)
 	fun scan str = str |> Source.of_string |> Symbol.source
                            |> Token.source {do_recover = SOME false}
                                            Keyword.get_lexicons
                                            Position.start
                            |> Token.source_proper |> Source.exhaust
                            |> partition Token.is_command;
-	datatype theory_body_elem = DataType of (string list * (string *
+
+        datatype theory_body_elem = DataType of (string list * (string *
                                     (string * string list) list)) list
                                    |Consts of (string * string) list
                                    |Axioms of (string * string) list
                                    |Lemma of {name: string,
                                               statement: string,
                                               proof: string}
-				   |Class of {name:string,
+                                   |Class of {name:string,
                                               parents:string list,
                                               assumes:(string*string) list,
                                               fixes:(string list*string) list}
-				   |Locale of {name:string,
+                                   |Locale of {name:string,
                                                parents:string list,
                                                assumes:(string*string) list,
                                                fixes:(string list*string) list}
-				   |TypeSynonym of string * string
-				   |Function of {name: string, 
+                                   |TypeSynonym of string * string
+                                   |Function of {name: string,
                                                  tp: string,
                                                  def_eqs: string list}
                                    |PrimRec of {names: (string*string) list,
@@ -46,166 +187,69 @@ struct
                                  imports: string list,
                                  body: theory_body_elem list
                                 };
-	val empty_theory = ParsedTheory {
-                            name = "",
-                            imports = [],
-			    body = []
-                           };
-	datatype ('a,'b) p = State  of ('a list) * 'b
-                           | Failed of string;
-	fun valP (State (_,v)) = v;
-        datatype ('a,'b) r = Result of 'b
-                           | More of 'a -> ('a,'b) r
-                           | End of 'b
-                           | Fail of string;
-        fun result [] _      = ([],Fail "No more data!")
-          | result (d::ds) f = case f d of
-                                More f => result ds f
-                               |End v  => (d::ds,Result v)
-                               |r      => (ds,r);
-	fun expect_end (Failed s)     = Failed s
-          | expect_end (State ([],v)) = State ([],v)
-          | expect_end (State (v,_)) = Failed "Expected end!";
-        (* val p  : ('a -> ('a,'c) r) -> ('a,'b) p -> ('a,('b,'c)) p;
-           
-           'parsers' can be combined using #> and
-           applied in sequence using |>  *)
-        fun p _ (Failed s)     = Failed s
-          | p f (State (ds,v)) = case result ds f of
-                                        (ds',Result v1) => State (ds',(v,v1))
-                                       |(_,Fail s)      => Failed s
-                                       |_               => Failed "Unexpected!";
-	fun p2r (State (_,v)) = Result v
-           |p2r (Failed s)    = Fail s;
-	infix 1 >> >>> >>=;
-	(* modify result value *)
-	fun  (State (d,v)) >> f = State (d,f v)
-            |(Failed s)    >> _ = Failed s;
-	fun  (f >>> g) x = x |> f >> g;
-	(* get result value and apply f to it *)
-	fun (State (d,v)) >>= f = SOME (f v)
-           |(Failed _)    >>= _ = NONE
-	fun getError (State (d,v)) = ""
-           |getError (Failed s)    = s;
-	fun return v1 (State (d,v)) = State (d,(v,v1))
-           |return _ (Failed s)     = Failed s;
-	exception Test of string;
-	fun pack (State (d,((v,v1),v2))) = State (d,(v,(v1,v2)))
-           |pack (Failed s) = Failed s;
-        fun failT s t = Fail (s^" at "^Token.pos_of t);
-	(* create a parser discarding the result of f *)
-	fun e f s = p f s >> #1;
-	(* always succeeds, but only consumes input if the
-	   parsing is successful *)
-	fun succeed f s = case p f s of
-                           Failed _          => s
-                          |State (ds,(v,v1)) => State (ds,v);
-	(* apply parser p as many times as possible *) 
-	fun many p s =
-             case (p s,s) of
-              (State (ds,(v,v1)),_)   =>
-               let val (ds',vs) = case many p (State (ds,v)) of
-                                   State (ds',(_,vs)) => (ds',vs)
-			          |Failed s => (ds,[])
-               in State (ds',(v,v1::vs)) end
-             |(Failed s,State (ds,v)) => State (ds,(v,[]))
-             |(_,Failed s)            => Failed s;
-	fun sepBy sep p s = case many (p #> sep) s of
-                             State (ds,(v,vs)) =>
-                              let val (ds',vs') =
-                                   case p (State (ds,v)) of
-                                    State (ds',(_,v')) => (ds',(v'::vs))
-                                   |Failed _ => (ds,vs)
-                              in State (ds',(v,vs')) end
-                            |Failed s => Failed s;
-	(* if p and p1 are parsers then `optional (p #> p1)`
-           is the optional version of `p |> p1` *)
-	fun optional p (Failed s)     = Failed s
-           |optional p (State (ds,v)) = case p (State (ds,v)) of
-                             Failed _ => State (ds,(v,NONE))
-                            |State (ds',(v',v1)) => State (ds',(v',SOME(v1)));
-	fun oneOf ps s = List.foldl (fn (p,s') => case s' of
-                                                   Failed _ => p s
-                                                   |_ => s')
-                          (Failed "No parser supplied") ps
+
+	(* Add token position to error message *)
+	fun failT s t = Fail (s^" at "^Token.pos_of t);
 	fun content s t = if Token.content_of t = s then Result true
                           else failT ("Expected content '"^s^"' but found "^
                                       "content '"^Token.content_of t^"'") t;
-	fun ident p t   = if Token.ident_with p t
-                          then Result (Token.content_of t)
-                          else failT "Not a valid identifier!" t;
-	fun type_ident t = if Token.kind_of t = Token.TypeIdent
+        fun ident t      = if Token.ident_with (K true) t
+                           then Result (Token.content_of t)
+                           else failT "Not a valid identifier!" t;
+        fun type_ident t = if Token.kind_of t = Token.TypeIdent
                            then Result (Token.content_of t)
                            else failT "Not a TypeIdent!" t;
-	fun str_ t       = if Token.kind_of t = Token.String
+        fun str_ t       = if Token.kind_of t = Token.String
                            then Result (Token.content_of t)
                            else failT "Not a String!" t;
-	fun keyword p t = if Token.keyword_with p t
-                          then Result (Token.content_of t)
-                          else failT "Not a valid keyword!" t;
-	fun parse_theory_head cmd = State (cmd,"") |> e (content "theory")
-                                    |> p (ident (K true)) >> #2
-                                    |> e (keyword (curry op= "imports"))
-                                    |> many (p (ident (K true)))
-                                    |> e (keyword (curry op= "begin"))
-                                    |> expect_end;
-	fun parse_theory_end cmd  = State (cmd,"") |> e (content "end")
-                                    |> expect_end;
-	fun parse_body_elem cmd   =
+        fun keyword s t  = if Token.keyword_with (curry op= s) t
+                           then Result (Token.content_of t)
+                           else failT "Not a valid keyword!" t;
+        val parse_theory_head = e (content "theory") #> p ident >>> #2
+                                #> e (keyword "imports") #> many (p ident)
+                                #> e (keyword "begin") #> expect_end;
+	val parse_theory_end = e (content "end") #> expect_end;
+        val parse_body_elem =
             let val dt_type = e (content "datatype")
-                               #> sepBy (e (keyword (curry op="and")))
-                                   (oneOf [e (keyword (curry op= "(")) #>
-                                           sepBy (e (keyword (curry op= ",")))
+                               #> sepBy (e (keyword "and"))
+                                   (oneOf [e (keyword "(") #>
+                                           sepBy (e (keyword ","))
                                                  (p type_ident) #>
-                                           e (keyword (curry op= ")")),
+                                           e (keyword ")"),
                                            many (p type_ident), return []]
-                                    #> p (ident (K true))
-                                    #> e (keyword (curry op= "="))
-                                    #> sepBy (e (keyword (curry op="|")))
-                                             (oneOf [p (ident (K true)),
-                                                     p str_]
-                                              #> many (oneOf
-                                                 [p (ident (K true)),
-                                                  p str_]) #> pack)
+                                    #> p ident #> e (keyword "=")
+                                    #> sepBy (e (keyword "|"))
+                                             (oneOf [p ident,p str_]
+                                              #> many (oneOf [p ident,p str_])
+                                              #> pack)
                                     #> pack #> pack)
                                #> expect_end >>> DataType o #2
-                val consts  = e (content "consts")
-                               #> many (p (ident (K true))
-                               #> e (keyword (curry op= "::"))
-                               #> (p str_) #> pack) #> expect_end
-                               >>> Consts o #2
-                val axioms  = e (content "axioms")
-                               #> many (p (ident (K true))
-                               #> e (keyword (curry op= ":"))
-                               #> (p str_) #> pack) #> expect_end
-                               >>> Axioms o #2
-		val cls_assumes = e (keyword (curry op= "assumes"))
-                                  #> sepBy
-                                     (e (keyword (curry op= "and")))
-                                     (p (ident (K true))
-                                       #> e (keyword (curry op= ":"))
-                                       #> p str_ #> pack)
-		val cls_assumes1 = e (keyword (curry op= "assumes"))
-                                  #> sepBy
-                                     (e (keyword (curry op= "and")))
-                                     (p (ident (K true))
-                                       #> e (keyword (curry op= ":"))
-                                       #> p str_ #> pack)
-		val cls_fixes = e (keyword (curry op= "fixes"))
-                                #> sepBy
-                                   (e (keyword (curry op= "and")))
-                                   (many (p (ident (K true)))
-                                     #> e (keyword (curry op= "::"))
-                                     #> p str_ #> pack)
-		val cls     = e (content "class")
-			       #> p (ident (K true))
-                               #> succeed (keyword (curry op= "="))
-                               #> sepBy (e (keyword (curry op= "+")))
-                                        (p (ident (K true)))
-                               #> succeed (keyword (curry op= "+"))
-			       #> optional cls_assumes #> optional cls_fixes
+                val consts  = e (content "consts") #> many (
+                                  p ident #> e (keyword "::") #> p str_ #> pack)
+                               #> expect_end >>> Consts o #2
+                val axioms  = e (content "axioms") #> many ((p ident)
+                               #> e (keyword ":") #> (p str_) #> pack)
+                               #> expect_end >>> Axioms o #2
+                val cls_assumes = e (keyword "assumes") #>
+                                    sepBy (e (keyword "and"))
+                                          (p ident #> e (keyword ":")
+                                           #> p str_ #> pack)
+		val cls_assumes1 = e (keyword "assumes") #>
+                                     sepBy (e (keyword "and"))
+                                           (p ident #> e (keyword ":")
+                                            #> p str_ #> pack)
+                val cls_fixes = e (keyword "fixes") #>
+                                   sepBy (e (keyword "and"))
+                                         (many (p ident) #> e (keyword "::")
+                                          #> p str_ #> pack)
+                val cls     = e (content "class") #> p ident
+                               #> succeed (keyword "=")
+                               #> sepBy (e (keyword "+"))
+                                        (p ident)
+                               #> succeed (keyword "+")
+                               #> optional cls_assumes #> optional cls_fixes
                                #> optional cls_assumes1
-			       >>> (fn (((((_,n),ps),a),f),a1) => 
+                               >>> (fn (((((_,n),ps),a),f),a1) =>
                                     Class { name = n,parents = ps,
                                             assumes = case (a,a1) of
                                                (SOME v,SOME v1) => v@v1
@@ -215,12 +259,11 @@ struct
                                             fixes = case f of
                                                      SOME v => v
                                                     |NONE => []})
-                val locale     = e (content "locale")
-                               #> p (ident (K true))
-                               #> succeed (keyword (curry op= "="))
-                               #> sepBy (e (keyword (curry op= "+")))
-                                        (p (ident (K true)))
-                               #> succeed (keyword (curry op= "+"))
+                val locale     = e (content "locale") #> p ident
+                               #> succeed (keyword "=")
+                               #> sepBy (e (keyword "+"))
+                                        (p ident)
+                               #> succeed (keyword "+")
                                #> optional cls_assumes #> optional cls_fixes
                                #> optional cls_assumes1
                                >>> (fn (((((_,n),ps),a),f),a1) =>
@@ -233,71 +276,62 @@ struct
                                             fixes = case f of
                                                      SOME v => v
                                                     |NONE => []})
-		val tp_synonym = e (content "type_synonym")
-                                  #> p (ident (K true))
-                                  #> e (keyword (curry op= "="))
+                val tp_synonym = e (content "type_synonym")
+                                  #> p ident #> e (keyword "=")
                                   #> p str_ #> pack >>> TypeSynonym o #2
-		val fun_       = e (content "fun")
-				  #> p (ident (K true))
-                                  #> e (keyword (curry op= "::"))
-                                  #> p str_ #> e (keyword (curry op= "where"))
-                                  #> sepBy (e (keyword (curry op= "|")))
+                val fun_       = e (content "fun") #> p ident
+                                  #> e (keyword "::") #> p str_
+                                  #> e (keyword "where")
+                                  #> sepBy (e (keyword "|"))
                                            (p str_)
                                   >>> (fn (((_,n),t),def) =>
                                         Function { name = n, tp = t,
                                                    def_eqs = def })
 		val primrec    = e (content "primrec")
-                                 #> sepBy (e (keyword (curry op= "and")))
-                                     (p (ident (K true)) #>
-                                      e (keyword (curry op= "::")) #>
+                                 #> sepBy (e (keyword "and"))
+                                     (p ident #> e (keyword "::") #>
                                       p str_ #> pack)
-                                 #> e (keyword (curry op= "where"))
-                                 #> sepBy (e (keyword (curry op= "|")))
-                                          (p str_)
+                                 #> e (keyword "where")
+                                 #> sepBy (e (keyword "|")) (p str_)
                                  >>> (fn ((_,ns),def) =>
                                        PrimRec { names = ns, def_eqs = def })
-		val def        = e (content "definition")
-				 #> p (ident (K true))
-                                 #> e (keyword (curry op= "::"))
-                                 #> p str_
-                                 #> e (keyword (curry op= "where"))
-                                 #> p str_
+                val def        = e (content "definition")
+                                 #> p ident #> e (keyword "::") #> p str_
+                                 #> e (keyword "where") #> p str_
                                  #> pack #> pack >>> Definition o #2
-            in State (cmd,"") |> oneOf [dt_type,consts,axioms,cls,
-                                        tp_synonym,fun_,primrec,
-                                        locale]  end;
-	fun parse_lemma cmd =  State (cmd,"") |> e (content "lemma")
-                              |> p (ident (K true))
-                              |> e (keyword (curry op= ":"))
-                              |> (p str_) |> pack >> #2 |> p2r
-	fun proof_qed l cmd = case cmd of
-                               t::ts => if Token.content_of t = "qed"
+            in oneOf [dt_type,consts,axioms,cls,
+                      tp_synonym,fun_,primrec,locale,def]  end;
+        val parse_lemma = e (content "lemma")
+                          #> p ident #> e (keyword ":")
+                          #> (p str_) #> pack >>> #2;
+        fun proof_qed l cmd = case cmd of
+                               t::_  => if Token.content_of t = "qed"
                                         then Result (List.rev (cmd::l))
                                         else More (proof_qed (cmd::l))
                               |_ => Fail "Expected non-empty command!";
-	fun cmdList2string cmds = List.map (List.map Token.unparse) cmds
+        fun cmdList2string cmds = List.map (List.map Token.unparse) cmds
                                   |> List.map (space_implode " ")
                                   |> cat_lines;
 	val proof = oneOf [p (fn cmd =>
                             case cmd of
-                             t::ts => if Token.content_of t = "proof"
+                             t::_  => if Token.content_of t = "proof"
                                       then More (proof_qed [cmd])
                                       else Fail "Unexpected command!"
                             |_ => Fail "Expected non-empty command!")
                            >>> (fn (v,cmds) => (v,cmdList2string cmds))];
-	fun test cmds = State (cmds,"") |> p (parse_theory_head #> p2r) >> #2
-                        |> many (oneOf [p (parse_body_elem #> p2r),
-                                        p parse_lemma #> proof #> pack >>> 
-                                         (fn (v,((n,stmt),prf)) =>
-                                           (v,Lemma {name=n,
-                                                     statement=stmt,
-                                                     proof=prf}))])
-                        |> e (parse_theory_end #> p2r)
-			|> expect_end >> (fn ((n,i),b) =>
-                            ParsedTheory {name = n,
-                                          imports = i,
-                                          body = b})
-                        |> getError;
+        val test = initialState #> p (parse_theory_head |> p2r) >>> #2
+                   #> many (oneOf [p (parse_body_elem |> p2r),
+                                   p (parse_lemma |> p2r) #> proof #> pack >>>
+                                    (fn (v,((n,stmt),prf)) =>
+                                      (v,Lemma {name=n,
+                                                statement=stmt,
+                                                proof=prf}))])
+                   #> e (parse_theory_end |> p2r)
+                   #> expect_end >>> (fn ((n,i),b) =>
+                       ParsedTheory {name = n,
+                                     imports = i,
+                                     body = b})
+                   #> (fn v => v >>= I);
 end;
 
 signature ExportHelper =
@@ -478,7 +512,7 @@ fun datatypes_of T =
                SOME (_,(s,ts,_)) => Type (s, List.map
                 (curry dtyp2typ descs) ts)
              | NONE => raise ExportError("Internal Error!")
-     val dt_desc = fn info => List.map (fn (i,(s,vs,eqs)) =>
+     val dt_desc = fn info => List.map (fn (_,(s,vs,eqs)) =>
       let val vs'  = List.map (curry dtyp2typ info) vs
           val eqs' = List.map (fn (s,ts) =>
                       (s,List.map (curry dtyp2typ info) ts)) eqs
@@ -742,7 +776,7 @@ fun xml_of_term' T tbl t = case t of
 fun xml_of_term T t = xml_of_term' T Symtab.empty
      (XML_Syntax.xml_of_term t)
 
-fun xml_of_datatype T eqs = XML.Elem (("RecDatatypes",[]),List.map
+fun xml_of_datatype _ eqs = XML.Elem (("RecDatatypes",[]),List.map
  (fn (name,type_params,constructors) =>
     XML.Elem (("Datatype",[("name",Long_Name.base_name name)]),
        (List.map XML_Syntax.xml_of_type type_params)
