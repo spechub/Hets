@@ -1,17 +1,4 @@
-signature ParserHelper =
-sig
-	type thy_body
-	val cmd_theory : (Token.T list * Thy_Header.header) parser
-	val cmd_header : string parser
-	val thy_body : (Token.T list * thy_body) parser
-	val unparse_tokens : Token.T list -> string
-	val init_thy : (Token.T list * Thy_Header.header) ->
-                       Toplevel.state * (Toplevel.state -> 
-                        Token.T list -> Toplevel.state)
-end;
-
-structure ParserHelper : ParserHelper =
-struct
+structure TheoryData = struct
 	type opt_target = (xstring * Position.T) option;
 	datatype misc_body = Chapter of opt_target * string
                             |Section of opt_target * string
@@ -41,7 +28,7 @@ struct
         |Classrel of (string * string) list
         |DefaultSort of opt_target * string
         |TypeDecl of ((opt_target * string list) * binding) * mixfix
-        |TypeSynonym of ((opt_target * string list) * binding) * 
+	|TypeSynonym of ((opt_target * string list) * binding) *
                         (string * mixfix)
         |Nonterminal of binding list
         |Arities of (string * string list * string) list
@@ -54,8 +41,8 @@ struct
         |Axioms of (Attrib.binding * string) list
 	|Defs of (bool * bool) * ((binding * string) * Args.src list) list
         |Definition of opt_target * ((binding * string option * mixfix) option
-                       * (Attrib.binding * string)) 
-	|Abbreviation of opt_target * ((string * bool) * 
+                       * (Attrib.binding * string))
+        |Abbreviation of opt_target * ((string * bool) *
                           ((binding * string option * mixfix) option * string))
         |TypeNotation of opt_target * ((string * bool) * (string * mixfix) list)
         |NoTypeNotation of opt_target * ((string * bool) *
@@ -121,7 +108,7 @@ struct
                    (Element.context list * Element.statement)) * proof
 	|Corollary of (((opt_target * Attrib.binding) *
                         (xstring * Position.T) list) *
-                       (Element.context list * Element.statement)) * proof
+                        (Element.context list * Element.statement)) * proof
 	|SchematicTheorem of (((opt_target * Attrib.binding) *
                                (xstring * Position.T) list) *
                               (Element.context list * Element.statement)) *
@@ -133,20 +120,36 @@ struct
                                  (xstring * Position.T) list) *
                                 (Element.context list * Element.statement)) *
                                proof
-	|Primrec of (opt_target * (binding * string option * mixfix) list) *
+        |Primrec of (opt_target * (binding * string option * mixfix) list) *
                     (Attrib.binding * string) list
-	|Datatype of Datatype.spec_cmd list
-	|RepDatatype of string list
-	|Fun of ((Function_Common.function_config * (binding *
+        |Datatype of Datatype.spec_cmd list
+        |RepDatatype of string list
+        |Fun of opt_target * ((Function_Common.function_config * (binding *
                  string option * mixfix) list) *
                 (Attrib.binding * string) list)
         |PartialFunction of xstring * ((binding * string option * mixfix) list *
                              (Attrib.binding  * string))
-	|Function of ((Function_Common.function_config *
+        |Function of (opt_target * ((Function_Common.function_config *
                        (binding * string option * mixfix) list)
-                      * (Attrib.binding * string) list) * proof
-	|Termination of string option * proof
-	|Misc of misc_body;
+              	      * (Attrib.binding * string) list)) * proof
+        |Termination of string option * proof
+        |Misc of misc_body;
+end;
+
+signature ParserHelper =
+sig
+	val cmd_theory : (Token.T list * Thy_Header.header) parser
+	val cmd_header : string parser
+	val thy_body : (Token.T list * TheoryData.thy_body) parser
+	val unparse_tokens : Token.T list -> string
+	val init_thy : (Token.T list * Thy_Header.header) ->
+                       Toplevel.state * (Toplevel.state ->
+                        Token.T list -> Toplevel.state)
+end;
+
+structure ParserHelper : ParserHelper =
+struct
+	open TheoryData
 	val hide = curry Hide;
 	fun preserve_toks f toks =
              let val (v,toks') = f toks
@@ -214,9 +217,17 @@ struct
              Scan.optional Parse_Spec.includes [] --
              Parse_Spec.general_statement;
 	val mk_thy_body = List.map (fn (s,p) => Parse.command_name s |-- p);
-	fun partition p [] = []
-           |partition p (t::l')  = let val (cmd,l'') = take_prefix p l'
-                                   in (t::cmd)::(partition p l'') end;
+	(* partition (l : a' list) into sublist according predicate
+           (p : 'a -> bool) which signals the start of a new sublist,
+           i.e. the start of each sublist will satisfy p and all
+           other elements of each sublist will not. Only the first
+           sublist may start with an element that does not satisfy p.
+           
+           example:  partition (curry op= "a") "abababab"
+                   = ["ab","ab","ab","ab"] *)
+        fun partition p l = #2 (List.foldr
+                (fn (x,(l1,l2)) =>      if (p x) then ([],(x::l1)::l2)
+                                        else (x::l1,l2)) ([],[]) l);
 	fun proof_qed i = Parse.group (fn () => "proof_qed") 
                           (fn t =>
                            if i > 0 then Scan.first
@@ -438,7 +449,7 @@ struct
         ("rep_datatype",Scan.repeat1 Parse.term
                         >> RepDatatype),
         (* line 173 HOL/Tools/Function/fun.ML *)
-        ("fun",Function_Common.function_parser
+        ("fun",Parse.opt_target -- Function_Common.function_parser
                 Function_Fun.fun_config
                >> Fun),
         (* line 285 HOL/Tools/Function/partial_function.ML *)
@@ -446,7 +457,7 @@ struct
          @{keyword ")"}) -- (Parse.fixes -- (Parse.where_ |--
          Parse_Spec.spec))) >> PartialFunction),
 	(* line 284 HOL/Tools/Function/function.ML *)
-        ("function",Function_Common.function_parser
+        ("function",Parse.opt_target -- Function_Common.function_parser
                      Function_Common.default_config
                     -- proof
                     >> Function),
@@ -574,10 +585,15 @@ sig
 	val dbg       : Token.T list -> (Token.kind * string) list
 	datatype thy = Thy of {header:string option,
                                args:(Token.T list * Thy_Header.header),
-                               body:(Token.T list * ParserHelper.thy_body)
+                               body:(Token.T list * TheoryData.thy_body)
                                     list};
 	val thy : Token.T list -> thy
-	val parse_typ : theory -> (string * Position.T) option -> string -> typ
+	val read_sort : Toplevel.state -> (string * Position.T) option
+                         -> string -> sort
+	val read_typ : Toplevel.state -> (string * Position.T) option
+                         -> string -> typ
+	val read_term : Proof_Context.mode -> Toplevel.state ->
+                         (string * Position.T) option -> string -> term
 	val pretty_tokens : unit -> unit
 end;
 
@@ -586,7 +602,7 @@ struct
 	open ParserHelper
         datatype thy = Thy of {header:string option,
                                args:(Token.T list * Thy_Header.header),
-                               body:(Token.T list * thy_body) list};
+                               body:(Token.T list * TheoryData.thy_body) list};
         (* scan isabelle source transforming it into a sequence of commands *)
         fun scan s =   File.read (Path.explode s)
                     |> Source.of_string |> Symbol.source
@@ -598,10 +614,273 @@ struct
                   -- Scan.repeat thy_body
                   --| Parse.command_name "end"
                   #> (fn (((h,a),b),_) => Thy {header=h,args=a,body=b}));
-	fun parse_typ T loc =
+	fun read_sort state loc =
+         let val ctxt = Named_Target.context_cmd (the_default
+                         ("-", Position.none) loc) (Toplevel.theory_of state)
+         in Syntax.read_sort ctxt end;
+	fun read_typ state loc =
          let val ctxt = Named_Target.context_cmd (the_default 
-                         ("-", Position.none) loc) T
-         in Syntax.parse_typ ctxt end;
+                         ("-", Position.none) loc) (Toplevel.theory_of state)
+         in Syntax.read_typ ctxt end;
+	fun read_term mode state loc =
+         let val ctxt' = Named_Target.context_cmd (the_default
+                          ("-", Position.none) loc) (Toplevel.theory_of state)
+             val ctxt = Proof_Context.set_mode mode ctxt'
+         in Syntax.read_term ctxt end;
 	fun pretty_tokens () =   (Token.unparse #> PolyML.PrettyString)
                               |> K |> K |> PolyML.addPrettyPrinter;
+end;
+
+signature Export =
+sig
+	val xml_of_theory : Parser.thy -> XML.tree
+end;
+
+structure Export : Export =
+struct
+	structure XML_Syntax = Legacy_XML_Syntax
+	open TheoryData
+	datatype thy = datatype Parser.thy;
+	fun xml name attrs body = XML.Elem ((name,attrs),body);
+	fun xml_of_import (name,_)  = xml "Import" [("name",name)] [];
+	fun xml_of_keyword (s,spec) =
+             case spec of
+               SOME ((s1,[]),[]) => xml "Keyword"
+                                     [("name","\""^s^"\" :: "^s1)] []
+              |NONE              => xml "Keyword" [("name",s)] []
+              |_                 => raise
+               (Fail ("xml_of_keyword not implemented for "^
+                      PolyML.makestring (s,spec)));
+	fun xml_of_use (s,b) =
+	     let val p = if b then "("^Path.print s^")"
+                         else Path.print s
+             in xml "UseFile" [("name",p)] [] end;
+	fun xml_of_expr ((name,_),(("",false),Expression.Named [])) =
+             xml "Parent" [("name",name)] []
+           |xml_of_expr v = raise (Fail ("xml_of_expr not implemented for "^
+                                         PolyML.makestring v));
+	fun xml_of_body_elem ((toks,e),((state,trans),l)) =
+            let fun extract_context t body =
+                     let val btoks = List.map #1 body |> flat
+                         val blen = List.length btoks
+                         val len  = List.length t
+			 fun eq t1 t2 = (Token.kind_of t1 = Token.kind_of t2)
+                                        andalso (Token.content_of t1 =
+                                                 Token.content_of t2)
+                     in if blen = 0 then (t,[])
+                        else
+                         if not (eq (List.nth (t,len-blen-1)) (List.hd btoks))
+                          orelse not (eq (List.nth (t,len-2)) (List.last btoks))
+                         then raise (Fail "Unexpected result!")
+                         else (List.take (t,len-blen-1),
+                               [List.last t]) end
+                fun attr_of_target (SOME (s,_)) = [("target",s)]
+                   |attr_of_target NONE         = []
+		fun attr_of_mixfix Mixfix.NoSyn = []
+                   |attr_of_mixfix m = [("mixfix",Mixfix.pretty_mixfix m
+                                                  |> Pretty.str_of)]
+		fun xml_of_typ state target (SOME typ) = [
+                       Parser.read_typ state target typ
+                    |> XML_Syntax.xml_of_type]
+                   |xml_of_typ _ _ _ = []
+		fun binding_to_str b =
+	                let val b' = Binding.print b
+        	        in String.substring (b',1,String.size b'-2) end
+		fun attrs_of_binding (name,args) =
+                    [("name",binding_to_str name),
+                     ("args",List.map (Args.pretty_src
+                       (Toplevel.context_of state) #> Pretty.string_of) args
+                       |> space_implode ", ")];
+	        fun xml_of_context state target
+                     (Element.Fixes fixes) = xml "Fixes" []
+        	     (List.map (fn (b,tp,mx) =>
+	               (xml "Fix" ([("name",binding_to_str b)]
+        	                   @attr_of_mixfix mx)
+                                    (xml_of_typ state target tp))) fixes)
+	           |xml_of_context state target
+                     (Element.Assumes ass) = xml "Assumes" []
+                     (List.map (fn (b,tms) => case tms of
+                       [(tm,[])] => xml "Assumption" (attrs_of_binding b)
+                        [Parser.read_term Proof_Context.mode_default
+                          state target tm |> XML_Syntax.xml_of_term]
+                      |v => raise (Fail ("xml_of_context not implemented for "^
+                                         PolyML.makestring v^" (Assumption)")))
+                      ass)
+	           |xml_of_context _ _ v =
+                     raise (Fail ("xml_of_context not implemented for "^
+	                          PolyML.makestring v));
+		fun xml_of_statement state target (Element.Shows s) =
+                    List.map (fn (b,tms) =>
+                     xml "Shows" (attrs_of_binding b)
+                      (List.map (fn (t,ts) => xml "show" [] (List.map
+                        (Parser.read_term Proof_Context.mode_default
+                         state target #> XML_Syntax.xml_of_term)
+                      (t::ts))) tms)) s
+                   |xml_of_statement _ _ v =
+                     raise (Fail ("xml_of_statement not implemented for "^
+                                  PolyML.makestring v));
+		fun attr_of_function_config
+                    (Function_Common.FunctionConfig {sequential,
+                     default,domintros,partials}) =
+                      (if sequential then [("sequential","")] else [])
+                     @(case default of
+                        SOME v => [("default",v)] | NONE => [])
+                     @(if domintros  then [("domintros" ,"")] else [])
+                     @(if partials   then [("partials"   ,"")] else [])
+                val (elem,state')   = case e of
+                  Locale ((name,(parents,ctxt)),body) =>
+                  let val (begin_,end_) = extract_context toks body
+                       val s1 = trans state begin_
+                       val ((s2,_),b_elems) =
+                            List.foldl xml_of_body_elem ((s1,trans),[]) body
+                       val s3 = trans s2 end_
+		       val parents' = case parents of
+                                      (ps,[]) => List.map xml_of_expr ps
+                                     |_ => raise (Fail "Case not implemented!")
+		       val name'  = [("name",binding_to_str name)]
+		       val target = SOME (binding_to_str name,Position.none)
+		       val ctxt'  = List.map (xml_of_context s3 target) ctxt
+		   in (xml "Locale" name' (ctxt'@parents'@
+                        [xml "Body" [] (List.rev b_elems)]),s3) end
+		 |Class ((name,(parents,ctxt)),body) =>
+                   let val (begin_,end_) = extract_context toks body
+                       val s1 = trans state begin_
+                       val ((s2,_),b_elems) =
+                            List.foldl xml_of_body_elem ((s1,trans),[]) body
+                       val s3 = trans s2 end_
+		       val target = SOME (binding_to_str name,Position.none)
+                       val parents' = List.map (fn p => xml "Parent"
+                            [("name",case Parser.read_sort s1 target p of
+                                      [cls] => cls
+                                     |_     => raise (Fail "Unexpected result"))
+                            ] []) parents
+                       val name'  = [("name",binding_to_str name)]
+                       val ctxt'  = List.map (xml_of_context s3 target) ctxt
+                   in (xml "Cls" name' (ctxt'@parents'@
+                        [xml "Body" [] (List.rev b_elems)]),s3) end
+                 |TypeSynonym (((target,vars),name),(typ,mixfix))
+                              =>
+                   let val s1      = trans state toks
+                       val typ'    = Parser.read_typ state target typ
+                                     |> XML_Syntax.xml_of_type
+		       val name'   = [("name",binding_to_str name)]
+		       val target' = attr_of_target target
+		       val mixfix' = attr_of_mixfix mixfix
+		       val vars'   = xml "Vars" [] (List.map
+                         (fn s => TFree (s,[]) |> XML_Syntax.xml_of_type)
+                          vars)
+                   in (xml "TypeSynonym" (name'@target'@mixfix')
+                       ([vars']@[typ']),s1) end
+		 |Datatype dts =>
+                   let val s1 = trans state toks
+                       val dts' = List.map
+                        (fn ((name,vars,mx),cs) => xml "Datatype"
+                          ([("name",binding_to_str name)]
+                           @(attr_of_mixfix mx))
+                          (List.map (fn (c,tms,mx) =>
+                             xml "Constructor" ([("name",binding_to_str c)]
+                              @attr_of_mixfix mx) (List.map
+                               (Parser.read_typ s1 NONE #>
+                                XML_Syntax.xml_of_type) tms)) cs
+                           @[xml "Vars" [] (List.map (fn (v,s) =>
+                            XML_Syntax.xml_of_type (TFree (v,
+                             case s of
+                              SOME(s') => [s']
+                             |NONE     => []))) vars)])) dts
+                   in (xml "Datatypes" [] dts', s1) end
+		 |Consts cs => (xml "Consts" [] (List.map
+                   (fn (name,tp,mx) => xml "Const"
+                    ([("name",binding_to_str name)]
+                     @attr_of_mixfix mx)
+                    [Parser.read_typ state NONE tp
+                     |> XML_Syntax.xml_of_type]) cs), trans state toks)
+		 |Axioms axs => (xml "Axioms" [] (List.map
+                   (fn (b,tm) => xml "Axioms"
+                    (attrs_of_binding b)
+                    [Parser.read_term Proof_Context.mode_default state NONE tm
+                     |> XML_Syntax.xml_of_term]) axs), trans state toks)
+		 |Lemma ((((target,(name,args)), strs),(ctxt,stmt)),proof) =>
+                  let val result = case (binding_to_str name,args,strs) of
+                   ("",[],[]) =>
+                    let val s1 = trans state toks
+                        val ctxt' = List.map (xml_of_context state target) ctxt
+                    in (xml "Lemma" (attr_of_target target)
+                         (ctxt'@[xml "Proof" [] [XML.Text proof]]
+                         @xml_of_statement state target stmt),s1) end
+                  |_ => raise (Fail "Case not implemented")
+                  in result end
+		 |Definition (target,(name,(binding,tm))) =>
+                   let val s1 = trans state toks
+                       val (attrs,tp') = case name of
+                                    SOME (name,tp,mx) =>
+                                     (("name",binding_to_str name)::
+                                      (attr_of_mixfix mx),
+                                      xml_of_typ state target tp)
+                                   |NONE => ([],[])
+                       val tm' = [Parser.read_term Proof_Context.mode_default
+                            state target tm |> XML_Syntax.xml_of_term]
+                   in (xml "Definition" attrs (tp'@tm'),s1) end
+		 |Fun (target,((cfg,f),a)) =>
+                   let val s1 = trans state toks
+                       val fixes = List.map (fn (b,typ,mixfix) =>
+                            xml "FunSig" (attr_of_mixfix mixfix
+                                         @[("name",binding_to_str b)])
+                                      (case typ of
+                                        SOME s =>
+                                          [Parser.read_typ state target s
+                                           |> XML_Syntax.xml_of_type]
+                                       |NONE => [])) f
+                       val eqs = List.map (fn ((b,l),tm) =>
+                                case ((binding_to_str b,l),tm) of
+                                  (("",[]),tm) =>
+                                   (Parser.read_term Proof_Context.mode_pattern
+                                       state target tm
+                                    |> XML_Syntax.xml_of_term)
+                                 | _ =>
+                                  raise (Fail "Not yet implemented for Fun!"))
+                                 a
+                   in (xml "Fun" (attr_of_target target
+                                 @attr_of_function_config cfg)
+                                 (fixes@eqs),s1) end
+		 |Primrec ((target,f),a) =>
+                   let val s1 = trans state toks
+                       val fixes = List.map (fn (b,typ,mixfix) =>
+                            xml "FunSig" (attr_of_mixfix mixfix
+                                         @[("name",binding_to_str b)])
+                                      (case typ of
+                                        SOME s =>
+                                          [Parser.read_typ state target s
+                                           |> XML_Syntax.xml_of_type]
+                                       |NONE => [])) f
+                       val eqs = List.map (fn ((b,l),tm) =>
+                                case ((binding_to_str b,l),tm) of
+                                  (("",[]),tm) =>
+                                   (Parser.read_term Proof_Context.mode_pattern
+                                       state target tm
+                                    |> XML_Syntax.xml_of_term)
+                                 | _ =>
+                                  raise (Fail "Not yet implemented for Fun!"))
+                                 a
+                   in (xml "Primrec" (attr_of_target target)
+                                     (fixes@eqs),s1) end
+                 |_ => raise (Fail ("Export of "^(PolyML.makestring e |>
+                                                  space_explode " " |>
+                                                   List.hd)
+                                    ^" not yet implemented"))
+             in ((state',trans),elem::l) end;
+	fun xml_of_body state body =
+            let val (state',b_elems) = List.foldl xml_of_body_elem
+                                        (state,[]) body
+            in xml "Body" [] (List.rev b_elems) end;
+	fun xml_of_theory (Thy {header,args=(th,h),body}) =
+	    let val imports      = List.map xml_of_import (#imports h)
+		val keywords     = List.map xml_of_keyword (#keywords h)
+		val uses         = List.map xml_of_use (#uses h)
+                val name         = ("name", #1 (#name h))
+		val header'      = case header of 
+                                    SOME s => [("header",s)]
+                                   |NONE   => []
+		val (s,t)        = ParserHelper.init_thy (th,h)
+		val body'        = [xml_of_body (s,t) body]
+            in xml "Thy" (name::header') (imports@keywords@body') end;
 end;

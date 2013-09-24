@@ -13,15 +13,6 @@ locale comm_semi = semi +
  and test1: "y=y"
  and test2: "x=x"
 
-theorem (in comm_semi) lcomm:
- "x * (y * z) = y * (x * z)"
-proof -
- have "x * (y * z) = (x * y) * z" by (simp add: assoc)
- also have "... = (y * x) * z" by (simp add: comm)
- also have "... = y * (x * z)" by (simp add: assoc)
- finally show ?thesis .
-qed
-
 locale parent
 locale parent1
 

@@ -95,18 +95,16 @@ val out = fn (i,s) => out' (\"$COMM_FILE\",i,s);
 val v = fn s => out (1,s);
 val e = fn s => out (0,s);
 
-v \"Isabelle: Loading theory $TRANS\n\";
-use_thy \"$TRANS\";
-
 v \"Isabelle: Loading helper library\n\";
-use \"$SCRIPTPATH/export_helper.ml\";
+use \"$SCRIPTPATH/parser.ml\";
 
-val T = Thy_Info.get_theory \"$TRANS_T\";
+v \"Isabelle: Analyzing theory\n\";
+
+val thy = Parser.scan \"$TRANS.thy\" |> Parser.thy;
 
 v \"Isabelle: Exporting theory information\n\";
 (File.write (Path.explode \"$OUT_FILE\")
- (XML.string_of (ExportHelper.xml_of_theories
-  (ExportHelper.get_theories T))))
+ (XML.string_of (Export.xml_of_theory thy)))
 handle ex => e ((General.exnMessage ex)^\"\n\");
 *}
 end"
