@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=HETS
+Exec=hets -v -g %f
+Terminal=true
+Type=Application
+MimeType=text/x-isabelle

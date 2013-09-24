@@ -1,0 +1,12 @@
+Source: hets-mime-types
+Section: misc
+Priority: extra
+Maintainer: Jonathan von Schroeder <jonathan.von_schroeder@dfki.de>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+
+Package: hets-mime-types
+Architecture: all
+Depends: ${misc:Depends}, hets
+Description: Mime types for HETS
+ This package should be merged into the main HETS package
