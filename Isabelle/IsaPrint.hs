@@ -373,7 +373,8 @@ printSentence s = case s of
      Nothing -> empty) <+>
    (text (show $ definitionName d) <+> text "::" <+>
     doubleQuotes (printType $ definitionType d)), text "where" <+>
-   doubleQuotes (printTerm (definitionTerm d))]
+   doubleQuotes (text (show $ definitionName d) <+> hsep (map printTerm (
+    definitionVars d)) <+> text "=" <+> printTerm (definitionTerm d))]
   f@(Fun {}) -> text "fun" <+> (case funTarget f of
    Just t  -> braces (text "in" <+> (text $ show t))
    Nothing -> empty) <+> (if funDomintros f then braces (text "domintros")
@@ -384,9 +385,9 @@ printSentence s = case s of
                       _ -> empty) (funEquations f)) <+> text "where" $+$
     (let eqs  = concat $ map (\(name,_,_,e) -> map (\e' -> (name,e')) e)
                              (funEquations f)
-         eqs' = map (\(n,(vs,t)) -> text n <+>
-                 hcat (map (doubleQuotes . printTerm) vs) <+>
-                 text "=" <+> doubleQuotes (printTerm t)) eqs
+         eqs' = map (\(n,(vs,t)) -> doubleQuotes (text n <+>
+                 hsep (map printTerm vs) <+>
+                 text "=" <+> printTerm t)) eqs
      in fsep $ bar eqs')
   i@(Instantiation {}) -> fsep $ [text "instantiation" <+> text
    (instantiationType i) <+> text "::" <+> printArity (instantiationArity i)]
@@ -418,9 +419,11 @@ printSentence s = case s of
                                          (if defsOverloaded d
                                           then text "overloaded"
                                           else empty)]
-   ++ map (\(name,tm,args) ->
-        text (show name) <+> text ":" <+> doubleQuotes (printTerm tm) <+>
-        if null args then empty else brackets (text args)) (defsEquations d)
+   ++ map (\eq ->
+        text (show (defEquationName eq)) <+> text ":" <+> doubleQuotes (
+         text (defEquationConst eq) <+> text "==" <+>
+         printTerm (defEquationTerm eq)) <+> if null (defEquationArgs eq)
+         then empty else brackets (text $ defEquationArgs eq)) (defsEquations d)
 
 printArity :: (Sort,[Sort]) -> Doc
 printArity (sort,sorts) = (parens $ hsep $ punctuate comma $
@@ -437,10 +440,7 @@ printBody sens = fsep $ if null sens then []
 printContext :: Ctxt -> ([Doc],[Doc])
 printContext ctxt =
  let fixes'   = map (\(n,_,tp) -> if n == "" then empty else text n
-                       <+> case tp of 
-                            Just tp' -> text "::" <+>
-                                        (doubleQuotes . printTyp Null) tp'
-                            Nothing -> empty)
+                       <+> text "::" <+> (doubleQuotes . printTyp Null) tp)
                      (fixes ctxt)
      assumes' = map (\(n,tm) -> if n == "" then empty else text n <+> text ":"
                        <+> (doubleQuotes . printTerm) tm)

@@ -608,6 +608,8 @@ sig
                          string -> term
 	val read_class : Toplevel.state -> (string * Position.T) option ->
                           string -> class
+        val inferred_param : string -> Toplevel.state ->
+                             (string * Position.T) option -> typ
 	val pretty_tokens : unit -> unit
 	datatype symb =
 	  Arg of int |
@@ -657,6 +659,9 @@ struct
         val read_prop = do_read Syntax.read_prop Proof_Context.mode_default;
 	val read_class = do_read Proof_Context.read_class
                                  Proof_Context.mode_default;
+        fun inferred_param s state target =
+             do_read (Proof_Context.inferred_param s)
+                      Proof_Context.mode_default state target |> #1;
 	fun pretty_tokens () =   (Token.unparse #> PolyML.PrettyString)
                               |> K |> K |> PolyML.addPrettyPrinter;
 	(* Taken from Pure/Syntax/printer.ML *)
@@ -767,6 +772,7 @@ struct
              [fn ((name,_),(("",false),Expression.Named [])) =>
                a "name" name] #> xml' "Parent" [];
 	local
+		val unqualified = Binding.qualified_name #> Binding.name_of;
         	fun extract_context (t : Token.T list)
                                     (body : (Token.T list * 'b) list) =
                      let val btoks = List.map #1 body |> flat
@@ -839,13 +845,12 @@ struct
                     |NONE => []
 		fun xml_of_context state target = variant "xml_of_context"
                      PolyML.makestring
-                     [fn Element.Fixes fixes => List.map (fn (b,tp,mx) =>
+                     [fn Element.Fixes fixes => List.map (fn (b,_,mx) =>
                           xml "Fix" (attr_of_binding b)
-                                    (xml_of_typ state target tp@
-                           let val tp'  = Option.map
-                                           (Parser.read_typ state target) tp
-                               val name = string_of_binding b
-                           in xml_of_mixfix state name tp' mx end)) fixes
+                           (let val name = string_of_binding b
+				val tp = Parser.inferred_param name state target
+                            in [XML_Syntax.xml_of_type tp]@
+                               xml_of_mixfix state name (SOME tp) mx end)) fixes
                        |> xml "Fixes" [],
                       fn Element.Assumes ass => List.map (fn (b,tms) =>
                              variant "xml_context (Assumes)"
@@ -879,14 +884,13 @@ struct
                              Symtab.update (Binding.name_of b,mx) t)
                              Symtab.empty f
                     in Symtab.fold_rev (fn (k,(tp,equations)) =>
-                        let val b = Binding.qualified_name k
-                            val SOME(mx) = Symtab.lookup fns (Binding.name_of b)
+                        let val b = unqualified k
+                            val SOME(mx) = Symtab.lookup fns b
 			    val equations' = List.map (fn (vs,tm) =>
                                  xml "Equation" [] (List.map
                                   XML_Syntax.xml_of_term (vs@[tm]))) equations
-			    val elem = xml "Fun" (attr "name" Binding.name_of b)
-                                 (xml_of_mixfix state (Binding.name_of b)
-                                   (SOME tp) mx@
+			    val elem = xml "Fun" (a "name" b)
+                                 (xml_of_mixfix state b (SOME tp) mx@
                                   [XML_Syntax.xml_of_type tp]@
                                   equations')
                         in fn l => elem::l end) fn_eqs []
@@ -923,11 +927,16 @@ struct
                   fn Defs ((unchecked,overloaded),l) =>
                   let val l' = List.map (fn ((name,tm),args) =>
                           let val tm' = Parser.read_prop state NONE tm
+                              val (c,def_tm) = Logic.dest_equals tm'
+                              val (cname',tp) = dest_Const c
+                              val cname = unqualified cname'
                               val args' = List.map (Args.pretty_src
                                  (Toplevel.context_of state) #> Pretty.str_of)
                                  args |> space_implode " "
-                          in xml "Def" (a "args" args'@attr_of_binding name)
-                              [XML_Syntax.xml_of_term tm'] end) l
+                          in xml "Def" (a "args" args'@attr_of_binding name@
+                                        a "const" cname)
+                              [XML_Syntax.xml_of_type tp,
+                               XML_Syntax.xml_of_term def_tm] end) l
                       val attrs = (if unchecked then a "unchecked" "" else [])
                                  @(if overloaded then a "overloaded" "" else [])
                   in (xml "Defs" attrs l',trans state toks) end,

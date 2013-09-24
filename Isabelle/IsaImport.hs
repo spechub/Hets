@@ -67,13 +67,14 @@ hXmlBody_2IsaSentence (Body_Lemma (Lemma a ctxt (Proof proof)
                            t:tms -> IsaSign.Prop {IsaSign.prop = t,
                                                   IsaSign.propPats = tms}
                            _ -> error "This should not happen!") tms}) shows }
-hXmlBody_2IsaSentence (Body_Definition (Definition a m tp tm)) =
+hXmlBody_2IsaSentence (Body_Definition (Definition a m tp (NonEmpty tms))) =
  IsaSign.Definition {
   IsaSign.definitionName    = IsaSign.mkQName $ definitionName a,
   IsaSign.definitionMixfix  = maybe Nothing (Just . hXmlMixfix2IsaMixfix) m,
   IsaSign.definitionTarget  = definitionTarget a,
   IsaSign.definitionType    = hXmlOneOf3_2IsaTyp tp,
-  IsaSign.definitionTerm    = hXmlOneOf6_2IsaTerm [] $ tm }
+  IsaSign.definitionVars    = map (hXmlOneOf6_2IsaTerm []) $ init tms,
+  IsaSign.definitionTerm    = hXmlOneOf6_2IsaTerm [] $ last tms }
 hXmlBody_2IsaSentence (Body_Funs (Funs a (NonEmpty funs))) =
  IsaSign.Fun {
   IsaSign.funTarget = maybe Nothing (Just . IsaSign.mkQName) $
@@ -129,8 +130,13 @@ hXmlBody_2IsaSentence (Body_Defs (Defs a (NonEmpty defs))) =
  IsaSign.Defs {
   IsaSign.defsUnchecked  = maybe False (\_ -> True) $ defsUnchecked a,
   IsaSign.defsOverloaded = maybe False (\_ -> True) $ defsOverloaded a,
-  IsaSign.defsEquations  = map (\(Def a tm) ->
-   (IsaSign.mkQName $ defName a,hXmlOneOf6_2IsaTerm [] tm,defArgs a)) defs }
+  IsaSign.defsEquations  = map (\(Def a tp tm) ->
+   IsaSign.DefEquation {
+    IsaSign.defEquationName      = IsaSign.mkQName $ defName a,
+    IsaSign.defEquationConst     = defConst a,
+    IsaSign.defEquationConstType = hXmlOneOf3_2IsaTyp tp,
+    IsaSign.defEquationTerm      = hXmlOneOf6_2IsaTerm [] tm,
+    IsaSign.defEquationArgs      = defArgs a }) defs }
 
 hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
 hXmlCtxt2IsaCtxt (Ctxt ctxt) =
@@ -138,7 +144,7 @@ hXmlCtxt2IsaCtxt (Ctxt ctxt) =
       case c of
        OneOf2 (Fixes f) -> (fixes'++map (\(Fix a t mx) ->
         (fixName a, maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
-         maybe Nothing (Just . hXmlOneOf3_2IsaTyp) t)) f, assumes')
+         hXmlOneOf3_2IsaTyp t)) f, assumes')
        TwoOf2 (Assumes a) -> (fixes',assumes'++map (\(Assumption a tm) ->
         (assumptionName a, hXmlOneOf6_2IsaTerm [] tm)) a)) ([],[]) ctxt
  in IsaSign.Ctxt {

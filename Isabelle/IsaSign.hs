@@ -188,6 +188,7 @@ data Sentence =
      definitionMixfix  :: Maybe Mixfix,
      definitionTarget  :: Maybe String,
      definitionType    :: Typ,
+     definitionVars    :: [Term],
      definitionTerm    :: Term }
   | Fun {
      funTarget     :: Maybe QName,
@@ -226,11 +227,18 @@ data Sentence =
   | Defs {
       defsUnchecked  :: Bool,
       defsOverloaded :: Bool,
-      defsEquations  :: [(QName,Term,String)] }
+      defsEquations  :: [DefEquation] }
     deriving (Eq, Ord, Show)
 
+data DefEquation = DefEquation {
+ defEquationName      :: QName,
+ defEquationConst     :: String,
+ defEquationConstType :: Typ,
+ defEquationTerm      :: Term,
+ defEquationArgs      :: String } deriving (Eq, Ord, Show)
+
 data Ctxt = Ctxt {
-	fixes   :: [(String,Maybe Mixfix,Maybe Typ)],
+	fixes   :: [(String,Maybe Mixfix,Typ)],
 	assumes :: [(String,Term)] } deriving (Eq, Ord, Show)
 
 data Mixfix = Mixfix {

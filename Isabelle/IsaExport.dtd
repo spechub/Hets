@@ -41,7 +41,7 @@
 <!ELEMENT Lemma (Ctxt,Proof,(Shows)+)>
   <!ATTLIST Lemma target CDATA #IMPLIED>
 
-<!ELEMENT Definition (Mixfix?,(TVar|TFree|Type),(Bound|Free|Var|Const|App|Abs))>
+<!ELEMENT Definition (Mixfix?,(TVar|TFree|Type),(Bound|Free|Var|Const|App|Abs)+)>
   <!ATTLIST Definition name CDATA #REQUIRED>
   <!ATTLIST Definition target CDATA #IMPLIED>
 
@@ -78,9 +78,10 @@
 <!ELEMENT Defs (Def+)>
   <!ATTLIST Defs unchecked CDATA #IMPLIED>
   <!ATTLIST Defs overloaded CDATA #IMPLIED>
-<!ELEMENT Def ((Bound|Free|Var|Const|App|Abs))>
+<!ELEMENT Def ((TVar|TFree|Type),(Bound|Free|Var|Const|App|Abs))>
   <!ATTLIST Def name CDATA #REQUIRED>
   <!ATTLIST Def args CDATA #REQUIRED>
+  <!ATTLIST Def const CDATA #REQUIRED>
 
 <!ELEMENT Sort (class+)>
 <!ELEMENT Arity (Sort,Sort*)>
@@ -91,7 +92,7 @@
   <!ATTLIST Parent name CDATA #REQUIRED>
 
 <!ELEMENT Fixes (Fix*)>
-<!ELEMENT Fix ((TVar|TFree|Type)?,Mixfix?)>
+<!ELEMENT Fix ((TVar|TFree|Type),Mixfix?)>
   <!ATTLIST Fix name CDATA #REQUIRED>
 
 <!ELEMENT Assumes (Assumption*)>
