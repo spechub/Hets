@@ -1,5 +1,5 @@
 theory Typedef_Example
-imports Typedef Inductive Fun Nat
+imports Nat
 begin
 
 definition Pair_Rep :: "'a \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> bool" where
