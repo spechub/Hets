@@ -62,8 +62,7 @@ hXmlBody_2IsaSentence (Body_Lemma (Lemma a ctxt (Proof proof)
    IsaSign.Props {
     IsaSign.propsName  = if null $ showsName a then Nothing
                          else Just $ IsaSign.mkQName $ showsName a,
-    IsaSign.propsArgs  = if null $ showsArgs a then Nothing
-                         else Just $ showsArgs a,
+    IsaSign.propsArgs  = showsArgs a,
     IsaSign.props      = map (\(AShow (NonEmpty l)) ->
                           case map (hXmlOneOf6_2IsaTerm []) l of
                            t:tms -> IsaSign.Prop {IsaSign.prop = t,

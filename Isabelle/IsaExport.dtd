@@ -136,7 +136,7 @@
 
 <!ELEMENT Shows (Show+)>
   <!ATTLIST Shows name CDATA #REQUIRED>
-  <!ATTLIST Shows args CDATA #REQUIRED>
+  <!ATTLIST Shows args CDATA #IMPLIED>
 
 <!ELEMENT Show ((Bound|Free|Var|Const|App|Abs)+)>
 
