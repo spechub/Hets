@@ -15,7 +15,8 @@ function path() {
 exec_test_script() {
 	echo "Testing $1"
 	RESULT=`$TEST_SCRIPT $1`
-	if [ ! `echo "$RESULT" | grep -q "val err = \"\": string"` ]; then
+        echo "$RESULT" | grep -q "val err = \"\": string"
+	if [ $? -ne 0 ]; then
 		echo "$RESULT" | grep -A 2 "val err ="
 		return 1
 	fi

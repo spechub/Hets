@@ -192,20 +192,24 @@ struct
                                             prios:int list option,
                                             def_prio:int option};
 	datatype qualifier = Optional | Mandatory;
-	datatype hide_what = HideConsts | HideConstsAll; 
+	datatype hide_what = HideLocal | HideAll; 
 (* http://stackoverflow.com/questions/16254465/how-to-hide-defined-constants *)
+	datatype arity     = Arity of (string list option) * string;
+	datatype instance_data = InstanceA of string list * arity
+                                |InstanceR of {name:string,rel:string,
+                                               parent:string};
         datatype theory_body_elem = Context of string * theory_body_elem list
                                    |DataType of (string list * (string *
                                     (string * string list) list)) list
                                    |Consts of (string * string) list
                                    |Axioms of (string * string) list
-                                   |Lemma of {name: string,
+                                   |Lemma of {name: string option,
 					      attrs: string list option,
 					      target: string option,
                                               statement: string,
 					      local_data:local_data,
                                               proof: string}
-                                   |Theorem of {name: string,
+                                   |Theorem of {name: string option,
                                                 attrs: string list option,
                                                 target: string option,
                                                 statement: string,
@@ -217,25 +221,38 @@ struct
                                    |Locale of {name:string,
                                                parents:string list,
                                                local_data:local_data}
-                                   |TypeSynonym of string * string
+                                   |TypeSynonym of string list * 
+                                                  (string * string)
                                    |Function of {name: string,
                                                  tp: string,
                                                  def_eqs: string list}
-                                   |PrimRec of {names: (string*string) list,
-                                                def_eqs: string list}
-                                   |Definition of (string*string) option *
-                                                  string
+                                   |PrimRec of {
+                                     names: (string*(string option)) list,
+                                     def_eqs: string list}
+                                   |Definition of
+                                     {name_tp:(string*string option) option,
+                                      eq:string,target:string option,
+                                      attrs:string list option}
 				   |Notation of {modes:string list option,
+                                     notations:(string*mixfix_data) list}
+                                   |NoNotation of {modes:string list option,
                                      notations:(string*mixfix_data) list}
                                    |Interpretation of {name:string,
                                                        qualifier:qualifier,
                                                        eqs:(string*string list),
                                                        proof:string}
-                                   |Abbreviation of string
+				   |Instantiation of {names:string list, 
+                                     arity:arity, body:theory_body_elem list}
+				   |Instance of instance_data option * string
+				   |Abbreviation of string
                                    |Declaration of string
-                                   |Hide of {what:hide_what,
+                                   |Axiomatization of {names:string list,
+                                     tp: string,mixfix_data:mixfix_data option}
+                                      list
+                                   |Hide of {what:string*hide_what,
                                              names:string list}
-                                   |MiscCmd of string * string;
+                                   |MiscCmd of string * string
+                                   |CodeCmd of string * string;
 	datatype parsed_theory = ParsedTheory of {
 				 header: string option,
                                  name: string,
@@ -246,12 +263,13 @@ struct
 
 	(* Add token position to error message *)
 	fun failT s t = Fail (s^" at "^Token.pos_of t);
-	fun content s t = if Token.content_of t = s then Result true
+	fun content s t = if Token.content_of t = s then Result s
                           else failT ("Expected content '"^s^"' but found "^
                                       "content '"^Token.content_of t^"'") t;
-        fun ident t      = if Token.ident_with (K true) t
+        fun name t      = if Token.is_name t orelse Token.kind_of t =
+                                                    Token.LongIdent
                            then Result (Token.content_of t)
-                           else failT "Not a valid identifier!" t;
+                           else failT "Not a valid name!" t;
         fun type_ident t = if Token.kind_of t = Token.TypeIdent
                            then Result (Token.content_of t)
                            else failT "Not a TypeIdent!" t;
@@ -268,23 +286,31 @@ struct
                                                     |> Result
                                             else Fail "Unexpected command!"
                                   |_    => Fail "Expected non-empty command!";
-        val parse_theory_head = e (content "theory") #> p ident
-                                #> e (keyword "imports") #> many (p ident)
+	fun unparse_code_cmd cmd = case cmd of 
+                                    t::ts => if String.isPrefix "code_"
+                                                (Token.content_of t) then
+                                     ts |> List.map Token.unparse
+                                     |> space_implode " " |> (fn v =>
+                                      Result (Token.content_of t,v))
+                                     else Fail "Unexpected command!"
+                                   |_ => Fail "Expected non-empty command!";
+        val parse_theory_head = e (content "theory") #> p name
+                                #> e (keyword "imports") #> many (p name)
                                 #> optional (e (keyword "keywords") #>
                                              many (p str_) #>
                                              e (keyword "::") #>
-                                             oneOf [p str_, p ident] #> pack)
+                                             p name #> pack)
                                 #> e (keyword "begin") #> pack #> expect_end;
 	val parse_theory_end = e (content "end") #> expect_end;
 	fun parse_local_data a =
                  let val assumes = fn k => e k #>
                                      sepBy (e (keyword "and"))
-                                        (optional (p ident #> e (keyword ":"))
+                                        (optional (p name #> e (keyword ":"))
                                         #> p str_ #> pack)
                      val fixes = e (keyword "fixes") #>
                                     sepBy (e (keyword "and"))
-                                          (many (p ident) #> e (keyword "::")
-                                           #> oneOf [p str_,p ident,
+                                          (many (p name) #> e (keyword "::")
+                                           #> oneOf [p name,
                                                      p type_ident] #> pack)
                  in optional (many (assumes a)) #> optional (many fixes)
                     #> optional (many (assumes a)) (* a = keyword "assumes" *)
@@ -319,41 +345,43 @@ struct
                                                  (p type_ident) #>
                                            e (keyword ")"),
                                            many (p type_ident), return []]
-                                    #> p ident #> e (keyword "=")
+                                    #> p name #> e (keyword "=")
                                     #> sepBy (e (keyword "|"))
-                                             (oneOf [p ident,p str_]
-                                              #> many (oneOf [p ident,p str_])
-                                              #> pack)
+                                             (p name #> many (p name) #> pack)
                                     #> pack #> pack)
                                #> expect_end >>> DataType
                 val consts  = e (content "consts") #> many (
-                                  p ident #> e (keyword "::") #> p str_ #> pack)
+                                  p name #> e (keyword "::") #> p str_ #> pack)
                                #> expect_end >>> Consts
-                val axioms  = e (content "axioms") #> many ((p ident)
+                val axioms  = e (content "axioms") #> many ((p name)
                                #> e (keyword ":") #> (p str_) #> pack)
                                #> expect_end >>> Axioms
-                val cls     = e (content "class") #> p ident
+                val cls     = e (content "class") #> p name
                                #> succeed (keyword "=")
                                #> sepBy (e (keyword "+"))
-                                        (p ident)
+                                        (p name)
                                #> succeed (keyword "+")
                                #> parse_local_data (keyword "assumes")
                                >>  (fn (((v,n),ps),l) =>
                                     (v,Class { name = n,parents = ps,
                                                local_data = l}))
-                val locale     = e (content "locale") #> p ident
+                val locale     = e (content "locale") #> p name
                                #> succeed (keyword "=")
                                #> sepBy (e (keyword "+"))
-                                        (p ident)
+                                        (p name)
                                #> succeed (keyword "+")
                                #> parse_local_data (keyword "assumes")
                                >>  (fn (((v,n),ps),l) =>
                                     (v,Locale { name = n,parents = ps,
                                              local_data = l}))
                 val tp_synonym = e (content "type_synonym")
-                                  #> p ident #> e (keyword "=")
-                                  #> p str_ #> pack >>> TypeSynonym
-                val fun_       = e (content "fun") #> p ident
+                                  #> oneOf [p type_ident >>> (fn v => [v]),
+                                            e (keyword "(")
+                                             #> many (p type_ident)
+                                             #> e (keyword ")"), return []]
+                                  #> p name #> e (keyword "=")
+                                  #> p str_ #> pack #> pack >>> TypeSynonym
+                val fun_       = e (content "fun") #> p name
                                   #> e (keyword "::") #> p str_
                                   #> e (keyword "where")
                                   #> sepBy (e (keyword "|"))
@@ -363,34 +391,50 @@ struct
                                                       def_eqs = def }))
 		val primrec    = e (content "primrec")
                                  #> sepBy (e (keyword "and"))
-                                     (p ident #> e (keyword "::") #>
-                                      p str_ #> pack)
+                                     (p name #> optional (e (keyword "::") #>
+                                      p str_) #> pack)
                                  #> e (keyword "where")
                                  #> sepBy (e (keyword "|")) (p str_)
                                  >>  (fn ((v,ns),def) =>
                                       (v,PrimRec { names = ns, def_eqs = def }))
+		(* see HOL/Quickcheck.thy line 136 for an example with
+                   : instead of where *)
                 val def        = e (content "definition")
-                                 #> optional (p ident #> e (keyword "::")
-                                    #> p str_ #> pack #> e (keyword "where"))
-                                 #> p str_ #> pack >>> Definition
-		val notation   = e (content "notation")
+                                 #> optional (e (keyword "(") #>
+                                              e (keyword "in") #>
+                                              p name #>
+                                              e (keyword ")"))
+                                 #> optional (e (keyword "[") #>
+                                              many (p name) #>
+                                              e (keyword "]"))
+                                 #> optional (p name
+                                    #> optional (e (keyword "::")
+                                    #> p str_) #> pack)
+                                 #> succeed (keyword "where")
+                                 #> succeed (keyword ":")
+                                 #> p str_ #> pack #> pack #> pack >>> 
+                                 (fn (t,(a,(n,e))) => Definition {
+                                   name_tp=n,eq=e,target=t,attrs=a})
+		val notation   = (oneOf [p (content "notation"),
+                                         p (content "no_notation")])
                                  #> optional (e (keyword "(")
-                                              #> many (p ident)
+                                              #> many (p name)
                                               #> e (keyword ")"))
                                  #> sepBy (e (keyword "and"))
-                                          (p ident #>
+                                          (p name #>
                                            parse_mixfix fail #> pack)
-                                 #> pack >>> (fn (m,ns) => Notation {
-                                              modes=m,
-                                              notations=ns})
+                                 #> pack #> pack >>> (fn (n,(m,ns)) =>
+                                     if n = "notation"
+                                     then Notation {modes=m,notations=ns}
+                                     else NoNotation {modes=m,notations=ns})
             in oneOf [dt_type,consts,axioms,cls,
                       tp_synonym,fun_,primrec,locale,def,notation]  end;
         fun parse_thm s = e (content s)
                           #> optional (
                              e (keyword "(") #> e (keyword "in")
-                             #> p ident #> e (keyword ")"))
-                          #> p ident
-                          #> optional (e (keyword "[") #> many (p ident)
+                             #> p name #> e (keyword ")"))
+                          #> optional (p name)
+                          #> optional (e (keyword "[") #> many (p name)
                                                       #> e (keyword "]"))
                           #> e (keyword ":")
                           #> optional (parse_local_data (keyword "assumes")
@@ -438,6 +482,11 @@ struct
                                                          SOME "?" => Optional
                                                         |SOME "!" => Mandatory
                                                         |_        => default);
+	val parse_arity = fn _ => optional (e (keyword "(") #>
+                                  sepBy (e (keyword ","))
+                                        (p name) #>
+                                    e (keyword ")")) #> (p name) #> pack
+                          >>> Arity;
 	fun parse_theory_body p1 p2 = [parse_body_elem p1 |> liftP,
                                    (parse_thm "lemma" |> liftP) #> (proof p2)
                                     #> pack >>>
@@ -459,10 +508,25 @@ struct
 					          local_data=the_default 
                                                    emptyLocalData l,
                                                   proof=prf}),
+                                   ((e (content "instance")) #> optional (
+                                    oneOf [sepBy (e (keyword "and"))
+                                            (p name) #>
+                                           e (keyword "::") #> parse_arity fail
+                                           #> pack >>> InstanceA,
+                                           p name #>
+                                           oneOf [p (keyword "<"),
+                                            p (keyword "\<subseteq>")]
+                                           #> p name
+                                           #> pack #> pack >>>
+                                            (fn (n,(r,p)) => InstanceR {
+                                              name=n,rel=r,parent=p})])
+                                           
+                                    |> liftP) #> proof fail #> pack
+                                   >>> Instance,
                                    ((e (content "interpretation") #>
-                                     p ident #> parse_qualifier Mandatory #> 
+                                     p name #> parse_qualifier Mandatory #> 
                                      e (keyword ":") #>
-                                     p ident #> many (p str_)
+                                     p name #> many (p str_)
                                      #> pack #> pack #> pack)
                                    |> liftP) #> proof fail #> pack
                                    >>> (fn ((n,(q,e)),prf) =>
@@ -470,15 +534,28 @@ struct
                                                          qualifier=q,
                                                          eqs=e,
                                                          proof=prf}),
-                                   ((e (content "hide_const") #>
-                                     optional (e (keyword "(") #>
-                                               p (keyword "open") #>
-                                               e (keyword ")")) #>
-                                     many (p ident) #> pack) |> liftP)
-                                   >>> (fn (opt,ns) =>
+                                   ((e (content "axiomatization") #>
+                                     sepBy (e (keyword "and"))
+                                     (many (p name) #> e (keyword "::")
+                                      #> p str_ #> optional (parse_mixfix fail)
+                                      #> pack #> pack)) |> liftP)
+                                   >>> (List.map (fn (ns,(t,m)) =>
+                                          {names=ns,tp=t,mixfix_data=m})
+                                        #> Axiomatization),
+                                   ((p (fn t => if String.isPrefix "hide_"
+                                                   (Token.content_of t)
+                                             then Result (String.extract
+                                                   (Token.content_of t,
+                                                    5,NONE))
+                                             else failT "Unexpected Token!" t)
+                                    #> optional (e (keyword "(") #>
+                                                 p (keyword "open") #>
+                                                 e (keyword ")")) #>
+                                     many (p name) #> pack #> pack) |> liftP)
+                                   >>> (fn (s,(opt,ns)) =>
                                         Hide {what=case opt of
-                                                    SOME _ => HideConsts
-                                                   |NONE  => HideConstsAll,
+                                                    SOME _ => (s,HideLocal)
+                                                   |NONE   => (s,HideAll),
                                               names=ns}),
                                    p (unparse_cmd "abbreviation") >>>
                                    Abbreviation,
@@ -497,15 +574,25 @@ struct
                                    p (unparse_cmd "ML_file") >>>
                                    (fn v => MiscCmd ("ML_file",v)),
                                    p (unparse_cmd "setup") >>>
-                                   (fn v => MiscCmd ("setup",v))];
-	val parse_context =   ((e (content "context") #> p ident #>
+                                   (fn v => MiscCmd ("setup",v)),
+                                   p unparse_code_cmd >>> CodeCmd];
+	val parse_context =   ((e (content "context") #> p name #>
                                 e (keyword "begin")) |> liftP)
                            #> many (oneOf (parse_theory_body fail fail))
                            #> ((e (content "end") #> expect_end) |> liftP)
                            #> pack >>> Context;
+	val parse_instantiation = ((e (content "instantiation") #>
+                                    sepBy (e (keyword "and")) (p name) #>
+                                    e (keyword "::") #> parse_arity fail #>
+                                    e (keyword "begin")) |> liftP)
+                                 #> many (oneOf (parse_theory_body fail fail))
+                                 #> ((e (content "end") #> expect_end) |> liftP)
+                                 #> pack #> pack >>> (fn (ns,(a,b)) =>
+                                  Instantiation { names=ns,arity=a,body=b })
 	val test = initialState #> optional (p (unparse_cmd "header"))
                    #> (parse_theory_head |> liftP)
-		   #> many (oneOf (parse_context::parse_theory_body fail fail))
+		   #> many (oneOf (parse_context::parse_instantiation::
+                                   parse_theory_body fail fail))
                    #> (parse_theory_end |> liftP)
                    #> expect_end >> (fn ((((_,h),n),(i,k)),b) =>
                        ParsedTheory {header = h,
