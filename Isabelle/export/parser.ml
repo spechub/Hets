@@ -812,6 +812,15 @@ struct
                              val mx'  = format_mixfix state name tp' mx
                          in AddConst (name,tp',mx') end) fixes,
                       fn Element.Assumes _   => []];
+		fun sigdata_of_equations state target eqs =
+                   let val tps = List.map (fn (_,tm) =>
+                                  Parser.read_term Proof_Context.mode_pattern
+                                   state target tm |> HOLogic.dest_eq |> #1 |>
+                                  head_of |> dest_Const) eqs
+                                 |> sort_distinct
+                                     (prod_ord fast_string_ord (K EQUAL))
+                   in List.map (fn (name,tp) =>
+                       AddConst (name,SOME tp,NONE)) tps end;
 		fun xml_of_symb v = variant "xml_of_symb" [
                      fn Parser.Arg i =>
                       xml "Arg" (attr "prio" string_of_int i) [],
@@ -1031,9 +1040,10 @@ struct
                                  | _ =>
                                   raise (Fail "Not yet implemented for Fun!"))
                                  a
+		       val sigdata = sigdata_of_equations s1 target a
                    in (xml "Fun" (attr_of_target target
                                  @attr_of_function_config cfg)
-                                 (fixes@eqs),s1) end,
+                                 (xml_of_sigdata sigdata::fixes@eqs),s1) end,
 		 fn Primrec ((target,f),a) =>
                    let val s1 = trans state toks
                        val fixes = List.map (fn (b,typ,mixfix) =>
@@ -1053,8 +1063,9 @@ struct
                                  | _ =>
                                   raise (Fail "Not yet implemented for Fun!"))
                                  a
+			val sigdata = sigdata_of_equations s1 target a
                    in (xml "Primrec" (attr_of_target target)
-                                     (fixes@eqs),s1) end] e
+                        (xml_of_sigdata sigdata::fixes@eqs),s1) end] e
              in ((state',trans),elem::l) end end;
 	fun xml_of_body state body =
               List.foldl xml_of_body_elem (state,[]) body
