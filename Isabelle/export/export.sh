@@ -100,7 +100,8 @@ use \"$SCRIPTPATH/parser.ml\";
 
 v \"Analyzing theory $TRANS_T\n\";
 
-val thys = Export.xml_of_theory v \"$TRANS.thy\";
+val thys = Export.xml_of_theory v \"$TRANS.thy\"
+handle ex => e ((General.exnMessage ex)^\"\n\");
 
 val xml = XML.Elem ((\"Export\",[]),thys);
 
