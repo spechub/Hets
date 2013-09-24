@@ -103,9 +103,9 @@ anaThyFile opts path = do
    removeFile tempFile
    return ret
 
-mkNode :: IsaData -> (DGraph,Map.Map String (Node,Sign)) ->
+mkNode :: (DGraph,Map.Map String (Node,Sign)) -> IsaData ->
      (DGraph,Map.Map String (Node,Sign))
-mkNode (name,header',imps,keywords',uses',body) (dg,m) =
+mkNode (dg,m) (name,header',imps,keywords',uses',body) =
  let sens = map (\sen ->
              let name' = case sen of
                   Locale n' _ _ _ -> "locale " ++ qname n'
@@ -147,7 +147,7 @@ anaIsaFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaIsaFile _ path = do
  theories <- importIsaDataIO path
  let name   = "Imported Theory"
-     (dg,_) = foldr mkNode (emptyDG,Map.empty) theories
+     (dg,_) = foldl mkNode (emptyDG,Map.empty) theories
      le     = Map.insert (emptyLibName name) dg Map.empty
  return $ Just (emptyLibName name,
   computeLibEnvTheories le)
