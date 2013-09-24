@@ -9,8 +9,8 @@ sig
 	val p : ('a -> ('a, 'b) r) -> ('a, 'c) p -> ('a, 'c * 'b) p;
 	val liftP : (('a,'b) p -> ('a,'c) p) -> ('a list,'b) p
                                              -> ('a list,'c) p;
-	val >> : ('a, 'b) p * ('b -> 'c) -> ('a, 'c) p;
-	val >>> : ('a -> ('b, 'c) p) * ('c -> 'd) -> 'a -> ('b, 'd) p;
+	val >> : ('a -> ('b, 'c) p) * ('c -> 'd) -> 'a -> ('b, 'd) p;
+	val >>> : ('a -> ('b,'c*'d) p) * ('d -> 'e) -> 'a -> ('b,'c*'e) p;
 	val >>= : ('a, 'b) p * ('b -> 'c) -> 'c option;
 	val getError : ('a, 'b) p -> string;
 	val return : 'a -> ('b, 'c) p -> ('b, 'c * 'a) p;
@@ -74,11 +74,11 @@ struct
                                          State (_,v') => State (ds,v')
                                         |Failed s     => Failed s;
 	
-	(* apply f to presult value *)
-	fun  (State (d,v)) >> f = State (d,f v)
-            |(Failed s)    >> _ = Failed s;
         (* apply g to the result produced by f *)
-	fun  (f >>> g) x = x |> f >> g;
+	fun  (f >> g) x = case f x of
+                           Failed s     => Failed s
+                          |State (ds,v) => State (ds,g v);
+	fun  (f >>> g) = (f >> (fn (v,v1) => (v,g v1)))
 	(* extract result and apply f *)
 	fun (State (_,v)) >>= f = SOME (f v)
            |(Failed _)    >>= _ = NONE
@@ -97,7 +97,7 @@ struct
           | expect_end (State ([],v)) = State ([],v)
           | expect_end (State (_,_)) = Failed "Expected end!";
 	(* create a parser discarding the result of f *)
-	fun e f s = p f s >> #1;
+	fun e f = p f >> #1;
 	(* always succeeds, but only consumes input if the
 	   parsing is successful *)
 	fun succeed f s = case p f s of
@@ -288,31 +288,30 @@ struct
                                                      p type_ident] #> pack)
                  in optional (many (assumes a)) #> optional (many fixes)
                     #> optional (many (assumes a)) (* a = keyword "assumes" *)
-                    >>> (fn (((v,a),f),a1) =>
+                    >>  (fn (((v,a),f),a1) =>
                          (v,mkLocalData (List.concat (the_default [] a @
                                                       the_default [] a1))
                                         (List.concat (the_default [] f)))) end
 	(* isa-ref.pdf p. 147 *)
 	val parse_mixfix = fn p_ =>
                       let val s2i = raw_explode #> read_int #> #1
-                          val prio = fn s2i => p str_ >>> (fn (v,v1) => 
-                                       (v,s2i v1))
+                          val prio = fn s2i => p str_ >>> s2i
                           val prios = optional (many (prio s2i))
                       in   oneOf [p_,p str_ #> prios #> optional (prio s2i) #>
                                    expect_end #> pack #> pack >>>
-                                   (fn (v,(t,(ps,p))) => (v,Template
-                                     {template=t,prios=ps,def_prio=p})),
+                                   (fn (t,(ps,p)) => Template
+                                     {template=t,prios=ps,def_prio=p}),
                                   e (content "infix") #> p str_ #> prio s2i
-                                   #> pack >>> (fn (v,v1) => (v,Infix v1)),
+                                   #> pack >>> Infix,
                                   e (content "infixl") #> p str_ #> prio s2i
-                                   #> pack >>> (fn (v,v1) => (v,InfixL v1)),
+                                   #> pack >>> InfixL,
                                   e (content "infixr") #> p str_ #> prio s2i
-                                   #> pack >>> (fn (v,v1) => (v,InfixR v1)),
+                                   #> pack >>> InfixR,
                                   e (content "binder") #> p str_ #> prios
                                    #> prio s2i #> pack #> pack >>>
-                                   (fn (v,(t,(ps,p))) => (v,Binder
-                                   {template=t,prios=ps,def_prio=p}))] end;
-        fun parse_body_elem p_ =
+                                   (fn (t,(ps,p)) => Binder
+                                   {template=t,prios=ps,def_prio=p})] end;
+        fun parse_body_elem _ =
             let val dt_type = e (content "datatype")
                                #> sepBy (e (keyword "and"))
                                    (oneOf [e (keyword "(") #>
@@ -326,20 +325,20 @@ struct
                                               #> many (oneOf [p ident,p str_])
                                               #> pack)
                                     #> pack #> pack)
-                               #> expect_end >>> (fn (v,v1) => (v,DataType v1))
+                               #> expect_end >>> DataType
                 val consts  = e (content "consts") #> many (
                                   p ident #> e (keyword "::") #> p str_ #> pack)
-                               #> expect_end >>> (fn (v,v1) => (v,Consts v1))
+                               #> expect_end >>> Consts
                 val axioms  = e (content "axioms") #> many ((p ident)
                                #> e (keyword ":") #> (p str_) #> pack)
-                               #> expect_end >>> (fn (v,v1) => (v,Axioms v1))
+                               #> expect_end >>> Axioms
                 val cls     = e (content "class") #> p ident
                                #> succeed (keyword "=")
                                #> sepBy (e (keyword "+"))
                                         (p ident)
                                #> succeed (keyword "+")
                                #> parse_local_data (keyword "assumes")
-                               >>> (fn (((v,n),ps),l) =>
+                               >>  (fn (((v,n),ps),l) =>
                                     (v,Class { name = n,parents = ps,
                                                local_data = l}))
                 val locale     = e (content "locale") #> p ident
@@ -348,19 +347,18 @@ struct
                                         (p ident)
                                #> succeed (keyword "+")
                                #> parse_local_data (keyword "assumes")
-                               >>> (fn (((v,n),ps),l) =>
+                               >>  (fn (((v,n),ps),l) =>
                                     (v,Locale { name = n,parents = ps,
                                              local_data = l}))
                 val tp_synonym = e (content "type_synonym")
                                   #> p ident #> e (keyword "=")
-                                  #> p str_ #> pack >>>
-                                  (fn (v,v1) => (v,TypeSynonym v1))
+                                  #> p str_ #> pack >>> TypeSynonym
                 val fun_       = e (content "fun") #> p ident
                                   #> e (keyword "::") #> p str_
                                   #> e (keyword "where")
                                   #> sepBy (e (keyword "|"))
                                            (p str_)
-                                  >>> (fn (((v,n),t),def) =>
+                                  >>  (fn (((v,n),t),def) =>
                                         (v,Function { name = n, tp = t,
                                                       def_eqs = def }))
 		val primrec    = e (content "primrec")
@@ -369,13 +367,12 @@ struct
                                       p str_ #> pack)
                                  #> e (keyword "where")
                                  #> sepBy (e (keyword "|")) (p str_)
-                                 >>> (fn ((v,ns),def) =>
+                                 >>  (fn ((v,ns),def) =>
                                       (v,PrimRec { names = ns, def_eqs = def }))
                 val def        = e (content "definition")
                                  #> optional (p ident #> e (keyword "::")
                                     #> p str_ #> pack #> e (keyword "where"))
-                                 #> p str_ #> pack >>>
-                                  (fn (v,v1) => (v,Definition v1))
+                                 #> p str_ #> pack >>> Definition
 		val notation   = e (content "notation")
                                  #> optional (e (keyword "(")
                                               #> many (p ident)
@@ -383,9 +380,9 @@ struct
                                  #> sepBy (e (keyword "and"))
                                           (p ident #>
                                            parse_mixfix fail #> pack)
-                                 #> pack >>> (fn (v,(m,ns)) => (v,Notation {
+                                 #> pack >>> (fn (m,ns) => Notation {
                                               modes=m,
-                                              notations=ns}))
+                                              notations=ns})
             in oneOf [dt_type,consts,axioms,cls,
                       tp_synonym,fun_,primrec,locale,def,notation]  end;
         fun parse_thm s = e (content s)
@@ -431,89 +428,86 @@ struct
                                        |"done"  => Result [cmd]
                                        |_       => raise (Test (Token.unparse t))
                                       in res end
-                            |_ => Fail "Expected non-empty command!")
-                           >>> (fn ((v,cmds),cmds1) => (v,cmds@cmds1 |>
-                                                          cmdList2string));
+                            |_ => Fail "Expected non-empty command!") #> pack
+                           >>> (fn (cmds,cmds1) => cmds@cmds1 |>
+                                                          cmdList2string);
 	(* isar-ref.pdf p. 86 *)
 	fun parse_qualifier default = optional (oneOf [p (keyword "?"),
                                                        p (keyword "!")])
-                                      >>> (fn (v,v1) => (v,case v1 of
+                                      >>> (fn v1 => case v1 of
                                                          SOME "?" => Optional
                                                         |SOME "!" => Mandatory
-                                                        |_        => default));
+                                                        |_        => default);
 	fun parse_theory_body p1 p2 = [parse_body_elem p1 |> liftP,
                                    (parse_thm "lemma" |> liftP) #> (proof p2)
                                     #> pack >>>
-                                    (fn (v,((t,(n,(a,(l,stmt)))),prf)) =>
-                                      (v,Lemma {name=n,
+                                    (fn ((t,(n,(a,(l,stmt)))),prf) =>
+                                      Lemma {name=n,
                                                 attrs=a,
 						target=t,
                                                 statement=stmt,
 						local_data=the_default
                                                  emptyLocalData l,
-                                                proof=prf})),
+                                                proof=prf}),
                                    (parse_thm "theorem" |> liftP) #> (proof p2)
                                     #> pack >>>
-                                    (fn (v,((t,(n,(a,(l,stmt)))),prf)) =>
-                                      (v,Theorem {name=n,
+                                    (fn ((t,(n,(a,(l,stmt)))),prf) =>
+                                      Theorem {name=n,
                                                   attrs=a,
                                                   target=t,
                                                   statement=stmt,
 					          local_data=the_default 
                                                    emptyLocalData l,
-                                                  proof=prf})),
+                                                  proof=prf}),
                                    ((e (content "interpretation") #>
                                      p ident #> parse_qualifier Mandatory #> 
                                      e (keyword ":") #>
                                      p ident #> many (p str_)
                                      #> pack #> pack #> pack)
                                    |> liftP) #> proof fail #> pack
-                                   >>> (fn (v,((n,(q,e)),prf)) => (v,
+                                   >>> (fn ((n,(q,e)),prf) =>
                                          Interpretation {name=n,
                                                          qualifier=q,
                                                          eqs=e,
-                                                         proof=prf})),
+                                                         proof=prf}),
                                    ((e (content "hide_const") #>
                                      optional (e (keyword "(") #>
                                                p (keyword "open") #>
                                                e (keyword ")")) #>
                                      many (p ident) #> pack) |> liftP)
-                                   >>> (fn (v,(o,ns)) => (v,
-                                        Hide {what=case o of
+                                   >>> (fn (opt,ns) =>
+                                        Hide {what=case opt of
                                                     SOME _ => HideConsts
                                                    |NONE  => HideConstsAll,
-                                              names=ns})),
+                                              names=ns}),
                                    p (unparse_cmd "abbreviation") >>>
-                                   (fn (v,v1) => (v,Abbreviation v1)),
+                                   Abbreviation,
                                    p (unparse_cmd "declaration") >>>
-                                   (fn (v,v1) => (v,Declaration v1)),
+                                   Declaration,
                                    p (unparse_cmd "text") >>>
-                                   (fn (v,v1) => (v,MiscCmd ("text",v1))),
+                                   (fn v => MiscCmd ("text",v)),
                                    p (unparse_cmd "section") >>>
-                                   (fn (v,v1) => (v,MiscCmd ("section",v1))),
+                                   (fn v => MiscCmd ("section",v)),
                                    p (unparse_cmd "subsection") >>>
-                                   (fn (v,v1) => (v,MiscCmd ("subsection",v1))),
+                                   (fn v => MiscCmd ("subsection",v)),
                                    p (unparse_cmd "value") >>>
-                                   (fn (v,v1) => (v,MiscCmd ("value",v1))),
+                                   (fn v => MiscCmd ("value",v)),
                                    p (unparse_cmd "unused_thms") >>>
-                                   (fn (v,v1) =>
-                                     (v,MiscCmd ("unused_thms",v1))),
+                                   (fn v => MiscCmd ("unused_thms",v)),
                                    p (unparse_cmd "ML_file") >>>
-                                   (fn (v,v1) =>
-                                     (v,MiscCmd ("ML_file",v1))),
+                                   (fn v => MiscCmd ("ML_file",v)),
                                    p (unparse_cmd "setup") >>>
-                                   (fn (v,v1) =>
-                                     (v,MiscCmd ("setup",v1)))];
+                                   (fn v => MiscCmd ("setup",v))];
 	val parse_context =   ((e (content "context") #> p ident #>
                                 e (keyword "begin")) |> liftP)
                            #> many (oneOf (parse_theory_body fail fail))
                            #> ((e (content "end") #> expect_end) |> liftP)
-                           #> pack >>> (fn (v,v1) => (v,Context v1));
+                           #> pack >>> Context;
 	val test = initialState #> optional (p (unparse_cmd "header"))
                    #> (parse_theory_head |> liftP)
 		   #> many (oneOf (parse_context::parse_theory_body fail fail))
                    #> (parse_theory_end |> liftP)
-                   #> expect_end >>> (fn ((((_,h),n),(i,k)),b) =>
+                   #> expect_end >> (fn ((((_,h),n),(i,k)),b) =>
                        ParsedTheory {header = h,
                                      name = n,
                                      imports = i,
