@@ -98,6 +98,8 @@ HolLight/ATC_HolLight.hs
 Isabelle/ATC_Isabelle.der.hs
 Isabelle/ATC_Isabelle.hs
 Isabelle/IsaExport.hs
+Isabelle/export/examples/*.isa
+Isabelle/export/examples/*.isa.pretty.xml
 LF/ATC_LF.der.hs
 LF/ATC_LF.hs
 Maude/ATC_Maude.der.hs
@@ -144,3 +146,5 @@ Hybrid/AS_Hybrid.hs
 Hybrid/ATC_Hybrid.der.hs
 TopHybrid/AS_TopHybrid.hs
 TopHybrid/ATC_TopHybrid.der.hs
+CSMOF/ATC_CSMOF.der.hs
+CSMOF/ATC_CSMOF.hs
