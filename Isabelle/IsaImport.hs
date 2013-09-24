@@ -120,8 +120,10 @@ hXmlBody_2IsaSentence (Body_Instance (Instance a (Proof proof) head)) =
   _ -> IsaSign.InstanceProof proof
 hXmlBody_2IsaSentence (Body_Subclass (Subclass a (Proof proof))) =
  IsaSign.Subclass {
-  IsaSign.subclassClass = subclassClass a,
-  IsaSign.subclassProof = proof }
+  IsaSign.subclassClass  = subclassClass a,
+  IsaSign.subclassTarget = maybe Nothing (Just . IsaSign.mkQName) $
+                            subclassTarget a,
+  IsaSign.subclassProof  = proof }
 
 hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
 hXmlCtxt2IsaCtxt (Ctxt ctxt) =

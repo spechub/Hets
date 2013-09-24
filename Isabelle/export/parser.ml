@@ -95,7 +95,7 @@ structure TheoryData = struct
                       (Attrib.binding * string) list
 	|Class of (binding * (string list * Element.context list)) *
                   (orig * thy_body) list
-	|Subclass of string * proof
+	|Subclass of opt_target * string * proof
 	|Instantiation of (string list * string list * string) *
                           (orig * thy_body) list
 	|Instance of (instance_type option) * proof
@@ -423,8 +423,8 @@ struct
 	("interpret",                                      (* line 449 *)
          parse_interpretation_arguments true
           >> Interpret),
-	("subclass",                                       (* line 471 *)
-	 Parse.class -- proof >> Subclass),
+	("subclass", Parse.opt_target --                   (* line 471 *)
+	 Parse.class -- proof >> Parse.triple1 >> Subclass),
 	("instance",Scan.option (                          (* line 481 *)
          ((Parse.class -- (@{keyword "\<subseteq>"}
                         || @{keyword "<"})
@@ -597,6 +597,8 @@ sig
                          (string * Position.T) option -> string -> term
         val read_prop : Toplevel.state -> (string * Position.T) option ->
                          string -> term
+	val read_class : Toplevel.state -> (string * Position.T) option ->
+                          string -> class
 	val pretty_tokens : unit -> unit
 	datatype symb =
 	  Arg of int |
@@ -644,6 +646,8 @@ struct
 	val read_typ  = do_read Syntax.read_typ Proof_Context.mode_default;
 	val read_term = do_read Syntax.read_term;
         val read_prop = do_read Syntax.read_prop Proof_Context.mode_default;
+	val read_class = do_read Proof_Context.read_class
+                                 Proof_Context.mode_default;
 	fun pretty_tokens () =   (Token.unparse #> PolyML.PrettyString)
                               |> K |> K |> PolyML.addPrettyPrinter;
 	(* Taken from Pure/Syntax/printer.ML *)
@@ -937,9 +941,11 @@ struct
                           |NONE => ([],[])
                   in (xml "Instance" attrs
                        ([xml "Proof" [] [XML.Text proof]]@elems), s1) end,
-		  fn Subclass (cls,proof) =>
+		  fn Subclass (target,cls,proof) =>
                   let val s1 = trans state toks
-                  in (xml "Subclass" (a "class" cls)
+                  in (xml "Subclass" (a "class"
+                      (Parser.read_class state target cls)@
+                      attr_of_target target)
                       [xml "Proof" [] [XML.Text proof]],
                       s1) end,
                   fn Locale ((name,(parents,ctxt)),body) =>

@@ -73,6 +73,7 @@
 
 <!ELEMENT Subclass (Proof)>
   <!ATTLIST Subclass class CDATA #REQUIRED>
+  <!ATTLIST Subclass target CDATA #IMPLIED>
 
 <!ELEMENT Sort (class+)>
 <!ELEMENT Arity (Sort,Sort*)>

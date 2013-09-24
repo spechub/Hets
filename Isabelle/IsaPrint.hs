@@ -382,8 +382,10 @@ printSentence s = case s of
    printArity (instanceArity i) $+$ text (instanceProof i)
   i@(InstanceSubclass {}) -> text "instance" <+> text (instanceClass i) <+>
    text (instanceRel i) <+> text (instanceClass1 i) $+$ text (instanceProof i)
-  c@(Subclass {}) -> text "subclass" <+> text (subclassClass c)
-   <+> text (subclassProof c)
+  c@(Subclass {}) -> text "subclass" <+> (case subclassTarget c of
+                           Just t  -> braces (text "in" <+> (text $ show t))
+                           Nothing -> empty) <+> text (subclassClass c)
+                          <+> text (subclassProof c)
 
 printArity :: (Sort,[Sort]) -> Doc
 printArity (sort,sorts) = (parens $ hsep $ punctuate comma $

@@ -216,8 +216,9 @@ data Sentence =
      instanceClass1 :: String,
      instanceProof  :: String }
   | Subclass {
-     subclassClass :: String,
-     subclassProof :: String
+     subclassClass  :: String,
+     subclassTarget :: Maybe QName,
+     subclassProof  :: String
     }
     deriving (Eq, Ord, Show)
 
