@@ -230,7 +230,8 @@ struct
 	fun proof_qed i = Parse.group (fn () => "proof_qed") 
                           (fn t =>
                            if i > 0 then Scan.first
-                                    [command "qed" -- proof_qed (i-1) >> op::,
+                                    [command_with_args "qed" --
+                                      proof_qed (i-1) >> op@,
                                      command "oops" >> single,
                                      command_with_args "proof"
                                       -- proof_qed (i+1) >> op@,
