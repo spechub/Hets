@@ -20,9 +20,9 @@ structure TheoryData = struct
 	datatype context_head = ContextNamed of xstring * Position.T
                                |ContextHead  of ((xstring * Position.T) list
                                                 * Element.context list);
-	datatype instance_type = InstanceArity of string list * string list
-                                                 *string
-                                |InstanceSubset of string;
+	datatype instance_type = InstanceArity of string list * string list *
+                                                  string
+                                |InstanceSubset of string * string;
 	datatype thy_body =
          Classes of (binding * string list) list
         |Classrel of (string * string) list
@@ -427,7 +427,7 @@ struct
 	 Parse.class -- proof >> Subclass),
 	("instance",Scan.option (Parse.class --            (* line 481 *)
          (((@{keyword "\<subseteq>"} || @{keyword "<"})
-          |-- Parse.!!! Parse.class) >> InstanceSubset
+          -- Parse.!!! Parse.class) >> InstanceSubset
          || Parse.multi_arity >> InstanceArity))
          -- proof >> Instance),
         ("theorem", parse_theorem -- proof >> Theorem),    (* line 525 *)
