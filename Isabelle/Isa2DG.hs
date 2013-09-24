@@ -39,6 +39,7 @@ import Driver.Options
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph (Node)
 import Data.List (intercalate)
+import Data.Maybe (catMaybes)
 
 import Control.Monad (unless)
 import Control.Concurrent (forkIO,killThread)
@@ -116,8 +117,8 @@ mkNode (name,header',imps,keywords',uses',body) (dg,m) =
                   TypeSynonym n' _ _ -> "type_synonym " ++ qname n'
                   Axioms axs -> "axioms " ++ (intercalate "_" $ 
                                  map (qname . axiomName) axs)
-                  Lemma _ _ _ _ s -> "lemma " ++ (intercalate "_" $
-                                      map (qname . showsName) s)
+                  Lemma _ _ _ _ l -> "lemma " ++ (intercalate "_" . map qname
+                                      . catMaybes $ map propsName l)
                   Definition n' _ _ _ -> "definition " ++ (show n')
                   Fun _ _ _ _ _ fsigs _ -> "fun " ++ (intercalate "_" $
                                             map (qname . funSigName) fsigs)

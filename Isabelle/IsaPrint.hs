@@ -33,7 +33,7 @@ import Common.Utils (number)
 
 import Data.Char
 import Data.List
-import Data.Maybe (catMaybes)
+import Data.Maybe (isNothing,catMaybes)
 
 printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
 printIsaTheory tn sign sens = let
@@ -347,16 +347,15 @@ printSentence s = case s of
    in text "lemma" <+> (case lemmaTarget l of
                            Just t  -> braces (text "in" <+> (text $ show t))
                            Nothing -> empty) <+>
-                           (case (null fixes,null assumes,lemmaShows l) of
-                            (True,True,[sh]) -> printNamedTerm (showsName sh)
-                             (showsArgs sh) (showsTerms sh)
-                            _ -> vsep $ fixes ++ assumes
-                                        ++ map (\sh -> 
-                                  text "shows" <+> printNamedTerm (showsName sh)
-                                   (showsArgs sh) (showsTerms sh))
-                                    (lemmaShows l)) $+$ (case lemmaProof l of
-                                       Just p -> text p
-                                       Nothing -> empty)
+                           (case (null fixes,null assumes,lemmaProps l) of
+                            (True,True,[sh]) -> printProps sh
+                            _ -> (vsep $ fixes ++ assumes
+                                        ++
+                                  [text "shows" <+> andDocs
+                                    (map printProps (lemmaProps l))]))
+      $+$ (case lemmaProof l of
+            Just p -> text p
+            Nothing -> empty)
   d@(Definition _ _ _ _) -> fsep [text "definition" <+>
    (case definitionTarget d of
      Just t  -> braces (text "in" <+> (text $ show t))
@@ -378,15 +377,19 @@ printContext fixes assumes =
                      assumes
  in (fixes',assumes')
 
-printNamedTerm :: QName -> String -> [[Term]] -> Doc
-printNamedTerm name args tms =
- let name' = show name
- in (if name' == "" then empty
-     else text name' <+> (if args /= ""
-      then brackets (text args)
-      else empty) <+> text ":") <+>
-    andDocs (map (hcat . map (doubleQuotes . printTerm)) tms)
+printProps :: Props -> Doc
+printProps (Props {propsName=n,propsArgs=a,props=p}) =
+ printMaybe (text . show) n <+> printMaybe text a
+ <+> (if (isNothing n && isNothing a)
+      then empty else text ":") <+>
+     vcat (map printProp p)
 
+printProp :: Prop -> Doc
+printProp (Prop {prop=t,propPats=ts}) =
+ let t'  = doubleQuotes $ printTerm t
+     ts' = hsep $ map (doubleQuotes . printTerm) ts
+ in t' <+> if null ts then empty
+           else parens (text "is" <+> ts')
 
 printSetDecl :: SetDecl -> Doc
 printSetDecl setdecl =

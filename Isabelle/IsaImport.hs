@@ -71,12 +71,17 @@ hXmlBody_2IsaSentence (Body_Lemma (Lemma a assumes' fixes'
                            map hXmlAssumption2IsaNamedTerm assumes
                           _ -> [],
   IsaSign.lemmaProof   = Just proof,
-  IsaSign.lemmaShows   = map (\(Shows a (NonEmpty tms)) ->
-   IsaSign.LemmaShows {
-    IsaSign.showsName  = IsaSign.mkQName $ showsName a,
-    IsaSign.showsArgs  = showsArgs a,
-    IsaSign.showsTerms = map (\(AShow (NonEmpty l)) -> map
-                           hXmlAShow_2IsaTerm l) tms }) shows }
+  IsaSign.lemmaProps   = map (\(Shows a (NonEmpty tms)) ->
+   IsaSign.Props {
+    IsaSign.propsName  = if null $ showsName a then Nothing
+                         else Just $ IsaSign.mkQName $ showsName a,
+    IsaSign.propsArgs  = if null $ showsArgs a then Nothing
+                         else Just $ showsArgs a,
+    IsaSign.props      = map (\(AShow (NonEmpty l)) ->
+                          case map hXmlAShow_2IsaTerm l of
+                           t:tms -> IsaSign.Prop {IsaSign.prop = t,
+                                                  IsaSign.propPats = tms}
+                           _ -> error "This should not happen!") tms}) shows }
 hXmlBody_2IsaSentence (Body_Definition (Definition a maybe_tp tm)) =
  IsaSign.Definition {
   IsaSign.definitionName = maybe Nothing (Just . IsaSign.mkQName) $

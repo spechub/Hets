@@ -55,8 +55,9 @@ deriving instance Eq QName
 deriving instance Ord QName
 
 mkQName :: String -> QName
-mkQName s = let (n:q) = splitOn '.' s
-            in QName {qname=n,qualifiers=q}
+mkQName s = case splitOn '.' s of
+             n:q -> QName {qname=n,qualifiers=q}
+             _   -> error $ "empty name!" ++ s
 
 {- | Indexnames can be quickly renamed by adding an offset to
    the integer part, for resolution. -}
@@ -127,6 +128,21 @@ data Term =
       | Set SetDecl
       deriving (Eq, Ord, Show)
 
+data Prop = Prop {
+   prop     :: Term
+ , propPats :: [Term] } deriving Eq
+
+deriving instance Ord Prop
+deriving instance Show Prop
+
+data Props = Props {
+   propsName :: Maybe QName
+ , propsArgs :: Maybe String
+ , props     :: [Prop] } deriving Eq
+
+deriving instance Ord Props
+deriving instance Show Props
+
 data Sentence =
     Sentence { isSimp :: Bool   -- True for "[simp]"
              , isRefuteAux :: Bool
@@ -169,7 +185,7 @@ data Sentence =
      lemmaFixes   :: [(String,Typ)],
      lemmaAssumes :: [(String,Term)],
      lemmaProof   :: Maybe String,
-     lemmaShows   :: [LemmaShows] }
+     lemmaProps   :: [Props] }
   | Definition {
      definitionName :: Maybe QName,
      definitionTarget :: Maybe String,
@@ -198,11 +214,6 @@ data Axiom = Axiom {
       axiomName :: QName,
       axiomArgs :: String,
       axiomTerm :: Term } deriving (Eq, Ord, Show)
-
-data LemmaShows = LemmaShows {
-      showsName :: QName,
-      showsArgs  :: String,
-      showsTerms :: [[Term]] } deriving (Eq, Ord, Show)
 
 data FunSig = FunSig {
        funSigName :: QName,

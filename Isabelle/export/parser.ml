@@ -712,10 +712,14 @@ struct
 		fun xml_of_statement state target (Element.Shows s) =
                     List.map (fn (b,tms) =>
                      xml "Shows" (attrs_of_binding b)
-                      (List.map (fn (t,ts) => xml "Show" [] (List.map
-                        (Parser.read_term Proof_Context.mode_default
-                         state target #> XML_Syntax.xml_of_term)
-                      (t::ts))) tms)) s
+                      (List.map (fn (t,ts) => xml "Show" [] (
+                        let val t' = Parser.read_term Proof_Context.mode_default
+                                     state target t |> XML_Syntax.xml_of_term
+                            val ts' = map (Parser.read_term
+                                       Proof_Context.mode_schematic
+                                       state target #>
+                                      XML_Syntax.xml_of_term) ts
+                        in t'::ts' end)) tms)) s
                    |xml_of_statement _ _ v =
                      raise (Fail ("xml_of_statement not implemented for "^
                                   PolyML.makestring v));
