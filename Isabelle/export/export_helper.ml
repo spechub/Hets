@@ -169,6 +169,7 @@ struct
 	fun mkLocalData a f = LocalData {
                            assumes = List.map (fn (n,t) => {name=n,term=t}) a,
                            fixes = List.map (fn (ns,t) => {names=ns,tp=t}) f };
+	val emptyLocalData = LocalData { assumes = [], fixes = [] };
         datatype theory_body_elem = DataType of (string list * (string *
                                     (string * string list) list)) list
                                    |Consts of (string * string) list
@@ -176,10 +177,12 @@ struct
                                    |Lemma of {name: string,
 					      target: string option,
                                               statement: string,
+					      local_data:local_data,
                                               proof: string}
                                    |Theorem of {name: string,
                                                 target: string option,
                                                 statement: string,
+                                                local_data:local_data,
                                                 proof: string}
                                    |Class of {name:string,
                                               parents:string list,
@@ -321,6 +324,16 @@ struct
                                         in if i' = 0 then List.rev l' |> Result
                                            else More (proof_qed i' l') end
                               |_ => Fail "Expected non-empty command!";
+	fun proof_by l cmd = case cmd of
+                              t::_ => if List.exists (Token.content_of t |>
+                                                      curry op=)
+                                         ["note","then","from",
+                                          "with","using","unfolding"]
+                                      then cmd::l |> proof_by |> More
+                                      else if Token.content_of t = "by"
+                                           then List.rev l |> Result
+					   else Fail "Unexpected command!"
+                             |_ => Fail "Expected non-empty command!";
         fun cmdList2string cmds = List.map (List.map Token.unparse) cmds
                                   |> List.map (space_implode " ")
                                   |> cat_lines;
@@ -331,13 +344,8 @@ struct
                                       else Fail "Unexpected command!"
                             |_ => Fail "Expected non-empty command!")
                            >>> (fn (v,cmds) => (v,cmdList2string cmds)),
-                          p (fn cmd =>
-                              case cmd of
-                               t::_ => if Token.content_of t = "by"
-                                       then Result [cmd]
-                                       else Fail "Unexpected command!"
-                              |_ => Fail "Expected non-empty command!")
-                          >>> (fn (v,cmds) => (v,cmdList2string cmds))];
+                          p (proof_by []) >>> (fn (v,cmds) =>
+                                               (v,cmdList2string cmds))];
         val test = initialState #> p (parse_theory_head |> p2r) >>> #2
                    #> many (oneOf [p (parse_body_elem |> p2r),
                                    p (parse_thm "lemma" |> p2r) #> proof
@@ -346,6 +354,8 @@ struct
                                       (v,Lemma {name=n,
 						target=t,
                                                 statement=stmt,
+						local_data=the_default
+                                                 emptyLocalData l,
                                                 proof=prf})),
                                    p (parse_thm "theorem" |> p2r) #> proof
                                     #> pack >>>
@@ -353,6 +363,8 @@ struct
                                       (v,Theorem {name=n,
                                                 target=t,
                                                 statement=stmt,
+					        local_data=the_default 
+                                                 emptyLocalData l,
                                                 proof=prf})),
                                    p (fn cmd => case cmd of
                                     t::ts => if Token.content_of t = "text"
