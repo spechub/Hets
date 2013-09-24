@@ -203,6 +203,7 @@ struct
 				 header: string option,
                                  name: string,
                                  imports: string list,
+				 keywords: (string list*string) option,
                                  body: theory_body_elem list
                                 };
 
@@ -232,7 +233,11 @@ struct
                                   |_    => Fail "Expected non-empty command!";
         val parse_theory_head = e (content "theory") #> p ident >>> #2
                                 #> e (keyword "imports") #> many (p ident)
-                                #> e (keyword "begin") #> expect_end;
+                                #> optional (e (keyword "keywords") #>
+                                             many (p str_) #>
+                                             e (keyword "::") #>
+                                             oneOf [p str_, p ident] #> pack)
+                                #> e (keyword "begin") #> pack #> expect_end;
 	val parse_theory_end = e (content "end") #> expect_end;
 	fun parse_local_data a =
                  let val assumes = fn k => e k #>
@@ -391,10 +396,11 @@ struct
                                    (fn (v,v1) =>
                                      (v,MiscCmd ("unused_thms",v1)))])
                    #> e (parse_theory_end |> p2r)
-                   #> expect_end >>> (fn ((h,(n,i)),b) =>
+                   #> expect_end >>> (fn ((h,(n,(i,k))),b) =>
                        ParsedTheory {header = h,
                                      name = n,
                                      imports = i,
+                                     keywords = k,
                                      body = b})
                    #> (fn v => (v >>= I,getError v));
 end;
