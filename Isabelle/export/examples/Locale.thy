@@ -5,6 +5,7 @@ begin
 
 locale semi =
  fixes prod :: "['a, 'a] => 'a" (infixl "*" 70)
+ and test
  assumes assoc: "(x * y) * z = x * (y * z)"
 
 locale comm_semi = semi +
