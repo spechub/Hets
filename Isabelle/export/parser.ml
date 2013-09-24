@@ -133,6 +133,8 @@ structure TheoryData = struct
                        (binding * string option * mixfix) list)
               	      * (Attrib.binding * string) list)) * proof
         |Termination of string option * proof
+        |Typedef of (((((string * string option) list * binding) * mixfix) *
+          string) * (binding * binding) option) * proof
         |Misc of misc_body;
 end;
 
@@ -464,7 +466,14 @@ struct
                     >> Function),
         (* line 290 HOL/Tools/Function/function.ML *)
         ("termination",Scan.option Parse.term -- proof
-                       >> Termination)]);
+                       >> Termination),
+        (* line 275 HOL/Tools/typedef.ML *)
+        ("typedef",Parse.type_args_constrained --
+          Parse.binding -- Parse.opt_mixfix --
+        (@{keyword "="} |-- Parse.term) --
+         Scan.option (@{keyword "morphisms"} |--
+         Parse.!!! (Parse.binding -- Parse.binding)) --
+         proof >> Typedef)]);
 	fun unparse_cmd s = Parse.group (fn () => s)
          (fn toks =>
            case toks of
@@ -910,6 +919,23 @@ struct
                      (List.map xml_of_sort (s'::s))
         in fun xml_of_body_elem ((toks,e),((state,trans),l)) =
             let val (elem,state')   = variant "xml_of_body" PolyML.makestring [
+                  fn Typedef (((((vars,tp),mx),tm),morphisms),proof) =>
+                  let val vars' = List.map (fn (name,sort) => case sort of
+                       SOME sort' => TFree (name,
+                        Parser.read_sort state NONE sort')
+                      |NONE => TFree (name,[])) vars
+                      val tm' = Parser.read_term Proof_Context.mode_default
+                                 state NONE tm
+		      val morphisms' = case morphisms of
+                               SOME (m1,m2) => attr "m1" string_of_binding m1@
+                                               attr "m2" string_of_binding m2
+                              |NONE => []
+                  in (xml "Typedef" (attr "type" string_of_binding tp
+                                    @morphisms'@attr_of_mixfix mx)
+                      ([xml "Proof" [] [XML.Text proof]]@
+                       [XML_Syntax.xml_of_term tm']@
+                       List.map XML_Syntax.xml_of_type vars'),
+                      trans state toks) end,
 		  fn Instantiation (arity,body) =>
                   let val ([name],args',sort)  = Class.read_multi_arity
                        (Toplevel.theory_of state) arity
