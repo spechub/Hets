@@ -808,43 +808,6 @@ struct
                      attr "args" (List.map (Args.pretty_src (
                       Toplevel.context_of state) #> Pretty.string_of)
                       #> space_implode ", ") args;
-		fun xml_of_context state target = variant "xml_of_context"
-                     PolyML.makestring
-                     [fn Element.Fixes fixes => List.map (fn (b,tp,mx) =>
-                          xml "Fix" (attr_of_binding b@attr_of_mixfix mx)
-                                    (xml_of_typ state target tp)) fixes
-                       |> xml "Fixes" [],
-                      fn Element.Assumes ass => List.map (fn (b,tms) =>
-                             variant "xml_context (Assumes)"
-                              PolyML.makestring [fn [(tm,[])] =>
-                               [Parser.read_term Proof_Context.mode_default
-                                state target tm |> XML_Syntax.xml_of_term]] tms
-                          |> xml "Assumption" (attrs_of_binding state b)) ass
-                       |> xml "Assumes" []];
-		fun format_mixfix state name tp = variant "format_mixfix"
-                     PolyML.makestring
-                     [fn Mixfix.NoSyn => NONE,
-                      fn mx => Parser.format_const_mixfix state name mx tp
-                               |> SOME];
-		fun sigdata_of_context state target =
-                     variant "sigdata_of_context" PolyML.makestring [
-                      fn Element.Fixes fixes => List.map
-                       (fn (b,tp,mx) =>
-                         let val name = string_of_binding b
-                             val tp'  = Option.map
-                                  (Parser.read_typ state target) tp
-                             val mx'  = format_mixfix state name tp' mx
-                         in AddConst (name,tp',mx') end) fixes,
-                      fn Element.Assumes _   => []];
-		fun sigdata_of_equations state target eqs =
-                   let val tps = List.map (fn (_,tm) =>
-                                  Parser.read_term Proof_Context.mode_pattern
-                                   state target tm |> HOLogic.dest_eq |> #1 |>
-                                  head_of |> dest_Const) eqs
-                                 |> sort_distinct
-                                     (prod_ord fast_string_ord (K EQUAL))
-                   in List.map (fn (name,tp) =>
-                       AddConst (name,SOME tp,NONE)) tps end;
 		fun xml_of_symb v = variant "xml_of_symb" PolyML.makestring [
                      fn Parser.Arg i =>
                       xml "Arg" (attr "prio" string_of_int i) [],
@@ -857,6 +820,74 @@ struct
                      fn Parser.Block (i,symbs) =>
                       xml "Block" (attr "prio" string_of_int i)
                                   (List.map xml_of_symb symbs)] v;
+                fun format_mixfix state name tp = variant "format_mixfix"
+                     PolyML.makestring
+                     [fn Mixfix.NoSyn => NONE,
+                      fn mx => Parser.format_const_mixfix state name mx tp
+                               |> SOME];
+		fun xml_of_mixfix state name tp mx = 
+                    case format_mixfix state name tp mx of
+                     SOME (symbs,nargs,prio) =>
+                       [xml "Mixfix" (attr "nargs" string_of_int nargs@
+                                      attr "prio"  string_of_int prio@
+                                      attr "pretty" (Mixfix.pretty_mixfix
+                                       #> Pretty.str_of) mx)
+                         (List.map xml_of_symb symbs)]
+                    |NONE => [];
+		fun xml_of_context state target = variant "xml_of_context"
+                     PolyML.makestring
+                     [fn Element.Fixes fixes => List.map (fn (b,tp,mx) =>
+                          xml "Fix" (attr_of_binding b@attr_of_mixfix mx)
+                                    (xml_of_typ state target tp@
+                           let val tp'  = Option.map
+                                           (Parser.read_typ state target) tp
+                               val name = string_of_binding b
+                           in xml_of_mixfix state name tp' mx end)) fixes
+                       |> xml "Fixes" [],
+                      fn Element.Assumes ass => List.map (fn (b,tms) =>
+                             variant "xml_context (Assumes)"
+                              PolyML.makestring [fn [(tm,[])] =>
+                               [Parser.read_term Proof_Context.mode_default
+                                state target tm |> XML_Syntax.xml_of_term]] tms
+                          |> xml "Assumption" (attrs_of_binding state b)) ass
+                       |> xml "Assumes" []];
+		fun split_equations state target f eqs =
+                    let val eqs' = List.map (fn ((b,l),tm) =>
+                             let val _ = case (string_of_binding b,l) of
+                                          ("",[]) => ()
+                                         |_ =>raise Fail ("Not yet implemented"^
+                                          " for split_equations!")
+                             in Parser.read_term
+                                 Proof_Context.mode_pattern state target tm |>
+                                 HOLogic.dest_eq |> (fn (head,body) =>
+                                 (strip_comb head,body)) end) eqs
+                        val fn_eqs = List.foldl (fn (eq,t) =>
+                             let val ((c,vs),def_tm) = eq
+                                 val (name,tp)     = dest_Const c
+                                 val old = Symtab.lookup t name
+                             in case old of
+                                 SOME (_,def_tms) =>
+                                  Symtab.update (name,(tp,def_tms@
+                                                          [(vs,def_tm)])) t
+                                |NONE => Symtab.update (name,(tp,
+                                          [(vs,def_tm)])) t
+                             end) Symtab.empty eqs'
+			val fns = List.foldl (fn ((b,_,mx),t) =>
+                             Symtab.update (Binding.name_of b,mx) t)
+                             Symtab.empty f
+                    in Symtab.fold_rev (fn (k,(tp,equations)) =>
+                        let val b = Binding.qualified_name k
+                            val SOME(mx) = Symtab.lookup fns (Binding.name_of b)
+			    val equations' = List.map (fn (vs,tm) =>
+                                 xml "Equation" [] (List.map
+                                  XML_Syntax.xml_of_term (vs@[tm]))) equations
+			    val elem = xml "Fun" (attr "name" Binding.name_of b)
+                                 (xml_of_mixfix state (Binding.name_of b)
+                                   (SOME tp) mx@
+                                  [XML_Syntax.xml_of_type tp]@
+                                  equations')
+                        in fn l => elem::l end) fn_eqs []
+                    end;
 		val attrs_of_mixfix = variant "attrs_of_mixfix"
                       PolyML.makestring
                       [fn SOME (symbs, nargs, prio) =>
@@ -998,10 +1029,7 @@ struct
 		       val target = SOME (string_of_binding name,Position.none)
 		       val ctxt'  = xml "Ctxt" []
                                      (List.map (xml_of_context s1 target) ctxt)
-		       val sigdata = List.map (sigdata_of_context s1 target)
-                                      ctxt |> flat
-		   in (xml "Locale" name' (ctxt'::(xml_of_sigdata sigdata)::
-                        parents'@
+		   in (xml "Locale" name' (ctxt'::parents'@
                         [xml "Body" [] (List.rev b_elems)]),s3) end,
 		 fn Class ((name,(parents,ctxt)),body) =>
                    let val (begin_,end_) = extract_context toks body
@@ -1018,10 +1046,7 @@ struct
                        val name'  = attr_of_binding name
                        val ctxt'  = xml "Ctxt" []
                                     (List.map (xml_of_context s1 target) ctxt)
-                       val sigdata = List.map (sigdata_of_context s1 target)
-                                      ctxt |> flat
-                   in (xml "Cls" name' (ctxt'::(xml_of_sigdata sigdata)::
-                        parents'@
+                   in (xml "Cls" name' (ctxt'::parents'@
                         [xml "Body" [] (List.rev b_elems)]),s3) end,
                  fn TypeSynonym (((target,vars),name),(typ,mixfix))
                               =>
@@ -1126,49 +1151,13 @@ struct
                          tp'@[tm' |> XML_Syntax.xml_of_term]),s1) end,
 		 fn Fun (target,((cfg,f),a)) =>
                    let val s1 = trans state toks
-                       val fixes = List.map (fn (b,typ,mixfix) =>
-                            xml "FunSig" (attr_of_mixfix mixfix
-                                         @attr_of_binding b)
-                                      (case typ of
-                                        SOME s =>
-                                          [Parser.read_typ state target s
-                                           |> XML_Syntax.xml_of_type]
-                                       |NONE => [])) f
-                       val eqs = List.map (fn ((b,l),tm) =>
-                                case ((string_of_binding b,l),tm) of
-                                  (("",[]),tm) =>
-                                   (Parser.read_term Proof_Context.mode_pattern
-                                       state target tm
-                                    |> XML_Syntax.xml_of_term)
-                                 | _ =>
-                                  raise (Fail "Not yet implemented for Fun!"))
-                                 a
-		       val sigdata = sigdata_of_equations s1 target a
-                   in (xml "Fun" (attr_of_target target
-                                 @attr_of_function_config cfg)
-                                 (xml_of_sigdata sigdata::fixes@eqs),s1) end,
+		       val elems = split_equations s1 target f a
+                   in (xml "Funs" (attr_of_target target
+                                  @attr_of_function_config cfg) elems,s1) end,
 		 fn Primrec ((target,f),a) =>
                    let val s1 = trans state toks
-                       val fixes = List.map (fn (b,typ,mixfix) =>
-                            xml "FunSig" (attr_of_mixfix mixfix
-                                         @attr_of_binding b)
-                                      (case typ of
-                                        SOME s =>
-                                          [Parser.read_typ state target s
-                                           |> XML_Syntax.xml_of_type]
-                                       |NONE => [])) f
-                       val eqs = List.map (fn ((b,l),tm) =>
-                                case ((string_of_binding b,l),tm) of
-                                  (("",[]),tm) =>
-                                   (Parser.read_term Proof_Context.mode_pattern
-                                       state target tm
-                                    |> XML_Syntax.xml_of_term)
-                                 | _ =>
-                                  raise (Fail "Not yet implemented for Fun!"))
-                                 a
-			val sigdata = sigdata_of_equations s1 target a
-                   in (xml "Primrec" (attr_of_target target)
-                        (xml_of_sigdata sigdata::fixes@eqs),s1) end] e
+                       val elems = split_equations s1 target f a
+                   in (xml "Primrec" (attr_of_target target) elems,s1) end] e
              in ((state',trans),elem::l) end end;
 	fun xml_of_body state body =
               List.foldl xml_of_body_elem (state,[]) body

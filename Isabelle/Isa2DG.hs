@@ -120,8 +120,8 @@ mkNode (name,header',imps,keywords',uses',body) (dg,m) =
                   Lemma _ _ _ l -> "lemma " ++ (intercalate "_" . map qname
                                       . catMaybes $ map propsName l)
                   Definition n' _ _ _ _ -> "definition " ++ (show n')
-                  Fun _ _ _ _ _ _ fsigs _ -> "fun " ++ (intercalate "_" $
-                                            map (qname . funSigName) fsigs)
+                  Fun _ _ _ _ _ fsigs -> "fun " ++ (intercalate "_" $
+                                            map (\(n,_,_,_) -> n) fsigs)
                   _ -> ""
              in makeNamed name' sen) body
      sgns = Map.foldWithKey (\k a l ->

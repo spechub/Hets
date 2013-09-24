@@ -192,14 +192,12 @@ data Sentence =
      definitionType    :: Maybe Typ,
      definitionTerm    :: Term }
   | Fun {
-     funSigData    :: SigData,
      funTarget     :: Maybe QName,
      funSequential :: Bool,
      funDefault    :: Maybe String,
      funDomintros  :: Bool,
      funPartials   :: Bool,
-     funSigs       :: [FunSig],
-     funEquations  :: [Term] }
+     funEquations  :: [(String,Maybe Mixfix,Typ,[([Term],Term)])] }
   | Instantiation {
      instantiationType  :: TName,
      instantiationArity :: (Sort,[Sort]),
@@ -250,6 +248,12 @@ data AddSigData = AddConst {
                  |AddTypeSynonym {
                    name :: QName,
                    tpS  :: Typ } deriving (Eq, Ord, Show)
+
+data Mixfix = Mixfix {
+ mixfixNargs    :: Int,
+ mixfixPrio     :: Int,
+ mixfixPretty   :: String,
+ mixfixTemplate :: [MixfixTemplate] } deriving (Eq, Ord, Show)
 
 data MixfixTemplate = Arg Int | Str String | Break Int |
                       Block Int [MixfixTemplate] deriving (Eq, Ord, Show)

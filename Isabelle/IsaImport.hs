@@ -78,25 +78,19 @@ hXmlBody_2IsaSentence (Body_Definition (Definition a sig maybe_tp tm)) =
   IsaSign.definitionType    = maybe Nothing (\tp -> Just $
                             hXmlOneOf3_2IsaTyp tp) maybe_tp,
   IsaSign.definitionTerm    = hXmlOneOf6_2IsaTerm [] $ tm }
-hXmlBody_2IsaSentence (Body_Fun (Fun a sig (NonEmpty fsigs) (NonEmpty tms))) =
+hXmlBody_2IsaSentence (Body_Funs (Funs a (NonEmpty funs))) =
  IsaSign.Fun {
-  IsaSign.funSigData = hXmlSigData2IsaSigData sig,
   IsaSign.funTarget = maybe Nothing (Just . IsaSign.mkQName) $
-                       funTarget a,
-  IsaSign.funSequential = maybe False (\_ -> True) $ funSequential a,
-  IsaSign.funDefault    = funDefault a,
-  IsaSign.funDomintros  = maybe False (\_ -> True) $ funDomintros a,
-  IsaSign.funPartials   = maybe False (\_ -> True) $ funPartials a,
-  IsaSign.funSigs       = map (\(FunSig a maybe_tp) ->
-   IsaSign.FunSig {
-    IsaSign.funSigType = case maybe_tp of
-     Just (FunSig_TVar v)  -> Just $ hXmlOneOf3_2IsaTyp (OneOf3 v)
-     Just (FunSig_TFree f) -> Just $ hXmlOneOf3_2IsaTyp (TwoOf3 f)
-     Just (FunSig_Type t)  -> Just $ hXmlOneOf3_2IsaTyp (ThreeOf3 t)
-     Nothing -> Nothing,
-    IsaSign.funSigName = IsaSign.mkQName $ funSigName a })
-   fsigs,
-  IsaSign.funEquations  = map (hXmlOneOf6_2IsaTerm []) tms }
+                       funsTarget a,
+  IsaSign.funSequential = maybe False (\_ -> True) $ funsSequential a,
+  IsaSign.funDefault    = funsDefault a,
+  IsaSign.funDomintros  = maybe False (\_ -> True) $ funsDomintros a,
+  IsaSign.funPartials   = maybe False (\_ -> True) $ funsPartials a,
+  IsaSign.funEquations  = map (\(Fun a mx tp (NonEmpty eqs)) ->
+   (funName a,maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
+    hXmlOneOf3_2IsaTyp tp,map (\(Equation (NonEmpty tms)) ->
+         let tms' = map (hXmlOneOf6_2IsaTerm []) tms
+         in (init tms',last tms')) eqs)) funs }
 hXmlBody_2IsaSentence (Body_Instantiation
  (Instantiation a arity body)) =
  IsaSign.Instantiation {
@@ -152,6 +146,13 @@ hXmlCtxt2IsaCtxt (Ctxt ctxt) =
  in IsaSign.Ctxt {
   IsaSign.fixes   = fixes,
   IsaSign.assumes = assumes }
+
+hXmlMixfix2IsaMixfix :: Mixfix -> IsaSign.Mixfix
+hXmlMixfix2IsaMixfix (Mixfix a symbs) = IsaSign.Mixfix {
+ IsaSign.mixfixNargs    = read $ mixfixNargs a,
+ IsaSign.mixfixPrio     = read $ mixfixPrio a,
+ IsaSign.mixfixPretty   = mixfixPretty a,
+ IsaSign.mixfixTemplate = map hXmlOneOf4_2IsaMixfixTemplate symbs }
 
 hXmlSigData2IsaSigData :: SigData -> IsaSign.SigData
 hXmlSigData2IsaSigData (SigData a) = IsaSign.SigData $
