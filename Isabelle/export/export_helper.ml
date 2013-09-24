@@ -7,7 +7,8 @@ sig
                            | Fail of string;
 	val result : 'a list -> ('a -> ('a,'b) r) -> 'a list * ('a,'b) r;
 	val p : ('a -> ('a, 'b) r) -> ('a, 'c) p -> ('a, 'c * 'b) p;
-	val p2r : (('a, string) p -> ('b, 'c) p) -> 'a list -> ('d, 'c) r;
+	val liftP : (('a,'b) p -> ('a,'c) p) -> ('a list,'b) p
+                                             -> ('a list,'c) p;
 	val >> : ('a, 'b) p * ('b -> 'c) -> ('a, 'c) p;
 	val >>> : ('a -> ('b, 'c) p) * ('c -> 'd) -> 'a -> ('b, 'd) p;
 	val >>= : ('a, 'b) p * ('b -> 'c) -> 'c option;
@@ -25,7 +26,8 @@ sig
                     ('a, 'd) p -> ('a, 'd * 'c list) p;
 	val optional : (('a, 'b) p -> ('a, 'b * 'c) p) ->
                        ('a, 'b) p -> ('a, 'b * 'c option) p;
-	val oneOf : ('a -> ('b, 'c) p) list -> 'a -> ('b, 'c) p;
+	val oneOf : (('a, 'b) p -> ('a, 'b * 'c) p) list ->
+                     ('a, 'b) p -> ('a, 'b * 'c) p;
 end;
 
 infix 1 >> >>> >>=;
@@ -62,10 +64,12 @@ struct
                                         (ds',Result v1) => State (ds',(v,v1))
                                        |(_,Fail s)      => Failed s
                                        |_               => Failed "Unexpected!";
-	(* Interpret a parser state as a parser result *)
-	fun p2r' (State (_,v)) = Result v
-           |p2r' (Failed s)    = Fail s;
-	fun p2r f v = State (v,"") |> f |> p2r';
+
+	fun liftP _ (Failed s)        = Failed s
+           |liftP _ (State ([],_))    = Failed "Expected command"
+           |liftP p (State (d::ds,v)) = case p (State (d,v)) of
+                                         State (_,v') => State (ds,v')
+                                        |Failed s     => Failed s;
 	
 	(* apply f to presult value *)
 	fun  (State (d,v)) >> f = State (d,f v)
@@ -126,7 +130,8 @@ struct
                             |State (ds',(v',v1)) => State (ds',(v',SOME(v1)));
 	(* try each of the parsers ps from left to right
            until one succeeds or fail if all parsers fail *)
-	fun oneOf ps s = List.foldl (fn (p,s') => case s' of
+	fun oneOf (ps : (('a, 'b) p -> ('a, 'b * 'c) p) list) s =
+                          List.foldl (fn (p,s') => case s' of
                                                    Failed _ => p s
                                                    |_ => s')
                           (Failed "No parser supplied") ps;
@@ -234,7 +239,7 @@ struct
                                                     |> Result
                                             else Fail "Unexpected command!"
                                   |_    => Fail "Expected non-empty command!";
-        val parse_theory_head = e (content "theory") #> p ident >>> #2
+        val parse_theory_head = e (content "theory") #> p ident
                                 #> e (keyword "imports") #> many (p ident)
                                 #> optional (e (keyword "keywords") #>
                                              many (p str_) #>
@@ -272,54 +277,56 @@ struct
                                               #> many (oneOf [p ident,p str_])
                                               #> pack)
                                     #> pack #> pack)
-                               #> expect_end >>> DataType o #2
+                               #> expect_end >>> (fn (v,v1) => (v,DataType v1))
                 val consts  = e (content "consts") #> many (
                                   p ident #> e (keyword "::") #> p str_ #> pack)
-                               #> expect_end >>> Consts o #2
+                               #> expect_end >>> (fn (v,v1) => (v,Consts v1))
                 val axioms  = e (content "axioms") #> many ((p ident)
                                #> e (keyword ":") #> (p str_) #> pack)
-                               #> expect_end >>> Axioms o #2
+                               #> expect_end >>> (fn (v,v1) => (v,Axioms v1))
                 val cls     = e (content "class") #> p ident
                                #> succeed (keyword "=")
                                #> sepBy (e (keyword "+"))
                                         (p ident)
                                #> succeed (keyword "+")
                                #> parse_local_data (keyword "assumes")
-                               >>> (fn (((_,n),ps),l) =>
-                                    Class { name = n,parents = ps,
-                                            local_data = l})
+                               >>> (fn (((v,n),ps),l) =>
+                                    (v,Class { name = n,parents = ps,
+                                               local_data = l}))
                 val locale     = e (content "locale") #> p ident
                                #> succeed (keyword "=")
                                #> sepBy (e (keyword "+"))
                                         (p ident)
                                #> succeed (keyword "+")
                                #> parse_local_data (keyword "assumes")
-                               >>> (fn (((_,n),ps),l) =>
-                                    Locale { name = n,parents = ps,
-                                             local_data = l})
+                               >>> (fn (((v,n),ps),l) =>
+                                    (v,Locale { name = n,parents = ps,
+                                             local_data = l}))
                 val tp_synonym = e (content "type_synonym")
                                   #> p ident #> e (keyword "=")
-                                  #> p str_ #> pack >>> TypeSynonym o #2
+                                  #> p str_ #> pack >>>
+                                  (fn (v,v1) => (v,TypeSynonym v1))
                 val fun_       = e (content "fun") #> p ident
                                   #> e (keyword "::") #> p str_
                                   #> e (keyword "where")
                                   #> sepBy (e (keyword "|"))
                                            (p str_)
-                                  >>> (fn (((_,n),t),def) =>
-                                        Function { name = n, tp = t,
-                                                   def_eqs = def })
+                                  >>> (fn (((v,n),t),def) =>
+                                        (v,Function { name = n, tp = t,
+                                                      def_eqs = def }))
 		val primrec    = e (content "primrec")
                                  #> sepBy (e (keyword "and"))
                                      (p ident #> e (keyword "::") #>
                                       p str_ #> pack)
                                  #> e (keyword "where")
                                  #> sepBy (e (keyword "|")) (p str_)
-                                 >>> (fn ((_,ns),def) =>
-                                       PrimRec { names = ns, def_eqs = def })
+                                 >>> (fn ((v,ns),def) =>
+                                      (v,PrimRec { names = ns, def_eqs = def }))
                 val def        = e (content "definition")
                                  #> optional (p ident #> e (keyword "::")
                                     #> p str_ #> pack #> e (keyword "where"))
-                                 #> p str_ #> pack >>> Definition o #2
+                                 #> p str_ #> pack >>>
+                                  (fn (v,v1) => (v,Definition v1))
             in oneOf [dt_type,consts,axioms,cls,
                       tp_synonym,fun_,primrec,locale,def]  end;
         fun parse_thm s = e (content s)
@@ -332,7 +339,7 @@ struct
                           #> e (keyword ":")
                           #> optional (parse_local_data (keyword "assumes")
                                         #> e (keyword "shows")) 
-                          #> (p str_) #> pack #> pack #> pack #> pack >>> #2;
+                          #> (p str_) #> pack #> pack #> pack #> pack;
         fun proof_qed i l cmd = case cmd of
                                t::_  => let val l' = cmd::l
                                             val i' = case Token.content_of t of
@@ -368,10 +375,8 @@ struct
                             |_ => Fail "Expected non-empty command!")
                            >>> (fn ((v,cmds),cmds1) => (v,cmds@cmds1 |>
                                                           cmdList2string));
-        val test = initialState #> optional (p (unparse_cmd "header"))
-                   #> p (parse_theory_head |> p2r) #> pack >>> #2
-                   #> many (oneOf [p (parse_body_elem |> p2r),
-                                   p (parse_thm "lemma" |> p2r) #> proof
+	val parse_theory_body = many (oneOf [parse_body_elem |> liftP,
+                                   (parse_thm "lemma" |> liftP) #> proof
                                     #> pack >>>
                                     (fn (v,((t,(n,(a,(l,stmt)))),prf)) =>
                                       (v,Lemma {name=n,
@@ -381,7 +386,7 @@ struct
 						local_data=the_default
                                                  emptyLocalData l,
                                                 proof=prf})),
-                                   p (parse_thm "theorem" |> p2r) #> proof
+                                   (parse_thm "theorem" |> liftP) #> proof
                                     #> pack >>>
                                     (fn (v,((t,(n,(a,(l,stmt)))),prf)) =>
                                       (v,Theorem {name=n,
@@ -407,9 +412,12 @@ struct
                                      (v,MiscCmd ("ML_file",v1))),
                                    p (unparse_cmd "setup") >>>
                                    (fn (v,v1) =>
-                                     (v,MiscCmd ("setup",v1)))])
-                   #> e (parse_theory_end |> p2r)
-                   #> expect_end >>> (fn ((h,(n,(i,k))),b) =>
+                                     (v,MiscCmd ("setup",v1)))]);
+	val test = initialState #> optional (p (unparse_cmd "header"))
+                   #> (parse_theory_head |> liftP)
+		   #> parse_theory_body
+                   #> (parse_theory_end |> liftP)
+                   #> expect_end >>> (fn ((((_,h),n),(i,k)),b) =>
                        ParsedTheory {header = h,
                                      name = n,
                                      imports = i,
