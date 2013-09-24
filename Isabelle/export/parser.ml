@@ -127,7 +127,20 @@ struct
                                  (xstring * Position.T) list) *
                                 (Element.context list * Element.statement)) *
                                proof
-        |Misc of misc_body;
+	|Primrec of (opt_target * (binding * string option * mixfix) list) *
+                    (Attrib.binding * string) list
+	|Datatype of Datatype.spec_cmd list
+	|RepDatatype of string list
+	|Fun of ((Function_Common.function_config * (binding *
+                 string option * mixfix) list) *
+                (Attrib.binding * string) list)
+        |PartialFunction of xstring * ((binding * string option * mixfix) list *
+                             (Attrib.binding  * string))
+	|Function of ((Function_Common.function_config *
+                       (binding * string option * mixfix) list)
+                      * (Attrib.binding * string) list) * proof
+	|Termination of string option * proof
+	|Misc of misc_body;
 	val hide = curry Hide;
 (* Common Functions *)
 	(* taken from Pure/Isar/parse.ML *)
@@ -400,7 +413,32 @@ struct
 	("schematic_lemma", parse_theorem -- proof         (* line 529 *)
                              >> SchematicLemma),
         ("schematic_corollary", parse_theorem -- proof     (* line 530 *)
-                             >> SchematicCorollary)]);
+                             >> SchematicCorollary),
+	(* line 313 HOL/Tools/Datatype/primrec.ML *)
+        ("primrec", Parse.opt_target -- Parse.fixes --
+                    Parse_Spec.where_alt_specs >> Primrec),
+	(* line 795 HOL/Tools/Datatype/datatype.ML *)
+	("datatype",Parse.and_list1 Datatype.spec_cmd
+                    >> Datatype),
+        (* line 646 HOL/Tools/Datatype/rep_datatype.ML *)
+        ("rep_datatype",Scan.repeat1 Parse.term
+                        >> RepDatatype),
+        (* line 173 HOL/Tools/Function/fun.ML *)
+        ("fun",Function_Common.function_parser
+                Function_Fun.fun_config
+               >> Fun),
+        (* line 285 HOL/Tools/Function/partial_function.ML *)
+        ("partial_function",((@{keyword "("} |-- Parse.xname --|
+         @{keyword ")"}) -- (Parse.fixes -- (Parse.where_ |--
+         Parse_Spec.spec))) >> PartialFunction),
+	(* line 284 HOL/Tools/Function/function.ML *)
+        ("function",Function_Common.function_parser
+                     Function_Common.default_config
+                    -- proof
+                    >> Function),
+        (* line 290 HOL/Tools/Function/function.ML *)
+        ("termination",Scan.option Parse.term -- proof
+                       >> Termination)]);
 	fun unparse_cmd s = Parse.group (fn () => s)
          (fn toks =>
            case toks of

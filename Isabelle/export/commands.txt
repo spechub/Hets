@@ -39,9 +39,9 @@ Tools/choice_specification.ML:@{command_spec "ax_specification"}
 Tools/Predicate_Compile/code_prolog.ML:@{command_spec "values"}
 Tools/Predicate_Compile/predicate_compile.ML:@{command_spec "code_pred"}
 Tools/Predicate_Compile/predicate_compile.ML:@{command_spec "values"}
-Tools/Datatype/primrec.ML:@{command_spec "primrec"}
-Tools/Datatype/datatype.ML:@{command_spec "datatype"}
-Tools/Datatype/rep_datatype.ML:@{command_spec "rep_datatype"}
+* Tools/Datatype/primrec.ML:@{command_spec "primrec"}
+* Tools/Datatype/datatype.ML:@{command_spec "datatype"}
+* Tools/Datatype/rep_datatype.ML:@{command_spec "rep_datatype"}
 Tools/SMT/smt_config.ML:@{command_spec "smt_status"}
 Tools/recdef.ML:@{command_spec "recdef"}
 Tools/recdef.ML:@{command_spec "defer_recdef"}
@@ -61,10 +61,10 @@ Tools/Sledgehammer/sledgehammer_isar.ML:@{command_spec "sledgehammer_params"}
 Tools/inductive_set.ML:@{command_spec "inductive_set"}
 Tools/inductive_set.ML:@{command_spec "coinductive_set"}
 Tools/typedef.ML:@{command_spec "typedef"}
-Tools/Function/fun.ML:@{command_spec "fun"}
-Tools/Function/partial_function.ML:@{command_spec "partial_function"}
-Tools/Function/function.ML:@{command_spec "function"}
-Tools/Function/function.ML:@{command_spec "termination"}
+* Tools/Function/fun.ML:@{command_spec "fun"}
+* Tools/Function/partial_function.ML:@{command_spec "partial_function"}
+* Tools/Function/function.ML:@{command_spec "function"}
+* Tools/Function/function.ML:@{command_spec "termination"}
 Tools/try0.ML:@{command_spec "try0"}
 Tools/Quickcheck/find_unused_assms.ML:@{command_spec "find_unused_assms"}
 Tools/Quickcheck/abstract_generators.ML:@{command_spec "quickcheck_generator"}
