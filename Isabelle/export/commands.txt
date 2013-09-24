@@ -60,7 +60,7 @@ Tools/Sledgehammer/sledgehammer_isar.ML:@{command_spec "sledgehammer"}
 Tools/Sledgehammer/sledgehammer_isar.ML:@{command_spec "sledgehammer_params"}
 Tools/inductive_set.ML:@{command_spec "inductive_set"}
 Tools/inductive_set.ML:@{command_spec "coinductive_set"}
-Tools/typedef.ML:@{command_spec "typedef"}
+* Tools/typedef.ML:@{command_spec "typedef"}
 * Tools/Function/fun.ML:@{command_spec "fun"}
 * Tools/Function/partial_function.ML:@{command_spec "partial_function"}
 * Tools/Function/function.ML:@{command_spec "function"}
