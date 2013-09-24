@@ -251,6 +251,9 @@ printNamedSen ns =
   Subclass {} -> d
   Typedef {} -> d
   Defs {}    -> d
+  Fixrec {}  -> d
+  Domains {} -> d
+  Primrec {} -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
               <+> dd $+$ text refuteS
@@ -339,6 +342,26 @@ printSentence s = case s of
                             cs   = map pretty_cs $ datatypeConstructors d
                         in hsep vars <+> name <+> text "=" <+>
                            fsep (bar $ cs)) dts)
+  Domains ds -> if null ds then empty
+                else text "domain" <+>
+                 andDocs (map (\d ->
+                  let vars = map printType $ domainTVars d
+                      name = text $ show $ domainName d
+                      pretty_cs = \c ->
+                       let cname = text $ show $ domainConstructorName c
+                           args' = map (\arg ->
+                            (if domainConstructorArgLazy arg
+                             then text "lazy" else empty) <+>
+                            (case domainConstructorArgSel arg of
+                              Just sel -> (text $ show sel) <+> text "::"
+                              Nothing  -> empty) <+> (doubleQuotes . printType)
+                            (domainConstructorArgType arg)) $
+                            domainConstructorArgs c
+                           args = map parens args'
+                       in hsep $ cname : args
+                      cs = map pretty_cs $ domainConstructors d
+                  in hsep vars <+> name <+> text "=" <+>
+                     fsep (bar $ cs)) ds)
   Consts cs -> if null cs then empty
                else vsep $ [text "consts"] ++
                      map (\(n,_,t) -> text n <+> text "::" <+>
@@ -424,6 +447,32 @@ printSentence s = case s of
          text (defEquationConst eq) <+> text "==" <+>
          printTerm (defEquationTerm eq)) <+> if null (defEquationArgs eq)
          then empty else brackets (text $ defEquationArgs eq)) (defsEquations d)
+  Fixrec fs ->
+   let head = map (\(name,_,tp,_) -> text name <+> text "::" <+>
+                                     (doubleQuotes . printType) tp) fs
+       pretty_fixreceq = \name eq ->
+        let unchecked = if fixrecEquationUnchecked eq then
+                        text "(unchecked)" else empty
+            p s = punctuate $ space <> text s
+            premises  = map printTerm $ fixrecEquationPremises eq
+            patterns  = map (parens . printTerm) $ fixrecEquationPatterns eq
+            tm        = printTerm $ fixrecEquationTerm eq
+        in unchecked <+> doubleQuotes (fsep $ p "\\<Longrightarrow>" $ premises
+            ++ [hsep (p "\\<cdot>" (text name:patterns)) <+> text "=" <+> tm])
+       body = concat $ map (\(name,_,_,eqs) -> map (pretty_fixreceq name) eqs)
+               fs
+   in text "fixrec" <+> andDocs head <+> text "where" $+$ fsep (bar body)
+  Primrec t eqs ->
+                let head = map (\(name,_,tp,_) -> text name <+> text "::" <+>
+                                 (doubleQuotes . printType) tp) eqs
+                    pretty_primrec = \name (vs,tm) -> doubleQuotes (text name
+                     <+> hsep (map printTerm vs) <+> text "=" <+> printTerm tm)
+                    body = concat $ map (\(name,_,_,tms) ->
+                            map (pretty_primrec name) tms) eqs
+                in text "primrec" <+> (case t of
+                           Just t' -> braces (text "in" <+> (text $ show t'))
+                           Nothing -> empty) <+> andDocs head <+> text "where"
+                   $+$ fsep (bar body)
 
 printArity :: (Sort,[Sort]) -> Doc
 printArity (sort,sorts) = (parens $ hsep $ punctuate comma $
