@@ -375,6 +375,20 @@ printSentence s = case s of
      (Just n,Nothing) -> text (show n)
      _ -> empty), text "where" <+>
    doubleQuotes (printTerm (definitionTerm d))]
+  f@(Fun {}) -> text "fun" <+> (case funTarget f of
+   Just t  -> braces (text "in" <+> (text $ show t))
+   Nothing -> empty) <+> (if funDomintros f then braces (text "domintros")
+    else empty) <+> vcat (intersperse (text andS) $
+     map (\(name,mx,tp,_) -> text name <+> text "::" <+>
+     doubleQuotes (printType tp) <+> case mx of
+                      Just (Mixfix _ _ s _) -> doubleQuotes (text s)
+                      _ -> empty) (funEquations f)) <+> text "where" $+$
+    (let eqs  = concat $ map (\(name,_,_,e) -> map (\e' -> (name,e')) e)
+                             (funEquations f)
+         eqs' = map (\(n,(vs,t)) -> text n <+>
+                 hcat (map (doubleQuotes . printTerm) vs) <+>
+                 text "=" <+> doubleQuotes (printTerm t)) eqs
+     in fsep $ bar eqs')
   i@(Instantiation {}) -> fsep $ [text "instantiation" <+> text
    (instantiationType i) <+> text "::" <+> printArity (instantiationArity i)]
     ++ [printBody (instantiationBody i)]
