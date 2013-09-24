@@ -244,6 +244,11 @@ printNamedSen ns =
   Lemma {} -> d
   Definition {} -> d
   Fun {} -> d
+  Instantiation {} -> d
+  InstanceProof {} -> d
+  InstanceArity {} -> d
+  InstanceSubclass {} -> d
+  Subclass {} -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
               <+> dd $+$ text refuteS
@@ -306,12 +311,14 @@ printSentence s = case s of
                   map (text . show) (localeParents l)
        (fixes,assumes) = printContext $ localeContext l
    in printFixesAssumes h parents assumes fixes
+      $+$ printBody (localeBody l)
   c@(Class {}) ->
    let h       = text "class" <+> text (show $ className c)
        parents = Data.List.intersperse (text "+") $
                   map (text . show) (classParents c)
        (fixes,assumes) = printContext (classContext c)
    in printFixesAssumes h parents assumes fixes
+      $+$ printBody (classBody c)
   (Datatypes dts) -> if null dts then empty
                      else text "datatype" <+>
                         andDocs (map (\d ->
@@ -366,6 +373,25 @@ printSentence s = case s of
      (Just n,Nothing) -> text (show n)
      _ -> empty), text "where" <+>
    doubleQuotes (printTerm (definitionTerm d))]
+  i@(Instantiation {}) -> fsep $ [text "instantiation" <+> text
+   (instantiationType i) <+> text "::" <+> printArity (instantiationArity i)]
+    ++ [printBody (instantiationBody i)]
+  InstanceProof proof -> text "instance" $+$ text proof
+  i@(InstanceArity {}) -> text "instance" <+>
+   hcat (intersperse (text "and") $ map text $ instanceTypes i) <+>
+   printArity (instanceArity i) $+$ text (instanceProof i)
+  i@(InstanceSubclass {}) -> text "instance" <+> text (instanceClass i) <+>
+   text (instanceRel i) <+> text (instanceClass1 i) $+$ text (instanceProof i)
+  c@(Subclass {}) -> text "subclass" <+> text (subclassClass c)
+   <+> text (subclassProof c)
+
+printArity :: (Sort,[Sort]) -> Doc
+printArity (sort,sorts) = (parens $ hsep $ punctuate comma $
+                           map (printSortAux True) sorts) <+> printSort sort
+
+printBody :: [Sentence] -> Doc
+printBody sens = fsep $ if null sens then []
+               else [text "begin"] ++ map printSentence sens ++ [text "end"]
 
 printContext :: Ctxt -> ([Doc],[Doc])
 printContext ctxt =

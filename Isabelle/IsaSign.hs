@@ -200,6 +200,25 @@ data Sentence =
      funPartials   :: Bool,
      funSigs       :: [FunSig],
      funEquations  :: [Term] }
+  | Instantiation {
+     instantiationType  :: TName,
+     instantiationArity :: (Sort,[Sort]),
+     instantiationBody  :: [Sentence] }
+  | InstanceProof {
+     instanceProof :: String }
+  | InstanceArity {
+     instanceTypes  :: [TName],
+     instanceArity  :: (Sort,[Sort]),
+     instanceProof  :: String }
+  | InstanceSubclass {
+     instanceClass  :: String,
+     instanceRel    :: String,
+     instanceClass1 :: String,
+     instanceProof  :: String }
+  | Subclass {
+     subclassClass :: String,
+     subclassProof :: String
+    }
     deriving (Eq, Ord, Show)
 
 data Ctxt = Ctxt {

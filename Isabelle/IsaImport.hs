@@ -97,6 +97,31 @@ hXmlBody_2IsaSentence (Body_Fun (Fun a sig (NonEmpty fsigs) (NonEmpty tms))) =
     IsaSign.funSigName = IsaSign.mkQName $ funSigName a })
    fsigs,
   IsaSign.funEquations  = map (hXmlOneOf6_2IsaTerm []) tms }
+hXmlBody_2IsaSentence (Body_Instantiation
+ (Instantiation a arity body)) =
+ IsaSign.Instantiation {
+  IsaSign.instantiationType  = instantiationType a,
+  IsaSign.instantiationArity = (\(Arity a1 a2) -> (hXmlSort2IsaSort a1,
+   map hXmlSort2IsaSort a2)) arity,
+  IsaSign.instantiationBody  =
+   map hXmlBody_2IsaSentence ((\(Body l) -> l) body) }
+hXmlBody_2IsaSentence (Body_Instance (Instance a (Proof proof) head)) =
+ case (instanceClass a,instanceRel a, instanceClass1 a, head) of
+  (Just c, Just rel, Just c1, _) -> IsaSign.InstanceSubclass {
+   IsaSign.instanceClass  = c,
+   IsaSign.instanceRel    = rel,
+   IsaSign.instanceClass1 = c1,
+   IsaSign.instanceProof  = proof }
+  (_,_,_, Just (Vars vars,Arity a1 a2)) -> IsaSign.InstanceArity {
+              IsaSign.instanceTypes = map (\(TFree a _ ) -> tFreeName a) vars,
+              IsaSign.instanceArity = (hXmlSort2IsaSort a1,
+                                       map hXmlSort2IsaSort a2),
+              IsaSign.instanceProof = proof }
+  _ -> IsaSign.InstanceProof proof
+hXmlBody_2IsaSentence (Body_Subclass (Subclass a (Proof proof))) =
+ IsaSign.Subclass {
+  IsaSign.subclassClass = subclassClass a,
+  IsaSign.subclassProof = proof }
 
 hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
 hXmlCtxt2IsaCtxt (Ctxt fixes' assumes') = IsaSign.Ctxt {
@@ -167,6 +192,9 @@ hXmlAxiom2IsaAxiom (Axiom a tm) =
 
 hXmlClass2IsaClass :: Class -> IsaSign.IsaClass
 hXmlClass2IsaClass = IsaSign.IsaClass . className
+
+hXmlSort2IsaSort :: Sort -> IsaSign.Sort
+hXmlSort2IsaSort (Sort (NonEmpty cls)) = map hXmlClass2IsaClass cls
 
 hXmlType2IsaTyp :: Type -> IsaSign.Typ
 hXmlType2IsaTyp (Type attrs tps) =

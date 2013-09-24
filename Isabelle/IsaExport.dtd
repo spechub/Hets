@@ -11,7 +11,7 @@
   <!ATTLIST UseFile name CDATA #REQUIRED>
 
 <!-- Body -->
-<!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Fun)*>
+<!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Fun|Instantiation|Instance|Subclass)*>
 
 <!ELEMENT Locale (Ctxt,SigData,Parent*,Body)>
   <!ATTLIST Locale name CDATA #REQUIRED>
@@ -62,6 +62,20 @@
 
 <!ELEMENT Primrec (SigData,FunSig+,(Bound|Free|Var|Const|App|Abs)+)>
   <!ATTLIST Primrec target CDATA #IMPLIED>
+
+<!ELEMENT Instantiation (Arity,Body)>
+  <!ATTLIST Instantiation type CDATA #REQUIRED>
+
+<!ELEMENT Instance (Proof,(Vars,Arity)?)>
+  <!ATTLIST Instance class CDATA #IMPLIED>
+  <!ATTLIST Instance rel CDATA #IMPLIED>
+  <!ATTLIST Instance class1 CDATA #IMPLIED>
+
+<!ELEMENT Subclass (Proof)>
+  <!ATTLIST Subclass class CDATA #REQUIRED>
+
+<!ELEMENT Sort (class+)>
+<!ELEMENT Arity (Sort,Sort*)>
 
 <!ELEMENT Vars (TFree*)>
 
