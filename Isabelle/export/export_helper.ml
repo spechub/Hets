@@ -198,8 +198,9 @@ struct
                                                 def_eqs: string list}
                                    |Definition of string * (string*string)
                                    |Text of string
-                                   |Section of string;
+                                   |MiscCmd of string * string;
 	datatype parsed_theory = ParsedTheory of {
+				 header: string option,
                                  name: string,
                                  imports: string list,
                                  body: theory_body_elem list
@@ -222,6 +223,13 @@ struct
         fun keyword s t  = if Token.keyword_with (curry op= s) t
                            then Result (Token.content_of t)
                            else failT "Not a valid keyword!" t;
+	fun unparse_cmd s cmd = case cmd of
+                                   t::ts => if Token.content_of t = s
+                                            then ts |> List.map Token.unparse
+                                                    |> space_implode " "
+                                                    |> Result
+                                            else Fail "Unexpected command!"
+                                  |_    => Fail "Expected non-empty command!";
         val parse_theory_head = e (content "theory") #> p ident >>> #2
                                 #> e (keyword "imports") #> many (p ident)
                                 #> e (keyword "begin") #> expect_end;
@@ -234,7 +242,8 @@ struct
                      val fixes = e (keyword "fixes") #>
                                     sepBy (e (keyword "and"))
                                           (many (p ident) #> e (keyword "::")
-                                           #> oneOf [p str_,p ident] #> pack)
+                                           #> oneOf [p str_,p ident,
+                                                     p type_ident] #> pack)
                  in optional (assumes a) #> optional fixes
                     #> optional (assumes a) (* a = keyword "assumes" *)
                     >>> (fn (((v,a),f),a1) =>
@@ -324,29 +333,33 @@ struct
                                         in if i' = 0 then List.rev l' |> Result
                                            else More (proof_qed i' l') end
                               |_ => Fail "Expected non-empty command!";
-	fun proof_by l cmd = case cmd of
+	fun proof_prefix l cmd = case cmd of
                               t::_ => if List.exists (Token.content_of t |>
                                                       curry op=)
-                                         ["note","then","from",
-                                          "with","using","unfolding"]
-                                      then cmd::l |> proof_by |> More
-                                      else if Token.content_of t = "by"
-                                           then List.rev l |> Result
-					   else Fail "Unexpected command!"
+                                         ["apply","using","unfolding"]
+                                      then cmd::l |> proof_prefix |> More
+                                      else cmd::l |> End
                              |_ => Fail "Expected non-empty command!";
         fun cmdList2string cmds = List.map (List.map Token.unparse) cmds
                                   |> List.map (space_implode " ")
                                   |> cat_lines;
-	val proof = oneOf [p (fn cmd =>
+	exception Test of string;
+	val proof = p (proof_prefix []) #> p (fn cmd =>
                             case cmd of
-                             t::_  => if Token.content_of t = "proof"
-                                      then More (proof_qed 1 [cmd])
-                                      else Fail "Unexpected command!"
+                             t::_  => let val res = case Token.content_of t of
+                                        "proof" => More (proof_qed 1 [cmd])
+                                       |"oops"  => Result [cmd]
+                                       |"by"    => Result [cmd]
+                                       |".."    => Result [cmd]
+                                       |"."     => Result [cmd]
+                                       |"done"  => Result [cmd]
+                                       |_       => raise (Test (Token.unparse t))
+                                      in res end
                             |_ => Fail "Expected non-empty command!")
-                           >>> (fn (v,cmds) => (v,cmdList2string cmds)),
-                          p (proof_by []) >>> (fn (v,cmds) =>
-                                               (v,cmdList2string cmds))];
-        val test = initialState #> p (parse_theory_head |> p2r) >>> #2
+                           >>> (fn ((v,cmds),cmds1) => (v,cmds@cmds1 |>
+                                                          cmdList2string));
+        val test = initialState #> optional (p (unparse_cmd "header"))
+                   #> p (parse_theory_head |> p2r) #> pack >>> #2
                    #> many (oneOf [p (parse_body_elem |> p2r),
                                    p (parse_thm "lemma" |> p2r) #> proof
                                     #> pack >>>
@@ -366,25 +379,21 @@ struct
 					        local_data=the_default 
                                                  emptyLocalData l,
                                                 proof=prf})),
-                                   p (fn cmd => case cmd of
-                                    t::ts => if Token.content_of t = "text"
-                                            then ts |> List.map Token.unparse
-                                                    |> space_implode " "
-                                                    |> Result
-                                            else Fail "Unexpected command!"
-                                   |_    => Fail "Expected non-empty command!")
-                                    >>> (fn (v,v1) => (v,Text v1)),
-                                   p (fn cmd => case cmd of
-                                    t::ts => if Token.content_of t = "section"
-                                            then ts |> List.map Token.unparse
-                                                    |> space_implode " "
-                                                    |> Result
-                                            else Fail "Unexpected command!"
-                                   |_    => Fail "Expected non-empty command!")
-                                    >>> (fn (v,v1) => (v,Section v1))])
+                                   p (unparse_cmd "text") >>>
+                                   (fn (v,v1) => (v,Text v1)),
+                                   p (unparse_cmd "section") >>>
+                                   (fn (v,v1) => (v,MiscCmd ("section",v1))),
+                                   p (unparse_cmd "subsection") >>>
+                                   (fn (v,v1) => (v,MiscCmd ("subsection",v1))),
+                                   p (unparse_cmd "value") >>>
+                                   (fn (v,v1) => (v,MiscCmd ("value",v1))),
+                                   p (unparse_cmd "unused_thms") >>>
+                                   (fn (v,v1) =>
+                                     (v,MiscCmd ("unused_thms",v1)))])
                    #> e (parse_theory_end |> p2r)
-                   #> expect_end >>> (fn ((n,i),b) =>
-                       ParsedTheory {name = n,
+                   #> expect_end >>> (fn ((h,(n,i)),b) =>
+                       ParsedTheory {header = h,
+                                     name = n,
                                      imports = i,
                                      body = b})
                    #> (fn v => (v >>= I,getError v));
