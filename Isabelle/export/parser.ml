@@ -1210,8 +1210,12 @@ struct
                        val ((_,[(_,tm')]),_) =
                             Specification.read_free_spec (the_list name)
                              [(binding,tm)] (Toplevel.context_of state)
-                       val (((name',tp),vs),def_tm) =
-                            Logic.dest_equals tm' |> (fn (head,body) =>
+                       val tm'' = HOLogic.dest_Trueprop tm'
+                                  handle ex => tm'
+                       val (((name',tp),vs),def_tm) = tm'' |>
+                            (fn t => (HOLogic.dest_eq t
+                             handle ex => Logic.dest_equals t))
+                            |> (fn (head,body) =>
                              case strip_comb head of
                               (f,vs) => ((dest_Free f,vs),body))
                        val mx' = case name of

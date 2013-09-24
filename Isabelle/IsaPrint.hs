@@ -453,12 +453,12 @@ printSentence s = case s of
        pretty_fixreceq = \name eq ->
         let unchecked = if fixrecEquationUnchecked eq then
                         text "(unchecked)" else empty
+            premises  = fixrecEquationPremises eq
             p s = punctuate $ space <> text s
-            premises  = map printTerm $ fixrecEquationPremises eq
             patterns  = map (parens . printTerm) $ fixrecEquationPatterns eq
             tm        = printTerm $ fixrecEquationTerm eq
-        in unchecked <+> doubleQuotes (fsep $ p "\\<Longrightarrow>" $ premises
-            ++ [hsep (p "\\<cdot>" (text name:patterns)) <+> text "=" <+> tm])
+        in unchecked <+> doubleQuotes (printTermWithPremises premises
+            (hsep (p "\\<cdot>" (text name:patterns)) <+> text "=" <+> tm))
        body = concat $ map (\(name,_,_,eqs) -> map (pretty_fixreceq name) eqs)
                fs
    in text "fixrec" <+> andDocs head <+> text "where" $+$ fsep (bar body)
@@ -473,6 +473,11 @@ printSentence s = case s of
                            Just t' -> braces (text "in" <+> (text $ show t'))
                            Nothing -> empty) <+> andDocs head <+> text "where"
                    $+$ fsep (bar body)
+
+printTermWithPremises :: [Term] -> Doc -> Doc
+printTermWithPremises ps t =
+ let p s = punctuate $ space <> text s
+ in fsep $ p "\\<Longrightarrow>" (map printTerm ps ++ [t])
 
 printArity :: (Sort,[Sort]) -> Doc
 printArity (sort,sorts) = (parens $ hsep $ punctuate comma $
