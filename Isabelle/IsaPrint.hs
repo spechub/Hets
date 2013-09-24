@@ -239,7 +239,7 @@ printNamedSen ns =
   Class {} -> d
   Datatypes _ -> d
   Consts _ -> d
-  TypeSynonym _ _ _ _ -> d
+  TypeSynonym {} -> d
   Axioms _ -> d
   Lemma {} -> d
   Definition {} -> d
@@ -327,7 +327,9 @@ printSentence s = case s of
                         let vars = map text $ datatypeTVars d
                             name = text $ show $ datatypeName d
                             pretty_cs = \c ->
-                             let cname = show $ constructorName c
+                             let cname = case c of
+                                  DatatypeNoConstructor {} -> ""
+                                  _ -> show $ constructorName c
                                  cname' = if any isSpace cname
                                           then doubleQuotes (text cname)
                                           else text cname
@@ -339,7 +341,7 @@ printSentence s = case s of
                            fsep (bar $ cs)) dts)
   Consts cs -> if null cs then empty
                else vsep $ [text "consts"] ++
-                     map (\(_,n,t) -> text n <+> text "::" <+>
+                     map (\(n,_,t) -> text n <+> text "::" <+>
                                     doubleQuotes (printType t)) cs
   TypeSynonym n _ vs tp -> hsep $ [text "type_synonym",
                                  text $ show n,text "="] ++ map text vs
@@ -369,11 +371,8 @@ printSentence s = case s of
    (case definitionTarget d of
      Just t  -> braces (text "in" <+> (text $ show t))
      Nothing -> empty) <+>
-   (case (definitionName d,definitionType d) of
-     (Just n,Just t)  -> text (show n) <+> text "::" <+>
-                         doubleQuotes (printType t)
-     (Just n,Nothing) -> text (show n)
-     _ -> empty), text "where" <+>
+   (text (show $ definitionName d) <+> text "::" <+>
+    doubleQuotes (printType $ definitionType d)), text "where" <+>
    doubleQuotes (printTerm (definitionTerm d))]
   f@(Fun {}) -> text "fun" <+> (case funTarget f of
    Just t  -> braces (text "in" <+> (text $ show t))
@@ -437,7 +436,7 @@ printBody sens = fsep $ if null sens then []
 
 printContext :: Ctxt -> ([Doc],[Doc])
 printContext ctxt =
- let fixes'   = map (\(n,tp) -> if n == "" then empty else text n
+ let fixes'   = map (\(n,_,tp) -> if n == "" then empty else text n
                        <+> case tp of 
                             Just tp' -> text "::" <+>
                                         (doubleQuotes . printTyp Null) tp'

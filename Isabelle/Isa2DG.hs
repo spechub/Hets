@@ -108,12 +108,12 @@ mkNode :: IsaData -> (DGraph,Map.Map String (Node,Sign)) ->
 mkNode (name,header',imps,keywords',uses',body) (dg,m) =
  let sens = map (\sen ->
              let name' = case sen of
-                  Locale n' _ _ _ _ -> "locale " ++ qname n'
-                  Class  n' _ _ _ _ -> "class " ++ qname n'
+                  Locale n' _ _ _ -> "locale " ++ qname n'
+                  Class  n' _ _ _ -> "class " ++ qname n'
                   Datatypes dts -> "datatype " ++ (intercalate "_" $
                                      map (qname . datatypeName) dts)
                   Consts cs -> "consts " ++ (intercalate "_" $
-                                             map (\(_,n,_) -> n) cs)
+                                             map (\(n,_,_) -> n) cs)
                   TypeSynonym n' _ _ _ -> "type_synonym " ++ qname n'
                   Axioms axs -> "axioms " ++ (intercalate "_" $ 
                                  map (qname . axiomName) axs)

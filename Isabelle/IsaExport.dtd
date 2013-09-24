@@ -13,29 +13,25 @@
 <!-- Body -->
 <!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Funs|Instantiation|Instance|Subclass|Typedef|Defs)*>
 
-<!ELEMENT Locale (Ctxt,SigData,Parent*,Body)>
+<!ELEMENT Locale (Ctxt,Parent*,Body)>
   <!ATTLIST Locale name CDATA #REQUIRED>
 
-<!ELEMENT Cls (Ctxt,SigData,Parent*,Body)>
+<!ELEMENT Cls (Ctxt,Parent*,Body)>
   <!ATTLIST Cls name CDATA #REQUIRED>
 
-<!ELEMENT TypeSynonym (SigData,Vars,(TVar|TFree|Type))>
+<!ELEMENT TypeSynonym (Mixfix?,Vars,(TVar|TFree|Type))>
   <!ATTLIST TypeSynonym name CDATA #REQUIRED>
-  <!ATTLIST TypeSynonym mixfix CDATA #IMPLIED>
   <!ATTLIST TypeSynonym target CDATA #IMPLIED>
 
 <!ELEMENT Datatypes (Datatype+)>
-<!ELEMENT Datatype (SigData,Constructor+,TFree*)>
+<!ELEMENT Datatype (Mixfix?,Constructor+,TFree*)>
   <!ATTLIST Datatype name CDATA #REQUIRED>
-  <!ATTLIST Datatype mixfix CDATA #REQUIRED>
-<!ELEMENT Constructor ((TVar|TFree|Type)*)>
-  <!ATTLIST Constructor name CDATA #REQUIRED>
-  <!ATTLIST Constructor mixfix CDATA #IMPLIED>
+<!ELEMENT Constructor (Mixfix?,(TVar|TFree|Type),(TVar|TFree|Type)*)>
+  <!ATTLIST Constructor name CDATA #IMPLIED>
 
 <!ELEMENT Consts (ConstDef+)>
-<!ELEMENT ConstDef (SigData,(TVar|TFree|Type))>
+<!ELEMENT ConstDef (Mixfix?,(TVar|TFree|Type))>
   <!ATTLIST ConstDef name CDATA #REQUIRED>
-  <!ATTLIST ConstDef mixfix CDATA #IMPLIED>
 
 <!ELEMENT Axioms (Axiom)+>
 <!ELEMENT Axiom ((Bound|Free|Var|Const|App|Abs))>
@@ -45,10 +41,9 @@
 <!ELEMENT Lemma (Ctxt,Proof,(Shows)+)>
   <!ATTLIST Lemma target CDATA #IMPLIED>
 
-<!ELEMENT Definition (SigData,(TVar|TFree|Type)?,(Bound|Free|Var|Const|App|Abs))>
-  <!ATTLIST Definition name CDATA #IMPLIED>
+<!ELEMENT Definition (Mixfix?,(TVar|TFree|Type),(Bound|Free|Var|Const|App|Abs))>
+  <!ATTLIST Definition name CDATA #REQUIRED>
   <!ATTLIST Definition target CDATA #IMPLIED>
-  <!ATTLIST Definition mixfix CDATA #IMPLIED>
 
 <!ELEMENT Funs (Fun+)>
   <!ATTLIST Funs target CDATA #IMPLIED>
@@ -75,7 +70,7 @@
   <!ATTLIST Subclass class CDATA #REQUIRED>
   <!ATTLIST Subclass target CDATA #IMPLIED>
 
-<!ELEMENT Typedef (Proof,(Bound|Free|Var|Const|App|Abs),TFree*)>
+<!ELEMENT Typedef (Mixfix?,Proof,(Bound|Free|Var|Const|App|Abs),TFree*)>
   <!ATTLIST Typedef type CDATA #REQUIRED>
   <!ATTLIST Typedef m1 CDATA #IMPLIED>
   <!ATTLIST Typedef m2 CDATA #IMPLIED>
@@ -96,9 +91,8 @@
   <!ATTLIST Parent name CDATA #REQUIRED>
 
 <!ELEMENT Fixes (Fix*)>
-<!ELEMENT Fix ((TVar|TFree|Type)?)>
+<!ELEMENT Fix ((TVar|TFree|Type)?,Mixfix?)>
   <!ATTLIST Fix name CDATA #REQUIRED>
-  <!ATTLIST Fix mixfix CDATA #IMPLIED>
 
 <!ELEMENT Assumes (Assumption*)>
 <!ELEMENT Assumption ((Bound|Free|Var|Const|App|Abs))>
@@ -112,11 +106,6 @@
   <!ATTLIST Mixfix prio CDATA #REQUIRED>
   <!ATTLIST Mixfix pretty CDATA #REQUIRED>
 
-<!ELEMENT SigData (AddType|AddConst|AddTypeSynonym)*>
-<!ELEMENT AddConst ((TVar|TFree|Type)?,(Arg|String|Break|Block)*)>
-  <!ATTLIST AddConst name CDATA #REQUIRED>
-  <!ATTLIST AddConst nargs CDATA #IMPLIED>
-  <!ATTLIST AddConst prio CDATA #IMPLIED>
 <!ELEMENT Arg EMPTY>
   <!ATTLIST Arg prio CDATA #REQUIRED>
 <!ELEMENT String EMPTY>
@@ -125,13 +114,6 @@
   <!ATTLIST Break prio CDATA #REQUIRED>
 <!ELEMENT Block ((Arg|String|Break|Block)*)>
   <!ATTLIST Block prio CDATA #REQUIRED>
-<!ELEMENT AddType ((Arg|String|Break|Block)*)>
-  <!ATTLIST AddType name CDATA #REQUIRED>
-  <!ATTLIST AddType arity CDATA #REQUIRED>
-  <!ATTLIST AddType nargs CDATA #IMPLIED>
-  <!ATTLIST AddType prio CDATA #IMPLIED>
-<!ELEMENT AddTypeSynonym ((TVar|TFree|Type))>
-  <!ATTLIST AddTypeSynonym name CDATA #REQUIRED>
 
 <!ELEMENT Proof (#PCDATA)>
 

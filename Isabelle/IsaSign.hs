@@ -168,17 +168,15 @@ data Sentence =
 
   | Locale { localeName    :: QName,
              localeContext :: Ctxt,
-             localeSigData :: SigData,
 	     localeParents :: [QName],
              localeBody    :: [Sentence] }
   | Class { className    :: QName,
             classContext :: Ctxt,
-            classSigData :: SigData,
 	    classParents :: [QName],
             classBody    :: [Sentence] }
   | Datatypes [Datatype]
-  | Consts [(SigData,String,Typ)]
-  | TypeSynonym QName SigData [String] Typ
+  | Consts [(String,Maybe Mixfix,Typ)]
+  | TypeSynonym QName (Maybe Mixfix) [String] Typ
   | Axioms [Axiom]
   | Lemma {
      lemmaTarget  :: Maybe QName,
@@ -186,10 +184,10 @@ data Sentence =
      lemmaProof   :: Maybe String,
      lemmaProps   :: [Props] }
   | Definition {
-     definitionName    :: Maybe QName,
+     definitionName    :: QName,
+     definitionMixfix  :: Maybe Mixfix,
      definitionTarget  :: Maybe String,
-     definitionSigData :: SigData,
-     definitionType    :: Maybe Typ,
+     definitionType    :: Typ,
      definitionTerm    :: Term }
   | Fun {
      funTarget     :: Maybe QName,
@@ -221,6 +219,7 @@ data Sentence =
   | Typedef {
       typedefName      :: QName,
       typedefVars      :: [(String,Sort)],
+      typedefMixfix    :: Maybe Mixfix,
       typedefMorphisms :: Maybe (QName,QName),
       typedefTerm      :: Term,
       typedefProof     :: String }
@@ -231,23 +230,8 @@ data Sentence =
     deriving (Eq, Ord, Show)
 
 data Ctxt = Ctxt {
-	fixes   :: [(String,Maybe Typ)],
+	fixes   :: [(String,Maybe Mixfix,Maybe Typ)],
 	assumes :: [(String,Term)] } deriving (Eq, Ord, Show)
-
-data SigData = SigData [AddSigData] deriving (Eq, Ord, Show)
-
-data AddSigData = AddConst {
-                   name  :: QName,
-                   nargs :: Maybe Int,
-                   tp    :: Maybe Typ,
-                   mx    :: Maybe (Int,[MixfixTemplate]) }
-                 |AddType {
-                   name  :: QName,
-                   arity :: Int,
-                   mx    :: Maybe (Int,[MixfixTemplate]) }
-                 |AddTypeSynonym {
-                   name :: QName,
-                   tpS  :: Typ } deriving (Eq, Ord, Show)
 
 data Mixfix = Mixfix {
  mixfixNargs    :: Int,
@@ -260,13 +244,17 @@ data MixfixTemplate = Arg Int | Str String | Break Int |
 
 data Datatype = Datatype {
       datatypeName         :: QName,
-      datatypeSigData      :: SigData,
       datatypeTVars        :: [String],
+      datatypeMixfix       :: Maybe Mixfix,
       datatypeConstructors :: [DatatypeConstructor] } deriving (Eq, Ord, Show)
 
 data DatatypeConstructor = DatatypeConstructor {
-      constructorName :: QName,
-      constructorArgs :: [Typ] } deriving (Eq, Ord, Show)
+      constructorName   :: QName,
+      constructorType   :: Typ,
+      constructorMixfix :: Maybe Mixfix,
+      constructorArgs   :: [Typ] } |
+     DatatypeNoConstructor {
+      constructorArgs   :: [Typ] } deriving (Eq, Ord, Show)
 
 data Axiom = Axiom {
       axiomName :: QName,

@@ -25,30 +25,28 @@ importIsaData = map (\(Thy a imports keywords uses body) ->
  in (thyName a,thyHeader a,imports',keywords',uses',body'))
 
 hXmlBody_2IsaSentence :: Body_ -> IsaSign.Sentence
-hXmlBody_2IsaSentence (Body_Locale (Locale a ctxt sig parents body)) =
+hXmlBody_2IsaSentence (Body_Locale (Locale a ctxt parents body)) =
  IsaSign.Locale {
   IsaSign.localeName    = IsaSign.mkQName $ localeName a,
   IsaSign.localeContext = hXmlCtxt2IsaCtxt ctxt,
-  IsaSign.localeSigData = hXmlSigData2IsaSigData sig,
   IsaSign.localeParents = map (IsaSign.mkQName . parentName) parents,
   IsaSign.localeBody    = map hXmlBody_2IsaSentence ((\(Body l) -> l) body) }
-hXmlBody_2IsaSentence (Body_Cls (Cls a ctxt sig parents body)) =
+hXmlBody_2IsaSentence (Body_Cls (Cls a ctxt parents body)) =
  IsaSign.Class {
   IsaSign.className    = IsaSign.mkQName $ clsName a,
   IsaSign.classContext = hXmlCtxt2IsaCtxt ctxt,
-  IsaSign.classSigData = hXmlSigData2IsaSigData sig,
   IsaSign.classParents = map (IsaSign.mkQName . parentName) parents,
   IsaSign.classBody    = map hXmlBody_2IsaSentence ((\(Body l) -> l) body) }
-hXmlBody_2IsaSentence (Body_TypeSynonym (TypeSynonym a sig (Vars vars) tp)) =
+hXmlBody_2IsaSentence (Body_TypeSynonym (TypeSynonym a mx (Vars vars) tp)) =
  IsaSign.TypeSynonym (IsaSign.mkQName $ typeSynonymName a)
-                     (hXmlSigData2IsaSigData sig)
+                     (maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx)
                      (map (\(TFree a _ ) -> tFreeName a) vars)
                      (hXmlOneOf3_2IsaTyp tp)
 hXmlBody_2IsaSentence (Body_Datatypes (Datatypes (NonEmpty dts))) =
  IsaSign.Datatypes (map hXmlDatatype2IsaDatatype dts)
 hXmlBody_2IsaSentence (Body_Consts (Consts (NonEmpty consts))) =
- IsaSign.Consts (map (\(ConstDef a sig t) ->
-  (hXmlSigData2IsaSigData sig,constDefName a,
+ IsaSign.Consts (map (\(ConstDef a m t) ->
+  (constDefName a, maybe Nothing (Just . hXmlMixfix2IsaMixfix) m,
    hXmlOneOf3_2IsaTyp t)) consts)
 hXmlBody_2IsaSentence (Body_Axioms (Axioms (NonEmpty axioms))) =
  IsaSign.Axioms (map hXmlAxiom2IsaAxiom axioms)
@@ -69,14 +67,12 @@ hXmlBody_2IsaSentence (Body_Lemma (Lemma a ctxt (Proof proof)
                            t:tms -> IsaSign.Prop {IsaSign.prop = t,
                                                   IsaSign.propPats = tms}
                            _ -> error "This should not happen!") tms}) shows }
-hXmlBody_2IsaSentence (Body_Definition (Definition a sig maybe_tp tm)) =
+hXmlBody_2IsaSentence (Body_Definition (Definition a m tp tm)) =
  IsaSign.Definition {
-  IsaSign.definitionName    = maybe Nothing (Just . IsaSign.mkQName) $
-                               definitionName a,
+  IsaSign.definitionName    = IsaSign.mkQName $ definitionName a,
+  IsaSign.definitionMixfix  = maybe Nothing (Just . hXmlMixfix2IsaMixfix) m,
   IsaSign.definitionTarget  = definitionTarget a,
-  IsaSign.definitionSigData = hXmlSigData2IsaSigData sig,
-  IsaSign.definitionType    = maybe Nothing (\tp -> Just $
-                            hXmlOneOf3_2IsaTyp tp) maybe_tp,
+  IsaSign.definitionType    = hXmlOneOf3_2IsaTyp tp,
   IsaSign.definitionTerm    = hXmlOneOf6_2IsaTerm [] $ tm }
 hXmlBody_2IsaSentence (Body_Funs (Funs a (NonEmpty funs))) =
  IsaSign.Fun {
@@ -118,11 +114,12 @@ hXmlBody_2IsaSentence (Body_Subclass (Subclass a (Proof proof))) =
   IsaSign.subclassTarget = maybe Nothing (Just . IsaSign.mkQName) $
                             subclassTarget a,
   IsaSign.subclassProof  = proof }
-hXmlBody_2IsaSentence (Body_Typedef (Typedef a (Proof proof) tm vs)) =
+hXmlBody_2IsaSentence (Body_Typedef (Typedef a mx (Proof proof) tm vs)) =
  IsaSign.Typedef {
   IsaSign.typedefName = IsaSign.mkQName $ typedefType a,
   IsaSign.typedefVars = map (\(TFree a s) -> (tFreeName a,
    map hXmlClass2IsaClass s)) vs,
+  IsaSign.typedefMixfix = maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
   IsaSign.typedefMorphisms = case (typedefM1 a,typedefM2 a) of
    (Just m1,Just m2) -> Just (IsaSign.mkQName m1,IsaSign.mkQName m2)
    _ -> Nothing,
@@ -139,8 +136,9 @@ hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
 hXmlCtxt2IsaCtxt (Ctxt ctxt) =
  let (fixes,assumes) = foldl (\(fixes',assumes') c ->
       case c of
-       OneOf2 (Fixes f) -> (fixes'++map (\(Fix a t) -> (fixName a, maybe Nothing
-        (Just . hXmlOneOf3_2IsaTyp) t)) f, assumes')
+       OneOf2 (Fixes f) -> (fixes'++map (\(Fix a t mx) ->
+        (fixName a, maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
+         maybe Nothing (Just . hXmlOneOf3_2IsaTyp) t)) f, assumes')
        TwoOf2 (Assumes a) -> (fixes',assumes'++map (\(Assumption a tm) ->
         (assumptionName a, hXmlOneOf6_2IsaTerm [] tm)) a)) ([],[]) ctxt
  in IsaSign.Ctxt {
@@ -154,31 +152,6 @@ hXmlMixfix2IsaMixfix (Mixfix a symbs) = IsaSign.Mixfix {
  IsaSign.mixfixPretty   = mixfixPretty a,
  IsaSign.mixfixTemplate = map hXmlOneOf4_2IsaMixfixTemplate symbs }
 
-hXmlSigData2IsaSigData :: SigData -> IsaSign.SigData
-hXmlSigData2IsaSigData (SigData a) = IsaSign.SigData $
- map hXmlSigData_2IsaAddSigData a
-
-hXmlSigData_2IsaAddSigData :: SigData_ -> IsaSign.AddSigData
-hXmlSigData_2IsaAddSigData (SigData_AddType (AddType a as)) =
- IsaSign.AddType {
-  IsaSign.name  = IsaSign.mkQName $ addTypeName a,
-  IsaSign.arity = read $ addTypeArity a,
-  IsaSign.mx    = case addTypePrio a of
-                   Just s  -> Just (read s,map hXmlOneOf4_2IsaMixfixTemplate as)
-                   Nothing -> Nothing }
-hXmlSigData_2IsaAddSigData (SigData_AddConst (AddConst a t as)) =
- IsaSign.AddConst {
-  IsaSign.name  = IsaSign.mkQName $ addConstName a,
-  IsaSign.nargs = maybe Nothing (\i -> Just $ read i) $ addConstNargs a,
-  IsaSign.tp    = maybe Nothing (\t -> Just $ hXmlOneOf3_2IsaTyp t) t,
-  IsaSign.mx    = case addConstPrio a of
-                   Just s  -> Just (read s,map hXmlOneOf4_2IsaMixfixTemplate as)
-                   Nothing -> Nothing }
-hXmlSigData_2IsaAddSigData (SigData_AddTypeSynonym (AddTypeSynonym a t)) =
- IsaSign.AddTypeSynonym {
-  IsaSign.name = IsaSign.mkQName $ addTypeSynonymName a,
-  IsaSign.tpS  = hXmlOneOf3_2IsaTyp t }
-
 hXmlOneOf4_2IsaMixfixTemplate :: OneOf4 Arg AString Break Block ->
                                  IsaSign.MixfixTemplate
 hXmlOneOf4_2IsaMixfixTemplate (OneOf4 a) =
@@ -191,15 +164,23 @@ hXmlOneOf4_2IsaMixfixTemplate (FourOf4 (Block a as)) =
  IsaSign.Block (read $ blockPrio a) (map hXmlOneOf4_2IsaMixfixTemplate as)
 
 hXmlDatatype2IsaDatatype :: Datatype -> IsaSign.Datatype
-hXmlDatatype2IsaDatatype (Datatype a sig (NonEmpty cs) vars) =
+hXmlDatatype2IsaDatatype (Datatype a mx (NonEmpty cs) vars) =
  IsaSign.Datatype {
   IsaSign.datatypeName         = IsaSign.mkQName $ datatypeName a,
-  IsaSign.datatypeSigData      = hXmlSigData2IsaSigData sig,
   IsaSign.datatypeTVars        = map (\(TFree a _ ) -> tFreeName a) vars,
-  IsaSign.datatypeConstructors = map (\(Constructor a tps) ->
-   IsaSign.DatatypeConstructor {
-    IsaSign.constructorName = IsaSign.mkQName $ constructorName a,
-    IsaSign.constructorArgs = map hXmlOneOf3_2IsaTyp tps }) cs }
+  IsaSign.datatypeMixfix       = maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
+  IsaSign.datatypeConstructors = map (\(Constructor a mx tp tps) ->
+   case constructorName a of
+    Just name ->
+     IsaSign.DatatypeConstructor {
+       IsaSign.constructorName   = IsaSign.mkQName name,
+       IsaSign.constructorType   = hXmlOneOf3_2IsaTyp tp,
+       IsaSign.constructorMixfix =
+        maybe Nothing (Just . hXmlMixfix2IsaMixfix) mx,
+       IsaSign.constructorArgs   = map hXmlOneOf3_2IsaTyp tps }
+    Nothing ->
+     IsaSign.DatatypeNoConstructor {
+      IsaSign.constructorArgs = map hXmlOneOf3_2IsaTyp (tp:tps) }) cs }
 
 hXmlAxiom2IsaAxiom :: Axiom -> IsaSign.Axiom
 hXmlAxiom2IsaAxiom (Axiom a tm) =
