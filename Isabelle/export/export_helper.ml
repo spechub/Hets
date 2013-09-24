@@ -19,6 +19,9 @@ sig
 	val expect_end : ('a, 'b) p -> ('c, 'b) p;
 	val e : ('a -> ('a, 'b) r) -> ('a, 'c) p -> ('a, 'c) p;
 	val succeed : ('a -> ('a, 'b) r) -> ('a, 'c) p -> ('a, 'c) p;
+	val succeedP : (('a, 'b) p -> ('a, 'b * 'c) p) -> 
+                       ('a, 'b) p -> ('a, 'b) p;
+	val fail : ('a, 'b) p -> ('c, 'd) p;
 	val many : (('a, 'b) p -> ('a, 'b * 'c) p) ->
                    ('a, 'b) p -> ('a, 'b * 'c list) p;
 	val sepBy : (('a, 'b * 'c) p -> ('a, 'd * 'c) p) ->
@@ -100,6 +103,10 @@ struct
 	fun succeed f s = case p f s of
                            Failed _          => s
                           |State (ds,(v,_)) => State (ds,v);
+	fun succeedP p s = case p s of
+                            Failed _          => s
+                           |State (ds,(v,_)) => State (ds,v);
+	fun fail (_ : ('a, 'b) p) = Failed "Always fails!";
 	(* apply parser p as many times as possible *) 
 	fun many p s =
              case (p s,s) of
@@ -175,7 +182,8 @@ struct
                            assumes = List.map (fn (n,t) => {name=n,term=t}) a,
                            fixes = List.map (fn (ns,t) => {names=ns,tp=t}) f };
 	val emptyLocalData = LocalData { assumes = [], fixes = [] };
-        datatype theory_body_elem = DataType of (string list * (string *
+        datatype theory_body_elem = Context of string * theory_body_elem list
+                                   |DataType of (string list * (string *
                                     (string * string list) list)) list
                                    |Consts of (string * string) list
                                    |Axioms of (string * string) list
@@ -205,7 +213,7 @@ struct
                                                 def_eqs: string list}
                                    |Definition of (string*string) option *
                                                   string
-                                   |Text of string
+                                   |Abbreviation of string
                                    |MiscCmd of string * string;
 	datatype parsed_theory = ParsedTheory of {
 				 header: string option,
@@ -263,7 +271,7 @@ struct
                          (v,mkLocalData (List.concat (the_default [] a @
                                                       the_default [] a1))
                                         (List.concat (the_default [] f)))) end
-        val parse_body_elem =
+        fun parse_body_elem p_ =
             let val dt_type = e (content "datatype")
                                #> sepBy (e (keyword "and"))
                                    (oneOf [e (keyword "(") #>
@@ -327,7 +335,7 @@ struct
                                     #> p str_ #> pack #> e (keyword "where"))
                                  #> p str_ #> pack >>>
                                   (fn (v,v1) => (v,Definition v1))
-            in oneOf [dt_type,consts,axioms,cls,
+            in oneOf [p_,dt_type,consts,axioms,cls,
                       tp_synonym,fun_,primrec,locale,def]  end;
         fun parse_thm s = e (content s)
                           #> optional (
@@ -361,7 +369,7 @@ struct
                                   |> List.map (space_implode " ")
                                   |> cat_lines;
 	exception Test of string;
-	val proof = p (proof_prefix []) #> p (fn cmd =>
+	fun proof p_ = succeedP p_ #> p (proof_prefix []) #> p (fn cmd =>
                             case cmd of
                              t::_  => let val res = case Token.content_of t of
                                         "proof" => More (proof_qed 1 [cmd])
@@ -375,8 +383,8 @@ struct
                             |_ => Fail "Expected non-empty command!")
                            >>> (fn ((v,cmds),cmds1) => (v,cmds@cmds1 |>
                                                           cmdList2string));
-	val parse_theory_body = many (oneOf [parse_body_elem |> liftP,
-                                   (parse_thm "lemma" |> liftP) #> proof
+	fun parse_theory_body p1 p2 = [parse_body_elem p1 |> liftP,
+                                   (parse_thm "lemma" |> liftP) #> (proof p2)
                                     #> pack >>>
                                     (fn (v,((t,(n,(a,(l,stmt)))),prf)) =>
                                       (v,Lemma {name=n,
@@ -386,7 +394,7 @@ struct
 						local_data=the_default
                                                  emptyLocalData l,
                                                 proof=prf})),
-                                   (parse_thm "theorem" |> liftP) #> proof
+                                   (parse_thm "theorem" |> liftP) #> (proof p2)
                                     #> pack >>>
                                     (fn (v,((t,(n,(a,(l,stmt)))),prf)) =>
                                       (v,Theorem {name=n,
@@ -396,8 +404,10 @@ struct
 					          local_data=the_default 
                                                    emptyLocalData l,
                                                   proof=prf})),
+                                   p (unparse_cmd "abbreviation") >>>
+                                   (fn (v,v1) => (v,Abbreviation v1)),
                                    p (unparse_cmd "text") >>>
-                                   (fn (v,v1) => (v,Text v1)),
+                                   (fn (v,v1) => (v,MiscCmd ("text",v1))),
                                    p (unparse_cmd "section") >>>
                                    (fn (v,v1) => (v,MiscCmd ("section",v1))),
                                    p (unparse_cmd "subsection") >>>
@@ -412,10 +422,15 @@ struct
                                      (v,MiscCmd ("ML_file",v1))),
                                    p (unparse_cmd "setup") >>>
                                    (fn (v,v1) =>
-                                     (v,MiscCmd ("setup",v1)))]);
+                                     (v,MiscCmd ("setup",v1)))];
+	val parse_context =   ((e (content "context") #> p ident #>
+                                e (keyword "begin")) |> liftP)
+                           #> many (oneOf (parse_theory_body fail fail))
+                           #> ((e (content "end") #> expect_end) |> liftP)
+                           #> pack >>> (fn (v,v1) => (v,Context v1));
 	val test = initialState #> optional (p (unparse_cmd "header"))
                    #> (parse_theory_head |> liftP)
-		   #> parse_theory_body
+		   #> many (oneOf (parse_context::parse_theory_body fail fail))
                    #> (parse_theory_end |> liftP)
                    #> expect_end >>> (fn ((((_,h),n),(i,k)),b) =>
                        ParsedTheory {header = h,
