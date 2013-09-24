@@ -300,17 +300,17 @@ printSentence s = case s of
                                    the list -}
                         else text lemmasS <+> text name <+>
                              equals <+> sep (map text lemmas)
-  l@(Locale _ _ _ _ _) ->
+  l@(Locale _ _ _ _) ->
    let h       = text "locale" <+> text (show $ localeName l) 
        parents = Data.List.intersperse (text "+") $
                   map (text . show) (localeParents l)
-       (fixes,assumes) = printContext (localeFixes l) (localeAssumes l)
+       (fixes,assumes) = printContext $ localeContext l
    in printFixesAssumes h parents assumes fixes
-  c@(Class _ _ _ _ _) ->
+  c@(Class _ _ _ _) ->
    let h       = text "class" <+> text (show $ className c)
        parents = Data.List.intersperse (text "+") $
                   map (text . show) (classParents c)
-       (fixes,assumes) = printContext (classFixes c) (classAssumes c)
+       (fixes,assumes) = printContext (classContext c)
    in printFixesAssumes h parents assumes fixes
   (Datatypes dts) -> if null dts then empty
                      else text "datatype" <+>
@@ -342,8 +342,8 @@ printSentence s = case s of
                                   then brackets (text $ axiomArgs a)
                                   else empty) <+> text ":" <+>
                                  doubleQuotes (printTerm $ axiomTerm a)) axs
-  l@(Lemma _ _ _ _ _) -> 
-   let (fixes,assumes) = printContext (lemmaFixes l) (lemmaAssumes l)
+  l@(Lemma _ _ _ _) -> 
+   let (fixes,assumes) = printContext $ lemmaContext l
    in text "lemma" <+> (case lemmaTarget l of
                            Just t  -> braces (text "in" <+> (text $ show t))
                            Nothing -> empty) <+>
@@ -367,14 +367,14 @@ printSentence s = case s of
      _ -> empty), text "where" <+>
    doubleQuotes (printTerm (definitionTerm d))]
 
-printContext :: [(String,Typ)] -> [(String,Term)] -> ([Doc],[Doc])
-printContext fixes assumes =
+printContext :: Ctxt -> ([Doc],[Doc])
+printContext ctxt =
  let fixes'   = map (\(n,tp) -> if n == "" then empty else text n <+> text "::"
                        <+> (doubleQuotes . printTyp Null) tp)
-                     fixes
+                     (fixes ctxt)
      assumes' = map (\(n,tm) -> if n == "" then empty else text n <+> text ":"
                        <+> (doubleQuotes . printTerm) tm)
-                     assumes
+                     (assumes ctxt)
  in (fixes',assumes')
 
 printProps :: Props -> Doc

@@ -167,14 +167,12 @@ data Sentence =
            , lemmasList :: [String]}
 
   | Locale { localeName    :: QName,
-             localeFixes   :: [(String,Typ)],
-             localeAssumes :: [(String,Term)],
-             localeParents :: [QName],
+             localeContext :: Ctxt,
+	     localeParents :: [QName],
              localeBody    :: [Sentence] }
   | Class { className    :: QName,
-            classFixes   :: [(String,Typ)],
-            classAssumes :: [(String,Term)],
-            classParents :: [QName],
+            classContext :: Ctxt,
+	    classParents :: [QName],
             classBody    :: [Sentence] }
   | Datatypes [Datatype]
   | Consts [(String,Typ)]
@@ -182,8 +180,7 @@ data Sentence =
   | Axioms [Axiom]
   | Lemma {
      lemmaTarget  :: Maybe QName,
-     lemmaFixes   :: [(String,Typ)],
-     lemmaAssumes :: [(String,Term)],
+     lemmaContext :: Ctxt,
      lemmaProof   :: Maybe String,
      lemmaProps   :: [Props] }
   | Definition {
@@ -200,6 +197,10 @@ data Sentence =
      funSigs       :: [FunSig],
      funEquations  :: [Term] }
     deriving (Eq, Ord, Show)
+
+data Ctxt = Ctxt {
+	fixes   :: [(String,Typ)],
+	assumes :: [(String,Term)] } deriving (Eq, Ord, Show)
 
 data Datatype = Datatype {
       datatypeName         :: QName,

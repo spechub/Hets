@@ -743,8 +743,9 @@ struct
                                      |_ => raise (Fail "Case not implemented!")
 		       val name'  = [("name",binding_to_str name)]
 		       val target = SOME (binding_to_str name,Position.none)
-		       val ctxt'  = List.map (xml_of_context s3 target) ctxt
-		   in (xml "Locale" name' (ctxt'@parents'@
+		       val ctxt'  = xml "Ctxt" []
+                                     (List.map (xml_of_context s3 target) ctxt)
+		   in (xml "Locale" name' (ctxt'::parents'@
                         [xml "Body" [] (List.rev b_elems)]),s3) end
 		 |Class ((name,(parents,ctxt)),body) =>
                    let val (begin_,end_) = extract_context toks body
@@ -759,8 +760,9 @@ struct
                                      |_     => raise (Fail "Unexpected result"))
                             ] []) parents
                        val name'  = [("name",binding_to_str name)]
-                       val ctxt'  = List.map (xml_of_context s3 target) ctxt
-                   in (xml "Cls" name' (ctxt'@parents'@
+                       val ctxt'  = xml "Ctxt" []
+                                    (List.map (xml_of_context s3 target) ctxt)
+                   in (xml "Cls" name' (ctxt'::parents'@
                         [xml "Body" [] (List.rev b_elems)]),s3) end
                  |TypeSynonym (((target,vars),name),(typ,mixfix))
                               =>
@@ -807,9 +809,10 @@ struct
                   let val result = case (binding_to_str name,args,strs) of
                    ("",[],[]) =>
                     let val s1 = trans state toks
-                        val ctxt' = List.map (xml_of_context state target) ctxt
+                        val ctxt' = xml "Ctxt" []
+                                   (List.map (xml_of_context state target) ctxt)
                     in (xml "Lemma" (attr_of_target target)
-                         (ctxt'@[xml "Proof" [] [XML.Text proof]]
+                         (ctxt'::[xml "Proof" [] [XML.Text proof]]
                          @xml_of_statement state target stmt),s1) end
                   |_ => raise (Fail "Case not implemented")
                   in result end

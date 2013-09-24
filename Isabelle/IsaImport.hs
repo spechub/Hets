@@ -25,28 +25,16 @@ importIsaData = map (\(Thy a imports keywords uses body) ->
  in (thyName a,thyHeader a,imports',keywords',uses',body'))
 
 hXmlBody_2IsaSentence :: Body_ -> IsaSign.Sentence
-hXmlBody_2IsaSentence (Body_Locale (Locale a fixes' assumes' parents body)) =
+hXmlBody_2IsaSentence (Body_Locale (Locale a ctxt parents body)) =
  IsaSign.Locale {
   IsaSign.localeName    = IsaSign.mkQName $ localeName a,
-  IsaSign.localeFixes   = case fixes' of
-                           Just (Fixes fixes) -> map hXmlFix2IsaNamedTyp fixes
-                           _ -> [],
-  IsaSign.localeAssumes = case assumes' of
-                           Just (Assumes assumes) ->
-                            map hXmlAssumption2IsaNamedTerm assumes
-                           _ -> [],
+  IsaSign.localeContext = hXmlCtxt2IsaCtxt ctxt,
   IsaSign.localeParents = map (IsaSign.mkQName . parentName) parents,
   IsaSign.localeBody    = map hXmlBody_2IsaSentence ((\(Body l) -> l) body) }
-hXmlBody_2IsaSentence (Body_Cls (Cls a fixes' assumes' parents body)) =
+hXmlBody_2IsaSentence (Body_Cls (Cls a ctxt parents body)) =
  IsaSign.Class {
   IsaSign.className    = IsaSign.mkQName $ clsName a,
-  IsaSign.classFixes   = case fixes' of
-                          Just (Fixes fixes) -> map hXmlFix2IsaNamedTyp fixes
-                          _ -> [],
-  IsaSign.classAssumes = case assumes' of
-                          Just (Assumes assumes) ->
-                           map hXmlAssumption2IsaNamedTerm assumes
-                          _ -> [],
+  IsaSign.classContext = hXmlCtxt2IsaCtxt ctxt,
   IsaSign.classParents = map (IsaSign.mkQName . parentName) parents,
   IsaSign.classBody    = map hXmlBody_2IsaSentence ((\(Body l) -> l) body) }
 hXmlBody_2IsaSentence (Body_TypeSynonym (TypeSynonym a (Vars vars) tp)) =
@@ -59,17 +47,11 @@ hXmlBody_2IsaSentence (Body_Consts (Consts (NonEmpty consts))) =
  IsaSign.Consts (map hXmlConst2IsaNamedTyp consts)
 hXmlBody_2IsaSentence (Body_Axioms (Axioms (NonEmpty axioms))) =
  IsaSign.Axioms (map hXmlAxiom2IsaAxiom axioms)
-hXmlBody_2IsaSentence (Body_Lemma (Lemma a assumes' fixes'
-                                    (Proof proof) (NonEmpty shows))) =
+hXmlBody_2IsaSentence (Body_Lemma (Lemma a ctxt (Proof proof)
+                                                (NonEmpty shows))) =
  IsaSign.Lemma {
-  IsaSign.lemmaTarget = maybe Nothing (Just . IsaSign.mkQName) (lemmaTarget a),
-  IsaSign.lemmaFixes   = case fixes' of
-                          Just (Fixes fixes) -> map hXmlFix2IsaNamedTyp fixes
-                          _ -> [],
-  IsaSign.lemmaAssumes = case assumes' of
-                          Just (Assumes assumes) ->
-                           map hXmlAssumption2IsaNamedTerm assumes
-                          _ -> [],
+  IsaSign.lemmaTarget  = maybe Nothing (Just . IsaSign.mkQName) (lemmaTarget a),
+  IsaSign.lemmaContext = hXmlCtxt2IsaCtxt ctxt,
   IsaSign.lemmaProof   = Just proof,
   IsaSign.lemmaProps   = map (\(Shows a (NonEmpty tms)) ->
    IsaSign.Props {
@@ -108,6 +90,16 @@ hXmlBody_2IsaSentence (Body_Fun (Fun a (NonEmpty fsigs) (NonEmpty tms))) =
     IsaSign.funSigName = IsaSign.mkQName $ funSigName a })
    fsigs,
   IsaSign.funEquations  = map (hXmlOneOf6_2IsaTerm []) tms }
+
+hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
+hXmlCtxt2IsaCtxt (Ctxt fixes' assumes') = IsaSign.Ctxt {
+  IsaSign.fixes   = case fixes' of
+                          Just (Fixes fixes) -> map hXmlFix2IsaNamedTyp fixes
+                          _ -> [],
+  IsaSign.assumes = case assumes' of
+                          Just (Assumes assumes) ->
+                           map hXmlAssumption2IsaNamedTerm assumes
+                          _ -> [] }
 
 hXmlDatatype2IsaDatatype :: Datatype -> IsaSign.Datatype
 hXmlDatatype2IsaDatatype (Datatype a (NonEmpty cs) vars) =

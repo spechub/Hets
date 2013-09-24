@@ -13,10 +13,10 @@
 <!-- Body -->
 <!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Fun)*>
 
-<!ELEMENT Locale (Fixes?,Assumes?,Parent*,Body)>
+<!ELEMENT Locale (Ctxt,Parent*,Body)>
   <!ATTLIST Locale name CDATA #REQUIRED>
 
-<!ELEMENT Cls (Fixes?,Assumes?,Parent*,Body)>
+<!ELEMENT Cls (Ctxt,Parent*,Body)>
   <!ATTLIST Cls name CDATA #REQUIRED>
 
 <!ELEMENT TypeSynonym (Vars,(TVar|TFree|Type))>
@@ -42,7 +42,7 @@
   <!ATTLIST Axiom name CDATA #REQUIRED>
   <!ATTLIST Axiom args CDATA #REQUIRED>
 
-<!ELEMENT Lemma (Assumes?,Fixes?,Proof,(Shows)+)>
+<!ELEMENT Lemma (Ctxt,Proof,(Shows)+)>
   <!ATTLIST Lemma target CDATA #IMPLIED>
 
 <!ELEMENT Definition ((TVar|TFree|Type)?,(Bound|Free|Var|Const|App|Abs))>
@@ -77,6 +77,8 @@
 <!ELEMENT Assumption (Bound|Free|Var|Const|App|Abs)>
   <!ATTLIST Assumption name CDATA #REQUIRED>
   <!ATTLIST Assumption args CDATA #REQUIRED>
+
+<!ELEMENT Ctxt (Fixes?,Assumes?)>
 
 <!ELEMENT Proof (#PCDATA)>
 
