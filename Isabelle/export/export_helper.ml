@@ -310,10 +310,15 @@ struct
                           #> optional (parse_local_data (keyword "assumes")
                                         #> e (keyword "shows")) 
                           #> (p str_) #> pack #> pack #> pack >>> #2;
-        fun proof_qed l cmd = case cmd of
-                               t::_  => if Token.content_of t = "qed"
-                                        then Result (List.rev (cmd::l))
-                                        else More (proof_qed (cmd::l))
+        fun proof_qed i l cmd = case cmd of
+                               t::_  => let val l' = cmd::l
+                                            val i' = case Token.content_of t of
+                                                      "qed"   => i-1
+                                                     |"oops"  => 0
+                                                     |"proof" => i+1
+                                                     |_       => i
+                                        in if i' = 0 then List.rev l' |> Result
+                                           else More (proof_qed i' l') end
                               |_ => Fail "Expected non-empty command!";
         fun cmdList2string cmds = List.map (List.map Token.unparse) cmds
                                   |> List.map (space_implode " ")
@@ -321,7 +326,7 @@ struct
 	val proof = oneOf [p (fn cmd =>
                             case cmd of
                              t::_  => if Token.content_of t = "proof"
-                                      then More (proof_qed [cmd])
+                                      then More (proof_qed 1 [cmd])
                                       else Fail "Unexpected command!"
                             |_ => Fail "Expected non-empty command!")
                            >>> (fn (v,cmds) => (v,cmdList2string cmds)),
