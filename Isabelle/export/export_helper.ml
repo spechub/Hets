@@ -182,6 +182,9 @@ struct
                            assumes = List.map (fn (n,t) => {name=n,term=t}) a,
                            fixes = List.map (fn (ns,t) => {names=ns,tp=t}) f };
 	val emptyLocalData = LocalData { assumes = [], fixes = [] };
+	datatype qualifier = Optional | Mandatory;
+	datatype hide_what = HideConsts | HideConstsAll; 
+(* http://stackoverflow.com/questions/16254465/how-to-hide-defined-constants *)
         datatype theory_body_elem = Context of string * theory_body_elem list
                                    |DataType of (string list * (string *
                                     (string * string list) list)) list
@@ -213,7 +216,14 @@ struct
                                                 def_eqs: string list}
                                    |Definition of (string*string) option *
                                                   string
+                                   |Interpretation of {name:string,
+                                                       qualifier:qualifier,
+                                                       eqs:(string*string list),
+                                                       proof:string}
                                    |Abbreviation of string
+                                   |Declaration of string
+                                   |Hide of {what:hide_what,
+                                             names:string list}
                                    |MiscCmd of string * string;
 	datatype parsed_theory = ParsedTheory of {
 				 header: string option,
@@ -383,6 +393,13 @@ struct
                             |_ => Fail "Expected non-empty command!")
                            >>> (fn ((v,cmds),cmds1) => (v,cmds@cmds1 |>
                                                           cmdList2string));
+	(* isar-ref.pdf p. 86 *)
+	fun parse_qualifier default = optional (oneOf [p (keyword "?"),
+                                                       p (keyword "!")])
+                                      >>> (fn (v,v1) => (v,case v1 of
+                                                         SOME "?" => Optional
+                                                        |SOME "!" => Mandatory
+                                                        |_        => default));
 	fun parse_theory_body p1 p2 = [parse_body_elem p1 |> liftP,
                                    (parse_thm "lemma" |> liftP) #> (proof p2)
                                     #> pack >>>
@@ -404,8 +421,31 @@ struct
 					          local_data=the_default 
                                                    emptyLocalData l,
                                                   proof=prf})),
+                                   ((e (content "interpretation") #>
+                                     p ident #> parse_qualifier Mandatory #> 
+                                     e (keyword ":") #>
+                                     p ident #> many (p str_)
+                                     #> pack #> pack #> pack)
+                                   |> liftP) #> proof fail #> pack
+                                   >>> (fn (v,((n,(q,e)),prf)) => (v,
+                                         Interpretation {name=n,
+                                                         qualifier=q,
+                                                         eqs=e,
+                                                         proof=prf})),
+                                   ((e (content "hide_const") #>
+                                     optional (e (keyword "(") #>
+                                               p (keyword "open") #>
+                                               e (keyword ")")) #>
+                                     many (p ident) #> pack) |> liftP)
+                                   >>> (fn (v,(o,ns)) => (v,
+                                        Hide {what=case o of
+                                                    SOME _ => HideConsts
+                                                   |NONE  => HideConstsAll,
+                                              names=ns})),
                                    p (unparse_cmd "abbreviation") >>>
                                    (fn (v,v1) => (v,Abbreviation v1)),
+                                   p (unparse_cmd "declaration") >>>
+                                   (fn (v,v1) => (v,Declaration v1)),
                                    p (unparse_cmd "text") >>>
                                    (fn (v,v1) => (v,MiscCmd ("text",v1))),
                                    p (unparse_cmd "section") >>>
