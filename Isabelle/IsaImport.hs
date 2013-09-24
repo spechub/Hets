@@ -134,6 +134,12 @@ hXmlBody_2IsaSentence (Body_Typedef (Typedef a (Proof proof) tm vs)) =
    _ -> Nothing,
   IsaSign.typedefTerm = hXmlOneOf6_2IsaTerm [] tm,
   IsaSign.typedefProof = proof }
+hXmlBody_2IsaSentence (Body_Defs (Defs a (NonEmpty defs))) =
+ IsaSign.Defs {
+  IsaSign.defsUnchecked  = maybe False (\_ -> True) $ defsUnchecked a,
+  IsaSign.defsOverloaded = maybe False (\_ -> True) $ defsOverloaded a,
+  IsaSign.defsEquations  = map (\(Def a tm) ->
+   (IsaSign.mkQName $ defName a,hXmlOneOf6_2IsaTerm [] tm,defArgs a)) defs }
 
 hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
 hXmlCtxt2IsaCtxt (Ctxt ctxt) =

@@ -226,6 +226,10 @@ data Sentence =
       typedefMorphisms :: Maybe (QName,QName),
       typedefTerm      :: Term,
       typedefProof     :: String }
+  | Defs {
+      defsUnchecked  :: Bool,
+      defsOverloaded :: Bool,
+      defsEquations  :: [(QName,Term,String)] }
     deriving (Eq, Ord, Show)
 
 data Ctxt = Ctxt {

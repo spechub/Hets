@@ -250,6 +250,7 @@ printNamedSen ns =
   InstanceSubclass {} -> d
   Subclass {} -> d
   Typedef {} -> d
+  Defs {}    -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
               <+> dd $+$ text refuteS
@@ -398,6 +399,15 @@ printSentence s = case s of
                       Just (m1,m2) -> text "morphisms" <+> text (show m1)
                                      <+> text (show m2)
                       Nothing -> empty) $+$ text (typedefProof t)
+  d@(Defs {}) -> fsep $ [text "defs" <+> (if defsUnchecked d
+                                          then text "unchecked"
+                                          else empty) <+>
+                                         (if defsOverloaded d
+                                          then text "overloaded"
+                                          else empty)]
+   ++ map (\(name,tm,args) ->
+        text (show name) <+> text ":" <+> doubleQuotes (printTerm tm) <+>
+        if null args then empty else brackets (text args)) (defsEquations d)
 
 printArity :: (Sort,[Sort]) -> Doc
 printArity (sort,sorts) = (parens $ hsep $ punctuate comma $

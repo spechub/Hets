@@ -919,6 +919,17 @@ struct
                      (List.map xml_of_sort (s'::s))
         in fun xml_of_body_elem ((toks,e),((state,trans),l)) =
             let val (elem,state')   = variant "xml_of_body" PolyML.makestring [
+                  fn Defs ((unchecked,overloaded),l) =>
+                  let val l' = List.map (fn ((name,tm),args) =>
+                          let val tm' = Parser.read_prop state NONE tm
+                              val args' = List.map (Args.pretty_src
+                                 (Toplevel.context_of state) #> Pretty.str_of)
+                                 args |> space_implode " "
+                          in xml "Def" (a "args" args'@attr_of_binding name)
+                              [XML_Syntax.xml_of_term tm'] end) l
+                      val attrs = (if unchecked then a "unchecked" "" else [])
+                                 @(if overloaded then a "overloaded" "" else [])
+                  in (xml "Defs" attrs l',trans state toks) end,
                   fn Typedef (((((vars,tp),mx),tm),morphisms),proof) =>
                   let val vars' = List.map (fn (name,sort) => case sort of
                        SOME sort' => TFree (name,
