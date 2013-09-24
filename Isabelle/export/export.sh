@@ -98,6 +98,8 @@ val e = fn s => (out (0,s); OS.Process.exit OS.Process.failure)
 v \"Isabelle: Loading helper library\n\";
 use \"$SCRIPTPATH/parser.ml\";
 
+Parser.pretty_tokens ();
+
 v \"Isabelle: Analyzing theory\n\";
 
 val thy = Parser.scan \"$TRANS.thy\" |> Parser.thy;
