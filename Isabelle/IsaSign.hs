@@ -168,15 +168,17 @@ data Sentence =
 
   | Locale { localeName    :: QName,
              localeContext :: Ctxt,
+             localeSigData :: SigData,
 	     localeParents :: [QName],
              localeBody    :: [Sentence] }
   | Class { className    :: QName,
             classContext :: Ctxt,
+            classSigData :: SigData,
 	    classParents :: [QName],
             classBody    :: [Sentence] }
   | Datatypes [Datatype]
-  | Consts [(String,Typ)]
-  | TypeSynonym QName [String] Typ
+  | Consts [(SigData,String,Typ)]
+  | TypeSynonym QName SigData [String] Typ
   | Axioms [Axiom]
   | Lemma {
      lemmaTarget  :: Maybe QName,
@@ -184,11 +186,13 @@ data Sentence =
      lemmaProof   :: Maybe String,
      lemmaProps   :: [Props] }
   | Definition {
-     definitionName :: Maybe QName,
-     definitionTarget :: Maybe String,
-     definitionType :: Maybe Typ,
-     definitionTerm :: Term }
+     definitionName    :: Maybe QName,
+     definitionTarget  :: Maybe String,
+     definitionSigData :: SigData,
+     definitionType    :: Maybe Typ,
+     definitionTerm    :: Term }
   | Fun {
+     funSigData    :: SigData,
      funTarget     :: Maybe QName,
      funSequential :: Bool,
      funDefault    :: Maybe String,
@@ -199,11 +203,30 @@ data Sentence =
     deriving (Eq, Ord, Show)
 
 data Ctxt = Ctxt {
-	fixes   :: [(String,Typ)],
+	fixes   :: [(String,Maybe Typ)],
 	assumes :: [(String,Term)] } deriving (Eq, Ord, Show)
+
+data SigData = SigData [AddSigData] deriving (Eq, Ord, Show)
+
+data AddSigData = AddConst {
+                   name  :: QName,
+                   nargs :: Maybe Int,
+                   tp    :: Maybe Typ,
+                   mx    :: Maybe (Int,[MixfixTemplate]) }
+                 |AddType {
+                   name  :: QName,
+                   arity :: Int,
+                   mx    :: Maybe (Int,[MixfixTemplate]) }
+                 |AddTypeSynonym {
+                   name :: QName,
+                   tpS  :: Typ } deriving (Eq, Ord, Show)
+
+data MixfixTemplate = Arg Int | Str String | Break Int |
+                      Block Int [MixfixTemplate] deriving (Eq, Ord, Show)
 
 data Datatype = Datatype {
       datatypeName         :: QName,
+      datatypeSigData      :: SigData,
       datatypeTVars        :: [String],
       datatypeConstructors :: [DatatypeConstructor] } deriving (Eq, Ord, Show)
 

@@ -13,29 +13,29 @@
 <!-- Body -->
 <!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Fun)*>
 
-<!ELEMENT Locale (Ctxt,Parent*,Body)>
+<!ELEMENT Locale (Ctxt,SigData,Parent*,Body)>
   <!ATTLIST Locale name CDATA #REQUIRED>
 
-<!ELEMENT Cls (Ctxt,Parent*,Body)>
+<!ELEMENT Cls (Ctxt,SigData,Parent*,Body)>
   <!ATTLIST Cls name CDATA #REQUIRED>
 
-<!ELEMENT TypeSynonym (Vars,(TVar|TFree|Type))>
+<!ELEMENT TypeSynonym (SigData,Vars,(TVar|TFree|Type))>
   <!ATTLIST TypeSynonym name CDATA #REQUIRED>
   <!ATTLIST TypeSynonym mixfix CDATA #IMPLIED>
   <!ATTLIST TypeSynonym target CDATA #IMPLIED>
 
 <!ELEMENT Datatypes (Datatype+)>
-<!ELEMENT Datatype (Constructor+,TFree*)>
+<!ELEMENT Datatype (SigData,Constructor+,TFree*)>
   <!ATTLIST Datatype name CDATA #REQUIRED>
   <!ATTLIST Datatype mixfix CDATA #REQUIRED>
 <!ELEMENT Constructor ((TVar|TFree|Type)*)>
   <!ATTLIST Constructor name CDATA #REQUIRED>
   <!ATTLIST Constructor mixfix CDATA #IMPLIED>
 
-<!ELEMENT Consts (Const+)>
-<!ELEMENT Const (TVar|TFree|Type)>
-  <!ATTLIST Const name CDATA #REQUIRED>
-  <!ATTLIST Const mixfix CDATA #IMPLIED>
+<!ELEMENT Consts (ConstDef+)>
+<!ELEMENT ConstDef (SigData,(TVar|TFree|Type))>
+  <!ATTLIST ConstDef name CDATA #REQUIRED>
+  <!ATTLIST ConstDef mixfix CDATA #IMPLIED>
 
 <!ELEMENT Axioms (Axiom)+>
 <!ELEMENT Axiom (Bound|Free|Var|Const|App|Abs)>
@@ -45,12 +45,12 @@
 <!ELEMENT Lemma (Ctxt,Proof,(Shows)+)>
   <!ATTLIST Lemma target CDATA #IMPLIED>
 
-<!ELEMENT Definition ((TVar|TFree|Type)?,(Bound|Free|Var|Const|App|Abs))>
+<!ELEMENT Definition (SigData,(TVar|TFree|Type)?,(Bound|Free|Var|Const|App|Abs))>
   <!ATTLIST Definition name CDATA #IMPLIED>
   <!ATTLIST Definition target CDATA #IMPLIED>
   <!ATTLIST Definition mixfix CDATA #IMPLIED>
 
-<!ELEMENT Fun (FunSig+,(Bound|Free|Var|Const|App|Abs)+)>
+<!ELEMENT Fun (SigData,FunSig+,(Bound|Free|Var|Const|App|Abs)+)>
   <!ATTLIST Fun target CDATA #IMPLIED>
   <!ATTLIST Fun sequential CDATA #IMPLIED>
   <!ATTLIST Fun default CDATA #IMPLIED>
@@ -60,7 +60,7 @@
   <!ATTLIST FunSig name CDATA #REQUIRED>
   <!ATTLIST FunSig mixfix CDATA #IMPLIED>
 
-<!ELEMENT Primrec (FunSig+,(Bound|Free|Var|Const|App|Abs)+)>
+<!ELEMENT Primrec (SigData,FunSig+,(Bound|Free|Var|Const|App|Abs)+)>
   <!ATTLIST Primrec target CDATA #IMPLIED>
 
 <!ELEMENT Vars (TFree*)>
@@ -69,7 +69,7 @@
   <!ATTLIST Parent name CDATA #REQUIRED>
 
 <!ELEMENT Fixes (Fix*)>
-<!ELEMENT Fix (TVar|TFree|Type)>
+<!ELEMENT Fix (TVar|TFree|Type)?>
   <!ATTLIST Fix name CDATA #REQUIRED>
   <!ATTLIST Fix mixfix CDATA #IMPLIED>
 
@@ -79,6 +79,27 @@
   <!ATTLIST Assumption args CDATA #REQUIRED>
 
 <!ELEMENT Ctxt (Fixes?,Assumes?)>
+
+<!ELEMENT SigData (AddType|AddConst|AddTypeSynonym)*>
+<!ELEMENT AddConst ((TVar|TFree|Type)?,(Arg|String|Break|Block)*)>
+  <!ATTLIST AddConst name CDATA #REQUIRED>
+  <!ATTLIST AddConst nargs CDATA #IMPLIED>
+  <!ATTLIST AddConst prio CDATA #IMPLIED>
+<!ELEMENT Arg EMPTY>
+  <!ATTLIST Arg prio CDATA #REQUIRED>
+<!ELEMENT String EMPTY>
+  <!ATTLIST String val CDATA #REQUIRED>
+<!ELEMENT Break EMPTY>
+  <!ATTLIST Break prio CDATA #REQUIRED>
+<!ELEMENT Block ((Arg|String|Break|Block)*)>
+  <!ATTLIST Block prio CDATA #REQUIRED>
+<!ELEMENT AddType ((Arg|String|Break|Block)*)>
+  <!ATTLIST AddType name CDATA #REQUIRED>
+  <!ATTLIST AddType arity CDATA #REQUIRED>
+  <!ATTLIST AddType nargs CDATA #IMPLIED>
+  <!ATTLIST AddType prio CDATA #IMPLIED>
+<!ELEMENT AddTypeSynonym ((TVar|TFree|Type))>
+  <!ATTLIST AddTypeSynonym name CDATA #REQUIRED>
 
 <!ELEMENT Proof (#PCDATA)>
 

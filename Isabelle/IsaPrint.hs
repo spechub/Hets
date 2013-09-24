@@ -239,7 +239,7 @@ printNamedSen ns =
   Class {} -> d
   Datatypes _ -> d
   Consts _ -> d
-  TypeSynonym _ _ _ -> d
+  TypeSynonym _ _ _ _ -> d
   Axioms _ -> d
   Lemma {} -> d
   Definition {} -> d
@@ -300,13 +300,13 @@ printSentence s = case s of
                                    the list -}
                         else text lemmasS <+> text name <+>
                              equals <+> sep (map text lemmas)
-  l@(Locale _ _ _ _) ->
+  l@(Locale {}) ->
    let h       = text "locale" <+> text (show $ localeName l) 
        parents = Data.List.intersperse (text "+") $
                   map (text . show) (localeParents l)
        (fixes,assumes) = printContext $ localeContext l
    in printFixesAssumes h parents assumes fixes
-  c@(Class _ _ _ _) ->
+  c@(Class {}) ->
    let h       = text "class" <+> text (show $ className c)
        parents = Data.List.intersperse (text "+") $
                   map (text . show) (classParents c)
@@ -330,9 +330,9 @@ printSentence s = case s of
                            fsep (bar $ cs)) dts)
   Consts cs -> if null cs then empty
                else vsep $ [text "consts"] ++
-                     map (\(n,t) -> text n <+> text "::" <+>
+                     map (\(_,n,t) -> text n <+> text "::" <+>
                                     doubleQuotes (printType t)) cs
-  TypeSynonym n vs tp -> hsep $ [text "type_synonym",
+  TypeSynonym n _ vs tp -> hsep $ [text "type_synonym",
                                  text $ show n,text "="] ++ map text vs
                                 ++ [doubleQuotes . printType $ tp]
   Axioms axs -> if null axs then empty
@@ -342,7 +342,7 @@ printSentence s = case s of
                                   then brackets (text $ axiomArgs a)
                                   else empty) <+> text ":" <+>
                                  doubleQuotes (printTerm $ axiomTerm a)) axs
-  l@(Lemma _ _ _ _) -> 
+  l@(Lemma {}) -> 
    let (fixes,assumes) = printContext $ lemmaContext l
    in text "lemma" <+> (case lemmaTarget l of
                            Just t  -> braces (text "in" <+> (text $ show t))
@@ -356,7 +356,7 @@ printSentence s = case s of
       $+$ (case lemmaProof l of
             Just p -> text p
             Nothing -> empty)
-  d@(Definition _ _ _ _) -> fsep [text "definition" <+>
+  d@(Definition {}) -> fsep [text "definition" <+>
    (case definitionTarget d of
      Just t  -> braces (text "in" <+> (text $ show t))
      Nothing -> empty) <+>
@@ -369,8 +369,11 @@ printSentence s = case s of
 
 printContext :: Ctxt -> ([Doc],[Doc])
 printContext ctxt =
- let fixes'   = map (\(n,tp) -> if n == "" then empty else text n <+> text "::"
-                       <+> (doubleQuotes . printTyp Null) tp)
+ let fixes'   = map (\(n,tp) -> if n == "" then empty else text n
+                       <+> case tp of 
+                            Just tp' -> text "::" <+>
+                                        (doubleQuotes . printTyp Null) tp'
+                            Nothing -> empty)
                      (fixes ctxt)
      assumes' = map (\(n,tm) -> if n == "" then empty else text n <+> text ":"
                        <+> (doubleQuotes . printTerm) tm)

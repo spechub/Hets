@@ -981,7 +981,7 @@ struct
                     let val tp' = Parser.read_typ state NONE tp
                         val name' = string_of_binding name
                         val mx' = format_mixfix state name' (SOME tp') mx
-                    in xml "Const"
+                    in xml "ConstDef"
                      ([("name",name')]@attr_of_mixfix mx)
                     [xml_of_sigdata [AddConst (name',SOME tp',mx')],
                      tp' |> XML_Syntax.xml_of_type] end) cs), trans state toks),

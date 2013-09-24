@@ -25,26 +25,31 @@ importIsaData = map (\(Thy a imports keywords uses body) ->
  in (thyName a,thyHeader a,imports',keywords',uses',body'))
 
 hXmlBody_2IsaSentence :: Body_ -> IsaSign.Sentence
-hXmlBody_2IsaSentence (Body_Locale (Locale a ctxt parents body)) =
+hXmlBody_2IsaSentence (Body_Locale (Locale a ctxt sig parents body)) =
  IsaSign.Locale {
   IsaSign.localeName    = IsaSign.mkQName $ localeName a,
   IsaSign.localeContext = hXmlCtxt2IsaCtxt ctxt,
+  IsaSign.localeSigData = hXmlSigData2IsaSigData sig,
   IsaSign.localeParents = map (IsaSign.mkQName . parentName) parents,
   IsaSign.localeBody    = map hXmlBody_2IsaSentence ((\(Body l) -> l) body) }
-hXmlBody_2IsaSentence (Body_Cls (Cls a ctxt parents body)) =
+hXmlBody_2IsaSentence (Body_Cls (Cls a ctxt sig parents body)) =
  IsaSign.Class {
   IsaSign.className    = IsaSign.mkQName $ clsName a,
   IsaSign.classContext = hXmlCtxt2IsaCtxt ctxt,
+  IsaSign.classSigData = hXmlSigData2IsaSigData sig,
   IsaSign.classParents = map (IsaSign.mkQName . parentName) parents,
   IsaSign.classBody    = map hXmlBody_2IsaSentence ((\(Body l) -> l) body) }
-hXmlBody_2IsaSentence (Body_TypeSynonym (TypeSynonym a (Vars vars) tp)) =
+hXmlBody_2IsaSentence (Body_TypeSynonym (TypeSynonym a sig (Vars vars) tp)) =
  IsaSign.TypeSynonym (IsaSign.mkQName $ typeSynonymName a)
+                     (hXmlSigData2IsaSigData sig)
                      (map (\(TFree a _ ) -> tFreeName a) vars)
                      (hXmlOneOf3_2IsaTyp tp)
 hXmlBody_2IsaSentence (Body_Datatypes (Datatypes (NonEmpty dts))) =
  IsaSign.Datatypes (map hXmlDatatype2IsaDatatype dts)
 hXmlBody_2IsaSentence (Body_Consts (Consts (NonEmpty consts))) =
- IsaSign.Consts (map hXmlConst2IsaNamedTyp consts)
+ IsaSign.Consts (map (\(ConstDef a sig t) ->
+  (hXmlSigData2IsaSigData sig,constDefName a,
+   hXmlOneOf3_2IsaTyp t)) consts)
 hXmlBody_2IsaSentence (Body_Axioms (Axioms (NonEmpty axioms))) =
  IsaSign.Axioms (map hXmlAxiom2IsaAxiom axioms)
 hXmlBody_2IsaSentence (Body_Lemma (Lemma a ctxt (Proof proof)
@@ -64,16 +69,18 @@ hXmlBody_2IsaSentence (Body_Lemma (Lemma a ctxt (Proof proof)
                            t:tms -> IsaSign.Prop {IsaSign.prop = t,
                                                   IsaSign.propPats = tms}
                            _ -> error "This should not happen!") tms}) shows }
-hXmlBody_2IsaSentence (Body_Definition (Definition a maybe_tp tm)) =
+hXmlBody_2IsaSentence (Body_Definition (Definition a sig maybe_tp tm)) =
  IsaSign.Definition {
-  IsaSign.definitionName = maybe Nothing (Just . IsaSign.mkQName) $
-                            definitionName a,
-  IsaSign.definitionTarget = definitionTarget a,
-  IsaSign.definitionType = maybe Nothing (\tp -> Just $
+  IsaSign.definitionName    = maybe Nothing (Just . IsaSign.mkQName) $
+                               definitionName a,
+  IsaSign.definitionTarget  = definitionTarget a,
+  IsaSign.definitionSigData = hXmlSigData2IsaSigData sig,
+  IsaSign.definitionType    = maybe Nothing (\tp -> Just $
                             hXmlOneOf3_2IsaTyp tp) maybe_tp,
-  IsaSign.definitionTerm = hXmlOneOf6_2IsaTerm [] $ tm }
-hXmlBody_2IsaSentence (Body_Fun (Fun a (NonEmpty fsigs) (NonEmpty tms))) =
+  IsaSign.definitionTerm    = hXmlOneOf6_2IsaTerm [] $ tm }
+hXmlBody_2IsaSentence (Body_Fun (Fun a sig (NonEmpty fsigs) (NonEmpty tms))) =
  IsaSign.Fun {
+  IsaSign.funSigData = hXmlSigData2IsaSigData sig,
   IsaSign.funTarget = maybe Nothing (Just . IsaSign.mkQName) $
                        funTarget a,
   IsaSign.funSequential = maybe False (\_ -> True) $ funSequential a,
@@ -101,28 +108,61 @@ hXmlCtxt2IsaCtxt (Ctxt fixes' assumes') = IsaSign.Ctxt {
                            map hXmlAssumption2IsaNamedTerm assumes
                           _ -> [] }
 
+hXmlSigData2IsaSigData :: SigData -> IsaSign.SigData
+hXmlSigData2IsaSigData (SigData a) = IsaSign.SigData $
+ map hXmlSigData_2IsaAddSigData a
+
+hXmlSigData_2IsaAddSigData :: SigData_ -> IsaSign.AddSigData
+hXmlSigData_2IsaAddSigData (SigData_AddType (AddType a as)) =
+ IsaSign.AddType {
+  IsaSign.name  = IsaSign.mkQName $ addTypeName a,
+  IsaSign.arity = read $ addTypeArity a,
+  IsaSign.mx    = case addTypePrio a of
+                   Just s  -> Just (read s,map hXmlOneOf4_2IsaMixfixTemplate as)
+                   Nothing -> Nothing }
+hXmlSigData_2IsaAddSigData (SigData_AddConst (AddConst a t as)) =
+ IsaSign.AddConst {
+  IsaSign.name  = IsaSign.mkQName $ addConstName a,
+  IsaSign.nargs = maybe Nothing (\i -> Just $ read i) $ addConstNargs a,
+  IsaSign.tp    = maybe Nothing (\t -> Just $ hXmlOneOf3_2IsaTyp t) t,
+  IsaSign.mx    = case addConstPrio a of
+                   Just s  -> Just (read s,map hXmlOneOf4_2IsaMixfixTemplate as)
+                   Nothing -> Nothing }
+hXmlSigData_2IsaAddSigData (SigData_AddTypeSynonym (AddTypeSynonym a t)) =
+ IsaSign.AddTypeSynonym {
+  IsaSign.name = IsaSign.mkQName $ addTypeSynonymName a,
+  IsaSign.tpS  = hXmlOneOf3_2IsaTyp t }
+
+hXmlOneOf4_2IsaMixfixTemplate :: OneOf4 Arg AString Break Block ->
+                                 IsaSign.MixfixTemplate
+hXmlOneOf4_2IsaMixfixTemplate (OneOf4 a) =
+ IsaSign.Arg (read $ argPrio a)
+hXmlOneOf4_2IsaMixfixTemplate (TwoOf4 a) =
+ IsaSign.Str (stringVal a)
+hXmlOneOf4_2IsaMixfixTemplate (ThreeOf4 a) =
+ IsaSign.Break (read $ breakPrio a)
+hXmlOneOf4_2IsaMixfixTemplate (FourOf4 (Block a as)) =
+ IsaSign.Block (read $ blockPrio a) (map hXmlOneOf4_2IsaMixfixTemplate as)
+
 hXmlDatatype2IsaDatatype :: Datatype -> IsaSign.Datatype
-hXmlDatatype2IsaDatatype (Datatype a (NonEmpty cs) vars) =
+hXmlDatatype2IsaDatatype (Datatype a sig (NonEmpty cs) vars) =
  IsaSign.Datatype {
   IsaSign.datatypeName         = IsaSign.mkQName $ datatypeName a,
+  IsaSign.datatypeSigData      = hXmlSigData2IsaSigData sig,
   IsaSign.datatypeTVars        = map (\(TFree a _ ) -> tFreeName a) vars,
   IsaSign.datatypeConstructors = map (\(Constructor a tps) ->
    IsaSign.DatatypeConstructor {
     IsaSign.constructorName = IsaSign.mkQName $ constructorName a,
     IsaSign.constructorArgs = map hXmlOneOf3_2IsaTyp tps }) cs }
 
-hXmlFix2IsaNamedTyp :: Fix -> (String,IsaSign.Typ)
-hXmlFix2IsaNamedTyp (FixTVar a v) = (fixName a,hXmlOneOf3_2IsaTyp (OneOf3 v))
-hXmlFix2IsaNamedTyp (FixTFree a v)= (fixName a,hXmlOneOf3_2IsaTyp (TwoOf3 v))
-hXmlFix2IsaNamedTyp (FixType a v) = (fixName a,hXmlOneOf3_2IsaTyp (ThreeOf3 v))
-
-hXmlConst2IsaNamedTyp :: Const -> (String,IsaSign.Typ)
-hXmlConst2IsaNamedTyp (ConstTVar a v) = (constName a,
- hXmlOneOf3_2IsaTyp (OneOf3 v))
-hXmlConst2IsaNamedTyp (ConstTFree a v)= (constName a,
- hXmlOneOf3_2IsaTyp (TwoOf3 v))
-hXmlConst2IsaNamedTyp (ConstType a v) = (constName a,
- hXmlOneOf3_2IsaTyp (ThreeOf3 v))
+hXmlFix2IsaNamedTyp :: Fix -> (String,Maybe IsaSign.Typ)
+hXmlFix2IsaNamedTyp (Fix a (Just (Fix_TVar v))) =
+ (fixName a,Just $ hXmlOneOf3_2IsaTyp (OneOf3 v))
+hXmlFix2IsaNamedTyp (Fix a (Just (Fix_TFree v))) =
+ (fixName a,Just $ hXmlOneOf3_2IsaTyp (TwoOf3 v))
+hXmlFix2IsaNamedTyp (Fix a (Just (Fix_Type v))) =
+ (fixName a,Just $ hXmlOneOf3_2IsaTyp (ThreeOf3 v))
+hXmlFix2IsaNamedTyp (Fix a Nothing) = (fixName a,Nothing)
 
 hXmlAssumption2IsaNamedTerm :: Assumption -> (String,IsaSign.Term)
 hXmlAssumption2IsaNamedTerm (AssumptionBound a b) =
