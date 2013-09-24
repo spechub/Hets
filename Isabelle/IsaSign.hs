@@ -220,6 +220,12 @@ data Sentence =
      subclassTarget :: Maybe QName,
      subclassProof  :: String
     }
+  | Typedef {
+      typedefName      :: QName,
+      typedefVars      :: [(String,Sort)],
+      typedefMorphisms :: Maybe (QName,QName),
+      typedefTerm      :: Term,
+      typedefProof     :: String }
     deriving (Eq, Ord, Show)
 
 data Ctxt = Ctxt {

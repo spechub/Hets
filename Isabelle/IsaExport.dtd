@@ -11,7 +11,7 @@
   <!ATTLIST UseFile name CDATA #REQUIRED>
 
 <!-- Body -->
-<!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Fun|Instantiation|Instance|Subclass)*>
+<!ELEMENT Body (Locale|Cls|TypeSynonym|Datatypes|Consts|Axioms|Lemma|Definition|Fun|Instantiation|Instance|Subclass|Typedef)*>
 
 <!ELEMENT Locale (Ctxt,SigData,Parent*,Body)>
   <!ATTLIST Locale name CDATA #REQUIRED>
@@ -74,6 +74,11 @@
 <!ELEMENT Subclass (Proof)>
   <!ATTLIST Subclass class CDATA #REQUIRED>
   <!ATTLIST Subclass target CDATA #IMPLIED>
+
+<!ELEMENT Typedef (Proof,(Bound|Free|Var|Const|App|Abs),TFree*)>
+  <!ATTLIST Typedef type CDATA #REQUIRED>
+  <!ATTLIST Typedef m1 CDATA #IMPLIED>
+  <!ATTLIST Typedef m2 CDATA #IMPLIED>
 
 <!ELEMENT Sort (class+)>
 <!ELEMENT Arity (Sort,Sort*)>

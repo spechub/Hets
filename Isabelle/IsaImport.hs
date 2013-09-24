@@ -124,6 +124,16 @@ hXmlBody_2IsaSentence (Body_Subclass (Subclass a (Proof proof))) =
   IsaSign.subclassTarget = maybe Nothing (Just . IsaSign.mkQName) $
                             subclassTarget a,
   IsaSign.subclassProof  = proof }
+hXmlBody_2IsaSentence (Body_Typedef (Typedef a (Proof proof) tm vs)) =
+ IsaSign.Typedef {
+  IsaSign.typedefName = IsaSign.mkQName $ typedefType a,
+  IsaSign.typedefVars = map (\(TFree a s) -> (tFreeName a,
+   map hXmlClass2IsaClass s)) vs,
+  IsaSign.typedefMorphisms = case (typedefM1 a,typedefM2 a) of
+   (Just m1,Just m2) -> Just (IsaSign.mkQName m1,IsaSign.mkQName m2)
+   _ -> Nothing,
+  IsaSign.typedefTerm = hXmlOneOf6_2IsaTerm [] tm,
+  IsaSign.typedefProof = proof }
 
 hXmlCtxt2IsaCtxt :: Ctxt -> IsaSign.Ctxt
 hXmlCtxt2IsaCtxt (Ctxt ctxt) =

@@ -249,6 +249,7 @@ printNamedSen ns =
   InstanceArity {} -> d
   InstanceSubclass {} -> d
   Subclass {} -> d
+  Typedef {} -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
               <+> dd $+$ text refuteS
@@ -386,10 +387,25 @@ printSentence s = case s of
                            Just t  -> braces (text "in" <+> (text $ show t))
                            Nothing -> empty) <+> text (subclassClass c)
                           <+> text (subclassProof c)
+  t@(Typedef {}) -> text "typedef" <+> (case typedefVars t of
+                     [] -> empty
+                     [v] -> printVarWithSort v
+                     vs -> parens $ hsep $ punctuate comma $
+                           map printVarWithSort vs) <+>
+                    text (show $ typedefName t) <+> text "=" <+>
+                    doubleQuotes (printTerm $ typedefTerm t) <+>
+                    (case typedefMorphisms t of
+                      Just (m1,m2) -> text "morphisms" <+> text (show m1)
+                                     <+> text (show m2)
+                      Nothing -> empty) $+$ text (typedefProof t)
 
 printArity :: (Sort,[Sort]) -> Doc
 printArity (sort,sorts) = (parens $ hsep $ punctuate comma $
                            map (printSortAux True) sorts) <+> printSort sort
+
+printVarWithSort :: (String,Sort) -> Doc
+printVarWithSort (name,[])   = text name
+printVarWithSort (name,sort) = text name <+> printSortAux True sort
 
 printBody :: [Sentence] -> Doc
 printBody sens = fsep $ if null sens then []
