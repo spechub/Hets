@@ -1031,10 +1031,11 @@ struct
                                       attr_of_mixfix mx,
                                       xml_of_typ state target tp)
                                    |NONE => ([],[])
-                       val tm' = Parser.read_term Proof_Context.mode_default
-                            s1 target tm
-                       val (name',tp) = Logic.dest_equals tm' |> #1 |>
-                            head_of |> dest_Const;
+                       val ((_,[(_,tm')]),_) =
+                            Specification.read_free_spec (the_list name)
+                             [(binding,tm)] (Toplevel.context_of state)
+                       val (name',tp) = HOLogic.dest_Trueprop tm' |>
+                            HOLogic.dest_eq |> #1 |> head_of |> dest_Free;
                    in (xml "Definition" (attrs@attr_of_target target)
                         ((xml_of_sigdata [AddConst (name',
                                            SOME tp,NONE)])::
