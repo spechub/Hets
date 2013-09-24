@@ -93,7 +93,7 @@ val out' = fn (f,i,s') =>
  end;
 val out = fn (i,s) => out' (\"$COMM_FILE\",i,s);
 val v = fn s => out (1,s);
-val e = fn s => out (0,s);
+val e = fn s => (out (0,s); OS.Process.exit OS.Process.failure)
 
 v \"Isabelle: Loading helper library\n\";
 use \"$SCRIPTPATH/parser.ml\";
