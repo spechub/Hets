@@ -19,7 +19,10 @@ struct
                             |Subsect of string
                             |Subsubsect of string
                             |Txt of string
-                            |TxtRaw of string;
+                            |TxtRaw of string
+			    |DiagnosticCommand of string
+                            |TopLevelCommand of string;
+	type proof = string;
 	type ml_text = string * Position.T;
 	(* isar-ref.pdf page 78 *)
 	datatype context_head = ContextNamed of xstring * Position.T
@@ -92,18 +95,38 @@ struct
 	|Context of context_head * thy_body list
 	|Locale of (binding * (Expression.expression * Element.context list))
                    * thy_body list
-	|Sublocale of (xstring * Position.T) * (Expression.expression *
-                       (Attrib.binding * string) list)
-	|Interpretation of Expression.expression *
-                           (Attrib.binding * string) list
+	|Sublocale of ((xstring * Position.T) * (Expression.expression *
+                        (Attrib.binding * string) list)) * proof
+	|Interpretation of (Expression.expression *
+                            (Attrib.binding * string) list) * proof
         |Interpret of Expression.expression *
                       (Attrib.binding * string) list
 	|Class of (binding * (string list * Element.context list)) *
                   thy_body list
-	|Subclass of string
+	|Subclass of string * proof
 	|Instantiation of (string list * string list * string) * thy_body list
-	|Instance of (string * instance_type) option
+	|Instance of ((string * instance_type) option) * proof
 	|Overloading of (bstring * string * bool) list * thy_body list
+	|Theorem of (((opt_target * Attrib.binding) *
+                      (xstring * Position.T) list) *
+                     (Element.context list * Element.statement)) * proof
+	|Lemma of (((opt_target * Attrib.binding) *
+                    (xstring * Position.T) list) *
+                   (Element.context list * Element.statement)) * proof
+	|Corollary of (((opt_target * Attrib.binding) *
+                        (xstring * Position.T) list) *
+                       (Element.context list * Element.statement)) * proof
+	|SchematicTheorem of (((opt_target * Attrib.binding) *
+                               (xstring * Position.T) list) *
+                              (Element.context list * Element.statement)) *
+                             proof
+        |SchematicLemma of (((opt_target * Attrib.binding) *
+                             (xstring * Position.T) list) *
+                            (Element.context list * Element.statement)) * proof
+        |SchematicCorollary of (((opt_target * Attrib.binding) *
+                                 (xstring * Position.T) list) *
+                                (Element.context list * Element.statement)) *
+                               proof
         |Misc of misc_body;
 	val hide = curry Hide;
 (* Common Functions *)
@@ -111,10 +134,16 @@ struct
 	fun RESET_VALUE atom =
           Scan.ahead (Scan.one (K true)) -- atom >>
            (fn (arg, x) => (Token.assign NONE arg; x));
-        fun unparse_kind k =
-            Parse.group (fn () => Token.str_of_kind k)
-             (RESET_VALUE (Scan.one (Token.is_kind k) >> Token.unparse));
+        fun token p = RESET_VALUE (Scan.one p);
+	fun unparse_kind k = Parse.group (fn () => Token.str_of_kind k)
+             (token (Token.is_kind k) >> Token.unparse);
         val unparse_verbatim = unparse_kind Token.Verbatim;
+	val not_command = Parse.group (fn () => "non-command token")
+             (token (not o Token.is_command));
+	fun command s = Parse.group (fn () => "command "^s)
+             (token (fn t => Token.is_command t andalso
+                             Token.content_of t = s));
+	fun command_with_args s = command s -- Scan.repeat not_command >> op::;
 (* Pure/pure_syn.ML *)
 	(* line 12 *)
         val cmd_theory = Parse.command_name "theory" |-- Thy_Header.args;
@@ -150,8 +179,43 @@ struct
 	    Scan.optional
 	      (Parse.where_ |-- Parse.and_list1
                (Parse_Spec.opt_thm_name ":" -- Parse.prop)) [];
+	(* line 514 *)
+	val parse_theorem = Parse.opt_target --
+             Scan.optional (Parse_Spec.opt_thm_name ":" --|
+             Scan.ahead (Parse_Spec.includes >> K "" ||
+             Parse_Spec.locale_keyword ||
+             Parse_Spec.statement_keyword)) Attrib.empty_binding --
+             Scan.optional Parse_Spec.includes [] --
+             Parse_Spec.general_statement;
 	val mk_thy_body = List.map (fn (s,p) => Parse.command_name s |-- p);
-	val simple_thy_body = Scan.first (mk_thy_body [
+	fun partition p [] = []
+           |partition p (t::l')  = let val (cmd,l'') = take_prefix p l'
+                                   in (t::cmd)::(partition p l'') end;
+	fun proof_qed i = Parse.group (fn () => "proof_qed") 
+                          (fn t =>
+                           if i > 0 then Scan.first
+                                    [command "qed" -- proof_qed (i-1) >> op::,
+                                     command "oops" >> single,
+                                     command_with_args "proof"
+                                      -- proof_qed (i+1) >> op@,
+                                     (token Token.is_command --
+                                      Scan.repeat not_command >> op::)
+                                     -- proof_qed i >> op@] t
+                           else ([],t));
+	val proof_prefix = Scan.repeat (Scan.first
+                            [command_with_args "apply",
+                             command_with_args "using",
+                             command_with_args "unfolding"]) >> flat;
+	val proof = Parse.!!! ((proof_prefix -- Scan.first
+                      [command_with_args "proof" -- proof_qed 1 >> op@,
+                       command "oops" >> single,
+                       command_with_args "by",
+                       command ".." >> single,
+                       command "." >> single]) >> op@
+                     >> ((List.map (List.map Token.unparse)
+                         #> List.map (space_implode " ")
+                         #> cat_lines) o (partition Token.is_command)));
+	val simple_thy_body' = Scan.first (mk_thy_body [
 	("chapter", Parse.opt_target -- unparse_verbatim
                      >> (Misc o Chapter)),                 (* line 19 *)
 	("section", Parse.opt_target -- unparse_verbatim
@@ -313,20 +377,59 @@ struct
                       (@{keyword "\<subseteq>"} ||
                        @{keyword "<"}) --
                        parse_interpretation_arguments false
+		      -- proof
                       >> Sublocale),
         ("interpretation",                                 (* line 442 *)
          parse_interpretation_arguments true
-          >> Interpretation),
+         -- proof >> Interpretation),
 	("interpret",                                      (* line 449 *)
          parse_interpretation_arguments true
           >> Interpret),
 	("subclass",                                       (* line 471 *)
-	 Parse.class >> Subclass),
+	 Parse.class -- proof >> Subclass),
 	("instance",Scan.option (Parse.class --            (* line 481 *)
          (((@{keyword "\<subseteq>"} || @{keyword "<"})
           |-- Parse.!!! Parse.class) >> InstanceSubset
          || Parse.multi_arity >> InstanceArity))
-         >> Instance)]);
+         -- proof >> Instance),
+        ("theorem", parse_theorem -- proof >> Theorem),    (* line 525 *)
+        ("lemma", parse_theorem -- proof >> Lemma),        (* line 526 *)
+        ("corollary", parse_theorem -- proof >> Corollary),(* line 527 *)
+	("schematic_theorem", parse_theorem -- proof       (* line 528 *)
+                               >> SchematicTheorem),
+	("schematic_lemma", parse_theorem -- proof         (* line 529 *)
+                             >> SchematicLemma),
+        ("schematic_corollary", parse_theorem -- proof     (* line 530 *)
+                             >> SchematicCorollary)]);
+	fun unparse_cmd s = Parse.group (fn () => s)
+         (fn toks =>
+           case toks of
+            t::toks' =>
+             if Token.is_command t andalso Token.content_of t = s then
+              let val (cmd,toks'') = take_suffix Token.is_command toks'
+              in (t::cmd |> List.map Token.unparse
+                         |> space_implode " ",toks'') end
+             else Scan.fail ()
+            |[] => Scan.fail ());
+	val diagnostic_commands = ["pretty_setmargin","help","print_commands",
+         "print_configs","print_context","print_theory","print_syntax",
+         "print_abbrevs","print_theorems","print_locales","print_classes",
+         "print_locale","print_interps","print_dependencies",
+         "print_attributes","print_simpset","print_rules","print_trans_rules",
+         "print_methods","print_antiquotations","thy_deps","locale_deps",
+         "class_deps","thm_deps","print_binds","print_facts","print_cases",
+         "print_statement","thm","prf","full_prf","prop","term","typ",
+         "print_codesetup","unused_thms"];
+	val toplevel_commands = ["cd","pwd","use_thy","remove_thy",
+         "kill_thy","display_drafts","print_drafts","pr","disable_pr",
+         "enable_pr","commit","quit","exit","welcome","init_toplevel",
+         "linear_undo","undo","undos_proof","cannot_undo","kill",
+         "realizers","realizability","extract_type","extract"];
+	val simple_thy_body = simple_thy_body' ||
+             Scan.first (List.map (fn s => unparse_cmd s >>
+              (Misc o DiagnosticCommand)) diagnostic_commands) ||
+             Scan.first (List.map (fn s => unparse_cmd s >>
+              (Misc o TopLevelCommand)) diagnostic_commands);
 	(* Isabelle/Isar/isar_syn.ML line 415 *)
         val locale_val =
           Parse_Spec.locale_expression false --
@@ -352,9 +455,9 @@ struct
            Scan.succeed []) >> Locale),
           (* line 464 *)
           (let val class_val = (* Pure/Isar/isar_syn.ML line 458 *)
-                Parse_Spec.class_expression -- Scan.optional (@{keyword "="}
-                 |-- Parse.!!! (Scan.repeat1 Parse_Spec.context_element)) []
-                 || Scan.repeat1 Parse_Spec.context_element >> pair []
+                Parse_Spec.class_expression -- Scan.optional (@{keyword "+"}
+                |-- Parse.!!! (Scan.repeat1 Parse_Spec.context_element)) [] ||
+                Scan.repeat1 Parse_Spec.context_element >> pair []
               val p = Parse.binding -- Scan.optional (@{keyword "="}
                        |-- class_val) ([], [])
           in Parse.command_name "class" |-- p --
