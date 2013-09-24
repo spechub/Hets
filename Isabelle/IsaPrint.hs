@@ -506,9 +506,9 @@ printProps (Props {propsName=n,propsArgs=a,props=p}) =
 printProp :: Prop -> Doc
 printProp (Prop {prop=t,propPats=ts}) =
  let t'  = doubleQuotes $ printTerm t
-     ts' = hsep $ map (doubleQuotes . printTerm) ts
+     ts' = hsep $ map (\p -> text "is" <+> (doubleQuotes . printTerm) p) ts
  in t' <+> if null ts then empty
-           else parens (text "is" <+> ts')
+           else parens ts'
 
 printSetDecl :: SetDecl -> Doc
 printSetDecl setdecl =
