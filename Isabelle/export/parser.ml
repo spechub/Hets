@@ -1,9 +1,13 @@
 signature ParserHelper =
 sig
 	type thy_body
-	val cmd_theory : Thy_Header.header parser
+	val cmd_theory : (Token.T list * Thy_Header.header) parser
 	val cmd_header : string parser
-	val thy_body : thy_body parser
+	val thy_body : (Token.T list * thy_body) parser
+	val unparse_tokens : Token.T list -> string
+	val init_thy : (Token.T list * Thy_Header.header) ->
+                       Toplevel.state * (Toplevel.state -> 
+                        Token.T list -> Toplevel.state)
 end;
 
 structure ParserHelper : ParserHelper =
@@ -24,6 +28,7 @@ struct
                             |TopLevelCommand of string;
 	type proof = string;
 	type ml_text = string * Position.T;
+	type orig = Token.T list;
 	(* isar-ref.pdf page 78 *)
 	datatype context_head = ContextNamed of xstring * Position.T
                                |ContextHead  of ((xstring * Position.T) list
@@ -92,9 +97,9 @@ struct
 	|Include of (xstring * Position.T) list
 	|Including of (xstring * Position.T) list
 	|PrintBundles
-	|Context of context_head * thy_body list
+	|Context of context_head * (orig * thy_body) list
 	|Locale of (binding * (Expression.expression * Element.context list))
-                   * thy_body list
+                   * (orig * thy_body) list
 	|Sublocale of ((xstring * Position.T) * (Expression.expression *
                         (Attrib.binding * string) list)) * proof
 	|Interpretation of (Expression.expression *
@@ -102,11 +107,12 @@ struct
         |Interpret of Expression.expression *
                       (Attrib.binding * string) list
 	|Class of (binding * (string list * Element.context list)) *
-                  thy_body list
+                  (orig * thy_body) list
 	|Subclass of string * proof
-	|Instantiation of (string list * string list * string) * thy_body list
+	|Instantiation of (string list * string list * string) *
+                          (orig * thy_body) list
 	|Instance of ((string * instance_type) option) * proof
-	|Overloading of (bstring * string * bool) list * thy_body list
+	|Overloading of (bstring * string * bool) list * (orig * thy_body) list
 	|Theorem of (((opt_target * Attrib.binding) *
                       (xstring * Position.T) list) *
                      (Element.context list * Element.statement)) * proof
@@ -142,6 +148,11 @@ struct
 	|Termination of string option * proof
 	|Misc of misc_body;
 	val hide = curry Hide;
+	fun preserve_toks f toks =
+             let val (v,toks') = f toks
+                 val consumed_toks = List.take(toks,List.length toks-
+                                                    List.length toks')
+             in ((consumed_toks,v),toks') end;
 (* Common Functions *)
 	(* taken from Pure/Isar/parse.ML *)
 	fun RESET_VALUE atom =
@@ -159,7 +170,8 @@ struct
 	fun command_with_args s = command s -- Scan.repeat not_command >> op::;
 (* Pure/pure_syn.ML *)
 	(* line 12 *)
-        val cmd_theory = Parse.command_name "theory" |-- Thy_Header.args;
+        val cmd_theory = preserve_toks (Parse.command_name "theory"
+                          |-- Thy_Header.args);
 (* Pure/Isar/isar_syn.ML *)
 	(* line 14 *)
         val cmd_header = Parse.command_name "header" |-- unparse_verbatim;
@@ -187,6 +199,7 @@ struct
 	  in trans_pat -- Parse.!!! (trans_arrow -- trans_pat)
 	    >> (fn (left, (arr, right)) => arr (left, right)) end;
 	val trfun = Parse.opt_keyword "advanced" -- Parse.ML_source;
+	fun first' l = Scan.first (List.map preserve_toks l);
 	fun parse_interpretation_arguments mandatory = (* line 428 *)
 	  Parse.!!! (Parse_Spec.locale_expression mandatory) --
 	    Scan.optional
@@ -219,16 +232,17 @@ struct
                             [command_with_args "apply",
                              command_with_args "using",
                              command_with_args "unfolding"]) >> flat;
+	val unparse_tokens = (List.map (List.map Token.unparse)
+                         #> List.map (space_implode " ")
+                         #> cat_lines) o (partition Token.is_command);
 	val proof = Parse.!!! ((proof_prefix -- Scan.first
                       [command_with_args "proof" -- proof_qed 1 >> op@,
                        command "oops" >> single,
                        command_with_args "by",
                        command ".." >> single,
                        command "." >> single]) >> op@
-                     >> ((List.map (List.map Token.unparse)
-                         #> List.map (space_implode " ")
-                         #> cat_lines) o (partition Token.is_command)));
-	val simple_thy_body' = Scan.first (mk_thy_body [
+                     >> unparse_tokens);
+	val simple_thy_body' = first' (mk_thy_body [
 	("chapter", Parse.opt_target -- unparse_verbatim
                      >> (Misc o Chapter)),                 (* line 19 *)
 	("section", Parse.opt_target -- unparse_verbatim
@@ -464,9 +478,9 @@ struct
          "linear_undo","undo","undos_proof","cannot_undo","kill",
          "realizers","realizability","extract_type","extract"];
 	val simple_thy_body = simple_thy_body' ||
-             Scan.first (List.map (fn s => unparse_cmd s >>
+             first' (List.map (fn s => unparse_cmd s >>
               (Misc o DiagnosticCommand)) diagnostic_commands) ||
-             Scan.first (List.map (fn s => unparse_cmd s >>
+             first' (List.map (fn s => unparse_cmd s >>
               (Misc o TopLevelCommand)) diagnostic_commands);
 	(* Isabelle/Isar/isar_syn.ML line 415 *)
         val locale_val =
@@ -474,7 +488,7 @@ struct
           Scan.optional (@{keyword "+"} |-- Parse.!!!
           (Scan.repeat1 Parse_Spec.context_element)) [] ||
           Scan.repeat1 Parse_Spec.context_element >> pair ([], []);
-        fun rec_thy_body toks = Scan.first [
+        fun rec_thy_body toks = first' [
 	(Parse.command_name "context" |--                  (* line 405 *)
          ((Parse.position Parse.xname >> ContextNamed) ||
           (Scan.optional Parse_Spec.includes [] --
@@ -482,6 +496,7 @@ struct
            >> ContextHead))
          --| Parse.begin
          -- Scan.repeat (simple_thy_body || rec_thy_body)
+         --| Parse.command_name "end"
          >> Context),
          (Parse.command_name "locale" |--                  (* line 421 *)
           Parse.binding --
@@ -520,6 +535,37 @@ struct
               >> Overloading end)
           ] toks;
 	val thy_body = simple_thy_body || rec_thy_body;
+	(* taken from Pure/Thy/thy_load.ML *)
+        fun read init state toks =
+             let val master_dir = Thy_Load.get_master_path ()
+                 val spans = (*map (resolve_files master_dir)*)
+                                 (Thy_Syntax.parse_spans toks)
+                 val elements = Thy_Syntax.parse_elements spans
+                 (* fun excursion *)
+                 val immediate = not (Goal.future_enabled ())
+                 fun proof_result (tr, trs) (st, _) =
+                      let
+                        val (result, st') = Toplevel.proof_result immediate
+                                             (tr, trs) st
+                        val pos' = Toplevel.pos_of (List.last (tr :: trs))
+                      in (result, (st', pos')) end
+                 fun element_result elem x =
+                      fold_map proof_result
+                        (Outer_Syntax.read_element (#2
+                         (Outer_Syntax.get_syntax ())) init elem) x
+                val (results, (end_state, end_pos)) = fold_map element_result
+                     elements (state, Position.none)
+             in end_state end;
+	fun init_thy (toks,header) =
+            let val t = read (K
+                (let val {name = (name, _), imports, uses, ...} = header
+	 	     val _ = Thy_Header.define_keywords header
+    	    	     val _ = Present.init_theory name
+                     val master_dir = Thy_Load.get_master_path ()
+		     val parents = List.map (Thy_Info.get_theory o #1) imports
+	         in Thy_Load.begin_theory master_dir header parents
+                 |> Present.begin_theory 0 master_dir uses end))
+            in (t Toplevel.toplevel toks,t) end;
 end;
 
 signature Parser =
@@ -527,18 +573,20 @@ sig
         val scan      : string -> Token.T list;
 	val dbg       : Token.T list -> (Token.kind * string) list
 	datatype thy = Thy of {header:string option,
-                               args:Thy_Header.header,
-                               body:ParserHelper.thy_body list};
+                               args:(Token.T list * Thy_Header.header),
+                               body:(Token.T list * ParserHelper.thy_body)
+                                    list};
 	val thy : Token.T list -> thy
 	val parse_typ : theory -> (string * Position.T) option -> string -> typ
+	val pretty_tokens : unit -> unit
 end;
 
 structure Parser : Parser = 
 struct
 	open ParserHelper
         datatype thy = Thy of {header:string option,
-                               args:Thy_Header.header,
-                               body:thy_body list};
+                               args:(Token.T list * Thy_Header.header),
+                               body:(Token.T list * thy_body) list};
         (* scan isabelle source transforming it into a sequence of commands *)
         fun scan s =   File.read (Path.explode s)
                     |> Source.of_string |> Symbol.source
@@ -554,4 +602,6 @@ struct
          let val ctxt = Named_Target.context_cmd (the_default 
                          ("-", Position.none) loc) T
          in Syntax.parse_typ ctxt end;
+	fun pretty_tokens () =   (Token.unparse #> PolyML.PrettyString)
+                              |> K |> K |> PolyML.addPrettyPrinter;
 end;
