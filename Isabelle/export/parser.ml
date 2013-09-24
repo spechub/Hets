@@ -619,7 +619,11 @@ struct
                     |> Source.of_string |> Symbol.source
                     |> Token.source {do_recover = SOME false}
                         Keyword.get_lexicons Position.start
-                    |> Token.source_proper |> Source.exhaust;
+                    |> Token.source_proper
+                    |> Source.source Token.stopper
+                        (Scan.bulk (Parse.$$$ "--" -- Parse.!!! Parse.doc_source
+                          >> K NONE || Parse.not_eof >> SOME)) NONE
+                    |> Source.map_filter I |> Source.exhaust;
 	val dbg = List.map (fn t => (Token.kind_of t,Token.content_of t));
 	val thy = Scan.catch (Scan.option cmd_header -- cmd_theory
                   -- Scan.repeat thy_body
