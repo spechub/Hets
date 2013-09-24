@@ -590,10 +590,12 @@ sig
 	val thy : Token.T list -> thy
 	val read_sort : Toplevel.state -> (string * Position.T) option
                          -> string -> sort
-	val read_typ : Toplevel.state -> (string * Position.T) option
-                         -> string -> typ
+	val read_typ  : Toplevel.state -> (string * Position.T) option
+                          -> string -> typ
 	val read_term : Proof_Context.mode -> Toplevel.state ->
                          (string * Position.T) option -> string -> term
+        val read_prop : Toplevel.state -> (string * Position.T) option ->
+                         string -> term
 	val pretty_tokens : unit -> unit
 	datatype symb =
 	  Arg of int |
@@ -633,15 +635,14 @@ struct
          let val ctxt = Named_Target.context_cmd (the_default
                          ("-", Position.none) loc) (Toplevel.theory_of state)
          in Syntax.read_sort ctxt end;
-	fun read_typ state loc =
-         let val ctxt = Named_Target.context_cmd (the_default 
-                         ("-", Position.none) loc) (Toplevel.theory_of state)
-         in Syntax.read_typ ctxt end;
-	fun read_term mode state loc =
+        fun do_read read mode state loc =
          let val ctxt' = Named_Target.context_cmd (the_default
                           ("-", Position.none) loc) (Toplevel.theory_of state)
-             val ctxt = Proof_Context.set_mode mode ctxt'
-         in Syntax.read_term ctxt end;
+             val ctxt  = Proof_Context.set_mode mode ctxt'
+         in read ctxt end;
+	val read_typ  = do_read Syntax.read_typ Proof_Context.mode_default;
+	val read_term = do_read Syntax.read_term;
+        val read_prop = do_read Syntax.read_prop Proof_Context.mode_default;
 	fun pretty_tokens () =   (Token.unparse #> PolyML.PrettyString)
                               |> K |> K |> PolyML.addPrettyPrinter;
 	(* Taken from Pure/Syntax/printer.ML *)
@@ -867,10 +868,13 @@ struct
                        xml "AddTypeSynonym" (a "name" n)
                         [XML_Syntax.xml_of_type tp]])
                     #> xml "SigData" [];
-		fun xml_of_statement state target = variant "xml_of_statement"
-                     PolyML.makestring
+		fun xml_of_statement state target name =
+                    variant "xml_of_statement" PolyML.makestring
                      [fn Element.Shows s => List.map (fn (b,tms) =>
-                       xml "Shows" (attrs_of_binding state b)
+                       xml "Shows"
+                        (if string_of_binding (#1 b) = "" then
+                          attr_of_binding name
+                         else attrs_of_binding state b)
                         (List.map (fn (t,ts) => xml "Show" [] (
                           let val t' = Parser.read_term
                                         Proof_Context.mode_default
@@ -1004,15 +1008,16 @@ struct
                     [Parser.read_term Proof_Context.mode_default state NONE tm
                      |> XML_Syntax.xml_of_term]) axs), trans state toks),
 		 fn Lemma ((((target,(name,args)), strs),(ctxt,stmt)),proof) =>
-                  let val result = case (string_of_binding name,args,strs) of
-                   ("",[],[]) =>
+                  let val result = case (args,strs) of
+                   ([],[]) =>
                     let val s1 = trans state toks
                         val ctxt' = xml "Ctxt" []
                                    (List.map (xml_of_context state target) ctxt)
                     in (xml "Lemma" (attr_of_target target)
                          (ctxt'::[xml "Proof" [] [XML.Text proof]]
-                         @xml_of_statement state target stmt),s1) end
-                  |_ => raise (Fail "Case not implemented")
+                         @xml_of_statement state target name stmt),s1) end
+                  |_ => raise Fail ("Case not implemented: "^PolyML.makestring
+                                    (args,strs))
                   in result end,
 		 fn Definition (target,(name,(binding,tm))) =>
                    let val s1 = trans state toks
