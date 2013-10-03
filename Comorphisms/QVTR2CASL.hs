@@ -248,8 +248,16 @@ createRuleFormula qvtSign _ (QVTR.RelationSen rDef varS parS souPat tarPat whenC
     parTyp = map (stringToId . varType) (parS)
 
     whenVarSet = collectWhenVarSet varS whenC
-    souDomVarSet = Set.fromList (QVTR.patVarSet souPat)
-    varSet_2 = Set.difference (Set.difference (Set.fromList (QVTR.patVarSet tarPat)) (Set.fromList whenVarSet)) souDomVarSet
+
+    souVarInOCL = foldr (\(_,_,ocl) l -> l ++ (getVarIdsFromOCLExpre varS ocl)) [] (QVTR.patPreds souPat)
+    souDomVarSet = Set.fromList ((QVTR.patVarSet souPat) ++ souVarInOCL)
+
+    tarVarInOCL = foldr (\(_,_,ocl) l -> l ++ (getVarIdsFromOCLExpre varS ocl)) [] (QVTR.patPreds tarPat)
+    tarDomVarSet = Set.fromList ((QVTR.patVarSet tarPat) ++ tarVarInOCL)
+
+    whereVarSet = Set.fromList $ collectWhenVarSet varS whereC
+
+    varSet_2 = Set.difference (Set.difference (Set.union tarDomVarSet whereVarSet) (Set.fromList whenVarSet)) souDomVarSet
 
   in 
     if null parS
@@ -297,10 +305,21 @@ findRelVarFromName (v : restV) nam = if QVTRAs.varName v == nam
 
 
 getVarIdsFromOCLExpre :: [RelVar] -> QVTRAs.OCL -> [RelVar]
-getVarIdsFromOCLExpre varS (StringExp (VarExp v)) = case findRelVarFromName varS v of
-                                                      Nothing -> []
-                                                      Just r -> [r]
+getVarIdsFromOCLExpre varS (StringExp str) = getVarIdsFromStrExpre varS str
+getVarIdsFromOCLExpre varS (Paren expr) = getVarIdsFromOCLExpre varS expr
+getVarIdsFromOCLExpre varS (NotB expr) = getVarIdsFromOCLExpre varS expr
+getVarIdsFromOCLExpre varS (AndB exp1 exp2) = (getVarIdsFromOCLExpre varS exp1) ++ (getVarIdsFromOCLExpre varS exp2)
+getVarIdsFromOCLExpre varS (OrB exp1 exp2) = (getVarIdsFromOCLExpre varS exp1) ++ (getVarIdsFromOCLExpre varS exp2)
+getVarIdsFromOCLExpre varS (Equal str1 str2) = (getVarIdsFromStrExpre varS str1) ++ (getVarIdsFromStrExpre varS str2)
 getVarIdsFromOCLExpre _ _ = []
+
+
+getVarIdsFromStrExpre :: [RelVar] -> QVTRAs.STRING -> [RelVar]
+getVarIdsFromStrExpre varS (ConcatExp str1 str2) = (getVarIdsFromStrExpre varS str1) ++ (getVarIdsFromStrExpre varS str2)
+getVarIdsFromStrExpre varS (VarExp v) = case findRelVarFromName varS v of
+                                          Nothing -> []
+                                          Just r -> [r]
+getVarIdsFromStrExpre _ _ = []
 
 
 -- 1. WhenVarSet = ∅
