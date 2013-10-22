@@ -49,12 +49,12 @@ lGAnnos lG = do
 -- | Parse a library of specifications
 library :: LogicGraph -> AParser st LIB_DEFN
 library lG = do
-    (lG1,an1) <- lGAnnos lG
+    (lG1, an1) <- lGAnnos lG
     (ps, ln) <- option (nullRange, emptyLibName "") $ do
       s1 <- asKey libraryS <|> asKey distributedOntologyS
       n <- libName lG1
       return (tokPos s1, n)
-    (lG2,an2) <- lGAnnos lG1
+    (lG2, an2) <- lGAnnos lG1
     ls <- libItems lG2
     return (Lib_defn ln ls ps (an1 ++ an2))
 
@@ -88,7 +88,7 @@ libItems l =
     <|> do
       r <- libItem l
       la <- lineAnnos
-      (l',an) <- lGAnnos l
+      (l', an) <- lGAnnos l
       is <- libItems (case r of
              Logic_decl logD _ ->
                  setLogicName logD l'
@@ -133,9 +133,9 @@ libItem l =
        s3 <- equalT
        sp <- aSpec l
        ep <- optEnd
-       return (Syntax.AS_Library.Equiv_defn en et sp 
-           (catRange (s1:s2:s3:(maybeToList ep))))
-       
+       return (Syntax.AS_Library.Equiv_defn en et sp
+           (catRange (s1 : s2 : s3 : maybeToList ep)))
+
   <|> -- align defn
     do s1 <- asKey alignmentS
        an <- hetIRI l
@@ -236,16 +236,17 @@ libItem l =
 useItem :: Monad m => IRI -> m LIB_ITEM
 useItem i = do
   let libPath = iriToStringUnsecure (deleteFragment i)
-  let shortLibName = convertFileToLibStr libPath
-  let fragment = getFragment i
-  let specName = if null fragment || null (tail fragment)
+      shortLibName = convertFileToLibStr libPath
+      fragment = getFragment i
+      specName = if null fragment || null (tail fragment)
                  then shortLibName
                  else tail fragment
   libNameIri <- case parseIRIManchester specName of
     Just i' -> return i'
     Nothing -> fail $ "could not read " ++ show specName ++ " into IRI"
-  return (Download_items (LibName (IndirectLink shortLibName nullRange libPath) Nothing)
-          (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange)
+  return $ Download_items
+    (LibName (IndirectLink shortLibName nullRange libPath) Nothing)
+    (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange
 
 useItems :: Monad m => [IRI] -> m [LIB_ITEM]
 useItems = mapM useItem
