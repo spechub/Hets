@@ -42,7 +42,7 @@ lGAnnos :: LogicGraph -> AParser st (LogicGraph, [Annotation])
 lGAnnos lG = do
   as <- annos
   let (pfx, _) = partPrefixes as
-  return (lG { prefixes = Map.union pfx (prefixes lG) }, as)
+  return (lG { prefixes = Map.union pfx $ prefixes lG }, as)
 
 -- * Parsing functions
 
@@ -289,18 +289,8 @@ alignArities = do
   return $ Align_arities f b
 
 alignArity :: AParser st ALIGN_ARITY
-alignArity = do
-    asKey "1"
-    return AA_InjectiveAndTotal
-  <|> do
-    asKey "?"
-    return AA_Injective
-  <|> do
-    asKey "+"
-    return AA_Total
-  <|> do
-    asKey "*"
-    return AA_NeitherInjectiveNorTotal
+alignArity = choice $ map (\ a -> asKey (showAlignArity a) >> return a)
+  [minBound .. maxBound]
 
 viewOrAlignType :: LogicGraph -> AParser st (Annoted SPEC, Annoted SPEC, Range)
 viewOrAlignType l = do

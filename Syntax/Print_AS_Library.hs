@@ -148,11 +148,7 @@ printAlignArities (Align_arities f b) =
        text alignArityBackwardS, printAlignArity b]
 
 printAlignArity :: ALIGN_ARITY -> Doc
-printAlignArity ar = text $ case ar of
-  AA_InjectiveAndTotal -> "1"
-  AA_Injective -> "?"
-  AA_Total -> "+"
-  AA_NeitherInjectiveNorTotal -> "*"
+printAlignArity = text . showAlignArity
 
 printCorrespondences :: [CORRESPONDENCE] -> Doc
 printCorrespondences = vsep . punctuate comma . map printCorrespondence

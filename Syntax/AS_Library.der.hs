@@ -91,13 +91,21 @@ data EQUIV_TYPE = Equiv_type SPEC SPEC Range deriving Show
 
 data ALIGN_TYPE = Align_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
 
-data MODULE_TYPE = Module_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
+data MODULE_TYPE = Module_type (Annoted SPEC) (Annoted SPEC) Range
+  deriving Show
 
-data ALIGN_ARITIES = Align_arities ALIGN_ARITY ALIGN_ARITY deriving (Show, Eq)
+data ALIGN_ARITIES = Align_arities ALIGN_ARITY ALIGN_ARITY deriving Show
 
 data ALIGN_ARITY = AA_InjectiveAndTotal | AA_Injective | AA_Total
                  | AA_NeitherInjectiveNorTotal
-                   deriving (Show, Eq)
+                   deriving (Show, Enum, Bounded)
+
+showAlignArity :: ALIGN_ARITY -> String
+showAlignArity ar = case ar of
+  AA_InjectiveAndTotal -> "1"
+  AA_Injective -> "?"
+  AA_Total -> "+"
+  AA_NeitherInjectiveNorTotal -> "*"
 
 data ItemNameMap =
     ItemNameMap IRI (Maybe IRI)
