@@ -82,50 +82,48 @@ instance PrettyLG LIB_ITEM where
                                     $ printGroupSpec lg to]]
                        ++ [ppWithCommas ad])
                           $+$ keyword endS
-      {-  Equiv_defn si (Equiv_type as1 as2 _) sp _ ->
-        -}
+        Equiv_defn si (Equiv_type as1 as2 _) sp _ -> topKey equivalenceS <+>
+            sep [structIRI si <+> colon, sep
+                [ printGroupSpec lg $ emptyAnno as1
+                , text equiS
+                , printGroupSpec lg $ emptyAnno as2]
+                <+> equals, prettyLG lg sp]
+            $+$ keyword endS
         Align_defn si ar (Align_type frm to _) corresps _ ->
             let spid = indexed (iriToStringShortUnsecure si)
                 sphead = case ar of
                   Nothing -> spid <+> colon
-                  Just alignArities -> sep [spid, printAlignArities alignArities
-                                                  <+> colon ]
+                  Just alignArities -> sep
+                    [spid, printAlignArities alignArities <+> colon ]
             in topKey alignmentS <+>
-               (sep ([sphead, sep [ printGroupSpec lg frm <+> keyword toS,
+               sep ([sphead, sep [ printGroupSpec lg frm <+> keyword toS,
                                     printGroupSpec lg to]]
                      ++ if null corresps then []
                         else [equals,
-                              printCorrespondences corresps]))
+                              printCorrespondences corresps])
                $+$ keyword endS
         Module_defn mn mt rs _ ->
             let spid = indexed (iriToStringShortUnsecure mn)
                 sphead = spid <+> colon
                 spmt = case mt of
-                  Module_type sp1 sp2 _ -> sep [prettyLG lg sp1,
-                                                text ofS,
-                                                prettyLG lg sp2]
+                  Module_type sp1 sp2 _ -> sep
+                    [prettyLG lg sp1, text ofS, prettyLG lg sp2]
             in topKey moduleS <+>
                sep [sphead, spmt, text forS, sep $ map structIRI rs]
-        Arch_spec_defn si ab _ ->
-            topKey archS <+>
-                   fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
-                           $+$ keyword endS
-        Unit_spec_defn si ab _ ->
-            topKey unitS <+>
-                   fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
-                           $+$ keyword endS
-        Ref_spec_defn si ab _ ->
-            keyword refinementS <+>
-                    fsep [structIRI si <+> equals, prettyLG lg ab]
-                            $+$ keyword endS
-        Download_items l ab _ ->
-            topKey fromS <+> fsep ((pretty l <+> keyword getS)
-                                   : prettyDownloadItems ab)
+        Arch_spec_defn si ab _ -> topKey archS <+>
+            fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
+            $+$ keyword endS
+        Unit_spec_defn si ab _ -> topKey unitS <+>
+            fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
+            $+$ keyword endS
+        Ref_spec_defn si ab _ -> keyword refinementS <+>
+            fsep [structIRI si <+> equals, prettyLG lg ab]
+            $+$ keyword endS
+        Download_items l ab _ -> topKey fromS <+>
+            fsep ((pretty l <+> keyword getS) : prettyDownloadItems ab)
         Logic_decl aa _ -> sep [keyword logicS, pretty aa]
-        Newlogic_defn nl _ ->
-            pretty nl
-        Newcomorphism_defn nc _ ->
-            pretty nc
+        Newlogic_defn nl _ -> pretty nl
+        Newcomorphism_defn nc _ -> pretty nc
 
 prettyDownloadItems :: DownloadItems -> [Doc]
 prettyDownloadItems d = case d of
@@ -151,16 +149,16 @@ printAlignArities (Align_arities f b) =
 
 printAlignArity :: ALIGN_ARITY -> Doc
 printAlignArity ar = text $ case ar of
-  AA_InjectiveAndTotal        -> "1"
-  AA_Injective                -> "?"
-  AA_Total                    -> "+"
+  AA_InjectiveAndTotal -> "1"
+  AA_Injective -> "?"
+  AA_Total -> "+"
   AA_NeitherInjectiveNorTotal -> "*"
 
 printCorrespondences :: [CORRESPONDENCE] -> Doc
-printCorrespondences = vsep . (punctuate comma) . (map printCorrespondence)
+printCorrespondences = vsep . punctuate comma . map printCorrespondence
 
 printCorrespondence :: CORRESPONDENCE -> Doc
-printCorrespondence Default_correspondence              = text "*"
+printCorrespondence Default_correspondence = text "*"
 printCorrespondence (Correspondence_block mrref mconf cs) =
   sep $ concat
   [[text relationS],
@@ -180,18 +178,18 @@ printCorrespondence (Single_correspondence mcid eRef toer mrRef mconf) =
 
 printConfidence :: CONFIDENCE -> Doc
    -- "show" should work in [0,1]
-printConfidence = text . ('(':) . (++ ")") . show
+printConfidence = text . ('(' :) . (++ ")") . show
 
 printRelationRef :: RELATION_REF -> Doc
 printRelationRef rref = case rref of
-  Subsumes        -> text ">"
-  IsSubsumed      -> text "<"
-  Equivalent      -> text "="
-  Incompatible    -> text "%"
-  HasInstance     -> text "$\\ni$"
-  InstanceOf      -> text "$\\in$"
+  Subsumes -> text ">"
+  IsSubsumed -> text "<"
+  Equivalent -> text "="
+  Incompatible -> text "%"
+  HasInstance -> text "$\\ni$"
+  InstanceOf -> text "$\\in$"
   DefaultRelation -> text "$\\mapsto$"
-  (Iri i)         -> structIRI i
+  Iri i -> structIRI i
 
 instance Pretty ItemNameMap where
     pretty (ItemNameMap a m) = fsep
