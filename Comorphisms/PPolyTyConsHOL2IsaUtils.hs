@@ -29,7 +29,7 @@ import HasCASL.DataAna
 import HasCASL.Le as Le
 import HasCASL.Unify (substGen)
 
-import Isabelle.IsaSign as Isa
+import Isabelle.IsaSign as Isa hiding (qname)
 import Isabelle.IsaConsts
 import Isabelle.IsaPrint
 import Isabelle.Translate

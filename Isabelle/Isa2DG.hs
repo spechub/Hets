@@ -113,7 +113,7 @@ mkNode (dg,m) (name,header',imps,keywords',uses',body) =
                   Datatypes dts -> "datatype " ++ (intercalate "_" $
                                      map (qname . datatypeName) dts)
                   Consts cs -> "consts " ++ (intercalate "_" $
-                                             map (\(n,_,_) -> n) cs)
+                                             map (\(n',_,_) -> n') cs)
                   TypeSynonym n' _ _ _ -> "type_synonym " ++ qname n'
                   Axioms axs -> "axioms " ++ (intercalate "_" $ 
                                  map (qname . axiomName) axs)
@@ -121,7 +121,7 @@ mkNode (dg,m) (name,header',imps,keywords',uses',body) =
                                       . catMaybes $ map propsName l)
                   Definition n' _ _ _ _ _ -> "definition " ++ (show n')
                   Fun _ _ _ _ _ fsigs -> "fun " ++ (intercalate "_" $
-                                            map (\(n,_,_,_) -> n) fsigs)
+                                            map (\(n',_,_,_) -> n') fsigs)
                   _ -> ""
              in makeNamed name' sen) body
      sgns = Map.foldWithKey (\k a l ->

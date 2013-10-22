@@ -68,6 +68,7 @@ instance Pretty Frm_Wrap where
 instance Pretty Spc_Wrap where
         pretty (Spc_Wrap _ b f) = pretty b $+$ pretty f
 instance Pretty Mor where
+        pretty _ = error "Not implemented!"
 
 instance Pretty Sgn_Wrap where
         pretty (Sgn_Wrap _ s) = pretty s

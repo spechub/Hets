@@ -168,11 +168,11 @@ data Sentence =
 
   | Locale { localeName    :: QName,
              localeContext :: Ctxt,
-	     localeParents :: [QName],
+             localeParents :: [QName],
              localeBody    :: [Sentence] }
   | Class { className    :: QName,
             classContext :: Ctxt,
-	    classParents :: [QName],
+            classParents :: [QName],
             classBody    :: [Sentence] }
   | Datatypes [Datatype]
   | Domains [Domain]
@@ -249,8 +249,8 @@ data FixrecEquation = FixrecEquation {
  fixrecEquationTerm      :: Term } deriving (Eq, Ord, Show)
 
 data Ctxt = Ctxt {
-	fixes   :: [(String,Maybe Mixfix,Typ)],
-	assumes :: [(String,Term)] } deriving (Eq, Ord, Show)
+        fixes   :: [(String,Maybe Mixfix,Typ)],
+        assumes :: [(String,Term)] } deriving (Eq, Ord, Show)
 
 data Mixfix = Mixfix {
  mixfixNargs    :: Int,

@@ -25,7 +25,7 @@ import HasCASL.As as As
 import HasCASL.AsUtils
 import HasCASL.Builtin
 
-import Isabelle.IsaSign as IsaSign
+import Isabelle.IsaSign as IsaSign hiding (qname)
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate

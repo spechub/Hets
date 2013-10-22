@@ -36,7 +36,7 @@ import qualified CommonLogic.Morphism as ClMor
 import qualified CommonLogic.Sublogic as ClSl
 import CommonLogic.ModuleElimination
 
-import Isabelle.IsaSign
+import Isabelle.IsaSign hiding (qname)
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate

@@ -44,7 +44,7 @@ import CASL.Fold
 import CASL.Induction
 import CASL.ToDoc
 
-import Isabelle.IsaSign as IsaSign
+import Isabelle.IsaSign as IsaSign hiding (qname)
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate
