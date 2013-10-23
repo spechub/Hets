@@ -24,18 +24,7 @@ unsafeProverCheck :: String -- ^ prover Name
                   -> String -- ^ Environment Variable
                   -> a
                   -> [a]
-unsafeProverCheck name env = unsafePerformIO . check4Prover name env
-
--- | Checks if a Prover Binary exists and is executable
-check4Prover :: String -- ^ prover Name
-             -> String -- ^ Environment Variable
-             -> a
-             -> IO [a]
-check4Prover name env a = do
-      ex <- check4FileAux name env
-      return $ case ex of
-        [] -> []
-        _ -> [a]
+unsafeProverCheck name env = unsafePerformIO . check4File name env
 
 missingExecutableInPath :: String -> IO Bool
 missingExecutableInPath name = do
@@ -43,16 +32,9 @@ missingExecutableInPath name = do
   case mp of
     Nothing -> return True
     Just name' -> do
-      p1 <- check4Prover (takeFileName name') "PATH" ()
-      p2 <- check4Prover (takeFileName name') "Path" ()
+      p1 <- check4File (takeFileName name') "PATH" ()
+      p2 <- check4File (takeFileName name') "Path" ()
       return . null $ p1 ++ p2
-
--- | Checks if a file exists in an unsafe manner
-unsafeFileCheck :: String -- ^ prover Name
-                -> String -- ^ Environment Variable
-                -> a
-                -> [a]
-unsafeFileCheck name env = unsafePerformIO . check4File name env
 
 check4FileAux :: String -- ^ file name
               -> String -- ^ Environment Variable
@@ -96,3 +78,7 @@ hetsOWLenv = "HETS_OWL_TOOLS"
 check4HetsOWLjar :: String -- ^ jar file name
   -> IO (Bool, FilePath)
 check4HetsOWLjar = check4jarFileWithDefault "OWL2" hetsOWLenv
+
+unsafeOWL2JarCheck :: String -> a -> [a]
+unsafeOWL2JarCheck jar p =
+  [p | unsafePerformIO $ fmap fst $ check4HetsOWLjar jar]
