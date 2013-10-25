@@ -354,6 +354,7 @@ data InType =
     ATermIn ATType
   | CASLIn
   | HetCASLIn
+  | DOLIn
   | OWLIn
   | HaskellIn
   | MaudeIn
@@ -379,6 +380,7 @@ instance Show InType where
     ATermIn at -> genTermS ++ show at
     CASLIn -> "casl"
     HetCASLIn -> "het"
+    DOLIn -> "dol"
     OWLIn -> "owl"
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
@@ -415,7 +417,7 @@ instance Show ATType where
 
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
+  [ CASLIn, HetCASLIn, DOLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True
   , DgXml, FreeCADIn, RDFIn, Xmi, Qvt ]
@@ -849,9 +851,8 @@ checkInFiles fs = do
 -- | check if infile is uri
 checkUri :: FilePath -> Bool
 checkUri file = let (_, t) = span (/= ':') file in
-                   if length t < 4 then False
-                      else let (_ : c2 : c3 : _) = t in c2 == '/' && c3 == '/'
-                              -- (http://, https://, ftp://, file://, etc.)
+  length t > 3 && let (_ : c2 : c3 : _) = t in c2 == '/' && c3 == '/'
+  -- (http://, https://, ftp://, file://, etc.)
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]
