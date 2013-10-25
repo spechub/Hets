@@ -850,9 +850,8 @@ checkInFiles fs = do
 
 -- | check if infile is uri
 checkUri :: FilePath -> Bool
-checkUri file = let (_, t) = span (/= ':') file in
-  length t > 3 && let (_ : c2 : c3 : _) = t in c2 == '/' && c3 == '/'
-  -- (http://, https://, ftp://, file://, etc.)
+checkUri file = "://" `isPrefixOf` dropWhile (/= ':') file
+   -- (http://, https://, ftp://, file://, etc.)
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]
