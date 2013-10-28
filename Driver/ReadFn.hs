@@ -108,15 +108,14 @@ readLibDefnAux lgraph opts file fileForPos input =
      ty <- quessInput opts file input
      case ty of
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
-#ifndef NOOWLLOGIC
-      OWLIn -> liftIO $ parseOWL file
-      OBOIn -> liftIO $ parseOWL file
-#endif
 #ifdef RDFLOGIC
    -- RDFIn -> liftIO $ parseRDF file
 #endif
       Xmi -> liftIO $ parseXmi file
       Qvt -> liftIO $ parseQvt file
+#ifndef NOOWLLOGIC
+      _ | elem ty [OWLIn, OBOIn] -> liftIO $ parseOWL file
+#endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
          Right ast -> return ast
