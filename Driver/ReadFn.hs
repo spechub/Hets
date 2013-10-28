@@ -57,14 +57,17 @@ import Data.Maybe
 
 import FreeCAD.Logic_FreeCAD
 
+noPrefix :: QName -> Bool
+noPrefix = isNothing . qPrefix
+
 isDgXml :: QName -> Bool
-isDgXml q = qName q == "DGraph" && qPrefix q == Nothing
+isDgXml q = qName q == "DGraph" && noPrefix q
 
 isPpXml :: QName -> Bool
-isPpXml q = qName q == "Lib" && qPrefix q == Nothing
+isPpXml q = qName q == "Lib" && noPrefix q
 
 isDMU :: QName -> Bool
-isDMU q = qName q == "ClashResult" && qPrefix q == Nothing
+isDMU q = qName q == "ClashResult" && noPrefix q
 
 isRDF :: QName -> Bool
 isRDF q = qName q == "RDF" && qPrefix q == Just "rdf"
@@ -107,9 +110,10 @@ readLibDefnAux lgraph opts file fileForPos input =
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
 #ifndef NOOWLLOGIC
       OWLIn -> liftIO $ parseOWL file
+      OBOIn -> liftIO $ parseOWL file
 #endif
 #ifdef RDFLOGIC
---      RDFIn -> liftIO $ parseRDF file
+   -- RDFIn -> liftIO $ parseRDF file
 #endif
       Xmi -> liftIO $ parseXmi file
       Qvt -> liftIO $ parseQvt file

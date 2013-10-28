@@ -356,6 +356,7 @@ data InType =
   | HetCASLIn
   | DOLIn
   | OWLIn
+  | OBOIn
   | HaskellIn
   | MaudeIn
   | TwelfIn
@@ -382,6 +383,7 @@ instance Show InType where
     HetCASLIn -> "het"
     DOLIn -> "dol"
     OWLIn -> "owl"
+    OBOIn -> "obo"
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
@@ -417,7 +419,8 @@ instance Show ATType where
 
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, DOLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
+  [ CASLIn, HetCASLIn, DOLIn, OWLIn, OBOIn, HaskellIn, ExperimentalIn
+  , MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True
   , DgXml, FreeCADIn, RDFIn, Xmi, Qvt ]
