@@ -692,7 +692,7 @@ initialize_installer:
 owl_java:
 	$(RM) -r OWL2/java/OwlApi
 	svn export \
-  https://owlapi.svn.sourceforge.net/svnroot/owlapi/v3/trunk \
+  https://svn.code.sf.net/p/owlapi/svn/v3/trunk \
   OWL2/java/OwlApi
 
 initialize_java: owl_java
