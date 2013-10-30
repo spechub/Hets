@@ -103,6 +103,9 @@ applyAutomaticRuleS = "apply-automatic-rule"
 normalFormS = "normal-form"
 unlitS = "unlit"
 
+urlCatalogS :: String
+urlCatalogS = "url-catalog"
+
 relposS :: String
 relposS = "relative-positions"
 
@@ -141,6 +144,7 @@ showEqOpt k s = if null s then "" else showOpt k ++ "=" ++ s
 data HetcatsOpts = HcOpt     -- for comments see usage info
   { analysis :: AnaType
   , guiType :: GuiType
+  , urlCatalog :: [(String, String)]
   , infiles :: [FilePath] -- ^ files to be read
   , specNames :: [SIMPLE_ID] -- ^ specs to be processed
   , transNames :: [SIMPLE_ID] -- ^ comorphism to be processed
@@ -181,6 +185,7 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = HcOpt
   { analysis = Basic
   , guiType = NoGui
+  , urlCatalog = []
   , infiles = []
   , specNames = []
   , transNames = []
@@ -219,20 +224,20 @@ instance Show HetcatsOpts where
     ++ show (guiType opts)
     ++ (if interactive opts then showOpt interactiveS else "")
     ++ show (analysis opts)
-    ++ (case defLogic opts of
+    ++ case defLogic opts of
           s | s /= defLogic defaultHetcatsOpts -> showEqOpt logicS s
-          _ -> "")
-    ++ (case defSyntax opts of
+          _ -> ""
+    ++ case defSyntax opts of
           s | s /= defSyntax defaultHetcatsOpts -> showEqOpt serializationS s
-          _ -> "")
+          _ -> ""
     ++ showEqOpt libdirsS (intercalate ":" $ libdirs opts)
-    ++ (case modelSparQ opts of
+    ++ case modelSparQ opts of
           "" -> ""
-          f -> showEqOpt modelSparQS f)
-    ++ (case counterSparQ opts of
+          f -> showEqOpt modelSparQS f
+    ++ case counterSparQ opts of
           n | n /= counterSparQ defaultHetcatsOpts
               -> showEqOpt counterSparQS $ show n
-          _ -> "")
+          _ -> ""
     ++ (if xmlFlag opts then showOpt xmlS else "")
     ++ (if connectP opts /= -1 then showOpt connectS else "")
     ++ (if listen opts /= -1 then showOpt listenS else "")
@@ -241,6 +246,10 @@ instance Show HetcatsOpts where
     ++ (if unlit opts then showOpt unlitS else "")
     ++ (if useLibPos opts then showOpt relposS else "")
     ++ (if fullSign opts then showOpt fullSignS else "")
+    ++ case urlCatalog opts of
+         [] -> ""
+         cs -> showEqOpt urlCatalogS $ intercalate ","
+           $ map (\ (a, b) -> a ++ '=' : b) cs
     ++ showEqOpt intypeS (show $ intype opts)
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (intercalate "," $ map show $ outtypes opts)
@@ -292,6 +301,7 @@ data Flag =
   | Listen Int
   | UseMMT
   | FullSign
+  | UrlCatalog [(String, String)]
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
@@ -326,8 +336,9 @@ makeOpts opts flg = case flg of
     Serve -> opts { serve = True }
     Unlit -> opts { unlit = True }
     RelPos -> opts { useLibPos = True }
-    UseMMT -> opts {runMMT = True}
-    FullSign -> opts {fullSign = True}
+    UseMMT -> opts { runMMT = True}
+    FullSign -> opts { fullSign = True}
+    UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     Help -> opts -- skipped
     Version -> opts -- skipped
 
@@ -590,6 +601,8 @@ options = let
        ++ crS ++ "to given host and port")
     , Option "S" [listenS] (ReqArg parseListen "PORT")
       "run interface by listening to the port"
+    , Option "C" [urlCatalogS] (ReqArg parseCatalog "URLS")
+      "comma-separated list of URL pairs: srcURL=tarURL"
     , Option "i" [intypeS] (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++
        concatMap (\ t -> crS ++ bS ++ t)
@@ -757,6 +770,12 @@ checkRecentEnv opts fp1 base2 = catchIOException False $ do
     maybe (return False) ( \ fp2 -> do
        fp2_time <- getModificationTime fp2
        return (fp1_time >= fp2_time)) maybe_source_file
+
+parseCatalog :: String -> Flag
+parseCatalog str = UrlCatalog $ map ((\ l -> case l of
+  [a, b] -> (a, b)
+  _ -> hetsError (str ++ " is not a valid URL catalog"))
+  . splitOn '=') $ splitOn ',' str
 
 -- | 'parseInType' parses an 'InType' Flag from user input
 parseInType :: String -> Flag
