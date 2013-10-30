@@ -132,8 +132,13 @@ anaSource mln lg opts topLns libenv initDG fname =
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg in ResultT $
 #ifndef NOHTTP
   if checkUri fname then runResultT $ do
+    let mName = case mapMaybe
+            (\ (a, b) -> fmap (b ++) $ stripPrefix a fname)
+            $ urlCatalog opts of
+          m : _ -> m
+          _ -> fname
     (fname', input) <-
-      tryDownloadSources opts (getOntoFileNames opts fname) fname
+      tryDownloadSources opts (getOntoFileNames opts mName) mName
     anaString mln lgraph opts topLns libenv initDG input fname'
   else
 #endif
