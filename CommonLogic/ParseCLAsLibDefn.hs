@@ -56,7 +56,7 @@ type SpecInfo = (BASIC_SPEC, Set String, Set String)
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
 parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
 parseCL_CLIF filename opts = do
-  let dirFile@(dir,_) = splitFileName filename
+  let dirFile@(dir, _) = splitFileName filename
   specMap <- downloadSpec opts Map.empty Set.empty Set.empty False dirFile dir
   specs <- anaImports opts dir specMap
   return $ convertToLibDefN (convertFileToLibStr filename) specs
@@ -93,6 +93,9 @@ specName def i = def ++ "_" ++ show i
 cnvImportName :: NAME -> NAME
 cnvImportName = mkSimpleId . convertFileToLibStr . tokStr
 
+httpCombine :: FilePath -> FilePath -> FilePath
+httpCombine d f = if checkUri f then f else combine d f
+
 collectDownloads :: HetcatsOpts -> String -> SpecMap -> (String, SpecInfo)
                     -> IO SpecMap
 collectDownloads opts baseDir specMap (n, (b, topTexts, importedBy)) =
@@ -100,10 +103,10 @@ collectDownloads opts baseDir specMap (n, (b, topTexts, importedBy)) =
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
   in foldM (\ sm d -> do
-          --trace ("in " ++ show baseDir ++ " import " ++ show d ++ " from " ++ show n) $ return ()
-          let (ddir,df) = splitFileName d
-          let baseDir' = combine baseDir ddir
-          newDls <- downloadSpec opts sm newTopTexts newImportedBy True ("", df) baseDir'
+          let (ddir, df) = splitFileName d
+              baseDir' = httpCombine baseDir ddir
+          newDls <- downloadSpec opts sm newTopTexts newImportedBy True
+              ("", df) baseDir'
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
 
@@ -141,7 +144,6 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir =
                         Map.insertWith unify n bti sm
                       ) specMap nbtis
                 in foldM (\ sm nbt -> do
-                          --trace (show nbt) $ return ()
                           newDls <- collectDownloads opts baseDir sm nbt
                           return (Map.unionWith unify newDls sm)
                       ) newSpecMap nbtis
@@ -152,9 +154,10 @@ unify (_, s, p) (a, t, q) = (a, s `Set.union` t, p `Set.union` q)
 {- one could add support for uri fragments/query
 (perhaps select a text from the file) -}
 getCLIFContents :: HetcatsOpts -> (String, String) -> String -> IO String
-getCLIFContents opts dirFile@(_, file) baseDir =
-  let filename = uncurry combine dirFile in
-  case parseURIReference filename of
+getCLIFContents opts dirFile@(_, file) baseDir = do
+  let filename = uncurry combine dirFile
+  case parseURIReference
+    $ if checkUri baseDir then httpCombine baseDir filename else filename of
     Nothing -> do
       putStrLn ("Not an URI: " ++ filename)
       localFileContents opts file baseDir
@@ -165,7 +168,8 @@ getCLIFContents opts dirFile@(_, file) baseDir =
         "file:" ->
           localFileContents opts (uriPath uri) baseDir
 #ifndef NOHTTP
-        "http:" -> getCLIFContentsHTTP filename ""
+        "http:" ->
+            getCLIFContentsHTTP (useCatalogURL opts $ show uri) ""
         "https:" ->
           simpleHTTP (defaultGETRequest uri) >>= getResponseBody
 #endif
@@ -198,7 +202,7 @@ localFileContents opts filename baseDir = do
   readFile file
 
 findLibFile :: [FilePath] -> String -> IO FilePath
-findLibFile ds f = do
+findLibFile ds f = if checkUri f then return f else do
   e <- doesFileExist f
   if e then return f else findLibFileAux ds f
 
@@ -208,7 +212,6 @@ findLibFileAux (d : ds) f = do
   let fs = [ combine d $ addExtension f $ show $ CommonLogicIn b
            | b <- [False, True]]
   es <- mapM doesFileExist fs
-  --es <- trace (show fs) $ mapM doesFileExist fs
   case filter fst $ zip es fs of
         [] -> findLibFileAux ds f
         (_, f0) : _ -> return f0
