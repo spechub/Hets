@@ -45,6 +45,7 @@ module Driver.Options
   , doDump
   , checkUri
   , defLogicIsDMU
+  , useCatalogURL
   ) where
 
 import Driver.Version
@@ -71,6 +72,14 @@ import Data.Maybe
 -- | short version without date for ATC files
 hetsVersion :: String
 hetsVersion = takeWhile (/= ',') hetcats_version
+
+-- | translate a given http reference using the URL catalog
+useCatalogURL :: HetcatsOpts -> FilePath -> FilePath
+useCatalogURL opts fname = case mapMaybe
+    (\ (a, b) -> fmap (b ++) $ stripPrefix a fname)
+    $ urlCatalog opts of
+  m : _ -> m
+  _ -> fname
 
 bracket :: String -> String
 bracket s = "[" ++ s ++ "]"
