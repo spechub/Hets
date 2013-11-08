@@ -59,6 +59,7 @@ import Driver.WriteLibDefn
 
 #ifndef NOHTTP
 import Network.HTTP
+import Common.Http
 #endif
 
 import qualified Data.Map as Map
@@ -93,7 +94,7 @@ anaSourceFile = anaSource Nothing
 downloadSource :: HetcatsOpts -> FilePath -> ResultT IO (FilePath, String)
 downloadSource opts fname = ResultT $ do
   putIfVerbose opts 3 $ "Downloading file " ++ fname
-  resp <- simpleHTTP (getRequest fname)
+  resp <- loadFromUri fname
   case resp of
     Right r -> case rspCode r of
       (2, 0, 0) -> do

@@ -45,6 +45,7 @@ import System.Directory (doesFileExist)
 
 import Network.URI
 #ifndef NOHTTP
+import Common.Http
 import Network.HTTP
 import Network.Stream (Result)
 #endif
@@ -155,31 +156,30 @@ unify (_, s, p) (a, t, q) = (a, s `Set.union` t, p `Set.union` q)
 (perhaps select a text from the file) -}
 getCLIFContents :: HetcatsOpts -> (String, String) -> String -> IO String
 getCLIFContents opts dirFile@(_, file) baseDir = do
-  let filename = uncurry combine dirFile
-  case parseURIReference
-    $ if checkUri baseDir then httpCombine baseDir filename else filename of
+  let fn = uncurry combine dirFile
+      uStr = if checkUri baseDir then httpCombine baseDir fn else fn
+  case parseURIReference uStr of
     Nothing -> do
-      putStrLn ("Not an URI: " ++ filename)
+      putStrLn ("Not an URI: " ++ fn)
       localFileContents opts file baseDir
     Just uri ->
       case uriScheme uri of
         "" ->
-          localFileContents opts (uriToString id uri "") baseDir
+          localFileContents opts fn baseDir
         "file:" ->
           localFileContents opts (uriPath uri) baseDir
 #ifndef NOHTTP
         "http:" ->
-            getCLIFContentsHTTP (useCatalogURL opts $ show uri) ""
+            getCLIFContentsHTTP (useCatalogURL opts uStr) ""
         "https:" ->
-          simpleHTTP (defaultGETRequest uri) >>= getResponseBody
+          loadFromUri uStr >>= getResponseBody
 #endif
         x -> error ("Unsupported URI scheme: " ++ x)
 
 #ifndef NOHTTP
 getCLIFContentsHTTP :: String -> String -> IO String
-getCLIFContentsHTTP uriS extension =
-  let (Just uri) = parseURIReference (uriS ++ extension) in do
-    res <- simpleHTTP $ defaultGETRequest uri
+getCLIFContentsHTTP uriS extension = do
+    res <- loadFromUri $ uriS ++ extension
     rb <- getResponseBody res
     case httpResponseCode res of
         (2, 0, 0) -> return rb
