@@ -881,7 +881,7 @@ checkInFiles fs = do
 
 -- | check if infile is uri
 checkUri :: FilePath -> Bool
-checkUri file = "://" `isPrefixOf` dropWhile (/= ':') file
+checkUri file = "://" `isPrefixOf` dropWhile isAlpha file
    -- (http://, https://, ftp://, file://, etc.)
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
