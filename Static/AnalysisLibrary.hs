@@ -127,7 +127,8 @@ anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSource mln lg opts topLns libenv initDG origName =
-  let fname = useCatalogURL opts origName
+  let mName = useCatalogURL opts origName
+      fname = fromMaybe mName $ stripPrefix "file://" mName
       syn = case defSyntax opts of
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s
