@@ -152,7 +152,7 @@ hetsServer opts1 = do
       "GET" -> liftIO $ if isJust $ lookup "menus" splitQuery
          then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path splitQuery
-         if not $ null cs then mkHtmlPage path dirs
+         if not (null cs) || null path then mkHtmlPage path dirs
            -- AUTOMATIC PROOFS (parsing)
            else if isJust $ getVal splitQuery "autoproof" then
              let qr k = Query (DGQuery k Nothing) $
@@ -271,7 +271,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
       -- show all menu options
       "menus" : [] -> mkMenuResponse
       -- list files from directory
-      "dir" : r -> let path' = (intercalate "/" r) in
+      "dir" : r -> let path' = intercalate "/" r in
         getHetsLibContent opts path' splitQuery >>= mkHtmlPage path'
       -- get dgraph from file
       "hets-lib" : r -> let file = intercalate "/" r in
@@ -326,7 +326,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
              let isProve = newIde == "prove"
                  pm = if isProve then GlProofs else GlConsistency
                  pc = ProveCmd pm
-                   (if isProve && isJust inclM then incl else True)
+                   (not (isProve && isJust inclM) || incl)
                    (if isProve then proverM else consM) transM timeout [] True
              in case nodeM of
              Nothing -> GlAutoProve pc
@@ -1057,8 +1057,8 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
     when (null thms && null ks) $ fail "no theorems to prove"
     ((nTh, sens), _) <- autoProofAtNode useTh (maybe 1 (max 1) tl)
       (if null thms then ks else thms) gTh cp
-    if null sens then return (le, sens) else return
-        (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
+    return (if null sens then le else
+        Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
 -- run over multiple dgnodes and prove available goals for each
 proveMultiNodes :: Bool -> ProverMode -> LibEnv -> LibName -> DGraph -> Bool
