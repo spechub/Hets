@@ -126,16 +126,16 @@ tryDownloadSources opts fnames origname = case fnames of
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
-anaSource mln lg opts topLns libenv initDG fname =
-  let syn = case defSyntax opts of
+anaSource mln lg opts topLns libenv initDG origName =
+  let fname = useCatalogURL opts origName
+      syn = case defSyntax opts of
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg in ResultT $
 #ifndef NOHTTP
   if checkUri fname then runResultT $ do
-    let mName = useCatalogURL opts fname
     (fname', input) <-
-      tryDownloadSources opts (getOntoFileNames opts mName) mName
+      tryDownloadSources opts (getOntoFileNames opts fname) fname
     anaString mln lgraph opts topLns libenv initDG input fname'
   else
 #endif

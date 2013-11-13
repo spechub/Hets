@@ -157,7 +157,8 @@ unify (_, s, p) (a, t, q) = (a, s `Set.union` t, p `Set.union` q)
 getCLIFContents :: HetcatsOpts -> (String, String) -> String -> IO String
 getCLIFContents opts dirFile@(_, file) baseDir = do
   let fn = uncurry combine dirFile
-      uStr = if checkUri baseDir then httpCombine baseDir fn else fn
+      uStr = useCatalogURL opts
+        $ if checkUri baseDir then httpCombine baseDir fn else fn
   case parseURIReference uStr of
     Nothing -> do
       putStrLn ("Not an URI: " ++ fn)
@@ -170,7 +171,7 @@ getCLIFContents opts dirFile@(_, file) baseDir = do
           localFileContents opts (uriPath uri) baseDir
 #ifndef NOHTTP
         "http:" ->
-            getCLIFContentsHTTP (useCatalogURL opts uStr) ""
+            getCLIFContentsHTTP uStr ""
         "https:" ->
           loadFromUri uStr >>= getResponseBody
 #endif
