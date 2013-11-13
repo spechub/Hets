@@ -38,12 +38,12 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.List (sortBy)
+import Data.Maybe
+import Data.List
 
 import System.FilePath (combine, splitFileName, addExtension)
 import System.Directory (doesFileExist)
 
-import Network.URI
 #ifndef NOHTTP
 import Common.Http
 import Network.HTTP
@@ -155,27 +155,16 @@ unify (_, s, p) (a, t, q) = (a, s `Set.union` t, p `Set.union` q)
 {- one could add support for uri fragments/query
 (perhaps select a text from the file) -}
 getCLIFContents :: HetcatsOpts -> (String, String) -> String -> IO String
-getCLIFContents opts dirFile@(_, file) baseDir = do
+getCLIFContents opts dirFile baseDir =
   let fn = uncurry combine dirFile
-      uStr = useCatalogURL opts
+      uStr1 = useCatalogURL opts
         $ if checkUri baseDir then httpCombine baseDir fn else fn
-  case parseURIReference uStr of
-    Nothing -> do
-      putStrLn ("Not an URI: " ++ fn)
-      localFileContents opts file baseDir
-    Just uri ->
-      case uriScheme uri of
-        "" ->
-          localFileContents opts fn baseDir
-        "file:" ->
-          localFileContents opts (uriPath uri) baseDir
+      uStr = fromMaybe uStr1 $ stripPrefix "file://" uStr1
+  in
 #ifndef NOHTTP
-        "http:" ->
-            getCLIFContentsHTTP uStr ""
-        "https:" ->
-          loadFromUri uStr >>= getResponseBody
+  if checkUri uStr then getCLIFContentsHTTP uStr "" else
 #endif
-        x -> error ("Unsupported URI scheme: " ++ x)
+  localFileContents opts uStr baseDir
 
 #ifndef NOHTTP
 getCLIFContentsHTTP :: String -> String -> IO String
