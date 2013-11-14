@@ -1,0 +1,78 @@
+% FormalMethodsatDFKIandUni-CF.tex
+\begin{hcarentry}[section]{Formal Methods at DFKI and University Bremen and University Magdeburg}
+\report{Christian Maeder}%05/13
+\participants{Mihai Codescu, Christoph L\"uth, Till Mossakowski}
+\status{active development}
+\makeheader
+
+The activities of our groups center on formal methods, covering a
+variety of formal languages and also translations and heterogeneous
+combinations of these.
+
+We are using the Glasgow Haskell Compiler and many of its extensions
+to develop the Heterogeneous tool set (Hets).  Hets is a parsing,
+static analysis and proof management tool incorporating various
+provers and different specification languages, thus providing a tool
+for heterogeneous specifications. Logic translations are first-class
+citizens.
+
+The languages supported by Hets include the CASL family, such as the
+Common Algebraic Specification Language (CASL) itself (which provides
+many-sorted first-order logic with partiality, subsorting and
+induction), HasCASL, CoCASL, CspCASL, and an extended modal logic
+based on CASL. Other languages supported include propositional logic,
+QBF, Isabelle, Maude, VSE, TPTP, THF, FPL (logic of functional
+programs), LF type theory and still Haskell (via Programatica). More
+recently, ontology languages like OWL, RDF, Common Logic, and DOL (the
+Distributed Ontology Language) have been integrated.
+
+Hets can speak to the following provers:
+\begin{compactitem}
+\item
+minisat, zChaff (SAT solvers),
+\item
+SPASS, Vampire, Darwin, KRHyper and MathServe (automated first-order theorem provers),
+\item
+Pellet and Fact++ (description logic tableau provers),
+\item
+Leo-II and Satallax (automated higher-order theorem provers),
+\item
+Isabelle (an interactive higher-order theorem prover),
+\item
+CSPCASL-prover (an Isabelle-based prover for CspCASL),
+\item VSE (an interactive prover for dynamic logic).
+\end{compactitem}
+
+The user interface of the Hets implementation (about 200K lines of
+Haskell code) is based on some Haskell sources such as bindings to
+uDrawGraph (formerly Davinci) and Tcl/TK that we maintain and also
+gtk2hs~\cref{gtk2hs}.  Additionally we have a command line interface
+and a prototypcial web interface based on warp~\cref{warp} with a
+RESTful API.
+
+HasCASL is a general-purpose higher-order language which is in particular
+suited for the specification and development of functional programs; Hets also
+contains a translation from an executable HasCASL subset to Haskell. There is
+a prototypical translation of a subset of Haskell to Isabelle/HOL.
+
+\FurtherReading
+\begin{compactitem}
+\item Group activities overview:
+
+\url{http://www.informatik.uni-bremen.de/agbkb/forschung/formal\_methods/}
+
+\item CASL specification language:
+
+\url{http://www.cofi.info}
+
+\item distributed ontology language DOL:
+
+\url{http://www.ontoiop.org}
+
+\item Heterogeneous tool set:
+
+\url{http://hets.dfki.de}\\
+\url{http://www.informatik.uni-bremen.de/htk/}\\
+\url{http://www.informatik.uni-bremen.de/uDrawGraph/}
+\end{compactitem}
+\end{hcarentry}
