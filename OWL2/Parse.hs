@@ -157,7 +157,7 @@ skips = (<< skipMany
 abbrIriNoPos :: CharParser st QName
 abbrIriNoPos = try $ do
     pre <- try $ prefix << char ':'
-    r <- hierPartWithOpts
+    r <- hierPartWithOpts <|> return "" -- allow an empty local part
     return nullQName { namePrefix = pre, localPart = r }
   <|> fmap mkQName hierPartWithOpts
 
@@ -199,11 +199,11 @@ symbItems = do
 
 -- | parse a symbol
 parseSymb :: GenParser Char st Entity
-parseSymb = do    
+parseSymb = do
     e <- entityType
     iri <- uriP
     return $ Entity e iri
-    
+
 -- | parse a comma separated list of uris
 symbs :: GenParser Char st [IRI]
 symbs = uriP >>= \ u -> do
