@@ -37,8 +37,9 @@ testAndInteg (pre, oiri) (old, tm) = case Map.lookup pre old of
   Nothing -> (Map.insert pre oiri old, tm)
 
 disambiguateName :: String -> PrefixMap -> String
-disambiguateName nm nameMap =
-  let newname = reverse . dropWhile isDigit $ reverse nm
+disambiguateName n nameMap =
+  let nm = if null n then "n" else n  -- change other empty prefixes to "n..."
+      newname = reverse . dropWhile isDigit $ reverse nm
   in fromJust $ find (not . flip Map.member nameMap)
       [newname ++ show (i :: Int) | i <- [1 ..]]
 
