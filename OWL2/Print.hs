@@ -108,7 +108,7 @@ instance Pretty Entity where
 
 instance Pretty Literal where
     pretty lit = case lit of
-        Literal lexi ty -> text ('"' : lexi ++ "\"") <> case ty of
+        Literal lexi ty -> text (show lexi) <> case ty of
             Typed u -> keyword cTypeS <> printDataIRI u
             Untyped tag -> case tag of
               Nothing -> empty
