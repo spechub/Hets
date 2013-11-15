@@ -93,6 +93,7 @@ module Common.Doc
     , lbrace
     , rbrace
       -- * converting strings into documents
+    , plainText
     , text
     , codeToken
     , commentText
@@ -309,6 +310,9 @@ isEmpty d = case d of
 empty :: Doc                 -- ^ An empty document
 empty = Empty
 
+plainText :: String -> Doc
+plainText = Text IdKind
+
 text :: String -> Doc
 text s = case lines s of
     [] -> Text IdKind ""
@@ -452,8 +456,8 @@ quMarkD, dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun,
    inDoc, andDoc, orDoc, implies, equiv, prefix_proc, sequential,
    interleave, synchronous, genpar_open, genpar_close, alpar_open,
    alpar_sep, alpar_close, external_choice, internal_choice, hiding_proc,
-   ren_proc_open, ren_proc_close, dagger, vdash, dashv, breve, prettyAt, prettyHere,
-   prettyBind, prettyUniv, prettyExist :: Doc
+   ren_proc_open, ren_proc_close, dagger, vdash, dashv, breve, prettyAt,
+   prettyHere, prettyBind, prettyUniv, prettyExist :: Doc
 
 quMarkD = text quMark
 dot = text dotS
@@ -1088,7 +1092,7 @@ parenAppl ga precs origDoc l arg = case origDoc of
                     in (if isLeftArg i l then
                      if checkArg ARight ga (i, p) (ta, q) ra
                        then oArg
-                       else if isPred || isSafeLhs i ta then d else True
+                       else not (isPred || isSafeLhs i ta) || d
                     else if isRightArg i l then
                        if checkArg ALeft ga (i, p) (ta, q) la
                        then oArg
