@@ -47,8 +47,8 @@ isSmthList :: [String] -> Text.XML.Light.QName -> Bool
 isSmthList l qn = qName qn `elem` l
 
 isNotSmth :: Text.XML.Light.QName -> Bool
-isNotSmth q = let qn = qName q in qn `notElem` ["Declaration",
-    "Prefix", "Import", "Annotation"]
+isNotSmth q = let qn = qName q in qn `notElem` [declarationK,
+    prefixK, importK, annotationK]
 
 -- | parses all children with the given name
 filterCh :: String -> Element -> [Element]
@@ -86,9 +86,9 @@ and then the IRI must be splitted -}
 appendBase :: XMLBase -> IRI -> IRI
 appendBase b qn =
     let r = localPart qn
-    in if ':' `elem` r
-        then splitIRI qn
-        else splitIRI $ qn {localPart = b ++ r, iriType = Full}
+    in splitIRI $ if ':' `elem` r
+        then qn
+        else qn {localPart = b ++ r, iriType = Full}
 
 -- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
@@ -134,14 +134,8 @@ getInt :: Element -> Int
 getInt e = let [int] = elAttribs e in value 10 $ attrVal int
 
 getEntityType :: String -> EntityType
-getEntityType ty = case ty of
-    "Class" -> Class
-    "Datatype" -> Datatype
-    "NamedIndividual" -> NamedIndividual
-    "ObjectProperty" -> ObjectProperty
-    "DataProperty" -> DataProperty
-    "AnnotationProperty" -> AnnotationProperty
-    _ -> err "not entity type"
+getEntityType ty = fromMaybe (err $ "no entity type " ++ ty)
+  . lookup ty $ map (\ e -> (show e, e)) entityTypes
 
 getEntity :: XMLBase -> Element -> Entity
 getEntity b e = Entity (getEntityType $ (qName . elName) e) $ getIRI b e
@@ -494,7 +488,9 @@ getAnnoAxiom :: XMLBase -> Element -> Axiom
 getAnnoAxiom b e =
    let as = getAllAnnos b e
        ap = getIRI b $ filterC "AnnotationProperty" e
-   in case getName e of
+       [ch] = filterChL [iriK, abbreviatedIRI] e
+       iri = contentIRI b ch
+    in case getName e of
     "AnnotationAssertion" ->
        let [s, v] = filterChL annotationValueList e
            sub = getSubject b s
@@ -507,15 +503,11 @@ getAnnoAxiom b e =
         in PlainAxiom (SimpleEntity $ Entity AnnotationProperty hd)
             $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, lst)]
     "AnnotationPropertyDomain" ->
-        let [ch] = filterChL ["IRI", "AbbreviatedIRI"] e
-            iri = contentIRI b ch
-        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
+        PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ADomain)
                       $ AnnotationBit [(as, iri)]
     "AnnotationPropertyRange" ->
-        let [ch] = filterChL ["IRI", "AbbreviatedIRI"] e
-            iri = contentIRI b ch
-        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
+        PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ARange)
                       $ AnnotationBit [(as, iri)]
     _ -> err $ "bad frame " ++ ppElement e
@@ -531,7 +523,7 @@ getOnlyAxioms :: XMLBase -> Element -> [Axiom]
 getOnlyAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e
 
 getImports :: XMLBase -> Element -> [ImportIRI]
-getImports b e = map (contentIRI b) $ filterCh "Import" e
+getImports b e = map (contentIRI b) $ filterCh importK e
 
 get1Map :: Element -> (String, String)
 get1Map e =

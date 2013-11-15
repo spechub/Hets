@@ -18,11 +18,11 @@ ontologyIRIK = "ontologyIRI"
 iriK :: String
 iriK = "IRI"
 
-abbreviatedIRIK :: String
-abbreviatedIRIK = "abbreviatedIRI"
+abbreviatedIRI :: String
+abbreviatedIRI = "AbbreviatedIRI"
 
-nodeIDK :: String
-nodeIDK = "nodeID"
+nodeID :: String
+nodeID = "nodeID"
 
 prefixK :: String
 prefixK = "Prefix"
@@ -251,10 +251,10 @@ entityList = [classK, datatypeK, namedIndividualK,
     objectPropertyK, dataPropertyK, annotationPropertyK]
 
 annotationValueList :: [String]
-annotationValueList = [literalK, iriK, "AbbreviatedIRI", anonymousIndividualK]
+annotationValueList = [literalK, iriK, abbreviatedIRI, anonymousIndividualK]
 
 annotationSubjectList :: [String]
-annotationSubjectList = [iriK, "AbbreviatedIRI", anonymousIndividualK]
+annotationSubjectList = [iriK, abbreviatedIRI, anonymousIndividualK]
 
 individualList :: [String]
 individualList = [namedIndividualK, anonymousIndividualK]
