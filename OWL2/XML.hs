@@ -95,8 +95,7 @@ splitIRI :: IRI -> IRI
 splitIRI qn = case iriType qn of
     NodeID -> mkNodeID qn
     _ -> let lp = localPart qn
-             np = takeWhile (/= ':') lp
-             ':' : nlp = dropWhile (/= ':') lp
+             (np, ':' : nlp) = span (/= ':') lp
          in qn {namePrefix = np, localPart = nlp}
 
 -- | prepends "_:" to the nodeID if is not there already
@@ -104,8 +103,8 @@ mkNodeID :: IRI -> IRI
 mkNodeID qn =
     let lp = localPart qn
     in case lp of
-        '_' : ':' : _ -> qn
-        _ -> qn {localPart = "_:" ++ lp}
+        '_' : ':' : r -> qn {namePrefix = "_", localPart = r}
+        _ -> qn {namePrefix = "_"}
 
 -- | gets the content of an element with name IRI, AbbreviatedIRI or Import
 contentIRI :: XMLBase -> Element -> IRI
