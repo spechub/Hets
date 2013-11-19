@@ -184,7 +184,7 @@ public class OWL2Parser {
     private static List<OWLOntology> getKeysByValue() {
         List<OWLOntology> keys = new ArrayList<OWLOntology>();
         for (Map.Entry<OWLOntology, List<OWLOntology>> pairs : m.entrySet()) {
-            if (pairs.getValue().toString().equals("[]")) {
+            if (pairs.getValue().isEmpty()) {
                 keys.add(pairs.getKey());
             }
         }
@@ -192,6 +192,8 @@ public class OWL2Parser {
     }
 
     private static void parsing_option(OWLOntology onto, BufferedWriter out) {
+        /* System.out.println(onto.getOWLOntologyManager().getOntologyDocumentIRI(onto)
+                + "\n" + onto.getOntologyID().getOntologyIRI()); */
         switch (op) {
             case OWL_XML:
                 parse2xml(onto, out);
