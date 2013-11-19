@@ -9,7 +9,6 @@ import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRende
 import java.io.*;
 import java.util.*;
 
-@SuppressWarnings("unchecked")
 public class OWL2Parser {
     private static enum OPTION {OWL_XML, MANCHESTER, RDF_XML}
 
@@ -141,20 +140,14 @@ public class OWL2Parser {
     }
 
     private static void parseImports(BufferedWriter out, OWLOntology ontology) {
-
-        for (Map.Entry<OWLOntology, List<OWLOntology>> owlOntologyListEntry : m.entrySet()) {
-            Map.Entry pairs = (Map.Entry) owlOntologyListEntry;
-            Set values;
-            List ls = new ArrayList<OWLOntology>();
-            ls.add(pairs.getValue());
-            List l = (List) ls.get(0);
-            values = cnvrt(l);
-            OWLOntology onto = (OWLOntology) pairs.getKey();
+        for (Map.Entry<OWLOntology, List<OWLOntology>> pairs : m.entrySet()) {
+            Set<OWLOntology> values = cnvrt(pairs.getValue());
+            OWLOntology onto = pairs.getKey();
             if (checkset(values)) {
                 if (!expanded.contains(onto)) {
                     parsing_option(onto, out, onto.getOWLOntologyManager());
                     expanded.add(onto);
-                    s.add((OWLOntology) pairs.getKey());
+                    s.add(onto);
                     if (onto.getOntologyID().toString().equals(ontology.getOntologyID().toString()))
                         System.exit(0);
                     parseImports(out, ontology);
@@ -163,16 +156,15 @@ public class OWL2Parser {
         }
     }
 
-    private static Set cnvrt(List lst) {
-        Set st = new HashSet<OWLOntology>();
-        for (Object aLst : lst) {
-            OWLOntology aux_ont = (OWLOntology) aLst;
+    private static Set<OWLOntology> cnvrt(List<OWLOntology> lst) {
+        Set<OWLOntology> st = new HashSet<OWLOntology>();
+        for (OWLOntology aux_ont : lst) {
             st.add(aux_ont);
         }
         return st;
     }
 
-    private static Boolean checkset(Collection it) {
+    private static Boolean checkset(Collection<OWLOntology> it) {
         if (it.isEmpty()) return false;
         Set<OWLOntology> aux = new HashSet<OWLOntology>();
         aux.addAll(it);
@@ -189,10 +181,9 @@ public class OWL2Parser {
         return eq;
     }
 
-    private static List getKeysByValue() {
-        List keys = new ArrayList<OWLOntology>();
-        for (Map.Entry<OWLOntology, List<OWLOntology>> owlOntologyListEntry : m.entrySet()) {
-            Map.Entry pairs = (Map.Entry) owlOntologyListEntry;
+    private static List<OWLOntology> getKeysByValue() {
+        List<OWLOntology> keys = new ArrayList<OWLOntology>();
+        for (Map.Entry<OWLOntology, List<OWLOntology>> pairs : m.entrySet()) {
             if (pairs.getValue().toString().equals("[]")) {
                 keys.add(pairs.getKey());
             }
