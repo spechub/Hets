@@ -61,7 +61,7 @@ public class OWL2Parser {
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
             getImportsList(ontology, manager);
             if (loadedImportsList.size() == 0)
-                parsing_option(ontology, out, manager);
+                parsing_option(ontology, out);
             else {
                 IRI ontIri = ontology.getOntologyID().getOntologyIRI();
                 if (importsIRI.contains(ontIri)) {
@@ -95,7 +95,7 @@ public class OWL2Parser {
                     IRI mergedOntologyIRI = IRI.create(merged_name);
                     // System.out.println("MERGED_IRI " + mergedOntologyIRI + "\n");
                     OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
-                    parsing_option(merged, out, manager);
+                    parsing_option(merged, out);
                 } else
                     parseZeroImports(out, ontology);
             }
@@ -133,7 +133,7 @@ public class OWL2Parser {
         for (Object anAll : all) {
             OWLOntology ontos = (OWLOntology) anAll;
             expanded.add(ontos);
-            parsing_option(ontos, out, ontos.getOWLOntologyManager());
+            parsing_option(ontos, out);
             s.add(ontos);
             parseImports(out, ontology);
         }
@@ -145,7 +145,7 @@ public class OWL2Parser {
             OWLOntology onto = pairs.getKey();
             if (checkset(values)) {
                 if (!expanded.contains(onto)) {
-                    parsing_option(onto, out, onto.getOWLOntologyManager());
+                    parsing_option(onto, out);
                     expanded.add(onto);
                     s.add(onto);
                     if (onto.getOntologyID().toString().equals(ontology.getOntologyID().toString()))
@@ -191,16 +191,16 @@ public class OWL2Parser {
         return keys;
     }
 
-    private static void parsing_option(OWLOntology onto, BufferedWriter out, OWLOntologyManager mng) {
+    private static void parsing_option(OWLOntology onto, BufferedWriter out) {
         switch (op) {
             case OWL_XML:
-                parse2xml(onto, out, mng);
+                parse2xml(onto, out);
                 break;
             case MANCHESTER:
                 parse(onto, out);
                 break;
             case RDF_XML:
-                parse2rdf(onto, out, mng);
+                parse2rdf(onto, out);
                 break;
         }
     }
@@ -215,9 +215,9 @@ public class OWL2Parser {
         }
     }
 
-    private static void parse2xml(OWLOntology onto, BufferedWriter out, OWLOntologyManager mng) {
+    private static void parse2xml(OWLOntology onto, BufferedWriter out) {
         try {
-            OWLXMLRenderer ren = new OWLXMLRenderer(mng);
+            OWLXMLRenderer ren = new OWLXMLRenderer(onto.getOWLOntologyManager());
             ren.render(onto, out);
         } catch (OWLRendererException ex) {
             System.err.println("Error by XMLParser!");
@@ -225,9 +225,9 @@ public class OWL2Parser {
         }
     }
 
-    private static void parse2rdf(OWLOntology onto, BufferedWriter out, OWLOntologyManager mng) {
+    private static void parse2rdf(OWLOntology onto, BufferedWriter out) {
         try {
-            RDFXMLRenderer rdfrend = new RDFXMLRenderer(mng, onto, out);
+            RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto.getOWLOntologyManager(), onto, out);
             rdfrend.render();
         } catch (IOException ex) {
             System.err.println("Error by RDFParser!");
