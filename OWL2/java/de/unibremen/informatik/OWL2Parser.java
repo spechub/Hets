@@ -69,8 +69,9 @@ public class OWL2Parser {
             if (loadedImportsList.size() == 0)
                 parsing_option(ontology, out, manager);
             else {
-                if (importsIRI.contains(ontology.getOntologyID().getOntologyIRI())) {
-                    importsIRI.remove(importsIRI.lastIndexOf(ontology.getOntologyID().getOntologyIRI()));
+                IRI ontIri = ontology.getOntologyID().getOntologyIRI();
+                if (importsIRI.contains(ontIri)) {
+                    importsIRI.remove(importsIRI.lastIndexOf(ontIri));
                 }
                 if (loadedImportsList.contains(ontology)) {
                     OWLOntologyMerger merger = new OWLOntologyMerger(manager);
@@ -111,20 +112,16 @@ public class OWL2Parser {
     }
 
     private static void getImportsList(OWLOntology ontology, OWLOntologyManager om) {
-        List<OWLOntology> empty = Collections.emptyList();
         List<OWLOntology> l = new ArrayList<OWLOntology>();
         ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
         try {
-            if (om.getDirectImports(ontology).isEmpty()) {
-                m.put(ontology, empty);
-            } else {
-                for (OWLOntology imported : om.getDirectImports(ontology)) {
-                    if (!importsIRI.contains(imported.getOntologyID().getOntologyIRI())) {
-                        unSavedImports.add(imported);
-                        loadedImportsList.add(imported);
-                        importsIRI.add(imported.getOntologyID().getOntologyIRI());
-                        l.add(imported);
-                    }
+            for (OWLOntology imported : om.getDirectImports(ontology)) {
+                IRI importIri = imported.getOntologyID().getOntologyIRI();
+                if (!importsIRI.contains(importIri)) {
+                    unSavedImports.add(imported);
+                    loadedImportsList.add(imported);
+                    importsIRI.add(importIri);
+                    l.add(imported);
                 }
             }
             m.put(ontology, l);
@@ -173,11 +170,8 @@ public class OWL2Parser {
 
     private static Set cnvrt(List lst) {
         Set st = new HashSet<OWLOntology>();
-        Iterator it = lst.iterator();
-        if (lst.size() == 0)
-            return st;
-        while (it.hasNext()) {
-            OWLOntology aux_ont = (OWLOntology) it.next();
+        for (Object aLst : lst) {
+            OWLOntology aux_ont = (OWLOntology) aLst;
             st.add(aux_ont);
         }
         return st;
@@ -187,15 +181,15 @@ public class OWL2Parser {
         if (it.isEmpty()) return false;
         Set<OWLOntology> aux = new HashSet<OWLOntology>();
         aux.addAll(it);
-        return equalcollections(aux, s);
+        return equalcollections(aux);
     }
 
-    private static Boolean equalcollections(Set<OWLOntology> l1, Set<OWLOntology> l2) {
+    private static Boolean equalcollections(Set<OWLOntology> l1) {
         Boolean eq = true;
-        if (l1.isEmpty() || l2.isEmpty())
+        if (l1.isEmpty() || OWL2Parser.s.isEmpty())
             eq = false;
         for (OWLOntology ont : l1)
-            if (!l2.contains(ont))
+            if (!OWL2Parser.s.contains(ont))
                 eq = false;
         return eq;
     }
