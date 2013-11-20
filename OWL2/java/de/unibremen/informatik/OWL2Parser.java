@@ -7,6 +7,8 @@ import org.semanticweb.owlapi.util.OWLOntologyMerger;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
 
 import java.io.*;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.*;
 
 public class OWL2Parser {
@@ -55,10 +57,12 @@ public class OWL2Parser {
                         out = new BufferedWriter(new FileWriter(filename));
             }
             /* Load an ontology from a physical IRI */
-            IRI physicalIRI = IRI.create(args[0]);
+            URL physicalUrl = new URL(args[0]);
+            URLConnection con = physicalUrl.openConnection();
+            con.addRequestProperty("Accept", "text/plain");
             // System.out.println("IRI: " + physicalIRI + "\n");
             // Now do the loading
-            OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
+            OWLOntology ontology = manager.loadOntologyFromOntologyDocument(con.getInputStream());
             getImportsList(ontology, manager);
             if (loadedImportsList.size() == 0)
                 parsing_option(ontology, out);
@@ -221,7 +225,7 @@ public class OWL2Parser {
             OWLXMLRenderer ren = new OWLXMLRenderer(mngr);
             ren.render(onto, out);
             out.append("<Loaded name=\"" + mngr.getOntologyDocumentIRI(onto)
-              + "\" ontiri=\"" + onto.getOntologyID().getOntologyIRI() + "\"/>\n");
+                    + "\" ontiri=\"" + onto.getOntologyID().getOntologyIRI() + "\"/>\n");
         } catch (Exception ex) {
             System.err.println("Error by XMLParser!");
             ex.printStackTrace();
