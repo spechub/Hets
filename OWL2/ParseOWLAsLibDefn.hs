@@ -17,6 +17,7 @@ import OWL2.MS
 import OWL2.Rename
 
 import Data.Char
+import Data.Maybe
 import qualified Data.Map as Map
 
 import Common.Id
@@ -63,10 +64,10 @@ parseOWL filename = do
 parseProc :: FilePath -> String -> LIB_DEFN
 parseProc filename str =
   let es = onlyElems $ parseXML str
-      imap = Map.fromList . map (\ e -> let
-        Just imp = findAttr (unqual "name") e
-        Just ont = findAttr (unqual "ontiri") e
-        in (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
+      imap = Map.fromList . mapMaybe (\ e -> do
+        imp <- findAttr (unqual "name") e
+        ont <- findAttr (unqual "ontiri") e
+        return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
   in convertToLibDefN filename
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
