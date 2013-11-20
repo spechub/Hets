@@ -60,7 +60,7 @@ addEntity = modEntity Set.insert
 
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> Entity -> Result ()
-checkEntity s (Entity ty e) =
+checkEntity s t@(Entity ty e) =
   let errMsg = mkError ("unknown " ++ showEntityType ty) e
   in case ty of
    Datatype -> unless (Set.member e (datatypes s) || isDatatypeKey e) errMsg
@@ -68,7 +68,7 @@ checkEntity s (Entity ty e) =
    ObjectProperty -> unless (isDeclObjProp s $ ObjectProp e) errMsg
    DataProperty -> unless (isDeclDataProp s e) errMsg
    AnnotationProperty -> unless (Set.member e (annotationRoles s)
-        || isPredefAnnoProp e) errMsg
+        || isPredefAnnoProp e) $ justWarn () $ showDoc t " unknown"
    _ -> return ()
 
 -- | takes an iri and finds out what entities it belongs to
