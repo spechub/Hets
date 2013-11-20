@@ -17,6 +17,7 @@ import OWL2.MS
 import OWL2.Rename
 
 import Data.Char
+import qualified Data.Map as Map
 
 import Common.Id
 import Common.IRI (simpleIdToIRI)
@@ -38,7 +39,8 @@ import System.Directory
 import System.Exit
 import System.FilePath
 
-import Text.XML.Light (parseXML, onlyElems, filterElementsName)
+import Text.XML.Light
+  (parseXML, onlyElems, filterElementsName, findAttr, unqual)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -59,10 +61,15 @@ parseOWL filename = do
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
 parseProc :: FilePath -> String -> LIB_DEFN
-parseProc filename str = convertToLibDefN filename
-        $ unifyDocs $ map xmlBasicSpec
-        $ concatMap (filterElementsName $ isSmth "Ontology")
-        $ onlyElems $ parseXML str
+parseProc filename str =
+  let es = onlyElems $ parseXML str
+      imap = Map.fromList . map (\ e -> let
+        Just imp = findAttr (unqual "name") e
+        Just ont = findAttr (unqual "ontiri") e
+        in (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
+  in convertToLibDefN filename
+        . unifyDocs . map (xmlBasicSpec imap)
+        $ concatMap (filterElementsName $ isSmth "Ontology") es
 
 cnvtoSimpleId :: QName -> SPEC_NAME
 cnvtoSimpleId = simpleIdToIRI . mkSimpleId . filter isAlphaNum . showQN

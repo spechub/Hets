@@ -192,8 +192,6 @@ public class OWL2Parser {
     }
 
     private static void parsing_option(OWLOntology onto, BufferedWriter out) {
-        /* System.out.println(onto.getOWLOntologyManager().getOntologyDocumentIRI(onto)
-                + "\n" + onto.getOntologyID().getOntologyIRI()); */
         switch (op) {
             case OWL_XML:
                 parse2xml(onto, out);
@@ -219,9 +217,12 @@ public class OWL2Parser {
 
     private static void parse2xml(OWLOntology onto, BufferedWriter out) {
         try {
-            OWLXMLRenderer ren = new OWLXMLRenderer(onto.getOWLOntologyManager());
+            OWLOntologyManager mngr = onto.getOWLOntologyManager();
+            OWLXMLRenderer ren = new OWLXMLRenderer(mngr);
             ren.render(onto, out);
-        } catch (OWLRendererException ex) {
+            out.append("<Loaded name=\"" + mngr.getOntologyDocumentIRI(onto)
+              + "\" ontiri=\"" + onto.getOntologyID().getOntologyIRI() + "\"/>\n");
+        } catch (Exception ex) {
             System.err.println("Error by XMLParser!");
             ex.printStackTrace();
         }

@@ -12,7 +12,7 @@ OWL/XML Syntax Parsing
 
 module OWL2.XML where
 
-import Common.Lexer
+import Common.Lexer (value)
 
 import OWL2.AS
 import OWL2.Extract
@@ -105,6 +105,14 @@ mkNodeID qn =
     in case lp of
         '_' : ':' : r -> qn {namePrefix = "_", localPart = r}
         _ -> qn {namePrefix = "_"}
+
+-- | gets the content of an element with name Import
+importIRI :: Map.Map String String -> XMLBase -> Element -> IRI
+importIRI m b e =
+  let cont1 = strContent e
+      cont = Map.findWithDefault cont1 cont1 m
+      iri = nullQName {localPart = cont}
+  in appendBase b $ iri {iriType = cssIRI cont}
 
 -- | gets the content of an element with name IRI, AbbreviatedIRI or Import
 contentIRI :: XMLBase -> Element -> IRI
@@ -521,8 +529,8 @@ getFrames b e =
 getOnlyAxioms :: XMLBase -> Element -> [Axiom]
 getOnlyAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e
 
-getImports :: XMLBase -> Element -> [ImportIRI]
-getImports b e = map (contentIRI b) $ filterCh importK e
+getImports :: Map.Map String String -> XMLBase -> Element -> [ImportIRI]
+getImports m b e = map (importIRI m b) $ filterCh importK e
 
 get1Map :: Element -> (String, String)
 get1Map e =
@@ -544,13 +552,13 @@ getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e
 
 -- | parses an ontology document
-xmlBasicSpec :: Element -> OntologyDocument
-xmlBasicSpec e =
+xmlBasicSpec :: Map.Map String String -> Element -> OntologyDocument
+xmlBasicSpec imap e =
     let b = getBase e
     in OntologyDocument (Map.fromList $ getPrefixMap e)
     (emptyOntology $ getFrames b e)
         {
-        imports = getImports b e,
+        imports = getImports imap b e,
         ann = [getAllAnnos b e],
         name = getOntologyIRI b e
         }
