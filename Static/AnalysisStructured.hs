@@ -66,11 +66,12 @@ import Common.Lib.MapSet (imageSet, setInsert)
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.List
 import Data.Function
 
 import Control.Monad
-import Proofs.ComputeColimit(insertColimitInGraph)
+import Proofs.ComputeColimit (insertColimitInGraph)
 
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
@@ -563,48 +564,48 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
   Combination cItems eItems pos -> adjustPos pos $ do
-    let  getNodes (cN, cE) cItem = let
-            cEntry = case lookupGlobalEnvDG cItem dg of
-                       Nothing -> error $ "No entry for " ++ show cItem
-                       Just gE -> gE
+    let getNodes (cN, cE) cItem = let
+            cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
+                     $ lookupGlobalEnvDG cItem dg
             bgraph = dgBody dg
-            lEdge x y = case filter (\(_,z,_) -> z == y) $ out bgraph x of
+            lEdge x y = case filter (\ (_, z, _) -> z == y) $ out bgraph x of
                              [] -> error "No edge found"
-                             lE:_ -> lE
+                             lE : _ -> lE
            in case cEntry of
-               SpecEntry extGenSig -> ((getNode $ extGenBody extGenSig):cN, cE)
+               SpecEntry extGenSig -> (getNode (extGenBody extGenSig) : cN, cE)
                ViewOrStructEntry True (ExtViewSig ns _gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (cN, (lEdge s t):cE)
+                 in (cN, lEdge s t : cE)
                AlignEntry asig ->
                   case asig of
                    AlignMor src _gmor tar -> let
                      s = getNode src
                      t = getNode tar
-                    in ([s,t] ++ cN, (lEdge s t):cE)
+                    in ([s, t] ++ cN, lEdge s t : cE)
                    AlignSpan src _phi1 tar1 _phi2 tar2 -> let
                      s = getNode src
                      t1 = getNode tar1
                      t2 = getNode tar2
-                    in ([s,t1,t2]++cN, [lEdge s t1, lEdge s t2]++cE)
-               _ -> error $ show cItem ++ "is not an ontology, a view or an alignment"
-         addGDefLinks (cN, cE) n = let
-           oEdges = filter (\(_,y,l) -> (y `elem` cN) &&
-                                        (isGlobalDef $ dgl_type l))
+                    in ([s, t1, t2] ++ cN, [lEdge s t1, lEdge s t2] ++ cE)
+               _ -> error $ show cItem
+                    ++ "is not an ontology, a view or an alignment"
+        addGDefLinks (cN, cE) n = let
+           oEdges = filter (\ (_, y, l) -> elem y cN
+                              && isGlobalDef (dgl_type l))
                      $ out (dgBody dg) n
            in (nub cN, nub $ oEdges ++ cE)
-         addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
-         (cNodes, cEdges) = addLinks $ foldl getNodes ([], []) (getItems cItems)
-         (eNodes, eEdges) = foldl getNodes ([], []) eItems
-         (cNodes', cEdges') = (cNodes \\ eNodes, cEdges \\ eEdges)
-         le = Map.insert ln dg Map.empty -- cheating!!!
-    (ns,dg') <- insertColimitInGraph le dg cNodes' cEdges' name
+        addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
+        (cNodes, cEdges) = addLinks . foldl getNodes ([], []) $ getItems cItems
+        (eNodes, eEdges) = foldl getNodes ([], []) eItems
+        (cNodes', cEdges') = (cNodes \\ eNodes, cEdges \\ eEdges)
+        le = Map.insert ln dg Map.empty -- cheating!!!
+    (ns, dg') <- insertColimitInGraph le dg cNodes' cEdges' name
     return (sp, ns, dg')
 
 getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
 getItems [] = []
-getItems ((Labeled _ i):r) = i:(getItems r)
+getItems (Labeled _ i : r) = i : getItems r
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname
