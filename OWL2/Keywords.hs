@@ -19,60 +19,28 @@ import Common.Keywords
 
 keywords :: [String]
 keywords =
-  [ base64BinaryS
-  , booleanS
-  , byteS
-  , dATAS
-  , decimalS
-  , digitsS
+  [ digitsS
   , exactlyS
-  , floatS
   , fractionS
   , functionalS
   , hasS
-  , hexBinaryS
-  , intS
-  , integerS
   , inverseS
   , lengthS
-  , longS
   , maxLengthS
   , maxS
   , minLengthS
   , minS
-  , negativeIntegerS
-  , nonNegativeIntegerS
-  , nonPositiveIntegerS
   , oS
   , onlyS
   , onlysomeS
   , orS
   , patternS
-  , positiveIntegerS
-  , rationalS
-  , realS
   , selfS
-  , shortS
   , someS
   , thatS
-  , rdfsLiteral
-  , unsignedByteS
-  , unsignedIntS
-  , unsignedLongS
-  , unsignedShortS
   , valueS
-  , dateTimeS
-  , dateTimeStampS
-  , anyURI
-  , xmlLiteral
-  , ncNameS
-  , nameS
-  , nmTokenS
-  , tokenS
-  , languageS
-  , normalizedStringS
   , xorS
-  ]
+  ] ++ datatypeKeys
 
 base64BinaryS :: String
 base64BinaryS = "base64Binary"
@@ -313,12 +281,14 @@ owlNumbers :: [String]
 owlNumbers = [realS, rationalS]
 
 xsdStrings :: [String]
-xsdStrings = [stringS, ncNameS, nameS, nmTokenS, tokenS, languageS,
-    normalizedStringS]
+xsdStrings = [stringS, ncNameS, "QName", nameS, nmTokenS, "NMTOKENS", tokenS
+  , languageS, normalizedStringS, "NOTATION", "ENTITY", "ENTITIES"
+  , "ID", "IDREF", "IDREFS" ]
 
 xsdKeys :: [String]
-xsdKeys = [booleanS, dATAS, hexBinaryS, base64BinaryS,
-    dateTimeS, dateTimeStampS, anyURI] ++ xsdNumbers ++ xsdStrings
+xsdKeys = [booleanS, dATAS, hexBinaryS, base64BinaryS, "date", "time"
+  , "gYearMonth", "gYear", "gMonthDay", "gDay", "gMonth", "duration"
+  , dateTimeS, dateTimeStampS, anyURI] ++ xsdNumbers ++ xsdStrings
 
 nonXSDKeys :: [String]
 nonXSDKeys = owlNumbers ++ [xmlLiteral, rdfsLiteral]
