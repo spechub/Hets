@@ -2,6 +2,7 @@ import org.coode.owlapi.owlxml.renderer.OWLXMLRenderer;
 import org.coode.owlapi.rdf.rdfxml.RDFXMLRenderer;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.OWLRendererException;
+import org.semanticweb.owlapi.io.StreamDocumentSource;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.OWLOntologyMerger;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
@@ -28,7 +29,6 @@ public class OWL2Parser {
         }
         // A simple example of how to load and save an ontology
         try {
-            OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
             op = OPTION.MANCHESTER;
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(System.out));
             if (args.length > 1) {
@@ -62,7 +62,10 @@ public class OWL2Parser {
             con.addRequestProperty("Accept", "text/plain");
             // System.out.println("IRI: " + physicalIRI + "\n");
             // Now do the loading
-            OWLOntology ontology = manager.loadOntologyFromOntologyDocument(con.getInputStream());
+            OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
+            config = config.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
+            OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+            OWLOntology ontology = manager.loadOntologyFromOntologyDocument(new StreamDocumentSource(con.getInputStream()), config);
             getImportsList(ontology, manager);
             if (loadedImportsList.size() == 0)
                 parsing_option(ontology, out);

@@ -521,7 +521,13 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
        return (Spec_inst spname ffitargs pos, ns, dg5)
        | otherwise -> instMismatchError spname lp la pos
-    _ -> notFoundError "structured specification" spname
+    _ | null afitargs -> case nsig of
+      EmptyNode _ -> do -- copied from EmptySpec case
+        warning () ("ignoring missing spec " ++ showDoc spname' "") pos
+        let (ns, dg') = insGSig dg name DGEmpty (getMaybeSig nsig)
+        return (sp, ns, dg')
+      JustNode ns -> return (sp, ns , dg) -- ignore
+    _ -> notFoundError "structured spec" spname
 
   -- analyse "data SPEC1 SPEC2"
   Data lD@(Logic lidD) lP asp1 asp2 pos -> adjustPos pos $ do
@@ -558,20 +564,20 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                    pos, nsig3, udg3)
   Combination cItems eItems pos -> adjustPos pos $ do
     let  getNodes (cN, cE) cItem = let
-            cEntry = case lookupGlobalEnvDG cItem dg of 
+            cEntry = case lookupGlobalEnvDG cItem dg of
                        Nothing -> error $ "No entry for " ++ show cItem
                        Just gE -> gE
             bgraph = dgBody dg
             lEdge x y = case filter (\(_,z,_) -> z == y) $ out bgraph x of
                              [] -> error "No edge found"
                              lE:_ -> lE
-           in case cEntry of 
+           in case cEntry of
                SpecEntry extGenSig -> ((getNode $ extGenBody extGenSig):cN, cE)
-               ViewOrStructEntry True (ExtViewSig ns _gm eGS) -> let 
+               ViewOrStructEntry True (ExtViewSig ns _gm eGS) -> let
                    s = getNode ns
-                   t = getNode $ extGenBody eGS  
+                   t = getNode $ extGenBody eGS
                  in (cN, (lEdge s t):cE)
-               AlignEntry asig -> 
+               AlignEntry asig ->
                   case asig of
                    AlignMor src _gmor tar -> let
                      s = getNode src
@@ -580,14 +586,14 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                    AlignSpan src _phi1 tar1 _phi2 tar2 -> let
                      s = getNode src
                      t1 = getNode tar1
-                     t2 = getNode tar2                     
+                     t2 = getNode tar2
                     in ([s,t1,t2]++cN, [lEdge s t1, lEdge s t2]++cE)
                _ -> error $ show cItem ++ "is not an ontology, a view or an alignment"
-         addGDefLinks (cN, cE) n = let 
-           oEdges = filter (\(_,y,l) -> (y `elem` cN) && 
+         addGDefLinks (cN, cE) n = let
+           oEdges = filter (\(_,y,l) -> (y `elem` cN) &&
                                         (isGlobalDef $ dgl_type l))
                      $ out (dgBody dg) n
-           in (nub cN, nub $ oEdges ++ cE) 
+           in (nub cN, nub $ oEdges ++ cE)
          addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
          (cNodes, cEdges) = addLinks $ foldl getNodes ([], []) (getItems cItems)
          (eNodes, eEdges) = foldl getNodes ([], []) eItems
@@ -598,7 +604,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
 
 getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
 getItems [] = []
-getItems ((Labeled _ i):r) = i:(getItems r) 
+getItems ((Labeled _ i):r) = i:(getItems r)
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname
