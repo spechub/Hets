@@ -45,7 +45,7 @@ data ListFrameBit =
   | IndividualFacts (AnnotatedList Fact)
     deriving (Show, Eq, Ord)
 
-data AnnoType = Declaration | Assertion
+data AnnoType = Declaration | Assertion | XmlError String
     deriving (Show, Eq, Ord)
 
 -- | frames which start with annotations

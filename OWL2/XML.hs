@@ -10,7 +10,11 @@ Portability :  portable
 OWL/XML Syntax Parsing
 -}
 
-module OWL2.XML where
+module OWL2.XML
+ ( xmlBasicSpec
+ , splitIRI
+ , isSmth
+ ) where
 
 import Common.Lexer (value)
 
@@ -519,14 +523,19 @@ getAnnoAxiom b e =
         PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ARange)
                       $ AnnotationBit [(as, iri)]
-    _ -> trace ("ignoring " ++ ppElement e)
-      $ PlainAxiom (Misc []) $ ListFrameBit Nothing $ AnnotationBit []
+    _ -> PlainAxiom (Misc []) . AnnFrameBit [] . AnnotationFrameBit
+      . XmlError $ getName e
 
-getFrames :: XMLBase -> Element -> [Frame]
-getFrames b e =
-   let ax = filterChildrenName isNotSmth e
-       f = map (axToFrame . getDeclaration b) (filterCh "Declaration" e)
-            ++ map (axToFrame . getClassAxiom b) ax
+xmlErrorString :: Axiom -> Maybe String
+xmlErrorString a = case a of
+   PlainAxiom (Misc []) (AnnFrameBit [] (AnnotationFrameBit (XmlError e)))
+     -> Just e
+   _ -> Nothing
+
+getFrames :: XMLBase -> Element -> [Axiom] -> [Frame]
+getFrames b e ax =
+   let f = map (axToFrame . getDeclaration b) (filterCh "Declaration" e)
+           ++ map axToFrame (filter (isNothing . xmlErrorString) ax)
    in f ++ signToFrames f
 
 getOnlyAxioms :: XMLBase -> Element -> [Axiom]
@@ -558,8 +567,17 @@ getBase e = fromJust $ vFindAttrBy (isSmth "base") e
 xmlBasicSpec :: Map.Map String String -> Element -> OntologyDocument
 xmlBasicSpec imap e =
     let b = getBase e
-    in OntologyDocument (Map.fromList $ getPrefixMap e)
-    (emptyOntology $ getFrames b e)
+        ax = getOnlyAxioms b e
+        es = mapMaybe xmlErrorString ax
+        em = Map.fromListWith (+) $ map (\ s -> (s, 1 :: Int)) es
+    in
+    (if Map.null em then id else
+      trace ("ignored element tags: "
+             ++ unwords (map (\ (s, c) ->
+                if c > 1 then s ++ " (" ++ show c ++ " times)" else s)
+                         $ Map.toList em)))
+    $ OntologyDocument (Map.fromList $ getPrefixMap e)
+    (emptyOntology $ getFrames b e ax)
         {
         imports = getImports imap b e,
         ann = [getAllAnnos b e],

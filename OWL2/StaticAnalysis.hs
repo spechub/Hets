@@ -312,7 +312,7 @@ checkAxiom s (PlainAxiom ext fb) = case fb of
                   next <- checkExtended s ext
                   -- could rarely happen, and only in our extended syntax
                   return [PlainAxiom next ab]
-            Declaration -> return []
+            _ -> return []
         _ -> do
             next <- checkExtended s ext
             nfb <- fmap (AnnFrameBit ans) $ checkAnnBit s afb

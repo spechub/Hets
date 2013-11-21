@@ -403,6 +403,7 @@ xmlAFB ext anno afb = case afb of
             Assertion -> if null anno then [makeElement declarationK
                                                 [xmlEntity ent]]
                           else let Entity _ iri = ent in xmlAssertion iri anno
+            XmlError _ -> error "xmlAFB"
         Misc ans -> let [Annotation _ iri _] = ans in xmlAssertion iri anno
         ClassEntity ent -> case ent of
             Expression c -> [makeElement declarationK
