@@ -76,28 +76,17 @@ public class OWL2Parser {
                 }
                 if (loadedImportsList.contains(ontology)) {
                     OWLOntologyMerger merger = new OWLOntologyMerger(manager);
-                    String str = ontology.getOntologyID().getOntologyIRI().toQuotedString();
-                    String notag = str.replaceAll("\\<", "");
-                    notag = notag.replaceAll("\\>", "");
-                    notag = notag.replaceAll("\\[.*?]", "");
-                    notag = notag.replaceAll("Ontology\\(", "");
-                    notag = notag.replaceAll(" ", "");
-                    notag = notag.replaceAll("\\)", "");
+                    String str = ontology.getOntologyID().getOntologyIRI().toString();
                     loadedImportsList.remove(loadedImportsList.indexOf(ontology));
-                    Object aux[] = loadedImportsList.toArray();
                     String merged_name = "";
-                    for (Object aux_ont : aux) {
-                        String mrg = aux_ont.toString();
-                        mrg = mrg.replaceAll("\\>", "");
-                        mrg = mrg.replaceAll("http:/", "");
-                        mrg = mrg.replaceAll("\\/.*?/", "");
-                        mrg = mrg.replaceAll(".*?/", "");
-                        mrg = mrg.replaceAll("\\[.*?]", "");
-                        mrg = mrg.replaceAll("\\)", "");
-                        mrg = mrg.replaceAll(" ", "");
+                    for (OWLOntology aux_ont : loadedImportsList) {
+                        String mrg = aux_ont.getOntologyID().getOntologyIRI().toString();
+                        mrg = mrg.replaceAll("[<>\\(\\) ]", "");
+                        mrg = mrg.replaceAll(".*/", "");
+                        mrg = mrg.replaceAll("\\[.*]", "");
                         merged_name = merged_name + mrg;
                     }
-                    merged_name = notag + merged_name;
+                    merged_name = str + merged_name;
                     // System.out.println("NAME: " + merged_name + "\n");
                     IRI mergedOntologyIRI = IRI.create(merged_name);
                     // System.out.println("MERGED_IRI " + mergedOntologyIRI + "\n");
@@ -114,19 +103,17 @@ public class OWL2Parser {
 
     private static void getImportsList(OWLOntology ontology, OWLOntologyManager om) {
         List<OWLOntology> l = new ArrayList<OWLOntology>();
-        ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
         try {
             for (OWLOntology imported : om.getDirectImports(ontology)) {
                 IRI importIri = imported.getOntologyID().getOntologyIRI();
                 if (!importsIRI.contains(importIri)) {
-                    unSavedImports.add(imported);
                     loadedImportsList.add(imported);
                     importsIRI.add(importIri);
                     l.add(imported);
                 }
             }
             m.put(ontology, l);
-            for (OWLOntology onto : unSavedImports) {
+            for (OWLOntology onto : l) {
                 getImportsList(onto, om);
             }
         } catch (Exception e) {
