@@ -26,6 +26,8 @@ import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
 
+import Debug.Trace
+
 type XMLBase = String
 
 -- | error messages for the parser
@@ -517,7 +519,8 @@ getAnnoAxiom b e =
         PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ARange)
                       $ AnnotationBit [(as, iri)]
-    _ -> err $ "bad frame " ++ ppElement e
+    _ -> trace ("ignoring " ++ ppElement e)
+      $ PlainAxiom (Misc []) $ ListFrameBit Nothing $ AnnotationBit []
 
 getFrames :: XMLBase -> Element -> [Frame]
 getFrames b e =
