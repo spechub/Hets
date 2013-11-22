@@ -132,8 +132,6 @@ module Common.IRI
 
 import Text.ParserCombinators.Parsec
 
-import Control.Monad (MonadPlus (..))
-
 import Data.Char
 import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
@@ -1061,8 +1059,8 @@ nonStrictRelativeTo ref base = relativeTo ref' base
                then ref { iriScheme = "" }
                else ref
 
-isDefined :: ( MonadPlus m, Eq (m a) ) => m a -> Bool
-isDefined a = a /= mzero
+isDefined :: String -> Bool
+isDefined = not . null
 
 {- | Compute an absolute 'IRI' for a supplied IRI
 relative to a given base. -}
@@ -1070,19 +1068,14 @@ relativeTo :: IRI -> IRI -> Maybe IRI
 relativeTo ref base
     | isDefined ( iriScheme ref ) =
         just_isegments ref
-    | isDefined ( iriAuthority ref ) =
+    | isJust ( iriAuthority ref ) =
         just_isegments ref { iriScheme = iriScheme base }
     | isDefined ( iriPath ref ) =
-        if head (iriPath ref) == '/' then
             just_isegments ref
                 { iriScheme = iriScheme base
                 , iriAuthority = iriAuthority base
-                }
-        else
-            just_isegments ref
-                { iriScheme = iriScheme base
-                , iriAuthority = iriAuthority base
-                , iriPath = mergePaths base ref
+                , iriPath = if head (iriPath ref) == '/' then iriPath ref
+                            else mergePaths base ref
                 }
     | isDefined ( iriQuery ref ) =
         just_isegments ref
@@ -1101,7 +1094,7 @@ relativeTo ref base
         just_isegments u =
             Just $ u { iriPath = removeDotSegments (iriPath u) }
         mergePaths b r
-            | isDefined (iriAuthority b) && null pb = '/' : pr
+            | isJust (iriAuthority b) && null pb = '/' : pr
             | otherwise = dropLast pb ++ pr
             where
                 pb = iriPath b
@@ -1291,10 +1284,10 @@ localname i@(IRI { iriPath = path
                  })
   | hasFullIRI i =
       if not $ null fragment then fragment else
-      if not $ null query then nmTokenSuffix query else nmTokenSuffix path
+      nmTokenSuffix $ if not $ null query then query else path
   | otherwise =
       if not $ null fragment then fragment else
-      if not $ null query then nmTokenSuffix query else nmTokenSuffix aPath
+      nmTokenSuffix $ if not $ null query then query else aPath
 
 nmTokenSuffix :: String -> String
 nmTokenSuffix = reverse . takeWhile nameCharW3CP . reverse
