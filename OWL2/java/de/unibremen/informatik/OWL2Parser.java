@@ -16,10 +16,10 @@ public class OWL2Parser {
     private static enum OPTION {OWL_XML, MANCHESTER, RDF_XML}
 
     private static OPTION op;
-    private static final Set<OWLOntology> loadedImportsList = new HashSet<OWLOntology>();
-    private static final Set<IRI> importsIRI = new HashSet<IRI>();
-    private static final Map<OWLOntology, List<OWLOntology>> m = new HashMap<OWLOntology, List<OWLOntology>>();
-    private static final Set<OWLOntology> expanded = new HashSet<OWLOntology>();
+    private static Boolean cyclic = false;
+    private static Set<OWLOntology> ontologies;
+    private static final Set<OWLOntology> exported = new HashSet<OWLOntology>();
+    private static final OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -62,36 +62,28 @@ public class OWL2Parser {
             StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream());
             OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
             config = config.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
-            OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);
-            getImportsList(ontology, manager);
-            if (loadedImportsList.isEmpty())
-                renderUsingOption(ontology, out);
-            else {
-                IRI ontIri = ontology.getOntologyID().getOntologyIRI();
-                if (importsIRI.contains(ontIri)) {
-                    importsIRI.remove(ontIri);
+            ontologies = getImports(ontology, new HashSet<OWLOntology>());
+            if (cyclic) {
+                OWLOntologyMerger merger = new OWLOntologyMerger(manager);
+                String str = ontology.getOntologyID().getOntologyIRI().toString();
+                String merged_name = "";
+                for (OWLOntology aux_ont : ontologies) {
+                    String mrg = aux_ont.getOntologyID().getOntologyIRI().toString();
+                    mrg = mrg.replaceAll("[<>\\(\\) ]", "");
+                    mrg = mrg.replaceAll(".*/", "");
+                    mrg = mrg.replaceAll("\\[.*]", "");
+                    merged_name = merged_name + mrg;
                 }
-                if (loadedImportsList.contains(ontology)) {
-                    OWLOntologyMerger merger = new OWLOntologyMerger(manager);
-                    String str = ontology.getOntologyID().getOntologyIRI().toString();
-                    loadedImportsList.remove(ontology);
-                    String merged_name = "";
-                    for (OWLOntology aux_ont : loadedImportsList) {
-                        String mrg = aux_ont.getOntologyID().getOntologyIRI().toString();
-                        mrg = mrg.replaceAll("[<>\\(\\) ]", "");
-                        mrg = mrg.replaceAll(".*/", "");
-                        mrg = mrg.replaceAll("\\[.*]", "");
-                        merged_name = merged_name + mrg;
-                    }
-                    merged_name = str + merged_name;
-                    // System.out.println("NAME: " + merged_name + "\n");
-                    IRI mergedOntologyIRI = IRI.create(merged_name);
-                    // System.out.println("MERGED_IRI " + mergedOntologyIRI + "\n");
-                    OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
-                    renderUsingOption(merged, out);
-                } else
-                    exportImports(out, ontology);
+                merged_name = str + merged_name;
+                // System.out.println("NAME: " + merged_name + "\n");
+                IRI mergedOntologyIRI = IRI.create(merged_name);
+                // System.out.println("MERGED_IRI " + mergedOntologyIRI + "\n");
+                OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
+                renderUsingOption(merged, out);
+            } else {
+                ontologies.add(ontology);
+                exportImports(out);
             }
         } catch (Exception ex) {
             System.err.println("OWL parse error: " + ex.getMessage());
@@ -99,46 +91,32 @@ public class OWL2Parser {
         }
     }
 
-    private static void getImportsList(OWLOntology ontology, OWLOntologyManager om) {
-        List<OWLOntology> l = new ArrayList<OWLOntology>();
-        try {
-            for (OWLOntology imported : om.getDirectImports(ontology)) {
-                IRI importIri = imported.getOntologyID().getOntologyIRI();
-                if (!importsIRI.contains(importIri)) {
-                    loadedImportsList.add(imported);
-                    importsIRI.add(importIri);
-                    l.add(imported);
-                }
+    private static Set<OWLOntology> getImports(OWLOntology ontology, Set<OWLOntology> stop) {
+        Set<OWLOntology> s = new HashSet<OWLOntology>();
+        Set<OWLOntology> next = new HashSet<OWLOntology>(stop);
+        next.add(ontology);
+        for (OWLOntology imported : ontology.getDirectImports())
+            if (next.contains(imported)) cyclic = true;
+            else if (!s.contains(imported)) {
+                Set<OWLOntology> i = getImports(imported, next);
+                s.add(imported);
+                s.addAll(i);
             }
-            m.put(ontology, l);
-            for (OWLOntology onto : l) {
-                getImportsList(onto, om);
-            }
-        } catch (Exception e) {
-            System.err.println("Error getImportsList!");
-            e.printStackTrace();
-        }
+        return s;
     }
 
-    private static void exportImports(BufferedWriter out, OWLOntology ontology) {
-        for (Map.Entry<OWLOntology, List<OWLOntology>> pairs : m.entrySet()) {
-            List<OWLOntology> values = pairs.getValue();
-            OWLOntology onto = pairs.getKey();
-            if (checkset(values)) {
-                if (!expanded.contains(onto)) {
-                    renderUsingOption(onto, out);
-                    expanded.add(onto);
-                    if (onto != ontology)
-                        exportImports(out, ontology);
+    private static void exportImports(BufferedWriter out) {
+        Boolean changed;
+        do {
+            changed = false;
+            for (OWLOntology onto : ontologies)
+                if (exported.containsAll(onto.getDirectImports())) {
+                    if (!exported.contains(onto)) {
+                        changed = exported.add(onto);
+                        renderUsingOption(onto, out);
+                    }
                 }
-            }
-        }
-    }
-
-    private static Boolean checkset(Collection<OWLOntology> it) {
-        Boolean noDeps = true;
-        for (OWLOntology v : it) if (!expanded.contains(v)) noDeps = false;
-        return noDeps;
+        } while (changed);
     }
 
     private static void renderUsingOption(OWLOntology onto, BufferedWriter out) {
@@ -157,7 +135,7 @@ public class OWL2Parser {
 
     private static void renderAsOmn(OWLOntology onto, BufferedWriter out) {
         try {
-            ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer(onto.getOWLOntologyManager());
+            ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer();
             rendi.render(onto, out);
         } catch (OWLRendererException ex) {
             System.err.println("Error by ManchesterParser!");
@@ -167,10 +145,9 @@ public class OWL2Parser {
 
     private static void renderAsXml(OWLOntology onto, BufferedWriter out) {
         try {
-            OWLOntologyManager mngr = onto.getOWLOntologyManager();
-            OWLXMLRenderer ren = new OWLXMLRenderer(mngr);
+            OWLXMLRenderer ren = new OWLXMLRenderer();
             ren.render(onto, out);
-            out.append("<Loaded name=\"").append(mngr.getOntologyDocumentIRI(onto));
+            out.append("<Loaded name=\"").append(manager.getOntologyDocumentIRI(onto));
             out.append("\" ontiri=\"").append(onto.getOntologyID().getOntologyIRI()).append("\"/>\n");
         } catch (Exception ex) {
             System.err.println("Error by XMLParser!");
@@ -180,7 +157,7 @@ public class OWL2Parser {
 
     private static void renderAsRdf(OWLOntology onto, BufferedWriter out) {
         try {
-            RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto.getOWLOntologyManager(), onto, out);
+            RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto, out);
             rdfrend.render();
         } catch (IOException ex) {
             System.err.println("Error by RDFParser!");
