@@ -32,41 +32,37 @@ import Static.GTheory
 import qualified Data.Map as Map
 import Common.AS_Annotation
 import Proofs.AbstractState
-import Common.OrderedMap
+import qualified Common.OrderedMap as OMap
 import Logic.Prover
 
-
-
-
 isNotDisproved :: G_theory -> Bool
-isNotDisproved G_theory {gTheorySens = el} = checkListDisproved $ Data.List.map ((Data.List.map snd) .getThmStatus . 
-                             senAttr . ele . snd) $ Map.toList el 
+isNotDisproved G_theory {gTheorySens = el} =
+  checkListDisproved . map
+  (map snd . getThmStatus . senAttr . OMap.ele . snd) $ Map.toList el
 
 checkList :: [BasicProof] -> Bool
 checkList [] = False
-checkList (l : ls) = case l of 
-            BasicProof _ (ProofStatus _ b _ _ _ _ _) -> case b of 
+checkList (l : ls) = case l of
+            BasicProof _ (ProofStatus _ b _ _ _ _ _) -> case b of
               Disproved -> True
               _ -> checkList ls
             _ -> checkList ls
 
 checkListDisproved :: [[BasicProof]] -> Bool
-checkListDisproved [] = True
-checkListDisproved (l : ls) = if checkList l then False
-                                             else checkListDisproved ls
+checkListDisproved = all (not . checkList)
 
 cmdlProcessString :: FilePath -> Int -> String -> CmdlState
   -> IO (CmdlState, Maybe Command)
 cmdlProcessString fp l ps st = case parseSingleLine fp l ps of
-  Left err -> do
-    return (genMsgAndCode err 3 st, Nothing)
+  Left err -> return (genMsgAndCode err 3 st, Nothing)
   Right c -> let cm = Parser.command c in
        fmap (\ nst -> (nst, Just $ cmdDescription cm)) $ execCmdlCmd cm st
 
---sets the errorCode to 0 and then processes the string
+-- sets the errorCode to 0 and then processes the string
 resetErrorAndProcString :: FilePath -> Int -> String -> CmdlState
   -> IO (CmdlState, Maybe Command)
-resetErrorAndProcString fp l ps st = cmdlProcessString fp l ps $ resetErrorCode st
+resetErrorAndProcString fp l ps st =
+  cmdlProcessString fp l ps $ resetErrorCode st
 
 execCmdlCmd :: CmdlCmdDescription -> CmdlState -> IO CmdlState
 execCmdlCmd cm =
@@ -85,12 +81,11 @@ printCmdResult state = do
       ms = outputMsg o
       ws = warningMsg o
       es = errorMsg o
-  unless (Data.List.null ms) $ putStrLn ms
-  unless (Data.List.null ws) . putStrLn $ "Warning:\n" ++ ws
-  unless (Data.List.null es) . putStrLn $ "Error:\n" ++ es
+  unless (null ms) $ putStrLn ms
+  unless (null ws) . putStrLn $ "Warning:\n" ++ ws
+  unless (null es) . putStrLn $ "Error:\n" ++ es
   hFlush stdout
   return state { output = emptyCmdlMessage }
-
 
 cmdlProcessScriptFile :: Bool -> FilePath -> CmdlState -> IO CmdlState
 cmdlProcessScriptFile doExit fp st = do
@@ -98,12 +93,12 @@ cmdlProcessScriptFile doExit fp st = do
   s <- foldM (\ nst (s, n) -> do
       (cst, _) <- resetErrorAndProcString fp n s nst
       printCmdResult cst) st . number $ lines str
-  case i_state $ intState s of 
-    Just x -> case head $ elements x of 
-      Element list _ -> when doExit $ if isNotDisproved (currentTheory list)
-                                      then exitWith $ getExitCode s
-                                      else exitWith $ ExitFailure 4
-    Nothing -> when doExit $ exitWith $ getExitCode s  
+  when doExit $ exitWith $ case i_state $ intState s of
+    Just x -> let hd : _ = elements x in case hd of
+      Element list _ -> if isNotDisproved (currentTheory list)
+          then getExitCode s
+          else ExitFailure 4
+    Nothing -> getExitCode s
   return s
 
 
