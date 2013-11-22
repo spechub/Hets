@@ -376,6 +376,7 @@ data InType =
   | HetCASLIn
   | DOLIn
   | OWLIn
+  | OwlXmlIn
   | OBOIn
   | HaskellIn
   | MaudeIn
@@ -402,6 +403,7 @@ instance Show InType where
     CASLIn -> "casl"
     HetCASLIn -> "het"
     DOLIn -> "dol"
+    OwlXmlIn -> "owl.xml"
     OWLIn -> "owl"
     OBOIn -> "obo"
     HaskellIn -> hsS
@@ -437,9 +439,10 @@ instance Show ATType where
     BAF -> bafS
     NonBAF -> ""
 
+-- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, DOLIn, OWLIn, OBOIn, HaskellIn, ExperimentalIn
+  [ CASLIn, HetCASLIn, DOLIn, OwlXmlIn, OWLIn, OBOIn, HaskellIn, ExperimentalIn
   , MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True

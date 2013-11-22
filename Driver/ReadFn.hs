@@ -114,7 +114,7 @@ readLibDefnAux lgraph opts file fileForPos input =
       Xmi -> liftIO $ parseXmi file
       Qvt -> liftIO $ parseQvt file
 #ifndef NOOWLLOGIC
-      _ | elem ty [OWLIn, OBOIn] -> liftIO $ parseOWL file
+      _ | elem ty [OWLIn, OwlXmlIn, OBOIn] -> liftIO $ parseOWL file
 #endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
