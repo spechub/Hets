@@ -25,8 +25,6 @@ import Data.Ord
 
 import System.FilePath
 
-import Data.Graph.Inductive.Graph
-
 omTs :: [Token]
 omTs = [genToken "OM"]
 
@@ -44,17 +42,6 @@ isQualName :: Id -> Bool
 isQualName (Id ts cs _) = case cs of
   _ : _ : _ -> ts == omTs
   _ -> False
-
-libIdOfQualName :: Id -> Id
-libIdOfQualName j@(Id _ cs _) = case cs of
-  [_, _, i] | isQualName j -> i
-  _ -> error "libIdOfQualName: Check by isQualName before calling getLibId!"
-
-getNodeId :: Id -> Id
-getNodeId j@(Id _ cs _) = case cs of
-  [_, i, _] | isQualName j -> i
-  _ -> error "Check by isQualName before calling getNodeId!"
-
 
 unQualName :: Id -> Id
 unQualName j@(Id _ cs _) = case cs of
@@ -133,26 +120,9 @@ instance Pretty LibName where
 instance Pretty LibId where
     pretty = structId . show
 
-data LinkPath a = LinkPath a [(LibId, Node)] deriving (Ord, Eq)
+data LinkPath a = LinkPath a [(LibId, Int)] deriving (Ord, Eq)
 
 type SLinkPath = LinkPath String
-
-showSLinkPath :: SLinkPath -> String
-showSLinkPath (LinkPath x l) = s l where
-    s ((_, n) : l1) = show n ++ "/" ++ s l1
-    s _ = x
-
-instance Show a => Show (LinkPath a) where
-    show (LinkPath x l) = showSLinkPath $ LinkPath (show x) l
-
-instance Functor LinkPath where
-    fmap f (LinkPath x l) = LinkPath (f x) l
-
-addToPath :: LibId -> Node -> LinkPath a -> LinkPath a
-addToPath libid n (LinkPath x l) = LinkPath x $ (libid, n) : l
-
-initPath :: LibId -> Node -> a -> LinkPath a
-initPath libid n x = LinkPath x [(libid, n)]
 
 convertFileToLibStr :: FilePath -> String
 convertFileToLibStr = mkLibStr . takeBaseName
