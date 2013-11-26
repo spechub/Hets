@@ -51,7 +51,6 @@ The default display for a LibEnv should be:
 
 -}
 
-import Common.LibName
 import Common.Utils
 
 import Data.Char
@@ -94,7 +93,7 @@ edgeCommands = ["edge"]
 -- Lib- and node name can be IRIs now (the query id is the session number)
 data DGQuery = DGQuery
   { queryId :: Int
-  , optQueryLibPath :: Maybe PATH
+  , optQueryLibPath :: Maybe String
   }
   | NewDGQuery
   { queryLib :: FilePath
