@@ -11,7 +11,23 @@ Abstract syntax of HetCASL specification libraries
    Follows Sect. II:2.2.5 of the CASL Reference Manual.
 -}
 
-module Common.LibName where
+module Common.LibName
+  ( LibName (LibName)
+  , LibId (IndirectLink)
+  , VersionNumber (VersionNumber)
+  , LinkPath (LinkPath)
+  , SLinkPath
+  , isQualNameFrom
+  , isQualName
+  , mkQualName
+  , unQualName
+  , setFilePath
+  , getFilePath
+  , emptyLibName
+  , convertFileToLibStr
+  , getLibId
+  , mkLibStr
+  ) where
 
 import Common.Doc
 import Common.DocUtils
@@ -56,7 +72,7 @@ libIdToId li = let
 
 data LibName = LibName
     { getLibId :: LibId
-    , libVersion :: Maybe VersionNumber }
+    , _libVersion :: Maybe VersionNumber }
 
 emptyLibName :: String -> LibName
 emptyLibName s = LibName (IndirectLink s nullRange "") Nothing
