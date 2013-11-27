@@ -61,9 +61,10 @@ library lG = do
 -- | Parse library name
 libName :: LogicGraph -> AParser st LibName
 libName lG = do
-    libid <- libId lG
+    p <- getPos
+    i <- hetIRI lG
     v <- optionMaybe version
-    return $ LibName libid v
+    return $ LibName i (Range [p]) Nothing v
 
 -- | Parse the library version
 version :: AParser st VersionNumber
@@ -73,13 +74,6 @@ version = do
     n <- sepBy1 (many1 digit) (string dotS)
     skip
     return (VersionNumber n (tokPos s `appRange` Range [pos]))
-
--- | Parse library ID
-libId :: LogicGraph -> AParser st LibId
-libId lG = do
-      pos <- getPos
-      i <- hetIRI lG
-      return $ IndirectLink (iriToStringUnsecure i) (Range [pos]) ""
 
 -- | Parse the library elements
 libItems :: LogicGraph -> AParser st [Annoted LIB_ITEM]
@@ -235,17 +229,14 @@ libItem l =
 
 useItem :: Monad m => IRI -> m LIB_ITEM
 useItem i = do
-  let libPath = iriToStringUnsecure (deleteFragment i)
-      shortLibName = convertFileToLibStr libPath
+  let libPath = deleteFragment i
       fragment = getFragment i
-      specName = if null fragment || null (tail fragment)
-                 then shortLibName
-                 else tail fragment
-  libNameIri <- case parseIRIManchester specName of
+  libNameIri <- if null fragment || null (tail fragment)
+    then return libPath else case parseIRIManchester $ tail fragment of
     Just i' -> return i'
-    Nothing -> fail $ "could not read " ++ show specName ++ " into IRI"
+    Nothing -> fail $ "could not read " ++ fragment ++ " into IRI"
   return $ Download_items
-    (LibName (IndirectLink shortLibName nullRange libPath) Nothing)
+    (LibName libPath nullRange (Just libPath) Nothing)
     (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange
 
 useItems :: Monad m => [IRI] -> m [LIB_ITEM]

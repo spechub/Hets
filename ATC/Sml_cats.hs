@@ -1830,13 +1830,13 @@ instance ATermConvertibleSML LibName where
         case aterm of
             (ShAAppl "versioned-lib" [ aa, ab ] _) ->
                 let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
+                (aa', r) = fromSmlShATermToLibId (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (LibName aa' $ Just ab')
+                in (LibName aa' r Nothing $ Just ab')
             (ShAAppl "lib" [ aa ] _) ->
                 let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (LibName aa' Nothing)
+                (aa', r) = fromSmlShATermToLibId (getATermByIndex1 aa att)
+                in (LibName aa' r Nothing Nothing)
             _ -> from_sml_ShATermError "LibName" aterm
         where
             aterm = getATerm att'
@@ -1846,15 +1846,16 @@ instance ATermConvertibleSML LibName where
                     getATermByIndex1 item_i att
                 _ -> att
 
-instance ATermConvertibleSML LibId where
-    from_sml_ShATerm att =
+fromSmlShATermToLibId :: ATermTable -> (IRI, Range)
+fromSmlShATermToLibId att =
         case aterm of
             (ShAAppl str [ aa ] _) | elem str ["path-name", "url"] ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (IndirectLink aa' ab' "")
-            _ -> from_sml_ShATermError "LibName" aterm
+                in (fromMaybe (error "fromSmlShATermToLibId")
+                   $ parseIRICurie aa', ab')
+            _ -> from_sml_ShATermError "LibId" aterm
         where
             aterm = getATerm att'
             (pos_l, att') =

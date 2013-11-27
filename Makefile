@@ -211,7 +211,7 @@ ATC/Consistency.der.hs: Common/Consistency.hs $(GENRULES)
 	$(GENRULECALL) -x Common.Consistency.ConservativityChecker -o $@ $<
 
 ATC/LibName.der.hs: Common/LibName.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.Id -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -o $@ $<
 
 ATC/ExtSign.der.hs: Common/ExtSign.hs $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $<

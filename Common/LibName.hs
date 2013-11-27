@@ -13,7 +13,6 @@ Abstract syntax of HetCASL specification libraries
 
 module Common.LibName
   ( LibName (LibName)
-  , LibId (IndirectLink)
   , VersionNumber (VersionNumber)
   , LinkPath (LinkPath)
   , SLinkPath
@@ -25,18 +24,21 @@ module Common.LibName
   , getFilePath
   , emptyLibName
   , convertFileToLibStr
-  , getLibId
   , mkLibStr
+  , getLibId
+  , locIRI
   ) where
 
 import Common.Doc
 import Common.DocUtils
 import Common.Id
+import Common.IRI
 import Common.Keywords
 import Common.Utils
 
 import Data.Char
 import Data.List
+import Data.Maybe
 import Data.Ord
 
 import System.FilePath
@@ -71,40 +73,27 @@ libNameToId ln = let
   in mkId $ map toTok $ intersperse "/" path
 
 data LibName = LibName
-    { getLibId :: LibId
-    , _libVersion :: Maybe VersionNumber }
+    { getLibId :: IRI
+    , libIdRange :: Range  -- start of getLibId
+    , locIRI :: Maybe IRI
+    , libVersion :: Maybe VersionNumber }
 
 emptyLibName :: String -> LibName
-emptyLibName s = LibName (IndirectLink s nullRange "") Nothing
-
-data LibId = IndirectLink PATH Range FilePath
-              -- pos: start of PATH
-
-updFilePathOfLibId :: FilePath -> LibId -> LibId
-updFilePathOfLibId fp (IndirectLink p r _) = IndirectLink p r fp
+emptyLibName s = LibName (fromMaybe (error "emptyLibName") $ parseIRICurie s)
+  nullRange Nothing Nothing
 
 setFilePath :: FilePath -> LibName -> LibName
 setFilePath fp ln =
-  ln { getLibId = updFilePathOfLibId fp $ getLibId ln }
+  ln { locIRI = maybe (error "setFilePath") Just $ parseIRICurie fp }
 
 getFilePath :: LibName -> FilePath
-getFilePath ln =
-    case getLibId ln of
-      IndirectLink _ _ fp -> fp
+getFilePath = maybe "" iriToStringUnsecure . locIRI
 
 data VersionNumber = VersionNumber [String] Range
                       -- pos: "version", start of first string
 
-type PATH = String
-
-instance GetRange LibId where
-  getRange (IndirectLink _ r _) = r
-
-instance Show LibId where
-  show (IndirectLink s1 _ _) = s1
-
 instance GetRange LibName where
-  getRange = getRange . getLibId
+  getRange = libIdRange
 
 instance Show LibName where
   show = show . hsep . prettyLibName
@@ -114,15 +103,8 @@ prettyVersionNumber (VersionNumber v _) =
   [keyword versionS, hcat $ punctuate dot $ map codeToken v]
 
 prettyLibName :: LibName -> [Doc]
-prettyLibName (LibName i mv) = pretty i : case mv of
-        Nothing -> []
-        Just v -> prettyVersionNumber v
-
-instance Eq LibId where
-  IndirectLink s1 _ _ == IndirectLink s2 _ _ = s1 == s2
-
-instance Ord LibId where
-  IndirectLink s1 _ _ <= IndirectLink s2 _ _ = s1 <= s2
+prettyLibName ln =
+  pretty (getLibId ln) : maybe [] prettyVersionNumber (libVersion ln)
 
 instance Eq LibName where
   ln1 == ln2 = compare ln1 ln2 == EQ
@@ -132,9 +114,6 @@ instance Ord LibName where
 
 instance Pretty LibName where
     pretty = fsep . prettyLibName
-
-instance Pretty LibId where
-    pretty = structId . show
 
 data LinkPath a = LinkPath a [(LibName, Int)] deriving (Ord, Eq)
 

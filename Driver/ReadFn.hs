@@ -41,6 +41,7 @@ import ATerm.ReadWrite
 
 import Common.AnnoState
 import Common.Id
+import Common.IRI
 import Common.Result
 import Common.DocUtils
 import Common.LibName
@@ -159,10 +160,8 @@ readVerbose lg opts ln file = do
 
 -- | create a file name without suffix from a library name
 libNameToFile :: LibName -> FilePath
-libNameToFile ln = case getLibId ln of
-  IndirectLink file _ ofile ->
-      if null ofile then file
-      else rmSuffix ofile
+libNameToFile ln = maybe (iriToStringUnsecure $ getLibId ln)
+  (rmSuffix . iriToStringUnsecure) $ locIRI ln
 
 findFileOfLibNameAux :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 findFileOfLibNameAux opts file = do
