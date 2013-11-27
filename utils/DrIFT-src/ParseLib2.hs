@@ -209,7 +209,7 @@ string (x : xs) = do
 
 ident :: Parser String
 ident = do
-  x <- lower
+  x <- lower +++ char '_'
   xs <- many alphanum
   return (x : xs)
 
