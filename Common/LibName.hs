@@ -44,14 +44,14 @@ import System.FilePath
 omTs :: [Token]
 omTs = [genToken "OM"]
 
-mkQualName :: SIMPLE_ID -> LibId -> Id -> Id
-mkQualName nodeId libId i =
-  Id omTs [i, simpleIdToId nodeId, libIdToId libId] $ posOfId i
+mkQualName :: SIMPLE_ID -> LibName -> Id -> Id
+mkQualName nodeId ln i =
+  Id omTs [i, simpleIdToId nodeId, libNameToId ln] $ posOfId i
 
-isQualNameFrom :: SIMPLE_ID -> LibId -> Id -> Bool
-isQualNameFrom nodeId libId i@(Id _ cs _) = case cs of
+isQualNameFrom :: SIMPLE_ID -> LibName -> Id -> Bool
+isQualNameFrom nodeId ln i@(Id _ cs _) = case cs of
   _ : n : l : _ | isQualName i ->
-    n == simpleIdToId nodeId && libIdToId libId == l
+    n == simpleIdToId nodeId && libNameToId ln == l
   _ -> True
 
 isQualName :: Id -> Bool
@@ -64,10 +64,10 @@ unQualName j@(Id _ cs _) = case cs of
   i : _ | isQualName j -> i
   _ -> j
 
-libIdToId :: LibId -> Id
-libIdToId li = let
-  path = splitOn '/' $ show li
-  toTok s = Token s $ getRange li
+libNameToId :: LibName -> Id
+libNameToId ln = let
+  path = splitOn '/' . show $ getLibId ln
+  toTok s = Token s $ getRange ln
   in mkId $ map toTok $ intersperse "/" path
 
 data LibName = LibName
@@ -136,7 +136,7 @@ instance Pretty LibName where
 instance Pretty LibId where
     pretty = structId . show
 
-data LinkPath a = LinkPath a [(LibId, Int)] deriving (Ord, Eq)
+data LinkPath a = LinkPath a [(LibName, Int)] deriving (Ord, Eq)
 
 type SLinkPath = LinkPath String
 

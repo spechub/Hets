@@ -286,7 +286,7 @@ vseSignToSExpr sig =
       ++ opMapToSExprs sig (diffOpMapSet (opMap sig) $ procsToOpMap e)
       ++ procsToSExprs (const True) sig
 
-qualVseSignToSExpr :: SIMPLE_ID -> LibId -> Sign f Procs -> SExpr
+qualVseSignToSExpr :: SIMPLE_ID -> LibName -> Sign f Procs -> SExpr
 qualVseSignToSExpr nodeId libId sig =
   let e = extendedInfo sig in
     SList $ SSymbol "signature" : sortSignToSExprs sig

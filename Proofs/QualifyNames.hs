@@ -54,7 +54,7 @@ type RenameMap = Map.Map Int (GMorphism, GMorphism)
 
 qualifyDGraph :: LibName -> DGraph -> Result (DGraph, RenameMap)
 qualifyDGraph ln dg =
-  addErrorDiag "qualification failed for" (getLibId ln)
+  addErrorDiag "qualification failed for" ln
   $ do
   let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
   unless (Set.size (Set.fromList es) == length es) $
@@ -128,7 +128,7 @@ qualifyLabNode ln (dg, mormap) (n, lb) =
                   [] -> ide sig
                   hd : tl -> constructUnion lid hd tl
         (m1, osens) <- qualify lid (mkSimpleId $ getDGNodeName lb)
-                       (getLibId ln) m sig
+                       ln m sig
         rm <- inverse m1
         nThSens <- mapThSensValueM (map_sen lid m1) $ joinSens sens
           $ toThSens osens

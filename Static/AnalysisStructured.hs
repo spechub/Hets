@@ -303,7 +303,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
            then return (bspec, mkExtSign $ empty_signature lid, [])
            else
              let res@(Result ds mb) = extBasicAnalysis lid (getName name)
-                   (getLibId ln) bspec sig $ globalAnnos dg0
+                   ln bspec sig $ globalAnnos dg0
              in case mb of
                Nothing | null ds ->
                  fail "basic analysis failed without giving a reason"

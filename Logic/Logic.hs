@@ -442,7 +442,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
            -> Maybe ((basic_spec, sign, sentence) -> Result sentence)
          sen_analysis _ = Nothing
          -- | a basic analysis with additional arguments
-         extBasicAnalysis :: lid -> IRI -> LibId
+         extBasicAnalysis :: lid -> IRI -> LibName
              -> basic_spec -> sign -> GlobalAnnos
              -> Result (basic_spec, ExtSign sign symbol, [Named sentence])
          extBasicAnalysis l _ _ b s g = case basic_analysis l of
@@ -493,7 +493,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          {- | rename and qualify the symbols considering a united incoming
             morphisms, code out overloading and
             create sentences for the overloading relation -}
-         qualify :: lid -> SIMPLE_ID -> LibId -> morphism -> sign
+         qualify :: lid -> SIMPLE_ID -> LibName -> morphism -> sign
                  -> Result (morphism, [Named sentence])
          qualify l _ _ _ _ = statFail l "qualify"
 

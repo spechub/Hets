@@ -93,15 +93,14 @@ prove (ln, node) libEnv =
          let lbln = getDGNodeName lbl
          G_theory lid _ (ExtSign sign0 _) _ sens0 _ <- return $ dgn_theory lbl
          (sign1, sens1) <-
-           addErrorDiag "failure when proving VSE nodes of" (getLibId ln)
+           addErrorDiag "failure when proving VSE nodes of" ln
            $ coerceBasicTheory lid VSE
              ("cannot cast untranslated node '" ++ lbln ++ "'")
              (sign0, toNamedList sens0)
          let (sign2, sens2) = addUniformRestr sign1 sens1
          return
            ( show $ prettySExpr
-             $ qualVseSignToSExpr (mkSimpleId lbln)
-               (getLibId ln) sign2
+             $ qualVseSignToSExpr (mkSimpleId lbln) ln sign2
            , show $ prettySExpr
              $ SList $ map (namedSenToSExpr sign2) sens2)) ns
     lift $ do
