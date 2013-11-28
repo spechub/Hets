@@ -62,7 +62,7 @@ makeHets ()
 {
 date
 rm -rf Hets
-svn co --ignore-externals \
+svn co -q --ignore-externals \
   https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
 cd Hets
 time $MAKE
@@ -174,7 +174,7 @@ for i in Basic/*.xml;
 makeLibCheck ()
 {
 rm -rf Hets-lib
-svn co --ignore-externals \
+svn co -q --ignore-externals \
   https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 cd Hets-lib
 mv ../Hets/Hets/hets .
@@ -386,7 +386,7 @@ for i in *.hpf Basic/*.hpf Calculi/*/*.hpf; do ./hets -v2 $i; done
 
 updateOMDoc ()
 {
-svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-OMDoc/trunk Hets-OMDoc
+svn co -q https://svn-agbkb.informatik.uni-bremen.de/Hets-OMDoc/trunk Hets-OMDoc
 cd Hets-OMDoc
 make
 svn diff
