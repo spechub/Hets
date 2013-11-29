@@ -81,12 +81,12 @@ data LibName = LibName
     , libVersion :: Maybe VersionNumber }
 
 emptyLibName :: String -> LibName
-emptyLibName s = LibName (fromMaybe (error "emptyLibName") $ parseIRICurie s)
+emptyLibName s = LibName (fromMaybe (error $ "emptyLibName: " ++ s) $ parseIRIReference s)
   nullRange Nothing Nothing
 
 setFilePath :: FilePath -> LibName -> LibName
 setFilePath fp ln =
-  ln { locIRI = mplus (parseIRICurie fp) (error "setFilePath") }
+  ln { locIRI = mplus (parseIRIReference fp) (error $ "setFilePath: " ++ fp) }
 
 getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI

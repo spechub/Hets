@@ -16,12 +16,11 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.Rename
 
-import Data.Char
 import Data.Maybe
 import qualified Data.Map as Map
 
 import Common.Id
-import Common.IRI (simpleIdToIRI)
+import Common.IRI
 import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation hiding (isAxiom, isDef)
@@ -72,17 +71,17 @@ parseProc filename str =
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 
-cnvtoSimpleId :: QName -> SPEC_NAME
-cnvtoSimpleId = simpleIdToIRI . mkSimpleId . filter isAlphaNum . showQN
+qNameToIRI :: QName -> SPEC_NAME
+qNameToIRI qn = let s = showQU qn in
+  fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRIReference s
 
 createSpec :: OntologyDocument -> Annoted SPEC
-createSpec o = addImports (map cnvtoSimpleId . imports $ ontology o)
+createSpec o = addImports (map qNameToIRI . imports $ ontology o)
   . makeSpec $ G_basic_spec OWL2 o
 
 convertone :: OntologyDocument -> Annoted LIB_ITEM
-convertone o = makeSpecItem (cnvtoSimpleId $ name $ ontology o) $ createSpec o
+convertone o = makeSpecItem (qNameToIRI $ name $ ontology o) $ createSpec o
 
 convertToLibDefN :: FilePath -> [OntologyDocument] -> LIB_DEFN
-convertToLibDefN filename l = Lib_defn
-  (emptyLibName $ convertFileToLibStr filename)
+convertToLibDefN filename l = Lib_defn (emptyLibName filename)
   (makeLogicItem OWL2 : map convertone l) nullRange []
