@@ -303,7 +303,7 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
 defPrefixGlobalAnnos :: FilePath -> GlobalAnnos
 defPrefixGlobalAnnos file = emptyGlobalAnnos
   { prefix_map = Map.singleton ""
-    $ fromMaybe nullIRI $ parseIRIReference $ file ++ "#" }
+    $ fromMaybe nullIRI $ parseIRIReference $ file ++ "?" }
 
 anaLibItemAux :: HetcatsOpts -> LNS -> LibName
   -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph, ExpOverrides) -> LIB_ITEM
