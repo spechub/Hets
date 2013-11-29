@@ -1,15 +1,15 @@
-vars S, T : Type
+vars  S, T : Type
 types Bool;
       Pred S := S ->? Unit;
       Set S := S ->? Unit
-ops True, False : Bool
-ops emptySet : Set S;
+ops   True, False : Bool
+ops   emptySet : Set S;
       {__} : S -> Set S;
       __isIn__ : S * Set S ->? Unit;
       __subset__ : Pred (Set (S) * Set (S));
-      __union__, __intersection__, __ \\ __ : Set S * Set S -> Set S;
+      __union__, __intersection__, __\\__ : Set S * Set S -> Set S;
       __disjoint__ : Pred (Set (S) * Set (S));
-      __ * __ : Set S * Set T -> Set (S * T);
+      __*__ : Set S * Set T -> Set (S * T);
       __disjointUnion__ : Set S * Set S -> Set (S * Bool);
       inl, inr : S -> S * Bool
 forall x, x' : S; y : T; s, s' : Set S; t : Set T
@@ -30,12 +30,12 @@ Set : Type -> Type
 type
 Set (S : Type) := S ->? Unit
 vars
-S : Type % (var_1) %;
-T : Type % (var_2) %
+S : Type %(var_1)%;
+T : Type %(var_2)%
 op False : Bool
 op True : Bool
-op __ * __ : forall S : Type; T : Type . Set S * Set T -> Set (S * T)
-op __ \\ __ : forall S : Type . Set S * Set S -> Set S
+op __*__ : forall S : Type; T : Type . Set S * Set T -> Set (S * T)
+op __\\__ : forall S : Type . Set S * Set S -> Set S
 op __disjoint__ : forall S : Type . Pred (Set S * Set S)
 op __disjointUnion__ : forall S : Type
                        . Set S * Set S -> Set (S * Bool)
@@ -64,112 +64,112 @@ forall S : Type; T : Type; s : Set S; t : Set T; x : S; y : T
 . (x, y) isIn (s * t) <=> x isIn s /\ y isIn t
 forall S : Type; x : S . inl x = (x, False)
 forall S : Type; x : S . inr x = (x, True)
-1.6 : ### Hint : is type variable 'S'
-1.8 : ### Hint : is type variable 'T'
-3.14 : ### Hint : rebound type variable 'S'
-3.8 - 3.11 : ### Hint : redeclared type 'Pred'
-4.13 : ### Hint : rebound type variable 'S'
-9.18 : ### Hint :
+1.6: ### Hint: is type variable 'S'
+1.9: ### Hint: is type variable 'T'
+3.14: ### Hint: rebound type variable 'S'
+3.8-3.11: ### Hint: redeclared type 'Pred'
+4.13: ### Hint: rebound type variable 'S'
+9.18: ### Hint:
 no kind found for 'S'
-  expected : {Cpo}
-     found : {Type}
-9.18 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+9.18: ### Hint:
 no kind found for 'S'
-  expected : {Cppo}
-     found : {Type}
-10.25 - 10.29 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+10.27-10.32: ### Hint:
 no kind found for 'Set S'
-  expected : {Cpo}
-     found : {Type}
-10.25 - 10.29 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+10.27-10.32: ### Hint:
 no kind found for 'Set S'
-  expected : {Cppo}
-     found : {Type}
-11.46 - 11.50 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+11.47-11.51: ### Hint:
 no kind found for 'Set S'
-  expected : {Cpo}
-     found : {Type}
-11.46 - 11.50 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+11.47-11.51: ### Hint:
 no kind found for 'Set S'
-  expected : {Cppo}
-     found : {Type}
-11.46 - 11.50 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+11.47-11.51: ### Hint:
 no kind found for 'Set S'
-  expected : {Cpo}
-     found : {Type}
-11.46 - 11.50 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+11.47-11.51: ### Hint:
 no kind found for 'Set S'
-  expected : {Cppo}
-     found : {Type}
-11.46 - 11.50 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+11.47-11.51: ### Hint:
 no kind found for 'Set S'
-  expected : {Cpo}
-     found : {Type}
-11.46 - 11.50 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+11.47-11.51: ### Hint:
 no kind found for 'Set S'
-  expected : {Cppo}
-     found : {Type}
-12.28 - 12.32 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+12.29-12.34: ### Hint:
 no kind found for 'Set S'
-  expected : {Cpo}
-     found : {Type}
-12.28 - 12.32 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+12.29-12.34: ### Hint:
 no kind found for 'Set S'
-  expected : {Cppo}
-     found : {Type}
-13.15 - 13.19 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+13.17-13.21: ### Hint:
 no kind found for 'Set S'
-  expected : {Cpo}
-     found : {Type}
-13.15 - 13.19 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+13.17-13.21: ### Hint:
 no kind found for 'Set S'
-  expected : {Cppo}
-     found : {Type}
-13.37 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+13.39: ### Hint:
 no kind found for 'S'
-  expected : {Cpo}
-     found : {Type}
-13.37 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+13.39: ### Hint:
 no kind found for 'S'
-  expected : {Cppo}
-     found : {Type}
-14.28 - 14.32 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+14.27-14.31: ### Hint:
 no kind found for 'Set S'
-  expected : {Cpo}
-     found : {Type}
-14.28 - 14.32 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+14.27-14.31: ### Hint:
 no kind found for 'Set S'
-  expected : {Cppo}
-     found : {Type}
-14.50 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+14.49: ### Hint:
 no kind found for 'S'
-  expected : {Cpo}
-     found : {Type}
-14.50 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+14.49: ### Hint:
 no kind found for 'S'
-  expected : {Cppo}
-     found : {Type}
-15.22 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+15.23: ### Hint:
 no kind found for 'S'
-  expected : {Cpo}
-     found : {Type}
-15.22 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+15.23: ### Hint:
 no kind found for 'S'
-  expected : {Cppo}
-     found : {Type}
-15.22 : ### Hint :
+  expected: {Cppo}
+     found: {Type}
+15.23: ### Hint:
 no kind found for 'S'
-  expected : {Cpo}
-     found : {Type}
-15.22 : ### Hint :
+  expected: {Cpo}
+     found: {Type}
+15.23: ### Hint:
 no kind found for 'S'
-  expected : {Cppo}
-     found : {Type}
-16.11 : ### Hint : not a class 'S'
-16.14 : ### Hint : not a class 'S'
-16.19 : ### Hint : not a class 'T'
-16.24 : ### Hint : not a kind 'Set (S) '
-16.27: ### Hint: not a kind ' Set (S) '
-16.37: ### Hint: not a kind ' Set (T) '
-20.32: ### Hint: not a class ' S'
-20.31 : ### Hint : rebound variable 'x'
+  expected: {Cppo}
+     found: {Type}
+16.11: ### Hint: not a class 'S'
+16.16: ### Hint: not a class 'S'
+16.23: ### Hint: not a class 'T'
+16.29: ### Hint: not a kind 'Set (S)'
+16.34: ### Hint: not a kind 'Set (S)'
+16.47: ### Hint: not a kind 'Set (T)'
+20.33: ### Hint: not a class 'S'
+20.31: ### Hint: rebound variable 'x'
