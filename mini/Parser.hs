@@ -9,6 +9,7 @@ import Grothendieck
 import Structured
 
 import Data.Dynamic
+import Data.Maybe
 
 hetParse :: LogicGraph -> String -> SPEC
 hetParse (logics@((_, defaultLogic) : _), translations) input =
