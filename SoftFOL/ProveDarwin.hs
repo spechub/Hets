@@ -276,7 +276,7 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
   noProg <- missingExecutableInPath bin
   when saveTPTP (writeFile tmpFile prob)
   if noProg then return (bin ++ " not found. Check your $PATH", [], -1)
-  else do
+    else do
    (err, out) <-
       do
        timeTmpFile <- getTempFile prob tmpFile

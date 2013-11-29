@@ -159,10 +159,8 @@ anaSource mln lg opts topLns libenv initDG origName =
                 Just $ emptyLibName libStr
               _ -> mln
         putIfVerbose opts 2 $ "Reading file " ++ file
-        if runMMT opts
-            then
-            mmtRes fname
-        else if takeExtension file /= ('.' : show TwelfIn)
+        if runMMT opts then mmtRes fname else
+            if takeExtension file /= ('.' : show TwelfIn)
                  then runResultT $
                       anaString nLn lgraph opts topLns libenv initDG input file
                   else do

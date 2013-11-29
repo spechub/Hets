@@ -123,10 +123,10 @@ error $ "The morphism " ++ (show s) ++
   if isJust lmod && dom (fromJust lmod) /= cod ltruth then
      error $ "The morphisms " ++ show s ++
              " and " ++ show m ++ " must be composable."
-  else if isJust lpf && dom (fromJust lpf) /= cod ltruth then
+    else if isJust lpf && dom (fromJust lpf) /= cod ltruth then
      error $ "The morphisms " ++ show s ++
              " and " ++ show p ++ " must be composable."
-  else return (ltruth, lmod, found, lpf)
+    else return (ltruth, lmod, found, lpf)
 
 -- creates a node for the logic definition
 addLogicDef2DG :: LogicDef -> DGraph -> DGraph
