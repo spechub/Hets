@@ -57,11 +57,11 @@ run p_r input flags = case parse p_r "" input of
                    putStrLn "  Trying to show satisfiability..."
                    let isS = satisfiable x flags
                    putStrLn $ if isS then "  ... The formula is satisfiable"
-                   else "  ... The formula is not satisfiable"
+                     else "  ... The formula is not satisfiable"
                    putStrLn "  Trying to show provability..."
                    let isP = provable x flags
                    putStrLn $ if isP then "  ... The formula is provable"
-                   else "  ... The formula is not provable"
+                     else "  ... The formula is not provable"
 
 -- | Parse formula according to the selected modal logic.
 runTest :: Int -> String -> [Bool] -> IO ()

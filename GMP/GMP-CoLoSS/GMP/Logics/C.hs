@@ -65,7 +65,7 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature C b c d w
                                                q <- stopParser
                                                spaces
                                                if q then normalParser (n : l)
-                                               else return (n : l)
+                                                 else return (n : l)
                                         <?> "Parser.parseCindex.normal"
                       char '{'
                       res <- try (normalParser [])
